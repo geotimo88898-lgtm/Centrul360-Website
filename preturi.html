@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prețuri — Centrul360 · Medicină Estetică Timișoara & Arad</title>
+<meta name="description" content="Lista de prețuri Centrul360: tratamente faciale, HIFU, radiofrecvență, RF Sculpt, Liposonix, EMS, epilare laser și pachete. Timișoara & Arad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b0b0d; --paper:#0b0b0d; --paper-2:#141418; --surface-3:#1c1c22;
+    --fg:#f5f4f2; --muted:rgba(245,244,242,0.58); --muted-2:rgba(245,244,242,0.38);
+    --line:rgba(255,255,255,0.10); --line-on-dark:rgba(255,255,255,0.14);
+    --glass:rgba(255,255,255,0.06); --glass-2:rgba(255,255,255,0.14);
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+      radial-gradient(90% 60% at 100% 0%, rgba(255,255,255,0.04), transparent 50%),
+      linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%);
+    background-attachment:fixed; color:var(--fg);
+    font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:clip;
+  }
+  ::selection{ background:var(--fg); color:#0b0b0d; }
+  ::-webkit-scrollbar{ width:7px; } ::-webkit-scrollbar-thumb{ background:#2c2c33; border-radius:10px; } ::-webkit-scrollbar-track{ background:transparent; }
+  a{ color:inherit; text-decoration:none; }
+
+  .wrap{ max-width:1280px; margin:0 auto; padding:0 1.25rem; }
+  .display{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; line-height:0.98; }
+  .accent{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; letter-spacing:-0.01em; }
+  .eyebrow{ font-size:11px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; }
+  .sec-head{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; line-height:1.0; }
+
+  /* aurora */
+  .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); opacity:.8; }
+  .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 70%); }
+  .aurora b:nth-child(2){ width:40vw; height:40vw; top:40vh; right:-12vw; background:radial-gradient(circle at 50% 50%, rgba(150,170,255,0.05), transparent 70%); }
+  .aurora b:nth-child(3){ width:32vw; height:32vw; bottom:-10vw; left:26vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05), transparent 70%); }
+
+  /* pills */
+  .pill{ position:relative; isolation:isolate; display:inline-flex; align-items:center; gap:.55rem; border-radius:999px; font-weight:600; cursor:pointer;
+    -webkit-backdrop-filter:blur(16px) saturate(180%); backdrop-filter:blur(16px) saturate(180%);
+    transition:transform .4s cubic-bezier(.16,1,.3,1), background-color .4s ease, box-shadow .4s ease; border:1px solid rgba(255,255,255,0.12);
+    box-shadow:inset 0 1px 0.5px 0 rgba(255,255,255,0.55), inset 1.5px 2px 0 -1.5px rgba(255,255,255,0.45), inset -1.5px -2px 1px -1.5px rgba(255,255,255,0.22), inset 0 -10px 18px -12px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.5), 0 10px 28px -10px rgba(0,0,0,0.6); }
+  .pill:focus-visible{ outline:2px solid var(--fg); outline-offset:3px; }
+  .pill-ink, .pill-on-dark{ background:var(--glass-2); color:#fff; }
+  .pill-ink:hover, .pill-on-dark:hover{ transform:translateY(-2px); background:rgba(255,255,255,0.22); }
+  .pill-ink:active, .pill-on-dark:active{ transform:translateY(0) scale(0.98); }
+  .pill-glass{ background:var(--glass); color:var(--fg); }
+  .pill-glass:hover{ transform:translateY(-2px); background:rgba(255,255,255,0.12); }
+  .pill .dot{ width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,.18); display:inline-flex; align-items:center; justify-content:center; }
+
+  /* header */
+  header.site{ position:fixed; top:1rem; left:0; right:0; z-index:50; padding:0 1rem; }
+  header.site .bar{ max-width:1280px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+  .logo-pill{ padding:.375rem 1.25rem .375rem .625rem; display:inline-flex; align-items:center; gap:.5rem; }
+  .logo-pill img{ height:11px; width:auto; object-fit:contain; }
+  @media (min-width:640px){ .logo-pill img{ height:12px; } }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); }
+
+  /* menu overlay (mirrors index) */
+  .menu-overlay{ position:fixed; inset:0; z-index:60; background:rgba(8,8,10,0.96); -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); color:#fff; opacity:0; visibility:hidden; transition:opacity .5s cubic-bezier(.16,1,.3,1), visibility .5s; display:flex; overflow-y:auto; }
+  .menu-overlay.open{ opacity:1; visibility:visible; }
+  .menu-inner{ width:100%; max-width:1280px; margin:0 auto; padding:0 1.5rem; display:flex; flex-direction:column; min-height:100%; }
+  .menu-topbar{ position:fixed; top:1rem; left:0; right:0; padding:0 1rem; z-index:1; }
+  .menu-topbar .bar{ max-width:1280px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+  .menu-links{ flex:1; display:flex; flex-direction:column; justify-content:flex-start; gap:.1rem; padding:6rem 0 1.5rem; }
+  @media (max-width:640px){ .menu-links{ justify-content:safe center; } }
+  /* menu offers auto-slider (replaces the static CTA) */
+  .menu-slider{ width:100%; max-width:440px; margin:0 0 1.75rem; }
+  .ms-viewport{ overflow:hidden; border-radius:18px; }
+  .ms-track{ display:flex; transition:transform .6s cubic-bezier(.16,1,.3,1); }
+  .ms-slide{ flex:0 0 100%; box-sizing:border-box; display:flex; flex-direction:row; align-items:center; gap:.85rem; min-height:84px; padding:.8rem 1rem; border-radius:18px; text-decoration:none; color:#f1ece2; position:relative; overflow:hidden;
+    background:linear-gradient(135deg, rgba(212,175,110,.10) 0%, rgba(255,255,255,.035) 32%, rgba(18,18,22,.6) 72%), linear-gradient(180deg,#17161a,#121215);
+    border:1px solid rgba(212,175,110,.20); box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 10px 24px -14px rgba(0,0,0,.7); transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
+  .ms-slide::before{ content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg, transparent 36%, rgba(255,255,255,.06) 50%, transparent 62%); }
+  .ms-slide:hover{ border-color:rgba(212,175,110,.32); box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 14px 30px -14px rgba(0,0,0,.8); }
+  .ms-thumb{ width:58px; height:58px; flex:none; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,.08); position:relative; z-index:1; }
+  .ms-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .ms-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.34rem; position:relative; z-index:1; }
+  .ms-name{ font-weight:600; font-size:1rem; letter-spacing:-.01em; color:#ece4d6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ms-row{ display:flex; align-items:center; gap:.55rem; }
+  .ms-price{ font-weight:800; font-size:1.2rem; letter-spacing:-.02em; white-space:nowrap; background:linear-gradient(135deg,#ecddbe,#cbb084); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .ms-old{ font-size:.78rem; font-weight:600; color:var(--muted-2); }
+  .ms-off{ margin-left:auto; font-weight:700; font-size:.74rem; color:#efe6d3; background:rgba(212,175,110,.16); border:1px solid rgba(212,175,110,.4); border-radius:999px; padding:.22rem .5rem; white-space:nowrap; }
+  .ms-cta{ justify-content:center; gap:.5rem; font-weight:700; font-size:1rem; color:#f5f4f2;
+    background:linear-gradient(180deg,#26262c 0%, #17171b 100%); border:1px solid rgba(255,255,255,.16); box-shadow:inset 0 1px 0 rgba(255,255,255,.14), inset 0 -10px 18px -12px rgba(0,0,0,.6), 0 10px 24px -14px rgba(0,0,0,.7); }
+  .ms-cta::before{ background:linear-gradient(115deg, transparent 38%, rgba(255,255,255,.05) 50%, transparent 62%); }
+  .ms-cta .ms-arrow{ color:#f5f4f2; }
+  .ms-arrow{ transition:transform .3s cubic-bezier(.16,1,.3,1); }
+  .ms-slide:hover .ms-arrow{ transform:translateX(4px); }
+  .ms-dots{ display:flex; gap:7px; margin-top:.85rem; padding-left:.3rem; }
+  .ms-dot{ width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.25); border:0; padding:0; cursor:pointer; transition:width .35s cubic-bezier(.16,1,.3,1), background .35s ease; }
+  .ms-dot.is-on{ width:22px; background:#fff; }
+  .menu-link{ width:max-content; max-width:100%; font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; font-size:clamp(2.1rem,7.5vw,4.6rem); line-height:1.08; color:#fff; opacity:.5; background:none; border:0; cursor:pointer; text-align:left; transition:opacity .3s ease; }
+  .menu-link:hover{ opacity:1; }
+  .menu-link .idx{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; font-size:.3em; vertical-align:super; opacity:.5; margin-right:.4rem; }
+  .menu-dd-trigger{ display:inline-flex; align-items:center; gap:.32em; }
+  .menu-chev{ width:.38em; height:.38em; flex:none; opacity:.4; transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .3s ease; }
+  .menu-dd.open .menu-chev{ transform:rotate(180deg); opacity:.85; }
+  .menu-sub{ overflow:hidden; max-height:0; opacity:0; transition:max-height .55s cubic-bezier(.16,1,.3,1), opacity .4s ease; }
+  .menu-dd.open .menu-sub{ max-height:680px; opacity:1; }
+  .menu-sub-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.05rem 2.5rem; padding:.9rem 0 1.3rem .15rem; }
+  @media (max-width:560px){ .menu-sub-grid{ grid-template-columns:1fr; gap:.05rem; } }
+  .menu-sub-head{ font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); margin:.7rem 0 .5rem; }
+  .menu-sub-link{ display:block; width:max-content; max-width:100%; padding:.4rem 0; font-size:1.05rem; font-weight:500; color:rgba(245,244,242,.64); transition:color .25s ease, transform .3s cubic-bezier(.16,1,.3,1); }
+  .menu-sub-link .sm{ display:block; font-size:.8rem; font-weight:400; color:var(--muted-2); margin-top:1px; }
+  .menu-sub-link:hover{ color:var(--fg); transform:translateX(5px); }
+  .menu-cta{ padding-bottom:1.75rem; }
+  .menu-foot{ display:flex; flex-wrap:wrap; gap:1.25rem 2rem; align-items:flex-end; justify-content:space-between; padding:2rem 0 2.5rem; border-top:1px solid rgba(255,255,255,.12); }
+
+  /* hero */
+  .phero{ position:relative; z-index:10; padding:9rem 0 2.5rem; }
+  .phero h1{ font-size:clamp(2.6rem,8vw,5.4rem); margin:.6rem 0 0; }
+  .phero p.lead{ color:var(--muted); max-width:42rem; line-height:1.7; margin:1.4rem 0 0; font-size:1.02rem; }
+
+  /* location legend */
+  .legend{ position:relative; z-index:10; margin:1.8rem 0 0; display:flex; gap:.85rem; align-items:flex-start; padding:1rem 1.15rem; border:1px solid var(--line); border-radius:18px; background:var(--paper-2); }
+  .legend svg{ flex:none; margin-top:1px; opacity:.7; }
+  .legend b{ color:var(--fg); font-weight:600; }
+  .legend span{ color:var(--muted); font-size:.92rem; line-height:1.55; }
+
+  /* sections */
+  .pcat{ position:relative; z-index:10; padding:3.2rem 0 0; }
+  .cat-head{ display:flex; align-items:center; flex-wrap:wrap; gap:.8rem; margin-bottom:.35rem; }
+  .cat-head h2{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.03em; font-size:clamp(1.5rem,3.4vw,2.15rem); margin:0; }
+  .cat-intro{ color:var(--muted); font-size:.95rem; line-height:1.6; max-width:46rem; margin:0 0 1.5rem; }
+
+  .loc-badge{ display:inline-flex; align-items:center; gap:.4rem; font-size:.7rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:rgba(245,244,242,.8); border:1px solid var(--line-on-dark); background:rgba(255,255,255,.04); border-radius:999px; padding:.3rem .7rem; }
+  .loc-badge i{ width:5px; height:5px; border-radius:50%; background:#fff; display:inline-block; }
+
+  .pgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:1rem; }
+  .pitem{ border:1px solid var(--line); background:var(--paper-2); border-radius:22px; padding:1.4rem 1.4rem 1.25rem;
+    transition:border-color .4s ease, transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
+  .pitem:hover{ border-color:rgba(255,255,255,.18); transform:translateY(-3px); box-shadow:0 26px 54px -30px rgba(0,0,0,.85); }
+  .pitem .top{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; }
+  .pitem h3{ font-size:1.12rem; font-weight:700; letter-spacing:-.01em; margin:0; }
+  .pitem .dur{ font-size:.78rem; color:var(--muted-2); white-space:nowrap; font-weight:500; }
+  .pitem .desc{ color:var(--muted); font-size:.88rem; line-height:1.55; margin:.5rem 0 0; }
+  .tiers{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem; }
+  .tier{ flex:1 1 auto; min-width:92px; border:1px solid var(--line); border-radius:13px; padding:.55rem .7rem; background:rgba(255,255,255,.02); }
+  .tier .lbl{ display:block; font-size:.72rem; color:var(--muted); }
+  .tier .lbl em{ font-style:normal; color:rgba(245,244,242,.85); font-weight:600; }
+  .tier .pr{ display:block; font-size:1.05rem; font-weight:700; letter-spacing:-.01em; margin-top:2px; }
+  .tier.lead-tier{ background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.16); }
+
+  /* epilare table */
+  .epi{ overflow-x:auto; border:1px solid var(--line); border-radius:22px; background:var(--paper-2); }
+  table.epitab{ width:100%; border-collapse:collapse; min-width:0; }
+  table.epitab caption{ text-align:left; font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); padding:1.1rem 1.3rem .4rem; }
+  table.epitab th, table.epitab td{ padding:.7rem 1.3rem; text-align:left; font-size:.92rem; border-top:1px solid var(--line); }
+  table.epitab thead th{ border-top:0; font-size:.7rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--muted-2); }
+  table.epitab td.z{ font-weight:500; }
+  table.epitab td.d{ color:var(--muted-2); font-size:.8rem; white-space:nowrap; }
+  table.epitab td.p{ font-weight:700; text-align:right; white-space:nowrap; }
+  table.epitab td.na{ color:var(--muted-2); font-weight:400; text-align:right; }
+  table.epitab tbody tr:hover{ background:rgba(255,255,255,.025); }
+  /* gender pills (epilare) — show one price column at a time, no horizontal scroll */
+  .genpills{ display:inline-flex; gap:.4rem; padding:.3rem; border:1px solid var(--line); border-radius:999px; background:var(--paper-2); margin:0 0 1rem; }
+  .genpill{ border:0; background:none; cursor:pointer; font-family:inherit; font-weight:600; font-size:.86rem; color:var(--muted); padding:.5rem 1.15rem; border-radius:999px; transition:color .25s ease, background-color .3s ease; }
+  .genpill.is-on{ color:#0b0b0d; background:#fff; }
+  .genpill:focus-visible{ outline:2px solid var(--fg); outline-offset:2px; }
+  #epiGenderWrap.show-f .epitab th:nth-child(4), #epiGenderWrap.show-f .epitab td:nth-child(4){ display:none; }
+  #epiGenderWrap.show-m .epitab th:nth-child(3), #epiGenderWrap.show-m .epitab td:nth-child(3){ display:none; }
+  @media (max-width:520px){ table.epitab th, table.epitab td{ padding:.6rem .85rem; } table.epitab caption{ padding:1rem 1rem .4rem; } }
+
+  /* packages */
+  .packs{ display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:1rem; }
+  .pack{ position:relative; border:1px solid rgba(255,255,255,.14); border-radius:24px; overflow:hidden; padding:1.5rem 1.5rem 1.4rem; color:#fff;
+    background:linear-gradient(165deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 52%, rgba(255,255,255,0.012) 100%);
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease; }
+  .pack:hover{ transform:translateY(-4px); border-color:rgba(255,255,255,.22); box-shadow:0 34px 70px -34px rgba(0,0,0,.9); }
+  .pack .pname{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.3rem; }
+  .pack .psub{ color:var(--muted); font-size:.86rem; line-height:1.5; margin:.35rem 0 1rem; }
+  .pack .incl{ list-style:none; padding:0; margin:0 0 1.1rem; display:flex; flex-direction:column; gap:.5rem; }
+  .pack .incl li{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; font-size:.88rem; border-bottom:1px dashed rgba(255,255,255,.1); padding-bottom:.5rem; }
+  .pack .incl li span:first-child{ color:rgba(245,244,242,.82); }
+  .pack .incl li span:last-child{ color:var(--muted); white-space:nowrap; }
+  .pack .totrow{ display:flex; align-items:baseline; justify-content:space-between; font-size:.84rem; color:var(--muted); }
+  .pack .totrow .v{ text-decoration:line-through; }
+  .pack .saverow{ display:flex; align-items:baseline; justify-content:space-between; font-size:.84rem; color:rgba(245,244,242,.7); margin-top:.25rem; }
+  .pack .finalrow{ display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin-top:1rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,.14); }
+  .pack .finalrow .lbl{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); }
+  .pack .finalrow .price{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.03em; font-size:2rem; line-height:1; }
+  .pack .finalrow .price small{ font-size:.95rem; font-weight:600; margin-left:.2rem; }
+
+  /* final cta + footer */
+  .pcta{ position:relative; z-index:10; margin:4.5rem 0 0; border-radius:30px; text-align:center; padding:4rem 1.5rem 4.5rem;
+    background:linear-gradient(160deg,#17171d 0%,#0c0c10 100%); border:1px solid var(--line); box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 40px 90px -40px rgba(0,0,0,.9); }
+  .pcta h2{ font-size:clamp(1.8rem,5vw,3.2rem); margin:.6rem 0 1.6rem; }
+  footer.site{ position:relative; z-index:10; margin-top:3rem; border-top:1px solid var(--line); padding:2.5rem 0; color:var(--muted); font-size:.85rem; }
+  footer.site .bar{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+
+<div class="aurora"><b></b><b></b><b></b></div>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="bar">
+    <a href="index.html" class="pill pill-glass logo-pill" aria-label="Centrul360 — acasă">
+      <canvas id="logo3d-head" width="72" height="72"></canvas>
+      <img src="brand_asset/wordmark-com.png" alt="Centrul360.com">
+    </a>
+    <button type="button" id="menuBtn" class="pill pill-ink" style="padding:.6rem 1.25rem; font-size:13px;" aria-label="Deschide meniul" aria-expanded="false">
+      Meniu <span class="dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg></span>
+    </button>
+  </div>
+</header>
+
+<!-- ============ MENU OVERLAY ============ -->
+<div id="menuOverlay" class="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Meniu">
+  <div class="menu-topbar">
+    <div class="bar">
+      <a href="index.html" class="pill pill-glass logo-pill" data-menu-close aria-label="Centrul360 — acasă"><canvas id="logo3d-menu" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
+      <button type="button" id="menuClose" class="pill pill-on-dark" style="padding:.6rem 1.25rem; font-size:13px;" aria-label="Închide meniul">
+        Închide <span class="dot" style="background:rgba(14,14,16,.08);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </button>
+    </div>
+  </div>
+  <div class="menu-inner">
+    <nav class="menu-links">
+      <div class="menu-dd" id="menuServicii">
+        <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false" aria-controls="menuServiciiSub">
+          <span class="idx">01</span>Servicii
+          <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-sub" id="menuServiciiSub">
+          <div class="menu-sub-grid">
+            <div>
+              <p class="menu-sub-head">Față</p>
+              <a href="ten-lipsit-de-stralucire.html" class="menu-sub-link" data-menu-close>Ten lipsit de strălucire<span class="sm">Hidratare, revitalizare, luminozitate</span></a>
+              <a href="ten-problematic.html" class="menu-sub-link" data-menu-close>Ten problematic<span class="sm">Acnee, sebum, pori dilatați</span></a>
+              <a href="riduri-linii-fine.html" class="menu-sub-link" data-menu-close>Riduri și lifting non-invaziv<span class="sm">Anti-aging, lifting, fermitate</span></a>
+              <a href="gusa-barbie-dubla.html" class="menu-sub-link" data-menu-close>Gușă și bărbie dublă<span class="sm">HIFU, contur facial</span></a>
+              <a href="pete-pigmentare.html" class="menu-sub-link" data-menu-close>Pete și pigmentare<span class="sm">Cearcăne, semne post-acnee</span></a>
+            </div>
+            <div>
+              <p class="menu-sub-head">Corp</p>
+              <a href="epilare-laser.html" class="menu-sub-link" data-menu-close>Epilare laser · Elysion Pro<span class="sm">Epilare laser progresiv definitivă</span></a>
+              <a href="grasime-localizata.html" class="menu-sub-link" data-menu-close>Grăsime localizată<span class="sm">Liposonix, cavitație</span></a>
+              <a href="celulita.html" class="menu-sub-link" data-menu-close>Celulită<span class="sm">Radiofrecvență, masaj</span></a>
+              <a href="tonifiere-musculara.html" class="menu-sub-link" data-menu-close>Tonifiere musculară<span class="sm">EMS · 20.000 contracții/ședință</span></a>
+              <a href="detox-drenaj.html" class="menu-sub-link" data-menu-close>Detox și drenaj<span class="sm">Termocuvertă, presoterapie</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
+      <a href="index.html#echipa" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <div class="menu-dd">
+        <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
+          <span class="idx">04</span>Locații
+          <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-sub">
+          <div class="menu-sub-grid" style="grid-template-columns:1fr 1fr;">
+            <a href="timisoara.html" class="menu-sub-link" data-menu-close>Timișoara<span class="sm">Str. Bucegi 7</span></a>
+            <a href="arad.html" class="menu-sub-link" data-menu-close>Arad<span class="sm">Str. Ioan Alexandru 16-18</span></a>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
+      <div class="ms-viewport"><div class="ms-track" id="msTrack">
+        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser"></span><span class="ms-info"><span class="ms-name">Epilare laser · axilă</span><span class="ms-row"><span class="ms-price">70 lei</span><s class="ms-old">120 lei</s><span class="ms-off">−42%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
+        <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
+      </div></div>
+      <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Oferta 3"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
+    </div>
+    <div class="menu-foot">
+      <div style="font-size:15px; line-height:1.7;">
+        <p class="eyebrow" style="color:rgba(255,255,255,.4); margin:0 0 .75rem;">Programări directe</p>
+        <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" style="color:rgba(255,255,255,.8);">Timișoara · +40 750 204 243</a><br>
+        <a href="https://wa.me/40750263054?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" style="color:rgba(255,255,255,.8);">Arad · +40 750 263 054</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <section class="phero">
+    <h1 class="display">Prețuri <span class="accent">transparente</span>,<br>rezultate reale.</h1>
+    <p class="lead">Tehnologii avansate pentru reducerea grăsimii localizate, tonifierea musculaturii și îmbunătățirea fermității pielii. Rezultate progresive, naturale și fără perioadă de recuperare. Prima consultație este gratuită.</p>
+
+    <div class="legend">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <span><b>Disponibilitate pe locații:</b> EMS, Împachetare la cald și Epilare laser sunt disponibile <b>doar în Timișoara</b>. Restul tratamentelor sunt disponibile în ambele clinici.</span>
+    </div>
+  </section>
+
+  <!-- ============ TRATAMENTE FACIALE ============ -->
+  <section class="pcat" id="faciale">
+    <div class="cat-head"><h2>Tratamente faciale</h2></div>
+    <p class="cat-intro">Proceduri faciale pentru hidratare, anti-aging, ten sensibil sau acneic și regenerare profundă.</p>
+    <div class="pgrid">
+
+      <div class="pitem">
+        <div class="top"><h3>Tratament de hidratare profundă</h3><span class="dur">60 min</span></div>
+        <p class="desc">Reface nivelul optim de apă al pielii și întărește bariera cutanată.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">350 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−15%</em></span><span class="pr">590 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−30%</em></span><span class="pr">990 lei</span></div>
+        </div>
+      </div>
+
+      <div class="pitem">
+        <div class="top"><h3>Tratament intensiv antirid</h3><span class="dur">60 min</span></div>
+        <p class="desc">Diminuează ridurile și liniile fine, stimulând regenerarea pielii.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">370 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−16%</em></span><span class="pr">620 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−31%</em></span><span class="pr">1020 lei</span></div>
+        </div>
+      </div>
+
+      <div class="pitem">
+        <div class="top"><h3>Redness Relief Protocol</h3><span class="dur">50 min</span></div>
+        <p class="desc">Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">300 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−18%</em></span><span class="pr">490 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−26%</em></span><span class="pr">890 lei</span></div>
+        </div>
+      </div>
+
+      <div class="pitem">
+        <div class="top"><h3>Sebum Off Protocol</h3><span class="dur">110 min</span></div>
+        <p class="desc">Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">420 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−18%</em></span><span class="pr">690 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−30%</em></span><span class="pr">1180 lei</span></div>
+        </div>
+      </div>
+
+      <div class="pitem">
+        <div class="top"><h3>Tratament Restart</h3><span class="dur">50 min</span></div>
+        <p class="desc">Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">300 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−10%</em></span><span class="pr">540 lei</span></div>
+        </div>
+      </div>
+
+      <div class="pitem">
+        <div class="top"><h3>Microneedling Exozomi PDRN</h3><span class="dur">60 min</span></div>
+        <p class="desc">Regenerare prin microperforații — cicatrici post-acneice, textură și fermitate.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">520 lei</span></div>
+          <div class="tier"><span class="lbl">3 ședințe <em>−19%</em></span><span class="pr">1290 lei</span></div>
+        </div>
+      </div>
+
+      <div class="pitem">
+        <div class="top"><h3>Microneedling Corector Periocular</h3><span class="dur">30 min</span></div>
+        <p class="desc">Țintit pe zona ochilor — cearcăne, hidratare și linii fine.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">520 lei</span></div>
+          <div class="tier"><span class="lbl">3 ședințe <em>−19%</em></span><span class="pr">1290 lei</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ HIFU ============ -->
+  <section class="pcat" id="hifu">
+    <div class="cat-head"><h2>HIFU</h2></div>
+    <p class="cat-intro">Ultrasunete focalizate de mare intensitate — lifting non-chirurgical, fermitate și redefinirea conturului facial și corporal.</p>
+    <div class="pgrid">
+      <div class="pitem">
+        <div class="top"><h3>O zonă mică facială</h3><span class="dur">20 min</span></div>
+        <p class="desc">Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">290 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−15%</em></span><span class="pr">490 lei</span></div>
+        </div>
+      </div>
+      <div class="pitem">
+        <div class="top"><h3>Full Face</h3><span class="dur">90 min</span></div>
+        <p class="desc">Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">1020 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−12%</em></span><span class="pr">1790 lei</span></div>
+        </div>
+      </div>
+      <div class="pitem">
+        <div class="top"><h3>O zonă corporală</h3><span class="dur">50 min</span></div>
+        <p class="desc">Abdomen, brațe, coapse, gambe, zona lombară, zona sutien.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">620 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−21%</em></span><span class="pr">980 lei</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RADIOFRECVENȚĂ ============ -->
+  <section class="pcat" id="radiofrecventa">
+    <div class="cat-head"><h2>Radiofrecvență</h2></div>
+    <p class="cat-intro">Energie termică controlată — stimulează colagenul și elastina pentru fermitate, reducerea ridurilor și a celulitei.</p>
+    <div class="pgrid">
+      <div class="pitem">
+        <div class="top"><h3>O zonă mică facială</h3><span class="dur">15 min</span></div>
+        <p class="desc">Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">170 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−15%</em></span><span class="pr">580 lei</span></div>
+        </div>
+      </div>
+      <div class="pitem">
+        <div class="top"><h3>Full Face</h3><span class="dur">30 min</span></div>
+        <p class="desc">Laxitate la nivelul întregii fețe, riduri și pierderea elasticității.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">280 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−22%</em></span><span class="pr">880 lei</span></div>
+        </div>
+      </div>
+      <div class="pitem">
+        <div class="top"><h3>O zonă corporală</h3><span class="dur">30 min</span></div>
+        <p class="desc">Abdomen, brațe, coapse — celulită, fermitate și depozite mici de grăsime.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">280 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−12%</em></span><span class="pr">990 lei</span></div>
+          <div class="tier"><span class="lbl">6 ședințe <em>−26%</em></span><span class="pr">1250 lei</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RF SCULPT ============ -->
+  <section class="pcat" id="rfsculpt">
+    <div class="cat-head"><h2>RF Sculpt</h2></div>
+    <p class="cat-intro">Radiofrecvență + masaj modelator pentru rezultate accelerate — remodelare, tonifiere și drenaj.</p>
+    <div class="pgrid">
+      <div class="pitem">
+        <div class="top"><h3>Gușă + Contur Mandibular</h3><span class="dur">30 min</span></div>
+        <p class="desc">Reduce gușa și redefinește linia mandibulei.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">210 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−18%</em></span><span class="pr">690 lei</span></div>
+          <div class="tier"><span class="lbl">6 ședințe <em>−27%</em></span><span class="pr">890 lei</span></div>
+        </div>
+      </div>
+      <div class="pitem">
+        <div class="top"><h3>Full Face</h3><span class="dur">90 min</span></div>
+        <p class="desc">Tonifiere și revitalizare la nivelul întregii fețe.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">350 lei</span></div>
+          <div class="tier"><span class="lbl">4 ședințe <em>−32%</em></span><span class="pr">960 lei</span></div>
+          <div class="tier"><span class="lbl">6 ședințe <em>−45%</em></span><span class="pr">1140 lei</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIPOSONIX ============ -->
+  <section class="pcat" id="liposonix">
+    <div class="cat-head"><h2>Liposonix</h2></div>
+    <p class="cat-intro">Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate — remodelare corporală fără recuperare.</p>
+    <div class="pgrid">
+      <div class="pitem">
+        <div class="top"><h3>O zonă corporală</h3><span class="dur">45 min</span></div>
+        <p class="desc">Abdomen, brațe, coapse, zona lombară — grăsime localizată rezistentă la dietă.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">640 lei</span></div>
+          <div class="tier"><span class="lbl">2 ședințe <em>−24%</em></span><span class="pr">980 lei</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EMS ============ -->
+  <section class="pcat" id="ems">
+    <div class="cat-head"><h2>Electrostimulare Magnetică (EMS)</h2> <span class="loc-badge"><i></i> Doar Timișoara</span></div>
+    <p class="cat-intro">Contracții musculare intense și controlate — tonifiere, fermitate și definirea zonelor corporale.</p>
+    <div class="pgrid">
+      <div class="pitem">
+        <div class="top"><h3>O zonă</h3><span class="dur">30 min</span></div>
+        <p class="desc">Abdomen, brațe sau coapse.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">250 lei</span></div>
+          <div class="tier"><span class="lbl">6 ședințe <em>−36%</em></span><span class="pr">960 lei</span></div>
+          <div class="tier"><span class="lbl">8 ședințe <em>−41%</em></span><span class="pr">1180 lei</span></div>
+        </div>
+      </div>
+      <div class="pitem">
+        <div class="top"><h3>2 zone</h3><span class="dur">60 min</span></div>
+        <p class="desc">Două grupe musculare în aceeași ședință.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">390 lei</span></div>
+          <div class="tier"><span class="lbl">6 ședințe <em>−37%</em></span><span class="pr">1480 lei</span></div>
+          <div class="tier"><span class="lbl">8 ședințe <em>−40%</em></span><span class="pr">1880 lei</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ÎMPACHETARE ============ -->
+  <section class="pcat" id="impachetare">
+    <div class="cat-head"><h2>Împachetare la cald</h2> <span class="loc-badge"><i></i> Doar Timișoara</span></div>
+    <p class="cat-intro">Tratament relaxant și detoxifiant — stimulează circulația, drenajul și absorbția ingredientelor active.</p>
+    <div class="pgrid">
+      <div class="pitem">
+        <div class="top"><h3>Împachetare la cald</h3><span class="dur">50 min</span></div>
+        <p class="desc">Celulită, retenție de apă și detoxifiere — piele mai netedă și revitalizată.</p>
+        <div class="tiers">
+          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">190 lei</span></div>
+          <div class="tier"><span class="lbl">6 ședințe <em>−32%</em></span><span class="pr">780 lei</span></div>
+          <div class="tier"><span class="lbl">8 ședințe <em>−42%</em></span><span class="pr">880 lei</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EPILARE LASER ============ -->
+  <section class="pcat" id="epilare">
+    <div class="cat-head"><h2>Epilare laser · Elysion Pro</h2> <span class="loc-badge"><i></i> Doar Timișoara</span></div>
+    <p class="cat-intro">Prețuri per ședință. Pentru rezultat progresiv definitiv sunt necesare în general 6–8 ședințe, în funcție de tipul de păr și de piele.</p>
+
+    <div class="genpills" role="tablist" aria-label="Selectează prețurile pentru femei sau bărbați">
+      <button type="button" class="genpill is-on" data-g="f" role="tab" aria-selected="true">Femei</button>
+      <button type="button" class="genpill" data-g="m" role="tab" aria-selected="false">Bărbați</button>
+    </div>
+    <div id="epiGenderWrap" class="show-f">
+    <div class="epi" style="margin-bottom:1rem;">
+      <table class="epitab">
+        <caption>Zone corporale</caption>
+        <thead><tr><th>Zonă</th><th>Durată</th><th style="text-align:right">Femei</th><th style="text-align:right">Bărbați</th></tr></thead>
+        <tbody>
+          <tr><td class="z">Axile</td><td class="d">10 min</td><td class="p">120 lei</td><td class="p">140 lei</td></tr>
+          <tr><td class="z">Antebrațe</td><td class="d">15 min</td><td class="p">150 lei</td><td class="p">200 lei</td></tr>
+          <tr><td class="z">Brațe total</td><td class="d">25 min</td><td class="p">190 lei</td><td class="p">240 lei</td></tr>
+          <tr><td class="z">Mâini / Laba piciorului</td><td class="d">10 min</td><td class="p">80 lei</td><td class="p">90 lei</td></tr>
+          <tr><td class="z">Areole mamare</td><td class="d">5 min</td><td class="p">70 lei</td><td class="na">—</td></tr>
+          <tr><td class="z">Piept</td><td class="d">15 min</td><td class="p">150 lei</td><td class="p">210 lei</td></tr>
+          <tr><td class="z">Umeri</td><td class="d">10 min</td><td class="na">—</td><td class="p">190 lei</td></tr>
+          <tr><td class="z">Abdomen</td><td class="d">15 min</td><td class="p">170 lei</td><td class="p">230 lei</td></tr>
+          <tr><td class="z">Linie bikini</td><td class="d">10 min</td><td class="p">120 lei</td><td class="na">—</td></tr>
+          <tr><td class="z">Linia albă</td><td class="d">5 min</td><td class="p">80 lei</td><td class="na">—</td></tr>
+          <tr><td class="z">Inghinal total</td><td class="d">15 min</td><td class="p">220 lei</td><td class="na">—</td></tr>
+          <tr><td class="z">Fese</td><td class="d">10 min</td><td class="p">160 lei</td><td class="na">—</td></tr>
+          <tr><td class="z">Labii / Interfesieri</td><td class="d">5 min</td><td class="p">90 lei</td><td class="na">—</td></tr>
+          <tr><td class="z">Zona lombară</td><td class="d">15 min</td><td class="p">160 lei</td><td class="p">220 lei</td></tr>
+          <tr><td class="z">Spate integral</td><td class="d">25 min</td><td class="p">250 lei</td><td class="p">400 lei</td></tr>
+          <tr><td class="z">Picior scurt (până la genunchi)</td><td class="d">20 min</td><td class="p">240 lei</td><td class="p">350 lei</td></tr>
+          <tr><td class="z">Picior lung (complet)</td><td class="d">60 min</td><td class="p">390 lei</td><td class="p">530 lei</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="epi">
+      <table class="epitab">
+        <caption>Zone faciale</caption>
+        <thead><tr><th>Zonă</th><th>Durată</th><th style="text-align:right">Femei</th><th style="text-align:right">Bărbați</th></tr></thead>
+        <tbody>
+          <tr><td class="z">O zonă la alegere <span style="color:var(--muted-2); font-size:.8rem;">(mustață · bărbie · perciuni · obraji · gât)</span></td><td class="d">5 min</td><td class="p">70 lei</td><td class="p">90 lei</td></tr>
+          <tr><td class="z">Față complet</td><td class="d">20 min</td><td class="p">200 lei</td><td class="p">240 lei</td></tr>
+          <tr><td class="z">Contur barbă / gât</td><td class="d">5 min</td><td class="na">—</td><td class="p">160 lei</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    </div><!-- /epiGenderWrap -->
+
+    <div class="epi" style="margin-top:1rem;">
+      <table class="epitab">
+        <caption>Pachete promoționale · o ședință</caption>
+        <thead><tr><th>Pachet</th><th style="text-align:right">Preț</th></tr></thead>
+        <tbody>
+          <tr><td class="z">Axilă + Inghinal total</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">340 lei</s>220 lei</td></tr>
+          <tr><td class="z">Axile + Antebrațe + Picior scurt</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">510 lei</s>410 lei</td></tr>
+          <tr><td class="z">Axile + Inghinal total + Picior lung</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">730 lei</s>630 lei</td></tr>
+          <tr><td class="z">Full Body <span style="color:var(--muted-2); font-size:.8rem;">(axile · inghinal total · brațe lung · picioare lung)</span></td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">920 lei</s>790 lei</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="epi" style="margin-top:1rem;">
+      <table class="epitab">
+        <caption>Pachete 6 ședințe · rezultat definitiv</caption>
+        <thead><tr><th>Pachet</th><th style="text-align:right">Preț</th></tr></thead>
+        <tbody>
+          <tr><td class="z">Axilă + Inghinal total</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">2040 lei</s>1140 lei</td></tr>
+          <tr><td class="z">Axile + Antebrațe + Picior scurt</td><td class="p">2100 lei</td></tr>
+          <tr><td class="z">Axile + Inghinal total + Picior lung</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">4380 lei</s>3300 lei</td></tr>
+          <tr><td class="z">Full Body <span style="color:var(--muted-2); font-size:.8rem;">(axile · inghinal total · brațe lung · picioare lung)</span></td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">5520 lei</s>2940 lei</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ PACHETE ============ -->
+  <section class="pcat" id="pachete">
+    <div style="border:1px solid var(--line); border-radius:24px; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012)); padding:clamp(28px,5vw,56px); text-align:center;">
+      <p class="eyebrow" style="color:var(--muted-2); margin:0 0 1rem;">Pachete cu reduceri</p>
+      <h2 class="display" style="font-size:clamp(1.7rem,4vw,2.6rem); margin:0 auto 1rem; max-width:18ch;">Vezi toate <span class="accent">pachetele</span> și găsește-ți planul</h2>
+      <p class="lead" style="max-width:48ch; margin:0 auto 2rem;">Pachetele complete cu reduceri sunt acum pe pagina de Oferte, alături de un simulator care îți recomandă pachetul potrivit în funcție de obiectiv, timp și buget.</p>
+      <a href="oferte.html#simulator" class="pill pill-on-dark" style="padding:1rem 1.9rem; font-size:15px;">Deschide simulatorul de pachete <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="pcta">
+    <p class="eyebrow" style="color:var(--muted-2); margin:0;">Primul pas e un mesaj</p>
+    <h2 class="display">Nu știi de unde să <span class="accent">începi</span>?</h2>
+    <p class="lead" style="margin:0 auto 2rem; text-align:center;">La consultația gratuită îți spunem exact ce ți se potrivește și câte ședințe sunt necesare.</p>
+    <div style="display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap;">
+      <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-on-dark" style="padding:1rem 1.9rem; font-size:15px;">Timișoara · WhatsApp</a>
+      <a href="https://wa.me/40750263054?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-glass" style="padding:1rem 1.9rem; font-size:15px;">Arad · WhatsApp</a>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER (unified across all pages) ============ -->
+  <style>
+    .cf{ position:relative; z-index:10; border-top:1px solid var(--line); margin-top:2rem; }
+    .cf-in{ max-width:80rem; margin:0 auto; padding:4rem 1.5rem; }
+    @media(min-width:640px){ .cf-in{ padding:4rem 2rem; } }
+    .cf-grid{ display:grid; gap:3rem; }
+    @media(min-width:768px){ .cf-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(min-width:1024px){ .cf-grid{ grid-template-columns:1.6fr 1fr 1.2fr 1.2fr; } }
+    .cf-logo{ width:260px; max-width:85%; height:auto; display:block; margin-bottom:1.5rem; }
+    .cf-desc{ color:var(--muted); font-size:15px; line-height:1.7; max-width:20rem; }
+    .cf-h{ font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); margin:0 0 1.25rem; }
+    .cf-links{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.75rem; font-size:15px; }
+    .cf-a{ color:var(--muted); text-decoration:none; transition:color .25s ease; }
+    .cf-a:hover{ color:var(--fg); }
+    .cf-socs{ display:flex; gap:.75rem; margin-top:1.75rem; }
+    .cf-soc{ width:42px; height:42px; border-radius:50%; border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; color:var(--muted); transition:color .25s ease, border-color .25s ease; }
+    .cf-soc:hover{ color:var(--fg); border-color:var(--line-on-dark); }
+    .cf-locs{ display:flex; flex-direction:column; gap:1.25rem; font-size:15px; }
+    .cf-loc strong{ display:block; font-weight:600; color:var(--fg); }
+    .cf-loc span{ display:block; color:var(--muted); }
+    .cf-cta{ display:inline-flex; align-items:center; justify-content:center; gap:.55rem; width:100%; padding:.9rem 1.5rem; font-size:14px; }
+    @media(min-width:640px){ .cf-cta{ width:auto; } }
+    .cf-bar{ margin-top:3.5rem; padding-top:2rem; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:1rem; align-items:center; justify-content:space-between; }
+    @media(min-width:640px){ .cf-bar{ flex-direction:row; } }
+    .cf-legal{ display:flex; gap:1.5rem; font-size:13px; }
+  </style>
+  <footer class="cf">
+    <div class="cf-in">
+      <div class="cf-grid">
+        <div>
+          <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="cf-logo">
+          <p class="cf-desc">Medicină estetică non-invazivă. Rezultate reale, vizibile din prima ședință — în Timișoara și Arad.</p>
+          <div class="cf-socs">
+            <a href="https://instagram.com/centrul360" target="_blank" rel="noopener" class="cf-soc" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a>
+            <a href="https://tiktok.com/@centrul360" target="_blank" rel="noopener" class="cf-soc" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.3.1-2.6-.3-3.7-1v6.1c0 3.2-2.4 5.4-5.3 5.4A5.2 5.2 0 0 1 5.5 14c.1-2.7 2.3-4.9 5-4.9.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.3 0-2.4 1.1-2.4 2.4 0 1.4 1.1 2.4 2.4 2.4 1.4 0 2.5-1.1 2.5-2.6V3H16z"/></svg></a>
+            <a href="https://facebook.com/centrul360" target="_blank" rel="noopener" class="cf-soc" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9h2.5V6H14c-2 0-3.3 1.3-3.3 3.3V11H8.5v3h2.2v7h3v-7h2.3l.5-3h-2.8V9.8c0-.5.3-.8.9-.8z"/></svg></a>
+          </div>
+        </div>
+        <div>
+          <p class="cf-h">Explorează</p>
+          <ul class="cf-links">
+            <li><a href="index.html#servicii" class="cf-a">Servicii</a></li>
+            <li><a href="index.html#oferte" class="cf-a">Oferte active</a></li>
+            <li><a href="echipa.html" class="cf-a">Echipa</a></li>
+            <li><a href="index.html#recenzii" class="cf-a">Recenzii</a></li>
+            <li><a href="index.html#intrebari" class="cf-a">Întrebări frecvente</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="cf-h">Locații</p>
+          <div class="cf-locs">
+            <div class="cf-loc"><strong>Timișoara</strong><span>Str. Bucegi 7</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
+            <div class="cf-loc"><strong>Arad</strong><span>Str. Ioan Alexandru 16</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
+          </div>
+        </div>
+        <div>
+          <p class="cf-h">Programări</p>
+          <p class="cf-desc" style="margin-bottom:1.5rem;">Scrie-ne pe WhatsApp — îți răspundem rapid și îți confirmăm o oră liberă.</p>
+          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-ink cf-cta">
+            Rezervă pe WhatsApp <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="cf-bar">
+        <p class="cf-h" style="margin:0;">© 2026 Centrul360 · Toate drepturile rezervate</p>
+        <div class="cf-legal">
+          <a href="#" class="cf-a">Termeni</a>
+          <a href="#" class="cf-a">Confidențialitate</a>
+          <a href="#" class="cf-a">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  const menuOverlay = document.getElementById('menuOverlay');
+  const menuBtn = document.getElementById('menuBtn');
+  const menuClose = document.getElementById('menuClose');
+  const dds = [...document.querySelectorAll('.menu-dd')];
+  function collapseDD(){ dds.forEach(dd=>{ dd.classList.remove('open'); const t=dd.querySelector('.menu-dd-trigger'); t && t.setAttribute('aria-expanded','false'); }); }
+  function openMenu(){ menuOverlay.classList.add('open'); menuOverlay.setAttribute('aria-hidden','false'); menuBtn.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
+  function closeMenu(){ menuOverlay.classList.remove('open'); menuOverlay.setAttribute('aria-hidden','true'); menuBtn.setAttribute('aria-expanded','false'); document.body.style.overflow=''; collapseDD(); }
+  menuBtn && menuBtn.addEventListener('click', openMenu);
+  menuClose && menuClose.addEventListener('click', closeMenu);
+  menuOverlay && menuOverlay.querySelectorAll('[data-menu-close]').forEach(a=>a.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && menuOverlay.classList.contains('open')) closeMenu(); });
+  dds.forEach(dd=>{ const t=dd.querySelector('.menu-dd-trigger'); t && t.addEventListener('click', ()=>{ const open=dd.classList.toggle('open'); t.setAttribute('aria-expanded', open?'true':'false'); }); });
+  (function(){
+    const track=document.getElementById('msTrack'); if(!track) return;
+    const dots=[...document.querySelectorAll('#msDots .ms-dot')];
+    const n=track.children.length; let i=0, timer=null;
+    function go(k){ i=(k%n+n)%n; track.style.transform='translateX(-'+(i*100)+'%)'; dots.forEach((d,j)=>d.classList.toggle('is-on',j===i)); }
+    function start(){ stop(); timer=setInterval(()=>go(i+1),3500); }
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    dots.forEach((d,j)=>d.addEventListener('click',()=>{ go(j); start(); }));
+    const sl=document.getElementById('menuSlider');
+    sl.addEventListener('pointerenter',stop); sl.addEventListener('pointerleave',start);
+    go(0); start();
+  })();
+  /* epilare gender pills — toggle which price column is shown */
+  (function(){
+    const wrap=document.getElementById('epiGenderWrap'); if(!wrap) return;
+    const pills=[...wrap.parentNode.querySelectorAll('.genpill')];
+    pills.forEach(p=>p.addEventListener('click',()=>{
+      pills.forEach(x=>{ x.classList.remove('is-on'); x.setAttribute('aria-selected','false'); });
+      p.classList.add('is-on'); p.setAttribute('aria-selected','true');
+      wrap.classList.remove('show-f','show-m');
+      wrap.classList.add(p.dataset.g==='m'?'show-m':'show-f');
+    }));
+  })();
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mounts = []; let glbScene = null;
+new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e));
+function mountAll(){
+  const head = document.getElementById('logo3d-head');
+  const menu = document.getElementById('logo3d-menu');
+  if(head) mounts.push(makeMount(head, { spin:0.5 }));
+  if(menu) mounts.push(makeMount(menu, { spin:0.5 }));
+}
+function makeMount(canvas, opts){
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
+  renderer.setClearColor(0x000000, 0);
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 100); cam.position.set(0, 0, 5);
+  const key = new THREE.DirectionalLight(0xffffff, 4.5); key.position.set(5, 3, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, 2.0); rim.position.set(-5, -2, -3); scene.add(rim);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+  const mat = new THREE.MeshPhysicalMaterial({ color:0xffffff, metalness:0.0, roughness:0.16, clearcoat:1.0, clearcoatRoughness:0.1, transmission:0.5, thickness:0.8, ior:1.45, transparent:true, opacity:1.0, envMapIntensity:1.5 });
+  const model = glbScene.clone(true);
+  model.traverse(o=>{ if(o.isMesh) o.material = mat; });
+  const box = new THREE.Box3().setFromObject(model);
+  model.position.sub(box.getCenter(new THREE.Vector3()));
+  const sz = box.getSize(new THREE.Vector3());
+  model.scale.setScalar(2.4 / Math.max(sz.x, sz.y, sz.z));
+  const tilt = new THREE.Group(); scene.add(tilt);
+  const spinner = new THREE.Group(); spinner.add(model); tilt.add(spinner);
+  function resize(){ const w = canvas.clientWidth || 64, h = canvas.clientHeight || 64; renderer.setSize(w, h, false); cam.aspect = w/h; cam.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  return { canvas, renderer, scene, cam, spinner, opts };
+}
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  for(const m of mounts){
+    if(m.canvas.offsetParent === null) continue;
+    const r = m.canvas.getBoundingClientRect();
+    if(r.bottom <= 0 || r.top >= innerHeight) continue;
+    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
+    m.renderer.render(m.scene, m.cam);
+  }
+}
+</script>
+</body>
+</html>

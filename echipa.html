@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echipa — Centrul360 · Medicină Estetică Timișoara & Arad</title>
+<meta name="description" content="Cunoaște echipa Centrul360 — specialistele în medicină estetică non-invazivă din Timișoara și Arad. Consultație gratuită, plan personalizat, echipamente certificate.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b0b0d; --paper:#0b0b0d; --paper-2:#141418; --surface-3:#1c1c22;
+    --fg:#f5f4f2; --muted:rgba(245,244,242,0.58); --muted-2:rgba(245,244,242,0.38);
+    --line:rgba(255,255,255,0.10); --line-on-dark:rgba(255,255,255,0.14);
+    --glass:rgba(255,255,255,0.06); --glass-2:rgba(255,255,255,0.14);
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+      radial-gradient(90% 60% at 100% 0%, rgba(255,255,255,0.04), transparent 50%),
+      linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%);
+    background-attachment:fixed; color:var(--fg);
+    font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:clip;
+  }
+  ::selection{ background:var(--fg); color:#0b0b0d; }
+  ::-webkit-scrollbar{ width:7px; } ::-webkit-scrollbar-thumb{ background:#2c2c33; border-radius:10px; } ::-webkit-scrollbar-track{ background:transparent; }
+  a{ color:inherit; text-decoration:none; }
+
+  .wrap{ max-width:1280px; margin:0 auto; padding:0 1.25rem; }
+  .display{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; line-height:0.98; }
+  .accent{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; letter-spacing:-0.01em; }
+  .eyebrow{ font-size:11px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; }
+
+  /* aurora */
+  .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); opacity:.8; }
+  .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 70%); }
+  .aurora b:nth-child(2){ width:40vw; height:40vw; top:40vh; right:-12vw; background:radial-gradient(circle at 50% 50%, rgba(150,170,255,0.05), transparent 70%); }
+  .aurora b:nth-child(3){ width:32vw; height:32vw; bottom:-10vw; left:26vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05), transparent 70%); }
+
+  /* reveal on scroll */
+  .reveal{ opacity:0; transform:translateY(26px); transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+  .reveal.in{ opacity:1; transform:none; }
+  .d1{ transition-delay:.08s; } .d2{ transition-delay:.16s; } .d3{ transition-delay:.24s; } .d4{ transition-delay:.32s; }
+
+  /* pills */
+  .pill{ position:relative; isolation:isolate; display:inline-flex; align-items:center; gap:.55rem; border-radius:999px; font-weight:600; cursor:pointer;
+    -webkit-backdrop-filter:blur(16px) saturate(180%); backdrop-filter:blur(16px) saturate(180%);
+    transition:transform .4s cubic-bezier(.16,1,.3,1), background-color .4s ease, box-shadow .4s ease; border:1px solid rgba(255,255,255,0.12);
+    box-shadow:inset 0 1px 0.5px 0 rgba(255,255,255,0.55), inset 1.5px 2px 0 -1.5px rgba(255,255,255,0.45), inset -1.5px -2px 1px -1.5px rgba(255,255,255,0.22), inset 0 -10px 18px -12px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.5), 0 10px 28px -10px rgba(0,0,0,0.6); }
+  .pill:focus-visible{ outline:2px solid var(--fg); outline-offset:3px; }
+  .pill-ink, .pill-on-dark{ background:var(--glass-2); color:#fff; }
+  .pill-ink:hover, .pill-on-dark:hover{ transform:translateY(-2px); background:rgba(255,255,255,0.22); }
+  .pill-glass{ background:var(--glass); color:var(--fg); }
+  .pill-glass:hover{ transform:translateY(-2px); background:rgba(255,255,255,0.12); }
+  .pill .dot{ width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,.18); display:inline-flex; align-items:center; justify-content:center; }
+
+  /* header + menu (mirrors preturi.html) */
+  header.site{ position:fixed; top:1rem; left:0; right:0; z-index:50; padding:0 1rem; }
+  header.site .bar{ max-width:1280px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+  .logo-pill{ padding:.375rem 1.25rem .375rem .625rem; display:inline-flex; align-items:center; gap:.5rem; }
+  .logo-pill img{ height:11px; width:auto; object-fit:contain; }
+  @media (min-width:640px){ .logo-pill img{ height:12px; } }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); }
+  .menu-overlay{ position:fixed; inset:0; z-index:60; background:rgba(8,8,10,0.96); -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); color:#fff; opacity:0; visibility:hidden; transition:opacity .5s cubic-bezier(.16,1,.3,1), visibility .5s; display:flex; overflow-y:auto; }
+  .menu-overlay.open{ opacity:1; visibility:visible; }
+  .menu-inner{ width:100%; max-width:1280px; margin:0 auto; padding:0 1.5rem; display:flex; flex-direction:column; min-height:100%; }
+  .menu-topbar{ position:fixed; top:1rem; left:0; right:0; padding:0 1rem; z-index:1; }
+  .menu-topbar .bar{ max-width:1280px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+  .menu-links{ flex:1; display:flex; flex-direction:column; justify-content:flex-start; gap:.1rem; padding:6rem 0 1.5rem; }
+  @media (max-width:640px){ .menu-links{ justify-content:safe center; } }
+  /* menu offers auto-slider (replaces the static CTA) */
+  .menu-slider{ width:100%; max-width:440px; margin:0 0 1.75rem; }
+  .ms-viewport{ overflow:hidden; border-radius:18px; }
+  .ms-track{ display:flex; transition:transform .6s cubic-bezier(.16,1,.3,1); }
+  .ms-slide{ flex:0 0 100%; box-sizing:border-box; display:flex; flex-direction:row; align-items:center; gap:.85rem; min-height:84px; padding:.8rem 1rem; border-radius:18px; text-decoration:none; color:#f1ece2; position:relative; overflow:hidden;
+    background:linear-gradient(135deg, rgba(212,175,110,.10) 0%, rgba(255,255,255,.035) 32%, rgba(18,18,22,.6) 72%), linear-gradient(180deg,#17161a,#121215);
+    border:1px solid rgba(212,175,110,.20); box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 10px 24px -14px rgba(0,0,0,.7); transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
+  .ms-slide::before{ content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg, transparent 36%, rgba(255,255,255,.06) 50%, transparent 62%); }
+  .ms-slide:hover{ border-color:rgba(212,175,110,.32); box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 14px 30px -14px rgba(0,0,0,.8); }
+  .ms-thumb{ width:58px; height:58px; flex:none; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,.08); position:relative; z-index:1; }
+  .ms-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .ms-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.34rem; position:relative; z-index:1; }
+  .ms-name{ font-weight:600; font-size:1rem; letter-spacing:-.01em; color:#ece4d6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ms-row{ display:flex; align-items:center; gap:.55rem; }
+  .ms-price{ font-weight:800; font-size:1.2rem; letter-spacing:-.02em; white-space:nowrap; background:linear-gradient(135deg,#ecddbe,#cbb084); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .ms-old{ font-size:.78rem; font-weight:600; color:var(--muted-2); }
+  .ms-off{ margin-left:auto; font-weight:700; font-size:.74rem; color:#efe6d3; background:rgba(212,175,110,.16); border:1px solid rgba(212,175,110,.4); border-radius:999px; padding:.22rem .5rem; white-space:nowrap; }
+  .ms-cta{ justify-content:center; gap:.5rem; font-weight:700; font-size:1rem; color:#f5f4f2;
+    background:linear-gradient(180deg,#26262c 0%, #17171b 100%); border:1px solid rgba(255,255,255,.16); box-shadow:inset 0 1px 0 rgba(255,255,255,.14), inset 0 -10px 18px -12px rgba(0,0,0,.6), 0 10px 24px -14px rgba(0,0,0,.7); }
+  .ms-cta::before{ background:linear-gradient(115deg, transparent 38%, rgba(255,255,255,.05) 50%, transparent 62%); }
+  .ms-cta .ms-arrow{ color:#f5f4f2; }
+  .ms-arrow{ transition:transform .3s cubic-bezier(.16,1,.3,1); }
+  .ms-slide:hover .ms-arrow{ transform:translateX(4px); }
+  .ms-dots{ display:flex; gap:7px; margin-top:.85rem; padding-left:.3rem; }
+  .ms-dot{ width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.25); border:0; padding:0; cursor:pointer; transition:width .35s cubic-bezier(.16,1,.3,1), background .35s ease; }
+  .ms-dot.is-on{ width:22px; background:#fff; }
+  .menu-link{ width:max-content; max-width:100%; font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; font-size:clamp(2.1rem,7.5vw,4.6rem); line-height:1.08; color:#fff; opacity:.5; background:none; border:0; cursor:pointer; text-align:left; transition:opacity .3s ease; }
+  .menu-link:hover{ opacity:1; }
+  .menu-link .idx{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; font-size:.3em; vertical-align:super; opacity:.5; margin-right:.4rem; }
+  .menu-dd-trigger{ display:inline-flex; align-items:center; gap:.32em; }
+  .menu-chev{ width:.38em; height:.38em; flex:none; opacity:.4; transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .3s ease; }
+  .menu-dd.open .menu-chev{ transform:rotate(180deg); opacity:.85; }
+  .menu-sub{ overflow:hidden; max-height:0; opacity:0; transition:max-height .55s cubic-bezier(.16,1,.3,1), opacity .4s ease; }
+  .menu-dd.open .menu-sub{ max-height:680px; opacity:1; }
+  .menu-sub-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.05rem 2.5rem; padding:.9rem 0 1.3rem .15rem; }
+  @media (max-width:560px){ .menu-sub-grid{ grid-template-columns:1fr; gap:.05rem; } }
+  .menu-sub-head{ font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); margin:.7rem 0 .5rem; }
+  .menu-sub-link{ display:block; width:max-content; max-width:100%; padding:.4rem 0; font-size:1.05rem; font-weight:500; color:rgba(245,244,242,.64); transition:color .25s ease, transform .3s cubic-bezier(.16,1,.3,1); }
+  .menu-sub-link .sm{ display:block; font-size:.8rem; font-weight:400; color:var(--muted-2); margin-top:1px; }
+  .menu-sub-link:hover{ color:var(--fg); transform:translateX(5px); }
+  .menu-cta{ padding-bottom:1.75rem; }
+  .menu-foot{ display:flex; flex-wrap:wrap; gap:1.25rem 2rem; align-items:flex-end; justify-content:space-between; padding:2rem 0 2.5rem; border-top:1px solid rgba(255,255,255,.12); }
+
+  /* hero */
+  .hero{ position:relative; z-index:10; padding:9rem 0 1rem; }
+  .hero h1{ font-size:clamp(2.7rem,8vw,5.6rem); margin:.7rem 0 0; }
+  .hero .lead{ color:var(--muted); max-width:40rem; line-height:1.7; margin:1.5rem 0 0; font-size:1.05rem; }
+
+  /* stats */
+  .stats{ position:relative; z-index:10; margin:3rem 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:22px; overflow:hidden; }
+  @media (max-width:680px){ .stats{ grid-template-columns:repeat(2,1fr); } }
+  .stat{ background:var(--paper-2); padding:1.5rem 1.3rem; }
+  .stat .num{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.03em; font-size:clamp(1.8rem,4vw,2.6rem); line-height:1; }
+  .stat .num .accent{ font-size:.8em; }
+  .stat .lbl{ color:var(--muted); font-size:.84rem; margin-top:.45rem; }
+
+  /* section helpers */
+  .sec{ position:relative; z-index:10; padding:4.5rem 0 0; }
+  .sec-eyebrow{ color:var(--muted-2); margin-bottom:1rem; display:flex; align-items:center; gap:.6rem; }
+  .sec-eyebrow i{ width:6px; height:6px; border-radius:50%; background:#fff; display:inline-block; }
+  .sec h2{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.035em; font-size:clamp(1.9rem,5vw,3.2rem); margin:0; line-height:1.05; }
+  .sec .sub{ color:var(--muted); max-width:44rem; line-height:1.7; margin:1.2rem 0 0; font-size:1.02rem; }
+
+  /* manifesto */
+  .manifesto{ position:relative; z-index:10; margin:4.5rem 0 0; padding:3rem 2rem; border:1px solid var(--line); border-radius:28px; background:linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+  .manifesto p{ font-family:'Fraunces',serif; font-weight:400; font-size:clamp(1.4rem,3.4vw,2.2rem); line-height:1.4; letter-spacing:-.01em; margin:0; max-width:52rem; }
+  .manifesto p em{ font-style:italic; color:#fff; }
+
+  /* team grid */
+  .team{ margin-top:2.2rem; display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; }
+  @media (max-width:980px){ .team{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:380px){ .team{ grid-template-columns:1fr; } }
+  .tcard{ border:1px solid var(--line); border-radius:22px; overflow:hidden; background:var(--paper-2);
+    transition:transform .45s cubic-bezier(.16,1,.3,1), border-color .45s ease, box-shadow .45s ease; }
+  .tcard:hover{ transform:translateY(-5px); border-color:rgba(255,255,255,.2); box-shadow:0 30px 60px -30px rgba(0,0,0,.85); }
+  .tcard .photo{ position:relative; aspect-ratio:4/5; overflow:hidden; background:#0e0e12; }
+  .tcard .photo img{ width:100%; height:100%; object-fit:cover; object-position:center 22%; filter:grayscale(35%) contrast(1.02); transition:transform .7s cubic-bezier(.16,1,.3,1), filter .6s ease; }
+  .tcard:hover .photo img{ transform:scale(1.05); filter:grayscale(0%) contrast(1.04); }
+  .tcard .photo::after{ content:""; position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,10,.72) 0%, rgba(8,8,10,.12) 38%, transparent 60%); pointer-events:none; }
+  .tcard .photo .clinic{ position:absolute; top:.7rem; left:.7rem; z-index:2; font-size:.66rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#fff; background:rgba(0,0,0,.35); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.18); padding:.28rem .6rem; border-radius:999px; }
+  .tcard .tbody{ padding:1.1rem 1.2rem 1.3rem; }
+  .tcard h3{ font-size:1.15rem; font-weight:700; letter-spacing:-.01em; margin:0; }
+  .tcard .role{ color:var(--muted); font-size:.85rem; margin-top:.25rem; }
+  .tcard .ttags{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.85rem; }
+  .ttag{ font-size:.7rem; font-weight:500; color:rgba(245,244,242,.78); border:1px solid var(--line-on-dark); border-radius:999px; padding:.25rem .6rem; }
+  /* placeholder photo */
+  .ph-empty{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.7rem; color:var(--muted-2);
+    background:repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 12px, rgba(255,255,255,.04) 12px 24px); }
+  .ph-empty svg{ opacity:.45; }
+  .ph-empty span{ font-size:.72rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; }
+  .is-ph{ color:var(--muted-2); }
+
+  /* values */
+  .values{ margin-top:2.2rem; display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+  @media (max-width:820px){ .values{ grid-template-columns:1fr; } }
+  .vcard{ border:1px solid var(--line); border-radius:20px; background:var(--paper-2); padding:1.6rem 1.5rem; transition:border-color .4s ease, transform .4s cubic-bezier(.16,1,.3,1); }
+  .vcard:hover{ border-color:rgba(255,255,255,.18); transform:translateY(-3px); }
+  .vico{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:1px solid var(--line-on-dark); background:rgba(255,255,255,.04); margin-bottom:1rem; }
+  .vcard h3{ font-size:1.08rem; font-weight:700; margin:0 0 .5rem; letter-spacing:-.01em; }
+  .vcard p{ color:var(--muted); font-size:.92rem; line-height:1.6; margin:0; }
+
+  /* atmosfera */
+  .atmo{ margin-top:2.2rem; display:grid; grid-template-columns:1.15fr .85fr; gap:1.2rem; align-items:stretch; }
+  @media (max-width:820px){ .atmo{ grid-template-columns:1fr; } }
+  .atmo .ph{ position:relative; border-radius:24px; overflow:hidden; min-height:340px; border:1px solid var(--line); }
+  .atmo .ph img{ width:100%; height:100%; object-fit:cover; }
+  .atmo .ph::after{ content:""; position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,10,.4), transparent 55%); }
+  .atmo .txt{ border:1px solid var(--line); border-radius:24px; background:var(--paper-2); padding:2rem 1.9rem; display:flex; flex-direction:column; justify-content:center; }
+  .atmo .txt h3{ font-size:1.5rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .8rem; }
+  .atmo .txt p{ color:var(--muted); line-height:1.7; margin:0; font-size:.98rem; }
+
+  /* tehnologii */
+  .tech{ margin-top:2rem; display:flex; flex-wrap:wrap; gap:.6rem; }
+  .tech a, .tech span{ display:inline-flex; align-items:center; gap:.5rem; border:1px solid var(--line-on-dark); border-radius:999px; padding:.6rem 1rem; font-size:.9rem; color:rgba(245,244,242,.85); background:rgba(255,255,255,.03); }
+  .tech i{ width:6px; height:6px; border-radius:50%; background:#fff; display:inline-block; opacity:.7; }
+
+  /* cta + footer */
+  .cta{ position:relative; z-index:10; margin:5rem 0 0; border-radius:30px; text-align:center; padding:4rem 1.5rem 4.5rem;
+    background:linear-gradient(160deg,#17171d 0%,#0c0c10 100%); border:1px solid var(--line); box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 40px 90px -40px rgba(0,0,0,.9); }
+  .cta h2{ font-size:clamp(1.9rem,5vw,3.4rem); margin:.6rem 0 1.6rem; }
+  .cta .row{ display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap; }
+  footer.site{ position:relative; z-index:10; margin-top:3rem; border-top:1px solid var(--line); padding:2.5rem 0; color:var(--muted); font-size:.85rem; }
+  footer.site .bar{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:.001ms !important; } .reveal{ opacity:1 !important; transform:none !important; } }
+</style>
+</head>
+<body>
+
+<div class="aurora"><b></b><b></b><b></b></div>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="bar">
+    <a href="index.html" class="pill pill-glass logo-pill" aria-label="Centrul360 — acasă"><canvas id="logo3d-head" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
+    <button type="button" id="menuBtn" class="pill pill-ink" style="padding:.6rem 1.25rem; font-size:13px;" aria-label="Deschide meniul" aria-expanded="false">
+      Meniu <span class="dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg></span>
+    </button>
+  </div>
+</header>
+
+<!-- ============ MENU OVERLAY ============ -->
+<div id="menuOverlay" class="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Meniu">
+  <div class="menu-topbar">
+    <div class="bar">
+      <a href="index.html" class="pill pill-glass logo-pill" data-menu-close aria-label="Centrul360 — acasă"><canvas id="logo3d-menu" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
+      <button type="button" id="menuClose" class="pill pill-on-dark" style="padding:.6rem 1.25rem; font-size:13px;" aria-label="Închide meniul">
+        Închide <span class="dot" style="background:rgba(14,14,16,.08);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </button>
+    </div>
+  </div>
+  <div class="menu-inner">
+    <nav class="menu-links">
+      <div class="menu-dd" id="menuServicii">
+        <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false" aria-controls="menuServiciiSub">
+          <span class="idx">01</span>Servicii
+          <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-sub" id="menuServiciiSub">
+          <div class="menu-sub-grid">
+            <div>
+              <p class="menu-sub-head">Față</p>
+              <a href="ten-lipsit-de-stralucire.html" class="menu-sub-link" data-menu-close>Ten lipsit de strălucire<span class="sm">Hidratare, revitalizare, luminozitate</span></a>
+              <a href="ten-problematic.html" class="menu-sub-link" data-menu-close>Ten problematic<span class="sm">Acnee, sebum, pori dilatați</span></a>
+              <a href="riduri-linii-fine.html" class="menu-sub-link" data-menu-close>Riduri și lifting non-invaziv<span class="sm">Anti-aging, lifting, fermitate</span></a>
+              <a href="gusa-barbie-dubla.html" class="menu-sub-link" data-menu-close>Gușă și bărbie dublă<span class="sm">HIFU, contur facial</span></a>
+              <a href="pete-pigmentare.html" class="menu-sub-link" data-menu-close>Pete și pigmentare<span class="sm">Cearcăne, semne post-acnee</span></a>
+            </div>
+            <div>
+              <p class="menu-sub-head">Corp</p>
+              <a href="epilare-laser.html" class="menu-sub-link" data-menu-close>Epilare laser · Elysion Pro<span class="sm">Epilare laser progresiv definitivă</span></a>
+              <a href="grasime-localizata.html" class="menu-sub-link" data-menu-close>Grăsime localizată<span class="sm">Liposonix, cavitație</span></a>
+              <a href="celulita.html" class="menu-sub-link" data-menu-close>Celulită<span class="sm">Radiofrecvență, masaj</span></a>
+              <a href="tonifiere-musculara.html" class="menu-sub-link" data-menu-close>Tonifiere musculară<span class="sm">EMS · 20.000 contracții/ședință</span></a>
+              <a href="detox-drenaj.html" class="menu-sub-link" data-menu-close>Detox și drenaj<span class="sm">Termocuvertă, presoterapie</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
+      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <div class="menu-dd">
+        <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
+          <span class="idx">04</span>Locații
+          <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-sub">
+          <div class="menu-sub-grid" style="grid-template-columns:1fr 1fr;">
+            <a href="timisoara.html" class="menu-sub-link" data-menu-close>Timișoara<span class="sm">Str. Bucegi 7</span></a>
+            <a href="arad.html" class="menu-sub-link" data-menu-close>Arad<span class="sm">Str. Ioan Alexandru 16-18</span></a>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
+      <div class="ms-viewport"><div class="ms-track" id="msTrack">
+        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser"></span><span class="ms-info"><span class="ms-name">Epilare laser · axilă</span><span class="ms-row"><span class="ms-price">70 lei</span><s class="ms-old">120 lei</s><span class="ms-off">−42%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
+        <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
+      </div></div>
+      <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Oferta 3"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
+    </div>
+    <div class="menu-foot">
+      <div style="font-size:15px; line-height:1.7;">
+        <p class="eyebrow" style="color:rgba(255,255,255,.4); margin:0 0 .75rem;">Programări directe</p>
+        <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" style="color:rgba(255,255,255,.8);">Timișoara · +40 750 204 243</a><br>
+        <a href="https://wa.me/40750263054?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" style="color:rgba(255,255,255,.8);">Arad · +40 750 263 054</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <p class="eyebrow" style="color:var(--muted);">Echipa Centrul360</p>
+    <h1 class="display">Oamenii din spatele<br><span class="accent">rezultatelor</span> tale.</h1>
+    <p class="lead">O echipă de specialiste dedicate medicinei estetice non-invazive. Aceeași grijă și aceleași standarde în Timișoara și Arad — fără presiune, doar planuri adaptate ție.</p>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="stats reveal">
+    <div class="stat"><div class="num">4</div><div class="lbl">Specialiste dedicate</div></div>
+    <div class="stat"><div class="num">2</div><div class="lbl">Clinici · Timișoara &amp; Arad</div></div>
+    <div class="stat"><div class="num">4,9<span class="accent">★</span></div><div class="lbl">300+ recenzii Google</div></div>
+    <div class="stat"><div class="num">100<span class="accent">%</span></div><div class="lbl">Tratamente non-invazive</div></div>
+  </section>
+
+  <!-- ============ MANIFESTO ============ -->
+  <section class="manifesto reveal">
+    <p>Credem că frumusețea reală nu se forțează — se <em>îngrijește</em>. De aceea fiecare plan începe cu o <em>consultație gratuită</em>, ascultăm ce îți dorești și recomandăm doar ce chiar ți se potrivește.</p>
+  </section>
+
+
+  <!-- ============ VALORI ============ -->
+  <section class="sec" id="valori">
+    <p class="sec-eyebrow eyebrow"><i></i> Cum lucrăm</p>
+    <h2>Principiile noastre.</h2>
+    <div class="values">
+      <div class="vcard reveal d1">
+        <div class="vico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h3>Consultație gratuită, fără obligații</h3>
+        <p>Înainte de orice tratament, evaluăm pielea și obiectivele tale și îți spunem sincer ce e potrivit — și ce nu.</p>
+      </div>
+      <div class="vcard reveal d2">
+        <div class="vico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Echipamente medicale certificate</h3>
+        <p>Lucrăm cu tehnologii profesionale — Elysion Pro, HIFU, Liposonix, EMS — sigure pe toate tipurile de piele.</p>
+      </div>
+      <div class="vcard reveal d3">
+        <div class="vico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/><path d="M12 8v4l3 2"/></svg></div>
+        <h3>Plan 100% personalizat</h3>
+        <p>Fără pachete impuse. Construim împreună un parcurs adaptat ritmului, bugetului și rezultatului pe care ți-l dorești.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ATMOSFERA ============ -->
+  <section class="sec" id="atmosfera">
+    <p class="sec-eyebrow eyebrow"><i></i> Atmosfera</p>
+    <h2>Un spațiu în care<br>te simți în siguranță.</h2>
+    <div class="atmo">
+      <div class="ph"><img src="brand_asset/loc-timisoara.webp" alt="Interiorul clinicii Centrul360 Timișoara"></div>
+      <div class="txt">
+        <h3>Clinici curate, calde, discrete</h3>
+        <p>De la recepție până la cabinet, totul e gândit ca tu să te relaxezi. Programări punctuale, intimitate și o echipă care îți explică fiecare pas — fără grabă și fără presiune.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TEHNOLOGII ============ -->
+  <section class="sec" id="tehnologii">
+    <p class="sec-eyebrow eyebrow"><i></i> Tehnologii cu care lucrăm</p>
+    <h2>Aparatura din spatele rezultatelor.</h2>
+    <div class="tech">
+      <span><i></i> Elysion Pro · Epilare laser</span>
+      <span><i></i> HIFU</span>
+      <span><i></i> Liposonix</span>
+      <span><i></i> Electrostimulare (EMS)</span>
+      <span><i></i> Radiofrecvență</span>
+      <span><i></i> RF Sculpt</span>
+      <span><i></i> Microneedling</span>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="cta reveal">
+    <p class="eyebrow" style="color:var(--muted-2); margin:0;">Hai să ne cunoaștem</p>
+    <h2 class="display">Programează o consultație <span class="accent">gratuită</span>.</h2>
+    <div class="row">
+      <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-on-dark" style="padding:1rem 1.9rem; font-size:15px;">Timișoara · WhatsApp</a>
+      <a href="https://wa.me/40750263054?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-glass" style="padding:1rem 1.9rem; font-size:15px;">Arad · WhatsApp</a>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER (unified across all pages) ============ -->
+  <style>
+    .cf{ position:relative; z-index:10; border-top:1px solid var(--line); margin-top:2rem; }
+    .cf-in{ max-width:80rem; margin:0 auto; padding:4rem 1.5rem; }
+    @media(min-width:640px){ .cf-in{ padding:4rem 2rem; } }
+    .cf-grid{ display:grid; gap:3rem; }
+    @media(min-width:768px){ .cf-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(min-width:1024px){ .cf-grid{ grid-template-columns:1.6fr 1fr 1.2fr 1.2fr; } }
+    .cf-logo{ width:260px; max-width:85%; height:auto; display:block; margin-bottom:1.5rem; }
+    .cf-desc{ color:var(--muted); font-size:15px; line-height:1.7; max-width:20rem; }
+    .cf-h{ font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); margin:0 0 1.25rem; }
+    .cf-links{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.75rem; font-size:15px; }
+    .cf-a{ color:var(--muted); text-decoration:none; transition:color .25s ease; }
+    .cf-a:hover{ color:var(--fg); }
+    .cf-socs{ display:flex; gap:.75rem; margin-top:1.75rem; }
+    .cf-soc{ width:42px; height:42px; border-radius:50%; border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; color:var(--muted); transition:color .25s ease, border-color .25s ease; }
+    .cf-soc:hover{ color:var(--fg); border-color:var(--line-on-dark); }
+    .cf-locs{ display:flex; flex-direction:column; gap:1.25rem; font-size:15px; }
+    .cf-loc strong{ display:block; font-weight:600; color:var(--fg); }
+    .cf-loc span{ display:block; color:var(--muted); }
+    .cf-cta{ display:inline-flex; align-items:center; justify-content:center; gap:.55rem; width:100%; padding:.9rem 1.5rem; font-size:14px; }
+    @media(min-width:640px){ .cf-cta{ width:auto; } }
+    .cf-bar{ margin-top:3.5rem; padding-top:2rem; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:1rem; align-items:center; justify-content:space-between; }
+    @media(min-width:640px){ .cf-bar{ flex-direction:row; } }
+    .cf-legal{ display:flex; gap:1.5rem; font-size:13px; }
+  </style>
+  <footer class="cf">
+    <div class="cf-in">
+      <div class="cf-grid">
+        <div>
+          <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="cf-logo">
+          <p class="cf-desc">Medicină estetică non-invazivă. Rezultate reale, vizibile din prima ședință — în Timișoara și Arad.</p>
+          <div class="cf-socs">
+            <a href="https://instagram.com/centrul360" target="_blank" rel="noopener" class="cf-soc" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a>
+            <a href="https://tiktok.com/@centrul360" target="_blank" rel="noopener" class="cf-soc" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.3.1-2.6-.3-3.7-1v6.1c0 3.2-2.4 5.4-5.3 5.4A5.2 5.2 0 0 1 5.5 14c.1-2.7 2.3-4.9 5-4.9.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.3 0-2.4 1.1-2.4 2.4 0 1.4 1.1 2.4 2.4 2.4 1.4 0 2.5-1.1 2.5-2.6V3H16z"/></svg></a>
+            <a href="https://facebook.com/centrul360" target="_blank" rel="noopener" class="cf-soc" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9h2.5V6H14c-2 0-3.3 1.3-3.3 3.3V11H8.5v3h2.2v7h3v-7h2.3l.5-3h-2.8V9.8c0-.5.3-.8.9-.8z"/></svg></a>
+          </div>
+        </div>
+        <div>
+          <p class="cf-h">Explorează</p>
+          <ul class="cf-links">
+            <li><a href="index.html#servicii" class="cf-a">Servicii</a></li>
+            <li><a href="index.html#oferte" class="cf-a">Oferte active</a></li>
+            <li><a href="echipa.html" class="cf-a">Echipa</a></li>
+            <li><a href="index.html#recenzii" class="cf-a">Recenzii</a></li>
+            <li><a href="index.html#intrebari" class="cf-a">Întrebări frecvente</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="cf-h">Locații</p>
+          <div class="cf-locs">
+            <div class="cf-loc"><strong>Timișoara</strong><span>Str. Bucegi 7</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
+            <div class="cf-loc"><strong>Arad</strong><span>Str. Ioan Alexandru 16</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
+          </div>
+        </div>
+        <div>
+          <p class="cf-h">Programări</p>
+          <p class="cf-desc" style="margin-bottom:1.5rem;">Scrie-ne pe WhatsApp — îți răspundem rapid și îți confirmăm o oră liberă.</p>
+          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-ink cf-cta">
+            Rezervă pe WhatsApp <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="cf-bar">
+        <p class="cf-h" style="margin:0;">© 2026 Centrul360 · Toate drepturile rezervate</p>
+        <div class="cf-legal">
+          <a href="#" class="cf-a">Termeni</a>
+          <a href="#" class="cf-a">Confidențialitate</a>
+          <a href="#" class="cf-a">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  const menuOverlay = document.getElementById('menuOverlay');
+  const menuBtn = document.getElementById('menuBtn');
+  const menuClose = document.getElementById('menuClose');
+  const dds = [...document.querySelectorAll('.menu-dd')];
+  function collapseDD(){ dds.forEach(dd=>{ dd.classList.remove('open'); const t=dd.querySelector('.menu-dd-trigger'); t && t.setAttribute('aria-expanded','false'); }); }
+  function openMenu(){ menuOverlay.classList.add('open'); menuOverlay.setAttribute('aria-hidden','false'); menuBtn.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
+  function closeMenu(){ menuOverlay.classList.remove('open'); menuOverlay.setAttribute('aria-hidden','true'); menuBtn.setAttribute('aria-expanded','false'); document.body.style.overflow=''; collapseDD(); }
+  menuBtn && menuBtn.addEventListener('click', openMenu);
+  menuClose && menuClose.addEventListener('click', closeMenu);
+  menuOverlay && menuOverlay.querySelectorAll('[data-menu-close]').forEach(a=>a.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && menuOverlay.classList.contains('open')) closeMenu(); });
+  dds.forEach(dd=>{ const t=dd.querySelector('.menu-dd-trigger'); t && t.addEventListener('click', ()=>{ const open=dd.classList.toggle('open'); t.setAttribute('aria-expanded', open?'true':'false'); }); });
+  (function(){
+    const track=document.getElementById('msTrack'); if(!track) return;
+    const dots=[...document.querySelectorAll('#msDots .ms-dot')];
+    const n=track.children.length; let i=0, timer=null;
+    function go(k){ i=(k%n+n)%n; track.style.transform='translateX(-'+(i*100)+'%)'; dots.forEach((d,j)=>d.classList.toggle('is-on',j===i)); }
+    function start(){ stop(); timer=setInterval(()=>go(i+1),3500); }
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    dots.forEach((d,j)=>d.addEventListener('click',()=>{ go(j); start(); }));
+    const sl=document.getElementById('menuSlider');
+    sl.addEventListener('pointerenter',stop); sl.addEventListener('pointerleave',start);
+    go(0); start();
+  })();
+
+  // reveal on scroll
+  const io = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold:0.08, rootMargin:'0px 0px -6% 0px' });
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mounts = []; let glbScene = null;
+new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e));
+function mountAll(){
+  const head = document.getElementById('logo3d-head');
+  const menu = document.getElementById('logo3d-menu');
+  if(head) mounts.push(makeMount(head, { spin:0.5 }));
+  if(menu) mounts.push(makeMount(menu, { spin:0.5 }));
+}
+function makeMount(canvas, opts){
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
+  renderer.setClearColor(0x000000, 0);
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 100); cam.position.set(0, 0, 5);
+  const key = new THREE.DirectionalLight(0xffffff, 4.5); key.position.set(5, 3, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, 2.0); rim.position.set(-5, -2, -3); scene.add(rim);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+  const mat = new THREE.MeshPhysicalMaterial({ color:0xffffff, metalness:0.0, roughness:0.16, clearcoat:1.0, clearcoatRoughness:0.1, transmission:0.5, thickness:0.8, ior:1.45, transparent:true, opacity:1.0, envMapIntensity:1.5 });
+  const model = glbScene.clone(true);
+  model.traverse(o=>{ if(o.isMesh) o.material = mat; });
+  const box = new THREE.Box3().setFromObject(model);
+  model.position.sub(box.getCenter(new THREE.Vector3()));
+  const sz = box.getSize(new THREE.Vector3());
+  model.scale.setScalar(2.4 / Math.max(sz.x, sz.y, sz.z));
+  const tilt = new THREE.Group(); scene.add(tilt);
+  const spinner = new THREE.Group(); spinner.add(model); tilt.add(spinner);
+  function resize(){ const w = canvas.clientWidth || 64, h = canvas.clientHeight || 64; renderer.setSize(w, h, false); cam.aspect = w/h; cam.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  return { canvas, renderer, scene, cam, spinner, opts };
+}
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  for(const m of mounts){
+    if(m.canvas.offsetParent === null) continue;
+    const r = m.canvas.getBoundingClientRect();
+    if(r.bottom <= 0 || r.top >= innerHeight) continue;
+    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
+    m.renderer.render(m.scene, m.cam);
+  }
+}
+</script>
+</body>
+</html>
