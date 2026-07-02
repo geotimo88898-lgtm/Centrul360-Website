@@ -42,6 +42,16 @@
     -webkit-font-smoothing:antialiased;
     scroll-snap-type:y proximity; /* gently settles on a card when you stop scrolling (the offer snap points are the only targets on the page) */
   }
+  /* MOBILE PERF: background-attachment:fixed forces a full-screen repaint on every scroll frame.
+     Same gradient, but on a fixed GPU-composited layer instead (identical look, no scroll repaint). */
+  @media (max-width:768px){
+    body{ background:#0b0b0d; background-attachment:initial; scroll-snap-type:none; }
+    body::before{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+        radial-gradient(90% 60% at 100% 0%, rgba(255,255,255,0.04), transparent 50%),
+        linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%); }
+  }
   ::selection{ background:var(--fg); color:#0b0b0d; }
   ::-webkit-scrollbar{ width:7px; }
   ::-webkit-scrollbar-thumb{ background:#2c2c33; border-radius:10px; }
@@ -68,6 +78,8 @@
   @keyframes drift1{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(6vw,4vh) scale(1.1);} }
   @keyframes drift2{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(-5vw,-3vh) scale(1.08);} }
   @keyframes drift3{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(3vw,-5vh) scale(1.12);} }
+  /* MOBILE PERF: stop the continuous blur(90px) drift animation (blobs stay, just static). */
+  @media (max-width:768px){ .aurora b{ animation:none !important; } }
 
   /* ---------- reveal ---------- */
   .reveal{ opacity:0; transform:translateY(26px); transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
@@ -160,8 +172,7 @@
     border:1px solid rgba(255,255,255,.11);
     box-shadow:0 -1px 0 rgba(255,255,255,.07) inset, 0 40px 80px -28px rgba(0,0,0,.85); will-change:transform; }
   .scard-3d{ position:relative; transform-style:preserve-3d; will-change:transform; }
-  .scard-sheen{ position:absolute; inset:0; z-index:6; pointer-events:none; border-radius:34px; mix-blend-mode:screen; opacity:0;
-    background:radial-gradient(45% 55% at var(--mx,50%) var(--my,28%), rgba(255,255,255,.18), transparent 62%); transition:opacity .5s ease; }
+  .scard-sheen{ display:none; }   /* metallic specular sheen removed (kept transition) */
   .scard .two-tone .solid{ color:#fff; }
   .scard .two-tone .ghost{ color:rgba(255,255,255,.30); }
   /* floating, scroll-animated media that blends into the card */
@@ -489,6 +500,42 @@
   .o3d-hint-dn{ display:inline-block; font-size:13px; animation:o3dHintDn 1.8s ease-in-out infinite; }
   @keyframes o3dHintDn{ 0%,100%{ transform:translateY(-1px); opacity:.4; } 50%{ transform:translateY(3px); opacity:.85; } }
   @media (prefers-reduced-motion: reduce){ .o3d-hint-ar, .o3d-hint-dn{ animation:none; } }
+  /* ===== MOBILE: swap the heavy pinned 3D carousel for a clean flat swipe (no 3D, no metal, fluid) ===== */
+  @media (max-width:768px){
+    #offersScroll{ display:none !important; }
+    .o3d-mwrap{ margin-top:20px; padding-bottom:3rem; }
+    #locatii{ margin-top:0 !important; }   /* the -mt-12 overlap was for the old pinned offers; not needed with the flat swipe */
+    .o3d-mrow{ display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+      padding:6px 24px 10px; scrollbar-width:none; }
+    .o3d-mrow::-webkit-scrollbar{ display:none; }
+    .o3d-mcard{ flex:0 0 84%; max-width:340px; scroll-snap-align:center; display:flex; flex-direction:column;
+      border:1px solid var(--line); border-radius:24px; overflow:hidden; background:var(--paper-2);
+      box-shadow:0 24px 50px -30px rgba(0,0,0,.8); }
+    .o3d-mcard .o3d-cta{ pointer-events:auto; align-self:stretch; }
+    .o3d-mcta{ align-items:center; justify-content:center; text-align:center; gap:12px; padding:38px 22px;
+      background:linear-gradient(180deg,#141418,#0d0d11); }
+    .o3d-mcta-ic{ width:50px; height:50px; border-radius:15px; display:grid; place-items:center; color:#fff;
+      border:1px solid var(--line-on-dark); background:rgba(255,255,255,.05); }
+    .o3d-mcta-t{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.03em; font-size:1.5rem; line-height:1.05; }
+    .o3d-mcta-s{ font-size:12.5px; color:var(--muted); }
+    .o3d-mdots{ display:flex; justify-content:center; gap:8px; margin-top:14px; }
+    .o3d-mdot{ width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.22);
+      transition:width .35s cubic-bezier(.16,1,.3,1), background .3s ease; }
+    .o3d-mdot.is-on{ width:22px; background:#fff; }
+    .o3d-mhint{ display:flex; align-items:center; justify-content:center; gap:8px; margin-top:11px;
+      font-size:10.5px; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--muted);
+      user-select:none; transition:opacity .45s ease; }
+    .o3d-mhint.gone{ opacity:0; pointer-events:none; }
+    .o3d-mhint .ar{ display:inline-block; font-size:13px; animation:o3dHintAr 1.5s ease-in-out infinite; }
+    .o3d-mviewport{ position:relative; }
+    .o3d-marrow{ position:absolute; top:50%; transform:translateY(-50%); z-index:6; width:38px; height:38px; border-radius:999px;
+      display:grid; place-items:center; color:#fff; background:rgba(18,18,22,.6); border:1px solid rgba(255,255,255,.20);
+      -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); box-shadow:0 8px 20px -8px rgba(0,0,0,.75);
+      cursor:pointer; transition:opacity .3s ease, background .2s ease, transform .15s ease; }
+    .o3d-marrow:active{ transform:translateY(-50%) scale(.9); }
+    .o3d-marrow.prev{ left:10px; } .o3d-marrow.next{ right:10px; }
+    .o3d-marrow[disabled]{ opacity:0; pointer-events:none; }
+  }
 </style>
 </head>
 <body>
@@ -554,10 +601,11 @@
         </div>
       </div>
       <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <a href="rezultate.html" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
+      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">04</span>Locații
+          <span class="idx">05</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
@@ -1128,9 +1176,6 @@
       if(td && !reduceM){
         td.style.transform = `rotateX(${(-ms.y*6*cf).toFixed(2)}deg) rotateY(${(ms.x*8.5*cf).toFixed(2)}deg)`;
       }
-      // moving specular light follows the cursor
-      const sh = card.querySelector('.scard-sheen');
-      if(sh){ sh.style.setProperty('--mx', (50+ms.x*42)+'%'); sh.style.setProperty('--my', (30+ms.y*34)+'%'); sh.style.opacity = (0.55*cf+0.1).toFixed(2); }
       // stacking: dim + slightly shrink the card as the next one slides over it
       const next = card.nextElementSibling;
       if(next){
@@ -1140,9 +1185,17 @@
         card.style.filter = `brightness(${(1 - overlap*0.16).toFixed(3)})`;
       }
     });
-    requestAnimationFrame(cardFrame);
+    if(cardRunning) requestAnimationFrame(cardFrame);
   }
-  requestAnimationFrame(cardFrame);
+  // run the scroll-transition loop ONLY while the services section is in view (frees the phone when it's not)
+  let cardRunning = false;
+  const servicesSec = document.getElementById('servicii');
+  const cardIO = new IntersectionObserver((es)=>{
+    const vis = es.some(e=>e.isIntersecting);
+    if(vis && !cardRunning){ cardRunning = true; requestAnimationFrame(cardFrame); }
+    else if(!vis){ cardRunning = false; }
+  }, { rootMargin:'200px 0px' });
+  if(servicesSec) cardIO.observe(servicesSec); else { cardRunning = true; requestAnimationFrame(cardFrame); }
 
   const fab = document.getElementById('fab');
   window.addEventListener('scroll', ()=>{
@@ -1271,6 +1324,49 @@
         `<a class="o3d-cta" href="${waUrl(o)}" target="_blank" rel="noopener">Rezervă oferta <span>→</span></a>`+
       `</div>`;
     const faceHTML = o => o.cta ? ctaFaceHTML() : offerFaceHTML(o);
+
+    // ---- MOBILE: skip the heavy pinned 3D carousel; render a clean flat swipe of the same offers ----
+    const isMobile = matchMedia('(max-width:768px)').matches;
+    if(isMobile){
+      const mCtaHTML = () =>
+        `<span class="o3d-mcta-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>`+
+        `<p class="o3d-mcta-t">Vezi toate ofertele</p>`+
+        `<p class="o3d-mcta-s">Oferte individuale &amp; pachete</p>`+
+        `<a class="o3d-cta" href="oferte.html">Deschide pagina <span>→</span></a>`;
+      const row = document.createElement('div'); row.className = 'o3d-mrow';
+      ITEMS.forEach(o=>{
+        const card = document.createElement('article');
+        card.className = o.cta ? 'o3d-mcard o3d-mcta' : 'o3d-mcard';
+        card.innerHTML = o.cta ? mCtaHTML() : faceHTML(o);
+        row.appendChild(card);
+      });
+      const dots = document.createElement('div'); dots.className = 'o3d-mdots';
+      ITEMS.forEach(()=>{ const d = document.createElement('span'); d.className = 'o3d-mdot'; dots.appendChild(d); });
+      const hint = document.createElement('div'); hint.className = 'o3d-mhint';
+      hint.innerHTML = 'Glisează <span class="ar">→</span>';
+      const chev = dir => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${dir==='prev'?'M15 6l-6 6 6 6':'M9 6l6 6-6 6'}"/></svg>`;
+      const prev = document.createElement('button'); prev.type='button'; prev.className='o3d-marrow prev'; prev.setAttribute('aria-label','Oferta anterioară'); prev.innerHTML=chev('prev');
+      const next = document.createElement('button'); next.type='button'; next.className='o3d-marrow next'; next.setAttribute('aria-label','Oferta următoare'); next.innerHTML=chev('next');
+      const viewport = document.createElement('div'); viewport.className='o3d-mviewport';
+      viewport.appendChild(row); viewport.appendChild(prev); viewport.appendChild(next);
+      const wrap = document.createElement('div'); wrap.className = 'o3d-mwrap';
+      wrap.appendChild(viewport); wrap.appendChild(dots); wrap.appendChild(hint);
+      const scroll = document.getElementById('offersScroll');
+      if(scroll){ scroll.parentNode.insertBefore(wrap, scroll); scroll.style.display = 'none'; }
+      const dEls = [...dots.children];
+      const cardW = ()=>{ const f = row.firstElementChild; return f ? f.getBoundingClientRect().width + 14 : row.clientWidth; };
+      const setDot = ()=>{ const cw = cardW();
+        const i = Math.max(0, Math.min(dEls.length-1, Math.round(row.scrollLeft / cw)));
+        dEls.forEach((d,k)=>d.classList.toggle('is-on', k===i));
+        prev.disabled = row.scrollLeft <= 8;
+        next.disabled = row.scrollLeft >= row.scrollWidth - row.clientWidth - 8; };
+      setDot();
+      prev.addEventListener('click', ()=>row.scrollBy({ left:-cardW(), behavior:'smooth' }));
+      next.addEventListener('click', ()=>row.scrollBy({ left: cardW(), behavior:'smooth' }));
+      let swiped = false;
+      row.addEventListener('scroll', ()=>{ requestAnimationFrame(setDot); if(!swiped && row.scrollLeft > 8){ swiped = true; hint.classList.add('gone'); } }, { passive:true });
+      return;
+    }
 
     const cardEls = sequence.map((o)=>{
       const card = document.createElement('div');
@@ -1457,6 +1553,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = matchMedia('(max-width:768px)').matches;   // mobile: lighter 3D logo (perf)
 const mounts = [];
 let glbScene = null;
 
@@ -1485,13 +1582,13 @@ function mountAll(){
   const herom = document.getElementById('logo3d-hero-m');
   if(head)  mounts.push(makeMount(head,  { tilt:0, spin:0.5,  dark:false }));
   if(menu)  mounts.push(makeMount(menu,  { tilt:0, spin:0.5,  dark:false }));
-  if(hero)  mounts.push(makeMount(hero,  { tilt:0, spin:0.30, mat:HERO_MAT }));
-  if(herom) mounts.push(makeMount(herom, { tilt:0, spin:0.26, mat:HERO_MAT }));
+  if(hero && !isMobile)  mounts.push(makeMount(hero,  { tilt:0, spin:0.30, mat:HERO_MAT }));
+  if(herom && isMobile) mounts.push(makeMount(herom, { tilt:0, spin:0.26, mat:HERO_MAT }));
 }
 
 function makeMount(canvas, opts){
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
@@ -1511,6 +1608,8 @@ function makeMount(canvas, opts){
     ? makeMaterial(opts.mat)
     : opts.dark
     ? new THREE.MeshPhysicalMaterial({ color:0x09090b, metalness:0.0, roughness:0.92, clearcoat:0.0, envMapIntensity:0.08, specularIntensity:0.18 })
+    : isMobile
+    ? new THREE.MeshStandardMaterial({ color:0xffffff, metalness:0.2, roughness:0.18, envMapIntensity:1.3 })
     : new THREE.MeshPhysicalMaterial({ color:0xffffff, metalness:0.0, roughness:0.16, clearcoat:1.0, clearcoatRoughness:0.1, transmission:0.5, thickness:0.8, ior:1.45, transparent:true, opacity:1.0, envMapIntensity:1.5 });
   const model = glbScene.clone(true);
   model.traverse(o=>{ if(o.isMesh) o.material = mat; });
@@ -1531,9 +1630,13 @@ function makeMount(canvas, opts){
 }
 
 const clock = new THREE.Clock();
+let lastLogoT = -1;
+const logoMinDelta = isMobile ? 1/30 : 0;   // cap the 3D logo to ~30fps on mobile
 function animate(){
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
+  if(logoMinDelta && (t - lastLogoT) < logoMinDelta){ return; }
+  lastLogoT = t;
   for(const m of mounts){
     if(m.canvas.offsetParent === null) continue;     // skip if hidden by responsive breakpoint
     const r = m.canvas.getBoundingClientRect();       // skip 3D logos scrolled off-screen (frees the GPU for the carousel)

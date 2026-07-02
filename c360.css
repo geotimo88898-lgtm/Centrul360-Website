@@ -423,3 +423,16 @@ footer.site .bar{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; ju
   *{ animation-duration:.001ms !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
   .reveal{ opacity:1 !important; transform:none !important; }
 }
+
+/* ===== MOBILE PERF ===== */
+/* Stop the continuous blur(90px) aurora drift + move the fixed background to a GPU-composited
+   layer (background-attachment:fixed repaints the whole screen on every scroll frame). */
+@media (max-width:768px){
+  .aurora b{ animation:none !important; }
+  body{ background:#0b0b0d; background-attachment:initial; }
+  body::before{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+      radial-gradient(90% 60% at 100% 0%, var(--accent-soft), transparent 50%),
+      linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%); }
+}

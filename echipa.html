@@ -198,6 +198,17 @@
   footer.site .bar{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between; }
 
   @media (prefers-reduced-motion: reduce){ *{ transition-duration:.001ms !important; } .reveal{ opacity:1 !important; transform:none !important; } }
+
+  /* MOBILE PERF — stop aurora drift + fixed bg on a GPU-composited layer (no scroll repaint) */
+  @media (max-width:768px){
+    .aurora b{ animation:none !important; }
+    body{ background:#0b0b0d !important; background-attachment:initial !important; }
+    body::before{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+        radial-gradient(90% 60% at 100% 0%, rgba(255,255,255,0.04), transparent 50%),
+        linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%); }
+  }
 </style>
 </head>
 <body>
@@ -253,10 +264,11 @@
         </div>
       </div>
       <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <a href="rezultate.html" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
+      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">04</span>Locații
+          <span class="idx">05</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
@@ -308,6 +320,72 @@
     <p>Credem că frumusețea reală nu se forțează — se <em>îngrijește</em>. De aceea fiecare plan începe cu o <em>consultație gratuită</em>, ascultăm ce îți dorești și recomandăm doar ce chiar ți se potrivește.</p>
   </section>
 
+  <!-- ============ SPECIALIȘTI ============ -->
+  <section class="sec" id="specialisti">
+    <p class="sec-eyebrow eyebrow"><i></i> Specialistele noastre</p>
+    <h2>Patru specialiste,<br>un singur standard.</h2>
+    <p class="sub">Fiecare cu expertiza ei — împreună acoperă tot ce înseamnă tratamente faciale și corporale non-invazive.</p>
+
+    <div class="team">
+
+      <!-- Specialist 1 — FOTO REALĂ -->
+      <article class="tcard reveal d1">
+        <div class="photo">
+          <span class="clinic">Timișoara</span>
+          <img src="brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39.jpeg" alt="Specialistă Centrul360">
+        </div>
+        <div class="tbody">
+          <h3 class="is-ph">[Prenume Nume]</h3>
+          <p class="role">[Rol · ex. Medic estetician]</p>
+          <div class="ttags"><span class="ttag">[specializare]</span><span class="ttag">[specializare]</span></div>
+        </div>
+      </article>
+
+      <!-- Specialist 2 — FOTO REALĂ -->
+      <article class="tcard reveal d2">
+        <div class="photo">
+          <span class="clinic">Timișoara</span>
+          <img src="brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39%20(1).jpeg" alt="Specialistă Centrul360">
+        </div>
+        <div class="tbody">
+          <h3 class="is-ph">[Prenume Nume]</h3>
+          <p class="role">[Rol · ex. Cosmetician]</p>
+          <div class="ttags"><span class="ttag">[specializare]</span><span class="ttag">[specializare]</span></div>
+        </div>
+      </article>
+
+      <!-- Specialist 3 — PLACEHOLDER FOTO -->
+      <article class="tcard reveal d3">
+        <div class="photo">
+          <div class="ph-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+            <span>Fotografie în curând</span>
+          </div>
+        </div>
+        <div class="tbody">
+          <h3 class="is-ph">[Prenume Nume]</h3>
+          <p class="role">[Rol]</p>
+          <div class="ttags"><span class="ttag">[specializare]</span></div>
+        </div>
+      </article>
+
+      <!-- Specialist 4 — PLACEHOLDER FOTO -->
+      <article class="tcard reveal d4">
+        <div class="photo">
+          <div class="ph-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+            <span>Fotografie în curând</span>
+          </div>
+        </div>
+        <div class="tbody">
+          <h3 class="is-ph">[Prenume Nume]</h3>
+          <p class="role">[Rol]</p>
+          <div class="ttags"><span class="ttag">[specializare]</span></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
 
   <!-- ============ VALORI ============ -->
   <section class="sec" id="valori">

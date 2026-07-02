@@ -174,6 +174,17 @@
   footer.site .bar{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between; }
 
   @media (prefers-reduced-motion: reduce){ *{ transition-duration:.001ms !important; } .reveal{ opacity:1 !important; transform:none !important; } }
+
+  /* MOBILE PERF — stop aurora drift + fixed bg on a GPU-composited layer (no scroll repaint) */
+  @media (max-width:768px){
+    .aurora b{ animation:none !important; }
+    body{ background:#0b0b0d !important; background-attachment:initial !important; }
+    body::before{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+        radial-gradient(90% 60% at 100% 0%, rgba(255,255,255,0.04), transparent 50%),
+        linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%); }
+  }
 </style>
 </head>
 <body>
@@ -227,10 +238,11 @@
         </div>
       </div>
       <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <a href="rezultate.html" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
+      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">04</span>Locații
+          <span class="idx">05</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
