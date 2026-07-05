@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2276074362800484');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Centrul360 — Medicină Estetică în Timișoara &amp; Arad</title>
@@ -197,6 +214,11 @@
     .scard-media .scard-img{ object-position:center 24%; }
     .scard-3d::before{ -webkit-mask-image:linear-gradient(to bottom, transparent 0, transparent 165px, #000 280px);
       mask-image:linear-gradient(to bottom, transparent 0, transparent 165px, #000 280px); }
+  }
+
+  /* MOBILE — carduri Servicii mai înguste (nu mai scurte); desktop neatins */
+  @media (max-width:640px){
+    .scard{ max-width:330px; margin-left:auto; margin-right:auto; }
   }
 
   .imgwrap{ position:relative; overflow:hidden; border-radius:22px; }
@@ -422,9 +444,18 @@
   @keyframes o3dShine{ 0%{ transform:translateX(0) rotate(9deg); } 58%,100%{ transform:translateX(380%) rotate(9deg); } }
   @media (prefers-reduced-motion: reduce){ .o3d-card.is-active .o3d-face::after{ animation:none; opacity:.45; transform:translateX(160%) rotate(9deg); } }
   /* portrait card: square before/after photo on top + dark info band below */
-  .o3d-photo{ flex:none; width:100%; aspect-ratio:3/2; overflow:hidden; background:#0a0a0c; } /* before|after banner (send 3:2 images) */
+  .o3d-photo{ position:relative; flex:none; width:100%; aspect-ratio:3/2; overflow:hidden; background:#0a0a0c; } /* before|after banner (send 3:2 images) */
   .o3d-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
   .o3d-photo .o3d-vid{ width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
+  .o3d-cert{ position:absolute; top:10px; left:10px; z-index:3; display:inline-flex; align-items:center; gap:.35rem;
+    font-size:9.5px; font-weight:600; letter-spacing:.01em; color:#f5f4f2; white-space:nowrap;
+    background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.16); border-radius:999px; padding:.32rem .55rem; }
+  .o3d-cert svg{ flex:none; color:#e9cfa3; }
+  .o3d-disc{ position:absolute; top:10px; right:10px; z-index:3; display:inline-flex; align-items:center;
+    font-size:10.5px; font-weight:800; letter-spacing:.01em; color:#1a140a; white-space:nowrap;
+    background:linear-gradient(135deg,#f0dcbb,#d8b483); border:1px solid rgba(255,255,255,.35);
+    border-radius:999px; padding:.28rem .55rem; box-shadow:0 6px 16px -8px rgba(0,0,0,.6); }
   .o3d-info{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:clamp(5px,1.1vh,8px);
     padding:clamp(12px,3.6%,18px) clamp(14px,5.5%,20px); background:linear-gradient(180deg,#111116,#0b0b0e); border-top:1px solid rgba(255,255,255,.07); }
   .o3d-info .o3d-prices{ flex-direction:row; align-items:baseline; gap:9px; }
@@ -604,11 +635,10 @@
         </div>
       </div>
       <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="rezultate.html" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
-      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
+      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">05</span>Locații
+          <span class="idx">04</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
@@ -622,9 +652,9 @@
     <!-- offers auto-slider: 3 offers + a final "see all offers" slide -->
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare-4zone.png" alt="Epilare laser 4 zone"></span><span class="ms-info"><span class="ms-name">Epilare laser · 4 zone</span><span class="ms-row"><span class="ms-price">139 lei</span><s class="ms-old">463 lei</s><span class="ms-off">−70%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="epilare-4zone" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare-4zone.png" alt="Epilare laser 4 zone"></span><span class="ms-info"><span class="ms-name">Epilare laser · 4 zone</span><span class="ms-row"><span class="ms-price">139 lei</span><s class="ms-old">463 lei</s><span class="ms-off">−70%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
       <div class="ms-dots" id="msDots">
@@ -644,25 +674,46 @@
   </div>
 </div>
 
+<!-- MOCK: summer-offers hero promo (replaces spinning logo) -->
+<style>
+  .hero-promo{ position:relative; display:block; width:100%; max-width:30rem; min-height:clamp(500px,76vh,740px);
+    border-radius:28px; overflow:hidden; text-decoration:none;
+    border:1px solid rgba(255,255,255,.14); box-shadow:0 44px 100px -48px rgba(0,0,0,.92);
+    transition:transform .45s cubic-bezier(.16,1,.3,1); }
+  .hero-promo:hover{ transform:translateY(-4px); }
+  .hp-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(.96) contrast(1.02); }
+  .hp-shade{ position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,10,.94) 6%, rgba(8,8,10,.55) 44%, rgba(8,8,10,.12) 100%); }
+  .hp-content{ position:absolute; left:0; right:0; bottom:0; z-index:1; display:flex; flex-direction:column; align-items:flex-start; padding:1.7rem 1.8rem 1.8rem; }
+  .hp-eyebrow{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:#e9cfa3; }
+  .hp-big{ font-family:'Inter',sans-serif; font-weight:600; letter-spacing:-.01em; font-size:1.4rem; color:#fff; line-height:1; margin-top:.55rem; display:flex; align-items:baseline; gap:.22em; }
+  .hp-big b{ font-weight:800; font-size:3rem; letter-spacing:-.03em; background:linear-gradient(135deg,#f5e6c8,#d8b483); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hp-sub{ color:rgba(245,244,242,.72); font-size:.9rem; margin-top:.6rem; line-height:1.4; max-width:22rem; }
+  .hp-cta{ margin-top:1.4rem; display:flex; align-self:stretch; justify-content:center; align-items:center; gap:.5rem; font-weight:600; font-size:15px; color:#0b0b0d;
+    padding:.9rem 1.4rem; border-radius:999px; background:#fff; transition:transform .25s ease, background .25s ease; }
+  .hero-promo:hover .hp-cta{ background:#f0ece4; }
+  .hero-promo:hover .arrow{ transform:translateX(3px); }
+</style>
 <!-- ============ HERO ============ -->
-<section id="top" class="relative z-10 min-h-screen flex flex-col justify-between gap-6 px-6 sm:px-8 max-w-7xl mx-auto pt-24 sm:pt-24 pb-16">
-  <canvas id="logo3d-hero" class="hidden lg:block" aria-hidden="true"></canvas>
-  <canvas id="logo3d-hero-m" class="lg:hidden" aria-hidden="true"></canvas>
+<section id="top" class="relative z-10 min-h-screen flex flex-col justify-start gap-6 px-6 sm:px-8 max-w-7xl mx-auto pt-24 sm:pt-24 pb-16">
+  <canvas id="logo3d-hero" class="hidden lg:block" aria-hidden="true" style="display:none"></canvas>
+  <canvas id="logo3d-hero-m" class="lg:hidden" aria-hidden="true" style="display:none"></canvas>
   <div>
     <p class="eyebrow text-[var(--muted)] reveal in flex items-center gap-2">
       <span class="inline-block w-1.5 h-1.5 rounded-full bg-white"></span>
       Două locații · Timișoara &amp; Arad
     </p>
-    <h1 class="display text-[clamp(2.5rem,6.6vw,6.2rem)] leading-[1.04] mt-3 sm:mt-4 reveal in d1 relative">
-      Rezultatele <span class="accent">dorite</span><br>aduse la realitate.
-    </h1>
   </div>
-  <div class="flex flex-col sm:flex-row items-start gap-3.5 reveal in d3">
-    <a href="#oferte" class="pill pill-ink px-7 py-4 text-[15px] justify-center whitespace-nowrap w-full sm:w-auto">
-      Vezi ofertele active <span class="arrow">→</span>
-    </a>
-    <a href="#servicii" class="pill pill-glass px-7 py-4 text-[15px] justify-center whitespace-nowrap w-full sm:w-auto">
-      Vezi tratamentele <span class="arrow">→</span>
+
+  <div class="reveal in d2 flex justify-center lg:justify-start">
+    <a href="oferte.html" class="hero-promo">
+      <video class="hp-img" autoplay muted loop playsinline preload="metadata" poster="brand_asset/promo-summer-poster.jpg"><source src="brand_asset/promo-summer.mp4" type="video/mp4"></video>
+      <span class="hp-shade"></span>
+      <span class="hp-content">
+        <span class="hp-eyebrow">☀ Oferte de vară</span>
+        <span class="hp-big">până la <b>−70%</b></span>
+        <span class="hp-sub">Epilare, remodelare &amp; faciale · Timișoara &amp; Arad</span>
+        <span class="hp-cta">Vezi ofertele <span class="arrow">→</span></span>
+      </span>
     </a>
   </div>
 </section>
@@ -877,6 +928,193 @@
     </div>
   </div>
 </div>
+
+<!-- ============ PRICE SIMULATOR (moved from oferte) ============ -->
+  <style>
+  /* price simulator */
+  .sim{ border:1px solid var(--line); border-radius:26px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); padding:clamp(20px,3.5vw,38px); }
+  .sim-sub{ color:var(--muted); font-size:.98rem; margin-top:.6rem; max-width:34rem; }
+  .sim-grid{ display:grid; grid-template-columns:1fr; gap:1.3rem; margin-top:1.7rem; }
+  @media (min-width:760px){ .sim-grid{ grid-template-columns:repeat(3,1fr); gap:1.6rem; } }
+  .sim-q{ display:block; font-size:.95rem; font-weight:600; color:rgba(255,255,255,.85); margin-bottom:.7rem; }
+  .sim-q b{ color:var(--muted-2); font-weight:700; margin-right:.35rem; }
+  .sim-chips{ display:flex; flex-wrap:wrap; gap:.55rem; }
+  .sim-chip{ border:1px solid var(--line-on-dark); background:var(--glass); color:rgba(255,255,255,.8); border-radius:999px; padding:.6rem 1.05rem; font-size:.9rem; font-weight:600; cursor:pointer; transition:background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease; }
+  .sim-chip:hover{ background:rgba(255,255,255,.1); transform:translateY(-1px); }
+  .sim-chip.on{ background:var(--fg); color:#0b0b0d; border-color:var(--fg); }
+  .sim-chip:focus-visible{ outline:2px solid var(--fg); outline-offset:3px; }
+  .sim-select{ display:none; width:100%; appearance:none; -webkit-appearance:none; background-color:var(--glass); border:1px solid var(--line-on-dark); border-radius:14px; color:var(--fg); padding:.85rem 2.5rem .85rem 1.05rem; font-size:.95rem; font-weight:600; cursor:pointer; background-repeat:no-repeat; background-position:right 14px center; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23f5f4f2' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+  .sim-select:focus-visible{ outline:2px solid var(--fg); outline-offset:3px; }
+  .sim-select option{ background:#16161a; color:var(--fg); }
+  @media (max-width:640px){ .sim-chips{ display:none; } .sim-select{ display:block; } }
+  .sim-hint{ color:var(--muted-2); font-size:.85rem; margin-top:1.4rem; }
+  .sim-result{ margin-top:1.6rem; border:1px solid var(--line-on-dark); border-radius:20px; background:var(--paper-2); padding:1.5rem 1.6rem; animation:simIn .5s cubic-bezier(.16,1,.3,1); }
+  @keyframes simIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+  .sim-rec-lbl{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); }
+  .sim-rec-name{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.5rem; margin:.35rem 0 .15rem; }
+  .sim-rec-dur{ color:var(--muted); font-size:.9rem; }
+  .sim-rec-incl{ color:rgba(255,255,255,.82); font-size:.92rem; margin:.9rem 0; line-height:1.5; }
+  .sim-rec-price{ display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap; }
+  .sim-rec-price b{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.03em; font-size:2rem; }
+  .sim-rec-price s{ color:var(--muted-2); font-weight:600; }
+  .sim-rec-off{ font-weight:700; font-size:.8rem; color:#0b0b0d; background:#fff; border-radius:999px; padding:.2rem .55rem; }
+  .sim-rec-tm{ display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; color:var(--muted); margin-top:.75rem; }
+  .sim-rec-actions{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.25rem; }
+  .sim-disc{ color:var(--muted-2); font-size:.76rem; margin-top:1rem; line-height:1.5; }
+  .sim-steps{ margin-top:.3rem; }
+  .sim-step{ border:1px solid var(--line); border-radius:18px; padding:1.1rem 1.2rem; background:rgba(255,255,255,.02); }
+  .sim-step.s1{ border-color:rgba(212,175,110,.42); background:linear-gradient(135deg, rgba(212,175,110,.10), rgba(255,255,255,.015)); }
+  .sim-step-lbl{ font-size:.7rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#e9cfa3; display:inline-flex; align-items:center; gap:.4rem; }
+  .sim-step-name{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.3rem; margin:.5rem 0 0; }
+  .sim-step-note{ color:var(--muted); font-size:.85rem; margin-top:.25rem; line-height:1.45; }
+  .sim-step-price{ display:flex; align-items:baseline; gap:.55rem; margin-top:.7rem; }
+  .sim-step-price b{ font-weight:800; font-size:1.5rem; letter-spacing:-.02em; }
+  .sim-step-price s{ color:var(--muted-2); font-weight:600; font-size:.9rem; }
+  .sim-step-price .off{ font-weight:700; font-size:.72rem; color:#0b0b0d; background:linear-gradient(135deg,#f0dcbb,#d8b483); padding:.15rem .5rem; border-radius:999px; align-self:center; }
+  .sim-step-cta{ margin-top:.9rem; }
+  .sim-conn{ display:flex; align-items:center; justify-content:center; gap:.6rem; color:var(--muted-2); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; margin:.55rem 0; }
+  .sim-conn::before, .sim-conn::after{ content:""; height:1px; width:30px; background:var(--line); }
+  </style>
+  <section class="px-6 sm:px-8 max-w-7xl mx-auto pt-12 sm:pt-24 pb-4">
+    <div class="sim reveal" id="simulator">
+      <h2 class="sec-head text-[clamp(1.7rem,4.2vw,2.7rem)]">Găsește-ți <span class="accent">planul</span>.</h2>
+
+      <div class="sim-grid">
+        <div>
+          <span class="sim-q"><b>1</b> Ce îți dorești?</span>
+          <div class="sim-chips" data-step="goal">
+            <button type="button" class="sim-chip" data-val="gusa">Gușă / bărbie dublă</button>
+            <button type="button" class="sim-chip" data-val="abdomen">Slăbire / abdomen</button>
+            <button type="button" class="sim-chip" data-val="lifting">Lifting facial / riduri</button>
+            <button type="button" class="sim-chip" data-val="celulita">Celulită</button>
+            <button type="button" class="sim-chip" data-val="detox">Detox / drenaj</button>
+          </div>
+          <select class="sim-select" data-step="goal" aria-label="Ce îți dorești?">
+            <option value="" disabled selected>Alege…</option>
+            <option value="gusa">Gușă / bărbie dublă</option>
+            <option value="abdomen">Slăbire / abdomen</option>
+            <option value="lifting">Lifting facial / riduri</option>
+            <option value="celulita">Celulită</option>
+            <option value="detox">Detox / drenaj</option>
+          </select>
+        </div>
+        <div>
+          <span class="sim-q"><b>2</b> În cât timp?</span>
+          <div class="sim-chips" data-step="time">
+            <button type="button" class="sim-chip" data-val="rapid">Rapid (~1 lună)</button>
+            <button type="button" class="sim-chip" data-val="echilibrat">Echilibrat (~3 luni)</button>
+            <button type="button" class="sim-chip" data-val="lung">Fără grabă</button>
+          </div>
+          <select class="sim-select" data-step="time" aria-label="În cât timp?">
+            <option value="" disabled selected>Alege…</option>
+            <option value="rapid">Rapid (~1 lună)</option>
+            <option value="echilibrat">Echilibrat (~3 luni)</option>
+            <option value="lung">Fără grabă</option>
+          </select>
+        </div>
+        <div>
+          <span class="sim-q"><b>3</b> Buget</span>
+          <div class="sim-chips" data-step="budget">
+            <button type="button" class="sim-chip" data-val="1000">sub 1.000 lei</button>
+            <button type="button" class="sim-chip" data-val="2500">1.000 – 2.500 lei</button>
+            <button type="button" class="sim-chip" data-val="4000">2.500 – 4.000 lei</button>
+            <button type="button" class="sim-chip" data-val="99999">peste 4.000 lei</button>
+          </div>
+          <select class="sim-select" data-step="budget" aria-label="Buget">
+            <option value="" disabled selected>Alege…</option>
+            <option value="1000">sub 1.000 lei</option>
+            <option value="2500">1.000 – 2.500 lei</option>
+            <option value="4000">2.500 – 4.000 lei</option>
+            <option value="99999">peste 4.000 lei</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sim-result" id="simResult" hidden></div>
+      <p class="sim-hint" id="simHint">Alege câte o opțiune la fiecare pas pentru recomandare.</p>
+    </div>
+  </section>
+  <script>
+  // ---- price simulator / package recommender ----
+  (function(){
+    const sim=document.getElementById('simulator'); if(!sim) return;
+    const PKGS=[
+      {goal:'abdomen',name:'Mini Belly',price:997,old:1640,sessions:5,dur:'~5 ședințe',incl:'1× Liposonix + 4× EMS',tm:true},
+      {goal:'abdomen',name:'Abdomen 360',price:3699,old:6380,sessions:17,dur:'program complet · ~3 luni',incl:'5× Liposonix/HIFU + 6× EMS + 6× Cavitație',tm:true},
+      {goal:'gusa',name:'Mini Gușă',price:990,old:1270,sessions:6,dur:'~5 săptămâni',incl:'2× HIFU + 4× RF Sculpt',tm:false},
+      {goal:'gusa',name:'Gușă 360',price:2241,old:3630,sessions:15,dur:'~3 luni',incl:'6× HIFU + 9× RF Sculpt',tm:false},
+      {goal:'lifting',name:'Lifting 360',price:1750,old:2420,sessions:5,dur:'program complet',incl:'1× HIFU Full Face + 4× RF Sculpt Full Face',tm:false},
+      {goal:'lifting',name:'Mini Lifting',price:2310,old:3840,sessions:12,dur:'program lifting',incl:'6× HIFU + 6× RF Sculpt Full Face',tm:false},
+      {goal:'celulita',name:'Celulită & Lifting',price:1180,old:2000,sessions:8,dur:'program',incl:'8× EMS',tm:true},
+      {goal:'celulita',name:'Celulită 360',price:2620,old:4240,sessions:16,dur:'program complet',incl:'8× EMS + 8× Cavitație',tm:true},
+      {goal:'detox',name:'Detox',price:1120,old:1780,sessions:8,dur:'program',incl:'4× EMS + 4× Împachetare la cald',tm:true}
+    ];
+    const GL={gusa:'Gușă / bărbie dublă',abdomen:'Slăbire / abdomen',lifting:'Lifting facial / riduri',celulita:'Celulită',detox:'Detox / drenaj'};
+    const TL={rapid:'rapid (~1 lună)',echilibrat:'echilibrat (~3 luni)',lung:'fără grabă'};
+    const BL={'1000':'sub 1.000 lei','2500':'1.000–2.500 lei','4000':'2.500–4.000 lei','99999':'peste 4.000 lei'};
+    // PAS 1 — oferta ieftină de intrare, pe obiectiv (de pe pagina Oferte)
+    const OFFERS={
+      gusa:{name:'HIFU · Gușă',price:150,old:299,note:'O ședință · conturul mandibulei'},
+      abdomen:{name:'Liposonix · 2 zone',price:640,old:1280,note:'Reduce grăsimea localizată'},
+      lifting:{name:'HIFU · Full Face',price:510,old:1020,note:'Lifting facial, fără bisturiu'},
+      celulita:{name:'Anticelulită',price:890,old:1680,note:'6× radiofrecvență + cadou'}
+    };
+    const sel={goal:null,time:null,budget:null};
+    const result=document.getElementById('simResult'), hint=document.getElementById('simHint');
+    sim.querySelectorAll('.sim-chips').forEach(group=>{
+      const step=group.dataset.step;
+      group.querySelectorAll('.sim-chip').forEach(ch=>ch.addEventListener('click',()=>{
+        group.querySelectorAll('.sim-chip').forEach(c=>c.classList.remove('on'));
+        ch.classList.add('on'); sel[step]=ch.dataset.val; recommend();
+      }));
+    });
+    sim.querySelectorAll('.sim-select').forEach(s=>s.addEventListener('change',()=>{ sel[s.dataset.step]=s.value; recommend(); }));
+    function recommend(){
+      if(!sel.goal||!sel.time||!sel.budget) return;
+      const budget=+sel.budget;
+      const cands=PKGS.filter(p=>p.goal===sel.goal);
+      const aff=cands.filter(p=>p.price<=budget);
+      let pick, over=false;
+      if(aff.length){ pick = sel.time==='rapid' ? aff.reduce((a,b)=>a.sessions<=b.sessions?a:b) : aff.reduce((a,b)=>a.price>=b.price?a:b); }
+      else { pick = cands.reduce((a,b)=>a.price<=b.price?a:b); over=true; }
+      render(pick, over);
+    }
+    function render(p, over){
+      const pin='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+      const OFF=OFFERS[sel.goal];
+      // PASUL 1 — oferta ieftină de intrare
+      let step1='';
+      if(OFF){
+        const o1=OFF.old?Math.round((1-OFF.price/OFF.old)*100):0;
+        const offMsg='Bună ziua! Am folosit simulatorul (obiectiv: '+GL[sel.goal]+'). Aș vrea să încep cu oferta '+OFF.name+' ('+OFF.price+' lei).';
+        const waOff='https://wa.me/40750204243?text='+encodeURIComponent(offMsg);
+        step1='<div class="sim-step s1">'+
+          '<span class="sim-step-lbl">☀ Pasul 1 · Începe aici</span>'+
+          '<div class="sim-step-name">'+OFF.name+'</div>'+
+          (OFF.note?'<div class="sim-step-note">'+OFF.note+'</div>':'')+
+          '<div class="sim-step-price"><b>'+OFF.price+' lei</b>'+(OFF.old?'<s>'+OFF.old+' lei</s><span class="off">−'+o1+'%</span>':'')+'</div>'+
+          '<a class="pill pill-on-dark px-5 py-2.5 text-[13px] sim-step-cta" href="'+waOff+'" target="_blank" rel="noopener">Rezervă oferta <span class="arrow">→</span></a>'+
+          '</div>'+
+          '<div class="sim-conn">apoi, pentru rezultat de durată</div>';
+      }
+      // PASUL URMĂTOR — pachetul (ales după buget)
+      const off=Math.round((1-p.price/p.old)*100);
+      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'. Mă interesează pachetul '+p.name+' ('+p.price+' lei).';
+      const wa='https://wa.me/40750204243?text='+encodeURIComponent(msg);
+      const step2='<div class="sim-step">'+
+        '<span class="sim-step-lbl">'+(OFF?'Pasul următor · Cură completă':'Pachet recomandat')+(over?' · cel mai apropiat de buget':'')+'</span>'+
+        '<div class="sim-step-name">'+p.name+'</div>'+
+        '<div class="sim-step-note">'+p.dur+' · '+p.incl+'</div>'+
+        '<div class="sim-step-price"><b>'+p.price+' lei</b><s>'+p.old+' lei</s><span class="off">−'+off+'%</span></div>'+
+        (p.tm?'<div class="sim-rec-tm">'+pin+' Disponibil doar la Timișoara</div>':'')+
+        '<div class="sim-step-cta" style="display:flex;flex-wrap:wrap;gap:.55rem;"><a class="pill pill-on-dark px-5 py-2.5 text-[13px]" href="'+wa+'" target="_blank" rel="noopener">Rezervă pachetul <span class="arrow">→</span></a><a class="pill pill-glass px-5 py-2.5 text-[13px]" href="oferte.html#pachete">Vezi toate</a></div>'+
+        '</div>';
+      result.innerHTML='<div class="sim-steps">'+step1+step2+'</div>'+
+        '<p class="sim-disc">Recomandare orientativă. Planul final și prețul exact se stabilesc gratuit la consultație.</p>';
+      result.hidden=false; if(hint) hint.style.display='none';
+    }
+  })();
+  </script>
 
 <!-- ============ OFFERS ============ -->
 <section id="oferte" class="relative z-10 pt-12 sm:pt-32">
@@ -1298,11 +1536,11 @@
 
     // honest offers: 3 real promos + 2 free-consultation treatment hooks (swap big/sub for real promo prices anytime)
     const OFFERS = [
-      { name:'Epilare laser · 4 zone',   price:'139', old:'463',  note:'−70%',   video:'brand_asset/offer-epilare-4zone.mp4', poster:'brand_asset/offer-epilare-4zone.png', ba:'brand_asset/offer-epilare-4zone.png', alt:'Ofertă epilare laser 4 zone',
+      { name:'Epilare laser · 4 zone',   price:'139', old:'463',  note:'−70%', cert:true, ba:'brand_asset/epilare-legs-black.webp', alt:'Ofertă epilare laser 4 zone',
         bullets:['4 zone la alegere · prima ședință','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'] },
-      { name:'Liposonix',                price:'640', old:'1280', note:'2 zone', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
+      { name:'Liposonix · 2 zone',       price:'640', old:'1280', note:'−50%', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
         bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'] },
-      { name:'Tratament facial Restart', price:'190', old:'300',  note:'',       ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
+      { name:'Tratament facial Restart', price:'190', old:'300',  note:'−37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
         bullets:['Hidratare și luminozitate vizibilă','Netezește ridurile fine','Fără timp de recuperare'] },
     ];
     // the carousel pages = the offers + a final "see all offers" CTA card
@@ -1326,11 +1564,11 @@
     const offerFaceHTML = o =>
       `<div class="o3d-photo">${ o.video
         ? `<video class="o3d-vid" autoplay muted loop playsinline preload="metadata" poster="${o.poster||''}"><source src="${o.video}" type="video/mp4"></video>`
-        : `<img src="${o.ba}" alt="${o.alt}" loading="lazy">` }</div>`+
+        : `<img src="${o.ba}" alt="${o.alt}" loading="lazy">` }${ o.cert ? `<span class="o3d-cert"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>` : '' }${ o.note ? `<span class="o3d-disc">${o.note}</span>` : '' }</div>`+
       `<div class="o3d-info">`+
-        `<span class="o3d-eyebrow">Ofertă activă${o.note ? ` · ${o.note}` : ''}</span>`+
+        `<span class="o3d-eyebrow">Ofertă activă</span>`+
         `<p class="o3d-name">${o.name}</p>`+
-        `<div class="o3d-prices">${priceHTML(o)}</div>`+
+        `${o.imgHasPrice ? '' : `<div class="o3d-prices">${priceHTML(o)}</div>`}`+
         `<ul class="o3d-bullets">` + o.bullets.map(b=>`<li class="o3d-bullet">${checkSVG}<span>${b}</span></li>`).join('') + `</ul>`+
         `<a class="o3d-cta" href="${waUrl(o)}" target="_blank" rel="noopener">Rezervă oferta <span>→</span></a>`+
       `</div>`;
@@ -1656,6 +1894,125 @@ function animate(){
     m.renderer.render(m.scene, m.cam);
   }
 }
+</script>
+
+<!-- ===== Offer quick-view popup (opens from menu offer slides) ===== -->
+<style>
+  .offpop{position:fixed;inset:0;z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;font-family:'Inter',system-ui,sans-serif;}
+  .offpop.open{display:flex;}
+  .offpop-topbar{position:relative;z-index:2;width:min(430px,100%);display:flex;justify-content:flex-end;}
+  .offpop-bd{position:absolute;inset:0;background:rgba(4,4,6,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);}
+  .offpop-card{position:relative;z-index:1;width:min(430px,100%);max-height:82vh;overflow-y:auto;border-radius:26px;
+    background:linear-gradient(180deg,#15151b,#0d0d11);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:offpop-in .34s cubic-bezier(.2,.9,.3,1);}
+  @keyframes offpop-in{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+  .offpop-close{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.22);
+    background:rgba(22,22,26,.55);color:#f5f4f2;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+  .offpop-close:hover{background:rgba(42,42,48,.85);}
+  .offpop-close:active{transform:scale(.94);}
+  .offpop-media{position:relative;width:100%;aspect-ratio:3/2;overflow:hidden;background:#0a0a0c;}
+  .offpop-media img{width:100%;height:100%;object-fit:cover;display:block;}
+  .offpop-cert{position:absolute;top:12px;left:12px;z-index:2;display:inline-flex;align-items:center;gap:.35rem;
+    font-size:10.5px;font-weight:600;letter-spacing:.01em;color:#f5f4f2;white-space:nowrap;
+    background:rgba(8,8,10,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:.36rem .6rem;}
+  .offpop-cert svg{flex:none;color:#e9cfa3;}
+  .offpop-cert[hidden]{display:none;}
+  .offpop-disc{position:absolute;top:12px;right:12px;z-index:2;display:inline-flex;align-items:center;
+    font-size:11px;font-weight:800;letter-spacing:.01em;color:#1a140a;white-space:nowrap;
+    background:linear-gradient(135deg,#f0dcbb,#d8b483);border:1px solid rgba(255,255,255,.35);
+    border-radius:999px;padding:.3rem .6rem;box-shadow:0 6px 16px -8px rgba(0,0,0,.6);}
+  .offpop-body{padding:22px 24px 26px;color:#f5f4f2;}
+  .offpop-eyebrow{font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+    background:linear-gradient(135deg,#ecddbe,#cbb084);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .offpop-name{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:9px 0 12px;line-height:1.08;}
+  .offpop-prices{display:flex;align-items:baseline;gap:10px;margin:0 0 18px;}
+  .offpop-price{font-size:30px;font-weight:800;letter-spacing:-.02em;color:#f5f4f2;}
+  .offpop-price span{font-size:14px;font-weight:600;color:rgba(255,255,255,.6);margin-left:3px;}
+  .offpop-old{font-size:15px;font-weight:600;color:rgba(255,255,255,.42);text-decoration:line-through;}
+  .offpop-bullets{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .offpop-bullets li{display:flex;gap:10px;font-size:14.5px;color:rgba(255,255,255,.86);line-height:1.35;}
+  .offpop-bullets li svg{flex:none;margin-top:2px;color:#d4af6e;}
+  .offpop-cta{display:flex;align-items:center;justify-content:center;gap:9px;height:54px;border-radius:100px;text-decoration:none;
+    background:linear-gradient(135deg,#f7ecd0,#c9a866);color:#2a1e0c;font-weight:800;font-size:15px;letter-spacing:.01em;
+    box-shadow:0 16px 32px -12px rgba(158,120,50,.6);transition:transform .15s;}
+  .offpop-cta:active{transform:scale(.98);}
+  .offpop-all{display:block;text-align:center;margin-top:15px;color:rgba(255,255,255,.58);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.02em;transition:color .2s;}
+  .offpop-all:hover{color:#f5f4f2;}
+</style>
+<div class="offpop" id="offpop" aria-hidden="true">
+  <div class="offpop-bd" data-offpop-close></div>
+  <div class="offpop-topbar"><button class="offpop-close" data-offpop-close aria-label="Închide">&times;</button></div>
+  <div class="offpop-card" role="dialog" aria-modal="true" aria-labelledby="offpop-name">
+    <div class="offpop-media">
+      <img id="offpop-img" src="" alt="" loading="lazy">
+      <span class="offpop-cert" id="offpop-cert"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>
+      <span class="offpop-disc" id="offpop-disc"></span>
+    </div>
+    <div class="offpop-body">
+      <span class="offpop-eyebrow">Ofertă activă</span>
+      <h3 class="offpop-name" id="offpop-name"></h3>
+      <div class="offpop-prices" id="offpop-prices"></div>
+      <ul class="offpop-bullets" id="offpop-bullets"></ul>
+      <a class="offpop-cta" id="offpop-wa" href="#" target="_blank" rel="noopener">Rezervă pe WhatsApp <span>&rarr;</span></a>
+      <a class="offpop-all" href="oferte.html">Vezi toate ofertele &rarr;</a>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const OFFERS = {
+    'epilare-4zone':{ name:'Epilare laser · 4 zone', img:'brand_asset/epilare-legs-black.webp', price:'139', old:'463', note:'−70%', cert:true,
+      bullets:['4 zone la alegere · prima ședință','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'], wa:'Epilare laser · 4 zone la 139 lei' },
+    'liposonix':{ name:'Liposonix · 2 zone', img:'brand_asset/ba-liposonix.webp', price:'640', old:'1280', note:'−50%',
+      bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'], wa:'Liposonix · 2 zone la 640 lei' },
+    'facial-restart':{ name:'Tratament facial Restart', img:'brand_asset/ba-facial.webp', price:'190', old:'300', note:'−37%',
+      bullets:['Hidratare și luminozitate vizibilă','Netezește ridurile fine','Fără timp de recuperare'], wa:'Tratament facial Restart la 190 lei' }
+  };
+  const pop = document.getElementById('offpop');
+  if(!pop) return;
+  const chk = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  function open(key){
+    const o = OFFERS[key]; if(!o) return;
+    var img = document.getElementById('offpop-img'); img.src = o.img; img.alt = o.name;
+    document.getElementById('offpop-name').textContent = o.name;
+    var disc = document.getElementById('offpop-disc'); disc.textContent = o.note || ''; disc.style.display = o.note ? '' : 'none';
+    document.getElementById('offpop-cert').hidden = !o.cert;
+    document.getElementById('offpop-prices').innerHTML = '<span class="offpop-price">'+o.price+'<span>lei</span></span><span class="offpop-old">'+o.old+' lei</span>';
+    document.getElementById('offpop-bullets').innerHTML = o.bullets.map(b=>'<li>'+chk+'<span>'+b+'</span></li>').join('');
+    document.getElementById('offpop-wa').href = 'https://wa.me/40750204243?text=' + encodeURIComponent('Bună ziua! Vreau să rezerv oferta ' + o.wa + '.');
+    pop.classList.add('open'); pop.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+  }
+  function close(){ pop.classList.remove('open'); pop.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  function openFromSlide(slide){
+    var mo = document.getElementById('menuOverlay');
+    if(mo){ mo.classList.remove('open'); mo.setAttribute('aria-hidden','true'); }
+    document.body.style.overflow='';
+    setTimeout(function(){ open(slide.dataset.offer); }, 170);
+  }
+  // The menu carousel captures the pointer on its track, so per-slide click listeners never fire.
+  // Detect a genuine tap on the track and hit-test which offer slide is under the finger.
+  document.querySelectorAll('.ms-track').forEach(function(track){
+    var x0=0,y0=0,moved=false,down=false;
+    track.addEventListener('pointerdown', function(e){ down=true; moved=false; x0=e.clientX; y0=e.clientY; });
+    track.addEventListener('pointermove', function(e){ if(down && (Math.abs(e.clientX-x0)>8 || Math.abs(e.clientY-y0)>8)) moved=true; });
+    track.addEventListener('pointerup', function(e){
+      if(down && !moved){
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        var slide = el && el.closest ? el.closest('.ms-offer[data-offer]') : null;
+        if(slide) openFromSlide(slide);
+      }
+      down=false;
+    });
+    track.addEventListener('pointercancel', function(){ down=false; });
+  });
+  // safety: stop the anchor navigation on the rare case a click does reach the slide
+  document.querySelectorAll('.ms-offer[data-offer]').forEach(function(s){
+    s.addEventListener('click', function(e){ e.preventDefault(); });
+  });
+  pop.querySelectorAll('[data-offpop-close]').forEach(function(b){ b.addEventListener('click', close); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop.classList.contains('open')) close(); });
+})();
 </script>
 </body>
 </html>

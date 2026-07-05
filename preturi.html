@@ -1,6 +1,23 @@
 <!doctype html>
 <html lang="ro">
 <head>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2276074362800484');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prețuri — Centrul360 · Medicină Estetică Timișoara & Arad</title>
@@ -270,11 +287,10 @@
         </div>
       </div>
       <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="rezultate.html" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
-      <a href="index.html#echipa" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
+      <a href="index.html#echipa" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">05</span>Locații
+          <span class="idx">04</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
@@ -287,9 +303,9 @@
     </nav>
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare-4zone.png" alt="Epilare laser 4 zone"></span><span class="ms-info"><span class="ms-name">Epilare laser · 4 zone</span><span class="ms-row"><span class="ms-price">139 lei</span><s class="ms-old">463 lei</s><span class="ms-off">−70%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="oferte.html" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="epilare-4zone" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare-4zone.png" alt="Epilare laser 4 zone"></span><span class="ms-info"><span class="ms-name">Epilare laser · 4 zone</span><span class="ms-row"><span class="ms-price">139 lei</span><s class="ms-old">463 lei</s><span class="ms-off">−70%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
       <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Oferta 3"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
@@ -318,6 +334,17 @@
   </section>
 
   <!-- ============ TRATAMENTE FACIALE ============ -->
+  <style>
+    .pitem.promo{ border-color:rgba(255,255,255,.18); }
+    .promo-flag{ display:inline-flex; align-items:center; gap:.3rem; font-size:.56rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      color:var(--fg); background:rgba(255,255,255,.07); border:1px solid var(--line-on-dark); border-radius:999px; padding:.18rem .5rem; margin-left:.5rem; vertical-align:middle; white-space:nowrap; }
+    .promo-flag::before{ content:""; width:5px; height:5px; border-radius:50%; background:#d8b483; opacity:.8; }
+    .offer-tier{ position:relative; padding-right:2.6rem; }
+    .disc-badge{ position:absolute; top:7px; right:7px; width:33px; height:33px; border-radius:50%;
+      display:inline-flex; align-items:center; justify-content:center; font-size:.58rem; font-weight:800; letter-spacing:-.02em; color:#19140c; background:linear-gradient(135deg,#f4e3c2,#d8b483); box-shadow:0 4px 12px -6px rgba(0,0,0,.5); }
+    .offer-tier .lbl{ font-size:.68rem; }
+    .offer-tier .pr s{ color:var(--muted-2); font-weight:600; font-size:.82em; margin-left:.35rem; }
+  </style>
   <section class="pcat" id="faciale">
     <div class="cat-head"><h2>Tratamente faciale</h2></div>
     <p class="cat-intro">Proceduri faciale pentru hidratare, anti-aging, ten sensibil sau acneic și regenerare profundă.</p>
@@ -363,11 +390,11 @@
         </div>
       </div>
 
-      <div class="pitem">
-        <div class="top"><h3>Tratament Restart</h3><span class="dur">50 min</span></div>
+      <div class="pitem promo">
+        <div class="top"><h3>Tratament Restart <span class="promo-flag">Ofertă vară</span></h3><span class="dur">50 min</span></div>
         <p class="desc">Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.</p>
         <div class="tiers">
-          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">300 lei</span></div>
+          <div class="tier lead-tier offer-tier"><span class="disc-badge">−37%</span><span class="lbl">Ofertă · 1 ședință</span><span class="pr">190 lei <s>300 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−10%</em></span><span class="pr">540 lei</span></div>
         </div>
       </div>
@@ -398,19 +425,19 @@
     <div class="cat-head"><h2>HIFU</h2></div>
     <p class="cat-intro">Ultrasunete focalizate de mare intensitate — lifting non-chirurgical, fermitate și redefinirea conturului facial și corporal.</p>
     <div class="pgrid">
-      <div class="pitem">
-        <div class="top"><h3>O zonă mică facială</h3><span class="dur">20 min</span></div>
+      <div class="pitem promo">
+        <div class="top"><h3>O zonă mică facială <span class="promo-flag">Ofertă vară</span></h3><span class="dur">20 min</span></div>
         <p class="desc">Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p>
         <div class="tiers">
-          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">290 lei</span></div>
+          <div class="tier lead-tier offer-tier"><span class="disc-badge">−50%</span><span class="lbl">Ofertă · Gușă</span><span class="pr">150 lei <s>299 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−15%</em></span><span class="pr">490 lei</span></div>
         </div>
       </div>
-      <div class="pitem">
-        <div class="top"><h3>Full Face</h3><span class="dur">90 min</span></div>
+      <div class="pitem promo">
+        <div class="top"><h3>Full Face <span class="promo-flag">Ofertă vară</span></h3><span class="dur">90 min</span></div>
         <p class="desc">Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.</p>
         <div class="tiers">
-          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">1020 lei</span></div>
+          <div class="tier lead-tier offer-tier"><span class="disc-badge">−50%</span><span class="lbl">Ofertă · 1 ședință</span><span class="pr">510 lei <s>1020 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−12%</em></span><span class="pr">1790 lei</span></div>
         </div>
       </div>
@@ -489,11 +516,11 @@
     <div class="cat-head"><h2>Liposonix</h2></div>
     <p class="cat-intro">Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate — remodelare corporală fără recuperare.</p>
     <div class="pgrid">
-      <div class="pitem">
-        <div class="top"><h3>O zonă corporală</h3><span class="dur">45 min</span></div>
+      <div class="pitem promo">
+        <div class="top"><h3>O zonă corporală <span class="promo-flag">Ofertă vară</span></h3><span class="dur">45 min</span></div>
         <p class="desc">Abdomen, brațe, coapse, zona lombară — grăsime localizată rezistentă la dietă.</p>
         <div class="tiers">
-          <div class="tier lead-tier"><span class="lbl">1 ședință</span><span class="pr">640 lei</span></div>
+          <div class="tier lead-tier offer-tier"><span class="disc-badge">−50%</span><span class="lbl">Ofertă · 2 zone</span><span class="pr">640 lei <s>1280 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−24%</em></span><span class="pr">980 lei</span></div>
         </div>
       </div>
@@ -547,6 +574,22 @@
   <section class="pcat" id="epilare">
     <div class="cat-head"><h2>Epilare laser · Elysion Pro</h2> <span class="loc-badge"><i></i> Doar Timișoara</span></div>
     <p class="cat-intro">Prețuri per ședință. Pentru rezultat progresiv definitiv sunt necesare în general 6–8 ședințe, în funcție de tipul de păr și de piele.</p>
+    <style>
+      .epi-promo{ display:flex; align-items:center; gap:.9rem; margin:1.1rem 0 1.6rem; padding:.75rem .9rem; border-radius:16px;
+        border:1px solid rgba(255,255,255,.14); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)); text-decoration:none; transition:border-color .25s ease, transform .25s ease; }
+      .epi-promo:hover{ border-color:rgba(255,255,255,.24); transform:translateY(-1px); }
+      .epi-promo .disc-badge{ position:static; width:40px; height:40px; flex:none; font-size:.66rem; }
+      .epi-promo-txt{ flex:1; color:var(--muted); font-size:.85rem; line-height:1.35; }
+      .epi-promo-txt b{ color:var(--fg); font-weight:700; }
+      .epi-promo-txt s{ color:var(--muted-2); font-weight:600; margin-left:.3rem; }
+      .epi-arrow{ color:var(--muted); font-size:1rem; transition:transform .25s ease, color .25s ease; }
+      .epi-promo:hover .epi-arrow{ transform:translateX(3px); color:var(--fg); }
+    </style>
+    <a class="epi-promo" href="oferte.html">
+      <span class="disc-badge">−70%</span>
+      <span class="epi-promo-txt"><b>Ofertă de vară</b> · 4 zone la alegere — <b>139 lei</b> <s>463 lei</s></span>
+      <span class="epi-arrow">→</span>
+    </a>
 
     <div class="genpills" role="tablist" aria-label="Selectează prețurile pentru femei sau bărbați">
       <button type="button" class="genpill is-on" data-g="f" role="tab" aria-selected="true">Femei</button>
@@ -817,6 +860,102 @@ function animate(){
     m.renderer.render(m.scene, m.cam);
   }
 }
+</script>
+<!-- ===== Offer quick-view popup (opens from menu offer slides) ===== -->
+<style>
+  .offpop{position:fixed;inset:0;z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;font-family:'Inter',system-ui,sans-serif;}
+  .offpop.open{display:flex;}
+  .offpop-topbar{position:relative;z-index:2;width:min(430px,100%);display:flex;justify-content:flex-end;}
+  .offpop-bd{position:absolute;inset:0;background:rgba(4,4,6,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);}
+  .offpop-card{position:relative;z-index:1;width:min(430px,100%);max-height:82vh;overflow-y:auto;border-radius:26px;
+    background:linear-gradient(180deg,#15151b,#0d0d11);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:offpop-in .34s cubic-bezier(.2,.9,.3,1);}
+  @keyframes offpop-in{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+  .offpop-close{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.22);
+    background:rgba(22,22,26,.55);color:#f5f4f2;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+  .offpop-close:hover{background:rgba(42,42,48,.85);}
+  .offpop-close:active{transform:scale(.94);}
+  .offpop-media{width:100%;aspect-ratio:3/2;overflow:hidden;background:#0a0a0c;}
+  .offpop-media img{width:100%;height:100%;object-fit:cover;display:block;}
+  .offpop-body{padding:22px 24px 26px;color:#f5f4f2;}
+  .offpop-eyebrow{font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+    background:linear-gradient(135deg,#ecddbe,#cbb084);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .offpop-name{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:9px 0 16px;line-height:1.08;}
+  .offpop-bullets{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .offpop-bullets li{display:flex;gap:10px;font-size:14.5px;color:rgba(255,255,255,.86);line-height:1.35;}
+  .offpop-bullets li svg{flex:none;margin-top:2px;color:#d4af6e;}
+  .offpop-cta{display:flex;align-items:center;justify-content:center;gap:9px;height:54px;border-radius:100px;text-decoration:none;
+    background:linear-gradient(135deg,#f7ecd0,#c9a866);color:#2a1e0c;font-weight:800;font-size:15px;letter-spacing:.01em;
+    box-shadow:0 16px 32px -12px rgba(158,120,50,.6);transition:transform .15s;}
+  .offpop-cta:active{transform:scale(.98);}
+  .offpop-all{display:block;text-align:center;margin-top:15px;color:rgba(255,255,255,.58);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.02em;transition:color .2s;}
+  .offpop-all:hover{color:#f5f4f2;}
+</style>
+<div class="offpop" id="offpop" aria-hidden="true">
+  <div class="offpop-bd" data-offpop-close></div>
+  <div class="offpop-topbar"><button class="offpop-close" data-offpop-close aria-label="Închide">&times;</button></div>
+  <div class="offpop-card" role="dialog" aria-modal="true" aria-labelledby="offpop-name">
+    <div class="offpop-media"><img id="offpop-img" src="" alt="" loading="lazy"></div>
+    <div class="offpop-body">
+      <span class="offpop-eyebrow">Ofertă activă</span>
+      <h3 class="offpop-name" id="offpop-name"></h3>
+      <ul class="offpop-bullets" id="offpop-bullets"></ul>
+      <a class="offpop-cta" id="offpop-wa" href="#" target="_blank" rel="noopener">Rezervă pe WhatsApp <span>&rarr;</span></a>
+      <a class="offpop-all" href="oferte.html">Vezi toate ofertele &rarr;</a>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const OFFERS = {
+    'epilare-4zone':{ name:'Epilare laser · 4 zone', img:'brand_asset/offer-thumb-epilare-4zone.webp',
+      bullets:['4 zone la alegere · prima ședință','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'], wa:'Epilare laser · 4 zone la 139 lei' },
+    'liposonix':{ name:'Liposonix · 2 zone', img:'brand_asset/offer-thumb-liposonix.webp',
+      bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'], wa:'Liposonix · 2 zone la 640 lei' },
+    'facial-restart':{ name:'Tratament facial Restart', img:'brand_asset/offer-thumb-restart.webp',
+      bullets:['Hidratare și luminozitate vizibilă','Netezește ridurile fine','Fără timp de recuperare'], wa:'Tratament facial Restart la 190 lei' }
+  };
+  const pop = document.getElementById('offpop');
+  if(!pop) return;
+  const chk = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  function open(key){
+    const o = OFFERS[key]; if(!o) return;
+    document.getElementById('offpop-img').src = o.img;
+    document.getElementById('offpop-name').textContent = o.name;
+    document.getElementById('offpop-bullets').innerHTML = o.bullets.map(b=>'<li>'+chk+'<span>'+b+'</span></li>').join('');
+    document.getElementById('offpop-wa').href = 'https://wa.me/40750204243?text=' + encodeURIComponent('Bună ziua! Vreau să rezerv oferta ' + o.wa + '.');
+    pop.classList.add('open'); pop.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+  }
+  function close(){ pop.classList.remove('open'); pop.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  function openFromSlide(slide){
+    var mo = document.getElementById('menuOverlay');
+    if(mo){ mo.classList.remove('open'); mo.setAttribute('aria-hidden','true'); }
+    document.body.style.overflow='';
+    setTimeout(function(){ open(slide.dataset.offer); }, 170);
+  }
+  // The menu carousel captures the pointer on its track, so per-slide click listeners never fire.
+  // Detect a genuine tap on the track and hit-test which offer slide is under the finger.
+  document.querySelectorAll('.ms-track').forEach(function(track){
+    var x0=0,y0=0,moved=false,down=false;
+    track.addEventListener('pointerdown', function(e){ down=true; moved=false; x0=e.clientX; y0=e.clientY; });
+    track.addEventListener('pointermove', function(e){ if(down && (Math.abs(e.clientX-x0)>8 || Math.abs(e.clientY-y0)>8)) moved=true; });
+    track.addEventListener('pointerup', function(e){
+      if(down && !moved){
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        var slide = el && el.closest ? el.closest('.ms-offer[data-offer]') : null;
+        if(slide) openFromSlide(slide);
+      }
+      down=false;
+    });
+    track.addEventListener('pointercancel', function(){ down=false; });
+  });
+  // safety: stop the anchor navigation on the rare case a click does reach the slide
+  document.querySelectorAll('.ms-offer[data-offer]').forEach(function(s){
+    s.addEventListener('click', function(e){ e.preventDefault(); });
+  });
+  pop.querySelectorAll('[data-offpop-close]').forEach(function(b){ b.addEventListener('click', close); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop.classList.contains('open')) close(); });
+})();
 </script>
 </body>
 </html>
