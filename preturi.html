@@ -303,7 +303,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     </nav>
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="epilare-4zone" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-epilare-4zone.png" alt="Epilare laser 4 zone"></span><span class="ms-info"><span class="ms-name">Epilare laser · 4 zone</span><span class="ms-row"><span class="ms-price">139 lei</span><s class="ms-old">463 lei</s><span class="ms-off">−70%</span></span></span></a>
+        <a class="ms-slide ms-offer" href="oferte.html" data-offer="epilare-4zone" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-thumb-epilare-4zone-nav.webp" alt="Epilare laser Full Body" loading="lazy" decoding="async"></span><span class="ms-info"><span class="ms-name">Epilare laser · Full Body</span><span class="ms-row"><span class="ms-price">359 lei</span><s class="ms-old">920 lei</s><span class="ms-off">−61%</span></span></span></a>
         <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
         <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
@@ -429,7 +429,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="top"><h3>O zonă mică facială <span class="promo-flag">Ofertă vară</span></h3><span class="dur">20 min</span></div>
         <p class="desc">Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p>
         <div class="tiers">
-          <div class="tier lead-tier offer-tier"><span class="disc-badge">−50%</span><span class="lbl">Ofertă · Gușă</span><span class="pr">150 lei <s>299 lei</s></span></div>
+          <div class="tier lead-tier offer-tier"><span class="disc-badge">−36%</span><span class="lbl">Ofertă · Gușă</span><span class="pr">190 lei <s>299 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−15%</em></span><span class="pr">490 lei</span></div>
         </div>
       </div>
@@ -586,8 +586,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       .epi-promo:hover .epi-arrow{ transform:translateX(3px); color:var(--fg); }
     </style>
     <a class="epi-promo" href="oferte.html">
-      <span class="disc-badge">−70%</span>
-      <span class="epi-promo-txt"><b>Ofertă de vară</b> · 4 zone la alegere — <b>139 lei</b> <s>463 lei</s></span>
+      <span class="disc-badge">−61%</span>
+      <span class="epi-promo-txt"><b>Ofertă de vară</b> · Full Body — <b>359 lei</b> <s>920 lei</s></span>
       <span class="epi-arrow">→</span>
     </a>
 
@@ -750,9 +750,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <div class="cf-bar">
         <p class="cf-h" style="margin:0;">© 2026 Centrul360 · Toate drepturile rezervate</p>
         <div class="cf-legal">
-          <a href="#" class="cf-a">Termeni</a>
-          <a href="#" class="cf-a">Confidențialitate</a>
-          <a href="#" class="cf-a">Cookies</a>
+          <a href="termeni.html" class="cf-a">Termeni</a>
+          <a href="politica-de-confidentialitate.html" class="cf-a">Confidențialitate</a>
+          <a href="cookies.html" class="cf-a">Cookies</a>
         </div>
       </div>
     </div>
@@ -805,8 +805,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 </script>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/"
 } }
 </script>
 <script type="module">
@@ -908,8 +908,8 @@ function animate(){
 <script>
 (function(){
   const OFFERS = {
-    'epilare-4zone':{ name:'Epilare laser · 4 zone', img:'brand_asset/offer-thumb-epilare-4zone.webp',
-      bullets:['4 zone la alegere · prima ședință','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'], wa:'Epilare laser · 4 zone la 139 lei' },
+    'epilare-4zone':{ name:'Epilare laser · Full Body', img:'brand_asset/offer-thumb-epilare-4zone.webp',
+      bullets:['Toate zonele într-o ședință · axile, inghinal total, brațe lung, picioare lung','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'], wa:'Epilare laser · Full Body la 359 lei' },
     'liposonix':{ name:'Liposonix · 2 zone', img:'brand_asset/offer-thumb-liposonix.webp',
       bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'], wa:'Liposonix · 2 zone la 640 lei' },
     'facial-restart':{ name:'Tratament facial Restart', img:'brand_asset/offer-thumb-restart.webp',

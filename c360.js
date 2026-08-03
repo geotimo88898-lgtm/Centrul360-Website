@@ -95,12 +95,22 @@
     const ccos = [...ts.querySelectorAll('.cco')];
     const fill = ts.querySelector('.th-progress span');
     const seq = ts.querySelector('[data-seq-count]');
-    let frames=[], N=0, lastIdx=-1;
-    if(seq){
+    let frames=[], N=0, lastIdx=-1, framesLoading=false;
+    function loadFrames(){
+      if(framesLoading || !seq) return;
+      framesLoading = true;
       N = parseInt(seq.dataset.seqCount, 10) || 0;
       const base = seq.dataset.seqBase, ext = seq.dataset.seqExt || '.jpg';
       const pad = n => String(n).padStart(3, '0');
       for(let i=1;i<=N;i++){ const im = new Image(); im.decoding='async'; im.src = base + pad(i) + ext; frames.push(im); }
+    }
+    if(seq && 'IntersectionObserver' in window){
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{ if(e.isIntersecting){ loadFrames(); io.disconnect(); } });
+      }, { rootMargin:'600px 0px' });
+      io.observe(ts);
+    } else {
+      loadFrames();
     }
     function showFrame(p){
       if(!N) return;
