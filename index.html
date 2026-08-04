@@ -92,9 +92,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     background:radial-gradient(circle at 50% 50%, rgba(150,170,255,0.06), transparent 70%); animation:drift2 30s ease-in-out infinite; }
   .aurora b:nth-child(3){ width:32vw; height:32vw; bottom:-10vw; left:26vw;
     background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06), transparent 70%); animation:drift3 27s ease-in-out infinite; }
-  @keyframes drift1{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(6vw,4vh) scale(1.1);} }
-  @keyframes drift2{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(-5vw,-3vh) scale(1.08);} }
-  @keyframes drift3{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(3vw,-5vh) scale(1.12);} }
+  @keyframes drift1{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(6vw,4vh);} }
+  @keyframes drift2{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(-5vw,-3vh);} }
+  @keyframes drift3{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(3vw,-5vh);} }
   /* MOBILE PERF: stop the continuous blur(90px) drift animation (blobs stay, just static). */
   @media (max-width:768px){ .aurora b{ animation:none !important; } }
 
@@ -320,7 +320,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .team-img{ filter:saturate(1.02); }
 
   /* ---------- 3D logo (mobile header + desktop hero) ---------- */
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
   /* desktop: large spinning logo centered in the middle of the first view, behind the text */
   #logo3d-hero{ position:absolute; pointer-events:none; z-index:-1;
     width:min(52vw,640px); height:min(52vw,640px); left:50%; top:50%; transform:translate(-50%,-50%); opacity:0.78;
