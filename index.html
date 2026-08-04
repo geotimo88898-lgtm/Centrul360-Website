@@ -85,7 +85,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
   /* ---------- background aurora (subtle, monochrome) ---------- */
   .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); }
+  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
   .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw;
     background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), transparent 70%); animation:drift1 24s ease-in-out infinite; }
   .aurora b:nth-child(2){ width:40vw; height:40vw; top:34vh; right:-12vw;
@@ -320,7 +320,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .team-img{ filter:saturate(1.02); }
 
   /* ---------- 3D logo (mobile header + desktop hero) ---------- */
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark.png') center/72% no-repeat; }
   /* desktop: large spinning logo centered in the middle of the first view, behind the text */
   #logo3d-hero{ position:absolute; pointer-events:none; z-index:-1;
     width:min(52vw,640px); height:min(52vw,640px); left:50%; top:50%; transform:translate(-50%,-50%); opacity:0.78;
