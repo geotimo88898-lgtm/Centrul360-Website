@@ -25,7 +25,7 @@
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500;1,9..144,700&family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   @page{ size:50cm 50cm; margin:0; }
   *{ box-sizing:border-box; }
@@ -63,7 +63,7 @@
   /* ---- titlu: numele procedurii, italic ---- */
   .p-title{
     flex:0 0 auto; margin:0 0 4cqw; text-align:center;
-    font-family:'Fraunces',serif; font-style:italic; font-weight:500;
+    font-family:'Fraunces',serif; font-style:italic; font-weight:700;
     font-size:10cqw; line-height:1.05; letter-spacing:-0.01em;
     color:#141416;
   }
@@ -79,7 +79,9 @@
     border-radius:1.6cqw; overflow:hidden;
     background:#e7e4dd;
     border:1px solid rgba(0,0,0,.08);
-    box-shadow:0 1.2cqw 3cqw rgba(0,0,0,.14);
+    box-shadow:
+      0 .5cqw 1cqw rgba(0,0,0,.14),
+      0 2.6cqw 5.5cqw rgba(0,0,0,.32);
   }
   .p-photo{ position:absolute; inset:0; background-repeat:no-repeat; }
   .p-tag{
