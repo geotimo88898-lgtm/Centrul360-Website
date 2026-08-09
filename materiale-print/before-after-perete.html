@@ -31,7 +31,7 @@
   *{ box-sizing:border-box; }
   html,body{
     margin:0; padding:0; height:100%;
-    background:#060608; /* aceeași culoare ca fundalul posterului: nicio linie/margine albă vizibilă în jurul lui */
+    background:#f6f4f0; /* aceeași culoare ca fundalul posterului: nicio linie/margine vizibilă în jurul lui */
   }
   body{
     display:flex; align-items:center; justify-content:center;
@@ -54,19 +54,18 @@
     display:flex; flex-direction:column;
     padding:6cqw 6cqw 5.2cqw;
     overflow:hidden;
-    color:#f5f4f2;
+    color:#1a1a1d;
     background:
-      radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,.55) 0%, transparent 52%),
-      radial-gradient(90% 60% at 100% 0%, rgba(150,170,255,.07), transparent 50%),
-      linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%);
+      radial-gradient(120% 70% at 50% -10%, rgba(0,0,0,.05) 0%, transparent 55%),
+      linear-gradient(160deg, #fbfaf7 0%, #f6f4f0 55%, #efece5 100%);
   }
 
   /* ---- titlu: numele procedurii, italic ---- */
   .p-title{
     flex:0 0 auto; margin:0 0 4cqw; text-align:center;
     font-family:'Fraunces',serif; font-style:italic; font-weight:500;
-    font-size:7.6cqw; line-height:1.05; letter-spacing:-0.01em;
-    color:#f5f4f2;
+    font-size:10cqw; line-height:1.05; letter-spacing:-0.01em;
+    color:#141416;
   }
 
   /* ---- rând before/after ---- */
@@ -78,16 +77,16 @@
   .p-panel{
     position:relative; height:100%; aspect-ratio:550/733;
     border-radius:1.6cqw; overflow:hidden;
-    background:#1c1c22;
-    border:1px solid rgba(255,255,255,.12);
-    box-shadow:0 1.2cqw 3cqw rgba(0,0,0,.4);
+    background:#e7e4dd;
+    border:1px solid rgba(0,0,0,.08);
+    box-shadow:0 1.2cqw 3cqw rgba(0,0,0,.14);
   }
   .p-photo{ position:absolute; inset:0; background-repeat:no-repeat; }
   .p-tag{
     position:absolute; top:1.5cqw; left:1.5cqw; z-index:2;
     padding:.6cqw 1.5cqw; border-radius:999px;
-    background:rgba(10,10,12,.55); backdrop-filter:blur(6px);
-    border:1px solid rgba(255,255,255,.16);
+    background:rgba(20,20,22,.82); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.08);
     font-weight:600; font-size:1.55cqw; letter-spacing:.01em; color:#f5f4f2;
   }
 
@@ -102,7 +101,7 @@
     display:flex; align-items:center; justify-content:center; gap:1.7cqw;
   }
   .p-logo img.mark{ height:6.2cqw; width:auto; display:block; }
-  .p-logo img.word{ height:2.7cqw; width:auto; display:block; }
+  .p-logo img.word{ height:2.7cqw; width:auto; display:block; filter:invert(1); /* wordmark-ul există doar în alb; îl inversăm ca să fie negru pe fundal deschis */ }
 </style>
 </head>
 <body>
@@ -124,7 +123,7 @@
       </div>
 
       <div class="p-logo">
-        <img class="mark" src="../brand_asset/logo-mark-white.png" alt="">
+        <img class="mark" src="../brand_asset/logo-mark.png" alt="">
         <img class="word" src="../brand_asset/wordmark-com.png" alt="Centrul360.com">
       </div>
 
