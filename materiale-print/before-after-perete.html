@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Centrul360 — Poster perete Before/After (50×50cm)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  ====================================================================
+  POSTER DE PERETE — BEFORE / AFTER — 50 x 50 cm
+  ====================================================================
+  Cum îl reutilizezi pentru altă procedură:
+   1. Schimbă textul din .p-title (numele procedurii, ex: "Epilare laser").
+   2. Schimbă cele două linkuri "background-image:url(...)" din
+      .p-photo.before și .p-photo.after cu poza reală a pacientului
+      (o singură poză compusă înainte/după, tăiată exact la mijloc —
+      la fel ca ba-liposonix.webp — sau două poze separate, caz în
+      care ștergi background-size/position și pui object-fit:cover
+      pe câte un <img> per panou).
+   3. Logo-ul de jos (sigla + wordmark) rămâne neschimbat.
+
+  Pentru print: deschide fișierul, Print → Save as PDF, hârtie
+  custom 50cm x 50cm, margini 0. Fundalul e full-bleed (fără margine
+  albă) — @page e setat mai jos exact pe 50x50cm.
+  ====================================================================
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page{ size:50cm 50cm; margin:0; }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:#060608; /* aceeași culoare ca fundalul posterului: nicio linie/margine albă vizibilă în jurul lui */
+  }
+  body{
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+
+  /* ---- cadru: pătrat responsive pe ecran, exact 50x50cm la print ---- */
+  .poster-frame{
+    container-type:size;
+    width:min(94vw,94vh); aspect-ratio:1/1;
+  }
+  @media print{
+    body{ min-height:0; }
+    .poster-frame{ width:50cm; height:50cm; }
+  }
+
+  .poster{
+    position:relative; width:100%; height:100%;
+    display:flex; flex-direction:column;
+    padding:6cqw 6cqw 5.2cqw;
+    overflow:hidden;
+    color:#f5f4f2;
+    background:
+      radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,.55) 0%, transparent 52%),
+      radial-gradient(90% 60% at 100% 0%, rgba(150,170,255,.07), transparent 50%),
+      linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%);
+  }
+
+  /* ---- titlu: numele procedurii, italic ---- */
+  .p-title{
+    flex:0 0 auto; margin:0 0 4cqw; text-align:center;
+    font-family:'Fraunces',serif; font-style:italic; font-weight:500;
+    font-size:7.6cqw; line-height:1.05; letter-spacing:-0.01em;
+    color:#f5f4f2;
+  }
+
+  /* ---- rând before/after ---- */
+  .p-photos{
+    flex:1 1 auto; min-height:0;
+    display:flex; align-items:stretch; justify-content:center;
+    gap:2.4cqw;
+  }
+  .p-panel{
+    position:relative; height:100%; aspect-ratio:550/733;
+    border-radius:1.6cqw; overflow:hidden;
+    background:#1c1c22;
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 1.2cqw 3cqw rgba(0,0,0,.4);
+  }
+  .p-photo{ position:absolute; inset:0; background-repeat:no-repeat; }
+  .p-tag{
+    position:absolute; top:1.5cqw; left:1.5cqw; z-index:2;
+    padding:.6cqw 1.5cqw; border-radius:999px;
+    background:rgba(10,10,12,.55); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.16);
+    font-weight:600; font-size:1.55cqw; letter-spacing:.01em; color:#f5f4f2;
+  }
+
+  /* imaginea reală: ba-liposonix.webp e o singură poză compusă,
+     tăiată exact la mijloc (stânga = înainte, dreapta = după) */
+  .p-photo.before{ background-image:url('../brand_asset/ba-liposonix.webp'); background-size:200% 100%; background-position:0% 50%; }
+  .p-photo.after{  background-image:url('../brand_asset/ba-liposonix.webp'); background-size:200% 100%; background-position:100% 50%; }
+
+  /* ---- logo, jos, pus pe lung (sigla + wordmark) ---- */
+  .p-logo{
+    flex:0 0 auto; margin-top:4.2cqw;
+    display:flex; align-items:center; justify-content:center; gap:1.7cqw;
+  }
+  .p-logo img.mark{ height:6.2cqw; width:auto; display:block; }
+  .p-logo img.word{ height:2.7cqw; width:auto; display:block; }
+</style>
+</head>
+<body>
+
+  <div class="poster-frame">
+    <div class="poster">
+
+      <h1 class="p-title">Liposonix</h1>
+
+      <div class="p-photos">
+        <div class="p-panel">
+          <span class="p-tag">Înainte</span>
+          <div class="p-photo before"></div>
+        </div>
+        <div class="p-panel">
+          <span class="p-tag">După</span>
+          <div class="p-photo after"></div>
+        </div>
+      </div>
+
+      <div class="p-logo">
+        <img class="mark" src="../brand_asset/logo-mark-white.png" alt="">
+        <img class="word" src="../brand_asset/wordmark-com.png" alt="Centrul360.com">
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
