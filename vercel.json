@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/epilare-laser-full-body", "destination": "/epilare-laser-full-body.html" },
+    { "source": "/multumesc", "destination": "/multumesc.html" }
+  ]
+}
