@@ -138,7 +138,7 @@
   .ba-card{ background:var(--paper-2); border:1px solid var(--line); border-radius:22px; overflow:hidden; display:flex; flex-direction:column;
     transition:transform .3s ease, border-color .3s ease, box-shadow .3s ease; }
   .ba-card:hover{ transform:translateY(-4px); border-color:rgba(255,255,255,.2); box-shadow:0 26px 50px -26px rgba(0,0,0,.7); }
-  .ba-card img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block; }
+  .ba-card img, .ba-card video{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block; }
   .ba-card .ba-cap{ padding:1.1rem 1.2rem 1.3rem; }
   .ba-card .ba-cap h3{ font-size:1rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .3rem; }
   .ba-card .ba-cap p{ color:var(--muted); font-size:13px; line-height:1.55; margin:0; }
@@ -374,6 +374,24 @@
         <div class="ba-cap">
           <h3>HIFU — zona periocular</h3>
           <p>Fermitate și riduri fine estompate în jurul ochilor.</p>
+        </div>
+      </article>
+
+      <article class="ba-card">
+        <img src="brand_asset/ba-hifu-barbie-gat.webp" alt="Rezultat real înainte și după — tratament HIFU, bărbie și gât" loading="lazy">
+        <div class="ba-cap">
+          <h3>HIFU — bărbie și gât</h3>
+          <p>Contur mandibular mai definit, laxitate redusă.</p>
+        </div>
+      </article>
+
+      <article class="ba-card">
+        <video muted autoplay loop playsinline preload="metadata">
+          <source src="brand_asset/ba-hifu-profil.mp4" type="video/mp4">
+        </video>
+        <div class="ba-cap">
+          <h3>HIFU — profil bărbie</h3>
+          <p>Rezultat real, din profil, la aceeași clientă.</p>
         </div>
       </article>
     </div>
