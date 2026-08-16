@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalog Rezultate — Centrul360</title>
+
+<!--
+  ============================================================================
+  CATALOG DE REZULTATE — Centrul360 (variantă print, A4 landscape, pe alb)
+  ============================================================================
+  Cum adaugi un caz nou:
+    1. Pune poza (colajul înainte/după) în folderul images/, ex: images/caz-02-nume.png
+    2. Copiază un bloc <section class="page case">...</section> întreg (vezi CAZUL 01 mai jos)
+    3. Lipește-l înainte de pagina finală (cea cu class="page closing")
+    4. Completează: numărul cazului, titlul tratamentului, badge-urile (locație / ședințe / tehnologie),
+       textul descriptiv și actualizează "01 / 0N" din header-ul fiecărei pagini + coperta, dacă e cazul.
+    5. Rulează build_pdf.py ca să regenerezi PDF-ul (vezi README.md din acest folder).
+  ============================================================================
+-->
+
+<style>
+  @font-face{ font-family:'Inter'; font-style:normal; font-weight:400; src:url('fonts/Inter-400.ttf') format('truetype'); }
+  @font-face{ font-family:'Inter'; font-style:normal; font-weight:500; src:url('fonts/Inter-500.ttf') format('truetype'); }
+  @font-face{ font-family:'Inter'; font-style:normal; font-weight:600; src:url('fonts/Inter-600.ttf') format('truetype'); }
+  @font-face{ font-family:'Inter'; font-style:normal; font-weight:700; src:url('fonts/Inter-700.ttf') format('truetype'); }
+  @font-face{ font-family:'Inter'; font-style:normal; font-weight:800; src:url('fonts/Inter-800.ttf') format('truetype'); }
+  @font-face{ font-family:'Inter'; font-style:normal; font-weight:900; src:url('fonts/Inter-900.ttf') format('truetype'); }
+  @font-face{ font-family:'Fraunces'; font-style:normal; font-weight:400; src:url('fonts/Fraunces-Regular-400.ttf') format('truetype'); }
+  @font-face{ font-family:'Fraunces'; font-style:normal; font-weight:500; src:url('fonts/Fraunces-Regular-500.ttf') format('truetype'); }
+  @font-face{ font-family:'Fraunces'; font-style:italic; font-weight:400; src:url('fonts/Fraunces-Italic-400.ttf') format('truetype'); }
+  @font-face{ font-family:'Fraunces'; font-style:italic; font-weight:500; src:url('fonts/Fraunces-Italic-500.ttf') format('truetype'); }
+
+  :root{
+    --paper:#fbfaf7; --paper-2:#f4f1ea; --ink:#15130f;
+    --muted:rgba(21,19,15,0.60); --muted-2:rgba(21,19,15,0.38);
+    --line:rgba(21,19,15,0.12); --line-soft:rgba(21,19,15,0.08);
+    --gold:#cbb084; --gold-text:#8a6a3a;
+    --gold-grad:linear-gradient(135deg,#caa66b,#8a6a3a);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:#e9e6df; }
+  body{ font-family:'Inter',system-ui,sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  a{ color:inherit; text-decoration:none; }
+  .display{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.03em; line-height:1; }
+  .accent{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; letter-spacing:-0.01em; }
+  .eyebrow{ font-size:9.5px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted-2); }
+
+  /* ============ PRINT / PAGE SETUP — A4 landscape ============ */
+  @page{ size:297mm 210mm; margin:0; }
+  @media print{
+    html,body{ background:#fff; }
+    .page{ box-shadow:none !important; margin:0 !important; }
+  }
+  .page{
+    width:297mm; height:210mm; position:relative; overflow:hidden;
+    background:var(--paper); page-break-after:always; break-after:page;
+    display:flex; margin:6mm auto; box-shadow:0 6px 40px rgba(0,0,0,0.18); /* shadow = screen-preview only */
+  }
+  .page:last-of-type{ page-break-after:auto; }
+
+  /* shared page chrome: brand header row + footer row (used on case pages) */
+  .brandrow{ position:absolute; top:9mm; left:9mm; right:9mm; display:flex; align-items:center; justify-content:space-between; z-index:5; }
+  .brandmark{ display:flex; align-items:center; gap:6px; }
+  .brandmark img{ height:15px; width:15px; object-fit:contain; }
+  .brandmark .word{ font-weight:800; letter-spacing:-.02em; font-size:12.5px; }
+  .brandmark .word span{ font-weight:500; color:var(--muted-2); }
+  .pageno{ font-size:9.5px; font-weight:600; letter-spacing:.08em; color:var(--muted-2); }
+
+  .footrow{ position:absolute; bottom:9mm; left:9mm; right:9mm; display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; z-index:5; }
+  .footrow .disc{ font-size:8px; line-height:1.55; color:var(--muted-2); max-width:78mm; }
+  .footrow .contact{ font-size:9.5px; font-weight:600; color:var(--muted); text-align:right; white-space:nowrap; }
+  .footrow .contact b{ color:var(--ink); }
+  /* on case pages the photo panel already carries its own before/after tags —
+     keep the disclaimer/contact footer scoped to the info panel so it never overlaps the photo */
+  .page.case .footrow{ left:calc(63% + 10mm); }
+
+  /* ============ pill / badge ============ */
+  .badge{ display:inline-flex; align-items:center; gap:.4em; font-size:10px; font-weight:600; letter-spacing:.01em;
+    color:var(--ink); background:var(--paper-2); border:1px solid var(--line); border-radius:999px; padding:5px 11px; }
+  .badge b{ color:var(--gold-text); font-weight:700; }
+  .badge-row{ display:flex; flex-wrap:wrap; gap:6px; }
+
+  /* ============================================================
+     COVER PAGE
+     ============================================================ */
+  .page.cover{ align-items:center; justify-content:center; text-align:center;
+    background:
+      radial-gradient(60% 50% at 50% 8%, rgba(203,176,132,0.14), transparent 65%),
+      radial-gradient(50% 45% at 90% 100%, rgba(203,176,132,0.10), transparent 60%),
+      var(--paper); }
+  .cover-inner{ max-width:190mm; padding:0 10mm; }
+  .cover .ring{ width:15mm; height:15mm; margin:0 auto 7mm; opacity:.92; }
+  .cover .eyebrow{ justify-content:center; display:flex; gap:.6em; align-items:center; margin-bottom:5mm; }
+  .cover .eyebrow i{ width:5px; height:5px; border-radius:50%; background:var(--gold-text); display:inline-block; }
+  .cover h1{ font-size:16mm; line-height:1.02; }
+  .cover .lead{ margin:6mm auto 0; max-width:130mm; color:var(--muted); font-size:12px; line-height:1.75; }
+  .cover .locs{ margin-top:11mm; display:flex; gap:9mm; justify-content:center; }
+  .cover .loc{ text-align:left; border-left:2px solid var(--gold); padding-left:4mm; }
+  .cover .loc .city{ font-weight:800; font-size:12.5px; letter-spacing:-.01em; }
+  .cover .loc .addr{ font-size:9.5px; color:var(--muted); margin-top:1.5px; line-height:1.5; }
+  .cover .loc .tel{ font-size:9.5px; color:var(--gold-text); font-weight:700; margin-top:2px; }
+  .cover .foot{ margin-top:13mm; font-size:9px; letter-spacing:.05em; color:var(--muted-2); text-transform:uppercase; }
+
+  /* ============================================================
+     CASE PAGE
+     ============================================================ */
+  .page.case{ padding:0; }
+  .case-photo{ position:relative; width:63%; height:100%; flex:none; background:#0e0d0b; overflow:hidden; }
+  .case-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .case-photo .tag{ position:absolute; bottom:8mm; z-index:4; font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#fff;
+    background:rgba(10,9,7,0.55); border:1px solid rgba(255,255,255,.28); border-radius:999px; padding:5px 12px; }
+  .case-photo .tag.b{ left:8mm; } .case-photo .tag.a{ right:8mm; }
+
+  .case-info{ position:relative; width:37%; height:100%; padding:9mm 10mm 26mm; display:flex; flex-direction:column; }
+  .case-info .num{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; color:var(--gold-text); font-size:11px; margin-top:10mm; }
+  .case-info h2{ margin-top:5mm; font-size:9mm; line-height:1.04; }
+  .case-info h2 .accent{ display:block; font-size:.92em; }
+  .case-info .badge-row{ margin-top:6mm; }
+  .case-info p.desc{ margin-top:6mm; font-size:10.5px; line-height:1.75; color:var(--muted); }
+  .case-info p.note{ margin-top:4mm; font-size:9.5px; line-height:1.7; color:var(--muted-2); }
+  /* optional real testimonial from the client — only include when you actually have her words */
+  .case-info .quote{ margin-top:auto; padding-top:6mm; border-top:1px solid var(--line-soft); font-family:'Fraunces',serif; font-style:italic; font-size:11.5px; line-height:1.6; color:var(--ink); }
+  .case-info .quote .who{ display:block; margin-top:2mm; font-family:'Inter',sans-serif; font-style:normal; font-weight:700; font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); }
+
+  /* ============================================================
+     CLOSING / CTA PAGE
+     ============================================================ */
+  .page.closing{ align-items:center; justify-content:center; text-align:center;
+    background:
+      radial-gradient(55% 60% at 50% 100%, rgba(203,176,132,0.16), transparent 65%),
+      var(--paper); }
+  .closing-inner{ max-width:170mm; padding:0 10mm; }
+  .closing h2{ font-size:15mm; line-height:1.04; }
+  .closing .lead{ margin:6mm auto 0; max-width:120mm; color:var(--muted); font-size:12px; line-height:1.75; }
+  .closing .locs{ margin-top:12mm; display:flex; gap:14mm; justify-content:center; }
+  .closing .loc{ text-align:center; }
+  .closing .loc .city{ font-weight:800; font-size:13.5px; letter-spacing:-.01em; }
+  .closing .loc .addr{ font-size:10px; color:var(--muted); margin-top:2px; }
+  .closing .loc .tel{ font-size:11px; color:var(--gold-text); font-weight:800; margin-top:4px; }
+  .closing .foot{ margin-top:12mm; font-size:9px; letter-spacing:.05em; color:var(--muted-2); text-transform:uppercase; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PAGE 1 — COVER
+     ============================================================ -->
+<section class="page cover">
+  <div class="cover-inner">
+    <img class="ring" src="../brand_asset/logo-mark.png" alt="Centrul360">
+    <p class="eyebrow"><i></i> Catalog · Ediția 2026</p>
+    <h1 class="display">Rezultate <span class="accent">reale</span>,<br>înainte &amp; după.</h1>
+    <p class="lead">O selecție de transformări obținute la Centrul360, cu tratamente non-invazive, ședință cu ședință — fără filtre, fără promisiuni goale. Fiecare caz din acest catalog este publicat cu acordul clientei.</p>
+    <div class="locs">
+      <div class="loc">
+        <p class="city">Timișoara</p>
+        <p class="addr">Str. Bucegi 7</p>
+        <p class="tel">+40 750 204 243</p>
+      </div>
+      <div class="loc">
+        <p class="city">Arad</p>
+        <p class="addr">Str. Ioan Alexandru 16–18</p>
+        <p class="tel">+40 750 263 054</p>
+      </div>
+    </div>
+    <p class="foot">Centrul360.com · Medicină estetică</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAZUL 01 — HIFU gușă și contur mandibular
+     ============================================================ -->
+<section class="page case">
+  <div class="case-photo">
+    <img src="images/caz-01-hifu-gusa.png" alt="Rezultat HIFU gușă și contur mandibular — înainte și după">
+    <span class="tag b">Înainte</span>
+    <span class="tag a">După</span>
+  </div>
+  <div class="case-info">
+    <div class="brandrow" style="position:static;">
+      <div class="brandmark"><img src="../brand_asset/logo-mark.png" alt=""><span class="word">Centrul360<span>.com</span></span></div>
+      <span class="pageno">01 / 01</span>
+    </div>
+    <p class="num">Cazul 01</p>
+    <h2 class="display">HIFU<span class="accent">gușă &amp; contur mandibular</span></h2>
+    <div class="badge-row">
+      <span class="badge">📍 <b>[Timișoara / Arad]</b></span>
+      <span class="badge"><b>1</b> ședință</span>
+      <span class="badge">Tehnologie · <b>HIFU</b></span>
+    </div>
+    <p class="desc">Reducem depozitul adipos și redefinim conturul mandibular prin HIFU — ultrasunete focalizate care lucrează în profunzime, sub piele, stimulând producția de colagen. Fără operație, fără timp de recuperare. Rezultatul de alături este vizibil după o singură ședință.</p>
+    <p class="note">Efectul se conturează progresiv, cu rezultat maxim la 8–12 săptămâni de la ședința HIFU.</p>
+    <!-- citat opțional al clientei — adaugă doar dacă ai un citat real, cu acordul ei:
+    <p class="quote">„…”<span class="who">Prenume C. · Cazul 01</span></p>
+    -->
+  </div>
+  <div class="footrow">
+    <p class="disc">Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.</p>
+    <p class="contact"><b>Centrul360.com</b> · Timișoara &amp; Arad</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGINA FINALĂ — CTA / Contact
+     ============================================================ -->
+<section class="page closing">
+  <div class="closing-inner">
+    <img class="ring" src="../brand_asset/logo-mark.png" alt="Centrul360" style="width:14mm; height:14mm; margin:0 auto 7mm;">
+    <h2 class="display">Următorul rezultat<br>poate fi <span class="accent">al tău.</span></h2>
+    <p class="lead">Programează o consultație gratuită și stabilim împreună planul potrivit pentru tine.</p>
+    <div class="locs">
+      <div class="loc">
+        <p class="city">Timișoara</p>
+        <p class="addr">Str. Bucegi 7</p>
+        <p class="tel">+40 750 204 243</p>
+      </div>
+      <div class="loc">
+        <p class="city">Arad</p>
+        <p class="addr">Str. Ioan Alexandru 16–18</p>
+        <p class="tel">+40 750 263 054</p>
+      </div>
+    </div>
+    <p class="foot">Centrul360.com</p>
+  </div>
+</section>
+
+</body>
+</html>
