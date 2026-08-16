@@ -95,13 +95,11 @@
   .lc-alt{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
   .lc-alt a{ justify-content:center; padding:.85rem 1rem; font-size:14px; }
 
-  /* ---------- Ce include ---------- */
-  .inc-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:.8rem; margin-top:1.5rem; }
-  @media(min-width:720px){ .inc-grid{ grid-template-columns:repeat(4,1fr); } }
-  .inc{ background:var(--paper-2); border:1px solid var(--line); border-radius:18px; padding:1.2rem 1rem; text-align:center; }
-  .inc svg{ color:#e6c27a; margin:0 auto .6rem; display:block; }
-  .inc b{ display:block; font-size:15px; font-weight:600; }
-  .inc span{ display:block; font-size:12px; color:var(--muted); margin-top:.2rem; }
+  /* ---------- Ce include (compact, chips) ---------- */
+  .inc-list{ list-style:none; margin:1.4rem 0 0; padding:0; display:flex; flex-wrap:wrap; gap:.6rem; }
+  .inc-list li{ display:inline-flex; align-items:center; gap:.5rem; background:var(--paper-2); border:1px solid var(--line);
+    border-radius:999px; padding:.55rem 1rem .55rem .85rem; font-size:14px; font-weight:500; color:var(--fg); }
+  .inc-list svg{ color:#e6c27a; flex:none; }
 
   /* ---------- Cum decurge (3 pași) ---------- */
   .steps{ display:grid; grid-template-columns:1fr; gap:1rem; margin-top:1.5rem; }
@@ -297,26 +295,18 @@
   <!-- ============ CE INCLUDE FULL BODY ============ -->
   <section class="sec" id="include">
     <p class="sec-eyebrow eyebrow"><i></i> Ce include Full Body</p>
-    <h2>Tot corpul,<br>într-un singur pachet.</h2>
-    <p class="sub">Pachetul Full Body acoperă cele mai cerute zone, într-o singură ședință — la un preț per ședință mai mic decât dacă le-ai lua separat.</p>
-    <div class="inc-grid reveal">
-      <div class="inc">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <b>Axile</b><span>Complet</span>
-      </div>
-      <div class="inc">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <b>Brațe</b><span>Complet</span>
-      </div>
-      <div class="inc">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <b>Picioare</b><span>Lung, complet</span>
-      </div>
-      <div class="inc">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <b>Inghinal total</b><span>Zona intimă</span>
-      </div>
-    </div>
+    <h2>8 zone, într-o singură ședință.</h2>
+    <p class="sub">Toate zonele de mai jos sunt incluse în pachet — la un preț mai mic decât dacă le-ai lua separat.</p>
+    <ul class="inc-list reveal">
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Brațe (lung)</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Degete mâini</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Axile</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Inghinal total</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Interfesier</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Picioare (lung)</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Degete picioare</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Laba piciorului</li>
+    </ul>
   </section>
 
   <!-- ============ PREȚ & PACHET (comutator 1 / 6 ședințe) ============ -->
