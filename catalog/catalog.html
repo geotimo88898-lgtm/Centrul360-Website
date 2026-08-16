@@ -121,12 +121,21 @@
      CASE PAGE
      ============================================================ */
   .page.case{ padding:0; }
-  /* lățime fixă (nu %) + margin-left:var(--gutter) — vezi nota de mai sus despre bug-ul de print */
-  .case-photo{ position:relative; width:176mm; height:100%; margin-left:var(--gutter); flex:none; background:#0e0d0b; overflow:hidden; }
-  .case-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .case-photo .tag{ position:absolute; bottom:8mm; z-index:4; font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#fff;
-    background:rgba(10,9,7,0.55); border:1px solid rgba(255,255,255,.28); border-radius:999px; padding:5px 12px; }
-  .case-photo .tag.b{ left:8mm; } .case-photo .tag.a{ right:8mm; }
+  /* lățime fixă (nu %) + margin-left:var(--gutter) — vezi nota de mai sus despre bug-ul de print.
+     object-fit:contain (nu cover) — poza rămâne 100% întreagă, indiferent de proporția ei;
+     nu tăiem niciodată din colaj, doar o încadrăm ca pe o fotografie printată. */
+  .case-photo{ position:relative; width:176mm; height:100%; margin-left:var(--gutter); flex:none;
+    background:
+      radial-gradient(70% 60% at 30% 20%, rgba(203,176,132,0.10), transparent 65%),
+      var(--paper-2);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6mm; padding:12mm; overflow:hidden; }
+  .case-photo .frame{ flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:center; }
+  .case-photo img{ max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block;
+    border-radius:4px; border:1px solid var(--line); box-shadow:0 22px 44px -26px rgba(21,19,15,0.35); background:#fff; }
+  .case-photo .caption{ flex:none; display:flex; align-items:center; gap:8px; }
+  .case-photo .tag{ font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    background:#fff; border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
+  .case-photo .caption .sep{ width:3px; height:3px; border-radius:50%; background:var(--muted-2); }
 
   .case-info{ position:relative; flex:1; height:100%; padding:9mm 10mm; display:flex; flex-direction:column; }
   .case-info .num{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; color:var(--gold-text); font-size:11px; margin-top:10mm; }
@@ -189,9 +198,8 @@
      ============================================================ -->
 <section class="page case">
   <div class="case-photo">
-    <img src="images/caz-01-hifu-abdomen-arad.png" alt="Rezultat HIFU abdomen total — înainte și după">
-    <span class="tag b">Înainte</span>
-    <span class="tag a">După</span>
+    <div class="frame"><img src="images/caz-01-hifu-abdomen-arad.png" alt="Rezultat HIFU abdomen total — înainte și după"></div>
+    <div class="caption"><span class="tag">Înainte</span><span class="sep"></span><span class="tag">După</span></div>
   </div>
   <div class="case-info">
     <div class="brandrow" style="position:static;">
