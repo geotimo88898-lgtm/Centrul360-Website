@@ -264,7 +264,7 @@
 
           <form class="lead-form" novalidate>
             <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <input type="hidden" name="oferta" value="HIFU Full Face 510 lei">
+            <input type="hidden" name="oferta" id="offerField" value="HIFU Full Face 510 lei">
             <input type="hidden" name="oras" value="Arad">
             <input type="hidden" name="sursa" value="Google Ads - HIFU Full Face LP Arad">
 
@@ -278,7 +278,7 @@
               <input type="tel" id="tel1" name="telefon" placeholder="ex: 07xx xxx xxx" autocomplete="tel" inputmode="tel" required>
               <span class="msg">Te rugăm scrie un număr de telefon valid.</span>
             </div>
-            <button type="submit" class="pill pill-on-dark lp-submit">Vreau oferta de 510 lei <span class="arrow">→</span></button>
+            <button type="submit" class="pill pill-on-dark lp-submit">Vreau oferta de <span id="offerPrice">510</span> lei <span class="arrow">→</span></button>
             <p class="lc-consent">Prin trimitere ești de acord să fii contactat/ă telefonic sau pe WhatsApp în legătură cu oferta. Datele tale nu sunt distribuite terților.</p>
           </form>
 
@@ -323,43 +323,45 @@
     </div>
   </section>
 
-  <!-- ============ PREȚ & PACHET (comutator 1 / 2 ședințe) ============ -->
+  <!-- ============ PREȚ & PACHET (2 opțiuni: o zonă / Full Face) ============ -->
   <section class="sec" id="pret">
     <p class="sec-eyebrow eyebrow"><i></i> Prețul ofertei</p>
-    <h2>510 lei acum —<br><span class="accent">jumătate</span> din prețul de listă.</h2>
-    <p class="sub">Efectul HIFU se instalează treptat, pe măsură ce se formează colagen nou, cu rezultat maxim la 8–12 săptămâni. Multe cliente aleg o a doua ședință pentru un rezultat și mai vizibil.</p>
+    <h2>Alege <span class="accent">zona</span><br>potrivită pentru tine.</h2>
+    <p class="sub">De la o singură zonă, la toată fața — ambele la preț de ofertă, redus față de lista de prețuri Centrul360.</p>
 
-    <div data-ptoggle class="reveal">
-      <div class="ptoggle" role="tablist" aria-label="Tip de pachet">
-        <button type="button" data-show="s1" class="is-on" role="tab" aria-selected="true">O ședință</button>
-        <button type="button" data-show="s2" role="tab" aria-selected="false">2 ședințe</button>
+    <div class="pkgs reveal">
+      <div class="pkgc">
+        <div class="pkg-badge">Ofertă −36%</div>
+        <div class="pkn">O zonă mică facială</div>
+        <div class="pkmeta">Gușă, gât, contur mandibular, pomeți, periocular, perioral sau frunte — o singură zonă. ~20 de minute.</div>
+        <div class="pkprice"><b>190<span class="u">lei</span></b><s>299 lei</s></div>
+        <span class="pksave">Economisești 109 lei</span>
+        <a href="#formular" class="pill pill-on-dark pkcta" data-offer="HIFU O zonă mică facială 190 lei" data-price="190">Vreau oferta <span class="arrow">→</span></a>
       </div>
-
-      <!-- O ȘEDINȚĂ -->
-      <div class="pkgs" data-set="s1">
-        <div class="pkgc feature">
-          <div class="pkg-badge">Ofertă −50%</div>
-          <div class="pkn">HIFU Full Face · o ședință</div>
-          <div class="pkmeta">Frunte · pomeți · obraji · contur mandibular · bărbie și gât. ~90 de minute.</div>
-          <div class="pkprice"><b>510<span class="u">lei</span></b><s>1020 lei</s></div>
-          <span class="pksave">Economisești 510 lei</span>
-          <a href="#formular" class="pill pill-on-dark pkcta">Vreau oferta <span class="arrow">→</span></a>
-        </div>
-      </div>
-
-      <!-- 2 ȘEDINȚE -->
-      <div class="pkgs" data-set="s2" hidden>
-        <div class="pkgc feature">
-          <div class="pkg-badge">Recomandat</div>
-          <div class="pkn">HIFU Full Face · 2 ședințe</div>
-          <div class="pkmeta">Pentru un rezultat și mai vizibil — a doua ședință la interval recomandat de specialist.</div>
-          <div class="pkprice"><b>1.790<span class="u">lei</span></b></div>
-          <span class="pksave">Prima ședință rămâne la 510 lei</span>
-          <a href="#formular" class="pill pill-on-dark pkcta">Vreau pachetul <span class="arrow">→</span></a>
-        </div>
+      <div class="pkgc feature">
+        <div class="pkg-badge">Ofertă −50%</div>
+        <div class="pkn">Full Face</div>
+        <div class="pkmeta">Frunte · pomeți · obraji · contur mandibular · bărbie și gât — toată fața. ~90 de minute.</div>
+        <div class="pkprice"><b>510<span class="u">lei</span></b><s>1020 lei</s></div>
+        <span class="pksave">Economisești 510 lei</span>
+        <a href="#formular" class="pill pill-on-dark pkcta" data-offer="HIFU Full Face 510 lei" data-price="510">Vreau oferta <span class="arrow">→</span></a>
       </div>
     </div>
-    <p class="sub" style="margin-top:1.2rem; font-size:13px; color:var(--muted-2);">HIFU Full Face disponibil la Centrul360 Arad · Str. Ioan Alexandru 16-18.</p>
+    <p class="sub" style="margin-top:1.2rem; font-size:13px; color:var(--muted-2);">HIFU disponibil la Centrul360 Arad · Str. Ioan Alexandru 16-18.</p>
+  </section>
+
+  <!-- ============ REZULTATE REALE (înainte / după) ============ -->
+  <section class="sec" id="rezultate">
+    <p class="sec-eyebrow eyebrow"><i></i> Rezultate reale</p>
+    <h2>Fermitate și contur,<br>vizibile în oglindă.</h2>
+    <div class="loc-card reveal">
+      <div>
+        <h3>HIFU — contur mandibular și gușă</h3>
+        <p style="color:var(--muted); font-size:15px; line-height:1.6; margin:0 0 .8rem;">Fotografie reală a unei cliente Centrul360, înainte și după o ședință HIFU. Aceeași tehnologie e folosită și la Full Face — aplicată pe toată fața: frunte, pomeți, obraji, contur mandibular, bărbie și gât.</p>
+        <p style="color:var(--muted-2); font-size:12.5px; line-height:1.5; margin:0;">Rezultatele pot varia de la persoană la persoană, în funcție de vârstă, elasticitatea pielii și numărul de ședințe.</p>
+      </div>
+      <img src="brand_asset/gusa-ba-premium.webp" alt="Rezultat real înainte și după — tratament HIFU, contur mandibular și gușă" loading="lazy">
+    </div>
   </section>
 
   <!-- ============ CUM DECURGE ============ -->
@@ -462,8 +464,8 @@
         <div class="faq-a"><div class="faq-a-inner">Pachetul Full Face tratează întreaga față — frunte, pomeți, obraji, contur mandibular, bărbie și gât — într-o singură ședință de aproximativ 90 de minute.</div></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">Am nevoie de mai multe ședințe?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">O singură ședință HIFU dă deja rezultate vizibile. Unele cliente aleg o a doua ședință pentru un efect și mai pronunțat — o discutăm sincer la consultație, în funcție de obiectivul tău.</div></div>
+        <button class="faq-q" aria-expanded="false">Care e diferența dintre „o zonă" și „Full Face"?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">„O zonă mică facială" tratează o singură zonă (de ex. gușă sau contur mandibular), în ~20 de minute. „Full Face" tratează toată fața — frunte, pomeți, obraji, contur mandibular, bărbie și gât — într-o ședință de ~90 de minute. Alegem varianta potrivită la consultație.</div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false">Trebuie să plătesc acum?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -551,6 +553,16 @@
   var THANK_YOU_PAGE = "multumesc";
 
   function digits(s){ return (s||"").replace(/\D/g,""); }
+
+  // sincronizează oferta aleasă (zonă mică / Full Face) cu formularul
+  document.querySelectorAll(".pkcta[data-offer]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var offerField = document.getElementById("offerField");
+      var priceWord  = document.getElementById("offerPrice");
+      if(offerField){ offerField.value = btn.getAttribute("data-offer"); }
+      if(priceWord && btn.getAttribute("data-price")){ priceWord.textContent = btn.getAttribute("data-price"); }
+    });
+  });
 
   document.querySelectorAll(".lead-form").forEach(function(form){
     form.addEventListener("submit", function(e){
