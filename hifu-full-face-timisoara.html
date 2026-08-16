@@ -132,24 +132,17 @@
   .loc-card .li svg{ color:#8fc9de; flex:none; }
   .loc-card img{ width:100%; height:100%; min-height:200px; object-fit:cover; border-radius:16px; }
 
-  /* ---------- Galerie rezultate (înainte/după) — slideshow orizontal ---------- */
-  .ba-gallery{ display:flex; gap:1rem; overflow-x:auto; scroll-snap-type:x mandatory; padding:.3rem .2rem 1rem; margin-top:1.5rem; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
-  .ba-gallery::-webkit-scrollbar{ height:7px; }
-  .ba-gallery::-webkit-scrollbar-thumb{ background:var(--line); border-radius:999px; }
-  .ba-slide{ flex:0 0 84%; scroll-snap-align:start; background:var(--paper-2); border:1px solid var(--line); border-radius:22px; overflow:hidden; display:flex; flex-direction:column; }
-  @media(min-width:640px){ .ba-slide{ flex-basis:56%; } }
-  @media(min-width:960px){ .ba-slide{ flex-basis:31.5%; } }
-  .ba-slide img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block; }
-  .ba-slide .ba-body{ padding:1.1rem 1.2rem 1.3rem; }
-  .ba-slide .ba-body h3{ font-size:1rem; font-weight:700; letter-spacing:-.01em; margin:0 0 .3rem; }
-  .ba-slide .ba-body p{ color:var(--muted); font-size:13px; line-height:1.5; margin:0; }
-  .ba-slide.placeholder{ align-items:center; justify-content:center; border-style:dashed; border-color:var(--line); min-height:260px; }
-  .ba-slide.placeholder .ba-ph-inner{ text-align:center; padding:2rem 1.2rem; color:var(--muted-2); }
-  .ba-slide.placeholder svg{ color:var(--muted-2); margin:0 auto .7rem; display:block; }
-  .ba-slide.placeholder p{ font-size:13px; line-height:1.5; margin:0; }
-  .ba-nav{ display:flex; gap:.6rem; justify-content:flex-end; margin-top:-.3rem; }
-  .ba-nav button{ width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--fg); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background-color .2s ease; }
-  .ba-nav button:hover{ background:var(--line); }
+  /* ---------- Galerie rezultate (înainte/după) — carduri mari, unul sub altul ---------- */
+  .ba-stack{ display:flex; flex-direction:column; gap:1.4rem; margin-top:1.5rem; }
+  .ba-card{ background:var(--paper-2); border:1px solid var(--line); border-radius:24px; overflow:hidden; }
+  .ba-card img{ display:block; width:100%; height:auto; }
+  .ba-card .ba-cap{ padding:1.3rem 1.5rem 1.5rem; }
+  .ba-card .ba-cap h3{ font-size:1.15rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .35rem; }
+  .ba-card .ba-cap p{ color:var(--muted); font-size:14px; line-height:1.6; margin:0; }
+  .ba-card.placeholder{ border-style:dashed; }
+  .ba-card.placeholder .ba-ph-inner{ padding:3rem 1.5rem; text-align:center; color:var(--muted-2); }
+  .ba-card.placeholder svg{ color:var(--muted-2); margin:0 auto .8rem; display:block; }
+  .ba-card.placeholder p{ font-size:13.5px; line-height:1.5; margin:0; }
 
   /* ---------- Sticky bar override (buton = mergi la formular) ---------- */
   #bookbar .lbl b{ color:#fff; }
@@ -369,40 +362,40 @@
     <p class="sub" style="margin-top:1.2rem; font-size:13px; color:var(--muted-2);">HIFU disponibil la Centrul360 Timișoara · Str. Bucegi 7.</p>
   </section>
 
-  <!-- ============ REZULTATE REALE (galerie înainte / după) ============ -->
-  <!-- ⇩ Adaugă un nou <article class="ba-slide"> cu fotografia reală și înlocuiește
-       un slide "placeholder" pe măsură ce primești poze noi de la cliente (cu acordul lor) ⇩ -->
+  <!-- ============ REZULTATE REALE (carduri mari, unul sub altul) ============ -->
+  <!-- ⇩ Când primești o fotografie reală nouă: încarc-o în brand_asset/ și înlocuiește
+       un card "placeholder" cu <img src="brand_asset/NUME-FISIER.jpg" ...> ⇩ -->
   <section class="sec" id="rezultate">
     <p class="sec-eyebrow eyebrow"><i></i> Rezultate reale</p>
     <h2>Fermitate și contur,<br>vizibile în oglindă.</h2>
     <p class="sub">Fotografii reale ale clientelor Centrul360, înainte și după tratament. Galeria se completează constant.</p>
 
-    <div class="ba-gallery reveal" id="baGallery">
-      <article class="ba-slide">
+    <div class="ba-stack reveal">
+      <article class="ba-card">
         <img src="brand_asset/gusa-ba-premium.webp" alt="Rezultat real înainte și după — tratament HIFU, contur mandibular și gușă" loading="lazy">
-        <div class="ba-body">
+        <div class="ba-cap">
           <h3>HIFU — contur mandibular și gușă</h3>
           <p>Aceeași tehnologie folosită și la Full Face, aplicată pe toată fața.</p>
         </div>
       </article>
-      <article class="ba-slide placeholder">
+
+      <!-- ⇩ Rezervat pentru fotografia cu gât / decolteu — încarcă fișierul în brand_asset/ ⇩ -->
+      <article class="ba-card placeholder">
         <div class="ba-ph-inner">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
-          <p>Rezultat nou, în curând</p>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+          <p>HIFU — gât și decolteu<br>Fotografia urmează să fie încărcată</p>
         </div>
       </article>
-      <article class="ba-slide placeholder">
+
+      <!-- ⇩ Rezervat pentru fotografia cu zona periocular — încarcă fișierul în brand_asset/ ⇩ -->
+      <article class="ba-card placeholder">
         <div class="ba-ph-inner">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
-          <p>Rezultat nou, în curând</p>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+          <p>HIFU — zona periocular<br>Fotografia urmează să fie încărcată</p>
         </div>
       </article>
     </div>
-    <div class="ba-nav">
-      <button type="button" id="baPrev" aria-label="Rezultatul anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-      <button type="button" id="baNext" aria-label="Rezultatul următor"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-    </div>
-    <p style="color:var(--muted-2); font-size:12.5px; line-height:1.5; margin-top:.6rem;">Rezultatele pot varia de la persoană la persoană, în funcție de vârstă, elasticitatea pielii și numărul de ședințe.</p>
+    <p style="color:var(--muted-2); font-size:12.5px; line-height:1.5; margin-top:.8rem;">Rezultatele pot varia de la persoană la persoană, în funcție de vârstă, elasticitatea pielii și numărul de ședințe.</p>
   </section>
 
   <!-- ============ CUM DECURGE ============ -->
@@ -604,20 +597,6 @@
       if(priceWord && btn.getAttribute("data-price")){ priceWord.textContent = btn.getAttribute("data-price"); }
     });
   });
-
-  // navigare galerie rezultate (înainte/după)
-  (function(){
-    var gal = document.getElementById("baGallery");
-    var prev = document.getElementById("baPrev");
-    var next = document.getElementById("baNext");
-    if(!gal) return;
-    function step(){
-      var slide = gal.querySelector(".ba-slide");
-      return slide ? slide.getBoundingClientRect().width + 16 : 300;
-    }
-    if(prev) prev.addEventListener("click", function(){ gal.scrollBy({ left: -step(), behavior: "smooth" }); });
-    if(next) next.addEventListener("click", function(){ gal.scrollBy({ left: step(), behavior: "smooth" }); });
-  })();
 
   document.querySelectorAll(".lead-form").forEach(function(form){
     form.addEventListener("submit", function(e){
