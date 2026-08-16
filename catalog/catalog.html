@@ -16,6 +16,11 @@
     4. Completează: numărul cazului, titlul tratamentului, badge-urile (locație / ședințe / tehnologie),
        textul descriptiv și actualizează "01 / 0N" din header-ul fiecărei pagini + coperta, dacă e cazul.
     5. Rulează build_pdf.py ca să regenerezi PDF-ul (vezi README.md din acest folder).
+
+  Perforare / îndosariere:
+    Fiecare pagină are o margine oarbă de --gutter (18mm) pe muchia stângă —
+    nimic (poză, text, badge) nu trebuie plasat acolo. La previzualizare pe ecran
+    apare o linie punctată ca ghid; la print (@media print) linia dispare automat.
   ============================================================================
 -->
 
@@ -52,28 +57,35 @@
     html,body{ background:#fff; }
     .page{ box-shadow:none !important; margin:0 !important; }
   }
+  /* --gutter = margine oarbă rezervată pe muchia stângă a fiecărei pagini,
+     pentru perforare + îndosariere. Nimic (poză, text) nu trebuie să atingă
+     această zonă — vezi și "Zona de perforare" mai jos. */
+  :root{ --gutter:18mm; }
   .page{
     width:297mm; height:210mm; position:relative; overflow:hidden;
     background:var(--paper); page-break-after:always; break-after:page;
     display:flex; margin:6mm auto; box-shadow:0 6px 40px rgba(0,0,0,0.18); /* shadow = screen-preview only */
+    padding-left:var(--gutter);
   }
   .page:last-of-type{ page-break-after:auto; }
+  /* ghid vizual pentru zona de perforare — apare doar la previzualizare pe ecran, nu la print */
+  .page::before{ content:""; position:absolute; top:0; bottom:0; left:0; width:var(--gutter);
+    border-right:1px dashed rgba(21,19,15,0.14); pointer-events:none; z-index:9; }
+  @media print{ .page::before{ display:none; } }
 
   /* shared page chrome: brand header row + footer row (used on case pages) */
-  .brandrow{ position:absolute; top:9mm; left:9mm; right:9mm; display:flex; align-items:center; justify-content:space-between; z-index:5; }
   .brandmark{ display:flex; align-items:center; gap:6px; }
   .brandmark img{ height:15px; width:15px; object-fit:contain; }
   .brandmark .word{ font-weight:800; letter-spacing:-.02em; font-size:12.5px; }
   .brandmark .word span{ font-weight:500; color:var(--muted-2); }
   .pageno{ font-size:9.5px; font-weight:600; letter-spacing:.08em; color:var(--muted-2); }
 
-  .footrow{ position:absolute; bottom:9mm; left:9mm; right:9mm; display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; z-index:5; }
-  .footrow .disc{ font-size:8px; line-height:1.55; color:var(--muted-2); max-width:78mm; }
-  .footrow .contact{ font-size:9.5px; font-weight:600; color:var(--muted); text-align:right; white-space:nowrap; }
-  .footrow .contact b{ color:var(--ink); }
-  /* on case pages the photo panel already carries its own before/after tags —
-     keep the disclaimer/contact footer scoped to the info panel so it never overlaps the photo */
-  .page.case .footrow{ left:calc(63% + 10mm); }
+  /* footer al paginii de caz — parte din fluxul normal al panoului de text
+     (nu absolut pe toată pagina), ca să nu depindă de lățimea pozei sau de --gutter */
+  .case-foot{ margin-top:auto; padding-top:6mm; display:flex; flex-direction:column; gap:3mm; }
+  .case-foot .disc{ font-size:8px; line-height:1.55; color:var(--muted-2); }
+  .case-foot .contact{ font-size:9.5px; font-weight:600; color:var(--muted); }
+  .case-foot .contact b{ color:var(--ink); }
 
   /* ============ pill / badge ============ */
   .badge{ display:inline-flex; align-items:center; gap:.4em; font-size:10px; font-weight:600; letter-spacing:.01em;
@@ -112,7 +124,7 @@
     background:rgba(10,9,7,0.55); border:1px solid rgba(255,255,255,.28); border-radius:999px; padding:5px 12px; }
   .case-photo .tag.b{ left:8mm; } .case-photo .tag.a{ right:8mm; }
 
-  .case-info{ position:relative; width:37%; height:100%; padding:9mm 10mm 26mm; display:flex; flex-direction:column; }
+  .case-info{ position:relative; width:37%; height:100%; padding:9mm 10mm; display:flex; flex-direction:column; }
   .case-info .num{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; color:var(--gold-text); font-size:11px; margin-top:10mm; }
   .case-info h2{ margin-top:5mm; font-size:9mm; line-height:1.04; }
   .case-info h2 .accent{ display:block; font-size:.92em; }
@@ -120,7 +132,7 @@
   .case-info p.desc{ margin-top:6mm; font-size:10.5px; line-height:1.75; color:var(--muted); }
   .case-info p.note{ margin-top:4mm; font-size:9.5px; line-height:1.7; color:var(--muted-2); }
   /* optional real testimonial from the client — only include when you actually have her words */
-  .case-info .quote{ margin-top:auto; padding-top:6mm; border-top:1px solid var(--line-soft); font-family:'Fraunces',serif; font-style:italic; font-size:11.5px; line-height:1.6; color:var(--ink); }
+  .case-info .quote{ margin-top:6mm; padding-top:6mm; border-top:1px solid var(--line-soft); font-family:'Fraunces',serif; font-style:italic; font-size:11.5px; line-height:1.6; color:var(--ink); }
   .case-info .quote .who{ display:block; margin-top:2mm; font-family:'Inter',sans-serif; font-style:normal; font-weight:700; font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); }
 
   /* ============================================================
@@ -169,11 +181,11 @@
 </section>
 
 <!-- ============================================================
-     CAZUL 01 — HIFU gușă și contur mandibular
+     CAZUL 01 — HIFU abdomen total · Arad
      ============================================================ -->
 <section class="page case">
   <div class="case-photo">
-    <img src="images/caz-01-hifu-gusa.png" alt="Rezultat HIFU gușă și contur mandibular — înainte și după">
+    <img src="images/caz-01-hifu-abdomen-arad.png" alt="Rezultat HIFU abdomen total — înainte și după">
     <span class="tag b">Înainte</span>
     <span class="tag a">După</span>
   </div>
@@ -183,21 +195,21 @@
       <span class="pageno">01 / 01</span>
     </div>
     <p class="num">Cazul 01</p>
-    <h2 class="display">HIFU<span class="accent">gușă &amp; contur mandibular</span></h2>
+    <h2 class="display">HIFU<span class="accent">abdomen total</span></h2>
     <div class="badge-row">
-      <span class="badge">📍 <b>[Timișoara / Arad]</b></span>
+      <span class="badge">📍 <b>Arad</b></span>
       <span class="badge"><b>1</b> ședință</span>
       <span class="badge">Tehnologie · <b>HIFU</b></span>
     </div>
-    <p class="desc">Reducem depozitul adipos și redefinim conturul mandibular prin HIFU — ultrasunete focalizate care lucrează în profunzime, sub piele, stimulând producția de colagen. Fără operație, fără timp de recuperare. Rezultatul de alături este vizibil după o singură ședință.</p>
-    <p class="note">Efectul se conturează progresiv, cu rezultat maxim la 8–12 săptămâni de la ședința HIFU.</p>
+    <p class="desc">HIFU corporal — ultrasunete focalizate care distrug celulele de grăsime din zona tratată. Corpul le elimină apoi natural, în săptămânile următoare. Fără bisturiu, fără timp de recuperare. Rezultatul de alături este după o singură ședință.</p>
+    <p class="note">Reducerea devine vizibilă în general la 6–8 săptămâni de la ședință.</p>
     <!-- citat opțional al clientei — adaugă doar dacă ai un citat real, cu acordul ei:
     <p class="quote">„…”<span class="who">Prenume C. · Cazul 01</span></p>
     -->
-  </div>
-  <div class="footrow">
-    <p class="disc">Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.</p>
-    <p class="contact"><b>Centrul360.com</b> · Timișoara &amp; Arad</p>
+    <div class="case-foot">
+      <p class="disc">Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.</p>
+      <p class="contact"><b>Centrul360.com</b> · Timișoara &amp; Arad</p>
+    </div>
   </div>
 </section>
 
