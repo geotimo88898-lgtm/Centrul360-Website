@@ -135,7 +135,7 @@
   /* ---------- Galerie rezultate (înainte/după) — carduri mari, unul sub altul ---------- */
   .ba-stack{ display:flex; flex-direction:column; gap:1.4rem; margin-top:1.5rem; }
   .ba-card{ background:var(--paper-2); border:1px solid var(--line); border-radius:24px; overflow:hidden; }
-  .ba-card img{ display:block; width:100%; height:auto; }
+  .ba-card img, .ba-card video{ display:block; width:100%; height:auto; }
   .ba-card .ba-cap{ padding:1.3rem 1.5rem 1.5rem; }
   .ba-card .ba-cap h3{ font-size:1.15rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .35rem; }
   .ba-card .ba-cap p{ color:var(--muted); font-size:14px; line-height:1.6; margin:0; }
@@ -310,6 +310,52 @@
     </div>
   </section>
 
+  <!-- ============ REZULTATE REALE (video + carduri mari, unul sub altul) ============ -->
+  <!-- ⇩ Când primești o fotografie reală nouă: încarc-o în brand_asset/ și înlocuiește
+       un card "placeholder" cu <img src="brand_asset/NUME-FISIER.jpg" ...> ⇩ -->
+  <section class="sec" id="rezultate">
+    <p class="sec-eyebrow eyebrow"><i></i> Rezultate reale</p>
+    <h2>Fermitate și contur,<br>vizibile în oglindă.</h2>
+    <p class="sub">Procedura reală, filmată la noi în salon, și fotografii înainte/după ale clientelor Centrul360.</p>
+
+    <div class="ba-stack reveal">
+      <article class="ba-card">
+        <video controls muted autoplay loop playsinline preload="metadata">
+          <source src="brand_asset/hifu-procedura.mp4" type="video/mp4">
+        </video>
+        <div class="ba-cap">
+          <h3>Procedura HIFU, filmată la noi în salon</h3>
+          <p>Vezi exact cum decurge o ședință HIFU, de la aplicare până la finalul procedurii.</p>
+        </div>
+      </article>
+
+      <article class="ba-card">
+        <img src="brand_asset/gusa-ba-premium.webp" alt="Rezultat real înainte și după — tratament HIFU, contur mandibular și gușă" loading="lazy">
+        <div class="ba-cap">
+          <h3>HIFU — contur mandibular și gușă</h3>
+          <p>Aceeași tehnologie folosită și la Full Face, aplicată pe toată fața.</p>
+        </div>
+      </article>
+
+      <!-- ⇩ Rezervat pentru fotografia cu gât / decolteu — încarcă fișierul în brand_asset/ ⇩ -->
+      <article class="ba-card placeholder">
+        <div class="ba-ph-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+          <p>HIFU — gât și decolteu<br>Fotografia urmează să fie încărcată</p>
+        </div>
+      </article>
+
+      <!-- ⇩ Rezervat pentru fotografia cu zona periocular — încarcă fișierul în brand_asset/ ⇩ -->
+      <article class="ba-card placeholder">
+        <div class="ba-ph-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+          <p>HIFU — zona periocular<br>Fotografia urmează să fie încărcată</p>
+        </div>
+      </article>
+    </div>
+    <p style="color:var(--muted-2); font-size:12.5px; line-height:1.5; margin-top:.8rem;">Rezultatele pot varia de la persoană la persoană, în funcție de vârstă, elasticitatea pielii și numărul de ședințe.</p>
+  </section>
+
   <!-- ============ ZONE TRATATE ============ -->
   <section class="sec" id="include">
     <p class="sec-eyebrow eyebrow"><i></i> Ce acoperă Full Face</p>
@@ -360,42 +406,6 @@
       </div>
     </div>
     <p class="sub" style="margin-top:1.2rem; font-size:13px; color:var(--muted-2);">HIFU disponibil la Centrul360 Timișoara · Str. Bucegi 7.</p>
-  </section>
-
-  <!-- ============ REZULTATE REALE (carduri mari, unul sub altul) ============ -->
-  <!-- ⇩ Când primești o fotografie reală nouă: încarc-o în brand_asset/ și înlocuiește
-       un card "placeholder" cu <img src="brand_asset/NUME-FISIER.jpg" ...> ⇩ -->
-  <section class="sec" id="rezultate">
-    <p class="sec-eyebrow eyebrow"><i></i> Rezultate reale</p>
-    <h2>Fermitate și contur,<br>vizibile în oglindă.</h2>
-    <p class="sub">Fotografii reale ale clientelor Centrul360, înainte și după tratament. Galeria se completează constant.</p>
-
-    <div class="ba-stack reveal">
-      <article class="ba-card">
-        <img src="brand_asset/gusa-ba-premium.webp" alt="Rezultat real înainte și după — tratament HIFU, contur mandibular și gușă" loading="lazy">
-        <div class="ba-cap">
-          <h3>HIFU — contur mandibular și gușă</h3>
-          <p>Aceeași tehnologie folosită și la Full Face, aplicată pe toată fața.</p>
-        </div>
-      </article>
-
-      <!-- ⇩ Rezervat pentru fotografia cu gât / decolteu — încarcă fișierul în brand_asset/ ⇩ -->
-      <article class="ba-card placeholder">
-        <div class="ba-ph-inner">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
-          <p>HIFU — gât și decolteu<br>Fotografia urmează să fie încărcată</p>
-        </div>
-      </article>
-
-      <!-- ⇩ Rezervat pentru fotografia cu zona periocular — încarcă fișierul în brand_asset/ ⇩ -->
-      <article class="ba-card placeholder">
-        <div class="ba-ph-inner">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
-          <p>HIFU — zona periocular<br>Fotografia urmează să fie încărcată</p>
-        </div>
-      </article>
-    </div>
-    <p style="color:var(--muted-2); font-size:12.5px; line-height:1.5; margin-top:.8rem;">Rezultatele pot varia de la persoană la persoană, în funcție de vârstă, elasticitatea pielii și numărul de ședințe.</p>
   </section>
 
   <!-- ============ CUM DECURGE ============ -->
