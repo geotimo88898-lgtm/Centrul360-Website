@@ -36,3 +36,8 @@ catalog/
 - Fiecare poză e afișată static (așa cum e trimisă), fără slider — potrivit pentru poze deja montate înainte/după alăturat.
 - Publică doar poze pentru care ai acordul scris al clientei (menționat deja în disclaimer-ul de subsol al fiecărei pagini de caz).
 - Dacă ai un citat real al clientei, îl poți adăuga decomentând blocul `<!-- citat opțional -->` din pagina cazului respectiv — nu adăuga citate inventate.
+- Fiecare pagină are 18mm liberi pe muchia stângă (`--gutter`), pentru perforare + îndosariere.
+  Pe paginile de caz, poza are `width:176mm; margin-left:var(--gutter)` (lățime fixă în mm, nu %) —
+  **nu** folosi padding pe `.page` pentru asta: motorul de print al Chromium îl ignoră silențios pe
+  muchia stângă la export PDF, deși arată corect pe ecran. Dacă adaugi un nou tip de pagină, verifică
+  gutter-ul mereu în PDF-ul generat (ex. cu `pymupdf`), nu doar în previzualizarea din browser.
