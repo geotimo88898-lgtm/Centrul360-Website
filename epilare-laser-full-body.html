@@ -73,16 +73,15 @@
   .video-portrait{ width:100%; max-width:340px; }
   .video-portrait iframe{ width:100%; height:640px; border:0; border-radius:16px; background:#111; display:block; }
   .video-cap{ text-align:center; font-size:13px; color:var(--muted); margin:.7rem 0 0; }
-  /* self-hosted autoplay video (mut, cu buton de sunet) */
-  .vid-card{ position:relative; width:100%; max-width:340px; }
-  .vid-el{ width:100%; aspect-ratio:9/16; object-fit:cover; border-radius:16px; background:#111; display:block; }
-  .vid-sound{ position:absolute; top:12px; right:12px; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; cursor:pointer;
-    color:#fff; background:rgba(8,8,10,.55); border:1px solid rgba(255,255,255,.22); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); transition:background .2s ease, transform .2s ease; }
-  .vid-sound:hover{ background:rgba(8,8,10,.75); }
-  .vid-sound:active{ transform:scale(.92); }
-  .vid-sound .ic-on{ display:none; }
-  .vid-sound.on .ic-muted{ display:none; }
-  .vid-sound.on .ic-on{ display:block; }
+  /* video nativ (player cu controale, fara autoplay/JS custom — fiabil pe iOS + Android) */
+  .vid-native{ width:100%; max-width:340px; margin:0 auto; }
+  .vid-native video{ width:100%; height:auto; border-radius:16px; display:block; background:#111; }
+  /* rating Google aliniat stanga pe mobil (in linie cu restul) */
+  @media(max-width:640px){
+    .rev-topbar{ justify-content:flex-start !important; }
+    .rev-rating{ text-align:left !important; }
+    .rev-rating > div{ justify-content:flex-start !important; }
+  }
 
   /* ---------- Card formular ---------- */
   .lead-card{ background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid var(--line-on-dark);
@@ -310,12 +309,12 @@
 
   <!-- ============ CE SPUN CLIENTELE (social proof) ============ -->
   <section class="sec" id="recenzii">
-    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:1.5rem;">
+    <div class="rev-topbar" style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:1.5rem;">
       <div>
         <p class="sec-eyebrow eyebrow"><i></i> Ce spun clientele</p>
         <h2>Rezultate reale,<br>de la cliente reale.</h2>
       </div>
-      <div style="text-align:right;">
+      <div class="rev-rating" style="text-align:right;">
         <div style="display:flex; align-items:center; justify-content:flex-end; gap:.6rem;">
           <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg>
           <p class="display" style="font-size:2.2rem;">5,0<span style="color:var(--muted-2); font-size:1.4rem;"> / 5</span></p>
@@ -324,15 +323,11 @@
       </div>
     </div>
     <div class="video-wrap reveal" style="margin-top:1.8rem;">
-      <div class="vid-card">
-        <video class="vid-el" autoplay muted loop playsinline preload="metadata">
+      <div class="vid-native">
+        <video controls playsinline preload="metadata" poster="brand_asset/video-client-poster.jpg">
           <source src="brand_asset/video-client.mp4" type="video/mp4">
         </video>
-        <button type="button" class="vid-sound" aria-label="Activează sunetul">
-          <svg class="ic-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          <svg class="ic-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-        </button>
-        <p class="video-cap">Experiența unei cliente · atinge pentru sunet 🔊</p>
+        <p class="video-cap">Experiența unei cliente · Centrul360</p>
       </div>
     </div>
     <div class="rev-wrap reveal" style="margin-top:2rem;">
@@ -385,15 +380,10 @@
     <h2>Vezi cum lucrăm.</h2>
     <p class="sub">O privire în interiorul clinicii și cum decurge o ședință — ca să știi exact la ce să te aștepți.</p>
     <div class="video-wrap reveal">
-      <div class="vid-card">
-        <video class="vid-el" autoplay muted loop playsinline preload="metadata">
+      <div class="vid-native">
+        <video controls playsinline preload="metadata" poster="brand_asset/video-prezentare-poster.jpg">
           <source src="brand_asset/video-prezentare.mp4" type="video/mp4">
         </video>
-        <button type="button" class="vid-sound" aria-label="Activează sunetul">
-          <svg class="ic-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          <svg class="ic-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-        </button>
-        <p class="video-cap">Atinge pentru sunet 🔊</p>
       </div>
     </div>
   </section>
