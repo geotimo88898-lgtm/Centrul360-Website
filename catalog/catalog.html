@@ -37,7 +37,7 @@
   @font-face{ font-family:'Fraunces'; font-style:italic; font-weight:500; src:url('fonts/Fraunces-Italic-500.ttf') format('truetype'); }
 
   :root{
-    --paper:#fbfaf7; --paper-2:#f4f1ea; --ink:#15130f;
+    --paper:#ffffff; --paper-2:#f4f1ea; --ink:#15130f;
     --muted:rgba(21,19,15,0.60); --muted-2:rgba(21,19,15,0.38);
     --line:rgba(21,19,15,0.12); --line-soft:rgba(21,19,15,0.08);
     --gold:#cbb084; --gold-text:#8a6a3a;
@@ -99,11 +99,8 @@
   /* ============================================================
      COVER PAGE
      ============================================================ */
-  .page.cover{ align-items:center; justify-content:center; text-align:center;
-    background:
-      radial-gradient(60% 50% at 50% 8%, rgba(203,176,132,0.14), transparent 65%),
-      radial-gradient(50% 45% at 90% 100%, rgba(203,176,132,0.10), transparent 60%),
-      var(--paper); }
+  /* fundal alb simplu (fără gradient) — pagini gata de print pe imprimante fără toner de rezervă */
+  .page.cover{ align-items:center; justify-content:center; text-align:center; background:var(--paper); }
   .cover-inner{ max-width:190mm; padding:0 10mm; }
   .cover .ring{ width:15mm; height:15mm; margin:0 auto 7mm; opacity:.92; }
   .cover .eyebrow{ justify-content:center; display:flex; gap:.6em; align-items:center; margin-bottom:5mm; }
@@ -122,16 +119,15 @@
      ============================================================ */
   .page.case{ padding:0; }
   /* lățime fixă (nu %) + margin-left:var(--gutter) — vezi nota de mai sus despre bug-ul de print.
-     object-fit:contain (nu cover) — poza rămâne 100% întreagă, indiferent de proporția ei; nu tăiem
-     niciodată din colaj. Fundal continuu, fără cutie/ramă separată — doar poza, puțin micșorată cât
-     să încapă, direct pe fundalul panoului. */
-  .case-photo{ position:relative; width:176mm; height:100%; margin-left:var(--gutter); flex:none;
-    background:var(--paper-2); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-  .case-photo img{ max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block;
+     Fără fundal colorat (economie de toner la print) — poza stă direct pe alb.
+     width:100% pe imagine (nu contain/max-height) — poza umple toată lățimea coloanei,
+     cât de mare posibil, fără să fie tăiată (nu forțăm o înălțime fixă de panou). */
+  .case-photo{ position:relative; width:176mm; margin-left:var(--gutter); margin-top:9mm; align-self:flex-start; flex:none; }
+  .case-photo img{ display:block; width:100%; height:auto;
     filter:drop-shadow(0 18px 30px rgba(21,19,15,0.22)); }
-  .case-photo .caption{ position:absolute; bottom:8mm; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:8px; }
-  .case-photo .tag{ font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted-2); }
-  .case-photo .caption .sep{ width:3px; height:3px; border-radius:50%; background:var(--muted-2); }
+  .case-photo .tag{ position:absolute; bottom:6mm; font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:#fff;
+    background:rgba(21,19,15,0.55); border-radius:999px; padding:5px 12px; }
+  .case-photo .tag.b{ left:6mm; } .case-photo .tag.a{ right:6mm; }
 
   .case-info{ position:relative; flex:1; height:100%; padding:9mm 10mm; display:flex; flex-direction:column; }
   .case-info .num{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; color:var(--gold-text); font-size:11px; margin-top:10mm; }
@@ -147,10 +143,7 @@
   /* ============================================================
      CLOSING / CTA PAGE
      ============================================================ */
-  .page.closing{ align-items:center; justify-content:center; text-align:center;
-    background:
-      radial-gradient(55% 60% at 50% 100%, rgba(203,176,132,0.16), transparent 65%),
-      var(--paper); }
+  .page.closing{ align-items:center; justify-content:center; text-align:center; background:var(--paper); }
   .closing-inner{ max-width:170mm; padding:0 10mm; }
   .closing h2{ font-size:15mm; line-height:1.04; }
   .closing .lead{ margin:6mm auto 0; max-width:120mm; color:var(--muted); font-size:12px; line-height:1.75; }
@@ -195,7 +188,8 @@
 <section class="page case">
   <div class="case-photo">
     <img src="images/caz-01-hifu-abdomen-arad.png" alt="Rezultat HIFU abdomen total — înainte și după">
-    <div class="caption"><span class="tag">Înainte</span><span class="sep"></span><span class="tag">După</span></div>
+    <span class="tag b">Înainte</span>
+    <span class="tag a">După</span>
   </div>
   <div class="case-info">
     <div class="brandrow" style="position:static;">
