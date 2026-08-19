@@ -687,7 +687,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .hero-promo{ position:relative; display:block; width:100%; max-width:30rem; min-height:clamp(330px,46vh,450px);
     border-radius:28px; overflow:hidden; text-decoration:none;
     border:1px solid rgba(255,255,255,.14); box-shadow:0 44px 100px -48px rgba(0,0,0,.92);
-    transition:transform .45s cubic-bezier(.16,1,.3,1); }
+    transition:transform .45s cubic-bezier(.16,1,.3,1);
+    background:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; -webkit-appearance:none; appearance:none; }
   .hero-promo:hover{ transform:translateY(-4px); }
   .hp-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(.96) contrast(1.02); }
   .hp-shade{ position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,10,.94) 6%, rgba(8,8,10,.55) 44%, rgba(8,8,10,.12) 100%); }
@@ -700,6 +701,41 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     padding:.9rem 1.4rem; border-radius:999px; background:#fff; transition:transform .25s ease, background .25s ease; }
   .hero-promo:hover .hp-cta{ background:#f0ece4; }
   .hero-promo:hover .arrow{ transform:translateX(3px); }
+
+  /* ---------- quiz modal (masaj facial cadou) ---------- */
+  .quiz-panel{ max-width:480px; text-align:left; padding:2rem 1.8rem 1.8rem; }
+  .quiz-eyebrow{ font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted-2); margin:0 0 .8rem; }
+  .quiz-progress{ height:4px; border-radius:999px; background:var(--glass); overflow:hidden; margin-bottom:1.7rem; }
+  .quiz-progress span{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,#f0e2c2,#cbb084); width:25%; transition:width .35s cubic-bezier(.16,1,.3,1); }
+  .qstep{ display:none; }
+  .qstep.active{ display:block; animation:qIn .35s cubic-bezier(.16,1,.3,1); }
+  @keyframes qIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  .qstep h3{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.28rem; line-height:1.25; margin:0 0 1.2rem; }
+  .qgrid{ display:flex; flex-direction:column; gap:.6rem; }
+  .qgrid-2{ flex-direction:row; flex-wrap:wrap; }
+  .qgrid-2 .qopt{ flex:1 1 calc(50% - .3rem); }
+  .qopt{ width:100%; text-align:left; padding:.9rem 1.1rem; border-radius:14px; border:1px solid var(--line-on-dark); background:var(--glass); color:var(--fg);
+    font:inherit; font-size:14.5px; font-weight:600; cursor:pointer; transition:background .2s ease, border-color .2s ease, transform .2s ease; }
+  .qopt:hover{ background:rgba(255,255,255,.12); transform:translateY(-1px); }
+  .qopt:focus-visible{ outline:2px solid var(--fg); outline-offset:2px; }
+  .qopt.sel{ background:var(--fg); color:#0b0b0d; border-color:var(--fg); }
+  .quiz-field{ margin-bottom:.85rem; }
+  .quiz-field label{ display:block; font-size:12px; font-weight:600; letter-spacing:.03em; color:var(--muted); margin:0 0 .35rem; }
+  .quiz-field input{ width:100%; background:rgba(0,0,0,.28); border:1px solid var(--line-on-dark); border-radius:13px; color:var(--fg);
+    padding:.85rem 1rem; font-size:15px; font-family:inherit; }
+  .quiz-field input:focus{ outline:none; border-color:rgba(212,175,110,.6); background:rgba(0,0,0,.4); }
+  .quiz-field input::placeholder{ color:var(--muted-2); }
+  .quiz-field.err input{ border-color:#e0736b; }
+  .quiz-field .qmsg{ display:none; color:#e79a94; font-size:12px; margin-top:.3rem; }
+  .quiz-field.err .qmsg{ display:block; }
+  .quiz-consent{ display:flex; align-items:flex-start; gap:.6rem; font-size:12px; line-height:1.5; color:var(--muted-2); margin:1rem 0 0; cursor:pointer; }
+  .quiz-consent input{ margin-top:.2rem; flex:none; }
+  .quiz-consent.err{ color:#e79a94; }
+  .quiz-hp{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+  .qnav{ display:flex; align-items:center; justify-content:space-between; gap:.8rem; margin-top:1.7rem; }
+  .qback{ font-size:13.5px; padding:.7rem 1.1rem; }
+  .qsubmit{ margin-left:auto; padding:.9rem 1.5rem; font-size:14.5px; }
+  #qBack[hidden], #qSubmit[hidden]{ display:none; } /* .pill's display:inline-flex otherwise beats [hidden] on equal specificity */
 </style>
 <!-- ============ HERO ============ -->
 <section id="top" class="relative z-10 min-h-screen flex flex-col justify-start gap-6 px-6 sm:px-8 max-w-7xl mx-auto pt-24 sm:pt-28 pb-14 sm:pb-20">
@@ -717,16 +753,16 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   </h1>
 
   <div class="reveal in d2 flex-1 min-h-0 flex items-stretch justify-center lg:justify-start">
-    <a href="oferte.html" class="hero-promo">
+    <button type="button" class="hero-promo" data-quiz-open aria-haspopup="dialog">
       <video class="hp-img" autoplay muted loop playsinline preload="metadata" poster="brand_asset/promo-summer-poster.jpg"><source src="brand_asset/promo-summer.mp4" type="video/mp4"></video>
       <span class="hp-shade"></span>
       <span class="hp-content">
-        <span class="hp-eyebrow">☀ Oferte de vară</span>
-        <span class="hp-big">până la <b>−61%</b></span>
-        <span class="hp-sub">Epilare, remodelare &amp; faciale · Timișoara &amp; Arad</span>
-        <span class="hp-cta">Vezi ofertele <span class="arrow">→</span></span>
+        <span class="hp-eyebrow">🎁 Cadou pentru tine</span>
+        <span class="hp-big">Masaj facial <b>gratuit</b></span>
+        <span class="hp-sub">Răspunde la 3 întrebări rapide și rezervă-l · Timișoara &amp; Arad</span>
+        <span class="hp-cta">Începe acum <span class="arrow">→</span></span>
       </span>
-    </a>
+    </button>
   </div>
 </section>
 
@@ -938,6 +974,76 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener" class="pill pill-ink px-6 py-4 text-[15px] justify-center w-full">Recenzii Timișoara <span class="arrow">→</span></a>
       <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016%20Arad" target="_blank" rel="noopener" class="pill pill-glass px-6 py-4 text-[15px] justify-center w-full">Recenzii Arad <span class="arrow">→</span></a>
     </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     FORMULAR CADOU (quiz) → HIGHLEVEL
+     ⇩ Lipește AICI URL-ul Inbound Webhook din Workflow-ul HighLevel ⇩
+     ============================================================ -->
+<div id="quizModal" class="rev-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Formular masaj facial cadou">
+  <div class="rev-modal-backdrop" data-quiz-close></div>
+  <div class="rev-modal-panel quiz-panel">
+    <button type="button" class="rev-modal-x" data-quiz-close aria-label="Închide">&times;</button>
+
+    <p class="quiz-eyebrow">🎁 Masaj facial gratuit</p>
+    <div class="quiz-progress"><span id="quizBar"></span></div>
+
+    <form id="quizForm" novalidate>
+      <input type="text" name="website" class="quiz-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input type="hidden" name="interes_principal" id="qInteres">
+      <input type="hidden" name="zona" id="qZona">
+      <input type="hidden" name="oras" id="qOras">
+      <input type="hidden" name="sursa" value="Website - Formular Homepage Masaj Cadou">
+
+      <div class="qstep" data-step="interes">
+        <h3>Ce te interesează cel mai mult?</h3>
+        <div class="qgrid">
+          <button type="button" class="qopt" data-value="Slăbit / conturare corp">Slăbit / conturare corp</button>
+          <button type="button" class="qopt" data-value="Fermitate față / anti-îmbătrânire">Fermitate față / anti-îmbătrânire</button>
+          <button type="button" class="qopt" data-value="Ten problematic / pete / luminozitate">Ten problematic / pete / luminozitate</button>
+          <button type="button" class="qopt" data-value="Celulită">Celulită</button>
+          <button type="button" class="qopt" data-value="Epilare laser">Epilare laser</button>
+          <button type="button" class="qopt" data-value="Nu știu exact, vreau o recomandare">Nu știu exact, vreau o recomandare</button>
+        </div>
+      </div>
+
+      <div class="qstep" data-step="zona">
+        <h3>Ce zonă te deranjează cel mai mult?</h3>
+        <div class="qgrid" id="qZonaGrid"></div>
+      </div>
+
+      <div class="qstep" data-step="oras">
+        <h3>La ce clinică preferi să vii?</h3>
+        <div class="qgrid qgrid-2">
+          <button type="button" class="qopt" data-value="Timișoara">Timișoara</button>
+          <button type="button" class="qopt" data-value="Arad">Arad</button>
+        </div>
+      </div>
+
+      <div class="qstep" data-step="contact">
+        <h3>Ultimul pas — unde te contactăm?</h3>
+        <div class="quiz-field">
+          <label for="qNume">Numele tău</label>
+          <input type="text" id="qNume" name="nume" placeholder="ex: Maria Popescu" autocomplete="name" required>
+          <span class="qmsg">Te rugăm scrie numele.</span>
+        </div>
+        <div class="quiz-field">
+          <label for="qTel">Număr de telefon (WhatsApp)</label>
+          <input type="tel" id="qTel" name="telefon" placeholder="ex: 07xx xxx xxx" autocomplete="tel" inputmode="tel" required>
+          <span class="qmsg">Te rugăm scrie un număr de telefon valid.</span>
+        </div>
+        <label class="quiz-consent" id="qConsentLabel">
+          <input type="checkbox" id="qConsimtamant" name="consimtamant_whatsapp" required>
+          <span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360, inclusiv cu oferte.</span>
+        </label>
+      </div>
+
+      <div class="qnav">
+        <button type="button" class="pill pill-glass qback" id="qBack" hidden>← Înapoi</button>
+        <button type="submit" class="pill pill-on-dark qsubmit" id="qSubmit" hidden>Trimite și rezervă <span class="arrow">→</span></button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1395,6 +1501,154 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     gmapsModal.querySelectorAll('[data-gmaps-close]').forEach(el=>el.addEventListener('click', closeGmaps));
     document.addEventListener('keydown', e=>{ if(e.key==='Escape' && gmapsModal.classList.contains('open')) closeGmaps(); });
   }
+
+  // ---- quiz modal (masaj facial cadou → HighLevel) ----
+  (function(){
+    const quizModal = document.getElementById('quizModal');
+    const quizOpeners = document.querySelectorAll('[data-quiz-open]');
+    const form = document.getElementById('quizForm');
+    if(!quizModal || !quizOpeners.length || !form) return;
+
+    const ZONES = {
+      'Slăbit / conturare corp': ['Abdomen','Șolduri / coapse','Brațe','Bărbie / gât dublu'],
+      'Fermitate față / anti-îmbătrânire': ['Gușă / bărbie','Riduri frunte','Zona ochilor','Obraji / linia maxilarului'],
+      'Ten problematic / pete / luminozitate': ['Acnee / pori dilatați','Pete / pigmentare','Luminozitate / hidratare'],
+      'Celulită': ['Coapse','Fese','Abdomen'],
+      'Epilare laser': ['Picioare','Axilă','Zona bikini','Față (mustață/bărbie)','Full Body']
+    };
+
+    const bar = document.getElementById('quizBar');
+    const backBtn = document.getElementById('qBack');
+    const submitBtn = document.getElementById('qSubmit');
+    const zonaGrid = document.getElementById('qZonaGrid');
+    const allSteps = ['interes','zona','oras','contact'];
+    let path = allSteps.slice();
+    let idx = 0;
+
+    function digits(s){ return (s||'').replace(/\D/g,''); }
+
+    function render(){
+      const current = path[idx];
+      form.querySelectorAll('.qstep').forEach(s=>s.classList.toggle('active', s.dataset.step === current));
+      bar.style.width = Math.round(((idx+1)/path.length)*100) + '%';
+      backBtn.hidden = idx === 0;
+      submitBtn.hidden = current !== 'contact';
+    }
+    function goNext(){ if(idx < path.length - 1){ idx++; render(); } }
+    function goBack(){ if(idx > 0){ idx--; render(); } }
+
+    function resetQuiz(){
+      path = allSteps.slice();
+      idx = 0;
+      form.reset();
+      form.querySelectorAll('.qopt.sel').forEach(b=>b.classList.remove('sel'));
+      form.querySelectorAll('.quiz-field.err, .quiz-consent.err').forEach(el=>el.classList.remove('err'));
+      zonaGrid.innerHTML = '';
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Trimite și rezervă <span class="arrow">→</span>';
+      render();
+    }
+
+    function openQuiz(){
+      resetQuiz();
+      quizModal.classList.add('open'); quizModal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+    }
+    function closeQuiz(){
+      quizModal.classList.remove('open'); quizModal.setAttribute('aria-hidden','true'); document.body.style.overflow='';
+    }
+
+    // pasul "interes" — alege și, dacă are subzone, le construiește; altfel sare peste pasul "zona"
+    form.querySelectorAll('[data-step="interes"] .qopt').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        form.querySelectorAll('[data-step="interes"] .qopt').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        document.getElementById('qInteres').value = btn.dataset.value;
+
+        const zones = ZONES[btn.dataset.value] || [];
+        document.getElementById('qZona').value = '';
+        zonaGrid.innerHTML = zones.map(z=>'<button type="button" class="qopt" data-value="'+z+'">'+z+'</button>').join('');
+        zonaGrid.querySelectorAll('.qopt').forEach(zb=>{
+          zb.addEventListener('click', ()=>{
+            zonaGrid.querySelectorAll('.qopt').forEach(b=>b.classList.remove('sel'));
+            zb.classList.add('sel');
+            document.getElementById('qZona').value = zb.dataset.value;
+            setTimeout(goNext, 180);
+          });
+        });
+
+        path = zones.length ? allSteps.slice() : allSteps.filter(s=>s!=='zona');
+        idx = 0;
+        setTimeout(goNext, 180);
+      });
+    });
+
+    // pasul "oras"
+    form.querySelectorAll('[data-step="oras"] .qopt').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        form.querySelectorAll('[data-step="oras"] .qopt').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        document.getElementById('qOras').value = btn.dataset.value;
+        setTimeout(goNext, 180);
+      });
+    });
+
+    backBtn.addEventListener('click', goBack);
+    quizOpeners.forEach(o=>o.addEventListener('click', openQuiz));
+    quizModal.querySelectorAll('[data-quiz-close]').forEach(el=>el.addEventListener('click', closeQuiz));
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape' && quizModal.classList.contains('open')) closeQuiz(); });
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      if(form.querySelector('.quiz-hp').value){ return; } // honeypot anti-spam
+
+      const nume = form.querySelector('[name="nume"]');
+      const tel = form.querySelector('[name="telefon"]');
+      const consent = form.querySelector('[name="consimtamant_whatsapp"]');
+      let ok = true;
+
+      if(!nume.value.trim()){ nume.closest('.quiz-field').classList.add('err'); ok=false; }
+      else { nume.closest('.quiz-field').classList.remove('err'); }
+
+      if(digits(tel.value).length < 9){ tel.closest('.quiz-field').classList.add('err'); ok=false; }
+      else { tel.closest('.quiz-field').classList.remove('err'); }
+
+      if(!consent.checked){ document.getElementById('qConsentLabel').classList.add('err'); ok=false; }
+      else { document.getElementById('qConsentLabel').classList.remove('err'); }
+
+      if(!ok) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Se trimite…';
+
+      const payload = {
+        nume: nume.value.trim(),
+        telefon: tel.value.trim(),
+        interes_principal: document.getElementById('qInteres').value,
+        zona: document.getElementById('qZona').value,
+        oras: document.getElementById('qOras').value,
+        sursa: form.querySelector('[name="sursa"]').value,
+        consimtamant_whatsapp: consent.checked,
+        pagina: location.href
+      };
+
+      function done(){ window.location.href = 'multumesc-cadou.html'; }
+
+      // ⇩⇩⇩ Webhook HighLevel (Inbound Webhook trigger) — lipește URL-ul aici ⇩⇩⇩
+      const QUIZ_WEBHOOK = "";
+      // ⇧⇧⇧ Webhook HighLevel ⇧⇧⇧
+
+      if(QUIZ_WEBHOOK.indexOf('http') === 0){
+        fetch(QUIZ_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(done).catch(done); // lead-ul e trimis chiar dacă CORS blochează citirea răspunsului
+      } else {
+        // webhook neconfigurat încă (preview) — mergem direct la pagina de mulțumire
+        done();
+      }
+    });
+  })();
 
   // ---- faq accordion ----
   document.querySelectorAll('.faq-item').forEach(item=>{
