@@ -661,10 +661,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         </div>
       </div>
     </nav>
-    <!-- offers auto-slider: 3 offers + a final "see all offers" slide -->
+    <!-- offers auto-slider: 2 offers + a final "see all offers" slide -->
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="epilare-4zone" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-thumb-epilare-4zone-nav.webp" alt="Epilare laser Full Body" loading="lazy" decoding="async"></span><span class="ms-info"><span class="ms-name">Epilare laser · Full Body</span><span class="ms-row"><span class="ms-price">359 lei</span><s class="ms-old">920 lei</s><span class="ms-off">−61%</span></span></span></a>
         <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
         <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
@@ -672,7 +671,6 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <div class="ms-dots" id="msDots">
         <button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button>
         <button type="button" class="ms-dot" aria-label="Oferta 2"></button>
-        <button type="button" class="ms-dot" aria-label="Oferta 3"></button>
         <button type="button" class="ms-dot" aria-label="Toate ofertele"></button>
       </div>
     </div>
@@ -1446,7 +1444,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   document.addEventListener('keydown', e=>{ if(e.key==='Escape' && menuOverlay.classList.contains('open')) closeMenu(); });
   // Servicii + Locații dropdowns (accordion) — opens in place, same on desktop + mobile
   dds.forEach(dd=>{ const t=dd.querySelector('.menu-dd-trigger'); t && t.addEventListener('click', ()=>{ const open=dd.classList.toggle('open'); t.setAttribute('aria-expanded', open?'true':'false'); }); });
-  // menu offers auto-slider (3 offers + "see all" slide)
+  // menu offers auto-slider (2 offers + "see all" slide)
   (function(){
     const track=document.getElementById('msTrack'); if(!track) return;
     const dots=[...document.querySelectorAll('#msDots .ms-dot')];
@@ -1792,10 +1790,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     if(!stage || !viewport) return;
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // honest offers: 3 real promos + 2 free-consultation treatment hooks (swap big/sub for real promo prices anytime)
+    // honest offers: real promos + free-consultation treatment hooks (swap big/sub for real promo prices anytime)
     const OFFERS = [
-      { name:'Epilare laser · Full Body', price:'359', old:'920',  note:'−61%', cert:true, ba:'brand_asset/epilare-legs-black.webp', alt:'Ofertă epilare laser Full Body',
-        bullets:['Toate zonele într-o ședință · axile, inghinal total, brațe lung, picioare lung','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'] },
       { name:'Liposonix · 2 zone',       price:'640', old:'1280', note:'−50%', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
         bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'] },
       { name:'Tratament facial Restart', price:'190', old:'300',  note:'−37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
@@ -2220,8 +2216,6 @@ function animate(){
 <script>
 (function(){
   const OFFERS = {
-    'epilare-4zone':{ name:'Epilare laser · Full Body', img:'brand_asset/epilare-legs-black.webp', price:'359', old:'920', note:'−61%', cert:true,
-      bullets:['Toate zonele într-o ședință · axile, inghinal total, brațe lung, picioare lung','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'], wa:'Epilare laser · Full Body la 359 lei' },
     'liposonix':{ name:'Liposonix · 2 zone', img:'brand_asset/ba-liposonix.webp', price:'640', old:'1280', note:'−50%',
       bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'], wa:'Liposonix · 2 zone la 640 lei' },
     'facial-restart':{ name:'Tratament facial Restart', img:'brand_asset/ba-facial.webp', price:'190', old:'300', note:'−37%',

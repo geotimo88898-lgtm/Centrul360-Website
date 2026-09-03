@@ -228,7 +228,6 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     .pkg-list li{ font-size:.83rem; }
     .pkg-price b{ font-size:1.5rem; }
     .ocard .pill, .pkg .pill{ padding-top:.58rem !important; padding-bottom:.58rem !important; font-size:12px !important; }
-    .oh-star{ min-height:clamp(280px,44vh,360px); }
   }
   .osec-head{ margin:0 0 1.4rem; display:flex; flex-direction:column; gap:.35rem; }
   .osec-head .eb{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:#e9cfa3; display:inline-flex; align-items:center; gap:.5rem; }
@@ -311,12 +310,11 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     </nav>
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="epilare-4zone" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-thumb-epilare-4zone-nav.webp" alt="Epilare laser Full Body" loading="lazy" decoding="async"></span><span class="ms-info"><span class="ms-name">Epilare laser · Full Body</span><span class="ms-row"><span class="ms-price">359 lei</span><s class="ms-old">920 lei</s><span class="ms-off">−61%</span></span></span></a>
         <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
         <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
-      <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Oferta 3"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
+      <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
     </div>
     <div class="menu-foot">
       <div class="text-[15px] leading-relaxed">
@@ -331,33 +329,13 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <main class="relative z-10">
 
 
-  <!-- ============ HERO (reduceri de vară + oferta 4 zone) ============ -->
+  <!-- ============ HERO (reduceri de vară) ============ -->
   <style>
-    .oh{ position:relative; z-index:10; max-width:80rem; margin:0 auto; padding:.5rem 1.5rem 0; display:grid; grid-template-columns:1.05fr .95fr; gap:2.6rem; align-items:center; }
-    @media(max-width:880px){ .oh{ grid-template-columns:1fr; gap:1.8rem; } }
+    .oh{ position:relative; z-index:10; max-width:80rem; margin:0 auto; padding:.5rem 1.5rem 0; }
     .oh-badge{ display:inline-flex; align-items:center; gap:.5rem; font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:#e9cfa3;
       border:1px solid rgba(233,207,163,.28); background:rgba(233,207,163,.08); border-radius:999px; padding:.5rem .95rem; }
     .oh-text h1{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.035em; line-height:1.0; font-size:clamp(2.4rem,6.2vw,4.6rem); margin:1.2rem 0 0; }
     .oh-text .lead{ color:var(--muted); font-size:clamp(1rem,1.9vw,1.15rem); line-height:1.6; margin:1.3rem 0 0; max-width:32rem; }
-    .oh-star{ position:relative; display:block; border-radius:26px; overflow:hidden; text-decoration:none; min-height:clamp(380px,54vh,480px);
-      border:1px solid rgba(255,255,255,.14); box-shadow:0 44px 100px -52px rgba(0,0,0,.92); transition:transform .45s cubic-bezier(.16,1,.3,1); }
-    .oh-star:hover{ transform:translateY(-4px); }
-    .oh-star video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-    .oh-star .sh{ position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,10,.93) 8%, rgba(8,8,10,.45) 46%, rgba(8,8,10,.1) 100%); }
-    .oh-star .ct{ position:absolute; left:0; right:0; bottom:0; z-index:1; padding:1.5rem 1.6rem 1.6rem; }
-    .oh-cert{ position:absolute; top:14px; left:14px; z-index:2; display:inline-flex; align-items:center; gap:.4rem;
-      font-size:10.5px; font-weight:600; letter-spacing:.01em; color:#f5f4f2;
-      background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-      border:1px solid rgba(255,255,255,.16); border-radius:999px; padding:.4rem .7rem; }
-    .oh-cert svg{ flex:none; color:#e9cfa3; }
-    .oh-star .eb{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:#e9cfa3; }
-    .oh-star .nm{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.55rem; color:#fff; margin:.4rem 0 0; display:block; }
-    .oh-star .pr{ display:flex; align-items:baseline; gap:.6rem; margin-top:.55rem; flex-wrap:wrap; }
-    .oh-star .pr b{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.03em; font-size:2.3rem; color:#fff; }
-    .oh-star .pr s{ color:var(--muted-2); font-weight:600; }
-    .oh-star .pr .off{ align-self:center; font-weight:700; font-size:.8rem; color:#19140c; background:linear-gradient(135deg,#f0dcbb,#d8b483); padding:.25rem .6rem; border-radius:999px; }
-    .oh-star .cta{ margin-top:1.15rem; display:flex; justify-content:center; align-items:center; gap:.5rem; font-weight:600; font-size:15px; color:#0b0b0d; background:#fff; padding:.9rem 1.3rem; border-radius:999px; transition:background .25s ease; }
-    .oh-star:hover .cta{ background:#f0ece4; } .oh-star:hover .arrow{ transform:translateX(3px); }
   </style>
   <section class="pt-24 sm:pt-28 pb-10 sm:pb-16">
     <div class="oh">
@@ -365,20 +343,6 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <span class="oh-badge">☀ Reducerile de vară au început</span>
         <h1>Reduceri de <span class="accent">vară</span><br>până la −61%.</h1>
         <p class="lead">La epilare laser, HIFU și tratamente faciale. Alege-ți oferta de vară — Timișoara &amp; Arad.</p>
-      </div>
-      <div class="oh-right reveal d1">
-        <div class="osec-head" style="margin-bottom:1.1rem;"><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Cele mai populare</h2></div>
-        <a class="oh-star" href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20oferta%20Epilare%20laser%20Full%20Body%20la%20359%20lei." target="_blank" rel="noopener">
-          <video autoplay muted loop playsinline preload="metadata" poster="brand_asset/promo-summer-poster.jpg"><source src="brand_asset/promo-summer.mp4" type="video/mp4"></video>
-          <span class="sh"></span>
-          <span class="oh-cert"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Aparat certificat medical</span>
-          <span class="ct">
-            <span class="eb">☀ Oferta principală</span>
-            <span class="nm">Epilare laser · Full Body</span>
-            <span class="pr"><b>359 lei</b><s>920 lei</s><span class="off">−61%</span></span>
-            <span class="cta">Rezervă oferta <span class="arrow">→</span></span>
-          </span>
-        </a>
       </div>
     </div>
   </section>
@@ -411,26 +375,6 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
             <div class="o-price"><b>190<span class="u">lei</span></b><s>299 lei</s></div>
             <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20HIFU%20Gusa%20la%20190%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
           </div>
-        </article>
-    </div>
-  </section>
-
-  <!-- ============ EPILARE ============ -->
-  <section class="px-6 sm:px-8 max-w-7xl mx-auto pb-14">
-    <div class="osec-head reveal"><span class="eb">Epilare laser</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Oferta de epilare</h2></div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      <article class="pkg reveal" data-cat="epilare">
-          <div class="pkg-media"><img src="brand_asset/offer-epilare.webp" alt=""><span class="o-shade"></span></div>
-          <span class="tag">Preț pe ședință</span>
-          <h3>Epilare laser · Full Body</h3>
-          <p class="pkg-sub">Oferta de vară la prima ședință. Cura completă o discuți direct în salon.</p>
-          <ul class="pkg-list">
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Ședințele următoare · Full Body — 790 lei</span></li>
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>4 zone la alegere — 199 lei / ședință</span></li>
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Cură completă — preț special în salon</span></li>
-          </ul>
-          <div class="pkg-price"><b>359<span class="u">lei</span></b><s>920 lei</s></div>
-          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Epilare%20laser%20Full%20Body%20la%20359%20lei%20(prima%20sedinta)." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă prima ședință <span class="arrow">→</span></a>
         </article>
     </div>
   </section>
@@ -865,8 +809,6 @@ function animate(){
 <script>
 (function(){
   const OFFERS = {
-    'epilare-4zone':{ name:'Epilare laser · Full Body', img:'brand_asset/offer-thumb-epilare-4zone.webp',
-      bullets:['Toate zonele într-o ședință · axile, inghinal total, brațe lung, picioare lung','Rezultate garantate sau banii înapoi','Laser Elysion Pro certificat medical'], wa:'Epilare laser · Full Body la 359 lei' },
     'liposonix':{ name:'Liposonix · 2 zone', img:'brand_asset/offer-thumb-liposonix.webp',
       bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'], wa:'Liposonix · 2 zone la 640 lei' },
     'facial-restart':{ name:'Tratament facial Restart', img:'brand_asset/offer-thumb-restart.webp',
