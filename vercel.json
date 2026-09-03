@@ -1,7 +1,5 @@
 {
   "rewrites": [
-    { "source": "/hifu-full-face-timisoara", "destination": "/hifu-full-face-timisoara.html" },
-    { "source": "/hifu-full-face-arad", "destination": "/hifu-full-face-arad.html" },
     { "source": "/multumesc", "destination": "/multumesc.html" }
   ]
 }
