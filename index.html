@@ -2083,8 +2083,8 @@ function mountAll(){
   const menu  = document.getElementById('logo3d-menu');
   const hero  = document.getElementById('logo3d-hero');
   const herom = document.getElementById('logo3d-hero-m');
-  if(head)  mounts.push(makeMount(head,  { tilt:0, spin:0.5,  dark:false }));
-  if(menu)  mounts.push(makeMount(menu,  { tilt:0, spin:0.5,  dark:false }));
+  if(head){ mounts.push(makeMount(head,  { tilt:0, spin:0.5,  dark:false })); head.style.backgroundImage='none'; }
+  if(menu){ mounts.push(makeMount(menu,  { tilt:0, spin:0.5,  dark:false })); menu.style.backgroundImage='none'; }
   if(hero && !isMobile)  mounts.push(makeMount(hero,  { tilt:0, spin:0.30, mat:HERO_MAT }));
   if(herom && isMobile) mounts.push(makeMount(herom, { tilt:0, spin:0.26, mat:HERO_MAT }));
 }

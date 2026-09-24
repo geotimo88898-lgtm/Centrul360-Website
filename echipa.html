@@ -608,8 +608,8 @@ new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountA
 function mountAll(){
   const head = document.getElementById('logo3d-head');
   const menu = document.getElementById('logo3d-menu');
-  if(head) mounts.push(makeMount(head, { spin:0.5 }));
-  if(menu) mounts.push(makeMount(menu, { spin:0.5 }));
+  if(head){ mounts.push(makeMount(head, { spin:0.5 })); head.style.backgroundImage='none'; }
+  if(menu){ mounts.push(makeMount(menu, { spin:0.5 })); menu.style.backgroundImage='none'; }
 }
 function makeMount(canvas, opts){
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
