@@ -26,7 +26,7 @@
   .wrap{ width:100%; max-width:26rem; }
   .logo{ display:flex; align-items:center; gap:.6rem; justify-content:center; margin-bottom:2rem; }
   .logo img{ height:13px; }
-  .logo .mark{ width:26px; height:26px; opacity:.9; }
+  #logo3d-avans{ width:26px; height:26px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
   .card{ background:var(--paper-2); border:1px solid var(--line); border-radius:24px; padding:1.75rem 1.6rem 1.9rem; }
   .eyebrow{ font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 .6rem; }
   h1{ font-size:1.5rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .5rem; line-height:1.2; }
@@ -57,7 +57,7 @@
 
 <div class="wrap">
   <div class="logo">
-    <img class="mark" src="brand_asset/logo-mark-white.png" alt="">
+    <canvas id="logo3d-avans" width="72" height="72"></canvas>
     <img src="brand_asset/wordmark-com.png" alt="Centrul360.com">
   </div>
 
@@ -90,6 +90,71 @@
     Probleme cu plata? Scrie-ne pe <a href="https://wa.me/40750204243" target="_blank" rel="noopener">WhatsApp</a>.
   </p>
 </div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canvas = document.getElementById('logo3d-avans');
+
+new GLTFLoader().load('brand_asset/3dsvg.glb', (g) => {
+  const glbScene = g.scene;
+  canvas.style.backgroundImage = 'none';
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+  cam.position.set(0, 0, 5);
+  scene.add(Object.assign(new THREE.DirectionalLight(0xffffff, 4.5), { position: new THREE.Vector3(5, 3, 5) }));
+  scene.add(Object.assign(new THREE.DirectionalLight(0xffffff, 2.0), { position: new THREE.Vector3(-5, -2, -3) }));
+  scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+
+  const mat = new THREE.MeshPhysicalMaterial({ color:0xffffff, metalness:0.0, roughness:0.16, clearcoat:1.0, clearcoatRoughness:0.1, transmission:0.5, thickness:0.8, ior:1.45, transparent:true, opacity:1.0, envMapIntensity:1.5 });
+  const model = glbScene.clone(true);
+  model.traverse(o => { if (o.isMesh) o.material = mat; });
+  const box = new THREE.Box3().setFromObject(model);
+  model.position.sub(box.getCenter(new THREE.Vector3()));
+  const sz = box.getSize(new THREE.Vector3());
+  model.scale.setScalar(2.4 / Math.max(sz.x, sz.y, sz.z));
+
+  const spinner = new THREE.Group();
+  spinner.add(model);
+  scene.add(spinner);
+
+  function resize() {
+    const w = canvas.clientWidth || 26, h = canvas.clientHeight || 26;
+    renderer.setSize(w, h, false);
+    cam.aspect = w / h;
+    cam.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const clock = new THREE.Clock();
+  (function animate() {
+    requestAnimationFrame(animate);
+    spinner.rotation.y = reduce ? 0.6 : clock.getElapsedTime() * 0.5;
+    renderer.render(scene, cam);
+  })();
+}, undefined, (e) => console.error('GLB load error', e));
+</script>
 
 </body>
 </html>
