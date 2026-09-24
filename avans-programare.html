@@ -93,18 +93,31 @@
   .then(function(r){ if(!r.ok) throw new Error('bad response'); return r.json(); })
   .then(function(data){
     status.style.display = 'none';
-    if (data.redirectUrl) {
-      // Embed MyPOS's hosted checkout inside an iframe so the client never leaves centrul360.com.
-      var iframe = document.createElement('iframe');
-      iframe.src = data.redirectUrl;
-      iframe.title = 'Plată securizată';
-      iframe.style.cssText = 'width:100%; border:0; border-radius:16px; min-height:480px;';
-      mount.appendChild(iframe);
-    } else if (data.formHtml) {
-      mount.innerHTML = data.formHtml;
-    } else {
-      throw new Error('missing payment payload');
-    }
+    if (!data.formAction || !data.fields) throw new Error('missing payment payload');
+
+    // myPOS's hosted checkout only accepts a signed POST, so we submit a hidden form
+    // targeted at an iframe — the client stays on centrul360.com and only myPOS's own
+    // page (loaded inside that iframe) ever sees the card details.
+    var frameName = 'mypos-checkout-frame';
+    var iframe = document.createElement('iframe');
+    iframe.name = frameName;
+    iframe.title = 'Plată securizată';
+    iframe.style.cssText = 'width:100%; border:0; border-radius:16px; min-height:480px;';
+    mount.appendChild(iframe);
+
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = data.formAction;
+    form.target = frameName;
+    Object.keys(data.fields).forEach(function(key){
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = data.fields[key];
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
   })
   .catch(function(){
     status.style.display = 'none';

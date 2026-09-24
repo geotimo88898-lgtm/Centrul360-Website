@@ -1,27 +1,41 @@
-// Vercel serverless function — creates a MyPOS IPC (Instant Payment Checkout) session
-// for the 49 RON booking deposit and returns a hosted-checkout URL to embed in an iframe
-// on avans-programare.html. The client's card details never touch this server or the
-// Centrul360 domain's own code — they're entered inside MyPOS's own secured iframe.
+// Vercel serverless function — builds a myPOS IPC (Instant Payment Checkout) "IPCPurchase"
+// request for the 49 RON booking deposit and returns the fields the client must POST
+// (as a hidden auto-submitting form) to myPOS's hosted checkout page. The client's card
+// details never touch this server or the Centrul360 domain — they're entered on myPOS's
+// own page, loaded inside an iframe by avans-programare.html.
 //
 // Required environment variables (set in Vercel → Project Settings → Environment Variables,
 // never committed to the repo, never pasted into chat):
-//   MYPOS_STORE_ID       — MyPOS "SID" / Store ID
-//   MYPOS_WALLET_NUMBER  — MyPOS wallet number (if applicable to your account type)
-//   MYPOS_PRIVATE_KEY    — the private key MyPOS issued for signing requests (PEM format)
-//   MYPOS_KEY_INDEX      — key index MyPOS assigned to that key pair
+//   MYPOS_STORE_ID       — myPOS "SID" / Store ID
+//   MYPOS_WALLET_NUMBER  — myPOS wallet / client number ("walletnumber" field)
+//   MYPOS_PRIVATE_KEY    — the private key myPOS issued for signing requests (PEM format)
+//   MYPOS_KEY_INDEX      — key index myPOS assigned to that key pair
 //
-// STATUS: the request-signing block below is a placeholder — MyPOS's exact field names,
-// field order and signature algorithm need to be filled in from their official IPC
-// integration guide (developers.mypos.com) before this goes live. Nothing here fabricates
-// those details; everything MyPOS-specific is marked TODO and the function fails loudly
-// (500, no silent fallback) until it's filled in, so a bad deploy can't quietly eat a
-// real payment.
+// Field names, field order and the signature algorithm below are taken from myPOS's own
+// official Node.js SDK source (`@mypos-ltd/mypos` on npm, github.com/developermypos/mypos-js),
+// specifically resources/checkout/purchase.js and resources/abstract/checkout-api-request.js,
+// not reimplemented from guesswork. We don't pull in the SDK itself (its dependency on the
+// old `request` package and a bundled node-rsa are unnecessary — Node's built-in `crypto`
+// reproduces the same PKCS#1-SHA256 signature), but the request shape matches it exactly.
 
 const crypto = require('crypto');
 
-const MYPOS_ENDPOINT = process.env.MYPOS_SANDBOX === '1'
-  ? 'https://sandbox-mypos.eu/vmp/checkout-api/purchase' // TODO: confirm exact sandbox endpoint against MyPOS docs
-  : 'https://mypos.eu/vmp/checkout-api/purchase';          // TODO: confirm exact production endpoint against MyPOS docs
+const MYPOS_HOST = process.env.MYPOS_SANDBOX === '1'
+  ? 'https://www.mypos.com/vmp/checkout-test'
+  : 'https://www.mypos.com/vmp/checkout';
+
+// Signs the fields the same way myPOS's official SDK does: join all values with "-",
+// base64-encode that string, then RSA-SHA256-sign the base64 string's bytes (PKCS#1 v1.5
+// padding, which is Node crypto's default for createSign('RSA-SHA256')), base64-encode
+// the signature. Signature is always the last field added to the request.
+function signFields(fields, privateKey) {
+  const joined = Object.values(fields).join('-');
+  const base64Payload = Buffer.from(joined, 'utf8').toString('base64');
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(base64Payload, 'utf8');
+  signer.end();
+  return signer.sign(privateKey, 'base64');
+}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -43,7 +57,7 @@ module.exports = async (req, res) => {
   const privateKey = process.env.MYPOS_PRIVATE_KEY;
   const keyIndex = process.env.MYPOS_KEY_INDEX;
 
-  if (!storeId || !privateKey || !keyIndex) {
+  if (!storeId || !walletNumber || !privateKey || !keyIndex) {
     console.error('mypos-checkout: missing MYPOS_* environment variables');
     res.status(500).json({ error: 'payment_not_configured' });
     return;
@@ -51,12 +65,13 @@ module.exports = async (req, res) => {
 
   const site = `https://${req.headers.host}`;
 
-  // TODO — replace with MyPOS's real IPC "Purchase" request fields, in the exact order
-  // and naming their docs specify (commonly: IPCmethod, IPCVersion, IPCLanguage, SID,
-  // walletnumber, Amount, Currency, OrderID, URL_OK, URL_Cancel, URL_Notify,
-  // PaymentParametersRequired, CartItems[...], Signature — verify every name and the
-  // signature's exact concatenation/order before enabling this in production).
+  // Field order matches myPOS's IPCPurchase request exactly (see purchase.js in the SDK).
+  // We skip the optional customer/cart/note fields — PaymentParametersRequired: 3 tells
+  // myPOS not to require customer details for this flow.
   const fields = {
+    IPCmethod: 'IPCPurchase',
+    IPCVersion: '1.4',
+    IPCLanguage: 'RO',
     SID: storeId,
     walletnumber: walletNumber,
     Amount: amount.toFixed(2),
@@ -64,32 +79,21 @@ module.exports = async (req, res) => {
     OrderID: orderId,
     URL_OK: `${site}/avans-multumesc.html`,
     URL_Cancel: `${site}/avans-programare.html`,
-    URL_Notify: `${site}/api/mypos-notify`, // TODO: implement this webhook once the field contract is confirmed
+    URL_Notify: `${site}/api/mypos-notify`,
+    CardTokenRequest: 0,
     KeyIndex: keyIndex,
+    PaymentParametersRequired: 3,
+    PaymentMethod: 1,
   };
 
-  // TODO — replace with MyPOS's documented signature algorithm once confirmed.
-  // Placeholder shape only: sign the pipe-joined field values with the merchant's
-  // RSA private key (SHA-256), base64-encode. Do not trust this concatenation order
-  // until it matches the official docs exactly.
-  function signFields(f) {
-    const payload = Object.values(f).join('-');
-    const signer = crypto.createSign('RSA-SHA256');
-    signer.update(payload);
-    signer.end();
-    return signer.sign(privateKey, 'base64');
-  }
-
   try {
-    fields.Signature = signFields(fields);
+    fields.Signature = signFields(fields, privateKey);
 
-    // TODO: confirm whether MyPOS IPC expects a redirect (302 to a hosted checkout URL
-    // built from these fields) or a server-to-server call that returns a checkout URL/token
-    // in JSON. Until confirmed, this throws instead of guessing.
-    throw new Error('MyPOS IPC field names and signature not yet verified against official docs');
-
-    // Once verified, this should end with something like:
-    // res.status(200).json({ redirectUrl: builtMyPosCheckoutUrl });
+    // myPOS's hosted checkout is a POST-only endpoint — the signature covers the exact
+    // field set above, so the client must submit these fields as a form (not a GET
+    // redirect). avans-programare.html builds a hidden form from this payload and
+    // auto-submits it into an iframe.
+    res.status(200).json({ formAction: MYPOS_HOST, fields });
   } catch (err) {
     console.error('mypos-checkout error:', err.message);
     res.status(500).json({ error: 'payment_init_failed' });
