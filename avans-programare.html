@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avans programare — Centrul360</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/brand_asset/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#0b0b0d; --paper-2:#141418; --fg:#f5f4f2; --muted:rgba(245,244,242,0.6);
+    --line:rgba(255,255,255,0.10); --accent:#e9cfa3;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+    background:
+      radial-gradient(120% 80% at 50% -8%, rgba(40,40,48,0.55) 0%, transparent 52%),
+      linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%);
+    color:var(--fg); font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    padding:2.5rem 1.25rem 3rem;
+  }
+  .wrap{ width:100%; max-width:26rem; }
+  .logo{ display:flex; align-items:center; gap:.6rem; justify-content:center; margin-bottom:2rem; }
+  .logo img{ height:13px; }
+  .logo .mark{ width:26px; height:26px; opacity:.9; }
+  .card{ background:var(--paper-2); border:1px solid var(--line); border-radius:24px; padding:1.75rem 1.6rem 1.9rem; }
+  .eyebrow{ font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 .6rem; }
+  h1{ font-size:1.5rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .5rem; line-height:1.2; }
+  .sub{ color:var(--muted); font-size:.9rem; line-height:1.55; margin:0 0 1.5rem; }
+  .amount-row{ display:flex; align-items:baseline; justify-content:space-between; padding:1rem 1.1rem; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.03); margin-bottom:1.5rem; }
+  .amount-row .lbl{ font-size:.85rem; color:var(--muted); }
+  .amount-row .val{ font-size:1.6rem; font-weight:800; letter-spacing:-.02em; }
+  #mypos-mount{ min-height:64px; }
+  #mypos-status{ font-size:.85rem; color:var(--muted); text-align:center; padding:1.2rem 0; }
+  #mypos-error{ display:none; font-size:.85rem; color:#f0a; background:rgba(240,80,80,.08); border:1px solid rgba(240,80,80,.25); border-radius:12px; padding:.8rem 1rem; margin-top:.75rem; }
+  .trust{ display:flex; align-items:center; gap:.5rem; justify-content:center; margin-top:1.4rem; color:var(--muted); font-size:.78rem; }
+  .trust svg{ flex:none; opacity:.7; }
+  .foot{ text-align:center; margin-top:1.75rem; color:var(--muted); font-size:.8rem; line-height:1.6; }
+  .foot a{ color:var(--fg); text-decoration:underline; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="logo">
+    <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="3.6" ry="9"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/></svg>
+    <img src="brand_asset/wordmark-com.png" alt="Centrul360.com">
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Avans programare</p>
+    <h1>Confirmă-ți programarea</h1>
+    <p class="sub">Avansul se scade integral din costul tratamentului la ședință. Plata e procesată securizat, cardul tău nu e stocat de Centrul360.</p>
+
+    <div class="amount-row">
+      <span class="lbl">Sumă avans</span>
+      <span class="val">49&nbsp;lei</span>
+    </div>
+
+    <div id="mypos-status">Se încarcă formularul de plată…</div>
+    <div id="mypos-mount"></div>
+    <div id="mypos-error">Plata nu a putut fi inițializată. Te rugăm să reîncerci sau să ne scrii pe WhatsApp.</div>
+  </div>
+
+  <p class="trust">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    Plată securizată · datele cardului nu ating serverele Centrul360
+  </p>
+
+  <p class="foot">
+    Probleme cu plata? Scrie-ne pe <a href="https://wa.me/40750204243" target="_blank" rel="noopener">WhatsApp</a>.
+  </p>
+</div>
+
+<script>
+(function(){
+  var mount = document.getElementById('mypos-mount');
+  var status = document.getElementById('mypos-status');
+  var errorBox = document.getElementById('mypos-error');
+
+  var params = new URLSearchParams(location.search);
+  var orderRef = params.get('ref') || ('C360-' + Date.now());
+
+  fetch('/api/mypos-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: 49, currency: 'RON', orderId: orderRef })
+  })
+  .then(function(r){ if(!r.ok) throw new Error('bad response'); return r.json(); })
+  .then(function(data){
+    status.style.display = 'none';
+    if (data.redirectUrl) {
+      // Embed MyPOS's hosted checkout inside an iframe so the client never leaves centrul360.com.
+      var iframe = document.createElement('iframe');
+      iframe.src = data.redirectUrl;
+      iframe.title = 'Plată securizată';
+      iframe.style.cssText = 'width:100%; border:0; border-radius:16px; min-height:480px;';
+      mount.appendChild(iframe);
+    } else if (data.formHtml) {
+      mount.innerHTML = data.formHtml;
+    } else {
+      throw new Error('missing payment payload');
+    }
+  })
+  .catch(function(){
+    status.style.display = 'none';
+    errorBox.style.display = 'block';
+  });
+})();
+</script>
+
+</body>
+</html>
