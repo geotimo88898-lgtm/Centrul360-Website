@@ -47,6 +47,23 @@
   }
   #mypos-pay-btn:hover{ filter:brightness(1.04); transform:translateY(-1px); }
   #mypos-pay-btn:active{ transform:translateY(0); filter:brightness(0.98); }
+
+  .tabs{ display:flex; gap:.4rem; padding:.3rem; margin-bottom:1.25rem; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:14px; }
+  .tab-btn{ flex:1; padding:.65rem .5rem; border:none; outline:none; background:transparent; border-radius:10px; color:var(--muted); font-family:'Inter',system-ui,sans-serif; font-size:.82rem; font-weight:700; letter-spacing:.01em; cursor:pointer; transition:background .15s ease, color .15s ease; }
+  .tab-btn.active{ background:var(--paper-2); color:var(--fg); box-shadow:0 4px 14px -6px rgba(0,0,0,.5); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .bank-card{ border:1px solid var(--line); border-radius:16px; padding:1.1rem 1.1rem 1.2rem; background:rgba(255,255,255,.03); }
+  .bank-row{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.55rem 0; border-bottom:1px solid var(--line); }
+  .bank-row:last-of-type{ border-bottom:none; }
+  .bank-row .lbl{ font-size:.78rem; color:var(--muted); }
+  .bank-row .val{ font-size:.9rem; font-weight:700; letter-spacing:.01em; text-align:right; }
+  .copy-btn{ flex:none; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--fg); border-radius:9px; padding:.4rem .6rem; font-size:.72rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:.3rem; transition:background .15s ease; }
+  .copy-btn:hover{ background:rgba(255,255,255,.1); }
+  .copy-btn.copied{ color:var(--accent); border-color:rgba(233,207,163,.4); }
+  .bank-note{ font-size:.78rem; color:var(--muted); line-height:1.55; margin:1rem 0 0; }
+  .bank-note strong{ color:var(--fg); }
   .trust{ display:flex; align-items:center; gap:.5rem; justify-content:center; margin-top:1.4rem; color:var(--muted); font-size:.78rem; }
   .trust svg{ flex:none; opacity:.7; }
   .foot{ text-align:center; margin-top:1.75rem; color:var(--muted); font-size:.8rem; line-height:1.6; }
@@ -71,13 +88,50 @@
       <span class="val">49&nbsp;lei</span>
     </div>
 
-    <div id="mypos-mount">
-      <form action="https://mypos.com/vmp/btn/B6GEUFPBPDG13" method="post" target="_self">
-        <button type="submit" id="mypos-pay-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
-          Plătește avansul
-        </button>
-      </form>
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="online">Plată online</button>
+      <button type="button" class="tab-btn" data-tab="transfer">Transfer bancar</button>
+    </div>
+
+    <div id="tab-online" class="tab-panel active">
+      <div id="mypos-mount">
+        <form action="https://mypos.com/vmp/btn/B6GEUFPBPDG13" method="post" target="_self">
+          <button type="submit" id="mypos-pay-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
+            Plătește avansul
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div id="tab-transfer" class="tab-panel">
+      <div class="bank-card">
+        <div class="bank-row">
+          <span class="lbl">Beneficiar</span>
+          <span class="val">MELLON INNOVATION STUDIOS SRL</span>
+        </div>
+        <div class="bank-row">
+          <span class="lbl">IBAN</span>
+          <span class="val" id="bank-iban">IE37 MPOS 9903 9040 7892 40</span>
+        </div>
+        <div class="bank-row">
+          <span class="lbl">BIC / SWIFT</span>
+          <span class="val">MPOSIE2D</span>
+        </div>
+        <div class="bank-row">
+          <span class="lbl">Mesaj plată</span>
+          <span class="val">Avans + numele tău</span>
+        </div>
+        <div class="bank-row">
+          <span class="lbl">Sumă</span>
+          <span class="val">49.00 RON</span>
+        </div>
+      </div>
+      <button type="button" class="copy-btn" id="copy-iban-btn" style="width:100%; justify-content:center; margin-top:.85rem; padding:.7rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copiază IBAN</span>
+      </button>
+      <p class="bank-note">După ce faci transferul, te rugăm să ne trimiți dovada plății pe <strong>WhatsApp</strong>, ca să confirmăm avansul și programarea. Transferurile bancare pot dura 1-2 zile lucrătoare până se procesează.</p>
     </div>
   </div>
 
@@ -154,6 +208,37 @@ new GLTFLoader().load('brand_asset/3dsvg.glb', (g) => {
     renderer.render(scene, cam);
   })();
 }, undefined, (e) => console.error('GLB load error', e));
+</script>
+
+<script>
+(function(){
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabBtns.forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  var copyBtn = document.getElementById('copy-iban-btn');
+  copyBtn.addEventListener('click', function(){
+    var iban = document.getElementById('bank-iban').textContent.replace(/\s+/g, '');
+    var label = copyBtn.querySelector('span');
+    var reset = function(){ copyBtn.classList.remove('copied'); label.textContent = 'Copiază IBAN'; };
+    (navigator.clipboard && navigator.clipboard.writeText
+      ? navigator.clipboard.writeText(iban)
+      : Promise.reject()
+    ).then(function(){
+      copyBtn.classList.add('copied');
+      label.textContent = 'Copiat!';
+      setTimeout(reset, 1800);
+    }).catch(function(){
+      label.textContent = iban;
+    });
+  });
+})();
 </script>
 
 </body>
