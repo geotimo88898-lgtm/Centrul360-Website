@@ -581,7 +581,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const mounts = []; let glbScene = null;
-new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e));
+const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
+idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e)));
 function mountAll(){
   const head = document.getElementById('logo3d-head');
   const menu = document.getElementById('logo3d-menu');
