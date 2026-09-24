@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Avans programare — Centrul360</title>
 <meta name="robots" content="noindex, nofollow">
+<meta name="format-detection" content="telephone=no, address=no, email=no, date=no">
 <link rel="icon" type="image/svg+xml" href="/brand_asset/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,20 +49,32 @@
   #mypos-pay-btn:hover{ filter:brightness(1.04); transform:translateY(-1px); }
   #mypos-pay-btn:active{ transform:translateY(0); filter:brightness(0.98); }
 
-  .tabs{ display:flex; gap:.4rem; padding:.3rem; margin-bottom:1.25rem; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:14px; }
-  .tab-btn{ flex:1; padding:.65rem .5rem; border:none; outline:none; background:transparent; border-radius:10px; color:var(--muted); font-family:'Inter',system-ui,sans-serif; font-size:.82rem; font-weight:700; letter-spacing:.01em; cursor:pointer; transition:background .15s ease, color .15s ease; }
-  .tab-btn.active{ background:var(--paper-2); color:var(--fg); box-shadow:0 4px 14px -6px rgba(0,0,0,.5); }
+  .tabs{ display:flex; gap:.5rem; margin-bottom:1.25rem; }
+  .tab-btn{
+    flex:1; padding:.85rem .5rem; border:1.5px solid var(--line); outline:none; background:rgba(255,255,255,.03);
+    border-radius:13px; color:var(--muted); font-family:'Inter',system-ui,sans-serif; font-size:.85rem; font-weight:700;
+    letter-spacing:.01em; cursor:pointer; transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .tab-btn.active{
+    background:linear-gradient(180deg, #f0dcb4 0%, var(--accent) 100%); color:#241d10; border-color:transparent;
+    box-shadow:0 8px 18px -8px rgba(233,207,163,0.5);
+  }
   .tab-panel{ display:none; }
   .tab-panel.active{ display:block; }
 
-  .bank-card{ border:1px solid var(--line); border-radius:16px; padding:1.1rem 1.1rem 1.2rem; background:rgba(255,255,255,.03); }
-  .bank-row{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.55rem 0; border-bottom:1px solid var(--line); }
+  .bank-card{ border:1px solid var(--line); border-radius:16px; padding:.3rem 1.1rem; background:rgba(255,255,255,.03); }
+  .bank-row{ padding:.9rem 0; border-bottom:1px solid var(--line); }
   .bank-row:last-of-type{ border-bottom:none; }
-  .bank-row .lbl{ font-size:.78rem; color:var(--muted); }
-  .bank-row .val{ font-size:.9rem; font-weight:700; letter-spacing:.01em; text-align:right; }
-  .copy-btn{ flex:none; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--fg); border-radius:9px; padding:.4rem .6rem; font-size:.72rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:.3rem; transition:background .15s ease; }
-  .copy-btn:hover{ background:rgba(255,255,255,.1); }
-  .copy-btn.copied{ color:var(--accent); border-color:rgba(233,207,163,.4); }
+  .bank-row .lbl{ display:block; font-size:.74rem; color:var(--muted); margin-bottom:.35rem; }
+  .bank-row .val-line{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+  .bank-row .val{ font-size:1rem; font-weight:700; letter-spacing:.01em; line-height:1.35; word-break:break-word; }
+  .copy-btn{
+    flex:none; border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--fg); border-radius:9px;
+    width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .copy-btn:hover{ background:rgba(255,255,255,.12); }
+  .copy-btn.copied{ color:#241d10; background:var(--accent); border-color:var(--accent); }
   .bank-note{ font-size:.78rem; color:var(--muted); line-height:1.55; margin:1rem 0 0; }
   .bank-note strong{ color:var(--fg); }
   .trust{ display:flex; align-items:center; gap:.5rem; justify-content:center; margin-top:1.4rem; color:var(--muted); font-size:.78rem; }
@@ -108,30 +121,50 @@
       <div class="bank-card">
         <div class="bank-row">
           <span class="lbl">Beneficiar</span>
-          <span class="val">MELLON INNOVATION STUDIOS SRL</span>
+          <div class="val-line">
+            <span class="val" data-copy="MELLON INNOVATION STUDIOS SRL">MELLON INNOVATION STUDIOS SRL</span>
+            <button type="button" class="copy-btn" data-copy-btn aria-label="Copiază beneficiarul">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
         </div>
         <div class="bank-row">
           <span class="lbl">IBAN</span>
-          <span class="val" id="bank-iban">IE37 MPOS 9903 9040 7892 40</span>
+          <div class="val-line">
+            <span class="val" data-copy="IE37MPOS99039040789240" style="-webkit-text-size-adjust:100%;">
+              <bdi style="unicode-bidi:isolate;">IE37&nbsp;MPOS&nbsp;9903&nbsp;9040&nbsp;7892&nbsp;40</bdi>
+            </span>
+            <button type="button" class="copy-btn" data-copy-btn aria-label="Copiază IBAN">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
         </div>
         <div class="bank-row">
           <span class="lbl">BIC / SWIFT</span>
-          <span class="val">MPOSIE2D</span>
+          <div class="val-line">
+            <span class="val" data-copy="MPOSIE2D">MPOSIE2D</span>
+            <button type="button" class="copy-btn" data-copy-btn aria-label="Copiază BIC">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
         </div>
         <div class="bank-row">
           <span class="lbl">Mesaj plată</span>
-          <span class="val">Avans + numele tău</span>
+          <div class="val-line">
+            <span class="val">Avans + numele tău</span>
+          </div>
         </div>
         <div class="bank-row">
           <span class="lbl">Sumă</span>
-          <span class="val">49.00 RON</span>
+          <div class="val-line">
+            <span class="val" data-copy="49.00">49.00 RON</span>
+            <button type="button" class="copy-btn" data-copy-btn aria-label="Copiază suma">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
         </div>
       </div>
-      <button type="button" class="copy-btn" id="copy-iban-btn" style="width:100%; justify-content:center; margin-top:.85rem; padding:.7rem;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        <span>Copiază IBAN</span>
-      </button>
-      <p class="bank-note">După ce faci transferul, te rugăm să ne trimiți dovada plății pe <strong>WhatsApp</strong>, ca să confirmăm avansul și programarea. Transferurile bancare pot dura 1-2 zile lucrătoare până se procesează.</p>
+      <p class="bank-note">Apasă pe <strong>iconița de copiere</strong> de lângă fiecare câmp ca să-l lipești direct în aplicația băncii tale. După ce faci transferul, te rugăm să ne trimiți dovada plății pe <strong>WhatsApp</strong>, ca să confirmăm avansul și programarea. Transferurile bancare pot dura 1-2 zile lucrătoare până se procesează.</p>
     </div>
   </div>
 
@@ -222,20 +255,21 @@ new GLTFLoader().load('brand_asset/3dsvg.glb', (g) => {
     });
   });
 
-  var copyBtn = document.getElementById('copy-iban-btn');
-  copyBtn.addEventListener('click', function(){
-    var iban = document.getElementById('bank-iban').textContent.replace(/\s+/g, '');
-    var label = copyBtn.querySelector('span');
-    var reset = function(){ copyBtn.classList.remove('copied'); label.textContent = 'Copiază IBAN'; };
-    (navigator.clipboard && navigator.clipboard.writeText
-      ? navigator.clipboard.writeText(iban)
-      : Promise.reject()
-    ).then(function(){
-      copyBtn.classList.add('copied');
-      label.textContent = 'Copiat!';
-      setTimeout(reset, 1800);
-    }).catch(function(){
-      label.textContent = iban;
+  var checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>';
+  document.querySelectorAll('[data-copy-btn]').forEach(function(btn){
+    var originalHTML = btn.innerHTML;
+    var valueEl = btn.closest('.val-line').querySelector('[data-copy]');
+    btn.addEventListener('click', function(){
+      var text = valueEl.getAttribute('data-copy');
+      var reset = function(){ btn.classList.remove('copied'); btn.innerHTML = originalHTML; };
+      (navigator.clipboard && navigator.clipboard.writeText
+        ? navigator.clipboard.writeText(text)
+        : Promise.reject()
+      ).then(function(){
+        btn.classList.add('copied');
+        btn.innerHTML = checkIcon;
+        setTimeout(reset, 1500);
+      }).catch(function(){});
     });
   });
 })();
