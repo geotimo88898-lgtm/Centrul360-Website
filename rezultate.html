@@ -185,7 +185,8 @@
   .rcard{ border:1px solid var(--line); border-radius:24px; overflow:hidden; background:var(--paper-2);
     transition:transform .45s cubic-bezier(.16,1,.3,1), border-color .45s ease, box-shadow .45s ease, opacity .45s ease; }
   .rcard:hover{ transform:translateY(-5px); border-color:rgba(255,255,255,.2); box-shadow:0 30px 60px -30px rgba(0,0,0,.85); }
-  .rcard .ba{ border:0; border-radius:0; border-bottom:1px solid var(--line); }
+  .rcard .ba{ border:0; border-radius:0; border-bottom:1px solid var(--line); aspect-ratio:3/2; }
+  .rcard .ba img{ object-fit:contain; background:#0e0e12; }
   .rcard .rbody{ padding:1.1rem 1.25rem 1.3rem; }
   .rcard .rmeta{ display:flex; align-items:center; gap:.55rem; }
   .rcard .rmeta .clinic{ font-size:.66rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); }
@@ -364,7 +365,7 @@
   <section class="hero">
     <p class="eyebrow" style="color:var(--muted);">Rezultate Centrul360</p>
     <h1 class="display">Transformări reale,<br><span class="accent">înainte</span> și după.</h1>
-    <p class="lead">Rezultate obținute cu tratamente non-invazive, ședință cu ședință. Trage de cursor peste fiecare imagine ca să vezi diferența — fără filtre, fără promisiuni goale.</p>
+    <p class="lead">Rezultate obținute cu tratamente non-invazive, ședință cu ședință — fotografii reale, publicate cu acordul clientelor. Fără filtre, fără promisiuni goale.</p>
     <div class="cta-row">
       <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-on-dark" style="padding:1rem 1.75rem; font-size:15px;">Vreau rezultate ca acestea <span class="arrow">→</span></a>
       <a href="#galerie" class="pill pill-glass" style="padding:1rem 1.75rem; font-size:15px;">Vezi galeria <span class="arrow">→</span></a>
@@ -382,147 +383,154 @@
   <!-- ============ GALLERY (interactive before/after) ============ -->
   <section class="sec" id="galerie">
     <p class="sec-eyebrow eyebrow"><i></i> Galeria de rezultate</p>
-    <h2>Înainte &amp; după,<br>la atingerea cursorului.</h2>
-    <p class="sub">Filtrează după zonă și trage de bară ca să compari. Înlocuiește placeholderele cu fotografiile reale ale clientelor (cu acordul lor) — păstrează raportul 4:3.</p>
+    <h2>Înainte &amp; după,<br>caz cu caz.</h2>
+    <p class="sub">Filtrează după zonă. Fotografii reale ale clientelor Centrul360, publicate cu acordul lor.</p>
 
     <div class="filters reveal" role="tablist" aria-label="Filtrează rezultatele">
       <button class="filter is-active" data-filter="all" role="tab" aria-selected="true">Toate</button>
       <button class="filter" data-filter="fata" role="tab" aria-selected="false">Față</button>
       <button class="filter" data-filter="corp" role="tab" aria-selected="false">Corp</button>
-      <button class="filter" data-filter="epilare" role="tab" aria-selected="false">Epilare laser</button>
     </div>
 
     <div class="gallery" id="gallery">
 
-      <!-- RESULT 1 -->
-      <article class="rcard reveal d1" data-cat="fata">
-        <div class="ba is-ph" data-ba>
-          <img class="ba-after" src="https://placehold.co/800x600/1c1c22/3a3a44?text=DUPA" alt="Rezultat după tratament facial">
-          <div class="ba-before-wrap"><img src="https://placehold.co/800x600/0e0e12/2a2a32?text=INAINTE" alt="Înainte de tratament facial"></div>
-          <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-          <div class="ba-divider"></div>
-          <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-        </div>
+      <article class="rcard reveal d1" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-01-hifu-abdomen-total.webp" alt="Rezultat real înainte și după — HIFU abdomen total" loading="lazy" decoding="async"></div>
         <div class="rbody">
-          <div class="rmeta"><span class="clinic">Timișoara</span><span class="dot"></span><span class="clinic">[nr] ședințe</span></div>
-          <h3>[Tratament · ex. Anti-acnee]</h3>
-          <p class="cap">[Scrie aici rezultatul pe scurt — ce s-a îmbunătățit și în cât timp.]</p>
-          <div class="rtags"><span class="rtag">[zonă]</span><span class="rtag">[tehnologie]</span></div>
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>HIFU abdomen total</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">HIFU</span></div>
         </div>
       </article>
 
-      <!-- RESULT 2 -->
+      <article class="rcard reveal d2" data-cat="fata">
+        <div class="ba"><img src="brand_asset/catalog/cazul-02-hifu-gusa.webp" alt="Rezultat real înainte și după — HIFU gușă" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>HIFU gușă</h3>
+          <div class="rtags"><span class="rtag">Gușă</span><span class="rtag">HIFU</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d3" data-cat="fata">
+        <div class="ba"><img src="brand_asset/catalog/cazul-03-hifu-gusa-tm.webp" alt="Rezultat real înainte și după — HIFU gușă, din două unghiuri" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Timișoara</span></div>
+          <h3>HIFU gușă</h3>
+          <div class="rtags"><span class="rtag">Gușă</span><span class="rtag">HIFU</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d1" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-04-liposonix-abdomen.webp" alt="Rezultat real înainte și după — Liposonix abdomen" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>Liposonix abdomen</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">Liposonix</span></div>
+        </div>
+      </article>
+
       <article class="rcard reveal d2" data-cat="corp">
-        <div class="ba is-ph" data-ba>
-          <img class="ba-after" src="https://placehold.co/800x600/1c1c22/3a3a44?text=DUPA" alt="Rezultat după tratament corporal">
-          <div class="ba-before-wrap"><img src="https://placehold.co/800x600/0e0e12/2a2a32?text=INAINTE" alt="Înainte de tratament corporal"></div>
-          <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-          <div class="ba-divider"></div>
-          <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-        </div>
+        <div class="ba"><img src="brand_asset/catalog/cazul-05-liposonix-solduri.webp" alt="Rezultat real înainte și după — Liposonix șolduri" loading="lazy" decoding="async"></div>
         <div class="rbody">
-          <div class="rmeta"><span class="clinic">Timișoara</span><span class="dot"></span><span class="clinic">[nr] ședințe</span></div>
-          <h3>[Tratament · ex. Remodelare corporală]</h3>
-          <p class="cap">[Scrie aici rezultatul pe scurt — ce s-a îmbunătățit și în cât timp.]</p>
-          <div class="rtags"><span class="rtag">[zonă]</span><span class="rtag">[tehnologie]</span></div>
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>Liposonix șolduri</h3>
+          <div class="rtags"><span class="rtag">Șolduri</span><span class="rtag">Liposonix</span></div>
         </div>
       </article>
 
-      <!-- RESULT 3 -->
-      <article class="rcard reveal d3" data-cat="epilare">
-        <div class="ba is-ph" data-ba>
-          <img class="ba-after" src="https://placehold.co/800x600/1c1c22/3a3a44?text=DUPA" alt="Rezultat după epilare laser">
-          <div class="ba-before-wrap"><img src="https://placehold.co/800x600/0e0e12/2a2a32?text=INAINTE" alt="Înainte de epilare laser"></div>
-          <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-          <div class="ba-divider"></div>
-          <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-        </div>
+      <article class="rcard reveal d3" data-cat="fata">
+        <div class="ba"><img src="brand_asset/catalog/cazul-06-hifu-full-face-tm.webp" alt="Rezultat real înainte și după — HIFU Full Face" loading="lazy" decoding="async"></div>
         <div class="rbody">
-          <div class="rmeta"><span class="clinic">Arad</span><span class="dot"></span><span class="clinic">[nr] ședințe</span></div>
-          <h3>[Tratament · ex. Epilare laser Elysion Pro]</h3>
-          <p class="cap">[Scrie aici rezultatul pe scurt — ce s-a îmbunătățit și în cât timp.]</p>
-          <div class="rtags"><span class="rtag">[zonă]</span><span class="rtag">Elysion Pro</span></div>
+          <div class="rmeta"><span class="clinic">Timișoara</span></div>
+          <h3>HIFU Full Face</h3>
+          <div class="rtags"><span class="rtag">Față completă</span><span class="rtag">HIFU</span></div>
         </div>
       </article>
 
-      <!-- RESULT 4 -->
       <article class="rcard reveal d1" data-cat="fata">
-        <div class="ba is-ph" data-ba>
-          <img class="ba-after" src="https://placehold.co/800x600/1c1c22/3a3a44?text=DUPA" alt="Rezultat după tratament facial">
-          <div class="ba-before-wrap"><img src="https://placehold.co/800x600/0e0e12/2a2a32?text=INAINTE" alt="Înainte de tratament facial"></div>
-          <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-          <div class="ba-divider"></div>
-          <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-        </div>
+        <div class="ba"><img src="brand_asset/catalog/cazul-07-hifu-full-face-arad.webp" alt="Rezultat real înainte și după — HIFU Full Face" loading="lazy" decoding="async"></div>
         <div class="rbody">
-          <div class="rmeta"><span class="clinic">Arad</span><span class="dot"></span><span class="clinic">[nr] ședințe</span></div>
-          <h3>[Tratament · ex. Lifting HIFU]</h3>
-          <p class="cap">[Scrie aici rezultatul pe scurt — ce s-a îmbunătățit și în cât timp.]</p>
-          <div class="rtags"><span class="rtag">[zonă]</span><span class="rtag">HIFU</span></div>
+          <div class="rmeta"><span class="clinic">Arad</span></div>
+          <h3>HIFU Full Face</h3>
+          <div class="rtags"><span class="rtag">Față completă</span><span class="rtag">HIFU</span></div>
         </div>
       </article>
 
-      <!-- RESULT 5 -->
       <article class="rcard reveal d2" data-cat="corp">
-        <div class="ba is-ph" data-ba>
-          <img class="ba-after" src="https://placehold.co/800x600/1c1c22/3a3a44?text=DUPA" alt="Rezultat după tratament corporal">
-          <div class="ba-before-wrap"><img src="https://placehold.co/800x600/0e0e12/2a2a32?text=INAINTE" alt="Înainte de tratament corporal"></div>
-          <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-          <div class="ba-divider"></div>
-          <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-        </div>
+        <div class="ba"><img src="brand_asset/catalog/cazul-08-pachet-mini-belly.webp" alt="Rezultat real înainte și după — pachet Mini Belly" loading="lazy" decoding="async"></div>
         <div class="rbody">
-          <div class="rmeta"><span class="clinic">Timișoara</span><span class="dot"></span><span class="clinic">[nr] ședințe</span></div>
-          <h3>[Tratament · ex. Anti-celulită]</h3>
-          <p class="cap">[Scrie aici rezultatul pe scurt — ce s-a îmbunătățit și în cât timp.]</p>
-          <div class="rtags"><span class="rtag">[zonă]</span><span class="rtag">[tehnologie]</span></div>
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>Pachet Mini Belly</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">Liposonix + EMS</span></div>
         </div>
       </article>
 
-      <!-- RESULT 6 -->
-      <article class="rcard reveal d3" data-cat="epilare">
-        <div class="ba is-ph" data-ba>
-          <img class="ba-after" src="https://placehold.co/800x600/1c1c22/3a3a44?text=DUPA" alt="Rezultat după epilare laser">
-          <div class="ba-before-wrap"><img src="https://placehold.co/800x600/0e0e12/2a2a32?text=INAINTE" alt="Înainte de epilare laser"></div>
-          <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-          <div class="ba-divider"></div>
-          <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-        </div>
+      <article class="rcard reveal d3" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-09-hifu-laxitate-abdomen-tm.webp" alt="Rezultat real înainte și după — HIFU laxitate abdomen" loading="lazy" decoding="async"></div>
         <div class="rbody">
-          <div class="rmeta"><span class="clinic">Timișoara</span><span class="dot"></span><span class="clinic">[nr] ședințe</span></div>
-          <h3>[Tratament · ex. Epilare laser corp]</h3>
-          <p class="cap">[Scrie aici rezultatul pe scurt — ce s-a îmbunătățit și în cât timp.]</p>
-          <div class="rtags"><span class="rtag">[zonă]</span><span class="rtag">Elysion Pro</span></div>
+          <div class="rmeta"><span class="clinic">Timișoara</span></div>
+          <h3>HIFU laxitate abdomen</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">HIFU</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d1" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-10-liposonix-abdomen-profil.webp" alt="Rezultat real înainte și după — Liposonix abdomen, din profil" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>Liposonix abdomen</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">Liposonix</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d2" data-cat="fata">
+        <div class="ba"><img src="brand_asset/catalog/cazul-11-facial-restart-arad.webp" alt="Rezultat real înainte și după — tratament facial Restart" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Arad</span></div>
+          <h3>Tratament facial Restart</h3>
+          <div class="rtags"><span class="rtag">Față</span><span class="rtag">Restart</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d3" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-12-hifu-abdomen-inferior-arad.webp" alt="Rezultat real înainte și după — HIFU abdomen inferior" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Arad</span></div>
+          <h3>HIFU abdomen inferior</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">HIFU</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d1" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-13-liposonix-ems.webp" alt="Rezultat real înainte și după — Liposonix și EMS" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Centrul360</span></div>
+          <h3>Liposonix + EMS</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">Liposonix + EMS</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d2" data-cat="corp">
+        <div class="ba"><img src="brand_asset/catalog/cazul-14-liposonix-abdomen-total-arad.webp" alt="Rezultat real înainte și după — Liposonix abdomen total" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Arad</span></div>
+          <h3>Liposonix abdomen total</h3>
+          <div class="rtags"><span class="rtag">Abdomen</span><span class="rtag">Liposonix</span></div>
+        </div>
+      </article>
+
+      <article class="rcard reveal d3" data-cat="fata">
+        <div class="ba"><img src="brand_asset/catalog/cazul-15-hifu-gusa-tm-3.webp" alt="Rezultat real înainte și după — HIFU gușă" loading="lazy" decoding="async"></div>
+        <div class="rbody">
+          <div class="rmeta"><span class="clinic">Timișoara</span></div>
+          <h3>HIFU gușă</h3>
+          <div class="rtags"><span class="rtag">Gușă</span><span class="rtag">HIFU</span></div>
         </div>
       </article>
 
     </div>
-    <p class="disclaimer">Fotografiile sunt orientative (placeholder). Rezultatele reale variază de la o persoană la alta în funcție de zonă, tip de piele și numărul de ședințe. Publică doar imagini pentru care ai acordul scris al clientei.</p>
-  </section>
-
-  <!-- ============ FEATURED RESULT ============ -->
-  <section class="sec" id="featured">
-    <p class="sec-eyebrow eyebrow"><i></i> Transformarea lunii</p>
-    <h2>O poveste, văzută<br>de aproape.</h2>
-    <div class="feature">
-      <div class="ba is-ph reveal d1" data-ba>
-        <img class="ba-after" src="https://placehold.co/1280x880/1c1c22/3a3a44?text=DUPA" alt="Transformare evidențiată — după">
-        <div class="ba-before-wrap"><img src="https://placehold.co/1280x880/0e0e12/2a2a32?text=INAINTE" alt="Transformare evidențiată — înainte"></div>
-        <span class="ba-tag b">Înainte</span><span class="ba-tag a">După</span>
-        <div class="ba-divider"></div>
-        <button class="ba-handle" type="button" aria-label="Trage pentru a compara înainte și după" aria-valnow="50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L3 12l6 6M15 6l6 6-6 6"/></svg></button>
-      </div>
-      <div class="ftxt reveal d2">
-        <p class="quote">„[Adaugă aici un citat real al clientei despre experiența și rezultatul obținut.]"</p>
-        <div class="meta">
-          <span class="av">[]</span>
-          <div>
-            <p class="who">[Prenume C.]</p>
-            <p class="role">[Tratament] · [nr] ședințe · [oraș]</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <p class="disclaimer">Rezultatele reale variază de la o persoană la alta, în funcție de zonă, tip de piele și numărul de ședințe. Fiecare fotografie e publicată cu acordul scris al clientei.</p>
   </section>
 
   <!-- ============ PROCESS ============ -->
@@ -603,18 +611,6 @@
           </div>
           <p class="rev-stars" style="margin-bottom:.75rem;" aria-label="5 din 5 stele">★★★★★</p>
           <p style="color:var(--muted); font-size:15px; line-height:1.7;">„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil."</p>
-        </article>
-
-        <article class="review-card" style="border-style:dashed;">
-          <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:1rem;">
-            <span style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:var(--muted-2); display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:600; flex:none;">[]</span>
-            <div style="flex:1; min-width:0;">
-              <p style="font-weight:600; font-size:15px; line-height:1.2; color:var(--muted-2);">[Nume client]</p>
-              <p class="eyebrow" style="color:var(--muted-2); margin-top:.15rem;">Recenzie Google · [oraș]</p>
-            </div>
-          </div>
-          <p class="rev-stars" style="margin-bottom:.75rem; opacity:.4;">★★★★★</p>
-          <p style="color:var(--muted-2); font-size:15px; line-height:1.7;">„[Adaugă aici o recenzie reală — copiază textul din Google.]"</p>
         </article>
       </div>
 
