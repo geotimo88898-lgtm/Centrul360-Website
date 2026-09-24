@@ -110,7 +110,17 @@
       N = parseInt(seq.dataset.seqCount, 10) || 0;
       const base = seq.dataset.seqBase, ext = seq.dataset.seqExt || '.jpg';
       const pad = n => String(n).padStart(3, '0');
-      for(let i=1;i<=N;i++){ const im = new Image(); im.decoding='async'; im.src = base + pad(i) + ext; frames.push(im); }
+      const idle = window.requestIdleCallback || (fn => setTimeout(fn, 60));
+      const BATCH = 6, FIRST = 6; // load enough frames upfront for instant scroll response, then trickle the rest in idle time
+      for(let i=1;i<=Math.min(FIRST,N);i++){ const im = new Image(); im.decoding='async'; im.src = base + pad(i) + ext; frames.push(im); }
+      let next = FIRST + 1;
+      function loadBatch(){
+        const end = Math.min(next + BATCH - 1, N);
+        for(let i=next;i<=end;i++){ const im = new Image(); im.decoding='async'; im.src = base + pad(i) + ext; frames[i-1] = im; }
+        next = end + 1;
+        if(next <= N) idle(loadBatch);
+      }
+      if(N > FIRST) idle(loadBatch);
     }
     if(seq && 'IntersectionObserver' in window){
       const io = new IntersectionObserver((entries)=>{
