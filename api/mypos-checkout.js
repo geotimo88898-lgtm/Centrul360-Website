@@ -54,7 +54,12 @@ module.exports = async (req, res) => {
 
   const storeId = process.env.MYPOS_STORE_ID;
   const walletNumber = process.env.MYPOS_WALLET_NUMBER;
-  const privateKey = process.env.MYPOS_PRIVATE_KEY;
+  // Vercel's env var editor stores the value as a single line, so a PEM key pasted in
+  // often ends up with literal "\n" characters instead of real line breaks — normalize
+  // that back to real newlines or Node's crypto module can't parse the key.
+  const privateKey = process.env.MYPOS_PRIVATE_KEY
+    ? process.env.MYPOS_PRIVATE_KEY.replace(/\\n/g, '\n')
+    : process.env.MYPOS_PRIVATE_KEY;
   const keyIndex = process.env.MYPOS_KEY_INDEX;
 
   if (!storeId || !walletNumber || !privateKey || !keyIndex) {
