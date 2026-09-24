@@ -60,6 +60,14 @@
     set(50);
   });
 
+  /* ----- lazy-autoplay: only fetch/play video once it's actually visible ----- */
+  document.querySelectorAll('video[data-lazyplay]').forEach(video=>{
+    const lio = new IntersectionObserver(es=>es.forEach(e=>{
+      if(e.isIntersecting){ const pr=video.play(); pr && pr.catch && pr.catch(()=>{}); } else { video.pause(); }
+    }), { threshold:0.01, rootMargin:'200px 0px' });
+    lio.observe(video);
+  });
+
   /* ----- scroll-reveal video (clip-path inset opens as it scrolls into view) ----- */
   document.querySelectorAll('[data-revealvid]').forEach(box=>{
     const inner = box.querySelector('.revealvid-inner');
