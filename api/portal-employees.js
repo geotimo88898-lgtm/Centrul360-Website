@@ -1,7 +1,7 @@
 // POST /api/portal-employees — admin-only employee management (Setări → Angajați).
-// One endpoint, four actions via body.action: 'create' | 'reset_password' | 'set_active'
-// | 'set_goals'. Passwords are hashed server-side (scrypt, see _lib/auth.js) before ever
-// touching storage.
+// One endpoint, five actions via body.action: 'create' | 'update_details' |
+// 'reset_password' | 'set_active' | 'set_goals'. Passwords are hashed server-side
+// (scrypt, see _lib/auth.js) before ever touching storage.
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -65,6 +65,35 @@ module.exports = async (req, res) => {
       res.status(200).json({
         ok: true,
         employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, username: employee.username, active: true },
+      });
+      return;
+    }
+
+    if (action === 'update_details') {
+      // Fixes a typo'd name/location, or a role change (e.g. an employee moving
+      // locations) — keeps the same id, so her login, goals and sales history stay
+      // intact (unlike deactivating + re-creating, which would silently orphan them).
+      const { employeeId, name, location, role } = req.body || {};
+      if (!employeeId || !name || !location || !role) {
+        res.status(400).json({ error: 'missing_fields' });
+        return;
+      }
+      if (!VALID_ROLES.includes(role)) {
+        res.status(400).json({ error: 'invalid_role' });
+        return;
+      }
+      const employee = employees.find((e) => e.id === employeeId);
+      if (!employee) {
+        res.status(404).json({ error: 'employee_not_found' });
+        return;
+      }
+      employee.name = String(name).slice(0, 100);
+      employee.location = String(location).slice(0, 100);
+      employee.role = role;
+      await writeJSON('data/employees.json', employees);
+      res.status(200).json({
+        ok: true,
+        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role },
       });
       return;
     }

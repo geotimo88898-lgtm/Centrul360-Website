@@ -1291,7 +1291,29 @@
         activateTab('setari');
       });
 
-      td.appendChild(resetBtn); td.appendChild(toggleBtn);
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pill small ghost'; editBtn.style.marginLeft = '.5rem'; editBtn.textContent = 'Editează';
+      editBtn.addEventListener('click', async ()=>{
+        const name = prompt('Nume:', emp.name);
+        if (name === null || !name.trim()) return;
+        const location = prompt('Locație:', emp.location);
+        if (location === null || !location.trim()) return;
+        const role = prompt('Rol (scrie exact: cosmetician, receptie sau admin):', emp.role);
+        if (role === null) return;
+        if (!['cosmetician','receptie','admin'].includes(role)){
+          alert('Rol invalid — scrie exact "cosmetician", "receptie" sau "admin".');
+          return;
+        }
+        const resp = await fetch('/api/portal-employees', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'update_details', employeeId: emp.id, name: name.trim(), location: location.trim(), role })
+        });
+        if (!resp.ok){ alert('Nu am putut salva modificarea.'); return; }
+        await loadData();
+        activateTab('setari');
+      });
+
+      td.appendChild(resetBtn); td.appendChild(editBtn); td.appendChild(toggleBtn);
       body.appendChild(tr);
     });
   }
