@@ -1425,7 +1425,7 @@
         '<td>'+fmtRON(s.amount)+'</td>' +
         '<td>'+(METHOD_LABELS[s.method]||s.method)+'</td>' +
         '<td>'+escapeHtml(s.performedByName||'—')+'</td>' +
-        '<td class="admin-only hidden"><div class="row-actions"></div></td>';
+        '<td><div class="row-actions"></div></td>';
       body.appendChild(tr);
 
       if (DATA.isAdmin){
