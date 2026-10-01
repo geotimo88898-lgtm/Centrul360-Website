@@ -26,44 +26,35 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const employees = await readJSON('data/employees.json', null);
+    // Bootstrap admin credentials always work, independent of whatever employees.json
+    // currently holds — the owner must never be lockable out of their own portal just
+    // because no employee row happens to share ADMIN_USERNAME, or because employees.json
+    // didn't exist yet, or exists but is empty. Computed once, checked as a fallback
+    // below rather than nested per-branch (the earlier per-branch version missed the
+    // case where employees.json exists but no employee matches the typed username at
+    // all, which returned 401 before ever consulting ADMIN_USERNAME/ADMIN_PASSWORD).
+    const adminUser = process.env.ADMIN_USERNAME;
+    const adminPass = process.env.ADMIN_PASSWORD;
+    const isBootstrapAdmin = Boolean(
+      adminUser && adminPass && username === adminUser && password === adminPass
+    );
 
-    if (employees === null) {
-      // First run — no employees.json yet. Allow the bootstrap admin only.
-      const adminUser = process.env.ADMIN_USERNAME;
-      const adminPass = process.env.ADMIN_PASSWORD;
-      if (adminUser && adminPass && username === adminUser && password === adminPass) {
-        setSessionCookie(res, 'admin', 'admin');
-        res.status(200).json({ ok: true, role: 'admin', name: 'Admin' });
-        return;
-      }
-      res.status(401).json({ error: 'invalid_credentials' });
+    const employees = await readJSON('data/employees.json', []);
+    const employee = employees.find((e) => e.username === username && e.active !== false);
+
+    if (employee && verifyPassword(password, employee.passwordSalt, employee.passwordHash)) {
+      setSessionCookie(res, employee.id, employee.role);
+      res.status(200).json({ ok: true, role: employee.role, name: employee.name });
       return;
     }
 
-    const employee = employees.find((e) => e.username === username);
-    if (!employee || employee.active === false) {
-      res.status(401).json({ error: 'invalid_credentials' });
+    if (isBootstrapAdmin) {
+      setSessionCookie(res, 'admin', 'admin');
+      res.status(200).json({ ok: true, role: 'admin', name: 'Admin' });
       return;
     }
 
-    const valid = verifyPassword(password, employee.passwordSalt, employee.passwordHash);
-    if (!valid) {
-      // Also allow bootstrap admin login even after employees.json exists, as long as
-      // the username matches ADMIN_USERNAME — keeps the owner from ever being locked out.
-      const adminUser = process.env.ADMIN_USERNAME;
-      const adminPass = process.env.ADMIN_PASSWORD;
-      if (adminUser && adminPass && username === adminUser && password === adminPass) {
-        setSessionCookie(res, 'admin', 'admin');
-        res.status(200).json({ ok: true, role: 'admin', name: 'Admin' });
-        return;
-      }
-      res.status(401).json({ error: 'invalid_credentials' });
-      return;
-    }
-
-    setSessionCookie(res, employee.id, employee.role);
-    res.status(200).json({ ok: true, role: employee.role, name: employee.name });
+    res.status(401).json({ error: 'invalid_credentials' });
   } catch (err) {
     console.error('portal-login error:', err.message);
     res.status(500).json({ error: 'login_failed' });
