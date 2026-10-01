@@ -184,7 +184,7 @@
     <nav class="tabs" id="tabsNav">
       <button data-tab="panou" class="active">Panou</button>
       <button data-tab="incasare">Încasează client</button>
-      <button data-tab="comision">Comision</button>
+      <button data-tab="comision" class="staff-only">Comision</button>
       <button data-tab="incasari">Tabel de încasări</button>
       <button data-tab="programari">Programări</button>
       <button data-tab="resurse">Resurse</button>
@@ -262,7 +262,7 @@
       </section>
 
       <!-- COMISION -->
-      <section class="panel" id="panel-comision">
+      <section class="panel staff-only" id="panel-comision">
         <div class="sec-eyebrow"><i></i>Comision</div>
         <h2>Loghează o vânzare proprie</h2>
         <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Pentru calculul comisionului tău — trece prin aprobarea administratorului.</p>
@@ -616,6 +616,9 @@
 
     if (DATA.isAdmin){
       document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      // The admin account doesn't earn commission — hide "Comision" rather than show
+      // an empty self-commission log that makes no sense for the owner's own account.
+      document.querySelectorAll('.staff-only').forEach(el => el.classList.add('hidden'));
     }
 
     renderPanou();
