@@ -19,7 +19,7 @@ const DAILY_TASKS = {
   ],
   receptie: [
     'Confirmă telefonic sau prin mesaj programările pentru ziua următoare.',
-    'Loghează fiecare programare (confirmată/anulată/reprogramată) în tab-ul „Programări".',
+    'Actualizează statusul fiecărei programări (confirmată/anulată/reprogramată) în tab-ul „Calendar".',
     'Încasează fiecare client plătitor în tab-ul „Încasează client" — înlocuiește fișa de hârtie.',
     'Răspunde la solicitările de programare în maxim 15 minute.',
     'Predă la final de zi situația încasărilor către management (vezi „Tabel de încasări").',
@@ -31,7 +31,9 @@ const DAILY_TASKS = {
   ],
 };
 
-const APPOINTMENT_STATUSES = ['confirmata', 'anulata', 'reprogramata'];
+// The full set of statuses an appointment can carry on the new shared Calendar (see
+// api/portal-appointments.js). 'programata' is the default for a freshly booked slot.
+const APPOINTMENT_STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata'];
 
 function monthKey(dateStr) {
   // dateStr expected as YYYY-MM-DD; returns YYYY-MM.
@@ -43,21 +45,26 @@ function todayISO() {
 }
 
 function emptyStatusCounts() {
-  return { confirmata: 0, anulata: 0, reprogramata: 0 };
+  const out = {};
+  APPOINTMENT_STATUSES.forEach((s) => { out[s] = 0; });
+  return out;
 }
 
 // Computes the live "current" value for one individual goal. Only 'manual' goals carry
 // a stored value (edited by the admin); every other metric is derived here from the
 // existing sales.json / appointments.json data, never separately tracked.
+// "programari_*" metrics count by cosmeticianId (who the appointment is assigned to),
+// not by who created/logged the row — the Calendar is shared, so creation and
+// assignment are no longer the same thing they were under the old same-day log.
 function computeGoalCurrent(goal, employeeId, sales, appointments, today, month) {
   switch (goal.metric) {
     case 'programari_confirmate_azi':
       return appointments.filter(
-        (a) => a.employeeId === employeeId && a.date === today && a.status === 'confirmata'
+        (a) => a.cosmeticianId === employeeId && a.date === today && a.status === 'confirmata'
       ).length;
     case 'programari_anulate_azi':
       return appointments.filter(
-        (a) => a.employeeId === employeeId && a.date === today && a.status === 'anulata'
+        (a) => a.cosmeticianId === employeeId && a.date === today && a.status === 'anulata'
       ).length;
     case 'comision_aprobat_luna':
       return sales
@@ -172,22 +179,20 @@ module.exports = async (req, res) => {
       })
       .sort((a, b) => (a.date < b.date ? 1 : -1));
 
-    // Programări — today's shared log (newest first) plus aggregate counts, and the
-    // logged-in employee's own counts for the Panou widget.
+    // Calendar — today's appointments (time order) for the Panou "azi" glance, plus
+    // aggregate counts and the logged-in employee's own counts (by assigned
+    // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
+    // is fetched directly from api/portal-appointments.js by portal.html, not here.
     const todaysAppointments = appointments
       .filter((a) => a.date === today)
       .slice()
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    const todaysAppointmentsWithNames = todaysAppointments.map((a) => {
-      const emp = employeesRaw.find((e) => e.id === a.employeeId);
-      return { ...a, employeeName: emp ? emp.name : a.employeeId };
-    });
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const countsToday = emptyStatusCounts();
     const myCountsToday = emptyStatusCounts();
     todaysAppointments.forEach((a) => {
       if (APPOINTMENT_STATUSES.includes(a.status)) {
         countsToday[a.status] += 1;
-        if (a.employeeId === me.id) myCountsToday[a.status] += 1;
+        if (a.cosmeticianId === me.id) myCountsToday[a.status] += 1;
       }
     });
 
@@ -222,8 +227,8 @@ module.exports = async (req, res) => {
       mySales,
       incasari,
       activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location })),
-      appointments: {
-        today: todaysAppointmentsWithNames,
+      appointmentsToday: {
+        list: todaysAppointments,
         countsToday,
         myCountsToday,
       },

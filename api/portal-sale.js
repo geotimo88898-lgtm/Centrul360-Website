@@ -195,7 +195,7 @@ async function handleIncasare(req, res, session) {
   }
 }
 
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' });
     return;
@@ -212,3 +212,9 @@ module.exports = async (req, res) => {
     await handleComision(req, res, session);
   }
 };
+
+// Exported so other endpoints (api/portal-appointments.js) share this exact list
+// instead of maintaining a second copy that could drift out of sync.
+handler.VALID_CATEGORIES = VALID_CATEGORIES;
+
+module.exports = handler;

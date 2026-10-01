@@ -69,6 +69,22 @@
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
   @media (max-width:720px){ .grid2{ grid-template-columns:1fr; } .shell{ flex-direction:column; } nav.tabs{ width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--line); } }
 
+  /* ---- Calendar: Zi/Săptămână toggle, week grid ---- */
+  .cal-toolbar{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+  .cal-toolbar input[type=date]{ width:auto; max-width:170px; }
+  .week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:.7rem; align-items:start; }
+  @media (max-width:720px){ .week-grid{ grid-template-columns:1fr; } }
+  .week-day{ border:1px solid var(--line); border-radius:14px; padding:.7rem; min-height:110px; background:var(--paper); }
+  .week-day.is-today{ background:var(--accent-soft); border-color:var(--accent); }
+  .week-day-header{ font-size:.78rem; font-weight:700; margin-bottom:.5rem; display:flex; justify-content:space-between; color:var(--muted); }
+  .week-day-header b{ color:var(--fg); }
+  .week-appt{ display:flex; align-items:center; gap:.4rem; font-size:.78rem; padding:.3rem .4rem; border-radius:8px; margin-bottom:.3rem; cursor:pointer; background:var(--glass); }
+  .week-appt:hover{ background:var(--glass-2); }
+  .week-appt-dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .week-appt-time{ font-weight:600; flex:none; }
+  .week-appt-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .week-day-empty{ font-size:.76rem; color:var(--muted-2); }
+
   .checklist label{ display:flex; align-items:flex-start; gap:.6rem; padding:.45rem 0; font-size:.9rem; cursor:pointer; }
   .checklist input{ margin-top:.2rem; }
   .checklist label.done span{ text-decoration:line-through; color:var(--muted-2); }
@@ -86,6 +102,12 @@
   .status-pending{ background:rgba(240,201,122,0.15); color:var(--warn); }
   .status-approved{ background:rgba(143,214,168,0.15); color:var(--good); }
   .status-rejected{ background:rgba(240,163,163,0.15); color:var(--bad); }
+  .status-recorded{ background:var(--glass-2); color:var(--fg); }
+  .status-programata{ background:rgba(58,90,214,0.12); color:var(--accent); }
+  .status-confirmata{ background:rgba(143,214,168,0.15); color:var(--good); }
+  .status-anulata{ background:rgba(240,163,163,0.15); color:var(--bad); }
+  .status-reprogramata{ background:rgba(240,201,122,0.15); color:var(--warn); }
+  .status-finalizata{ background:var(--glass-2); color:var(--fg); }
 
   form.inline-form{ display:grid; grid-template-columns:repeat(2,1fr); gap:.9rem; }
   form.inline-form .full{ grid-column:1 / -1; }
@@ -193,7 +215,7 @@
       <button data-tab="incasare">Încasează client</button>
       <button data-tab="comision" class="staff-only">Comision</button>
       <button data-tab="incasari">Tabel de încasări</button>
-      <button data-tab="programari">Programări</button>
+      <button data-tab="programari">Calendar</button>
       <button data-tab="resurse">Resurse</button>
       <button data-tab="fise">Fișe de printat</button>
       <button data-tab="aprobari" class="admin-only hidden">Aprobări</button>
@@ -367,36 +389,73 @@
         </div>
       </section>
 
-      <!-- PROGRAMARI -->
+      <!-- CALENDAR (PROGRAMARI) -->
       <section class="panel" id="panel-programari">
-        <div class="sec-eyebrow"><i></i>Programări</div>
-        <h2>Jurnalul zilei</h2>
-        <div class="card">
-          <form class="inline-form" id="apptForm">
-            <div><label class="field-label">Status</label>
-              <select id="apptStatus" required>
-                <option value="confirmata">Confirmată</option>
-                <option value="anulata">Anulată</option>
-                <option value="reprogramata">Reprogramată</option>
-              </select>
-            </div>
-            <div><label class="field-label">Oră (opțional)</label><input type="text" id="apptTime" placeholder="ex: 14:30"></div>
-            <div class="full"><label class="field-label">Client (opțional)</label><input type="text" id="apptClient" placeholder="opțional"></div>
-            <div class="full">
-              <button class="pill" type="submit">Adaugă în jurnal</button>
-              <div class="msg" id="apptMsg"></div>
-            </div>
-          </form>
+        <div class="sec-eyebrow"><i></i>Calendar</div>
+        <h2>Calendar programări</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Comun tuturor — oricine poate adăuga sau edita orice programare.</p>
+
+        <div class="card cal-toolbar">
+          <button type="button" class="pill small" id="calViewDayBtn">Zi</button>
+          <button type="button" class="pill small ghost" id="calViewWeekBtn">Săptămână</button>
+          <div style="flex:1 1 auto;"></div>
+          <button type="button" class="pill small ghost" id="calPrevBtn">◀</button>
+          <input type="date" id="calDateInput">
+          <button type="button" class="pill small ghost" id="calNextBtn">▶</button>
         </div>
 
-        <h3>Astăzi</h3>
-        <div class="card">
-          <div id="apptCounts" style="display:flex; gap:1.4rem; flex-wrap:wrap; margin-bottom:1rem;"></div>
-          <table>
-            <thead><tr><th>Ora</th><th>Status</th><th>Client</th><th>Angajat</th></tr></thead>
-            <tbody id="apptBody"></tbody>
-          </table>
-          <p class="muted" id="apptEmpty" style="font-size:.86rem; display:none;">Nicio programare logată azi.</p>
+        <!-- ZI -->
+        <div id="calDayView">
+          <h3>Adaugă programare</h3>
+          <div class="card">
+            <form class="inline-form" id="apptForm">
+              <div><label class="field-label">Data</label><input type="date" id="apptDate" required></div>
+              <div><label class="field-label">Oră</label><input type="text" id="apptTime" placeholder="ex: 14:30" required></div>
+              <div class="client-ac"><label class="field-label">Client</label><input type="text" id="apptClient" autocomplete="off" required>
+                <div class="client-ac-list" id="apptClientList"></div>
+              </div>
+              <div><label class="field-label">Telefon client</label><input type="tel" id="apptClientPhone" placeholder="ex: 0722 123 456" required></div>
+              <div class="full"><label class="field-label">Tratament</label><input type="text" id="apptTreatment" required></div>
+              <div><label class="field-label">Categorie</label><select id="apptCategory" required></select></div>
+              <div><label class="field-label">Locație</label>
+                <select id="apptLocation" required>
+                  <option value="Timișoara">Timișoara</option>
+                  <option value="Arad">Arad</option>
+                </select>
+              </div>
+              <div><label class="field-label">Cosmeticiană</label><select id="apptCosmetician"><option value="">— neasignat —</option></select></div>
+              <div><label class="field-label">Status</label>
+                <select id="apptStatus" required>
+                  <option value="programata">Programată</option>
+                  <option value="confirmata">Confirmată</option>
+                  <option value="anulata">Anulată</option>
+                  <option value="reprogramata">Reprogramată</option>
+                  <option value="finalizata">Finalizată</option>
+                </select>
+              </div>
+              <div class="full">
+                <button class="pill" type="submit">Adaugă programare</button>
+                <div class="msg" id="apptMsg"></div>
+              </div>
+            </form>
+          </div>
+
+          <h3>Programările zilei</h3>
+          <div class="card">
+            <table>
+              <thead><tr><th>Ora</th><th>Client</th><th>Tratament</th><th>Locație</th><th>Cosmeticiană</th><th>Status</th><th></th></tr></thead>
+              <tbody id="apptBody"></tbody>
+            </table>
+            <p class="muted" id="apptEmpty" style="font-size:.86rem; display:none;">Nicio programare în această zi.</p>
+          </div>
+        </div>
+
+        <!-- SAPTAMANA -->
+        <div id="calWeekView" class="hidden">
+          <h3>Săptămâna selectată</h3>
+          <div class="card">
+            <div class="week-grid" id="weekGrid"></div>
+          </div>
         </div>
       </section>
 
@@ -670,7 +729,7 @@
   };
   const STATUS_LABELS = { pending: 'În așteptare', approved: 'Aprobat', rejected: 'Respins', recorded: 'Înregistrat' };
   const METHOD_LABELS = { card: 'Card', cash: 'Cash', transfer: 'Transfer' };
-  const APPT_STATUS_LABELS = { confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată' };
+  const APPT_STATUS_LABELS = { programata: 'Programată', confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată', finalizata: 'Finalizată' };
   const GOAL_METRIC_LABELS = {
     programari_confirmate_azi: 'Programări confirmate azi',
     programari_anulate_azi: 'Programări anulate azi',
@@ -723,7 +782,7 @@
     renderPerformedBySelect();
     renderMySales();
     renderIncasari();
-    renderAppointments();
+    initCalendar();
     renderResources();
     if (DATA.isAdmin){
       renderApprovals();
@@ -1010,7 +1069,7 @@
 
     const tally = document.getElementById('panouApptTally');
     tally.innerHTML = '';
-    const myCounts = DATA.appointments.myCountsToday;
+    const myCounts = DATA.appointmentsToday.myCountsToday;
     Object.keys(APPT_STATUS_LABELS).forEach(key=>{
       const div = document.createElement('div');
       div.innerHTML = '<div class="muted" style="font-size:.76rem;">'+APPT_STATUS_LABELS[key]+'</div>' +
@@ -1113,10 +1172,13 @@
   const saleClientAC = setupClientAutocomplete('saleClient', 'saleClientList', (c)=>{
     document.getElementById('saleClientPhone').value = c.phone || '';
   });
+  const apptClientAC = setupClientAutocomplete('apptClient', 'apptClientList', (c)=>{
+    document.getElementById('apptClientPhone').value = c.phone || '';
+  });
 
   // ---------------- Vanzarile mele ----------------
   function renderCategorySelects(){
-    const selects = [document.getElementById('saleCategory'), document.getElementById('inCategory')];
+    const selects = [document.getElementById('saleCategory'), document.getElementById('inCategory'), document.getElementById('apptCategory')];
     selects.forEach(sel=>{
       sel.innerHTML = '';
       Object.keys(CATEGORY_LABELS).forEach(key=>{
@@ -1127,14 +1189,22 @@
     });
   }
 
-  function renderPerformedBySelect(){
-    const sel = document.getElementById('inPerformedBy');
-    sel.innerHTML = '<option value="">—</option>';
+  // Fills a <select> with every active employee as "<name> (<location>)" — shared by
+  // "Încasează client"'s "Cine a efectuat tratamentul" and the Calendar's "Cosmeticiană"
+  // select, so there's one place building this option list instead of two copies.
+  function fillActiveEmployeeOptions(selectEl, placeholderLabel){
+    selectEl.innerHTML = '<option value="">'+placeholderLabel+'</option>';
     (DATA.activeEmployees||[]).forEach(e=>{
       const opt = document.createElement('option');
       opt.value = e.id; opt.textContent = e.name + ' (' + e.location + ')';
-      sel.appendChild(opt);
+      selectEl.appendChild(opt);
     });
+  }
+  function renderPerformedBySelect(){
+    fillActiveEmployeeOptions(document.getElementById('inPerformedBy'), '—');
+  }
+  function renderCosmeticianSelect(){
+    fillActiveEmployeeOptions(document.getElementById('apptCosmetician'), '— neasignat —');
   }
 
   document.getElementById('saleForm').addEventListener('submit', async (e)=>{
@@ -1356,59 +1426,273 @@
     window.print();
   });
 
-  // ---------------- Programari ----------------
+  // ---------------- Calendar (Programari) ----------------
+  // Shared scheduler: everyone sees the same data, any role can add/edit/delete. Two
+  // views — Zi (one day, table + add form) and Săptămână (7-day glance grid). Both
+  // fetch from the same api/portal-appointments.js `list` action with a {from,to}
+  // range, so the week view never over-fetches the whole history.
+  let calView = 'day';
+  let calDate = todayISO();
+  let dayAppointments = [];
+  let weekAppointments = [];
+
+  function addDaysISO(dateStr, n){
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0,10);
+  }
+  // Monday..Sunday range containing dateStr — reuses startOfWeekMonday() (already used
+  // by "Tabel de încasări" for its weekly total) instead of a second implementation.
+  function weekRangeFor(dateStr){
+    const monday = startOfWeekMonday(new Date(dateStr + 'T00:00:00')).toISOString().slice(0,10);
+    return { monday, sunday: addDaysISO(monday, 6) };
+  }
+
+  async function fetchAppointments(from, to){
+    const resp = await fetch('/api/portal-appointments', {
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+      body: JSON.stringify({ action:'list', from, to })
+    });
+    if (resp.status === 401){ location.href = '/portal-login'; return []; }
+    if (!resp.ok) throw new Error('appointments_failed');
+    const body = await resp.json();
+    return body.appointments || [];
+  }
+
+  async function loadCalendar(){
+    try{
+      if (calView === 'day'){
+        dayAppointments = await fetchAppointments(calDate, calDate);
+        renderApptBody();
+      } else {
+        const { monday, sunday } = weekRangeFor(calDate);
+        weekAppointments = await fetchAppointments(monday, sunday);
+        renderWeekGrid();
+      }
+    }catch(err){
+      const body = document.getElementById(calView==='day' ? 'apptBody' : 'weekGrid');
+      if (body) body.innerHTML = calView==='day' ? '<tr><td colspan="7">Eroare la încărcarea calendarului.</td></tr>' : 'Eroare la încărcarea calendarului.';
+    }
+  }
+
+  function apptCategoryOptionsHtml(selected){
+    return Object.keys(CATEGORY_LABELS).map(k=>'<option value="'+k+'"'+(selected===k?' selected':'')+'>'+CATEGORY_LABELS[k]+'</option>').join('');
+  }
+  function apptLocationOptionsHtml(selected){
+    return ['Timișoara','Arad'].map(loc=>'<option value="'+loc+'"'+(selected===loc?' selected':'')+'>'+loc+'</option>').join('');
+  }
+  function apptCosmeticianOptionsHtml(selected){
+    let html = '<option value=""'+(!selected?' selected':'')+'>— neasignat —</option>';
+    (DATA.activeEmployees||[]).forEach(e=>{
+      html += '<option value="'+e.id+'"'+(selected===e.id?' selected':'')+'>'+escapeHtml(e.name)+' ('+escapeHtml(e.location)+')</option>';
+    });
+    return html;
+  }
+  function apptStatusOptionsHtml(selected){
+    return Object.keys(APPT_STATUS_LABELS).map(k=>'<option value="'+k+'"'+(selected===k?' selected':'')+'>'+APPT_STATUS_LABELS[k]+'</option>').join('');
+  }
+
+  // Too many fields for a prompt() — reuses the same edit-row-insertion pattern as
+  // Oferte's offerEditRowHtml()/insertAdjacentHTML. The client itself isn't editable
+  // here (kept read-only, carried through as clientId on save) — changing who the
+  // appointment is for is rare enough to just delete + re-add rather than complicate
+  // this row further.
+  function apptEditRowHtml(a){
+    return (
+      '<tr class="appt-edit-row" data-edit-for="'+a.id+'"><td colspan="7">' +
+        '<div class="grid2">' +
+          '<div><label class="field-label">Data</label><input type="date" class="ae-date" value="'+a.date+'"></div>' +
+          '<div><label class="field-label">Oră</label><input type="text" class="ae-time" value="'+escapeHtml(a.time||'')+'"></div>' +
+          '<div class="full"><label class="field-label">Client</label><div class="muted" style="padding:.65rem 0;">'+escapeHtml(a.clientName||'—')+'</div></div>' +
+          '<div class="full"><label class="field-label">Tratament</label><input type="text" class="ae-treatment" value="'+escapeHtml(a.treatment||'')+'"></div>' +
+          '<div><label class="field-label">Categorie</label><select class="ae-category">'+apptCategoryOptionsHtml(a.category)+'</select></div>' +
+          '<div><label class="field-label">Locație</label><select class="ae-location">'+apptLocationOptionsHtml(a.location)+'</select></div>' +
+          '<div><label class="field-label">Cosmeticiană</label><select class="ae-cosmetician">'+apptCosmeticianOptionsHtml(a.cosmeticianId)+'</select></div>' +
+          '<div><label class="field-label">Status</label><select class="ae-status">'+apptStatusOptionsHtml(a.status)+'</select></div>' +
+          '<div class="full">' +
+            '<button type="button" class="pill small" data-save-appt="'+a.id+'">Salvează</button> ' +
+            '<button type="button" class="pill small ghost" data-cancel-appt="'+a.id+'">Anulează</button>' +
+            '<div class="msg" data-appt-msg="'+a.id+'"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>'
+    );
+  }
+
+  function renderApptBody(){
+    const body = document.getElementById('apptBody');
+    body.innerHTML = '';
+    const sorted = dayAppointments.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    document.getElementById('apptEmpty').style.display = sorted.length ? 'none' : 'block';
+    sorted.forEach(a=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(a.time||'—')+'</td>' +
+        '<td>'+escapeHtml(a.clientName||'—')+'</td>' +
+        '<td>'+(CATEGORY_LABELS[a.category]||a.category)+' — '+escapeHtml(a.treatment)+'</td>' +
+        '<td>'+escapeHtml(a.location||'—')+'</td>' +
+        '<td>'+escapeHtml(a.cosmeticianName||'—')+'</td>' +
+        '<td><span class="status-pill status-'+a.status+'">'+(APPT_STATUS_LABELS[a.status]||a.status)+'</span></td>' +
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+      editBtn.addEventListener('click', ()=>{
+        const existing = document.querySelector('[data-edit-for="'+a.id+'"]');
+        if (existing){ existing.remove(); return; }
+        document.querySelectorAll('.appt-edit-row').forEach(r=>r.remove());
+        tr.insertAdjacentHTML('afterend', apptEditRowHtml(a));
+        const editRow = document.querySelector('[data-edit-for="'+a.id+'"]');
+        editRow.querySelector('[data-cancel-appt]').addEventListener('click', ()=> editRow.remove());
+        editRow.querySelector('[data-save-appt]').addEventListener('click', async ()=>{
+          const payload = {
+            action: 'update',
+            id: a.id,
+            date: editRow.querySelector('.ae-date').value,
+            time: editRow.querySelector('.ae-time').value.trim(),
+            clientId: a.clientId,
+            treatment: editRow.querySelector('.ae-treatment').value.trim(),
+            category: editRow.querySelector('.ae-category').value,
+            location: editRow.querySelector('.ae-location').value,
+            cosmeticianId: editRow.querySelector('.ae-cosmetician').value,
+            status: editRow.querySelector('.ae-status').value,
+          };
+          const msgEl = editRow.querySelector('[data-appt-msg]');
+          try{
+            const resp = await fetch('/api/portal-appointments', {
+              method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+            });
+            if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+            editRow.remove();
+            await loadCalendar();
+          }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+        });
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
+      delBtn.addEventListener('click', async ()=>{
+        if (!confirm('Ștergi definitiv programarea lui "'+a.clientName+'"?')) return;
+        const resp = await fetch('/api/portal-appointments', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'delete', id:a.id })
+        });
+        if (!resp.ok){ alert('Nu am putut șterge programarea.'); return; }
+        await loadCalendar();
+      });
+
+      td.appendChild(editBtn); td.appendChild(delBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  const WEEKDAY_LABELS = ['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'];
+  function renderWeekGrid(){
+    const grid = document.getElementById('weekGrid');
+    grid.innerHTML = '';
+    const { monday } = weekRangeFor(calDate);
+    const today = todayISO();
+    for (let i=0; i<7; i++){
+      const dayDate = addDaysISO(monday, i);
+      const dayAppts = weekAppointments.filter(a=>a.date===dayDate).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const col = document.createElement('div');
+      col.className = 'week-day' + (dayDate===today ? ' is-today' : '');
+      const dLabel = new Date(dayDate+'T00:00:00').getDate() + '.' + (new Date(dayDate+'T00:00:00').getMonth()+1);
+      col.innerHTML = '<div class="week-day-header"><b>'+WEEKDAY_LABELS[i]+'</b><span>'+dLabel+'</span></div>';
+      if (!dayAppts.length){
+        col.innerHTML += '<div class="week-day-empty">—</div>';
+      } else {
+        dayAppts.forEach(a=>{
+          const row = document.createElement('div');
+          row.className = 'week-appt';
+          row.innerHTML =
+            '<span class="week-appt-dot status-'+a.status+'" style="background:currentColor;"></span>' +
+            '<span class="week-appt-time">'+escapeHtml(a.time||'—')+'</span>' +
+            '<span class="week-appt-name">'+escapeHtml(a.clientName||'—')+'</span>';
+          // Clicking an entry switches to Zi view on that entry's date, rather than
+          // editing inline in the cramped week grid.
+          row.addEventListener('click', ()=>{
+            calDate = dayDate;
+            document.getElementById('calDateInput').value = calDate;
+            switchCalView('day');
+          });
+          col.appendChild(row);
+        });
+      }
+      grid.appendChild(col);
+    }
+  }
+
+  function switchCalView(view){
+    calView = view;
+    document.getElementById('calViewDayBtn').classList.toggle('ghost', view!=='day');
+    document.getElementById('calViewWeekBtn').classList.toggle('ghost', view!=='week');
+    document.getElementById('calDayView').classList.toggle('hidden', view!=='day');
+    document.getElementById('calWeekView').classList.toggle('hidden', view!=='week');
+    loadCalendar();
+    if (view === 'day') document.getElementById('calDayView').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  document.getElementById('calViewDayBtn').addEventListener('click', ()=> switchCalView('day'));
+  document.getElementById('calViewWeekBtn').addEventListener('click', ()=> switchCalView('week'));
+
+  document.getElementById('calDateInput').addEventListener('change', (e)=>{
+    calDate = e.target.value || todayISO();
+    loadCalendar();
+  });
+  document.getElementById('calPrevBtn').addEventListener('click', ()=>{
+    calDate = addDaysISO(calDate, calView==='day' ? -1 : -7);
+    document.getElementById('calDateInput').value = calDate;
+    loadCalendar();
+  });
+  document.getElementById('calNextBtn').addEventListener('click', ()=>{
+    calDate = addDaysISO(calDate, calView==='day' ? 1 : 7);
+    document.getElementById('calDateInput').value = calDate;
+    loadCalendar();
+  });
+
   document.getElementById('apptForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const payload = {
-      status: document.getElementById('apptStatus').value,
+      action: 'create',
+      date: document.getElementById('apptDate').value,
       time: document.getElementById('apptTime').value.trim(),
+      clientId: apptClientAC.getSelectedId(),
       clientName: document.getElementById('apptClient').value.trim(),
+      clientPhone: document.getElementById('apptClientPhone').value.trim(),
+      treatment: document.getElementById('apptTreatment').value.trim(),
+      category: document.getElementById('apptCategory').value,
+      location: document.getElementById('apptLocation').value,
+      cosmeticianId: document.getElementById('apptCosmetician').value,
+      status: document.getElementById('apptStatus').value,
     };
     const msgEl = document.getElementById('apptMsg');
     try{
-      const resp = await fetch('/api/portal-appointment', {
+      const resp = await fetch('/api/portal-appointments', {
         method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
       });
       if (resp.status === 401){ location.href='/portal-login'; return; }
       if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
-      const body = await resp.json();
-      DATA.appointments.today.unshift(Object.assign({}, body.entry, { employeeName: DATA.me.name }));
-      DATA.appointments.countsToday[body.entry.status] = (DATA.appointments.countsToday[body.entry.status]||0) + 1;
-      if (body.entry.employeeId === DATA.me.id){
-        DATA.appointments.myCountsToday[body.entry.status] = (DATA.appointments.myCountsToday[body.entry.status]||0) + 1;
-      }
+      const apptDate = document.getElementById('apptDate').value;
       document.getElementById('apptForm').reset();
-      renderAppointments();
-      renderPanou();
+      document.getElementById('apptDate').value = apptDate;
+      document.getElementById('apptStatus').value = 'programata';
+      apptClientAC.reset();
+      calDate = apptDate;
+      document.getElementById('calDateInput').value = calDate;
+      if (calView === 'day') { await loadCalendar(); } else { switchCalView('day'); }
       showMsg(msgEl, 'Programare adăugată.', true);
     }catch(err){
       showMsg(msgEl, 'Eroare de rețea.', false);
     }
   });
 
-  function renderAppointments(){
-    const counts = document.getElementById('apptCounts');
-    counts.innerHTML = '';
-    Object.keys(APPT_STATUS_LABELS).forEach(key=>{
-      const div = document.createElement('div');
-      div.innerHTML = '<div class="muted" style="font-size:.76rem;">'+APPT_STATUS_LABELS[key]+'</div>' +
-        '<div style="font-size:1.4rem; font-weight:700;">'+(DATA.appointments.countsToday[key]||0)+'</div>';
-      counts.appendChild(div);
-    });
-
-    const body = document.getElementById('apptBody');
-    body.innerHTML = '';
-    const today = DATA.appointments.today || [];
-    document.getElementById('apptEmpty').style.display = today.length ? 'none' : 'block';
-    today.forEach(a=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>'+escapeHtml(a.time||'—')+'</td>' +
-        '<td>'+(APPT_STATUS_LABELS[a.status]||a.status)+'</td>' +
-        '<td>'+escapeHtml(a.clientName||'—')+'</td>' +
-        '<td>'+escapeHtml(a.employeeName||a.employeeId)+'</td>';
-      body.appendChild(tr);
-    });
+  function initCalendar(){
+    document.getElementById('calDateInput').value = calDate;
+    document.getElementById('apptDate').value = calDate;
+    renderCosmeticianSelect();
+    loadCalendar();
   }
 
   // ---------------- Resurse ----------------
