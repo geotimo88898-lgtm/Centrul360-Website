@@ -1142,14 +1142,21 @@
         body: JSON.stringify({ saleId, decision })
       });
       if (resp.status === 401){ location.href='/portal-login'; return; }
-      if (!resp.ok) return;
+      if (!resp.ok){
+        let detail = resp.status;
+        try{ const d = await resp.json(); if (d && d.error) detail = d.error; }catch(e){}
+        alert('Nu am putut salva decizia (' + detail + ').');
+        return;
+      }
       // Refresh the whole payload — simplest way to keep goal/leaderboard/approvals in sync.
       await loadData();
       document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.remove('active'));
       document.querySelector('[data-tab="aprobari"]').classList.add('active');
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       document.getElementById('panel-aprobari').classList.add('active');
-    }catch(err){}
+    }catch(err){
+      alert('Eroare de rețea: ' + err.message);
+    }
   }
 
   // ---------------- Setari: Angajati ----------------
