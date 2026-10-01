@@ -98,6 +98,13 @@
   }
   textarea{ resize:vertical; min-height:80px; }
   input:focus, select:focus, textarea:focus{ outline:2px solid var(--fg); outline-offset:1px; }
+  /* The closed <select> box uses the page's near-white text on a near-transparent dark
+     background, which reads fine on the dark page. But most browsers render the OPEN
+     options list on a plain white popup regardless of the select's own background (they
+     ignore a translucent background there), so that same near-white text became almost
+     invisible against it. Force each <option> to a legible dark-on-light pair instead —
+     this only affects the dropdown list, not the closed select shown on the page. */
+  select option{ color:#111; background:#fff; }
 
   button.pill{
     border:none; border-radius:999px; padding:.65rem 1.2rem; font-weight:600;
