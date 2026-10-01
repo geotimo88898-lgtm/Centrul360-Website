@@ -11,20 +11,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0b0b0d; --paper:#0b0b0d; --paper-2:#141418; --surface-3:#1c1c22;
-    --fg:#f5f4f2; --muted:rgba(245,244,242,0.58); --muted-2:rgba(245,244,242,0.38);
-    --line:rgba(255,255,255,0.10); --line-on-dark:rgba(255,255,255,0.14);
-    --glass:rgba(255,255,255,0.06); --glass-2:rgba(255,255,255,0.14);
-    --accent:#cdd8f0; --accent-soft:rgba(150,170,255,0.06);
-    --good:#8fd6a8; --warn:#f0c97a; --bad:#f0a3a3;
+    --ink:#ffffff; --paper:#ffffff; --paper-2:#f6f6f7; --surface-3:#ececee;
+    --fg:#17171a; --muted:rgba(23,23,26,0.62); --muted-2:rgba(23,23,26,0.42);
+    --line:rgba(0,0,0,0.10); --line-on-dark:rgba(0,0,0,0.14);
+    --glass:rgba(0,0,0,0.04); --glass-2:rgba(0,0,0,0.08);
+    --accent:#3a5ad6; --accent-soft:rgba(58,90,214,0.05);
+    --good:#1a7f4e; --warn:#9a6400; --bad:#c92a2a;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0; font-family:'Inter',system-ui,sans-serif; color:var(--fg);
-    background:
-      radial-gradient(90% 60% at 100% 0%, var(--accent-soft), transparent 50%),
-      var(--ink);
+    background:var(--ink);
     min-height:100vh; -webkit-font-smoothing:antialiased;
   }
   a{ color:inherit; }
@@ -35,7 +33,7 @@
   #loadingScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.9rem; }
   header.topbar{
     position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
-    padding:.9rem 1.4rem; border-bottom:1px solid var(--line); background:rgba(11,11,13,0.85);
+    padding:.9rem 1.4rem; border-bottom:1px solid var(--line); background:rgba(255,255,255,0.88);
     backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
   }
   .brand{ display:flex; align-items:center; gap:.6rem; font-weight:700; letter-spacing:.02em; }
@@ -92,10 +90,11 @@
   form.inline-form .full{ grid-column:1 / -1; }
   @media (max-width:600px){ form.inline-form{ grid-template-columns:1fr; } }
   label.field-label{ display:block; font-size:.78rem; color:var(--muted); margin-bottom:.35rem; }
-  input, select, textarea{
+  input:not([type=checkbox]):not([type=radio]), select, textarea{
     width:100%; padding:.65rem .8rem; border-radius:10px; border:1px solid var(--line);
-    background:rgba(255,255,255,0.05); color:var(--fg); font-size:.9rem; font-family:inherit;
+    background:var(--paper-2); color:var(--fg); font-size:.9rem; font-family:inherit;
   }
+  input[type=checkbox], input[type=radio]{ width:auto; flex:none; accent-color:var(--accent); }
   textarea{ resize:vertical; min-height:80px; }
   input:focus, select:focus, textarea:focus{ outline:2px solid var(--fg); outline-offset:1px; }
   /* The closed <select> box uses the page's near-white text on a near-transparent dark
@@ -108,10 +107,10 @@
 
   button.pill{
     border:none; border-radius:999px; padding:.65rem 1.2rem; font-weight:600;
-    font-size:.85rem; cursor:pointer; background:var(--glass-2); color:#fff; font-family:inherit;
+    font-size:.85rem; cursor:pointer; background:var(--fg); color:var(--paper); font-family:inherit;
     transition:transform .15s ease, background .15s ease; display:inline-flex; align-items:center; gap:.4rem;
   }
-  button.pill:hover{ transform:translateY(-1px); background:rgba(255,255,255,0.22); }
+  button.pill:hover{ transform:translateY(-1px); opacity:.85; }
   button.pill.small{ padding:.4rem .85rem; font-size:.76rem; }
   button.pill.danger{ background:rgba(240,163,163,0.18); color:var(--bad); }
   button.pill.ghost{ background:var(--glass); color:var(--fg); }
