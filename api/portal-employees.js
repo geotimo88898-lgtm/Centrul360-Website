@@ -1,0 +1,101 @@
+// POST /api/portal-employees — admin-only employee management (Setări → Angajați).
+// One endpoint, three actions via body.action: 'create' | 'reset_password' | 'set_active'.
+// Passwords are hashed server-side (scrypt, see _lib/auth.js) before ever touching storage.
+
+const crypto = require('crypto');
+const { readJSON, writeJSON } = require('./_lib/store');
+const { requireAdmin } = require('./_lib/auth');
+const { hashPassword } = require('./_lib/auth');
+
+const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'method_not_allowed' });
+    return;
+  }
+
+  const session = requireAdmin(req, res);
+  if (!session) return;
+
+  const { action } = req.body || {};
+
+  try {
+    const employees = await readJSON('data/employees.json', []);
+
+    if (action === 'create') {
+      const { name, location, role, username, password } = req.body || {};
+      if (!name || !location || !role || !username || !password) {
+        res.status(400).json({ error: 'missing_fields' });
+        return;
+      }
+      if (!VALID_ROLES.includes(role)) {
+        res.status(400).json({ error: 'invalid_role' });
+        return;
+      }
+      if (employees.some((e) => e.username === username)) {
+        res.status(409).json({ error: 'username_taken' });
+        return;
+      }
+      const { salt, hash } = hashPassword(password);
+      const employee = {
+        id: crypto.randomUUID(),
+        name: String(name).slice(0, 100),
+        location: String(location).slice(0, 100),
+        role,
+        username: String(username).slice(0, 60),
+        passwordHash: hash,
+        passwordSalt: salt,
+        active: true,
+      };
+      employees.push(employee);
+      await writeJSON('data/employees.json', employees);
+      res.status(200).json({
+        ok: true,
+        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, username: employee.username, active: true },
+      });
+      return;
+    }
+
+    if (action === 'reset_password') {
+      const { employeeId, newPassword } = req.body || {};
+      if (!employeeId || !newPassword) {
+        res.status(400).json({ error: 'missing_fields' });
+        return;
+      }
+      const employee = employees.find((e) => e.id === employeeId);
+      if (!employee) {
+        res.status(404).json({ error: 'employee_not_found' });
+        return;
+      }
+      const { salt, hash } = hashPassword(newPassword);
+      employee.passwordHash = hash;
+      employee.passwordSalt = salt;
+      await writeJSON('data/employees.json', employees);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === 'set_active') {
+      const { employeeId, active } = req.body || {};
+      if (!employeeId || typeof active !== 'boolean') {
+        res.status(400).json({ error: 'missing_fields' });
+        return;
+      }
+      const employee = employees.find((e) => e.id === employeeId);
+      if (!employee) {
+        res.status(404).json({ error: 'employee_not_found' });
+        return;
+      }
+      employee.active = active;
+      await writeJSON('data/employees.json', employees);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    res.status(400).json({ error: 'invalid_action' });
+  } catch (err) {
+    console.error('portal-employees error:', err.message);
+    res.status(500).json({ error: 'employees_failed' });
+  }
+};

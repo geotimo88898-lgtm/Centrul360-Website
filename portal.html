@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Portal echipă — Centrul360</title>
+<link rel="icon" type="image/svg+xml" href="/brand_asset/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b0b0d; --paper:#0b0b0d; --paper-2:#141418; --surface-3:#1c1c22;
+    --fg:#f5f4f2; --muted:rgba(245,244,242,0.58); --muted-2:rgba(245,244,242,0.38);
+    --line:rgba(255,255,255,0.10); --line-on-dark:rgba(255,255,255,0.14);
+    --glass:rgba(255,255,255,0.06); --glass-2:rgba(255,255,255,0.14);
+    --accent:#cdd8f0; --accent-soft:rgba(150,170,255,0.06);
+    --good:#8fd6a8; --warn:#f0c97a; --bad:#f0a3a3;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:'Inter',system-ui,sans-serif; color:var(--fg);
+    background:
+      radial-gradient(90% 60% at 100% 0%, var(--accent-soft), transparent 50%),
+      var(--ink);
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:500; margin:0; }
+  .hidden{ display:none !important; }
+
+  /* ---- shell ---- */
+  #loadingScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.9rem; }
+  header.topbar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+    padding:.9rem 1.4rem; border-bottom:1px solid var(--line); background:rgba(11,11,13,0.85);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  }
+  .brand{ display:flex; align-items:center; gap:.6rem; font-weight:700; letter-spacing:.02em; }
+  .brand .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .who{ text-align:right; font-size:.8rem; color:var(--muted); line-height:1.3; }
+  .who b{ color:var(--fg); font-weight:600; }
+  .logoutBtn{
+    border:1px solid var(--line); background:var(--glass); color:var(--fg); border-radius:999px;
+    padding:.5rem 1rem; font-size:.8rem; cursor:pointer; margin-left:1rem; font-family:inherit;
+  }
+  .logoutBtn:hover{ background:var(--glass-2); }
+
+  .shell{ display:flex; min-height:calc(100vh - 62px); }
+  nav.tabs{
+    width:220px; flex:none; border-right:1px solid var(--line); padding:1.2rem .8rem;
+    display:flex; flex-direction:column; gap:.3rem;
+  }
+  nav.tabs button{
+    text-align:left; background:none; border:none; color:var(--muted); font-family:inherit;
+    font-size:.9rem; padding:.65rem .8rem; border-radius:12px; cursor:pointer;
+  }
+  nav.tabs button:hover{ background:var(--glass); color:var(--fg); }
+  nav.tabs button.active{ background:var(--glass-2); color:var(--fg); font-weight:600; }
+  main{ flex:1; padding:1.8rem 2rem 4rem; max-width:980px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .sec-eyebrow{ font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
+  .sec-eyebrow i{ width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;}
+  h2{ font-size:1.5rem; margin-bottom:1.4rem; }
+  h3{ font-size:1.05rem; margin:1.6rem 0 .8rem; }
+
+  .card{ border:1px solid var(--line); border-radius:18px; background:var(--paper-2); padding:1.4rem 1.4rem; margin-bottom:1.3rem; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media (max-width:720px){ .grid2{ grid-template-columns:1fr; } .shell{ flex-direction:column; } nav.tabs{ width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--line); } }
+
+  .checklist label{ display:flex; align-items:flex-start; gap:.6rem; padding:.45rem 0; font-size:.9rem; cursor:pointer; }
+  .checklist input{ margin-top:.2rem; }
+  .checklist label.done span{ text-decoration:line-through; color:var(--muted-2); }
+
+  .progress-track{ height:10px; border-radius:999px; background:var(--line); overflow:hidden; margin:.6rem 0; }
+  .progress-fill{ height:100%; background:var(--accent); border-radius:999px; transition:width .4s ease; }
+  .progress-label{ font-size:.82rem; color:var(--muted); display:flex; justify-content:space-between; }
+
+  table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  th,td{ text-align:left; padding:.55rem .6rem; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; }
+  tr:last-child td{ border-bottom:none; }
+  .status-pill{ display:inline-block; padding:.18rem .6rem; border-radius:999px; font-size:.72rem; font-weight:600; }
+  .status-pending{ background:rgba(240,201,122,0.15); color:var(--warn); }
+  .status-approved{ background:rgba(143,214,168,0.15); color:var(--good); }
+  .status-rejected{ background:rgba(240,163,163,0.15); color:var(--bad); }
+
+  form.inline-form{ display:grid; grid-template-columns:repeat(2,1fr); gap:.9rem; }
+  form.inline-form .full{ grid-column:1 / -1; }
+  @media (max-width:600px){ form.inline-form{ grid-template-columns:1fr; } }
+  label.field-label{ display:block; font-size:.78rem; color:var(--muted); margin-bottom:.35rem; }
+  input, select, textarea{
+    width:100%; padding:.65rem .8rem; border-radius:10px; border:1px solid var(--line);
+    background:rgba(255,255,255,0.05); color:var(--fg); font-size:.9rem; font-family:inherit;
+  }
+  textarea{ resize:vertical; min-height:80px; }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--fg); outline-offset:1px; }
+
+  button.pill{
+    border:none; border-radius:999px; padding:.65rem 1.2rem; font-weight:600;
+    font-size:.85rem; cursor:pointer; background:var(--glass-2); color:#fff; font-family:inherit;
+    transition:transform .15s ease, background .15s ease; display:inline-flex; align-items:center; gap:.4rem;
+  }
+  button.pill:hover{ transform:translateY(-1px); background:rgba(255,255,255,0.22); }
+  button.pill.small{ padding:.4rem .85rem; font-size:.76rem; }
+  button.pill.danger{ background:rgba(240,163,163,0.18); color:var(--bad); }
+  button.pill.ghost{ background:var(--glass); color:var(--fg); }
+  button:disabled{ opacity:.55; cursor:default; }
+
+  .msg{ margin-top:.7rem; font-size:.84rem; padding:.6rem .8rem; border-radius:10px; display:none; }
+  .msg.show{ display:block; }
+  .msg.ok{ background:rgba(143,214,168,0.12); color:var(--good); }
+  .msg.err{ background:rgba(240,163,163,0.12); color:var(--bad); }
+
+  .resource-list{ list-style:none; margin:0; padding:0; }
+  .resource-list li{ padding:.6rem 0; border-bottom:1px solid var(--line); font-size:.88rem; line-height:1.5; color:var(--muted); }
+  .resource-list li:last-child{ border-bottom:none; }
+  .resource-list li::before{ content:'—'; color:var(--accent); margin-right:.5rem; }
+
+  .muted{ color:var(--muted); }
+  .total-row{ font-weight:700; color:var(--fg); }
+
+  .leaderboard-row{ display:flex; align-items:center; gap:.7rem; padding:.5rem 0; border-bottom:1px solid var(--line); }
+  .leaderboard-row:last-child{ border-bottom:none; }
+  .lb-rank{ width:22px; text-align:center; color:var(--muted); font-size:.8rem; }
+  .lb-name{ flex:1; font-size:.88rem; }
+  .lb-name small{ display:block; color:var(--muted-2); font-size:.74rem; }
+  .lb-track{ width:120px; height:6px; border-radius:999px; background:var(--line); overflow:hidden; }
+  .lb-fill{ height:100%; background:var(--accent); }
+  .lb-count{ width:46px; text-align:right; font-size:.82rem; color:var(--muted); }
+
+  .notice{ border:1px solid rgba(240,201,122,0.3); background:rgba(240,201,122,0.08); color:var(--warn);
+    border-radius:12px; padding:.8rem 1rem; font-size:.84rem; margin-bottom:1rem; }
+
+  /* ---- print sheets (hidden on screen, shown only in @media print) ---- */
+  .print-sheet{ display:none; }
+  .sheet-row{ display:flex; gap:1rem; margin-bottom:1.1rem; }
+  .sheet-field{ flex:1; }
+  .sheet-field .lbl{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:.3rem; }
+  .sheet-field .line{ border-bottom:1px solid var(--line); height:1.6rem; }
+
+  @media print{
+    header.topbar, nav.tabs, .no-print{ display:none !important; }
+    body{ background:#fff; color:#000; }
+    main{ padding:0; max-width:100%; }
+    .shell{ display:block; }
+    .panel{ display:none !important; }
+    .print-sheet.printing{ display:block !important; color:#000; }
+    .print-sheet table{ color:#000; }
+    .print-sheet th, .print-sheet td{ border-color:#999; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">Se încarcă portalul...</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>Centrul360 · Portal echipă</div>
+    <div style="display:flex; align-items:center;">
+      <div class="who"><b id="whoName"></b><br><span id="whoLocation"></span></div>
+      <button class="logoutBtn" id="logoutBtn">Deconectare</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="tabs" id="tabsNav">
+      <button data-tab="panou" class="active">Panou</button>
+      <button data-tab="vanzari">Vânzările mele</button>
+      <button data-tab="resurse">Resurse</button>
+      <button data-tab="fise">Fișe de printat</button>
+      <button data-tab="aprobari" class="admin-only hidden">Aprobări</button>
+      <button data-tab="setari" class="admin-only hidden">Setări</button>
+    </nav>
+
+    <main>
+      <!-- PANOU -->
+      <section class="panel active" id="panel-panou">
+        <div class="sec-eyebrow"><i></i>Panou</div>
+        <h2 id="panouGreeting">Bună!</h2>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Sarcini zilnice</h3>
+          <div class="checklist" id="tasksList"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Obiectiv de companie — luna curentă</h3>
+          <p class="muted" id="companyGoalExplain" style="font-size:.86rem;"></p>
+          <div class="progress-track"><div class="progress-fill" id="companyGoalFill" style="width:0%"></div></div>
+          <div class="progress-label"><span id="companyGoalCurrent">0 RON</span><span id="companyGoalTarget">0 RON</span></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Bonus de viteză — clasament lunar</h3>
+          <p class="muted" id="raceBonusExplain" style="font-size:.86rem;"></p>
+          <div id="leaderboard"></div>
+        </div>
+      </section>
+
+      <!-- VANZARILE MELE -->
+      <section class="panel" id="panel-vanzari">
+        <div class="sec-eyebrow"><i></i>Vânzările mele</div>
+        <h2>Loghează o vânzare</h2>
+        <div class="card">
+          <form class="inline-form" id="saleForm">
+            <div>
+              <label class="field-label">Data</label>
+              <input type="date" id="saleDate" required>
+            </div>
+            <div>
+              <label class="field-label">Categorie tratament</label>
+              <select id="saleCategory" required></select>
+            </div>
+            <div class="full">
+              <label class="field-label">Tratament / pachet (text liber)</label>
+              <input type="text" id="saleTreatment" placeholder="ex: HIFU full face - ședință unică" required>
+            </div>
+            <div>
+              <label class="field-label">Sumă încasată (RON)</label>
+              <input type="number" id="saleAmount" min="0" step="0.01" required>
+            </div>
+            <div>
+              <label class="field-label">Notă (opțional)</label>
+              <input type="text" id="saleNote" placeholder="opțional">
+            </div>
+            <div class="full">
+              <button class="pill" type="submit">Salvează vânzarea</button>
+              <div class="msg" id="saleMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Istoricul meu</h3>
+        <div class="card">
+          <label class="field-label" style="max-width:220px;">Filtrează după lună</label>
+          <input type="month" id="mySalesMonthFilter" style="max-width:220px; margin-bottom:1rem;">
+          <table>
+            <thead><tr><th>Data</th><th>Categorie</th><th>Tratament</th><th>Sumă</th><th>Status</th><th>Comision</th></tr></thead>
+            <tbody id="mySalesBody"></tbody>
+          </table>
+          <p style="margin-top:1rem;" class="total-row">Total comision aprobat (luna selectată): <span id="mySalesTotal">0 RON</span></p>
+        </div>
+      </section>
+
+      <!-- RESURSE -->
+      <section class="panel" id="panel-resurse">
+        <div class="sec-eyebrow"><i></i>Resurse</div>
+        <h2>Materiale de lucru</h2>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Pachete de upsell recomandate</h3>
+          <ul class="resource-list" id="resUpsell"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Oferte viitoare</h3>
+          <ul class="resource-list" id="resOffers"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Scripturi de recepție</h3>
+          <ul class="resource-list" id="resScripts"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Scheme de tratament pe tip de aparat</h3>
+          <ul class="resource-list" id="resProtocols"></ul>
+        </div>
+      </section>
+
+      <!-- FISE DE PRINTAT -->
+      <section class="panel" id="panel-fise">
+        <div class="sec-eyebrow"><i></i>Fișe de printat</div>
+        <h2>Fișă client</h2>
+        <div class="card no-print">
+          <p class="muted" style="font-size:.86rem;">Completează câmpurile mai jos, apoi apasă Printează — doar fișa va apărea pe pagina tipărită.</p>
+          <form class="inline-form" id="intakeForm">
+            <div><label class="field-label">Nume client</label><input type="text" id="icName"></div>
+            <div><label class="field-label">Data</label><input type="date" id="icDate"></div>
+            <div><label class="field-label">Tratament</label><input type="text" id="icTreatment"></div>
+            <div><label class="field-label">Sumă încasată</label><input type="text" id="icAmount"></div>
+            <div><label class="field-label">Metodă de plată</label>
+              <select id="icMethod">
+                <option value="Numerar">Numerar</option>
+                <option value="Card">Card</option>
+                <option value="Transfer bancar">Transfer bancar</option>
+              </select>
+            </div>
+            <div class="full"><label class="field-label">Observații</label><textarea id="icNote"></textarea></div>
+            <div class="full"><button type="button" class="pill" id="printIntakeBtn">Printează fișa</button></div>
+          </form>
+        </div>
+
+        <h2 style="margin-top:2.2rem;">Tabel de încasări lunar</h2>
+        <div class="card no-print">
+          <label class="field-label" style="max-width:220px;">Luna</label>
+          <input type="month" id="receiptsMonth" style="max-width:220px; margin-bottom:1rem;">
+          <div>
+            <button type="button" class="pill" id="printReceiptsBtn">Printează tabelul lunii</button>
+          </div>
+        </div>
+
+        <!-- Printable sheets, hidden on screen -->
+        <div class="print-sheet" id="intakeSheet">
+          <h1 style="font-family:Georgia,serif;">Centrul360 — Fișă client</h1>
+          <div class="sheet-row">
+            <div class="sheet-field"><div class="lbl">Nume client</div><div class="line" id="pf-name"></div></div>
+            <div class="sheet-field"><div class="lbl">Data</div><div class="line" id="pf-date"></div></div>
+          </div>
+          <div class="sheet-row">
+            <div class="sheet-field"><div class="lbl">Tratament</div><div class="line" id="pf-treatment"></div></div>
+          </div>
+          <div class="sheet-row">
+            <div class="sheet-field"><div class="lbl">Sumă încasată</div><div class="line" id="pf-amount"></div></div>
+            <div class="sheet-field"><div class="lbl">Metodă de plată</div><div class="line" id="pf-method"></div></div>
+          </div>
+          <div class="sheet-row">
+            <div class="sheet-field" style="flex:2;"><div class="lbl">Observații</div><div class="line" id="pf-note"></div></div>
+          </div>
+          <div class="sheet-row" style="margin-top:3rem;">
+            <div class="sheet-field"><div class="lbl">Semnătură client</div><div class="line"></div></div>
+            <div class="sheet-field"><div class="lbl">Semnătură angajat</div><div class="line"></div></div>
+          </div>
+        </div>
+
+        <div class="print-sheet" id="receiptsSheet">
+          <h1 style="font-family:Georgia,serif;" id="receiptsTitle">Centrul360 — Tabel de încasări</h1>
+          <table>
+            <thead><tr><th>Data</th><th>Angajat</th><th>Locație</th><th>Tratament</th><th>Sumă</th><th>Status</th></tr></thead>
+            <tbody id="receiptsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- APROBARI (admin) -->
+      <section class="panel admin-only hidden" id="panel-aprobari">
+        <div class="sec-eyebrow"><i></i>Aprobări</div>
+        <h2>Vânzări în așteptare</h2>
+        <div class="card">
+          <table>
+            <thead><tr><th>Angajat</th><th>Locație</th><th>Data</th><th>Categorie</th><th>Tratament</th><th>Sumă</th><th></th></tr></thead>
+            <tbody id="approvalsBody"></tbody>
+          </table>
+          <p class="muted" id="approvalsEmpty" style="font-size:.86rem; display:none;">Nicio vânzare în așteptare.</p>
+        </div>
+      </section>
+
+      <!-- SETARI (admin) -->
+      <section class="panel admin-only hidden" id="panel-setari">
+        <div class="sec-eyebrow"><i></i>Setări</div>
+        <h2>Administrare</h2>
+
+        <h3 style="margin-top:0;">Angajați</h3>
+        <div class="card">
+          <form class="inline-form" id="newEmployeeForm">
+            <div><label class="field-label">Nume</label><input type="text" id="neName" required></div>
+            <div><label class="field-label">Locație</label>
+              <select id="neLocation" required>
+                <option value="Timișoara">Timișoara</option>
+                <option value="Arad">Arad</option>
+              </select>
+            </div>
+            <div><label class="field-label">Rol</label>
+              <select id="neRole" required>
+                <option value="cosmetician">Cosmetician</option>
+                <option value="receptie">Recepție</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div><label class="field-label">Username</label><input type="text" id="neUsername" required></div>
+            <div><label class="field-label">Parolă temporară</label><input type="text" id="nePassword" required></div>
+            <div class="full"><button class="pill" type="submit">Adaugă angajat</button>
+              <div class="msg" id="newEmployeeMsg"></div>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Nume</th><th>Locație</th><th>Rol</th><th>Username</th><th>Status</th><th></th></tr></thead>
+            <tbody id="employeesBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Reguli comision</h3>
+        <div class="card">
+          <form class="inline-form" id="commissionForm"></form>
+          <button class="pill" id="saveCommissionBtn" style="margin-top:1rem;">Salvează regulile de comision</button>
+          <div class="msg" id="commissionMsg"></div>
+        </div>
+
+        <h3>Bonus de viteză lunar</h3>
+        <div class="card">
+          <form class="inline-form" id="raceBonusForm">
+            <div><label class="field-label">Categorie țintă</label><select id="rbCategory"></select></div>
+            <div><label class="field-label">Target (nr. ședințe/vânzări)</label><input type="number" id="rbTarget" min="1"></div>
+            <div><label class="field-label">Recompensă (RON)</label><input type="number" id="rbReward" min="0"></div>
+            <div class="full"><button class="pill" type="submit">Salvează bonusul de viteză</button>
+              <div class="msg" id="raceBonusMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Obiectiv de companie</h3>
+        <div class="card">
+          <div class="notice">Valoarea implicită de 25.000 RON este un placeholder — ajustează-l la obiectivul real lunar al companiei.</div>
+          <form class="inline-form" id="companyGoalForm">
+            <div><label class="field-label">Target venit lunar (RON)</label><input type="number" id="cgTarget" min="0"></div>
+            <div><label class="field-label">Recompensă per angajat (RON)</label><input type="number" id="cgReward" min="0"></div>
+            <div class="full"><button class="pill" type="submit">Salvează obiectivul</button>
+              <div class="msg" id="companyGoalMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Conținut (tab Resurse)</h3>
+        <div class="card">
+          <p class="muted" style="font-size:.84rem;">Textul de mai jos este cel afișat angajaților în tab-ul „Resurse”. Fiecare linie = un element din listă. Editare directă de text — nu necesită nicio modificare de cod.</p>
+          <form id="contentForm">
+            <label class="field-label">Pachete de upsell recomandate (o linie per element)</label>
+            <textarea id="cUpsell" rows="5" style="margin-bottom:1rem;"></textarea>
+            <label class="field-label">Oferte viitoare</label>
+            <textarea id="cOffers" rows="4" style="margin-bottom:1rem;"></textarea>
+            <label class="field-label">Scripturi de recepție</label>
+            <textarea id="cScripts" rows="5" style="margin-bottom:1rem;"></textarea>
+            <label class="field-label">Scheme de tratament pe tip de aparat</label>
+            <textarea id="cProtocols" rows="6" style="margin-bottom:1rem;"></textarea>
+            <button class="pill" type="submit">Salvează conținutul</button>
+            <div class="msg" id="contentMsg"></div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const CATEGORY_LABELS = {
+    'epilare-laser': 'Epilare laser',
+    'hifu': 'HIFU full face',
+    'liposonix': 'Liposonix',
+    'ems-tonifiere': 'EMS tonifiere',
+    'radiofrecventa': 'Radiofrecvență (RF Sculpt)',
+    'microneedling': 'Microneedling',
+    'tratament-facial': 'Tratament facial',
+    'celulita': 'Celulită',
+    'detox-drenaj': 'Detox / drenaj',
+    'retail': 'Produs retail / home-care',
+    'altele': 'Altele',
+  };
+  const STATUS_LABELS = { pending: 'În așteptare', approved: 'Aprobat', rejected: 'Respins' };
+
+  let DATA = null;
+
+  function fmtRON(n){ return (Math.round(Number(n||0)*100)/100).toLocaleString('ro-RO') + ' RON'; }
+  function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+  function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function currentMonthValue(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+  function showMsg(el, text, ok){
+    el.textContent = text;
+    el.className = 'msg show ' + (ok ? 'ok' : 'err');
+    setTimeout(()=>{ el.classList.remove('show'); }, 4000);
+  }
+
+  // ---------------- bootstrap ----------------
+  async function loadData(){
+    try{
+      const resp = await fetch('/api/portal-data', { credentials: 'same-origin' });
+      if (resp.status === 401){ location.href = '/portal-login'; return; }
+      if (!resp.ok) throw new Error('data_failed');
+      DATA = await resp.json();
+      render();
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+    }catch(err){
+      document.getElementById('loadingScreen').textContent = 'Eroare la încărcarea portalului. Reîncearcă.';
+    }
+  }
+
+  function render(){
+    document.getElementById('whoName').textContent = DATA.me.name;
+    document.getElementById('whoLocation').textContent = DATA.me.location + ' · ' + roleLabel(DATA.me.role);
+
+    if (DATA.isAdmin){
+      document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    }
+
+    renderPanou();
+    renderCategorySelects();
+    renderMySales();
+    renderResources();
+    if (DATA.isAdmin){
+      renderApprovals();
+      renderEmployees();
+      renderCommissionForm();
+      renderRaceBonusForm();
+      renderCompanyGoalForm();
+      renderContentForm();
+    }
+
+    document.getElementById('saleDate').value = todayISO();
+    document.getElementById('icDate').value = todayISO();
+    document.getElementById('mySalesMonthFilter').value = currentMonthValue();
+    document.getElementById('receiptsMonth').value = currentMonthValue();
+  }
+
+  function roleLabel(role){
+    return { cosmetician:'Cosmetician', receptie:'Recepție', admin:'Admin' }[role] || role;
+  }
+
+  // ---------------- tabs ----------------
+  document.getElementById('tabsNav').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tab]');
+    if (!btn) return;
+    document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    try{ await fetch('/api/portal-logout', { method:'POST' }); }catch(e){}
+    location.href = '/portal-login';
+  });
+
+  // ---------------- Panou ----------------
+  function renderPanou(){
+    document.getElementById('panouGreeting').textContent = 'Bună, ' + DATA.me.name.split(' ')[0] + '!';
+
+    const list = document.getElementById('tasksList');
+    list.innerHTML = '';
+    let storageKey = 'c360_portal_tasks_' + todayISO();
+    let doneState = {};
+    try{ doneState = JSON.parse(sessionStorage.getItem(storageKey) || '{}'); }catch(e){}
+
+    DATA.tasks.forEach((task, i)=>{
+      const label = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!doneState[i];
+      if (cb.checked) label.classList.add('done');
+      cb.addEventListener('change', ()=>{
+        doneState[i] = cb.checked;
+        label.classList.toggle('done', cb.checked);
+        try{ sessionStorage.setItem(storageKey, JSON.stringify(doneState)); }catch(e){}
+      });
+      const span = document.createElement('span');
+      span.textContent = task;
+      label.appendChild(cb);
+      label.appendChild(span);
+      list.appendChild(label);
+    });
+
+    const cg = DATA.companyGoal;
+    const pct = cg.target > 0 ? Math.min(100, Math.round((cg.current / cg.target) * 100)) : 0;
+    document.getElementById('companyGoalFill').style.width = pct + '%';
+    document.getElementById('companyGoalCurrent').textContent = fmtRON(cg.current);
+    document.getElementById('companyGoalTarget').textContent = 'Target: ' + fmtRON(cg.target);
+    document.getElementById('companyGoalExplain').textContent =
+      'Dacă vânzările aprobate din ambele locații ating ' + fmtRON(cg.target) + ' luna aceasta, fiecare angajat activ primește ' + fmtRON(cg.reward) + '.';
+
+    const rb = DATA.raceBonus;
+    document.getElementById('raceBonusExplain').textContent =
+      'Angajatul cu cele mai multe vânzări aprobate la categoria "' + (CATEGORY_LABELS[rb.category] || rb.category) +
+      '" luna aceasta, dacă atinge ' + rb.target + ', câștigă ' + fmtRON(rb.reward) + '.';
+
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = '';
+    rb.leaderboard.forEach((row, i)=>{
+      const pctRow = rb.target > 0 ? Math.min(100, Math.round((row.count / rb.target) * 100)) : 0;
+      const div = document.createElement('div');
+      div.className = 'leaderboard-row';
+      div.innerHTML =
+        '<div class="lb-rank">'+(i+1)+'</div>' +
+        '<div class="lb-name">'+escapeHtml(row.name)+'<small>'+escapeHtml(row.location)+'</small></div>' +
+        '<div class="lb-track"><div class="lb-fill" style="width:'+pctRow+'%"></div></div>' +
+        '<div class="lb-count">'+row.count+' / '+rb.target+'</div>';
+      lb.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------------- Vanzarile mele ----------------
+  function renderCategorySelects(){
+    const selects = [document.getElementById('saleCategory')];
+    selects.forEach(sel=>{
+      sel.innerHTML = '';
+      Object.keys(CATEGORY_LABELS).forEach(key=>{
+        const opt = document.createElement('option');
+        opt.value = key; opt.textContent = CATEGORY_LABELS[key];
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  document.getElementById('saleForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      date: document.getElementById('saleDate').value,
+      category: document.getElementById('saleCategory').value,
+      treatment: document.getElementById('saleTreatment').value.trim(),
+      amount: Number(document.getElementById('saleAmount').value),
+      note: document.getElementById('saleNote').value.trim(),
+    };
+    const msgEl = document.getElementById('saleMsg');
+    try{
+      const resp = await fetch('/api/portal-sale', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare. Verifică datele.', false); return; }
+      const body = await resp.json();
+      DATA.mySales.unshift(body.entry);
+      document.getElementById('saleForm').reset();
+      document.getElementById('saleDate').value = todayISO();
+      renderMySales();
+      showMsg(msgEl, 'Vânzare salvată — în așteptarea aprobării.', true);
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  function renderMySales(){
+    const monthFilter = document.getElementById('mySalesMonthFilter').value || currentMonthValue();
+    const body = document.getElementById('mySalesBody');
+    body.innerHTML = '';
+    let total = 0;
+    DATA.mySales.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
+        '<td>'+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td><span class="status-pill status-'+s.status+'">'+STATUS_LABELS[s.status]+'</span></td>' +
+        '<td>'+(s.status==='approved' ? fmtRON(s.commission) : '—')+'</td>';
+      body.appendChild(tr);
+      if (s.status === 'approved' && monthKey(s.date) === monthFilter){ total += Number(s.commission||0); }
+    });
+    document.getElementById('mySalesTotal').textContent = fmtRON(total);
+  }
+  document.getElementById('mySalesMonthFilter').addEventListener('change', renderMySales);
+
+  // ---------------- Resurse ----------------
+  function renderResources(){
+    fillList('resUpsell', DATA.resources.upsellPackages);
+    fillList('resOffers', DATA.resources.upcomingOffers);
+    fillList('resScripts', DATA.resources.receptionScripts);
+    fillList('resProtocols', DATA.resources.treatmentProtocols);
+  }
+  function fillList(id, arr){
+    const ul = document.getElementById(id);
+    ul.innerHTML = '';
+    (arr||[]).forEach(item=>{
+      const li = document.createElement('li');
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+  }
+
+  // ---------------- Fise de printat ----------------
+  document.getElementById('printIntakeBtn').addEventListener('click', ()=>{
+    document.getElementById('pf-name').textContent = document.getElementById('icName').value;
+    document.getElementById('pf-date').textContent = document.getElementById('icDate').value;
+    document.getElementById('pf-treatment').textContent = document.getElementById('icTreatment').value;
+    document.getElementById('pf-amount').textContent = document.getElementById('icAmount').value;
+    document.getElementById('pf-method').textContent = document.getElementById('icMethod').value;
+    document.getElementById('pf-note').textContent = document.getElementById('icNote').value;
+
+    document.getElementById('intakeSheet').classList.add('printing');
+    document.getElementById('receiptsSheet').classList.remove('printing');
+    window.print();
+  });
+
+  document.getElementById('printReceiptsBtn').addEventListener('click', ()=>{
+    const month = document.getElementById('receiptsMonth').value || currentMonthValue();
+    const source = DATA.isAdmin ? (DATA.admin.allSales || []) : DATA.mySales;
+    const rows = source.filter(s => monthKey(s.date) === month && s.status !== 'rejected');
+
+    document.getElementById('receiptsTitle').textContent =
+      'Centrul360 — Tabel de încasări — ' + month + (DATA.isAdmin ? ' (toate locațiile)' : ' — ' + DATA.me.name);
+
+    const body = document.getElementById('receiptsBody');
+    body.innerHTML = '';
+    rows.sort((a,b)=> a.date < b.date ? -1 : 1).forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+escapeHtml(s.employeeName || DATA.me.name)+'</td>' +
+        '<td>'+escapeHtml(s.employeeLocation || DATA.me.location)+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td>'+STATUS_LABELS[s.status]+'</td>';
+      body.appendChild(tr);
+    });
+
+    document.getElementById('receiptsSheet').classList.add('printing');
+    document.getElementById('intakeSheet').classList.remove('printing');
+    window.print();
+  });
+
+  // ---------------- Aprobari (admin) ----------------
+  function renderApprovals(){
+    const body = document.getElementById('approvalsBody');
+    body.innerHTML = '';
+    const pending = DATA.admin.pendingSales;
+    document.getElementById('approvalsEmpty').style.display = pending.length ? 'none' : 'block';
+    pending.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(s.employeeName)+'</td>' +
+        '<td>'+escapeHtml(s.employeeLocation)+'</td>' +
+        '<td>'+s.date+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
+        '<td>'+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td></td>';
+      const td = tr.lastElementChild;
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'pill small'; approveBtn.textContent = 'Aprobă';
+      approveBtn.addEventListener('click', ()=>decide(s.id, 'approve'));
+      const rejectBtn = document.createElement('button');
+      rejectBtn.className = 'pill small danger'; rejectBtn.style.marginLeft='.5rem'; rejectBtn.textContent = 'Respinge';
+      rejectBtn.addEventListener('click', ()=>decide(s.id, 'reject'));
+      td.appendChild(approveBtn); td.appendChild(rejectBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  async function decide(saleId, decision){
+    try{
+      const resp = await fetch('/api/portal-approve', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ saleId, decision })
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok) return;
+      // Refresh the whole payload — simplest way to keep goal/leaderboard/approvals in sync.
+      await loadData();
+      document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.remove('active'));
+      document.querySelector('[data-tab="aprobari"]').classList.add('active');
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById('panel-aprobari').classList.add('active');
+    }catch(err){}
+  }
+
+  // ---------------- Setari: Angajati ----------------
+  function renderEmployees(){
+    const body = document.getElementById('employeesBody');
+    body.innerHTML = '';
+    DATA.admin.employees.forEach(emp=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(emp.name)+'</td>' +
+        '<td>'+escapeHtml(emp.location)+'</td>' +
+        '<td>'+roleLabel(emp.role)+'</td>' +
+        '<td>'+escapeHtml(emp.username)+'</td>' +
+        '<td>'+(emp.active ? 'Activ' : 'Dezactivat')+'</td>' +
+        '<td></td>';
+      const td = tr.lastElementChild;
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'pill small ghost'; resetBtn.textContent = 'Resetează parola';
+      resetBtn.addEventListener('click', async ()=>{
+        const newPassword = prompt('Parolă nouă pentru '+emp.name+':');
+        if (!newPassword) return;
+        await fetch('/api/portal-employees', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'reset_password', employeeId: emp.id, newPassword })
+        });
+        alert('Parolă resetată.');
+      });
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'pill small ' + (emp.active ? 'danger' : 'ghost');
+      toggleBtn.style.marginLeft = '.5rem';
+      toggleBtn.textContent = emp.active ? 'Dezactivează' : 'Activează';
+      toggleBtn.addEventListener('click', async ()=>{
+        await fetch('/api/portal-employees', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'set_active', employeeId: emp.id, active: !emp.active })
+        });
+        await loadData();
+        activateTab('setari');
+      });
+
+      td.appendChild(resetBtn); td.appendChild(toggleBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  function activateTab(tab){
+    document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+tab).classList.add('active');
+  }
+
+  document.getElementById('newEmployeeForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      name: document.getElementById('neName').value.trim(),
+      location: document.getElementById('neLocation').value,
+      role: document.getElementById('neRole').value,
+      username: document.getElementById('neUsername').value.trim(),
+      password: document.getElementById('nePassword').value,
+    };
+    const msgEl = document.getElementById('newEmployeeMsg');
+    try{
+      const resp = await fetch('/api/portal-employees', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){
+        const body = await resp.json().catch(()=>({}));
+        showMsg(msgEl, body.error === 'username_taken' ? 'Acest username există deja.' : 'Eroare la adăugare.', false);
+        return;
+      }
+      document.getElementById('newEmployeeForm').reset();
+      showMsg(msgEl, 'Angajat adăugat.', true);
+      await loadData();
+      activateTab('setari');
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  // ---------------- Setari: Reguli comision ----------------
+  function renderCommissionForm(){
+    const form = document.getElementById('commissionForm');
+    form.innerHTML = '';
+    const cfg = DATA.admin.config;
+    Object.keys(CATEGORY_LABELS).filter(k=>k!=='retail').forEach(key=>{
+      const div = document.createElement('div');
+      div.innerHTML = '<label class="field-label">'+CATEGORY_LABELS[key]+' (%)</label>' +
+        '<input type="number" min="0" max="100" data-cat="'+key+'" value="'+(cfg.commissionRates[key] ?? 10)+'">';
+      form.appendChild(div);
+    });
+    const retailDiv = document.createElement('div');
+    retailDiv.innerHTML = '<label class="field-label">Produse retail / home-care (%)</label>' +
+      '<input type="number" min="0" max="100" id="retailRateInput" value="'+(cfg.retailRate ?? 15)+'">';
+    form.appendChild(retailDiv);
+  }
+  document.getElementById('saveCommissionBtn').addEventListener('click', async ()=>{
+    const commissionRates = {};
+    document.querySelectorAll('#commissionForm input[data-cat]').forEach(inp=>{
+      commissionRates[inp.dataset.cat] = Number(inp.value);
+    });
+    const retailRate = Number(document.getElementById('retailRateInput').value);
+    const msgEl = document.getElementById('commissionMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ commissionRates, retailRate })
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      const body = await resp.json();
+      DATA.admin.config = body.config;
+      showMsg(msgEl, 'Reguli de comision salvate.', true);
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Setari: Bonus de viteza ----------------
+  function renderRaceBonusForm(){
+    const sel = document.getElementById('rbCategory');
+    sel.innerHTML = '';
+    Object.keys(CATEGORY_LABELS).forEach(key=>{
+      const opt = document.createElement('option');
+      opt.value = key; opt.textContent = CATEGORY_LABELS[key];
+      sel.appendChild(opt);
+    });
+    const rb = DATA.admin.config.raceBonus;
+    sel.value = rb.category;
+    document.getElementById('rbTarget').value = rb.target;
+    document.getElementById('rbReward').value = rb.reward;
+  }
+  document.getElementById('raceBonusForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      raceBonus: {
+        category: document.getElementById('rbCategory').value,
+        target: Number(document.getElementById('rbTarget').value),
+        reward: Number(document.getElementById('rbReward').value),
+        month: currentMonthValue(),
+      }
+    };
+    const msgEl = document.getElementById('raceBonusMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      showMsg(msgEl, 'Bonus de viteză salvat.', true);
+      await loadData(); activateTab('setari');
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Setari: Obiectiv de companie ----------------
+  function renderCompanyGoalForm(){
+    const cg = DATA.admin.config.companyGoal;
+    document.getElementById('cgTarget').value = cg.target;
+    document.getElementById('cgReward').value = cg.reward;
+  }
+  document.getElementById('companyGoalForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      companyGoal: {
+        target: Number(document.getElementById('cgTarget').value),
+        reward: Number(document.getElementById('cgReward').value),
+        month: currentMonthValue(),
+      }
+    };
+    const msgEl = document.getElementById('companyGoalMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      showMsg(msgEl, 'Obiectiv de companie salvat.', true);
+      await loadData(); activateTab('setari');
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Setari: Continut ----------------
+  function renderContentForm(){
+    const r = DATA.admin.config.resources;
+    document.getElementById('cUpsell').value = (r.upsellPackages||[]).join('\n');
+    document.getElementById('cOffers').value = (r.upcomingOffers||[]).join('\n');
+    document.getElementById('cScripts').value = (r.receptionScripts||[]).join('\n');
+    document.getElementById('cProtocols').value = (r.treatmentProtocols||[]).join('\n');
+  }
+  function linesToArray(text){
+    return text.split('\n').map(s=>s.trim()).filter(Boolean);
+  }
+  document.getElementById('contentForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      resources: {
+        upsellPackages: linesToArray(document.getElementById('cUpsell').value),
+        upcomingOffers: linesToArray(document.getElementById('cOffers').value),
+        receptionScripts: linesToArray(document.getElementById('cScripts').value),
+        treatmentProtocols: linesToArray(document.getElementById('cProtocols').value),
+      }
+    };
+    const msgEl = document.getElementById('contentMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      const body = await resp.json();
+      DATA.admin.config = body.config;
+      DATA.resources = body.config.resources;
+      renderResources();
+      showMsg(msgEl, 'Conținut salvat.', true);
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  loadData();
+})();
+</script>
+</body>
+</html>
