@@ -18,6 +18,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
+const { upsertClient } = require('./_lib/clients');
 
 const VALID_CATEGORIES = [
   'epilare-laser',
@@ -40,7 +41,8 @@ function isValidDate(date) {
 }
 
 async function handleComision(req, res, session) {
-  const { date, category, treatment, amount, note } = req.body || {};
+  const { date, category, treatment, amount, note, clientId, clientName, clientPhone } =
+    req.body || {};
 
   if (!date || !category || !treatment || amount === undefined) {
     res.status(400).json({ error: 'missing_fields' });
@@ -63,6 +65,29 @@ async function handleComision(req, res, session) {
   try {
     const sales = await readJSON('data/sales.json', []);
 
+    // Client attribution is entirely optional for a commission entry — unchanged
+    // behavior when none is given. An employee can either point at an existing
+    // client (clientId, picked from the shared autocomplete) or quick-add a new
+    // one inline (clientName + clientPhone), reusing the same upsertClient() the
+    // cash-register flow uses, so there's still only one place clients get written.
+    let linkedClientId = '';
+    let linkedClientName = '';
+    if (clientId) {
+      const clients = await readJSON('data/clients.json', []);
+      const found = clients.find((c) => c.id === clientId);
+      if (found) {
+        linkedClientId = found.id;
+        linkedClientName = found.name;
+      }
+    } else if (clientName && clientPhone) {
+      const client = await upsertClient(
+        { name: clientName, phone: clientPhone },
+        { readJSON, writeJSON }
+      );
+      linkedClientId = client.id;
+      linkedClientName = client.name;
+    }
+
     const entry = {
       id: crypto.randomUUID(),
       source: 'comision',
@@ -72,6 +97,8 @@ async function handleComision(req, res, session) {
       treatment: String(treatment).slice(0, 200),
       amount: numAmount,
       note: note ? String(note).slice(0, 500) : '',
+      clientId: linkedClientId,
+      client: linkedClientName,
       status: 'pending',
       commission: 0,
       createdAt: new Date().toISOString(),
@@ -89,9 +116,18 @@ async function handleComision(req, res, session) {
 }
 
 async function handleIncasare(req, res, session) {
-  const { client, date, category, treatment, amount, method, performedBy } = req.body || {};
+  const { clientName, clientPhone, date, category, treatment, amount, method, performedBy } =
+    req.body || {};
 
-  if (!client || !date || !category || !treatment || amount === undefined || !method) {
+  if (
+    !clientName ||
+    !clientPhone ||
+    !date ||
+    !category ||
+    !treatment ||
+    amount === undefined ||
+    !method
+  ) {
     res.status(400).json({ error: 'missing_fields' });
     return;
   }
@@ -112,16 +148,31 @@ async function handleIncasare(req, res, session) {
     res.status(400).json({ error: 'invalid_date' });
     return;
   }
+  const cleanClientName = String(clientName).trim().slice(0, 150);
+  const cleanClientPhone = String(clientPhone).trim().slice(0, 30);
+  if (!cleanClientName || !cleanClientPhone) {
+    res.status(400).json({ error: 'invalid_client' });
+    return;
+  }
 
   try {
     const sales = await readJSON('data/sales.json', []);
+
+    // One place writes client records: every "încasare" upserts the client directory
+    // keyed by phone (see api/_lib/clients.js), so names typed slightly differently
+    // over time still collapse onto the same client instead of creating duplicates.
+    const clientRecord = await upsertClient(
+      { name: cleanClientName, phone: cleanClientPhone },
+      { readJSON, writeJSON }
+    );
 
     const entry = {
       id: crypto.randomUUID(),
       source: 'incasare',
       employeeId: session.employeeId, // who recorded the cash entry (usually recepție)
       performedBy: performedBy ? String(performedBy).slice(0, 100) : '',
-      client: String(client).slice(0, 150),
+      clientId: clientRecord.id,
+      client: clientRecord.name, // denormalized for display without a join
       date,
       category,
       treatment: String(treatment).slice(0, 200),

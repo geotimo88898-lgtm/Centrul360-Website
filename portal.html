@@ -112,6 +112,19 @@
 
   .msg{ margin-top:.7rem; font-size:.84rem; padding:.6rem .8rem; border-radius:10px; display:none; }
   .msg.show{ display:block; }
+
+  .client-ac{ position:relative; }
+  .client-ac-list{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:20;
+    background:var(--surface-3); border:1px solid var(--line); border-radius:10px;
+    max-height:220px; overflow-y:auto; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+  .client-ac-list.show{ display:block; }
+  .client-ac-item{ padding:.55rem .8rem; font-size:.85rem; cursor:pointer; border-bottom:1px solid var(--line); }
+  .client-ac-item:last-child{ border-bottom:none; }
+  .client-ac-item:hover, .client-ac-item.active{ background:var(--glass-2); }
+  .client-ac-item small{ display:block; color:var(--muted); font-size:.74rem; margin-top:.1rem; }
+  .client-ac-empty{ padding:.55rem .8rem; font-size:.8rem; color:var(--muted); }
   .msg.ok{ background:rgba(143,214,168,0.12); color:var(--good); }
   .msg.err{ background:rgba(240,163,163,0.12); color:var(--bad); }
 
@@ -222,7 +235,10 @@
         <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Înlocuiește fișa de hârtie — apare imediat în „Tabel de încasări", vizibil tuturor. Nu creează un comision pentru nimeni.</p>
         <div class="card">
           <form class="inline-form" id="incasareForm">
-            <div><label class="field-label">Nume client</label><input type="text" id="inClient" required></div>
+            <div class="client-ac"><label class="field-label">Nume client</label><input type="text" id="inClient" autocomplete="off" required>
+              <div class="client-ac-list" id="inClientList"></div>
+            </div>
+            <div><label class="field-label">Telefon client</label><input type="tel" id="inClientPhone" placeholder="ex: 0722 123 456" required></div>
             <div><label class="field-label">Data</label><input type="date" id="inDate" required></div>
             <div class="full"><label class="field-label">Tratament / pachet</label><input type="text" id="inTreatment" required></div>
             <div><label class="field-label">Categorie</label><select id="inCategory" required></select></div>
@@ -268,6 +284,10 @@
               <label class="field-label">Sumă încasată (RON)</label>
               <input type="number" id="saleAmount" min="0" step="0.01" required>
             </div>
+            <div class="client-ac"><label class="field-label">Client (opțional)</label><input type="text" id="saleClient" autocomplete="off" placeholder="caută client existent sau adaugă unul nou">
+              <div class="client-ac-list" id="saleClientList"></div>
+            </div>
+            <div><label class="field-label">Telefon client (opțional, doar la client nou)</label><input type="tel" id="saleClientPhone" placeholder="ex: 0722 123 456"></div>
             <div>
               <label class="field-label">Notă (opțional)</label>
               <input type="text" id="saleNote" placeholder="opțional">
@@ -728,6 +748,80 @@
     return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // ---------------- Client autocomplete (shared by Incasare + Comision) ----------------
+  // One small reusable piece of UI: a text input + a dropdown of matching clients below
+  // it, debounced ~250ms against GET /api/portal-clients?q=. Clicking a suggestion fills
+  // the input with the client's name and remembers its id; typing anything afterwards
+  // clears that remembered id, so a stale link can never be submitted.
+  function setupClientAutocomplete(inputId, listId, onSelect){
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let selectedId = '';
+    let debounceTimer = null;
+
+    function hide(){ list.classList.remove('show'); list.innerHTML = ''; }
+
+    function render(items){
+      list.innerHTML = '';
+      if (!items.length){
+        list.innerHTML = '<div class="client-ac-empty">Niciun client găsit.</div>';
+        list.classList.add('show');
+        return;
+      }
+      items.forEach(c=>{
+        const div = document.createElement('div');
+        div.className = 'client-ac-item';
+        div.innerHTML = escapeHtml(c.name || '(fără nume)') + '<small>' + escapeHtml(c.phone||'') + '</small>';
+        // mousedown (not click) fires before the input's blur, so hide() on blur
+        // doesn't swallow the selection.
+        div.addEventListener('mousedown', (e)=>{
+          e.preventDefault();
+          input.value = c.name || '';
+          selectedId = c.id;
+          hide();
+          if (typeof onSelect === 'function') onSelect(c);
+        });
+        list.appendChild(div);
+      });
+      list.classList.add('show');
+    }
+
+    async function search(q){
+      try{
+        const resp = await fetch('/api/portal-clients?q=' + encodeURIComponent(q));
+        if (resp.status === 401){ location.href = '/portal-login'; return; }
+        if (!resp.ok) return;
+        const body = await resp.json();
+        render(body.clients || []);
+      }catch(err){ /* autocomplete is a convenience — fail silently, typing still works */ }
+    }
+
+    input.addEventListener('input', ()=>{
+      selectedId = '';
+      const q = input.value.trim();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(()=>search(q), 250);
+    });
+    input.addEventListener('focus', ()=>{
+      if (!input.value.trim()) search('');
+    });
+    input.addEventListener('blur', ()=>{ setTimeout(hide, 150); });
+
+    return {
+      getSelectedId: ()=> selectedId,
+      reset: ()=>{ selectedId = ''; hide(); },
+    };
+  }
+
+  // Selecting an existing client in "Încasează client" also fills the phone field —
+  // it stays editable/required either way, but there's no need to retype a known number.
+  const inClientAC = setupClientAutocomplete('inClient', 'inClientList', (c)=>{
+    document.getElementById('inClientPhone').value = c.phone || '';
+  });
+  const saleClientAC = setupClientAutocomplete('saleClient', 'saleClientList', (c)=>{
+    document.getElementById('saleClientPhone').value = c.phone || '';
+  });
+
   // ---------------- Vanzarile mele ----------------
   function renderCategorySelects(){
     const selects = [document.getElementById('saleCategory'), document.getElementById('inCategory')];
@@ -761,6 +855,19 @@
       amount: Number(document.getElementById('saleAmount').value),
       note: document.getElementById('saleNote').value.trim(),
     };
+    // Client is optional here. A suggestion clicked -> send clientId. Otherwise, if a
+    // name + phone were typed for a client not yet in the directory, send those and
+    // let the server upsert-and-link them. No client info at all -> unchanged, legacy
+    // behavior (entry saved with no client attached).
+    const saleClientId = saleClientAC.getSelectedId();
+    const saleClientName = document.getElementById('saleClient').value.trim();
+    const saleClientPhone = document.getElementById('saleClientPhone').value.trim();
+    if (saleClientId){
+      payload.clientId = saleClientId;
+    } else if (saleClientName && saleClientPhone){
+      payload.clientName = saleClientName;
+      payload.clientPhone = saleClientPhone;
+    }
     const msgEl = document.getElementById('saleMsg');
     try{
       const resp = await fetch('/api/portal-sale', {
@@ -772,6 +879,7 @@
       DATA.mySales.unshift(body.entry);
       document.getElementById('saleForm').reset();
       document.getElementById('saleDate').value = todayISO();
+      saleClientAC.reset();
       renderMySales();
       showMsg(msgEl, 'Vânzare salvată — în așteptarea aprobării.', true);
     }catch(err){
@@ -805,7 +913,8 @@
     e.preventDefault();
     const payload = {
       source: 'incasare',
-      client: document.getElementById('inClient').value.trim(),
+      clientName: document.getElementById('inClient').value.trim(),
+      clientPhone: document.getElementById('inClientPhone').value.trim(),
       date: document.getElementById('inDate').value,
       category: document.getElementById('inCategory').value,
       treatment: document.getElementById('inTreatment').value.trim(),
@@ -827,6 +936,7 @@
       }));
       document.getElementById('incasareForm').reset();
       document.getElementById('inDate').value = todayISO();
+      inClientAC.reset();
       renderIncasari();
       showMsg(msgEl, 'Încasare salvată.', true);
     }catch(err){
