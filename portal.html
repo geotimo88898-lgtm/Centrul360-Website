@@ -81,6 +81,7 @@
   th,td{ text-align:left; padding:.55rem .6rem; border-bottom:1px solid var(--line); }
   th{ color:var(--muted); font-weight:600; font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; }
   tr:last-child td{ border-bottom:none; }
+  .row-actions{ display:flex; flex-wrap:wrap; gap:.5rem; }
   .status-pill{ display:inline-block; padding:.18rem .6rem; border-radius:999px; font-size:.72rem; font-weight:600; }
   .status-pending{ background:rgba(240,201,122,0.15); color:var(--warn); }
   .status-approved{ background:rgba(143,214,168,0.15); color:var(--good); }
@@ -845,8 +846,8 @@
         '<td>'+(o.active?'Activă':'Dezactivată')+'</td>' +
         '<td>'+(o.featured?'Da':'Nu')+'</td>' +
         '<td>'+(o.order||'')+'</td>' +
-        '<td></td>';
-      const td = tr.lastElementChild;
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
 
       const editBtn = document.createElement('button');
       editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
@@ -887,7 +888,6 @@
 
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'pill small ' + (o.active ? 'danger' : 'ghost');
-      toggleBtn.style.marginLeft = '.5rem';
       toggleBtn.textContent = o.active ? 'Dezactivează' : 'Activează';
       toggleBtn.addEventListener('click', async ()=>{
         const resp = await fetch('/api/portal-offers', {
@@ -901,7 +901,7 @@
       });
 
       const delBtn = document.createElement('button');
-      delBtn.className = 'pill small danger'; delBtn.style.marginLeft = '.5rem'; delBtn.textContent = 'Șterge';
+      delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
       delBtn.addEventListener('click', async ()=>{
         if (!confirm('Ștergi definitiv oferta "'+o.title+'"? Dispare imediat de pe site.')) return;
         const resp = await fetch('/api/portal-offers', {
@@ -1481,13 +1481,13 @@
         '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
         '<td>'+escapeHtml(s.treatment)+'</td>' +
         '<td>'+fmtRON(s.amount)+'</td>' +
-        '<td></td>';
-      const td = tr.lastElementChild;
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
       const approveBtn = document.createElement('button');
       approveBtn.className = 'pill small'; approveBtn.textContent = 'Aprobă';
       approveBtn.addEventListener('click', ()=>decide(s.id, 'approve'));
       const rejectBtn = document.createElement('button');
-      rejectBtn.className = 'pill small danger'; rejectBtn.style.marginLeft='.5rem'; rejectBtn.textContent = 'Respinge';
+      rejectBtn.className = 'pill small danger'; rejectBtn.textContent = 'Respinge';
       rejectBtn.addEventListener('click', ()=>decide(s.id, 'reject'));
       td.appendChild(approveBtn); td.appendChild(rejectBtn);
       body.appendChild(tr);
@@ -1597,8 +1597,8 @@
         '<td>'+roleLabel(emp.role)+'</td>' +
         '<td>'+escapeHtml(emp.username)+'</td>' +
         '<td>'+(emp.active ? 'Activ' : 'Dezactivat')+'</td>' +
-        '<td></td>';
-      const td = tr.lastElementChild;
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
 
       const resetBtn = document.createElement('button');
       resetBtn.className = 'pill small ghost'; resetBtn.textContent = 'Resetează parola';
@@ -1614,7 +1614,6 @@
 
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'pill small ' + (emp.active ? 'danger' : 'ghost');
-      toggleBtn.style.marginLeft = '.5rem';
       toggleBtn.textContent = emp.active ? 'Dezactivează' : 'Activează';
       toggleBtn.addEventListener('click', async ()=>{
         await fetch('/api/portal-employees', {
@@ -1626,7 +1625,7 @@
       });
 
       const editBtn = document.createElement('button');
-      editBtn.className = 'pill small ghost'; editBtn.style.marginLeft = '.5rem'; editBtn.textContent = 'Editează';
+      editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
       editBtn.addEventListener('click', async ()=>{
         const name = prompt('Nume:', emp.name);
         if (name === null || !name.trim()) return;
