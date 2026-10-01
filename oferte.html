@@ -355,7 +355,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
   <!-- ============ CELE MAI POPULARE ============ -->
   <section class="px-6 sm:px-8 max-w-7xl mx-auto pb-14" id="pachete">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridPachete" data-offers-section="pachete">
       <article class="ocard reveal" data-cat="epilare">
           <div class="ocard-media acc-epilare"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser Full Body"><span class="o-shade"></span><span class="tag">Ofertă · −47%</span></div>
           <div class="ocard-body">
@@ -394,7 +394,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   <!-- ============ EPILARE LASER ============ -->
   <section class="px-6 sm:px-8 max-w-7xl mx-auto pb-14">
     <div class="osec-head reveal"><span class="eb">Epilare laser · Doar Timișoara</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Epilare laser</h2></div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridEpilare" data-offers-section="epilare">
       <article class="ocard reveal" data-cat="epilare">
           <div class="ocard-media acc-epilare"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser Full Body"><span class="o-shade"></span><span class="tag">Ofertă · −47%</span></div>
           <div class="ocard-body">
@@ -420,7 +420,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   <!-- ============ REMODELARE ============ -->
   <section class="px-6 sm:px-8 max-w-7xl mx-auto pb-14">
     <div class="osec-head reveal"><span class="eb">Remodelare corporală</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Remodelare corporală</h2></div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridRemodelare" data-offers-section="remodelare">
       <article class="ocard reveal" data-cat="remodelare">
           <div class="ocard-media acc-remodelare"><img src="brand_asset/ba-liposonix-premium.webp" alt="Rezultat real înainte și după — Liposonix abdomen"><span class="o-shade"></span></div>
           <div class="ocard-body">
@@ -515,7 +515,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   <!-- ============ FACIALE ============ -->
   <section class="px-6 sm:px-8 max-w-7xl mx-auto pb-14">
     <div class="osec-head reveal"><span class="eb">Faciale</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Tratamente faciale</h2></div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridFaciale" data-offers-section="faciale">
       <article class="ocard reveal" data-cat="faciale">
           <div class="ocard-media acc-faciale"><img src="brand_asset/restart-ba-premium.webp" alt="Rezultat real înainte și după — tratament facial Restart"><span class="o-shade"></span></div>
           <div class="ocard-body">
@@ -902,6 +902,100 @@ function animate(){
   });
   pop.querySelectorAll('[data-offpop-close]').forEach(function(b){ b.addEventListener('click', close); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop.classList.contains('open')) close(); });
+})();
+</script>
+<script>
+// ===== Admin-managed offers (Setări → Oferte in the portal) =====
+// Replaces the hardcoded cards above with live data from /api/offers-public so prices
+// never drift out of sync with preturi.html. On fetch failure the cards already in the
+// HTML (the current real offers, kept as a static fallback) stay exactly as they are —
+// this script only ever overwrites a grid once it has a successful response for it.
+(function(){
+  const WA_NUMBER = '40750204243';
+  const DIACRITICS = { 'ă':'a','â':'a','î':'i','ș':'s','ş':'s','ț':'t','ţ':'t','Ă':'A','Â':'A','Î':'I','Ș':'S','Ş':'S','Ț':'T','Ţ':'T' };
+  function stripDiacritics(s){ return String(s||'').replace(/[ăâîșşțţĂÂÎȘŞȚŢ]/g, c => DIACRITICS[c] || c); }
+  function waLink(text){ return 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(stripDiacritics(text)); }
+  const CHK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  const DELAYS = ['', 'd1', 'd2', 'd3', 'd4', 'd5'];
+
+  function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // A multi-line description (first line = subtitle, rest = bullet points) renders as the
+  // longer ".pkg" card template; a single-line (or empty) description renders as the
+  // compact ".ocard" template — matching which cards were hand-built as which in the
+  // original markup.
+  function isPkg(offer){ return (offer.description || '').indexOf('\n') !== -1; }
+
+  function ocardHtml(o, delay){
+    const sub = o.description ? '<p class="pkg-sub" style="margin:0;">' + escapeHtml(o.description) + '</p>' : '';
+    return (
+      '<article class="ocard reveal ' + delay + '" data-cat="' + escapeHtml(o.category) + '">' +
+        '<div class="ocard-media acc-' + escapeHtml(o.category) + '"><img src="' + escapeHtml(o.imageUrl) + '" alt="' + escapeHtml(o.title) + '"><span class="o-shade"></span><span class="tag">Ofertă · −' + o.discountPercent + '%</span></div>' +
+        '<div class="ocard-body">' +
+          '<h3>' + escapeHtml(o.title) + '</h3>' +
+          sub +
+          '<div class="o-price"><b>' + Math.round(o.priceNew) + '<span class="u">lei</span></b><s>' + Math.round(o.priceOld) + ' lei</s></div>' +
+          '<a href="' + waLink('Buna ziua! Vreau sa rezerv oferta ' + o.title + ' la ' + Math.round(o.priceNew) + ' lei.') + '" target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  function pkgHtml(o, delay){
+    const lines = (o.description || '').split('\n').filter(Boolean);
+    const sub = lines[0] || '';
+    const bullets = lines.slice(1);
+    return (
+      '<article class="pkg ' + (o.featured ? 'featured ' : '') + 'reveal ' + delay + '" data-cat="' + escapeHtml(o.category) + '">' +
+        '<div class="pkg-media"><img src="' + escapeHtml(o.imageUrl) + '" alt=""><span class="o-shade"></span></div>' +
+        (o.featured ? '<span class="pkg-badge">Program complet</span>' : '') +
+        '<span class="tag">Pachet</span>' +
+        '<h3>' + escapeHtml(o.title) + '</h3>' +
+        (sub ? '<p class="pkg-sub">' + escapeHtml(sub) + '</p>' : '') +
+        (bullets.length ? '<ul class="pkg-list">' + bullets.map(b => '<li>' + CHK + '<span>' + escapeHtml(b) + '</span></li>').join('') + '</ul>' : '') +
+        '<div class="pkg-price"><b>' + Math.round(o.priceNew) + '<span class="u">lei</span></b><s>' + Math.round(o.priceOld) + ' lei</s></div>' +
+        '<a href="' + waLink('Buna ziua! As dori pachetul ' + o.title + ' (' + Math.round(o.priceNew) + ' lei).') + '" target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă pachetul <span class="arrow">→</span></a>' +
+      '</article>'
+    );
+  }
+
+  function cardHtml(o, idx){ return (isPkg(o) ? pkgHtml : ocardHtml)(o, DELAYS[idx % DELAYS.length]); }
+
+  function fillGrid(id, list){
+    const grid = document.getElementById(id);
+    if (!grid) return;
+    grid.innerHTML = list.map((o, i) => cardHtml(o, i)).join('');
+    // `io` is the IntersectionObserver created in the earlier inline <script> ("reveal on
+    // scroll") — it ran once at page load, before these nodes existed, so newly-injected
+    // .reveal cards need to be handed to it explicitly or they'd stay invisible forever.
+    grid.querySelectorAll('.reveal').forEach(el => { try { io.observe(el); } catch (e) { el.classList.add('in'); } });
+  }
+
+  // "Cele mai populare" is a fixed curated pick (same 3 offers as the original hardcoded
+  // section), not a category — picked by key, in this order.
+  const PACHETE_KEYS = ['epilare-full-body', 'hifu-program-complet', 'hifu-gusa-1sedinta'];
+
+  fetch('/api/offers-public')
+    .then(r => { if (!r.ok) throw new Error('offers_failed'); return r.json(); })
+    .then(data => {
+      const offers = (data && data.offers) || [];
+      if (!offers.length) return; // nothing active — leave the static fallback cards as-is
+      const byOrder = (a, b) => (a.order || 0) - (b.order || 0);
+      const byKey = {}; offers.forEach(o => { byKey[o.key] = o; });
+
+      const pachete = PACHETE_KEYS.map(k => byKey[k]).filter(Boolean);
+      const epilare = offers.filter(o => o.category === 'epilare').sort(byOrder);
+      const remodelare = offers.filter(o => o.category === 'remodelare').sort(byOrder);
+      const faciale = offers.filter(o => o.category === 'faciale' && PACHETE_KEYS.indexOf(o.key) === -1).sort(byOrder);
+
+      fillGrid('offersGridPachete', pachete);
+      fillGrid('offersGridEpilare', epilare);
+      fillGrid('offersGridRemodelare', remodelare);
+      fillGrid('offersGridFaciale', faciale);
+    })
+    .catch(err => { console.error('offers-public fetch failed, keeping static offer cards:', err); });
 })();
 </script>
 <script src="c360-convert.js" defer></script>

@@ -198,6 +198,7 @@
       <button data-tab="fise">Fișe de printat</button>
       <button data-tab="aprobari" class="admin-only hidden">Aprobări</button>
       <button data-tab="angajati" class="admin-only hidden">Angajați</button>
+      <button data-tab="oferte" class="admin-only hidden">Oferte</button>
       <button data-tab="setari" class="admin-only hidden">Setări</button>
     </nav>
 
@@ -510,6 +511,52 @@
         </div>
       </section>
 
+      <!-- OFERTE (admin) -->
+      <section class="panel admin-only hidden" id="panel-oferte">
+        <div class="sec-eyebrow"><i></i>Oferte</div>
+        <h2>Oferte publice (oferte.html &amp; preturi.html)</h2>
+        <p class="muted" style="font-size:.84rem;">Aceste oferte alimentează automat paginile publice oferte.html și preturi.html — orice modificare de aici se vede pe site în câteva minute, fără intervenție de cod. Reducerea (%) se calculează automat din preț nou/vechi.</p>
+
+        <div class="card">
+          <table>
+            <thead><tr><th>Titlu</th><th>Preț nou</th><th>Preț vechi</th><th>Reducere</th><th>Categorie</th><th>Activă</th><th>Featured</th><th>Ordine</th><th></th></tr></thead>
+            <tbody id="offersBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Adaugă ofertă</h3>
+        <div class="card">
+          <form class="inline-form" id="newOfferForm">
+            <div class="full"><label class="field-label">Titlu</label><input type="text" id="noTitle" required></div>
+            <div class="full"><label class="field-label">Descriere (opțional — prima linie = subtitlu, liniile următoare = puncte listă pentru pachete)</label><textarea id="noDescription" rows="3"></textarea></div>
+            <div><label class="field-label">Preț nou (lei)</label><input type="number" id="noPriceNew" min="0" required></div>
+            <div><label class="field-label">Preț vechi (lei)</label><input type="number" id="noPriceOld" min="0" required></div>
+            <div><label class="field-label">Categorie</label>
+              <select id="noCategory" required>
+                <option value="epilare">Epilare</option>
+                <option value="faciale">Faciale</option>
+                <option value="remodelare">Remodelare</option>
+              </select>
+            </div>
+            <div><label class="field-label">Ordine</label><input type="number" id="noOrder" min="1" value="1"></div>
+            <div>
+              <label class="field-label">Imagine</label>
+              <select id="noImageKey"></select>
+              <img id="noImagePreview" alt="" style="display:block; margin-top:.5rem; width:120px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--line);">
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:1.5rem;">
+              <label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" id="noFeatured"> Featured (card tip pachet, mai detaliat)</label>
+              <label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" id="noActive" checked> Activă (vizibilă pe site)</label>
+            </div>
+            <div class="full"><button class="pill" type="submit">Adaugă oferta</button>
+              <div class="msg" id="newOfferMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <div id="offerEditRows"></div>
+      </section>
+
       <!-- SETARI (admin) -->
       <section class="panel admin-only hidden" id="panel-setari">
         <div class="sec-eyebrow"><i></i>Setări</div>
@@ -708,6 +755,198 @@
     btn.classList.add('active');
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'oferte' && !OFFERS) loadOffers();
+  });
+
+  // ---------------- Oferte (admin) — drives public oferte.html / preturi.html ----------------
+  const OFFER_CATEGORY_LABELS = { epilare: 'Epilare', faciale: 'Faciale', remodelare: 'Remodelare' };
+  let OFFERS = null;
+  let OFFER_IMAGES = [];
+
+  function offerDiscount(o){
+    const pNew = Number(o.priceNew) || 0, pOld = Number(o.priceOld) || 0;
+    return pOld > 0 ? Math.round(100 - (pNew / pOld) * 100) : 0;
+  }
+
+  function imageOptionsHtml(selectedKey){
+    return OFFER_IMAGES.map(img =>
+      '<option value="'+img.key+'"'+(img.key===selectedKey?' selected':'')+'>'+escapeHtml(img.label)+'</option>'
+    ).join('');
+  }
+
+  function imagePathForKey(key){
+    const img = OFFER_IMAGES.find(i=>i.key===key);
+    return img ? '/'+img.path : '';
+  }
+
+  function wireImagePreview(selectEl, imgEl){
+    const update = ()=>{ imgEl.src = imagePathForKey(selectEl.value); };
+    selectEl.addEventListener('change', update);
+    update();
+  }
+
+  async function loadOffers(){
+    try{
+      const resp = await fetch('/api/portal-offers', {
+        method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+        body: JSON.stringify({ action:'list' })
+      });
+      if (!resp.ok) throw new Error('offers_failed');
+      const body = await resp.json();
+      OFFERS = body.offers || [];
+      OFFER_IMAGES = body.images || [];
+      document.getElementById('noImageKey').innerHTML = imageOptionsHtml(OFFER_IMAGES[0] && OFFER_IMAGES[0].key);
+      wireImagePreview(document.getElementById('noImageKey'), document.getElementById('noImagePreview'));
+      renderOffers();
+    }catch(err){
+      document.getElementById('offersBody').innerHTML = '<tr><td colspan="9">Eroare la încărcarea ofertelor.</td></tr>';
+    }
+  }
+
+  function offerEditRowHtml(o){
+    return (
+      '<tr class="offer-edit-row" data-edit-for="'+o.id+'"><td colspan="9">' +
+        '<div class="grid2">' +
+          '<div class="full"><label class="field-label">Titlu</label><input type="text" class="oe-title" value="'+escapeHtml(o.title)+'"></div>' +
+          '<div class="full"><label class="field-label">Descriere</label><textarea class="oe-description" rows="3">'+escapeHtml(o.description||'')+'</textarea></div>' +
+          '<div><label class="field-label">Preț nou (lei)</label><input type="number" class="oe-priceNew" min="0" value="'+o.priceNew+'"></div>' +
+          '<div><label class="field-label">Preț vechi (lei)</label><input type="number" class="oe-priceOld" min="0" value="'+o.priceOld+'"></div>' +
+          '<div><label class="field-label">Categorie</label><select class="oe-category">' +
+            Object.keys(OFFER_CATEGORY_LABELS).map(k=>'<option value="'+k+'"'+(o.category===k?' selected':'')+'>'+OFFER_CATEGORY_LABELS[k]+'</option>').join('') +
+          '</select></div>' +
+          '<div><label class="field-label">Ordine</label><input type="number" class="oe-order" min="1" value="'+(o.order||1)+'"></div>' +
+          '<div><label class="field-label">Imagine</label><select class="oe-imageKey">'+imageOptionsHtml(o.imageKey)+'</select>' +
+            '<img class="oe-preview" alt="" style="display:block; margin-top:.5rem; width:120px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--line);"></div>' +
+          '<div style="display:flex; align-items:flex-end; gap:1.5rem;">' +
+            '<label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" class="oe-featured" '+(o.featured?'checked':'')+'> Featured</label>' +
+            '<label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" class="oe-active" '+(o.active?'checked':'')+'> Activă</label>' +
+          '</div>' +
+          '<div class="full">' +
+            '<button type="button" class="pill small" data-save-offer="'+o.id+'">Salvează</button> ' +
+            '<button type="button" class="pill small ghost" data-cancel-offer="'+o.id+'">Anulează</button>' +
+            '<div class="msg" data-offer-msg="'+o.id+'"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>'
+    );
+  }
+
+  function renderOffers(){
+    const body = document.getElementById('offersBody');
+    body.innerHTML = '';
+    const sorted = [...OFFERS].sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+    sorted.forEach(o=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(o.title)+'</td>' +
+        '<td>'+Math.round(o.priceNew)+' lei</td>' +
+        '<td>'+Math.round(o.priceOld)+' lei</td>' +
+        '<td>−'+offerDiscount(o)+'%</td>' +
+        '<td>'+(OFFER_CATEGORY_LABELS[o.category]||o.category)+'</td>' +
+        '<td>'+(o.active?'Activă':'Dezactivată')+'</td>' +
+        '<td>'+(o.featured?'Da':'Nu')+'</td>' +
+        '<td>'+(o.order||'')+'</td>' +
+        '<td></td>';
+      const td = tr.lastElementChild;
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+      editBtn.addEventListener('click', ()=>{
+        const existing = document.querySelector('[data-edit-for="'+o.id+'"]');
+        if (existing){ existing.remove(); return; }
+        document.querySelectorAll('.offer-edit-row').forEach(r=>r.remove());
+        tr.insertAdjacentHTML('afterend', offerEditRowHtml(o));
+        const editRow = document.querySelector('[data-edit-for="'+o.id+'"]');
+        wireImagePreview(editRow.querySelector('.oe-imageKey'), editRow.querySelector('.oe-preview'));
+        editRow.querySelector('[data-cancel-offer]').addEventListener('click', ()=> editRow.remove());
+        editRow.querySelector('[data-save-offer]').addEventListener('click', async ()=>{
+          const payload = {
+            action: 'update',
+            id: o.id,
+            title: editRow.querySelector('.oe-title').value.trim(),
+            description: editRow.querySelector('.oe-description').value,
+            priceNew: Number(editRow.querySelector('.oe-priceNew').value),
+            priceOld: Number(editRow.querySelector('.oe-priceOld').value),
+            category: editRow.querySelector('.oe-category').value,
+            order: Number(editRow.querySelector('.oe-order').value),
+            imageKey: editRow.querySelector('.oe-imageKey').value,
+            featured: editRow.querySelector('.oe-featured').checked,
+            active: editRow.querySelector('.oe-active').checked,
+          };
+          const msgEl = editRow.querySelector('[data-offer-msg]');
+          try{
+            const resp = await fetch('/api/portal-offers', {
+              method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+            });
+            if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+            const body2 = await resp.json();
+            OFFERS = body2.offers;
+            renderOffers();
+          }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+        });
+      });
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'pill small ' + (o.active ? 'danger' : 'ghost');
+      toggleBtn.style.marginLeft = '.5rem';
+      toggleBtn.textContent = o.active ? 'Dezactivează' : 'Activează';
+      toggleBtn.addEventListener('click', async ()=>{
+        const resp = await fetch('/api/portal-offers', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'update', id:o.id, title:o.title, description:o.description, priceNew:o.priceNew, priceOld:o.priceOld, category:o.category, order:o.order, imageKey:o.imageKey, featured:o.featured, active: !o.active })
+        });
+        if (!resp.ok){ alert('Nu am putut salva modificarea.'); return; }
+        const body2 = await resp.json();
+        OFFERS = body2.offers;
+        renderOffers();
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'pill small danger'; delBtn.style.marginLeft = '.5rem'; delBtn.textContent = 'Șterge';
+      delBtn.addEventListener('click', async ()=>{
+        if (!confirm('Ștergi definitiv oferta "'+o.title+'"? Dispare imediat de pe site.')) return;
+        const resp = await fetch('/api/portal-offers', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'delete', id:o.id })
+        });
+        if (!resp.ok){ alert('Nu am putut șterge oferta.'); return; }
+        const body2 = await resp.json();
+        OFFERS = body2.offers;
+        renderOffers();
+      });
+
+      td.appendChild(editBtn); td.appendChild(toggleBtn); td.appendChild(delBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('newOfferForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      title: document.getElementById('noTitle').value.trim(),
+      description: document.getElementById('noDescription').value,
+      priceNew: Number(document.getElementById('noPriceNew').value),
+      priceOld: Number(document.getElementById('noPriceOld').value),
+      category: document.getElementById('noCategory').value,
+      order: Number(document.getElementById('noOrder').value) || 1,
+      imageKey: document.getElementById('noImageKey').value,
+      featured: document.getElementById('noFeatured').checked,
+      active: document.getElementById('noActive').checked,
+    };
+    const msgEl = document.getElementById('newOfferMsg');
+    try{
+      const resp = await fetch('/api/portal-offers', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la adăugare.', false); return; }
+      const body = await resp.json();
+      OFFERS = body.offers;
+      document.getElementById('newOfferForm').reset();
+      document.getElementById('noActive').checked = true;
+      showMsg(msgEl, 'Ofertă adăugată.', true);
+      renderOffers();
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
   });
 
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
