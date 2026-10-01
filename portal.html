@@ -197,6 +197,7 @@
       <button data-tab="resurse">Resurse</button>
       <button data-tab="fise">Fișe de printat</button>
       <button data-tab="aprobari" class="admin-only hidden">Aprobări</button>
+      <button data-tab="angajati" class="admin-only hidden">Angajați</button>
       <button data-tab="setari" class="admin-only hidden">Setări</button>
     </nav>
 
@@ -467,6 +468,29 @@
         </div>
       </section>
 
+      <!-- ANGAJATI (admin) -->
+      <section class="panel admin-only hidden" id="panel-angajati">
+        <div class="sec-eyebrow"><i></i>Angajați</div>
+        <h2>Comisioane pe angajat</h2>
+        <div class="card">
+          <table>
+            <thead><tr><th>Angajat</th><th>Locație</th><th>Rol</th><th>Comision aprobat (total)</th><th>Comision în așteptare</th><th>Vânzări aprobate</th></tr></thead>
+            <tbody id="employeeSummaryBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Detalii per angajat</h3>
+        <div class="card">
+          <label class="field-label" style="max-width:280px;">Alege angajatul</label>
+          <select id="employeeDetailSelect" style="max-width:280px; margin-bottom:1rem;"></select>
+          <table>
+            <thead><tr><th>Data</th><th>Categorie</th><th>Tratament</th><th>Sumă</th><th>Status</th><th>Comision</th></tr></thead>
+            <tbody id="employeeDetailBody"></tbody>
+          </table>
+          <p class="muted" id="employeeDetailEmpty" style="font-size:.86rem; display:none;">Nicio vânzare înregistrată.</p>
+        </div>
+      </section>
+
       <!-- SETARI (admin) -->
       <section class="panel admin-only hidden" id="panel-setari">
         <div class="sec-eyebrow"><i></i>Setări</div>
@@ -637,6 +661,7 @@
     renderResources();
     if (DATA.isAdmin){
       renderApprovals();
+      renderEmployeeSummary();
       renderEmployees();
       renderGoalsEditor();
       renderCommissionForm();
@@ -1134,6 +1159,73 @@
       body.appendChild(tr);
     });
   }
+
+  // ---------------- Angajati (admin) — commission summary + per-employee detail ----------------
+  let selectedEmployeeDetailId = '';
+
+  function renderEmployeeSummary(){
+    const body = document.getElementById('employeeSummaryBody');
+    body.innerHTML = '';
+    const employees = DATA.admin.employees.filter(e=>e.active);
+    employees.forEach(emp=>{
+      const sales = DATA.admin.allSales.filter(s=>s.employeeId===emp.id);
+      const approved = sales.filter(s=>s.status==='approved');
+      const pending = sales.filter(s=>s.status==='pending');
+      const approvedTotal = approved.reduce((sum,s)=>sum+Number(s.commission||0),0);
+      const pendingTotal = pending.reduce((sum,s)=>{
+        const rate = s.category==='retail' ? DATA.retailRate : (DATA.commissionRates[s.category]||0);
+        return sum + Math.round(Number(s.amount||0)*(rate/100)*100)/100;
+      },0);
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(emp.name)+'</td>' +
+        '<td>'+escapeHtml(emp.location)+'</td>' +
+        '<td>'+roleLabel(emp.role)+'</td>' +
+        '<td>'+fmtRON(approvedTotal)+'</td>' +
+        '<td>'+fmtRON(pendingTotal)+' <span class="muted" style="font-size:.78rem;">(estimat)</span></td>' +
+        '<td>'+approved.length+'</td>';
+      body.appendChild(tr);
+    });
+
+    const sel = document.getElementById('employeeDetailSelect');
+    const keepSelection = selectedEmployeeDetailId;
+    sel.innerHTML = '';
+    employees.forEach(emp=>{
+      const opt = document.createElement('option');
+      opt.value = emp.id; opt.textContent = emp.name + ' (' + emp.location + ')';
+      sel.appendChild(opt);
+    });
+    selectedEmployeeDetailId = employees.some(e=>e.id===keepSelection) ? keepSelection : (employees[0] ? employees[0].id : '');
+    renderEmployeeDetail();
+  }
+
+  function renderEmployeeDetail(){
+    const sel = document.getElementById('employeeDetailSelect');
+    sel.value = selectedEmployeeDetailId;
+
+    const body = document.getElementById('employeeDetailBody');
+    body.innerHTML = '';
+    const sales = DATA.admin.allSales
+      .filter(s=>s.employeeId===selectedEmployeeDetailId)
+      .sort((a,b)=> a.date < b.date ? 1 : -1);
+    document.getElementById('employeeDetailEmpty').style.display = sales.length ? 'none' : 'block';
+    sales.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
+        '<td>'+escapeHtml(s.treatment)+(s.client?' · <span class="muted" style="font-size:.78rem;">'+escapeHtml(s.client)+'</span>':'')+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td><span class="status-pill status-'+s.status+'">'+STATUS_LABELS[s.status]+'</span></td>' +
+        '<td>'+(s.status==='approved' ? fmtRON(s.commission) : '—')+'</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('employeeDetailSelect').addEventListener('change', (e)=>{
+    selectedEmployeeDetailId = e.target.value;
+    renderEmployeeDetail();
+  });
 
   async function decide(saleId, decision){
     try{
