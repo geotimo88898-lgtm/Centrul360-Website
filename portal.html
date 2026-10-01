@@ -374,7 +374,7 @@
         </div>
         <div class="card">
           <table>
-            <thead><tr><th>Data</th><th>Client</th><th>Tratament</th><th>Sumă</th><th>Metodă</th><th>Efectuat de</th></tr></thead>
+            <thead><tr><th>Data</th><th>Client</th><th>Tratament</th><th>Sumă</th><th>Metodă</th><th>Efectuat de</th><th class="admin-only hidden">Acțiuni</th></tr></thead>
             <tbody id="incasariBody"></tbody>
           </table>
           <p style="margin-top:1rem;" class="total-row">Total (luna selectată): <span id="incasariTotal">0 RON</span></p>
@@ -1381,6 +1381,33 @@
     });
   }
 
+  function incasareEditRowHtml(s){
+    return (
+      '<tr class="incasare-edit-row" data-edit-for="'+s.id+'"><td colspan="7">' +
+        '<div class="grid2">' +
+          '<div><label class="field-label">Data</label><input type="date" class="ie-date" value="'+s.date+'"></div>' +
+          '<div><label class="field-label">Client</label><input type="text" class="ie-client" value="'+escapeHtml(s.client)+'"></div>' +
+          '<div><label class="field-label">Categorie</label><select class="ie-category">' +
+            Object.keys(CATEGORY_LABELS).map(k=>'<option value="'+k+'"'+(s.category===k?' selected':'')+'>'+CATEGORY_LABELS[k]+'</option>').join('') +
+          '</select></div>' +
+          '<div class="full"><label class="field-label">Tratament</label><input type="text" class="ie-treatment" value="'+escapeHtml(s.treatment)+'"></div>' +
+          '<div><label class="field-label">Sumă (RON)</label><input type="number" class="ie-amount" min="0" step="0.01" value="'+s.amount+'"></div>' +
+          '<div><label class="field-label">Metodă</label><select class="ie-method">' +
+            Object.keys(METHOD_LABELS).map(k=>'<option value="'+k+'"'+(s.method===k?' selected':'')+'>'+METHOD_LABELS[k]+'</option>').join('') +
+          '</select></div>' +
+          '<div><label class="field-label">Efectuat de</label><select class="ie-performedBy"><option value="">—</option>' +
+            (DATA.activeEmployees||[]).map(e=>'<option value="'+e.id+'"'+(s.performedBy===e.id?' selected':'')+'>'+escapeHtml(e.name)+'</option>').join('') +
+          '</select></div>' +
+          '<div class="full">' +
+            '<button type="button" class="pill small" data-save-incasare="'+s.id+'">Salvează</button> ' +
+            '<button type="button" class="pill small ghost" data-cancel-incasare="'+s.id+'">Anulează</button>' +
+            '<div class="msg" data-incasare-msg="'+s.id+'"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>'
+    );
+  }
+
   function renderIncasari(){
     const monthFilter = document.getElementById('incasariMonthFilter').value || currentMonthValue();
     renderIncasariStats();
@@ -1397,8 +1424,59 @@
         '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
         '<td>'+fmtRON(s.amount)+'</td>' +
         '<td>'+(METHOD_LABELS[s.method]||s.method)+'</td>' +
-        '<td>'+escapeHtml(s.performedByName||'—')+'</td>';
+        '<td>'+escapeHtml(s.performedByName||'—')+'</td>' +
+        '<td class="admin-only hidden"><div class="row-actions"></div></td>';
       body.appendChild(tr);
+
+      if (DATA.isAdmin){
+        const actionsTd = tr.lastElementChild.firstElementChild;
+        const editBtn = document.createElement('button');
+        editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+        editBtn.addEventListener('click', ()=>{
+          const existing = document.querySelector('[data-edit-for="'+s.id+'"]');
+          if (existing){ existing.remove(); return; }
+          document.querySelectorAll('.incasare-edit-row').forEach(r=>r.remove());
+          tr.insertAdjacentHTML('afterend', incasareEditRowHtml(s));
+          const editRow = document.querySelector('[data-edit-for="'+s.id+'"]');
+          editRow.querySelector('[data-cancel-incasare]').addEventListener('click', ()=> editRow.remove());
+          editRow.querySelector('[data-save-incasare]').addEventListener('click', async ()=>{
+            const payload = {
+              action:'update', id: s.id,
+              date: editRow.querySelector('.ie-date').value,
+              client: editRow.querySelector('.ie-client').value.trim(),
+              category: editRow.querySelector('.ie-category').value,
+              treatment: editRow.querySelector('.ie-treatment').value.trim(),
+              amount: Number(editRow.querySelector('.ie-amount').value),
+              method: editRow.querySelector('.ie-method').value,
+              performedBy: editRow.querySelector('.ie-performedBy').value,
+            };
+            const msgEl = editRow.querySelector('[data-incasare-msg]');
+            try{
+              const resp = await fetch('/api/portal-incasari', {
+                method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+              });
+              if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+              await loadData();
+              activateTab('incasari');
+            }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+          });
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
+        delBtn.addEventListener('click', async ()=>{
+          if (!confirm('Ștergi definitiv această încasare? Nu poate fi recuperată.')) return;
+          const resp = await fetch('/api/portal-incasari', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'delete', id: s.id })
+          });
+          if (!resp.ok){ alert('Nu am putut șterge încasarea.'); return; }
+          await loadData();
+          activateTab('incasari');
+        });
+
+        actionsTd.appendChild(editBtn); actionsTd.appendChild(delBtn);
+      }
     });
     document.getElementById('incasariTotal').textContent = fmtRON(total);
   }
