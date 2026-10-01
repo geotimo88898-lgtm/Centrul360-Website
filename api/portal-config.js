@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
       };
     }
     if (resources && typeof resources === 'object') {
-      ['upsellPackages', 'upcomingOffers', 'receptionScripts', 'treatmentProtocols'].forEach((key) => {
+      ['upsellPackages', 'upcomingOffers', 'receptionScripts', 'treatmentProtocols', 'treatmentReference'].forEach((key) => {
         if (Array.isArray(resources[key])) {
           config.resources[key] = resources[key].map((s) => String(s).slice(0, 1000)).slice(0, 100);
         }

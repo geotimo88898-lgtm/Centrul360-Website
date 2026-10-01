@@ -14,15 +14,15 @@ const DAILY_TASKS = {
     'Verifică programările zilei și pregătește cabina/aparatele necesare.',
     'Dezinfectează suprafețele și aparatele după fiecare client.',
     'Completează fișa de client pentru fiecare tratament efectuat.',
-    'Loghează fiecare vânzare în tab-ul „Vânzările mele" până la finalul zilei.',
+    'Loghează fiecare vânzare proprie în tab-ul „Comision" până la finalul zilei.',
     'Recomandă cel puțin un upsell relevant per client (vezi tab „Resurse").',
   ],
   receptie: [
     'Confirmă telefonic sau prin mesaj programările pentru ziua următoare.',
-    'Verifică încasările zilei și completează fișele de printat pentru fiecare client plătitor.',
+    'Loghează fiecare programare (confirmată/anulată/reprogramată) în tab-ul „Programări".',
+    'Încasează fiecare client plătitor în tab-ul „Încasează client" — înlocuiește fișa de hârtie.',
     'Răspunde la solicitările de programare în maxim 15 minute.',
-    'Actualizează agenda cu eventualele anulări/reprogramări.',
-    'Predă la final de zi situația încasărilor către management.',
+    'Predă la final de zi situația încasărilor către management (vezi „Tabel de încasări").',
   ],
   admin: [
     'Verifică vânzările în așteptare și aprobă/respinge-le în tab-ul „Aprobări".',
@@ -31,9 +31,52 @@ const DAILY_TASKS = {
   ],
 };
 
+const APPOINTMENT_STATUSES = ['confirmata', 'anulata', 'reprogramata'];
+
 function monthKey(dateStr) {
   // dateStr expected as YYYY-MM-DD; returns YYYY-MM.
   return (dateStr || '').slice(0, 7);
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function emptyStatusCounts() {
+  return { confirmata: 0, anulata: 0, reprogramata: 0 };
+}
+
+// Computes the live "current" value for one individual goal. Only 'manual' goals carry
+// a stored value (edited by the admin); every other metric is derived here from the
+// existing sales.json / appointments.json data, never separately tracked.
+function computeGoalCurrent(goal, employeeId, sales, appointments, today, month) {
+  switch (goal.metric) {
+    case 'programari_confirmate_azi':
+      return appointments.filter(
+        (a) => a.employeeId === employeeId && a.date === today && a.status === 'confirmata'
+      ).length;
+    case 'programari_anulate_azi':
+      return appointments.filter(
+        (a) => a.employeeId === employeeId && a.date === today && a.status === 'anulata'
+      ).length;
+    case 'comision_aprobat_luna':
+      return sales
+        .filter(
+          (s) =>
+            s.source !== 'incasare' &&
+            s.employeeId === employeeId &&
+            s.status === 'approved' &&
+            monthKey(s.date) === month
+        )
+        .reduce((sum, s) => sum + Number(s.commission || 0), 0);
+    case 'incasari_atribuite_luna':
+      return sales
+        .filter((s) => s.source === 'incasare' && s.performedBy === employeeId && monthKey(s.date) === month)
+        .reduce((sum, s) => sum + Number(s.amount || 0), 0);
+    case 'manual':
+    default:
+      return Number(goal.currentValue || 0);
+  }
 }
 
 module.exports = async (req, res) => {
@@ -46,14 +89,16 @@ module.exports = async (req, res) => {
   if (!session) return;
 
   try {
-    const [employeesRaw, sales, configRaw] = await Promise.all([
+    const [employeesRaw, sales, appointments, configRaw] = await Promise.all([
       readJSON('data/employees.json', []),
       readJSON('data/sales.json', []),
+      readJSON('data/appointments.json', []),
       readJSON('data/config.json', null),
     ]);
 
     const config = configRaw || defaultConfig();
     const month = currentMonth();
+    const today = todayISO();
 
     // Resolve "me" — either a real employee row, or the synthetic bootstrap admin.
     let me;
@@ -73,9 +118,17 @@ module.exports = async (req, res) => {
     }
 
     const isAdmin = session.role === 'admin';
+    const activeEmployees = employeesRaw.filter((e) => e.active !== false);
 
-    // Company goal progress: sum of approved sales this month, across both locations.
-    const approvedThisMonth = sales.filter(
+    // Commission sales only (source !== 'incasare'; legacy entries from before this
+    // field existed have no `source` at all and are treated as 'comision' as well).
+    const comisionSales = sales.filter((s) => s.source !== 'incasare');
+    const incasareSales = sales.filter((s) => s.source === 'incasare');
+
+    // Company goal progress: sum of approved COMMISSION sales this month, across both
+    // locations. "Încasare" entries are pure bookkeeping and never count here, so the
+    // same money is never counted twice toward goals/bonuses.
+    const approvedThisMonth = comisionSales.filter(
       (s) => s.status === 'approved' && monthKey(s.date) === config.companyGoal.month
     );
     const companyApprovedTotal = approvedThisMonth.reduce((sum, s) => sum + Number(s.amount || 0), 0);
@@ -85,13 +138,12 @@ module.exports = async (req, res) => {
     const raceCategory = config.raceBonus.category;
     const raceMonth = config.raceBonus.month;
     const raceCounts = {};
-    sales.forEach((s) => {
+    comisionSales.forEach((s) => {
       if (s.status === 'approved' && s.category === raceCategory && monthKey(s.date) === raceMonth) {
         raceCounts[s.employeeId] = (raceCounts[s.employeeId] || 0) + 1;
       }
     });
-    const leaderboard = employeesRaw
-      .filter((e) => e.active !== false)
+    const leaderboard = activeEmployees
       .map((e) => ({
         employeeId: e.id,
         name: e.name,
@@ -100,10 +152,53 @@ module.exports = async (req, res) => {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // My own sales (admin sees their own too, which will be empty unless they log sales).
-    const mySales = sales
+    // My own commission log ("Comision" tab) — never includes "încasare" bookkeeping
+    // entries, even ones I personally recorded at the register.
+    const mySales = comisionSales
       .filter((s) => s.employeeId === me.id)
       .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+    // Shared "Tabel de încasări" — visible to every authenticated role, read-only for
+    // non-admins. Only `source: 'incasare'` entries, so commission claims never show here.
+    const incasari = incasareSales
+      .map((s) => {
+        const recorder = employeesRaw.find((e) => e.id === s.employeeId);
+        const performer = employeesRaw.find((e) => e.id === s.performedBy);
+        return {
+          ...s,
+          employeeName: recorder ? recorder.name : s.employeeId,
+          performedByName: performer ? performer.name : (s.performedBy || '—'),
+        };
+      })
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+    // Programări — today's shared log (newest first) plus aggregate counts, and the
+    // logged-in employee's own counts for the Panou widget.
+    const todaysAppointments = appointments
+      .filter((a) => a.date === today)
+      .slice()
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    const todaysAppointmentsWithNames = todaysAppointments.map((a) => {
+      const emp = employeesRaw.find((e) => e.id === a.employeeId);
+      return { ...a, employeeName: emp ? emp.name : a.employeeId };
+    });
+    const countsToday = emptyStatusCounts();
+    const myCountsToday = emptyStatusCounts();
+    todaysAppointments.forEach((a) => {
+      if (APPOINTMENT_STATUSES.includes(a.status)) {
+        countsToday[a.status] += 1;
+        if (a.employeeId === me.id) myCountsToday[a.status] += 1;
+      }
+    });
+
+    // Individual goals (Panou) — up to 2 per employee, set by the admin in Setări →
+    // Angajați. Computed live here except for 'manual' goals.
+    const myGoals = (me.goals || []).map((g) => ({
+      title: g.title,
+      metric: g.metric,
+      target: g.target,
+      current: computeGoalCurrent(g, me.id, sales, appointments, today, month),
+    }));
 
     const payload = {
       me: { id: me.id, name: me.name, location: me.location, role: me.role },
@@ -125,12 +220,20 @@ module.exports = async (req, res) => {
       retailRate: config.retailRate,
       resources: config.resources,
       mySales,
+      incasari,
+      activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location })),
+      appointments: {
+        today: todaysAppointmentsWithNames,
+        countsToday,
+        myCountsToday,
+      },
+      myGoals,
       isAdmin,
     };
 
     if (isAdmin) {
       payload.admin = {
-        pendingSales: sales
+        pendingSales: comisionSales
           .filter((s) => s.status === 'pending')
           .map((s) => {
             const emp = employeesRaw.find((e) => e.id === s.employeeId);
@@ -140,7 +243,7 @@ module.exports = async (req, res) => {
               employeeLocation: emp ? emp.location : '—',
             };
           }),
-        allSales: sales.map((s) => {
+        allSales: comisionSales.map((s) => {
           const emp = employeesRaw.find((e) => e.id === s.employeeId);
           return {
             ...s,
@@ -155,6 +258,7 @@ module.exports = async (req, res) => {
           role: e.role,
           username: e.username,
           active: e.active !== false,
+          goals: e.goals || [],
         })),
         config,
       };

@@ -1,6 +1,7 @@
 // POST /api/portal-employees — admin-only employee management (Setări → Angajați).
-// One endpoint, three actions via body.action: 'create' | 'reset_password' | 'set_active'.
-// Passwords are hashed server-side (scrypt, see _lib/auth.js) before ever touching storage.
+// One endpoint, four actions via body.action: 'create' | 'reset_password' | 'set_active'
+// | 'set_goals'. Passwords are hashed server-side (scrypt, see _lib/auth.js) before ever
+// touching storage.
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -8,6 +9,17 @@ const { requireAdmin } = require('./_lib/auth');
 const { hashPassword } = require('./_lib/auth');
 
 const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
+
+// Up to 2 "obiective individuale" per employee (Setări → Angajați → edit → obiective).
+// Non-manual metrics are computed live in portal-data.js from sales.json/appointments.json
+// — only 'manual' goals carry a stored currentValue the admin edits by hand.
+const VALID_GOAL_METRICS = [
+  'programari_confirmate_azi',
+  'programari_anulate_azi',
+  'comision_aprobat_luna',
+  'incasari_atribuite_luna',
+  'manual',
+];
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -90,6 +102,47 @@ module.exports = async (req, res) => {
       employee.active = active;
       await writeJSON('data/employees.json', employees);
       res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === 'set_goals') {
+      const { employeeId, goals } = req.body || {};
+      if (!employeeId || !Array.isArray(goals)) {
+        res.status(400).json({ error: 'missing_fields' });
+        return;
+      }
+      if (goals.length > 2) {
+        res.status(400).json({ error: 'too_many_goals' });
+        return;
+      }
+      const employee = employees.find((e) => e.id === employeeId);
+      if (!employee) {
+        res.status(404).json({ error: 'employee_not_found' });
+        return;
+      }
+
+      const cleaned = [];
+      for (const g of goals) {
+        if (!g || !g.title || !VALID_GOAL_METRICS.includes(g.metric)) {
+          res.status(400).json({ error: 'invalid_goal' });
+          return;
+        }
+        const target = Number(g.target);
+        if (!Number.isFinite(target) || target < 0) {
+          res.status(400).json({ error: 'invalid_goal' });
+          return;
+        }
+        const goal = { title: String(g.title).slice(0, 100), metric: g.metric, target };
+        if (g.metric === 'manual') {
+          const cur = Number(g.currentValue);
+          goal.currentValue = Number.isFinite(cur) ? cur : 0;
+        }
+        cleaned.push(goal);
+      }
+
+      employee.goals = cleaned;
+      await writeJSON('data/employees.json', employees);
+      res.status(200).json({ ok: true, goals: cleaned });
       return;
     }
 

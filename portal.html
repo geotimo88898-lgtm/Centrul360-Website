@@ -170,7 +170,10 @@
   <div class="shell">
     <nav class="tabs" id="tabsNav">
       <button data-tab="panou" class="active">Panou</button>
-      <button data-tab="vanzari">Vânzările mele</button>
+      <button data-tab="incasare">Încasează client</button>
+      <button data-tab="comision">Comision</button>
+      <button data-tab="incasari">Tabel de încasări</button>
+      <button data-tab="programari">Programări</button>
       <button data-tab="resurse">Resurse</button>
       <button data-tab="fise">Fișe de printat</button>
       <button data-tab="aprobari" class="admin-only hidden">Aprobări</button>
@@ -200,12 +203,53 @@
           <p class="muted" id="raceBonusExplain" style="font-size:.86rem;"></p>
           <div id="leaderboard"></div>
         </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Programări azi</h3>
+          <div id="panouApptTally" style="display:flex; gap:1.4rem; flex-wrap:wrap;"></div>
+        </div>
+
+        <div class="card hidden" id="panouGoalsCard">
+          <h3 style="margin-top:0;">Obiective individuale</h3>
+          <div id="panouGoals"></div>
+        </div>
       </section>
 
-      <!-- VANZARILE MELE -->
-      <section class="panel" id="panel-vanzari">
-        <div class="sec-eyebrow"><i></i>Vânzările mele</div>
-        <h2>Loghează o vânzare</h2>
+      <!-- INCASEAZA CLIENT -->
+      <section class="panel" id="panel-incasare">
+        <div class="sec-eyebrow"><i></i>Încasează client</div>
+        <h2>Înregistrează o încasare</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Înlocuiește fișa de hârtie — apare imediat în „Tabel de încasări", vizibil tuturor. Nu creează un comision pentru nimeni.</p>
+        <div class="card">
+          <form class="inline-form" id="incasareForm">
+            <div><label class="field-label">Nume client</label><input type="text" id="inClient" required></div>
+            <div><label class="field-label">Data</label><input type="date" id="inDate" required></div>
+            <div class="full"><label class="field-label">Tratament / pachet</label><input type="text" id="inTreatment" required></div>
+            <div><label class="field-label">Categorie</label><select id="inCategory" required></select></div>
+            <div><label class="field-label">Sumă (RON)</label><input type="number" id="inAmount" min="0" step="0.01" required></div>
+            <div><label class="field-label">Metodă de plată</label>
+              <select id="inMethod" required>
+                <option value="card">Card</option>
+                <option value="cash">Cash</option>
+                <option value="transfer">Transfer</option>
+              </select>
+            </div>
+            <div><label class="field-label">Cine a efectuat tratamentul</label>
+              <select id="inPerformedBy"><option value="">—</option></select>
+            </div>
+            <div class="full">
+              <button class="pill" type="submit">Salvează încasarea</button>
+              <div class="msg" id="incasareMsg"></div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- COMISION -->
+      <section class="panel" id="panel-comision">
+        <div class="sec-eyebrow"><i></i>Comision</div>
+        <h2>Loghează o vânzare proprie</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Pentru calculul comisionului tău — trece prin aprobarea administratorului.</p>
         <div class="card">
           <form class="inline-form" id="saleForm">
             <div>
@@ -247,6 +291,67 @@
         </div>
       </section>
 
+      <!-- TABEL DE INCASARI -->
+      <section class="panel" id="panel-incasari">
+        <div class="sec-eyebrow"><i></i>Tabel de încasări</div>
+        <h2>Toate încasările</h2>
+        <div class="card no-print">
+          <label class="field-label" style="max-width:220px;">Filtrează după lună</label>
+          <input type="month" id="incasariMonthFilter" style="max-width:220px; margin-bottom:1rem;">
+          <div>
+            <button type="button" class="pill" id="printIncasariBtn">Printează</button>
+          </div>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Data</th><th>Client</th><th>Tratament</th><th>Sumă</th><th>Metodă</th><th>Efectuat de</th></tr></thead>
+            <tbody id="incasariBody"></tbody>
+          </table>
+          <p style="margin-top:1rem;" class="total-row">Total (luna selectată): <span id="incasariTotal">0 RON</span></p>
+        </div>
+
+        <div class="print-sheet" id="incasariSheet">
+          <h1 style="font-family:Georgia,serif;" id="incasariSheetTitle">Centrul360 — Tabel de încasări</h1>
+          <table>
+            <thead><tr><th>Data</th><th>Client</th><th>Tratament</th><th>Sumă</th><th>Metodă</th><th>Efectuat de</th></tr></thead>
+            <tbody id="incasariSheetBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PROGRAMARI -->
+      <section class="panel" id="panel-programari">
+        <div class="sec-eyebrow"><i></i>Programări</div>
+        <h2>Jurnalul zilei</h2>
+        <div class="card">
+          <form class="inline-form" id="apptForm">
+            <div><label class="field-label">Status</label>
+              <select id="apptStatus" required>
+                <option value="confirmata">Confirmată</option>
+                <option value="anulata">Anulată</option>
+                <option value="reprogramata">Reprogramată</option>
+              </select>
+            </div>
+            <div><label class="field-label">Oră (opțional)</label><input type="text" id="apptTime" placeholder="ex: 14:30"></div>
+            <div class="full"><label class="field-label">Client (opțional)</label><input type="text" id="apptClient" placeholder="opțional"></div>
+            <div class="full">
+              <button class="pill" type="submit">Adaugă în jurnal</button>
+              <div class="msg" id="apptMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Astăzi</h3>
+        <div class="card">
+          <div id="apptCounts" style="display:flex; gap:1.4rem; flex-wrap:wrap; margin-bottom:1rem;"></div>
+          <table>
+            <thead><tr><th>Ora</th><th>Status</th><th>Client</th><th>Angajat</th></tr></thead>
+            <tbody id="apptBody"></tbody>
+          </table>
+          <p class="muted" id="apptEmpty" style="font-size:.86rem; display:none;">Nicio programare logată azi.</p>
+        </div>
+      </section>
+
       <!-- RESURSE -->
       <section class="panel" id="panel-resurse">
         <div class="sec-eyebrow"><i></i>Resurse</div>
@@ -267,6 +372,11 @@
         <div class="card">
           <h3 style="margin-top:0;">Scheme de tratament pe tip de aparat</h3>
           <ul class="resource-list" id="resProtocols"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Fișe de referință pe tratament</h3>
+          <p class="muted" style="font-size:.84rem;">Pentru recepție — răspunde la telefon fără să întrerupi un cosmetician.</p>
+          <div id="resReference"></div>
         </div>
       </section>
 
@@ -293,16 +403,7 @@
           </form>
         </div>
 
-        <h2 style="margin-top:2.2rem;">Tabel de încasări lunar</h2>
-        <div class="card no-print">
-          <label class="field-label" style="max-width:220px;">Luna</label>
-          <input type="month" id="receiptsMonth" style="max-width:220px; margin-bottom:1rem;">
-          <div>
-            <button type="button" class="pill" id="printReceiptsBtn">Printează tabelul lunii</button>
-          </div>
-        </div>
-
-        <!-- Printable sheets, hidden on screen -->
+        <!-- Printable sheet, hidden on screen -->
         <div class="print-sheet" id="intakeSheet">
           <h1 style="font-family:Georgia,serif;">Centrul360 — Fișă client</h1>
           <div class="sheet-row">
@@ -323,14 +424,6 @@
             <div class="sheet-field"><div class="lbl">Semnătură client</div><div class="line"></div></div>
             <div class="sheet-field"><div class="lbl">Semnătură angajat</div><div class="line"></div></div>
           </div>
-        </div>
-
-        <div class="print-sheet" id="receiptsSheet">
-          <h1 style="font-family:Georgia,serif;" id="receiptsTitle">Centrul360 — Tabel de încasări</h1>
-          <table>
-            <thead><tr><th>Data</th><th>Angajat</th><th>Locație</th><th>Tratament</th><th>Sumă</th><th>Status</th></tr></thead>
-            <tbody id="receiptsBody"></tbody>
-          </table>
         </div>
       </section>
 
@@ -381,6 +474,12 @@
             <thead><tr><th>Nume</th><th>Locație</th><th>Rol</th><th>Username</th><th>Status</th><th></th></tr></thead>
             <tbody id="employeesBody"></tbody>
           </table>
+        </div>
+
+        <h3>Obiective individuale</h3>
+        <div class="card">
+          <p class="muted" style="font-size:.84rem;">Până la 2 obiective per angajat activ. Pentru metrica „manual" valoarea curentă e editabilă direct — actualizeaz-o oricând.</p>
+          <div id="goalsEditor"></div>
         </div>
 
         <h3>Reguli comision</h3>
@@ -452,7 +551,16 @@
     'retail': 'Produs retail / home-care',
     'altele': 'Altele',
   };
-  const STATUS_LABELS = { pending: 'În așteptare', approved: 'Aprobat', rejected: 'Respins' };
+  const STATUS_LABELS = { pending: 'În așteptare', approved: 'Aprobat', rejected: 'Respins', recorded: 'Înregistrat' };
+  const METHOD_LABELS = { card: 'Card', cash: 'Cash', transfer: 'Transfer' };
+  const APPT_STATUS_LABELS = { confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată' };
+  const GOAL_METRIC_LABELS = {
+    programari_confirmate_azi: 'Programări confirmate azi',
+    programari_anulate_azi: 'Programări anulate azi',
+    comision_aprobat_luna: 'Comision aprobat (luna curentă)',
+    incasari_atribuite_luna: 'Încasări atribuite (luna curentă)',
+    manual: 'Manual (valoare introdusă de admin)',
+  };
 
   let DATA = null;
 
@@ -492,11 +600,15 @@
 
     renderPanou();
     renderCategorySelects();
+    renderPerformedBySelect();
     renderMySales();
+    renderIncasari();
+    renderAppointments();
     renderResources();
     if (DATA.isAdmin){
       renderApprovals();
       renderEmployees();
+      renderGoalsEditor();
       renderCommissionForm();
       renderRaceBonusForm();
       renderCompanyGoalForm();
@@ -504,9 +616,10 @@
     }
 
     document.getElementById('saleDate').value = todayISO();
+    document.getElementById('inDate').value = todayISO();
     document.getElementById('icDate').value = todayISO();
     document.getElementById('mySalesMonthFilter').value = currentMonthValue();
-    document.getElementById('receiptsMonth').value = currentMonthValue();
+    document.getElementById('incasariMonthFilter').value = currentMonthValue();
   }
 
   function roleLabel(role){
@@ -582,6 +695,33 @@
         '<div class="lb-count">'+row.count+' / '+rb.target+'</div>';
       lb.appendChild(div);
     });
+
+    const tally = document.getElementById('panouApptTally');
+    tally.innerHTML = '';
+    const myCounts = DATA.appointments.myCountsToday;
+    Object.keys(APPT_STATUS_LABELS).forEach(key=>{
+      const div = document.createElement('div');
+      div.innerHTML = '<div class="muted" style="font-size:.76rem;">'+APPT_STATUS_LABELS[key]+'</div>' +
+        '<div style="font-size:1.4rem; font-weight:700;">'+(myCounts[key]||0)+'</div>';
+      tally.appendChild(div);
+    });
+
+    const goalsCard = document.getElementById('panouGoalsCard');
+    const goalsWrap = document.getElementById('panouGoals');
+    goalsWrap.innerHTML = '';
+    const myGoals = DATA.myGoals || [];
+    goalsCard.classList.toggle('hidden', myGoals.length === 0);
+    myGoals.forEach(g=>{
+      const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+      const isRon = g.metric === 'comision_aprobat_luna' || g.metric === 'incasari_atribuite_luna';
+      const div = document.createElement('div');
+      div.style.marginBottom = '1rem';
+      div.innerHTML =
+        '<div class="progress-label"><span>'+escapeHtml(g.title)+'</span><span>'+
+          (isRon ? fmtRON(g.current)+' / '+fmtRON(g.target) : g.current+' / '+g.target)+'</span></div>' +
+        '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+      goalsWrap.appendChild(div);
+    });
   }
 
   function escapeHtml(s){
@@ -590,7 +730,7 @@
 
   // ---------------- Vanzarile mele ----------------
   function renderCategorySelects(){
-    const selects = [document.getElementById('saleCategory')];
+    const selects = [document.getElementById('saleCategory'), document.getElementById('inCategory')];
     selects.forEach(sel=>{
       sel.innerHTML = '';
       Object.keys(CATEGORY_LABELS).forEach(key=>{
@@ -601,9 +741,20 @@
     });
   }
 
+  function renderPerformedBySelect(){
+    const sel = document.getElementById('inPerformedBy');
+    sel.innerHTML = '<option value="">—</option>';
+    (DATA.activeEmployees||[]).forEach(e=>{
+      const opt = document.createElement('option');
+      opt.value = e.id; opt.textContent = e.name + ' (' + e.location + ')';
+      sel.appendChild(opt);
+    });
+  }
+
   document.getElementById('saleForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const payload = {
+      source: 'comision',
       date: document.getElementById('saleDate').value,
       category: document.getElementById('saleCategory').value,
       treatment: document.getElementById('saleTreatment').value.trim(),
@@ -649,12 +800,145 @@
   }
   document.getElementById('mySalesMonthFilter').addEventListener('change', renderMySales);
 
+  // ---------------- Incasează client ----------------
+  document.getElementById('incasareForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      source: 'incasare',
+      client: document.getElementById('inClient').value.trim(),
+      date: document.getElementById('inDate').value,
+      category: document.getElementById('inCategory').value,
+      treatment: document.getElementById('inTreatment').value.trim(),
+      amount: Number(document.getElementById('inAmount').value),
+      method: document.getElementById('inMethod').value,
+      performedBy: document.getElementById('inPerformedBy').value,
+    };
+    const msgEl = document.getElementById('incasareMsg');
+    try{
+      const resp = await fetch('/api/portal-sale', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare. Verifică datele.', false); return; }
+      const body = await resp.json();
+      DATA.incasari.unshift(Object.assign({}, body.entry, {
+        employeeName: DATA.me.name,
+        performedByName: (DATA.activeEmployees.find(a=>a.id===body.entry.performedBy)||{}).name || '—',
+      }));
+      document.getElementById('incasareForm').reset();
+      document.getElementById('inDate').value = todayISO();
+      renderIncasari();
+      showMsg(msgEl, 'Încasare salvată.', true);
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  function renderIncasari(){
+    const monthFilter = document.getElementById('incasariMonthFilter').value || currentMonthValue();
+    const body = document.getElementById('incasariBody');
+    body.innerHTML = '';
+    let total = 0;
+    DATA.incasari.filter(s=>monthKey(s.date)===monthFilter).forEach(s=>{
+      total += Number(s.amount||0);
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+escapeHtml(s.client)+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td>'+(METHOD_LABELS[s.method]||s.method)+'</td>' +
+        '<td>'+escapeHtml(s.performedByName||'—')+'</td>';
+      body.appendChild(tr);
+    });
+    document.getElementById('incasariTotal').textContent = fmtRON(total);
+  }
+  document.getElementById('incasariMonthFilter').addEventListener('change', renderIncasari);
+
+  document.getElementById('printIncasariBtn').addEventListener('click', ()=>{
+    const month = document.getElementById('incasariMonthFilter').value || currentMonthValue();
+    const rows = DATA.incasari.filter(s=>monthKey(s.date)===month);
+    document.getElementById('incasariSheetTitle').textContent = 'Centrul360 — Tabel de încasări — ' + month;
+    const body = document.getElementById('incasariSheetBody');
+    body.innerHTML = '';
+    rows.slice().sort((a,b)=> a.date < b.date ? -1 : 1).forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+escapeHtml(s.client)+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td>'+(METHOD_LABELS[s.method]||s.method)+'</td>' +
+        '<td>'+escapeHtml(s.performedByName||'—')+'</td>';
+      body.appendChild(tr);
+    });
+    document.getElementById('incasariSheet').classList.add('printing');
+    document.getElementById('intakeSheet').classList.remove('printing');
+    window.print();
+  });
+
+  // ---------------- Programari ----------------
+  document.getElementById('apptForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      status: document.getElementById('apptStatus').value,
+      time: document.getElementById('apptTime').value.trim(),
+      clientName: document.getElementById('apptClient').value.trim(),
+    };
+    const msgEl = document.getElementById('apptMsg');
+    try{
+      const resp = await fetch('/api/portal-appointment', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      const body = await resp.json();
+      DATA.appointments.today.unshift(Object.assign({}, body.entry, { employeeName: DATA.me.name }));
+      DATA.appointments.countsToday[body.entry.status] = (DATA.appointments.countsToday[body.entry.status]||0) + 1;
+      if (body.entry.employeeId === DATA.me.id){
+        DATA.appointments.myCountsToday[body.entry.status] = (DATA.appointments.myCountsToday[body.entry.status]||0) + 1;
+      }
+      document.getElementById('apptForm').reset();
+      renderAppointments();
+      renderPanou();
+      showMsg(msgEl, 'Programare adăugată.', true);
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  function renderAppointments(){
+    const counts = document.getElementById('apptCounts');
+    counts.innerHTML = '';
+    Object.keys(APPT_STATUS_LABELS).forEach(key=>{
+      const div = document.createElement('div');
+      div.innerHTML = '<div class="muted" style="font-size:.76rem;">'+APPT_STATUS_LABELS[key]+'</div>' +
+        '<div style="font-size:1.4rem; font-weight:700;">'+(DATA.appointments.countsToday[key]||0)+'</div>';
+      counts.appendChild(div);
+    });
+
+    const body = document.getElementById('apptBody');
+    body.innerHTML = '';
+    const today = DATA.appointments.today || [];
+    document.getElementById('apptEmpty').style.display = today.length ? 'none' : 'block';
+    today.forEach(a=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(a.time||'—')+'</td>' +
+        '<td>'+(APPT_STATUS_LABELS[a.status]||a.status)+'</td>' +
+        '<td>'+escapeHtml(a.clientName||'—')+'</td>' +
+        '<td>'+escapeHtml(a.employeeName||a.employeeId)+'</td>';
+      body.appendChild(tr);
+    });
+  }
+
   // ---------------- Resurse ----------------
   function renderResources(){
     fillList('resUpsell', DATA.resources.upsellPackages);
     fillList('resOffers', DATA.resources.upcomingOffers);
     fillList('resScripts', DATA.resources.receptionScripts);
     fillList('resProtocols', DATA.resources.treatmentProtocols);
+    fillReference('resReference', DATA.resources.treatmentReference);
   }
   function fillList(id, arr){
     const ul = document.getElementById(id);
@@ -663,6 +947,29 @@
       const li = document.createElement('li');
       li.textContent = item;
       ul.appendChild(li);
+    });
+  }
+  // Treatment reference cards use the "## Name" heading convention (see _lib/defaults.js):
+  // a line starting with "## " opens a new card, every other line is a bullet under it.
+  function fillReference(id, arr){
+    const wrap = document.getElementById(id);
+    wrap.innerHTML = '';
+    let currentList = null;
+    (arr||[]).forEach(line=>{
+      if (line.indexOf('## ') === 0){
+        const h = document.createElement('h3');
+        h.style.margin = '1.2rem 0 .5rem';
+        h.style.fontSize = '.95rem';
+        h.textContent = line.slice(3);
+        wrap.appendChild(h);
+        currentList = document.createElement('ul');
+        currentList.className = 'resource-list';
+        wrap.appendChild(currentList);
+      } else if (currentList){
+        const li = document.createElement('li');
+        li.textContent = line;
+        currentList.appendChild(li);
+      }
     });
   }
 
@@ -676,34 +983,7 @@
     document.getElementById('pf-note').textContent = document.getElementById('icNote').value;
 
     document.getElementById('intakeSheet').classList.add('printing');
-    document.getElementById('receiptsSheet').classList.remove('printing');
-    window.print();
-  });
-
-  document.getElementById('printReceiptsBtn').addEventListener('click', ()=>{
-    const month = document.getElementById('receiptsMonth').value || currentMonthValue();
-    const source = DATA.isAdmin ? (DATA.admin.allSales || []) : DATA.mySales;
-    const rows = source.filter(s => monthKey(s.date) === month && s.status !== 'rejected');
-
-    document.getElementById('receiptsTitle').textContent =
-      'Centrul360 — Tabel de încasări — ' + month + (DATA.isAdmin ? ' (toate locațiile)' : ' — ' + DATA.me.name);
-
-    const body = document.getElementById('receiptsBody');
-    body.innerHTML = '';
-    rows.sort((a,b)=> a.date < b.date ? -1 : 1).forEach(s=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>'+s.date+'</td>' +
-        '<td>'+escapeHtml(s.employeeName || DATA.me.name)+'</td>' +
-        '<td>'+escapeHtml(s.employeeLocation || DATA.me.location)+'</td>' +
-        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
-        '<td>'+fmtRON(s.amount)+'</td>' +
-        '<td>'+STATUS_LABELS[s.status]+'</td>';
-      body.appendChild(tr);
-    });
-
-    document.getElementById('receiptsSheet').classList.add('printing');
-    document.getElementById('intakeSheet').classList.remove('printing');
+    document.getElementById('incasariSheet').classList.remove('printing');
     window.print();
   });
 
@@ -794,6 +1074,73 @@
 
       td.appendChild(resetBtn); td.appendChild(toggleBtn);
       body.appendChild(tr);
+    });
+  }
+
+  // ---------------- Setari: Obiective individuale ----------------
+  function goalRowHtml(empId, idx, goal){
+    goal = goal || { title:'', metric:'manual', target:0, currentValue:0 };
+    const metricOptions = Object.keys(GOAL_METRIC_LABELS).map(k=>
+      '<option value="'+k+'"'+(goal.metric===k?' selected':'')+'>'+GOAL_METRIC_LABELS[k]+'</option>'
+    ).join('');
+    return (
+      '<div class="grid2" style="margin-bottom:.6rem;" data-goal-row="'+idx+'">' +
+        '<div><label class="field-label">Titlu obiectiv '+(idx+1)+'</label>' +
+          '<input type="text" class="goal-title" value="'+escapeHtml(goal.title)+'" placeholder="ex: Programări confirmate azi"></div>' +
+        '<div><label class="field-label">Metrică</label><select class="goal-metric">'+metricOptions+'</select></div>' +
+        '<div><label class="field-label">Target</label><input type="number" class="goal-target" min="0" value="'+(goal.target||0)+'"></div>' +
+        '<div class="goal-current-wrap" style="'+(goal.metric==='manual'?'':'display:none;')+'">' +
+          '<label class="field-label">Valoare curentă (manual)</label><input type="number" class="goal-current" value="'+(goal.currentValue||0)+'"></div>' +
+      '</div>'
+    );
+  }
+
+  function renderGoalsEditor(){
+    const wrap = document.getElementById('goalsEditor');
+    wrap.innerHTML = '';
+    DATA.admin.employees.filter(e=>e.active).forEach(emp=>{
+      const goals = emp.goals || [];
+      const card = document.createElement('div');
+      card.style.borderTop = '1px solid var(--line)';
+      card.style.paddingTop = '1rem';
+      card.style.marginTop = '1rem';
+      card.innerHTML =
+        '<h4 style="margin:0 0 .6rem;">'+escapeHtml(emp.name)+' <span class="muted" style="font-weight:400; font-size:.8rem;">('+roleLabel(emp.role)+' · '+escapeHtml(emp.location)+')</span></h4>' +
+        '<div class="goal-slots">' + goalRowHtml(emp.id, 0, goals[0]) + goalRowHtml(emp.id, 1, goals[1]) + '</div>' +
+        '<button type="button" class="pill small" data-save-goals="'+emp.id+'">Salvează obiectivele</button>' +
+        '<div class="msg" data-goals-msg="'+emp.id+'"></div>';
+      wrap.appendChild(card);
+
+      card.querySelectorAll('.goal-metric').forEach(sel=>{
+        sel.addEventListener('change', ()=>{
+          const row = sel.closest('[data-goal-row]');
+          row.querySelector('.goal-current-wrap').style.display = sel.value === 'manual' ? '' : 'none';
+        });
+      });
+
+      card.querySelector('[data-save-goals]').addEventListener('click', async ()=>{
+        const rows = card.querySelectorAll('[data-goal-row]');
+        const goalsPayload = [];
+        rows.forEach(row=>{
+          const title = row.querySelector('.goal-title').value.trim();
+          if (!title) return; // empty slot = not set
+          const metric = row.querySelector('.goal-metric').value;
+          const target = Number(row.querySelector('.goal-target').value);
+          const g = { title, metric, target };
+          if (metric === 'manual') g.currentValue = Number(row.querySelector('.goal-current').value);
+          goalsPayload.push(g);
+        });
+        const msgEl = card.querySelector('[data-goals-msg]');
+        try{
+          const resp = await fetch('/api/portal-employees', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'set_goals', employeeId: emp.id, goals: goalsPayload })
+          });
+          if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+          emp.goals = goalsPayload;
+          showMsg(msgEl, 'Obiective salvate.', true);
+        }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+      });
     });
   }
 
