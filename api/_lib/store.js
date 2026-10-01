@@ -28,7 +28,10 @@ async function streamToString(stream) {
 // yet (first run) or fails to parse (defensive — should not happen in normal operation).
 async function readJSON(pathname, fallback) {
   try {
-    const result = await get(pathname, { access: 'private' });
+    // useCache:false — the portal always reads right after writing (every save reloads
+    // the whole payload to show the result), so a cached stale read would look exactly
+    // like "my change didn't save" even though it did.
+    const result = await get(pathname, { access: 'private', useCache: false });
     if (!result) return fallback;
     const text = await streamToString(result.stream);
     if (!text) return fallback;
