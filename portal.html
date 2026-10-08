@@ -48,15 +48,24 @@
 
   .shell{ display:flex; min-height:calc(100vh - 62px); }
   nav.tabs{
-    width:220px; flex:none; border-right:1px solid var(--line); padding:1.2rem .8rem;
-    display:flex; flex-direction:column; gap:.3rem;
+    width:232px; flex:none; border-right:1px solid var(--line); padding:1rem .7rem;
+    display:flex; flex-direction:column; gap:.15rem; background:var(--paper-2);
   }
   nav.tabs button{
     text-align:left; background:none; border:none; color:var(--muted); font-family:inherit;
-    font-size:.9rem; padding:.65rem .8rem; border-radius:12px; cursor:pointer;
+    font-size:.88rem; padding:.6rem .75rem; border-radius:10px; cursor:pointer;
+    display:flex; align-items:center; gap:.65rem; border-left:3px solid transparent;
+    margin-left:-1px;
   }
+  nav.tabs button svg{ width:17px; height:17px; flex:none; opacity:.75; }
   nav.tabs button:hover{ background:var(--glass); color:var(--fg); }
-  nav.tabs button.active{ background:var(--glass-2); color:var(--fg); font-weight:600; }
+  nav.tabs button:hover svg{ opacity:1; }
+  nav.tabs button.active{ background:var(--paper); color:var(--accent); font-weight:600; border-left-color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  nav.tabs button.active svg{ opacity:1; }
+  nav.tabs .nav-group-label{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted-2);
+    padding:1rem .75rem .4rem; font-weight:700;
+  }
   main{ flex:1; padding:1.8rem 2rem 4rem; max-width:980px; }
   .panel{ display:none; }
   .panel.active{ display:block; }
@@ -67,7 +76,7 @@
 
   .card{ border:1px solid var(--line); border-radius:18px; background:var(--paper-2); padding:1.4rem 1.4rem; margin-bottom:1.3rem; }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-  @media (max-width:720px){ .grid2{ grid-template-columns:1fr; } .shell{ flex-direction:column; } nav.tabs{ width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--line); } }
+  @media (max-width:720px){ .grid2{ grid-template-columns:1fr; } .shell{ flex-direction:column; } nav.tabs{ width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--line); } nav.tabs .nav-group-label{ display:none; } }
 
   /* ---- Calendar: Zi/Săptămână toggle, week grid ---- */
   .cal-toolbar{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
@@ -233,19 +242,20 @@
 
   <div class="shell">
     <nav class="tabs" id="tabsNav">
-      <button data-tab="panou" class="active">Panou</button>
-      <button data-tab="incasare">Încasează client</button>
-      <button data-tab="comision" class="staff-only">Comision</button>
-      <button data-tab="incasari">Tabel de încasări</button>
-      <button data-tab="programari">Calendar</button>
-      <button data-tab="pipeline">Pipeline</button>
-      <button data-tab="automatizari">Automatizări</button>
-      <button data-tab="resurse">Resurse</button>
-      <button data-tab="fise">Fișe de printat</button>
-      <button data-tab="aprobari" class="admin-only hidden">Aprobări</button>
-      <button data-tab="angajati" class="admin-only hidden">Angajați</button>
-      <button data-tab="oferte" class="admin-only hidden">Oferte</button>
-      <button data-tab="setari" class="admin-only hidden">Setări</button>
+      <button data-tab="panou" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Panou</button>
+      <button data-tab="incasare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Încasează client</button>
+      <button data-tab="comision" class="staff-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Comision</button>
+      <button data-tab="incasari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>Tabel de încasări</button>
+      <button data-tab="programari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</button>
+      <button data-tab="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg>Pipeline</button>
+      <button data-tab="automatizari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Automatizări</button>
+      <button data-tab="resurse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Resurse</button>
+      <button data-tab="fise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>Fișe de printat</button>
+      <div class="nav-group-label admin-only hidden">Admin</div>
+      <button data-tab="aprobari" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Aprobări</button>
+      <button data-tab="angajati" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Angajați</button>
+      <button data-tab="oferte" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Oferte</button>
+      <button data-tab="setari" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Setări</button>
     </nav>
 
     <main>
