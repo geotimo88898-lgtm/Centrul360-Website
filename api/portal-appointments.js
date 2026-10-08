@@ -30,6 +30,7 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
 const { VALID_CATEGORIES } = require('./portal-sale');
+const { createAutomationTask } = require('./_lib/automation');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records) — kept as a literal list
@@ -146,6 +147,23 @@ module.exports = async (req, res) => {
       };
       appointments.push(entry);
       await writeJSON('data/appointments.json', appointments);
+
+      // Hook: a freshly booked appointment always needs a WhatsApp confirmation —
+      // surfaced as a task for whoever's at that location's reception rather than
+      // sent automatically (see _lib/whatsapp.js). Best-effort: a failure here must
+      // never roll back the appointment that was just saved.
+      try {
+        await createAutomationTask({
+          type: 'confirmare_programare',
+          text: `Trimite confirmare WhatsApp către ${entry.clientName} pentru programarea din ${entry.date} ${entry.time || ''}.`.trim(),
+          relatedAppointmentId: entry.id,
+          location: entry.location,
+          assigneeRole: 'receptie',
+        });
+      } catch (taskErr) {
+        console.error('portal-appointments: automation task failed:', taskErr.message);
+      }
+
       res.status(200).json({ ok: true, appointment: entry });
       return;
     }
