@@ -1154,10 +1154,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const BL={'1000':'sub 1.000 lei','2500':'1.000–2.500 lei','4000':'2.500–4.000 lei','99999':'peste 4.000 lei'};
     // PAS 1 — oferta ieftină de intrare, pe obiectiv (de pe pagina Oferte)
     const OFFERS={
-      gusa:{name:'HIFU · Gușă',price:190,old:299,note:'O ședință · conturul mandibulei'},
-      abdomen:{name:'Liposonix · 2 zone',price:640,old:1280,note:'Reduce grăsimea localizată'},
-      lifting:{name:'HIFU · Full Face',price:890,old:1020,note:'Lifting facial, fără bisturiu'},
-      celulita:{name:'Anticelulită',price:890,old:1680,note:'6× radiofrecvență + cadou'}
+      abdomen:{name:'Liposonix · 2 zone',price:640,old:1280,note:'2 zone la preț de una · reduce grăsimea localizată'},
+      lifting:{name:'Tratament facial Restart',price:190,old:300,note:'Hidratare și luminozitate · fără recuperare'}
     };
     const sel={goal:null,time:null,budget:null};
     const result=document.getElementById('simResult'), hint=document.getElementById('simHint');
@@ -1797,6 +1795,12 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'] },
       { name:'Tratament facial Restart', price:'190', old:'300',  note:'−37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
         bullets:['Hidratare și luminozitate vizibilă','Netezește ridurile fine','Fără timp de recuperare'] },
+      { name:'Epilare laser · Full Body', price:'490', old:'920',  note:'−47%', ba:'brand_asset/ba-epilare.webp',   alt:'Rezultat · Epilare laser', cert:true,
+        bullets:['Laser medical Elysion Pro','Toate zonele de corp, fără față','Doar în Timișoara'] },
+      { name:'Cavitație + EMS · Timișoara', price:'280', old:'530', note:'−47%', ba:'brand_asset/concern-grasime.webp', alt:'Cavitație și EMS',
+        bullets:['Reduce grăsimea localizată','Tonifiere cu electrostimulare','Fără timp de recuperare'] },
+      { name:'Cavitație 1+1 · Arad',      price:'280', old:'560',  note:'−50%', ba:'brand_asset/concern-belly-2.webp', alt:'Cavitație',
+        bullets:['2 ședințe la preț de una','Reduce grăsimea localizată','Fără timp de recuperare'] },
     ];
     // the carousel pages = the offers + a final "see all offers" CTA card
     const ITEMS = OFFERS.concat([{ cta:true }]);
