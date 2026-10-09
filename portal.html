@@ -1,0 +1,2654 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Portal echipă — Centrul360</title>
+<link rel="icon" type="image/svg+xml" href="/brand_asset/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#ffffff; --paper:#ffffff; --paper-2:#f6f6f7; --surface-3:#ececee;
+    --fg:#17171a; --muted:rgba(23,23,26,0.62); --muted-2:rgba(23,23,26,0.42);
+    --line:rgba(0,0,0,0.10); --line-on-dark:rgba(0,0,0,0.14);
+    --glass:rgba(0,0,0,0.04); --glass-2:rgba(0,0,0,0.08);
+    --accent:#3a5ad6; --accent-soft:rgba(58,90,214,0.05);
+    --good:#1a7f4e; --warn:#9a6400; --bad:#c92a2a;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:'Inter',system-ui,sans-serif; color:var(--fg);
+    background:var(--ink);
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:500; margin:0; }
+  .hidden{ display:none !important; }
+
+  /* ---- shell ---- */
+  #loadingScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.9rem; }
+  header.topbar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+    padding:.9rem 1.4rem; border-bottom:1px solid var(--line); background:rgba(255,255,255,0.88);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  }
+  .brand{ display:flex; align-items:center; gap:.6rem; font-weight:700; letter-spacing:.02em; }
+  .brand .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .who{ text-align:right; font-size:.8rem; color:var(--muted); line-height:1.3; }
+  .who b{ color:var(--fg); font-weight:600; }
+  .logoutBtn{
+    border:1px solid var(--line); background:var(--glass); color:var(--fg); border-radius:999px;
+    padding:.5rem 1rem; font-size:.8rem; cursor:pointer; margin-left:1rem; font-family:inherit;
+  }
+  .logoutBtn:hover{ background:var(--glass-2); }
+
+  .shell{ display:flex; min-height:calc(100vh - 62px); }
+  nav.tabs{
+    width:232px; flex:none; border-right:1px solid var(--line); padding:1rem .7rem;
+    display:flex; flex-direction:column; gap:.15rem; background:var(--paper-2);
+  }
+  nav.tabs button{
+    text-align:left; background:none; border:none; color:var(--muted); font-family:inherit;
+    font-size:.88rem; padding:.6rem .75rem; border-radius:10px; cursor:pointer;
+    display:flex; align-items:center; gap:.65rem; border-left:3px solid transparent;
+    margin-left:-1px;
+  }
+  nav.tabs button svg{ width:17px; height:17px; flex:none; opacity:.75; }
+  nav.tabs button:hover{ background:var(--glass); color:var(--fg); }
+  nav.tabs button:hover svg{ opacity:1; }
+  nav.tabs button.active{ background:var(--paper); color:var(--accent); font-weight:600; border-left-color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  nav.tabs button.active svg{ opacity:1; }
+  nav.tabs .nav-group-label{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted-2);
+    padding:1rem .75rem .4rem; font-weight:700;
+  }
+  main{ flex:1; padding:1.8rem 2rem 4rem; max-width:980px; }
+  main.wide{ max-width:none; padding:0; }
+  #creativeFrame{ display:block; width:100%; height:calc(100vh - 64px); border:0; background:var(--paper); }
+  #creativeMsg{ padding:1.8rem 2rem; color:var(--muted); }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .sec-eyebrow{ font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
+  .sec-eyebrow i{ width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;}
+  h2{ font-size:1.5rem; margin-bottom:1.4rem; }
+  h3{ font-size:1.05rem; margin:1.6rem 0 .8rem; }
+
+  .card{ border:1px solid var(--line); border-radius:18px; background:var(--paper-2); padding:1.4rem 1.4rem; margin-bottom:1.3rem; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media (max-width:720px){ .grid2{ grid-template-columns:1fr; } .shell{ flex-direction:column; } nav.tabs{ width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--line); } nav.tabs .nav-group-label{ display:none; } }
+
+  /* ---- Calendar: Zi/Săptămână toggle, week grid ---- */
+  .cal-toolbar{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+  .cal-toolbar input[type=date]{ width:auto; max-width:170px; }
+  .week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:.7rem; align-items:start; }
+  @media (max-width:720px){ .week-grid{ grid-template-columns:1fr; } }
+  .week-day{ border:1px solid var(--line); border-radius:14px; padding:.7rem; min-height:110px; background:var(--paper); }
+  .week-day.is-today{ background:var(--accent-soft); border-color:var(--accent); }
+  .week-day-header{ font-size:.78rem; font-weight:700; margin-bottom:.5rem; display:flex; justify-content:space-between; color:var(--muted); }
+  .week-day-header b{ color:var(--fg); }
+  .week-appt{ display:flex; align-items:center; gap:.4rem; font-size:.78rem; padding:.3rem .4rem; border-radius:8px; margin-bottom:.3rem; cursor:pointer; background:var(--glass); }
+  .week-appt:hover{ background:var(--glass-2); }
+  .week-appt-dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .week-appt-time{ font-weight:600; flex:none; }
+  .week-appt-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .week-day-empty{ font-size:.76rem; color:var(--muted-2); }
+
+  .checklist label{ display:flex; align-items:flex-start; gap:.6rem; padding:.45rem 0; font-size:.9rem; cursor:pointer; }
+  .checklist input{ margin-top:.2rem; }
+  .checklist label.done span{ text-decoration:line-through; color:var(--muted-2); }
+
+  .progress-track{ height:10px; border-radius:999px; background:var(--line); overflow:hidden; margin:.6rem 0; }
+  .progress-fill{ height:100%; background:var(--accent); border-radius:999px; transition:width .4s ease; }
+  .progress-label{ font-size:.82rem; color:var(--muted); display:flex; justify-content:space-between; }
+
+  table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  th,td{ text-align:left; padding:.55rem .6rem; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; }
+  tr:last-child td{ border-bottom:none; }
+  .row-actions{ display:flex; flex-wrap:wrap; gap:.5rem; }
+  .status-pill{ display:inline-block; padding:.18rem .6rem; border-radius:999px; font-size:.72rem; font-weight:600; }
+  .status-pending{ background:rgba(240,201,122,0.15); color:var(--warn); }
+  .status-approved{ background:rgba(143,214,168,0.15); color:var(--good); }
+  .status-rejected{ background:rgba(240,163,163,0.15); color:var(--bad); }
+  .status-recorded{ background:var(--glass-2); color:var(--fg); }
+  .status-programata{ background:rgba(58,90,214,0.12); color:var(--accent); }
+  .status-confirmata{ background:rgba(143,214,168,0.15); color:var(--good); }
+  .status-anulata{ background:rgba(240,163,163,0.15); color:var(--bad); }
+  .status-reprogramata{ background:rgba(240,201,122,0.15); color:var(--warn); }
+  .status-finalizata{ background:var(--glass-2); color:var(--fg); }
+
+  form.inline-form{ display:grid; grid-template-columns:repeat(2,1fr); gap:.9rem; }
+  form.inline-form .full{ grid-column:1 / -1; }
+  @media (max-width:600px){ form.inline-form{ grid-template-columns:1fr; } }
+  label.field-label{ display:block; font-size:.78rem; color:var(--muted); margin-bottom:.35rem; }
+  input:not([type=checkbox]):not([type=radio]), select, textarea{
+    width:100%; padding:.65rem .8rem; border-radius:10px; border:1px solid var(--line);
+    background:var(--paper-2); color:var(--fg); font-size:.9rem; font-family:inherit;
+  }
+  input[type=checkbox], input[type=radio]{ width:auto; flex:none; accent-color:var(--accent); }
+  textarea{ resize:vertical; min-height:80px; }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--fg); outline-offset:1px; }
+  /* The closed <select> box uses the page's near-white text on a near-transparent dark
+     background, which reads fine on the dark page. But most browsers render the OPEN
+     options list on a plain white popup regardless of the select's own background (they
+     ignore a translucent background there), so that same near-white text became almost
+     invisible against it. Force each <option> to a legible dark-on-light pair instead —
+     this only affects the dropdown list, not the closed select shown on the page. */
+  select option{ color:#111; background:#fff; }
+
+  button.pill{
+    border:none; border-radius:999px; padding:.65rem 1.2rem; font-weight:600;
+    font-size:.85rem; cursor:pointer; background:var(--fg); color:var(--paper); font-family:inherit;
+    transition:transform .15s ease, background .15s ease; display:inline-flex; align-items:center; gap:.4rem;
+  }
+  button.pill:hover{ transform:translateY(-1px); opacity:.85; }
+  button.pill.small{ padding:.4rem .85rem; font-size:.76rem; }
+  button.pill.danger{ background:rgba(240,163,163,0.18); color:var(--bad); }
+  button.pill.ghost{ background:var(--glass); color:var(--fg); }
+  button:disabled{ opacity:.55; cursor:default; }
+
+  .msg{ margin-top:.7rem; font-size:.84rem; padding:.6rem .8rem; border-radius:10px; display:none; }
+  .msg.show{ display:block; }
+
+  .client-ac{ position:relative; }
+  .client-ac-list{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:20;
+    background:var(--surface-3); border:1px solid var(--line); border-radius:10px;
+    max-height:220px; overflow-y:auto; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+  .client-ac-list.show{ display:block; }
+  .client-ac-item{ padding:.55rem .8rem; font-size:.85rem; cursor:pointer; border-bottom:1px solid var(--line); }
+  .client-ac-item:last-child{ border-bottom:none; }
+  .client-ac-item:hover, .client-ac-item.active{ background:var(--glass-2); }
+  .client-ac-item small{ display:block; color:var(--muted); font-size:.74rem; margin-top:.1rem; }
+  .client-ac-empty{ padding:.55rem .8rem; font-size:.8rem; color:var(--muted); }
+  .msg.ok{ background:rgba(143,214,168,0.12); color:var(--good); }
+  .msg.err{ background:rgba(240,163,163,0.12); color:var(--bad); }
+
+  .resource-list{ list-style:none; margin:0; padding:0; }
+  .resource-list li{ padding:.6rem 0; border-bottom:1px solid var(--line); font-size:.88rem; line-height:1.5; color:var(--muted); }
+  .resource-list li:last-child{ border-bottom:none; }
+  .resource-list li::before{ content:'—'; color:var(--accent); margin-right:.5rem; }
+
+  .muted{ color:var(--muted); }
+  .total-row{ font-weight:700; color:var(--fg); }
+
+  .leaderboard-row{ display:flex; align-items:center; gap:.7rem; padding:.5rem 0; border-bottom:1px solid var(--line); }
+  .leaderboard-row:last-child{ border-bottom:none; }
+  .lb-rank{ width:22px; text-align:center; color:var(--muted); font-size:.8rem; }
+  .lb-name{ flex:1; font-size:.88rem; }
+  .lb-name small{ display:block; color:var(--muted-2); font-size:.74rem; }
+  .lb-track{ width:120px; height:6px; border-radius:999px; background:var(--line); overflow:hidden; }
+  .lb-fill{ height:100%; background:var(--accent); }
+  .lb-count{ width:46px; text-align:right; font-size:.82rem; color:var(--muted); }
+
+  .notice{ border:1px solid rgba(240,201,122,0.3); background:rgba(240,201,122,0.08); color:var(--warn);
+    border-radius:12px; padding:.8rem 1rem; font-size:.84rem; margin-bottom:1rem; }
+
+  /* ---- Pipeline: kanban board ---- */
+  .kanban-board{ display:flex; gap:1rem; overflow-x:auto; padding-bottom:.6rem; }
+  .kanban-col{ flex:none; width:230px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; padding:.8rem; }
+  .kanban-col h4{ font-family:'Inter',sans-serif; font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--muted); margin:0 0 .7rem; display:flex; justify-content:space-between; }
+  .kanban-card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:.7rem .8rem; margin-bottom:.6rem; font-size:.84rem; }
+  .kanban-card.inactive{ border-color:var(--warn); }
+  .kanban-card .kc-name{ font-weight:600; margin-bottom:.15rem; }
+  .kanban-card .kc-meta{ color:var(--muted); font-size:.76rem; margin-bottom:.5rem; }
+  .kanban-card .kc-badge{ display:inline-block; padding:.12rem .55rem; border-radius:999px; background:var(--glass-2); font-size:.68rem; margin:0 .25rem .25rem 0; }
+  .kanban-card .kc-badge.kc-warn{ background:rgba(240,201,122,0.22); color:var(--warn); }
+  .kanban-card .kc-actions{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
+  .kanban-notes{ margin-top:.5rem; border-top:1px solid var(--line); padding-top:.5rem; }
+  .kanban-notes .note-item{ font-size:.78rem; margin-bottom:.4rem; color:var(--muted); line-height:1.4; }
+  .kanban-notes .note-item b{ color:var(--fg); }
+
+  /* ---- Automatizari ---- */
+  .at-row{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.7rem 0; border-bottom:1px solid var(--line); }
+  .at-row:last-child{ border-bottom:none; }
+  .at-text{ font-size:.88rem; }
+  .at-meta{ font-size:.74rem; color:var(--muted); margin-top:.2rem; }
+
+  /* ---- print sheets (hidden on screen, shown only in @media print) ---- */
+  .print-sheet{ display:none; }
+  .sheet-row{ display:flex; gap:1rem; margin-bottom:1.1rem; }
+  .sheet-field{ flex:1; }
+  .sheet-field .lbl{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:.3rem; }
+  .sheet-field .line{ border-bottom:1px solid var(--line); height:1.6rem; }
+
+  @media print{
+    header.topbar, nav.tabs, .no-print{ display:none !important; }
+    body{ background:#fff; color:#000; }
+    main{ padding:0; max-width:100%; }
+    .shell{ display:block; }
+    .panel{ display:none !important; }
+    .print-sheet.printing{ display:block !important; color:#000; }
+    .print-sheet table{ color:#000; }
+    .print-sheet th, .print-sheet td{ border-color:#999; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">Se încarcă portalul...</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>Centrul360 · Portal echipă</div>
+    <div style="display:flex; align-items:center;">
+      <div class="who"><b id="whoName"></b><br><span id="whoLocation"></span></div>
+      <button class="logoutBtn" id="logoutBtn">Deconectare</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="tabs" id="tabsNav">
+      <button data-tab="panou" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Panou</button>
+      <button data-tab="incasare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Încasează client</button>
+      <button data-tab="comision" class="staff-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Comision</button>
+      <button data-tab="incasari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>Tabel de încasări</button>
+      <button data-tab="programari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</button>
+      <button data-tab="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg>Pipeline</button>
+      <button data-tab="automatizari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Automatizări</button>
+      <button data-tab="resurse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Resurse</button>
+      <button data-tab="fise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>Fișe de printat</button>
+      <div class="nav-group-label admin-only hidden">Admin</div>
+      <button data-tab="aprobari" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Aprobări</button>
+      <button data-tab="angajati" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Angajați</button>
+      <button data-tab="oferte" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Oferte</button>
+      <button data-tab="setari" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Setări</button>
+      <div class="nav-group-label admin-only hidden">Marketing</div>
+      <button data-tab="creative" class="admin-only hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Creative</button>
+    </nav>
+
+    <main>
+      <!-- PANOU -->
+      <section class="panel active" id="panel-panou">
+        <div class="sec-eyebrow"><i></i>Panou</div>
+        <h2 id="panouGreeting">Bună!</h2>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Sarcini zilnice</h3>
+          <div class="checklist" id="tasksList"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Obiectiv de companie — luna curentă</h3>
+          <p class="muted" id="companyGoalExplain" style="font-size:.86rem;"></p>
+          <div class="progress-track"><div class="progress-fill" id="companyGoalFill" style="width:0%"></div></div>
+          <div class="progress-label"><span id="companyGoalCurrent">0 RON</span><span id="companyGoalTarget">0 RON</span></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Bonus de viteză — clasament lunar</h3>
+          <p class="muted" id="raceBonusExplain" style="font-size:.86rem;"></p>
+          <div id="leaderboard"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Programări azi</h3>
+          <div id="panouApptTally" style="display:flex; gap:1.4rem; flex-wrap:wrap;"></div>
+        </div>
+
+        <div class="card hidden" id="panouGoalsCard">
+          <h3 style="margin-top:0;">Obiective individuale</h3>
+          <div id="panouGoals"></div>
+        </div>
+      </section>
+
+      <!-- INCASEAZA CLIENT -->
+      <section class="panel" id="panel-incasare">
+        <div class="sec-eyebrow"><i></i>Încasează client</div>
+        <h2>Înregistrează o încasare</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Înlocuiește fișa de hârtie — apare imediat în „Tabel de încasări", vizibil tuturor. Nu creează un comision pentru nimeni.</p>
+        <div class="card">
+          <form class="inline-form" id="incasareForm">
+            <div class="client-ac"><label class="field-label">Nume client</label><input type="text" id="inClient" autocomplete="off" required>
+              <div class="client-ac-list" id="inClientList"></div>
+            </div>
+            <div><label class="field-label">Telefon client</label><input type="tel" id="inClientPhone" placeholder="ex: 0722 123 456" required></div>
+            <div><label class="field-label">Data</label><input type="date" id="inDate" required></div>
+            <div class="full"><label class="field-label">Tratament / pachet</label><input type="text" id="inTreatment" required></div>
+            <div><label class="field-label">Categorie</label><select id="inCategory" required></select></div>
+            <div><label class="field-label">Sumă (RON)</label><input type="number" id="inAmount" min="0" step="0.01" required></div>
+            <div><label class="field-label">Metodă de plată</label>
+              <select id="inMethod" required>
+                <option value="card">Card</option>
+                <option value="cash">Cash</option>
+                <option value="transfer">Transfer</option>
+              </select>
+            </div>
+            <div><label class="field-label">Cine a efectuat tratamentul</label>
+              <select id="inPerformedBy"><option value="">—</option></select>
+            </div>
+            <div class="full">
+              <button class="pill" type="submit">Salvează încasarea</button>
+              <div class="msg" id="incasareMsg"></div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- COMISION -->
+      <section class="panel staff-only" id="panel-comision">
+        <div class="sec-eyebrow"><i></i>Comision</div>
+        <h2>Loghează o vânzare proprie</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Pentru calculul comisionului tău — trece prin aprobarea administratorului.</p>
+        <div class="card">
+          <form class="inline-form" id="saleForm">
+            <div>
+              <label class="field-label">Data</label>
+              <input type="date" id="saleDate" required>
+            </div>
+            <div>
+              <label class="field-label">Categorie tratament</label>
+              <select id="saleCategory" required></select>
+            </div>
+            <div class="full">
+              <label class="field-label">Tratament / pachet (text liber)</label>
+              <input type="text" id="saleTreatment" placeholder="ex: HIFU full face - ședință unică" required>
+            </div>
+            <div>
+              <label class="field-label">Sumă încasată (RON)</label>
+              <input type="number" id="saleAmount" min="0" step="0.01" required>
+            </div>
+            <div class="client-ac"><label class="field-label">Client (opțional)</label><input type="text" id="saleClient" autocomplete="off" placeholder="caută client existent sau adaugă unul nou">
+              <div class="client-ac-list" id="saleClientList"></div>
+            </div>
+            <div><label class="field-label">Telefon client (opțional, doar la client nou)</label><input type="tel" id="saleClientPhone" placeholder="ex: 0722 123 456"></div>
+            <div>
+              <label class="field-label">Notă (opțional)</label>
+              <input type="text" id="saleNote" placeholder="opțional">
+            </div>
+            <div class="full">
+              <button class="pill" type="submit">Salvează vânzarea</button>
+              <div class="msg" id="saleMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Istoricul meu</h3>
+        <div class="card">
+          <label class="field-label" style="max-width:220px;">Filtrează după lună</label>
+          <input type="month" id="mySalesMonthFilter" style="max-width:220px; margin-bottom:1rem;">
+          <table>
+            <thead><tr><th>Data</th><th>Categorie</th><th>Tratament</th><th>Sumă</th><th>Status</th><th>Comision</th></tr></thead>
+            <tbody id="mySalesBody"></tbody>
+          </table>
+          <p style="margin-top:1rem;" class="total-row">Total comision aprobat (luna selectată): <span id="mySalesTotal">0 RON</span></p>
+        </div>
+      </section>
+
+      <!-- TABEL DE INCASARI -->
+      <section class="panel" id="panel-incasari">
+        <div class="sec-eyebrow"><i></i>Tabel de încasări</div>
+        <h2>Toate încasările</h2>
+
+        <div class="card no-print" style="display:flex; gap:2.5rem; flex-wrap:wrap;">
+          <div>
+            <div class="muted" style="font-size:.78rem;">Astăzi</div>
+            <div style="font-size:1.7rem; font-weight:700;" id="incasariToday">0 RON</div>
+            <div class="muted" style="font-size:.78rem;" id="incasariTodayCount">0 încasări</div>
+          </div>
+          <div>
+            <div class="muted" style="font-size:.78rem;">Săptămâna aceasta (luni–azi)</div>
+            <div style="font-size:1.7rem; font-weight:700;" id="incasariWeek">0 RON</div>
+            <div class="muted" style="font-size:.78rem;" id="incasariWeekCount">0 încasări</div>
+          </div>
+        </div>
+
+        <div class="card no-print">
+          <div class="muted" style="font-size:.78rem; margin-bottom:.6rem;">Încasări pe zi — luna selectată</div>
+          <svg id="incasariChart" width="100%" viewBox="0 0 760 220" role="img" aria-label="Încasări pe zi"></svg>
+        </div>
+
+        <div class="card no-print">
+          <label class="field-label" style="max-width:220px;">Filtrează după lună</label>
+          <input type="month" id="incasariMonthFilter" style="max-width:220px; margin-bottom:1rem;">
+          <div>
+            <button type="button" class="pill" id="printIncasariBtn">Printează</button>
+          </div>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Data</th><th>Client</th><th>Tratament</th><th>Sumă</th><th>Metodă</th><th>Efectuat de</th><th class="admin-only hidden">Acțiuni</th></tr></thead>
+            <tbody id="incasariBody"></tbody>
+          </table>
+          <p style="margin-top:1rem;" class="total-row">Total (luna selectată): <span id="incasariTotal">0 RON</span></p>
+        </div>
+
+        <div class="print-sheet" id="incasariSheet">
+          <h1 style="font-family:Georgia,serif;" id="incasariSheetTitle">Centrul360 — Tabel de încasări</h1>
+          <table>
+            <thead><tr><th>Data</th><th>Client</th><th>Tratament</th><th>Sumă</th><th>Metodă</th><th>Efectuat de</th></tr></thead>
+            <tbody id="incasariSheetBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CALENDAR (PROGRAMARI) -->
+      <section class="panel" id="panel-programari">
+        <div class="sec-eyebrow"><i></i>Calendar</div>
+        <h2>Calendar programări</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Comun tuturor — oricine poate adăuga sau edita orice programare.</p>
+
+        <div class="card cal-toolbar">
+          <button type="button" class="pill small" id="calViewDayBtn">Zi</button>
+          <button type="button" class="pill small ghost" id="calViewWeekBtn">Săptămână</button>
+          <div style="flex:1 1 auto;"></div>
+          <button type="button" class="pill small ghost" id="calPrevBtn">◀</button>
+          <input type="date" id="calDateInput">
+          <button type="button" class="pill small ghost" id="calNextBtn">▶</button>
+        </div>
+
+        <!-- ZI -->
+        <div id="calDayView">
+          <h3>Adaugă programare</h3>
+          <div class="card">
+            <form class="inline-form" id="apptForm">
+              <div><label class="field-label">Data</label><input type="date" id="apptDate" required></div>
+              <div><label class="field-label">Oră</label><input type="text" id="apptTime" placeholder="ex: 14:30" required></div>
+              <div class="client-ac"><label class="field-label">Client</label><input type="text" id="apptClient" autocomplete="off" required>
+                <div class="client-ac-list" id="apptClientList"></div>
+              </div>
+              <div><label class="field-label">Telefon client</label><input type="tel" id="apptClientPhone" placeholder="ex: 0722 123 456" required></div>
+              <div class="full"><label class="field-label">Tratament</label><input type="text" id="apptTreatment" required></div>
+              <div><label class="field-label">Categorie</label><select id="apptCategory" required></select></div>
+              <div><label class="field-label">Locație</label>
+                <select id="apptLocation" required>
+                  <option value="Timișoara">Timișoara</option>
+                  <option value="Arad">Arad</option>
+                </select>
+              </div>
+              <div><label class="field-label">Cosmeticiană</label><select id="apptCosmetician"><option value="">— neasignat —</option></select></div>
+              <div><label class="field-label">Status</label>
+                <select id="apptStatus" required>
+                  <option value="programata">Programată</option>
+                  <option value="confirmata">Confirmată</option>
+                  <option value="anulata">Anulată</option>
+                  <option value="reprogramata">Reprogramată</option>
+                  <option value="finalizata">Finalizată</option>
+                </select>
+              </div>
+              <div class="full">
+                <button class="pill" type="submit">Adaugă programare</button>
+                <div class="msg" id="apptMsg"></div>
+              </div>
+            </form>
+          </div>
+
+          <h3>Programările zilei</h3>
+          <div class="card">
+            <table>
+              <thead><tr><th>Ora</th><th>Client</th><th>Tratament</th><th>Locație</th><th>Cosmeticiană</th><th>Status</th><th></th></tr></thead>
+              <tbody id="apptBody"></tbody>
+            </table>
+            <p class="muted" id="apptEmpty" style="font-size:.86rem; display:none;">Nicio programare în această zi.</p>
+          </div>
+        </div>
+
+        <!-- SAPTAMANA -->
+        <div id="calWeekView" class="hidden">
+          <h3>Săptămâna selectată</h3>
+          <div class="card">
+            <div class="week-grid" id="weekGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PIPELINE -->
+      <section class="panel" id="panel-pipeline">
+        <div class="sec-eyebrow"><i></i>Pipeline</div>
+        <h2>Pipeline leaduri</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">De la primul contact până la client fidel. Oricine poate adăuga, muta și nota leaduri — card-urile marcate cu bordură galbenă nu au mai primit nicio activitate de 7+ zile.</p>
+
+        <h3 style="margin-top:0;">+ Lead nou</h3>
+        <div class="card">
+          <form class="inline-form" id="leadForm">
+            <div><label class="field-label">Nume</label><input type="text" id="leadName" required></div>
+            <div><label class="field-label">Telefon</label><input type="tel" id="leadPhone" placeholder="ex: 0722 123 456" required></div>
+            <div><label class="field-label">Sursă</label>
+              <select id="leadSource" required>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="site">Site</option>
+                <option value="recomandare">Recomandare</option>
+                <option value="altul">Altul</option>
+              </select>
+            </div>
+            <div><label class="field-label">Locație</label>
+              <select id="leadLocation" required>
+                <option value="Timișoara">Timișoara</option>
+                <option value="Arad">Arad</option>
+              </select>
+            </div>
+            <div class="full">
+              <button class="pill" type="submit">Adaugă lead</button>
+              <div class="msg" id="leadFormMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Pipeline</h3>
+        <div class="kanban-board" id="kanbanBoard"></div>
+      </section>
+
+      <!-- AUTOMATIZARI -->
+      <section class="panel" id="panel-automatizari">
+        <div class="sec-eyebrow"><i></i>Automatizări</div>
+        <h2>Sarcini automate</h2>
+        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">Generate automat (programare nouă, reminder de azi, lead inactiv) — momentan înlocuiesc trimiterea reală de WhatsApp. Bifează după ce ai trimis mesajul manual.</p>
+        <div class="card">
+          <div id="automationTasksList"></div>
+          <p class="muted" id="automationTasksEmpty" style="font-size:.86rem; display:none;">Nicio sarcină în așteptare.</p>
+        </div>
+      </section>
+
+      <!-- RESURSE -->
+      <section class="panel" id="panel-resurse">
+        <div class="sec-eyebrow"><i></i>Resurse</div>
+        <h2>Materiale de lucru</h2>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Pachete de upsell recomandate</h3>
+          <ul class="resource-list" id="resUpsell"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Oferte viitoare</h3>
+          <ul class="resource-list" id="resOffers"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Scripturi de recepție</h3>
+          <ul class="resource-list" id="resScripts"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Scheme de tratament pe tip de aparat</h3>
+          <ul class="resource-list" id="resProtocols"></ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Fișe de referință pe tratament</h3>
+          <p class="muted" style="font-size:.84rem;">Pentru recepție — răspunde la telefon fără să întrerupi un cosmetician.</p>
+          <div id="resReference"></div>
+        </div>
+      </section>
+
+      <!-- FISE DE PRINTAT -->
+      <section class="panel" id="panel-fise">
+        <div class="sec-eyebrow"><i></i>Fișe de printat</div>
+
+        <h2 style="margin-bottom:.6rem;">Fișe de rezervă (PDF)</h2>
+        <div class="card no-print">
+          <p class="muted" style="font-size:.86rem; margin:0 0 1rem;">Printează direct dacă rămâneți fără exemplare fizice la o locație.</p>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding:.6rem 0; border-bottom:1px solid var(--line);">
+            <span>Program recomandat și ofertă</span>
+            <a href="/fise/program-recomandat-si-oferta.pdf" target="_blank" rel="noopener" class="pill small">Deschide / Printează</a>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding:.6rem 0;">
+            <span>Fișă client — proceduri corporale</span>
+            <a href="/fise/fisa-client-proceduri-corporale.pdf" target="_blank" rel="noopener" class="pill small">Deschide / Printează</a>
+          </div>
+        </div>
+
+        <h2 class="hidden">Fișă client</h2>
+        <div class="card no-print hidden">
+          <p class="muted" style="font-size:.86rem;">Completează câmpurile mai jos, apoi apasă Printează — doar fișa va apărea pe pagina tipărită.</p>
+          <form class="inline-form" id="intakeForm">
+            <div><label class="field-label">Nume client</label><input type="text" id="icName"></div>
+            <div><label class="field-label">Data</label><input type="date" id="icDate"></div>
+            <div><label class="field-label">Tratament</label><input type="text" id="icTreatment"></div>
+            <div><label class="field-label">Sumă încasată</label><input type="text" id="icAmount"></div>
+            <div><label class="field-label">Metodă de plată</label>
+              <select id="icMethod">
+                <option value="Numerar">Numerar</option>
+                <option value="Card">Card</option>
+                <option value="Transfer bancar">Transfer bancar</option>
+              </select>
+            </div>
+            <div class="full"><label class="field-label">Observații</label><textarea id="icNote"></textarea></div>
+            <div class="full"><button type="button" class="pill" id="printIntakeBtn">Printează fișa</button></div>
+          </form>
+        </div>
+
+        <!-- Printable sheet, hidden on screen -->
+        <div class="print-sheet" id="intakeSheet">
+          <h1 style="font-family:Georgia,serif;">Centrul360 — Fișă client</h1>
+          <div class="sheet-row">
+            <div class="sheet-field"><div class="lbl">Nume client</div><div class="line" id="pf-name"></div></div>
+            <div class="sheet-field"><div class="lbl">Data</div><div class="line" id="pf-date"></div></div>
+          </div>
+          <div class="sheet-row">
+            <div class="sheet-field"><div class="lbl">Tratament</div><div class="line" id="pf-treatment"></div></div>
+          </div>
+          <div class="sheet-row">
+            <div class="sheet-field"><div class="lbl">Sumă încasată</div><div class="line" id="pf-amount"></div></div>
+            <div class="sheet-field"><div class="lbl">Metodă de plată</div><div class="line" id="pf-method"></div></div>
+          </div>
+          <div class="sheet-row">
+            <div class="sheet-field" style="flex:2;"><div class="lbl">Observații</div><div class="line" id="pf-note"></div></div>
+          </div>
+          <div class="sheet-row" style="margin-top:3rem;">
+            <div class="sheet-field"><div class="lbl">Semnătură client</div><div class="line"></div></div>
+            <div class="sheet-field"><div class="lbl">Semnătură angajat</div><div class="line"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- APROBARI (admin) -->
+      <section class="panel admin-only hidden" id="panel-aprobari">
+        <div class="sec-eyebrow"><i></i>Aprobări</div>
+        <h2>Vânzări în așteptare</h2>
+        <div class="card">
+          <table>
+            <thead><tr><th>Angajat</th><th>Locație</th><th>Data</th><th>Categorie</th><th>Tratament</th><th>Sumă</th><th></th></tr></thead>
+            <tbody id="approvalsBody"></tbody>
+          </table>
+          <p class="muted" id="approvalsEmpty" style="font-size:.86rem; display:none;">Nicio vânzare în așteptare.</p>
+        </div>
+      </section>
+
+      <!-- ANGAJATI (admin) -->
+      <section class="panel admin-only hidden" id="panel-angajati">
+        <div class="sec-eyebrow"><i></i>Angajați</div>
+        <h2>Comisioane pe angajat</h2>
+        <div class="card">
+          <table>
+            <thead><tr><th>Angajat</th><th>Locație</th><th>Rol</th><th>Comision aprobat (total)</th><th>Comision în așteptare</th><th>Vânzări aprobate</th></tr></thead>
+            <tbody id="employeeSummaryBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Detalii per angajat</h3>
+        <div class="card">
+          <label class="field-label" style="max-width:280px;">Alege angajatul</label>
+          <select id="employeeDetailSelect" style="max-width:280px; margin-bottom:1rem;"></select>
+          <table>
+            <thead><tr><th>Data</th><th>Categorie</th><th>Tratament</th><th>Sumă</th><th>Status</th><th>Comision</th></tr></thead>
+            <tbody id="employeeDetailBody"></tbody>
+          </table>
+          <p class="muted" id="employeeDetailEmpty" style="font-size:.86rem; display:none;">Nicio vânzare înregistrată.</p>
+        </div>
+      </section>
+
+      <!-- OFERTE (admin) -->
+      <section class="panel admin-only hidden" id="panel-oferte">
+        <div class="sec-eyebrow"><i></i>Oferte</div>
+        <h2>Oferte publice (oferte.html &amp; preturi.html)</h2>
+        <p class="muted" style="font-size:.84rem;">Aceste oferte alimentează automat paginile publice oferte.html și preturi.html — orice modificare de aici se vede pe site în câteva minute, fără intervenție de cod. Reducerea (%) se calculează automat din preț nou/vechi.</p>
+
+        <div class="card">
+          <table>
+            <thead><tr><th>Titlu</th><th>Preț nou</th><th>Preț vechi</th><th>Reducere</th><th>Categorie</th><th>Activă</th><th>Featured</th><th>Ordine</th><th></th></tr></thead>
+            <tbody id="offersBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Adaugă ofertă</h3>
+        <div class="card">
+          <form class="inline-form" id="newOfferForm">
+            <div class="full"><label class="field-label">Titlu</label><input type="text" id="noTitle" required></div>
+            <div class="full"><label class="field-label">Descriere (opțional — prima linie = subtitlu, liniile următoare = puncte listă pentru pachete)</label><textarea id="noDescription" rows="3"></textarea></div>
+            <div><label class="field-label">Preț nou (lei)</label><input type="number" id="noPriceNew" min="0" required></div>
+            <div><label class="field-label">Preț vechi (lei)</label><input type="number" id="noPriceOld" min="0" required></div>
+            <div><label class="field-label">Categorie</label>
+              <select id="noCategory" required>
+                <option value="epilare">Epilare</option>
+                <option value="faciale">Faciale</option>
+                <option value="remodelare">Remodelare</option>
+              </select>
+            </div>
+            <div><label class="field-label">Ordine</label><input type="number" id="noOrder" min="1" value="1"></div>
+            <div>
+              <label class="field-label">Imagine</label>
+              <select id="noImageKey"></select>
+              <img id="noImagePreview" alt="" style="display:block; margin-top:.5rem; width:120px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--line);">
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:1.5rem;">
+              <label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" id="noFeatured"> Featured (card tip pachet, mai detaliat)</label>
+              <label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" id="noActive" checked> Activă (vizibilă pe site)</label>
+            </div>
+            <div class="full"><button class="pill" type="submit">Adaugă oferta</button>
+              <div class="msg" id="newOfferMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <div id="offerEditRows"></div>
+      </section>
+
+      <!-- SETARI (admin) -->
+      <section class="panel admin-only hidden" id="panel-setari">
+        <div class="sec-eyebrow"><i></i>Setări</div>
+        <h2>Administrare</h2>
+
+        <h3 style="margin-top:0;">Angajați</h3>
+        <div class="card">
+          <form class="inline-form" id="newEmployeeForm">
+            <div><label class="field-label">Nume</label><input type="text" id="neName" required></div>
+            <div><label class="field-label">Locație</label>
+              <select id="neLocation" required>
+                <option value="Timișoara">Timișoara</option>
+                <option value="Arad">Arad</option>
+              </select>
+            </div>
+            <div><label class="field-label">Rol</label>
+              <select id="neRole" required>
+                <option value="cosmetician">Cosmetician</option>
+                <option value="receptie">Recepție</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div><label class="field-label">Username</label><input type="text" id="neUsername" required></div>
+            <div><label class="field-label">Parolă temporară</label><input type="text" id="nePassword" required></div>
+            <div class="full"><button class="pill" type="submit">Adaugă angajat</button>
+              <div class="msg" id="newEmployeeMsg"></div>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Nume</th><th>Locație</th><th>Rol</th><th>Username</th><th>Status</th><th></th></tr></thead>
+            <tbody id="employeesBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Obiective individuale</h3>
+        <div class="card">
+          <p class="muted" style="font-size:.84rem;">Până la 2 obiective per angajat activ. Pentru metrica „manual" valoarea curentă e editabilă direct — actualizeaz-o oricând.</p>
+          <div id="goalsEditor"></div>
+        </div>
+
+        <h3>Reguli comision</h3>
+        <div class="card">
+          <form class="inline-form" id="commissionForm"></form>
+          <button class="pill" id="saveCommissionBtn" style="margin-top:1rem;">Salvează regulile de comision</button>
+          <div class="msg" id="commissionMsg"></div>
+        </div>
+
+        <h3>Bonus de viteză lunar</h3>
+        <div class="card">
+          <form class="inline-form" id="raceBonusForm">
+            <div><label class="field-label">Categorie țintă</label><select id="rbCategory"></select></div>
+            <div><label class="field-label">Target (nr. ședințe/vânzări)</label><input type="number" id="rbTarget" min="1"></div>
+            <div><label class="field-label">Recompensă (RON)</label><input type="number" id="rbReward" min="0"></div>
+            <div class="full"><button class="pill" type="submit">Salvează bonusul de viteză</button>
+              <div class="msg" id="raceBonusMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Obiectiv de companie</h3>
+        <div class="card">
+          <div class="notice">Valoarea implicită de 25.000 RON este un placeholder — ajustează-l la obiectivul real lunar al companiei.</div>
+          <form class="inline-form" id="companyGoalForm">
+            <div><label class="field-label">Target venit lunar (RON)</label><input type="number" id="cgTarget" min="0"></div>
+            <div><label class="field-label">Recompensă per angajat (RON)</label><input type="number" id="cgReward" min="0"></div>
+            <div class="full"><button class="pill" type="submit">Salvează obiectivul</button>
+              <div class="msg" id="companyGoalMsg"></div>
+            </div>
+          </form>
+        </div>
+
+        <h3>Conținut (tab Resurse)</h3>
+        <div class="card">
+          <p class="muted" style="font-size:.84rem;">Textul de mai jos este cel afișat angajaților în tab-ul „Resurse”. Fiecare linie = un element din listă. Editare directă de text — nu necesită nicio modificare de cod.</p>
+          <form id="contentForm">
+            <label class="field-label">Pachete de upsell recomandate (o linie per element)</label>
+            <textarea id="cUpsell" rows="5" style="margin-bottom:1rem;"></textarea>
+            <label class="field-label">Oferte viitoare</label>
+            <textarea id="cOffers" rows="4" style="margin-bottom:1rem;"></textarea>
+            <label class="field-label">Scripturi de recepție</label>
+            <textarea id="cScripts" rows="5" style="margin-bottom:1rem;"></textarea>
+            <label class="field-label">Scheme de tratament pe tip de aparat</label>
+            <textarea id="cProtocols" rows="6" style="margin-bottom:1rem;"></textarea>
+            <button class="pill" type="submit">Salvează conținutul</button>
+            <div class="msg" id="contentMsg"></div>
+          </form>
+        </div>
+
+        <h3>Integrări</h3>
+        <div class="card">
+          <p class="muted" style="font-size:.84rem;">Leadurile trimise prin formulare Facebook/Instagram Lead Ads intră automat în Pipeline ca „lead nou", din Pagina de Facebook conectată aici.</p>
+          <div id="fbIntegrationStatus">Se verifică...</div>
+          <div class="msg" id="fbIntegrationMsg"></div>
+        </div>
+      </section>
+
+      <!-- CREATIVE (admin) — the creative machine, opened inside the portal with single sign-on -->
+      <section class="panel admin-only hidden" id="panel-creative">
+        <p id="creativeMsg">Se deschide mașina de creative…</p>
+        <iframe id="creativeFrame" title="Creative" class="hidden" allow="clipboard-write"></iframe>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const CATEGORY_LABELS = {
+    'epilare-laser': 'Epilare laser',
+    'hifu': 'HIFU full face',
+    'liposonix': 'Liposonix',
+    'ems-tonifiere': 'EMS tonifiere',
+    'radiofrecventa': 'Radiofrecvență (RF Sculpt)',
+    'microneedling': 'Microneedling',
+    'tratament-facial': 'Tratament facial',
+    'celulita': 'Celulită',
+    'detox-drenaj': 'Detox / drenaj',
+    'retail': 'Produs retail / home-care',
+    'altele': 'Altele',
+  };
+  const STATUS_LABELS = { pending: 'În așteptare', approved: 'Aprobat', rejected: 'Respins', recorded: 'Înregistrat' };
+  const METHOD_LABELS = { card: 'Card', cash: 'Cash', transfer: 'Transfer' };
+  const APPT_STATUS_LABELS = { programata: 'Programată', confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată', finalizata: 'Finalizată' };
+  const STAGE_ORDER = ['lead_nou', 'contactat', 'programare_stabilita', 'venit_la_programare', 'client_fidel'];
+  const STAGE_LABELS = {
+    lead_nou: 'Lead nou', contactat: 'Contactat', programare_stabilita: 'Programare stabilită',
+    venit_la_programare: 'Venit la programare', client_fidel: 'Client fidel', pierdut: 'Pierdut',
+  };
+  const SOURCE_LABELS = { facebook: 'Facebook', instagram: 'Instagram', site: 'Site', recomandare: 'Recomandare', altul: 'Altul' };
+  const AUTOMATION_TYPE_LABELS = { confirmare_programare: 'Confirmare programare', reminder_azi: 'Reminder azi', lead_inactiv: 'Lead inactiv' };
+  const GOAL_METRIC_LABELS = {
+    programari_confirmate_azi: 'Programări confirmate azi',
+    programari_anulate_azi: 'Programări anulate azi',
+    comision_aprobat_luna: 'Comision aprobat (luna curentă)',
+    incasari_atribuite_luna: 'Încasări atribuite (luna curentă)',
+    manual: 'Manual (valoare introdusă de admin)',
+  };
+
+  let DATA = null;
+
+  function fmtRON(n){ return (Math.round(Number(n||0)*100)/100).toLocaleString('ro-RO') + ' RON'; }
+  function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+  function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function currentMonthValue(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+  function showMsg(el, text, ok){
+    el.textContent = text;
+    el.className = 'msg show ' + (ok ? 'ok' : 'err');
+    setTimeout(()=>{ el.classList.remove('show'); }, 4000);
+  }
+
+  // ---------------- bootstrap ----------------
+  async function loadData(){
+    try{
+      const resp = await fetch('/api/portal-data', { credentials: 'same-origin' });
+      if (resp.status === 401){ location.href = '/portal-login'; return; }
+      if (!resp.ok) throw new Error('data_failed');
+      DATA = await resp.json();
+      render();
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+    }catch(err){
+      document.getElementById('loadingScreen').textContent = 'Eroare la încărcarea portalului. Reîncearcă.';
+    }
+  }
+
+  function render(){
+    document.getElementById('whoName').textContent = DATA.me.name;
+    document.getElementById('whoLocation').textContent = DATA.me.location + ' · ' + roleLabel(DATA.me.role);
+
+    if (DATA.isAdmin){
+      document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      // The admin account doesn't earn commission — hide "Comision" rather than show
+      // an empty self-commission log that makes no sense for the owner's own account.
+      document.querySelectorAll('.staff-only').forEach(el => el.classList.add('hidden'));
+    }
+
+    renderPanou();
+    renderCategorySelects();
+    renderPerformedBySelect();
+    renderMySales();
+    renderIncasari();
+    initCalendar();
+    renderResources();
+    if (DATA.isAdmin){
+      renderApprovals();
+      renderEmployeeSummary();
+      renderEmployees();
+      renderGoalsEditor();
+      renderCommissionForm();
+      renderRaceBonusForm();
+      renderCompanyGoalForm();
+      renderContentForm();
+      loadFbIntegrationStatus();
+    }
+
+    document.getElementById('saleDate').value = todayISO();
+    document.getElementById('inDate').value = todayISO();
+    document.getElementById('icDate').value = todayISO();
+    document.getElementById('mySalesMonthFilter').value = currentMonthValue();
+    document.getElementById('incasariMonthFilter').value = currentMonthValue();
+  }
+
+  function roleLabel(role){
+    return { cosmetician:'Cosmetician', receptie:'Recepție', admin:'Admin' }[role] || role;
+  }
+
+  // ---------------- tabs ----------------
+  document.getElementById('tabsNav').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tab]');
+    if (!btn) return;
+    document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'oferte' && !OFFERS) loadOffers();
+    if (btn.dataset.tab === 'pipeline') loadLeads();
+    if (btn.dataset.tab === 'automatizari') loadAutomationTasks();
+    document.querySelector('main').classList.toggle('wide', btn.dataset.tab === 'creative');
+    if (btn.dataset.tab === 'creative') loadCreative();
+  });
+
+  // ---------------- Creative (admin) — creative machine in an iframe, signed in via a short-lived SSO link ----------------
+  async function loadCreative(){
+    const frame = document.getElementById('creativeFrame');
+    const msg = document.getElementById('creativeMsg');
+    if (frame.src) return;
+    try {
+      const r = await fetch('/api/portal-creative-sso', { credentials: 'same-origin' });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Nu am putut deschide Creative.');
+      frame.src = d.url;
+      frame.classList.remove('hidden');
+      msg.classList.add('hidden');
+    } catch (err) {
+      msg.textContent = err.message;
+    }
+  }
+
+  // ---------------- Oferte (admin) — drives public oferte.html / preturi.html ----------------
+  const OFFER_CATEGORY_LABELS = { epilare: 'Epilare', faciale: 'Faciale', remodelare: 'Remodelare' };
+  let OFFERS = null;
+  let OFFER_IMAGES = [];
+
+  function offerDiscount(o){
+    const pNew = Number(o.priceNew) || 0, pOld = Number(o.priceOld) || 0;
+    return pOld > 0 ? Math.round(100 - (pNew / pOld) * 100) : 0;
+  }
+
+  function imageOptionsHtml(selectedKey){
+    return OFFER_IMAGES.map(img =>
+      '<option value="'+img.key+'"'+(img.key===selectedKey?' selected':'')+'>'+escapeHtml(img.label)+'</option>'
+    ).join('');
+  }
+
+  function imagePathForKey(key){
+    const img = OFFER_IMAGES.find(i=>i.key===key);
+    return img ? '/'+img.path : '';
+  }
+
+  function wireImagePreview(selectEl, imgEl){
+    const update = ()=>{ imgEl.src = imagePathForKey(selectEl.value); };
+    selectEl.addEventListener('change', update);
+    update();
+  }
+
+  async function loadOffers(){
+    try{
+      const resp = await fetch('/api/portal-offers', {
+        method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+        body: JSON.stringify({ action:'list' })
+      });
+      if (!resp.ok) throw new Error('offers_failed');
+      const body = await resp.json();
+      OFFERS = body.offers || [];
+      OFFER_IMAGES = body.images || [];
+      document.getElementById('noImageKey').innerHTML = imageOptionsHtml(OFFER_IMAGES[0] && OFFER_IMAGES[0].key);
+      wireImagePreview(document.getElementById('noImageKey'), document.getElementById('noImagePreview'));
+      renderOffers();
+    }catch(err){
+      document.getElementById('offersBody').innerHTML = '<tr><td colspan="9">Eroare la încărcarea ofertelor.</td></tr>';
+    }
+  }
+
+  function offerEditRowHtml(o){
+    return (
+      '<tr class="offer-edit-row" data-edit-for="'+o.id+'"><td colspan="9">' +
+        '<div class="grid2">' +
+          '<div class="full"><label class="field-label">Titlu</label><input type="text" class="oe-title" value="'+escapeHtml(o.title)+'"></div>' +
+          '<div class="full"><label class="field-label">Descriere</label><textarea class="oe-description" rows="3">'+escapeHtml(o.description||'')+'</textarea></div>' +
+          '<div><label class="field-label">Preț nou (lei)</label><input type="number" class="oe-priceNew" min="0" value="'+o.priceNew+'"></div>' +
+          '<div><label class="field-label">Preț vechi (lei)</label><input type="number" class="oe-priceOld" min="0" value="'+o.priceOld+'"></div>' +
+          '<div><label class="field-label">Categorie</label><select class="oe-category">' +
+            Object.keys(OFFER_CATEGORY_LABELS).map(k=>'<option value="'+k+'"'+(o.category===k?' selected':'')+'>'+OFFER_CATEGORY_LABELS[k]+'</option>').join('') +
+          '</select></div>' +
+          '<div><label class="field-label">Ordine</label><input type="number" class="oe-order" min="1" value="'+(o.order||1)+'"></div>' +
+          '<div><label class="field-label">Imagine</label><select class="oe-imageKey">'+imageOptionsHtml(o.imageKey)+'</select>' +
+            '<img class="oe-preview" alt="" style="display:block; margin-top:.5rem; width:120px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--line);"></div>' +
+          '<div style="display:flex; align-items:flex-end; gap:1.5rem;">' +
+            '<label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" class="oe-featured" '+(o.featured?'checked':'')+'> Featured</label>' +
+            '<label style="display:flex; align-items:center; gap:.4rem; font-size:.86rem;"><input type="checkbox" class="oe-active" '+(o.active?'checked':'')+'> Activă</label>' +
+          '</div>' +
+          '<div class="full">' +
+            '<button type="button" class="pill small" data-save-offer="'+o.id+'">Salvează</button> ' +
+            '<button type="button" class="pill small ghost" data-cancel-offer="'+o.id+'">Anulează</button>' +
+            '<div class="msg" data-offer-msg="'+o.id+'"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>'
+    );
+  }
+
+  function renderOffers(){
+    const body = document.getElementById('offersBody');
+    body.innerHTML = '';
+    const sorted = [...OFFERS].sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+    sorted.forEach(o=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(o.title)+'</td>' +
+        '<td>'+Math.round(o.priceNew)+' lei</td>' +
+        '<td>'+Math.round(o.priceOld)+' lei</td>' +
+        '<td>−'+offerDiscount(o)+'%</td>' +
+        '<td>'+(OFFER_CATEGORY_LABELS[o.category]||o.category)+'</td>' +
+        '<td>'+(o.active?'Activă':'Dezactivată')+'</td>' +
+        '<td>'+(o.featured?'Da':'Nu')+'</td>' +
+        '<td>'+(o.order||'')+'</td>' +
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+      editBtn.addEventListener('click', ()=>{
+        const existing = document.querySelector('[data-edit-for="'+o.id+'"]');
+        if (existing){ existing.remove(); return; }
+        document.querySelectorAll('.offer-edit-row').forEach(r=>r.remove());
+        tr.insertAdjacentHTML('afterend', offerEditRowHtml(o));
+        const editRow = document.querySelector('[data-edit-for="'+o.id+'"]');
+        wireImagePreview(editRow.querySelector('.oe-imageKey'), editRow.querySelector('.oe-preview'));
+        editRow.querySelector('[data-cancel-offer]').addEventListener('click', ()=> editRow.remove());
+        editRow.querySelector('[data-save-offer]').addEventListener('click', async ()=>{
+          const payload = {
+            action: 'update',
+            id: o.id,
+            title: editRow.querySelector('.oe-title').value.trim(),
+            description: editRow.querySelector('.oe-description').value,
+            priceNew: Number(editRow.querySelector('.oe-priceNew').value),
+            priceOld: Number(editRow.querySelector('.oe-priceOld').value),
+            category: editRow.querySelector('.oe-category').value,
+            order: Number(editRow.querySelector('.oe-order').value),
+            imageKey: editRow.querySelector('.oe-imageKey').value,
+            featured: editRow.querySelector('.oe-featured').checked,
+            active: editRow.querySelector('.oe-active').checked,
+          };
+          const msgEl = editRow.querySelector('[data-offer-msg]');
+          try{
+            const resp = await fetch('/api/portal-offers', {
+              method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+            });
+            if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+            const body2 = await resp.json();
+            OFFERS = body2.offers;
+            renderOffers();
+          }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+        });
+      });
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'pill small ' + (o.active ? 'danger' : 'ghost');
+      toggleBtn.textContent = o.active ? 'Dezactivează' : 'Activează';
+      toggleBtn.addEventListener('click', async ()=>{
+        const resp = await fetch('/api/portal-offers', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'update', id:o.id, title:o.title, description:o.description, priceNew:o.priceNew, priceOld:o.priceOld, category:o.category, order:o.order, imageKey:o.imageKey, featured:o.featured, active: !o.active })
+        });
+        if (!resp.ok){ alert('Nu am putut salva modificarea.'); return; }
+        const body2 = await resp.json();
+        OFFERS = body2.offers;
+        renderOffers();
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
+      delBtn.addEventListener('click', async ()=>{
+        if (!confirm('Ștergi definitiv oferta "'+o.title+'"? Dispare imediat de pe site.')) return;
+        const resp = await fetch('/api/portal-offers', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'delete', id:o.id })
+        });
+        if (!resp.ok){ alert('Nu am putut șterge oferta.'); return; }
+        const body2 = await resp.json();
+        OFFERS = body2.offers;
+        renderOffers();
+      });
+
+      td.appendChild(editBtn); td.appendChild(toggleBtn); td.appendChild(delBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('newOfferForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      title: document.getElementById('noTitle').value.trim(),
+      description: document.getElementById('noDescription').value,
+      priceNew: Number(document.getElementById('noPriceNew').value),
+      priceOld: Number(document.getElementById('noPriceOld').value),
+      category: document.getElementById('noCategory').value,
+      order: Number(document.getElementById('noOrder').value) || 1,
+      imageKey: document.getElementById('noImageKey').value,
+      featured: document.getElementById('noFeatured').checked,
+      active: document.getElementById('noActive').checked,
+    };
+    const msgEl = document.getElementById('newOfferMsg');
+    try{
+      const resp = await fetch('/api/portal-offers', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la adăugare.', false); return; }
+      const body = await resp.json();
+      OFFERS = body.offers;
+      document.getElementById('newOfferForm').reset();
+      document.getElementById('noActive').checked = true;
+      showMsg(msgEl, 'Ofertă adăugată.', true);
+      renderOffers();
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    try{ await fetch('/api/portal-logout', { method:'POST' }); }catch(e){}
+    location.href = '/portal-login';
+  });
+
+  // ---------------- Panou ----------------
+  function renderPanou(){
+    document.getElementById('panouGreeting').textContent = 'Bună, ' + DATA.me.name.split(' ')[0] + '!';
+
+    const list = document.getElementById('tasksList');
+    list.innerHTML = '';
+    let storageKey = 'c360_portal_tasks_' + todayISO();
+    let doneState = {};
+    try{ doneState = JSON.parse(sessionStorage.getItem(storageKey) || '{}'); }catch(e){}
+
+    DATA.tasks.forEach((task, i)=>{
+      const label = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!doneState[i];
+      if (cb.checked) label.classList.add('done');
+      cb.addEventListener('change', ()=>{
+        doneState[i] = cb.checked;
+        label.classList.toggle('done', cb.checked);
+        try{ sessionStorage.setItem(storageKey, JSON.stringify(doneState)); }catch(e){}
+      });
+      const span = document.createElement('span');
+      span.textContent = task;
+      label.appendChild(cb);
+      label.appendChild(span);
+      list.appendChild(label);
+    });
+
+    const cg = DATA.companyGoal;
+    const pct = cg.target > 0 ? Math.min(100, Math.round((cg.current / cg.target) * 100)) : 0;
+    document.getElementById('companyGoalFill').style.width = pct + '%';
+    document.getElementById('companyGoalCurrent').textContent = fmtRON(cg.current);
+    document.getElementById('companyGoalTarget').textContent = 'Target: ' + fmtRON(cg.target);
+    document.getElementById('companyGoalExplain').textContent =
+      'Dacă vânzările aprobate din ambele locații ating ' + fmtRON(cg.target) + ' luna aceasta, fiecare angajat activ primește ' + fmtRON(cg.reward) + '.';
+
+    const rb = DATA.raceBonus;
+    document.getElementById('raceBonusExplain').textContent =
+      'Angajatul cu cele mai multe vânzări aprobate la categoria "' + (CATEGORY_LABELS[rb.category] || rb.category) +
+      '" luna aceasta, dacă atinge ' + rb.target + ', câștigă ' + fmtRON(rb.reward) + '.';
+
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = '';
+    rb.leaderboard.forEach((row, i)=>{
+      const pctRow = rb.target > 0 ? Math.min(100, Math.round((row.count / rb.target) * 100)) : 0;
+      const div = document.createElement('div');
+      div.className = 'leaderboard-row';
+      div.innerHTML =
+        '<div class="lb-rank">'+(i+1)+'</div>' +
+        '<div class="lb-name">'+escapeHtml(row.name)+'<small>'+escapeHtml(row.location)+'</small></div>' +
+        '<div class="lb-track"><div class="lb-fill" style="width:'+pctRow+'%"></div></div>' +
+        '<div class="lb-count">'+row.count+' / '+rb.target+'</div>';
+      lb.appendChild(div);
+    });
+
+    const tally = document.getElementById('panouApptTally');
+    tally.innerHTML = '';
+    const myCounts = DATA.appointmentsToday.myCountsToday;
+    Object.keys(APPT_STATUS_LABELS).forEach(key=>{
+      const div = document.createElement('div');
+      div.innerHTML = '<div class="muted" style="font-size:.76rem;">'+APPT_STATUS_LABELS[key]+'</div>' +
+        '<div style="font-size:1.4rem; font-weight:700;">'+(myCounts[key]||0)+'</div>';
+      tally.appendChild(div);
+    });
+
+    const goalsCard = document.getElementById('panouGoalsCard');
+    const goalsWrap = document.getElementById('panouGoals');
+    goalsWrap.innerHTML = '';
+    const myGoals = DATA.myGoals || [];
+    goalsCard.classList.toggle('hidden', myGoals.length === 0);
+    myGoals.forEach(g=>{
+      const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+      const isRon = g.metric === 'comision_aprobat_luna' || g.metric === 'incasari_atribuite_luna';
+      const div = document.createElement('div');
+      div.style.marginBottom = '1rem';
+      div.innerHTML =
+        '<div class="progress-label"><span>'+escapeHtml(g.title)+'</span><span>'+
+          (isRon ? fmtRON(g.current)+' / '+fmtRON(g.target) : g.current+' / '+g.target)+'</span></div>' +
+        '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+      goalsWrap.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------------- Client autocomplete (shared by Incasare + Comision) ----------------
+  // One small reusable piece of UI: a text input + a dropdown of matching clients below
+  // it, debounced ~250ms against GET /api/portal-clients?q=. Clicking a suggestion fills
+  // the input with the client's name and remembers its id; typing anything afterwards
+  // clears that remembered id, so a stale link can never be submitted.
+  function setupClientAutocomplete(inputId, listId, onSelect){
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let selectedId = '';
+    let debounceTimer = null;
+
+    function hide(){ list.classList.remove('show'); list.innerHTML = ''; }
+
+    function render(items){
+      list.innerHTML = '';
+      if (!items.length){
+        list.innerHTML = '<div class="client-ac-empty">Niciun client găsit.</div>';
+        list.classList.add('show');
+        return;
+      }
+      items.forEach(c=>{
+        const div = document.createElement('div');
+        div.className = 'client-ac-item';
+        div.innerHTML = escapeHtml(c.name || '(fără nume)') + '<small>' + escapeHtml(c.phone||'') + '</small>';
+        // mousedown (not click) fires before the input's blur, so hide() on blur
+        // doesn't swallow the selection.
+        div.addEventListener('mousedown', (e)=>{
+          e.preventDefault();
+          input.value = c.name || '';
+          selectedId = c.id;
+          hide();
+          if (typeof onSelect === 'function') onSelect(c);
+        });
+        list.appendChild(div);
+      });
+      list.classList.add('show');
+    }
+
+    async function search(q){
+      try{
+        const resp = await fetch('/api/portal-clients?q=' + encodeURIComponent(q));
+        if (resp.status === 401){ location.href = '/portal-login'; return; }
+        if (!resp.ok) return;
+        const body = await resp.json();
+        render(body.clients || []);
+      }catch(err){ /* autocomplete is a convenience — fail silently, typing still works */ }
+    }
+
+    input.addEventListener('input', ()=>{
+      selectedId = '';
+      const q = input.value.trim();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(()=>search(q), 250);
+    });
+    input.addEventListener('focus', ()=>{
+      if (!input.value.trim()) search('');
+    });
+    input.addEventListener('blur', ()=>{ setTimeout(hide, 150); });
+
+    return {
+      getSelectedId: ()=> selectedId,
+      reset: ()=>{ selectedId = ''; hide(); },
+    };
+  }
+
+  // Selecting an existing client in "Încasează client" also fills the phone field —
+  // it stays editable/required either way, but there's no need to retype a known number.
+  const inClientAC = setupClientAutocomplete('inClient', 'inClientList', (c)=>{
+    document.getElementById('inClientPhone').value = c.phone || '';
+  });
+  const saleClientAC = setupClientAutocomplete('saleClient', 'saleClientList', (c)=>{
+    document.getElementById('saleClientPhone').value = c.phone || '';
+  });
+  const apptClientAC = setupClientAutocomplete('apptClient', 'apptClientList', (c)=>{
+    document.getElementById('apptClientPhone').value = c.phone || '';
+  });
+
+  // ---------------- Vanzarile mele ----------------
+  function renderCategorySelects(){
+    const selects = [document.getElementById('saleCategory'), document.getElementById('inCategory'), document.getElementById('apptCategory')];
+    selects.forEach(sel=>{
+      sel.innerHTML = '';
+      Object.keys(CATEGORY_LABELS).forEach(key=>{
+        const opt = document.createElement('option');
+        opt.value = key; opt.textContent = CATEGORY_LABELS[key];
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  // Fills a <select> with every active employee as "<name> (<location>)" — shared by
+  // "Încasează client"'s "Cine a efectuat tratamentul" and the Calendar's "Cosmeticiană"
+  // select, so there's one place building this option list instead of two copies.
+  function fillActiveEmployeeOptions(selectEl, placeholderLabel){
+    selectEl.innerHTML = '<option value="">'+placeholderLabel+'</option>';
+    (DATA.activeEmployees||[]).forEach(e=>{
+      const opt = document.createElement('option');
+      opt.value = e.id; opt.textContent = e.name + ' (' + e.location + ')';
+      selectEl.appendChild(opt);
+    });
+  }
+  function renderPerformedBySelect(){
+    fillActiveEmployeeOptions(document.getElementById('inPerformedBy'), '—');
+  }
+  function renderCosmeticianSelect(){
+    fillActiveEmployeeOptions(document.getElementById('apptCosmetician'), '— neasignat —');
+  }
+
+  document.getElementById('saleForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      source: 'comision',
+      date: document.getElementById('saleDate').value,
+      category: document.getElementById('saleCategory').value,
+      treatment: document.getElementById('saleTreatment').value.trim(),
+      amount: Number(document.getElementById('saleAmount').value),
+      note: document.getElementById('saleNote').value.trim(),
+    };
+    // Client is optional here. A suggestion clicked -> send clientId. Otherwise, if a
+    // name + phone were typed for a client not yet in the directory, send those and
+    // let the server upsert-and-link them. No client info at all -> unchanged, legacy
+    // behavior (entry saved with no client attached).
+    const saleClientId = saleClientAC.getSelectedId();
+    const saleClientName = document.getElementById('saleClient').value.trim();
+    const saleClientPhone = document.getElementById('saleClientPhone').value.trim();
+    if (saleClientId){
+      payload.clientId = saleClientId;
+    } else if (saleClientName && saleClientPhone){
+      payload.clientName = saleClientName;
+      payload.clientPhone = saleClientPhone;
+    }
+    const msgEl = document.getElementById('saleMsg');
+    try{
+      const resp = await fetch('/api/portal-sale', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare. Verifică datele.', false); return; }
+      const body = await resp.json();
+      DATA.mySales.unshift(body.entry);
+      document.getElementById('saleForm').reset();
+      document.getElementById('saleDate').value = todayISO();
+      saleClientAC.reset();
+      renderMySales();
+      showMsg(msgEl, 'Vânzare salvată — în așteptarea aprobării.', true);
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  function renderMySales(){
+    const monthFilter = document.getElementById('mySalesMonthFilter').value || currentMonthValue();
+    const body = document.getElementById('mySalesBody');
+    body.innerHTML = '';
+    let total = 0;
+    DATA.mySales.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
+        '<td>'+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td><span class="status-pill status-'+s.status+'">'+STATUS_LABELS[s.status]+'</span></td>' +
+        '<td>'+(s.status==='approved' ? fmtRON(s.commission) : '—')+'</td>';
+      body.appendChild(tr);
+      if (s.status === 'approved' && monthKey(s.date) === monthFilter){ total += Number(s.commission||0); }
+    });
+    document.getElementById('mySalesTotal').textContent = fmtRON(total);
+  }
+  document.getElementById('mySalesMonthFilter').addEventListener('change', renderMySales);
+
+  // ---------------- Incasează client ----------------
+  document.getElementById('incasareForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      source: 'incasare',
+      clientName: document.getElementById('inClient').value.trim(),
+      clientPhone: document.getElementById('inClientPhone').value.trim(),
+      date: document.getElementById('inDate').value,
+      category: document.getElementById('inCategory').value,
+      treatment: document.getElementById('inTreatment').value.trim(),
+      amount: Number(document.getElementById('inAmount').value),
+      method: document.getElementById('inMethod').value,
+      performedBy: document.getElementById('inPerformedBy').value,
+    };
+    const msgEl = document.getElementById('incasareMsg');
+    try{
+      const resp = await fetch('/api/portal-sale', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare. Verifică datele.', false); return; }
+      const body = await resp.json();
+      DATA.incasari.unshift(Object.assign({}, body.entry, {
+        employeeName: DATA.me.name,
+        performedByName: (DATA.activeEmployees.find(a=>a.id===body.entry.performedBy)||{}).name || '—',
+      }));
+      document.getElementById('incasareForm').reset();
+      document.getElementById('inDate').value = todayISO();
+      inClientAC.reset();
+      renderIncasari();
+      showMsg(msgEl, 'Încasare salvată.', true);
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  function startOfWeekMonday(d){
+    const day = (d.getDay() + 6) % 7; // 0 = Monday
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - day);
+    monday.setHours(0,0,0,0);
+    return monday;
+  }
+
+  function renderIncasariStats(){
+    const today = todayISO();
+    const mondayStr = startOfWeekMonday(new Date()).toISOString().slice(0,10);
+    let todayTotal=0, todayCount=0, weekTotal=0, weekCount=0;
+    DATA.incasari.forEach(s=>{
+      if (s.date === today){ todayTotal += Number(s.amount||0); todayCount++; }
+      if (s.date >= mondayStr && s.date <= today){ weekTotal += Number(s.amount||0); weekCount++; }
+    });
+    document.getElementById('incasariToday').textContent = fmtRON(todayTotal);
+    document.getElementById('incasariTodayCount').textContent = todayCount + (todayCount===1?' încasare':' încasări');
+    document.getElementById('incasariWeek').textContent = fmtRON(weekTotal);
+    document.getElementById('incasariWeekCount').textContent = weekCount + (weekCount===1?' încasare':' încasări');
+  }
+
+  function daysInMonth(monthValue){
+    const [y,m] = monthValue.split('-').map(Number);
+    return new Date(y, m, 0).getDate();
+  }
+
+  let incasariChartTip = null;
+  function renderIncasariChart(monthFilter){
+    const days = daysInMonth(monthFilter);
+    const totals = new Array(days+1).fill(0);
+    DATA.incasari.forEach(s=>{
+      if (monthKey(s.date) !== monthFilter) return;
+      const day = Number(s.date.slice(8,10));
+      if (day>=1 && day<=days) totals[day] += Number(s.amount||0);
+    });
+    const max = Math.max(1, ...totals.slice(1));
+    const W=760, H=220, padL=6, padR=6, padB=22, padT=10;
+    const plotW = W-padL-padR, plotH = H-padT-padB;
+    const barGap = 2;
+    const barW = Math.max(2, plotW/days - barGap);
+    const today = todayISO();
+    let svgContent = '<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="var(--line)" stroke-width="1"/>';
+    for (let d=1; d<=days; d++){
+      const v = totals[d];
+      const h = Math.max(0, Math.round((v/max)*plotH));
+      const x = padL + (d-1)*(barW+barGap);
+      const y = H-padB-h;
+      const dayStr = monthFilter+'-'+String(d).padStart(2,'0');
+      const isToday = dayStr === today;
+      svgContent += '<rect class="incasari-bar" data-day="'+d+'" data-val="'+v+'" x="'+x.toFixed(1)+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+h+'" rx="4" fill="'+(isToday?'var(--fg)':'var(--accent)')+'" fill-opacity="'+(isToday?'1':'0.85')+'"></rect>';
+    }
+    const svg = document.getElementById('incasariChart');
+    svg.innerHTML = svgContent;
+
+    if (!incasariChartTip){
+      incasariChartTip = document.createElement('div');
+      incasariChartTip.style.cssText = 'position:fixed; pointer-events:none; background:var(--surface-3); color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:.35rem .6rem; font-size:.78rem; display:none; z-index:999;';
+      document.body.appendChild(incasariChartTip);
+    }
+    svg.querySelectorAll('.incasari-bar').forEach(rect=>{
+      rect.addEventListener('mouseenter', ()=>{
+        const d = rect.getAttribute('data-day');
+        const v = Number(rect.getAttribute('data-val'));
+        incasariChartTip.textContent = monthFilter+'-'+String(d).padStart(2,'0')+' · '+fmtRON(v);
+        incasariChartTip.style.display = 'block';
+      });
+      rect.addEventListener('mousemove', (e)=>{
+        incasariChartTip.style.left = (e.clientX+12)+'px';
+        incasariChartTip.style.top = (e.clientY+12)+'px';
+      });
+      rect.addEventListener('mouseleave', ()=>{ incasariChartTip.style.display='none'; });
+    });
+  }
+
+  function incasareEditRowHtml(s){
+    return (
+      '<tr class="incasare-edit-row" data-edit-for="'+s.id+'"><td colspan="7">' +
+        '<div class="grid2">' +
+          '<div><label class="field-label">Data</label><input type="date" class="ie-date" value="'+s.date+'"></div>' +
+          '<div><label class="field-label">Client</label><input type="text" class="ie-client" value="'+escapeHtml(s.client)+'"></div>' +
+          '<div><label class="field-label">Categorie</label><select class="ie-category">' +
+            Object.keys(CATEGORY_LABELS).map(k=>'<option value="'+k+'"'+(s.category===k?' selected':'')+'>'+CATEGORY_LABELS[k]+'</option>').join('') +
+          '</select></div>' +
+          '<div class="full"><label class="field-label">Tratament</label><input type="text" class="ie-treatment" value="'+escapeHtml(s.treatment)+'"></div>' +
+          '<div><label class="field-label">Sumă (RON)</label><input type="number" class="ie-amount" min="0" step="0.01" value="'+s.amount+'"></div>' +
+          '<div><label class="field-label">Metodă</label><select class="ie-method">' +
+            Object.keys(METHOD_LABELS).map(k=>'<option value="'+k+'"'+(s.method===k?' selected':'')+'>'+METHOD_LABELS[k]+'</option>').join('') +
+          '</select></div>' +
+          '<div><label class="field-label">Efectuat de</label><select class="ie-performedBy"><option value="">—</option>' +
+            (DATA.activeEmployees||[]).map(e=>'<option value="'+e.id+'"'+(s.performedBy===e.id?' selected':'')+'>'+escapeHtml(e.name)+'</option>').join('') +
+          '</select></div>' +
+          '<div class="full">' +
+            '<button type="button" class="pill small" data-save-incasare="'+s.id+'">Salvează</button> ' +
+            '<button type="button" class="pill small ghost" data-cancel-incasare="'+s.id+'">Anulează</button>' +
+            '<div class="msg" data-incasare-msg="'+s.id+'"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>'
+    );
+  }
+
+  function renderIncasari(){
+    const monthFilter = document.getElementById('incasariMonthFilter').value || currentMonthValue();
+    renderIncasariStats();
+    renderIncasariChart(monthFilter);
+    const body = document.getElementById('incasariBody');
+    body.innerHTML = '';
+    let total = 0;
+    DATA.incasari.filter(s=>monthKey(s.date)===monthFilter).forEach(s=>{
+      total += Number(s.amount||0);
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+escapeHtml(s.client)+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td>'+(METHOD_LABELS[s.method]||s.method)+'</td>' +
+        '<td>'+escapeHtml(s.performedByName||'—')+'</td>' +
+        '<td><div class="row-actions"></div></td>';
+      body.appendChild(tr);
+
+      if (DATA.isAdmin){
+        const actionsTd = tr.lastElementChild.firstElementChild;
+        const editBtn = document.createElement('button');
+        editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+        editBtn.addEventListener('click', ()=>{
+          const existing = document.querySelector('[data-edit-for="'+s.id+'"]');
+          if (existing){ existing.remove(); return; }
+          document.querySelectorAll('.incasare-edit-row').forEach(r=>r.remove());
+          tr.insertAdjacentHTML('afterend', incasareEditRowHtml(s));
+          const editRow = document.querySelector('[data-edit-for="'+s.id+'"]');
+          editRow.querySelector('[data-cancel-incasare]').addEventListener('click', ()=> editRow.remove());
+          editRow.querySelector('[data-save-incasare]').addEventListener('click', async ()=>{
+            const payload = {
+              action:'update', id: s.id,
+              date: editRow.querySelector('.ie-date').value,
+              client: editRow.querySelector('.ie-client').value.trim(),
+              category: editRow.querySelector('.ie-category').value,
+              treatment: editRow.querySelector('.ie-treatment').value.trim(),
+              amount: Number(editRow.querySelector('.ie-amount').value),
+              method: editRow.querySelector('.ie-method').value,
+              performedBy: editRow.querySelector('.ie-performedBy').value,
+            };
+            const msgEl = editRow.querySelector('[data-incasare-msg]');
+            try{
+              const resp = await fetch('/api/portal-incasari', {
+                method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+              });
+              if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+              await loadData();
+              activateTab('incasari');
+            }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+          });
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
+        delBtn.addEventListener('click', async ()=>{
+          if (!confirm('Ștergi definitiv această încasare? Nu poate fi recuperată.')) return;
+          const resp = await fetch('/api/portal-incasari', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'delete', id: s.id })
+          });
+          if (!resp.ok){ alert('Nu am putut șterge încasarea.'); return; }
+          await loadData();
+          activateTab('incasari');
+        });
+
+        actionsTd.appendChild(editBtn); actionsTd.appendChild(delBtn);
+      }
+    });
+    document.getElementById('incasariTotal').textContent = fmtRON(total);
+  }
+  document.getElementById('incasariMonthFilter').addEventListener('change', renderIncasari);
+
+  document.getElementById('printIncasariBtn').addEventListener('click', ()=>{
+    const month = document.getElementById('incasariMonthFilter').value || currentMonthValue();
+    const rows = DATA.incasari.filter(s=>monthKey(s.date)===month);
+    document.getElementById('incasariSheetTitle').textContent = 'Centrul360 — Tabel de încasări — ' + month;
+    const body = document.getElementById('incasariSheetBody');
+    body.innerHTML = '';
+    rows.slice().sort((a,b)=> a.date < b.date ? -1 : 1).forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+escapeHtml(s.client)+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+' — '+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td>'+(METHOD_LABELS[s.method]||s.method)+'</td>' +
+        '<td>'+escapeHtml(s.performedByName||'—')+'</td>';
+      body.appendChild(tr);
+    });
+    document.getElementById('incasariSheet').classList.add('printing');
+    document.getElementById('intakeSheet').classList.remove('printing');
+    window.print();
+  });
+
+  // ---------------- Calendar (Programari) ----------------
+  // Shared scheduler: everyone sees the same data, any role can add/edit/delete. Two
+  // views — Zi (one day, table + add form) and Săptămână (7-day glance grid). Both
+  // fetch from the same api/portal-appointments.js `list` action with a {from,to}
+  // range, so the week view never over-fetches the whole history.
+  let calView = 'day';
+  let calDate = todayISO();
+  let dayAppointments = [];
+  let weekAppointments = [];
+
+  function addDaysISO(dateStr, n){
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0,10);
+  }
+  // Monday..Sunday range containing dateStr — reuses startOfWeekMonday() (already used
+  // by "Tabel de încasări" for its weekly total) instead of a second implementation.
+  function weekRangeFor(dateStr){
+    const monday = startOfWeekMonday(new Date(dateStr + 'T00:00:00')).toISOString().slice(0,10);
+    return { monday, sunday: addDaysISO(monday, 6) };
+  }
+
+  async function fetchAppointments(from, to){
+    const resp = await fetch('/api/portal-appointments', {
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+      body: JSON.stringify({ action:'list', from, to })
+    });
+    if (resp.status === 401){ location.href = '/portal-login'; return []; }
+    if (!resp.ok) throw new Error('appointments_failed');
+    const body = await resp.json();
+    return body.appointments || [];
+  }
+
+  async function loadCalendar(){
+    try{
+      if (calView === 'day'){
+        dayAppointments = await fetchAppointments(calDate, calDate);
+        renderApptBody();
+      } else {
+        const { monday, sunday } = weekRangeFor(calDate);
+        weekAppointments = await fetchAppointments(monday, sunday);
+        renderWeekGrid();
+      }
+    }catch(err){
+      const body = document.getElementById(calView==='day' ? 'apptBody' : 'weekGrid');
+      if (body) body.innerHTML = calView==='day' ? '<tr><td colspan="7">Eroare la încărcarea calendarului.</td></tr>' : 'Eroare la încărcarea calendarului.';
+    }
+  }
+
+  function apptCategoryOptionsHtml(selected){
+    return Object.keys(CATEGORY_LABELS).map(k=>'<option value="'+k+'"'+(selected===k?' selected':'')+'>'+CATEGORY_LABELS[k]+'</option>').join('');
+  }
+  function apptLocationOptionsHtml(selected){
+    return ['Timișoara','Arad'].map(loc=>'<option value="'+loc+'"'+(selected===loc?' selected':'')+'>'+loc+'</option>').join('');
+  }
+  function apptCosmeticianOptionsHtml(selected){
+    let html = '<option value=""'+(!selected?' selected':'')+'>— neasignat —</option>';
+    (DATA.activeEmployees||[]).forEach(e=>{
+      html += '<option value="'+e.id+'"'+(selected===e.id?' selected':'')+'>'+escapeHtml(e.name)+' ('+escapeHtml(e.location)+')</option>';
+    });
+    return html;
+  }
+  function apptStatusOptionsHtml(selected){
+    return Object.keys(APPT_STATUS_LABELS).map(k=>'<option value="'+k+'"'+(selected===k?' selected':'')+'>'+APPT_STATUS_LABELS[k]+'</option>').join('');
+  }
+
+  // Too many fields for a prompt() — reuses the same edit-row-insertion pattern as
+  // Oferte's offerEditRowHtml()/insertAdjacentHTML. The client itself isn't editable
+  // here (kept read-only, carried through as clientId on save) — changing who the
+  // appointment is for is rare enough to just delete + re-add rather than complicate
+  // this row further.
+  function apptEditRowHtml(a){
+    return (
+      '<tr class="appt-edit-row" data-edit-for="'+a.id+'"><td colspan="7">' +
+        '<div class="grid2">' +
+          '<div><label class="field-label">Data</label><input type="date" class="ae-date" value="'+a.date+'"></div>' +
+          '<div><label class="field-label">Oră</label><input type="text" class="ae-time" value="'+escapeHtml(a.time||'')+'"></div>' +
+          '<div class="full"><label class="field-label">Client</label><div class="muted" style="padding:.65rem 0;">'+escapeHtml(a.clientName||'—')+'</div></div>' +
+          '<div class="full"><label class="field-label">Tratament</label><input type="text" class="ae-treatment" value="'+escapeHtml(a.treatment||'')+'"></div>' +
+          '<div><label class="field-label">Categorie</label><select class="ae-category">'+apptCategoryOptionsHtml(a.category)+'</select></div>' +
+          '<div><label class="field-label">Locație</label><select class="ae-location">'+apptLocationOptionsHtml(a.location)+'</select></div>' +
+          '<div><label class="field-label">Cosmeticiană</label><select class="ae-cosmetician">'+apptCosmeticianOptionsHtml(a.cosmeticianId)+'</select></div>' +
+          '<div><label class="field-label">Status</label><select class="ae-status">'+apptStatusOptionsHtml(a.status)+'</select></div>' +
+          '<div class="full">' +
+            '<button type="button" class="pill small" data-save-appt="'+a.id+'">Salvează</button> ' +
+            '<button type="button" class="pill small ghost" data-cancel-appt="'+a.id+'">Anulează</button>' +
+            '<div class="msg" data-appt-msg="'+a.id+'"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>'
+    );
+  }
+
+  function renderApptBody(){
+    const body = document.getElementById('apptBody');
+    body.innerHTML = '';
+    const sorted = dayAppointments.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    document.getElementById('apptEmpty').style.display = sorted.length ? 'none' : 'block';
+    sorted.forEach(a=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(a.time||'—')+'</td>' +
+        '<td>'+escapeHtml(a.clientName||'—')+'</td>' +
+        '<td>'+(CATEGORY_LABELS[a.category]||a.category)+' — '+escapeHtml(a.treatment)+'</td>' +
+        '<td>'+escapeHtml(a.location||'—')+'</td>' +
+        '<td>'+escapeHtml(a.cosmeticianName||'—')+'</td>' +
+        '<td><span class="status-pill status-'+a.status+'">'+(APPT_STATUS_LABELS[a.status]||a.status)+'</span></td>' +
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+      editBtn.addEventListener('click', ()=>{
+        const existing = document.querySelector('[data-edit-for="'+a.id+'"]');
+        if (existing){ existing.remove(); return; }
+        document.querySelectorAll('.appt-edit-row').forEach(r=>r.remove());
+        tr.insertAdjacentHTML('afterend', apptEditRowHtml(a));
+        const editRow = document.querySelector('[data-edit-for="'+a.id+'"]');
+        editRow.querySelector('[data-cancel-appt]').addEventListener('click', ()=> editRow.remove());
+        editRow.querySelector('[data-save-appt]').addEventListener('click', async ()=>{
+          const payload = {
+            action: 'update',
+            id: a.id,
+            date: editRow.querySelector('.ae-date').value,
+            time: editRow.querySelector('.ae-time').value.trim(),
+            clientId: a.clientId,
+            treatment: editRow.querySelector('.ae-treatment').value.trim(),
+            category: editRow.querySelector('.ae-category').value,
+            location: editRow.querySelector('.ae-location').value,
+            cosmeticianId: editRow.querySelector('.ae-cosmetician').value,
+            status: editRow.querySelector('.ae-status').value,
+          };
+          const msgEl = editRow.querySelector('[data-appt-msg]');
+          try{
+            const resp = await fetch('/api/portal-appointments', {
+              method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+            });
+            if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+            editRow.remove();
+            await loadCalendar();
+          }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+        });
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
+      delBtn.addEventListener('click', async ()=>{
+        if (!confirm('Ștergi definitiv programarea lui "'+a.clientName+'"?')) return;
+        const resp = await fetch('/api/portal-appointments', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'delete', id:a.id })
+        });
+        if (!resp.ok){ alert('Nu am putut șterge programarea.'); return; }
+        await loadCalendar();
+      });
+
+      td.appendChild(editBtn); td.appendChild(delBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  const WEEKDAY_LABELS = ['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'];
+  function renderWeekGrid(){
+    const grid = document.getElementById('weekGrid');
+    grid.innerHTML = '';
+    const { monday } = weekRangeFor(calDate);
+    const today = todayISO();
+    for (let i=0; i<7; i++){
+      const dayDate = addDaysISO(monday, i);
+      const dayAppts = weekAppointments.filter(a=>a.date===dayDate).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const col = document.createElement('div');
+      col.className = 'week-day' + (dayDate===today ? ' is-today' : '');
+      const dLabel = new Date(dayDate+'T00:00:00').getDate() + '.' + (new Date(dayDate+'T00:00:00').getMonth()+1);
+      col.innerHTML = '<div class="week-day-header"><b>'+WEEKDAY_LABELS[i]+'</b><span>'+dLabel+'</span></div>';
+      if (!dayAppts.length){
+        col.innerHTML += '<div class="week-day-empty">—</div>';
+      } else {
+        dayAppts.forEach(a=>{
+          const row = document.createElement('div');
+          row.className = 'week-appt';
+          row.innerHTML =
+            '<span class="week-appt-dot status-'+a.status+'" style="background:currentColor;"></span>' +
+            '<span class="week-appt-time">'+escapeHtml(a.time||'—')+'</span>' +
+            '<span class="week-appt-name">'+escapeHtml(a.clientName||'—')+'</span>';
+          // Clicking an entry switches to Zi view on that entry's date, rather than
+          // editing inline in the cramped week grid.
+          row.addEventListener('click', ()=>{
+            calDate = dayDate;
+            document.getElementById('calDateInput').value = calDate;
+            switchCalView('day');
+          });
+          col.appendChild(row);
+        });
+      }
+      grid.appendChild(col);
+    }
+  }
+
+  function switchCalView(view){
+    calView = view;
+    document.getElementById('calViewDayBtn').classList.toggle('ghost', view!=='day');
+    document.getElementById('calViewWeekBtn').classList.toggle('ghost', view!=='week');
+    document.getElementById('calDayView').classList.toggle('hidden', view!=='day');
+    document.getElementById('calWeekView').classList.toggle('hidden', view!=='week');
+    loadCalendar();
+    if (view === 'day') document.getElementById('calDayView').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  document.getElementById('calViewDayBtn').addEventListener('click', ()=> switchCalView('day'));
+  document.getElementById('calViewWeekBtn').addEventListener('click', ()=> switchCalView('week'));
+
+  document.getElementById('calDateInput').addEventListener('change', (e)=>{
+    calDate = e.target.value || todayISO();
+    loadCalendar();
+  });
+  document.getElementById('calPrevBtn').addEventListener('click', ()=>{
+    calDate = addDaysISO(calDate, calView==='day' ? -1 : -7);
+    document.getElementById('calDateInput').value = calDate;
+    loadCalendar();
+  });
+  document.getElementById('calNextBtn').addEventListener('click', ()=>{
+    calDate = addDaysISO(calDate, calView==='day' ? 1 : 7);
+    document.getElementById('calDateInput').value = calDate;
+    loadCalendar();
+  });
+
+  document.getElementById('apptForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      date: document.getElementById('apptDate').value,
+      time: document.getElementById('apptTime').value.trim(),
+      clientId: apptClientAC.getSelectedId(),
+      clientName: document.getElementById('apptClient').value.trim(),
+      clientPhone: document.getElementById('apptClientPhone').value.trim(),
+      treatment: document.getElementById('apptTreatment').value.trim(),
+      category: document.getElementById('apptCategory').value,
+      location: document.getElementById('apptLocation').value,
+      cosmeticianId: document.getElementById('apptCosmetician').value,
+      status: document.getElementById('apptStatus').value,
+    };
+    const msgEl = document.getElementById('apptMsg');
+    try{
+      const resp = await fetch('/api/portal-appointments', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      const apptDate = document.getElementById('apptDate').value;
+      document.getElementById('apptForm').reset();
+      document.getElementById('apptDate').value = apptDate;
+      document.getElementById('apptStatus').value = 'programata';
+      apptClientAC.reset();
+      calDate = apptDate;
+      document.getElementById('calDateInput').value = calDate;
+      if (calView === 'day') { await loadCalendar(); } else { switchCalView('day'); }
+      showMsg(msgEl, 'Programare adăugată.', true);
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  function initCalendar(){
+    document.getElementById('calDateInput').value = calDate;
+    document.getElementById('apptDate').value = calDate;
+    renderCosmeticianSelect();
+    loadCalendar();
+  }
+
+  // ---------------- Pipeline (leads) ----------------
+  // Lazy-loaded on tab open, same pattern as Oferte — but always refetched (not
+  // cached-once) since stage/notes/inactivity flags change from other screens too.
+  let LEADS = [];
+  let expandedLeadId = '';
+
+  async function loadLeads(){
+    try{
+      const resp = await fetch('/api/portal-leads', {
+        method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+        body: JSON.stringify({ action:'list' })
+      });
+      if (resp.status === 401){ location.href = '/portal-login'; return; }
+      if (!resp.ok) throw new Error('leads_failed');
+      const body = await resp.json();
+      LEADS = body.leads || [];
+      renderKanban();
+    }catch(err){
+      document.getElementById('kanbanBoard').innerHTML = '<p class="muted">Eroare la încărcarea pipeline-ului.</p>';
+    }
+  }
+
+  function daysAgoLabel(n){ return n + (n===1 ? ' zi' : ' zile') + ' în etapă'; }
+
+  function leadCardEl(l){
+    const card = document.createElement('div');
+    card.className = 'kanban-card' + (l.isInactive ? ' inactive' : '');
+    card.innerHTML =
+      '<div class="kc-name">'+escapeHtml(l.name)+'</div>' +
+      '<div class="kc-meta">'+escapeHtml(l.phone)+' · '+escapeHtml(l.location)+'</div>' +
+      '<span class="kc-badge">'+(SOURCE_LABELS[l.source]||l.source)+'</span>' +
+      '<span class="kc-badge">'+daysAgoLabel(l.daysInStage||0)+'</span>' +
+      (l.isInactive ? '<span class="kc-badge kc-warn">Inactiv — necesită follow-up</span>' : '') +
+      '<div class="kc-actions"></div>';
+    const actions = card.querySelector('.kc-actions');
+
+    if (l.stage !== 'pierdut'){
+      const idx = STAGE_ORDER.indexOf(l.stage);
+      if (idx > 0){
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'pill small ghost'; prevBtn.textContent = '← Înapoi';
+        prevBtn.addEventListener('click', ()=> moveLeadStage(l.id, STAGE_ORDER[idx-1]));
+        actions.appendChild(prevBtn);
+      }
+      if (idx > -1 && idx < STAGE_ORDER.length - 1){
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'pill small'; nextBtn.textContent = 'Avansează →';
+        nextBtn.addEventListener('click', ()=> moveLeadStage(l.id, STAGE_ORDER[idx+1]));
+        actions.appendChild(nextBtn);
+      }
+      const lostBtn = document.createElement('button');
+      lostBtn.className = 'pill small danger'; lostBtn.textContent = 'Pierdut';
+      lostBtn.addEventListener('click', ()=>{
+        if (confirm('Marchezi leadul "'+l.name+'" ca pierdut?')) moveLeadStage(l.id, 'pierdut');
+      });
+      actions.appendChild(lostBtn);
+    } else {
+      const restoreBtn = document.createElement('button');
+      restoreBtn.className = 'pill small ghost'; restoreBtn.textContent = 'Readu la Lead nou';
+      restoreBtn.addEventListener('click', ()=> moveLeadStage(l.id, 'lead_nou'));
+      actions.appendChild(restoreBtn);
+    }
+
+    const noteBtn = document.createElement('button');
+    noteBtn.className = 'pill small ghost'; noteBtn.textContent = '+ Notă';
+    noteBtn.addEventListener('click', ()=>{
+      const text = prompt('Notă pentru '+l.name+':');
+      if (text && text.trim()) addLeadNote(l.id, text.trim());
+    });
+    actions.appendChild(noteBtn);
+
+    const expandBtn = document.createElement('button');
+    expandBtn.className = 'pill small ghost';
+    expandBtn.textContent = (expandedLeadId === l.id ? 'Ascunde ' : '') + 'Notițe (' + (l.notes||[]).length + ')';
+    expandBtn.addEventListener('click', ()=>{
+      expandedLeadId = (expandedLeadId === l.id) ? '' : l.id;
+      renderKanban();
+    });
+    actions.appendChild(expandBtn);
+
+    if (expandedLeadId === l.id){
+      const notesWrap = document.createElement('div');
+      notesWrap.className = 'kanban-notes';
+      const notes = (l.notes||[]).slice().reverse();
+      if (!notes.length){
+        notesWrap.innerHTML = '<div class="note-item">Nicio notă încă.</div>';
+      } else {
+        notes.forEach(n=>{
+          const div = document.createElement('div');
+          div.className = 'note-item';
+          div.innerHTML = '<b>'+escapeHtml(n.author||'—')+'</b> · '+escapeHtml((n.createdAt||'').slice(0,10))+'<br>'+escapeHtml(n.text);
+          notesWrap.appendChild(div);
+        });
+      }
+      card.appendChild(notesWrap);
+    }
+
+    return card;
+  }
+
+  function renderKanban(){
+    const board = document.getElementById('kanbanBoard');
+    board.innerHTML = '';
+    STAGE_ORDER.concat(['pierdut']).forEach(stage=>{
+      const col = document.createElement('div');
+      col.className = 'kanban-col';
+      const inStage = LEADS.filter(l=>l.stage===stage);
+      col.innerHTML = '<h4><span>'+STAGE_LABELS[stage]+'</span><span>'+inStage.length+'</span></h4>';
+      inStage.forEach(l=> col.appendChild(leadCardEl(l)));
+      board.appendChild(col);
+    });
+  }
+
+  async function moveLeadStage(leadId, stage){
+    try{
+      const resp = await fetch('/api/portal-leads', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'move_stage', leadId, stage })
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ alert('Nu am putut muta leadul.'); return; }
+      await loadLeads();
+    }catch(err){ alert('Eroare de rețea.'); }
+  }
+
+  async function addLeadNote(leadId, text){
+    try{
+      const resp = await fetch('/api/portal-leads', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'add_note', leadId, text })
+      });
+      if (!resp.ok){ alert('Nu am putut salva nota.'); return; }
+      await loadLeads();
+    }catch(err){ alert('Eroare de rețea.'); }
+  }
+
+  document.getElementById('leadForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      name: document.getElementById('leadName').value.trim(),
+      phone: document.getElementById('leadPhone').value.trim(),
+      source: document.getElementById('leadSource').value,
+      location: document.getElementById('leadLocation').value,
+    };
+    const msgEl = document.getElementById('leadFormMsg');
+    try{
+      const resp = await fetch('/api/portal-leads', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la adăugare.', false); return; }
+      document.getElementById('leadForm').reset();
+      showMsg(msgEl, 'Lead adăugat.', true);
+      await loadLeads();
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Automatizari ----------------
+  let AUTOMATION_TASKS = [];
+
+  async function loadAutomationTasks(){
+    try{
+      const resp = await fetch('/api/portal-automation-tasks', { credentials:'same-origin' });
+      if (resp.status === 401){ location.href = '/portal-login'; return; }
+      if (!resp.ok) throw new Error('automation_tasks_failed');
+      const body = await resp.json();
+      AUTOMATION_TASKS = body.tasks || [];
+      renderAutomationTasks();
+    }catch(err){
+      document.getElementById('automationTasksList').innerHTML = '<p class="muted">Eroare la încărcarea sarcinilor.</p>';
+    }
+  }
+
+  function renderAutomationTasks(){
+    const wrap = document.getElementById('automationTasksList');
+    wrap.innerHTML = '';
+    document.getElementById('automationTasksEmpty').style.display = AUTOMATION_TASKS.length ? 'none' : 'block';
+    AUTOMATION_TASKS.forEach(t=>{
+      const row = document.createElement('div');
+      row.className = 'at-row';
+      row.innerHTML =
+        '<div><div class="at-text">'+escapeHtml(t.text)+'</div>' +
+        '<div class="at-meta">'+(AUTOMATION_TYPE_LABELS[t.type]||t.type)+' · '+escapeHtml(t.location||'—')+'</div></div>';
+      const btn = document.createElement('button');
+      btn.className = 'pill small'; btn.textContent = 'Marchează trimis / Finalizat';
+      btn.addEventListener('click', async ()=>{
+        try{
+          const resp = await fetch('/api/portal-automation-tasks', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'complete', id: t.id })
+          });
+          if (!resp.ok){ alert('Nu am putut finaliza sarcina.'); return; }
+          await loadAutomationTasks();
+        }catch(err){ alert('Eroare de rețea.'); }
+      });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    });
+  }
+
+  // ---------------- Resurse ----------------
+  function renderResources(){
+    fillList('resUpsell', DATA.resources.upsellPackages);
+    fillList('resOffers', DATA.resources.upcomingOffers);
+    fillList('resScripts', DATA.resources.receptionScripts);
+    fillList('resProtocols', DATA.resources.treatmentProtocols);
+    fillReference('resReference', DATA.resources.treatmentReference);
+  }
+  function fillList(id, arr){
+    const ul = document.getElementById(id);
+    ul.innerHTML = '';
+    (arr||[]).forEach(item=>{
+      const li = document.createElement('li');
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+  }
+  // Treatment reference cards use the "## Name" heading convention (see _lib/defaults.js):
+  // a line starting with "## " opens a new card, every other line is a bullet under it.
+  function fillReference(id, arr){
+    const wrap = document.getElementById(id);
+    wrap.innerHTML = '';
+    let currentList = null;
+    (arr||[]).forEach(line=>{
+      if (line.indexOf('## ') === 0){
+        const h = document.createElement('h3');
+        h.style.margin = '1.2rem 0 .5rem';
+        h.style.fontSize = '.95rem';
+        h.textContent = line.slice(3);
+        wrap.appendChild(h);
+        currentList = document.createElement('ul');
+        currentList.className = 'resource-list';
+        wrap.appendChild(currentList);
+      } else if (currentList){
+        const li = document.createElement('li');
+        li.textContent = line;
+        currentList.appendChild(li);
+      }
+    });
+  }
+
+  // ---------------- Fise de printat ----------------
+  document.getElementById('printIntakeBtn').addEventListener('click', ()=>{
+    document.getElementById('pf-name').textContent = document.getElementById('icName').value;
+    document.getElementById('pf-date').textContent = document.getElementById('icDate').value;
+    document.getElementById('pf-treatment').textContent = document.getElementById('icTreatment').value;
+    document.getElementById('pf-amount').textContent = document.getElementById('icAmount').value;
+    document.getElementById('pf-method').textContent = document.getElementById('icMethod').value;
+    document.getElementById('pf-note').textContent = document.getElementById('icNote').value;
+
+    document.getElementById('intakeSheet').classList.add('printing');
+    document.getElementById('incasariSheet').classList.remove('printing');
+    window.print();
+  });
+
+  // ---------------- Aprobari (admin) ----------------
+  function renderApprovals(){
+    const body = document.getElementById('approvalsBody');
+    body.innerHTML = '';
+    const pending = DATA.admin.pendingSales;
+    document.getElementById('approvalsEmpty').style.display = pending.length ? 'none' : 'block';
+    pending.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(s.employeeName)+'</td>' +
+        '<td>'+escapeHtml(s.employeeLocation)+'</td>' +
+        '<td>'+s.date+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
+        '<td>'+escapeHtml(s.treatment)+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'pill small'; approveBtn.textContent = 'Aprobă';
+      approveBtn.addEventListener('click', ()=>decide(s.id, 'approve'));
+      const rejectBtn = document.createElement('button');
+      rejectBtn.className = 'pill small danger'; rejectBtn.textContent = 'Respinge';
+      rejectBtn.addEventListener('click', ()=>decide(s.id, 'reject'));
+      td.appendChild(approveBtn); td.appendChild(rejectBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  // ---------------- Angajati (admin) — commission summary + per-employee detail ----------------
+  let selectedEmployeeDetailId = '';
+
+  function renderEmployeeSummary(){
+    const body = document.getElementById('employeeSummaryBody');
+    body.innerHTML = '';
+    const employees = DATA.admin.employees.filter(e=>e.active);
+    employees.forEach(emp=>{
+      const sales = DATA.admin.allSales.filter(s=>s.employeeId===emp.id);
+      const approved = sales.filter(s=>s.status==='approved');
+      const pending = sales.filter(s=>s.status==='pending');
+      const approvedTotal = approved.reduce((sum,s)=>sum+Number(s.commission||0),0);
+      const pendingTotal = pending.reduce((sum,s)=>{
+        const rate = s.category==='retail' ? DATA.retailRate : (DATA.commissionRates[s.category]||0);
+        return sum + Math.round(Number(s.amount||0)*(rate/100)*100)/100;
+      },0);
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(emp.name)+'</td>' +
+        '<td>'+escapeHtml(emp.location)+'</td>' +
+        '<td>'+roleLabel(emp.role)+'</td>' +
+        '<td>'+fmtRON(approvedTotal)+'</td>' +
+        '<td>'+fmtRON(pendingTotal)+' <span class="muted" style="font-size:.78rem;">(estimat)</span></td>' +
+        '<td>'+approved.length+'</td>';
+      body.appendChild(tr);
+    });
+
+    const sel = document.getElementById('employeeDetailSelect');
+    const keepSelection = selectedEmployeeDetailId;
+    sel.innerHTML = '';
+    employees.forEach(emp=>{
+      const opt = document.createElement('option');
+      opt.value = emp.id; opt.textContent = emp.name + ' (' + emp.location + ')';
+      sel.appendChild(opt);
+    });
+    selectedEmployeeDetailId = employees.some(e=>e.id===keepSelection) ? keepSelection : (employees[0] ? employees[0].id : '');
+    renderEmployeeDetail();
+  }
+
+  function renderEmployeeDetail(){
+    const sel = document.getElementById('employeeDetailSelect');
+    sel.value = selectedEmployeeDetailId;
+
+    const body = document.getElementById('employeeDetailBody');
+    body.innerHTML = '';
+    const sales = DATA.admin.allSales
+      .filter(s=>s.employeeId===selectedEmployeeDetailId)
+      .sort((a,b)=> a.date < b.date ? 1 : -1);
+    document.getElementById('employeeDetailEmpty').style.display = sales.length ? 'none' : 'block';
+    sales.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+s.date+'</td>' +
+        '<td>'+(CATEGORY_LABELS[s.category]||s.category)+'</td>' +
+        '<td>'+escapeHtml(s.treatment)+(s.client?' · <span class="muted" style="font-size:.78rem;">'+escapeHtml(s.client)+'</span>':'')+'</td>' +
+        '<td>'+fmtRON(s.amount)+'</td>' +
+        '<td><span class="status-pill status-'+s.status+'">'+STATUS_LABELS[s.status]+'</span></td>' +
+        '<td>'+(s.status==='approved' ? fmtRON(s.commission) : '—')+'</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('employeeDetailSelect').addEventListener('change', (e)=>{
+    selectedEmployeeDetailId = e.target.value;
+    renderEmployeeDetail();
+  });
+
+  async function decide(saleId, decision){
+    try{
+      const resp = await fetch('/api/portal-approve', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ saleId, decision })
+      });
+      if (resp.status === 401){ location.href='/portal-login'; return; }
+      if (!resp.ok){
+        let detail = resp.status;
+        try{ const d = await resp.json(); if (d && d.error) detail = d.error; }catch(e){}
+        alert('Nu am putut salva decizia (' + detail + ').');
+        return;
+      }
+      // Refresh the whole payload — simplest way to keep goal/leaderboard/approvals in sync.
+      await loadData();
+      document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.remove('active'));
+      document.querySelector('[data-tab="aprobari"]').classList.add('active');
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById('panel-aprobari').classList.add('active');
+    }catch(err){
+      alert('Eroare de rețea: ' + err.message);
+    }
+  }
+
+  // ---------------- Setari: Angajati ----------------
+  function renderEmployees(){
+    const body = document.getElementById('employeesBody');
+    body.innerHTML = '';
+    DATA.admin.employees.forEach(emp=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+escapeHtml(emp.name)+'</td>' +
+        '<td>'+escapeHtml(emp.location)+'</td>' +
+        '<td>'+roleLabel(emp.role)+'</td>' +
+        '<td>'+escapeHtml(emp.username)+'</td>' +
+        '<td>'+(emp.active ? 'Activ' : 'Dezactivat')+'</td>' +
+        '<td><div class="row-actions"></div></td>';
+      const td = tr.lastElementChild.firstElementChild;
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'pill small ghost'; resetBtn.textContent = 'Resetează parola';
+      resetBtn.addEventListener('click', async ()=>{
+        const newPassword = prompt('Parolă nouă pentru '+emp.name+':');
+        if (!newPassword) return;
+        await fetch('/api/portal-employees', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'reset_password', employeeId: emp.id, newPassword })
+        });
+        alert('Parolă resetată.');
+      });
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'pill small ' + (emp.active ? 'danger' : 'ghost');
+      toggleBtn.textContent = emp.active ? 'Dezactivează' : 'Activează';
+      toggleBtn.addEventListener('click', async ()=>{
+        await fetch('/api/portal-employees', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'set_active', employeeId: emp.id, active: !emp.active })
+        });
+        await loadData();
+        activateTab('setari');
+      });
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
+      editBtn.addEventListener('click', async ()=>{
+        const name = prompt('Nume:', emp.name);
+        if (name === null || !name.trim()) return;
+        const location = prompt('Locație:', emp.location);
+        if (location === null || !location.trim()) return;
+        const role = prompt('Rol (scrie exact: cosmetician, receptie sau admin):', emp.role);
+        if (role === null) return;
+        if (!['cosmetician','receptie','admin'].includes(role)){
+          alert('Rol invalid — scrie exact "cosmetician", "receptie" sau "admin".');
+          return;
+        }
+        const resp = await fetch('/api/portal-employees', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'update_details', employeeId: emp.id, name: name.trim(), location: location.trim(), role })
+        });
+        if (!resp.ok){ alert('Nu am putut salva modificarea.'); return; }
+        await loadData();
+        activateTab('setari');
+      });
+
+      td.appendChild(resetBtn); td.appendChild(editBtn); td.appendChild(toggleBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  // ---------------- Setari: Obiective individuale ----------------
+  function goalRowHtml(empId, idx, goal){
+    goal = goal || { title:'', metric:'manual', target:0, currentValue:0 };
+    const metricOptions = Object.keys(GOAL_METRIC_LABELS).map(k=>
+      '<option value="'+k+'"'+(goal.metric===k?' selected':'')+'>'+GOAL_METRIC_LABELS[k]+'</option>'
+    ).join('');
+    return (
+      '<div class="grid2" style="margin-bottom:.6rem;" data-goal-row="'+idx+'">' +
+        '<div><label class="field-label">Titlu obiectiv '+(idx+1)+'</label>' +
+          '<input type="text" class="goal-title" value="'+escapeHtml(goal.title)+'" placeholder="ex: Programări confirmate azi"></div>' +
+        '<div><label class="field-label">Metrică</label><select class="goal-metric">'+metricOptions+'</select></div>' +
+        '<div><label class="field-label">Target</label><input type="number" class="goal-target" min="0" value="'+(goal.target||0)+'"></div>' +
+        '<div class="goal-current-wrap" style="'+(goal.metric==='manual'?'':'display:none;')+'">' +
+          '<label class="field-label">Valoare curentă (manual)</label><input type="number" class="goal-current" value="'+(goal.currentValue||0)+'"></div>' +
+      '</div>'
+    );
+  }
+
+  function renderGoalsEditor(){
+    const wrap = document.getElementById('goalsEditor');
+    wrap.innerHTML = '';
+    DATA.admin.employees.filter(e=>e.active).forEach(emp=>{
+      const goals = emp.goals || [];
+      const card = document.createElement('div');
+      card.style.borderTop = '1px solid var(--line)';
+      card.style.paddingTop = '1rem';
+      card.style.marginTop = '1rem';
+      card.innerHTML =
+        '<h4 style="margin:0 0 .6rem;">'+escapeHtml(emp.name)+' <span class="muted" style="font-weight:400; font-size:.8rem;">('+roleLabel(emp.role)+' · '+escapeHtml(emp.location)+')</span></h4>' +
+        '<div class="goal-slots">' + goalRowHtml(emp.id, 0, goals[0]) + goalRowHtml(emp.id, 1, goals[1]) + '</div>' +
+        '<button type="button" class="pill small" data-save-goals="'+emp.id+'">Salvează obiectivele</button>' +
+        '<div class="msg" data-goals-msg="'+emp.id+'"></div>';
+      wrap.appendChild(card);
+
+      card.querySelectorAll('.goal-metric').forEach(sel=>{
+        sel.addEventListener('change', ()=>{
+          const row = sel.closest('[data-goal-row]');
+          row.querySelector('.goal-current-wrap').style.display = sel.value === 'manual' ? '' : 'none';
+        });
+      });
+
+      card.querySelector('[data-save-goals]').addEventListener('click', async ()=>{
+        const rows = card.querySelectorAll('[data-goal-row]');
+        const goalsPayload = [];
+        rows.forEach(row=>{
+          const title = row.querySelector('.goal-title').value.trim();
+          if (!title) return; // empty slot = not set
+          const metric = row.querySelector('.goal-metric').value;
+          const target = Number(row.querySelector('.goal-target').value);
+          const g = { title, metric, target };
+          if (metric === 'manual') g.currentValue = Number(row.querySelector('.goal-current').value);
+          goalsPayload.push(g);
+        });
+        const msgEl = card.querySelector('[data-goals-msg]');
+        try{
+          const resp = await fetch('/api/portal-employees', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'set_goals', employeeId: emp.id, goals: goalsPayload })
+          });
+          if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+          emp.goals = goalsPayload;
+          showMsg(msgEl, 'Obiective salvate.', true);
+        }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+      });
+    });
+  }
+
+  function activateTab(tab){
+    document.querySelectorAll('#tabsNav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+tab).classList.add('active');
+  }
+
+  // ---------------- Setari: Integrari (Facebook Lead Ads) ----------------
+  async function loadFbIntegrationStatus(){
+    const box = document.getElementById('fbIntegrationStatus');
+    box.textContent = 'Se verifică...';
+    try{
+      const resp = await fetch('/api/fb-connection-status', { credentials:'same-origin' });
+      const d = await resp.json();
+      if (!resp.ok) throw new Error(d.error || 'status_failed');
+      renderFbIntegrationStatus(d);
+    }catch(err){
+      box.innerHTML = '<p class="muted" style="font-size:.84rem;">Nu am putut verifica starea conexiunii Facebook.</p>';
+    }
+  }
+
+  function renderFbIntegrationStatus(d){
+    const box = document.getElementById('fbIntegrationStatus');
+    if (d.notConfigured){
+      box.innerHTML = '<div class="notice">Aplicația Meta nu e configurată încă (FB_APP_ID / FB_APP_SECRET lipsesc).</div>';
+      return;
+    }
+    if (d.connected){
+      const connectedAt = d.connectedAt ? new Date(d.connectedAt).toLocaleString('ro-RO') : '';
+      box.innerHTML =
+        '<p style="margin:0 0 .6rem;">Conectat la Pagina <strong>'+escapeHtml(d.pageName||'')+'</strong>'+
+        (connectedAt ? ' — din '+escapeHtml(connectedAt) : '')+'.</p>'+
+        '<button class="pill small danger" id="fbDisconnectBtn">Deconectează</button>';
+      document.getElementById('fbDisconnectBtn').addEventListener('click', async ()=>{
+        const msgEl = document.getElementById('fbIntegrationMsg');
+        try{
+          const resp = await fetch('/api/fb-disconnect', { method:'POST', credentials:'same-origin' });
+          if (!resp.ok) throw new Error('disconnect_failed');
+          showMsg(msgEl, 'Deconectat.', true);
+          loadFbIntegrationStatus();
+        }catch(err){ showMsg(msgEl, 'Eroare la deconectare.', false); }
+      });
+      return;
+    }
+    box.innerHTML = '<a class="pill small" href="/api/fb-oauth-start">Conectează Facebook</a>';
+  }
+
+  // Facebook redirects back to /portal?fb=connected|error#setari after the OAuth dialog
+  // (see api/fb-oauth-callback.js) — show the result and land on Setări.
+  (function handleFbOauthReturn(){
+    const params = new URLSearchParams(location.search);
+    const fbFlag = params.get('fb');
+    if (!fbFlag) return;
+    // Inline script at the bottom of the page — DOM is already parsed by the time this
+    // runs, so just activate the tab directly (render() unhides the admin-only panel a
+    // moment later, once loadData() resolves).
+    activateTab('setari');
+    const msgEl = document.getElementById('fbIntegrationMsg');
+    if (msgEl) showMsg(msgEl, fbFlag === 'connected' ? 'Facebook conectat cu succes.' : 'Conectarea la Facebook a eșuat.', fbFlag === 'connected');
+    params.delete('fb');
+    const qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?'+qs : '') + '#setari');
+  })();
+
+  document.getElementById('newEmployeeForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      name: document.getElementById('neName').value.trim(),
+      location: document.getElementById('neLocation').value,
+      role: document.getElementById('neRole').value,
+      username: document.getElementById('neUsername').value.trim(),
+      password: document.getElementById('nePassword').value,
+    };
+    const msgEl = document.getElementById('newEmployeeMsg');
+    try{
+      const resp = await fetch('/api/portal-employees', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){
+        const body = await resp.json().catch(()=>({}));
+        showMsg(msgEl, body.error === 'username_taken' ? 'Acest username există deja.' : 'Eroare la adăugare.', false);
+        return;
+      }
+      document.getElementById('newEmployeeForm').reset();
+      showMsg(msgEl, 'Angajat adăugat.', true);
+      await loadData();
+      activateTab('setari');
+    }catch(err){
+      showMsg(msgEl, 'Eroare de rețea.', false);
+    }
+  });
+
+  // ---------------- Setari: Reguli comision ----------------
+  function renderCommissionForm(){
+    const form = document.getElementById('commissionForm');
+    form.innerHTML = '';
+    const cfg = DATA.admin.config;
+    Object.keys(CATEGORY_LABELS).filter(k=>k!=='retail').forEach(key=>{
+      const div = document.createElement('div');
+      div.innerHTML = '<label class="field-label">'+CATEGORY_LABELS[key]+' (%)</label>' +
+        '<input type="number" min="0" max="100" data-cat="'+key+'" value="'+(cfg.commissionRates[key] ?? 10)+'">';
+      form.appendChild(div);
+    });
+    const retailDiv = document.createElement('div');
+    retailDiv.innerHTML = '<label class="field-label">Produse retail / home-care (%)</label>' +
+      '<input type="number" min="0" max="100" id="retailRateInput" value="'+(cfg.retailRate ?? 15)+'">';
+    form.appendChild(retailDiv);
+  }
+  document.getElementById('saveCommissionBtn').addEventListener('click', async ()=>{
+    const commissionRates = {};
+    document.querySelectorAll('#commissionForm input[data-cat]').forEach(inp=>{
+      commissionRates[inp.dataset.cat] = Number(inp.value);
+    });
+    const retailRate = Number(document.getElementById('retailRateInput').value);
+    const msgEl = document.getElementById('commissionMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ commissionRates, retailRate })
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      const body = await resp.json();
+      DATA.admin.config = body.config;
+      showMsg(msgEl, 'Reguli de comision salvate.', true);
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Setari: Bonus de viteza ----------------
+  function renderRaceBonusForm(){
+    const sel = document.getElementById('rbCategory');
+    sel.innerHTML = '';
+    Object.keys(CATEGORY_LABELS).forEach(key=>{
+      const opt = document.createElement('option');
+      opt.value = key; opt.textContent = CATEGORY_LABELS[key];
+      sel.appendChild(opt);
+    });
+    const rb = DATA.admin.config.raceBonus;
+    sel.value = rb.category;
+    document.getElementById('rbTarget').value = rb.target;
+    document.getElementById('rbReward').value = rb.reward;
+  }
+  document.getElementById('raceBonusForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      raceBonus: {
+        category: document.getElementById('rbCategory').value,
+        target: Number(document.getElementById('rbTarget').value),
+        reward: Number(document.getElementById('rbReward').value),
+        month: currentMonthValue(),
+      }
+    };
+    const msgEl = document.getElementById('raceBonusMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      showMsg(msgEl, 'Bonus de viteză salvat.', true);
+      await loadData(); activateTab('setari');
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Setari: Obiectiv de companie ----------------
+  function renderCompanyGoalForm(){
+    const cg = DATA.admin.config.companyGoal;
+    document.getElementById('cgTarget').value = cg.target;
+    document.getElementById('cgReward').value = cg.reward;
+  }
+  document.getElementById('companyGoalForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      companyGoal: {
+        target: Number(document.getElementById('cgTarget').value),
+        reward: Number(document.getElementById('cgReward').value),
+        month: currentMonthValue(),
+      }
+    };
+    const msgEl = document.getElementById('companyGoalMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      showMsg(msgEl, 'Obiectiv de companie salvat.', true);
+      await loadData(); activateTab('setari');
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  // ---------------- Setari: Continut ----------------
+  function renderContentForm(){
+    const r = DATA.admin.config.resources;
+    document.getElementById('cUpsell').value = (r.upsellPackages||[]).join('\n');
+    document.getElementById('cOffers').value = (r.upcomingOffers||[]).join('\n');
+    document.getElementById('cScripts').value = (r.receptionScripts||[]).join('\n');
+    document.getElementById('cProtocols').value = (r.treatmentProtocols||[]).join('\n');
+  }
+  function linesToArray(text){
+    return text.split('\n').map(s=>s.trim()).filter(Boolean);
+  }
+  document.getElementById('contentForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      resources: {
+        upsellPackages: linesToArray(document.getElementById('cUpsell').value),
+        upcomingOffers: linesToArray(document.getElementById('cOffers').value),
+        receptionScripts: linesToArray(document.getElementById('cScripts').value),
+        treatmentProtocols: linesToArray(document.getElementById('cProtocols').value),
+      }
+    };
+    const msgEl = document.getElementById('contentMsg');
+    try{
+      const resp = await fetch('/api/portal-config', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!resp.ok){ showMsg(msgEl, 'Eroare la salvare.', false); return; }
+      const body = await resp.json();
+      DATA.admin.config = body.config;
+      DATA.resources = body.config.resources;
+      renderResources();
+      showMsg(msgEl, 'Conținut salvat.', true);
+    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
+  });
+
+  loadData();
+})();
+</script>
+</body>
+</html>

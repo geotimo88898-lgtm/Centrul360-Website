@@ -404,7 +404,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="top"><h3>Tratament Restart <span class="promo-flag">Ofertă</span></h3><span class="dur">50 min</span></div>
         <p class="desc">Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.</p>
         <div class="tiers">
-          <div class="tier lead-tier offer-tier"><span class="disc-badge">−37%</span><span class="lbl">Ofertă · 1 ședință</span><span class="pr">190 lei <s>300 lei</s></span></div>
+          <div class="tier lead-tier offer-tier" data-offer-key="facial-restart"><span class="disc-badge">−37%</span><span class="lbl">Ofertă · 1 ședință</span><span class="pr">190 lei <s>300 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−10%</em></span><span class="pr">540 lei</span></div>
         </div>
       </div>
@@ -454,7 +454,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="top"><h3>HIFU + RF Sculpt <span class="promo-flag">Ofertă</span></h3><span class="dur">45 zile</span></div>
         <p class="desc">Program complet gușă — 3× HIFU gușă + 5× RF Sculpt, plan personalizat și monitorizarea evoluției.</p>
         <div class="tiers">
-          <div class="tier lead-tier offer-tier"><span class="disc-badge">−41%</span><span class="lbl">Ofertă · Program complet</span><span class="pr">990 lei <s>1690 lei</s></span></div>
+          <div class="tier lead-tier offer-tier" data-offer-key="hifu-program-complet"><span class="disc-badge">−41%</span><span class="lbl">Ofertă · Program complet</span><span class="pr">990 lei <s>1690 lei</s></span></div>
         </div>
       </div>
       <div class="pitem">
@@ -536,7 +536,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="top"><h3>O zonă corporală <span class="promo-flag">Ofertă</span></h3><span class="dur">45 min</span></div>
         <p class="desc">Abdomen, brațe, coapse, zona lombară — grăsime localizată rezistentă la dietă.</p>
         <div class="tiers">
-          <div class="tier lead-tier offer-tier"><span class="disc-badge">−50%</span><span class="lbl">Ofertă · 2 zone la preț de una</span><span class="pr">640 lei <s>1280 lei</s></span></div>
+          <div class="tier lead-tier offer-tier" data-offer-key="liposonix-2zone"><span class="disc-badge">−50%</span><span class="lbl">Ofertă · 2 zone la preț de una</span><span class="pr">640 lei <s>1280 lei</s></span></div>
           <div class="tier"><span class="lbl">2 ședințe <em>−24%</em></span><span class="pr">980 lei</span></div>
         </div>
       </div>
@@ -1003,6 +1003,37 @@ function animate(){
   });
   pop.querySelectorAll('[data-offpop-close]').forEach(function(b){ b.addEventListener('click', close); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop.classList.contains('open')) close(); });
+})();
+</script>
+<script>
+// ===== Admin-managed offer prices (Setări → Oferte in the portal) =====
+// Only the tier rows marked data-offer-key above (the ones that duplicate an oferte.html
+// promo) get their numbers refreshed here — every other price on this page (normal
+// pricing, bulk-session discounts) is left completely untouched by this script. On fetch
+// failure, or if a key has no match in the response, the hardcoded numbers already in the
+// HTML stay exactly as they are — a price is never blanked out.
+(function(){
+  fetch('/api/offers-public')
+    .then(function(r){ if (!r.ok) throw new Error('offers_failed'); return r.json(); })
+    .then(function(data){
+      var offers = (data && data.offers) || [];
+      var byKey = {};
+      offers.forEach(function(o){ byKey[o.key] = o; });
+      document.querySelectorAll('[data-offer-key]').forEach(function(row){
+        var o = byKey[row.dataset.offerKey];
+        if (!o) return; // inactive or removed — leave this row's hardcoded price as-is
+        var prEl = row.querySelector('.pr');
+        var sEl = row.querySelector('.pr s');
+        var badgeEl = row.querySelector('.disc-badge');
+        if (prEl && sEl){
+          // sEl is nested inside prEl — rebuild prEl's text node only, keep the <s> node.
+          var sHtml = sEl.outerHTML;
+          prEl.innerHTML = Math.round(o.priceNew) + ' lei ' + sHtml.replace('>' + sEl.textContent + '<', '>' + Math.round(o.priceOld) + ' lei<');
+        }
+        if (badgeEl) badgeEl.textContent = '−' + o.discountPercent + '%';
+      });
+    })
+    .catch(function(err){ console.error('offers-public fetch failed, keeping static prices:', err); });
 })();
 </script>
 <script src="c360-convert.js" defer></script>
