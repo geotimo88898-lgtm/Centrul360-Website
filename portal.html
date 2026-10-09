@@ -192,21 +192,6 @@
   .notice{ border:1px solid rgba(240,201,122,0.3); background:rgba(240,201,122,0.08); color:var(--warn);
     border-radius:12px; padding:.8rem 1rem; font-size:.84rem; margin-bottom:1rem; }
 
-  /* ---- Pipeline: kanban board ---- */
-  .kanban-board{ display:flex; gap:1rem; overflow-x:auto; padding-bottom:.6rem; }
-  .kanban-col{ flex:none; width:230px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; padding:.8rem; }
-  .kanban-col h4{ font-family:'Inter',sans-serif; font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
-    color:var(--muted); margin:0 0 .7rem; display:flex; justify-content:space-between; }
-  .kanban-card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:.7rem .8rem; margin-bottom:.6rem; font-size:.84rem; }
-  .kanban-card.inactive{ border-color:var(--warn); }
-  .kanban-card .kc-name{ font-weight:600; margin-bottom:.15rem; }
-  .kanban-card .kc-meta{ color:var(--muted); font-size:.76rem; margin-bottom:.5rem; }
-  .kanban-card .kc-badge{ display:inline-block; padding:.12rem .55rem; border-radius:999px; background:var(--glass-2); font-size:.68rem; margin:0 .25rem .25rem 0; }
-  .kanban-card .kc-badge.kc-warn{ background:rgba(240,201,122,0.22); color:var(--warn); }
-  .kanban-card .kc-actions{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
-  .kanban-notes{ margin-top:.5rem; border-top:1px solid var(--line); padding-top:.5rem; }
-  .kanban-notes .note-item{ font-size:.78rem; margin-bottom:.4rem; color:var(--muted); line-height:1.4; }
-  .kanban-notes .note-item b{ color:var(--fg); }
 
   /* ---- Automatizari ---- */
   .at-row{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.7rem 0; border-bottom:1px solid var(--line); }
@@ -233,7 +218,9 @@
   }
 </style>
 <link rel="stylesheet" href="/portal-theme.css">
+<link rel="stylesheet" href="/portal-pipeline.css">
 <script src="/portal-ui.js" defer></script>
+<script src="/portal-pipeline.js" defer></script>
 </head>
 <body>
 
@@ -504,41 +491,7 @@
       </section>
 
       <!-- PIPELINE -->
-      <section class="panel" id="panel-pipeline">
-        <div class="sec-eyebrow"><i></i>Pipeline</div>
-        <h2>Pipeline leaduri</h2>
-        <p class="muted" style="font-size:.86rem; margin-top:-.8rem;">De la primul contact până la client fidel. Oricine poate adăuga, muta și nota leaduri — card-urile marcate cu bordură galbenă nu au mai primit nicio activitate de 7+ zile.</p>
-
-        <h3 style="margin-top:0;">+ Lead nou</h3>
-        <div class="card">
-          <form class="inline-form" id="leadForm">
-            <div><label class="field-label">Nume</label><input type="text" id="leadName" required></div>
-            <div><label class="field-label">Telefon</label><input type="tel" id="leadPhone" placeholder="ex: 0722 123 456" required></div>
-            <div><label class="field-label">Sursă</label>
-              <select id="leadSource" required>
-                <option value="facebook">Facebook</option>
-                <option value="instagram">Instagram</option>
-                <option value="site">Site</option>
-                <option value="recomandare">Recomandare</option>
-                <option value="altul">Altul</option>
-              </select>
-            </div>
-            <div><label class="field-label">Locație</label>
-              <select id="leadLocation" required>
-                <option value="Timișoara">Timișoara</option>
-                <option value="Arad">Arad</option>
-              </select>
-            </div>
-            <div class="full">
-              <button class="pill" type="submit">Adaugă lead</button>
-              <div class="msg" id="leadFormMsg"></div>
-            </div>
-          </form>
-        </div>
-
-        <h3>Pipeline</h3>
-        <div class="kanban-board" id="kanbanBoard"></div>
-      </section>
+      <section class="panel" id="panel-pipeline"></section>
 
       <!-- AUTOMATIZARI -->
       <section class="panel" id="panel-automatizari">
@@ -849,12 +802,6 @@
   const STATUS_LABELS = { pending: 'În așteptare', approved: 'Aprobat', rejected: 'Respins', recorded: 'Înregistrat' };
   const METHOD_LABELS = { card: 'Card', cash: 'Cash', transfer: 'Transfer' };
   const APPT_STATUS_LABELS = { programata: 'Programată', confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată', finalizata: 'Finalizată' };
-  const STAGE_ORDER = ['lead_nou', 'contactat', 'programare_stabilita', 'venit_la_programare', 'client_fidel'];
-  const STAGE_LABELS = {
-    lead_nou: 'Lead nou', contactat: 'Contactat', programare_stabilita: 'Programare stabilită',
-    venit_la_programare: 'Venit la programare', client_fidel: 'Client fidel', pierdut: 'Pierdut',
-  };
-  const SOURCE_LABELS = { facebook: 'Facebook', instagram: 'Instagram', site: 'Site', recomandare: 'Recomandare', altul: 'Altul' };
   const AUTOMATION_TYPE_LABELS = { confirmare_programare: 'Confirmare programare', reminder_azi: 'Reminder azi', lead_inactiv: 'Lead inactiv' };
   const GOAL_METRIC_LABELS = {
     programari_confirmate_azi: 'Programări confirmate azi',
@@ -903,6 +850,8 @@
       document.querySelectorAll('.staff-only').forEach(el => el.classList.add('hidden'));
     }
 
+    // Read by portal-pipeline.js (it may load after this runs, so it is not called directly).
+    window.C360_CTX = { isAdmin: !!DATA.isAdmin, me: DATA.me, categories: CATEGORY_LABELS };
     renderPanou();
     renderCategorySelects();
     renderPerformedBySelect();
@@ -942,9 +891,10 @@
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'oferte' && !OFFERS) loadOffers();
-    if (btn.dataset.tab === 'pipeline') loadLeads();
+    if (btn.dataset.tab === 'pipeline' && window.C360Pipeline) C360Pipeline.open();
     if (btn.dataset.tab === 'automatizari') loadAutomationTasks();
     document.querySelector('main').classList.toggle('wide', btn.dataset.tab === 'creative');
+    document.querySelector('main').classList.toggle('pl-full', btn.dataset.tab === 'pipeline');
     if (btn.dataset.tab === 'creative') loadCreative();
   });
 
@@ -1922,163 +1872,6 @@
   }
 
   // ---------------- Pipeline (leads) ----------------
-  // Lazy-loaded on tab open, same pattern as Oferte — but always refetched (not
-  // cached-once) since stage/notes/inactivity flags change from other screens too.
-  let LEADS = [];
-  let expandedLeadId = '';
-
-  async function loadLeads(){
-    try{
-      const resp = await fetch('/api/portal-leads', {
-        method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-        body: JSON.stringify({ action:'list' })
-      });
-      if (resp.status === 401){ location.href = '/portal-login'; return; }
-      if (!resp.ok) throw new Error('leads_failed');
-      const body = await resp.json();
-      LEADS = body.leads || [];
-      renderKanban();
-    }catch(err){
-      document.getElementById('kanbanBoard').innerHTML = '<p class="muted">Eroare la încărcarea pipeline-ului.</p>';
-    }
-  }
-
-  function daysAgoLabel(n){ return n + (n===1 ? ' zi' : ' zile') + ' în etapă'; }
-
-  function leadCardEl(l){
-    const card = document.createElement('div');
-    card.className = 'kanban-card' + (l.isInactive ? ' inactive' : '');
-    card.innerHTML =
-      '<div class="kc-name">'+escapeHtml(l.name)+'</div>' +
-      '<div class="kc-meta">'+escapeHtml(l.phone)+' · '+escapeHtml(l.location)+'</div>' +
-      '<span class="kc-badge">'+(SOURCE_LABELS[l.source]||l.source)+'</span>' +
-      '<span class="kc-badge">'+daysAgoLabel(l.daysInStage||0)+'</span>' +
-      (l.isInactive ? '<span class="kc-badge kc-warn">Inactiv — necesită follow-up</span>' : '') +
-      '<div class="kc-actions"></div>';
-    const actions = card.querySelector('.kc-actions');
-
-    if (l.stage !== 'pierdut'){
-      const idx = STAGE_ORDER.indexOf(l.stage);
-      if (idx > 0){
-        const prevBtn = document.createElement('button');
-        prevBtn.className = 'pill small ghost'; prevBtn.textContent = '← Înapoi';
-        prevBtn.addEventListener('click', ()=> moveLeadStage(l.id, STAGE_ORDER[idx-1]));
-        actions.appendChild(prevBtn);
-      }
-      if (idx > -1 && idx < STAGE_ORDER.length - 1){
-        const nextBtn = document.createElement('button');
-        nextBtn.className = 'pill small'; nextBtn.textContent = 'Avansează →';
-        nextBtn.addEventListener('click', ()=> moveLeadStage(l.id, STAGE_ORDER[idx+1]));
-        actions.appendChild(nextBtn);
-      }
-      const lostBtn = document.createElement('button');
-      lostBtn.className = 'pill small danger'; lostBtn.textContent = 'Pierdut';
-      lostBtn.addEventListener('click', async ()=>{
-        if (await c360.confirm({ title:'Marchezi leadul ca pierdut?', message:l.name+' trece în coloana Pierdut. Îl poți restaura oricând.', confirmText:'Marchează pierdut', danger:true })) moveLeadStage(l.id, 'pierdut');
-      });
-      actions.appendChild(lostBtn);
-    } else {
-      const restoreBtn = document.createElement('button');
-      restoreBtn.className = 'pill small ghost'; restoreBtn.textContent = 'Readu la Lead nou';
-      restoreBtn.addEventListener('click', ()=> moveLeadStage(l.id, 'lead_nou'));
-      actions.appendChild(restoreBtn);
-    }
-
-    const noteBtn = document.createElement('button');
-    noteBtn.className = 'pill small ghost'; noteBtn.textContent = '+ Notă';
-    noteBtn.addEventListener('click', async ()=>{
-      const text = await c360.prompt({ title:'Notă nouă', message:'Pentru '+l.name, multiline:true, confirmText:'Salvează nota' });
-      if (text && text.trim()) addLeadNote(l.id, text.trim());
-    });
-    actions.appendChild(noteBtn);
-
-    const expandBtn = document.createElement('button');
-    expandBtn.className = 'pill small ghost';
-    expandBtn.textContent = (expandedLeadId === l.id ? 'Ascunde ' : '') + 'Notițe (' + (l.notes||[]).length + ')';
-    expandBtn.addEventListener('click', ()=>{
-      expandedLeadId = (expandedLeadId === l.id) ? '' : l.id;
-      renderKanban();
-    });
-    actions.appendChild(expandBtn);
-
-    if (expandedLeadId === l.id){
-      const notesWrap = document.createElement('div');
-      notesWrap.className = 'kanban-notes';
-      const notes = (l.notes||[]).slice().reverse();
-      if (!notes.length){
-        notesWrap.innerHTML = '<div class="note-item">Nicio notă încă.</div>';
-      } else {
-        notes.forEach(n=>{
-          const div = document.createElement('div');
-          div.className = 'note-item';
-          div.innerHTML = '<b>'+escapeHtml(n.author||'—')+'</b> · '+escapeHtml((n.createdAt||'').slice(0,10))+'<br>'+escapeHtml(n.text);
-          notesWrap.appendChild(div);
-        });
-      }
-      card.appendChild(notesWrap);
-    }
-
-    return card;
-  }
-
-  function renderKanban(){
-    const board = document.getElementById('kanbanBoard');
-    board.innerHTML = '';
-    STAGE_ORDER.concat(['pierdut']).forEach(stage=>{
-      const col = document.createElement('div');
-      col.className = 'kanban-col';
-      const inStage = LEADS.filter(l=>l.stage===stage);
-      col.innerHTML = '<h4><span>'+STAGE_LABELS[stage]+'</span><span>'+inStage.length+'</span></h4>';
-      inStage.forEach(l=> col.appendChild(leadCardEl(l)));
-      board.appendChild(col);
-    });
-  }
-
-  async function moveLeadStage(leadId, stage){
-    try{
-      const resp = await fetch('/api/portal-leads', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'move_stage', leadId, stage })
-      });
-      if (resp.status === 401){ location.href='/portal-login'; return; }
-      if (!resp.ok){ alert('Nu am putut muta leadul.'); return; }
-      await loadLeads();
-    }catch(err){ alert('Eroare de rețea.'); }
-  }
-
-  async function addLeadNote(leadId, text){
-    try{
-      const resp = await fetch('/api/portal-leads', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'add_note', leadId, text })
-      });
-      if (!resp.ok){ alert('Nu am putut salva nota.'); return; }
-      await loadLeads();
-    }catch(err){ alert('Eroare de rețea.'); }
-  }
-
-  document.getElementById('leadForm').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const payload = {
-      action: 'create',
-      name: document.getElementById('leadName').value.trim(),
-      phone: document.getElementById('leadPhone').value.trim(),
-      source: document.getElementById('leadSource').value,
-      location: document.getElementById('leadLocation').value,
-    };
-    const msgEl = document.getElementById('leadFormMsg');
-    try{
-      const resp = await fetch('/api/portal-leads', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-      });
-      if (resp.status === 401){ location.href='/portal-login'; return; }
-      if (!resp.ok){ showMsg(msgEl, 'Eroare la adăugare.', false); return; }
-      document.getElementById('leadForm').reset();
-      showMsg(msgEl, 'Lead adăugat.', true);
-      await loadLeads();
-    }catch(err){ showMsg(msgEl, 'Eroare de rețea.', false); }
-  });
-
   // ---------------- Automatizari ----------------
   let AUTOMATION_TASKS = [];
 

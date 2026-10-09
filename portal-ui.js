@@ -397,6 +397,8 @@
     items.push({ group: 'Acțiuni', label: document.documentElement.classList.contains('c360-rail') ? 'Extinde meniul' : 'Strânge meniul',
       icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>', hint: 'Ctrl B', run: toggleRail });
     items.push({ group: 'Acțiuni', label: 'Reîncarcă datele', icon: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>', run: () => location.reload() });
+    // Sections can contribute their own entries (portal-pipeline.js adds "Lead nou" and every lead by name).
+    (window.c360PaletteProviders || []).forEach((fn) => { try { items.push(...fn()); } catch (e) { /* a broken provider must not kill Ctrl+K */ } });
     const logout = document.getElementById('logoutBtn');
     if (logout) items.push({ group: 'Cont', label: 'Deconectare', icon: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', run: () => logout.click() });
     return items;
@@ -422,7 +424,8 @@
       // Forgiving match: substring first, then letters-in-order (so "incasare" still finds "Încasează").
       const fuzzy = (text) => { let k = 0; for (const ch of text) if (ch === q[k]) k++; return k >= Math.min(q.length, Math.max(3, q.length - 2)); };
       shown = q ? all.filter((i) => norm(i.label).includes(q) || norm(i.group).includes(q))
-        .concat(all.filter((i) => !norm(i.label).includes(q) && !norm(i.group).includes(q) && fuzzy(norm(i.label)))) : all;
+        .concat(all.filter((i) => !norm(i.label).includes(q) && !norm(i.group).includes(q) && fuzzy(norm(i.label)))).slice(0, 40)
+        : all.filter((i) => i.group !== 'Leaduri'); // lead names only show up once you type
       active = Math.min(active, Math.max(0, shown.length - 1));
       let html = '', group = '';
       shown.forEach((it, i) => {
