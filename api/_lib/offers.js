@@ -53,10 +53,18 @@ const ADDED = [
 
 const MARKETING_DEFAULTS = { ads: false, locations: ['timisoara', 'arad'], adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
 
+// Clinic rule: laser hair removal and EMS exist only in Timișoara. Offers that never had their
+// locations set default to that, until the owner picks otherwise in Oferte.
+function defaultLocations(o) {
+  const t = String((o.title || '') + ' ' + (o.description || '')).toLowerCase();
+  if (o.category === 'epilare' || /epilare|laser/.test(t) || /\bems\b|electrostimulare/.test(t)) return ['timisoara'];
+  return ['timisoara', 'arad'];
+}
+
 function withMarketing(o) {
   const out = Object.assign({}, MARKETING_DEFAULTS, o);
-  out.locations = (Array.isArray(out.locations) ? out.locations : []).filter((l) => LOCATIONS.includes(l));
-  if (!out.locations.length) out.locations = ['timisoara', 'arad'];
+  out.locations = (Array.isArray(o.locations) ? o.locations : []).filter((l) => LOCATIONS.includes(l));
+  if (!out.locations.length) out.locations = defaultLocations(o);
   out.objections = Array.isArray(out.objections) ? out.objections : [];
   out.zones = Array.isArray(out.zones) ? out.zones : [];
   return out;
