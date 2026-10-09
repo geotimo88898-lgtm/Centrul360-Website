@@ -1,0 +1,272 @@
+/* Centrul360 portal — design layer.
+   Loaded after portal.html's own <style>, so it restyles the existing markup without touching it.
+   Follows the OS/Chrome theme (light/dark) and shares its palette with the Creative section. */
+
+/* ---------------- tokens ---------------- */
+:root{
+  color-scheme: light dark;
+  --ink:#f7f5f2;            /* page */
+  --paper:#ffffff;          /* raised surfaces */
+  --paper-2:#fbfaf8;        /* cards, sidebar */
+  --surface-3:#f1eee9;      /* inputs, wells */
+  --fg:#1c1a17;
+  --muted:#6f6a62;
+  --muted-2:#a29c92;
+  --line:#e7e2da;
+  --line-on-dark:#ddd7ce;
+  --glass:rgba(28,26,23,.045);
+  --glass-2:rgba(28,26,23,.085);
+  --accent:#b4532a;
+  --accent-fg:#ffffff;
+  --accent-soft:rgba(180,83,42,.09);
+  --good:#2f7d4f; --good-soft:rgba(47,125,79,.11);
+  --warn:#a8650b; --warn-soft:rgba(168,101,11,.11);
+  --bad:#b83a3a;  --bad-soft:rgba(184,58,58,.10);
+  --shadow-sm:0 1px 2px rgba(28,26,23,.05);
+  --shadow:0 1px 2px rgba(28,26,23,.04), 0 8px 24px -12px rgba(28,26,23,.14);
+  --shadow-lg:0 24px 60px -24px rgba(28,26,23,.28);
+  --topbar-bg:rgba(247,245,242,.78);
+  --radius:16px;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#0f0f10;
+    --paper:#1a1a1b;
+    --paper-2:#161617;
+    --surface-3:#222224;
+    --fg:#f0ede8;
+    --muted:#9c978f;
+    --muted-2:#6c6862;
+    --line:#2a2a2c;
+    --line-on-dark:#333336;
+    --glass:rgba(255,255,255,.045);
+    --glass-2:rgba(255,255,255,.085);
+    --accent:#e0835a;
+    --accent-fg:#1a0e08;
+    --accent-soft:rgba(224,131,90,.13);
+    --good:#6cc28f; --good-soft:rgba(108,194,143,.13);
+    --warn:#e2a64a; --warn-soft:rgba(226,166,74,.13);
+    --bad:#ec7b7b;  --bad-soft:rgba(236,123,123,.13);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 30px -14px rgba(0,0,0,.6);
+    --shadow-lg:0 30px 70px -24px rgba(0,0,0,.75);
+    --topbar-bg:rgba(15,15,16,.72);
+  }
+}
+
+/* ---------------- base ---------------- */
+html{ scroll-behavior:smooth; }
+body{
+  background:var(--ink); color:var(--fg);
+  font-family:'Inter',system-ui,-apple-system,sans-serif; font-feature-settings:"cv11","ss01";
+  letter-spacing:-.006em;
+}
+::selection{ background:var(--accent-soft); color:var(--fg); }
+h1,h2,h3{ font-family:'Inter',system-ui,sans-serif; font-weight:650; letter-spacing:-.022em; }
+h2{ font-size:1.65rem; line-height:1.15; margin-bottom:1.5rem; }
+h3{ font-size:1rem; font-weight:620; letter-spacing:-.012em; }
+a{ text-underline-offset:3px; }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
+
+/* slim scrollbars */
+*{ scrollbar-width:thin; scrollbar-color:var(--line-on-dark) transparent; }
+*::-webkit-scrollbar{ width:10px; height:10px; }
+*::-webkit-scrollbar-thumb{ background:var(--line-on-dark); border-radius:999px; border:3px solid transparent; background-clip:content-box; }
+
+/* ---------------- loading ---------------- */
+#loadingScreen{ flex-direction:column; gap:1.1rem; color:var(--muted); font-size:.85rem; letter-spacing:.02em; }
+#loadingScreen::before{
+  content:""; width:44px; height:44px; border-radius:50%;
+  border:2.5px solid var(--line); border-top-color:var(--accent);
+  animation:c360-spin .8s linear infinite;
+}
+
+/* ---------------- top bar ---------------- */
+header.topbar{
+  background:var(--topbar-bg); border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(1.6) blur(16px); -webkit-backdrop-filter:saturate(1.6) blur(16px);
+  padding:.7rem 1.4rem; min-height:60px;
+}
+.brand{ gap:.8rem; font-weight:600; font-size:.82rem; letter-spacing:.02em; color:var(--muted); }
+.brand .dot{ display:none; }
+.brand .brand-logo{ height:30px; width:auto; display:block; }
+.brand .brand-sep{ width:1px; height:18px; background:var(--line-on-dark); }
+.brand .brand-sub{ text-transform:uppercase; letter-spacing:.16em; font-size:.68rem; font-weight:650; }
+.who{ font-size:.78rem; }
+.who b{ font-size:.84rem; }
+.logoutBtn{
+  background:transparent; border:1px solid var(--line); color:var(--muted);
+  padding:.48rem .95rem; font-weight:550; transition:all .2s var(--ease);
+}
+.logoutBtn:hover{ color:var(--fg); background:var(--glass); border-color:var(--line-on-dark); }
+
+/* ---------------- sidebar ---------------- */
+.shell{ min-height:calc(100vh - 60px); }
+nav.tabs{
+  position:sticky; top:60px; align-self:flex-start; height:calc(100vh - 60px); overflow-y:auto;
+  width:250px; padding:1rem .75rem 2rem; gap:2px; background:var(--paper-2); border-right:1px solid var(--line);
+}
+nav.tabs .c360-indicator{
+  position:absolute; left:.75rem; right:.75rem; top:0; height:38px; border-radius:11px;
+  background:var(--paper); box-shadow:var(--shadow-sm), inset 0 0 0 1px var(--line);
+  transition:transform .32s var(--ease), height .32s var(--ease), opacity .2s ease;
+  pointer-events:none; opacity:0; z-index:0;
+}
+nav.tabs{ position:sticky; }
+nav.tabs button{
+  position:relative; z-index:1; height:38px; padding:0 .8rem; border-radius:11px; border-left:0; margin:0;
+  font-size:.875rem; font-weight:500; color:var(--muted); gap:.7rem;
+  transition:color .2s ease, background .2s ease, transform .15s var(--ease);
+}
+nav.tabs button svg{ width:18px; height:18px; opacity:.7; transition:opacity .2s ease, transform .3s var(--spring); }
+nav.tabs button:hover{ background:var(--glass); color:var(--fg); }
+nav.tabs button:hover svg{ opacity:1; transform:scale(1.08); }
+nav.tabs button:active{ transform:scale(.98); }
+nav.tabs button.active{ background:transparent; color:var(--fg); font-weight:600; box-shadow:none; border-left:0; }
+nav.tabs button.active svg{ opacity:1; color:var(--accent); }
+nav.tabs.has-indicator button.active{ background:transparent; }
+nav.tabs:not(.has-indicator) button.active{ background:var(--paper); box-shadow:var(--shadow-sm), inset 0 0 0 1px var(--line); }
+nav.tabs .nav-group-label{ font-size:.66rem; letter-spacing:.14em; color:var(--muted-2); padding:1.3rem .8rem .45rem; font-weight:650; }
+
+/* ---------------- content ---------------- */
+main{ padding:2.2rem 2.4rem 5rem; max-width:1040px; }
+main.wide{ max-width:none; padding:0; }
+.sec-eyebrow{ color:var(--accent); font-size:.68rem; font-weight:650; letter-spacing:.16em; margin-bottom:.55rem; }
+.sec-eyebrow i{ background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+
+.panel.active{ animation:c360-panel-in .38s var(--ease) both; }
+.panel.active > *{ animation:c360-rise .5s var(--ease) both; }
+.panel.active > *:nth-child(2){ animation-delay:.03s; }
+.panel.active > *:nth-child(3){ animation-delay:.06s; }
+.panel.active > *:nth-child(4){ animation-delay:.09s; }
+.panel.active > *:nth-child(5){ animation-delay:.12s; }
+.panel.active > *:nth-child(6){ animation-delay:.15s; }
+.panel.active > *:nth-child(n+7){ animation-delay:.18s; }
+
+.card{
+  background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  padding:1.45rem 1.5rem; box-shadow:var(--shadow-sm);
+  transition:box-shadow .3s var(--ease), border-color .3s var(--ease), transform .3s var(--ease);
+}
+.card:hover{ box-shadow:var(--shadow); border-color:var(--line-on-dark); }
+
+/* ---------------- forms ---------------- */
+label.field-label{ font-size:.76rem; font-weight:550; color:var(--muted); letter-spacing:.005em; }
+input:not([type=checkbox]):not([type=radio]), select, textarea{
+  background:var(--surface-3); border:1px solid transparent; border-radius:11px; color:var(--fg);
+  padding:.68rem .85rem; font-size:.9rem;
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+input:not([type=checkbox]):not([type=radio]):hover, select:hover, textarea:hover{ border-color:var(--line-on-dark); }
+input:focus, select:focus, textarea:focus{
+  outline:none; background:var(--paper); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft);
+}
+input::placeholder, textarea::placeholder{ color:var(--muted-2); }
+select option{ color:var(--fg); background:var(--paper); }
+
+/* ---------------- buttons ---------------- */
+button.pill{
+  background:var(--fg); color:var(--ink); border-radius:11px; padding:.66rem 1.15rem; font-weight:600;
+  box-shadow:var(--shadow-sm);
+  transition:transform .18s var(--ease), box-shadow .2s var(--ease), opacity .2s ease, background .2s ease;
+}
+button.pill:hover{ opacity:1; transform:translateY(-1px); box-shadow:var(--shadow); }
+button.pill:active{ transform:translateY(0) scale(.97); box-shadow:var(--shadow-sm); }
+button.pill.small{ border-radius:9px; padding:.4rem .8rem; font-size:.76rem; }
+button.pill.ghost{ background:var(--glass); color:var(--fg); box-shadow:none; }
+button.pill.ghost:hover{ background:var(--glass-2); }
+button.pill.danger{ background:var(--bad-soft); color:var(--bad); box-shadow:none; }
+button.pill.danger:hover{ background:var(--bad); color:#fff; }
+button.pill.is-busy{ pointer-events:none; opacity:.75; }
+button.pill.is-busy::before{
+  content:""; width:13px; height:13px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent;
+  animation:c360-spin .7s linear infinite;
+}
+
+/* ---------------- tables ---------------- */
+table{ font-size:.86rem; }
+th{ font-size:.7rem; font-weight:650; letter-spacing:.07em; color:var(--muted-2); padding:.6rem .7rem; border-bottom:1px solid var(--line); }
+td{ padding:.7rem .7rem; border-bottom:1px solid var(--line); }
+tbody tr{ transition:background .15s ease; }
+tbody tr:hover{ background:var(--glass); }
+
+/* ---------------- pills, notices, messages ---------------- */
+.status-pill{ font-weight:600; letter-spacing:.01em; padding:.22rem .62rem; }
+.status-pending, .status-reprogramata{ background:var(--warn-soft); color:var(--warn); }
+.status-approved, .status-confirmata{ background:var(--good-soft); color:var(--good); }
+.status-rejected, .status-anulata{ background:var(--bad-soft); color:var(--bad); }
+.status-programata{ background:var(--accent-soft); color:var(--accent); }
+.status-recorded, .status-finalizata{ background:var(--glass-2); color:var(--fg); }
+.notice{ background:var(--warn-soft); border-color:transparent; color:var(--warn); border-radius:12px; }
+.msg{ border-radius:11px; }
+.msg.show{ animation:c360-pop .35s var(--spring) both; }
+.msg.ok{ background:var(--good-soft); color:var(--good); }
+.msg.err{ background:var(--bad-soft); color:var(--bad); }
+
+/* ---------------- progress & leaderboard ---------------- */
+.progress-track{ height:8px; background:var(--surface-3); }
+.progress-fill{ background:linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #f0b48f)); transition:width .9s var(--ease); }
+.lb-track{ background:var(--surface-3); }
+.lb-fill{ background:var(--accent); transition:width .9s var(--ease); }
+.leaderboard-row{ transition:background .2s ease; border-radius:10px; }
+
+/* ---------------- calendar / kanban ---------------- */
+.week-day{ background:var(--paper); border-radius:14px; transition:border-color .2s ease, box-shadow .2s ease; }
+.week-day:hover{ box-shadow:var(--shadow-sm); }
+.week-day.is-today{ background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
+.week-appt{ background:var(--surface-3); transition:transform .15s var(--ease), background .15s ease; }
+.week-appt:hover{ background:var(--glass-2); transform:translateX(2px); }
+.kanban-col{ background:var(--paper-2); border-radius:16px; }
+.kanban-card{ background:var(--paper); border-radius:12px; box-shadow:var(--shadow-sm); transition:transform .2s var(--ease), box-shadow .2s var(--ease); }
+.kanban-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
+.kanban-card .kc-badge{ background:var(--surface-3); }
+
+/* ---------------- autocomplete ---------------- */
+.client-ac-list{ background:var(--paper); border-radius:12px; box-shadow:var(--shadow-lg); animation:c360-pop .2s var(--ease) both; }
+.client-ac-item:hover, .client-ac-item.active{ background:var(--accent-soft); }
+
+/* ---------------- checklist ---------------- */
+.checklist label{ border-radius:10px; padding:.5rem .55rem; margin:0 -.55rem; transition:background .15s ease; }
+.checklist label:hover{ background:var(--glass); }
+.checklist label span{ transition:color .25s ease; }
+
+/* ---------------- creative section ---------------- */
+#creativeFrame{ height:calc(100vh - 60px); background:var(--ink); animation:c360-fade .4s ease both; }
+#creativeMsg{ display:flex; align-items:center; gap:.7rem; }
+#creativeMsg::before{ content:""; width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--accent); animation:c360-spin .8s linear infinite; }
+
+/* ---------------- mobile ---------------- */
+@media (max-width:720px){
+  header.topbar{ padding:.6rem 1rem; }
+  .brand .brand-sep, .brand .brand-sub{ display:none; }
+  nav.tabs{ position:sticky; top:60px; z-index:15; height:auto; width:100%; padding:.5rem .6rem; gap:.3rem; background:var(--topbar-bg);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); flex-direction:row; overflow-x:auto; }
+  nav.tabs button{ flex:none; height:34px; padding:0 .8rem; border-radius:999px; font-size:.82rem; }
+  nav.tabs button svg{ display:none; }
+  nav.tabs .c360-indicator{ display:none; }
+  nav.tabs button.active{ background:var(--fg) !important; color:var(--ink) !important; }
+  main{ padding:1.4rem 1rem 4rem; }
+  h2{ font-size:1.35rem; }
+  .card{ padding:1.15rem; }
+  #creativeFrame{ height:calc(100vh - 112px); }
+}
+
+/* ---------------- motion ---------------- */
+@keyframes c360-spin{ to{ transform:rotate(360deg); } }
+@keyframes c360-fade{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes c360-panel-in{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes c360-rise{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+@keyframes c360-pop{ from{ opacity:0; transform:translateY(-4px) scale(.98); } to{ opacity:1; transform:none; } }
+#app.c360-enter{ animation:c360-fade .45s ease both; }
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration:.001ms !important; animation-delay:0s !important; transition-duration:.001ms !important; }
+  html{ scroll-behavior:auto; }
+}
+
+@media print{
+  :root{ color-scheme:light; }
+  .panel.active, .panel.active > *{ animation:none !important; }
+}
