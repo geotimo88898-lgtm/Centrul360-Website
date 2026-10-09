@@ -1110,7 +1110,7 @@
       const delBtn = document.createElement('button');
       delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
       delBtn.addEventListener('click', async ()=>{
-        if (!confirm('Ștergi definitiv oferta "'+o.title+'"? Dispare imediat de pe site.')) return;
+        if (!(await c360.confirm({ title:'Ștergi oferta?', message:'„'+o.title+'” dispare imediat de pe site.', confirmText:'Șterge oferta', danger:true }))) return;
         const resp = await fetch('/api/portal-offers', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ action:'delete', id:o.id })
@@ -1613,7 +1613,7 @@
         const delBtn = document.createElement('button');
         delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
         delBtn.addEventListener('click', async ()=>{
-          if (!confirm('Ștergi definitiv această încasare? Nu poate fi recuperată.')) return;
+          if (!(await c360.confirm({ title:'Ștergi încasarea?', message:'Nu mai poate fi recuperată după ștergere.', confirmText:'Șterge', danger:true }))) return;
           const resp = await fetch('/api/portal-incasari', {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ action:'delete', id: s.id })
@@ -1799,7 +1799,7 @@
       const delBtn = document.createElement('button');
       delBtn.className = 'pill small danger'; delBtn.textContent = 'Șterge';
       delBtn.addEventListener('click', async ()=>{
-        if (!confirm('Ștergi definitiv programarea lui "'+a.clientName+'"?')) return;
+        if (!(await c360.confirm({ title:'Ștergi programarea?', message:'Programarea lui '+a.clientName+' se șterge definitiv.', confirmText:'Șterge', danger:true }))) return;
         const resp = await fetch('/api/portal-appointments', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ action:'delete', id:a.id })
@@ -1973,8 +1973,8 @@
       }
       const lostBtn = document.createElement('button');
       lostBtn.className = 'pill small danger'; lostBtn.textContent = 'Pierdut';
-      lostBtn.addEventListener('click', ()=>{
-        if (confirm('Marchezi leadul "'+l.name+'" ca pierdut?')) moveLeadStage(l.id, 'pierdut');
+      lostBtn.addEventListener('click', async ()=>{
+        if (await c360.confirm({ title:'Marchezi leadul ca pierdut?', message:l.name+' trece în coloana Pierdut. Îl poți restaura oricând.', confirmText:'Marchează pierdut', danger:true })) moveLeadStage(l.id, 'pierdut');
       });
       actions.appendChild(lostBtn);
     } else {
@@ -1986,8 +1986,8 @@
 
     const noteBtn = document.createElement('button');
     noteBtn.className = 'pill small ghost'; noteBtn.textContent = '+ Notă';
-    noteBtn.addEventListener('click', ()=>{
-      const text = prompt('Notă pentru '+l.name+':');
+    noteBtn.addEventListener('click', async ()=>{
+      const text = await c360.prompt({ title:'Notă nouă', message:'Pentru '+l.name, multiline:true, confirmText:'Salvează nota' });
       if (text && text.trim()) addLeadNote(l.id, text.trim());
     });
     actions.appendChild(noteBtn);
@@ -2314,7 +2314,7 @@
       const resetBtn = document.createElement('button');
       resetBtn.className = 'pill small ghost'; resetBtn.textContent = 'Resetează parola';
       resetBtn.addEventListener('click', async ()=>{
-        const newPassword = prompt('Parolă nouă pentru '+emp.name+':');
+        const newPassword = await c360.prompt({ title:'Parolă nouă', message:'Pentru '+emp.name, type:'password', confirmText:'Resetează parola' });
         if (!newPassword) return;
         await fetch('/api/portal-employees', {
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -2338,11 +2338,11 @@
       const editBtn = document.createElement('button');
       editBtn.className = 'pill small ghost'; editBtn.textContent = 'Editează';
       editBtn.addEventListener('click', async ()=>{
-        const name = prompt('Nume:', emp.name);
+        const name = await c360.prompt({ title:'Editează angajatul', label:'Nume', value:emp.name, confirmText:'Continuă' });
         if (name === null || !name.trim()) return;
-        const location = prompt('Locație:', emp.location);
+        const location = await c360.prompt({ title:'Editează angajatul', label:'Locație', value:emp.location, confirmText:'Continuă' });
         if (location === null || !location.trim()) return;
-        const role = prompt('Rol (scrie exact: cosmetician, receptie sau admin):', emp.role);
+        const role = await c360.prompt({ title:'Editează angajatul', label:'Rol', value:emp.role, options:[['cosmetician','Cosmetician'],['receptie','Recepție'],['admin','Admin']], confirmText:'Salvează' });
         if (role === null) return;
         if (!['cosmetician','receptie','admin'].includes(role)){
           alert('Rol invalid — scrie exact "cosmetician", "receptie" sau "admin".');
