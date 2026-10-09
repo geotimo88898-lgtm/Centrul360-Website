@@ -424,7 +424,8 @@ html.c360-noscroll{ overflow:hidden; }
 @media (max-width:720px){
   .c360-search-btn{ min-width:0; margin-right:.5rem; }
   .c360-search-btn span, .c360-search-btn kbd, .c360-rail-toggle{ display:none; }
-  .c360-avatar{ display:none !important; }
+  .who, .logoutBtn{ display:none !important; }
+  .c360-avatar{ display:inline-grid !important; margin-left:.2rem; }
   .c360-toasts{ left:1rem; right:1rem; align-items:stretch; }
   .c360-toast{ max-width:none; }
 }

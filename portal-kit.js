@@ -134,7 +134,9 @@
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', refresh: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>',
     shield: '<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
     filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5z"/>', more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
-    ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>', undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>',
+    ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    video: '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>', undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>',
   };
   const icon = (name, cls) => '<svg class="k-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || '') + '</svg>';
 
@@ -158,6 +160,8 @@
     el._kv = to;
     if (from === to) { el.textContent = fmt(to); return; }
     tween(from, to, dur || 1100, (v) => { el.textContent = fmt(v); });
+    // Background tabs pause requestAnimationFrame — make sure the final number always lands.
+    setTimeout(() => { if (el._kv === to) el.textContent = fmt(to); }, (dur || 1100) + 200);
   }
   // Animates every [data-count] inside root: data-count="1234" data-fmt="lei|num|pct".
   // data-key="..." remembers the last value across re-renders, so a refresh rolls from the old
@@ -179,15 +183,18 @@
   setInterval(() => { if (!document.hidden) tickers.forEach((fn) => { try { fn(new Date()); } catch (e) { /* keep ticking */ } }); }, 1000);
 
   // ------------------------------------------------------------------ charts (SVG)
-  function smoothPath(pts) {
+  // Smooth curve through the points; control points are clamped to [minY, maxY] so the line never
+  // dips below the baseline (or above the top) between two data points.
+  function smoothPath(pts, minY, maxY) {
+    const cy = (v) => (minY == null ? v : Math.max(minY, Math.min(maxY, v)));
     if (!pts.length) return '';
     if (pts.length === 1) return 'M' + pts[0][0] + ',' + pts[0][1];
     let d = 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1);
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
       const t = 0.18;
-      const c1x = p1[0] + (p2[0] - p0[0]) * t, c1y = p1[1] + (p2[1] - p0[1]) * t;
-      const c2x = p2[0] - (p3[0] - p1[0]) * t, c2y = p2[1] - (p3[1] - p1[1]) * t;
+      const c1x = p1[0] + (p2[0] - p0[0]) * t, c1y = cy(p1[1] + (p2[1] - p0[1]) * t);
+      const c2x = p2[0] - (p3[0] - p1[0]) * t, c2y = cy(p2[1] - (p3[1] - p1[1]) * t);
       d += ' C' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
     }
     return d;
@@ -197,7 +204,7 @@
     const o = Object.assign({ w: 120, h: 36, color: 'var(--accent)' }, opts || {});
     const max = Math.max(1, ...values), n = values.length;
     const pts = values.map((v, i) => [n === 1 ? o.w / 2 : (i / (n - 1)) * o.w, o.h - 3 - (v / max) * (o.h - 6)]);
-    const line = smoothPath(pts);
+    const line = smoothPath(pts, 1, o.h - 1);
     const id = 'ks' + (++gid);
     return '<svg class="k-spark" viewBox="0 0 ' + o.w + ' ' + o.h + '" preserveAspectRatio="none" aria-hidden="true">' +
       '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + o.color + '" stop-opacity=".28"/><stop offset="1" stop-color="' + o.color + '" stop-opacity="0"/></linearGradient></defs>' +
@@ -243,9 +250,11 @@
       const padL = 44, padR = 12, padT = 14, padB = 26;
       const n = cfg.labels.length;
       const all = cfg.series.flatMap((s) => s.values);
-      const rawMax = Math.max(1, ...all);
-      const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
-      const max = Math.ceil(rawMax / mag * 1.1) * mag || 1;
+      // Nice axis: 4 gridlines on a 1 / 2 / 2.5 / 5 × 10ⁿ step.
+      const rawMax = Math.max(1, ...all) * 1.08;
+      const rough = rawMax / 4, mag = Math.pow(10, Math.floor(Math.log10(rough)));
+      const yStep = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= rough) || 10 * mag;
+      const max = yStep * 4;
       const x = (i) => padL + (n <= 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
       const bw = (W - padL - padR) / Math.max(1, n);
       const xb = (i) => padL + i * bw;
@@ -273,7 +282,7 @@
           return;
         }
         const pts = s.values.map((v, i) => [x(i), y(v)]);
-        const line = smoothPath(pts);
+        const line = smoothPath(pts, padT, H - padB);
         if (s.kind !== 'line') svg += '<path class="k-area" d="' + line + ' L' + x(n - 1) + ',' + (H - padB) + ' L' + x(0) + ',' + (H - padB) + 'Z" fill="url(#kc' + si + '_' + el._kid + ')"/>';
         svg += '<path class="k-draw' + (s.dashed ? ' is-dashed' : '') + '" d="' + line + '" fill="none" stroke="' + s.color + '" stroke-width="' + (s.dashed ? 1.6 : 2.4) + '" stroke-linecap="round" stroke-linejoin="round"' + (s.dashed ? ' stroke-dasharray="4 5"' : ' pathLength="1"') + '/>';
       });

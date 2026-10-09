@@ -29,6 +29,8 @@
   header.topbar{ position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; }
   .brand{ display:flex; align-items:center; }
   .who{ text-align:right; line-height:1.3; }
+  .who b, .who span{ display:block; }
+  .who span[hidden]{ display:none; }
   .logoutBtn{ border-radius:999px; cursor:pointer; margin-left:1rem; font-family:inherit; font-size:.8rem; }
   .shell{ display:flex; }
   nav.tabs{ flex:none; display:flex; flex-direction:column; }
@@ -71,7 +73,7 @@
   <header class="topbar">
     <div class="brand"><span class="dot"></span>Centrul360 · Portal echipă</div>
     <div style="display:flex; align-items:center;">
-      <div class="who"><b id="whoName"></b><br><span id="whoLocation"></span></div>
+      <div class="who"><b id="whoName"></b><span id="whoLocation"></span></div>
       <button class="logoutBtn" id="logoutBtn">Deconectare</button>
     </div>
   </header>

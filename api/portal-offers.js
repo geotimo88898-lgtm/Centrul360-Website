@@ -7,7 +7,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { defaultOffers } = require('./_lib/offer-defaults');
+const { loadOffers, cleanMarketing } = require('./_lib/offers');
 const { OFFER_IMAGES, findOfferImage } = require('./_lib/offer-images');
 
 const VALID_CATEGORIES = ['epilare', 'faciale', 'remodelare'];
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   const { action } = req.body || {};
 
   try {
-    const offers = await readJSON('data/offers.json', defaultOffers());
+    const offers = await loadOffers(readJSON, writeJSON);
 
     if (action === 'list') {
       res.status(200).json({ ok: true, offers, images: OFFER_IMAGES });
@@ -63,6 +63,7 @@ module.exports = async (req, res) => {
         imageKey,
         active: active === undefined ? true : !!active,
         order: maxOrder + 1,
+        ...cleanMarketing(req.body || {}),
       };
       offers.push(offer);
       await writeJSON('data/offers.json', offers);
@@ -97,6 +98,8 @@ module.exports = async (req, res) => {
       offer.imageKey = imageKey;
       offer.active = active === undefined ? offer.active : !!active;
       if (order !== undefined && Number.isFinite(Number(order))) offer.order = Number(order);
+      // Marketing brief (Creative) — only when the editor sent it, so older callers keep working.
+      if (req.body && req.body.marketing) Object.assign(offer, cleanMarketing(req.body.marketing));
       await writeJSON('data/offers.json', offers);
       res.status(200).json({ ok: true, offer, offers });
       return;

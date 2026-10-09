@@ -18,6 +18,8 @@
   };
   const S = { view: 'day', date: K.today(), loc: 'all', emp: '', appts: [], range: '', loading: false };
   let panel, gridEl, nowTimer = 0;
+  // Front desk + owner edit the calendar; a cosmetician sees it read-only (server enforces the same).
+  const canEdit = () => !!(K.frontDesk && K.frontDesk());
 
   const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
   const toHM = (m) => K.pad(Math.floor(m / 60)) + ':' + K.pad(m % 60);
@@ -32,8 +34,8 @@
     if (K.data && !K.data.isAdmin && K.data.me.role === 'cosmetician') S.emp = K.data.me.id;
     if (window.innerWidth < 720) S.view = 'day';
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2><p class="k-lede">Click pe un loc liber ca să programezi. Trage o programare ca s-o muți.</p></div>' +
-      '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2><p class="k-lede">' + (canEdit() ? 'Click pe un loc liber ca să programezi. Trage o programare ca s-o muți.' : 'Programările tale și ale echipei. Modificările le face recepția.') + '</p></div>' +
+      (canEdit() ? '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
@@ -60,7 +62,7 @@
     if (!K.isActive('programari') || K.drawerOpen || K.typing(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey) return;
     if (document.querySelector('.c360-dialog-root, .c360-palette-root')) return;
     const k = e.key.toLowerCase();
-    if (k === 'n') { e.preventDefault(); openNew({}); }
+    if (k === 'n' && canEdit()) { e.preventDefault(); openNew({}); }
     else if (k === 't') { S.date = K.today(); load(); }
     else if (e.key === 'ArrowLeft') shift(-1);
     else if (e.key === 'ArrowRight') shift(1);
@@ -207,7 +209,8 @@
     const col = e.target.closest('.cal-col');
     if (!col) return;
     drag = { block, col, sx: e.clientX, sy: e.clientY, started: false, id: block && block.dataset.id, type: e.pointerType, timer: 0 };
-    if (block && e.pointerType !== 'mouse') drag.timer = setTimeout(() => { if (drag && !drag.started) startDrag(e); }, 350);
+    if (!canEdit()) { drag.readOnly = true; }
+    if (block && e.pointerType !== 'mouse' && canEdit()) drag.timer = setTimeout(() => { if (drag && !drag.started) startDrag(e); }, 350);
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp, { once: true });
   }
@@ -215,7 +218,7 @@
     if (!drag) return;
     const dist = Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy);
     if (!drag.started) {
-      if (drag.block && drag.type === 'mouse' && dist > 5 && drag.block.classList.contains('cal-block')) startDrag(e);
+      if (drag.block && !drag.readOnly && drag.type === 'mouse' && dist > 5 && drag.block.classList.contains('cal-block')) startDrag(e);
       else if (dist > 10) { clearTimeout(drag.timer); if (!drag.block) drag.cancel = true; }
       return;
     }
@@ -265,6 +268,7 @@
     }
     if (d.cancel) return;
     if (d.block) { openAppt(d.block.dataset.id); return; }
+    if (d.readOnly) return;
     // Empty slot → new appointment at that time (rounded to 15 min).
     const rect = d.col.getBoundingClientRect();
     const m = Math.max(START * 60, Math.min(END * 60 - 15, Math.floor(((e.clientY - rect.top) / PPM + START * 60) / 15) * 15));
@@ -297,7 +301,8 @@
   function formHtml(a, isNew) {
     return '<form class="k-form" data-form>' +
       (isNew ? K.field('Client', '<input name="clientName" required maxlength="150" placeholder="Caută sau scrie un nume nou" autofocus>', 'full') +
-        K.field('Telefon', '<input name="clientPhone" type="tel" required maxlength="30" placeholder="07xx xxx xxx">', 'full') : '') +
+        K.field('Telefon', '<input name="clientPhone" type="tel" required maxlength="30" placeholder="07xx xxx xxx">', 'full') :
+        !a.clientPhone ? K.field('Telefon clientă', '<input name="clientPhone" type="tel" maxlength="30" placeholder="Lipsește — adaugă-l ca să poți suna / trimite WhatsApp">', 'full') : '') +
       K.field('Data', '<input name="date" type="date" required value="' + esc(a.date) + '">') +
       K.field('Ora', '<select name="time">' + slotOptions(a.time || '10:00') + '</select>') +
       K.field('Tratament', '<input name="treatment" required maxlength="200" value="' + esc(a.treatment || '') + '" placeholder="ex: Facial Restart">', 'full') +
@@ -309,6 +314,7 @@
   }
 
   function openNew(pre) {
+    if (!canEdit()) return;
     const loc = pre.location || (K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]);
     const a = { date: pre.date || S.date, time: pre.time || '', location: loc, treatment: pre.treatment || '', category: pre.category || '', cosmeticianId: pre.cosmeticianId || S.emp || '' };
     let picker;
@@ -344,6 +350,19 @@
     const a = S.appts.find((x) => x.id === id);
     if (!a) return;
     const st = STATUS[a.status] || STATUS.programata;
+    if (!canEdit()) {
+      K.drawer({
+        title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
+        subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.time || 'fără oră') + ' · ' + esc(a.location),
+        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '—') + '</dd><dt>Categorie</dt><dd>' + esc(K.cats[a.category] || a.category || '—') + '</dd>' +
+          '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(a.time || '—') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
+          '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
+          '<div class="mo-note">' + icon('info') + 'Schimbări (oră, status, anulare) — le face recepția.</div>' +
+          '<a class="k-btn is-outline" href="#resurse" data-go-sop>' + icon('book') + 'Protocolul tratamentului</a>',
+        onMount(el) { el.querySelector('[data-go-sop]').addEventListener('click', (e) => { e.preventDefault(); K.go('resurse'); setTimeout(() => K.emit('resurse:tab', 'protocoale'), 200); }); },
+      });
+      return;
+    }
     const d = K.drawer({
       title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.time || 'fără oră') + ' · ' + esc(a.location),
@@ -369,7 +388,10 @@
         }));
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(f);
+          if (!v.clientPhone) delete v.clientPhone;
           const next = Object.assign({}, a, v);
+          // A phone added here links the appointment to the client directory (upsert by phone).
+          if (v.clientPhone) next.clientId = '';
           try { await save(next); Object.assign(a, v); d.close(); K.ui().toast('Programare salvată.', 'success'); load(true); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));

@@ -13,11 +13,17 @@ const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
 // Up to 2 "obiective individuale" per employee (Setări → Angajați → edit → obiective).
 // Non-manual metrics are computed live in portal-data.js from sales.json/appointments.json
 // — only 'manual' goals carry a stored currentValue the admin edits by hand.
+const MAX_GOALS = 4;
 const VALID_GOAL_METRICS = [
   'programari_confirmate_azi',
   'programari_anulate_azi',
   'comision_aprobat_luna',
   'incasari_atribuite_luna',
+  'programari_finalizate_luna',
+  'vanzari_aprobate_luna',
+  'incasari_inregistrate_luna',
+  'leaduri_contactate_luna',
+  'leaduri_programate_luna',
   'manual',
 ];
 
@@ -140,7 +146,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'missing_fields' });
         return;
       }
-      if (goals.length > 2) {
+      if (goals.length > MAX_GOALS) {
         res.status(400).json({ error: 'too_many_goals' });
         return;
       }
@@ -161,7 +167,9 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: 'invalid_goal' });
           return;
         }
-        const goal = { title: String(g.title).slice(0, 100), metric: g.metric, target };
+        // Optional bonus (lei) paid when the goal is reached — shown to the employee as "Bonusurile mele".
+        const reward = Number(g.reward);
+        const goal = { title: String(g.title).slice(0, 100), metric: g.metric, target, reward: Number.isFinite(reward) && reward > 0 ? Math.round(reward) : 0 };
         if (g.metric === 'manual') {
           const cur = Number(g.currentValue);
           goal.currentValue = Number.isFinite(cur) ? cur : 0;

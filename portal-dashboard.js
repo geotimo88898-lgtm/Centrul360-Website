@@ -127,8 +127,8 @@
     }
     const actions = role === 'cosmetician'
       ? '<button type="button" class="k-btn is-accent" data-go="comision" data-then="comision:new">' + icon('percent') + 'Loghează o vânzare</button>' +
-        '<button type="button" class="k-btn db-glass" data-go="programari" data-then="calendar:new">' + icon('calendar') + 'Programare</button>' +
-        '<button type="button" class="k-btn db-glass" data-go="resurse">' + icon('book') + 'Protocoale</button>'
+        '<button type="button" class="k-btn db-glass" data-go="programari">' + icon('calendar') + 'Calendarul meu</button>' +
+        '<button type="button" class="k-btn db-glass" data-go="resurse">' + icon('book') + 'SOP & protocoale</button>'
       : '<button type="button" class="k-btn is-accent" data-go="incasari" data-then="incasari:new">' + icon('wallet') + 'Încasare</button>' +
         '<button type="button" class="k-btn db-glass" data-go="programari" data-then="calendar:new">' + icon('calendar') + 'Programare</button>' +
         '<button type="button" class="k-btn db-glass" data-go="pipeline" data-then="pipeline:new">' + icon('userPlus') + 'Lead</button>' +
@@ -200,7 +200,7 @@
 
       // ---------------- today + leaderboard + tasks
       '<div class="db-row db-row-b">' +
-        '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + 'Ziua de azi</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
+        '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
           '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>' +
         '<div class="k-stack">' +
           '<section class="k-card db-race"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonus de viteză</h3><span class="k-sub">' + esc(cats[rb.category] || rb.category || '') + ' · țintă ' + rb.target + ' · ' + K.lei(rb.reward) + '</span></div>' +

@@ -31,12 +31,17 @@
     }
     window.C360_CTX = { isAdmin: !!DATA.isAdmin, me: DATA.me, categories: K.cats };
     document.getElementById('whoName').textContent = DATA.me.name;
-    document.getElementById('whoLocation').textContent = (DATA.me.location && DATA.me.location !== '—' ? DATA.me.location + ' · ' : '') + K.roleLabel(DATA.me.role);
+    // Owner: just "Admin". Staff: their role + location under the name.
+    const whoLoc = document.getElementById('whoLocation');
+    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.location && DATA.me.location !== '—' ? ' · ' + DATA.me.location : '');
+    whoLoc.hidden = !whoLoc.textContent;
     document.querySelectorAll('.admin-only').forEach((el) => el.classList.toggle('hidden', !DATA.isAdmin));
     // Role-shaped navigation: reception works the pipeline + tasks, cosmeticians see their own
     // clients and commission, the owner sees everything except a personal commission screen.
     const role = DATA.isAdmin ? 'admin' : DATA.me.role;
     document.documentElement.setAttribute('data-role', role);
+    const sub = document.querySelector('.brand .brand-sub');
+    if (sub) sub.textContent = DATA.isAdmin ? 'Admin' : 'Echipă';
     document.querySelectorAll('[data-roles]').forEach((el) => el.classList.toggle('hidden', !el.dataset.roles.split(',').includes(role)));
     K.setData(DATA);
     badges();
@@ -142,7 +147,7 @@
     menu = document.createElement('div');
     menu.className = 'k-menu';
     menu.innerHTML =
-      '<div class="k-menu-head">' + K.avatar(DATA ? DATA.me.name : '?', 38) + '<div><b>' + esc(DATA ? DATA.me.name : '') + '</b><small>' + esc(document.getElementById('whoLocation').textContent) + '</small></div></div>' +
+      '<div class="k-menu-head">' + K.avatar(DATA ? DATA.me.name : '?', 38) + '<div><b>' + esc(DATA ? DATA.me.name : '') + '</b><small>' + esc(document.getElementById('whoLocation').textContent || 'Administrator · acces complet') + '</small></div></div>' +
       '<div class="k-menu-label">Culoare accent</div><div class="k-swatches">' +
       ACCENTS.map(([k, label, a, b]) => '<button type="button" title="' + label + '" data-accent="' + k + '" class="' + (k === cur ? 'is-on' : '') + '" style="--a:' + a + ';--b:' + b + '"></button>').join('') + '</div>' +
       '<button type="button" class="k-menu-item" data-act="rail">' + icon('layers') + 'Strânge / extinde meniul<kbd>Ctrl B</kbd></button>' +

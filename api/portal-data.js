@@ -4,7 +4,8 @@
 
 const { readJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
-const { defaultConfig, currentMonth } = require('./_lib/defaults');
+const { defaultConfig, currentMonth, defaultSops } = require('./_lib/defaults');
+const { loadOffers, discountOf } = require('./_lib/offers');
 
 // Daily mandatory task checklists per role. Plain static content — no need for these to
 // live in Blob since they don't change often; checkbox state itself is kept client-side
@@ -40,8 +41,10 @@ function monthKey(dateStr) {
   return (dateStr || '').slice(0, 7);
 }
 
+// The clinic runs on Romanian time — the server (UTC) would otherwise roll over to "tomorrow"
+// three hours late.
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 }
 
 function emptyStatusCounts() {
@@ -56,7 +59,9 @@ function emptyStatusCounts() {
 // "programari_*" metrics count by cosmeticianId (who the appointment is assigned to),
 // not by who created/logged the row — the Calendar is shared, so creation and
 // assignment are no longer the same thing they were under the old same-day log.
-function computeGoalCurrent(goal, employeeId, sales, appointments, today, month) {
+function computeGoalCurrent(goal, employeeId, sales, appointments, today, month, ctx) {
+  const myActs = (type) => ((ctx && ctx.leads) || []).reduce((n, l) => n + (l.activities || []).filter(
+    (a) => a.type === type && a.author === (ctx && ctx.name) && String(a.at || '').slice(0, 7) === month).length, 0);
   switch (goal.metric) {
     case 'programari_confirmate_azi':
       return appointments.filter(
@@ -80,6 +85,16 @@ function computeGoalCurrent(goal, employeeId, sales, appointments, today, month)
       return sales
         .filter((s) => s.source === 'incasare' && s.performedBy === employeeId && monthKey(s.date) === month)
         .reduce((sum, s) => sum + Number(s.amount || 0), 0);
+    case 'programari_finalizate_luna':
+      return appointments.filter((a) => a.cosmeticianId === employeeId && a.status === 'finalizata' && monthKey(a.date) === month).length;
+    case 'vanzari_aprobate_luna':
+      return sales.filter((s) => s.source !== 'incasare' && s.employeeId === employeeId && s.status === 'approved' && monthKey(s.date) === month).length;
+    case 'incasari_inregistrate_luna':
+      return sales.filter((s) => s.source === 'incasare' && s.employeeId === employeeId && monthKey(s.date) === month).reduce((sum, s) => sum + Number(s.amount || 0), 0);
+    case 'leaduri_contactate_luna':
+      return myActs('contact');
+    case 'leaduri_programate_luna':
+      return myActs('booking');
     case 'manual':
     default:
       return Number(goal.currentValue || 0);
@@ -96,16 +111,18 @@ module.exports = async (req, res) => {
   if (!session) return;
 
   try {
-    const [employeesRaw, sales, appointments, configRaw] = await Promise.all([
+    const [employeesRaw, sales, appointments, configRaw, leads, offersAll] = await Promise.all([
       readJSON('data/employees.json', []),
       readJSON('data/sales.json', []),
       readJSON('data/appointments.json', []),
       readJSON('data/config.json', null),
+      readJSON('data/leads.json', []),
+      loadOffers(readJSON, null),
     ]);
 
     const config = configRaw || defaultConfig();
-    const month = currentMonth();
     const today = todayISO();
+    const month = today.slice(0, 7);
 
     // Resolve "me" — either a real employee row, or the synthetic bootstrap admin.
     let me;
@@ -136,14 +153,15 @@ module.exports = async (req, res) => {
     // locations. "Încasare" entries are pure bookkeeping and never count here, so the
     // same money is never counted twice toward goals/bonuses.
     const approvedThisMonth = comisionSales.filter(
-      (s) => s.status === 'approved' && monthKey(s.date) === config.companyGoal.month
+      (s) => s.status === 'approved' && monthKey(s.date) === month
     );
     const companyApprovedTotal = approvedThisMonth.reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
     // Race bonus leaderboard: count of approved sales in the target category this month,
     // per employee, regardless of role/location (everyone can see where they stand).
     const raceCategory = config.raceBonus.category;
-    const raceMonth = config.raceBonus.month;
+    // Targets carry over month to month; progress is always the current month's.
+    const raceMonth = month;
     const raceCounts = {};
     comisionSales.forEach((s) => {
       if (s.status === 'approved' && s.category === raceCategory && monthKey(s.date) === raceMonth) {
@@ -202,7 +220,8 @@ module.exports = async (req, res) => {
       title: g.title,
       metric: g.metric,
       target: g.target,
-      current: computeGoalCurrent(g, me.id, sales, appointments, today, month),
+      reward: Number(g.reward) || 0,
+      current: computeGoalCurrent(g, me.id, sales, appointments, today, month, { leads, name: me.name }),
     }));
 
     const payload = {
@@ -211,7 +230,7 @@ module.exports = async (req, res) => {
       companyGoal: {
         target: config.companyGoal.target,
         reward: config.companyGoal.reward,
-        month: config.companyGoal.month,
+        month,
         current: companyApprovedTotal,
       },
       raceBonus: {
@@ -233,6 +252,13 @@ module.exports = async (req, res) => {
         myCountsToday,
       },
       myGoals,
+      // SOPs for this role (+ the shared ones); the owner gets every role's set to manage them.
+      sops: (() => { const all = config.sops || defaultSops(); return isAdmin ? all : { [me.role]: all[me.role] || [], toti: all.toti || [] }; })(),
+      // Active offers from the shared source — same list the public site and Creative use.
+      offers: offersAll.filter((o) => o.active).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((o) => ({
+        id: o.id, key: o.key, title: o.title, description: o.description || '', priceNew: Number(o.priceNew) || 0, priceOld: Number(o.priceOld) || 0,
+        discountPercent: discountOf(o), category: o.category, locations: o.locations, ads: !!o.ads, guarantee: o.guarantee || '', featured: !!o.featured,
+      })),
       isAdmin,
     };
 
@@ -263,7 +289,7 @@ module.exports = async (req, res) => {
           role: e.role,
           username: e.username,
           active: e.active !== false,
-          goals: e.goals || [],
+          goals: (e.goals || []).map((g) => Object.assign({}, g, { current: computeGoalCurrent(g, e.id, sales, appointments, today, month, { leads, name: e.name }) })),
         })),
         config,
       };

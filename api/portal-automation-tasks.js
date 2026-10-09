@@ -18,7 +18,7 @@ const { requireRole } = require('./_lib/auth');
 const { ensureTodayReminders } = require('./_lib/automation');
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 }
 
 module.exports = async (req, res) => {
@@ -38,6 +38,21 @@ module.exports = async (req, res) => {
       await ensureTodayReminders(appointmentsToday);
 
       const allTasks = await readJSON('data/automation-tasks.json', []);
+
+      // Tasks whose appointment no longer needs a message close themselves: the appointment
+      // was deleted, cancelled or already done, or its day has passed.
+      const apptById = new Map(appointments.map((a) => [a.id, a]));
+      let autoClosed = 0;
+      allTasks.forEach((t) => {
+        if (t.status !== 'pending' || !t.relatedAppointmentId) return;
+        const a = apptById.get(t.relatedAppointmentId);
+        if (!a || a.status === 'anulata' || a.status === 'finalizata' || a.date < today) {
+          t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++;
+        }
+      });
+      if (autoClosed) await writeJSON('data/automation-tasks.json', allTasks);
+      const clients = await readJSON('data/clients.json', []);
+      const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
       const showAll = req.query && (req.query.all === '1' || req.query.all === 'true');
       let visible = showAll ? allTasks : allTasks.filter((t) => t.status === 'pending');
 
@@ -49,6 +64,13 @@ module.exports = async (req, res) => {
       }
 
       visible = visible.slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+      // Attach the appointment (with the client's phone) so the UI can send the WhatsApp in one tap.
+      visible = visible.map((t) => {
+        const a = t.relatedAppointmentId && apptById.get(t.relatedAppointmentId);
+        if (!a) return t;
+        return Object.assign({}, t, { appointment: { id: a.id, date: a.date, time: a.time, clientName: a.clientName, clientPhone: a.clientPhone || phoneById.get(a.clientId) || '',
+          treatment: a.treatment, location: a.location, status: a.status, cosmeticianName: a.cosmeticianName || '' } });
+      });
       res.status(200).json({ ok: true, tasks: visible });
       return;
     }

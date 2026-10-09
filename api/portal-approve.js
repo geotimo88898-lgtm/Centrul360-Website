@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   const session = requireAdmin(req, res);
   if (!session) return;
 
-  const { saleId, decision } = req.body || {};
+  const { saleId, decision, reason } = req.body || {};
   if (!saleId || !['approve', 'reject'].includes(decision)) {
     res.status(400).json({ error: 'missing_fields' });
     return;
@@ -49,6 +49,8 @@ module.exports = async (req, res) => {
       sale.commission = 0;
     }
     sale.decidedAt = new Date().toISOString();
+    // Optional note shown to the employee in "Comisionul meu" (mostly: why it was rejected).
+    sale.decisionNote = reason ? String(reason).trim().slice(0, 200) : '';
 
     await writeJSON('data/sales.json', sales);
 
