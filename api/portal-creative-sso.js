@@ -1,5 +1,6 @@
 // GET /api/portal-creative-sso — admin-only. Returns a short-lived signed link that opens the
-// creative machine (separate Vercel app) already signed in, so the owner logs in once, here.
+// creative machine (served at /creative via the rewrite in vercel.json) already signed in,
+// so the owner logs in once, here.
 //
 // Token = "<base64url(expiryMs.employeeId)>.<hex hmac-sha256>" signed with CREATIVE_SSO_SECRET,
 // the same secret configured on the creative machine, which verifies it in its /api/sso route.
@@ -22,7 +23,8 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Lipsește CREATIVE_SSO_SECRET în setările Vercel ale portalului.' });
     return;
   }
-  const base = (process.env.CREATIVE_URL || 'https://creatives.centrul360.com').replace(/\/$/, '');
+  // Same origin by default: vercel.json proxies /creative/* to the creative machine, so it lives inside the portal.
+  const base = (process.env.CREATIVE_URL || '/creative').replace(/\/$/, '');
   const payload = Buffer.from(`${Date.now() + TOKEN_TTL_MS}.${session.employeeId}`, 'utf8').toString('base64url');
   const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
 
