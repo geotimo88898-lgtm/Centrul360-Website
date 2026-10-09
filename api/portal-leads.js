@@ -65,6 +65,30 @@ function validateCoreFields({ name, phone, source, location }) {
   return { fields: { name: cleanName, phone: cleanPhone, source, location } };
 }
 
+// Shared lead-creation core, used by both the 'create' action below and the Facebook
+// Lead Ads webhook (api/webhook-facebook-leads.js) — same validation, same shape, same
+// storage, so a lead created from a Facebook form is indistinguishable in the Pipeline
+// from one typed in by hand, aside from `source`/`createdBy`.
+async function createLead({ name, phone, source, location, createdBy }) {
+  const result = validateCoreFields({ name, phone, source, location });
+  if (result.error) return { error: result.error };
+  const leads = await readJSON('data/leads.json', []);
+  const now = new Date().toISOString();
+  const lead = {
+    id: crypto.randomUUID(),
+    ...result.fields,
+    stage: 'lead_nou',
+    notes: [],
+    clientId: '',
+    createdAt: now,
+    updatedAt: now,
+    createdBy,
+  };
+  leads.push(lead);
+  await writeJSON('data/leads.json', leads);
+  return { lead: withComputedFields(lead) };
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' });
@@ -89,25 +113,13 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'create') {
-      const result = validateCoreFields(req.body || {});
+      const { name, phone, source, location } = req.body || {};
+      const result = await createLead({ name, phone, source, location, createdBy: session.employeeId });
       if (result.error) {
         res.status(400).json({ error: result.error });
         return;
       }
-      const now = new Date().toISOString();
-      const lead = {
-        id: crypto.randomUUID(),
-        ...result.fields,
-        stage: 'lead_nou',
-        notes: [],
-        clientId: '',
-        createdAt: now,
-        updatedAt: now,
-        createdBy: session.employeeId,
-      };
-      leads.push(lead);
-      await writeJSON('data/leads.json', leads);
-      res.status(200).json({ ok: true, lead: withComputedFields(lead) });
+      res.status(200).json({ ok: true, lead: result.lead });
       return;
     }
 
@@ -228,3 +240,4 @@ module.exports = async (req, res) => {
 
 module.exports.STAGE_ORDER = STAGE_ORDER;
 module.exports.ALL_STAGES = ALL_STAGES;
+module.exports.createLead = createLead;
