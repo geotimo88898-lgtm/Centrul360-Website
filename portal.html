@@ -806,6 +806,13 @@
             <div class="msg" id="contentMsg"></div>
           </form>
         </div>
+
+        <h3>Integrări</h3>
+        <div class="card">
+          <p class="muted" style="font-size:.84rem;">Leadurile trimise prin formulare Facebook/Instagram Lead Ads intră automat în Pipeline ca „lead nou", din Pagina de Facebook conectată aici.</p>
+          <div id="fbIntegrationStatus">Se verifică...</div>
+          <div class="msg" id="fbIntegrationMsg"></div>
+        </div>
       </section>
 
       <!-- CREATIVE (admin) — the creative machine, opened inside the portal with single sign-on -->
@@ -907,6 +914,7 @@
       renderRaceBonusForm();
       renderCompanyGoalForm();
       renderContentForm();
+      loadFbIntegrationStatus();
     }
 
     document.getElementById('saleDate').value = todayISO();
@@ -2421,6 +2429,63 @@
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+tab).classList.add('active');
   }
+
+  // ---------------- Setari: Integrari (Facebook Lead Ads) ----------------
+  async function loadFbIntegrationStatus(){
+    const box = document.getElementById('fbIntegrationStatus');
+    box.textContent = 'Se verifică...';
+    try{
+      const resp = await fetch('/api/fb-connection-status', { credentials:'same-origin' });
+      const d = await resp.json();
+      if (!resp.ok) throw new Error(d.error || 'status_failed');
+      renderFbIntegrationStatus(d);
+    }catch(err){
+      box.innerHTML = '<p class="muted" style="font-size:.84rem;">Nu am putut verifica starea conexiunii Facebook.</p>';
+    }
+  }
+
+  function renderFbIntegrationStatus(d){
+    const box = document.getElementById('fbIntegrationStatus');
+    if (d.notConfigured){
+      box.innerHTML = '<div class="notice">Aplicația Meta nu e configurată încă (FB_APP_ID / FB_APP_SECRET lipsesc).</div>';
+      return;
+    }
+    if (d.connected){
+      const connectedAt = d.connectedAt ? new Date(d.connectedAt).toLocaleString('ro-RO') : '';
+      box.innerHTML =
+        '<p style="margin:0 0 .6rem;">Conectat la Pagina <strong>'+escapeHtml(d.pageName||'')+'</strong>'+
+        (connectedAt ? ' — din '+escapeHtml(connectedAt) : '')+'.</p>'+
+        '<button class="pill small danger" id="fbDisconnectBtn">Deconectează</button>';
+      document.getElementById('fbDisconnectBtn').addEventListener('click', async ()=>{
+        const msgEl = document.getElementById('fbIntegrationMsg');
+        try{
+          const resp = await fetch('/api/fb-disconnect', { method:'POST', credentials:'same-origin' });
+          if (!resp.ok) throw new Error('disconnect_failed');
+          showMsg(msgEl, 'Deconectat.', true);
+          loadFbIntegrationStatus();
+        }catch(err){ showMsg(msgEl, 'Eroare la deconectare.', false); }
+      });
+      return;
+    }
+    box.innerHTML = '<a class="pill small" href="/api/fb-oauth-start">Conectează Facebook</a>';
+  }
+
+  // Facebook redirects back to /portal?fb=connected|error#setari after the OAuth dialog
+  // (see api/fb-oauth-callback.js) — show the result and land on Setări.
+  (function handleFbOauthReturn(){
+    const params = new URLSearchParams(location.search);
+    const fbFlag = params.get('fb');
+    if (!fbFlag) return;
+    // Inline script at the bottom of the page — DOM is already parsed by the time this
+    // runs, so just activate the tab directly (render() unhides the admin-only panel a
+    // moment later, once loadData() resolves).
+    activateTab('setari');
+    const msgEl = document.getElementById('fbIntegrationMsg');
+    if (msgEl) showMsg(msgEl, fbFlag === 'connected' ? 'Facebook conectat cu succes.' : 'Conectarea la Facebook a eșuat.', fbFlag === 'connected');
+    params.delete('fb');
+    const qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?'+qs : '') + '#setari');
+  })();
 
   document.getElementById('newEmployeeForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
