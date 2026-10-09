@@ -14,7 +14,7 @@
 // with their own location (or assigneeRole:'any', which isn't location-specific).
 
 const { readJSON, writeJSON } = require('./_lib/store');
-const { requireAuth } = require('./_lib/auth');
+const { requireRole } = require('./_lib/auth');
 const { ensureTodayReminders } = require('./_lib/automation');
 
 function todayISO() {
@@ -22,7 +22,8 @@ function todayISO() {
 }
 
 module.exports = async (req, res) => {
-  const session = requireAuth(req, res);
+  // Front-desk queue: reception + admin (cosmeticians have no tasks here).
+  const session = requireRole(req, res, ['admin', 'receptie']);
   if (!session) return;
 
   try {

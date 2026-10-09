@@ -3,57 +3,76 @@
    Follows the OS/Chrome theme (light/dark) and shares its palette with the Creative section. */
 
 /* ---------------- tokens ---------------- */
+/* Cool, clean neutrals + one vivid accent pair (--accent → --accent-2) used as a gradient for the
+   moments that matter. The accent pair is switchable from the avatar menu (html[data-accent]). */
 :root{
   color-scheme: light dark;
-  --ink:#f7f5f2;            /* page */
+  --ink:#f4f5f9;            /* page */
   --paper:#ffffff;          /* raised surfaces */
-  --paper-2:#fbfaf8;        /* cards, sidebar */
-  --surface-3:#f1eee9;      /* inputs, wells */
-  --fg:#1c1a17;
-  --muted:#6f6a62;
-  --muted-2:#a29c92;
-  --line:#e7e2da;
-  --line-on-dark:#ddd7ce;
-  --glass:rgba(28,26,23,.045);
-  --glass-2:rgba(28,26,23,.085);
-  --accent:#b4532a;
+  --paper-2:#f9fafc;        /* cards, sidebar */
+  --surface-3:#eef0f5;      /* inputs, wells */
+  --fg:#0d0f14;
+  --muted:#5d6271;
+  --muted-2:#979dab;
+  --line:#e3e6ee;
+  --line-on-dark:#d4d8e2;
+  --glass:rgba(13,15,20,.04);
+  --glass-2:rgba(13,15,20,.075);
+  --accent:#6a4dff;
+  --accent-2:#d946ef;
   --accent-fg:#ffffff;
-  --accent-soft:rgba(180,83,42,.09);
-  --good:#2f7d4f; --good-soft:rgba(47,125,79,.11);
-  --warn:#a8650b; --warn-soft:rgba(168,101,11,.11);
-  --bad:#b83a3a;  --bad-soft:rgba(184,58,58,.10);
-  --shadow-sm:0 1px 2px rgba(28,26,23,.05);
-  --shadow:0 1px 2px rgba(28,26,23,.04), 0 8px 24px -12px rgba(28,26,23,.14);
-  --shadow-lg:0 24px 60px -24px rgba(28,26,23,.28);
-  --topbar-bg:rgba(247,245,242,.78);
+  --accent-soft:rgba(106,77,255,.10);
+  --grad:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  --good:#0f9d68; --good-soft:rgba(15,157,104,.11);
+  --warn:#c77d02; --warn-soft:rgba(199,125,2,.12);
+  --bad:#e5484d;  --bad-soft:rgba(229,72,77,.10);
+  --info:#0ea5e9; --info-soft:rgba(14,165,233,.11);
+  --shadow-sm:0 1px 2px rgba(13,15,20,.05);
+  --shadow:0 1px 2px rgba(13,15,20,.04), 0 10px 28px -14px rgba(28,30,60,.18);
+  --shadow-lg:0 28px 70px -24px rgba(28,30,60,.32);
+  --glow:0 10px 30px -10px color-mix(in srgb, var(--accent) 55%, transparent);
+  --topbar-bg:rgba(244,245,249,.78);
   --radius:16px;
   --ease:cubic-bezier(.2,.8,.2,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --ink:#0f0f10;
-    --paper:#1a1a1b;
-    --paper-2:#161617;
-    --surface-3:#222224;
-    --fg:#f0ede8;
-    --muted:#9c978f;
-    --muted-2:#6c6862;
-    --line:#2a2a2c;
-    --line-on-dark:#333336;
-    --glass:rgba(255,255,255,.045);
-    --glass-2:rgba(255,255,255,.085);
-    --accent:#e0835a;
-    --accent-fg:#1a0e08;
-    --accent-soft:rgba(224,131,90,.13);
-    --good:#6cc28f; --good-soft:rgba(108,194,143,.13);
-    --warn:#e2a64a; --warn-soft:rgba(226,166,74,.13);
-    --bad:#ec7b7b;  --bad-soft:rgba(236,123,123,.13);
-    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
-    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 30px -14px rgba(0,0,0,.6);
-    --shadow-lg:0 30px 70px -24px rgba(0,0,0,.75);
-    --topbar-bg:rgba(15,15,16,.72);
+    --ink:#07080b;
+    --paper:#101218;
+    --paper-2:#0c0e13;
+    --surface-3:#181b23;
+    --fg:#eef0f7;
+    --muted:#8f96a7;
+    --muted-2:#5b6172;
+    --line:#1d2029;
+    --line-on-dark:#282c37;
+    --glass:rgba(255,255,255,.04);
+    --glass-2:rgba(255,255,255,.08);
+    --accent:#8c78ff;
+    --accent-2:#f06be3;
+    --accent-fg:#0a0718;
+    --accent-soft:rgba(140,120,255,.15);
+    --good:#34d399; --good-soft:rgba(52,211,153,.13);
+    --warn:#fbbf24; --warn-soft:rgba(251,191,36,.13);
+    --bad:#ff6b70;  --bad-soft:rgba(255,107,112,.13);
+    --info:#38bdf8; --info-soft:rgba(56,189,248,.13);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.45);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 30px 80px -24px rgba(0,0,0,.85);
+    --topbar-bg:rgba(7,8,11,.72);
   }
+}
+/* Accent themes (chosen in the avatar menu, stored per device). */
+html[data-accent="ocean"]{ --accent:#2563eb; --accent-2:#06b6d4; --accent-soft:rgba(37,99,235,.10); }
+html[data-accent="emerald"]{ --accent:#059669; --accent-2:#84cc16; --accent-soft:rgba(5,150,105,.10); }
+html[data-accent="sunset"]{ --accent:#ea580c; --accent-2:#e11d48; --accent-soft:rgba(234,88,12,.10); }
+html[data-accent="mono"]{ --accent:#18181b; --accent-2:#52525b; --accent-soft:rgba(24,24,27,.08); --accent-fg:#fff; }
+@media (prefers-color-scheme: dark){
+  html[data-accent="ocean"]{ --accent:#5b8cff; --accent-2:#22d3ee; --accent-soft:rgba(91,140,255,.16); }
+  html[data-accent="emerald"]{ --accent:#34d399; --accent-2:#a3e635; --accent-soft:rgba(52,211,153,.15); --accent-fg:#04140d; }
+  html[data-accent="sunset"]{ --accent:#fb923c; --accent-2:#f43f5e; --accent-soft:rgba(251,146,60,.15); --accent-fg:#1a0a02; }
+  html[data-accent="mono"]{ --accent:#f4f4f5; --accent-2:#a1a1aa; --accent-soft:rgba(244,244,245,.10); --accent-fg:#09090b; }
 }
 
 /* ---------------- base ---------------- */
@@ -114,6 +133,7 @@ nav.tabs .c360-indicator{
   transition:transform .32s var(--ease), height .32s var(--ease), opacity .2s ease;
   pointer-events:none; opacity:0; z-index:0;
 }
+nav.tabs .c360-indicator::before{ content:""; position:absolute; left:0; top:9px; bottom:9px; width:3px; border-radius:0 3px 3px 0; background:var(--grad); }
 nav.tabs{ position:sticky; }
 nav.tabs button{
   position:relative; z-index:1; height:38px; padding:0 .8rem; border-radius:11px; border-left:0; margin:0;
@@ -207,9 +227,9 @@ tbody tr:hover{ background:var(--glass); }
 
 /* ---------------- progress & leaderboard ---------------- */
 .progress-track{ height:8px; background:var(--surface-3); }
-.progress-fill{ background:linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #f0b48f)); transition:width .9s var(--ease); }
+.progress-fill{ background:var(--grad); transition:width .9s var(--ease); }
 .lb-track{ background:var(--surface-3); }
-.lb-fill{ background:var(--accent); transition:width .9s var(--ease); }
+.lb-fill{ background:var(--grad); transition:width .9s var(--ease); }
 .leaderboard-row{ transition:background .2s ease; border-radius:10px; }
 
 /* ---------------- calendar / kanban ---------------- */
@@ -275,7 +295,7 @@ kbd{
 }
 .c360-avatar{
   width:34px; height:34px; border-radius:50%; display:inline-grid; place-items:center; margin-left:.7rem;
-  background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #f3c3a5)); color:#fff;
+  background:var(--grad); color:#fff; cursor:pointer; transition:transform .2s var(--spring), box-shadow .2s ease;
   font-size:.76rem; font-weight:700; letter-spacing:.03em; box-shadow:0 0 0 3px var(--paper), 0 0 0 4px var(--line);
 }
 

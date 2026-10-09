@@ -207,6 +207,11 @@ const handler = async (req, res) => {
   const { source } = req.body || {};
 
   if (source === 'incasare') {
+    // Taking payments is front-desk work (receptie) + admin.
+    if (!['admin', 'receptie'].includes(session.role)) {
+      res.status(403).json({ error: 'forbidden' });
+      return;
+    }
     await handleIncasare(req, res, session);
   } else {
     await handleComision(req, res, session);

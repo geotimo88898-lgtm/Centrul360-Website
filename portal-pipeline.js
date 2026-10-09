@@ -282,6 +282,7 @@
   async function load(silent) {
     try {
       const j = await api('list');
+      if (window.K) window.K.emit('leads', j); // nav badge + dashboard stay in sync
       const sig = JSON.stringify([j.stages, j.leads]);
       S.stages = j.stages || [];
       S.leads = j.leads || [];
@@ -1247,6 +1248,10 @@
     openLead, openNew, openQueue,
   };
   // Lead names should be searchable from Ctrl+K before the tab is ever opened.
+  if (window.K) {
+    window.K.on('pipeline:new', () => { if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX); mount(); openNew(); });
+    window.K.on('pipeline:queue', () => { mount(); (S.loaded ? Promise.resolve() : load()).then(openQueue); });
+  }
   // Plain fetch (no login redirect) — this is a background nicety, not a page load.
   document.addEventListener('DOMContentLoaded', () => setTimeout(() => {
     if (S.loaded) return;

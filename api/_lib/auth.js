@@ -139,7 +139,21 @@ function requireAdmin(req, res) {
   return session;
 }
 
+// Returns the session if its role is one of `roles`, or writes a 401/403 JSON response and
+// returns null. Front desk work (calendar edits, payments, pipeline) is admin + receptie;
+// cosmeticians get read-only access to the calendar.
+function requireRole(req, res, roles) {
+  const session = requireAuth(req, res);
+  if (!session) return null;
+  if (!roles.includes(session.role)) {
+    res.status(403).json({ error: 'forbidden' });
+    return null;
+  }
+  return session;
+}
+
 module.exports = {
+  requireRole,
   hashPassword,
   verifyPassword,
   setSessionCookie,

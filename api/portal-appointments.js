@@ -92,6 +92,7 @@ async function validateAndBuildFields(body, employees) {
       time: cleanTime(time),
       clientId: clientRecord.id,
       clientName: clientRecord.name,
+      clientPhone: clientRecord.phone || '', // denormalized so the Calendar can call / WhatsApp
       treatment: String(treatment).trim().slice(0, 200),
       category,
       location,
@@ -126,7 +127,20 @@ module.exports = async (req, res) => {
         .filter((a) => a.date >= from && a.date <= to)
         .slice()
         .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : (a.time || '').localeCompare(b.time || '')));
+      // Appointments saved before clientPhone was stored get it from the client directory.
+      if (matching.some((a) => !a.clientPhone && a.clientId)) {
+        const clients = await readJSON('data/clients.json', []);
+        const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
+        matching.forEach((a) => { if (!a.clientPhone && a.clientId) a.clientPhone = phoneById.get(a.clientId) || ''; });
+      }
       res.status(200).json({ ok: true, appointments: matching });
+      return;
+    }
+
+    // Everything below changes the calendar: front desk (receptie) + admin only — a
+    // cosmetician sees the calendar read-only.
+    if (!['admin', 'receptie'].includes(session.role)) {
+      res.status(403).json({ error: 'forbidden' });
       return;
     }
 

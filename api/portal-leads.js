@@ -32,7 +32,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
-const { requireAuth, requireAdmin } = require('./_lib/auth');
+const { requireRole, requireAdmin } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
 
 const LEADS_KEY = 'data/leads.json';
@@ -245,7 +245,8 @@ module.exports = async (req, res) => {
     res.status(405).json({ error: 'method_not_allowed' });
     return;
   }
-  const session = requireAuth(req, res);
+  // The pipeline is reception's (and the owner's) — cosmeticians don't work leads.
+  const session = requireRole(req, res, ['admin', 'receptie']);
   if (!session) return;
   const body = req.body || {};
   const { action } = body;
