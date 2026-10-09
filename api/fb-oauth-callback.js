@@ -118,6 +118,27 @@ module.exports = async (req, res) => {
     // A single clinic very likely manages one Page — take the first, but keep the full
     // list in storage in case a Page picker gets added to the UI later.
     const primary = pages[0];
+
+    // Subscribe the Page to THIS app's webhook for the leadgen field. Without this call,
+    // Facebook never sends leadgen events to our callback URL even if Webhooks is wired
+    // up correctly in the App Dashboard — the dashboard config only tells Meta where the
+    // app's webhook endpoint is, each Page still has to opt in to notifying that app.
+    const subscribeUrl = `${GRAPH_BASE}/${primary.id}/subscribed_apps`;
+    const subscribeResp = await fetch(subscribeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        subscribed_fields: 'leadgen',
+        access_token: primary.access_token,
+      }),
+    });
+    const subscribeData = await subscribeResp.json();
+    if (!subscribeResp.ok || !subscribeData.success) {
+      console.error('fb-oauth-callback: page webhook subscription failed', subscribeData);
+      redirectToPortal(res, 'error');
+      return;
+    }
+
     await writeJSON('data/fb-connection.json', {
       pageId: primary.id,
       pageName: primary.name,
