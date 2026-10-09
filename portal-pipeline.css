@@ -392,3 +392,12 @@ input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form inp
   .pl-dtitle p{ font-size:.72rem; }
   .pl-dbody{ padding:.9rem 1rem 1.4rem; }
 }
+
+/* Owner: today's front-desk activity strip */
+.pl-team{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin:-.2rem 0 1rem; padding:.55rem .7rem; border-radius:14px; background:var(--paper); border:1px solid var(--line); font-size:.8rem; }
+.pl-team-label{ display:inline-flex; align-items:center; gap:.4rem; font-weight:700; color:var(--accent); padding-right:.4rem; }
+.pl-team-person{ display:inline-flex; align-items:center; gap:.45rem; padding:.3rem .65rem; border-radius:999px; background:var(--glass); color:var(--muted); }
+.pl-team-person b{ color:var(--fg); }
+.pl-team-person em{ font-style:normal; color:var(--muted-2); }
+.pl-team-empty{ color:var(--muted); }
+@media (max-width:720px){ .pl-team-person em{ display:none; } }

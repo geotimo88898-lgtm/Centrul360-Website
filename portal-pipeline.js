@@ -243,7 +243,7 @@
     root.classList.add('pl-panel');
     root.innerHTML =
       '<div class="pl-head">' +
-        '<div><div class="sec-eyebrow"><i></i>Vânzări</div><h2>Pipeline</h2>' +
+        '<div><div class="k-eyebrow">Vânzări</div><h2>Pipeline</h2>' +
         '<p class="pl-lede">Fiecare lead, de la formular la client. Sună întâi pe cei noi — viteza închide vânzarea.</p></div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
@@ -252,6 +252,7 @@
         '</div>' +
       '</div>' +
       '<div class="pl-stats" data-stats></div>' +
+      (S.ctx.isAdmin ? '<div class="pl-team" data-team></div>' : '') +
       '<div class="pl-toolbar">' +
         '<label class="pl-search">' + ic('search') + '<input type="search" placeholder="Caută nume, telefon, interes…" data-search autocomplete="off" spellcheck="false"><kbd>/</kbd></label>' +
         '<div class="pl-chips" data-chips></div>' +
@@ -299,7 +300,30 @@
   }
 
   // ------------------------------------------------------------------ render: stats / chips
-  function renderAll() { renderStats(); renderChips(); renderBoard(); }
+  function renderAll() { renderStats(); renderTeam(); renderChips(); renderBoard(); }
+
+  // Owner view: what the front desk did in the pipeline today (the pipeline itself is reception's).
+  function renderTeam() {
+    const el = root && root.querySelector('[data-team]');
+    if (!el) return;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const per = {};
+    S.leads.forEach((l) => (l.activities || []).forEach((a) => {
+      if (!a.author || a.type === 'created' || new Date(a.at) < today) return;
+      const p = per[a.author] = per[a.author] || { calls: 0, bookings: 0, moves: 0, last: null, lead: '' };
+      if (a.type === 'contact') p.calls++;
+      if (a.type === 'booking') p.bookings++;
+      if (a.type === 'stage') p.moves++;
+      if (!p.last || a.at > p.last.at) { p.last = a; p.lead = l.name; }
+    }));
+    const people = Object.keys(per).sort((a, b) => per[b].calls + per[b].bookings - (per[a].calls + per[a].bookings));
+    el.innerHTML = '<span class="pl-team-label">' + ic('users') + 'Echipa azi</span>' + (people.length ? people.map((n) => {
+      const p = per[n];
+      const what = p.last.type === 'contact' ? 'a contactat-o pe ' : p.last.type === 'booking' ? 'a programat-o pe ' : p.last.type === 'stage' ? 'a mutat-o pe ' : 'a lucrat la ';
+      return '<span class="pl-team-person"><b>' + esc(n) + '</b>' + p.calls + ' contactări · ' + p.bookings + ' programări' +
+        '<em>' + what + esc(p.lead) + ', ' + agoLong(p.last.at) + '</em></span>';
+    }).join('') : '<span class="pl-team-empty">Nimeni n-a lucrat încă în pipeline azi.</span>');
+  }
 
   function renderStats() {
     const el = root.querySelector('[data-stats]');
