@@ -2467,7 +2467,36 @@
       });
       return;
     }
-    box.innerHTML = '<a class="pill small" href="/api/fb-oauth-start">Conectează Facebook</a>';
+    box.innerHTML =
+      '<a class="pill small" href="/api/fb-oauth-start">Conectează Facebook</a> '+
+      '<button class="pill small ghost" id="fbManualToggle" type="button">Nu merge? Conectare manuală</button>'+
+      '<form id="fbManualForm" class="hidden" style="margin-top:1rem;">'+
+        '<label class="field-label">User Access Token (din Graph API Explorer)</label>'+
+        '<textarea id="fbManualToken" rows="3" placeholder="Lipește aici token-ul generat în Graph API Explorer" required></textarea>'+
+        '<button class="pill small" type="submit" style="margin-top:.6rem;">Conectează cu acest token</button>'+
+      '</form>';
+    document.getElementById('fbManualToggle').addEventListener('click', ()=>{
+      document.getElementById('fbManualForm').classList.toggle('hidden');
+    });
+    document.getElementById('fbManualForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const msgEl = document.getElementById('fbIntegrationMsg');
+      const userAccessToken = document.getElementById('fbManualToken').value.trim();
+      if (!userAccessToken) return;
+      try{
+        const resp = await fetch('/api/fb-manual-connect', {
+          method:'POST', credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ userAccessToken })
+        });
+        const d = await resp.json();
+        if (!resp.ok) throw new Error(d.error || 'connect_failed');
+        showMsg(msgEl, 'Conectat la Pagina '+(d.pageName||'')+'.', true);
+        loadFbIntegrationStatus();
+      }catch(err){
+        showMsg(msgEl, 'Eroare la conectare: '+err.message, false);
+      }
+    });
   }
 
   // Facebook redirects back to /portal?fb=connected|error#setari after the OAuth dialog
