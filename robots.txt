@@ -2,3 +2,5 @@ User-agent: *
 Disallow: /portal
 Disallow: /portal-login
 Disallow: /fise/
+
+Sitemap: https://www.centrul360.com/sitemap.xml

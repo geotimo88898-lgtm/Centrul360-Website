@@ -40,14 +40,29 @@
   .ty-back a{ color:var(--muted-2); font-size:13px; text-decoration:underline; }
 </style>
 <style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
-@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } .pkg-badge, .promo-flag, .disc-badge, .o3d-cert, .o3d-eyebrow, .o3d-disc, .o3d-mhint, .u{ font-size:11px !important; } }
 </style>
+<!-- Meta Pixel Code (thank-you page: the form was sent → Lead) -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2276074362800484');
+fbq('track', 'PageView');
+fbq('track', 'Lead');
+</script>
+<!-- End Meta Pixel Code -->
 </head>
 <body>
 <div class="aurora"><b></b><b></b><b></b></div>
 
 <div class="ty">
-  <a href="index.html" class="pill pill-glass logo-pill ty-logo" style="padding:.375rem 1.25rem .375rem .625rem;" aria-label="Centrul360 — acasă">
+  <a href="/" class="pill pill-glass logo-pill ty-logo" style="padding:.375rem 1.25rem .375rem .625rem;" aria-label="Centrul360 — acasă">
     <img src="brand_asset/wordmark-com.png" alt="Centrul360.com">
   </a>
 
@@ -66,7 +81,7 @@
     <a href="tel:+40750204243" class="pill pill-glass">Sună acum · +40 750 204 243</a>
   </div>
 
-  <p class="ty-back"><a href="index.html">← Înapoi la centrul360.com</a></p>
+  <p class="ty-back"><a href="/">← Înapoi la centrul360.com</a></p>
 </div>
 
 </body>
