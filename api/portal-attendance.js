@@ -132,6 +132,22 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (action === 'balance_all') {
+      // Admin overview: every employee's balance in one call, plus today's clock status, so
+      // the Condică tab can show a team-wide table without a round trip per employee.
+      if (!requireAdmin(req, res)) return;
+      const employees = await readJSON('data/employees.json', []);
+      const today = serverToday();
+      const list = [];
+      for (const emp of employees.filter((e) => e.id !== 'admin' && e.active !== false)) {
+        const balance = await computeBalance(emp.id, entries);
+        const todayEntry = entries.find((e) => e.employeeId === emp.id && e.date === today) || null;
+        list.push({ employeeId: emp.id, name: emp.name, location: emp.location, role: emp.role, ...balance, todayCheckIn: todayEntry ? todayEntry.checkIn : null, todayCheckOut: todayEntry ? todayEntry.checkOut : null });
+      }
+      res.status(200).json({ ok: true, employees: list });
+      return;
+    }
+
     if (action === 'update') {
       if (!requireAdmin(req, res)) return;
       const entry = entries.find((e) => e.id === body.id);

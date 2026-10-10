@@ -13,7 +13,7 @@
   const STATUS_LABEL = { pending: 'În așteptare', approved: 'Aprobată', rejected: 'Respinsă' };
   const STATUS_TONE = { pending: 'warn', approved: 'good', rejected: 'bad' };
 
-  const C = { attendance: [], leave: [], empFilter: '', year: null, month: null, balance: null };
+  const C = { attendance: [], leave: [], empFilter: '', year: null, month: null, balance: null, overview: null };
   let panel;
 
   function isAdmin() { return !!(K.data && K.data.isAdmin); }
@@ -38,17 +38,20 @@
 
   async function load() {
     try {
-      // Admin with no employee picked has no balance of her own worth showing (she doesn't
-      // accrue concediu like staff do) — only fetch/show it once she's filtered to someone.
-      const balanceFor = isAdmin() ? C.empFilter : K.data.me.id;
-      const [att, lv, bal] = await Promise.all([
+      // Admin with no employee picked: no personal balance (she doesn't accrue concediu), but
+      // she gets a one-shot team overview instead. Picking an employee switches to that
+      // person's detail (balance + their own attendance rows), same as before.
+      const wantOverview = isAdmin() && !C.empFilter;
+      const [att, lv, bal, ov] = await Promise.all([
         K.api('/api/portal-attendance', { action: 'list', employeeId: isAdmin() ? (C.empFilter || undefined) : undefined, year: isAdmin() ? C.year : undefined, month: isAdmin() ? C.month : undefined }),
         K.api('/api/portal-leave', { action: 'list' }),
-        balanceFor ? K.api('/api/portal-attendance', { action: 'balance', employeeId: balanceFor }) : Promise.resolve(null),
+        !wantOverview ? K.api('/api/portal-attendance', { action: 'balance', employeeId: isAdmin() ? C.empFilter : K.data.me.id }) : Promise.resolve(null),
+        wantOverview ? K.api('/api/portal-attendance', { action: 'balance_all' }) : Promise.resolve(null),
       ]);
       C.attendance = att.entries || [];
       C.leave = lv.requests || [];
       C.balance = bal;
+      C.overview = ov ? ov.employees || [] : null;
       render();
     } catch (e) {
       panel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca condica', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="refresh">Reîncearcă</button>');
@@ -91,17 +94,40 @@
       (editable ? '<button type="button" class="k-icon-btn" aria-label="Corectează">' + icon('pen') + '</button>' : '') + '</div>';
   }
 
+  function filterToolbar() {
+    return '<div class="cd-filters k-toolbar">' +
+      '<select data-f="emp"><option value="">Toată echipa</option>' + employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>' +
+      '<select data-f="month">' + Array.from({ length: 12 }, (_, i) => i + 1).map((m) => '<option value="' + m + '"' + (C.month === m ? ' selected' : '') + '>' + K.monthLabel(C.year + '-' + String(m).padStart(2, '0')).split(' ')[0] + '</option>').join('') + '</select>' +
+      '<select data-f="year">' + [C.year - 1, C.year, C.year + 1].map((y) => '<option value="' + y + '"' + (C.year === y ? ' selected' : '') + '>' + y + '</option>').join('') + '</select>' +
+      '</div>';
+  }
+
+  function overviewTable() {
+    const rows = C.overview || [];
+    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + 'Condica echipei — toți angajații</h3></div>' +
+      filterToolbar() +
+      (rows.length ? '<div class="k-list" style="margin-top:.8rem">' + rows.map((r) => {
+        const today = r.todayCheckIn || r.todayCheckOut ? (r.todayCheckIn ? 'Sosire ' + esc(r.todayCheckIn) : 'Fără sosire') + (r.todayCheckOut ? ' · Plecare ' + esc(r.todayCheckOut) : '') : 'Nicio intrare azi';
+        return '<div class="k-row" data-pick-emp="' + esc(r.employeeId) + '" style="cursor:pointer">' +
+          '<div class="k-row-main"><div class="k-row-title">' + esc(r.name) + '</div><div class="k-row-sub">' + esc(r.location || '') + ' · ' + esc(today) + '</div></div>' +
+          '<div class="k-row-end"><span class="k-tag">' + r.daysLeft + ' zile concediu</span>' +
+          '<span class="k-tag is-' + (r.hoursDelta >= 0 ? 'good' : 'warn') + '">' + (r.hoursDelta >= 0 ? '+' : '') + r.hoursDelta + ' h</span></div></div>';
+      }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', 'Adaugă angajați din tab-ul Echipa.')) +
+      '</section>';
+  }
+
   function attendanceSection() {
+    if (isAdmin() && !C.empFilter) return overviewTable();
     const mineOnly = isAdmin() ? C.attendance : C.attendance.filter((e) => e.employeeId === K.data.me.id);
     const recent = mineOnly.slice(0, 20);
-    const filterHtml = isAdmin() ?
-      '<div class="cd-filters"><select data-f="emp"><option value="">Toată echipa</option>' + employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>' +
-      '<select data-f="month">' + Array.from({ length: 12 }, (_, i) => i + 1).map((m) => '<option value="' + m + '"' + (C.month === m ? ' selected' : '') + '>' + K.monthLabel(C.year + '-' + String(m).padStart(2, '0')).split(' ')[0] + '</option>').join('') + '</select>' +
-      '<select data-f="year">' + [C.year - 1, C.year, C.year + 1].map((y) => '<option value="' + y + '"' + (C.year === y ? ' selected' : '') + '>' + y + '</option>').join('') + '</select></div>' : '';
+    const filterHtml = isAdmin() ? filterToolbar() : '';
     const summaryHtml = isAdmin() ? summary() : '';
-    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + (isAdmin() ? 'Condica echipei' : 'Pontajele mele') + '</h3></div>' +
+    const emptyState = isAdmin()
+      ? K.empty('clock', 'Nicio intrare încă', esc(empName(C.empFilter)) + ' nu are pontaje în această perioadă.')
+      : K.empty('clock', 'Nicio intrare încă', 'Pontajele apar aici imediat ce apeși „Pontează sosirea”.');
+    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + (isAdmin() ? 'Condica — ' + esc(empName(C.empFilter)) : 'Pontajele mele') + '</h3></div>' +
       filterHtml + summaryHtml +
-      (recent.length ? '<div class="k-list">' + recent.map((e) => attendanceRow(e, isAdmin())).join('') + '</div>' : K.empty('clock', 'Nicio intrare încă', 'Pontajele apar aici imediat ce apeși „Pontează sosirea”.')) +
+      (recent.length ? '<div class="k-list">' + recent.map((e) => attendanceRow(e, isAdmin())).join('') + '</div>' : emptyState) +
       '</section>';
   }
 
@@ -242,6 +268,8 @@
     if (clockBtn) return clock(clockBtn.dataset.clock);
     if (t.closest('[data-new-leave]')) return newLeaveDrawer();
     if (t.closest('[data-admin-new-leave]')) return adminNewLeaveDrawer();
+    const pick = t.closest('[data-pick-emp]');
+    if (pick) { C.empFilter = pick.dataset.pickEmp; return load(); }
     const row = t.closest('[data-edit-att]');
     if (row) { const entry = C.attendance.find((x) => x.id === row.dataset.editAtt); if (entry) editAttendanceDrawer(entry); }
   }

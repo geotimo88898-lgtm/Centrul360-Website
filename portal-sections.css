@@ -242,6 +242,10 @@
 .cal-bar-right .c360-select-btn{ height:38px; padding-top:0; padding-bottom:0; }
 .cal-bar-right > select{ width:auto; min-width:160px; height:38px; }
 
+/* =============================== CONDICĂ (attendance + leave) =============================== */
+.cd-filters > select{ width:auto; min-width:150px; height:38px; }
+/* .k-row:hover (portal-kit.css) already gives the clickable overview rows a hover state. */
+
 /* =============================== MONEY (Încasări + Comision) =============================== */
 .k-form > .full{ grid-column:1 / -1; }
 .mo-monthbar{ display:flex; align-items:center; gap:.8rem; margin-bottom:1rem; }
