@@ -151,6 +151,49 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (action === 'admin_create') {
+      // Admin manually logs a leave that already happened/was agreed off-portal (e.g. the
+      // employee didn't submit it herself) — created and approved in one step: no 'pending'
+      // state, same PDF-generation + Calendar-block side effects as a normal approval.
+      if (!requireAdmin(req, res)) return;
+      const { employeeId, type, startDate, endDate } = body;
+      if (!employeeId || typeof employeeId !== 'string') return fail(400, 'missing_employee');
+      if (!VALID_TYPES.includes(type)) return fail(400, 'invalid_type');
+      if (!isValidDate(startDate) || !isValidDate(endDate)) return fail(400, 'invalid_date');
+      if (endDate < startDate) return fail(400, 'invalid_range');
+      const reason = String(body.reason || '').trim().slice(0, MAX_REASON);
+      if (REASON_REQUIRED.includes(type) && !reason) return fail(400, 'missing_reason');
+
+      const employees = await readJSON('data/employees.json', []);
+      if (employeeId !== 'admin' && !employees.some((e) => e.id === employeeId)) return fail(404, 'employee_not_found');
+
+      const request = {
+        id: crypto.randomUUID(),
+        employeeId,
+        type, startDate, endDate,
+        workDays: workDaysBetween(startDate, endDate),
+        reason,
+        status: 'approved',
+        requestedAt: nowISO(),
+        decidedAt: nowISO(),
+        decidedBy: session.employeeId,
+        rejectionNote: '',
+        pdfBlobPath: '',
+      };
+
+      const employee = await employeeInfo(employeeId);
+      const pdfBuffer = await buildLeaveRequestPdf(employee, request);
+      const pdfBlobPath = 'data/leave-pdfs/' + request.id + '.pdf';
+      await writeBinary(pdfBlobPath, pdfBuffer, 'application/pdf');
+      request.pdfBlobPath = pdfBlobPath;
+      await blockCalendar(request, employee);
+
+      requests.push(request);
+      await writeJSON(KEY, requests);
+      res.status(200).json({ ok: true, request });
+      return;
+    }
+
     fail(400, 'invalid_action');
   } catch (err) {
     console.error('portal-leave error:', err.message);

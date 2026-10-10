@@ -38,11 +38,13 @@
 
   async function load() {
     try {
-      const balanceFor = isAdmin() && C.empFilter ? C.empFilter : K.data.me.id;
+      // Admin with no employee picked has no balance of her own worth showing (she doesn't
+      // accrue concediu like staff do) — only fetch/show it once she's filtered to someone.
+      const balanceFor = isAdmin() ? C.empFilter : K.data.me.id;
       const [att, lv, bal] = await Promise.all([
         K.api('/api/portal-attendance', { action: 'list', employeeId: isAdmin() ? (C.empFilter || undefined) : undefined, year: isAdmin() ? C.year : undefined, month: isAdmin() ? C.month : undefined }),
         K.api('/api/portal-leave', { action: 'list' }),
-        K.api('/api/portal-attendance', { action: 'balance', employeeId: balanceFor }),
+        balanceFor ? K.api('/api/portal-attendance', { action: 'balance', employeeId: balanceFor }) : Promise.resolve(null),
       ]);
       C.attendance = att.entries || [];
       C.leave = lv.requests || [];
@@ -118,15 +120,22 @@
   }
 
   function leaveSection() {
+    if (isAdmin()) {
+      const list = C.empFilter ? C.leave.filter((r) => r.employeeId === C.empFilter) : C.leave;
+      return '<section class="k-card"><div class="k-card-head"><h3>' + icon('calendar') + 'Concedii' + (C.empFilter ? ' · ' + esc(empName(C.empFilter)) : ' — toată echipa') + '</h3></div>' +
+        '<button type="button" class="k-btn is-accent" data-admin-new-leave>' + icon('plus') + 'Notează concediu pentru un angajat</button>' +
+        (list.length ? '<div class="k-list" style="margin-top:.8rem">' + list.map((r) => leaveRow(r, true)).join('') + '</div>'
+          : '<p class="k-muted" style="margin-top:.8rem">Nicio cerere încă.</p>') + '</section>';
+    }
     const mine = C.leave.filter((r) => r.employeeId === K.data.me.id);
     return '<section class="k-card"><div class="k-card-head"><h3>' + icon('calendar') + 'Cererile mele de concediu</h3></div>' +
       '<button type="button" class="k-btn is-accent" data-new-leave>' + icon('plus') + 'Cerere nouă</button>' +
-      (mine.length ? '<div class="k-list" style="margin-top:.8rem">' + mine.map(leaveRow).join('') + '</div>'
+      (mine.length ? '<div class="k-list" style="margin-top:.8rem">' + mine.map((r) => leaveRow(r, false)).join('') + '</div>'
         : '<p class="k-muted" style="margin-top:.8rem">Nicio cerere încă.</p>') + '</section>';
   }
 
-  function leaveRow(r) {
-    return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(TYPE_LABELS[r.type] || r.type) + '</div>' +
+  function leaveRow(r, showEmployee) {
+    return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + (showEmployee ? esc(empName(r.employeeId)) + ' · ' : '') + esc(TYPE_LABELS[r.type] || r.type) + '</div>' +
       '<div class="k-row-sub">' + esc(K.dateShort(r.startDate)) + ' – ' + esc(K.dateShort(r.endDate)) + ' · ' + K.plural(r.workDays, 'zi', 'zile') +
       (r.reason ? ' · „' + esc(r.reason) + '”' : '') + (r.status === 'rejected' && r.rejectionNote ? ' · motiv refuz: „' + esc(r.rejectionNote) + '”' : '') + '</div></div>' +
       '<div class="k-row-end"><span class="k-tag is-' + STATUS_TONE[r.status] + '">' + STATUS_LABEL[r.status] + '</span>' +
@@ -136,7 +145,9 @@
 
   function render() {
     if (!panel) return;
-    panel.querySelector('[data-body]').innerHTML = todayCard() + balanceHtml() + attendanceSection() + leaveSection();
+    // Admin doesn't clock her own attendance — it doesn't apply to her — so no "azi" card;
+    // she gets the team's pontaj/sold + the ability to log a leave manually instead.
+    panel.querySelector('[data-body]').innerHTML = (isAdmin() ? '' : todayCard()) + balanceHtml() + attendanceSection() + leaveSection();
   }
 
   async function clock(action) {
@@ -165,6 +176,36 @@
           try {
             await K.api('/api/portal-leave', { action: 'create', type: v.type, startDate: v.startDate, endDate: v.endDate, reason: v.reason });
             d.close(); K.ui().toast('Cererea a fost trimisă.', 'success'); load();
+          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+
+  function adminNewLeaveDrawer() {
+    const opts = employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('');
+    const d = K.drawer({
+      title: 'Notează concediu pentru un angajat', icon: 'calendar', width: 520,
+      subtitle: 'Se marchează direct ca aprobat — pentru cazul în care angajatul nu a trecut-o singur în portal.',
+      body: '<form class="k-form" data-form>' +
+        K.field('Angajat', '<select name="employeeId" required><option value="">Alege...</option>' + opts + '</select>', 'full') +
+        K.field('Tip concediu', K.seg('type', [['odihna', 'Odihnă'], ['fara_plata', 'Fără plată'], ['medical', 'Medical'], ['alta', 'Altul']], 'odihna', 'is-big'), 'full') +
+        K.field('Data început', '<input name="startDate" type="date" required value="' + esc(K.today()) + '">') +
+        K.field('Data sfârșit', '<input name="endDate" type="date" required value="' + esc(K.today()) + '">') +
+        K.field('Motiv', '<textarea name="reason" rows="3" maxlength="500" placeholder="Opțional la odihnă/fără plată, obligatoriu la medical/altul"></textarea>', 'full') +
+        '</form>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Notează ca aprobat</button>',
+      onMount(el) {
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(el.querySelector('[data-form]'));
+          if (!v.employeeId) { K.ui().toast('Alege angajatul.', 'error'); return; }
+          if (!v.startDate || !v.endDate) { K.ui().toast('Completează perioada.', 'error'); return; }
+          if (v.endDate < v.startDate) { K.ui().toast('Data de sfârșit e înainte de data de început.', 'error'); return; }
+          if ((v.type === 'medical' || v.type === 'alta') && !v.reason.trim()) { K.ui().toast('Completează motivul pentru acest tip de concediu.', 'error'); return; }
+          try {
+            await K.api('/api/portal-leave', { action: 'admin_create', employeeId: v.employeeId, type: v.type, startDate: v.startDate, endDate: v.endDate, reason: v.reason });
+            d.close(); K.ui().toast('Concediul a fost notat și calendarul a fost blocat.', 'success'); load();
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
       },
@@ -200,6 +241,7 @@
     const clockBtn = t.closest('[data-clock]');
     if (clockBtn) return clock(clockBtn.dataset.clock);
     if (t.closest('[data-new-leave]')) return newLeaveDrawer();
+    if (t.closest('[data-admin-new-leave]')) return adminNewLeaveDrawer();
     const row = t.closest('[data-edit-att]');
     if (row) { const entry = C.attendance.find((x) => x.id === row.dataset.editAtt); if (entry) editAttendanceDrawer(entry); }
   }
