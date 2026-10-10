@@ -172,7 +172,7 @@
     root.innerHTML =
       // ---------------- hero
       '<section class="db-hero">' +
-        '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>' +
+        '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
         '<div class="db-hero-main">' +
           '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">live</span></div>' +
           '<h2>' + greeting() + ', ' + esc(first) + '</h2>' +
