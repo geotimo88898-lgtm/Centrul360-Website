@@ -164,6 +164,9 @@ p{ margin:0; }
 .tr-links{ display:flex; flex-wrap:wrap; gap:.4rem; }
 .tr-links a{ font-size:.78rem; font-weight:600; padding:.32rem .65rem; border-radius:999px; border:1px solid var(--line-2); color:var(--fg); transition:border-color .15s, background-color .15s; }
 .tr-links a:hover{ border-color:#4a4f5d; background:var(--glass-2); }
+.tr-facts{ display:flex; flex-wrap:wrap; gap:.4rem .9rem; font-size:.8rem; color:var(--muted); }
+.tr-facts span::before{ content:"·"; margin-right:.5rem; color:var(--muted-2); }
+.tr-facts span:first-child::before{ display:none; }
 .tr-more{ margin-top:auto; display:inline-flex; align-items:center; gap:.4rem; font-weight:650; font-size:.9rem; color:var(--fg); }
 .tr-more svg{ width:16px; height:16px; transition:transform .2s; }
 .tr:hover .tr-more svg{ transform:translateX(3px); }
