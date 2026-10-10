@@ -33,6 +33,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireRole, requireAdmin } = require('./_lib/auth');
+const workflows = require('./_lib/workflows');
 const { upsertClient } = require('./_lib/clients');
 
 const LEADS_KEY = 'data/leads.json';
@@ -215,6 +216,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   if (note) lead.activities.push({ id: crypto.randomUUID(), type: 'note', text: clip(note, 1000), author, at: now });
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);
+  await workflows.emit('lead_created', { lead }); // e.g. welcome WhatsApp + "call in 5 min"
   return { lead: withComputedFields(lead, stages) };
 }
 
@@ -340,7 +342,11 @@ module.exports = async (req, res) => {
         const client = await upsertClient({ name: lead.name, phone: lead.phone }, { readJSON, writeJSON });
         lead.clientId = client.id;
       }
-      return save();
+      await writeJSON(LEADS_KEY, leads);
+      await workflows.emit('stage_changed', { lead, stage: target.id }); // may itself move the lead again
+      const fresh = (await readJSON(LEADS_KEY, [])).map(normalizeLead).find((l) => l.id === lead.id) || lead;
+      res.status(200).json({ ok: true, lead: withComputedFields(fresh, stages) });
+      return;
     }
 
     if (action === 'add_note') {
@@ -423,3 +429,4 @@ module.exports = async (req, res) => {
 module.exports.STAGE_ORDER = STAGE_ORDER;
 module.exports.ALL_STAGES = ALL_STAGES;
 module.exports.createLead = createLead;
+module.exports.loadStages = loadStages;

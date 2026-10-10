@@ -1,12 +1,9 @@
-// /api/portal-automation-tasks — the internal "sarcină" queue standing in for GHL's
-// WhatsApp automations (portal.html's "Automatizări" tab). See api/_lib/automation.js
-// for how tasks get created, and api/_lib/whatsapp.js for the (currently no-op) send.
+// /api/portal-automation-tasks — the reception's task queue ("Sarcini"). Tasks are created by the
+// automations (api/_lib/workflows.js): WhatsApp messages to send in one tap when they can't go out
+// automatically, calls to make, follow-ups.
 //
 // GET  -> list (default: only status:'pending'; pass ?all=1 for everything). Also the
-//         one place that materializes 'reminder_azi' tasks for today's scheduled/
-//         confirmed appointments — there's no cron infra in this project, so "today's
-//         reminders exist" is computed right here, on read, the same way portal-data.js
-//         computes "today's appointments".
+//         runs whatever automation steps are due first (workflows.tick).
 // POST -> action:'complete' — any authenticated employee can mark a task done (they
 //         sent the WhatsApp by hand and are checking it off), not just admin.
 //
@@ -15,7 +12,7 @@
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireRole } = require('./_lib/auth');
-const { ensureTodayReminders } = require('./_lib/automation');
+const { tick } = require('./_lib/workflows');
 
 function todayISO() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
@@ -28,14 +25,14 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      const [appointments, employeesRaw] = await Promise.all([
+      const [appointments, employeesRaw, leads] = await Promise.all([
         readJSON('data/appointments.json', []),
         readJSON('data/employees.json', []),
+        readJSON('data/leads.json', []),
       ]);
 
       const today = todayISO();
-      const appointmentsToday = appointments.filter((a) => a.date === today);
-      await ensureTodayReminders(appointmentsToday);
+      await tick(); // anything due from Automatizări lands here before the list is read
 
       const allTasks = await readJSON('data/automation-tasks.json', []);
 
@@ -43,8 +40,16 @@ module.exports = async (req, res) => {
       // was deleted, cancelled or already done, or its day has passed.
       const apptById = new Map(appointments.map((a) => [a.id, a]));
       let autoClosed = 0;
+      const leadById = new Map(leads.map((l) => [l.id, l]));
       allTasks.forEach((t) => {
+        // A lead's "call / write" task is done once someone has reached that lead.
+        if (t.status === 'pending' && t.workflowId && t.relatedLeadId && !t.relatedAppointmentId) {
+          const l = leadById.get(t.relatedLeadId);
+          if (!l || (l.lastContactAt && l.lastContactAt > t.createdAt)) { t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++; }
+          return;
+        }
         if (t.status !== 'pending' || !t.relatedAppointmentId) return;
+        if (t.workflowId && !t.autoClose) return; // e.g. a review request after a finished treatment
         const a = apptById.get(t.relatedAppointmentId);
         if (!a || a.status === 'anulata' || a.status === 'finalizata' || a.date < today) {
           t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++;

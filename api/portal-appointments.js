@@ -30,7 +30,7 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
 const { VALID_CATEGORIES } = require('./portal-sale');
-const { createAutomationTask } = require('./_lib/automation');
+const workflows = require('./_lib/workflows');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records) — kept as a literal list
@@ -162,21 +162,8 @@ module.exports = async (req, res) => {
       appointments.push(entry);
       await writeJSON('data/appointments.json', appointments);
 
-      // Hook: a freshly booked appointment always needs a WhatsApp confirmation —
-      // surfaced as a task for whoever's at that location's reception rather than
-      // sent automatically (see _lib/whatsapp.js). Best-effort: a failure here must
-      // never roll back the appointment that was just saved.
-      try {
-        await createAutomationTask({
-          type: 'confirmare_programare',
-          text: `Trimite confirmare WhatsApp către ${entry.clientName} pentru programarea din ${entry.date} ${entry.time || ''}.`.trim(),
-          relatedAppointmentId: entry.id,
-          location: entry.location,
-          assigneeRole: 'receptie',
-        });
-      } catch (taskErr) {
-        console.error('portal-appointments: automation task failed:', taskErr.message);
-      }
+      // Automations (Admin → Automatizări): confirmation, reminders … Never throws.
+      await workflows.emit('appointment_created', { appointment: entry });
 
       res.status(200).json({ ok: true, appointment: entry });
       return;
@@ -199,8 +186,12 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: result.error });
         return;
       }
+      const before = { date: appointment.date, time: appointment.time, status: appointment.status };
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
       await writeJSON('data/appointments.json', appointments);
+      // Automations: a moved appointment gets its reminders recalculated; a status change can start a flow.
+      if (before.date !== appointment.date || before.time !== appointment.time) await workflows.emit('appointment_rescheduled', { appointment });
+      if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });
       res.status(200).json({ ok: true, appointment });
       return;
     }
@@ -216,8 +207,9 @@ module.exports = async (req, res) => {
         res.status(404).json({ error: 'appointment_not_found' });
         return;
       }
-      appointments.splice(idx, 1);
+      const [removed] = appointments.splice(idx, 1);
       await writeJSON('data/appointments.json', appointments);
+      await workflows.emit('appointment_deleted', { appointment: removed });
       res.status(200).json({ ok: true });
       return;
     }

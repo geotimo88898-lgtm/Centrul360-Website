@@ -16,6 +16,9 @@
     reminder_azi: { label: 'Reminder azi', ic: 'bell', tone: 'accent', msg: 'reminder' },
     confirmare_programare: { label: 'Confirmare programare', ic: 'checkCircle', tone: 'good', msg: 'confirm' },
     lead_inactiv: { label: 'Lead inactiv', ic: 'zap', tone: 'warn', msg: '' },
+    // From Admin → Automatizări: the message text comes already written by the flow.
+    whatsapp: { label: 'WhatsApp', ic: 'chat', tone: 'good', msg: 'flow' },
+    sarcina: { label: 'De făcut', ic: 'listCheck', tone: 'accent', msg: '' },
   };
   const T = { tasks: [], done: [], filter: '' };
   let tpanel;
@@ -66,6 +69,7 @@
   }
   function taskHtml(t) {
     const ty = TYPES[t.type] || { label: t.type, ic: 'bell', tone: '' };
+    if (ty.msg === 'flow' || t.type === 'sarcina') return flowTaskHtml(t, ty);
     const a = t.appointment;
     const phone = a && a.clientPhone;
     return '<article class="wk-task" data-task="' + esc(t.id) + '"><span class="k-icon-chip is-' + ty.tone + '">' + icon(ty.ic) + '</span>' +
@@ -76,6 +80,25 @@
       '<div class="wk-task-actions">' +
         (phone && ty.msg ? '<a class="k-btn is-sm wk-wa" target="_blank" rel="noopener" data-sent="' + esc(t.id) + '" href="' + K.wa(phone, waText(a, ty.msg)) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
         (phone ? '<a class="k-icon-btn" href="' + K.tel(phone) + '" title="Sună">' + icon('phone') + '</a>' : '') +
+        (a ? '<button type="button" class="k-icon-btn" data-open="' + esc(a.id) + '" data-date="' + esc(a.date) + '" title="Deschide programarea">' + icon('calendar') + '</button>' : '') +
+        '<button type="button" class="k-btn is-sm is-primary wk-done" data-done="' + esc(t.id) + '">' + icon('check') + 'Gata</button>' +
+      '</div></article>';
+  }
+  // A task an automation created: its own title (the flow's name), message and phone.
+  function flowTaskHtml(t, ty) {
+    const a = t.appointment;
+    const phone = t.phone || (a && a.clientPhone) || '';
+    const msg = t.message || '';
+    return '<article class="wk-task" data-task="' + esc(t.id) + '"><span class="k-icon-chip is-' + ty.tone + '">' + icon(ty.ic) + '</span>' +
+      '<div class="wk-task-main"><div class="wk-task-top"><b>' + esc(t.clientName || (a && a.clientName) || ty.label) + '</b><span class="k-tag is-' + ty.tone + '">' + icon('zap') + esc(t.title || ty.label) + '</span>' +
+        (t.location ? '<span class="k-tag">' + icon('pin') + esc(t.location) + '</span>' : '') +
+        (!phone && msg ? '<span class="k-tag is-warn">' + icon('alert') + 'fără telefon</span>' : '') + '</div>' +
+      '<div class="wk-task-sub">' + (a ? esc(K.relDay(a.date) + ' · ' + (a.time || 'fără oră') + ' · ' + (a.treatment || '')) : msg ? '' : esc(t.text)) + '</div>' +
+      (msg ? '<div class="wk-msg">' + esc(msg) + '</div>' : '') + '</div>' +
+      '<div class="wk-task-actions">' +
+        (phone && msg ? '<a class="k-btn is-sm wk-wa" target="_blank" rel="noopener" data-sent="' + esc(t.id) + '" href="' + K.wa(phone, msg) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
+        (phone ? '<a class="k-icon-btn" href="' + K.tel(phone) + '" title="Sună">' + icon('phone') + '</a>' : '') +
+        (t.relatedLeadId ? '<button type="button" class="k-icon-btn" data-lead="' + esc(t.relatedLeadId) + '" title="Deschide leadul">' + icon('user') + '</button>' : '') +
         (a ? '<button type="button" class="k-icon-btn" data-open="' + esc(a.id) + '" data-date="' + esc(a.date) + '" title="Deschide programarea">' + icon('calendar') + '</button>' : '') +
         '<button type="button" class="k-btn is-sm is-primary wk-done" data-done="' + esc(t.id) + '">' + icon('check') + 'Gata</button>' +
       '</div></article>';
@@ -110,6 +133,8 @@
     }
     const done = t.closest('[data-done]');
     if (done) return complete(done.dataset.done, done.closest('.wk-task'));
+    const lead = t.closest('[data-lead]');
+    if (lead) { K.go('pipeline'); setTimeout(() => window.C360Pipeline && window.C360Pipeline.openLead(lead.dataset.lead), 350); return; }
     const open = t.closest('[data-open]');
     if (open) { K.go('programari'); setTimeout(() => K.emit('calendar:open', { id: open.dataset.open, date: open.dataset.date }), 250); }
   }
