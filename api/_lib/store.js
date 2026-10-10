@@ -79,4 +79,31 @@ async function readRev() {
   return value;
 }
 
-module.exports = { readJSON, writeJSON, readRev };
+// ---- Binary documents (e.g. generated PDFs) -----------------------------------------
+// Same put/get wiring as readJSON/writeJSON above, but for raw bytes instead of JSON text —
+// used by the leave-request PDF (api/portal-leave.js + api/portal-leave-pdf.js). Doesn't bump
+// the live-sync revision: a generated PDF isn't part of the portal's shared on-screen state.
+async function writeBinary(pathname, buffer, contentType) {
+  await put(pathname, buffer, {
+    access: 'private',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: contentType || 'application/octet-stream',
+  });
+}
+
+async function readBinary(pathname) {
+  try {
+    const result = await get(pathname, { access: 'private', useCache: false });
+    if (!result) return null;
+    const chunks = [];
+    for await (const chunk of result.stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    return Buffer.concat(chunks);
+  } catch (err) {
+    if (err && (err.name === 'BlobNotFoundError' || /not.?found/i.test(err.message || ''))) return null;
+    console.error(`store.readBinary(${pathname}) error:`, err.message);
+    return null;
+  }
+}
+
+module.exports = { readJSON, writeJSON, readRev, writeBinary, readBinary };

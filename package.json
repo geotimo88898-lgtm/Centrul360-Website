@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Centrul360 static site + Vercel serverless API functions (no build step for the site itself).",
   "dependencies": {
-    "@vercel/blob": "^2.8.0"
+    "@vercel/blob": "^2.8.0",
+    "pdf-lib": "^1.17.1"
   }
 }
