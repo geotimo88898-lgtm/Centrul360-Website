@@ -137,8 +137,8 @@
 
   // ------------------------------------------------------------------ avatar menu
   const ACCENTS = [
-    ['violet', 'Violet', '#6a4dff', '#d946ef'], ['ocean', 'Ocean', '#2563eb', '#06b6d4'], ['emerald', 'Smarald', '#059669', '#84cc16'],
-    ['sunset', 'Apus', '#ea580c', '#e11d48'], ['mono', 'Monocrom', '#18181b', '#71717a'],
+    ['violet', 'Violet', '#6a4dff', '#8b5cf6'], ['ocean', 'Ocean', '#2563eb', '#3b82f6'], ['emerald', 'Smarald', '#059669', '#10b981'],
+    ['sunset', 'Apus', '#ea580c', '#f97316'], ['mono', 'Monocrom', '#18181b', '#71717a'],
   ];
   let menu = null;
   function openMenu(anchor) {
