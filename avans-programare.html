@@ -237,11 +237,11 @@ new GLTFLoader().load('brand_asset/3dsvg.glb', (g) => {
   window.addEventListener('resize', resize);
 
   const clock = new THREE.Clock();
-  (function animate() {
-    requestAnimationFrame(animate);
-    spinner.rotation.y = reduce ? 0.6 : clock.getElapsedTime() * 0.5;
-    renderer.render(scene, cam);
-  })();
+  // ~30 fps and only while the logo is on screen (same look, a fraction of the work).
+  let on = true, raf = 0, last = -1;
+  const frame = () => { raf = 0; if (!on) return; raf = requestAnimationFrame(frame); const t = clock.getElapsedTime(); if (t - last < 1/30) return; last = t; spinner.rotation.y = reduce ? 0.6 : t * 0.5; renderer.render(scene, cam); };
+  new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on && !raf) raf = requestAnimationFrame(frame); }).observe(canvas);
+  frame();
 }, undefined, (e) => console.error('GLB load error', e));
 </script>
 

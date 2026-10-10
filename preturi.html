@@ -58,7 +58,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
   /* aurora */
   .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); opacity:.8; will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
+  .aurora b{ position:absolute; border-radius:50%; opacity:.8; will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
   .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 70%); }
   .aurora b:nth-child(2){ width:40vw; height:40vw; top:40vh; right:-12vw; background:radial-gradient(circle at 50% 50%, rgba(150,170,255,0.05), transparent 70%); }
   .aurora b:nth-child(3){ width:32vw; height:32vw; bottom:-10vw; left:26vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05), transparent 70%); }
@@ -865,7 +865,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const mounts = []; let glbScene = null;
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
-idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e)));
+// The model (2.6 MB) loads after the page itself, so it never competes with the content.
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
+if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 function mountAll(){
   const head = document.getElementById('logo3d-head');
   const menu = document.getElementById('logo3d-menu');
@@ -899,16 +901,23 @@ function makeMount(canvas, opts){
   return { canvas, renderer, scene, cam, spinner, opts };
 }
 const clock = new THREE.Clock();
+// Render only while a logo is on screen, at ~30 fps (the spin is slow, so it looks the same),
+// and stop completely when none is visible — the header logo used to redraw 60+ times a second forever.
+const visibleLogos = new Set();
+const logoIO = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting) visibleLogos.add(e.target); else visibleLogos.delete(e.target); }); kickLogo(); });
+let logoRaf = 0, lastLogoFrame = -1;
+function liveLogo(m){ return visibleLogos.has(m.canvas) && m.canvas.offsetParent !== null && !m.canvas.closest('.menu-overlay:not(.open)'); }
+function kickLogo(){ if(!logoRaf && mounts.some(liveLogo)) logoRaf = requestAnimationFrame(animate); }
+document.addEventListener('click', ()=>setTimeout(kickLogo, 60));   // the menu logo becomes visible when the menu opens
 function animate(){
-  requestAnimationFrame(animate);
+  logoRaf = 0;
+  const on = mounts.filter(liveLogo);
+  if(!on.length) return;
+  logoRaf = requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
-  for(const m of mounts){
-    if(m.canvas.offsetParent === null) continue;
-    const r = m.canvas.getBoundingClientRect();
-    if(r.bottom <= 0 || r.top >= innerHeight) continue;
-    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
-    m.renderer.render(m.scene, m.cam);
-  }
+  if(t - lastLogoFrame < 1/30) return;
+  lastLogoFrame = t;
+  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
 }
 </script>
 <!-- ===== Offer quick-view popup (opens from menu offer slides) ===== -->

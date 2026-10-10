@@ -10,13 +10,15 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isMobile = matchMedia('(max-width:768px)').matches;   // mobile: lighter 3D logo (perf)
 const mounts = []; let glbScene = null;
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
-idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e)));
+// The model (2.6 MB) loads after the page itself, so it never competes with the content.
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
+if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 
 function mountAll(){
   const head = document.getElementById('logo3d-head');
   const menu = document.getElementById('logo3d-menu');
-  if(head) mounts.push(makeMount(head, { spin:0.5 }));
-  if(menu) mounts.push(makeMount(menu, { spin:0.5 }));
+  if(head){ mounts.push(makeMount(head, { spin:0.5 })); head.style.backgroundImage='none'; }
+  if(menu){ mounts.push(makeMount(menu, { spin:0.5 })); menu.style.backgroundImage='none'; }
 }
 function makeMount(canvas, opts){
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
@@ -47,18 +49,21 @@ function makeMount(canvas, opts){
   return { canvas, renderer, scene, cam, spinner, opts };
 }
 const clock = new THREE.Clock();
-let lastLogoT = -1;
-const logoMinDelta = isMobile ? 1/30 : 0;   // cap the 3D logo to ~30fps on mobile
+// Render only while a logo is on screen, at ~30 fps (the spin is slow, so it looks the same),
+// and stop completely when none is visible — the header logo used to redraw 60+ times a second forever.
+const visibleLogos = new Set();
+const logoIO = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting) visibleLogos.add(e.target); else visibleLogos.delete(e.target); }); kickLogo(); });
+let logoRaf = 0, lastLogoFrame = -1;
+function liveLogo(m){ return visibleLogos.has(m.canvas) && m.canvas.offsetParent !== null && !m.canvas.closest('.menu-overlay:not(.open)'); }
+function kickLogo(){ if(!logoRaf && mounts.some(liveLogo)) logoRaf = requestAnimationFrame(animate); }
+document.addEventListener('click', ()=>setTimeout(kickLogo, 60));   // the menu logo becomes visible when the menu opens
 function animate(){
-  requestAnimationFrame(animate);
+  logoRaf = 0;
+  const on = mounts.filter(liveLogo);
+  if(!on.length) return;
+  logoRaf = requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
-  if(logoMinDelta && (t - lastLogoT) < logoMinDelta){ return; }
-  lastLogoT = t;
-  for(const m of mounts){
-    if(m.canvas.offsetParent === null) continue;
-    const r = m.canvas.getBoundingClientRect();
-    if(r.bottom <= 0 || r.top >= innerHeight) continue;
-    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
-    m.renderer.render(m.scene, m.cam);
-  }
+  if(t - lastLogoFrame < 1/30) return;
+  lastLogoFrame = t;
+  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
 }

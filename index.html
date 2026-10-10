@@ -97,7 +97,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
   /* ---------- background aurora (subtle, monochrome) ---------- */
   .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
+  .aurora b{ position:absolute; border-radius:50%; will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
   .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw;
     background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), transparent 70%); animation:drift1 24s ease-in-out infinite; }
   .aurora b:nth-child(2){ width:40vw; height:40vw; top:34vh; right:-12vw;
@@ -206,6 +206,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .scard .two-tone .ghost{ color:rgba(255,255,255,.30); }
   /* floating, scroll-animated media that blends into the card */
   .scard-body{ position:relative; z-index:10; }
+  .scard::after{ content:""; position:absolute; inset:0; z-index:30; pointer-events:none; border-radius:inherit; background:#000; opacity:var(--dim, 0); }
   /* full-width cover image filling the top of the card, into the rounded corners */
   .scard-media{ position:relative; margin:0; height:230px; overflow:hidden; }
   .scard-media .scard-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 26%;
@@ -1387,7 +1388,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <div>
             <p class="font-semibold">Timișoara</p>
             <p class="text-[var(--muted)]">Str. Bucegi 7</p>
-            <a href="tel:+40750263054" class="foot-link">+40 750 263 054</a>
+            <a href="tel:+40750204243" class="foot-link">+40 750 204 243</a>
           </div>
           <div>
             <p class="font-semibold">Arad</p>
@@ -1656,48 +1657,49 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   const ms = { x:0, y:0, tx:0, ty:0 };
   window.addEventListener('mousemove', e=>{ ms.tx = e.clientX/window.innerWidth*2-1; ms.ty = e.clientY/window.innerHeight*2-1; }, { passive:true });
   document.addEventListener('mouseleave', ()=>{ ms.tx = 0; ms.ty = 0; });
+  // One read pass, then one write pass per frame (no layout thrashing); the stacking "dim" is an
+  // overlay's opacity instead of filter:brightness (no repaint); and the loop sleeps when nothing moves.
+  const parts = cards.map((card)=>({ card, img: card.querySelector('.scard-img'), glow: card.querySelector('.scard-glow'), td: card.querySelector('.scard-3d'), next: card.nextElementSibling }));
+  let lastY = -1, still = 0;
   function cardFrame(){
     ms.x += (ms.tx - ms.x)*0.08; ms.y += (ms.ty - ms.y)*0.08;
     const vh = window.innerHeight;
-    cards.forEach((card)=>{
-      const r = card.getBoundingClientRect();
-      if(r.bottom < -80 || r.top > vh + 80){ requestAnimationFrame; return; }
-      // image: alive zoom + rotation + parallax + moving light as the card travels through the viewport
-      const img = card.querySelector('.scard-img');
-      if(img && !reduceM){
-        const p = clampU((vh - r.top) / (vh + r.height));
-        img.style.transform = `translateY(${((p-0.5)*-26).toFixed(2)}px) scale(${(1.05+p*0.18).toFixed(3)}) rotate(${((p-0.5)*3.2).toFixed(2)}deg)`;
-        const glow = card.querySelector('.scard-glow');
-        if(glow){ glow.style.setProperty('--gx', (60+p*24)+'%'); glow.style.setProperty('--gy', (18+p*44)+'%'); }
+    const moving = Math.abs(ms.tx - ms.x) > 0.001 || Math.abs(ms.ty - ms.y) > 0.001 || scrollY !== lastY;
+    lastY = scrollY;
+    still = moving ? 0 : still + 1;
+    if(still > 20){ cardRunning = false; return; }          // settled: sleep until the next scroll / mouse move
+    const rects = parts.map(p=>p.card.getBoundingClientRect());
+    const nexts = parts.map(p=>p.next ? p.next.getBoundingClientRect() : null);
+    parts.forEach((p, i)=>{
+      const r = rects[i];
+      if(r.bottom < -80 || r.top > vh + 80) return;
+      if(p.img && !reduceM){
+        const pr = clampU((vh - r.top) / (vh + r.height));
+        p.img.style.transform = `translateY(${((pr-0.5)*-26).toFixed(2)}px) scale(${(1.05+pr*0.18).toFixed(3)}) rotate(${((pr-0.5)*3.2).toFixed(2)}deg)`;
+        if(p.glow){ p.glow.style.setProperty('--gx', (60+pr*24)+'%'); p.glow.style.setProperty('--gy', (18+pr*44)+'%'); }
       }
-      // how "active" (centered) this card is -> drives tilt + light intensity
-      const cc = r.top + r.height/2;
-      const cf = clampU(1 - Math.abs(cc - vh/2)/(vh*0.62));
-      // interactive 3D parallax tilt on the inner wrapper (keeps the sticky stack intact)
-      const td = card.querySelector('.scard-3d');
-      if(td && !reduceM){
-        td.style.transform = `rotateX(${(-ms.y*6*cf).toFixed(2)}deg) rotateY(${(ms.x*8.5*cf).toFixed(2)}deg)`;
-      }
-      // stacking: dim + slightly shrink the card as the next one slides over it
-      const next = card.nextElementSibling;
-      if(next){
-        const nr = next.getBoundingClientRect();
+      const cf = clampU(1 - Math.abs(r.top + r.height/2 - vh/2)/(vh*0.62));
+      if(p.td && !reduceM) p.td.style.transform = `rotateX(${(-ms.y*6*cf).toFixed(2)}deg) rotateY(${(ms.x*8.5*cf).toFixed(2)}deg)`;
+      const nr = nexts[i];
+      if(nr){
         const overlap = clampU((r.top + r.height - nr.top) / (r.height*0.6));
-        card.style.transform = `scale(${(1 - overlap*0.05).toFixed(3)})`;
-        card.style.filter = `brightness(${(1 - overlap*0.16).toFixed(3)})`;
+        p.card.style.transform = `scale(${(1 - overlap*0.05).toFixed(3)})`;
+        p.card.style.setProperty('--dim', (overlap*0.16).toFixed(3));
       }
     });
     if(cardRunning) requestAnimationFrame(cardFrame);
   }
-  // run the scroll-transition loop ONLY while the services section is in view (frees the phone when it's not)
-  let cardRunning = false;
+  // run the loop only while the services section is in view, and wake it on scroll / mouse move
+  let cardRunning = false, cardVisible = false;
+  const wakeCards = ()=>{ if(cardVisible && !cardRunning){ cardRunning = true; still = 0; requestAnimationFrame(cardFrame); } };
   const servicesSec = document.getElementById('servicii');
   const cardIO = new IntersectionObserver((es)=>{
-    const vis = es.some(e=>e.isIntersecting);
-    if(vis && !cardRunning){ cardRunning = true; requestAnimationFrame(cardFrame); }
-    else if(!vis){ cardRunning = false; }
+    cardVisible = es.some(e=>e.isIntersecting);
+    if(cardVisible) wakeCards(); else cardRunning = false;
   }, { rootMargin:'200px 0px' });
-  if(servicesSec) cardIO.observe(servicesSec); else { cardRunning = true; requestAnimationFrame(cardFrame); }
+  if(servicesSec) cardIO.observe(servicesSec); else { cardVisible = true; wakeCards(); }
+  addEventListener('scroll', wakeCards, { passive:true });
+  addEventListener('mousemove', wakeCards, { passive:true });
 
   const fab = document.getElementById('fab');
   window.addEventListener('scroll', ()=>{
@@ -2029,19 +2031,23 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     placeSnaps(); addEventListener('resize', placeSnaps);
 
     let running = false;
+    let inView = false;
     function loop(){
       if(!running) return;
       const st = scrollTarget();
       progress = reduceMotion ? st : progress + (st - progress) * 0.16; // ease the 3D toward the scroll position
       if(hint) hint.style.opacity = Math.max(0, 1 - progress * 1.5).toFixed(2);
       position();
+      if(Math.abs(st - progress) < 0.0005){ progress = st; position(); running = false; return; } // arrived: sleep until the next scroll
       requestAnimationFrame(loop);
     }
+    addEventListener('scroll', ()=>{ if(inView && !running){ running = true; requestAnimationFrame(loop); } }, { passive:true });
     position(); // initial placement before it scrolls into view
 
     // run the RAF loop only while the section is on screen (saves CPU)
     new IntersectionObserver((es)=>{
       es.forEach(e=>{
+        inView = e.isIntersecting;
         if(e.isIntersecting && !running){ running = true; requestAnimationFrame(loop); }
         else if(!e.isIntersecting){ running = false; }
       });
@@ -2081,8 +2087,10 @@ function makeMaterial(kind){
 }
 
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
-idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); },
+// The model (2.6 MB) loads after the page itself, so it never competes with the content.
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); },
   undefined, (e)=>console.error('GLB load error', e)));
+if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 
 function mountAll(){
   const head  = document.getElementById('logo3d-head');
@@ -2139,20 +2147,23 @@ function makeMount(canvas, opts){
 }
 
 const clock = new THREE.Clock();
-let lastLogoT = -1;
-const logoMinDelta = isMobile ? 1/30 : 0;   // cap the 3D logo to ~30fps on mobile
+// Render only while a logo is on screen, at ~30 fps (the spin is slow, so it looks the same),
+// and stop completely when none is visible — the header logo used to redraw 60+ times a second forever.
+const visibleLogos = new Set();
+const logoIO = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting) visibleLogos.add(e.target); else visibleLogos.delete(e.target); }); kickLogo(); });
+let logoRaf = 0, lastLogoFrame = -1;
+function liveLogo(m){ return visibleLogos.has(m.canvas) && m.canvas.offsetParent !== null && !m.canvas.closest('.menu-overlay:not(.open)'); }
+function kickLogo(){ if(!logoRaf && mounts.some(liveLogo)) logoRaf = requestAnimationFrame(animate); }
+document.addEventListener('click', ()=>setTimeout(kickLogo, 60));   // the menu logo becomes visible when the menu opens
 function animate(){
-  requestAnimationFrame(animate);
+  logoRaf = 0;
+  const on = mounts.filter(liveLogo);
+  if(!on.length) return;
+  logoRaf = requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
-  if(logoMinDelta && (t - lastLogoT) < logoMinDelta){ return; }
-  lastLogoT = t;
-  for(const m of mounts){
-    if(m.canvas.offsetParent === null) continue;     // skip if hidden by responsive breakpoint
-    const r = m.canvas.getBoundingClientRect();       // skip 3D logos scrolled off-screen (frees the GPU for the carousel)
-    if(r.bottom <= 0 || r.top >= innerHeight) continue;
-    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
-    m.renderer.render(m.scene, m.cam);
-  }
+  if(t - lastLogoFrame < 1/30) return;
+  lastLogoFrame = t;
+  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
 }
 </script>
 
