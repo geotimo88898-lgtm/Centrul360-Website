@@ -1,8 +1,12 @@
 /* ============================================================
-   Centrul360 — offer prices come from Admin → Oferte, everywhere.
-   Any element with data-ov="new|old|pct|save|newlei|oldlei" shows that field of the offer named
-   by data-ok (on the element or on a parent). The value written in the HTML is only the fallback
-   for the first instant (or if the admin can't be reached) — a price is never blanked out.
+   Centrul360 — the offers on the site are exactly the active offers in Admin → Oferte.
+   Live: every visit reads /api/offers-public.
+   - [data-ok="key"] marks an offer (card, row, menu slide). Not active in the admin → hidden.
+   - [data-ov="new|old|pct|save|newlei|oldlei"] inside it shows that field of the offer.
+   - [data-offer-cat="epilare"] is a list rebuilt from all active admin offers of that category
+     (a card already written for an offer keeps its text; a new admin offer gets a card like the first).
+   - [data-offer-key] tiers on Prețuri: hidden when the offer is no longer active.
+   The values written in the HTML only show for the first instant, or if the admin can't be reached.
    ============================================================ */
 (function () {
   'use strict';
@@ -14,28 +18,81 @@
     pct: (o) => '−' + o.discountPercent + '%',
     save: (o) => 'Economisești ' + Math.round(o.priceOld - o.priceNew) + ' lei'
   };
-  let byKey = null;
+  const SHORT = (o) => o.title.replace(/^Epilare laser\s*·\s*/i, '');
+  let byKey = null, list = [];
+
+  function waFor(o) {
+    return 'https://wa.me/40750204243?text=' + encodeURIComponent('Buna ziua! Vreau sa rezerv oferta ' + o.title.normalize('NFD').replace(/[̀-ͯ]/g, '') + ' la ' + Math.round(o.priceNew) + ' lei.');
+  }
+  function buildLists() {
+    document.querySelectorAll('[data-offer-cat]').forEach((box) => {
+      const offers = list.filter((o) => o.category === box.dataset.offerCat);
+      const existing = {};
+      box.querySelectorAll(':scope > [data-ok]').forEach((el) => { existing[el.dataset.ok] = el; });
+      const tpl = box.querySelector(':scope > [data-ok]');
+      if (!tpl) return;
+      const items = offers.map((o) => {
+        let el = existing[o.key];
+        if (!el) {
+          el = tpl.cloneNode(true);
+          el.dataset.ok = o.key;
+          el.classList.remove('feature');
+          el.querySelectorAll('.pkg-badge').forEach((b) => b.remove());
+          el.querySelectorAll('[data-of="title"]').forEach((t) => { t.textContent = SHORT(o); });
+          el.querySelectorAll('[data-of="desc"]').forEach((t) => { t.textContent = (o.description || '').split('\n')[0]; });
+          el.querySelectorAll('a[href*="wa.me"]').forEach((a) => { a.href = waFor(o); a.innerHTML = 'Programează <span class="arrow">→</span>'; });
+        }
+        el.hidden = false;
+        return el;
+      });
+      box.replaceChildren(...items);
+      const sec = box.closest('[data-offer-sec]');
+      if (sec) sec.hidden = !items.length;
+    });
+  }
   function apply(root) {
     if (!byKey) return;
-    (root || document).querySelectorAll('[data-ov]').forEach((el) => {
+    const scope = root || document;
+    scope.querySelectorAll('[data-ok]').forEach((host) => {
+      if (host.parentElement && host.parentElement.hasAttribute('data-offer-cat')) return; // lists handled above
+      if (!byKey[host.dataset.ok] && !/^(SPAN|S|B)$/.test(host.tagName)) host.hidden = true;
+    });
+    scope.querySelectorAll('[data-ov]').forEach((el) => {
       const host = el.dataset.ok ? el : el.closest('[data-ok]');
       const o = host && byKey[host.dataset.ok];
       const f = FMT[el.dataset.ov];
-      if (!o || !f || !(o.priceOld > 0 || /^new/.test(el.dataset.ov))) return;
+      if (!o || !f) return;
       const v = f(o);
       if (el.textContent !== v) el.textContent = v;
     });
+    // Prețuri: an offer tier that is no longer active goes; its card stays as a normal price card,
+    // or goes entirely if the offer was all it had
+    scope.querySelectorAll('[data-offer-key]').forEach((tier) => {
+      if (byKey[tier.dataset.offerKey]) return;
+      tier.hidden = true;
+      const card = tier.closest('.pitem');
+      if (!card) return;
+      if (![...card.querySelectorAll('.tier')].some((t) => !t.hidden)) card.hidden = true;
+      else { card.classList.remove('promo'); card.querySelectorAll('.promo-flag').forEach((f) => f.remove()); }
+      const cat = card.closest('.pcat');                 // a category left with nothing goes too
+      if (cat && ![...cat.querySelectorAll('.pitem')].some((p) => !p.hidden)) cat.hidden = true;
+    });
+  }
+  function done(feed) {
+    window.C360Offers = feed;
+    document.dispatchEvent(new CustomEvent('c360:offers', { detail: feed }));
   }
   fetch('/api/offers-public')
     .then((r) => { if (!r.ok) throw new Error('offers_failed'); return r.json(); })
     .then((data) => {
+      list = (data && data.offers) || [];
       byKey = {};
-      ((data && data.offers) || []).forEach((o) => { byKey[o.key] = o; });
+      list.forEach((o) => { byKey[o.key] = o; });
+      buildLists();
       apply();
-      // cards rendered later (carousels, pop-ups) get the same prices
+      // cards rendered later (carousels, pop-ups) follow the same rules
       new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) apply(n.parentNode || n); }))).observe(document.body, { childList: true, subtree: true });
-      window.C360Offers = byKey;
-      document.dispatchEvent(new CustomEvent('c360:offers', { detail: byKey }));
+      done(byKey);
     })
-    .catch(() => { /* keep the prices written in the page */ });
+    .catch(() => done(null));                         // keep what the page has written
 })();

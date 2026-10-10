@@ -32,6 +32,16 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   gtag('config', 'AW-16691853931');
 </script>
 <title>Centrul360 — Medicină Estetică în Timișoara &amp; Arad</title>
+<script>
+  // Offers shown on the site = only what is active in Admin → Oferte (c360-offers.js loads them).
+  // cb(feed) runs once: with the admin offers, or with null if the admin can't be reached in time.
+  window.whenOffers = window.whenOffers || function(cb){
+    if(window.C360Offers !== undefined) return cb(window.C360Offers);
+    let done = false; const go = (d)=>{ if(!done){ done = true; cb(d); } };
+    document.addEventListener('c360:offers', (e)=>go(e.detail));
+    setTimeout(()=>go(null), 3000);
+  };
+</script>
 <link rel="canonical" href="https://www.centrul360.com/">
 <meta name="description" content="Tratamente faciale și corporale non-invazive, cu tehnologie medicală certificată. Rezultate vizibile din prima ședință. Programează-te în Timișoara sau Arad.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -887,7 +897,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <span class="tag">Nedureros</span>
           <span class="tag">Certificat medical</span>
           <span class="tag">Pentru ea și el</span>
-          <span class="tag">Rezultate garantate de la prima ședință</span>
+          <span class="tag">Rezultate vizibile din prima ședință</span>
         </div>
         <p class="flex gap-3 text-[15px] text-white/65 leading-relaxed max-w-md mb-7">
 <span>Cu laserul medical Elysion Pro, îți oferim o piele fină pentru totdeauna. Un rezultat care se vede în oglindă și se simte la fiecare atingere.</span>
@@ -1027,7 +1037,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <p class="text-[var(--muted)] text-[15px] mb-7">Alege locația pe care vrei să o vezi.</p>
     <div class="flex flex-col gap-3">
       <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener" class="pill pill-ink px-6 py-4 text-[15px] justify-center w-full">Recenzii Timișoara <span class="arrow">→</span></a>
-      <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016%20Arad" target="_blank" rel="noopener" class="pill pill-glass px-6 py-4 text-[15px] justify-center w-full">Recenzii Arad <span class="arrow">→</span></a>
+      <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad" target="_blank" rel="noopener" class="pill pill-glass px-6 py-4 text-[15px] justify-center w-full">Recenzii Arad <span class="arrow">→</span></a>
     </div>
   </div>
 </div>
@@ -1147,24 +1157,29 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   (function(){
     const sim=document.getElementById('simulator'); if(!sim) return;
     const PKGS=[
-      {goal:'abdomen',name:'Mini Belly',price:997,old:1640,sessions:5,dur:'~5 ședințe',incl:'1× Liposonix + 4× EMS',tm:true},
-      {goal:'abdomen',name:'Abdomen 360',price:3699,old:6380,sessions:17,dur:'program complet · ~3 luni',incl:'5× Liposonix/HIFU + 6× EMS + 6× Cavitație',tm:true},
-      {goal:'gusa',name:'Mini Gușă',price:990,old:1270,sessions:6,dur:'~5 săptămâni',incl:'2× HIFU + 4× RF Sculpt',tm:false},
-      {goal:'gusa',name:'Gușă 360',price:2241,old:3630,sessions:15,dur:'~3 luni',incl:'6× HIFU + 9× RF Sculpt',tm:false},
-      {goal:'lifting',name:'Lifting 360',price:1750,old:2420,sessions:5,dur:'program complet',incl:'1× HIFU Full Face + 4× RF Sculpt Full Face',tm:false},
-      {goal:'lifting',name:'Mini Lifting',price:2310,old:3840,sessions:12,dur:'program lifting',incl:'6× HIFU + 6× RF Sculpt Full Face',tm:false},
-      {goal:'celulita',name:'Celulită & Lifting',price:1180,old:2000,sessions:8,dur:'program',incl:'8× EMS',tm:true},
-      {goal:'celulita',name:'Celulită 360',price:2620,old:4240,sessions:16,dur:'program complet',incl:'8× EMS + 8× Cavitație',tm:true},
-      {goal:'detox',name:'Detox',price:1120,old:1780,sessions:8,dur:'program',incl:'4× EMS + 4× Împachetare la cald',tm:true}
+      {goal:'abdomen',key:'mini-belly',name:'Mini Belly',price:997,old:1640,sessions:5,dur:'~5 ședințe',incl:'1× Liposonix + 4× EMS',tm:true},
+      {goal:'abdomen',key:'abdomen-360',name:'Abdomen 360',price:3699,old:6380,sessions:17,dur:'program complet · ~3 luni',incl:'5× Liposonix/HIFU + 6× EMS + 6× Cavitație',tm:true},
+      {goal:'gusa',key:'mini-gusa',name:'Mini Gușă',price:990,old:1270,sessions:6,dur:'~5 săptămâni',incl:'2× HIFU + 4× RF Sculpt',tm:false},
+      {goal:'gusa',key:'gusa-360',name:'Gușă 360',price:2241,old:3630,sessions:15,dur:'~3 luni',incl:'6× HIFU + 9× RF Sculpt',tm:false},
+      {goal:'lifting',key:'lifting-360',name:'Lifting 360',price:1750,old:2420,sessions:5,dur:'program complet',incl:'1× HIFU Full Face + 4× RF Sculpt Full Face',tm:false},
+      {goal:'lifting',key:'mini-lifting',name:'Mini Lifting',price:2310,old:3840,sessions:12,dur:'program lifting',incl:'6× HIFU + 6× RF Sculpt Full Face',tm:false},
+      {goal:'celulita',key:'celulita-lifting',name:'Celulită & Lifting',price:1180,old:2000,sessions:8,dur:'program',incl:'8× EMS',tm:true},
+      {goal:'celulita',key:'celulita-360',name:'Celulită 360',price:2620,old:4240,sessions:16,dur:'program complet',incl:'8× EMS + 8× Cavitație',tm:true},
+      {goal:'detox',key:'detox-pachet',name:'Detox',price:1120,old:1780,sessions:8,dur:'program',incl:'4× EMS + 4× Împachetare la cald',tm:true}
     ];
     const GL={gusa:'Gușă / bărbie dublă',abdomen:'Slăbire / abdomen',lifting:'Lifting facial / riduri',celulita:'Celulită',detox:'Detox / drenaj'};
     const TL={rapid:'rapid (~1 lună)',echilibrat:'echilibrat (~3 luni)',lung:'fără grabă'};
     const BL={'1000':'sub 1.000 lei','2500':'1.000–2.500 lei','4000':'2.500–4.000 lei','99999':'peste 4.000 lei'};
     // PAS 1 — oferta ieftină de intrare, pe obiectiv (de pe pagina Oferte)
     const OFFERS={
-      abdomen:{name:'Liposonix · 2 zone',price:640,old:1280,note:'2 zone la preț de una · reduce grăsimea localizată'},
-      lifting:{name:'Tratament facial Restart',price:190,old:300,note:'Hidratare și luminozitate · fără recuperare'}
+      abdomen:{key:'liposonix-2zone',name:'Liposonix · 2 zone',price:640,old:1280,note:'2 zone la preț de una · reduce grăsimea localizată'},
+      lifting:{key:'facial-restart',name:'Tratament facial Restart',price:190,old:300,note:'Hidratare și luminozitate · fără recuperare'}
     };
+    whenOffers(function(FEED){
+      if(!FEED) return;
+      for(let i = PKGS.length - 1; i >= 0; i--){ const f = FEED[PKGS[i].key]; if(!f) PKGS.splice(i, 1); else { PKGS[i].price = Math.round(f.priceNew); PKGS[i].old = Math.round(f.priceOld); } }
+      Object.keys(OFFERS).forEach((g)=>{ const f = FEED[OFFERS[g].key]; if(!f) delete OFFERS[g]; else { OFFERS[g].price = Math.round(f.priceNew); OFFERS[g].old = Math.round(f.priceOld); } });
+    });
     const sel={goal:null,time:null,budget:null};
     const result=document.getElementById('simResult'), hint=document.getElementById('simHint');
     sim.querySelectorAll('.sim-chips').forEach(group=>{
@@ -1181,6 +1196,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       const cands=PKGS.filter(p=>p.goal===sel.goal);
       const aff=cands.filter(p=>p.price<=budget);
       let pick, over=false;
+      if(!cands.length){ render(null, false); return; }
       if(aff.length){ pick = sel.time==='rapid' ? aff.reduce((a,b)=>a.sessions<=b.sessions?a:b) : aff.reduce((a,b)=>a.price>=b.price?a:b); }
       else { pick = cands.reduce((a,b)=>a.price<=b.price?a:b); over=true; }
       render(pick, over);
@@ -1198,17 +1214,17 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           (OFF.note?'<div class="sim-step-note">'+OFF.note+'</div>':'')+
           '<div class="sim-step-price"><b>'+OFF.price+' lei</b>'+(OFF.old?'<s>'+OFF.old+' lei</s><span class="off">−'+o1+'%</span>':'')+'</div>'+
           '</div>'+
-          '<div class="sim-conn">apoi, pentru rezultat de durată</div>';
+          (p?'<div class="sim-conn">apoi, pentru rezultat de durată</div>':'');
       }
-      const off=Math.round((1-p.price/p.old)*100);
-      const step2='<div class="sim-step">'+
+      const off=p?Math.round((1-p.price/p.old)*100):0;
+      const step2=!p?'':'<div class="sim-step">'+
         '<span class="sim-step-lbl">'+(OFF?'Cură completă':'Pachet recomandat')+(over?' · cel mai apropiat de buget':'')+'</span>'+
         '<div class="sim-step-name">'+p.name+'</div>'+
         '<div class="sim-step-note">'+p.dur+' · '+p.incl+'</div>'+
         '<div class="sim-step-price"><b>'+p.price+' lei</b><s>'+p.old+' lei</s><span class="off">−'+off+'%</span></div>'+
         (p.tm?'<div class="sim-rec-tm">'+pin+' Disponibil doar la Timișoara</div>':'')+
         '</div>';
-      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'. Mă interesează '+(OFF?OFF.name+' / ':'')+p.name+'.';
+      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'.'+(OFF||p?' Mă interesează '+[OFF&&OFF.name,p&&p.name].filter(Boolean).join(' / ')+'.':'');
       const wa='https://wa.me/40750204243?text='+encodeURIComponent(msg);
       const consult='<div class="sim-consult">'+
         '<span class="sim-step-lbl">Primul pas, pentru orice plan</span>'+
@@ -1300,7 +1316,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="loc-pop-bg" style="background-image:url('brand_asset/loc-arad.webp')"></div>
         <div class="loc-pop-info">
           <p class="eyebrow text-white/60 mb-2">Arad</p>
-          <h3 class="sec-head text-[1.45rem] mb-4">Str. Ioan Alexandru 16</h3>
+          <h3 class="sec-head text-[1.45rem] mb-4">Str. Ioan Alexandru 16-18</h3>
           <div class="mb-5 text-[13px] text-white/75">
             <p class="flex items-center gap-2.5"><svg class="loc-icn" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Luni – Vineri · 11:00 – 19:00</p>
           </div>
@@ -1340,7 +1356,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">Unde vă găsesc?<span class="faq-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Avem două clinici: Timișoara (Str. Bucegi 7) și Arad (Str. Ioan Alexandru 16). Alegi locația care îți este la îndemână atunci când te programezi.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Avem două clinici: Timișoara (Str. Bucegi 7) și Arad (Str. Ioan Alexandru 16-18). Alegi locația care îți este la îndemână atunci când te programezi.</div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">Tratamentele sunt sigure?<span class="faq-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -1372,16 +1388,10 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <!-- cvz:start -->
 <section class="relative z-10 px-6 sm:px-8 max-w-7xl mx-auto" style="padding-top:1rem;padding-bottom:1rem;">
 <div class="cvz-guarantee">
-  <p class="cvz-eyebrow">Garanție scrisă</p>
-  <h3>Dacă nu vezi nicio schimbare după prima ședință, îți returnăm ședința.</h3>
-  <p>Fotografiem zona înainte și după, în aceleași condiții de lumină. Compari singură. Dacă nu există nicio diferență vizibilă, ședința îți este returnată — fără discuții și fără să fie nevoie să justifici.</p>
-  <p>La epilarea laser mergem mai departe: <strong style="color:var(--fg)">dacă părul crește la loc, continuăm gratuit</strong> până când nu mai e nevoie.</p>
-  <ul class="cvz-cond">
-    <li>Fotografii înainte și după, la aceeași ședință</li>
-    <li>Protocolul recomandat trebuie respectat</li>
-    <li>Valabil în ambele clinici</li>
-    <li>Consultația inițială e oricum gratuită</li>
-  </ul>
+  <p class="cvz-eyebrow">Garanție scrisă · epilare laser</p>
+  <h3>Dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie.</h3>
+  <p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine și tot ai nevoie să te epilezi regulat, mai faci ședințe pe cheltuiala noastră. Fără plafon.</p>
+  <p><a href="/epilare-laser#garantie" style="color:var(--fg); text-decoration:underline; text-underline-offset:3px;">Vezi condițiile garanției →</a></p>
 </div>
 </section>
 <!-- cvz:end -->
@@ -1420,7 +1430,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           </div>
           <div>
             <p class="font-semibold">Arad</p>
-            <p class="text-[var(--muted)]">Str. Ioan Alexandru 16</p>
+            <p class="text-[var(--muted)]">Str. Ioan Alexandru 16-18</p>
             <a href="tel:+40750263054" class="foot-link">+40 750 263 054</a>
           </div>
         </div>
@@ -1812,7 +1822,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   })();
 
   // ---- 3D offers carousel (vanilla port of the React reference) ----
-  (function(){
+  whenOffers(function(FEED){
     const stage = document.getElementById('offers3dStage');
     const viewport = document.getElementById('offers3dViewport');
     if(!stage || !viewport) return;
@@ -1831,6 +1841,13 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       { key:'cavitatie-1plus1', name:'Cavitație 1+1 · Arad',      price:'280', old:'560',  note:'−50%', ba:'brand_asset/concern-belly-2.webp', alt:'Cavitație',
         bullets:['2 ședințe la preț de una','Reduce grăsimea localizată','Fără timp de recuperare'] },
     ];
+    if(FEED){
+      for(let i = OFFERS.length - 1; i >= 0; i--){
+        const f = FEED[OFFERS[i].key];
+        if(!f){ OFFERS.splice(i, 1); continue; }
+        OFFERS[i].price = String(Math.round(f.priceNew)); OFFERS[i].old = String(Math.round(f.priceOld)); OFFERS[i].note = '−' + f.discountPercent + '%';
+      }
+    }
     // the carousel pages = the offers + a final "see all offers" CTA card
     const ITEMS = OFFERS.concat([{ cta:true }]);
     const sequence = ITEMS.concat(ITEMS); // duplicate so the loop always has a buffer card off-screen
@@ -2079,7 +2096,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         else if(!e.isIntersecting){ running = false; }
       });
     }, { threshold:0.04 }).observe(stage);
-  })();
+  });
 </script>
 
 <script type="importmap">

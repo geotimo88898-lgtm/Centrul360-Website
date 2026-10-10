@@ -310,7 +310,7 @@
       </div>
       <div class="info-actions">
         <a href="https://wa.me/40750263054?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20la%20clinica%20din%20Arad." target="_blank" rel="noopener" class="pill pill-on-dark">Programează pe WhatsApp <span class="dot" style="background:rgba(14,14,16,.08);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg></span></a>
-        <a href="https://www.google.com/maps/dir/?api=1&destination=Centrul360%20Strada%20Ioan%20Alexandru%2016%20Arad" target="_blank" rel="noopener" class="pill pill-glass">Navighează <span class="dot"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg></span></a>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad" target="_blank" rel="noopener" class="pill pill-glass">Navighează <span class="dot"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg></span></a>
       </div>
     </div>
   </section>
@@ -444,22 +444,6 @@
     @media(min-width:640px){ .cf-bar{ flex-direction:row; } }
     .cf-legal{ display:flex; gap:1.5rem; font-size:13px; }
   </style>
-<!-- cvz:start -->
-<section class="sec" id="garantie"><div class="wrap">
-<div class="cvz-guarantee">
-  <p class="cvz-eyebrow">Garanție scrisă</p>
-  <h3>Dacă după prima ședință nu vezi nicio schimbare, îți returnăm ședința.</h3>
-  <p>Fotografiem zona înainte și după, în aceleași condiții de lumină. Compari singură. Dacă nu există nicio diferență vizibilă, ședința îți este returnată — fără discuții și fără să fie nevoie să justifici.</p>
-  <p>De aceea consultația e gratuită și de aceea îți spunem deschis când un tratament nu e potrivit pentru cazul tău.</p>
-  <ul class="cvz-cond">
-    <li>Fotografii înainte și după, la aceeași ședință</li>
-    <li>Se aplică la prima ședință din protocol</li>
-    <li>Protocolul recomandat trebuie respectat</li>
-    <li>Valabil în ambele clinici</li>
-  </ul>
-</div>
-</div></section>
-<!-- cvz:end -->
 <section class="sec"><div class="wrap">
 <div class="cvz-proof">
   <div><b>4,9</b><span class="cvz-stars">★★★★★</span><span>din 300+ recenzii Google</span></div>
@@ -497,7 +481,7 @@
           <p class="cf-h">Locații</p>
           <div class="cf-locs">
             <div class="cf-loc"><strong>Timișoara</strong><span>Str. Bucegi 7</span><a href="tel:+40750204243" class="cf-a">+40 750 204 243</a></div>
-            <div class="cf-loc"><strong>Arad</strong><span>Str. Ioan Alexandru 16</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
+            <div class="cf-loc"><strong>Arad</strong><span>Str. Ioan Alexandru 16-18</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
           </div>
         </div>
         <div>
@@ -565,7 +549,7 @@
     const map = L.map(el, { zoomControl:true, attributionControl:true, scrollWheelZoom:false });
     L.maplibreGL({ style: window.__c360MapStyle, attribution:'© OpenFreeMap · © OpenStreetMap' }).addTo(map);
     map.setView(latlng, 15);
-    const icon = L.divIcon({ className:'loc-mk', iconSize:[220,46], iconAnchor:[110,8], html:'<span class="loc-pin-dot"></span><span class="loc-pin-label">Centrul360 · Str. Ioan Alexandru 16</span>' });
+    const icon = L.divIcon({ className:'loc-mk', iconSize:[220,46], iconAnchor:[110,8], html:'<span class="loc-pin-dot"></span><span class="loc-pin-label">Centrul360 · Str. Ioan Alexandru 16-18</span>' });
     L.marker(latlng, { icon, keyboard:false }).addTo(map);
     setTimeout(()=> map.invalidateSize(), 350);
     window.addEventListener('resize', ()=> map.invalidateSize());
