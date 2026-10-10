@@ -343,3 +343,77 @@ p{ margin:0; }
 .rv-in.in{ opacity:1; transform:none; }
 @media (prefers-reduced-motion:reduce){ *, *::before, *::after{ animation:none !important; transition:none !important; } .rv-in{ opacity:1; transform:none; } }
 @media (max-width:600px){ .wrap{ padding:0 1rem; } .qgrid-2{ grid-template-columns:1fr 1fr; } .hero-actions .btn{ flex:1; } }
+
+/* =========================================================================
+   MOBILE FIRST PASS — most visitors come from ads on a phone.
+   Tight rhythm, one action always in reach, swipe instead of long stacks.
+   ========================================================================= */
+.top-wa{ display:none; color:#25d366; }
+.mbar{ display:none; }
+@media (max-width:960px){
+  .top-wa{ display:grid; margin-left:auto; }
+  .top-wa + .menu-btn{ margin-left:.5rem; }
+}
+@media (max-width:640px){
+  body{ font-size:15px; }
+  .topbar .wrap{ height:58px; gap:.5rem; }
+  .brand img{ height:22px; }
+  .menu-btn{ width:40px; height:40px; }
+  .sec{ padding:2.6rem 0; }
+  .sec-head{ margin-bottom:1.1rem; gap:.8rem; }
+  .sec-head .btn{ display:none; }
+  .eyebrow{ font-size:.66rem; margin-bottom:.6rem; }
+  .h1{ font-size:2.15rem; letter-spacing:-.04em; }
+  .h2{ font-size:1.6rem; }
+  .lede{ font-size:.96rem; margin-top:.7rem; }
+  .hero{ padding:1.4rem 0 1.6rem; }
+  .hero-lava{ display:none; }
+  .hero{ background:radial-gradient(90% 60% at 0% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), radial-gradient(70% 50% at 100% 10%, color-mix(in srgb, var(--accent-3) 22%, transparent), transparent 70%); }
+  .hero-grid{ gap:1.3rem; }
+  .hero-proof{ margin-top:1.1rem; gap:.45rem 1rem; }
+  .hero-proof div{ font-size:.82rem; }
+  .hide-m{ display:none !important; }
+  .quiz{ padding:1.15rem; border-radius:20px; }
+  .quiz-progress{ margin-bottom:1.1rem; }
+  .qstep h3{ font-size:1.1rem; margin-bottom:.8rem; }
+  .qopt{ min-height:48px; font-size:.9rem; }
+  /* swipe rows instead of tall stacks */
+  .rail{ display:grid !important; grid-auto-flow:column; grid-auto-columns:84%; grid-template-columns:none !important; gap:.75rem; overflow-x:auto; overscroll-behavior-x:contain;
+    scroll-snap-type:x mandatory; scroll-padding-inline:1rem; margin:0 -1rem; padding:0 1rem .4rem; scrollbar-width:none; }
+  .rail::-webkit-scrollbar{ display:none; }
+  .rail > *{ scroll-snap-align:start; }
+  .rev-list.rail{ grid-auto-columns:86%; }
+  .tr-img{ aspect-ratio:16/10; }
+  .tr-body{ padding:1rem 1.1rem 1.15rem; gap:.6rem; }
+  .tr-body h3{ font-size:1.15rem; }
+  .of{ padding:1.1rem; gap:.7rem; }
+  .of-price b{ font-size:1.8rem; }
+  .rev{ gap:.75rem; }
+  .rev-score{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:.3rem .8rem; padding:1rem 1.1rem; }
+  .rev-score b{ font-size:2.2rem; }
+  .rev-score span:last-of-type{ flex-basis:100%; font-size:.84rem; }
+  .rev-score .btn{ display:none; }
+  .rv{ padding:1.05rem; }
+  .sim{ padding:1.1rem; }
+  .sim-steps-q{ gap:1rem; }
+  .how{ gap:.6rem; }
+  .how .card{ padding:1.05rem 1.1rem; }
+  .how-n{ margin-bottom:.6rem; }
+  .guar{ padding:1.2rem; gap:.9rem; }
+  .guar .chip-ic{ width:44px; height:44px; }
+  .loc-img{ aspect-ratio:21/9; }
+  .loc-body{ padding:1rem 1.1rem 1.15rem; gap:.7rem; }
+  .loc-actions .btn{ flex:1; padding:0 .6rem; }
+  .faq summary{ padding:.9rem 1rem; font-size:.95rem; }
+  .faq details p{ padding:0 1rem 1rem; }
+  .cta{ padding:2.2rem 1.1rem; border-radius:22px; }
+  .foot{ padding-bottom:6rem; }
+  /* thumb-reach action bar: appears once the form has scrolled away */
+  .fab{ display:none; }
+  .mbar{ display:flex; gap:.5rem; position:fixed; left:0; right:0; bottom:0; z-index:45; padding:.6rem .75rem calc(.6rem + env(safe-area-inset-bottom));
+    background:rgba(7,8,11,.92); border-top:1px solid var(--line); transform:translateY(110%); transition:transform .3s var(--ease); }
+  .mbar.show{ transform:none; }
+  .mbar .btn-lava{ flex:1; height:50px; }
+  .mbar-wa{ width:50px; height:50px; padding:0; color:#25d366; flex:none; }
+  .mbar-wa svg{ width:24px; height:24px; }
+}

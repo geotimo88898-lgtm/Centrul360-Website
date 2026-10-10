@@ -41,6 +41,19 @@
     setTimeout(() => els.forEach((el) => { if (el.getBoundingClientRect().top < innerHeight) el.classList.add('in'); }), 300);
   } else els.forEach((el) => el.classList.add('in'));
 
+  // ---- mobile action bar: hidden while the hero form is visible (one call to action at a time)
+  const mbar = document.getElementById('mbar');
+  const form = document.getElementById('formular');
+  if (mbar) {
+    let formVisible = !!form, scrolled = false;
+    const sync = () => { const on = scrolled && !formVisible; mbar.classList.toggle('show', on); mbar.setAttribute('aria-hidden', on ? 'false' : 'true'); };
+    if (form) new IntersectionObserver(([e]) => { formVisible = e.isIntersecting; sync(); }, { threshold: 0.15 }).observe(form);
+    const top = document.createElement('div');
+    top.style.cssText = 'position:absolute;top:0;height:480px;width:1px;pointer-events:none';
+    document.body.prepend(top);
+    new IntersectionObserver(([e]) => { scrolled = !e.isIntersecting; sync(); }).observe(top);
+  }
+
   // ---- live offers: cards marked [data-offer="key"] take title + prices from Admin → Oferte
   const cards = document.querySelectorAll('[data-offer]');
   if (cards.length) {
