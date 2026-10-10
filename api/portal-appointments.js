@@ -38,7 +38,11 @@ const workflows = require('./_lib/workflows');
 // an appointment must be bookable even before any employee of a given location exists.
 const VALID_LOCATIONS = ['Timișoara', 'Arad'];
 
-const VALID_STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata'];
+// 'concediu' is a non-client calendar block (see createBlockingAppointment below) — created
+// automatically when an admin approves a leave request (api/portal-leave.js), so reception
+// can't accidentally double-book someone who's away. It's a real appointment row with no real
+// client, same as the others, just with its own status so the Calendar can style it distinctly.
+const VALID_STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata', 'concediu'];
 
 function isValidDate(date) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date || '');
@@ -101,6 +105,26 @@ async function validateAndBuildFields(body, employees) {
       status,
     },
   };
+}
+
+// Reused by api/portal-leave.js (action: 'decide', on approval) — same "exported create helper"
+// pattern as portal-leads.js's createLead(), reused by the Facebook webhook. No real client: an
+// all-day marker (no `time`, so it renders as an untimed chip, naturally spanning the whole
+// day) tied to the employee via cosmeticianId, so reception sees the clash immediately.
+async function createBlockingAppointment({ date, location, cosmeticianId, cosmeticianName, label }) {
+  const appointments = await readJSON('data/appointments.json', []);
+  const now = new Date().toISOString();
+  const entry = {
+    id: crypto.randomUUID(), date, time: '',
+    clientId: '', clientName: label, clientPhone: '',
+    treatment: label, category: 'altele', location,
+    cosmeticianId: cosmeticianId || '', cosmeticianName: cosmeticianName || '',
+    status: 'concediu',
+    createdBy: 'leave-approval', createdAt: now, updatedAt: now,
+  };
+  appointments.push(entry);
+  await writeJSON('data/appointments.json', appointments);
+  return entry;
 }
 
 module.exports = async (req, res) => {
@@ -220,3 +244,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'appointments_failed' });
   }
 };
+
+module.exports.createBlockingAppointment = createBlockingAppointment;

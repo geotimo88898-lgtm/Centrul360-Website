@@ -196,11 +196,13 @@
 .cal-block.is-finalizata{ --bc:var(--muted-2); opacity:.75; }
 .cal-block.is-anulata{ --bc:var(--bad); opacity:.55; }
 .cal-block.is-anulata b{ text-decoration:line-through; }
+.cal-block.is-concediu{ --bc:var(--muted-2); opacity:.7; }
 .cal-block.is-src{ opacity:.25; }
 .cal-block.is-ghost{ z-index:8; opacity:.95; box-shadow:0 20px 40px -14px rgba(0,0,0,.45), inset 3px 0 0 var(--bc, var(--accent)); transform:scale(1.03); transition:top .08s linear; cursor:grabbing; animation:none; }
 .cal-grid.is-dragging, .cal-grid.is-dragging *{ cursor:grabbing !important; user-select:none; }
 .cal-untimed{ position:absolute; top:4px; left:4px; right:4px; z-index:4; display:flex; gap:.25rem; flex-wrap:wrap; }
 .cal-chip{ border:0; border-radius:7px; padding:.15rem .45rem; font:inherit; font-size:.7rem; font-weight:600; cursor:pointer; background:var(--warn-soft); color:var(--warn); }
+.cal-chip.is-concediu{ background:var(--glass-2); color:var(--muted); }
 .cal-now{ position:absolute; left:-1px; right:0; height:2px; background:var(--bad); z-index:5; pointer-events:none; box-shadow:0 0 10px var(--bad); }
 .cal-now::before{ content:""; position:absolute; left:-5px; top:-4px; width:10px; height:10px; border-radius:50%; background:var(--bad); animation:k-ping 1.8s var(--ease) infinite; color:var(--bad); }
 .cal-now span{ position:absolute; left:-58px; top:-9px; width:50px; text-align:right; font-size:.66rem; font-weight:800; color:var(--bad); font-variant-numeric:tabular-nums; }

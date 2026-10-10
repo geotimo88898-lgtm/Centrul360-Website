@@ -15,6 +15,9 @@
     finalizata: { label: 'Finalizată', plural: 'finalizate', tone: 'mute', ic: 'check' },
     reprogramata: { label: 'Reprogramată', plural: 'reprogramate', tone: 'warn', ic: 'refresh' },
     anulata: { label: 'Anulată', plural: 'anulate', tone: 'bad', ic: 'ban' },
+    // Created automatically when an admin approves a leave request (Aprobări) — not a real
+    // appointment, just a marker so reception sees the person is away. See api/portal-leave.js.
+    concediu: { label: 'Concediu', plural: 'concedii', tone: 'mute', ic: 'calendar' },
   };
   const S = { view: 'day', date: K.today(), loc: 'all', emp: '', appts: [], range: '', loading: false };
   let panel, gridEl, nowTimer = 0;
@@ -350,6 +353,26 @@
     const a = S.appts.find((x) => x.id === id);
     if (!a) return;
     const st = STATUS[a.status] || STATUS.programata;
+    // A leave block isn't a real appointment — show it read-only, with just a delete button
+    // for whoever can edit the calendar (undoing the approval's calendar side, if ever needed).
+    if (a.status === 'concediu') {
+      K.drawer({
+        title: a.clientName || 'Concediu', lead: K.avatar(a.cosmeticianName || '?', 42),
+        subtitle: '<span class="k-tag is-mute">' + icon('calendar') + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.location),
+        body: '<dl class="k-kv cal-kv"><dt>Angajat</dt><dd>' + esc(a.cosmeticianName || '—') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd></dl>' +
+          '<div class="mo-note">' + icon('info') + 'Generat automat la aprobarea cererii de concediu (Aprobări). Angajatul nu poate fi programat în această zi.</div>',
+        footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge blocarea</button>' : '',
+        onMount(el) {
+          const del = el.querySelector('[data-del]');
+          if (del) del.addEventListener('click', async () => {
+            if (!(await K.ui().confirm({ title: 'Ștergi blocarea?', message: 'Ziua devine din nou liberă în Calendar — cererea de concediu rămâne aprobată.', confirmText: 'Șterge', danger: true }))) return;
+            try { await K.api('/api/portal-appointments', { action: 'delete', id: a.id }); K.ui().toast('Blocare ștearsă.', 'success'); load(true); }
+            catch (err) { K.ui().toast(K.errText(err), 'error'); }
+          });
+        },
+      });
+      return;
+    }
     if (!canEdit()) {
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
