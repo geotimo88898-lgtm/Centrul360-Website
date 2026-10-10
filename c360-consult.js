@@ -200,7 +200,7 @@
     try {
       const txt = new URL(a.href).searchParams.get('text') || '';
       const m = /(?:rezerv[ăa]? oferta|pachetul|programul)\s+(.+?)\.?$/i.exec(txt);
-      if (m) name = m[1];
+      if (m) name = m[1].replace(/\s+la\s+\d+\s*lei$/i, '').replace(/\s*\(\d+\s*lei\)$/i, '');
     } catch (err) { /* keep going without it */ }
     if (!name) { const card = a.closest('.ocard, .pkg'); const h = card && card.querySelector('h3, h4'); name = h ? h.textContent : ''; }
     const pop = a.closest('.offpop, #offpop');                 // the offer pop-up on Oferte closes first

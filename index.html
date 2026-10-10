@@ -668,8 +668,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <!-- offers auto-slider: 2 offers + a final "see all offers" slide -->
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="/oferte" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="/oferte" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
+        <a class="ms-slide ms-offer" data-ok="liposonix-2zone" href="/oferte" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price" data-ov="newlei">640 lei</span><s class="ms-old" data-ov="oldlei">1280 lei</s><span class="ms-off" data-ov="pct">−50%</span></span></span></a>
+        <a class="ms-slide ms-offer" data-ok="facial-restart" href="/oferte" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price" data-ov="newlei">190 lei</span><s class="ms-old" data-ov="oldlei">300 lei</s><span class="ms-off" data-ov="pct">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="/oferte" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
       <div class="ms-dots" id="msDots">
@@ -1820,15 +1820,15 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
     // honest offers: real promos + free-consultation treatment hooks (swap big/sub for real promo prices anytime)
     const OFFERS = [
-      { name:'Liposonix · 2 zone',       price:'640', old:'1280', note:'−50%', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
+      { key:'liposonix-2zone', name:'Liposonix · 2 zone',       price:'640', old:'1280', note:'−50%', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
         bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'] },
-      { name:'Tratament facial Restart', price:'190', old:'300',  note:'−37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
+      { key:'facial-restart', name:'Tratament facial Restart', price:'190', old:'300',  note:'−37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
         bullets:['Hidratare și luminozitate vizibilă','Netezește ridurile fine','Fără timp de recuperare'] },
-      { name:'Epilare laser · Full Body', price:'490', old:'920',  note:'−47%', ba:'brand_asset/ba-epilare.webp',   alt:'Rezultat · Epilare laser', cert:true,
+      { key:'epilare-full-body', name:'Epilare laser · Full Body', price:'599', old:'920',  note:'−35%', ba:'brand_asset/ba-epilare.webp',   alt:'Rezultat · Epilare laser', cert:true,
         bullets:['Laser medical Elysion Pro','Toate zonele de corp, fără față','Doar în Timișoara'] },
-      { name:'Cavitație + EMS · Timișoara', price:'280', old:'530', note:'−47%', ba:'brand_asset/concern-grasime.webp', alt:'Cavitație și EMS',
+      { key:'cavitatie-ems', name:'Cavitație + EMS · Timișoara', price:'280', old:'530', note:'−47%', ba:'brand_asset/concern-grasime.webp', alt:'Cavitație și EMS',
         bullets:['Reduce grăsimea localizată','Tonifiere cu electrostimulare','Fără timp de recuperare'] },
-      { name:'Cavitație 1+1 · Arad',      price:'280', old:'560',  note:'−50%', ba:'brand_asset/concern-belly-2.webp', alt:'Cavitație',
+      { key:'cavitatie-1plus1', name:'Cavitație 1+1 · Arad',      price:'280', old:'560',  note:'−50%', ba:'brand_asset/concern-belly-2.webp', alt:'Cavitație',
         bullets:['2 ședințe la preț de una','Reduce grăsimea localizată','Fără timp de recuperare'] },
     ];
     // the carousel pages = the offers + a final "see all offers" CTA card
@@ -1838,7 +1838,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const thickness = [-1.2, 0, 1.2]; // volumetric 3D thickness slices (3 layers — lighter to composite on mobile)
 
     const waUrl = o => 'https://wa.me/40750204243?text=' + encodeURIComponent(`Bună ziua! Vreau să rezerv oferta ${o.name} la ${o.price} lei.`);
-    const priceHTML = o => `<span class="o3d-price">${o.price}<span class="u">lei</span></span><span class="o3d-old">${o.old} lei</span>`;
+    const priceHTML = o => `<span class="o3d-price" data-ok="${o.key||''}"><span data-ov="new">${o.price}</span><span class="u">lei</span></span><span class="o3d-old" data-ok="${o.key||''}" data-ov="oldlei">${o.old} lei</span>`;
     const checkSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
     // final CTA card (same metallic 3D card → links to the full offers page)
     const ctaFaceHTML = () =>
@@ -1852,7 +1852,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const offerFaceHTML = o =>
       `<div class="o3d-photo">${ o.video
         ? `<video class="o3d-vid" autoplay muted loop playsinline preload="metadata" poster="${o.poster||''}"><source src="${o.video}" type="video/mp4"></video>`
-        : `<img src="${o.ba}" alt="${o.alt}" loading="lazy">` }${ o.cert ? `<span class="o3d-cert"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>` : '' }${ o.note ? `<span class="o3d-disc">${o.note}</span>` : '' }</div>`+
+        : `<img src="${o.ba}" alt="${o.alt}" loading="lazy">` }${ o.cert ? `<span class="o3d-cert"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>` : '' }${ o.note ? `<span class="o3d-disc" data-ok="${o.key||''}" data-ov="pct">${o.note}</span>` : '' }</div>`+
       `<div class="o3d-info">`+
         `<span class="o3d-eyebrow">Ofertă activă</span>`+
         `<p class="o3d-name">${o.name}</p>`+
@@ -2353,5 +2353,6 @@ function animate(){
 })();
 </script>
 <script src="c360-consult.js" defer></script>
+<script src="c360-offers.js" defer></script>
 </body>
 </html>

@@ -313,8 +313,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     </nav>
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="/oferte" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">−50%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="/oferte" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">−37%</span></span></span></a>
+        <a class="ms-slide ms-offer" data-ok="liposonix-2zone" href="/oferte" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price" data-ov="newlei">640 lei</span><s class="ms-old" data-ov="oldlei">1280 lei</s><span class="ms-off" data-ov="pct">−50%</span></span></span></a>
+        <a class="ms-slide ms-offer" data-ok="facial-restart" href="/oferte" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price" data-ov="newlei">190 lei</span><s class="ms-old" data-ov="oldlei">300 lei</s><span class="ms-off" data-ov="pct">−37%</span></span></span></a>
         <a class="ms-slide ms-cta" href="/oferte" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
       <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
@@ -668,10 +668,10 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <caption>Pachete promoționale · o ședință</caption>
         <thead><tr><th>Pachet</th><th style="text-align:right">Preț</th></tr></thead>
         <tbody>
-          <tr><td class="z">Axilă + Inghinal total</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">340 lei</s>220 lei</td></tr>
+          <tr data-ok="epilare-inghinal-axila"><td class="z">Axilă + Inghinal total</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;" data-ov="oldlei">340 lei</s><span data-ov="newlei">220 lei</span></td></tr>
           <tr><td class="z">Axile + Antebrațe + Picior scurt</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">510 lei</s>410 lei</td></tr>
           <tr><td class="z">Axile + Inghinal total + Picior lung</td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">730 lei</s>630 lei</td></tr>
-          <tr><td class="z">Full Body <span style="color:var(--muted-2); font-size:.8rem;">(axile · inghinal total · brațe total · picior lung)</span></td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;">920 lei</s>490 lei</td></tr>
+          <tr data-ok="epilare-full-body"><td class="z">Full Body <span style="color:var(--muted-2); font-size:.8rem;">(axile · inghinal total · brațe total · picior lung)</span></td><td class="p"><s style="color:var(--muted-2); font-weight:600; margin-right:.45em;" data-ov="oldlei">920 lei</s><span data-ov="newlei">599 lei</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -1052,5 +1052,6 @@ function animate(){
 </script>
 <script src="c360-convert.js" defer></script>
 <script src="c360-consult.js" defer></script>
+<script src="c360-offers.js" defer></script>
 </body>
 </html>
