@@ -23,7 +23,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <!-- End Meta Pixel Code -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#08090a">
+<meta name="theme-color" content="#0a0b0e">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16691853931"></script>
 <script>
@@ -36,225 +36,60 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <meta name="description" content="Tratamente faciale și corporale non-invazive, cu tehnologie medicală certificată. Rezultate vizibile din prima ședință. Programează-te în Timișoara sau Arad.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/site.css">
+<link rel="preload" as="image" href="/brand_asset/site/hero.webp" media="(min-width:900px)">
 <script src="/site.js" defer></script>
 </head>
 <body>
 
-<!-- ============ NAV: glass pill ============ -->
-<nav class="nav" aria-label="Principal">
-  <a class="logo" href="/" aria-label="Centrul360 — acasă"><img class="mk" src="/brand_asset/logo-mark-white.svg" alt=""><img src="/brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
-  <ul>
-    <li class="dd">
-      <button type="button" aria-expanded="false">Tratamente</button>
-      <div class="dd-menu">
-        <b>Corp</b>
-        <a href="/grasime-localizata.html">Grăsime localizată</a><a href="/celulita.html">Celulită</a>
-        <a href="/tonifiere-musculara.html">Tonifiere EMS</a><a href="/detox-drenaj.html">Detox &amp; drenaj</a>
-        <b>Față</b>
-        <a href="/riduri-linii-fine.html">Riduri &amp; lifting</a><a href="/gusa-barbie-dubla.html">Gușă / bărbie dublă</a>
-        <a href="/ten-problematic.html">Ten problematic</a><a href="/pete-pigmentare.html">Pete &amp; pigmentare</a>
-        <a href="/ten-lipsit-de-stralucire.html">Ten fără strălucire</a><a href="/epilare-laser.html">Epilare laser</a>
-      </div>
-    </li>
-    <li><a href="#preturi">Prețuri</a></li>
-    <li><a href="/rezultate.html">Rezultate</a></li>
-  </ul>
-  <button type="button" class="burger" data-sheet-open aria-label="Meniu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg></button>
-  <a class="go" href="#programare">Programare</a>
-</nav>
+<!-- ============ HEADER: logo left, menu right ============ -->
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Centrul360 — acasă"><img src="/brand_asset/logo-mark-white.svg" alt="" width="17" height="17"><img src="/brand_asset/wordmark-com.png" alt="Centrul360.com" width="223" height="17"></a>
+    <nav class="menu" aria-label="Principal">
+      <a href="#tratamente">Tratamente</a>
+      <a href="#oferte">Oferte</a>
+      <a href="/preturi.html">Prețuri</a>
+      <a href="/rezultate.html">Rezultate</a>
+      <a href="#locatii">Contact</a>
+    </nav>
+    <button type="button" class="burger" data-menu aria-label="Deschide meniul"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
 
-<div class="sheet" id="sheet" aria-hidden="true">
-  <button type="button" class="sheet-x" data-sheet-close aria-label="Închide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-  <div class="sheet-in">
-    <a href="#preturi">Prețuri</a><a href="/oferte.html">Toate ofertele</a><a href="/rezultate.html">Rezultate</a><a href="/echipa.html">Echipa</a><a href="#programare">Programare</a>
-    <b>Corp</b>
-    <div class="sub-l"><a href="/grasime-localizata.html">Grăsime localizată</a><a href="/celulita.html">Celulită</a><a href="/tonifiere-musculara.html">Tonifiere EMS</a><a href="/detox-drenaj.html">Detox &amp; drenaj</a></div>
-    <b>Față</b>
-    <div class="sub-l"><a href="/riduri-linii-fine.html">Riduri &amp; lifting</a><a href="/gusa-barbie-dubla.html">Gușă / bărbie</a><a href="/ten-problematic.html">Ten problematic</a><a href="/pete-pigmentare.html">Pete</a><a href="/ten-lipsit-de-stralucire.html">Ten fără strălucire</a><a href="/epilare-laser.html">Epilare laser</a></div>
+<div class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-bg"></div>
+  <div class="drawer-panel">
+    <div class="drawer-head"><button type="button" class="burger" data-close aria-label="Închide meniul" style="display:grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <a href="#tratamente">Tratamente</a>
+    <a href="#oferte">Oferte</a>
+    <a href="/preturi.html">Prețuri</a>
+    <a href="/rezultate.html">Rezultate</a>
+    <a href="#locatii">Contact</a>
+    <small>Corp</small>
+    <div class="sub"><a href="/grasime-localizata.html">Grăsime localizată</a><a href="/celulita.html">Celulită</a><a href="/tonifiere-musculara.html">Tonifiere EMS</a><a href="/detox-drenaj.html">Detox &amp; drenaj</a></div>
+    <small>Față</small>
+    <div class="sub"><a href="/riduri-linii-fine.html">Riduri &amp; lifting</a><a href="/gusa-barbie-dubla.html">Gușă / bărbie dublă</a><a href="/ten-problematic.html">Ten problematic</a><a href="/pete-pigmentare.html">Pete &amp; pigmentare</a><a href="/ten-lipsit-de-stralucire.html">Ten fără strălucire</a></div>
+    <small>Epilare</small>
+    <div class="sub"><a href="/epilare-laser.html">Epilare laser</a></div>
   </div>
 </div>
 
 <main>
-<!-- ============ HERO: the living plate leads, the headline is modest ============ -->
-<header class="hero">
-  <div class="hero-mid">
-    <div class="plate" aria-label="Tratăm grăsimea localizată, celulita, ridurile, gușa, petele și părul nedorit">
-      <span class="edge" aria-hidden="true"></span>
-      <span class="k">Tratăm</span><span class="roll" data-words="grăsimea localizată|celulita|ridurile|gușa|petele|părul nedorit"><span class="bg"></span><span class="tx">grăsimea localizată</span></span><span class="caret" aria-hidden="true"></span>
+<!-- ============ HERO: headline + the form that converts ============ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Rezultate vizibile din prima ședință.</h1>
+      <p class="lead">Tratamente faciale și corporale non-invazive, pe aparatură certificată medical. În Timișoara și Arad.</p>
+      <div class="rating"><span class="stars">★★★★★</span><span><b>5,0</b> din 300+ recenzii Google</span></div>
+      <div class="hero-photo"><img src="/brand_asset/site/hero.webp" alt="Consultație la Centrul360" width="900" height="1125" fetchpriority="high"></div>
     </div>
-  </div>
-  <div class="hero-low">
-    <h1 data-words>Rezultate pe care le vezi <span class="am">din prima ședință.</span></h1>
-    <p class="sub">Fără operație, fără recuperare. Aparatură medicală certificată și un plan făcut pentru tine, în Timișoara și Arad.</p>
-    <div class="acts">
-      <a class="btn b1" href="#programare" data-dock-after>Consultație gratuită</a>
-      <span class="proof"><span class="st">★★★★★</span><b>5,0</b> din 300+ recenzii Google</span>
-    </div>
-  </div>
-  <div class="tech" aria-hidden="true">
-    <div class="mq"><div class="mq-t">
-      <span>Liposonix</span><span>HIFU</span><span>RF Sculpt</span><span>EMS</span><span>Cavitație</span><span>Laser Elysion Pro</span><span>Microneedling</span><span>Drenaj limfatic</span>
-      <span>Liposonix</span><span>HIFU</span><span>RF Sculpt</span><span>EMS</span><span>Cavitație</span><span>Laser Elysion Pro</span><span>Microneedling</span><span>Drenaj limfatic</span>
-    </div></div>
-  </div>
-</header>
 
-<!-- ============ MANIFEST + what the free consultation gives you ============ -->
-<section class="sec" id="consultatie">
-  <div class="w">
-    <p class="manifest">Nu îți vindem ședințe. Îți spunem sincer ce se poate schimba, în cât timp și cu ce costuri, înainte să începi.</p>
-    <div class="gets">
-      <div class="bz rv" style="--d:0"><div class="in">
-        <h3>Ce primești la consultația gratuită</h3>
-        <ul class="ck">
-          <li><b>Evaluarea zonei</b> sau a tenului, de un specialist</li>
-          <li><b>Tratamentul potrivit</b> pentru obiectivul tău, nu cel mai scump</li>
-          <li><b>Numărul de ședințe și prețul</b>, spuse dinainte</li>
-          <li><b>Un masaj facial cadou</b>, dacă te programezi de aici</li>
-        </ul>
-      </div></div>
-      <div class="bz rv" style="--d:1"><div class="in">
-        <h3>Lucrăm cu</h3>
-        <div class="chips"><span>Liposonix</span><span>HIFU</span><span>RF Sculpt</span><span>EMS</span><span>Cavitație</span><span>Laser Elysion Pro</span><span>Microneedling</span></div>
-        <p class="note">Toate procedurile sunt non-invazive și se fac pe aparatură certificată medical.</p>
-      </div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ HOW: the step you are at lights up ============ -->
-<section class="sec" id="cum" style="padding-top:0">
-  <div class="w">
-    <div class="head rv"><h2>Cum lucrăm</h2><p>Trei pași. Decizia e mereu a ta.</p></div>
-    <div class="steps">
-      <div class="bz step rv" style="--d:0"><div class="in"><span class="sn">01</span><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><h3>Ne scrii sau lași datele</h3><p>Te sunăm rapid și găsim o oră care ți se potrivește.</p></div></div>
-      <div class="bz step rv" style="--d:1"><div class="in"><span class="sn">02</span><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><h3>Consultația gratuită</h3><p>Evaluăm zona, îți spunem ce se poate obține, câte ședințe și cât costă.</p></div></div>
-      <div class="bz step rv" style="--d:2"><div class="in"><span class="sn">03</span><svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg><h3>Prima ședință</h3><p>Începi doar dacă vrei. Progresul îl urmărim împreună la fiecare vizită.</p></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ REVIEWS: one big quote at a time ============ -->
-<section class="sec" id="recenzii" style="padding-top:0">
-  <div class="w">
-    <div class="head rv"><h2>Ce spun clientele.</h2></div>
-    <div class="review bz rv"><div class="in">
-      <span class="hi"><b>5,0</b> din 300+ recenzii Google</span>
-      <div class="qs">
-        <figure><blockquote>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</blockquote><figcaption><b>Maria Muntean</b>Timișoara · recenzie Google</figcaption></figure>
-        <figure><blockquote>„O experiență minunată — d-na Andreea m-a abordat cu căldură și profesionalism.”</blockquote><figcaption><b>Alina Galuțiu</b>Arad · recenzie Google</figcaption></figure>
-        <figure><blockquote>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</blockquote><figcaption><b>Simona-Mihaela J.</b>Timișoara · recenzie Google</figcaption></figure>
-      </div>
-      <div class="dots"></div>
-    </div></div>
-    <p class="below rv"><a class="tl" href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener">Toate recenziile, pe Google ↗</a></p>
-  </div>
-</section>
-
-<!-- ============ PRICES: tabs, one offer in focus (live from Admin → Oferte) ============ -->
-<section class="sec" id="preturi" style="padding-top:0">
-  <div class="w">
-    <div class="head rv"><h2>Prețuri la vedere.</h2><p>Ofertele lunii. Prețul final îl afli la consultație, înainte să începi.</p></div>
-    <div class="tabs-wrap rv"><div class="tabs" role="tablist">
-      <button type="button" class="on" data-t="corp" role="tab" aria-selected="true">Corp</button>
-      <button type="button" data-t="fata" role="tab" aria-selected="false">Față</button>
-      <button type="button" data-t="epilare" role="tab" aria-selected="false">Epilare</button>
-    </div></div>
-    <article class="bz offer on" data-t="corp" data-offer="liposonix-2zone"><div class="in">
-      <span class="disc" data-o-off>−50%</span>
-      <h3 data-o-title>Liposonix · 2 zone</h3>
-      <div class="pr"><b><span data-o-price>640</span><small>lei</small></b><s data-o-old>1280 lei</s></div>
-      <p>Reduce grăsimea localizată. Fără intervenție, fără recuperare.</p>
-      <a class="tl" data-o-wa href="https://wa.me/40750204243?text=Bun%C4%83%20ziua!%20Vreau%20s%C4%83%20rezerv%20oferta%20Liposonix%20%C2%B7%202%20zone%20la%20640%20lei." target="_blank" rel="noopener">Rezervă pe WhatsApp →</a>
-    </div></article>
-    <article class="bz offer" data-t="fata" data-offer="facial-restart"><div class="in">
-      <span class="disc" data-o-off>−37%</span>
-      <h3 data-o-title>Tratament facial Restart</h3>
-      <div class="pr"><b><span data-o-price>190</span><small>lei</small></b><s data-o-old>300 lei</s></div>
-      <p>Hidratare și luminozitate vizibilă. Fără timp de recuperare.</p>
-      <a class="tl" data-o-wa href="https://wa.me/40750204243?text=Bun%C4%83%20ziua!%20Vreau%20s%C4%83%20rezerv%20oferta%20Tratament%20facial%20Restart%20la%20190%20lei." target="_blank" rel="noopener">Rezervă pe WhatsApp →</a>
-    </div></article>
-    <article class="bz offer" data-t="epilare" data-offer="epilare-full-body"><div class="in">
-      <span class="disc" data-o-off>−47%</span>
-      <h3 data-o-title>Epilare laser · Full Body</h3>
-      <div class="pr"><b><span data-o-price>490</span><small>lei</small></b><s data-o-old>920 lei</s></div>
-      <p>Laser medical Elysion Pro, toate zonele de corp, fără față.</p>
-      <a class="tl" data-o-wa href="https://wa.me/40750204243?text=Bun%C4%83%20ziua!%20Vreau%20s%C4%83%20rezerv%20oferta%20Epilare%20laser%20%C2%B7%20Full%20Body%20la%20490%20lei." target="_blank" rel="noopener">Rezervă pe WhatsApp →</a>
-      <span class="where">Doar în clinica din Timișoara</span>
-    </div></article>
-    <p class="below rv"><a class="tl" href="/oferte.html">Toate ofertele și pachetele →</a></p>
-  </div>
-</section>
-
-<!-- ============ TREATMENTS: two clean lists ============ -->
-<section class="sec" id="tratamente" style="padding-top:0">
-  <div class="w">
-    <div class="head rv"><h2>Ce tratăm.</h2></div>
-    <div class="cols rv">
-      <div>
-        <h3>Corp</h3>
-        <a href="/grasime-localizata.html">Grăsime localizată<span>Liposonix, cavitație</span></a>
-        <a href="/celulita.html">Celulită<span>EMS, cavitație</span></a>
-        <a href="/tonifiere-musculara.html">Tonifiere<span>EMS</span></a>
-        <a href="/detox-drenaj.html">Detox &amp; drenaj<span>Drenaj limfatic</span></a>
-        <a href="/epilare-laser.html">Epilare laser<span>Elysion Pro</span></a>
-      </div>
-      <div>
-        <h3>Față</h3>
-        <a href="/riduri-linii-fine.html">Riduri &amp; lifting<span>HIFU, RF Sculpt</span></a>
-        <a href="/gusa-barbie-dubla.html">Gușă / bărbie dublă<span>HIFU, RF Sculpt</span></a>
-        <a href="/ten-problematic.html">Ten problematic<span>Curățare, microneedling</span></a>
-        <a href="/pete-pigmentare.html">Pete &amp; pigmentare<span>Ten uniform</span></a>
-        <a href="/ten-lipsit-de-stralucire.html">Ten fără strălucire<span>Facial Restart</span></a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ COMMITMENTS (the guarantee is only for laser epilation) ============ -->
-<section class="sec" id="angajamente" style="padding-top:0">
-  <div class="w">
-    <div class="head rv"><h2>Ce ne asumăm.</h2></div>
-    <div class="vows">
-      <div class="bz vow rv" style="--d:0"><div class="in"><i><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></i><h3>Consultație gratuită</h3><p>Fără cost și fără obligații. Pleci cu un plan, chiar dacă nu începi.</p></div></div>
-      <div class="bz vow rv" style="--d:1"><div class="in"><i><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></i><h3>Prețul, dinainte</h3><p>Știi câte ședințe îți trebuie și cât costă înainte de prima.</p></div></div>
-      <div class="bz vow rv" style="--d:2"><div class="in"><i><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></i><h3>Aparatură certificată medical</h3><p>Proceduri non-invazive, fără operație și fără timp de recuperare.</p></div></div>
-      <div class="bz vow rv" style="--d:3"><div class="in"><i><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></i><h3>Garanție la epilarea laser</h3><p>Dacă părul crește la loc în zona tratată, continuăm gratuit, cu protocolul respectat. În Timișoara.</p></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ FAQ ============ -->
-<section class="sec" id="intrebari" style="padding-top:0">
-  <div class="w">
-    <div class="head rv"><h2>Întrebări frecvente</h2></div>
-    <div class="faq rv">
-      <details><summary>Consultația chiar e gratuită?</summary><p>Da. Prima consultație e gratuită și fără obligații: evaluăm zona, îți spunem ce se poate obține și cât costă. Decizia e a ta.</p></details>
-      <details><summary>Cum aleg tratamentul potrivit?</summary><p>Nu trebuie să știi dinainte. La consultație îți recomandăm soluția potrivită pentru obiectivul tău, tipul de piele și buget.</p></details>
-      <details><summary>Doare? Am nevoie de recuperare?</summary><p>Procedurile sunt non-invazive, fără operație și fără timp de recuperare. Te poți întoarce la ce ai de făcut în aceeași zi.</p></details>
-      <details><summary>Când văd rezultate?</summary><p>La multe tratamente, rezultatele se văd din prima ședință. Pentru efecte de durată îți stabilim la consultație numărul optim de ședințe.</p></details>
-      <details><summary>Unde vă găsesc?</summary><p>Timișoara, Str. Bucegi 7, și Arad, Str. Ioan Alexandru 16. Epilarea laser și EMS se fac doar în Timișoara.</p></details>
-    </div>
-  </div>
-</section>
-
-<!-- ============ BOOKING: words left, form right (→ HighLevel) ============ -->
-<section class="sec" id="programare" style="padding-top:0">
-  <div class="w contact">
-    <div class="rv">
-      <h2>Spune-ne ce vrei să <span class="am">schimbi.</span></h2>
-      <p class="lead">Patru întrebări scurte. Te sunăm rapid, stabilim ora și primești un masaj facial cadou la consultație.</p>
-      <div class="chips"><span>Fără obligații</span><span>Răspuns rapid</span><span>Masaj facial cadou</span></div>
-      <div class="call">
-        <span>Preferi să ne scrii direct?</span>
-        <span>Timișoara · <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener">0750 204 243</a></span>
-        <span>Arad · <a href="https://wa.me/40750263054?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener">0750 263 054</a></span>
-      </div>
-    </div>
-    <div class="bz rv" style="--d:1"><div class="in" id="formular">
-      <div class="quiz-top"><span>Masaj facial cadou</span><span id="quizSteps">Pasul 1</span></div>
+    <!-- FORMULAR CADOU (quiz) → HighLevel -->
+    <div class="form" id="formular">
+      <div class="form-head"><div><b>Consultație gratuită</b><span>+ un masaj facial cadou</span></div><em id="quizSteps">Pasul 1</em></div>
       <div class="quiz-progress"><span id="quizBar"></span></div>
       <form id="quizForm" novalidate>
         <input type="text" name="website" class="quiz-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -308,26 +143,165 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         </div>
         <div class="qnav">
           <button type="button" class="qback" id="qBack" hidden>← Înapoi</button>
-          <button type="submit" class="btn b1 qsubmit" id="qSubmit" hidden>Trimite</button>
+          <button type="submit" class="btn qsubmit" id="qSubmit" hidden>Trimite</button>
         </div>
       </form>
-      <p class="form-fine">Datele tale sunt folosite doar ca să te contactăm. <a href="/politica-de-confidentialitate.html">Confidențialitate</a></p>
-    </div></div>
+      <div class="form-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>Fără obligații. Te sunăm noi pentru programare.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PHOTO BAND ============ -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="band fade">
+      <img src="/brand_asset/site/clinica.webp" srcset="/brand_asset/site/clinica-sm.webp 560w, /brand_asset/site/clinica.webp 900w" sizes="(min-width:900px) 1040px, 100vw" alt="Cabinet de tratament Centrul360" loading="lazy" decoding="async">
+      <div class="band-text"><h2>Fără operație. Fără recuperare.</h2><p>Proceduri non-invazive, după care te întorci la ce ai de făcut în aceeași zi.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TREATMENTS ============ -->
+<section class="sec" id="tratamente">
+  <div class="wrap">
+    <div class="sec-head fade"><h2>Tratamente</h2><p class="lead">Alege zona pe care vrei s-o schimbi. La consultație îți spunem ce funcționează pentru tine.</p></div>
+    <div class="treats">
+      <a class="card treat fade" href="/grasime-localizata.html">
+        <div class="ph"><img src="/brand_asset/site/corp-sm.webp" srcset="/brand_asset/site/corp-sm.webp 560w, /brand_asset/site/corp.webp 900w" sizes="(min-width:760px) 33vw, 100vw" alt="Tratament corporal" loading="lazy" decoding="async"></div>
+        <div class="bd"><h3>Corp</h3><p>Grăsime localizată, celulită, tonifiere și drenaj.</p><span class="link">Vezi tratamentele <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      </a>
+      <a class="card treat fade" href="/riduri-linii-fine.html">
+        <div class="ph"><img src="/brand_asset/site/fata-sm.webp" srcset="/brand_asset/site/fata-sm.webp 560w, /brand_asset/site/fata.webp 900w" sizes="(min-width:760px) 33vw, 100vw" alt="Tratament facial" loading="lazy" decoding="async"></div>
+        <div class="bd"><h3>Față</h3><p>Riduri și lifting, gușă, ten problematic, pete.</p><span class="link">Vezi tratamentele <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      </a>
+      <a class="card treat fade" href="/epilare-laser.html">
+        <div class="ph"><img src="/brand_asset/site/epilare-sm.webp" srcset="/brand_asset/site/epilare-sm.webp 560w, /brand_asset/site/epilare.webp 900w" sizes="(min-width:760px) 33vw, 100vw" alt="Epilare laser" loading="lazy" decoding="async"></div>
+        <div class="bd"><h3>Epilare laser</h3><p>Laser medical Elysion Pro, cu garanție: dacă părul crește la loc, continuăm gratuit. În Timișoara.</p><span class="link">Despre epilare <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OFFERS (live prices from Admin → Oferte) ============ -->
+<section class="sec" id="oferte">
+  <div class="wrap">
+    <div class="sec-head fade"><h2>Oferte</h2><p class="lead">Prețurile lunii acesteia. Prețul exact pentru tine îl afli la consultație.</p></div>
+    <div class="offers">
+      <article class="card offer fade" data-offer="liposonix-2zone">
+        <div class="top-row"><span>Corp</span><span class="off" data-o-off>−50%</span></div>
+        <h3 data-o-title>Liposonix · 2 zone</h3>
+        <div class="price"><b><span data-o-price>640</span><small>lei</small></b><s data-o-old>1280 lei</s></div>
+        <p>Reduce grăsimea localizată, fără recuperare.</p>
+        <a class="link" data-o-wa href="https://wa.me/40750204243?text=Bun%C4%83%20ziua!%20Vreau%20s%C4%83%20rezerv%20oferta%20Liposonix%20%C2%B7%202%20zone%20la%20640%20lei." target="_blank" rel="noopener">Rezervă pe WhatsApp <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </article>
+      <article class="card offer fade" data-offer="facial-restart">
+        <div class="top-row"><span>Față</span><span class="off" data-o-off>−37%</span></div>
+        <h3 data-o-title>Tratament facial Restart</h3>
+        <div class="price"><b><span data-o-price>190</span><small>lei</small></b><s data-o-old>300 lei</s></div>
+        <p>Hidratare și luminozitate, fără timp de recuperare.</p>
+        <a class="link" data-o-wa href="https://wa.me/40750204243?text=Bun%C4%83%20ziua!%20Vreau%20s%C4%83%20rezerv%20oferta%20Tratament%20facial%20Restart%20la%20190%20lei." target="_blank" rel="noopener">Rezervă pe WhatsApp <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </article>
+      <article class="card offer fade" data-offer="epilare-full-body">
+        <div class="top-row"><span>Epilare · Timișoara</span><span class="off" data-o-off>−47%</span></div>
+        <h3 data-o-title>Epilare laser · Full Body</h3>
+        <div class="price"><b><span data-o-price>490</span><small>lei</small></b><s data-o-old>920 lei</s></div>
+        <p>Toate zonele de corp, fără față.</p>
+        <a class="link" data-o-wa href="https://wa.me/40750204243?text=Bun%C4%83%20ziua!%20Vreau%20s%C4%83%20rezerv%20oferta%20Epilare%20laser%20%C2%B7%20Full%20Body%20la%20490%20lei." target="_blank" rel="noopener">Rezervă pe WhatsApp <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </article>
+    </div>
+    <div class="more fade"><a class="link" href="/oferte.html">Toate ofertele și pachetele <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="sec" id="cum">
+  <div class="wrap how">
+    <div>
+      <div class="sec-head fade"><h2>Cum decurge</h2><p class="lead">De la primul mesaj până la rezultat, știi mereu ce urmează.</p></div>
+      <div class="steps">
+        <div class="step fade"><i>1</i><div><h3>Lași datele sau ne scrii</h3><p>Te sunăm și găsim împreună o oră care ți se potrivește.</p></div></div>
+        <div class="step fade"><i>2</i><div><h3>Consultația gratuită</h3><p>Evaluăm zona și îți spunem ce se poate obține, în câte ședințe și cât costă.</p></div></div>
+        <div class="step fade"><i>3</i><div><h3>Începi doar dacă vrei</h3><p>Progresul îl urmărim la fiecare ședință. Decizia e mereu a ta.</p></div></div>
+      </div>
+    </div>
+    <div class="how-photo fade"><img src="/brand_asset/site/hero-sm.webp" srcset="/brand_asset/site/hero-sm.webp 560w, /brand_asset/site/hero.webp 900w" sizes="(min-width:900px) 50vw, 100vw" alt="Specialistă Centrul360 la consultație" loading="lazy" decoding="async"></div>
+  </div>
+</section>
+
+<!-- ============ REVIEWS ============ -->
+<section class="sec" id="recenzii">
+  <div class="wrap">
+    <div class="sec-head fade"><h2>Recenzii</h2><div class="score"><b>5,0</b><span class="stars">★★★★★</span><span>din 300+ recenzii Google</span></div></div>
+    <div class="reviews">
+      <figure class="card review fade"><span class="stars">★★★★★</span><p>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</p><figcaption class="who"><b>Maria Muntean</b>Timișoara</figcaption></figure>
+      <figure class="card review fade"><span class="stars">★★★★★</span><p>„O experiență minunată — d-na Andreea m-a abordat cu căldură și profesionalism.”</p><figcaption class="who"><b>Alina Galuțiu</b>Arad</figcaption></figure>
+      <figure class="card review fade"><span class="stars">★★★★★</span><p>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</p><figcaption class="who"><b>Simona-Mihaela J.</b>Timișoara</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOCATIONS ============ -->
+<section class="sec" id="locatii">
+  <div class="wrap">
+    <div class="sec-head fade"><h2>Locații</h2><p class="lead">Două clinici. Ne poți suna sau scrie pe WhatsApp la oricare.</p></div>
+    <div class="locs">
+      <div class="card loc fade">
+        <div class="ph"><img src="/brand_asset/loc-timisoara.webp" alt="Clinica Centrul360 Timișoara" loading="lazy" decoding="async"></div>
+        <div class="bd">
+          <h3>Timișoara</h3>
+          <p class="addr">Str. Bucegi 7 · 0750 204 243</p>
+          <div class="acts"><a class="btn btn-quiet" href="tel:+40750204243">Sună</a><a class="btn btn-quiet" href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener">Indicații</a></div>
+        </div>
+      </div>
+      <div class="card loc fade">
+        <div class="ph"><img src="/brand_asset/loc-arad.webp" alt="Clinica Centrul360 Arad" loading="lazy" decoding="async"></div>
+        <div class="bd">
+          <h3>Arad</h3>
+          <p class="addr">Str. Ioan Alexandru 16 · 0750 263 054</p>
+          <p class="note">Epilarea laser și EMS se fac doar în Timișoara.</p>
+          <div class="acts"><a class="btn btn-quiet" href="tel:+40750263054">Sună</a><a class="btn btn-quiet" href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016%20Arad" target="_blank" rel="noopener">Indicații</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="sec" id="intrebari">
+  <div class="wrap faq-grid">
+    <div class="sec-head fade"><h2>Întrebări frecvente</h2></div>
+    <div class="faq fade">
+      <details><summary>Consultația chiar e gratuită?</summary><p>Da. Prima consultație e gratuită și fără obligații: evaluăm zona, îți spunem ce se poate obține și cât costă.</p></details>
+      <details><summary>Cum aleg tratamentul potrivit?</summary><p>Nu trebuie să știi dinainte. La consultație îți recomandăm soluția potrivită pentru obiectivul tău, tipul de piele și buget.</p></details>
+      <details><summary>Doare? Am nevoie de recuperare?</summary><p>Procedurile sunt non-invazive, fără operație și fără timp de recuperare.</p></details>
+      <details><summary>Când văd rezultate?</summary><p>La multe tratamente, rezultatele se văd din prima ședință. Pentru efecte de durată îți stabilim la consultație numărul de ședințe.</p></details>
+      <details><summary>Ce garanție aveți la epilarea laser?</summary><p>Dacă respecți protocolul recomandat și părul crește la loc în zona tratată, continuăm ședințele gratuit. Epilarea se face în clinica din Timișoara.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CALL ============ -->
+<section class="sec">
+  <div class="wrap">
+    <div class="card final fade">
+      <h2>Programează consultația gratuită</h2>
+      <p class="lead">Durează un minut. Primești și un masaj facial cadou.</p>
+      <a class="btn" href="#formular">Completează formularul</a>
+    </div>
   </div>
 </section>
 </main>
 
-<!-- sticky call to action -->
-<div class="dock" id="dock"><span><b>Consultație gratuită</b> + masaj facial cadou</span><a class="btn b1" href="#programare">Programează-te</a></div>
+<div class="sticky" id="sticky" aria-hidden="true"><a class="btn" href="#formular">Consultație gratuită + masaj cadou</a></div>
 
 <!-- ============ FOOTER ============ -->
 <footer class="foot">
-  <div class="w">
+  <div class="wrap">
     <div class="foot-grid">
-      <div><span class="logo"><img class="mk" src="/brand_asset/logo-mark-white.svg" alt=""><img src="/brand_asset/wordmark-com.png" alt="Centrul360.com"></span><p>Medicină estetică non-invazivă, în Timișoara și Arad.</p></div>
-      <div><h4>Explorează</h4><ul><li><a href="/oferte.html">Oferte</a></li><li><a href="/preturi.html">Prețuri</a></li><li><a href="/rezultate.html">Rezultate</a></li><li><a href="/echipa.html">Echipa</a></li></ul></div>
-      <div><h4>Timișoara</h4><ul><li><a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener">Str. Bucegi 7</a></li><li><a href="tel:+40750204243">0750 204 243</a></li></ul></div>
-      <div><h4>Arad</h4><ul><li><a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016%20Arad" target="_blank" rel="noopener">Str. Ioan Alexandru 16</a></li><li><a href="tel:+40750263054">0750 263 054</a></li></ul></div>
+      <div><span class="logo"><img src="/brand_asset/logo-mark-white.svg" alt="" width="15" height="15"><img src="/brand_asset/wordmark-com.png" alt="Centrul360.com" width="197" height="15"></span><p>Medicină estetică non-invazivă, în Timișoara și Arad.</p></div>
+      <div><h4>Site</h4><ul><li><a href="/oferte.html">Oferte</a></li><li><a href="/preturi.html">Prețuri</a></li><li><a href="/rezultate.html">Rezultate</a></li><li><a href="/echipa.html">Echipa</a></li></ul></div>
+      <div><h4>Timișoara</h4><ul><li>Str. Bucegi 7</li><li><a href="tel:+40750204243">0750 204 243</a></li></ul></div>
+      <div><h4>Arad</h4><ul><li>Str. Ioan Alexandru 16</li><li><a href="tel:+40750263054">0750 263 054</a></li></ul></div>
     </div>
     <div class="foot-bottom"><span>© 2026 Centrul360</span><nav><a href="/termeni.html">Termeni</a><a href="/politica-de-confidentialitate.html">Confidențialitate</a><a href="/cookies.html">Cookies</a></nav></div>
   </div>
