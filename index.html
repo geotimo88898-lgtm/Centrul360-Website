@@ -38,8 +38,6 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tailwind-built.css">
 <link rel="stylesheet" href="c360-convert.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
   :root{
     /* dark theme: black page, white ink */
@@ -396,7 +394,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .loc-pin-label{ font-size:12.5px; font-weight:600; letter-spacing:.01em; color:rgba(255,255,255,.7); white-space:nowrap; padding:3px 10px; border-radius:999px; background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:1px solid transparent; transition:color .3s ease, border-color .3s ease, background .3s ease; }
   /* real dark map (Leaflet) with cinematic zoom + immersive top popup */
   .loc-map.leaflet-container{ background:#0c0d11; font:inherit; }
-  .loc-map .leaflet-tile{ filter:brightness(.9) contrast(1.04); }
+  /* OpenStreetMap tiles, darkened to the site look (CARTO dark tiles now require an API key) */
+  .loc-map .leaflet-tile{ filter:invert(1) hue-rotate(180deg) grayscale(1) brightness(.78) contrast(1.1); }
   .loc-map .leaflet-control-attribution{ background:rgba(8,8,10,.5); color:rgba(255,255,255,.4); font-size:9px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
   .loc-map .leaflet-control-attribution a{ color:rgba(255,255,255,.6); }
   /* custom markers — reuse the pin dot + label look */
@@ -1712,7 +1711,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   // ---- locations (variant 2): real dark map → click a city → cinematic zoom-in + immersive popup ----
   (function(){
     const el = document.getElementById('locMap');
-    if(!el || typeof L === 'undefined') return;
+    if(!el) return;
+    if(typeof L === 'undefined'){ window.__c360MapInit = arguments.callee; return; }   // runs again once Leaflet has loaded
 
     const LOCS = {
       tm: { label:'Timișoara', latlng:[45.744386, 21.244059] },
@@ -1724,8 +1724,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       zoomControl:false, attributionControl:true, scrollWheelZoom:false,
       doubleClickZoom:false, dragging:false, touchZoom:false, boxZoom:false, keyboard:false
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution:'© OpenStreetMap, © CARTO', maxZoom:19, subdomains:'abcd'
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© OpenStreetMap', maxZoom:19
     }).addTo(map);
 
     // overview bounds (both cities visible)
@@ -2281,6 +2281,26 @@ function animate(){
   });
   pop.querySelectorAll('[data-offpop-close]').forEach(function(b){ b.addEventListener('click', close); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop.classList.contains('open')) close(); });
+})();
+</script>
+<script>
+// Map: Leaflet is fetched only when the map is about to scroll into view (it used to block the page load).
+(function(){
+  var el = document.getElementById('locMap'); if(!el) return;
+  var started = false;
+  function go(){
+    if(started) return; started = true;
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    l.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='; l.crossOrigin = ''; document.head.appendChild(l);
+    var s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='; s.crossOrigin = '';
+    s.onload = function(){ if(window.__c360MapInit) window.__c360MapInit(); };
+    document.head.appendChild(s);
+  }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(es){ if(es[0].isIntersecting){ io.disconnect(); go(); } }, { rootMargin:'800px 0px' });
+    io.observe(el);
+  } else go();
 })();
 </script>
 </body>

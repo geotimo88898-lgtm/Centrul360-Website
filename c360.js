@@ -103,24 +103,45 @@
     const ccos = [...ts.querySelectorAll('.cco')];
     const fill = ts.querySelector('.th-progress span');
     const seq = ts.querySelector('[data-seq-count]');
-    let frames=[], N=0, lastIdx=-1, framesLoading=false;
+    // Frames are decoded ahead of time (off the main thread) and drawn on a canvas: changing frame
+    // while scrolling is then instant — no decode, no flicker. The <img> stays as the no-JS fallback.
+    let bitmaps=[], N=0, lastIdx=-1, framesLoading=false, canvas=null, ctx=null;
+    function decode(url){
+      return fetch(url).then(r=>r.blob()).then(b=> window.createImageBitmap ? createImageBitmap(b) : new Promise((ok, no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=no; im.src=URL.createObjectURL(b); }));
+    }
     function loadFrames(){
       if(framesLoading || !seq) return;
       framesLoading = true;
       N = parseInt(seq.dataset.seqCount, 10) || 0;
-      const base = seq.dataset.seqBase, ext = seq.dataset.seqExt || '.jpg';
+      const base = seq.dataset.seqBase, ext = seq.dataset.seqExt || '.webp';
       const pad = n => String(n).padStart(3, '0');
-      const idle = window.requestIdleCallback || (fn => setTimeout(fn, 60));
-      const BATCH = 6, FIRST = 6; // load enough frames upfront for instant scroll response, then trickle the rest in idle time
-      for(let i=1;i<=Math.min(FIRST,N);i++){ const im = new Image(); im.decoding='async'; im.src = base + pad(i) + ext; frames.push(im); }
-      let next = FIRST + 1;
-      function loadBatch(){
-        const end = Math.min(next + BATCH - 1, N);
-        for(let i=next;i<=end;i++){ const im = new Image(); im.decoding='async'; im.src = base + pad(i) + ext; frames[i-1] = im; }
-        next = end + 1;
-        if(next <= N) idle(loadBatch);
-      }
-      if(N > FIRST) idle(loadBatch);
+      const order = [];                    // every 6th frame first (a coarse spin is ready at once), then the rest
+      for(let i=0;i<N;i+=6) order.push(i);
+      for(let i=0;i<N;i++) if(i % 6) order.push(i);
+      let k = 0;
+      const pump = ()=>{ if(k >= order.length) return; const i = order[k++];
+        decode(base + pad(i+1) + ext).then(bm=>{ bitmaps[i] = bm; if(!canvas) mountCanvas(bm); if(Math.abs(i - wantIdx) < 3) draw(wantIdx, true); }).catch(()=>{}).then(pump); };
+      for(let c=0;c<4;c++) pump();         // four in flight
+    }
+    function mountCanvas(bm){
+      canvas = document.createElement('canvas');
+      canvas.width = bm.width; canvas.height = bm.height;
+      canvas.className = 'techseq-canvas';
+      canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', seq.alt || '');
+      ctx = canvas.getContext('2d');
+      seq.after(canvas);
+      seq.style.display = 'none';
+      draw(wantIdx, true);
+    }
+    let wantIdx = 0;
+    function draw(idx, force){
+      if(!ctx) return;
+      let use = idx;
+      if(!bitmaps[use]){ for(let d=1; d<N; d++){ if(bitmaps[idx-d]){ use=idx-d; break; } if(bitmaps[idx+d]){ use=idx+d; break; } } }
+      if(!bitmaps[use] || (use === lastIdx && !force)) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmaps[use], 0, 0);
+      lastIdx = use;
     }
     if(seq && 'IntersectionObserver' in window){
       const io = new IntersectionObserver((entries)=>{
@@ -132,15 +153,15 @@
     }
     function showFrame(p){
       if(!N) return;
-      const idx = Math.max(0, Math.min(N-1, Math.round(p*(N-1))));
-      if(idx !== lastIdx){ const s = frames[idx] && frames[idx].src; if(s) seq.src = s; lastIdx = idx; }
+      wantIdx = Math.max(0, Math.min(N-1, Math.round(p*(N-1))));
+      draw(wantIdx, false);
     }
     let ticking=false, lastA=-1;
     function apply(){
       ticking=false;
       const total = ts.offsetHeight - innerHeight;
       const p = clamp((-ts.getBoundingClientRect().top) / Math.max(1, total));
-      if(fill) fill.style.width = (p*100).toFixed(1)+'%';
+      if(fill) fill.style.transform = 'scaleX(' + p.toFixed(3) + ')';
       showFrame(p);
       const ai = Math.max(0, Math.min(ccos.length-1, Math.floor(p*ccos.length - 1e-9)));
       if(ai !== lastA){ ccos.forEach((c,i)=> c.classList.toggle('cur', i===ai)); lastA = ai; }
