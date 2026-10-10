@@ -23,8 +23,10 @@
     apanel = p;
     apanel.classList.add('k-panel', 'ad');
     apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2><p class="k-lede">Vânzările logate de echipă pentru comision. Aprobi → comisionul se calculează cu regulile de acum și intră la obiective.</p></div>' +
-      '<div class="k-head-actions" data-head></div></div><div data-body></div>';
+      '<div class="k-head-actions" data-head></div></div><div data-body></div>' +
+      '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('calendar') + 'Cereri de concediu</h3></div><div data-leave></div></section>';
     apanel.addEventListener('click', onApprovalClick);
+    loadLeaveApprovals();
     document.addEventListener('keydown', (e) => {
       if (!K.isActive('aprobari') || K.drawerOpen || K.typing(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (document.querySelector('.c360-dialog-root, .c360-palette-root')) return;
@@ -79,6 +81,8 @@
   async function onApprovalClick(e) {
     const a = e.target.closest('[data-approve]'); if (a) return decide(a.dataset.approve, 'approve');
     const r = e.target.closest('[data-reject]'); if (r) return decide(r.dataset.reject, 'reject');
+    const al = e.target.closest('[data-approve-leave]'); if (al) return decideLeave(al.dataset.approveLeave, 'approved');
+    const rl = e.target.closest('[data-reject-leave]'); if (rl) return decideLeave(rl.dataset.rejectLeave, 'rejected');
     if (e.target.closest('[data-all]')) {
       const pend = K.data.admin.pendingSales;
       if (!(await K.ui().confirm({ title: 'Aprobi toate cele ' + pend.length + ' vânzări?', message: 'Comisionul se calculează pentru fiecare cu regulile de acum.', confirmText: 'Aprobă toate' }))) return;
@@ -87,7 +91,57 @@
       K.reload();
     }
   }
-  K.section('aprobari', { mount: mountApprovals, show: renderApprovals, data() { if (apanel && K.isActive('aprobari')) renderApprovals(); } });
+  K.section('aprobari', { mount: mountApprovals, show() { renderApprovals(); loadLeaveApprovals(); }, data() { if (apanel && K.isActive('aprobari')) renderApprovals(); } });
+
+  // ---------------------------------------------------------------- Cereri de concediu
+  // Second, clearly separate list inside the same Aprobări tab — leave requests aren't tied to
+  // commission, but it's the same "admin decides, team sees the result" mental model.
+  const LEAVE_TYPE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu' };
+  const LV = { requests: [] };
+  function empNameFor(id) {
+    if (id === 'admin') return 'Admin';
+    const e = (K.data.admin.employees || []).find((x) => x.id === id);
+    return e ? e.name : id;
+  }
+  async function loadLeaveApprovals() {
+    if (!apanel) return;
+    try { const j = await K.api('/api/portal-leave', { action: 'list' }); LV.requests = j.requests || []; renderLeaveApprovals(); }
+    catch (e) { /* badge-less, best effort */ }
+  }
+  function renderLeaveApprovals() {
+    const box = apanel && apanel.querySelector('[data-leave]');
+    if (!box) return;
+    const pending = LV.requests.filter((r) => r.status === 'pending');
+    const decided = LV.requests.filter((r) => r.status !== 'pending').slice(0, 8);
+    box.innerHTML = (pending.length ? '<div class="ad-list">' + pending.map((r) => leaveCardHtml(r)).join('') + '</div>'
+      : '<p class="k-muted">Nicio cerere în așteptare.</p>') +
+      (decided.length ? '<div class="k-list" style="margin-top:.8rem">' + decided.map((r) =>
+        '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(empNameFor(r.employeeId)) + ' · ' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</div>' +
+        '<div class="k-row-sub">' + esc(K.dateShort(r.startDate)) + ' – ' + esc(K.dateShort(r.endDate)) + (r.rejectionNote ? ' · „' + esc(r.rejectionNote) + '”' : '') + '</div></div>' +
+        '<span class="k-tag is-' + (r.status === 'approved' ? 'good' : 'bad') + '">' + (r.status === 'approved' ? 'Aprobată' : 'Respinsă') + '</span>' +
+        (r.status === 'approved' ? '<a class="k-icon-btn" target="_blank" rel="noopener" href="/api/portal-leave-pdf?id=' + esc(r.id) + '" title="PDF">' + icon('file') + '</a>' : '') + '</div>').join('') + '</div>' : '');
+  }
+  function leaveCardHtml(r) {
+    return '<article class="ad-card" data-leave-req="' + esc(r.id) + '">' + K.avatar(empNameFor(r.employeeId), 44) +
+      '<div class="ad-main"><div class="ad-top"><b>' + esc(empNameFor(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</span><span class="k-muted">' + esc(K.dateLong(r.startDate)) + '</span></div>' +
+      '<div class="ad-what">' + esc(K.dateShort(r.startDate)) + ' – ' + esc(K.dateShort(r.endDate)) + ' · ' + K.plural(r.workDays, 'zi', 'zile') + '</div>' +
+      (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') + '</div>' +
+      '<div class="ad-actions"><button type="button" class="k-btn is-danger" data-reject-leave="' + esc(r.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good" data-approve-leave="' + esc(r.id) + '">' + icon('check') + 'Aprobă</button></div></article>';
+  }
+  async function decideLeave(id, decision) {
+    const card = apanel.querySelector('[data-leave-req="' + id + '"]');
+    let rejectionNote = '';
+    if (decision === 'rejected') {
+      rejectionNote = await K.ui().prompt({ title: 'Respingi cererea de concediu?', message: 'Spune-i pe scurt de ce — vede motivul la cererea ei.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
+      if (rejectionNote === null) return;
+    }
+    if (card) card.classList.add('is-leaving', decision === 'approved' ? 'is-yes' : 'is-no');
+    try {
+      await K.api('/api/portal-leave', { action: 'decide', id, decision, rejectionNote });
+      K.ui().toast(decision === 'approved' ? 'Cerere aprobată — PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
+      setTimeout(loadLeaveApprovals, 260);
+    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(K.errText(e), 'error'); }
+  }
 
   // =====================================================================================
   // ECHIPA
@@ -173,16 +227,19 @@
       title: e.name, lead: K.avatar(e.name, 44), width: 600,
       subtitle: '<span class="k-tag is-' + (e.role === 'receptie' ? 'info' : 'good') + '">' + esc(K.roleLabel(e.role)) + '</span>' + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>dezactivat</b>'),
       body:
-        '<div class="ad-tabs">' + K.seg('emptab', [['goals', 'Obiective & bonusuri', 'target'], ['profile', 'Profil & acces', 'user'], ['sales', 'Vânzări', 'receipt']], 'goals', 'is-big') + '</div>' +
+        '<div class="ad-tabs">' + K.seg('emptab', [['goals', 'Obiective & bonusuri', 'target'], ['profile', 'Profil & acces', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], 'goals', 'is-big') + '</div>' +
         '<div data-pane="goals"><p class="k-muted" style="margin:0 0 .7rem">Până la 4 obiective. Tot ce are bonus apare la ' + esc(e.name.split(' ')[0]) + ' în „Bonusurile mele”, cu progres live.</p><div data-goals></div>' +
           '<button type="button" class="k-btn is-outline rs-add" data-addg>' + icon('plus') + 'Adaugă obiectiv</button></div>' +
         '<div data-pane="profile" hidden><form class="k-form" data-profile>' +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
           K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full') +
-          K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') + '</form>' +
+          K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +
+          K.field('Zile de concediu pe an', '<input name="annualLeaveDays" type="number" min="0" max="60" value="' + esc(e.annualLeaveDays != null ? e.annualLeaveDays : 21) + '">', '', 'Minimul legal e 20; implicit 21.') +
+          K.field('Ore contractate / zi', '<input name="contractedHoursPerDay" type="number" min="1" max="16" step="0.5" value="' + esc(e.contractedHoursPerDay != null ? e.contractedHoursPerDay : 8) + '">') + '</form>' +
           '<div class="ad-access"><button type="button" class="k-btn is-outline" data-pass>' + icon('key') + 'Resetează parola</button>' +
           '<button type="button" class="k-btn ' + (e.active ? 'is-danger' : 'is-good') + '" data-toggle>' + icon('power') + (e.active ? 'Dezactivează contul' : 'Reactivează contul') + '</button></div>' +
           '<p class="k-muted">Dezactivarea blochează logarea, dar păstrează istoricul și comisioanele.</p></div>' +
+        '<div data-pane="condica" hidden><div data-balance><div class="k-skel" style="height:90px"></div></div></div>' +
         '<div data-pane="sales" hidden><div class="k-grid c3" style="margin-bottom:.8rem">' +
           '<div class="k-stat is-good"><div class="k-stat-top">Comision luna</div><div class="k-stat-value">' + K.lei(st.comm) + '</div></div>' +
           '<div class="k-stat"><div class="k-stat-top">Aprobate</div><div class="k-stat-value">' + st.approved + '</div></div>' +
@@ -205,9 +262,22 @@
         box.addEventListener('change', (ev) => { if (ev.target.dataset.f === 'metric') { const row = ev.target.closest('[data-g]'); row.querySelector('[data-cur]').style.display = ev.target.value === 'manual' ? '' : 'none'; } });
         el.querySelector('[data-addg]').addEventListener('click', () => { readGoals(); goals.push({ title: '', metric: e.role === 'receptie' ? 'leaduri_programate_luna' : 'comision_aprobat_luna', target: '', reward: '' }); paint(); const t = box.querySelectorAll('[data-f="title"]'); t[t.length - 1].focus(); });
         box.addEventListener('click', (ev) => { const rm = ev.target.closest('[data-rmg]'); if (rm) { readGoals(); goals.splice(+rm.dataset.rmg, 1); paint(); } });
+        let balanceLoaded = false;
+        async function loadBalance() {
+          if (balanceLoaded) return;
+          balanceLoaded = true;
+          const box = el.querySelector('[data-balance]');
+          try {
+            const b = await K.api('/api/portal-attendance', { action: 'balance', employeeId: e.id });
+            box.innerHTML = '<div class="k-grid c2">' +
+              '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Zile de concediu rămase</div><div class="k-stat-value">' + b.daysLeft + '</div><div class="k-stat-sub">din ' + b.annualLeaveDays + ' — ' + b.daysUsed + ' folosite anul acesta</div></div>' +
+              '<div class="k-stat is-' + (b.hoursDelta >= 0 ? 'good' : 'warn') + '"><div class="k-stat-top">' + icon('clock') + 'Ore de recuperat</div><div class="k-stat-value">' + (b.hoursDelta >= 0 ? '+' : '') + b.hoursDelta + '</div><div class="k-stat-sub">' + b.hoursPeriod + ' · program ' + b.contractedHoursPerDay + ' h/zi · doar zilele cu sosire și plecare</div></div></div>';
+          } catch (err) { box.innerHTML = '<span class="k-muted">Nu am putut calcula.</span>'; }
+        }
         el.querySelector('input[name=emptab]').addEventListener('change', (ev) => {
           el.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== ev.target.value; });
-          el.querySelector('[data-save]').hidden = ev.target.value === 'sales';
+          el.querySelector('[data-save]').hidden = ev.target.value === 'sales' || ev.target.value === 'condica';
+          if (ev.target.value === 'condica') loadBalance();
         });
         el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
         el.querySelector('[data-pass]').addEventListener('click', async () => {
@@ -229,7 +299,7 @@
             if (tab === 'profile') {
               const v = K.formValues(el.querySelector('[data-profile]'));
               if (!v.name) { K.ui().toast('Numele e obligatoriu.', 'error'); return; }
-              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role });
+              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay });
             } else {
               const clean = goals.filter((g) => String(g.title).trim()).map((g) => ({ title: String(g.title).trim(), metric: g.metric, target: Number(g.target) || 0, reward: Number(g.reward) || 0, currentValue: Number(g.currentValue) || 0 }));
               if (clean.some((g) => !g.target)) { K.ui().toast('Fiecare obiectiv are nevoie de o țintă.', 'error'); return; }

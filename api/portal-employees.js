@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
       // Fixes a typo'd name/location, or a role change (e.g. an employee moving
       // locations) — keeps the same id, so her login, goals and sales history stay
       // intact (unlike deactivating + re-creating, which would silently orphan them).
-      const { employeeId, name, location, role } = req.body || {};
+      const { employeeId, name, location, role, annualLeaveDays, contractedHoursPerDay } = req.body || {};
       if (!employeeId || !name || !location || !role) {
         res.status(400).json({ error: 'missing_fields' });
         return;
@@ -96,10 +96,22 @@ module.exports = async (req, res) => {
       employee.name = String(name).slice(0, 100);
       employee.location = String(location).slice(0, 100);
       employee.role = role;
+      // Optional — feed the "Condică" leave-balance / hours-owed numbers (api/portal-attendance.js,
+      // action 'balance'). Left unset, those default to 21 days / 8h per day. Never required.
+      if (annualLeaveDays !== undefined) {
+        const n = Number(annualLeaveDays);
+        if (!Number.isFinite(n) || n < 0 || n > 60) { res.status(400).json({ error: 'invalid_leave_days' }); return; }
+        employee.annualLeaveDays = n;
+      }
+      if (contractedHoursPerDay !== undefined) {
+        const n = Number(contractedHoursPerDay);
+        if (!Number.isFinite(n) || n <= 0 || n > 16) { res.status(400).json({ error: 'invalid_hours' }); return; }
+        employee.contractedHoursPerDay = n;
+      }
       await writeJSON('data/employees.json', employees);
       res.status(200).json({
         ok: true,
-        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role },
+        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, annualLeaveDays: employee.annualLeaveDays, contractedHoursPerDay: employee.contractedHoursPerDay },
       });
       return;
     }

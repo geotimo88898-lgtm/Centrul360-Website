@@ -291,6 +291,10 @@ module.exports = async (req, res) => {
           role: e.role,
           username: e.username,
           active: e.active !== false,
+          // Optional — feeds the Condică leave-balance / hours-owed numbers, edited in the
+          // Profil tab below (api/portal-employees.js' update_details). Unset = the defaults.
+          annualLeaveDays: e.annualLeaveDays,
+          contractedHoursPerDay: e.contractedHoursPerDay,
           goals: (e.goals || []).map((g) => Object.assign({}, g, { current: computeGoalCurrent(g, e.id, sales, appointments, today, month, { leads, name: e.name }) })),
         })),
         config,
