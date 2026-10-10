@@ -332,7 +332,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .team-img{ filter:saturate(1.02); }
 
   /* ---------- 3D logo (mobile header + desktop hero) ---------- */
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo3d-poster.png') center/100% no-repeat; }
+  @media (max-width:768px){ #logo3d-head, #logo3d-menu{ background-image:url('brand_asset/logo3d-poster-m.png'); } }
   /* desktop: large spinning logo centered in the middle of the first view, behind the text */
   #logo3d-hero{ position:absolute; pointer-events:none; z-index:-1;
     width:min(52vw,640px); height:min(52vw,640px); left:50%; top:50%; transform:translate(-50%,-50%); opacity:0.78;
@@ -388,20 +389,18 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .loc-icn{ flex:none; opacity:.85; }
   .loc-map{ position:relative; border-radius:24px; overflow:hidden; height:clamp(460px,60vh,580px); border:1px solid var(--line); z-index:0; background-color:#0c0d11; }
   /* marker dot + label (shared by the Leaflet divIcon markers) */
-  .loc-pin-dot{ position:relative; width:15px; height:15px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.6); transition:transform .3s ease; }
+  .loc-pin-dot{ position:relative; flex:none; width:15px; height:15px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.6); transition:transform .3s ease; }
   .loc-pin-dot::after{ content:''; position:absolute; inset:-5px; border-radius:50%; border:1px solid rgba(255,255,255,.5); animation:locPulse 2.4s ease-out infinite; }
   @keyframes locPulse{ 0%{ transform:scale(.6); opacity:.8; } 100%{ transform:scale(2.2); opacity:0; } }
-  .loc-pin-label{ font-size:12.5px; font-weight:600; letter-spacing:.01em; color:rgba(255,255,255,.7); white-space:nowrap; padding:3px 10px; border-radius:999px; background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:1px solid transparent; transition:color .3s ease, border-color .3s ease, background .3s ease; }
+  .loc-pin-label{ font-size:14px; font-weight:700; letter-spacing:.01em; color:#fff; white-space:nowrap; padding:3px 10px; border-radius:999px; background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:1px solid transparent; transition:color .3s ease, border-color .3s ease, background .3s ease; }
   /* real dark map (Leaflet) with cinematic zoom + immersive top popup */
   .loc-map.leaflet-container{ background:#0c0d11; font:inherit; }
-  /* OpenStreetMap tiles, darkened to the site look (CARTO dark tiles now require an API key) */
-  .loc-map .leaflet-tile{ filter:invert(1) hue-rotate(180deg) grayscale(1) brightness(.78) contrast(1.1); }
   .loc-map .leaflet-control-attribution{ background:rgba(8,8,10,.5); color:rgba(255,255,255,.4); font-size:9px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
   .loc-map .leaflet-control-attribution a{ color:rgba(255,255,255,.6); }
   /* custom markers — reuse the pin dot + label look */
   .loc-mk{ background:transparent !important; border:0 !important; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .loc-mk.is-active .loc-pin-dot{ transform:scale(1.18); }
-  .loc-mk:not(.is-active) .loc-pin-dot{ background:rgba(255,255,255,.7); }
+  .loc-mk:not(.is-active) .loc-pin-dot{ background:#fff; }
   .loc-mk.is-active .loc-pin-label{ color:#fff; border-color:var(--line-on-dark); background:var(--glass-2); }
   /* immersive popup — pinned to the top-center of the map while zoomed in */
   .loc-pop{ position:absolute; left:50%; top:16px; z-index:1000; width:min(330px,84%); border-radius:20px; overflow:hidden; isolation:isolate;
@@ -585,7 +584,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   }
 </style>
 <style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
-@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
 </style>
 </head>
 <body>
@@ -1051,7 +1050,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .sim-select option{ background:#16161a; color:var(--fg); }
   @media (max-width:640px){ .sim-chips{ display:none; } .sim-select{ display:block; } }
   .sim-hint{ color:var(--muted-2); font-size:.85rem; margin-top:1.4rem; }
-  .sim-result{ margin-top:1.6rem; border:1px solid var(--line-on-dark); border-radius:20px; background:var(--paper-2); padding:1.5rem 1.6rem; animation:simIn .5s cubic-bezier(.16,1,.3,1); }
+  .sim-result{ margin-top:1.6rem; padding-top:1.4rem; border-top:1px solid var(--line); animation:simIn .5s cubic-bezier(.16,1,.3,1); }
   @keyframes simIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
   .sim-rec-lbl{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); }
   .sim-rec-name{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.5rem; margin:.35rem 0 .15rem; }
@@ -1063,10 +1062,15 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .sim-rec-off{ font-weight:700; font-size:.8rem; color:#0b0b0d; background:#fff; border-radius:999px; padding:.2rem .55rem; }
   .sim-rec-tm{ display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; color:var(--muted); margin-top:.75rem; }
   .sim-rec-actions{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.25rem; }
+  .sim-consult{ margin-top:1.4rem; padding-top:1.4rem; border-top:1px solid var(--line); display:flex; flex-direction:column; align-items:flex-start; gap:.55rem; }
+  .sim-consult p{ color:var(--muted); font-size:14px; line-height:1.55; max-width:52ch; margin:0; }
+  .sim-consult-btn{ margin-top:.4rem; }
+  .sim-wa{ font-size:13px; color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
+  .sim-wa:hover{ color:var(--fg); }
   .sim-disc{ color:var(--muted-2); font-size:.76rem; margin-top:1rem; line-height:1.5; }
   .sim-steps{ margin-top:.3rem; }
-  .sim-step{ border:1px solid var(--line); border-radius:18px; padding:1.1rem 1.2rem; background:rgba(255,255,255,.02); }
-  .sim-step.s1{ border-color:rgba(212,175,110,.42); background:linear-gradient(135deg, rgba(212,175,110,.10), rgba(255,255,255,.015)); }
+  .sim-step{ padding:0; }
+  .sim-step.s1{ }
   .sim-step-lbl{ font-size:.7rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#e9cfa3; display:inline-flex; align-items:center; gap:.4rem; }
   .sim-step-name{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.3rem; margin:.5rem 0 0; }
   .sim-step-note{ color:var(--muted); font-size:.85rem; margin-top:.25rem; line-height:1.45; }
@@ -1183,37 +1187,58 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     function render(p, over){
       const pin='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
       const OFF=OFFERS[sel.goal];
-      // PASUL 1 — oferta ieftină de intrare
+      // the recommendation is the value; the next step is always the free consultation
       let step1='';
       if(OFF){
         const o1=OFF.old?Math.round((1-OFF.price/OFF.old)*100):0;
-        const offMsg='Bună ziua! Am folosit simulatorul (obiectiv: '+GL[sel.goal]+'). Aș vrea să încep cu oferta '+OFF.name+' ('+OFF.price+' lei).';
-        const waOff='https://wa.me/40750204243?text='+encodeURIComponent(offMsg);
         step1='<div class="sim-step s1">'+
-          '<span class="sim-step-lbl">☀ Pasul 1 · Începe aici</span>'+
+          '<span class="sim-step-lbl">Început recomandat</span>'+
           '<div class="sim-step-name">'+OFF.name+'</div>'+
           (OFF.note?'<div class="sim-step-note">'+OFF.note+'</div>':'')+
           '<div class="sim-step-price"><b>'+OFF.price+' lei</b>'+(OFF.old?'<s>'+OFF.old+' lei</s><span class="off">−'+o1+'%</span>':'')+'</div>'+
-          '<a class="pill pill-on-dark px-5 py-2.5 text-[13px] sim-step-cta" href="'+waOff+'" target="_blank" rel="noopener">Rezervă oferta <span class="arrow">→</span></a>'+
           '</div>'+
           '<div class="sim-conn">apoi, pentru rezultat de durată</div>';
       }
-      // PASUL URMĂTOR — pachetul (ales după buget)
       const off=Math.round((1-p.price/p.old)*100);
-      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'. Mă interesează pachetul '+p.name+' ('+p.price+' lei).';
-      const wa='https://wa.me/40750204243?text='+encodeURIComponent(msg);
       const step2='<div class="sim-step">'+
-        '<span class="sim-step-lbl">'+(OFF?'Pasul următor · Cură completă':'Pachet recomandat')+(over?' · cel mai apropiat de buget':'')+'</span>'+
+        '<span class="sim-step-lbl">'+(OFF?'Cură completă':'Pachet recomandat')+(over?' · cel mai apropiat de buget':'')+'</span>'+
         '<div class="sim-step-name">'+p.name+'</div>'+
         '<div class="sim-step-note">'+p.dur+' · '+p.incl+'</div>'+
         '<div class="sim-step-price"><b>'+p.price+' lei</b><s>'+p.old+' lei</s><span class="off">−'+off+'%</span></div>'+
         (p.tm?'<div class="sim-rec-tm">'+pin+' Disponibil doar la Timișoara</div>':'')+
-        '<div class="sim-step-cta" style="display:flex;flex-wrap:wrap;gap:.55rem;"><a class="pill pill-on-dark px-5 py-2.5 text-[13px]" href="'+wa+'" target="_blank" rel="noopener">Rezervă pachetul <span class="arrow">→</span></a><a class="pill pill-glass px-5 py-2.5 text-[13px]" href="oferte.html#pachete">Vezi toate</a></div>'+
         '</div>';
-      result.innerHTML='<div class="sim-steps">'+step1+step2+'</div>'+
+      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'. Mă interesează '+(OFF?OFF.name+' / ':'')+p.name+'.';
+      const wa='https://wa.me/40750204243?text='+encodeURIComponent(msg);
+      const consult='<div class="sim-consult">'+
+        '<span class="sim-step-lbl">Primul pas, pentru orice plan</span>'+
+        '<div class="sim-step-name">Consultația gratuită</div>'+
+        '<p>Evaluăm zona, îți spunem exact ce ți se potrivește, de câte ședințe ai nevoie și prețul final. Fără obligații — și primești un masaj facial cadou.</p>'+
+        '<button type="button" class="pill pill-on-dark px-6 py-3.5 text-[14px] sim-consult-btn" data-sim-consult>Programează consultația gratuită <span class="arrow">→</span></button>'+
+        '<a class="sim-wa" href="'+wa+'" target="_blank" rel="noopener">sau întreabă-ne pe WhatsApp</a>'+
+        '</div>';
+      result.innerHTML='<div class="sim-steps">'+step1+step2+'</div>'+consult+
         '<p class="sim-disc">Recomandare orientativă. Planul final și prețul exact se stabilesc gratuit la consultație.</p>';
       result.hidden=false; if(hint) hint.style.display='none';
     }
+    // "Programează consultația gratuită": jump to the form at the top and fill in what we already know
+    const QUIZ_FOR = {
+      abdomen:['Slăbit / conturare corp','Abdomen'], gusa:['Fermitate față / anti-îmbătrânire','Gușă / bărbie'],
+      lifting:['Fermitate față / anti-îmbătrânire',''], celulita:['Celulită',''], detox:['Slăbit / conturare corp','']
+    };
+    result.addEventListener('click', (ev)=>{
+      if(!ev.target.closest('[data-sim-consult]')) return;
+      const form = document.getElementById('quizForm');
+      const card = form && form.closest('.quiz-card');
+      if(!form) return;
+      (card || form).scrollIntoView({ behavior:'smooth', block:'center' });
+      const pick = QUIZ_FOR[sel.goal] || [];
+      const optI = pick[0] && [...form.querySelectorAll('[data-step="interes"] .qopt')].find(b=>b.dataset.value===pick[0]);
+      if(!optI) return;
+      setTimeout(()=>{
+        optI.click();
+        if(pick[1]) setTimeout(()=>{ const z = [...form.querySelectorAll('#qZonaGrid .qopt')].find(b=>b.dataset.value===pick[1]); if(z) z.click(); }, 260);
+      }, 450);
+    });
   })();
   </script>
 
@@ -1727,9 +1752,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       zoomControl:false, attributionControl:true, scrollWheelZoom:false,
       doubleClickZoom:false, dragging:false, touchZoom:false, boxZoom:false, keyboard:false
     });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© OpenStreetMap', maxZoom:19
-    }).addTo(map);
+    L.maplibreGL({ style: window.__c360MapStyle, attribution:'© OpenFreeMap · © OpenStreetMap' }).addTo(map);
 
     // overview bounds (both cities visible)
     const bounds = L.latLngBounds(Object.values(LOCS).map(l => l.latlng));
@@ -2091,7 +2114,7 @@ function makeMaterial(kind){
 
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
 // The model (2.6 MB) loads after the page itself, so it never competes with the content.
-const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); },
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); clock.start(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); },
   undefined, (e)=>console.error('GLB load error', e)));
 if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 
@@ -2166,7 +2189,7 @@ function animate(){
   const t = clock.getElapsedTime();
   if(t - lastLogoFrame < 1/30) return;
   lastLogoFrame = t;
-  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
+  for(const m of on){ m.spinner.rotation.y = 1.5708 + (reduce ? 0 : t * m.opts.spin); m.renderer.render(m.scene, m.cam); }
 }
 </script>
 
@@ -2287,18 +2310,40 @@ function animate(){
 })();
 </script>
 <script>
-// Map: Leaflet is fetched only when the map is about to scroll into view (it used to block the page load).
+// Map: everything (Leaflet + MapLibre + the map style) is fetched only when the map is about to scroll
+// into view. The base is OpenFreeMap (free, no API key) with all labels, borders and points of interest
+// removed, so the only names on the map are our two clinics.
 (function(){
   var el = document.getElementById('locMap'); if(!el) return;
   var started = false;
+  function css(href){ var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.insertBefore(l, document.head.firstChild); }   // first, so the page's own map styles still win
+  function js(src){ return new Promise(function(ok, no){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function quiet(style){
+    style.layers = style.layers.filter(function(l){
+      return l.type !== 'symbol' && l.type !== 'raster' && !/boundary|admin|aeroway|hillshade|ne2/.test(l.id);
+    });
+    style.layers.forEach(function(l){
+      var p = l.paint = l.paint || {}, id = l.id;
+      if(l.type === 'background') p['background-color'] = '#1b1d23';
+      else if(/water/.test(id)){ if(l.type === 'fill') p['fill-color'] = '#121821'; if(l.type === 'line') p['line-color'] = '#121821'; }
+      else if(/building/.test(id) && l.type === 'fill'){ p['fill-color'] = '#262931'; p['fill-outline-color'] = '#2c2f38'; }
+      else if(l.type === 'fill'){ p['fill-color'] = '#1f2228'; p['fill-opacity'] = 0.7; }
+      else if(l.type === 'line'){ p['line-color'] = /motorway|trunk|primary/.test(id) ? '#565b67' : /secondary|tertiary/.test(id) ? '#40444e' : '#33363e'; }
+    });
+    delete style.sources.ne2_shaded;
+    return style;
+  }
   function go(){
     if(started) return; started = true;
-    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    l.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='; l.crossOrigin = ''; document.head.appendChild(l);
-    var s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='; s.crossOrigin = '';
-    s.onload = function(){ if(window.__c360MapInit) window.__c360MapInit(); };
-    document.head.appendChild(s);
+    css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+    css('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css');
+    var styleP = fetch('https://tiles.openfreemap.org/styles/dark').then(function(r){ return r.json(); }).then(quiet);
+    js('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
+      .then(function(){ return js('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'); })
+      .then(function(){ return js('https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js'); })
+      .then(function(){ return styleP; })
+      .then(function(style){ window.__c360MapStyle = style; if(window.__c360MapInit) window.__c360MapInit(); })
+      .catch(function(e){ console.error('map load failed', e); });
   }
   if('IntersectionObserver' in window){
     var io = new IntersectionObserver(function(es){ if(es[0].isIntersecting){ io.disconnect(); go(); } }, { rootMargin:'800px 0px' });

@@ -82,7 +82,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .logo-pill{ padding:.375rem 1.25rem .375rem .625rem; display:inline-flex; align-items:center; gap:.5rem; }
   .logo-pill img{ height:11px; width:auto; object-fit:contain; }
   @media (min-width:640px){ .logo-pill img{ height:12px; } }
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo3d-poster.png') center/100% no-repeat; }
 
   /* menu overlay (mirrors index) */
   .menu-overlay{ position:fixed; inset:0; z-index:60; background:rgba(8,8,10,0.96); -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); color:#fff; opacity:0; visibility:hidden; transition:opacity .5s cubic-bezier(.16,1,.3,1), visibility .5s; display:flex; overflow-y:auto; overflow-x:hidden; max-width:100vw; }
@@ -237,7 +237,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 </style>
 <link rel="stylesheet" href="c360-convert.css">
 <style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
-@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
 </style>
 </head>
 <body>
@@ -869,7 +869,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const mounts = []; let glbScene = null;
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
 // The model (2.6 MB) loads after the page itself, so it never competes with the content.
-const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); clock.start(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
 if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 function mountAll(){
   const head = document.getElementById('logo3d-head');
@@ -920,7 +920,7 @@ function animate(){
   const t = clock.getElapsedTime();
   if(t - lastLogoFrame < 1/30) return;
   lastLogoFrame = t;
-  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
+  for(const m of on){ m.spinner.rotation.y = 1.5708 + (reduce ? 0 : t * m.opts.spin); m.renderer.render(m.scene, m.cam); }
 }
 </script>
 <!-- ===== Offer quick-view popup (opens from menu offer slides) ===== -->

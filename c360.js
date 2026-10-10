@@ -170,6 +170,24 @@
     window.addEventListener('scroll', onScroll, { passive:true });
     window.addEventListener('resize', onScroll);
     apply();
+
+    // Not everyone knows to keep scrolling here: a tap on the device or a sideways swipe moves it on too,
+    // and the hint stays until the last step.
+    const hint = ts.querySelector('.th-hint');
+    const steps = Math.max(1, ccos.length);
+    function progress(){ return clamp((-ts.getBoundingClientRect().top) / Math.max(1, ts.offsetHeight - innerHeight)); }
+    function goStep(dir){
+      const cur = Math.min(steps - 1, Math.floor(progress() * steps - 1e-9));
+      const next = Math.max(0, Math.min(steps, cur + dir));
+      const target = next >= steps ? ts.offsetTop + ts.offsetHeight - innerHeight + 2 : ts.offsetTop + (ts.offsetHeight - innerHeight) * ((next + 0.5) / steps);
+      window.scrollTo({ top: target, behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
+    const device = ts.querySelector('.techdevice');
+    if(device) device.addEventListener('click', ()=>goStep(1));
+    let sx = 0, sy = 0;
+    ts.addEventListener('touchstart', (e)=>{ sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive:true });
+    ts.addEventListener('touchend', (e)=>{ const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if(Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) goStep(dx < 0 ? 1 : -1); }, { passive:true });
+    if(hint){ const upd = ()=>{ hint.style.opacity = progress() > 0.92 ? '0' : '1'; }; window.addEventListener('scroll', upd, { passive:true }); upd(); }
   })();
 
   /* ----- vertical animated timeline (fill draws down, dots light up on scroll) ----- */

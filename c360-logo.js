@@ -11,7 +11,7 @@ const isMobile = matchMedia('(max-width:768px)').matches;   // mobile: lighter 3
 const mounts = []; let glbScene = null;
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
 // The model (2.6 MB) loads after the page itself, so it never competes with the content.
-const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); clock.start(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
 if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 
 function mountAll(){
@@ -65,5 +65,5 @@ function animate(){
   const t = clock.getElapsedTime();
   if(t - lastLogoFrame < 1/30) return;
   lastLogoFrame = t;
-  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
+  for(const m of on){ m.spinner.rotation.y = 1.5708 + (reduce ? 0 : t * m.opts.spin); m.renderer.render(m.scene, m.cam); }
 }

@@ -57,7 +57,7 @@
   .logo-pill{ padding:.375rem 1.25rem .375rem .625rem; display:inline-flex; align-items:center; gap:.5rem; }
   .logo-pill img{ height:11px; width:auto; object-fit:contain; }
   @media (min-width:640px){ .logo-pill img{ height:12px; } }
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo3d-poster.png') center/100% no-repeat; }
   .menu-overlay{ position:fixed; inset:0; z-index:60; background:rgba(8,8,10,0.96); -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); color:#fff; opacity:0; visibility:hidden; transition:opacity .5s cubic-bezier(.16,1,.3,1), visibility .5s; display:flex; overflow-y:auto; overflow-x:hidden; max-width:100vw; }
   .menu-overlay.open{ opacity:1; visibility:visible; }
   .menu-inner{ width:100%; max-width:1280px; margin:0 auto; padding:0 1.5rem; display:flex; flex-direction:column; min-height:100%; }
@@ -122,8 +122,6 @@
   @media (max-width:860px){ .loc-grid{ grid-template-columns:1fr; } }
   .loc-map{ position:relative; border-radius:24px; overflow:hidden; min-height:440px; height:100%; border:1px solid var(--line); z-index:0; background-color:#0c0d11; }
   .loc-map.leaflet-container{ background:#0c0d11; font:inherit; }
-  /* OpenStreetMap tiles, darkened to the site look (CARTO dark tiles now require an API key) */
-  .loc-map .leaflet-tile{ filter:invert(1) hue-rotate(180deg) grayscale(1) brightness(.78) contrast(1.1); }
   .loc-map .leaflet-control-attribution{ background:rgba(8,8,10,.5); color:rgba(255,255,255,.4); font-size:9px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
   .loc-map .leaflet-control-attribution a{ color:rgba(255,255,255,.6); }
   .loc-map .leaflet-control-zoom{ border:0; box-shadow:none; }
@@ -131,7 +129,7 @@
   .loc-map .leaflet-control-zoom a:first-child{ border-radius:10px 10px 0 0; }
   .loc-map .leaflet-control-zoom a:last-child{ border-radius:0 0 10px 10px; }
   .loc-map .leaflet-control-zoom a:hover{ background:rgba(40,40,48,.95); }
-  .loc-pin-dot{ position:relative; width:15px; height:15px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.6); }
+  .loc-pin-dot{ position:relative; flex:none; width:15px; height:15px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.6); }
   .loc-pin-dot::after{ content:''; position:absolute; inset:-5px; border-radius:50%; border:1px solid rgba(255,255,255,.5); animation:locPulse 2.4s ease-out infinite; }
   @keyframes locPulse{ 0%{ transform:scale(.6); opacity:.8; } 100%{ transform:scale(2.2); opacity:0; } }
   .loc-pin-label{ font-size:12.5px; font-weight:600; color:#fff; white-space:nowrap; padding:3px 11px; border-radius:999px; background:var(--glass-2); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:1px solid var(--line-on-dark); }
@@ -194,7 +192,7 @@
 </style>
 <link rel="stylesheet" href="c360-convert.css">
 <style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
-@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
 </style>
 </head>
 <body>
@@ -564,7 +562,7 @@
     if(typeof L === 'undefined'){ window.__c360MapInit = arguments.callee; return; }   // runs again once Leaflet has loaded
     const latlng = [46.182332, 21.330247];
     const map = L.map(el, { zoomControl:true, attributionControl:true, scrollWheelZoom:false });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(map);
+    L.maplibreGL({ style: window.__c360MapStyle, attribution:'© OpenFreeMap · © OpenStreetMap' }).addTo(map);
     map.setView(latlng, 15);
     const icon = L.divIcon({ className:'loc-mk', iconSize:[220,46], iconAnchor:[110,8], html:'<span class="loc-pin-dot"></span><span class="loc-pin-label">Centrul360 · Str. Ioan Alexandru 16</span>' });
     L.marker(latlng, { icon, keyboard:false }).addTo(map);
@@ -586,7 +584,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const mounts = []; let glbScene = null;
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
 // The model (2.6 MB) loads after the page itself, so it never competes with the content.
-const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); clock.start(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
 if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 function mountAll(){
   const head = document.getElementById('logo3d-head');
@@ -637,23 +635,45 @@ function animate(){
   const t = clock.getElapsedTime();
   if(t - lastLogoFrame < 1/30) return;
   lastLogoFrame = t;
-  for(const m of on){ m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin; m.renderer.render(m.scene, m.cam); }
+  for(const m of on){ m.spinner.rotation.y = 1.5708 + (reduce ? 0 : t * m.opts.spin); m.renderer.render(m.scene, m.cam); }
 }
 </script>
 <script src="c360-convert.js" defer></script>
 <script>
-// Map: Leaflet is fetched only when the map is about to scroll into view (it used to block the page load).
+// Map: everything (Leaflet + MapLibre + the map style) is fetched only when the map is about to scroll
+// into view. The base is OpenFreeMap (free, no API key) with all labels, borders and points of interest
+// removed, so the only names on the map are our two clinics.
 (function(){
   var el = document.getElementById('locMap'); if(!el) return;
   var started = false;
+  function css(href){ var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.insertBefore(l, document.head.firstChild); }   // first, so the page's own map styles still win
+  function js(src){ return new Promise(function(ok, no){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function quiet(style){
+    style.layers = style.layers.filter(function(l){
+      return l.type !== 'symbol' && l.type !== 'raster' && !/boundary|admin|aeroway|hillshade|ne2/.test(l.id);
+    });
+    style.layers.forEach(function(l){
+      var p = l.paint = l.paint || {}, id = l.id;
+      if(l.type === 'background') p['background-color'] = '#1b1d23';
+      else if(/water/.test(id)){ if(l.type === 'fill') p['fill-color'] = '#121821'; if(l.type === 'line') p['line-color'] = '#121821'; }
+      else if(/building/.test(id) && l.type === 'fill'){ p['fill-color'] = '#262931'; p['fill-outline-color'] = '#2c2f38'; }
+      else if(l.type === 'fill'){ p['fill-color'] = '#1f2228'; p['fill-opacity'] = 0.7; }
+      else if(l.type === 'line'){ p['line-color'] = /motorway|trunk|primary/.test(id) ? '#565b67' : /secondary|tertiary/.test(id) ? '#40444e' : '#33363e'; }
+    });
+    delete style.sources.ne2_shaded;
+    return style;
+  }
   function go(){
     if(started) return; started = true;
-    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    l.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='; l.crossOrigin = ''; document.head.appendChild(l);
-    var s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='; s.crossOrigin = '';
-    s.onload = function(){ if(window.__c360MapInit) window.__c360MapInit(); };
-    document.head.appendChild(s);
+    css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+    css('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css');
+    var styleP = fetch('https://tiles.openfreemap.org/styles/dark').then(function(r){ return r.json(); }).then(quiet);
+    js('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
+      .then(function(){ return js('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'); })
+      .then(function(){ return js('https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js'); })
+      .then(function(){ return styleP; })
+      .then(function(style){ window.__c360MapStyle = style; if(window.__c360MapInit) window.__c360MapInit(); })
+      .catch(function(e){ console.error('map load failed', e); });
   }
   if('IntersectionObserver' in window){
     var io = new IntersectionObserver(function(es){ if(es[0].isIntersecting){ io.disconnect(); go(); } }, { rootMargin:'800px 0px' });

@@ -36,7 +36,7 @@
 </script>
 <link rel="stylesheet" href="c360-convert.css">
 <style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
-@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
 </style>
 </head>
 <body style="--accent:#9fb6e6; --accent-soft:rgba(140,168,235,0.07);">
@@ -168,7 +168,8 @@
         <article class="cco" data-step="3"><span class="cco-line"><i class="cco-dot"></i></span><h3 class="cco-title">Certificat medical</h3></article>
 
         <div class="th-progress"><span></span></div>
-        <p class="th-hint">Derulează</p>
+        <div class="th-hint" aria-hidden="true"><span>Derulează în jos</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></div>
+        <a class="th-skip" href="#despre">Sari peste</a>
       </div>
     </div>
   </section>
