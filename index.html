@@ -332,7 +332,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .team-img{ filter:saturate(1.02); }
 
   /* ---------- 3D logo (mobile header + desktop hero) ---------- */
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
   /* desktop: large spinning logo centered in the middle of the first view, behind the text */
   #logo3d-hero{ position:absolute; pointer-events:none; z-index:-1;
     width:min(52vw,640px); height:min(52vw,640px); left:50%; top:50%; transform:translate(-50%,-50%); opacity:0.78;
@@ -584,6 +584,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     .o3d-marrow[disabled]{ opacity:0; pointer-events:none; }
   }
 </style>
+<style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } }
+</style>
 </head>
 <body>
 
@@ -830,15 +833,15 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <span class="solid">Tratamente</span><br><span class="ghost">Corporale</span>
         </h3>
         <div class="flex flex-wrap gap-2.5 mb-6">
-          <span class="tag">Grăsime localizată</span>
-          <span class="tag">Celulită</span>
-          <span class="tag">Tonifiere EMS</span>
-          <span class="tag">Detox &amp; drenaj</span>
+          <a class="tag" href="grasime-localizata.html">Grăsime localizată</a>
+          <a class="tag" href="celulita.html">Celulită</a>
+          <a class="tag" href="tonifiere-musculara.html">Tonifiere EMS</a>
+          <a class="tag" href="detox-drenaj.html">Detox &amp; drenaj</a>
         </div>
         <p class="flex gap-3 text-[15px] text-white/65 leading-relaxed max-w-md mb-7">
 <span>Silueta pe care ți-o dorești, ședință cu ședință. Rezultate care se văd și se simt.</span>
         </p>
-        <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20pentru%20tratamente%20corporale." target="_blank" rel="noopener" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
+        <a href="grasime-localizata.html" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
           <span class="magn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg></span> Explorează
         </a>
       </div>
@@ -855,16 +858,16 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <span class="solid">Tratamente</span><br><span class="ghost">Faciale</span>
         </h3>
         <div class="flex flex-wrap gap-2.5 mb-6">
-          <span class="tag">Hidratare profundă</span>
-          <span class="tag">Riduri</span>
-          <span class="tag">Lifting non-invaziv</span>
-          <span class="tag">Reducerea gușei</span>
-          <span class="tag">Curățare profundă</span>
+          <a class="tag" href="ten-lipsit-de-stralucire.html">Hidratare profundă</a>
+          <a class="tag" href="riduri-linii-fine.html">Riduri</a>
+          <a class="tag" href="riduri-linii-fine.html">Lifting non-invaziv</a>
+          <a class="tag" href="gusa-barbie-dubla.html">Reducerea gușei</a>
+          <a class="tag" href="ten-problematic.html">Curățare profundă</a>
         </div>
         <p class="flex gap-3 text-[15px] text-white/65 leading-relaxed max-w-md mb-7">
 <span>Fiecare ședință îți redă tenului prospețimea și încrederea. O strălucire care se vede în oglindă și se simte cu fiecare zi.</span>
         </p>
-        <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20pentru%20tratamente%20faciale." target="_blank" rel="noopener" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
+        <a href="riduri-linii-fine.html" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
           <span class="magn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg></span> Explorează
         </a>
       </div>
