@@ -25,6 +25,8 @@
     forbidden: 'Doar adminul poate face asta.', too_many_goals: 'Maxim 2 obiective per angajat.', invalid_goal: 'Un obiectiv nu e complet.',
     preview_only: 'Ești în previzualizarea contului — aici doar te uiți. Revino la Admin ca să faci modificări.',
     missing_title: 'Completează titlul.', invalid_prices: 'Prețurile nu sunt valide.', offer_not_found: 'Oferta nu mai există.',
+    invalid_type: 'Alege tipul de concediu.', invalid_range: 'Data de sfârșit e înainte de cea de început.', missing_reason: 'Completează motivul.',
+    request_not_found: 'Cererea nu mai există.', entry_not_found: 'Intrarea nu mai există.', invalid_time: 'Ora nu e validă.',
   };
   const errText = (e, fallback) => ERR[e && e.code] || fallback || 'Nu am putut salva. Încearcă din nou.';
   async function api(url, body, opts) {
