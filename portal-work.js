@@ -241,7 +241,9 @@
   function printHtml() {
     return '<div class="rs-print">' +
       '<a class="rs-pdf" href="/fise/program-recomandat-si-oferta.pdf" target="_blank" rel="noopener"><span class="k-icon-chip is-accent">' + icon('file') + '</span><div><b>Program recomandat și ofertă</b><span>PDF · pentru clientă, după consultație</span></div>' + icon('printer') + '</a>' +
-      '<a class="rs-pdf" href="/fise/fisa-client-proceduri-corporale.pdf" target="_blank" rel="noopener"><span class="k-icon-chip is-accent">' + icon('file') + '</span><div><b>Fișă client — proceduri corporale</b><span>PDF · se completează la prima vizită</span></div>' + icon('printer') + '</a></div>';
+      '<a class="rs-pdf" href="/fise/fisa-client-proceduri-corporale.pdf" target="_blank" rel="noopener"><span class="k-icon-chip is-accent">' + icon('file') + '</span><div><b>Fișă client — proceduri corporale</b><span>PDF · se completează la prima vizită</span></div>' + icon('printer') + '</a>' +
+      '<a class="rs-pdf" href="/fise/fisa-client-proceduri-faciale.pdf" target="_blank" rel="noopener"><span class="k-icon-chip is-accent">' + icon('file') + '</span><div><b>Fișă client — proceduri faciale</b><span>PDF · se completează la prima vizită</span></div>' + icon('printer') + '</a>' +
+      '<a class="rs-pdf" href="/fise/fisa-client-epilare-laser.pdf" target="_blank" rel="noopener"><span class="k-icon-chip is-accent">' + icon('file') + '</span><div><b>Fișă client — epilare laser</b><span>PDF · se completează la prima vizită</span></div>' + icon('printer') + '</a></div>';
   }
 
   function section(id) {
