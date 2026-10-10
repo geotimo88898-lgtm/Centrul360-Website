@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
         // A lead's "call / write" task is done once someone has reached that lead.
         if (t.status === 'pending' && t.workflowId && t.relatedLeadId && !t.relatedAppointmentId) {
           const l = leadById.get(t.relatedLeadId);
-          if (!l || (l.lastContactAt && l.lastContactAt > t.createdAt)) { t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++; }
+          if (!l || (l.lastContactAt && l.lastContactAt >= t.createdAt)) { t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++; }
           return;
         }
         if (t.status !== 'pending' || !t.relatedAppointmentId) return;
