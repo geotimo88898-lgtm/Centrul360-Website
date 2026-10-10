@@ -9,9 +9,9 @@ main.k-wide{ max-width:1320px; min-width:0; }
 .k-head h2{ margin:0; font-size:1.75rem; letter-spacing:-.03em; }
 .k-head .k-lede{ margin:.4rem 0 0; color:var(--muted); font-size:.88rem; max-width:60ch; }
 .k-head-actions{ display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
-.k-eyebrow{ display:inline-flex; align-items:center; gap:.5rem; font-size:.68rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; margin-bottom:.55rem;
-  background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.k-eyebrow::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+.k-eyebrow{ display:inline-flex; align-items:center; gap:.5rem; font-size:.68rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; margin-bottom:.55rem; background-size:200% auto !important; animation:c360-duo 7s linear infinite;
+  background:linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.k-eyebrow::before{ content:""; width:6px; height:6px; border-radius:50%; background:linear-gradient(135deg, var(--accent), var(--accent-3)); box-shadow:0 0 0 4px var(--accent-soft); }
 .k-live{ display:inline-flex; align-items:center; gap:.4rem; font-size:.72rem; font-weight:650; color:var(--good); }
 .k-live::before{ content:""; width:7px; height:7px; border-radius:50%; background:currentColor; animation:k-ping 1.8s var(--ease) infinite; }
 
