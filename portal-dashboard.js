@@ -172,14 +172,14 @@
     root.innerHTML =
       // ---------------- hero
       '<section class="db-hero">' +
-        '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i></div>' +
+        '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>' +
         '<div class="db-hero-main">' +
           '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">live</span></div>' +
           '<h2>' + greeting() + ', ' + esc(first) + '</h2>' +
           '<p class="db-summary">Ai ' + summary.join(', ').replace(/, ([^,]*)$/, ' și $1') + '.</p>' +
           '<div class="db-actions">' + actions + '</div>' +
         '</div>' +
-        '<div class="db-clock" aria-label="Ora"><b data-clock>--:--</b><span data-sec>--</span></div>' +
+        '<div class="db-clock" aria-label="Ora"><div class="db-time" data-time></div>' +'<div class="db-secs"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="db-secs-track"/><circle cx="24" cy="24" r="20" class="db-secs-arc" pathLength="60" data-arc/></svg><b data-sec>--</b></div></div>' +
       '</section>' +
 
       // ---------------- KPIs (role-shaped, see above)
@@ -282,10 +282,38 @@
   // ------------------------------------------------------------------ live ticking
   function tick(now) {
     if (!panel || !K.isActive('panou')) return;
-    const c = panel.querySelector('[data-clock]');
-    if (c) { c.textContent = K.pad(now.getHours()) + ':' + K.pad(now.getMinutes()); panel.querySelector('[data-sec]').textContent = K.pad(now.getSeconds()); }
+    setClock(now);
     if (now.getSeconds() % 20 === 0 || !panel.querySelector('.db-now')) placeNow(now);
     if (now.getSeconds() === 0) panel.querySelectorAll('[data-ago]').forEach((x) => { x.textContent = K.ago(x.dataset.ago); });
+  }
+  // Hero clock: each digit rolls in when it changes, seconds sweep a glowing ring.
+  function setClock(now) {
+    const box = panel.querySelector('[data-time]');
+    if (!box) return;
+    const str = K.pad(now.getHours()) + ':' + K.pad(now.getMinutes());
+    if (box.children.length !== 5) {
+      box.innerHTML = str.split('').map((ch) => (ch === ':' ? '<i class="db-colon">:</i>' : '<span class="db-dig"><span>' + ch + '</span></span>')).join('');
+    } else {
+      str.split('').forEach((ch, i) => {
+        const slot = box.children[i];
+        if (ch === ':') return;
+        const cur = slot.lastElementChild;
+        if (cur && cur.textContent === ch && !cur.classList.contains('out')) return;
+        const n = document.createElement('span');
+        n.textContent = ch;
+        n.className = 'in';
+        if (cur) { cur.classList.add('out'); setTimeout(() => cur.remove(), 650); }
+        slot.appendChild(n);
+      });
+    }
+    const s = now.getSeconds();
+    const secEl = panel.querySelector('[data-sec]');
+    if (secEl) secEl.textContent = K.pad(s);
+    const arc = panel.querySelector('[data-arc]');
+    if (arc) {
+      arc.style.transition = s === 0 ? 'none' : '';
+      arc.style.strokeDashoffset = String(60 - (s === 0 ? 60 : s));
+    }
   }
   function placeNow(now) {
     const tl = panel.querySelector('.db-tl');

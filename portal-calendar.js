@@ -10,11 +10,11 @@
   const DUR = 60;                        // appointments carry no duration — draw them as 1h
   const LOCS = ['Timișoara', 'Arad'];
   const STATUS = {
-    programata: { label: 'Programată', tone: 'accent', ic: 'calendar' },
-    confirmata: { label: 'Confirmată', tone: 'good', ic: 'checkCircle' },
-    finalizata: { label: 'Finalizată', tone: 'mute', ic: 'check' },
-    reprogramata: { label: 'Reprogramată', tone: 'warn', ic: 'refresh' },
-    anulata: { label: 'Anulată', tone: 'bad', ic: 'ban' },
+    programata: { label: 'Programată', plural: 'programate', tone: 'accent', ic: 'calendar' },
+    confirmata: { label: 'Confirmată', plural: 'confirmate', tone: 'good', ic: 'checkCircle' },
+    finalizata: { label: 'Finalizată', plural: 'finalizate', tone: 'mute', ic: 'check' },
+    reprogramata: { label: 'Reprogramată', plural: 'reprogramate', tone: 'warn', ic: 'refresh' },
+    anulata: { label: 'Anulată', plural: 'anulate', tone: 'bad', ic: 'ban' },
   };
   const S = { view: 'day', date: K.today(), loc: 'all', emp: '', appts: [], range: '', loading: false };
   let panel, gridEl, nowTimer = 0;
@@ -184,7 +184,7 @@
     const c = (s) => list.filter((a) => a.status === s).length;
     const live = list.filter((a) => a.status !== 'anulata').length;
     el.innerHTML = '<span class="cal-sum-main">' + K.plural(live, 'programare', 'programări') + (S.view === 'day' ? '' : ' săptămâna aceasta') + '</span>' +
-      Object.keys(STATUS).filter((s) => c(s)).map((s) => '<span class="k-tag is-' + STATUS[s].tone + '">' + icon(STATUS[s].ic) + c(s) + ' ' + STATUS[s].label.toLowerCase() + (c(s) > 1 && s !== 'finalizata' ? '' : '') + '</span>').join('') +
+      Object.keys(STATUS).filter((s) => c(s)).map((s) => '<span class="k-tag is-' + STATUS[s].tone + '">' + icon(STATUS[s].ic) + c(s) + ' ' + (c(s) === 1 ? STATUS[s].label.toLowerCase() : STATUS[s].plural) + '</span>').join('') +
       (c('programata') ? '<span class="cal-hint">' + icon('info') + 'Programările neconfirmate apar cu albastru — confirmă-le cu un click.</span>' : '');
   }
   function placeNow() {

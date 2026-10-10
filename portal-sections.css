@@ -1,18 +1,43 @@
 /* Centrul360 portal — section-specific styles (dashboard, calendar, money, work, admin). */
 
 /* =============================== DASHBOARD =============================== */
+/* Hero lava: five colour blobs drifting and melting into each other behind the greeting. */
+.db-aurora{ position:absolute; inset:-35%; z-index:-1; filter:blur(26px) saturate(1.25); opacity:1; }
+.db-aurora i{ position:absolute; border-radius:50%; opacity:.85; will-change:transform; }
+.db-aurora i:nth-child(1){ width:22%; height:46%; left:50%; top:30%; background:var(--accent); animation:db-lava1 12s ease-in-out infinite alternate; }
+.db-aurora i:nth-child(2){ width:20%; height:44%; left:66%; top:40%; background:var(--accent-3); opacity:1; animation:db-lava2 15s ease-in-out infinite alternate; }
+.db-aurora i:nth-child(3){ width:16%; height:34%; left:60%; top:18%; background:#c4b5fd; opacity:.7; animation:db-lava3 10s ease-in-out infinite alternate; }
+.db-aurora i:nth-child(4){ width:18%; height:38%; left:76%; top:24%; background:var(--accent); opacity:.9; animation:db-lava2 13s ease-in-out infinite alternate-reverse; }
+.db-aurora i:nth-child(5){ width:16%; height:32%; left:42%; top:48%; background:var(--accent-3); opacity:.9; animation:db-lava1 17s ease-in-out infinite alternate-reverse; }
+@keyframes db-lava1{ 0%{ transform:translate(0,0) scale(1); border-radius:50% 44% 56% 48%; } 50%{ transform:translate(-14%,18%) scale(1.25); border-radius:42% 58% 46% 54%; } 100%{ transform:translate(12%,-10%) scale(.9); border-radius:56% 46% 50% 42%; } }
+@keyframes db-lava2{ 0%{ transform:translate(0,0) scale(1.1); } 50%{ transform:translate(-30%,-16%) scale(.85); } 100%{ transform:translate(-8%,22%) scale(1.2); } }
+@keyframes db-lava3{ 0%{ transform:translate(0,0) scale(.9); } 50%{ transform:translate(24%,30%) scale(1.3); } 100%{ transform:translate(-20%,12%) scale(1); } }
+
+/* Hero clock: lava-coloured digits that roll in, seconds on a glowing ring. */
+.db-clock{ display:flex; align-items:center; gap:.9rem; flex:none; }
+.db-time{ display:flex; align-items:center; font-size:4.6rem; font-weight:800; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums;
+  filter:drop-shadow(0 6px 24px color-mix(in srgb, var(--accent) 45%, transparent)); }
+.db-dig{ position:relative; display:inline-block; width:.62em; height:1.05em; overflow:hidden; }
+.db-dig > span{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg, #ffffff 0%, #ffffff 35%, color-mix(in srgb, var(--accent-2) 70%, #fff) 70%, var(--accent) 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent; }
+.db-dig > span.in{ animation:db-roll-in .6s cubic-bezier(.2,.9,.25,1.15) both; }
+.db-dig > span.out{ animation:db-roll-out .6s cubic-bezier(.5,0,.75,0) both; }
+@keyframes db-roll-in{ from{ transform:translateY(90%) rotateX(-70deg); opacity:0; filter:blur(6px); } to{ transform:none; opacity:1; filter:none; } }
+@keyframes db-roll-out{ to{ transform:translateY(-90%) rotateX(70deg); opacity:0; filter:blur(6px); } }
+.db-colon{ font-style:normal; width:.3em; text-align:center; margin-top:-.08em; color:#fff; animation:db-colon 1s steps(1) infinite; }
+@keyframes db-colon{ 50%{ opacity:.25; } }
+.db-secs{ position:relative; width:58px; height:58px; display:grid; place-items:center; }
+.db-secs svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+.db-secs-track{ fill:none; stroke:rgba(255,255,255,.12); stroke-width:3.5; }
+.db-secs-arc{ fill:none; stroke:var(--accent-2); stroke-width:3.5; stroke-linecap:round; stroke-dasharray:60; stroke-dashoffset:60; transition:stroke-dashoffset 1s linear;
+  filter:drop-shadow(0 0 6px var(--accent-2)); }
+.db-secs b{ font-size:1rem; font-weight:750; font-variant-numeric:tabular-nums; color:#fff; }
+
 .db-root{ display:flex; flex-direction:column; gap:1rem; }
 .db-hero{ position:relative; overflow:hidden; display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; padding:1.7rem 1.8rem 1.6rem;
   border-radius:24px; background:var(--fg); color:var(--ink); isolation:isolate; min-height:190px; animation:k-rise .6s var(--ease) both; }
-.db-aurora{ position:absolute; inset:-40%; z-index:-1; filter:blur(56px); opacity:.6; }
-.db-aurora i{ position:absolute; width:46%; height:60%; border-radius:50%; mix-blend-mode:screen; }
-.db-aurora i:nth-child(1){ background:var(--accent); left:55%; top:28%; animation:db-orb1 16s ease-in-out infinite alternate; }
-.db-aurora i:nth-child(2){ background:var(--accent-2); opacity:.45; left:68%; top:46%; animation:db-orb2 19s ease-in-out infinite alternate; }
-.db-aurora i:nth-child(3){ display:none; background:var(--accent); left:30%; top:55%; width:36%; height:46%; opacity:.6; animation:db-orb3 23s ease-in-out infinite alternate; }
 @media all{ /* always dark */ .db-hero{ background:#11131b; color:#eef0f7; border:1px solid var(--line); } }
-@keyframes db-orb1{ 0%{ transform:translate(0,0) scale(1); } 100%{ transform:translate(-18%,-14%) scale(1.25); } }
-@keyframes db-orb2{ 0%{ transform:translate(0,0) scale(1.1); } 100%{ transform:translate(-26%,10%) scale(.85); } }
-@keyframes db-orb3{ 0%{ transform:translate(0,0); } 100%{ transform:translate(30%,-18%) scale(1.2); } }
 .db-hero::after{ content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg, rgba(8,8,14,.82) 0%, rgba(8,8,14,.55) 38%, transparent 70%);
   pointer-events:none; }
 .db-hero-main{ min-width:0; }
@@ -26,9 +51,6 @@
 .db-actions{ display:flex; gap:.5rem; flex-wrap:wrap; }
 .db-glass{ background:rgba(255,255,255,.12); color:inherit; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:inset 0 0 0 1px rgba(255,255,255,.16); }
 .db-glass:hover{ background:rgba(255,255,255,.2); }
-.db-clock{ display:flex; align-items:flex-start; gap:.25rem; font-variant-numeric:tabular-nums; flex:none; }
-.db-clock b{ font-size:4.2rem; font-weight:700; letter-spacing:-.06em; line-height:.9; }
-.db-clock span{ font-size:1.1rem; font-weight:650; opacity:.6; margin-top:.3rem; width:1.5em; }
 
 .db-kpis .k-stat{ min-height:118px; }
 .db-hot .k-stat-ic{ animation:k-ping 1.8s var(--ease) infinite; color:var(--bad); }
@@ -116,7 +138,7 @@
 @media (max-width:720px){
   .db-hero{ flex-direction:column-reverse; align-items:flex-start; padding:1.3rem 1.2rem; gap:.6rem; border-radius:20px; }
   .db-hero h2{ font-size:1.6rem; }
-  .db-clock b{ font-size:2.6rem; }
+  .db-time{ font-size:3rem; } .db-secs{ width:46px; height:46px; }
   .db-actions .k-btn{ flex:1; }
   .db-goal-meta{ grid-template-columns:1fr 1fr 1fr; }
 }
@@ -501,3 +523,9 @@
 }
 html[data-role="cosmetician"] .cal-col{ cursor:default; }
 .cal-kv{ padding:.2rem 0; }
+@media (max-width:720px){
+  .cal-bar-right{ display:grid; grid-template-columns:1fr; gap:.5rem; width:100%; }
+  .cal-bar-right > select, .cal-bar-right .c360-select{ width:100%; min-width:0; height:40px; line-height:normal; }
+  .cal-bar-right .k-seg{ display:flex; flex-wrap:nowrap; width:100%; }
+  .cal-bar-right .k-seg button{ flex:1; justify-content:center; padding:.5rem .4rem; }
+}
