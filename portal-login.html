@@ -8,20 +8,19 @@
 <link rel="icon" type="image/png" href="/brand_asset/portal/favicon-light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/png" href="/brand_asset/portal/favicon-dark.png" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="/brand_asset/portal/icon-180.png">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f9">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#07080b">
+<meta name="theme-color" content="#07080b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    color-scheme: light dark;
+    color-scheme: dark;
     --ink:#f4f5f9; --paper:#ffffff; --surface:#eef0f5; --fg:#0d0f14; --muted:#5d6271; --muted-2:#979dab;
     --line:#e3e6ee; --accent:#6a4dff; --accent-soft:rgba(106,77,255,.10); --bad:#e5484d; --bad-soft:rgba(229,72,77,.10);
     --shadow:0 1px 2px rgba(13,15,20,.04), 0 30px 70px -30px rgba(28,30,60,.32);
     --glow:rgba(106,77,255,.16); --ease:cubic-bezier(.2,.8,.2,1);
   }
-  @media (prefers-color-scheme: dark){
+  @media all{ /* always dark */
     :root{
       --ink:#07080b; --paper:#101218; --surface:#181b23; --fg:#eef0f7; --muted:#8f96a7; --muted-2:#5b6172;
       --line:#1d2029; --accent:#8c78ff; --accent-soft:rgba(140,120,255,.15); --bad:#ff6b70; --bad-soft:rgba(255,107,112,.13);
@@ -90,8 +89,8 @@
 <body>
   <div class="wrap">
     <picture>
-      <source srcset="/brand_asset/portal/logo-white.png" media="(prefers-color-scheme: dark)">
-      <img class="logo" src="/brand_asset/portal/logo-black.png" alt="Centrul360">
+
+      <img class="logo" src="/brand_asset/portal/logo-white.png" alt="Centrul360">
     </picture>
     <div class="card">
       <div class="eyebrow"><i></i>Zonă privată</div>

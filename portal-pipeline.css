@@ -289,7 +289,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-input:hover, .pl-form input:hover, .pl-form textarea:hover{ border-color:var(--line-on-dark); }
 .pl-input:focus, .pl-form input:focus, .pl-form textarea:focus, .pl-note textarea:focus{ outline:none; border-color:var(--accent); background:var(--paper); box-shadow:0 0 0 4px var(--accent-soft); }
 .pl-input::placeholder, .pl-form input::placeholder, .pl-form textarea::placeholder{ color:var(--muted-2); }
-input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form input[type="time"]{ color-scheme:light dark; }
+input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form input[type="time"]{ color-scheme:dark; }
 
 .pl-follow{ display:flex; flex-direction:column; gap:.45rem; margin-top:.6rem; }
 .pl-follow-label{ display:flex; align-items:center; gap:.35rem; font-size:.74rem; font-weight:650; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }

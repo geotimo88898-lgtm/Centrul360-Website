@@ -250,8 +250,8 @@
     brand.innerHTML =
       '<button class="c360-rail-toggle" type="button" aria-label="Strânge meniul" title="Strânge meniul (Ctrl+B)">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>' +
-      '<picture><source srcset="/brand_asset/portal/logo-white.png" media="(prefers-color-scheme: dark)">' +
-      '<img class="brand-logo" src="/brand_asset/portal/logo-black.png" alt="Centrul360"></picture>' +
+      '<picture>' +
+      '<img class="brand-logo" src="/brand_asset/portal/logo-white.png" alt="Centrul360"></picture>' +
       '<span class="brand-sep"></span><span class="brand-sub">Admin</span>';
     brand.querySelector('.c360-rail-toggle').addEventListener('click', toggleRail);
   }

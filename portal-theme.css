@@ -6,7 +6,7 @@
 /* Cool, clean neutrals + one vivid accent pair (--accent → --accent-2) used as a gradient for the
    moments that matter. The accent pair is switchable from the avatar menu (html[data-accent]). */
 :root{
-  color-scheme: light dark;
+  color-scheme: dark;
   --ink:#f4f5f9;            /* page */
   --paper:#ffffff;          /* raised surfaces */
   --paper-2:#f9fafc;        /* cards, sidebar */
@@ -36,7 +36,7 @@
   --ease:cubic-bezier(.2,.8,.2,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
 }
-@media (prefers-color-scheme: dark){
+@media all{ /* always dark */
   :root{
     --ink:#07080b;
     --paper:#101218;
@@ -68,7 +68,7 @@ html[data-accent="ocean"]{ --accent:#2563eb; --accent-2:#3b82f6; --accent-soft:r
 html[data-accent="emerald"]{ --accent:#059669; --accent-2:#10b981; --accent-soft:rgba(5,150,105,.10); }
 html[data-accent="sunset"]{ --accent:#ea580c; --accent-2:#f97316; --accent-soft:rgba(234,88,12,.10); }
 html[data-accent="mono"]{ --accent:#18181b; --accent-2:#52525b; --accent-soft:rgba(24,24,27,.08); --accent-fg:#fff; }
-@media (prefers-color-scheme: dark){
+@media all{ /* always dark */
   html[data-accent="ocean"]{ --accent:#5b8cff; --accent-2:#93b4ff; --accent-soft:rgba(91,140,255,.16); }
   html[data-accent="emerald"]{ --accent:#34d399; --accent-2:#6ee7b7; --accent-soft:rgba(52,211,153,.15); --accent-fg:#04140d; }
   html[data-accent="sunset"]{ --accent:#fb923c; --accent-2:#fdba74; --accent-soft:rgba(251,146,60,.15); --accent-fg:#1a0a02; }

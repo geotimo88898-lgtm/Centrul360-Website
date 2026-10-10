@@ -9,7 +9,7 @@
 .db-aurora i:nth-child(1){ background:var(--accent); left:55%; top:28%; animation:db-orb1 16s ease-in-out infinite alternate; }
 .db-aurora i:nth-child(2){ background:var(--accent-2); opacity:.45; left:68%; top:46%; animation:db-orb2 19s ease-in-out infinite alternate; }
 .db-aurora i:nth-child(3){ display:none; background:var(--accent); left:30%; top:55%; width:36%; height:46%; opacity:.6; animation:db-orb3 23s ease-in-out infinite alternate; }
-@media (prefers-color-scheme: dark){ .db-hero{ background:#11131b; color:#eef0f7; border:1px solid var(--line); } }
+@media all{ /* always dark */ .db-hero{ background:#11131b; color:#eef0f7; border:1px solid var(--line); } }
 @keyframes db-orb1{ 0%{ transform:translate(0,0) scale(1); } 100%{ transform:translate(-18%,-14%) scale(1.25); } }
 @keyframes db-orb2{ 0%{ transform:translate(0,0) scale(1.1); } 100%{ transform:translate(-26%,10%) scale(.85); } }
 @keyframes db-orb3{ 0%{ transform:translate(0,0); } 100%{ transform:translate(30%,-18%) scale(1.2); } }
