@@ -29,7 +29,10 @@ function verifyPassword(password, salt, hash) {
 
 // ---- Session cookie ----------------------------------------------------------------
 // Cookie value = "<base64url(payload)>.<hex hmac-sha256 of that base64url string>"
-// payload (before encoding) = "employeeId.role.expiryTimestamp"
+// payload (before encoding) = "employeeId.role.expiryTimestamp[.viewerId]"
+// viewerId is set only while the owner previews an employee's account ("Intră în cont"):
+// the session then IS that employee's (same screens, same data) but read-only, and it
+// remembers who to switch back to.
 
 function sign(base64Payload) {
   const secret = process.env.PORTAL_SECRET || '';
@@ -44,15 +47,23 @@ function base64urlDecode(str) {
   return Buffer.from(str, 'base64url').toString('utf8');
 }
 
-function createSessionCookieValue(employeeId, role) {
+function createSessionCookieValue(employeeId, role, viewer) {
   const expiry = Date.now() + SESSION_TTL_MS;
-  const payload = `${employeeId}.${role}.${expiry}`;
+  const payload = `${employeeId}.${role}.${expiry}${viewer ? '.' + viewer : ''}`;
   const encoded = base64urlEncode(payload);
   const sig = sign(encoded);
   return `${encoded}.${sig}`;
 }
 
-function buildSetCookieHeader(value, { clear = false } = {}) {
+// One sign-in for admin.centrul360.com and staff.centrul360.com: on the live domain the cookie
+// is scoped to .centrul360.com so moving between the two keeps the session.
+function cookieDomain(res) {
+  const req = res && res.req;
+  const host = String((req && req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '').split(':')[0].toLowerCase();
+  return /(^|\.)centrul360\.com$/.test(host) ? '.centrul360.com' : '';
+}
+
+function buildSetCookieHeader(value, { clear = false, domain = '' } = {}) {
   const parts = [
     `${SESSION_COOKIE}=${clear ? '' : value}`,
     'Path=/',
@@ -60,17 +71,25 @@ function buildSetCookieHeader(value, { clear = false } = {}) {
     'Secure',
     'SameSite=Lax',
   ];
+  if (domain) parts.push(`Domain=${domain}`);
   parts.push(clear ? 'Max-Age=0' : `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`);
   return parts.join('; ');
 }
 
-function setSessionCookie(res, employeeId, role) {
-  const value = createSessionCookieValue(employeeId, role);
-  res.setHeader('Set-Cookie', buildSetCookieHeader(value));
+function setSessionCookie(res, employeeId, role, viewer) {
+  const value = createSessionCookieValue(employeeId, role, viewer);
+  const domain = cookieDomain(res);
+  // An older host-only cookie would shadow the shared one — clear it in the same response.
+  res.setHeader('Set-Cookie', domain
+    ? [buildSetCookieHeader('', { clear: true }), buildSetCookieHeader(value, { domain })]
+    : buildSetCookieHeader(value));
 }
 
 function clearSessionCookie(res) {
-  res.setHeader('Set-Cookie', buildSetCookieHeader('', { clear: true }));
+  const domain = cookieDomain(res);
+  res.setHeader('Set-Cookie', domain
+    ? [buildSetCookieHeader('', { clear: true }), buildSetCookieHeader('', { clear: true, domain })]
+    : buildSetCookieHeader('', { clear: true }));
 }
 
 function parseCookies(req) {
@@ -105,11 +124,11 @@ function getSession(req) {
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
     const payload = base64urlDecode(encoded);
-    const [employeeId, role, expiryStr] = payload.split('.');
+    const [employeeId, role, expiryStr, viewer] = payload.split('.');
     const expiry = Number(expiryStr);
     if (!employeeId || !role || !expiry || Date.now() > expiry) return null;
 
-    return { employeeId, role };
+    return { employeeId, role, viewer: viewer || null };
   } catch (err) {
     return null;
   }
@@ -120,6 +139,13 @@ function requireAuth(req, res) {
   const session = getSession(req);
   if (!session) {
     res.status(401).json({ error: 'not_authenticated' });
+    return null;
+  }
+  // Previewing an employee's account is look-only: nothing gets saved in their name.
+  // (Some screens read through POST { action: 'list' } — those stay allowed.)
+  const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search'].includes(req.body.action));
+  if (session.viewer && !readOnly) {
+    res.status(403).json({ error: 'preview_only' });
     return null;
   }
   return session;

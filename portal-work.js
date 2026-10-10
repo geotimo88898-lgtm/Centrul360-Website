@@ -114,6 +114,7 @@
     if (open) { K.go('programari'); setTimeout(() => K.emit('calendar:open', { id: open.dataset.open, date: open.dataset.date }), 250); }
   }
   K.section('automatizari', { mount: mountTasks, show: loadTasks });
+  K.on('remote', () => { if (tpanel && K.isActive('automatizari')) loadTasks(); });
 
   // =====================================================================================
   // SOP & RESURSE

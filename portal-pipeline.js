@@ -1273,6 +1273,7 @@
   };
   // Lead names should be searchable from Ctrl+K before the tab is ever opened.
   if (window.K) {
+    window.K.on('remote', () => { if (isActive()) refresh(); });
     window.K.on('pipeline:new', () => { if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX); mount(); openNew(); });
     window.K.on('pipeline:queue', () => { mount(); (S.loaded ? Promise.resolve() : load()).then(openQueue); });
   }

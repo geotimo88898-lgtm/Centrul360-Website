@@ -19,9 +19,12 @@
   const ALIASES = { incasare: ['incasari', 'incasari:new'], fise: ['resurse', 'resurse:fise'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'] };
 
   let DATA = null, first = true;
+  let rev = null, pendingRemote = false; // live-sync revision (see "live sync" below)
   const app = document.getElementById('app');
 
   async function load(quiet) {
+    // Baseline revision first, so a save that lands while this loads still triggers a refresh.
+    if (rev === null) { try { rev = (await K.api('/api/portal-pulse')).rev; } catch (e) { /* first pulse sets it */ } }
     try {
       DATA = await K.api('/api/portal-data');
     } catch (e) {
@@ -29,6 +32,8 @@
       if (!quiet) document.getElementById('loadingScreen').textContent = 'Eroare la încărcarea portalului. Reîncarcă pagina.';
       return;
     }
+    if (routeHost()) return;
+    previewBar();
     window.C360_CTX = { isAdmin: !!DATA.isAdmin, me: DATA.me, categories: K.cats };
     document.getElementById('whoName').textContent = DATA.me.name;
     // Owner: just "Admin". Staff: their role + location under the name.
@@ -52,6 +57,67 @@
       route(location.hash.slice(1) || 'panou', true);
     }
   }
+  // ------------------------------------------------------------------ domains
+  // The owner works on admin.centrul360.com, the team on staff.centrul360.com (same app, one
+  // shared sign-in). Whoever lands on the other one is moved over, keeping the page they asked for.
+  function routeHost() {
+    if (DATA.impersonating) return false;
+    const h = location.hostname;
+    const to = h === 'admin.centrul360.com' && !DATA.isAdmin ? 'staff' : h === 'staff.centrul360.com' && DATA.isAdmin ? 'admin' : '';
+    if (!to) return false;
+    location.replace('https://' + to + '.centrul360.com/portal' + location.hash);
+    return true;
+  }
+
+  // ------------------------------------------------------------------ account preview
+  // Admin → Echipa → "Intră în cont": the portal exactly as that person sees it, read-only.
+  function previewBar() {
+    let bar = document.getElementById('previewBar');
+    document.documentElement.classList.toggle('is-previewing', !!DATA.impersonating);
+    if (!DATA.impersonating) { if (bar) bar.remove(); return; }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'previewBar';
+      bar.className = 'k-preview-bar';
+      document.querySelector('header.topbar').after(bar);
+    }
+    bar.innerHTML = icon('eye') + '<span>Vezi portalul ca <b>' + esc(DATA.me.name) + '</b> · ' + esc(K.roleLabel(DATA.me.role)) +
+      '<em> — exact ce vede, doar pentru privit</em></span><button type="button" class="k-btn is-sm" data-stop>' + icon('undo') + 'Înapoi la Admin</button>';
+    bar.querySelector('[data-stop]').addEventListener('click', async (e) => {
+      e.currentTarget.disabled = true;
+      try { await K.api('/api/portal-impersonate', {}, { method: 'DELETE' }); } catch (err) { /* back to login at worst */ }
+      history.replaceState(null, '', '/portal#angajati');
+      location.reload();
+    });
+  }
+  K.previewAs = async (id) => {
+    try { await K.api('/api/portal-impersonate', { employeeId: id }); history.replaceState(null, '', '/portal#panou'); location.reload(); }
+    catch (err) { K.ui().toast(K.errText(err, 'Nu am putut deschide contul.'), 'error'); }
+  };
+
+  // ------------------------------------------------------------------ live sync
+  // Every save anywhere bumps a revision on the server; each open portal checks it every few
+  // seconds and refreshes what's on screen when it moves — never while someone is mid-edit.
+  const busyEditing = () => K.typing(document.activeElement) || !!document.querySelector('.k-drawer-root .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
+  function applyRemote() {
+    if (busyEditing()) { pendingRemote = true; return; }
+    pendingRemote = false;
+    load(true);
+    if (frontDesk()) K.leads(true).catch(() => {});
+    K.emit('remote');
+  }
+  async function pulse() {
+    if (document.hidden || !DATA) return;
+    try {
+      const p = await K.api('/api/portal-pulse');
+      if (rev !== null && p.rev !== rev) applyRemote();
+      else if (pendingRemote) applyRemote();
+      rev = p.rev;
+    } catch (e) { /* next tick */ }
+  }
+  setInterval(pulse, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pulse(); });
+
   const frontDesk = () => !!DATA && (DATA.isAdmin || DATA.me.role === 'receptie');
   K.frontDesk = frontDesk;
   K.on('reload', () => load(true));

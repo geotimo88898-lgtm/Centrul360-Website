@@ -447,6 +447,7 @@
     mount,
     show() { load(); },
   });
+  K.on('remote', () => { if (panel && K.isActive('programari')) load(true); });
   K.on('calendar:new', (pre) => openNew(pre || {}));
   K.on('calendar:open', async (o) => {
     if (!o) return;

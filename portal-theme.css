@@ -252,6 +252,17 @@ tbody tr:hover{ background:var(--glass); }
 .checklist label:hover{ background:var(--glass); }
 .checklist label span{ transition:color .25s ease; }
 
+/* ---------------- account preview bar ---------------- */
+.k-preview-bar{ position:sticky; top:60px; z-index:19; display:flex; align-items:center; gap:.7rem; padding:.55rem 1.2rem; font-size:.85rem;
+  color:#eef0f7; background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 34%, #0b0b14), color-mix(in srgb, var(--accent-3) 30%, #0b0b14));
+  border-bottom:1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.k-preview-bar > svg{ width:16px; height:16px; flex:none; opacity:.9; }
+.k-preview-bar span{ flex:1; min-width:0; }
+.k-preview-bar em{ font-style:normal; opacity:.7; }
+.k-preview-bar .k-btn{ flex:none; background:rgba(255,255,255,.12); color:#fff; border-color:rgba(255,255,255,.18); }
+.k-preview-bar .k-btn:hover{ background:rgba(255,255,255,.2); }
+@media (max-width:720px){ .k-preview-bar{ position:relative; top:auto; padding:.5rem 1rem; } .k-preview-bar em{ display:none; } }
+
 /* ---------------- creative section ---------------- */
 /* Creative is its own app shown inside this panel; until it has painted, a skeleton in its page shape. */
 #creativeFrame{ height:calc(100vh - 60px); background:transparent; animation:c360-fade .35s ease both; }

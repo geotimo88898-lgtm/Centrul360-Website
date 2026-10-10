@@ -260,6 +260,8 @@ module.exports = async (req, res) => {
         discountPercent: discountOf(o), category: o.category, locations: o.locations, ads: !!o.ads, guarantee: o.guarantee || '', featured: !!o.featured,
       })),
       isAdmin,
+      // Set while the owner previews this employee's account (read-only, banner + "Înapoi la Admin").
+      impersonating: !!session.viewer,
     };
 
     if (isAdmin) {

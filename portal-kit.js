@@ -23,6 +23,7 @@
     missing_treatment: 'Completează tratamentul.', invalid_cosmetician: 'Cosmeticiana aleasă nu mai există.', username_taken: 'Acest username există deja.',
     invalid_role: 'Rolul nu e valid.', employee_not_found: 'Angajatul nu mai există.', already_decided: 'Vânzarea a fost deja decisă.',
     forbidden: 'Doar adminul poate face asta.', too_many_goals: 'Maxim 2 obiective per angajat.', invalid_goal: 'Un obiectiv nu e complet.',
+    preview_only: 'Ești în previzualizarea contului — aici doar te uiți. Revino la Admin ca să faci modificări.',
     missing_title: 'Completează titlul.', invalid_prices: 'Prețurile nu sunt valide.', offer_not_found: 'Oferta nu mai există.',
   };
   const errText = (e, fallback) => ERR[e && e.code] || fallback || 'Nu am putut salva. Încearcă din nou.';
