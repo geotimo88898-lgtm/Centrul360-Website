@@ -104,15 +104,19 @@
 
   function overviewTable() {
     const rows = C.overview || [];
+    const card = (r) => {
+      const today = r.todayCheckIn || r.todayCheckOut
+        ? (r.todayCheckIn ? 'Sosire ' + r.todayCheckIn : 'Fără sosire') + (r.todayCheckOut ? ' · Plecare ' + r.todayCheckOut : '')
+        : 'Nicio intrare azi';
+      const kv = [['Zile concediu', r.daysLeft], ['Ore', (r.hoursDelta >= 0 ? '+' : '') + r.hoursDelta], ['Azi', r.todayCheckIn ? (r.todayCheckOut ? 'Plecat' : 'Prezent') : 'Absent']];
+      return '<button type="button" class="ad-emp" data-pick-emp="' + esc(r.employeeId) + '"><div class="ad-emp-top">' + K.avatar(r.name, 46) +
+        '<div><b>' + esc(r.name) + '</b><span><span class="k-tag is-' + (r.role === 'receptie' ? 'info' : 'good') + '">' + esc(K.roleLabel(r.role)) + '</span>' + esc(r.location || '') + '</span></div></div>' +
+        '<dl class="ad-emp-kv" title="' + esc(today) + '">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
+        '</button>';
+    };
     return '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + 'Condica echipei — toți angajații</h3></div>' +
       filterToolbar() +
-      (rows.length ? '<div class="k-list" style="margin-top:.8rem">' + rows.map((r) => {
-        const today = r.todayCheckIn || r.todayCheckOut ? (r.todayCheckIn ? 'Sosire ' + esc(r.todayCheckIn) : 'Fără sosire') + (r.todayCheckOut ? ' · Plecare ' + esc(r.todayCheckOut) : '') : 'Nicio intrare azi';
-        return '<div class="k-row" data-pick-emp="' + esc(r.employeeId) + '" style="cursor:pointer">' +
-          '<div class="k-row-main"><div class="k-row-title">' + esc(r.name) + '</div><div class="k-row-sub">' + esc(r.location || '') + ' · ' + esc(today) + '</div></div>' +
-          '<div class="k-row-end"><span class="k-tag">' + r.daysLeft + ' zile concediu</span>' +
-          '<span class="k-tag is-' + (r.hoursDelta >= 0 ? 'good' : 'warn') + '">' + (r.hoursDelta >= 0 ? '+' : '') + r.hoursDelta + ' h</span></div></div>';
-      }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', 'Adaugă angajați din tab-ul Echipa.')) +
+      (rows.length ? '<div class="ad-emps k-stagger" style="margin-top:.8rem">' + rows.map(card).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', 'Adaugă angajați din tab-ul Echipa.')) +
       '</section>';
   }
 
