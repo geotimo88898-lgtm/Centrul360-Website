@@ -62,15 +62,24 @@
     const b = document.querySelector('#tabsNav button[data-tab="' + tab + '"]');
     return !!(b && !b.classList.contains('hidden'));
   }
-  function activate(tab) {
+  // Creative is one panel with several pages (its own app, shown inside); `creativeRoute` is the page.
+  let creativeRoute = '/';
+  const creativeHash = (r) => 'creative' + (r && r !== '/' ? r : '');
+  function markNav(tab) {
+    document.querySelectorAll('#tabsNav button[data-tab]').forEach((b) => b.classList.toggle('active',
+      b.dataset.tab === tab && (!b.dataset.route || b.dataset.route === creativeRoute)));
+  }
+  function activate(tab, sub) {
     if (!allowed(tab)) tab = 'panou';
-    document.querySelectorAll('#tabsNav button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    if (tab === 'creative') creativeRoute = /^\/[a-z-]*$/.test(sub || '') ? sub : (sub === undefined ? creativeRoute : '/');
+    markNav(tab);
     document.querySelectorAll('main > .panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + tab));
     const main = document.querySelector('main');
     main.classList.toggle('wide', tab === 'creative');
     main.classList.toggle('pl-full', tab === 'pipeline');
     main.classList.toggle('k-wide', tab !== 'creative' && tab !== 'pipeline');
-    if (location.hash.slice(1) !== tab) history.replaceState(null, '', location.pathname + location.search + '#' + tab);
+    const hash = tab === 'creative' ? creativeHash(creativeRoute) : tab;
+    if (location.hash.slice(1) !== hash) history.replaceState(null, '', location.pathname + location.search + '#' + hash);
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
     if (tab === 'pipeline' && window.C360Pipeline) window.C360Pipeline.open();
     else if (tab === 'creative') loadCreative();
@@ -78,22 +87,27 @@
   }
   function route(hash, initial) {
     const [name, arg] = String(hash || '').split('/');
+    if (name === 'creative') { activate('creative', '/' + (arg || '')); return; }
     const alias = ALIASES[name];
     activate(alias ? alias[0] : name);
     if (alias && alias[1]) setTimeout(() => K.emit(alias[1], arg || null), initial ? 400 : 200);
   }
   document.getElementById('tabsNav').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-tab]');
-    if (b) activate(b.dataset.tab);
+    if (b) activate(b.dataset.tab, b.dataset.route);
   });
-  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h && !document.querySelector('#panel-' + h + '.active')) route(h); });
+  window.addEventListener('hashchange', () => {
+    const h = location.hash.slice(1);
+    const here = document.querySelector('#panel-creative.active') ? creativeHash(creativeRoute) : (document.querySelector('main > .panel.active') || {}).id;
+    if (h && h !== here && 'panel-' + h !== here) route(h);
+  });
 
   // Section shortcuts from anywhere: Alt+1..9 follow the visible nav order.
   document.addEventListener('keydown', (e) => {
     if (!e.altKey || e.ctrlKey || e.metaKey || !/^[1-9]$/.test(e.key)) return;
     const visible = Array.from(document.querySelectorAll('#tabsNav button[data-tab]')).filter((b) => !b.classList.contains('hidden'));
     const b = visible[Number(e.key) - 1];
-    if (b) { e.preventDefault(); activate(b.dataset.tab); }
+    if (b) { e.preventDefault(); activate(b.dataset.tab, b.dataset.route); }
   });
 
   // ------------------------------------------------------------------ nav badges
@@ -121,19 +135,49 @@
   setInterval(() => { if (!document.hidden && DATA && frontDesk()) { K.leads(true).catch(() => {}); K.api('/api/portal-automation-tasks').then((t) => { K.badge('automatizari', (t.tasks || []).length); K.emit('tasks', t.tasks || []); }).catch(() => {}); } }, 120000);
 
   // ------------------------------------------------------------------ creative (admin)
+  // First open: single sign-on straight onto the chosen page; the frame stays hidden behind a
+  // skeleton until it has painted. After that the portal menu just tells the app which page to show.
+  let creativeReady = false;
+  let creativePending = null; // message to deliver once the app has loaded
+  const creativePost = (m) => {
+    const frame = document.getElementById('creativeFrame');
+    if (creativeReady && frame.contentWindow) frame.contentWindow.postMessage(m, location.origin);
+    else creativePending = m;
+  };
   async function loadCreative() {
     const frame = document.getElementById('creativeFrame');
     const msg = document.getElementById('creativeMsg');
-    if (frame.src) return;
+    if (frame.dataset.started) { if (creativeReady) creativePost({ type: 'c360:navigate', route: creativeRoute }); return; }
+    frame.dataset.started = '1';
+    msg.classList.remove('hidden', 'is-error');
+    msg.innerHTML = '<div class="cr-skel"><i></i><i></i><div>' + '<b></b>'.repeat(6) + '</div></div>';
     try {
-      const d = await K.api('/api/portal-creative-sso');
+      const d = await K.api('/api/portal-creative-sso?next=' + encodeURIComponent(creativeRoute));
+      frame.addEventListener('load', () => {
+        creativeReady = true;
+        frame.classList.remove('hidden');
+        msg.classList.add('hidden');
+        if (creativePending) { const m = creativePending; creativePending = null; creativePost(m); }
+      }, { once: true });
       frame.src = d.url;
-      frame.classList.remove('hidden');
-      msg.classList.add('hidden');
     } catch (err) {
+      delete frame.dataset.started;
+      msg.classList.add('is-error');
       msg.textContent = 'Nu am putut deschide Creative. Reîncearcă.';
     }
   }
+  // The app reports in-app navigation so the menu highlight and the URL follow it.
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'c360:route' || typeof e.data.route !== 'string') return;
+    if (!/^\/[a-z-]*$/.test(e.data.route)) return;
+    creativeRoute = e.data.route;
+    if (!document.querySelector('#panel-creative.active')) return;
+    markNav('creative');
+    const hash = creativeHash(creativeRoute);
+    if (location.hash.slice(1) !== hash) history.replaceState(null, '', location.pathname + location.search + '#' + hash);
+  });
+  // Command palette → "Comandă creative noi": open the order form inside Creative.
+  window.addEventListener('c360:creative-new', () => creativePost({ type: 'c360:new-request' }));
 
   // ------------------------------------------------------------------ avatar menu
   const ACCENTS = [

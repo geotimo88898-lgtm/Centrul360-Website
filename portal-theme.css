@@ -253,9 +253,15 @@ tbody tr:hover{ background:var(--glass); }
 .checklist label span{ transition:color .25s ease; }
 
 /* ---------------- creative section ---------------- */
-#creativeFrame{ height:calc(100vh - 60px); background:var(--ink); animation:c360-fade .4s ease both; }
-#creativeMsg{ display:flex; align-items:center; gap:.7rem; }
-#creativeMsg::before{ content:""; width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--accent); animation:c360-spin .8s linear infinite; }
+/* Creative is its own app shown inside this panel; until it has painted, a skeleton in its page shape. */
+#creativeFrame{ height:calc(100vh - 60px); background:transparent; animation:c360-fade .35s ease both; }
+#creativeMsg{ display:block; padding:2.2rem 2.4rem; max-width:1320px; color:var(--muted); }
+#creativeMsg.is-error{ display:flex; align-items:center; gap:.7rem; }
+.cr-skel > i, .cr-skel b{ display:block; border-radius:12px; background:linear-gradient(90deg, var(--glass) 0%, var(--glass-2) 50%, var(--glass) 100%); background-size:600px 100%; animation:k-shimmer 1.3s linear infinite; }
+.cr-skel > i:nth-child(1){ width:14rem; height:2rem; margin-bottom:.7rem; }
+.cr-skel > i:nth-child(2){ width:22rem; max-width:80%; height:.95rem; margin-bottom:2rem; }
+.cr-skel > div{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
+.cr-skel b{ aspect-ratio:4/5; border-radius:16px; }
 
 /* ---------------- mobile ---------------- */
 @media (max-width:720px){
@@ -271,6 +277,7 @@ tbody tr:hover{ background:var(--glass); }
   h2{ font-size:1.35rem; }
   .card{ padding:1.15rem; }
   #creativeFrame{ height:calc(100vh - 112px); }
+  #creativeMsg{ padding:1.4rem 1rem; }
 }
 
 /* ---------------- top bar extras: rail toggle, search, avatar ---------------- */

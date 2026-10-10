@@ -29,5 +29,7 @@ module.exports = async (req, res) => {
   const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
 
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ url: `${base}/api/sso?t=${encodeURIComponent(`${payload}.${sig}`)}` });
+  // Optional page to land on (portal menu: Creative → Comenzi / Scripturi / …).
+  const next = /^\/[a-z-]*$/.test(String((req.query && req.query.next) || '')) ? req.query.next : '';
+  res.status(200).json({ url: `${base}/api/sso?t=${encodeURIComponent(`${payload}.${sig}`)}${next ? '&next=' + encodeURIComponent(next) : ''}` });
 };

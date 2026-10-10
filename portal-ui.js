@@ -273,6 +273,16 @@
     setari: '<path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
     creative: '<path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>',
   };
+  // Creative pages (Marketing group) — one icon each.
+  Object.assign(ICONS, {
+    'creative/': ICONS.creative,
+    'creative/cereri': '<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/>',
+    'creative/video': '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+    'creative/chat': '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>',
+    'creative/referinte': '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+    'creative/cunostinte': '<path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/><path d="M9 21h6"/>',
+    'creative/setari': '<path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.6a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.6a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  });
   const svgIcon = (inner) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
 
   let nav, indicator;
@@ -293,7 +303,7 @@
     nav.querySelectorAll('button[data-tab]').forEach((b) => {
       const label = b.textContent.trim();
       b.setAttribute('data-label', label);
-      const icon = ICONS[b.dataset.tab];
+      const icon = ICONS[b.dataset.route ? 'creative' + b.dataset.route : b.dataset.tab] || ICONS[b.dataset.tab];
       const old = b.querySelector('svg');
       if (icon && old) old.outerHTML = svgIcon(icon);
       Array.from(b.childNodes).forEach((n) => {
@@ -390,10 +400,10 @@
     if (nav) nav.querySelectorAll('button[data-tab]').forEach((b) => {
       if (b.classList.contains('hidden') || getComputedStyle(b).display === 'none') return;
       const label = b.getAttribute('data-label') || b.textContent.trim();
-      items.push({ group: 'Mergi la', label, icon: ICONS[b.dataset.tab] || ICONS.panou, run: () => b.click() });
+      items.push({ group: 'Mergi la', label, icon: ICONS[b.dataset.route ? 'creative' + b.dataset.route : b.dataset.tab] || ICONS.panou, run: () => b.click() });
     });
     const creative = nav && nav.querySelector('button[data-tab="creative"]:not(.hidden)');
-    if (creative) items.push({ group: 'Acțiuni', label: 'Comandă creative noi', icon: ICONS.creative, run: () => creative.click() });
+    if (creative) items.push({ group: 'Acțiuni', label: 'Comandă creative noi', icon: ICONS.creative, run: () => { creative.click(); window.dispatchEvent(new Event('c360:creative-new')); } });
     items.push({ group: 'Acțiuni', label: document.documentElement.classList.contains('c360-rail') ? 'Extinde meniul' : 'Strânge meniul',
       icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>', hint: 'Ctrl B', run: toggleRail });
     items.push({ group: 'Acțiuni', label: 'Reîncarcă datele', icon: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>', run: () => location.reload() });
