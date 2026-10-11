@@ -7,6 +7,15 @@ const { readJSON } = require('./_lib/store');
 const { defaultOffers } = require('./_lib/offer-defaults');
 const { findOfferImage } = require('./_lib/offer-images');
 
+// The site writes without long dashes: "a — b" reads as "a: b", ranges as "6-8".
+// Applied to what the public sees; the text stored in the admin stays as typed.
+function plain(s) {
+  return String(s)
+    .replace(/(\d)\s*[–—]\s*(\d)/g, '$1-$2')
+    .replace(/\s+[—–]\s+/g, ': ')
+    .replace(/[—–]/g, '-');
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'method_not_allowed' });
@@ -26,8 +35,8 @@ module.exports = async (req, res) => {
         const img = findOfferImage(o.imageKey);
         return {
           key: o.key,
-          title: o.title,
-          description: o.description || '',
+          title: plain(o.title),
+          description: plain(o.description || ''),
           priceNew,
           priceOld,
           discountPercent,

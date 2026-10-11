@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/brand_asset/portal/icon-180.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Epilare laser definitivă · Elysion Pro — Centrul360 Timișoara</title>
+<title>Epilare laser definitivă · Elysion Pro | Centrul360 Timișoara</title>
 <meta name="description" content="Epilare laser definitivă în Timișoara cu Elysion Pro. Garanție scrisă: dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie. Consultație gratuită.">
 <link rel="canonical" href="https://www.centrul360.com/epilare-laser">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,6 +36,7 @@
 </script>
 <link rel="stylesheet" href="c360-convert.css">
 <style>[id^="oferta-"], #pret{ scroll-margin-top:112px; }</style>
+<style id="c360-hdr">/* header buttons: the same dark glass on every page, whatever scrolls under them (light photos made them look white) */ header .pill-ink, header .pill-glass{ background:rgba(16,16,20,.74) !important; border-color:rgba(255,255,255,.16) !important; } header .pill-ink:hover{ background:rgba(34,34,40,.86) !important; }</style>
 <style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
 @media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } .pkg-badge, .promo-flag, .disc-badge, .o3d-cert, .o3d-eyebrow, .o3d-disc, .o3d-mhint, .u{ font-size:11px !important; } }
 </style>
@@ -47,7 +48,7 @@
 <!-- ============ HEADER ============ -->
 <header class="site">
   <div class="bar">
-    <a href="/" class="pill pill-glass logo-pill" aria-label="Centrul360 — acasă"><canvas id="logo3d-head" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
+    <a href="/" class="pill pill-glass logo-pill" aria-label="Centrul360, acasă"><canvas id="logo3d-head" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
     <button type="button" id="menuBtn" class="pill pill-ink" style="padding:.6rem 1.25rem; font-size:13px;" aria-label="Deschide meniul" aria-expanded="false">
       Meniu <span class="dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg></span>
     </button>
@@ -58,7 +59,7 @@
 <div id="menuOverlay" class="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Meniu">
   <div class="menu-topbar">
     <div class="bar">
-      <a href="/" class="pill pill-glass logo-pill" data-menu-close aria-label="Centrul360 — acasă"><canvas id="logo3d-menu" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
+      <a href="/" class="pill pill-glass logo-pill" data-menu-close aria-label="Centrul360, acasă"><canvas id="logo3d-menu" width="72" height="72"></canvas><img src="brand_asset/wordmark-com.png" alt="Centrul360.com"></a>
       <button type="button" id="menuClose" class="pill pill-on-dark" style="padding:.6rem 1.25rem; font-size:13px;" aria-label="Închide meniul">
         Închide <span class="dot" style="background:rgba(14,14,16,.08);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
       </button>
@@ -137,7 +138,7 @@
     <div>
       <p class="eyebrow cat reveal in"><i></i> Corp · Epilare definitivă</p>
       <h1 class="display reveal in d1">Epilare laser care<br><span class="accent">chiar</span> ține.</h1>
-      <p class="lead reveal in d2">Scapă de firele de păr nedorite definitiv, cu laserul diodă <strong>Elysion Pro</strong> și sistemul lui de răcire — confortabil, sigur pe orice tip de piele și eficient ședință după ședință.</p>
+      <p class="lead reveal in d2">Scapă de firele de păr nedorite definitiv, cu laserul diodă <strong>Elysion Pro</strong> și sistemul lui de răcire, confortabil, sigur pe orice tip de piele și eficient ședință după ședință.</p>
       <div class="cta-row reveal in d3">
         <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20pentru%20epilare%20laser." target="_blank" rel="noopener" class="pill pill-on-dark" style="padding:1rem 1.75rem; font-size:15px;">Consultație gratuită <span class="arrow">→</span></a>
         <a href="#pret" class="pill pill-glass" style="padding:1rem 1.75rem; font-size:15px;">Vezi prețurile <span class="arrow">→</span></a>
@@ -180,21 +181,103 @@
     <p class="sec-eyebrow eyebrow"><i></i> Ce este epilarea laser</p>
     <h2>O soluție definitivă,<br>nu o întreținere fără sfârșit.</h2>
 
-    <div class="revealvid" data-revealvid>
-      <div class="revealvid-inner">
-        <video loop muted playsinline preload="none" aria-label="Ședință de epilare laser la Centrul360">
-          <source src="brand_asset/epilare.mp4" type="video/mp4">
-        </video>
-      </div>
-    </div>
+    <!-- how laser hair removal works: light, heat in the follicle, no more hair (animated drawing, no video) -->
+    <figure class="lx reveal" aria-label="Cum funcționează epilarea laser: lumina este absorbită de pigmentul firului, căldura ajunge la folicul, iar foliculul nu mai produce păr.">
+      <style>
+        .lx{ margin:2.2rem 0 .5rem; border:1px solid var(--line); border-radius:22px; overflow:hidden;
+          background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)); }
+        .lx svg{ display:block; width:100%; height:auto; }
+        .lx-steps{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); margin:0; padding:0; list-style:none; }
+        .lx-steps li{ padding:.9rem .9rem 1rem; font-size:13.5px; line-height:1.4; color:var(--muted-2); transition:color .4s ease; }
+        .lx-steps li + li{ border-left:1px solid var(--line); }
+        .lx-steps b{ display:block; font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; margin-bottom:.3rem; color:inherit; }
+        .lx-steps li.on{ color:var(--fg); }
+        @media (max-width:560px){ .lx-steps li{ padding:.75rem .6rem .85rem; font-size:12.5px; } .lx-steps b{ letter-spacing:.08em; } }
+        /* one 9s cycle: 0-30% light on the hair, 30-62% heat down to the bulb, 62-100% follicle off and hair gone */
+        .lx svg *{ animation-duration:9s; animation-iteration-count:infinite; animation-timing-function:ease-in-out; animation-play-state:paused; }
+        .lx.on svg *{ animation-play-state:running; }
+        .lx-beam{ animation-name:lxBeam; opacity:0; }
+        @keyframes lxBeam{ 0%,4%{ opacity:0; } 9%,26%{ opacity:1; } 32%,100%{ opacity:0; } }
+        .lx-shaft{ animation-name:lxShaft; }
+        @keyframes lxShaft{ 0%,8%{ stroke:#2b211c; } 18%,30%{ stroke:#ff8a5c; } 40%,94%{ stroke:#6b4a3c; } 100%{ stroke:#2b211c; } }
+        .lx-hair{ animation-name:lxHair; }
+        @keyframes lxHair{ 0%,62%{ opacity:1; transform:translateY(0); } 80%,94%{ opacity:0; transform:translateY(-14px); } 100%{ opacity:1; transform:translateY(0); } }
+        .lx-heat{ animation-name:lxHeat; opacity:0; transform-box:fill-box; transform-origin:50% 50%; }
+        @keyframes lxHeat{ 0%,30%{ opacity:0; transform:scale(.6); } 46%,58%{ opacity:1; transform:scale(1.15); } 70%,100%{ opacity:0; transform:scale(1.3); } }
+        .lx-pulse{ animation-name:lxPulse; opacity:0; }
+        @keyframes lxPulse{ 0%,28%{ opacity:0; transform:translateY(0); } 32%{ opacity:1; } 54%,100%{ opacity:0; transform:translateY(118px); } }
+        .lx-bulb{ animation-name:lxBulb; }
+        @keyframes lxBulb{ 0%,40%{ fill:#4a3127; } 52%,60%{ fill:#ff7a4a; } 74%,94%{ fill:#55504d; } 100%{ fill:#4a3127; } }
+        @media (prefers-reduced-motion: reduce){ .lx svg *{ animation:none !important; } .lx-beam{ opacity:.85; } .lx-steps li{ color:var(--fg); } }
+      </style>
+      <svg viewBox="0 0 600 330" aria-hidden="true">
+        <defs>
+          <linearGradient id="lxSkin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#d9b9a2"/><stop offset=".12" stop-color="#caa58c"/><stop offset=".13" stop-color="#b48a72"/><stop offset="1" stop-color="#6e4f42"/>
+          </linearGradient>
+          <linearGradient id="lxBeamG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset=".25" stop-color="#ffe3d6" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a5c" stop-opacity=".08"/>
+          </linearGradient>
+          <radialGradient id="lxHeatG"><stop offset="0" stop-color="#ffb08a" stop-opacity=".95"/><stop offset=".45" stop-color="#ff6a3d" stop-opacity=".45"/><stop offset="1" stop-color="#ff6a3d" stop-opacity="0"/></radialGradient>
+        </defs>
+        <!-- skin: surface at y=120, epidermis, dermis -->
+        <rect x="0" y="120" width="600" height="210" fill="url(#lxSkin)"/>
+        <rect x="0" y="120" width="600" height="2" fill="#f1dccd" opacity=".7"/>
+        <text x="20" y="146" font-family="Inter, system-ui, sans-serif" font-size="11" letter-spacing="1.5" fill="#5a3f33" opacity=".75">EPIDERMĂ</text>
+        <text x="20" y="316" font-family="Inter, system-ui, sans-serif" font-size="11" letter-spacing="1.5" fill="#f3e3d8" opacity=".55">DERMĂ</text>
+        <!-- light from the handpiece -->
+        <rect x="226" y="0" width="148" height="12" rx="6" fill="#e9e6e1" opacity=".9"/>
+        <polygon class="lx-beam" points="236,12 364,12 398,250 202,250" fill="url(#lxBeamG)"/>
+        <!-- two follicles at the sides, the close-up in the middle -->
+        <path d="M118 120 L120 216" stroke="#3a2b25" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+        <ellipse cx="120" cy="226" rx="13" ry="16" fill="#4a3127" opacity=".55"/>
+        <path d="M118 120 Q112 84 104 52" stroke="#2b211c" stroke-width="4" fill="none" stroke-linecap="round" opacity=".55"/>
+        <path d="M480 120 L482 210" stroke="#3a2b25" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+        <ellipse cx="482" cy="220" rx="13" ry="16" fill="#4a3127" opacity=".55"/>
+        <path d="M480 120 Q488 86 498 56" stroke="#2b211c" stroke-width="4" fill="none" stroke-linecap="round" opacity=".55"/>
+        <path d="M296 120 L300 236" stroke="#d9b9a2" stroke-width="22" stroke-linecap="round" opacity=".35"/>
+        <path class="lx-shaft" d="M297 122 L300 228" stroke="#2b211c" stroke-width="8" stroke-linecap="round"/>
+        <circle class="lx-heat" cx="300" cy="246" r="46" fill="url(#lxHeatG)"/>
+        <circle class="lx-pulse" cx="298" cy="128" r="7" fill="#ffd2bf"/>
+        <ellipse class="lx-bulb" cx="300" cy="248" rx="21" ry="25" fill="#4a3127"/>
+        <path class="lx-hair" d="M297 122 Q290 80 280 36" stroke="#2b211c" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <text x="332" y="252" font-family="Inter, system-ui, sans-serif" font-size="12" letter-spacing="1.2" fill="#f7ece4" opacity=".85">FOLICUL</text>
+      </svg>
+      <ol class="lx-steps">
+        <li><b>1 · Lumina</b>e absorbită de pigmentul firului</li>
+        <li><b>2 · Căldura</b>coboară până la folicul</li>
+        <li><b>3 · Foliculul</b>nu mai produce păr</li>
+      </ol>
+      <script>
+      (function(){
+        var fig = document.currentScript.closest('.lx'); if(!fig) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var steps = fig.querySelectorAll('.lx-steps li'), t0 = 0, raf = 0;
+        function tick(now){
+          var p = ((now - t0) / 9000) % 1, k = p < .30 ? 0 : p < .62 ? 1 : 2;
+          for (var i = 0; i < steps.length; i++) steps[i].classList.toggle('on', i === k);
+          raf = requestAnimationFrame(tick);
+        }
+        new IntersectionObserver(function(es){ es.forEach(function(e){
+          if (e.isIntersecting){
+            // start the cycle from the beginning, so the captions and the drawing stay in step
+            fig.querySelectorAll('svg *').forEach(function(n){ n.style.animation = 'none'; });
+            void fig.offsetWidth;
+            fig.querySelectorAll('svg *').forEach(function(n){ n.style.animation = ''; });
+            fig.classList.add('on'); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+          } else { fig.classList.remove('on'); cancelAnimationFrame(raf); }
+        }); }, { threshold:.25 }).observe(fig);
+      })();
+      </script>
+    </figure>
 
     <div class="prose reveal" style="max-width:48rem; margin-top:1.5rem;">
         <p>Spre deosebire de epilarea cu ceară sau aparatul de ras, epilarea laser acționează direct asupra <strong>foliculului de păr</strong>: lumina laserului este absorbită de pigment și transformată în căldură, care dezactivează progresiv folicul cu folicul.</p>
-        <p>Pentru că părul crește în cicluri, rezultatul se construiește în mai multe ședințe — dar este de durată. La final, ai o piele <strong>netedă, fără iritații, fără fire crescute sub piele</strong> și fără bătaia de cap a întreținerii săptămânale.</p>
+        <p>Pentru că părul crește în cicluri, rezultatul se construiește în mai multe ședințe. Dar este de durată. La final, ai o piele <strong>netedă, fără iritații, fără fire crescute sub piele</strong> și fără bătaia de cap a întreținerii săptămânale.</p>
         <ul>
           <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Potrivit pentru față și corp, la femei și bărbați</li>
           <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Elimină firele crescute sub piele și iritațiile</li>
-          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Fără perioadă de recuperare — îți reiei ziua imediat</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Fără perioadă de recuperare. Îți reiei ziua imediat</li>
         </ul>
     </div>
   </section>
@@ -288,7 +371,7 @@
       </div>
       <div class="tl-item">
         <span class="tl-dot"></span>
-        <span class="tl-k">După 8–10 săptămâni</span>
+        <span class="tl-k">După 8-10 săptămâni</span>
         <p class="tl-t">A șasea ședință</p>
         <p class="tl-d">Te bucuri de o piele vizibil mai netedă. De aici, tratamentul continuă în funcție de fiecare.</p>
       </div>
@@ -307,7 +390,7 @@
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false">De câte ședințe am nevoie?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">În general 6–8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere. Numărul exact depinde de zonă, tipul de păr și pielea ta — îl stabilim la consultație.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere. Numărul exact depinde de zonă, tipul de păr și pielea ta. Îl stabilim la consultație.</div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false">Cum mă pregătesc pentru ședință?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -315,7 +398,7 @@
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false">Funcționează pe părul blond sau alb?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Laserul țintește pigmentul din păr, deci dă cele mai bune rezultate pe părul închis la culoare. Pe părul foarte deschis, blond sau alb, eficiența este mai redusă — evaluăm sincer acest aspect la consultație.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Laserul țintește pigmentul din păr, deci dă cele mai bune rezultate pe părul închis la culoare. Pe părul foarte deschis, blond sau alb, eficiența este mai redusă. Evaluăm sincer acest aspect la consultație.</div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false">Pot face epilare laser vara?<span class="faq-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -394,7 +477,7 @@
     <p class="cvz-eyebrow">Garanție scrisă</p>
   <h3>Dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie.</h3>
   <p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine și tot ai nevoie să te epilezi regulat, mai faci ședințe pe cheltuiala noastră. Fără plafon și fără să fie nevoie să negociezi.</p>
-  <p>De aceea la consultație îți spunem sincer dacă ești sau nu un caz potrivit. <strong style="color:var(--fg)">Nu luăm cazuri pe care nu le putem rezolva</strong> — nu ne-am permite garanția asta altfel.</p>
+  <p>De aceea la consultație îți spunem sincer dacă ești sau nu un caz potrivit. <strong style="color:var(--fg)">Nu luăm cazuri pe care nu le putem rezolva</strong>. Nu ne-am permite garanția asta altfel.</p>
   <ul class="cvz-cond">
     <li>Stabilim la consultație dacă ești un caz potrivit</li>
     <li>Ședințele respectate la intervalele recomandate</li>
@@ -406,8 +489,8 @@
 <!-- cvz:end -->
 <section class="sec"><div class="wrap">
 <div class="cvz-proof">
-  <div><b>4,9</b><span class="cvz-stars">★★★★★</span><span>din 300+ recenzii Google</span></div>
-  <div><b>2</b><span>clinici — Timișoara și Arad</span></div>
+  <div><b>5,0</b><span class="cvz-stars">★★★★★</span><span>din 300+ recenzii Google</span></div>
+  <div><b>2</b><span>clinici, Timișoara și Arad</span></div>
   <div><b>15+</b><span>cazuri documentate cu fotografii înainte și după</span></div>
   <div><b>0 lei</b><span>consultația inițială, fără obligații</span></div>
 </div>
@@ -420,7 +503,7 @@
       <div class="cols">
         <div>
           <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="brandmark">
-          <p class="tag">Medicină estetică non-invazivă. Rezultate reale, vizibile din prima ședință — în Timișoara și Arad.</p>
+          <p class="tag">Medicină estetică non-invazivă. Rezultate reale, vizibile din prima ședință, în Timișoara și Arad.</p>
           <div class="socs">
             <a href="https://instagram.com/centrul360" target="_blank" rel="noopener" class="soc" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a>
             <a href="https://tiktok.com/@centrul360" target="_blank" rel="noopener" class="soc" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.3.1-2.6-.3-3.7-1v6.1c0 3.2-2.4 5.4-5.3 5.4A5.2 5.2 0 0 1 5.5 14c.1-2.7 2.3-4.9 5-4.9.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.3 0-2.4 1.1-2.4 2.4 0 1.4 1.1 2.4 2.4 2.4 1.4 0 2.5-1.1 2.5-2.6V3H16z"/></svg></a>
@@ -446,7 +529,7 @@
         </div>
         <div>
           <h4>Programări</h4>
-          <p class="tag" style="margin-bottom:1.4rem;">Scrie-ne pe WhatsApp — îți răspundem rapid și îți confirmăm o oră liberă.</p>
+          <p class="tag" style="margin-bottom:1.4rem;">Scrie-ne pe WhatsApp. Îți răspundem rapid și îți confirmăm o oră liberă.</p>
           <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-ink" style="padding:.85rem 1.5rem; font-size:14px;">
             Rezervă pe WhatsApp <span class="dot"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg></span>
           </a>
