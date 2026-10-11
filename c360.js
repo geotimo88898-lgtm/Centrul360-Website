@@ -271,3 +271,28 @@
     barIO.observe(sentinel);
   }
 })();
+
+/* ----- "Cum funcționează" diagrams: play only on screen, captions lit in step with the drawing ----- */
+(function(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('.mx').forEach(function(fig){
+    var steps = fig.querySelectorAll('.mx-steps li');
+    var cuts = (fig.dataset.steps || '0.33,0.66').split(',').map(Number);
+    var t0 = 0, raf = 0;
+    function tick(now){
+      var p = ((now - t0) / 9000) % 1, k = 0;
+      while (k < cuts.length && p >= cuts[k]) k++;
+      for (var i = 0; i < steps.length; i++) steps[i].classList.toggle('on', i === k);
+      raf = requestAnimationFrame(tick);
+    }
+    new IntersectionObserver(function(es){ es.forEach(function(e){
+      if (e.isIntersecting){
+        // restart from the beginning so drawing and captions stay in step
+        fig.querySelectorAll('svg *').forEach(function(n){ n.style.animation = 'none'; });
+        void fig.offsetWidth;
+        fig.querySelectorAll('svg *').forEach(function(n){ n.style.animation = ''; });
+        fig.classList.add('on'); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+      } else { fig.classList.remove('on'); cancelAnimationFrame(raf); }
+    }); }, { threshold:.25 }).observe(fig);
+  });
+})();

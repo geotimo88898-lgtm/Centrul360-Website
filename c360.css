@@ -445,3 +445,18 @@ footer.site .bar{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; ju
       radial-gradient(90% 60% at 100% 0%, var(--accent-soft), transparent 50%),
       linear-gradient(160deg, #060608 0%, #111116 48%, #1a1a20 100%); }
 }
+
+/* ----- "Cum funcționează": animated mechanism diagram (one per treatment page) ----- */
+.mx{ margin:2.2rem 0 0; border:1px solid var(--line); border-radius:22px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)); }
+.mx-head{ margin:0; padding:1rem 1.1rem .2rem; font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted-2); }
+.mx svg{ display:block; width:100%; height:auto; }
+.mx svg text{ font-family:Inter, system-ui, sans-serif; }
+.mx-steps{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); margin:0; padding:0; list-style:none; }
+.mx-steps li{ padding:.9rem .9rem 1rem; font-size:13.5px; line-height:1.4; color:var(--muted-2); transition:color .4s ease; }
+.mx-steps li + li{ border-left:1px solid var(--line); }
+.mx-steps b{ display:block; font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; margin-bottom:.3rem; color:inherit; }
+.mx-steps li.on{ color:var(--fg); }
+@media (max-width:560px){ .mx-steps li{ padding:.75rem .6rem .85rem; font-size:12.5px; } .mx-steps b{ letter-spacing:.08em; } }
+.mx svg *{ animation-duration:9s; animation-iteration-count:infinite; animation-timing-function:ease-in-out; animation-play-state:paused; }
+.mx.on svg *{ animation-play-state:running; }
+@media (prefers-reduced-motion: reduce){ .mx svg *{ animation:none !important; } .mx-steps li{ color:var(--fg); } }

@@ -153,6 +153,39 @@
         </ul>
       </div>
     </div>
+    <!-- mx -->
+    <figure class="mx reveal" data-steps=".34,.64" aria-label="Cum acționează HIFU și radiofrecvența pe riduri: energia ajunge în dermă, fibrele de colagen se contractă, iar colagenul nou estompează treptat ridul.">
+      <p class="mx-head">Cum se reduc ridurile</p>
+      <style>
+.rd-heat{ animation-name:rdHeat; opacity:0; transform-box:fill-box; transform-origin:50% 50%; } @keyframes rdHeat{ 0%,4%{opacity:0; transform:scale(.6)} 18%,40%{opacity:1; transform:scale(1)} 52%,100%{opacity:0; transform:scale(1.15)} }
+.rd-cone{ animation-name:rdCone; opacity:0; } @keyframes rdCone{ 0%,3%{opacity:0} 8%,30%{opacity:1} 36%,100%{opacity:0} }
+.rd-fib{ animation-name:rdFib; transform-box:fill-box; transform-origin:50% 50%; } @keyframes rdFib{ 0%,36%{transform:scaleX(1); opacity:1} 48%,94%{transform:scaleX(.9); opacity:1} 100%{transform:scaleX(1)} }
+.rd-new{ stroke-dasharray:1; stroke-dashoffset:1; animation-name:rdNew; } @keyframes rdNew{ 0%,64%{stroke-dashoffset:1; opacity:1} 84%,94%{stroke-dashoffset:0; opacity:1} 100%{stroke-dashoffset:0; opacity:0} }
+.rd-flat{ animation-name:rdFlat; opacity:0; } @keyframes rdFlat{ 0%,68%{opacity:0} 84%,94%{opacity:1} 100%{opacity:0} }
+.rd-n3{ animation-name:rdN3; opacity:0; } @keyframes rdN3{ 0%,66%{opacity:0} 72%,94%{opacity:1} 100%{opacity:0} }
+.rd-n0{ animation-name:rdN0; } @keyframes rdN0{ 0%,66%{opacity:.85} 72%,94%{opacity:0} 100%{opacity:.85} }
+      </style>
+      <svg viewBox="0 0 600 330" aria-hidden="true">
+<defs><linearGradient id="rdS" gradientUnits="userSpaceOnUse" x1="0" y1="80" x2="0" y2="250"><stop offset="0" stop-color="#dcbca5"/><stop offset=".18" stop-color="#c49c84"/><stop offset="1" stop-color="#9c735f"/></linearGradient><radialGradient id="rdG"><stop offset="0" stop-color="#ff8a5c" stop-opacity=".95"/><stop offset=".5" stop-color="#ff8a5c" stop-opacity=".4"/><stop offset="1" stop-color="#ff8a5c" stop-opacity="0"/></radialGradient>
+<linearGradient id="rdC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".05"/><stop offset="1" stop-color="#ff9a66" stop-opacity=".3"/></linearGradient></defs>
+<rect x="0" y="250" width="600" height="80" fill="#e6c48a"/>
+<path d="M0 80 L240 80 Q284 81 296 136 Q300 150 304 136 Q316 81 360 80 L600 80 L600 250 L0 250 Z" fill="url(#rdS)"/>
+<path class="rd-flat" d="M0 80 L240 80 Q286 81 297 96 Q300 101 303 96 Q314 81 360 80 L600 80 L600 250 L0 250 Z" fill="url(#rdS)"/>
+<g class="rd-fib"><path d="M100 118 c40 -10 60 10 100 0 s60 -10 100 0 s60 10 100 0 s60 -10 100 0" stroke="#f3dccb" stroke-width="2.2" fill="none" opacity=".55"/><path d="M110 150 c40 -10 60 10 100 0 s60 -10 100 0 s60 10 100 0 s60 -10 100 0" stroke="#f3dccb" stroke-width="2.2" fill="none" opacity=".55"/><path d="M120 182 c40 -10 60 10 100 0 s60 -10 100 0 s60 10 100 0 s60 -10 100 0" stroke="#f3dccb" stroke-width="2.2" fill="none" opacity=".55"/><path d="M130 214 c40 -10 60 10 100 0 s60 -10 100 0 s60 10 100 0 s60 -10 100 0" stroke="#f3dccb" stroke-width="2.2" fill="none" opacity=".55"/></g>
+<g stroke="#fff1e4" stroke-width="2.6" fill="none" stroke-linecap="round"><path class="rd-new" pathLength="1" d="M200 166 C240 156 270 176 300 166 S360 156 400 166"/><path class="rd-new" pathLength="1" d="M210 198 C250 188 280 208 310 198 S370 188 410 198"/></g>
+<ellipse class="rd-heat" cx="300" cy="180" rx="120" ry="50" fill="url(#rdG)"/>
+<text x="14" y="104" font-size="12" letter-spacing="1.4" fill="#5a3f33">EPIDERMĂ</text><text x="14" y="236" font-size="12" letter-spacing="1.4" fill="#f3e3d8" opacity=".7">DERMĂ · COLAGEN</text><text x="14" y="296" font-size="12" letter-spacing="1.4" fill="#7a5a2c">GRĂSIME</text>
+<rect x="440" y="22" width="140" height="26" rx="10" fill="#e9e6e1" opacity=".92"/>
+<polygon class="rd-cone" points="446,48 574,48 380,190 220,190" fill="url(#rdC)"/>
+<text x="316" y="64" font-size="12" letter-spacing="1.4" fill="#e9e6e1" class="rd-n0">RID</text><text x="316" y="64" font-size="12" letter-spacing="1.4" fill="#ffe1cf" class="rd-n3">RID ESTOMPAT</text><text x="440" y="238" font-size="12" letter-spacing="1.4" fill="#fff1e4" class="rd-n3">COLAGEN NOU</text>
+      </svg>
+      <ol class="mx-steps">
+        <li><b>1 · Energia</b>ajunge în dermă (HIFU, radiofrecvență)</li>
+        <li><b>2 · Fibrele de colagen</b>se contractă, pielea se strânge</li>
+        <li><b>3 · Colagen nou</b>ridul se estompează treptat</li>
+      </ol>
+    </figure>
+    <!-- /mx -->
   </section>
 
   <section class="sec" id="tratamente">
