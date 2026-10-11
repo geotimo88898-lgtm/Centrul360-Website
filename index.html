@@ -538,6 +538,19 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .o3d-cta:hover span{ transform:translateX(3px); }
   .o3d-cta:active{ transform:scale(.97); }
   .o3d-stage.is-grabbing{ cursor:grabbing; }
+  /* easy navigation on the pinned carousel: arrows, clickable dots, keys, a way out */
+  .o3d-arrow{ position:absolute; top:50%; z-index:20; width:48px; height:48px; margin-top:-24px; border-radius:999px; display:grid; place-items:center;
+    color:#fff; background:rgba(18,18,22,.62); border:1px solid rgba(255,255,255,.22); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    box-shadow:0 10px 26px -10px rgba(0,0,0,.8); cursor:pointer; transition:opacity .3s ease, background .2s ease, transform .15s ease; }
+  .o3d-arrow:hover{ background:rgba(40,40,46,.8); }
+  .o3d-arrow:active{ transform:scale(.92); }
+  .o3d-arrow.prev{ left:max(8px, calc(50% - 300px)); } .o3d-arrow.next{ right:max(8px, calc(50% - 300px)); }
+  .o3d-arrow[disabled]{ opacity:0; pointer-events:none; }
+  .o3d-arrow:focus-visible{ outline:2px solid rgba(255,255,255,.7); outline-offset:3px; }
+  .o3d-dot{ position:relative; }
+  .o3d-dot::after{ content:''; position:absolute; inset:-9px -5px; } /* bigger click target than the 7px dot */
+  .o3d-skip{ font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); text-decoration:underline; text-underline-offset:3px; background:none; border:0; cursor:pointer; }
+  .o3d-skip:hover{ color:#fff; }
   /* section footer: pagination dots + swipe hint (replaces the old generic WhatsApp pill) */
   .o3d-foot-nav{ margin-top:14px; display:flex; flex-direction:column; align-items:center; gap:13px; }
   @media (min-width:640px){ .o3d-foot-nav{ margin-top:22px; } }
@@ -1274,10 +1287,13 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <div class="o3d-pin px-6 sm:px-8">
         <div id="offers3dStage" class="o3d-stage">
           <div id="offers3dViewport" class="o3d-viewport"></div>
+          <button type="button" class="o3d-arrow prev" id="offers3dPrev" aria-label="Oferta anterioară"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button type="button" class="o3d-arrow next" id="offers3dNext" aria-label="Oferta următoare"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
         </div>
         <div class="o3d-actionbar">
           <div id="offers3dDots" class="o3d-dots" role="tablist" aria-label="Oferte active"></div>
-          <p id="offers3dHint" class="o3d-hint"><span class="o3d-hint-dn" aria-hidden="true">↓</span> derulează</p>
+          <p id="offers3dHint" class="o3d-hint"><span class="o3d-hint-dn" aria-hidden="true">↓</span> derulează sau folosește săgețile</p>
+          <button type="button" id="offers3dSkip" class="o3d-skip">Sari peste oferte</button>
         </div>
       </div>
     </div>
@@ -2051,8 +2067,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const L = ITEMS.length;
     const dotsWrap = document.getElementById('offers3dDots');
     const dots = ITEMS.map((o)=>{
-      const b = document.createElement('span');
-      b.className = 'o3d-dot'; b.setAttribute('role','presentation');
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'o3d-dot'; b.setAttribute('aria-label', o.cta ? 'Consultație gratuită' : 'Oferta: ' + (o.name || o.title || ''));
       dotsWrap && dotsWrap.appendChild(b);
       return b;
     });
@@ -2061,6 +2077,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       const cur = Math.min(L - 1, Math.max(0, Math.round(progress)));
       if(cur === lastDot) return;
       dots.forEach((d,i)=>d.classList.toggle('is-on', i === cur));
+      const pb = document.getElementById('offers3dPrev'), nb = document.getElementById('offers3dNext');
+      if(pb) pb.disabled = cur === 0;
+      if(nb) nb.disabled = cur === L - 1;
       lastDot = cur;
     }
 
@@ -2080,6 +2099,22 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       snaps.forEach((s, i) => { s.style.top = (total > 0 ? Math.round(i * total / (L - 1)) : 0) + 'px'; });
     }
     placeSnaps(); addEventListener('resize', placeSnaps);
+
+    // ---- direct navigation: arrows, dots and ← → keys scroll to that card (the scroll still drives the animation) ----
+    const prevBtn = document.getElementById('offers3dPrev'), nextBtn = document.getElementById('offers3dNext');
+    const cardTop = (i) => driver.getBoundingClientRect().top + scrollY + (driver.offsetHeight - innerHeight) * i / Math.max(1, L - 1);
+    const goTo = (i) => { i = Math.max(0, Math.min(L - 1, i)); scrollTo({ top: Math.round(cardTop(i)), behavior: reduceMotion ? 'auto' : 'smooth' }); };
+    const here = () => Math.min(L - 1, Math.max(0, Math.round(scrollTarget())));
+    prevBtn && prevBtn.addEventListener('click', () => goTo(here() - 1));
+    nextBtn && nextBtn.addEventListener('click', () => goTo(here() + 1));
+    dots.forEach((d, i) => d.addEventListener('click', () => goTo(i)));
+    const skip = document.getElementById('offers3dSkip');
+    skip && skip.addEventListener('click', () => scrollTo({ top: driver.getBoundingClientRect().top + scrollY + driver.offsetHeight, behavior: reduceMotion ? 'auto' : 'smooth' }));
+    addEventListener('keydown', (e) => {
+      if (!inView || e.altKey || e.ctrlKey || e.metaKey || /input|textarea|select/i.test((e.target && e.target.tagName) || '')) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(here() + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(here() - 1); }
+    });
 
     let running = false;
     let inView = false;
