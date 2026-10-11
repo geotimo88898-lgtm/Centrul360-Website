@@ -280,7 +280,8 @@
     var cuts = (fig.dataset.steps || '0.33,0.66').split(',').map(Number);
     var t0 = 0, raf = 0;
     function tick(now){
-      var p = ((now - t0) / 9000) % 1, k = 0;
+      var p = ((now - t0) / 6000) % 1, k = 0;
+      fig.style.setProperty("--mxp", p.toFixed(4));
       while (k < cuts.length && p >= cuts[k]) k++;
       for (var i = 0; i < steps.length; i++) steps[i].classList.toggle('on', i === k);
       raf = requestAnimationFrame(tick);

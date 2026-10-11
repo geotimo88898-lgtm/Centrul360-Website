@@ -188,14 +188,14 @@
         .lx{ margin:2.2rem auto .5rem; max-width:680px; border:1px solid var(--line); border-radius:22px; overflow:hidden;
           background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)); }
         .lx svg{ display:block; width:100%; height:auto; }
-        .lx-steps{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); margin:0; padding:0; list-style:none; }
+        .lx-steps{ position:relative; display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); margin:0; padding:0; list-style:none; }
         .lx-steps li{ padding:.9rem .9rem 1rem; font-size:13.5px; line-height:1.4; color:var(--muted-2); transition:color .4s ease; }
         .lx-steps li + li{ border-left:1px solid var(--line); }
         .lx-steps b{ display:block; font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; margin-bottom:.3rem; color:inherit; }
         .lx-steps li.on{ color:var(--fg); }
         @media (max-width:560px){ .lx-steps li{ padding:.75rem .6rem .85rem; font-size:12.5px; } .lx-steps b{ letter-spacing:.08em; } }
         /* one 9s cycle: 0-30% light on the hair, 30-62% heat down to the bulb, 62-100% follicle off and hair gone */
-        .lx svg *{ animation-duration:9s; animation-iteration-count:infinite; animation-timing-function:ease-in-out; animation-play-state:paused; }
+        .lx svg *{ animation-duration:6s; animation-iteration-count:infinite; animation-timing-function:ease-in-out; animation-play-state:paused; }
         .lx.on svg *{ animation-play-state:running; }
         .lx-beam{ animation-name:lxBeam; opacity:0; }
         @keyframes lxBeam{ 0%,4%{ opacity:0; } 9%,26%{ opacity:1; } 32%,100%{ opacity:0; } }
@@ -255,7 +255,8 @@
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         var steps = fig.querySelectorAll('.lx-steps li'), t0 = 0, raf = 0;
         function tick(now){
-          var p = ((now - t0) / 9000) % 1, k = p < .30 ? 0 : p < .62 ? 1 : 2;
+          var p = ((now - t0) / 6000) % 1, k = p < .30 ? 0 : p < .62 ? 1 : 2;
+          fig.style.setProperty("--mxp", p.toFixed(4));
           for (var i = 0; i < steps.length; i++) steps[i].classList.toggle('on', i === k);
           raf = requestAnimationFrame(tick);
         }
