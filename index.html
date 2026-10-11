@@ -289,7 +289,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .ms-dot::after{ content:""; width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.25); transition:width .35s cubic-bezier(.16,1,.3,1), background .35s ease; display:block; }
   .ms-dot.is-on::after{ width:22px; background:#fff; }
   .menu-link{ width:max-content; max-width:100%; font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em;
-    font-size:clamp(2.1rem,7.5vw,4.6rem); line-height:1.08; color:#fff; opacity:.5;
+    font-size:clamp(2.1rem,5.2vw,3.1rem); line-height:1.08; color:#fff; opacity:.5;
     transition:opacity .3s ease, transform .55s cubic-bezier(.16,1,.3,1); transform:translateY(16px); }
   .menu-overlay.open .menu-link{ transform:translateY(0); }
   .menu-link:hover{ opacity:1; }
@@ -2122,7 +2122,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       if(!running) return;
       const st = scrollTarget();
       progress = reduceMotion ? st : progress + (st - progress) * 0.16; // ease the 3D toward the scroll position
-      if(hint) hint.style.opacity = Math.max(0, 1 - progress * 1.5).toFixed(2);
+
       position();
       if(Math.abs(st - progress) < 0.0005){ progress = st; position(); running = false; return; } // arrived: sleep until the next scroll
       requestAnimationFrame(loop);
