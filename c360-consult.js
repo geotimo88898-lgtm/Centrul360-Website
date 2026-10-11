@@ -9,7 +9,7 @@
 (function () {
   'use strict';
   const WEBHOOK = 'https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68';
-  const INTERESTS = ['Slăbit / conturare corp', 'Fermitate față / anti-îmbătrânire', 'Ten problematic / pete / luminozitate', 'Celulită', 'Epilare laser', 'Nu știu exact, vreau o recomandare'];
+  const INTERESTS = ['Epilare laser', 'Slăbit / conturare corp', 'Fermitate față / anti-îmbătrânire', 'Ten problematic / pete / luminozitate', 'Celulită', 'Nu știu exact, vreau o recomandare'];
   const ZONES = {
     'Slăbit / conturare corp': ['Abdomen', 'Șolduri / coapse', 'Brațe', 'Bărbie / gât dublu'],
     'Fermitate față / anti-îmbătrânire': ['Gușă / bărbie', 'Riduri frunte', 'Zona ochilor', 'Obraji / linia maxilarului'],
@@ -119,7 +119,11 @@
   function buildPath() {
     const zones = ZONES[state.interes] || [];
     root.querySelector('[data-zones]').innerHTML = zones.map((z) => `<button type="button" class="cq-opt${z === state.zona ? ' sel' : ''}" data-v="${z}">${z}</button>`).join('');
-    state.path = ['interes'].concat(zones.length ? ['zona'] : [], ['oras', 'contact']);
+    // epilation is only in Timișoara: the city is already decided, so no city question
+    const tmOnly = state.interes === 'Epilare laser';
+    if (tmOnly) state.oras = 'Timișoara';
+    root.querySelectorAll('[data-s="oras"] .cq-opt').forEach((b) => b.classList.toggle('sel', b.dataset.v === state.oras));
+    state.path = ['interes'].concat(zones.length ? ['zona'] : [], tmOnly ? [] : ['oras'], ['contact']);
   }
   function render() {
     const cur = state.path[state.i];
