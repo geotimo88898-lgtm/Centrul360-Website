@@ -274,16 +274,41 @@ tbody tr:hover{ background:var(--glass); }
 .cr-skel > div{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
 .cr-skel b{ aspect-ratio:4/5; border-radius:16px; }
 
+/* phone menu button: only on small screens (see the mobile block) */
+.c360-mnav, .c360-mnav-backdrop{ display:none; }
+
 /* ---------------- mobile ---------------- */
 @media (max-width:720px){
   header.topbar{ padding:.6rem 1rem; }
   .brand .brand-sep, .brand .brand-sub{ display:none; }
-  nav.tabs{ position:sticky; top:60px; z-index:15; height:auto; width:100%; padding:.5rem .6rem; gap:.3rem; background:var(--topbar-bg);
-    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); flex-direction:row; overflow-x:auto; }
-  nav.tabs button{ flex:none; height:34px; padding:0 .8rem; border-radius:999px; font-size:.82rem; }
-  nav.tabs button svg{ display:none; }
+  /* the menu is one button with the current section; it opens the whole menu as a grouped dropdown */
+  .c360-mnav{ position:sticky; top:60px; z-index:16; display:flex; align-items:center; gap:.7rem; width:100%;
+    min-height:52px; padding:.55rem 1rem; border:0; border-bottom:1px solid var(--line); background:var(--topbar-bg);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); color:var(--fg); font:inherit; font-size:.95rem;
+    font-weight:650; text-align:left; cursor:pointer; }
+  .c360-mnav-icon{ display:grid; gap:4px; width:18px; flex:none; }
+  .c360-mnav-icon i{ display:block; height:2px; border-radius:2px; background:currentColor; opacity:.8; }
+  .c360-mnav-label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .c360-mnav-chev{ width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round;
+    stroke-linejoin:round; opacity:.6; transition:transform .25s var(--ease); }
+  html.c360-mnav-open .c360-mnav-chev{ transform:rotate(180deg); }
+  nav.tabs{ position:fixed; top:112px; left:.6rem; right:.6rem; z-index:40; width:auto; height:auto;
+    max-height:calc(100dvh - 124px); overflow-y:auto; overscroll-behavior:contain; flex-direction:column; gap:2px;
+    padding:.35rem .4rem .6rem; border:1px solid var(--line); border-radius:18px; background:var(--paper-2);
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.55); opacity:0; visibility:hidden; transform:translateY(-8px);
+    transition:opacity .18s ease, transform .22s var(--ease), visibility 0s linear .22s; }
+  html.c360-mnav-open nav.tabs{ opacity:1; visibility:visible; transform:none; transition:opacity .18s ease, transform .22s var(--ease); }
+  nav.tabs .nav-group-label{ display:block; padding:.9rem .75rem .35rem; font-size:.66rem; }
+  nav.tabs .nav-group-label.hidden{ display:none; }
+  nav.tabs button{ flex:none; min-height:46px; padding:0 .8rem; border-radius:12px; font-size:.95rem; gap:.7rem; }
+  nav.tabs button svg{ display:block; }
   nav.tabs .c360-indicator{ display:none; }
-  nav.tabs button.active{ background:var(--fg) !important; color:var(--ink) !important; }
+  nav.tabs button.active{ background:var(--glass) !important; color:var(--fg) !important; font-weight:650; }
+  nav.tabs button.active::after{ content:""; margin-left:auto; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .c360-mnav-backdrop{ display:block; position:fixed; inset:0; z-index:35; background:rgba(0,0,0,.45); opacity:0; visibility:hidden;
+    transition:opacity .2s ease, visibility 0s linear .2s; }
+  html.c360-mnav-open .c360-mnav-backdrop{ opacity:1; visibility:visible; transition:opacity .2s ease; }
+  html.c360-mnav-open body{ overflow:hidden; }
   main{ padding:1.4rem 1rem 4rem; }
   h2{ font-size:1.35rem; }
   .card{ padding:1.15rem; }
