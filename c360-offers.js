@@ -90,6 +90,14 @@
       list.forEach((o) => { byKey[o.key] = o; });
       buildLists();
       apply();
+      // a link to an offer (e.g. #oferta-full-body): land on it after the list is rebuilt,
+      // or on the offers section if that offer is no longer active
+      const id = decodeURIComponent(location.hash.slice(1));
+      if (/^oferta-/.test(id)) {
+        const el = document.getElementById(id);
+        const target = el && !el.hidden ? el : document.getElementById('pret');
+        if (target) target.scrollIntoView({ block: 'start' });
+      }
       // cards rendered later (carousels, pop-ups) follow the same rules
       new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) apply(n.parentNode || n); }))).observe(document.body, { childList: true, subtree: true });
       done(byKey);
