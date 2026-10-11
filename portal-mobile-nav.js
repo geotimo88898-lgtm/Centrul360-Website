@@ -19,7 +19,9 @@
   var backdrop = document.createElement('div');
   backdrop.className = 'c360-mnav-backdrop';
   nav.parentNode.insertBefore(bar, nav);
-  document.body.appendChild(backdrop);
+  // same stacking layer as the menu, right below it: placed on <body> it ended up ON TOP of the
+  // menu and swallowed every tap and scroll
+  nav.parentNode.insertBefore(backdrop, nav);
 
   function label(btn) {
     // the entry's own label, without the icon or the count badge ("Pipeline", not "Pipeline3")
