@@ -529,10 +529,17 @@
 .st-fb-sub svg{ width:16px; height:16px; flex:none; }
 .st-fb-sub.is-ok{ background:var(--good-soft); color:var(--good); }
 .st-fb-sub.is-bad{ background:var(--bad-soft); color:var(--bad); }
+.st-fb-sub.is-wait{ background:var(--glass); color:var(--muted); }
+.st-fb-tech{ font-size:.82rem; }
+.st-fb-tech summary{ cursor:pointer; color:var(--muted); }
+.st-fb-tech p{ margin:.5rem 0 0; font-size:.8rem; line-height:1.45; }
+.st-fb-tech-actions{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.6rem; }
+.st-fb-log.is-tech{ margin-top:.6rem; }
+.st-fb-log.is-tech em{ color:var(--muted); }
 .st-fb-sub span{ flex:1; min-width:12rem; }
 .st-fb-read{ display:flex; flex-direction:column; align-items:flex-start; gap:.35rem; }
 .st-fb-read small{ font-size:.76rem; }
-.st-fb-readout{ font-size:.8rem; line-height:1.45; padding:.45rem .6rem; border-radius:10px; }
+.st-fb-readout{ font-size:.8rem; line-height:1.45; padding:.45rem .6rem; margin-top:.5rem; border-radius:10px; background:var(--glass); color:var(--muted); }
 .st-fb-readout.is-ok{ background:var(--good-soft); color:var(--good); }
 .st-fb-readout.is-bad{ background:var(--bad-soft); color:var(--bad); }
 .st-fb-log{ padding:.6rem .7rem; border-radius:11px; border:1px solid var(--line); background:var(--glass); }

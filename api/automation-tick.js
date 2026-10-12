@@ -4,6 +4,7 @@
 // carry it (Vercel's own cron sends it automatically) are accepted.
 
 const { tick } = require('./_lib/workflows');
+const { pollLeads } = require('./_lib/fb-leads');
 
 module.exports = async (req, res) => {
   const secret = process.env.CRON_SECRET;
@@ -11,7 +12,8 @@ module.exports = async (req, res) => {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }
+  const leads = await pollLeads(true); // new Facebook leads first, so their automations run now too
   const ran = await tick(true);
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran });
+  res.status(200).json({ ok: true, ran, leads });
 };

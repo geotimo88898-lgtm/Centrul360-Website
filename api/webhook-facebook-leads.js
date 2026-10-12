@@ -13,30 +13,13 @@
 // per-entry try/catch below). The answer goes out after the work: on Vercel a function is frozen
 // as soon as it has answered, so work left for later would never run.
 //
-// Each lead arrives with its procedure and city: the form's settings in Integrări (data/fb-forms.json,
-// set by the owner) win; otherwise they're read from the form / ad / campaign names and the answers.
-// The form's questions and answers stay on the lead (lead.forms) and show on the contact. Creating the lead starts the "Lead nou" automations
-// (the team's alert, the WhatsApp to the lead …).
+// What happens to each lead (procedure, city, answers, the automations) lives in _lib/fb-leads.js,
+// shared with the reading of the forms that covers a webhook Meta doesn't deliver.
 
 const crypto = require('crypto');
-const { readJSON, writeJSON } = require('./_lib/store');
-const { loadConnection, webhookSecrets, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity } = require('./_lib/facebook');
-const { loadOffers } = require('./_lib/offers');
-const { createLead } = require('./portal-leads');
-
-const FORMS_KEY = 'data/fb-forms.json';
-// what Facebook sent lately and what became of it (Integrări → Facebook → Ultimele livrări)
-const LOG_KEY = 'data/fb-webhook-log.json';
-async function logDelivery(entry) {
-  try {
-    const list = await readJSON(LOG_KEY, []);
-    list.unshift(Object.assign({ at: new Date().toISOString() }, entry));
-    await writeJSON(LOG_KEY, list.slice(0, 30));
-  } catch (err) { console.error('webhook-facebook-leads: log failed', err.message); }
-}
-
-// When neither the form's settings nor its names say the city.
-const DEFAULT_LOCATION = 'Timișoara';
+const { readJSON } = require('./_lib/store');
+const { loadConnection, webhookSecrets } = require('./_lib/facebook');
+const { FORMS_KEY, LOG_KEY, logDelivery, processLeadgenEvent } = require('./_lib/fb-leads');
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -56,48 +39,6 @@ function isValidSignature(rawBody, header, secret) {
   const b = Buffer.from(expected, 'hex');
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
-}
-
-// Returns a short line for the delivery log.
-async function processLeadgenEvent(value, pageAccessToken) {
-  const leadgenId = value && value.leadgen_id && String(value.leadgen_id);
-  if (!leadgenId) return 'fără leadgen_id';
-  const doc = await readJSON(FORMS_KEY, {});
-  doc.forms = doc.forms || {};
-  doc.seen = doc.seen || [];
-  if (doc.seen.includes(leadgenId)) return 'deja primit'; // Meta sent the same lead again
-
-  const got = await fetchLead(leadgenId, pageAccessToken);
-  if (got.error) { console.error('webhook-facebook-leads: fetch lead failed', leadgenId, got.error); return 'Facebook n-a dat datele leadului: ' + got.error; }
-  const lead = got.lead;
-  const formId = String(lead.form_id || value.form_id || '');
-  const form = doc.forms[formId] = doc.forms[formId] || { name: '', offerId: '', location: '', leads: 0 };
-  if (!form.name) form.name = await fetchFormName(formId, pageAccessToken);
-
-  const { name, phone, email } = extractLeadFields(lead.field_data);
-  const answers = extraAnswers(lead.field_data);
-  const text = [form.name, lead.ad_name, lead.adset_name, lead.campaign_name].concat(answers).filter(Boolean).join(' · ');
-  const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
-  const city = form.location || detectCity(text);
-  const offer = (form.offerId && offers.find((o) => o.id === form.offerId)) || detectOffer(offers, text, city);
-  const only = offer && Array.isArray(offer.locations) && offer.locations.length === 1 ? offer.locations[0] : '';
-  const location = city || (only === 'arad' ? 'Arad' : only === 'timisoara' ? 'Timișoara' : DEFAULT_LOCATION);
-
-  form.leads = (form.leads || 0) + 1;
-  form.lastAt = new Date().toISOString();
-  form.detected = { offerId: offer ? offer.id : '', location };
-  doc.seen = doc.seen.concat(leadgenId).slice(-300);
-  await writeJSON(FORMS_KEY, doc); // before the lead, so a retry from Meta can't make it twice
-
-  const note = ['Formular: ' + (form.name || formId || '-'), lead.ad_name ? 'Reclamă: ' + lead.ad_name : '', lead.campaign_name ? 'Campanie: ' + lead.campaign_name : '',
-    lead.platform === 'ig' ? 'Venit din Instagram' : ''].filter(Boolean).join('\n');
-  const result = await createLead({
-    name: name || 'Lead Facebook', phone, email, source: 'facebook', location,
-    interest: offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
-    form: { id: formId, name: form.name, ad: lead.ad_name || '', answers: answerPairs(lead.field_data) },
-  });
-  if (result.error) { console.error('webhook-facebook-leads: createLead failed', leadgenId, result.error); return 'nu s-a putut salva: ' + result.error; }
-  return (result.duplicate ? 'lead existent, actualizat: ' : 'lead nou: ') + (name || 'fără nume') + ' · ' + (offer ? offer.title : form.name || 'procedură necunoscută') + ' · ' + location;
 }
 
 module.exports = async (req, res) => {

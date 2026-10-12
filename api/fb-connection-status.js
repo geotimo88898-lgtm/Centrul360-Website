@@ -48,8 +48,12 @@ async function status(req) {
     redirectUri: origin + '/api/fb-oauth-callback', webhookUrl: origin + '/api/webhook-facebook-leads', verifyToken: creds.verifyToken,
   };
   if (!creds.appId || !creds.appSecret) return { connected: false, notConfigured: true, app };
-  const [conn, pending, log] = await Promise.all([loadConnection(readJSON), loadPending({ readJSON }), readJSON('data/fb-webhook-log.json', [])]);
-  const out = { connected: !!conn.pageId, app, deliveries: (log || []).slice(0, 8) };
+  const [conn, pending, log, poll] = await Promise.all([loadConnection(readJSON), loadPending({ readJSON }), readJSON('data/fb-webhook-log.json', []), readJSON('data/fb-poll.json', {})]);
+  const out = {
+    connected: !!conn.pageId, app, deliveries: (log || []).slice(0, 12),
+    // the reading of the forms (_lib/fb-leads.js): when it last looked and whether Facebook answered
+    poll: poll && poll.at ? { at: poll.at, ok: poll.ok !== false, error: poll.error || '', forms: (poll.forms || []).length } : null,
+  };
   if (conn.pageId) out.subscription = await subscription(conn, creds.appId);
   if (conn.pageId) Object.assign(out, {
     pageName: conn.pageName, connectedAt: conn.connectedAt, pageId: conn.pageId,

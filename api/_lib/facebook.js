@@ -115,7 +115,9 @@ async function fetchFormName(formId, token) {
 // campaign names and the answers. An offer wins by how many of its words appear; a tie is broken
 // by the city (Cavitație 1+1 is Arad's, Cavitație + EMS Timișoara's).
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\+/g, 'plus');
-const STOP = new Set(['tratament', 'tratamentul', 'zone', 'zona', 'pret', 'oferta', 'sedinta', 'sedinte', 'pentru', 'full', 'body', 'lei', 'una', 'doua', 'the']);
+const STOP = new Set(['tratament', 'tratamentul', 'zone', 'zona', 'pret', 'oferta', 'sedinta', 'sedinte', 'pentru', 'full', 'body', 'lei', 'una', 'doua', 'the',
+  // a city in an offer's name ("Cavitație 1+1 · Arad") is not a procedure word: the city is matched on its own
+  'arad', 'timisoara', 'timis']);
 const words = (s) => norm(s).split(/[^a-z0-9]+/).filter((t) => t.length >= 3 && !STOP.has(t));
 const CITY = { 'Timișoara': /timis|\btm\b/, 'Arad': /\barad/ };
 const CITY_ID = { 'Timișoara': 'timisoara', 'Arad': 'arad' };

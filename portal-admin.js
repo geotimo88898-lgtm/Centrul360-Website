@@ -780,16 +780,26 @@
 
     if (d.connected) {
       const many = (d.pages || []).length > 1;
-      // the check that answers "why didn't the lead arrive?"
-      const sub = d.subscription || {};
-      const diag = '<div class="st-fb-diag"><div class="st-fb-sub ' + (sub.ok ? 'is-ok' : 'is-bad') + '">' + icon(sub.ok ? 'checkCircle' : 'alert') +
-          '<span>' + (sub.ok ? 'Pagina trimite leadurile la portal.' + (sub.since ? ' Abonată ' + esc(K.ago(sub.since)) + '.' : '') : 'Pagina nu trimite leadurile la portal' + (sub.error ? ': ' + esc(sub.error) : '.')) + '</span>' +
-          (sub.ok ? '' : '<button type="button" class="k-btn is-primary is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') + '</div>' +
-        (sub.apps && sub.apps.length ? '<small class="k-muted">Aplicații care primesc leadurile Paginii: ' + esc(sub.apps.join(', ')) + '</small>' : '') +
-        '<div class="st-fb-read"><button type="button" class="k-btn is-outline is-sm" data-fb-read>' + icon('search') + 'Verifică citirea leadurilor</button><small class="k-muted">Pagina ' + esc(d.pageName || '') + ' · ID ' + esc(d.pageId || '') + '</small><div data-fb-read-out></div></div>' +
-        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele livrări de la Facebook</b><button type="button" class="k-btn is-ghost is-sm" data-fb-refresh>' + icon('refresh') + 'Reîmprospătează</button></div>' +
-          ((d.deliveries || []).length ? d.deliveries.map((x) => '<div class="st-fb-logrow ' + (x.ok ? 'is-ok' : 'is-bad') + '"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text) + '</em></div>').join('')
-            : '<p class="k-muted">Nimic încă. Un lead de test care nu apare aici nu a fost trimis de Facebook către portal.</p>') + '</div></div>';
+      // Are the leads coming in? One calm line and the leads received; the technical side (webhook
+      // subscription, the read test, every delivery) sits folded under "Detalii tehnice".
+      const sub = d.subscription || {}, poll = d.poll || {};
+      const live = poll.at && poll.ok !== false;
+      const got = (d.deliveries || []).filter((x) => (x.kind === 'lead' || x.kind === 'poll') && x.ok && /^lead /.test(x.text));
+      const diag = '<div class="st-fb-diag">' +
+        '<div class="st-fb-sub ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') + '<span>' +
+          (live ? 'Leadurile intră automat. Ultima verificare ' + esc(K.ago(poll.at)) + (poll.forms ? ', ' + K.plural(poll.forms, 'formular activ', 'formulare active') : '') + '.'
+            : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur în un minut.' : 'Prima verificare a formularelor se face în cel mult un minut.') + '</span></div>' +
+        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri primite</b><button type="button" class="k-btn is-ghost is-sm" data-fb-refresh>' + icon('refresh') + 'Reîmprospătează</button></div>' +
+          (got.length ? got.slice(0, 6).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
+            : '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>') + '</div>' +
+        '<details class="st-fb-tech"><summary>Detalii tehnice</summary>' +
+          '<p class="k-muted">Pagina ' + esc(d.pageName || '') + ' · ID ' + esc(d.pageId || '') + '</p>' +
+          (poll.error ? '<p class="k-muted">Ultima verificare: ' + esc(poll.error) + '</p>' : '') +
+          '<p class="k-muted">Webhook (leadurile anunțate pe loc): ' + (sub.ok ? 'activ' : 'inactiv' + (sub.error ? ', ' + esc(sub.error) : '')) + '. Fără el, leadurile vin prin verificarea formularelor, la fiecare minut.</p>' +
+          '<div class="st-fb-tech-actions">' + (sub.ok ? '' : '<button type="button" class="k-btn is-outline is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') +
+            '<button type="button" class="k-btn is-outline is-sm" data-fb-read>' + icon('search') + 'Verifică citirea leadurilor</button></div><div data-fb-read-out></div>' +
+          ((d.deliveries || []).length ? '<div class="st-fb-log is-tech">' + d.deliveries.map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text) + '</em></div>').join('') + '</div>' : '') +
+        '</details></div>';
       box.innerHTML = '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat la ' + esc(d.pageName || 'Pagină') + '</span>' + (d.connectedAt ? '<span class="k-muted">din ' + esc(new Date(d.connectedAt).toLocaleDateString('ro-RO')) + '</span>' : '') + '</div>' +
         '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
         diag +
@@ -806,9 +816,9 @@
         const out = box.querySelector('[data-fb-read-out]');
         try {
           const t = await K.api('/api/fb-connection-status', { action: 'test_read' });
-          out.className = 'st-fb-readout ' + (t.ok ? 'is-ok' : 'is-bad');
+          out.className = 'st-fb-readout';
           out.textContent = (t.ok ? 'Merge. ' : 'Facebook refuză' + (t.step === 'forms' ? ' lista de formulare: ' : ' leadurile' + (t.form ? ' din „' + t.form + '”' : '') + ': ')) + t.message;
-        } catch (err) { out.className = 'st-fb-readout is-bad'; out.textContent = K.errText(err); }
+        } catch (err) { out.className = 'st-fb-readout'; out.textContent = K.errText(err); }
       }));
       const rs = box.querySelector('[data-fb-resub]');
       if (rs) rs.addEventListener('click', () => K.busy(rs, async () => {
