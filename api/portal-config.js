@@ -5,6 +5,7 @@
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { defaultConfig, defaultSops } = require('./_lib/defaults');
+const { cleanAcademy } = require('./_lib/academy');
 
 const SOP_ROLES = ['receptie', 'cosmetician', 'toti'];
 // SOP edits from "SOP & Resurse" (admin): { receptie:[...], cosmetician:[...], toti:[...] }, each
@@ -33,7 +34,7 @@ module.exports = async (req, res) => {
   const session = requireAdmin(req, res);
   if (!session) return;
 
-  const { commissionRates, retailRate, raceBonus, companyGoal, resources, sops } = req.body || {};
+  const { commissionRates, retailRate, raceBonus, companyGoal, resources, sops, academy } = req.body || {};
 
   try {
     const configRaw = await readJSON('data/config.json', null);
@@ -73,6 +74,7 @@ module.exports = async (req, res) => {
     }
 
     if (sops && typeof sops === 'object') config.sops = cleanSops(sops, config.sops || defaultSops());
+    if (academy && typeof academy === 'object') config.academy = cleanAcademy(academy, config.academy);
 
     await writeJSON('data/config.json', config);
     res.status(200).json({ ok: true, config });

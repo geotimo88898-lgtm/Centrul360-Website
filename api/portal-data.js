@@ -5,6 +5,7 @@
 const { readJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { defaultConfig, currentMonth, defaultSops } = require('./_lib/defaults');
+const { defaultAcademy } = require('./_lib/academy');
 const { loadOffers, discountOf } = require('./_lib/offers');
 
 // Daily mandatory task checklists per role. Plain static content — no need for these to
@@ -253,6 +254,7 @@ module.exports = async (req, res) => {
       },
       myGoals,
       // SOPs for this role (+ the shared ones); the owner gets every role's set to manage them.
+      academy: config.academy || defaultAcademy(), // Traininguri: every manual for everyone (the goal: everyone sells)
       sops: (() => { const all = config.sops || defaultSops(); return isAdmin ? all : { [me.role]: all[me.role] || [], toti: all.toti || [] }; })(),
       // Active offers from the shared source — same list the public site and Creative use.
       offers: offersAll.filter((o) => o.active).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((o) => ({
