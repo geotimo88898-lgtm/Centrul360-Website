@@ -370,7 +370,7 @@ Clienta are cea mai mare încredere în cosmeticiana care o tratează. Ce spui t
 > Zona a răspuns foarte bine azi. Ca să ajungi la ce mi-ai spus, [rezultatul ei], ne mai trebuie [număr] ședințe, la [interval]. Hai să-ți rezervăm acum următoarea, să ai locul sigur.
 ## La recepție, de față cu clienta
 > [Recepționera], [clienta] continuă cu [tratament], următoarea ședință în [interval]. Îi găsești un loc?
-! Dacă clienta a cumpărat un pachet sau un produs la recomandarea ta, loghează vânzarea în Comisionul meu în aceeași zi.
+! Dacă clienta a cumpărat un pachet sau un tratament în plus la recomandarea ta, la încasare se bifează „Upsell efectuat” cu valoarea vândută. Comisionul tău: valoarea minus 60% cheltuieli, apoi 10% din rest (la 3.000 lei, 120 lei). Devine oficial după aprobarea administratorului.
 `),
           },
           {

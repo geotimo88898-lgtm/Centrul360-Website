@@ -2,9 +2,9 @@
 // Încasări: pick the city (Timișoara / Arad / both) and the period (today, yesterday, this week,
 // this month, last month or exact dates); totals per payment method, daily bars, per person and
 // per category, the day-grouped list, CSV + print. A payment always starts from an appointment:
-// the desk picks only WHICH appointment, HOW it was paid (card / cash / transfer / cash + card)
-// and WHO did the treatment; the amount comes from the appointment and, if the client paid more,
-// the difference is an upsell (10% for whoever did the treatment, after the owner approves it).
+// the desk picks WHICH appointment, HOW it was paid (card / cash / transfer / cash + card), WHO did
+// the treatment and, when she sold something extra, ticks "Upsell efectuat" with its value. The
+// commission on it (value - 60% costs, 10% of the profit) waits for the owner's approval.
 // Comisionul meu: commission earned this month, every bonus with how much is left to win it, and
 // the upsell list.
 (function () {
@@ -20,7 +20,6 @@
   const LOCS = ['Timișoara', 'Arad'];
   const SALE_STATUS = { pending: { label: 'În așteptare', tone: 'warn' }, approved: { label: 'Aprobat', tone: 'good' }, rejected: { label: 'Respins', tone: 'bad' } };
   const sum = (list) => list.reduce((a, s) => a + Number(s.amount || 0), 0);
-  const rate = () => ((K.data && K.data.upsellRate) || 10) / 100;
   // Cash + card payments count on both sides of the split.
   function byMethod(rows) {
     const t = { card: 0, cash: 0, transfer: 0 };
@@ -195,7 +194,7 @@
   async function openNew(pre) {
     pre = pre || {};
     // Step 1 = city (Timișoara / Arad) → day (today by default) → that day's unpaid appointments in a dropdown.
-    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(),
+    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(), upsell: false, upsellAmount: '',
       city: K.data && K.data.city ? K.data.city : (K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]) };
     const d = K.drawer({
       title: 'Încasare', icon: 'wallet', width: 600, focus: false,
@@ -272,7 +271,13 @@
             '<div class="pay-note" data-note></div></div></section>' +
         '<section class="pay-step"><h4><i>3</i>Cine a făcut tratamentul?</h4><div class="pay-people">' +
           team.map((x) => '<button type="button" data-who="' + esc(x.id) + '" class="' + (st.who === x.id ? 'is-on' : '') + '">' + K.avatar(x.name, 30) + '<span><b>' + esc(x.name) + '</b><small>' + esc(x.location) + '</small></span></button>').join('') +
-          (!team.length ? '<p class="k-muted">Nicio cosmeticiană activă în ' + esc(st.city) + ' (Echipa).</p>' : '') + '</div></section>';
+          (!team.length ? '<p class="k-muted">Nicio cosmeticiană activă în ' + esc(st.city) + ' (Echipa).</p>' : '') + '</div></section>' +
+        '<section class="pay-step pay-ups' + (st.upsell ? ' is-on' : '') + '"><h4><i>4</i>A vândut ceva în plus?</h4>' +
+          '<label class="pay-check"><input type="checkbox" data-upsell' + (st.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span>' +
+            '<span><b>Upsell efectuat</b><small>Bifează dacă a vândut un pachet, o zonă în plus sau alt tratament.</small></span></label>' +
+          (st.upsell ? '<div class="pay-ups-body"><label class="k-field"><span>Valoarea upsell-ului</span><div class="k-money"><input data-upsell-amount type="number" inputmode="decimal" min="0" step="1" value="' + esc(st.upsellAmount) + '" placeholder="ex: 3000"></div></label>' +
+            '<div class="pay-ups-quick" data-ups-quick></div><div class="pay-ups-calc" data-ups-calc></div></div>' : '') +
+        '</section>';
       note(); updateSave();
     }
     function vals() {
@@ -280,25 +285,44 @@
       const amt = Number((d.el.querySelector('[data-amount]') || {}).value) || 0;
       const cash = Number((d.el.querySelector('[data-cash]') || {}).value) || 0;
       const card = Number((d.el.querySelector('[data-card]') || {}).value) || 0;
-      return { a, amt, cash, card };
+      const ups = st.upsell ? Number(st.upsellAmount) || 0 : 0;
+      return { a, amt, cash, card, ups };
+    }
+    // "Upsell efectuat": quick values + the commission, worked out in front of her
+    function upsCalc() {
+      const box = d.el.querySelector('[data-ups-calc]');
+      if (!box) return;
+      const { a, amt, ups } = vals();
+      const booked = Number(a && a.amount) || 0;
+      const quick = [];
+      if (booked && amt > booked) quick.push([amt - booked, 'Peste programare']);
+      if (amt) quick.push([amt, 'Toată suma']);
+      d.el.querySelector('[data-ups-quick]').innerHTML = quick.length ? quick.map((q) => '<button type="button" class="k-chip" data-ups-set="' + q[0] + '">' + q[1] + ' · ' + K.lei(q[0]) + '</button>').join('') : '';
+      const who = cosmeticians().find((x) => x.id === st.who);
+      const R = K.commissionRule();
+      if (!(ups > 0)) { box.innerHTML = '<span class="k-muted">Scrie cât a fost upsell-ul și vezi comisionul.</span>'; return; }
+      if (amt && ups > amt) { box.innerHTML = '<span class="pay-warn">' + icon('alert') + 'Upsell-ul nu poate fi mai mare decât suma încasată (' + K.lei(amt) + ').</span>'; return; }
+      box.innerHTML = '<div class="cb-calc"><span>Upsell <b>' + K.lei(ups) + '</b></span><span>- ' + R.cost + '% cheltuieli</span><span>= <b>' + K.lei(K.profitOf(ups), 2) + '</b> profit</span><span>× ' + R.rate + '%</span><span>= <b>' + K.lei(K.commissionOf(ups), 2) + '</b></span></div>' +
+        '<small>' + icon('clock') + 'Comision ' + K.lei(K.commissionOf(ups), 2) + (who ? ' pentru ' + esc(who.name.split(' ')[0]) : '') + '. Ajunge la administrator în Aprobări și devine oficial după ce îl aprobă.</small>';
     }
     function note() {
       const box = d.el.querySelector('[data-note]');
       if (!box) return;
       const { a, amt, cash, card } = vals();
       const booked = Number(a.amount) || 0;
-      const who = cosmeticians().find((x) => x.id === st.who);
       const lines = [];
       if (booked) lines.push('Programat: <b>' + K.lei(booked) + '</b>');
-      if (booked && amt > booked) lines.push('<span class="pay-up">' + icon('trend') + 'Upsell <b>+' + K.lei(amt - booked) + '</b> → comision ' + Math.round(rate() * 100) + '% = <b>' + K.lei((amt - booked) * rate(), 2) + '</b>' + (who ? ' pentru ' + esc(who.name.split(' ')[0]) : '') + ' (după aprobare)</span>');
+      if (booked && amt > booked && !st.upsell) lines.push('<span class="pay-up">' + icon('trend') + 'A plătit ' + K.lei(amt - booked) + ' peste programare. Dacă a fost un upsell, bifează mai jos „Upsell efectuat”.</span>');
       if (booked && amt && amt < booked) lines.push('<span class="pay-warn">' + icon('alert') + 'Mai puțin decât suma programării.</span>');
       if (st.method === 'cash_card' && amt && Math.abs(cash + card - amt) > 0.01) lines.push('<span class="pay-warn">' + icon('alert') + 'Cash + card = ' + K.lei(cash + card) + ', trebuie ' + K.lei(amt) + '.</span>');
       box.innerHTML = lines.join('');
+      upsCalc();
     }
     function ready() {
       const { a, amt, cash, card } = vals();
       if (!a || !(amt > 0) || !st.who || !whoOk()) return false;
       if (st.method === 'cash_card' && (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amt) > 0.01)) return false;
+      if (st.upsell && !(Number(st.upsellAmount) > 0 && Number(st.upsellAmount) <= amt)) return false;
       return true;
     }
     function updateSave() {
@@ -315,6 +339,8 @@
       if (m) { keepInputs(); st.method = m.dataset.m; return paint(); }
       const w = e.target.closest('[data-who]');
       if (w) { st.who = w.dataset.who; d.el.querySelectorAll('[data-who]').forEach((x) => x.classList.toggle('is-on', x === w)); note(); updateSave(); }
+      const q = e.target.closest('[data-ups-set]');
+      if (q) { st.upsellAmount = q.dataset.upsSet; d.el.querySelector('[data-upsell-amount]').value = st.upsellAmount; upsCalc(); updateSave(); }
     }
     // A different city or day empties the choice unless the chosen appointment still matches.
     function setDay(day) {
@@ -333,14 +359,20 @@
         return paint();
       }
       if (t.matches('[data-day-input]')) return setDay(t.value);
+      if (t.matches('[data-upsell]')) {
+        keepInputs(); st.upsell = t.checked; paint();
+        const inp = d.el.querySelector('[data-upsell-amount]'); if (inp && !inp.value) inp.focus();
+        return;
+      }
       if (t.matches('[data-appt-select]')) {
-        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = '';
+        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = ''; st.upsell = false; st.upsellAmount = '';
         st.who = (appt() && appt().cosmeticianId) || '';
         return paint();
       }
     }
     function keepInputs() {
-      const amt = d.el.querySelector('[data-amount]'), c1 = d.el.querySelector('[data-cash]'), c2 = d.el.querySelector('[data-card]');
+      const amt = d.el.querySelector('[data-amount]'), c1 = d.el.querySelector('[data-cash]'), c2 = d.el.querySelector('[data-card]'), up = d.el.querySelector('[data-upsell-amount]');
+      if (up) st.upsellAmount = up.value;
       if (amt) st.amount = amt.value;
       if (c1) st.cash = c1.value;
       if (c2) st.card = c2.value;
@@ -354,16 +386,16 @@
     }
     async function save() {
       if (!ready()) return;
-      const { a, amt, cash, card } = vals();
+      const { a, amt, cash, card, ups } = vals();
       try {
-        const r = await K.api('/api/portal-sale', { source: 'incasare', appointmentId: a.id, method: st.method, amount: amt, cashAmount: cash, cardAmount: card, performedBy: st.who });
+        const r = await K.api('/api/portal-sale', { source: 'incasare', appointmentId: a.id, method: st.method, amount: amt, cashAmount: cash, cardAmount: card, performedBy: st.who, upsell: st.upsell, upsellAmount: ups });
         d.close();
-        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? ' · upsell +' + K.lei(r.upsell.amount) : ''), 'success');
+        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + ' trimis la aprobare.' : ''), 'success');
         if (!(a.date >= range()[0] && a.date <= range()[1])) { S.period = a.date === K.today() ? 'today' : 'month'; }
         K.reload();
         K.emit('remote');
       } catch (err) {
-        const msg = { already_paid: 'Programarea e deja încasată.', missing_performer: 'Alege cine a făcut tratamentul.', invalid_split: 'Cash + card trebuie să dea suma totală.', appointment_not_found: 'Programarea nu mai există.' }[err.code];
+        const msg = { invalid_upsell: 'Valoarea upsell-ului trebuie să fie între 1 leu și suma încasată.', already_paid: 'Programarea e deja încasată.', missing_performer: 'Alege cine a făcut tratamentul.', invalid_split: 'Cash + card trebuie să dea suma totală.', appointment_not_found: 'Programarea nu mai există.' }[err.code];
         K.ui().toast(msg || K.errText(err), 'error');
       }
     }
@@ -380,7 +412,8 @@
       title: K.lei(s.amount, 2), lead: '<span class="k-dicon" style="background:' + m.color + '">' + icon(m.ic) + '</span>',
       subtitle: esc(s.client) + ' · ' + esc(K.dateLong(s.date)) + (s.location ? ' · ' + esc(s.location) : ''),
       body: '<dl class="k-kv"><dt>Clientă</dt><dd>' + esc(s.client) + '</dd><dt>Tratament</dt><dd>' + esc(s.treatment) + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(s) || '-') + '</dd>' +
-          '<dt>Plată</dt><dd>' + esc(methodText(s)) + '</dd>' + (s.bookedAmount ? '<dt>Programat</dt><dd>' + K.lei(s.bookedAmount) + (s.upsell ? ' · upsell +' + K.lei(s.upsell) : '') + '</dd>' : '') +
+          '<dt>Plată</dt><dd>' + esc(methodText(s)) + '</dd>' + (s.bookedAmount ? '<dt>Programat</dt><dd>' + K.lei(s.bookedAmount) + '</dd>' : '') +
+          (s.upsell ? '<dt>Upsell</dt><dd>' + K.lei(s.upsell) + ' · comision ' + K.lei(K.commissionOf(s.upsell), 2) + '</dd>' : '') +
           '<dt>A făcut tratamentul</dt><dd>' + esc(s.performedByName || '-') + '</dd><dt>Înregistrată de</dt><dd>' + esc(s.employeeName || '-') + (s.createdAt ? ' · ' + esc(K.ago(s.createdAt)) : '') + '</dd></dl>' +
         (admin ? '<section class="k-section"><h4>' + icon('pen') + 'Corectează</h4><form class="k-form" data-form>' +
           K.field('Sumă', '<div class="k-money"><input name="amount" type="number" min="0" step="0.01" value="' + esc(s.amount) + '"></div>') +
@@ -390,6 +423,8 @@
           '<label class="k-field"><span>Card</span><input name="cardAmount" type="number" min="0" step="0.01" value="' + esc(s.split ? s.split.card : '') + '"></label></div>' +
           K.field('Categorie', K.catPicker(K.catsOf(s)), 'full') +
           K.field('A făcut tratamentul', '<select name="performedBy"><option value="">-</option>' + K.options(emp.map((e) => [e.id, e.name + ' · ' + e.location]), s.performedBy || '') + '</select>', 'full') +
+          '<label class="pay-check full"><input type="checkbox" name="upsell" value="true"' + (s.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span><span><b>Upsell efectuat</b><small>Comisionul se recalculează cât timp nu e aprobat.</small></span></label>' +
+          K.field('Valoarea upsell-ului', '<div class="k-money"><input name="upsellAmount" type="number" min="0" step="1" value="' + esc(s.upsell || '') + '"></div>', 'full') +
           '</form></section>'
           : '<div class="mo-note">' + icon('info') + 'O greșeală? Corecturile le face administratorul. Spune-i ce trebuie modificat.</div>'),
       footer: admin ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>' : '',
@@ -400,9 +435,10 @@
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(f);
           try {
-            await K.api('/api/portal-incasari', Object.assign({ action: 'update', id: s.id }, v, { amount: Number(v.amount), cashAmount: Number(v.cashAmount) || 0, cardAmount: Number(v.cardAmount) || 0, categories: String(v.categories || '').split(',').filter(Boolean) }));
+            const upsell = !!f.querySelector('input[name=upsell]').checked;
+            await K.api('/api/portal-incasari', Object.assign({ action: 'update', id: s.id }, v, { amount: Number(v.amount), cashAmount: Number(v.cashAmount) || 0, cardAmount: Number(v.cardAmount) || 0, categories: String(v.categories || '').split(',').filter(Boolean), upsell, upsellAmount: upsell ? Number(v.upsellAmount) || 0 : 0 }));
             d.close(); K.ui().toast('Încasare corectată.', 'success'); K.reload();
-          } catch (err) { K.ui().toast(err.code === 'invalid_split' ? 'Cash + card trebuie să dea suma totală.' : K.errText(err), 'error'); }
+          } catch (err) { K.ui().toast(err.code === 'invalid_split' ? 'Cash + card trebuie să dea suma totală.' : err.code === 'invalid_upsell' ? 'Valoarea upsell-ului trebuie să fie între 1 leu și suma încasată.' : K.errText(err), 'error'); }
         }));
         el.querySelector('[data-del]').addEventListener('click', async () => {
           if (!(await K.ui().confirm({ title: 'Ștergi încasarea?', message: K.lei(s.amount, 2) + ' · ' + s.client + ' dispare din totaluri, iar programarea redevine neîncasată.', confirmText: 'Șterge', danger: true }))) return;
@@ -490,7 +526,6 @@
     if (!cpanel || !K.data) return;
     const D = K.data;
     const me = D.me;
-    const R = Math.round(rate() * 100);
     const isNow = C.month === K.thisMonth();
     const today = K.today();
     const dim = K.daysIn(C.month);
@@ -500,16 +535,16 @@
     // ---- commission (upsells credited to her)
     const sales = (D.mySales || []);
     const salesOf = (m) => sales.filter((s) => K.monthOf(s.date) === m && s.status !== 'rejected');
-    const commOf = (list) => list.reduce((a, s) => a + (s.status === 'approved' ? Number(s.commission || 0) : Number(s.amount || 0) * rate()), 0);
+    // official = approved by the owner; the rest waits in Aprobări (shown, not counted yet)
+    const commOf = (list) => list.filter((s) => s.status === 'approved').reduce((a, s) => a + Number(s.commission || 0), 0);
+    const waitOf = (list) => list.filter((s) => s.status === 'pending').reduce((a, s) => a + (s.commission != null && s.commission !== 0 ? Number(s.commission) : K.commissionOf(s.amount)), 0);
     const inMonth = salesOf(C.month);
     const comm = commOf(inMonth);
     const pending = inMonth.filter((s) => s.status === 'pending');
+    const waiting = waitOf(inMonth);
+    const approvedN = inMonth.filter((s) => s.status === 'approved').length;
     const upsTotal = inMonth.reduce((a, s) => a + Number(s.amount || 0), 0);
-    const amounts = (s) => {
-      if (s.paidAmount != null) return { booked: Number(s.bookedAmount) || 0, paid: Number(s.paidAmount) || 0 };
-      const m = /Programat ([\d.]+) lei, încasat ([\d.]+) lei/.exec(s.note || '');
-      return m ? { booked: Number(m[1]), paid: Number(m[2]) } : null;
-    };
+    const RULE = K.commissionRule();
 
     // ---- her treatments (payments where she is "who did the treatment") and what she recorded
     const inc = D.incasari || [];
@@ -550,7 +585,7 @@
     const bonusPossible = isNow ? all.reduce((a, b) => a + (b.reward || 0), 0) : 0;
     const total = comm + bonusWon;
     // pace: what this month ends at if she keeps going like this
-    const projComm = isNow && dayNow ? (comm / dayNow) * dim : comm;
+    const projComm = isNow && dayNow ? ((comm + waiting) / dayNow) * dim : comm;
 
     // ---- last 6 months
     const hist = [];
@@ -573,14 +608,15 @@
       // ---------------- hero: the total, split in commission + bonuses (+ pace)
       '<section class="cb-hero k-card"><div class="cb-hero-main"><span>Câștigul tău · ' + esc(K.monthLabel(C.month)) + '</span>' +
         '<b data-count="' + Math.round(total * 100) / 100 + '" data-fmt="lei" data-key="cb-t-' + C.month + '">0</b>' +
-        '<p>' + icon('wallet') + 'comision din upsell + bonusuri câștigate' + (isNow ? ' până azi' : '') + '</p></div>' +
+        '<p>' + icon('wallet') + 'comision aprobat + bonusuri câștigate' + (isNow ? ' până azi' : '') + '</p></div>' +
         '<div class="k-month"><button type="button" class="k-icon-btn" data-m="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + esc(K.monthLabel(C.month)) + '</b><button type="button" class="k-icon-btn" data-m="1" aria-label="Luna următoare"' + (isNow ? ' disabled' : '') + '>' + icon('right') + '</button></div>' +
         '<div class="cb-split">' +
-          '<div><span>' + icon('percent') + 'Comision din upsell</span><b>' + K.lei(comm, comm % 1 ? 2 : 0) + '</b><small>' + K.plural(inMonth.length, 'upsell', 'upsell-uri') + ' · ' + K.lei(upsTotal) + ' peste programare' + (pending.length ? ' · ' + pending.length + ' de confirmat' : '') + '</small></div>' +
+          '<div><span>' + icon('percent') + 'Comision aprobat</span><b>' + K.lei(comm, comm % 1 ? 2 : 0) + '</b><small>' + K.plural(approvedN, 'upsell aprobat', 'upsell-uri aprobate') + ' · ' + K.lei(upsTotal) + ' vândut în plus</small></div>' +
+          '<div class="' + (pending.length ? 'is-wait' : '') + '"><span>' + icon('clock') + 'În așteptare</span><b>' + K.lei(waiting, waiting % 1 ? 2 : 0) + '</b><small>' + (pending.length ? K.plural(pending.length, 'cerere', 'cereri') + ' la administrator. Devin oficiale după aprobare.' : 'nimic de aprobat') + '</small></div>' +
           '<div><span>' + icon('trophy') + 'Bonusuri câștigate</span><b>' + K.lei(bonusWon) + '</b><small>' + (isNow ? (bonusPossible ? 'din ' + K.lei(bonusPossible) + ' posibile luna asta' : 'niciun bonus activ') : 'vezi luna curentă') + '</small></div>' +
           (isNow ? '<div><span>' + icon('trend') + 'Estimare final de lună</span><b>' + K.lei(projComm + bonusWon) + '</b><small>dacă păstrezi ritmul de până acum</small></div>' : '<div><span>' + icon('sparkles') + 'Tratamente făcute</span><b>' + done.length + '</b><small>' + K.lei(doneValue) + ' încasat</small></div>') +
         '</div>' +
-        '<div class="cb-rule">' + icon('info') + '<span><b>Automat, la fiecare încasare:</b> (suma încasată - suma programării) × ' + R + '% = comisionul tău. Îl primește cine e trecută la „Cine a făcut tratamentul”.</span></div></section>' +
+        '<div class="cb-rule">' + icon('info') + '<span><b>Cum se calculează:</b> la încasare se bifează „Upsell efectuat” cu valoarea vândută în plus. Din ea se scad ' + RULE.cost + '% (cheltuielile medii ale procedurii) și primești ' + RULE.rate + '% din ce rămâne. Exemplu: 3.000 lei upsell, profit 1.200 lei, comision <b>' + K.lei(K.commissionOf(3000)) + '</b>. Îl primește cine e trecută la „Cine a făcut tratamentul” și devine oficial după ce îl aprobă administratorul.</span></div></section>' +
 
       // ---------------- her activity
       '<section class="cb-sec"><h3>' + icon('sparkles') + 'Activitatea ta · ' + esc(K.monthLabel(C.month)) + '</h3><div class="k-grid c4 k-stagger">' +
@@ -588,7 +624,7 @@
         '<div class="k-stat"><div class="k-stat-top"><span class="k-stat-ic">' + icon('wallet') + '</span>Încasat din tratamentele tale</div><div class="k-stat-value">' + K.lei(doneValue) + '</div><div class="k-stat-sub">' + delta(doneValue, donePrevValue) + (done.length ? 'bon mediu ' + K.lei(doneValue / done.length) : 'încă nimic luna asta') + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top"><span class="k-stat-ic">' + icon('trend') + '</span>Rata de upsell</div><div class="k-stat-value">' + upRate + '%</div><div class="k-stat-sub">' + withUpsell + ' din ' + done.length + ' tratamente cu upsell</div></div>' +
         (isDesk ? '<div class="k-stat"><div class="k-stat-top"><span class="k-stat-ic">' + icon('receipt') + '</span>Încasări înregistrate de tine</div><div class="k-stat-value">' + recorded.length + '</div><div class="k-stat-sub">' + K.lei(recorded.reduce((a, s) => a + Number(s.amount || 0), 0)) + '</div></div>'
-          : '<div class="k-stat"><div class="k-stat-top"><span class="k-stat-ic">' + icon('percent') + '</span>Upsell mediu</div><div class="k-stat-value">' + K.lei(inMonth.length ? upsTotal / inMonth.length : 0) + '</div><div class="k-stat-sub">' + K.lei(inMonth.length ? comm / inMonth.length : 0, 2) + ' comision / upsell</div></div>') +
+          : '<div class="k-stat"><div class="k-stat-top"><span class="k-stat-ic">' + icon('percent') + '</span>Upsell mediu</div><div class="k-stat-value">' + K.lei(inMonth.length ? upsTotal / inMonth.length : 0) + '</div><div class="k-stat-sub">' + K.lei(inMonth.length ? K.commissionOf(upsTotal / inMonth.length) : 0, 2) + ' comision / upsell</div></div>') +
       '</div></section>' +
       (done.length ? '<section class="k-card cb-sec"><div class="k-card-head"><h3>' + icon('trend') + 'Pe zile</h3><span class="k-sub">valoarea tratamentelor făcute de tine</span></div><div data-cbchart></div></section>' : '') +
 
@@ -603,15 +639,15 @@
             '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(s.treatment || '') + '</div></div>' +
             '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + '<span class="k-amount">' + K.lei(s.amount) + '</span></div></div>').join('') + '</div>'
             : K.empty('sparkles', 'Niciun tratament încasat', 'Tratamentele la care ești trecută la încasare apar aici.')) + '</section>' +
-        '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsell-urile tale</h3><span class="k-sub">' + K.lei(comm, 2) + ' comision</span></div>' +
+        '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsell-urile tale</h3><span class="k-sub">' + K.lei(comm, 2) + ' aprobat' + (waiting ? ' · ' + K.lei(waiting, 2) + ' în așteptare' : '') + '</span></div>' +
           (inMonth.length ? '<div class="k-list">' + inMonth.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((s) => {
             const st = SALE_STATUS[s.status] || { label: s.status, tone: '' };
-            const am = amounts(s);
-            return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(String(s.treatment || '').replace(/^Upsell · /, '')) + '</div>' +
-              (am ? '<div class="cb-calc"><span>Încasat <b>' + K.lei(am.paid) + '</b></span><span>- programat <b>' + K.lei(am.booked) + '</b></span><span>= <b>' + K.lei(s.amount) + '</b></span><span>× ' + R + '%</span></div>' : '<div class="k-row-sub">upsell ' + K.lei(s.amount) + '</div>') + '</div>' +
-              '<div class="k-row-end">' + (s.status === 'pending' ? '<span class="k-tag is-warn">' + st.label + '</span>' : '') + '<span class="k-amount">+' + K.lei(s.status === 'approved' ? s.commission : Number(s.amount) * rate(), 2) + '</span></div></div>';
+            const val = s.status === 'approved' ? Number(s.commission || 0) : (s.commission ? Number(s.commission) : K.commissionOf(s.amount));
+            return '<div class="k-row' + (s.status === 'pending' ? ' is-wait' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(String(s.treatment || '').replace(/^Upsell · /, '')) + '</div>' +
+              '<div class="cb-calc"><span>Upsell <b>' + K.lei(s.amount) + '</b></span><span>- ' + RULE.cost + '% cheltuieli</span><span>= <b>' + K.lei(K.profitOf(s.amount), 2) + '</b> profit</span><span>× ' + RULE.rate + '%</span></div></div>' +
+              '<div class="k-row-end"><span class="k-tag is-' + st.tone + '">' + st.label + '</span><span class="k-amount">+' + K.lei(val, 2) + '</span></div></div>';
           }).join('') + '</div>'
-            : K.empty('trend', 'Niciun upsell încă', 'Când clienta plătește mai mult decât suma programării la un tratament făcut de tine, comisionul apare aici automat.')) + '</section>' +
+            : K.empty('trend', 'Niciun upsell încă', 'Când la încasare se bifează „Upsell efectuat” la un tratament făcut de tine, comisionul apare aici. Devine oficial după aprobare.')) + '</section>' +
       '</div>' +
 
       // ---------------- history + how to earn more
@@ -622,7 +658,7 @@
         '<section class="k-card cb-tip"><div class="k-card-head"><h3>' + icon('zap') + 'Cum îți crești comisionul</h3></div>' +
           '<ol><li>La finalul tratamentului spune-i clientei ce ai observat și ce ar ajuta-o să ajungă mai repede la rezultat.</li>' +
           '<li>Recomandă <b>o singură</b> combinație potrivită (ex. grăsime → plus tonifiere; facial → întreținere lunară).</li>' +
-          '<li>Programeaz-o pe loc la următoarea ședință. Tot ce plătește peste suma programării îți aduce ' + R + '%.</li></ol>' +
+          '<li>Programeaz-o pe loc la următoarea ședință. Din orice upsell primești ' + RULE.rate + '% din profit (valoarea minus ' + RULE.cost + '% cheltuieli).</li></ol>' +
           '<button type="button" class="k-btn is-outline" data-go-train>' + icon('book') + 'Manualul de vânzări</button></section>' +
       '</div>';
 

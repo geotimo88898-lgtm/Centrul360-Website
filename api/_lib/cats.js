@@ -25,7 +25,12 @@ function normalizeCategories(input) {
 // Categories of a stored row (new rows carry `categories`, old ones a single `category`).
 const categoriesOf = (row) => normalizeCategories((row && row.categories && row.categories.length) ? row.categories : row && row.category);
 
-// Every upsell (paid more than the booked amount) earns the person who did the treatment 10%.
-const UPSELL_RATE = 10;
+// Commission on an upsell: 60% of the upsell value covers the average costs of the procedure;
+// whoever made the upsell earns 10% of what is left (the profit). 3.000 lei upsell → 1.200 lei
+// profit → 120 lei commission (4% of the upsell). Paid once the owner approves it (Aprobări).
+const UPSELL_RATE = 10;   // % of the profit
+const COST_SHARE = 60;    // % of the upsell that goes on costs
+const commissionOf = (upsell) => Math.round((Number(upsell) || 0) * (100 - COST_SHARE) / 100 * UPSELL_RATE) / 100;
+const profitOf = (upsell) => Math.round((Number(upsell) || 0) * (100 - COST_SHARE)) / 100;
 
-module.exports = { CATEGORIES, LEGACY, normalizeCategories, categoriesOf, UPSELL_RATE };
+module.exports = { CATEGORIES, LEGACY, normalizeCategories, categoriesOf, UPSELL_RATE, COST_SHARE, commissionOf, profitOf };

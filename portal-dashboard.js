@@ -81,11 +81,10 @@
     const mineToday = appts.filter((a) => a.cosmeticianId === me.id);
     const unconfirmed = appts.filter((a) => a.status === 'programata');
     const ms = D.mySales || [];
-    const rate = () => (D.upsellRate || 10) / 100;
     const commMonth = ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.commission || 0), 0);
     const commPrev = ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === prevMonth && s.date <= prevSameDay).reduce((a, s) => a + Number(s.commission || 0), 0);
     const pendingMine = ms.filter((s) => s.status === 'pending');
-    const pendingEst = pendingMine.reduce((a, s) => a + Number(s.amount || 0) * rate(s), 0);
+    const pendingEst = pendingMine.reduce((a, s) => a + (s.commission ? Number(s.commission) : K.commissionOf(s.amount)), 0);
     const attributed = inc.filter((s) => s.performedBy === me.id && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.amount || 0), 0);
 
     const summary = [];

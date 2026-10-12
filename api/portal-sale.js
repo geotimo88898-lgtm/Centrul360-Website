@@ -19,7 +19,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
-const { CATEGORIES, normalizeCategories, categoriesOf, UPSELL_RATE } = require('./_lib/cats');
+const { CATEGORIES, normalizeCategories, categoriesOf, commissionOf, profitOf } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
 const { cityOf, inCity } = require('./_lib/city');
 
@@ -110,11 +110,11 @@ async function handleComision(req, res, session) {
   }
 }
 
-// "Încasare" = an appointment gets paid. The desk picks only three things: WHICH appointment,
-// HOW it was paid (card / cash / transfer / cash + card) and WHO did the treatment. The amount
-// defaults to what the appointment was booked for; if the client pays more (she bought more on
-// the spot), the difference is an upsell and the person picked as "who did the treatment" in the
-// payment (not the one on the appointment) earns 10% of it, automatically, no approval needed.
+// "Încasare" = an appointment gets paid. The desk picks WHICH appointment, HOW it was paid (card /
+// cash / transfer / cash + card) and WHO did the treatment. When that person sold something extra
+// ("Upsell efectuat" ticked, with its value), she earns a commission on it: value - 60% costs, then
+// 10% of the profit (_lib/cats.js). It goes to the owner's Aprobări first and counts only once
+// approved; until then she sees it as "în așteptare".
 async function handleIncasare(req, res, session) {
   const { appointmentId, method, performedBy } = req.body || {};
   if (!appointmentId) { res.status(400).json({ error: 'missing_appointment' }); return; }
@@ -146,8 +146,10 @@ async function handleIncasare(req, res, session) {
     const date = appt.date && appt.date <= today ? appt.date : today;
     const categories = categoriesOf(appt);
     const booked = Number(appt.amount) || 0;
-    // An upsell only exists when the booked amount is known.
-    const upsell = booked > 0 && amount > booked ? Math.round((amount - booked) * 100) / 100 : 0;
+    // "Upsell efectuat": ticked by the desk, with the upsell's value (at most the amount paid).
+    const upsellDone = req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1;
+    const upsell = upsellDone ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : 0;
+    if (upsellDone && !(upsell > 0 && upsell <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
 
     const entry = {
       id: crypto.randomUUID(),
@@ -196,10 +198,12 @@ async function handleIncasare(req, res, session) {
   }
 }
 
-// The commission entry for the upsell part of a payment: 10% of (paid - booked), credited at once
-// to whoever did the treatment. A correction of the payment (api/portal-incasari.js) recomputes it.
+// The commission request for the upsell of a payment, for whoever made it: waits in the owner's
+// Aprobări (the amount shown is upsell - 60% costs, 10% of the profit; approving fixes it). A
+// correction of the payment (api/portal-incasari.js) keeps a still-waiting request in step.
 function upsellFor(entry, employeeId) {
   const amount = entry.upsell;
+  const profit = profitOf(amount), commission = commissionOf(amount);
   return {
     id: crypto.randomUUID(),
     source: 'comision',
@@ -211,16 +215,16 @@ function upsellFor(entry, employeeId) {
     category: entry.category,
     treatment: 'Upsell · ' + entry.treatment,
     amount,
-    bookedAmount: entry.bookedAmount,
     paidAmount: entry.amount,
-    note: 'Programat ' + entry.bookedAmount + ' lei, încasat ' + entry.amount + ' lei',
+    profit,
+    note: 'Upsell ' + amount + ' lei, minus 60% cheltuieli = ' + profit + ' lei profit, 10% = ' + commission + ' lei',
     clientId: entry.clientId,
     client: entry.client,
-    status: 'approved',
-    commission: Math.round(amount * UPSELL_RATE) / 100,
-    automatic: true,
+    status: 'pending',
+    commission, // what she'll get; fixed when the owner approves
+    automatic: false,
     createdAt: new Date().toISOString(),
-    decidedAt: new Date().toISOString(),
+    decidedAt: null,
     decisionNote: '',
   };
 }

@@ -40,6 +40,12 @@
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
   K.roleLabel = (r) => ({ cosmetician: 'Cosmeticiană', receptie: 'Recepție', admin: 'Admin' }[r] || r);
+  // Commission on an upsell: value - 60% costs, then 10% of the profit (same as api/_lib/cats.js).
+  const costShare = () => (K.data && K.data.costShare != null ? K.data.costShare : 60);
+  const upRate = () => (K.data && K.data.upsellRate) || 10;
+  K.profitOf = (v) => Math.round((Number(v) || 0) * (100 - costShare())) / 100;
+  K.commissionOf = (v) => Math.round((Number(v) || 0) * (100 - costShare()) / 100 * upRate()) / 100;
+  K.commissionRule = () => ({ cost: costShare(), rate: upRate() });
 
   // Old links / bookmarks keep working.
   const ALIASES = { incasare: ['incasari', 'incasari:new'], fise: ['traininguri', 'academy:print'], resurse: ['traininguri'], setari: ['integrari'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'], contacts: ['contacte'] };
@@ -62,6 +68,9 @@
     previewBar();
     window.C360_CTX = { isAdmin: !!DATA.isAdmin, me: DATA.me, categories: K.cats };
     document.getElementById('whoName').textContent = DATA.me.name;
+    // profile photo (Contul meu) on the round avatar, top right
+    const av = document.querySelector('.c360-avatar');
+    if (av) { av.classList.toggle('has-photo', !!DATA.me.photo); av.style.backgroundImage = DATA.me.photo ? 'url("' + DATA.me.photo + '")' : ''; }
     // Owner: just "Admin". Staff: their role + location under the name.
     const whoLoc = document.getElementById('whoLocation');
     whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.location && DATA.me.location !== '-' ? ' · ' + DATA.me.location : '');
@@ -80,7 +89,8 @@
       first = false;
       document.getElementById('loadingScreen').classList.add('hidden');
       app.classList.remove('hidden');
-      route(location.hash.slice(1) || 'panou', true);
+      if (K.applyPrefs) K.applyPrefs(DATA.me.prefs);
+      route(location.hash.slice(1) || (DATA.me.prefs && DATA.me.prefs.startPage) || 'panou', true);
     }
   }
   // ------------------------------------------------------------------ domains
@@ -286,7 +296,8 @@
     menu = document.createElement('div');
     menu.className = 'k-menu has-acc';
     menu.innerHTML =
-      '<div class="k-menu-head">' + K.avatar(DATA ? DATA.me.name : '?', 38) + '<div><b>' + esc(DATA ? DATA.me.name : '') + '</b><small>' + esc(document.getElementById('whoLocation').textContent || 'Administrator · acces complet') + '</small></div></div>' +
+      '<button type="button" class="k-menu-head" data-act="account" title="Contul meu">' + K.avatar(DATA ? DATA.me.name : '?', 38) + '<div><b>' + esc(DATA ? DATA.me.name : '') + '</b><small>' + esc(document.getElementById('whoLocation').textContent || 'Administrator · acces complet') + '</small></div>' + icon('right') + '</button>' +
+      '<button type="button" class="k-menu-item is-strong" data-act="account">' + icon('user') + 'Contul meu</button>' +
       (window.C360Accent ? window.C360Accent.menuHtml() : '') +
       (phone() ? '<button type="button" class="k-menu-item" data-act="nav">' + icon('layers') + 'Deschide meniul</button>' :
         '<button type="button" class="k-menu-item" data-act="rail">' + icon('layers') + 'Strânge / extinde meniul<kbd>Ctrl B</kbd></button>') +
@@ -309,6 +320,7 @@
       if (what === 'nav') { const b = document.querySelector('.c360-mnav'); if (b) setTimeout(() => b.click(), 0); }
       if (what === 'search') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
       if (what === 'logout') logout();
+      if (what === 'account' && K.openAccount) K.openAccount();
     });
   }
   function closeMenu() { if (!menu) return; const m = menu; menu = null; m.classList.remove('is-open'); setTimeout(() => m.remove(), 200); }

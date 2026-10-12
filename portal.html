@@ -16,6 +16,8 @@
 <script>
   // Accent colour before first paint (picked in the avatar menu; computed by portal-accent.js).
   try { var v = JSON.parse(localStorage.getItem('c360_accent_v') || 'null'); if (v) for (var k in v) if (/^--accent/.test(k)) document.documentElement.style.setProperty(k, v[k]); } catch (e) {}
+  // Text size and motion (Contul meu → Preferințe), also before the first paint.
+  try { var pf = JSON.parse(localStorage.getItem('c360_prefs') || 'null'); if (pf) { if (pf.fontSize === 'lg' || pf.fontSize === 'xl') document.documentElement.setAttribute('data-fs', pf.fontSize); if (pf.motion === 'reduced') document.documentElement.classList.add('c360-reduce'); } } catch (e) {}
 </script>
 <style>
   /* Layout skeleton only, every visual rule lives in portal-theme.css / portal-kit.css / portal-sections.css. */
@@ -70,6 +72,7 @@
 <script src="/portal-whatsapp.js" defer></script>
 <script src="/portal-admin.js" defer></script>
 <script src="/portal-automations.js" defer></script>
+<script src="/portal-me.js" defer></script>
 <script src="/portal-core.js" defer></script>
 <script src="/portal-mobile-nav.js" defer></script>
 <script>

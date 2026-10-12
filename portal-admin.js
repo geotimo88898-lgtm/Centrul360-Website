@@ -12,8 +12,6 @@
   const cat = (k) => (K.cats && (K.cats[k] || K.cats[K.catKey(k)])) || k || '';
   const ROLES = [['receptie', 'Recepție'], ['cosmetician', 'Cosmeticiană'], ['admin', 'Admin']];
   const LOCS = [['Timișoara', 'Timișoara'], ['Arad', 'Arad']];
-  // One commission rule: 10% of every upsell.
-  const rateOf = () => (K.data && K.data.upsellRate) || 10;
   const monthOf = K.monthOf;
 
   // =====================================================================================
@@ -23,7 +21,7 @@
   function mountApprovals(p) {
     apanel = p;
     apanel.classList.add('k-panel', 'ad');
-    apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2><p class="k-lede">Cererile de concediu ale echipei. Comisionul din upsell (10%) se dă automat la încasare; aici apar doar vânzări mai vechi rămase de aprobat.</p></div>' +
+    apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2><p class="k-lede">Comisioanele din upsell așteaptă aici aprobarea ta: devin oficiale în contul angajatei abia după ce le aprobi. Mai jos, cererile de concediu.</p></div>' +
       '<div class="k-head-actions" data-head></div></div><div data-body></div>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('calendar') + 'Cereri de concediu</h3></div><div data-leave></div></section>';
     apanel.addEventListener('click', onApprovalClick);
@@ -42,24 +40,23 @@
     const pend = K.data.admin.pendingSales.slice().sort((a, b) => (a.date < b.date ? -1 : 1));
     const month = K.thisMonth();
     const decided = K.data.admin.allSales.filter((s) => s.status !== 'pending' && s.decidedAt).sort((a, b) => (a.decidedAt < b.decidedAt ? 1 : -1)).slice(0, 8);
-    const totalComm = pend.reduce((a, s) => a + Number(s.amount || 0) * rateOf(s.category) / 100, 0);
+    const totalComm = pend.reduce((a, s) => a + K.commissionOf(s.amount), 0);
     apanel.querySelector('[data-head]').innerHTML = pend.length > 1 ? '<button type="button" class="k-btn is-good" data-all>' + icon('check') + 'Aprobă toate (' + pend.length + ')</button>' : '';
     const approvedMonth = K.data.admin.allSales.filter((s) => s.status === 'approved' && monthOf(s.date) === month);
     apanel.querySelector('[data-body]').innerHTML =
       '<div class="k-grid c3 k-stagger" style="margin-bottom:1rem">' +
         '<div class="k-stat is-warn"><div class="k-stat-top"><span class="k-stat-ic">' + icon('clock') + '</span>În așteptare</div><div class="k-stat-value" data-count="' + pend.length + '" data-key="ad-p">0</div><div class="k-stat-sub">' + K.lei(pend.reduce((a, s) => a + Number(s.amount || 0), 0)) + ' vândut</div></div>' +
-        '<div class="k-stat is-accent"><div class="k-stat-top"><span class="k-stat-ic">' + icon('percent') + '</span>Comision de plătit dacă aprobi</div><div class="k-stat-value" data-count="' + Math.round(totalComm) + '" data-fmt="lei" data-key="ad-c">0</div><div class="k-stat-sub">10% din upsell-uri</div></div>' +
+        '<div class="k-stat is-accent"><div class="k-stat-top"><span class="k-stat-ic">' + icon('percent') + '</span>Comision de plătit dacă aprobi</div><div class="k-stat-value" data-count="' + Math.round(totalComm) + '" data-fmt="lei" data-key="ad-c">0</div><div class="k-stat-sub">10% din profit (upsell - 60%)</div></div>' +
         '<div class="k-stat is-good"><div class="k-stat-top"><span class="k-stat-ic">' + icon('check') + '</span>Aprobate luna asta</div><div class="k-stat-value" data-count="' + approvedMonth.length + '" data-key="ad-a">0</div><div class="k-stat-sub">' + K.lei(approvedMonth.reduce((a, s) => a + Number(s.commission || 0), 0)) + ' comision</div></div>' +
       '</div>' +
       (pend.length ? '<p class="ad-keys">' + icon('info') + 'Scurtături: <kbd>A</kbd> aprobă, <kbd>R</kbd> respinge prima vânzare din listă.</p><div class="ad-list">' + pend.map((s) => {
-        const r = rateOf(s.category);
         return '<article class="ad-card" data-sale="' + esc(s.id) + '">' + K.avatar(s.employeeName, 44) +
           '<div class="ad-main"><div class="ad-top"><b>' + esc(s.employeeName) + '</b><span class="k-tag">' + icon('pin') + esc(s.employeeLocation) + '</span><span class="k-muted">' + esc(K.dateLong(s.date)) + '</span></div>' +
-          '<div class="ad-what">' + esc(s.treatment) + '</div><div class="ad-sub">' + esc(cat(s.category)) + (s.client ? ' · ' + esc(s.client) : '') + (s.note ? ' · „' + esc(s.note) + '”' : '') + '</div></div>' +
-          '<div class="ad-money"><b>' + K.lei(s.amount, 2) + '</b><span>comision ' + K.lei(Number(s.amount) * r / 100, 2) + ' · ' + r + '%</span></div>' +
+          '<div class="ad-what">' + esc(s.treatment) + '</div><div class="ad-sub">' + esc(cat(s.category)) + (s.client ? ' · ' + esc(s.client) : '') + (s.note && s.origin !== 'upsell' ? ' · „' + esc(s.note) + '”' : '') + '</div></div>' +
+          '<div class="ad-money"><span class="ad-label">upsell</span><b>' + K.lei(s.amount, 2) + '</b><span>profit ' + K.lei(K.profitOf(s.amount), 2) + ' · comision <b>' + K.lei(K.commissionOf(s.amount), 2) + '</b></span></div>' +
           '<div class="ad-actions"><button type="button" class="k-btn is-danger" data-reject="' + esc(s.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good" data-approve="' + esc(s.id) + '">' + icon('check') + 'Aprobă</button></div></article>';
       }).join('') + '</div>'
-        : '<section class="k-card">' + K.empty('shield', 'Nimic de aprobat', 'Comisionul din upsell se acordă automat la încasare. Cererile de concediu apar mai jos.') + '</section>') +
+        : '<section class="k-card">' + K.empty('shield', 'Nimic de aprobat', 'Când la o încasare se bifează „Upsell efectuat”, cererea de comision apare aici. Cererile de concediu sunt mai jos.') + '</section>') +
       (decided.length ? '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Decise recent</h3></div><div class="k-list">' + decided.map((s) =>
         '<div class="k-row">' + K.avatar(s.employeeName, 30) + '<div class="k-row-main"><div class="k-row-title">' + esc(s.treatment) + '</div><div class="k-row-sub">' + esc(s.employeeName) + ' · ' + esc(K.dateShort(s.date)) + ' · ' + K.lei(s.amount) + (s.decisionNote ? ' · „' + esc(s.decisionNote) + '”' : '') + '</div></div>' +
         '<div class="k-row-end"><span class="k-tag is-' + (s.status === 'approved' ? 'good' : 'bad') + '">' + (s.status === 'approved' ? 'Aprobată · ' + K.lei(s.commission, 2) : 'Respinsă') + '</span></div></div>').join('') + '</div></section>' : '');

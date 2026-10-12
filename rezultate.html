@@ -258,6 +258,21 @@
 
   .disclaimer{ color:var(--muted-2); font-size:.78rem; line-height:1.6; margin-top:1.4rem; max-width:46rem; }
 
+  /* cases published from the clinic's portal (api/cases-public): one compact card per case */
+  .rcase .ba{ display:block; width:100%; padding:0; border:0; cursor:pointer; font:inherit; color:inherit; }
+  .rcase .ba:focus-visible{ outline:2px solid #fff; outline-offset:-2px; }
+  .rcase-badge{ position:absolute; left:12px; top:12px; z-index:2; font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#0b0b0d; background:#fff; border-radius:999px; padding:.3rem .65rem; }
+  .rcase-more{ margin-top:1rem; display:inline-flex; align-items:center; gap:.4rem; font-size:.86rem; font-weight:600; color:#fff; background:var(--glass-2); border:1px solid var(--line-on-dark); border-radius:999px; padding:.55rem 1rem; cursor:pointer; transition:background .2s ease, transform .2s ease; }
+  .rcase-more:hover{ background:rgba(255,255,255,.18); transform:translateY(-1px); }
+  .case-modal{ z-index:400; } /* above the sticky call / WhatsApp bar */
+  .case-modal .rev-modal-panel{ max-width:880px; max-height:calc(100dvh - 48px); overflow-y:auto; text-align:left; padding:28px 24px 24px; }
+  .case-modal h3{ font-size:1.35rem; margin:0 2.5rem .3rem 0; }
+  .case-modal .case-meta{ color:var(--muted); font-size:.9rem; margin:0 0 1.2rem; }
+  .case-modal figure{ margin:0 0 1.1rem; }
+  .case-modal figure img{ width:100%; height:auto; display:block; border-radius:16px; background:#0e0e12; }
+  .case-modal figcaption{ margin-top:.45rem; font-size:.8rem; font-weight:600; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; }
+  @media (max-width:600px){ .case-modal{ padding:0; } .case-modal .rev-modal-panel{ max-height:100dvh; height:100dvh; border-radius:0; padding:22px 16px; } }
+
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } .reveal{ opacity:1 !important; transform:none !important; } }
 
   /* MOBILE PERF, stop aurora drift + fixed bg on a GPU-composited layer (no scroll repaint) */
@@ -1055,7 +1070,7 @@
 
   /* ----- gallery filters ----- */
   const filters = document.querySelectorAll('.filter');
-  const cards = [...document.querySelectorAll('#gallery .rcard')];
+  const cards = { forEach: (fn) => document.querySelectorAll('#gallery .rcard').forEach(fn) }; // includes the cases added later
   filters.forEach(f=>{
     f.addEventListener('click', ()=>{
       filters.forEach(x=>{ x.classList.remove('is-active'); x.setAttribute('aria-selected','false'); });
@@ -1138,6 +1153,61 @@ function animate(){
     m.renderer.render(m.scene, m.cam);
   }
 }
+</script>
+<div id="caseModal" class="rev-modal case-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Cazul complet">
+  <div class="rev-modal-backdrop" data-case-close></div>
+  <div class="rev-modal-panel">
+    <button type="button" class="rev-modal-x" data-case-close aria-label="Închide">&times;</button>
+    <div data-case-body></div>
+  </div>
+</div>
+<script>
+/* Cases published from the clinic's portal (Contacte → Poze înainte / după → "Publică pe site"),
+   only with the client's consent. One compact card each, first in the gallery; "Vezi cazul complet"
+   opens every session. */
+(function () {
+  var gallery = document.getElementById('gallery');
+  var modal = document.getElementById('caseModal');
+  if (!gallery || !modal) return;
+  var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var cases = [];
+  var sessionsText = function (n) { return n === 1 ? 'O ședință' : n + ' ședințe'; };
+  function card(c) {
+    var isNew = c.publishedAt && (Date.now() - new Date(c.publishedAt).getTime()) < 30 * 864e5;
+    var more = c.images.length > 1;
+    var area = c.category === 'fata' ? 'Față' : 'Corp';
+    return '<article class="rcard rcase pop" data-cat="' + (c.category === 'fata' ? 'fata' : 'corp') + '">' +
+      '<button type="button" class="ba" data-case="' + esc(c.id) + '" aria-label="Vezi cazul: ' + esc(c.title) + '">' +
+        (isNew ? '<span class="rcase-badge">Caz nou</span>' : '') +
+        '<img src="' + esc(c.images[0].url) + '" alt="Rezultat real înainte și după - ' + esc(c.title) + '" loading="lazy" decoding="async"></button>' +
+      '<div class="rbody"><div class="rmeta"><span class="clinic">Centrul360' + (c.location ? ' · ' + esc(c.location) : '') + '</span></div>' +
+        '<h3>' + esc(c.title) + '</h3>' +
+        '<div class="rtags"><span class="rtag">' + area + '</span><span class="rtag">' + sessionsText(c.sessions || 1) + '</span></div>' +
+        (more ? '<button type="button" class="rcase-more" data-case="' + esc(c.id) + '">Vezi cazul complet · ' + c.images.length + ' imagini <span aria-hidden="true">→</span></button>' : '') +
+      '</div></article>';
+  }
+  function open(id) {
+    var c = cases.find(function (x) { return x.id === id; });
+    if (!c) return;
+    modal.querySelector('[data-case-body]').innerHTML = '<h3>' + esc(c.title) + '</h3>' +
+      '<p class="case-meta">' + sessionsText(c.sessions || 1) + (c.location ? ' · Centrul360 ' + esc(c.location) : '') + '. Fotografii reale, publicate cu acordul clientei.</p>' +
+      c.images.map(function (im, i) { return '<figure><img src="' + esc(im.url) + '" alt="' + esc(c.title + ', ' + (im.label || 'înainte și după')) + '"' + (i ? ' loading="lazy"' : '') + '><figcaption>' + esc(im.label || '') + '</figcaption></figure>'; }).join('');
+    modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false');
+    document.documentElement.style.overflow = 'hidden';
+    modal.querySelector('.rev-modal-x').focus();
+  }
+  function close() { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); document.documentElement.style.overflow = ''; }
+  modal.addEventListener('click', function (e) { if (e.target.closest('[data-case-close]')) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('open')) close(); });
+  gallery.addEventListener('click', function (e) { var b = e.target.closest('[data-case]'); if (b) open(b.getAttribute('data-case')); });
+  fetch('/api/cases-public').then(function (r) { return r.ok ? r.json() : { cases: [] }; }).then(function (j) {
+    cases = (j.cases || []).filter(function (c) { return c.images && c.images.length; });
+    if (!cases.length) return;
+    gallery.insertAdjacentHTML('afterbegin', cases.map(card).join(''));
+    var active = document.querySelector('.filter.is-active');
+    if (active && active.dataset.filter !== 'all') active.click();
+  }).catch(function () {});
+})();
 </script>
 <script src="c360-convert.js" defer></script>
 </body>

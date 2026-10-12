@@ -75,7 +75,7 @@ async function validateAndBuildFields(body, employees) {
   const { date, time, endTime, treatment, location, cosmeticianId, status } = body || {};
   // One or more of: epilare-laser, faciale, corporale (older single `category` keys still accepted).
   const categories = normalizeCategories(body && body.categories && body.categories.length ? body.categories : body && body.category);
-  // What the client is booked to pay. Paying more at the desk = upsell (10% to whoever did it).
+  // What the client is booked to pay (an upsell is ticked at payment time, Încasări).
   const amount = Math.max(0, Math.round((Number(body && body.amount) || 0) * 100) / 100);
 
   if (!date || !isValidDate(date)) return { error: 'invalid_date' };

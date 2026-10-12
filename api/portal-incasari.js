@@ -2,16 +2,16 @@
 // in data/sales.json. Mistakes (wrong amount, wrong method, wrong person) are fixed only by the
 // owner, never by whoever recorded the payment.
 //
-// A payment is tied to its appointment and, when the client paid more than booked, to an upsell
-// commission entry (10% to whoever did the treatment, credited automatically). Both follow:
-//   - update: the upsell commission is recomputed (amount, person, date) or removed if there is
-//     no upsell any more; one created if the correction produces an upsell.
-//   - delete: the appointment becomes unpaid again (back in the payment list) and its upsell
-//     commission goes with it.
+// A payment is tied to its appointment and, when "Upsell efectuat" was ticked, to a commission
+// request for whoever made the upsell (upsell - 60% costs, 10% of the profit). Both follow:
+//   - update: a request still waiting for approval is kept in step (value, person, date) or
+//     removed when there's no upsell any more; one is created if the correction adds an upsell.
+//     An already approved commission is left as it was.
+//   - delete: the appointment becomes unpaid again and a still-waiting request goes with it.
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { normalizeCategories, UPSELL_RATE } = require('./_lib/cats');
+const { normalizeCategories, commissionOf, profitOf } = require('./_lib/cats');
 const portalSale = require('./portal-sale');
 
 const VALID_METHODS = ['card', 'cash', 'transfer', 'cash_card'];
@@ -87,16 +87,21 @@ module.exports = async (req, res) => {
       if (req.body.treatment) entry.treatment = String(req.body.treatment).slice(0, 200);
       if (req.body.client) entry.client = String(req.body.client).slice(0, 150);
       entry.performedBy = performedBy ? String(performedBy).slice(0, 100) : '';
-      const booked = Number(entry.bookedAmount) || 0;
-      entry.upsell = booked > 0 && amount > booked ? Math.round((amount - booked) * 100) / 100 : 0;
+      // "Upsell efectuat" + its value can be corrected too; left out = unchanged.
+      if (req.body.upsell !== undefined) {
+        const done = req.body.upsell === true || req.body.upsell === 'true';
+        const value = done ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : 0;
+        if (done && !(value > 0 && value <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+        entry.upsell = value;
+      } else if (entry.upsell > amount) entry.upsell = amount;
 
-      // Keep the upsell commission in step (only while it's still waiting for approval).
+      // Keep the commission request in step (only while it's still waiting for approval).
       let next = sales;
       if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) {
         if (entry.upsell > 0 && entry.performedBy) {
-          Object.assign(upsellEntry, { amount: entry.upsell, bookedAmount: booked, paidAmount: amount, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
-            note: 'Programat ' + booked + ' lei, încasat ' + amount + ' lei' });
-          if (upsellEntry.automatic) upsellEntry.commission = Math.round(entry.upsell * UPSELL_RATE) / 100;
+          Object.assign(upsellEntry, { amount: entry.upsell, paidAmount: amount, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
+            profit: profitOf(entry.upsell), commission: commissionOf(entry.upsell),
+            note: 'Upsell ' + entry.upsell + ' lei, minus 60% cheltuieli = ' + profitOf(entry.upsell) + ' lei profit, 10% = ' + commissionOf(entry.upsell) + ' lei' });
         } else next = sales.filter((s) => s.id !== upsellEntry.id);
       } else if (!upsellEntry && entry.upsell > 0 && entry.performedBy) {
         const employees = await readJSON('data/employees.json', []);

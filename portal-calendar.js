@@ -371,7 +371,7 @@
       (isNew ? '<div class="k-field full"><span>Alege din oferte (completează tratamentul și suma)</span><div data-offer-box>' + offerChips(a.location || LOCS[0]) + '</div></div>' : '') +
       K.field('Tratament', '<input name="treatment" required maxlength="200" value="' + esc(a.treatment || '') + '" placeholder="ex: Facial Restart">', 'full') +
       K.field('Categorie (poți alege mai multe)', K.catPicker(K.catsOf(a)), 'full') +
-      K.field('Suma programării', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="0" step="1" value="' + esc(a.amount || '') + '" placeholder="0"></div>', 'full', 'Cât plătește clienta pentru ce s-a programat. Dacă la final plătește mai mult, diferența e upsell (10% pentru cine a făcut tratamentul).') +
+      K.field('Suma programării', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="0" step="1" value="' + esc(a.amount || '') + '" placeholder="0"></div>', 'full', 'Cât plătește clienta pentru ce s-a programat. Un upsell (pachet, zonă în plus) se bifează la încasare.') +
       K.field('Cosmeticiană', '<select name="cosmeticianId" data-cos>' + empOptions(a.cosmeticianId || '', a.location || LOCS[0]) + '</select>', 'full') +
       (isNew ? K.field('Status', K.seg('status', [['programata', 'Programată'], ['confirmata', 'Confirmată']], 'programata', 'is-big'), 'full') : '') +
       '</form>';

@@ -105,7 +105,19 @@
   const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   const HUES = ['#4f8fd6', '#2bb3a3', '#c9a227', '#e0835a', '#e05a7a', '#8b6fd0', '#2f9d62', '#d97757', '#6fa8d6'];
   const colorFor = (s) => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return HUES[h % HUES.length]; };
-  const avatar = (name, size) => '<span class="k-avatar" style="--c:' + colorFor(name) + (size ? ';--s:' + size + 'px' : '') + '">' + esc(initials(name)) + '</span>';
+  // Team members' profile photos (Contul meu): any avatar drawn for their name shows the photo.
+  const photoFor = (name) => {
+    const d = window.K && window.K.data, n = String(name || '').trim();
+    if (!d || !n) return '';
+    if (d.me && d.me.name === n && d.me.photo) return d.me.photo;
+    const e = (d.activeEmployees || []).find((x) => x.name === n);
+    return (e && e.photo) || '';
+  };
+  const avatar = (name, size) => {
+    const ph = photoFor(name);
+    return '<span class="k-avatar' + (ph ? ' has-photo' : '') + '" style="--c:' + colorFor(name) + (size ? ';--s:' + size + 'px' : '') + '">' +
+      (ph ? '<img src="' + esc(ph) + '" alt="" loading="lazy">' : esc(initials(name))) + '</span>';
+  };
   function intlPhone(p) {
     let d = String(p || '').replace(/\D/g, '');
     if (d.startsWith('00')) d = d.slice(2);
@@ -158,6 +170,7 @@
     shield: '<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
     filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5z"/>', more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
     ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+    move: '<path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/>', minus: '<path d="M5 12h14"/>',
     globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     video: '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>', undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>',
   };

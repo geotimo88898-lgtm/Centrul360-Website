@@ -4,7 +4,13 @@
 //     short notes from the team;
 //   - Poze înainte / după, organised by session (Ședința 1, 2, …): a before and an after photo per
 //     session; the side-by-side images are composed in the browser (portal-contacts.js);
-//   - Acord de publicare: whether the client agreed that her photos may be published.
+//   - Acord de publicare: whether the client agreed that her photos may be published;
+//   - Aliniere: each photo keeps how it sits in its half of the before / after image (zoom +
+//     offset, set in the "Aliniază" editor), so the two halves line up;
+//   - Publicare pe site: one pair (a session) or the whole case (first before → last after, plus
+//     every session) goes on the Rezultate page. Only with the client's consent; taking the consent
+//     back takes everything down. The images (composed in the browser, no name on them) live under
+//     cases/<caseId>/… and the list in data/cases.json, served by api/cases-public.js.
 //
 // Storage: the contact itself lives in data/clients.json (same directory the calendar and the
 // payments use, keyed by phone); its notes / files / sessions live in data/contacts/<id>.json and
@@ -15,13 +21,14 @@
 //
 // Actions: list · get · create · update · note_add · note_delete · file_add · file_delete ·
 //          session_add · session_update · session_delete · photo_set · photo_delete · consent ·
-//          import (admin: contacts exported from HighLevel)
+//          frames_set · publish · unpublish · import (admin: contacts exported from HighLevel)
 
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary, removeBinary } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { normalizePhone, upsertClient } = require('./_lib/clients');
 const { cityOf, inCity } = require('./_lib/city');
+const { dedash } = require('./_lib/dedash');
 
 const uid = () => crypto.randomUUID();
 const nowISO = () => new Date().toISOString();
@@ -31,7 +38,7 @@ const MIME_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'
 const MAX_BYTES = 3.5 * 1024 * 1024;
 
 const detailPath = (cid) => 'data/contacts/' + cid + '.json';
-const emptyDetail = () => ({ notes: [], files: [], sessions: [], consent: null });
+const emptyDetail = () => ({ notes: [], files: [], sessions: [], consent: null, published: [] });
 async function readDetail(cid) { return Object.assign(emptyDetail(), await readJSON(detailPath(cid), {})); }
 
 // "data:image/jpeg;base64,…" → { mime, buf }
@@ -49,6 +56,16 @@ async function storeFile(cid, dataUrl) {
   await writeBinary(path, f.buf, f.mime);
   return { path, mime: f.mime, size: f.buf.length };
 }
+
+// A published case leaves the site: its images and its row in data/cases.json.
+async function removeCase(caseId) {
+  const cases = await readJSON('data/cases.json', []);
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return;
+  await Promise.all((c.images || []).map((im) => removeBinary(im.path)));
+  await writeJSON('data/cases.json', cases.filter((x) => x.id !== caseId));
+}
+const canPublish = (session) => ['admin', 'receptie'].includes(session.role);
 
 // Mirrors the counters shown in the contact list (so the list never opens every detail file).
 function summarize(d) {
@@ -297,6 +314,69 @@ module.exports = async (req, res) => {
     }
     if (action === 'consent') {
       detail.consent = { publish: !!body.publish, at: nowISO(), by: author };
+      // no consent any more: whatever was on the site comes down right away
+      if (!detail.consent.publish && (detail.published || []).length) {
+        for (const pub of detail.published) await removeCase(pub.caseId);
+        detail.published = [];
+      }
+      return save();
+    }
+
+    // ---------------------------------------------------------------- alignment (editor "Aliniază")
+    // z = zoom (1 = the photo just fills its half), x / y = offset as a fraction of the half.
+    if (action === 'frames_set') {
+      const list = Array.isArray(body.frames) ? body.frames.slice(0, 4) : [];
+      const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n * 1000) / 1000)) : d; };
+      for (const f of list) {
+        const s = detail.sessions.find((x) => x.id === f.sessionId);
+        const slot = f.slot === 'after' ? 'after' : 'before';
+        if (!s || !s[slot]) return fail(404, 'not_found');
+        s[slot].frame = { z: num(f.z, 0.5, 4, 1), x: num(f.x, -1, 1, 0), y: num(f.y, -1, 1, 0) };
+      }
+      return save();
+    }
+
+    // ---------------------------------------------------------------- publish on the site
+    // kind 'pair' = one session; kind 'case' = the whole case (cover: first before → last after,
+    // then every session). Re-publishing the same pair / case replaces the old one.
+    if (action === 'publish') {
+      if (!canPublish(session)) return fail(403, 'forbidden');
+      if (!(detail.consent && detail.consent.publish)) return fail(400, 'no_consent');
+      const kind = body.kind === 'case' ? 'case' : 'pair';
+      const sessionId = kind === 'pair' ? String(body.sessionId || '') : '';
+      if (kind === 'pair' && !detail.sessions.some((x) => x.id === sessionId)) return fail(404, 'not_found');
+      const title = dedash(String(body.title || '').trim()).slice(0, 80);
+      if (!title) return fail(400, 'missing_title');
+      const images = (Array.isArray(body.images) ? body.images : []).slice(0, 13);
+      const parsed = images.map((im) => parseDataUrl(im && im.dataUrl));
+      if (!parsed.length || parsed.some((f) => !f || f.mime === 'application/pdf')) return fail(400, 'invalid_file');
+      const caseId = uid();
+      const stored = [];
+      for (let i = 0; i < parsed.length; i++) {
+        const path = 'cases/' + caseId + '/' + i + '.' + MIME_EXT[parsed[i].mime];
+        await writeBinary(path, parsed[i].buf, parsed[i].mime);
+        stored.push({ path, label: dedash(String(images[i].label || '')).slice(0, 60) });
+      }
+      const prev = (detail.published || []).find((x) => x.kind === kind && (kind === 'case' || x.sessionId === sessionId));
+      if (prev) await removeCase(prev.caseId);
+      const entry = {
+        id: caseId, contactId: client.id, kind, sessionId, title, category: body.category === 'fata' ? 'fata' : 'corp',
+        location: ['Timișoara', 'Arad'].includes(body.location) ? body.location : (client.location || ''),
+        sessions: Math.max(1, Math.min(50, Number(body.sessions) || 1)), images: stored, publishedAt: nowISO(), by: author, byId: session.employeeId,
+      };
+      const cases = await readJSON('data/cases.json', []);
+      cases.unshift(entry);
+      await writeJSON('data/cases.json', cases);
+      detail.published = (detail.published || []).filter((x) => !prev || x.caseId !== prev.caseId)
+        .concat({ caseId, kind, sessionId, title, category: entry.category, location: entry.location, at: entry.publishedAt, by: author });
+      return save();
+    }
+    if (action === 'unpublish') {
+      if (!canPublish(session)) return fail(403, 'forbidden');
+      const pub = (detail.published || []).find((x) => x.caseId === body.caseId);
+      if (!pub) return fail(404, 'not_found');
+      await removeCase(pub.caseId);
+      detail.published = detail.published.filter((x) => x.caseId !== pub.caseId);
       return save();
     }
 

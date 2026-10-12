@@ -5,8 +5,11 @@
 const { readJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { defaultConfig } = require('./_lib/defaults');
-const { categoriesOf, normalizeCategories, UPSELL_RATE } = require('./_lib/cats');
+const { categoriesOf, normalizeCategories, UPSELL_RATE, COST_SHARE } = require('./_lib/cats');
 const { cityOf, inCity } = require('./_lib/city');
+const { photoUrl } = require('./portal-account');
+// Profile photo (Contul meu) of an employee row, as a URL the portal can show.
+const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
 const { defaultAcademy } = require('./_lib/academy');
 const { loadOffers, discountOf } = require('./_lib/offers');
 
@@ -105,12 +108,9 @@ module.exports = async (req, res) => {
     // Resolve "me" - either a real employee row, or the synthetic bootstrap admin.
     let me;
     if (session.employeeId === 'admin' && session.role === 'admin') {
-      me = employeesRaw.find((e) => e.id === 'admin') || {
-        id: 'admin',
-        name: 'Admin',
-        location: '-',
-        role: 'admin',
-      };
+      // the bootstrap owner keeps name / photo / preferences in data/admin-profile.json (Contul meu)
+      me = employeesRaw.find((e) => e.id === 'admin') || Object.assign({ id: 'admin', name: 'Admin', location: '-', role: 'admin' },
+        await readJSON('data/admin-profile.json', {}), { id: 'admin', role: 'admin' });
     } else {
       me = employeesRaw.find((e) => e.id === session.employeeId);
       if (!me || me.active === false) {
@@ -208,7 +208,7 @@ module.exports = async (req, res) => {
     }));
 
     const payload = {
-      me: { id: me.id, name: me.name, location: me.location, role: me.role },
+      me: { id: me.id, name: me.name, location: me.location, role: me.role, username: me.username || '', photo: photoOf(me), prefs: me.prefs || {} },
       city, // set = this account is limited to one city (cosmeticians)
       companyGoal: {
         target: config.companyGoal.target,
@@ -223,11 +223,12 @@ module.exports = async (req, res) => {
         month: raceMonth,
         leaderboard,
       },
-      // One commission rule: 10% of every upsell.
+      // One commission rule: upsell - 60% costs, 10% of the profit (K.commissionOf in the portal).
       upsellRate: UPSELL_RATE,
+      costShare: COST_SHARE,
       mySales,
       incasari,
-      activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role })),
+      activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, photo: photoOf(e) })),
       appointmentsToday: {
         list: todaysAppointments,
         countsToday,
@@ -271,6 +272,9 @@ module.exports = async (req, res) => {
           location: e.location,
           role: e.role,
           username: e.username,
+          photo: photoOf(e),
+          phone: e.phone || '',
+          email: e.email || '',
           active: e.active !== false,
           // Optional, feeds the Condică leave-balance / hours-owed numbers, edited in the
           // Profil tab below (api/portal-employees.js' update_details). Unset = the defaults.

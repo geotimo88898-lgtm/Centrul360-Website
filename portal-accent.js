@@ -127,7 +127,7 @@
   }
   // A preset keeps its own second colour; a custom single colour gets a derived one.
   const varsOf = (st) => derive(st.a, st.id !== 'custom' || st.mode === 'grad' ? st.b : '');
-  function apply(st, persist) {
+  function apply(st, persist, fromAccount) {
     const vars = varsOf(st);
     const root = document.documentElement;
     root.removeAttribute('data-accent'); // old preset attribute (pre-2026-10)
@@ -136,6 +136,7 @@
       write(KEY, st.id);
       write(KEY_C, JSON.stringify({ mode: st.mode, a: st.a, b: st.b }));
       write(KEY_V, JSON.stringify(vars));
+      if (!fromAccount && typeof window.C360Accent.onChange === 'function') window.C360Accent.onChange(st); // saved on the account (Contul meu)
     }
     return vars;
   }

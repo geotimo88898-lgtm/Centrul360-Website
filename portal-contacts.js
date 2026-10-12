@@ -17,7 +17,7 @@
   const fileUrl = (p) => '/api/portal-file?p=' + encodeURIComponent(p);
   const api = (action, body) => K.api('/api/portal-contacts', Object.assign({ action }, body || {}));
   const SOURCES = { highlevel: 'HighLevel', facebook: 'Facebook', instagram: 'Instagram', site: 'Site', manual: 'Adăugat manual', recomandare: 'Recomandare', lead: 'Lead', tiktok: 'TikTok', google: 'Google' };
-  const ERR = { invalid_file: 'Fișierul nu e o imagine sau un PDF, sau e prea mare.', contact_not_found: 'Contactul nu mai există.', invalid_client: 'Completează numele și telefonul.', missing_text: 'Scrie mențiunea.' };
+  const ERR = { no_consent: 'Clienta nu și-a dat acordul pentru publicare.', missing_title: 'Scrie un titlu.',  invalid_file: 'Fișierul nu e o imagine sau un PDF, sau e prea mare.', contact_not_found: 'Contactul nu mai există.', invalid_client: 'Completează numele și telefonul.', missing_text: 'Scrie mențiunea.' };
   const errText = (e) => ERR[e && e.code] || K.errText(e);
 
   // =====================================================================================
@@ -108,20 +108,37 @@
     c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
     return c.toDataURL('image/jpeg', 0.86);
   }
-  // BEFORE | AFTER side by side, same height, with a label on each photo.
+  // How a photo sits in its half of the before / after image (set in "Aliniază"): z = zoom (1 = the
+  // photo just fills its half), x / y = offset as a fraction of the half. Both halves take the shape
+  // of the BEFORE photo (kept between 3:4 and 4:3).
+  const frameOf = (ph) => Object.assign({ z: 1, x: 0, y: 0 }, ph && ph.frame);
+  const cellRatio = (img) => Math.min(4 / 3, Math.max(3 / 4, img.naturalWidth / img.naturalHeight));
+  function placeIn(W, H, iw, ih, f) {
+    const sc = Math.max(W / iw, H / ih) * f.z, dw = iw * sc, dh = ih * sc;
+    return { sc, dw, dh, dx: (W - dw) / 2 + f.x * W, dy: (H - dh) / 2 + f.y * H };
+  }
+  // BEFORE | AFTER side by side, each photo framed as aligned, with a label on each half.
   const composed = new Map();
-  async function compose(before, after, la, lb) {
-    const key = before + '|' + after + '|' + la + '|' + lb;
+  async function compose(bPh, aPh, la, lb, height) {
+    const fb = frameOf(bPh), fa = frameOf(aPh);
+    const key = [bPh.path, aPh.path, JSON.stringify(fb), JSON.stringify(fa), la, lb, height || 0].join('|');
     if (composed.has(key)) return composed.get(key);
-    const [A, B] = await Promise.all([loadImg(fileUrl(before)), loadImg(fileUrl(after))]);
-    const H = Math.min(1500, Math.max(A.naturalHeight, B.naturalHeight));
-    const wa = Math.round(A.naturalWidth * H / A.naturalHeight), wb = Math.round(B.naturalWidth * H / B.naturalHeight), gap = Math.round(H * 0.012);
+    const [A, B] = await Promise.all([loadImg(fileUrl(bPh.path)), loadImg(fileUrl(aPh.path))]);
+    const H = height || Math.min(1500, Math.max(A.naturalHeight, B.naturalHeight));
+    const W = Math.round(H * cellRatio(A)), gap = Math.round(H * 0.012);
+    const wa = W;
     const c = document.createElement('canvas');
-    c.width = wa + gap + wb; c.height = H;
+    c.width = W * 2 + gap; c.height = H;
     const g = c.getContext('2d');
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
-    g.drawImage(A, 0, 0, wa, H);
-    g.drawImage(B, wa + gap, 0, wb, H);
+    const cell = (img, f, x0) => {
+      g.save(); g.beginPath(); g.rect(x0, 0, W, H); g.clip();
+      g.fillStyle = '#ececec'; g.fillRect(x0, 0, W, H); // shows only when a photo is zoomed out
+      const pl = placeIn(W, H, img.naturalWidth, img.naturalHeight, f);
+      g.drawImage(img, x0 + pl.dx, pl.dy, pl.dw, pl.dh);
+      g.restore();
+    };
+    cell(A, fb, 0); cell(B, fa, W + gap);
     const fs = Math.round(H * 0.042), pad = Math.round(fs * 0.55);
     const label = (txt, x) => {
       g.font = '700 ' + fs + 'px Inter, system-ui, sans-serif';
@@ -135,9 +152,172 @@
     g.font = '600 ' + Math.round(H * 0.022) + 'px Inter, system-ui, sans-serif';
     g.fillStyle = 'rgba(255,255,255,.85)'; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
     g.fillText('CENTRUL360', c.width - pad, H - pad);
-    const url = c.toDataURL('image/jpeg', 0.9);
+    const url = c.toDataURL('image/jpeg', height ? 0.84 : 0.9);
     composed.set(key, url);
     return url;
+  }
+
+  // ---------------------------------------------------------------- overlay (above the drawer)
+  function overlay(opts) {
+    const root = document.createElement('div');
+    root.className = 'ct-ov' + (opts.wide ? ' is-wide' : '');
+    root.innerHTML = '<div class="ct-ov-back" data-ov-close></div><div class="ct-ov-panel" role="dialog" aria-modal="true" aria-label="' + esc(opts.title) + '">' +
+      '<header class="ct-ov-head"><div><b>' + esc(opts.title) + '</b>' + (opts.sub ? '<small>' + opts.sub + '</small>' : '') + '</div><button type="button" class="k-icon-btn" data-ov-close aria-label="Închide">' + icon('x') + '</button></header>' +
+      '<div class="ct-ov-body">' + opts.body + '</div><footer class="ct-ov-foot">' + opts.footer + '</footer></div>';
+    document.body.appendChild(root);
+    document.documentElement.classList.add('ct-ov-lock');
+    const close = () => { root.classList.remove('is-open'); document.documentElement.classList.remove('ct-ov-lock'); document.removeEventListener('keydown', onKey, true); setTimeout(() => root.remove(), 220); if (opts.onClose) opts.onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+    document.addEventListener('keydown', onKey, true);
+    root.addEventListener('click', (e) => { if (e.target.closest('[data-ov-close]')) close(); });
+    requestAnimationFrame(() => root.classList.add('is-open'));
+    if (opts.onMount) opts.onMount(root, close);
+    return { root, close };
+  }
+
+  // ---------------------------------------------------------------- "Aliniază": zoom / move each photo
+  // Side by side (with guide lines across both) or on top of each other (the before one see-through),
+  // drag to move, pinch / wheel / slider to zoom. Saves each photo's frame; every before / after image
+  // made from these photos (downloads, the site) uses it.
+  async function openAligner(bPh, aPh, labels, onSave) {
+    let A, B;
+    try { [A, B] = await Promise.all([loadImg(fileUrl(bPh.path)), loadImg(fileUrl(aPh.path))]); }
+    catch (e) { K.ui().toast('Nu am putut încărca pozele.', 'error'); return; }
+    const F = { b: frameOf(bPh), a: frameOf(aPh) };
+    const IMG = { b: A, a: B };
+    const ratio = cellRatio(A);
+    const st = { mode: 'side', grid: true, move: 'b' };
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const zoomRow = (k, label) => '<div class="al-zoom" data-zrow="' + k + '"><span>' + label + '</span>' +
+      '<button type="button" class="k-icon-btn" data-zstep="' + k + ':-1" aria-label="Micșorează">' + icon('minus') + '</button>' +
+      '<input type="range" min="50" max="400" step="1" data-zrange="' + k + '" aria-label="Zoom ' + label + '">' +
+      '<button type="button" class="k-icon-btn" data-zstep="' + k + ':1" aria-label="Mărește">' + icon('plus') + '</button>' +
+      '<b data-zval="' + k + '"></b><button type="button" class="al-reset" data-zreset="' + k + '">Centrează</button></div>';
+    const ov = overlay({
+      title: 'Aliniază înainte / după', wide: true,
+      sub: 'Trage poza ca s-o muți. Ca s-o mărești sau micșorezi: două degete, rotița mouse-ului sau bara de jos.',
+      body: '<div class="al-bar">' + K.seg('almode', [['side', 'Una lângă alta'], ['ghost', 'Suprapuse']], 'side') +
+          '<label class="al-check"><input type="checkbox" data-grid checked>Linii ajutătoare</label></div>' +
+        '<div class="al-movebar" data-movebar hidden><span>Muți:</span>' + K.seg('almove', [['b', 'Poza ÎNAINTE'], ['a', 'Poza DUPĂ']], 'b') + '</div>' +
+        '<div class="al-stage" data-stage></div>' +
+        '<div class="al-zooms">' + zoomRow('b', 'ÎNAINTE') + zoomRow('a', 'DUPĂ') + '</div>',
+      footer: '<button type="button" class="k-btn" data-ov-close>Renunță</button><button type="button" class="k-btn is-primary" data-al-save>' + icon('check') + 'Salvează</button>',
+      onMount(root, close) {
+        const stage = root.querySelector('[data-stage]');
+        let panes = {}, W = 0, H = 0;
+        function layout() {
+          const sw = stage.clientWidth || 600;
+          const maxH = Math.max(220, Math.min(window.innerHeight - (window.innerWidth < 720 ? 330 : 360), 640));
+          const gap = 6;
+          if (st.mode === 'side') { W = Math.floor(Math.min((sw - gap) / 2, maxH * ratio)); }
+          else { W = Math.floor(Math.min(sw, maxH * ratio)); }
+          H = Math.round(W / ratio);
+          const pane = (k, extra) => '<div class="al-pane' + (extra || '') + '" data-p="' + k + '" style="width:' + W + 'px;height:' + H + 'px">' +
+            (k === 'g' ? '<img data-img="a" alt="" draggable="false"><img data-img="b" class="is-ghost" alt="" draggable="false">' : '<img data-img="' + k + '" alt="" draggable="false">') +
+            '<span class="al-tag">' + (k === 'b' ? 'ÎNAINTE' : k === 'a' ? 'DUPĂ' : 'ÎNAINTE peste DUPĂ') + '</span></div>';
+          stage.innerHTML = '<div class="al-panes' + (st.grid ? ' has-grid' : '') + '" style="gap:' + gap + 'px">' +
+            (st.mode === 'side' ? pane('b') + pane('a') : pane('g')) + '<i class="al-grid" aria-hidden="true"></i></div>';
+          panes = {};
+          stage.querySelectorAll('[data-p]').forEach((el) => { panes[el.dataset.p] = el; wire(el); });
+          stage.querySelectorAll('img[data-img]').forEach((im) => { im.src = IMG[im.dataset.img].src; });
+          paint();
+        }
+        function paint() {
+          stage.querySelectorAll('img[data-img]').forEach((im) => {
+            const k = im.dataset.img, I = IMG[k], pl = placeIn(W, H, I.naturalWidth, I.naturalHeight, F[k]);
+            im.style.cssText = 'width:' + pl.dw + 'px;height:' + pl.dh + 'px;left:' + pl.dx + 'px;top:' + pl.dy + 'px';
+          });
+          ['b', 'a'].forEach((k) => {
+            root.querySelector('[data-zrange="' + k + '"]').value = Math.round(F[k].z * 100);
+            root.querySelector('[data-zval="' + k + '"]').textContent = Math.round(F[k].z * 100) + '%';
+          });
+        }
+        // keep the point under the finger / cursor still while zooming
+        function zoomAt(k, px, py, factor) {
+          const f = F[k], I = IMG[k];
+          const p1 = placeIn(W, H, I.naturalWidth, I.naturalHeight, f);
+          const ux = (px - p1.dx) / p1.sc, uy = (py - p1.dy) / p1.sc;
+          const z2 = clamp(f.z * factor, 0.5, 4);
+          const s2 = Math.max(W / I.naturalWidth, H / I.naturalHeight) * z2;
+          f.z = z2;
+          f.x = clamp((px - ux * s2 - (W - I.naturalWidth * s2) / 2) / W, -1, 1);
+          f.y = clamp((py - uy * s2 - (H - I.naturalHeight * s2) / 2) / H, -1, 1);
+        }
+        const target = (el) => (el.dataset.p === 'g' ? st.move : el.dataset.p);
+        function wire(el) {
+          const pts = new Map();
+          let last = null;
+          const snapshot = () => {
+            const r = el.getBoundingClientRect(), list = [...pts.values()];
+            if (list.length >= 2) {
+              const [p, q] = list;
+              return { two: true, mx: (p.x + q.x) / 2 - r.left, my: (p.y + q.y) / 2 - r.top, d: Math.hypot(p.x - q.x, p.y - q.y) };
+            }
+            return list.length ? { two: false, mx: list[0].x - r.left, my: list[0].y - r.top } : null;
+          };
+          el.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            try { el.setPointerCapture(e.pointerId); } catch (err) { /* gone */ }
+            pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            last = snapshot();
+            el.classList.add('is-drag');
+          });
+          el.addEventListener('pointermove', (e) => {
+            if (!pts.has(e.pointerId)) return;
+            pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            const now = snapshot(), k = target(el), f = F[k];
+            if (!now || !last) { last = now; return; }
+            if (now.two && last.two && last.d > 0) zoomAt(k, now.mx, now.my, now.d / last.d);
+            f.x = clamp(f.x + (now.mx - last.mx) / W, -1, 1);
+            f.y = clamp(f.y + (now.my - last.my) / H, -1, 1);
+            last = now;
+            paint();
+          });
+          const up = (e) => { pts.delete(e.pointerId); last = snapshot(); if (!pts.size) el.classList.remove('is-drag'); };
+          el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+          el.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const r = el.getBoundingClientRect();
+            zoomAt(target(el), e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
+            paint();
+          }, { passive: false });
+        }
+        root.querySelector('input[name=almode]').addEventListener('change', (e) => {
+          st.mode = e.target.value;
+          root.querySelector('[data-movebar]').hidden = st.mode !== 'ghost';
+          layout();
+        });
+        root.querySelector('input[name=almove]').addEventListener('change', (e) => { st.move = e.target.value; });
+        root.querySelector('[data-grid]').addEventListener('change', (e) => { st.grid = e.target.checked; stage.querySelector('.al-panes').classList.toggle('has-grid', st.grid); });
+        root.addEventListener('input', (e) => {
+          const k = e.target.dataset && e.target.dataset.zrange;
+          if (!k) return;
+          zoomAt(k, W / 2, H / 2, (Number(e.target.value) / 100) / F[k].z);
+          paint();
+        });
+        root.addEventListener('click', async (e) => {
+          const zs = e.target.closest('[data-zstep]');
+          if (zs) { const [k, dir] = zs.dataset.zstep.split(':'); zoomAt(k, W / 2, H / 2, dir === '1' ? 1.08 : 1 / 1.08); paint(); return; }
+          const zr = e.target.closest('[data-zreset]');
+          if (zr) { F[zr.dataset.zreset] = { z: 1, x: 0, y: 0 }; paint(); return; }
+          const sv = e.target.closest('[data-al-save]');
+          if (sv) {
+            await K.busy(sv, async () => {
+              try { await onSave(F.b, F.a); close(); }
+              catch (err) { K.ui().toast(errText(err), 'error'); }
+            });
+          }
+        });
+        let rz = 0;
+        const onResize = () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(layout); };
+        window.addEventListener('resize', onResize);
+        const mo = new MutationObserver(() => { if (!document.body.contains(root)) { window.removeEventListener('resize', onResize); mo.disconnect(); } });
+        mo.observe(document.body, { childList: true });
+        layout();
+        if (!stage.clientWidth) setTimeout(layout, 60);
+      },
+    });
+    return ov;
   }
   const slug = (s) => K.norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'clienta';
 
@@ -153,6 +333,17 @@
     });
     const me = K.data.me, admin = K.data.isAdmin;
     const canRemove = (x) => admin || (x && x.authorId === me.id);
+    // Publishing on the site: the owner and reception (never without the client's consent).
+    const canPublish = admin || me.role === 'receptie';
+    const pubOf = (kind, sid) => (st.detail.published || []).find((x) => x.kind === kind && (kind === 'case' || x.sessionId === sid));
+    const consentOk = () => !!(st.detail.consent && st.detail.consent.publish);
+    function pubHtml(kind, sid) {
+      const pub = pubOf(kind, sid);
+      if (pub) return '<span class="ct-onsite">' + icon('checkCircle') + 'Pe site' + '</span>' + (canPublish ? '<button type="button" class="k-btn is-sm is-outline" data-unpub="' + esc(pub.caseId) + '">' + icon('x') + 'Retrage de pe site</button>' : '');
+      if (!canPublish) return '';
+      return '<button type="button" class="k-btn is-sm ' + (kind === 'case' ? 'is-accent' : 'is-outline') + (consentOk() ? '' : ' is-locked') + '" data-publish="' + kind + '"' + (sid ? ' data-sid="' + esc(sid) + '"' : '') + '>' +
+        icon('globe') + (kind === 'case' ? 'Publică cazul pe site' : 'Publică pe site') + '</button>';
+    }
     (async () => {
       try {
         const j = await api('get', { id });
@@ -237,16 +428,20 @@
           '<small>' + (consent ? (consent.publish ? 'Clienta a fost de acord ca pozele să fie publicate.' : 'Pozele NU se publică (nici pe site, nici în reclame).') + ' · ' + esc(consent.by || '') + ', ' + esc(K.ago(consent.at)) : 'Nesetat. Întreab-o pe clientă și bifează aici.') + '</small></div>' +
           '<div class="ct-consent-btns"><button type="button" data-consent="1" class="' + (consent && consent.publish ? 'is-on' : '') + '">' + icon('check') + 'Da, se pot publica</button>' +
           '<button type="button" data-consent="0" class="' + (consent && !consent.publish ? 'is-on' : '') + '">' + icon('ban') + 'Nu se publică</button></div></section>' +
-        (tp ? '<section class="ct-total"><div class="ct-total-head"><b>' + icon('sparkles') + 'Evoluția totală · Ședința ' + tp.first.n + ' → Ședința ' + tp.last.n + '</b>' +
-          '<a class="k-btn is-sm is-primary" data-dl-total download="inainte-dupa-' + slug(st.c.name) + '-s' + tp.first.n + '-s' + tp.last.n + '.jpg" href="#" aria-disabled="true">' + icon('download') + 'Descarcă</a></div>' +
-          '<div class="ct-composite" data-total><span class="k-spin"></span></div></section>' : '') +
+        (tp ? '<section class="ct-total"><div class="ct-total-head"><b>' + icon('sparkles') + 'Evoluția totală · Ședința ' + tp.first.n + ' → Ședința ' + tp.last.n + '</b></div>' +
+          '<div class="ct-composite" data-total><span class="k-spin"></span></div>' +
+          '<div class="ct-pair-actions"><a class="k-btn is-sm is-outline" data-dl-total download="inainte-dupa-' + slug(st.c.name) + '-s' + tp.first.n + '-s' + tp.last.n + '.jpg" href="#" aria-disabled="true">' + icon('download') + 'Descarcă</a>' +
+          '<button type="button" class="k-btn is-sm is-outline" data-align="total">' + icon('move') + 'Aliniază</button>' + pubHtml('case') + '</div>' +
+          (canPublish && !pubOf('case') ? '<p class="ct-hint">' + icon('info') + 'Pe site apare un singur card: ÎNAINTE de la Ședința ' + tp.first.n + ' și DUPĂ de la Ședința ' + tp.last.n + ', iar „Vezi cazul” arată toate ședințele. Numele clientei nu apare.</p>' : '') +
+          '</section>' : '') +
         (ss.length ? '<div class="ct-sessions">' + ss.map((s) => '<article class="ct-session" data-session="' + esc(s.id) + '">' +
           '<header><span class="ct-sn">Ședința ' + s.n + '</span><input type="date" data-sdate value="' + esc(s.date || '') + '" aria-label="Data ședinței">' +
           '<input data-streat value="' + esc(s.treatment || '') + '" placeholder="Tratament (ex: LipoSonix abdomen)" maxlength="150">' +
           ((admin || (!s.before && !s.after)) ? '<button type="button" class="k-icon-btn" data-del-session="' + esc(s.id) + '" title="Șterge ședința">' + icon('trash') + '</button>' : '') + '</header>' +
           '<div class="ct-slots">' + slotHtml(s, 'before') + slotHtml(s, 'after') + '</div>' +
           (s.before && s.after ? '<div class="ct-pair"><div class="ct-composite" data-pair="' + esc(s.id) + '"><span class="k-spin"></span></div>' +
-            '<a class="k-btn is-sm is-outline" data-dl-pair="' + esc(s.id) + '" download="inainte-dupa-' + slug(st.c.name) + '-s' + s.n + '.jpg" href="#" aria-disabled="true">' + icon('download') + 'Descarcă înainte / după</a></div>'
+            '<div class="ct-pair-actions"><a class="k-btn is-sm is-outline" data-dl-pair="' + esc(s.id) + '" download="inainte-dupa-' + slug(st.c.name) + '-s' + s.n + '.jpg" href="#" aria-disabled="true">' + icon('download') + 'Descarcă</a>' +
+            '<button type="button" class="k-btn is-sm is-outline" data-align="' + esc(s.id) + '">' + icon('move') + 'Aliniază</button>' + pubHtml('pair', s.id) + '</div></div>'
             : '<p class="ct-hint">' + icon('info') + (s.before || s.after ? 'Mai adaugă poza ' + (s.before ? 'DUPĂ' : 'ÎNAINTE') + ' și imaginea înainte / după se face singură.' : 'Fă poza ÎNAINTE de tratament și poza DUPĂ, la final.') + '</p>') +
           '</article>').join('') + '</div>'
           : '<div class="ct-empty-photos">' + icon('image') + '<b>Încă nicio ședință cu poze</b><span>Începe cu Ședința 1: poza ÎNAINTE de tratament și poza DUPĂ.</span></div>') +
@@ -259,7 +454,7 @@
         const box = d.el.querySelector('[data-pair="' + s.id + '"]');
         if (!box) continue;
         try {
-          const url = await compose(s.before.path, s.after.path, 'ÎNAINTE · Ședința ' + s.n, 'DUPĂ · Ședința ' + s.n);
+          const url = await compose(s.before, s.after, 'ÎNAINTE · Ședința ' + s.n, 'DUPĂ · Ședința ' + s.n);
           box.innerHTML = '<img src="' + url + '" alt="Înainte și după, ședința ' + s.n + '">';
           const a = d.el.querySelector('[data-dl-pair="' + s.id + '"]'); if (a) { a.href = url; a.removeAttribute('aria-disabled'); }
         } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut genera imaginea.</span>'; }
@@ -268,7 +463,7 @@
       const tb = d.el.querySelector('[data-total]');
       if (tp && tb) {
         try {
-          const url = await compose(tp.first.before.path, tp.last.after.path, 'ÎNAINTE · Ședința ' + tp.first.n, 'DUPĂ · Ședința ' + tp.last.n);
+          const url = await compose(tp.first.before, tp.last.after, 'ÎNAINTE · Ședința ' + tp.first.n, 'DUPĂ · Ședința ' + tp.last.n);
           tb.innerHTML = '<img src="' + url + '" alt="Evoluția totală">';
           const a = d.el.querySelector('[data-dl-total]'); if (a) { a.href = url; a.removeAttribute('aria-disabled'); }
         } catch (e) { tb.innerHTML = '<span class="k-muted">Nu am putut genera imaginea.</span>'; }
@@ -351,11 +546,82 @@
       if (ds) { if (await K.ui().confirm({ title: 'Ștergi ședința?', message: 'Se șterg și pozele ei.', confirmText: 'Șterge', danger: true })) act('session_delete', { sessionId: ds.dataset.delSession }); return; }
       const dp = t.closest('[data-del-photo]');
       if (dp) { if (await K.ui().confirm({ title: 'Ștergi poza?', confirmText: 'Șterge', danger: true })) act('photo_delete', { sessionId: dp.dataset.delPhoto, slot: dp.dataset.slot }); return; }
+      const al = t.closest('[data-align]');
+      if (al) {
+        const tp = totalPair();
+        const sid = al.dataset.align;
+        const bs = sid === 'total' ? tp.first : st.detail.sessions.find((x) => x.id === sid);
+        const as = sid === 'total' ? tp.last : bs;
+        if (!bs || !as) return;
+        openAligner(bs.before, as.after, null, async (fb, fa) => {
+          const r = await api('frames_set', { id: st.id, frames: [Object.assign({ sessionId: bs.id, slot: 'before' }, fb), Object.assign({ sessionId: as.id, slot: 'after' }, fa)] });
+          st.detail = r.detail; S.dirty = true; paintPane();
+          K.ui().toast('Aliniere salvată.' + ((st.detail.published || []).length ? ' Dacă e deja pe site, publică din nou ca să se vadă noua aliniere.' : ''), 'success');
+        });
+        return;
+      }
+      const pb = t.closest('[data-publish]');
+      if (pb) {
+        if (!consentOk()) { K.ui().toast('Întâi bifează acordul clientei: „Da, se pot publica”.', 'error'); d.el.querySelector('.ct-consent').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        openPublish(pb.dataset.publish, pb.dataset.sid);
+        return;
+      }
+      const up = t.closest('[data-unpub]');
+      if (up) {
+        if (!(await K.ui().confirm({ title: 'Retragi de pe site?', message: 'Imaginile dispar imediat de pe pagina de rezultate.', confirmText: 'Retrage', danger: true }))) return;
+        if (await act('unpublish', { caseId: up.dataset.unpub })) K.ui().toast('Retras de pe site.', 'success');
+        return;
+      }
       const z = t.closest('[data-zoom]');
       if (z) { window.open(fileUrl(z.dataset.zoom), '_blank', 'noopener'); return; }
       const dl = t.closest('a[aria-disabled="true"]');
       if (dl) e.preventDefault();
     }
+    // Guess "față" / "corp" from the treatment name.
+    const guessCat = (txt) => (/facial|fata|față|gusa|gușă|barbie|bărbie|periocular|riduri|ten|pete|acnee|gat|gât|full face|pleoape|obraz/i.test(K.norm(txt)) ? 'fata' : 'corp');
+    async function openPublish(kind, sid) {
+      const ss = st.detail.sessions.slice().sort((a, b) => a.n - b.n);
+      const tp = totalPair();
+      const pair = kind === 'pair' ? ss.find((x) => x.id === sid) : null;
+      const withBoth = ss.filter((x) => x.before && x.after);
+      const treat = (pair ? pair.treatment : (ss.map((x) => x.treatment).filter(Boolean).pop() || '')) || '';
+      const nSess = kind === 'case' ? ss.length : 1;
+      const loc = ['Timișoara', 'Arad'].includes(st.c.location) ? st.c.location : (K.data.me.location === 'Arad' ? 'Arad' : 'Timișoara');
+      let cover = '';
+      const ov = overlay({
+        title: kind === 'case' ? 'Publică cazul pe site' : 'Publică pe site',
+        sub: 'Apare pe pagina de rezultate. Numele și telefonul clientei nu apar nicăieri.',
+        body: '<div class="pb-preview" data-pv><span class="k-spin"></span></div>' +
+          '<form class="k-form pb-form" data-pbf>' +
+          K.field('Titlu pe site', '<input name="title" maxlength="80" required value="' + esc(treat) + '" placeholder="ex: HIFU gușă și contur">', 'full') +
+          K.field('Zona', K.seg('category', [['fata', 'Față'], ['corp', 'Corp']], guessCat(treat), 'is-big')) +
+          K.field('Oraș', K.seg('location', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], loc, 'is-big')) +
+          '</form>' +
+          '<p class="ct-hint">' + icon('info') + (kind === 'case' ? 'Cardul arată ÎNAINTE (Ședința ' + tp.first.n + ') și DUPĂ (Ședința ' + tp.last.n + '). În „Vezi cazul” apar ' + (withBoth.length === 1 ? 'și ședința cu poze' : 'toate cele ' + withBoth.length + ' ședințe cu poze') + '.' : 'Cardul arată poza ÎNAINTE și DUPĂ din Ședința ' + pair.n + '.') + '</p>',
+        footer: '<button type="button" class="k-btn" data-ov-close>Renunță</button><button type="button" class="k-btn is-accent" data-pb-go>' + icon('globe') + 'Publică pe site</button>',
+        async onMount(root, close) {
+          const pv = root.querySelector('[data-pv]');
+          try {
+            cover = kind === 'case' ? await compose(tp.first.before, tp.last.after, 'ÎNAINTE · Ședința ' + tp.first.n, 'DUPĂ · Ședința ' + tp.last.n, 900)
+              : await compose(pair.before, pair.after, 'ÎNAINTE', 'DUPĂ', 900);
+            pv.innerHTML = '<img src="' + cover + '" alt="Previzualizare">';
+          } catch (e) { pv.innerHTML = '<span class="k-muted">Nu am putut genera imaginea.</span>'; }
+          root.querySelector('[data-pb-go]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+            const v = K.formValues(root.querySelector('[data-pbf]'));
+            if (!v.title.trim()) { K.ui().toast('Scrie un titlu (ex: tratamentul și zona).', 'error'); return; }
+            if (!cover) { K.ui().toast('Imaginea nu e gata.', 'error'); return; }
+            const images = [{ dataUrl: cover, label: kind === 'case' ? 'Ședința ' + tp.first.n + ' → Ședința ' + tp.last.n : 'Înainte și după' }];
+            if (kind === 'case') {
+              for (const x of withBoth.slice(-12)) images.push({ dataUrl: await compose(x.before, x.after, 'ÎNAINTE · Ședința ' + x.n, 'DUPĂ · Ședința ' + x.n, 900), label: 'Ședința ' + x.n });
+            }
+            const r = await act('publish', { kind, sessionId: sid || '', title: v.title.trim(), category: v.category, location: v.location, sessions: nSess, images });
+            if (r) { close(); K.ui().toast('Publicat pe site, pe pagina de rezultate.', 'success'); }
+          }));
+        },
+      });
+      return ov;
+    }
+
     function onBlur(e) {
       const t = e.target;
       const s = t.closest && t.closest('[data-session]');
