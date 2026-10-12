@@ -134,7 +134,8 @@
   // ------------------------------------------------------------------ live sync
   // Every save anywhere bumps a revision on the server; each open portal checks it every few
   // seconds and refreshes what's on screen when it moves, never while someone is mid-edit.
-  const busyEditing = () => K.typing(document.activeElement) || !!document.querySelector('.k-drawer-root .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
+  // (the drawer's panel stays in the page once opened, so only an open one counts)
+  const busyEditing = () => K.typing(document.activeElement) || !!document.querySelector('.k-drawer-root.is-open .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
   function applyRemote() {
     if (busyEditing()) { pendingRemote = true; return; }
     pendingRemote = false;
@@ -142,8 +143,15 @@
     if (frontDesk()) K.leads(true).catch(() => {});
     K.emit('remote');
   }
+  let hiddenPulse = 0;
   async function pulse() {
-    if (document.hidden || !DATA) return;
+    if (!DATA) return;
+    // a portal in a background tab: the front desk still hears about new leads (every 30 s, for the
+    // bell and the alert); everyone else catches up when the tab is back
+    if (document.hidden) {
+      if (!frontDesk() || Date.now() - hiddenPulse < 30e3) return;
+      hiddenPulse = Date.now();
+    }
     try {
       const p = await K.api('/api/portal-pulse');
       if (rev !== null && p.rev !== rev) applyRemote();

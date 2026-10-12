@@ -3,10 +3,8 @@
 // 1) Satisfies PWA installability (Chrome/Android requires a registered service worker with
 //    a fetch handler before it will offer "Add to Home Screen" / let the app be installed).
 //    No caching strategy here, the portal is always fetched fresh, same as the browser tab.
-// 2) Push notification handlers are wired and ready, but INACTIVE until the portal starts
-//    creating push subscriptions (a later step: VAPID keys + a subscribe endpoint + the
-//    browser's permission prompt + server code that sends a push on real events, new
-//    appointment, lead, approval needed, etc.). Until then, no push ever arrives here.
+// 2) Shows the Web Push notifications the portal sends (a new lead, other alerts from the automations,
+//    api/_lib/push.js); a tap opens the portal on the right section.
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
@@ -24,6 +22,10 @@ self.addEventListener('push', (event) => {
     icon: '/brand_asset/portal/icon-192.png',
     badge: '/brand_asset/portal/icon-192.png',
     data: { url: data.url || '/portal' },
+    // the same lead twice (e.g. it filled the form again) replaces its notification and rings again
+    tag: data.tag || undefined,
+    renotify: !!data.tag,
+    vibrate: [120, 60, 120],
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -34,7 +36,11 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if (client.url.includes(new URL(url, self.location.origin).pathname) && 'focus' in client) return client.focus();
+        if (client.url.includes(new URL(url, self.location.origin).pathname) && 'focus' in client) {
+          // an open portal goes to the right section (e.g. Pipeline for a new lead) instead of reloading
+          client.postMessage({ type: 'c360:go', url });
+          return client.focus();
+        }
       }
       if (self.clients.openWindow) return self.clients.openWindow(url);
     })

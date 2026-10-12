@@ -236,7 +236,8 @@ module.exports = async (req, res) => {
     }
 
     const payload = {
-      notifications: isAdmin ? [] : bonusNotes.concat(await myNotifications({ readJSON }, me.id)),
+      // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
+      notifications: isAdmin ? await myNotifications({ readJSON }, me.id) : bonusNotes.concat(await myNotifications({ readJSON }, me.id)),
       salary,
       me: { id: me.id, name: me.name, location: me.location, role: me.role, username: me.username || '', photo: photoOf(me), prefs: me.prefs || {} },
       city, // set = this account is limited to one city (cosmeticians)

@@ -6,6 +6,8 @@
 //   password  {currentPassword, newPassword}
 //   photo_set {dataUrl} / photo_delete   (a square JPEG made in the browser)
 //   prefs     {prefs}                    (accent colour, start page, text size, motion)
+//   push_key                             → the key a device needs to turn on notifications + how many are on
+//   push_on   {sub, device} / push_off {endpoint}   (notifications on this phone / computer, _lib/push.js)
 //
 // Staff accounts live in data/employees.json, so whatever someone changes here (name, user, photo)
 // shows up in the owner's Echipa right away. The owner's bootstrap login (ADMIN_USERNAME /
@@ -16,6 +18,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary, removeBinary } = require('./_lib/store');
 const { requireAuth, hashPassword, verifyPassword } = require('./_lib/auth');
 const { dedash } = require('./_lib/dedash');
+const push = require('./_lib/push');
 
 const ADMIN_PROFILE = 'data/admin-profile.json';
 const START_PAGES = ['panou', 'programari', 'mesaje', 'incasari', 'pipeline', 'contacte', 'automatizari', 'comision', 'traininguri', 'condica', 'ofertele', 'aprobari', 'angajati'];
@@ -70,6 +73,19 @@ module.exports = async (req, res) => {
     const { action } = body;
 
     if (action === 'get') { res.status(200).json({ ok: true, account: view(acc, isBootstrapAdmin) }); return; }
+
+    const store = { readJSON, writeJSON };
+    if (action === 'push_key') { res.status(200).json({ ok: true, key: await push.publicKey(store), devices: await push.devicesOf(store, acc.id) }); return; }
+    if (action === 'push_on') {
+      if (!(await push.subscribe(store, acc.id, body.sub, body.device))) return fail(400, 'invalid_subscription');
+      res.status(200).json({ ok: true, devices: await push.devicesOf(store, acc.id) });
+      return;
+    }
+    if (action === 'push_off') {
+      await push.unsubscribe(store, String(body.endpoint || ''), acc.id);
+      res.status(200).json({ ok: true, devices: await push.devicesOf(store, acc.id) });
+      return;
+    }
 
     if (action === 'profile') {
       const name = clip(body.name, 100);

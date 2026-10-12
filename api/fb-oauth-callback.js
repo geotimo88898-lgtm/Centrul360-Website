@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { GRAPH_BASE, siteOrigin } = require('./_lib/facebook');
+const { GRAPH_BASE, siteOrigin, listAssets, afterLogin } = require('./_lib/facebook');
 
 function verifyState(state, secret) {
   if (!state) return false;
@@ -101,54 +101,21 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Step 3: list the Pages the admin manages, each entry already carries its own
-    // (non-expiring) Page Access Token, so we don't need a separate per-page exchange.
-    const accountsUrl = `${GRAPH_BASE}/me/accounts?${new URLSearchParams({
-      access_token: longData.access_token,
-    })}`;
-    const accountsResp = await fetch(accountsUrl);
-    const accountsData = await accountsResp.json();
-    const pages = (accountsData && accountsData.data) || [];
-    if (!accountsResp.ok || pages.length === 0) {
-      console.error('fb-oauth-callback: no pages returned', accountsData);
+    // Step 3: the Pages (and ad accounts) this login can reach. One Page connects now; with
+    // several, the admin picks the clinic's in Integrări (redirect with fb=choose).
+    const assets = await listAssets(longData.access_token);
+    if (assets.error) {
+      console.error('fb-oauth-callback: listing pages failed', assets.details);
       redirectToPortal(res, 'error');
       return;
     }
-
-    // A single clinic very likely manages one Page, take the first, but keep the full
-    // list in storage in case a Page picker gets added to the UI later.
-    const primary = pages[0];
-
-    // Subscribe the Page to THIS app's webhook for the leadgen field. Without this call,
-    // Facebook never sends leadgen events to our callback URL even if Webhooks is wired
-    // up correctly in the App Dashboard, the dashboard config only tells Meta where the
-    // app's webhook endpoint is, each Page still has to opt in to notifying that app.
-    const subscribeUrl = `${GRAPH_BASE}/${primary.id}/subscribed_apps`;
-    const subscribeResp = await fetch(subscribeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        subscribed_fields: 'leadgen',
-        access_token: primary.access_token,
-      }),
-    });
-    const subscribeData = await subscribeResp.json();
-    if (!subscribeResp.ok || !subscribeData.success) {
-      console.error('fb-oauth-callback: page webhook subscription failed', subscribeData);
-      redirectToPortal(res, 'error');
+    const done = await afterLogin({ readJSON, writeJSON }, assets, session.employeeId, 'oauth');
+    if (done.error) {
+      console.error('fb-oauth-callback: connect failed', done.error, done.details);
+      redirectToPortal(res, done.error === 'no_pages' ? 'nopages' : 'error');
       return;
     }
-
-    await writeJSON('data/fb-connection.json', {
-      pageId: primary.id,
-      pageName: primary.name,
-      pageAccessToken: primary.access_token,
-      pages: pages.map((p) => ({ id: p.id, name: p.name, access_token: p.access_token })),
-      connectedAt: new Date().toISOString(),
-      connectedBy: session.employeeId,
-    });
-
-    redirectToPortal(res, 'connected');
+    redirectToPortal(res, done.choose ? 'choose' : 'connected');
   } catch (err) {
     console.error('fb-oauth-callback error:', err.message);
     redirectToPortal(res, 'error');

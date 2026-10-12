@@ -16,6 +16,7 @@ module.exports = async (req, res) => {
 
   try {
     await writeJSON('data/fb-connection.json', {});
+    await writeJSON('data/fb-pending.json', {}); // a login waiting for its Page pick goes too
     res.status(200).json({ ok: true });
   } catch (err) {
     console.error('fb-disconnect error:', err.message);

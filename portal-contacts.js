@@ -347,7 +347,7 @@
     (async () => {
       try {
         const j = await api('get', { id });
-        Object.assign(st, { c: j.contact, detail: j.detail, appts: j.appointments || [], pays: j.payments || [] });
+        Object.assign(st, { c: j.contact, detail: j.detail, appts: j.appointments || [], pays: j.payments || [], forms: j.forms || [] });
         paintAll();
       } catch (e) { d.set({ body: K.empty('alert', 'Nu am putut deschide contactul', errText(e)) }); }
     })();
@@ -359,6 +359,7 @@
         subtitle: (c.isClient ? '<span class="k-tag is-accent">Clientă</span>' : '<span class="k-tag is-info">Lead</span>') + esc(c.phone || '') + (c.location ? ' · ' + esc(c.location) : '') + (c.source ? ' · ' + esc(SOURCES[c.source] || c.source) : ''),
         body: '<div class="ct-quick">' + (c.phone ? '<a class="k-btn is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + 'Sună</a><a class="k-btn is-outline" target="_blank" rel="noopener" href="' + K.wa(c.phone) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
             '<button type="button" class="k-btn is-outline" data-edit>' + icon('pen') + 'Editează</button></div>' +
+          formsHtml() +
           '<div class="ct-tabs">' + K.seg('cttab', [['fise', 'Fișe & mențiuni', 'file'], ['poze', 'Poze înainte / după', 'image'], ['istoric', 'Istoric', 'clock']], st.tab, 'is-big') + '</div>' +
           '<div class="ct-pane" data-pane></div>',
         onMount(el) {
@@ -377,6 +378,15 @@
           paintPane();
         },
       });
+    }
+    // what she answered in the Facebook form (the questions that sort the leads), right under her buttons
+    function formsHtml() {
+      const f = st.forms || [];
+      if (!f.length) return '';
+      const one = (x) => '<div class="ct-form-head">' + icon('facebook') + '<b>' + esc(x.name || 'Formular Facebook') + '</b><small>' + esc(K.dateShort(String(x.at).slice(0, 10))) + '</small></div>' +
+        (x.answers && x.answers.length ? '<dl class="ct-qa">' + x.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="k-muted">Formularul n-a avut întrebări.</p>');
+      return '<section class="ct-form">' + one(f[0]) +
+        (f.length > 1 ? '<details class="ct-form-more"><summary>Alte formulare (' + (f.length - 1) + ')</summary>' + f.slice(1).map((x) => '<div class="ct-form-old">' + one(x) + '</div>').join('') + '</details>' : '') + '</section>';
     }
     const pane = () => d.el.querySelector('[data-pane]');
     function paintPane() {

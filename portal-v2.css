@@ -131,6 +131,21 @@ div.pay-appt{ cursor:default; }
 .ct-more{ margin:1rem auto 0; display:flex; }
 .ct-count{ text-align:center; color:var(--muted-2); font-size:.8rem; margin:.8rem 0 0; }
 .ct-quick{ display:flex; gap:.5rem; flex-wrap:wrap; }
+/* the Facebook form she filled: question → answer */
+.ct-form{ margin-top:1rem; padding:.85rem .95rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); }
+.ct-form-head{ display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
+.ct-form-head svg{ width:16px; height:16px; color:#1877f2; flex:none; }
+.ct-form-head b{ font-size:.9rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ct-form-head small{ font-size:.76rem; color:var(--muted); }
+.ct-qa{ display:grid; gap:.5rem; margin:0; }
+.ct-qa > div{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:.75rem; padding-top:.5rem; border-top:1px solid var(--line); }
+.ct-qa > div:first-child{ border-top:0; padding-top:0; }
+.ct-qa dt{ font-size:.82rem; color:var(--muted); }
+.ct-qa dd{ margin:0; font-size:.88rem; font-weight:600; color:var(--fg); }
+.ct-form-more{ margin-top:.7rem; font-size:.84rem; }
+.ct-form-more summary{ cursor:pointer; color:var(--muted); }
+.ct-form-old{ margin-top:.7rem; padding-top:.7rem; border-top:1px dashed var(--line); }
+@media (max-width:560px){ .ct-qa > div{ grid-template-columns:1fr; gap:.15rem; } }
 .ct-tabs .k-seg{ display:flex; width:100%; } .ct-tabs .k-seg button{ flex:1; justify-content:center; }
 .ct-sec{ display:flex; flex-direction:column; gap:.8rem; }
 .ct-sec + .ct-sec{ padding-top:1rem; border-top:1px solid var(--line); }
@@ -523,6 +538,12 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .nt-h{ display:flex; align-items:center; gap:.4rem; margin:.2rem 0 .5rem; font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); }
 .nt-h svg{ width:14px; height:14px; }
 .nt-h:not(:first-child){ margin-top:1.2rem; }
+/* phone notifications on / off for this device */
+.nt-push{ display:flex; flex-direction:column; align-items:flex-start; gap:.6rem; padding:.8rem .9rem; margin-bottom:1rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); }
+.nt-push p{ display:flex; gap:.5rem; align-items:flex-start; margin:0; font-size:.86rem; line-height:1.45; color:var(--muted); }
+.nt-push p svg{ width:16px; height:16px; flex:none; margin-top:.15rem; }
+.nt-push p b{ color:var(--fg); }
+.nt-push p.is-on svg{ color:var(--good); }
 .nt-list{ display:flex; flex-direction:column; gap:.45rem; }
 .nt-item{ display:flex; align-items:flex-start; gap:.7rem; width:100%; padding:.75rem .8rem; border-radius:14px; border:1px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:border-color .2s ease, background .2s ease; }
 .nt-item:hover{ border-color:var(--line-on-dark); }

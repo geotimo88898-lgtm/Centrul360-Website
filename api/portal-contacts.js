@@ -94,6 +94,9 @@ function leadRow(l) {
   };
 }
 
+// the forms filled by a person, newest first
+const formsOf = (leads) => leads.reduce((all, l) => all.concat(l.forms || []), []).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 5);
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
   const session = requireAuth(req, res);
@@ -201,7 +204,7 @@ module.exports = async (req, res) => {
     // ---------------------------------------------------------------- get
     if (action === 'get') {
       if (lead) {
-        res.status(200).json({ ok: true, contact: leadRow(lead), detail: emptyDetail(), appointments: [], payments: [] });
+        res.status(200).json({ ok: true, contact: leadRow(lead), detail: emptyDetail(), appointments: [], payments: [], forms: formsOf([lead]) });
         return;
       }
       const [detail, appointments, sales] = await Promise.all([readDetail(client.id), readJSON('data/appointments.json', []), readJSON('data/sales.json', [])]);
@@ -211,7 +214,9 @@ module.exports = async (req, res) => {
         .map((a) => ({ id: a.id, date: a.date, time: a.time, treatment: a.treatment, status: a.status, location: a.location, cosmeticianName: a.cosmeticianName || '', amount: a.amount || 0 }));
       const payments = sales.filter((s) => s.source === 'incasare' && s.clientId === client.id).sort((a, b) => (a.date < b.date ? 1 : -1))
         .map((s) => ({ id: s.id, date: s.date, amount: s.amount, treatment: s.treatment, method: s.method }));
-      res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments });
+      // what she answered in the Facebook forms (kept on her leads, matched by phone)
+      const leads = phone ? (await readJSON('data/leads.json', [])).filter((l) => normalizePhone(l.phone) === phone) : [];
+      res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments, forms: formsOf(leads) });
       return;
     }
 

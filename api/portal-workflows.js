@@ -8,15 +8,17 @@
 //   POST { action: 'run_now' }                 run whatever is due right now
 
 const { requireAdmin } = require('./_lib/auth');
-const { readJSON } = require('./_lib/store');
+const { readJSON, writeJSON } = require('./_lib/store');
+const { loadOffers } = require('./_lib/offers');
 const W = require('./_lib/workflows');
 const { whatsappConfigured } = require('./_lib/whatsapp');
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
 
 async function payload() {
-  const [doc, runsDoc, stagesDoc, leads, appointments] = await Promise.all([
+  const [doc, runsDoc, stagesDoc, leads, appointments, offers, employees, admin] = await Promise.all([
     W.loadDoc(), W.loadRuns(), require('./portal-leads').loadStages(), readJSON('data/leads.json', []), readJSON('data/appointments.json', []),
+    loadOffers(readJSON, writeJSON), readJSON('data/employees.json', []), readJSON('data/admin-profile.json', {}),
   ]);
   const leadName = new Map(leads.map((l) => [l.id, l.name]));
   const apptName = new Map(appointments.map((a) => [a.id, a.clientName + (a.date ? ' · ' + a.date.slice(8, 10) + '.' + a.date.slice(5, 7) + ' ' + (a.time || '') : '')]));
@@ -38,7 +40,10 @@ async function payload() {
     meta: {
       triggers: Object.keys(W.TRIGGERS).map((k) => ({ id: k, label: W.TRIGGERS[k].label, entity: W.TRIGGERS[k].entity })),
       stages: (stagesDoc || []).map((s) => ({ id: s.id, name: s.name, kind: s.kind })),
-      statuses: W.STATUSES, sources: W.SOURCES, locations: W.LOCATIONS, stopConds: W.STOP_CONDS,
+      statuses: W.STATUSES, sources: W.SOURCES, locations: W.LOCATIONS, stopConds: W.STOP_CONDS, valueConds: W.VALUE_CONDS, maxSteps: W.MAX_STEPS,
+      // the procedures a flow can be about, and the people "Anunță echipa" can reach
+      offers: offers.filter((o) => o.active !== false).map((o) => o.title),
+      team: [{ id: 'admin', name: admin.name || 'Admin (tu)', role: 'admin' }].concat(employees.filter((e) => e.active !== false).map((e) => ({ id: e.id, name: e.name, role: e.role }))),
       whatsappCloud: whatsappConfigured(),
     },
   };

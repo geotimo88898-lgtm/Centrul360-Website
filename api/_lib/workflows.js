@@ -5,7 +5,8 @@
 //
 // A trigger fires from the place where the thing happens (lead created, stage moved, appointment
 // booked / changed …) through emit(). Every matching active workflow gets a "run" that walks its
-// steps: wait, WhatsApp message, task for reception, move the lead, stop-if. Waiting runs are
+// steps: wait, WhatsApp message, alert for the team, task for reception, move the lead, if / else
+// (two branches), stop-if. Waiting runs are
 // picked up by tick(), which the portal heartbeat (/api/portal-pulse, polled by every open portal)
 // and the daily cron (/api/automation-tick) call, so there is no separate job server.
 //
@@ -17,6 +18,8 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./store');
 const { sendWhatsApp, whatsappConfigured } = require('./whatsapp');
 const { dedash } = require('./dedash');
+const { notifyMany } = require('./notify');
+const { sendPush } = require('./push');
 
 const WF_KEY = 'data/workflows.json';
 const RUNS_KEY = 'data/workflow-runs.json';
@@ -33,8 +36,15 @@ const TRIGGERS = {
   appointment_status: { label: 'Status programare schimbat', entity: 'appointment' },
   appointment_after: { label: 'După tratament', entity: 'appointment' },
 };
-const STEP_TYPES = ['wait', 'whatsapp', 'task', 'move_stage', 'stop_if'];
+const STEP_TYPES = ['wait', 'whatsapp', 'notify', 'task', 'move_stage', 'if', 'stop_if'];
 const STOP_CONDS = ['contacted', 'booked', 'appt_inactive', 'appt_confirmed', 'future_appt'];
+// conditions that compare with a value the owner picks (an "if" or a "stop if" can use them too)
+const VALUE_CONDS = ['interest', 'location', 'source'];
+const LEAD_CONDS = ['contacted', 'booked', 'source'];
+const APPT_CONDS = ['appt_inactive', 'appt_confirmed'];
+const NOTIFY_TO = /^(role:(admin|receptie|cosmetician)|emp:[\w-]{1,60})$/;
+const MAX_STEPS = 40;
+const MAX_DEPTH = 3;
 const STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata'];
 const SOURCES = ['any', 'facebook', 'instagram', 'site', 'telefon', 'recomandare', 'walk-in', 'manual'];
 const LOCATIONS = ['any', 'Timișoara', 'Arad'];
@@ -114,18 +124,36 @@ function defaultSettings() {
     reviewLink: '',
   };
 }
+// The team's alert for every new lead: asked for when the Facebook leads were connected, so it is
+// added (switched on) once; if the owner deletes it later, it stays deleted.
+const LEAD_ALERT = {
+  key: 'alerta_lead', name: 'Lead nou: anunță echipa', note: 'Adminul și recepția primesc pe loc numele, procedura și orașul, în portal și pe telefon.',
+  trigger: { type: 'lead_created', source: 'any', location: 'any', interest: 'any', returning: true },
+  steps: [{ type: 'notify', to: ['role:admin', 'role:receptie'], title: 'Lead nou: {nume}', text: '{procedura} · {locatie} · {telefon}', whatsapp: false }],
+};
+RECIPES.unshift(LEAD_ALERT);
+
+const withIds = (list) => (list || []).map((s) => Object.assign({ id: uid() }, s, s.type === 'if' ? { yes: withIds(s.yes), no: withIds(s.no) } : {}));
+// every step of a tree, branches included
+const flat = (steps) => (steps || []).reduce((a, s) => a.concat(s, s.type === 'if' ? flat(s.yes).concat(flat(s.no)) : []), []);
+
 function fromRecipe(r, active) {
-  return { id: uid(), name: r.name, note: r.note || '', active: !!active, trigger: Object.assign({}, r.trigger), steps: r.steps.map((s) => Object.assign({ id: uid() }, s)), recipe: r.key, createdAt: nowISO(), updatedAt: nowISO() };
+  return { id: uid(), name: r.name, note: r.note || '', active: !!active, trigger: Object.assign({}, r.trigger), steps: withIds(r.steps), recipe: r.key, createdAt: nowISO(), updatedAt: nowISO() };
 }
 async function loadDoc() {
   const doc = await readJSON(WF_KEY, null);
   if (doc && Array.isArray(doc.workflows)) {
     doc.settings = Object.assign(defaultSettings(), doc.settings || {});
+    if (!(doc.seeded || {}).leadAlert) {
+      doc.seeded = Object.assign({}, doc.seeded, { leadAlert: true });
+      if (!doc.workflows.some((w) => flat(w.steps).some((s) => s.type === 'notify'))) doc.workflows.unshift(fromRecipe(LEAD_ALERT, true));
+      await writeJSON(WF_KEY, doc);
+    }
     return doc;
   }
-  // First run: the recipes become the starting workflows, confirmation + 24h reminder on
-  // (they replace the old fixed "send confirmation / reminder today" tasks), the rest ready to switch on.
-  const seeded = { settings: defaultSettings(), workflows: RECIPES.map((r) => fromRecipe(r, DEFAULT_ACTIVE.includes(r.key))) };
+  // First run: the recipes become the starting workflows, confirmation + 24h reminder + the team's
+  // lead alert on (they replace the old fixed "send confirmation / reminder today" tasks), the rest ready to switch on.
+  const seeded = { settings: defaultSettings(), seeded: { leadAlert: true }, workflows: RECIPES.map((r) => fromRecipe(r, DEFAULT_ACTIVE.includes(r.key) || r.key === LEAD_ALERT.key)) };
   await writeJSON(WF_KEY, seeded); // ids must stay stable, runs point at them
   return seeded;
 }
@@ -142,6 +170,50 @@ function saveRuns(doc) {
 }
 
 // ---------------------------------------------------------------- validation (editor → API)
+function cleanCond(s, st) {
+  st.cond = STOP_CONDS.concat(VALUE_CONDS).includes(s.cond) ? s.cond : 'contacted';
+  if (VALUE_CONDS.includes(st.cond)) { st.value = clip(s.value, 80).trim(); if (!st.value) return false; }
+  return true;
+}
+// Steps form a tree: an "if" holds two lists of its own (yes / no), at most MAX_DEPTH deep.
+function cleanSteps(list, depth, seen) {
+  const out = [];
+  for (const s of Array.isArray(list) ? list : []) {
+    if (!s || !STEP_TYPES.includes(s.type)) return { error: 'invalid_step' };
+    if (++seen.n > MAX_STEPS) return { error: 'too_many_steps' };
+    let id = s.id && /^[\w-]{6,40}$/.test(s.id) ? s.id : uid();
+    if (seen.ids.has(id)) id = uid();
+    seen.ids.add(id);
+    const st = { id, type: s.type };
+    let ok = true;
+    if (s.type === 'wait') { st.amount = Math.min(999, Math.max(1, Math.round(Number(s.amount) || 1))); st.unit = unitMs[s.unit] ? s.unit : 'h'; }
+    if (s.type === 'whatsapp') { st.text = clip(s.text, 1000).trim(); st.template = clip(s.template, 80).replace(/[^\w]/g, ''); ok = !!st.text; }
+    if (s.type === 'task') { st.text = clip(s.text, 300).trim(); ok = !!st.text; }
+    if (s.type === 'move_stage') { st.stage = clip(s.stage, 60); ok = !!st.stage; }
+    if (s.type === 'stop_if') ok = cleanCond(s, st);
+    if (s.type === 'notify') {
+      st.to = [...new Set((Array.isArray(s.to) ? s.to : []).map(String).filter((x) => NOTIFY_TO.test(x)))].slice(0, 20);
+      st.title = clip(s.title, 80).trim();
+      st.text = clip(s.text, 160).trim();
+      st.whatsapp = !!s.whatsapp;
+      st.template = clip(s.template, 80).replace(/[^\w]/g, '');
+      ok = st.to.length > 0 && !!st.title;
+    }
+    if (s.type === 'if') {
+      if (depth >= MAX_DEPTH) return { error: 'too_deep' };
+      ok = cleanCond(s, st);
+      const yes = cleanSteps(s.yes, depth + 1, seen);
+      if (yes.error) return yes;
+      const no = cleanSteps(s.no, depth + 1, seen);
+      if (no.error) return no;
+      st.yes = yes.steps;
+      st.no = no.steps;
+    }
+    if (!ok) return { error: 'invalid_step' };
+    out.push(st);
+  }
+  return { steps: out };
+}
 function validateWorkflow(input) {
   const w = input || {};
   const name = clip(w.name, 80).trim();
@@ -149,31 +221,32 @@ function validateWorkflow(input) {
   const t = w.trigger || {};
   if (!TRIGGERS[t.type]) return { error: 'invalid_trigger' };
   const trigger = { type: t.type };
-  if (t.type === 'lead_created') { trigger.source = SOURCES.includes(t.source) ? t.source : 'any'; trigger.location = LOCATIONS.includes(t.location) ? t.location : 'any'; }
+  if (t.type === 'lead_created') {
+    trigger.source = SOURCES.includes(t.source) ? t.source : 'any';
+    trigger.location = LOCATIONS.includes(t.location) ? t.location : 'any';
+    trigger.interest = clip(t.interest, 80).trim() || 'any';
+    trigger.returning = !!t.returning;
+  }
   if (t.type === 'stage_changed') { trigger.stage = clip(t.stage, 60); if (!trigger.stage) return { error: 'invalid_trigger' }; }
   if (t.type === 'lead_idle') trigger.hours = Math.min(720, Math.max(1, Math.round(Number(t.hours) || 2)));
   if (t.type === 'appointment_before') trigger.hours = Math.min(168, Math.max(1, Math.round(Number(t.hours) || 24)));
   if (t.type === 'appointment_after') trigger.days = Math.min(365, Math.max(0, Math.round(Number(t.days) || 1)));
   if (t.type === 'appointment_status') { trigger.status = STATUSES.includes(t.status) ? t.status : ''; if (!trigger.status) return { error: 'invalid_trigger' }; }
   if (t.type.startsWith('appointment')) trigger.location = LOCATIONS.includes(t.location) ? t.location : 'any';
-  const steps = (Array.isArray(w.steps) ? w.steps : []).slice(0, 12).map((s) => {
-    const st = { id: s.id && /^[\w-]{6,40}$/.test(s.id) ? s.id : uid(), type: s.type };
-    if (s.type === 'wait') { st.amount = Math.min(999, Math.max(1, Math.round(Number(s.amount) || 1))); st.unit = unitMs[s.unit] ? s.unit : 'h'; }
-    if (s.type === 'whatsapp') { st.text = clip(s.text, 1000).trim(); st.template = clip(s.template, 80).replace(/[^\w]/g, ''); }
-    if (s.type === 'task') st.text = clip(s.text, 300).trim();
-    if (s.type === 'move_stage') st.stage = clip(s.stage, 60);
-    if (s.type === 'stop_if') st.cond = STOP_CONDS.includes(s.cond) ? s.cond : 'contacted';
-    return st;
-  });
+  const c = cleanSteps(w.steps, 0, { n: 0, ids: new Set() });
+  if (c.error) return c;
+  const steps = c.steps;
   if (!steps.length) return { error: 'missing_steps' };
-  if (steps.some((s) => !STEP_TYPES.includes(s.type) || ((s.type === 'whatsapp' || s.type === 'task') && !s.text) || (s.type === 'move_stage' && !s.stage))) return { error: 'invalid_step' };
+  const all = flat(steps);
   const entity = TRIGGERS[trigger.type].entity;
-  if (entity === 'appointment' && steps.some((s) => s.type === 'move_stage' || s.cond === 'contacted' || s.cond === 'booked')) return { error: 'step_needs_lead' };
-  if (entity === 'lead' && steps.some((s) => s.cond === 'appt_inactive' || s.cond === 'appt_confirmed')) return { error: 'step_needs_appointment' };
+  if (entity === 'appointment' && all.some((s) => s.type === 'move_stage' || LEAD_CONDS.includes(s.cond))) return { error: 'step_needs_lead' };
+  if (entity === 'lead' && all.some((s) => APPT_CONDS.includes(s.cond))) return { error: 'step_needs_appointment' };
   return { workflow: { name, note: clip(w.note, 160), active: w.active !== false, trigger, steps } };
 }
 
 // ---------------------------------------------------------------- triggers
+// "LipoSonix" finds "Liposonix · 2 zone" (no diacritics, no case)
+const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 function matches(wf, event, p) {
   const t = wf.trigger;
   if (!wf.active) return false;
@@ -181,7 +254,14 @@ function matches(wf, event, p) {
     const loc = (p.lead && p.lead.location) || (p.appointment && p.appointment.location) || '';
     if (loc !== t.location) return false;
   }
-  if (event === 'lead_created') return (t.type === 'lead_created' && (t.source === 'any' || t.source === p.lead.source)) || t.type === 'lead_idle';
+  if (event === 'lead_created') {
+    // p.returning: someone already in the Pipeline sent the form again
+    if (t.type === 'lead_idle') return !p.returning;
+    if (t.type !== 'lead_created') return false;
+    if (p.returning && !t.returning) return false;
+    if (t.source && t.source !== 'any' && t.source !== p.lead.source) return false;
+    return !t.interest || t.interest === 'any' || fold(p.lead.interest).includes(fold(t.interest));
+  }
   if (event === 'stage_changed') return t.type === 'stage_changed' && t.stage === p.stage;
   if (event === 'appointment_created') return t.type === 'appointment_created' || t.type === 'appointment_before';
   if (event === 'appointment_rescheduled') return t.type === 'appointment_before';
@@ -225,7 +305,7 @@ async function emit(event, payload) {
       doc.workflows.filter((wf) => matches(wf, event, p)).forEach((wf) => {
         const due = dueFor(wf, p, now);
         if (due == null) return;
-        const run = { id: uid(), wf: wf.id, ent, step: 0, dueAt: new Date(due).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(), log: [{ at: nowISO(), text: 'Pornit: ' + TRIGGERS[wf.trigger.type].label }] };
+        const run = { id: uid(), wf: wf.id, ent, at: '^', dueAt: new Date(due).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(), log: [{ at: nowISO(), text: 'Pornit: ' + TRIGGERS[wf.trigger.type].label }] };
         runsDoc.runs.push(run);
         const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
         c.runs++;
@@ -268,6 +348,7 @@ function vars(ctx, settings) {
     prenume: person.name.trim().split(/\s+/)[0] || '', nume: person.name, telefon: person.phone,
     data: roDate(a.date), ora: a.time || '', zi: a.date ? relDay(a.date) : '', tratament: a.treatment || l.interest || 'tratament',
     locatie: loc, adresa: (settings.addresses || {})[loc] || loc, interes: l.interest || a.treatment || 'tratamentele noastre',
+    procedura: l.interest || a.treatment || 'tratament',
     link_recenzie: settings.reviewLink || '',
   };
 }
@@ -308,25 +389,104 @@ async function moveLead(lead, stage, wfName) {
   return true;
 }
 
+// Steps form a tree (an "if" holds its own yes / no lists). They run through a map of
+// id → what comes next, so a waiting run keeps only the id of the step it continues with
+// ('^' = from the start, '$' = nothing left) and editing the workflow doesn't derail runs in flight.
+function compile(steps) {
+  const ops = new Map();
+  const walk = (list, next) => {
+    let entry = next;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const s = list[i];
+      if (s.type === 'if') ops.set(s.id, { s, yes: walk(s.yes || [], entry), no: walk(s.no || [], entry) });
+      else ops.set(s.id, { s, next: entry });
+      entry = s.id;
+    }
+    return entry;
+  };
+  return { start: walk(steps || [], '$'), ops };
+}
+
+const COND_TEXT = {
+  contacted: 'leadul a fost contactat', booked: 'leadul are programare', appt_inactive: 'programarea e anulată / finalizată',
+  appt_confirmed: 'programarea e confirmată', future_appt: 'are deja o programare viitoare',
+};
+const condText = (s) => ({ interest: 'procedura e ' + s.value, location: 'orașul e ' + s.value, source: 'sursa e ' + s.value })[s.cond] || COND_TEXT[s.cond] || s.cond;
+function condHit(s, ctx) {
+  const a = ctx.appointment, l = ctx.lead;
+  if (s.cond === 'interest') return [l && l.interest, a && a.treatment].some((x) => x && fold(x).includes(fold(s.value)));
+  if (s.cond === 'location') return ((a && a.location) || (l && l.location) || '') === s.value;
+  if (s.cond === 'source') return !!(l && l.source === s.value);
+  return stopHit(s.cond, ctx);
+}
+
+// "Anunță echipa": the bell in the portal and the phone (Web Push) of everyone picked, plus, if
+// asked, a WhatsApp to their own number (that one needs WhatsApp automat and, usually, a template).
+async function notifyTeam(s, v, ctx) {
+  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
+  const ids = new Set();
+  for (const to of s.to || []) {
+    if (to === 'role:admin') { ids.add('admin'); employees.filter((e) => e.role === 'admin').forEach((e) => ids.add(e.id)); }
+    else if (to.startsWith('role:')) employees.filter((e) => e.role === to.slice(5)).forEach((e) => ids.add(e.id));
+    else if (to.startsWith('emp:')) { const id = to.slice(4); if (id === 'admin' || employees.some((e) => e.id === id)) ids.add(id); }
+  }
+  if (!ids.size) return { people: 0, pushed: 0, wa: 0 };
+  const store = { readJSON, writeJSON };
+  const title = render(s.title, v), text = render(s.text, v);
+  const go = ctx.appointment ? 'programari' : 'pipeline';
+  await notifyMany(store, [...ids], { kind: ctx.appointment ? 'alert' : 'lead', tone: 'info', title, text, go });
+  const pushed = await sendPush(store, [...ids], { title, body: text, url: '/portal#' + go, tag: ctx.lead ? 'lead-' + ctx.lead.id : '' });
+  let wa = 0;
+  if (s.whatsapp && whatsappConfigured()) {
+    const admin = ids.has('admin') ? await readJSON('data/admin-profile.json', {}) : {};
+    for (const id of ids) {
+      const phone = id === 'admin' ? admin.phone : (employees.find((e) => e.id === id) || {}).phone;
+      if (!phone) continue;
+      const r = await sendWhatsApp({ phone, text: title + (text ? '\n' + text : ''), template: s.template, params: varsInOrder(s.title + ' ' + s.text, v) });
+      if (r.sent) wa++;
+    }
+  }
+  return { people: ids.size, pushed, wa };
+}
+
 async function runOne(run, wf, settings, counters) {
   const ctx = await context(run.ent);
   const log = (text) => run.log.push({ at: nowISO(), text });
   if (!ctx.lead && !ctx.appointment) { run.status = 'stopped'; log('Leadul / programarea nu mai există'); return; }
+  // runs saved before branches existed kept an index into the list of steps
+  if (run.at === undefined) run.at = !run.step ? '^' : ((wf.steps[run.step] || {}).id || '$');
   // "Lead necontactat": only fires if nobody has reached the lead in the meantime.
-  if (run.step === 0 && wf.trigger.type === 'lead_idle' && stopHit('contacted', ctx)) { run.status = 'done'; log('Leadul a fost contactat între timp'); return; }
+  if (run.at === '^' && wf.trigger.type === 'lead_idle' && stopHit('contacted', ctx)) { run.status = 'done'; log('Leadul a fost contactat între timp'); return; }
+  const prog = compile(wf.steps);
   const v = vars(ctx, settings);
   const person = personOf(ctx);
   const c = counters[wf.id] = counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
-  while (run.step < wf.steps.length) {
-    const s = wf.steps[run.step];
-    run.step++;
+  let id = run.at === '^' ? prog.start : run.at;
+  for (let guard = 0; id !== '$'; guard++) {
+    if (guard > 100) { run.status = 'error'; log('Prea mulți pași la rând'); return; }
+    const op = prog.ops.get(id);
+    if (!op) { run.status = 'stopped'; log('Pasul următor a fost șters din automatizare'); return; }
+    const s = op.s;
+    if (s.type === 'if') {
+      const hit = condHit(s, ctx);
+      log((hit ? 'Da: ' : 'Nu: ') + condText(s));
+      id = hit ? op.yes : op.no;
+      continue;
+    }
+    id = op.next;
+    run.at = id;
     if (s.type === 'wait') {
       run.dueAt = new Date(Date.now() + s.amount * unitMs[s.unit]).toISOString();
       log('Așteaptă ' + s.amount + ' ' + ({ min: 'min', h: 'h', d: 'zile' }[s.unit]));
       return;
     }
     if (s.type === 'stop_if') {
-      if (stopHit(s.cond, ctx)) { run.status = 'done'; log('Oprit: ' + s.cond); return; }
+      if (condHit(s, ctx)) { run.status = 'done'; log('Oprit: ' + condText(s)); return; }
+      continue;
+    }
+    if (s.type === 'notify') {
+      const r = await notifyTeam(s, v, ctx);
+      log(r.people ? 'Echipa anunțată: ' + r.people + (r.people === 1 ? ' persoană' : ' persoane') + (r.pushed ? ', ' + r.pushed + ' pe telefon' : '') + (r.wa ? ', ' + r.wa + ' pe WhatsApp' : '') : 'Nimeni de anunțat (rol fără oameni activi)');
       continue;
     }
     if (s.type === 'whatsapp') {
@@ -358,6 +518,7 @@ async function runOne(run, wf, settings, counters) {
       continue;
     }
   }
+  run.at = '$';
   run.status = 'done';
   log('Terminat');
 }
@@ -404,4 +565,4 @@ async function tick(force) {
   }
 }
 
-module.exports = { TRIGGERS, STEP_TYPES, STOP_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars };
+module.exports = { TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat };

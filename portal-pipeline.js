@@ -814,6 +814,14 @@
   }
   const field = (label, control, cls) => '<label class="pl-field' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span>' + control + '</label>';
 
+  // what the person answered in the Facebook form (the newest one)
+  function formAnswers(l) {
+    const f = (l.forms || []).slice(-1)[0];
+    if (!f || !f.answers || !f.answers.length) return '';
+    return '<section class="pl-card-sec pl-form-ans"><div class="pl-sec-head"><h4>' + ic('facebook') + 'Din formular</h4><span class="pl-muted">' + esc(f.name || '') + '</span></div>' +
+      '<dl class="pl-qa">' + f.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl></section>';
+  }
+
   function leadHtml(l) {
     if (!l) return '<div class="pl-dbody"><p class="pl-muted">Leadul nu mai există.</p></div>';
     const d = S.drawer;
@@ -848,6 +856,7 @@
           '<button type="button" class="pl-big-action is-book' + (d.section === 'book' ? ' is-on' : '') + '" data-section-toggle="book">' + ic('calPlus') + '<span><b>Programează</b><small>' + (l.appointmentAt ? esc(apptWhen(l.appointmentAt)) : 'direct în calendar') + '</small></span></button>' +
         '</div>' +
         (d.section === 'book' ? bookHtml(l) : '') +
+        formAnswers(l) +
         // log contact
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +
           '<div class="pl-sec-head"><h4>' + ic('phone') + 'Cum a mers contactul?</h4><span class="pl-muted">' + (l.contactCount ? l.contactCount + (l.contactCount === 1 ? ' contactare' : ' contactări') + ' · ultima ' + agoLong(l.lastContactAt) : 'Încă necontactată') + '</span></div>' +

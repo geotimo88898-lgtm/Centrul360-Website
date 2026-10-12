@@ -643,7 +643,7 @@
     if (!ipanel) return;
     const body = ipanel.querySelector('[data-body]');
     body.innerHTML = '<div class="st-integrations">' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
+      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div><div class="st-forms-box" data-forms></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Mesajele clientelor în „Mesaje” și trimiterea automată a confirmărilor și a reminderelor.</span></div></div><div data-wa><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="creative">Deschide Creative' + icon('arrow') + '</button></div></section>' +
@@ -653,39 +653,127 @@
     loadFb(body.querySelector('[data-fb]'));
     (async () => {
       const box = body.querySelector('[data-wa]');
+      const formsBox = body.querySelector('[data-forms]');
       try {
         const j = await K.api('/api/portal-integrations');
         box.innerHTML = j.whatsapp
           ? '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Deschide Mesaje' + icon('arrow') + '</button></div>'
           : '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Neconectat</span><span class="k-muted">Până la conectare, mesajele de trimis apar ca sarcini la recepție.</span></div>';
         box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
-      } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; }
+        paintForms(formsBox, j);
+      } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; formsBox.innerHTML = ''; }
     })();
   }
 
+  // Facebook lead forms: each lead arrives with its procedure and city. They're read from the form's
+  // name (and the ad's); a form whose name doesn't say them gets them set here.
+  function paintForms(box, j) {
+    const forms = j.fbForms || [];
+    const offerName = (id) => ((j.offers || []).find((o) => o.id === id) || {}).title || '';
+    if (!forms.length) {
+      box.innerHTML = '<p class="k-muted st-forms-empty">' + icon('info') + 'Formularele apar aici după primul lead din fiecare. Procedura și orașul se citesc din numele formularului și al reclamei; dacă nu reies de acolo, le alegi aici.</p>';
+      return;
+    }
+    box.innerHTML = '<div class="st-forms-head"><b>Formulare</b><span class="k-muted">Procedura și orașul cu care intră leadurile din fiecare formular.</span></div>' +
+      '<div class="st-forms">' + forms.map((f) => {
+        const det = f.detected || {};
+        const autoOffer = det.offerId && offerName(det.offerId) ? 'Automat: ' + offerName(det.offerId) : 'Automat (nedetectată)';
+        const autoCity = (det.location || 'Timișoara') + ' (auto)';
+        return '<div class="st-form" data-form="' + esc(f.id) + '"><div class="st-form-name"><b>' + esc(f.name || 'Formular ' + f.id) + '</b><small>' + K.plural(f.leads, 'lead', 'leaduri') + (f.lastAt ? ' · ultimul ' + esc(K.ago(f.lastAt)) : '') + '</small></div>' +
+          '<select data-ff="offerId" aria-label="Procedura">' + K.options([['', autoOffer]].concat((j.offers || []).map((o) => [o.id, o.title])), f.offerId) + '</select>' +
+          '<select data-ff="location" aria-label="Orașul">' + K.options([['', autoCity], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], f.location) + '</select></div>';
+      }).join('') + '</div>';
+    box.addEventListener('change', async (e) => {
+      const row = e.target.closest('[data-form]');
+      if (!row) return;
+      const v = (k) => row.querySelector('[data-ff="' + k + '"]').value;
+      try {
+        await K.api('/api/portal-integrations', { action: 'fb_form', id: row.dataset.form, offerId: v('offerId'), location: v('location') });
+        K.ui().toast('Salvat. Leadurile noi din formular vin așa.', 'success');
+      } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+    });
+  }
+  // Facebook: one button logs in with Facebook (Meta's own window); back here, the admin picks the
+  // clinic's Page (an account can manage several, e.g. the salon's too) and the ad account, which
+  // can also be typed by hand when Facebook doesn't list it.
+  const FB_ERR = { login_expired: 'Logarea a expirat. Apasă din nou „Conectează cu Facebook”.', page_not_found: 'Pagina nu mai e disponibilă. Loghează-te din nou.',
+    subscribe_failed: 'Facebook n-a permis primirea leadurilor pe Pagina asta. Verifică să fii admin pe Pagină și reîncearcă.', invalid_ad_account: 'ID-ul contului de reclame are doar cifre (ex. 1234567890 sau act_1234567890).',
+    token_invalid: 'Tokenul nu e valid sau a expirat.', no_pages: 'Contul ăsta de Facebook nu administrează nicio Pagină.' };
+  const adOptions = (list, sel) => K.options([['', 'Niciunul încă']].concat((list || []).map((a) => [a.id, a.name + (a.business ? ' · ' + a.business : '')])).concat([['__manual', 'Nu e în listă, scriu ID-ul']]), sel);
+  const adManual = '<input data-ad-manual hidden placeholder="ID cont de reclame, ex. 1234567890" inputmode="numeric" maxlength="24">';
+  function bindAdSelect(root) {
+    const sel = root.querySelector('[data-ad]'), man = root.querySelector('[data-ad-manual]');
+    if (sel && man) sel.addEventListener('change', () => { man.hidden = sel.value !== '__manual'; if (!man.hidden) man.focus(); });
+  }
+  const adValue = (root) => { const sel = root.querySelector('[data-ad]'); return sel && sel.value === '__manual' ? root.querySelector('[data-ad-manual]').value.trim() : (sel ? sel.value : ''); };
+
   async function loadFb(box) {
-    try {
-      const d = await K.api('/api/fb-connection-status');
-      if (d.notConfigured) { box.innerHTML = '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Aplicația Meta nu e configurată (FB_APP_ID / FB_APP_SECRET)</span></div>'; return; }
-      if (d.connected) {
-        box.innerHTML = '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat la ' + esc(d.pageName || 'Pagină') + '</span>' + (d.connectedAt ? '<span class="k-muted">din ' + esc(new Date(d.connectedAt).toLocaleDateString('ro-RO')) + '</span>' : '') +
-          '<button type="button" class="k-btn is-danger is-sm" data-fbx>Deconectează</button></div>';
-        box.querySelector('[data-fbx]').addEventListener('click', async () => {
-          if (!(await K.ui().confirm({ title: 'Deconectezi Facebook?', message: 'Leadurile noi din formulare nu mai intră în Pipeline până reconectezi.', confirmText: 'Deconectează', danger: true }))) return;
-          try { await K.api('/api/fb-disconnect', {}); K.ui().toast('Facebook deconectat.', 'success'); loadFb(box); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
-        });
-        return;
-      }
-      box.innerHTML = '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Neconectat</span><a class="k-btn is-primary is-sm" href="/api/fb-oauth-start">' + icon('facebook') + 'Conectează Pagina</a><button type="button" class="k-btn is-sm" data-man>Conectare manuală</button></div>' +
-        '<form class="st-manual" data-manual hidden><textarea name="t" rows="3" placeholder="User Access Token din Graph API Explorer"></textarea><button type="submit" class="k-btn is-primary is-sm">Conectează cu acest token</button></form>';
-      box.querySelector('[data-man]').addEventListener('click', () => { box.querySelector('[data-manual]').hidden = !box.querySelector('[data-manual]').hidden; });
-      box.querySelector('[data-manual]').addEventListener('submit', async (e) => {
+    let d;
+    try { d = await K.api('/api/fb-connection-status'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica starea conexiunii.</span>'; return; }
+    if (d.notConfigured) { box.innerHTML = '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Aplicația Meta nu e configurată (FB_APP_ID / FB_APP_SECRET)</span></div>'; return; }
+    const fail = (err) => K.ui().toast(FB_ERR[err.code] || K.errText(err), 'error');
+
+    // several Pages after the login: pick the clinic's
+    if (d.pending && d.pending.pages.length) {
+      const p = d.pending;
+      // the clinic's Page / ad account picked in advance when the names say so
+      const guessPage = (p.pages.find((x) => /centrul|360/i.test(x.name)) || (p.pages.length === 1 ? p.pages[0] : {})).id;
+      const guessAd = (p.adAccounts.find((x) => /centru/i.test(x.name)) || (p.adAccounts.length === 1 ? p.adAccounts[0] : {})).id || '';
+      box.innerHTML = '<div class="st-fb-pick"><b>Alege Pagina clinicii</b><span class="k-muted">Contul tău administrează ' + K.plural(p.pages.length, 'Pagină', 'Pagini') + '. Leadurile vin doar din cea aleasă.</span>' +
+        '<div class="st-fb-pages">' + p.pages.map((x, i) => '<label class="st-fb-page"><input type="radio" name="fbpage" value="' + esc(x.id) + '"' + (x.id === guessPage ? ' checked' : '') + '><span>' + icon('facebook') + esc(x.name) + '</span></label>').join('') + '</div>' +
+        '<label class="k-field full"><span>Cont de reclame (pentru publicarea reclamelor, mai târziu)</span><select data-ad>' + adOptions(p.adAccounts, guessAd) + '</select>' + adManual + '</label>' +
+        '<div class="st-int-row"><button type="button" class="k-btn is-primary is-sm" data-fb-choose>' + icon('check') + 'Conectează Pagina aleasă</button></div></div>';
+      bindAdSelect(box);
+      box.querySelector('[data-fb-choose]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+        const pageId = (box.querySelector('input[name=fbpage]:checked') || {}).value;
+        if (!pageId) { K.ui().toast('Alege Pagina clinicii.', 'error'); return; }
+        const manual = box.querySelector('[data-ad]').value === '__manual';
+        const ad = adValue(box);
+        try {
+          let r = await K.api('/api/fb-connection-status', { action: 'choose', pageId, adAccountId: manual ? '' : ad });
+          if (manual && ad) r = await K.api('/api/fb-connection-status', { action: 'ad_account', adAccountId: ad });
+          K.ui().toast('Conectat la ' + (r.pageName || 'Pagină') + '. Leadurile noi intră singure.', 'success');
+          loadFb(box);
+        } catch (err) { fail(err); }
+      }));
+      return;
+    }
+
+    if (d.connected) {
+      const many = (d.pages || []).length > 1;
+      box.innerHTML = '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat la ' + esc(d.pageName || 'Pagină') + '</span>' + (d.connectedAt ? '<span class="k-muted">din ' + esc(new Date(d.connectedAt).toLocaleDateString('ro-RO')) + '</span>' : '') + '</div>' +
+        '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
+        '<form class="st-fb-adform" data-fb-adform hidden><select data-ad>' + adOptions(d.adAccounts, d.adAccountId) + '</select>' + adManual + '<button type="submit" class="k-btn is-primary is-sm">Salvează</button></form>' +
+        '<div class="st-int-row">' + (many ? '<button type="button" class="k-btn is-outline is-sm" data-fb-repick>' + icon('refresh') + 'Altă Pagină</button>' : '') +
+        '<a class="k-btn is-outline is-sm" href="/api/fb-oauth-start">' + icon('facebook') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-fbx>Deconectează</button></div>' +
+        (many ? '<div class="st-fb-pages" data-fb-pages hidden>' + d.pages.map((x) => '<button type="button" class="st-fb-page' + (x.id === d.pageId ? ' is-on' : '') + '" data-page="' + esc(x.id) + '">' + icon('facebook') + esc(x.name) + '</button>').join('') + '</div>' : '');
+      bindAdSelect(box);
+      box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });
+      box.querySelector('[data-fb-adform]').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const tok = e.target.t.value.trim(); if (!tok) return;
-        try { const r = await K.api('/api/fb-manual-connect', { userAccessToken: tok }); K.ui().toast('Conectat la ' + (r.pageName || 'Pagină') + '.', 'success'); loadFb(box); }
-        catch (err) { K.ui().toast('Nu am putut conecta: ' + (err.code || 'eroare'), 'error'); }
+        try { await K.api('/api/fb-connection-status', { action: 'ad_account', adAccountId: adValue(box) }); K.ui().toast('Contul de reclame e salvat.', 'success'); loadFb(box); } catch (err) { fail(err); }
       });
-    } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica starea conexiunii.</span>'; }
+      const rp = box.querySelector('[data-fb-repick]');
+      if (rp) rp.addEventListener('click', () => { const l = box.querySelector('[data-fb-pages]'); l.hidden = !l.hidden; });
+      box.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
+        try { await K.api('/api/fb-connection-status', { action: 'choose', pageId: b.dataset.page, adAccountId: d.adAccountId }); K.ui().toast('Pagina s-a schimbat.', 'success'); loadFb(box); } catch (err) { fail(err); }
+      })));
+      box.querySelector('[data-fbx]').addEventListener('click', async () => {
+        if (!(await K.ui().confirm({ title: 'Deconectezi Facebook?', message: 'Leadurile noi din formulare nu mai intră în Pipeline până reconectezi.', confirmText: 'Deconectează', danger: true }))) return;
+        try { await K.api('/api/fb-disconnect', {}); K.ui().toast('Facebook deconectat.', 'success'); loadFb(box); } catch (err) { fail(err); }
+      });
+      return;
+    }
+
+    box.innerHTML = '<div class="st-fb-login"><a class="k-btn is-fb" href="/api/fb-oauth-start">' + icon('facebook') + 'Conectează cu Facebook</a>' +
+      '<span class="k-muted">Te loghezi în fereastra Facebook, alegi firma (ex. Hair Revive), Pagina clinicii și contul de reclame, apoi revii aici.</span></div>' +
+      '<details class="st-fb-manual"><summary>Nu merge logarea? Conectare cu token</summary><form class="st-manual" data-manual><textarea name="t" rows="3" placeholder="User Access Token din Graph API Explorer"></textarea><button type="submit" class="k-btn is-primary is-sm">Conectează cu acest token</button></form></details>';
+    box.querySelector('[data-manual]').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const tok = e.target.t.value.trim(); if (!tok) return;
+      try { const r = await K.api('/api/fb-manual-connect', { userAccessToken: tok }); K.ui().toast(r.choose ? 'Alege acum Pagina clinicii.' : 'Conectat la ' + (r.pageName || 'Pagină') + '.', 'success'); loadFb(box); }
+      catch (err) { fail(err); }
+    });
   }
   K.section('integrari', { mount: mountIntegrations, show: renderIntegrations });
 
@@ -697,6 +785,7 @@
     params.delete('fb');
     const qs = params.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#integrari');
-    setTimeout(() => K.ui().toast(flag === 'connected' ? 'Facebook conectat cu succes.' : 'Conectarea la Facebook a eșuat.', flag === 'connected' ? 'success' : 'error'), 1200);
+    const msg = { connected: ['Facebook conectat. Leadurile noi intră singure.', 'success'], choose: ['Alege acum Pagina clinicii, în Integrări → Facebook.', 'success'], nopages: ['Contul de Facebook nu administrează nicio Pagină.', 'error'] }[flag] || ['Conectarea la Facebook a eșuat.', 'error'];
+    setTimeout(() => K.ui().toast(msg[0], msg[1]), 1200);
   })();
 })();

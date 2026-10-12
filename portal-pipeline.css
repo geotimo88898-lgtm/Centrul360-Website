@@ -252,6 +252,12 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-big-action.is-book .pl-ic{ background:var(--accent); color:var(--accent-fg); }
 .pl-big-action.is-on{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 
+/* the Facebook form answers */
+.pl-qa{ display:grid; gap:.45rem; margin:.4rem 0 0; }
+.pl-qa > div{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:.75rem; }
+.pl-qa dt{ font-size:.82rem; color:var(--muted); }
+.pl-qa dd{ margin:0; font-size:.88rem; font-weight:600; }
+@media (max-width:560px){ .pl-qa > div{ grid-template-columns:1fr; gap:.1rem; } }
 .pl-card-sec{ border:1px solid var(--line); border-radius:14px; padding:.9rem .95rem; background:var(--paper); scroll-margin-top:.8rem; transition:border-color .25s ease, box-shadow .25s ease; }
 .pl-card-sec.is-focus{ border-color:color-mix(in srgb, var(--accent) 55%, var(--line)); box-shadow:0 0 0 4px var(--accent-soft); }
 .pl-book{ animation:pl-swap .3s var(--ease) both; }

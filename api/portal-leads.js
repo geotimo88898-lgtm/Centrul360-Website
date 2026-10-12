@@ -171,7 +171,16 @@ function validateFields(body, { partial }) {
 // (api/webhook-facebook-leads.js). A phone number already in the pipeline does not create a
 // second card: an open lead gets a "came back" activity and jumps to the top, a lost one is
 // reopened in the first stage, so re-submitted Facebook forms never split a client's history.
-async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel }) {
+// A form the person filled (Facebook Lead Ads): its name and the answers to its questions.
+function cleanForm(f) {
+  if (!f || typeof f !== 'object') return null;
+  const answers = (Array.isArray(f.answers) ? f.answers : []).slice(0, 20)
+    .map((x) => ({ q: clip(x && x.q, 200), a: clip(x && x.a, 500) })).filter((x) => x.q && x.a);
+  return { id: clip(f.id, 40), name: clip(f.name, 120), ad: clip(f.ad, 160), at: nowISO(), answers };
+}
+
+async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form }) {
+  const filled = cleanForm(form);
   const result = validateFields({ name, phone, source, location, email: email || '', interest: interest || '', value: value || 0 }, { partial: false });
   if (result.error) return { error: result.error };
   const stages = await loadStages();
@@ -190,6 +199,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     }
     if (result.fields.interest && !existing.interest) existing.interest = result.fields.interest;
     if (result.fields.email && !existing.email) existing.email = result.fields.email;
+    if (filled) existing.forms = (existing.forms || []).concat(filled).slice(-5);
     existing.position = top;
     addActivity(existing, {
       type: 'returned', author,
@@ -197,6 +207,8 @@ async function createLead({ name, phone, source, location, createdBy, email, int
         (result.fields.interest ? ' · ' + result.fields.interest : '') + (note ? ' - ' + clip(note, 500) : ''),
     });
     await writeJSON(LEADS_KEY, leads);
+    // someone already in the Pipeline filled the form again: worth an alert, not a second welcome
+    await workflows.emit('lead_created', { lead: existing, returning: true });
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
   }
 
@@ -213,6 +225,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     updatedAt: now,
     stageChangedAt: now,
     createdBy,
+    forms: filled ? [filled] : [],
   });
   if (note) lead.activities.push({ id: crypto.randomUUID(), type: 'note', text: clip(note, 1000), author, at: now });
   leads.push(lead);
