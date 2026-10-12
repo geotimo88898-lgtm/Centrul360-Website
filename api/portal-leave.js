@@ -5,9 +5,12 @@
 //   create | list | decide (admin)
 //
 // Request shape (data/leave-requests.json):
-//   { id, employeeId, type ('odihna'|'fara_plata'|'medical'|'alta'), startDate, endDate,
+//   { id, employeeId, type ('odihna'|'fara_plata'|'medical'|'alta'|'suplimentare'), startDate, endDate,
 //     workDays, reason, status ('pending'|'approved'|'rejected'), requestedAt, decidedAt,
-//     decidedBy, rejectionNote, pdfBlobPath }
+//     decidedBy, rejectionNote, pdfBlobPath,
+//     recovery?: { minutes, plan: [{ date, minutes }] }   ('alta' "cu recuperare": hours she'll make up)
+//     minutes? }                                          ('suplimentare': hours off paid from her overtime)
+// Approved recovery / overtime use move her hours balances (_lib/timebank.js).
 //
 // On approval, a one-page PDF is generated (api/_lib/pdf-leave.js) and stored privately in
 // Blob at data/leave-pdfs/{id}.pdf; api/portal-leave-pdf.js streams it back to the admin or the
@@ -19,14 +22,18 @@ const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
 const { requireAuth, requireAdmin } = require('./_lib/auth');
 const { buildLeaveRequestPdf } = require('./_lib/pdf-leave');
 const { createBlockingAppointment } = require('./portal-appointments');
+const TB = require('./_lib/timebank');
+const { notify } = require('./_lib/notify');
 
 const KEY = 'data/leave-requests.json';
-const VALID_TYPES = ['odihna', 'fara_plata', 'medical', 'alta'];
+const VALID_TYPES = ['odihna', 'fara_plata', 'medical', 'alta', 'suplimentare'];
 const REASON_REQUIRED = ['medical', 'alta'];
 const MAX_REASON = 500;
 // Full labels (with diacritics) for the calendar block, the PDF strips diacritics itself
 // (see _lib/pdf-leave.js), but the Calendar UI renders UTF-8 fine.
-const LEAVE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu' };
+const LEAVE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu', suplimentare: 'Ore libere din orele suplimentare' };
+const fmtMin = (m) => { const a = Math.abs(Math.round(m)); const h = Math.floor(a / 60), r = a % 60; return h ? h + 'h' + (r ? ' ' + String(r).padStart(2, '0') : '') : r + ' min'; };
+const hm = (m) => Math.round(Number(m) || 0);
 // Same literal location list as api/portal-appointments.js / api/portal-leads.js.
 const VALID_LOCATIONS = ['Timișoara', 'Arad'];
 
@@ -94,12 +101,33 @@ module.exports = async (req, res) => {
       const reason = String(body.reason || '').trim().slice(0, MAX_REASON);
       if (REASON_REQUIRED.includes(type) && !reason) return fail(400, 'missing_reason');
 
+      // "Altul" + "cu recuperare": how many hours she misses and when she'll make them up
+      let recovery = null;
+      if (type === 'alta' && body.recovery) {
+        const total = hm(body.recovery.minutes);
+        const plan = (Array.isArray(body.recovery.plan) ? body.recovery.plan : []).slice(0, 30)
+          .map((x) => ({ date: String(x.date || ''), minutes: hm(x.minutes) })).filter((x) => isValidDate(x.date) && x.minutes > 0);
+        if (!(total > 0) || total > 31 * 24 * 60) return fail(400, 'invalid_recovery');
+        if (!plan.length || plan.reduce((a, x) => a + x.minutes, 0) !== total) return fail(400, 'recovery_plan_mismatch');
+        recovery = { minutes: total, plan: plan.sort((a, b) => (a.date < b.date ? -1 : 1)) };
+      }
+      // "Ore libere": hours off paid from her overtime (no making up)
+      let minutes = 0;
+      if (type === 'suplimentare') {
+        minutes = hm(body.minutes);
+        if (!(minutes > 0)) return fail(400, 'invalid_minutes');
+        const bal = TB.ledger(session.employeeId, await TB.loadAll(readJSON));
+        const waiting = requests.filter((r) => r.employeeId === session.employeeId && r.type === 'suplimentare' && r.status === 'pending').reduce((a, r) => a + (Number(r.minutes) || 0), 0);
+        if (minutes + waiting > bal.bank) return fail(400, 'not_enough_overtime');
+      }
       const request = {
         id: crypto.randomUUID(),
         employeeId: session.employeeId,
         type, startDate, endDate,
         workDays: workDaysBetween(startDate, endDate),
         reason,
+        ...(recovery ? { recovery } : {}),
+        ...(type === 'suplimentare' ? { minutes } : {}),
         status: 'pending',
         requestedAt: nowISO(),
         decidedAt: '', decidedBy: '', rejectionNote: '', pdfBlobPath: '',
@@ -130,6 +158,10 @@ module.exports = async (req, res) => {
       if (request.status !== 'pending') return fail(400, 'already_decided');
       if (!['approved', 'rejected'].includes(body.decision)) return fail(400, 'invalid_decision');
 
+      if (body.decision === 'approved' && request.type === 'suplimentare') {
+        const bal = TB.ledger(request.employeeId, await TB.loadAll(readJSON));
+        if ((Number(request.minutes) || 0) > bal.bank) return fail(400, 'not_enough_overtime');
+      }
       request.decidedAt = nowISO();
       request.decidedBy = session.employeeId;
       if (body.decision === 'rejected') {
@@ -144,9 +176,19 @@ module.exports = async (req, res) => {
         request.pdfBlobPath = pdfBlobPath;
         // Any leave type makes the person unavailable, not just 'odihna' - block the Calendar
         // for the whole range before responding, so reception sees it the moment it's approved.
-        await blockCalendar(request, employee);
+        // (A few hours off from overtime aren't a whole day away: no block.)
+        const partial = request.type === 'suplimentare' && (Number(request.minutes) || 0) < TB.weekdaysBetween(request.startDate, request.endDate).length * TB.BASE_MINUTES;
+        if (!partial) await blockCalendar(request, employee);
       }
       await writeJSON(KEY, requests);
+      // tell her, one short line
+      const when = request.startDate === request.endDate ? request.startDate.slice(8, 10) + '.' + request.startDate.slice(5, 7) : request.startDate.slice(8, 10) + '.' + request.startDate.slice(5, 7) + '-' + request.endDate.slice(8, 10) + '.' + request.endDate.slice(5, 7);
+      const isOff = request.type === 'suplimentare';
+      const what = isOff ? 'Ore libere' : (LEAVE_LABELS[request.type] || 'Concediu');
+      const ok = isOff ? ' aprobate (' + fmtMin(request.minutes) + ')' : ' aprobat', no = isOff ? ' respinse (' + fmtMin(request.minutes) + ')' : ' respins';
+      await notify({ readJSON, writeJSON }, request.employeeId, request.status === 'approved'
+        ? { kind: 'leave', tone: 'good', title: what + ok, text: when + (request.recovery ? '. Ai de recuperat ' + fmtMin(request.recovery.minutes) + ', după planul tău.' : '.'), go: 'condica' }
+        : { kind: 'leave', tone: 'bad', title: what + no, text: when + (request.rejectionNote ? '. ' + request.rejectionNote : '.'), go: 'condica' });
       res.status(200).json({ ok: true, request });
       return;
     }

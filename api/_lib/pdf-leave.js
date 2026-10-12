@@ -17,6 +17,7 @@ const TYPE_LABELS = {
   fara_plata: 'Concediu fara plata',
   medical: 'Concediu medical',
   alta: 'Alt tip de concediu',
+  suplimentare: 'Ore libere din orele suplimentare',
 };
 
 function formatDateRO(iso) {
@@ -73,6 +74,12 @@ async function buildLeaveRequestPdf(employee, request) {
   row('Perioada', formatDateRO(request.startDate) + '  -  ' + formatDateRO(request.endDate));
   row('Numarul de zile (zile calendaristice, luni-vineri)', String(request.workDays));
   if (request.reason) row('Motivul', request.reason);
+  if (request.type === 'suplimentare' && request.minutes) row('Ore folosite din orele suplimentare', String(Math.round(request.minutes / 6) / 10) + ' h');
+  if (request.recovery && request.recovery.minutes) {
+    row('Ore de recuperat', String(Math.round(request.recovery.minutes / 6) / 10) + ' h');
+    const plan = (request.recovery.plan || []).map((x) => x.date.slice(8, 10) + '.' + x.date.slice(5, 7) + ': ' + String(Math.round(x.minutes / 6) / 10) + ' h');
+    row('Plan de recuperare', plan.slice(0, 5).join(', ') + (plan.length > 5 ? ' (+' + (plan.length - 5) + ')' : ''));
+  }
   row('Data cererii', formatDateRO((request.requestedAt || '').slice(0, 10)));
 
   y -= 30;

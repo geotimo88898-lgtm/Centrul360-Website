@@ -8,6 +8,7 @@ const { defaultConfig } = require('./_lib/defaults');
 const { categoriesOf, normalizeCategories, UPSELL_RATE, COST_SHARE } = require('./_lib/cats');
 const { cityOf, inCity } = require('./_lib/city');
 const { photoUrl } = require('./portal-account');
+const { mine: myNotifications } = require('./_lib/notify');
 // Profile photo (Contul meu) of an employee row, as a URL the portal can show.
 const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
 const { defaultAcademy } = require('./_lib/academy');
@@ -207,7 +208,45 @@ module.exports = async (req, res) => {
       current: computeGoalCurrent(g, me.id, sales, appointments, today, month, { leads, name: me.name }),
     }));
 
+    // Bonus reminders for the bell, worked out live (not stored): a bonus reached, or one that's
+    // close (70%+) with the days left. The tone follows the days left: plenty = upbeat, a few = a
+    // little urgency. One short line each; the id changes with the stage, so it pops up again.
+    const bonusNotes = [];
+    if (!isAdmin) {
+      const dim = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
+      const daysLeft = dim - Number(today.slice(8, 10)) + 1;
+      const UNITS = {
+        comision_aprobat_luna: 'lei', incasari_atribuite_luna: 'lei', incasari_inregistrate_luna: 'lei',
+        vanzari_aprobate_luna: ['upsell', 'upsell-uri'], programari_finalizate_luna: ['tratament', 'tratamente'],
+        leaduri_contactate_luna: ['lead', 'leaduri'], leaduri_programate_luna: ['programare', 'programări'], programari_confirmate_azi: ['programare', 'programări'],
+      };
+      const left = (n, u) => { const v = Math.ceil(n); return u === 'lei' ? v.toLocaleString('ro-RO') + ' lei' : u ? v + ' ' + (v === 1 ? u[0] : u[1]) : String(v); };
+      const items = [];
+      myGoals.forEach((g, i) => { if (g.reward > 0 && Number(g.target) > 0) items.push({ key: 'g' + i, title: g.title || 'Bonusul tău', current: Number(g.current) || 0, target: Number(g.target), reward: g.reward, unit: UNITS[g.metric] || '' }); });
+      if (Number(config.companyGoal.reward) && Number(config.companyGoal.target)) items.push({ key: 'company', title: 'Obiectivul clinicii', current: companyApprovedTotal, target: Number(config.companyGoal.target), reward: Number(config.companyGoal.reward), unit: 'lei' });
+      const meRace = leaderboard.findIndex((r) => r.employeeId === me.id);
+      if (meRace > -1 && Number(config.raceBonus.reward) && Number(config.raceBonus.target)) {
+        const row = leaderboard[meRace];
+        items.push({ key: 'race', title: 'Cursa lunii', current: row.count, target: Number(config.raceBonus.target), reward: Number(config.raceBonus.reward), unit: ['tratament', 'tratamente'], won: meRace === 0 && row.count >= Number(config.raceBonus.target) && row.count > 0 });
+      }
+      items.forEach((b) => {
+        const won = b.won != null ? b.won : b.current >= b.target;
+        if (won) {
+          bonusNotes.push({ id: 'bonus:' + month + ':' + b.key + ':won', kind: 'bonus', tone: 'good', live: true, go: 'comision', title: '🏆 Bonus atins: ' + b.title, text: '+' + b.reward + ' lei luna asta. Bravo!' });
+          return;
+        }
+        if (b.current / b.target < 0.7) return;
+        const rest = left(b.target - b.current, b.unit);
+        const stage = daysLeft > 10 ? 'a' : daysLeft > 3 ? 'b' : 'c';
+        const text = stage === 'a' ? 'Mai ai ' + rest + ' până la +' + b.reward + ' lei. Ești aproape! 🎯'
+          : stage === 'b' ? 'Încă ' + rest + ' în ' + daysLeft + ' zile și iei +' + b.reward + ' lei. 💪'
+            : (daysLeft === 1 ? 'Ultima zi! ' : 'Doar ' + daysLeft + ' zile! ') + 'Mai ai ' + rest + ' pentru +' + b.reward + ' lei. ⏳';
+        bonusNotes.push({ id: 'bonus:' + month + ':' + b.key + ':near:' + stage, kind: 'bonus', tone: stage === 'c' ? 'warn' : 'info', live: true, go: 'comision', title: b.title, text });
+      });
+    }
+
     const payload = {
+      notifications: isAdmin ? [] : bonusNotes.concat(await myNotifications({ readJSON }, me.id)),
       me: { id: me.id, name: me.name, location: me.location, role: me.role, username: me.username || '', photo: photoOf(me), prefs: me.prefs || {} },
       city, // set = this account is limited to one city (cosmeticians)
       companyGoal: {
@@ -248,6 +287,9 @@ module.exports = async (req, res) => {
 
     if (isAdmin) {
       payload.admin = {
+        // waiting in Aprobări besides the commissions: days over / under 8 hours, leave requests
+        pendingTime: (await readJSON('data/time-adjust.json', [])).filter((a) => a.status === 'pending').length,
+        pendingLeave: (await readJSON('data/leave-requests.json', [])).filter((r) => r.status === 'pending').length,
         pendingSales: comisionSales
           .filter((s) => s.status === 'pending')
           .map((s) => {

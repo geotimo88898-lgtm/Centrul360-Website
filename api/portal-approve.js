@@ -4,6 +4,7 @@
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { commissionOf } = require('./_lib/cats');
+const { notify } = require('./_lib/notify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -46,6 +47,9 @@ module.exports = async (req, res) => {
     sale.decisionNote = reason ? String(reason).trim().slice(0, 200) : '';
 
     await writeJSON('data/sales.json', sales);
+    await notify({ readJSON, writeJSON }, sale.employeeId, sale.status === 'approved'
+      ? { kind: 'commission', tone: 'good', title: 'Comision aprobat: +' + sale.commission + ' lei', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : '') + '.', go: 'comision' }
+      : { kind: 'commission', tone: 'bad', title: 'Comision respins', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.decisionNote ? '. ' + sale.decisionNote : '.'), go: 'comision' });
 
     res.status(200).json({ ok: true, sale });
   } catch (err) {

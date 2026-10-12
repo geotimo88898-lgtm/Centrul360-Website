@@ -23,9 +23,11 @@
     apanel.classList.add('k-panel', 'ad');
     apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2><p class="k-lede">Comisioanele din upsell așteaptă aici aprobarea ta: devin oficiale în contul angajatei abia după ce le aprobi. Mai jos, cererile de concediu.</p></div>' +
       '<div class="k-head-actions" data-head></div></div><div data-body></div>' +
+      '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Pontaj: ore peste / sub program</h3><span class="k-sub">luni-vineri 8 ore, sâmbăta totul e suplimentar</span></div><div data-time></div></section>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('calendar') + 'Cereri de concediu</h3></div><div data-leave></div></section>';
     apanel.addEventListener('click', onApprovalClick);
     loadLeaveApprovals();
+    loadTimeApprovals();
     document.addEventListener('keydown', (e) => {
       if (!K.isActive('aprobari') || K.drawerOpen || K.typing(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (document.querySelector('.c360-dialog-root, .c360-palette-root')) return;
@@ -81,6 +83,8 @@
     const r = e.target.closest('[data-reject]'); if (r) return decide(r.dataset.reject, 'reject');
     const al = e.target.closest('[data-approve-leave]'); if (al) return decideLeave(al.dataset.approveLeave, 'approved');
     const rl = e.target.closest('[data-reject-leave]'); if (rl) return decideLeave(rl.dataset.rejectLeave, 'rejected');
+    const at = e.target.closest('[data-approve-time]'); if (at) return decideTime(at.dataset.approveTime, 'approve');
+    const rt = e.target.closest('[data-reject-time]'); if (rt) return decideTime(rt.dataset.rejectTime, 'reject');
     if (e.target.closest('[data-all]')) {
       const pend = K.data.admin.pendingSales;
       if (!(await K.ui().confirm({ title: 'Aprobi toate cele ' + pend.length + ' vânzări?', message: 'Comisionul se calculează pentru fiecare cu regulile de acum.', confirmText: 'Aprobă toate' }))) return;
@@ -89,12 +93,14 @@
       K.reload();
     }
   }
-  K.section('aprobari', { mount: mountApprovals, show() { renderApprovals(); loadLeaveApprovals(); }, data() { if (apanel && K.isActive('aprobari')) renderApprovals(); } });
+  K.section('aprobari', { mount: mountApprovals, show() { renderApprovals(); loadLeaveApprovals(); loadTimeApprovals(); }, data() { if (apanel && K.isActive('aprobari')) renderApprovals(); } });
 
   // ---------------------------------------------------------------- Cereri de concediu
   // Second, clearly separate list inside the same Aprobări tab, leave requests aren't tied to
   // commission, but it's the same "admin decides, team sees the result" mental model.
-  const LEAVE_TYPE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu' };
+  const LEAVE_TYPE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu', suplimentare: 'Ore libere din suplimentare' };
+  // "1h 05" / "45 min", with the sign when asked
+  const fmtMin = (m, sign) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return (sign ? (m > 0 ? '+' : m < 0 ? '-' : '') : '') + (h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min'); };
   const LV = { requests: [] };
   function empNameFor(id) {
     if (id === 'admin') return 'Admin';
@@ -123,9 +129,71 @@
     return '<article class="ad-card" data-leave-req="' + esc(r.id) + '">' + K.avatar(empNameFor(r.employeeId), 44) +
       '<div class="ad-main"><div class="ad-top"><b>' + esc(empNameFor(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</span><span class="k-muted">' + esc(K.dateLong(r.startDate)) + '</span></div>' +
       '<div class="ad-what">' + esc(K.dateShort(r.startDate)) + ' - ' + esc(K.dateShort(r.endDate)) + ' · ' + K.plural(r.workDays, 'zi', 'zile') + '</div>' +
-      (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') + '</div>' +
+      (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') +
+      (r.type === 'suplimentare' ? '<div class="ad-plan"><b>' + icon('trend') + 'Folosește ' + fmtMin(r.minutes) + ' din orele suplimentare</b><span>Nu mai are de recuperat.</span></div>' : '') +
+      (r.recovery ? '<div class="ad-plan"><b>' + icon('refresh') + 'Cu recuperare: ' + fmtMin(r.recovery.minutes) + '</b><span>' + (r.recovery.plan || []).map((x) => esc(K.dateShort(x.date)) + ' · ' + fmtMin(x.minutes)).join('  ·  ') + '</span></div>' : '') + '</div>' +
       '<div class="ad-actions"><button type="button" class="k-btn is-danger" data-reject-leave="' + esc(r.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good" data-approve-leave="' + esc(r.id) + '">' + icon('check') + 'Aprobă</button></div></article>';
   }
+  // ---------------------------------------------------------------- Pontaj: days over / under
+  // Each finished day that's 15+ minutes off the 8 hours (or any weekend time). Shows what approving
+  // does right now (covers hours to make up, goes to overtime, comes out of overtime, or becomes
+  // hours to make up); the minutes can be corrected before approving.
+  const TM = { list: [], balances: {}, rate: 40 };
+  async function loadTimeApprovals() {
+    if (!apanel) return;
+    try { const j = await K.api('/api/portal-attendance', { action: 'adjust_list' }); TM.list = j.adjustments || []; TM.balances = j.balances || {}; TM.rate = j.rate || 40; renderTimeApprovals(); }
+    catch (e) { /* best effort */ }
+  }
+  function effectText(bal, m) {
+    if (m > 0) {
+      const cover = Math.min(bal.debt || 0, m), bank = m - cover;
+      return (cover ? fmtMin(cover) + ' acoperă din orele de recuperat (are ' + fmtMin(bal.debt) + ')' : '') + (cover && bank ? ', ' : '') +
+        (bank ? fmtMin(bank) + ' la ore suplimentare = ' + K.lei(Math.round(bank / 60 * TM.rate * 100) / 100) + ', cu salariul' : '');
+    }
+    const miss = -m, take = Math.min(bal.bank || 0, miss), debt = miss - take;
+    return (take ? fmtMin(take) + ' se scad din orele suplimentare (are ' + fmtMin(bal.bank) + ')' : '') + (take && debt ? ', ' : '') + (debt ? fmtMin(debt) + ' trec la recuperat' : '');
+  }
+  function renderTimeApprovals() {
+    const box = apanel && apanel.querySelector('[data-time]');
+    if (!box) return;
+    if (!TM.list.length) { box.innerHTML = '<p class="k-muted">Nicio zi peste sau sub program în așteptare.</p>'; return; }
+    box.innerHTML = '<div class="ad-list">' + TM.list.map((a) => {
+      const bal = TM.balances[a.employeeId] || { debt: 0, bank: 0 };
+      const up = a.minutes > 0;
+      const h = Math.floor(Math.abs(a.minutes) / 60), mi = Math.abs(a.minutes) % 60;
+      return '<article class="ad-card ad-time" data-time-card="' + esc(a.id) + '">' + K.avatar(a.employeeName, 44) +
+        '<div class="ad-main"><div class="ad-top"><b>' + esc(a.employeeName) + '</b>' + (a.location ? '<span class="k-tag">' + icon('pin') + esc(a.location) + '</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(a.date)) + '</span>' + (a.weekend ? '<span class="k-tag is-accent">weekend</span>' : '') + '</div>' +
+          '<div class="ad-what">Sosire ' + esc(a.checkIn || '-') + ' · Plecare ' + esc(a.checkOut || '-') + ' · ' + fmtMin(a.worked) + ' lucrate' + (a.weekend ? '' : ' (program ' + fmtMin(a.expected) + ')') + '</div>' +
+          '<div class="ad-sub ad-effect" data-effect>' + icon('info') + '<span>La aprobare: ' + effectText(bal, a.minutes) + '.</span></div></div>' +
+        '<div class="ad-money ' + (up ? 'is-up' : 'is-down') + '"><span class="ad-label">' + (a.weekend ? 'suplimentar' : up ? 'peste program' : 'sub program') + '</span><b>' + fmtMin(a.minutes, true) + '</b>' +
+          '<label class="ad-edit"><span>Aprobă</span><input type="number" min="0" max="24" data-th value="' + h + '" aria-label="Ore">h<input type="number" min="0" max="59" data-tm value="' + mi + '" aria-label="Minute">min</label></div>' +
+        '<div class="ad-actions"><button type="button" class="k-btn is-danger" data-reject-time="' + esc(a.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good" data-approve-time="' + esc(a.id) + '">' + icon('check') + 'Aprobă</button></div></article>';
+    }).join('') + '</div>';
+    // a corrected number shows its effect right away
+    box.querySelectorAll('[data-time-card]').forEach((card) => card.addEventListener('input', () => {
+      const a = TM.list.find((x) => x.id === card.dataset.timeCard);
+      const m = Math.sign(a.minutes) * ((Number(card.querySelector('[data-th]').value) || 0) * 60 + (Number(card.querySelector('[data-tm]').value) || 0));
+      card.querySelector('[data-effect] span').textContent = m ? 'La aprobare: ' + effectText(TM.balances[a.employeeId] || { debt: 0, bank: 0 }, m) + '.' : 'Cu 0 minute nu se schimbă nimic.';
+    }));
+  }
+  async function decideTime(id, decision) {
+    const card = apanel.querySelector('[data-time-card="' + id + '"]');
+    const a = TM.list.find((x) => x.id === id);
+    let note = '';
+    if (decision === 'reject') {
+      note = await K.ui().prompt({ title: 'Respingi ziua?', message: 'Ex.: a uitat să ponteze plecarea. Vede motivul în notificări.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
+      if (note === null) return;
+    }
+    const minutes = card ? (Number(card.querySelector('[data-th]').value) || 0) * 60 + (Number(card.querySelector('[data-tm]').value) || 0) : Math.abs(a.minutes);
+    if (card) card.classList.add('is-leaving', decision === 'approve' ? 'is-yes' : 'is-no');
+    try {
+      await K.api('/api/portal-attendance', { action: 'adjust_decide', id, decision, minutes, note });
+      K.ui().toast(decision === 'approve' ? 'Aprobat.' : 'Respins.', decision === 'approve' ? 'success' : 'info');
+      setTimeout(loadTimeApprovals, 260);
+      K.reload();
+    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(K.errText(e), 'error'); }
+  }
+
   async function decideLeave(id, decision) {
     const card = apanel.querySelector('[data-leave-req="' + id + '"]');
     let rejectionNote = '';
@@ -136,9 +204,10 @@
     if (card) card.classList.add('is-leaving', decision === 'approved' ? 'is-yes' : 'is-no');
     try {
       await K.api('/api/portal-leave', { action: 'decide', id, decision, rejectionNote });
-      K.ui().toast(decision === 'approved' ? 'Cerere aprobată - PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
+      K.ui().toast(decision === 'approved' ? 'Cerere aprobată, PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
       setTimeout(loadLeaveApprovals, 260);
-    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(K.errText(e), 'error'); }
+      K.reload();
+    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(e.code === 'not_enough_overtime' ? 'Nu mai are destule ore suplimentare pentru cererea asta.' : K.errText(e), 'error'); }
   }
 
   // =====================================================================================

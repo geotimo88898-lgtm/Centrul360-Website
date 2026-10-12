@@ -216,7 +216,7 @@
   // ------------------------------------------------------------------ nav badges
   async function badges() {
     if (!DATA) return;
-    if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length, 'hot');
+    if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length + (DATA.admin.pendingTime || 0) + (DATA.admin.pendingLeave || 0), 'hot');
     if (!frontDesk()) return; // cosmeticians: no pipeline badge / task queue
     if (DATA.me.role === 'receptie') { // Sarcini is the receptionist's own list
       try {
