@@ -780,8 +780,18 @@
 
     if (d.connected) {
       const many = (d.pages || []).length > 1;
+      // the check that answers "why didn't the lead arrive?"
+      const sub = d.subscription || {};
+      const diag = '<div class="st-fb-diag"><div class="st-fb-sub ' + (sub.ok ? 'is-ok' : 'is-bad') + '">' + icon(sub.ok ? 'checkCircle' : 'alert') +
+          '<span>' + (sub.ok ? 'Pagina trimite leadurile la portal.' : 'Pagina nu trimite leadurile la portal' + (sub.error ? ': ' + esc(sub.error) : '.')) + '</span>' +
+          (sub.ok ? '' : '<button type="button" class="k-btn is-primary is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') + '</div>' +
+        (sub.apps && sub.apps.length ? '<small class="k-muted">Aplicații care primesc leadurile Paginii: ' + esc(sub.apps.join(', ')) + '</small>' : '') +
+        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele livrări de la Facebook</b><button type="button" class="k-btn is-ghost is-sm" data-fb-refresh>' + icon('refresh') + 'Reîmprospătează</button></div>' +
+          ((d.deliveries || []).length ? d.deliveries.map((x) => '<div class="st-fb-logrow ' + (x.ok ? 'is-ok' : 'is-bad') + '"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text) + '</em></div>').join('')
+            : '<p class="k-muted">Nimic încă. Un lead de test care nu apare aici nu a fost trimis de Facebook către portal.</p>') + '</div></div>';
       box.innerHTML = '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat la ' + esc(d.pageName || 'Pagină') + '</span>' + (d.connectedAt ? '<span class="k-muted">din ' + esc(new Date(d.connectedAt).toLocaleDateString('ro-RO')) + '</span>' : '') + '</div>' +
         '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
+        diag +
         '<form class="st-fb-adform" data-fb-adform hidden><select data-ad>' + adOptions(d.adAccounts, d.adAccountId) + '</select>' + adManual + '<button type="submit" class="k-btn is-primary is-sm">Salvează</button></form>' +
         '<div class="st-int-row">' + (many ? '<button type="button" class="k-btn is-outline is-sm" data-fb-repick>' + icon('refresh') + 'Altă Pagină</button>' : '') +
         '<a class="k-btn is-outline is-sm" href="/api/fb-oauth-start">' + icon('facebook') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-fbx>Deconectează</button></div>' +
@@ -789,6 +799,12 @@
       bindAdSelect(box);
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });
+      box.querySelector('[data-fb-refresh]').addEventListener('click', () => loadFb(box));
+      const rs = box.querySelector('[data-fb-resub]');
+      if (rs) rs.addEventListener('click', () => K.busy(rs, async () => {
+        try { await K.api('/api/fb-connection-status', { action: 'resubscribe' }); K.ui().toast('Gata, Pagina trimite acum leadurile la portal.', 'success'); loadFb(box); }
+        catch (err) { K.ui().toast('Facebook a refuzat abonarea' + (err.data && err.data.message ? ': ' + err.data.message : '') + '. Încearcă „Conectare cu token”.', 'error'); }
+      }));
       box.querySelector('[data-fb-adform]').addEventListener('submit', async (e) => {
         e.preventDefault();
         try { await K.api('/api/fb-connection-status', { action: 'ad_account', adAccountId: adValue(box) }); K.ui().toast('Contul de reclame e salvat.', 'success'); loadFb(box); } catch (err) { fail(err); }

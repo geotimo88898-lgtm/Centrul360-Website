@@ -25,6 +25,15 @@ const { loadOffers } = require('./_lib/offers');
 const { createLead } = require('./portal-leads');
 
 const FORMS_KEY = 'data/fb-forms.json';
+// what Facebook sent lately and what became of it (Integrări → Facebook → Ultimele livrări)
+const LOG_KEY = 'data/fb-webhook-log.json';
+async function logDelivery(entry) {
+  try {
+    const list = await readJSON(LOG_KEY, []);
+    list.unshift(Object.assign({ at: new Date().toISOString() }, entry));
+    await writeJSON(LOG_KEY, list.slice(0, 30));
+  } catch (err) { console.error('webhook-facebook-leads: log failed', err.message); }
+}
 
 // When neither the form's settings nor its names say the city.
 const DEFAULT_LOCATION = 'Timișoara';
@@ -49,16 +58,17 @@ function isValidSignature(rawBody, header, secret) {
   return crypto.timingSafeEqual(a, b);
 }
 
+// Returns a short line for the delivery log.
 async function processLeadgenEvent(value, pageAccessToken) {
   const leadgenId = value && value.leadgen_id && String(value.leadgen_id);
-  if (!leadgenId) return;
+  if (!leadgenId) return 'fără leadgen_id';
   const doc = await readJSON(FORMS_KEY, {});
   doc.forms = doc.forms || {};
   doc.seen = doc.seen || [];
-  if (doc.seen.includes(leadgenId)) return; // Meta sent the same lead again
+  if (doc.seen.includes(leadgenId)) return 'deja primit'; // Meta sent the same lead again
 
   const got = await fetchLead(leadgenId, pageAccessToken);
-  if (got.error) { console.error('webhook-facebook-leads: fetch lead failed', leadgenId, got.error); return; }
+  if (got.error) { console.error('webhook-facebook-leads: fetch lead failed', leadgenId, got.error); return 'Facebook n-a dat datele leadului: ' + got.error; }
   const lead = got.lead;
   const formId = String(lead.form_id || value.form_id || '');
   const form = doc.forms[formId] = doc.forms[formId] || { name: '', offerId: '', location: '', leads: 0 };
@@ -86,7 +96,8 @@ async function processLeadgenEvent(value, pageAccessToken) {
     interest: offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
     form: { id: formId, name: form.name, ad: lead.ad_name || '', answers: answerPairs(lead.field_data) },
   });
-  if (result.error) console.error('webhook-facebook-leads: createLead failed', leadgenId, result.error);
+  if (result.error) { console.error('webhook-facebook-leads: createLead failed', leadgenId, result.error); return 'nu s-a putut salva: ' + result.error; }
+  return (result.duplicate ? 'lead existent, actualizat: ' : 'lead nou: ') + (name || 'fără nume') + ' · ' + (offer ? offer.title : form.name || 'procedură necunoscută') + ' · ' + location;
 }
 
 module.exports = async (req, res) => {
@@ -94,9 +105,11 @@ module.exports = async (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query || {};
     const { tokens } = await webhookSecrets(readJSON);
     if (!tokens.length || mode !== 'subscribe' || !tokens.includes(token)) {
+      await logDelivery({ kind: 'verify', ok: false, text: 'Verificare webhook respinsă (verify token diferit)' });
       res.status(403).send('forbidden');
       return;
     }
+    await logDelivery({ kind: 'verify', ok: true, text: 'Webhook verificat de Meta' });
     res.status(200).send(String(challenge || ''));
     return;
   }
@@ -117,6 +130,7 @@ module.exports = async (req, res) => {
   const { secrets } = await webhookSecrets(readJSON);
   const signatureHeader = req.headers['x-hub-signature-256'];
   if (!secrets.some((secret) => isValidSignature(rawBody, signatureHeader, secret))) {
+    await logDelivery({ kind: 'lead', ok: false, text: 'Semnătură invalidă: App secret salvat în portal nu e al aplicației care trimite' });
     res.status(403).json({ error: 'invalid_signature' });
     return;
   }
@@ -127,20 +141,21 @@ module.exports = async (req, res) => {
   try {
     const payload = JSON.parse(rawBody.toString('utf8'));
     const conn = await loadConnection(readJSON);
-    if (!conn.pageAccessToken) {
-      console.error('webhook-facebook-leads: received leadgen event but no Facebook Page is connected');
-      return;
-    }
-
     const entries = payload.entry || [];
     for (const entry of entries) {
       const changes = entry.changes || [];
       for (const change of changes) {
         if (change.field !== 'leadgen') continue;
+        const pageId = String((change.value && change.value.page_id) || entry.id || '');
+        // the token of the Page the lead came from (the login may reach several Pages)
+        const token = ((conn.pages || []).find((p) => p.id === pageId) || {}).access_token || conn.pageAccessToken;
+        if (!token) { await logDelivery({ kind: 'lead', ok: false, text: 'Lead primit, dar nicio Pagină conectată în portal' }); continue; }
         try {
-          await processLeadgenEvent(change.value, conn.pageAccessToken);
+          const text = await processLeadgenEvent(change.value, token);
+          await logDelivery({ kind: 'lead', ok: /^lead /.test(text) || text === 'deja primit', text: text + (conn.pageId && pageId && pageId !== conn.pageId ? ' (de pe altă Pagină: ' + pageId + ')' : '') });
         } catch (err) {
           console.error('webhook-facebook-leads: error processing entry', err.message);
+          await logDelivery({ kind: 'lead', ok: false, text: 'Eroare: ' + err.message });
         }
       }
     }
@@ -152,3 +167,4 @@ module.exports = async (req, res) => {
 
 module.exports.config = { api: { bodyParser: false } };
 module.exports.FORMS_KEY = FORMS_KEY;
+module.exports.LOG_KEY = LOG_KEY;

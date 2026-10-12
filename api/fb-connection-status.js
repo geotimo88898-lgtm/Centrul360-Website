@@ -4,6 +4,7 @@
 //         to be picked after Facebook's login (several Pages on one account)
 //   POST { action: 'app', appId, appSecret, configId }   the Meta app to use (saved in the portal,
 //         wins over FB_APP_ID / FB_APP_SECRET in Vercel); an empty secret keeps the saved one
+//   POST { action: 'resubscribe' }   subscribe the connected Page to this app's leads again
 //   POST { action: 'choose', pageId, adAccountId }   connect that Page (from the login just made,
 //         or another Page of the same login) and remember the ad account
 //   POST { action: 'ad_account', adAccountId }       change the ad account (picked from the list, or
@@ -12,7 +13,27 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { APP_KEY, appCreds, loadConnection, loadPending, connectPage, siteOrigin } = require('./_lib/facebook');
+const { APP_KEY, GRAPH_BASE, appCreds, loadConnection, loadPending, connectPage, siteOrigin } = require('./_lib/facebook');
+
+// Is the connected Page subscribed to this app's leadgen webhook? (Meta lists the apps it notifies)
+async function subscription(conn, appId) {
+  try {
+    const r = await fetch(GRAPH_BASE + '/' + encodeURIComponent(conn.pageId) + '/subscribed_apps?' + new URLSearchParams({ access_token: conn.pageAccessToken }));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, error: (j.error && j.error.message) || 'Facebook n-a răspuns' };
+    const apps = j.data || [];
+    const mine = apps.find((a) => String(a.id) === String(appId));
+    return { ok: !!(mine && (mine.subscribed_fields || []).includes('leadgen')), apps: apps.map((a) => a.name || a.id) };
+  } catch (e) { return { ok: false, error: 'rețea' }; }
+}
+async function subscribe(conn) {
+  const r = await fetch(GRAPH_BASE + '/' + encodeURIComponent(conn.pageId) + '/subscribed_apps', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ subscribed_fields: 'leadgen', access_token: conn.pageAccessToken }),
+  });
+  const j = await r.json().catch(() => ({}));
+  return r.ok && j.success ? { ok: true } : { ok: false, error: (j.error && j.error.message) || 'refuzat' };
+}
 
 const pub = (list) => (list || []).map((x) => ({ id: x.id, name: x.name, business: x.business || '' }));
 
@@ -24,8 +45,9 @@ async function status(req) {
     redirectUri: origin + '/api/fb-oauth-callback', webhookUrl: origin + '/api/webhook-facebook-leads', verifyToken: creds.verifyToken,
   };
   if (!creds.appId || !creds.appSecret) return { connected: false, notConfigured: true, app };
-  const [conn, pending] = await Promise.all([loadConnection(readJSON), loadPending({ readJSON })]);
-  const out = { connected: !!conn.pageId, app };
+  const [conn, pending, log] = await Promise.all([loadConnection(readJSON), loadPending({ readJSON }), readJSON('data/fb-webhook-log.json', [])]);
+  const out = { connected: !!conn.pageId, app, deliveries: (log || []).slice(0, 8) };
+  if (conn.pageId) out.subscription = await subscription(conn, creds.appId);
   if (conn.pageId) Object.assign(out, {
     pageName: conn.pageName, connectedAt: conn.connectedAt, pageId: conn.pageId,
     pages: pub(conn.pages), adAccounts: pub(conn.adAccounts), adAccountId: conn.adAccountId || '', adAccountName: conn.adAccountName || '',
@@ -61,6 +83,15 @@ module.exports = async (req, res) => {
       });
       // a Page token belongs to the app that issued it: another app means connecting again
       if (!sameApp) { await writeJSON('data/fb-connection.json', {}); await writeJSON('data/fb-pending.json', {}); }
+      res.status(200).json(await status(req));
+      return;
+    }
+
+    if (body.action === 'resubscribe') {
+      const conn = await loadConnection(readJSON);
+      if (!conn.pageId) { res.status(400).json({ error: 'not_connected' }); return; }
+      const r = await subscribe(conn);
+      if (!r.ok) { res.status(400).json({ error: 'subscribe_failed', message: r.error }); return; }
       res.status(200).json(await status(req));
       return;
     }
