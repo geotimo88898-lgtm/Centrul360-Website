@@ -6,6 +6,7 @@ const { readJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { defaultConfig } = require('./_lib/defaults');
 const { categoriesOf, normalizeCategories, UPSELL_RATE } = require('./_lib/cats');
+const { cityOf, inCity } = require('./_lib/city');
 const { defaultAcademy } = require('./_lib/academy');
 const { loadOffers, discountOf } = require('./_lib/offers');
 
@@ -119,6 +120,9 @@ module.exports = async (req, res) => {
     }
 
     const isAdmin = session.role === 'admin';
+    // A cosmetician works in one city: she sees only its payments and appointments (the clinic's
+    // overall goal still counts both cities).
+    const city = await cityOf(session, readJSON, employeesRaw);
     const activeEmployees = employeesRaw.filter((e) => e.active !== false);
 
     // Commission sales only (source !== 'incasare'; legacy entries from before this
@@ -173,6 +177,7 @@ module.exports = async (req, res) => {
           performedByName: performer ? performer.name : (s.performedBy || '—'),
         };
       })
+      .filter((s) => inCity(city, s.location))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
 
     // Calendar — today's appointments (time order) for the Panou "azi" glance, plus
@@ -180,7 +185,7 @@ module.exports = async (req, res) => {
     // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
     // is fetched directly from api/portal-appointments.js by portal.html, not here.
     const todaysAppointments = appointments
-      .filter((a) => a.date === today)
+      .filter((a) => a.date === today && inCity(city, a.location))
       .slice()
       .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const countsToday = emptyStatusCounts();
@@ -204,6 +209,7 @@ module.exports = async (req, res) => {
 
     const payload = {
       me: { id: me.id, name: me.name, location: me.location, role: me.role },
+      city, // set = this account is limited to one city (cosmeticians)
       companyGoal: {
         target: config.companyGoal.target,
         reward: config.companyGoal.reward,

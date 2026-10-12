@@ -21,6 +21,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary, removeBinary } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { normalizePhone, upsertClient } = require('./_lib/clients');
+const { cityOf, inCity } = require('./_lib/city');
 
 const uid = () => crypto.randomUUID();
 const nowISO = () => new Date().toISOString();
@@ -93,8 +94,9 @@ module.exports = async (req, res) => {
     if (action === 'list') {
       const [clients, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', [])]);
       const phones = new Set(clients.map((c) => normalizePhone(c.phone)).filter(Boolean));
+      const city = await cityOf(session, readJSON, employees);
       const all = clients.map((c) => contactRow(c)).concat(
-        leads.filter((l) => l.phone && !phones.has(normalizePhone(l.phone))).map(leadRow));
+        leads.filter((l) => l.phone && !phones.has(normalizePhone(l.phone))).map(leadRow)).filter((c) => inCity(city, c.location));
       const q = norm(body.q).trim();
       const qDigits = String(body.q || '').replace(/\D/g, '');
       const filter = body.filter || 'all';

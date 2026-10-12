@@ -206,7 +206,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-dtitle p{ margin:.15rem 0 0; font-size:.76rem; color:var(--muted); display:flex; align-items:center; gap:.3rem; flex-wrap:wrap; }
 .pl-avatar{
   --c:var(--accent); width:42px; height:42px; border-radius:13px; display:grid; place-items:center; flex:none; font-weight:700; font-size:.92rem;
-  color:#fff; background:linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, #000));
+  color:#fff; background:linear-gradient(135deg, color-mix(in srgb, var(--c) 76%, #000), color-mix(in srgb, var(--c) 54%, #000));
 }
 .pl-avatar.is-new{ background:var(--accent-soft); color:var(--accent); }
 .pl-avatar .pl-ic{ width:20px; height:20px; }

@@ -218,7 +218,7 @@
     return '<ol class="db-tl">' + list.map((a) => {
       const st = STATUS[a.status] || { label: a.status, tone: '' };
       return '<li class="db-tl-item is-' + a.status + '" data-appt="' + esc(a.id) + '" data-time="' + esc(a.time || '') + '">' +
-        '<span class="db-tl-time">' + esc(a.time || '—') + '</span><span class="db-tl-dot"></span>' +
+        '<span class="db-tl-time">' + esc(a.time || '—') + (a.endTime && a.endTime > (a.time || '') ? '<small>' + esc(a.endTime) + '</small>' : '') + '</span><span class="db-tl-dot"></span>' +
         '<div class="db-tl-card"><div class="db-tl-top"><b>' + esc(a.clientName || '—') + '</b><span class="k-tag is-' + st.tone + '">' + st.label + '</span></div>' +
         '<div class="db-tl-sub">' + esc(a.treatment || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div></li>';
     }).join('') + '</ol>';

@@ -4,7 +4,7 @@
 
 /* ---------------- tokens ---------------- */
 /* Cool, clean neutrals + one vivid accent pair (--accent → --accent-2) used as a gradient for the
-   moments that matter. The accent pair is switchable from the avatar menu (html[data-accent]). */
+   moments that matter. Any accent colour / gradient can be picked in the avatar menu (portal-accent.js). */
 :root{
   color-scheme: dark;
   --ink:#f4f5f9;            /* page */
@@ -44,7 +44,7 @@
     --surface-3:#181b23;
     --fg:#eef0f7;
     --muted:#8f96a7;
-    --muted-2:#5b6172;
+    --muted-2:#6a7083;  /* ≥3:1 on the dark surfaces, so secondary labels stay readable */
     --line:#1d2029;
     --line-on-dark:#282c37;
     --glass:rgba(255,255,255,.04);
@@ -63,17 +63,11 @@
     --topbar-bg:rgba(7,8,11,.72);
   }
 }
-/* Accent themes (chosen in the avatar menu, stored per device). */
-html[data-accent="ocean"]{ --accent:#2563eb; --accent-2:#3b82f6; --accent-soft:rgba(37,99,235,.10); }
-html[data-accent="emerald"]{ --accent:#059669; --accent-2:#10b981; --accent-soft:rgba(5,150,105,.10); }
-html[data-accent="sunset"]{ --accent:#ea580c; --accent-2:#f97316; --accent-soft:rgba(234,88,12,.10); }
-html[data-accent="mono"]{ --accent:#18181b; --accent-2:#52525b; --accent-soft:rgba(24,24,27,.08); --accent-fg:#fff; }
-@media all{ /* always dark */
-  html[data-accent="ocean"]{ --accent:#5b8cff; --accent-2:#93b4ff; --accent-soft:rgba(91,140,255,.16); }
-  html[data-accent="emerald"]{ --accent:#34d399; --accent-2:#6ee7b7; --accent-soft:rgba(52,211,153,.15); --accent-fg:#04140d; }
-  html[data-accent="sunset"]{ --accent:#fb923c; --accent-2:#fdba74; --accent-soft:rgba(251,146,60,.15); --accent-fg:#1a0a02; }
-  html[data-accent="mono"]{ --accent:#f4f4f5; --accent-2:#a1a1aa; --accent-soft:rgba(244,244,245,.10); --accent-fg:#09090b; }
-}
+/* Accent colour: any colour / gradient picked in the avatar menu. portal-accent.js computes
+   --accent, --accent-2, --accent-3, --accent-fg (text on the accent) and --accent-soft and sets them
+   inline on <html>; the values above are the default violet. Text on the status colours (good / warn /
+   bad backgrounds) uses --on-color, which reads on all of them. */
+:root{ --on-color:#0b0d12; }
 
 /* ---------------- base ---------------- */
 html{ scroll-behavior:smooth; }
@@ -198,7 +192,7 @@ button.pill.small{ border-radius:9px; padding:.4rem .8rem; font-size:.76rem; }
 button.pill.ghost{ background:var(--glass); color:var(--fg); box-shadow:none; }
 button.pill.ghost:hover{ background:var(--glass-2); }
 button.pill.danger{ background:var(--bad-soft); color:var(--bad); box-shadow:none; }
-button.pill.danger:hover{ background:var(--bad); color:#fff; }
+button.pill.danger:hover{ background:var(--bad); color:var(--on-color); }
 button.pill.is-busy{ pointer-events:none; opacity:.75; }
 button.pill.is-busy::before{
   content:""; width:13px; height:13px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent;
@@ -338,7 +332,7 @@ kbd{
 }
 .c360-avatar{
   width:34px; height:34px; border-radius:50%; display:inline-grid; place-items:center; margin-left:.7rem;
-  background:var(--grad); color:#fff; cursor:pointer; transition:transform .2s var(--spring), box-shadow .2s ease;
+  background:var(--grad); color:var(--accent-fg); cursor:pointer; transition:transform .2s var(--spring), box-shadow .2s ease;
   font-size:.76rem; font-weight:700; letter-spacing:.03em; box-shadow:0 0 0 3px var(--paper), 0 0 0 4px var(--line);
 }
 
@@ -427,7 +421,7 @@ html.c360-noscroll{ overflow:hidden; }
 .c360-btn.is-ghost:hover{ background:var(--glass-2); }
 .c360-btn.is-primary{ background:var(--fg); color:var(--ink); box-shadow:var(--shadow-sm); }
 .c360-btn.is-primary:hover{ box-shadow:var(--shadow); transform:translateY(-1px); }
-.c360-btn.is-danger{ background:var(--bad); color:#fff; box-shadow:0 8px 20px -10px var(--bad); }
+.c360-btn.is-danger{ background:var(--bad); color:var(--on-color); box-shadow:0 8px 20px -10px var(--bad); }
 .c360-btn.is-danger:hover{ transform:translateY(-1px); filter:brightness(1.05); }
 
 /* ---------------- command palette ---------------- */
@@ -494,11 +488,7 @@ html.c360-noscroll{ overflow:hidden; }
 }
 
 /* ---------------- duo accent: a deep indigo next to the violet ---------------- */
-:root{ --accent-3:#4a55c9; }
-html[data-accent="ocean"]{ --accent-3:#6d4fd1; }
-html[data-accent="emerald"]{ --accent-3:#1f7a9e; }
-html[data-accent="sunset"]{ --accent-3:#b8326b; }
-html[data-accent="mono"]{ --accent-3:#52525b; }
+:root{ --accent-3:#6f63e0; }
 body::before{
   content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
   background:
@@ -531,7 +521,7 @@ body::before{
 .k-btn.is-accent:hover, .pl-btn.is-hot:hover{ animation-duration:2.6s; }
 .k-eyebrow{
   background:
-    radial-gradient(circle at 50% 50%, #c4b5fd 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, var(--accent-2) 0%, transparent 40%),
     radial-gradient(circle at 50% 50%, var(--accent-3) 0%, transparent 45%),
     linear-gradient(var(--accent), var(--accent)) !important;
   background-size:240% 300%, 260% 300%, 100% 100% !important;

@@ -27,7 +27,7 @@
       '.wa-conv-name{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }' +
       '.wa-conv-time{ font-size:.72rem; color:var(--muted); flex:none; }' +
       '.wa-conv-preview{ font-size:.82rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:.15rem; }' +
-      '.wa-conv-badge{ flex:none; min-width:20px; height:20px; border-radius:999px; background:var(--accent,#6a4dff); color:#fff; font-size:.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 .35rem; }' +
+      '.wa-conv-badge{ flex:none; min-width:20px; height:20px; border-radius:999px; background:var(--accent,#6a4dff); color:var(--accent-fg,#fff); font-size:.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 .35rem; }' +
       '.wa-thread{ display:flex; flex-direction:column; height:min(70vh,640px); }' +
       '.wa-thread-head{ display:flex; align-items:center; gap:.6rem; padding-bottom:.6rem; border-bottom:1px solid var(--border, rgba(127,127,127,.18)); }' +
       '.wa-thread-body{ flex:1; overflow-y:auto; padding:.8rem .2rem; display:flex; flex-direction:column; gap:.4rem; }' +
@@ -35,7 +35,7 @@
       '.wa-bubble-row.is-out{ justify-content:flex-end; }' +
       '.wa-bubble{ max-width:70%; padding:.55rem .75rem; border-radius:14px; font-size:.86rem; line-height:1.4; white-space:pre-wrap; word-break:break-word; }' +
       '.wa-bubble-row.is-in .wa-bubble{ background:var(--panel-2, rgba(127,127,127,.12)); border-radius:14px 14px 14px 4px; }' +
-      '.wa-bubble-row.is-out .wa-bubble{ background:var(--accent,#6a4dff); color:#fff; border-radius:14px 14px 4px 14px; }' +
+      '.wa-bubble-row.is-out .wa-bubble{ background:var(--accent,#6a4dff); color:var(--accent-fg,#fff); border-radius:14px 14px 4px 14px; }' +
       '.wa-bubble-meta{ display:block; font-size:.68rem; opacity:.7; margin-top:.25rem; text-align:right; }' +
       '.wa-send{ display:flex; gap:.5rem; padding-top:.6rem; border-top:1px solid var(--border, rgba(127,127,127,.18)); }' +
       '.wa-send textarea{ flex:1; resize:none; min-height:42px; max-height:120px; }' +

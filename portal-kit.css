@@ -26,19 +26,20 @@ main.k-wide{ max-width:1320px; min-width:0; }
 .k-btn:disabled{ opacity:.45; pointer-events:none; }
 .k-btn.is-primary{ background:var(--fg); color:var(--ink); box-shadow:var(--shadow-sm); }
 .k-btn.is-primary:hover{ box-shadow:var(--shadow); transform:translateY(-1px); }
-.k-btn.is-accent{ background:var(--grad); color:#fff; box-shadow:var(--glow); }
+.k-btn.is-accent{ background:var(--grad); color:var(--accent-fg); box-shadow:var(--glow); }
 .k-btn.is-accent:hover{ transform:translateY(-1px); filter:brightness(1.07) saturate(1.1); }
 .k-btn.is-outline{ background:transparent; box-shadow:inset 0 0 0 1px var(--line-on-dark); }
 .k-btn.is-outline:hover{ background:var(--glass); }
-.k-btn.is-good{ background:var(--good); color:#fff; }
+.k-btn.is-good{ background:var(--good); color:var(--on-color); }
 .k-btn.is-danger{ background:var(--bad-soft); color:var(--bad); }
-.k-btn.is-danger:hover{ background:var(--bad); color:#fff; }
+.k-btn.is-danger:hover{ background:var(--bad); color:var(--on-color); }
 .k-btn.is-sm{ padding:.42rem .7rem; font-size:.8rem; border-radius:9px; }
 .k-btn.is-lg{ padding:.85rem 1.3rem; font-size:.95rem; border-radius:13px; }
 .k-btn kbd{ font-size:.66rem; padding:.12rem .36rem; border-radius:6px; background:rgba(127,127,127,.2); border:0; color:inherit; opacity:.75; }
 .k-btn.is-busy{ color:transparent !important; }
 .k-btn.is-busy::after{ content:""; position:absolute; inset:0; margin:auto; width:15px; height:15px; border-radius:50%; border:2px solid currentColor; border-color:var(--muted); border-right-color:transparent; animation:k-spin .7s linear infinite; }
-.k-btn.is-primary.is-busy::after, .k-btn.is-accent.is-busy::after{ border-color:#fff; border-right-color:transparent; }
+.k-btn.is-primary.is-busy::after{ border-color:var(--ink); border-right-color:transparent; }
+.k-btn.is-accent.is-busy::after{ border-color:var(--accent-fg); border-right-color:transparent; }
 .k-icon-btn{ width:34px; height:34px; display:inline-grid; place-items:center; border:0; border-radius:10px; background:transparent; color:var(--muted); cursor:pointer; text-decoration:none;
   transition:background .2s ease, color .2s ease, transform .15s var(--ease); flex:none; }
 .k-icon-btn:hover{ background:var(--glass-2); color:var(--fg); }
@@ -160,7 +161,7 @@ button.k-stat:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
 
 /* ---------------- avatar / lists ---------------- */
 .k-avatar{ --c:var(--accent); --s:36px; width:var(--s); height:var(--s); border-radius:calc(var(--s) * .32); display:inline-grid; place-items:center; flex:none;
-  font-weight:700; font-size:calc(var(--s) * .36); color:#fff; letter-spacing:.02em; background:linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 62%, #000)); }
+  font-weight:700; font-size:calc(var(--s) * .36); color:#fff; letter-spacing:.02em; background:linear-gradient(135deg, color-mix(in srgb, var(--c) 76%, #000), color-mix(in srgb, var(--c) 54%, #000)); }
 .k-list{ display:flex; flex-direction:column; }
 .k-row{ display:flex; align-items:center; gap:.8rem; padding:.7rem .4rem; border-radius:12px; transition:background .15s ease; min-width:0; }
 .k-row + .k-row{ border-top:1px solid var(--line); }
@@ -225,7 +226,7 @@ rect.k-col{ transform-box:fill-box; transform-origin:bottom; animation:k-bar .7s
 .k-drawer-root.is-open .k-drawer{ transform:none; }
 .k-drawer.is-swap > *{ animation:k-swap .32s var(--ease) both; }
 .k-dhead{ display:flex; align-items:center; gap:.7rem; padding:1rem 1rem .95rem 1.25rem; border-bottom:1px solid var(--line); }
-.k-dicon{ width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background:var(--grad); color:#fff; flex:none; box-shadow:var(--glow); }
+.k-dicon{ width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background:var(--grad); color:var(--accent-fg); flex:none; box-shadow:var(--glow); }
 .k-dicon .k-ic{ width:19px; height:19px; }
 .k-dtitle{ flex:1; min-width:0; }
 .k-dtitle h3{ margin:0; font-size:1.06rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -253,7 +254,7 @@ rect.k-col{ transform-box:fill-box; transform-origin:bottom; animation:k-bar .7s
 /* ---------------- nav badge + accent picker ---------------- */
 .k-nav-badge{ margin-left:auto; min-width:20px; height:20px; padding:0 .38rem; border-radius:999px; display:inline-grid; place-items:center; font-size:.68rem; font-weight:700;
   background:var(--glass-2); color:var(--fg); font-variant-numeric:tabular-nums; }
-.k-nav-badge.is-hot{ background:var(--grad); color:#fff; box-shadow:var(--glow); }
+.k-nav-badge.is-hot{ background:var(--grad); color:var(--accent-fg); box-shadow:var(--glow); }
 .k-nav-badge.is-pop{ animation:k-pop .45s var(--spring); }
 html.c360-rail .k-nav-badge{ position:absolute; top:3px; right:5px; min-width:16px; height:16px; font-size:.6rem; padding:0 .25rem; }
 .k-menu{ position:fixed; z-index:960; min-width:250px; padding:6px; background:var(--paper); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-lg);
@@ -263,10 +264,6 @@ html.c360-rail .k-nav-badge{ position:absolute; top:3px; right:5px; min-width:16
 .k-menu-head b{ display:block; font-size:.88rem; }
 .k-menu-head small{ color:var(--muted); font-size:.75rem; }
 .k-menu-label{ font-size:.64rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted-2); padding:.55rem .6rem .35rem; }
-.k-swatches{ display:flex; gap:.45rem; padding:.2rem .6rem .6rem; }
-.k-swatches button{ width:28px; height:28px; border-radius:50%; border:0; cursor:pointer; background:linear-gradient(135deg, var(--a), var(--b)); transition:transform .2s var(--spring), box-shadow .2s ease; }
-.k-swatches button:hover{ transform:scale(1.12); }
-.k-swatches button.is-on{ box-shadow:0 0 0 2px var(--paper), 0 0 0 4px var(--a); }
 .k-menu-item{ width:100%; display:flex; align-items:center; gap:.6rem; padding:.55rem .6rem; border:0; border-radius:10px; background:transparent; color:var(--fg); font:inherit; font-size:.86rem; cursor:pointer; text-align:left; }
 .k-menu-item:hover{ background:var(--glass); }
 .k-menu-item .k-ic{ color:var(--muted); }

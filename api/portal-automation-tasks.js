@@ -62,7 +62,8 @@ module.exports = async (req, res) => {
       let visible = showAll ? allTasks : allTasks.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today));
 
       const isAdmin = session.role === 'admin';
-      if (!isAdmin) {
+      // Reception works for both clinics; only other roles are limited to their own city.
+      if (!isAdmin && session.role !== 'receptie') {
         const me = employeesRaw.find((e) => e.id === session.employeeId);
         const myLocation = me ? me.location : '';
         visible = visible.filter((t) => t.assigneeRole === 'any' || !t.location || t.location === myLocation);

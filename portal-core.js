@@ -279,50 +279,44 @@
   window.addEventListener('c360:creative-new', () => creativePost({ type: 'c360:new-request' }));
 
   // ------------------------------------------------------------------ avatar menu
-  const ACCENTS = [
-    ['violet', 'Violet', '#6a4dff', '#8b5cf6'], ['ocean', 'Ocean', '#2563eb', '#3b82f6'], ['emerald', 'Smarald', '#059669', '#10b981'],
-    ['sunset', 'Apus', '#ea580c', '#f97316'], ['mono', 'Monocrom', '#18181b', '#71717a'],
-  ];
   let menu = null;
+  const phone = () => window.matchMedia('(max-width:720px)').matches; // no side rail, no keyboard
   function openMenu(anchor) {
     if (menu) { closeMenu(); return; }
-    const cur = document.documentElement.getAttribute('data-accent') || 'violet';
     menu = document.createElement('div');
-    menu.className = 'k-menu';
+    menu.className = 'k-menu has-acc';
     menu.innerHTML =
       '<div class="k-menu-head">' + K.avatar(DATA ? DATA.me.name : '?', 38) + '<div><b>' + esc(DATA ? DATA.me.name : '') + '</b><small>' + esc(document.getElementById('whoLocation').textContent || 'Administrator · acces complet') + '</small></div></div>' +
-      '<div class="k-menu-label">Culoare accent</div><div class="k-swatches">' +
-      ACCENTS.map(([k, label, a, b]) => '<button type="button" title="' + label + '" data-accent="' + k + '" class="' + (k === cur ? 'is-on' : '') + '" style="--a:' + a + ';--b:' + b + '"></button>').join('') + '</div>' +
-      '<button type="button" class="k-menu-item" data-act="rail">' + icon('layers') + 'Strânge / extinde meniul<kbd>Ctrl B</kbd></button>' +
+      (window.C360Accent ? window.C360Accent.menuHtml() : '') +
+      (phone() ? '<button type="button" class="k-menu-item" data-act="nav">' + icon('layers') + 'Deschide meniul</button>' :
+        '<button type="button" class="k-menu-item" data-act="rail">' + icon('layers') + 'Strânge / extinde meniul<kbd>Ctrl B</kbd></button>') +
       '<button type="button" class="k-menu-item" data-act="search">' + icon('search') + 'Caută orice<kbd>Ctrl K</kbd></button>' +
       '<button type="button" class="k-menu-item" data-act="logout">' + icon('power') + 'Deconectare</button>';
     document.body.appendChild(menu);
     const r = anchor.getBoundingClientRect();
     menu.style.top = (r.bottom + 8) + 'px';
     menu.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
-    requestAnimationFrame(() => menu.classList.add('is-open'));
+    menu.style.setProperty('--menu-top', (r.bottom + 8) + 'px');
+    if (window.C360Accent) window.C360Accent.wire(menu);
+    requestAnimationFrame(() => menu && menu.classList.add('is-open'));
     menu.addEventListener('click', (e) => {
-      const sw = e.target.closest('[data-accent]');
-      if (sw) {
-        const k = sw.dataset.accent;
-        if (k === 'violet') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', k);
-        try { localStorage.setItem('c360_accent', k); } catch (err) { /* private mode */ }
-        menu.querySelectorAll('[data-accent]').forEach((x) => x.classList.toggle('is-on', x === sw));
-        return;
-      }
       const act = e.target.closest('[data-act]');
       if (!act) return;
+      const what = act.dataset.act;
       closeMenu();
-      if (act.dataset.act === 'rail') document.querySelector('.c360-rail-toggle') && document.querySelector('.c360-rail-toggle').click();
-      if (act.dataset.act === 'search') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
-      if (act.dataset.act === 'logout') logout();
+      if (what === 'rail') { const t = document.querySelector('.c360-rail-toggle'); if (t) t.click(); }
+      // phones: the side menu is the "☰" button under the top bar
+      if (what === 'nav') { const b = document.querySelector('.c360-mnav'); if (b) setTimeout(() => b.click(), 0); }
+      if (what === 'search') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+      if (what === 'logout') logout();
     });
   }
   function closeMenu() { if (!menu) return; const m = menu; menu = null; m.classList.remove('is-open'); setTimeout(() => m.remove(), 200); }
   document.addEventListener('click', (e) => {
     const av = e.target.closest('.c360-avatar');
     if (av) { e.stopPropagation(); openMenu(av); return; }
-    if (menu && !e.target.closest('.k-menu')) closeMenu();
+    // (a drag on the colour picker that ends outside the menu doesn't close it)
+    if (menu && !e.target.closest('.k-menu') && !(window.C360Accent && window.C360Accent.justDragged())) closeMenu();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && menu) closeMenu(); });
 

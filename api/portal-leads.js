@@ -32,6 +32,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
+const { cityOf, inCity } = require('./_lib/city');
 const { requireRole, requireAdmin } = require('./_lib/auth');
 const workflows = require('./_lib/workflows');
 const { upsertClient } = require('./_lib/clients');
@@ -248,7 +249,8 @@ module.exports = async (req, res) => {
     return;
   }
   // The pipeline is reception's (and the owner's) — cosmeticians don't work leads.
-  const session = requireRole(req, res, ['admin', 'receptie']);
+  // Reception works every lead; a cosmetician sees and works only her city's leads (booking stays with reception).
+  const session = requireRole(req, res, ['admin', 'receptie', 'cosmetician']);
   if (!session) return;
   const body = req.body || {};
   const { action } = body;
@@ -293,7 +295,8 @@ module.exports = async (req, res) => {
     const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
 
     if (action === 'list') {
-      const sorted = leads.slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((l) => withComputedFields(l, stages));
+      const city = await cityOf(session, readJSON);
+      const sorted = leads.filter((l) => inCity(city, l.location)).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((l) => withComputedFields(l, stages));
       res.status(200).json({
         ok: true, stages, leads: sorted,
         meta: { sources: VALID_SOURCES, locations: VALID_LOCATIONS, outcomes: VALID_OUTCOMES, channels: VALID_CHANNELS, inactiveDays: INACTIVE_DAYS_THRESHOLD },
@@ -304,6 +307,7 @@ module.exports = async (req, res) => {
     const lead = body.leadId ? leads.find((l) => l.id === body.leadId) : null;
     if (!body.leadId) return fail(400, 'missing_lead_id');
     if (!lead) return fail(404, 'lead_not_found');
+    if (!inCity(await cityOf(session, readJSON), lead.location)) return fail(403, 'forbidden');
     const author = await authorName(session);
     const save = async (extra) => {
       await writeJSON(LEADS_KEY, leads);

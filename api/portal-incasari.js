@@ -3,15 +3,15 @@
 // owner, never by whoever recorded the payment.
 //
 // A payment is tied to its appointment and, when the client paid more than booked, to an upsell
-// commission entry (10% to whoever did the treatment). Both follow the correction:
-//   - update: the upsell is recomputed (still-pending upsell entries are updated, created or
-//     removed; an upsell the owner already approved is left as it is).
-//   - delete: the appointment becomes unpaid again (back in the payment list) and a pending
-//     upsell entry is removed with it.
+// commission entry (10% to whoever did the treatment, credited automatically). Both follow:
+//   - update: the upsell commission is recomputed (amount, person, date) or removed if there is
+//     no upsell any more; one created if the correction produces an upsell.
+//   - delete: the appointment becomes unpaid again (back in the payment list) and its upsell
+//     commission goes with it.
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { normalizeCategories } = require('./_lib/cats');
+const { normalizeCategories, UPSELL_RATE } = require('./_lib/cats');
 const portalSale = require('./portal-sale');
 
 const VALID_METHODS = ['card', 'cash', 'transfer', 'cash_card'];
@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
 
     if (action === 'delete') {
       const drop = new Set([entry.id]);
-      if (upsellEntry && upsellEntry.status === 'pending') drop.add(upsellEntry.id);
+      if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) drop.add(upsellEntry.id);
       await writeJSON('data/sales.json', sales.filter((s) => !drop.has(s.id)));
       if (entry.appointmentId) {
         const appointments = await readJSON('data/appointments.json', []);
@@ -92,10 +92,11 @@ module.exports = async (req, res) => {
 
       // Keep the upsell commission in step (only while it's still waiting for approval).
       let next = sales;
-      if (upsellEntry && upsellEntry.status === 'pending') {
+      if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) {
         if (entry.upsell > 0 && entry.performedBy) {
-          Object.assign(upsellEntry, { amount: entry.upsell, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
+          Object.assign(upsellEntry, { amount: entry.upsell, bookedAmount: booked, paidAmount: amount, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
             note: 'Programat ' + booked + ' lei, încasat ' + amount + ' lei' });
+          if (upsellEntry.automatic) upsellEntry.commission = Math.round(entry.upsell * UPSELL_RATE) / 100;
         } else next = sales.filter((s) => s.id !== upsellEntry.id);
       } else if (!upsellEntry && entry.upsell > 0 && entry.performedBy) {
         const employees = await readJSON('data/employees.json', []);

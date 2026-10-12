@@ -19,8 +19,9 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
-const { CATEGORIES, normalizeCategories, categoriesOf } = require('./_lib/cats');
+const { CATEGORIES, normalizeCategories, categoriesOf, UPSELL_RATE } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
+const { cityOf, inCity } = require('./_lib/city');
 
 // The three treatment categories (see _lib/cats.js); kept under this name for older importers.
 const VALID_CATEGORIES = CATEGORIES;
@@ -112,8 +113,8 @@ async function handleComision(req, res, session) {
 // "Încasare" = an appointment gets paid. The desk picks only three things: WHICH appointment,
 // HOW it was paid (card / cash / transfer / cash + card) and WHO did the treatment. The amount
 // defaults to what the appointment was booked for; if the client pays more (she bought more on
-// the spot), the difference is an upsell and the person who did the treatment earns 10% of it,
-// as a commission entry that goes to Aprobări like every commission.
+// the spot), the difference is an upsell and the person picked as "who did the treatment" in the
+// payment (not the one on the appointment) earns 10% of it — automatically, no approval needed.
 async function handleIncasare(req, res, session) {
   const { appointmentId, method, performedBy } = req.body || {};
   if (!appointmentId) { res.status(400).json({ error: 'missing_appointment' }); return; }
@@ -136,6 +137,7 @@ async function handleIncasare(req, res, session) {
     ]);
     const appt = appointments.find((x) => x.id === appointmentId);
     if (!appt) { res.status(404).json({ error: 'appointment_not_found' }); return; }
+    if (!inCity(await cityOf(session, readJSON, employees), appt.location)) { res.status(403).json({ error: 'forbidden' }); return; }
     if (appt.paidSaleId && sales.some((x) => x.id === appt.paidSaleId)) { res.status(409).json({ error: 'already_paid' }); return; }
     const performer = performedBy ? employees.find((e) => e.id === performedBy) : null;
     if (!performer) { res.status(400).json({ error: 'missing_performer' }); return; }
@@ -194,8 +196,10 @@ async function handleIncasare(req, res, session) {
   }
 }
 
-// The commission entry for the upsell part of a payment (pending until the owner approves it).
+// The commission entry for the upsell part of a payment: 10% of (paid − booked), credited at once
+// to whoever did the treatment. A correction of the payment (api/portal-incasari.js) recomputes it.
 function upsellFor(entry, employeeId) {
+  const amount = entry.upsell;
   return {
     id: crypto.randomUUID(),
     source: 'comision',
@@ -206,14 +210,18 @@ function upsellFor(entry, employeeId) {
     categories: entry.categories,
     category: entry.category,
     treatment: 'Upsell · ' + entry.treatment,
-    amount: entry.upsell,
+    amount,
+    bookedAmount: entry.bookedAmount,
+    paidAmount: entry.amount,
     note: 'Programat ' + entry.bookedAmount + ' lei, încasat ' + entry.amount + ' lei',
     clientId: entry.clientId,
     client: entry.client,
-    status: 'pending',
-    commission: 0,
+    status: 'approved',
+    commission: Math.round(amount * UPSELL_RATE) / 100,
+    automatic: true,
     createdAt: new Date().toISOString(),
-    decidedAt: null,
+    decidedAt: new Date().toISOString(),
+    decisionNote: '',
   };
 }
 

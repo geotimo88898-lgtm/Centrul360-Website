@@ -14,8 +14,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script>
-  // Accent theme before first paint (picked in the avatar menu).
-  try { var a = localStorage.getItem('c360_accent'); if (a && a !== 'violet') document.documentElement.setAttribute('data-accent', a); } catch (e) {}
+  // Accent colour before first paint (picked in the avatar menu; computed by portal-accent.js).
+  try { var v = JSON.parse(localStorage.getItem('c360_accent_v') || 'null'); if (v) for (var k in v) if (/^--accent/.test(k)) document.documentElement.style.setProperty(k, v[k]); } catch (e) {}
 </script>
 <style>
   /* Layout skeleton only — every visual rule lives in portal-theme.css / portal-kit.css / portal-sections.css. */
@@ -56,6 +56,7 @@
 <link rel="stylesheet" href="/portal-sections.css">
 <link rel="stylesheet" href="/portal-pipeline.css">
 <link rel="stylesheet" href="/portal-v2.css">
+<script src="/portal-accent.js" defer></script>
 <script src="/portal-ui.js" defer></script>
 <script src="/portal-kit.js" defer></script>
 <script src="/portal-pipeline.js" defer></script>

@@ -15,7 +15,7 @@
 // 4-person internal tool in active development, so there is no migration: old rows
 // are simply ignored under the new shape:
 //   {
-//     id, date (YYYY-MM-DD), time (HH:MM),
+//     id, date (YYYY-MM-DD), time (HH:MM), endTime (HH:MM, '' = not set → shown as 1h),
 //     clientId, clientName,                 // denormalized, via upsertClient()
 //     treatment,                            // free text
 //     category,                             // VALID_CATEGORIES, shared with portal-sale.js
@@ -31,6 +31,7 @@ const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
 const { normalizeCategories } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
+const { cityOf, inCity } = require('./_lib/city');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records) — kept as a literal list
@@ -71,7 +72,7 @@ async function resolveClient({ clientId, clientName, clientPhone }) {
 }
 
 async function validateAndBuildFields(body, employees) {
-  const { date, time, treatment, location, cosmeticianId, status } = body || {};
+  const { date, time, endTime, treatment, location, cosmeticianId, status } = body || {};
   // One or more of: epilare-laser, faciale, corporale (older single `category` keys still accepted).
   const categories = normalizeCategories(body && body.categories && body.categories.length ? body.categories : body && body.category);
   // What the client is booked to pay. Paying more at the desk = upsell (10% to whoever did it).
@@ -94,10 +95,16 @@ async function validateAndBuildFields(body, employees) {
     cosmeticianName = cosmetician.name;
   }
 
+  // The end must come after the start; anything else is dropped (the calendar then draws 1h).
+  const start = cleanTime(time), end = cleanTime(endTime);
+  const minutes = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const cleanEnd = start && end && minutes(end) > minutes(start) ? end : '';
+
   return {
     fields: {
       date,
-      time: cleanTime(time),
+      time: start,
+      endTime: cleanEnd,
       clientId: clientRecord.id,
       clientName: clientRecord.name,
       clientPhone: clientRecord.phone || '', // denormalized so the Calendar can call / WhatsApp
@@ -146,6 +153,8 @@ module.exports = async (req, res) => {
 
   try {
     const appointments = await readJSON('data/appointments.json', []);
+    // A cosmetician sees only her clinic's city; reception and the owner see both.
+    const city = await cityOf(session, readJSON);
 
     // Payment drawer (Încasări): appointments still to be paid, newest first — today and the last
     // 30 days, not cancelled, not leave blocks, not already paid.
@@ -153,7 +162,7 @@ module.exports = async (req, res) => {
       const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
       const from = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
       const list = appointments
-        .filter((a) => a.date >= from && a.date <= today && !a.paidSaleId && !['anulata', 'concediu', 'finalizata'].includes(a.status))
+        .filter((a) => a.date >= from && a.date <= today && !a.paidSaleId && !['anulata', 'concediu', 'finalizata'].includes(a.status) && inCity(city, a.location))
         .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.time || '').localeCompare(b.time || '')));
       res.status(200).json({ ok: true, appointments: list });
       return;
@@ -166,7 +175,7 @@ module.exports = async (req, res) => {
         return;
       }
       const matching = appointments
-        .filter((a) => a.date >= from && a.date <= to)
+        .filter((a) => a.date >= from && a.date <= to && inCity(city, a.location))
         .slice()
         .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : (a.time || '').localeCompare(b.time || '')));
       // Appointments saved before clientPhone was stored get it from the client directory.
@@ -229,6 +238,7 @@ module.exports = async (req, res) => {
         return;
       }
       const before = { date: appointment.date, time: appointment.time, status: appointment.status };
+      if (!('endTime' in req.body)) result.fields.endTime = appointment.endTime || ''; // older clients don't send it
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
       await writeJSON('data/appointments.json', appointments);
       // Automations: a moved appointment gets its reminders recalculated; a status change can start a flow.
