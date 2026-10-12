@@ -175,7 +175,7 @@ async function connectPage(store, { page, pages, adAccounts, adAccountId, by, vi
     pageId: page.id, pageName: page.name, pageAccessToken: page.access_token,
     pages: (pages || [page]).map((p) => ({ id: p.id, name: p.name, access_token: p.access_token })),
     adAccounts: adAccounts || [], adAccountId: ad ? ad.id : '', adAccountName: ad ? ad.name : '',
-    connectedAt: new Date().toISOString(), connectedBy: by, connectedVia: via,
+    connectedAt: new Date().toISOString(), connectedBy: by, connectedVia: via, subscribedAt: new Date().toISOString(),
   });
   await store.writeJSON(PENDING_KEY, {});
   return { ok: true, pageName: page.name };

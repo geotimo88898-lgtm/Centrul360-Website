@@ -783,7 +783,7 @@
       // the check that answers "why didn't the lead arrive?"
       const sub = d.subscription || {};
       const diag = '<div class="st-fb-diag"><div class="st-fb-sub ' + (sub.ok ? 'is-ok' : 'is-bad') + '">' + icon(sub.ok ? 'checkCircle' : 'alert') +
-          '<span>' + (sub.ok ? 'Pagina trimite leadurile la portal.' : 'Pagina nu trimite leadurile la portal' + (sub.error ? ': ' + esc(sub.error) : '.')) + '</span>' +
+          '<span>' + (sub.ok ? 'Pagina trimite leadurile la portal.' + (sub.since ? ' Abonată ' + esc(K.ago(sub.since)) + '.' : '') : 'Pagina nu trimite leadurile la portal' + (sub.error ? ': ' + esc(sub.error) : '.')) + '</span>' +
           (sub.ok ? '' : '<button type="button" class="k-btn is-primary is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') + '</div>' +
         (sub.apps && sub.apps.length ? '<small class="k-muted">Aplicații care primesc leadurile Paginii: ' + esc(sub.apps.join(', ')) + '</small>' : '') +
         '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele livrări de la Facebook</b><button type="button" class="k-btn is-ghost is-sm" data-fb-refresh>' + icon('refresh') + 'Reîmprospătează</button></div>' +

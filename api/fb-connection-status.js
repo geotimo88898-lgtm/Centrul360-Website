@@ -20,7 +20,9 @@ async function subscription(conn, appId) {
   try {
     const r = await fetch(GRAPH_BASE + '/' + encodeURIComponent(conn.pageId) + '/subscribed_apps?' + new URLSearchParams({ access_token: conn.pageAccessToken }));
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) return { ok: false, error: (j.error && j.error.message) || 'Facebook n-a răspuns' };
+    // Reading the list needs pages_manage_metadata on the token; without it, the subscription made
+    // when connecting (Facebook said yes then) is what we know.
+    if (!r.ok) return conn.subscribedAt ? { ok: true, since: conn.subscribedAt } : { ok: false, error: (j.error && j.error.message) || 'Facebook n-a răspuns' };
     const apps = j.data || [];
     const mine = apps.find((a) => String(a.id) === String(appId));
     return { ok: !!(mine && (mine.subscribed_fields || []).includes('leadgen')), apps: apps.map((a) => a.name || a.id) };
@@ -92,6 +94,9 @@ module.exports = async (req, res) => {
       if (!conn.pageId) { res.status(400).json({ error: 'not_connected' }); return; }
       const r = await subscribe(conn);
       if (!r.ok) { res.status(400).json({ error: 'subscribe_failed', message: r.error }); return; }
+      const stored = await readJSON('data/fb-connection.json', {});
+      stored.subscribedAt = new Date().toISOString();
+      await writeJSON('data/fb-connection.json', stored);
       res.status(200).json(await status(req));
       return;
     }
