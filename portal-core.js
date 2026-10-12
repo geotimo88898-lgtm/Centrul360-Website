@@ -256,17 +256,19 @@
   async function loadCreative() {
     const frame = document.getElementById('creativeFrame');
     const msg = document.getElementById('creativeMsg');
-    if (frame.dataset.started) { if (creativeReady) creativePost({ type: 'c360:navigate', route: creativeRoute }); return; }
+    // still loading: the page asked for is queued (the latest wins) and shown as soon as the app listens
+    if (frame.dataset.started) { creativePost({ type: 'c360:navigate', route: creativeRoute }); return; }
     frame.dataset.started = '1';
     msg.classList.remove('hidden', 'is-error');
     msg.innerHTML = '<div class="cr-skel"><i></i><i></i><div>' + '<b></b>'.repeat(6) + '</div></div>';
     try {
       const d = await K.api('/api/portal-creative-sso?next=' + encodeURIComponent(creativeRoute));
       frame.addEventListener('load', () => {
-        creativeReady = true;
         frame.classList.remove('hidden');
         msg.classList.add('hidden');
-        if (creativePending) { const m = creativePending; creativePending = null; creativePost(m); }
+        // ready = when the app reports its page (it listens by then); an older app that never does
+        // still gets its messages a moment later
+        setTimeout(() => { if (!creativeReady) { creativeReady = true; if (creativePending) { const m = creativePending; creativePending = null; creativePost(m); } } }, 3000);
       }, { once: true });
       frame.src = d.url;
     } catch (err) {
@@ -279,6 +281,13 @@
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'c360:route' || typeof e.data.route !== 'string') return;
     if (!/^\/[a-z-]*$/.test(e.data.route)) return;
+    // The app speaks only once it listens: that's when a page asked meanwhile can be delivered
+    // (the frame's "load" can come before the app is ready, and the message would be lost).
+    if (!creativeReady) creativeReady = true;
+    if (creativePending) {
+      const m = creativePending; creativePending = null; creativePost(m);
+      if (m.type === 'c360:navigate') return; // the page asked for is on its way: keep its menu item lit
+    }
     creativeRoute = e.data.route;
     if (!document.querySelector('#panel-creative.active')) return;
     markNav('creative');
