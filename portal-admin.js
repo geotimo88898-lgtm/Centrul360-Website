@@ -698,7 +698,8 @@
   // can also be typed by hand when Facebook doesn't list it.
   const FB_ERR = { login_expired: 'Logarea a expirat. Apasă din nou „Conectează cu Facebook”.', page_not_found: 'Pagina nu mai e disponibilă. Loghează-te din nou.',
     subscribe_failed: 'Facebook n-a permis primirea leadurilor pe Pagina asta. Verifică să fii admin pe Pagină și reîncearcă.', invalid_ad_account: 'ID-ul contului de reclame are doar cifre (ex. 1234567890 sau act_1234567890).',
-    token_invalid: 'Tokenul nu e valid sau a expirat.', no_pages: 'Contul ăsta de Facebook nu administrează nicio Pagină.' };
+    token_invalid: 'Tokenul nu e valid sau a expirat.', no_pages: 'Contul ăsta de Facebook nu administrează nicio Pagină.',
+    invalid_app_id: 'App ID are doar cifre.', invalid_app_secret: 'App secret are litere și cifre (32 de caractere), copiază-l din nou.', invalid_config_id: 'Configuration ID are doar cifre.', missing_app_secret: 'Lipește și App secret pentru aplicația asta.' };
   const adOptions = (list, sel) => K.options([['', 'Niciunul încă']].concat((list || []).map((a) => [a.id, a.name + (a.business ? ' · ' + a.business : '')])).concat([['__manual', 'Nu e în listă, scriu ID-ul']]), sel);
   const adManual = '<input data-ad-manual hidden placeholder="ID cont de reclame, ex. 1234567890" inputmode="numeric" maxlength="24">';
   function bindAdSelect(root) {
@@ -707,10 +708,47 @@
   }
   const adValue = (root) => { const sel = root.querySelector('[data-ad]'); return sel && sel.value === '__manual' ? root.querySelector('[data-ad-manual]').value.trim() : (sel ? sel.value : ''); };
 
+  // The Meta app the portal uses (App ID + secret + the "Facebook Login for Business" configuration),
+  // pasted here instead of in Vercel, and the two webhook values to paste back in Meta.
+  function appHtml(app, open) {
+    const copy = (label, val) => '<div class="st-fb-copy"><span>' + esc(label) + '</span><code>' + esc(val || '-') + '</code>' + (val ? '<button type="button" class="k-btn is-ghost is-sm" data-copy="' + esc(val) + '">' + icon('copy') + 'Copiază</button>' : '') + '</div>';
+    return '<details class="st-fb-app"' + (open ? ' open' : '') + '><summary>' + icon('key') + '<b>Aplicația Meta</b><span class="k-muted">' + (app.appId ? 'ID ' + esc(app.appId) + (app.fromPortal ? '' : ' (din Vercel)') : 'nesetată') + '</span></summary>' +
+      '<form class="st-fb-appform" data-fb-app autocomplete="off">' +
+        '<label class="k-field full"><span>App ID</span><input name="appId" inputmode="numeric" value="' + esc(app.appId || '') + '" placeholder="ex. 2177971149814780"></label>' +
+        '<label class="k-field full"><span>App secret</span><input name="appSecret" type="password" autocomplete="new-password" placeholder="' + (app.hasSecret && app.fromPortal ? 'salvat, lasă gol ca să rămână' : 'din App settings → Basic → App secret → Show') + '"></label>' +
+        '<label class="k-field full"><span>Configuration ID (Facebook Login for Business)</span><input name="configId" inputmode="numeric" value="' + esc(app.configId || '') + '" placeholder="din Facebook Login for Business → Configurations"></label>' +
+        '<button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează aplicația</button></form>' +
+      '<div class="st-fb-copies"><p class="k-muted">De pus în Meta:</p>' +
+        copy('Valid OAuth Redirect URI', app.redirectUri) +
+        copy('Webhooks → Callback URL', app.webhookUrl) +
+        copy('Webhooks → Verify token', app.verifyToken) + '</div></details>';
+  }
+  function bindApp(root, reload) {
+    const f = root.querySelector('[data-fb-app]');
+    if (!f) return;
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = K.formValues(f);
+      try {
+        await K.api('/api/fb-connection-status', { action: 'app', appId: v.appId, appSecret: v.appSecret, configId: v.configId });
+        K.ui().toast('Aplicația Meta e salvată. Acum apasă „Conectează cu Facebook”.', 'success');
+        reload();
+      } catch (err) { K.ui().toast(FB_ERR[err.code] || K.errText(err), 'error'); }
+    });
+    root.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); K.ui().toast('Copiat.', 'success'); } catch (x) { K.ui().toast('Selectează textul și copiază-l de mână.', 'error'); }
+    }));
+  }
+
   async function loadFb(box) {
     let d;
     try { d = await K.api('/api/fb-connection-status'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica starea conexiunii.</span>'; return; }
-    if (d.notConfigured) { box.innerHTML = '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Aplicația Meta nu e configurată (FB_APP_ID / FB_APP_SECRET)</span></div>'; return; }
+    const addApp = () => { box.insertAdjacentHTML('beforeend', appHtml(d.app || {}, false)); bindApp(box, () => loadFb(box)); };
+    if (d.notConfigured) {
+      box.innerHTML = '<p class="k-muted st-fb-intro">Pune aici datele aplicației Meta (developers.facebook.com), apoi apare butonul de logare.</p>' + appHtml(d.app || {}, true);
+      bindApp(box, () => loadFb(box));
+      return;
+    }
     const fail = (err) => K.ui().toast(FB_ERR[err.code] || K.errText(err), 'error');
 
     // several Pages after the login: pick the clinic's
@@ -724,6 +762,7 @@
         '<label class="k-field full"><span>Cont de reclame (pentru publicarea reclamelor, mai târziu)</span><select data-ad>' + adOptions(p.adAccounts, guessAd) + '</select>' + adManual + '</label>' +
         '<div class="st-int-row"><button type="button" class="k-btn is-primary is-sm" data-fb-choose>' + icon('check') + 'Conectează Pagina aleasă</button></div></div>';
       bindAdSelect(box);
+      addApp();
       box.querySelector('[data-fb-choose]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
         const pageId = (box.querySelector('input[name=fbpage]:checked') || {}).value;
         if (!pageId) { K.ui().toast('Alege Pagina clinicii.', 'error'); return; }
@@ -748,6 +787,7 @@
         '<a class="k-btn is-outline is-sm" href="/api/fb-oauth-start">' + icon('facebook') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-fbx>Deconectează</button></div>' +
         (many ? '<div class="st-fb-pages" data-fb-pages hidden>' + d.pages.map((x) => '<button type="button" class="st-fb-page' + (x.id === d.pageId ? ' is-on' : '') + '" data-page="' + esc(x.id) + '">' + icon('facebook') + esc(x.name) + '</button>').join('') + '</div>' : '');
       bindAdSelect(box);
+      addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });
       box.querySelector('[data-fb-adform]').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -774,6 +814,7 @@
       try { const r = await K.api('/api/fb-manual-connect', { userAccessToken: tok }); K.ui().toast(r.choose ? 'Alege acum Pagina clinicii.' : 'Conectat la ' + (r.pageName || 'Pagină') + '.', 'success'); loadFb(box); }
       catch (err) { fail(err); }
     });
+    addApp();
   }
   K.section('integrari', { mount: mountIntegrations, show: renderIntegrations });
 

@@ -523,6 +523,19 @@
 .st-manual{ display:flex; flex-direction:column; gap:.5rem; margin-top:.6rem; }
 /* Facebook: log in, pick the clinic's Page and the ad account */
 .st-fb-adform[hidden], .st-fb-pages[hidden]{ display:none; }
+/* the Meta app (App ID / secret / configuration) + what to paste back in Meta */
+.st-fb-intro{ margin:0 0 .6rem; font-size:.84rem; line-height:1.45; }
+.st-fb-app{ margin-top:.9rem; padding:.7rem .8rem; border-radius:12px; border:1px solid var(--line); background:var(--glass); }
+.st-fb-app summary{ display:flex; align-items:center; gap:.45rem; cursor:pointer; font-size:.88rem; }
+.st-fb-app summary svg{ width:15px; height:15px; color:var(--muted); }
+.st-fb-app summary .k-muted{ font-size:.8rem; margin-left:auto; }
+.st-fb-appform{ display:flex; flex-direction:column; align-items:flex-start; gap:.6rem; margin-top:.8rem; }
+.st-fb-appform .k-field{ width:100%; margin:0; }
+.st-fb-copies{ margin-top:.9rem; display:flex; flex-direction:column; gap:.4rem; }
+.st-fb-copies p{ margin:0; font-size:.8rem; }
+.st-fb-copy{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.15rem .5rem; align-items:center; padding:.45rem .55rem; border-radius:10px; background:var(--paper); border:1px solid var(--line); }
+.st-fb-copy span{ grid-column:1 / -1; font-size:.74rem; color:var(--muted); }
+.st-fb-copy code{ font-size:.78rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg); }
 .k-btn.is-fb{ background:#1877f2; color:#fff; border-color:#1877f2; }
 .k-btn.is-fb:hover{ background:#166fe5; }
 .st-fb-login{ display:flex; flex-direction:column; align-items:flex-start; gap:.5rem; }

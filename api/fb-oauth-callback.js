@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { GRAPH_BASE, siteOrigin, listAssets, afterLogin } = require('./_lib/facebook');
+const { GRAPH_BASE, siteOrigin, listAssets, afterLogin, appCreds } = require('./_lib/facebook');
 
 function verifyState(state, secret) {
   if (!state) return false;
@@ -43,8 +43,7 @@ module.exports = async (req, res) => {
   const session = requireAdmin(req, res);
   if (!session) return;
 
-  const appId = process.env.FB_APP_ID;
-  const appSecret = process.env.FB_APP_SECRET;
+  const { appId, appSecret } = await appCreds(readJSON);
   if (!appId || !appSecret) {
     res.status(400).json({ error: 'fb_not_configured' });
     return;

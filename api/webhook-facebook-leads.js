@@ -4,7 +4,7 @@
 //
 // GET  -> Meta's one-time webhook verification handshake.
 // POST -> the actual 'leadgen' event. Body signature must be verified against the RAW
-//         bytes (HMAC-SHA256 with FB_APP_SECRET), so automatic JSON body parsing is
+//         bytes (HMAC-SHA256 with the Meta app's secret), so automatic JSON body parsing is
 //         disabled below (config.api.bodyParser:false) and the body is parsed by hand
 //         only after the signature check passes.
 //
@@ -20,7 +20,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
-const { loadConnection, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity } = require('./_lib/facebook');
+const { loadConnection, webhookSecrets, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
 const { createLead } = require('./portal-leads');
 
@@ -92,8 +92,8 @@ async function processLeadgenEvent(value, pageAccessToken) {
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query || {};
-    const expected = process.env.FB_WEBHOOK_VERIFY_TOKEN;
-    if (!expected || mode !== 'subscribe' || token !== expected) {
+    const { tokens } = await webhookSecrets(readJSON);
+    if (!tokens.length || mode !== 'subscribe' || !tokens.includes(token)) {
       res.status(403).send('forbidden');
       return;
     }
@@ -114,9 +114,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const appSecret = process.env.FB_APP_SECRET;
+  const { secrets } = await webhookSecrets(readJSON);
   const signatureHeader = req.headers['x-hub-signature-256'];
-  if (!isValidSignature(rawBody, signatureHeader, appSecret)) {
+  if (!secrets.some((secret) => isValidSignature(rawBody, signatureHeader, secret))) {
     res.status(403).json({ error: 'invalid_signature' });
     return;
   }

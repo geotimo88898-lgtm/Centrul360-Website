@@ -16,8 +16,28 @@
 const GRAPH_VERSION = 'v21.0';
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
-function isConfigured() {
-  return Boolean(process.env.FB_APP_ID && process.env.FB_APP_SECRET);
+// The Meta app the portal logs in with and gets the leads from. Set in Integrări → Facebook
+// (data/fb-app.json, private like the Page tokens, never sent to the browser except the App ID) or,
+// as before, with FB_APP_ID / FB_APP_SECRET / FB_WEBHOOK_VERIFY_TOKEN in Vercel. The one saved in
+// Integrări wins, and its secret is never mixed with Vercel's (they'd belong to different apps).
+const APP_KEY = 'data/fb-app.json';
+async function appCreds(readJSON) {
+  const s = (await readJSON(APP_KEY, {})) || {};
+  if (s.appId) return { appId: s.appId, appSecret: s.appSecret || '', verifyToken: s.verifyToken || '', configId: s.configId || '', fromPortal: true };
+  return { appId: process.env.FB_APP_ID || '', appSecret: process.env.FB_APP_SECRET || '', verifyToken: process.env.FB_WEBHOOK_VERIFY_TOKEN || '', configId: process.env.FB_LOGIN_CONFIG_ID || '', fromPortal: false };
+}
+async function isConfigured(readJSON) {
+  const c = await appCreds(readJSON);
+  return Boolean(c.appId && c.appSecret);
+}
+// Webhook checks accept the app saved in Integrări and the one in Vercel, so switching apps
+// never drops a lead in between.
+async function webhookSecrets(readJSON) {
+  const s = (await readJSON(APP_KEY, {})) || {};
+  return {
+    secrets: [s.appSecret, process.env.FB_APP_SECRET].filter(Boolean),
+    tokens: [s.verifyToken, process.env.FB_WEBHOOK_VERIFY_TOKEN].filter(Boolean),
+  };
 }
 
 async function loadConnection(readJSON) {
@@ -174,5 +194,5 @@ async function loadPending(store) {
   return p && Array.isArray(p.pages) && Date.now() - (p.at || 0) < PENDING_TTL ? p : null;
 }
 
-module.exports = { GRAPH_VERSION, GRAPH_BASE, isConfigured, loadConnection, siteOrigin, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity, CITY_ID,
+module.exports = { GRAPH_VERSION, GRAPH_BASE, APP_KEY, appCreds, isConfigured, webhookSecrets, loadConnection, siteOrigin, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity, CITY_ID,
   listAssets, connectPage, afterLogin, loadPending, PENDING_KEY };

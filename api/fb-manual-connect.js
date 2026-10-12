@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
   const session = requireAdmin(req, res);
   if (!session) return;
 
-  if (!isConfigured()) {
+  if (!(await isConfigured(readJSON))) {
     res.status(400).json({ error: 'fb_not_configured' });
     return;
   }
