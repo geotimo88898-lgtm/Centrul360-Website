@@ -31,15 +31,24 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   gtag('js', new Date());
   gtag('config', 'AW-16691853931');
 </script>
-<title>Centrul360 - Medicină Estetică în Timișoara &amp; Arad</title>
+<title>Centrul360 | Medicină Estetică în Timișoara &amp; Arad</title>
+<script>
+  // Offers shown on the site = only what is active in Admin → Oferte (c360-offers.js loads them).
+  // cb(feed) runs once: with the admin offers, or with null if the admin can't be reached in time.
+  window.whenOffers = window.whenOffers || function(cb){
+    if(window.C360Offers !== undefined) return cb(window.C360Offers);
+    let done = false; const go = (d)=>{ if(!done){ done = true; cb(d); } };
+    document.addEventListener('c360:offers', (e)=>go(e.detail));
+    setTimeout(()=>go(null), 3000);
+  };
+</script>
+<link rel="canonical" href="https://www.centrul360.com/">
 <meta name="description" content="Tratamente faciale și corporale non-invazive, cu tehnologie medicală certificată. Rezultate vizibile din prima ședință. Programează-te în Timișoara sau Arad.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tailwind-built.css">
 <link rel="stylesheet" href="c360-convert.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
   :root{
     /* dark theme: black page, white ink */
@@ -97,7 +106,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
   /* ---------- background aurora (subtle, monochrome) ---------- */
   .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
+  .aurora b{ position:absolute; border-radius:50%; will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
   .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw;
     background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), transparent 70%); animation:drift1 24s ease-in-out infinite; }
   .aurora b:nth-child(2){ width:40vw; height:40vw; top:34vh; right:-12vw;
@@ -206,6 +215,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .scard .two-tone .ghost{ color:rgba(255,255,255,.30); }
   /* floating, scroll-animated media that blends into the card */
   .scard-body{ position:relative; z-index:10; }
+  .scard::after{ content:""; position:absolute; inset:0; z-index:30; pointer-events:none; border-radius:inherit; background:#000; opacity:var(--dim, 0); }
   /* full-width cover image filling the top of the card, into the rounded corners */
   .scard-media{ position:relative; margin:0; height:230px; overflow:hidden; }
   .scard-media .scard-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 26%;
@@ -279,7 +289,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .ms-dot::after{ content:""; width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.25); transition:width .35s cubic-bezier(.16,1,.3,1), background .35s ease; display:block; }
   .ms-dot.is-on::after{ width:22px; background:#fff; }
   .menu-link{ width:max-content; max-width:100%; font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em;
-    font-size:clamp(2.1rem,7.5vw,4.6rem); line-height:1.08; color:#fff; opacity:.5;
+    font-size:clamp(2.1rem,5.2vw,3.1rem); line-height:1.08; color:#fff; opacity:.5;
     transition:opacity .3s ease, transform .55s cubic-bezier(.16,1,.3,1); transform:translateY(16px); }
   .menu-overlay.open .menu-link{ transform:translateY(0); }
   .menu-link:hover{ opacity:1; }
@@ -333,7 +343,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .team-img{ filter:saturate(1.02); }
 
   /* ---------- 3D logo (mobile header + desktop hero) ---------- */
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo3d-poster.png') center/100% no-repeat; }
+  @media (max-width:768px){ #logo3d-head, #logo3d-menu{ background-image:url('brand_asset/logo3d-poster-m.png'); } }
   /* desktop: large spinning logo centered in the middle of the first view, behind the text */
   #logo3d-hero{ position:absolute; pointer-events:none; z-index:-1;
     width:min(52vw,640px); height:min(52vw,640px); left:50%; top:50%; transform:translate(-50%,-50%); opacity:0.78;
@@ -389,19 +400,18 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .loc-icn{ flex:none; opacity:.85; }
   .loc-map{ position:relative; border-radius:24px; overflow:hidden; height:clamp(460px,60vh,580px); border:1px solid var(--line); z-index:0; background-color:#0c0d11; }
   /* marker dot + label (shared by the Leaflet divIcon markers) */
-  .loc-pin-dot{ position:relative; width:15px; height:15px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.6); transition:transform .3s ease; }
+  .loc-pin-dot{ position:relative; flex:none; width:15px; height:15px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.6); transition:transform .3s ease; }
   .loc-pin-dot::after{ content:''; position:absolute; inset:-5px; border-radius:50%; border:1px solid rgba(255,255,255,.5); animation:locPulse 2.4s ease-out infinite; }
   @keyframes locPulse{ 0%{ transform:scale(.6); opacity:.8; } 100%{ transform:scale(2.2); opacity:0; } }
-  .loc-pin-label{ font-size:12.5px; font-weight:600; letter-spacing:.01em; color:rgba(255,255,255,.7); white-space:nowrap; padding:3px 10px; border-radius:999px; background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:1px solid transparent; transition:color .3s ease, border-color .3s ease, background .3s ease; }
+  .loc-pin-label{ font-size:14px; font-weight:700; letter-spacing:.01em; color:#fff; white-space:nowrap; padding:3px 10px; border-radius:999px; background:rgba(8,8,10,.5); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:1px solid transparent; transition:color .3s ease, border-color .3s ease, background .3s ease; }
   /* real dark map (Leaflet) with cinematic zoom + immersive top popup */
   .loc-map.leaflet-container{ background:#0c0d11; font:inherit; }
-  .loc-map .leaflet-tile{ filter:brightness(.9) contrast(1.04); }
   .loc-map .leaflet-control-attribution{ background:rgba(8,8,10,.5); color:rgba(255,255,255,.4); font-size:9px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
   .loc-map .leaflet-control-attribution a{ color:rgba(255,255,255,.6); }
   /* custom markers, reuse the pin dot + label look */
   .loc-mk{ background:transparent !important; border:0 !important; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .loc-mk.is-active .loc-pin-dot{ transform:scale(1.18); }
-  .loc-mk:not(.is-active) .loc-pin-dot{ background:rgba(255,255,255,.7); }
+  .loc-mk:not(.is-active) .loc-pin-dot{ background:#fff; }
   .loc-mk.is-active .loc-pin-label{ color:#fff; border-color:var(--line-on-dark); background:var(--glass-2); }
   /* immersive popup, pinned to the top-center of the map while zoomed in */
   .loc-pop{ position:absolute; left:50%; top:16px; z-index:1000; width:min(330px,84%); border-radius:20px; overflow:hidden; isolation:isolate;
@@ -528,6 +538,19 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .o3d-cta:hover span{ transform:translateX(3px); }
   .o3d-cta:active{ transform:scale(.97); }
   .o3d-stage.is-grabbing{ cursor:grabbing; }
+  /* easy navigation on the pinned carousel: arrows, clickable dots, keys, a way out */
+  .o3d-arrow{ position:absolute; top:50%; z-index:20; width:48px; height:48px; margin-top:-24px; border-radius:999px; display:grid; place-items:center;
+    color:#fff; background:rgba(18,18,22,.62); border:1px solid rgba(255,255,255,.22); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    box-shadow:0 10px 26px -10px rgba(0,0,0,.8); cursor:pointer; transition:opacity .3s ease, background .2s ease, transform .15s ease; }
+  .o3d-arrow:hover{ background:rgba(40,40,46,.8); }
+  .o3d-arrow:active{ transform:scale(.92); }
+  .o3d-arrow.prev{ left:max(8px, calc(50% - 300px)); } .o3d-arrow.next{ right:max(8px, calc(50% - 300px)); }
+  .o3d-arrow[disabled]{ opacity:0; pointer-events:none; }
+  .o3d-arrow:focus-visible{ outline:2px solid rgba(255,255,255,.7); outline-offset:3px; }
+  .o3d-dot{ position:relative; }
+  .o3d-dot::after{ content:''; position:absolute; inset:-9px -5px; } /* bigger click target than the 7px dot */
+  .o3d-skip{ font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); text-decoration:underline; text-underline-offset:3px; background:none; border:0; cursor:pointer; }
+  .o3d-skip:hover{ color:#fff; }
   /* section footer: pagination dots + swipe hint (replaces the old generic WhatsApp pill) */
   .o3d-foot-nav{ margin-top:14px; display:flex; flex-direction:column; align-items:center; gap:13px; }
   @media (min-width:640px){ .o3d-foot-nav{ margin-top:22px; } }
@@ -584,6 +607,10 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     .o3d-marrow[disabled]{ opacity:0; pointer-events:none; }
   }
 </style>
+<style id="c360-hdr">/* header buttons: the same dark glass on every page, whatever scrolls under them (light photos made them look white) */ header .pill-ink, header .pill-glass{ background:rgba(16,16,20,.74) !important; border-color:rgba(255,255,255,.16) !important; } header .pill-ink:hover{ background:rgba(34,34,40,.86) !important; } /* menu: the dropdown titles line up exactly like the plain links */ .menu-dd-trigger{ display:block !important; padding:0 !important; margin:0 !important; } .menu-dd-trigger .menu-chev{ display:inline-block; vertical-align:middle; margin-left:.3em; } /* the bottom bar steps aside while the menu is open */ body:has(.menu-overlay.open) .cvz-bar{ display:none !important; }</style>
+<style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } .pkg-badge, .promo-flag, .disc-badge, .o3d-cert, .o3d-eyebrow, .o3d-disc, .o3d-mhint, .u{ font-size:11px !important; } }
+</style>
 </head>
 <body>
 
@@ -593,7 +620,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <header class="fixed top-4 left-0 right-0 z-50 px-4">
   <div class="max-w-7xl mx-auto flex items-center justify-between">
     <!-- logo lockup: 3D spinning mark + wordmark (mobile + desktop) -->
-    <a href="#top" class="pill pill-glass pl-2.5 pr-4 sm:pr-5 py-1.5 inline-flex items-center gap-2" aria-label="Centrul360 - acasă">
+    <a href="#top" class="pill pill-glass pl-2.5 pr-4 sm:pr-5 py-1.5 inline-flex items-center gap-2" aria-label="Centrul360, acasă">
       <canvas id="logo3d-head" width="72" height="72"></canvas>
       <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="h-[11px] sm:h-[12px] w-auto object-contain">
     </a>
@@ -610,7 +637,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   <!-- topbar mirrors the header geometry exactly so the logo sits over the header logo -->
   <div class="menu-topbar fixed top-4 left-0 right-0 px-4 z-[1]">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <a href="#top" class="pill pill-glass pl-2.5 pr-4 py-1.5 inline-flex items-center gap-2" data-menu-close aria-label="Centrul360 - acasă">
+      <a href="#top" class="pill pill-glass pl-2.5 pr-4 py-1.5 inline-flex items-center gap-2" data-menu-close aria-label="Centrul360, acasă">
         <canvas id="logo3d-menu" width="72" height="72"></canvas>
         <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="h-[11px] w-auto object-contain">
       </a>
@@ -630,34 +657,35 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <div class="menu-sub-grid">
             <div>
               <p class="menu-sub-head">Față</p>
-              <a href="ten-lipsit-de-stralucire.html" class="menu-sub-link" data-menu-close>Ten lipsit de strălucire<span class="sm">Hidratare, revitalizare, luminozitate</span></a>
-              <a href="ten-problematic.html" class="menu-sub-link" data-menu-close>Ten problematic<span class="sm">Acnee, sebum, pori dilatați</span></a>
-              <a href="riduri-linii-fine.html" class="menu-sub-link" data-menu-close>Riduri și lifting non-invaziv<span class="sm">Anti-aging, lifting, fermitate</span></a>
-              <a href="gusa-barbie-dubla.html" class="menu-sub-link" data-menu-close>Gușă și bărbie dublă<span class="sm">HIFU, contur facial</span></a>
-              <a href="pete-pigmentare.html" class="menu-sub-link" data-menu-close>Pete și pigmentare<span class="sm">Cearcăne, semne post-acnee</span></a>
+              <a href="/ten-lipsit-de-stralucire" class="menu-sub-link" data-menu-close>Ten lipsit de strălucire<span class="sm">Hidratare, revitalizare, luminozitate</span></a>
+              <a href="/ten-problematic" class="menu-sub-link" data-menu-close>Ten problematic<span class="sm">Acnee, sebum, pori dilatați</span></a>
+              <a href="/riduri-linii-fine" class="menu-sub-link" data-menu-close>Riduri și lifting non-invaziv<span class="sm">Anti-aging, lifting, fermitate</span></a>
+              <a href="/gusa-barbie-dubla" class="menu-sub-link" data-menu-close>Gușă și bărbie dublă<span class="sm">HIFU, contur facial</span></a>
+              <a href="/pete-pigmentare" class="menu-sub-link" data-menu-close>Pete și pigmentare<span class="sm">Cearcăne, semne post-acnee</span></a>
             </div>
             <div>
               <p class="menu-sub-head">Corp</p>
-              <a href="epilare-laser.html" class="menu-sub-link" data-menu-close>Epilare laser · Elysion Pro<span class="sm">Epilare laser progresiv definitivă</span></a>
-              <a href="grasime-localizata.html" class="menu-sub-link" data-menu-close>Grăsime localizată<span class="sm">Liposonix, cavitație</span></a>
-              <a href="celulita.html" class="menu-sub-link" data-menu-close>Celulită<span class="sm">Radiofrecvență, masaj</span></a>
-              <a href="tonifiere-musculara.html" class="menu-sub-link" data-menu-close>Tonifiere musculară<span class="sm">EMS · 20.000 contracții/ședință</span></a>
-              <a href="detox-drenaj.html" class="menu-sub-link" data-menu-close>Detox și drenaj<span class="sm">Termocuvertă, presoterapie</span></a>
+              <a href="/epilare-laser" class="menu-sub-link" data-menu-close>Epilare laser · Elysion Pro<span class="sm">Epilare laser progresiv definitivă</span></a>
+              <a href="/grasime-localizata" class="menu-sub-link" data-menu-close>Grăsime localizată<span class="sm">Liposonix, cavitație</span></a>
+              <a href="/celulita" class="menu-sub-link" data-menu-close>Celulită<span class="sm">Radiofrecvență, masaj</span></a>
+              <a href="/tonifiere-musculara" class="menu-sub-link" data-menu-close>Tonifiere musculară<span class="sm">EMS · 20.000 contracții/ședință</span></a>
+              <a href="/detox-drenaj" class="menu-sub-link" data-menu-close>Detox și drenaj<span class="sm">Termocuvertă, presoterapie</span></a>
             </div>
           </div>
         </div>
       </div>
-      <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <a href="/preturi" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
+      <a href="/rezultate" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
+      <a href="/echipa" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">04</span>Locații
+          <span class="idx">05</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
           <div class="menu-sub-grid" style="grid-template-columns:1fr 1fr;">
-            <a href="timisoara.html" class="menu-sub-link" data-menu-close>Timișoara<span class="sm">Str. Bucegi 7</span></a>
-            <a href="arad.html" class="menu-sub-link" data-menu-close>Arad<span class="sm">Str. Ioan Alexandru 16-18</span></a>
+            <a href="/timisoara" class="menu-sub-link" data-menu-close>Timișoara<span class="sm">Str. Bucegi 7</span></a>
+            <a href="/arad" class="menu-sub-link" data-menu-close>Arad<span class="sm">Str. Ioan Alexandru 16-18</span></a>
           </div>
         </div>
       </div>
@@ -665,9 +693,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <!-- offers auto-slider: 2 offers + a final "see all offers" slide -->
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">-50%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">-37%</span></span></span></a>
-        <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
+        <a class="ms-slide ms-offer" data-ok="liposonix-2zone" href="/oferte" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price" data-ov="newlei">640 lei</span><s class="ms-old" data-ov="oldlei">1280 lei</s><span class="ms-off" data-ov="pct">-50%</span></span></span></a>
+        <a class="ms-slide ms-offer" data-ok="facial-restart" href="/oferte" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price" data-ov="newlei">190 lei</span><s class="ms-old" data-ov="oldlei">300 lei</s><span class="ms-off" data-ov="pct">-37%</span></span></span></a>
+        <a class="ms-slide ms-cta" href="/oferte" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
       <div class="ms-dots" id="msDots">
         <button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button>
@@ -764,11 +792,11 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="qstep" data-step="interes">
           <h3>Ce te interesează cel mai mult?</h3>
           <div class="qgrid">
+            <button type="button" class="qopt" data-value="Epilare laser">Epilare laser</button>
             <button type="button" class="qopt" data-value="Slăbit / conturare corp">Slăbit / conturare corp</button>
             <button type="button" class="qopt" data-value="Fermitate față / anti-îmbătrânire">Fermitate față / anti-îmbătrânire</button>
             <button type="button" class="qopt" data-value="Ten problematic / pete / luminozitate">Ten problematic / pete / luminozitate</button>
             <button type="button" class="qopt" data-value="Celulită">Celulită</button>
-            <button type="button" class="qopt" data-value="Epilare laser">Epilare laser</button>
             <button type="button" class="qopt" data-value="Nu știu exact, vreau o recomandare">Nu știu exact, vreau o recomandare</button>
           </div>
         </div>
@@ -787,7 +815,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         </div>
 
         <div class="qstep" data-step="contact">
-          <h3>Ultimul pas - unde te contactăm?</h3>
+          <h3>Ultimul pas: unde te contactăm?</h3>
           <div class="quiz-field">
             <label for="qNume">Numele tău</label>
             <input type="text" id="qNume" name="nume" placeholder="ex: Maria Popescu" autocomplete="name" required>
@@ -830,15 +858,15 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <span class="solid">Tratamente</span><br><span class="ghost">Corporale</span>
         </h3>
         <div class="flex flex-wrap gap-2.5 mb-6">
-          <span class="tag">Grăsime localizată</span>
-          <span class="tag">Celulită</span>
-          <span class="tag">Tonifiere EMS</span>
-          <span class="tag">Detox &amp; drenaj</span>
+          <a class="tag" href="/grasime-localizata">Grăsime localizată</a>
+          <a class="tag" href="/celulita">Celulită</a>
+          <a class="tag" href="/tonifiere-musculara">Tonifiere EMS</a>
+          <a class="tag" href="/detox-drenaj">Detox &amp; drenaj</a>
         </div>
         <p class="flex gap-3 text-[15px] text-white/65 leading-relaxed max-w-md mb-7">
 <span>Silueta pe care ți-o dorești, ședință cu ședință. Rezultate care se văd și se simt.</span>
         </p>
-        <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20pentru%20tratamente%20corporale." target="_blank" rel="noopener" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
+        <a href="/grasime-localizata" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
           <span class="magn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg></span> Explorează
         </a>
       </div>
@@ -855,16 +883,16 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <span class="solid">Tratamente</span><br><span class="ghost">Faciale</span>
         </h3>
         <div class="flex flex-wrap gap-2.5 mb-6">
-          <span class="tag">Hidratare profundă</span>
-          <span class="tag">Riduri</span>
-          <span class="tag">Lifting non-invaziv</span>
-          <span class="tag">Reducerea gușei</span>
-          <span class="tag">Curățare profundă</span>
+          <a class="tag" href="/ten-lipsit-de-stralucire">Hidratare profundă</a>
+          <a class="tag" href="/riduri-linii-fine">Riduri</a>
+          <a class="tag" href="/riduri-linii-fine">Lifting non-invaziv</a>
+          <a class="tag" href="/gusa-barbie-dubla">Reducerea gușei</a>
+          <a class="tag" href="/ten-problematic">Curățare profundă</a>
         </div>
         <p class="flex gap-3 text-[15px] text-white/65 leading-relaxed max-w-md mb-7">
 <span>Fiecare ședință îți redă tenului prospețimea și încrederea. O strălucire care se vede în oglindă și se simte cu fiecare zi.</span>
         </p>
-        <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20pentru%20tratamente%20faciale." target="_blank" rel="noopener" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
+        <a href="/riduri-linii-fine" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
           <span class="magn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg></span> Explorează
         </a>
       </div>
@@ -884,12 +912,12 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <span class="tag">Nedureros</span>
           <span class="tag">Certificat medical</span>
           <span class="tag">Pentru ea și el</span>
-          <span class="tag">Rezultate garantate de la prima ședință</span>
+          <span class="tag">Rezultate vizibile din prima ședință</span>
         </div>
         <p class="flex gap-3 text-[15px] text-white/65 leading-relaxed max-w-md mb-7">
 <span>Cu laserul medical Elysion Pro, îți oferim o piele fină pentru totdeauna. Un rezultat care se vede în oglindă și se simte la fiecare atingere.</span>
         </p>
-        <a href="epilare-laser.html" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
+        <a href="/epilare-laser" class="pill pill-on-dark px-6 py-3.5 text-[14px]">
           <span class="magn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg></span> Explorează
         </a>
       </div>
@@ -933,12 +961,12 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <div class="reveal d3">
         <div class="flex items-center gap-4 mb-6"><span class="step-num text-5xl sm:text-6xl">03</span><span class="step-line flex-1"></span></div>
         <h3 class="text-white text-xl font-semibold mb-3">Rezultate vizibile</h3>
-        <p class="text-white/55 text-[15px] leading-relaxed">Progres natural, monitorizat la fiecare ședință, rezultate pe care le vezi din prima.</p>
+        <p class="text-white/55 text-[15px] leading-relaxed">Progres natural, monitorizat la fiecare ședință: rezultate pe care le vezi din prima.</p>
       </div>
     </div>
 
     <div class="reveal d2">
-      <a href="echipa.html" class="pill pill-ink px-7 py-4 text-[15px] justify-center w-full sm:w-auto">
+      <a href="/echipa" class="pill pill-ink px-7 py-4 text-[15px] justify-center w-full sm:w-auto">
         Vezi echipa <span class="arrow">→</span>
       </a>
     </div>
@@ -1024,7 +1052,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <p class="text-[var(--muted)] text-[15px] mb-7">Alege locația pe care vrei să o vezi.</p>
     <div class="flex flex-col gap-3">
       <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener" class="pill pill-ink px-6 py-4 text-[15px] justify-center w-full">Recenzii Timișoara <span class="arrow">→</span></a>
-      <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016%20Arad" target="_blank" rel="noopener" class="pill pill-glass px-6 py-4 text-[15px] justify-center w-full">Recenzii Arad <span class="arrow">→</span></a>
+      <a href="https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad" target="_blank" rel="noopener" class="pill pill-glass px-6 py-4 text-[15px] justify-center w-full">Recenzii Arad <span class="arrow">→</span></a>
     </div>
   </div>
 </div>
@@ -1048,7 +1076,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .sim-select option{ background:#16161a; color:var(--fg); }
   @media (max-width:640px){ .sim-chips{ display:none; } .sim-select{ display:block; } }
   .sim-hint{ color:var(--muted-2); font-size:.85rem; margin-top:1.4rem; }
-  .sim-result{ margin-top:1.6rem; border:1px solid var(--line-on-dark); border-radius:20px; background:var(--paper-2); padding:1.5rem 1.6rem; animation:simIn .5s cubic-bezier(.16,1,.3,1); }
+  .sim-result{ margin-top:1.6rem; padding-top:1.4rem; border-top:1px solid var(--line); animation:simIn .5s cubic-bezier(.16,1,.3,1); }
   @keyframes simIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
   .sim-rec-lbl{ font-size:11px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); }
   .sim-rec-name{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.5rem; margin:.35rem 0 .15rem; }
@@ -1060,10 +1088,15 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .sim-rec-off{ font-weight:700; font-size:.8rem; color:#0b0b0d; background:#fff; border-radius:999px; padding:.2rem .55rem; }
   .sim-rec-tm{ display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; color:var(--muted); margin-top:.75rem; }
   .sim-rec-actions{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.25rem; }
+  .sim-consult{ margin-top:1.4rem; padding-top:1.4rem; border-top:1px solid var(--line); display:flex; flex-direction:column; align-items:flex-start; gap:.55rem; }
+  .sim-consult p{ color:var(--muted); font-size:14px; line-height:1.55; max-width:52ch; margin:0; }
+  .sim-consult-btn{ margin-top:.4rem; }
+  .sim-wa{ font-size:13px; color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
+  .sim-wa:hover{ color:var(--fg); }
   .sim-disc{ color:var(--muted-2); font-size:.76rem; margin-top:1rem; line-height:1.5; }
   .sim-steps{ margin-top:.3rem; }
-  .sim-step{ border:1px solid var(--line); border-radius:18px; padding:1.1rem 1.2rem; background:rgba(255,255,255,.02); }
-  .sim-step.s1{ border-color:rgba(212,175,110,.42); background:linear-gradient(135deg, rgba(212,175,110,.10), rgba(255,255,255,.015)); }
+  .sim-step{ padding:0; }
+  .sim-step.s1{ }
   .sim-step-lbl{ font-size:.7rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#e9cfa3; display:inline-flex; align-items:center; gap:.4rem; }
   .sim-step-name{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.3rem; margin:.5rem 0 0; }
   .sim-step-note{ color:var(--muted); font-size:.85rem; margin-top:.25rem; line-height:1.45; }
@@ -1139,26 +1172,29 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   (function(){
     const sim=document.getElementById('simulator'); if(!sim) return;
     const PKGS=[
-      {goal:'abdomen',name:'Mini Belly',price:997,old:1640,sessions:5,dur:'~5 ședințe',incl:'1× Liposonix + 4× EMS',tm:true},
-      {goal:'abdomen',name:'Abdomen 360',price:3699,old:6380,sessions:17,dur:'program complet · ~3 luni',incl:'5× Liposonix/HIFU + 6× EMS + 6× Cavitație',tm:true},
-      {goal:'gusa',name:'Mini Gușă',price:990,old:1270,sessions:6,dur:'~5 săptămâni',incl:'2× HIFU + 4× RF Sculpt',tm:false},
-      {goal:'gusa',name:'Gușă 360',price:2241,old:3630,sessions:15,dur:'~3 luni',incl:'6× HIFU + 9× RF Sculpt',tm:false},
-      {goal:'lifting',name:'Lifting 360',price:1750,old:2420,sessions:5,dur:'program complet',incl:'1× HIFU Full Face + 4× RF Sculpt Full Face',tm:false},
-      {goal:'lifting',name:'Mini Lifting',price:2310,old:3840,sessions:12,dur:'program lifting',incl:'6× HIFU + 6× RF Sculpt Full Face',tm:false},
-      {goal:'celulita',name:'Celulită & Lifting',price:1180,old:2000,sessions:8,dur:'program',incl:'8× EMS',tm:true},
-      {goal:'celulita',name:'Celulită 360',price:2620,old:4240,sessions:16,dur:'program complet',incl:'8× EMS + 8× Cavitație',tm:true},
-      {goal:'detox',name:'Detox',price:1120,old:1780,sessions:8,dur:'program',incl:'4× EMS + 4× Împachetare la cald',tm:true}
+      {goal:'abdomen',key:'mini-belly',name:'Mini Belly',price:997,old:1640,sessions:5,dur:'~5 ședințe',incl:'1× Liposonix + 4× EMS',tm:true},
+      {goal:'abdomen',key:'abdomen-360',name:'Abdomen 360',price:3699,old:6380,sessions:17,dur:'program complet · ~3 luni',incl:'5× Liposonix/HIFU + 6× EMS + 6× Cavitație',tm:true},
+      {goal:'gusa',key:'mini-gusa',name:'Mini Gușă',price:990,old:1270,sessions:6,dur:'~5 săptămâni',incl:'2× HIFU + 4× RF Sculpt',tm:false},
+      {goal:'gusa',key:'gusa-360',name:'Gușă 360',price:2241,old:3630,sessions:15,dur:'~3 luni',incl:'6× HIFU + 9× RF Sculpt',tm:false},
+      {goal:'lifting',key:'lifting-360',name:'Lifting 360',price:1750,old:2420,sessions:5,dur:'program complet',incl:'1× HIFU Full Face + 4× RF Sculpt Full Face',tm:false},
+      {goal:'lifting',key:'mini-lifting',name:'Mini Lifting',price:2310,old:3840,sessions:12,dur:'program lifting',incl:'6× HIFU + 6× RF Sculpt Full Face',tm:false},
+      {goal:'celulita',key:'celulita-lifting',name:'Celulită & Lifting',price:1180,old:2000,sessions:8,dur:'program',incl:'8× EMS',tm:true},
+      {goal:'celulita',key:'celulita-360',name:'Celulită 360',price:2620,old:4240,sessions:16,dur:'program complet',incl:'8× EMS + 8× Cavitație',tm:true},
+      {goal:'detox',key:'detox-pachet',name:'Detox',price:1120,old:1780,sessions:8,dur:'program',incl:'4× EMS + 4× Împachetare la cald',tm:true}
     ];
     const GL={gusa:'Gușă / bărbie dublă',abdomen:'Slăbire / abdomen',lifting:'Lifting facial / riduri',celulita:'Celulită',detox:'Detox / drenaj'};
     const TL={rapid:'rapid (~1 lună)',echilibrat:'echilibrat (~3 luni)',lung:'fără grabă'};
     const BL={'1000':'sub 1.000 lei','2500':'1.000-2.500 lei','4000':'2.500-4.000 lei','99999':'peste 4.000 lei'};
     // PAS 1, oferta ieftină de intrare, pe obiectiv (de pe pagina Oferte)
     const OFFERS={
-      gusa:{name:'HIFU · Gușă',price:190,old:299,note:'O ședință · conturul mandibulei'},
-      abdomen:{name:'Liposonix · 2 zone',price:640,old:1280,note:'Reduce grăsimea localizată'},
-      lifting:{name:'HIFU · Full Face',price:890,old:1020,note:'Lifting facial, fără bisturiu'},
-      celulita:{name:'Anticelulită',price:890,old:1680,note:'6× radiofrecvență + cadou'}
+      abdomen:{key:'liposonix-2zone',name:'Liposonix · 2 zone',price:640,old:1280,note:'2 zone la preț de una · reduce grăsimea localizată'},
+      lifting:{key:'facial-restart',name:'Tratament facial Restart',price:190,old:300,note:'Hidratare și luminozitate · fără recuperare'}
     };
+    whenOffers(function(FEED){
+      if(!FEED) return;
+      for(let i = PKGS.length - 1; i >= 0; i--){ const f = FEED[PKGS[i].key]; if(!f) PKGS.splice(i, 1); else { PKGS[i].price = Math.round(f.priceNew); PKGS[i].old = Math.round(f.priceOld); } }
+      Object.keys(OFFERS).forEach((g)=>{ const f = FEED[OFFERS[g].key]; if(!f) delete OFFERS[g]; else { OFFERS[g].price = Math.round(f.priceNew); OFFERS[g].old = Math.round(f.priceOld); } });
+    });
     const sel={goal:null,time:null,budget:null};
     const result=document.getElementById('simResult'), hint=document.getElementById('simHint');
     sim.querySelectorAll('.sim-chips').forEach(group=>{
@@ -1175,6 +1211,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       const cands=PKGS.filter(p=>p.goal===sel.goal);
       const aff=cands.filter(p=>p.price<=budget);
       let pick, over=false;
+      if(!cands.length){ render(null, false); return; }
       if(aff.length){ pick = sel.time==='rapid' ? aff.reduce((a,b)=>a.sessions<=b.sessions?a:b) : aff.reduce((a,b)=>a.price>=b.price?a:b); }
       else { pick = cands.reduce((a,b)=>a.price<=b.price?a:b); over=true; }
       render(pick, over);
@@ -1182,37 +1219,58 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     function render(p, over){
       const pin='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
       const OFF=OFFERS[sel.goal];
-      // PASUL 1, oferta ieftină de intrare
+      // the recommendation is the value; the next step is always the free consultation
       let step1='';
       if(OFF){
         const o1=OFF.old?Math.round((1-OFF.price/OFF.old)*100):0;
-        const offMsg='Bună ziua! Am folosit simulatorul (obiectiv: '+GL[sel.goal]+'). Aș vrea să încep cu oferta '+OFF.name+' ('+OFF.price+' lei).';
-        const waOff='https://wa.me/40750204243?text='+encodeURIComponent(offMsg);
         step1='<div class="sim-step s1">'+
-          '<span class="sim-step-lbl">☀ Pasul 1 · Începe aici</span>'+
+          '<span class="sim-step-lbl">Început recomandat</span>'+
           '<div class="sim-step-name">'+OFF.name+'</div>'+
           (OFF.note?'<div class="sim-step-note">'+OFF.note+'</div>':'')+
           '<div class="sim-step-price"><b>'+OFF.price+' lei</b>'+(OFF.old?'<s>'+OFF.old+' lei</s><span class="off">-'+o1+'%</span>':'')+'</div>'+
-          '<a class="pill pill-on-dark px-5 py-2.5 text-[13px] sim-step-cta" href="'+waOff+'" target="_blank" rel="noopener">Rezervă oferta <span class="arrow">→</span></a>'+
           '</div>'+
-          '<div class="sim-conn">apoi, pentru rezultat de durată</div>';
+          (p?'<div class="sim-conn">apoi, pentru rezultat de durată</div>':'');
       }
-      // PASUL URMĂTOR, pachetul (ales după buget)
-      const off=Math.round((1-p.price/p.old)*100);
-      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'. Mă interesează pachetul '+p.name+' ('+p.price+' lei).';
-      const wa='https://wa.me/40750204243?text='+encodeURIComponent(msg);
-      const step2='<div class="sim-step">'+
-        '<span class="sim-step-lbl">'+(OFF?'Pasul următor · Cură completă':'Pachet recomandat')+(over?' · cel mai apropiat de buget':'')+'</span>'+
+      const off=p?Math.round((1-p.price/p.old)*100):0;
+      const step2=!p?'':'<div class="sim-step">'+
+        '<span class="sim-step-lbl">'+(OFF?'Cură completă':'Pachet recomandat')+(over?' · cel mai apropiat de buget':'')+'</span>'+
         '<div class="sim-step-name">'+p.name+'</div>'+
         '<div class="sim-step-note">'+p.dur+' · '+p.incl+'</div>'+
         '<div class="sim-step-price"><b>'+p.price+' lei</b><s>'+p.old+' lei</s><span class="off">-'+off+'%</span></div>'+
         (p.tm?'<div class="sim-rec-tm">'+pin+' Disponibil doar la Timișoara</div>':'')+
-        '<div class="sim-step-cta" style="display:flex;flex-wrap:wrap;gap:.55rem;"><a class="pill pill-on-dark px-5 py-2.5 text-[13px]" href="'+wa+'" target="_blank" rel="noopener">Rezervă pachetul <span class="arrow">→</span></a><a class="pill pill-glass px-5 py-2.5 text-[13px]" href="oferte.html#pachete">Vezi toate</a></div>'+
         '</div>';
-      result.innerHTML='<div class="sim-steps">'+step1+step2+'</div>'+
+      const msg='Bună ziua! Am folosit simulatorul. Obiectiv: '+GL[sel.goal]+', timp: '+TL[sel.time]+', buget: '+BL[sel.budget]+'.'+(OFF||p?' Mă interesează '+[OFF&&OFF.name,p&&p.name].filter(Boolean).join(' / ')+'.':'');
+      const wa='https://wa.me/40750204243?text='+encodeURIComponent(msg);
+      const consult='<div class="sim-consult">'+
+        '<span class="sim-step-lbl">Primul pas, pentru orice plan</span>'+
+        '<div class="sim-step-name">Consultația gratuită</div>'+
+        '<p>Evaluăm zona, îți spunem exact ce ți se potrivește, de câte ședințe ai nevoie și prețul final. Fără obligații. Și primești un masaj facial cadou.</p>'+
+        '<button type="button" class="pill pill-on-dark px-6 py-3.5 text-[14px] sim-consult-btn" data-sim-consult>Programează consultația gratuită <span class="arrow">→</span></button>'+
+        '<a class="sim-wa" href="'+wa+'" target="_blank" rel="noopener">sau întreabă-ne pe WhatsApp</a>'+
+        '</div>';
+      result.innerHTML='<div class="sim-steps">'+step1+step2+'</div>'+consult+
         '<p class="sim-disc">Recomandare orientativă. Planul final și prețul exact se stabilesc gratuit la consultație.</p>';
       result.hidden=false; if(hint) hint.style.display='none';
     }
+    // "Programează consultația gratuită": jump to the form at the top and fill in what we already know
+    const QUIZ_FOR = {
+      abdomen:['Slăbit / conturare corp','Abdomen'], gusa:['Fermitate față / anti-îmbătrânire','Gușă / bărbie'],
+      lifting:['Fermitate față / anti-îmbătrânire',''], celulita:['Celulită',''], detox:['Slăbit / conturare corp','']
+    };
+    result.addEventListener('click', (ev)=>{
+      if(!ev.target.closest('[data-sim-consult]')) return;
+      const form = document.getElementById('quizForm');
+      const card = form && form.closest('.quiz-card');
+      if(!form) return;
+      (card || form).scrollIntoView({ behavior:'smooth', block:'center' });
+      const pick = QUIZ_FOR[sel.goal] || [];
+      const optI = pick[0] && [...form.querySelectorAll('[data-step="interes"] .qopt')].find(b=>b.dataset.value===pick[0]);
+      if(!optI) return;
+      setTimeout(()=>{
+        optI.click();
+        if(pick[1]) setTimeout(()=>{ const z = [...form.querySelectorAll('#qZonaGrid .qopt')].find(b=>b.dataset.value===pick[1]); if(z) z.click(); }, 260);
+      }, 450);
+    });
   })();
   </script>
 
@@ -1229,10 +1287,13 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <div class="o3d-pin px-6 sm:px-8">
         <div id="offers3dStage" class="o3d-stage">
           <div id="offers3dViewport" class="o3d-viewport"></div>
+          <button type="button" class="o3d-arrow prev" id="offers3dPrev" aria-label="Oferta anterioară"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button type="button" class="o3d-arrow next" id="offers3dNext" aria-label="Oferta următoare"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
         </div>
         <div class="o3d-actionbar">
           <div id="offers3dDots" class="o3d-dots" role="tablist" aria-label="Oferte active"></div>
-          <p id="offers3dHint" class="o3d-hint"><span class="o3d-hint-dn" aria-hidden="true">↓</span> derulează</p>
+          <p id="offers3dHint" class="o3d-hint"><span class="o3d-hint-dn" aria-hidden="true">↓</span> derulează sau folosește săgețile</p>
+          <button type="button" id="offers3dSkip" class="o3d-skip">Sari peste oferte</button>
         </div>
       </div>
     </div>
@@ -1258,9 +1319,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <p class="eyebrow text-white/60 mb-2">Timișoara</p>
           <h3 class="sec-head text-[1.45rem] mb-4">Str. Bucegi 7</h3>
           <div class="mb-5 text-[13px] text-white/75">
-            <p class="flex items-center gap-2.5"><svg class="loc-icn" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Luni - Vineri · 09:00-20:00</p>
+            <p class="flex items-center gap-2.5"><svg class="loc-icn" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Luni - Vineri · 09:00 - 20:00</p>
           </div>
-          <a href="timisoara.html" class="pill pill-call px-5 py-3 text-[13px] w-full justify-center">
+          <a href="/timisoara" class="pill pill-call px-5 py-3 text-[13px] w-full justify-center">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
             Vezi locația <span class="arrow">→</span>
           </a>
@@ -1273,11 +1334,11 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <div class="loc-pop-bg" style="background-image:url('brand_asset/loc-arad.webp')"></div>
         <div class="loc-pop-info">
           <p class="eyebrow text-white/60 mb-2">Arad</p>
-          <h3 class="sec-head text-[1.45rem] mb-4">Str. Ioan Alexandru 16</h3>
+          <h3 class="sec-head text-[1.45rem] mb-4">Str. Ioan Alexandru 16-18</h3>
           <div class="mb-5 text-[13px] text-white/75">
-            <p class="flex items-center gap-2.5"><svg class="loc-icn" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Luni - Vineri · 11:00-19:00</p>
+            <p class="flex items-center gap-2.5"><svg class="loc-icn" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Luni - Vineri · 11:00 - 19:00</p>
           </div>
-          <a href="arad.html" class="pill pill-call px-5 py-3 text-[13px] w-full justify-center">
+          <a href="/arad" class="pill pill-call px-5 py-3 text-[13px] w-full justify-center">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
             Vezi locația <span class="arrow">→</span>
           </a>
@@ -1301,7 +1362,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <div class="reveal d1">
       <div class="faq-item open">
         <button class="faq-q" type="button">Cum mă programez?<span class="faq-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Cel mai simplu, direct pe WhatsApp, alegi locația (Timișoara sau Arad) și îți confirmăm rapid o oră liberă. Consultația inițială este gratuită.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Cel mai simplu, direct pe WhatsApp. Alegi locația (Timișoara sau Arad) și îți confirmăm rapid o oră liberă. Consultația inițială este gratuită.</div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">Consultația este gratuită?<span class="faq-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -1313,7 +1374,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">Unde vă găsesc?<span class="faq-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Avem două clinici: Timișoara (Str. Bucegi 7) și Arad (Str. Ioan Alexandru 16). Alegi locația care îți este la îndemână atunci când te programezi.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Avem două clinici: Timișoara (Str. Bucegi 7) și Arad (Str. Ioan Alexandru 16-18). Alegi locația care îți este la îndemână atunci când te programezi.</div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">Tratamentele sunt sigure?<span class="faq-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -1345,16 +1406,10 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <!-- cvz:start -->
 <section class="relative z-10 px-6 sm:px-8 max-w-7xl mx-auto" style="padding-top:1rem;padding-bottom:1rem;">
 <div class="cvz-guarantee">
-  <p class="cvz-eyebrow">Garanție scrisă</p>
-  <h3>Dacă nu vezi nicio schimbare după prima ședință, îți returnăm ședința.</h3>
-  <p>Fotografiem zona înainte și după, în aceleași condiții de lumină. Compari singură. Dacă nu există nicio diferență vizibilă, ședința îți este returnată, fără discuții și fără să fie nevoie să justifici.</p>
-  <p>La epilarea laser mergem mai departe: <strong style="color:var(--fg)">dacă părul crește la loc, continuăm gratuit</strong> până când nu mai e nevoie.</p>
-  <ul class="cvz-cond">
-    <li>Fotografii înainte și după, la aceeași ședință</li>
-    <li>Protocolul recomandat trebuie respectat</li>
-    <li>Valabil în ambele clinici</li>
-    <li>Consultația inițială e oricum gratuită</li>
-  </ul>
+  <p class="cvz-eyebrow">Garanție scrisă · epilare laser</p>
+  <h3>Dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie.</h3>
+  <p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine și tot ai nevoie să te epilezi regulat, mai faci ședințe pe cheltuiala noastră. Fără plafon.</p>
+  <p><a href="/epilare-laser#oferta-full-body" style="color:var(--fg); text-decoration:underline; text-underline-offset:3px;">Vezi oferta Full Body →</a></p>
 </div>
 </section>
 <!-- cvz:end -->
@@ -1377,7 +1432,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         <ul class="space-y-3 text-[15px]">
           <li><a href="#servicii" class="foot-link">Servicii</a></li>
           <li><a href="#oferte" class="foot-link">Oferte active</a></li>
-          <li><a href="echipa.html" class="foot-link">Echipa</a></li>
+          <li><a href="/echipa" class="foot-link">Echipa</a></li>
           <li><a href="#recenzii" class="foot-link">Recenzii</a></li>
           <li><a href="#intrebari" class="foot-link">Întrebări frecvente</a></li>
         </ul>
@@ -1389,11 +1444,11 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <div>
             <p class="font-semibold">Timișoara</p>
             <p class="text-[var(--muted)]">Str. Bucegi 7</p>
-            <a href="tel:+40750263054" class="foot-link">+40 750 263 054</a>
+            <a href="tel:+40750204243" class="foot-link">+40 750 204 243</a>
           </div>
           <div>
             <p class="font-semibold">Arad</p>
-            <p class="text-[var(--muted)]">Str. Ioan Alexandru 16</p>
+            <p class="text-[var(--muted)]">Str. Ioan Alexandru 16-18</p>
             <a href="tel:+40750263054" class="foot-link">+40 750 263 054</a>
           </div>
         </div>
@@ -1401,7 +1456,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <!-- cta -->
       <div>
         <p class="eyebrow text-[var(--muted-2)] mb-5">Programări</p>
-        <p class="text-[var(--muted)] text-[15px] leading-relaxed mb-6">Scrie-ne pe WhatsApp, îți răspundem rapid și îți confirmăm o oră liberă.</p>
+        <p class="text-[var(--muted)] text-[15px] leading-relaxed mb-6">Scrie-ne pe WhatsApp. Îți răspundem rapid și îți confirmăm o oră liberă.</p>
         <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-ink px-6 py-3.5 text-[14px] justify-center w-full sm:w-auto">
           Rezervă pe WhatsApp <span class="dot"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg></span>
         </a>
@@ -1411,9 +1466,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <div class="mt-14 pt-8 border-t border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-4">
       <p class="eyebrow text-[var(--muted-2)]">© 2026 Centrul360 · Toate drepturile rezervate</p>
       <div class="flex items-center gap-6 text-[13px] text-[var(--muted)]">
-        <a href="termeni.html" class="foot-link">Termeni</a>
-        <a href="politica-de-confidentialitate.html" class="foot-link">Confidențialitate</a>
-        <a href="cookies.html" class="foot-link">Cookies</a>
+        <a href="/termeni" class="foot-link">Termeni</a>
+        <a href="/politica-de-confidentialitate" class="foot-link">Confidențialitate</a>
+        <a href="/cookies" class="foot-link">Cookies</a>
       </div>
     </div>
   </div>
@@ -1545,7 +1600,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       render();
     }
 
-    // pasul "interes" - alege și, dacă are subzone, le construiește; altfel sare peste pasul "zona"
+    // pasul "interes", alege și, dacă are subzone, le construiește; altfel sare peste pasul "zona"
     form.querySelectorAll('[data-step="interes"] .qopt').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         form.querySelectorAll('[data-step="interes"] .qopt').forEach(b=>b.classList.remove('sel'));
@@ -1565,6 +1620,11 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         });
 
         path = zones.length ? allSteps.slice() : allSteps.filter(s=>s!=='zona');
+        // epilation is only in Timișoara: no city question, it's already decided
+        const tmOnly = btn.dataset.value === 'Epilare laser';
+        document.getElementById('qOras').value = tmOnly ? 'Timișoara' : '';
+        form.querySelectorAll('[data-step="oras"] .qopt').forEach(b=>b.classList.toggle('sel', tmOnly && b.dataset.value === 'Timișoara'));
+        if(tmOnly) path = path.filter(s=>s!=='oras');
         idx = 0;
         setTimeout(goNext, 180);
       });
@@ -1622,7 +1682,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         pagina: location.href
       };
 
-      function done(){ window.location.href = 'multumesc-cadou.html'; }
+      function done(){ window.location.href = '/multumesc-cadou'; }
 
       // ⇩⇩⇩ Webhook HighLevel (Inbound Webhook trigger), lipește URL-ul aici ⇩⇩⇩
       const QUIZ_WEBHOOK = "https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68";
@@ -1658,48 +1718,49 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   const ms = { x:0, y:0, tx:0, ty:0 };
   window.addEventListener('mousemove', e=>{ ms.tx = e.clientX/window.innerWidth*2-1; ms.ty = e.clientY/window.innerHeight*2-1; }, { passive:true });
   document.addEventListener('mouseleave', ()=>{ ms.tx = 0; ms.ty = 0; });
+  // One read pass, then one write pass per frame (no layout thrashing); the stacking "dim" is an
+  // overlay's opacity instead of filter:brightness (no repaint); and the loop sleeps when nothing moves.
+  const parts = cards.map((card)=>({ card, img: card.querySelector('.scard-img'), glow: card.querySelector('.scard-glow'), td: card.querySelector('.scard-3d'), next: card.nextElementSibling }));
+  let lastY = -1, still = 0;
   function cardFrame(){
     ms.x += (ms.tx - ms.x)*0.08; ms.y += (ms.ty - ms.y)*0.08;
     const vh = window.innerHeight;
-    cards.forEach((card)=>{
-      const r = card.getBoundingClientRect();
-      if(r.bottom < -80 || r.top > vh + 80){ requestAnimationFrame; return; }
-      // image: alive zoom + rotation + parallax + moving light as the card travels through the viewport
-      const img = card.querySelector('.scard-img');
-      if(img && !reduceM){
-        const p = clampU((vh - r.top) / (vh + r.height));
-        img.style.transform = `translateY(${((p-0.5)*-26).toFixed(2)}px) scale(${(1.05+p*0.18).toFixed(3)}) rotate(${((p-0.5)*3.2).toFixed(2)}deg)`;
-        const glow = card.querySelector('.scard-glow');
-        if(glow){ glow.style.setProperty('--gx', (60+p*24)+'%'); glow.style.setProperty('--gy', (18+p*44)+'%'); }
+    const moving = Math.abs(ms.tx - ms.x) > 0.001 || Math.abs(ms.ty - ms.y) > 0.001 || scrollY !== lastY;
+    lastY = scrollY;
+    still = moving ? 0 : still + 1;
+    if(still > 20){ cardRunning = false; return; }          // settled: sleep until the next scroll / mouse move
+    const rects = parts.map(p=>p.card.getBoundingClientRect());
+    const nexts = parts.map(p=>p.next ? p.next.getBoundingClientRect() : null);
+    parts.forEach((p, i)=>{
+      const r = rects[i];
+      if(r.bottom < -80 || r.top > vh + 80) return;
+      if(p.img && !reduceM){
+        const pr = clampU((vh - r.top) / (vh + r.height));
+        p.img.style.transform = `translateY(${((pr-0.5)*-26).toFixed(2)}px) scale(${(1.05+pr*0.18).toFixed(3)}) rotate(${((pr-0.5)*3.2).toFixed(2)}deg)`;
+        if(p.glow){ p.glow.style.setProperty('--gx', (60+pr*24)+'%'); p.glow.style.setProperty('--gy', (18+pr*44)+'%'); }
       }
-      // how "active" (centered) this card is -> drives tilt + light intensity
-      const cc = r.top + r.height/2;
-      const cf = clampU(1 - Math.abs(cc - vh/2)/(vh*0.62));
-      // interactive 3D parallax tilt on the inner wrapper (keeps the sticky stack intact)
-      const td = card.querySelector('.scard-3d');
-      if(td && !reduceM){
-        td.style.transform = `rotateX(${(-ms.y*6*cf).toFixed(2)}deg) rotateY(${(ms.x*8.5*cf).toFixed(2)}deg)`;
-      }
-      // stacking: dim + slightly shrink the card as the next one slides over it
-      const next = card.nextElementSibling;
-      if(next){
-        const nr = next.getBoundingClientRect();
+      const cf = clampU(1 - Math.abs(r.top + r.height/2 - vh/2)/(vh*0.62));
+      if(p.td && !reduceM) p.td.style.transform = `rotateX(${(-ms.y*6*cf).toFixed(2)}deg) rotateY(${(ms.x*8.5*cf).toFixed(2)}deg)`;
+      const nr = nexts[i];
+      if(nr){
         const overlap = clampU((r.top + r.height - nr.top) / (r.height*0.6));
-        card.style.transform = `scale(${(1 - overlap*0.05).toFixed(3)})`;
-        card.style.filter = `brightness(${(1 - overlap*0.16).toFixed(3)})`;
+        p.card.style.transform = `scale(${(1 - overlap*0.05).toFixed(3)})`;
+        p.card.style.setProperty('--dim', (overlap*0.16).toFixed(3));
       }
     });
     if(cardRunning) requestAnimationFrame(cardFrame);
   }
-  // run the scroll-transition loop ONLY while the services section is in view (frees the phone when it's not)
-  let cardRunning = false;
+  // run the loop only while the services section is in view, and wake it on scroll / mouse move
+  let cardRunning = false, cardVisible = false;
+  const wakeCards = ()=>{ if(cardVisible && !cardRunning){ cardRunning = true; still = 0; requestAnimationFrame(cardFrame); } };
   const servicesSec = document.getElementById('servicii');
   const cardIO = new IntersectionObserver((es)=>{
-    const vis = es.some(e=>e.isIntersecting);
-    if(vis && !cardRunning){ cardRunning = true; requestAnimationFrame(cardFrame); }
-    else if(!vis){ cardRunning = false; }
+    cardVisible = es.some(e=>e.isIntersecting);
+    if(cardVisible) wakeCards(); else cardRunning = false;
   }, { rootMargin:'200px 0px' });
-  if(servicesSec) cardIO.observe(servicesSec); else { cardRunning = true; requestAnimationFrame(cardFrame); }
+  if(servicesSec) cardIO.observe(servicesSec); else { cardVisible = true; wakeCards(); }
+  addEventListener('scroll', wakeCards, { passive:true });
+  addEventListener('mousemove', wakeCards, { passive:true });
 
   const fab = document.getElementById('fab');
   window.addEventListener('scroll', ()=>{
@@ -1712,7 +1773,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   // ---- locations (variant 2): real dark map → click a city → cinematic zoom-in + immersive popup ----
   (function(){
     const el = document.getElementById('locMap');
-    if(!el || typeof L === 'undefined') return;
+    if(!el) return;
+    if(typeof L === 'undefined'){ window.__c360MapInit = arguments.callee; return; }   // runs again once Leaflet has loaded
 
     const LOCS = {
       tm: { label:'Timișoara', latlng:[45.744386, 21.244059] },
@@ -1724,9 +1786,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       zoomControl:false, attributionControl:true, scrollWheelZoom:false,
       doubleClickZoom:false, dragging:false, touchZoom:false, boxZoom:false, keyboard:false
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution:'© OpenStreetMap, © CARTO', maxZoom:19, subdomains:'abcd'
-    }).addTo(map);
+    L.maplibreGL({ style: window.__c360MapStyle, attribution:'© OpenFreeMap · © OpenStreetMap' }).addTo(map);
 
     // overview bounds (both cities visible)
     const bounds = L.latLngBounds(Object.values(LOCS).map(l => l.latlng));
@@ -1785,7 +1845,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   })();
 
   // ---- 3D offers carousel (vanilla port of the React reference) ----
-  (function(){
+  whenOffers(function(FEED){
     const stage = document.getElementById('offers3dStage');
     const viewport = document.getElementById('offers3dViewport');
     if(!stage || !viewport) return;
@@ -1793,11 +1853,24 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
     // honest offers: real promos + free-consultation treatment hooks (swap big/sub for real promo prices anytime)
     const OFFERS = [
-      { name:'Liposonix · 2 zone',       price:'640', old:'1280', note:'-50%', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
+      { key:'liposonix-2zone', name:'Liposonix · 2 zone',       price:'640', old:'1280', note:'-50%', ba:'brand_asset/ba-liposonix.webp', alt:'Înainte și după · Liposonix',
         bullets:['Reduce grăsimea localizată','Fără intervenție, fără recuperare','Rezultate vizibile în câteva săptămâni'] },
-      { name:'Tratament facial Restart', price:'190', old:'300',  note:'-37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
+      { key:'facial-restart', name:'Tratament facial Restart', price:'190', old:'300',  note:'-37%', ba:'brand_asset/ba-facial.webp',    alt:'Înainte și după · Facial Restart',
         bullets:['Hidratare și luminozitate vizibilă','Netezește ridurile fine','Fără timp de recuperare'] },
+      { key:'epilare-full-body', name:'Epilare laser · Full Body', price:'599', old:'920',  note:'-35%', ba:'brand_asset/ba-epilare.webp',   alt:'Rezultat · Epilare laser', cert:true,
+        bullets:['Laser medical Elysion Pro','Toate zonele de corp, fără față','Doar în Timișoara'] },
+      { key:'cavitatie-ems', name:'Cavitație + EMS · Timișoara', price:'280', old:'530', note:'-47%', ba:'brand_asset/concern-grasime.webp', alt:'Cavitație și EMS',
+        bullets:['Reduce grăsimea localizată','Tonifiere cu electrostimulare','Fără timp de recuperare'] },
+      { key:'cavitatie-1plus1', name:'Cavitație 1+1 · Arad',      price:'280', old:'560',  note:'-50%', ba:'brand_asset/concern-belly-2.webp', alt:'Cavitație',
+        bullets:['2 ședințe la preț de una','Reduce grăsimea localizată','Fără timp de recuperare'] },
     ];
+    if(FEED){
+      for(let i = OFFERS.length - 1; i >= 0; i--){
+        const f = FEED[OFFERS[i].key];
+        if(!f){ OFFERS.splice(i, 1); continue; }
+        OFFERS[i].price = String(Math.round(f.priceNew)); OFFERS[i].old = String(Math.round(f.priceOld)); OFFERS[i].note = '-' + f.discountPercent + '%';
+      }
+    }
     // the carousel pages = the offers + a final "see all offers" CTA card
     const ITEMS = OFFERS.concat([{ cta:true }]);
     const sequence = ITEMS.concat(ITEMS); // duplicate so the loop always has a buffer card off-screen
@@ -1805,7 +1878,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const thickness = [-1.2, 0, 1.2]; // volumetric 3D thickness slices (3 layers, lighter to composite on mobile)
 
     const waUrl = o => 'https://wa.me/40750204243?text=' + encodeURIComponent(`Bună ziua! Vreau să rezerv oferta ${o.name} la ${o.price} lei.`);
-    const priceHTML = o => `<span class="o3d-price">${o.price}<span class="u">lei</span></span><span class="o3d-old">${o.old} lei</span>`;
+    const priceHTML = o => `<span class="o3d-price" data-ok="${o.key||''}"><span data-ov="new">${o.price}</span><span class="u">lei</span></span><span class="o3d-old" data-ok="${o.key||''}" data-ov="oldlei">${o.old} lei</span>`;
     const checkSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
     // final CTA card (same metallic 3D card → links to the full offers page)
     const ctaFaceHTML = () =>
@@ -1813,13 +1886,13 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         `<span class="o3d-ctacard-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>`+
         `<p class="o3d-ctacard-t">Vezi toate<br>ofertele</p>`+
         `<p class="o3d-ctacard-s">Oferte individuale &amp; pachete</p>`+
-        `<a class="o3d-cta" href="oferte.html">Deschide pagina <span>→</span></a>`+
+        `<a class="o3d-cta" href="/oferte">Deschide pagina <span>→</span></a>`+
       `</div>`;
     // portrait card: before/after banner on top + info (name, price, 3 bullets, CTA) below, all inside the card
     const offerFaceHTML = o =>
       `<div class="o3d-photo">${ o.video
         ? `<video class="o3d-vid" autoplay muted loop playsinline preload="metadata" poster="${o.poster||''}"><source src="${o.video}" type="video/mp4"></video>`
-        : `<img src="${o.ba}" alt="${o.alt}" loading="lazy">` }${ o.cert ? `<span class="o3d-cert"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>` : '' }${ o.note ? `<span class="o3d-disc">${o.note}</span>` : '' }</div>`+
+        : `<img src="${o.ba}" alt="${o.alt}" loading="lazy">` }${ o.cert ? `<span class="o3d-cert"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>` : '' }${ o.note ? `<span class="o3d-disc" data-ok="${o.key||''}" data-ov="pct">${o.note}</span>` : '' }</div>`+
       `<div class="o3d-info">`+
         `<span class="o3d-eyebrow">Ofertă activă</span>`+
         `<p class="o3d-name">${o.name}</p>`+
@@ -1836,7 +1909,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         `<span class="o3d-mcta-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>`+
         `<p class="o3d-mcta-t">Vezi toate ofertele</p>`+
         `<p class="o3d-mcta-s">Oferte individuale &amp; pachete</p>`+
-        `<a class="o3d-cta" href="oferte.html">Deschide pagina <span>→</span></a>`;
+        `<a class="o3d-cta" href="/oferte">Deschide pagina <span>→</span></a>`;
       const row = document.createElement('div'); row.className = 'o3d-mrow';
       ITEMS.forEach(o=>{
         const card = document.createElement('article');
@@ -1994,8 +2067,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const L = ITEMS.length;
     const dotsWrap = document.getElementById('offers3dDots');
     const dots = ITEMS.map((o)=>{
-      const b = document.createElement('span');
-      b.className = 'o3d-dot'; b.setAttribute('role','presentation');
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'o3d-dot'; b.setAttribute('aria-label', o.cta ? 'Consultație gratuită' : 'Oferta: ' + (o.name || o.title || ''));
       dotsWrap && dotsWrap.appendChild(b);
       return b;
     });
@@ -2004,6 +2077,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       const cur = Math.min(L - 1, Math.max(0, Math.round(progress)));
       if(cur === lastDot) return;
       dots.forEach((d,i)=>d.classList.toggle('is-on', i === cur));
+      const pb = document.getElementById('offers3dPrev'), nb = document.getElementById('offers3dNext');
+      if(pb) pb.disabled = cur === 0;
+      if(nb) nb.disabled = cur === L - 1;
       lastDot = cur;
     }
 
@@ -2024,25 +2100,45 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     }
     placeSnaps(); addEventListener('resize', placeSnaps);
 
+    // ---- direct navigation: arrows, dots and ← → keys scroll to that card (the scroll still drives the animation) ----
+    const prevBtn = document.getElementById('offers3dPrev'), nextBtn = document.getElementById('offers3dNext');
+    const cardTop = (i) => driver.getBoundingClientRect().top + scrollY + (driver.offsetHeight - innerHeight) * i / Math.max(1, L - 1);
+    const goTo = (i) => { i = Math.max(0, Math.min(L - 1, i)); scrollTo({ top: Math.round(cardTop(i)), behavior: reduceMotion ? 'auto' : 'smooth' }); };
+    const here = () => Math.min(L - 1, Math.max(0, Math.round(scrollTarget())));
+    prevBtn && prevBtn.addEventListener('click', () => goTo(here() - 1));
+    nextBtn && nextBtn.addEventListener('click', () => goTo(here() + 1));
+    dots.forEach((d, i) => d.addEventListener('click', () => goTo(i)));
+    const skip = document.getElementById('offers3dSkip');
+    skip && skip.addEventListener('click', () => scrollTo({ top: driver.getBoundingClientRect().top + scrollY + driver.offsetHeight, behavior: reduceMotion ? 'auto' : 'smooth' }));
+    addEventListener('keydown', (e) => {
+      if (!inView || e.altKey || e.ctrlKey || e.metaKey || /input|textarea|select/i.test((e.target && e.target.tagName) || '')) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(here() + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(here() - 1); }
+    });
+
     let running = false;
+    let inView = false;
     function loop(){
       if(!running) return;
       const st = scrollTarget();
       progress = reduceMotion ? st : progress + (st - progress) * 0.16; // ease the 3D toward the scroll position
-      if(hint) hint.style.opacity = Math.max(0, 1 - progress * 1.5).toFixed(2);
+
       position();
+      if(Math.abs(st - progress) < 0.0005){ progress = st; position(); running = false; return; } // arrived: sleep until the next scroll
       requestAnimationFrame(loop);
     }
+    addEventListener('scroll', ()=>{ if(inView && !running){ running = true; requestAnimationFrame(loop); } }, { passive:true });
     position(); // initial placement before it scrolls into view
 
     // run the RAF loop only while the section is on screen (saves CPU)
     new IntersectionObserver((es)=>{
       es.forEach(e=>{
+        inView = e.isIntersecting;
         if(e.isIntersecting && !running){ running = true; requestAnimationFrame(loop); }
         else if(!e.isIntersecting){ running = false; }
       });
     }, { threshold:0.04 }).observe(stage);
-  })();
+  });
 </script>
 
 <script type="importmap">
@@ -2077,8 +2173,10 @@ function makeMaterial(kind){
 }
 
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
-idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); },
+// The model (2.6 MB) loads after the page itself, so it never competes with the content.
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); clock.start(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); },
   undefined, (e)=>console.error('GLB load error', e)));
+if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 
 function mountAll(){
   const head  = document.getElementById('logo3d-head');
@@ -2135,20 +2233,23 @@ function makeMount(canvas, opts){
 }
 
 const clock = new THREE.Clock();
-let lastLogoT = -1;
-const logoMinDelta = isMobile ? 1/30 : 0;   // cap the 3D logo to ~30fps on mobile
+// Render only while a logo is on screen, at ~30 fps (the spin is slow, so it looks the same),
+// and stop completely when none is visible, the header logo used to redraw 60+ times a second forever.
+const visibleLogos = new Set();
+const logoIO = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting) visibleLogos.add(e.target); else visibleLogos.delete(e.target); }); kickLogo(); });
+let logoRaf = 0, lastLogoFrame = -1;
+function liveLogo(m){ return visibleLogos.has(m.canvas) && m.canvas.offsetParent !== null && !m.canvas.closest('.menu-overlay:not(.open)'); }
+function kickLogo(){ if(!logoRaf && mounts.some(liveLogo)) logoRaf = requestAnimationFrame(animate); }
+document.addEventListener('click', ()=>setTimeout(kickLogo, 60));   // the menu logo becomes visible when the menu opens
 function animate(){
-  requestAnimationFrame(animate);
+  logoRaf = 0;
+  const on = mounts.filter(liveLogo);
+  if(!on.length) return;
+  logoRaf = requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
-  if(logoMinDelta && (t - lastLogoT) < logoMinDelta){ return; }
-  lastLogoT = t;
-  for(const m of mounts){
-    if(m.canvas.offsetParent === null) continue;     // skip if hidden by responsive breakpoint
-    const r = m.canvas.getBoundingClientRect();       // skip 3D logos scrolled off-screen (frees the GPU for the carousel)
-    if(r.bottom <= 0 || r.top >= innerHeight) continue;
-    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
-    m.renderer.render(m.scene, m.cam);
-  }
+  if(t - lastLogoFrame < 1/30) return;
+  lastLogoFrame = t;
+  for(const m of on){ m.spinner.rotation.y = 1.5708 + (reduce ? 0 : t * m.opts.spin); m.renderer.render(m.scene, m.cam); }
 }
 </script>
 
@@ -2201,7 +2302,7 @@ function animate(){
   <div class="offpop-topbar"><button class="offpop-close" data-offpop-close aria-label="Închide">&times;</button></div>
   <div class="offpop-card" role="dialog" aria-modal="true" aria-labelledby="offpop-name">
     <div class="offpop-media">
-      <img id="offpop-img" src="" alt="" loading="lazy">
+      <img id="offpop-img" alt="" loading="lazy">
       <span class="offpop-cert" id="offpop-cert"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> Certificat medical</span>
       <span class="offpop-disc" id="offpop-disc"></span>
     </div>
@@ -2211,7 +2312,7 @@ function animate(){
       <div class="offpop-prices" id="offpop-prices"></div>
       <ul class="offpop-bullets" id="offpop-bullets"></ul>
       <a class="offpop-cta" id="offpop-wa" href="#" target="_blank" rel="noopener">Rezervă pe WhatsApp <span>&rarr;</span></a>
-      <a class="offpop-all" href="oferte.html">Vezi toate ofertele &rarr;</a>
+      <a class="offpop-all" href="/oferte">Vezi toate ofertele &rarr;</a>
     </div>
   </div>
 </div>
@@ -2268,5 +2369,49 @@ function animate(){
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop.classList.contains('open')) close(); });
 })();
 </script>
+<script>
+// Map: everything (Leaflet + MapLibre + the map style) is fetched only when the map is about to scroll
+// into view. The base is OpenFreeMap (free, no API key) with all labels, borders and points of interest
+// removed, so the only names on the map are our two clinics.
+(function(){
+  var el = document.getElementById('locMap'); if(!el) return;
+  var started = false;
+  function css(href){ var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.insertBefore(l, document.head.firstChild); }   // first, so the page's own map styles still win
+  function js(src){ return new Promise(function(ok, no){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function quiet(style){
+    style.layers = style.layers.filter(function(l){
+      return l.type !== 'symbol' && l.type !== 'raster' && !/boundary|admin|aeroway|hillshade|ne2/.test(l.id);
+    });
+    style.layers.forEach(function(l){
+      var p = l.paint = l.paint || {}, id = l.id;
+      if(l.type === 'background') p['background-color'] = '#1b1d23';
+      else if(/water/.test(id)){ if(l.type === 'fill') p['fill-color'] = '#121821'; if(l.type === 'line') p['line-color'] = '#121821'; }
+      else if(/building/.test(id) && l.type === 'fill'){ p['fill-color'] = '#262931'; p['fill-outline-color'] = '#2c2f38'; }
+      else if(l.type === 'fill'){ p['fill-color'] = '#1f2228'; p['fill-opacity'] = 0.7; }
+      else if(l.type === 'line'){ p['line-color'] = /motorway|trunk|primary/.test(id) ? '#565b67' : /secondary|tertiary/.test(id) ? '#40444e' : '#33363e'; }
+    });
+    delete style.sources.ne2_shaded;
+    return style;
+  }
+  function go(){
+    if(started) return; started = true;
+    css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+    css('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css');
+    var styleP = fetch('https://tiles.openfreemap.org/styles/dark').then(function(r){ return r.json(); }).then(quiet);
+    js('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
+      .then(function(){ return js('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'); })
+      .then(function(){ return js('https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js'); })
+      .then(function(){ return styleP; })
+      .then(function(style){ window.__c360MapStyle = style; if(window.__c360MapInit) window.__c360MapInit(); })
+      .catch(function(e){ console.error('map load failed', e); });
+  }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(es){ if(es[0].isIntersecting){ io.disconnect(); go(); } }, { rootMargin:'800px 0px' });
+    io.observe(el);
+  } else go();
+})();
+</script>
+<script src="c360-consult.js" defer></script>
+<script src="c360-offers.js" defer></script>
 </body>
 </html>

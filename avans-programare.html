@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Avans programare - Centrul360</title>
+<title>Avans programare | Centrul360</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="format-detection" content="telephone=no, address=no, email=no, date=no">
 <link rel="icon" type="image/png" href="/brand_asset/portal/favicon-light.png" media="(prefers-color-scheme: light)">
@@ -29,7 +29,7 @@
   .wrap{ width:100%; max-width:26rem; }
   .logo{ display:flex; align-items:center; gap:.6rem; justify-content:center; margin-bottom:2rem; }
   .logo img{ height:13px; }
-  #logo3d-avans{ width:26px; height:26px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-avans{ width:26px; height:26px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo3d-poster.png') center/100% no-repeat; }
   .card{ background:var(--paper-2); border:1px solid var(--line); border-radius:24px; padding:1.75rem 1.6rem 1.9rem; }
   .eyebrow{ font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 .6rem; }
   h1{ font-size:1.5rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .5rem; line-height:1.2; }
@@ -83,6 +83,10 @@
   .trust svg{ flex:none; opacity:.7; }
   .foot{ text-align:center; margin-top:1.75rem; color:var(--muted); font-size:.8rem; line-height:1.6; }
   .foot a{ color:var(--fg); text-decoration:underline; }
+</style>
+<style id="c360-hdr">/* header buttons: the same dark glass on every page, whatever scrolls under them (light photos made them look white) */ header .pill-ink, header .pill-glass{ background:rgba(16,16,20,.74) !important; border-color:rgba(255,255,255,.16) !important; } header .pill-ink:hover{ background:rgba(34,34,40,.86) !important; } /* menu: the dropdown titles line up exactly like the plain links */ .menu-dd-trigger{ display:block !important; padding:0 !important; margin:0 !important; } .menu-dd-trigger .menu-chev{ display:inline-block; vertical-align:middle; margin-left:.3em; } /* the bottom bar steps aside while the menu is open */ body:has(.menu-overlay.open) .cvz-bar{ display:none !important; }</style>
+<style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } .pkg-badge, .promo-flag, .disc-badge, .o3d-cert, .o3d-eyebrow, .o3d-disc, .o3d-mhint, .u{ font-size:11px !important; } }
 </style>
 </head>
 <body>
@@ -237,11 +241,11 @@ new GLTFLoader().load('brand_asset/3dsvg.glb', (g) => {
   window.addEventListener('resize', resize);
 
   const clock = new THREE.Clock();
-  (function animate() {
-    requestAnimationFrame(animate);
-    spinner.rotation.y = reduce ? 0.6 : clock.getElapsedTime() * 0.5;
-    renderer.render(scene, cam);
-  })();
+  // ~30 fps and only while the logo is on screen (same look, a fraction of the work).
+  let on = true, raf = 0, last = -1;
+  const frame = () => { raf = 0; if (!on) return; raf = requestAnimationFrame(frame); const t = clock.getElapsedTime(); if (t - last < 1/30) return; last = t; spinner.rotation.y = 1.5708 + (reduce ? 0 : t * 0.5); renderer.render(scene, cam); };
+  new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on && !raf) raf = requestAnimationFrame(frame); }).observe(canvas);
+  frame();
 }, undefined, (e) => console.error('GLB load error', e));
 </script>
 

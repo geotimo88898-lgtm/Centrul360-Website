@@ -26,13 +26,17 @@
     }
   ],
   "rewrites": [
+    { "source": "/creative", "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative" },
+    { "source": "/creative/:path*", "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative/:path*" }
+  ],
+  "headers": [
     {
-      "source": "/creative",
-      "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative"
+      "source": "/brand_asset/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/creative/:path*",
-      "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative/:path*"
+      "source": "/vendor/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }]
     }
   ],
   "crons": [

@@ -53,7 +53,9 @@ function defaultOffers() {
       category: 'faciale',
       featured: false,
       imageKey: 'gusa-ba-premium',
-      active: true,
+      // Deactivated in the October 2026 active-offers cleanup (see git history on
+      // oferte.html/preturi.html), no longer sold at a discount.
+      active: false,
       order: 3,
     },
     {
@@ -80,8 +82,35 @@ function defaultOffers() {
       category: 'epilare',
       featured: false,
       imageKey: 'epilare-legs-black',
-      active: true,
+      // Deactivated in the October 2026 active-offers cleanup, see hifu-gusa-1sedinta.
+      active: false,
       order: 4,
+    },
+    {
+      id: 'seed-cavitatie-ems-timisoara',
+      key: 'cavitatie-ems-timisoara',
+      title: 'Cavitație + EMS · Timișoara',
+      description: 'O ședință de cavitație + o ședință de electrostimulare (EMS).',
+      priceNew: 280,
+      priceOld: 530,
+      category: 'remodelare',
+      featured: false,
+      imageKey: 'concern-grasime',
+      active: true,
+      order: 18,
+    },
+    {
+      id: 'seed-cavitatie-1-1-arad',
+      key: 'cavitatie-1-1-arad',
+      title: 'Cavitație 1+1 · Arad',
+      description: 'Două ședințe de cavitație la preț de una.',
+      priceNew: 280,
+      priceOld: 560,
+      category: 'remodelare',
+      featured: false,
+      imageKey: 'concern-belly-2',
+      active: true,
+      order: 19,
     },
     {
       id: 'seed-liposonix-2zone',
@@ -197,7 +226,8 @@ function defaultOffers() {
       category: 'faciale',
       featured: false,
       imageKey: 'ba-facial',
-      active: true,
+      // Deactivated in the October 2026 active-offers cleanup, see hifu-gusa-1sedinta.
+      active: false,
       order: 13,
     },
     {

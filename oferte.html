@@ -23,8 +23,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <!-- End Meta Pixel Code -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oferte &amp; Pachete - Centrul360</title>
-<meta name="description" content="Toate ofertele active și pachetele Centrul360 - epilare laser, remodelare corporală și tratamente faciale. Rezervă rapid pe WhatsApp.">
+<title>Oferte &amp; Pachete | Centrul360</title>
+<link rel="canonical" href="https://www.centrul360.com/oferte">
+<meta name="description" content="Toate ofertele active și pachetele Centrul360, epilare laser, remodelare corporală și tratamente faciale. Rezervă rapid pe WhatsApp.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -60,7 +61,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   }
 
   .aurora{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-  .aurora b{ position:absolute; border-radius:50%; filter:blur(90px); will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
+  .aurora b{ position:absolute; border-radius:50%; will-change:transform; transform:translateZ(0); backface-visibility:hidden; }
   .aurora b:nth-child(1){ width:46vw; height:46vw; top:-14vw; left:-8vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), transparent 70%); }
   .aurora b:nth-child(2){ width:40vw; height:40vw; top:34vh; right:-12vw; background:radial-gradient(circle at 50% 50%, rgba(150,170,255,0.06), transparent 70%); }
   .aurora b:nth-child(3){ width:32vw; height:32vw; bottom:-10vw; left:26vw; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06), transparent 70%); }
@@ -174,7 +175,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .ms-dot{ width:24px; height:24px; padding:0; border:0; background:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
   .ms-dot::after{ content:""; width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.25); transition:width .35s cubic-bezier(.16,1,.3,1), background .35s ease; display:block; }
   .ms-dot.is-on::after{ width:22px; background:#fff; }
-  .menu-link{ width:max-content; max-width:100%; font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; font-size:clamp(2.1rem,7.5vw,4.6rem); line-height:1.08; color:#fff; opacity:.5; transition:opacity .3s ease, transform .55s cubic-bezier(.16,1,.3,1); transform:translateY(16px); text-decoration:none; }
+  .menu-link{ width:max-content; max-width:100%; font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.035em; font-size:clamp(2.1rem,5.2vw,3.1rem); line-height:1.08; color:#fff; opacity:.5; transition:opacity .3s ease, transform .55s cubic-bezier(.16,1,.3,1); transform:translateY(16px); text-decoration:none; }
   .menu-overlay.open .menu-link{ transform:translateY(0); }
   .menu-link:hover{ opacity:1; }
   .menu-link .idx{ font-family:'Fraunces',serif; font-style:italic; font-weight:400; font-size:.3em; vertical-align:super; opacity:.5; margin-right:.4rem; }
@@ -192,7 +193,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .menu-sub-link{ display:block; width:max-content; max-width:100%; padding:.4rem 0; font-size:1.05rem; font-weight:500; color:rgba(245,244,242,.64); transition:color .25s ease, transform .3s cubic-bezier(.16,1,.3,1); text-decoration:none; }
   .menu-sub-link .sm{ display:block; font-size:.8rem; font-weight:400; color:var(--muted-2); margin-top:1px; }
   .menu-sub-link:hover{ color:var(--fg); transform:translateX(5px); }
-  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo-mark-white.png') center/72% no-repeat; }
+  #logo3d-head, #logo3d-menu{ width:30px; height:30px; display:block; will-change:transform; transform:translateZ(0); filter:drop-shadow(0 2px 6px rgba(14,14,16,0.22)); background:url('brand_asset/logo3d-poster.png') center/100% no-repeat; }
   /* fab */
   #fab{ position:fixed; right:18px; bottom:18px; z-index:40; width:54px; height:54px; border-radius:50%;
     display:grid; place-items:center; background:var(--glass-2); border:1px solid rgba(255,255,255,.16);
@@ -236,6 +237,10 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .osec-head .eb::before{ content:""; width:6px; height:6px; border-radius:50%; background:#e9cfa3; display:inline-block; }
 </style>
 <link rel="stylesheet" href="c360-convert.css">
+<style id="c360-hdr">/* header buttons: the same dark glass on every page, whatever scrolls under them (light photos made them look white) */ header .pill-ink, header .pill-glass{ background:rgba(16,16,20,.74) !important; border-color:rgba(255,255,255,.16) !important; } header .pill-ink:hover{ background:rgba(34,34,40,.86) !important; } /* menu: the dropdown titles line up exactly like the plain links */ .menu-dd-trigger{ display:block !important; padding:0 !important; margin:0 !important; } .menu-dd-trigger .menu-chev{ display:inline-block; vertical-align:middle; margin-left:.3em; } /* the bottom bar steps aside while the menu is open */ body:has(.menu-overlay.open) .cvz-bar{ display:none !important; }</style>
+<style id="c360-tap">/* phones: links and checkboxes big enough for a thumb */
+@media (max-width:768px){ footer a:not(.pill):not([class*="pill"]):not(.soc):not([class*="soc"]):not([aria-label]){ display:inline-block; padding:.45rem 0; } input[type=checkbox]{ width:18px; height:18px; } .pkg-badge, .promo-flag, .disc-badge, .o3d-cert, .o3d-eyebrow, .o3d-disc, .o3d-mhint, .u{ font-size:11px !important; } }
+</style>
 </head>
 <body>
 
@@ -244,7 +249,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <!-- ============ HEADER ============ -->
 <header class="fixed top-4 left-0 right-0 z-50 px-4">
   <div class="max-w-7xl mx-auto flex items-center justify-between">
-    <a href="index.html#top" class="pill pill-glass pl-2.5 pr-4 sm:pr-5 py-1.5 inline-flex items-center gap-2" aria-label="Centrul360 - acasă">
+    <a href="/#top" class="pill pill-glass pl-2.5 pr-4 sm:pr-5 py-1.5 inline-flex items-center gap-2" aria-label="Centrul360, acasă">
       <canvas id="logo3d-head" width="72" height="72"></canvas>
       <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="h-[11px] sm:h-[12px] w-auto object-contain">
     </a>
@@ -258,7 +263,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <div id="menuOverlay" class="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Meniu">
   <div class="menu-topbar fixed top-4 left-0 right-0 px-4 z-[1]">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <a href="index.html#top" class="pill pill-glass pl-2.5 pr-4 sm:pr-5 py-1.5 inline-flex items-center gap-2" data-menu-close aria-label="Centrul360 - acasă">
+      <a href="/#top" class="pill pill-glass pl-2.5 pr-4 sm:pr-5 py-1.5 inline-flex items-center gap-2" data-menu-close aria-label="Centrul360, acasă">
         <canvas id="logo3d-menu" width="72" height="72"></canvas>
         <img src="brand_asset/wordmark-com.png" alt="Centrul360.com" class="h-[11px] sm:h-[12px] w-auto object-contain">
       </a>
@@ -278,43 +283,44 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
           <div class="menu-sub-grid">
             <div>
               <p class="menu-sub-head">Față</p>
-              <a href="ten-lipsit-de-stralucire.html" class="menu-sub-link" data-menu-close>Ten lipsit de strălucire<span class="sm">Hidratare, revitalizare, luminozitate</span></a>
-              <a href="ten-problematic.html" class="menu-sub-link" data-menu-close>Ten problematic<span class="sm">Acnee, sebum, pori dilatați</span></a>
-              <a href="riduri-linii-fine.html" class="menu-sub-link" data-menu-close>Riduri și lifting non-invaziv<span class="sm">Anti-aging, lifting, fermitate</span></a>
-              <a href="gusa-barbie-dubla.html" class="menu-sub-link" data-menu-close>Gușă și bărbie dublă<span class="sm">HIFU, contur facial</span></a>
-              <a href="pete-pigmentare.html" class="menu-sub-link" data-menu-close>Pete și pigmentare<span class="sm">Cearcăne, semne post-acnee</span></a>
+              <a href="/ten-lipsit-de-stralucire" class="menu-sub-link" data-menu-close>Ten lipsit de strălucire<span class="sm">Hidratare, revitalizare, luminozitate</span></a>
+              <a href="/ten-problematic" class="menu-sub-link" data-menu-close>Ten problematic<span class="sm">Acnee, sebum, pori dilatați</span></a>
+              <a href="/riduri-linii-fine" class="menu-sub-link" data-menu-close>Riduri și lifting non-invaziv<span class="sm">Anti-aging, lifting, fermitate</span></a>
+              <a href="/gusa-barbie-dubla" class="menu-sub-link" data-menu-close>Gușă și bărbie dublă<span class="sm">HIFU, contur facial</span></a>
+              <a href="/pete-pigmentare" class="menu-sub-link" data-menu-close>Pete și pigmentare<span class="sm">Cearcăne, semne post-acnee</span></a>
             </div>
             <div>
               <p class="menu-sub-head">Corp</p>
-              <a href="epilare-laser.html" class="menu-sub-link" data-menu-close>Epilare laser · Elysion Pro<span class="sm">Epilare laser progresiv definitivă</span></a>
-              <a href="grasime-localizata.html" class="menu-sub-link" data-menu-close>Grăsime localizată<span class="sm">Liposonix, cavitație</span></a>
-              <a href="celulita.html" class="menu-sub-link" data-menu-close>Celulită<span class="sm">Radiofrecvență, masaj</span></a>
-              <a href="tonifiere-musculara.html" class="menu-sub-link" data-menu-close>Tonifiere musculară<span class="sm">EMS · 20.000 contracții/ședință</span></a>
-              <a href="detox-drenaj.html" class="menu-sub-link" data-menu-close>Detox și drenaj<span class="sm">Termocuvertă, presoterapie</span></a>
+              <a href="/epilare-laser" class="menu-sub-link" data-menu-close>Epilare laser · Elysion Pro<span class="sm">Epilare laser progresiv definitivă</span></a>
+              <a href="/grasime-localizata" class="menu-sub-link" data-menu-close>Grăsime localizată<span class="sm">Liposonix, cavitație</span></a>
+              <a href="/celulita" class="menu-sub-link" data-menu-close>Celulită<span class="sm">Radiofrecvență, masaj</span></a>
+              <a href="/tonifiere-musculara" class="menu-sub-link" data-menu-close>Tonifiere musculară<span class="sm">EMS · 20.000 contracții/ședință</span></a>
+              <a href="/detox-drenaj" class="menu-sub-link" data-menu-close>Detox și drenaj<span class="sm">Termocuvertă, presoterapie</span></a>
             </div>
           </div>
         </div>
       </div>
-      <a href="preturi.html" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
-      <a href="echipa.html" class="menu-link" data-menu-close><span class="idx">03</span>Echipă</a>
+      <a href="/preturi" class="menu-link" data-menu-close><span class="idx">02</span>Prețuri</a>
+      <a href="/rezultate" class="menu-link" data-menu-close><span class="idx">03</span>Rezultate</a>
+      <a href="/echipa" class="menu-link" data-menu-close><span class="idx">04</span>Echipă</a>
       <div class="menu-dd">
         <button type="button" class="menu-link menu-dd-trigger" aria-expanded="false">
-          <span class="idx">04</span>Locații
+          <span class="idx">05</span>Locații
           <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-sub">
           <div class="menu-sub-grid" style="grid-template-columns:1fr 1fr;">
-            <a href="timisoara.html" class="menu-sub-link" data-menu-close>Timișoara<span class="sm">Str. Bucegi 7</span></a>
-            <a href="arad.html" class="menu-sub-link" data-menu-close>Arad<span class="sm">Str. Ioan Alexandru 16-18</span></a>
+            <a href="/timisoara" class="menu-sub-link" data-menu-close>Timișoara<span class="sm">Str. Bucegi 7</span></a>
+            <a href="/arad" class="menu-sub-link" data-menu-close>Arad<span class="sm">Str. Ioan Alexandru 16-18</span></a>
           </div>
         </div>
       </div>
     </nav>
     <div class="menu-slider" id="menuSlider" aria-label="Oferte active">
       <div class="ms-viewport"><div class="ms-track" id="msTrack">
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price">640 lei</span><s class="ms-old">1280 lei</s><span class="ms-off">-50%</span></span></span></a>
-        <a class="ms-slide ms-offer" href="oferte.html" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price">190 lei</span><s class="ms-old">300 lei</s><span class="ms-off">-37%</span></span></span></a>
-        <a class="ms-slide ms-cta" href="oferte.html" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
+        <a class="ms-slide ms-offer" data-ok="liposonix-2zone" href="/oferte" data-offer="liposonix" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-liposonix.webp" alt="Liposonix"></span><span class="ms-info"><span class="ms-name">Liposonix · 2 zone</span><span class="ms-row"><span class="ms-price" data-ov="newlei">640 lei</span><s class="ms-old" data-ov="oldlei">1280 lei</s><span class="ms-off" data-ov="pct">-50%</span></span></span></a>
+        <a class="ms-slide ms-offer" data-ok="facial-restart" href="/oferte" data-offer="facial-restart" data-menu-close><span class="ms-thumb"><img src="brand_asset/offer-facial.webp" alt="Tratament facial"></span><span class="ms-info"><span class="ms-name">Tratament facial Restart</span><span class="ms-row"><span class="ms-price" data-ov="newlei">190 lei</span><s class="ms-old" data-ov="oldlei">300 lei</s><span class="ms-off" data-ov="pct">-37%</span></span></span></a>
+        <a class="ms-slide ms-cta" href="/oferte" data-menu-close>Vezi ofertele disponibile <span class="ms-arrow">→</span></a>
       </div></div>
       <div class="ms-dots" id="msDots"><button type="button" class="ms-dot is-on" aria-label="Oferta 1"></button><button type="button" class="ms-dot" aria-label="Oferta 2"></button><button type="button" class="ms-dot" aria-label="Toate ofertele"></button></div>
     </div>
@@ -331,7 +337,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 <main class="relative z-10">
 
 
-  <!-- ============ HERO (reduceri de vară) ============ -->
+  <!-- ============ HERO (oferte active) ============ -->
   <style>
     .oh{ position:relative; z-index:10; max-width:80rem; margin:0 auto; padding:.5rem 1.5rem 0; }
     .oh-badge{ display:inline-flex; align-items:center; gap:.5rem; font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:#e9cfa3;
@@ -342,12 +348,12 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   <section class="pt-24 sm:pt-28 pb-10 sm:pb-16">
     <div class="oh">
       <div class="oh-text reveal">
-        <span class="oh-badge">☀ Reducerile de vară au început</span>
-        <h1>Reduceri de <span class="accent">vară</span><br>până la -50%.</h1>
-        <p class="lead">La epilare laser, HIFU și tratamente faciale. Alege-ți oferta de vară - Timișoara &amp; Arad.</p>
+        <span class="oh-badge">Oferte active · Timișoara &amp; Arad</span>
+        <h1>Oferte active<br>până la <span class="accent">-50%</span>.</h1>
+        <p class="lead">Liposonix, cavitație, epilare laser și tratamente faciale. Alege-ți oferta, în Timișoara sau Arad.</p>
         <p style="color:var(--muted); font-size:.92rem; margin-top:1rem; display:flex; align-items:center; gap:.5rem;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e9cfa3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/><path d="M9 12l2 2 4-4"/></svg>
-          Garanție scrisă: fără schimbare vizibilă după prima ședință, ți-o returnăm. <a href="#garantie" style="color:var(--fg); text-decoration:underline;">Detalii →</a>
+          Epilare laser cu garanție scrisă: dacă părul crește la loc, continuăm gratuit. <a href="/epilare-laser#garantie" style="color:var(--fg); text-decoration:underline;">Detalii →</a>
         </p>
       </div>
     </div>
@@ -356,36 +362,53 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   <!-- ============ CELE MAI POPULARE ============ -->
   <section class="px-6 sm:px-8 max-w-7xl mx-auto pb-14" id="pachete">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridPachete" data-offers-section="pachete">
-      <article class="ocard reveal" data-cat="epilare">
-          <div class="ocard-media acc-epilare"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser Full Body"><span class="o-shade"></span><span class="tag">Ofertă · -47%</span></div>
+      <article class="ocard reveal" data-cat="remodelare">
+          <div class="ocard-media acc-remodelare"><img src="brand_asset/ba-liposonix-premium.webp" alt="Rezultat real înainte și după, Liposonix abdomen"><span class="o-shade"></span><span class="tag">1+1 · -50%</span></div>
           <div class="ocard-body">
-            <h3>Epilare laser · Full Body</h3>
-            <div class="o-price"><b>490<span class="u">lei</span></b><s>920 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Epilare%20laser%20Full%20Body%20la%20490%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
+            <h3>Liposonix · 2 zone la preț de una</h3>
+            <p class="pkg-sub" style="margin:0;">Reduce grăsimea localizată, fără intervenție și fără recuperare.</p>
+            <div class="o-price"><b>640<span class="u">lei</span></b><s>1280 lei</s></div>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Liposonix%202%20zone%20la%20640%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
           </div>
         </article>
 
-      <article class="pkg featured reveal d1" data-cat="faciale">
-          <div class="pkg-media"><img src="brand_asset/concern-gusa.webp" alt=""><span class="o-shade"></span></div>
-          <span class="pkg-badge">Program complet</span>
-          <span class="tag">Pachet · 45 zile</span>
-          <h3>HIFU + RF Sculpt</h3>
-          <p class="pkg-sub">Program complet pentru zona gușei, contur mai definit, progresiv.</p>
-          <ul class="pkg-list">
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>3× HIFU gușă</span></li>
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>5× RF Sculpt</span></li>
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Plan personalizat + monitorizarea evoluției</span></li>
-          </ul>
-          <div class="pkg-price"><b>990<span class="u">lei</span></b><s>1690 lei</s></div>
-          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20programul%20HIFU%20%2B%20RF%20Sculpt%20(990%20lei)." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă pachetul <span class="arrow">→</span></a>
+      <article class="ocard reveal d1" data-cat="faciale">
+          <div class="ocard-media acc-faciale"><img src="brand_asset/restart-ba-premium.webp" alt="Rezultat real înainte și după, tratament facial Restart"><span class="o-shade"></span><span class="tag">Ofertă · -37%</span></div>
+          <div class="ocard-body">
+            <h3>Tratament facial Restart</h3>
+            <p class="pkg-sub" style="margin:0;">Hidratare, luminozitate și textură mai fină, fără recuperare.</p>
+            <div class="o-price"><b>190<span class="u">lei</span></b><s>300 lei</s></div>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Tratament%20facial%20Restart%20la%20190%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
+          </div>
         </article>
 
-      <article class="ocard reveal d2" data-cat="faciale">
-          <div class="ocard-media acc-faciale"><img src="brand_asset/gusa-ba-premium.webp" alt="Rezultat real înainte și după - HIFU gușă"><span class="o-shade"></span></div>
+      <article class="ocard reveal d2" data-cat="epilare">
+          <div class="ocard-media acc-epilare"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser Full Body"><span class="o-shade"></span><span class="tag">Doar Timișoara · -35%</span></div>
           <div class="ocard-body">
-            <h3>HIFU · Gușă</h3>
-            <div class="o-price"><b>190<span class="u">lei</span></b><s>290 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20HIFU%20Gusa%20la%20190%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
+            <h3>Epilare laser · Full Body</h3>
+            <p class="pkg-sub" style="margin:0;">Laser medical certificat Elysion Pro. Toate zonele de corp, fără față.</p>
+            <div class="o-price"><b>599<span class="u">lei</span></b><s>920 lei</s></div>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Epilare%20laser%20Full%20Body%20la%20599%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
+          </div>
+        </article>
+
+      <article class="ocard reveal" data-cat="remodelare">
+          <div class="ocard-media acc-remodelare"><img src="brand_asset/concern-grasime.webp" alt="Cavitație și EMS, remodelare corporală"><span class="o-shade"></span><span class="tag">Timișoara · -47%</span></div>
+          <div class="ocard-body">
+            <h3>Cavitație + EMS · Timișoara</h3>
+            <p class="pkg-sub" style="margin:0;">O ședință de cavitație + o ședință de electrostimulare (EMS).</p>
+            <div class="o-price"><b>280<span class="u">lei</span></b><s>530 lei</s></div>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Cavitatie%20%2B%20EMS%20(Timisoara)%20la%20280%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
+          </div>
+        </article>
+
+      <article class="ocard reveal d1" data-cat="remodelare">
+          <div class="ocard-media acc-remodelare"><img src="brand_asset/concern-belly-2.webp" alt="Cavitație, remodelare corporală"><span class="o-shade"></span><span class="tag">Arad · 1+1 · -50%</span></div>
+          <div class="ocard-body">
+            <h3>Cavitație 1+1 · Arad</h3>
+            <p class="pkg-sub" style="margin:0;">Două ședințe de cavitație la preț de una.</p>
+            <div class="o-price"><b>280<span class="u">lei</span></b><s>560 lei</s></div>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Cavitatie%201%2B1%20(Arad)%20la%20280%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
           </div>
         </article>
     </div>
@@ -396,25 +419,16 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <div class="osec-head reveal"><span class="eb">Epilare laser · Doar Timișoara</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Epilare laser</h2></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridEpilare" data-offers-section="epilare">
       <article class="ocard reveal" data-cat="epilare">
-          <div class="ocard-media acc-epilare"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser Full Body"><span class="o-shade"></span><span class="tag">Ofertă · -47%</span></div>
+          <div class="ocard-media acc-epilare"><img src="brand_asset/offer-epilare.webp" alt="Epilare laser Full Body"><span class="o-shade"></span><span class="tag">Ofertă · -35%</span></div>
           <div class="ocard-body">
             <h3>Epilare laser · Full Body</h3>
             <p class="pkg-sub" style="margin:0;">Toate zonele de corp, fără față.</p>
-            <div class="o-price"><b>490<span class="u">lei</span></b><s>920 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Epilare%20laser%20Full%20Body%20la%20490%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
-          </div>
-        </article>
-
-      <article class="ocard reveal d1" data-cat="epilare">
-          <div class="ocard-media acc-epilare"><img src="brand_asset/epilare-legs-black.webp" alt="Epilare laser inghinal și axilă"><span class="o-shade"></span><span class="tag">Ofertă · -35%</span></div>
-          <div class="ocard-body">
-            <h3>Epilare laser · Inghinal + Axilă</h3>
-            <div class="o-price"><b>220<span class="u">lei</span></b><s>340 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Epilare%20laser%20Inghinal%20%2B%20Axila%20la%20220%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
+            <div class="o-price"><b>599<span class="u">lei</span></b><s>920 lei</s></div>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Epilare%20laser%20Full%20Body%20la%20599%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
           </div>
         </article>
     </div>
-    <p class="text-[var(--muted)] text-[13px] mt-5">Vezi toate zonele și prețurile individuale pe <a href="preturi.html#epilare" style="color:var(--fg); text-decoration:underline;">pagina de prețuri</a>.</p>
+    <p class="text-[var(--muted)] text-[13px] mt-5">Vezi toate zonele și prețurile individuale pe <a href="/preturi#epilare" style="color:var(--fg); text-decoration:underline;">pagina de prețuri</a>.</p>
   </section>
 
   <!-- ============ REMODELARE ============ -->
@@ -422,11 +436,11 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <div class="osec-head reveal"><span class="eb">Remodelare corporală</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Remodelare corporală</h2></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridRemodelare" data-offers-section="remodelare">
       <article class="ocard reveal" data-cat="remodelare">
-          <div class="ocard-media acc-remodelare"><img src="brand_asset/ba-liposonix-premium.webp" alt="Rezultat real înainte și după - Liposonix abdomen"><span class="o-shade"></span></div>
+          <div class="ocard-media acc-remodelare"><img src="brand_asset/ba-liposonix-premium.webp" alt="Rezultat real înainte și după, Liposonix abdomen"><span class="o-shade"></span></div>
           <div class="ocard-body">
             <h3>Liposonix · 2 zone</h3>
             <div class="o-price"><b>640<span class="u">lei</span></b><s>1280 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Liposonix." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Liposonix." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
           </div>
         </article>
 
@@ -484,7 +498,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
 
       <article class="pkg reveal d2" data-cat="remodelare">
           <div class="pkg-media"><img src="brand_asset/concern-cellulite-3.webp" alt=""><span class="o-shade"></span></div>
-          <span class="tag">Pachet · -47%</span>
+          <span class="tag">Pachet · -41%</span>
           <h3>Anticelulită</h3>
           <p class="pkg-sub">Radiofrecvență corporală pentru reducerea celulitei și fermitate.</p>
           <ul class="pkg-list">
@@ -492,8 +506,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
             <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Reduce celulita + tonifiere</span></li>
             <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Cadou: o ședință Împachetare la cald</span></li>
           </ul>
-          <div class="pkg-price"><b>890<span class="u">lei</span></b><s>1680 lei</s></div>
-          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20pachetul%20Anticelulita%20(890%20lei)." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă pachetul <span class="arrow">→</span></a>
+          <div class="pkg-price"><b>990<span class="u">lei</span></b><s>1680 lei</s></div>
+          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20pachetul%20Anticelulita%20(990%20lei)." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă pachetul <span class="arrow">→</span></a>
         </article>
 
       <article class="pkg featured reveal d1" data-cat="remodelare">
@@ -517,27 +531,27 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <div class="osec-head reveal"><span class="eb">Faciale</span><h2 class="sec-head text-[clamp(1.5rem,4vw,2.1rem)]">Tratamente faciale</h2></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="offersGridFaciale" data-offers-section="faciale">
       <article class="ocard reveal" data-cat="faciale">
-          <div class="ocard-media acc-faciale"><img src="brand_asset/restart-ba-premium.webp" alt="Rezultat real înainte și după - tratament facial Restart"><span class="o-shade"></span></div>
+          <div class="ocard-media acc-faciale"><img src="brand_asset/restart-ba-premium.webp" alt="Rezultat real înainte și după, tratament facial Restart"><span class="o-shade"></span></div>
           <div class="ocard-body">
             <h3>Tratament facial Restart</h3>
             <div class="o-price"><b>190<span class="u">lei</span></b><s>300 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Tratament%20facial%20Restart." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>
+            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Tratament%20facial%20Restart." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
           </div>
         </article>
 
-      <article class="ocard reveal d2" data-cat="faciale">
-          <div class="ocard-media acc-faciale"><img src="brand_asset/ba-facial.webp" alt="Rezultat real facial - hidratare și luminozitate" style="object-position:center 34%;"><span class="o-shade"></span><span class="tag" style="left:auto; right:12px;">1 + 1 Cadou</span></div>
-          <div class="ocard-body">
-            <h3>Glow de vacanță</h3>
-            <p class="pkg-sub" style="margin:0;">Hidratare profundă, una înainte de vacanță, una după. A doua ședință e cadou.</p>
-            <ul class="pkg-list">
-              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>2× Hidratare profundă (60 min)</span></li>
-              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>A 2-a ședință, cadou (1+1)</span></li>
-              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Piele hidratată și luminoasă</span></li>
-            </ul>
-            <div class="pkg-price"><b>350<span class="u">lei</span></b><s>700 lei</s></div>
-            <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20oferta%20Glow%20de%20vacanta%20(Hidratare%20profunda%201%2B1)." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
-          </div>
+      <article class="pkg featured reveal d1" data-cat="faciale">
+          <div class="pkg-media"><img src="brand_asset/concern-gusa.webp" alt=""><span class="o-shade"></span></div>
+          <span class="pkg-badge">Program complet</span>
+          <span class="tag">Pachet · 45 zile</span>
+          <h3>HIFU + RF Sculpt</h3>
+          <p class="pkg-sub">Program complet pentru zona gușei: contur mai definit, progresiv.</p>
+          <ul class="pkg-list">
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>3× HIFU gușă</span></li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>5× RF Sculpt</span></li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Plan personalizat + monitorizarea evoluției</span></li>
+          </ul>
+          <div class="pkg-price"><b>990<span class="u">lei</span></b><s>1690 lei</s></div>
+          <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20programul%20HIFU%20%2B%20RF%20Sculpt%20(990%20lei)." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3.5 text-[13px] w-full">Rezervă pachetul <span class="arrow">→</span></a>
         </article>
 
       <article class="pkg reveal" data-cat="faciale">
@@ -633,26 +647,10 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   @media(min-width:640px){ .cf-bar{ flex-direction:row; } }
   .cf-legal{ display:flex; gap:1.5rem; font-size:13px; }
 </style>
-<!-- cvz:start -->
-<section class="sec" id="garantie"><div class="wrap">
-<div class="cvz-guarantee">
-  <p class="cvz-eyebrow">Garanție scrisă</p>
-  <h3>Dacă după prima ședință nu vezi nicio schimbare, îți returnăm ședința.</h3>
-  <p>Fotografiem zona înainte și după, în aceleași condiții de lumină. Compari singură. Dacă nu există nicio diferență vizibilă, ședința îți este returnată, fără discuții și fără să fie nevoie să justifici.</p>
-  <p>De aceea consultația e gratuită și de aceea îți spunem deschis când un tratament nu e potrivit pentru cazul tău.</p>
-  <ul class="cvz-cond">
-    <li>Fotografii înainte și după, la aceeași ședință</li>
-    <li>Se aplică la prima ședință din protocol</li>
-    <li>Protocolul recomandat trebuie respectat</li>
-    <li>Valabil în ambele clinici</li>
-  </ul>
-</div>
-</div></section>
-<!-- cvz:end -->
 <section class="sec"><div class="wrap">
 <div class="cvz-proof">
-  <div><b>4,9</b><span class="cvz-stars">★★★★★</span><span>din 300+ recenzii Google</span></div>
-  <div><b>2</b><span>clinici - Timișoara și Arad</span></div>
+  <div><b>5,0</b><span class="cvz-stars">★★★★★</span><span>din 300+ recenzii Google</span></div>
+  <div><b>2</b><span>clinici, Timișoara și Arad</span></div>
   <div><b>15+</b><span>cazuri documentate cu fotografii înainte și după</span></div>
   <div><b>0 lei</b><span>consultația inițială, fără obligații</span></div>
 </div>
@@ -675,23 +673,23 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       <div>
         <p class="cf-h">Explorează</p>
         <ul class="cf-links">
-          <li><a href="index.html#servicii" class="cf-a">Servicii</a></li>
-          <li><a href="index.html#oferte" class="cf-a">Oferte active</a></li>
-          <li><a href="echipa.html" class="cf-a">Echipa</a></li>
-          <li><a href="index.html#recenzii" class="cf-a">Recenzii</a></li>
-          <li><a href="index.html#intrebari" class="cf-a">Întrebări frecvente</a></li>
+          <li><a href="/#servicii" class="cf-a">Servicii</a></li>
+          <li><a href="/#oferte" class="cf-a">Oferte active</a></li>
+          <li><a href="/echipa" class="cf-a">Echipa</a></li>
+          <li><a href="/#recenzii" class="cf-a">Recenzii</a></li>
+          <li><a href="/#intrebari" class="cf-a">Întrebări frecvente</a></li>
         </ul>
       </div>
       <div>
         <p class="cf-h">Locații</p>
         <div class="cf-locs">
-          <div class="cf-loc"><strong>Timișoara</strong><span>Str. Bucegi 7</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
-          <div class="cf-loc"><strong>Arad</strong><span>Str. Ioan Alexandru 16</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
+          <div class="cf-loc"><strong>Timișoara</strong><span>Str. Bucegi 7</span><a href="tel:+40750204243" class="cf-a">+40 750 204 243</a></div>
+          <div class="cf-loc"><strong>Arad</strong><span>Str. Ioan Alexandru 16-18</span><a href="tel:+40750263054" class="cf-a">+40 750 263 054</a></div>
         </div>
       </div>
       <div>
         <p class="cf-h">Programări</p>
-        <p class="cf-desc" style="margin-bottom:1.5rem;">Scrie-ne pe WhatsApp, îți răspundem rapid și îți confirmăm o oră liberă.</p>
+        <p class="cf-desc" style="margin-bottom:1.5rem;">Scrie-ne pe WhatsApp. Îți răspundem rapid și îți confirmăm o oră liberă.</p>
         <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener" class="pill pill-ink cf-cta">
           Rezervă pe WhatsApp <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
         </a>
@@ -700,9 +698,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     <div class="cf-bar">
       <p class="cf-h" style="margin:0;">© 2026 Centrul360 · Toate drepturile rezervate</p>
       <div class="cf-legal">
-        <a href="termeni.html" class="cf-a">Termeni</a>
-        <a href="politica-de-confidentialitate.html" class="cf-a">Confidențialitate</a>
-        <a href="cookies.html" class="cf-a">Cookies</a>
+        <a href="/termeni" class="cf-a">Termeni</a>
+        <a href="/politica-de-confidentialitate" class="cf-a">Confidențialitate</a>
+        <a href="/cookies" class="cf-a">Cookies</a>
       </div>
     </div>
   </div>
@@ -764,7 +762,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const mounts = []; let glbScene = null;
 const idleGlb = window.requestIdleCallback || (fn=>setTimeout(fn,150));
-idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); animate(); }, undefined, (e)=>console.error('GLB load error', e)));
+// The model (2.6 MB) loads after the page itself, so it never competes with the content.
+const startLogoModel = ()=> idleGlb(()=> new GLTFLoader().load('brand_asset/3dsvg.glb', (g)=>{ glbScene = g.scene; mountAll(); clock.start(); mounts.forEach(m=>logoIO.observe(m.canvas)); kickLogo(); }, undefined, (e)=>console.error('GLB load error', e)));
+if(document.readyState === 'complete') startLogoModel(); else addEventListener('load', startLogoModel, { once:true });
 function mountAll(){
   const head = document.getElementById('logo3d-head');
   const menu = document.getElementById('logo3d-menu');
@@ -798,16 +798,23 @@ function makeMount(canvas, opts){
   return { canvas, renderer, scene, cam, spinner, opts };
 }
 const clock = new THREE.Clock();
+// Render only while a logo is on screen, at ~30 fps (the spin is slow, so it looks the same),
+// and stop completely when none is visible, the header logo used to redraw 60+ times a second forever.
+const visibleLogos = new Set();
+const logoIO = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting) visibleLogos.add(e.target); else visibleLogos.delete(e.target); }); kickLogo(); });
+let logoRaf = 0, lastLogoFrame = -1;
+function liveLogo(m){ return visibleLogos.has(m.canvas) && m.canvas.offsetParent !== null && !m.canvas.closest('.menu-overlay:not(.open)'); }
+function kickLogo(){ if(!logoRaf && mounts.some(liveLogo)) logoRaf = requestAnimationFrame(animate); }
+document.addEventListener('click', ()=>setTimeout(kickLogo, 60));   // the menu logo becomes visible when the menu opens
 function animate(){
-  requestAnimationFrame(animate);
+  logoRaf = 0;
+  const on = mounts.filter(liveLogo);
+  if(!on.length) return;
+  logoRaf = requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
-  for(const m of mounts){
-    if(m.canvas.offsetParent === null) continue;
-    const r = m.canvas.getBoundingClientRect();
-    if(r.bottom <= 0 || r.top >= innerHeight) continue;
-    m.spinner.rotation.y = reduce ? 0.6 : t * m.opts.spin;
-    m.renderer.render(m.scene, m.cam);
-  }
+  if(t - lastLogoFrame < 1/30) return;
+  lastLogoFrame = t;
+  for(const m of on){ m.spinner.rotation.y = 1.5708 + (reduce ? 0 : t * m.opts.spin); m.renderer.render(m.scene, m.cam); }
 }
 </script>
 <!-- ===== Offer quick-view popup (opens from menu offer slides) ===== -->
@@ -844,13 +851,13 @@ function animate(){
   <div class="offpop-bd" data-offpop-close></div>
   <div class="offpop-topbar"><button class="offpop-close" data-offpop-close aria-label="Închide">&times;</button></div>
   <div class="offpop-card" role="dialog" aria-modal="true" aria-labelledby="offpop-name">
-    <div class="offpop-media"><img id="offpop-img" src="" alt="" loading="lazy"></div>
+    <div class="offpop-media"><img id="offpop-img" alt="" loading="lazy"></div>
     <div class="offpop-body">
       <span class="offpop-eyebrow">Ofertă activă</span>
       <h3 class="offpop-name" id="offpop-name"></h3>
       <ul class="offpop-bullets" id="offpop-bullets"></ul>
-      <a class="offpop-cta" id="offpop-wa" href="#" target="_blank" rel="noopener">Rezervă pe WhatsApp <span>&rarr;</span></a>
-      <a class="offpop-all" href="oferte.html">Vezi toate ofertele &rarr;</a>
+      <a class="offpop-cta" id="offpop-wa" href="#" target="_blank" rel="noopener">Rezervă oferta <span>&rarr;</span></a>
+      <a class="offpop-all" href="/oferte">Vezi toate ofertele &rarr;</a>
     </div>
   </div>
 </div>
@@ -908,8 +915,7 @@ function animate(){
 // ===== Admin-managed offers (Setări → Oferte in the portal) =====
 // Replaces the hardcoded cards above with live data from /api/offers-public so prices
 // never drift out of sync with preturi.html. On fetch failure the cards already in the
-// HTML (the current real offers, kept as a static fallback) stay exactly as they are, 
-// this script only ever overwrites a grid once it has a successful response for it.
+// HTML (the current real offers, kept as a static fallback) stay exactly as they are, // this script only ever overwrites a grid once it has a successful response for it.
 (function(){
   const WA_NUMBER = '40750204243';
   const DIACRITICS = { 'ă':'a','â':'a','î':'i','ș':'s','ş':'s','ț':'t','ţ':'t','Ă':'A','Â':'A','Î':'I','Ș':'S','Ş':'S','Ț':'T','Ţ':'T' };
@@ -937,7 +943,7 @@ function animate(){
           '<h3>' + escapeHtml(o.title) + '</h3>' +
           sub +
           '<div class="o-price"><b>' + Math.round(o.priceNew) + '<span class="u">lei</span></b><s>' + Math.round(o.priceOld) + ' lei</s></div>' +
-          '<a href="' + waLink('Buna ziua! Vreau sa rezerv oferta ' + o.title + ' la ' + Math.round(o.priceNew) + ' lei.') + '" target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă pe WhatsApp <span class="arrow">→</span></a>' +
+          '<a href="' + waLink('Buna ziua! Vreau sa rezerv oferta ' + o.title + ' la ' + Math.round(o.priceNew) + ' lei.') + '" target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>' +
         '</div>' +
       '</article>'
     );
@@ -975,7 +981,7 @@ function animate(){
 
   // "Cele mai populare" is a fixed curated pick (same 3 offers as the original hardcoded
   // section), not a category, picked by key, in this order.
-  const PACHETE_KEYS = ['epilare-full-body', 'hifu-program-complet', 'hifu-gusa-1sedinta'];
+  const PACHETE_KEYS = ['liposonix-2zone', 'facial-restart', 'epilare-full-body', 'cavitatie-ems', 'cavitatie-1plus1'];
 
   fetch('/api/offers-public')
     .then(r => { if (!r.ok) throw new Error('offers_failed'); return r.json(); })
@@ -999,5 +1005,7 @@ function animate(){
 })();
 </script>
 <script src="c360-convert.js" defer></script>
+<script src="c360-consult.js" defer></script>
+<script src="c360-offers.js" defer></script>
 </body>
 </html>

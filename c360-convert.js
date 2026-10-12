@@ -95,10 +95,10 @@
         pagina: location.href
       };
 
-      if (window.fbq) { try { fbq('track', 'Lead'); } catch (err) {} }
+      // Meta Lead fires once, on the thank-you page (same for every form on the site)
       if (window.gtag) { try { gtag('event', 'generate_lead', { value: 1 }); } catch (err) {} }
 
-      function done() { window.location.href = 'multumesc-cadou.html'; }
+      function done() { window.location.href = '/multumesc-cadou'; }
 
       fetch(WEBHOOK, {
         method: 'POST',
@@ -119,6 +119,15 @@
       '<a class="cvz-bar-b" href="https://wa.me/' + WA['Timișoara'] + '" target="_blank" rel="noopener">WhatsApp</a>';
     document.body.appendChild(el);
     if (mount) mount.id = 'cvz-form';
+    // one bar at the bottom, not two stacked: this one replaces the page's own booking bar
+    var old = document.getElementById('bookbar');
+    if (old) old.remove();
+    // the consultation opens right where the visitor is (c360-consult.js); without it, jump to the form
+    el.querySelector('.cvz-bar-a').addEventListener('click', function (e) {
+      if (!window.C360Consult) return;
+      e.preventDefault();
+      window.C360Consult.open('');
+    });
   }
 
   document.addEventListener('DOMContentLoaded', function () {
