@@ -72,9 +72,23 @@
 .pay-warn{ display:flex; align-items:center; gap:.4rem; color:var(--warn); } .pay-warn svg{ width:16px; height:16px; flex:none; }
 .pay-people{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:.5rem; }
 .pay-people button{ display:flex; align-items:center; gap:.6rem; min-height:56px; padding:.5rem .7rem; border-radius:14px; border:1.5px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:all .15s ease; }
-.pay-people button span{ display:flex; flex-direction:column; } .pay-people button b{ font-size:.88rem; } .pay-people button small{ font-size:.72rem; color:var(--muted); }
+.pay-people button > span:not(.k-avatar){ display:flex; flex-direction:column; } .pay-people button b{ font-size:.88rem; } .pay-people button small{ font-size:.72rem; color:var(--muted); }
+.pay-people .k-avatar{ flex:none; }
 .pay-people button.is-on{ border-color:var(--accent); background:var(--accent-soft); }
 .pay-people button.is-other{ opacity:.7; }
+
+/* payment: step 1 filters (city, day) + appointment dropdown */
+.pay-filters{ display:flex; flex-wrap:wrap; gap:.7rem 1rem; align-items:flex-end; }
+.pay-filter{ display:flex; flex-direction:column; gap:.3rem; min-width:0; }
+.pay-filter > span, .pay-select > span{ font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+.pay-days{ display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+.pay-days button{ height:40px; padding:0 .9rem; border-radius:11px; border:1.5px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; font-size:.86rem; font-weight:650; cursor:pointer; }
+.pay-days button.is-on{ border-color:var(--accent); background:var(--accent-soft); }
+.pay-days input{ height:40px; border-radius:11px; border:1.5px solid var(--line); background:var(--surface-3); color:var(--fg); padding:0 .6rem; font:inherit; font-size:.86rem; }
+.pay-select select{ min-height:48px; font-size:.95rem; }
+.pay-select .c360-select-btn{ min-height:48px; font-size:.95rem; }
+.pay-other{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; font-size:.84rem; color:var(--muted); }
+div.pay-appt{ cursor:default; }
 
 /* ---------------- Comisionul meu ---------------- */
 .cb-hero{ display:grid; grid-template-columns:1fr auto; gap:1rem 1.5rem; align-items:center; padding:1.3rem 1.4rem; margin-bottom:1.2rem;
@@ -140,7 +154,7 @@
 .ct-notes{ display:flex; flex-direction:column; gap:.5rem; }
 .ct-note{ padding:.75rem .85rem; border-radius:14px; background:var(--paper-2); border:1px solid var(--line); }
 .ct-note p{ margin:0 0 .5rem; white-space:pre-wrap; font-size:.92rem; line-height:1.5; }
-.ct-note footer{ display:flex; align-items:center; gap:.45rem; font-size:.76rem; color:var(--muted); } .ct-note footer span{ flex:1; }
+.ct-note footer{ display:flex; align-items:center; gap:.45rem; font-size:.76rem; color:var(--muted); } .ct-note footer > span:not(.k-avatar){ flex:1; } .ct-note footer .k-avatar{ flex:none; }
 .ct-consent{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.8rem; padding:.9rem 1rem; border-radius:16px; border:1.5px solid var(--line); background:var(--paper-2); }
 .ct-consent > div:first-child{ display:flex; flex-direction:column; gap:.2rem; flex:1 1 260px; }
 .ct-consent b{ display:flex; align-items:center; gap:.45rem; } .ct-consent b svg{ width:17px; height:17px; }
@@ -191,6 +205,9 @@
   .k-catpick{ grid-template-columns:1fr; }
   .k-catpick button{ min-height:52px; font-size:.95rem; }
   .pay-methods{ grid-template-columns:repeat(2,1fr); }
+  .pay-filters{ flex-direction:column; align-items:stretch; }
+  .pay-filter .k-seg{ display:flex; } .pay-filter .k-seg button{ flex:1; justify-content:center; }
+  .pay-days input{ flex:1; min-width:0; }
   .pay-methods button{ min-height:70px; }
   .pay-split{ grid-template-columns:1fr; }
   .pay-people{ grid-template-columns:1fr 1fr; }

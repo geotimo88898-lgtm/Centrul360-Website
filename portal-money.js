@@ -193,7 +193,9 @@
   // ---------------- new payment: appointment → method → who did it
   async function openNew(pre) {
     pre = pre || {};
-    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', q: '', picking: !pre.appointmentId };
+    // Step 1 = city (Timișoara / Arad) → day (today by default) → that day's unpaid appointments in a dropdown.
+    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(),
+      city: K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0] };
     const d = K.drawer({
       title: 'Încasare', icon: 'wallet', width: 600, focus: false,
       subtitle: 'Alegi programarea, cum a plătit și cine a făcut tratamentul.',
@@ -204,6 +206,7 @@
         const body = el.querySelector('.k-dbody'); // the drawer shell is shared by every drawer: listen on its body only
         body.addEventListener('click', onDrawerClick);
         body.addEventListener('input', onDrawerInput);
+        body.addEventListener('change', onDrawerChange);
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, save));
       },
     });
@@ -213,14 +216,38 @@
       st.list = j.appointments || [];
     } catch (e) { root().innerHTML = K.empty('alert', 'Nu am putut încărca programările', 'Verifică conexiunea și reîncearcă.'); return; }
     const appt = () => st.list.find((a) => a.id === st.apptId);
-    if (st.apptId && !appt()) { st.apptId = ''; st.picking = true; }
-    if (appt()) st.who = appt().cosmeticianId || '';
+    function whoOk() { return cosmeticians(st.city).some((x) => x.id === st.who); }
+    if (st.apptId && !appt()) st.apptId = '';
+    if (appt()) { st.who = appt().cosmeticianId || ''; st.city = appt().location || st.city; st.day = appt().date || st.day; }
     paint();
 
-    function apptCard(a, on) {
-      return '<button type="button" class="pay-appt' + (on ? ' is-on' : '') + '" data-appt="' + esc(a.id) + '"><span class="pay-time"><b>' + esc(a.time || '—') + '</b><small>' + esc(K.relDay(a.date) === K.dateLong(a.date) ? K.dateShort(a.date) : K.relDay(a.date)) + '</small></span>' +
+    function apptCard(a) {
+      return '<div class="pay-appt is-on"><span class="pay-time"><b>' + esc(a.time || '—') + '</b><small>' + esc(K.relDay(a.date) === K.dateLong(a.date) ? K.dateShort(a.date) : K.relDay(a.date)) + '</small></span>' +
         '<span class="pay-main"><b>' + esc(a.clientName || '—') + '</b><small>' + esc(a.treatment || '') + ' · ' + esc(a.location) + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</small></span>' +
-        '<span class="pay-amt">' + (a.amount ? K.lei(a.amount) : '<em>fără sumă</em>') + '</span></button>';
+        '<span class="pay-amt">' + (a.amount ? K.lei(a.amount) : '<em>fără sumă</em>') + '</span></div>';
+    }
+    function optText(x) { return [x.time || 'fără oră', x.clientName || '—', x.treatment || '', x.cosmeticianName || '', x.amount ? K.lei(x.amount) : 'fără sumă'].filter(Boolean).join(' · '); }
+    function step1Html(a) {
+      const today = K.today(), yest = K.addDays(today, -1);
+      const dayList = st.list.filter((x) => x.location === st.city && x.date === st.day).sort((x, y) => (x.time || '99').localeCompare(y.time || '99'));
+      // other days in this city that still have unpaid appointments (newest first)
+      const other = {};
+      st.list.forEach((x) => { if (x.location === st.city && x.date !== st.day) other[x.date] = (other[x.date] || 0) + 1; });
+      const otherDays = Object.keys(other).sort().reverse().slice(0, 8);
+      const dayName = st.day === today ? 'azi' : st.day === yest ? 'ieri' : K.dateLong(st.day).toLowerCase();
+      return '<section class="pay-step' + (a ? ' is-done' : '') + '"><h4><i>' + (a ? icon('check') : '1') + '</i>Ce programare încasezi?</h4>' +
+        '<div class="pay-filters"><div class="pay-filter"><span>Oraș</span>' + K.seg('paycity', LOCS.map((l) => [l, l, 'pin']), st.city, 'is-big') + '</div>' +
+          '<div class="pay-filter"><span>Ziua</span><div class="pay-days">' +
+            '<button type="button" data-day="' + today + '" class="' + (st.day === today ? 'is-on' : '') + '">Azi</button>' +
+            '<button type="button" data-day="' + yest + '" class="' + (st.day === yest ? 'is-on' : '') + '">Ieri</button>' +
+            '<input type="date" data-day-input max="' + today + '" value="' + esc(st.day) + '" aria-label="Alege ziua"></div></div></div>' +
+        '<label class="k-field pay-select"><span>Programările din ' + esc(st.city) + ', ' + esc(dayName) + '</span>' +
+          '<select data-appt-select' + (dayList.length ? '' : ' disabled') + '>' +
+            (dayList.length ? '<option value="">— alege programarea (' + dayList.length + ') —</option>' + dayList.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === st.apptId ? ' selected' : '') + '>' + esc(optText(x)) + '</option>').join('')
+              : '<option value="">Nicio programare neîncasată în ziua asta</option>') +
+          '</select></label>' +
+        (!dayList.length && otherDays.length ? '<div class="pay-other"><span>Mai sunt neîncasate în ' + esc(st.city) + ':</span>' + otherDays.map((dd) => '<button type="button" class="k-chip" data-day="' + dd + '">' + esc(dd === today ? 'Azi' : dd === yest ? 'Ieri' : K.dateShort(dd)) + '<span>' + other[dd] + '</span></button>').join('') + '</div>' : '') +
+        (a ? apptCard(a) : '') + '</section>';
     }
     function paint() {
       const a = appt();
@@ -229,21 +256,11 @@
           '<button type="button" class="k-btn is-primary" data-go-cal>' + icon('calendar') + 'Deschide Calendarul</button>');
         return;
       }
-      const q = K.norm(st.q);
-      const mine = (x) => !K.data.isAdmin && LOCS.includes(K.data.me.location) ? x.location === K.data.me.location : true;
-      const list = st.list.filter((x) => !q || K.norm(x.clientName + ' ' + x.treatment).includes(q)).sort((x, y) => (mine(y) ? 1 : 0) - (mine(x) ? 1 : 0));
-      const today = list.filter((x) => x.date === K.today()), older = list.filter((x) => x.date !== K.today());
-      const step1 = st.picking || !a
-        ? '<section class="pay-step"><h4><i>1</i>Ce programare încasezi?</h4>' +
-          (st.list.length > 6 ? '<label class="k-search pay-search">' + icon('search') + '<input data-pay-q placeholder="Caută clienta…" value="' + esc(st.q) + '"></label>' : '') +
-          (today.length ? '<div class="pay-group">Azi</div>' + today.map((x) => apptCard(x, x.id === st.apptId)).join('') : '') +
-          (older.length ? '<div class="pay-group">Zilele trecute, neîncasate</div>' + older.map((x) => apptCard(x, x.id === st.apptId)).join('') : '') +
-          (!list.length ? '<p class="k-muted">Nicio programare găsită.</p>' : '') + '</section>'
-        : '<section class="pay-step is-done"><h4><i>' + icon('check') + '</i>Programarea</h4>' + apptCard(a, true) + '<button type="button" class="k-btn is-sm is-outline pay-change" data-change>' + icon('refresh') + 'Altă programare</button></section>';
-      if (!a || st.picking) { root().innerHTML = step1; updateSave(); return; }
+      const step1 = step1Html(a);
+      if (!a) { root().innerHTML = step1; updateSave(); return; }
       const booked = Number(a.amount) || 0;
-      const team = cosmeticians(a.location);
-      const others = cosmeticians().filter((x) => x.location !== a.location);
+      // only the cosmeticians of the chosen city
+      const team = cosmeticians(st.city);
       root().innerHTML = step1 +
         '<section class="pay-step"><h4><i>2</i>Cum a plătit?</h4><div class="pay-methods">' + Object.keys(METHODS).map((k) =>
           '<button type="button" data-m="' + k + '" class="' + (st.method === k ? 'is-on' : '') + '"><span>' + icon(METHODS[k].ic) + '</span>' + METHODS[k].label + '</button>').join('') + '</div>' +
@@ -253,8 +270,8 @@
               '<label class="k-field"><span>Din care card</span><div class="k-money"><input data-card type="number" inputmode="decimal" min="0" step="1" value="' + esc(st.card || '') + '"></div></label></div>' : '') +
             '<div class="pay-note" data-note></div></div></section>' +
         '<section class="pay-step"><h4><i>3</i>Cine a făcut tratamentul?</h4><div class="pay-people">' +
-          team.concat(others).map((x) => '<button type="button" data-who="' + esc(x.id) + '" class="' + (st.who === x.id ? 'is-on' : '') + (x.location !== a.location ? ' is-other' : '') + '">' + K.avatar(x.name, 30) + '<span><b>' + esc(x.name) + '</b><small>' + esc(x.location) + '</small></span></button>').join('') +
-          (!team.length && !others.length ? '<p class="k-muted">Nicio cosmeticiană activă în Echipa.</p>' : '') + '</div></section>';
+          team.map((x) => '<button type="button" data-who="' + esc(x.id) + '" class="' + (st.who === x.id ? 'is-on' : '') + '">' + K.avatar(x.name, 30) + '<span><b>' + esc(x.name) + '</b><small>' + esc(x.location) + '</small></span></button>').join('') +
+          (!team.length ? '<p class="k-muted">Nicio cosmeticiană activă în ' + esc(st.city) + ' (Echipa).</p>' : '') + '</div></section>';
       note(); updateSave();
     }
     function vals() {
@@ -279,7 +296,7 @@
     }
     function ready() {
       const { a, amt, cash, card } = vals();
-      if (!a || st.picking || !(amt > 0) || !st.who) return false;
+      if (!a || !(amt > 0) || !st.who || !whoOk()) return false;
       if (st.method === 'cash_card' && (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amt) > 0.01)) return false;
       return true;
     }
@@ -291,17 +308,35 @@
     }
     function onDrawerClick(e) {
       if (e.target.closest('[data-go-cal]')) { d.close(); K.go('programari'); return; }
-      const ap = e.target.closest('[data-appt]');
-      if (ap && (st.picking || !appt())) {
-        st.apptId = ap.dataset.appt; st.picking = false; st.amount = null; st.cash = ''; st.card = '';
-        st.who = (appt() && appt().cosmeticianId) || '';
-        return paint();
-      }
-      if (e.target.closest('[data-change]')) { st.picking = true; return paint(); }
+      const dy = e.target.closest('[data-day]');
+      if (dy) { setDay(dy.dataset.day); return; }
       const m = e.target.closest('[data-m]');
       if (m) { keepInputs(); st.method = m.dataset.m; return paint(); }
       const w = e.target.closest('[data-who]');
       if (w) { st.who = w.dataset.who; d.el.querySelectorAll('[data-who]').forEach((x) => x.classList.toggle('is-on', x === w)); note(); updateSave(); }
+    }
+    // A different city or day empties the choice unless the chosen appointment still matches.
+    function setDay(day) {
+      if (!day) return;
+      st.day = day;
+      const a = appt();
+      if (a && a.date !== st.day) st.apptId = '';
+      paint();
+    }
+    function onDrawerChange(e) {
+      const t = e.target;
+      if (t.name === 'paycity') {
+        st.city = t.value;
+        const a = appt();
+        if (a && a.location !== st.city) st.apptId = '';
+        return paint();
+      }
+      if (t.matches('[data-day-input]')) return setDay(t.value);
+      if (t.matches('[data-appt-select]')) {
+        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = '';
+        st.who = (appt() && appt().cosmeticianId) || '';
+        return paint();
+      }
     }
     function keepInputs() {
       const amt = d.el.querySelector('[data-amount]'), c1 = d.el.querySelector('[data-cash]'), c2 = d.el.querySelector('[data-card]');
@@ -310,7 +345,6 @@
       if (c2) st.card = c2.value;
     }
     function onDrawerInput(e) {
-      if (e.target.matches('[data-pay-q]')) { st.q = e.target.value; const pos = e.target.selectionStart; paint(); const q = d.el.querySelector('[data-pay-q]'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } return; }
       // cash + card: typing one side fills the other with the rest
       const amt = Number((d.el.querySelector('[data-amount]') || {}).value) || 0;
       if (e.target.matches('[data-cash]') && amt) d.el.querySelector('[data-card]').value = Math.max(0, Math.round((amt - (Number(e.target.value) || 0)) * 100) / 100) || '';
