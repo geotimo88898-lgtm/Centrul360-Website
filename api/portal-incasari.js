@@ -106,7 +106,7 @@ module.exports = async (req, res) => {
       } else if (!upsellEntry && entry.upsell > 0 && entry.performedBy) {
         const employees = await readJSON('data/employees.json', []);
         const p = employees.find((e) => e.id === entry.performedBy);
-        if (p && p.role !== 'admin') sales.push(portalSale.upsellFor(entry, p.id));
+        if (p && p.role === 'cosmetician') sales.push(portalSale.upsellFor(entry, p.id));
       }
 
       await writeJSON('data/sales.json', next);

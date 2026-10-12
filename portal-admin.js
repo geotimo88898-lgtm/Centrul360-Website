@@ -1,8 +1,7 @@
-// Centrul360 portal, owner sections: Aprobări, Echipa (people · bonuses · Condică), Oferte, Integrări.
+// Centrul360 portal, owner sections: Aprobări, Echipa (people · salaries · Condică), Oferte, Integrări.
 // Aprobări: decision cards (A / R keys), optional reason on reject, bulk approve.
-// Echipa: one card per person (role, month numbers, goal rings); a drawer to edit profile,
-// reset password, (de)activate, and set up to 4 goals with a bonus each, what the employee
-// then sees as "Bonusurile mele". Oferte: the ONE offer list (website + portal + Creative) as
+// Echipa: one card per person (role, salary, month numbers); a drawer to edit profile,
+// reset password, (de)activate, the net salary (what she sees in "Salariu"). Oferte: the ONE offer list (website + portal + Creative) as
 // site-like cards with live preview, toggles, drag-to-reorder and the marketing brief Creative
 // writes ads from. Integrări: Facebook Lead Ads, WhatsApp, Creative, the site.
 (function () {
@@ -68,7 +67,7 @@
     const card = apanel.querySelector('[data-sale="' + id + '"]');
     let reason = '';
     if (decision === 'reject') {
-      reason = await K.ui().prompt({ title: 'Respingi vânzarea?', message: 'Spune-i pe scurt de ce, vede motivul în „Comisionul meu”.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
+      reason = await K.ui().prompt({ title: 'Respingi vânzarea?', message: 'Spune-i pe scurt de ce, vede motivul în „Salariu”.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
       if (reason === null) return;
     }
     if (card) card.classList.add('is-leaving', decision === 'approve' ? 'is-yes' : 'is-no');
@@ -229,20 +228,22 @@
   const TEAM = { tab: 'people' };
   function showTeamTab() {
     epanel.querySelectorAll('[data-pane]').forEach((x) => { x.hidden = x.dataset.pane !== TEAM.tab; });
-    if (TEAM.tab === 'bonus') renderTeamBonus();
+    if (TEAM.tab === 'salarii') renderPayroll();
     if (TEAM.tab === 'condica' && K.mountCondica) K.mountCondica(epanel.querySelector('[data-cond]'));
   }
   function mountTeam(p) {
     epanel = p;
     epanel.classList.add('k-panel', 'ad');
-    epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2><p class="k-lede">Oamenii, bonusurile (pe clinică și personale) și condica, într-un singur loc.</p></div>' +
+    epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2><p class="k-lede">Oamenii, salariile și condica, într-un singur loc.</p></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
-      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['bonus', 'Bonusuri', 'trophy'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
-      '<div data-pane="people"><div data-body></div></div><div data-pane="bonus" hidden><div data-bonus></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
+      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
+      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();
       const c = e.target.closest('[data-emp]');
       if (c) openEmployee(c.dataset.emp);
+      const po = e.target.closest('[data-payout]');
+      if (po) payOvertime(po.dataset.payout);
     });
     epanel.addEventListener('change', (e) => { if (e.target.name === 'teamtab') { TEAM.tab = e.target.value; showTeamTab(); } });
   }
@@ -264,17 +265,14 @@
     const active = emps.filter((e) => e.active), inactive = emps.filter((e) => !e.active);
     const card = (e) => {
       const st = empStats(e);
-      const goals = e.goals || [];
+      const pay = (K.data.admin.payroll || []).find((x) => x.id === e.id) || {};
       const kv = e.role === 'receptie'
-        ? [['Încasări', K.lei(st.recorded)], ['Comision', K.lei(st.comm)], ['De aprobat', st.pending]]
-        : [['Comision', K.lei(st.comm)], ['Tratamente', K.lei(st.performed)], ['De aprobat', st.pending]];
+        ? [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Bonus', K.lei(pay.bonus || 0)], ['Media/zi', pay.booking ? K.num(pay.booking.avg) : '-']]
+        : [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Comision', K.lei(st.comm)], ['Tratamente', K.lei(st.performed)]];
       return '<button type="button" class="ad-emp' + (e.active ? '' : ' is-off') + '" data-emp="' + esc(e.id) + '"><div class="ad-emp-top">' + K.avatar(e.name, 46) +
         '<div><b>' + esc(e.name) + '</b><span><span class="k-tag is-' + (e.role === 'receptie' ? 'info' : e.role === 'admin' ? 'accent' : 'good') + '">' + esc(K.roleLabel(e.role)) + '</span>' + esc(e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
         '<dl class="ad-emp-kv" title="Luna curentă">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
-        (goals.length ? '<div class="ad-emp-goals">' + goals.map((g) => {
-          const pct = g.target > 0 ? Math.min(100, ((g.current || 0) / g.target) * 100) : 0;
-          return '<div class="ad-goal-mini" title="' + esc(g.title) + '">' + K.ring(pct, { size: 40, stroke: 4.5, inner: '<b>' + Math.round(pct) + '</b>' }) + '<span>' + esc(g.title) + (g.reward ? '<em>' + K.lei(g.reward) + '</em>' : '') + '</span></div>';
-        }).join('') + '</div>' : '<div class="ad-emp-empty">' + icon('target') + 'Fără obiective, adaugă din card</div>') + '</button>';
+        (e.netSalary ? '' : '<div class="ad-emp-empty">' + icon('wallet') + 'Salariul nu e setat, apasă ca să-l pui</div>') + '</button>';
     };
     epanel.querySelector('[data-body]').innerHTML =
       (active.length ? '<div class="ad-emps k-stagger">' + active.map(card).join('') + '</div>' : '<section class="k-card">' + K.empty('users', 'Niciun angajat încă', 'Adaugă primul om din echipă, primește username și parolă pentru portal.', '<button type="button" class="k-btn is-primary" data-new>' + icon('userPlus') + 'Angajat nou</button>') + '</section>') +
@@ -303,10 +301,10 @@
       title: e.name, lead: K.avatar(e.name, 44), width: 600,
       subtitle: '<span class="k-tag is-' + (e.role === 'receptie' ? 'info' : 'good') + '">' + esc(K.roleLabel(e.role)) + '</span>' + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>dezactivat</b>'),
       body:
-        '<div class="ad-tabs">' + K.seg('emptab', [['goals', 'Obiective & bonusuri', 'target'], ['profile', 'Profil & acces', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], 'goals', 'is-big') + '</div>' +
-        '<div data-pane="goals"><p class="k-muted" style="margin:0 0 .7rem">Până la 4 obiective. Tot ce are bonus apare la ' + esc(e.name.split(' ')[0]) + ' în „Bonusurile mele”, cu progres live.</p><div data-goals></div>' +
-          '<button type="button" class="k-btn is-outline rs-add" data-addg>' + icon('plus') + 'Adaugă obiectiv</button></div>' +
-        '<div data-pane="profile" hidden><form class="k-form" data-profile>' +
+        '<div class="ad-tabs">' + K.seg('emptab', [['profile', 'Profil & salariu', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], 'profile', 'is-big') + '</div>' +
+        '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
+        '<div data-pane="profile"><form class="k-form" data-profile>' +
+          K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'receptie' ? 'bonusul de programări.' : 'comisionul.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
           K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full') +
           K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +
@@ -344,10 +342,12 @@
           balanceLoaded = true;
           const box = el.querySelector('[data-balance]');
           try {
-            const b = await K.api('/api/portal-attendance', { action: 'balance', employeeId: e.id });
-            box.innerHTML = '<div class="k-grid c2">' +
-              '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Zile de concediu rămase</div><div class="k-stat-value">' + b.daysLeft + '</div><div class="k-stat-sub">din ' + b.annualLeaveDays + ' - ' + b.daysUsed + ' folosite anul acesta</div></div>' +
-              '<div class="k-stat is-' + (b.hoursDelta >= 0 ? 'good' : 'warn') + '"><div class="k-stat-top">' + icon('clock') + 'Ore de recuperat</div><div class="k-stat-value">' + (b.hoursDelta >= 0 ? '+' : '') + b.hoursDelta + '</div><div class="k-stat-sub">' + b.hoursPeriod + ' · program ' + b.contractedHoursPerDay + ' h/zi · doar zilele cu sosire și plecare</div></div></div>';
+            const [b, t] = await Promise.all([K.api('/api/portal-attendance', { action: 'balance', employeeId: e.id }), K.api('/api/portal-attendance', { action: 'timebank', employeeId: e.id })]);
+            const hm = (m) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return a ? (h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min') : '0'; };
+            box.innerHTML = '<div class="k-grid c3">' +
+              '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Zile de concediu rămase</div><div class="k-stat-value">' + b.daysLeft + '</div><div class="k-stat-sub">din ' + b.annualLeaveDays + ', ' + b.daysUsed + ' folosite anul acesta</div></div>' +
+              '<div class="k-stat' + (t.debt ? ' is-warn' : '') + '"><div class="k-stat-top">' + icon('refresh') + 'De recuperat</div><div class="k-stat-value">' + hm(t.debt) + '</div></div>' +
+              '<div class="k-stat' + (t.bank ? ' is-good' : '') + '"><div class="k-stat-top">' + icon('trend') + 'Ore suplimentare</div><div class="k-stat-value">' + hm(t.bank) + '</div><div class="k-stat-sub">' + K.lei(t.bankLei) + ' de plătit cu salariul</div></div></div>';
           } catch (err) { box.innerHTML = '<span class="k-muted">Nu am putut calcula.</span>'; }
         }
         el.querySelector('input[name=emptab]').addEventListener('change', (ev) => {
@@ -375,8 +375,8 @@
             if (tab === 'profile') {
               const v = K.formValues(el.querySelector('[data-profile]'));
               if (!v.name) { K.ui().toast('Numele e obligatoriu.', 'error'); return; }
-              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay });
-            } else {
+              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: v.netSalary });
+            } else if (tab === 'goals') {
               const clean = goals.filter((g) => String(g.title).trim()).map((g) => ({ title: String(g.title).trim(), metric: g.metric, target: Number(g.target) || 0, reward: Number(g.reward) || 0, currentValue: Number(g.currentValue) || 0 }));
               if (clean.some((g) => !g.target)) { K.ui().toast('Fiecare obiectiv are nevoie de o țintă.', 'error'); return; }
               await K.api('/api/portal-employees', { action: 'set_goals', employeeId: e.id, goals: clean });
@@ -419,45 +419,39 @@
       },
     });
   }
-  // ---------------- Bonusuri: the clinic's goal + the monthly race + every person's own bonuses
-  function renderTeamBonus() {
-    const box = epanel && epanel.querySelector('[data-bonus]');
+  // ---------------- Salarii: this month's pay of every person (salary + overtime + commission / bonus)
+  function renderPayroll() {
+    const box = epanel && epanel.querySelector('[data-pay]');
     if (!box || !K.data || !K.data.admin) return;
-    const cfg = K.data.admin.config, cg = cfg.companyGoal || {}, rb = cfg.raceBonus || {};
-    const emps = (K.data.admin.employees || []).filter((e) => e.active && e.id !== 'admin');
-    const raceCat = K.catKey(rb.category) || 'faciale';
-    const cur = K.data.companyGoal || {};
-    box.innerHTML = '<div class="k-grid c2">' +
-      '<section class="k-card"><div class="k-card-head"><h3>' + icon('target') + 'Bonusul clinicii</h3></div><p class="k-muted" style="margin-top:0">Dacă încasările lunii (Timișoara + Arad) ating ținta, fiecare angajat activ primește bonusul. Toată echipa îl vede în „Comisionul meu”, cu cât mai e până la el.</p>' +
-        '<form class="k-form" data-cg>' + K.field('Ținta lunii (lei încasați)', '<input name="target" type="number" min="0" step="500" value="' + esc(cg.target) + '">') + K.field('Bonus per angajat (lei)', '<input name="reward" type="number" min="0" step="10" value="' + esc(cg.reward) + '">') + '</form>' +
-        '<div class="st-example" data-cgx></div><div class="k-form-actions"><button type="button" class="k-btn is-primary" data-save-cg>' + icon('check') + 'Salvează</button></div></section>' +
-      '<section class="k-card"><div class="k-card-head"><h3>' + icon('trophy') + 'Cursa lunii</h3></div><p class="k-muted" style="margin-top:0">Cosmeticiana cu cele mai multe tratamente încasate din categoria aleasă, dacă atinge ținta, câștigă bonusul. Clasamentul e live pe Panou.</p>' +
-        '<form class="k-form" data-rb>' + K.field('Categorie', K.seg('category', Object.keys(K.cats).map((k) => [k, K.cats[k]]), raceCat, 'is-big'), 'full') +
-        K.field('Ținta (nr. tratamente)', '<input name="target" type="number" min="1" value="' + esc(rb.target) + '">') + K.field('Bonus (lei)', '<input name="reward" type="number" min="0" step="10" value="' + esc(rb.reward) + '">') + '</form>' +
-        '<div class="k-form-actions"><button type="button" class="k-btn is-primary" data-save-rb>' + icon('check') + 'Salvează</button></div></section></div>' +
-      '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('star') + 'Bonusuri personale</h3><span class="k-sub">fiecare om își vede bonusurile în „Comisionul meu”</span></div>' +
-        (emps.length ? '<div class="k-list">' + emps.map((e) => {
-          const goals = e.goals || [];
-          return '<div class="k-row is-click" data-emp="' + esc(e.id) + '">' + K.avatar(e.name, 34) + '<div class="k-row-main"><div class="k-row-title">' + esc(e.name) + ' <span class="k-muted">· ' + esc(K.roleLabel(e.role)) + ' · ' + esc(e.location) + '</span></div>' +
-            '<div class="k-row-sub">' + (goals.length ? goals.map((g) => esc(g.title) + (g.reward ? ' (' + K.lei(g.reward) + ')' : '') + ': ' + Math.min(100, Math.round(((g.current || 0) / (g.target || 1)) * 100)) + '%').join(' · ') : 'Niciun bonus personal') + '</div></div>' +
-            '<span class="k-btn is-sm is-outline">' + icon('pen') + (goals.length ? 'Editează' : 'Adaugă bonus') + '</span></div>';
-        }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', '')) + '</section>';
-    const act = emps.length;
-    const cgx = () => { const v = K.formValues(box.querySelector('[data-cg]')); box.querySelector('[data-cgx]').innerHTML = icon('info') + '<span>Luna aceasta: <b>' + K.lei(cur.current || 0) + '</b> din ' + K.lei(Number(v.target) || 0) + '. Dacă se atinge, costă <b>' + K.lei((Number(v.reward) || 0) * act) + '</b> (' + K.plural(act, 'angajat', 'angajați') + ').</span>'; };
-    cgx(); box.querySelector('[data-cg]').addEventListener('input', cgx);
-    box.querySelector('[data-save-cg]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
-      const v = K.formValues(box.querySelector('[data-cg]'));
-      try { await K.api('/api/portal-config', { companyGoal: { target: Number(v.target), reward: Number(v.reward), month: K.thisMonth() } }); K.ui().toast('Bonusul clinicii a fost salvat.', 'success'); K.reload(); }
-      catch (err) { K.ui().toast(K.errText(err), 'error'); }
-    }));
-    box.querySelector('[data-save-rb]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
-      const v = K.formValues(box.querySelector('[data-rb]'));
-      try { await K.api('/api/portal-config', { raceBonus: { category: v.category, target: Number(v.target), reward: Number(v.reward), month: K.thisMonth() } }); K.ui().toast('Cursa lunii a fost salvată.', 'success'); K.reload(); }
-      catch (err) { K.ui().toast(K.errText(err), 'error'); }
-    }));
+    const rows = K.data.admin.payroll || [];
+    const sum = (k) => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+    const hm = (m) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min'; };
+    box.innerHTML =
+      '<div class="k-grid c4 k-stagger" style="margin-bottom:1rem">' +
+        '<div class="k-stat is-accent"><div class="k-stat-top">' + icon('wallet') + 'Total de plată</div><div class="k-stat-value">' + K.lei(sum('total')) + '</div><div class="k-stat-sub">' + esc(K.monthLabel(K.thisMonth())) + ', până azi</div></div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('users') + 'Salarii de bază</div><div class="k-stat-value">' + K.lei(sum('base')) + '</div></div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('clock') + 'Ore suplimentare</div><div class="k-stat-value">' + K.lei(sum('overtimeLei')) + '</div></div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('percent') + 'Comision + bonus</div><div class="k-stat-value">' + K.lei(sum('commission') + sum('bonus')) + '</div></div>' +
+      '</div>' +
+      (rows.length ? '<div class="pr-list">' + rows.map((r) => {
+        const extra = r.hasBonus
+          ? '<div><dt>Bonus programări</dt><dd>' + K.lei(r.bonus) + '</dd><small>' + (r.booking && r.booking.days ? 'media ' + K.num(r.booking.avg) + '/zi' : 'fără zile pontate') + '</small></div>'
+          : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upsell-uri')) + '</small></div>';
+        return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + '</small></span></button>' +
+          '<dl class="pr-kv"><div><dt>Salariu net</dt><dd>' + (r.base ? K.lei(r.base) : '<em>nesetat</em>') + '</dd></div>' +
+          '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
+          '<div class="pr-total"><dt>Total</dt><dd>' + K.lei(r.total, r.total % 1 ? 2 : 0) + '</dd></div></dl>' +
+          (r.overtimeDueLei ? '<button type="button" class="k-btn is-sm is-good" data-payout="' + esc(r.id) + '">' + icon('check') + 'Ore plătite cu salariul</button>' : '') + '</article>';
+      }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', ''));
+  }
+  async function payOvertime(id) {
+    const r = (K.data.admin.payroll || []).find((x) => x.id === id);
+    if (!r || !(await K.ui().confirm({ title: 'Ore suplimentare plătite?', message: r.name + ': ' + K.lei(r.overtimeDueLei, 2) + ', cu salariul. Orele ies din sold.', confirmText: 'Da, plătite' }))) return;
+    try { await K.api('/api/portal-attendance', { action: 'payout', employeeId: id }); K.ui().toast('Marcat plătit.', 'success'); K.reload(); }
+    catch (e) { K.ui().toast(K.errText(e), 'error'); }
   }
 
-  K.section('angajati', { mount: mountTeam, show() { renderTeam(); showTeamTab(); }, data() { if (epanel && K.isActive('angajati')) { renderTeam(); if (TEAM.tab === 'bonus') renderTeamBonus(); } } });
+  K.section('angajati', { mount: mountTeam, show() { renderTeam(); showTeamTab(); }, data() { if (epanel && K.isActive('angajati')) { renderTeam(); if (TEAM.tab === 'salarii') renderPayroll(); } } });
 
   // =====================================================================================
   // OFERTE

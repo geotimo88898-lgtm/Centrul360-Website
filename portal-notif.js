@@ -49,10 +49,10 @@
     const live = list.filter((n) => n.live), past = list.filter((n) => !n.live);
     const d = K.drawer({
       title: 'Notificări', icon: 'bell', width: 460,
-      subtitle: 'Cererile tale și bonusurile, pe scurt.',
+      subtitle: 'Răspunsurile la cererile tale, pe scurt.',
       body: (list.length ? (live.length ? '<h4 class="nt-h">' + icon('trophy') + 'Bonusuri</h4><div class="nt-list">' + live.map(row).join('') + '</div>' : '') +
           (past.length ? '<h4 class="nt-h">' + icon('bell') + 'Răspunsuri la cereri</h4><div class="nt-list">' + past.map(row).join('') + '</div>' : '')
-        : K.empty('bell', 'Nicio notificare', 'Aici apar răspunsurile la cererile tale și cât mai ai până la bonusuri.')),
+        : K.empty('bell', 'Nicio notificare', 'Aici apar răspunsurile la cererile tale.')),
       onMount(el) {
         el.querySelector('.k-dbody').addEventListener('click', (e) => {
           const go = e.target.closest('[data-go-to]');

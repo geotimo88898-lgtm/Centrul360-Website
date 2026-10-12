@@ -90,7 +90,7 @@
     const summary = [];
     if (role === 'cosmetician') {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(mineToday.filter((a) => a.status !== 'anulata').length, 'clientă', 'cliente') + '</a> azi');
-      if (pendingMine.length) summary.push('<a href="#comision" data-go="comision">' + K.plural(pendingMine.length, 'upsell', 'upsell-uri') + ' în așteptarea aprobării</a>');
+      if (pendingMine.length) summary.push('<a href="#comision" data-go="comision">' + K.plural(pendingMine.length, 'upsell', 'upsell-uri') + ' în așteptare</a>');
     } else {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(live.length, 'programare', 'programări') + '</a> azi');
       if (role === 'receptie' && unconfirmed.length) summary.push('<a href="#programari" data-go="programari">' + K.plural(unconfirmed.length, 'programare de confirmat', 'programări de confirmat') + '</a>');
@@ -101,7 +101,7 @@
     const actions = role === 'cosmetician'
       ? '<button type="button" class="k-btn is-accent" data-go="programari">' + icon('calendar') + 'Calendarul meu</button>' +
         '<button type="button" class="k-btn db-glass" data-go="contacte">' + icon('image') + 'Fișe și poze</button>' +
-        '<button type="button" class="k-btn db-glass" data-go="comision">' + icon('percent') + 'Comisionul meu</button>' +
+        '<button type="button" class="k-btn db-glass" data-go="comision">' + icon('wallet') + 'Salariul meu</button>' +
         '<button type="button" class="k-btn db-glass" data-go="traininguri">' + icon('book') + 'Traininguri</button>'
       : '<button type="button" class="k-btn is-accent" data-go="incasari" data-then="incasari:new">' + icon('wallet') + 'Încasare</button>' +
         '<button type="button" class="k-btn db-glass" data-go="programari" data-then="calendar:new">' + icon('calendar') + 'Programare</button>' +
@@ -133,14 +133,27 @@
           : stat(callNow.length ? 'is-bad db-hot' : 'is-good', 'pipeline', 'pipeline:queue', 'zap', 'De sunat acum', callNow.length, '', 'db-call', leadsData ? working.length + ' leaduri active în pipeline' : 'se încarcă…'));
     }
 
-    const cg = D.companyGoal || { target: 0, current: 0, reward: 0 };
-    const cgPct = cg.target > 0 ? Math.min(100, (cg.current / cg.target) * 100) : 0;
-    const daysLeft = K.daysIn(month) - dayOfMonth + 1;
-    const perDay = cg.target > cg.current ? Math.ceil((cg.target - cg.current) / Math.max(1, daysLeft)) : 0;
-
-    const rb = D.raceBonus || { leaderboard: [], target: 0 };
-    const lbMax = Math.max(rb.target || 1, ...rb.leaderboard.map((r) => r.count));
-    const cats = (window.C360_CTX && window.C360_CTX.categories) || {};
+    // Pay this month: hers (staff) or the whole team's (owner). See "Salariu" / Echipa > Salarii.
+    const lei2 = (v) => K.lei(v, v % 1 ? 2 : 0);
+    const myPay = D.salary && D.salary.months && D.salary.months[0];
+    const team = (D.admin && D.admin.payroll) || [];
+    const tsum = (k) => team.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+    const payCard = D.isAdmin
+      ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salarii · ' + esc(K.monthLabel(month)) + '</h3></div>' +
+        '<b class="db-pay-total" data-count="' + Math.round(tsum('total')) + '" data-fmt="lei" data-key="db-payt">0 lei</b><span class="db-pay-sub">de plată până azi, toată echipa</span>' +
+        '<div class="db-pay-lines"><div><span>Salarii de bază</span><b>' + K.lei(tsum('base')) + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(tsum('overtimeLei')) + '</b></div><div><span>Comision + bonus</span><b>' + lei2(tsum('commission') + tsum('bonus')) + '</b></div></div>' +
+        '<button type="button" class="k-btn is-sm is-outline" data-go="angajati">' + icon('users') + 'Echipa · Salarii</button></section>'
+      : myPay ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salariul meu · ' + esc(K.monthLabel(month)) + '</h3></div>' +
+        '<b class="db-pay-total" data-count="' + myPay.total + '" data-fmt="lei" data-key="db-payme">0 lei</b><span class="db-pay-sub">în mână, până azi</span>' +
+        '<div class="db-pay-lines"><div><span>Salariu de bază</span><b>' + (myPay.base ? K.lei(myPay.base) : '-') + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(myPay.overtimeLei) + '</b></div>' +
+        (myPay.hasBonus ? '<div><span>Bonus programări</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '<div><span>Comision</span><b>' + lei2(myPay.commission) + '</b></div>') + '</div>' +
+        '<button type="button" class="k-btn is-sm is-outline" data-go="comision">' + icon('wallet') + 'Detalii</button></section>' : '';
+    // Reception: the booking bonus at a glance (average per clocked-in day, the steps)
+    const bk = myPay && myPay.booking;
+    const bonusCard = bk ? '<section class="k-card db-book"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3><a class="k-btn is-sm is-outline" href="#comision" data-go="comision">Detalii' + icon('arrow') + '</a></div>' +
+      '<div class="db-book-row"><div><b>' + K.num(bk.avg) + '</b><span>programări / zi în medie</span></div><div class="' + (bk.lei ? 'is-on' : '') + '"><b>' + K.lei(bk.lei) + '</b><span>bonus acum</span></div></div>' +
+      '<div class="db-book-steps">' + bk.tiers.slice().sort((a, b) => a.min - b.min).map((t) => '<span class="' + (bk.avg >= t.min ? 'is-on' : '') + '">' + t.min + '+ · ' + K.lei(t.lei) + '</span>').join('') + '</div>' +
+      (bk.next ? '<p class="db-book-next">' + (bk.days ? 'Încă ' + K.num(Math.ceil((bk.next.min - bk.avg) * 10) / 10) + ' pe zi pentru ' + K.lei(bk.next.lei) + '.' : 'Pontează sosirea și pornește media de azi.') + '</p>' : '<p class="db-book-next">Treapta cea mai mare. Bravo!</p>') + '</section>' : '';
 
     const root = panel.querySelector('.db-root');
     root.innerHTML =
@@ -164,36 +177,18 @@
         '<section class="k-card db-chart-card"><div class="k-card-head"><h3>' + icon('trend') + (role === 'cosmetician' ? 'Comisionul meu' : 'Încasări') + ' · ultimele 30 de zile</h3>' +
           '<div class="k-legend"><span><i style="background:var(--accent)"></i>Ultimele 30 zile · ' + K.lei(series30.reduce((a, x) => a + x.v, 0)) + '</span><span><i style="background:var(--muted-2)"></i>Cele 30 dinainte</span></div></div>' +
           '<div data-chart></div></section>' +
-        '<section class="k-card db-goal"><div class="k-card-head"><h3>' + icon('target') + 'Obiectivul lunii</h3><span class="k-sub">' + K.plural(daysLeft, 'zi rămasă', 'zile rămase') + '</span></div>' +
-          '<div class="db-goal-body">' + K.ring(cgPct, { size: 168, stroke: 14, color: 'var(--accent)', color2: 'var(--accent-2)',
-            inner: '<b class="db-goal-pct" data-count="' + Math.round(cgPct) + '" data-fmt="pct" data-key="db-cg">0%</b><span>din ' + K.lei(cg.target) + '</span>' }) +
-          '<div class="db-goal-meta"><div><span>Realizat</span><b data-count="' + cg.current + '" data-fmt="lei" data-key="db-cgc">0 lei</b></div>' +
-          (perDay ? '<div><span>Ritm necesar</span><b>' + K.lei(perDay) + '<small>/zi</small></b></div>' : '<div><span>Status</span><b class="db-good">Atins</b></div>') +
-          '<div><span>Bonus / angajat</span><b>' + K.lei(cg.reward) + '</b></div></div></div></section>' +
+        payCard +
       '</div>' +
 
       // ---------------- today + leaderboard + tasks
-      '<div class="db-row db-row-b">' +
+      '<div class="db-row db-row-b' + (bonusCard ? '' : ' is-single') + '">' +
         '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
           '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>' +
-        '<div class="k-stack">' +
-          '<section class="k-card db-race"><div class="k-card-head"><h3>' + icon('trophy') + 'Cursa lunii</h3><span class="k-sub">' + esc(cats[rb.category] || rb.category || '') + ' · țintă ' + rb.target + ' · ' + K.lei(rb.reward) + '</span></div>' +
-            (rb.leaderboard.length ? '<ol class="db-lb">' + rb.leaderboard.slice(0, 6).map((r, i) =>
-              '<li class="' + (i === 0 && r.count ? 'is-lead' : '') + (r.employeeId === me.id ? ' is-me' : '') + '"><span class="db-rank">' + (i === 0 && r.count ? icon('crown') : i + 1) + '</span>' + K.avatar(r.name, 30) +
-              '<div class="db-lb-main"><div class="db-lb-name">' + esc(r.name) + (r.employeeId === me.id ? ' <em>tu</em>' : '') + '</div><div class="k-bar"><i style="--w:' + Math.min(100, (r.count / lbMax) * 100) + '%"></i></div></div>' +
-              '<b class="db-lb-count">' + r.count + '<small>/' + rb.target + '</small></b></li>').join('') + '</ol>'
-              : K.empty('trophy', 'Niciun tratament încă', 'Clasamentul pornește la primul tratament încasat din categorie.')) + '</section>' +
-        '</div>' +
+        (bonusCard ? '<div class="k-stack">' + bonusCard + '</div>' : '') +
       '</div>' +
 
       // ---------------- goals / team
-      ((D.myGoals || []).length ? '<section class="k-card db-goals"><div class="k-card-head"><h3>' + icon('target') + 'Obiectivele mele</h3></div><div class="db-goal-list">' +
-        D.myGoals.map((g) => {
-          const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0;
-          const ron = g.metric === 'comision_aprobat_luna' || g.metric === 'incasari_atribuite_luna';
-          return '<div class="db-goal-item">' + K.ring(pct, { size: 64, stroke: 7, inner: '<b class="db-mini-pct">' + Math.round(pct) + '%</b>' }) +
-            '<div><b>' + esc(g.title) + '</b><span>' + (ron ? K.lei(g.current) + ' din ' + K.lei(g.target) : g.current + ' din ' + g.target) + '</span></div></div>';
-        }).join('') + '</div></section>' : '') +
+
       (D.isAdmin ? '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa în pipeline</h3><a class="k-btn is-sm is-outline" href="#pipeline" data-go="pipeline">Pipeline' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>' : '');
 
     K.chart(root.querySelector('[data-chart]'), {

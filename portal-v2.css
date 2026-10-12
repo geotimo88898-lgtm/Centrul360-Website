@@ -594,3 +594,65 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .ad-edit input{ width:46px; height:30px; padding:0 .3rem; text-align:center; font-size:.85rem; border-radius:8px; }
 /* hours stats: labels and notes wrap instead of being cut (phones) */
 .cd-hstats .k-stat-top, .cd-hstats .k-stat-sub{ white-space:normal; overflow:visible; text-overflow:clip; line-height:1.35; }
+
+/* ---------------- Salariu ---------------- */
+/* Panou: pay card + booking bonus card */
+.db-pay{ display:flex; flex-direction:column; gap:.35rem; }
+.db-pay-total{ font-size:2.2rem; font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums; line-height:1.1; margin-top:.2rem; }
+.db-pay-sub{ color:var(--muted); font-size:.82rem; }
+.db-pay-lines{ display:flex; flex-direction:column; gap:.4rem; margin:.8rem 0; }
+.db-pay-lines div{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.55rem .7rem; border-radius:11px; background:var(--glass); font-size:.86rem; }
+.db-pay-lines span{ color:var(--muted); }
+.db-pay-lines b{ font-variant-numeric:tabular-nums; }
+.db-pay .k-btn{ align-self:flex-start; margin-top:auto; }
+.db-row-b.is-single{ grid-template-columns:1fr; }
+.db-book-row{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+.db-book-row > div{ display:flex; flex-direction:column; gap:.15rem; padding:.75rem .85rem; border-radius:13px; background:var(--glass); }
+.db-book-row > div.is-on{ background:var(--good-soft); color:var(--good); }
+.db-book-row b{ font-size:1.6rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.db-book-row span{ font-size:.76rem; color:var(--muted); }
+.db-book-steps{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.75rem; }
+.db-book-steps span{ font-size:.76rem; font-weight:650; padding:.3rem .6rem; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+.db-book-steps span.is-on{ background:var(--good-soft); border-color:transparent; color:var(--good); }
+.db-book-next{ margin:.7rem 0 0; font-size:.84rem; color:var(--fg); }
+
+/* Salariu page: booking bonus details, month history with 5 columns */
+.sl-bonus{ margin-top:1rem; }
+.sl-bk-top{ display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+.sl-bk-top > div{ display:flex; flex-direction:column; gap:.2rem; padding:.9rem 1rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); }
+.sl-bk-top > div.is-on{ background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 35%, var(--line)); }
+.sl-bk-top span{ font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); }
+.sl-bk-top b{ font-size:2rem; font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+.sl-bk-top small{ font-size:.8rem; color:var(--muted); line-height:1.4; }
+.sl-tiers{ padding:2.4rem .4rem 1.2rem; }
+.sl-track{ position:relative; height:10px; border-radius:999px; background:var(--glass-2); }
+.sl-track > i{ position:absolute; inset:0 auto 0 0; width:var(--w); border-radius:inherit; background:var(--grad); }
+.sl-tick{ position:absolute; top:50%; transform:translate(-50%, -50%); width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--line-on-dark); }
+.sl-tick.is-on{ border-color:var(--good); background:var(--good); }
+.sl-tick b, .sl-tick em{ position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:.72rem; font-style:normal; }
+.sl-tick b{ bottom:calc(100% + 6px); font-weight:700; }
+.sl-tick em{ top:calc(100% + 6px); color:var(--muted); font-weight:650; }
+.sl-tick.is-on em{ color:var(--good); }
+.sl-days{ display:grid; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:.4rem; margin-top:.9rem; }
+.sl-day{ display:flex; flex-direction:column; align-items:center; gap:.1rem; padding:.5rem; border-radius:11px; background:var(--glass); }
+.sl-day span{ font-size:.72rem; color:var(--muted); }
+.sl-day b{ font-size:1.05rem; font-variant-numeric:tabular-nums; }
+.sl-day.is-good b{ color:var(--good); }
+.sl-hist .cb-hist-row{ grid-template-columns:1.4fr repeat(4, 1fr); }
+@media (max-width:520px){ .sl-bk-top{ grid-template-columns:1fr; } .sl-hist .cb-hist-row{ grid-template-columns:1.2fr repeat(4, 1fr); font-size:.74rem; } }
+
+/* Echipa > Salarii */
+.pr-list{ display:flex; flex-direction:column; gap:.6rem; }
+.pr-row{ display:grid; grid-template-columns:minmax(180px, 1.1fr) minmax(0, 3fr) auto; align-items:center; gap:.9rem; padding:.85rem 1rem; border-radius:16px; background:var(--paper); border:1px solid var(--line); }
+.pr-who{ display:flex; align-items:center; gap:.65rem; min-width:0; padding:0; border:0; background:transparent; color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
+.pr-who > span:not(.k-avatar){ display:flex; flex-direction:column; min-width:0; }
+.pr-who small{ color:var(--muted); font-size:.76rem; }
+.pr-kv{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.5rem; margin:0; }
+.pr-kv > div{ display:flex; flex-direction:column; gap:.1rem; padding:.5rem .6rem; border-radius:11px; background:var(--glass); min-width:0; }
+.pr-kv dt{ font-size:.64rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.pr-kv dd{ margin:0; font-weight:750; font-variant-numeric:tabular-nums; }
+.pr-kv dd em{ font-style:normal; color:var(--warn); font-weight:650; }
+.pr-kv small{ font-size:.72rem; color:var(--muted); }
+.pr-kv .pr-total{ background:var(--accent-soft); }
+.pr-kv .pr-total dd{ font-size:1.05rem; }
+@media (max-width:900px){ .pr-row{ grid-template-columns:1fr; } .pr-kv{ grid-template-columns:repeat(2, minmax(0, 1fr)); } .pr-row > .k-btn{ justify-self:start; } }

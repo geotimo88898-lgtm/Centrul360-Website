@@ -178,7 +178,7 @@ async function handleIncasare(req, res, session) {
     sales.push(entry);
 
     let upsellEntry = null;
-    if (upsell > 0 && performer.role !== 'admin') {
+    if (upsell > 0 && performer.role === 'cosmetician') {
       upsellEntry = upsellFor(entry, performer.id);
       sales.push(upsellEntry);
     }

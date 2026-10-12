@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
       // Fixes a typo'd name/location, or a role change (e.g. an employee moving
       // locations), keeps the same id, so her login, goals and sales history stay
       // intact (unlike deactivating + re-creating, which would silently orphan them).
-      const { employeeId, name, location, role, annualLeaveDays, contractedHoursPerDay } = req.body || {};
+      const { employeeId, name, location, role, annualLeaveDays, contractedHoursPerDay, netSalary } = req.body || {};
       if (!employeeId || !name || !location || !role) {
         res.status(400).json({ error: 'missing_fields' });
         return;
@@ -103,6 +103,14 @@ module.exports = async (req, res) => {
         if (!Number.isFinite(n) || n < 0 || n > 60) { res.status(400).json({ error: 'invalid_leave_days' }); return; }
         employee.annualLeaveDays = n;
       }
+      // Salariul net (în mână), lei / month: the base of "Salariu" (_lib/payroll.js)
+      if (netSalary !== undefined && netSalary !== '') {
+        const n = Math.round(Number(netSalary));
+        if (!Number.isFinite(n) || n < 0 || n > 100000) { res.status(400).json({ error: 'invalid_salary' }); return; }
+        // the month the salary starts counting from (no salary shown in the months before it)
+        if (n > 0 && !employee.netSalaryFrom) employee.netSalaryFrom = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
+        employee.netSalary = n;
+      }
       if (contractedHoursPerDay !== undefined) {
         const n = Number(contractedHoursPerDay);
         if (!Number.isFinite(n) || n <= 0 || n > 16) { res.status(400).json({ error: 'invalid_hours' }); return; }
@@ -111,7 +119,7 @@ module.exports = async (req, res) => {
       await writeJSON('data/employees.json', employees);
       res.status(200).json({
         ok: true,
-        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, annualLeaveDays: employee.annualLeaveDays, contractedHoursPerDay: employee.contractedHoursPerDay },
+        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, annualLeaveDays: employee.annualLeaveDays, contractedHoursPerDay: employee.contractedHoursPerDay, netSalary: employee.netSalary || 0 },
       });
       return;
     }

@@ -240,7 +240,7 @@
     const types = [['odihna', 'Odihnă'], ['fara_plata', 'Fără plată'], ['medical', 'Medical'], ['alta', 'Altul']].concat(tb.bank > 0 ? [['suplimentare', 'Ore libere']] : []);
     const d = K.drawer({
       title: 'Cerere de concediu', icon: 'calendar', width: 540,
-      subtitle: 'Se trimite spre aprobare administratorului.',
+      subtitle: 'Completează și trimite. Primești răspunsul în notificări.',
       body: '<form class="k-form" data-form>' +
         K.field('Tip concediu', '<div class="lv-types">' + K.seg('type', types, preset || 'odihna', 'is-big') + '</div>', 'full') +
         K.field('Data început', '<input name="startDate" type="date" required value="' + esc(K.today()) + '">') +
