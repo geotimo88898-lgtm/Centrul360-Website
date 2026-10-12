@@ -697,7 +697,7 @@
   // clinic's Page (an account can manage several, e.g. the salon's too) and the ad account, which
   // can also be typed by hand when Facebook doesn't list it.
   const FB_ERR = { login_expired: 'Logarea a expirat. Apasă din nou „Conectează cu Facebook”.', page_not_found: 'Pagina nu mai e disponibilă. Loghează-te din nou.',
-    subscribe_failed: 'Facebook n-a permis primirea leadurilor pe Pagina asta. Verifică să fii admin pe Pagină și reîncearcă.', invalid_ad_account: 'ID-ul contului de reclame are doar cifre (ex. 1234567890 sau act_1234567890).',
+    subscribe_failed: 'Facebook n-a permis primirea leadurilor pe Pagina asta: lipsește permisiunea pages_manage_metadata sau nu ești admin pe Pagină. Folosește „Conectare cu token”.', invalid_ad_account: 'ID-ul contului de reclame are doar cifre (ex. 1234567890 sau act_1234567890).',
     token_invalid: 'Tokenul nu e valid sau a expirat.', no_pages: 'Contul ăsta de Facebook nu administrează nicio Pagină.',
     invalid_app_id: 'App ID are doar cifre.', invalid_app_secret: 'App secret are litere și cifre (32 de caractere), copiază-l din nou.', invalid_config_id: 'Configuration ID are doar cifre.', missing_app_secret: 'Lipește și App secret pentru aplicația asta.' };
   const adOptions = (list, sel) => K.options([['', 'Niciunul încă']].concat((list || []).map((a) => [a.id, a.name + (a.business ? ' · ' + a.business : '')])).concat([['__manual', 'Nu e în listă, scriu ID-ul']]), sel);
@@ -811,7 +811,13 @@
     box.querySelector('[data-manual]').addEventListener('submit', async (e) => {
       e.preventDefault();
       const tok = e.target.t.value.trim(); if (!tok) return;
-      try { const r = await K.api('/api/fb-manual-connect', { userAccessToken: tok }); K.ui().toast(r.choose ? 'Alege acum Pagina clinicii.' : 'Conectat la ' + (r.pageName || 'Pagină') + '.', 'success'); loadFb(box); }
+      try {
+        const r = await K.api('/api/fb-manual-connect', { userAccessToken: tok });
+        K.ui().toast(r.choose ? 'Alege acum Pagina clinicii.' : 'Conectat la ' + (r.pageName || 'Pagină') + '.', 'success');
+        // a token from another app can't be made permanent: the leads would stop within the hour
+        if (r.shortLived) setTimeout(() => K.ui().toast('Atenție: tokenul nu e de la aplicația salvată aici, așa că expiră într-o oră. În Graph API Explorer alege aceeași aplicație și refă tokenul.', 'error'), 600);
+        loadFb(box);
+      }
       catch (err) { fail(err); }
     });
     addApp();
@@ -826,7 +832,7 @@
     params.delete('fb');
     const qs = params.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#integrari');
-    const msg = { connected: ['Facebook conectat. Leadurile noi intră singure.', 'success'], choose: ['Alege acum Pagina clinicii, în Integrări → Facebook.', 'success'], nopages: ['Contul de Facebook nu administrează nicio Pagină.', 'error'] }[flag] || ['Conectarea la Facebook a eșuat.', 'error'];
+    const msg = { connected: ['Facebook conectat. Leadurile noi intră singure.', 'success'], choose: ['Alege acum Pagina clinicii, în Integrări → Facebook.', 'success'], nopages: ['Contul de Facebook nu administrează nicio Pagină.', 'error'], nosub: ['Facebook n-a lăsat portalul să primească leadurile Paginii: lipsește permisiunea pages_manage_metadata. Folosește „Conectare cu token”.', 'error'] }[flag] || ['Conectarea la Facebook a eșuat.', 'error'];
     setTimeout(() => K.ui().toast(msg[0], msg[1]), 1200);
   })();
 })();

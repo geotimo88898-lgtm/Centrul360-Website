@@ -111,7 +111,7 @@ module.exports = async (req, res) => {
     const done = await afterLogin({ readJSON, writeJSON }, assets, session.employeeId, 'oauth');
     if (done.error) {
       console.error('fb-oauth-callback: connect failed', done.error, done.details);
-      redirectToPortal(res, done.error === 'no_pages' ? 'nopages' : 'error');
+      redirectToPortal(res, done.error === 'no_pages' ? 'nopages' : done.error === 'subscribe_failed' ? 'nosub' : 'error');
       return;
     }
     redirectToPortal(res, done.choose ? 'choose' : 'connected');
