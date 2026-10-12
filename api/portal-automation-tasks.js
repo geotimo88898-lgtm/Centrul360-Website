@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
       const clients = await readJSON('data/clients.json', []);
       const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
       const showAll = req.query && (req.query.all === '1' || req.query.all === 'true');
-      let visible = showAll ? allTasks : allTasks.filter((t) => t.status === 'pending');
+      let visible = showAll ? allTasks : allTasks.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today));
 
       const isAdmin = session.role === 'admin';
       if (!isAdmin) {
@@ -82,6 +82,27 @@ module.exports = async (req, res) => {
 
     if (req.method === 'POST') {
       const { action, id } = req.body || {};
+      // The receptionist writes her own to-dos ("Adaugă sarcină"): what to do, optionally for
+      // which client (name + phone, so WhatsApp / call is one tap) and for which day.
+      if (action === 'create') {
+        const text = String((req.body && req.body.text) || '').trim().slice(0, 500);
+        if (!text) { res.status(400).json({ error: 'missing_text' }); return; }
+        const employeesAll = await readJSON('data/employees.json', []);
+        const me = employeesAll.find((e) => e.id === session.employeeId);
+        const due = /^\d{4}-\d{2}-\d{2}$/.test((req.body && req.body.dueDate) || '') ? req.body.dueDate : todayISO();
+        const tasks = await readJSON('data/automation-tasks.json', []);
+        const task = {
+          id: require('crypto').randomUUID(), type: 'sarcina', status: 'pending', assigneeRole: 'receptie',
+          title: 'Sarcina mea', text, dueDate: due,
+          clientName: String((req.body && req.body.clientName) || '').trim().slice(0, 150),
+          phone: String((req.body && req.body.phone) || '').trim().slice(0, 30),
+          location: (me && me.location) || '', createdBy: session.employeeId, createdAt: new Date().toISOString(), doneAt: null, doneBy: null,
+        };
+        tasks.push(task);
+        await writeJSON('data/automation-tasks.json', tasks);
+        res.status(200).json({ ok: true, task });
+        return;
+      }
       if (action !== 'complete') {
         res.status(400).json({ error: 'invalid_action' });
         return;

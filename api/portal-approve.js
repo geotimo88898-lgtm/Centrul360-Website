@@ -1,10 +1,9 @@
 // POST /api/portal-approve — admin approves or rejects a pending sale entry.
-// Approving computes the commission from config.commissionRates / retailRate at the
-// moment of approval (so a later rate change doesn't retroactively change past commissions).
+// Approving computes the commission: 10% of the upsell amount, fixed at the moment of approval.
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { defaultConfig } = require('./_lib/defaults');
+const { UPSELL_RATE } = require('./_lib/cats');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -22,11 +21,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const [sales, configRaw] = await Promise.all([
-      readJSON('data/sales.json', []),
-      readJSON('data/config.json', null),
-    ]);
-    const config = configRaw || defaultConfig();
+    const sales = await readJSON('data/sales.json', []);
 
     const sale = sales.find((s) => s.id === saleId);
     if (!sale) {
@@ -39,9 +34,8 @@ module.exports = async (req, res) => {
     }
 
     if (decision === 'approve') {
-      const rate = sale.category === 'retail'
-        ? config.retailRate
-        : (config.commissionRates[sale.category] ?? 0);
+      // One rule for everyone: 10% of every upsell (see _lib/cats.js).
+      const rate = UPSELL_RATE;
       sale.commission = Math.round(sale.amount * (rate / 100) * 100) / 100;
       sale.status = 'approved';
     } else {

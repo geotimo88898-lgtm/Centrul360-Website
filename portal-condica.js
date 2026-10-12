@@ -24,13 +24,14 @@
     return e ? e.name : id;
   }
 
-  function mount(p) {
+  // embedded: shown inside Echipa → Condică (admin), without its own title.
+  function mount(p, embedded) {
     panel = p;
     panel.classList.add('k-panel', 'cd');
     const thisMonth = K.thisMonth().split('-');
     C.year = Number(thisMonth[0]); C.month = Number(thisMonth[1]);
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Condică</h2><p class="k-lede">Pontaj zilnic și cereri de concediu — ale tale, și ale echipei dacă ești admin.</p></div></div>' +
+      (embedded ? '' : '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Condică</h2><p class="k-lede">Pontajul tău zilnic și cererile de concediu.</p></div></div>') +
       '<div data-body><div class="k-skel" style="height:180px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);
@@ -287,5 +288,7 @@
   }
 
   K.section('condica', { mount, show: load });
+  // Admin sees the team's Condică inside Echipa (portal-admin.js).
+  K.mountCondica = (el) => { if (panel !== el) mount(el, true); load(); };
   K.on('remote', () => { if (panel && K.isActive('condica')) load(); });
 })();

@@ -19,22 +19,15 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
+const { CATEGORIES, normalizeCategories, categoriesOf } = require('./_lib/cats');
+const workflows = require('./_lib/workflows');
 
-const VALID_CATEGORIES = [
-  'epilare-laser',
-  'hifu',
-  'liposonix',
-  'ems-tonifiere',
-  'radiofrecventa',
-  'microneedling',
-  'tratament-facial',
-  'celulita',
-  'detox-drenaj',
-  'retail',
-  'altele',
-];
+// The three treatment categories (see _lib/cats.js); kept under this name for older importers.
+const VALID_CATEGORIES = CATEGORIES;
 
-const VALID_METHODS = ['card', 'cash', 'transfer'];
+const VALID_METHODS = ['card', 'cash', 'transfer', 'cash_card'];
+
+const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 
 function isValidDate(date) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date || '');
@@ -48,7 +41,7 @@ async function handleComision(req, res, session) {
     res.status(400).json({ error: 'missing_fields' });
     return;
   }
-  if (!VALID_CATEGORIES.includes(category)) {
+  if (!normalizeCategories(category).length) {
     res.status(400).json({ error: 'invalid_category' });
     return;
   }
@@ -93,7 +86,8 @@ async function handleComision(req, res, session) {
       source: 'comision',
       employeeId: session.employeeId,
       date,
-      category,
+      categories: normalizeCategories(category),
+      category: normalizeCategories(category)[0],
       treatment: String(treatment).slice(0, 200),
       amount: numAmount,
       note: note ? String(note).slice(0, 500) : '',
@@ -115,84 +109,112 @@ async function handleComision(req, res, session) {
   }
 }
 
+// "Încasare" = an appointment gets paid. The desk picks only three things: WHICH appointment,
+// HOW it was paid (card / cash / transfer / cash + card) and WHO did the treatment. The amount
+// defaults to what the appointment was booked for; if the client pays more (she bought more on
+// the spot), the difference is an upsell and the person who did the treatment earns 10% of it,
+// as a commission entry that goes to Aprobări like every commission.
 async function handleIncasare(req, res, session) {
-  const { clientName, clientPhone, date, category, treatment, amount, method, performedBy } =
-    req.body || {};
-
-  if (
-    !clientName ||
-    !clientPhone ||
-    !date ||
-    !category ||
-    !treatment ||
-    amount === undefined ||
-    !method
-  ) {
-    res.status(400).json({ error: 'missing_fields' });
-    return;
-  }
-  if (!VALID_CATEGORIES.includes(category)) {
-    res.status(400).json({ error: 'invalid_category' });
-    return;
-  }
-  if (!VALID_METHODS.includes(method)) {
-    res.status(400).json({ error: 'invalid_method' });
-    return;
-  }
-  const numAmount = Number(amount);
-  if (!Number.isFinite(numAmount) || numAmount <= 0) {
-    res.status(400).json({ error: 'invalid_amount' });
-    return;
-  }
-  if (!isValidDate(date)) {
-    res.status(400).json({ error: 'invalid_date' });
-    return;
-  }
-  const cleanClientName = String(clientName).trim().slice(0, 150);
-  const cleanClientPhone = String(clientPhone).trim().slice(0, 30);
-  if (!cleanClientName || !cleanClientPhone) {
-    res.status(400).json({ error: 'invalid_client' });
-    return;
+  const { appointmentId, method, performedBy } = req.body || {};
+  if (!appointmentId) { res.status(400).json({ error: 'missing_appointment' }); return; }
+  if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
+  const amount = Math.round(Number(req.body.amount) * 100) / 100;
+  if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+  let split = null;
+  if (method === 'cash_card') {
+    const cash = Math.round(Number(req.body.cashAmount) * 100) / 100;
+    const card = Math.round(Number(req.body.cardAmount) * 100) / 100;
+    if (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amount) > 0.01) { res.status(400).json({ error: 'invalid_split' }); return; }
+    split = { cash, card };
   }
 
   try {
-    const sales = await readJSON('data/sales.json', []);
+    const [appointments, sales, employees] = await Promise.all([
+      readJSON('data/appointments.json', []),
+      readJSON('data/sales.json', []),
+      readJSON('data/employees.json', []),
+    ]);
+    const appt = appointments.find((x) => x.id === appointmentId);
+    if (!appt) { res.status(404).json({ error: 'appointment_not_found' }); return; }
+    if (appt.paidSaleId && sales.some((x) => x.id === appt.paidSaleId)) { res.status(409).json({ error: 'already_paid' }); return; }
+    const performer = performedBy ? employees.find((e) => e.id === performedBy) : null;
+    if (!performer) { res.status(400).json({ error: 'missing_performer' }); return; }
 
-    // One place writes client records: every "încasare" upserts the client directory
-    // keyed by phone (see api/_lib/clients.js), so names typed slightly differently
-    // over time still collapse onto the same client instead of creating duplicates.
-    const clientRecord = await upsertClient(
-      { name: cleanClientName, phone: cleanClientPhone },
-      { readJSON, writeJSON }
-    );
+    const today = todayISO();
+    const date = appt.date && appt.date <= today ? appt.date : today;
+    const categories = categoriesOf(appt);
+    const booked = Number(appt.amount) || 0;
+    // An upsell only exists when the booked amount is known.
+    const upsell = booked > 0 && amount > booked ? Math.round((amount - booked) * 100) / 100 : 0;
 
     const entry = {
       id: crypto.randomUUID(),
       source: 'incasare',
-      employeeId: session.employeeId, // who recorded the cash entry (usually recepție)
-      performedBy: performedBy ? String(performedBy).slice(0, 100) : '',
-      clientId: clientRecord.id,
-      client: clientRecord.name, // denormalized for display without a join
+      employeeId: session.employeeId, // who recorded it
+      performedBy: performer.id,
+      appointmentId: appt.id,
+      clientId: appt.clientId || '',
+      client: appt.clientName || '',
       date,
-      category,
-      treatment: String(treatment).slice(0, 200),
-      amount: numAmount,
+      location: appt.location || performer.location || '',
+      categories,
+      category: categories[0] || '',
+      treatment: String(appt.treatment || '').slice(0, 200),
+      amount,
+      bookedAmount: booked,
+      upsell,
       method,
-      status: 'recorded', // no approval needed — pure bookkeeping, visible immediately
+      split,
+      status: 'recorded',
       commission: 0,
       note: '',
       createdAt: new Date().toISOString(),
       decidedAt: null,
     };
-
     sales.push(entry);
+
+    let upsellEntry = null;
+    if (upsell > 0 && performer.role !== 'admin') {
+      upsellEntry = upsellFor(entry, performer.id);
+      sales.push(upsellEntry);
+    }
     await writeJSON('data/sales.json', sales);
 
-    res.status(200).json({ ok: true, entry });
+    // Paid = done: the appointment is closed in the Calendar (and the "after treatment"
+    // automations, like the review request, can start).
+    const before = appt.status;
+    Object.assign(appt, { status: 'finalizata', paidSaleId: entry.id, paidAt: entry.createdAt, updatedAt: entry.createdAt });
+    await writeJSON('data/appointments.json', appointments);
+    if (before !== 'finalizata') { try { await workflows.emit('appointment_status', { appointment: appt, status: 'finalizata' }); } catch (e) { /* never blocks a payment */ } }
+
+    res.status(200).json({ ok: true, entry, upsell: upsellEntry });
   } catch (err) {
     console.error('portal-sale (incasare) error:', err.message);
     res.status(500).json({ error: 'sale_failed' });
   }
+}
+
+// The commission entry for the upsell part of a payment (pending until the owner approves it).
+function upsellFor(entry, employeeId) {
+  return {
+    id: crypto.randomUUID(),
+    source: 'comision',
+    origin: 'upsell',
+    incasareId: entry.id,
+    employeeId,
+    date: entry.date,
+    categories: entry.categories,
+    category: entry.category,
+    treatment: 'Upsell · ' + entry.treatment,
+    amount: entry.upsell,
+    note: 'Programat ' + entry.bookedAmount + ' lei, încasat ' + entry.amount + ' lei',
+    clientId: entry.clientId,
+    client: entry.client,
+    status: 'pending',
+    commission: 0,
+    createdAt: new Date().toISOString(),
+    decidedAt: null,
+  };
 }
 
 const handler = async (req, res) => {
@@ -207,11 +229,7 @@ const handler = async (req, res) => {
   const { source } = req.body || {};
 
   if (source === 'incasare') {
-    // Taking payments is front-desk work (receptie) + admin.
-    if (!['admin', 'receptie'].includes(session.role)) {
-      res.status(403).json({ error: 'forbidden' });
-      return;
-    }
+    // Whoever is at the desk takes the payment (in Arad that can be the cosmetician herself).
     await handleIncasare(req, res, session);
   } else {
     await handleComision(req, res, session);
@@ -221,5 +239,6 @@ const handler = async (req, res) => {
 // Exported so other endpoints (api/portal-appointments.js) share this exact list
 // instead of maintaining a second copy that could drift out of sync.
 handler.VALID_CATEGORIES = VALID_CATEGORIES;
+handler.upsellFor = upsellFor;
 
 module.exports = handler;

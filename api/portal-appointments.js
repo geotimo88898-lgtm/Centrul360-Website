@@ -29,7 +29,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
-const { VALID_CATEGORIES } = require('./portal-sale');
+const { normalizeCategories } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
@@ -71,11 +71,15 @@ async function resolveClient({ clientId, clientName, clientPhone }) {
 }
 
 async function validateAndBuildFields(body, employees) {
-  const { date, time, treatment, category, location, cosmeticianId, status } = body || {};
+  const { date, time, treatment, location, cosmeticianId, status } = body || {};
+  // One or more of: epilare-laser, faciale, corporale (older single `category` keys still accepted).
+  const categories = normalizeCategories(body && body.categories && body.categories.length ? body.categories : body && body.category);
+  // What the client is booked to pay. Paying more at the desk = upsell (10% to whoever did it).
+  const amount = Math.max(0, Math.round((Number(body && body.amount) || 0) * 100) / 100);
 
   if (!date || !isValidDate(date)) return { error: 'invalid_date' };
   if (!treatment || !String(treatment).trim()) return { error: 'missing_treatment' };
-  if (!VALID_CATEGORIES.includes(category)) return { error: 'invalid_category' };
+  if (!categories.length) return { error: 'invalid_category' };
   if (!VALID_LOCATIONS.includes(location)) return { error: 'invalid_location' };
   if (!VALID_STATUSES.includes(status)) return { error: 'invalid_status' };
 
@@ -98,7 +102,9 @@ async function validateAndBuildFields(body, employees) {
       clientName: clientRecord.name,
       clientPhone: clientRecord.phone || '', // denormalized so the Calendar can call / WhatsApp
       treatment: String(treatment).trim().slice(0, 200),
-      category,
+      categories,
+      category: categories[0], // kept for older readers (automations, exports)
+      amount,
       location,
       cosmeticianId: cleanCosmeticianId,
       cosmeticianName,
@@ -140,6 +146,18 @@ module.exports = async (req, res) => {
 
   try {
     const appointments = await readJSON('data/appointments.json', []);
+
+    // Payment drawer (Încasări): appointments still to be paid, newest first — today and the last
+    // 30 days, not cancelled, not leave blocks, not already paid.
+    if (action === 'unpaid') {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+      const from = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+      const list = appointments
+        .filter((a) => a.date >= from && a.date <= today && !a.paidSaleId && !['anulata', 'concediu', 'finalizata'].includes(a.status))
+        .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.time || '').localeCompare(b.time || '')));
+      res.status(200).json({ ok: true, appointments: list });
+      return;
+    }
 
     if (action === 'list') {
       const { from, to } = req.body || {};

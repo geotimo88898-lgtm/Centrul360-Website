@@ -32,6 +32,17 @@
 
   const manuals = () => ((K.data && K.data.academy && K.data.academy.manuals) || []);
   const current = () => manuals().find((m) => m.id === A.manual) || manuals()[0];
+  // Printable client forms (static PDFs in /fise), shown as the last card next to the manuals.
+  const PRINTS = [
+    ['/fise/fisa-client-proceduri-corporale.pdf', 'Fișă client · proceduri corporale', 'Se completează la prima vizită'],
+    ['/fise/fisa-client-proceduri-faciale.pdf', 'Fișă client · proceduri faciale', 'Se completează la prima vizită'],
+    ['/fise/fisa-client-epilare-laser.pdf', 'Fișă client · epilare laser', 'Se completează la prima vizită'],
+    ['/fise/program-recomandat-si-oferta.pdf', 'Program recomandat și ofertă', 'Pentru clientă, după consultație'],
+  ];
+  function printHtml() {
+    return '<div class="ac-head"><div><h3>Fișe de printat</h3><p>Fișele pe care le completează clientele. Le deschizi și le printezi; după ce sunt completate, le scanezi în Contacte → „Scanează fișa”.</p></div></div>' +
+      '<div class="ac-grid">' + PRINTS.map(([href, t, sub]) => '<a class="ac-ch ac-print" href="' + href + '" target="_blank" rel="noopener"><span class="k-icon-chip is-accent">' + icon('printer') + '</span><h4>' + esc(t) + '</h4><p>' + esc(sub) + '</p><footer><span class="k-btn is-sm is-outline">' + icon('file') + 'Deschide PDF</span></footer></a>').join('') + '</div>';
+  }
   const num = (i) => String(i + 1).padStart(2, '0');
 
   // ------------------------------------------------------------------ PDF (html2pdf, loaded on first use)
@@ -100,11 +111,14 @@
     if (!panel || !K.data) return;
     const all = manuals();
     if (!all.length) { panel.querySelector('[data-manual]').innerHTML = K.empty('book', 'Niciun training încă', ''); return; }
+    const isPrint = A.manual === 'print';
     const m = current();
-    A.manual = m.id;
+    if (!isPrint) A.manual = m.id;
     panel.querySelector('[data-manuals]').innerHTML = all.map((x) =>
       '<button type="button" class="ac-mcard' + (x.id === m.id ? ' is-on' : '') + '" data-m="' + esc(x.id) + '"><span class="k-icon-chip is-accent">' + icon(x.icon || 'book') + '</span>' +
-      '<div><b>' + esc(x.title) + '</b><span>' + x.chapters.length + ' capitole</span></div></button>').join('');
+      '<div><b>' + esc(x.title) + '</b><span>' + x.chapters.length + ' capitole</span></div></button>').join('') +
+      '<button type="button" class="ac-mcard' + (isPrint ? ' is-on' : '') + '" data-m="print"><span class="k-icon-chip is-accent">' + icon('printer') + '</span><div><b>Fișe de printat</b><span>' + PRINTS.length + ' PDF-uri</span></div></button>';
+    if (isPrint) { panel.querySelector('[data-manual]').innerHTML = printHtml(); return; }
     panel.querySelector('[data-manual]').innerHTML =
       '<div class="ac-head"><div><h3>' + esc(m.title) + '</h3><p>' + esc(m.lede || '') + '</p></div><div class="ac-head-actions">' +
       (K.data.isAdmin ? '<button type="button" class="k-btn is-outline is-sm" data-edit>' + icon('pen') + 'Editează</button>' : '') +
@@ -206,6 +220,7 @@
 .ac-ch{ display:flex; flex-direction:column; gap:.45rem; padding:1rem 1.05rem; border-radius:16px; background:var(--paper); border:1px solid var(--line); box-shadow:var(--shadow-sm); animation:k-rise .4s var(--ease) both; }
 .ac-ch h4{ margin:0; font-size:1rem; line-height:1.3; } .ac-ch p{ margin:0; color:var(--muted); font-size:.85rem; line-height:1.5; flex:1; }
 .ac-ch footer{ display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.35rem; }
+.ac-print{ color:inherit; text-decoration:none; cursor:pointer; transition:transform .2s ease, border-color .2s ease; } .ac-print:hover{ transform:translateY(-2px); border-color:var(--accent, #6a4dff); }
 .ac-num{ font-size:.72rem; font-weight:700; letter-spacing:.12em; color:var(--accent, #6a4dff); }
 .ac-num.is-sm{ min-width:1.6rem; }
 .ac-read{ font-size:.93rem; line-height:1.6; }
@@ -232,4 +247,5 @@
   document.head.appendChild(st);
 
   K.section('traininguri', { mount, show: render, data() { if (panel && K.isActive('traininguri')) render(); } });
+  K.on('academy:print', () => { A.manual = 'print'; render(); });
 })();

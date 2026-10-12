@@ -7,16 +7,42 @@
   const K = window.K;
   const { icon, esc } = K;
 
-  // Treatment categories (same keys as api/portal-sale.js VALID_CATEGORIES).
-  K.cats = {
-    'epilare-laser': 'Epilare laser', 'hifu': 'HIFU full face', 'liposonix': 'Liposonix', 'ems-tonifiere': 'EMS tonifiere',
-    'radiofrecventa': 'Radiofrecvență (RF Sculpt)', 'microneedling': 'Microneedling', 'tratament-facial': 'Tratament facial',
-    'celulita': 'Celulită', 'detox-drenaj': 'Detox / drenaj', 'retail': 'Produs retail / home-care', 'altele': 'Altele',
+  // Treatment categories: the clinic works with three (api/_lib/cats.js). An appointment or a
+  // payment can have several. Older rows with finer keys map onto the three for display.
+  K.cats = { 'epilare-laser': 'Epilare laser', 'faciale': 'Tratamente faciale', 'corporale': 'Tratamente corporale' };
+  const LEGACY_CATS = {
+    hifu: 'faciale', microneedling: 'faciale', 'tratament-facial': 'faciale', liposonix: 'corporale', 'ems-tonifiere': 'corporale',
+    radiofrecventa: 'corporale', celulita: 'corporale', 'detox-drenaj': 'corporale', retail: 'corporale', altele: 'corporale',
   };
+  K.catKey = (k) => (K.cats[k] ? k : LEGACY_CATS[k] || '');
+  K.catsOf = (row) => {
+    const list = row && row.categories && row.categories.length ? row.categories : row && row.category ? [row.category] : [];
+    const out = [];
+    list.forEach((k) => { const n = K.catKey(k); if (n && !out.includes(n)) out.push(n); });
+    return out;
+  };
+  K.catLabel = (row) => K.catsOf(row).map((k) => K.cats[k]).join(' + ');
+  // Multi-select category chips (tap to toggle) bound to a hidden input with comma-separated keys.
+  K.catPicker = (selected) => {
+    const sel = (selected || []).filter((k) => K.cats[k]);
+    return '<div class="k-catpick" data-catpick>' + Object.keys(K.cats).map((k) =>
+      '<button type="button" data-cat="' + k + '" class="' + (sel.includes(k) ? 'is-on' : '') + '" aria-pressed="' + sel.includes(k) + '"><i>' + K.icon('check') + '</i>' + K.esc(K.cats[k]) + '</button>').join('') +
+      '<input type="hidden" name="categories" value="' + sel.join(',') + '"></div>';
+  };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-catpick] [data-cat]');
+    if (!b) return;
+    const box = b.closest('[data-catpick]');
+    b.classList.toggle('is-on');
+    b.setAttribute('aria-pressed', b.classList.contains('is-on'));
+    const input = box.querySelector('input[name=categories]');
+    input.value = Array.from(box.querySelectorAll('[data-cat].is-on')).map((x) => x.dataset.cat).join(',');
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   K.roleLabel = (r) => ({ cosmetician: 'Cosmeticiană', receptie: 'Recepție', admin: 'Admin' }[r] || r);
 
   // Old links / bookmarks keep working.
-  const ALIASES = { incasare: ['incasari', 'incasari:new'], fise: ['resurse', 'resurse:fise'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'] };
+  const ALIASES = { incasare: ['incasari', 'incasari:new'], fise: ['traininguri', 'academy:print'], resurse: ['traininguri'], setari: ['integrari'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'], contacts: ['contacte'] };
 
   let DATA = null, first = true;
   let rev = null, pendingRemote = false; // live-sync revision (see "live sync" below)
@@ -124,9 +150,10 @@
   K.reload = () => load(true);
 
   // ------------------------------------------------------------------ navigation
+  // A section can sit in two places of the menu (Traininguri: staff group / admin group) —
+  // it's allowed if any of its buttons is visible for this account.
   function allowed(tab) {
-    const b = document.querySelector('#tabsNav button[data-tab="' + tab + '"]');
-    return !!(b && !b.classList.contains('hidden'));
+    return Array.from(document.querySelectorAll('#tabsNav button[data-tab="' + tab + '"]')).some((b) => !b.classList.contains('hidden'));
   }
   // Creative is one panel with several pages (its own app, shown inside); `creativeRoute` is the page.
   let creativeRoute = '/';
@@ -180,12 +207,14 @@
   async function badges() {
     if (!DATA) return;
     if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length, 'hot');
-    if (!frontDesk()) return; // cosmeticians: no pipeline / task queue
-    try {
-      const t = await K.api('/api/portal-automation-tasks');
-      K.badge('automatizari', (t.tasks || []).length);
-      K.emit('tasks', t.tasks || []);
-    } catch (e) { /* badge only */ }
+    if (!frontDesk()) return; // cosmeticians: no pipeline badge / task queue
+    if (DATA.me.role === 'receptie') { // Sarcini is the receptionist's own list
+      try {
+        const t = await K.api('/api/portal-automation-tasks');
+        K.badge('automatizari', (t.tasks || []).length);
+        K.emit('tasks', t.tasks || []);
+      } catch (e) { /* badge only */ }
+    }
     try {
       const j = await K.leads();
       leadBadge(j);
@@ -198,7 +227,11 @@
   K.on('leads', leadBadge);
   K.on('tasks:changed', badges);
   // Keep badges fresh in the background (cheap: two small requests every 2 minutes).
-  setInterval(() => { if (!document.hidden && DATA && frontDesk()) { K.leads(true).catch(() => {}); K.api('/api/portal-automation-tasks').then((t) => { K.badge('automatizari', (t.tasks || []).length); K.emit('tasks', t.tasks || []); }).catch(() => {}); } }, 120000);
+  setInterval(() => {
+    if (document.hidden || !DATA || !frontDesk()) return;
+    K.leads(true).catch(() => {});
+    if (DATA.me.role === 'receptie') K.api('/api/portal-automation-tasks').then((t) => { K.badge('automatizari', (t.tasks || []).length); K.emit('tasks', t.tasks || []); }).catch(() => {});
+  }, 120000);
 
   // ------------------------------------------------------------------ creative (admin)
   // First open: single sign-on straight onto the chosen page; the frame stays hidden behind a

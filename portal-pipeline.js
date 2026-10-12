@@ -81,10 +81,10 @@
   };
   // Active offers only — the same list the Creative machine sells.
   const OFFERS = [
-    { label: 'Facial Restart', value: 190, category: 'tratament-facial', where: '' },
-    { label: 'LipoSonix 2 zone la preț de 1', value: 640, category: 'liposonix', where: '' },
-    { label: 'Cavitație + EMS', value: 280, category: 'ems-tonifiere', where: 'Timișoara' },
-    { label: 'Cavitație 1+1', value: 280, category: 'altele', where: 'Arad' },
+    { label: 'Facial Restart', value: 190, category: 'faciale', where: '' },
+    { label: 'LipoSonix 2 zone la preț de 1', value: 640, category: 'corporale', where: '' },
+    { label: 'Cavitație + EMS', value: 280, category: 'corporale', where: 'Timișoara' },
+    { label: 'Cavitație 1+1', value: 280, category: 'corporale', where: 'Arad' },
     { label: 'Epilare laser Full Body', value: 490, category: 'epilare-laser', where: 'Timișoara' },
   ];
   const LOST_REASONS = ['Preț prea mare', 'Nu răspunde (3+ încercări)', 'A ales altă clinică', 'Nu e momentul', 'Distanță / locație', 'Număr greșit / spam', 'Altul'];
@@ -1132,7 +1132,7 @@
     await busy(form.querySelector('[type=submit]'), async () => {
       try {
         const a = await api('create', {
-          date: data.date, time: data.time, treatment: data.treatment, category: data.category, location: data.location,
+          date: data.date, time: data.time, treatment: data.treatment, category: data.category, location: data.location, amount: Number(l.value) || 0,
           status: 'programata', clientName: l.name, clientPhone: l.phone,
         }, '/api/portal-appointments');
         const appt = a.appointment || {};

@@ -14,7 +14,7 @@
 //   - get(pathname, { access: 'private' }) reads a blob's content back as a stream;
 //     resolves to null if the blob doesn't exist yet (used for first-run bootstrapping).
 
-const { put, get } = require('@vercel/blob');
+const { put, get, del } = require('@vercel/blob');
 
 async function streamToString(stream) {
   const chunks = [];
@@ -106,4 +106,9 @@ async function readBinary(pathname) {
   }
 }
 
-module.exports = { readJSON, writeJSON, readRev, writeBinary, readBinary };
+// Deletes a binary blob (a replaced or removed photo / scan). Never throws: a leftover file is harmless.
+async function removeBinary(pathname) {
+  try { await del(pathname); } catch (err) { console.error(`store.removeBinary(${pathname}) error:`, err.message); }
+}
+
+module.exports = { readJSON, writeJSON, readRev, writeBinary, readBinary, removeBinary };

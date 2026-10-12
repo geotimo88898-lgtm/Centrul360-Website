@@ -154,7 +154,7 @@
       if (a === 'reload') return load();
       if (a === 'new') return openEditor(null);
       if (a === 'recipes') return openRecipes();
-      if (a === 'fb') { e.preventDefault(); return K.go('setari'); }
+      if (a === 'fb') { e.preventDefault(); return K.go('integrari'); }
       if (a === 'wa-guide') { e.preventDefault(); S.tab = 'vars'; return render(); }
       if (a === 'save-settings') return K.busy(act, saveSettings);
     }

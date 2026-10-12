@@ -4,34 +4,10 @@
 
 const { readJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
-const { defaultConfig, currentMonth, defaultSops } = require('./_lib/defaults');
+const { defaultConfig } = require('./_lib/defaults');
+const { categoriesOf, normalizeCategories, UPSELL_RATE } = require('./_lib/cats');
 const { defaultAcademy } = require('./_lib/academy');
 const { loadOffers, discountOf } = require('./_lib/offers');
-
-// Daily mandatory task checklists per role. Plain static content — no need for these to
-// live in Blob since they don't change often; checkbox state itself is kept client-side
-// (sessionStorage), per the spec (no server-side persistence needed for this).
-const DAILY_TASKS = {
-  cosmetician: [
-    'Verifică programările zilei și pregătește cabina/aparatele necesare.',
-    'Dezinfectează suprafețele și aparatele după fiecare client.',
-    'Completează fișa de client pentru fiecare tratament efectuat.',
-    'Loghează fiecare vânzare proprie în tab-ul „Comision" până la finalul zilei.',
-    'Recomandă cel puțin un upsell relevant per client (vezi tab „Resurse").',
-  ],
-  receptie: [
-    'Confirmă telefonic sau prin mesaj programările pentru ziua următoare.',
-    'Actualizează statusul fiecărei programări (confirmată/anulată/reprogramată) în tab-ul „Calendar".',
-    'Încasează fiecare client plătitor în tab-ul „Încasează client" — înlocuiește fișa de hârtie.',
-    'Răspunde la solicitările de programare în maxim 15 minute.',
-    'Predă la final de zi situația încasărilor către management (vezi „Tabel de încasări").',
-  ],
-  admin: [
-    'Verifică vânzările în așteptare și aprobă/respinge-le în tab-ul „Aprobări".',
-    'Urmărește progresul obiectivului de companie pentru luna curentă.',
-    'Verifică dacă regulile de comision și bonusurile sunt actuale.',
-  ],
-};
 
 // The full set of statuses an appointment can carry on the new shared Calendar (see
 // api/portal-appointments.js). 'programata' is the default for a freshly booked slot.
@@ -150,26 +126,25 @@ module.exports = async (req, res) => {
     const comisionSales = sales.filter((s) => s.source !== 'incasare');
     const incasareSales = sales.filter((s) => s.source === 'incasare');
 
-    // Company goal progress: sum of approved COMMISSION sales this month, across both
-    // locations. "Încasare" entries are pure bookkeeping and never count here, so the
-    // same money is never counted twice toward goals/bonuses.
-    const approvedThisMonth = comisionSales.filter(
-      (s) => s.status === 'approved' && monthKey(s.date) === month
-    );
-    const companyApprovedTotal = approvedThisMonth.reduce((sum, s) => sum + Number(s.amount || 0), 0);
+    // Company goal progress: everything the clinic took in this month (Încasări, both locations).
+    const companyApprovedTotal = incasareSales
+      .filter((s) => monthKey(s.date) === month)
+      .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
     // Race bonus leaderboard: count of approved sales in the target category this month,
     // per employee, regardless of role/location (everyone can see where they stand).
-    const raceCategory = config.raceBonus.category;
+    const raceCategory = normalizeCategories(config.raceBonus.category)[0] || 'faciale';
     // Targets carry over month to month; progress is always the current month's.
     const raceMonth = month;
+    // Counted from Încasări: every paid treatment in the category, credited to whoever did it.
     const raceCounts = {};
-    comisionSales.forEach((s) => {
-      if (s.status === 'approved' && s.category === raceCategory && monthKey(s.date) === raceMonth) {
-        raceCounts[s.employeeId] = (raceCounts[s.employeeId] || 0) + 1;
+    incasareSales.forEach((s) => {
+      if (s.performedBy && monthKey(s.date) === raceMonth && categoriesOf(s).includes(raceCategory)) {
+        raceCounts[s.performedBy] = (raceCounts[s.performedBy] || 0) + 1;
       }
     });
     const leaderboard = activeEmployees
+      .filter((e) => e.role !== 'receptie' || raceCounts[e.id])
       .map((e) => ({
         employeeId: e.id,
         name: e.name,
@@ -192,6 +167,8 @@ module.exports = async (req, res) => {
         const performer = employeesRaw.find((e) => e.id === s.performedBy);
         return {
           ...s,
+          categories: categoriesOf(s),
+          location: s.location || (performer && performer.location) || (recorder && recorder.location) || '',
           employeeName: recorder ? recorder.name : s.employeeId,
           performedByName: performer ? performer.name : (s.performedBy || '—'),
         };
@@ -227,7 +204,6 @@ module.exports = async (req, res) => {
 
     const payload = {
       me: { id: me.id, name: me.name, location: me.location, role: me.role },
-      tasks: DAILY_TASKS[me.role] || DAILY_TASKS.cosmetician,
       companyGoal: {
         target: config.companyGoal.target,
         reward: config.companyGoal.reward,
@@ -241,21 +217,18 @@ module.exports = async (req, res) => {
         month: raceMonth,
         leaderboard,
       },
-      commissionRates: config.commissionRates,
-      retailRate: config.retailRate,
-      resources: config.resources,
+      // One commission rule: 10% of every upsell.
+      upsellRate: UPSELL_RATE,
       mySales,
       incasari,
-      activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location })),
+      activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role })),
       appointmentsToday: {
         list: todaysAppointments,
         countsToday,
         myCountsToday,
       },
       myGoals,
-      // SOPs for this role (+ the shared ones); the owner gets every role's set to manage them.
       academy: config.academy || defaultAcademy(), // Traininguri: every manual for everyone (the goal: everyone sells)
-      sops: (() => { const all = config.sops || defaultSops(); return isAdmin ? all : { [me.role]: all[me.role] || [], toti: all.toti || [] }; })(),
       // Active offers from the shared source — same list the public site and Creative use.
       offers: offersAll.filter((o) => o.active).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((o) => ({
         id: o.id, key: o.key, title: o.title, description: o.description || '', priceNew: Number(o.priceNew) || 0, priceOld: Number(o.priceOld) || 0,

@@ -19,7 +19,10 @@
     // appointment, just a marker so reception sees the person is away. See api/portal-leave.js.
     concediu: { label: 'Concediu', plural: 'concedii', tone: 'mute', ic: 'calendar' },
   };
-  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', appts: [], range: '', loading: false };
+  // Statuses the front desk picks by hand. "Finalizată" comes by itself when the appointment is paid
+  // (Încasări); "Concediu" is a leave block created by an approved leave request.
+  const PICK = ['programata', 'confirmata', 'reprogramata', 'anulata'];
+  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false };
   let panel, gridEl, nowTimer = 0;
   // Front desk + owner edit the calendar; a cosmetician sees it read-only (server enforces the same).
   const canEdit = () => !!(K.frontDesk && K.frontDesk());
@@ -27,6 +30,8 @@
   const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
   const toHM = (m) => K.pad(Math.floor(m / 60)) + ':' + K.pad(m % 60);
   const empName = (id) => { const e = (K.data && K.data.activeEmployees || []).find((x) => x.id === id); return e ? e.name : ''; };
+  // Only cosmeticians do treatments; the list follows the chosen location (Timișoara / Arad).
+  const cosmeticians = (loc) => ((K.data && K.data.activeEmployees) || []).filter((e) => e.role === 'cosmetician' && (!loc || loc === 'all' || e.location === loc));
 
   // ------------------------------------------------------------------ mount + chrome
   function mount(p) {
@@ -44,7 +49,8 @@
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
         '<button type="button" class="k-icon-btn" data-act="next" aria-label="Înainte">' + icon('right') + '</button>' +
         '<button type="button" class="cal-title" data-act="month"><b data-title></b>' + icon('down') + '</button></div>' +
-        '<div class="cal-bar-right"><select data-emp aria-label="Cosmeticiană"><option value="">Toată echipa</option>' + K.options(((K.data && K.data.activeEmployees) || []).map((e) => [e.id, (K.data.me.id === e.id ? 'Doar ale mele' : e.name)]), S.emp) + '</select>' + K.seg('calloc', [['all', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.loc) +
+        '<div class="cal-bar-right"><select data-emp aria-label="Cosmeticiană">' + empFilterOptions() + '</select>' + K.seg('calloc', [['all', 'Ambele orașe'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.loc) +
+        K.seg('calonly', [['all', 'Toate'], ['confirmata', 'Doar confirmate']], S.only) +
         K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) + '</div>' +
       '</div>' +
       '<div class="cal-summary" data-summary></div>' +
@@ -53,12 +59,24 @@
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', (e) => {
       if (e.target.name === 'calview') { S.view = e.target.value; load(); }
-      if (e.target.name === 'calloc') { S.loc = e.target.value; render(); }
+      if (e.target.name === 'calloc') {
+        S.loc = e.target.value;
+        // the cosmetician filter only offers people from the chosen city
+        if (S.emp && !cosmeticians(S.loc).some((c) => c.id === S.emp)) S.emp = '';
+        const sel = panel.querySelector('[data-emp]'); sel.innerHTML = empFilterOptions(); sel.value = S.emp;
+        render();
+      }
+      if (e.target.name === 'calonly') { S.only = e.target.value; render(true); }
       if (e.target.matches('[data-emp]')) { S.emp = e.target.value; render(true); }
     });
     gridEl.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKey);
     K.everySecond((now) => { if (now.getSeconds() % 30 === 0 && K.isActive('programari')) placeNow(); });
+  }
+
+  function empFilterOptions() {
+    const me = K.data && K.data.me;
+    return '<option value="">Toate cosmeticienele</option>' + K.options(cosmeticians(S.loc).map((e) => [e.id, me && me.id === e.id ? 'Doar ale mele' : e.name]), S.emp);
   }
 
   function onKey(e) {
@@ -126,7 +144,8 @@
     if (!gridEl) return;
     const prevScroll = gridEl.parentElement.scrollTop;
     const cols = columns();
-    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp));
+    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
+      (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
     renderSummary(visible);
     const H = (END - START) * 60 * PPM;
     const hours = Array.from({ length: END - START + 1 }, (_, i) => START + i);
@@ -180,7 +199,7 @@
     return '<button type="button" class="cal-block is-' + a.status + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px)"' +
       ' title="' + esc(a.time + ' · ' + a.clientName + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
       '<span class="cal-b-time">' + esc(a.time) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
-      '<b>' + esc(a.clientName || '—') + '</b><span class="cal-b-sub">' + esc(a.treatment || '') + '</span></button>';
+      '<b>' + esc(a.clientName || '—') + '</b><span class="cal-b-sub">' + esc(a.treatment || '') + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
@@ -281,14 +300,33 @@
   function payload(a) {
     return {
       action: 'update', id: a.id, date: a.date, time: a.time, clientId: a.clientId, clientName: a.clientName, clientPhone: a.clientPhone,
-      treatment: a.treatment, category: a.category, location: a.location, cosmeticianId: a.cosmeticianId || '', status: a.status,
+      treatment: a.treatment, categories: K.catsOf(a), amount: a.amount || 0, location: a.location, cosmeticianId: a.cosmeticianId || '', status: a.status,
     };
   }
   const save = (a) => K.api('/api/portal-appointments', payload(a));
 
   // ------------------------------------------------------------------ drawers
-  function catOptions(sel) { return K.options(Object.keys(K.cats).map((k) => [k, K.cats[k]]), sel); }
-  function empOptions(sel) { return '<option value="">— neasignat —</option>' + K.options((K.data.activeEmployees || []).map((e) => [e.id, e.name + ' · ' + e.location]), sel); }
+  function empOptions(sel, loc) {
+    const list = cosmeticians(loc);
+    const pairs = list.map((e) => [e.id, e.name]);
+    // an appointment already assigned to someone not in the list (moved city, other role) keeps her
+    if (sel && !list.some((e) => e.id === sel)) pairs.push([sel, empName(sel) || 'Cosmeticiana aleasă']);
+    return '<option value="">— alege cosmeticiana —</option>' + K.options(pairs, sel);
+  }
+  // Quick fill from the active offers (treatment + price + category) for the chosen city.
+  function offerChips(loc) {
+    const key = loc === 'Arad' ? 'arad' : 'timisoara';
+    const offers = ((K.data && K.data.offers) || []).filter((o) => !o.locations || !o.locations.length || o.locations.includes(key));
+    if (!offers.length) return '';
+    return '<div class="cal-offers" data-cal-offers>' + offers.map((o) => '<button type="button" data-offer="' + esc(o.id) + '"><b>' + esc(o.title) + '</b><span>' + K.lei(o.priceNew) + '</span></button>').join('') + '</div>';
+  }
+  // Offers carry the site category (epilare / faciale / remodelare) → the three portal categories.
+  function offerCats(o) {
+    if (o.category === 'epilare') return ['epilare-laser'];
+    if (o.category === 'faciale') return ['faciale'];
+    if (o.category === 'remodelare') return ['corporale'];
+    return /epilare|laser/.test(K.norm(o.title)) ? ['epilare-laser'] : /facial|restart|hifu/.test(K.norm(o.title)) ? ['faciale'] : ['corporale'];
+  }
   function slotOptions(sel) {
     const out = [];
     for (let m = START * 60; m < END * 60; m += 15) out.push([toHM(m), toHM(m)]);
@@ -308,13 +346,41 @@
         !a.clientPhone ? K.field('Telefon clientă', '<input name="clientPhone" type="tel" maxlength="30" placeholder="Lipsește — adaugă-l ca să poți suna / trimite WhatsApp">', 'full') : '') +
       K.field('Data', '<input name="date" type="date" required value="' + esc(a.date) + '">') +
       K.field('Ora', '<select name="time">' + slotOptions(a.time || '10:00') + '</select>') +
+      K.field('Locație', K.seg('location', LOCS.map((l) => [l, l, 'pin']), a.location || LOCS[0], 'is-big'), 'full') +
+      (isNew ? '<div class="k-field full"><span>Alege din oferte (completează tratamentul și suma)</span><div data-offer-box>' + offerChips(a.location || LOCS[0]) + '</div></div>' : '') +
       K.field('Tratament', '<input name="treatment" required maxlength="200" value="' + esc(a.treatment || '') + '" placeholder="ex: Facial Restart">', 'full') +
-      K.field('Categorie', '<select name="category">' + catOptions(a.category || 'tratament-facial') + '</select>') +
-      K.field('Locație', '<select name="location">' + K.options(LOCS.map((l) => [l, l]), a.location || LOCS[0]) + '</select>') +
-      K.field('Cosmeticiană', '<select name="cosmeticianId">' + empOptions(a.cosmeticianId || '') + '</select>', 'full') +
+      K.field('Categorie (poți alege mai multe)', K.catPicker(K.catsOf(a)), 'full') +
+      K.field('Suma programării', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="0" step="1" value="' + esc(a.amount || '') + '" placeholder="0"></div>', 'full', 'Cât plătește clienta pentru ce s-a programat. Dacă la final plătește mai mult, diferența e upsell (10% pentru cine a făcut tratamentul).') +
+      K.field('Cosmeticiană', '<select name="cosmeticianId" data-cos>' + empOptions(a.cosmeticianId || '', a.location || LOCS[0]) + '</select>', 'full') +
       (isNew ? K.field('Status', K.seg('status', [['programata', 'Programată'], ['confirmata', 'Confirmată']], 'programata', 'is-big'), 'full') : '') +
       '</form>';
   }
+
+  function wireForm(el, f) {
+    f.addEventListener('change', (e) => {
+      if (e.target.name !== 'location') return;
+      const loc = e.target.value;
+      const sel = f.querySelector('[data-cos]');
+      const keep = cosmeticians(loc).some((c) => c.id === sel.value) ? sel.value : '';
+      sel.innerHTML = empOptions(keep, loc); sel.value = keep;
+      const box = f.querySelector('[data-offer-box]');
+      if (box) box.innerHTML = offerChips(loc);
+    });
+    f.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-offer]');
+      if (!b) return;
+      const o = (K.data.offers || []).find((x) => x.id === b.dataset.offer);
+      if (!o) return;
+      f.querySelectorAll('[data-offer]').forEach((x) => x.classList.toggle('is-on', x === b));
+      f.treatment.value = o.title;
+      f.amount.value = o.priceNew;
+      const pick = f.querySelector('[data-catpick]');
+      const cats = offerCats(o);
+      pick.querySelectorAll('[data-cat]').forEach((x) => { const on = cats.includes(x.dataset.cat); x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on); });
+      pick.querySelector('input[name=categories]').value = cats.join(',');
+    });
+  }
+  const formCats = (v) => String(v.categories || '').split(',').filter(Boolean);
 
   function openNew(pre) {
     if (!canEdit()) return;
@@ -328,6 +394,7 @@
       onMount(el) {
         const f = el.querySelector('[data-form]');
         picker = K.clientPicker(f.clientName, f.clientPhone);
+        wireForm(el, f);
         if (pre.clientName) { f.clientName.value = pre.clientName; f.clientPhone.value = pre.clientPhone || ''; }
         el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
         f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
@@ -335,8 +402,11 @@
           const v = K.formValues(f);
           if (!v.clientName || !v.clientPhone) { K.ui().toast('Completează clientul și telefonul.', 'error'); return; }
           if (!v.treatment) { K.ui().toast('Completează tratamentul.', 'error'); f.treatment.focus(); return; }
+          if (!formCats(v).length) { K.ui().toast('Alege cel puțin o categorie.', 'error'); return; }
+          if (!(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării.', 'error'); f.amount.focus(); return; }
+          if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
           try {
-            await K.api('/api/portal-appointments', Object.assign({ action: 'create', clientId: picker.id() }, v));
+            await K.api('/api/portal-appointments', Object.assign({ action: 'create', clientId: picker.id() }, v, { categories: formCats(v), amount: Number(v.amount) }));
             d.close();
             K.ui().toast('Programat: ' + v.clientName + ' · ' + K.relDay(v.date) + ' ' + v.time, 'success');
             S.date = v.date;
@@ -377,12 +447,12 @@
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
         subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.time || 'fără oră') + ' · ' + esc(a.location),
-        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '—') + '</dd><dt>Categorie</dt><dd>' + esc(K.cats[a.category] || a.category || '—') + '</dd>' +
+        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '—') + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '—') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(a.time || '—') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
-          '<div class="mo-note">' + icon('info') + 'Schimbări (oră, status, anulare) — le face recepția.</div>' +
-          '<a class="k-btn is-outline" href="#resurse" data-go-sop>' + icon('book') + 'Protocolul tratamentului</a>',
-        onMount(el) { el.querySelector('[data-go-sop]').addEventListener('click', (e) => { e.preventDefault(); K.go('resurse'); setTimeout(() => K.emit('resurse:tab', 'protocoale'), 200); }); },
+          '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
+          (a.clientId ? '<button type="button" class="k-btn is-outline" data-contact>' + icon('user') + 'Fișa clientei și pozele</button>' : ''),
+        onMount(el) { const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => K.emit('contacts:open', a.clientId), 250); }); },
       });
       return;
     }
@@ -390,7 +460,8 @@
       title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.time || 'fără oră') + ' · ' + esc(a.location),
       body:
-        '<div class="cal-status" role="group" aria-label="Status">' + Object.keys(STATUS).map((s) =>
+        (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită — apare în Încasări.</div>' : '') +
+        '<div class="cal-status" role="group" aria-label="Status">' + PICK.map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +
           '<a class="k-btn is-outline" href="' + K.tel(a.clientPhone) + '">' + icon('phone') + 'Sună</a>' +
@@ -398,9 +469,13 @@
         '<section class="k-section"><h4>' + icon('pen') + 'Detalii</h4>' + formHtml(a, false) + '</section>' +
         '<div class="k-muted">' + esc(a.clientPhone || 'Fără telefon salvat') + (a.cosmeticianName ? ' · cu ' + esc(a.cosmeticianName) : '') + '</div>',
       footer: '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button><span class="k-grow"></span>' +
-        '<button type="button" class="k-btn is-outline" data-pay>' + icon('wallet') + 'Încasează</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+        (a.clientId ? '<button type="button" class="k-icon-btn" data-contact title="Fișa clientei și pozele">' + icon('user') + '</button>' : '') +
+        (a.paidSaleId ? '' : '<button type="button" class="k-btn is-outline" data-pay>' + icon('wallet') + 'Încasează</button>') + '<button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
+        wireForm(el, f);
+        const ct = el.querySelector('[data-contact]');
+        if (ct) ct.addEventListener('click', () => { d.close(); K.go('contacte'); setTimeout(() => K.emit('contacts:open', a.clientId), 250); });
         el.querySelectorAll('[data-status]').forEach((b) => b.addEventListener('click', async () => {
           const before = a.status;
           if (before === b.dataset.status) return;
@@ -412,16 +487,20 @@
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(f);
           if (!v.clientPhone) delete v.clientPhone;
+          v.categories = formCats(v);
+          v.amount = Number(v.amount) || 0;
+          if (!v.categories.length) { K.ui().toast('Alege cel puțin o categorie.', 'error'); return; }
           const next = Object.assign({}, a, v);
           // A phone added here links the appointment to the client directory (upsert by phone).
           if (v.clientPhone) next.clientId = '';
           try { await save(next); Object.assign(a, v); d.close(); K.ui().toast('Programare salvată.', 'success'); load(true); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
-        el.querySelector('[data-pay]').addEventListener('click', () => {
+        const pay = el.querySelector('[data-pay]');
+        if (pay) pay.addEventListener('click', () => {
           d.close();
           K.go('incasari');
-          setTimeout(() => K.emit('incasari:new', { clientName: a.clientName, clientPhone: a.clientPhone, clientId: a.clientId, treatment: a.treatment, category: a.category, performedBy: a.cosmeticianId, date: a.date, appt: a }), 250);
+          setTimeout(() => K.emit('incasari:new', { appointmentId: a.id }), 250);
         });
         el.querySelector('[data-del]').addEventListener('click', async () => {
           if (!(await K.ui().confirm({ title: 'Ștergi programarea?', message: a.clientName + ' · ' + K.relDay(a.date) + ' ' + a.time + ' se șterge definitiv. Dacă doar s-a anulat, folosește „Anulată”.', confirmText: 'Șterge', danger: true }))) return;

@@ -169,18 +169,37 @@
       if (items[i]) { items[i].classList.add('is-active'); items[i].scrollIntoView({ block: 'nearest' }); }
       active = i;
     }
+    function place() {
+      const r = btn.getBoundingClientRect();
+      const up = window.innerHeight - r.bottom < 260 && r.top > window.innerHeight - r.bottom;
+      wrap.classList.toggle('drop-up', up);
+      list.style.position = 'fixed';
+      list.style.left = r.left + 'px';
+      list.style.width = r.width + 'px';
+      list.style.right = 'auto';
+      list.style.top = up ? 'auto' : (r.bottom + 6) + 'px';
+      list.style.bottom = up ? (window.innerHeight - r.top + 6) + 'px' : 'auto';
+      list.style.maxHeight = Math.max(160, Math.min(320, (up ? r.top : window.innerHeight - r.bottom) - 16)) + 'px';
+      list.style.zIndex = '2000';
+      list.classList.toggle('is-up', up);
+    }
     function open() {
       if (openSelect && openSelect !== api) openSelect.close();
       render();
-      const r = btn.getBoundingClientRect();
-      wrap.classList.toggle('drop-up', window.innerHeight - r.bottom < 260 && r.top > 260);
+      // The open list lives on <body>: inside a drawer (or any transformed / clipped box) a fixed
+      // list is positioned against that box instead of the screen and ends up invisible.
+      document.body.appendChild(list);
+      place();
       wrap.classList.add('is-open');
+      list.classList.add('is-open');
       btn.setAttribute('aria-expanded', 'true');
       highlight(sel.selectedIndex);
       openSelect = api;
     }
     function close() {
       wrap.classList.remove('is-open');
+      list.classList.remove('is-open');
+      if (list.parentNode !== wrap) wrap.appendChild(list);
       btn.setAttribute('aria-expanded', 'false');
       if (openSelect === api) openSelect = null;
     }
@@ -229,13 +248,20 @@
     // Options are often rebuilt by the portal (innerHTML) — keep the label in step.
     new MutationObserver(() => { sync(); if (wrap.classList.contains('is-open')) render(); })
       .observe(sel, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'selected'] });
-    const api = { sync, close };
+    const api = { sync, close, place };
     enhanced.set(sel, api);
     sync();
   }
   document.addEventListener('mousedown', (e) => {
-    if (openSelect && !e.target.closest('.c360-select.is-open')) openSelect.close();
+    if (openSelect && !e.target.closest('.c360-select.is-open, .c360-select-list.is-open')) openSelect.close();
   });
+  // The fixed list follows its button when something scrolls; it closes if the button leaves the screen.
+  window.addEventListener('scroll', (e) => {
+    if (!openSelect) return;
+    if (e.target && e.target.closest && e.target.closest('.c360-select-list')) return;
+    openSelect.place();
+  }, true);
+  window.addEventListener('resize', () => { if (openSelect) openSelect.close(); });
   function enhanceAll(root) {
     (root || document).querySelectorAll('select').forEach(enhanceSelect);
   }
@@ -270,6 +296,10 @@
     fise: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
     traininguri: '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',
     condica: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    mesaje: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>',
+    contacte: '<path d="M16 2v2M8 2v2"/><rect x="3" y="4" width="18" height="18" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M7 19a5 5 0 0 1 10 0"/>',
+    integrari: '<path d="M12 22v-5M9 8V2M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
+    ofertele: '<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1"/>',
     aprobari: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
     angajati: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     oferte: '<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1"/>',
@@ -290,7 +320,7 @@
   let nav, indicator;
   function placeIndicator(instant) {
     if (!nav || !indicator) return;
-    const active = nav.querySelector('button[data-tab].active');
+    const active = nav.querySelector('button[data-tab].active:not(.hidden)');
     if (!active || active.offsetParent === null || window.innerWidth <= 720) { indicator.style.opacity = '0'; return; }
     if (instant || reduceMotion) indicator.style.transition = 'none';
     indicator.style.transform = 'translateY(' + active.offsetTop + 'px)';

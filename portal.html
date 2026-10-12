@@ -55,6 +55,7 @@
 <link rel="stylesheet" href="/portal-kit.css">
 <link rel="stylesheet" href="/portal-sections.css">
 <link rel="stylesheet" href="/portal-pipeline.css">
+<link rel="stylesheet" href="/portal-v2.css">
 <script src="/portal-ui.js" defer></script>
 <script src="/portal-kit.js" defer></script>
 <script src="/portal-pipeline.js" defer></script>
@@ -63,6 +64,7 @@
 <script src="/portal-money.js" defer></script>
 <script src="/portal-work.js" defer></script>
 <script src="/portal-academy.js" defer></script>
+<script src="/portal-contacts.js" defer></script>
 <script src="/portal-condica.js" defer></script>
 <script src="/portal-whatsapp.js" defer></script>
 <script src="/portal-admin.js" defer></script>
@@ -94,20 +96,22 @@
       <div class="nav-group-label">Clinică</div>
       <button data-tab="programari"><svg></svg>Calendar</button>
       <button data-tab="mesaje"><svg></svg>Mesaje</button>
-      <button data-tab="incasari" data-roles="admin,receptie"><svg></svg>Încasări</button>
-      <button data-tab="pipeline" data-roles="admin,receptie"><svg></svg>Pipeline</button>
-      <button data-tab="automatizari" data-roles="admin,receptie"><svg></svg>Sarcini</button>
-      <div class="nav-group-label">Echipă</div>
+      <button data-tab="incasari"><svg></svg>Încasări</button>
+      <button data-tab="pipeline"><svg></svg>Pipeline</button>
+      <button data-tab="contacte"><svg></svg>Contacte</button>
+      <button data-tab="automatizari" data-roles="receptie"><svg></svg>Sarcini</button>
+      <div class="nav-group-label" data-roles="receptie,cosmetician">Echipă</div>
       <button data-tab="comision" data-roles="receptie,cosmetician"><svg></svg>Comisionul meu</button>
-      <button data-tab="traininguri"><svg></svg>Traininguri</button>
-      <button data-tab="condica"><svg></svg>Condică</button>
-      <button data-tab="resurse"><svg></svg>SOP & Resurse</button>
+      <button data-tab="traininguri" data-roles="receptie,cosmetician"><svg></svg>Traininguri</button>
+      <button data-tab="condica" data-roles="receptie,cosmetician"><svg></svg>Condică</button>
+      <button data-tab="ofertele" data-roles="receptie,cosmetician"><svg></svg>Oferte</button>
       <div class="nav-group-label admin-only hidden">Admin</div>
       <button data-tab="aprobari" class="admin-only hidden"><svg></svg>Aprobări</button>
       <button data-tab="angajati" class="admin-only hidden"><svg></svg>Echipa</button>
       <button data-tab="fluxuri" class="admin-only hidden"><svg></svg>Automatizări</button>
+      <button data-tab="integrari" class="admin-only hidden"><svg></svg>Integrări</button>
       <button data-tab="oferte" class="admin-only hidden"><svg></svg>Oferte</button>
-      <button data-tab="setari" class="admin-only hidden"><svg></svg>Setări</button>
+      <button data-tab="traininguri" data-roles="admin" data-dup="1"><svg></svg>Traininguri</button>
       <div class="nav-group-label admin-only hidden">Marketing · Creative</div>
       <button data-tab="creative" data-route="/" class="admin-only hidden"><svg></svg>Galerie creative</button>
       <button data-tab="creative" data-route="/convertor" class="admin-only hidden"><svg></svg>Convertor oraș</button>
@@ -123,16 +127,17 @@
       <section class="panel" id="panel-mesaje"></section>
       <section class="panel" id="panel-incasari"></section>
       <section class="panel" id="panel-pipeline"></section>
+      <section class="panel" id="panel-contacte"></section>
       <section class="panel" id="panel-automatizari"></section>
       <section class="panel staff-only" id="panel-comision"></section>
       <section class="panel" id="panel-traininguri"></section>
       <section class="panel" id="panel-condica"></section>
-      <section class="panel" id="panel-resurse"></section>
+      <section class="panel" id="panel-ofertele"></section>
       <section class="panel admin-only hidden" id="panel-aprobari"></section>
       <section class="panel admin-only hidden" id="panel-angajati"></section>
       <section class="panel admin-only hidden" id="panel-fluxuri"></section>
+      <section class="panel admin-only hidden" id="panel-integrari"></section>
       <section class="panel admin-only hidden" id="panel-oferte"></section>
-      <section class="panel admin-only hidden" id="panel-setari"></section>
       <!-- CREATIVE (admin) — the creative machine, opened inside the portal with single sign-on -->
       <section class="panel admin-only hidden" id="panel-creative">
         <p id="creativeMsg">Se deschide mașina de creative…</p>

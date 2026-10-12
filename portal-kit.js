@@ -342,7 +342,11 @@
       });
     }
     if (current) current.close(true);
-    const aside = drawerRoot.querySelector('.k-drawer');
+    // A fresh panel for every drawer: listeners a previous drawer attached to its panel would
+    // otherwise keep firing (with that drawer's data) inside the next one.
+    const old = drawerRoot.querySelector('.k-drawer');
+    const aside = old.cloneNode(false);
+    old.replaceWith(aside);
     aside.style.setProperty('--w', (opts.width || 520) + 'px');
     const handle = {
       el: aside,

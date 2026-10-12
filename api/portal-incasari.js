@@ -1,15 +1,20 @@
-// POST /api/portal-incasari — admin-only correction/deletion of "Încasează client" (source:
-// 'incasare') cash-record entries in data/sales.json. The owner explicitly wants mistakes
-// (wrong amount, wrong treatment text, etc.) fixable only by her, not by whoever recorded the
-// entry — this endpoint never touches source:'comision' entries, which have their own
-// create/approve flow (portal-sale.js / portal-approve.js).
+// POST /api/portal-incasari — admin-only correction/deletion of a payment (source: 'incasare')
+// in data/sales.json. Mistakes (wrong amount, wrong method, wrong person) are fixed only by the
+// owner, never by whoever recorded the payment.
+//
+// A payment is tied to its appointment and, when the client paid more than booked, to an upsell
+// commission entry (10% to whoever did the treatment). Both follow the correction:
+//   - update: the upsell is recomputed (still-pending upsell entries are updated, created or
+//     removed; an upsell the owner already approved is left as it is).
+//   - delete: the appointment becomes unpaid again (back in the payment list) and a pending
+//     upsell entry is removed with it.
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
+const { normalizeCategories } = require('./_lib/cats');
 const portalSale = require('./portal-sale');
 
-const VALID_CATEGORIES = portalSale.VALID_CATEGORIES;
-const VALID_METHODS = ['card', 'cash', 'transfer'];
+const VALID_METHODS = ['card', 'cash', 'transfer', 'cash_card'];
 
 function isValidDate(date) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date || '');
@@ -37,47 +42,68 @@ module.exports = async (req, res) => {
       res.status(404).json({ error: 'entry_not_found' });
       return;
     }
+    const upsellEntry = sales.find((s) => s.source === 'comision' && s.incasareId === entry.id);
 
     if (action === 'delete') {
-      const next = sales.filter((s) => s.id !== id);
-      await writeJSON('data/sales.json', next);
+      const drop = new Set([entry.id]);
+      if (upsellEntry && upsellEntry.status === 'pending') drop.add(upsellEntry.id);
+      await writeJSON('data/sales.json', sales.filter((s) => !drop.has(s.id)));
+      if (entry.appointmentId) {
+        const appointments = await readJSON('data/appointments.json', []);
+        const a = appointments.find((x) => x.id === entry.appointmentId);
+        if (a && a.paidSaleId === entry.id) {
+          delete a.paidSaleId; delete a.paidAt;
+          if (a.status === 'finalizata') a.status = 'confirmata';
+          a.updatedAt = new Date().toISOString();
+          await writeJSON('data/appointments.json', appointments);
+        }
+      }
       res.status(200).json({ ok: true });
       return;
     }
 
     if (action === 'update') {
-      const { date, client, category, treatment, amount, method, performedBy } = req.body || {};
-      if (!date || !client || !category || !treatment || amount === undefined || !method) {
-        res.status(400).json({ error: 'missing_fields' });
-        return;
+      const { date, method, performedBy } = req.body || {};
+      const amount = Math.round(Number(req.body.amount) * 100) / 100;
+      if (!isValidDate(date)) { res.status(400).json({ error: 'invalid_date' }); return; }
+      if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
+      if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+      let split = null;
+      if (method === 'cash_card') {
+        const cash = Math.round(Number(req.body.cashAmount) * 100) / 100;
+        const card = Math.round(Number(req.body.cardAmount) * 100) / 100;
+        if (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amount) > 0.01) { res.status(400).json({ error: 'invalid_split' }); return; }
+        split = { cash, card };
       }
-      if (!isValidDate(date)) {
-        res.status(400).json({ error: 'invalid_date' });
-        return;
-      }
-      if (!VALID_CATEGORIES.includes(category)) {
-        res.status(400).json({ error: 'invalid_category' });
-        return;
-      }
-      if (!VALID_METHODS.includes(method)) {
-        res.status(400).json({ error: 'invalid_method' });
-        return;
-      }
-      const numAmount = Number(amount);
-      if (!Number.isFinite(numAmount) || numAmount <= 0) {
-        res.status(400).json({ error: 'invalid_amount' });
-        return;
-      }
+      const categories = normalizeCategories(req.body.categories && req.body.categories.length ? req.body.categories : entry.categories || entry.category);
+      if (!categories.length) { res.status(400).json({ error: 'invalid_category' }); return; }
 
       entry.date = date;
-      entry.client = String(client).slice(0, 150);
-      entry.category = category;
-      entry.treatment = String(treatment).slice(0, 200);
-      entry.amount = numAmount;
       entry.method = method;
+      entry.split = split;
+      entry.amount = amount;
+      entry.categories = categories;
+      entry.category = categories[0];
+      if (req.body.treatment) entry.treatment = String(req.body.treatment).slice(0, 200);
+      if (req.body.client) entry.client = String(req.body.client).slice(0, 150);
       entry.performedBy = performedBy ? String(performedBy).slice(0, 100) : '';
+      const booked = Number(entry.bookedAmount) || 0;
+      entry.upsell = booked > 0 && amount > booked ? Math.round((amount - booked) * 100) / 100 : 0;
 
-      await writeJSON('data/sales.json', sales);
+      // Keep the upsell commission in step (only while it's still waiting for approval).
+      let next = sales;
+      if (upsellEntry && upsellEntry.status === 'pending') {
+        if (entry.upsell > 0 && entry.performedBy) {
+          Object.assign(upsellEntry, { amount: entry.upsell, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
+            note: 'Programat ' + booked + ' lei, încasat ' + amount + ' lei' });
+        } else next = sales.filter((s) => s.id !== upsellEntry.id);
+      } else if (!upsellEntry && entry.upsell > 0 && entry.performedBy) {
+        const employees = await readJSON('data/employees.json', []);
+        const p = employees.find((e) => e.id === entry.performedBy);
+        if (p && p.role !== 'admin') sales.push(portalSale.upsellFor(entry, p.id));
+      }
+
+      await writeJSON('data/sales.json', next);
       res.status(200).json({ ok: true, entry });
       return;
     }
