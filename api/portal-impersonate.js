@@ -1,4 +1,4 @@
-// /api/portal-impersonate — the owner previews an employee's account exactly as they see it.
+// /api/portal-impersonate, the owner previews an employee's account exactly as they see it.
 //   POST   { employeeId }  admin only: switches this browser to that employee's session, read-only
 //                          (see requireAuth), remembering the admin to switch back to.
 //   DELETE                 back to the admin session.

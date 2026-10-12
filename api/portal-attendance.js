@@ -1,4 +1,4 @@
-// POST /api/portal-attendance — "Condică" (attendance log), one entry per employee per day.
+// POST /api/portal-attendance, "Condică" (attendance log), one entry per employee per day.
 // One endpoint, action-routed via body.action, same style as portal-employees.js / portal-leads.js:
 //
 //   clock_in | clock_out | list | update (admin) | balance
@@ -7,7 +7,7 @@
 //   { id, employeeId, date ('YYYY-MM-DD'), checkIn ('HH:MM'|null), checkOut ('HH:MM'|null),
 //     location, note, createdAt, updatedAt }
 //
-// clock_in / clock_out always act on TODAY as computed from the server clock — never from a
+// clock_in / clock_out always act on TODAY as computed from the server clock, never from a
 // client-sent date, so someone can't clock in for a different day by editing the request.
 
 const crypto = require('crypto');
@@ -38,14 +38,14 @@ async function employeeLocation(employeeId) {
   return (e && e.location) || '';
 }
 
-const DEFAULT_ANNUAL_LEAVE_DAYS = 21; // Romania's statutory minimum is 20 — 21 is just a sane default, admin edits per employee.
+const DEFAULT_ANNUAL_LEAVE_DAYS = 21; // Romania's statutory minimum is 20, 21 is just a sane default, admin edits per employee.
 const DEFAULT_CONTRACTED_HOURS = 8;
 const minutesOf = (hhmm) => { const m = /^(\d{2}):(\d{2})$/.exec(hhmm || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
 const hoursOf = (checkIn, checkOut) => { const a = minutesOf(checkIn), b = minutesOf(checkOut); return a != null && b != null && b > a ? (b - a) / 60 : null; };
 
-// Live numbers for the Condică tab — never stored, always derived from attendance.json +
+// Live numbers for the Condică tab, never stored, always derived from attendance.json +
 // leave-requests.json + the employee's own optional fields (annualLeaveDays / contractedHoursPerDay,
-// api/portal-employees.js' update_details — default 21 days / 8h/day when unset).
+// api/portal-employees.js' update_details, default 21 days / 8h/day when unset).
 async function computeBalance(employeeId, entries) {
   const employees = await readJSON('data/employees.json', []);
   const emp = employeeId === 'admin' ? {} : employees.find((e) => e.id === employeeId) || {};
@@ -58,7 +58,7 @@ async function computeBalance(employeeId, entries) {
     .filter((r) => r.employeeId === employeeId && r.type === 'odihna' && r.status === 'approved' && String(r.startDate || '').slice(0, 4) === year)
     .reduce((a, r) => a + Number(r.workDays || 0), 0);
 
-  // Only complete days (both checkIn and checkOut) count — an open/incomplete day is skipped
+  // Only complete days (both checkIn and checkOut) count, an open/incomplete day is skipped
   // rather than treated as a full shortfall.
   let hoursDelta = 0;
   entries
@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
       const field = action === 'clock_in' ? 'checkIn' : 'checkOut';
       if (entry) {
         if (!entry[field]) { entry[field] = serverTime(); entry.updatedAt = nowISO(); }
-        // else: already set — no-op, idempotent.
+        // else: already set, no-op, idempotent.
       } else {
         entry = {
           id: crypto.randomUUID(), employeeId: session.employeeId, date,

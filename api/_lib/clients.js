@@ -1,6 +1,6 @@
 // Shared client-directory helpers, backed by data/clients.json in Blob (same
 // readJSON/writeJSON "document" convention as every other data/*.json file in the
-// portal — see api/_lib/store.js).
+// portal, see api/_lib/store.js).
 //
 // A client record: { id, name, phone, createdAt, lastVisit }
 //   - id: crypto.randomUUID()
@@ -19,7 +19,7 @@ function todayISO() {
 
 // Normalizes a Romanian phone number to the local "07xxxxxxxx" 10-digit form where
 // possible, so the same phone always normalizes to the same key regardless of how
-// it was typed (spaces, dashes, parens, +40/0040 prefix). Intentionally simple —
+// it was typed (spaces, dashes, parens, +40/0040 prefix). Intentionally simple, 
 // not a full phone-validation library, just enough for a stable dedupe key.
 function normalizePhone(raw) {
   if (!raw) return '';
@@ -49,7 +49,7 @@ function findByPhone(clients, normalizedPhone) {
 
 // Creates or updates a client keyed by normalized phone. Last write wins on `name`
 // (names get corrected/retyped slightly over time). A phone that fails to normalize
-// to anything plausible still allows creating the client — store what was given
+// to anything plausible still allows creating the client, store what was given
 // rather than blocking the cash-register flow over a bad digit.
 async function upsertClient({ name, phone }, { readJSON, writeJSON }) {
   const clients = await readJSON('data/clients.json', []);

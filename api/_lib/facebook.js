@@ -5,10 +5,10 @@
 // data/fb-connection.json shape (written by fb-oauth-callback, read by the webhook and
 // the status endpoint):
 //   { pageId, pageName, pageAccessToken, pages: [{id,name,access_token}], connectedAt, connectedBy }
-// An empty object ({}) means "not connected" — same "overwrite with {} to clear" pattern
+// An empty object ({}) means "not connected" - same "overwrite with {} to clear" pattern
 // used elsewhere in this codebase for documents that don't have a natural empty list.
 //
-// This file contains a live secret (pageAccessToken) once connected — it's protected the
+// This file contains a live secret (pageAccessToken) once connected, it's protected the
 // same way employees.json's password hashes are: private Blob access, only ever read/written
 // from requireAdmin-gated endpoints (or the signature-verified webhook), never sent to the
 // browser.
@@ -25,7 +25,7 @@ async function loadConnection(readJSON) {
   return conn && conn.pageId && conn.pageAccessToken ? conn : {};
 }
 
-// Builds the absolute https origin this request was served on — same approach as
+// Builds the absolute https origin this request was served on, same approach as
 // api/mypos-checkout.js (`https://${req.headers.host}`), which is the only other place
 // in this codebase that needs to build an absolute callback URL from the request.
 function siteOrigin(req) {

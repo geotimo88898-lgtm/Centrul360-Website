@@ -1,4 +1,4 @@
-// Centrul360 portal — Admin → Automatizări: GoHighLevel-style flows. One trigger ("Programare nouă",
+// Centrul360 portal - Admin → Automatizări: GoHighLevel-style flows. One trigger ("Programare nouă",
 // "Lead nou din reclamă", "Cu 24h înainte" …), then steps (wait, WhatsApp, task for reception, move
 // the lead, stop if …). Each flow is a card you can read at a glance; the editor shows the message
 // exactly as the client will get it. The engine itself lives in api/_lib/workflows.js.
@@ -60,7 +60,7 @@
     panel = p;
     panel.classList.add('k-panel', 'au');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Automatizări</h2><p class="k-lede">Ce se întâmplă singur: confirmări, remindere, mesaje către leadurile din reclame, sarcini pentru recepție. Un declanșator, apoi pașii — ca în GoHighLevel.</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Automatizări</h2><p class="k-lede">Ce se întâmplă singur: confirmări, remindere, mesaje către leadurile din reclame, sarcini pentru recepție. Un declanșator, apoi pașii, ca în GoHighLevel.</p></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="recipes">' + icon('book') + 'Rețete</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Automatizare nouă</button></div></div>' +
       '<div data-body><div class="k-skel" style="height:120px;margin-bottom:1rem"></div><div class="k-skel" style="height:320px"></div></div>';
     panel.addEventListener('click', onClick);
@@ -85,7 +85,7 @@
     panel.querySelector('[data-body]').innerHTML =
       '<div class="au-status">' +
         '<div class="k-card au-chan ' + (meta.whatsappCloud ? 'is-on' : '') + '"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp · ' + (meta.whatsappCloud ? 'trimitere automată' : 'într-un tap') + '</b><span>' +
-          (meta.whatsappCloud ? 'Mesajele pleacă singure prin WhatsApp Business. Dacă Meta refuză unul, devine sarcină.' : 'Mesajele apar în Sarcini, deja scrise — recepția apasă WhatsApp și trimite. <a href="#" data-act="wa-guide">Activează trimiterea automată</a>') + '</span></div></div>' +
+          (meta.whatsappCloud ? 'Mesajele pleacă singure prin WhatsApp Business. Dacă Meta refuză unul, devine sarcină.' : 'Mesajele apar în Sarcini, deja scrise, recepția apasă WhatsApp și trimite. <a href="#" data-act="wa-guide">Activează trimiterea automată</a>') + '</span></div></div>' +
         '<div class="k-card au-chan" data-act="fb"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Reclamele → Pipeline</b><span>Leadurile din formularele Facebook intră singure în Pipeline și pornesc automatizările „Lead nou”. <a href="#setari" data-act="fb">Conexiunea Facebook</a></span></div></div>' +
         '<div class="au-nums"><div><b>' + active + '</b><span>active</span></div><div><b>' + K.num(tot.runs) + '</b><span>rulări</span></div><div><b>' + K.num(tot.sent + tot.tasks) + '</b><span>mesaje & sarcini</span></div><div><b>' + K.num(waiting) + '</b><span>programate</span></div></div>' +
       '</div>' +
@@ -107,7 +107,7 @@
         const ti = TRIG[w.trigger.type] || { ic: 'zap' };
         return '<article class="k-card au-flow' + (w.active ? ' is-active' : '') + '" data-open="' + esc(w.id) + '">' +
           '<div class="au-flow-head"><div class="au-flow-title"><b>' + esc(w.name) + '</b>' + (w.note ? '<span>' + esc(w.note) + '</span>' : '') + '</div>' +
-          '<label class="k-switch" data-stop title="' + (w.active ? 'Activă — apasă ca s-o oprești' : 'Oprită — apasă ca s-o pornești') + '"><input type="checkbox" data-toggle="' + esc(w.id) + '"' + (w.active ? ' checked' : '') + '><i></i></label></div>' +
+          '<label class="k-switch" data-stop title="' + (w.active ? 'Activă, apasă ca s-o oprești' : 'Oprită, apasă ca s-o pornești') + '"><input type="checkbox" data-toggle="' + esc(w.id) + '"' + (w.active ? ' checked' : '') + '><i></i></label></div>' +
           '<div class="au-chain"><span class="au-node is-trigger">' + icon(ti.ic) + esc(trigText(w.trigger, meta)) + '</span>' +
             w.steps.map((s) => '<span class="au-arrow">' + icon('right') + '</span><span class="au-node is-' + s.type + '" title="' + esc(s.text || '') + '">' + icon(STEP[s.type].ic) + '<em>' + esc(stepText(s, meta)) + '</em></span>').join('') + '</div>' +
           '<div class="au-flow-foot">' + (c.runs ? K.plural(c.runs, 'rulare', 'rulări') + ' · ' + (c.sent ? c.sent + ' trimise automat · ' : '') + K.plural(c.tasks, 'sarcină', 'sarcini') : 'Nu a rulat încă') +
@@ -182,7 +182,7 @@
     const have = new Set(S.d.workflows.map((w) => w.recipe).filter(Boolean));
     const d = K.drawer({
       title: 'Rețete gata făcute', icon: 'book', width: 620,
-      subtitle: 'Automatizările care aduc bani într-o clinică. Se adaugă oprite — le verifici textul și le pornești.',
+      subtitle: 'Automatizările care aduc bani într-o clinică. Se adaugă oprite, le verifici textul și le pornești.',
       body: '<div class="au-recipes">' + S.d.recipes.map((r) => '<article class="au-recipe"><div class="au-recipe-top"><span class="k-icon-chip">' + icon((TRIG[r.trigger.type] || {}).ic || 'zap') + '</span><div><b>' + esc(r.name) + '</b><span>' + esc(r.note || '') + '</span></div>' +
         (have.has(r.key) ? '<span class="k-tag is-good">' + icon('check') + 'Adăugată</span>' : '<button type="button" class="k-btn is-sm is-primary" data-add="' + esc(r.key) + '">' + icon('plus') + 'Adaugă</button>') + '</div>' +
         '<div class="au-chain is-compact"><span class="au-node is-trigger">' + esc(trigText(r.trigger, S.d.meta)) + '</span>' + r.steps.map((s) => '<span class="au-arrow">' + icon('right') + '</span><span class="au-node is-' + s.type + '">' + icon(STEP[s.type].ic) + '<em>' + esc(stepText(s, S.d.meta)) + '</em></span>').join('') + '</div></article>').join('') + '</div>',
@@ -333,13 +333,13 @@
   }
   function trigHint(t) {
     return ({
-      lead_created: 'Pornește când intră un lead nou — din formularul Facebook, de pe site sau adăugat de recepție.',
+      lead_created: 'Pornește când intră un lead nou, din formularul Facebook, de pe site sau adăugat de recepție.',
       stage_changed: 'Pornește când cineva (sau altă automatizare) mută leadul în etapa aleasă din Pipeline.',
       lead_idle: 'Verifică după atâtea ore: dacă nimeni n-a contactat leadul, face pașii. Dacă a fost sunat, nu face nimic.',
       appointment_created: 'Pornește imediat ce se face o programare (din Calendar sau din Pipeline).',
       appointment_before: 'Rulează la ora potrivită înainte de programare. Dacă programarea se mută, se recalculează singur.',
       appointment_status: 'Pornește când programarea primește statusul ales.',
-      appointment_after: 'Pornește după ce programarea e marcată „Finalizată” — pentru recenzii, revenire, upsell.',
+      appointment_after: 'Pornește după ce programarea e marcată „Finalizată”, pentru recenzii, revenire, upsell.',
     })[t.type] || '';
   }
 

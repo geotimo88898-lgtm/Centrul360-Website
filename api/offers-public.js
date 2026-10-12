@@ -1,11 +1,12 @@
-// GET /api/offers-public — PUBLIC, unauthenticated (no requireAuth/requireAdmin), same
+// GET /api/offers-public - PUBLIC, unauthenticated (no requireAuth/requireAdmin), same
 // trust level as api/mypos-notify.js: read-only data that the public pages oferte.html
 // and preturi.html fetch directly to render current offers. Not part of the employee
-// portal's admin surface — api/portal-offers.js is the admin-only read/write side.
+// portal's admin surface, api/portal-offers.js is the admin-only read/write side.
 
 const { readJSON } = require('./_lib/store');
 const { loadOffers } = require('./_lib/offers');
 const { findOfferImage } = require('./_lib/offer-images');
+const { dedashDeep } = require('./_lib/dedash');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
@@ -39,10 +40,10 @@ module.exports = async (req, res) => {
         };
       });
 
-    // Cacheable for a short window — this is read by every oferte.html / preturi.html
+    // Cacheable for a short window, this is read by every oferte.html / preturi.html
     // visit but changes only when the admin edits an offer in the portal.
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-    res.status(200).json({ offers: result });
+    res.status(200).json({ offers: dedashDeep(result) });
   } catch (err) {
     console.error('offers-public error:', err.message);
     res.status(500).json({ error: 'offers_failed' });

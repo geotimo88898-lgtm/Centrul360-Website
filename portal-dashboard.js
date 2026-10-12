@@ -1,4 +1,4 @@
-// Centrul360 portal — Panou (live dashboard). Everything here is derived from /api/portal-data
+// Centrul360 portal - Panou (live dashboard). Everything here is derived from /api/portal-data
 // (K.data) plus the pipeline leads (K.leads()); it refreshes itself every minute while visible and
 // the clock / "now" line / relative times tick every second.
 (function () {
@@ -28,7 +28,7 @@
     return out;
   }
   function delta(cur, prev) {
-    if (!prev && !cur) return '<span class="k-delta is-flat">—</span>';
+    if (!prev && !cur) return '<span class="k-delta is-flat">-</span>';
     if (!prev) return '<span class="k-delta is-up">' + icon('arrowUp') + 'nou</span>';
     const p = Math.round(((cur - prev) / prev) * 100);
     return '<span class="k-delta ' + (p > 0 ? 'is-up' : p < 0 ? 'is-down' : 'is-flat') + '">' + icon(p >= 0 ? 'arrowUp' : 'arrowDown') + Math.abs(p) + '%</span>';
@@ -218,13 +218,13 @@
     return '<ol class="db-tl">' + list.map((a) => {
       const st = STATUS[a.status] || { label: a.status, tone: '' };
       return '<li class="db-tl-item is-' + a.status + '" data-appt="' + esc(a.id) + '" data-time="' + esc(a.time || '') + '">' +
-        '<span class="db-tl-time">' + esc(a.time || '—') + (a.endTime && a.endTime > (a.time || '') ? '<small>' + esc(a.endTime) + '</small>' : '') + '</span><span class="db-tl-dot"></span>' +
-        '<div class="db-tl-card"><div class="db-tl-top"><b>' + esc(a.clientName || '—') + '</b><span class="k-tag is-' + st.tone + '">' + st.label + '</span></div>' +
+        '<span class="db-tl-time">' + esc(a.time || '-') + (a.endTime && a.endTime > (a.time || '') ? '<small>' + esc(a.endTime) + '</small>' : '') + '</span><span class="db-tl-dot"></span>' +
+        '<div class="db-tl-card"><div class="db-tl-top"><b>' + esc(a.clientName || '-') + '</b><span class="k-tag is-' + st.tone + '">' + st.label + '</span></div>' +
         '<div class="db-tl-sub">' + esc(a.treatment || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div></li>';
     }).join('') + '</ol>';
   }
 
-  // Admin: what the team (reception) did in the pipeline — latest actions + today's counters per person.
+  // Admin: what the team (reception) did in the pipeline, latest actions + today's counters per person.
   function teamHtml(L) {
     if (!leadsData) return '<div class="k-skel" style="height:120px"></div>';
     const acts = [];

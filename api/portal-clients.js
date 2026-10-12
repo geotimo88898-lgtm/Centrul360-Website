@@ -1,7 +1,7 @@
-// GET /api/portal-clients?q=<query> — live search over the shared client directory
+// GET /api/portal-clients?q=<query> - live search over the shared client directory
 // (data/clients.json), used for the autocomplete field in both the "Încasează client"
 // and "Comision" forms in portal.html. Any authenticated role can search (same as the
-// rest of the read side of the portal). No POST here — client creation only happens
+// rest of the read side of the portal). No POST here, client creation only happens
 // as a side effect of api/portal-sale.js (via upsertClient), so there's one single
 // place where client records get written.
 

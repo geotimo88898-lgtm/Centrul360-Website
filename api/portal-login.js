@@ -1,11 +1,11 @@
-// POST /api/portal-login — employee portal authentication.
+// POST /api/portal-login, employee portal authentication.
 //
 // Two paths:
 //  1. Normal path: username/password checked against data/employees.json (Blob),
 //     password verified with scrypt (see _lib/auth.js).
 //  2. Bootstrap path: ONLY when data/employees.json doesn't exist yet (first run, before
 //     the owner has created any real employee accounts), credentials are also checked
-//     against process.env.ADMIN_USERNAME / process.env.ADMIN_PASSWORD (plain compare —
+//     against process.env.ADMIN_USERNAME / process.env.ADMIN_PASSWORD (plain compare, 
 //     acceptable here only because the owner sets both directly in Vercel's env var UI,
 //     never through this app, and this path disappears the moment employees.json exists).
 //     This lets the owner log in on day one and create real accounts from Setări.
@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
 
   try {
     // Bootstrap admin credentials always work, independent of whatever employees.json
-    // currently holds — the owner must never be lockable out of their own portal just
+    // currently holds, the owner must never be lockable out of their own portal just
     // because no employee row happens to share ADMIN_USERNAME, or because employees.json
     // didn't exist yet, or exists but is empty. Computed once, checked as a fallback
     // below rather than nested per-branch (the earlier per-branch version missed the

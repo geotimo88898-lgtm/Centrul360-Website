@@ -1,4 +1,4 @@
-// POST /api/portal-incasari — admin-only correction/deletion of a payment (source: 'incasare')
+// POST /api/portal-incasari, admin-only correction/deletion of a payment (source: 'incasare')
 // in data/sales.json. Mistakes (wrong amount, wrong method, wrong person) are fixed only by the
 // owner, never by whoever recorded the payment.
 //

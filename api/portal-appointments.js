@@ -1,17 +1,17 @@
-// POST /api/portal-appointments — shared Calendar for the whole team (portal.html's
+// POST /api/portal-appointments, shared Calendar for the whole team (portal.html's
 // "Calendar" tab). One endpoint, action-routed via body.action: 'create' | 'update' |
-// 'delete' | 'list' — same style as portal-offers.js / portal-employees.js.
+// 'delete' | 'list' - same style as portal-offers.js / portal-employees.js.
 //
 // Replaces the old same-day tally (api/portal-appointment.js, now deleted). This is a
 // real shared scheduler: every appointment has a required client (reusing the shared
 // client directory via upsertClient, exactly like the "Încasează client" flow in
 // api/portal-sale.js), an optional assigned cosmetician, a location and a status.
-// Any authenticated role can create/update/delete any appointment — it's a common
+// Any authenticated role can create/update/delete any appointment, it's a common
 // calendar, not scoped per creator, so there is deliberately no "only the creator can
 // edit" check anywhere below.
 //
 // Appointment shape (data/appointments.json), a breaking change from the old
-// {id, employeeId, date, status, clientName?, time?, createdAt} log — this is a
+// {id, employeeId, date, status, clientName?, time?, createdAt} log, this is a
 // 4-person internal tool in active development, so there is no migration: old rows
 // are simply ignored under the new shape:
 //   {
@@ -20,7 +20,7 @@
 //     treatment,                            // free text
 //     category,                             // VALID_CATEGORIES, shared with portal-sale.js
 //     location,                             // one of VALID_LOCATIONS
-//     cosmeticianId, cosmeticianName,       // nullable — may be unassigned
+//     cosmeticianId, cosmeticianName,       // nullable, may be unassigned
 //     status,                               // VALID_STATUSES
 //     createdBy, createdAt, updatedAt,
 //   }
@@ -34,12 +34,12 @@ const workflows = require('./_lib/workflows');
 const { cityOf, inCity } = require('./_lib/city');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
-// neLocation select, api/portal-employees.js employee records) — kept as a literal list
+// neLocation select, api/portal-employees.js employee records), kept as a literal list
 // here rather than reading employees.json, since the two clinic locations are fixed and
 // an appointment must be bookable even before any employee of a given location exists.
 const VALID_LOCATIONS = ['Timișoara', 'Arad'];
 
-// 'concediu' is a non-client calendar block (see createBlockingAppointment below) — created
+// 'concediu' is a non-client calendar block (see createBlockingAppointment below), created
 // automatically when an admin approves a leave request (api/portal-leave.js), so reception
 // can't accidentally double-book someone who's away. It's a real appointment row with no real
 // client, same as the others, just with its own status so the Calendar can style it distinctly.
@@ -56,7 +56,7 @@ function cleanTime(time) {
 
 // Resolves the required client for an appointment. A client picked from the shared
 // autocomplete arrives as `clientId` and is reused as-is (no write). One typed fresh
-// (no clientId — the autocomplete found nothing, or the user kept typing after a
+// (no clientId, the autocomplete found nothing, or the user kept typing after a
 // selection) upserts into the directory keyed by phone, exactly like the "Încasează
 // client" flow in portal-sale.js. Returns null if neither resolves to anything usable.
 async function resolveClient({ clientId, clientName, clientPhone }) {
@@ -120,7 +120,7 @@ async function validateAndBuildFields(body, employees) {
   };
 }
 
-// Reused by api/portal-leave.js (action: 'decide', on approval) — same "exported create helper"
+// Reused by api/portal-leave.js (action: 'decide', on approval), same "exported create helper"
 // pattern as portal-leads.js's createLead(), reused by the Facebook webhook. No real client: an
 // all-day marker (no `time`, so it renders as an untimed chip, naturally spanning the whole
 // day) tied to the employee via cosmeticianId, so reception sees the clash immediately.
@@ -156,7 +156,7 @@ module.exports = async (req, res) => {
     // A cosmetician sees only her clinic's city; reception and the owner see both.
     const city = await cityOf(session, readJSON);
 
-    // Payment drawer (Încasări): appointments still to be paid, newest first — today and the last
+    // Payment drawer (Încasări): appointments still to be paid, newest first, today and the last
     // 30 days, not cancelled, not leave blocks, not already paid.
     if (action === 'unpaid') {
       const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
@@ -188,7 +188,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Everything below changes the calendar: front desk (receptie) + admin only — a
+    // Everything below changes the calendar: front desk (receptie) + admin only, a
     // cosmetician sees the calendar read-only.
     if (!['admin', 'receptie'].includes(session.role)) {
       res.status(403).json({ error: 'forbidden' });

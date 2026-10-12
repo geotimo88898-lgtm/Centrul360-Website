@@ -1,4 +1,4 @@
-// /api/portal-workflows — Admin → Automatizări (admin only).
+// /api/portal-workflows - Admin → Automatizări (admin only).
 //   GET                       workflows + settings + recipes + what the editor needs + recent runs
 //   POST { action: 'save', workflow }          create (no id) or update
 //   POST { action: 'toggle', id, active }
@@ -23,7 +23,7 @@ async function payload() {
   const wfName = new Map(doc.workflows.map((w) => [w.id, w.name]));
   const recent = runsDoc.runs.slice().sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)).slice(0, 40).map((r) => ({
     id: r.id, workflowId: r.wf, workflow: wfName.get(r.wf) || 'Automatizare ștearsă', status: r.status, dueAt: r.dueAt, updatedAt: r.updatedAt,
-    who: (r.ent.type === 'lead' ? leadName.get(r.ent.id) : apptName.get(r.ent.id)) || '—', log: r.log.slice(-6),
+    who: (r.ent.type === 'lead' ? leadName.get(r.ent.id) : apptName.get(r.ent.id)) || '-', log: r.log.slice(-6),
   }));
   const waiting = {};
   runsDoc.runs.forEach((r) => { if (r.status === 'waiting') waiting[r.wf] = (waiting[r.wf] || 0) + 1; });

@@ -1,4 +1,4 @@
-// POST /api/portal-config — admin-only config updates (Setări → Reguli comision,
+// POST /api/portal-config, admin-only config updates (Setări → Reguli comision,
 // Bonus de viteză lunar, Obiectiv de companie, Conținut). One endpoint, partial updates:
 // the client sends only the section(s) it's editing, merged onto the stored config.
 

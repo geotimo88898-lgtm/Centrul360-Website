@@ -18,7 +18,7 @@
   try { var v = JSON.parse(localStorage.getItem('c360_accent_v') || 'null'); if (v) for (var k in v) if (/^--accent/.test(k)) document.documentElement.style.setProperty(k, v[k]); } catch (e) {}
 </script>
 <style>
-  /* Layout skeleton only — every visual rule lives in portal-theme.css / portal-kit.css / portal-sections.css. */
+  /* Layout skeleton only, every visual rule lives in portal-theme.css / portal-kit.css / portal-sections.css. */
   *{ box-sizing:border-box; }
   html,body{ height:100%; }
   body{ margin:0; min-height:100vh; -webkit-font-smoothing:antialiased; }
@@ -139,7 +139,7 @@
       <section class="panel admin-only hidden" id="panel-fluxuri"></section>
       <section class="panel admin-only hidden" id="panel-integrari"></section>
       <section class="panel admin-only hidden" id="panel-oferte"></section>
-      <!-- CREATIVE (admin) — the creative machine, opened inside the portal with single sign-on -->
+      <!-- CREATIVE (admin), the creative machine, opened inside the portal with single sign-on -->
       <section class="panel admin-only hidden" id="panel-creative">
         <p id="creativeMsg">Se deschide mașina de creative…</p>
         <iframe id="creativeFrame" title="Creative" class="hidden" allow="clipboard-write"></iframe>

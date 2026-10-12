@@ -1,18 +1,18 @@
-// Default data/offers.json seed — used the first time the portal's Oferte feature runs
+// Default data/offers.json seed, used the first time the portal's Oferte feature runs
 // (before the owner ever touches Setări → Oferte). This is a 1:1 snapshot of the offers
 // that were hardcoded in oferte.html before this feature existed, so the very first
-// deploy changes nothing visually on oferte.html / preturi.html — the admin only sees a
+// deploy changes nothing visually on oferte.html / preturi.html, the admin only sees a
 // difference once they edit, add, remove or reorder an offer from the portal.
 //
 // `key` is a short stable slug. Four of these match a `data-offer-key` tier row added to
 // preturi.html (the confirmed price duplicates): facial-restart, hifu-gusa-1sedinta,
 // hifu-program-complet, liposonix-2zone. `hifu-gusa-2sedinte` also carries a matching
 // preturi.html row but starts inactive (see note below) since no oferte.html card for
-// the 2-session HIFU gușă price (290/580) existed before this feature — adding it as an
+// the 2-session HIFU gușă price (290/580) existed before this feature, adding it as an
 // active offer would have changed oferte.html's visible cards on first deploy. The admin
 // can activate it later from the portal to publish it with no further code changes.
 //
-// `discountPercent` is intentionally NOT stored — compute Math.round(100 - priceNew/priceOld*100)
+// `discountPercent` is intentionally NOT stored, compute Math.round(100 - priceNew/priceOld*100)
 // wherever it's shown (here: api/offers-public.js and portal.html's Oferte tab).
 
 function defaultOffers() {
@@ -34,7 +34,7 @@ function defaultOffers() {
       id: 'seed-hifu-program-complet',
       key: 'hifu-program-complet',
       title: 'HIFU + RF Sculpt',
-      description: 'Program complet pentru zona gușei — contur mai definit, progresiv.\n3× HIFU gușă\n5× RF Sculpt\nPlan personalizat + monitorizarea evoluției',
+      description: 'Program complet pentru zona gușei, contur mai definit, progresiv.\n3× HIFU gușă\n5× RF Sculpt\nPlan personalizat + monitorizarea evoluției',
       priceNew: 990,
       priceOld: 1690,
       category: 'faciale',
@@ -66,7 +66,7 @@ function defaultOffers() {
       category: 'faciale',
       featured: false,
       imageKey: 'gusa-ba-premium',
-      // Starts inactive on purpose — see file header note.
+      // Starts inactive on purpose, see file header note.
       active: false,
       order: 99,
     },
@@ -191,7 +191,7 @@ function defaultOffers() {
       id: 'seed-glow-vacanta',
       key: 'glow-vacanta',
       title: 'Glow de vacanță',
-      description: 'Hidratare profundă — una înainte de vacanță, una după. A doua ședință e cadou.\n2× Hidratare profundă (60 min)\nA 2-a ședință — cadou (1+1)\nPiele hidratată și luminoasă',
+      description: 'Hidratare profundă, una înainte de vacanță, una după. A doua ședință e cadou.\n2× Hidratare profundă (60 min)\nA 2-a ședință, cadou (1+1)\nPiele hidratată și luminoasă',
       priceNew: 350,
       priceOld: 700,
       category: 'faciale',

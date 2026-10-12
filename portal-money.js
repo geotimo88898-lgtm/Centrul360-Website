@@ -1,4 +1,4 @@
-// Centrul360 portal — money: "Încasări" and "Comisionul meu".
+// Centrul360 portal, money: "Încasări" and "Comisionul meu".
 // Încasări: pick the city (Timișoara / Arad / both) and the period (today, yesterday, this week,
 // this month, last month or exact dates); totals per payment method, daily bars, per person and
 // per category, the day-grouped list, CSV + print. A payment always starts from an appointment:
@@ -52,7 +52,7 @@
   const rangeLabel = () => {
     const [a, b] = range();
     if (a === b) return K.relDay(a) === K.dateLong(a) ? K.dateLong(a) : K.relDay(a) + ' · ' + K.dateShort(a);
-    return K.dateShort(a) + ' – ' + K.dateShort(b) + (a.slice(0, 4) !== K.today().slice(0, 4) ? ' ' + a.slice(0, 4) : '');
+    return K.dateShort(a) + ' - ' + K.dateShort(b) + (a.slice(0, 4) !== K.today().slice(0, 4) ? ' ' + a.slice(0, 4) : '');
   };
 
   function mountIncasari(p) {
@@ -123,7 +123,7 @@
     rows.forEach((s) => { const c = K.catsOf(s); c.forEach((k) => { byCat[k] += Number(s.amount || 0) / c.length; }); });
     const catKeys = Object.keys(byCat).filter((k) => byCat[k] > 0).sort((a, b) => byCat[b] - byCat[a]);
     const byPerson = {};
-    rows.forEach((s) => { const n = s.performedByName && s.performedByName !== '—' ? s.performedByName : 'Neatribuit'; byPerson[n] = (byPerson[n] || 0) + Number(s.amount || 0); });
+    rows.forEach((s) => { const n = s.performedByName && s.performedByName !== '-' ? s.performedByName : 'Neatribuit'; byPerson[n] = (byPerson[n] || 0) + Number(s.amount || 0); });
     const people = Object.keys(byPerson).sort((a, b) => byPerson[b] - byPerson[a]);
     const upsell = rows.reduce((a, s) => a + Number(s.upsell || 0), 0);
     const pct = (v) => (total ? Math.round((v / total) * 100) : 0);
@@ -142,7 +142,7 @@
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('sparkles') + 'Pe categorii</h3></div>' +
           (catKeys.length ? catKeys.map((k) => '<div class="mo-bar"><span>' + esc(K.cats[k]) + '</span><b>' + K.lei(byCat[k]) + '</b><div class="k-bar"><i style="--w:' + (byCat[k] / byCat[catKeys[0]]) * 100 + '%"></i></div></div>').join('') : '<p class="k-muted">Nicio încasare în perioada aleasă.</p>') + '</section>' +
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('users') + 'Cine a făcut tratamentele</h3></div>' +
-          (people.length ? '<div class="mo-people-grid">' + people.map((n) => '<div class="mo-person">' + K.avatar(n, 34) + '<div><b>' + esc(n) + '</b><span>' + K.lei(byPerson[n]) + ' · ' + pct(byPerson[n]) + '%</span><div class="k-bar"><i style="--w:' + (byPerson[n] / byPerson[people[0]]) * 100 + '%"></i></div></div></div>').join('') + '</div>' : '<p class="k-muted">—</p>') + '</section>' +
+          (people.length ? '<div class="mo-people-grid">' + people.map((n) => '<div class="mo-person">' + K.avatar(n, 34) + '<div><b>' + esc(n) + '</b><span>' + K.lei(byPerson[n]) + ' · ' + pct(byPerson[n]) + '%</span><div class="k-bar"><i style="--w:' + (byPerson[n] / byPerson[people[0]]) * 100 + '%"></i></div></div></div>').join('') + '</div>' : '<p class="k-muted">-</p>') + '</section>' +
       '</div>' +
       '<section class="k-card"><div class="k-toolbar"><label class="k-search">' + icon('search') + '<input data-q placeholder="Caută clientă sau tratament…" value="' + esc(S.q) + '"></label>' +
         '<div class="k-chips">' + Object.keys(METHODS).map((k) => '<button type="button" class="k-chip' + (S.method === k ? ' is-on' : '') + '" data-method="' + k + '">' + icon(METHODS[k].ic) + METHODS[k].label + '</button>').join('') + '</div>' +
@@ -185,8 +185,8 @@
         '<div class="k-list">' + d.rows.map((s) => {
           const mm = METHODS[s.method] || METHODS.card;
           return '<div class="k-row is-click" data-pay="' + esc(s.id) + '"><span class="k-icon-chip" style="color:' + mm.color + '">' + icon(mm.ic) + '</span>' +
-            '<div class="k-row-main"><div class="k-row-title">' + esc(s.client || '—') + '</div><div class="k-row-sub">' + esc(s.treatment) + (K.catLabel(s) ? ' · ' + esc(K.catLabel(s)) : '') +
-            (s.performedByName && s.performedByName !== '—' ? ' · ' + esc(s.performedByName) : '') + (S.loc === 'all' && s.location ? ' · ' + esc(s.location) : '') + '</div></div>' +
+            '<div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(s.treatment) + (K.catLabel(s) ? ' · ' + esc(K.catLabel(s)) : '') +
+            (s.performedByName && s.performedByName !== '-' ? ' · ' + esc(s.performedByName) : '') + (S.loc === 'all' && s.location ? ' · ' + esc(s.location) : '') + '</div></div>' +
             '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + '<span class="k-tag">' + mm.label + '</span><span class="k-amount">' + K.lei(s.amount, 2) + '</span></div></div>';
         }).join('') + '</div>').join('');
   }
@@ -223,11 +223,11 @@
     paint();
 
     function apptCard(a) {
-      return '<div class="pay-appt is-on"><span class="pay-time"><b>' + esc(a.time || '—') + '</b><small>' + esc(K.relDay(a.date) === K.dateLong(a.date) ? K.dateShort(a.date) : K.relDay(a.date)) + '</small></span>' +
-        '<span class="pay-main"><b>' + esc(a.clientName || '—') + '</b><small>' + esc(a.treatment || '') + ' · ' + esc(a.location) + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</small></span>' +
+      return '<div class="pay-appt is-on"><span class="pay-time"><b>' + esc(a.time || '-') + '</b><small>' + esc(K.relDay(a.date) === K.dateLong(a.date) ? K.dateShort(a.date) : K.relDay(a.date)) + '</small></span>' +
+        '<span class="pay-main"><b>' + esc(a.clientName || '-') + '</b><small>' + esc(a.treatment || '') + ' · ' + esc(a.location) + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</small></span>' +
         '<span class="pay-amt">' + (a.amount ? K.lei(a.amount) : '<em>fără sumă</em>') + '</span></div>';
     }
-    function optText(x) { return [x.time || 'fără oră', x.clientName || '—', x.treatment || '', x.cosmeticianName || '', x.amount ? K.lei(x.amount) : 'fără sumă'].filter(Boolean).join(' · '); }
+    function optText(x) { return [x.time || 'fără oră', x.clientName || '-', x.treatment || '', x.cosmeticianName || '', x.amount ? K.lei(x.amount) : 'fără sumă'].filter(Boolean).join(' · '); }
     function step1Html(a) {
       const today = K.today(), yest = K.addDays(today, -1);
       const dayList = st.list.filter((x) => x.location === st.city && x.date === st.day).sort((x, y) => (x.time || '99').localeCompare(y.time || '99'));
@@ -244,7 +244,7 @@
             '<input type="date" data-day-input max="' + today + '" value="' + esc(st.day) + '" aria-label="Alege ziua"></div></div></div>' +
         '<label class="k-field pay-select"><span>Programările din ' + esc(st.city) + ', ' + esc(dayName) + '</span>' +
           '<select data-appt-select' + (dayList.length ? '' : ' disabled') + '>' +
-            (dayList.length ? '<option value="">— alege programarea (' + dayList.length + ') —</option>' + dayList.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === st.apptId ? ' selected' : '') + '>' + esc(optText(x)) + '</option>').join('')
+            (dayList.length ? '<option value="">- alege programarea (' + dayList.length + ') -</option>' + dayList.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === st.apptId ? ' selected' : '') + '>' + esc(optText(x)) + '</option>').join('')
               : '<option value="">Nicio programare neîncasată în ziua asta</option>') +
           '</select></label>' +
         (!dayList.length && otherDays.length ? '<div class="pay-other"><span>Mai sunt neîncasate în ' + esc(st.city) + ':</span>' + otherDays.map((dd) => '<button type="button" class="k-chip" data-day="' + dd + '">' + esc(dd === today ? 'Azi' : dd === yest ? 'Ieri' : K.dateShort(dd)) + '<span>' + other[dd] + '</span></button>').join('') + '</div>' : '') +
@@ -379,9 +379,9 @@
     const d = K.drawer({
       title: K.lei(s.amount, 2), lead: '<span class="k-dicon" style="background:' + m.color + '">' + icon(m.ic) + '</span>',
       subtitle: esc(s.client) + ' · ' + esc(K.dateLong(s.date)) + (s.location ? ' · ' + esc(s.location) : ''),
-      body: '<dl class="k-kv"><dt>Clientă</dt><dd>' + esc(s.client) + '</dd><dt>Tratament</dt><dd>' + esc(s.treatment) + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(s) || '—') + '</dd>' +
+      body: '<dl class="k-kv"><dt>Clientă</dt><dd>' + esc(s.client) + '</dd><dt>Tratament</dt><dd>' + esc(s.treatment) + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(s) || '-') + '</dd>' +
           '<dt>Plată</dt><dd>' + esc(methodText(s)) + '</dd>' + (s.bookedAmount ? '<dt>Programat</dt><dd>' + K.lei(s.bookedAmount) + (s.upsell ? ' · upsell +' + K.lei(s.upsell) : '') + '</dd>' : '') +
-          '<dt>A făcut tratamentul</dt><dd>' + esc(s.performedByName || '—') + '</dd><dt>Înregistrată de</dt><dd>' + esc(s.employeeName || '—') + (s.createdAt ? ' · ' + esc(K.ago(s.createdAt)) : '') + '</dd></dl>' +
+          '<dt>A făcut tratamentul</dt><dd>' + esc(s.performedByName || '-') + '</dd><dt>Înregistrată de</dt><dd>' + esc(s.employeeName || '-') + (s.createdAt ? ' · ' + esc(K.ago(s.createdAt)) : '') + '</dd></dl>' +
         (admin ? '<section class="k-section"><h4>' + icon('pen') + 'Corectează</h4><form class="k-form" data-form>' +
           K.field('Sumă', '<div class="k-money"><input name="amount" type="number" min="0" step="0.01" value="' + esc(s.amount) + '"></div>') +
           K.field('Data', '<input name="date" type="date" value="' + esc(s.date) + '">') +
@@ -389,7 +389,7 @@
           '<div class="pay-split full" data-split' + (s.method === 'cash_card' ? '' : ' hidden') + '><label class="k-field"><span>Cash</span><input name="cashAmount" type="number" min="0" step="0.01" value="' + esc(s.split ? s.split.cash : '') + '"></label>' +
           '<label class="k-field"><span>Card</span><input name="cardAmount" type="number" min="0" step="0.01" value="' + esc(s.split ? s.split.card : '') + '"></label></div>' +
           K.field('Categorie', K.catPicker(K.catsOf(s)), 'full') +
-          K.field('A făcut tratamentul', '<select name="performedBy"><option value="">—</option>' + K.options(emp.map((e) => [e.id, e.name + ' · ' + e.location]), s.performedBy || '') + '</select>', 'full') +
+          K.field('A făcut tratamentul', '<select name="performedBy"><option value="">-</option>' + K.options(emp.map((e) => [e.id, e.name + ' · ' + e.location]), s.performedBy || '') + '</select>', 'full') +
           '</form></section>'
           : '<div class="mo-note">' + icon('info') + 'O greșeală? Corecturile le face administratorul. Spune-i ce trebuie modificat.</div>'),
       footer: admin ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>' : '',
@@ -485,7 +485,7 @@
         : '<strong>Mai ai ' + fmt(left) + (b.reward ? ' până la ' + K.lei(b.reward) : '') + '</strong>') + '</div></article>';
   }
 
-  // What she earned, how, what's left to win, and how she's doing — for the chosen month.
+  // What she earned, how, what's left to win, and how she's doing, for the chosen month.
   function renderComision() {
     if (!cpanel || !K.data) return;
     const D = K.data;
@@ -580,7 +580,7 @@
           '<div><span>' + icon('trophy') + 'Bonusuri câștigate</span><b>' + K.lei(bonusWon) + '</b><small>' + (isNow ? (bonusPossible ? 'din ' + K.lei(bonusPossible) + ' posibile luna asta' : 'niciun bonus activ') : 'vezi luna curentă') + '</small></div>' +
           (isNow ? '<div><span>' + icon('trend') + 'Estimare final de lună</span><b>' + K.lei(projComm + bonusWon) + '</b><small>dacă păstrezi ritmul de până acum</small></div>' : '<div><span>' + icon('sparkles') + 'Tratamente făcute</span><b>' + done.length + '</b><small>' + K.lei(doneValue) + ' încasat</small></div>') +
         '</div>' +
-        '<div class="cb-rule">' + icon('info') + '<span><b>Automat, la fiecare încasare:</b> (suma încasată − suma programării) × ' + R + '% = comisionul tău. Îl primește cine e trecută la „Cine a făcut tratamentul”.</span></div></section>' +
+        '<div class="cb-rule">' + icon('info') + '<span><b>Automat, la fiecare încasare:</b> (suma încasată - suma programării) × ' + R + '% = comisionul tău. Îl primește cine e trecută la „Cine a făcut tratamentul”.</span></div></section>' +
 
       // ---------------- her activity
       '<section class="cb-sec"><h3>' + icon('sparkles') + 'Activitatea ta · ' + esc(K.monthLabel(C.month)) + '</h3><div class="k-grid c4 k-stagger">' +
@@ -600,7 +600,7 @@
       '<div class="mo-row cb-lists">' +
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('sparkles') + 'Tratamentele tale</h3><span class="k-sub">' + K.plural(done.length, 'tratament', 'tratamente') + '</span></div>' +
           (done.length ? '<div class="k-list">' + done.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 40).map((s) =>
-            '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || '—') + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(s.treatment || '') + '</div></div>' +
+            '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(s.treatment || '') + '</div></div>' +
             '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + '<span class="k-amount">' + K.lei(s.amount) + '</span></div></div>').join('') + '</div>'
             : K.empty('sparkles', 'Niciun tratament încasat', 'Tratamentele la care ești trecută la încasare apar aici.')) + '</section>' +
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsell-urile tale</h3><span class="k-sub">' + K.lei(comm, 2) + ' comision</span></div>' +
@@ -608,7 +608,7 @@
             const st = SALE_STATUS[s.status] || { label: s.status, tone: '' };
             const am = amounts(s);
             return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(String(s.treatment || '').replace(/^Upsell · /, '')) + '</div>' +
-              (am ? '<div class="cb-calc"><span>Încasat <b>' + K.lei(am.paid) + '</b></span><span>− programat <b>' + K.lei(am.booked) + '</b></span><span>= <b>' + K.lei(s.amount) + '</b></span><span>× ' + R + '%</span></div>' : '<div class="k-row-sub">upsell ' + K.lei(s.amount) + '</div>') + '</div>' +
+              (am ? '<div class="cb-calc"><span>Încasat <b>' + K.lei(am.paid) + '</b></span><span>- programat <b>' + K.lei(am.booked) + '</b></span><span>= <b>' + K.lei(s.amount) + '</b></span><span>× ' + R + '%</span></div>' : '<div class="k-row-sub">upsell ' + K.lei(s.amount) + '</div>') + '</div>' +
               '<div class="k-row-end">' + (s.status === 'pending' ? '<span class="k-tag is-warn">' + st.label + '</span>' : '') + '<span class="k-amount">+' + K.lei(s.status === 'approved' ? s.commission : Number(s.amount) * rate(), 2) + '</span></div></div>';
           }).join('') + '</div>'
             : K.empty('trend', 'Niciun upsell încă', 'Când clienta plătește mai mult decât suma programării la un tratament făcut de tine, comisionul apare aici automat.')) + '</section>' +

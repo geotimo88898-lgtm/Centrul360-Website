@@ -1,4 +1,4 @@
-// GET /api/portal-creative-sso — admin-only. Returns a short-lived signed link that opens the
+// GET /api/portal-creative-sso, admin-only. Returns a short-lived signed link that opens the
 // creative machine (served at /creative via the rewrite in vercel.json) already signed in,
 // so the owner logs in once, here.
 //

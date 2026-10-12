@@ -1,5 +1,5 @@
 /* =========================================================================
-   c360-convert.js — captare lead pe paginile de tratament
+   c360-convert.js, captare lead pe paginile de tratament
    Trimite în același webhook HighLevel ca quizul de pe prima pagină,
    cu aceeași structură de payload, ca leadurile să intre în același flux.
 

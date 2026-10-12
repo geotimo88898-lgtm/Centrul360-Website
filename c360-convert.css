@@ -1,5 +1,5 @@
 /* =========================================================================
-   c360-convert.css — componente de conversie
+   c360-convert.css, componente de conversie
    Garanție · dovadă socială · captare lead pe paginile de tratament
    Folosește tokenii existenți din c360.css (--paper, --fg, --line, --accent…)
    ========================================================================= */
@@ -37,7 +37,7 @@
   color:var(--muted-2);font-size:.86rem;line-height:1.55;
   display:flex;gap:.6rem;
 }
-.cvz-cond li::before{content:"—";color:var(--accent);flex:none;}
+.cvz-cond li::before{content:"-";color:var(--accent);flex:none;}
 
 /* ---------- 2. Bandă de dovadă ---------- */
 .cvz-proof{

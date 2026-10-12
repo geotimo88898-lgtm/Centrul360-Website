@@ -1,4 +1,4 @@
-// Centrul360 portal — Calendar. A real time grid (08–21) in Day view (one column per location) and
+// Centrul360 portal - Calendar. A real time grid (08-21) in Day view (one column per location) and
 // Week view (one column per day): click an empty slot to book, drag a block to move it (15-min snap,
 // across columns too), click a block for its drawer with one-tap status, call / WhatsApp confirmation
 // and "Încasează" straight into Încasări. Talks to /api/portal-appointments.
@@ -15,7 +15,7 @@
     finalizata: { label: 'Finalizată', plural: 'finalizate', tone: 'mute', ic: 'check' },
     reprogramata: { label: 'Reprogramată', plural: 'reprogramate', tone: 'warn', ic: 'refresh' },
     anulata: { label: 'Anulată', plural: 'anulate', tone: 'bad', ic: 'ban' },
-    // Created automatically when an admin approves a leave request (Aprobări) — not a real
+    // Created automatically when an admin approves a leave request (Aprobări), not a real
     // appointment, just a marker so reception sees the person is away. See api/portal-leave.js.
     concediu: { label: 'Concediu', plural: 'concedii', tone: 'mute', ic: 'calendar' },
   };
@@ -32,8 +32,8 @@
   // End of an appointment in minutes: its end time, or start + 1h when none was set.
   const endMin = (a) => { const s = toMin(a.time), e = toMin(a.endTime); return s == null ? null : e != null && e > s ? e : s + DUR; };
   const durText = (min) => (min >= 60 ? Math.floor(min / 60) + 'h' + (min % 60 ? ' ' + (min % 60) + ' min' : '') : min + ' min');
-  // "10:00 – 11:30" (or just "10:00" when the end isn't set).
-  const span = (a) => (a.time ? a.time + (toMin(a.endTime) > toMin(a.time) ? ' – ' + a.endTime : '') : '');
+  // "10:00-11:30" (or just "10:00" when the end isn't set).
+  const span = (a) => (a.time ? a.time + (toMin(a.endTime) > toMin(a.time) ? ' - ' + a.endTime : '') : '');
   const empName = (id) => { const e = (K.data && K.data.activeEmployees || []).find((x) => x.id === id); return e ? e.name : ''; };
   // Only cosmeticians do treatments; the list follows the chosen location (Timișoara / Arad).
   const cosmeticians = (loc) => ((K.data && K.data.activeEmployees) || []).filter((e) => e.role === 'cosmetician' && (!loc || loc === 'all' || e.location === loc));
@@ -136,7 +136,7 @@
   function renderTitle() {
     const t = panel.querySelector('[data-title]');
     if (S.view === 'day') t.textContent = K.relDay(S.date) === K.dateLong(S.date) ? K.dateLong(S.date) : K.relDay(S.date) + ' · ' + K.dateLong(S.date).split(', ')[1];
-    else { const [a, b] = rangeFor(); t.textContent = K.dateShort(a) + ' – ' + K.dateShort(b) + ' ' + b.slice(0, 4); }
+    else { const [a, b] = rangeFor(); t.textContent = K.dateShort(a) + ' - ' + K.dateShort(b) + ' ' + b.slice(0, 4); }
   }
 
   // ------------------------------------------------------------------ render grid
@@ -206,7 +206,7 @@
     return '<button type="button" class="cal-block is-' + a.status + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px)"' +
       ' title="' + esc(span(a) + ' · ' + a.clientName + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
       '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
-      '<b>' + esc(a.clientName || '—') + '</b><span class="cal-b-sub">' + esc(a.treatment || '') + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
+      '<b>' + esc(a.clientName || '-') + '</b><span class="cal-b-sub">' + esc(a.treatment || '') + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
@@ -214,7 +214,7 @@
     const live = list.filter((a) => a.status !== 'anulata').length;
     el.innerHTML = '<span class="cal-sum-main">' + K.plural(live, 'programare', 'programări') + (S.view === 'day' ? '' : ' săptămâna aceasta') + '</span>' +
       Object.keys(STATUS).filter((s) => c(s)).map((s) => '<span class="k-tag is-' + STATUS[s].tone + '">' + icon(STATUS[s].ic) + c(s) + ' ' + (c(s) === 1 ? STATUS[s].label.toLowerCase() : STATUS[s].plural) + '</span>').join('') +
-      (c('programata') ? '<span class="cal-hint">' + icon('info') + 'Programările neconfirmate apar cu albastru — confirmă-le cu un click.</span>' : '');
+      (c('programata') ? '<span class="cal-hint">' + icon('info') + 'Programările neconfirmate apar cu albastru, confirmă-le cu un click.</span>' : '');
   }
   function placeNow() {
     if (!gridEl) return;
@@ -259,7 +259,7 @@
     drag.min = m; drag.target = target;
     if (drag.ghost.parentElement !== target) target.appendChild(drag.ghost);
     drag.ghost.style.top = ((m - START * 60) * PPM) + 'px';
-    drag.ghost.querySelector('.cal-b-time').firstChild.textContent = toHM(m) + (drag.dur ? ' – ' + toHM(Math.min(m + drag.dur, 24 * 60 - 1)) : '');
+    drag.ghost.querySelector('.cal-b-time').firstChild.textContent = toHM(m) + (drag.dur ? ' - ' + toHM(Math.min(m + drag.dur, 24 * 60 - 1)) : '');
   }
   function colAt(x) { return Array.from(gridEl.querySelectorAll('.cal-col')).find((c) => { const r = c.getBoundingClientRect(); return x >= r.left && x <= r.right; }); }
   function startDrag(e) {
@@ -321,7 +321,7 @@
     const pairs = list.map((e) => [e.id, e.name]);
     // an appointment already assigned to someone not in the list (moved city, other role) keeps her
     if (sel && !list.some((e) => e.id === sel)) pairs.push([sel, empName(sel) || 'Cosmeticiana aleasă']);
-    return '<option value="">— alege cosmeticiana —</option>' + K.options(pairs, sel);
+    return '<option value="">- alege cosmeticiana</option>' + K.options(pairs, sel);
   }
   // Quick fill from the active offers (treatment + price + category) for the chosen city.
   function offerChips(loc) {
@@ -363,7 +363,7 @@
     return '<form class="k-form" data-form>' +
       (isNew ? K.field('Client', '<input name="clientName" required maxlength="150" placeholder="Caută sau scrie un nume nou" autofocus>', 'full') +
         K.field('Telefon', '<input name="clientPhone" type="tel" required maxlength="30" placeholder="07xx xxx xxx">', 'full') :
-        !a.clientPhone ? K.field('Telefon clientă', '<input name="clientPhone" type="tel" maxlength="30" placeholder="Lipsește — adaugă-l ca să poți suna / trimite WhatsApp">', 'full') : '') +
+        !a.clientPhone ? K.field('Telefon clientă', '<input name="clientPhone" type="tel" maxlength="30" placeholder="Lipsește - adaugă-l ca să poți suna / trimite WhatsApp">', 'full') : '') +
       K.field('Data', '<input name="date" type="date" required value="' + esc(a.date) + '">', 'full') +
       K.field('Începe la', '<select name="time" data-start>' + slotOptions(a.time || '10:00') + '</select>') +
       K.field('Se termină la', '<select name="endTime" data-end>' + endOptions(a.time || '10:00', formEnd(a)) + '</select>') +
@@ -378,7 +378,7 @@
   }
 
   function wireForm(el, f) {
-    // Moving the start keeps the length (10:00–11:30 → 11:00–12:30).
+    // Moving the start keeps the length (10:00-11:30 → 11:00-12:30).
     let lastStart = f.time.value;
     f.addEventListener('change', (e) => {
       if (e.target.name === 'time') {
@@ -454,19 +454,19 @@
     const a = S.appts.find((x) => x.id === id);
     if (!a) return;
     const st = STATUS[a.status] || STATUS.programata;
-    // A leave block isn't a real appointment — show it read-only, with just a delete button
+    // A leave block isn't a real appointment, show it read-only, with just a delete button
     // for whoever can edit the calendar (undoing the approval's calendar side, if ever needed).
     if (a.status === 'concediu') {
       K.drawer({
         title: a.clientName || 'Concediu', lead: K.avatar(a.cosmeticianName || '?', 42),
         subtitle: '<span class="k-tag is-mute">' + icon('calendar') + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.location),
-        body: '<dl class="k-kv cal-kv"><dt>Angajat</dt><dd>' + esc(a.cosmeticianName || '—') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd></dl>' +
+        body: '<dl class="k-kv cal-kv"><dt>Angajat</dt><dd>' + esc(a.cosmeticianName || '-') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd></dl>' +
           '<div class="mo-note">' + icon('info') + 'Generat automat la aprobarea cererii de concediu (Aprobări). Angajatul nu poate fi programat în această zi.</div>',
         footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge blocarea</button>' : '',
         onMount(el) {
           const del = el.querySelector('[data-del]');
           if (del) del.addEventListener('click', async () => {
-            if (!(await K.ui().confirm({ title: 'Ștergi blocarea?', message: 'Ziua devine din nou liberă în Calendar — cererea de concediu rămâne aprobată.', confirmText: 'Șterge', danger: true }))) return;
+            if (!(await K.ui().confirm({ title: 'Ștergi blocarea?', message: 'Ziua devine din nou liberă în Calendar, cererea de concediu rămâne aprobată.', confirmText: 'Șterge', danger: true }))) return;
             try { await K.api('/api/portal-appointments', { action: 'delete', id: a.id }); K.ui().toast('Blocare ștearsă.', 'success'); load(true); }
             catch (err) { K.ui().toast(K.errText(err), 'error'); }
           });
@@ -478,8 +478,8 @@
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
         subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
-        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '—') + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '—') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
-          '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '—') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
+        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
+          '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
           (a.clientId ? '<button type="button" class="k-btn is-outline" data-contact>' + icon('user') + 'Fișa clientei și pozele</button>' : ''),
@@ -491,7 +491,7 @@
       title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
       body:
-        (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită — apare în Încasări.</div>' : '') +
+        (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită, apare în Încasări.</div>' : '') +
         '<div class="cal-status" role="group" aria-label="Status">' + PICK.map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +

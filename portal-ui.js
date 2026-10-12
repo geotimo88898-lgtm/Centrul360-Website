@@ -1,4 +1,4 @@
-// Centrul360 portal — interaction layer (pairs with portal-theme.css).
+// Centrul360 portal, interaction layer (pairs with portal-theme.css).
 // Progressive enhancement: the portal keeps working if this file fails, except the dialogs,
 // which portal.html calls through window.c360 (confirm / prompt / toast).
 (function () {
@@ -12,7 +12,7 @@
   };
 
   // =====================================================================================
-  // Toasts — replace window.alert() with non-blocking animated notifications.
+  // Toasts, replace window.alert() with non-blocking animated notifications.
   // =====================================================================================
   let toastHost;
   function toast(message, kind) {
@@ -39,7 +39,7 @@
   window.alert = (msg) => toast(String(msg));
 
   // =====================================================================================
-  // Dialogs — confirm / prompt as animated modals that return Promises.
+  // Dialogs, confirm / prompt as animated modals that return Promises.
   // =====================================================================================
   function dialog(opts) {
     return new Promise((resolve) => {
@@ -110,13 +110,13 @@
   };
 
   // =====================================================================================
-  // Custom dropdowns — every <select> gets an animated listbox; the native select stays the
+  // Custom dropdowns, every <select> gets an animated listbox; the native select stays the
   // source of truth (value, change events, form submit), so existing portal code is untouched.
   // =====================================================================================
   const enhanced = new WeakMap();
   const valueDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
   const indexDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex');
-  // Code that sets select.value directly fires no event — re-sync the custom label when it does.
+  // Code that sets select.value directly fires no event, re-sync the custom label when it does.
   Object.defineProperty(HTMLSelectElement.prototype, 'value', {
     get() { return valueDesc.get.call(this); },
     set(v) { valueDesc.set.call(this, v); const s = enhanced.get(this); if (s) s.sync(); },
@@ -154,7 +154,7 @@
     const options = () => Array.from(sel.options);
     function sync() {
       const o = sel.options[sel.selectedIndex];
-      btn.querySelector('.c360-select-label').textContent = o ? o.textContent : '—';
+      btn.querySelector('.c360-select-label').textContent = o ? o.textContent : '-';
       btn.disabled = sel.disabled;
       wrap.classList.toggle('is-placeholder', !o || o.value === '');
     }
@@ -245,7 +245,7 @@
       }
     });
     sel.addEventListener('change', sync);
-    // Options are often rebuilt by the portal (innerHTML) — keep the label in step.
+    // Options are often rebuilt by the portal (innerHTML), keep the label in step.
     new MutationObserver(() => { sync(); if (wrap.classList.contains('is-open')) render(); })
       .observe(sel, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'selected'] });
     const api = { sync, close, place };
@@ -282,7 +282,7 @@
     brand.querySelector('.c360-rail-toggle').addEventListener('click', toggleRail);
   }
 
-  // One coherent icon set (Lucide geometry, 1.75 stroke) — every section gets its own icon.
+  // One coherent icon set (Lucide geometry, 1.75 stroke), every section gets its own icon.
   const ICONS = {
     panou: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
     incasare: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
@@ -306,7 +306,7 @@
     setari: '<path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
     creative: '<path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>',
   };
-  // Creative pages (Marketing group) — one icon each.
+  // Creative pages (Marketing group), one icon each.
   Object.assign(ICONS, {
     'creative/': ICONS.creative,
     'creative/convertor': '<path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/>',
@@ -554,7 +554,7 @@
     wireBusyButtons();
     updateTitle();
     enhanceAll(document);
-    // Selects are created all the time by the portal (edit rows, forms) — enhance them as they appear.
+    // Selects are created all the time by the portal (edit rows, forms), enhance them as they appear.
     new MutationObserver((muts) => {
       for (const m of muts) m.addedNodes.forEach((n) => {
         if (n.nodeType !== 1) return;

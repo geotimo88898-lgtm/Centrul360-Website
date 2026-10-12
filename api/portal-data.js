@@ -1,4 +1,4 @@
-// GET /api/portal-data — the single role-aware payload that drives the whole portal.html
+// GET /api/portal-data, the single role-aware payload that drives the whole portal.html
 // SPA shell. Requires a valid session; a logged-out/expired visitor gets 401 and the
 // client redirects to /portal-login.
 
@@ -19,7 +19,7 @@ function monthKey(dateStr) {
   return (dateStr || '').slice(0, 7);
 }
 
-// The clinic runs on Romanian time — the server (UTC) would otherwise roll over to "tomorrow"
+// The clinic runs on Romanian time, the server (UTC) would otherwise roll over to "tomorrow"
 // three hours late.
 function todayISO() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
@@ -35,7 +35,7 @@ function emptyStatusCounts() {
 // a stored value (edited by the admin); every other metric is derived here from the
 // existing sales.json / appointments.json data, never separately tracked.
 // "programari_*" metrics count by cosmeticianId (who the appointment is assigned to),
-// not by who created/logged the row — the Calendar is shared, so creation and
+// not by who created/logged the row, the Calendar is shared, so creation and
 // assignment are no longer the same thing they were under the old same-day log.
 function computeGoalCurrent(goal, employeeId, sales, appointments, today, month, ctx) {
   const myActs = (type) => ((ctx && ctx.leads) || []).reduce((n, l) => n + (l.activities || []).filter(
@@ -102,13 +102,13 @@ module.exports = async (req, res) => {
     const today = todayISO();
     const month = today.slice(0, 7);
 
-    // Resolve "me" — either a real employee row, or the synthetic bootstrap admin.
+    // Resolve "me" - either a real employee row, or the synthetic bootstrap admin.
     let me;
     if (session.employeeId === 'admin' && session.role === 'admin') {
       me = employeesRaw.find((e) => e.id === 'admin') || {
         id: 'admin',
         name: 'Admin',
-        location: '—',
+        location: '-',
         role: 'admin',
       };
     } else {
@@ -157,13 +157,13 @@ module.exports = async (req, res) => {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // My own commission log ("Comision" tab) — never includes "încasare" bookkeeping
+    // My own commission log ("Comision" tab), never includes "încasare" bookkeeping
     // entries, even ones I personally recorded at the register.
     const mySales = comisionSales
       .filter((s) => s.employeeId === me.id)
       .sort((a, b) => (a.date < b.date ? 1 : -1));
 
-    // Shared "Tabel de încasări" — visible to every authenticated role, read-only for
+    // Shared "Tabel de încasări" - visible to every authenticated role, read-only for
     // non-admins. Only `source: 'incasare'` entries, so commission claims never show here.
     const incasari = incasareSales
       .map((s) => {
@@ -174,13 +174,13 @@ module.exports = async (req, res) => {
           categories: categoriesOf(s),
           location: s.location || (performer && performer.location) || (recorder && recorder.location) || '',
           employeeName: recorder ? recorder.name : s.employeeId,
-          performedByName: performer ? performer.name : (s.performedBy || '—'),
+          performedByName: performer ? performer.name : (s.performedBy || '-'),
         };
       })
       .filter((s) => inCity(city, s.location))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
 
-    // Calendar — today's appointments (time order) for the Panou "azi" glance, plus
+    // Calendar, today's appointments (time order) for the Panou "azi" glance, plus
     // aggregate counts and the logged-in employee's own counts (by assigned
     // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
     // is fetched directly from api/portal-appointments.js by portal.html, not here.
@@ -197,7 +197,7 @@ module.exports = async (req, res) => {
       }
     });
 
-    // Individual goals (Panou) — up to 2 per employee, set by the admin in Setări →
+    // Individual goals (Panou), up to 2 per employee, set by the admin in Setări →
     // Angajați. Computed live here except for 'manual' goals.
     const myGoals = (me.goals || []).map((g) => ({
       title: g.title,
@@ -235,7 +235,7 @@ module.exports = async (req, res) => {
       },
       myGoals,
       academy: config.academy || defaultAcademy(), // Traininguri: every manual for everyone (the goal: everyone sells)
-      // Active offers from the shared source — same list the public site and Creative use.
+      // Active offers from the shared source, same list the public site and Creative use.
       offers: offersAll.filter((o) => o.active).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((o) => ({
         id: o.id, key: o.key, title: o.title, description: o.description || '', priceNew: Number(o.priceNew) || 0, priceOld: Number(o.priceOld) || 0,
         discountPercent: discountOf(o), category: o.category, locations: o.locations, ads: !!o.ads, guarantee: o.guarantee || '', featured: !!o.featured,
@@ -254,7 +254,7 @@ module.exports = async (req, res) => {
             return {
               ...s,
               employeeName: emp ? emp.name : s.employeeId,
-              employeeLocation: emp ? emp.location : '—',
+              employeeLocation: emp ? emp.location : '-',
             };
           }),
         allSales: comisionSales.map((s) => {
@@ -262,7 +262,7 @@ module.exports = async (req, res) => {
           return {
             ...s,
             employeeName: emp ? emp.name : s.employeeId,
-            employeeLocation: emp ? emp.location : '—',
+            employeeLocation: emp ? emp.location : '-',
           };
         }),
         employees: employeesRaw.map((e) => ({
@@ -272,7 +272,7 @@ module.exports = async (req, res) => {
           role: e.role,
           username: e.username,
           active: e.active !== false,
-          // Optional — feeds the Condică leave-balance / hours-owed numbers, edited in the
+          // Optional, feeds the Condică leave-balance / hours-owed numbers, edited in the
           // Profil tab below (api/portal-employees.js' update_details). Unset = the defaults.
           annualLeaveDays: e.annualLeaveDays,
           contractedHoursPerDay: e.contractedHoursPerDay,

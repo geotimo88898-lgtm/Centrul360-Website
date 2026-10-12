@@ -1,4 +1,4 @@
-// GET /api/portal-file?p=contacts/<id>/<file> — serves a contact's private file (scanned sheet,
+// GET /api/portal-file?p=contacts/<id>/<file> - serves a contact's private file (scanned sheet,
 // before/after photo) to a signed-in team member only. The blobs are private; nothing is ever
 // reachable without a portal session.
 

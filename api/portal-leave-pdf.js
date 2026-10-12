@@ -1,6 +1,6 @@
-// GET /api/portal-leave-pdf?id=<leaveRequestId> — streams the generated "Cerere de concediu"
+// GET /api/portal-leave-pdf?id=<leaveRequestId> - streams the generated "Cerere de concediu"
 // PDF for an approved leave request. Scoped to the admin or the employee who requested it (the
-// Blob itself is private — this is the only way to fetch its bytes).
+// Blob itself is private, this is the only way to fetch its bytes).
 
 const { readJSON, readBinary } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');

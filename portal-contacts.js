@@ -1,11 +1,11 @@
-// Centrul360 portal — "Contacte": every client and lead, searchable, and per contact:
-//   Fișe & mențiuni — scan the paper sheet with the phone camera ("Scanează fișa"), upload files,
+// Centrul360 portal, "Contacte": every client and lead, searchable, and per contact:
+//   Fișe & mențiuni, scan the paper sheet with the phone camera ("Scanează fișa"), upload files,
 //                     write short notes;
-//   Poze înainte / după — organised by session (Ședința 1, 2, …): one BEFORE and one AFTER photo
+//   Poze înainte / după, organised by session (Ședința 1, 2, …): one BEFORE and one AFTER photo
 //                     per session. The side-by-side image is generated automatically for every
 //                     session, plus the overall one (BEFORE of session 1 + AFTER of the latest);
 //                     each can be downloaded. Plus the client's consent to publish her photos.
-//   Istoric — her appointments and payments.
+//   Istoric, her appointments and payments.
 // The owner imports the existing contacts once from HighLevel (CSV export). Talks to
 // /api/portal-contacts; files are served privately by /api/portal-file.
 (function () {
@@ -68,7 +68,7 @@
     const consent = c.publish === true ? '<span class="k-tag is-good" title="Acord de publicare a pozelor">' + icon('check') + 'Publicare: da</span>'
       : c.publish === false ? '<span class="k-tag is-bad" title="Fără acord de publicare">' + icon('ban') + 'Nu se publică</span>' : '';
     return '<button type="button" class="ct-row" data-open="' + esc(c.id) + '">' + K.avatar(c.name || '?', 42) +
-      '<span class="ct-row-main"><b>' + esc(c.name || '(fără nume)') + '</b><small>' + esc(c.phone || c.email || '—') + (c.location ? ' · ' + esc(c.location) : '') + '</small></span>' +
+      '<span class="ct-row-main"><b>' + esc(c.name || '(fără nume)') + '</b><small>' + esc(c.phone || c.email || '-') + (c.location ? ' · ' + esc(c.location) : '') + '</small></span>' +
       '<span class="ct-row-tags">' + (c.isClient ? '<span class="k-tag is-accent">Clientă</span>' : '<span class="k-tag is-info">Lead</span>') +
         (c.filesCount ? '<span class="k-tag" title="Fișe">' + icon('file') + c.filesCount + '</span>' : '') +
         (c.photosCount ? '<span class="k-tag" title="Poze">' + icon('image') + c.photosCount + '</span>' : '') + consent + '</span>' +
@@ -169,7 +169,7 @@
         body: '<div class="ct-quick">' + (c.phone ? '<a class="k-btn is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + 'Sună</a><a class="k-btn is-outline" target="_blank" rel="noopener" href="' + K.wa(c.phone) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
             '<button type="button" class="k-btn is-outline" data-edit>' + icon('pen') + 'Editează</button></div>' +
           '<div class="ct-tabs">' + K.seg('cttab', [['fise', 'Fișe & mențiuni', 'file'], ['poze', 'Poze înainte / după', 'image'], ['istoric', 'Istoric', 'clock']], st.tab, 'is-big') + '</div>' +
-          '<div data-pane></div>',
+          '<div class="ct-pane" data-pane></div>',
         onMount(el) {
           el.querySelector('input[name=cttab]').addEventListener('change', (e) => { st.tab = e.target.value; paintPane(); });
           el.querySelector('[data-edit]').addEventListener('click', () => editContact(st, () => paintAll()));
@@ -281,7 +281,7 @@
       const paid = st.pays.reduce((a, p) => a + Number(p.amount || 0), 0);
       return '<div class="k-grid c2 ct-kpis"><div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Programări</div><div class="k-stat-value">' + st.appts.length + '</div></div>' +
         '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
-        (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '—') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
+        (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
           '<div class="k-row-end">' + (a.amount ? '<span class="k-amount">' + K.lei(a.amount) + '</span>' : '') + '<span class="k-tag">' + esc(ST[a.status] || a.status) + '</span></div></div>').join('') + '</div>'
           : K.empty('calendar', 'Nicio programare încă', ''));
     }
@@ -464,7 +464,7 @@
           const withPhone = rows.filter((r) => r.phone).length;
           el.querySelector('[data-preview]').innerHTML = rows.length
             ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Am găsit <b>' + rows.length + '</b> contacte (' + withPhone + ' cu telefon) în <b>' + esc(f.name) + '</b>.</div>' +
-              '<div class="k-list">' + rows.slice(0, 6).map((r) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(r.name || '(fără nume)') + '</div><div class="k-row-sub">' + esc(r.phone || '—') + (r.email ? ' · ' + esc(r.email) : '') + (r.tags ? ' · ' + esc(r.tags) : '') + '</div></div></div>').join('') + '</div>' +
+              '<div class="k-list">' + rows.slice(0, 6).map((r) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(r.name || '(fără nume)') + '</div><div class="k-row-sub">' + esc(r.phone || '-') + (r.email ? ' · ' + esc(r.email) : '') + (r.tags ? ' · ' + esc(r.tags) : '') + '</div></div></div>').join('') + '</div>' +
               (rows.length > 6 ? '<p class="k-muted">… și încă ' + (rows.length - 6) + '.</p>' : '')
             : '<div class="mo-note is-bad">' + icon('alert') + 'Nu am găsit contacte în fișier. Verifică să fie exportul de contacte (CSV) din HighLevel.</div>';
           const go = el.querySelector('[data-go]');

@@ -1,4 +1,4 @@
-// Automations ("Automatizări") — GoHighLevel-style workflows: one trigger, then a list of steps.
+// Automations ("Automatizări") - GoHighLevel-style workflows: one trigger, then a list of steps.
 //
 //   data/workflows.json      { settings, workflows: [{ id, name, active, trigger, steps, ... }] }
 //   data/workflow-runs.json  { runs: [...], counters: { [workflowId]: { runs, sent, tasks } } }
@@ -7,15 +7,16 @@
 // booked / changed …) through emit(). Every matching active workflow gets a "run" that walks its
 // steps: wait, WhatsApp message, task for reception, move the lead, stop-if. Waiting runs are
 // picked up by tick(), which the portal heartbeat (/api/portal-pulse, polled by every open portal)
-// and the daily cron (/api/automation-tick) call — so there is no separate job server.
+// and the daily cron (/api/automation-tick) call, so there is no separate job server.
 //
 // WhatsApp: with WHATSAPP_TOKEN + WHATSAPP_PHONE_ID set (Meta WhatsApp Cloud API) messages go out
-// on their own; without them — or when Meta refuses one — the message becomes a one-tap task in
+// on their own; without them, or when Meta refuses one, the message becomes a one-tap task in
 // Sarcini (opens WhatsApp with the text already written), so nothing is ever silently lost.
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./store');
 const { sendWhatsApp, whatsappConfigured } = require('./whatsapp');
+const { dedash } = require('./dedash');
 
 const WF_KEY = 'data/workflows.json';
 const RUNS_KEY = 'data/workflow-runs.json';
@@ -73,7 +74,7 @@ const unitMs = { min: 60e3, h: 3600e3, d: 86400e3 };
 const RECIPES = [
   { key: 'confirmare', name: 'Confirmare la programare', note: 'Imediat ce se face o programare, clientul primește confirmarea.',
     trigger: { type: 'appointment_created' },
-    steps: [{ type: 'whatsapp', text: 'Bună, {prenume}! Programarea ta la Centrul360 {locatie} e confirmată: {zi}, {data}, ora {ora} — {tratament}.\nAdresa: {adresa}\nDacă intervine ceva, răspunde la acest mesaj și o mutăm. Te așteptăm! 💜' }] },
+    steps: [{ type: 'whatsapp', text: 'Bună, {prenume}! Programarea ta la Centrul360 {locatie} e confirmată: {zi}, {data}, ora {ora} - {tratament}.\nAdresa: {adresa}\nDacă intervine ceva, răspunde la acest mesaj și o mutăm. Te așteptăm! 💜' }] },
   { key: 'reminder24', name: 'Reminder cu o zi înainte', note: 'Cu 24 de ore înainte. Scade neprezentările.',
     trigger: { type: 'appointment_before', hours: 24 },
     steps: [{ type: 'stop_if', cond: 'appt_inactive' },
@@ -84,11 +85,11 @@ const RECIPES = [
       { type: 'whatsapp', text: 'Ne vedem azi la ora {ora}, {prenume}! 📍 {adresa}' }] },
   { key: 'lead_nou', name: 'Lead nou din reclamă → mesaj + sună în 5 min', note: 'Viteza contează: primul care sună câștigă clientul.',
     trigger: { type: 'lead_created', source: 'facebook', location: 'any' },
-    steps: [{ type: 'whatsapp', text: 'Bună, {prenume}! Sunt de la Centrul360 — am primit cererea ta pentru {interes}. Te sunăm în câteva minute să-ți găsim o oră care ți se potrivește. 💜' },
-      { type: 'task', text: 'Sună-l acum pe {nume} ({telefon}) — lead nou din reclamă: {interes}.' }] },
+    steps: [{ type: 'whatsapp', text: 'Bună, {prenume}! Sunt de la Centrul360, am primit cererea ta pentru {interes}. Te sunăm în câteva minute să-ți găsim o oră care ți se potrivește. 💜' },
+      { type: 'task', text: 'Sună-l acum pe {nume} ({telefon}), lead nou din reclamă: {interes}.' }] },
   { key: 'necontactat', name: 'Lead necontactat în 2 ore → alertă', note: 'Niciun lead nu rămâne nesunat.',
     trigger: { type: 'lead_idle', hours: 2 },
-    steps: [{ type: 'task', text: '⚠️ {nume} ({telefon}) așteaptă de 2 ore să fie sunat — {interes}.' }] },
+    steps: [{ type: 'task', text: '⚠️ {nume} ({telefon}) așteaptă de 2 ore să fie sunat, {interes}.' }] },
   { key: 'anulare', name: 'Programare anulată → propune altă oră', note: 'Recuperează programările pierdute.',
     trigger: { type: 'appointment_status', status: 'anulata' },
     steps: [{ type: 'wait', amount: 30, unit: 'min' },
@@ -100,7 +101,7 @@ const RECIPES = [
   { key: 'revenire', name: 'Revenire la 21 de zile', note: 'Clienta care nu și-a făcut următoarea ședință.',
     trigger: { type: 'appointment_after', days: 21 },
     steps: [{ type: 'stop_if', cond: 'future_appt' },
-      { type: 'whatsapp', text: 'Bună, {prenume}! Au trecut 3 săptămâni de la {tratament}. Pentru rezultat complet e momentul ședinței următoare — îți rezervăm o oră? 💜' },
+      { type: 'whatsapp', text: 'Bună, {prenume}! Au trecut 3 săptămâni de la {tratament}. Pentru rezultat complet e momentul ședinței următoare, îți rezervăm o oră? 💜' },
       { type: 'wait', amount: 1, unit: 'd' },
       { type: 'stop_if', cond: 'future_appt' },
       { type: 'task', text: 'Sun-o pe {nume} ({telefon}) pentru următoarea ședință de {tratament}.' }] },
@@ -122,10 +123,10 @@ async function loadDoc() {
     doc.settings = Object.assign(defaultSettings(), doc.settings || {});
     return doc;
   }
-  // First run: the recipes become the starting workflows — confirmation + 24h reminder on
+  // First run: the recipes become the starting workflows, confirmation + 24h reminder on
   // (they replace the old fixed "send confirmation / reminder today" tasks), the rest ready to switch on.
   const seeded = { settings: defaultSettings(), workflows: RECIPES.map((r) => fromRecipe(r, DEFAULT_ACTIVE.includes(r.key))) };
-  await writeJSON(WF_KEY, seeded); // ids must stay stable — runs point at them
+  await writeJSON(WF_KEY, seeded); // ids must stay stable, runs point at them
   return seeded;
 }
 const saveDoc = (doc) => writeJSON(WF_KEY, doc);
@@ -199,7 +200,7 @@ function dueFor(wf, p, now) {
   return now;
 }
 
-// Called from the API routes right after the change was saved. Never throws — an automation
+// Called from the API routes right after the change was saved. Never throws, an automation
 // problem must not fail the booking or the lead that triggered it.
 async function emit(event, payload) {
   try {
@@ -270,7 +271,8 @@ function vars(ctx, settings) {
     link_recenzie: settings.reviewLink || '',
   };
 }
-const render = (text, v) => String(text || '').replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)).replace(/[ \t]+\n/g, '\n').trim();
+// (no long dashes in what clients receive, even in a message saved before that rule)
+const render = (text, v) => dedash(String(text || '').replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)).replace(/[ \t]+\n/g, '\n').trim());
 const varsInOrder = (text, v) => (String(text || '').match(/\{(\w+)\}/g) || []).map((m) => v[m.slice(1, -1)] || '-');
 
 async function addTask(task) {

@@ -1,11 +1,11 @@
 // Builds the one-page "Cerere de concediu" PDF generated on approval (api/portal-leave.js,
-// action: 'decide'). Pure pdf-lib — no external template file, no native binaries.
+// action: 'decide'). Pure pdf-lib, no external template file, no native binaries.
 //
 // Diacritics note: pdf-lib's built-in Standard-14 fonts (Helvetica etc.) only support the
 // WinAnsi (Windows-1252) encoding, which does NOT contain the Romanian comma-below letters
 // ă/â/î/ș/ț (or even the cedilla variants ş/ţ). Embedding a custom Unicode font would need a
 // font file + fontkit, which this project doesn't carry. So this document's text has its
-// diacritics stripped (ă→a, ș→s, ț→t, …) via Unicode NFD normalization — it reads as plain
+// diacritics stripped (ă→a, ș→s, ț→t, …) via Unicode NFD normalization, it reads as plain
 // Romanian without diacritics, which is legible and avoids pdf-lib throwing on encode. This is
 // a presentation compromise, not a legal one; see the printed notice at the bottom of the page.
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
@@ -26,7 +26,7 @@ function formatDateRO(iso) {
   return d + ' ' + MON[m - 1] + ' ' + y;
 }
 
-// employee: { name, role, location, cnp? } (cnp optional — omitted from the PDF when absent)
+// employee: { name, role, location, cnp? } (cnp optional, omitted from the PDF when absent)
 // request: { type, startDate, endDate, workDays, reason, requestedAt }
 async function buildLeaveRequestPdf(employee, request) {
   const doc = await PDFDocument.create();

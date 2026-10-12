@@ -1,4 +1,4 @@
-// POST /api/portal-employees — admin-only employee management (Setări → Angajați).
+// POST /api/portal-employees, admin-only employee management (Setări → Angajați).
 // One endpoint, five actions via body.action: 'create' | 'update_details' |
 // 'reset_password' | 'set_active' | 'set_goals'. Passwords are hashed server-side
 // (scrypt, see _lib/auth.js) before ever touching storage.
@@ -12,7 +12,7 @@ const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
 
 // Up to 2 "obiective individuale" per employee (Setări → Angajați → edit → obiective).
 // Non-manual metrics are computed live in portal-data.js from sales.json/appointments.json
-// — only 'manual' goals carry a stored currentValue the admin edits by hand.
+// - only 'manual' goals carry a stored currentValue the admin edits by hand.
 const MAX_GOALS = 4;
 const VALID_GOAL_METRICS = [
   'programari_confirmate_azi',
@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
 
     if (action === 'update_details') {
       // Fixes a typo'd name/location, or a role change (e.g. an employee moving
-      // locations) — keeps the same id, so her login, goals and sales history stay
+      // locations), keeps the same id, so her login, goals and sales history stay
       // intact (unlike deactivating + re-creating, which would silently orphan them).
       const { employeeId, name, location, role, annualLeaveDays, contractedHoursPerDay } = req.body || {};
       if (!employeeId || !name || !location || !role) {
@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
       employee.name = String(name).slice(0, 100);
       employee.location = String(location).slice(0, 100);
       employee.role = role;
-      // Optional — feed the "Condică" leave-balance / hours-owed numbers (api/portal-attendance.js,
+      // Optional, feed the "Condică" leave-balance / hours-owed numbers (api/portal-attendance.js,
       // action 'balance'). Left unset, those default to 21 days / 8h per day. Never required.
       if (annualLeaveDays !== undefined) {
         const n = Number(annualLeaveDays);
@@ -179,7 +179,7 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: 'invalid_goal' });
           return;
         }
-        // Optional bonus (lei) paid when the goal is reached — shown to the employee as "Bonusurile mele".
+        // Optional bonus (lei) paid when the goal is reached, shown to the employee as "Bonusurile mele".
         const reward = Number(g.reward);
         const goal = { title: String(g.title).slice(0, 100), metric: g.metric, target, reward: Number.isFinite(reward) && reward > 0 ? Math.round(reward) : 0 };
         if (g.metric === 'manual') {

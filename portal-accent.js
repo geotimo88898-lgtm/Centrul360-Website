@@ -1,4 +1,4 @@
-// Centrul360 portal — accent colour (avatar menu → "Culoare accent").
+// Centrul360 portal, accent colour (avatar menu → "Culoare accent").
 // Any colour or two-colour gradient works: the picked colour is tuned in OKLCH so it stays visible on
 // the dark theme (lightness kept between 0.64 and 0.86; greys become a light neutral), the second
 // stop is derived when there is none, and the text drawn on the accent (--accent-fg) is whichever of
@@ -102,7 +102,7 @@
     const [, Cb, Hb] = rgbToOklch(B);
     // the deeper partner used for ambient glows and the eyebrow text gradient (still readable as text)
     const third = neutral ? oklchToRgb([0.6, 0, 0]) : rawB ? oklchToRgb([0.6, Cb * 0.9, Hb]) : oklchToRgb([0.6, Ca * 0.9, Ha - 40]);
-    // text on the accent: white or a near-black tinted with the hue — whichever reads better on BOTH stops
+    // text on the accent: white or a near-black tinted with the hue, whichever reads better on BOTH stops
     const ink = oklchToRgb([0.17, Math.min(Ca, 0.05), Ha]);
     const score = (c) => Math.min(contrast(c, A), contrast(c, B), contrast(c, third)); // lava buttons blend all three
     const fg = score([1, 1, 1]) >= score(ink) ? [1, 1, 1] : ink;

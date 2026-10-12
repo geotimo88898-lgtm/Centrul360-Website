@@ -1,4 +1,4 @@
-// Treatment categories — the clinic works with three: laser hair removal, face and body.
+// Treatment categories, the clinic works with three: laser hair removal, face and body.
 // An appointment or a payment can have several (a client may do laser AND a facial).
 // Older rows used finer categories (hifu, liposonix, …); they map onto the three here, so old
 // data keeps showing and counting correctly without a migration.

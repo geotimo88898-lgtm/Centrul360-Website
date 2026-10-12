@@ -1,4 +1,4 @@
-// Centrul360 portal — "Mesaje": a WhatsApp inbox inside the portal (reception/admin see and
+// Centrul360 portal, "Mesaje": a WhatsApp inbox inside the portal (reception/admin see and
 // reply to client messages without needing the WhatsApp Business app on a phone). Visible to
 // everyone, same K.section/K.api/K.drawer conventions as portal-condica.js.
 (function () {
@@ -48,7 +48,7 @@
     injectStyle();
     panel.classList.add('k-panel', 'wa');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Mesaje</h2><p class="k-lede">WhatsApp — conversațiile cu clienții, direct din portal.</p></div></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Mesaje</h2><p class="k-lede">WhatsApp, conversațiile cu clienții, direct din portal.</p></div></div>' +
       '<div data-body><div class="k-skel" style="height:220px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('submit', onSubmit);
@@ -73,7 +73,7 @@
     try {
       const j = await K.api('/api/portal-whatsapp', { action: 'thread', phone });
       C.thread = j;
-      // That conversation is read now — clear its badge locally without waiting for a reload.
+      // That conversation is read now, clear its badge locally without waiting for a reload.
       const convo = C.conversations.find((c) => c.phone === phone);
       if (convo) convo.unreadCount = 0;
     } catch (e) {
@@ -148,7 +148,7 @@
       '<div class="wa-thread-body">' + (msgs || K.empty('chat', 'Nimic încă', '')) + '</div>' +
       (t.within24h
         ? '<form class="wa-send" data-send><textarea name="text" maxlength="4000" placeholder="Scrie un mesaj..." rows="1"></textarea><button type="submit" class="k-btn is-primary">' + icon('arrowUp') + 'Trimite</button></form>'
-        : '<div class="wa-blocked">' + icon('alert') + ' Fereastra de 24h a expirat — clientul trebuie să scrie el primul din nou, sau trimite un șablon aprobat.</div>') +
+        : '<div class="wa-blocked">' + icon('alert') + ' Fereastra de 24h a expirat, clientul trebuie să scrie el primul din nou, sau trimite un șablon aprobat.</div>') +
       '</div></section>';
   }
 

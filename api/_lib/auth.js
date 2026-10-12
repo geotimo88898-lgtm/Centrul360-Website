@@ -1,8 +1,8 @@
 // Password hashing + signed session cookie for the employee portal.
-// No external auth library — Node's built-in `crypto` covers both needs:
+// No external auth library - Node's built-in `crypto` covers both needs:
 //   - scrypt for password hashing (slow-by-design, salted, no bcrypt dependency needed)
 //   - HMAC-SHA256 for a tamper-proof session cookie (no server-side session store needed,
-//     which matters here since there's no database — only Blob JSON documents)
+//     which matters here since there's no database, only Blob JSON documents)
 
 const crypto = require('crypto');
 
@@ -79,7 +79,7 @@ function buildSetCookieHeader(value, { clear = false, domain = '' } = {}) {
 function setSessionCookie(res, employeeId, role, viewer) {
   const value = createSessionCookieValue(employeeId, role, viewer);
   const domain = cookieDomain(res);
-  // An older host-only cookie would shadow the shared one — clear it in the same response.
+  // An older host-only cookie would shadow the shared one, clear it in the same response.
   res.setHeader('Set-Cookie', domain
     ? [buildSetCookieHeader('', { clear: true }), buildSetCookieHeader(value, { domain })]
     : buildSetCookieHeader(value));
@@ -142,7 +142,7 @@ function requireAuth(req, res) {
     return null;
   }
   // Previewing an employee's account is look-only: nothing gets saved in their name.
-  // (Some screens read through POST { action: 'list' } — those stay allowed.)
+  // (Some screens read through POST { action: 'list' }, those stay allowed.)
   const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search', 'get', 'unpaid', 'thread'].includes(req.body.action));
   if (session.viewer && !readOnly) {
     res.status(403).json({ error: 'preview_only' });

@@ -1,4 +1,4 @@
-// GET /api/offers-feed — server-to-server feed of every offer with its marketing brief, for the
+// GET /api/offers-feed, server-to-server feed of every offer with its marketing brief, for the
 // Creative machine (centrul360-creative-machine). Authenticated with the secret both projects
 // already share for single sign-on (CREATIVE_SSO_SECRET), sent as "Authorization: Bearer …".
 // The portal's Oferte section is the only place offers are edited; Creative only reads this.
@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { loadOffers, discountOf } = require('./_lib/offers');
 const { findOfferImage } = require('./_lib/offer-images');
+const { dedashDeep } = require('./_lib/dedash');
 
 function authorized(req) {
   const secret = process.env.CREATIVE_SSO_SECRET || '';
@@ -44,7 +45,7 @@ module.exports = async (req, res) => {
         };
       });
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ ok: true, updated: new Date().toISOString(), offers: out });
+    res.status(200).json({ ok: true, updated: new Date().toISOString(), offers: dedashDeep(out) });
   } catch (err) {
     console.error('offers-feed error:', err.message);
     res.status(500).json({ error: 'offers_failed' });

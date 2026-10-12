@@ -1,4 +1,4 @@
-// GET /api/portal-pulse — the live-sync heartbeat. Returns the current data revision (bumped on
+// GET /api/portal-pulse, the live-sync heartbeat. Returns the current data revision (bumped on
 // every save, see _lib/store.js); the portal polls it and refreshes only when it moves. It also
 // drives the automations (Admin → Automatizări), throttled inside tick().
 

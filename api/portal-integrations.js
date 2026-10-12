@@ -1,4 +1,4 @@
-// GET /api/portal-integrations — what's connected, for the Integrări section (admin).
+// GET /api/portal-integrations, what's connected, for the Integrări section (admin).
 // Facebook has its own status endpoint (fb-connection-status); this covers the rest.
 
 const { requireAdmin } = require('./_lib/auth');

@@ -1,5 +1,5 @@
 /* ============================================================
-   Centrul360 — shared 3D GLB spinning logo (header + menu)
+   Centrul360, shared 3D GLB spinning logo (header + menu)
    Load as: <script type="module" src="c360-logo.js"></script>
    ============================================================ */
 import * as THREE from 'three';

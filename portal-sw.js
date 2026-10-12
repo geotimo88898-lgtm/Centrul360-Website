@@ -1,18 +1,18 @@
-// Centrul360 portal service worker — minimal on purpose.
+// Centrul360 portal service worker, minimal on purpose.
 //
 // 1) Satisfies PWA installability (Chrome/Android requires a registered service worker with
 //    a fetch handler before it will offer "Add to Home Screen" / let the app be installed).
-//    No caching strategy here — the portal is always fetched fresh, same as the browser tab.
+//    No caching strategy here, the portal is always fetched fresh, same as the browser tab.
 // 2) Push notification handlers are wired and ready, but INACTIVE until the portal starts
 //    creating push subscriptions (a later step: VAPID keys + a subscribe endpoint + the
-//    browser's permission prompt + server code that sends a push on real events — new
+//    browser's permission prompt + server code that sends a push on real events, new
 //    appointment, lead, approval needed, etc.). Until then, no push ever arrives here.
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
 
 self.addEventListener('fetch', () => {
-  // Intentionally a no-op passthrough — required for installability, no offline caching.
+  // Intentionally a no-op passthrough, required for installability, no offline caching.
 });
 
 self.addEventListener('push', (event) => {

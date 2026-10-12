@@ -1,7 +1,7 @@
-// Centrul360 portal — owner sections: Aprobări, Echipa (people · bonuses · Condică), Oferte, Integrări.
+// Centrul360 portal, owner sections: Aprobări, Echipa (people · bonuses · Condică), Oferte, Integrări.
 // Aprobări: decision cards (A / R keys), optional reason on reject, bulk approve.
 // Echipa: one card per person (role, month numbers, goal rings); a drawer to edit profile,
-// reset password, (de)activate, and set up to 4 goals with a bonus each — what the employee
+// reset password, (de)activate, and set up to 4 goals with a bonus each, what the employee
 // then sees as "Bonusurile mele". Oferte: the ONE offer list (website + portal + Creative) as
 // site-like cards with live preview, toggles, drag-to-reorder and the marketing brief Creative
 // writes ads from. Integrări: Facebook Lead Ads, WhatsApp, Creative, the site.
@@ -69,7 +69,7 @@
     const card = apanel.querySelector('[data-sale="' + id + '"]');
     let reason = '';
     if (decision === 'reject') {
-      reason = await K.ui().prompt({ title: 'Respingi vânzarea?', message: 'Spune-i pe scurt de ce — vede motivul în „Comisionul meu”.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
+      reason = await K.ui().prompt({ title: 'Respingi vânzarea?', message: 'Spune-i pe scurt de ce, vede motivul în „Comisionul meu”.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
       if (reason === null) return;
     }
     if (card) card.classList.add('is-leaving', decision === 'approve' ? 'is-yes' : 'is-no');
@@ -95,7 +95,7 @@
   K.section('aprobari', { mount: mountApprovals, show() { renderApprovals(); loadLeaveApprovals(); }, data() { if (apanel && K.isActive('aprobari')) renderApprovals(); } });
 
   // ---------------------------------------------------------------- Cereri de concediu
-  // Second, clearly separate list inside the same Aprobări tab — leave requests aren't tied to
+  // Second, clearly separate list inside the same Aprobări tab, leave requests aren't tied to
   // commission, but it's the same "admin decides, team sees the result" mental model.
   const LEAVE_TYPE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu' };
   const LV = { requests: [] };
@@ -118,14 +118,14 @@
       : '<p class="k-muted">Nicio cerere în așteptare.</p>') +
       (decided.length ? '<div class="k-list" style="margin-top:.8rem">' + decided.map((r) =>
         '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(empNameFor(r.employeeId)) + ' · ' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</div>' +
-        '<div class="k-row-sub">' + esc(K.dateShort(r.startDate)) + ' – ' + esc(K.dateShort(r.endDate)) + (r.rejectionNote ? ' · „' + esc(r.rejectionNote) + '”' : '') + '</div></div>' +
+        '<div class="k-row-sub">' + esc(K.dateShort(r.startDate)) + ' - ' + esc(K.dateShort(r.endDate)) + (r.rejectionNote ? ' · „' + esc(r.rejectionNote) + '”' : '') + '</div></div>' +
         '<span class="k-tag is-' + (r.status === 'approved' ? 'good' : 'bad') + '">' + (r.status === 'approved' ? 'Aprobată' : 'Respinsă') + '</span>' +
         (r.status === 'approved' ? '<a class="k-icon-btn" target="_blank" rel="noopener" href="/api/portal-leave-pdf?id=' + esc(r.id) + '" title="PDF">' + icon('file') + '</a>' : '') + '</div>').join('') + '</div>' : '');
   }
   function leaveCardHtml(r) {
     return '<article class="ad-card" data-leave-req="' + esc(r.id) + '">' + K.avatar(empNameFor(r.employeeId), 44) +
       '<div class="ad-main"><div class="ad-top"><b>' + esc(empNameFor(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</span><span class="k-muted">' + esc(K.dateLong(r.startDate)) + '</span></div>' +
-      '<div class="ad-what">' + esc(K.dateShort(r.startDate)) + ' – ' + esc(K.dateShort(r.endDate)) + ' · ' + K.plural(r.workDays, 'zi', 'zile') + '</div>' +
+      '<div class="ad-what">' + esc(K.dateShort(r.startDate)) + ' - ' + esc(K.dateShort(r.endDate)) + ' · ' + K.plural(r.workDays, 'zi', 'zile') + '</div>' +
       (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') + '</div>' +
       '<div class="ad-actions"><button type="button" class="k-btn is-danger" data-reject-leave="' + esc(r.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good" data-approve-leave="' + esc(r.id) + '">' + icon('check') + 'Aprobă</button></div></article>';
   }
@@ -133,13 +133,13 @@
     const card = apanel.querySelector('[data-leave-req="' + id + '"]');
     let rejectionNote = '';
     if (decision === 'rejected') {
-      rejectionNote = await K.ui().prompt({ title: 'Respingi cererea de concediu?', message: 'Spune-i pe scurt de ce — vede motivul la cererea ei.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
+      rejectionNote = await K.ui().prompt({ title: 'Respingi cererea de concediu?', message: 'Spune-i pe scurt de ce, vede motivul la cererea ei.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
       if (rejectionNote === null) return;
     }
     if (card) card.classList.add('is-leaving', decision === 'approved' ? 'is-yes' : 'is-no');
     try {
       await K.api('/api/portal-leave', { action: 'decide', id, decision, rejectionNote });
-      K.ui().toast(decision === 'approved' ? 'Cerere aprobată — PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
+      K.ui().toast(decision === 'approved' ? 'Cerere aprobată - PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
       setTimeout(loadLeaveApprovals, 260);
     } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(K.errText(e), 'error'); }
   }
@@ -208,10 +208,10 @@
         (goals.length ? '<div class="ad-emp-goals">' + goals.map((g) => {
           const pct = g.target > 0 ? Math.min(100, ((g.current || 0) / g.target) * 100) : 0;
           return '<div class="ad-goal-mini" title="' + esc(g.title) + '">' + K.ring(pct, { size: 40, stroke: 4.5, inner: '<b>' + Math.round(pct) + '</b>' }) + '<span>' + esc(g.title) + (g.reward ? '<em>' + K.lei(g.reward) + '</em>' : '') + '</span></div>';
-        }).join('') + '</div>' : '<div class="ad-emp-empty">' + icon('target') + 'Fără obiective — adaugă din card</div>') + '</button>';
+        }).join('') + '</div>' : '<div class="ad-emp-empty">' + icon('target') + 'Fără obiective, adaugă din card</div>') + '</button>';
     };
     epanel.querySelector('[data-body]').innerHTML =
-      (active.length ? '<div class="ad-emps k-stagger">' + active.map(card).join('') + '</div>' : '<section class="k-card">' + K.empty('users', 'Niciun angajat încă', 'Adaugă primul om din echipă — primește username și parolă pentru portal.', '<button type="button" class="k-btn is-primary" data-new>' + icon('userPlus') + 'Angajat nou</button>') + '</section>') +
+      (active.length ? '<div class="ad-emps k-stagger">' + active.map(card).join('') + '</div>' : '<section class="k-card">' + K.empty('users', 'Niciun angajat încă', 'Adaugă primul om din echipă, primește username și parolă pentru portal.', '<button type="button" class="k-btn is-primary" data-new>' + icon('userPlus') + 'Angajat nou</button>') + '</section>') +
       (inactive.length ? '<details class="ad-inactive"><summary>' + K.plural(inactive.length, 'cont dezactivat', 'conturi dezactivate') + '</summary><div class="ad-emps">' + inactive.map(card).join('') + '</div></details>' : '');
   }
 
@@ -265,7 +265,7 @@
         if (pv) pv.addEventListener('click', () => K.busy(pv, () => K.previewAs(e.id)));
         const readGoals = () => { box.querySelectorAll('[data-g]').forEach((row) => { const g = goals[+row.dataset.g]; row.querySelectorAll('[data-f]').forEach((f) => { g[f.dataset.f] = f.value; }); }); };
         const paint = () => {
-          box.innerHTML = goals.length ? goals.map((g, i) => goalRowHtml(g, i, e.role)).join('') : '<div class="ad-emp-empty" style="margin-bottom:.7rem">' + icon('target') + 'Niciun obiectiv. Adaugă unul — de ex. un bonus de 200 lei la 25 de programări.</div>';
+          box.innerHTML = goals.length ? goals.map((g, i) => goalRowHtml(g, i, e.role)).join('') : '<div class="ad-emp-empty" style="margin-bottom:.7rem">' + icon('target') + 'Niciun obiectiv. Adaugă unul, de ex. un bonus de 200 lei la 25 de programări.</div>';
           el.querySelector('[data-addg]').disabled = goals.length >= 4;
         };
         paint();
@@ -280,7 +280,7 @@
           try {
             const b = await K.api('/api/portal-attendance', { action: 'balance', employeeId: e.id });
             box.innerHTML = '<div class="k-grid c2">' +
-              '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Zile de concediu rămase</div><div class="k-stat-value">' + b.daysLeft + '</div><div class="k-stat-sub">din ' + b.annualLeaveDays + ' — ' + b.daysUsed + ' folosite anul acesta</div></div>' +
+              '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Zile de concediu rămase</div><div class="k-stat-value">' + b.daysLeft + '</div><div class="k-stat-sub">din ' + b.annualLeaveDays + ' - ' + b.daysUsed + ' folosite anul acesta</div></div>' +
               '<div class="k-stat is-' + (b.hoursDelta >= 0 ? 'good' : 'warn') + '"><div class="k-stat-top">' + icon('clock') + 'Ore de recuperat</div><div class="k-stat-value">' + (b.hoursDelta >= 0 ? '+' : '') + b.hoursDelta + '</div><div class="k-stat-sub">' + b.hoursPeriod + ' · program ' + b.contractedHoursPerDay + ' h/zi · doar zilele cu sosire și plecare</div></div></div>';
           } catch (err) { box.innerHTML = '<span class="k-muted">Nu am putut calcula.</span>'; }
         }
@@ -377,7 +377,7 @@
             '<span class="k-btn is-sm is-outline">' + icon('pen') + (goals.length ? 'Editează' : 'Adaugă bonus') + '</span></div>';
         }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', '')) + '</section>';
     const act = emps.length;
-    const cgx = () => { const v = K.formValues(box.querySelector('[data-cg]')); box.querySelector('[data-cgx]').innerHTML = icon('info') + 'Luna aceasta: <b>' + K.lei(cur.current || 0) + '</b> din ' + K.lei(Number(v.target) || 0) + ' · cost dacă se atinge: <b>' + K.lei((Number(v.reward) || 0) * act) + '</b> (' + K.plural(act, 'angajat', 'angajați') + ').'; };
+    const cgx = () => { const v = K.formValues(box.querySelector('[data-cg]')); box.querySelector('[data-cgx]').innerHTML = icon('info') + '<span>Luna aceasta: <b>' + K.lei(cur.current || 0) + '</b> din ' + K.lei(Number(v.target) || 0) + '. Dacă se atinge, costă <b>' + K.lei((Number(v.reward) || 0) * act) + '</b> (' + K.plural(act, 'angajat', 'angajați') + ').</span>'; };
     cgx(); box.querySelector('[data-cg]').addEventListener('input', cgx);
     box.querySelector('[data-save-cg]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
       const v = K.formValues(box.querySelector('[data-cg]'));
@@ -406,7 +406,7 @@
   function mountOffers(p) {
     opanel = p;
     opanel.classList.add('k-panel', 'of');
-    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Oferte</h2><p class="k-lede">O singură listă pentru site (oferte.html, prețuri), recepție, comisioane și Creative. Schimbi aici — se schimbă peste tot.</p></div>' +
+    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Oferte</h2><p class="k-lede">O singură listă pentru site (oferte.html, prețuri), recepție, comisioane și Creative. Schimbi aici, se schimbă peste tot.</p></div>' +
       '<div class="k-head-actions"><a class="k-btn is-outline" href="/oferte" target="_blank" rel="noopener">' + icon('eye') + 'Vezi pe site</a><button type="button" class="k-btn is-accent" data-new>' + icon('plus') + 'Ofertă nouă</button></div></div>' +
       '<div class="of-flow">' + ['Site public', 'Recepție & încasări', 'Comision', 'Creative · reclame'].map((x, i) => '<span>' + icon(['globe', 'wallet', 'percent', 'sparkles'][i] || 'tag') + x + '</span>').join(icon('arrow')) + '</div>' +
       '<div data-body><div class="k-skel" style="height:260px"></div></div>';
@@ -436,7 +436,7 @@
   function offerCard(o) {
     const lines = String(o.description || '').split('\n').filter(Boolean);
     return '<article class="of-card' + (o.active ? '' : ' is-off') + '" data-offer="' + esc(o.id) + '" draggable="true">' +
-      '<div class="of-img" style="background-image:url(\'' + esc(imgUrl(o.imageKey)) + '\')">' + (disc(o) ? '<span class="of-disc">−' + disc(o) + '%</span>' : '') + (o.featured ? '<span class="of-feat">' + icon('star') + 'Pachet</span>' : '') + '</div>' +
+      '<div class="of-img" style="background-image:url(\'' + esc(imgUrl(o.imageKey)) + '\')">' + (disc(o) ? '<span class="of-disc">-' + disc(o) + '%</span>' : '') + (o.featured ? '<span class="of-feat">' + icon('star') + 'Pachet</span>' : '') + '</div>' +
       '<div class="of-body"><div class="of-cat">' + esc((SITE_CATS.find((c) => c[0] === o.category) || [, o.category])[1]) + '</div><b>' + esc(o.title) + '</b>' +
       '<div class="of-price"><b>' + K.lei(o.priceNew) + '</b>' + (o.priceOld > o.priceNew ? '<s>' + K.lei(o.priceOld) + '</s>' : '') + '</div>' +
       (lines[0] ? '<p>' + esc(lines[0]) + '</p>' : '') +
@@ -536,7 +536,7 @@
             locations: Object.keys(LOC).filter((l) => s['loc_' + l]), objections: split(m.objections), zones: split(m.zones),
           });
         };
-        const preview = () => { const x = collect(); el.querySelector('[data-preview]').innerHTML = '<div class="of-grid is-single">' + offerCard(Object.assign({ id: 'preview' }, x)).replace('draggable="true"', '') + '</div><span class="k-muted">Previzualizare — așa arată cardul în listă.</span>'; };
+        const preview = () => { const x = collect(); el.querySelector('[data-preview]').innerHTML = '<div class="of-grid is-single">' + offerCard(Object.assign({ id: 'preview' }, x)).replace('draggable="true"', '') + '</div><span class="k-muted">Previzualizare, așa arată cardul în listă.</span>'; };
         preview();
         el.addEventListener('input', preview);
         el.addEventListener('change', preview);
@@ -562,7 +562,7 @@
             const body = Object.assign(siteFields(x), { priceOld: x.priceOld || x.priceNew }, src ? { action: 'update', id: src.id, marketing: marketingFields(x) } : Object.assign({ action: 'create' }, marketingFields(x)));
             const j = await K.api('/api/portal-offers', body);
             O.list = j.offers; d.close(); renderOffers(); K.reload();
-            K.ui().toast(src ? 'Ofertă salvată — e live pe site.' : 'Ofertă publicată pe site.', 'success');
+            K.ui().toast(src ? 'Ofertă salvată, e live pe site.' : 'Ofertă publicată pe site.', 'success');
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
       },

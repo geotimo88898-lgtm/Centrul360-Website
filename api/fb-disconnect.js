@@ -1,6 +1,6 @@
-// POST /api/fb-disconnect — admin-only (Setări → Integrări → "Deconectează"). Clears the
+// POST /api/fb-disconnect, admin-only (Setări → Integrări → "Deconectează"). Clears the
 // stored Facebook Page connection. Overwrites with {} rather than deleting the blob
-// pathname outright — same "empty object means cleared" convention loadConnection() uses.
+// pathname outright, same "empty object means cleared" convention loadConnection() uses.
 
 const { writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');

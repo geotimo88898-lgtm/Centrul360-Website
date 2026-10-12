@@ -2,7 +2,7 @@
 // Every portal API route goes through here instead of calling @vercel/blob directly,
 // so the overwrite/retry semantics only need to be right in one place.
 //
-// Requires BLOB_READ_WRITE_TOKEN in the environment — this is injected automatically
+// Requires BLOB_READ_WRITE_TOKEN in the environment, this is injected automatically
 // by Vercel once a Blob store is created and linked to the project (Project Settings
 // → Storage → connect a Blob store). No manual token copying needed.
 //
@@ -25,10 +25,10 @@ async function streamToString(stream) {
 }
 
 // Reads a JSON document from Blob storage. Returns `fallback` if the blob doesn't exist
-// yet (first run) or fails to parse (defensive — should not happen in normal operation).
+// yet (first run) or fails to parse (defensive, should not happen in normal operation).
 async function readJSON(pathname, fallback) {
   try {
-    // useCache:false — the portal always reads right after writing (every save reloads
+    // useCache:false, the portal always reads right after writing (every save reloads
     // the whole payload to show the result), so a cached stale read would look exactly
     // like "my change didn't save" even though it did.
     const result = await get(pathname, { access: 'private', useCache: false });
@@ -37,7 +37,7 @@ async function readJSON(pathname, fallback) {
     if (!text) return fallback;
     return JSON.parse(text);
   } catch (err) {
-    // BlobNotFoundError or similar — treat as "not created yet".
+    // BlobNotFoundError or similar, treat as "not created yet".
     if (err && (err.name === 'BlobNotFoundError' || /not.?found/i.test(err.message || ''))) {
       return fallback;
     }
@@ -80,7 +80,7 @@ async function readRev() {
 }
 
 // ---- Binary documents (e.g. generated PDFs) -----------------------------------------
-// Same put/get wiring as readJSON/writeJSON above, but for raw bytes instead of JSON text —
+// Same put/get wiring as readJSON/writeJSON above, but for raw bytes instead of JSON text
 // used by the leave-request PDF (api/portal-leave.js + api/portal-leave-pdf.js). Doesn't bump
 // the live-sync revision: a generated PDF isn't part of the portal's shared on-screen state.
 async function writeBinary(pathname, buffer, contentType) {

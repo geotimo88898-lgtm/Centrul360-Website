@@ -1,4 +1,4 @@
-// POST /api/portal-leads — lead pipeline (portal.html's "Pipeline" tab, UI in
+// POST /api/portal-leads, lead pipeline (portal.html's "Pipeline" tab, UI in
 // portal-pipeline.js). One endpoint, action-routed via body.action, same style as
 // portal-employees.js / portal-appointments.js:
 //
@@ -9,11 +9,11 @@
 // Admin-only: delete a lead and edit the stages (the two destructive/structural actions).
 //
 // Stages are editable (data/pipeline-stages.json):
-//   { id, name, color, kind }   — ordered by array position
+//   { id, name, color, kind }, ordered by array position
 //   kind: 'open'   a normal working stage
 //         'booked' an open stage the "Programează" flow moves a lead into
-//         'won'    exactly one — moving a lead INTO it upserts the shared client directory
-//         'lost'   exactly one — side exit, hidden on the board unless asked for
+//         'won'    exactly one, moving a lead INTO it upserts the shared client directory
+//         'lost'   exactly one, side exit, hidden on the board unless asked for
 // The seed reuses the ids of the old fixed pipeline, so existing leads (lead.stage) and the
 // Facebook webhook keep working without a migration.
 //
@@ -27,7 +27,7 @@
 //     activities: [{ id, type, text, outcome, channel, author, at }],
 //     stageChangedAt, createdAt, updatedAt, createdBy,
 //   }
-// Older leads stored `notes: [{id,text,author,createdAt}]` — normalizeLead() folds them into
+// Older leads stored `notes: [{id,text,author,createdAt}]` - normalizeLead() folds them into
 // `activities` on read, and the folded form is what gets written back.
 
 const crypto = require('crypto');
@@ -63,7 +63,7 @@ const VALID_OUTCOMES = ['raspuns', 'nu_raspunde', 'revine', 'interesat', 'progra
 const MAX_ACTIVITIES = 200;
 
 // A lead in a working stage with no activity for this long is flagged in the UI.
-// Computed on every read — no background job, per the "no cron infra" constraint.
+// Computed on every read, no background job, per the "no cron infra" constraint.
 const INACTIVE_DAYS_THRESHOLD = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -170,7 +170,7 @@ function validateFields(body, { partial }) {
 // Shared lead-creation core, used by the 'create' action and the Facebook Lead Ads webhook
 // (api/webhook-facebook-leads.js). A phone number already in the pipeline does not create a
 // second card: an open lead gets a "came back" activity and jumps to the top, a lost one is
-// reopened in the first stage — so re-submitted Facebook forms never split a client's history.
+// reopened in the first stage, so re-submitted Facebook forms never split a client's history.
 async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel }) {
   const result = validateFields({ name, phone, source, location, email: email || '', interest: interest || '', value: value || 0 }, { partial: false });
   if (result.error) return { error: result.error };
@@ -194,7 +194,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     addActivity(existing, {
       type: 'returned', author,
       text: (reopened ? 'Leadul pierdut s-a întors' : 'A trimis din nou datele') + ' (' + (SOURCE_LABELS[source] || source) + ')' +
-        (result.fields.interest ? ' · ' + result.fields.interest : '') + (note ? ' — ' + clip(note, 500) : ''),
+        (result.fields.interest ? ' · ' + result.fields.interest : '') + (note ? ' - ' + clip(note, 500) : ''),
     });
     await writeJSON(LEADS_KEY, leads);
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
@@ -248,7 +248,7 @@ module.exports = async (req, res) => {
     res.status(405).json({ error: 'method_not_allowed' });
     return;
   }
-  // The pipeline is reception's (and the owner's) — cosmeticians don't work leads.
+  // The pipeline is reception's (and the owner's), cosmeticians don't work leads.
   // Reception works every lead; a cosmetician sees and works only her city's leads (booking stays with reception).
   const session = requireRole(req, res, ['admin', 'receptie', 'cosmetician']);
   if (!session) return;
@@ -339,7 +339,7 @@ module.exports = async (req, res) => {
         type: 'stage', author,
         text: (stages.find((s) => s.id === from) || { name: from }).name + ' → ' + target.name + (lead.lostReason ? ' · ' + lead.lostReason : ''),
       });
-      // Winning is the one place this endpoint writes the shared client directory — same
+      // Winning is the one place this endpoint writes the shared client directory, same
       // upsertClient() every money/booking flow uses, keyed by phone, so a lead and an
       // existing client with the same number collapse onto one record.
       if (target.kind === 'won') {

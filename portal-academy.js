@@ -1,4 +1,4 @@
-// Centrul360 portal — "Traininguri": the team's manuals (sales, booking, treatment room). Each
+// Centrul360 portal, "Traininguri": the team's manuals (sales, booking, treatment room). Each
 // chapter is a card: read it here, or download it as a branded PDF; the whole manual downloads as
 // one PDF too. The owner edits any chapter in place. Content: api/_lib/academy.js (first version),
 // saved edits live in config.academy (api/portal-config.js).

@@ -1,10 +1,10 @@
-// Offers — the ONE source of truth for every surface:
+// Offers, the ONE source of truth for every surface:
 //   • public site      (api/offers-public.js → oferte.html / preturi.html)
 //   • team portal      (api/portal-offers.js admin CRUD, api/portal-data.js for everyone)
 //   • Creative machine (api/offers-feed.js → admin.centrul360.com/creative)
 // Stored in data/offers.json. On top of the site fields every offer can carry the marketing
 // brief the Creative machine needs (where it's sold, whether it's promoted in ads, the
-// mechanism/outcome/objections, and a guarantee — which today exists only for laser hair removal).
+// mechanism/outcome/objections, and a guarantee, which today exists only for laser hair removal).
 
 const { defaultOffers } = require('./offer-defaults');
 
@@ -13,13 +13,13 @@ const SITE_CATEGORIES = ['epilare', 'faciale', 'remodelare'];
 const SCHEMA = 3;
 
 // Marketing briefs for the offers that run in ads today (ported 1:1 from the Creative
-// machine's old offers.json, which is retired — Creative now reads this feed).
+// machine's old offers.json, which is retired - Creative now reads this feed).
 const BRIEFS = {
   'liposonix-2zone': {
     ads: true, locations: ['timisoara', 'arad'], adName: 'LipoSonix · 2 zone la preț de una', mechanic: '1+1: 2 zone tratate la prețul uneia',
     dreamOutcome: 'talie/abdomen/șolduri mai definite, haine care vin mai bine', mechanism: 'ultrasunete focalizate care țintesc grăsimea localizată rezistentă la dietă și sport',
     objections: ['fără operație', 'fără timp de recuperare', 'fără ace/anestezie', 'rezultate din prima ședință'],
-    zones: ['abdomen', 'flancuri/talie', 'coapse', 'brațe', 'zona lombară'], notes: 'Cea mai dovedită ofertă — toate creativele câștigătoare de până acum sunt LipoSonix.',
+    zones: ['abdomen', 'flancuri/talie', 'coapse', 'brațe', 'zona lombară'], notes: 'Cea mai dovedită ofertă, toate creativele câștigătoare de până acum sunt LipoSonix.',
   },
   'facial-restart': {
     ads: true, locations: ['timisoara', 'arad'], adName: 'Tratament facial Restart',
@@ -28,12 +28,12 @@ const BRIEFS = {
   },
   'epilare-full-body': {
     ads: true, locations: ['timisoara'], adName: 'Epilare laser · Full Body', includes: 'toate zonele de corp, fără față (axile, inghinal total, brațe total, picioare lung)',
-    device: 'Elysion Pro — laser certificat medical', dreamOutcome: 'piele fină permanent, fără ras, fără ceară, fără iritații',
+    device: 'Elysion Pro, laser certificat medical', dreamOutcome: 'piele fină permanent, fără ras, fără ceară, fără iritații',
     mechanism: 'laser medical cu diodă care distruge foliculul', objections: ['nedureros', 'certificat medical', 'pentru ea și el'],
     guarantee: 'Garanția banilor înapoi.', notes: 'DOAR Timișoara. Se poate face și pentru bărbați.',
   },
 };
-// Two active ad offers the site never listed — added once by the schema-3 migration.
+// Two active ad offers the site never listed, added once by the schema-3 migration.
 const ADDED = [
   {
     id: 'seed-cavitatie-ems', key: 'cavitatie-ems', title: 'Cavitație + EMS', description: 'O ședință de cavitație + o ședință de electrostimulare musculară.\n1× Cavitație\n1× EMS (20.000 de contracții)',

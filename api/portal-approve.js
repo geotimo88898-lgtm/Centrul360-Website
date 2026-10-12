@@ -1,4 +1,4 @@
-// POST /api/portal-approve — admin approves or rejects a pending sale entry.
+// POST /api/portal-approve, admin approves or rejects a pending sale entry.
 // Approving computes the commission: 10% of the upsell amount, fixed at the moment of approval.
 
 const { readJSON, writeJSON } = require('./_lib/store');

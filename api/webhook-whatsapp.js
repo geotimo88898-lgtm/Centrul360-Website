@@ -1,15 +1,15 @@
-// /api/webhook-whatsapp — Meta calls this directly, no portal auth (same shape as
+// /api/webhook-whatsapp - Meta calls this directly, no portal auth (same shape as
 // api/webhook-facebook-leads.js, see that file's header comment for the general pattern).
 //
 // GET  -> Meta's one-time webhook verification handshake (WHATSAPP_WEBHOOK_VERIFY_TOKEN).
 // POST -> inbound client messages + delivery/read status updates for the WhatsApp Cloud API.
 //         Body signature is verified against the RAW bytes (HMAC-SHA256 with
-//         WHATSAPP_APP_SECRET — a DIFFERENT Meta app than the one FB_APP_SECRET belongs to,
+//         WHATSAPP_APP_SECRET, a DIFFERENT Meta app than the one FB_APP_SECRET belongs to,
 //         since WhatsApp lives in its own "Centrul 360 WhatsApp" app, not the Facebook Login
 //         app used for lead ads). Automatic JSON body parsing is disabled below so the raw
 //         bytes are available for the signature check.
 //
-// Always responds 200 once the payload is accepted — Meta retries aggressively on anything
+// Always responds 200 once the payload is accepted - Meta retries aggressively on anything
 // else, and one bad message/status entry must never take the whole delivery down with it.
 
 const crypto = require('crypto');
@@ -43,7 +43,7 @@ function isValidSignature(rawBody, header, secret) {
 
 // Which clinic location owns the WhatsApp number that received the message, from Meta's
 // `metadata.phone_number_id`. Both location numbers aren't live yet (only Meta's sandbox test
-// number is, as of writing) — WHATSAPP_PHONE_ID_TIMISOARA / WHATSAPP_PHONE_ID_ARAD are the
+// number is, as of writing) - WHATSAPP_PHONE_ID_TIMISOARA / WHATSAPP_PHONE_ID_ARAD are the
 // per-location numbers to set once they're connected; a phone_number_id that matches neither
 // (e.g. today's sandbox number) falls back to '' (unknown), it never hard-fails.
 function locationForPhoneNumberId(phoneNumberId) {
@@ -62,7 +62,7 @@ function findOrCreateConversation(conversations, phone) {
   return convo;
 }
 
-// Best-effort text for a message type we don't render specially — never throws.
+// Best-effort text for a message type we don't render specially, never throws.
 function textFor(message) {
   const type = message && message.type;
   if (type === 'text') return (message.text && message.text.body) || '';
@@ -81,7 +81,7 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
   const convo = findOrCreateConversation(conversations, phone);
 
   // Resolve a display name from the client directory (upsert so a client that messages in
-  // doesn't need to exist yet) — fall back to the raw phone number when nothing resolves.
+  // doesn't need to exist yet), fall back to the raw phone number when nothing resolves.
   try {
     const client = await upsertClient({ name: convo.clientName, phone: from }, { readJSON, writeJSON });
     convo.clientName = (client && client.name) || convo.clientName || phone;
@@ -117,7 +117,7 @@ function handleStatusUpdate(conversations, status) {
     const msg = convo.messages.find((m) => m.id === id);
     if (msg) { msg.status = status.status || msg.status; return; }
   }
-  // No matching outbound message found (e.g. sent before this feature existed) — nothing to update.
+  // No matching outbound message found (e.g. sent before this feature existed), nothing to update.
 }
 
 module.exports = async (req, res) => {
@@ -155,11 +155,11 @@ module.exports = async (req, res) => {
   } else {
     // TEMPORARY / INSECURE FALLBACK: WHATSAPP_APP_SECRET isn't set yet on this deployment
     // (the WhatsApp app's own App Secret, separate from FB_APP_SECRET). Skip verification
-    // rather than 500ing on every delivery — set the env var to close this gap.
-    console.warn('webhook-whatsapp: WHATSAPP_APP_SECRET not set — skipping signature verification (insecure, temporary)');
+    // rather than 500ing on every delivery, set the env var to close this gap.
+    console.warn('webhook-whatsapp: WHATSAPP_APP_SECRET not set, skipping signature verification (insecure, temporary)');
   }
 
-  // Process fully BEFORE responding — Vercel can freeze/tear down the function the instant
+  // Process fully BEFORE responding - Vercel can freeze/tear down the function the instant
   // the response is sent, so any `await` after res.json() here is not guaranteed to run
   // (this is exactly why messages were accepted but never actually saved). Per-entry
   // try/catch below still means one bad entry never blocks the rest or the final response.

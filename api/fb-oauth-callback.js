@@ -1,4 +1,4 @@
-// GET /api/fb-oauth-callback — Facebook redirects the admin's browser here after the
+// GET /api/fb-oauth-callback - Facebook redirects the admin's browser here after the
 // OAuth dialog in api/fb-oauth-start.js. Exchanges the `code` for a long-lived Page
 // Access Token and stores it in data/fb-connection.json, then redirects back into the
 // portal's Setări tab with a success/failure flag.
@@ -101,7 +101,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Step 3: list the Pages the admin manages — each entry already carries its own
+    // Step 3: list the Pages the admin manages, each entry already carries its own
     // (non-expiring) Page Access Token, so we don't need a separate per-page exchange.
     const accountsUrl = `${GRAPH_BASE}/me/accounts?${new URLSearchParams({
       access_token: longData.access_token,
@@ -115,13 +115,13 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // A single clinic very likely manages one Page — take the first, but keep the full
+    // A single clinic very likely manages one Page, take the first, but keep the full
     // list in storage in case a Page picker gets added to the UI later.
     const primary = pages[0];
 
     // Subscribe the Page to THIS app's webhook for the leadgen field. Without this call,
     // Facebook never sends leadgen events to our callback URL even if Webhooks is wired
-    // up correctly in the App Dashboard — the dashboard config only tells Meta where the
+    // up correctly in the App Dashboard, the dashboard config only tells Meta where the
     // app's webhook endpoint is, each Page still has to opt in to notifying that app.
     const subscribeUrl = `${GRAPH_BASE}/${primary.id}/subscribed_apps`;
     const subscribeResp = await fetch(subscribeUrl, {

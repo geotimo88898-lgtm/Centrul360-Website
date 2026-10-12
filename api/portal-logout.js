@@ -1,4 +1,4 @@
-// POST /api/portal-logout — clears the session cookie.
+// POST /api/portal-logout, clears the session cookie.
 
 const { clearSessionCookie } = require('./_lib/auth');
 

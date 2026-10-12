@@ -1,8 +1,8 @@
-// POST /api/portal-offers — admin-only "Oferte" management (Setări → Oferte).
+// POST /api/portal-offers, admin-only "Oferte" management (Setări → Oferte).
 // One endpoint, action-based routing via body.action: 'list' | 'create' | 'update' |
-// 'delete' | 'reorder' — same pattern as portal-employees.js. These offers drive the
+// 'delete' | 'reorder' - same pattern as portal-employees.js. These offers drive the
 // PUBLIC oferte.html and preturi.html pages through the separate, unauthenticated
-// api/offers-public.js — this endpoint only ever touches data/offers.json's admin view.
+// api/offers-public.js, this endpoint only ever touches data/offers.json's admin view.
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -98,7 +98,7 @@ module.exports = async (req, res) => {
       offer.imageKey = imageKey;
       offer.active = active === undefined ? offer.active : !!active;
       if (order !== undefined && Number.isFinite(Number(order))) offer.order = Number(order);
-      // Marketing brief (Creative) — only when the editor sent it, so older callers keep working.
+      // Marketing brief (Creative), only when the editor sent it, so older callers keep working.
       if (req.body && req.body.marketing) Object.assign(offer, cleanMarketing(req.body.marketing));
       await writeJSON('data/offers.json', offers);
       res.status(200).json({ ok: true, offer, offers });

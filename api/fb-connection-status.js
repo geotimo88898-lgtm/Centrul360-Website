@@ -1,4 +1,4 @@
-// GET /api/fb-connection-status — admin-only (Setări → Integrări). Tells the UI whether
+// GET /api/fb-connection-status, admin-only (Setări → Integrări). Tells the UI whether
 // a Facebook Page is connected, without ever exposing the stored Page Access Token.
 
 const { readJSON } = require('./_lib/store');

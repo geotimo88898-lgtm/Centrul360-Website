@@ -1,13 +1,13 @@
-// POST /api/fb-manual-connect — admin-only fallback for connecting the Facebook Page
+// POST /api/fb-manual-connect, admin-only fallback for connecting the Facebook Page
 // when the OAuth flow (fb-oauth-start / fb-oauth-callback) can't be used because Meta's
 // dashboard isn't offering a Pages/Lead Ads use case for this app (seen in practice when
 // the app's attached Business Portfolio isn't verified yet). The admin instead gets a
 // User Access Token with the needed permissions from Graph API Explorer
-// (developers.facebook.com/tools/explorer — works for any Admin/Developer/Tester on the
+// (developers.facebook.com/tools/explorer, works for any Admin/Developer/Tester on the
 // app regardless of which "use cases" are configured, since it's a sandbox tool, not the
 // OAuth dialog), and pastes it here. Does the same two things fb-oauth-callback does:
 // resolve the admin's Pages + Page Access Token, subscribe the chosen Page to this app's
-// leadgen webhook, and store the connection — just skipping the broken OAuth hop.
+// leadgen webhook, and store the connection, just skipping the broken OAuth hop.
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // List the Pages this token's user manages — each entry already carries its own
+    // List the Pages this token's user manages, each entry already carries its own
     // (non-expiring) Page Access Token, same as the OAuth path.
     const accountsUrl = `${GRAPH_BASE}/me/accounts?${new URLSearchParams({
       access_token: userAccessToken,
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
 
     const primary = pages[0];
 
-    // Subscribe the Page to this app's leadgen webhook — without this, Facebook never
+    // Subscribe the Page to this app's leadgen webhook, without this, Facebook never
     // sends leadgen events even though the Webhooks product is configured.
     const subscribeUrl = `${GRAPH_BASE}/${primary.id}/subscribed_apps`;
     const subscribeResp = await fetch(subscribeUrl, {

@@ -1,14 +1,14 @@
-// POST /api/portal-sale — records a money entry in data/sales.json. Two independent
+// POST /api/portal-sale, records a money entry in data/sales.json. Two independent
 // flows share this one endpoint, distinguished by body.source:
 //
 //   source: 'comision' (default, back-compat with the original "Vânzările mele" form)
-//     — an employee logs HER OWN sale for commission purposes. Always created as
-//     status: 'pending' — only an admin approval (api/portal-approve.js) computes
+// - an employee logs HER OWN sale for commission purposes. Always created as
+//     status: 'pending' - only an admin approval (api/portal-approve.js) computes
 //     commission and makes it count toward the company goal / race bonus. Unchanged
 //     from the first portal build.
 //
-//   source: 'incasare' ("Încasează client" — the shared cash-register replacement)
-//     — a factual record that money was received, available to any role (mainly the
+//   source: 'incasare' ("Încasează client" - the shared cash-register replacement)
+// - a factual record that money was received, available to any role (mainly the
 //     receptionist). Written with status: 'recorded' immediately, no approval queue,
 //     no commission math, and never attributed as anyone's personal commission claim.
 //     It appears right away in the shared "Tabel de încasări" (api/portal-data.js
@@ -59,7 +59,7 @@ async function handleComision(req, res, session) {
   try {
     const sales = await readJSON('data/sales.json', []);
 
-    // Client attribution is entirely optional for a commission entry — unchanged
+    // Client attribution is entirely optional for a commission entry, unchanged
     // behavior when none is given. An employee can either point at an existing
     // client (clientId, picked from the shared autocomplete) or quick-add a new
     // one inline (clientName + clientPhone), reusing the same upsertClient() the
@@ -114,7 +114,7 @@ async function handleComision(req, res, session) {
 // HOW it was paid (card / cash / transfer / cash + card) and WHO did the treatment. The amount
 // defaults to what the appointment was booked for; if the client pays more (she bought more on
 // the spot), the difference is an upsell and the person picked as "who did the treatment" in the
-// payment (not the one on the appointment) earns 10% of it — automatically, no approval needed.
+// payment (not the one on the appointment) earns 10% of it, automatically, no approval needed.
 async function handleIncasare(req, res, session) {
   const { appointmentId, method, performedBy } = req.body || {};
   if (!appointmentId) { res.status(400).json({ error: 'missing_appointment' }); return; }
@@ -196,7 +196,7 @@ async function handleIncasare(req, res, session) {
   }
 }
 
-// The commission entry for the upsell part of a payment: 10% of (paid − booked), credited at once
+// The commission entry for the upsell part of a payment: 10% of (paid - booked), credited at once
 // to whoever did the treatment. A correction of the payment (api/portal-incasari.js) recomputes it.
 function upsellFor(entry, employeeId) {
   const amount = entry.upsell;

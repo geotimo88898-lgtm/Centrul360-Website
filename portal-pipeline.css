@@ -1,6 +1,6 @@
-/* Centrul360 portal — Pipeline (pairs with portal-pipeline.js). Uses the tokens from portal-theme.css. */
+/* Centrul360 portal - Pipeline (pairs with portal-pipeline.js). Uses the tokens from portal-theme.css. */
 
-/* main is a flex item of .shell — min-width:0 keeps the wide board scrolling inside it instead of widening the page */
+/* main is a flex item of .shell, min-width:0 keeps the wide board scrolling inside it instead of widening the page */
 main.pl-full{ max-width:none; min-width:0; }
 .pl-panel{ --pl-col-w:300px; min-width:0; }
 .pl-ic{ width:16px; height:16px; flex:none; }

@@ -1,4 +1,4 @@
-/* Centrul360 portal — design layer.
+/* Centrul360 portal, design layer.
    Loaded after portal.html's own <style>, so it restyles the existing markup without touching it.
    Follows the OS/Chrome theme (light/dark) and shares its palette with the Creative section. */
 
@@ -168,12 +168,13 @@ main.wide{ max-width:none; padding:0; }
 
 /* ---------------- forms ---------------- */
 label.field-label{ font-size:.76rem; font-weight:550; color:var(--muted); letter-spacing:.005em; }
-input:not([type=checkbox]):not([type=radio]), select, textarea{
+/* :where() keeps these base styles at the lowest specificity, so a component's own sizes win */
+:where(input:not([type=checkbox]):not([type=radio]), select, textarea){
   background:var(--surface-3); border:1px solid transparent; border-radius:11px; color:var(--fg);
   padding:.68rem .85rem; font-size:.9rem;
   transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
-input:not([type=checkbox]):not([type=radio]):hover, select:hover, textarea:hover{ border-color:var(--line-on-dark); }
+:where(input:not([type=checkbox]):not([type=radio]), select, textarea):hover{ border-color:var(--line-on-dark); }
 input:focus, select:focus, textarea:focus{
   outline:none; background:var(--paper); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft);
 }

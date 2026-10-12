@@ -1,12 +1,30 @@
-// Centrul360 portal — shared kit for every section module (portal-dashboard.js, portal-calendar.js,
+// Centrul360 portal, shared kit for every section module (portal-dashboard.js, portal-calendar.js,
 // portal-money.js, portal-work.js, portal-admin.js). One API helper, one icon set, one drawer, one
-// chart engine, one motion vocabulary — so every section looks and behaves the same.
+// chart engine, one motion vocabulary, so every section looks and behaves the same.
 // Exposed as window.K. Sections register with K.section(id, {...}); portal.html's core calls
 // K.show(tab) on navigation and K.setData(DATA) whenever /api/portal-data is (re)loaded.
 (function () {
   'use strict';
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // No long dashes on screen: text from the data (offers, notes, messages saved earlier) gets a comma
+  // or a plain hyphen instead of "—" / "–" (same rules as api/_lib/dedash.js).
+  const WORDCH = /[\p{L}\p{N}]/u;
+  function dedash(input) {
+    if (!/[—–−]/.test(input)) return input;
+    const s = input.replace(/−/g, '-').replace(/(\d)[ \t ]*–[ \t ]*(\d)/g, '$1-$2').replace(/(\d)—(\d)/g, '$1-$2');
+    return s.replace(/[ \t ]*[—–][ \t ]*/g, (m, off, str) => {
+      const prev = off > 0 ? str[off - 1] : '\n', next = off + m.length < str.length ? str[off + m.length] : '\n';
+      const spacedL = /^[ \t ]/.test(m), spacedR = /[ \t ]$/.test(m);
+      if (!WORDCH.test(prev) && !WORDCH.test(next) && next !== '\n') return m.replace(/[—–]/, '-');
+      if (/[\n"'„“(\[]/.test(prev)) return (spacedL ? ' ' : '') + '- ';
+      if (/[\n”)\]"']/.test(next)) return '';
+      if (!spacedL && !spacedR) return m.includes('–') ? '-' : ' - ';
+      if (/[,.;:!?]/.test(prev)) return ' ';
+      if (/[A-ZĂÂÎȘȚŞŢ]/.test(next)) return ' - ';
+      return ', ';
+    });
+  }
+  const esc = (s) => dedash(String(s == null ? '' : s)).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const ui = () => window.c360 || { toast: (m) => window.alert(m), confirm: async (o) => window.confirm(o.message || o.title), prompt: async (o) => window.prompt(o.title, o.value || '') };
 
@@ -23,12 +41,12 @@
     missing_treatment: 'Completează tratamentul.', invalid_cosmetician: 'Cosmeticiana aleasă nu mai există.', username_taken: 'Acest username există deja.',
     invalid_role: 'Rolul nu e valid.', employee_not_found: 'Angajatul nu mai există.', already_decided: 'Vânzarea a fost deja decisă.',
     forbidden: 'Doar adminul poate face asta.', too_many_goals: 'Maxim 2 obiective per angajat.', invalid_goal: 'Un obiectiv nu e complet.',
-    preview_only: 'Ești în previzualizarea contului — aici doar te uiți. Revino la Admin ca să faci modificări.',
+    preview_only: 'Ești în previzualizarea contului, aici doar te uiți. Revino la Admin ca să faci modificări.',
     missing_title: 'Completează titlul.', invalid_prices: 'Prețurile nu sunt valide.', offer_not_found: 'Oferta nu mai există.',
     invalid_type: 'Alege tipul de concediu.', invalid_range: 'Data de sfârșit e înainte de cea de început.', missing_reason: 'Completează motivul.',
     request_not_found: 'Cererea nu mai există.', entry_not_found: 'Intrarea nu mai există.', invalid_time: 'Ora nu e validă.',
     invalid_phone: 'Numărul de telefon nu e valid.', missing_text: 'Scrie un mesaj.', conversation_not_found: 'Conversația nu mai există.',
-    outside_24h_window: 'Fereastra de 24h a expirat — clientul trebuie să scrie el primul din nou, sau trimite un șablon aprobat.', send_failed: 'Trimiterea a eșuat. Încearcă din nou.',
+    outside_24h_window: 'Fereastra de 24h a expirat, clientul trebuie să scrie el primul din nou, sau trimite un șablon aprobat.', send_failed: 'Trimiterea a eșuat. Încearcă din nou.',
   };
   const errText = (e, fallback) => ERR[e && e.code] || fallback || 'Nu am putut salva. Încearcă din nou.';
   async function api(url, body, opts) {
@@ -165,7 +183,7 @@
     el._kv = to;
     if (from === to) { el.textContent = fmt(to); return; }
     tween(from, to, dur || 1100, (v) => { el.textContent = fmt(v); });
-    // Background tabs pause requestAnimationFrame — make sure the final number always lands.
+    // Background tabs pause requestAnimationFrame, make sure the final number always lands.
     setTimeout(() => { if (el._kv === to) el.textContent = fmt(to); }, (dur || 1100) + 200);
   }
   // Animates every [data-count] inside root: data-count="1234" data-fmt="lei|num|pct".
@@ -423,7 +441,7 @@
     const paint = () => {
       list.innerHTML = items.length ? items.map((c, i) => '<button type="button" class="k-ac-item' + (i === active ? ' is-active' : '') + '" data-i="' + i + '">' + avatar(c.name, 28) +
         '<span><b>' + esc(c.name || '(fără nume)') + '</b><small>' + esc(c.phone || '') + '</small></span></button>').join('')
-        : '<div class="k-ac-empty">' + icon('userPlus') + 'Client nou — se salvează automat</div>';
+        : '<div class="k-ac-empty">' + icon('userPlus') + 'Client nou, se salvează automat</div>';
       list.classList.add('is-open');
     };
     const pick = (c) => { input.value = c.name || ''; id = c.id; if (phoneInput) phoneInput.value = c.phone || ''; hide(); if (onSelect) onSelect(c); };
@@ -483,7 +501,7 @@
   }
   async function copy(text) {
     try { await navigator.clipboard.writeText(text); ui().toast('Copiat în clipboard.', 'success'); }
-    catch (e) { ui().toast('Nu am putut copia — selectează textul manual.', 'error'); }
+    catch (e) { ui().toast('Nu am putut copia, selectează textul manual.', 'error'); }
   }
   // Pipeline leads, shared by the dashboard / nav badges (15s cache, one request in flight).
   let leadsCache = null, leadsAt = 0, leadsP = null;
@@ -498,7 +516,7 @@
   const typing = (el) => !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable));
 
   window.K = {
-    on, emit, api, errText, ui, esc, norm, reduceMotion,
+    on, emit, api, errText, ui, esc, dedash, norm, reduceMotion,
     lei, num, pad, iso, today, parse, addDays, monthOf, thisMonth, addMonths, daysIn, mondayOf, DOW, DOW_S, MON, MON_S,
     dateShort, dateLong, monthLabel, relDay, ago, plural, initials, colorFor, avatar, wa, tel, intlPhone,
     icon, P, tween, countUp, countAll, everySecond, spark, ring, donut, chart,

@@ -1,4 +1,4 @@
-// /api/webhook-facebook-leads — Meta calls this directly, no portal auth. Replaces what
+// /api/webhook-facebook-leads - Meta calls this directly, no portal auth. Replaces what
 // GoHighLevel used to do for this clinic: a new Facebook/Instagram Lead Ads submission
 // lands here and becomes a 'lead_nou' Pipeline entry.
 //
@@ -8,7 +8,7 @@
 //         disabled below (config.api.bodyParser:false) and the body is parsed by hand
 //         only after the signature check passes.
 //
-// Always responds 200 once the payload is accepted for processing — Meta retries a
+// Always responds 200 once the payload is accepted for processing - Meta retries a
 // webhook aggressively on anything else, and one bad leadgen_id must not take the whole
 // delivery down with it (see the per-entry try/catch below).
 
@@ -20,7 +20,7 @@ const { createLead } = require('./portal-leads');
 module.exports.config = { api: { bodyParser: false } };
 
 // Form-id -> location mapping isn't built out yet (no UI spec for it, and a single
-// clinic location Page is the common case) — default every Facebook lead to the primary
+// clinic location Page is the common case), default every Facebook lead to the primary
 // location. Revisit if/when the clinic runs ads for both locations through one Page and
 // needs per-form routing.
 const DEFAULT_LOCATION = 'Timișoara';
@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // Always 200 once we're past signature verification — everything below is "best
+  // Always 200 once we're past signature verification, everything below is "best
   // effort, log and move on" so a flaky Graph API call never turns into a Meta retry
   // storm or a half-processed batch.
   res.status(200).json({ ok: true });

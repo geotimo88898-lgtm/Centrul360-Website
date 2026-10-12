@@ -1,5 +1,5 @@
 /* ============================================================
-   Centrul360 — shared service-page interactions (c360.js)
+   Centrul360, shared service-page interactions (c360.js)
    ============================================================ */
 (function(){
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;

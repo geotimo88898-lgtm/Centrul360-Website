@@ -1,4 +1,4 @@
-// Centrul360 portal — Pipeline (portal.html "Pipeline" tab).
+// Centrul360 portal - Pipeline (portal.html "Pipeline" tab).
 // Ported from the sales.timoceanuhr.com pipeline and taken further: editable stages, pointer
 // drag & drop (mouse and touch long-press) with edge auto-scroll, a lead drawer with contact
 // log / follow-up / next step / booking straight into the Calendar, a speed-to-lead call queue,
@@ -79,7 +79,7 @@
     refuz: { label: 'Nu e interesată', tone: 'bad' },
     numar_gresit: { label: 'Număr greșit', tone: 'bad' },
   };
-  // Active offers only — the same list the Creative machine sells.
+  // Active offers only, the same list the Creative machine sells.
   const OFFERS = [
     { label: 'Facial Restart', value: 190, category: 'faciale', where: '' },
     { label: 'LipoSonix 2 zone la preț de 1', value: 640, category: 'corporale', where: '' },
@@ -97,7 +97,7 @@
     invalid_outcome: 'Alege cum a decurs discuția.', invalid_followup: 'Data de follow-up nu e validă.',
     need_one_won_stage: 'Trebuie exact o etapă de tip „Câștigat”.', need_one_lost_stage: 'Trebuie exact o etapă de tip „Pierdut”.',
     need_open_stage: 'Ai nevoie de cel puțin o etapă de lucru.', missing_stage_name: 'Fiecare etapă are nevoie de un nume.',
-    invalid_stages: 'Lista de etape nu e validă (maxim 15).', lead_not_found: 'Leadul nu mai există — probabil a fost șters.',
+    invalid_stages: 'Lista de etape nu e validă (maxim 15).', lead_not_found: 'Leadul nu mai există, probabil a fost șters.',
     forbidden: 'Doar adminul poate face asta.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
     invalid_category: 'Alege categoria.', invalid_client: 'Leadul nu are nume sau telefon.', network: 'Nu am putut contacta serverul. Verifică conexiunea.',
   };
@@ -150,7 +150,7 @@
     const v = ago(iso);
     return v === 'acum' ? 'chiar acum' : /(min|h|zile)$/.test(v) ? 'acum ' + v : v;
   }
-  // appointmentAt is stored as "YYYY-MM-DD HH:MM" (calendar format) — show it like follow-ups.
+  // appointmentAt is stored as "YYYY-MM-DD HH:MM" (calendar format), show it like follow-ups.
   function apptWhen(s) {
     const m = /^(\d{4}-\d{2}-\d{2})(?: (\d{1,2}:\d{2}))?/.exec(s || '');
     if (!m) return s || '';
@@ -169,7 +169,7 @@
   const fullDate = (iso) => { const d = new Date(iso); return Number.isFinite(d.getTime()) ? d.toLocaleString('ro-RO', { dateStyle: 'medium', timeStyle: 'short' }) : ''; };
   const toLocalInput = (iso) => { if (!iso) return ''; const d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + hm(d); };
   const fromLocalInput = (v) => (v ? new Date(v).toISOString() : '');
-  // Calls only make sense while people pick up: anything outside 09:00–20:00 rolls to 10:00.
+  // Calls only make sense while people pick up: anything outside 09:00-20:00 rolls to 10:00.
   function callableHours(d) {
     if (d.getHours() >= 20) { d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); }
     else if (d.getHours() < 9) d.setHours(10, 0, 0, 0);
@@ -244,7 +244,7 @@
     root.innerHTML =
       '<div class="pl-head">' +
         '<div><div class="k-eyebrow">Vânzări</div><h2>Pipeline</h2>' +
-        '<p class="pl-lede">Fiecare lead, de la formular la client. Sună întâi pe cei noi — viteza închide vânzarea.</p></div>' +
+        '<p class="pl-lede">Fiecare lead, de la formular la client. Sună întâi pe cei noi, viteza închide vânzarea.</p></div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
           (S.ctx.isAdmin ? '<button type="button" class="pl-btn is-ghost" data-act="stages" title="Editează etapele">' + ic('sliders') + '<span>Etape</span></button>' : '') +
@@ -344,7 +344,7 @@
       card('all', 'users', 'Leaduri active', w.length, fmtLei(w.reduce((s, l) => s + (l.value || 0), 0)) + ' în pipeline') +
       card('queue', 'zap', 'De sunat acum', callNow.length, overdue.length + ' întârziate · ' + fresh.length + ' noi', callNow.length ? 'hot' : '') +
       card('new', 'flame', 'Necontactați', fresh.length, oldest ? 'cel mai vechi: ' + agoLong(oldest.createdAt) : 'toți au fost sunați', fresh.length ? 'warn' : 'good') +
-      card('booked', 'calendar', 'Programați', booked.length, bookedStage ? 'în „' + esc(bookedStage.name) + '”' : '—') +
+      card('booked', 'calendar', 'Programați', booked.length, bookedStage ? 'în „' + esc(bookedStage.name) + '”' : '-') +
       card('won', 'trophy', 'Câștigați luna asta', won.length, fmtLei(won.reduce((s, l) => s + (l.value || 0), 0)), won.length ? 'good' : '');
     const q = queueList().length;
     const qc = root.querySelector('[data-queue-count]');
@@ -671,7 +671,7 @@
       renderAll();
       if (S.drawer && S.drawer.id === id) renderDrawer();
       if (!changed) return;
-      if (target.kind === 'won') ui().toast('Felicitări — ' + lead.name + ' e client nou. L-am adăugat în baza de clienți.', 'success');
+      if (target.kind === 'won') ui().toast('Felicitări - ' + lead.name + ' e client nou. L-am adăugat în baza de clienți.', 'success');
       else if (target.kind === 'booked' && !j.lead.appointmentId) {
         ui().toast('Pune și programarea în calendar, ca să primească confirmarea.', 'info');
         openLead(id, { section: 'book' });
@@ -742,7 +742,7 @@
   }
   function openQueue() {
     const q = queueList();
-    if (!q.length) { ui().toast('Coada e goală — toți leadurii au fost contactați la timp.', 'success'); return; }
+    if (!q.length) { ui().toast('Coada e goală, toți leadurii au fost contactați la timp.', 'success'); return; }
     openLead(q[0].id, { queue: q.map((l) => l.id), section: 'log' });
   }
   function stepDrawer(dir) {
@@ -783,7 +783,7 @@
 
   function offerOptions(current) {
     const known = OFFERS.some((o) => o.label === current);
-    return '<option value="">— alege oferta —</option>' +
+    return '<option value="">- alege oferta</option>' +
       OFFERS.map((o) => '<option value="' + esc(o.label) + '"' + (o.label === current ? ' selected' : '') + '>' + esc(o.label) + ' · ' + o.value + ' lei' + (o.where ? ' (' + o.where + ')' : '') + '</option>').join('') +
       (current && !known ? '<option selected>' + esc(current) + '</option>' : '') +
       '<option value="__custom">Altceva…</option>';
@@ -794,7 +794,7 @@
   function newLeadHtml() {
     const d = S.drawer;
     const workStages = S.stages.filter((s) => s.kind === 'open' || s.kind === 'booked');
-    return '<header class="pl-dhead"><div class="pl-dtitle"><span class="pl-avatar is-new">' + ic('userPlus') + '</span><div><h3>Lead nou</h3><p>Dacă numărul există deja, deschid fișa existentă — fără dubluri.</p></div></div>' +
+    return '<header class="pl-dhead"><div class="pl-dtitle"><span class="pl-avatar is-new">' + ic('userPlus') + '</span><div><h3>Lead nou</h3><p>Dacă numărul există deja, deschid fișa existentă, fără dubluri.</p></div></div>' +
       '<button type="button" class="pl-icon-btn" data-close aria-label="Închide">' + ic('x') + '</button></header>' +
       '<form class="pl-dbody pl-form" data-form="new" autocomplete="off">' +
         '<div class="pl-grid">' +
@@ -1055,8 +1055,8 @@
         replaceLead(j.lead);
         S.drawer.dirty = false;
         renderAll();
-        if (j.duplicate) ui().toast(j.reopened ? 'Numărul era la Pierduți — am redeschis leadul existent.' : 'Numărul există deja — am deschis fișa existentă.', 'info');
-        else ui().toast('Lead adăugat. Sună-l acum — primele 5 minute contează cel mai mult.', 'success');
+        if (j.duplicate) ui().toast(j.reopened ? 'Numărul era la Pierduți, am redeschis leadul existent.' : 'Numărul există deja, am deschis fișa existentă.', 'info');
+        else ui().toast('Lead adăugat. Sună-l acum, primele 5 minute contează cel mai mult.', 'success');
         openLead(j.lead.id, { section: j.duplicate ? '' : 'log' });
         flashCard(j.lead.id);
       } catch (e) { ui().toast(errText(e), 'error'); }
@@ -1277,7 +1277,7 @@
     window.K.on('pipeline:new', () => { if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX); mount(); openNew(); });
     window.K.on('pipeline:queue', () => { mount(); (S.loaded ? Promise.resolve() : load()).then(openQueue); });
   }
-  // Plain fetch (no login redirect) — this is a background nicety, not a page load.
+  // Plain fetch (no login redirect), this is a background nicety, not a page load.
   document.addEventListener('DOMContentLoaded', () => setTimeout(() => {
     if (S.loaded) return;
     fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: '{"action":"list"}' })

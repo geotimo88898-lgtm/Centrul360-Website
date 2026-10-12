@@ -1,10 +1,10 @@
-// /api/portal-automation-tasks — the reception's task queue ("Sarcini"). Tasks are created by the
+// /api/portal-automation-tasks, the reception's task queue ("Sarcini"). Tasks are created by the
 // automations (api/_lib/workflows.js): WhatsApp messages to send in one tap when they can't go out
 // automatically, calls to make, follow-ups.
 //
 // GET  -> list (default: only status:'pending'; pass ?all=1 for everything). Also the
 //         runs whatever automation steps are due first (workflows.tick).
-// POST -> action:'complete' — any authenticated employee can mark a task done (they
+// POST -> action:'complete' - any authenticated employee can mark a task done (they
 //         sent the WhatsApp by hand and are checking it off), not just admin.
 //
 // Visibility: admin sees every location's tasks; everyone else only sees tasks tagged

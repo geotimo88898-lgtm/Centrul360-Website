@@ -1,4 +1,4 @@
-// /api/portal-whatsapp — "Mesaje" tab: a WhatsApp inbox inside the portal. Action-routed,
+// /api/portal-whatsapp, "Mesaje" tab: a WhatsApp inbox inside the portal. Action-routed,
 // same convention as portal-attendance.js / portal-leave.js.
 //
 //   list   -> every conversation (any authenticated employee), lightest payload: last

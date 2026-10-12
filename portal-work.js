@@ -1,4 +1,4 @@
-// Centrul360 portal — work: "Sarcini" (the receptionist's list) and "Oferte" (the team's view of
+// Centrul360 portal, work: "Sarcini" (the receptionist's list) and "Oferte" (the team's view of
 // the live offers). Sarcini: every message to send with the WhatsApp text already written (from
 // the automations) plus the to-dos she adds herself ("Adaugă sarcină"); one tap to send, one tap
 // to tick off. Oferte: the same list as the website, read-only, with a copy button for WhatsApp.
@@ -185,7 +185,7 @@
     return '<div class="rs-offers">' + offers.map((o) => {
       const lines = String(o.description || '').split('\n').filter(Boolean);
       const pitch = o.title + ': ' + o.priceNew + ' lei' + (o.priceOld > o.priceNew ? ' în loc de ' + o.priceOld + ' lei' : '') + (lines[0] ? '. ' + lines[0] : '');
-      return '<article class="rs-offer"><header><b>' + esc(o.title) + '</b>' + (o.discountPercent ? '<span class="k-tag is-accent">−' + o.discountPercent + '%</span>' : '') + '</header>' +
+      return '<article class="rs-offer"><header><b>' + esc(o.title) + '</b>' + (o.discountPercent ? '<span class="k-tag is-accent">-' + o.discountPercent + '%</span>' : '') + '</header>' +
         '<div class="rs-price"><b>' + K.lei(o.priceNew) + '</b>' + (o.priceOld > o.priceNew ? '<s>' + K.lei(o.priceOld) + '</s>' : '') + '</div>' +
         (lines.length ? '<ul>' + lines.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ul>' : '') +
         '<footer>' + (o.locations || []).map((l) => '<span class="k-tag">' + icon('pin') + loc[l] + '</span>').join('') + (o.guarantee ? '<span class="k-tag is-good">' + icon('shield') + 'Garanția banilor înapoi</span>' : '') +

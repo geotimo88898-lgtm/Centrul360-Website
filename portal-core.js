@@ -1,4 +1,4 @@
-// Centrul360 portal — core: loads /api/portal-data, routes between sections (with #hash deep links),
+// Centrul360 portal, core: loads /api/portal-data, routes between sections (with #hash deep links),
 // keeps the live nav badges, and owns the avatar menu (accent theme, menu rail, logout).
 // Every section's UI lives in its own module (portal-dashboard.js, portal-calendar.js, …) and
 // registers itself with K.section(); this file only wires them together.
@@ -64,7 +64,7 @@
     document.getElementById('whoName').textContent = DATA.me.name;
     // Owner: just "Admin". Staff: their role + location under the name.
     const whoLoc = document.getElementById('whoLocation');
-    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.location && DATA.me.location !== '—' ? ' · ' + DATA.me.location : '');
+    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.location && DATA.me.location !== '-' ? ' · ' + DATA.me.location : '');
     whoLoc.hidden = !whoLoc.textContent;
     document.querySelectorAll('.admin-only').forEach((el) => el.classList.toggle('hidden', !DATA.isAdmin));
     // Role-shaped navigation: reception works the pipeline + tasks, cosmeticians see their own
@@ -108,7 +108,7 @@
       document.querySelector('header.topbar').after(bar);
     }
     bar.innerHTML = icon('eye') + '<span>Vezi portalul ca <b>' + esc(DATA.me.name) + '</b> · ' + esc(K.roleLabel(DATA.me.role)) +
-      '<em> — exact ce vede, doar pentru privit</em></span><button type="button" class="k-btn is-sm" data-stop>' + icon('undo') + 'Înapoi la Admin</button>';
+      '<em> - exact ce vede, doar pentru privit</em></span><button type="button" class="k-btn is-sm" data-stop>' + icon('undo') + 'Înapoi la Admin</button>';
     bar.querySelector('[data-stop]').addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
       try { await K.api('/api/portal-impersonate', {}, { method: 'DELETE' }); } catch (err) { /* back to login at worst */ }
@@ -123,7 +123,7 @@
 
   // ------------------------------------------------------------------ live sync
   // Every save anywhere bumps a revision on the server; each open portal checks it every few
-  // seconds and refreshes what's on screen when it moves — never while someone is mid-edit.
+  // seconds and refreshes what's on screen when it moves, never while someone is mid-edit.
   const busyEditing = () => K.typing(document.activeElement) || !!document.querySelector('.k-drawer-root .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
   function applyRemote() {
     if (busyEditing()) { pendingRemote = true; return; }
@@ -150,7 +150,7 @@
   K.reload = () => load(true);
 
   // ------------------------------------------------------------------ navigation
-  // A section can sit in two places of the menu (Traininguri: staff group / admin group) —
+  // A section can sit in two places of the menu (Traininguri: staff group / admin group)
   // it's allowed if any of its buttons is visible for this account.
   function allowed(tab) {
     return Array.from(document.querySelectorAll('#tabsNav button[data-tab="' + tab + '"]')).some((b) => !b.classList.contains('hidden'));

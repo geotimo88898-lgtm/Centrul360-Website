@@ -1,4 +1,4 @@
-// Default config.json seed — used the first time the portal runs (before the owner has
+// Default config.json seed, used the first time the portal runs (before the owner has
 // adjusted anything in Setări). All of this is editable later through the portal UI
 // (commission %, race bonus, company goal) or through the Setări → Conținut tab
 // (resources). Nothing here is hardcoded into the pages themselves.
@@ -36,9 +36,9 @@ function defaultConfig() {
     },
     // Company-wide revenue goal for the current month, across both locations. When the
     // sum of all *approved* sales in `month` reaches `target`, every active employee
-    // gets `reward` RON. PLACEHOLDER VALUES — the owner must adjust these in Setări.
+    // gets `reward` RON. PLACEHOLDER VALUES, the owner must adjust these in Setări.
     companyGoal: {
-      target: 25000, // PLACEHOLDER — owner must set a real monthly target
+      target: 25000, // PLACEHOLDER, owner must set a real monthly target
       reward: 100,
       month: currentMonth(),
     },
@@ -56,10 +56,10 @@ function defaultConfig() {
       ],
       upcomingOffers: [
         'Actualizează această secțiune din Setări → Conținut cu ofertele active (campanii sezoniere, reduceri de lansare, pachete cadou).',
-        'Exemplu: "Reducere 15% la pachete HIFU full face în luna curentă — valabil doar la plata integrală în avans."',
+        'Exemplu: "Reducere 15% la pachete HIFU full face în luna curentă, valabil doar la plata integrală în avans."',
       ],
       receptionScripts: [
-        'Preluare telefonică programare: "Bună ziua, ați sunat la Centrul360. Cu ce vă pot ajuta? Pentru ce tratament doriți să vă programați și la ce locație — Timișoara sau Arad?"',
+        'Preluare telefonică programare: "Bună ziua, ați sunat la Centrul360. Cu ce vă pot ajuta? Pentru ce tratament doriți să vă programați și la ce locație - Timișoara sau Arad?"',
         'Confirmare programare: repetă data, ora, tratamentul și locația; menționează avansul de 49 RON dacă e cazul și explică politica de anulare/reprogramare.',
         'Client nehotărât la recepție: prezintă pe scurt 2-3 opțiuni de tratament potrivite nevoii descrise, oferă o fișă de informare și propune o consultație gratuită.',
         'Reclamație / nemulțumire: ascultă complet fără a întrerupe, mulțumește pentru feedback, notează detaliile și anunță imediat managementul; nu promite compensații pe loc.',
@@ -77,7 +77,7 @@ function defaultConfig() {
       // per treatment: a line starting with "## " is the treatment name/heading, every
       // other line under it is a bullet (duration, who it's for, FAQ...). Editable as
       // plain text from Setări → Conținut, same one-line-per-bullet convention as the
-      // sections above — no code changes needed to update these.
+      // sections above, no code changes needed to update these.
       treatmentReference: [
         '## Epilare laser (Elysion Pro)',
         'Durată: 10-45 min în funcție de zonă (ex: subsuori ~10 min, picior întreg ~40-45 min).',
@@ -111,7 +111,7 @@ function defaultConfig() {
         'Cât de des? La 4-6 săptămâni interval, cură de 3-6 ședințe.',
         '## Tratamente faciale (hidratare / ten problematic / anti-pigmentare)',
         'Durată: 45-60 min în funcție de protocolul ales.',
-        'Pentru cine: orice tip de ten — personalizat după nevoie (hidratare, acnee, pete pigmentare).',
+        'Pentru cine: orice tip de ten, personalizat după nevoie (hidratare, acnee, pete pigmentare).',
         'Se poate face lunar? Da, recomandat ca întreținere 1 ședință/lună între curele intensive.',
         '## Celulită',
         'Durată: 30-45 min per ședință.',
@@ -130,7 +130,7 @@ function defaultConfig() {
 
 // Standard operating procedures, one set per role (+ one for everyone). Shown in
 // "SOP & Resurse"; the owner edits them in place from the same screen. Each SOP is a
-// short "when" line and numbered steps — written to be followed, not read once.
+// short "when" line and numbered steps, written to be followed, not read once.
 function defaultSops() {
   return {
     receptie: [
@@ -140,15 +140,15 @@ function defaultSops() {
         'Sarcini: trimite reminderul WhatsApp tuturor programărilor de azi care nu l-au primit.',
         'Pipeline → Coada de apeluri: sună întâi leadurile întârziate, apoi pe cele noi.',
       ] },
-      { id: 'r-lead', title: 'Lead nou din Facebook — regula celor 5 minute', icon: 'zap', when: 'De fiecare dată când apare un lead nou', steps: [
-        'Sună în maxim 5 minute — după 1 oră șansa de programare scade drastic.',
+      { id: 'r-lead', title: 'Lead nou din Facebook - regula celor 5 minute', icon: 'zap', when: 'De fiecare dată când apare un lead nou', steps: [
+        'Sună în maxim 5 minute, după 1 oră șansa de programare scade drastic.',
         'Nu răspunde? Trimite imediat WhatsApp-ul pregătit din fișa leadului.',
         'Notează rezultatul în fișă (A răspuns / Nu răspunde / Vrea programare…). Follow-up-ul se propune singur.',
         'Ritmul de revenire: peste 2 ore → mâine 10:00 → peste 3 zile. După 3 încercări fără răspuns: Pierdut, cu motiv.',
         'Nu promite rezultate și nu da prețuri diferite de cele din Oferte active.',
       ] },
       { id: 'r-programare', title: 'Programarea', icon: 'calendar', when: 'La telefon, WhatsApp sau la recepție', steps: [
-        'Confirmă tratamentul și oferta exactă (vezi Oferte active — prețul de acolo e singurul corect).',
+        'Confirmă tratamentul și oferta exactă (vezi Oferte active, prețul de acolo e singurul corect).',
         'Verifică locația: EMS și epilarea laser doar la Timișoara; Cavitația 1+1 doar la Arad.',
         'Din fișa leadului apasă Programează (sau Calendar → click pe slot liber). Telefonul e obligatoriu.',
         'Trimite confirmarea pe WhatsApp din fișa programării.',
@@ -165,7 +165,7 @@ function defaultSops() {
         'Anunță cosmeticiana și condu clienta în cabină.',
       ] },
       { id: 'r-incasare', title: 'Încasarea și următoarea programare', icon: 'wallet', when: 'La finalul tratamentului', steps: [
-        'Din fișa programării apasă Încasează — clientul, tratamentul și cosmeticiana se completează singure.',
+        'Din fișa programării apasă Încasează, clientul, tratamentul și cosmeticiana se completează singure.',
         'Alege oferta din chips (prețul se pune automat) și metoda de plată.',
         'Programarea trece automat pe Finalizată.',
         'Înainte să plece: propune și pune în Calendar următoarea ședință.',
@@ -178,7 +178,7 @@ function defaultSops() {
       { id: 'r-reclamatie', title: 'Reclamații', icon: 'alert', when: 'Când o clientă e nemulțumită', steps: [
         'Ascultă până la capăt, fără să întrerupi; mulțumește pentru feedback.',
         'Notează detaliile (în Pipeline, ca notă, dacă e lead) și anunță imediat managementul.',
-        'Nu promite compensații pe loc — revii tu cu răspunsul în aceeași zi.',
+        'Nu promite compensații pe loc, revii tu cu răspunsul în aceeași zi.',
       ] },
     ],
     cosmetician: [
@@ -194,19 +194,19 @@ function defaultSops() {
         'Fotografii înainte doar cu acordul clientei.',
       ] },
       { id: 'c-tratament', title: 'Tratamentul', icon: 'sparkles', when: 'În cabină', steps: [
-        'Urmează protocolul aparatului (Protocoale) — parametri, timp, zone.',
+        'Urmează protocolul aparatului (Protocoale), parametri, timp, zone.',
         'Spune-i clientei ce urmează să simtă; verifică confortul pe parcurs.',
         'Igienă: dezinfectare aparat și suprafețe după fiecare clientă.',
       ] },
       { id: 'c-dupa', title: 'După tratament', icon: 'checkCircle', when: 'Înainte ca clienta să iasă din cabină', steps: [
-        'Recomandări post-tratament (soare, sport, hidratare) — pe scurt și clar.',
+        'Recomandări post-tratament (soare, sport, hidratare), pe scurt și clar.',
         'Spune-i recepției ce ședință urmează și când, ca să fie programată pe loc.',
         'Dacă ai recomandat un pachet sau produs și clienta l-a cumpărat: Comisionul meu → Loghează vânzarea, în aceeași zi.',
       ] },
       { id: 'c-upsell', title: 'Upsell etic', icon: 'gift', when: 'Doar când ajută clienta', steps: [
         'Recomandă doar ce rezolvă obiectivul spus de clientă (vezi Upsell).',
         'Explică de ce: rezultatul, numărul de ședințe, intervalul.',
-        'Fără presiune — o recomandare bună vinde singură.',
+        'Fără presiune, o recomandare bună vinde singură.',
       ] },
       { id: 'c-inchidere', title: 'Final de zi', icon: 'moon', when: 'Zilnic', steps: [
         'Aparate oprite și curățate, cabina pregătită pentru mâine.',
@@ -216,7 +216,7 @@ function defaultSops() {
     ],
     toti: [
       { id: 't-reguli', title: 'Regulile de aur', icon: 'star', when: 'Mereu', steps: [
-        'Prețurile corecte sunt cele din Oferte active — nimic negociat pe loc.',
+        'Prețurile corecte sunt cele din Oferte active, nimic negociat pe loc.',
         'EMS și epilarea laser doar la Timișoara; Cavitația 1+1 doar la Arad.',
         'Garanția banilor înapoi există doar la epilarea laser.',
         'Nu promitem rezultate garantate pentru tratamentele corporale și faciale.',

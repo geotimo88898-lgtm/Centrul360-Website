@@ -1,4 +1,4 @@
-// POST /api/portal-leave — "Cereri de concediu" (leave requests), folded into the admin's
+// POST /api/portal-leave, "Cereri de concediu" (leave requests), folded into the admin's
 // existing Aprobări mental model (api/portal-approve.js does the same for commission).
 // One endpoint, action-routed via body.action:
 //
@@ -11,7 +11,7 @@
 //
 // On approval, a one-page PDF is generated (api/_lib/pdf-leave.js) and stored privately in
 // Blob at data/leave-pdfs/{id}.pdf; api/portal-leave-pdf.js streams it back to the admin or the
-// requesting employee. This is a mechanism, not a legal guarantee — see the UI copy and the
+// requesting employee. This is a mechanism, not a legal guarantee, see the UI copy and the
 // footer notice printed on the PDF itself.
 
 const crypto = require('crypto');
@@ -24,7 +24,7 @@ const KEY = 'data/leave-requests.json';
 const VALID_TYPES = ['odihna', 'fara_plata', 'medical', 'alta'];
 const REASON_REQUIRED = ['medical', 'alta'];
 const MAX_REASON = 500;
-// Full labels (with diacritics) for the calendar block — the PDF strips diacritics itself
+// Full labels (with diacritics) for the calendar block, the PDF strips diacritics itself
 // (see _lib/pdf-leave.js), but the Calendar UI renders UTF-8 fine.
 const LEAVE_LABELS = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu' };
 // Same literal location list as api/portal-appointments.js / api/portal-leads.js.
@@ -40,7 +40,7 @@ const isoDate = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pa
 // no fixed location (e.g. the admin, who isn't scheduled on the Calendar) simply gets no block.
 async function blockCalendar(request, employee) {
   if (!VALID_LOCATIONS.includes(employee.location)) return;
-  const label = 'Concediu — ' + (LEAVE_LABELS[request.type] || request.type);
+  const label = 'Concediu - ' + (LEAVE_LABELS[request.type] || request.type);
   const start = new Date(request.startDate + 'T00:00:00');
   const end = new Date(request.endDate + 'T00:00:00');
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -48,7 +48,7 @@ async function blockCalendar(request, employee) {
   }
 }
 
-// Simple calendar count of Mon-Fri between start/end inclusive — doesn't model Romanian public
+// Simple calendar count of Mon-Fri between start/end inclusive, doesn't model Romanian public
 // holidays (there's no holiday calendar in this codebase), so this is an approximation the
 // owner should sanity-check for periods spanning a legal holiday.
 function workDaysBetween(startDate, endDate) {
@@ -112,7 +112,7 @@ module.exports = async (req, res) => {
 
     if (action === 'list') {
       let list = isAdmin ? requests : requests.filter((r) => r.employeeId === session.employeeId);
-      // Pending first (oldest first — first to act on), then decided, most recent decision first.
+      // Pending first (oldest first, first to act on), then decided, most recent decision first.
       list = list.slice().sort((a, b) => {
         if (a.status === 'pending' && b.status !== 'pending') return -1;
         if (b.status === 'pending' && a.status !== 'pending') return 1;
@@ -142,7 +142,7 @@ module.exports = async (req, res) => {
         await writeBinary(pdfBlobPath, pdfBuffer, 'application/pdf');
         request.status = 'approved';
         request.pdfBlobPath = pdfBlobPath;
-        // Any leave type makes the person unavailable, not just 'odihna' — block the Calendar
+        // Any leave type makes the person unavailable, not just 'odihna' - block the Calendar
         // for the whole range before responding, so reception sees it the moment it's approved.
         await blockCalendar(request, employee);
       }
@@ -153,7 +153,7 @@ module.exports = async (req, res) => {
 
     if (action === 'admin_create') {
       // Admin manually logs a leave that already happened/was agreed off-portal (e.g. the
-      // employee didn't submit it herself) — created and approved in one step: no 'pending'
+      // employee didn't submit it herself), created and approved in one step: no 'pending'
       // state, same PDF-generation + Calendar-block side effects as a normal approval.
       if (!requireAdmin(req, res)) return;
       const { employeeId, type, startDate, endDate } = body;

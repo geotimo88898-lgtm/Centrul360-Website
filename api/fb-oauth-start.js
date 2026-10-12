@@ -1,10 +1,10 @@
-// GET /api/fb-oauth-start — admin-only, one-time setup action (Setări → Integrări →
+// GET /api/fb-oauth-start, admin-only, one-time setup action (Setări → Integrări →
 // "Conectează Facebook"). Redirects the admin's browser into Facebook's OAuth dialog so
 // they can grant this app access to the clinic's Facebook Page (for Lead Ads retrieval).
 //
 // Requires FB_APP_ID (Vercel env var, set by the owner once she creates her own Meta
 // Developer App with the "Facebook Login for Business" product). Until then this just
-// responds 400 — no crash, no redirect to a broken URL.
+// responds 400, no crash, no redirect to a broken URL.
 
 const crypto = require('crypto');
 const { requireAdmin } = require('./_lib/auth');
@@ -13,7 +13,7 @@ const { siteOrigin, GRAPH_VERSION } = require('./_lib/facebook');
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes is plenty for an admin to complete the dialog
 
 // Signs "<expiry>.<nonce>" with PORTAL_SECRET (the same secret that signs the portal's
-// session cookie — see _lib/auth.js) so fb-oauth-callback can verify the `state` it gets
+// session cookie, see _lib/auth.js) so fb-oauth-callback can verify the `state` it gets
 // back from Facebook wasn't forged, without needing any server-side storage for it.
 function signState(secret) {
   const nonce = crypto.randomBytes(16).toString('hex');

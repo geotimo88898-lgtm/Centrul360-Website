@@ -1,4 +1,4 @@
-/* Centrul360 portal — launch layer: multi-category picker, payment drawer, Încasări filters,
+/* Centrul360 portal, launch layer: multi-category picker, payment drawer, Încasări filters,
    Comisionul meu, Contacte (sheets, notes, before/after sessions), Echipa tabs.
    Built on the same tokens as portal-theme.css / portal-kit.css. Big tap targets on phones. */
 
@@ -339,3 +339,22 @@ html[data-role="cosmetician"] [data-section-toggle="book"], html[data-role="cosm
 .acc-reset{ justify-self:start; padding:0; border:0; background:transparent; color:var(--muted); font:inherit; font-size:.76rem; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
 .acc-reset:hover{ color:var(--fg); }
 @media (max-width:720px){ .k-menu-item kbd{ display:none; } }
+
+/* Contact drawer tabs: the blocks of a tab (consent, sessions, add button …) never touch */
+.ct-pane{ display:flex; flex-direction:column; gap:1rem; }
+.ct-pane > *{ margin-top:0; margin-bottom:0; }
+
+/* Info rows: the icon stays put, the sentence wraps as one block (not word by word) */
+.st-example > svg, .st-note > svg{ flex:none; }
+.st-example > span, .st-note > span{ flex:1; min-width:0; line-height:1.45; }
+/* A form's Save row never sticks to the last field */
+.k-form + .k-form-actions{ margin-top:1rem; }
+
+/* Native selects (phones open the system picker): the fixed-height ones keep their text centred, not cut */
+.cal-bar-right > select, .cd-filters > select{ padding-top:0; padding-bottom:0; }
+@media (max-width:720px){
+  .cd-filters{ display:flex; flex-wrap:wrap; gap:.5rem; }
+  .cd-filters > select{ flex:1 1 0; min-width:0; height:44px; }
+  .cd-filters > select[data-f="emp"]{ flex-basis:100%; }
+  .cal-bar-right > select{ height:44px; }
+}
