@@ -4,6 +4,7 @@
 //         to be picked after Facebook's login (several Pages on one account)
 //   POST { action: 'app', appId, appSecret, configId }   the Meta app to use (saved in the portal,
 //         wins over FB_APP_ID / FB_APP_SECRET in Vercel); an empty secret keeps the saved one
+//   POST { action: 'test_read' }     can the portal read the Page's forms and leads? (Facebook's own answer)
 //   POST { action: 'resubscribe' }   subscribe the connected Page to this app's leads again
 //   POST { action: 'choose', pageId, adAccountId }   connect that Page (from the login just made,
 //         or another Page of the same login) and remember the ad account
@@ -86,6 +87,27 @@ module.exports = async (req, res) => {
       // a Page token belongs to the app that issued it: another app means connecting again
       if (!sameApp) { await writeJSON('data/fb-connection.json', {}); await writeJSON('data/fb-pending.json', {}); }
       res.status(200).json(await status(req));
+      return;
+    }
+
+    if (body.action === 'test_read') {
+      const conn = await loadConnection(readJSON);
+      if (!conn.pageId) { res.status(400).json({ error: 'not_connected' }); return; }
+      const get = async (path, params) => {
+        const r = await fetch(GRAPH_BASE + path + '?' + new URLSearchParams(Object.assign({ access_token: conn.pageAccessToken }, params)));
+        const j = await r.json().catch(() => ({}));
+        return r.ok ? { data: j.data || [] } : { error: (j.error && j.error.message) || 'eroare ' + r.status };
+      };
+      const forms = await get('/' + encodeURIComponent(conn.pageId) + '/leadgen_forms', { fields: 'id,name,status', limit: '25' });
+      if (forms.error) { res.status(200).json({ ok: false, step: 'forms', message: forms.error }); return; }
+      const active = forms.data.filter((f) => f.status === 'ACTIVE');
+      const pick = active[0] || forms.data[0];
+      if (!pick) { res.status(200).json({ ok: false, step: 'forms', message: 'Pagina nu are niciun formular.' }); return; }
+      const leads = await get('/' + encodeURIComponent(pick.id) + '/leads', { fields: 'id,created_time', limit: '1' });
+      res.status(200).json({
+        ok: !leads.error, step: 'leads', form: pick.name, forms: forms.data.length,
+        message: leads.error || (leads.data.length ? 'Ultimul lead din formular: ' + leads.data[0].created_time : 'Formularul nu are încă leaduri.'),
+      });
       return;
     }
 

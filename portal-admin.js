@@ -786,6 +786,7 @@
           '<span>' + (sub.ok ? 'Pagina trimite leadurile la portal.' + (sub.since ? ' Abonată ' + esc(K.ago(sub.since)) + '.' : '') : 'Pagina nu trimite leadurile la portal' + (sub.error ? ': ' + esc(sub.error) : '.')) + '</span>' +
           (sub.ok ? '' : '<button type="button" class="k-btn is-primary is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') + '</div>' +
         (sub.apps && sub.apps.length ? '<small class="k-muted">Aplicații care primesc leadurile Paginii: ' + esc(sub.apps.join(', ')) + '</small>' : '') +
+        '<div class="st-fb-read"><button type="button" class="k-btn is-outline is-sm" data-fb-read>' + icon('search') + 'Verifică citirea leadurilor</button><small class="k-muted">Pagina ' + esc(d.pageName || '') + ' · ID ' + esc(d.pageId || '') + '</small><div data-fb-read-out></div></div>' +
         '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele livrări de la Facebook</b><button type="button" class="k-btn is-ghost is-sm" data-fb-refresh>' + icon('refresh') + 'Reîmprospătează</button></div>' +
           ((d.deliveries || []).length ? d.deliveries.map((x) => '<div class="st-fb-logrow ' + (x.ok ? 'is-ok' : 'is-bad') + '"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text) + '</em></div>').join('')
             : '<p class="k-muted">Nimic încă. Un lead de test care nu apare aici nu a fost trimis de Facebook către portal.</p>') + '</div></div>';
@@ -800,6 +801,15 @@
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });
       box.querySelector('[data-fb-refresh]').addEventListener('click', () => loadFb(box));
+      const rd = box.querySelector('[data-fb-read]');
+      rd.addEventListener('click', () => K.busy(rd, async () => {
+        const out = box.querySelector('[data-fb-read-out]');
+        try {
+          const t = await K.api('/api/fb-connection-status', { action: 'test_read' });
+          out.className = 'st-fb-readout ' + (t.ok ? 'is-ok' : 'is-bad');
+          out.textContent = (t.ok ? 'Merge. ' : 'Facebook refuză' + (t.step === 'forms' ? ' lista de formulare: ' : ' leadurile' + (t.form ? ' din „' + t.form + '”' : '') + ': ')) + t.message;
+        } catch (err) { out.className = 'st-fb-readout is-bad'; out.textContent = K.errText(err); }
+      }));
       const rs = box.querySelector('[data-fb-resub]');
       if (rs) rs.addEventListener('click', () => K.busy(rs, async () => {
         try { await K.api('/api/fb-connection-status', { action: 'resubscribe' }); K.ui().toast('Gata, Pagina trimite acum leadurile la portal.', 'success'); loadFb(box); }

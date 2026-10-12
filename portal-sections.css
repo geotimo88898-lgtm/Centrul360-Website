@@ -530,6 +530,11 @@
 .st-fb-sub.is-ok{ background:var(--good-soft); color:var(--good); }
 .st-fb-sub.is-bad{ background:var(--bad-soft); color:var(--bad); }
 .st-fb-sub span{ flex:1; min-width:12rem; }
+.st-fb-read{ display:flex; flex-direction:column; align-items:flex-start; gap:.35rem; }
+.st-fb-read small{ font-size:.76rem; }
+.st-fb-readout{ font-size:.8rem; line-height:1.45; padding:.45rem .6rem; border-radius:10px; }
+.st-fb-readout.is-ok{ background:var(--good-soft); color:var(--good); }
+.st-fb-readout.is-bad{ background:var(--bad-soft); color:var(--bad); }
 .st-fb-log{ padding:.6rem .7rem; border-radius:11px; border:1px solid var(--line); background:var(--glass); }
 .st-fb-log-head{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-bottom:.35rem; font-size:.84rem; }
 .st-fb-log p{ margin:0; font-size:.8rem; }
