@@ -27,6 +27,8 @@
     missing_title: 'Completează titlul.', invalid_prices: 'Prețurile nu sunt valide.', offer_not_found: 'Oferta nu mai există.',
     invalid_type: 'Alege tipul de concediu.', invalid_range: 'Data de sfârșit e înainte de cea de început.', missing_reason: 'Completează motivul.',
     request_not_found: 'Cererea nu mai există.', entry_not_found: 'Intrarea nu mai există.', invalid_time: 'Ora nu e validă.',
+    invalid_phone: 'Numărul de telefon nu e valid.', missing_text: 'Scrie un mesaj.', conversation_not_found: 'Conversația nu mai există.',
+    outside_24h_window: 'Fereastra de 24h a expirat — clientul trebuie să scrie el primul din nou, sau trimite un șablon aprobat.', send_failed: 'Trimiterea a eșuat. Încearcă din nou.',
   };
   const errText = (e, fallback) => ERR[e && e.code] || fallback || 'Nu am putut salva. Încearcă din nou.';
   async function api(url, body, opts) {
