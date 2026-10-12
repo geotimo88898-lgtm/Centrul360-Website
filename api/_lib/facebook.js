@@ -79,18 +79,39 @@ function extractLeadFields(fieldData) {
 // The form's own questions (everything except name / phone / email) with what the person answered
 // (zone, city, best time to call…): kept on the lead and shown on the contact.
 const CONTACT_KEYS = ['full_name', 'name', 'first_name', 'last_name', 'phone_number', 'phone', 'telefon', 'email'];
-function answerPairs(fieldData) {
+// `questions` (from fetchFormInfo) gives each answer the question exactly as written in the form,
+// and the option's own text for a multiple-choice answer; without it the field's key is tidied up.
+function answerPairs(fieldData, questions) {
+  const byKey = new Map((questions || []).map((q) => [String(q.key || '').toLowerCase(), q]));
   return (fieldData || [])
     .filter((f) => !CONTACT_KEYS.includes(String(f.name || '').toLowerCase().trim()))
     .map((f) => {
-      const q = String(f.name || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-      const a = (Array.isArray(f.values) ? f.values : [f.value]).filter((x) => x != null && x !== '').join(', ').replace(/_/g, ' ').trim();
-      return { q: q.charAt(0).toUpperCase() + q.slice(1), a };
+      const qd = byKey.get(String(f.name || '').toLowerCase());
+      const opts = new Map(((qd && qd.options) || []).map((o) => [String(o.key), o.value]));
+      const raw = String(f.name || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+      const q = qd && qd.label ? qd.label : raw.charAt(0).toUpperCase() + raw.slice(1);
+      const a = (Array.isArray(f.values) ? f.values : [f.value]).filter((x) => x != null && x !== '')
+        .map((v) => opts.get(String(v)) || (qd && qd.label ? String(v) : String(v).replace(/_/g, ' '))).join(', ').trim();
+      return { q, a };
     })
     .filter((x) => x.q && x.a);
 }
-const extraAnswers = (fieldData) => answerPairs(fieldData).map((x) => x.q.replace(/\?+$/, '') + ': ' + x.a);
+const extraAnswers = (fieldData, questions) => answerPairs(fieldData, questions).map((x) => x.q.replace(/\?+$/, '') + ': ' + x.a);
 
+// A form's name and its questions as Facebook shows them ({ key, label, options:[{ key, value }] }).
+async function fetchFormInfo(formId, token) {
+  if (!formId) return { name: '', questions: [] };
+  try {
+    const r = await fetch(`${GRAPH_BASE}/${encodeURIComponent(formId)}?${new URLSearchParams({ fields: 'name,questions', access_token: token })}`);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { name: '', questions: [] };
+    const questions = (j.questions || []).map((q) => ({
+      key: q.key || '', label: String(q.label || '').trim(), type: q.type || '',
+      options: (q.options || []).map((o) => ({ key: o.key, value: o.value })),
+    }));
+    return { name: String(j.name || ''), questions };
+  } catch (e) { return { name: '', questions: [] }; }
+}
 // One lead with what the ad told us. Ad / campaign names need the ads permission; without it
 // Meta refuses the whole request, so it is asked again with the basics only.
 async function fetchLead(leadgenId, token) {
@@ -196,5 +217,5 @@ async function loadPending(store) {
   return p && Array.isArray(p.pages) && Date.now() - (p.at || 0) < PENDING_TTL ? p : null;
 }
 
-module.exports = { GRAPH_VERSION, GRAPH_BASE, APP_KEY, appCreds, isConfigured, webhookSecrets, loadConnection, siteOrigin, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity, CITY_ID,
+module.exports = { GRAPH_VERSION, GRAPH_BASE, APP_KEY, appCreds, isConfigured, webhookSecrets, loadConnection, siteOrigin, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, fetchFormInfo, detectOffer, detectCity, CITY_ID,
   listAssets, connectPage, afterLogin, loadPending, PENDING_KEY };

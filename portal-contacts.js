@@ -383,8 +383,9 @@
     function formsHtml() {
       const f = st.forms || [];
       if (!f.length) return '';
-      const one = (x) => '<div class="ct-form-head">' + icon('facebook') + '<b>' + esc(x.name || 'Formular Facebook') + '</b><small>' + esc(K.dateShort(String(x.at).slice(0, 10))) + '</small></div>' +
-        (x.answers && x.answers.length ? '<dl class="ct-qa">' + x.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="k-muted">Formularul n-a avut întrebări.</p>');
+      const one = (x) => '<div class="ct-form-head">' + icon('facebook') + '<b>' + esc(x.name || 'Formular Facebook') + '</b><small>' + esc(K.dateShort(String(x.sentAt || x.at).slice(0, 10))) + '</small></div>' +
+        (x.answers && x.answers.length ? '<dl class="ct-qa">' + x.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="k-muted">Formularul n-a avut întrebări.</p>') +
+        (x.ad || x.campaign ? '<p class="ct-form-meta">' + [x.ad ? 'Reclamă: ' + x.ad : '', x.campaign ? 'Campanie: ' + x.campaign : ''].filter(Boolean).map(esc).join(' · ') + '</p>' : '');
       return '<section class="ct-form">' + one(f[0]) +
         (f.length > 1 ? '<details class="ct-form-more"><summary>Alte formulare (' + (f.length - 1) + ')</summary>' + f.slice(1).map((x) => '<div class="ct-form-old">' + one(x) + '</div>').join('') + '</details>' : '') + '</section>';
     }

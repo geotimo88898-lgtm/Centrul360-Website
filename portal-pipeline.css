@@ -253,6 +253,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-big-action.is-on{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 
 /* the Facebook form answers */
+.pl-form-meta{ margin:.6rem 0 0; font-size:.78rem; color:var(--muted); line-height:1.45; }
 .pl-qa{ display:grid; gap:.45rem; margin:.4rem 0 0; }
 .pl-qa > div{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:.75rem; }
 .pl-qa dt{ font-size:.82rem; color:var(--muted); }

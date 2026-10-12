@@ -814,12 +814,15 @@
   }
   const field = (label, control, cls) => '<label class="pl-field' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span>' + control + '</label>';
 
-  // what the person answered in the Facebook form (the newest one)
+  // the Facebook form the person filled (the newest): the questions as in the form with her answers,
+  // then which form, ad and campaign, and when she sent it
   function formAnswers(l) {
     const f = (l.forms || []).slice(-1)[0];
-    if (!f || !f.answers || !f.answers.length) return '';
-    return '<section class="pl-card-sec pl-form-ans"><div class="pl-sec-head"><h4>' + ic('facebook') + 'Din formular</h4><span class="pl-muted">' + esc(f.name || '') + '</span></div>' +
-      '<dl class="pl-qa">' + f.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl></section>';
+    if (!f) return '';
+    const meta = [f.name ? 'Formular: ' + f.name : '', f.ad ? 'Reclamă: ' + f.ad : '', f.campaign ? 'Campanie: ' + f.campaign : ''].filter(Boolean);
+    return '<section class="pl-card-sec pl-form-ans"><div class="pl-sec-head"><h4>' + ic('facebook') + 'Din formularul Facebook</h4><span class="pl-muted">trimis ' + esc(agoLong(f.sentAt || f.at)) + '</span></div>' +
+      (f.answers && f.answers.length ? '<dl class="pl-qa">' + f.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="pl-muted">Formularul n-a avut întrebări.</p>') +
+      (meta.length ? '<p class="pl-form-meta">' + meta.map(esc).join(' · ') + '</p>' : '') + '</section>';
   }
 
   function leadHtml(l) {

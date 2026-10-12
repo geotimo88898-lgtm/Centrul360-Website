@@ -13,7 +13,7 @@
 // "Lead nou" automations (the team's alert, the WhatsApp to the lead …).
 
 const { readJSON, writeJSON } = require('./store');
-const { GRAPH_BASE, loadConnection, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormName, detectOffer, detectCity } = require('./facebook');
+const { GRAPH_BASE, loadConnection, extractLeadFields, extraAnswers, answerPairs, fetchLead, fetchFormInfo, detectOffer, detectCity } = require('./facebook');
 const { loadOffers } = require('./offers');
 
 const FORMS_KEY = 'data/fb-forms.json';
@@ -39,7 +39,12 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   if (doc.seen.includes(leadgenId)) return 'deja primit';
   const formId = String(lead.form_id || formIdHint || '');
   const form = doc.forms[formId] = doc.forms[formId] || { name: '', offerId: '', location: '', leads: 0 };
-  if (!form.name) form.name = await fetchFormName(formId, pageAccessToken);
+  // the form's name and questions, asked once and kept (the questions as written in the form)
+  if (!form.name || !form.questions) {
+    const info = await fetchFormInfo(formId, pageAccessToken);
+    form.name = form.name || info.name;
+    form.questions = info.questions;
+  }
 
   const f = extractLeadFields(lead.field_data);
   // Meta's test leads carry text like "<test lead: dummy data for email>": a lead is never refused for a
@@ -48,7 +53,7 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   const name = isTest ? 'Lead de test Facebook' : f.name;
   const phone = String(f.phone).replace(/\D/g, '').length >= 6 ? f.phone : isTest ? '0700 000 000' : f.phone;
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email || '') ? f.email : '';
-  const answers = extraAnswers(lead.field_data);
+  const answers = extraAnswers(lead.field_data, form.questions);
   const text = [form.name, lead.ad_name, lead.adset_name, lead.campaign_name].concat(answers).filter(Boolean).join(' · ');
   const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
   // what the person answered ("Oraș: Arad") says the city better than the form's name
@@ -70,7 +75,7 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   const result = await createLead({
     name: name || 'Lead Facebook', phone, email, source: 'facebook', location,
     interest: offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
-    form: { id: formId, name: form.name, ad: lead.ad_name || '', answers: answerPairs(lead.field_data) },
+    form: { id: formId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
   });
   if (result.error) { console.error('fb-leads: createLead failed', leadgenId, result.error); return 'nu s-a putut salva: ' + result.error; }
   return (result.duplicate ? 'lead existent, actualizat: ' : 'lead nou: ') + (name || 'fără nume') + ' · ' + (offer ? offer.title : form.name || 'procedură necunoscută') + ' · ' + location;
