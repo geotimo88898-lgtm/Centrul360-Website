@@ -159,10 +159,10 @@ module.exports = async (req, res) => {
     console.warn('webhook-whatsapp: WHATSAPP_APP_SECRET not set — skipping signature verification (insecure, temporary)');
   }
 
-  // Always 200 once we're past (attempted) signature verification — everything below is
-  // "best effort, log and move on" so one bad entry never turns into a Meta retry storm.
-  res.status(200).json({ ok: true });
-
+  // Process fully BEFORE responding — Vercel can freeze/tear down the function the instant
+  // the response is sent, so any `await` after res.json() here is not guaranteed to run
+  // (this is exactly why messages were accepted but never actually saved). Per-entry
+  // try/catch below still means one bad entry never blocks the rest or the final response.
   try {
     const payload = JSON.parse(rawBody.toString('utf8'));
     const conversations = await readJSON(KEY, []);
@@ -199,4 +199,6 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error('webhook-whatsapp: error handling payload', err.message);
   }
+
+  res.status(200).json({ ok: true });
 };
