@@ -498,3 +498,15 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .cb-split > .is-wait svg{ color:var(--warn); }
 .k-row.is-wait .k-amount{ color:var(--muted); }
 .ad-money .ad-label{ font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+
+/* Evoluția totală: compare any session's BEFORE with any session's AFTER (subtle pickers) */
+.ct-cmp{ display:flex; align-items:center; flex-wrap:wrap; gap:.35rem; }
+.ct-cmp-pick{ position:relative; display:inline-flex; align-items:center; gap:.3rem; height:30px; padding:0 .55rem 0 .65rem; border-radius:999px; background:var(--glass); border:1px solid var(--line); cursor:pointer; transition:border-color .2s ease, background .2s ease; }
+.ct-cmp-pick:hover{ border-color:var(--line-on-dark); background:var(--glass-2); }
+.ct-cmp-pick > span{ font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+.ct-cmp-pick select{ appearance:none; -webkit-appearance:none; border:0 !important; background:transparent !important; box-shadow:none !important; padding:0 1rem 0 0 !important; height:28px; color:var(--fg); font:inherit; font-size:.8rem; font-weight:650; cursor:pointer; }
+.ct-cmp-pick select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+.ct-cmp-pick svg{ position:absolute; right:.5rem; width:13px; height:13px; color:var(--muted); pointer-events:none; }
+.ct-cmp-arrow{ color:var(--muted-2); font-size:.85rem; }
+.ct-cmp-reset{ border:0; background:transparent; color:var(--muted); font:inherit; font-size:.74rem; font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0 .2rem; }
+.ct-cmp-reset:hover{ color:var(--fg); }

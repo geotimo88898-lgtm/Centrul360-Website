@@ -366,6 +366,12 @@
           el.querySelector('[data-edit]').addEventListener('click', () => editContact(st, () => paintAll()));
           const body = el.querySelector('.k-dbody'); // the drawer shell is shared by every drawer: listen on its body only
           body.addEventListener('change', onFile);
+          body.addEventListener('change', (e) => {
+            const k = e.target.dataset && e.target.dataset.cmp;
+            if (!k) return;
+            st.cmp = Object.assign({}, st.cmp, { [k]: e.target.value });
+            paintPane();
+          });
           body.addEventListener('click', onPaneClick);
           body.addEventListener('focusout', onBlur);
           paintPane();
@@ -411,12 +417,22 @@
         '<div class="ct-slot-actions"><label class="k-icon-btn" title="Schimbă poza"><input type="file" accept="image/*" data-photo="' + esc(s.id) + '" data-slot="' + slot + '" hidden>' + icon('refresh') + '</label>' +
         (canRemove(ph) ? '<button type="button" class="k-icon-btn" data-del-photo="' + esc(s.id) + '" data-slot="' + slot + '" title="Șterge poza">' + icon('trash') + '</button>' : '') + '</div></div>';
     }
+    // "Evoluția totală": by default the first BEFORE and the last AFTER; the two small pickers in
+    // its title compare any session's before with any session's after (st.cmp).
     function totalPair() {
       const ss = st.detail.sessions.slice().sort((a, b) => a.n - b.n);
       const first = ss.find((s) => s.before);
       const last = ss.slice().reverse().find((s) => s.after);
       if (!first || !last || first.id === last.id) return null;
-      return { first, last };
+      const cmp = st.cmp || {};
+      const b = ss.find((s) => s.id === cmp.b && s.before) || first;
+      const a = ss.find((s) => s.id === cmp.a && s.after) || last;
+      return { first: b, last: a, isDefault: b === first && a === last };
+    }
+    function cmpPicker(k, sel) {
+      const list = st.detail.sessions.slice().sort((x, y) => x.n - y.n).filter((x) => (k === 'b' ? x.before : x.after));
+      return '<label class="ct-cmp-pick"><span>' + (k === 'b' ? 'Înainte' : 'După') + '</span><select data-cmp="' + k + '" data-native aria-label="' + (k === 'b' ? 'Poza ÎNAINTE din' : 'Poza DUPĂ din') + '">' +
+        list.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === sel.id ? ' selected' : '') + '>Ședința ' + x.n + '</option>').join('') + '</select>' + icon('down') + '</label>';
     }
     function pozeHtml() {
       const det = st.detail;
@@ -428,7 +444,9 @@
           '<small>' + (consent ? (consent.publish ? 'Clienta a fost de acord ca pozele să fie publicate.' : 'Pozele NU se publică (nici pe site, nici în reclame).') + ' · ' + esc(consent.by || '') + ', ' + esc(K.ago(consent.at)) : 'Nesetat. Întreab-o pe clientă și bifează aici.') + '</small></div>' +
           '<div class="ct-consent-btns"><button type="button" data-consent="1" class="' + (consent && consent.publish ? 'is-on' : '') + '">' + icon('check') + 'Da, se pot publica</button>' +
           '<button type="button" data-consent="0" class="' + (consent && !consent.publish ? 'is-on' : '') + '">' + icon('ban') + 'Nu se publică</button></div></section>' +
-        (tp ? '<section class="ct-total"><div class="ct-total-head"><b>' + icon('sparkles') + 'Evoluția totală · Ședința ' + tp.first.n + ' → Ședința ' + tp.last.n + '</b></div>' +
+        (tp ? '<section class="ct-total"><div class="ct-total-head"><b>' + icon('sparkles') + 'Evoluția totală</b>' +
+          '<div class="ct-cmp">' + cmpPicker('b', tp.first) + '<span class="ct-cmp-arrow" aria-hidden="true">→</span>' + cmpPicker('a', tp.last) +
+          (tp.isDefault ? '' : '<button type="button" class="ct-cmp-reset" data-cmp-reset title="Înapoi la prima și ultima ședință">Resetează</button>') + '</div></div>' +
           '<div class="ct-composite" data-total><span class="k-spin"></span></div>' +
           '<div class="ct-pair-actions"><a class="k-btn is-sm is-outline" data-dl-total download="inainte-dupa-' + slug(st.c.name) + '-s' + tp.first.n + '-s' + tp.last.n + '.jpg" href="#" aria-disabled="true">' + icon('download') + 'Descarcă</a>' +
           '<button type="button" class="k-btn is-sm is-outline" data-align="total">' + icon('move') + 'Aliniază</button>' + pubHtml('case') + '</div>' +
@@ -546,6 +564,7 @@
       if (ds) { if (await K.ui().confirm({ title: 'Ștergi ședința?', message: 'Se șterg și pozele ei.', confirmText: 'Șterge', danger: true })) act('session_delete', { sessionId: ds.dataset.delSession }); return; }
       const dp = t.closest('[data-del-photo]');
       if (dp) { if (await K.ui().confirm({ title: 'Ștergi poza?', confirmText: 'Șterge', danger: true })) act('photo_delete', { sessionId: dp.dataset.delPhoto, slot: dp.dataset.slot }); return; }
+      if (t.closest('[data-cmp-reset]')) { st.cmp = null; paintPane(); return; }
       const al = t.closest('[data-align]');
       if (al) {
         const tp = totalPair();

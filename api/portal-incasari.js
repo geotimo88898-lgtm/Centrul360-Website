@@ -90,7 +90,7 @@ module.exports = async (req, res) => {
       // "Upsell efectuat" + its value can be corrected too; left out = unchanged.
       if (req.body.upsell !== undefined) {
         const done = req.body.upsell === true || req.body.upsell === 'true';
-        const value = done ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : 0;
+        const value = done ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : amount) : 0;
         if (done && !(value > 0 && value <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
         entry.upsell = value;
       } else if (entry.upsell > amount) entry.upsell = amount;

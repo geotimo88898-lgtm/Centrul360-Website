@@ -112,7 +112,7 @@ async function handleComision(req, res, session) {
 
 // "Încasare" = an appointment gets paid. The desk picks WHICH appointment, HOW it was paid (card /
 // cash / transfer / cash + card) and WHO did the treatment. When that person sold something extra
-// ("Upsell efectuat" ticked, with its value), she earns a commission on it: value - 60% costs, then
+// ("Upsell efectuat" ticked: the amount paid is the upsell), she earns a commission on it: value - 60% costs, then
 // 10% of the profit (_lib/cats.js). It goes to the owner's Aprobări first and counts only once
 // approved; until then she sees it as "în așteptare".
 async function handleIncasare(req, res, session) {
@@ -146,9 +146,9 @@ async function handleIncasare(req, res, session) {
     const date = appt.date && appt.date <= today ? appt.date : today;
     const categories = categoriesOf(appt);
     const booked = Number(appt.amount) || 0;
-    // "Upsell efectuat": ticked by the desk, with the upsell's value (at most the amount paid).
+    // "Upsell efectuat": ticked by the desk; the upsell is the amount paid (or a given part of it).
     const upsellDone = req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1;
-    const upsell = upsellDone ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : 0;
+    const upsell = upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : amount) : 0;
     if (upsellDone && !(upsell > 0 && upsell <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
 
     const entry = {

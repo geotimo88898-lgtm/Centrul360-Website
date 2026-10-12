@@ -130,7 +130,7 @@
 
   let openSelect = null;
   function enhanceSelect(sel) {
-    if (!finePointer || enhanced.has(sel) || sel.multiple || sel.size > 1 || sel.closest('.print-sheet')) return;
+    if (!finePointer || enhanced.has(sel) || sel.multiple || sel.size > 1 || sel.closest('.print-sheet') || sel.hasAttribute('data-native')) return;
     const wrap = document.createElement('div');
     wrap.className = 'c360-select';
     const btn = document.createElement('button');

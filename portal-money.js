@@ -194,7 +194,7 @@
   async function openNew(pre) {
     pre = pre || {};
     // Step 1 = city (Timișoara / Arad) → day (today by default) → that day's unpaid appointments in a dropdown.
-    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(), upsell: false, upsellAmount: '',
+    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(), upsell: false,
       city: K.data && K.data.city ? K.data.city : (K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]) };
     const d = K.drawer({
       title: 'Încasare', icon: 'wallet', width: 600, focus: false,
@@ -275,8 +275,6 @@
         '<section class="pay-step pay-ups' + (st.upsell ? ' is-on' : '') + '"><h4><i>4</i>A vândut ceva în plus?</h4>' +
           '<label class="pay-check"><input type="checkbox" data-upsell' + (st.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span>' +
             '<span><b>Upsell efectuat</b><small>Bifează dacă a vândut un pachet, o zonă în plus sau alt tratament.</small></span></label>' +
-          (st.upsell ? '<div class="pay-ups-body"><label class="k-field"><span>Valoarea upsell-ului</span><div class="k-money"><input data-upsell-amount type="number" inputmode="decimal" min="0" step="1" value="' + esc(st.upsellAmount) + '" placeholder="ex: 3000"></div></label>' +
-            '<div class="pay-ups-quick" data-ups-quick></div><div class="pay-ups-calc" data-ups-calc></div></div>' : '') +
         '</section>';
       note(); updateSave();
     }
@@ -285,25 +283,8 @@
       const amt = Number((d.el.querySelector('[data-amount]') || {}).value) || 0;
       const cash = Number((d.el.querySelector('[data-cash]') || {}).value) || 0;
       const card = Number((d.el.querySelector('[data-card]') || {}).value) || 0;
-      const ups = st.upsell ? Number(st.upsellAmount) || 0 : 0;
+      const ups = st.upsell ? amt : 0; // "Upsell efectuat" = the whole amount paid is the upsell
       return { a, amt, cash, card, ups };
-    }
-    // "Upsell efectuat": quick values + the commission, worked out in front of her
-    function upsCalc() {
-      const box = d.el.querySelector('[data-ups-calc]');
-      if (!box) return;
-      const { a, amt, ups } = vals();
-      const booked = Number(a && a.amount) || 0;
-      const quick = [];
-      if (booked && amt > booked) quick.push([amt - booked, 'Peste programare']);
-      if (amt) quick.push([amt, 'Toată suma']);
-      d.el.querySelector('[data-ups-quick]').innerHTML = quick.length ? quick.map((q) => '<button type="button" class="k-chip" data-ups-set="' + q[0] + '">' + q[1] + ' · ' + K.lei(q[0]) + '</button>').join('') : '';
-      const who = cosmeticians().find((x) => x.id === st.who);
-      const R = K.commissionRule();
-      if (!(ups > 0)) { box.innerHTML = '<span class="k-muted">Scrie cât a fost upsell-ul și vezi comisionul.</span>'; return; }
-      if (amt && ups > amt) { box.innerHTML = '<span class="pay-warn">' + icon('alert') + 'Upsell-ul nu poate fi mai mare decât suma încasată (' + K.lei(amt) + ').</span>'; return; }
-      box.innerHTML = '<div class="cb-calc"><span>Upsell <b>' + K.lei(ups) + '</b></span><span>- ' + R.cost + '% cheltuieli</span><span>= <b>' + K.lei(K.profitOf(ups), 2) + '</b> profit</span><span>× ' + R.rate + '%</span><span>= <b>' + K.lei(K.commissionOf(ups), 2) + '</b></span></div>' +
-        '<small>' + icon('clock') + 'Comision ' + K.lei(K.commissionOf(ups), 2) + (who ? ' pentru ' + esc(who.name.split(' ')[0]) : '') + '. Ajunge la administrator în Aprobări și devine oficial după ce îl aprobă.</small>';
     }
     function note() {
       const box = d.el.querySelector('[data-note]');
@@ -312,17 +293,14 @@
       const booked = Number(a.amount) || 0;
       const lines = [];
       if (booked) lines.push('Programat: <b>' + K.lei(booked) + '</b>');
-      if (booked && amt > booked && !st.upsell) lines.push('<span class="pay-up">' + icon('trend') + 'A plătit ' + K.lei(amt - booked) + ' peste programare. Dacă a fost un upsell, bifează mai jos „Upsell efectuat”.</span>');
       if (booked && amt && amt < booked) lines.push('<span class="pay-warn">' + icon('alert') + 'Mai puțin decât suma programării.</span>');
       if (st.method === 'cash_card' && amt && Math.abs(cash + card - amt) > 0.01) lines.push('<span class="pay-warn">' + icon('alert') + 'Cash + card = ' + K.lei(cash + card) + ', trebuie ' + K.lei(amt) + '.</span>');
       box.innerHTML = lines.join('');
-      upsCalc();
     }
     function ready() {
       const { a, amt, cash, card } = vals();
       if (!a || !(amt > 0) || !st.who || !whoOk()) return false;
       if (st.method === 'cash_card' && (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amt) > 0.01)) return false;
-      if (st.upsell && !(Number(st.upsellAmount) > 0 && Number(st.upsellAmount) <= amt)) return false;
       return true;
     }
     function updateSave() {
@@ -339,8 +317,7 @@
       if (m) { keepInputs(); st.method = m.dataset.m; return paint(); }
       const w = e.target.closest('[data-who]');
       if (w) { st.who = w.dataset.who; d.el.querySelectorAll('[data-who]').forEach((x) => x.classList.toggle('is-on', x === w)); note(); updateSave(); }
-      const q = e.target.closest('[data-ups-set]');
-      if (q) { st.upsellAmount = q.dataset.upsSet; d.el.querySelector('[data-upsell-amount]').value = st.upsellAmount; upsCalc(); updateSave(); }
+
     }
     // A different city or day empties the choice unless the chosen appointment still matches.
     function setDay(day) {
@@ -360,19 +337,18 @@
       }
       if (t.matches('[data-day-input]')) return setDay(t.value);
       if (t.matches('[data-upsell]')) {
-        keepInputs(); st.upsell = t.checked; paint();
-        const inp = d.el.querySelector('[data-upsell-amount]'); if (inp && !inp.value) inp.focus();
+        st.upsell = t.checked;
+        t.closest('.pay-ups').classList.toggle('is-on', st.upsell);
         return;
       }
       if (t.matches('[data-appt-select]')) {
-        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = ''; st.upsell = false; st.upsellAmount = '';
+        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = ''; st.upsell = false;
         st.who = (appt() && appt().cosmeticianId) || '';
         return paint();
       }
     }
     function keepInputs() {
-      const amt = d.el.querySelector('[data-amount]'), c1 = d.el.querySelector('[data-cash]'), c2 = d.el.querySelector('[data-card]'), up = d.el.querySelector('[data-upsell-amount]');
-      if (up) st.upsellAmount = up.value;
+      const amt = d.el.querySelector('[data-amount]'), c1 = d.el.querySelector('[data-cash]'), c2 = d.el.querySelector('[data-card]');
       if (amt) st.amount = amt.value;
       if (c1) st.cash = c1.value;
       if (c2) st.card = c2.value;
@@ -413,7 +389,7 @@
       subtitle: esc(s.client) + ' · ' + esc(K.dateLong(s.date)) + (s.location ? ' · ' + esc(s.location) : ''),
       body: '<dl class="k-kv"><dt>Clientă</dt><dd>' + esc(s.client) + '</dd><dt>Tratament</dt><dd>' + esc(s.treatment) + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(s) || '-') + '</dd>' +
           '<dt>Plată</dt><dd>' + esc(methodText(s)) + '</dd>' + (s.bookedAmount ? '<dt>Programat</dt><dd>' + K.lei(s.bookedAmount) + '</dd>' : '') +
-          (s.upsell ? '<dt>Upsell</dt><dd>' + K.lei(s.upsell) + ' · comision ' + K.lei(K.commissionOf(s.upsell), 2) + '</dd>' : '') +
+          (s.upsell ? '<dt>Upsell</dt><dd>Da · comision ' + K.lei(K.commissionOf(s.upsell), 2) + '</dd>' : '') +
           '<dt>A făcut tratamentul</dt><dd>' + esc(s.performedByName || '-') + '</dd><dt>Înregistrată de</dt><dd>' + esc(s.employeeName || '-') + (s.createdAt ? ' · ' + esc(K.ago(s.createdAt)) : '') + '</dd></dl>' +
         (admin ? '<section class="k-section"><h4>' + icon('pen') + 'Corectează</h4><form class="k-form" data-form>' +
           K.field('Sumă', '<div class="k-money"><input name="amount" type="number" min="0" step="0.01" value="' + esc(s.amount) + '"></div>') +
@@ -423,8 +399,7 @@
           '<label class="k-field"><span>Card</span><input name="cardAmount" type="number" min="0" step="0.01" value="' + esc(s.split ? s.split.card : '') + '"></label></div>' +
           K.field('Categorie', K.catPicker(K.catsOf(s)), 'full') +
           K.field('A făcut tratamentul', '<select name="performedBy"><option value="">-</option>' + K.options(emp.map((e) => [e.id, e.name + ' · ' + e.location]), s.performedBy || '') + '</select>', 'full') +
-          '<label class="pay-check full"><input type="checkbox" name="upsell" value="true"' + (s.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span><span><b>Upsell efectuat</b><small>Comisionul se recalculează cât timp nu e aprobat.</small></span></label>' +
-          K.field('Valoarea upsell-ului', '<div class="k-money"><input name="upsellAmount" type="number" min="0" step="1" value="' + esc(s.upsell || '') + '"></div>', 'full') +
+          '<label class="pay-check full"><input type="checkbox" name="upsell" value="true"' + (s.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span><span><b>Upsell efectuat</b><small>Toată suma e upsell. Comisionul se recalculează cât timp nu e aprobat.</small></span></label>' +
           '</form></section>'
           : '<div class="mo-note">' + icon('info') + 'O greșeală? Corecturile le face administratorul. Spune-i ce trebuie modificat.</div>'),
       footer: admin ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>' : '',
@@ -436,7 +411,7 @@
           const v = K.formValues(f);
           try {
             const upsell = !!f.querySelector('input[name=upsell]').checked;
-            await K.api('/api/portal-incasari', Object.assign({ action: 'update', id: s.id }, v, { amount: Number(v.amount), cashAmount: Number(v.cashAmount) || 0, cardAmount: Number(v.cardAmount) || 0, categories: String(v.categories || '').split(',').filter(Boolean), upsell, upsellAmount: upsell ? Number(v.upsellAmount) || 0 : 0 }));
+            await K.api('/api/portal-incasari', Object.assign({ action: 'update', id: s.id }, v, { amount: Number(v.amount), cashAmount: Number(v.cashAmount) || 0, cardAmount: Number(v.cardAmount) || 0, categories: String(v.categories || '').split(',').filter(Boolean), upsell, upsellAmount: upsell ? Number(v.amount) || 0 : 0 }));
             d.close(); K.ui().toast('Încasare corectată.', 'success'); K.reload();
           } catch (err) { K.ui().toast(err.code === 'invalid_split' ? 'Cash + card trebuie să dea suma totală.' : err.code === 'invalid_upsell' ? 'Valoarea upsell-ului trebuie să fie între 1 leu și suma încasată.' : K.errText(err), 'error'); }
         }));
