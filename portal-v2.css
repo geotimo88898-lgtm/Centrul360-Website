@@ -656,3 +656,7 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .pr-kv .pr-total{ background:var(--accent-soft); }
 .pr-kv .pr-total dd{ font-size:1.05rem; }
 @media (max-width:900px){ .pr-row{ grid-template-columns:1fr; } .pr-kv{ grid-template-columns:repeat(2, minmax(0, 1fr)); } .pr-row > .k-btn{ justify-self:start; } }
+
+/* Every block of a page keeps 1rem from the one above it, on every page and for every role
+   (zero specificity: a component's own spacing still wins). */
+:where(.k-panel [data-body] > * + *, .k-panel [data-pane] > * + *){ margin-top:1rem; }
