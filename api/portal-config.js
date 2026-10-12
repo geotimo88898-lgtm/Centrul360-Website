@@ -4,7 +4,25 @@
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
-const { defaultConfig } = require('./_lib/defaults');
+const { defaultConfig, defaultSops } = require('./_lib/defaults');
+
+const SOP_ROLES = ['receptie', 'cosmetician', 'toti'];
+// SOP edits from "SOP & Resurse" (admin): { receptie:[...], cosmetician:[...], toti:[...] }, each
+// SOP { id, title, icon, when, steps[] }. Roles not sent are left untouched.
+function cleanSops(input, current) {
+  const out = Object.assign({}, current);
+  SOP_ROLES.forEach((role) => {
+    if (!Array.isArray(input[role])) return;
+    out[role] = input[role].slice(0, 30).map((s, i) => ({
+      id: /^[a-z0-9-]{1,40}$/.test(s && s.id) ? s.id : role.charAt(0) + '-' + Date.now().toString(36) + i,
+      title: String((s && s.title) || '').trim().slice(0, 120) || 'SOP fără titlu',
+      icon: /^[a-zA-Z]{1,20}$/.test(s && s.icon) ? s.icon : 'file',
+      when: String((s && s.when) || '').trim().slice(0, 160),
+      steps: (Array.isArray(s && s.steps) ? s.steps : []).map((x) => String(x).trim().slice(0, 600)).filter(Boolean).slice(0, 25),
+    }));
+  });
+  return out;
+}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -15,7 +33,7 @@ module.exports = async (req, res) => {
   const session = requireAdmin(req, res);
   if (!session) return;
 
-  const { commissionRates, retailRate, raceBonus, companyGoal, resources } = req.body || {};
+  const { commissionRates, retailRate, raceBonus, companyGoal, resources, sops } = req.body || {};
 
   try {
     const configRaw = await readJSON('data/config.json', null);
@@ -53,6 +71,8 @@ module.exports = async (req, res) => {
         }
       });
     }
+
+    if (sops && typeof sops === 'object') config.sops = cleanSops(sops, config.sops || defaultSops());
 
     await writeJSON('data/config.json', config);
     res.status(200).json({ ok: true, config });

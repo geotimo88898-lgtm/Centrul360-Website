@@ -1,0 +1,17 @@
+{
+  "name": "Centrul360 — Portal echipă",
+  "short_name": "Centrul360",
+  "description": "Portalul intern Centrul360 — Pipeline, Calendar, Condică, Comisioane și restul.",
+  "start_url": "/portal-login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#17171a",
+  "theme_color": "#17171a",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/brand_asset/portal/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand_asset/portal/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/brand_asset/portal/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/brand_asset/portal/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

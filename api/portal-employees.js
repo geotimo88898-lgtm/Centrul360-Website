@@ -13,11 +13,17 @@ const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
 // Up to 2 "obiective individuale" per employee (Setări → Angajați → edit → obiective).
 // Non-manual metrics are computed live in portal-data.js from sales.json/appointments.json
 // — only 'manual' goals carry a stored currentValue the admin edits by hand.
+const MAX_GOALS = 4;
 const VALID_GOAL_METRICS = [
   'programari_confirmate_azi',
   'programari_anulate_azi',
   'comision_aprobat_luna',
   'incasari_atribuite_luna',
+  'programari_finalizate_luna',
+  'vanzari_aprobate_luna',
+  'incasari_inregistrate_luna',
+  'leaduri_contactate_luna',
+  'leaduri_programate_luna',
   'manual',
 ];
 
@@ -73,7 +79,7 @@ module.exports = async (req, res) => {
       // Fixes a typo'd name/location, or a role change (e.g. an employee moving
       // locations) — keeps the same id, so her login, goals and sales history stay
       // intact (unlike deactivating + re-creating, which would silently orphan them).
-      const { employeeId, name, location, role } = req.body || {};
+      const { employeeId, name, location, role, annualLeaveDays, contractedHoursPerDay } = req.body || {};
       if (!employeeId || !name || !location || !role) {
         res.status(400).json({ error: 'missing_fields' });
         return;
@@ -90,10 +96,22 @@ module.exports = async (req, res) => {
       employee.name = String(name).slice(0, 100);
       employee.location = String(location).slice(0, 100);
       employee.role = role;
+      // Optional — feed the "Condică" leave-balance / hours-owed numbers (api/portal-attendance.js,
+      // action 'balance'). Left unset, those default to 21 days / 8h per day. Never required.
+      if (annualLeaveDays !== undefined) {
+        const n = Number(annualLeaveDays);
+        if (!Number.isFinite(n) || n < 0 || n > 60) { res.status(400).json({ error: 'invalid_leave_days' }); return; }
+        employee.annualLeaveDays = n;
+      }
+      if (contractedHoursPerDay !== undefined) {
+        const n = Number(contractedHoursPerDay);
+        if (!Number.isFinite(n) || n <= 0 || n > 16) { res.status(400).json({ error: 'invalid_hours' }); return; }
+        employee.contractedHoursPerDay = n;
+      }
       await writeJSON('data/employees.json', employees);
       res.status(200).json({
         ok: true,
-        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role },
+        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, annualLeaveDays: employee.annualLeaveDays, contractedHoursPerDay: employee.contractedHoursPerDay },
       });
       return;
     }
@@ -140,7 +158,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'missing_fields' });
         return;
       }
-      if (goals.length > 2) {
+      if (goals.length > MAX_GOALS) {
         res.status(400).json({ error: 'too_many_goals' });
         return;
       }
@@ -161,7 +179,9 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: 'invalid_goal' });
           return;
         }
-        const goal = { title: String(g.title).slice(0, 100), metric: g.metric, target };
+        // Optional bonus (lei) paid when the goal is reached — shown to the employee as "Bonusurile mele".
+        const reward = Number(g.reward);
+        const goal = { title: String(g.title).slice(0, 100), metric: g.metric, target, reward: Number.isFinite(reward) && reward > 0 ? Math.round(reward) : 0 };
         if (g.metric === 'manual') {
           const cur = Number(g.currentValue);
           goal.currentValue = Number.isFinite(cur) ? cur : 0;

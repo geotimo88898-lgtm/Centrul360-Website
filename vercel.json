@@ -1,6 +1,30 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.centrul360.com"
+        }
+      ],
+      "destination": "/portal",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "staff.centrul360.com"
+        }
+      ],
+      "destination": "/portal",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/creative", "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative" },
     { "source": "/creative/:path*", "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative/:path*" }
@@ -13,6 +37,12 @@
     {
       "source": "/vendor/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/automation-tick",
+      "schedule": "0 6 * * *"
     }
   ]
 }

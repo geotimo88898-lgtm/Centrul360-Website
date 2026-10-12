@@ -30,7 +30,7 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
 const { VALID_CATEGORIES } = require('./portal-sale');
-const { createAutomationTask } = require('./_lib/automation');
+const workflows = require('./_lib/workflows');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records) — kept as a literal list
@@ -38,7 +38,11 @@ const { createAutomationTask } = require('./_lib/automation');
 // an appointment must be bookable even before any employee of a given location exists.
 const VALID_LOCATIONS = ['Timișoara', 'Arad'];
 
-const VALID_STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata'];
+// 'concediu' is a non-client calendar block (see createBlockingAppointment below) — created
+// automatically when an admin approves a leave request (api/portal-leave.js), so reception
+// can't accidentally double-book someone who's away. It's a real appointment row with no real
+// client, same as the others, just with its own status so the Calendar can style it distinctly.
+const VALID_STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata', 'concediu'];
 
 function isValidDate(date) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date || '');
@@ -92,6 +96,7 @@ async function validateAndBuildFields(body, employees) {
       time: cleanTime(time),
       clientId: clientRecord.id,
       clientName: clientRecord.name,
+      clientPhone: clientRecord.phone || '', // denormalized so the Calendar can call / WhatsApp
       treatment: String(treatment).trim().slice(0, 200),
       category,
       location,
@@ -100,6 +105,26 @@ async function validateAndBuildFields(body, employees) {
       status,
     },
   };
+}
+
+// Reused by api/portal-leave.js (action: 'decide', on approval) — same "exported create helper"
+// pattern as portal-leads.js's createLead(), reused by the Facebook webhook. No real client: an
+// all-day marker (no `time`, so it renders as an untimed chip, naturally spanning the whole
+// day) tied to the employee via cosmeticianId, so reception sees the clash immediately.
+async function createBlockingAppointment({ date, location, cosmeticianId, cosmeticianName, label }) {
+  const appointments = await readJSON('data/appointments.json', []);
+  const now = new Date().toISOString();
+  const entry = {
+    id: crypto.randomUUID(), date, time: '',
+    clientId: '', clientName: label, clientPhone: '',
+    treatment: label, category: 'altele', location,
+    cosmeticianId: cosmeticianId || '', cosmeticianName: cosmeticianName || '',
+    status: 'concediu',
+    createdBy: 'leave-approval', createdAt: now, updatedAt: now,
+  };
+  appointments.push(entry);
+  await writeJSON('data/appointments.json', appointments);
+  return entry;
 }
 
 module.exports = async (req, res) => {
@@ -126,7 +151,20 @@ module.exports = async (req, res) => {
         .filter((a) => a.date >= from && a.date <= to)
         .slice()
         .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : (a.time || '').localeCompare(b.time || '')));
+      // Appointments saved before clientPhone was stored get it from the client directory.
+      if (matching.some((a) => !a.clientPhone && a.clientId)) {
+        const clients = await readJSON('data/clients.json', []);
+        const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
+        matching.forEach((a) => { if (!a.clientPhone && a.clientId) a.clientPhone = phoneById.get(a.clientId) || ''; });
+      }
       res.status(200).json({ ok: true, appointments: matching });
+      return;
+    }
+
+    // Everything below changes the calendar: front desk (receptie) + admin only — a
+    // cosmetician sees the calendar read-only.
+    if (!['admin', 'receptie'].includes(session.role)) {
+      res.status(403).json({ error: 'forbidden' });
       return;
     }
 
@@ -148,21 +186,8 @@ module.exports = async (req, res) => {
       appointments.push(entry);
       await writeJSON('data/appointments.json', appointments);
 
-      // Hook: a freshly booked appointment always needs a WhatsApp confirmation —
-      // surfaced as a task for whoever's at that location's reception rather than
-      // sent automatically (see _lib/whatsapp.js). Best-effort: a failure here must
-      // never roll back the appointment that was just saved.
-      try {
-        await createAutomationTask({
-          type: 'confirmare_programare',
-          text: `Trimite confirmare WhatsApp către ${entry.clientName} pentru programarea din ${entry.date} ${entry.time || ''}.`.trim(),
-          relatedAppointmentId: entry.id,
-          location: entry.location,
-          assigneeRole: 'receptie',
-        });
-      } catch (taskErr) {
-        console.error('portal-appointments: automation task failed:', taskErr.message);
-      }
+      // Automations (Admin → Automatizări): confirmation, reminders … Never throws.
+      await workflows.emit('appointment_created', { appointment: entry });
 
       res.status(200).json({ ok: true, appointment: entry });
       return;
@@ -185,8 +210,12 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: result.error });
         return;
       }
+      const before = { date: appointment.date, time: appointment.time, status: appointment.status };
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
       await writeJSON('data/appointments.json', appointments);
+      // Automations: a moved appointment gets its reminders recalculated; a status change can start a flow.
+      if (before.date !== appointment.date || before.time !== appointment.time) await workflows.emit('appointment_rescheduled', { appointment });
+      if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });
       res.status(200).json({ ok: true, appointment });
       return;
     }
@@ -202,8 +231,9 @@ module.exports = async (req, res) => {
         res.status(404).json({ error: 'appointment_not_found' });
         return;
       }
-      appointments.splice(idx, 1);
+      const [removed] = appointments.splice(idx, 1);
       await writeJSON('data/appointments.json', appointments);
+      await workflows.emit('appointment_deleted', { appointment: removed });
       res.status(200).json({ ok: true });
       return;
     }
@@ -214,3 +244,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'appointments_failed' });
   }
 };
+
+module.exports.createBlockingAppointment = createBlockingAppointment;

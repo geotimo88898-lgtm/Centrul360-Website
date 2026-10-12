@@ -128,4 +128,107 @@ function defaultConfig() {
   };
 }
 
-module.exports = { defaultConfig, currentMonth };
+// Standard operating procedures, one set per role (+ one for everyone). Shown in
+// "SOP & Resurse"; the owner edits them in place from the same screen. Each SOP is a
+// short "when" line and numbered steps — written to be followed, not read once.
+function defaultSops() {
+  return {
+    receptie: [
+      { id: 'r-deschidere', title: 'Deschiderea zilei', icon: 'sunrise', when: 'Zilnic, înainte de primul client (15 min)', steps: [
+        'Deschide Panoul: vezi programările de azi, leadurile de sunat și sarcinile.',
+        'Calendar → Azi: verifică că fiecare programare are telefon și cosmeticiană alocată.',
+        'Sarcini: trimite reminderul WhatsApp tuturor programărilor de azi care nu l-au primit.',
+        'Pipeline → Coada de apeluri: sună întâi leadurile întârziate, apoi pe cele noi.',
+      ] },
+      { id: 'r-lead', title: 'Lead nou din Facebook — regula celor 5 minute', icon: 'zap', when: 'De fiecare dată când apare un lead nou', steps: [
+        'Sună în maxim 5 minute — după 1 oră șansa de programare scade drastic.',
+        'Nu răspunde? Trimite imediat WhatsApp-ul pregătit din fișa leadului.',
+        'Notează rezultatul în fișă (A răspuns / Nu răspunde / Vrea programare…). Follow-up-ul se propune singur.',
+        'Ritmul de revenire: peste 2 ore → mâine 10:00 → peste 3 zile. După 3 încercări fără răspuns: Pierdut, cu motiv.',
+        'Nu promite rezultate și nu da prețuri diferite de cele din Oferte active.',
+      ] },
+      { id: 'r-programare', title: 'Programarea', icon: 'calendar', when: 'La telefon, WhatsApp sau la recepție', steps: [
+        'Confirmă tratamentul și oferta exactă (vezi Oferte active — prețul de acolo e singurul corect).',
+        'Verifică locația: EMS și epilarea laser doar la Timișoara; Cavitația 1+1 doar la Arad.',
+        'Din fișa leadului apasă Programează (sau Calendar → click pe slot liber). Telefonul e obligatoriu.',
+        'Trimite confirmarea pe WhatsApp din fișa programării.',
+        'Explică politica de anulare: anunță cu minim 24 de ore înainte.',
+      ] },
+      { id: 'r-confirmari', title: 'Confirmări pentru ziua următoare', icon: 'checkCircle', when: 'Zilnic, până la ora 16:00', steps: [
+        'Calendar → Mâine: pentru fiecare programare albastră (Programată) trimite Confirmare WhatsApp.',
+        'Când clienta răspunde DA: status Confirmată (un click în fișa programării).',
+        'Neconfirmate la 18:00: sună. Dacă anulează, marchează Anulată și propune altă zi.',
+      ] },
+      { id: 'r-primire', title: 'Primirea clientei', icon: 'users', when: 'La sosire', steps: [
+        'Salut pe nume, ofertă de apă, check-in pe programare.',
+        'Prima vizită: fișa de client completată și semnată (Fișe de printat).',
+        'Anunță cosmeticiana și condu clienta în cabină.',
+      ] },
+      { id: 'r-incasare', title: 'Încasarea și următoarea programare', icon: 'wallet', when: 'La finalul tratamentului', steps: [
+        'Din fișa programării apasă Încasează — clientul, tratamentul și cosmeticiana se completează singure.',
+        'Alege oferta din chips (prețul se pune automat) și metoda de plată.',
+        'Programarea trece automat pe Finalizată.',
+        'Înainte să plece: propune și pune în Calendar următoarea ședință.',
+      ] },
+      { id: 'r-inchidere', title: 'Închiderea zilei', icon: 'moon', when: 'Zilnic, la final', steps: [
+        'Încasări → Azi: totalul din portal = cash + POS + transferuri din ziua respectivă.',
+        'Programările de mâine sunt confirmate sau sunate.',
+        'Pipeline fără leaduri întârziate; Sarcini bifate.',
+      ] },
+      { id: 'r-reclamatie', title: 'Reclamații', icon: 'alert', when: 'Când o clientă e nemulțumită', steps: [
+        'Ascultă până la capăt, fără să întrerupi; mulțumește pentru feedback.',
+        'Notează detaliile (în Pipeline, ca notă, dacă e lead) și anunță imediat managementul.',
+        'Nu promite compensații pe loc — revii tu cu răspunsul în aceeași zi.',
+      ] },
+    ],
+    cosmetician: [
+      { id: 'c-pregatire', title: 'Înainte de prima clientă', icon: 'sunrise', when: 'Zilnic, cu 15 minute înainte', steps: [
+        'Calendar → filtrul „Doar ale mele”: vezi clientele tale de azi și tratamentele.',
+        'Pregătește cabina și aparatele pentru primul tratament; verifică consumabilele.',
+        'Citește protocolul aparatului dacă ai un tratament pe care nu l-ai mai făcut de mult (Protocoale).',
+      ] },
+      { id: 'c-consultatie', title: 'Consultația și fișa', icon: 'file', when: 'La fiecare clientă nouă', steps: [
+        'Întreabă obiectivul clientei, în cuvintele ei.',
+        'Verifică contraindicațiile (sarcină, implanturi metalice, boli de piele active, tratamente recente).',
+        'Laser: stabilește fototipul și fă test pe o zonă mică la prima ședință.',
+        'Fotografii înainte doar cu acordul clientei.',
+      ] },
+      { id: 'c-tratament', title: 'Tratamentul', icon: 'sparkles', when: 'În cabină', steps: [
+        'Urmează protocolul aparatului (Protocoale) — parametri, timp, zone.',
+        'Spune-i clientei ce urmează să simtă; verifică confortul pe parcurs.',
+        'Igienă: dezinfectare aparat și suprafețe după fiecare clientă.',
+      ] },
+      { id: 'c-dupa', title: 'După tratament', icon: 'checkCircle', when: 'Înainte ca clienta să iasă din cabină', steps: [
+        'Recomandări post-tratament (soare, sport, hidratare) — pe scurt și clar.',
+        'Spune-i recepției ce ședință urmează și când, ca să fie programată pe loc.',
+        'Dacă ai recomandat un pachet sau produs și clienta l-a cumpărat: Comisionul meu → Loghează vânzarea, în aceeași zi.',
+      ] },
+      { id: 'c-upsell', title: 'Upsell etic', icon: 'gift', when: 'Doar când ajută clienta', steps: [
+        'Recomandă doar ce rezolvă obiectivul spus de clientă (vezi Upsell).',
+        'Explică de ce: rezultatul, numărul de ședințe, intervalul.',
+        'Fără presiune — o recomandare bună vinde singură.',
+      ] },
+      { id: 'c-inchidere', title: 'Final de zi', icon: 'moon', when: 'Zilnic', steps: [
+        'Aparate oprite și curățate, cabina pregătită pentru mâine.',
+        'Consumabile pe terminate: anunță managementul.',
+        'Verifică în Comisionul meu că toate vânzările zilei sunt logate.',
+      ] },
+    ],
+    toti: [
+      { id: 't-reguli', title: 'Regulile de aur', icon: 'star', when: 'Mereu', steps: [
+        'Prețurile corecte sunt cele din Oferte active — nimic negociat pe loc.',
+        'EMS și epilarea laser doar la Timișoara; Cavitația 1+1 doar la Arad.',
+        'Garanția banilor înapoi există doar la epilarea laser.',
+        'Nu promitem rezultate garantate pentru tratamentele corporale și faciale.',
+        'Fotografiile clientelor nu ies din clinică fără acordul lor scris.',
+      ] },
+      { id: 't-anulare', title: 'Politica de anulare', icon: 'calendar', when: 'La programare și la reprogramare', steps: [
+        'Anularea sau reprogramarea se anunță cu minim 24 de ore înainte.',
+        'Neprezentare fără anunț: avansul nu se returnează.',
+        'Reprogramarea se face din Calendar (tragi programarea pe noua oră) sau din fișa programării.',
+      ] },
+    ],
+  };
+}
+
+module.exports = { defaultConfig, currentMonth, defaultSops };

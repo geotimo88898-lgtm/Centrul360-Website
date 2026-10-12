@@ -4,7 +4,7 @@
 // portal's admin surface — api/portal-offers.js is the admin-only read/write side.
 
 const { readJSON } = require('./_lib/store');
-const { defaultOffers } = require('./_lib/offer-defaults');
+const { loadOffers } = require('./_lib/offers');
 const { findOfferImage } = require('./_lib/offer-images');
 
 // The site writes without long dashes: "a — b" reads as "a: b", ranges as "6-8".
@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const offers = await readJSON('data/offers.json', defaultOffers());
+    const offers = await loadOffers(readJSON, null);
 
     const result = offers
       .filter((o) => o && o.active)
@@ -44,6 +44,7 @@ module.exports = async (req, res) => {
           featured: !!o.featured,
           imageUrl: img ? '/' + img.path : '',
           order: Number(o.order) || 0,
+          locations: o.locations,
         };
       });
 
