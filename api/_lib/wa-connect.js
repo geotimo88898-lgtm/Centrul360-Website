@@ -114,7 +114,20 @@ async function checkNumber(store, origin, city) {
     const exp = scopes.expiresAt ? 'expiră ' + new Date(scopes.expiresAt * 1000).toLocaleDateString('ro-RO') : 'nu expiră';
     line(send, send ? 'Accesul are voie să trimită mesaje' : 'Accesul NU are voie să trimită mesaje pentru contul ăsta',
       kind + ' · ' + exp + ' · ' + (scopes.appName ? 'aplicația ' + scopes.appName + ' · ' : '') + 'permisiuni: ' + (scopes.scopes.filter((x) => /whatsapp|business_management/.test(x)).join(', ') || 'niciuna de WhatsApp') +
-      (send ? '' : '. Trebuie un acces cu whatsapp_business_messaging pe contul ' + (n.wabaId || '?') + ' (Conectează din nou numărul).'));
+      (send ? '' : '. Trebuie un acces cu whatsapp_business_messaging pe contul ' + (n.wabaId || '?') + ' (Conectează din nou numărul).') +
+      // the accounts it was granted, as Meta lists them
+      (() => { const g = scopes.granular.find((x) => x.scope === 'whatsapp_business_messaging'); return g && (g.target_ids || []).length ? ' · trimite pentru conturile: ' + g.target_ids.join(', ') : ''; })());
+  }
+  // whose the WhatsApp account is (a shared one, e.g. by HighLevel, can refuse sending)
+  if (n.wabaId) {
+    const wb = await call('GET', '/' + n.wabaId, n.token, { fields: 'name,owner_business_info,on_behalf_of_business_info,account_review_status,business_verification_status' });
+    if (wb.ok) {
+      const own = (wb.j.owner_business_info || {}), obo = (wb.j.on_behalf_of_business_info || {});
+      const review = wb.j.account_review_status || '?';
+      line(review === 'APPROVED', 'Contul WhatsApp: ' + (wb.j.name || n.wabaId),
+        'ID ' + n.wabaId + ' · al firmei ' + (own.name || '?') + (own.id ? ' (' + own.id + ')' : '') + (obo.name ? ' · în numele ' + obo.name : '') +
+        ' · verificare cont ' + review + (wb.j.business_verification_status ? ' · verificare firmă ' + wb.j.business_verification_status : ''));
+    } else line(false, 'Nu pot citi contul WhatsApp ' + n.wabaId, 'Meta: ' + wb.error);
   }
   const live = p.j.platform_type === 'CLOUD_API' || p.j.status === 'CONNECTED';
   line(live, live ? 'Numărul e pornit (' + (p.j.display_phone_number || n.phoneId) + ')' : 'Numărul nu e pornit pe WhatsApp Cloud API',
