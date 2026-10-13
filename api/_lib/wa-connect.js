@@ -104,6 +104,18 @@ async function checkNumber(store, origin, city) {
     return out;
   }
   line(true, 'Accesul la Meta merge', '');
+  // what this access may do: asked through each app we have the secret of (the one that made it answers)
+  const scopes = await tokenScopes(store, n.token);
+  if (scopes) {
+    const can = (perm) => scopes.granular.some((g) => g.scope === perm && (!(g.target_ids || []).length || (g.target_ids || []).map(String).includes(String(n.wabaId)))) ||
+      (scopes.scopes.includes(perm) && !scopes.granular.some((g) => g.scope === perm));
+    const send = !!n.wabaId && can('whatsapp_business_messaging');
+    const kind = scopes.type === 'SYSTEM_USER' ? 'utilizator de sistem' : scopes.type === 'USER' ? 'cont de persoană' : (scopes.type || '?').toLowerCase();
+    const exp = scopes.expiresAt ? 'expiră ' + new Date(scopes.expiresAt * 1000).toLocaleDateString('ro-RO') : 'nu expiră';
+    line(send, send ? 'Accesul are voie să trimită mesaje' : 'Accesul NU are voie să trimită mesaje pentru contul ăsta',
+      kind + ' · ' + exp + ' · ' + (scopes.appName ? 'aplicația ' + scopes.appName + ' · ' : '') + 'permisiuni: ' + (scopes.scopes.filter((x) => /whatsapp|business_management/.test(x)).join(', ') || 'niciuna de WhatsApp') +
+      (send ? '' : '. Trebuie un acces cu whatsapp_business_messaging pe contul ' + (n.wabaId || '?') + ' (Conectează din nou numărul).'));
+  }
   const live = p.j.platform_type === 'CLOUD_API' || p.j.status === 'CONNECTED';
   line(live, live ? 'Numărul e pornit (' + (p.j.display_phone_number || n.phoneId) + ')' : 'Numărul nu e pornit pe WhatsApp Cloud API',
     'stare ' + (p.j.status || '?') + ' · ' + (p.j.platform_type || '?') + (p.j.quality_rating ? ' · calitate ' + p.j.quality_rating : '') + (p.j.name_status && p.j.name_status !== 'APPROVED' ? ' · nume ' + p.j.name_status : ''), !live);
@@ -145,6 +157,20 @@ async function checkNumber(store, origin, city) {
   convos.filter((c) => c.location === city).forEach((c) => (c.messages || []).forEach((m) => { if (m.direction === 'in' && m.timestamp > last) last = m.timestamp; }));
   line(!!last, last ? 'Ultimul mesaj primit: ' + new Date(last).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) : 'Niciun mesaj primit încă pe numărul ăsta', '');
   return out;
+}
+
+// what an access may do, asked through the apps we have the secret of (null when none can tell)
+async function tokenScopes(store, token) {
+  const apps = await knownApps(store);
+  for (const id of Object.keys(apps)) {
+    const a = apps[id];
+    const r = await call('GET', '/debug_token', a.appId + '|' + a.appSecret, { input_token: token });
+    const d = r.ok && r.j.data;
+    if (d && d.is_valid !== false && (d.scopes || d.granular_scopes)) {
+      return { type: d.type || '', expiresAt: d.expires_at || 0, appName: d.application || '', scopes: d.scopes || [], granular: d.granular_scopes || [] };
+    }
+  }
+  return null;
 }
 
 // what can be fixed from here: our app(s) listen to the account, Meta's address on every app we have

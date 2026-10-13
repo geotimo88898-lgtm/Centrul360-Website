@@ -98,6 +98,8 @@ async function sendWhatsApp({ phone, text, template, params, language, from }) {
       const code = j && j.error && j.error.code;
       // 131047 = outside the 24 h window (needs a template); 132001 = template missing / not approved.
       const why = code === 131047 ? 'în afara ferestrei de 24h, e nevoie de șablon' : code === 132001 ? 'șablonul nu există / nu e aprobat'
+        : code === 200 || code === 10 ? 'accesul cu care e conectat numărul nu are voie să trimită mesaje (îi lipsește whatsapp_business_messaging pe contul WhatsApp)'
+        : code === 131042 ? 'lipsește metoda de plată în Meta (WhatsApp Manager → Plăți)'
         : 'cod ' + (code || r.status) + (j && j.error && j.error.message ? ': ' + String(j.error.message).slice(0, 200) : '');
       return { sent: false, error: why, fromCity: city };
     }
