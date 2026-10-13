@@ -142,9 +142,9 @@
   // The only messages the clinic sends first on WhatsApp: made here (or in WhatsApp Manager), approved
   // by Meta, then picked in a flow's WhatsApp step.
   const L = { box: null };
-  function list(box) {
+  function list(box, force) {
     if (L.box !== box) { L.box = box; box.addEventListener('click', listClick); }
-    paintList();
+    paintList(force);
   }
   async function paintList(force) {
     const box = L.box; if (!box) return;

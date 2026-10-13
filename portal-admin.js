@@ -630,6 +630,7 @@
     });
   }
   K.section('oferte', { mount: mountOffers, show() { if (O.list) renderOffers(); loadOffers(); } });
+  K.on('remote', () => { if (opanel && K.isActive('oferte')) loadOffers(); });
 
   // =====================================================================================
   // INTEGRĂRI
@@ -683,6 +684,12 @@
   K.on('integrari:forms', () => setTab('forms'));
   K.on('integrari:int', () => setTab('int'));
   K.on('integrari:wa', () => setTab('wa'));
+  K.on('remote', () => {
+    if (!ipanel || !K.isActive('integrari')) return;
+    if (I.tab === 'forms' && window.C360Forms) window.C360Forms.load();
+    else if (I.tab === 'wa' && window.C360Wa) window.C360Wa.list(ipanel.querySelector('[data-pane="wa"]'), true);
+    else { const fb = ipanel.querySelector('[data-fb]'); if (fb) loadFb(fb); }
+  });
   function renderIntegrations() {
     if (!ipanel || I.tab !== 'int') return;
     const body = ipanel.querySelector('[data-int-body]');

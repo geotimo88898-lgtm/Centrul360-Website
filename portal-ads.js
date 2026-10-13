@@ -685,4 +685,7 @@
   }
 
   K.section('reclame', { mount, show: () => (A.d ? (Date.now() - (A.at || 0) > 20e3 ? load(true) : null) : load()) });
+  const fresh = (ms) => { if (A.d && K.isActive('reclame') && !document.hidden && !K.drawerOpen && Date.now() - (A.at || 0) > ms) load(true); };
+  setInterval(() => fresh(55e3), 60e3);
+  K.on('remote', () => fresh(30e3));
 })();

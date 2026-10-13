@@ -325,4 +325,12 @@
   }
   K.on('wa', (d) => { if (S.d && S.d.meta) S.d.meta.waTemplates = d.templates; });
   K.section('fluxuri', { mount, show: load });
+  K.on('remote', async () => {
+    if (!S.d || !K.isActive('fluxuri') || S.loading || document.querySelector('.fb-root.is-open')) return;
+    try {
+      const d = await K.api('/api/portal-workflows');
+      if (JSON.stringify(d) === JSON.stringify(S.d)) return; // nothing new: no redraw
+      S.d = d; render();
+    } catch (e) { /* the next pulse tries again */ }
+  });
 })();
