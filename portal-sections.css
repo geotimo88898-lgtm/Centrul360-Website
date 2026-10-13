@@ -1092,3 +1092,12 @@ main.ad-full{ max-width:none; }
 .ad-ed .ad-age input{ width:84px; }
 .ad-ed .ad-age span{ font-size:.82rem; color:var(--muted); text-transform:none; letter-spacing:0; font-weight:500; }
 @media (max-width:560px){ .ad-ed-form{ grid-template-columns:minmax(0,1fr); } .ad-pv-meta{ grid-template-columns:1fr 1fr; } }
+/* Panou: the KPIs and blocks each account chose */
+.db-kpis{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
+.db-blocks{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1rem; grid-auto-flow:row dense; min-width:0; }
+.db-b{ min-width:0; display:flex; flex-direction:column; }
+.db-b > .k-card{ flex:1; }
+.db-b.is-wide{ grid-column:span 2; }
+.db-b.is-full{ grid-column:1 / -1; }
+.db-b:empty{ display:none; }
+@media (max-width:1100px){ .db-blocks{ grid-template-columns:minmax(0,1fr); } .db-b.is-wide, .db-b.is-full{ grid-column:auto; } }

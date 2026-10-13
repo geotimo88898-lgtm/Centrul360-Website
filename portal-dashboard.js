@@ -6,6 +6,7 @@
   const K = window.K;
   const { esc, icon } = K;
   let panel = null, timer = 0, leadsData = null, firstPaint = true, tasksOpen = 0;
+  let customizeCtx = null; // what Personalizează offers this account (set by render)
   K.on('tasks', (list) => { tasksOpen = list.length; });
 
   const STATUS = {
@@ -43,12 +44,35 @@
   }
 
   function onClick(e) {
+    if (e.target.closest('[data-act="customize"]')) return customizeDash();
     const a = e.target.closest('[data-go]');
     if (a) { e.preventDefault(); K.go(a.dataset.go); if (a.dataset.then) setTimeout(() => K.emit(a.dataset.then, a.dataset.arg || null), 250); return; }
     const appt = e.target.closest('[data-appt]');
     if (appt) { K.go('programari'); setTimeout(() => K.emit('calendar:open', { id: appt.dataset.appt, date: K.today() }), 250); return; }
     const lead = e.target.closest('[data-lead]');
     if (lead) { K.go('pipeline'); setTimeout(() => window.C360Pipeline && window.C360Pipeline.openLead(lead.dataset.lead), 400); }
+  }
+
+  // Personalizează: the KPI cards (any number, any order) and the blocks of the page, per account
+  function customizeDash() {
+    const c = customizeCtx; if (!c) return;
+    const catalog = {};
+    c.mineKpi.forEach((k) => { catalog[k] = { label: c.KPI[k].label, group: c.KPI[k].group, only: ['kpis'] }; });
+    Object.keys(c.BLOCK).filter((b) => c.BLOCK[b].ok).forEach((b) => { catalog['b:' + b] = { label: c.BLOCK[b].label, group: 'Secțiuni', only: ['blocks'] }; });
+    const groups = []; c.mineKpi.forEach((k) => { if (!groups.includes(c.KPI[k].group)) groups.push(c.KPI[k].group); });
+    K.customize({
+      title: 'Personalizează panoul', subtitle: 'Alegi cifrele de sus și secțiunile, în ordinea ta. Se păstrează pe contul tău.',
+      catalog, groups: groups.concat(['Secțiuni']),
+      parts: [
+        { key: 'kpis', label: 'Cifrele de sus', hint: 'Oricâte; se așază pe rânduri.', value: c.kpiNow, def: c.DEF },
+        { key: 'blocks', label: 'Secțiunile', hint: 'Ce apare sub cifre și în ce ordine.', value: c.blocksNow.map((b) => 'b:' + b), def: c.DEF_BLOCKS.map((b) => 'b:' + b) },
+      ],
+      async onSave(v) {
+        await K.prefs.set('dash.kpis', v.kpis);
+        await K.prefs.set('dash.blocks', v.blocks.map((b) => b.slice(2)));
+        render();
+      },
+    });
   }
 
   // ------------------------------------------------------------------ render
@@ -107,6 +131,7 @@
         '<button type="button" class="k-btn db-glass" data-go="programari" data-then="calendar:new">' + icon('calendar') + 'Programare</button>' +
         '<button type="button" class="k-btn db-glass" data-go="pipeline" data-then="pipeline:new">' + icon('userPlus') + 'Lead</button>' +
         (callNow.length ? '<button type="button" class="k-btn db-glass" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'Coada de apeluri · ' + callNow.length + '</button>' : '');
+    const custom = '<button type="button" class="k-btn db-glass db-custom" data-act="customize" title="Alege cifrele și secțiunile panoului">' + icon('sliders') + 'Personalizează</button>';
 
     // Chart: clinic revenue for admin/reception; the cosmetician's own approved commission otherwise.
     const chartSrc = role === 'cosmetician' ? ms.filter((s) => s.status === 'approved').map((s) => ({ date: s.date, amount: s.commission })) : inc;
@@ -115,24 +140,6 @@
     const stat = (cls, go, then, ic, label, value, fmt, key, sub, extra) =>
       '<button type="button" class="k-stat ' + cls + '" data-go="' + go + '"' + (then ? ' data-then="' + then + '"' : '') + '><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + label + '</div>' +
       '<div class="k-stat-value" data-count="' + value + '"' + (fmt ? ' data-fmt="' + fmt + '"' : '') + ' data-key="' + key + '">0</div><div class="k-stat-sub">' + sub + '</div>' + (extra || '') + '</button>';
-    let kpis;
-    if (role === 'cosmetician') {
-      kpis = stat('is-info', 'programari', '', 'calendar', 'Clientele mele azi', mineToday.filter((a) => a.status !== 'anulata').length, '', 'db-mine',
-          mineToday.filter((a) => a.status === 'confirmata').length + ' confirmate · ' + mineToday.filter((a) => a.status === 'finalizata').length + ' finalizate') +
-        stat('is-good', 'comision', '', 'percent', 'Comision luna aceasta', commMonth, 'lei', 'db-comm', delta(commMonth, commPrev) + 'aprobat', K.spark(dailySeries(chartSrc, 14).map((x) => x.v), { color: 'var(--good)' })) +
-        stat('is-warn', 'comision', '', 'clock', 'În așteptare', Math.round(pendingEst), 'lei', 'db-pend', K.plural(pendingMine.length, 'upsell', 'upsell-uri') + ' · estimat') +
-        stat('is-accent', 'incasari', '', 'wallet', 'Încasări atribuite', attributed, 'lei', 'db-attr', 'tratamente efectuate de tine luna asta');
-    } else {
-      kpis = stat('is-accent', 'incasari', '', 'wallet', 'Încasat azi', todaySum, 'lei', 'db-today', delta(todaySum, yesterday) + K.plural(todayCount, 'încasare', 'încasări'), K.spark(spark14)) +
-        (role === 'receptie'
-          ? stat(unconfirmed.length ? 'is-warn' : 'is-good', 'programari', '', 'checkCircle', 'De confirmat', unconfirmed.length, '', 'db-unconf', confirmed + ' confirmate din ' + live.length + ' azi')
-          : stat('is-good', 'incasari', '', 'trend', 'Luna aceasta', mtd, 'lei', 'db-mtd', delta(mtd, prevMtd) + 'vs ' + K.MON_S[Number(prevMonth.slice(5)) - 1] + '.')) +
-        stat('is-info', 'programari', '', 'calendar', 'Programări azi', live.length, '', 'db-appts', confirmed + ' confirmate · ' + appts.filter((a) => a.status === 'finalizata').length + ' finalizate') +
-        (role === 'admin' && pending
-          ? stat('is-warn', 'aprobari', '', 'shield', 'De aprobat', pending, '', 'db-pending', 'upsell-uri în așteptare')
-          : stat(callNow.length ? 'is-bad db-hot' : 'is-good', 'pipeline', 'pipeline:queue', 'zap', 'De sunat acum', callNow.length, '', 'db-call', leadsData ? working.length + ' leaduri active în pipeline' : 'se încarcă…'));
-    }
-
     // Pay this month: hers (staff) or the whole team's (owner). See "Salariu" / Echipa > Salarii.
     const lei2 = (v) => K.lei(v, v % 1 ? 2 : 0);
     const myPay = D.salary && D.salary.months && D.salary.months[0];
@@ -155,6 +162,81 @@
       '<div class="db-book-steps">' + bk.tiers.slice().sort((a, b) => a.min - b.min).map((t) => '<span class="' + (bk.avg >= t.min ? 'is-on' : '') + '">' + t.min + '+ · ' + K.lei(t.lei) + '</span>').join('') + '</div>' +
       (bk.next ? '<p class="db-book-next">' + (bk.days ? 'Încă ' + K.num(Math.ceil((bk.next.min - bk.avg) * 10) / 10) + ' pe zi pentru ' + K.lei(bk.next.lei) + '.' : 'Pontează sosirea și pornește media de azi.') + '</p>' : '<p class="db-book-next">Treapta cea mai mare. Bravo!</p>') + '</section>' : '';
 
+    // ---- every KPI this account may put on its Panou (its own choice, K.prefs 'dash.kpis')
+    const lastMonthSum = sumBy(inc, prevMonth + '-01', K.addDays(month + '-01', -1));
+    const monthInc = inc.filter((s) => K.monthOf(s.date) === month);
+    const byCity = (c) => monthInc.filter((s) => s.location === c).reduce((a, s) => a + Number(s.amount || 0), 0);
+    const upsMonth = monthInc.filter((s) => Number(s.upsell) > 0);
+    const dayOf = (iso) => (iso ? K.iso(new Date(iso)) : '');
+    const newToday = L.filter((l) => dayOf(l.createdAt) === today);
+    const newMonth = L.filter((l) => dayOf(l.createdAt).slice(0, 7) === month);
+    const bookedNow = L.filter((l) => l.kind === 'booked');
+    const wonMonth = L.filter((l) => l.kind === 'won' && dayOf(l.stageChangedAt).slice(0, 7) === month);
+    const pipeValue = working.reduce((a, l) => a + (Number(l.value) || 0), 0);
+    const myUpsMonth = ms.filter((s) => K.monthOf(s.date) === month);
+    const mineLive = mineToday.filter((a) => a.status !== 'anulata');
+    const ALL = ['admin', 'receptie', 'cosmetician'], DESK = ['admin', 'receptie'], STAFF = ['receptie', 'cosmetician'];
+    const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+    const KPI = {
+      incToday: { label: 'Încasat azi', group: 'Încasări', roles: DESK, html: () => stat('is-accent', 'incasari', '', 'wallet', 'Încasat azi', todaySum, 'lei', 'db-today', delta(todaySum, yesterday) + K.plural(todayCount, 'încasare', 'încasări'), K.spark(spark14)) },
+      incYesterday: { label: 'Încasat ieri', group: 'Încasări', roles: DESK, html: () => stat('is-accent', 'incasari', '', 'wallet', 'Încasat ieri', yesterday, 'lei', 'db-yday', K.dateLong(K.addDays(today, -1))) },
+      mtd: { label: 'Încasări luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-good', 'incasari', '', 'trend', 'Luna aceasta', mtd, 'lei', 'db-mtd', delta(mtd, prevMtd) + 'vs ' + K.MON_S[Number(prevMonth.slice(5)) - 1] + '.') },
+      lastMonth: { label: 'Încasări luna trecută', group: 'Încasări', roles: ['admin'], html: () => stat('is-info', 'incasari', '', 'calendar', 'Luna trecută', lastMonthSum, 'lei', 'db-lm', esc(K.monthLabel(prevMonth))) },
+      perDay: { label: 'Medie pe zi, luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-info', 'incasari', '', 'trend', 'Medie pe zi', Math.round(mtd / Math.max(1, dayOfMonth)), 'lei', 'db-perday', 'în ' + dayOfMonth + ' zile din lună') },
+      ticket: { label: 'Bon mediu, luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-info', 'incasari', '', 'wallet', 'Bon mediu', Math.round(mtd / Math.max(1, monthInc.length)), 'lei', 'db-ticket', K.plural(monthInc.length, 'încasare', 'încasări') + ' luna asta') },
+      incCountMonth: { label: 'Nr. încasări luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-info', 'incasari', '', 'wallet', 'Încasări luna asta', monthInc.length, '', 'db-incn', 'plăți înregistrate') },
+      incTM: { label: 'Timișoara, luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-accent', 'incasari', '', 'pin', 'Timișoara', byCity('Timișoara'), 'lei', 'db-tm', 'încasări luna asta') },
+      incAR: { label: 'Arad, luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-accent', 'incasari', '', 'pin', 'Arad', byCity('Arad'), 'lei', 'db-ar', 'încasări luna asta') },
+      upsellsMonth: { label: 'Upselluri luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-good', 'incasari', '', 'trophy', 'Upselluri luna asta', upsMonth.length, '', 'db-ups', K.lei(upsMonth.reduce((a, s) => a + Number(s.upsell || 0), 0)) + ' valoare') },
+      apptsToday: { label: 'Programări azi', group: 'Programări', roles: DESK, html: () => stat('is-info', 'programari', '', 'calendar', 'Programări azi', live.length, '', 'db-appts', confirmed + ' confirmate · ' + appts.filter((a) => a.status === 'finalizata').length + ' finalizate') },
+      unconfirmed: { label: 'De confirmat azi', group: 'Programări', roles: DESK, html: () => stat(unconfirmed.length ? 'is-warn' : 'is-good', 'programari', '', 'checkCircle', 'De confirmat', unconfirmed.length, '', 'db-unconf', confirmed + ' confirmate din ' + live.length + ' azi') },
+      doneToday: { label: 'Finalizate azi', group: 'Programări', roles: DESK, html: () => stat('is-good', 'programari', '', 'checkCircle', 'Finalizate azi', appts.filter((a) => a.status === 'finalizata').length, '', 'db-done', 'din ' + live.length + ' programări') },
+      cancelledToday: { label: 'Anulate azi', group: 'Programări', roles: DESK, html: () => stat('is-bad', 'programari', '', 'alert', 'Anulate azi', appts.filter((a) => a.status === 'anulata').length, '', 'db-canc', 'programări anulate') },
+      mineToday: { label: 'Clientele mele azi', group: 'Programări', roles: ['cosmetician'], html: () => stat('is-info', 'programari', '', 'calendar', 'Clientele mele azi', mineLive.length, '', 'db-mine', mineToday.filter((a) => a.status === 'confirmata').length + ' confirmate · ' + mineToday.filter((a) => a.status === 'finalizata').length + ' finalizate') },
+      callNow: { label: 'De sunat acum', group: 'Leaduri', roles: DESK, html: () => stat(callNow.length ? 'is-bad db-hot' : 'is-good', 'pipeline', 'pipeline:queue', 'zap', 'De sunat acum', callNow.length, '', 'db-call', leadsData ? working.length + ' leaduri active în pipeline' : 'se încarcă…') },
+      leadsActive: { label: 'Leaduri active', group: 'Leaduri', roles: DESK, html: () => stat('is-info', 'pipeline', '', 'users', 'Leaduri active', working.length, '', 'db-lact', K.lei(pipeValue) + ' în pipeline') },
+      leadsNewToday: { label: 'Leaduri noi azi', group: 'Leaduri', roles: DESK, html: () => stat('is-accent', 'pipeline', '', 'userPlus', 'Leaduri noi azi', newToday.length, '', 'db-lnew', K.plural(newMonth.length, 'lead', 'leaduri') + ' luna asta') },
+      leadsNewMonth: { label: 'Leaduri noi luna aceasta', group: 'Leaduri', roles: DESK, html: () => stat('is-accent', 'pipeline', '', 'userPlus', 'Leaduri luna asta', newMonth.length, '', 'db-lmon', newToday.length + ' azi') },
+      leadsBooked: { label: 'Leaduri programate', group: 'Leaduri', roles: DESK, html: () => stat('is-info', 'pipeline', '', 'calendar', 'Programați', bookedNow.length, '', 'db-lbook', 'în etapa de programare') },
+      leadsWon: { label: 'Câștigați luna aceasta', group: 'Leaduri', roles: DESK, html: () => stat('is-good', 'pipeline', '', 'trophy', 'Câștigați luna asta', wonMonth.length, '', 'db-lwon', pct(wonMonth.length, newMonth.length) + '% din leadurile lunii') },
+      pendingApprovals: { label: 'Upselluri de aprobat', group: 'Echipa', roles: ['admin'], html: () => stat(pending ? 'is-warn' : 'is-good', 'aprobari', '', 'shield', 'De aprobat', pending, '', 'db-pending', 'upsell-uri în așteptare') },
+      payroll: { label: 'Salarii luna aceasta (echipa)', group: 'Echipa', roles: ['admin'], html: () => stat('is-info', 'angajati', '', 'users', 'Salarii luna asta', Math.round(tsum('total')), 'lei', 'db-payroll', 'de plată până azi') },
+      tasksOpen: { label: 'Sarcinile mele', group: 'Echipa', roles: ['receptie'], html: () => stat(tasksOpen ? 'is-warn' : 'is-good', 'automatizari', '', 'checkCircle', 'Sarcini', tasksOpen, '', 'db-tasks', 'de făcut') },
+      commMonth: { label: 'Comision luna aceasta', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-good', 'comision', '', 'percent', 'Comision luna aceasta', commMonth, 'lei', 'db-comm', delta(commMonth, commPrev) + 'aprobat', K.spark(dailySeries(chartSrc, 14).map((x) => x.v), { color: 'var(--good)' })) },
+      commPending: { label: 'Comision în așteptare', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-warn', 'comision', '', 'clock', 'În așteptare', Math.round(pendingEst), 'lei', 'db-pend', K.plural(pendingMine.length, 'upsell', 'upsell-uri') + ' · estimat') },
+      attributed: { label: 'Încasări atribuite mie', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-accent', 'incasari', '', 'wallet', 'Încasări atribuite', attributed, 'lei', 'db-attr', 'tratamente efectuate de tine luna asta') },
+      myUpsells: { label: 'Upsellurile mele luna aceasta', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-good', 'comision', '', 'trophy', 'Upselluri luna asta', myUpsMonth.length, '', 'db-myups', K.lei(myUpsMonth.reduce((a, s) => a + Number(s.amount || 0), 0)) + ' valoare') },
+      myPay: { label: 'Salariul meu până azi', group: 'Salariul meu', roles: STAFF, html: () => stat('is-good', 'comision', '', 'wallet', 'Salariul meu', myPay ? Math.round(myPay.total) : 0, 'lei', 'db-mypay', 'în mână, până azi') },
+      myOvertime: { label: 'Ore suplimentare (lei)', group: 'Salariul meu', roles: STAFF, html: () => stat('is-info', 'comision', '', 'clock', 'Ore suplimentare', myPay ? Math.round(myPay.overtimeLei || 0) : 0, 'lei', 'db-myot', 'luna asta') },
+      bookingAvg: { label: 'Programări pe zi (bonus)', group: 'Salariul meu', roles: ['receptie'], html: () => stat('is-accent', 'comision', '', 'trophy', 'Programări / zi', bk ? bk.avg : 0, '', 'db-bkavg', bk ? 'bonus acum ' + K.lei(bk.lei) : 'pontează ca să pornească media') },
+    };
+    const DEF_KPI = { admin: ['incToday', 'mtd', 'apptsToday', 'callNow'], receptie: ['incToday', 'unconfirmed', 'apptsToday', 'callNow'], cosmetician: ['mineToday', 'commMonth', 'commPending', 'attributed'] };
+    const mineKpi = Object.keys(KPI).filter((k) => KPI[k].roles.includes(role));
+    const chosenKpi = (K.prefs.get('dash.kpis', null) || DEF_KPI[role] || []).filter((k) => mineKpi.includes(k));
+    const kpis = chosenKpi.map((k) => KPI[k].html()).join('');
+
+    // ---- the page's blocks, in her order (K.prefs 'dash.blocks')
+    const BLOCK = {
+      chart: { label: role === 'cosmetician' ? 'Graficul comisionului' : 'Graficul încasărilor', size: 'wide', ok: true },
+      pay: { label: D.isAdmin ? 'Salariile echipei' : 'Salariul meu', size: 'narrow', ok: !!payCard },
+      today: { label: role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi', size: 'wide', ok: true },
+      bonus: { label: 'Bonusul de programări', size: 'narrow', ok: !!bonusCard },
+      team: { label: 'Echipa în pipeline', size: 'full', ok: !!D.isAdmin },
+    };
+    const DEF_BLOCKS = ['chart', 'pay', 'today', 'bonus', 'team'];
+    const chosenBlocks = (K.prefs.get('dash.blocks', null) || DEF_BLOCKS).filter((b) => BLOCK[b] && BLOCK[b].ok);
+    customizeCtx = { KPI, mineKpi, DEF: DEF_KPI[role] || [], BLOCK, DEF_BLOCKS: DEF_BLOCKS.filter((b) => BLOCK[b].ok), kpiNow: chosenKpi, blocksNow: chosenBlocks };
+    const blockHtml = {
+      chart: () => '<section class="k-card db-chart-card"><div class="k-card-head"><h3>' + icon('trend') + (role === 'cosmetician' ? 'Comisionul meu' : 'Încasări') + ' · ultimele 30 de zile</h3>' +
+        '<div class="k-legend"><span><i style="background:var(--accent)"></i>Ultimele 30 zile · ' + K.lei(series30.reduce((a, x) => a + x.v, 0)) + '</span><span><i style="background:var(--muted-2)"></i>Cele 30 dinainte</span></div></div>' +
+        '<div data-chart></div></section>',
+      pay: () => payCard,
+      today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
+        '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>',
+      bonus: () => bonusCard,
+      team: () => '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa în pipeline</h3><a class="k-btn is-sm is-outline" href="#pipeline" data-go="pipeline">Pipeline' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>',
+    };
+
     const root = panel.querySelector('.db-root');
     root.innerHTML =
       // ---------------- hero
@@ -164,34 +246,16 @@
           '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">live</span></div>' +
           '<h2>' + greeting() + ', ' + esc(first) + '</h2>' +
           '<p class="db-summary">Ai ' + summary.join(', ').replace(/, ([^,]*)$/, ' și $1') + '.</p>' +
-          '<div class="db-actions">' + actions + '</div>' +
+          '<div class="db-actions">' + actions + custom + '</div>' +
         '</div>' +
         '<div class="db-clock" aria-label="Ora"><div class="db-time" data-time></div>' +'<div class="db-secs"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="db-secs-track"/><circle cx="24" cy="24" r="20" class="db-secs-arc" pathLength="60" data-arc/></svg><b data-sec>--</b></div></div>' +
       '</section>' +
 
-      // ---------------- KPIs (role-shaped, see above)
-      '<div class="k-grid c4 db-kpis">' + kpis + '</div>' +
+      // ---------------- the KPIs and blocks she chose (Personalizează)
+      (kpis ? '<div class="db-kpis">' + kpis + '</div>' : '') +
+      '<div class="db-blocks">' + chosenBlocks.map((b) => '<div class="db-b is-' + BLOCK[b].size + '">' + blockHtml[b]() + '</div>').join('') + '</div>';
 
-      // ---------------- revenue chart + goal
-      '<div class="db-row db-row-a">' +
-        '<section class="k-card db-chart-card"><div class="k-card-head"><h3>' + icon('trend') + (role === 'cosmetician' ? 'Comisionul meu' : 'Încasări') + ' · ultimele 30 de zile</h3>' +
-          '<div class="k-legend"><span><i style="background:var(--accent)"></i>Ultimele 30 zile · ' + K.lei(series30.reduce((a, x) => a + x.v, 0)) + '</span><span><i style="background:var(--muted-2)"></i>Cele 30 dinainte</span></div></div>' +
-          '<div data-chart></div></section>' +
-        payCard +
-      '</div>' +
-
-      // ---------------- today + leaderboard + tasks
-      '<div class="db-row db-row-b' + (bonusCard ? '' : ' is-single') + '">' +
-        '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
-          '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>' +
-        (bonusCard ? '<div class="k-stack">' + bonusCard + '</div>' : '') +
-      '</div>' +
-
-      // ---------------- goals / team
-
-      (D.isAdmin ? '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa în pipeline</h3><a class="k-btn is-sm is-outline" href="#pipeline" data-go="pipeline">Pipeline' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>' : '');
-
-    K.chart(root.querySelector('[data-chart]'), {
+    if (root.querySelector('[data-chart]')) K.chart(root.querySelector('[data-chart]'), {
       labels: series30.map((x) => K.dateShort(x.d)), height: 230, format: K.lei, axis: (v) => (v >= 1000 ? (Math.round(v / 100) / 10).toLocaleString('ro-RO') + 'k' : Math.round(v)),
       series: [
         { name: 'Perioada anterioară', values: prev30, color: 'var(--muted-2)', kind: 'line', dashed: true },
@@ -317,8 +381,8 @@
       if (!leadsData) {
         // Give the leads a moment so the first paint (and its animations) is the complete one.
         panel.querySelector('.db-root').innerHTML = skeleton();
-        Promise.race([K.leads().then((j) => { leadsData = j; }).catch(() => { leadsData = { leads: [] }; }), sleep(900)]).then(render);
-      } else render();
+        Promise.race([Promise.all([K.leads().then((j) => { leadsData = j; }).catch(() => { leadsData = { leads: [] }; }), K.prefs.load()]), sleep(900)]).then(render);
+      } else K.prefs.load().then(render);
       clearInterval(timer);
       timer = setInterval(() => {
         if (!K.isActive('panou')) { clearInterval(timer); return; }
