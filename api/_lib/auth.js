@@ -143,7 +143,7 @@ function requireAuth(req, res) {
   }
   // Previewing an employee's account is look-only: nothing gets saved in their name.
   // (Some screens read through POST { action: 'list' }, those stay allowed.)
-  const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search', 'get', 'unpaid', 'thread'].includes(req.body.action));
+  const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list'].includes(req.body.action));
   if (session.viewer && !readOnly) {
     res.status(403).json({ error: 'preview_only' });
     return null;

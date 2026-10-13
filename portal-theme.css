@@ -568,12 +568,12 @@ body::before{
   #creativeFrame{ height:calc(100dvh - 60px - 66px - env(safe-area-inset-bottom)); }
 }
 @media (max-width:640px){
-  /* Panou: the numbers two by two */
-  .db-root .db-kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:.6rem; }
-  .db-root .db-kpis .k-stat{ min-height:0; padding:.8rem .85rem; gap:.2rem; }
-  .db-root .db-kpis .k-stat-top{ font-size:.7rem; }
-  .db-root .db-kpis .k-stat-ic{ width:24px; height:24px; }
-  .db-root .db-kpis .k-stat-value{ font-size:1.25rem; }
-  .db-root .db-kpis .k-stat-sub{ font-size:.68rem; }
-  .db-root .db-kpis .k-stat .k-spark{ display:none; }
+  /* Panou, Încasări: the numbers two by two */
+  .db-root .db-kpis, .mo .mo-kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:.6rem; }
+  .db-root .db-kpis .k-stat, .mo .mo-kpis .k-stat{ min-height:0; padding:.8rem .85rem; gap:.2rem; }
+  .db-root .db-kpis .k-stat-top, .mo .mo-kpis .k-stat-top{ font-size:.7rem; }
+  .db-root .db-kpis .k-stat-ic, .mo .mo-kpis .k-stat-ic{ width:24px; height:24px; }
+  .db-root .db-kpis .k-stat-value, .mo .mo-kpis .k-stat-value{ font-size:1.25rem; }
+  .db-root .db-kpis .k-stat-sub, .mo .mo-kpis .k-stat-sub{ font-size:.68rem; white-space:normal; overflow:visible; text-overflow:clip; }
+  .db-root .db-kpis .k-stat .k-spark, .mo .mo-kpis .k-stat .k-spark{ display:none; }
 }

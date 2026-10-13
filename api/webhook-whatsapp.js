@@ -14,7 +14,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
-const { upsertClient, normalizePhone } = require('./_lib/clients');
+const { normalizePhone } = require('./_lib/clients');
 const { sendPush } = require('./_lib/push');
 
 module.exports.config = { api: { bodyParser: false } };
@@ -83,10 +83,13 @@ async function pushMessages(fresh) {
   }
 }
 
-// her lead's name (same phone, newest lead), when the client directory has none
-async function leadName(phone) {
+// her name as the portal knows it: the client base first, then her newest lead (same phone)
+async function knownName(phone) {
   const key = String(phone || '').replace(/\D/g, '').slice(-9);
   if (key.length < 9) return '';
+  const clients = await readJSON('data/clients.json', []);
+  const client = clients.find((c) => String(c.phone || '').replace(/\D/g, '').slice(-9) === key && c.name);
+  if (client) return String(client.name).trim();
   const leads = await readJSON('data/leads.json', []);
   const lead = leads.filter((l) => String(l.phone || '').replace(/\D/g, '').slice(-9) === key && l.name)
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
@@ -102,11 +105,10 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
   if (dup) return;
   const convo = findOrCreateConversation(conversations, phone);
 
-  // Resolve a display name from the client directory (upsert so a client that messages in
-  // doesn't need to exist yet), fall back to the raw phone number when nothing resolves.
+  // Her name from the client base or her lead (only read: writing on WhatsApp doesn't make her a
+  // client), the number itself while the portal doesn't know her.
   try {
-    const client = await upsertClient({ name: convo.clientName, phone: from }, { readJSON, writeJSON });
-    convo.clientName = (client && client.name) || (convo.clientName && convo.clientName !== phone ? convo.clientName : '') || (await leadName(phone)) || phone;
+    if (!convo.clientName || convo.clientName === phone) convo.clientName = (await knownName(phone)) || phone;
   } catch (err) {
     console.error('webhook-whatsapp: client resolution failed', err.message);
     if (!convo.clientName) convo.clientName = phone;

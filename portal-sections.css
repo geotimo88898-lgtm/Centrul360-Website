@@ -1106,7 +1106,7 @@ main.ad-full{ max-width:none; }
 /* Automatizări: folders, the ticked ones, the history filters */
 .au-bar{ justify-content:flex-start; }
 .au-bar .ad-search{ flex:1 1 220px; max-width:360px; }
-.au-bar select{ height:36px; min-width:170px; width:auto; }
+.au-bar select, .au-hfilters select{ height:36px; min-width:170px; width:auto; padding-top:0; padding-bottom:0; }
 .au-folder + .au-folder{ margin-top:1.1rem; }
 .au-folder-head{ display:flex; align-items:center; gap:.4rem; margin:.2rem 0 .55rem; }
 .au-folder-title{ display:inline-flex; align-items:center; gap:.45rem; border:0; background:none; padding:.3rem .2rem; color:var(--fg); font:inherit; cursor:pointer; margin-right:auto; }
@@ -1243,9 +1243,9 @@ main.ad-full{ max-width:none; }
 @media (max-width:640px){
   .ad-sm-hide{ display:none; }
   .ad-sm-only{ display:inline; }
-  .ad .k-head{ align-items:center; }
-  .ad .k-head-actions{ flex-wrap:nowrap; }
-  .ad .k-head-actions .k-btn{ padding-left:.8rem; padding-right:.8rem; }
+  .ad:not(.au) .k-head{ align-items:center; }
+  .ad:not(.au) .k-head-actions{ flex-wrap:nowrap; }
+  .ad:not(.au) .k-head-actions .k-btn{ padding-left:.8rem; padding-right:.8rem; }
   /* the period on one line, sideways */
   .ad-bar{ gap:.55rem; margin-bottom:.8rem; }
   .ad-bar > .k-seg{ width:100%; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
@@ -1284,9 +1284,9 @@ main.ad-full{ max-width:none; }
   .ad-row.is-camp .ad-cell:empty, .ad-row.is-camp .ad-cell.is-none{ display:none; }
 }
 @media (max-width:640px){
-  .ad .k-head-actions{ display:flex; width:100%; gap:.5rem; }
-  .ad .k-head-actions [data-act="defaults"]{ flex:none; }
-  .ad .k-head-actions [data-act="creative"]{ flex:1; justify-content:center; }
+  .ad:not(.au) .k-head-actions{ display:flex; width:100%; gap:.5rem; }
+  .ad:not(.au) .k-head-actions [data-act="defaults"]{ flex:none; }
+  .ad:not(.au) .k-head-actions [data-act="creative"]{ flex:1; justify-content:center; }
   .ad-hero b{ font-size:1.15rem; letter-spacing:-.03em; }
   .ad-row.is-camp{ column-gap:1rem; }
   .ad-row.is-camp .ad-cell{ flex:1 1 calc(50% - .5rem); }
@@ -1460,4 +1460,46 @@ main.ad-full{ max-width:none; }
   html.mx-thread-open:has(#panel-mesaje.active), html.mx-thread-open:has(#panel-mesaje.active) body{ overflow:hidden; }
   html.mx-thread-open:has(#panel-mesaje.active) .c360-tabbar{ display:none; }
   html.mx-thread-open:has(#panel-mesaje.active) .c360-toasts{ bottom:calc(140px + env(safe-area-inset-bottom)); }
+}
+
+/* short native selects (filters): the text sits in the middle, not cut */
+.cal-bar-right > select, .cd-filters > select, .k-panel .pl-filters select, .pl-root .pl-filters select{ padding-top:0; padding-bottom:0; }
+
+/* phones: every row of numbers two by two (the last one alone takes the whole row) */
+@media (max-width:640px){
+  .k-grid:has(> .k-stat){ grid-template-columns:repeat(2, minmax(0,1fr)); gap:.6rem; }
+  .k-grid:has(> .k-stat) > .k-stat:last-child:nth-child(odd){ grid-column:1 / -1; }
+  .k-grid:has(> .k-stat) > .k-stat{ min-height:0; padding:.8rem .85rem; gap:.2rem; }
+  .k-grid:has(> .k-stat) .k-stat-top, .k-grid:has(> .k-stat) .k-stat-top *{ font-size:.7rem; white-space:normal; overflow:visible; text-overflow:clip; }
+  .k-grid:has(> .k-stat) .k-stat-ic{ width:24px; height:24px; }
+  .k-grid:has(> .k-stat) .k-stat-value{ font-size:1.25rem; }
+  .k-grid:has(> .k-stat) .k-stat-sub{ font-size:.68rem; white-space:normal; }
+  .k-grid:has(> .k-stat) .k-spark{ display:none; }
+}
+/* Aprobări on a phone: who and what on top, the money under it, the two buttons at the bottom */
+@media (max-width:720px){
+  .ad-keys{ display:none; }
+  .ad-card{ align-items:flex-start; gap:.7rem .8rem; padding:.9rem; }
+  .ad-card > .ad-main{ flex:1 1 calc(100% - 60px); }
+  .ad-card > .ad-money{ flex:1 1 100%; flex-direction:row; flex-wrap:wrap; align-items:baseline; column-gap:.6rem; row-gap:.15rem; padding:.6rem .75rem; border-radius:12px; background:var(--glass); }
+  .ad-card > .ad-money .ad-label{ flex:1 1 100%; }
+  .ad-top{ row-gap:.25rem; }
+}
+/* Integrări on a phone: the three tabs side by side, the icon above the name */
+@media (max-width:640px){
+  .st-tabs .k-seg{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); width:100%; }
+  .st-tabs .k-seg button{ flex-direction:column; justify-content:center; gap:.2rem; min-height:54px; padding:.4rem .25rem; font-size:.72rem; line-height:1.15; white-space:normal; text-align:center; }
+  .st-tabs .k-seg button .k-ic{ width:17px; height:17px; }
+}
+/* Oferte on a phone: a compact row each (photo on the left), the switches under it */
+@media (max-width:640px){
+  .k-panel .of-grid:not(.is-single){ grid-template-columns:minmax(0,1fr); gap:.6rem; }
+  .k-panel .of-grid:not(.is-single) .of-card{ display:grid; grid-template-columns:104px minmax(0,1fr); border-radius:16px; }
+  .k-panel .of-grid:not(.is-single) .of-img{ aspect-ratio:auto; min-height:118px; height:100%; }
+  .k-panel .of-grid:not(.is-single) .of-disc{ top:.4rem; left:.4rem; padding:.15rem .4rem; font-size:.66rem; }
+  .k-panel .of-grid:not(.is-single) .of-body{ padding:.65rem .75rem .55rem; gap:.2rem; }
+  .k-panel .of-grid:not(.is-single) .of-body > b{ font-size:.9rem; }
+  .k-panel .of-grid:not(.is-single) .of-body p{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:.76rem; }
+  .k-panel .of-grid:not(.is-single) .of-toggles{ grid-column:1 / -1; padding:.5rem .75rem; }
+  .k-panel .of-grid:not(.is-single) .of-feat{ top:auto; bottom:.4rem; left:.4rem; right:auto; padding:.15rem .4rem; font-size:.64rem; }
 }

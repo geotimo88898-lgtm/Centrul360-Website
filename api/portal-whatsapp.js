@@ -106,6 +106,7 @@ module.exports = async (req, res) => {
       const leads = await readJSON('data/leads.json', []);
       const names = new Map();
       leads.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).forEach((l) => { if (l.name && digits9(l.phone).length === 9) names.set(digits9(l.phone), String(l.name).trim()); });
+      (await readJSON('data/clients.json', [])).forEach((c) => { if (c.name && digits9(c.phone).length === 9) names.set(digits9(c.phone), String(c.name).trim()); });
       const list = conversations
         .map((c) => (c.clientName && c.clientName !== c.phone ? c : Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || c.phone })))
         .map(listItem)
