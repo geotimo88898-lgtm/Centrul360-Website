@@ -98,10 +98,13 @@ async function sendWhatsApp({ phone, text, template, params, language, from }) {
       const code = j && j.error && j.error.code;
       // 131047 = outside the 24 h window (needs a template); 132001 = template missing / not approved.
       const why = code === 131047 ? 'în afara ferestrei de 24h, e nevoie de șablon' : code === 132001 ? 'șablonul nu există / nu e aprobat'
-        : code === 200 || code === 10 ? 'accesul cu care e conectat numărul nu are voie să trimită mesaje (îi lipsește whatsapp_business_messaging pe contul WhatsApp)'
         : code === 131042 ? 'lipsește metoda de plată în Meta (WhatsApp Manager → Plăți)'
-        : 'cod ' + (code || r.status) + (j && j.error && j.error.message ? ': ' + String(j.error.message).slice(0, 200) : '');
-      return { sent: false, error: why, fromCity: city };
+        : code === 200 || code === 10 ? 'Meta refuză trimiterea cu accesul ăsta' : 'Meta a refuzat';
+      // Meta's own words always come along (its details say the real reason, e.g. what to set where)
+      const e = (j && j.error) || {};
+      const meta = [e.message, e.error_data && e.error_data.details, e.error_user_msg].filter(Boolean).map((x) => String(x).slice(0, 300)).join(' · ');
+      console.error('sendWhatsApp', city, code, e.error_subcode, meta);
+      return { sent: false, error: why + ' (cod ' + (code || r.status) + (e.error_subcode ? '/' + e.error_subcode : '') + (meta ? ': ' + meta : '') + ')', fromCity: city };
     }
     return { sent: true, id: j.messages && j.messages[0] && j.messages[0].id, fromCity: city };
   } catch (err) {
