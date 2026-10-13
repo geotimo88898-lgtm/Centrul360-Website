@@ -64,7 +64,7 @@ const isContactKey = (k) => NAME_KEY.test(k) || PHONE_KEY.test(k) || EMAIL_KEY.t
 function extractLeadFields(fieldData) {
   const map = {};
   (fieldData || []).forEach((f) => {
-    const key = String(f.name || '').toLowerCase().trim();
+    const key = String(f.name || '').toLowerCase().trim().replace(/\s+/g, '_');
     const value = Array.isArray(f.values) ? f.values[0] : f.value;
     if (value !== undefined) map[key] = String(value).trim();
   });
@@ -89,7 +89,7 @@ const CONTACT_KEYS = ['full_name', 'name', 'first_name', 'last_name', 'phone_num
 function answerPairs(fieldData, questions) {
   const byKey = new Map((questions || []).map((q) => [String(q.key || '').toLowerCase(), q]));
   return (fieldData || [])
-    .filter((f) => !CONTACT_KEYS.includes(String(f.name || '').toLowerCase().trim()) && !isContactKey(String(f.name || '').toLowerCase().trim()))
+    .filter((f) => { const k = String(f.name || '').toLowerCase().trim().replace(/\s+/g, '_'); return !CONTACT_KEYS.includes(k) && !isContactKey(k); })
     .map((f) => {
       const qd = byKey.get(String(f.name || '').toLowerCase());
       const opts = new Map(((qd && qd.options) || []).map((o) => [String(o.key), o.value]));

@@ -312,6 +312,11 @@
 .wk-pct small{ font-size:.75rem; color:var(--muted); font-weight:600; }
 .wk-chips{ margin-bottom:.8rem; }
 .wk-list{ display:flex; flex-direction:column; gap:.6rem; }
+/* leads to call back today ("Revin la ea" in Pipeline), on top of the tasks */
+.wk-group-title{ display:flex; align-items:center; gap:.45rem; margin:1.2rem 0 .6rem; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.wk-group-title svg{ width:14px; height:14px; }
+.wk-group-title span{ font-size:.72rem; padding:.05rem .45rem; border-radius:999px; background:var(--glass-2); color:var(--muted); letter-spacing:0; }
+.wk-calls{ margin-bottom:1.2rem; }
 .wk-task{ display:flex; gap:.85rem; align-items:flex-start; padding:.95rem 1rem; border-radius:16px; background:var(--paper); border:1px solid var(--line); box-shadow:var(--shadow-sm);
   transition:opacity .28s ease, transform .28s var(--ease), max-height .28s ease, border-color .2s ease; animation:k-rise .4s var(--ease) both; }
 .wk-task:hover{ border-color:var(--line-on-dark); }

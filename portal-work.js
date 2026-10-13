@@ -18,7 +18,7 @@
     whatsapp: { label: 'WhatsApp', ic: 'chat', tone: 'good', msg: 'flow' },
     sarcina: { label: 'De făcut', ic: 'listCheck', tone: 'accent', msg: '' },
   };
-  const T = { tasks: [], done: [], filter: '' };
+  const T = { tasks: [], done: [], filter: '', calls: [] };
   let tpanel;
 
   function waText(a, kind) {
@@ -40,11 +40,15 @@
   }
   async function loadTasks() {
     try {
-      const [p, all] = await Promise.all([K.api('/api/portal-automation-tasks'), K.api('/api/portal-automation-tasks?all=1')]);
+      const [p, all, lj] = await Promise.all([K.api('/api/portal-automation-tasks'), K.api('/api/portal-automation-tasks?all=1'), K.leads(true).catch(() => null)]);
       T.tasks = p.tasks || [];
+      // "Revin la ea" set in Pipeline: due today or already late, still open leads
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      T.calls = ((lj && lj.leads) || []).filter((l) => l.followUpAt && new Date(l.followUpAt) <= end && l.kind !== 'won' && l.kind !== 'lost')
+        .sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
       const today = K.today();
       T.done = (all.tasks || []).filter((t) => t.status === 'done' && t.doneBy !== 'system' && t.doneAt && K.iso(new Date(t.doneAt)) === today);
-      K.badge('automatizari', T.tasks.length);
+      K.badge('automatizari', T.tasks.length + T.calls.length);
       renderTasks();
     } catch (e) {
       tpanel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca sarcinile', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="refresh">Reîncearcă</button>');
@@ -58,13 +62,31 @@
     const list = T.tasks.filter((t) => !T.filter || t.type === T.filter);
     tpanel.querySelector('[data-body]').innerHTML =
       '<section class="k-card wk-progress">' + K.ring(pct, { size: 86, stroke: 9, inner: '<b class="wk-pct">' + T.done.length + '<small>/' + total + '</small></b>' }) +
-        '<div><b>' + (T.tasks.length ? K.plural(T.tasks.length, 'mesaj de trimis', 'mesaje de trimis') : 'Totul e trimis pentru azi') + '</b>' +
+        '<div><b>' + (T.tasks.length ? K.plural(T.tasks.length, 'mesaj de trimis', 'mesaje de trimis') + (T.calls.length ? ' · ' + K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : '') : T.calls.length ? K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : 'Totul e trimis pentru azi') + '</b>' +
         '<span>' + (T.done.length ? K.plural(T.done.length, 'sarcină bifată azi', 'sarcini bifate azi') : 'Nicio sarcină bifată încă azi') + ' · sarcinile pentru programări anulate se închid singure</span></div>' +
         (T.tasks.length > 1 ? '<button type="button" class="k-btn is-outline is-sm" data-act="all">' + icon('check') + 'Bifează toate</button>' : '') + '</section>' +
       (T.tasks.length ? '<div class="k-chips wk-chips"><button type="button" class="k-chip' + (!T.filter ? ' is-on' : '') + '" data-filter="">Toate<span>' + T.tasks.length + '</span></button>' +
         Object.keys(TYPES).filter((k) => counts[k]).map((k) => '<button type="button" class="k-chip' + (T.filter === k ? ' is-on' : '') + '" data-filter="' + k + '">' + icon(TYPES[k].ic) + TYPES[k].label + '<span>' + counts[k] + '</span></button>').join('') + '</div>' : '') +
+      callsHtml() +
       (list.length ? '<div class="wk-list">' + list.map(taskHtml).join('') + '</div>'
-        : K.empty('checkCircle', 'Inbox zero', 'Nu mai e nimic de trimis. Sarcinile noi apar singure când se fac programări.'));
+        : T.calls.length ? '' : K.empty('checkCircle', 'Inbox zero', 'Nu mai e nimic de trimis. Sarcinile noi apar singure când se fac programări.'));
+  }
+  // leads to call back today: they leave the list once the call is logged in Pipeline
+  function callsHtml() {
+    if (!T.calls.length) return '';
+    const now = Date.now();
+    return '<div class="wk-group-title">' + icon('phone') + 'De sunat azi<span>' + T.calls.length + '</span></div><div class="wk-list wk-calls">' + T.calls.map((l) => {
+      const late = new Date(l.followUpAt).getTime() < now;
+      const at = new Date(l.followUpAt);
+      return '<article class="wk-task"><span class="k-icon-chip is-' + (late ? 'warn' : 'accent') + '">' + icon('phone') + '</span>' +
+        '<div class="wk-task-main"><div class="wk-task-top"><b>' + esc(l.name) + '</b><span class="k-tag is-' + (late ? 'warn' : 'accent') + '">' + icon('clock') + (late ? 'întârziat, ' : '') + K.pad(at.getHours()) + ':' + K.pad(at.getMinutes()) + '</span>' +
+          (l.location ? '<span class="k-tag">' + icon('pin') + esc(l.location) + '</span>' : '') + '</div>' +
+          '<div class="wk-task-sub">' + esc([l.interest, l.nextAction].filter(Boolean).join(' · ') || 'Revin la ea, din Pipeline') + '</div></div>' +
+        '<div class="wk-task-actions">' +
+          (l.phone && /\d{6}/.test(String(l.phone).replace(/\D/g, '')) ? '<a class="k-icon-btn" href="' + K.tel(l.phone) + '" title="Sună">' + icon('phone') + '</a><a class="k-icon-btn" target="_blank" rel="noopener" href="' + K.wa(l.phone) + '" title="WhatsApp">' + icon('chat') + '</a>' : '') +
+          '<button type="button" class="k-btn is-sm is-primary" data-lead="' + esc(l.id) + '">' + icon('user') + 'Deschide</button>' +
+        '</div></article>';
+    }).join('') + '</div>';
   }
   function taskHtml(t) {
     const ty = TYPES[t.type] || { label: t.type, ic: 'bell', tone: '' };

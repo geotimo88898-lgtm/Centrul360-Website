@@ -664,6 +664,7 @@
     lead.stage = stageId; lead.kind = target.kind;
     if (position != null) lead.position = position;
     renderAll();
+    if (S.drawer && S.drawer.id === id) syncStepper(stageId);
     flashCard(id);
     try {
       const j = await api('move_stage', { leadId: id, stage: stageId, position, lostReason });
@@ -681,6 +682,12 @@
       renderAll();
       ui().toast(errText(e), 'error');
     }
+  }
+  function syncStepper(stageId) {
+    const steps = Array.from(drawerEl().querySelectorAll('.pl-stepper .pl-step'));
+    const at = steps.findIndex((b) => b.dataset.move === stageId);
+    if (at < 0) return;
+    steps.forEach((b, i) => { b.classList.toggle('is-on', i === at); b.classList.toggle('is-past', i < at); });
   }
   function flashCard(id) {
     const c = boardEl.querySelector('.pl-card[data-id="' + id + '"]');
@@ -816,12 +823,13 @@
 
   // the Facebook form the person filled (the newest): the questions as in the form with her answers,
   // then which form, ad and campaign, and when she sent it
+  const qaHtml = (f) => (f.answers && f.answers.length ? '<dl class="pl-qa">' + f.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="pl-muted">Formularul n-a avut întrebări.</p>');
   function formAnswers(l) {
     const f = (l.forms || []).slice(-1)[0];
     if (!f) return '';
     const meta = [f.name ? 'Formular: ' + f.name : '', f.ad ? 'Reclamă: ' + f.ad : '', f.campaign ? 'Campanie: ' + f.campaign : ''].filter(Boolean);
     return '<section class="pl-card-sec pl-form-ans"><div class="pl-sec-head"><h4>' + ic('facebook') + 'Din formularul Facebook</h4><span class="pl-muted">trimis ' + esc(agoLong(f.sentAt || f.at)) + '</span></div>' +
-      (f.answers && f.answers.length ? '<dl class="pl-qa">' + f.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="pl-muted">Formularul n-a avut întrebări.</p>') +
+      qaHtml(f) +
       (meta.length ? '<p class="pl-form-meta">' + meta.map(esc).join(' · ') + '</p>' : '') + '</section>';
   }
 
@@ -847,7 +855,7 @@
       '<div class="pl-dbody">' +
         // stage stepper
         '<div class="pl-stepper" role="group" aria-label="Etapă">' +
-          flow.map((s) => '<button type="button" class="pl-step' + (s.id === l.stage ? ' is-on' : '') + (flow.indexOf(s) < flow.findIndex((x) => x.id === l.stage) ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + '">' +
+          flow.map((s) => '<button type="button" class="pl-step' + (s.id === l.stage ? ' is-on' : '') + (flow.indexOf(s) < flow.findIndex((x) => x.id === l.stage) ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + ';--i:' + flow.indexOf(s) + '">' +
             '<i></i><span>' + esc(s.name) + '</span></button>').join('') +
         '</div>' +
         (l.kind === 'lost' ? '<div class="pl-banner is-bad">' + ic('ban') + '<div><b>Pierdut</b>' + (l.lostReason ? ' · ' + esc(l.lostReason) : '') + '</div><button type="button" class="pl-btn is-ghost is-sm" data-move="' + (S.stages.find((s) => s.kind === 'open') || {}).id + '">Redeschide</button></div>' : '') +
@@ -863,6 +871,7 @@
         // log contact
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +
           '<div class="pl-sec-head"><h4>' + ic('phone') + 'Cum a mers contactul?</h4><span class="pl-muted">' + (l.contactCount ? l.contactCount + (l.contactCount === 1 ? ' contactare' : ' contactări') + ' · ultima ' + agoLong(l.lastContactAt) : 'Încă necontactată') + '</span></div>' +
+          (l.followUpAt ? '<div class="pl-followup-now"><span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '">' + ic('clock') + 'Revin la ea ' + esc(when(l.followUpAt)) + '</span><span class="pl-muted">apare în Sarcini în ziua respectivă</span><button type="button" class="pl-btn is-ghost is-sm" data-clear-next>Anulează</button></div>' : '') +
           '<div class="pl-seg" data-seg="channel">' + Object.keys(CHANNELS).map((k) => '<button type="button" data-val="' + k + '" class="' + (k === (d.channel || 'call') ? 'is-on' : '') + '">' + CHANNELS[k] + '</button>').join('') + '</div>' +
           '<div class="pl-outcomes" data-seg="outcome">' + Object.keys(OUTCOMES).map((k) => '<button type="button" data-val="' + k + '" class="is-' + OUTCOMES[k].tone + '">' + OUTCOMES[k].label + '</button>').join('') + '</div>' +
           '<textarea class="pl-input" data-log-text rows="2" maxlength="1000" placeholder="Ce a spus? (opțional)"></textarea>' +
@@ -870,16 +879,6 @@
             '<div class="pl-quickpicks" data-picks="log">' + QUICK.map(([k, t]) => '<button type="button" data-pick="' + k + '">' + t + '</button>').join('') + '</div>' +
             '<input type="datetime-local" class="pl-input" data-log-follow></div>' +
           '<div class="pl-sec-actions"><button type="button" class="pl-btn is-primary" data-save-log disabled>' + ic('check') + 'Salvează contactul</button></div>' +
-        '</section>' +
-        // next step
-        '<section class="pl-card-sec" data-section="next">' +
-          '<div class="pl-sec-head"><h4>' + ic('arrow') + 'Următorul pas</h4>' +
-            (l.followUpAt ? '<span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '">' + ic('clock') + when(l.followUpAt) + '</span>' : '<span class="pl-muted">Nimic programat</span>') + '</div>' +
-          '<input class="pl-input" data-next-text maxlength="160" placeholder="ex: Trimite prețul pe WhatsApp, sună după salariu…" value="' + esc(l.nextAction) + '">' +
-          '<div class="pl-follow"><div class="pl-quickpicks" data-picks="next">' + QUICK.map(([k, t]) => '<button type="button" data-pick="' + k + '">' + t + '</button>').join('') + '</div>' +
-          '<input type="datetime-local" class="pl-input" data-next-follow value="' + toLocalInput(l.followUpAt) + '"></div>' +
-          '<div class="pl-sec-actions">' + (l.followUpAt ? '<button type="button" class="pl-btn is-ghost" data-clear-next>Șterge follow-up</button>' : '') +
-          '<button type="button" class="pl-btn is-primary" data-save-next>' + ic('check') + 'Salvează pasul</button></div>' +
         '</section>' +
         // details
         '<details class="pl-card-sec pl-details"' + (d.detailsOpen ? ' open' : '') + ' data-section="details"><summary><h4>' + ic('pen') + 'Detalii</h4>' +
@@ -894,6 +893,8 @@
             '<div class="pl-field full is-hidden" data-custom-interest><span>Descrie interesul</span><input name="interestCustom" maxlength="120"></div>' +
             field('Valoare estimată (lei)', '<input name="value" type="number" min="0" step="10" value="' + (l.value || '') + '">') +
           '</div><div class="pl-form-actions"><button type="submit" class="pl-btn is-primary" data-save-details disabled>' + ic('check') + 'Salvează detaliile</button></div></form>' +
+          // after all the details: what she answered in the Facebook form
+          ((l.forms || []).length ? '<div class="pl-details-form"><h5>' + ic('facebook') + 'Răspunsuri din formularul Facebook</h5>' + qaHtml(l.forms[l.forms.length - 1]) + '</div>' : '') +
         '</details>' +
         // note + timeline
         '<section class="pl-card-sec" data-section="timeline">' +
@@ -999,8 +1000,7 @@
       return;
     }
     if (t.closest('[data-save-log]')) return saveLog(l);
-    if (t.closest('[data-save-next]')) return saveNext(l, false);
-    if (t.closest('[data-clear-next]')) return saveNext(l, true);
+    if (t.closest('[data-clear-next]')) return clearFollowUp(l, t.closest('[data-clear-next]'));
     if (t.closest('[data-delete]')) return deleteLead(l);
     const sum = t.closest('summary');
     if (sum) setTimeout(() => { d.detailsOpen = sum.parentElement.open; }, 0);
@@ -1126,16 +1126,12 @@
       } catch (e) { ui().toast(errText(e), 'error'); }
     });
   }
-  async function saveNext(l, clear) {
-    const sec = drawerEl().querySelector('[data-section="next"]');
-    const payload = clear ? { leadId: l.id, followUpAt: '', nextAction: '' } : {
-      leadId: l.id, nextAction: sec.querySelector('[data-next-text]').value.trim(), followUpAt: fromLocalInput(sec.querySelector('[data-next-follow]').value),
-    };
-    await busy(sec.querySelector(clear ? '[data-clear-next]' : '[data-save-next]'), async () => {
+  async function clearFollowUp(l, btn) {
+    await busy(btn, async () => {
       try {
-        const j = await api('set_followup', payload);
+        const j = await api('set_followup', { leadId: l.id, followUpAt: '', nextAction: '' });
         replaceLead(j.lead); renderAll(); renderDrawer();
-        ui().toast(clear ? 'Follow-up șters.' : payload.followUpAt ? 'Îți amintesc ' + when(payload.followUpAt) + '.' : 'Pas salvat.', 'success');
+        ui().toast('Am scos revenirea.', 'success');
       } catch (e) { ui().toast(errText(e), 'error'); }
     });
   }
