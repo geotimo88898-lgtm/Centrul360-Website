@@ -61,7 +61,7 @@
     body.innerHTML =
       (tok && days != null && days < 14 ? '<div class="k-card ad-note is-warn">' + icon('clock') + '<span>Conexiunea pentru reclame expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) + '. Reconectează din Integrări → Facebook (cu un token de System User nu mai expiră).</span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
       '<div class="ad-bar">' + K.seg('adperiod', PERIODS.map(([k, l]) => [k, l]), A.period) +
-        '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie…" value="' + esc(A.q) + '"></label>' +
+        '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie sau o reclamă…" value="' + esc(A.q) + '"></label>' +
         '<div class="k-chips"><button type="button" class="k-chip' + (A.show === 'active' ? ' is-on' : '') + '" data-show="active">Pornite<span>' + active + '</span></button><button type="button" class="k-chip' + (A.show === 'all' ? ' is-on' : '') + '" data-show="all">Toate<span>' + d.campaigns.length + '</span></button></div>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div class="ad-stats">' +
@@ -74,10 +74,12 @@
   }
   const stat = (ic, label, val) => '<div class="k-card ad-stat"><span class="k-icon-chip is-accent">' + icon(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></div>';
 
+  // a campaign is found by its own name or by the name of one of its ad sets or ads
+  const hay = (c) => K.norm([c.name].concat(c.adsets.map((s) => s.name + ' ' + s.ads.map((x) => x.name).join(' '))).join(' '));
   function visible() {
     const q = K.norm(A.q || '');
     // a campaign switched off a moment ago stays in view (Pornite) until the filter changes
-    return A.d.campaigns.filter((c) => (A.show === 'all' || c.status === 'ACTIVE' || A.keep.has(c.id)) && (!q || K.norm(c.name).includes(q)));
+    return A.d.campaigns.filter((c) => (A.show === 'all' || c.status === 'ACTIVE' || A.keep.has(c.id)) && (!q || hay(c).includes(q)));
   }
   function paintList() {
     const box = panel.querySelector('[data-list]');
@@ -174,7 +176,7 @@
       try {
         await post({ action: 'budget', id: box.dataset.id, daily: v });
         const x = findAny(box.dataset.id); if (x) x.daily = v;
-        A.d.campaigns.forEach((c) => { if (!c.cbo) c.daily = c.adsets.filter((s) => s.status === 'ACTIVE').reduce((n, s) => n + s.daily, 0); });
+        A.d.campaigns.forEach((c) => { if (!c.cbo) { const on = c.adsets.filter((s) => s.status === 'ACTIVE'); c.daily = (on.length ? on : c.adsets).reduce((n, s) => n + s.daily, 0); } });
         K.ui().toast('Bugetul e ' + money(v) + ' pe zi.', 'success');
         paintList();
       } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }

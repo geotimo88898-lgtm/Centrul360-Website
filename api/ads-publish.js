@@ -32,6 +32,15 @@ const REASONS = {
   token_expired: 'Conexiunea pentru reclame a expirat. Reconectează din Integrări → Facebook.',
   ad_account_inactive: 'Contul de reclame nu e activ în Meta.',
 };
+// what is missing from the window's settings, in words
+const SETTINGS = {
+  missing_names: 'Lipsește numele campaniei, al setului sau al reclamei.',
+  missing_form: 'Alege formularul.',
+  missing_text: 'Scrie textul reclamei.',
+  missing_city: 'Alege orașul.',
+  missing_placements: 'Alege cel puțin o plasare.',
+  budget_too_low: 'Bugetul minim e 5 lei pe zi.',
+};
 
 async function options() {
   const conn = await loadConnection(readJSON);
@@ -76,7 +85,7 @@ module.exports = async (req, res) => {
     const image = body.image || {};
     if (!image.base64 || typeof image.base64 !== 'string' || image.base64.length > 6e6) { res.status(400).json({ error: 'invalid_image', message: 'Imaginea lipsește sau e prea mare.' }); return; }
     const v = ads.cleanSettings(body.settings || {});
-    if (v.error) { res.status(400).json({ error: v.error }); return; }
+    if (v.error) { res.status(400).json({ error: v.error, message: SETTINGS[v.error] || v.error }); return; }
 
     const r = await ads.publish(conn, { base64: image.base64, name: String(image.name || 'creative.jpg').slice(0, 80) }, v.s);
     if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }

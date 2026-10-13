@@ -26,6 +26,8 @@ const PLACEMENTS = {
 const CTAS = ['LEARN_MORE', 'SIGN_UP', 'BOOK_NOW', 'GET_OFFER', 'APPLY_NOW', 'GET_QUOTE'];
 const PERIODS = { today: 'today', yesterday: 'yesterday', '7d': 'last_7d', '30d': 'last_30d', max: 'maximum' };
 // a lead from an instant form, as Meta counts it in the results (first one found)
+// everything that is not deleted or archived (the edges' own effective_status filter)
+const LIVE = ['ACTIVE', 'PAUSED', 'PENDING_REVIEW', 'DISAPPROVED', 'PREAPPROVED', 'PENDING_BILLING_INFO', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES'];
 const LEAD_ACTIONS = ['onsite_conversion.lead_grouped', 'lead', 'leadgen_grouped', 'onsite_conversion.lead'];
 
 const DEFAULTS = {
@@ -124,7 +126,7 @@ async function accountInfo(conn) {
 async function listAdsets(conn) {
   const r = await all('/' + conn.adAccountId + '/adsets', conn.userToken, {
     fields: 'id,name,effective_status,daily_budget,created_time,campaign{id,name,objective}', limit: '100',
-    filtering: JSON.stringify([{ field: 'effective_status', operator: 'IN', value: ['ACTIVE', 'PAUSED', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES', 'PENDING_REVIEW', 'PREAPPROVED'] }]),
+    effective_status: JSON.stringify(['ACTIVE', 'PAUSED', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES', 'PENDING_REVIEW', 'PREAPPROVED']),
   }, 2);
   if (r.error) return [];
   return r.data.filter((a) => !a.campaign || !a.campaign.objective || /LEAD/.test(a.campaign.objective))
@@ -213,8 +215,9 @@ async function publish(conn, image, s) {
       if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
       adsetId = adset.j.id;
     } else {
-      const a = await call('GET', '/' + adsetId, tok, { fields: 'campaign_id' });
+      const a = await call('GET', '/' + adsetId, tok, { fields: 'campaign_id,account_id' });
       if (!a.ok) return { error: metaError(a.j, 'Setul de reclame ales') };
+      if (a.j.account_id && 'act_' + a.j.account_id !== act) return { error: 'Setul de reclame ales nu e în contul de reclame conectat.' };
       campaignId = a.j.campaign_id || '';
     }
 
@@ -237,9 +240,11 @@ async function publish(conn, image, s) {
     const ad = await call('POST', '/' + act + '/ads', tok, { name: s.adName, adset_id: adsetId, creative: { creative_id: creative.j.id }, status: s.adsetId && !s.startNow ? 'PAUSED' : 'ACTIVE' });
     if (!ad.ok) { await undo(); return { error: metaError(ad.j, 'Reclama') }; }
 
-    if (s.startNow && !s.adsetId) {
+    // a new campaign: the ad set goes on now, the campaign too unless she starts it herself later,
+    // so switching the campaign on (Reclame or Ads Manager) is all it takes then
+    if (!s.adsetId) {
       const a = await call('POST', '/' + adsetId, tok, { status: 'ACTIVE' });
-      const c = await call('POST', '/' + campaignId, tok, { status: 'ACTIVE' });
+      const c = s.startNow ? await call('POST', '/' + campaignId, tok, { status: 'ACTIVE' }) : { ok: true };
       if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: metaError(!a.ok ? a.j : c.j, 'Pornirea') };
     }
     return { ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow };
@@ -270,15 +275,21 @@ function audience(t) {
   return [where.join(', '), who + ' ' + (t.age_min || 18) + '-' + (t.age_max || 65)].filter(Boolean).join(' · ');
 }
 
+// a campaign without its own budget: what its ad sets spend a day (the ones on, else all of them)
+const setsBudget = (sets) => {
+  const on = sets.filter((a) => a.status === 'ACTIVE');
+  return (on.length ? on : sets).reduce((n, a) => n + a.daily, 0);
+};
+
 // Campaigns with their ad sets and ads, and the results of the period, for the Reclame page.
 async function overview(conn, period) {
   const tok = conn.userToken, act = conn.adAccountId;
   const datePreset = PERIODS[period] || 'last_7d';
-  const live = JSON.stringify([{ field: 'effective_status', operator: 'NOT_IN', value: ['DELETED', 'ARCHIVED'] }]);
+  const live = JSON.stringify(LIVE);
   const [camps, sets, ads, iC, iS, iA, acc] = await Promise.all([
-    all('/' + act + '/campaigns', tok, { fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time', limit: '100', filtering: live }, 2),
-    all('/' + act + '/adsets', tok, { fields: 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', limit: '200', filtering: live }, 3),
-    all('/' + act + '/ads', tok, { fields: 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', limit: '200', filtering: live }, 3),
+    all('/' + act + '/campaigns', tok, { fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time', limit: '100', effective_status: live }, 2),
+    all('/' + act + '/adsets', tok, { fields: 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', limit: '200', effective_status: live }, 3),
+    all('/' + act + '/ads', tok, { fields: 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', limit: '200', effective_status: live }, 3),
     all('/' + act + '/insights', tok, { level: 'campaign', date_preset: datePreset, fields: 'campaign_id,spend,actions,impressions,clicks', limit: '200' }, 3),
     all('/' + act + '/insights', tok, { level: 'adset', date_preset: datePreset, fields: 'adset_id,spend,actions', limit: '500' }, 3),
     all('/' + act + '/insights', tok, { level: 'ad', date_preset: datePreset, fields: 'ad_id,spend,actions', limit: '500' }, 3),
@@ -312,7 +323,7 @@ async function overview(conn, period) {
     const r = rC.get(c.id) || zero;
     const adsets = (setsByCamp.get(c.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1));
     return { id: c.id, name: c.name, status: c.status, effective: c.effective_status, objective: c.objective, created: c.created_time,
-      daily: money(c.daily_budget) || adsets.filter((a) => a.status === 'ACTIVE').reduce((n, a) => n + a.daily, 0), cbo: !!c.daily_budget,
+      daily: money(c.daily_budget) || setsBudget(adsets), cbo: !!c.daily_budget,
       lifetime: money(c.lifetime_budget), spend: r.spend, leads: r.leads, impressions: r.impressions, clicks: r.clicks, adsets };
   }).sort((a, b) => (a.status === 'ACTIVE') === (b.status === 'ACTIVE') ? (a.created < b.created ? 1 : -1) : a.status === 'ACTIVE' ? -1 : 1);
   const totals = campaigns.reduce((t, c) => ({ spend: t.spend + c.spend, leads: t.leads + c.leads }), { spend: 0, leads: 0 });
