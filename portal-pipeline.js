@@ -71,6 +71,7 @@
     altul: { label: 'Altul', icon: 'tag' },
   };
   const CHANNELS = { call: 'Apel', whatsapp: 'WhatsApp', sms: 'SMS', in_person: 'În clinică' };
+  const PICK_CHANNELS = ['call', 'whatsapp', 'in_person']; // SMS stays only as a label on old contacts
   const OUTCOMES = {
     raspuns: { label: 'A răspuns', tone: 'good' },
     interesat: { label: 'Interesată', tone: 'good' },
@@ -1005,7 +1006,7 @@
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +
           '<div class="pl-sec-head"><h4>' + ic('phone') + 'Cum a mers contactul?</h4><span class="pl-muted">' + (l.contactCount ? l.contactCount + (l.contactCount === 1 ? ' contactare' : ' contactări') + ' · ultima ' + agoLong(l.lastContactAt) : 'Încă necontactată') + '</span></div>' +
           (l.followUpAt ? '<div class="pl-followup-now"><span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '">' + ic('clock') + 'Revin la ea ' + esc(when(l.followUpAt)) + '</span><span class="pl-muted">apare în Sarcini în ziua respectivă</span><button type="button" class="pl-btn is-ghost is-sm" data-clear-next>Anulează</button></div>' : '') +
-          '<div class="pl-seg" data-seg="channel">' + Object.keys(CHANNELS).map((k) => '<button type="button" data-val="' + k + '" class="' + (k === (d.channel || 'call') ? 'is-on' : '') + '">' + CHANNELS[k] + '</button>').join('') + '</div>' +
+          '<div class="pl-seg" data-seg="channel">' + PICK_CHANNELS.map((k) => '<button type="button" data-val="' + k + '" class="' + (k === (d.channel || 'call') ? 'is-on' : '') + '">' + CHANNELS[k] + '</button>').join('') + '</div>' +
           '<div class="pl-outcomes" data-seg="outcome">' + Object.keys(OUTCOMES).map((k) => '<button type="button" data-val="' + k + '" class="is-' + OUTCOMES[k].tone + '">' + OUTCOMES[k].label + '</button>').join('') + '</div>' +
           '<textarea class="pl-input" data-log-text rows="2" maxlength="1000" placeholder="Ce a spus? (opțional)"></textarea>' +
           '<div class="pl-follow"><span class="pl-follow-label">' + ic('clock') + 'Revin la ea</span>' +
