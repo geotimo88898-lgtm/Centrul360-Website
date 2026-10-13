@@ -193,6 +193,12 @@
   // ------------------------------------------------------------------ derived data
   const stageById = (id) => S.stages.find((s) => s.id === id);
   const leadById = (id) => S.leads.find((l) => l.id === id);
+  // the pipeline of one city (Timișoara / Arad) or both: what every count and column starts from
+  const cityLeads = () => (S.location ? S.leads.filter((l) => l.location === S.location) : S.leads);
+  const CITY_KEY = () => 'c360_pl_city_' + ((S.ctx.me && S.ctx.me.id) || '');
+  // owner and reception choose the city; a cosmetician only ever sees her own
+  const pickCity = () => !!(S.ctx.isAdmin || (S.ctx.me && S.ctx.me.role === 'receptie'));
+  function savedCity() { try { const v = localStorage.getItem(CITY_KEY()) || ''; return ['Timișoara', 'Arad'].includes(v) ? v : ''; } catch (e) { return ''; } }
   const isWorking = (l) => l.kind === 'open' || l.kind === 'booked';
   const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || '';
   const fmtLei = (n) => Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei';
@@ -218,7 +224,7 @@
   const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   function queueList() {
-    const w = S.leads.filter(isWorking);
+    const w = cityLeads().filter(isWorking);
     const overdue = w.filter((l) => l.followUpState === 'overdue').sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
     const fresh = w.filter((l) => l.neverContacted && l.followUpState !== 'overdue').sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
     const today = w.filter((l) => l.followUpState === 'today' && !l.neverContacted).sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
@@ -273,12 +279,14 @@
   function mount() {
     root = document.getElementById('panel-pipeline');
     if (!root || root.dataset.plMounted) return;
+    if (pickCity()) S.location = savedCity();
     root.dataset.plMounted = '1';
     root.classList.add('pl-panel');
     root.innerHTML =
       '<div class="pl-head">' +
-        '<div><div class="k-eyebrow">Vânzări</div><h2>Pipeline</h2>' +
-        '</div>' +
+        '<div><div class="k-eyebrow">Vânzări</div><div class="pl-title"><h2>Pipeline</h2>' +
+          (pickCity() ? K.seg('plcity', [['', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.location, 'pl-city') : '') +
+        '</div></div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
           (S.ctx.isAdmin ? '<button type="button" class="pl-btn is-ghost" data-act="stages" title="Editează etapele">' + ic('sliders') + '<span>Etape</span></button>' : '') +
@@ -293,7 +301,6 @@
         '<div class="pl-filters">' +
           '<select data-filter-source aria-label="Sursă"><option value="">Toate sursele</option>' +
             Object.keys(SOURCES).map((k) => '<option value="' + k + '">' + SOURCES[k].label + '</option>').join('') + '</select>' +
-          '<select data-filter-location aria-label="Locație"><option value="">Ambele locații</option><option>Timișoara</option><option>Arad</option></select>' +
           '<button type="button" class="pl-toggle" data-act="lost" aria-pressed="false">' + ic('archive') + '<span>Pierduți</span></button>' +
           '<button type="button" class="pl-toggle pl-fbtn" data-act="filters">' + ic('filter') + '<span>Filtre</span><em data-fcount hidden></em></button>' +
         '</div>' +
@@ -305,7 +312,12 @@
     root.addEventListener('click', onRootClick);
     root.querySelector('[data-search]').addEventListener('input', (e) => { S.q = e.target.value; renderBoard(); renderChips(); });
     root.querySelector('[data-filter-source]').addEventListener('change', (e) => { S.source = e.target.value; renderAll(); });
-    root.querySelector('[data-filter-location]').addEventListener('change', (e) => { S.location = e.target.value; renderAll(); });
+    root.addEventListener('change', (e) => {
+      if (e.target.name !== 'plcity') return;
+      S.location = e.target.value;
+      try { localStorage.setItem(CITY_KEY(), S.location); } catch (err) { /* private mode */ }
+      renderAll();
+    });
     boardEl.addEventListener('pointerdown', onPointerDown);
     boardEl.addEventListener('click', (e) => {
       if (Date.now() - lastDropAt < 350) { e.stopPropagation(); e.preventDefault(); }
@@ -348,7 +360,7 @@
     root.querySelector('[data-act="filters"]').classList.toggle('is-on', !!on.length);
     box.hidden = !on.length;
     if (!on.length) { box.innerHTML = ''; return; }
-    const found = S.leads.filter(matches);
+    const found = cityLeads().filter(matches);
     const booked = found.filter(wasBooked).length, won = found.filter((l) => l.kind === 'won').length;
     box.innerHTML = on.map((k) => '<button type="button" class="pl-fchip" data-fclear="' + k + '"><small>' + F_LABEL[k] + '</small>' + esc(fValue(k, S.f[k])) + ic('x') + '</button>').join('') +
       '<button type="button" class="pl-btn is-ghost is-sm" data-fclear="*">Șterge filtrele</button>' +
@@ -361,19 +373,19 @@
     const opts = (pairs, cur, all) => K.options([['', all]].concat(pairs.map(([v, n]) => [v, v + ' (' + n + ')'])), cur);
     const body = () => {
       const f = S.f;
-      const forms = S.leads.flatMap(formsOf);
+      const forms = cityLeads().flatMap(formsOf);
       const ads = forms.filter((x) => !f.campaign || x.campaign === f.campaign).map((x) => x.ad);
       return '<form class="k-form pl-fform" data-fform autocomplete="off">' +
-        K.field('Procedură', '<select name="proc">' + opts(count(S.leads.map((l) => l.interest)), f.proc, 'Toate procedurile') + '</select>', 'full') +
+        K.field('Procedură', '<select name="proc">' + opts(count(cityLeads().map((l) => l.interest)), f.proc, 'Toate procedurile') + '</select>', 'full') +
         K.field('Campanie', '<select name="campaign">' + opts(count(forms.map((x) => x.campaign)), f.campaign, 'Toate campaniile') + '</select>', 'full') +
         K.field('Reclamă', '<select name="ad">' + opts(count(ads), f.ad, f.campaign ? 'Toate reclamele campaniei' : 'Toate reclamele') + '</select>', 'full') +
         K.field('Formular', '<select name="form">' + opts(count(forms.map((x) => x.name)), f.form, 'Toate formularele') + '</select>', 'full') +
-        K.field('Etapă', '<select name="stage">' + K.options([['', 'Toate etapele']].concat(S.stages.map((s) => [s.id, s.name + ' (' + S.leads.filter((l) => l.stage === s.id).length + ')'])), f.stage) + '</select>') +
+        K.field('Etapă', '<select name="stage">' + K.options([['', 'Toate etapele']].concat(S.stages.map((s) => [s.id, s.name + ' (' + cityLeads().filter((l) => l.stage === s.id).length + ')'])), f.stage) + '</select>') +
         K.field('Creat', '<select name="period">' + K.options([['', 'Oricând']].concat(Object.keys(PERIOD).map((k) => [k, PERIOD[k]])), f.period) + '</select>') +
         K.field('Programare', '<select name="booked">' + K.options([['', 'Toate'], ['yes', 'Cu programare'], ['no', 'Fără programare']], f.booked) + '</select>') +
         '</form>';
     };
-    const foot = () => { const n = S.leads.filter(matches).length; return '<b>' + n + '</b> ' + (n === 1 ? 'lead' : 'leaduri'); };
+    const foot = () => { const n = cityLeads().filter(matches).length; return '<b>' + n + '</b> ' + (n === 1 ? 'lead' : 'leaduri'); };
     const dr = K.drawer({
       title: 'Filtre', icon: 'filter', width: 460, subtitle: 'Se aplică pe loc. Sursa și orașul sunt lângă căutare.',
       body: '<div data-fbody>' + body() + '</div>',
@@ -399,7 +411,7 @@
     if (!el) return;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const per = {};
-    S.leads.forEach((l) => (l.activities || []).forEach((a) => {
+    cityLeads().forEach((l) => (l.activities || []).forEach((a) => {
       if (!a.author || a.type === 'created' || new Date(a.at) < today) return;
       const p = per[a.author] = per[a.author] || { calls: 0, bookings: 0, moves: 0, last: null, lead: '' };
       if (a.type === 'contact') p.calls++;
@@ -418,13 +430,13 @@
 
   function renderStats() {
     const el = root.querySelector('[data-stats]');
-    const w = S.leads.filter(isWorking);
+    const w = cityLeads().filter(isWorking);
     const overdue = w.filter((l) => l.followUpState === 'overdue');
     const fresh = w.filter((l) => l.neverContacted);
     const callNow = w.filter((l) => l.followUpState === 'overdue' || l.neverContacted);
-    const booked = S.leads.filter((l) => l.kind === 'booked');
+    const booked = cityLeads().filter((l) => l.kind === 'booked');
     const ms = new Date(); ms.setDate(1); ms.setHours(0, 0, 0, 0);
-    const won = S.leads.filter((l) => l.kind === 'won' && new Date(l.stageChangedAt) >= ms);
+    const won = cityLeads().filter((l) => l.kind === 'won' && new Date(l.stageChangedAt) >= ms);
     const oldest = fresh.slice().sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))[0];
     const bookedStage = S.stages.find((s) => s.kind === 'booked');
     const card = (key, icon, label, value, sub, tone) =>
@@ -446,11 +458,11 @@
   function renderChips() {
     const el = root.querySelector('[data-chips]');
     const counts = {
-      all: S.leads.filter((l) => S.showLost || l.kind !== 'lost').length,
-      queue: S.leads.filter((l) => isWorking(l) && (l.followUpState === 'overdue' || l.followUpState === 'today' || l.neverContacted)).length,
-      overdue: S.leads.filter((l) => l.followUpState === 'overdue').length,
-      new: S.leads.filter((l) => l.neverContacted).length,
-      idle: S.leads.filter((l) => l.isInactive).length,
+      all: cityLeads().filter((l) => S.showLost || l.kind !== 'lost').length,
+      queue: cityLeads().filter((l) => isWorking(l) && (l.followUpState === 'overdue' || l.followUpState === 'today' || l.neverContacted)).length,
+      overdue: cityLeads().filter((l) => l.followUpState === 'overdue').length,
+      new: cityLeads().filter((l) => l.neverContacted).length,
+      idle: cityLeads().filter((l) => l.isInactive).length,
     };
     const chips = [['all', 'Toate'], ['queue', 'De sunat azi'], ['overdue', 'Întârziate'], ['new', 'Necontactați'], ['idle', 'Fără activitate']];
     el.innerHTML = chips.map(([k, label]) =>
@@ -478,7 +490,7 @@
       boardEl.classList.add('is-enter');
       setTimeout(() => boardEl.classList.remove('is-enter'), 700);
     }
-    const visible = S.leads.filter(matches);
+    const visible = cityLeads().filter(matches);
     const stages = S.stages.filter((s) => (s.kind !== 'lost' || S.showLost) && (!S.f.stage || s.id === S.f.stage));
     // Stats "Programați"/"Câștigați" filters are column focus, not lead filters.
     const focus = S.filter === 'booked' ? 'booked' : S.filter === 'won' ? 'won' : '';
@@ -492,7 +504,7 @@
         '<span class="pl-col-count">' + all.length + '</span>' +
         (value ? '<span class="pl-col-value">' + fmtLei(value) + '</span>' : '') + '</header>' +
         '<div class="pl-list" data-stage="' + s.id + '">' +
-          (all.length ? all.slice(0, limit).map(cardHtml).join('') : '<div class="pl-col-empty">' + (S.q || S.filter !== 'all' || S.source || S.location || activeFilters().length ? 'Nimic aici pentru filtrul ales' : 'Trage un lead aici') + '</div>') +
+          (all.length ? all.slice(0, limit).map(cardHtml).join('') : '<div class="pl-col-empty">' + (S.q || S.filter !== 'all' || S.source || activeFilters().length ? 'Nimic aici pentru filtrul ales' : 'Trage un lead aici') + '</div>') +
           (all.length > limit ? '<button type="button" class="pl-more" data-more="' + s.id + '">Arată încă ' + (all.length - limit) + '</button>' : '') +
         '</div>' +
         (s.kind === 'won' || s.kind === 'lost' ? '' : '<button type="button" class="pl-add" data-add="' + s.id + '">' + ic('plus') + 'Adaugă lead</button>') +

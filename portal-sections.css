@@ -932,7 +932,8 @@ html[data-role="cosmetician"] .cal-col{ cursor:default; }
 .ad-name{ display:flex; align-items:center; gap:.7rem; min-width:0; }
 .ad-sw{ flex:none; }
 .ad-title{ display:flex; flex-direction:column; gap:.2rem; min-width:0; border:0; background:none; padding:0; text-align:left; color:inherit; font:inherit; }
-button.ad-title{ cursor:pointer; }
+button.ad-title{ cursor:pointer; flex:1 1 auto; align-self:stretch; justify-content:center; }
+.ad-row.is-camp{ cursor:pointer; }
 .ad-title b{ font-size:.92rem; font-weight:620; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ad-title small{ display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; font-size:.77rem; color:var(--muted); }
 button.ad-title:hover b{ color:var(--accent); }

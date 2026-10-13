@@ -489,3 +489,7 @@ input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form inp
   .pl-fsum{ margin-left:0; width:100%; }
   .pl-stage-next{ margin-left:0; }
 }
+
+/* the city of the pipeline, next to the title */
+.pl-title{ display:flex; align-items:center; gap:.9rem; flex-wrap:wrap; }
+.pl-city.k-seg{ flex:none; }

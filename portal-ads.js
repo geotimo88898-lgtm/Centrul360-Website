@@ -631,6 +631,9 @@
     const be = t.closest('[data-budget-edit]'); if (be) return editBudget(be.closest('[data-budget-box]'));
     const bs = t.closest('[data-budget-save]'); if (bs) return saveBudget(bs.closest('[data-budget-box]'));
     const m = t.closest('[data-more]'); if (m) return more(m);
+    // anywhere else on a campaign's row (next to the name, on its numbers): the preview
+    const row = t.closest('.ad-row.is-camp');
+    if (row && !t.closest('input, button, label, a, select, textarea, [data-budget-box]')) return openPreview(row.closest('[data-camp]').dataset.camp);
   }
 
   // ------------------------------------------------------------------ defaults for "Publică pe Meta"
