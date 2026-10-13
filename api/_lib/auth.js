@@ -7,7 +7,8 @@
 const crypto = require('crypto');
 
 const SESSION_COOKIE = 'c360_portal_session';
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // ~12h
+const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days, renewed while the portal is used (see renew)
+const VIEW_TTL_MS = 12 * 60 * 60 * 1000;          // looking at an employee's account: 12 h
 
 // ---- Password hashing -------------------------------------------------------------
 
@@ -48,7 +49,7 @@ function base64urlDecode(str) {
 }
 
 function createSessionCookieValue(employeeId, role, viewer) {
-  const expiry = Date.now() + SESSION_TTL_MS;
+  const expiry = Date.now() + (viewer ? VIEW_TTL_MS : SESSION_TTL_MS);
   const payload = `${employeeId}.${role}.${expiry}${viewer ? '.' + viewer : ''}`;
   const encoded = base64urlEncode(payload);
   const sig = sign(encoded);
@@ -63,7 +64,7 @@ function cookieDomain(res) {
   return /(^|\.)centrul360\.com$/.test(host) ? '.centrul360.com' : '';
 }
 
-function buildSetCookieHeader(value, { clear = false, domain = '' } = {}) {
+function buildSetCookieHeader(value, { clear = false, domain = '', maxAgeMs = SESSION_TTL_MS } = {}) {
   const parts = [
     `${SESSION_COOKIE}=${clear ? '' : value}`,
     'Path=/',
@@ -72,17 +73,18 @@ function buildSetCookieHeader(value, { clear = false, domain = '' } = {}) {
     'SameSite=Lax',
   ];
   if (domain) parts.push(`Domain=${domain}`);
-  parts.push(clear ? 'Max-Age=0' : `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`);
+  parts.push(clear ? 'Max-Age=0' : `Max-Age=${Math.floor(maxAgeMs / 1000)}`);
   return parts.join('; ');
 }
 
 function setSessionCookie(res, employeeId, role, viewer) {
   const value = createSessionCookieValue(employeeId, role, viewer);
   const domain = cookieDomain(res);
+  const maxAgeMs = viewer ? VIEW_TTL_MS : SESSION_TTL_MS;
   // An older host-only cookie would shadow the shared one, clear it in the same response.
   res.setHeader('Set-Cookie', domain
-    ? [buildSetCookieHeader('', { clear: true }), buildSetCookieHeader(value, { domain })]
-    : buildSetCookieHeader(value));
+    ? [buildSetCookieHeader('', { clear: true }), buildSetCookieHeader(value, { domain, maxAgeMs })]
+    : buildSetCookieHeader(value, { maxAgeMs }));
 }
 
 function clearSessionCookie(res) {
@@ -128,10 +130,17 @@ function getSession(req) {
     const expiry = Number(expiryStr);
     if (!employeeId || !role || !expiry || Date.now() > expiry) return null;
 
-    return { employeeId, role, viewer: viewer || null };
+    return { employeeId, role, viewer: viewer || null, expiry };
   } catch (err) {
     return null;
   }
+}
+
+// Someone using the portal stays signed in: a session older than a day gets a fresh 90 days.
+function renew(res, session) {
+  if (!session || session.viewer || !res || typeof res.setHeader !== 'function') return;
+  if (session.expiry - Date.now() > SESSION_TTL_MS - 24 * 60 * 60 * 1000) return;
+  try { setSessionCookie(res, session.employeeId, session.role); } catch (e) { /* the old one still works */ }
 }
 
 // Returns the session, or writes a 401 JSON response and returns null.
@@ -141,6 +150,7 @@ function requireAuth(req, res) {
     res.status(401).json({ error: 'not_authenticated' });
     return null;
   }
+  renew(res, session);
   // Previewing an employee's account is look-only: nothing gets saved in their name.
   // (Some screens read through POST { action: 'list' }, those stay allowed.)
   const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list'].includes(req.body.action));

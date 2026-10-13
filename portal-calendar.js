@@ -65,6 +65,7 @@
         K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) +
         K.seg('calmode', [['list', 'Listă', 'listCheck'], ['grid', 'Grilă', 'calendar']], S.mode, 'cal-mode') + '</div>' +
       '</div>' +
+      '<div class="cal-strip" data-strip hidden></div>' +
       '<div class="cal-summary" data-summary></div>' +
       '<div class="cal-agenda" data-agenda hidden></div>' +
       '<div class="cal-wrap k-card"><div class="cal-grid" data-grid></div></div>' +
@@ -81,7 +82,7 @@
         render();
       }
       if (e.target.name === 'calonly') { S.only = e.target.value; render(true); }
-      if (e.target.name === 'calmode') { S.mode = e.target.value; if (S.mode === 'grid') S.view = 'day'; render(); }
+      if (e.target.name === 'calmode') { S.mode = e.target.value; if (S.mode === 'grid') S.view = 'day'; load(); }
       if (e.target.matches('[data-emp]')) { S.emp = e.target.value; render(true); }
     });
     gridEl.addEventListener('pointerdown', onPointerDown);
@@ -115,7 +116,9 @@
     else if (k === 's') setView('week');
   }
   function setView(v) { S.view = v; const seg = panel.querySelector('[data-k-seg="calview"]'); seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); seg.querySelector('input').value = v; load(); }
-  function shift(dir) { S.date = K.addDays(S.date, dir * (S.view === 'day' ? 1 : 7)); load(); }
+  function shift(dir) { S.date = K.addDays(S.date, dir * (S.view === 'day' ? 1 : 7)); inWeek() ? (renderTitle(), render()) : load(); }
+  // the phone's list already has the whole week: moving inside it needs no reload
+  const inWeek = () => { if (!listMode() || !S.range) return false; const [a, b] = S.range.split('|'); return S.date >= a && S.date <= b; };
 
   function onClick(e) {
     const act = e.target.closest('[data-act]');
@@ -127,6 +130,8 @@
       if (a === 'next') return shift(1);
       if (a === 'month') return openMonth(act);
     }
+    const sday = e.target.closest('[data-sday]');
+    if (sday) { S.date = sday.dataset.sday; renderTitle(); return render(); }
     const row = e.target.closest('[data-open]');
     if (row) return openAppt(row.dataset.open);
     const gap = e.target.closest('[data-gap]');
@@ -137,7 +142,7 @@
 
   // ------------------------------------------------------------------ data
   function rangeFor() {
-    if (S.view === 'day') return [S.date, S.date];
+    if (S.view === 'day' && !listMode()) return [S.date, S.date];
     const mon = K.mondayOf(S.date);
     return [mon, K.addDays(mon, 6)];
   }
@@ -171,8 +176,11 @@
   function render(keepScroll) {
     if (!gridEl) return;
     const agenda = panel.querySelector('[data-agenda]');
+    const strip = panel.querySelector('[data-strip]');
     panel.classList.toggle('is-list', listMode());
+    strip.hidden = !listMode();
     if (listMode()) {
+      strip.innerHTML = stripHtml();
       const vis = S.appts.filter((a) => a.date === S.date && (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
         (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
       renderSummary(vis);
@@ -219,6 +227,17 @@
   // ------------------------------------------------------------------ the phone list (one day)
   // Per city: each appointment as a row (time, client, treatment and price, who does it, status), the
   // free gaps of the working day between them (tap = book there), the "now" line on today.
+  // the week on a phone: each day with how many bookings it has (cancelled ones and leave don't count)
+  function stripHtml() {
+    const mon = K.mondayOf(S.date), today = K.today();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = K.addDays(mon, i);
+      const n = S.appts.filter((a) => a.date === d && a.status !== 'anulata' && a.status !== 'concediu' &&
+        (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp)).length;
+      return '<button type="button" class="cal-strip-day' + (d === S.date ? ' is-on' : '') + (d === today ? ' is-today' : '') + '" data-sday="' + d + '">' +
+        '<span>' + K.DOW_S[K.parse(d).getDay()] + '</span><b>' + K.parse(d).getDate() + '</b><i>' + (n || '') + '</i></button>';
+    }).join('');
+  }
   function agendaHtml(list) {
     const today = S.date === K.today();
     const nowM = new Date().getHours() * 60 + new Date().getMinutes();

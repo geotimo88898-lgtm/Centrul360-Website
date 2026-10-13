@@ -486,7 +486,9 @@
     if (!boardEl || !isActive()) return;
     const top = boardEl.getBoundingClientRect().top + window.scrollY;
     const phone = window.matchMedia && window.matchMedia('(max-width:720px)').matches;
-    const h = Math.max(phone ? 360 : 440, window.innerHeight - top - (phone ? 92 : 24));
+    // on a phone, room for the bottom bar (its real height: the iPhone's home bar adds to it)
+    const bar = phone && document.querySelector('.c360-tabbar');
+    const h = Math.max(phone ? 360 : 440, window.innerHeight - top - (bar ? bar.getBoundingClientRect().height + 16 : 24));
     boardEl.style.height = h + 'px';
   }
 

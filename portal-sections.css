@@ -1296,7 +1296,7 @@ main.ad-full{ max-width:none; }
 .cal-mode, .cal-fab{ display:none; }
 @media (max-width:720px){
   .cal .k-head-actions{ display:none; }
-  .cal-fab{ position:fixed; right:1rem; bottom:calc(78px + env(safe-area-inset-bottom)); z-index:29; display:grid; place-items:center; width:56px; height:56px;
+  .cal-fab{ position:fixed; right:1rem; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:29; display:grid; place-items:center; width:56px; height:56px;
     border:0; border-radius:18px; background:var(--grad, var(--accent)); color:var(--accent-ink, #fff); box-shadow:0 12px 28px -8px color-mix(in srgb, var(--accent) 70%, transparent); cursor:pointer; }
   .cal-fab .k-ic{ width:24px; height:24px; }
   .cal-fab:active{ transform:scale(.94); }
@@ -1367,11 +1367,12 @@ main.ad-full{ max-width:none; }
 .mx-search{ display:flex; align-items:center; gap:.5rem; height:40px; padding:0 .8rem; border-radius:12px; background:var(--glass); color:var(--muted); }
 .mx-search .k-ic{ width:16px; height:16px; flex:none; }
 .mx-search input{ flex:1; min-width:0; height:100%; border:0; background:none; color:var(--fg); font:inherit; font-size:.9rem; outline:none; }
-.mx-filters{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
-.mx-filters .k-chips{ flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
+.mx-filters{ display:flex; flex-direction:column; align-items:stretch; gap:.5rem; }
+.mx-filters .k-chips{ flex-wrap:wrap; gap:.35rem; }
 .mx-filters .k-chip{ height:30px; padding:0 .65rem; font-size:.78rem; white-space:nowrap; }
 .mx-filters .k-chip span{ margin-left:.1rem; font-size:.7rem; font-weight:750; opacity:.75; }
-.mx-filters .k-seg{ flex:none; }
+.mx-filters .k-seg{ display:flex; width:100%; }
+.mx-filters .k-seg button{ flex:1; justify-content:center; }
 .mx-list{ flex:1; min-height:0; overflow-y:auto; padding:.3rem; }
 .mx-row{ display:flex; align-items:center; gap:.7rem; width:100%; padding:.65rem .7rem; border:0; border-radius:14px; background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .mx-row:hover{ background:var(--glass); }
@@ -1438,10 +1439,6 @@ main.ad-full{ max-width:none; }
   .mx-wrap{ display:block; height:auto; min-height:0; }
   .mx-list-col{ overflow:visible; }
   .mx-tools{ position:sticky; top:60px; z-index:2; background:var(--paper); border-radius:18px 18px 0 0; }
-  .mx-filters{ flex-wrap:wrap; }
-  .mx-filters .k-chips{ flex:1 1 100%; }
-  .mx-filters .k-seg{ flex:1 1 100%; }
-  .mx-filters .k-seg button{ flex:1; }
   .mx-list{ overflow:visible; padding:.2rem; }
   .mx-row{ padding:.7rem .55rem; }
   .mx-thread-col{ display:none; }
@@ -1503,3 +1500,16 @@ main.ad-full{ max-width:none; }
   .k-panel .of-grid:not(.is-single) .of-toggles{ grid-column:1 / -1; padding:.5rem .75rem; }
   .k-panel .of-grid:not(.is-single) .of-feat{ top:auto; bottom:.4rem; left:.4rem; right:auto; padding:.15rem .4rem; font-size:.64rem; }
 }
+
+/* Calendar on a phone: the week as a strip of days, a tap shows that day */
+.cal-strip{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:.2rem; margin:0 0 .7rem; padding:.3rem; border-radius:18px; background:var(--paper); border:1px solid var(--line); }
+.cal-strip[hidden]{ display:none; }
+.cal-strip-day{ display:flex; flex-direction:column; align-items:center; gap:.12rem; padding:.4rem 0 .35rem; border:0; border-radius:14px; background:none; color:var(--muted); font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cal-strip-day span{ font-size:.62rem; font-weight:650; text-transform:uppercase; letter-spacing:.03em; }
+.cal-strip-day b{ font-size:1.02rem; font-weight:700; line-height:1.2; color:var(--fg); }
+.cal-strip-day i{ min-width:18px; height:16px; padding:0 .3rem; border-radius:999px; font-style:normal; font-size:.64rem; font-weight:750; line-height:16px; text-align:center; background:var(--accent-soft); color:var(--accent); }
+.cal-strip-day i:empty{ background:none; }
+.cal-strip-day.is-today b{ color:var(--accent); }
+.cal-strip-day.is-on{ background:var(--fg); color:var(--ink); }
+.cal-strip-day.is-on b{ color:var(--ink); }
+.cal-strip-day.is-on i{ background:var(--accent); color:var(--accent-fg, #fff); }
