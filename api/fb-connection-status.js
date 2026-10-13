@@ -54,7 +54,7 @@ async function status(req) {
   const out = {
     connected: !!conn.pageId, app, deliveries: (log || []).slice(0, 12),
     // the reading of the forms (_lib/fb-leads.js): when it last looked and whether Facebook answered
-    poll: poll && poll.at ? { at: poll.at, ok: poll.ok !== false, error: poll.error || '', forms: (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').length } : null,
+    poll: poll && poll.at ? { at: poll.at, ok: poll.ok !== false, error: poll.error || '', forms: (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').length, lastFailure: poll.lastFailure || null } : null,
   };
   if (conn.pageId) out.subscription = await subscription(conn, creds.appId);
   if (conn.pageId) Object.assign(out, {

@@ -52,6 +52,12 @@ function siteOrigin(req) {
   return `https://${req.headers.host}`;
 }
 
+// Contact fields, by Meta's standard keys or a form's own wording; everything else is a question.
+const NAME_KEY = /(^|_)(full_name|first_name|last_name|name|nume|numele|prenume|nume_complet)(_|$|\?)/;
+const PHONE_KEY = /(phone|telefon|mobil)/;
+const EMAIL_KEY = /(^|_)(email|e_mail|mail)(_|$|\?)/;
+const isContactKey = (k) => NAME_KEY.test(k) || PHONE_KEY.test(k) || EMAIL_KEY.test(k);
+
 // Facebook returns field_data as an array of { name, values: [v] } pairs. Form field
 // names vary a lot between forms the owner builds in Meta's form editor, so this maps
 // defensively across the common variants instead of assuming one exact set of names.
@@ -62,20 +68,19 @@ function extractLeadFields(fieldData) {
     const value = Array.isArray(f.values) ? f.values[0] : f.value;
     if (value !== undefined) map[key] = String(value).trim();
   });
+  const keys = Object.keys(map);
+  const pick = (list) => { for (const k of list) if (map[k]) return map[k]; return ''; };
+  const like = (re) => { const k = keys.find((x) => re.test(x) && map[x]); return k ? map[k] : ''; };
 
-  let name = map.full_name || map.name || '';
-  if (!name) {
-    const first = map.first_name || '';
-    const last = map.last_name || '';
-    name = `${first} ${last}`.trim();
-  }
-
-  const phone = map.phone_number || map.phone || map.telefon || '';
-  const email = map.email || '';
-
+  // Meta's standard fields first, then a form's own wording ("Nume și prenume", "Număr de telefon")
+  let name = pick(['full_name', 'name']) || `${map.first_name || ''} ${map.last_name || ''}`.trim() || like(NAME_KEY);
+  let phone = pick(['phone_number', 'phone', 'telefon']) || like(PHONE_KEY);
+  // last resort: an answer that is clearly a phone number
+  if (!phone) phone = Object.values(map).find((v) => /^[+\d\s().-]{9,}$/.test(v) && v.replace(/\D/g, '').length >= 9) || '';
+  const email = pick(['email']) || like(EMAIL_KEY);
+  if (!name) name = '';
   return { name, phone, email };
 }
-
 // The form's own questions (everything except name / phone / email) with what the person answered
 // (zone, city, best time to call…): kept on the lead and shown on the contact.
 const CONTACT_KEYS = ['full_name', 'name', 'first_name', 'last_name', 'phone_number', 'phone', 'telefon', 'email'];
@@ -84,7 +89,7 @@ const CONTACT_KEYS = ['full_name', 'name', 'first_name', 'last_name', 'phone_num
 function answerPairs(fieldData, questions) {
   const byKey = new Map((questions || []).map((q) => [String(q.key || '').toLowerCase(), q]));
   return (fieldData || [])
-    .filter((f) => !CONTACT_KEYS.includes(String(f.name || '').toLowerCase().trim()))
+    .filter((f) => !CONTACT_KEYS.includes(String(f.name || '').toLowerCase().trim()) && !isContactKey(String(f.name || '').toLowerCase().trim()))
     .map((f) => {
       const qd = byKey.get(String(f.name || '').toLowerCase());
       const opts = new Map(((qd && qd.options) || []).map((o) => [String(o.key), o.value]));

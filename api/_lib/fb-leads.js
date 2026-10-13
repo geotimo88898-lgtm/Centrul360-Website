@@ -144,7 +144,7 @@ async function pollLeads(force) {
     const seen = new Set(((await readJSON(FORMS_KEY, {})).seen) || []);
     const changed = list.forms.filter((f) => f.lastId && f.lastAt > since - 120 && !seen.has(f.lastId));
 
-    let newest = since, count = 0, lastError = '';
+    let newest = since, count = 0, lastError = '', failure = '';
     for (const form of changed) {
       const r = await graph('/' + encodeURIComponent(form.id) + '/leads', {
         fields: LEAD_FIELDS, limit: '50',
@@ -156,13 +156,15 @@ async function pollLeads(force) {
         if (t > newest) newest = t;
         const text = await ingestLead(lead, String(lead.id), conn.pageAccessToken, form.id);
         if (text === 'deja primit') continue;
-        count++;
-        await logDelivery({ kind: 'poll', ok: /^lead /.test(text), text });
+        const good = /^lead /.test(text);
+        if (good) count++; else failure = text;
+        await logDelivery({ kind: 'poll', ok: good, text });
       }
     }
     const fresh = await readJSON(POLL_KEY, {});
     Object.assign(fresh, {
       at: st.at, cursor: Math.max(since, newest), ok: !lastError, error: lastError,
+      lastFailure: failure ? { at: new Date().toISOString(), text: failure } : fresh.lastFailure || null,
       forms: list.forms.map((f) => ({ id: f.id, name: f.name, status: f.status, count: f.count, created: f.created, lastAt: f.lastAt })),
       formsAt: new Date().toISOString(),
     });

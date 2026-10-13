@@ -814,7 +814,12 @@
       pn.addEventListener('click', () => K.busy(pn, async () => {
         try {
           const t = await K.api('/api/fb-connection-status', { action: 'poll_now' });
-          K.ui().toast(t.read ? (t.read === 1 ? 'A intrat un lead nou.' : 'Au intrat ' + t.read + ' leaduri noi.') : t.poll && t.poll.ok === false ? 'Facebook n-a răspuns: ' + (t.poll.error || 'eroare') : 'Niciun lead nou acum.', t.poll && t.poll.ok === false ? 'error' : 'success');
+          const lf = t.poll && t.poll.lastFailure;
+          const freshFail = lf && Date.now() - Date.parse(lf.at) < 60e3;
+          if (t.read) K.ui().toast(t.read === 1 ? 'A intrat un lead nou. Îl găsești în Pipeline.' : 'Au intrat ' + t.read + ' leaduri noi. Le găsești în Pipeline.', 'success');
+          else if (freshFail) K.ui().toast('Un lead n-a putut fi salvat: ' + lf.text, 'error');
+          else if (t.poll && t.poll.ok === false) K.ui().toast('Facebook n-a răspuns: ' + (t.poll.error || 'eroare'), 'error');
+          else K.ui().toast('Niciun lead nou acum.', 'success');
           loadFb(box);
         } catch (err) { K.ui().toast(K.errText(err), 'error'); }
       }));
