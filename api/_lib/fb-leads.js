@@ -51,7 +51,8 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   // bad email (it's just left out), and a test lead gets a name and a pretend number
   const isTest = /test lead/i.test([f.name, f.phone, f.email].join(' '));
   const name = isTest ? 'Lead de test Facebook' : f.name;
-  const phone = String(f.phone).replace(/\D/g, '').length >= 6 ? f.phone : isTest ? '0700 000 000' : f.phone;
+  // a lead is never lost for a missing number: it comes in as "fără telefon" and reception sees it
+  const phone = String(f.phone).replace(/\D/g, '').length >= 6 ? f.phone : isTest ? '0700 000 000' : (f.phone || 'fără telefon');
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email || '') ? f.email : '';
   const answers = extraAnswers(lead.field_data, form.questions);
   const text = [form.name, lead.ad_name, lead.adset_name, lead.campaign_name].concat(answers).filter(Boolean).join(' · ');
