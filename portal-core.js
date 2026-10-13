@@ -188,6 +188,7 @@
   }
   function activate(tab, sub) {
     if (!allowed(tab)) tab = 'panou';
+    K.pageNav(); // a slow page gets the turning mark (a fast one, nothing)
     if (tab === 'creative') creativeRoute = /^\/[a-z-]*$/.test(sub || '') ? sub : (sub === undefined ? creativeRoute : '/');
     markNav(tab);
     document.querySelectorAll('main > .panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + tab));
@@ -282,9 +283,11 @@
     frame.dataset.started = '1';
     msg.classList.remove('hidden', 'is-error');
     msg.innerHTML = '<div class="cr-skel"><i></i><i></i><div>' + '<b></b>'.repeat(6) + '</div></div>';
+    const ready = K.pageWait(); // the cover stays until Creative's own app has loaded
     try {
       const d = await K.api('/api/portal-creative-sso?next=' + encodeURIComponent(creativeRoute));
       frame.addEventListener('load', () => {
+        ready();
         frame.classList.remove('hidden');
         msg.classList.add('hidden');
         // ready = when the app reports its page (it listens by then); an older app that never does
@@ -293,6 +296,7 @@
       }, { once: true });
       frame.src = d.url;
     } catch (err) {
+      ready();
       delete frame.dataset.started;
       msg.classList.add('is-error');
       msg.textContent = 'Nu am putut deschide Creative. Reîncearcă.';

@@ -90,11 +90,23 @@ a{ text-underline-offset:3px; }
 
 /* ---------------- loading ---------------- */
 #loadingScreen{ flex-direction:column; gap:1.1rem; color:var(--muted); font-size:.85rem; letter-spacing:.02em; }
-#loadingScreen::before{
-  content:""; width:44px; height:44px; border-radius:50%;
-  border:2.5px solid var(--line); border-top-color:var(--accent);
-  animation:c360-spin .8s linear infinite;
+#loadingScreen::before{ content:""; width:52px; height:52px; background:var(--fg); -webkit-mask:var(--c360-mark) center / contain no-repeat; mask:var(--c360-mark) center / contain no-repeat;
+  animation:c360-mark-turn 1.6s cubic-bezier(.65,0,.35,1) infinite; }
+
+/* a page that takes a while: a calm cover over the page area, the mark turning in the middle */
+:root{ --c360-mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='92 92 328 328' fill='none' stroke='%23000' stroke-width='19'%3E%3Ccircle cx='256' cy='256' r='150'/%3E%3Cellipse cx='256' cy='256' rx='62' ry='118'/%3E%3Cellipse cx='256' cy='256' rx='116' ry='63'/%3E%3C/svg%3E"); }
+.c360-cover{ position:fixed; right:0; z-index:15; display:grid; place-items:center; pointer-events:none; opacity:0; visibility:hidden;
+  background:color-mix(in srgb, var(--ink) 90%, transparent); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  transition:opacity .22s ease, visibility 0s linear .22s; }
+.c360-cover.is-on{ opacity:1; visibility:visible; pointer-events:auto; transition:opacity .22s ease; }
+.c360-mark{ display:block; width:56px; height:56px; background:var(--fg); -webkit-mask:var(--c360-mark) center / contain no-repeat; mask:var(--c360-mark) center / contain no-repeat;
+  transform:scale(.88); transition:transform .3s var(--ease); }
+.c360-cover.is-on .c360-mark{ transform:scale(1); animation:c360-mark-turn 1.6s cubic-bezier(.65,0,.35,1) infinite; }
+@keyframes c360-mark-turn{ to{ rotate:180deg; } }
+@media (prefers-reduced-motion:reduce){
+  .c360-cover.is-on .c360-mark, #loadingScreen::before{ animation:c360-mark-breathe 1.6s ease-in-out infinite; }
 }
+@keyframes c360-mark-breathe{ 50%{ opacity:.45; } }
 
 /* ---------------- top bar ---------------- */
 header.topbar{
