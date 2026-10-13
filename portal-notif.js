@@ -77,7 +77,7 @@
     const br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '';
     return os + (br ? ' · ' + br : '');
   }
-  async function pushOn() {
+  async function pushOn(quiet) {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') throw new Error('denied');
     const { key: k } = await K.api('/api/portal-account', { action: 'push_key' });
@@ -85,11 +85,7 @@
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(k) });
     await K.api('/api/portal-account', { action: 'push_on', sub: sub.toJSON(), device: deviceName() });
-    K.api('/api/portal-account', { action: 'push_test' }).catch(() => {});
-  }
-  async function pushOff(sub) {
-    try { await K.api('/api/portal-account', { action: 'push_off', endpoint: sub.endpoint }); } catch (e) { /* the device stops anyway */ }
-    await sub.unsubscribe();
+    if (!quiet) K.api('/api/portal-account', { action: 'push_test' }).catch(() => {});
   }
   async function paintPush(box) {
     const st = await pushState();
@@ -100,18 +96,20 @@
         : '<p>' + icon('info') + '<span>Browserul acesta nu primește notificări. Pe telefon, folosește Chrome (Android) sau portalul adăugat pe ecranul principal (iPhone).</span></p>';
     } else if (st.perm === 'denied') {
       h = '<p>' + icon('alert') + '<span>Notificările sunt blocate pentru portal. Le pornești din setările browserului (iconița de lângă adresă → Notificări → Permite), apoi revii aici.</span></p>';
-    } else if (st.sub && st.perm === 'granted') {
-      h = '<p class="is-on">' + icon('checkCircle') + '<span><b>Pornite pe acest dispozitiv.</b> Leadurile noi, bonusurile și răspunsurile apar pe ecran chiar dacă portalul e închis.</span></p>' +
-        '<div class="nt-push-acts"><button type="button" class="k-btn is-sm" data-push="test">' + icon('bell') + 'Trimite un test</button><button type="button" class="k-btn is-ghost is-sm" data-push="off">Oprește aici</button></div>';
+    } else if (st.perm === 'granted') {
+      // on (or allowed and only the subscription missing: made now, without asking): nothing to show
+      box.hidden = true; box.innerHTML = '';
+      if (!st.sub) pushOn(true).catch(() => {});
+      return;
     } else {
       h = '<p>' + icon('bell') + '<span>Leadurile noi, bonusurile și răspunsurile, pe ecran, chiar și cu portalul închis.</span></p><button type="button" class="k-btn is-primary is-sm" data-push="on">' + icon('bell') + 'Pornește pe acest dispozitiv</button>';
     }
+    box.hidden = false;
     box.innerHTML = h;
     box.querySelectorAll('[data-push]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
       try {
-        if (b.dataset.push === 'test') { const r = await K.api('/api/portal-account', { action: 'push_test' }); K.ui().toast(r.sent ? 'Trimis. Apare pe ecran în câteva secunde.' : 'Nu a plecat: pornește din nou notificările aici.', r.sent ? 'success' : 'error'); return; }
-        if (b.dataset.push === 'on') { await pushOn(); K.ui().toast('Gata. Ți-am trimis o notificare de test.', 'success'); }
-        else { await pushOff(st.sub); K.ui().toast('Notificările s-au oprit pe acest dispozitiv.', 'success'); }
+        await pushOn();
+        K.ui().toast('Gata. Ți-am trimis o notificare de test.', 'success');
       } catch (e) { K.ui().toast(e.message === 'denied' ? 'Ai refuzat notificările. Le poți porni din setările telefonului.' : 'Nu am putut porni notificările. Încearcă din nou.', 'error'); }
       paintPush(box); nudge();
     })));
@@ -134,7 +132,7 @@
     nudging = true;
     try {
       const st = await pushState();
-      const on = st.supported && st.sub && st.perm === 'granted';
+      const on = st.supported && st.perm === 'granted';
       let what = '';
       if (phone() && !nudgeLater()) {
         if (iOS() && !standalone()) what = 'ios';

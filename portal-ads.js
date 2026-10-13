@@ -44,8 +44,8 @@
     panel.classList.add('k-panel', 'ad');
     panel.innerHTML =
       '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Reclame</h2></div>' +
-      '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="defaults">' + icon('sliders') + 'Setări implicite</button>' +
-      '<button type="button" class="k-btn is-accent" data-act="creative">' + icon('sparkles') + 'Publică un creative</button></div></div>' +
+      '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="defaults" title="Setări implicite">' + icon('sliders') + '<span class="ad-sm-hide">Setări implicite</span></button>' +
+      '<button type="button" class="k-btn is-accent" data-act="creative">' + icon('sparkles') + '<span class="ad-sm-hide">Publică un creative</span><span class="ad-sm-only">Publică</span></button></div></div>' +
       '<div data-body><div class="k-skel" style="height:110px;margin-bottom:1rem"></div><div class="k-skel" style="height:360px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);
@@ -172,11 +172,11 @@
     body.classList.toggle('is-readonly', !!d.readOnly);
     body.innerHTML =
       (d.readOnly ? '<div class="k-card ad-note is-warn">' + icon('alert') + '<span>Doar vizualizare: tokenul pentru reclame n-are permisiunea ads_management, așa că nu poți porni, opri sau schimba nimic de aici.</span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
-      (tok && days != null && days < 14 ? '<div class="k-card ad-note is-warn">' + icon('clock') + '<span>Conexiunea pentru reclame expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) + '. Integrări → Facebook → Reclame: lipește un token nou (unul de System User nu mai expiră).</span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
+      (tok && days != null && days < 14 ? '<div class="k-card ad-note is-warn">' + icon('clock') + '<span>Conexiunea pentru reclame expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) + '.<span class="ad-sm-hide"> Integrări → Facebook → Reclame: lipește un token nou (unul de System User nu mai expiră).</span></span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
       '<div class="ad-bar">' + K.seg('adperiod', periodPairs(), A.range ? 'custom' : A.period) +
         '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie sau o reclamă…" value="' + esc(A.q) + '"></label>' +
         '<div class="k-chips"><button type="button" class="k-chip' + (A.show === 'active' ? ' is-on' : '') + '" data-show="active">Pornite<span>' + active + '</span></button><button type="button" class="k-chip' + (A.show === 'all' ? ' is-on' : '') + '" data-show="all">Toate<span>' + d.campaigns.length + '</span></button></div>' +
-        '<button type="button" class="k-btn is-outline is-sm" data-act="customize">' + icon('sliders') + 'Coloane și KPI</button>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-act="customize" title="Coloane și KPI">' + icon('sliders') + '<span class="ad-sm-hide">Coloane și KPI</span></button>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div data-stats></div>' +
       (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
@@ -202,7 +202,8 @@
     const un = A.d.unmatched && !picked.length ? A.d.unmatched.pLeads : 0;
     box.innerHTML =
       (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
-      '<div class="ad-stats">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint)).join('') + '</div>' +
+      '<div class="ad-hero">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
+      '<div class="ad-stats">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id)).join('') + '</div>' +
       (un ? '<p class="k-muted ad-partial">' + K.plural(un, 'lead din reclame care nu mai sunt în listă nu intră', 'leaduri din reclame care nu mai sunt în listă nu intră') + ' în cifre.</p>' : '');
     syncPickAll();
   }
@@ -215,7 +216,9 @@
     all.checked = !!shown.length && n === shown.length;
     all.indeterminate = n > 0 && n < shown.length;
   }
-  const stat = (ic, label, val, hint) => '<div class="k-card ad-stat"' + (hint ? ' title="' + esc(hint) + '"' : '') + '><span class="k-icon-chip is-accent">' + icon(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></div>';
+  // on a phone these three come first and big, for the account and for every campaign
+  const KEY = ['leads', 'cpl', 'spend'];
+  const stat = (ic, label, val, hint, id) => '<div class="k-card ad-stat' + (KEY.includes(id) ? ' is-key' : '') + '"' + (hint ? ' title="' + esc(hint) + '"' : '') + '><span class="k-icon-chip is-accent">' + icon(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></div>';
 
   // a campaign is found by its own name or by the name of one of its ad sets or ads
   const hay = (c) => K.norm([c.name].concat(c.adsets.map((s) => s.name + ' ' + s.ads.map((x) => x.name).join(' '))).join(' '));
@@ -248,13 +251,14 @@
         return '<div class="ad-cell' + (kind === 'ad' ? ' is-none' : '') + '" data-l="' + esc(M[id].label) + '">' + v + '</div>';
       }
       const v = fmt(id, M[id].val(x));
-      return '<div class="ad-cell" data-l="' + esc(M[id].label) + '">' + (M[id].strong ? '<b>' + esc(v) + '</b>' : esc(v)) + '</div>';
+      return '<div class="ad-cell' + (KEY.includes(id) ? ' is-key' : '') + '" data-l="' + esc(M[id].label) + '">' + (M[id].strong ? '<b>' + esc(v) + '</b>' : esc(v)) + '</div>';
     }).join('');
   }
   function campHtml(c) {
     return '<article class="k-card ad-camp' + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
       '<div class="ad-row is-camp">' +
         '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + '<button type="button" class="ad-title" data-preview="' + esc(c.id) + '" title="Previzualizare"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
+        '<div class="ad-mkpis">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(c))) + '</b></div>').join('') + '</div>' +
         cellsOf(c, 'campaign') +
         '<div class="ad-acts"><button type="button" class="k-icon-btn" data-preview="' + esc(c.id) + '" title="Previzualizare">' + icon('eye') + '</button>' +
           '<button type="button" class="k-icon-btn" data-more="campaign" data-id="' + esc(c.id) + '" data-name="' + esc(c.name) + '" title="Mai mult">' + icon('more') + '</button></div>' +
