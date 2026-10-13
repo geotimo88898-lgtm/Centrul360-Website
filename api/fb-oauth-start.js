@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
 
   const params = new URLSearchParams({ client_id: appId, redirect_uri: redirectUri, state, response_type: 'code' });
   if (creds.configId) { params.set('config_id', creds.configId); params.set('override_default_response_type', 'true'); }
-  else params.set('scope', 'pages_show_list,leads_retrieval,pages_manage_metadata,pages_read_engagement');
+  else params.set('scope', 'pages_show_list,leads_retrieval,pages_manage_metadata,pages_read_engagement,ads_management,ads_read,business_management');
 
   res.setHeader('Cache-Control', 'no-store');
   res.writeHead(302, { Location: `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${params.toString()}` });

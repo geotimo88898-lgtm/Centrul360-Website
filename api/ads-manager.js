@@ -15,8 +15,9 @@ const ads = require('./_lib/meta-ads');
 
 const REASONS = {
   not_connected: 'Facebook nu e conectat. Integrări → Facebook.',
-  no_user_token: 'Conexiunea Facebook n-are încă permisiunea de reclame (ads_management). Reconectează din Integrări → Facebook.',
+  no_user_token: 'Lipsește tokenul pentru reclame. Integrări → Facebook → Reclame: lipește un token cu ads_management.',
   no_ad_account: 'Alege contul de reclame: Integrări → Facebook → Setări conexiune.',
+  no_ads_permission: 'Tokenul pentru reclame n-are permisiunea ads_management. Integrări → Facebook → Reclame: lipește un token care o are.',
 };
 
 async function connection() {
@@ -40,11 +41,14 @@ module.exports = async (req, res) => {
       const [view, token] = await Promise.all([ads.overview(conn, period), ads.tokenInfo(conn.userToken, await appCreds(readJSON))]);
       if (view.error) {
         const expired = token && !token.valid;
-        res.status(200).json({ ok: true, ready: false, reason: expired ? 'token_expired' : 'meta_error', defaults,
-          message: expired ? 'Conexiunea pentru reclame a expirat. Reconectează din Integrări → Facebook.' : 'Meta: ' + view.error });
+        const noScope = token && token.valid && !(token.scopes || []).some((x) => x === 'ads_management' || x === 'ads_read');
+        res.status(200).json({ ok: true, ready: false, reason: expired ? 'token_expired' : noScope ? 'no_ads_permission' : 'meta_error', defaults,
+          message: expired ? 'Conexiunea pentru reclame a expirat. Integrări → Facebook → Reclame: lipește un token nou.' : noScope ? REASONS.no_ads_permission : 'Meta: ' + view.error });
         return;
       }
-      res.status(200).json(Object.assign({ ready: true, defaults, token, adsManager: ads.adsManagerUrl(conn.adAccountId) }, view));
+      // without ads_management the page only reads (the switches would be refused)
+      const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
+      res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId) }, view));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }

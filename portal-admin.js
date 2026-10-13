@@ -666,9 +666,28 @@
   // Facebook: one button logs in with Facebook (Meta's own window); back here, the admin picks the
   // clinic's Page (an account can manage several, e.g. the salon's too) and the ad account, which
   // can also be typed by hand when Facebook doesn't list it.
+  // the ads (Admin → Reclame, "Publică pe Meta") use their own token; it can be replaced here
+  // without touching the Page and the leads. A System User token never expires.
+  function adsRow(a) {
+    a = a || { set: false };
+    const days = a.expiresAt ? Math.round((a.expiresAt - Date.now()) / 86400e3) : null;
+    const st = !a.set ? ['is-wait', 'alert', 'Lipsește tokenul pentru reclame. Lipește-l mai jos.']
+      : a.valid === false ? ['is-wait', 'alert', 'Tokenul pentru reclame a expirat. Lipește unul nou mai jos.']
+      : a.publish === false ? ['is-wait', 'alert', 'Tokenul n-are permisiunea ads_management. Lipește unul care o are.']
+      : a.valid == null ? ['is-wait', 'clock', 'Token salvat; Meta nu l-a putut verifica acum.']
+      : ['is-ok', 'checkCircle', 'Merge' + (a.expiresAt ? ' · expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) : ' · nu expiră')];
+    const needs = st[0] !== 'is-ok' || (days != null && days < 14);
+    return '<div class="st-fb-status st-fb-ads ' + st[0] + '">' + icon(st[1]) + '<div><b>Reclame</b><span>' + esc(st[2]) + '</span></div>' +
+        (st[0] === 'is-ok' ? '<button type="button" class="k-btn is-ghost is-sm" data-goto="reclame">Deschide' + icon('arrow') + '</button>' : '') + '</div>' +
+      '<details class="st-fb-manual"' + (needs ? ' open' : '') + '><summary>' + (a.set ? 'Schimbă tokenul pentru reclame' : 'Lipește tokenul pentru reclame') + '</summary>' +
+        '<form class="st-manual" data-adstoken><textarea name="t" rows="3" placeholder="Token de System User (nu expiră) sau User Access Token cu ads_management" autocomplete="off"></textarea>' +
+        '<small class="k-muted">Cel mai bun: Business Settings → Utilizatori de sistem → Generează token, aplicația Centrul360 ADMIN, cu ads_management, ads_read, pages_show_list, pages_read_engagement, leads_retrieval. Contul de reclame și Pagina trebuie atribuite utilizatorului de sistem.</small>' +
+        '<button type="submit" class="k-btn is-primary is-sm">Salvează tokenul</button></form></details>';
+  }
   const FB_ERR = { login_expired: 'Logarea a expirat. Apasă din nou „Conectează cu Facebook”.', page_not_found: 'Pagina nu mai e disponibilă. Loghează-te din nou.',
     subscribe_failed: 'Facebook n-a permis primirea leadurilor pe Pagina asta: lipsește permisiunea pages_manage_metadata sau nu ești admin pe Pagină. Folosește „Conectare cu token”.', invalid_ad_account: 'ID-ul contului de reclame are doar cifre (ex. 1234567890 sau act_1234567890).',
-    token_invalid: 'Tokenul nu e valid sau a expirat.', no_pages: 'Contul ăsta de Facebook nu administrează nicio Pagină.',
+    token_invalid: 'Tokenul nu e valid sau a expirat.', no_ads_management: 'Tokenul n-are permisiunea ads_management. Generează-l din nou cu ea bifată.',
+    ad_account_unreachable: 'Cu tokenul ăsta nu se deschide contul de reclame ales. Atribuie contul utilizatorului (sau alege alt cont în Setări conexiune).', no_pages: 'Contul ăsta de Facebook nu administrează nicio Pagină.',
     invalid_app_id: 'App ID are doar cifre.', invalid_app_secret: 'App secret are litere și cifre (32 de caractere), copiază-l din nou.', invalid_config_id: 'Configuration ID are doar cifre.', missing_app_secret: 'Lipește și App secret pentru aplicația asta.' };
   const adOptions = (list, sel) => K.options([['', 'Niciunul încă']].concat((list || []).map((a) => [a.id, a.name + (a.business ? ' · ' + a.business : '')])).concat([['__manual', 'Nu e în listă, scriu ID-ul']]), sel);
   const adManual = '<input data-ad-manual hidden placeholder="ID cont de reclame, ex. 1234567890" inputmode="numeric" maxlength="24">';
@@ -763,6 +782,7 @@
           (got.length ? got.slice(0, 3).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
             : '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>') + '</div>' +
         '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-goto="formulare">' + icon('file') + 'Formulare' + (poll.forms ? ' (' + poll.forms + ' active)' : '') + icon('arrow') + '</button></div>' +
+        adsRow(d.ads) +
         '<details class="st-fb-settings"><summary>' + icon('sliders') + 'Setări conexiune</summary>' +
           '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
           '<form class="st-fb-adform" data-fb-adform hidden><select data-ad>' + adOptions(d.adAccounts, d.adAccountId) + '</select>' + adManual + '<button type="submit" class="k-btn is-primary is-sm">Salvează</button></form>' +
@@ -782,6 +802,19 @@
       bindAdSelect(box);
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });
+      const at = box.querySelector('[data-adstoken]');
+      at.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const tok = at.t.value.trim(); if (!tok) return;
+        K.busy(at.querySelector('button'), async () => {
+          try {
+            const r = await K.api('/api/fb-connection-status', { action: 'ads_token', token: tok });
+            at.t.value = '';
+            K.ui().toast(r.ads && r.ads.expiresAt ? 'Salvat. Reclamele merg (tokenul expiră în ' + K.plural(Math.round((r.ads.expiresAt - Date.now()) / 86400e3), 'zi', 'zile') + ').' : 'Salvat. Reclamele merg, tokenul nu expiră.', 'success');
+            loadFb(box);
+          } catch (err) { fail(err); }
+        });
+      });
       const pn = box.querySelector('[data-fb-pollnow]');
       pn.addEventListener('click', () => K.busy(pn, async () => {
         try {

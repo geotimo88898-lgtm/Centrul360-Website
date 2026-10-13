@@ -9,6 +9,8 @@
 //   POST { action: 'resubscribe' }   subscribe the connected Page to this app's leads again
 //   POST { action: 'choose', pageId, adAccountId }   connect that Page (from the login just made,
 //         or another Page of the same login) and remember the ad account
+//   POST { action: 'ads_token', token }  a token only for the ads (System User or a user token with
+//         ads_management), checked with Meta and made long-lived; the Page connection stays
 //   POST { action: 'ad_account', adAccountId }       change the ad account (picked from the list, or
 //         typed by hand: act_123… / 123…), used later to publish ads from Creative
 
@@ -17,6 +19,7 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { pollLeads } = require('./_lib/fb-leads');
 const { APP_KEY, GRAPH_BASE, appCreds, loadConnection, loadPending, connectPage, siteOrigin } = require('./_lib/facebook');
+const { tokenInfo } = require('./_lib/meta-ads');
 
 // Is the connected Page subscribed to this app's leadgen webhook? (Meta lists the apps it notifies)
 async function subscription(conn, appId) {
@@ -57,6 +60,13 @@ async function status(req) {
     poll: poll && poll.at ? { at: poll.at, ok: poll.ok !== false, error: poll.error || '', forms: (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').length, lastFailure: poll.lastFailure || null } : null,
   };
   if (conn.pageId) out.subscription = await subscription(conn, creds.appId);
+  // the token kept for the ads (Reclame, "Publică pe Meta"): whether it works, until when, if it may publish
+  if (conn.pageId) {
+    const t = conn.userToken ? await tokenInfo(conn.userToken, creds) : null;
+    out.ads = conn.userToken
+      ? { set: true, at: conn.userTokenAt || '', valid: t ? t.valid : null, expiresAt: t ? t.expiresAt : null, publish: t ? (t.scopes || []).includes('ads_management') : null }
+      : { set: false };
+  }
   if (conn.pageId) Object.assign(out, {
     pageName: conn.pageName, connectedAt: conn.connectedAt, pageId: conn.pageId,
     pages: pub(conn.pages), adAccounts: pub(conn.adAccounts), adAccountId: conn.adAccountId || '', adAccountName: conn.adAccountName || '',
@@ -157,6 +167,50 @@ module.exports = async (req, res) => {
       if (!known && raw && !/^\d{5,20}$/.test(digits)) { res.status(400).json({ error: 'invalid_ad_account' }); return; }
       conn.adAccountId = known ? known.id : raw ? 'act_' + digits : '';
       conn.adAccountName = known ? known.name : String(body.adAccountName || '').trim().slice(0, 80) || (raw ? 'act_' + digits : '');
+      await writeJSON('data/fb-connection.json', conn);
+      res.status(200).json(await status(req));
+      return;
+    }
+
+    // a token only for the ads (Reclame, "Publică pe Meta"): the Page and the leads stay as they are
+    if (body.action === 'ads_token') {
+      const conn = await readJSON('data/fb-connection.json', {});
+      if (!conn.pageId) { res.status(400).json({ error: 'not_connected' }); return; }
+      const creds = await appCreds(readJSON);
+      let token = String(body.token || '').trim();
+      if (!/^[A-Za-z0-9_|.-]{20,600}$/.test(token)) { res.status(400).json({ error: 'token_invalid' }); return; }
+      let info = await tokenInfo(token, creds);
+      if (!info || !info.valid) { res.status(400).json({ error: 'token_invalid' }); return; }
+      // a user token from this app becomes a ~60-day one; a System User token already never expires
+      if (info.expiresAt && info.expiresAt - Date.now() < 30 * 86400e3) {
+        const ex = await fetch(GRAPH_BASE + '/oauth/access_token?' + new URLSearchParams({ grant_type: 'fb_exchange_token', client_id: creds.appId, client_secret: creds.appSecret, fb_exchange_token: token }));
+        const exj = await ex.json().catch(() => ({}));
+        if (ex.ok && exj.access_token) {
+          const longInfo = await tokenInfo(exj.access_token, creds);
+          if (longInfo && longInfo.valid) { token = exj.access_token; info = longInfo; }
+        }
+      }
+      if (!(info.scopes || []).includes('ads_management')) { res.status(400).json({ error: 'no_ads_management' }); return; }
+      // the chosen ad account must open with it; without one chosen, its ad accounts fill the list
+      const get = async (path, params) => {
+        const r = await fetch(GRAPH_BASE + path + '?' + new URLSearchParams(Object.assign({ access_token: token }, params)));
+        const j = await r.json().catch(() => ({}));
+        return { ok: r.ok, j };
+      };
+      if (conn.adAccountId) {
+        const acc = await get('/' + conn.adAccountId, { fields: 'name' });
+        if (!acc.ok) { res.status(400).json({ error: 'ad_account_unreachable', message: (acc.j.error && acc.j.error.message) || '' }); return; }
+      }
+      const list = await get('/me/adaccounts', { fields: 'id,name,business{name}', limit: '50' });
+      if (list.ok && Array.isArray(list.j.data) && list.j.data.length) {
+        const known = new Map((conn.adAccounts || []).map((a) => [a.id, a]));
+        list.j.data.forEach((a) => known.set(a.id, { id: a.id, name: a.name || a.id, business: (a.business && a.business.name) || '' }));
+        conn.adAccounts = Array.from(known.values());
+        if (!conn.adAccountId && conn.adAccounts.length === 1) { conn.adAccountId = conn.adAccounts[0].id; conn.adAccountName = conn.adAccounts[0].name; }
+      }
+      conn.userToken = token;
+      conn.userTokenAt = new Date().toISOString();
+      conn.userTokenBy = session.employeeId;
       await writeJSON('data/fb-connection.json', conn);
       res.status(200).json(await status(req));
       return;

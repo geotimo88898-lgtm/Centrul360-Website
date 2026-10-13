@@ -983,3 +983,9 @@ button.ad-title:hover b{ color:var(--accent); }
 .ad-menu{ min-width:220px; }
 .ad-menu a.k-menu-item{ text-decoration:none; }
 .ad-menu .k-menu-item.is-danger, .ad-menu .k-menu-item.is-danger .k-ic{ color:var(--bad); }
+.st-fb-ads{ margin-top:.8rem; margin-bottom:0; }
+.st-fb-ads > .k-btn{ margin-left:auto; flex:none; }
+.st-fb-ads.is-wait{ background:var(--warn-soft); color:var(--warn); }
+.st-fb-ads + .st-fb-manual{ margin-top:.5rem; }
+.st-manual small{ font-size:.76rem; line-height:1.45; }
+.is-readonly .ad-sw, .is-readonly .ad-budget-btn, .is-readonly [data-more]{ pointer-events:none; opacity:.4; }

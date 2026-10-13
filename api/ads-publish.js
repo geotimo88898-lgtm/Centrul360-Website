@@ -27,10 +27,11 @@ function fromCreative(req) {
 
 const REASONS = {
   not_connected: 'Facebook nu e conectat (Integrări → Facebook).',
-  no_user_token: 'Conexiunea Facebook nu are încă permisiunea de reclame. Reconectează din Integrări → Facebook (cu ads_management).',
+  no_user_token: 'Lipsește tokenul pentru reclame. Integrări → Facebook → Reclame: lipește un token cu ads_management.',
   no_ad_account: 'Alege contul de reclame în Integrări → Facebook → Setări conexiune.',
-  token_expired: 'Conexiunea pentru reclame a expirat. Reconectează din Integrări → Facebook.',
+  token_expired: 'Tokenul pentru reclame a expirat. Integrări → Facebook → Reclame: lipește unul nou.',
   ad_account_inactive: 'Contul de reclame nu e activ în Meta.',
+  no_ads_permission: 'Tokenul pentru reclame n-are permisiunea ads_management. Integrări → Facebook → Reclame: lipește un token care o are.',
 };
 // what is missing from the window's settings, in words
 const SETTINGS = {
@@ -50,6 +51,8 @@ async function options() {
   ]);
   // ad sets an ad can join, and how long the ads connection still works
   const [adsets, token] = info.ready ? await Promise.all([ads.listAdsets(conn), ads.tokenInfo(conn.userToken, await appCreds(readJSON))]) : [[], null];
+  // publishing needs ads_management on the token
+  if (info.ready && token && token.valid && !(token.scopes || []).includes('ads_management')) Object.assign(info, { ready: false, reason: 'no_ads_permission', message: '' });
   const offerTitle = (id) => ((offers.find((o) => o.id === id) || {}).title || '');
   const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').map((f) => {
     const r = (reg.forms || {})[f.id] || {};
