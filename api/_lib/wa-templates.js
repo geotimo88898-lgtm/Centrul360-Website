@@ -1,4 +1,4 @@
-// WhatsApp templates ("Șabloane WhatsApp", Automatizări): the only way the clinic writes first on
+// WhatsApp templates ("Șabloane WhatsApp", Integrări): the only way the clinic writes first on
 // WhatsApp. The owner writes one like in HighLevel (name, category, header, message with {prenume},
 // {data}… , footer, buttons); it is kept here and, once a number is connected, sent to Meta for
 // approval. Meta's own list is read back (statuses, and templates made in WhatsApp Manager).

@@ -8,7 +8,7 @@
 // Vercel variables still work as a fallback: WHATSAPP_TOKEN, WHATSAPP_WABA_ID,
 // WHATSAPP_PHONE_ID_TIMISOARA / WHATSAPP_PHONE_ID_ARAD (and the old single WHATSAPP_PHONE_ID).
 //
-// Meta's rule: the clinic writes first only with an approved template (Automatizări → Șabloane
+// Meta's rule: the clinic writes first only with an approved template (Integrări → Șabloane
 // WhatsApp); free text only as a reply within 24 h of the client's last message (Mesaje).
 
 const { readJSON } = require('./store');

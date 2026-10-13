@@ -645,7 +645,7 @@
         (n.connected ? '<button type="button" class="k-btn is-ghost is-sm" data-wa-connect="' + esc(c) + '">Schimbă</button><button type="button" class="k-icon-btn" data-wa-off="' + esc(c) + '" title="Deconectează ' + esc(c) + '">' + icon('x') + '</button>'
           : '<button type="button" class="k-btn is-primary is-sm" data-wa-connect="' + esc(c) + '" title="Conectează numărul ' + esc(c) + '">' + icon('plus') + 'Conectează</button>') + '</div>';
     }).join('') + '</div>' +
-      '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-wa-tpl>' + icon('chat') + 'Șabloane WhatsApp' + icon('arrow') + '</button>' +
+      '<div class="st-int-row">' +
         (ok ? '<button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Mesaje' + icon('arrow') + '</button>' : '<span class="k-muted">Până la conectare, mesajele automatizărilor nu pleacă.</span>') + '</div>';
     box.querySelectorAll('[data-wa-connect]').forEach((b) => b.addEventListener('click', () => window.C360Wa.connect(b.dataset.waConnect, { onDone: () => paintWa(box) })));
     box.querySelectorAll('[data-wa-off]').forEach((b) => b.addEventListener('click', async () => {
@@ -653,7 +653,6 @@
       if (!(await K.ui().confirm({ title: 'Deconectezi numărul ' + c + '?', message: 'Mesajele automatizărilor nu mai pleacă de pe el până îl conectezi la loc.', confirmText: 'Deconectează', danger: true }))) return;
       try { await window.C360Wa.post({ action: 'disconnect', city: c }); paintWa(box); K.ui().toast('Deconectat.', 'success'); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
     }));
-    box.querySelector('[data-wa-tpl]').addEventListener('click', () => { K.go('fluxuri'); setTimeout(() => K.emit('fluxuri:tpl'), 300); });
     box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
   }
   let ipanel;
@@ -662,13 +661,13 @@
     ipanel = p;
     ipanel.classList.add('k-panel', 'st');
     ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Integrări</h2></div></div>' +
-      '<div class="st-tabs">' + K.seg('intab', [['int', 'Integrări', 'layers'], ['forms', 'Formulare Facebook', 'file']], I.tab) + '</div>' +
-      '<div data-pane="int"><div data-int-body></div></div><div data-pane="forms" hidden></div>';
+      '<div class="st-tabs">' + K.seg('intab', [['int', 'Integrări', 'layers'], ['forms', 'Formulare Facebook', 'file'], ['wa', 'Șabloane WhatsApp', 'chat']], I.tab) + '</div>' +
+      '<div data-pane="int"><div data-int-body></div></div><div data-pane="forms" hidden></div><div data-pane="wa" hidden></div>';
     ipanel.addEventListener('change', (e) => { if (e.target.name === 'intab') setTab(e.target.value); });
   }
-  // two tabs: the connections, and the Facebook lead forms (portal-forms.js)
+  // three tabs: the connections, the Facebook lead forms (portal-forms.js), the WhatsApp templates (portal-wa.js)
   function setTab(t) {
-    I.tab = t === 'forms' ? 'forms' : 'int';
+    I.tab = ['forms', 'wa'].includes(t) ? t : 'int';
     if (!ipanel) return;
     ipanel.querySelectorAll('[data-k-seg="intab"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === I.tab));
     ipanel.querySelector('[data-k-seg="intab"] input').value = I.tab;
@@ -677,10 +676,12 @@
       const pane = ipanel.querySelector('[data-pane="forms"]');
       if (!window.C360Forms.isMounted()) window.C360Forms.mount(pane);
       window.C360Forms.load();
-    } else renderIntegrations();
+    } else if (I.tab === 'wa' && window.C360Wa) window.C360Wa.list(ipanel.querySelector('[data-pane="wa"]'));
+    else renderIntegrations();
   }
   K.on('integrari:forms', () => setTab('forms'));
   K.on('integrari:int', () => setTab('int'));
+  K.on('integrari:wa', () => setTab('wa'));
   function renderIntegrations() {
     if (!ipanel || I.tab !== 'int') return;
     const body = ipanel.querySelector('[data-int-body]');

@@ -11,7 +11,7 @@
 // picked up by tick(), which the portal heartbeat (/api/portal-pulse, polled by every open portal)
 // and the daily cron (/api/automation-tick) call, so there is no separate job server.
 //
-// WhatsApp: a step sends one approved template (Automatizări → Șabloane WhatsApp) from the number
+// WhatsApp: a step sends one approved template (Integrări → Șabloane WhatsApp) from the number
 // chosen on the step, Timișoara, Arad or the client's city (Integrări → WhatsApp, _lib/whatsapp.js).
 // A template not yet approved for that number, or WhatsApp not connected: logged, nothing sent.
 

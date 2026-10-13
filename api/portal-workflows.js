@@ -71,7 +71,7 @@ async function payload() {
       offers: offers.filter((o) => o.active !== false).map((o) => o.title),
       team: [{ id: 'admin', name: admin.name || 'Admin (tu)', role: 'admin' }].concat(employees.filter((e) => e.active !== false).map((e) => ({ id: e.id, name: e.name, role: e.role }))),
       whatsappCloud: WA.readyNumbers(waCfg).length > 0,
-      // the WhatsApp step: from which number, which template (Automatizări → Șabloane WhatsApp)
+      // the WhatsApp step: from which number, which template (Integrări → Șabloane WhatsApp)
       waNumbers: WA.CITIES.map((c) => ({ city: c, connected: !!(waCfg.numbers[c].phoneId && waCfg.numbers[c].token), display: waCfg.numbers[c].display || '' })),
       waTemplates: waDoc.templates.map((t) => WT.view(t, waCfg)),
     },

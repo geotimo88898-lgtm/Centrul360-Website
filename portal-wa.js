@@ -1,7 +1,7 @@
 // Centrul360 portal - WhatsApp for the admin: the template editor (like HighLevel: name, category,
 // header, message with {prenume} {data}…, footer, buttons, a live WhatsApp preview) and the window
-// that connects a number (Timișoara / Arad). Used by Automatizări (Șabloane WhatsApp, the WhatsApp
-// step of a flow) and Integrări (WhatsApp). Data: /api/portal-wa (tokens never come back here).
+// that connects a number (Timișoara / Arad), and the list of templates. Used by Integrări (WhatsApp,
+// the Șabloane WhatsApp tab) and the WhatsApp step of a flow. Data: /api/portal-wa (tokens never come back here).
 (function () {
   'use strict';
   const K = window.K;
@@ -127,7 +127,7 @@
             const r = await post({ action: 'tpl_save', submit, template: { id: tpl && tpl.id, label: t.label, category: t.category, header: t.header, body: t.text, footer: t.footer, buttons: t.buttons, map: t.map } });
             dr.close();
             if (r.submitError) K.ui().toast('Salvat, dar Meta: ' + r.submitError, 'error');
-            else K.ui().toast(submit ? 'Trimis la Meta. Vezi starea în Șabloane WhatsApp (de obicei câteva minute).' : 'Salvat.', 'success');
+            else K.ui().toast(submit ? 'Trimis la Meta. Răspunde de obicei în câteva minute.' : 'Salvat.', 'success');
             if (o.onSaved) o.onSaved(r.savedId, r);
           } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
         });
@@ -136,6 +136,84 @@
       },
     });
     return dr;
+  }
+
+  // ------------------------------------------------------------------ the list (Integrări → Șabloane WhatsApp)
+  // The only messages the clinic sends first on WhatsApp: made here (or in WhatsApp Manager), approved
+  // by Meta, then picked in a flow's WhatsApp step.
+  const L = { box: null };
+  function list(box) {
+    if (L.box !== box) { L.box = box; box.addEventListener('click', listClick); }
+    paintList();
+  }
+  async function paintList(force) {
+    const box = L.box; if (!box) return;
+    if (!box.firstChild) box.innerHTML = '<div class="k-skel" style="height:220px"></div>';
+    let d;
+    try { d = await load(force); } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca șabloanele', K.errText(e)); return; }
+    const conn = Object.keys(d.numbers || {}).filter((c) => d.numbers[c].connected);
+    box.innerHTML =
+      '<div class="ad-bar au-bar"><button type="button" class="k-btn is-accent" data-tpl-new>' + icon('plus') + 'Șablon nou</button>' +
+        (d.ready ? '<button type="button" class="k-btn is-outline" data-tpl-sync>' + icon('refresh') + 'Citește din Meta</button><span class="k-muted wa-sync">' + (d.syncedAt ? 'citit ' + esc(K.ago(d.syncedAt)) : '') + '</span>' : '') + '</div>' +
+      (!d.ready ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>WhatsApp nu e conectat încă. Șabloanele rămân ciorne până conectezi numerele.</span><button type="button" class="k-btn is-sm" data-goto-int>Conectează</button></div>'
+        : '<p class="k-muted wa-conn">' + icon('check') + conn.map((c) => esc(c) + (d.numbers[c].display ? ' (' + esc(d.numbers[c].display) + ')' : '')).join(' · ') + '</p>') +
+      (d.syncError ? '<p class="wa-reason">' + icon('alert') + 'Meta: ' + esc(d.syncError) + '</p>' : '') +
+      (d.templates.length ? '<div class="ad-list">' + d.templates.map((t) => '<article class="k-card ad-camp wa-row"><div class="wa-row-in">' +
+          '<button type="button" class="ad-title" data-tpl-open="' + esc(t.id) + '"><b>' + esc(t.label) + '</b><small>' + (t.category === 'MARKETING' ? 'Marketing' : 'Utilitate') + (t.name ? ' · ' + esc(t.name) : '') + (t.imported ? ' · din WhatsApp Manager' : '') + '</small></button>' +
+          '<div class="wa-row-status">' + cityTags(t) + (t.reason ? '<small class="wa-row-reason">' + esc(t.reason) + '</small>' : '') + '</div>' +
+          '<div class="wa-row-used k-muted">' + (t.usedIn.length ? 'în ' + K.plural(t.usedIn.length, 'automatizare', 'automatizări') : 'nefolosit') + '</div>' +
+          '<div class="ad-acts">' + (t.editable && d.ready ? '<button type="button" class="k-btn is-sm is-primary" data-tpl-send="' + esc(t.id) + '">' + icon('zap') + 'Trimite la aprobare</button>' : '') +
+            '<button type="button" class="k-icon-btn" data-tpl-more="' + esc(t.id) + '" title="Mai mult">' + icon('more') + '</button></div>' +
+        '</div></article>').join('') + '</div>'
+        : K.empty('chat', 'Niciun șablon încă', '', '<button type="button" class="k-btn is-primary" data-tpl-new>' + icon('plus') + 'Șablon nou</button>'));
+  }
+  const tplById = (id) => ((W.d && W.d.templates) || []).find((t) => t.id === id);
+  const errMsg = (err) => K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error');
+  const again = { onSaved: () => paintList() };
+  async function listClick(e) {
+    const t = e.target;
+    if (t.closest('[data-tpl-new]')) return edit(null, again);
+    if (t.closest('[data-goto-int]')) return K.emit('integrari:int');
+    const sy = t.closest('[data-tpl-sync]');
+    if (sy) return K.busy(sy, async () => { try { await post({ action: 'tpl_sync' }); paintList(); K.ui().toast('Citit din Meta.', 'success'); } catch (err) { errMsg(err); } });
+    const op = t.closest('[data-tpl-open]'); if (op) { const x = tplById(op.dataset.tplOpen); if (x) edit(x, again); return; }
+    const se = t.closest('[data-tpl-send]');
+    if (se) return K.busy(se, async () => { try { const r = await post({ action: 'tpl_submit', id: se.dataset.tplSend }); paintList(); K.ui().toast(r.submitError ? 'Parțial: ' + r.submitError : 'Trimis la Meta.', r.submitError ? 'error' : 'success'); } catch (err) { errMsg(err); } });
+    const mo = t.closest('[data-tpl-more]');
+    if (mo) {
+      const x = tplById(mo.dataset.tplMore); if (!x) return;
+      menu(mo, [['open', 'pen', 'Editează'], ['copy', 'copy', 'Fă o copie'], ['del', 'trash', 'Șterge', true]], async (k) => {
+        try {
+          if (k === 'open') edit(x, again);
+          if (k === 'copy') edit(Object.assign({}, x, { id: '', label: x.label + ' (copie)', editable: true, status: 'DRAFT', name: '', reason: '', cities: {} }), again);
+          if (k === 'del') {
+            const used = x.usedIn.length ? ' E folosit în: ' + x.usedIn.join(', ') + '; acolo pasul WhatsApp rămâne fără șablon.' : '';
+            if (!(await K.ui().confirm({ title: 'Ștergi șablonul „' + x.label + '”?', message: 'Se șterge și din Meta.' + used, confirmText: 'Șterge', danger: true }))) return;
+            await post({ action: 'tpl_delete', id: x.id }); paintList(); K.ui().toast('Șters.', 'success');
+          }
+        } catch (err) { errMsg(err); }
+      });
+    }
+  }
+  // the ⋯ menu of a template
+  let menuEl = null;
+  function closeMenu() { if (!menuEl) return; const m = menuEl; menuEl = null; m.classList.remove('is-open'); setTimeout(() => m.remove(), 180); document.removeEventListener('mousedown', outside, true); }
+  const outside = (e) => { if (menuEl && !menuEl.contains(e.target) && !e.target.closest('[data-tpl-more]')) closeMenu(); };
+  function menu(btn, items, onPick) {
+    const same = menuEl && menuEl.dataset.for === btn.dataset.tplMore;
+    closeMenu(); if (same) return;
+    const m = document.createElement('div');
+    m.className = 'k-menu ad-menu'; m.dataset.for = btn.dataset.tplMore;
+    m.innerHTML = items.map(([k, ic, l, danger]) => '<button type="button" class="k-menu-item' + (danger ? ' is-danger' : '') + '" data-m="' + k + '">' + icon(ic) + esc(l) + '</button>').join('');
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect(), h = m.offsetHeight, below = r.bottom + 6 + h < window.innerHeight;
+    m.style.top = (below ? r.bottom + 6 : r.top - 6 - h) + 'px';
+    m.style.left = Math.max(8, Math.min(r.right - m.offsetWidth, window.innerWidth - m.offsetWidth - 8)) + 'px';
+    m.style.transformOrigin = below ? 'top right' : 'bottom right';
+    requestAnimationFrame(() => m.classList.add('is-open'));
+    menuEl = m;
+    setTimeout(() => document.addEventListener('mousedown', outside, true), 0);
+    m.addEventListener('click', (e) => { const it = e.target.closest('[data-m]'); if (!it) return; closeMenu(); onPick(it.dataset.m); });
   }
 
   // ------------------------------------------------------------------ connect a number
@@ -186,5 +264,5 @@
     });
   }
 
-  window.C360Wa = { load, post, edit, connect, tag, cityTags, bubble, STATUS, CAT, VLABEL, get d() { return W.d; } };
+  window.C360Wa = { load, post, edit, connect, list, tag, cityTags, bubble, STATUS, CAT, VLABEL, get d() { return W.d; } };
 })();

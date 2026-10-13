@@ -1,5 +1,5 @@
 // /api/portal-wa, WhatsApp for the admin: the two numbers (Integrări → WhatsApp) and the templates
-// (Automatizări → Șabloane WhatsApp). Tokens are kept on the server and never sent back.
+// (Integrări → Șabloane WhatsApp). Tokens are kept on the server and never sent back.
 //   GET                                         the numbers, the templates (read again from Meta every few minutes)
 //   POST { action: 'discover', city, token? }   the numbers this token can use (to pick Timișoara's / Arad's)
 //   POST { action: 'connect', city, token?, wabaId, phoneId }
