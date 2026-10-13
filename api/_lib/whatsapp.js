@@ -97,7 +97,8 @@ async function sendWhatsApp({ phone, text, template, params, language, from }) {
     if (!r.ok) {
       const code = j && j.error && j.error.code;
       // 131047 = outside the 24 h window (needs a template); 132001 = template missing / not approved.
-      const why = code === 131047 ? 'în afara ferestrei de 24h, e nevoie de șablon' : code === 132001 ? 'șablonul nu există / nu e aprobat' : 'cod ' + (code || r.status);
+      const why = code === 131047 ? 'în afara ferestrei de 24h, e nevoie de șablon' : code === 132001 ? 'șablonul nu există / nu e aprobat'
+        : 'cod ' + (code || r.status) + (j && j.error && j.error.message ? ': ' + String(j.error.message).slice(0, 200) : '');
       return { sent: false, error: why, fromCity: city };
     }
     return { sent: true, id: j.messages && j.messages[0] && j.messages[0].id, fromCity: city };

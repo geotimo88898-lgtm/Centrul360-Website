@@ -448,5 +448,53 @@
     if (K.data) once(); else K.on('data', once);
   }
 
-  window.C360Wa = { load, post, edit, connect, list, tag, cityTags, bubble, STATUS, CAT, VLABEL, get d() { return W.d; } };
+  // ------------------------------------------------------------------ check the numbers
+  async function check() {
+    const dr = K.drawer({ title: 'Verifică WhatsApp', icon: 'shield', width: 560, body: '<div data-checks><div class="k-skel" style="height:260px"></div></div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-close>Închide</button>',
+      onMount(el) {
+        el.querySelector('[data-close]').addEventListener('click', () => dr.close());
+        el.addEventListener('click', (e) => {
+          const fx = e.target.closest('[data-fix]');
+          if (fx) {
+            return K.busy(fx, async () => {
+              try {
+                const r = await K.api('/api/portal-wa', { action: 'repair', city: fx.dataset.fix });
+                K.ui().toast('Gata: ' + r.done.join(' · '), 'success');
+                paint(el);
+              } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+            });
+          }
+          const ts = e.target.closest('[data-test]');
+          if (ts) {
+            const inp = el.querySelector('[data-test-phone="' + ts.dataset.test + '"]');
+            return K.busy(ts, async () => {
+              try {
+                const r = await K.api('/api/portal-wa', { action: 'test_send', city: ts.dataset.test, phone: inp.value.trim() });
+                K.ui().toast('Trimis de pe ' + r.from + ' (' + r.template + '). Verifică telefonul.', 'success');
+              } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+            });
+          }
+        });
+        paint(el);
+      } });
+    async function paint(el) {
+      const box = el.querySelector('[data-checks]');
+      box.innerHTML = '<div class="k-skel" style="height:260px"></div>';
+      let r;
+      try { r = await K.api('/api/portal-wa', { action: 'check' }); } catch (err) { box.innerHTML = K.empty('alert', 'Nu am putut verifica', K.errText(err)); return; }
+      const me = K.data && K.data.me && K.data.me.phone ? K.data.me.phone : '';
+      box.innerHTML = Object.keys(r.checks).map((city) => {
+        const list = r.checks[city];
+        const bad = list.filter((x) => !x.ok).length, fix = list.some((x) => !x.ok && x.fix);
+        return '<section class="wa-check"><h4>' + esc(city) + (bad ? '<span class="k-tag is-bad">' + bad + ' de rezolvat</span>' : '<span class="k-tag is-good">merge</span>') + '</h4>' +
+          '<ul>' + list.map((x) => '<li class="' + (x.ok ? 'is-ok' : 'is-bad') + '">' + icon(x.ok ? 'checkCircle' : 'alert') + '<div><b>' + esc(x.label) + '</b>' + (x.detail ? '<small>' + esc(x.detail) + '</small>' : '') + '</div></li>').join('') + '</ul>' +
+          '<div class="wa-check-acts">' + (fix ? '<button type="button" class="k-btn is-primary is-sm" data-fix="' + esc(city) + '">' + icon('refresh') + 'Repară</button>' : '') +
+          '<input data-test-phone="' + esc(city) + '" type="tel" inputmode="tel" placeholder="Telefon pentru test" value="' + esc(me) + '">' +
+          '<button type="button" class="k-btn is-outline is-sm" data-test="' + esc(city) + '">' + icon('chat') + 'Trimite un test</button></div></section>';
+      }).join('');
+    }
+  }
+
+  window.C360Wa = { check, load, post, edit, connect, list, tag, cityTags, bubble, STATUS, CAT, VLABEL, get d() { return W.d; } };
 })();

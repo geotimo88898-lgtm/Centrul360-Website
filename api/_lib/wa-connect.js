@@ -30,9 +30,10 @@ async function verifyToken(store) {
   return c.verifyToken;
 }
 
-// 1. our app's webhook for WhatsApp accounts points at this portal (Meta checks it right away)
-async function ensureWebhook(store, origin) {
-  const creds = await appCreds(store.readJSON);
+// 1. an app's webhook for WhatsApp accounts points at this portal (Meta checks it right away); the
+// leads app by default, or the WhatsApp app given (the one saved for the phone's app)
+async function ensureWebhook(store, origin, given) {
+  const creds = given || await appCreds(store.readJSON);
   if (!creds.appId || !creds.appSecret) return { error: 'Lipsește aplicația Meta: conectează întâi Facebook (Integrări).' };
   const appToken = creds.appId + '|' + creds.appSecret;
   const callback = origin + '/api/webhook-whatsapp';
@@ -67,4 +68,95 @@ async function setupNumber({ token, wabaId, phoneId, pin }) {
   return { ok: true, display: p.j.display_phone_number || '', name: p.j.verified_name || '', pin: usedPin };
 }
 
-module.exports = { call, verifyToken, ensureWebhook, setupNumber };
+// the apps whose secret is saved here (the leads app, the WhatsApp app): by id
+async function knownApps(store) {
+  const apps = {};
+  const lead = await appCreds(store.readJSON);
+  if (lead.appId && lead.appSecret) apps[String(lead.appId)] = { appId: String(lead.appId), appSecret: lead.appSecret, label: 'aplicația Facebook (leaduri)' };
+  const c = (await store.readJSON(WA.CONFIG_KEY, null)) || {};
+  const a = c.app || {};
+  const appId = a.appId || process.env.WHATSAPP_APP_ID || '', appSecret = a.appSecret || process.env.WHATSAPP_APP_SECRET || '';
+  if (appId && appSecret) apps[String(appId)] = { appId: String(appId), appSecret, label: 'aplicația WhatsApp' };
+  return apps;
+}
+
+// Everything that has to be true for a number to send and receive, checked in order. Each line:
+// { ok, label, detail, fix } (fix: Repară can do it). Stops early when the rest can't be checked.
+async function checkNumber(store, origin, city) {
+  const cfg = await WA.loadConfig(true);
+  const n = cfg.numbers[city];
+  const raw = (((await store.readJSON(WA.CONFIG_KEY, null)) || {}).numbers || {})[city];
+  const out = [];
+  const line = (ok, label, detail, fix) => out.push({ ok, label, detail: detail || '', fix: !!fix });
+  if (!n.phoneId || !n.token) { line(false, 'Numărul nu e conectat', 'Apasă Conectează.'); return out; }
+  if (!raw) line(false, 'Vine din setările vechi din Vercel', 'Nu e numărul conectat din portal (ID ' + n.phoneId + '). Conectează numărul clinicii din portal.');
+  // the token and the number, in one question
+  const p = await call('GET', '/' + n.phoneId, n.token, { fields: 'display_phone_number,verified_name,status,platform_type,quality_rating,name_status,code_verification_status,messaging_limit_tier' });
+  if (!p.ok) {
+    const expired = /expired|session|190|invalid oauth|access token/i.test(p.error);
+    line(false, expired ? 'Accesul la Meta a expirat' : 'Meta nu răspunde pentru număr', 'Meta: ' + p.error + (expired ? ' (conectează din nou)' : ''));
+    return out;
+  }
+  line(true, 'Accesul la Meta merge', '');
+  const live = p.j.platform_type === 'CLOUD_API' || p.j.status === 'CONNECTED';
+  line(live, live ? 'Numărul e pornit (' + (p.j.display_phone_number || n.phoneId) + ')' : 'Numărul nu e pornit pe WhatsApp Cloud API',
+    'stare ' + (p.j.status || '?') + ' · ' + (p.j.platform_type || '?') + (p.j.quality_rating ? ' · calitate ' + p.j.quality_rating : '') + (p.j.name_status && p.j.name_status !== 'APPROVED' ? ' · nume ' + p.j.name_status : ''), !live);
+  // our app(s) listen to the number's account
+  const apps = await knownApps(store);
+  let listening = [];
+  if (n.wabaId) {
+    const s = await call('GET', '/' + n.wabaId + '/subscribed_apps', n.token);
+    if (s.ok) {
+      listening = (s.j.data || []).map((x) => String(((x.whatsapp_business_api_data || {}).id) || x.id || ''));
+      const ours = listening.filter((id) => apps[id]);
+      line(ours.length > 0, ours.length ? 'Contul WhatsApp e ascultat de ' + ours.map((id) => apps[id].label).join(' și ') : 'Nicio aplicație de-a noastră nu ascultă contul WhatsApp',
+        listening.length ? 'aplicații abonate: ' + listening.join(', ') : 'nicio aplicație abonată', !ours.length);
+    } else line(false, 'Nu pot vedea cine ascultă contul WhatsApp', 'Meta: ' + s.error);
+  } else line(false, 'Lipsește ID-ul contului WhatsApp Business', 'Conectează din nou numărul.');
+  // Meta's address for the messages, on the app(s) that listen
+  const callback = origin + '/api/webhook-whatsapp';
+  const target = listening.filter((id) => apps[id]);
+  if (!target.length && Object.keys(apps).length) target.push(Object.keys(apps)[0]);
+  for (const id of target) {
+    const a = apps[id];
+    const r = await call('GET', '/' + a.appId + '/subscriptions', a.appId + '|' + a.appSecret);
+    const sub = r.ok && (r.j.data || []).find((x) => x.object === 'whatsapp_business_account');
+    const good = sub && sub.callback_url === callback && sub.active !== false && (sub.fields || []).some((f) => (f.name || f) === 'messages');
+    line(!!good, good ? 'Meta trimite mesajele primite în portal (' + a.label + ')' : 'Meta nu trimite mesajele primite în portal (' + a.label + ')',
+      !r.ok ? 'Meta: ' + r.error : sub ? 'adresa la Meta: ' + (sub.callback_url || '-') + ((sub.fields || []).some((f) => (f.name || f) === 'messages') ? '' : ' (fără „messages”)') : 'nicio adresă setată', !good);
+  }
+  // templates for writing first; the last message in
+  const T = require('./wa-templates');
+  const doc = await T.load();
+  const ok = (doc.templates || []).filter((t) => T.approvedFor(t, n.wabaId)).length;
+  line(ok > 0, ok ? ok + (ok === 1 ? ' șablon aprobat' : ' șabloane aprobate') : 'Niciun șablon aprobat', ok ? '' : 'Fără șablon aprobat nu poți scrie tu primul (Integrări → Șabloane WhatsApp).');
+  const convos = await store.readJSON('data/whatsapp-conversations.json', []);
+  let last = '';
+  convos.filter((c) => c.location === city).forEach((c) => (c.messages || []).forEach((m) => { if (m.direction === 'in' && m.timestamp > last) last = m.timestamp; }));
+  line(!!last, last ? 'Ultimul mesaj primit: ' + new Date(last).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) : 'Niciun mesaj primit încă pe numărul ăsta', '');
+  return out;
+}
+
+// what can be fixed from here: our app(s) listen to the account, Meta's address on every app we have
+async function repairNumber(store, origin, city) {
+  const cfg = await WA.loadConfig(true);
+  const n = cfg.numbers[city];
+  const done = [];
+  if (!n.phoneId || !n.token || !n.wabaId) return { error: 'Numărul ' + city + ' nu e conectat din portal.' };
+  const s = await call('POST', '/' + n.wabaId + '/subscribed_apps', n.token);
+  done.push(s.ok ? 'aplicația ascultă contul' : 'abonarea: ' + s.error);
+  const apps = await knownApps(store);
+  for (const id of Object.keys(apps)) {
+    const r = await ensureWebhook(store, origin, apps[id]);
+    done.push(r.ok ? 'adresa pentru mesaje setată (' + apps[id].label + ')' : r.error + ' (' + apps[id].label + ')');
+  }
+  const p = await call('GET', '/' + n.phoneId, n.token, { fields: 'status,platform_type' });
+  if (p.ok && p.j.platform_type !== 'CLOUD_API' && p.j.status !== 'CONNECTED' && !n.coex) {
+    const raw = (((await store.readJSON(WA.CONFIG_KEY, null)) || {}).numbers || {})[city] || {};
+    const reg = await setupNumber({ token: n.token, wabaId: n.wabaId, phoneId: n.phoneId, pin: raw.pin });
+    done.push(reg.ok ? 'numărul pornit' : reg.error);
+  }
+  return { ok: true, done };
+}
+
+module.exports = { call, verifyToken, ensureWebhook, setupNumber, knownApps, checkNumber, repairNumber };

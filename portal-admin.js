@@ -648,7 +648,8 @@
           : '<button type="button" class="k-btn is-primary is-sm" data-wa-connect="' + esc(c) + '" title="Conectează numărul ' + esc(c) + '">' + icon('plus') + 'Conectează</button>') + '</div>';
     }).join('') + '</div>' +
       '<div class="st-int-row">' +
-        (ok ? '<button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Mesaje' + icon('arrow') + '</button>' : '<span class="k-muted">Până la conectare, mesajele automatizărilor nu pleacă.</span>') + '</div>';
+        (ok ? '<button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Mesaje' + icon('arrow') + '</button>' : '<span class="k-muted">Până la conectare, mesajele automatizărilor nu pleacă.</span>') +
+        '<button type="button" class="k-btn is-ghost is-sm" data-wa-check>' + icon('shield') + 'Verifică</button></div>';
     box.querySelectorAll('[data-wa-connect]').forEach((b) => b.addEventListener('click', () => window.C360Wa.connect(b.dataset.waConnect, { onDone: () => paintWa(box) })));
     box.querySelectorAll('[data-wa-off]').forEach((b) => b.addEventListener('click', async () => {
       const c = b.dataset.waOff;
@@ -656,6 +657,8 @@
       try { await window.C360Wa.post({ action: 'disconnect', city: c }); paintWa(box); K.ui().toast('Deconectat.', 'success'); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
     }));
     box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
+    const chk = box.querySelector('[data-wa-check]');
+    if (chk) chk.addEventListener('click', () => window.C360Wa.check());
   }
   let ipanel;
   const I = { tab: 'int' };

@@ -4,6 +4,9 @@
 //   POST { action: 'discover', city, token? }   the numbers this token can use (to pick Timișoara's / Arad's)
 //   POST { action: 'connect', city, token?, wabaId, phoneId, pin? }   also sets Meta up (webhook,
 //                                                our app on the account, the number live on the Cloud API)
+//   POST { action: 'check' }                    per number, what works and what doesn't (Verifică)
+//   POST { action: 'repair', city }              what can be fixed from here (Repară)
+//   POST { action: 'test_send', city, phone }    Meta's hello_world (or an approved template) to a phone
 //   POST { action: 'login_config', configId }   the "Facebook Login for Business" configuration with the
 //                                                WhatsApp permissions ("Conectează cu Facebook", once)
 //   POST { action: 'disconnect', city }
@@ -126,6 +129,33 @@ module.exports = async (req, res) => {
       await writeJSON(WA.CONFIG_KEY, c);
       WA.invalidate();
       res.status(200).json(await payload(true));
+      return;
+    }
+    if (a === 'check') {
+      const out = {};
+      for (const c of WA.CITIES) out[c] = await WC.checkNumber({ readJSON, writeJSON }, siteOrigin(req), c).catch((e) => [{ ok: false, label: 'Verificarea a căzut', detail: e.message }]);
+      res.status(200).json({ ok: true, checks: out });
+      return;
+    }
+    if (a === 'repair') {
+      if (!city) { res.status(400).json({ error: 'invalid_city' }); return; }
+      const r = await WC.repairNumber({ readJSON, writeJSON }, siteOrigin(req), city);
+      if (r.error) { res.status(400).json({ error: 'repair_failed', message: r.error }); return; }
+      res.status(200).json({ ok: true, done: r.done });
+      return;
+    }
+    if (a === 'test_send') {
+      if (!city) { res.status(400).json({ error: 'invalid_city' }); return; }
+      const phone = clip(body.phone, 30);
+      if (!WA.toE164(phone)) { res.status(400).json({ error: 'invalid_phone', message: 'Scrie un număr de telefon.' }); return; }
+      // an approved template of ours without variables first, else Meta's own hello_world
+      const doc = await T.load();
+      const cfg = await WA.loadConfig(true);
+      const n = cfg.numbers[city];
+      const mine = (doc.templates || []).find((t) => T.approvedFor(t, n.wabaId) && !(t.map || []).length);
+      const r = await WA.sendWhatsApp({ phone, from: city, template: mine ? ((mine.meta || {})[n.wabaId] || {}).name || mine.name : 'hello_world', language: mine ? mine.language || 'ro' : 'en_US' });
+      if (!r.sent) { res.status(400).json({ error: 'send_failed', message: 'Nu a plecat: ' + r.error }); return; }
+      res.status(200).json({ ok: true, from: r.fromCity, template: mine ? mine.label : 'hello_world' });
       return;
     }
     if (a === 'login_config') {
