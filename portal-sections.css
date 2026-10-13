@@ -1325,11 +1325,12 @@ main.ad-full{ max-width:none; }
   .cal-mbox-grid button{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; height:44px; padding:0; border:0; border-radius:14px;
     background:none; color:var(--fg); font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; font-variant-numeric:tabular-nums; }
   .cal-mbox-grid button b{ font-size:.92rem; font-weight:600; line-height:1.1; }
-  .cal-mbox-grid button i{ height:12px; font-style:normal; font-size:.6rem; font-weight:800; line-height:12px; color:var(--accent); }
+  .cal-mbox-grid button i{ width:5px; height:5px; margin-top:3px; border-radius:50%; background:var(--accent); }
+  .cal-mbox-grid button i.is-none{ background:transparent; }
   .cal-mbox-grid button.is-today b{ color:var(--accent); font-weight:800; }
   .cal-mbox-grid button.is-sel{ background:var(--fg); }
   .cal-mbox-grid button.is-sel b{ color:var(--ink); font-weight:750; }
-  .cal-mbox-grid button.is-sel i{ color:var(--ink); opacity:.7; }
+  .cal-mbox-grid button.is-sel i:not(.is-none){ background:var(--ink); }
 }
 
 /* ---------------- Mesaje: the WhatsApp inbox ---------------- */

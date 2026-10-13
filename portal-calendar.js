@@ -213,7 +213,7 @@
   // ------------------------------------------------------------------ the phone list (one day)
   // Per city: each appointment as a row (time, client, treatment and price, who does it, status), the
   // free gaps of the working day between them (tap = book there), the "now" line on today.
-  // the month on a phone: each day with a dot (how many bookings, cancelled ones and leave don't
+  // the month on a phone: a dot under each day with bookings (cancelled ones and leave don't
   // count), the picked day lit, today in the accent colour
   function monthHtml() {
     const m = S.date.slice(0, 7), first = K.parse(m + '-01'), lead = (first.getDay() + 6) % 7, days = K.daysIn(m), today = K.today();
@@ -224,7 +224,7 @@
     for (let d = 1; d <= days; d++) {
       const iso = m + '-' + K.pad(d), n = count[iso] || 0;
       cells.push('<button type="button" data-mday="' + iso + '" class="' + (iso === S.date ? 'is-sel ' : '') + (iso === today ? 'is-today' : '') + '">' +
-        '<b>' + d + '</b><i>' + (n ? (n > 9 ? '9+' : n) : '') + '</i></button>');
+        '<b>' + d + '</b>' + (n ? '<i title="' + K.plural(n, 'programare', 'programări') + '"></i>' : '<i class="is-none"></i>') + '</button>');
     }
     return '<div class="cal-mbox-head"><button type="button" class="k-icon-btn" data-mmonth="-1" aria-label="Luna trecută">' + icon('left') + '</button>' +
       '<b>' + K.monthLabel(m) + '</b><button type="button" class="k-icon-btn" data-mmonth="1" aria-label="Luna viitoare">' + icon('right') + '</button></div>' +
