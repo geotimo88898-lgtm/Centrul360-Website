@@ -734,7 +734,7 @@
   function openLead(id, opts) {
     if (!leadById(id)) return;
     const o = opts || {};
-    S.drawer = { mode: 'lead', id, section: o.section || '', channel: o.channel || 'call', queue: o.queue || (S.drawer && S.drawer.queue) || null, dirty: false };
+    S.drawer = { mode: 'lead', id, section: o.section || '', tab: o.section === 'log' ? 'contact' : o.section === 'details' ? 'details' : '', channel: o.channel || 'call', queue: o.queue || (S.drawer && S.drawer.queue) || null, dirty: false };
     openDrawerShell();
     renderDrawer(true);
     boardEl.querySelectorAll('.pl-card.is-current').forEach((c) => c.classList.remove('is-current'));
@@ -833,6 +833,19 @@
       (meta.length ? '<p class="pl-form-meta">' + meta.map(esc).join(' · ') + '</p>' : '') + '</section>';
   }
 
+  // The lead's sheet: name, stage and the three big actions stay on top; the rest sits in tabs, so
+  // nothing is far down a long page. A new lead from a form opens on its answers, the others on
+  // Contactare. Switching a tab only shows / hides (what's typed in the others stays).
+  const LTABS = [['contact', 'Contactare', 'phone'], ['form', 'Formular', 'facebook'], ['details', 'Detalii', 'pen'], ['history', 'Istoric', 'note']];
+  const curTab = (l) => S.drawer.tab || ((l.forms || []).length && !l.contactCount ? 'form' : 'contact');
+  function tabsBar(l) {
+    const t = curTab(l);
+    return '<div class="pl-tabs" role="tablist">' + LTABS.filter(([k]) => k !== 'form' || (l.forms || []).length).map(([k, label, icn]) =>
+      '<button type="button" role="tab" aria-selected="' + (k === t) + '" data-ltab="' + k + '" class="' + (k === t ? 'is-on' : '') + '">' + ic(icn) + '<span>' + label + '</span>' +
+      (k === 'history' ? '<em>' + (l.activities || []).length + '</em>' : '') + '</button>').join('') + '</div>';
+  }
+  const pane = (l, k) => ' data-pane="' + k + '"' + (curTab(l) === k ? '' : ' hidden');
+
   function leadHtml(l) {
     if (!l) return '<div class="pl-dbody"><p class="pl-muted">Leadul nu mai există.</p></div>';
     const d = S.drawer;
@@ -867,7 +880,9 @@
           '<button type="button" class="pl-big-action is-book' + (d.section === 'book' ? ' is-on' : '') + '" data-section-toggle="book">' + ic('calPlus') + '<span><b>Programează</b><small>' + (l.appointmentAt ? esc(apptWhen(l.appointmentAt)) : 'direct în calendar') + '</small></span></button>' +
         '</div>' +
         (d.section === 'book' ? bookHtml(l) : '') +
-        formAnswers(l) +
+        tabsBar(l) +
+        '<div class="pl-pane"' + pane(l, 'form') + '>' + formAnswers(l) + '</div>' +
+        '<div class="pl-pane"' + pane(l, 'contact') + '>' +
         // log contact
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +
           '<div class="pl-sec-head"><h4>' + ic('phone') + 'Cum a mers contactul?</h4><span class="pl-muted">' + (l.contactCount ? l.contactCount + (l.contactCount === 1 ? ' contactare' : ' contactări') + ' · ultima ' + agoLong(l.lastContactAt) : 'Încă necontactată') + '</span></div>' +
@@ -880,9 +895,10 @@
             '<input type="datetime-local" class="pl-input" data-log-follow></div>' +
           '<div class="pl-sec-actions"><button type="button" class="pl-btn is-primary" data-save-log disabled>' + ic('check') + 'Salvează contactul</button></div>' +
         '</section>' +
+        '</div>' +
+        '<div class="pl-pane"' + pane(l, 'details') + '>' +
         // details
-        '<details class="pl-card-sec pl-details"' + (d.detailsOpen ? ' open' : '') + ' data-section="details"><summary><h4>' + ic('pen') + 'Detalii</h4>' +
-          '<span class="pl-muted">' + esc([l.interest, l.value ? fmtLei(l.value) : '', l.email].filter(Boolean).join(' · ') || 'interes, valoare, email') + '</span></summary>' +
+        '<section class="pl-card-sec pl-details" data-section="details"><div class="pl-sec-head"><h4>' + ic('pen') + 'Detalii</h4><span class="pl-muted">se salvează cu butonul de jos</span></div>' +
           '<form class="pl-form" data-form="details" autocomplete="off"><div class="pl-grid">' +
             field('Nume', '<input name="name" required maxlength="150" value="' + esc(l.name) + '">', 'full') +
             field('Telefon', '<input name="phone" type="tel" required maxlength="30" value="' + esc(l.phone) + '">') +
@@ -895,13 +911,16 @@
           '</div><div class="pl-form-actions"><button type="submit" class="pl-btn is-primary" data-save-details disabled>' + ic('check') + 'Salvează detaliile</button></div></form>' +
           // after all the details: what she answered in the Facebook form
           ((l.forms || []).length ? '<div class="pl-details-form"><h5>' + ic('facebook') + 'Răspunsuri din formularul Facebook</h5>' + qaHtml(l.forms[l.forms.length - 1]) + '</div>' : '') +
-        '</details>' +
+        '</section>' +
+        '</div>' +
+        '<div class="pl-pane"' + pane(l, 'history') + '>' +
         // note + timeline
         '<section class="pl-card-sec" data-section="timeline">' +
           '<div class="pl-sec-head"><h4>' + ic('note') + 'Istoric</h4><span class="pl-muted">' + (l.activities || []).length + ' evenimente</span></div>' +
           '<form class="pl-note" data-form="note"><textarea class="pl-input" name="text" rows="2" maxlength="1000" placeholder="Adaugă o notă… (Ctrl+Enter salvează)"></textarea><button type="submit" class="pl-btn is-ghost">Adaugă</button></form>' +
           '<ol class="pl-timeline">' + (l.activities || []).slice().reverse().map(activityHtml).join('') + '</ol>' +
         '</section>' +
+        '</div>' +
         '<footer class="pl-dfoot">' +
           (l.kind !== 'lost' && lostStage ? '<button type="button" class="pl-btn is-ghost is-sm is-danger-text" data-move="' + lostStage.id + '">' + ic('ban') + 'Marchează pierdut</button>' : '') +
           (S.ctx.isAdmin ? '<button type="button" class="pl-btn is-ghost is-sm is-danger-text" data-delete>' + ic('trash') + 'Șterge definitiv</button>' : '') +
@@ -966,12 +985,19 @@
     if (!l) return;
     const move = t.closest('[data-move]');
     if (move && move.dataset.move && move.dataset.move !== l.stage) return moveLead(l.id, move.dataset.move, null);
+    const lt = t.closest('[data-ltab]');
+    if (lt) {
+      d.tab = lt.dataset.ltab;
+      drawerEl().querySelectorAll('[data-ltab]').forEach((b) => { const on = b === lt; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
+      drawerEl().querySelectorAll('.pl-pane').forEach((p) => { p.hidden = p.dataset.pane !== d.tab; });
+      return;
+    }
     const sect = t.closest('[data-section-toggle]');
     if (sect) return showSection(sect.dataset.sectionToggle);
     const dial = t.closest('[data-dial]');
     if (dial) {
       d.channel = dial.dataset.dial;
-      setTimeout(() => { d.section = 'log'; renderDrawer(); const s = drawerEl().querySelector('[data-section="log"]'); s && s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+      setTimeout(() => { d.section = 'log'; d.tab = 'contact'; renderDrawer(); const s = drawerEl().querySelector('[data-section="log"]'); s && s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
       return;
     }
     const segBtn = t.closest('[data-seg] > button');

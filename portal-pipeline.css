@@ -252,6 +252,17 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-big-action.is-book .pl-ic{ background:var(--accent); color:var(--accent-fg); }
 .pl-big-action.is-on{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 
+/* the lead sheet in tabs: Contactare · Formular · Detalii · Istoric */
+.pl-tabs{ display:flex; gap:.25rem; padding:.25rem; border-radius:12px; background:var(--glass); border:1px solid var(--line); position:sticky; top:0; z-index:2; backdrop-filter:blur(8px); }
+.pl-tabs button{ flex:1; display:flex; align-items:center; justify-content:center; gap:.4rem; padding:.5rem .4rem; border:0; border-radius:9px; background:transparent; color:var(--muted); font:inherit; font-size:.82rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background-color .2s ease, color .2s ease, box-shadow .2s ease; }
+.pl-tabs button svg{ width:15px; height:15px; flex:none; }
+.pl-tabs button em{ font-style:normal; font-size:.7rem; padding:0 .4rem; border-radius:999px; background:var(--glass-2); color:var(--muted); }
+.pl-tabs button:hover{ color:var(--fg); }
+.pl-tabs button.is-on{ background:var(--paper); color:var(--fg); box-shadow:var(--shadow-sm), 0 0 0 1px var(--line); }
+.pl-pane{ display:flex; flex-direction:column; gap:.8rem; animation:plPane .22s var(--ease); }
+.pl-pane[hidden]{ display:none; }
+@keyframes plPane{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+@media (max-width:560px){ .pl-tabs button span{ display:none; } .pl-tabs button.is-on span{ display:inline; } }
 /* the Facebook form answers */
 .pl-form-meta{ margin:.6rem 0 0; font-size:.78rem; color:var(--muted); line-height:1.45; }
 .pl-qa{ display:flex; flex-direction:column; margin:.5rem 0 0; }
