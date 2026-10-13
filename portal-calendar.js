@@ -2,8 +2,8 @@
 // Week view (one column per day): click an empty slot to book, drag a block to move it (15-min snap,
 // across columns too), click a block for its drawer with one-tap status, call / WhatsApp confirmation
 // and "Încasează" straight into Încasări. Talks to /api/portal-appointments.
-// On a phone the day is a list (per city, free gaps to tap and book, a swipe for the next / previous
-// day, a round "+"); the grid is one tap away.
+// On a phone: the month always open on top (a dot under each day with bookings, a tap picks the
+// day, like LeadConnector), the day's grid under it, a round "+" to book.
 (function () {
   'use strict';
   const K = window.K;
@@ -24,9 +24,8 @@
   // Statuses the front desk picks by hand. "Finalizată" comes by itself when the appointment is paid
   // (Încasări); "Concediu" is a leave block created by an approved leave request.
   const PICK = ['programata', 'confirmata', 'reprogramata', 'anulata'];
-  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false, mode: 'list' };
+  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false };
   const phone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
-  const listMode = () => phone() && S.mode === 'list';
   let panel, gridEl, nowTimer = 0;
   // Front desk + owner edit the calendar; a cosmetician sees it read-only (server enforces the same).
   const canEdit = () => !!(K.frontDesk && K.frontDesk());
@@ -62,12 +61,10 @@
         '<button type="button" class="cal-title" data-act="month"><b data-title></b>' + icon('down') + '</button></div>' +
         '<div class="cal-bar-right"><select data-emp aria-label="Cosmeticiană">' + empFilterOptions() + '</select>' + (locked ? '' : K.seg('calloc', [['all', 'Ambele orașe'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.loc)) +
         K.seg('calonly', [['all', 'Toate'], ['confirmata', 'Doar confirmate']], S.only) +
-        K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) +
-        K.seg('calmode', [['list', 'Listă', 'listCheck'], ['grid', 'Grilă', 'calendar']], S.mode, 'cal-mode') + '</div>' +
+        K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) + '</div>' +
       '</div>' +
-      '<div class="cal-strip" data-strip hidden></div>' +
+      '<div class="cal-mbox" data-mbox hidden></div>' +
       '<div class="cal-summary" data-summary></div>' +
-      '<div class="cal-agenda" data-agenda hidden></div>' +
       '<div class="cal-wrap k-card"><div class="cal-grid" data-grid></div></div>' +
       (canEdit() ? '<button type="button" class="cal-fab" data-act="new" aria-label="Programare nouă">' + icon('plus') + '</button>' : '');
     gridEl = panel.querySelector('[data-grid]');
@@ -82,19 +79,9 @@
         render();
       }
       if (e.target.name === 'calonly') { S.only = e.target.value; render(true); }
-      if (e.target.name === 'calmode') { S.mode = e.target.value; if (S.mode === 'grid') S.view = 'day'; load(); }
       if (e.target.matches('[data-emp]')) { S.emp = e.target.value; render(true); }
     });
     gridEl.addEventListener('pointerdown', onPointerDown);
-    const ag = panel.querySelector('[data-agenda]');
-    let sx = null, sy = 0;
-    ag.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
-    ag.addEventListener('touchend', (e) => {
-      if (sx == null) return;
-      const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-      sx = null;
-      if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) { ag.classList.add(dx < 0 ? 'is-next' : 'is-prev'); setTimeout(() => ag.classList.remove('is-next', 'is-prev'), 260); shift(dx < 0 ? 1 : -1); }
-    }, { passive: true });
     document.addEventListener('keydown', onKey);
     K.everySecond((now) => { if (now.getSeconds() % 30 === 0 && K.isActive('programari')) placeNow(); });
   }
@@ -116,9 +103,11 @@
     else if (k === 's') setView('week');
   }
   function setView(v) { S.view = v; const seg = panel.querySelector('[data-k-seg="calview"]'); seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); seg.querySelector('input').value = v; load(); }
-  function shift(dir) { S.date = K.addDays(S.date, dir * (S.view === 'day' ? 1 : 7)); inWeek() ? (renderTitle(), render()) : load(); }
-  // the phone's list already has the whole week: moving inside it needs no reload
-  const inWeek = () => { if (!listMode() || !S.range) return false; const [a, b] = S.range.split('|'); return S.date >= a && S.date <= b; };
+  function shift(dir) { S.date = K.addDays(S.date, dir * (S.view === 'day' ? 1 : 7)); inRange() ? (renderTitle(), render()) : load(); }
+  // a phone has the whole month loaded: moving inside it needs no reload
+  const inRange = () => { if (!phone() || !S.range) return false; const [a, b] = S.range.split('|'); return S.date >= a && S.date <= b; };
+  // a day picked in the month on top (the next / previous month from its arrows)
+  function pickDay(d) { S.date = d; inRange() ? (renderTitle(), render()) : load(); }
 
   function onClick(e) {
     const act = e.target.closest('[data-act]');
@@ -128,10 +117,16 @@
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
       if (a === 'next') return shift(1);
-      if (a === 'month') return openMonth(act);
+      if (a === 'month') return phone() ? null : openMonth(act); // a phone has the month open on top
     }
-    const sday = e.target.closest('[data-sday]');
-    if (sday) { S.date = sday.dataset.sday; renderTitle(); return render(); }
+    const mday = e.target.closest('[data-mday]');
+    if (mday) return pickDay(mday.dataset.mday);
+    const mm = e.target.closest('[data-mmonth]');
+    if (mm) {
+      // another month: its first day (today, when it's this month)
+      const m = K.addMonths(S.date.slice(0, 7), +mm.dataset.mmonth);
+      return pickDay(m === K.today().slice(0, 7) ? K.today() : m + '-01');
+    }
     const row = e.target.closest('[data-open]');
     if (row) return openAppt(row.dataset.open);
     const gap = e.target.closest('[data-gap]');
@@ -142,7 +137,9 @@
 
   // ------------------------------------------------------------------ data
   function rangeFor() {
-    if (S.view === 'day' && !listMode()) return [S.date, S.date];
+    // a phone: the whole month (the month on top shows which days have bookings)
+    if (phone()) { const m = S.date.slice(0, 7); return [m + '-01', m + '-' + K.pad(K.daysIn(m))]; }
+    if (S.view === 'day') return [S.date, S.date];
     const mon = K.mondayOf(S.date);
     return [mon, K.addDays(mon, 6)];
   }
@@ -175,25 +172,14 @@
 
   function render(keepScroll) {
     if (!gridEl) return;
-    const agenda = panel.querySelector('[data-agenda]');
-    const strip = panel.querySelector('[data-strip]');
-    panel.classList.toggle('is-list', listMode());
-    strip.hidden = !listMode();
-    if (listMode()) {
-      strip.innerHTML = stripHtml();
-      const vis = S.appts.filter((a) => a.date === S.date && (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
-        (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
-      renderSummary(vis);
-      agenda.hidden = false;
-      agenda.innerHTML = agendaHtml(vis);
-      return;
-    }
-    agenda.hidden = true;
+    const mbox = panel.querySelector('[data-mbox]');
+    mbox.hidden = !phone();
+    if (phone()) mbox.innerHTML = monthHtml();
     const prevScroll = gridEl.parentElement.scrollTop;
     const cols = columns();
     const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
       (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
-    renderSummary(visible);
+    renderSummary(phone() ? visible.filter((a) => a.date === S.date) : visible); // a phone has the month loaded: the day's numbers
     const H = (END - START) * 60 * PPM;
     const hours = Array.from({ length: END - START + 1 }, (_, i) => START + i);
     const today = K.today();
@@ -227,50 +213,22 @@
   // ------------------------------------------------------------------ the phone list (one day)
   // Per city: each appointment as a row (time, client, treatment and price, who does it, status), the
   // free gaps of the working day between them (tap = book there), the "now" line on today.
-  // the week on a phone: each day with how many bookings it has (cancelled ones and leave don't count)
-  function stripHtml() {
-    const mon = K.mondayOf(S.date), today = K.today();
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = K.addDays(mon, i);
-      const n = S.appts.filter((a) => a.date === d && a.status !== 'anulata' && a.status !== 'concediu' &&
-        (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp)).length;
-      return '<button type="button" class="cal-strip-day' + (d === S.date ? ' is-on' : '') + (d === today ? ' is-today' : '') + '" data-sday="' + d + '">' +
-        '<span>' + K.DOW_S[K.parse(d).getDay()] + '</span><b>' + K.parse(d).getDate() + '</b><i>' + (n || '') + '</i></button>';
-    }).join('');
-  }
-  function agendaHtml(list) {
-    const today = S.date === K.today();
-    const nowM = new Date().getHours() * 60 + new Date().getMinutes();
-    const cities = S.loc === 'all' ? LOCS : [S.loc];
-    const row = (a) => {
-      const st = STATUS[a.status] || STATUS.programata;
-      const past = today ? endMin(a) != null && endMin(a) < nowM : S.date < K.today();
-      return '<button type="button" class="cal-ag-row is-' + a.status + (past ? ' is-past' : '') + '" data-open="' + esc(a.id) + '">' +
-        '<span class="cal-ag-time"><b>' + esc(a.time || '-') + '</b>' + (toMin(a.endTime) > toMin(a.time) ? '<small>' + esc(a.endTime) + '</small>' : '') + '</span>' +
-        '<span class="cal-ag-body"><b>' + esc(a.clientName || '-') + '</b>' +
-          '<small>' + esc([a.treatment, a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
-          '<span class="cal-ag-meta"><span class="k-tag is-' + st.tone + '">' + esc(st.label) + '</span>' + (a.cosmeticianName ? '<span class="cal-ag-who">' + esc(a.cosmeticianName) + '</span>' : '') + '</span></span>' +
-        icon('right') + '</button>';
-    };
-    const gap = (from, to, loc) => (to - from >= 30 && canEdit() && !(today && to <= nowM) && S.date >= K.today()
-      ? '<button type="button" class="cal-ag-gap" data-gap="' + toHM(Math.max(from, today ? Math.ceil(nowM / 15) * 15 : from)) + '|' + esc(loc) + '">' + icon('plus') + 'Liber ' + toHM(Math.max(from, today ? Math.ceil(nowM / 15) * 15 : from)) + ' - ' + toHM(to) + '</button>' : '');
-    const html = cities.map((loc) => {
-      const mine = list.filter((a) => a.location === loc).sort((x, y) => (toMin(x.time) ?? 9999) - (toMin(y.time) ?? 9999));
-      const live = mine.filter((a) => a.status !== 'anulata');
-      let out = '', cursor = START * 60, nowPut = !today;
-      for (const a of mine) {
-        const s = toMin(a.time);
-        if (s != null && a.status !== 'anulata' && s > cursor) out += gap(cursor, s, loc);
-        if (!nowPut && s != null && s > nowM) { out += '<div class="cal-ag-now"><span>' + toHM(nowM) + '</span></div>'; nowPut = true; }
-        out += row(a);
-        if (s != null && a.status !== 'anulata') cursor = Math.max(cursor, endMin(a));
-      }
-      if (!nowPut && nowM < END * 60) out += '<div class="cal-ag-now"><span>' + toHM(nowM) + '</span></div>';
-      out += gap(cursor, END * 60, loc);
-      return '<section class="cal-ag-city">' + (cities.length > 1 ? '<h4>' + icon('pin') + esc(loc) + '<em>' + live.length + '</em></h4>' : '') +
-        (mine.length ? out : '<div class="cal-ag-empty">Nicio programare' + (canEdit() && S.date >= K.today() ? '<button type="button" class="k-btn is-sm is-outline" data-gap="10:00|' + esc(loc) + '">' + icon('plus') + 'Programează</button>' : '') + '</div>') + '</section>';
-    }).join('');
-    return html;
+  // the month on a phone: each day with a dot (how many bookings, cancelled ones and leave don't
+  // count), the picked day lit, today in the accent colour
+  function monthHtml() {
+    const m = S.date.slice(0, 7), first = K.parse(m + '-01'), lead = (first.getDay() + 6) % 7, days = K.daysIn(m), today = K.today();
+    const count = {};
+    S.appts.forEach((x) => { if (x.status !== 'anulata' && x.status !== 'concediu' && (S.loc === 'all' || x.location === S.loc) && (!S.emp || x.cosmeticianId === S.emp)) count[x.date] = (count[x.date] || 0) + 1; });
+    const cells = [];
+    for (let i = 0; i < lead; i++) cells.push('<span></span>');
+    for (let d = 1; d <= days; d++) {
+      const iso = m + '-' + K.pad(d), n = count[iso] || 0;
+      cells.push('<button type="button" data-mday="' + iso + '" class="' + (iso === S.date ? 'is-sel ' : '') + (iso === today ? 'is-today' : '') + '">' +
+        '<b>' + d + '</b><i>' + (n ? (n > 9 ? '9+' : n) : '') + '</i></button>');
+    }
+    return '<div class="cal-mbox-head"><button type="button" class="k-icon-btn" data-mmonth="-1" aria-label="Luna trecută">' + icon('left') + '</button>' +
+      '<b>' + K.monthLabel(m) + '</b><button type="button" class="k-icon-btn" data-mmonth="1" aria-label="Luna viitoare">' + icon('right') + '</button></div>' +
+      '<div class="cal-mbox-grid">' + ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((x) => '<em>' + x + '</em>').join('') + cells.join('') + '</div>';
   }
 
   // Overlapping appointments share the column width (simple lane packing).
