@@ -1,4 +1,4 @@
-// Centrul360 portal - Admin → Formulare: every Facebook lead form of the connected Page in one
+// Centrul360 portal - Admin → Integrări → Formulare Facebook: every Facebook lead form of the connected Page in one
 // place. Per form: whether it's active, how many leads it brought (on Facebook and in the
 // Pipeline), when the last one came, the procedure and city its leads get (set here, or read
 // from the form's name), its questions as written in the form, and a jump to its leads.
@@ -10,12 +10,12 @@
   const F = { d: null, q: '', show: 'active', open: null, limit: 40 };
   let panel;
 
+  // mounted inside Integrări (its "Formulare Facebook" tab, see portal-admin.js)
   function mount(p) {
     panel = p;
-    panel.classList.add('k-panel', 'fm');
+    panel.classList.add('fm');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Formulare</h2><p class="k-lede">Formularele de lead din Facebook: procedura și orașul cu care intră leadurile fiecăruia, întrebările și leadurile primite.</p></div>' +
-      '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="reload">' + icon('refresh') + 'Actualizează</button></div></div>' +
+      '<p class="k-muted fm-lede">Procedura și orașul cu care intră leadurile fiecărui formular, întrebările lui și leadurile primite.</p>' +
       '<div data-body><div class="k-skel" style="height:120px;margin-bottom:1rem"></div><div class="k-skel" style="height:360px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);
@@ -43,13 +43,14 @@
     const active = all.filter((f) => !f.status || f.status === 'ACTIVE').length;
     const withLeads = all.filter((f) => f.leads).length;
     if (!all.length) {
-      panel.querySelector('[data-body]').innerHTML = K.empty('facebook', 'Niciun formular încă', 'Formularele apar aici la un minut după ce Facebook e conectat (Integrări → Facebook).', '<button type="button" class="k-btn is-primary" data-act="integrari">Integrări</button>');
+      panel.querySelector('[data-body]').innerHTML = K.empty('facebook', 'Niciun formular încă', 'Formularele apar aici la un minut după ce Facebook e conectat (Integrări → Facebook).', '<button type="button" class="k-btn is-primary" data-act="integrari">Conexiunea Facebook</button>');
       return;
     }
     panel.querySelector('[data-body]').innerHTML =
       '<div class="fm-bar"><label class="fm-search">' + icon('search') + '<input data-q type="search" placeholder="Caută un formular…" value="' + esc(F.q) + '"></label>' +
         '<div class="k-chips">' + [['active', 'Active', active], ['leads', 'Cu leaduri în portal', withLeads], ['archived', 'Arhivate', all.length - active], ['all', 'Toate', all.length]]
-          .map(([k, l, n]) => '<button type="button" class="k-chip' + (F.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + n + '</span></button>').join('') + '</div></div>' +
+          .map(([k, l, n]) => '<button type="button" class="k-chip' + (F.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + n + '</span></button>').join('') + '</div>' +
+        '<button type="button" class="k-icon-btn fm-reload" data-act="reload" title="Actualizează">' + icon('refresh') + '</button></div>' +
       '<div class="fm-list" data-list></div>';
     paintList();
   }
@@ -84,7 +85,7 @@
   async function onClick(e) {
     const t = e.target;
     if (t.closest('[data-act="reload"]')) return load();
-    if (t.closest('[data-act="integrari"]')) return K.go('integrari');
+    if (t.closest('[data-act="integrari"]')) return K.emit('integrari:int');
     const sh = t.closest('[data-show]');
     if (sh) { F.show = sh.dataset.show; F.limit = 40; return render(); }
     if (t.closest('[data-more]')) { F.limit += 40; return paintList(); }
@@ -116,5 +117,5 @@
     } catch (err) { K.ui().toast(K.errText(err), 'error'); }
   }
 
-  K.section('formulare', { mount, show: load });
+  window.C360Forms = { mount, load, isMounted: () => !!panel };
 })();

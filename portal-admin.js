@@ -634,14 +634,33 @@
   // INTEGRĂRI
   // =====================================================================================
   let ipanel;
+  const I = { tab: 'int' };
   function mountIntegrations(p) {
     ipanel = p;
     ipanel.classList.add('k-panel', 'st');
-    ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Integrări</h2><p class="k-lede">Ce e conectat la portal: leadurile din Facebook, WhatsApp, Creative și site-ul.</p></div></div><div data-body></div>';
+    ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Integrări</h2><p class="k-lede">Ce e conectat la portal: leadurile din Facebook, WhatsApp, Creative și site-ul.</p></div></div>' +
+      '<div class="st-tabs">' + K.seg('intab', [['int', 'Integrări', 'layers'], ['forms', 'Formulare Facebook', 'file']], I.tab) + '</div>' +
+      '<div data-pane="int"><div data-int-body></div></div><div data-pane="forms" hidden></div>';
+    ipanel.addEventListener('change', (e) => { if (e.target.name === 'intab') setTab(e.target.value); });
   }
-  function renderIntegrations() {
+  // two tabs: the connections, and the Facebook lead forms (portal-forms.js)
+  function setTab(t) {
+    I.tab = t === 'forms' ? 'forms' : 'int';
     if (!ipanel) return;
-    const body = ipanel.querySelector('[data-body]');
+    ipanel.querySelectorAll('[data-k-seg="intab"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === I.tab));
+    ipanel.querySelector('[data-k-seg="intab"] input').value = I.tab;
+    ipanel.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== I.tab; });
+    if (I.tab === 'forms' && window.C360Forms) {
+      const pane = ipanel.querySelector('[data-pane="forms"]');
+      if (!window.C360Forms.isMounted()) window.C360Forms.mount(pane);
+      window.C360Forms.load();
+    } else renderIntegrations();
+  }
+  K.on('integrari:forms', () => setTab('forms'));
+  K.on('integrari:int', () => setTab('int'));
+  function renderIntegrations() {
+    if (!ipanel || I.tab !== 'int') return;
+    const body = ipanel.querySelector('[data-int-body]');
     body.innerHTML = '<div class="st-integrations">' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Mesajele clientelor în „Mesaje” și trimiterea automată a confirmărilor și a reminderelor.</span></div></div><div data-wa><div class="k-skel" style="height:44px"></div></div></section>' +
@@ -681,7 +700,7 @@
         (st[0] === 'is-ok' ? '<button type="button" class="k-btn is-ghost is-sm" data-goto="reclame">Deschide' + icon('arrow') + '</button>' : '') + '</div>' +
       '<details class="st-fb-manual"' + (needs ? ' open' : '') + '><summary>' + (a.set ? 'Schimbă tokenul pentru reclame' : 'Lipește tokenul pentru reclame') + '</summary>' +
         '<form class="st-manual" data-adstoken><textarea name="t" rows="3" placeholder="Token de System User (nu expiră) sau User Access Token cu ads_management" autocomplete="off"></textarea>' +
-        '<small class="k-muted">Cel mai bun: Business Settings → Utilizatori de sistem → Generează token, aplicația Centrul360 ADMIN, cu ads_management, ads_read, pages_show_list, pages_read_engagement, leads_retrieval. Contul de reclame și Pagina trebuie atribuite utilizatorului de sistem.</small>' +
+        '<small class="k-muted">Din Graph API Explorer: aplicația Centrul360 ADMIN, cu ads_management, ads_read, business_management, pages_show_list, pages_read_engagement, leads_retrieval. Portalul îl face de 60 de zile. Unul de System User nu expiră deloc.</small>' +
         '<button type="submit" class="k-btn is-primary is-sm">Salvează tokenul</button></form></details>';
   }
   const FB_ERR = { login_expired: 'Logarea a expirat. Apasă din nou „Conectează cu Facebook”.', page_not_found: 'Pagina nu mai e disponibilă. Loghează-te din nou.',
@@ -781,7 +800,6 @@
         '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
           (got.length ? got.slice(0, 3).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
             : '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>') + '</div>' +
-        '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-goto="formulare">' + icon('file') + 'Formulare' + (poll.forms ? ' (' + poll.forms + ' active)' : '') + icon('arrow') + '</button></div>' +
         adsRow(d.ads) +
         '<details class="st-fb-settings"><summary>' + icon('sliders') + 'Setări conexiune</summary>' +
           '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
@@ -875,7 +893,7 @@
     });
     addApp();
   }
-  K.section('integrari', { mount: mountIntegrations, show: renderIntegrations });
+  K.section('integrari', { mount: mountIntegrations, show() { setTab(I.tab); } });
 
   // Facebook redirects back to /portal?fb=connected|error after OAuth.
   (function fbReturn() {

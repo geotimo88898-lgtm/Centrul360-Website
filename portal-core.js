@@ -48,7 +48,7 @@
   K.commissionRule = () => ({ cost: costShare(), rate: upRate() });
 
   // Old links / bookmarks keep working.
-  const ALIASES = { incasare: ['incasari', 'incasari:new'], fise: ['traininguri', 'academy:print'], resurse: ['traininguri'], setari: ['integrari'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'], contacts: ['contacte'] };
+  const ALIASES = { incasare: ['incasari', 'incasari:new'], fise: ['traininguri', 'academy:print'], resurse: ['traininguri'], setari: ['integrari'], formulare: ['integrari', 'integrari:forms'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'], contacts: ['contacte'] };
 
   let DATA = null, first = true;
   let rev = null, pendingRemote = false; // live-sync revision (see "live sync" below)
