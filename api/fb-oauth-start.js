@@ -5,20 +5,23 @@
 // Uses the Meta app saved in Integrări → Facebook (or FB_APP_ID in Vercel). Until there is one
 // this just responds 400, no crash, no redirect to a broken URL. With a "Facebook Login for
 // Business" configuration ID saved, the dialog asks for that configuration instead of scopes.
+// ?for=wa: the WhatsApp login (Integrări → WhatsApp → "Conectează"), with the WhatsApp permissions
+// (its own configuration, saved with the numbers); the callback keeps the token for the numbers.
 
 const crypto = require('crypto');
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON } = require('./_lib/store');
 const { siteOrigin, GRAPH_VERSION, appCreds } = require('./_lib/facebook');
+const WA = require('./_lib/whatsapp');
 
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes is plenty for an admin to complete the dialog
 
 // Signs "<expiry>.<nonce>" with PORTAL_SECRET (the same secret that signs the portal's
 // session cookie, see _lib/auth.js) so fb-oauth-callback can verify the `state` it gets
 // back from Facebook wasn't forged, without needing any server-side storage for it.
-function signState(secret) {
+function signState(secret, purpose) {
   const nonce = crypto.randomBytes(16).toString('hex');
-  const payload = Buffer.from(`${Date.now() + STATE_TTL_MS}.${nonce}`, 'utf8').toString('base64url');
+  const payload = Buffer.from(`${Date.now() + STATE_TTL_MS}.${nonce}${purpose ? '.' + purpose : ''}`, 'utf8').toString('base64url');
   const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   return `${payload}.${sig}`;
 }
@@ -39,12 +42,17 @@ module.exports = async (req, res) => {
     return;
   }
 
+  const forWa = (req.query || {}).for === 'wa';
   const secret = process.env.PORTAL_SECRET || '';
-  const state = signState(secret);
+  const state = signState(secret, forWa ? 'wa' : '');
   const redirectUri = `${siteOrigin(req)}/api/fb-oauth-callback`;
 
   const params = new URLSearchParams({ client_id: appId, redirect_uri: redirectUri, state, response_type: 'code' });
-  if (creds.configId) { params.set('config_id', creds.configId); params.set('override_default_response_type', 'true'); }
+  if (forWa) {
+    const wa = (await readJSON(WA.CONFIG_KEY, null)) || {};
+    if (wa.loginConfigId) { params.set('config_id', wa.loginConfigId); params.set('override_default_response_type', 'true'); }
+    else params.set('scope', 'whatsapp_business_management,whatsapp_business_messaging,business_management');
+  } else if (creds.configId) { params.set('config_id', creds.configId); params.set('override_default_response_type', 'true'); }
   else params.set('scope', 'pages_show_list,leads_retrieval,pages_manage_metadata,pages_read_engagement,pages_manage_ads,ads_management,ads_read,business_management');
 
   res.setHeader('Cache-Control', 'no-store');

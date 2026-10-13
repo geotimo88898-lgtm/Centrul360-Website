@@ -2,7 +2,10 @@
 // (Integrări → Șabloane WhatsApp). Tokens are kept on the server and never sent back.
 //   GET                                         the numbers, the templates (read again from Meta every few minutes)
 //   POST { action: 'discover', city, token? }   the numbers this token can use (to pick Timișoara's / Arad's)
-//   POST { action: 'connect', city, token?, wabaId, phoneId }
+//   POST { action: 'connect', city, token?, wabaId, phoneId, pin? }   also sets Meta up (webhook,
+//                                                our app on the account, the number live on the Cloud API)
+//   POST { action: 'login_config', configId }   the "Facebook Login for Business" configuration with the
+//                                                WhatsApp permissions ("Conectează cu Facebook", once)
 //   POST { action: 'disconnect', city }
 //   POST { action: 'app_save', appId, appSecret?, configId }   the WhatsApp app, for connecting from the phone's app
 //   POST { action: 'coex', city, code, wabaId, phoneId? }      a number connected from the WhatsApp Business app
@@ -16,7 +19,8 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const WA = require('./_lib/whatsapp');
 const T = require('./_lib/wa-templates');
-const { appCreds } = require('./_lib/facebook');
+const { appCreds, siteOrigin } = require('./_lib/facebook');
+const WC = require('./_lib/wa-connect');
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
 const okId = (v) => /^\d{5,25}$/.test(String(v || ''));
@@ -50,8 +54,12 @@ async function payload(forceSync) {
   });
   // what the browser needs to open Meta's window (the App ID and configuration are public, the secret isn't)
   const app = { appId: cfg.app.appId, configId: cfg.app.configId, secretSaved: !!cfg.app.appSecret };
+  // the Facebook login for WhatsApp: the app, its configuration, how the token came
+  const raw = (await readJSON(WA.CONFIG_KEY, null)) || {};
+  const creds = await appCreds(readJSON);
+  const login = { appReady: !!(creds.appId && creds.appSecret), configId: raw.loginConfigId || '', via: raw.tokenVia || (cfg.token ? 'paste' : ''), at: raw.tokenAt || '' };
   return {
-    ok: true, numbers, app, tokenSaved: !!cfg.token, ready: WA.readyNumbers(cfg).length > 0,
+    ok: true, numbers, app, login, tokenSaved: !!cfg.token, ready: WA.readyNumbers(cfg).length > 0,
     templates: d.templates.map((t) => Object.assign(T.view(t, cfg), { usedIn: used[t.id] || [] })).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
     vars: T.VARS, sample: T.SAMPLE, syncedAt: d.syncedAt, syncError: d.syncError,
   };
@@ -101,15 +109,33 @@ module.exports = async (req, res) => {
       if (!okId(body.phoneId) || !okId(body.wabaId)) { res.status(400).json({ error: 'invalid_ids', message: 'Alege numărul din listă.' }); return; }
       const r = await graph(token, '/' + body.phoneId, { fields: 'display_phone_number,verified_name' });
       if (!r.ok) { res.status(400).json({ error: 'meta_refused', message: 'Meta: ' + r.error }); return; }
+      // what HighLevel does behind its button: Meta sends us the clients' messages, our app listens to
+      // the account, the number is live (nothing is called connected before all of it worked)
+      const hook = await WC.ensureWebhook({ readJSON, writeJSON }, siteOrigin(req));
+      if (hook.error) { res.status(400).json({ error: 'webhook_failed', message: hook.error }); return; }
+      const setup = await WC.setupNumber({ token, wabaId: String(body.wabaId), phoneId: String(body.phoneId), pin: clip(body.pin, 6) });
+      if (setup.needsPin) { res.status(409).json({ error: 'needs_pin', message: setup.error }); return; }
+      if (setup.error) { res.status(400).json({ error: 'setup_failed', message: setup.error }); return; }
       const c = (await readJSON(WA.CONFIG_KEY, null)) || {};
       c.numbers = c.numbers || {};
       const pasted = clip(body.token, 600).trim();
-      if (pasted && !c.token) c.token = pasted;                 // the first token becomes the shared one
-      c.numbers[city] = { phoneId: String(body.phoneId), wabaId: String(body.wabaId), display: r.j.display_phone_number || '', name: r.j.verified_name || '',
-        token: pasted && c.token !== pasted ? pasted : '', connectedAt: new Date().toISOString() };
+      if (pasted && !c.token) { c.token = pasted; c.tokenVia = 'paste'; c.tokenAt = new Date().toISOString(); } // the first token becomes the shared one
+      const prevPin = (c.numbers[city] && c.numbers[city].pin) || '';
+      c.numbers[city] = { phoneId: String(body.phoneId), wabaId: String(body.wabaId), display: r.j.display_phone_number || setup.display, name: r.j.verified_name || setup.name,
+        token: pasted && c.token !== pasted ? pasted : '', pin: setup.pin || prevPin, connectedAt: new Date().toISOString() };
       await writeJSON(WA.CONFIG_KEY, c);
       WA.invalidate();
       res.status(200).json(await payload(true));
+      return;
+    }
+    if (a === 'login_config') {
+      const id = String(body.configId || '').trim();
+      if (!/^\d{6,25}$/.test(id)) { res.status(400).json({ error: 'invalid_config', message: 'ID-ul configurației are doar cifre.' }); return; }
+      const c = (await readJSON(WA.CONFIG_KEY, null)) || {};
+      c.loginConfigId = id;
+      await writeJSON(WA.CONFIG_KEY, c);
+      WA.invalidate();
+      res.status(200).json(await payload(false));
       return;
     }
     if (a === 'disconnect') {

@@ -1,13 +1,12 @@
 // /api/webhook-whatsapp - Meta calls this directly, no portal auth (same shape as
 // api/webhook-facebook-leads.js, see that file's header comment for the general pattern).
 //
-// GET  -> Meta's one-time webhook verification handshake (WHATSAPP_WEBHOOK_VERIFY_TOKEN).
+// GET  -> Meta's webhook verification handshake: the verify token the portal made when a number was
+//         connected (data/whatsapp-config.json, see _lib/wa-connect.js), or WHATSAPP_WEBHOOK_VERIFY_TOKEN.
 // POST -> inbound client messages + delivery/read status updates for the WhatsApp Cloud API.
-//         Body signature is verified against the RAW bytes (HMAC-SHA256 with
-//         WHATSAPP_APP_SECRET, a DIFFERENT Meta app than the one FB_APP_SECRET belongs to,
-//         since WhatsApp lives in its own "Centrul 360 WhatsApp" app, not the Facebook Login
-//         app used for lead ads). Automatic JSON body parsing is disabled below so the raw
-//         bytes are available for the signature check.
+//         Body signature is verified against the RAW bytes (HMAC-SHA256) with our Meta app's secret
+//         (Integrări → Facebook, the app that now also connects WhatsApp) or WHATSAPP_APP_SECRET.
+//         Automatic JSON body parsing is disabled below so the raw bytes are available for the check.
 //
 // A number connected from the WhatsApp Business app (coexistence, see _lib/whatsapp.js) also sends:
 //   message_echoes  what reception wrote from the phone's app -> an outgoing message here
@@ -21,6 +20,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { normalizePhone } = require('./_lib/clients');
 const { sendPush } = require('./_lib/push');
+const { appCreds } = require('./_lib/facebook');
 
 module.exports.config = { api: { bodyParser: false } };
 
@@ -208,8 +208,9 @@ function handleStatusUpdate(conversations, status) {
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query || {};
-    const expected = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-    if (!expected || mode !== 'subscribe' || token !== expected) {
+    const saved = ((await readJSON('data/whatsapp-config.json', null)) || {}).verifyToken;
+    const expected = [saved, process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN].filter(Boolean);
+    if (!expected.length || mode !== 'subscribe' || !expected.includes(token)) {
       res.status(403).send('forbidden');
       return;
     }
@@ -230,19 +231,20 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // the WhatsApp app's secret, saved in Integrări or set in Vercel (either one may have signed it)
-  const secrets = await require('./_lib/whatsapp').webhookSecrets().catch(() => [process.env.WHATSAPP_APP_SECRET].filter(Boolean));
-  const signatureHeader = req.headers['x-hub-signature-256'];
-  if (secrets.length) {
-    if (!secrets.some((sec) => isValidSignature(rawBody, signatureHeader, sec))) {
+  // Who may have signed it: the WhatsApp app (saved in Integrări or WHATSAPP_APP_SECRET in Vercel) or
+  // our Meta app (Integrări → Facebook), which connects numbers through the Facebook login. Once a
+  // WhatsApp app is saved, a delivery none of them signed is refused; before that, one they can't
+  // check is still taken (a number wired through another app keeps its messages coming in).
+  const waSecrets = await require('./_lib/whatsapp').webhookSecrets().catch(() => [process.env.WHATSAPP_APP_SECRET].filter(Boolean));
+  const creds = await appCreds(readJSON).catch(() => ({}));
+  const secrets = waSecrets.concat(creds && creds.appSecret ? [creds.appSecret] : []);
+  const signed = secrets.some((sec) => isValidSignature(rawBody, req.headers['x-hub-signature-256'], sec));
+  if (!signed) {
+    if (waSecrets.length) {
       res.status(403).json({ error: 'invalid_signature' });
       return;
     }
-  } else {
-    // TEMPORARY / INSECURE FALLBACK: WHATSAPP_APP_SECRET isn't set yet on this deployment
-    // (the WhatsApp app's own App Secret, separate from FB_APP_SECRET). Skip verification
-    // rather than 500ing on every delivery, set the env var to close this gap.
-    console.warn('webhook-whatsapp: WHATSAPP_APP_SECRET not set, skipping signature verification (insecure, temporary)');
+    console.warn('webhook-whatsapp: signature not checked (no saved secret matches the sending app)');
   }
 
   // Process fully BEFORE responding - Vercel can freeze/tear down the function the instant
