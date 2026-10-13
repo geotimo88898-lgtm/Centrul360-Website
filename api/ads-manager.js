@@ -5,6 +5,10 @@
 //   POST { action: 'budget', id, daily }      daily budget in lei (an ad set, or a campaign with its own budget)
 //   POST { action: 'rename', id, name }
 //   POST { action: 'delete', id }
+//   POST { action: 'details', campaignId }        its ad sets (audience, budget) and ads (texts, images)
+//   POST { action: 'edit_ad', adId, texts, headlines, descriptions, cta, formId }
+//   POST { action: 'edit_adset', adsetId, budget, ageMin, ageMax, women, radiusKm, placements }
+//   GET  ?media=<link>                       an ad's picture, to save it
 //   POST { action: 'defaults', defaults }     what the "Publică pe Meta" window starts with
 // The Meta side lives in _lib/meta-ads.js.
 
@@ -13,6 +17,7 @@ const { requireAdmin } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
 const ads = require('./_lib/meta-ads');
 const { funnel } = require('./_lib/ads-funnel');
+const edit = require('./_lib/ads-edit');
 
 // after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad
 async function withFunnel(view, period, range) {
@@ -67,6 +72,15 @@ module.exports = async (req, res) => {
   try {
     const { conn, problem } = await connection();
     const defaults = await ads.loadDefaults(readJSON);
+    // a picture of an ad, to save it (?media=<Meta link>)
+    if (req.method === 'GET' && req.query && req.query.media) {
+      const m = await edit.media(req.query.media);
+      if (m.error) { res.status(400).json({ error: m.error }); return; }
+      res.setHeader('Content-Type', m.type);
+      res.setHeader('Content-Disposition', 'attachment; filename="reclama.' + (m.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg') + '"');
+      res.status(200).send(m.buf);
+      return;
+    }
     if (req.method === 'GET') {
       if (problem) { res.status(200).json({ ok: true, ready: false, reason: problem, message: REASONS[problem], defaults }); return; }
       const period = ads.PERIODS[req.query && req.query.period] ? req.query.period : '7d';
@@ -94,6 +108,19 @@ module.exports = async (req, res) => {
       return;
     }
     if (problem) { res.status(400).json({ error: problem, message: REASONS[problem] }); return; }
+    // Previzualizare / Editează a running campaign
+    if (body.action === 'details') {
+      const d = await edit.details(conn, body.campaignId);
+      if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }
+      res.status(200).json(d);
+      return;
+    }
+    if (body.action === 'edit_ad' || body.action === 'edit_adset') {
+      const r = body.action === 'edit_ad' ? await edit.editAd(conn, body) : await edit.editAdset(conn, body);
+      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      res.status(200).json(r);
+      return;
+    }
     const r = await ads.act(conn, body);
     if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
     res.status(200).json({ ok: true });

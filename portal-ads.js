@@ -227,9 +227,10 @@
   }
   function budgetCell(x, kind) {
     const val = x.daily ? money(x.daily) : x.lifetime ? money(x.lifetime) + ' total' : '-';
-    const editable = (kind === 'adset' && !!x.daily) || (kind === 'campaign' && x.cbo);
+    const one = kind === 'campaign' && !x.cbo && x.adsets && x.adsets.length === 1 && x.adsets[0].daily ? x.adsets[0] : null;
+    const editable = (kind === 'adset' && !!x.daily) || (kind === 'campaign' && (x.cbo || one));
     return editable
-      ? '<span class="ad-budget" data-budget-box data-id="' + esc(x.id) + '"><button type="button" class="ad-budget-btn" data-budget-edit title="Schimbă bugetul">' + esc(val) + icon('pen') + '</button></span>'
+      ? '<span class="ad-budget" data-budget-box data-id="' + esc(one ? one.id : x.id) + '"><button type="button" class="ad-budget-btn" data-budget-edit title="Schimbă bugetul">' + esc(val) + icon('pen') + '</button></span>'
       : '<span class="ad-budget">' + esc(val) + '</span>';
   }
   // the chosen columns of one row
@@ -244,37 +245,15 @@
     }).join('');
   }
   function campHtml(c) {
-    const open = A.open.has(c.id);
-    return '<article class="k-card ad-camp' + (open ? ' is-open' : '') + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
+    return '<article class="k-card ad-camp' + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
       '<div class="ad-row is-camp">' +
-        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + '<button type="button" class="ad-title" data-toggle="' + esc(c.id) + '"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
+        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + '<button type="button" class="ad-title" data-preview="' + esc(c.id) + '" title="Previzualizare"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
         cellsOf(c, 'campaign') +
-        '<div class="ad-acts"><button type="button" class="k-icon-btn" data-more="campaign" data-id="' + esc(c.id) + '" data-name="' + esc(c.name) + '" title="Mai mult">' + icon('more') + '</button>' +
-          '<button type="button" class="k-icon-btn ad-chev" data-toggle="' + esc(c.id) + '" aria-label="Seturile de reclame">' + icon(open ? 'up' : 'down') + '</button></div>' +
+        '<div class="ad-acts"><button type="button" class="k-icon-btn" data-preview="' + esc(c.id) + '" title="Previzualizare">' + icon('eye') + '</button>' +
+          '<button type="button" class="k-icon-btn" data-more="campaign" data-id="' + esc(c.id) + '" data-name="' + esc(c.name) + '" title="Mai mult">' + icon('more') + '</button></div>' +
       '</div>' +
-      (open ? '<div class="ad-sets">' + (c.adsets.length ? c.adsets.map((s) => setHtml(s, c)).join('') : '<p class="k-muted ad-empty">Campania n-are seturi de reclame.</p>') + '</div>' : '') +
       '</article>';
   }
-  function setHtml(s, c) {
-    return '<div class="ad-set' + (s.status === 'ACTIVE' ? '' : ' is-off') + '">' +
-      '<div class="ad-row is-set">' +
-        '<div class="ad-name">' + sw(s.id, s.status === 'ACTIVE', 'adset') + '<div class="ad-title"><b>' + esc(s.name) + '</b><small>' + tag(s.effective) + (s.audience && K.norm(s.audience) !== K.norm(s.name) ? ' ' + esc(s.audience) : '') + '</small></div></div>' +
-        cellsOf(s, 'adset', c) +
-        '<div class="ad-acts"><button type="button" class="k-icon-btn" data-more="adset" data-id="' + esc(s.id) + '" data-name="' + esc(s.name) + '" title="Mai mult">' + icon('more') + '</button></div>' +
-      '</div>' +
-      '<div class="ad-ads">' + (s.ads.length ? s.ads.map(adHtml).join('') : '<p class="k-muted ad-empty">Nicio reclamă în set.</p>') + '</div>' +
-      '</div>';
-  }
-  function adHtml(a) {
-    return '<div class="ad-row is-ad' + (a.status === 'ACTIVE' ? '' : ' is-off') + '">' +
-      '<div class="ad-name">' + sw(a.id, a.status === 'ACTIVE', 'ad') +
-        (a.thumb ? '<img class="ad-thumb" src="' + esc(a.thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="ad-thumb is-empty">' + icon('image') + '</span>') +
-        '<div class="ad-title"><b>' + esc(a.name) + '</b><small>' + tag(a.effective) + made(a, !!tag(a.effective)) + (a.review ? ' <span class="ad-review">' + esc(a.review) + '</span>' : '') + '</small></div></div>' +
-      cellsOf(a, 'ad') +
-      '<div class="ad-acts"><button type="button" class="k-icon-btn" data-more="ad" data-id="' + esc(a.id) + '" data-name="' + esc(a.name) + '" title="Mai mult">' + icon('more') + '</button></div>' +
-      '</div>';
-  }
-
   // ------------------------------------------------------------------ actions
   async function post(body) { return K.api('/api/ads-manager', body); }
   function findAny(id) {
@@ -382,6 +361,167 @@
     });
   }
 
+  // ------------------------------------------------------------------ Previzualizare / Editează
+  // A running campaign: what its ads say and show (each text and headline copied with one tap, the
+  // picture saved), and changing them: the words, the button, the form, the audience, the budget.
+  const CTA_RO = { LEARN_MORE: 'Află mai multe', SIGN_UP: 'Înscrie-te', BOOK_NOW: 'Rezervă acum', GET_OFFER: 'Obține oferta', APPLY_NOW: 'Aplică acum', GET_QUOTE: 'Solicită ofertă', CONTACT_US: 'Contactează-ne', SUBSCRIBE: 'Abonează-te', DOWNLOAD: 'Descarcă' };
+  let formsP = null;
+  // the lead forms (names for the ids), once
+  const forms = () => (formsP = formsP || K.api('/api/ads-publish?action=options').then((o) => o.forms || []).catch(() => []));
+  const details = (campaignId) => post({ action: 'details', campaignId });
+
+  // save the picture: the share sheet on a phone (→ Photos), a download on a computer
+  async function savePicture(url, btn) {
+    await K.busy(btn, async () => {
+      try {
+        const r = await fetch('/api/ads-manager?media=' + encodeURIComponent(url), { credentials: 'same-origin' });
+        if (!r.ok) throw new Error('Nu am putut lua imaginea de la Meta.');
+        const blob = await r.blob();
+        const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+        const file = new File([blob], 'reclama-centrul360.' + ext, { type: blob.type });
+        const phone = window.matchMedia('(max-width:720px)').matches || /iPhone|iPad|Android/i.test(navigator.userAgent);
+        if (phone && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }).catch(() => {}); return; }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = file.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      } catch (err) { K.ui().toast(err.message || K.errText(err), 'error'); }
+    });
+  }
+  const copyRow = (label, text) => '<div class="ad-pv-copy"><div class="ad-pv-copy-head"><small>' + esc(label) + '</small><button type="button" class="k-btn is-ghost is-sm" data-copy="' + esc(text) + '">' + icon('copy') + 'Copiază</button></div><p>' + esc(text) + '</p></div>';
+  const variants = (label, list) => list.map((t, i) => copyRow(list.length > 1 ? label + ' ' + (i + 1) : label, t)).join('');
+
+  async function openPreview(campaignId) {
+    const c = A.d.campaigns.find((x) => x.id === campaignId);
+    let d = null, list = [], at = 0;
+    const paint = (el) => {
+      const box = el.querySelector('[data-pv]');
+      if (!d) { box.innerHTML = '<div class="k-skel" style="height:320px"></div><div class="k-skel" style="height:140px"></div>'; return; }
+      if (!d.ads.length) { box.innerHTML = K.empty('image', 'Nicio reclamă', 'Campania n-are reclame.'); return; }
+      const a = d.ads[at];
+      const form = list.find((f) => f.id === a.formId);
+      box.innerHTML =
+        (d.ads.length > 1 ? '<div class="ad-pv-tabs">' + d.ads.map((x, i) => '<button type="button" class="k-chip' + (i === at ? ' is-on' : '') + '" data-pv-ad="' + i + '">' + esc(x.name) + '</button>').join('') + '</div>' : '') +
+        '<div class="ad-pv-media' + (a.images.length > 1 ? ' is-many' : '') + '">' + (a.images.length ? a.images.map((u) =>
+          '<figure><img src="' + esc(u) + '" alt="" referrerpolicy="no-referrer" loading="lazy"><button type="button" class="k-btn is-sm ad-pv-save" data-save-img="' + esc(u) + '">' + icon('download') + 'Descarcă</button></figure>').join('')
+          : '<div class="ad-pv-noimg">' + icon(a.video ? 'play' : 'image') + '<span>' + (a.video ? 'Reclamă video: o vezi în Ads Manager.' : 'Fără imagine') + '</span></div>') + '</div>' +
+        '<div class="ad-pv-texts">' + variants('Text principal', a.texts) + variants('Titlu', a.headlines) + variants('Descriere', a.descriptions) +
+          '<div class="ad-pv-meta"><span><small>Buton</small><b>' + esc(CTA_RO[a.cta] || a.cta || '-') + '</b></span><span><small>Formular</small><b>' + esc(form ? form.name : a.formId || '-') + '</b></span>' +
+          '<span><small>Stare</small><b>' + (a.status === 'ACTIVE' ? 'Pornită' : 'Oprită') + '</b></span></div></div>';
+    };
+    const dr = K.drawer({
+      title: c ? c.name : 'Previzualizare', icon: 'eye', width: 560, subtitle: 'Ce văd clientele: imaginea, textele, titlurile. Fiecare se copiază separat.',
+      body: '<div class="ad-pv" data-pv></div>',
+      footer: '<a class="k-btn is-ghost" href="' + esc(amUrl('campaign', campaignId)) + '" target="_blank" rel="noopener">' + icon('link') + 'Ads Manager</a><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-pv-edit>' + icon('pen') + 'Editează</button>',
+      onMount(el) {
+        paint(el);
+        el.addEventListener('click', (e) => {
+          const cp = e.target.closest('[data-copy]'); if (cp) return K.copy(cp.dataset.copy);
+          const sv = e.target.closest('[data-save-img]'); if (sv) return savePicture(sv.dataset.saveImg, sv);
+          const tb = e.target.closest('[data-pv-ad]'); if (tb) { at = Number(tb.dataset.pvAd); return paint(el); }
+          if (e.target.closest('[data-pv-edit]')) { dr.close(); setTimeout(() => openEdit(campaignId, d, at), 220); }
+        });
+        Promise.all([details(campaignId), forms()]).then(([x, f]) => { d = x; list = f; paint(el); })
+          .catch((err) => { el.querySelector('[data-pv]').innerHTML = K.empty('alert', 'Nu am putut citi reclama', err.data && err.data.message ? err.data.message : K.errText(err)); });
+      },
+    });
+  }
+
+  async function openEdit(campaignId, pre, adAt) {
+    const c = A.d.campaigns.find((x) => x.id === campaignId);
+    let d = pre || null, list = [], ai = adAt || 0, si = 0;
+    // what she types, kept while switching between ads / ad sets
+    const draft = { ads: {}, sets: {} };
+    const adDraft = (a) => (draft.ads[a.id] = draft.ads[a.id] || { texts: a.texts.slice(), headlines: a.headlines.slice(), descriptions: a.descriptions.slice(), cta: a.cta || 'LEARN_MORE', formId: a.formId, dirty: false });
+    const setDraft = (s) => (draft.sets[s.id] = draft.sets[s.id] || { budget: s.budget, ageMin: s.ageMin, ageMax: s.ageMax, women: s.women, radiusKm: s.radiusKm, placements: s.placements.slice(), dirty: false });
+    const area = (name, i, v, multi) => '<div class="ad-ed-item"><textarea class="ad-ed-ta" data-f="' + name + '" data-i="' + i + '" rows="' + (name === 'texts' ? 4 : 1) + '">' + esc(v) + '</textarea>' + (multi ? '<button type="button" class="k-icon-btn" data-rm="' + name + '" data-i="' + i + '" aria-label="Scoate">' + icon('x') + '</button>' : '') + '</div>';
+    const listField = (label, name, vals, multi, max) => '<div class="k-field full"><span>' + esc(label) + (multi ? ' (variante)' : '') + '</span>' + (vals.length ? vals : ['']).map((v, i) => area(name, i, v, multi && vals.length > 1)).join('') +
+      (multi && vals.length < max ? '<button type="button" class="k-btn is-ghost is-sm ad-ed-add" data-addv="' + name + '">' + icon('plus') + 'Adaugă o variantă</button>' : '') + '</div>';
+    const paint = (el) => {
+      const box = el.querySelector('[data-ed]');
+      if (!d) { box.innerHTML = '<div class="k-skel" style="height:260px"></div><div class="k-skel" style="height:200px"></div>'; return; }
+      const a = d.ads[ai], s = d.adsets[si];
+      let h = '';
+      if (a) {
+        const x = adDraft(a);
+        const formOpts = list.slice(); if (x.formId && !formOpts.some((f) => f.id === x.formId)) formOpts.unshift({ id: x.formId, name: 'Formularul actual (' + x.formId + ')' });
+        h += '<section class="ad-ed-sec"><div class="ad-ed-head"><b>Reclama</b>' + (d.ads.length > 1 ? '<div class="ad-pv-tabs">' + d.ads.map((y, i) => '<button type="button" class="k-chip' + (i === ai ? ' is-on' : '') + '" data-ed-ad="' + i + '">' + esc(y.name) + '</button>').join('') + '</div>' : '') + '</div>' +
+          (a.editable ? '<div class="k-form ad-ed-form">' +
+            listField('Text principal', 'texts', x.texts, a.multi, 5) + listField('Titlu', 'headlines', x.headlines, a.multi, 5) + listField('Descriere', 'descriptions', x.descriptions, a.multi, 5) +
+            K.field('Buton', '<select data-f="cta">' + K.options(Object.keys(CTA_RO).slice(0, 6).map((k) => [k, CTA_RO[k]]), x.cta) + '</select>') +
+            K.field('Formular', '<select data-f="formId">' + K.options(formOpts.map((f) => [f.id, f.name + (f.location ? ' · ' + f.location : '')]), x.formId) + '</select>') +
+            '</div><p class="k-muted ad-ed-note">' + icon('alert') + 'Textele noi trimit reclama la Meta pentru verificare (de obicei câteva minute). Rezultatele de până acum rămân.</p>'
+            : '<p class="k-muted">Reclama asta (video sau alt format) se editează doar în Ads Manager.</p>') + '</section>';
+      }
+      if (s) {
+        const y = setDraft(s);
+        const PL = [['fb_feed', 'Facebook · flux'], ['fb_story', 'Facebook · stories'], ['fb_reels', 'Facebook · reels'], ['ig_feed', 'Instagram · flux'], ['ig_story', 'Instagram · stories'], ['ig_reels', 'Instagram · reels']];
+        h += '<section class="ad-ed-sec"><div class="ad-ed-head"><b>Public și buget</b>' + (d.adsets.length > 1 ? '<div class="ad-pv-tabs">' + d.adsets.map((z, i) => '<button type="button" class="k-chip' + (i === si ? ' is-on' : '') + '" data-ed-set="' + i + '">' + esc(z.name) + '</button>').join('') + '</div>' : '') + '</div>' +
+          '<div class="k-form ad-ed-form">' +
+            (d.campaign.cbo ? K.field('Buget pe zi, al campaniei (lei)', '<input type="number" min="5" step="5" data-cbo value="' + esc(draft.cbo != null ? draft.cbo : d.campaign.budget) + '">')
+              : s.budget ? K.field('Buget pe zi (lei)', '<input type="number" min="5" step="5" data-s="budget" value="' + esc(y.budget) + '">') : '') +
+            (s.hasPin ? K.field('Rază (km)', '<input type="number" min="1" max="80" data-s="radiusKm" value="' + esc(y.radiusKm) + '">') : '') +
+            K.field('Vârstă', '<div class="ad-age"><input type="number" min="18" max="65" data-s="ageMin" value="' + esc(y.ageMin) + '"><span>până la</span><input type="number" min="18" max="65" data-s="ageMax" value="' + esc(y.ageMax) + '"></div>') +
+            K.field('Public', '<select data-s="women">' + K.options([['1', 'Doar femei'], ['0', 'Toți']], y.women ? '1' : '0') + '</select>') +
+            '<div class="k-field full"><span>Plasări' + (s.automatic ? ' (acum automate, Meta alege)' : '') + '</span><div class="ad-checks">' + PL.map(([k, l]) => '<label class="fb-check"><input type="checkbox" data-pl="' + k + '"' + (y.placements.includes(k) ? ' checked' : '') + '><span>' + esc(l) + '</span></label>').join('') + '</div></div>' +
+          '</div></section>';
+      }
+      box.innerHTML = h || K.empty('image', 'Nimic de editat', 'Campania n-are reclame.');
+      box.querySelectorAll('.ad-ed-ta').forEach(fit);
+    };
+    const fit = (ta) => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; };
+    const dr = K.drawer({
+      title: 'Editează · ' + (c ? c.name : ''), icon: 'pen', width: 600, subtitle: 'Schimbi textele, butonul, formularul, publicul și bugetul reclamei care rulează.',
+      body: '<div class="ad-ed" data-ed></div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-ed-save>' + icon('check') + 'Salvează</button>',
+      onMount(el) {
+        paint(el);
+        const cur = () => ({ a: d && d.ads[ai], s: d && d.adsets[si] });
+        el.addEventListener('input', (e) => {
+          const t = e.target; const { a, s } = cur();
+          if (t.dataset.f && a) { const x = adDraft(a); if (t.dataset.i != null) x[t.dataset.f][Number(t.dataset.i)] = t.value; else x[t.dataset.f] = t.value; x.dirty = true; if (t.tagName === 'TEXTAREA') fit(t); }
+          if (t.dataset.s && s) { const y = setDraft(s); y[t.dataset.s] = t.dataset.s === 'women' ? t.value === '1' : Number(t.value); y.dirty = true; }
+          if (t.hasAttribute('data-cbo')) draft.cbo = Number(t.value);
+        });
+        el.addEventListener('change', (e) => {
+          const t = e.target; const { a, s } = cur();
+          if (t.dataset.f && a && t.tagName === 'SELECT') { const x = adDraft(a); x[t.dataset.f] = t.value; x.dirty = true; }
+          if (t.dataset.s === 'women' && s) { const y = setDraft(s); y.women = t.value === '1'; y.dirty = true; }
+          if (t.dataset.pl && s) { const y = setDraft(s); y.placements = Array.from(el.querySelectorAll('[data-pl]:checked')).map((x) => x.dataset.pl); y.dirty = true; }
+        });
+        el.addEventListener('click', (e) => {
+          const { a } = cur();
+          const ta = e.target.closest('[data-ed-ad]'); if (ta) { ai = Number(ta.dataset.edAd); return paint(el); }
+          const ts = e.target.closest('[data-ed-set]'); if (ts) { si = Number(ts.dataset.edSet); return paint(el); }
+          const add = e.target.closest('[data-addv]'); if (add && a) { const x = adDraft(a); x[add.dataset.addv].push(''); x.dirty = true; return paint(el); }
+          const rm = e.target.closest('[data-rm]'); if (rm && a) { const x = adDraft(a); x[rm.dataset.rm].splice(Number(rm.dataset.i), 1); x.dirty = true; return paint(el); }
+          if (e.target.closest('[data-cancel]')) dr.close();
+        });
+        el.querySelector('[data-ed-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          if (!d) return;
+          try {
+            let n = 0;
+            for (const a of d.ads) {
+              const x = draft.ads[a.id]; if (!x || !x.dirty) continue;
+              await post({ action: 'edit_ad', adId: a.id, texts: x.texts, headlines: x.headlines, descriptions: x.descriptions, cta: x.cta, formId: x.formId }); n++;
+            }
+            for (const s of d.adsets) {
+              const y = draft.sets[s.id]; if (!y || !y.dirty) continue;
+              if (y.ageMin > y.ageMax) throw new Error('Vârsta: „de la” trebuie să fie mai mic decât „până la”.');
+              await post({ action: 'edit_adset', adsetId: s.id, budget: y.budget, ageMin: y.ageMin, ageMax: y.ageMax, women: y.women, radiusKm: y.radiusKm, placements: y.placements }); n++;
+            }
+            if (draft.cbo != null && d.campaign.cbo && draft.cbo !== d.campaign.budget) { await post({ action: 'budget', id: d.campaign.id, daily: draft.cbo }); n++; }
+            dr.close();
+            K.ui().toast(n ? 'Salvat în Meta.' : 'Nimic schimbat.', 'success');
+            if (n) load(true);
+          } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : err.message || K.errText(err), 'error'); }
+        }));
+        Promise.all([d ? Promise.resolve(d) : details(campaignId), forms()]).then(([x, f]) => { d = x; list = f; paint(el); })
+          .catch((err) => { el.querySelector('[data-ed]').innerHTML = K.empty('alert', 'Nu am putut citi reclama', err.data && err.data.message ? err.data.message : K.errText(err)); });
+      },
+    });
+  }
+
   // the ⋯ menu next to a campaign, an ad set or an ad
   let menuEl = null;
   function closeMenu() {
@@ -409,6 +549,8 @@
     m.className = 'k-menu ad-menu';
     m.dataset.for = id;
     m.innerHTML =
+      (kind === 'campaign' ? '<button type="button" class="k-menu-item" data-m="preview">' + icon('eye') + 'Previzualizare</button>' +
+        '<button type="button" class="k-menu-item" data-m="edit">' + icon('sliders') + 'Editează</button>' : '') +
       '<button type="button" class="k-menu-item" data-m="rename">' + icon('pen') + 'Redenumește</button>' +
       '<a class="k-menu-item" href="' + esc(amUrl(kind, id)) + '" target="_blank" rel="noopener" data-m="open">' + icon('link') + 'Deschide în Ads Manager</a>' +
       '<button type="button" class="k-menu-item is-danger" data-m="delete">' + icon('trash') + 'Șterge</button>';
@@ -430,6 +572,8 @@
       const it = e.target.closest('[data-m]');
       if (!it) return;
       closeMenu();
+      if (it.dataset.m === 'preview') openPreview(btn.dataset.id);
+      if (it.dataset.m === 'edit') openEdit(btn.dataset.id);
       if (it.dataset.m === 'rename') rename(btn);
       if (it.dataset.m === 'delete') remove(btn);
     });
@@ -465,8 +609,7 @@
     if (t.closest('[data-act="creative"]')) { K.go('creative'); K.ui().toast('Deschide un creative aprobat și apasă „Publică pe Meta”.', 'info'); return; }
     const go = t.closest('[data-goto]'); if (go) return K.go(go.dataset.goto);
     const sh = t.closest('[data-show]'); if (sh) { A.show = sh.dataset.show; A.keep.clear(); return render(); }
-    const tg = t.closest('[data-toggle]');
-    if (tg) { const id = tg.dataset.toggle; if (A.open.has(id)) A.open.delete(id); else A.open.add(id); return paintList(); }
+    const pv = t.closest('[data-preview]'); if (pv) return openPreview(pv.dataset.preview);
     const be = t.closest('[data-budget-edit]'); if (be) return editBudget(be.closest('[data-budget-box]'));
     const bs = t.closest('[data-budget-save]'); if (bs) return saveBudget(bs.closest('[data-budget-box]'));
     const m = t.closest('[data-more]'); if (m) return more(m);
