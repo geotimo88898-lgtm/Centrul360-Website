@@ -1,6 +1,7 @@
 // Automations ("Automatizări") - GoHighLevel-style workflows: one trigger, then a list of steps.
 //
-//   data/workflows.json      { settings, workflows: [{ id, name, active, trigger, steps, ... }] }
+//   data/workflows.json      { settings, folders: [{ id, name }], workflows: [{ id, name, active, folder, trigger, steps, ... }] }
+//   data/workflows-archive.json  the flows taken off the list when the folders came (kept, nothing lost)
 //   data/workflow-runs.json  { runs: [...], counters: { [workflowId]: { runs, sent, tasks } } }
 //
 // A trigger fires from the place where the thing happens (lead created, stage moved, appointment
@@ -23,6 +24,9 @@ const { sendPush } = require('./push');
 
 const WF_KEY = 'data/workflows.json';
 const RUNS_KEY = 'data/workflow-runs.json';
+const ARCHIVE_KEY = 'data/workflows-archive.json';
+// the owner's folders to start with: leads from the ads, and the appointment reminders
+const DEFAULT_FOLDERS = [{ id: 'intake', name: 'Intake' }, { id: 'reminders', name: 'Reminders' }];
 const TASKS_KEY = 'data/automation-tasks.json';
 const LEADS_KEY = 'data/leads.json';
 const MAX_FINISHED = 400;
@@ -147,6 +151,18 @@ async function loadDoc() {
   const doc = await readJSON(WF_KEY, null);
   if (doc && Array.isArray(doc.workflows)) {
     doc.settings = Object.assign(defaultSettings(), doc.settings || {});
+    // Folders (13.10.2026): the owner builds her own flows in Intake and Reminders. The flows there
+    // were go to the archive (switched off), the list starts empty.
+    if (!(doc.seeded || {}).foldersV1) {
+      const archive = (await readJSON(ARCHIVE_KEY, [])) || [];
+      if (doc.workflows.length) archive.push({ at: nowISO(), workflows: doc.workflows.map((w) => Object.assign({}, w, { active: false })) });
+      await writeJSON(ARCHIVE_KEY, archive);
+      doc.workflows = [];
+      doc.folders = DEFAULT_FOLDERS.map((f) => Object.assign({}, f));
+      doc.seeded = Object.assign({}, doc.seeded, { leadAlert: true, foldersV1: true });
+      await writeJSON(WF_KEY, doc);
+    }
+    if (!Array.isArray(doc.folders)) doc.folders = [];
     if (!(doc.seeded || {}).leadAlert) {
       doc.seeded = Object.assign({}, doc.seeded, { leadAlert: true });
       if (!doc.workflows.some((w) => flat(w.steps).some((s) => s.type === 'notify'))) doc.workflows.unshift(fromRecipe(LEAD_ALERT, true));
@@ -154,9 +170,8 @@ async function loadDoc() {
     }
     return doc;
   }
-  // First run: the recipes become the starting workflows, confirmation + 24h reminder + the team's
-  // lead alert on (they replace the old fixed "send confirmation / reminder today" tasks), the rest ready to switch on.
-  const seeded = { settings: defaultSettings(), seeded: { leadAlert: true }, workflows: RECIPES.map((r) => fromRecipe(r, DEFAULT_ACTIVE.includes(r.key) || r.key === LEAD_ALERT.key)) };
+  // First run: the two folders, no flows (the owner builds them)
+  const seeded = { settings: defaultSettings(), seeded: { leadAlert: true, foldersV1: true }, folders: DEFAULT_FOLDERS.map((f) => Object.assign({}, f)), workflows: [] };
   await writeJSON(WF_KEY, seeded); // ids must stay stable, runs point at them
   return seeded;
 }
@@ -244,7 +259,7 @@ function validateWorkflow(input) {
   const entity = TRIGGERS[trigger.type].entity;
   if (entity === 'appointment' && all.some((s) => s.type === 'move_stage' || LEAD_CONDS.includes(s.cond))) return { error: 'step_needs_lead' };
   if (entity === 'lead' && all.some((s) => APPT_CONDS.includes(s.cond))) return { error: 'step_needs_appointment' };
-  return { workflow: { name, note: clip(w.note, 160), active: w.active !== false, trigger, steps } };
+  return { workflow: { name, note: clip(w.note, 160), active: w.active !== false, folder: clip(w.folder, 40), trigger, steps } };
 }
 
 // ---------------------------------------------------------------- triggers

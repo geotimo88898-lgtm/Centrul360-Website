@@ -1,216 +1,323 @@
-// Centrul360 portal - Admin → Automatizări: GoHighLevel-style flows. One trigger ("Programare nouă",
-// "Lead nou din reclamă", "Cu 24h înainte" …), then steps (wait, WhatsApp, task for reception, move
-// the lead, alert the team, if / else, stop if …). Each flow is a card you can read at a glance; a click
-// opens it on the canvas editor (portal-builder.js). The engine itself lives in api/_lib/workflows.js.
+// Centrul360 portal - Admin → Automatizări: the owner's flows in folders (Intake for the leads from the
+// ads, Reminders for the appointments, any others she makes). Each flow is one row like in Reclame:
+// tick, on / off, the name, the numbers she picked; a tap opens it on the canvas editor
+// (portal-builder.js). Istoric: every run, filtered by flow, folder, form, status, period.
+// The engine lives in api/_lib/workflows.js, the data comes from /api/portal-workflows.
 (function () {
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
 
   const TRIG = {
-    lead_created: { ic: 'userPlus', label: 'Lead nou' },
-    stage_changed: { ic: 'layers', label: 'Lead mutat în etapă' },
-    lead_idle: { ic: 'clock', label: 'Lead necontactat' },
-    appointment_created: { ic: 'calendar', label: 'Programare nouă' },
-    appointment_before: { ic: 'bell', label: 'Înainte de programare' },
-    appointment_status: { ic: 'refresh', label: 'Status programare' },
-    appointment_after: { ic: 'sparkles', label: 'După tratament' },
+    lead_created: 'Lead nou', stage_changed: 'Lead mutat în etapă', lead_idle: 'Lead necontactat',
+    appointment_created: 'Programare nouă', appointment_before: 'Înainte de programare',
+    appointment_status: 'Status programare', appointment_after: 'După tratament',
   };
-  const STEP = {
-    wait: { ic: 'clock', label: 'Așteaptă', tone: '' },
-    whatsapp: { ic: 'chat', label: 'Mesaj WhatsApp', tone: 'good' },
-    task: { ic: 'listCheck', label: 'Sarcină pentru recepție', tone: 'accent' },
-    move_stage: { ic: 'layers', label: 'Mută leadul', tone: 'info' },
-    stop_if: { ic: 'ban', label: 'Oprește dacă', tone: 'warn' },
-    notify: { ic: 'bell', label: 'Anunță echipa', tone: 'accent' },
-    if: { ic: 'filter', label: 'Dacă / Altfel', tone: 'warn' },
-  };
-  const ROLE = { admin: 'Admin', receptie: 'Recepție', cosmetician: 'Cosmeticiene' };
-  const COND = {
-    contacted: 'leadul a fost contactat', booked: 'leadul are programare', appt_inactive: 'programarea e anulată / finalizată',
-    appt_confirmed: 'programarea e confirmată', future_appt: 'clientul are deja o programare viitoare',
-  };
-  const STATUS = { programata: 'Programată', confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată', finalizata: 'Finalizată' };
-  const SOURCE = { any: 'Orice sursă', facebook: 'Reclamă Facebook', instagram: 'Instagram', site: 'Site', telefon: 'Telefon', recomandare: 'Recomandare', 'walk-in': 'Walk-in', manual: 'Adăugat manual' };
-  const UNIT = { min: 'minute', h: 'ore', d: 'zile' };
-
-  const S = { d: null, tab: 'flows', loading: false };
+  const RUN = { waiting: ['Programat', 'info'], done: ['Terminat', 'good'], stopped: ['Oprit', ''], error: ['Eroare', 'bad'] };
+  // sel: the flows ticked; closed: the folders folded; h: the history filters
+  const S = { d: null, tab: 'flows', loading: false, q: '', show: 'all', folder: '', trig: '', sel: new Set(), closed: new Set(),
+    h: { wf: '', folder: '', form: '', status: '', period: '30d', q: '' } };
   let panel;
 
-  const trigText = (t, meta) => {
-    if (!t) return '';
-    if (t.type === 'lead_created') return 'Lead nou' + (t.interest && t.interest !== 'any' ? ': ' + t.interest : '') + (t.source && t.source !== 'any' ? ' din ' + (SOURCE[t.source] || t.source).toLowerCase() : '') + (t.location && t.location !== 'any' ? ' · ' + t.location : '');
-    if (t.type === 'stage_changed') return 'Lead mutat în „' + ((meta.stages.find((s) => s.id === t.stage) || {}).name || t.stage) + '”';
-    if (t.type === 'lead_idle') return 'Lead nesunat ' + t.hours + 'h';
-    if (t.type === 'appointment_before') return 'Cu ' + (t.hours % 24 === 0 ? (t.hours / 24 === 1 ? 'o zi' : t.hours / 24 + ' zile') : t.hours + 'h') + ' înainte de programare';
-    if (t.type === 'appointment_after') return t.days === 0 ? 'În ziua tratamentului' : 'La ' + (t.days === 1 ? 'o zi' : t.days + ' zile') + ' după tratament';
-    if (t.type === 'appointment_status') return 'Programare devenită „' + (STATUS[t.status] || t.status) + '”';
-    return (TRIG[t.type] || {}).label || t.type;
+  const NONE = '__none';
+  const folderName = (id) => ((S.d.folders || []).find((f) => f.id === id) || {}).name || '';
+  const ago = (iso) => (iso ? K.ago(iso) : '-');
+  const whenShort = (iso) => { if (!iso) return '-'; const d = new Date(iso); return K.dateShort(K.iso(d)) + ', ' + K.pad(d.getHours()) + ':' + K.pad(d.getMinutes()); };
+  const stepsOf = (w) => (function cnt(l) { return (l || []).reduce((a, x) => a + 1 + (x.type === 'if' ? cnt(x.yes) + cnt(x.no) : 0), 0); })(w.steps);
+  const statOf = (w) => Object.assign({ waiting: 0, done: 0, stopped: 0, errors: 0, runs7d: 0, runs30d: 0, last: '' }, (S.d.stats || {})[w.id] || {}, { counters: (S.d.counters || {})[w.id] || { runs: 0, sent: 0, tasks: 0 } });
+
+  // ------------------------------------------------------------------ what a row / the cards can show
+  const M = {
+    waiting: { label: 'Rulări active', group: 'Rulări', hint: 'Programate acum, așteaptă pasul următor', val: (x) => x.waiting },
+    runs: { label: 'Rulări totale', group: 'Rulări', val: (x) => x.counters.runs },
+    runs7d: { label: 'Rulări 7 zile', group: 'Rulări', val: (x) => x.runs7d },
+    runs30d: { label: 'Rulări 30 zile', group: 'Rulări', val: (x) => x.runs30d },
+    done: { label: 'Terminate', group: 'Rulări', val: (x) => x.done },
+    stopped: { label: 'Oprite', group: 'Rulări', hint: 'Oprite de o condiție sau de o schimbare', val: (x) => x.stopped },
+    errors: { label: 'Erori', group: 'Rulări', val: (x) => x.errors },
+    sent: { label: 'Mesaje trimise', group: 'Ce au făcut', val: (x) => x.counters.sent },
+    tasks: { label: 'Sarcini create', group: 'Ce au făcut', val: (x) => x.counters.tasks },
+    lastRun: { label: 'Ultima rulare', group: 'Detalii', text: true, only: ['cols'], val: (x) => (x.last ? ago(x.last) : '-') },
+    trigger: { label: 'Declanșator', group: 'Detalii', text: true, only: ['cols'], val: (x, w) => TRIG[w.trigger.type] || w.trigger.type },
+    steps: { label: 'Pași', group: 'Detalii', only: ['cols'], val: (x, w) => stepsOf(w) },
+    updated: { label: 'Modificată', group: 'Detalii', text: true, only: ['cols'], val: (x, w) => whenShort(w.updatedAt) },
+    created: { label: 'Creată', group: 'Detalii', text: true, only: ['cols'], val: (x, w) => whenShort(w.createdAt) },
+    count: { label: 'Automatizări', group: 'Detalii', only: ['cards'], val: (x) => x.count },
+    activeCount: { label: 'Pornite', group: 'Detalii', only: ['cards'], val: (x) => x.on },
   };
-  const stepText = (s, meta) => {
-    if (s.type === 'wait') return s.amount + ' ' + UNIT[s.unit];
-    if (s.type === 'stop_if' || s.type === 'if') {
-      const c = ({ interest: 'procedura e ', location: 'orașul e ', source: 'sursa e ' })[s.cond];
-      const t = c ? c + (s.value || '…') : (COND[s.cond] || s.cond);
-      if (s.type === 'stop_if') return t;
-      const n = (function cnt(l) { return (l || []).reduce((a, x) => a + 1 + (x.type === 'if' ? cnt(x.yes) + cnt(x.no) : 0), 0); })((s.yes || []).concat(s.no || []));
-      return 'Dacă ' + t + (n ? ' (+' + n + ' în ramuri)' : '');
-    }
-    if (s.type === 'notify') return 'Către ' + (s.to || []).map((x) => (x.startsWith('role:') ? ROLE[x.slice(5)] : ((meta.team || []).find((p) => 'emp:' + p.id === x) || { name: '?' }).name)).join(', ');
-    if (s.type === 'move_stage') return '→ ' + ((meta.stages.find((x) => x.id === s.stage) || {}).name || s.stage);
-    return String(s.text || '').replace(/\s+/g, ' ').slice(0, 70) + (String(s.text || '').length > 70 ? '…' : '');
-  };
+  const GROUPS = ['Rulări', 'Ce au făcut', 'Detalii'];
+  const DEF_COLS = ['waiting', 'runs', 'runs7d', 'sent', 'lastRun'];
+  const DEF_CARDS = ['activeCount', 'waiting', 'runs', 'runs7d', 'sent'];
+  const okIds = (list, part) => (Array.isArray(list) ? list : []).filter((id) => M[id] && (!M[id].only || M[id].only.includes(part)));
+  const cols = () => okIds(K.prefs.get('wf.cols', DEF_COLS), 'cols');
+  const cards = () => okIds(K.prefs.get('wf.cards', DEF_CARDS), 'cards');
 
   // ------------------------------------------------------------------ page
   function mount(p) {
     panel = p;
-    panel.classList.add('k-panel', 'au');
+    panel.classList.add('k-panel', 'au', 'ad');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Automatizări</h2><p class="k-lede">Ce se întâmplă singur: confirmări, remindere, mesaje către leadurile din reclame, sarcini pentru recepție. Un declanșator, apoi pașii, ca în GoHighLevel.</p></div>' +
-      '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="recipes">' + icon('book') + 'Rețete</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Automatizare nouă</button></div></div>' +
-      '<div data-body><div class="k-skel" style="height:120px;margin-bottom:1rem"></div><div class="k-skel" style="height:320px"></div></div>';
+      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Automatizări</h2><p class="k-lede">Ce se întâmplă singur, pe foldere. Apeși pe o automatizare și o construiești pe schemă.</p></div>' +
+      '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="customize">' + icon('sliders') + 'Coloane și KPI</button>' +
+      '<button type="button" class="k-btn is-outline" data-act="folder-new">' + icon('folder') + 'Folder nou</button>' +
+      '<button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Automatizare nouă</button></div></div>' +
+      '<div data-body><div class="k-skel" style="height:110px;margin-bottom:1rem"></div><div class="k-skel" style="height:320px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);
+    panel.addEventListener('input', (e) => {
+      if (e.target.matches('[data-q]')) { S.q = e.target.value; paintFlows(); }
+      if (e.target.matches('[data-hq]')) { S.h.q = e.target.value; paintLog(); }
+    });
   }
   async function load() {
     if (S.loading) return;
     S.loading = true;
-    try { S.d = await K.api('/api/portal-workflows'); render(); }
-    catch (e) { panel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca automatizările', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>'); }
+    try {
+      [S.d] = await Promise.all([K.api('/api/portal-workflows'), K.prefs.load()]);
+      const ids = new Set(S.d.workflows.map((w) => w.id)); S.sel.forEach((id) => { if (!ids.has(id)) S.sel.delete(id); });
+      render();
+    } catch (e) { panel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca automatizările', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>'); }
     finally { S.loading = false; }
   }
-  function totals() {
-    const c = S.d.counters || {};
-    return Object.keys(c).reduce((o, k) => { o.runs += c[k].runs || 0; o.sent += c[k].sent || 0; o.tasks += c[k].tasks || 0; return o; }, { runs: 0, sent: 0, tasks: 0 });
-  }
+  const post = async (body) => { S.d = await K.api('/api/portal-workflows', body); const ids = new Set(S.d.workflows.map((w) => w.id)); S.sel.forEach((id) => { if (!ids.has(id)) S.sel.delete(id); }); render(); };
+
   function render() {
-    const d = S.d, meta = d.meta;
-    const tot = totals();
-    const waiting = Object.values(d.waiting || {}).reduce((a, b) => a + b, 0);
-    const active = d.workflows.filter((w) => w.active).length;
+    const d = S.d;
+    const folders = d.folders || [];
     panel.querySelector('[data-body]').innerHTML =
-      '<div class="au-status">' +
-        '<div class="k-card au-chan ' + (meta.whatsappCloud ? 'is-on' : '') + '"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp · ' + (meta.whatsappCloud ? 'trimitere automată' : 'într-un tap') + '</b><span>' +
-          (meta.whatsappCloud ? 'Mesajele pleacă singure prin WhatsApp Business. Dacă Meta refuză unul, devine sarcină.' : 'Mesajele apar în Sarcini, deja scrise, recepția apasă WhatsApp și trimite. <a href="#" data-act="wa-guide">Activează trimiterea automată</a>') + '</span></div></div>' +
-        '<div class="k-card au-chan" data-act="fb"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Reclamele → Pipeline</b><span>Leadurile din formularele Facebook intră singure în Pipeline și pornesc automatizările „Lead nou”. <a href="#setari" data-act="fb">Conexiunea Facebook</a></span></div></div>' +
-        '<div class="au-nums"><div><b>' + active + '</b><span>active</span></div><div><b>' + K.num(tot.runs) + '</b><span>rulări</span></div><div><b>' + K.num(tot.sent + tot.tasks) + '</b><span>mesaje & sarcini</span></div><div><b>' + K.num(waiting) + '</b><span>programate</span></div></div>' +
+      '<div data-stats></div>' +
+      '<div class="ad-tabs">' + K.seg('autab', [['flows', 'Automatizări', 'zap'], ['log', 'Istoric', 'clock']], S.tab, 'is-big') + '</div>' +
+      '<div data-pane="flows"' + (S.tab === 'flows' ? '' : ' hidden') + '>' +
+        '<div class="ad-bar au-bar"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o automatizare…" value="' + esc(S.q) + '"></label>' +
+          '<div class="k-chips">' + [['all', 'Toate'], ['on', 'Pornite'], ['off', 'Oprite']].map(([k, l]) => '<button type="button" class="k-chip' + (S.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + d.workflows.filter((w) => k === 'all' || (k === 'on') === !!w.active).length + '</span></button>').join('') + '</div>' +
+          '<select data-ffolder aria-label="Folder">' + K.options([['', 'Toate folderele']].concat(folders.map((f) => [f.id, f.name]), [[NONE, 'Fără folder']]), S.folder) + '</select>' +
+          '<select data-ftrig aria-label="Declanșator">' + K.options([['', 'Orice declanșator']].concat(Object.keys(TRIG).map((k) => [k, TRIG[k]])), S.trig) + '</select>' +
+        '</div>' +
+        '<div data-bulk></div>' +
+        '<div data-flows></div>' +
       '</div>' +
-      '<div class="ad-tabs">' + K.seg('autab', [['flows', 'Automatizări', 'zap'], ['log', 'Istoric', 'clock'], ['vars', 'Date pentru mesaje', 'sliders']], S.tab, 'is-big') + '</div>' +
-      '<div data-pane="flows"' + (S.tab === 'flows' ? '' : ' hidden') + '>' + flowsHtml() + '</div>' +
-      '<div data-pane="log"' + (S.tab === 'log' ? '' : ' hidden') + '>' + logHtml() + '</div>' +
-      '<div data-pane="vars"' + (S.tab === 'vars' ? '' : ' hidden') + '>' + varsHtml() + '</div>';
+      '<div data-pane="log"' + (S.tab === 'log' ? '' : ' hidden') + '>' + logFilters() + '<div data-log></div></div>';
+    paintStats(); paintFlows(); paintLog();
   }
-  function flowsHtml() {
-    const d = S.d, meta = d.meta;
-    if (!d.workflows.length) return K.empty('zap', 'Nicio automatizare', 'Pornește de la o rețetă gata făcută sau construiește una de la zero.', '<button type="button" class="k-btn is-primary" data-act="recipes">' + icon('book') + 'Vezi rețetele</button>');
-    const groups = [['Programări', (w) => w.trigger.type.startsWith('appointment')], ['Leaduri & reclame', (w) => !w.trigger.type.startsWith('appointment')]];
-    return groups.map(([title, fn]) => {
-      const list = d.workflows.filter(fn);
-      if (!list.length) return '';
-      return '<div class="au-group"><div class="au-group-title">' + esc(title) + '<span>' + list.length + '</span></div><div class="au-list">' + list.map((w) => {
-        const c = (d.counters || {})[w.id] || { runs: 0, sent: 0, tasks: 0 };
-        const wt = (d.waiting || {})[w.id] || 0;
-        const ti = TRIG[w.trigger.type] || { ic: 'zap' };
-        return '<article class="k-card au-flow' + (w.active ? ' is-active' : '') + '" data-open="' + esc(w.id) + '">' +
-          '<div class="au-flow-head"><div class="au-flow-title"><b>' + esc(w.name) + '</b>' + (w.note ? '<span>' + esc(w.note) + '</span>' : '') + '</div>' +
-          '<label class="k-switch" data-stop title="' + (w.active ? 'Activă, apasă ca s-o oprești' : 'Oprită, apasă ca s-o pornești') + '"><input type="checkbox" data-toggle="' + esc(w.id) + '"' + (w.active ? ' checked' : '') + '><i></i></label></div>' +
-          '<div class="au-chain"><span class="au-node is-trigger">' + icon(ti.ic) + esc(trigText(w.trigger, meta)) + '</span>' +
-            w.steps.map((s) => '<span class="au-arrow">' + icon('right') + '</span><span class="au-node is-' + s.type + '" title="' + esc(s.text || '') + '">' + icon(STEP[s.type].ic) + '<em>' + esc(stepText(s, meta)) + '</em></span>').join('') + '</div>' +
-          '<div class="au-flow-foot">' + (c.runs ? K.plural(c.runs, 'rulare', 'rulări') + ' · ' + (c.sent ? c.sent + ' trimise automat · ' : '') + K.plural(c.tasks, 'sarcină', 'sarcini') : 'Nu a rulat încă') +
-            (wt ? ' · <b>' + wt + ' programat' + (wt === 1 ? '' : 'e') + '</b>' : '') + '</div></article>';
-      }).join('') + '</div></div>';
-    }).join('');
+
+  // the cards on top: of the ticked flows, or of all of them
+  function paintStats() {
+    const box = panel.querySelector('[data-stats]'); if (!box) return;
+    const picked = S.d.workflows.filter((w) => S.sel.has(w.id));
+    const list = picked.length ? picked : S.d.workflows;
+    const t = { count: list.length, on: list.filter((w) => w.active).length, counters: { runs: 0, sent: 0, tasks: 0 }, waiting: 0, done: 0, stopped: 0, errors: 0, runs7d: 0, runs30d: 0 };
+    list.forEach((w) => { const x = statOf(w); ['waiting', 'done', 'stopped', 'errors', 'runs7d', 'runs30d'].forEach((k) => { t[k] += x[k]; }); ['runs', 'sent', 'tasks'].forEach((k) => { t.counters[k] += x.counters[k] || 0; }); });
+    const ic = { waiting: 'clock', runs: 'zap', runs7d: 'zap', runs30d: 'zap', done: 'check', stopped: 'ban', errors: 'alert', sent: 'chat', tasks: 'listCheck', count: 'layers', activeCount: 'zap' };
+    box.innerHTML = (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'automatizare selectată', 'automatizări selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-sel-clear>Toate</button></div>' : '') +
+      '<div class="ad-stats">' + cards().map((id) => '<div class="k-card ad-stat"' + (M[id].hint ? ' title="' + esc(M[id].hint) + '"' : '') + '><span class="k-icon-chip is-accent">' + icon(ic[id] || 'zap') + '</span><div><small>' + esc(M[id].label) + '</small><b>' + esc(K.num(M[id].val(t))) + '</b></div></div>').join('') + '</div>';
   }
-  function logHtml() {
-    const r = S.d.recent || [];
-    if (!r.length) return K.empty('clock', 'Nimic încă', 'Aici vezi fiecare rulare: pentru cine, ce pas, ce s-a trimis.');
-    const tone = { waiting: 'info', done: 'good', stopped: '', error: 'bad' };
-    const lab = { waiting: 'Programat', done: 'Terminat', stopped: 'Oprit', error: 'Eroare' };
-    return '<div class="k-card au-log">' + r.map((x) => '<div class="au-log-row"><div class="au-log-main"><b>' + esc(x.who) + '</b><span>' + esc(x.workflow) + '</span>' +
-      '<div class="au-log-steps">' + x.log.map((l) => '<i>' + esc(l.text) + '</i>').join('') + '</div></div>' +
-      '<div class="au-log-side"><span class="k-tag is-' + tone[x.status] + '">' + lab[x.status] + '</span><small>' + esc(x.status === 'waiting' ? 'la ' + fmtWhen(x.dueAt) : K.ago(x.updatedAt)) + '</small></div></div>').join('') + '</div>';
+
+  // ------------------------------------------------------------------ the flows, by folder
+  function visible() {
+    const q = K.norm(S.q);
+    return S.d.workflows.filter((w) => (S.show === 'all' || (S.show === 'on') === !!w.active) &&
+      (!S.folder || (S.folder === NONE ? !folderName(w.folder) : w.folder === S.folder)) &&
+      (!S.trig || w.trigger.type === S.trig) && (!q || K.norm(w.name).includes(q)));
   }
-  const fmtWhen = (iso) => { const d = new Date(iso); return K.relDay(K.iso(d)).toLowerCase() + ' ' + K.pad(d.getHours()) + ':' + K.pad(d.getMinutes()); };
-  function varsHtml() {
-    const s = S.d.settings;
-    return '<section class="k-card au-vars"><h3>' + icon('pin') + 'Adresele clinicilor</h3><p class="k-muted">Apar în mesaje acolo unde scrii {adresa}.</p><form class="k-form" data-settings>' +
-      K.field('Timișoara', '<input name="adr_tm" value="' + esc(s.addresses['Timișoara'] || '') + '" placeholder="ex. Str. Exemplu 10, Timișoara (lângă …)" maxlength="200">', 'full') +
-      K.field('Arad', '<input name="adr_ar" value="' + esc(s.addresses['Arad'] || '') + '" placeholder="ex. Bd. Revoluției 5, Arad" maxlength="200">', 'full') +
-      K.field('Link pentru recenzii Google', '<input name="review" value="' + esc(s.reviewLink || '') + '" placeholder="https://g.page/r/…/review" maxlength="300">', 'full', 'Google Business → „Cere recenzii” → copiază linkul. Apare în mesaje la {link_recenzie}.') +
-      '</form><div class="au-vars-foot"><button type="button" class="k-btn is-primary" data-act="save-settings">' + icon('check') + 'Salvează</button></div></section>' +
-      '<section class="k-card au-vars"><h3>' + icon('chat') + 'WhatsApp automat (opțional)</h3>' + waGuide() + '</section>';
+  function paintFlows() {
+    const box = panel.querySelector('[data-flows]'); if (!box) return;
+    const C = cols();
+    const list = visible();
+    const folders = (S.d.folders || []).filter((f) => !S.folder || S.folder === f.id);
+    const loose = list.filter((w) => !folderName(w.folder));
+    const groups = folders.map((f) => ({ f, items: list.filter((w) => w.folder === f.id) }));
+    if ((!S.folder || S.folder === NONE) && loose.length) groups.push({ f: { id: NONE, name: 'Fără folder' }, items: loose });
+    const filtering = S.q || S.show !== 'all' || S.trig;
+    const minw = 320 + C.length * 116 + 84;
+    box.innerHTML = '<div class="ad-scroll"><div class="ad-table" style="--ad-cols:minmax(320px,1.6fr) repeat(' + C.length + ',minmax(116px,1fr)) 84px;--ad-minw:' + minw + 'px">' +
+      '<div class="ad-head-row"><span class="ad-head-name"><label class="ad-pick" title="Selectează toate cele afișate"><input type="checkbox" data-pick-all></label>Automatizare</span>' +
+        C.map((id) => '<span title="' + esc(M[id].hint || '') + '">' + esc(M[id].label) + '</span>').join('') + '<span></span></div>' +
+      (groups.length ? groups.map((g) => folderHtml(g.f, g.items, filtering)).join('') : K.empty('folder', 'Niciun folder', 'Fă un folder nou, apoi automatizările în el.')) +
+      '</div></div>';
+    syncPickAll(); paintBulk();
   }
-  function waGuide() {
-    const on = S.d.meta.whatsappCloud;
-    return '<p class="k-muted">' + (on ? '<span class="k-tag is-good">' + icon('check') + 'Activ</span> Mesajele pleacă singure din numărul WhatsApp Business al clinicii.' : 'Acum mesajele ajung la recepție gata scrise (un tap pe WhatsApp). Ca să plece singure:') + '</p>' +
-      '<ol class="au-steps"><li>În <b>Meta Business → WhatsApp Manager</b> adaugi numărul clinicii (WhatsApp Business Platform).</li>' +
-      '<li>Creezi un <b>System User</b> cu acces la WhatsApp și generezi un token permanent.</li>' +
-      '<li>În Vercel (proiectul site-ului) pui <code>WHATSAPP_TOKEN</code> și <code>WHATSAPP_PHONE_ID</code>, apoi Redeploy.</li>' +
-      '<li>Pentru mesajele trimise de voi primii (confirmări, remindere), Meta cere <b>șabloane aprobate</b>: în WhatsApp Manager creezi șablonul în română, cu {{1}}, {{2}} … în ordinea variabilelor din mesaj, și îi scrii numele la pasul de WhatsApp.</li></ol>' +
-      '<p class="k-muted">Până atunci nu se pierde nimic: orice mesaj care nu poate pleca singur devine sarcină într-un tap.</p>';
+  function folderHtml(f, items, filtering) {
+    if (filtering && !items.length) return '';
+    const closed = S.closed.has(f.id);
+    return '<section class="au-folder' + (closed ? ' is-closed' : '') + '">' +
+      '<header class="au-folder-head"><button type="button" class="au-folder-title" data-fold="' + esc(f.id) + '">' + icon(closed ? 'right' : 'down') + icon('folder') + '<b>' + esc(f.name) + '</b><span>' + items.length + '</span></button>' +
+        (f.id !== NONE ? '<button type="button" class="k-btn is-ghost is-sm" data-new-in="' + esc(f.id) + '">' + icon('plus') + 'Nouă aici</button><button type="button" class="k-icon-btn" data-fmore="' + esc(f.id) + '" title="Folder">' + icon('more') + '</button>' : '') +
+      '</header>' +
+      (closed ? '' : '<div class="ad-list">' + (items.length ? items.map(rowHtml).join('') : '<p class="k-muted au-folder-empty">Gol. „Nouă aici” pornește o automatizare în folderul ăsta.</p>') + '</div>') +
+      '</section>';
+  }
+  function rowHtml(w) {
+    const x = statOf(w);
+    return '<article class="k-card ad-camp' + (w.active ? '' : ' is-off') + (S.sel.has(w.id) ? ' is-picked' : '') + '" data-wf="' + esc(w.id) + '">' +
+      '<div class="ad-row is-camp">' +
+        '<div class="ad-name"><label class="ad-pick" title="Selectează"><input type="checkbox" data-pick="' + esc(w.id) + '"' + (S.sel.has(w.id) ? ' checked' : '') + '></label>' +
+          '<label class="k-switch ad-sw" title="' + (w.active ? 'Pornită, apasă ca s-o oprești' : 'Oprită, apasă ca s-o pornești') + '"><input type="checkbox" data-toggle="' + esc(w.id) + '"' + (w.active ? ' checked' : '') + '><i></i></label>' +
+          '<button type="button" class="ad-title" data-open="' + esc(w.id) + '" title="Deschide pe schemă"><b>' + esc(w.name) + '</b>' + (x.errors ? '<small><span class="k-tag is-bad">' + K.plural(x.errors, 'eroare', 'erori') + '</span></small>' : '') + '</button></div>' +
+        cols().map((id) => { const v = M[id].val(x, w); return '<div class="ad-cell" data-l="' + esc(M[id].label) + '">' + (M[id].text ? esc(v) : '<b>' + esc(K.num(v)) + '</b>') + '</div>'; }).join('') +
+        '<div class="ad-acts"><button type="button" class="k-icon-btn" data-wmore="' + esc(w.id) + '" title="Mai mult">' + icon('more') + '</button></div>' +
+      '</div></article>';
+  }
+  function syncPickAll() {
+    const all = panel.querySelector('[data-pick-all]'); if (!all) return;
+    const shown = visible(); const n = shown.filter((w) => S.sel.has(w.id)).length;
+    all.checked = !!shown.length && n === shown.length; all.indeterminate = n > 0 && n < shown.length;
+  }
+  // what to do with the ticked ones
+  function paintBulk() {
+    const box = panel.querySelector('[data-bulk]'); if (!box) return;
+    const n = S.sel.size;
+    box.innerHTML = n ? '<div class="au-bulk"><b>' + K.plural(n, 'selectată', 'selectate') + '</b>' +
+      '<button type="button" class="k-btn is-sm" data-bulk="on">' + icon('zap') + 'Pornește</button><button type="button" class="k-btn is-sm" data-bulk="off">' + icon('ban') + 'Oprește</button>' +
+      '<button type="button" class="k-btn is-sm" data-bulk="move">' + icon('folder') + 'Mută în folder</button><button type="button" class="k-btn is-sm is-danger" data-bulk="delete">' + icon('trash') + 'Șterge</button>' +
+      '<span class="k-grow"></span><button type="button" class="k-btn is-ghost is-sm" data-sel-clear>Deselectează</button></div>' : '';
+  }
+
+  // ------------------------------------------------------------------ Istoric, with its filters
+  function logFilters() {
+    const runs = S.d.recent || [];
+    const forms = Array.from(new Set(runs.map((r) => r.form).filter(Boolean))).sort();
+    const wfs = Array.from(new Map(runs.map((r) => [r.workflowId, r.workflow])).entries()).sort((a, b) => a[1].localeCompare(b[1]));
+    const h = S.h;
+    return '<div class="k-card au-hfilters">' +
+      '<label class="ad-search">' + icon('search') + '<input data-hq type="search" placeholder="Caută o persoană…" value="' + esc(h.q) + '"></label>' +
+      '<select data-h="wf" aria-label="Automatizare">' + K.options([['', 'Toate automatizările']].concat(wfs), h.wf) + '</select>' +
+      '<select data-h="folder" aria-label="Folder">' + K.options([['', 'Toate folderele']].concat((S.d.folders || []).map((f) => [f.id, f.name])), h.folder) + '</select>' +
+      '<select data-h="form" aria-label="Formular">' + K.options([['', 'Toate formularele']].concat(forms.map((f) => [f, f])), h.form) + '</select>' +
+      '<select data-h="status" aria-label="Stare">' + K.options([['', 'Orice stare']].concat(Object.keys(RUN).map((k) => [k, RUN[k][0]])), h.status) + '</select>' +
+      '<select data-h="period" aria-label="Perioadă">' + K.options([['today', 'Azi'], ['7d', 'Ultimele 7 zile'], ['30d', 'Ultimele 30 de zile'], ['all', 'Tot']], h.period) + '</select>' +
+      '</div>';
+  }
+  function logRows() {
+    const h = S.h, q = K.norm(h.q);
+    const wfFolder = new Map(S.d.workflows.map((w) => [w.id, w.folder]));
+    const since = h.period === 'today' ? new Date(new Date().setHours(0, 0, 0, 0)).getTime() : h.period === '7d' ? Date.now() - 7 * 864e5 : h.period === '30d' ? Date.now() - 30 * 864e5 : 0;
+    return (S.d.recent || []).filter((r) => (!h.wf || r.workflowId === h.wf) && (!h.folder || wfFolder.get(r.workflowId) === h.folder) &&
+      (!h.form || r.form === h.form) && (!h.status || r.status === h.status) && (!since || Date.parse(r.updatedAt) >= since) &&
+      (!q || K.norm(r.who + ' ' + r.workflow).includes(q)));
+  }
+  function paintLog() {
+    const box = panel.querySelector('[data-log]'); if (!box) return;
+    const rows = logRows();
+    if (!rows.length) { box.innerHTML = K.empty('clock', (S.d.recent || []).length ? 'Nimic pentru filtrele alese' : 'Nimic încă', 'Aici vezi fiecare rulare: pentru cine, ce automatizare, ce s-a întâmplat.'); return; }
+    const by = (k) => rows.filter((r) => r.status === k).length;
+    box.innerHTML = '<p class="au-hsum"><b>' + rows.length + '</b> ' + (rows.length === 1 ? 'rulare' : 'rulări') + ' · ' + by('waiting') + ' programate · ' + by('done') + ' terminate · ' + by('stopped') + ' oprite' + (by('error') ? ' · <span class="au-herr">' + by('error') + ' erori</span>' : '') + '</p>' +
+      '<div class="k-card au-log">' + rows.slice(0, 300).map((x) => '<div class="au-log-row"><div class="au-log-main"><b>' + esc(x.who) + '</b><span>' + esc(x.workflow) + (x.form ? ' · ' + esc(x.form) : '') + '</span>' +
+        '<div class="au-log-steps">' + x.log.map((l) => '<i>' + esc(l.text) + '</i>').join('') + '</div></div>' +
+        '<div class="au-log-side"><span class="k-tag is-' + (RUN[x.status] || ['', ''])[1] + '">' + esc((RUN[x.status] || [x.status])[0]) + '</span><small>' + esc(x.status === 'waiting' ? 'la ' + whenShort(x.dueAt) : whenShort(x.updatedAt)) + '</small></div></div>').join('') + '</div>' +
+      (rows.length > 300 ? '<p class="k-muted">Primele 300. Restrânge filtrele ca să vezi altele.</p>' : '');
+  }
+
+  // ------------------------------------------------------------------ menus (a flow, a folder)
+  let menuEl = null;
+  function closeMenu() { if (!menuEl) return; const m = menuEl; menuEl = null; m.classList.remove('is-open'); setTimeout(() => m.remove(), 180); document.removeEventListener('mousedown', outside, true); }
+  const outside = (e) => { if (menuEl && !menuEl.contains(e.target) && !e.target.closest('[data-wmore],[data-fmore]')) closeMenu(); };
+  function menu(btn, items, onPick) {
+    const again = menuEl && menuEl.dataset.for === (btn.dataset.wmore || btn.dataset.fmore);
+    closeMenu(); if (again) return;
+    const m = document.createElement('div');
+    m.className = 'k-menu ad-menu'; m.dataset.for = btn.dataset.wmore || btn.dataset.fmore;
+    m.innerHTML = items.map(([k, ic, l, danger]) => '<button type="button" class="k-menu-item' + (danger ? ' is-danger' : '') + '" data-m="' + k + '">' + icon(ic) + esc(l) + '</button>').join('');
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect(), h = m.offsetHeight, below = r.bottom + 6 + h < window.innerHeight;
+    m.style.top = (below ? r.bottom + 6 : r.top - 6 - h) + 'px';
+    m.style.left = Math.max(8, Math.min(r.right - m.offsetWidth, window.innerWidth - m.offsetWidth - 8)) + 'px';
+    m.style.transformOrigin = below ? 'top right' : 'bottom right';
+    requestAnimationFrame(() => m.classList.add('is-open'));
+    menuEl = m;
+    setTimeout(() => document.addEventListener('mousedown', outside, true), 0);
+    m.addEventListener('click', (e) => { const it = e.target.closest('[data-m]'); if (!it) return; closeMenu(); onPick(it.dataset.m); });
+  }
+  const pickFolder = async (title) => {
+    const opts = [['', 'Fără folder']].concat((S.d.folders || []).map((f) => [f.id, f.name]));
+    return K.ui().prompt({ title, label: 'Folder', options: opts, value: (S.d.folders[0] || {}).id || '', confirmText: 'Mută' });
+  };
+  const fail = (err) => K.ui().toast(err.data && err.data.error === 'too_many_workflows' ? 'Poți avea cel mult 40 de automatizări.' : K.errText(err), 'error');
+  async function flowMenu(btn) {
+    const w = S.d.workflows.find((x) => x.id === btn.dataset.wmore); if (!w) return;
+    menu(btn, [['open', 'pen', 'Editează pe schemă'], ['rename', 'type', 'Redenumește'], ['move', 'folder', 'Mută în folder'], ['dup', 'copy', 'Duplică'], ['del', 'trash', 'Șterge', true]], async (k) => {
+      try {
+        if (k === 'open') return openEditor(w);
+        if (k === 'rename') { const n = await K.ui().prompt({ title: 'Redenumește', value: w.name, confirmText: 'Salvează' }); if (n && n.trim() && n.trim() !== w.name) { await post({ action: 'rename', id: w.id, name: n.trim() }); K.ui().toast('Redenumită.', 'success'); } }
+        if (k === 'move') { const f = await pickFolder('Mută „' + w.name + '”'); if (f !== null) { await post({ action: 'many', ids: [w.id], op: 'move', folder: f }); K.ui().toast('Mutată.', 'success'); } }
+        if (k === 'dup') { await post({ action: 'duplicate', id: w.id }); K.ui().toast('Copie făcută (oprită).', 'success'); }
+        if (k === 'del' && await K.ui().confirm({ title: 'Ștergi „' + w.name + '”?', message: 'Rulările programate ale ei se opresc. Nu se poate anula.', confirmText: 'Șterge', danger: true })) { await post({ action: 'delete', id: w.id }); K.ui().toast('Ștearsă.', 'success'); }
+      } catch (err) { fail(err); }
+    });
+  }
+  async function folderMenu(btn) {
+    const f = (S.d.folders || []).find((x) => x.id === btn.dataset.fmore); if (!f) return;
+    menu(btn, [['rename', 'type', 'Redenumește folderul'], ['del', 'trash', 'Șterge folderul', true]], async (k) => {
+      try {
+        if (k === 'rename') { const n = await K.ui().prompt({ title: 'Redenumește folderul', value: f.name, confirmText: 'Salvează' }); if (n && n.trim()) await post({ action: 'folder', id: f.id, name: n.trim() }); }
+        if (k === 'del' && await K.ui().confirm({ title: 'Ștergi folderul „' + f.name + '”?', message: 'Automatizările din el rămân, fără folder.', confirmText: 'Șterge', danger: true })) await post({ action: 'folder_delete', id: f.id });
+      } catch (err) { fail(err); }
+    });
   }
 
   // ------------------------------------------------------------------ events
   async function onClick(e) {
     const t = e.target;
     const act = t.closest('[data-act]');
-    if (t.closest('[data-stop]')) return; // the switch has its own change handler
     if (act) {
       const a = act.dataset.act;
       if (a === 'reload') return load();
-      if (a === 'new') return openEditor(null);
-      if (a === 'recipes') return openRecipes();
-      if (a === 'fb') { e.preventDefault(); return K.go('integrari'); }
-      if (a === 'wa-guide') { e.preventDefault(); S.tab = 'vars'; return render(); }
-      if (a === 'save-settings') return K.busy(act, saveSettings);
+      if (a === 'new') return openEditor(null, S.folder && S.folder !== NONE ? S.folder : '');
+      if (a === 'customize') return customize();
+      if (a === 'folder-new') {
+        const n = await K.ui().prompt({ title: 'Folder nou', label: 'Numele folderului', confirmText: 'Fă folderul' });
+        if (n && n.trim()) { try { await post({ action: 'folder', name: n.trim() }); K.ui().toast('Folder făcut.', 'success'); } catch (err) { fail(err); } }
+        return;
+      }
     }
-    const card = t.closest('[data-open]');
-    if (card) openEditor(S.d.workflows.find((w) => w.id === card.dataset.open));
+    if (t.closest('[data-sel-clear]')) { S.sel.clear(); paintStats(); return paintFlows(); }
+    const sh = t.closest('[data-show]'); if (sh) { S.show = sh.dataset.show; panel.querySelectorAll('[data-show]').forEach((b) => b.classList.toggle('is-on', b === sh)); return paintFlows(); }
+    const fo = t.closest('[data-fold]'); if (fo) { const id = fo.dataset.fold; if (S.closed.has(id)) S.closed.delete(id); else S.closed.add(id); return paintFlows(); }
+    const ni = t.closest('[data-new-in]'); if (ni) return openEditor(null, ni.dataset.newIn);
+    const wm = t.closest('[data-wmore]'); if (wm) return flowMenu(wm);
+    const fm = t.closest('[data-fmore]'); if (fm) return folderMenu(fm);
+    const op = t.closest('[data-open]'); if (op) return openEditor(S.d.workflows.find((w) => w.id === op.dataset.open));
+    const bk = t.closest('[data-bulk]');
+    if (bk) {
+      const ids = Array.from(S.sel), op2 = bk.dataset.bulk;
+      try {
+        if (op2 === 'move') { const f = await pickFolder('Mută ' + K.plural(ids.length, 'automatizare', 'automatizări')); if (f === null) return; await post({ action: 'many', ids, op: 'move', folder: f }); }
+        else if (op2 === 'delete') { if (!(await K.ui().confirm({ title: 'Ștergi ' + K.plural(ids.length, 'automatizare', 'automatizări') + '?', message: 'Rulările lor programate se opresc. Nu se poate anula.', confirmText: 'Șterge', danger: true }))) return; await post({ action: 'many', ids, op: 'delete' }); S.sel.clear(); render(); }
+        else await post({ action: 'many', ids, op: op2 });
+        K.ui().toast('Gata.', 'success');
+      } catch (err) { fail(err); }
+    }
   }
   async function onChange(e) {
     const t = e.target;
     if (t.name === 'autab') { S.tab = t.value; panel.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== S.tab; }); return; }
+    if (t.matches('[data-ffolder]')) { S.folder = t.value; return paintFlows(); }
+    if (t.matches('[data-ftrig]')) { S.trig = t.value; return paintFlows(); }
+    if (t.dataset.h) { S.h[t.dataset.h] = t.value; return paintLog(); }
+    if (t.matches('[data-pick]')) { if (t.checked) S.sel.add(t.dataset.pick); else S.sel.delete(t.dataset.pick); t.closest('.ad-camp').classList.toggle('is-picked', t.checked); syncPickAll(); paintBulk(); return paintStats(); }
+    if (t.matches('[data-pick-all]')) { visible().forEach((w) => { if (t.checked) S.sel.add(w.id); else S.sel.delete(w.id); }); paintFlows(); return paintStats(); }
     if (t.dataset.toggle) {
       const on = t.checked;
-      try { S.d = await K.api('/api/portal-workflows', { action: 'toggle', id: t.dataset.toggle, active: on }); render(); K.ui().toast(on ? 'Automatizare pornită.' : 'Automatizare oprită.', 'success'); }
+      try { await post({ action: 'toggle', id: t.dataset.toggle, active: on }); K.ui().toast(on ? 'Pornită.' : 'Oprită.', 'success'); }
       catch (err) { t.checked = !on; K.ui().toast(K.errText(err), 'error'); }
     }
   }
-  async function saveSettings() {
-    const v = K.formValues(panel.querySelector('[data-settings]'));
-    if (v.review && !/^https?:\/\//.test(v.review)) { K.ui().toast('Linkul de recenzii trebuie să înceapă cu https://', 'error'); return; }
-    try { S.d = await K.api('/api/portal-workflows', { action: 'settings', settings: { addresses: { 'Timișoara': v.adr_tm, 'Arad': v.adr_ar }, reviewLink: v.review } }); render(); K.ui().toast('Salvat. Mesajele folosesc noile date.', 'success'); }
-    catch (err) { K.ui().toast(K.errText(err), 'error'); }
-  }
-
-  // ------------------------------------------------------------------ recipes
-  function openRecipes() {
-    const have = new Set(S.d.workflows.map((w) => w.recipe).filter(Boolean));
-    const d = K.drawer({
-      title: 'Rețete gata făcute', icon: 'book', width: 620,
-      subtitle: 'Automatizările care aduc bani într-o clinică. Se adaugă oprite, le verifici textul și le pornești.',
-      body: '<div class="au-recipes">' + S.d.recipes.map((r) => '<article class="au-recipe"><div class="au-recipe-top"><span class="k-icon-chip">' + icon((TRIG[r.trigger.type] || {}).ic || 'zap') + '</span><div><b>' + esc(r.name) + '</b><span>' + esc(r.note || '') + '</span></div>' +
-        (have.has(r.key) ? '<span class="k-tag is-good">' + icon('check') + 'Adăugată</span>' : '<button type="button" class="k-btn is-sm is-primary" data-add="' + esc(r.key) + '">' + icon('plus') + 'Adaugă</button>') + '</div>' +
-        '<div class="au-chain is-compact"><span class="au-node is-trigger">' + esc(trigText(r.trigger, S.d.meta)) + '</span>' + r.steps.map((s) => '<span class="au-arrow">' + icon('right') + '</span><span class="au-node is-' + s.type + '">' + icon(STEP[s.type].ic) + '<em>' + esc(stepText(s, S.d.meta)) + '</em></span>').join('') + '</div></article>').join('') + '</div>',
-      onMount(el) {
-        el.addEventListener('click', (ev) => {
-          const b = ev.target.closest('[data-add]');
-          if (!b) return;
-          K.busy(b, async () => {
-            try { S.d = await K.api('/api/portal-workflows', { action: 'add_recipe', key: b.dataset.add }); render(); b.outerHTML = '<span class="k-tag is-good">' + icon('check') + 'Adăugată</span>'; K.ui().toast('Adăugată (oprită). O găsești în listă.', 'success'); }
-            catch (err) { K.ui().toast(K.errText(err), 'error'); }
-          });
-        });
-      },
+  function customize() {
+    K.customize({
+      title: 'Coloane și KPI', subtitle: 'Alegi cifrele de sus și coloanele listei, în ordinea ta. Se păstrează pe contul tău.',
+      catalog: M, groups: GROUPS,
+      parts: [
+        { key: 'cards', label: 'Cifrele de sus', hint: 'Pentru automatizările bifate, sau pentru toate. Oricâte.', value: cards(), def: DEF_CARDS },
+        { key: 'cols', label: 'Coloanele listei', hint: 'Dacă sunt multe, lista se derulează în lateral.', value: cols(), def: DEF_COLS },
+      ],
+      async onSave(v) { await K.prefs.set('wf.cards', v.cards); await K.prefs.set('wf.cols', v.cols); render(); },
     });
-    return d;
   }
 
   // ------------------------------------------------------------------ editor
-  // The flow itself is edited on a canvas, like in GoHighLevel (portal-builder.js).
-  function openEditor(wf) {
+  // The flow itself is built on a canvas, like in GoHighLevel (portal-builder.js); a new one starts in its folder.
+  function openEditor(wf, folder) {
     K.flowBuilder.open(wf, {
-      meta: S.d.meta, settings: S.d.settings,
+      meta: S.d.meta, settings: S.d.settings, folder: folder || '',
       list: () => S.d.workflows,
       onSaved(d) { S.d = d; render(); },
     });

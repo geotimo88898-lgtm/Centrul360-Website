@@ -1102,3 +1102,30 @@ main.ad-full{ max-width:none; }
 .db-b:empty{ display:none; }
 @media (max-width:1100px){ .db-blocks{ grid-template-columns:minmax(0,1fr); } .db-b.is-wide, .db-b.is-full{ grid-column:auto; } }
 .mo-kpis{ display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:1rem; }
+/* Automatizări: folders, the ticked ones, the history filters */
+.au-bar{ justify-content:flex-start; }
+.au-bar .ad-search{ flex:1 1 220px; max-width:360px; }
+.au-bar select{ height:36px; min-width:170px; width:auto; }
+.au-folder + .au-folder{ margin-top:1.1rem; }
+.au-folder-head{ display:flex; align-items:center; gap:.4rem; margin:.2rem 0 .55rem; }
+.au-folder-title{ display:inline-flex; align-items:center; gap:.45rem; border:0; background:none; padding:.3rem .2rem; color:var(--fg); font:inherit; cursor:pointer; margin-right:auto; }
+.au-folder-title .k-ic{ width:16px; height:16px; color:var(--muted); }
+.au-folder-title .k-ic + .k-ic{ color:var(--accent); }
+.au-folder-title b{ font-size:.95rem; font-weight:650; }
+.au-folder-title span{ font-size:.72rem; padding:.05rem .45rem; border-radius:999px; background:var(--glass-2); color:var(--muted); font-variant-numeric:tabular-nums; }
+.au-folder-empty{ padding:.9rem 1rem; margin:0; border:1px dashed var(--line); border-radius:14px; text-align:center; }
+.au-bulk{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; padding:.55rem .7rem; margin-bottom:.8rem; border-radius:12px; background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.au-bulk > b{ font-size:.86rem; margin-right:.3rem; }
+.au-hfilters{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.75rem .9rem; margin-bottom:.8rem; }
+.au-hfilters .ad-search{ flex:1 1 200px; max-width:300px; }
+.au-hfilters select{ height:36px; min-width:160px; width:auto; }
+.au-hsum{ margin:0 0 .6rem; font-size:.84rem; color:var(--muted); }
+.au-hsum b{ color:var(--fg); }
+.au-herr{ color:var(--bad); }
+@media (max-width:720px){
+  .au-bar select, .au-hfilters select{ flex:1 1 45%; min-width:0; }
+  .au-bar .ad-search, .au-hfilters .ad-search{ max-width:none; flex-basis:100%; }
+}
+.au-bar .c360-select, .au-hfilters .c360-select{ width:auto; min-width:180px; flex:0 0 auto; }
+.au-bar .c360-select-btn, .au-hfilters .c360-select-btn{ height:36px; padding-top:0; padding-bottom:0; }
+@media (max-width:720px){ .au-bar .c360-select, .au-hfilters .c360-select{ flex:1 1 45%; min-width:0; } }

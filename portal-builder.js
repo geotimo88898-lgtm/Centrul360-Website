@@ -447,7 +447,8 @@
   // ------------------------------------------------------------------ open / save / close
   function open(wf, ctx) {
     if (B) close(true);
-    const W = wf ? clone(wf) : { name: '', note: '', active: true, trigger: { type: 'lead_created', source: 'any', location: 'any', interest: 'any' }, steps: [] };
+    // a new flow starts in the folder it was made from (Automatizări → „Nouă aici”)
+    const W = wf ? clone(wf) : { name: '', note: '', active: true, folder: (ctx && ctx.folder) || '', trigger: { type: 'lead_created', source: 'any', location: 'any', interest: 'any' }, steps: [] };
     ensureIds(W.steps);
     let z = 1;
     try { z = Number(localStorage.getItem(ZOOM_KEY)) || 1; } catch (e) { /* private mode */ }
