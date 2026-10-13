@@ -431,7 +431,9 @@
     const c = A.d.campaigns.find((x) => x.id === campaignId);
     let d = pre || null, list = [], ai = adAt || 0, si = 0;
     // what she types, kept while switching between ads / ad sets
-    const draft = { ads: {}, sets: {} };
+    const draft = { ads: {}, sets: {}, names: {} };
+    // the names (campaign, ad set, ad) as she types them
+    const nm = (x) => (draft.names[x.id] != null ? draft.names[x.id] : x.name);
     const adDraft = (a) => (draft.ads[a.id] = draft.ads[a.id] || { texts: a.texts.slice(), headlines: a.headlines.slice(), descriptions: a.descriptions.slice(), cta: a.cta || 'LEARN_MORE', formId: a.formId, dirty: false });
     const setDraft = (s) => (draft.sets[s.id] = draft.sets[s.id] || { budget: s.budget, ageMin: s.ageMin, ageMax: s.ageMax, women: s.women, radiusKm: s.radiusKm, placements: s.placements.slice(), dirty: false });
     const area = (name, i, v, multi) => '<div class="ad-ed-item"><textarea class="ad-ed-ta" data-f="' + name + '" data-i="' + i + '" rows="' + (name === 'texts' ? 4 : 1) + '">' + esc(v) + '</textarea>' + (multi ? '<button type="button" class="k-icon-btn" data-rm="' + name + '" data-i="' + i + '" aria-label="Scoate">' + icon('x') + '</button>' : '') + '</div>';
@@ -441,7 +443,11 @@
       const box = el.querySelector('[data-ed]');
       if (!d) { box.innerHTML = '<div class="k-skel" style="height:260px"></div><div class="k-skel" style="height:200px"></div>'; return; }
       const a = d.ads[ai], s = d.adsets[si];
-      let h = '';
+      let h = '<section class="ad-ed-sec"><div class="ad-ed-head"><b>Nume</b></div><div class="k-form ad-ed-form">' +
+        K.field('Campanie', '<input data-name="' + esc(d.campaign.id) + '" value="' + esc(nm(d.campaign)) + '" maxlength="200">', 'full') +
+        (s ? K.field('Set de reclame' + (d.adsets.length > 1 ? ' (cel ales mai jos)' : ''), '<input data-name="' + esc(s.id) + '" value="' + esc(nm(s)) + '" maxlength="200">', 'full') : '') +
+        (a ? K.field('Reclamă' + (d.ads.length > 1 ? ' (cea aleasă mai jos)' : ''), '<input data-name="' + esc(a.id) + '" value="' + esc(nm(a)) + '" maxlength="200">', 'full') : '') +
+        '</div></section>';
       if (a) {
         const x = adDraft(a);
         const formOpts = list.slice(); if (x.formId && !formOpts.some((f) => f.id === x.formId)) formOpts.unshift({ id: x.formId, name: 'Formularul actual (' + x.formId + ')' });
@@ -471,7 +477,7 @@
     };
     const fit = (ta) => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; };
     const dr = K.drawer({
-      title: 'Editează · ' + (c ? c.name : ''), icon: 'pen', width: 600, subtitle: 'Schimbi textele, butonul, formularul, publicul și bugetul reclamei care rulează.',
+      title: 'Editează · ' + (c ? c.name : ''), icon: 'pen', width: 600, subtitle: 'Schimbi numele, textele, butonul, formularul, publicul și bugetul reclamei care rulează.',
       body: '<div class="ad-ed" data-ed></div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-ed-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
@@ -482,6 +488,7 @@
           if (t.dataset.f && a) { const x = adDraft(a); if (t.dataset.i != null) x[t.dataset.f][Number(t.dataset.i)] = t.value; else x[t.dataset.f] = t.value; x.dirty = true; if (t.tagName === 'TEXTAREA') fit(t); }
           if (t.dataset.s && s) { const y = setDraft(s); y[t.dataset.s] = t.dataset.s === 'women' ? t.value === '1' : Number(t.value); y.dirty = true; }
           if (t.hasAttribute('data-cbo')) draft.cbo = Number(t.value);
+          if (t.dataset.name) draft.names[t.dataset.name] = t.value;
         });
         el.addEventListener('change', (e) => {
           const t = e.target; const { a, s } = cur();
@@ -501,6 +508,12 @@
           if (!d) return;
           try {
             let n = 0;
+            // new names first (campaign, ad sets, ads)
+            for (const x of [d.campaign].concat(d.adsets, d.ads)) {
+              const v = draft.names[x.id]; if (v == null || !v.trim() || v.trim() === x.name) continue;
+              await post({ action: 'rename', id: x.id, name: v.trim() }); n++;
+              const row = findAny(x.id); if (row) row.name = v.trim();
+            }
             for (const a of d.ads) {
               const x = draft.ads[a.id]; if (!x || !x.dirty) continue;
               await post({ action: 'edit_ad', adId: a.id, texts: x.texts, headlines: x.headlines, descriptions: x.descriptions, cta: x.cta, formId: x.formId }); n++;
