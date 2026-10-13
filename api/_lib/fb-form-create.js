@@ -17,8 +17,8 @@ const T = require('./fb-form-template');
 
 const FORMS_KEY = 'data/fb-forms.json';
 const POLL_KEY = 'data/fb-poll.json';
-const SITE = 'https://centrul360.com';
-const PRIVACY = SITE + '/politica-de-confidentialitate';
+const SITE = 'https://www.centrul360.com';
+const PRIVACY = 'https://www.centrul360.com/politica-de-confidentialitate';
 const SCREENING = 3;
 
 const clip = (v, n) => dedash(String(v == null ? '' : v)).replace(/\s+/g, ' ').trim().slice(0, n);

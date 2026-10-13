@@ -78,7 +78,7 @@ function fromForm(j) {
 const EMPTY = () => ({
   ending: { title: 'Mulțumim! Scrie-ne pe WhatsApp', body: 'Apasă butonul de mai jos și scrie-ne pe WhatsApp. O colegă îți răspunde în cel mai scurt timp.' },
   cta: { type: 'WHATSAPP', text: 'Scrie-ne pe WhatsApp', url: '', countryCode: 'RO', enableMessenger: false },
-  intro: null, privacy: { url: 'https://centrul360.com/politica-de-confidentialitate', linkText: 'Politica de confidențialitate' },
+  intro: null, privacy: { url: 'https://www.centrul360.com/politica-de-confidentialitate', linkText: 'Politica de confidențialitate' },
   locale: 'RO_RO', headline: '', quality: false, fields: ['FULL_NAME', 'PHONE'],
   cities: { 'Timișoara': { whatsapp: '' }, Arad: { whatsapp: '' } }, from: null, readAt: '',
 });
