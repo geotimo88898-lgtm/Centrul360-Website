@@ -6,8 +6,8 @@
 // this device (stored ones by time, live bonus ones by id). A new lead also pops up at once while
 // the portal is open, and every notification reaches the phone (Web Push, portal-sw.js) once they are on
 // for that device: the nudge on top of the portal on phones, or Notificări → "Pornește pe acest dispozitiv".
-// On phones the nudge also installs the portal as an app (Android: one tap; iPhone: the steps, since
-// Web Push on iPhone works only from the Home Screen).
+// On phones the nudge also gets the app: Android downloads the Centrul360 app (android-app/, built by
+// GitHub Actions); iPhone puts the portal on the Home Screen (Web Push on iPhone works only from there).
 (function () {
   'use strict';
   const K = window.K;
@@ -50,6 +50,10 @@
 
   // ------------------------------------------------------------------ phone notifications (Web Push)
   const iOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const android = () => /Android/.test(navigator.userAgent);
+  const APK = 'https://github.com/geotimo88898-lgtm/Centrul360-Website/releases/download/android/centrul360.apk';
+  // inside the Android app (it opens the portal with its own referrer) or the Home Screen app
+  const inApp = () => { try { if (sessionStorage.getItem('c360_app')) return true; } catch (e) { /* private mode */ } return standalone(); };
   const standalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   function swReady() {
     return Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('sw')), 4000))]);
@@ -115,16 +119,13 @@
 
   // ------------------------------------------------------------------ phones: install the app, turn notifications on
   // A small card on top of every section until this phone gets the notifications; "×" hides it 3 days.
-  let installEvt = null;
-  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; nudge(); });
-  window.addEventListener('appinstalled', () => { installEvt = null; nudge(); });
   const phone = () => (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) || /Android|iPhone|iPad/.test(navigator.userAgent);
   const NUDGE_KEY = 'c360_push_nudge';
   const nudgeLater = () => { try { return Number(localStorage.getItem(NUDGE_KEY) || 0) > Date.now(); } catch (e) { return false; } };
   const NUDGE = {
     ios: ['Instalează aplicația', 'Ca să primești notificările pe iPhone.', 'Cum'],
     push: ['Notificări pe telefon', 'Leaduri noi, bonusuri, răspunsuri.', 'Pornește'],
-    install: ['Instalează aplicația', 'Centrul360 pe ecranul telefonului.', 'Instalează'],
+    android: ['Aplicația Centrul360', 'Leaduri și mesaje pe telefon, ca orice aplicație.', 'Instalează'],
   };
   let nudging = false;
   async function nudge() {
@@ -137,8 +138,8 @@
       let what = '';
       if (phone() && !nudgeLater()) {
         if (iOS() && !standalone()) what = 'ios';
+        else if (android() && !inApp()) what = 'android';
         else if (!on && st.supported && st.perm !== 'denied') what = 'push';
-        else if (installEvt && !standalone()) what = 'install';
       }
       let el = document.querySelector('.nt-nudge');
       if (!what) { if (el) el.remove(); return; }
@@ -152,11 +153,24 @@
       const b = el.querySelector('[data-nudge]');
       b.addEventListener('click', () => K.busy(b, async () => {
         if (what === 'ios') return iosSteps();
-        if (what === 'install') { if (installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch (e) { /* closed */ } installEvt = null; } return nudge(); }
+        if (what === 'android') return androidSteps();
         try { await pushOn(); K.ui().toast('Gata. Ți-am trimis o notificare de test.', 'success'); } catch (e) { K.ui().toast(e.message === 'denied' ? 'Ai refuzat notificările. Le poți porni din setările telefonului.' : 'Nu am putut porni notificările. Încearcă din nou.', 'error'); }
         el.dataset.what = ''; nudging = false; nudge();
       }));
     } finally { nudging = false; }
+  }
+  // Android: the app is downloaded from the portal (not from Google Play), so the phone asks once to allow it
+  function androidSteps() {
+    const step = (n, ic, html) => '<li><span class="nt-step-n">' + n + '</span><span class="nt-step-ic">' + icon(ic) + '</span><span>' + html + '</span></li>';
+    K.drawer({
+      title: 'Aplicația pe Android', icon: 'download', width: 440,
+      body: '<a class="k-btn is-primary nt-apk" href="' + APK + '">' + icon('download') + 'Descarcă aplicația Centrul360</a>' +
+        '<ol class="nt-steps">' +
+        step(1, 'download', 'Apasă <b>Descarcă</b>, apoi deschide fișierul <b>centrul360.apk</b> din notificări sau din Descărcări.') +
+        step(2, 'shield', 'Telefonul întreabă dacă permiți instalarea: apasă <b>Setări</b> → <b>Permite din această sursă</b>, apoi <b>Instalează</b>.') +
+        step(3, 'bell', 'Deschide <b>Centrul360</b> de pe ecran, intră în cont și apasă <b>Pornește</b> la notificări.') +
+        '</ol>',
+    });
   }
   // iPhone: Web Push works only for the portal added to the Home Screen (iOS 16.4+)
   function iosSteps() {

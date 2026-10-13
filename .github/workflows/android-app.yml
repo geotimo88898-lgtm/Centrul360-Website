@@ -1,0 +1,53 @@
+# Centrul360 for Android: builds and signs the app (android-app/, a Trusted Web Activity around the
+# portal) and publishes centrul360.apk on the "android" release, the link the portal offers on phones:
+# https://github.com/geotimo88898-lgtm/Centrul360-Website/releases/download/android/centrul360.apk
+# The signing key lives in the repository secrets ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD.
+name: Aplicația Android
+
+on:
+  push:
+    branches: [main]
+    paths: ['android-app/**', '.github/workflows/android-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Cheia de semnare
+        run: echo "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+
+      - name: Construiește
+        run: gradle -p android-app assembleRelease --no-daemon --stacktrace
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/release.p12
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          APP_VERSION_CODE: ${{ github.run_number }}
+
+      - name: Publică
+        run: |
+          cp android-app/app/build/outputs/apk/release/app-release.apk centrul360.apk
+          if gh release view android >/dev/null 2>&1; then
+            gh release upload android centrul360.apk --clobber
+            gh release edit android --notes "Versiunea 1.${{ github.run_number }}"
+          else
+            gh release create android centrul360.apk --title "Centrul360 pentru Android" --notes "Versiunea 1.${{ github.run_number }}"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

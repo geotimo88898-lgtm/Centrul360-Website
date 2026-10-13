@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appName">Centrul360</string>
+    <string name="launcherName">Centrul360</string>
+    <string name="launchUrl">https://admin.centrul360.com/portal-login</string>
+    <string name="assetStatements" translatable="false">[{ \"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": { \"namespace\": \"web\", \"site\": \"https://admin.centrul360.com\" } }]</string>
+</resources>

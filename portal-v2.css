@@ -701,3 +701,4 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .ad-emp-push{ display:flex; align-items:center; gap:.4rem; margin-top:.6rem; font-size:.76rem; color:var(--muted); }
 .ad-emp-push svg{ width:13px; height:13px; }
 .ad-emp-push.is-on{ color:var(--good); }
+.nt-apk{ width:100%; justify-content:center; margin-bottom:1rem; }

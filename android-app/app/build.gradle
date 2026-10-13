@@ -1,0 +1,50 @@
+// Centrul360 for Android: the team portal (admin.centrul360.com) as an app. A Trusted Web Activity:
+// the portal full screen, its Web Push notifications shown as the app's. Built and signed by GitHub
+// Actions (.github/workflows/android-app.yml) with the key kept in the repository's secrets.
+plugins {
+    id 'com.android.application'
+}
+
+def versionNumber = (System.getenv('APP_VERSION_CODE') ?: '1') as Integer
+
+android {
+    namespace 'com.centrul360.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.centrul360.app'
+        minSdk 23
+        targetSdk 34
+        versionCode versionNumber
+        versionName '1.' + versionNumber
+    }
+
+    signingConfigs {
+        release {
+            def ks = System.getenv('KEYSTORE_FILE')
+            if (ks) {
+                storeFile file(ks)
+                storeType 'pkcs12'
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias 'centrul360'
+                keyPassword System.getenv('KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}
