@@ -101,17 +101,36 @@
   }
   const condText = (s) => (COND[s.cond] || { label: s.cond }).label + (COND[s.cond] && COND[s.cond].value ? ' ' + (s.value || '…') : '');
   const toText = (to) => (to || []).map((x) => (x.startsWith('role:') ? ROLE[x.slice(5)] : ((B.meta.team || []).find((p) => 'emp:' + p.id === x) || { name: '?' }).name)).join(', ');
+  // the WhatsApp templates and numbers (from /api/portal-workflows, refreshed after a new template)
+  const tplOf = (id) => (B.meta.waTemplates || []).find((t) => t.id === id) || null;
+  const WA_STATUS = { DRAFT: 'ciornă', PENDING: 'în verificare', APPROVED: 'aprobat', REJECTED: 'respins', PAUSED: 'pe pauză', DISABLED: 'dezactivat', DELETED: 'șters din Meta' };
+  function waFields(s, label) {
+    const nums = B.meta.waNumbers || [{ city: 'Timișoara' }, { city: 'Arad' }];
+    const tpls = B.meta.waTemplates || [];
+    const tpl = tplOf(s.templateId);
+    const city = s.from && s.from !== 'auto' ? s.from : '';
+    return K.field(label || 'De pe numărul', '<select data-f="from">' + K.options([['auto', 'Automat, după orașul clientei']].concat(nums.map((n) => [n.city, n.city + (n.display ? ' · ' + n.display : n.connected === false ? ' (neconectat încă)' : '')])), s.from || 'auto') + '</select>', 'full') +
+      K.field('Șablonul', '<div class="fb-tpl-row"><select data-f="templateId">' + K.options([['', tpls.length ? 'Alege șablonul…' : 'Niciun șablon încă']].concat(tpls.map((t) => [t.id, t.label + ' · ' + (WA_STATUS[t.status] || t.status)])), s.templateId || '') + '</select>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-tpl-new>' + icon('plus') + 'Șablon nou</button></div>', 'full') +
+      (tpl ? '<div class="au-preview"><span>' + icon('eye') + 'Așa îl primește</span>' + (window.C360Wa ? window.C360Wa.bubble(tpl, sample(city)) : '<div class="au-bubble">' + renderMsg(tpl.text, sample(city)) + '</div>') + '</div>' +
+        (tpl.status !== 'APPROVED' ? '<p class="fb-hint is-warn">' + icon('alert') + (tpl.status === 'DRAFT' ? (nums.some((n) => n.connected) ? 'E ciornă: deschide-l mai jos și apasă „Salvează și trimite la aprobare”.' : 'E ciornă: îl trimiți la aprobare după ce conectezi numerele (Integrări → WhatsApp).') + ' Până e aprobat, mesajul nu pleacă.' : 'Meta: ' + (WA_STATUS[tpl.status] || tpl.status) + '. Până e aprobat, mesajul nu pleacă.') + '</p>' : '') +
+        '<button type="button" class="k-btn is-ghost is-sm" data-tpl-edit="' + esc(tpl.id) + '">' + icon('pen') + 'Vezi / editează șablonul</button>'
+        : '<p class="fb-hint">' + icon('info') + 'Pe WhatsApp scriem primii doar cu șabloane aprobate de Meta. Alege unul sau fă unul nou.</p>');
+  }
   function summary(s) {
     if (s.type === 'wait') return (s.amount || 1) + ' ' + UNIT[s.unit || 'h'];
     if (s.type === 'if' || s.type === 'stop_if') return condText(s);
     if (s.type === 'move_stage') return '→ ' + ((B.meta.stages.find((x) => x.id === s.stage) || {}).name || 'alege etapa');
     if (s.type === 'notify') return s.to && s.to.length ? 'Către ' + toText(s.to) : 'Alege cui';
+    if (s.type === 'whatsapp') { const tp = tplOf(s.templateId); return tp ? tp.label + (s.from && s.from !== 'auto' ? ' · ' + s.from : '') : 'Alege șablonul'; }
     const t = String(s.text || '').replace(/\s+/g, ' ').trim();
     return t ? (t.length > 60 ? t.slice(0, 60) + '…' : t) : 'Scrie mesajul';
   }
   // what keeps a step from saving (shown on the card in yellow)
   function problem(s) {
-    if ((s.type === 'whatsapp' || s.type === 'task') && !String(s.text || '').trim()) return 'gol';
+    if (s.type === 'whatsapp' && !s.templateId) return 'alege șablonul';
+    if (s.type === 'notify' && s.whatsapp && !s.templateId) return 'alege șablonul';
+    if (s.type === 'task' && !String(s.text || '').trim()) return 'gol';
     if (s.type === 'move_stage' && !s.stage) return 'alege etapa';
     if (s.type === 'notify' && (!s.to || !s.to.length)) return 'alege cui';
     if (s.type === 'notify' && !String(s.title || '').trim()) return 'fără titlu';
@@ -120,11 +139,14 @@
     if ((s.type === 'if' || s.type === 'stop_if') && COND[s.cond] && COND[s.cond].appt && isLead()) return 'doar la programări';
     return '';
   }
-  function sample() {
+  // a sample client for the previews, in the chosen number's city, else the trigger's, else Timișoara
+  function sample(city) {
     const appt = !isLead(), st = B.settings;
+    const tl = B.W.trigger.location;
+    const loc = city || (tl && tl !== 'any' ? tl : 'Timișoara');
     return { prenume: 'Andreea', nume: 'Andreea Popescu', telefon: '0722 123 456', zi: 'mâine', data: '14.10.2026', ora: '11:00', tratament: appt ? 'Facial Restart' : (offerOpts()[0] || 'LipoSonix'),
       procedura: appt ? 'Facial Restart' : (B.W.trigger.interest && B.W.trigger.interest !== 'any' ? B.W.trigger.interest : (offerOpts()[0] || 'LipoSonix')), interes: offerOpts()[0] || 'LipoSonix',
-      locatie: 'Timișoara', adresa: (st.addresses || {})['Timișoara'] || 'Timișoara', link_recenzie: st.reviewLink || 'https://g.page/r/…' };
+      locatie: loc, adresa: (st.addresses || {})[loc] || loc, link_recenzie: st.reviewLink || 'https://g.page/r/…' };
   }
   const renderMsg = (text, v) => esc(String(text || '')).replace(/\{(\w+)\}/g, (m, k) => (k in v ? '<mark>' + esc(v[k]) + '</mark>' : '<mark class="is-bad">' + m + '</mark>'));
 
@@ -202,12 +224,7 @@
     const v = sample();
     let body = '';
     if (s.type === 'wait') body = K.field('Cât așteaptă', '<div class="au-inline"><input type="number" min="1" max="999" data-f="amount" value="' + esc(s.amount || 1) + '"><select data-f="unit">' + K.options(Object.keys(UNIT).map((u) => [u, UNIT[u]]), s.unit || 'h') + '</select></div>', 'full', 'Apoi merge la pasul următor.');
-    if (s.type === 'whatsapp') {
-      body = K.field('Mesajul', '<textarea rows="7" data-f="text" maxlength="1000" placeholder="Mesajul către client… (lipește aici textul din HighLevel)">' + esc(s.text || '') + '</textarea>', 'full') + chips +
-        '<div class="au-preview"><span>' + icon('eye') + 'Așa îl primește clientul</span><div class="au-bubble" data-prev>' + renderMsg(s.text, v) + '</div></div>' +
-        K.field('Șablon Meta', '<input data-f="template" value="' + esc(s.template || '') + '" placeholder="ex. lead_nou_liposonix" maxlength="80">', 'full',
-          'Primul mesaj către un lead nou pleacă automat doar ca șablon aprobat în WhatsApp Manager. Scrie aici numele lui; {variabilele} din mesaj devin, în ordine, {{1}}, {{2}} … Fără WhatsApp automat, mesajul ajunge la recepție ca sarcină într-un tap.');
-    }
+    if (s.type === 'whatsapp') body = waFields(s);
     if (s.type === 'task') body = K.field('Ce face recepția', '<textarea rows="3" data-f="text" maxlength="300" placeholder="ex. Sună-l pe {nume} ({telefon}) pentru {procedura}">' + esc(s.text || '') + '</textarea>', 'full') + chips;
     if (s.type === 'move_stage') body = K.field('Etapa', '<select data-f="stage">' + K.options([['', 'Alege etapa…']].concat(B.meta.stages.map((x) => [x.id, x.name])), s.stage || '') + '</select>', 'full');
     if (s.type === 'if') body = condFields(s) + '<p class="fb-hint">' + icon('info') + 'Dacă e adevărat, merge pe ramura <b>Da</b>; altfel pe <b>Nu</b>. După ramuri, continuă cu pașii de dedesubt.</p>';
@@ -222,8 +239,8 @@
         K.field('Text', '<input data-f="text" maxlength="160" value="' + esc(s.text || '') + '" placeholder="ex. {procedura} · {locatie} · {telefon}">', 'full') + chips +
         '<div class="au-preview"><span>' + icon('bell') + 'Așa apare în portal și pe telefon</span><div class="fb-notif"><b data-prev-t>' + renderMsg(s.title, v) + '</b><span data-prev>' + renderMsg(s.text, v) + '</span></div></div>' +
         '<p class="fb-hint">' + icon('info') + 'Apare la clopoțel și, pe telefoanele unde au pornit notificările (Notificări → Pornește pe acest dispozitiv), ca notificare.</p>' +
-        '<label class="fb-check is-row"><input type="checkbox" data-f="whatsapp"' + (s.whatsapp ? ' checked' : '') + '><span>Și pe WhatsApp, la numărul lor<small>Doar cu WhatsApp automat. Numărul e cel din profilul fiecăreia.</small></span></label>' +
-        (s.whatsapp ? K.field('Șablon Meta (pentru WhatsApp)', '<input data-f="template" value="' + esc(s.template || '') + '" placeholder="ex. alerta_lead_echipa" maxlength="80">', 'full', 'Meta cere șablon aprobat pentru mesajele pe care le începeți voi.') : '');
+        '<label class="fb-check is-row"><input type="checkbox" data-f="whatsapp"' + (s.whatsapp ? ' checked' : '') + '><span>Și pe WhatsApp, la numărul lor<small>Cu un șablon aprobat. Numărul e cel din profilul fiecăreia.</small></span></label>' +
+        (s.whatsapp ? waFields(s, 'WhatsApp de pe numărul') : '');
     }
     return '<header class="fb-ph"><span class="k-icon-chip is-' + st.tone + '">' + icon(st.ic) + '</span><div><b>' + esc(st.label) + '</b><small>' + esc(problem(s) ? 'Incomplet: ' + problem(s) : 'Modificările se văd pe loc în schemă') + '</small></div>' +
       '<button type="button" class="k-icon-btn" data-close-panel aria-label="Închide">' + icon('x') + '</button></header>' +
@@ -288,10 +305,10 @@
   // ------------------------------------------------------------------ add / remove / move
   function defaults(type) {
     if (type === 'wait') return { type, amount: 1, unit: 'h' };
-    if (type === 'whatsapp') return { type, text: 'Bună, {prenume}! ', template: '' };
+    if (type === 'whatsapp') return { type, templateId: '', from: 'auto', text: '' };
     if (type === 'task') return { type, text: '' };
     if (type === 'move_stage') return { type, stage: '' };
-    if (type === 'notify') return { type, to: ['role:admin', 'role:receptie'], title: isLead() ? 'Lead nou: {nume}' : 'Programare: {nume}', text: isLead() ? '{procedura} · {locatie} · {telefon}' : '{tratament} · {zi} {ora} · {locatie}', whatsapp: false, template: '' };
+    if (type === 'notify') return { type, to: ['role:admin', 'role:receptie'], title: isLead() ? 'Lead nou: {nume}' : 'Programare: {nume}', text: isLead() ? '{procedura} · {locatie} · {telefon}' : '{tratament} · {zi} {ora} · {locatie}', whatsapp: false, templateId: '', from: 'auto' };
     if (type === 'if') return { type, cond: isLead() ? 'interest' : 'appt_confirmed', value: '', yes: [], no: [] };
     if (type === 'stop_if') return { type, cond: isLead() ? 'contacted' : 'appt_inactive' };
     return { type };
@@ -548,6 +565,20 @@
     if (t.closest('[data-save]')) return save(t.closest('[data-save]'));
     if (t.closest('[data-del]')) return delWorkflow();
     if (t.closest('[data-close-panel]')) return closePanel();
+    // a new WhatsApp template (or the chosen one) in the template editor (portal-wa.js); the step takes the new one
+    const tn = t.closest('[data-tpl-new], [data-tpl-edit]');
+    if (tn && window.C360Wa) {
+      const stepId = B.sel;
+      const cur = tn.dataset.tplEdit ? tplOf(tn.dataset.tplEdit) : null;
+      window.C360Wa.edit(cur, { onSaved: (id, d) => {
+        if (!B) return;
+        B.meta.waTemplates = d.templates;
+        const r = locate(stepId);
+        if (r) { if (!cur) r.s.templateId = id; const tp = tplOf(r.s.templateId); r.s.text = tp ? tp.text : r.s.text; changed(); }
+        openPanel(stepId);
+      } });
+      return;
+    }
     const z = t.closest('[data-zoom]'); if (z) return setZoom(B.zoom + Number(z.dataset.zoom) * 0.1);
     if (t.closest('[data-fit]')) return fit();
     const add = t.closest('[data-add]'); if (add) { if (B.menu && B.menu.dataset.for === add.dataset.add) return closeMenu(); openMenu(add); B.menu.dataset.for = add.dataset.add; return; }
@@ -604,6 +635,7 @@
       const r = setField(f);
       if (!r) return;
       if (f.dataset.f === 'cond') r.s.value = '';
+      if (f.dataset.f === 'templateId') { const tp = tplOf(f.value); r.s.text = tp ? tp.text : ''; }
       changed();
       // a select or a checkbox can change what the panel shows (a value list, the template field)
       if (f.tagName === 'SELECT' || f.type === 'checkbox') openPanel(B.sel); else { paint(); refreshPanelBits(); }

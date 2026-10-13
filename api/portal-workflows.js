@@ -16,11 +16,13 @@ const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { loadOffers } = require('./_lib/offers');
 const W = require('./_lib/workflows');
-const { whatsappConfigured } = require('./_lib/whatsapp');
+const WA = require('./_lib/whatsapp');
+const WT = require('./_lib/wa-templates');
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
 
 async function payload() {
+  const [waCfg, waDoc] = await Promise.all([WA.loadConfig(), WT.load()]);
   const [doc, runsDoc, stagesDoc, leads, appointments, offers, employees, admin] = await Promise.all([
     W.loadDoc(), W.loadRuns(), require('./portal-leads').loadStages(), readJSON('data/leads.json', []), readJSON('data/appointments.json', []),
     loadOffers(readJSON, writeJSON), readJSON('data/employees.json', []), readJSON('data/admin-profile.json', {}),
@@ -68,7 +70,10 @@ async function payload() {
       // the procedures a flow can be about, and the people "Anunță echipa" can reach
       offers: offers.filter((o) => o.active !== false).map((o) => o.title),
       team: [{ id: 'admin', name: admin.name || 'Admin (tu)', role: 'admin' }].concat(employees.filter((e) => e.active !== false).map((e) => ({ id: e.id, name: e.name, role: e.role }))),
-      whatsappCloud: whatsappConfigured(),
+      whatsappCloud: WA.readyNumbers(waCfg).length > 0,
+      // the WhatsApp step: from which number, which template (Automatizări → Șabloane WhatsApp)
+      waNumbers: WA.CITIES.map((c) => ({ city: c, connected: !!(waCfg.numbers[c].phoneId && waCfg.numbers[c].token), display: waCfg.numbers[c].display || '' })),
+      waTemplates: waDoc.templates.map((t) => WT.view(t, waCfg)),
     },
   };
 }

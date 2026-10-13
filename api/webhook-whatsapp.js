@@ -46,12 +46,8 @@ function isValidSignature(rawBody, header, secret) {
 // number is, as of writing) - WHATSAPP_PHONE_ID_TIMISOARA / WHATSAPP_PHONE_ID_ARAD are the
 // per-location numbers to set once they're connected; a phone_number_id that matches neither
 // (e.g. today's sandbox number) falls back to '' (unknown), it never hard-fails.
-function locationForPhoneNumberId(phoneNumberId) {
-  if (!phoneNumberId) return '';
-  if (process.env.WHATSAPP_PHONE_ID_TIMISOARA && phoneNumberId === process.env.WHATSAPP_PHONE_ID_TIMISOARA) return 'Timișoara';
-  if (process.env.WHATSAPP_PHONE_ID_ARAD && phoneNumberId === process.env.WHATSAPP_PHONE_ID_ARAD) return 'Arad';
-  return '';
-}
+// (the numbers connected in Integrări → WhatsApp, see _lib/whatsapp.js; the Vercel variables still count)
+const locationForPhoneNumberId = (phoneNumberId) => require('./_lib/whatsapp').cityForPhoneId(phoneNumberId);
 
 function findOrCreateConversation(conversations, phone) {
   let convo = conversations.find((c) => c.phone === phone);
@@ -91,7 +87,7 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
   }
 
   if (!convo.location) {
-    const loc = locationForPhoneNumberId(phoneNumberId);
+    const loc = await locationForPhoneNumberId(phoneNumberId);
     if (loc) convo.location = loc;
   }
 

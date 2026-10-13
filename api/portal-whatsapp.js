@@ -104,7 +104,8 @@ module.exports = async (req, res) => {
       if (!convo) return fail(404, 'conversation_not_found');
       if (!within24h(convo)) return fail(409, 'outside_24h_window');
 
-      const result = await sendWhatsApp({ phone, text });
+      // the answer leaves from the number she wrote to (Timișoara / Arad)
+      const result = await sendWhatsApp({ phone, text, from: convo.location || '' });
       if (!result.sent) return fail(502, 'send_failed');
 
       convo.messages.push({

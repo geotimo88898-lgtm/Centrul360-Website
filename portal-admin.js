@@ -633,6 +633,29 @@
   // =====================================================================================
   // INTEGRĂRI
   // =====================================================================================
+  // WhatsApp: a row per clinic (Timișoara, Arad), each connected on its own (portal-wa.js)
+  async function paintWa(box, force) {
+    let d;
+    try { d = await window.C360Wa.load(force); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; return; }
+    const ok = Object.keys(d.numbers).filter((c) => d.numbers[c].connected).length;
+    box.innerHTML = '<div class="wa-nums">' + Object.keys(d.numbers).map((c) => {
+      const n = d.numbers[c];
+      return '<div class="st-fb-status wa-num ' + (n.connected ? 'is-ok' : 'is-wait') + '">' + icon(n.connected ? 'checkCircle' : 'pin') +
+        '<div><b>' + esc(c) + '</b><span>' + (n.connected ? esc(n.display || n.phoneId) + (n.name ? ' · ' + esc(n.name) : '') : 'Neconectat') + '</span></div>' +
+        (n.connected ? '<button type="button" class="k-btn is-ghost is-sm" data-wa-connect="' + esc(c) + '">Schimbă</button><button type="button" class="k-icon-btn" data-wa-off="' + esc(c) + '" title="Deconectează ' + esc(c) + '">' + icon('x') + '</button>'
+          : '<button type="button" class="k-btn is-primary is-sm" data-wa-connect="' + esc(c) + '" title="Conectează numărul ' + esc(c) + '">' + icon('plus') + 'Conectează</button>') + '</div>';
+    }).join('') + '</div>' +
+      '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-wa-tpl>' + icon('chat') + 'Șabloane WhatsApp' + icon('arrow') + '</button>' +
+        (ok ? '<button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Mesaje' + icon('arrow') + '</button>' : '<span class="k-muted">Până la conectare, mesajele automatizărilor nu pleacă.</span>') + '</div>';
+    box.querySelectorAll('[data-wa-connect]').forEach((b) => b.addEventListener('click', () => window.C360Wa.connect(b.dataset.waConnect, { onDone: () => paintWa(box) })));
+    box.querySelectorAll('[data-wa-off]').forEach((b) => b.addEventListener('click', async () => {
+      const c = b.dataset.waOff;
+      if (!(await K.ui().confirm({ title: 'Deconectezi numărul ' + c + '?', message: 'Mesajele automatizărilor nu mai pleacă de pe el până îl conectezi la loc.', confirmText: 'Deconectează', danger: true }))) return;
+      try { await window.C360Wa.post({ action: 'disconnect', city: c }); paintWa(box); K.ui().toast('Deconectat.', 'success'); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+    }));
+    box.querySelector('[data-wa-tpl]').addEventListener('click', () => { K.go('fluxuri'); setTimeout(() => K.emit('fluxuri:tpl'), 300); });
+    box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
+  }
   let ipanel;
   const I = { tab: 'int' };
   function mountIntegrations(p) {
@@ -663,7 +686,7 @@
     const body = ipanel.querySelector('[data-int-body]');
     body.innerHTML = '<div class="st-integrations">' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Mesajele clientelor în „Mesaje” și trimiterea automată a confirmărilor și a reminderelor.</span></div></div><div data-wa><div class="k-skel" style="height:44px"></div></div></section>' +
+      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Două numere: Timișoara și Arad. De pe ele pleacă șabloanele din automatizări și răspunsurile din Mesaje.</span></div></div><div data-wa><div class="k-skel" style="height:96px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="creative">Deschide Creative' + icon('arrow') + '</button></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-info">' + icon('globe') + '</span><div><b>Site centrul360.com</b><span>Paginile Oferte și Prețuri se actualizează din secțiunea Oferte, în câteva minute.</span></div></div>' +
@@ -672,13 +695,7 @@
     loadFb(body.querySelector('[data-fb]'));
     (async () => {
       const box = body.querySelector('[data-wa]');
-      try {
-        const j = await K.api('/api/portal-integrations');
-        box.innerHTML = j.whatsapp
-          ? '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Deschide Mesaje' + icon('arrow') + '</button></div>'
-          : '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Neconectat</span><span class="k-muted">Până la conectare, mesajele de trimis apar ca sarcini la recepție.</span></div>';
-        box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
-      } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; }
+      if (box && window.C360Wa) paintWa(box);
     })();
   }
 

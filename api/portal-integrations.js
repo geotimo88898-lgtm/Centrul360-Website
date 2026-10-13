@@ -9,7 +9,7 @@
 
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
-const { whatsappConfigured } = require('./_lib/whatsapp');
+const { whatsappReady } = require('./_lib/whatsapp');
 const { loadOffers } = require('./_lib/offers');
 const { loadConnection, fetchFormInfo } = require('./_lib/facebook');
 
@@ -37,7 +37,7 @@ async function payload() {
   }).sort((a, b) => (b.lastAt || b.created || '').localeCompare(a.lastAt || a.created || ''));
   return {
     ok: true,
-    whatsapp: !!whatsappConfigured(),
+    whatsapp: await whatsappReady(),
     blob: !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID),
     fbForms: forms,
     formsAt: poll.formsAt || '',

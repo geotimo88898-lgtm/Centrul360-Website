@@ -358,7 +358,7 @@
   }
 
   // ------------------------------------------------------------------ drawer
-  let drawerRoot = null, current = null;
+  let drawerRoot = null, current = null, openRaf = 0;
   function drawer(opts) {
     if (!drawerRoot) {
       drawerRoot = document.createElement('div');
@@ -396,7 +396,8 @@
       close(silent) {
         if (current !== handle) return;
         current = null;
-        if (!silent) { drawerRoot.classList.remove('is-open'); document.documentElement.classList.remove('c360-noscroll'); }
+        // a drawer closed before its first frame (a background tab) must not open afterwards
+        if (!silent) { cancelAnimationFrame(openRaf); drawerRoot.classList.remove('is-open'); document.documentElement.classList.remove('c360-noscroll'); }
         if (opts.onClose) opts.onClose();
       },
     };
@@ -404,7 +405,7 @@
     handle.set({});
     aside.classList.remove('is-swap'); void aside.offsetWidth; aside.classList.add('is-swap');
     document.documentElement.classList.add('c360-noscroll');
-    requestAnimationFrame(() => drawerRoot.classList.add('is-open'));
+    openRaf = requestAnimationFrame(() => drawerRoot.classList.add('is-open'));
     setTimeout(() => { const f = aside.querySelector('[autofocus], .k-dbody input:not([type=hidden]):not([readonly]), .k-dbody textarea'); if (f && opts.focus !== false) f.focus({ preventScroll: true }); }, 280);
     return handle;
   }

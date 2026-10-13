@@ -11,13 +11,15 @@
 // picked up by tick(), which the portal heartbeat (/api/portal-pulse, polled by every open portal)
 // and the daily cron (/api/automation-tick) call, so there is no separate job server.
 //
-// WhatsApp: with WHATSAPP_TOKEN + WHATSAPP_PHONE_ID set (Meta WhatsApp Cloud API) messages go out
-// on their own; without them, or when Meta refuses one, the message becomes a one-tap task in
-// Sarcini (opens WhatsApp with the text already written), so nothing is ever silently lost.
+// WhatsApp: a step sends one approved template (Automatizări → Șabloane WhatsApp) from the number
+// chosen on the step, Timișoara, Arad or the client's city (Integrări → WhatsApp, _lib/whatsapp.js).
+// A template not yet approved for that number, or WhatsApp not connected: logged, nothing sent.
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./store');
-const { sendWhatsApp, whatsappConfigured } = require('./whatsapp');
+const WA = require('./whatsapp');
+const { sendWhatsApp } = WA;
+const WT = require('./wa-templates');
 const { dedash } = require('./dedash');
 const { notifyMany } = require('./notify');
 const { sendPush } = require('./push');
@@ -205,7 +207,7 @@ function cleanSteps(list, depth, seen) {
     const st = { id, type: s.type };
     let ok = true;
     if (s.type === 'wait') { st.amount = Math.min(999, Math.max(1, Math.round(Number(s.amount) || 1))); st.unit = unitMs[s.unit] ? s.unit : 'h'; }
-    if (s.type === 'whatsapp') { st.text = clip(s.text, 1000).trim(); st.template = clip(s.template, 80).replace(/[^\w]/g, ''); ok = !!st.text; }
+    if (s.type === 'whatsapp') { waFields(s, st); st.text = clip(s.text, 1100).trim(); ok = !!st.templateId; }
     if (s.type === 'task') { st.text = clip(s.text, 300).trim(); ok = !!st.text; }
     if (s.type === 'move_stage') { st.stage = clip(s.stage, 60); ok = !!st.stage; }
     if (s.type === 'stop_if') ok = cleanCond(s, st);
@@ -214,8 +216,8 @@ function cleanSteps(list, depth, seen) {
       st.title = clip(s.title, 80).trim();
       st.text = clip(s.text, 160).trim();
       st.whatsapp = !!s.whatsapp;
-      st.template = clip(s.template, 80).replace(/[^\w]/g, '');
-      ok = st.to.length > 0 && !!st.title;
+      if (st.whatsapp) waFields(s, st);
+      ok = st.to.length > 0 && !!st.title && (!st.whatsapp || !!st.templateId);
     }
     if (s.type === 'if') {
       if (depth >= MAX_DEPTH) return { error: 'too_deep' };
@@ -231,6 +233,11 @@ function cleanSteps(list, depth, seen) {
     out.push(st);
   }
   return { steps: out };
+}
+// a WhatsApp step: which template, from which number ('auto' = the client's city)
+function waFields(s, st) {
+  st.templateId = clip(s.templateId, 40).replace(/[^\w-]/g, '');
+  st.from = WA.CITIES.includes(s.from) ? s.from : 'auto';
 }
 function validateWorkflow(input) {
   const w = input || {};
@@ -438,9 +445,24 @@ function condHit(s, ctx) {
   return stopHit(s.cond, ctx);
 }
 
+// One template to one phone, from a number: { sent, why, city }. wa = { tpls, cfg } (read once per tick).
+async function sendTemplate(wa, templateId, from, phone, v) {
+  const tpl = (wa.tpls || []).find((t) => t.id === templateId);
+  if (!tpl) return { why: 'șablonul WhatsApp nu mai există' };
+  if (!phone) return { why: 'fără telefon' };
+  const ready = wa.cfg ? WA.readyNumbers(wa.cfg) : [];
+  if (!ready.length) return { why: 'WhatsApp nu e conectat' };
+  const city = ready.includes(from) ? from : ready[0];
+  const n = wa.cfg.numbers[city];
+  if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city };
+  const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city });
+  return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
+}
+const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';
+
 // "Anunță echipa": the bell in the portal and the phone (Web Push) of everyone picked, plus, if
-// asked, a WhatsApp to their own number (that one needs WhatsApp automat and, usually, a template).
-async function notifyTeam(s, v, ctx) {
+// asked, a WhatsApp template to their own number.
+async function notifyTeam(s, v, ctx, wa) {
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   const ids = new Set();
   for (const to of s.to || []) {
@@ -454,17 +476,17 @@ async function notifyTeam(s, v, ctx) {
   const go = ctx.appointment ? 'programari' : 'pipeline';
   await notifyMany(store, [...ids], { kind: ctx.appointment ? 'alert' : 'lead', tone: 'info', title, text, go });
   const pushed = await sendPush(store, [...ids], { title, body: text, url: '/portal#' + go, tag: ctx.lead ? 'lead-' + ctx.lead.id : '' });
-  let wa = 0;
-  if (s.whatsapp && whatsappConfigured()) {
+  let waSent = 0;
+  if (s.whatsapp && s.templateId) {
     const admin = ids.has('admin') ? await readJSON('data/admin-profile.json', {}) : {};
     for (const id of ids) {
       const phone = id === 'admin' ? admin.phone : (employees.find((e) => e.id === id) || {}).phone;
       if (!phone) continue;
-      const r = await sendWhatsApp({ phone, text: title + (text ? '\n' + text : ''), template: s.template, params: varsInOrder(s.title + ' ' + s.text, v) });
-      if (r.sent) wa++;
+      const r = await sendTemplate(wa || {}, s.templateId, s.from === 'auto' ? cityOf(ctx) : s.from, phone, v);
+      if (r.sent) waSent++;
     }
   }
-  return { people: ids.size, pushed, wa };
+  return { people: ids.size, pushed, wa: waSent };
 }
 
 async function runOne(run, wf, settings, counters) {
@@ -503,26 +525,14 @@ async function runOne(run, wf, settings, counters) {
       continue;
     }
     if (s.type === 'notify') {
-      const r = await notifyTeam(s, v, ctx);
+      const r = await notifyTeam(s, v, ctx, settings._wa);
       log(r.people ? 'Echipa anunțată: ' + r.people + (r.people === 1 ? ' persoană' : ' persoane') + (r.pushed ? ', ' + r.pushed + ' pe telefon' : '') + (r.wa ? ', ' + r.wa + ' pe WhatsApp' : '') : 'Nimeni de anunțat (rol fără oameni activi)');
       continue;
     }
     if (s.type === 'whatsapp') {
-      const text = render(s.text, v);
-      let sent = null;
-      if (person.phone && whatsappConfigured()) {
-        sent = await sendWhatsApp({ phone: person.phone, text, template: s.template, params: varsInOrder(s.text, v) });
-      }
-      if (sent && sent.sent) { c.sent++; log('WhatsApp trimis automat'); continue; }
-      // reception gets no automatic tasks: the message waits for WhatsApp automat
-      if (!FALLBACK_TASKS) { log(person.phone ? (sent && sent.error ? 'Meta a refuzat (' + sent.error + '), mesajul n-a plecat' : 'WhatsApp automat nu e pornit, mesajul n-a plecat') : 'Fără telefon, mesajul n-a plecat'); continue; }
-      await addTask({ type: 'whatsapp', title: wf.name, text: text, message: text, phone: person.phone, clientName: person.name,
-        relatedAppointmentId: ctx.appointment ? ctx.appointment.id : '', relatedLeadId: ctx.lead ? ctx.lead.id : '',
-        location: (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '', workflowId: wf.id,
-        // confirmations / reminders lose their point once the appointment is cancelled or over
-        autoClose: wf.trigger.type === 'appointment_created' || wf.trigger.type === 'appointment_before' });
-      c.tasks++;
-      log(person.phone ? (sent && sent.error ? 'Meta a refuzat (' + sent.error + ') → sarcină WhatsApp într-un tap' : 'Sarcină WhatsApp într-un tap') : 'Fără telefon → sarcină');
+      const r = await sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v);
+      if (r.sent) { c.sent++; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
+      log((r.why || 'nu a plecat') + ', mesajul n-a plecat');
       continue;
     }
     if (s.type === 'task' && !FALLBACK_TASKS) { log('Sarcină sărită (sarcinile le pune doar recepția)'); continue; }
@@ -553,10 +563,12 @@ async function processRuns(runsDoc, doc, onlyIds) {
   const lease = new Date(now + 2 * 60e3).toISOString();
   due.forEach((r) => { r.dueAt = lease; }); // claim
   await saveRuns(runsDoc);
+  const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
+  const settings = Object.assign({}, doc.settings, { _wa: wa });
   for (const run of due) {
     const wf = doc.workflows.find((w) => w.id === run.wf);
     if (!wf || !wf.active) { run.status = 'stopped'; run.log.push({ at: nowISO(), text: wf ? 'Automatizarea a fost oprită' : 'Automatizarea a fost ștearsă' }); run.updatedAt = nowISO(); continue; }
-    try { await runOne(run, wf, doc.settings, runsDoc.counters); }
+    try { await runOne(run, wf, settings, runsDoc.counters); }
     catch (err) { run.status = 'error'; run.log.push({ at: nowISO(), text: 'Eroare: ' + clip(err.message, 120) }); }
     run.updatedAt = nowISO();
   }

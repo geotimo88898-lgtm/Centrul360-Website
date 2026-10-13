@@ -1129,3 +1129,58 @@ main.ad-full{ max-width:none; }
 .au-bar .c360-select, .au-hfilters .c360-select{ width:auto; min-width:180px; flex:0 0 auto; }
 .au-bar .c360-select-btn, .au-hfilters .c360-select-btn{ height:36px; padding-top:0; padding-bottom:0; }
 @media (max-width:720px){ .au-bar .c360-select, .au-hfilters .c360-select{ flex:1 1 45%; min-width:0; } }
+/* ---------------- WhatsApp: templates (editor, preview, list) and the two numbers ---------------- */
+.wa-edit{ display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:1.2rem; align-items:start; }
+.wa-side{ position:sticky; top:0; display:flex; flex-direction:column; gap:.5rem; }
+.wa-side > small{ font-size:.7rem; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.wa-form{ grid-template-columns:minmax(0,1fr); }
+.wa-chips{ margin-top:-.3rem; }
+.wa-phone{ padding:.9rem .8rem; border-radius:16px; background:#0b141a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff10'/%3E%3C/svg%3E"); }
+.wa-bubble{ position:relative; max-width:94%; padding:.5rem .65rem 1.2rem; border-radius:3px 12px 12px 12px; background:#202c33; color:#e9edef; font-size:.84rem; line-height:1.42; white-space:pre-line; word-break:break-word; box-shadow:0 1px 1px rgba(0,0,0,.25); }
+.wa-bubble .wa-h{ display:block; margin-bottom:.25rem; font-size:.86rem; }
+.wa-bubble mark{ background:rgba(37,211,102,.18); color:#7ee2a8; border-radius:4px; padding:0 .15rem; }
+.wa-bubble mark.is-bad{ background:rgba(229,72,77,.2); color:#ff8a8a; }
+.wa-bubble .wa-f{ display:block; margin-top:.3rem; color:#8696a0; font-size:.74rem; }
+.wa-bubble .wa-time{ position:absolute; right:.55rem; bottom:.3rem; font-size:.66rem; color:#8696a0; }
+.wa-btns{ display:flex; flex-direction:column; gap:3px; max-width:94%; margin-top:3px; }
+.wa-btns span{ display:flex; align-items:center; justify-content:center; gap:.4rem; padding:.45rem; border-radius:10px; background:#202c33; color:#53bdeb; font-size:.82rem; font-weight:560; }
+.wa-btns .k-ic{ width:14px; height:14px; }
+.wa-btn-row{ display:flex; gap:.35rem; align-items:center; margin-bottom:.35rem; }
+.wa-btn-row select{ width:150px; flex:none; }
+.wa-btn-row input{ flex:1; min-width:0; }
+.wa-btn-row .c360-select{ width:150px; flex:none; }
+.wa-locked{ display:flex; gap:.5rem; align-items:flex-start; padding:.7rem .8rem; margin-bottom:.8rem; border-radius:12px; background:var(--glass); font-size:.84rem; color:var(--muted); }
+.wa-locked .k-ic{ flex:none; margin-top:.1rem; }
+.wa-map{ display:flex; align-items:center; gap:.6rem; margin-bottom:.35rem; }
+.wa-map b{ width:3.2rem; font-variant-numeric:tabular-nums; }
+.wa-map select, .wa-map .c360-select{ flex:1; }
+.wa-reason{ display:flex; gap:.4rem; align-items:flex-start; margin:.2rem 0 .6rem; font-size:.82rem; color:var(--bad); }
+.wa-reason .k-ic{ flex:none; margin-top:.1rem; }
+.wa-note{ display:flex; gap:.4rem; align-items:flex-start; margin:0; font-size:.8rem; }
+.wa-city{ font-size:.72rem; color:var(--muted); margin:0 .2rem 0 .4rem; }
+.wa-city:first-child{ margin-left:0; }
+.wa-conn{ display:flex; align-items:center; gap:.4rem; margin:-.2rem 0 .8rem; font-size:.84rem; }
+.wa-conn .k-ic{ color:var(--good); }
+.wa-sync{ font-size:.8rem; }
+.wa-row{ padding:0; }
+.wa-row-in{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1.1fr) 120px auto; align-items:center; gap:.8rem; padding:.75rem 1rem; }
+.wa-row-status{ display:flex; flex-wrap:wrap; align-items:center; gap:.3rem; min-width:0; }
+.wa-row-reason{ flex-basis:100%; color:var(--bad); font-size:.74rem; }
+.wa-row-used{ font-size:.8rem; }
+.wa-nums{ display:flex; flex-direction:column; gap:.55rem; margin-bottom:.7rem; }
+.wa-num{ margin:0; }
+.wa-num > .k-btn:first-of-type{ margin-left:auto; }
+.wa-num .k-btn, .wa-num .k-icon-btn{ flex:none; }
+.wa-found{ display:flex; flex-direction:column; gap:.35rem; }
+.fb-tpl-row{ display:flex; gap:.4rem; align-items:center; }
+.fb-tpl-row select, .fb-tpl-row .c360-select{ flex:1; min-width:0; }
+.fb-tpl-row .k-btn{ flex:none; }
+.fb-hint.is-warn{ color:var(--warn); }
+@media (max-width:760px){
+  .wa-edit{ grid-template-columns:minmax(0,1fr); }
+  .wa-side{ position:static; }
+  .wa-row-in{ grid-template-columns:minmax(0,1fr) auto; }
+  .wa-row-status{ grid-column:1 / -1; grid-row:2; }
+  .wa-row-used{ display:none; }
+  .wa-num{ flex-wrap:wrap; }
+}
