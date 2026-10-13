@@ -96,8 +96,14 @@
   // ------------------------------------------------------------------ domains
   // The owner works on admin.centrul360.com, the team on staff.centrul360.com (same app, one
   // shared sign-in). Whoever lands on the other one is moved over, keeping the page they asked for.
+  // Not inside the phone app (Android app or iPhone Home Screen): it lives on admin.centrul360.com, and
+  // another domain would open as a web page (with the address bar) instead of the app.
+  const inPhoneApp = () => {
+    try { if (sessionStorage.getItem('c360_app')) return true; } catch (e) { /* private mode */ }
+    return window.navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  };
   function routeHost() {
-    if (DATA.impersonating) return false;
+    if (DATA.impersonating || inPhoneApp()) return false;
     const h = location.hostname;
     const to = h === 'admin.centrul360.com' && !DATA.isAdmin ? 'staff' : h === 'staff.centrul360.com' && DATA.isAdmin ? 'admin' : '';
     if (!to) return false;

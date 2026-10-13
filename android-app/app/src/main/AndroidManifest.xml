@@ -20,6 +20,7 @@
             android:exported="true"
             android:label="@string/launcherName">
             <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL" android:value="@string/launchUrl" />
+            <meta-data android:name="android.support.customtabs.trusted.ADDITIONAL_TRUSTED_ORIGINS" android:resource="@array/additionalTrustedOrigins" />
             <meta-data android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR" android:resource="@color/colorPrimary" />
             <meta-data android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR" android:resource="@color/colorPrimary" />
             <meta-data android:name="android.support.customtabs.trusted.SCREEN_ORIENTATION" android:value="portrait" />
@@ -33,6 +34,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="admin.centrul360.com" />
+                <data android:scheme="https" android:host="staff.centrul360.com" />
             </intent-filter>
         </activity>
 
