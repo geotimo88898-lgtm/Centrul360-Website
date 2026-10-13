@@ -497,10 +497,10 @@ input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form inp
 /* phones: one stage at a time, a swipe lands on the next one, the stage row on top */
 .pl-stagebar{ display:none; }
 @media (max-width:720px){
-  .pl-stagebar{ display:flex; gap:.4rem; overflow-x:auto; scrollbar-width:none; margin:0 0 .6rem; padding:2px; }
+  .pl-stagebar{ position:relative; display:flex; gap:.4rem; overflow-x:auto; scrollbar-width:none; margin:0 0 .6rem; padding:2px; }
   .pl-stagebar::-webkit-scrollbar{ display:none; }
   .pl-stagebar button{ --c:#888; flex:none; display:inline-flex; align-items:center; gap:.4rem; padding:.45rem .75rem; border-radius:999px; border:1px solid var(--line);
-    background:var(--paper); color:var(--muted); font:inherit; font-size:.8rem; font-weight:620; cursor:pointer; transition:background .2s ease, color .2s ease, border-color .2s ease; }
+    background:var(--paper); color:var(--muted); font:inherit; font-size:.8rem; font-weight:620; cursor:pointer; }
   .pl-stagebar button i{ width:8px; height:8px; border-radius:50%; background:var(--c); flex:none; }
   .pl-stagebar button b{ min-width:20px; padding:0 .35rem; border-radius:999px; background:var(--glass); color:var(--fg); font-size:.72rem; text-align:center; }
   .pl-stagebar button.is-on{ color:var(--fg); border-color:color-mix(in srgb, var(--c) 60%, var(--line)); background:color-mix(in srgb, var(--c) 14%, var(--paper)); }

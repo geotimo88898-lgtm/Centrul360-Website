@@ -39,6 +39,7 @@
       C.loaded = true;
       if (C.selectedPhone && !C.conversations.find((c) => c.phone === C.selectedPhone)) closeThread();
       if (!panel.querySelector('[data-mx-list]')) render(); else { paintStatus(); paintList(); }
+      fitWrap();
       if (C.selectedPhone) loadThread(C.selectedPhone, false);
     } catch (e) {
       panel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="refresh">Reîncearcă</button>');
@@ -97,9 +98,20 @@
         '<section class="k-card mx-thread-col" data-mx-thread></section>' +
       '</div>';
     paintStatus(); paintList(); paintThread();
+    fitWrap();
   }
 
   // which numbers are connected: a quiet line when both are, a clear card when not
+  // a computer: the two columns end at the bottom of the window (the answer box stays in sight)
+  function fitWrap() {
+    const w = panel && panel.querySelector('.mx-wrap');
+    if (!w) return;
+    if (phone()) { w.style.height = ''; return; }
+    const top = w.getBoundingClientRect().top + window.scrollY;
+    w.style.height = Math.max(440, window.innerHeight - top - 20) + 'px';
+  }
+  window.addEventListener('resize', () => { if (panel && K.isActive('mesaje')) fitWrap(); });
+
   function paintStatus() {
     const box = panel.querySelector('[data-mx-status]');
     if (!box) return;
@@ -390,7 +402,7 @@
   }
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitViewport); window.visualViewport.addEventListener('scroll', fitViewport); }
 
-  K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); } load(); } });
+  K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); requestAnimationFrame(fitWrap); } load(); } });
   K.on('remote', () => { if (panel && K.isActive('mesaje')) load(); });
   // leaving Mesaje on a phone gives the bottom bar back
   window.addEventListener('hashchange', () => { if (!K.isActive('mesaje')) document.documentElement.classList.remove('mx-thread-open'); });
