@@ -15,6 +15,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { upsertClient, normalizePhone } = require('./_lib/clients');
+const { sendPush } = require('./_lib/push');
 
 module.exports.config = { api: { bodyParser: false } };
 
@@ -70,6 +71,18 @@ function textFor(message) {
   return '[tip mesaj: ' + (type || 'necunoscut') + ']';
 }
 
+// who hears a client's message on the phone: the owner, and reception of the clinic she wrote to
+// (both receptions while the number isn't tied to a city)
+async function pushMessages(fresh) {
+  if (!fresh.length) return;
+  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
+  for (const m of fresh) {
+    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
+    const text = m.text.length > 140 ? m.text.slice(0, 139) + '…' : m.text;
+    await sendPush({ readJSON, writeJSON }, ids, { title: m.name + (m.location ? ' · ' + m.location : ''), body: (m.count > 1 ? '(' + m.count + ' mesaje) ' : '') + text, url: '/portal#mesaje', tag: 'msg-' + m.phone });
+  }
+}
+
 async function handleInboundMessage(conversations, message, phoneNumberId) {
   const from = message && message.from;
   if (!from) return;
@@ -104,6 +117,7 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
   });
   convo.lastMessageAt = ts;
   convo.unreadCount = (convo.unreadCount || 0) + 1;
+  return { phone: convo.phone, name: convo.clientName || convo.phone, location: convo.location || '', text: textFor(message), count: convo.unreadCount };
 }
 
 function handleStatusUpdate(conversations, status) {
@@ -163,6 +177,7 @@ module.exports = async (req, res) => {
     const payload = JSON.parse(rawBody.toString('utf8'));
     const conversations = await readJSON(KEY, []);
     let changed = false;
+    const fresh = new Map(); // the newest message per client, for the phones
 
     const entries = payload.entry || [];
     for (const entry of entries) {
@@ -173,7 +188,8 @@ module.exports = async (req, res) => {
 
         for (const message of value.messages || []) {
           try {
-            await handleInboundMessage(conversations, message, phoneNumberId);
+            const m = await handleInboundMessage(conversations, message, phoneNumberId);
+            if (m) fresh.set(m.phone, m);
             changed = true;
           } catch (err) {
             console.error('webhook-whatsapp: error processing message', err.message);
@@ -192,6 +208,8 @@ module.exports = async (req, res) => {
     }
 
     if (changed) await writeJSON(KEY, conversations);
+    // before answering Meta: once the response is sent the function may be stopped
+    try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
   } catch (err) {
     console.error('webhook-whatsapp: error handling payload', err.message);
   }
