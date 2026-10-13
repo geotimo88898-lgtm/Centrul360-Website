@@ -1211,3 +1211,29 @@ main.ad-full{ max-width:none; }
 @media (max-width:820px){ .fm-create{ grid-template-columns:minmax(0,1fr); } .fm-create-side{ position:static; } .fm-cq{ grid-template-columns:minmax(0,1fr) auto; } .fm-cq select{ grid-column:1; } }
 .fm-cf > [data-cqs], .fm-cf > .fb-check{ grid-column:1 / -1; }
 .fm-cf > [data-cq-add]{ grid-column:1 / -1; justify-self:start; }
+
+/* Formular nou: city → WhatsApp, the data asked, the three screening questions */
+.fm-wa{ display:flex; align-items:center; gap:.4rem; margin-top:.45rem; font-size:.8rem; color:var(--muted); }
+.fm-wa svg{ width:14px; height:14px; color:var(--good); flex:none; }
+.fm-wa b{ color:var(--fg); }
+.fm-wa.is-bad, .fm-wa.is-bad svg{ color:var(--bad); }
+.fm-chips{ display:flex; flex-wrap:wrap; gap:.4rem; }
+.fm-chip{ display:inline-flex; align-items:center; padding:.4rem .7rem; border-radius:999px; border:1px solid var(--line); background:var(--paper); font-size:.82rem; cursor:pointer; user-select:none; }
+.fm-chip input{ position:absolute; opacity:0; pointer-events:none; }
+.fm-chip.is-on{ border-color:color-mix(in srgb, var(--accent) 60%, var(--line)); background:color-mix(in srgb, var(--accent) 14%, var(--paper)); color:var(--fg); }
+.fm-chip.is-locked{ cursor:default; opacity:.85; }
+.fm-sqs{ grid-column:1 / -1; display:flex; flex-direction:column; gap:.8rem; }
+.fm-sq{ display:flex; flex-direction:column; gap:.5rem; padding:.85rem .9rem; border-radius:14px; border:1px solid var(--line); background:var(--glass); }
+.fm-ans{ display:flex; flex-direction:column; gap:.35rem; }
+.fm-an{ display:grid; grid-template-columns:22px minmax(0,1fr) auto; align-items:center; gap:.45rem; }
+.fm-an > span{ font-size:.75rem; font-weight:700; color:var(--muted); text-align:center; }
+.fm-ans > .k-btn{ align-self:flex-start; }
+.fm-copy{ grid-column:1 / -1; }
+.fm-more{ grid-column:1 / -1; border-top:1px solid var(--line); padding-top:.7rem; }
+.fm-more > summary{ cursor:pointer; font-size:.84rem; font-weight:600; color:var(--muted); }
+.fm-more > .k-form{ margin-top:.7rem; }
+.fm-pv-btn.is-wa{ display:flex; align-items:center; justify-content:center; gap:.35rem; background:#25d366; }
+.fm-pv-btn.is-wa svg{ width:14px; height:14px; }
+.fm-pv-num{ text-align:center; color:#8a8d91; font-size:.72rem; }
+.fm-from{ display:flex; gap:.4rem; align-items:flex-start; margin:0 0 .3rem; font-size:.82rem; }
+.fm-from svg{ width:15px; height:15px; flex:none; margin-top:.1rem; }

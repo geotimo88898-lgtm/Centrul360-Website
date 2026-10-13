@@ -50,6 +50,7 @@
       '<div class="fm-bar"><label class="fm-search">' + icon('search') + '<input data-q type="search" placeholder="Caută un formular…" value="' + esc(F.q) + '"></label>' +
         '<div class="k-chips">' + [['active', 'Active', active], ['leads', 'Cu leaduri în portal', withLeads], ['archived', 'Arhivate', all.length - active], ['all', 'Toate', all.length]]
           .map(([k, l, n]) => '<button type="button" class="k-chip' + (F.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + n + '</span></button>').join('') + '</div>' +
+        '<button type="button" class="k-btn is-outline fm-new" data-act="settings">' + icon('sliders') + 'Setări formulare</button>' +
         '<button type="button" class="k-btn is-accent fm-new" data-act="new">' + icon('plus') + 'Formular nou</button>' +
         '<button type="button" class="k-icon-btn fm-reload" data-act="reload" title="Actualizează">' + icon('refresh') + '</button></div>' +
       '<div class="fm-list" data-list></div>';
@@ -87,6 +88,7 @@
     const t = e.target;
     if (t.closest('[data-act="reload"]')) return load();
     if (t.closest('[data-act="new"]')) return openCreate();
+    if (t.closest('[data-act="settings"]')) return openSettings();
     if (t.closest('[data-act="integrari"]')) return K.emit('integrari:int');
     const sh = t.closest('[data-show]');
     if (sh) { F.show = sh.dataset.show; F.limit = 40; return render(); }
@@ -120,120 +122,180 @@
   }
 
   // ------------------------------------------------------------------ a new form ("Formular nou")
-  // Made on the connected Page through Meta, then right in the list with its procedure and city. Name and
-  // phone (and e-mail, if wanted) are Meta's own fields, filled in for the client; up to 5 questions of ours.
+  // What matters on a form: its name, its city (the WhatsApp number of the button at the end follows it,
+  // so the clients write to the right clinic), the contact data asked, the three screening questions with
+  // their answers, the ending. The ending, the button and the numbers come from "Setări formulare",
+  // copied from the forms that already run (api/_lib/fb-form-template.js).
   const CITY_SHORT = { 'Timișoara': 'TM', Arad: 'AR' };
-  const SLUG_CITY = { timisoara: 'Timișoara', arad: 'Arad' };
+  const FIELDS = [['FULL_NAME', 'Nume complet'], ['FIRST_NAME', 'Prenume'], ['LAST_NAME', 'Nume de familie'], ['PHONE', 'Telefon'], ['EMAIL', 'E-mail'], ['CITY', 'Oraș'], ['DOB', 'Data nașterii']];
+  const FIELD_LABEL = Object.fromEntries(FIELDS);
   const dayMonth = () => { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0'); };
-  function openCreate() {
+  const shortTitle = (t) => String(t || '').split(/\s*[·(]\s*/)[0].trim();
+  async function template(refresh) {
+    if (!F.tpl || refresh) F.tpl = (await K.api('/api/portal-integrations', { action: 'fb_form_template', refresh: !!refresh })).template;
+    return F.tpl;
+  }
+  const errMsg = (err) => K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error');
+  const fieldChips = (sel, attr) => '<div class="fm-chips">' + FIELDS.map(([k, l]) => '<label class="fm-chip' + (sel.includes(k) ? ' is-on' : '') + (k === 'PHONE' ? ' is-locked' : '') + '"><input type="checkbox" ' + attr + '="' + k + '"' + (sel.includes(k) ? ' checked' : '') + (k === 'PHONE' ? ' disabled' : '') + '><span>' + l + '</span></label>').join('') + '</div>';
+
+  async function openCreate() {
+    let t;
+    try { t = await template(); } catch (err) { return errMsg(err); }
     const offers = (F.d && F.d.offers) || [];
     const st = {
-      offerId: (offers[0] || {}).id || '', location: 'Timișoara', name: '',
-      intro: { title: '', lines: '', button: 'Vreau oferta' }, headline: 'Lasă-ne numărul și te sunăm noi',
-      email: false, custom: [], quality: false,
-      thanks: { title: 'Mulțumim! Te sunăm noi.', body: 'O colegă de la Centrul360 te sună în curând ca să stabiliți ora.', button: 'Vezi site-ul' },
+      name: '', location: 'Timișoara', offerId: '', fields: (t.fields || ['FULL_NAME', 'PHONE']).slice(),
+      questions: [0, 1, 2].map(() => ({ label: '', options: ['', ''] })),
+      ending: { title: t.ending.title, body: t.ending.body, button: t.cta.text },
+      intro: { on: !!t.intro, title: (t.intro && t.intro.title) || '', lines: ((t.intro && t.intro.lines) || []).join('\n'), button: (t.intro && t.intro.button) || 'Continuă' },
+      headline: t.headline || '', quality: !!t.quality,
     };
-    const touched = { name: false, intro: false };
+    let touchedName = false;
     const offerOf = () => offers.find((o) => o.id === st.offerId) || null;
-    const citiesOf = (o) => (o && o.locations && o.locations.length ? o.locations.map((l) => SLUG_CITY[l]).filter(Boolean) : ['Timișoara', 'Arad']);
-    // the name and the first page follow the procedure and the city until they're written by hand
-    function auto() {
-      const o = offerOf();
-      if (!citiesOf(o).includes(st.location)) st.location = citiesOf(o)[0];
-      if (!touched.name) st.name = (o ? o.title : 'Formular') + ' ' + (CITY_SHORT[st.location] || '') + ' · ' + dayMonth();
-      if (!touched.intro && o) {
-        st.intro.title = o.title + ' în ' + st.location;
-        const lines = String(o.description || '').split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 3);
-        if (o.priceNew) lines.push(o.priceNew + ' lei' + (o.priceOld ? ' în loc de ' + o.priceOld + ' lei' : ''));
-        st.intro.lines = lines.join('\n');
-      }
-    }
-    auto();
-    const get = (path) => path.split('.').reduce((o, k) => (o ? o[k] : ''), st);
-    const set = (path, v) => { const ks = path.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], st)[last] = v; };
-    const inp = (path, ph, max) => '<input data-cf="' + path + '" value="' + esc(get(path)) + '" placeholder="' + esc(ph || '') + '"' + (max ? ' maxlength="' + max + '"' : '') + '>';
-    const qRow = (q, i) => '<div class="fm-cq" data-cq="' + i + '"><input data-cqf="label" value="' + esc(q.label) + '" placeholder="Întrebarea, ex. Ce zonă vrei să tratezi?" maxlength="120">' +
-      '<select data-cqf="kind">' + K.options([['text', 'Răspuns scris'], ['choice', 'Variante']], q.kind) + '</select>' +
-      '<button type="button" class="k-icon-btn" data-cq-rm="' + i + '" aria-label="Scoate întrebarea">' + icon('x') + '</button>' +
-      (q.kind === 'choice' ? '<input class="fm-cq-opts" data-cqf="options" value="' + esc(q.options) + '" placeholder="Variantele, despărțite prin virgulă: Abdomen, Coapse, Brațe">' : '') + '</div>';
+    const autoName = () => { if (!touchedName) st.name = ((offerOf() && shortTitle(offerOf().title)) || 'Formular') + ' ' + CITY_SHORT[st.location] + ' · ' + dayMonth(); };
+    autoName();
+    const wa = () => (t.cities[st.location] || {}).pretty || '';
+    const forms = () => (F.d.fbForms || []).filter((f) => !f.status || f.status === 'ACTIVE');
+    const get = (p) => p.split('.').reduce((o, k) => (o ? o[k] : ''), st);
+    const set = (p, v) => { const ks = p.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], st)[last] = v; };
+    const inp = (p, ph, max) => '<input data-cf="' + p + '" value="' + esc(get(p)) + '" placeholder="' + esc(ph || '') + '"' + (max ? ' maxlength="' + max + '"' : '') + '>';
+    const qHtml = (q, i) => '<div class="fm-sq" data-q="' + i + '"><label class="k-field full"><span>Întrebarea ' + (i + 1) + '</span><input data-ql value="' + esc(q.label) + '" maxlength="120" placeholder="ex. Ce zonă vrei să tratezi?"></label>' +
+      '<div class="fm-ans">' + q.options.map((o, k) => '<div class="fm-an"><span>' + String.fromCharCode(65 + k) + '</span><input data-qo="' + k + '" value="' + esc(o) + '" maxlength="80" placeholder="Răspunsul ' + (k + 1) + '">' +
+        (q.options.length > 2 ? '<button type="button" class="k-icon-btn" data-qo-rm="' + k + '" aria-label="Scoate răspunsul">' + icon('x') + '</button>' : '') + '</div>').join('') +
+      (q.options.length < 10 ? '<button type="button" class="k-btn is-ghost is-sm" data-qo-add>' + icon('plus') + 'Răspuns</button>' : '') + '</div></div>';
     const formHtml = () => '<div class="k-form fm-cf">' +
-      K.field('Procedura', '<select data-cf="offerId">' + K.options(offers.map((o) => [o.id, o.title]), st.offerId) + '</select>') +
-        K.field('Orașul', '<select data-cf="location">' + K.options(citiesOf(offerOf()).map((c) => [c, c]), st.location) + '</select>') +
-      K.field('Numele formularului', inp('name', '', 200), 'full', 'Doar pentru tine; clientele nu-l văd.') +
-      '<h4 class="fm-cf-h">' + icon('file') + 'Prima pagină</h4>' +
-      K.field('Titlul', inp('intro.title', 'ex. LipoSonix în Timișoara', 60), 'full') +
-      K.field('Rândurile', '<textarea data-cf="intro.lines" rows="4" placeholder="Câte unul pe rând">' + esc(st.intro.lines) + '</textarea>', 'full') +
-      K.field('Butonul', inp('intro.button', 'Vreau oferta', 30), 'full') +
-      '<h4 class="fm-cf-h">' + icon('listCheck') + 'Întrebările</h4>' +
-      K.field('Titlul paginii', inp('headline', '', 60), 'full') +
-      '<div class="fm-cf-fixed"><span>' + icon('check') + 'Nume complet</span><span>' + icon('check') + 'Telefon</span>' +
-        '<label class="fb-check"><input type="checkbox" data-cf="email"' + (st.email ? ' checked' : '') + '><span>E-mail</span></label></div>' +
-      '<div data-cqs>' + st.custom.map(qRow).join('') + '</div>' +
-      (st.custom.length < 5 ? '<button type="button" class="k-btn is-ghost is-sm" data-cq-add>' + icon('plus') + 'Întrebare a noastră</button>' : '') +
-      '<h4 class="fm-cf-h">' + icon('checkCircle') + 'Mulțumirea</h4>' +
-      K.field('Titlul', inp('thanks.title', '', 60), 'full') +
-      K.field('Textul', '<textarea data-cf="thanks.body" rows="2">' + esc(st.thanks.body) + '</textarea>', 'full') +
-      K.field('Butonul (duce pe centrul360.com)', inp('thanks.button', 'Vezi site-ul', 30), 'full') +
-      '<label class="fb-check is-row"><input type="checkbox" data-cf="quality"' + (st.quality ? ' checked' : '') + '><span>Leaduri mai atente<small>Clienta își confirmă datele înainte să trimită: mai puține leaduri, dar mai bune.</small></span></label>' +
+      '<h4 class="fm-cf-h">' + icon('file') + 'Formularul</h4>' +
+      K.field('Numele formularului', inp('name', '', 200), 'full') +
+      '<div class="k-field full"><span>Orașul</span>' + K.seg('fmcity', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], st.location) +
+        '<small class="fm-wa' + (wa() ? '' : ' is-bad') + '">' + icon('chat') + (wa() ? 'La final, butonul deschide WhatsApp pe <b>' + esc(wa()) + '</b> (' + esc(st.location) + ')' : 'Lipsește numărul de WhatsApp pentru ' + esc(st.location) + ': pune-l în Setări formulare') + '</small></div>' +
+      K.field('Procedura', '<select data-cf="offerId">' + K.options([['', 'Din numele formularului (automat)']].concat(offers.map((o) => [o.id, o.title])), st.offerId) + '</select>', 'full') +
+      '<h4 class="fm-cf-h">' + icon('users') + 'Datele cerute</h4>' +
+      '<div class="k-field full">' + fieldChips(st.fields, 'data-fld') + '</div>' +
+      '<h4 class="fm-cf-h">' + icon('listCheck') + 'Întrebările de selecție</h4>' +
+      '<div class="k-field full fm-copy"><span>Copiază întrebările din</span><select data-copy-from>' + K.options([['', 'Alege un formular…']].concat(forms().map((f) => [f.id, f.name + (f.location ? ' · ' + f.location : '')])), '') + '</select></div>' +
+      '<div class="fm-sqs">' + st.questions.map(qHtml).join('') + '</div>' +
+      '<h4 class="fm-cf-h">' + icon('checkCircle') + 'Finalul</h4>' +
+      K.field('Titlul', inp('ending.title', '', 60), 'full') +
+      K.field('Textul', '<textarea data-cf="ending.body" rows="3">' + esc(st.ending.body) + '</textarea>', 'full') +
+      K.field('Butonul (WhatsApp)', inp('ending.button', 'Scrie-ne pe WhatsApp', 30), 'full') +
+      '<details class="fm-more"' + (st.intro.on ? ' open' : '') + '><summary>Mai mult: prima pagină, titlul întrebărilor</summary><div class="k-form">' +
+        '<label class="fb-check is-row full"><input type="checkbox" data-cf="intro.on"' + (st.intro.on ? ' checked' : '') + '><span>Are o primă pagină</span></label>' +
+        (st.intro.on ? K.field('Titlul primei pagini', inp('intro.title', '', 60), 'full') + K.field('Rândurile', '<textarea data-cf="intro.lines" rows="3" placeholder="Câte unul pe rând">' + esc(st.intro.lines) + '</textarea>', 'full') + K.field('Butonul', inp('intro.button', 'Continuă', 30), 'full') : '') +
+        K.field('Titlul paginii cu întrebări', inp('headline', '', 60), 'full') +
+        '<label class="fb-check is-row full"><input type="checkbox" data-cf="quality"' + (st.quality ? ' checked' : '') + '><span>Leaduri mai atente<small>Clienta își confirmă datele înainte să trimită: mai puține leaduri, dar mai bune.</small></span></label>' +
+      '</div></details>' +
       '</div>';
     const preview = () => {
       const lines = st.intro.lines.split('\n').map((x) => x.trim()).filter(Boolean);
       return '<div class="fm-pv">' +
-        '<div class="fm-pv-card"><small>1 · Prima pagină</small><b>' + esc(st.intro.title || st.name) + '</b>' + (lines.length ? '<ul>' + lines.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ul>' : '') + '<span class="fm-pv-btn">' + esc(st.intro.button || 'Continuă') + '</span></div>' +
-        '<div class="fm-pv-card"><small>2 · Întrebările</small><b>' + esc(st.headline || 'Datele tale') + '</b>' +
-          ['Nume complet', 'Număr de telefon'].concat(st.email ? ['E-mail'] : []).map((l) => '<span class="fm-pv-in">' + l + '</span>').join('') +
-          st.custom.filter((q) => q.label.trim()).map((q) => '<span class="fm-pv-q">' + esc(q.label) + '</span>' + (q.kind === 'choice' ? q.options.split(',').map((o) => o.trim()).filter(Boolean).map((o) => '<span class="fm-pv-opt">' + esc(o) + '</span>').join('') : '<span class="fm-pv-in">Răspunsul tău</span>')).join('') +
+        (st.intro.on ? '<div class="fm-pv-card"><small>Prima pagină</small><b>' + esc(st.intro.title || st.name) + '</b>' + (lines.length ? '<ul>' + lines.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ul>' : '') + '<span class="fm-pv-btn">' + esc(st.intro.button || 'Continuă') + '</span></div>' : '') +
+        '<div class="fm-pv-card"><small>Întrebările</small>' + (st.headline ? '<b>' + esc(st.headline) + '</b>' : '') +
+          st.fields.map((f) => '<span class="fm-pv-in">' + esc(FIELD_LABEL[f] || f) + '</span>').join('') +
+          st.questions.map((q, i) => '<span class="fm-pv-q">' + esc(q.label || 'Întrebarea ' + (i + 1)) + '</span>' + q.options.filter((o) => o.trim()).map((o) => '<span class="fm-pv-opt">' + esc(o) + '</span>').join('')).join('') +
           '<span class="fm-pv-btn">Trimite</span></div>' +
-        '<div class="fm-pv-card"><small>3 · Mulțumirea</small><b>' + esc(st.thanks.title) + '</b><p>' + esc(st.thanks.body) + '</p><span class="fm-pv-btn">' + esc(st.thanks.button || 'Vezi site-ul') + '</span></div></div>';
+        '<div class="fm-pv-card"><small>Finalul</small><b>' + esc(st.ending.title) + '</b><p>' + esc(st.ending.body) + '</p><span class="fm-pv-btn is-wa">' + icon('chat') + esc(st.ending.button || 'Scrie-ne pe WhatsApp') + '</span>' + (wa() ? '<small class="fm-pv-num">' + esc(wa()) + '</small>' : '') + '</div></div>';
     };
     const dr = K.drawer({
-      title: 'Formular nou', icon: 'file', width: 820,
-      subtitle: 'Se creează pe Pagina de Facebook și apare imediat aici și în „Publică pe Meta”.',
+      title: 'Formular nou', icon: 'file', width: 840,
+      subtitle: 'Se creează pe Pagina de Facebook; apare imediat aici și în „Publică pe Meta”.',
       body: '<div class="fm-create"><div data-cform>' + formHtml() + '</div><aside class="fm-create-side"><small>Așa îl vede clienta</small><div data-cpv>' + preview() + '</div></aside></div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-create>' + icon('check') + 'Creează formularul</button>',
       onMount(el) {
         const prev = () => { el.querySelector('[data-cpv]').innerHTML = preview(); };
-        const repaint = () => { el.querySelector('[data-cform]').innerHTML = formHtml(); prev(); };
-        const onField = (e) => {
+        const repaint = () => { const y = el.querySelector('.k-dbody').scrollTop; el.querySelector('[data-cform]').innerHTML = formHtml(); prev(); el.querySelector('.k-dbody').scrollTop = y; };
+        el.addEventListener('input', (e) => {
           const f = e.target;
-          if (f.dataset.cf) {
-            const v = f.type === 'checkbox' ? f.checked : f.value;
-            set(f.dataset.cf, v);
-            if (f.dataset.cf === 'name') touched.name = true;
-            if (/^intro\./.test(f.dataset.cf)) touched.intro = true;
-            if (f.dataset.cf === 'offerId' || f.dataset.cf === 'location') { auto(); return repaint(); }
-            return prev();
+          if (f.dataset.cf && f.type !== 'checkbox' && f.tagName !== 'SELECT') { set(f.dataset.cf, f.value); if (f.dataset.cf === 'name') touchedName = true; return prev(); }
+          const q = f.closest('[data-q]');
+          if (q) { const qq = st.questions[Number(q.dataset.q)]; if (f.matches('[data-ql]')) qq.label = f.value; else if (f.dataset.qo != null) qq.options[Number(f.dataset.qo)] = f.value; prev(); }
+        });
+        el.addEventListener('change', async (e) => {
+          const f = e.target;
+          if (f.name === 'fmcity') { st.location = f.value; autoName(); return repaint(); }
+          if (f.dataset.cf === 'offerId') { st.offerId = f.value; autoName(); return repaint(); }
+          if (f.dataset.cf && f.type === 'checkbox') { set(f.dataset.cf, f.checked); return f.dataset.cf === 'intro.on' ? repaint() : prev(); }
+          if (f.dataset.fld) { st.fields = FIELDS.map(([k]) => k).filter((k) => k === 'PHONE' || (k === f.dataset.fld ? f.checked : st.fields.includes(k))); return repaint(); }
+          if (f.matches('[data-copy-from]') && f.value) {
+            try {
+              F.d = await K.api('/api/portal-integrations', { action: 'fb_form_info', id: f.value });
+              const src = (F.d.fbForms || []).find((x) => x.id === f.value);
+              const qs = ((src && src.questions) || []).filter((x) => x.type === 'CUSTOM' && x.options && x.options.length).slice(0, 3);
+              if (!qs.length) { K.ui().toast('Formularul ales n-are întrebări cu răspunsuri.', 'info'); return; }
+              qs.forEach((x, i) => { st.questions[i] = { label: x.label, options: x.options.slice(0, 10) }; });
+              repaint();
+              K.ui().toast('Am copiat ' + K.plural(qs.length, 'întrebare', 'întrebări') + '.', 'success');
+            } catch (err) { errMsg(err); }
           }
-          const row = f.closest('[data-cq]');
-          if (row && f.dataset.cqf) {
-            st.custom[Number(row.dataset.cq)][f.dataset.cqf] = f.value;
-            if (f.dataset.cqf === 'kind') return repaint();
-            prev();
-          }
-        };
-        el.addEventListener('input', onField);
-        el.addEventListener('change', (e) => { if (e.target.tagName === 'SELECT' || e.target.type === 'checkbox') onField(e); });
+        });
         el.addEventListener('click', (e) => {
-          if (e.target.closest('[data-cq-add]')) { st.custom.push({ label: '', kind: 'text', options: '' }); return repaint(); }
-          const rm = e.target.closest('[data-cq-rm]'); if (rm) { st.custom.splice(Number(rm.dataset.cqRm), 1); return repaint(); }
-          if (e.target.closest('[data-cancel]')) dr.close();
+          if (e.target.closest('[data-cancel]')) return dr.close();
+          const q = e.target.closest('[data-q]');
+          if (q && e.target.closest('[data-qo-add]')) { st.questions[Number(q.dataset.q)].options.push(''); return repaint(); }
+          const rm = e.target.closest('[data-qo-rm]');
+          if (q && rm) { st.questions[Number(q.dataset.q)].options.splice(Number(rm.dataset.qoRm), 1); return repaint(); }
         });
         el.querySelector('[data-create]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           try {
             const r = await K.api('/api/portal-integrations', { action: 'fb_form_create', form: {
-              name: st.name, offerId: st.offerId, location: st.location,
-              intro: { title: st.intro.title, lines: st.intro.lines.split('\n'), button: st.intro.button }, headline: st.headline,
-              email: st.email, quality: st.quality, thanks: st.thanks,
-              custom: st.custom.map((q) => ({ label: q.label, options: q.kind === 'choice' ? q.options.split(',').map((o) => o.trim()).filter(Boolean) : [] })),
+              name: st.name, location: st.location, offerId: st.offerId, fields: st.fields,
+              questions: st.questions.map((q) => ({ label: q.label, options: q.options.filter((o) => o.trim()) })),
+              ending: st.ending, headline: st.headline, quality: st.quality,
+              intro: st.intro.on ? { title: st.intro.title, lines: st.intro.lines.split('\n'), button: st.intro.button } : null,
             } });
             F.d = r; F.show = 'active'; F.q = ''; render();
             dr.close();
-            K.ui().toast('Formularul „' + st.name + '” e creat pe Facebook.', 'success');
-          } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
+            K.ui().toast('Formularul „' + st.name + '” e creat pe Facebook, cu WhatsApp ' + st.location + '.', 'success');
+          } catch (err) { errMsg(err); }
         }));
       },
     });
   }
 
-  window.C360Forms = { mount, load, isMounted: () => !!panel, create: openCreate };
+  // "Setări formulare": what every new form copies (read from the forms that run, changeable here)
+  async function openSettings(onSaved) {
+    let t;
+    try { t = await template(); } catch (err) { return errMsg(err); }
+    const st = {
+      tm: (t.cities['Timișoara'] || {}).pretty || '', ar: (t.cities.Arad || {}).pretty || '',
+      button: t.cta.text, title: t.ending.title, body: t.ending.body, privacy: (t.privacy && t.privacy.url) || '', fields: (t.fields || []).slice(),
+    };
+    const from = t.from && t.from.name ? 'Copiate din formularul „' + esc(t.from.name) + '”' + (t.readAt ? ', ' + esc(K.ago(t.readAt)) : '') + '.' : 'Nu am găsit un formular din care să copiez: completează-le aici.';
+    const body = () => '<div class="k-form">' +
+      '<p class="k-muted full fm-from">' + icon('info') + from + '</p>' +
+      K.field('WhatsApp Timișoara', '<input data-s="tm" value="' + esc(st.tm) + '" placeholder="+40 7xx xxx xxx" inputmode="tel">') +
+      K.field('WhatsApp Arad', '<input data-s="ar" value="' + esc(st.ar) + '" placeholder="+40 7xx xxx xxx" inputmode="tel">') +
+      K.field('Butonul de la final', '<input data-s="button" value="' + esc(st.button) + '" maxlength="30">', 'full') +
+      K.field('Titlul de la final', '<input data-s="title" value="' + esc(st.title) + '" maxlength="60">', 'full') +
+      K.field('Textul de la final', '<textarea data-s="body" rows="3">' + esc(st.body) + '</textarea>', 'full') +
+      '<div class="k-field full"><span>Datele cerute implicit</span>' + fieldChips(st.fields, 'data-sfld') + '</div>' +
+      K.field('Politica de confidențialitate', '<input data-s="privacy" value="' + esc(st.privacy) + '" placeholder="https://…">', 'full') +
+      '</div>';
+    const d = K.drawer({
+      title: 'Setări formulare', icon: 'sliders', width: 560,
+      subtitle: 'Ce copiază fiecare formular nou. Orașul formularului alege numărul de WhatsApp.',
+      body: '<div data-sbody>' + body() + '</div>',
+      footer: '<button type="button" class="k-btn is-ghost" data-reread>' + icon('refresh') + 'Citește din nou din formulare</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-ssave>' + icon('check') + 'Salvează</button>',
+      onMount(el) {
+        el.addEventListener('input', (e) => { const f = e.target; if (f.dataset.s) st[f.dataset.s] = f.value; });
+        el.addEventListener('change', (e) => {
+          const f = e.target;
+          if (f.dataset.sfld) { st.fields = FIELDS.map(([k]) => k).filter((k) => k === 'PHONE' || (k === f.dataset.sfld ? f.checked : st.fields.includes(k))); el.querySelector('[data-sbody]').innerHTML = body(); }
+        });
+        el.querySelector('[data-reread]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try { await template(true); d.close(); K.ui().toast('Citit din nou din formularele care rulează.', 'success'); openSettings(onSaved); } catch (err) { errMsg(err); }
+        }));
+        el.querySelector('[data-ssave]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try {
+            F.tpl = (await K.api('/api/portal-integrations', { action: 'fb_form_template_save', template: {
+              cities: { 'Timișoara': { whatsapp: st.tm }, Arad: { whatsapp: st.ar } }, cta: { text: st.button }, ending: { title: st.title, body: st.body }, privacy: { url: st.privacy }, fields: st.fields,
+            } })).template;
+            d.close();
+            K.ui().toast('Setările formularelor sunt salvate.', 'success');
+            if (onSaved) onSaved();
+          } catch (err) { errMsg(err); }
+        }));
+      },
+    });
+  }
+
+  window.C360Forms = { mount, load, isMounted: () => !!panel, create: openCreate, settings: openSettings };
 })();

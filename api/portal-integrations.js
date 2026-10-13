@@ -7,6 +7,8 @@
 //        (empty = read it from the form and ad names, see _lib/fb-leads.js)
 //   POST { action: 'fb_form_info', id }          the form's questions, asked from Facebook now
 //   POST { action: 'fb_form_create', form }      a new lead form on the Page (_lib/fb-form-create.js)
+//   POST { action: 'fb_form_template', refresh } what new forms copy (ending, WhatsApp per city…), read again from Meta on refresh
+//   POST { action: 'fb_form_template_save', template }   "Setări formulare"
 
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -14,6 +16,7 @@ const { whatsappReady } = require('./_lib/whatsapp');
 const { loadOffers } = require('./_lib/offers');
 const { loadConnection, fetchFormInfo } = require('./_lib/facebook');
 const { createForm } = require('./_lib/fb-form-create');
+const { getTemplate, saveTemplate } = require('./_lib/fb-form-template');
 
 const FORMS_KEY = 'data/fb-forms.json';
 const LOCATIONS = ['Timișoara', 'Arad'];
@@ -55,6 +58,13 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') { res.status(200).json(await payload()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
+    if (body.action === 'fb_form_template') { res.status(200).json({ ok: true, template: await getTemplate({ readJSON, writeJSON }, { refresh: !!body.refresh }) }); return; }
+    if (body.action === 'fb_form_template_save') {
+      const r = await saveTemplate({ readJSON, writeJSON }, body.template);
+      if (r.error) { res.status(400).json({ error: 'invalid', message: r.error }); return; }
+      res.status(200).json({ ok: true, template: r.template });
+      return;
+    }
     // a new form has no id yet
     if (body.action === 'fb_form_create') {
       const r = await createForm({ readJSON, writeJSON }, body.form);

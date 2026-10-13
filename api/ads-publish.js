@@ -4,6 +4,8 @@
 //                            + the Page, its Instagram, the active lead forms, the offers, the cities
 //   POST { action: 'publish', image: { base64, name }, settings, ref }
 //   POST { action: 'form_create', form }   a new lead form on the Page, offered in the window at once
+//   GET  ?action=form_setup                what the "Creează formular" window starts from (the template, the forms)
+//   POST { action: 'form_info', id }       an existing form's screening questions (to copy them)
 //                            campaign + ad set + ad, see _lib/meta-ads.js; kept in data/ads-published.json
 // The publishing itself lives in _lib/meta-ads.js.
 
@@ -13,6 +15,8 @@ const { getSession } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
 const { createForm } = require('./_lib/fb-form-create');
+const { getTemplate } = require('./_lib/fb-form-template');
+const { fetchFormInfo } = require('./_lib/facebook');
 const ads = require('./_lib/meta-ads');
 
 const LOG_KEY = 'data/ads-published.json';
@@ -78,9 +82,22 @@ module.exports = async (req, res) => {
   if (!allowed) { res.status(401).json({ error: 'not_authenticated' }); return; }
   res.setHeader('Cache-Control', 'no-store');
   try {
+    if (req.method === 'GET' && req.query && req.query.action === 'form_setup') {
+      const [template, poll, reg, offersAll] = await Promise.all([getTemplate({ readJSON, writeJSON }), readJSON('data/fb-poll.json', {}), readJSON('data/fb-forms.json', {}), loadOffers(readJSON, writeJSON)]);
+      const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').map((f) => { const r = (reg.forms || {})[f.id] || {}; return { id: f.id, name: f.name, location: r.location || (r.detected && r.detected.location) || '' }; });
+      res.status(200).json({ ok: true, template, forms, offers: offersAll.filter((o) => o.active !== false).map((o) => ({ id: o.id, title: o.title })) });
+      return;
+    }
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
+    if (body.action === 'form_info') {
+      const conn = await loadConnection(readJSON);
+      if (!conn.pageAccessToken) { res.status(400).json({ error: 'not_connected', message: REASONS.not_connected }); return; }
+      const info = await fetchFormInfo(String(body.id || '').replace(/\D/g, ''), conn.pageAccessToken);
+      res.status(200).json({ ok: true, name: info.name, questions: info.questions.filter((q) => q.type === 'CUSTOM' && q.options.length).map((q) => ({ label: q.label, options: q.options.map((o) => o.value) })) });
+      return;
+    }
     if (body.action === 'form_create') {
       // Creative names the procedure as it knows it (the offer's title or its ad name)
       const offersAll = await loadOffers(readJSON, writeJSON);
