@@ -30,7 +30,7 @@ main.pl-full{ max-width:none; min-width:0; }
 .pl-btn.is-busy{ position:relative; color:transparent !important; }
 .pl-btn.is-busy::after{ content:""; position:absolute; inset:0; margin:auto; width:15px; height:15px; border-radius:50%; border:2px solid var(--ink); border-right-color:transparent; animation:pl-spin .7s linear infinite; }
 .pl-btn.is-ghost.is-busy::after{ border-color:var(--fg); border-right-color:transparent; }
-.pl-count{ min-width:22px; height:22px; padding:0 .4rem; border-radius:999px; display:inline-grid; place-items:center; background:color-mix(in srgb, currentColor 18%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent); font-size:.75rem; font-weight:700; }
+.pl-count{ flex:none; min-width:22px; height:22px; padding:0 .4rem; border-radius:999px; display:inline-grid; place-items:center; line-height:1; font-variant-numeric:tabular-nums; text-box:trim-both cap alphabetic; background:color-mix(in srgb, currentColor 18%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent); font-size:.75rem; font-weight:700; }
 .pl-count.is-zero{ opacity:.6; }
 .pl-icon-btn{
   width:34px; height:34px; display:inline-grid; place-items:center; border:0; border-radius:10px; background:transparent; color:var(--muted); cursor:pointer;
@@ -401,6 +401,10 @@ input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form inp
   .pl-head-actions{ width:100%; }
   .pl-head-actions .pl-btn{ flex:1; justify-content:center; }
   .pl-head-actions .pl-btn kbd, .pl-search kbd{ display:none; }
+  /* the call queue: its count stays inside the button (the label shortens first) */
+  .pl-head-actions [data-act="queue"]{ min-width:0; gap:.4rem; padding-left:.8rem; padding-right:.6rem; }
+  .pl-head-actions [data-act="queue"] > span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pl-head-actions [data-act="queue"] > svg{ display:none; }
   .pl-stats{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 0 1rem; padding:2px 2px .3rem; scrollbar-width:none; }
   .pl-stats::-webkit-scrollbar{ display:none; }
   .pl-stat, .pl-stat:nth-child(n+4){ display:grid; flex:0 0 148px; scroll-snap-align:start; padding:.7rem .8rem; }

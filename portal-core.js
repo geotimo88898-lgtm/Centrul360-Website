@@ -246,8 +246,13 @@
       leadBadge(j);
     } catch (e) { /* badge only */ }
   }
+  // the Pipeline count = the people in the call queue (late call-backs, never called, call-backs due
+  // today), in the city picked in the Pipeline (the same list "Coada de apeluri" opens)
   function leadBadge(j) {
-    const n = (j.leads || []).filter((l) => (l.kind === 'open' || l.kind === 'booked') && (l.followUpState === 'overdue' || l.neverContacted)).length;
+    let city = '';
+    try { const v = localStorage.getItem('c360_pl_city_' + (DATA && DATA.me ? DATA.me.id : '')) || ''; if (v === 'Timișoara' || v === 'Arad') city = v; } catch (e) { /* both cities */ }
+    const n = (j.leads || []).filter((l) => (l.kind === 'open' || l.kind === 'booked') && (!city || l.location === city) &&
+      (l.followUpState === 'overdue' || l.neverContacted || l.followUpState === 'today')).length;
     K.badge('pipeline', n, 'hot');
   }
   K.on('leads', leadBadge);

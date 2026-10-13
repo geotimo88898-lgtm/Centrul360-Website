@@ -299,7 +299,6 @@ tbody tr:hover{ background:var(--glass); }
   nav.tabs button svg{ display:block; }
   nav.tabs .c360-indicator{ display:none; }
   nav.tabs button.active{ background:var(--glass) !important; color:var(--fg) !important; font-weight:650; }
-  nav.tabs button.active::after{ content:""; margin-left:auto; width:8px; height:8px; border-radius:50%; background:var(--accent); }
   .c360-mnav-backdrop{ display:block; position:fixed; inset:0; z-index:35; background:rgba(0,0,0,.45); opacity:0; visibility:hidden;
     transition:opacity .2s ease, visibility 0s linear .2s; }
   html.c360-mnav-open .c360-mnav-backdrop{ opacity:1; visibility:visible; transition:opacity .2s ease; }

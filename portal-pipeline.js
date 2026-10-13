@@ -464,6 +464,7 @@
     const qc = root.querySelector('[data-queue-count]');
     qc.textContent = q;
     qc.classList.toggle('is-zero', !q);
+    if (window.K) window.K.badge('pipeline', q, 'hot'); // the menu shows the same number
   }
 
   function renderChips() {

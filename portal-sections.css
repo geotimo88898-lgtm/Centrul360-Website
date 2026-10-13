@@ -59,6 +59,8 @@
 
 .db-kpis .k-stat{ min-height:118px; }
 .db-hot .k-stat-ic{ animation:k-ping 1.8s var(--ease) infinite; color:var(--bad); }
+/* the ring around it fades out whole (its row clips long labels: room for the ring, same place) */
+.db-hot .k-stat-top{ padding:10px; margin:-10px; }
 .db-row{ display:grid; gap:1rem; min-width:0; }
 .db-row-a{ grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr); }
 .db-row-b{ grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr); align-items:start; }
