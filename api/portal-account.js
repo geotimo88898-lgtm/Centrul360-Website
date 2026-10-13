@@ -81,6 +81,11 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, devices: await push.devicesOf(store, acc.id) });
       return;
     }
+    if (action === 'push_test') {
+      const sent = await push.sendPush(store, [acc.id], { title: 'Centrul360', body: 'Notificările merg pe acest telefon. Așa vei primi leadurile noi.', url: '/portal', tag: 'test' });
+      res.status(200).json({ ok: true, sent });
+      return;
+    }
     if (action === 'push_off') {
       await push.unsubscribe(store, String(body.endpoint || ''), acc.id);
       res.status(200).json({ ok: true, devices: await push.devicesOf(store, acc.id) });

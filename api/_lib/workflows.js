@@ -22,7 +22,6 @@ const { sendWhatsApp } = WA;
 const WT = require('./wa-templates');
 const { dedash } = require('./dedash');
 const { notifyMany } = require('./notify');
-const { sendPush } = require('./push');
 
 const WF_KEY = 'data/workflows.json';
 const RUNS_KEY = 'data/workflow-runs.json';
@@ -474,8 +473,8 @@ async function notifyTeam(s, v, ctx, wa) {
   const store = { readJSON, writeJSON };
   const title = render(s.title, v), text = render(s.text, v);
   const go = ctx.appointment ? 'programari' : 'pipeline';
-  await notifyMany(store, [...ids], { kind: ctx.appointment ? 'alert' : 'lead', tone: 'info', title, text, go });
-  const pushed = await sendPush(store, [...ids], { title, body: text, url: '/portal#' + go, tag: ctx.lead ? 'lead-' + ctx.lead.id : '' });
+  // bell + phone; the portal's own new-lead alert has the same tag, so the lead rings once
+  const pushed = await notifyMany(store, [...ids], { kind: ctx.appointment ? 'alert' : 'lead', tone: 'info', title, text, go, tag: ctx.lead ? 'lead-' + ctx.lead.id : ctx.appointment ? 'appt-' + ctx.appointment.id : '' });
   let waSent = 0;
   if (s.whatsapp && s.templateId) {
     const admin = ids.has('admin') ? await readJSON('data/admin-profile.json', {}) : {};

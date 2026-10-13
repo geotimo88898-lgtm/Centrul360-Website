@@ -11,6 +11,8 @@ const { photoUrl } = require('./portal-account');
 const { mine: myNotifications } = require('./_lib/notify');
 const TB = require('./_lib/timebank');
 const PAY = require('./_lib/payroll');
+const { bookingNotes } = require('./_lib/bonus');
+const { deviceCounts } = require('./_lib/push');
 // Profile photo (Contul meu) of an employee row, as a URL the portal can show.
 const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
 const { defaultAcademy } = require('./_lib/academy');
@@ -218,22 +220,7 @@ module.exports = async (req, res) => {
 
     // Bell reminders for the booking bonus (reception): the step reached, and the next one when
     // it's close (within 3 a day), the tone following the days left in the month. One short line.
-    const bonusNotes = [];
-    const bk = salary && salary.months[0].booking;
-    if (bk && bk.days) {
-      const dim = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
-      const daysLeft = dim - Number(today.slice(8, 10)) + 1;
-      const avg = bk.avg.toLocaleString('ro-RO');
-      if (bk.lei) bonusNotes.push({ id: 'book:' + month + ':' + bk.lei, kind: 'bonus', tone: 'good', live: true, go: 'comision', title: '🏆 Bonus ' + bk.lei.toLocaleString('ro-RO') + ' lei', text: 'Media ta: ' + avg + ' programări pe zi.' });
-      if (bk.next && bk.next.min - bk.avg <= 3) {
-        const need = (Math.ceil((bk.next.min - bk.avg) * 10) / 10).toLocaleString('ro-RO');
-        const stage = daysLeft > 10 ? 'a' : daysLeft > 3 ? 'b' : 'c';
-        const text = stage === 'a' ? 'Încă ' + need + ' programări pe zi în medie și urci la ' + bk.next.lei + ' lei. 🎯'
-          : stage === 'b' ? 'Încă ' + need + ' pe zi în ' + daysLeft + ' zile pentru ' + bk.next.lei + ' lei. 💪'
-            : (daysLeft === 1 ? 'Ultima zi! ' : 'Doar ' + daysLeft + ' zile! ') + 'Încă ' + need + ' pe zi pentru ' + bk.next.lei + ' lei. ⏳';
-        bonusNotes.push({ id: 'book:' + month + ':next' + bk.next.min + ':' + stage, kind: 'bonus', tone: stage === 'c' ? 'warn' : 'info', live: true, go: 'comision', title: 'Bonus ' + bk.next.lei + ' lei', text });
-      }
-    }
+    const bonusNotes = salary ? bookingNotes(salary.months[0].booking, month, today) : [];
 
     const payload = {
       // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
@@ -278,6 +265,7 @@ module.exports = async (req, res) => {
     };
 
     if (isAdmin) {
+      const devices = await deviceCounts({ readJSON });
       payload.admin = {
         // Echipa > Salarii: this month's pay of every active person
         payroll: activeEmployees.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => Object.assign({ id: e.id, name: e.name, role: e.role, location: e.location, photo: photoOf(e), netSalary: Number(e.netSalary) || 0 }, payOf(e, month))),
@@ -304,6 +292,7 @@ module.exports = async (req, res) => {
         }),
         employees: employeesRaw.map((e) => ({
           id: e.id,
+          pushDevices: devices[e.id] || 0,
           name: e.name,
           location: e.location,
           role: e.role,

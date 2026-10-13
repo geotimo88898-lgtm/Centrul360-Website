@@ -35,6 +35,7 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { cityOf, inCity } = require('./_lib/city');
 const { requireRole, requireAdmin } = require('./_lib/auth');
 const workflows = require('./_lib/workflows');
+const { notifyMany } = require('./_lib/notify');
 const { upsertClient } = require('./_lib/clients');
 
 const LEADS_KEY = 'data/leads.json';
@@ -180,6 +181,19 @@ function cleanForm(f) {
   return { id: clip(f.id, 40), name: clip(f.name, 120), ad: clip(f.ad, 160), campaign: clip(f.campaign, 160), adId: num(f.adId), adsetId: num(f.adsetId), campaignId: num(f.campaignId), at: nowISO(), sentAt: clip(f.sentAt, 40), answers };
 }
 
+// A lead that came by itself (a Facebook form) rings at once for the owner and reception: in the bell
+// and on their phones. Leads the team types in don't (they know already). Built in, not an automation.
+async function alertTeam(lead, returning) {
+  if (lead.createdBy !== 'facebook-webhook' && !(returning && lead.source === 'facebook')) return;
+  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
+  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie').map((e) => e.id));
+  await notifyMany({ readJSON, writeJSON }, ids, {
+    kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
+    title: (returning ? 'A revenit: ' : 'Lead nou: ') + lead.name,
+    text: [lead.interest, lead.location, lead.phone].filter(Boolean).join(' · '),
+  });
+}
+
 async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form }) {
   const filled = cleanForm(form);
   const result = validateFields({ name, phone, source, location, email: email || '', interest: interest || '', value: value || 0 }, { partial: false });
@@ -210,6 +224,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     await writeJSON(LEADS_KEY, leads);
     // someone already in the Pipeline filled the form again: worth an alert, not a second welcome
     await workflows.emit('lead_created', { lead: existing, returning: true });
+    if (createdBy === 'facebook-webhook') await alertTeam(existing, true);
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
   }
 
@@ -232,6 +247,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);
   await workflows.emit('lead_created', { lead }); // e.g. welcome WhatsApp + "call in 5 min"
+  await alertTeam(lead, false);
   return { lead: withComputedFields(lead, stages) };
 }
 

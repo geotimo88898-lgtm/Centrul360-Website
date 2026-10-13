@@ -31,6 +31,7 @@ const { requireAuth } = require('./_lib/auth');
 const { upsertClient } = require('./_lib/clients');
 const { normalizeCategories } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
+const { bonusPush } = require('./_lib/bonus');
 const { cityOf, inCity } = require('./_lib/city');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
@@ -215,6 +216,8 @@ module.exports = async (req, res) => {
 
       // Automations (Admin → Automatizări): confirmation, reminders … Never throws.
       await workflows.emit('appointment_created', { appointment: entry });
+      // reception's booking bonus may have moved: the new line goes to her phone
+      await bonusPush({ readJSON, writeJSON }, session.employeeId);
 
       res.status(200).json({ ok: true, appointment: entry });
       return;

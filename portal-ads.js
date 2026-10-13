@@ -60,7 +60,12 @@
     if (A.d && quiet !== true) body.classList.add('is-loading');
     try {
       // the columns and cards this account chose (K.prefs) come with the first load
-      [A.d] = await Promise.all([K.api('/api/ads-manager?' + (A.range ? 'since=' + A.range.since + '&until=' + A.range.until : 'period=' + A.period)), K.prefs.load()]);
+      const [d] = await Promise.all([K.api('/api/ads-manager?' + (A.range ? 'since=' + A.range.since + '&until=' + A.range.until : 'period=' + A.period)), K.prefs.load()]);
+      A.at = Date.now();
+      // nothing changed: the page stays exactly as it is (no redraw, no jump)
+      const key = JSON.stringify(d);
+      if (key === A.key && body.querySelector('[data-list]')) return;
+      A.d = d; A.key = key;
       // a picked campaign that no longer exists drops out of the pick
       if (A.d.campaigns) { const ids = new Set(A.d.campaigns.map((c) => c.id)); A.sel.forEach((id) => { if (!ids.has(id)) A.sel.delete(id); }); }
       render();
@@ -163,6 +168,7 @@
     const days = tok && tok.expiresAt ? Math.round((tok.expiresAt - Date.now()) / 86400e3) : null;
     const C = cols();
     const minw = 300 + C.length * 116 + 84;
+    const old = body.querySelector('.ad-scroll'), sx = old ? old.scrollLeft : 0;
     body.classList.toggle('is-readonly', !!d.readOnly);
     body.innerHTML =
       (d.readOnly ? '<div class="k-card ad-note is-warn">' + icon('alert') + '<span>Doar vizualizare: tokenul pentru reclame n-are permisiunea ads_management, așa că nu poți porni, opri sau schimba nimic de aici.</span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
@@ -180,6 +186,7 @@
         '<div class="ad-list" data-list></div></div></div>';
     paintStats();
     paintList();
+    if (sx) body.querySelector('.ad-scroll').scrollLeft = sx;
   }
   // the numbers on top: of the picked campaigns, or of all of them
   function sumOf(list) {
@@ -445,8 +452,6 @@
       const a = d.ads[ai], s = d.adsets[si];
       let h = '<section class="ad-ed-sec"><div class="ad-ed-head"><b>Nume</b></div><div class="k-form ad-ed-form">' +
         K.field('Campanie', '<input data-name="' + esc(d.campaign.id) + '" value="' + esc(nm(d.campaign)) + '" maxlength="200">', 'full') +
-        (s ? K.field('Set de reclame' + (d.adsets.length > 1 ? ' (cel ales mai jos)' : ''), '<input data-name="' + esc(s.id) + '" value="' + esc(nm(s)) + '" maxlength="200">', 'full') : '') +
-        (a ? K.field('Reclamă' + (d.ads.length > 1 ? ' (cea aleasă mai jos)' : ''), '<input data-name="' + esc(a.id) + '" value="' + esc(nm(a)) + '" maxlength="200">', 'full') : '') +
         '</div></section>';
       if (a) {
         const x = adDraft(a);
@@ -508,8 +513,8 @@
           if (!d) return;
           try {
             let n = 0;
-            // new names first (campaign, ad sets, ads)
-            for (const x of [d.campaign].concat(d.adsets, d.ads)) {
+            // the campaign's new name first
+            for (const x of [d.campaign]) {
               const v = draft.names[x.id]; if (v == null || !v.trim() || v.trim() === x.name) continue;
               await post({ action: 'rename', id: x.id, name: v.trim() }); n++;
               const row = findAny(x.id); if (row) row.name = v.trim();
@@ -672,5 +677,5 @@
     });
   }
 
-  K.section('reclame', { mount, show: load });
+  K.section('reclame', { mount, show: () => (A.d ? (Date.now() - (A.at || 0) > 20e3 ? load(true) : null) : load()) });
 })();

@@ -43,6 +43,12 @@ async function unsubscribe(store, endpoint, employeeId) {
   if (next.length !== list.length) await store.writeJSON(SUBS_KEY, next);
 }
 const devicesOf = async (store, employeeId) => (await store.readJSON(SUBS_KEY, [])).filter((x) => x.employeeId === employeeId).length;
+// { employeeId: number of devices with notifications on }, for Echipa
+async function deviceCounts(store) {
+  const out = {};
+  (await store.readJSON(SUBS_KEY, [])).forEach((x) => { out[x.employeeId] = (out[x.employeeId] || 0) + 1; });
+  return out;
+}
 
 // { title, body, url } to every device of these people. Never throws; dead subscriptions
 // (the person turned notifications off or reinstalled) are dropped.
@@ -75,4 +81,4 @@ async function sendPush(store, employeeIds, msg) {
   }
 }
 
-module.exports = { publicKey, subscribe, unsubscribe, devicesOf, sendPush };
+module.exports = { publicKey, subscribe, unsubscribe, devicesOf, deviceCounts, sendPush };

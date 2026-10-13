@@ -682,3 +682,22 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 /* Every block of a page keeps 1rem from the one above it, on every page and for every role
    (zero specificity: a component's own spacing still wins). */
 :where(.k-panel [data-body] > * + *, .k-panel [data-pane] > * + *){ margin-top:1rem; }
+
+/* notifications: the test button, the phone nudge, the iPhone steps, Echipa */
+.nt-push-acts{ display:flex; gap:.4rem; flex-wrap:wrap; }
+.nt-nudge{ display:flex; align-items:center; gap:.7rem; margin:0 0 1rem; padding:.7rem .75rem .7rem .8rem; border-radius:16px; background:color-mix(in srgb, var(--accent) 10%, var(--paper)); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.nt-nudge-ic{ flex:none; display:grid; place-items:center; width:36px; height:36px; border-radius:11px; background:var(--accent); color:var(--accent-ink, #fff); }
+.nt-nudge-ic svg{ width:18px; height:18px; }
+.nt-nudge-txt{ flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.3; }
+.nt-nudge-txt b{ font-size:.9rem; }
+.nt-nudge-txt span{ font-size:.78rem; color:var(--muted); }
+.nt-nudge .k-btn{ flex:none; }
+.nt-nudge .k-icon-btn{ flex:none; margin-left:-.2rem; }
+.nt-steps{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.7rem; }
+.nt-steps li{ display:flex; align-items:center; gap:.7rem; padding:.8rem .9rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); font-size:.9rem; line-height:1.4; }
+.nt-step-n{ flex:none; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--fg); color:var(--ink); font-size:.75rem; font-weight:700; }
+.nt-step-ic{ flex:none; color:var(--accent); display:grid; }
+.nt-step-ic svg{ width:18px; height:18px; }
+.ad-emp-push{ display:flex; align-items:center; gap:.4rem; margin-top:.6rem; font-size:.76rem; color:var(--muted); }
+.ad-emp-push svg{ width:13px; height:13px; }
+.ad-emp-push.is-on{ color:var(--good); }
