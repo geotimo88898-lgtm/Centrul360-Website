@@ -6,12 +6,14 @@
 //   POST { action: 'fb_form', id, offerId, location }   which procedure / city a form's leads are
 //        (empty = read it from the form and ad names, see _lib/fb-leads.js)
 //   POST { action: 'fb_form_info', id }          the form's questions, asked from Facebook now
+//   POST { action: 'fb_form_create', form }      a new lead form on the Page (_lib/fb-form-create.js)
 
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { whatsappReady } = require('./_lib/whatsapp');
 const { loadOffers } = require('./_lib/offers');
 const { loadConnection, fetchFormInfo } = require('./_lib/facebook');
+const { createForm } = require('./_lib/fb-form-create');
 
 const FORMS_KEY = 'data/fb-forms.json';
 const LOCATIONS = ['Timișoara', 'Arad'];
@@ -41,7 +43,7 @@ async function payload() {
     blob: !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID),
     fbForms: forms,
     formsAt: poll.formsAt || '',
-    offers: offers.filter((o) => o.active !== false).map((o) => ({ id: o.id, title: o.title, locations: o.locations || [] })),
+    offers: offers.filter((o) => o.active !== false).map((o) => ({ id: o.id, title: o.title, locations: o.locations || [], priceNew: o.priceNew || 0, priceOld: o.priceOld || 0, description: o.description || '' })),
   };
 }
 
@@ -53,6 +55,13 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') { res.status(200).json(await payload()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
+    // a new form has no id yet
+    if (body.action === 'fb_form_create') {
+      const r = await createForm({ readJSON, writeJSON }, body.form);
+      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      res.status(200).json(Object.assign(await payload(), { createdId: r.form.id }));
+      return;
+    }
     const id = String(body.id || '');
     if (!/^\d{5,25}$/.test(id)) { res.status(400).json({ error: 'form_not_found' }); return; }
 

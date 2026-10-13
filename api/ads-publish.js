@@ -3,6 +3,7 @@
 //   GET  ?action=options     can publishing work (the user token with ads_management, the ad account)
 //                            + the Page, its Instagram, the active lead forms, the offers, the cities
 //   POST { action: 'publish', image: { base64, name }, settings, ref }
+//   POST { action: 'form_create', form }   a new lead form on the Page, offered in the window at once
 //                            campaign + ad set + ad, see _lib/meta-ads.js; kept in data/ads-published.json
 // The publishing itself lives in _lib/meta-ads.js.
 
@@ -11,6 +12,7 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { getSession } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
+const { createForm } = require('./_lib/fb-form-create');
 const ads = require('./_lib/meta-ads');
 
 const LOG_KEY = 'data/ads-published.json';
@@ -79,6 +81,22 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
+    if (body.action === 'form_create') {
+      // Creative names the procedure as it knows it (the offer's title or its ad name)
+      const offersAll = await loadOffers(readJSON, writeJSON);
+      const fold = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+      const input = Object.assign({}, body.form || {});
+      if (!input.offerId && input.offer) {
+        const t = fold(input.offer);
+        const o = offersAll.find((x) => fold(x.title) === t || fold(x.adName) === t) || offersAll.find((x) => t && (t.includes(fold(x.title)) || fold(x.title).includes(t)));
+        if (o) input.offerId = o.id;
+      }
+      const r = await createForm({ readJSON, writeJSON }, input);
+      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      const offer = offersAll.find((o) => o.id === r.form.offerId);
+      res.status(200).json({ ok: true, form: { id: r.form.id, name: r.form.name, lastAt: '', created: new Date().toISOString(), offer: offer ? offer.title : '', location: r.form.location } });
+      return;
+    }
     if (body.action !== 'publish') { res.status(400).json({ error: 'invalid_action' }); return; }
 
     const conn = await loadConnection(readJSON);
