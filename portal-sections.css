@@ -1101,3 +1101,4 @@ main.ad-full{ max-width:none; }
 .db-b.is-full{ grid-column:1 / -1; }
 .db-b:empty{ display:none; }
 @media (max-width:1100px){ .db-blocks{ grid-template-columns:minmax(0,1fr); } .db-b.is-wide, .db-b.is-full{ grid-column:auto; } }
+.mo-kpis{ display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:1rem; }
