@@ -119,6 +119,16 @@ async function checkNumber(store, origin, city) {
   const live = p.j.platform_type === 'CLOUD_API' || p.j.status === 'CONNECTED';
   line(live, live ? 'Numărul e pornit (' + (p.j.display_phone_number || n.phoneId) + ')' : 'Numărul nu e pornit pe WhatsApp Cloud API',
     'stare ' + (p.j.status || '?') + ' · ' + (p.j.platform_type || '?') + (p.j.quality_rating ? ' · calitate ' + p.j.quality_rating : '') + (p.j.name_status && p.j.name_status !== 'APPROVED' ? ' · nume ' + p.j.name_status : ''), !live);
+  // where Meta really sends this number's messages (the number's own address, its account's, the app's)
+  const wc = await call('GET', '/' + n.phoneId, n.token, { fields: 'webhook_configuration' });
+  if (wc.ok && wc.j.webhook_configuration) {
+    const w = wc.j.webhook_configuration;
+    const used = w.phone_number || w.whatsapp_business_account || w.application || '';
+    const from = w.phone_number ? 'adresa pusă pe număr' : w.whatsapp_business_account ? 'adresa pusă pe contul WhatsApp' : 'adresa aplicației';
+    const ours = isOurHook(used, origin);
+    line(ours, ours ? 'Mesajele numărului merg la portal' : 'Mesajele numărului merg în altă parte, nu la portal',
+      from + ': ' + (used || 'niciuna') + (ours ? '' : '. Repară pune adresa portalului direct pe număr.'), !ours);
+  }
   // our app(s) listen to the number's account
   const apps = await knownApps(store);
   let listening = [];
@@ -185,6 +195,13 @@ async function repairNumber(store, origin, city) {
   for (const id of Object.keys(apps)) {
     const r = await ensureWebhook(store, origin, apps[id]);
     done.push(r.ok ? 'adresa pentru mesaje setată (' + apps[id].label + ')' : r.error + ' (' + apps[id].label + ')');
+  }
+  // the portal's address on the number itself, when its messages go elsewhere
+  const wc = await call('GET', '/' + n.phoneId, n.token, { fields: 'webhook_configuration' });
+  const w = (wc.ok && wc.j.webhook_configuration) || null;
+  if (w && !isOurHook(w.phone_number || w.whatsapp_business_account || w.application || '', origin)) {
+    const r = await call('POST', '/' + n.phoneId, n.token, { webhook_configuration: JSON.stringify({ override_callback_uri: hookUrl(origin), verify_token: await verifyToken(store) }) });
+    done.push(r.ok ? 'adresa portalului pusă pe număr' : 'adresa pe număr: ' + r.error);
   }
   const p = await call('GET', '/' + n.phoneId, n.token, { fields: 'status,platform_type' });
   if (p.ok && p.j.platform_type !== 'CLOUD_API' && p.j.status !== 'CONNECTED' && !n.coex) {
