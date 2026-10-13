@@ -308,7 +308,7 @@
       const mine = d.numbers[city] && d.numbers[city].phoneId === x.phoneId;
       return '<button type="button" class="wa-pick-row' + (mine ? ' is-on' : '') + '" ' + attr + '="' + i + '"' + (usedBy ? ' disabled' : '') + '>' +
         '<span class="wa-pick-ic">' + icon('chat') + '</span><span class="wa-pick-main"><b>' + esc(x.display || x.phoneId) + '</b><small>' + esc(x.name || '') + '</small></span>' +
-        (usedBy ? '<em>la ' + esc(other) + '</em>' : mine ? '<em class="is-on">conectat</em>' : icon('right')) + '</button>';
+        (usedBy ? '<em>la ' + esc(other) + '</em>' : mine ? (attr === 'data-mpick' ? '<em class="is-on">apasă ca să salvezi tokenul</em>' : '<em class="is-on">conectat</em>') : icon('right')) + '</button>';
     }).join('') + '</div>';
     const listHtml = () => (st.found.length
       ? rowsHtml(st.found, 'data-pick')
