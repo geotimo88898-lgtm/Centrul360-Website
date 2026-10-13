@@ -19,8 +19,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Centrul360';
   const options = {
     body: data.body || '',
-    icon: '/brand_asset/portal/icon-192.png',
-    badge: '/brand_asset/portal/icon-192.png',
+    icon: '/brand_asset/portal/icon-192.png?v=2',
+    badge: '/brand_asset/portal/badge-96.png',
     data: { url: data.url || '/portal' },
     // the same lead twice (e.g. it filled the form again) replaces its notification and rings again
     tag: data.tag || undefined,
