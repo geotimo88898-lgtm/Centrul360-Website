@@ -383,15 +383,8 @@ module.exports = async (req, res) => {
       lead.contactCount = (lead.contactCount || 0) + 1;
       if (body.followUpAt !== undefined) lead.followUpAt = followUpAt;
       if (body.nextAction !== undefined) lead.nextAction = clip(body.nextAction, 160);
+      // only a note on the lead: the stage is moved by the receptionist, never by the outcome
       addActivity(lead, { type: 'contact', channel, outcome: body.outcome, text: clip(body.text, 1000), author });
-      // First real conversation pulls a brand-new lead out of the first column automatically.
-      const advance = body.advance !== false && lead.stage === firstOpenStage(stages).id && !['nu_raspunde', 'numar_gresit', 'refuz'].includes(body.outcome);
-      const next = advance ? stages.slice(stages.indexOf(stages.find((s) => s.id === lead.stage)) + 1).find((s) => s.kind === 'open') : null;
-      if (next) {
-        addActivity(lead, { type: 'stage', author, text: (stages.find((s) => s.id === lead.stage) || {}).name + ' → ' + next.name });
-        lead.stage = next.id;
-        lead.stageChangedAt = nowISO();
-      }
       return save();
     }
 

@@ -451,11 +451,11 @@ input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form inp
 /* ---------------- the stage of the open lead: a bar that always fits + the stage menu ---------------- */
 .pl-stage{ display:flex; flex-direction:column; gap:.6rem; }
 .pl-stage-bars{ display:flex; gap:4px; }
-.pl-seg{ --c:#888; flex:1; height:8px; padding:0; border:0; border-radius:999px; background:var(--glass-2); cursor:pointer; position:relative; overflow:hidden; transition:transform .2s var(--ease); }
-.pl-seg::after{ content:""; position:absolute; inset:0; background:var(--c); transform:scaleX(0); transform-origin:left; transition:transform .45s var(--ease) calc(var(--i, 0) * 45ms); }
-.pl-seg.is-past::after, .pl-seg.is-on::after{ transform:scaleX(1); }
-.pl-seg.is-past{ opacity:.55; }
-.pl-seg:hover{ transform:scaleY(1.4); }
+.pl-sbar{ --c:#888; flex:1; height:8px; padding:0; border:0; border-radius:999px; background:var(--glass-2); cursor:pointer; position:relative; overflow:hidden; transition:transform .2s var(--ease); }
+.pl-sbar::after{ content:""; position:absolute; inset:0; background:var(--c); transform:scaleX(0); transform-origin:left; transition:transform .45s var(--ease) calc(var(--i, 0) * 45ms); }
+.pl-sbar.is-past::after, .pl-sbar.is-on::after{ transform:scaleX(1); }
+.pl-sbar.is-past{ opacity:.55; }
+.pl-sbar:hover{ transform:scaleY(1.4); }
 .pl-stage-row{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
 .pl-stage-pick{ --c:#888; display:inline-flex; align-items:center; gap:.6rem; padding:.45rem .7rem .45rem .6rem; border-radius:12px; border:1px solid color-mix(in srgb, var(--c) 55%, var(--line)); background:color-mix(in srgb, var(--c) 10%, transparent); color:var(--fg); font:inherit; cursor:pointer; text-align:left; transition:background .2s ease; }
 .pl-stage-pick:hover{ background:color-mix(in srgb, var(--c) 16%, transparent); }

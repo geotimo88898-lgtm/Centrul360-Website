@@ -780,7 +780,7 @@
     const cur = flow[at] || stageById(l.stage) || { name: '', color: '#888' };
     const next = at >= 0 ? flow[at + 1] : null;
     return '<div class="pl-stage" data-stagebar>' +
-      '<div class="pl-stage-bars" role="group" aria-label="Etape">' + flow.map((s, i) => '<button type="button" class="pl-seg' + (i === at ? ' is-on' : '') + (i < at ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + ';--i:' + i + '" title="' + esc(s.name) + '" aria-label="Mută în ' + esc(s.name) + '"></button>').join('') + '</div>' +
+      '<div class="pl-stage-bars" role="group" aria-label="Etape">' + flow.map((s, i) => '<button type="button" class="pl-sbar' + (i === at ? ' is-on' : '') + (i < at ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + ';--i:' + i + '" title="' + esc(s.name) + '" aria-label="Mută în ' + esc(s.name) + '"></button>').join('') + '</div>' +
       '<div class="pl-stage-row">' +
         '<button type="button" class="pl-stage-pick" data-stage-pick style="--c:' + cur.color + '"><i></i><span><small>Etapa ' + (at >= 0 ? (at + 1) + ' din ' + flow.length : '') + '</small><b>' + esc(cur.name) + '</b></span>' + ic('down') + '</button>' +
         (next ? '<button type="button" class="pl-btn is-ghost is-sm pl-stage-next" data-move="' + next.id + '" style="--c:' + next.color + '"><span>Următoarea: <b>' + esc(next.name) + '</b></span>' + ic('right') + '</button>' : '') +
@@ -1258,14 +1258,8 @@
       try {
         const j = await api('log_contact', payload);
         replaceLead(j.lead); renderAll();
-        const stageChanged = j.lead.stage !== l.stage;
-        ui().toast('Contact salvat' + (stageChanged ? ' · mutat în „' + (stageById(j.lead.stage) || {}).name + '”' : '') + (followUpAt ? ' · revii ' + when(followUpAt) : ''), 'success');
-        if (outcome === 'programat') { S.drawer.section = ''; showSection('book'); return; }
-        if (outcome === 'refuz' || outcome === 'numar_gresit') {
-          const lost = S.stages.find((s) => s.kind === 'lost');
-          const ok = await ui().confirm({ title: 'Îl treci la Pierduți?', message: outcome === 'refuz' ? 'Nu mai apare în coada de apeluri.' : 'Numărul greșit nu poate fi contactat.', confirmText: 'Da, pierdut' });
-          if (ok && lost) return moveLead(l.id, lost.id, null, outcome === 'numar_gresit' ? { lostReason: 'Număr greșit / spam' } : null);
-        }
+        // just a note: the stage stays as it is (the receptionist moves it herself)
+        ui().toast('Contact salvat' + (followUpAt ? ' · revii ' + when(followUpAt) : ''), 'success');
         if (S.drawer && S.drawer.queue) { stepDrawer(1); return; }
         S.drawer.section = '';
         renderDrawer();
