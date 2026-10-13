@@ -789,7 +789,7 @@
         '<div class="st-fb-sub ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') + '<span>' +
           (live ? 'Leadurile intră automat. Ultima verificare ' + esc(K.ago(poll.at)) + (poll.forms ? ', ' + K.plural(poll.forms, 'formular activ', 'formulare active') : '') + '.'
             : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur în un minut.' : 'Prima verificare a formularelor se face în cel mult un minut.') + '</span></div>' +
-        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri primite</b><button type="button" class="k-btn is-ghost is-sm" data-fb-refresh>' + icon('refresh') + 'Reîmprospătează</button></div>' +
+        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri primite</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
           (got.length ? got.slice(0, 6).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
             : '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>') + '</div>' +
         '<details class="st-fb-tech"><summary>Detalii tehnice</summary>' +
@@ -810,7 +810,14 @@
       bindAdSelect(box);
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });
-      box.querySelector('[data-fb-refresh]').addEventListener('click', () => loadFb(box));
+      const pn = box.querySelector('[data-fb-pollnow]');
+      pn.addEventListener('click', () => K.busy(pn, async () => {
+        try {
+          const t = await K.api('/api/fb-connection-status', { action: 'poll_now' });
+          K.ui().toast(t.read ? (t.read === 1 ? 'A intrat un lead nou.' : 'Au intrat ' + t.read + ' leaduri noi.') : t.poll && t.poll.ok === false ? 'Facebook n-a răspuns: ' + (t.poll.error || 'eroare') : 'Niciun lead nou acum.', t.poll && t.poll.ok === false ? 'error' : 'success');
+          loadFb(box);
+        } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      }));
       const rd = box.querySelector('[data-fb-read]');
       rd.addEventListener('click', () => K.busy(rd, async () => {
         const out = box.querySelector('[data-fb-read-out]');

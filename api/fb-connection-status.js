@@ -4,6 +4,7 @@
 //         to be picked after Facebook's login (several Pages on one account)
 //   POST { action: 'app', appId, appSecret, configId }   the Meta app to use (saved in the portal,
 //         wins over FB_APP_ID / FB_APP_SECRET in Vercel); an empty secret keeps the saved one
+//   POST { action: 'poll_now' }      read the forms for new leads right now (instead of waiting the minute)
 //   POST { action: 'test_read' }     can the portal read the Page's forms and leads? (Facebook's own answer)
 //   POST { action: 'resubscribe' }   subscribe the connected Page to this app's leads again
 //   POST { action: 'choose', pageId, adAccountId }   connect that Page (from the login just made,
@@ -14,6 +15,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
+const { pollLeads } = require('./_lib/fb-leads');
 const { APP_KEY, GRAPH_BASE, appCreds, loadConnection, loadPending, connectPage, siteOrigin } = require('./_lib/facebook');
 
 // Is the connected Page subscribed to this app's leadgen webhook? (Meta lists the apps it notifies)
@@ -91,6 +93,12 @@ module.exports = async (req, res) => {
       // a Page token belongs to the app that issued it: another app means connecting again
       if (!sameApp) { await writeJSON('data/fb-connection.json', {}); await writeJSON('data/fb-pending.json', {}); }
       res.status(200).json(await status(req));
+      return;
+    }
+
+    if (body.action === 'poll_now') {
+      const read = await pollLeads(true);
+      res.status(200).json(Object.assign({ read: read || 0 }, await status(req)));
       return;
     }
 

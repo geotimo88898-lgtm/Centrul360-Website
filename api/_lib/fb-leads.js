@@ -101,24 +101,31 @@ async function graph(pathname, params, token) {
 }
 
 let lastLocal = 0;
-// All the Page's forms with how many leads each has (Facebook counts them): one or a few calls,
-// however many forms there are.
+// All the Page's forms, each with its newest lead (id + time) in the same answer: one or a few
+// calls however many forms there are. (Facebook's lead counter lags and skips test leads, so it
+// isn't used.)
 async function listForms(pageId, token) {
   const out = [];
-  let next = GRAPH_BASE + '/' + encodeURIComponent(pageId) + '/leadgen_forms?' + new URLSearchParams({ fields: 'id,name,status,leads_count,created_time', limit: '100', access_token: token });
+  let next = GRAPH_BASE + '/' + encodeURIComponent(pageId) + '/leadgen_forms?' + new URLSearchParams({
+    fields: 'id,name,status,leads_count,created_time,leads.limit(1){id,created_time}', limit: '100', access_token: token,
+  });
   for (let page = 0; next && page < 10; page++) {
     const r = await fetch(next);
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return { error: (j.error && j.error.message) || 'eroare ' + r.status };
-    (j.data || []).forEach((f) => out.push({ id: f.id, name: f.name, status: f.status, count: Number(f.leads_count) || 0, created: f.created_time || '' }));
+    (j.data || []).forEach((f) => {
+      const last = f.leads && f.leads.data && f.leads.data[0];
+      out.push({ id: f.id, name: f.name, status: f.status, count: Number(f.leads_count) || 0, created: f.created_time || '',
+        lastId: last ? String(last.id) : '', lastAt: last && last.created_time ? Math.floor(Date.parse(last.created_time) / 1000) : 0 });
+    });
     next = j.paging && j.paging.next;
   }
   return { forms: out };
 }
 
-// Every minute: the list of forms with their lead counts; only a form whose count went up is asked
-// for its new leads (since the last look, with two minutes of overlap; the seen list drops repeats).
-// At most once a minute across all servers (data/fb-poll.json).
+// Every minute: the forms with their newest lead; only a form whose newest lead is newer than the
+// last look (and not already in) is asked for its new leads, since the last look with two minutes
+// of overlap (the seen list drops repeats). At most once a minute across all servers.
 async function pollLeads(force) {
   if (!force && Date.now() - lastLocal < 60e3) return null;
   lastLocal = Date.now();
@@ -134,18 +141,16 @@ async function pollLeads(force) {
 
     const list = await listForms(conn.pageId, conn.pageAccessToken);
     if (list.error) { st.ok = false; st.error = list.error; await writeJSON(POLL_KEY, st); return 0; }
-    const before = st.counts; // { formId: leads } from the last look (none the first time)
-    const counts = {};
-    list.forms.forEach((f) => { counts[f.id] = f.count; });
-    const changed = before ? list.forms.filter((f) => f.count > (before[f.id] || 0)) : [];
+    const seen = new Set(((await readJSON(FORMS_KEY, {})).seen) || []);
+    const changed = list.forms.filter((f) => f.lastId && f.lastAt > since - 120 && !seen.has(f.lastId));
 
     let newest = since, count = 0, lastError = '';
     for (const form of changed) {
       const r = await graph('/' + encodeURIComponent(form.id) + '/leads', {
         fields: LEAD_FIELDS, limit: '50',
-        filtering: JSON.stringify([{ field: 'time_created', operator: 'GREATER_THAN', value: since }]),
+        filtering: JSON.stringify([{ field: 'time_created', operator: 'GREATER_THAN', value: since - 120 }]),
       }, conn.pageAccessToken);
-      if (r.error) { lastError = form.name + ': ' + r.error; counts[form.id] = (before && before[form.id]) || 0; continue; } // try again next time
+      if (r.error) { lastError = form.name + ': ' + r.error; continue; }
       for (const lead of r.data.slice().reverse()) { // oldest first
         const t = Math.floor(Date.parse(lead.created_time) / 1000);
         if (t > newest) newest = t;
@@ -157,10 +162,11 @@ async function pollLeads(force) {
     }
     const fresh = await readJSON(POLL_KEY, {});
     Object.assign(fresh, {
-      at: st.at, counts, cursor: Math.max(since, newest - 120), ok: !lastError, error: lastError,
-      forms: list.forms.map((f) => ({ id: f.id, name: f.name, status: f.status, count: f.count, created: f.created })),
+      at: st.at, cursor: Math.max(since, newest), ok: !lastError, error: lastError,
+      forms: list.forms.map((f) => ({ id: f.id, name: f.name, status: f.status, count: f.count, created: f.created, lastAt: f.lastAt })),
       formsAt: new Date().toISOString(),
     });
+    delete fresh.counts;
     await writeJSON(POLL_KEY, fresh);
     return count;
   } catch (err) {
