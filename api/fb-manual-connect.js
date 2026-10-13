@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
       res.status(400).json({ error: 'token_invalid', details: assets.details });
       return;
     }
-    const done = await afterLogin({ readJSON, writeJSON }, assets, session.employeeId, 'manual');
+    const done = await afterLogin({ readJSON, writeJSON }, assets, session.employeeId, 'manual', shortLived ? '' : token);
     if (done.error) {
       res.status(400).json({ error: done.error, details: done.details });
       return;

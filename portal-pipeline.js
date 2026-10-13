@@ -680,11 +680,28 @@
       ui().toast(errText(e), 'error');
     }
   }
+  // the stages may not all fit: the bar scrolls sideways (wheel too) and keeps the current one in view
+  function centerStep(instant) {
+    const bar = drawerEl().querySelector('.pl-stepper');
+    const on = bar && bar.querySelector('.pl-step.is-on');
+    if (!on) return;
+    const left = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;
+    bar.scrollTo({ left: Math.max(0, left), behavior: instant || reduceMotion ? 'auto' : 'smooth' });
+    if (!bar._wheel) {
+      bar._wheel = true;
+      bar.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || bar.scrollWidth <= bar.clientWidth) return;
+        e.preventDefault();
+        bar.scrollLeft += e.deltaY;
+      }, { passive: false });
+    }
+  }
   function syncStepper(stageId) {
     const steps = Array.from(drawerEl().querySelectorAll('.pl-stepper .pl-step'));
     const at = steps.findIndex((b) => b.dataset.move === stageId);
     if (at < 0) return;
     steps.forEach((b, i) => { b.classList.toggle('is-on', i === at); b.classList.toggle('is-past', i < at); });
+    centerStep(false);
   }
   function flashCard(id) {
     const c = boardEl.querySelector('.pl-card[data-id="' + id + '"]');
@@ -778,6 +795,7 @@
     el.innerHTML = S.drawer.mode === 'new' ? newLeadHtml() : leadHtml(leadById(S.drawer.id));
     const nb = el.querySelector('.pl-dbody');
     if (nb) nb.scrollTop = keep;
+    centerStep(true);
     if (fresh) {
       el.classList.remove('is-swap'); void el.offsetWidth; el.classList.add('is-swap');
       clearTimeout(el._swapT);
@@ -818,26 +836,17 @@
   }
   const field = (label, control, cls) => '<label class="pl-field' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span>' + control + '</label>';
 
-  // the Facebook form the person filled (the newest): the questions as in the form with her answers,
-  // then which form, ad and campaign, and when she sent it
+  // the questions of the Facebook form with her answers (end of Detalii)
   const qaHtml = (f) => (f.answers && f.answers.length ? '<dl class="pl-qa">' + f.answers.map((a) => '<div><dt>' + esc(a.q) + '</dt><dd>' + esc(a.a) + '</dd></div>').join('') + '</dl>' : '<p class="pl-muted">Formularul n-a avut întrebări.</p>');
-  function formAnswers(l) {
-    const f = (l.forms || []).slice(-1)[0];
-    if (!f) return '';
-    const meta = [f.name ? 'Formular: ' + f.name : '', f.ad ? 'Reclamă: ' + f.ad : '', f.campaign ? 'Campanie: ' + f.campaign : ''].filter(Boolean);
-    return '<section class="pl-card-sec pl-form-ans"><div class="pl-sec-head"><h4>' + ic('facebook') + 'Din formularul Facebook</h4><span class="pl-muted">trimis ' + esc(agoLong(f.sentAt || f.at)) + '</span></div>' +
-      qaHtml(f) +
-      (meta.length ? '<p class="pl-form-meta">' + meta.map(esc).join(' · ') + '</p>' : '') + '</section>';
-  }
 
   // The lead's sheet: name, stage and the three big actions stay on top; the rest sits in tabs, so
   // nothing is far down a long page. A new lead from a form opens on its answers, the others on
   // Contactare. Switching a tab only shows / hides (what's typed in the others stays).
-  const LTABS = [['contact', 'Contactare', 'phone'], ['form', 'Formular', 'facebook'], ['details', 'Detalii', 'pen'], ['history', 'Istoric', 'note']];
-  const curTab = (l) => S.drawer.tab || ((l.forms || []).length && !l.contactCount ? 'form' : 'contact');
+  const LTABS = [['contact', 'Contactare', 'phone'], ['details', 'Detalii', 'pen'], ['history', 'Istoric', 'note']];
+  const curTab = () => S.drawer.tab || 'contact';
   function tabsBar(l) {
     const t = curTab(l);
-    return '<div class="pl-tabs" role="tablist">' + LTABS.filter(([k]) => k !== 'form' || (l.forms || []).length).map(([k, label, icn]) =>
+    return '<div class="pl-tabs" role="tablist">' + LTABS.map(([k, label, icn]) =>
       '<button type="button" role="tab" aria-selected="' + (k === t) + '" data-ltab="' + k + '" class="' + (k === t ? 'is-on' : '') + '">' + ic(icn) + '<span>' + label + '</span>' +
       (k === 'history' ? '<em>' + (l.activities || []).length + '</em>' : '') + '</button>').join('') + '</div>';
   }
@@ -878,7 +887,6 @@
         '</div>' +
         (d.section === 'book' ? bookHtml(l) : '') +
         tabsBar(l) +
-        '<div class="pl-pane"' + pane(l, 'form') + '>' + formAnswers(l) + '</div>' +
         '<div class="pl-pane"' + pane(l, 'contact') + '>' +
         // log contact
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +

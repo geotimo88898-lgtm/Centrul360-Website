@@ -138,11 +138,11 @@ module.exports = async (req, res) => {
     if (body.action === 'choose') {
       const pending = await loadPending(store);
       const conn = await loadConnection(readJSON);
-      const src = pending || (conn.pageId ? { pages: conn.pages || [], adAccounts: conn.adAccounts || [], via: conn.connectedVia } : null);
+      const src = pending || (conn.pageId ? { pages: conn.pages || [], adAccounts: conn.adAccounts || [], via: conn.connectedVia, userToken: conn.userToken } : null);
       if (!src) { res.status(400).json({ error: 'login_expired' }); return; }
       const page = src.pages.find((p) => p.id === body.pageId);
       if (!page || !page.access_token) { res.status(400).json({ error: 'page_not_found' }); return; }
-      const done = await connectPage(store, { page, pages: src.pages, adAccounts: src.adAccounts, adAccountId: body.adAccountId || '', by: session.employeeId, via: src.via || 'oauth' });
+      const done = await connectPage(store, { page, pages: src.pages, adAccounts: src.adAccounts, adAccountId: body.adAccountId || '', by: session.employeeId, via: src.via || 'oauth', userToken: src.userToken || conn.userToken || '' });
       if (done.error) { res.status(400).json({ error: done.error }); return; }
       res.status(200).json(await status(req));
       return;

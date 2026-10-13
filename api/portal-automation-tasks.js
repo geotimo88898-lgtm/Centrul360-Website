@@ -59,7 +59,9 @@ module.exports = async (req, res) => {
       const clients = await readJSON('data/clients.json', []);
       const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
       const showAll = req.query && (req.query.all === '1' || req.query.all === 'true');
-      let visible = showAll ? allTasks : allTasks.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today));
+      // only the tasks a person wrote ("Adaugă sarcină"); the ones automations made before are not shown
+      const own = allTasks.filter((t) => t.createdBy);
+      let visible = showAll ? own : own.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today));
 
       const isAdmin = session.role === 'admin';
       // Reception works for both clinics; only other roles are limited to their own city.

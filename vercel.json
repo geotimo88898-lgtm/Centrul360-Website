@@ -26,17 +26,33 @@
     }
   ],
   "rewrites": [
-    { "source": "/creative", "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative" },
-    { "source": "/creative/:path*", "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative/:path*" }
+    {
+      "source": "/creative",
+      "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative"
+    },
+    {
+      "source": "/creative/:path*",
+      "destination": "https://centrul360-creative-machine-centrul360.vercel.app/creative/:path*"
+    }
   ],
   "headers": [
     {
       "source": "/brand_asset/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
     },
     {
       "source": "/vendor/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, immutable"
+        }
+      ]
     }
   ],
   "crons": [
@@ -44,5 +60,10 @@
       "path": "/api/automation-tick",
       "schedule": "0 6 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/ads-publish.js": {
+      "maxDuration": 60
+    }
+  }
 }

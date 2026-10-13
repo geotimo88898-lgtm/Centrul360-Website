@@ -20,7 +20,7 @@
   const STEP = {
     whatsapp: { ic: 'chat', label: 'WhatsApp către client', short: 'WhatsApp', tone: 'good', group: 'Mesaje' },
     notify: { ic: 'bell', label: 'Anunță echipa', short: 'Anunță echipa', tone: 'accent', group: 'Mesaje' },
-    task: { ic: 'listCheck', label: 'Sarcină pentru recepție', short: 'Sarcină', tone: 'info', group: 'Echipă și Pipeline' },
+    task: { ic: 'listCheck', label: 'Sarcină pentru recepție', short: 'Sarcină', tone: 'info', group: 'Echipă și Pipeline', hidden: true },
     move_stage: { ic: 'layers', label: 'Mută leadul în etapă', short: 'Mută leadul', tone: 'info', group: 'Echipă și Pipeline', lead: true },
     wait: { ic: 'clock', label: 'Așteaptă', short: 'Așteaptă', tone: '', group: 'Logică' },
     if: { ic: 'filter', label: 'Dacă / Altfel', short: 'Dacă / Altfel', tone: 'warn', group: 'Logică' },
@@ -301,7 +301,8 @@
     const [path, i] = btn.dataset.add.split('|');
     const full = count(B.W.steps) >= (B.meta.maxSteps || 40);
     const groups = {};
-    Object.keys(STEP).forEach((k) => { (groups[STEP[k].group] = groups[STEP[k].group] || []).push(k); });
+    // (no "task" step: reception's Sarcini hold only what she adds herself)
+    Object.keys(STEP).filter((k) => !STEP[k].hidden).forEach((k) => { (groups[STEP[k].group] = groups[STEP[k].group] || []).push(k); });
     const m = document.createElement('div');
     m.className = 'fb-menu';
     m.innerHTML = (full ? '<p class="fb-menu-note">Ai atins 40 de pași.</p>' : '') + Object.keys(groups).map((g) => '<div class="fb-menu-g"><small>' + esc(g) + '</small>' + groups[g].map((k) => {

@@ -44,6 +44,9 @@ const LEAD_CONDS = ['contacted', 'booked', 'source'];
 const APPT_CONDS = ['appt_inactive', 'appt_confirmed'];
 const NOTIFY_TO = /^(role:(admin|receptie|cosmetician)|emp:[\w-]{1,60})$/;
 const MAX_STEPS = 40;
+// Automations don't put tasks in reception's Sarcini (the owner's choice): a WhatsApp that can't go
+// out is logged on the run, and a "task" step is skipped.
+const FALLBACK_TASKS = false;
 const MAX_DEPTH = 3;
 const STATUSES = ['programata', 'confirmata', 'anulata', 'reprogramata', 'finalizata'];
 const SOURCES = ['any', 'facebook', 'instagram', 'site', 'telefon', 'recomandare', 'walk-in', 'manual'];
@@ -496,6 +499,8 @@ async function runOne(run, wf, settings, counters) {
         sent = await sendWhatsApp({ phone: person.phone, text, template: s.template, params: varsInOrder(s.text, v) });
       }
       if (sent && sent.sent) { c.sent++; log('WhatsApp trimis automat'); continue; }
+      // reception gets no automatic tasks: the message waits for WhatsApp automat
+      if (!FALLBACK_TASKS) { log(person.phone ? (sent && sent.error ? 'Meta a refuzat (' + sent.error + '), mesajul n-a plecat' : 'WhatsApp automat nu e pornit, mesajul n-a plecat') : 'Fără telefon, mesajul n-a plecat'); continue; }
       await addTask({ type: 'whatsapp', title: wf.name, text: text, message: text, phone: person.phone, clientName: person.name,
         relatedAppointmentId: ctx.appointment ? ctx.appointment.id : '', relatedLeadId: ctx.lead ? ctx.lead.id : '',
         location: (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '', workflowId: wf.id,
@@ -505,6 +510,7 @@ async function runOne(run, wf, settings, counters) {
       log(person.phone ? (sent && sent.error ? 'Meta a refuzat (' + sent.error + ') → sarcină WhatsApp într-un tap' : 'Sarcină WhatsApp într-un tap') : 'Fără telefon → sarcină');
       continue;
     }
+    if (s.type === 'task' && !FALLBACK_TASKS) { log('Sarcină sărită (sarcinile le pune doar recepția)'); continue; }
     if (s.type === 'task') {
       await addTask({ type: 'sarcina', title: wf.name, text: render(s.text, v), phone: person.phone, clientName: person.name,
         relatedAppointmentId: ctx.appointment ? ctx.appointment.id : '', relatedLeadId: ctx.lead ? ctx.lead.id : '',

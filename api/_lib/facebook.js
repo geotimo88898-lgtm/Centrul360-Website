@@ -188,33 +188,36 @@ async function listAssets(userToken) {
   };
 }
 
-// Subscribes the Page to this app's leadgen webhook (without it Meta never sends the leads, even
-// with Webhooks set up in the app) and stores the connection.
-async function connectPage(store, { page, pages, adAccounts, adAccountId, by, via }) {
+// Subscribes the Page to this app's leadgen webhook (leads announced at once) and stores the
+// connection, with the login's user token for publishing ads (Ads Manager in Creative). When Meta
+// refuses the subscription the Page still connects: the leads come by reading the forms.
+async function connectPage(store, { page, pages, adAccounts, adAccountId, by, via, userToken }) {
   const r = await fetch(`${GRAPH_BASE}/${page.id}/subscribed_apps`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ subscribed_fields: 'leadgen', access_token: page.access_token }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.success) return { error: 'subscribe_failed', details: j && j.error };
+  const subscribed = r.ok && j.success;
+  if (!subscribed) console.error('facebook: leadgen subscription refused', j && j.error && j.error.message);
   const ad = (adAccounts || []).find((a) => a.id === adAccountId) || null;
   await store.writeJSON('data/fb-connection.json', {
     pageId: page.id, pageName: page.name, pageAccessToken: page.access_token,
     pages: (pages || [page]).map((p) => ({ id: p.id, name: p.name, access_token: p.access_token })),
     adAccounts: adAccounts || [], adAccountId: ad ? ad.id : '', adAccountName: ad ? ad.name : '',
-    connectedAt: new Date().toISOString(), connectedBy: by, connectedVia: via, subscribedAt: new Date().toISOString(),
+    connectedAt: new Date().toISOString(), connectedBy: by, connectedVia: via, subscribedAt: subscribed ? new Date().toISOString() : '',
+    userToken: userToken || '', userTokenAt: userToken ? new Date().toISOString() : '',
   });
   await store.writeJSON(PENDING_KEY, {});
   return { ok: true, pageName: page.name };
 }
 
 // One Page → connected now; several → waiting for the admin's pick.
-async function afterLogin(store, assets, by, via) {
+async function afterLogin(store, assets, by, via, userToken) {
   if (!assets.pages.length) return { error: 'no_pages' };
   const onlyAd = assets.adAccounts.length === 1 ? assets.adAccounts[0].id : '';
-  if (assets.pages.length === 1) return connectPage(store, { page: assets.pages[0], pages: assets.pages, adAccounts: assets.adAccounts, adAccountId: onlyAd, by, via });
-  await store.writeJSON(PENDING_KEY, { pages: assets.pages, adAccounts: assets.adAccounts, by, via, at: Date.now() });
+  if (assets.pages.length === 1) return connectPage(store, { page: assets.pages[0], pages: assets.pages, adAccounts: assets.adAccounts, adAccountId: onlyAd, by, via, userToken });
+  await store.writeJSON(PENDING_KEY, { pages: assets.pages, adAccounts: assets.adAccounts, by, via, userToken: userToken || '', at: Date.now() });
   return { ok: true, choose: true };
 }
 async function loadPending(store) {
