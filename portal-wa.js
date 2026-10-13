@@ -303,20 +303,21 @@
       (d.login && !d.login.configId ? '<details class="wa-cfg"><summary>Configurarea Meta pentru WhatsApp (o singură dată)</summary><div class="wa-cfg-row">' +
         '<input data-cfg inputmode="numeric" autocomplete="off" placeholder="ID configurare (Facebook Login for Business)"><button type="button" class="k-btn is-sm" data-cfg-save>Salvează</button></div></details>' : '') +
       '</div>';
+    const rowsHtml = (list, attr) => '<div class="wa-pick">' + list.map((x, i) => {
+      const usedBy = otherN && otherN.connected && otherN.phoneId === x.phoneId;
+      const mine = d.numbers[city] && d.numbers[city].phoneId === x.phoneId;
+      return '<button type="button" class="wa-pick-row' + (mine ? ' is-on' : '') + '" ' + attr + '="' + i + '"' + (usedBy ? ' disabled' : '') + '>' +
+        '<span class="wa-pick-ic">' + icon('chat') + '</span><span class="wa-pick-main"><b>' + esc(x.display || x.phoneId) + '</b><small>' + esc(x.name || '') + '</small></span>' +
+        (usedBy ? '<em>la ' + esc(other) + '</em>' : mine ? '<em class="is-on">conectat</em>' : icon('right')) + '</button>';
+    }).join('') + '</div>';
     const listHtml = () => (st.found.length
-      ? '<div class="wa-pick">' + st.found.map((x, i) => {
-          const usedBy = otherN && otherN.connected && otherN.phoneId === x.phoneId;
-          const mine = d.numbers[city] && d.numbers[city].phoneId === x.phoneId;
-          return '<button type="button" class="wa-pick-row' + (mine ? ' is-on' : '') + '" data-pick="' + i + '"' + (usedBy ? ' disabled' : '') + '>' +
-            '<span class="wa-pick-ic">' + icon('chat') + '</span><span class="wa-pick-main"><b>' + esc(x.display || x.phoneId) + '</b><small>' + esc(x.name || '') + '</small></span>' +
-            (usedBy ? '<em>la ' + esc(other) + '</em>' : mine ? '<em class="is-on">conectat</em>' : icon('right')) + '</button>';
-        }).join('') + '</div>'
+      ? rowsHtml(st.found, 'data-pick')
       : '<p class="k-muted">' + icon('info') + 'Contul de Facebook ales nu are numere de WhatsApp Business. Apasă „Alt cont” și alege contul clinicii.</p>') +
       '<button type="button" class="k-btn is-ghost is-sm wa-relogin" data-login>' + icon('facebook') + 'Alt cont</button>';
     const pinHtml = () => '<div class="k-form wa-form"><p class="k-muted">Numărul are deja un PIN de verificare în doi pași (din WhatsApp Manager sau de la aplicația de până acum). Scrie-l:</p>' +
       K.field('PIN (6 cifre)', '<input data-pin inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">', 'full') +
       '<div class="k-field full"><button type="button" class="k-btn is-primary" data-pin-go>' + icon('check') + 'Pornește numărul</button></div></div>';
-    const coexHtml = () => '<div class="wa-coex"><b>Numărul e în aplicația WhatsApp Business de pe telefon?</b>' +
+    const coexHtml = () => '<details class="wa-coex"><summary>Numărul e în aplicația WhatsApp Business de pe telefon?</summary>' +
       '<small>Rămâne și în aplicație, cu conversațiile. Se aduc în portal conversațiile din ultimele 6 luni și ce scrie recepția de pe telefon. Deschide WhatsApp Business pe telefon măcar o dată la 14 zile.</small>' +
       '<button type="button" class="k-btn is-outline" data-coex' + (appReady ? '' : ' disabled') + '>' + icon('chat') + 'Conectează din aplicația WhatsApp Business</button>' +
       (appReady ? '<small><a href="#" data-app-edit>Schimbă aplicația Meta</a></small>' : '<small>Întâi datele aplicației WhatsApp din Meta (o singură dată):</small>') +
@@ -325,11 +326,11 @@
         K.field('App Secret' + (app.secretSaved ? ' (salvat; scrie doar ca să-l schimbi)' : ''), '<input data-app-secret type="password" autocomplete="off" placeholder="32 de caractere">', '', 'Același loc, „Arată” la App Secret') +
         K.field('Configuration ID', '<input data-app-config inputmode="numeric" value="' + esc(app.configId || '') + '">', 'full',
           'Facebook Login for Business → Configurații → Creează: tip „WhatsApp Embedded Signup”, cu whatsapp_business_management și whatsapp_business_messaging.') +
-        '<div class="k-field full"><button type="button" class="k-btn is-outline" data-app-save>' + icon('check') + 'Salvează aplicația</button></div></div></div>';
+        '<div class="k-field full"><button type="button" class="k-btn is-outline" data-app-save>' + icon('check') + 'Salvează aplicația</button></div></div></details>';
     const manualHtml = () => '<details class="wa-manual"><summary>Am un token</summary><div class="k-form wa-form">' +
       K.field('Token WhatsApp', '<textarea data-tok rows="3" placeholder="Token de System User cu whatsapp_business_messaging" autocomplete="off"></textarea>', 'full') +
       K.field('ID cont WhatsApp Business (opțional)', '<input data-waba inputmode="numeric" autocomplete="off">', 'full') +
-      '<div class="k-field full"><button type="button" class="k-btn is-outline" data-discover>' + icon('search') + 'Caută numerele</button></div></div></details>';
+      '<div class="k-field full"><button type="button" class="k-btn is-outline" data-discover>' + icon('search') + 'Caută numerele</button></div></div><div data-mfound></div></details>';
     const paint = () => {
       if (!el) return;
       el.querySelector('[data-step]').innerHTML = st.pin ? pinHtml() : st.found ? listHtml() : (d.tokenSaved ? '<div class="k-skel" style="height:120px"></div>' : loginHtml());
@@ -340,6 +341,19 @@
         st.found = r.found || [];
       } catch (err) { st.found = null; d.tokenSaved = false; K.ui().toast(errMsg(err), 'error'); }
       paint();
+    }
+    // with a pasted token: its numbers right under its button (or why there are none)
+    async function discoverToken(token, wabaId) {
+      const box = el.querySelector('[data-mfound]');
+      if (!token && !d.tokenSaved) { box.innerHTML = '<p class="wa-mnote is-bad">' + icon('alert') + 'Lipește tokenul.</p>'; return; }
+      box.innerHTML = '<div class="k-skel" style="height:64px"></div>';
+      try {
+        const r = await K.api('/api/portal-wa', { action: 'discover', city, token: token || '', wabaId: wabaId || '' });
+        st.mfound = r.found || [];
+        box.innerHTML = st.mfound.length ? '<p class="wa-mnote">' + (st.mfound.length === 1 ? 'Un număr găsit' : st.mfound.length + ' numere găsite') + '. Apasă pe cel pentru ' + esc(city) + ':</p>' + rowsHtml(st.mfound, 'data-mpick')
+          : '<p class="wa-mnote is-bad">' + icon('alert') + esc(r.message || 'Tokenul nu vede niciun număr. Verifică ID-ul contului WhatsApp Business și că tokenul are contul atribuit.') + '</p>';
+      } catch (err) { box.innerHTML = '<p class="wa-mnote is-bad">' + icon('alert') + esc(errMsg(err)) + '</p>'; }
+      box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
     // the other city next, by itself, while it isn't connected
     function next() {
@@ -381,6 +395,11 @@
           if (pk && !pk.disabled) {
             const x = st.found[Number(pk.dataset.pick)];
             return K.busy(pk, () => pick(x));
+          }
+          const mp = e.target.closest('[data-mpick]');
+          if (mp && !mp.disabled) {
+            const x = st.mfound[Number(mp.dataset.mpick)];
+            return K.busy(mp, () => pick(x));
           }
           const pg = e.target.closest('[data-pin-go]');
           if (pg) {
@@ -429,7 +448,7 @@
             });
           }
           const ds = e.target.closest('[data-discover]');
-          if (ds) return K.busy(ds, () => discover(el.querySelector('[data-tok]').value.trim(), el.querySelector('[data-waba]').value.trim()));
+          if (ds) return K.busy(ds, () => discoverToken(el.querySelector('[data-tok]').value.trim(), el.querySelector('[data-waba]').value.trim()));
         });
       },
     });
