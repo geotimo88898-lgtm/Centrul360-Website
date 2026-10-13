@@ -1135,6 +1135,7 @@ main.ad-full{ max-width:none; }
 .wa-side{ position:sticky; top:0; display:flex; flex-direction:column; gap:.5rem; }
 .wa-side > small{ font-size:.7rem; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
 .wa-form{ grid-template-columns:minmax(0,1fr); }
+.wa-sep{ border:0; border-top:1px solid var(--line, rgba(127,127,127,.2)); margin:1.1rem 0; }
 .wa-chips{ margin-top:-.3rem; }
 .wa-phone{ padding:.9rem .8rem; border-radius:16px; background:#0b141a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff10'/%3E%3C/svg%3E"); }
 .wa-bubble{ position:relative; max-width:94%; padding:.5rem .65rem 1.2rem; border-radius:3px 12px 12px 12px; background:#202c33; color:#e9edef; font-size:.84rem; line-height:1.42; white-space:pre-line; word-break:break-word; box-shadow:0 1px 1px rgba(0,0,0,.25); }

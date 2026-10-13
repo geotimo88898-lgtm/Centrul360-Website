@@ -8,6 +8,12 @@
 // Vercel variables still work as a fallback: WHATSAPP_TOKEN, WHATSAPP_WABA_ID,
 // WHATSAPP_PHONE_ID_TIMISOARA / WHATSAPP_PHONE_ID_ARAD (and the old single WHATSAPP_PHONE_ID).
 //
+// A number can also be connected from the WhatsApp Business app on the clinic's phone ("coexistence",
+// Embedded Signup): it keeps working in the app, its chats come over, and what reception writes from
+// the phone comes back here as an echo. That needs the WhatsApp app's own ID, secret and the Facebook
+// Login for Business configuration, kept in the same file as `app: { appId, appSecret, configId }`
+// (or WHATSAPP_APP_ID / WHATSAPP_APP_SECRET / WHATSAPP_ES_CONFIG_ID in Vercel).
+//
 // Meta's rule: the clinic writes first only with an approved template (Integrări → Șabloane
 // WhatsApp); free text only as a reply within 24 h of the client's last message (Mesaje).
 
@@ -32,11 +38,19 @@ async function loadConfig(force) {
     numbers[city] = {
       phoneId: n.phoneId || envId || '', display: n.display || '', name: n.name || '',
       wabaId: n.wabaId || env.WHATSAPP_WABA_ID || '', token: n.token || shared, ownToken: !!n.token, connectedAt: n.connectedAt || '',
+      coex: !!n.coex,
     };
   });
-  cache = { numbers, token: shared, tokenSaved: !!c.token };
+  const a = c.app || {};
+  const app = { appId: a.appId || env.WHATSAPP_APP_ID || '', appSecret: a.appSecret || env.WHATSAPP_APP_SECRET || '', configId: a.configId || env.WHATSAPP_ES_CONFIG_ID || '' };
+  cache = { numbers, token: shared, tokenSaved: !!c.token, app };
   cacheAt = Date.now();
   return cache;
+}
+// every secret a webhook delivery may be signed with (the app saved in Integrări, the one in Vercel)
+async function webhookSecrets() {
+  const c = (await readJSON(CONFIG_KEY, null)) || {};
+  return [c.app && c.app.appSecret, process.env.WHATSAPP_APP_SECRET].filter(Boolean);
 }
 // the numbers that can send now
 const readyNumbers = (cfg) => CITIES.filter((c) => cfg.numbers[c].phoneId && cfg.numbers[c].token);
@@ -92,4 +106,4 @@ async function sendWhatsApp({ phone, text, template, params, language, from }) {
   }
 }
 
-module.exports = { CITIES, CONFIG_KEY, GRAPH, loadConfig, invalidate, readyNumbers, whatsappReady, whatsappConfigured, cityForPhoneId, sendWhatsApp, toE164 };
+module.exports = { CITIES, CONFIG_KEY, GRAPH, loadConfig, invalidate, webhookSecrets, readyNumbers, whatsappReady, whatsappConfigured, cityForPhoneId, sendWhatsApp, toE164 };

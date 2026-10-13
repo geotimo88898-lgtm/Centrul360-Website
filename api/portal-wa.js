@@ -4,6 +4,9 @@
 //   POST { action: 'discover', city, token? }   the numbers this token can use (to pick Timișoara's / Arad's)
 //   POST { action: 'connect', city, token?, wabaId, phoneId }
 //   POST { action: 'disconnect', city }
+//   POST { action: 'app_save', appId, appSecret?, configId }   the WhatsApp app, for connecting from the phone's app
+//   POST { action: 'coex', city, code, wabaId, phoneId? }      a number connected from the WhatsApp Business app
+//                                                              (Embedded Signup): its token, webhooks, chats and contacts
 //   POST { action: 'tpl_save', template }        a new one or changes (a sent one: only its name / variables)
 //   POST { action: 'tpl_submit', id }            to Meta for approval
 //   POST { action: 'tpl_delete', id }
@@ -19,7 +22,13 @@ const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
 const okId = (v) => /^\d{5,25}$/.test(String(v || ''));
 
 async function graph(token, path, params) {
-  const r = await fetch(WA.GRAPH + path + '?' + new URLSearchParams(Object.assign({ access_token: token }, params || {})));
+  const r = await fetch(WA.GRAPH + path + '?' + new URLSearchParams(Object.assign(token ? { access_token: token } : {}, params || {})));
+  const j = await r.json().catch(() => ({}));
+  return { ok: r.ok, j, error: !r.ok ? (((j && j.error) || {}).message || 'eroare ' + r.status) : '' };
+}
+
+async function graphPost(token, path, body) {
+  const r = await fetch(WA.GRAPH + path, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
   const j = await r.json().catch(() => ({}));
   return { ok: r.ok, j, error: !r.ok ? (((j && j.error) || {}).message || 'eroare ' + r.status) : '' };
 }
@@ -37,10 +46,12 @@ async function payload(forceSync) {
   const numbers = {};
   WA.CITIES.forEach((c) => {
     const n = cfg.numbers[c];
-    numbers[c] = { connected: !!(n.phoneId && n.token), phoneId: n.phoneId, display: n.display, name: n.name, wabaId: n.wabaId, ownToken: n.ownToken, connectedAt: n.connectedAt };
+    numbers[c] = { connected: !!(n.phoneId && n.token), phoneId: n.phoneId, display: n.display, name: n.name, wabaId: n.wabaId, ownToken: n.ownToken, connectedAt: n.connectedAt, coex: n.coex };
   });
+  // what the browser needs to open Meta's window (the App ID and configuration are public, the secret isn't)
+  const app = { appId: cfg.app.appId, configId: cfg.app.configId, secretSaved: !!cfg.app.appSecret };
   return {
-    ok: true, numbers, tokenSaved: !!cfg.token, ready: WA.readyNumbers(cfg).length > 0,
+    ok: true, numbers, app, tokenSaved: !!cfg.token, ready: WA.readyNumbers(cfg).length > 0,
     templates: d.templates.map((t) => Object.assign(T.view(t, cfg), { usedIn: used[t.id] || [] })).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
     vars: T.VARS, sample: T.SAMPLE, syncedAt: d.syncedAt, syncError: d.syncError,
   };
@@ -108,6 +119,56 @@ module.exports = async (req, res) => {
       await writeJSON(WA.CONFIG_KEY, c);
       WA.invalidate();
       res.status(200).json(await payload(false));
+      return;
+    }
+
+    if (a === 'app_save') {
+      if (!okId(body.appId) || !okId(body.configId)) { res.status(400).json({ error: 'invalid_ids', message: 'App ID și Configuration ID sunt numere.' }); return; }
+      const c = (await readJSON(WA.CONFIG_KEY, null)) || {};
+      const prev = c.app || {};
+      const secret = clip(body.appSecret, 200).trim();
+      if (secret && !/^[a-f0-9]{32}$/i.test(secret)) { res.status(400).json({ error: 'invalid_secret', message: 'App Secret are 32 de caractere (Setări aplicație → De bază).' }); return; }
+      c.app = { appId: String(body.appId), configId: String(body.configId), appSecret: secret || (prev.appId === String(body.appId) ? prev.appSecret || '' : '') };
+      await writeJSON(WA.CONFIG_KEY, c);
+      WA.invalidate();
+      res.status(200).json(await payload(false));
+      return;
+    }
+
+    // From the WhatsApp Business app (coexistence): Meta's window gave the browser a code and the
+    // account; the code becomes this number's own token. The number stays registered in the app, so it
+    // is NOT registered again here (that would take it off the phone).
+    if (a === 'coex') {
+      if (!city) { res.status(400).json({ error: 'invalid_city' }); return; }
+      const cfg = await WA.loadConfig(true);
+      const { appId, appSecret } = cfg.app;
+      if (!appId || !appSecret) { res.status(400).json({ error: 'app_missing', message: 'Lipsesc App ID / App Secret ale aplicației WhatsApp.' }); return; }
+      const code = clip(body.code, 2000).trim();
+      if (!code || !okId(body.wabaId)) { res.status(400).json({ error: 'invalid', message: 'Meta nu a trimis contul. Încearcă din nou.' }); return; }
+      const t = await graph('', '/oauth/access_token', { client_id: appId, client_secret: appSecret, code });
+      const token = t.ok && t.j.access_token;
+      if (!token) { res.status(400).json({ error: 'meta_refused', message: 'Meta: ' + (t.error || 'fără token') }); return; }
+      const wabaId = String(body.wabaId);
+      const list = await graph(token, '/' + wabaId + '/phone_numbers', { fields: 'id,display_phone_number,verified_name', limit: '50' });
+      if (!list.ok) { res.status(400).json({ error: 'meta_refused', message: 'Meta: ' + list.error }); return; }
+      const nums = list.j.data || [];
+      const num = nums.find((p) => String(p.id) === String(body.phoneId || '')) || (nums.length === 1 ? nums[0] : null);
+      if (!num) { res.status(400).json({ error: 'no_number', message: nums.length ? 'Contul are mai multe numere; reia conectarea.' : 'Contul nu are niciun număr.' }); return; }
+      // the messages of this account come to our webhook
+      const sub = await graphPost(token, '/' + wabaId + '/subscribed_apps');
+      const c = (await readJSON(WA.CONFIG_KEY, null)) || {};
+      c.numbers = c.numbers || {};
+      c.numbers[city] = { phoneId: String(num.id), wabaId, display: num.display_phone_number || '', name: num.verified_name || '', token, coex: true, connectedAt: new Date().toISOString() };
+      await writeJSON(WA.CONFIG_KEY, c);
+      WA.invalidate();
+      // the app's contacts, then its chats (Meta allows it once, within 24 h of connecting); they arrive on the webhook
+      const warn = [];
+      if (!sub.ok) warn.push('abonarea la mesaje: ' + sub.error);
+      const contacts = await graphPost(token, '/' + num.id + '/smb_app_data', { messaging_product: 'whatsapp', sync_type: 'smb_app_state_sync' });
+      if (!contacts.ok) warn.push('contactele: ' + contacts.error);
+      const history = await graphPost(token, '/' + num.id + '/smb_app_data', { messaging_product: 'whatsapp', sync_type: 'history' });
+      if (!history.ok) warn.push('istoricul: ' + history.error);
+      res.status(200).json(Object.assign(await payload(true), { warning: warn.join('; ') }));
       return;
     }
 

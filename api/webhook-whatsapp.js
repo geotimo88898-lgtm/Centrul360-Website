@@ -9,6 +9,11 @@
 //         app used for lead ads). Automatic JSON body parsing is disabled below so the raw
 //         bytes are available for the signature check.
 //
+// A number connected from the WhatsApp Business app (coexistence, see _lib/whatsapp.js) also sends:
+//   message_echoes  what reception wrote from the phone's app -> an outgoing message here
+//   history         the app's past chats, once after connecting -> filled in, no unread, no push
+//   state_sync      the app's contacts -> the names chats are shown with (data/whatsapp-contacts.json)
+//
 // Always responds 200 once the payload is accepted - Meta retries aggressively on anything
 // else, and one bad message/status entry must never take the whole delivery down with it.
 
@@ -20,6 +25,7 @@ const { sendPush } = require('./_lib/push');
 module.exports.config = { api: { bodyParser: false } };
 
 const KEY = 'data/whatsapp-conversations.json';
+const CONTACTS_KEY = 'data/whatsapp-contacts.json';
 const nowISO = () => new Date().toISOString();
 
 function readRawBody(req) {
@@ -93,7 +99,11 @@ async function knownName(phone) {
   const leads = await readJSON('data/leads.json', []);
   const lead = leads.filter((l) => String(l.phone || '').replace(/\D/g, '').slice(-9) === key && l.name)
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
-  return lead ? String(lead.name).trim() : '';
+  if (lead) return String(lead.name).trim();
+  // the name it has in the clinic phone's contacts (WhatsApp Business app)
+  const contacts = await readJSON(CONTACTS_KEY, {});
+  const c = Object.keys(contacts || {}).find((p) => p.slice(-9) === key);
+  return c ? String(contacts[c]).trim() : '';
 }
 
 async function handleInboundMessage(conversations, message, phoneNumberId) {
@@ -135,6 +145,56 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
   return { phone: convo.phone, name: convo.clientName || convo.phone, location: convo.location || '', text: textFor(message), count: convo.unreadCount };
 }
 
+// a message in its place by time (the app's history arrives after newer messages)
+function insertMessage(convo, msg) {
+  const msgs = convo.messages;
+  let i = msgs.length;
+  while (i > 0 && String(msgs[i - 1].timestamp) > msg.timestamp) i--;
+  msgs.splice(i, 0, msg);
+  if (!convo.lastMessageAt || msg.timestamp > convo.lastMessageAt) convo.lastMessageAt = msg.timestamp;
+}
+const seen = (conversations, id) => !!id && conversations.some((c) => (c.messages || []).some((m) => m.id === id));
+const tsOf = (t) => (t ? new Date(Number(t) * 1000).toISOString() : nowISO());
+
+// one chat of the clinic's phone app (an echo or a history message), never counted as unread
+async function addFromApp(conversations, clientWaId, message, direction, phoneNumberId, status, answered) {
+  if (!clientWaId || !message || seen(conversations, message.id)) return false;
+  const phone = normalizePhone(clientWaId) || clientWaId;
+  const convo = findOrCreateConversation(conversations, phone);
+  if (!convo.clientName || convo.clientName === phone) {
+    try { convo.clientName = (await knownName(phone)) || phone; } catch (err) { if (!convo.clientName) convo.clientName = phone; }
+  }
+  if (!convo.location) { const loc = await locationForPhoneNumberId(phoneNumberId); if (loc) convo.location = loc; }
+  if (!convo.messages.length) convo.lastMessageAt = ''; // a chat that starts with its history
+  insertMessage(convo, {
+    id: message.id || crypto.randomUUID(), direction, type: message.type === 'text' ? 'text' : 'other', text: textFor(message),
+    status: direction === 'in' ? 'received' : status || 'sent', timestamp: tsOf(message.timestamp), sentBy: null,
+    sentByName: direction === 'out' ? 'din aplicație' : undefined,
+  });
+  if (answered) convo.unreadCount = 0; // reception answered from the phone: the chat is read
+  return true;
+}
+
+// the app's contacts: their names, for chats the portal doesn't know by a lead or client
+async function handleStateSync(conversations, items) {
+  const contacts = await readJSON(CONTACTS_KEY, {});
+  let changedContacts = false, changedConvos = false;
+  for (const it of items) {
+    const c = it && it.type === 'contact' && it.contact;
+    if (!c || !c.phone_number) continue;
+    const phone = normalizePhone(c.phone_number) || String(c.phone_number).replace(/\D/g, '');
+    if (it.action === 'remove') { if (contacts[phone]) { delete contacts[phone]; changedContacts = true; } continue; }
+    const name = String(c.full_name || c.first_name || '').trim();
+    if (!name) continue;
+    contacts[phone] = name; changedContacts = true;
+    const key = String(phone).replace(/\D/g, '').slice(-9);
+    conversations.filter((x) => String(x.phone).replace(/\D/g, '').slice(-9) === key && (!x.clientName || x.clientName === x.phone))
+      .forEach((x) => { x.clientName = name; changedConvos = true; });
+  }
+  if (changedContacts) await writeJSON(CONTACTS_KEY, contacts);
+  return changedConvos;
+}
+
 function handleStatusUpdate(conversations, status) {
   const id = status && status.id;
   if (!id) return;
@@ -170,10 +230,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  // the WhatsApp app's secret, saved in Integrări or set in Vercel (either one may have signed it)
+  const secrets = await require('./_lib/whatsapp').webhookSecrets().catch(() => [process.env.WHATSAPP_APP_SECRET].filter(Boolean));
   const signatureHeader = req.headers['x-hub-signature-256'];
-  if (appSecret) {
-    if (!isValidSignature(rawBody, signatureHeader, appSecret)) {
+  if (secrets.length) {
+    if (!secrets.some((sec) => isValidSignature(rawBody, signatureHeader, sec))) {
       res.status(403).json({ error: 'invalid_signature' });
       return;
     }
@@ -208,6 +269,32 @@ module.exports = async (req, res) => {
             changed = true;
           } catch (err) {
             console.error('webhook-whatsapp: error processing message', err.message);
+          }
+        }
+
+        // what reception wrote from the WhatsApp Business app on the phone
+        for (const echo of value.message_echoes || []) {
+          try { if (await addFromApp(conversations, echo.to, echo, 'out', phoneNumberId, '', true)) changed = true; } catch (err) {
+            console.error('webhook-whatsapp: error processing echo', err.message);
+          }
+        }
+        // the app's past chats, in chunks
+        for (const h of value.history || []) {
+          for (const thread of h.threads || []) {
+            for (const msg of thread.messages || []) {
+              try {
+                const dir = String(msg.from || '') === String(thread.id) ? 'in' : 'out';
+                const st = msg.history_context && msg.history_context.status ? String(msg.history_context.status).toLowerCase() : '';
+                if (await addFromApp(conversations, thread.id, msg, dir, phoneNumberId, st)) changed = true;
+              } catch (err) {
+                console.error('webhook-whatsapp: error processing history', err.message);
+              }
+            }
+          }
+        }
+        if ((value.state_sync || []).length) {
+          try { if (await handleStateSync(conversations, value.state_sync)) changed = true; } catch (err) {
+            console.error('webhook-whatsapp: error processing contacts', err.message);
           }
         }
 

@@ -643,7 +643,7 @@
     box.innerHTML = '<div class="wa-nums">' + Object.keys(d.numbers).map((c) => {
       const n = d.numbers[c];
       return '<div class="st-fb-status wa-num ' + (n.connected ? 'is-ok' : 'is-wait') + '">' + icon(n.connected ? 'checkCircle' : 'pin') +
-        '<div><b>' + esc(c) + '</b><span>' + (n.connected ? esc(n.display || n.phoneId) + (n.name ? ' · ' + esc(n.name) : '') : 'Neconectat') + '</span></div>' +
+        '<div><b>' + esc(c) + '</b><span>' + (n.connected ? esc(n.display || n.phoneId) + (n.name ? ' · ' + esc(n.name) : '') + (n.coex ? ' · și în aplicația de pe telefon' : '') : 'Neconectat') + '</span></div>' +
         (n.connected ? '<button type="button" class="k-btn is-ghost is-sm" data-wa-connect="' + esc(c) + '">Schimbă</button><button type="button" class="k-icon-btn" data-wa-off="' + esc(c) + '" title="Deconectează ' + esc(c) + '">' + icon('x') + '</button>'
           : '<button type="button" class="k-btn is-primary is-sm" data-wa-connect="' + esc(c) + '" title="Conectează numărul ' + esc(c) + '">' + icon('plus') + 'Conectează</button>') + '</div>';
     }).join('') + '</div>' +

@@ -217,22 +217,86 @@
   }
 
   // ------------------------------------------------------------------ connect a number
+  // Meta's JavaScript SDK, loaded when the window opens: the button must open Meta's popup right on
+  // the click, or the browser blocks it.
+  function loadSdk(appId) {
+    if (W.sdk && W.sdkFor === appId) return W.sdk;
+    W.sdkFor = appId;
+    W.sdk = new Promise((resolve, reject) => {
+      const init = () => { window.FB.init({ appId, autoLogAppEvents: false, xfbml: false, version: 'v21.0' }); resolve(window.FB); };
+      if (window.FB) { init(); return; }
+      window.fbAsyncInit = init;
+      const sc = document.createElement('script');
+      sc.src = 'https://connect.facebook.net/en_US/sdk.js'; sc.async = true; sc.crossOrigin = 'anonymous';
+      sc.onerror = () => { W.sdk = null; reject(new Error('sdk')); };
+      document.head.appendChild(sc);
+    });
+    return W.sdk;
+  }
+  // Meta's window for a number already in the WhatsApp Business app (coexistence): the owner logs in,
+  // picks the business and scans a QR code with the app. Answers { code, info } (info: the account, or
+  // where it was cancelled).
+  function coexLogin(FB, configId) {
+    return new Promise((resolve) => {
+      let code = null, info = null, done = false, timer = 0;
+      const end = () => { if (done) return; done = true; clearTimeout(timer); window.removeEventListener('message', onMsg); resolve({ code: code || '', info: info || {} }); };
+      const ready = () => { if (code !== null && info) end(); };
+      function onMsg(e) {
+        let host = '';
+        try { host = new URL(e.origin).hostname; } catch (err) { return; }
+        if (!/(^|\.)facebook\.com$/.test(host)) return;
+        let m = e.data;
+        try { if (typeof m === 'string') m = JSON.parse(m); } catch (err) { return; }
+        if (!m || m.type !== 'WA_EMBEDDED_SIGNUP') return;
+        if (m.event === 'CANCEL') info = { cancel: (m.data && m.data.current_step) || 'cancel', error: m.data && m.data.error_message };
+        else if (/^FINISH/.test(m.event || '')) info = m.data || {};
+        ready();
+      }
+      window.addEventListener('message', onMsg);
+      FB.login((resp) => {
+        code = (resp && resp.authResponse && resp.authResponse.code) || '';
+        // the account comes in a separate message, sometimes a moment after
+        timer = setTimeout(end, code ? 6000 : 800);
+        ready();
+      }, { config_id: configId, response_type: 'code', override_default_response_type: true,
+        extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' } });
+    });
+  }
+
   async function connect(city, opts) {
     const o = opts || {};
     let d;
     try { d = await load(); } catch (e) { K.ui().toast(K.errText(e), 'error'); return; }
     let found = null;
     const n = (d.numbers || {})[city] || {};
+    const app = d.app || {};
+    const appReady = !!(app.appId && app.configId && app.secretSaved);
+    let FBsdk = null;
+    if (appReady) loadSdk(app.appId).then((x) => { FBsdk = x; }).catch(() => {});
     const paint = (el) => {
       el.querySelector('[data-found]').innerHTML = !found ? '' : found.length
         ? '<div class="k-field full"><span>Alege numărul pentru ' + esc(city) + '</span><div class="wa-found">' + found.map((x, i) => '<label class="fb-check"><input type="radio" name="wa_num" value="' + i + '"' + (n.phoneId === x.phoneId ? ' checked' : '') + '><span>' + esc(x.display || x.phoneId) + '<small>' + esc(x.name || '') + (x.quality ? ' · calitate ' + esc(x.quality) : '') + '</small></span></label>').join('') + '</div></div>'
         : '<p class="k-muted">' + icon('info') + 'Nu am găsit numere. Verifică tokenul sau scrie ID-ul contului WhatsApp Business.</p>';
       el.querySelector('[data-connect]').hidden = !(found && found.length);
     };
+    // the WhatsApp app's details, asked once (they open Meta's window)
+    const appForm = '<div class="k-form wa-form" data-appform' + (appReady ? ' hidden' : '') + '>' +
+      K.field('App ID', '<input data-app-id inputmode="numeric" placeholder="ex. 2177971149814780" value="' + esc(app.appId || '') + '">', '', 'developers.facebook.com → aplicația cu WhatsApp → Setări aplicație → De bază') +
+      K.field('App Secret' + (app.secretSaved ? ' (salvat; scrie doar ca să-l schimbi)' : ''), '<input data-app-secret type="password" autocomplete="off" placeholder="32 de caractere">', '', 'Același loc, „Arată” la App Secret') +
+      K.field('Configuration ID', '<input data-app-config inputmode="numeric" value="' + esc(app.configId || '') + '">', 'full',
+        'Facebook Login for Business → Configurații → Creează: tip „WhatsApp Embedded Signup”, cu whatsapp_business_management și whatsapp_business_messaging.') +
+      '<div class="k-field full"><button type="button" class="k-btn is-outline" data-app-save>' + icon('check') + 'Salvează aplicația</button></div></div>';
     const dr = K.drawer({
       title: 'Conectează numărul ' + city, icon: 'chat', width: 560,
       subtitle: 'Numărul de WhatsApp Business al clinicii din ' + city + '. De pe el pleacă mesajele automatizărilor și răspunsurile din Mesaje.',
       body: '<div class="k-form wa-form">' +
+        '<div class="k-field full"><span>Numărul e în aplicația WhatsApp Business de pe telefon?</span>' +
+          '<small>Rămâne și în aplicație, cu conversațiile. Se aduc în portal conversațiile din ultimele 6 luni și ce scrie recepția de pe telefon. Deschide WhatsApp Business pe telefon măcar o dată la 14 zile.</small></div>' +
+        '<div class="k-field full"><button type="button" class="k-btn is-primary" data-coex' + (appReady ? '' : ' disabled') + '>' + icon('chat') + 'Conectează din aplicația WhatsApp Business</button>' +
+          (appReady ? '<small><a href="#" data-app-edit>Schimbă aplicația Meta</a></small>' : '<small>Întâi datele aplicației WhatsApp din Meta (o singură dată):</small>') + '</div></div>' +
+        appForm +
+        '<hr class="wa-sep"><div class="k-form wa-form">' +
+        '<div class="k-field full"><span>Sau: un număr fără aplicație, cu token</span></div>' +
         K.field('Token WhatsApp' + (d.tokenSaved ? ' (opțional, există deja unul salvat)' : ''), '<textarea data-tok rows="3" placeholder="Token permanent de System User" autocomplete="off"></textarea>', 'full',
           'Business Settings → Utilizatori de sistem → Generează token, cu whatsapp_business_messaging și whatsapp_business_management, pentru aplicația cu WhatsApp. Numerele trebuie atribuite utilizatorului de sistem.') +
         K.field('ID cont WhatsApp Business (opțional)', '<input data-waba inputmode="numeric" placeholder="îl caut singur; dacă nu, din WhatsApp Manager → Setări cont" value="' + esc(n.wabaId || '') + '">', 'full') +
@@ -241,6 +305,35 @@
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-connect hidden>' + icon('check') + 'Conectează ' + esc(city) + '</button>',
       onMount(el) {
         el.querySelector('[data-cancel]').addEventListener('click', () => dr.close());
+        const edit = el.querySelector('[data-app-edit]');
+        if (edit) edit.addEventListener('click', (e) => { e.preventDefault(); el.querySelector('[data-appform]').hidden = false; });
+        el.querySelector('[data-app-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try {
+            await post({ action: 'app_save', appId: el.querySelector('[data-app-id]').value.trim(), appSecret: el.querySelector('[data-app-secret]').value.trim(), configId: el.querySelector('[data-app-config]').value.trim() });
+            if (!(W.d.app && W.d.app.secretSaved)) { K.ui().toast('Lipsește App Secret.', 'error'); return; }
+            K.ui().toast('Aplicația e salvată.', 'success');
+            connect(city, o);
+          } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
+        }));
+        el.querySelector('[data-coex]').addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget;
+          if (!FBsdk) { K.ui().toast('Se încarcă fereastra Meta, apasă din nou într-o secundă.', 'info'); return; }
+          const login = coexLogin(FBsdk, app.configId); // opened right on the click
+          await K.busy(btn, async () => {
+            const r = await login;
+            if (!r.code || !r.info.waba_id) {
+              K.ui().toast(r.info.error ? 'Meta: ' + r.info.error : r.code ? 'Meta nu a trimis contul WhatsApp. Încearcă din nou.' : 'Conectarea a fost oprită.', r.code ? 'error' : 'info');
+              return;
+            }
+            try {
+              const res = await post({ action: 'coex', city, code: r.code, wabaId: r.info.waba_id, phoneId: r.info.phone_number_id || '' });
+              dr.close();
+              K.ui().toast('Numărul ' + city + ' e conectat. Conversațiile vin în Mesaje în câteva minute.', 'success');
+              if (res.warning) K.ui().toast('Atenție, Meta a refuzat ' + res.warning, 'error');
+              if (o.onDone) o.onDone();
+            } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
+          });
+        });
         el.querySelector('[data-discover]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           try {
             const r = await K.api('/api/portal-wa', { action: 'discover', city, token: el.querySelector('[data-tok]').value.trim(), wabaId: el.querySelector('[data-waba]').value.trim() });
