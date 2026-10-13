@@ -24,17 +24,29 @@
       document.body.appendChild(toastHost);
     }
     const tone = kind || (/nu am putut|eroare|invalid/i.test(message) ? 'error' : 'info');
+    // On a phone a toast is a small pill and only the newest shows (many quick changes, e.g. moving
+    // leads, don't pile up); on a computer at most three stay. The same message again just stays longer.
+    const phone = window.matchMedia('(max-width:720px)').matches;
+    const live = Array.from(toastHost.children).filter((x) => !x.classList.contains('is-leaving'));
+    const same = live.find((x) => x.dataset.msg === message && x.dataset.tone === tone);
+    const life = tone === 'error' ? (phone ? 4500 : 6000) : (phone ? 2200 : 3800);
+    if (same) { clearTimeout(same._t); same._t = setTimeout(same._close, life); return; }
+    live.slice(0, phone ? live.length : Math.max(0, live.length - 2)).forEach((x) => x._close());
     const el = document.createElement('div');
     el.className = 'c360-toast is-' + tone;
+    el.dataset.msg = message; el.dataset.tone = tone;
     el.innerHTML = '<span class="c360-toast-dot"></span><span class="c360-toast-text">' + esc(message) + '</span>' +
       '<button class="c360-toast-x" aria-label="Închide">×</button>';
     toastHost.appendChild(el);
-    const close = () => {
+    el._close = () => {
+      if (el.classList.contains('is-leaving')) return;
+      clearTimeout(el._t);
       el.classList.add('is-leaving');
       setTimeout(() => el.remove(), reduceMotion ? 0 : 220);
     };
-    el.querySelector('.c360-toast-x').addEventListener('click', close);
-    setTimeout(close, tone === 'error' ? 6000 : 3800);
+    el.querySelector('.c360-toast-x').addEventListener('click', el._close);
+    if (phone) el.addEventListener('click', el._close);
+    el._t = setTimeout(el._close, life);
   }
   window.alert = (msg) => toast(String(msg));
 

@@ -34,9 +34,12 @@ const DEFAULTS = {
   budget: 50, radiusKm: 7, women: true,
   ages: { body: [28, 64], facial: [20, 60] },
   placements: Object.keys(PLACEMENTS), cta: 'LEARN_MORE', startNow: true,
-  // {oferta} {oras} {data} {km} {varsta} {hook}
-  names: { campaign: '{oferta} · {oras} · {data}', adset: '{oras} {km} km · femei {varsta}', ad: '{hook}' },
+  // {oras_scurt} TM / AR, {proc} LIPO / CAV 1+1 / RESTART…, {unghi} the ad in 2-3 words,
+  // {oferta} {oras} {km} {varsta} {hook} {data}; filled in by Creative's publish window
+  names: { campaign: '{oras_scurt} {proc} · {unghi}', adset: '{oras} {km} km · femei {varsta}', ad: '{hook}' },
 };
+// the first pattern (with the date) gives way to the new one
+const OLD_CAMPAIGN = '{oferta} · {oras} · {data}';
 
 // A Meta error as one sentence the owner can act on.
 function metaError(j, step) {
@@ -96,7 +99,7 @@ function cleanDefaults(x) {
   if (Array.isArray(i.placements)) { const p = i.placements.filter((k) => PLACEMENTS[k]); if (p.length) d.placements = p; }
   if (CTAS.includes(i.cta)) d.cta = i.cta;
   if (typeof i.startNow === 'boolean') d.startNow = i.startNow;
-  if (i.names) ['campaign', 'adset', 'ad'].forEach((k) => { const v = String(i.names[k] || '').trim().slice(0, 120); if (v) d.names[k] = v; });
+  if (i.names) ['campaign', 'adset', 'ad'].forEach((k) => { const v = String(i.names[k] || '').trim().slice(0, 120); if (v && !(k === 'campaign' && v === OLD_CAMPAIGN)) d.names[k] = v; });
   return d;
 }
 const loadDefaults = async (readJSON) => cleanDefaults(await readJSON(DEFAULTS_KEY, {}));
@@ -282,17 +285,18 @@ const setsBudget = (sets) => {
 };
 
 // Campaigns with their ad sets and ads, and the results of the period, for the Reclame page.
-async function overview(conn, period) {
+// range = { since, until } (YYYY-MM-DD, the account's days) wins over the period
+async function overview(conn, period, range) {
   const tok = conn.userToken, act = conn.adAccountId;
-  const datePreset = PERIODS[period] || 'last_7d';
+  const when = range ? { time_range: JSON.stringify({ since: range.since, until: range.until }) } : { date_preset: PERIODS[period] || 'last_7d' };
   const live = JSON.stringify(LIVE);
   const [camps, sets, ads, iC, iS, iA, acc] = await Promise.all([
     all('/' + act + '/campaigns', tok, { fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time', limit: '100', effective_status: live }, 2),
     all('/' + act + '/adsets', tok, { fields: 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', limit: '200', effective_status: live }, 3),
     all('/' + act + '/ads', tok, { fields: 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', limit: '200', effective_status: live }, 3),
-    all('/' + act + '/insights', tok, { level: 'campaign', date_preset: datePreset, fields: 'campaign_id,spend,actions,impressions,clicks', limit: '200' }, 3),
-    all('/' + act + '/insights', tok, { level: 'adset', date_preset: datePreset, fields: 'adset_id,spend,actions', limit: '500' }, 3),
-    all('/' + act + '/insights', tok, { level: 'ad', date_preset: datePreset, fields: 'ad_id,spend,actions', limit: '500' }, 3),
+    all('/' + act + '/insights', tok, Object.assign({ level: 'campaign', fields: 'campaign_id,spend,actions,impressions,clicks', limit: '200' }, when), 3),
+    all('/' + act + '/insights', tok, Object.assign({ level: 'adset', fields: 'adset_id,spend,actions', limit: '500' }, when), 3),
+    all('/' + act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,spend,actions', limit: '500' }, when), 3),
     call('GET', '/' + act, tok, { fields: 'name,currency,account_status,amount_spent' }),
   ]);
   if (camps.error) return { error: camps.error };
@@ -328,7 +332,7 @@ async function overview(conn, period) {
   }).sort((a, b) => (a.status === 'ACTIVE') === (b.status === 'ACTIVE') ? (a.created < b.created ? 1 : -1) : a.status === 'ACTIVE' ? -1 : 1);
   const totals = campaigns.reduce((t, c) => ({ spend: t.spend + c.spend, leads: t.leads + c.leads }), { spend: 0, leads: 0 });
   return {
-    ok: true, period, account: { id: act, name: (acc.ok && acc.j.name) || conn.adAccountName || act, currency: (acc.ok && acc.j.currency) || 'RON', status: acc.ok ? acc.j.account_status : null },
+    ok: true, period: range ? 'custom' : period, range: range || null, account: { id: act, name: (acc.ok && acc.j.name) || conn.adAccountName || act, currency: (acc.ok && acc.j.currency) || 'RON', status: acc.ok ? acc.j.account_status : null },
     totals, campaigns, partial: [iC, iS, iA].some((x) => x.error) ? 'Rezultatele n-au venit toate de la Meta.' : '',
   };
 }

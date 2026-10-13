@@ -687,7 +687,7 @@
   // can also be typed by hand when Facebook doesn't list it.
   // the ads (Admin → Reclame, "Publică pe Meta") use their own token; it can be replaced here
   // without touching the Page and the leads. A System User token never expires.
-  function adsRow(a) {
+  function adsState(a) {
     a = a || { set: false };
     const days = a.expiresAt ? Math.round((a.expiresAt - Date.now()) / 86400e3) : null;
     const st = !a.set ? ['is-wait', 'alert', 'Lipsește tokenul pentru reclame. Lipește-l mai jos.']
@@ -695,14 +695,78 @@
       : a.publish === false ? ['is-wait', 'alert', 'Tokenul n-are permisiunea ads_management. Lipește unul care o are.']
       : a.valid == null ? ['is-wait', 'clock', 'Token salvat; Meta nu l-a putut verifica acum.']
       : ['is-ok', 'checkCircle', 'Merge' + (a.expiresAt ? ' · expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) : ' · nu expiră')];
-    const needs = st[0] !== 'is-ok' || (days != null && days < 14);
+    return { a, st, needs: st[0] !== 'is-ok' || (days != null && days < 14) };
+  }
+  function adsStatus(x) {
+    const { st } = adsState(x);
     return '<div class="st-fb-status st-fb-ads ' + st[0] + '">' + icon(st[1]) + '<div><b>Reclame</b><span>' + esc(st[2]) + '</span></div>' +
-        (st[0] === 'is-ok' ? '<button type="button" class="k-btn is-ghost is-sm" data-goto="reclame">Deschide' + icon('arrow') + '</button>' : '') + '</div>' +
-      '<details class="st-fb-manual"' + (needs ? ' open' : '') + '><summary>' + (a.set ? 'Schimbă tokenul pentru reclame' : 'Lipește tokenul pentru reclame') + '</summary>' +
+      (st[0] === 'is-ok' ? '<button type="button" class="k-btn is-ghost is-sm" data-goto="reclame">Deschide' + icon('arrow') + '</button>' : '') + '</div>';
+  }
+  function adsToken(x) {
+    const { a, needs } = adsState(x);
+    return '<details class="st-fb-manual"' + (needs ? ' open' : '') + '><summary>' + (a.set ? 'Schimbă tokenul pentru reclame' : 'Lipește tokenul pentru reclame') + '</summary>' +
         '<form class="st-manual" data-adstoken><textarea name="t" rows="3" placeholder="Token de System User (nu expiră) sau User Access Token cu ads_management" autocomplete="off"></textarea>' +
         '<small class="k-muted">Din Graph API Explorer: aplicația Centrul360 ADMIN, cu ads_management, ads_read, business_management, pages_show_list, pages_read_engagement, leads_retrieval. Portalul îl face de 60 de zile. Unul de System User nu expiră deloc.</small>' +
         '<button type="submit" class="k-btn is-primary is-sm">Salvează tokenul</button></form></details>';
   }
+  // Every Facebook form filled in, newest first: who, when exactly (the moment it was sent on
+  // Facebook), the procedure and the city. A client who filled in twice shows twice.
+  function fbEntries(leads) {
+    const out = [];
+    (leads || []).forEach((l) => {
+      const forms = Array.isArray(l.forms) ? l.forms : [];
+      if (forms.length) forms.forEach((f) => out.push({ id: l.id, name: l.name, at: f.sentAt || f.at || l.createdAt, proc: l.interest || f.name || '', city: l.location || '', form: f.name || '', ad: f.ad || '' }));
+      else if (l.source === 'facebook') out.push({ id: l.id, name: l.name, at: l.createdAt, proc: l.interest || '', city: l.location || '', form: '', ad: '' });
+    });
+    return out.filter((x) => Number.isFinite(Date.parse(x.at))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  }
+  const hhmm = (ts) => { const d = new Date(ts); return K.pad(d.getHours()) + ':' + K.pad(d.getMinutes()); };
+  const dayOf = (ts) => K.iso(new Date(ts));
+  // "azi, 14:32" · "ieri, 09:05" · "12 oct, 18:40"
+  const when = (ts) => { const r = K.relDay(dayOf(ts)); return (r === 'Azi' ? 'azi' : r === 'Ieri' ? 'ieri' : K.dateShort(dayOf(ts))) + ', ' + hhmm(ts); };
+  const openLead = (id) => { K.go('pipeline'); setTimeout(() => window.C360Pipeline && window.C360Pipeline.openLead(id), 400); };
+  const entryLine = (x) => [x.proc, x.city].filter(Boolean).map(esc).join(' · ');
+
+  async function fillFbLeads(box) {
+    const list = box.querySelector('[data-fb-leads]');
+    let all;
+    try { all = fbEntries((await K.leads(true)).leads); }
+    catch (e) { list.innerHTML = '<p class="k-muted">Nu am putut citi leadurile. Apasă „Verifică acum”.</p>'; return; }
+    if (!all.length) { list.innerHTML = '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>'; return; }
+    list.innerHTML = all.slice(0, 2).map((x) => '<button type="button" class="st-fb-logrow is-lead" data-lead="' + esc(x.id) + '"><span>' + esc(when(x.at)) + '</span><em><b>' + esc(x.name) + '</b>' + (entryLine(x) ? ' · ' + entryLine(x) : '') + '</em></button>').join('') +
+      (all.length > 2 ? '<button type="button" class="k-btn is-ghost is-sm st-fb-more" data-fb-all>Vezi toate (' + all.length + ')' + icon('arrow') + '</button>' : '');
+    list.querySelectorAll('[data-lead]').forEach((b) => b.addEventListener('click', () => openLead(b.dataset.lead)));
+    const more = list.querySelector('[data-fb-all]');
+    if (more) more.addEventListener('click', () => allFbLeads(all));
+  }
+
+  // All of them, by day, with the exact hour; a tap opens the lead in Pipeline.
+  function allFbLeads(all) {
+    let q = '';
+    const paint = (el) => {
+      const f = K.norm(q);
+      const rows = f ? all.filter((x) => K.norm(x.name + ' ' + x.proc + ' ' + x.city + ' ' + x.form).includes(f)) : all;
+      let day = '';
+      el.querySelector('[data-rows]').innerHTML = rows.length ? rows.map((x) => {
+        const d = dayOf(x.at);
+        const head = d !== day ? '<div class="st-fbl-day">' + esc(K.relDay(d)) + (K.relDay(d) === 'Azi' || K.relDay(d) === 'Ieri' ? ', ' + esc(K.dateShort(d)) : '') + '</div>' : '';
+        day = d;
+        return head + '<button type="button" class="st-fbl-row" data-lead="' + esc(x.id) + '"><span class="st-fbl-time">' + esc(hhmm(x.at)) + '</span>' +
+          '<span class="st-fbl-main"><b>' + esc(x.name) + '</b><small>' + (entryLine(x) || 'procedură necunoscută') + (x.ad ? ' · reclama ' + esc(x.ad) : '') + '</small></span>' + icon('right') + '</button>';
+      }).join('') : K.empty('search', 'Niciun lead găsit', 'Caută după nume, procedură sau oraș.');
+    };
+    const dr = K.drawer({
+      title: 'Leaduri din Facebook', icon: 'facebook', width: 560,
+      subtitle: K.plural(all.length, 'formular completat', 'formulare completate') + ', cu ora exactă la care a fost trimis.',
+      body: '<label class="st-fbl-search">' + icon('search') + '<input type="search" data-q placeholder="Caută după nume, procedură sau oraș…" autocomplete="off"></label><div class="st-fbl-list" data-rows></div>',
+      onMount(el) {
+        paint(el);
+        el.querySelector('[data-q]').addEventListener('input', (e) => { q = e.target.value; paint(el); });
+        el.querySelector('[data-rows]').addEventListener('click', (e) => { const b = e.target.closest('[data-lead]'); if (b) { dr.close(); openLead(b.dataset.lead); } });
+      },
+    });
+  }
+
   const FB_ERR = { login_expired: 'Logarea a expirat. Apasă din nou „Conectează cu Facebook”.', page_not_found: 'Pagina nu mai e disponibilă. Loghează-te din nou.',
     subscribe_failed: 'Facebook n-a permis primirea leadurilor pe Pagina asta: lipsește permisiunea pages_manage_metadata sau nu ești admin pe Pagină. Folosește „Conectare cu token”.', invalid_ad_account: 'ID-ul contului de reclame are doar cifre (ex. 1234567890 sau act_1234567890).',
     token_invalid: 'Tokenul nu e valid sau a expirat.', no_ads_management: 'Tokenul n-are permisiunea ads_management. Generează-l din nou cu ea bifată.',
@@ -790,17 +854,16 @@
       const many = (d.pages || []).length > 1;
       const sub = d.subscription || {}, poll = d.poll || {};
       const live = poll.at && poll.ok !== false;
-      const got = (d.deliveries || []).filter((x) => (x.kind === 'lead' || x.kind === 'poll') && x.ok && /^lead /.test(x.text));
-      // What matters at a glance: connected, leads coming in, the last ones, the forms. Everything about
-      // the connection itself (ad account, Page, the Meta app, technical checks) is folded below.
+      // What matters at a glance: the green confirmations (leads, ads), then the last leads. Everything
+      // about the connection itself (ad account, Page, the Meta app, technical checks) is folded below.
       box.innerHTML =
         '<div class="st-fb-status ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') +
           '<div><b>Conectat la ' + esc(d.pageName || 'Pagină') + '</b><span>' + (live ? 'Leadurile intră automat · verificat ' + esc(K.ago(poll.at))
             : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur.' : 'Prima verificare se face în cel mult un minut.') + '</span></div></div>' +
+        adsStatus(d.ads) +
         '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
-          (got.length ? got.slice(0, 3).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
-            : '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>') + '</div>' +
-        adsRow(d.ads) +
+          '<div data-fb-leads><div class="k-skel" style="height:58px"></div></div></div>' +
+        adsToken(d.ads) +
         '<details class="st-fb-settings"><summary>' + icon('sliders') + 'Setări conexiune</summary>' +
           '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
           '<form class="st-fb-adform" data-fb-adform hidden><select data-ad>' + adOptions(d.adAccounts, d.adAccountId) + '</select>' + adManual + '<button type="submit" class="k-btn is-primary is-sm">Salvează</button></form>' +
@@ -817,6 +880,7 @@
           '<div data-app-slot></div>' +
         '</details>';
       box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
+      fillFbLeads(box);
       bindAdSelect(box);
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });

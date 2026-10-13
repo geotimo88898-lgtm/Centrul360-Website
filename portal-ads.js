@@ -7,10 +7,15 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const A = { d: null, period: '7d', show: 'active', q: '', open: new Set(), keep: new Set(), loading: false };
+  // sel: the campaigns picked (the numbers on top are theirs; none picked = the whole account)
+  // range: { since, until } when "Personalizat" is chosen
+  const A = { d: null, period: '7d', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false };
   let panel;
 
   const PERIODS = [['today', 'Azi'], ['yesterday', 'Ieri'], ['7d', '7 zile'], ['30d', '30 zile'], ['max', 'Tot']];
+  const dayLabel = (d) => K.dateShort(d);
+  const rangeLabel = (r) => (r.since === r.until ? dayLabel(r.since) : dayLabel(r.since) + ' - ' + dayLabel(r.until));
+  const periodPairs = () => PERIODS.concat([['custom', A.range ? rangeLabel(A.range) : 'Personalizat', 'calendar']]);
   const STATUS = {
     ACTIVE: ['Activă', 'good'], PAUSED: ['Oprită', ''], CAMPAIGN_PAUSED: ['Campania e oprită', ''], ADSET_PAUSED: ['Setul e oprit', ''],
     PENDING_REVIEW: ['În verificare', 'info'], IN_PROCESS: ['Se pregătește', 'info'], PREAPPROVED: ['Pre-aprobată', 'info'],
@@ -20,6 +25,14 @@
   const CTA = { LEARN_MORE: 'Află mai multe', SIGN_UP: 'Înscrie-te', BOOK_NOW: 'Rezervă acum', GET_OFFER: 'Obține oferta', APPLY_NOW: 'Aplică acum', GET_QUOTE: 'Solicită ofertă' };
 
   const money = (n) => K.lei(n, n && n < 100 ? 2 : 0);
+  // "13 oct, 14:32" from Meta's created_time (2026-10-13T14:32:10+0300)
+  const madeAt = (ts) => {
+    const t = Date.parse(String(ts || '').replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
+    if (!Number.isFinite(t)) return '';
+    const d = new Date(t);
+    return K.dateShort(K.iso(d)) + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '') + ', ' + K.pad(d.getHours()) + ':' + K.pad(d.getMinutes());
+  };
+  const made = (x) => { const m = madeAt(x.created); return m ? '<span class="ad-made" title="Publicată">' + esc(m) + '</span>' : ''; };
   const cpl = (x) => (x.leads ? money(x.spend / x.leads) : '-');
   const tag = (eff) => { const s = STATUS[eff] || [eff ? eff.toLowerCase() : '', '']; return '<span class="k-tag' + (s[1] ? ' is-' + s[1] : '') + '">' + esc(s[0]) + '</span>'; };
   const sw = (id, on, kind) => '<label class="k-switch ad-sw" title="' + (on ? 'Pornită, apasă ca s-o oprești' : 'Oprită, apasă ca s-o pornești') + '"><input type="checkbox" data-sw="' + esc(id) + '" data-kind="' + kind + '"' + (on ? ' checked' : '') + '><i></i></label>';
@@ -43,7 +56,12 @@
     A.loading = true;
     const body = panel.querySelector('[data-body]');
     if (A.d && quiet !== true) body.classList.add('is-loading');
-    try { A.d = await K.api('/api/ads-manager?period=' + A.period); render(); }
+    try {
+      A.d = await K.api('/api/ads-manager?' + (A.range ? 'since=' + A.range.since + '&until=' + A.range.until : 'period=' + A.period));
+      // a picked campaign that no longer exists drops out of the pick
+      if (A.d.campaigns) { const ids = new Set(A.d.campaigns.map((c) => c.id)); A.sel.forEach((id) => { if (!ids.has(id)) A.sel.delete(id); }); }
+      render();
+    }
     catch (e) { body.innerHTML = K.empty('alert', 'Nu am putut încărca reclamele', K.errText(e), '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>'); }
     finally { A.loading = false; body.classList.remove('is-loading'); }
   }
@@ -55,24 +73,47 @@
         '<button type="button" class="k-btn is-primary is-sm" data-goto="integrari">' + icon('facebook') + 'Integrări → Facebook</button></div></div>';
       return;
     }
-    const t = d.totals, active = d.campaigns.filter((c) => c.status === 'ACTIVE').length;
+    const active = d.campaigns.filter((c) => c.status === 'ACTIVE').length;
     const tok = d.token;
     const days = tok && tok.expiresAt ? Math.round((tok.expiresAt - Date.now()) / 86400e3) : null;
     body.classList.toggle('is-readonly', !!d.readOnly);
     body.innerHTML =
       (d.readOnly ? '<div class="k-card ad-note is-warn">' + icon('alert') + '<span>Doar vizualizare: tokenul pentru reclame n-are permisiunea ads_management, așa că nu poți porni, opri sau schimba nimic de aici.</span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
       (tok && days != null && days < 14 ? '<div class="k-card ad-note is-warn">' + icon('clock') + '<span>Conexiunea pentru reclame expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) + '. Integrări → Facebook → Reclame: lipește un token nou (unul de System User nu mai expiră).</span><button type="button" class="k-btn is-sm" data-goto="integrari">Integrări</button></div>' : '') +
-      '<div class="ad-bar">' + K.seg('adperiod', PERIODS.map(([k, l]) => [k, l]), A.period) +
+      '<div class="ad-bar">' + K.seg('adperiod', periodPairs(), A.range ? 'custom' : A.period) +
         '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie sau o reclamă…" value="' + esc(A.q) + '"></label>' +
         '<div class="k-chips"><button type="button" class="k-chip' + (A.show === 'active' ? ' is-on' : '') + '" data-show="active">Pornite<span>' + active + '</span></button><button type="button" class="k-chip' + (A.show === 'all' ? ' is-on' : '') + '" data-show="all">Toate<span>' + d.campaigns.length + '</span></button></div>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
-      '<div class="ad-stats">' +
-        stat('wallet', 'Cheltuit', money(t.spend)) + stat('userPlus', 'Leaduri', K.num(t.leads)) +
-        stat('target', 'Cost pe lead', t.leads ? money(t.spend / t.leads) : '-') + stat('zap', 'Campanii pornite', String(active)) + '</div>' +
+      '<div data-stats></div>' +
       (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
-      '<div class="ad-head-row"><span>Campanie</span><span>Buget / zi</span><span>Cheltuit</span><span>Leaduri</span><span>Cost / lead</span><span></span></div>' +
+      '<div class="ad-head-row"><span><label class="ad-pick" title="Selectează toate campaniile afișate"><input type="checkbox" data-pick-all></label>Campanie</span><span>Buget / zi</span><span>Cheltuit</span><span>Leaduri</span><span>Cost / lead</span><span></span></div>' +
       '<div class="ad-list" data-list></div>';
+    paintStats();
     paintList();
+  }
+  // the numbers on top: of the picked campaigns, or of all of them
+  function paintStats() {
+    const box = panel.querySelector('[data-stats]');
+    if (!box || !A.d || !A.d.campaigns) return;
+    const picked = A.d.campaigns.filter((c) => A.sel.has(c.id));
+    const list = picked.length ? picked : A.d.campaigns;
+    const spend = list.reduce((n, c) => n + c.spend, 0), leads = list.reduce((n, c) => n + c.leads, 0);
+    const on = list.filter((c) => c.status === 'ACTIVE').length;
+    box.innerHTML =
+      (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
+      '<div class="ad-stats">' +
+        stat('wallet', 'Cheltuit', money(spend)) + stat('userPlus', 'Leaduri', K.num(leads)) +
+        stat('target', 'Cost pe lead', leads ? money(spend / leads) : '-') + stat('zap', picked.length ? 'Pornite din cele alese' : 'Campanii pornite', String(on)) + '</div>';
+    syncPickAll();
+  }
+  // the "all" box in the header: on when every shown campaign is picked, half when some are
+  function syncPickAll() {
+    const all = panel.querySelector('[data-pick-all]');
+    if (!all) return;
+    const shown = visible();
+    const n = shown.filter((c) => A.sel.has(c.id)).length;
+    all.checked = !!shown.length && n === shown.length;
+    all.indeterminate = n > 0 && n < shown.length;
   }
   const stat = (ic, label, val) => '<div class="k-card ad-stat"><span class="k-icon-chip is-accent">' + icon(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></div>';
 
@@ -87,6 +128,7 @@
     const box = panel.querySelector('[data-list]');
     if (!box) return;
     const list = visible();
+    setTimeout(syncPickAll, 0);
     box.innerHTML = list.length ? list.map(campHtml).join('')
       : K.empty('zap', A.show === 'active' ? 'Nicio campanie pornită' : 'Nicio campanie', A.show === 'active' ? 'Vezi „Toate” pentru cele oprite, sau publică un creative din Creative.' : 'Publică un creative din Creative („Publică pe Meta”).');
   }
@@ -99,9 +141,9 @@
   }
   function campHtml(c) {
     const open = A.open.has(c.id);
-    return '<article class="k-card ad-camp' + (open ? ' is-open' : '') + (c.status === 'ACTIVE' ? '' : ' is-off') + '" data-camp="' + esc(c.id) + '">' +
+    return '<article class="k-card ad-camp' + (open ? ' is-open' : '') + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
       '<div class="ad-row is-camp">' +
-        '<div class="ad-name">' + sw(c.id, c.status === 'ACTIVE', 'campaign') + '<button type="button" class="ad-title" data-toggle="' + esc(c.id) + '"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + ' ' + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + '</small></button></div>' +
+        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + '<button type="button" class="ad-title" data-toggle="' + esc(c.id) + '"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + ' ' + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
         '<div class="ad-cell" data-l="Buget / zi">' + budgetCell(c, 'campaign') + '</div>' +
         '<div class="ad-cell" data-l="Cheltuit">' + esc(money(c.spend)) + '</div>' +
         '<div class="ad-cell" data-l="Leaduri"><b>' + K.num(c.leads) + '</b></div>' +
@@ -129,7 +171,7 @@
     return '<div class="ad-row is-ad' + (a.status === 'ACTIVE' ? '' : ' is-off') + '">' +
       '<div class="ad-name">' + sw(a.id, a.status === 'ACTIVE', 'ad') +
         (a.thumb ? '<img class="ad-thumb" src="' + esc(a.thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="ad-thumb is-empty">' + icon('image') + '</span>') +
-        '<div class="ad-title"><b>' + esc(a.name) + '</b><small>' + tag(a.effective) + (a.review ? ' <span class="ad-review">' + esc(a.review) + '</span>' : '') + '</small></div></div>' +
+        '<div class="ad-title"><b>' + esc(a.name) + '</b><small>' + tag(a.effective) + made(a) + (a.review ? ' <span class="ad-review">' + esc(a.review) + '</span>' : '') + '</small></div></div>' +
       '<div class="ad-cell" data-l="Buget / zi"></div>' +
       '<div class="ad-cell" data-l="Cheltuit">' + esc(money(a.spend)) + '</div>' +
       '<div class="ad-cell" data-l="Leaduri"><b>' + K.num(a.leads) + '</b></div>' +
@@ -149,7 +191,19 @@
   }
   async function onChange(e) {
     const t = e.target;
-    if (t.name === 'adperiod') { A.period = t.value; A.keep.clear(); return load(); }
+    if (t.name === 'adperiod') {
+      if (t.value === 'custom') return openRange(t.closest('[data-k-seg]').querySelector('[data-v="custom"]'));
+      A.period = t.value; A.range = null; A.keep.clear(); return load();
+    }
+    if (t.matches('[data-pick]')) {
+      if (t.checked) A.sel.add(t.dataset.pick); else A.sel.delete(t.dataset.pick);
+      const art = t.closest('.ad-camp'); if (art) art.classList.toggle('is-picked', t.checked);
+      return paintStats();
+    }
+    if (t.matches('[data-pick-all]')) {
+      visible().forEach((c) => { if (t.checked) A.sel.add(c.id); else A.sel.delete(c.id); });
+      paintList(); return paintStats();
+    }
     if (t.dataset.sw) {
       const x = findAny(t.dataset.sw);
       const status = t.checked ? 'ACTIVE' : 'PAUSED';
@@ -184,6 +238,55 @@
       } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
     });
   }
+  // "Personalizat": two days, from and to (the results of every day in between)
+  let rangeEl = null;
+  function closeRange(apply) {
+    if (!rangeEl) return;
+    const m = rangeEl; rangeEl = null;
+    m.classList.remove('is-open');
+    setTimeout(() => m.remove(), 200);
+    document.removeEventListener('mousedown', outsideRange, true);
+    document.removeEventListener('keydown', escRange, true);
+    // cancelled: the period chosen before stays lit
+    if (!apply) panel.querySelectorAll('[data-k-seg="adperiod"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === (A.range ? 'custom' : A.period)));
+  }
+  const outsideRange = (e) => { if (rangeEl && !rangeEl.contains(e.target) && !e.target.closest('[data-v="custom"]')) closeRange(false); };
+  const escRange = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeRange(false); } };
+  function openRange(anchor) {
+    if (rangeEl) { closeRange(false); return; }
+    const today = K.today();
+    const r = A.range || { since: K.addDays(today, -6), until: today };
+    const m = document.createElement('div');
+    m.className = 'k-menu ad-range';
+    m.innerHTML = '<div class="k-menu-label">Perioadă personalizată</div>' +
+      '<div class="ad-range-fields"><label><span>De la</span><input type="date" data-since value="' + r.since + '" max="' + today + '"></label>' +
+      '<label><span>Până la</span><input type="date" data-until value="' + r.until + '" max="' + today + '"></label></div>' +
+      '<div class="ad-range-quick">' + [['Luna asta', K.thisMonth() + '-01', today], ['Luna trecută', K.addMonths(K.thisMonth(), -1) + '-01', K.addDays(K.thisMonth() + '-01', -1)], ['90 de zile', K.addDays(today, -89), today]]
+        .map(([l, a, b]) => '<button type="button" class="k-chip" data-q-since="' + a + '" data-q-until="' + b + '">' + l + '</button>').join('') + '</div>' +
+      '<div class="ad-range-acts"><button type="button" class="k-btn is-ghost is-sm" data-range-cancel>Renunță</button><button type="button" class="k-btn is-primary is-sm" data-range-ok>' + icon('check') + 'Aplică</button></div>';
+    document.body.appendChild(m);
+    const b = anchor.getBoundingClientRect();
+    m.style.top = (b.bottom + 6) + 'px';
+    m.style.left = Math.max(8, Math.min(b.left, window.innerWidth - m.offsetWidth - 8)) + 'px';
+    m.style.transformOrigin = 'top left';
+    requestAnimationFrame(() => m.classList.add('is-open'));
+    rangeEl = m;
+    setTimeout(() => { document.addEventListener('mousedown', outsideRange, true); document.addEventListener('keydown', escRange, true); }, 0);
+    m.addEventListener('click', (e) => {
+      const qb = e.target.closest('[data-q-since]');
+      if (qb) { m.querySelector('[data-since]').value = qb.dataset.qSince; m.querySelector('[data-until]').value = qb.dataset.qUntil; return; }
+      if (e.target.closest('[data-range-cancel]')) return closeRange(false);
+      if (!e.target.closest('[data-range-ok]')) return;
+      let a = m.querySelector('[data-since]').value, z = m.querySelector('[data-until]').value;
+      if (!a || !z) { K.ui().toast('Alege ambele zile.', 'error'); return; }
+      if (a > z) [a, z] = [z, a];
+      A.range = { since: a, until: z > today ? today : z };
+      A.keep.clear();
+      closeRange(true);
+      load();
+    });
+  }
+
   // the ⋯ menu next to a campaign, an ad set or an ad
   let menuEl = null;
   function closeMenu() {
@@ -260,6 +363,7 @@
   }
   async function onClick(e) {
     const t = e.target;
+    if (t.closest('[data-pick-clear]')) { A.sel.clear(); paintList(); return paintStats(); }
     if (t.closest('[data-act="reload"]')) { panel.querySelector('[data-body]').innerHTML = '<div class="k-skel" style="height:360px"></div>'; return load(); }
     if (t.closest('[data-act="defaults"]')) return openDefaults();
     if (t.closest('[data-act="creative"]')) { K.go('creative'); K.ui().toast('Deschide un creative aprobat și apasă „Publică pe Meta”.', 'info'); return; }
@@ -291,7 +395,7 @@
         K.field('Pornire', '<select name="startNow">' + K.options([['1', 'Pornește imediat după publicare'], ['0', 'Rămâne oprită, o pornesc eu']], d.startNow === false ? '0' : '1') + '</select>', 'full') +
         K.field('Numele campaniei', '<input name="n_campaign" value="' + esc(names.campaign || '') + '">', 'full') +
         K.field('Numele setului de reclame', '<input name="n_adset" value="' + esc(names.adset || '') + '">', 'full') +
-        K.field('Numele reclamei', '<input name="n_ad" value="' + esc(names.ad || '') + '">', 'full', 'În nume poți folosi {oferta}, {oras}, {data}, {km}, {varsta}, {hook}.') +
+        K.field('Numele reclamei', '<input name="n_ad" value="' + esc(names.ad || '') + '">', 'full', 'Poți folosi {oras_scurt} (TM, AR), {proc} (LIPO, CAV 1+1, RESTART…), {unghi} (reclama în 2-3 cuvinte), {oferta}, {oras}, {km}, {varsta}, {hook}, {data}.') +
         '</form>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
