@@ -76,7 +76,7 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   const result = await createLead({
     name: name || 'Lead Facebook', phone, email, source: 'facebook', location,
     interest: offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
-    form: { id: formId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
+    form: { id: formId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', adId: lead.ad_id || '', adsetId: lead.adset_id || '', campaignId: lead.campaign_id || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
   });
   if (result.error) { console.error('fb-leads: createLead failed', leadgenId, result.error); return 'nu s-a putut salva: ' + result.error; }
   return (result.duplicate ? 'lead existent, actualizat: ' : 'lead nou: ') + (name || 'fără nume') + ' · ' + (offer ? offer.title : form.name || 'procedură necunoscută') + ' · ' + location;
@@ -94,7 +94,7 @@ async function processLeadgenEvent(value, pageAccessToken) {
 }
 
 // ---------------------------------------------------------------- reading the forms
-const LEAD_FIELDS = 'id,created_time,field_data,form_id,ad_name,adset_name,campaign_name,platform';
+const LEAD_FIELDS = 'id,created_time,field_data,form_id,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,platform';
 async function graph(pathname, params, token) {
   const r = await fetch(GRAPH_BASE + pathname + '?' + new URLSearchParams(Object.assign({ access_token: token }, params)));
   const j = await r.json().catch(() => ({}));

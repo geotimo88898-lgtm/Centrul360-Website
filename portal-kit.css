@@ -311,3 +311,24 @@ html.c360-rail .k-nav-badge{ position:absolute; top:3px; right:5px; min-width:16
   .k-stat:has(.k-spark) .k-stat-sub{ padding-right:0; }
   .k-dhead{ padding-top:max(.9rem, env(safe-area-inset-top)); }
 }
+
+/* ---------------- "Personalizează" (K.customize): pick and order cards / columns / KPIs ---------------- */
+.k-cz{ display:flex; flex-direction:column; gap:1.4rem; }
+.k-cz-part + .k-cz-part{ padding-top:1.2rem; border-top:1px solid var(--line); }
+.k-cz-head{ display:flex; align-items:baseline; justify-content:space-between; gap:.6rem; }
+.k-cz-head b{ font-size:.95rem; }
+.k-cz-head .k-muted{ font-size:.76rem; }
+.k-cz-hint{ margin:.25rem 0 .6rem; font-size:.8rem; }
+.k-cz-list{ list-style:none; margin:.4rem 0 0; padding:0; display:flex; flex-direction:column; gap:.3rem; }
+.k-cz-list li{ display:flex; align-items:center; gap:.5rem; padding:.3rem .35rem .3rem .5rem; border:1px solid var(--line); border-radius:11px; background:var(--paper); }
+.k-cz-list li .k-icon-btn{ width:30px; height:30px; }
+.k-cz-list li .k-icon-btn:disabled{ opacity:.3; pointer-events:none; }
+.k-cz-n{ width:22px; height:22px; border-radius:7px; display:grid; place-items:center; flex:none; font-size:.72rem; font-weight:700; background:var(--accent-soft); color:var(--accent); font-variant-numeric:tabular-nums; }
+.k-cz-name{ flex:1; min-width:0; font-size:.88rem; font-weight:560; }
+.k-cz-empty{ justify-content:center; color:var(--muted); font-size:.84rem; border-style:dashed !important; padding:.8rem !important; }
+.k-cz-more{ margin-top:.9rem; display:flex; flex-direction:column; gap:.6rem; }
+.k-cz-more-title{ font-size:.7rem; font-weight:650; text-transform:uppercase; letter-spacing:.07em; color:var(--muted-2); }
+.k-cz-group small{ display:block; font-size:.74rem; color:var(--muted); margin-bottom:.3rem; }
+.k-cz-chips{ display:flex; flex-wrap:wrap; gap:.35rem; }
+.k-cz-add{ height:30px; padding:0 .65rem; font-size:.8rem; }
+.k-cz-add .k-ic{ width:13px; height:13px; }

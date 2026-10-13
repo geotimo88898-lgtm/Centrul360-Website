@@ -176,7 +176,8 @@ function cleanForm(f) {
   if (!f || typeof f !== 'object') return null;
   const answers = (Array.isArray(f.answers) ? f.answers : []).slice(0, 20)
     .map((x) => ({ q: clip(x && x.q, 200), a: clip(x && x.a, 500) })).filter((x) => x.q && x.a);
-  return { id: clip(f.id, 40), name: clip(f.name, 120), ad: clip(f.ad, 160), campaign: clip(f.campaign, 160), at: nowISO(), sentAt: clip(f.sentAt, 40), answers };
+  const num = (v) => (/^\d{5,25}$/.test(String(v || '')) ? String(v) : '');
+  return { id: clip(f.id, 40), name: clip(f.name, 120), ad: clip(f.ad, 160), campaign: clip(f.campaign, 160), adId: num(f.adId), adsetId: num(f.adsetId), campaignId: num(f.campaignId), at: nowISO(), sentAt: clip(f.sentAt, 40), answers };
 }
 
 async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form }) {

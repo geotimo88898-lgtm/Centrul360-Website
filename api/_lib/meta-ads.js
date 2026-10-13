@@ -28,6 +28,8 @@ const PERIODS = { today: 'today', yesterday: 'yesterday', '7d': 'last_7d', '30d'
 // a lead from an instant form, as Meta counts it in the results (first one found)
 // everything that is not deleted or archived (the edges' own effective_status filter)
 const LIVE = ['ACTIVE', 'PAUSED', 'PENDING_REVIEW', 'DISAPPROVED', 'PREAPPROVED', 'PENDING_BILLING_INFO', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES'];
+// what Meta counts for every row (the rest is worked out from these on the page)
+const RESULTS = 'spend,actions,impressions,reach,clicks,inline_link_clicks';
 const LEAD_ACTIONS = ['onsite_conversion.lead_grouped', 'lead', 'leadgen_grouped', 'onsite_conversion.lead'];
 
 const DEFAULTS = {
@@ -294,33 +296,37 @@ async function overview(conn, period, range) {
     all('/' + act + '/campaigns', tok, { fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time', limit: '100', effective_status: live }, 2),
     all('/' + act + '/adsets', tok, { fields: 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', limit: '200', effective_status: live }, 3),
     all('/' + act + '/ads', tok, { fields: 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', limit: '200', effective_status: live }, 3),
-    all('/' + act + '/insights', tok, Object.assign({ level: 'campaign', fields: 'campaign_id,spend,actions,impressions,clicks', limit: '200' }, when), 3),
-    all('/' + act + '/insights', tok, Object.assign({ level: 'adset', fields: 'adset_id,spend,actions', limit: '500' }, when), 3),
-    all('/' + act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,spend,actions', limit: '500' }, when), 3),
+    all('/' + act + '/insights', tok, Object.assign({ level: 'campaign', fields: 'campaign_id,' + RESULTS, limit: '200' }, when), 3),
+    all('/' + act + '/insights', tok, Object.assign({ level: 'adset', fields: 'adset_id,' + RESULTS, limit: '500' }, when), 3),
+    all('/' + act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,' + RESULTS, limit: '500' }, when), 3),
     call('GET', '/' + act, tok, { fields: 'name,currency,account_status,amount_spent' }),
   ]);
   if (camps.error) return { error: camps.error };
-  const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], { spend: Number(r.spend) || 0, leads: leadsOf(r), impressions: Number(r.impressions) || 0, clicks: Number(r.clicks) || 0 }]));
+  const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], {
+    spend: Number(r.spend) || 0, leads: leadsOf(r), impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
+    clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0,
+  }]));
   const rC = res(iC, 'campaign_id'), rS = res(iS, 'adset_id'), rA = res(iA, 'ad_id');
-  const zero = { spend: 0, leads: 0 };
+  const zero = { spend: 0, leads: 0, impressions: 0, reach: 0, clicks: 0, linkClicks: 0 };
+  const results = (r) => ({ spend: r.spend, leads: r.leads, impressions: r.impressions, reach: r.reach, clicks: r.clicks, linkClicks: r.linkClicks });
   const money = (v) => (v ? Number(v) / 100 : 0);
   const adsBySet = new Map();
   (ads.data || []).forEach((a) => {
     const r = rA.get(a.id) || zero;
     const review = a.ad_review_feedback && a.ad_review_feedback.global ? Object.values(a.ad_review_feedback.global).join(' ') : '';
     const list = adsBySet.get(a.adset_id) || [];
-    list.push({ id: a.id, name: a.name, status: a.status, effective: a.effective_status, created: a.created_time,
+    list.push(Object.assign({ id: a.id, name: a.name, status: a.status, effective: a.effective_status, created: a.created_time,
       thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '', text: (a.creative && (a.creative.title || a.creative.body)) || '',
-      review, spend: r.spend, leads: r.leads });
+      review, adsetId: a.adset_id, campaignId: a.campaign_id }, results(r)));
     adsBySet.set(a.adset_id, list);
   });
   const setsByCamp = new Map();
   (sets.data || []).forEach((s) => {
     const r = rS.get(s.id) || zero;
     const list = setsByCamp.get(s.campaign_id) || [];
-    list.push({ id: s.id, name: s.name, status: s.status, effective: s.effective_status, created: s.created_time,
+    list.push(Object.assign({ id: s.id, name: s.name, status: s.status, effective: s.effective_status, created: s.created_time,
       daily: money(s.daily_budget), lifetime: money(s.lifetime_budget), audience: audience(s.targeting),
-      spend: r.spend, leads: r.leads, ads: (adsBySet.get(s.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1)) });
+      campaignId: s.campaign_id, ads: (adsBySet.get(s.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1)) }, results(r)));
     setsByCamp.set(s.campaign_id, list);
   });
   const campaigns = (camps.data || []).map((c) => {
@@ -328,7 +334,7 @@ async function overview(conn, period, range) {
     const adsets = (setsByCamp.get(c.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1));
     return { id: c.id, name: c.name, status: c.status, effective: c.effective_status, objective: c.objective, created: c.created_time,
       daily: money(c.daily_budget) || setsBudget(adsets), cbo: !!c.daily_budget,
-      lifetime: money(c.lifetime_budget), spend: r.spend, leads: r.leads, impressions: r.impressions, clicks: r.clicks, adsets };
+      lifetime: money(c.lifetime_budget), adsets, ...results(r) };
   }).sort((a, b) => (a.status === 'ACTIVE') === (b.status === 'ACTIVE') ? (a.created < b.created ? 1 : -1) : a.status === 'ACTIVE' ? -1 : 1);
   const totals = campaigns.reduce((t, c) => ({ spend: t.spend + c.spend, leads: t.leads + c.leads }), { spend: 0, leads: 0 });
   return {

@@ -188,7 +188,8 @@
     const main = document.querySelector('main');
     main.classList.toggle('wide', tab === 'creative');
     main.classList.toggle('pl-full', tab === 'pipeline');
-    main.classList.toggle('k-wide', tab !== 'creative' && tab !== 'pipeline');
+    main.classList.toggle('ad-full', tab === 'reclame');
+    main.classList.toggle('k-wide', tab !== 'creative' && tab !== 'pipeline' && tab !== 'reclame');
     const hash = tab === 'creative' ? creativeHash(creativeRoute) : tab;
     if (location.hash.slice(1) !== hash) history.replaceState(null, '', location.pathname + location.search + '#' + hash);
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });

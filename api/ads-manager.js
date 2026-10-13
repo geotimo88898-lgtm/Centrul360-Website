@@ -12,6 +12,27 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
 const ads = require('./_lib/meta-ads');
+const { funnel } = require('./_lib/ads-funnel');
+
+// after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad
+async function withFunnel(view, period, range) {
+  const [leads, appointments, sales, stages] = await Promise.all([
+    readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/pipeline-stages.json', null),
+  ]);
+  const flat = [];
+  view.campaigns.forEach((c) => c.adsets.forEach((s) => s.ads.forEach((a) => flat.push({ id: a.id, name: a.name, adsetId: s.id, campaignId: c.id, campaignName: c.name }))));
+  const f = funnel({ leads, appointments, sales, stages: Array.isArray(stages) && stages.length ? stages : DEFAULT_STAGES, ads: flat, period, range });
+  const put = (x, m) => Object.assign(x, { pLeads: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }, renameLeads(m.get(x.id)));
+  view.campaigns.forEach((c) => { put(c, f.campaigns); c.adsets.forEach((s) => { put(s, f.adsets); s.ads.forEach((a) => put(a, f.ads)); }); });
+  view.unmatched = renameLeads(f.unmatched);
+  return view;
+}
+const renameLeads = (x) => { if (!x) return {}; const o = Object.assign({}, x); o.pLeads = o.leads; delete o.leads; return o; };
+// the pipeline's first stages, if none were ever saved (same as api/portal-leads.js)
+const DEFAULT_STAGES = [
+  { id: 'lead_nou', kind: 'open' }, { id: 'contactat', kind: 'open' }, { id: 'programare_stabilita', kind: 'booked' },
+  { id: 'venit_la_programare', kind: 'open' }, { id: 'client_fidel', kind: 'won' }, { id: 'pierdut', kind: 'lost' },
+];
 
 const REASONS = {
   not_connected: 'Facebook nu e conectat. Integrări → Facebook.',
@@ -60,6 +81,7 @@ module.exports = async (req, res) => {
       }
       // without ads_management the page only reads (the switches would be refused)
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
+      await withFunnel(view, period, range).catch((e) => { console.error('ads-manager funnel:', e.message); });
       res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId) }, view));
       return;
     }

@@ -528,6 +528,72 @@
   }
   const typing = (el) => !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable));
 
+  // =====================================================================================
+  // Each account arranges its own pages (api/portal-prefs.js): K.prefs.load() once, then get / set.
+  // =====================================================================================
+  let prefsP = null, prefsData = null;
+  const prefs = {
+    load() {
+      if (!prefsP) prefsP = api('/api/portal-prefs').then((j) => { prefsData = j.prefs || {}; return prefsData; }).catch(() => { prefsData = prefsData || {}; prefsP = null; return prefsData; });
+      return prefsP;
+    },
+    get(k, d) { return prefsData && prefsData[k] !== undefined && prefsData[k] !== null ? prefsData[k] : d; },
+    async set(k, v) { const j = await api('/api/portal-prefs', { key: k, value: v }); prefsData = j.prefs || {}; return prefsData; },
+  };
+
+  // "Personalizează": pick, order and remove what a page shows (cards, columns, KPIs).
+  //   K.customize({ title, subtitle, catalog: { id: { label, group, hint } }, groups: ['Bani', ...],
+  //     parts: [{ key, label, hint, value: [ids], def: [ids], min, max }], onSave(values) })
+  // values = { [part.key]: [ids in order] }
+  function customize(o) {
+    const cur = {};
+    o.parts.forEach((p) => { cur[p.key] = (p.value || p.def || []).filter((id) => o.catalog[id]); });
+    const label = (id) => (o.catalog[id] || {}).label || id;
+    const partHtml = (p) => {
+      const sel = cur[p.key];
+      const groups = (o.groups || []).map((g) => {
+        const items = Object.keys(o.catalog).filter((id) => (o.catalog[id].group || '') === g && !sel.includes(id) && (!o.catalog[id].only || o.catalog[id].only.includes(p.key)));
+        return items.length ? '<div class="k-cz-group"><small>' + esc(g) + '</small><div class="k-cz-chips">' + items.map((id) => '<button type="button" class="k-chip k-cz-add" data-add="' + esc(id) + '" title="' + esc(o.catalog[id].hint || '') + '">' + icon('plus') + esc(label(id)) + '</button>').join('') + '</div></div>' : '';
+      }).join('');
+      return '<section class="k-cz-part" data-part="' + esc(p.key) + '"><div class="k-cz-head"><b>' + esc(p.label) + '</b><span class="k-muted">' + sel.length + ' alese' + (p.max ? ' din max. ' + p.max : '') + '</span></div>' +
+        (p.hint ? '<p class="k-muted k-cz-hint">' + esc(p.hint) + '</p>' : '') +
+        '<ol class="k-cz-list">' + (sel.length ? sel.map((id, i) => '<li><span class="k-cz-n">' + (i + 1) + '</span><span class="k-cz-name">' + esc(label(id)) + '</span>' +
+          '<button type="button" class="k-icon-btn" data-up="' + esc(id) + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Mai sus">' + icon('up') + '</button>' +
+          '<button type="button" class="k-icon-btn" data-down="' + esc(id) + '"' + (i === sel.length - 1 ? ' disabled' : '') + ' aria-label="Mai jos">' + icon('down') + '</button>' +
+          '<button type="button" class="k-icon-btn" data-del="' + esc(id) + '" aria-label="Scoate">' + icon('x') + '</button></li>').join('') : '<li class="k-cz-empty">Nimic ales încă. Adaugă de mai jos.</li>') + '</ol>' +
+        '<div class="k-cz-more"><small class="k-cz-more-title">Adaugă</small>' + (groups || '<p class="k-muted">Ai ales tot.</p>') + '</div></section>';
+    };
+    let el;
+    const paint = () => { const box = el.querySelector('[data-cz]'); const y = box.parentElement.scrollTop; box.innerHTML = o.parts.map(partHtml).join(''); box.parentElement.scrollTop = y; };
+    const dr = drawer({
+      title: o.title || 'Personalizează', icon: 'sliders', width: 560, subtitle: o.subtitle || 'Alegi ce vezi și în ce ordine. Se păstrează pe contul tău.',
+      body: '<div class="k-cz" data-cz></div>',
+      footer: '<button type="button" class="k-btn is-ghost" data-reset>' + icon('refresh') + 'Implicit</button><span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+      onMount(root) {
+        el = root;
+        paint();
+        root.querySelector('[data-cz]').addEventListener('click', (e) => {
+          const part = e.target.closest('[data-part]'); if (!part) return;
+          const p = o.parts.find((x) => x.key === part.dataset.part), sel = cur[p.key];
+          const b = e.target.closest('[data-add],[data-up],[data-down],[data-del]'); if (!b) return;
+          if (b.dataset.add) { if (p.max && sel.length >= p.max) { ui().toast('Poți alege cel mult ' + p.max + '.', 'error'); return; } sel.push(b.dataset.add); }
+          const move = (id, d) => { const i = sel.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= sel.length) return; [sel[i], sel[j]] = [sel[j], sel[i]]; };
+          if (b.dataset.up) move(b.dataset.up, -1);
+          if (b.dataset.down) move(b.dataset.down, 1);
+          if (b.dataset.del) { if (p.min && sel.length <= p.min) { ui().toast('Lasă măcar ' + p.min + '.', 'error'); return; } sel.splice(sel.indexOf(b.dataset.del), 1); }
+          paint();
+        });
+        root.querySelector('[data-reset]').addEventListener('click', () => { o.parts.forEach((p) => { cur[p.key] = (p.def || []).slice(); }); paint(); });
+        root.querySelector('[data-cancel]').addEventListener('click', () => dr.close());
+        root.querySelector('[data-save]').addEventListener('click', (ev) => busy(ev.currentTarget, async () => {
+          try { await o.onSave(JSON.parse(JSON.stringify(cur))); dr.close(); ui().toast('Salvat.', 'success'); }
+          catch (err) { ui().toast(errText(err), 'error'); }
+        }));
+      },
+    });
+    return dr;
+  }
+
   window.K = {
     on, emit, api, errText, ui, esc, dedash, norm, reduceMotion,
     lei, num, pad, iso, today, parse, addDays, monthOf, thisMonth, addMonths, daysIn, mondayOf, DOW, DOW_S, MON, MON_S,
@@ -535,6 +601,7 @@
     icon, P, tween, countUp, countAll, everySecond, spark, ring, donut, chart,
     drawer, field, formValues, busy, options, seg, empty, toggle, clientPicker,
     section, show, setData, badge, go, isActive, csv, copy, typing, leads,
+    prefs, customize,
     get data() { return data; },
     get drawerOpen() { return !!current; },
   };
