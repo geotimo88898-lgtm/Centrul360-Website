@@ -1,22 +1,30 @@
-// /api/portal-whatsapp, "Mesaje" tab: a WhatsApp inbox inside the portal. Action-routed,
-// same convention as portal-attendance.js / portal-leave.js.
+// /api/portal-whatsapp, "Mesaje" tab: the WhatsApp inbox inside the portal (both clinic numbers,
+// Timișoara and Arad). Action-routed, same convention as portal-attendance.js / portal-leave.js.
 //
-//   list   -> every conversation (any authenticated employee), lightest payload: last
-//             message preview + unreadCount, sorted by lastMessageAt descending.
-//   thread -> { phone } full message history for one conversation; marks it read.
-//   send   -> { phone, text } sends a free-text message via the WhatsApp Cloud API, only
-//             inside Meta's 24h customer-service window (last INBOUND message < 24h ago).
+//   list          -> every conversation (any authenticated employee), lightest payload: last message
+//                    preview + unreadCount, sorted by lastMessageAt descending; plus which numbers are
+//                    connected and the approved templates (for answering after 24h / writing first).
+//   thread        -> { phone } full message history for one conversation; marks it read; the lead /
+//                    client with that phone, if any.
+//   send          -> { phone, text } a free-text answer, only inside Meta's 24h customer-service window
+//                    (last INBOUND message < 24h ago), from the number she wrote to.
+//   send_template -> { phone, templateId, name?, location? } an approved template, the client's details
+//                    filled in (from her lead / appointment); also starts a new conversation.
 //
 // Data: data/whatsapp-conversations.json (see api/webhook-whatsapp.js for the inbound side).
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
-const { sendWhatsApp, toE164 } = require('./_lib/whatsapp');
+const WA = require('./_lib/whatsapp');
+const WT = require('./_lib/wa-templates');
+const { normalizePhone } = require('./_lib/clients');
 
+const { sendWhatsApp, toE164 } = WA;
 const KEY = 'data/whatsapp-conversations.json';
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const nowISO = () => new Date().toISOString();
+const digits9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 
 function lastInboundAt(convo) {
   const inbound = (convo.messages || []).filter((m) => m.direction === 'in');
@@ -28,6 +36,11 @@ function within24h(convo) {
   const last = lastInboundAt(convo);
   if (!last) return false;
   return Date.now() - new Date(last).getTime() < WINDOW_MS;
+}
+// until when she can get a free answer (ISO), '' when the window is closed
+function windowEnds(convo) {
+  const last = lastInboundAt(convo);
+  return last && Date.now() - new Date(last).getTime() < WINDOW_MS ? new Date(new Date(last).getTime() + WINDOW_MS).toISOString() : '';
 }
 
 function lastMessage(convo) {
@@ -45,8 +58,34 @@ function listItem(convo) {
     unreadCount: convo.unreadCount || 0,
     lastText: last ? last.text : '',
     lastDirection: last ? last.direction : '',
+    lastStatus: last ? last.status : '',
     within24h: within24h(convo),
   };
+}
+
+// which clinic numbers are connected (nothing secret), and the templates approved for at least one
+async function setup() {
+  const [cfg, doc] = await Promise.all([WA.loadConfig(), WT.load()]);
+  const ready = WA.readyNumbers(cfg);
+  const numbers = {};
+  WA.CITIES.forEach((c) => { const n = cfg.numbers[c] || {}; numbers[c] = { connected: ready.includes(c), display: n.display || '' }; });
+  const templates = (doc.templates || []).map((t) => WT.view(t, cfg))
+    .filter((t) => Object.values(t.cities || {}).some((s) => s === 'APPROVED'))
+    .map((t) => ({ id: t.id, label: t.label, text: t.text, header: t.header || '', footer: t.footer || '', category: t.category, cities: t.cities, vars: t.map || [] }));
+  return { numbers, templates, ready };
+}
+
+// what the portal knows about this phone: her lead, her next (or last) appointment
+async function whoIs(phone) {
+  const key = digits9(phone);
+  if (key.length < 9) return {};
+  const [leads, appts] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', [])]);
+  const lead = leads.filter((l) => digits9(l.phone) === key).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0] || null;
+  const mine = appts.filter((a) => digits9(a.clientPhone) === key && a.status !== 'anulata' && a.status !== 'concediu');
+  const today = new Date().toISOString().slice(0, 10);
+  const next = mine.filter((a) => a.date >= today).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+  const last = mine.filter((a) => a.date < today).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))[0];
+  return { lead, appointment: next || last || null };
 }
 
 module.exports = async (req, res) => {
@@ -59,15 +98,20 @@ module.exports = async (req, res) => {
   if (!session) return;
   const body = req.body || {};
   const { action } = body;
-  const fail = (code, error) => res.status(code).json({ error });
+  const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
 
   try {
     if (action === 'list') {
       const conversations = await readJSON(KEY, []);
+      const leads = await readJSON('data/leads.json', []);
+      const names = new Map();
+      leads.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).forEach((l) => { if (l.name && digits9(l.phone).length === 9) names.set(digits9(l.phone), String(l.name).trim()); });
       const list = conversations
+        .map((c) => (c.clientName && c.clientName !== c.phone ? c : Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || c.phone })))
         .map(listItem)
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));
-      res.status(200).json({ ok: true, conversations: list });
+      const s = await setup();
+      res.status(200).json({ ok: true, conversations: list, numbers: s.numbers, templates: s.templates });
       return;
     }
 
@@ -81,13 +125,20 @@ module.exports = async (req, res) => {
         convo.unreadCount = 0;
         await writeJSON(KEY, conversations);
       }
+      const who = await whoIs(phone);
+      if ((!convo.clientName || convo.clientName === convo.phone) && who.lead && who.lead.name) convo.clientName = who.lead.name;
+      const employees = await readJSON('data/employees.json', []);
+      const nameOf = (id) => (id === 'admin' ? 'Admin' : ((employees.find((e) => e.id === id) || {}).name || ''));
       res.status(200).json({
         ok: true,
         phone: convo.phone,
         clientName: convo.clientName || convo.phone,
         location: convo.location || '',
         within24h: within24h(convo),
-        messages: convo.messages || [],
+        windowEnds: windowEnds(convo),
+        messages: (convo.messages || []).map((m) => (m.sentBy ? Object.assign({}, m, { sentByName: nameOf(m.sentBy) }) : m)),
+        lead: who.lead ? { id: who.lead.id, name: who.lead.name, interest: who.lead.interest || '' } : null,
+        appointment: who.appointment ? { id: who.appointment.id, date: who.appointment.date, time: who.appointment.time, treatment: who.appointment.treatment || '' } : null,
       });
       return;
     }
@@ -102,11 +153,11 @@ module.exports = async (req, res) => {
       const conversations = await readJSON(KEY, []);
       const convo = conversations.find((c) => c.phone === phone);
       if (!convo) return fail(404, 'conversation_not_found');
-      if (!within24h(convo)) return fail(409, 'outside_24h_window');
+      if (!within24h(convo)) return fail(409, 'outside_24h_window', 'Au trecut 24 de ore de la ultimul ei mesaj: trimite un șablon.');
 
       // the answer leaves from the number she wrote to (Timișoara / Arad)
       const result = await sendWhatsApp({ phone, text, from: convo.location || '' });
-      if (!result.sent) return fail(502, 'send_failed');
+      if (!result.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis mesajul' + (result.error ? ': ' + result.error : '.'));
 
       convo.messages.push({
         id: result.id || crypto.randomUUID(),
@@ -120,6 +171,50 @@ module.exports = async (req, res) => {
       convo.lastMessageAt = nowISO();
       await writeJSON(KEY, conversations);
       res.status(200).json({ ok: true, messages: convo.messages });
+      return;
+    }
+
+    // an approved template: after 24h, or to write first (a new conversation)
+    if (action === 'send_template') {
+      const raw = String(body.phone || '').trim();
+      const phone = normalizePhone(raw) || raw;
+      if (!toE164(phone)) return fail(400, 'invalid_phone', 'Numărul de telefon nu pare corect.');
+      const s = await setup();
+      if (!s.ready.length) return fail(409, 'not_connected', 'WhatsApp nu e conectat încă (Integrări → WhatsApp).');
+      const conversations = await readJSON(KEY, []);
+      let convo = conversations.find((c) => c.phone === phone);
+      const who = await whoIs(phone);
+      const city = (convo && convo.location) || (WA.CITIES.includes(body.location) ? body.location : '') ||
+        (who.appointment && who.appointment.location) || (who.lead && who.lead.location) || s.ready[0];
+      if (!s.ready.includes(city)) return fail(409, 'not_connected', 'Numărul de WhatsApp pentru ' + city + ' nu e conectat încă.');
+      const doc = await WT.load();
+      const tpl = (doc.templates || []).find((t) => t.id === body.templateId);
+      if (!tpl) return fail(404, 'template_not_found', 'Șablonul nu mai există.');
+      const cfg = await WA.loadConfig();
+      const n = cfg.numbers[city];
+      if (!WT.approvedFor(tpl, n.wabaId)) return fail(409, 'not_approved', 'Șablonul „' + tpl.label + '” nu e aprobat pentru numărul ' + city + '.');
+      // her details, as the automations fill them
+      const W = require('./_lib/workflows');
+      const settings = (await W.loadDoc()).settings || {};
+      const name = String(body.name || (convo && convo.clientName !== convo.phone && convo.clientName) || (who.lead && who.lead.name) || (who.appointment && who.appointment.clientName) || '').trim().slice(0, 120);
+      const ctx = { lead: who.lead, appointment: who.appointment && Object.assign({ clientName: name }, who.appointment), clients: [] };
+      if (!ctx.lead && !ctx.appointment) ctx.lead = { name, phone, location: city };
+      const v = W.vars(ctx, settings);
+      if (name) { v.prenume = name.split(/\s+/)[0]; v.nume = name; }
+      v.locatie = v.locatie || city; v.adresa = (settings.addresses || {})[v.locatie] || v.adresa || v.locatie;
+      const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city });
+      if (!r.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis șablonul' + (r.error ? ': ' + r.error : '.'));
+      if (!convo) {
+        convo = { phone, clientName: name || phone, location: city, lastMessageAt: nowISO(), unreadCount: 0, messages: [] };
+        conversations.push(convo);
+      }
+      if (!convo.location) convo.location = city;
+      if (name && (!convo.clientName || convo.clientName === convo.phone)) convo.clientName = name;
+      const text = WT.friendly(tpl).replace(/\{(\w+)\}/g, (m, k) => v[k] || '-');
+      convo.messages.push({ id: r.id || crypto.randomUUID(), direction: 'out', type: 'template', templateId: tpl.id, text: [tpl.header, text, tpl.footer].filter(Boolean).join('\n'), status: 'sent', timestamp: nowISO(), sentBy: session.employeeId });
+      convo.lastMessageAt = nowISO();
+      await writeJSON(KEY, conversations);
+      res.status(200).json({ ok: true, phone: convo.phone, messages: convo.messages });
       return;
     }
 

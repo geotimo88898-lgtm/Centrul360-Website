@@ -222,8 +222,13 @@ module.exports = async (req, res) => {
     // it's close (within 3 a day), the tone following the days left in the month. One short line.
     const bonusNotes = salary ? bookingNotes(salary.months[0].booking, month, today) : [];
 
+    // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city)
+    const waConvos = await readJSON('data/whatsapp-conversations.json', []);
+    const myCity = !isAdmin && me.role === 'receptie' ? me.location : '';
+    const waUnread = waConvos.filter((c) => c.unreadCount && (!myCity || !c.location || c.location === myCity)).length;
     const payload = {
       // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
+      waUnread,
       notifications: isAdmin ? await myNotifications({ readJSON }, me.id) : bonusNotes.concat(await myNotifications({ readJSON }, me.id)),
       salary,
       me: { id: me.id, name: me.name, location: me.location, role: me.role, username: me.username || '', photo: photoOf(me), prefs: me.prefs || {} },

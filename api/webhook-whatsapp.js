@@ -83,17 +83,30 @@ async function pushMessages(fresh) {
   }
 }
 
+// her lead's name (same phone, newest lead), when the client directory has none
+async function leadName(phone) {
+  const key = String(phone || '').replace(/\D/g, '').slice(-9);
+  if (key.length < 9) return '';
+  const leads = await readJSON('data/leads.json', []);
+  const lead = leads.filter((l) => String(l.phone || '').replace(/\D/g, '').slice(-9) === key && l.name)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+  return lead ? String(lead.name).trim() : '';
+}
+
 async function handleInboundMessage(conversations, message, phoneNumberId) {
   const from = message && message.from;
   if (!from) return;
   const phone = normalizePhone(from) || from;
+  // Meta sends a message again when our answer was slow: it counts once
+  const dup = message.id && conversations.some((c) => (c.messages || []).some((m) => m.id === message.id));
+  if (dup) return;
   const convo = findOrCreateConversation(conversations, phone);
 
   // Resolve a display name from the client directory (upsert so a client that messages in
   // doesn't need to exist yet), fall back to the raw phone number when nothing resolves.
   try {
     const client = await upsertClient({ name: convo.clientName, phone: from }, { readJSON, writeJSON });
-    convo.clientName = (client && client.name) || convo.clientName || phone;
+    convo.clientName = (client && client.name) || (convo.clientName && convo.clientName !== phone ? convo.clientName : '') || (await leadName(phone)) || phone;
   } catch (err) {
     console.error('webhook-whatsapp: client resolution failed', err.message);
     if (!convo.clientName) convo.clientName = phone;

@@ -141,7 +141,7 @@
   // Every save anywhere bumps a revision on the server; each open portal checks it every few
   // seconds and refreshes what's on screen when it moves, never while someone is mid-edit.
   // (the drawer's panel stays in the page once opened, so only an open one counts)
-  const busyEditing = () => K.typing(document.activeElement) || !!document.querySelector('.k-drawer-root.is-open .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
+  const busyEditing = () => (K.typing(document.activeElement) && !document.activeElement.closest('.mx-compose')) || !!document.querySelector('.k-drawer-root.is-open .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
   function applyRemote() {
     if (busyEditing()) { pendingRemote = true; return; }
     pendingRemote = false;
@@ -231,6 +231,7 @@
   // ------------------------------------------------------------------ nav badges
   async function badges() {
     if (!DATA) return;
+    K.badge('mesaje', DATA.waUnread || 0); // conversations with unread client messages
     if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length + (DATA.admin.pendingTime || 0) + (DATA.admin.pendingLeave || 0), 'hot');
     if (!frontDesk()) return; // cosmeticians: no pipeline badge / task queue
     if (DATA.me.role === 'receptie') { // Sarcini is the receptionist's own list

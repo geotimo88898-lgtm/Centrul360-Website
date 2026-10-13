@@ -904,7 +904,7 @@
     boardEl && boardEl.querySelectorAll('.pl-card.is-current').forEach((c) => c.classList.remove('is-current'));
   }
   function openLead(id, opts) {
-    if (!leadById(id)) return;
+    if (!leadById(id)) return false;
     const o = opts || {};
     S.drawer = { mode: 'lead', id, section: o.section || '', tab: o.section === 'log' ? 'contact' : o.section === 'details' ? 'details' : '', channel: o.channel || 'call', queue: o.queue || (S.drawer && S.drawer.queue) || null, dirty: false };
     openDrawerShell();
@@ -912,6 +912,7 @@
     boardEl.querySelectorAll('.pl-card.is-current').forEach((c) => c.classList.remove('is-current'));
     const c = boardEl.querySelector('.pl-card[data-id="' + id + '"]');
     if (c) c.classList.add('is-current');
+    return true;
   }
   function openNew(stageId) {
     S.drawer = { mode: 'new', stageId: stageId || '', dirty: false };
