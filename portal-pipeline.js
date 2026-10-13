@@ -278,7 +278,7 @@
     root.innerHTML =
       '<div class="pl-head">' +
         '<div><div class="k-eyebrow">Vânzări</div><h2>Pipeline</h2>' +
-        '<p class="pl-lede">Fiecare lead, de la formular la client. Sună întâi pe cei noi, viteza închide vânzarea.</p></div>' +
+        '</div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
           (S.ctx.isAdmin ? '<button type="button" class="pl-btn is-ghost" data-act="stages" title="Editează etapele">' + ic('sliders') + '<span>Etape</span></button>' : '') +

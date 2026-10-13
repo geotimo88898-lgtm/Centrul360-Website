@@ -103,7 +103,7 @@
     panel.classList.add('k-panel', 'ac');
     panel.innerHTML =
       '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Traininguri</h2>' +
-      '<p class="k-lede">Tot ce trebuie să știi ca să vinzi, să programezi și să lucrezi în cabină. Citește aici sau descarcă orice capitol ca PDF.</p></div></div>' +
+      '</div></div>' +
       '<div class="ac-manuals" data-manuals></div><div data-manual></div>';
     panel.addEventListener('click', onClick);
   }

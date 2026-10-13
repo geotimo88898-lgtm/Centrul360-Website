@@ -43,7 +43,7 @@
     panel = p;
     panel.classList.add('k-panel', 'ad');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Reclame</h2><p class="k-lede">Campaniile din contul de reclame: pornești, oprești, schimbi bugetul și vezi leadurile. Reclamele noi le publici din Creative, cu „Publică pe Meta”.</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Reclame</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="defaults">' + icon('sliders') + 'Setări implicite</button>' +
       '<button type="button" class="k-btn is-accent" data-act="creative">' + icon('sparkles') + 'Publică un creative</button></div></div>' +
       '<div data-body><div class="k-skel" style="height:110px;margin-bottom:1rem"></div><div class="k-skel" style="height:360px"></div></div>';

@@ -15,7 +15,6 @@
     panel = p;
     panel.classList.add('fm');
     panel.innerHTML =
-      '<p class="k-muted fm-lede">Procedura și orașul cu care intră leadurile fiecărui formular, întrebările lui și leadurile primite.</p>' +
       '<div data-body><div class="k-skel" style="height:120px;margin-bottom:1rem"></div><div class="k-skel" style="height:360px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);

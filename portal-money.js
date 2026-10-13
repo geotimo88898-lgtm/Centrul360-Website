@@ -60,7 +60,7 @@
     if (locked) S.loc = K.data.city;
     S.from = K.thisMonth() + '-01'; S.to = K.today();
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Încasări</h2><p class="k-lede">Fiecare plată, în timp real. Alege orașul și perioada.</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Încasări</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="customize">' + icon('sliders') + 'Personalizează</button><button type="button" class="k-btn is-outline" data-act="csv">' + icon('download') + 'Export</button>' +
       '<button type="button" class="k-btn is-outline" data-act="print">' + icon('printer') + 'Printează</button>' +
       '<button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Încasare<kbd>N</kbd></button></div></div>' +
@@ -524,7 +524,7 @@
     cpanel = p;
     cpanel.classList.add('k-panel', 'mo', 'cb');
     cpanel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Salariul meu</h2><p class="k-lede">Ce primești în mână luna asta și din ce se adună.</p></div><div class="k-head-actions"><button type="button" class="k-btn is-outline" data-sal-custom>' + icon('sliders') + 'Personalizează</button></div></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Salariul meu</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline" data-sal-custom>' + icon('sliders') + 'Personalizează</button></div></div>' +
       '<div data-body></div>';
     cpanel.addEventListener('click', (e) => {
       const m = e.target.closest('[data-m]');

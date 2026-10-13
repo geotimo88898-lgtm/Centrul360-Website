@@ -48,7 +48,7 @@
     injectStyle();
     panel.classList.add('k-panel', 'wa');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Mesaje</h2><p class="k-lede">WhatsApp, conversațiile cu clienții, direct din portal.</p></div></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Mesaje</h2></div></div>' +
       '<div data-body><div class="k-skel" style="height:220px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('submit', onSubmit);

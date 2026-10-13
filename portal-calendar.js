@@ -49,7 +49,7 @@
     if (K.data && !K.data.isAdmin && K.data.me.role === 'cosmetician') S.emp = K.data.me.id;
     if (window.innerWidth < 720) S.view = 'day';
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2><p class="k-lede">' + (canEdit() ? 'Click pe un loc liber ca să programezi. Trage o programare ca s-o muți.' : 'Programările tale și ale echipei. Modificările le face recepția.') + '</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2></div>' +
       (canEdit() ? '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +

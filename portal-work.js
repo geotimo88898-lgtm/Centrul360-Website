@@ -32,7 +32,7 @@
     tpanel = p;
     tpanel.classList.add('k-panel', 'wk');
     tpanel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Sarcini</h2><p class="k-lede">Ce ai de făcut azi: mesajele de trimis (textul e deja scris) și sarcinile adăugate de tine.</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Sarcini</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="refresh">' + icon('refresh') + 'Actualizează</button>' +
       '<button type="button" class="k-btn is-accent" data-act="add">' + icon('plus') + 'Adaugă sarcină</button></div></div>' +
       '<div data-body><div class="k-skel" style="height:140px"></div></div>';
@@ -217,7 +217,7 @@
   function mountOffers(p) {
     opanel = p;
     opanel.classList.add('k-panel', 'rs');
-    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Oferte</h2><p class="k-lede">Ofertele active, la fel ca pe site. Prețurile de aici sunt singurele corecte.</p></div>' +
+    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Oferte</h2></div>' +
       '<div class="k-head-actions"><label class="k-search">' + icon('search') + '<input data-q placeholder="Caută o ofertă…"></label></div></div><div data-body></div>';
     opanel.querySelector('[data-q]').addEventListener('input', (e) => { oq = e.target.value.trim(); renderOffers(); });
     opanel.addEventListener('click', (e) => { const cp = e.target.closest('[data-copy]'); if (cp) K.copy(cp.dataset.copy); });

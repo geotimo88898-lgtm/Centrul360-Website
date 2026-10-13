@@ -44,7 +44,7 @@
     const thisMonth = K.thisMonth().split('-');
     C.year = Number(thisMonth[0]); C.month = Number(thisMonth[1]);
     panel.innerHTML =
-      (embedded ? '' : '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Condică</h2><p class="k-lede">Pontajul tău, orele de recuperat, orele suplimentare și cererile de concediu.</p></div></div>') +
+      (embedded ? '' : '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Condică</h2></div></div>') +
       '<div data-body><div class="k-skel" style="height:180px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);

@@ -57,7 +57,7 @@
     panel = p;
     panel.classList.add('k-panel', 'au', 'ad');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Automatizări</h2><p class="k-lede">Ce se întâmplă singur, pe foldere. Apeși pe o automatizare și o construiești pe schemă.</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Automatizări</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="customize">' + icon('sliders') + 'Coloane și KPI</button>' +
       '<button type="button" class="k-btn is-outline" data-act="folder-new">' + icon('folder') + 'Folder nou</button>' +
       '<button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Automatizare nouă</button></div></div>' +

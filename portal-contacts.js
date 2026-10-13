@@ -28,7 +28,7 @@
     panel.classList.add('k-panel', 'ct');
     const admin = K.data && K.data.isAdmin;
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Contacte</h2><p class="k-lede">Toate clientele și leadurile. Deschide un contact ca să scanezi fișa, să scrii mențiuni sau să urci pozele înainte/după.</p></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Contacte</h2></div>' +
       '<div class="k-head-actions">' + (admin ? '<button type="button" class="k-btn is-outline" data-act="import">' + icon('download') + 'Importă din HighLevel</button>' : '') +
       '<button type="button" class="k-btn is-accent" data-act="new">' + icon('userPlus') + 'Contact nou</button></div></div>' +
       '<div class="ct-bar"><label class="k-search ct-search">' + icon('search') + '<input data-q type="search" placeholder="Caută după nume, telefon sau email…" autocomplete="off"></label>' +

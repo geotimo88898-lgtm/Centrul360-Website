@@ -20,7 +20,7 @@
   function mountApprovals(p) {
     apanel = p;
     apanel.classList.add('k-panel', 'ad');
-    apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2><p class="k-lede">Comisioanele din upsell așteaptă aici aprobarea ta: devin oficiale în contul angajatei abia după ce le aprobi. Mai jos, cererile de concediu.</p></div>' +
+    apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2></div>' +
       '<div class="k-head-actions" data-head></div></div><div data-body></div>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Pontaj: ore peste / sub program</h3><span class="k-sub">luni-vineri 8 ore, sâmbăta totul e suplimentar</span></div><div data-time></div></section>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('calendar') + 'Cereri de concediu</h3></div><div data-leave></div></section>';
@@ -234,7 +234,7 @@
   function mountTeam(p) {
     epanel = p;
     epanel.classList.add('k-panel', 'ad');
-    epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2><p class="k-lede">Oamenii, salariile și condica, într-un singur loc.</p></div>' +
+    epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
       '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
       '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
@@ -466,7 +466,7 @@
   function mountOffers(p) {
     opanel = p;
     opanel.classList.add('k-panel', 'of');
-    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Oferte</h2><p class="k-lede">O singură listă pentru site (oferte.html, prețuri), recepție, comisioane și Creative. Schimbi aici, se schimbă peste tot.</p></div>' +
+    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Oferte</h2></div>' +
       '<div class="k-head-actions"><a class="k-btn is-outline" href="/oferte" target="_blank" rel="noopener">' + icon('eye') + 'Vezi pe site</a><button type="button" class="k-btn is-accent" data-new>' + icon('plus') + 'Ofertă nouă</button></div></div>' +
       '<div class="of-flow">' + ['Site public', 'Recepție & încasări', 'Comision', 'Creative · reclame'].map((x, i) => '<span>' + icon(['globe', 'wallet', 'percent', 'sparkles'][i] || 'tag') + x + '</span>').join(icon('arrow')) + '</div>' +
       '<div data-body><div class="k-skel" style="height:260px"></div></div>';
@@ -661,7 +661,7 @@
   function mountIntegrations(p) {
     ipanel = p;
     ipanel.classList.add('k-panel', 'st');
-    ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Integrări</h2><p class="k-lede">Ce e conectat la portal: leadurile din Facebook, WhatsApp, Creative și site-ul.</p></div></div>' +
+    ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Integrări</h2></div></div>' +
       '<div class="st-tabs">' + K.seg('intab', [['int', 'Integrări', 'layers'], ['forms', 'Formulare Facebook', 'file']], I.tab) + '</div>' +
       '<div data-pane="int"><div data-int-body></div></div><div data-pane="forms" hidden></div>';
     ipanel.addEventListener('change', (e) => { if (e.target.name === 'intab') setTab(e.target.value); });
