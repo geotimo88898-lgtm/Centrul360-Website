@@ -568,7 +568,7 @@ body::before{
   .c360-mnav-backdrop{ display:none; }
   .c360-tabbar{ transition:transform .25s var(--ease); }
   html.c360-mnav-open .c360-tabbar{ transform:translateY(110%); }
-  nav.tabs .c360-mhead{ position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:.6rem; margin:0 -.9rem .2rem; padding:.9rem .9rem .5rem; background:var(--ink); }
+  nav.tabs .c360-mhead{ display:flex; align-items:center; gap:.6rem; margin:0 -.9rem .2rem; padding:.9rem .9rem .5rem; background:var(--ink); }
   nav.tabs .c360-mhead b{ font-size:1.4rem; font-weight:750; letter-spacing:-.02em; }
   nav.tabs .c360-mhead .c360-mclose{ margin-left:auto; flex:none; display:grid; place-items:center; width:40px; min-height:40px; height:40px; padding:0; border-radius:50%;
     border:1px solid var(--line); background:var(--paper); color:var(--fg); }
