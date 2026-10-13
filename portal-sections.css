@@ -1296,6 +1296,9 @@ main.ad-full{ max-width:none; }
 .cal-fab, .cal-mbox{ display:none; }
 @media (max-width:720px){
   .cal .k-head-actions{ display:none; }
+  /* one scroll on a phone, the page: the day's grid is as tall as it needs, its heads stay under the header */
+  .cal-wrap{ overflow:clip; max-height:none; min-height:0; }
+  .cal-corner, .cal-colhead{ top:60px; }
   .cal-fab{ position:fixed; right:1rem; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:29; display:grid; place-items:center; width:56px; height:56px;
     border:0; border-radius:18px; background:var(--grad, var(--accent)); color:var(--accent-ink, #fff); box-shadow:0 12px 28px -8px color-mix(in srgb, var(--accent) 70%, transparent); cursor:pointer; }
   .cal-fab .k-ic{ width:24px; height:24px; }
