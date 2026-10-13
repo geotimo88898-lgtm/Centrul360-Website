@@ -9,7 +9,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { getSession } = require('./_lib/auth');
-const { loadConnection } = require('./_lib/facebook');
+const { loadConnection, appCreds } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
 const ads = require('./_lib/meta-ads');
 
@@ -29,15 +29,18 @@ const REASONS = {
   not_connected: 'Facebook nu e conectat (Integrări → Facebook).',
   no_user_token: 'Conexiunea Facebook nu are încă permisiunea de reclame. Reconectează din Integrări → Facebook (cu ads_management).',
   no_ad_account: 'Alege contul de reclame în Integrări → Facebook → Setări conexiune.',
+  token_expired: 'Conexiunea pentru reclame a expirat. Reconectează din Integrări → Facebook.',
   ad_account_inactive: 'Contul de reclame nu e activ în Meta.',
 };
 
 async function options() {
   const conn = await loadConnection(readJSON);
   if (!conn.pageId) return { ok: true, ready: false, reason: 'not_connected', message: REASONS.not_connected };
-  const [info, poll, reg, offers] = await Promise.all([
-    ads.accountInfo(conn), readJSON('data/fb-poll.json', {}), readJSON('data/fb-forms.json', {}), loadOffers(readJSON, writeJSON),
+  const [info, poll, reg, offers, defaults] = await Promise.all([
+    ads.accountInfo(conn), readJSON('data/fb-poll.json', {}), readJSON('data/fb-forms.json', {}), loadOffers(readJSON, writeJSON), ads.loadDefaults(readJSON),
   ]);
+  // ad sets an ad can join, and how long the ads connection still works
+  const [adsets, token] = info.ready ? await Promise.all([ads.listAdsets(conn), ads.tokenInfo(conn.userToken, await appCreds(readJSON))]) : [[], null];
   const offerTitle = (id) => ((offers.find((o) => o.id === id) || {}).title || '');
   const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').map((f) => {
     const r = (reg.forms || {})[f.id] || {};
@@ -51,6 +54,7 @@ async function options() {
     forms,
     offers: offers.filter((o) => o.active !== false).map((o) => ({ title: o.title, key: o.key, category: o.category || '' })),
     cities: Object.keys(ads.CITIES), placements: Object.keys(ads.PLACEMENTS), ctas: ads.CTAS,
+    defaults, adsets, tokenExpiresAt: token && token.expiresAt ? new Date(token.expiresAt).toISOString() : '',
   };
 }
 

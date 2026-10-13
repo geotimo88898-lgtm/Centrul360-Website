@@ -1,13 +1,18 @@
-// Publishing a creative to Meta (Creative → "Publică pe Meta"), the way the owner builds her ads in
-// Ads Manager: one campaign (leads), one ad set (a radius around Timișoara or Arad, women only, an
-// age range, Facebook + Instagram feed / stories / reels, a daily budget), one ad (the image, the
-// texts, the Facebook lead form). Everything is created paused and switched on only at the end, so
-// a step Meta refuses never leaves a half-made ad running; whatever was made is deleted again.
+// Meta ads from the portal: publishing a creative (Creative → "Publică pe Meta") and the small Ads
+// Manager in Admin → Reclame (campaigns, ad sets, ads: on / off, budget, results).
 //
-// It uses the user token kept at connect (Integrări → Facebook, needs ads_management) and the
-// connected Page; the ad account is the one chosen there.
+// Publishing builds what the owner builds by hand in Ads Manager: one campaign (leads), one ad set (a
+// radius around Timișoara or Arad, women only, an age range, Facebook + Instagram feed / stories /
+// reels, a daily budget), one ad (the image, the texts, the Facebook lead form). Or just the ad, in
+// an ad set she already has. Everything is created paused and switched on only at the end, so a
+// step Meta refuses never leaves a half-made ad running; whatever was made is deleted again.
+//
+// It uses the user token kept at connect (Integrări → Facebook, with ads_management) and the
+// connected Page; the ad account is the one chosen there. Defaults for the publish window live in
+// data/ads-defaults.json (Admin → Reclame → Setări implicite).
 
 const ADS_GRAPH = 'https://graph.facebook.com/v25.0';
+const DEFAULTS_KEY = 'data/ads-defaults.json';
 
 // city centres; the radius is set per ad set (the owner uses about 6-7 km)
 const CITIES = {
@@ -19,20 +24,31 @@ const PLACEMENTS = {
   ig_feed: ['instagram', 'stream'], ig_story: ['instagram', 'story'], ig_reels: ['instagram', 'reels'],
 };
 const CTAS = ['LEARN_MORE', 'SIGN_UP', 'BOOK_NOW', 'GET_OFFER', 'APPLY_NOW', 'GET_QUOTE'];
+const PERIODS = { today: 'today', yesterday: 'yesterday', '7d': 'last_7d', '30d': 'last_30d', max: 'maximum' };
+// a lead from an instant form, as Meta counts it in the results (first one found)
+const LEAD_ACTIONS = ['onsite_conversion.lead_grouped', 'lead', 'leadgen_grouped', 'onsite_conversion.lead'];
+
+const DEFAULTS = {
+  budget: 50, radiusKm: 7, women: true,
+  ages: { body: [28, 64], facial: [20, 60] },
+  placements: Object.keys(PLACEMENTS), cta: 'LEARN_MORE', startNow: true,
+  // {oferta} {oras} {data} {km} {varsta} {hook}
+  names: { campaign: '{oferta} · {oras} · {data}', adset: '{oras} {km} km · femei {varsta}', ad: '{hook}' },
+};
 
 // A Meta error as one sentence the owner can act on.
 function metaError(j, step) {
   const e = (j && j.error) || {};
   const msg = e.error_user_msg || e.error_user_title || e.message || 'eroare necunoscută';
-  return step + ': ' + msg;
+  return (step ? step + ': ' : '') + msg;
 }
 
 async function call(method, path, token, params) {
-  const url = ADS_GRAPH + path;
+  const url = /^https:/.test(path) ? path : ADS_GRAPH + path;
   const opts = { method };
   if (method === 'GET' || method === 'DELETE') {
     const q = new URLSearchParams(Object.assign({ access_token: token }, params || {}));
-    const r = await fetch(url + '?' + q, opts);
+    const r = await fetch(url + (url.includes('?') ? '&' : '?') + q, opts);
     return { ok: r.ok, j: await r.json().catch(() => ({})) };
   }
   const body = new URLSearchParams({ access_token: token });
@@ -42,28 +58,86 @@ async function call(method, path, token, params) {
   const r = await fetch(url, opts);
   return { ok: r.ok, j: await r.json().catch(() => ({})) };
 }
+// every page of a list (Meta pages at `limit`)
+async function all(path, token, params, max) {
+  const out = [];
+  let r = await call('GET', path, token, params);
+  for (let i = 0; i < (max || 5); i++) {
+    if (!r.ok) return { error: metaError(r.j) };
+    out.push(...(r.j.data || []));
+    const next = r.j.paging && r.j.paging.next;
+    if (!next) break;
+    r = await call('GET', next, token, {});
+  }
+  return { data: out };
+}
 
+// ---------------------------------------------------------------- the token
+// How long the token kept for ads still works (0 = never, a System User token) and what it may do.
+async function tokenInfo(token, creds) {
+  if (!token || !creds || !creds.appId || !creds.appSecret) return null;
+  const r = await call('GET', '/debug_token', creds.appId + '|' + creds.appSecret, { input_token: token });
+  const d = (r.ok && r.j.data) || {};
+  if (!r.ok) return null;
+  return { valid: !!d.is_valid, expiresAt: d.expires_at ? d.expires_at * 1000 : 0, scopes: d.scopes || [], type: d.type || '' };
+}
+
+// ---------------------------------------------------------------- defaults
+function cleanDefaults(x) {
+  const d = JSON.parse(JSON.stringify(DEFAULTS));
+  const i = x || {};
+  if (Number(i.budget) >= 5) d.budget = Math.round(Number(i.budget) * 100) / 100;
+  if (Number(i.radiusKm) >= 1) d.radiusKm = Math.min(80, Math.round(Number(i.radiusKm)));
+  if (typeof i.women === 'boolean') d.women = i.women;
+  const age = (v, def) => (Array.isArray(v) && v.length === 2 ? [Math.min(65, Math.max(18, Math.round(+v[0] || def[0]))), Math.min(65, Math.max(18, Math.round(+v[1] || def[1])))].sort((a, b) => a - b) : def);
+  if (i.ages) { d.ages.body = age(i.ages.body, d.ages.body); d.ages.facial = age(i.ages.facial, d.ages.facial); }
+  if (Array.isArray(i.placements)) { const p = i.placements.filter((k) => PLACEMENTS[k]); if (p.length) d.placements = p; }
+  if (CTAS.includes(i.cta)) d.cta = i.cta;
+  if (typeof i.startNow === 'boolean') d.startNow = i.startNow;
+  if (i.names) ['campaign', 'adset', 'ad'].forEach((k) => { const v = String(i.names[k] || '').trim().slice(0, 120); if (v) d.names[k] = v; });
+  return d;
+}
+const loadDefaults = async (readJSON) => cleanDefaults(await readJSON(DEFAULTS_KEY, {}));
+
+// ---------------------------------------------------------------- account
 // What the publish window needs to know about the account (and whether publishing can work at all).
 async function accountInfo(conn) {
   if (!conn.userToken) return { ready: false, reason: 'no_user_token' };
   if (!conn.adAccountId) return { ready: false, reason: 'no_ad_account' };
   const acc = await call('GET', '/' + conn.adAccountId, conn.userToken, { fields: 'name,currency,account_status' });
-  if (!acc.ok) return { ready: false, reason: 'ad_account_error', message: metaError(acc.j, 'Contul de reclame') };
+  if (!acc.ok) {
+    const code = acc.j && acc.j.error && acc.j.error.code;
+    return { ready: false, reason: code === 190 ? 'token_expired' : 'ad_account_error', message: metaError(acc.j, 'Contul de reclame') };
+  }
   const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account{id,username}' });
   const igAcc = ig.ok && ig.j.instagram_business_account ? { id: ig.j.instagram_business_account.id, username: ig.j.instagram_business_account.username || '' } : null;
+  const active = acc.j.account_status === 1 || acc.j.account_status === undefined;
   return {
-    ready: acc.j.account_status === 1 || acc.j.account_status === undefined,
-    reason: acc.j.account_status && acc.j.account_status !== 1 ? 'ad_account_inactive' : '',
+    ready: active, reason: active ? '' : 'ad_account_inactive',
     adAccount: { id: conn.adAccountId, name: acc.j.name || conn.adAccountName || conn.adAccountId, currency: acc.j.currency || 'RON' },
     page: { id: conn.pageId, name: conn.pageName },
     instagram: igAcc,
   };
 }
 
+// The ad sets an ad can join (not deleted), newest first, with their campaign.
+async function listAdsets(conn) {
+  const r = await all('/' + conn.adAccountId + '/adsets', conn.userToken, {
+    fields: 'id,name,effective_status,daily_budget,created_time,campaign{id,name,objective}', limit: '100',
+    filtering: JSON.stringify([{ field: 'effective_status', operator: 'IN', value: ['ACTIVE', 'PAUSED', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES', 'PENDING_REVIEW', 'PREAPPROVED'] }]),
+  }, 2);
+  if (r.error) return [];
+  return r.data.filter((a) => !a.campaign || !a.campaign.objective || /LEAD/.test(a.campaign.objective))
+    .sort((a, b) => (a.created_time < b.created_time ? 1 : -1)).slice(0, 60)
+    .map((a) => ({ id: a.id, name: a.name, status: a.effective_status, campaign: (a.campaign && a.campaign.name) || '', budget: a.daily_budget ? Number(a.daily_budget) / 100 : 0 }));
+}
+
+// ---------------------------------------------------------------- publishing
 // The settings as the owner chose them, checked; returns { s } or { error }.
 function cleanSettings(x) {
   const s = {};
   const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  s.adsetId = /^\d{5,25}$/.test(String(x.adsetId || '')) ? String(x.adsetId) : '';
   s.campaignName = str(x.campaignName, 200);
   s.adsetName = str(x.adsetName, 200);
   s.adName = str(x.adName, 200);
@@ -80,12 +154,14 @@ function cleanSettings(x) {
   s.description = str(x.description, 255);
   s.cta = CTAS.includes(x.cta) ? x.cta : 'LEARN_MORE';
   s.startNow = x.startNow !== false;
-  if (!s.campaignName || !s.adsetName || !s.adName) return { error: 'missing_names' };
+  if (!s.adName) return { error: 'missing_names' };
+  if (!s.formId) return { error: 'missing_form' };
+  if (!s.primaryText) return { error: 'missing_text' };
+  if (s.adsetId) return { s }; // the audience, budget and placements are the ad set's own
+  if (!s.campaignName || !s.adsetName) return { error: 'missing_names' };
   if (!s.city) return { error: 'missing_city' };
   if (!s.placements.length) return { error: 'missing_placements' };
   if (!(s.budget >= 5)) return { error: 'budget_too_low' };
-  if (!s.formId) return { error: 'missing_form' };
-  if (!s.primaryText) return { error: 'missing_text' };
   return { s };
 }
 
@@ -112,31 +188,35 @@ async function publish(conn, image, s) {
   const tok = conn.userToken;
   const act = conn.adAccountId;
   const made = [];
-  const undo = async () => { for (const id of made.reverse()) await call('DELETE', '/' + id, tok).catch(() => {}); };
+  const undo = async () => { for (const id of made.slice().reverse()) await call('DELETE', '/' + id, tok).catch(() => {}); };
   try {
-    const acc = await call('GET', '/' + act, tok, { fields: 'currency' });
-    // budgets go to Meta in the currency's cents (50 lei → 5000)
-    const minor = Math.round(s.budget * 100);
-
     const img = await call('POST', '/' + act + '/adimages', tok, { bytes: image.base64, name: image.name || 'creative.jpg' });
     if (!img.ok) return { error: metaError(img.j, 'Imaginea') };
     const imgs = img.j.images || {};
     const hash = (imgs[Object.keys(imgs)[0]] || {}).hash;
     if (!hash) return { error: 'Imaginea: Meta n-a întors codul imaginii' };
 
-    const camp = await call('POST', '/' + act + '/campaigns', tok, {
-      name: s.campaignName, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: [], buying_type: 'AUCTION',
-      is_adset_budget_sharing_enabled: false,
-    });
-    if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
-    made.push(camp.j.id);
-
-    const adset = await call('POST', '/' + act + '/adsets', tok, {
-      name: s.adsetName, campaign_id: camp.j.id, daily_budget: String(minor), billing_event: 'IMPRESSIONS',
-      optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
-      promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED',
-    });
-    if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
+    let campaignId = '', adsetId = s.adsetId;
+    if (!adsetId) {
+      const camp = await call('POST', '/' + act + '/campaigns', tok, {
+        name: s.campaignName, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: [], buying_type: 'AUCTION',
+        is_adset_budget_sharing_enabled: false,
+      });
+      if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
+      campaignId = camp.j.id;
+      made.push(campaignId);
+      const adset = await call('POST', '/' + act + '/adsets', tok, {
+        name: s.adsetName, campaign_id: campaignId, daily_budget: String(Math.round(s.budget * 100)), billing_event: 'IMPRESSIONS',
+        optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
+        promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED',
+      });
+      if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
+      adsetId = adset.j.id;
+    } else {
+      const a = await call('GET', '/' + adsetId, tok, { fields: 'campaign_id' });
+      if (!a.ok) return { error: metaError(a.j, 'Setul de reclame ales') };
+      campaignId = a.j.campaign_id || '';
+    }
 
     const spec = {
       page_id: conn.pageId,
@@ -153,21 +233,122 @@ async function publish(conn, image, s) {
     if (!creative.ok) { await undo(); return { error: metaError(creative.j, 'Reclama (textele și imaginea)') }; }
     made.push(creative.j.id);
 
-    const ad = await call('POST', '/' + act + '/ads', tok, { name: s.adName, adset_id: adset.j.id, creative: { creative_id: creative.j.id }, status: 'ACTIVE' });
+    // in a new campaign the ad goes on with it; in an existing ad set it follows the choice
+    const ad = await call('POST', '/' + act + '/ads', tok, { name: s.adName, adset_id: adsetId, creative: { creative_id: creative.j.id }, status: s.adsetId && !s.startNow ? 'PAUSED' : 'ACTIVE' });
     if (!ad.ok) { await undo(); return { error: metaError(ad.j, 'Reclama') }; }
 
-    if (s.startNow) {
-      const a = await call('POST', '/' + adset.j.id, tok, { status: 'ACTIVE' });
-      const c = await call('POST', '/' + camp.j.id, tok, { status: 'ACTIVE' });
-      if (!a.ok || !c.ok) return { ok: true, campaignId: camp.j.id, adsetId: adset.j.id, adId: ad.j.id, started: false, warning: metaError(!a.ok ? a.j : c.j, 'Pornirea') };
+    if (s.startNow && !s.adsetId) {
+      const a = await call('POST', '/' + adsetId, tok, { status: 'ACTIVE' });
+      const c = await call('POST', '/' + campaignId, tok, { status: 'ACTIVE' });
+      if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: metaError(!a.ok ? a.j : c.j, 'Pornirea') };
     }
-    return { ok: true, campaignId: camp.j.id, adsetId: adset.j.id, adId: ad.j.id, started: s.startNow, currency: (acc.j && acc.j.currency) || '' };
+    return { ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow };
   } catch (err) {
     await undo();
     return { error: 'Rețea: ' + err.message };
   }
 }
 
+// ---------------------------------------------------------------- Admin → Reclame
+const leadsOf = (row) => {
+  const acts = (row && row.actions) || [];
+  for (const t of LEAD_ACTIONS) { const a = acts.find((x) => x.action_type === t); if (a) return Number(a.value) || 0; }
+  return 0;
+};
+function nearCity(lat, lng) {
+  const k = Object.keys(CITIES).find((c) => Math.abs(CITIES[c].lat - lat) < 0.08 && Math.abs(CITIES[c].lng - lng) < 0.1);
+  return k || '';
+}
+// who an ad set reaches, in a few words
+function audience(t) {
+  if (!t) return '';
+  const g = t.geo_locations || {};
+  const where = (g.custom_locations || []).map((c) => (nearCity(+c.latitude, +c.longitude) || 'pin') + ' ' + c.radius + ' ' + (c.distance_unit === 'mile' ? 'mile' : 'km'))
+    .concat((g.cities || []).map((c) => c.name + (c.radius ? ' +' + c.radius + ' ' + (c.distance_unit === 'mile' ? 'mile' : 'km') : '')))
+    .concat((g.regions || []).map((r) => r.name)).concat((g.countries || []).map((c) => c));
+  const who = Array.isArray(t.genders) && t.genders.length === 1 ? (t.genders[0] === 2 ? 'femei' : 'bărbați') : 'toți';
+  return [where.join(', '), who + ' ' + (t.age_min || 18) + '-' + (t.age_max || 65)].filter(Boolean).join(' · ');
+}
+
+// Campaigns with their ad sets and ads, and the results of the period, for the Reclame page.
+async function overview(conn, period) {
+  const tok = conn.userToken, act = conn.adAccountId;
+  const datePreset = PERIODS[period] || 'last_7d';
+  const live = JSON.stringify([{ field: 'effective_status', operator: 'NOT_IN', value: ['DELETED', 'ARCHIVED'] }]);
+  const [camps, sets, ads, iC, iS, iA, acc] = await Promise.all([
+    all('/' + act + '/campaigns', tok, { fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time', limit: '100', filtering: live }, 2),
+    all('/' + act + '/adsets', tok, { fields: 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', limit: '200', filtering: live }, 3),
+    all('/' + act + '/ads', tok, { fields: 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', limit: '200', filtering: live }, 3),
+    all('/' + act + '/insights', tok, { level: 'campaign', date_preset: datePreset, fields: 'campaign_id,spend,actions,impressions,clicks', limit: '200' }, 3),
+    all('/' + act + '/insights', tok, { level: 'adset', date_preset: datePreset, fields: 'adset_id,spend,actions', limit: '500' }, 3),
+    all('/' + act + '/insights', tok, { level: 'ad', date_preset: datePreset, fields: 'ad_id,spend,actions', limit: '500' }, 3),
+    call('GET', '/' + act, tok, { fields: 'name,currency,account_status,amount_spent' }),
+  ]);
+  if (camps.error) return { error: camps.error };
+  const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], { spend: Number(r.spend) || 0, leads: leadsOf(r), impressions: Number(r.impressions) || 0, clicks: Number(r.clicks) || 0 }]));
+  const rC = res(iC, 'campaign_id'), rS = res(iS, 'adset_id'), rA = res(iA, 'ad_id');
+  const zero = { spend: 0, leads: 0 };
+  const money = (v) => (v ? Number(v) / 100 : 0);
+  const adsBySet = new Map();
+  (ads.data || []).forEach((a) => {
+    const r = rA.get(a.id) || zero;
+    const review = a.ad_review_feedback && a.ad_review_feedback.global ? Object.values(a.ad_review_feedback.global).join(' ') : '';
+    const list = adsBySet.get(a.adset_id) || [];
+    list.push({ id: a.id, name: a.name, status: a.status, effective: a.effective_status, created: a.created_time,
+      thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '', text: (a.creative && (a.creative.title || a.creative.body)) || '',
+      review, spend: r.spend, leads: r.leads });
+    adsBySet.set(a.adset_id, list);
+  });
+  const setsByCamp = new Map();
+  (sets.data || []).forEach((s) => {
+    const r = rS.get(s.id) || zero;
+    const list = setsByCamp.get(s.campaign_id) || [];
+    list.push({ id: s.id, name: s.name, status: s.status, effective: s.effective_status, created: s.created_time,
+      daily: money(s.daily_budget), lifetime: money(s.lifetime_budget), audience: audience(s.targeting),
+      spend: r.spend, leads: r.leads, ads: (adsBySet.get(s.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1)) });
+    setsByCamp.set(s.campaign_id, list);
+  });
+  const campaigns = (camps.data || []).map((c) => {
+    const r = rC.get(c.id) || zero;
+    const adsets = (setsByCamp.get(c.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1));
+    return { id: c.id, name: c.name, status: c.status, effective: c.effective_status, objective: c.objective, created: c.created_time,
+      daily: money(c.daily_budget) || adsets.filter((a) => a.status === 'ACTIVE').reduce((n, a) => n + a.daily, 0), cbo: !!c.daily_budget,
+      lifetime: money(c.lifetime_budget), spend: r.spend, leads: r.leads, impressions: r.impressions, clicks: r.clicks, adsets };
+  }).sort((a, b) => (a.status === 'ACTIVE') === (b.status === 'ACTIVE') ? (a.created < b.created ? 1 : -1) : a.status === 'ACTIVE' ? -1 : 1);
+  const totals = campaigns.reduce((t, c) => ({ spend: t.spend + c.spend, leads: t.leads + c.leads }), { spend: 0, leads: 0 });
+  return {
+    ok: true, period, account: { id: act, name: (acc.ok && acc.j.name) || conn.adAccountName || act, currency: (acc.ok && acc.j.currency) || 'RON', status: acc.ok ? acc.j.account_status : null },
+    totals, campaigns, partial: [iC, iS, iA].some((x) => x.error) ? 'Rezultatele n-au venit toate de la Meta.' : '',
+  };
+}
+
+// On / off, budget, name, delete: for a campaign, an ad set or an ad of this account.
+async function act(conn, a) {
+  const tok = conn.userToken;
+  const id = String(a.id || '');
+  if (!/^\d{5,25}$/.test(id)) return { error: 'ID invalid' };
+  // the object must belong to the connected ad account
+  const own = await call('GET', '/' + id, tok, { fields: 'account_id' });
+  if (!own.ok) return { error: metaError(own.j) };
+  if ('act_' + own.j.account_id !== conn.adAccountId) return { error: 'Nu e în contul de reclame conectat.' };
+  let r;
+  if (a.action === 'status') {
+    if (!['ACTIVE', 'PAUSED'].includes(a.status)) return { error: 'Status invalid' };
+    r = await call('POST', '/' + id, tok, { status: a.status });
+  } else if (a.action === 'budget') {
+    const lei = Math.round((Number(a.daily) || 0) * 100) / 100;
+    if (!(lei >= 5)) return { error: 'Bugetul minim e 5 lei pe zi.' };
+    r = await call('POST', '/' + id, tok, { daily_budget: String(Math.round(lei * 100)) });
+  } else if (a.action === 'rename') {
+    const name = String(a.name || '').trim().slice(0, 200);
+    if (!name) return { error: 'Numele lipsește.' };
+    r = await call('POST', '/' + id, tok, { name });
+  } else if (a.action === 'delete') {
+    r = await call('DELETE', '/' + id, tok);
+  } else return { error: 'Acțiune necunoscută' };
+  return r.ok ? { ok: true } : { error: metaError(r.j) };
+}
+
 const adsManagerUrl = (actId, campaignId) => 'https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=' + String(actId).replace(/^act_/, '') + (campaignId ? '&selected_campaign_ids=' + campaignId : '');
 
-module.exports = { CITIES, PLACEMENTS, CTAS, accountInfo, cleanSettings, publish, adsManagerUrl };
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl };

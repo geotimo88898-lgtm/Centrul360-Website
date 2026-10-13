@@ -64,6 +64,9 @@
   "functions": {
     "api/ads-publish.js": {
       "maxDuration": 60
+    },
+    "api/ads-manager.js": {
+      "maxDuration": 60
     }
   }
 }
