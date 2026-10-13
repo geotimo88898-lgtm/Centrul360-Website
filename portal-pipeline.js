@@ -310,8 +310,10 @@
       '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>';
     boardEl = root.querySelector('[data-board]');
     // phones: the stage row follows the swipe, and a tap on a stage goes to it
-    let syncT = 0;
-    boardEl.addEventListener('scroll', () => { clearTimeout(syncT); syncT = setTimeout(syncStagebar, 60); }, { passive: true });
+    let syncF = 0;
+    boardEl.addEventListener('scroll', () => { if (!syncF) syncF = requestAnimationFrame(() => { syncF = 0; syncStagebar(); }); }, { passive: true });
+    // the phone already knows where the swipe will land: light that stage right away
+    boardEl.addEventListener('scrollsnapchanging', (e) => { const c = e.snapTargetInline; if (c && c.dataset && c.dataset.stage) syncStagebar(c.dataset.stage); });
     root.querySelector('[data-stagebar]').addEventListener('click', (e) => {
       const b = e.target.closest('[data-goto-stage]');
       const col = b && boardEl.querySelector('.pl-col[data-stage="' + b.dataset.gotoStage + '"]');
@@ -462,6 +464,7 @@
     const qc = root.querySelector('[data-queue-count]');
     qc.textContent = q;
     qc.classList.toggle('is-zero', !q);
+    if (window.K) window.K.badge('pipeline', q, 'hot'); // the menu shows the same number
   }
 
   function renderChips() {
@@ -486,7 +489,9 @@
     if (!boardEl || !isActive()) return;
     const top = boardEl.getBoundingClientRect().top + window.scrollY;
     const phone = window.matchMedia && window.matchMedia('(max-width:720px)').matches;
-    const h = Math.max(phone ? 360 : 440, window.innerHeight - top - (phone ? 92 : 24));
+    // on a phone, room for the bottom bar (its real height: the iPhone's home bar adds to it)
+    const bar = phone && document.querySelector('.c360-tabbar');
+    const h = Math.max(phone ? 360 : 440, window.innerHeight - top - (bar ? bar.getBoundingClientRect().height + 16 : 24));
     boardEl.style.height = h + 'px';
   }
 
@@ -525,23 +530,29 @@
     boardEl.querySelectorAll('.pl-list').forEach((l) => { if (scroll.lists[l.dataset.stage]) l.scrollTop = scroll.lists[l.dataset.stage]; });
     // the stage row (phones): each stage with its count, the one on screen lit
     const bar = root.querySelector('[data-stagebar]');
-    if (bar) bar.innerHTML = stages.map((s) => '<button type="button" data-goto-stage="' + s.id + '" style="--c:' + s.color + '"><i></i>' + esc(s.name) + '<b>' + visible.filter((l) => l.stage === s.id).length + '</b></button>').join('');
+    if (bar) { delete bar.dataset.on; } if (bar) bar.innerHTML = stages.map((s) => '<button type="button" data-goto-stage="' + s.id + '" style="--c:' + s.color + '"><i></i>' + esc(s.name) + '<b>' + visible.filter((l) => l.stage === s.id).length + '</b></button>').join('');
     syncStagebar();
     fitBoard();
   }
   // a column's place inside the board (the board may or may not be its offset parent)
   const colLeft = (c) => (c.offsetParent === boardEl ? c.offsetLeft : c.offsetLeft - boardEl.offsetLeft);
   // which stage is on screen (the column closest to the board's left edge)
-  function syncStagebar() {
+  function syncStagebar(target) {
     const bar = root && root.querySelector('[data-stagebar]');
     if (!bar || !boardEl) return;
-    let best = null, d = Infinity;
-    boardEl.querySelectorAll('.pl-col').forEach((c) => { const x = Math.abs(colLeft(c) - boardEl.scrollLeft); if (x < d) { d = x; best = c; } });
-    const id = best && best.dataset.stage;
+    let id = target;
+    if (!id) {
+      let best = null, d = Infinity;
+      boardEl.querySelectorAll('.pl-col').forEach((c) => { const x = Math.abs(colLeft(c) - boardEl.scrollLeft); if (x < d) { d = x; best = c; } });
+      id = best && best.dataset.stage;
+    }
+    if (!id || bar.dataset.on === id) return; // the same stage: nothing to do this frame
+    bar.dataset.on = id;
     bar.querySelectorAll('[data-goto-stage]').forEach((b) => {
       const on = b.dataset.gotoStage === id;
-      if (on && !b.classList.contains('is-on')) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
       b.classList.toggle('is-on', on);
+      // keep it in view: only the row slides (scrollIntoView would also move the board and the page)
+      if (on) bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.offsetWidth) / 2, behavior: 'smooth' });
     });
   }
 

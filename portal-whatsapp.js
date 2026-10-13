@@ -39,6 +39,7 @@
       C.loaded = true;
       if (C.selectedPhone && !C.conversations.find((c) => c.phone === C.selectedPhone)) closeThread();
       if (!panel.querySelector('[data-mx-list]')) render(); else { paintStatus(); paintList(); }
+      fitWrap();
       if (C.selectedPhone) loadThread(C.selectedPhone, false);
     } catch (e) {
       panel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="refresh">Reîncearcă</button>');
@@ -97,9 +98,20 @@
         '<section class="k-card mx-thread-col" data-mx-thread></section>' +
       '</div>';
     paintStatus(); paintList(); paintThread();
+    fitWrap();
   }
 
   // which numbers are connected: a quiet line when both are, a clear card when not
+  // a computer: the two columns end at the bottom of the window (the answer box stays in sight)
+  function fitWrap() {
+    const w = panel && panel.querySelector('.mx-wrap');
+    if (!w) return;
+    if (phone()) { w.style.height = ''; return; }
+    const top = w.getBoundingClientRect().top + window.scrollY;
+    w.style.height = Math.max(440, window.innerHeight - top - 20) + 'px';
+  }
+  window.addEventListener('resize', () => { if (panel && K.isActive('mesaje')) fitWrap(); });
+
   function paintStatus() {
     const box = panel.querySelector('[data-mx-status]');
     if (!box) return;
@@ -200,7 +212,7 @@
     return '<header class="mx-thead"><button type="button" class="k-icon-btn mx-back" data-act="back" aria-label="Înapoi">' + icon('left') + '</button>' +
       face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
       esc([named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : ''].filter(Boolean).join(' · ')) + '</small></div>' +
-      '<a class="k-icon-btn" href="tel:' + esc(String(t.phone || '').replace(/[^\d+]/g, '')) + '" title="Sună">' + icon('phone') + '</a>' +
+      '<a class="k-icon-btn" href="tel:' + esc(String(t.phone || '').replace(/[^\d+]/g, '')) + '" title="Sună" data-act="call">' + icon('phone') + '</a>' +
       (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>';
   }
   function autoGrow(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + 'px'; ta.style.overflowY = ta.scrollHeight > 138 ? 'auto' : 'hidden'; }
@@ -333,6 +345,13 @@
       if (a === 'new') return openNew();
       if (a === 'connect') { K.go('integrari'); return; }
       if (a === 'back') return goBack();
+      // a computer can't dial: the number is copied instead (on a phone the link opens the call)
+      if (a === 'call' && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+        e.preventDefault();
+        const num = pretty(C.thread ? C.thread.phone : C.selectedPhone);
+        (navigator.clipboard ? navigator.clipboard.writeText(num.replace(/\s/g, '')) : Promise.reject()).catch(() => {});
+        return K.ui().toast('Am copiat numărul ' + num + '. De pe calculator nu se poate suna, sună de pe telefon.', 'info');
+      }
       if (a === 'tpl' && C.thread) return pickTemplate({ phone: C.thread.phone, name: named(C.thread) ? C.thread.clientName : '', city: C.thread.location, interest: C.thread.lead ? C.thread.lead.interest : '' });
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);
     }
@@ -383,7 +402,7 @@
   }
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitViewport); window.visualViewport.addEventListener('scroll', fitViewport); }
 
-  K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); } load(); } });
+  K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); requestAnimationFrame(fitWrap); } load(); } });
   K.on('remote', () => { if (panel && K.isActive('mesaje')) load(); });
   // leaving Mesaje on a phone gives the bottom bar back
   window.addEventListener('hashchange', () => { if (!K.isActive('mesaje')) document.documentElement.classList.remove('mx-thread-open'); });

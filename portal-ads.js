@@ -10,7 +10,7 @@
   const { esc, icon } = K;
   // sel: the campaigns picked (the numbers on top are theirs; none picked = the whole account)
   // range: { since, until } when "Personalizat" is chosen
-  const A = { d: null, period: '7d', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false };
+  const A = { d: null, period: '7d', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false, cache: new Map(), seq: 0 };
   let panel;
 
   const PERIODS = [['today', 'Azi'], ['yesterday', 'Ieri'], ['7d', '7 zile'], ['30d', '30 zile'], ['max', 'Tot']];
@@ -53,26 +53,52 @@
     panel.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('[data-budget-input]')) { e.preventDefault(); saveBudget(e.target.closest('[data-budget-box]')); } });
   }
   // quiet: refresh after a change (statuses that follow from it) without dimming the page
+  const qsOf = () => (A.range ? 'since=' + A.range.since + '&until=' + A.range.until : 'period=' + A.period);
   async function load(quiet) {
-    if (A.loading) return;
-    A.loading = true;
+    const qs = qsOf(), seq = ++A.seq;
     const body = panel.querySelector('[data-body]');
-    if (A.d && quiet !== true) body.classList.add('is-loading');
+    // this period was seen in the last 10 minutes: its numbers show at once, fresh ones follow
+    const kept = A.cache.get(qs);
+    if (kept && Date.now() - kept.at < 10 * 60e3) show(kept.d, body);
+    else if (A.d && quiet !== true) body.classList.add('is-loading');
+    A.loading = true;
     try {
       // the columns and cards this account chose (K.prefs) come with the first load
-      const [d] = await Promise.all([K.api('/api/ads-manager?' + (A.range ? 'since=' + A.range.since + '&until=' + A.range.until : 'period=' + A.period)), K.prefs.load()]);
+      const [d] = await Promise.all([K.api('/api/ads-manager?' + qs), K.prefs.load()]);
+      A.cache.set(qs, { d, at: Date.now() });
+      if (seq !== A.seq) return; // a newer pick is on screen: this one is only kept for later
       A.at = Date.now();
-      // nothing changed: the page stays exactly as it is (no redraw, no jump)
-      const key = JSON.stringify(d);
-      if (key === A.key && body.querySelector('[data-list]')) return;
-      A.d = d; A.key = key;
-      // a picked campaign that no longer exists drops out of the pick
-      if (A.d.campaigns) { const ids = new Set(A.d.campaigns.map((c) => c.id)); A.sel.forEach((id) => { if (!ids.has(id)) A.sel.delete(id); }); }
-      render();
+      show(d, body);
+      prefetch();
     }
-    catch (e) { body.innerHTML = K.empty('alert', 'Nu am putut încărca reclamele', K.errText(e), '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>'); }
-    finally { A.loading = false; body.classList.remove('is-loading'); }
+    catch (e) { if (seq === A.seq && !kept) body.innerHTML = K.empty('alert', 'Nu am putut încărca reclamele', K.errText(e), '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>'); }
+    finally { if (seq === A.seq) { A.loading = false; body.classList.remove('is-loading'); } }
   }
+  function show(d, body) {
+    // nothing changed: the page stays exactly as it is (no redraw, no jump)
+    const key = JSON.stringify(d);
+    if (key === A.key && body.querySelector('[data-list]')) return;
+    A.d = d; A.key = key;
+    // a picked campaign that no longer exists drops out of the pick
+    if (A.d.campaigns) { const ids = new Set(A.d.campaigns.map((c) => c.id)); A.sel.forEach((id) => { if (!ids.has(id)) A.sel.delete(id); }); }
+    render();
+  }
+  // the other periods load quietly, one after another, so Azi / Ieri / 30 zile show at once
+  let prefetching = false;
+  async function prefetch() {
+    if (prefetching) return;
+    prefetching = true;
+    try {
+      for (const [p] of PERIODS) {
+        const qs = 'period=' + p, kept = A.cache.get(qs);
+        if (kept && Date.now() - kept.at < 5 * 60e3) continue;
+        if (!K.isActive('reclame') || document.hidden) break;
+        try { A.cache.set(qs, { d: await K.api('/api/ads-manager?' + qs), at: Date.now() }); } catch (e) { break; }
+      }
+    } finally { prefetching = false; }
+  }
+  // after a change in Meta (paused, edited, deleted) the kept periods are out of date
+  const reloadChanged = () => { A.cache.clear(); load(true); };
 
   // ------------------------------------------------------------------ what can be shown
   // Every number a row (campaign, ad set, ad) or the summary can show. Meta's results come with the
@@ -299,7 +325,7 @@
         if (t.dataset.kind === 'campaign') A.keep.add(t.dataset.sw);
         K.ui().toast(t.checked ? 'Pornită.' : 'Oprită.', 'success');
         paintList();
-        load(true);
+        reloadChanged();
       } catch (err) { t.checked = !t.checked; K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
       finally { t.disabled = false; }
     }
@@ -535,7 +561,7 @@
             if (draft.cbo != null && d.campaign.cbo && draft.cbo !== d.campaign.budget) { await post({ action: 'budget', id: d.campaign.id, daily: draft.cbo }); n++; }
             dr.close();
             K.ui().toast(n ? 'Salvat în Meta.' : 'Nimic schimbat.', 'success');
-            if (n) load(true);
+            if (n) reloadChanged();
           } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : err.message || K.errText(err), 'error'); }
         }));
         Promise.all([d ? Promise.resolve(d) : details(campaignId), forms()]).then(([x, f]) => { d = x; list = f; paint(el); })
@@ -619,7 +645,7 @@
       message: '„' + name + '”. ' + (kind === 'campaign' ? 'Se șterg și seturile și reclamele din ea. ' : kind === 'adset' ? 'Se șterg și reclamele din el. ' : '') + 'Rezultatele rămân în Meta, dar nu se poate anula. Dacă vrei doar s-o oprești, folosește butonul de pornire.',
     });
     if (!ok) return;
-    try { await post({ action: 'delete', id }); K.ui().toast('Șters.', 'success'); load(true); }
+    try { await post({ action: 'delete', id }); K.ui().toast('Șters.', 'success'); reloadChanged(); }
     catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
   }
   async function onClick(e) {

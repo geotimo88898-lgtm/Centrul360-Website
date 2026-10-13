@@ -1,6 +1,6 @@
 /* Phones: like an app. A bar at the bottom with the 4 main sections of this account (Panou, Pipeline,
    Mesaje, Calendar, or what the account has instead) and "Meniu", which opens the whole grouped menu
-   as a sheet above it. The desktop sidebar is untouched. Purely presentational: every button forwards
+   as a full screen under the header (the bottom bar steps aside; back or X closes it). The desktop sidebar is untouched. Purely presentational: every button forwards
    to the menu's own button (portal-core decides what each one opens), badges included. */
 (function () {
   'use strict';
@@ -22,6 +22,14 @@
   // same stacking layer as the menu, right below it: placed on <body> it ended up ON TOP of the
   // menu and swallowed every tap and scroll
   nav.parentNode.insertBefore(backdrop, nav);
+  // the full-screen menu's own title and close button (phones only)
+  var head = document.createElement('div');
+  head.className = 'c360-mhead';
+  head.innerHTML = '<b>Meniu</b><button type="button" class="c360-mclose" aria-label="Închide meniul">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+  nav.insertBefore(head, nav.firstChild);
+  var html = document.documentElement;
+  var pushed = false;
 
   function label(btn) {
     // the entry's own label, without the icon or the count badge ("Pipeline", not "Pipeline3")
@@ -65,8 +73,8 @@
   tabbar.addEventListener('click', function (e) {
     var b = e.target.closest('button');
     if (!b) return;
-    if (b.hasAttribute('data-menu')) return open(!document.documentElement.classList.contains('c360-mnav-open'));
-    open(false);
+    if (b.hasAttribute('data-menu')) return html.classList.contains('c360-mnav-open') ? close() : open(true);
+    close('pick');
     var target = navBtn(b.dataset.go);
     if (target) target.click();
     else window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -76,26 +84,45 @@
     paintTabbar();
   }
   function open(yes) {
-    document.documentElement.classList.toggle('c360-mnav-open', yes);
+    if (yes && MOBILE.matches) {
+      // the menu starts right under the header, whatever its height on this phone
+      var top = document.querySelector('header.topbar');
+      html.style.setProperty('--c360-mtop', Math.max(0, Math.round(top ? top.getBoundingClientRect().bottom : 60)) + 'px');
+      // the phone's back button closes the menu instead of leaving the app
+      if (!pushed) { try { history.pushState({ mnav: 1 }, '', location.href); pushed = true; } catch (e) { /* no history */ } }
+    }
+    html.classList.toggle('c360-mnav-open', yes);
     bar.setAttribute('aria-expanded', yes ? 'true' : 'false');
     if (yes) {
       var a = current();
       if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' });
     }
   }
+  // how it closes: by the phone's back ('back'), by picking a section ('pick', which takes that step in
+  // history), or by X / Esc / a tap outside (the step it added goes away)
+  function close(how) {
+    if (pushed && !how) { pushed = false; history.back(); }
+    else if (how) pushed = false;
+    open(false);
+  }
+  window.addEventListener('popstate', function () { if (pushed) { pushed = false; open(false); } });
   bar.addEventListener('click', function () {
-    open(!document.documentElement.classList.contains('c360-mnav-open'));
+    html.classList.contains('c360-mnav-open') ? close() : open(true);
   });
-  backdrop.addEventListener('click', function () { open(false); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') open(false); });
+  backdrop.addEventListener('click', function () { close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && html.classList.contains('c360-mnav-open')) close(); });
+  head.querySelector('.c360-mclose').addEventListener('click', function (e) { e.stopPropagation(); close(); });
+  // the header (search, account) works on top of the menu: using it closes the menu
+  var topbar = document.querySelector('header.topbar');
+  if (topbar) topbar.addEventListener('click', function () { if (html.classList.contains('c360-mnav-open')) close(); });
   // picking an entry: let its own handler run, then close and show the new section
   nav.addEventListener('click', function (e) {
-    if (!e.target.closest('button')) return;
-    setTimeout(function () { refresh(); if (MOBILE.matches) open(false); }, 0);
+    if (!e.target.closest('button[data-tab]')) return;
+    setTimeout(function () { refresh(); if (MOBILE.matches) close('pick'); }, 0);
   });
   // the active entry also changes from elsewhere (links, hash, search): keep the label in step
   new MutationObserver(refresh).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
   window.addEventListener('hashchange', function () { setTimeout(refresh, 0); });
-  MOBILE.addEventListener ? MOBILE.addEventListener('change', function () { open(false); }) : null;
+  MOBILE.addEventListener ? MOBILE.addEventListener('change', function () { close('pick'); }) : null;
   refresh();
 })();

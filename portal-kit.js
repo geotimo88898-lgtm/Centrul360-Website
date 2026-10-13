@@ -63,6 +63,74 @@
     return j;
   }
 
+  // ------------------------------------------------------------------ a slow page
+  // Moving to a page opens a short window: the portal's own requests started in it (any screen, its
+  // own fetch included) hold the cover; it shows only if they're still running after 400 ms, and goes
+  // when the last one is back. The window closes when they're all back, so what a page loads later
+  // in the background (prefetch, live refresh) never brings it up.
+  const PG = { gen: 0, open: false, pending: 0, timer: 0, close: 0, el: null, shownAt: 0, safety: 0 };
+  function coverEl() {
+    if (PG.el) return PG.el;
+    PG.el = document.createElement('div');
+    PG.el.className = 'c360-cover';
+    PG.el.setAttribute('aria-hidden', 'true');
+    PG.el.innerHTML = '<span class="c360-mark"></span>';
+    document.body.appendChild(PG.el);
+    return PG.el;
+  }
+  function showCover() {
+    const el = coverEl();
+    // the page area only: under the header, right of the side menu, above the phone's bottom bar
+    const head = document.querySelector('header.topbar'), main = document.querySelector('main'), bar = document.querySelector('.c360-tabbar');
+    el.style.top = Math.max(0, Math.round(head ? head.getBoundingClientRect().bottom : 0)) + 'px';
+    el.style.left = Math.max(0, Math.round(main ? main.getBoundingClientRect().left : 0)) + 'px';
+    el.style.bottom = (bar && bar.offsetParent !== null && getComputedStyle(bar).display !== 'none' ? Math.round(bar.getBoundingClientRect().height) : 0) + 'px';
+    el.classList.add('is-on');
+    PG.shownAt = Date.now();
+    clearTimeout(PG.safety);
+    PG.safety = setTimeout(() => hideCover(true), 15000);
+  }
+  function hideCover(now) {
+    clearTimeout(PG.timer); PG.timer = 0;
+    if (!PG.el || !PG.el.classList.contains('is-on')) return;
+    const wait = now ? 0 : Math.max(0, 350 - (Date.now() - PG.shownAt)); // once shown, long enough not to flash
+    setTimeout(() => { if (PG.el && (now || !PG.pending || !pageEmpty())) PG.el.classList.remove('is-on'); }, wait);
+  }
+  // the page on screen has nothing to show yet (only its loading placeholders); a page already
+  // drawn that refreshes behind is never covered
+  function pageEmpty() {
+    const p = document.querySelector('main > .panel.active');
+    if (!p) return false;
+    return !!p.querySelector('.k-skel, .pl-skeleton, .cr-skel, [data-grid]:empty') || p.textContent.trim().length < 20;
+  }
+  // a page starts loading: earlier requests no longer count, the cover (if any) goes at once; a page
+  // that asks for nothing right away closes the window by itself
+  function pageNav() {
+    PG.gen++; PG.open = true; PG.pending = 0;
+    hideCover(true);
+    clearTimeout(PG.close);
+    PG.close = setTimeout(() => { if (!PG.pending) PG.open = false; }, 300);
+  }
+  // something the page waits for: +1 when it starts, -1 when it's back (gen: the page it belongs to)
+  function pageHold(d, gen) {
+    if (gen !== PG.gen) return;
+    PG.pending = Math.max(0, PG.pending + d);
+    if (d > 0 && !PG.timer && !(PG.el && PG.el.classList.contains('is-on'))) PG.timer = setTimeout(() => { PG.timer = 0; if (PG.pending && pageEmpty()) showCover(); }, 400);
+    if (!PG.pending) PG.open = false;
+    if (!PG.pending || (d < 0 && !pageEmpty())) hideCover();
+  }
+  // every request of the portal's own API started while a page loads holds the cover
+  const rawFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (!PG.open || !/^(https?:\/\/[^/]+)?\/api\//.test(url) || /portal-pulse/.test(url)) return rawFetch(input, init);
+    const gen = PG.gen;
+    pageHold(1, gen);
+    return rawFetch(input, init).finally(() => pageHold(-1, gen));
+  };
+  // a wait that isn't a request (Creative's own app loading in its frame)
+  const pageWait = () => { const gen = PG.gen; PG.open = true; pageHold(1, gen); let done = false; return () => { if (!done) { done = true; pageHold(-1, gen); } }; };
+
   // ------------------------------------------------------------------ formatting
   const pad = (n) => String(n).padStart(2, '0');
   const lei = (n, dec) => (Math.round(Number(n || 0) * 100) / 100).toLocaleString('ro-RO', { maximumFractionDigits: dec == null ? 0 : dec }) + ' lei';
@@ -601,7 +669,7 @@
     dateShort, dateLong, monthLabel, relDay, ago, plural, initials, colorFor, avatar, wa, tel, intlPhone,
     icon, P, tween, countUp, countAll, everySecond, spark, ring, donut, chart,
     drawer, field, formValues, busy, options, seg, empty, toggle, clientPicker,
-    section, show, setData, badge, go, isActive, csv, copy, typing, leads,
+    section, show, setData, badge, go, isActive, csv, copy, typing, leads, pageNav, pageWait,
     prefs, customize,
     get data() { return data; },
     get drawerOpen() { return !!current; },
