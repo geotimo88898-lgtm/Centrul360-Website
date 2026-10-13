@@ -1,7 +1,7 @@
-/* Phones: the side menu (24 entries) used to become a row of pills scrolling sideways, which was hard to
-   use. On small screens it is now one clean button with the current section ("Referințe ▾") that opens
-   the whole menu as a grouped dropdown. The desktop sidebar is untouched. Purely presentational: the
-   menu buttons keep their own click handlers (portal-core decides what each one opens). */
+/* Phones: like an app. A bar at the bottom with the 4 main sections of this account (Panou, Pipeline,
+   Mesaje, Calendar, or what the account has instead) and "Meniu", which opens the whole grouped menu
+   as a sheet above it. The desktop sidebar is untouched. Purely presentational: every button forwards
+   to the menu's own button (portal-core decides what each one opens), badges included. */
 (function () {
   'use strict';
   var nav = document.getElementById('tabsNav');
@@ -32,8 +32,48 @@
   function current() {
     return nav.querySelector('button.active:not(.hidden)') || nav.querySelector('button.active');
   }
+  // ---- the bottom bar
+  var MAIN = ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri'];
+  var SHORT = { programari: 'Calendar', incasari: 'Încasări', comision: 'Salariu', condica: 'Condică', traininguri: 'Training' };
+  var tabbar = document.createElement('nav');
+  tabbar.className = 'c360-tabbar';
+  tabbar.setAttribute('aria-label', 'Secțiuni');
+  document.body.appendChild(tabbar);
+  var shown = '';
+  function navBtn(tab) {
+    var list = nav.querySelectorAll('button[data-tab="' + tab + '"]');
+    for (var i = 0; i < list.length; i++) if (!list[i].classList.contains('hidden')) return list[i];
+    return null;
+  }
+  function paintTabbar() {
+    var tabs = MAIN.filter(function (t) { return !!navBtn(t); }).slice(0, 4);
+    var cur = current();
+    var curTab = cur && cur.dataset.tab;
+    var key = tabs.join() + '|' + curTab + '|' + tabs.map(function (t) { var b = navBtn(t).querySelector('.k-nav-badge'); return b ? b.textContent : ''; }).join();
+    if (key === shown) return;
+    shown = key;
+    tabbar.innerHTML = tabs.map(function (t) {
+      var b = navBtn(t);
+      var svg = b.querySelector('svg');
+      var badge = b.querySelector('.k-nav-badge');
+      return '<button type="button" data-go="' + t + '"' + (t === curTab ? ' class="is-on" aria-current="page"' : '') + '>' +
+        '<span class="c360-tab-ic">' + (svg ? svg.outerHTML : '') + (badge && badge.textContent ? '<b>' + badge.textContent + '</b>' : '') + '</span>' +
+        '<span>' + (SHORT[t] || label(b)) + '</span></button>';
+    }).join('') +
+      '<button type="button" data-menu' + (curTab && tabs.indexOf(curTab) < 0 ? ' class="is-on"' : '') + '><span class="c360-tab-ic"><span class="c360-mnav-icon"><i></i><i></i><i></i></span></span><span>Meniu</span></button>';
+  }
+  tabbar.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (b.hasAttribute('data-menu')) return open(!document.documentElement.classList.contains('c360-mnav-open'));
+    open(false);
+    var target = navBtn(b.dataset.go);
+    if (target) target.click();
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
   function refresh() {
     bar.querySelector('.c360-mnav-label').textContent = label(current());
+    paintTabbar();
   }
   function open(yes) {
     document.documentElement.classList.toggle('c360-mnav-open', yes);

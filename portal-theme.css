@@ -540,3 +540,40 @@ body::before{
   50% { background-position: 100% 30%, 0% 70%, 0 0; }
   100%{ background-position: 0% 50%, 100% 50%, 0 0; }
 }
+
+/* ---------------- phones: the bottom bar (like an app) ---------------- */
+.c360-tabbar{ display:none; }
+@media (max-width:720px){
+  .c360-mnav{ display:none; }
+  .c360-tabbar{ position:fixed; left:0; right:0; bottom:0; z-index:30; display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
+    padding:.3rem .35rem calc(.3rem + env(safe-area-inset-bottom)); background:var(--topbar-bg); border-top:1px solid var(--line);
+    backdrop-filter:saturate(1.6) blur(18px); -webkit-backdrop-filter:saturate(1.6) blur(18px); }
+  .c360-tabbar button{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.2rem; min-height:54px; padding:.2rem 0;
+    border:0; border-radius:14px; background:none; color:var(--muted); font:inherit; font-size:.68rem; font-weight:620; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; transition:color .15s ease; }
+  .c360-tabbar button > span:last-child{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .c360-tab-ic{ position:relative; display:grid; place-items:center; width:46px; height:28px; border-radius:999px; transition:background .2s ease; }
+  .c360-tab-ic svg{ width:21px; height:21px; }
+  .c360-tab-ic .c360-mnav-icon{ display:grid; gap:4px; width:18px; }
+  .c360-tab-ic b{ position:absolute; top:-3px; right:4px; min-width:17px; height:17px; padding:0 4px; border-radius:999px; background:var(--accent);
+    color:var(--accent-ink, #fff); font-size:.6rem; font-weight:800; line-height:17px; text-align:center; box-shadow:0 0 0 2px var(--paper); }
+  .c360-tabbar button.is-on{ color:var(--fg); }
+  .c360-tabbar button.is-on .c360-tab-ic{ background:var(--accent-soft); color:var(--accent); }
+  .c360-tabbar button:active .c360-tab-ic{ transform:scale(.92); }
+  /* the whole menu: a sheet above the bar */
+  nav.tabs{ top:auto; bottom:calc(66px + env(safe-area-inset-bottom)); max-height:calc(100dvh - 150px); transform:translateY(10px); }
+  /* room for the bar under every page and the toasts above it */
+  main{ padding-bottom:calc(6rem + env(safe-area-inset-bottom)); }
+  .c360-toasts{ bottom:calc(76px + env(safe-area-inset-bottom)); }
+  #creativeFrame{ height:calc(100dvh - 60px - 66px - env(safe-area-inset-bottom)); }
+}
+@media (max-width:640px){
+  /* Panou: the numbers two by two */
+  .db-root .db-kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:.6rem; }
+  .db-root .db-kpis .k-stat{ min-height:0; padding:.8rem .85rem; gap:.2rem; }
+  .db-root .db-kpis .k-stat-top{ font-size:.7rem; }
+  .db-root .db-kpis .k-stat-ic{ width:24px; height:24px; }
+  .db-root .db-kpis .k-stat-value{ font-size:1.25rem; }
+  .db-root .db-kpis .k-stat-sub{ font-size:.68rem; }
+  .db-root .db-kpis .k-stat .k-spark{ display:none; }
+}

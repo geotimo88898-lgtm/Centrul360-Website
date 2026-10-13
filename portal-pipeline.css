@@ -493,3 +493,24 @@ input[type="datetime-local"].pl-input, .pl-form input[type="date"], .pl-form inp
 /* the city of the pipeline, next to the title */
 .pl-title{ display:flex; align-items:center; gap:.9rem; flex-wrap:wrap; }
 .pl-city.k-seg{ flex:none; }
+
+/* phones: one stage at a time, a swipe lands on the next one, the stage row on top */
+.pl-stagebar{ display:none; }
+@media (max-width:720px){
+  .pl-stagebar{ display:flex; gap:.4rem; overflow-x:auto; scrollbar-width:none; margin:0 0 .6rem; padding:2px; }
+  .pl-stagebar::-webkit-scrollbar{ display:none; }
+  .pl-stagebar button{ --c:#888; flex:none; display:inline-flex; align-items:center; gap:.4rem; padding:.45rem .75rem; border-radius:999px; border:1px solid var(--line);
+    background:var(--paper); color:var(--muted); font:inherit; font-size:.8rem; font-weight:620; cursor:pointer; transition:background .2s ease, color .2s ease, border-color .2s ease; }
+  .pl-stagebar button i{ width:8px; height:8px; border-radius:50%; background:var(--c); flex:none; }
+  .pl-stagebar button b{ min-width:20px; padding:0 .35rem; border-radius:999px; background:var(--glass); color:var(--fg); font-size:.72rem; text-align:center; }
+  .pl-stagebar button.is-on{ color:var(--fg); border-color:color-mix(in srgb, var(--c) 60%, var(--line)); background:color-mix(in srgb, var(--c) 14%, var(--paper)); }
+  .pl-board{ gap:.75rem; padding:0 0 .4rem; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+  .pl-col{ flex:0 0 100%; width:100%; scroll-snap-align:start; scroll-snap-stop:always; }
+  .pl-col.is-dim{ opacity:1; }
+}
+@media (max-width:720px){
+  .pl-head-actions{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:.45rem; }
+  .pl-head-actions .pl-btn{ flex:none; }
+  .pl-head-actions [data-act="stages"] span{ display:none; }
+  .pl-team{ display:none; }
+}

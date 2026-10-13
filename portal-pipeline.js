@@ -306,8 +306,17 @@
         '</div>' +
       '</div>' +
       '<div class="pl-factive" data-factive hidden></div>' +
+      '<div class="pl-stagebar" data-stagebar></div>' +
       '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>';
     boardEl = root.querySelector('[data-board]');
+    // phones: the stage row follows the swipe, and a tap on a stage goes to it
+    let syncT = 0;
+    boardEl.addEventListener('scroll', () => { clearTimeout(syncT); syncT = setTimeout(syncStagebar, 60); }, { passive: true });
+    root.querySelector('[data-stagebar]').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-goto-stage]');
+      const col = b && boardEl.querySelector('.pl-col[data-stage="' + b.dataset.gotoStage + '"]');
+      if (col) boardEl.scrollTo({ left: colLeft(col), behavior: 'smooth' });
+    });
 
     root.addEventListener('click', onRootClick);
     root.querySelector('[data-search]').addEventListener('input', (e) => { S.q = e.target.value; renderBoard(); renderChips(); });
@@ -476,7 +485,8 @@
   function fitBoard() {
     if (!boardEl || !isActive()) return;
     const top = boardEl.getBoundingClientRect().top + window.scrollY;
-    const h = Math.max(440, window.innerHeight - top - 24);
+    const phone = window.matchMedia && window.matchMedia('(max-width:720px)').matches;
+    const h = Math.max(phone ? 360 : 440, window.innerHeight - top - (phone ? 92 : 24));
     boardEl.style.height = h + 'px';
   }
 
@@ -513,7 +523,26 @@
 
     boardEl.scrollLeft = scroll.left;
     boardEl.querySelectorAll('.pl-list').forEach((l) => { if (scroll.lists[l.dataset.stage]) l.scrollTop = scroll.lists[l.dataset.stage]; });
+    // the stage row (phones): each stage with its count, the one on screen lit
+    const bar = root.querySelector('[data-stagebar]');
+    if (bar) bar.innerHTML = stages.map((s) => '<button type="button" data-goto-stage="' + s.id + '" style="--c:' + s.color + '"><i></i>' + esc(s.name) + '<b>' + visible.filter((l) => l.stage === s.id).length + '</b></button>').join('');
+    syncStagebar();
     fitBoard();
+  }
+  // a column's place inside the board (the board may or may not be its offset parent)
+  const colLeft = (c) => (c.offsetParent === boardEl ? c.offsetLeft : c.offsetLeft - boardEl.offsetLeft);
+  // which stage is on screen (the column closest to the board's left edge)
+  function syncStagebar() {
+    const bar = root && root.querySelector('[data-stagebar]');
+    if (!bar || !boardEl) return;
+    let best = null, d = Infinity;
+    boardEl.querySelectorAll('.pl-col').forEach((c) => { const x = Math.abs(colLeft(c) - boardEl.scrollLeft); if (x < d) { d = x; best = c; } });
+    const id = best && best.dataset.stage;
+    bar.querySelectorAll('[data-goto-stage]').forEach((b) => {
+      const on = b.dataset.gotoStage === id;
+      if (on && !b.classList.contains('is-on')) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      b.classList.toggle('is-on', on);
+    });
   }
 
   // A lead on the board, calm: name and time on top, phone and city, the procedure on its own line,
