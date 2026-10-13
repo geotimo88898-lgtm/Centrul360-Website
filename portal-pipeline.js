@@ -20,6 +20,7 @@
 
   // ------------------------------------------------------------------ icons (Lucide paths)
   const P = {
+    filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5z"/>',
     phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
     chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
@@ -108,6 +109,8 @@
     ctx: { isAdmin: false, categories: {} },
     stages: [], leads: [], loaded: false, sig: '',
     q: '', filter: 'all', source: '', location: '', showLost: false,
+    // Filtre: procedure, campaign, ad, form (from the Facebook form), stage, created in, booked yes / no
+    f: { proc: '', campaign: '', ad: '', form: '', stage: '', period: '', booked: '' },
     expanded: {}, dragging: false, timer: null,
     drawer: null, // { mode: 'lead'|'new', id, section, queue, dirty }
   };
@@ -220,7 +223,37 @@
     const today = w.filter((l) => l.followUpState === 'today' && !l.neverContacted).sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
     return overdue.concat(fresh, today);
   }
+  // the lead's Facebook forms: campaign, ad, form name
+  const formsOf = (l) => (Array.isArray(l.forms) ? l.forms : []);
+  const wasBooked = (l) => !!l.appointmentId || l.kind === 'booked' || l.kind === 'won';
+  function inPeriod(iso, p) {
+    if (!p) return true;
+    const t = new Date(iso); if (isNaN(t)) return false;
+    const day = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+    const today = day(new Date());
+    if (p === 'today') return t >= today;
+    if (p === '7d') return t >= new Date(today - 6 * 864e5);
+    if (p === '30d') return t >= new Date(today - 29 * 864e5);
+    const m0 = new Date(today); m0.setDate(1);
+    if (p === 'month') return t >= m0;
+    if (p === 'lastmonth') { const p0 = new Date(m0); p0.setMonth(p0.getMonth() - 1); return t >= p0 && t < m0; }
+    return true;
+  }
+  const activeFilters = () => Object.keys(S.f).filter((k) => S.f[k]);
+  function matchesF(l) {
+    const f = S.f;
+    if (f.proc && (l.interest || '') !== f.proc) return false;
+    if (f.campaign && !formsOf(l).some((x) => x.campaign === f.campaign)) return false;
+    if (f.ad && !formsOf(l).some((x) => x.ad === f.ad)) return false;
+    if (f.form && !formsOf(l).some((x) => x.name === f.form)) return false;
+    if (f.stage && l.stage !== f.stage) return false;
+    if (f.period && !inPeriod(l.createdAt, f.period)) return false;
+    if (f.booked === 'yes' && !wasBooked(l)) return false;
+    if (f.booked === 'no' && wasBooked(l)) return false;
+    return true;
+  }
   function matches(l) {
+    if (!matchesF(l)) return false;
     if (S.source && l.source !== S.source) return false;
     if (S.location && l.location !== S.location) return false;
     if (S.filter === 'queue' && !(isWorking(l) && (l.followUpState === 'overdue' || l.followUpState === 'today' || l.neverContacted))) return false;
@@ -261,8 +294,10 @@
             Object.keys(SOURCES).map((k) => '<option value="' + k + '">' + SOURCES[k].label + '</option>').join('') + '</select>' +
           '<select data-filter-location aria-label="Locație"><option value="">Ambele locații</option><option>Timișoara</option><option>Arad</option></select>' +
           '<button type="button" class="pl-toggle" data-act="lost" aria-pressed="false">' + ic('archive') + '<span>Pierduți</span></button>' +
+          '<button type="button" class="pl-toggle pl-fbtn" data-act="filters">' + ic('filter') + '<span>Filtre</span><em data-fcount hidden></em></button>' +
         '</div>' +
       '</div>' +
+      '<div class="pl-factive" data-factive hidden></div>' +
       '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>';
     boardEl = root.querySelector('[data-board]');
 
@@ -300,7 +335,62 @@
   }
 
   // ------------------------------------------------------------------ render: stats / chips
-  function renderAll() { renderStats(); renderTeam(); renderChips(); renderBoard(); }
+  function renderAll() { renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); }
+  // the filters in use, as chips (each one off with ✕) and what they find
+  const PERIOD = { today: 'Azi', '7d': 'Ultimele 7 zile', '30d': 'Ultimele 30 de zile', month: 'Luna asta', lastmonth: 'Luna trecută' };
+  const F_LABEL = { proc: 'Procedură', campaign: 'Campanie', ad: 'Reclamă', form: 'Formular', stage: 'Etapă', period: 'Creat', booked: 'Programare' };
+  const fValue = (k, v) => (k === 'stage' ? (stageById(v) || {}).name || v : k === 'period' ? PERIOD[v] : k === 'booked' ? (v === 'yes' ? 'cu programare' : 'fără programare') : v);
+  function renderFilters() {
+    const box = root.querySelector('[data-factive]'), cnt = root.querySelector('[data-fcount]');
+    const on = activeFilters();
+    cnt.hidden = !on.length; cnt.textContent = on.length;
+    root.querySelector('[data-act="filters"]').classList.toggle('is-on', !!on.length);
+    box.hidden = !on.length;
+    if (!on.length) { box.innerHTML = ''; return; }
+    const found = S.leads.filter(matches);
+    const booked = found.filter(wasBooked).length, won = found.filter((l) => l.kind === 'won').length;
+    box.innerHTML = on.map((k) => '<button type="button" class="pl-fchip" data-fclear="' + k + '"><small>' + F_LABEL[k] + '</small>' + esc(fValue(k, S.f[k])) + ic('x') + '</button>').join('') +
+      '<button type="button" class="pl-btn is-ghost is-sm" data-fclear="*">Șterge filtrele</button>' +
+      '<span class="pl-fsum"><b>' + found.length + '</b> ' + (found.length === 1 ? 'lead' : 'leaduri') + ' · <b>' + booked + '</b> programate · <b>' + won + '</b> câștigate</span>';
+  }
+  // Filtre: every way to narrow the board, lists made from the leads themselves
+  function openFilters() {
+    const K = window.K;
+    const count = (vals) => { const m = new Map(); vals.filter(Boolean).forEach((v) => m.set(v, (m.get(v) || 0) + 1)); return Array.from(m.entries()).sort((a, b) => b[1] - a[1]); };
+    const opts = (pairs, cur, all) => K.options([['', all]].concat(pairs.map(([v, n]) => [v, v + ' (' + n + ')'])), cur);
+    const body = () => {
+      const f = S.f;
+      const forms = S.leads.flatMap(formsOf);
+      const ads = forms.filter((x) => !f.campaign || x.campaign === f.campaign).map((x) => x.ad);
+      return '<form class="k-form pl-fform" data-fform autocomplete="off">' +
+        K.field('Procedură', '<select name="proc">' + opts(count(S.leads.map((l) => l.interest)), f.proc, 'Toate procedurile') + '</select>', 'full') +
+        K.field('Campanie', '<select name="campaign">' + opts(count(forms.map((x) => x.campaign)), f.campaign, 'Toate campaniile') + '</select>', 'full') +
+        K.field('Reclamă', '<select name="ad">' + opts(count(ads), f.ad, f.campaign ? 'Toate reclamele campaniei' : 'Toate reclamele') + '</select>', 'full') +
+        K.field('Formular', '<select name="form">' + opts(count(forms.map((x) => x.name)), f.form, 'Toate formularele') + '</select>', 'full') +
+        K.field('Etapă', '<select name="stage">' + K.options([['', 'Toate etapele']].concat(S.stages.map((s) => [s.id, s.name + ' (' + S.leads.filter((l) => l.stage === s.id).length + ')'])), f.stage) + '</select>') +
+        K.field('Creat', '<select name="period">' + K.options([['', 'Oricând']].concat(Object.keys(PERIOD).map((k) => [k, PERIOD[k]])), f.period) + '</select>') +
+        K.field('Programare', '<select name="booked">' + K.options([['', 'Toate'], ['yes', 'Cu programare'], ['no', 'Fără programare']], f.booked) + '</select>') +
+        '</form>';
+    };
+    const foot = () => { const n = S.leads.filter(matches).length; return '<b>' + n + '</b> ' + (n === 1 ? 'lead' : 'leaduri'); };
+    const dr = K.drawer({
+      title: 'Filtre', icon: 'filter', width: 460, subtitle: 'Se aplică pe loc. Sursa și orașul sunt lângă căutare.',
+      body: '<div data-fbody>' + body() + '</div>',
+      footer: '<span class="pl-fcount-foot" data-ffoot>' + foot() + '</span><span class="k-grow"></span><button type="button" class="k-btn is-ghost" data-fx>Șterge filtrele</button><button type="button" class="k-btn is-primary" data-fok>Gata</button>',
+      onMount(el) {
+        const repaint = () => { el.querySelector('[data-fbody]').innerHTML = body(); el.querySelector('[data-ffoot]').innerHTML = foot(); };
+        el.addEventListener('change', (e) => {
+          const t = e.target; if (!t.name || !(t.name in S.f)) return;
+          S.f[t.name] = t.value;
+          if (t.name === 'campaign') S.f.ad = '';
+          if (t.name === 'stage' && t.value && (stageById(t.value) || {}).kind === 'lost') S.showLost = true;
+          renderAll(); repaint();
+        });
+        el.querySelector('[data-fx]').addEventListener('click', () => { Object.keys(S.f).forEach((k) => { S.f[k] = ''; }); renderAll(); repaint(); });
+        el.querySelector('[data-fok]').addEventListener('click', () => dr.close());
+      },
+    });
+  }
 
   // Owner view: what the front desk did in the pipeline today (the pipeline itself is reception's).
   function renderTeam() {
@@ -388,7 +478,7 @@
       setTimeout(() => boardEl.classList.remove('is-enter'), 700);
     }
     const visible = S.leads.filter(matches);
-    const stages = S.stages.filter((s) => s.kind !== 'lost' || S.showLost);
+    const stages = S.stages.filter((s) => (s.kind !== 'lost' || S.showLost) && (!S.f.stage || s.id === S.f.stage));
     // Stats "Programați"/"Câștigați" filters are column focus, not lead filters.
     const focus = S.filter === 'booked' ? 'booked' : S.filter === 'won' ? 'won' : '';
     boardEl.innerHTML = stages.map((s) => {
@@ -401,7 +491,7 @@
         '<span class="pl-col-count">' + all.length + '</span>' +
         (value ? '<span class="pl-col-value">' + fmtLei(value) + '</span>' : '') + '</header>' +
         '<div class="pl-list" data-stage="' + s.id + '">' +
-          (all.length ? all.slice(0, limit).map(cardHtml).join('') : '<div class="pl-col-empty">' + (S.q || S.filter !== 'all' || S.source || S.location ? 'Nimic aici pentru filtrul ales' : 'Trage un lead aici') + '</div>') +
+          (all.length ? all.slice(0, limit).map(cardHtml).join('') : '<div class="pl-col-empty">' + (S.q || S.filter !== 'all' || S.source || S.location || activeFilters().length ? 'Nimic aici pentru filtrul ales' : 'Trage un lead aici') + '</div>') +
           (all.length > limit ? '<button type="button" class="pl-more" data-more="' + s.id + '">Arată încă ' + (all.length - limit) + '</button>' : '') +
         '</div>' +
         (s.kind === 'won' || s.kind === 'lost' ? '' : '<button type="button" class="pl-add" data-add="' + s.id + '">' + ic('plus') + 'Adaugă lead</button>') +
@@ -447,6 +537,8 @@
   // ------------------------------------------------------------------ events: panel
   function onRootClick(e) {
     const t = e.target;
+    const fc = t.closest('[data-fclear]');
+    if (fc) { if (fc.dataset.fclear === '*') Object.keys(S.f).forEach((k) => { S.f[k] = ''; }); else S.f[fc.dataset.fclear] = ''; return renderAll(); }
     const act = t.closest('[data-act]');
     if (act) {
       const a = act.dataset.act;
@@ -455,6 +547,7 @@
       if (a === 'stages') return openStageEditor();
       if (a === 'reload') return load();
       if (a === 'lost') { S.showLost = !S.showLost; return renderAll(); }
+      if (a === 'filters') return openFilters();
     }
     const stat = t.closest('[data-stat]');
     if (stat) { const k = stat.dataset.stat; S.filter = S.filter === k ? 'all' : k; return renderAll(); }
@@ -680,28 +773,51 @@
       ui().toast(errText(e), 'error');
     }
   }
-  // the stages may not all fit: the bar scrolls sideways (wheel too) and keeps the current one in view
-  function centerStep(instant) {
-    const bar = drawerEl().querySelector('.pl-stepper');
-    const on = bar && bar.querySelector('.pl-step.is-on');
-    if (!on) return;
-    const left = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;
-    bar.scrollTo({ left: Math.max(0, left), behavior: instant || reduceMotion ? 'auto' : 'smooth' });
-    if (!bar._wheel) {
-      bar._wheel = true;
-      bar.addEventListener('wheel', (e) => {
-        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || bar.scrollWidth <= bar.clientWidth) return;
-        e.preventDefault();
-        bar.scrollLeft += e.deltaY;
-      }, { passive: false });
-    }
+  // The stage of the open lead: a thin bar that always fits (one piece per stage, a tap moves there),
+  // under it the current stage (a tap lists every stage) and a button for the next one.
+  function stageBarHtml(l, flow) {
+    const at = flow.findIndex((x) => x.id === l.stage);
+    const cur = flow[at] || stageById(l.stage) || { name: '', color: '#888' };
+    const next = at >= 0 ? flow[at + 1] : null;
+    return '<div class="pl-stage" data-stagebar>' +
+      '<div class="pl-stage-bars" role="group" aria-label="Etape">' + flow.map((s, i) => '<button type="button" class="pl-seg' + (i === at ? ' is-on' : '') + (i < at ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + ';--i:' + i + '" title="' + esc(s.name) + '" aria-label="Mută în ' + esc(s.name) + '"></button>').join('') + '</div>' +
+      '<div class="pl-stage-row">' +
+        '<button type="button" class="pl-stage-pick" data-stage-pick style="--c:' + cur.color + '"><i></i><span><small>Etapa ' + (at >= 0 ? (at + 1) + ' din ' + flow.length : '') + '</small><b>' + esc(cur.name) + '</b></span>' + ic('down') + '</button>' +
+        (next ? '<button type="button" class="pl-btn is-ghost is-sm pl-stage-next" data-move="' + next.id + '" style="--c:' + next.color + '"><span>Următoarea: <b>' + esc(next.name) + '</b></span>' + ic('right') + '</button>' : '') +
+      '</div></div>';
   }
+  function stageMenu(btn) {
+    const l = S.drawer && leadById(S.drawer.id);
+    if (!l) return;
+    const old = document.querySelector('.pl-stage-menu');
+    if (old) { old.remove(); return; }
+    const m = document.createElement('div');
+    m.className = 'k-menu pl-stage-menu';
+    m.innerHTML = '<div class="k-menu-label">Mută în etapa</div>' + S.stages.map((s) => '<button type="button" class="k-menu-item' + (s.id === l.stage ? ' is-current' : '') + '" data-to="' + s.id + '" style="--c:' + s.color + '"><i class="pl-mdot"></i>' + esc(s.name) + (s.id === l.stage ? ic('check') : '') + '</button>').join('');
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect();
+    const h = m.offsetHeight, below = r.bottom + 6 + h < window.innerHeight;
+    m.style.top = (below ? r.bottom + 6 : Math.max(8, r.top - 6 - h)) + 'px';
+    m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - m.offsetWidth - 8)) + 'px';
+    m.style.transformOrigin = below ? 'top left' : 'bottom left';
+    requestAnimationFrame(() => m.classList.add('is-open'));
+    const close = () => { m.classList.remove('is-open'); setTimeout(() => m.remove(), 180); document.removeEventListener('mousedown', out, true); document.removeEventListener('keydown', esc1, true); };
+    const out = (e) => { if (!m.contains(e.target) && !e.target.closest('[data-stage-pick]')) close(); };
+    const esc1 = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+    setTimeout(() => { document.addEventListener('mousedown', out, true); document.addEventListener('keydown', esc1, true); }, 0);
+    m.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-to]'); if (!b) return;
+      close();
+      if (b.dataset.to !== l.stage) moveLead(l.id, b.dataset.to, null);
+    });
+  }
+  function centerStep() { /* the stage bar always fits now */ }
   function syncStepper(stageId) {
-    const steps = Array.from(drawerEl().querySelectorAll('.pl-stepper .pl-step'));
-    const at = steps.findIndex((b) => b.dataset.move === stageId);
-    if (at < 0) return;
-    steps.forEach((b, i) => { b.classList.toggle('is-on', i === at); b.classList.toggle('is-past', i < at); });
-    centerStep(false);
+    const bar = drawerEl().querySelector('[data-stagebar]');
+    const l = S.drawer && leadById(S.drawer.id);
+    if (!bar || !l) return;
+    const flow = S.stages.filter((s) => s.kind !== 'lost');
+    bar.outerHTML = stageBarHtml(Object.assign({}, l, { stage: stageId }), flow);
   }
   function flashCard(id) {
     const c = boardEl.querySelector('.pl-card[data-id="' + id + '"]');
@@ -873,10 +989,7 @@
       '</header>' +
       '<div class="pl-dbody">' +
         // stage stepper
-        '<div class="pl-stepper" role="group" aria-label="Etapă">' +
-          flow.map((s) => '<button type="button" class="pl-step' + (s.id === l.stage ? ' is-on' : '') + (flow.indexOf(s) < flow.findIndex((x) => x.id === l.stage) ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + ';--i:' + flow.indexOf(s) + '">' +
-            '<i></i><span>' + esc(s.name) + '</span></button>').join('') +
-        '</div>' +
+        stageBarHtml(l, flow) +
         (l.kind === 'lost' ? '<div class="pl-banner is-bad">' + ic('ban') + '<div><b>Pierdut</b>' + (l.lostReason ? ' · ' + esc(l.lostReason) : '') + '</div><button type="button" class="pl-btn is-ghost is-sm" data-move="' + (S.stages.find((s) => s.kind === 'open') || {}).id + '">Redeschide</button></div>' : '') +
         (l.kind === 'won' ? '<div class="pl-banner is-good">' + ic('trophy') + '<div><b>Client câștigat</b> · e în baza de clienți a clinicii.</div></div>' : '') +
         // contact row
@@ -988,6 +1101,8 @@
     if (d.mode !== 'lead') return;
     const l = leadById(d.id);
     if (!l) return;
+    const stagePick = t.closest('[data-stage-pick]');
+    if (stagePick) return stageMenu(stagePick);
     const move = t.closest('[data-move]');
     if (move && move.dataset.move && move.dataset.move !== l.stage) return moveLead(l.id, move.dataset.move, null);
     const lt = t.closest('[data-ltab]');
