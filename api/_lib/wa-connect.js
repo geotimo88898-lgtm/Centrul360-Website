@@ -11,6 +11,12 @@ const crypto = require('crypto');
 const WA = require('./whatsapp');
 const { appCreds } = require('./facebook');
 
+// Meta's address for the messages: any centrul360.com host is this same site; a new one goes to www
+const HOOK_PATH = '/api/webhook-whatsapp';
+const isOurHook = (u, origin) => u === origin + HOOK_PATH || /^https:\/\/([a-z0-9-]+\.)?centrul360\.com\/api\/webhook-whatsapp$/.test(String(u || ''));
+const hookUrl = (origin) => (/centrul360\.com$/.test(String(origin).replace(/^https?:\/\//, '')) ? 'https://www.centrul360.com' : origin) + HOOK_PATH;
+const HOOK_KEY = 'data/whatsapp-hook.json'; // Meta's last delivery: { at, signed, refusedAt }
+
 async function call(method, path, token, params) {
   const p = new URLSearchParams(Object.assign({ access_token: token }, params || {}));
   const r = method === 'GET'
@@ -36,9 +42,9 @@ async function ensureWebhook(store, origin, given) {
   const creds = given || await appCreds(store.readJSON);
   if (!creds.appId || !creds.appSecret) return { error: 'Lipsește aplicația Meta: conectează întâi Facebook (Integrări).' };
   const appToken = creds.appId + '|' + creds.appSecret;
-  const callback = origin + '/api/webhook-whatsapp';
+  const callback = hookUrl(origin);
   const cur = await call('GET', '/' + creds.appId + '/subscriptions', appToken);
-  const set = cur.ok && (cur.j.data || []).some((s) => s.object === 'whatsapp_business_account' && s.callback_url === callback && s.active !== false &&
+  const set = cur.ok && (cur.j.data || []).some((s) => s.object === 'whatsapp_business_account' && isOurHook(s.callback_url, origin) && s.active !== false &&
     (s.fields || []).some((f) => (f.name || f) === 'messages'));
   if (set) return { ok: true };
   const r = await call('POST', '/' + creds.appId + '/subscriptions', appToken, {
@@ -114,14 +120,13 @@ async function checkNumber(store, origin, city) {
     } else line(false, 'Nu pot vedea cine ascultă contul WhatsApp', 'Meta: ' + s.error);
   } else line(false, 'Lipsește ID-ul contului WhatsApp Business', 'Conectează din nou numărul.');
   // Meta's address for the messages, on the app(s) that listen
-  const callback = origin + '/api/webhook-whatsapp';
   const target = listening.filter((id) => apps[id]);
   if (!target.length && Object.keys(apps).length) target.push(Object.keys(apps)[0]);
   for (const id of target) {
     const a = apps[id];
     const r = await call('GET', '/' + a.appId + '/subscriptions', a.appId + '|' + a.appSecret);
     const sub = r.ok && (r.j.data || []).find((x) => x.object === 'whatsapp_business_account');
-    const good = sub && sub.callback_url === callback && sub.active !== false && (sub.fields || []).some((f) => (f.name || f) === 'messages');
+    const good = sub && isOurHook(sub.callback_url, origin) && sub.active !== false && (sub.fields || []).some((f) => (f.name || f) === 'messages');
     line(!!good, good ? 'Meta trimite mesajele primite în portal (' + a.label + ')' : 'Meta nu trimite mesajele primite în portal (' + a.label + ')',
       !r.ok ? 'Meta: ' + r.error : sub ? 'adresa la Meta: ' + (sub.callback_url || '-') + ((sub.fields || []).some((f) => (f.name || f) === 'messages') ? '' : ' (fără „messages”)') : 'nicio adresă setată', !good);
   }
@@ -130,6 +135,11 @@ async function checkNumber(store, origin, city) {
   const doc = await T.load();
   const ok = (doc.templates || []).filter((t) => T.approvedFor(t, n.wabaId)).length;
   line(ok > 0, ok ? ok + (ok === 1 ? ' șablon aprobat' : ' șabloane aprobate') : 'Niciun șablon aprobat', ok ? '' : 'Fără șablon aprobat nu poți scrie tu primul (Integrări → Șabloane WhatsApp).');
+  // did Meta reach us at all (any number), and were we able to take it
+  const hk = await store.readJSON(HOOK_KEY, null);
+  if (!hk || !hk.at) line(false, 'Meta n-a trimis încă nimic la adresa portalului', 'Scrie un mesaj de pe alt telefon pe numărul clinicii și apasă din nou Verifică.');
+  else if (hk.refusedAt && (!hk.okAt || hk.refusedAt > hk.okAt)) line(false, 'Meta trimite, dar portalul refuză (semnătura nu se potrivește)', 'ultima livrare refuzată: ' + new Date(hk.refusedAt).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '. App Secret-ul salvat nu e al aplicației care trimite.');
+  else line(true, 'Meta trimite la portal: ultima livrare ' + new Date(hk.okAt || hk.at).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }), hk.signed ? 'semnătură verificată' : 'semnătura nu a putut fi verificată (primită oricum)');
   const convos = await store.readJSON('data/whatsapp-conversations.json', []);
   let last = '';
   convos.filter((c) => c.location === city).forEach((c) => (c.messages || []).forEach((m) => { if (m.direction === 'in' && m.timestamp > last) last = m.timestamp; }));
@@ -159,4 +169,4 @@ async function repairNumber(store, origin, city) {
   return { ok: true, done };
 }
 
-module.exports = { call, verifyToken, ensureWebhook, setupNumber, knownApps, checkNumber, repairNumber };
+module.exports = { call, verifyToken, ensureWebhook, setupNumber, knownApps, checkNumber, repairNumber, HOOK_KEY, isOurHook, hookUrl };

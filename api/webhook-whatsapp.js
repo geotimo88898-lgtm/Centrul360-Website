@@ -239,13 +239,24 @@ module.exports = async (req, res) => {
   const creds = await appCreds(readJSON).catch(() => ({}));
   const secrets = waSecrets.concat(creds && creds.appSecret ? [creds.appSecret] : []);
   const signed = secrets.some((sec) => isValidSignature(rawBody, req.headers['x-hub-signature-256'], sec));
+  // Meta's last delivery, for Integrări → WhatsApp → Verifică (does anything reach us, was it taken)
+  const noteDelivery = async (taken) => {
+    try {
+      const k = 'data/whatsapp-hook.json', h = (await readJSON(k, null)) || {}, now = nowISO();
+      Object.assign(h, { at: now, signed }, taken ? { okAt: now } : { refusedAt: now });
+      await writeJSON(k, h);
+    } catch (e) { /* only a note */ }
+  };
   if (!signed) {
     if (waSecrets.length) {
+      await noteDelivery(false);
       res.status(403).json({ error: 'invalid_signature' });
       return;
     }
     console.warn('webhook-whatsapp: signature not checked (no saved secret matches the sending app)');
   }
+
+  await noteDelivery(true);
 
   // Process fully BEFORE responding - Vercel can freeze/tear down the function the instant
   // the response is sent, so any `await` after res.json() here is not guaranteed to run
