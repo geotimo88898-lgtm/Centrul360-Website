@@ -643,7 +643,7 @@
     if (!ipanel) return;
     const body = ipanel.querySelector('[data-body]');
     body.innerHTML = '<div class="st-integrations">' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div><div class="st-forms-box" data-forms></div></section>' +
+      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Mesajele clientelor în „Mesaje” și trimiterea automată a confirmărilor și a reminderelor.</span></div></div><div data-wa><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="creative">Deschide Creative' + icon('arrow') + '</button></div></section>' +
@@ -653,46 +653,16 @@
     loadFb(body.querySelector('[data-fb]'));
     (async () => {
       const box = body.querySelector('[data-wa]');
-      const formsBox = body.querySelector('[data-forms]');
       try {
         const j = await K.api('/api/portal-integrations');
         box.innerHTML = j.whatsapp
           ? '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Deschide Mesaje' + icon('arrow') + '</button></div>'
           : '<div class="st-int-row"><span class="k-tag is-warn">' + icon('alert') + 'Neconectat</span><span class="k-muted">Până la conectare, mesajele de trimis apar ca sarcini la recepție.</span></div>';
         box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
-        paintForms(formsBox, j);
-      } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; formsBox.innerHTML = ''; }
+      } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; }
     })();
   }
 
-  // Facebook lead forms: each lead arrives with its procedure and city. They're read from the form's
-  // name (and the ad's); a form whose name doesn't say them gets them set here.
-  function paintForms(box, j) {
-    const forms = j.fbForms || [];
-    const offerName = (id) => ((j.offers || []).find((o) => o.id === id) || {}).title || '';
-    if (!forms.length) {
-      box.innerHTML = '<p class="k-muted st-forms-empty">' + icon('info') + 'Formularele apar aici după primul lead din fiecare. Procedura și orașul se citesc din numele formularului și al reclamei; dacă nu reies de acolo, le alegi aici.</p>';
-      return;
-    }
-    box.innerHTML = '<div class="st-forms-head"><b>Formulare</b><span class="k-muted">Procedura și orașul cu care intră leadurile din fiecare formular.</span></div>' +
-      '<div class="st-forms">' + forms.map((f) => {
-        const det = f.detected || {};
-        const autoOffer = det.offerId && offerName(det.offerId) ? 'Automat: ' + offerName(det.offerId) : 'Automat (nedetectată)';
-        const autoCity = (det.location || 'Timișoara') + ' (auto)';
-        return '<div class="st-form" data-form="' + esc(f.id) + '"><div class="st-form-name"><b>' + esc(f.name || 'Formular ' + f.id) + '</b><small>' + K.plural(f.leads, 'lead', 'leaduri') + (f.lastAt ? ' · ultimul ' + esc(K.ago(f.lastAt)) : '') + '</small></div>' +
-          '<select data-ff="offerId" aria-label="Procedura">' + K.options([['', autoOffer]].concat((j.offers || []).map((o) => [o.id, o.title])), f.offerId) + '</select>' +
-          '<select data-ff="location" aria-label="Orașul">' + K.options([['', autoCity], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], f.location) + '</select></div>';
-      }).join('') + '</div>';
-    box.addEventListener('change', async (e) => {
-      const row = e.target.closest('[data-form]');
-      if (!row) return;
-      const v = (k) => row.querySelector('[data-ff="' + k + '"]').value;
-      try {
-        await K.api('/api/portal-integrations', { action: 'fb_form', id: row.dataset.form, offerId: v('offerId'), location: v('location') });
-        K.ui().toast('Salvat. Leadurile noi din formular vin așa.', 'success');
-      } catch (err) { K.ui().toast(K.errText(err), 'error'); }
-    });
-  }
   // Facebook: one button logs in with Facebook (Meta's own window); back here, the admin picks the
   // clinic's Page (an account can manage several, e.g. the salon's too) and the ad account, which
   // can also be typed by hand when Facebook doesn't list it.
@@ -743,7 +713,7 @@
   async function loadFb(box) {
     let d;
     try { d = await K.api('/api/fb-connection-status'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica starea conexiunii.</span>'; return; }
-    const addApp = () => { box.insertAdjacentHTML('beforeend', appHtml(d.app || {}, false)); bindApp(box, () => loadFb(box)); };
+    const addApp = () => { (box.querySelector('[data-app-slot]') || box).insertAdjacentHTML('beforeend', appHtml(d.app || {}, false)); bindApp(box, () => loadFb(box)); };
     if (d.notConfigured) {
       box.innerHTML = '<p class="k-muted st-fb-intro">Pune aici datele aplicației Meta (developers.facebook.com), apoi apare butonul de logare.</p>' + appHtml(d.app || {}, true);
       bindApp(box, () => loadFb(box));
@@ -780,33 +750,35 @@
 
     if (d.connected) {
       const many = (d.pages || []).length > 1;
-      // Are the leads coming in? One calm line and the leads received; the technical side (webhook
-      // subscription, the read test, every delivery) sits folded under "Detalii tehnice".
       const sub = d.subscription || {}, poll = d.poll || {};
       const live = poll.at && poll.ok !== false;
       const got = (d.deliveries || []).filter((x) => (x.kind === 'lead' || x.kind === 'poll') && x.ok && /^lead /.test(x.text));
-      const diag = '<div class="st-fb-diag">' +
-        '<div class="st-fb-sub ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') + '<span>' +
-          (live ? 'Leadurile intră automat. Ultima verificare ' + esc(K.ago(poll.at)) + (poll.forms ? ', ' + K.plural(poll.forms, 'formular activ', 'formulare active') : '') + '.'
-            : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur în un minut.' : 'Prima verificare a formularelor se face în cel mult un minut.') + '</span></div>' +
-        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri primite</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
-          (got.length ? got.slice(0, 6).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
+      // What matters at a glance: connected, leads coming in, the last ones, the forms. Everything about
+      // the connection itself (ad account, Page, the Meta app, technical checks) is folded below.
+      box.innerHTML =
+        '<div class="st-fb-status ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') +
+          '<div><b>Conectat la ' + esc(d.pageName || 'Pagină') + '</b><span>' + (live ? 'Leadurile intră automat · verificat ' + esc(K.ago(poll.at))
+            : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur.' : 'Prima verificare se face în cel mult un minut.') + '</span></div></div>' +
+        '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
+          (got.length ? got.slice(0, 3).map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text.replace(/^lead (nou|existent, actualizat): /, '')) + '</em></div>').join('')
             : '<p class="k-muted">Încă niciunul. Un lead apare aici în cel mult un minut după ce cineva completează un formular.</p>') + '</div>' +
-        '<details class="st-fb-tech"><summary>Detalii tehnice</summary>' +
-          '<p class="k-muted">Pagina ' + esc(d.pageName || '') + ' · ID ' + esc(d.pageId || '') + '</p>' +
-          (poll.error ? '<p class="k-muted">Ultima verificare: ' + esc(poll.error) + '</p>' : '') +
-          '<p class="k-muted">Webhook (leadurile anunțate pe loc): ' + (sub.ok ? 'activ' : 'inactiv' + (sub.error ? ', ' + esc(sub.error) : '')) + '. Fără el, leadurile vin prin verificarea formularelor, la fiecare minut.</p>' +
-          '<div class="st-fb-tech-actions">' + (sub.ok ? '' : '<button type="button" class="k-btn is-outline is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') +
-            '<button type="button" class="k-btn is-outline is-sm" data-fb-read>' + icon('search') + 'Verifică citirea leadurilor</button></div><div data-fb-read-out></div>' +
-          ((d.deliveries || []).length ? '<div class="st-fb-log is-tech">' + d.deliveries.map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text) + '</em></div>').join('') + '</div>' : '') +
-        '</details></div>';
-      box.innerHTML = '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat la ' + esc(d.pageName || 'Pagină') + '</span>' + (d.connectedAt ? '<span class="k-muted">din ' + esc(new Date(d.connectedAt).toLocaleDateString('ro-RO')) + '</span>' : '') + '</div>' +
-        '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
-        diag +
-        '<form class="st-fb-adform" data-fb-adform hidden><select data-ad>' + adOptions(d.adAccounts, d.adAccountId) + '</select>' + adManual + '<button type="submit" class="k-btn is-primary is-sm">Salvează</button></form>' +
-        '<div class="st-int-row">' + (many ? '<button type="button" class="k-btn is-outline is-sm" data-fb-repick>' + icon('refresh') + 'Altă Pagină</button>' : '') +
-        '<a class="k-btn is-outline is-sm" href="/api/fb-oauth-start">' + icon('facebook') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-fbx>Deconectează</button></div>' +
-        (many ? '<div class="st-fb-pages" data-fb-pages hidden>' + d.pages.map((x) => '<button type="button" class="st-fb-page' + (x.id === d.pageId ? ' is-on' : '') + '" data-page="' + esc(x.id) + '">' + icon('facebook') + esc(x.name) + '</button>').join('') + '</div>' : '');
+        '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-goto="formulare">' + icon('file') + 'Formulare' + (poll.forms ? ' (' + poll.forms + ' active)' : '') + icon('arrow') + '</button></div>' +
+        '<details class="st-fb-settings"><summary>' + icon('sliders') + 'Setări conexiune</summary>' +
+          '<div class="st-fb-ad"><span class="k-muted">Cont de reclame:</span> <b>' + esc(d.adAccountName || 'neales') + '</b> <button type="button" class="k-btn is-ghost is-sm" data-fb-adedit>' + icon('pen') + 'Schimbă</button></div>' +
+          '<form class="st-fb-adform" data-fb-adform hidden><select data-ad>' + adOptions(d.adAccounts, d.adAccountId) + '</select>' + adManual + '<button type="submit" class="k-btn is-primary is-sm">Salvează</button></form>' +
+          '<div class="st-int-row">' + (many ? '<button type="button" class="k-btn is-outline is-sm" data-fb-repick>' + icon('refresh') + 'Altă Pagină</button>' : '') +
+            '<a class="k-btn is-outline is-sm" href="/api/fb-oauth-start">' + icon('facebook') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-fbx>Deconectează</button></div>' +
+          (many ? '<div class="st-fb-pages" data-fb-pages hidden>' + d.pages.map((x) => '<button type="button" class="st-fb-page' + (x.id === d.pageId ? ' is-on' : '') + '" data-page="' + esc(x.id) + '">' + icon('facebook') + esc(x.name) + '</button>').join('') + '</div>' : '') +
+          '<div class="st-fb-tech">' +
+            '<p class="k-muted">Pagina ' + esc(d.pageName || '') + ' · ID ' + esc(d.pageId || '') + (poll.error ? '<br>Ultima verificare: ' + esc(poll.error) : '') + '</p>' +
+            '<p class="k-muted">Webhook (leadurile anunțate pe loc): ' + (sub.ok ? 'activ' : 'inactiv') + '. Fără el, leadurile vin prin verificarea formularelor, la fiecare minut.</p>' +
+            '<div class="st-fb-tech-actions">' + (sub.ok ? '' : '<button type="button" class="k-btn is-outline is-sm" data-fb-resub>' + icon('refresh') + 'Abonează Pagina</button>') +
+              '<button type="button" class="k-btn is-outline is-sm" data-fb-read>' + icon('search') + 'Verifică citirea leadurilor</button></div><div data-fb-read-out></div>' +
+            ((d.deliveries || []).length ? '<div class="st-fb-log is-tech">' + d.deliveries.map((x) => '<div class="st-fb-logrow"><span>' + esc(K.ago(x.at)) + '</span><em>' + esc(x.text) + '</em></div>').join('') + '</div>' : '') +
+          '</div>' +
+          '<div data-app-slot></div>' +
+        '</details>';
+      box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
       bindAdSelect(box);
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });

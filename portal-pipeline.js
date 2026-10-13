@@ -229,7 +229,7 @@
     if (S.filter === 'idle' && !l.isInactive) return false;
     if (S.q) {
       const q = norm(S.q), qd = S.q.replace(/\D/g, '');
-      const hay = norm([l.name, l.email, l.interest, l.nextAction, l.location].join(' '));
+      const hay = norm([l.name, l.email, l.interest, l.nextAction, l.location].concat((l.forms || []).map((f) => f.name)).join(' '));
       if (!hay.includes(q) && !(qd.length >= 3 && String(l.phone).replace(/\D/g, '').includes(qd))) return false;
     }
     return true;
@@ -413,32 +413,29 @@
     fitBoard();
   }
 
+  // A lead on the board, calm: name and time on top, phone and city, the procedure on its own line,
+  // then at most a few small tags. One colour only (the accent) for what needs her now: a new lead
+  // not called yet and a call-back due; everything else is grey.
   function cardHtml(l) {
     const src = SOURCES[l.source] || SOURCES.altul;
     const chips = [];
     if (l.followUpState) {
-      chips.push('<span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '" title="' + esc(l.nextAction || 'Follow-up') + '">' +
-        ic('clock') + (l.followUpState === 'overdue' ? 'Întârziat · ' : '') + when(l.followUpAt) + '</span>');
+      const due = l.followUpState === 'overdue' || l.followUpState === 'today';
+      chips.push('<span class="pl-tag is-' + (due ? 'accent' : 'mute') + '" title="' + esc(l.nextAction || 'Revin la ea') + '">' + ic('clock') + (l.followUpState === 'overdue' ? 'Întârziat · ' : '') + when(l.followUpAt) + '</span>');
     }
-    if (l.neverContacted) {
-      const age = Date.now() - new Date(l.createdAt).getTime();
-      const tone = age < 15 * MIN ? 'good' : age < 2 * HOUR ? 'warn' : 'bad';
-      chips.push('<span class="pl-tag is-' + tone + ' is-pulse">' + '<i class="pl-pulse"></i>Nou · ' + ago(l.createdAt) + '</span>');
-    } else if (l.isInactive) {
-      chips.push('<span class="pl-tag is-warn">' + ic('alert') + l.idleDays + ' zile fără activitate</span>');
-    }
-    if (l.appointmentAt && l.kind !== 'won') chips.push('<span class="pl-tag is-info">' + ic('calendar') + esc(apptWhen(l.appointmentAt)) + '</span>');
+    if (l.neverContacted) chips.push('<span class="pl-tag is-accent">Nesunat · ' + ago(l.createdAt) + '</span>');
+    else if (l.isInactive) chips.push('<span class="pl-tag is-mute">' + l.idleDays + ' zile fără activitate</span>');
+    if (l.appointmentAt && l.kind !== 'won') chips.push('<span class="pl-tag is-mute">' + ic('calendar') + esc(apptWhen(l.appointmentAt)) + '</span>');
     if (l.contactCount) chips.push('<span class="pl-tag is-mute" title="Contactări">' + ic('phone') + l.contactCount + '</span>');
     if (l.kind === 'lost' && l.lostReason) chips.push('<span class="pl-tag is-mute">' + esc(l.lostReason) + '</span>');
-    return '<article class="pl-card' + (l.followUpState === 'overdue' ? ' is-overdue' : '') + (l.neverContacted ? ' is-new' : '') + '" data-id="' + l.id + '" tabindex="0">' +
+    return '<article class="pl-card' + (l.neverContacted ? ' is-new' : '') + '" data-id="' + l.id + '" tabindex="0">' +
       '<div class="pl-card-top">' +
-        '<span class="pl-src is-' + l.source + '" title="' + src.label + '">' + ic(src.icon) + '</span>' +
+        (l.neverContacted ? '<i class="pl-newdot" title="Lead nou, încă nesunat"></i>' : '') +
         '<b class="pl-name">' + esc(l.name) + '</b>' +
         '<span class="pl-age" title="În etapă de ' + l.daysInStage + ' zile">' + ago(l.stageChangedAt || l.createdAt) + '</span>' +
       '</div>' +
       '<div class="pl-card-sub">' + esc(l.phone) + ' · ' + esc(l.location) + '</div>' +
-      (l.interest ? '<div class="pl-interest">' + ic('target') + '<span>' + esc(l.interest) + '</span>' + (l.value ? '<b>' + fmtLei(l.value) + '</b>' : '') + '</div>' : '') +
-      (l.nextAction && !l.followUpState ? '<div class="pl-next">' + ic('arrow') + esc(l.nextAction) + '</div>' : '') +
+      '<div class="pl-meta" title="' + esc(src.label) + '">' + ic(src.icon) + '<span>' + esc(l.interest || src.label) + '</span>' + (l.value ? '<b>' + fmtLei(l.value) + '</b>' : '') + '</div>' +
       (chips.length ? '<div class="pl-tags">' + chips.join('') + '</div>' : '') +
       '<div class="pl-quick">' +
         '<a href="' + telLink(l) + '" class="pl-qbtn" title="Sună" data-quick="call">' + ic('phone') + '</a>' +
@@ -1296,6 +1293,13 @@
   // ------------------------------------------------------------------ public
   window.C360Pipeline = {
     init(ctx) { S.ctx = Object.assign(S.ctx, ctx || {}); },
+    // the leads of one form (Formulare → "Vezi leadurile"): the search box gets its name
+    search(q) {
+      S.q = String(q || '');
+      const box = root && root.querySelector('[data-search]');
+      if (box) box.value = S.q;
+      renderBoard(); renderChips();
+    },
     open() {
       if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX);
       mount();

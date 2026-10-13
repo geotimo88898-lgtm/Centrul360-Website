@@ -528,6 +528,21 @@
 .st-manual{ display:flex; flex-direction:column; gap:.5rem; margin-top:.6rem; }
 /* Facebook: log in, pick the clinic's Page and the ad account */
 .st-fb-adform[hidden], .st-fb-pages[hidden]{ display:none; }
+/* Integrări → Facebook at a glance */
+.st-fb-status{ display:flex; align-items:center; gap:.7rem; padding:.7rem .8rem; border-radius:12px; margin-bottom:.7rem; }
+.st-fb-status > svg{ width:20px; height:20px; flex:none; }
+.st-fb-status div{ display:flex; flex-direction:column; min-width:0; }
+.st-fb-status b{ font-size:.9rem; }
+.st-fb-status span{ font-size:.8rem; opacity:.85; }
+.st-fb-status.is-ok{ background:var(--good-soft); color:var(--good); }
+.st-fb-status.is-wait{ background:var(--glass); color:var(--muted); }
+.st-fb-log + .st-int-row{ margin-top:.75rem; }
+.st-fb-settings{ margin-top:.9rem; padding:.7rem .8rem; border-radius:12px; border:1px solid var(--line); }
+.st-fb-settings > summary{ display:flex; align-items:center; gap:.45rem; cursor:pointer; font-size:.86rem; color:var(--muted); }
+.st-fb-settings > summary svg{ width:15px; height:15px; }
+.st-fb-settings[open] > summary{ margin-bottom:.6rem; color:var(--fg); }
+.st-fb-settings .st-fb-app{ margin-top:.8rem; }
+.st-fb-settings .st-fb-tech{ margin-top:.6rem; }
 /* is the Page sending its leads here + the last deliveries */
 .st-fb-diag{ display:flex; flex-direction:column; gap:.5rem; margin:.8rem 0; }
 .st-fb-sub{ display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; padding:.55rem .7rem; border-radius:11px; font-size:.86rem; font-weight:600; }
@@ -848,3 +863,26 @@ html[data-role="cosmetician"] .cal-col{ cursor:default; }
   .fb-tip{ bottom:64px; font-size:.72rem; }
   .fb-zoombar{ left:10px; bottom:10px; }
 }
+
+/* ---------------- Admin → Formulare (portal-forms.js) ---------------- */
+.fm-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; margin-bottom:1rem; }
+.fm-search{ display:flex; align-items:center; gap:.5rem; flex:1 1 260px; max-width:420px; padding:0 .75rem; border-radius:11px; border:1px solid var(--line); background:var(--surface-3); }
+.fm-search svg{ width:16px; height:16px; color:var(--muted); flex:none; }
+.fm-search input{ flex:1; min-width:0; border:0; background:transparent; color:var(--fg); font:inherit; font-size:.9rem; padding:.6rem 0; outline:none; }
+.fm-list{ display:flex; flex-direction:column; gap:.6rem; }
+.fm-row{ padding:.8rem .9rem; }
+.fm-top{ display:flex; align-items:center; gap:.7rem; }
+.fm-ic{ width:34px; height:34px; color:#1877f2; background:rgba(24,119,242,.1); }
+.fm-name{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.fm-name b{ font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fm-name small{ font-size:.78rem; color:var(--muted); }
+.fm-set{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:.6rem; margin-top:.7rem; }
+.fm-set label{ display:flex; flex-direction:column; gap:.25rem; min-width:0; }
+.fm-set label > span:first-child{ font-size:.72rem; font-weight:650; letter-spacing:.05em; text-transform:uppercase; color:var(--muted-2); }
+.fm-set select{ width:100%; }
+.fm-q{ margin-top:.8rem; padding-top:.7rem; border-top:1px solid var(--line); font-size:.86rem; }
+.fm-q ol{ margin:.5rem 0 0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.4rem; }
+.fm-q li small{ display:block; color:var(--muted); font-size:.78rem; }
+.fm-q p{ margin:0 0 .5rem; }
+.fm-more{ align-self:center; margin-top:.4rem; }
+@media (max-width:640px){ .fm-set{ grid-template-columns:1fr; } .fm-top [data-leads] span{ display:none; } }
