@@ -562,16 +562,22 @@
     const ta = form.querySelector('textarea[name="text"]');
     const text = (ta.value || '').trim();
     if (!text || !C.selectedPhone) return;
-    const btn = form.querySelector('button[type="submit"]');
-    K.busy(btn, async () => {
-      try {
-        const ph = C.selectedPhone;
-        await K.api('/api/portal-whatsapp', { action: 'send', phone: ph, text });
-        ta.value = ''; autoGrow(ta);
-        await loadThread(ph, false);
-        scrollToBottom();
-        load();
-      } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
+    const ph = C.selectedPhone;
+    // in the chat right away, with a small clock; the real message (and its marks) takes its place when WhatsApp answers
+    const tmp = { id: 'tmp-' + Date.now(), direction: 'out', type: 'text', text, status: 'pending', timestamp: new Date().toISOString(), sentBy: '', sentByName: (K.data && K.data.me && K.data.me.name) || '' };
+    if (C.thread) { C.thread.messages = (C.thread.messages || []).concat(tmp); paintThread(); scrollToBottom(); }
+    ta.value = ''; autoGrow(ta);
+    K.api('/api/portal-whatsapp', { action: 'send', phone: ph, text }).then(async (j) => {
+      if (C.selectedPhone === ph) {
+        if (j && Array.isArray(j.messages) && C.thread) { C.thread.messages = j.messages; paintThread(); scrollToBottom(); }
+        else await loadThread(ph, false);
+      }
+      load();
+    }).catch((err) => {
+      tmp.status = 'failed';
+      if (C.selectedPhone === ph && C.thread) paintThread();
+      if (!ta.value) { ta.value = text; autoGrow(ta); }
+      K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error');
     });
   }
 

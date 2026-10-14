@@ -85,7 +85,7 @@
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(k) });
     await K.api('/api/portal-account', { action: 'push_on', sub: sub.toJSON(), device: deviceName() });
-    if (!quiet) K.api('/api/portal-account', { action: 'push_test' }).catch(() => {});
+    if (!quiet) K.api('/api/portal-account', { action: 'push_test', device: deviceName() }).catch(() => {});
   }
   async function paintPush(box) {
     const st = await pushState();
@@ -109,7 +109,7 @@
     box.querySelectorAll('[data-push]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
       try {
         await pushOn();
-        K.ui().toast('Gata. Ți-am trimis o notificare de test.', 'success');
+        K.ui().toast('Gata. Notificările sunt pornite pe acest dispozitiv.', 'success');
       } catch (e) { K.ui().toast(e.message === 'denied' ? 'Ai refuzat notificările. Le poți porni din setările telefonului.' : 'Nu am putut porni notificările. Încearcă din nou.', 'error'); }
       paintPush(box); nudge();
     })));
@@ -152,7 +152,7 @@
       b.addEventListener('click', () => K.busy(b, async () => {
         if (what === 'ios') return iosSteps();
         if (what === 'android') return androidSteps();
-        try { await pushOn(); K.ui().toast('Gata. Ți-am trimis o notificare de test.', 'success'); } catch (e) { K.ui().toast(e.message === 'denied' ? 'Ai refuzat notificările. Le poți porni din setările telefonului.' : 'Nu am putut porni notificările. Încearcă din nou.', 'error'); }
+        try { await pushOn(); K.ui().toast('Gata. Notificările sunt pornite pe acest dispozitiv.', 'success'); } catch (e) { K.ui().toast(e.message === 'denied' ? 'Ai refuzat notificările. Le poți porni din setările telefonului.' : 'Nu am putut porni notificările. Încearcă din nou.', 'error'); }
         el.dataset.what = ''; nudging = false; nudge();
       }));
     } finally { nudging = false; }

@@ -83,6 +83,13 @@ module.exports = async (req, res) => {
       return;
     }
     if (action === 'push_test') {
+      // once per device: the first time notifications are turned on there
+      const device = clip(body.device, 80) || 'dispozitiv';
+      const tested = await readJSON('data/push-tested.json', {});
+      const mine = tested[acc.id] = tested[acc.id] || {};
+      if (mine[device]) { res.status(200).json({ ok: true, sent: 0, already: true }); return; }
+      mine[device] = new Date().toISOString();
+      await writeJSON('data/push-tested.json', tested, { quiet: true });
       const sent = await push.sendPush(store, [acc.id], { title: 'Centrul360', body: 'Notificările merg pe acest telefon. Așa vei primi leadurile noi.', url: '/portal', tag: 'test' });
       res.status(200).json({ ok: true, sent });
       return;

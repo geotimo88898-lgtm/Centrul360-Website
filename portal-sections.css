@@ -1482,7 +1482,7 @@ main.ad-full{ max-width:none; }
 .mx-tk{ width:16px; height:12px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; opacity:.78; }
 .mx-tick.is-pending .mx-tk, .mx-tick.is-failed .mx-tk{ width:13px; height:13px; }
 .mx-tick.is-read .mx-tk{ opacity:1; stroke:#4fc3f7; stroke-width:1.9; filter:drop-shadow(0 0 .5px rgba(0,0,0,.35)); }
-.mx-msg.is-out .mx-tick.is-read .mx-tk{ stroke:#8fe3ff; stroke-width:2.1; filter:drop-shadow(0 0 1px rgba(0,40,80,.45)); }
+.mx-msg.is-out .mx-tick.is-read .mx-tk{ stroke:#38bdf8; stroke-width:2.2; filter:drop-shadow(0 0 1.2px rgba(255,255,255,.85)); }
 .mx-tick.is-failed .mx-tk{ opacity:1; stroke:var(--bad); stroke-width:2; }
 .mx-row-prev .mx-tick{ margin-right:.25rem; vertical-align:-1px; color:var(--muted); }
 .mx-row-prev .mx-tick.is-read .mx-tk{ stroke:#34b7f1; filter:none; }

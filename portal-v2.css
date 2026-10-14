@@ -322,7 +322,11 @@ html.c360-pull, html.c360-pull body{ overscroll-behavior-y:none; }
 .c360-ptr span{ display:inline-flex; }
 .c360-ptr .k-ic{ width:20px; height:20px; stroke-width:2.2; }
 .c360-ptr.is-armed{ color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
-.c360-ptr.is-spin span{ animation:c360-ptr-spin .75s linear infinite; }
+.c360-ptr.is-pulling span{ animation:c360-ptr-spin 1.1s linear infinite; }
+.c360-ptr.is-armed span{ animation-duration:.6s; }
+.c360-ptr.is-spin span{ animation:c360-ptr-spin .7s linear infinite; }
+.c360-ptr.is-armed{ transform-origin:center; }
+.c360-ptr.is-armed .k-ic{ transform:scale(1.08); }
 @keyframes c360-ptr-spin{ to{ transform:rotate(360deg); } }
 /* switching the theme: instant, in one frame (no transition anywhere while it switches) */
 html.c360-theming, html.c360-theming *, html.c360-theming *::before, html.c360-theming *::after{ transition:none !important; animation-play-state:paused !important; }

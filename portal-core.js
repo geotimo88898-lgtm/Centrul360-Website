@@ -184,12 +184,11 @@
     document.body.appendChild(el);
     const MAX = 110, ARM = 72;
     let y0 = null, d = 0, busy = false;
-    const spin = el.firstChild;
     const set = (px, armed) => {
       el.style.transform = 'translate(-50%,' + Math.round(px - 52) + 'px)';
       el.style.opacity = String(Math.min(1, px / 40));
       el.classList.toggle('is-armed', !!armed);
-      if (!busy) spin.style.transform = 'rotate(' + Math.round(px * 3.2) + 'deg)';
+      el.classList.toggle('is-pulling', px > 0);
     };
     // where it starts: right under the header
     const place = () => { const h = document.querySelector('header.topbar'); el.style.top = (h ? Math.max(0, h.getBoundingClientRect().bottom) : 0) + 'px'; };

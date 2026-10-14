@@ -149,6 +149,18 @@
   }
   // ------------------------------------------------------------------ Light / Dark
   const theme = () => (isLight() ? 'light' : 'dark');
+  // The iPhone keeps parts of the page background (the canvas under everything) in the old colour when only a
+  // CSS variable changes. Setting the colour itself, as a plain value, on html and body makes it repaint all of it;
+  // a 1px scroll there and back refreshes whatever is still cached.
+  function repaintBackground() {
+    const root = document.documentElement, body = document.body;
+    const ink = getComputedStyle(root).getPropertyValue('--ink').trim();
+    if (ink) { root.style.backgroundColor = ink; if (body) body.style.backgroundColor = ink; }
+    const y = window.scrollY, x = window.scrollX;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(x, y + 1); window.scrollTo(x, y);
+    root.style.scrollBehavior = '';
+  }
   function setTheme(t, fromAccount) {
     const light = t === 'light';
     if (light === isLight() && read('c360_theme') === (light ? 'light' : 'dark')) return;
@@ -160,7 +172,8 @@
     if (meta) meta.setAttribute('content', light ? '#f4f5f9' : '#07080b');
     apply(state(), true, true); // the accent, tuned for the theme
     void root.offsetHeight; // the new colours applied now, everywhere
-    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('c360-theming')));
+    repaintBackground();
+    requestAnimationFrame(() => requestAnimationFrame(() => { root.classList.remove('c360-theming'); repaintBackground(); }));
     if (!fromAccount && typeof window.C360Accent.onTheme === 'function') window.C360Accent.onTheme(light ? 'light' : 'dark');
   }
 
