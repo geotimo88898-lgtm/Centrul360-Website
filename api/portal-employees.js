@@ -68,6 +68,10 @@ module.exports = async (req, res) => {
       };
       employees.push(employee);
       await writeJSON('data/employees.json', employees);
+      if (role === 'receptie' || role === 'cosmetician') {
+        const P = require('./_lib/academy-progress');
+        await P.update(employee.id, (p) => { p.path = { role, start: P.todayRo() }; }).catch((err) => console.error('academy path:', err.message));
+      }
       res.status(200).json({
         ok: true,
         employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, username: employee.username, active: true },

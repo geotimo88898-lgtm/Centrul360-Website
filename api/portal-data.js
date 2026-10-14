@@ -15,7 +15,7 @@ const { bookingNotes } = require('./_lib/bonus');
 const { deviceCounts } = require('./_lib/push');
 // Profile photo (Contul meu) of an employee row, as a URL the portal can show.
 const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
-const { defaultAcademy } = require('./_lib/academy');
+const { mergeAcademy, forStaff } = require('./_lib/academy');
 const { loadOffers, discountOf } = require('./_lib/offers');
 
 // The full set of statuses an appointment can carry on the new shared Calendar (see
@@ -97,13 +97,14 @@ module.exports = async (req, res) => {
   if (!session) return;
 
   try {
-    const [employeesRaw, sales, appointments, configRaw, leads, offersAll] = await Promise.all([
+    const [employeesRaw, sales, appointments, configRaw, leads, offersAll, academyProgress] = await Promise.all([
       readJSON('data/employees.json', []),
       readJSON('data/sales.json', []),
       readJSON('data/appointments.json', []),
       readJSON('data/config.json', null),
       readJSON('data/leads.json', []),
       loadOffers(readJSON, null),
+      readJSON('data/academy-progress.json', {}),
     ]);
 
     const config = configRaw || defaultConfig();
@@ -258,7 +259,10 @@ module.exports = async (req, res) => {
         myCountsToday,
       },
       myGoals,
-      academy: config.academy || defaultAcademy(), // Traininguri: every manual for everyone (the goal: everyone sells)
+      // Traininguri: every manual for everyone (the goal: everyone sells). The team sees the sheets and cases the
+      // owner checked, without the answers; the owner sees everything and everyone's progress.
+      academy: isAdmin ? mergeAcademy(config.academy) : forStaff(mergeAcademy(config.academy), academyProgress[me.id]),
+      academyProgress: isAdmin ? academyProgress : { [me.id]: academyProgress[me.id] || null },
       // Active offers from the shared source, same list the public site and Creative use.
       offers: offersAll.filter((o) => o.active).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((o) => ({
         id: o.id, key: o.key, title: o.title, description: o.description || '', priceNew: Number(o.priceNew) || 0, priceOld: Number(o.priceOld) || 0,

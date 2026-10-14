@@ -30,13 +30,14 @@ const ROUTES = {
   'portal-wa': { area: 'WhatsApp', go: 'integrari' },
   'portal-integrations': { area: 'Integrări', go: 'integrari' },
   'portal-config': { area: 'Setări', go: 'integrari' },
+  'portal-academy': { area: 'Traininguri', go: 'traininguri' },
   'portal-account': { area: 'Contul meu', go: '' },
   'ads-manager': { area: 'Reclame', go: 'reclame' },
   'ads-publish': { area: 'Reclame', go: 'reclame' },
 };
 // what is only read (never a line), and routes that are not changes of the clinic's work
 const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list', 'check', 'discover', 'profile_get',
-  'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync'];
+  'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image'];
 const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-creative-sso', 'portal-file', 'portal-leave-pdf', 'portal-avatar', 'portal-data', 'portal-login', 'portal-logout', 'portal-activity'];
 
 // the words for each change (route:action; route: for the routes without actions)
@@ -69,6 +70,8 @@ const VERBS = {
   'portal-account:password': 'și-a schimbat parola', 'portal-account:profile': 'și-a actualizat profilul', 'portal-account:photo_set': 'și-a schimbat poza',
   'portal-account:photo_delete': 'și-a scos poza', 'portal-account:username': 'și-a schimbat utilizatorul',
   'ads-manager:edit_ad': 'a modificat o reclamă', 'ads-manager:edit_adset': 'a modificat un set de reclame',
+  'portal-academy:read': 'a citit', 'portal-academy:quiz': 'a dat testul', 'portal-academy:case': 'a rezolvat cazul',
+  'portal-academy:task': 'a bifat sarcina', 'portal-academy:confirm': 'a decis sarcina', 'portal-academy:path': 'a setat drumul de început pentru',
 };
 const generic = (a) => (/create|add|new/.test(a) ? 'a adăugat' : /delete|remove/.test(a) ? 'a șters' : 'a modificat');
 
@@ -127,6 +130,10 @@ function describe(route, action, body, before, after, out) {
     (b.snippet && b.snippet.title) || (b.template && b.template.label) || (b.workflow && b.workflow.name) || '';
   if (!subject && b.phone) subject = String(b.phone);
   if (route === 'portal-wa' && b.city) subject = subject || b.city;
+  if (route === 'portal-config' && b.academy) {
+    const a = b.academy, it = (a.upsert && a.upsert.item) || {};
+    subject = it.name || it.title || (a.remove ? 'un element' : '') || (a.manualId ? 'manualul ' + a.manualId : '') || (a.rules ? 'regulile ofertei' : '') || (a.paths ? 'drumul de început' : '') || 'Traininguri';
+  }
   let detail = '';
   if (route === 'portal-appointments' && action === 'create') detail = [b.treatment, [pretty('date', b.date), b.time].filter((x) => x && x !== '-').join(' '), b.location].filter(Boolean).join(' · ');
   else if (route === 'portal-leads' && action === 'move_stage' && after && (after.activities || []).length) detail = clip(after.activities[after.activities.length - 1].text, 80);
@@ -137,6 +144,12 @@ function describe(route, action, body, before, after, out) {
   else if (route === 'portal-approve') detail = b.decision === 'approve' || b.decision === 'approved' ? 'aprobată' : b.decision ? 'respinsă' + (b.reason ? ': ' + clip(b.reason, 60) : '') : '';
   else if (route === 'portal-leave' && action === 'decide') detail = b.decision === 'approve' || b.decision === 'approved' ? 'aprobată' : 'respinsă';
   else if (route === 'portal-employees' && action === 'set_active') detail = b.active ? 'activ' : 'dezactivat';
+  else if (route === 'portal-academy' && action === 'quiz' && out) detail = out.score + ' din ' + out.total;
+  else if (route === 'portal-academy' && action === 'case' && out) detail = out.right ? 'corect' : 'greșit';
+  else if (route === 'portal-academy' && action === 'task') detail = b.done ? 'făcută, de confirmat' : 'anulată';
+  else if (route === 'portal-academy' && action === 'confirm') detail = b.ok ? 'confirmată' : 'trimisă înapoi';
+  else if (route === 'portal-academy' && action === 'path') detail = b.role === 'receptie' ? 'recepție' : b.role === 'cosmetician' ? 'cosmeticiană' : 'oprit';
+  else if (route === 'portal-config' && b.academy) detail = b.academy.remove ? 'scos' : (b.academy.upsert && b.academy.upsert.item && b.academy.upsert.item.verified ? 'verificat' : '');
   else if (/update|session_update|update_details/.test(action || '')) detail = diff(before, after);
   if (!detail && before && after) detail = diff(before, after);
   return { verb, subject: clip(subject, 80), detail: clip(detail, 160) };
@@ -176,10 +189,11 @@ function watch(req, res, session) {
     const route = (String(req.url || '').split('?')[0].match(/\/api\/([\w-]+)/) || [])[1] || '';
     if (!route || SKIP.includes(route)) return;
     const body = req.body && typeof req.body === 'object' ? req.body : {};
+    if (typeof body.type === 'string' && body.type.startsWith('blob.')) return;
     const action = String(body.action || (req.method === 'DELETE' ? 'delete' : ''));
     if (READS.includes(action)) return;
     res.__activity = true;
-    const r = ROUTES[route] || { area: route.replace(/^portal-/, ''), go: '' };
+    const r = route === 'portal-config' && body.academy ? { area: 'Traininguri', go: 'traininguri' } : ROUTES[route] || { area: route.replace(/^portal-/, ''), go: '' };
     // the thing as it was, read before the route changes it
     const id = idOf(route, body);
     const beforeP = r.doc && id ? readJSON(r.doc, null).then((d) => JSON.parse(JSON.stringify(findById(d, id) || null))).catch(() => null) : Promise.resolve(null);
