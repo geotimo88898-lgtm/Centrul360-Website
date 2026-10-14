@@ -11,10 +11,19 @@
 //     This lets the owner log in on day one and create real accounts from Setări.
 
 const { readJSON } = require('./_lib/store');
-const { verifyPassword, setSessionCookie } = require('./_lib/auth');
+const { verifyPassword, setSessionCookie, getSession, renew } = require('./_lib/auth');
 
 module.exports = async (req, res) => {
   res.req = res.req || req; // cookie scope follows the host (see _lib/auth.js cookieDomain)
+  // GET: is this browser still signed in? The login page asks, and a signed-in person goes straight
+  // into the portal (the phone app used to open on the form every time, which looked like a logout).
+  if (req.method === 'GET') {
+    const session = getSession(req);
+    if (session && !session.viewer) renew(res, session);
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ signedIn: !!session });
+    return;
+  }
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' });
     return;

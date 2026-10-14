@@ -2,7 +2,7 @@
   "name": "Centrul360 - Portal echipă",
   "short_name": "Centrul360",
   "description": "Portalul intern Centrul360 - Pipeline, Calendar, Condică, Comisioane și restul.",
-  "start_url": "/portal-login",
+  "start_url": "/portal",
   "scope": "/",
   "display": "standalone",
   "background_color": "#17171a",

@@ -172,6 +172,7 @@ function requireAdmin(req, res) {
     res.status(403).json({ error: 'forbidden' });
     return null;
   }
+  renew(res, session);
   return session;
 }
 
@@ -189,6 +190,7 @@ function requireRole(req, res, roles) {
 }
 
 module.exports = {
+  renew,
   requireRole,
   hashPassword,
   verifyPassword,

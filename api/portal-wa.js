@@ -170,8 +170,10 @@ module.exports = async (req, res) => {
     }
     if (a === 'disconnect') {
       const c = (await readJSON(WA.CONFIG_KEY, null)) || {};
-      if (c.numbers) delete c.numbers[city];
-      if (c.token && !WA.CITIES.some((x) => c.numbers && c.numbers[x])) delete c.token;
+      // kept off (not just removed), so a number from Vercel's variables doesn't come back on its own
+      c.numbers = c.numbers || {};
+      c.numbers[city] = { off: true, offAt: new Date().toISOString() };
+      if (c.token && !WA.CITIES.some((x) => c.numbers[x] && c.numbers[x].phoneId)) delete c.token;
       await writeJSON(WA.CONFIG_KEY, c);
       WA.invalidate();
       res.status(200).json(await payload(false));

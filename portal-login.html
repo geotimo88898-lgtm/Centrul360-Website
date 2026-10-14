@@ -2,6 +2,21 @@
 <html lang="ro">
 <head>
 <script>try { if (/^android-app:\/\//.test(document.referrer)) sessionStorage.setItem('c360_app', 'android'); } catch (e) {}</script>
+<script>
+  // Still signed in (the phone app opens here): straight into the portal, the form never shows.
+  (function () {
+    var d = document.documentElement, show = function () { d.classList.remove('c360-chk'); };
+    d.classList.add('c360-chk');
+    setTimeout(show, 2500);
+    try {
+      fetch('/api/portal-login', { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : {}; })
+        .then(function (j) { if (j && j.signedIn) location.replace('/portal' + location.hash); else show(); })
+        .catch(show);
+    } catch (e) { show(); }
+  })();
+</script>
+<style>html.c360-chk body > *{ visibility:hidden; }</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">

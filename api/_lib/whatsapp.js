@@ -34,10 +34,11 @@ async function loadConfig(force) {
   const numbers = {};
   CITIES.forEach((city) => {
     const n = (c.numbers || {})[city] || {};
-    const envId = city === 'Timișoara' ? env.WHATSAPP_PHONE_ID_TIMISOARA || env.WHATSAPP_PHONE_ID : env.WHATSAPP_PHONE_ID_ARAD;
+    // "Deconectează" keeps the city off, even while Vercel still has a number for it
+    const envId = n.off ? '' : city === 'Timișoara' ? env.WHATSAPP_PHONE_ID_TIMISOARA || env.WHATSAPP_PHONE_ID : env.WHATSAPP_PHONE_ID_ARAD;
     numbers[city] = {
       phoneId: n.phoneId || envId || '', display: n.display || '', name: n.name || '',
-      wabaId: n.wabaId || env.WHATSAPP_WABA_ID || '', token: n.token || shared, ownToken: !!n.token, connectedAt: n.connectedAt || '',
+      wabaId: n.wabaId || (n.off ? '' : env.WHATSAPP_WABA_ID) || '', token: n.token || shared, ownToken: !!n.token, connectedAt: n.connectedAt || '',
       coex: !!n.coex,
     };
   });
