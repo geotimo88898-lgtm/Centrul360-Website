@@ -577,6 +577,40 @@
 .st-fb-status span{ font-size:.8rem; opacity:.85; }
 .st-fb-status.is-ok{ background:var(--good-soft); color:var(--good); }
 .st-fb-status.is-wait{ background:var(--glass); color:var(--muted); }
+/* Încasări → POS myPOS */
+.mo-pos .k-card-head{ margin-bottom:.8rem; }
+.mo-pos-sum{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.6rem; }
+.mo-pos-sum > div{ display:flex; flex-direction:column; gap:.15rem; padding:.75rem .9rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); min-width:0; }
+.mo-pos-sum span{ font-size:.78rem; color:var(--muted); }
+.mo-pos-sum b{ font-size:1.25rem; font-variant-numeric:tabular-nums; }
+.mo-pos-sum small{ font-size:.76rem; color:var(--muted); }
+.mo-pos-sum .is-good{ background:var(--good-soft); border-color:transparent; }
+.mo-pos-sum .is-good b, .mo-pos-sum .is-good small{ color:var(--good); }
+.mo-pos-sum .is-warn{ background:var(--warn-soft, var(--glass)); border-color:transparent; }
+.mo-pos-sum .is-warn b{ color:var(--warn); }
+.mo-pos-h{ margin:1.1rem 0 .4rem; font-size:.84rem; font-weight:700; color:var(--muted); }
+.mo-pos-ok{ display:flex; align-items:center; gap:.5rem; margin:.9rem 0 0; font-size:.86rem; color:var(--good); }
+.mo-pos-ok svg{ width:18px; height:18px; }
+.mo-pos-note{ display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; margin:.8rem 0 0; font-size:.82rem; color:var(--muted); }
+.mo-pos-note svg{ width:16px; height:16px; }
+.mo-pos-err{ margin:0 0 1rem; font-size:.84rem; }
+[data-pos]:not(:empty){ margin-bottom:1rem; }
+@container panel (max-width:560px){
+  .mo-pos-sum{ gap:.4rem; }
+  .mo-pos-sum > div{ padding:.6rem .6rem; border-radius:12px; }
+  .mo-pos-sum b{ font-size:1rem; }
+  .mo-pos-sum span, .mo-pos-sum small{ font-size:.7rem; }
+}
+/* myPOS: the terminals and their city */
+.st-mp-devs{ display:flex; flex-direction:column; gap:.4rem; margin-bottom:.75rem; }
+.st-mp-dev{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.55rem .7rem; border:1px solid var(--line); border-radius:12px; }
+.st-mp-dev span{ display:flex; flex-direction:column; min-width:0; }
+.st-mp-dev b{ font-size:.88rem; }
+.st-mp-dev small{ font-size:.76rem; color:var(--muted); white-space:nowrap; }
+.st-mp-dev select{ width:auto; min-width:9.5rem; }
+.st-mp-none{ margin:0 0 .75rem; font-size:.84rem; }
+.st-mp-id{ font-size:.8rem; }
+.st-mp-off{ margin-top:.5rem; color:var(--bad); }
 .st-fb-log + .st-int-row{ margin-top:.75rem; }
 .st-fb-settings{ margin-top:.9rem; padding:.7rem .8rem; border-radius:12px; border:1px solid var(--line); }
 .st-fb-settings > summary{ display:flex; align-items:center; gap:.45rem; cursor:pointer; font-size:.86rem; color:var(--muted); }

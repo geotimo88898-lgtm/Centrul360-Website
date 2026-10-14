@@ -67,6 +67,9 @@
     },
     "api/ads-manager.js": {
       "maxDuration": 60
+    },
+    "api/portal-mypos.js": {
+      "maxDuration": 60
     }
   }
 }

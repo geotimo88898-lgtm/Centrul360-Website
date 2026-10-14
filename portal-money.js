@@ -5,6 +5,8 @@
 // the desk picks WHICH appointment, HOW it was paid (card / cash / transfer / cash + card), WHO did
 // the treatment and, when she sold something extra, ticks "Upsell efectuat" with its value. The
 // commission on it (value - 60% costs, 10% of the profit) waits for the owner's approval.
+// The owner also sees the POS check (myPOS, Integrări): the card payments made on the POS next to the card
+// payments recorded here, matched one by one (same day, same city, same sum), and what is on one side only.
 // Salariu: salary + overtime + commission (cosmeticians) or the booking bonus (reception), per month.
 (function () {
   'use strict';
@@ -199,6 +201,7 @@
     panel.querySelector('[data-body]').innerHTML =
       '<div class="mo-range"><b>' + esc(rangeLabel()) + '</b><span>' + esc(where) + '</span><span class="k-live">live</span></div>' +
       (kpis.length ? '<div class="mo-kpis k-stagger">' + kpis.map((k) => INC[k].html()).join('') + '</div>' : '') +
+      (K.data.isAdmin ? '<div data-pos></div>' : '') +
       blocks.map((b) => BLOCK[b]()).join('');
 
     const ch = panel.querySelector('[data-chart]');
@@ -212,8 +215,102 @@
     });
     K.countAll(panel);
     renderList();
+    if (K.data.isAdmin) paintPos(from, to);
   }
 
+  // ---------------- myPOS (owner only): the card payments on the POS next to the card payments recorded here
+  const POS = { key: '', at: 0, data: null, loading: null, r: null, all: false };
+  const cardPart = (s) => (s.method === 'card' ? Number(s.amount || 0) : s.method === 'cash_card' && s.split ? Number(s.split.card || 0) : 0);
+  K.on('remote', () => { POS.at = 0; });
+  function loadPos(from, to) {
+    const key = from + '|' + to;
+    if (POS.key === key && Date.now() - POS.at < 60e3) return Promise.resolve(false);
+    if (POS.loading && POS.loading.key === key) return POS.loading.p;
+    const p = K.api('/api/portal-mypos?' + new URLSearchParams({ view: 'payments', from, to }))
+      .then((d) => { POS.data = d; }, () => { POS.data = { error: true }; })
+      .then(() => { POS.key = key; POS.at = Date.now(); POS.loading = null; return true; });
+    POS.loading = { key, p };
+    return p;
+  }
+  // one POS payment ↔ one card payment recorded here: same day, same sum (50 bani either way), the city of the
+  // terminal when it's set, the nearest in time
+  function reconcile(rows, d) {
+    const devices = d.devices || {};
+    const cityOfTid = (tid) => (devices[tid] && devices[tid].city) || '';
+    const cover = d.coverFrom ? K.iso(new Date(d.coverFrom)) : '';
+    const live = (d.payments || []).filter((p) => !p.cancelled);
+    const unknown = live.filter((p) => !cityOfTid(p.tid)).length;
+    const pays = live.filter((p) => S.loc === 'all' || cityOfTid(p.tid) === S.loc);
+    const pos = pays.filter((p) => p.amount > 0), refunds = pays.filter((p) => p.amount < 0);
+    const sales = rows.filter((s) => cardPart(s) > 0 && (!cover || s.date >= cover))
+      .map((s) => ({ s, amt: cardPart(s), t: Date.parse(s.createdAt) || Date.parse(s.date + 'T12:00:00') }));
+    const used = new Set(), matched = new Map(), posOnly = [];
+    pos.slice().sort((a, b) => (a.at < b.at ? -1 : 1)).forEach((p) => {
+      const pc = cityOfTid(p.tid), pt = Date.parse(p.at);
+      let best = null;
+      sales.forEach((x) => {
+        if (used.has(x.s.id) || x.s.date !== p.day || Math.abs(x.amt - p.amount) > 0.5 || (pc && x.s.location && x.s.location !== pc)) return;
+        const dt = Math.abs(x.t - pt);
+        if (!best || dt < best.dt) best = { x, dt };
+      });
+      if (best) { used.add(best.x.s.id); matched.set(best.x.s.id, p); } else posOnly.push(p);
+    });
+    return {
+      pos, refunds, unknown, matched, posOnly, portalOnly: sales.filter((x) => !used.has(x.s.id)),
+      posTotal: pos.reduce((a, p) => a + p.amount, 0), portalCard: sales.reduce((a, x) => a + x.amt, 0), cover,
+    };
+  }
+  const posTime = (p) => { const t = new Date(p.at); return K.pad(t.getHours()) + ':' + K.pad(t.getMinutes()); };
+  function posHtml(r, d) {
+    const devices = d.devices || {};
+    const diff = Math.round((r.posTotal - r.portalCard) * 100) / 100;
+    const ok = !r.posOnly.length && !r.portalOnly.length;
+    const dayTxt = (day) => (K.relDay(day) === K.dateLong(day) ? K.dateShort(day) : K.relDay(day));
+    const cap = (list) => (POS.all ? list : list.slice(0, 6));
+    const posRow = (p) => '<div class="k-row"><span class="k-icon-chip" style="color:var(--accent)">' + icon('card') + '</span><div class="k-row-main"><div class="k-row-title">' + esc(dayTxt(p.day) + ', ' + posTime(p)) + '</div>' +
+      '<div class="k-row-sub">' + esc([devices[p.tid] && devices[p.tid].city, p.pan ? 'card ••' + p.pan : '', 'TID ' + p.tid].filter(Boolean).join(' · ')) + '</div></div><div class="k-row-end"><span class="k-amount">' + K.lei(p.amount, 2) + '</span></div></div>';
+    const saleRow = (x) => '<div class="k-row is-click" data-pay="' + esc(x.s.id) + '"><span class="k-icon-chip" style="color:var(--warn)">' + icon('receipt') + '</span><div class="k-row-main"><div class="k-row-title">' + esc(x.s.client || '-') + '</div>' +
+      '<div class="k-row-sub">' + esc([dayTxt(x.s.date), x.s.treatment, S.loc === 'all' ? x.s.location : ''].filter(Boolean).join(' · ')) + '</div></div><div class="k-row-end"><span class="k-amount">' + K.lei(x.amt, 2) + '</span></div></div>';
+    const more = (list) => (list.length > 6 ? '<button type="button" class="k-btn is-ghost is-sm" data-pos-all>' + (POS.all ? 'Mai puține' : 'Vezi toate (' + list.length + ')') + '</button>' : '');
+    return '<section class="k-card mo-pos"><div class="k-card-head"><h3>' + icon('card') + 'POS myPOS</h3><span class="k-sub">' + (d.syncedAt ? 'citit ' + esc(K.ago(d.syncedAt)) : '') + '</span></div>' +
+      '<div class="mo-pos-sum">' +
+        '<div><span>Pe POS</span><b>' + K.lei(r.posTotal) + '</b><small>' + K.plural(r.pos.length, 'plată', 'plăți') + '</small></div>' +
+        '<div><span>În portal, pe card</span><b>' + K.lei(r.portalCard) + '</b><small>' + K.plural(r.matched.size + r.portalOnly.length, 'încasare', 'încasări') + '</small></div>' +
+        '<div class="' + (Math.abs(diff) < 0.01 && ok ? 'is-good' : 'is-warn') + '"><span>Diferență</span><b>' + (diff > 0 ? '+' : '') + K.lei(diff) + '</b><small>' + (ok ? (r.pos.length ? 'totul se potrivește' : 'nicio plată pe card') : K.plural(r.posOnly.length + r.portalOnly.length, 'plată nepotrivită', 'plăți nepotrivite')) + '</small></div>' +
+      '</div>' +
+      (r.unknown && S.loc !== 'all' ? '<p class="mo-pos-note">' + icon('info') + K.plural(r.unknown, 'plată vine', 'plăți vin') + ' de pe un aparat fără oraș. <button type="button" class="k-btn is-ghost is-sm" data-goto-int>Alege orașul aparatelor</button></p>' : '') +
+      (r.posOnly.length ? '<h4 class="mo-pos-h">Pe POS, dar nu în portal · ' + r.posOnly.length + '</h4><div class="k-list">' + cap(r.posOnly).map(posRow).join('') + '</div>' + more(r.posOnly) : '') +
+      (r.portalOnly.length ? '<h4 class="mo-pos-h">În portal pe card, dar nu pe POS · ' + r.portalOnly.length + '</h4><div class="k-list">' + cap(r.portalOnly).map(saleRow).join('') + '</div>' + more(r.portalOnly) : '') +
+      (r.refunds.length ? '<h4 class="mo-pos-h">Returnări pe POS · ' + r.refunds.length + '</h4><div class="k-list">' + r.refunds.map(posRow).join('') + '</div>' : '') +
+      (ok && r.pos.length ? '<p class="mo-pos-ok">' + icon('checkCircle') + 'Fiecare plată de pe POS are încasarea ei în portal.</p>' : '') +
+      '</section>';
+  }
+  function paintPos(from, to) {
+    const draw = () => {
+      const slot = panel && panel.querySelector('[data-pos]');
+      if (!slot) return;
+      const d = POS.data;
+      if (!d || POS.key !== from + '|' + to) return;
+      if (d.error) { slot.innerHTML = '<p class="k-muted mo-pos-err">Nu am putut citi plățile de pe POS.</p>'; POS.r = null; return; }
+      if (!d.connected) { slot.innerHTML = ''; POS.r = null; return; }
+      POS.r = reconcile(periodRows(), d);
+      slot.innerHTML = posHtml(POS.r, d);
+      const all = slot.querySelectorAll('[data-pos-all]');
+      all.forEach((b) => b.addEventListener('click', () => { POS.all = !POS.all; draw(); }));
+      const gi = slot.querySelector('[data-goto-int]');
+      if (gi) gi.addEventListener('click', () => K.go('integrari'));
+      renderList();
+    };
+    draw();
+    loadPos(from, to).then((changed) => { if (changed) draw(); });
+  }
+
+  // the owner sees on each card payment whether it is on the POS too
+  function posTag(s) {
+    const r = POS.r;
+    if (!r || !cardPart(s) || (r.cover && s.date < r.cover)) return '';
+    return r.matched.has(s.id) ? '<span class="k-tag is-good">' + icon('check') + 'POS</span>' : '<span class="k-tag is-warn">fără POS</span>';
+  }
   function filtered() {
     const q = K.norm(S.q);
     return periodRows().filter((s) => (!S.day || s.date === S.day) && (!S.method || s.method === S.method) &&
@@ -239,7 +336,7 @@
           return '<div class="k-row is-click" data-pay="' + esc(s.id) + '"><span class="k-icon-chip" style="color:' + mm.color + '">' + icon(mm.ic) + '</span>' +
             '<div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(s.treatment) + (K.catLabel(s) ? ' · ' + esc(K.catLabel(s)) : '') +
             (s.performedByName && s.performedByName !== '-' ? ' · ' + esc(s.performedByName) : '') + (S.loc === 'all' && s.location ? ' · ' + esc(s.location) : '') + '</div></div>' +
-            '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + '<span class="k-tag">' + mm.label + '</span><span class="k-amount">' + K.lei(s.amount, 2) + '</span></div></div>';
+            '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + posTag(s) + '<span class="k-tag">' + mm.label + '</span><span class="k-amount">' + K.lei(s.amount, 2) + '</span></div></div>';
         }).join('') + '</div>').join('');
   }
 

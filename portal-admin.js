@@ -692,7 +692,10 @@
     if (!ipanel || !K.isActive('integrari')) return;
     if (I.tab === 'forms' && window.C360Forms) window.C360Forms.load();
     else if (I.tab === 'wa' && window.C360Wa) window.C360Wa.list(ipanel.querySelector('[data-pane="wa"]'), true);
-    else { const fb = ipanel.querySelector('[data-fb]'); if (fb) loadFb(fb); }
+    else {
+      const fb = ipanel.querySelector('[data-fb]'); if (fb) loadFb(fb);
+      const mp = ipanel.querySelector('[data-mypos]'); if (mp && !mp.contains(document.activeElement)) loadMypos(mp);
+    }
   });
   function renderIntegrations() {
     if (!ipanel || I.tab !== 'int') return;
@@ -700,16 +703,89 @@
     body.innerHTML = '<div class="st-integrations">' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Două numere: Timișoara și Arad. De pe ele pleacă șabloanele din automatizări și răspunsurile din Mesaje.</span></div></div><div data-wa><div class="k-skel" style="height:96px"></div></div></section>' +
+      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-warn">' + icon('card') + '</span><div><b>myPOS</b><span>Plățile cu cardul de pe POS, puse lângă încasările din portal, în Încasări.</span></div></div><div data-mypos><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="creative">Deschide Creative' + icon('arrow') + '</button></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-info">' + icon('globe') + '</span><div><b>Site centrul360.com</b><span>Paginile Oferte și Prețuri se actualizează din secțiunea Oferte, în câteva minute.</span></div></div>' +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Sincronizat</span><a class="k-btn is-outline is-sm" href="https://centrul360.com/oferte" target="_blank" rel="noopener">Vezi pagina' + icon('arrow') + '</a></div></section></div>';
     body.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
     loadFb(body.querySelector('[data-fb]'));
+    loadMypos(body.querySelector('[data-mypos]'));
     (async () => {
       const box = body.querySelector('[data-wa]');
       if (box && window.C360Wa) paintWa(box);
     })();
+  }
+
+  // myPOS: the REST API credentials from the myPOS account (ID Client + Secret), then the terminals and their
+  // city, whether the live payments come (webhook) and when the history was last read. The secret never
+  // comes back from the server.
+  const MP_ERR = {
+    mypos_auth: 'myPOS nu a recunoscut ID-ul sau secretul. Copiază-le din nou din contul myPOS.', mypos_down: 'myPOS nu răspunde acum. Încearcă din nou în câteva minute.',
+    invalid_client_id: 'ID-ul clientului nu arată bine. Copiază-l din nou.', invalid_client_secret: 'Secretul nu arată bine. Copiază-l din nou.',
+    mypos_denied: 'myPOS nu dă voie cu cheile astea.', mypos_busy: 'Prea multe cereri la myPOS. Mai încearcă peste un minut.', mypos_failed: 'myPOS a dat o eroare. Încearcă din nou.', not_connected: 'myPOS nu e conectat.',
+  };
+  const mpFail = (err) => K.ui().toast(MP_ERR[err.code] || K.errText(err), 'error');
+  const mpWhen = (iso) => { if (!iso) return ''; const r = K.relDay(dayOf(iso)); return (r === 'Azi' ? 'azi' : r === 'Ieri' ? 'ieri' : K.dateShort(dayOf(iso))) + ', ' + hhmm(iso); };
+  const mpKeysForm = (open, has) => '<details class="st-fb-manual"' + (open ? ' open' : '') + '><summary>' + (has ? 'Schimbă cheile' : 'Cheile myPOS') + '</summary>' +
+    '<form class="st-manual" data-mp-connect autocomplete="off">' +
+      '<label class="k-field full"><span>ID Client</span><input name="clientId" autocomplete="off" spellcheck="false"></label>' +
+      '<label class="k-field full"><span>Secretul clientului</span><input name="clientSecret" type="password" autocomplete="new-password" spellcheck="false"></label>' +
+      '<small class="k-muted">Din contul myPOS: Integrări → REST API → Generați acreditări noi.</small>' +
+      '<button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Conectează</button></form></details>';
+  async function loadMypos(box) {
+    if (!box) return;
+    let d;
+    try { d = await K.api('/api/portal-mypos'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica myPOS.</span>'; return; }
+    const errLine = (x) => (x && x.status ? 'myPOS a răspuns ' + x.status + (x.message ? ': ' + x.message : '') : (x && x.message) || 'myPOS n-a răspuns');
+    if (!d.connected) {
+      box.innerHTML = mpKeysForm(true, false);
+    } else {
+      const live = d.live && d.live.ok, hist = d.history;
+      const devs = d.devices || [];
+      box.innerHTML =
+        '<div class="st-fb-status ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'alert') + '<div><b>Plăți în timp real</b><span>' +
+          (live ? (d.lastHook && d.lastHook.ok && d.lastHook.amount ? 'Ultima: ' + esc(K.lei(d.lastHook.amount)) + ' · ' + esc(mpWhen(d.lastHook.at)) : 'Pornite. Prima plată pe POS apare aici.') : esc('Nu s-au putut porni. ' + errLine(d.live))) + '</span></div></div>' +
+        '<div class="st-fb-status ' + (hist && hist.ok ? 'is-ok' : 'is-wait') + '">' + icon(hist && hist.ok ? 'checkCircle' : hist ? 'alert' : 'clock') + '<div><b>Istoricul plăților</b><span>' +
+          (hist && hist.ok ? 'Citit ' + esc(mpWhen(d.syncedAt || hist.at)) + (d.lastPayment ? ' · ultima plată ' + esc(K.lei(d.lastPayment.amount)) + ', ' + esc(mpWhen(d.lastPayment.at)) : '') : hist ? esc('Nu s-a putut citi. ' + errLine(hist)) : 'Încă necitit.') + '</span></div></div>' +
+        (devs.length ? '<div class="st-mp-devs">' + devs.map((x) => '<label class="st-mp-dev"><span><b>' + esc(x.model || 'POS') + '</b><small>TID ' + esc(x.tid) + '</small></span>' +
+          '<select data-mp-city="' + esc(x.tid) + '">' + K.options([['', 'Alege orașul'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], x.city || '') + '</select></label>').join('') + '</div>'
+          : '<p class="k-muted st-mp-none">' + (d.devicesHealth && !d.devicesHealth.ok ? esc('Nu am putut citi aparatele. ' + errLine(d.devicesHealth)) : 'Niciun aparat POS găsit în cont.') + '</p>') +
+        '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><span class="k-muted st-mp-id">ID ' + esc(d.clientId) + '</span><span class="k-grow"></span>' +
+          '<button type="button" class="k-btn is-ghost is-sm" data-mp-sync>' + icon('refresh') + 'Citește acum</button>' +
+          '<button type="button" class="k-btn is-outline is-sm" data-goto="incasari">Încasări' + icon('arrow') + '</button></div>' +
+        mpKeysForm(false, true) +
+        '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-mp-off>Deconectează myPOS</button>';
+    }
+    const f = box.querySelector('[data-mp-connect]');
+    if (f) f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(f);
+      const btn = f.querySelector('[type="submit"]');
+      K.busy(btn, async () => {
+        try {
+          await K.api('/api/portal-mypos', { action: 'connect', clientId: v.clientId, clientSecret: v.clientSecret });
+          f.reset();
+          K.ui().toast('myPOS e conectat.', 'success');
+          loadMypos(box);
+        } catch (err) { mpFail(err); }
+      });
+    });
+    box.querySelectorAll('[data-mp-city]').forEach((s) => s.addEventListener('change', async () => {
+      try { await K.api('/api/portal-mypos', { action: 'device', tid: s.dataset.mpCity, city: s.value }); K.ui().toast(s.value ? 'Aparatul e în ' + s.value + '.' : 'Orașul aparatului e scos.', 'success'); }
+      catch (err) { mpFail(err); loadMypos(box); }
+    }));
+    const sy = box.querySelector('[data-mp-sync]');
+    if (sy) sy.addEventListener('click', () => K.busy(sy, async () => {
+      try { const r = await K.api('/api/portal-mypos', { action: 'sync' }); K.ui().toast(r.added ? K.plural(r.added, 'plată nouă', 'plăți noi') + ' de pe POS.' : 'Nicio plată nouă.', 'success'); loadMypos(box); }
+      catch (err) { mpFail(err); loadMypos(box); }
+    }));
+    const off = box.querySelector('[data-mp-off]');
+    if (off) off.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Deconectezi myPOS?', message: 'Plățile de pe POS nu mai vin în portal până îl conectezi la loc. Cele citite rămân.', confirmText: 'Deconectează', danger: true }))) return;
+      try { await K.api('/api/portal-mypos', { action: 'disconnect' }); K.ui().toast('myPOS e deconectat.', 'success'); loadMypos(box); } catch (err) { mpFail(err); }
+    });
+    box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
   }
 
   // Facebook: one button logs in with Facebook (Meta's own window); back here, the admin picks the
