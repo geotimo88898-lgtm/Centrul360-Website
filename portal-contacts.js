@@ -801,5 +801,16 @@
 
   K.section('contacte', { mount, show() { load(); } });
   K.on('contacts:open', (id) => { if (id) openContact(id, 'poze'); });
+  // from a conversation (Mesaje): her profile, found by her phone
+  K.on('contacts:open-phone', async (phone) => {
+    const digits = String(phone || '').replace(/\D/g, '').slice(-9);
+    if (digits.length < 9) return;
+    try {
+      const j = await api('list', { q: digits, limit: 20 });
+      const c = (j.contacts || []).find((x) => String(x.phone || '').replace(/\D/g, '').slice(-9) === digits);
+      if (c) openContact(c.id, 'fise');
+      else K.ui().toast('Nu e încă în Contacte (apare după prima programare sau formular).', 'info');
+    } catch (err) { K.ui().toast(errText(err), 'error'); }
+  });
   K.on('remote', () => { if (panel && K.isActive('contacte') && !K.drawerOpen) load(); });
 })();

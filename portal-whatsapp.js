@@ -232,8 +232,8 @@
   const telOf = (p) => { const d = String(p || '').replace(/[^\d+]/g, ''); return /^\+/.test(d) || /^0/.test(d) ? d : d.length >= 11 ? '+' + d : d; };
   function headHtml(t) {
     return '<header class="mx-thead"><button type="button" class="k-icon-btn mx-back" data-act="back" aria-label="Înapoi">' + icon('left') + '</button>' +
-      face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
-      esc([named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : ''].filter(Boolean).join(' · ')) + '</small></div>' +
+      '<button type="button" class="mx-thead-who" data-act="contact" title="Deschide profilul ei">' + face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
+      esc([named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : ''].filter(Boolean).join(' · ')) + '</small></div></button>' +
       '<a class="k-icon-btn" href="tel:' + esc(telOf(t.phone)) + '" title="Sună" data-act="call">' + icon('phone') + '</a>' +
       (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>';
   }
@@ -377,6 +377,7 @@
       if (a === 'tpl' && C.thread) return pickTemplate({ phone: C.thread.phone, name: named(C.thread) ? C.thread.clientName : '', city: C.thread.location, interest: C.thread.lead ? C.thread.lead.interest : '' });
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);
       if (a === 'snip') return toggleSnips(act);
+      if (a === 'contact') return K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
       if (a === 'snips') return manageSnips();
     }
     const sh = e.target.closest('[data-show]');

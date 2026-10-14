@@ -1485,6 +1485,9 @@ main.ad-full{ max-width:none; }
 .mx-doc .k-ic{ flex:none; width:18px; height:18px; }
 .mx-doc.is-missing{ color:var(--muted); }
 .mx-attach{ cursor:pointer; }
+.mx-thead-who{ flex:1; min-width:0; display:flex; align-items:center; gap:.65rem; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.mx-thead-who .mx-thead-main{ min-width:0; }
+@media (hover:hover) and (pointer:fine){ .mx-thead-who:hover b{ text-decoration:underline; text-underline-offset:3px; } }
 /* a template with a picture header: the picture's place in the preview, the example picture button */
 .wa-himg{ display:grid; place-items:center; height:120px; margin:-.35rem -.45rem .45rem; border-radius:10px; background:var(--glass); color:var(--muted); }
 .wa-himg .k-ic{ width:30px; height:30px; }
