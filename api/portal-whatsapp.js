@@ -235,6 +235,57 @@ module.exports = async (req, res) => {
     }
 
     // an approved template: after 24h, or to write first (a new conversation)
+    // "Trimite rezultatele" (Contacte → her before / after): the picture to her WhatsApp. Inside her 24h
+    // window as a photo with the text; otherwise only with an approved results template (picture header).
+    if (action === 'send_results') {
+      const raw = String(body.phone || '').trim();
+      const phone = normalizePhone(raw) || raw;
+      if (!toE164(phone)) return fail(400, 'invalid_phone', 'Clienta nu are un număr de telefon corect.');
+      const img = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
+      if (!img) return fail(400, 'invalid_file', 'Imaginea nu a putut fi citită.');
+      const buf = Buffer.from(img[1], 'base64');
+      if (buf.length > 3e6) return fail(400, 'too_big', 'Imaginea e prea mare.');
+      const s = await setup();
+      if (!s.ready.length) return fail(409, 'not_connected', 'WhatsApp nu e conectat încă (Integrări → WhatsApp).');
+      const conversations = await readJSON(KEY, []);
+      let convo = conversations.find((c) => c.phone === phone);
+      const city = (s.ready.includes(body.location) ? body.location : '') || (convo && s.ready.includes(convo.location) ? convo.location : '') || s.ready[0];
+      const cfg = await WA.loadConfig();
+      const n = cfg.numbers[city];
+      const doc = await WT.load();
+      const all = (doc.templates || []).filter((t) => t.purpose === 'results');
+      const tpl = all.find((t) => WT.approvedFor(t, n.wabaId)) || null;
+      const name = String(body.name || (convo && convo.clientName !== convo.phone && convo.clientName) || '').trim().slice(0, 120);
+      const treat = String(body.treatment || '').trim().slice(0, 150);
+      const v = { prenume: name.split(/\s+/)[0] || '', nume: name, tratament: treat || 'tratament', procedura: treat || 'tratament', interes: treat || 'tratament', locatie: city, telefon: phone };
+      const fill = (t) => WT.friendly(t).replace(/\{(\w+)\}/g, (m, k) => v[k] || '');
+      let r, text, type, templateId;
+      if (convo && within24h(convo)) {
+        text = all[0] ? fill(all[0]) : 'Rezultatele tale' + (treat ? ' după ' + treat : '') + ' 💛';
+        r = await WA.sendMedia({ phone, from: city, buf, mime: 'image/jpeg', filename: 'rezultate.jpg', caption: text });
+        type = 'other';
+      } else {
+        if (!tpl) return fail(409, 'not_approved', all.length
+          ? 'Șablonul de rezultate „' + all[0].label + '” nu e aprobat încă pentru ' + city + '. Până atunci rezultatele pleacă doar dacă ți-a scris în ultimele 24h.'
+          : 'Nu există încă un șablon pentru rezultate: în Integrări → Șabloane WhatsApp, cu antet Imagine și bifa „Trimite rezultatele”.');
+        const up = await WA.uploadMedia(city, buf, 'image/jpeg', 'rezultate.jpg');
+        if (up.error) return fail(502, 'send_failed', 'Imaginea nu a ajuns la Meta: ' + up.error);
+        r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImageId: up.id });
+        text = fill(tpl); type = 'template'; templateId = tpl.id;
+      }
+      if (!r.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis rezultatele' + (r.error ? ': ' + r.error : '.'));
+      if (!convo) { convo = { phone, clientName: name || phone, location: city, lastMessageAt: nowISO(), unreadCount: 0, messages: [] }; conversations.push(convo); }
+      if (!convo.location) convo.location = city;
+      const id = r.id || crypto.randomUUID();
+      const path = 'wa-media/' + String(id).replace(/[^\w-]/g, '').slice(-60) + '.jpg';
+      await writeBinary(path, buf, 'image/jpeg');
+      convo.messages.push(Object.assign({ id, direction: 'out', type, media: { kind: 'image', mime: 'image/jpeg', filename: 'rezultate.jpg', path }, text, status: 'sent', timestamp: nowISO(), sentBy: session.employeeId }, templateId ? { templateId } : {}));
+      convo.lastMessageAt = nowISO();
+      await writeJSON(KEY, conversations);
+      res.status(200).json({ ok: true, how: type === 'template' ? 'template' : 'photo', city });
+      return;
+    }
+
     if (action === 'send_template') {
       const raw = String(body.phone || '').trim();
       const phone = normalizePhone(raw) || raw;

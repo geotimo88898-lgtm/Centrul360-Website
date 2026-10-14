@@ -76,7 +76,7 @@ function toE164(phone) {
 
 // from: 'Timișoara' | 'Arad' (the number it leaves from); when that one isn't connected, the other
 // connected number sends it and the answer says so (fromCity).
-async function sendWhatsApp({ phone, text, template, params, language, from }) {
+async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId }) {
   const cfg = await loadConfig();
   const ready = readyNumbers(cfg);
   if (!ready.length) return { sent: false, error: 'not_configured' };
@@ -86,7 +86,8 @@ async function sendWhatsApp({ phone, text, template, params, language, from }) {
   if (!to) return { sent: false, error: 'telefon invalid', fromCity: city };
   const body = template
     ? { messaging_product: 'whatsapp', to, type: 'template', template: { name: template, language: { code: language || 'ro' },
-        components: params && params.length ? [{ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p).slice(0, 1000) })) }] : [] } }
+        components: [].concat(headerImageId ? [{ type: 'header', parameters: [{ type: 'image', image: { id: String(headerImageId) } }] }] : [],
+          params && params.length ? [{ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p).slice(0, 1000) })) }] : []) } }
     : { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(text || '').slice(0, 4000) } };
   try {
     const r = await fetch(`${GRAPH}/${encodeURIComponent(n.phoneId)}/messages`, {
@@ -122,6 +123,38 @@ const MEDIA_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp
 const mediaExt = (mime) => MEDIA_EXT[String(mime || '').split(';')[0].trim().toLowerCase()] || '';
 // what kind of WhatsApp message a file goes as
 const mediaKind = (mime) => (/^image\/(jpeg|png)$/.test(mime) ? 'image' : /^video\//.test(mime) ? 'video' : /^audio\//.test(mime) ? 'audio' : 'document');
+
+// a file up to Meta from a clinic's number (for a message or a template's header): { id } or { error }
+async function uploadMedia(city, buf, mime, filename) {
+  const cfg = await loadConfig();
+  const n = cfg.numbers[city];
+  if (!n || !n.phoneId || !n.token) return { error: 'numărul ' + city + ' nu e conectat' };
+  try {
+    const fd = new FormData();
+    fd.append('messaging_product', 'whatsapp');
+    fd.append('type', mime);
+    fd.append('file', new Blob([buf], { type: mime }), filename || ('fisier.' + (mediaExt(mime) || 'bin')));
+    const up = await fetch(GRAPH + '/' + encodeURIComponent(n.phoneId) + '/media', { method: 'POST', headers: { Authorization: 'Bearer ' + n.token }, body: fd });
+    const uj = await up.json().catch(() => ({}));
+    if (!up.ok || !uj.id) return { error: ((uj && uj.error) || {}).message || 'eroare ' + up.status };
+    return { id: String(uj.id) };
+  } catch (err) { return { error: 'rețea' }; }
+}
+// an example picture for Meta's review of a template (resumable upload → a handle), with an account's access
+async function resumableHandle(token, buf, mime) {
+  try {
+    const app = await fetch(GRAPH + '/app?access_token=' + encodeURIComponent(token));
+    const aj = await app.json().catch(() => ({}));
+    if (!app.ok || !aj.id) return { error: ((aj && aj.error) || {}).message || 'nu găsesc aplicația Meta a accesului' };
+    const s = await fetch(GRAPH + '/' + aj.id + '/uploads?' + new URLSearchParams({ file_name: 'exemplu.' + (mediaExt(mime) || 'jpg'), file_length: String(buf.length), file_type: mime, access_token: token }), { method: 'POST' });
+    const sj = await s.json().catch(() => ({}));
+    if (!s.ok || !sj.id) return { error: ((sj && sj.error) || {}).message || 'eroare ' + s.status };
+    const u = await fetch(GRAPH + '/' + sj.id, { method: 'POST', headers: { Authorization: 'OAuth ' + token, file_offset: '0' }, body: buf });
+    const uj = await u.json().catch(() => ({}));
+    if (!u.ok || !uj.h) return { error: ((uj && uj.error) || {}).message || 'eroare ' + u.status };
+    return { h: uj.h };
+  } catch (err) { return { error: 'rețea' }; }
+}
 
 // a file from the portal, out to a client: up to Meta from the number it leaves from, then the message
 async function sendMedia({ phone, from, buf, mime, filename, caption }) {
@@ -171,4 +204,4 @@ async function fetchMedia(phoneNumberId, mediaId) {
   return { buf: Buffer.from(await f.arrayBuffer()), mime: String(mj.mime_type || f.headers.get('content-type') || '').split(';')[0] };
 }
 
-module.exports = { mediaExt, mediaKind, sendMedia, fetchMedia, CITIES, CONFIG_KEY, GRAPH, loadConfig, invalidate, webhookSecrets, readyNumbers, whatsappReady, whatsappConfigured, cityForPhoneId, sendWhatsApp, toE164 };
+module.exports = { uploadMedia, resumableHandle, mediaExt, mediaKind, sendMedia, fetchMedia, CITIES, CONFIG_KEY, GRAPH, loadConfig, invalidate, webhookSecrets, readyNumbers, whatsappReady, whatsappConfigured, cityForPhoneId, sendWhatsApp, toE164 };

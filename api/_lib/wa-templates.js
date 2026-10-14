@@ -13,7 +13,7 @@
 //     updatedAt }] }
 
 const crypto = require('crypto');
-const { readJSON, writeJSON } = require('./store');
+const { readJSON, writeJSON, readBinary } = require('./store');
 const WA = require('./whatsapp');
 
 const KEY = 'data/wa-templates.json';
@@ -78,11 +78,15 @@ function clean(input, prev) {
   const i = input || {};
   const t = prev ? JSON.parse(JSON.stringify(prev)) : { id: crypto.randomUUID().slice(0, 12), language: 'ro', name: '', meta: {} };
   if (i.only !== undefined) t.only = onlyOf(i.only);
+  // the template "Trimite rezultatele" (Contacte → before / after) sends
+  if (i.purpose !== undefined) t.purpose = i.purpose === 'results' ? 'results' : '';
   t.label = clip(i.label, 80).trim() || t.label || '';
   if (!t.label) return { error: 'Dă-i un nume șablonului.' };
   if (!prev || editable(prev)) {
     t.category = CATEGORIES.includes(i.category) ? i.category : 'UTILITY';
-    t.header = clip(i.header, 60).trim();
+    // the header: words, or a picture sent with each message (Meta reviews it with an example picture)
+    t.headerType = i.headerType === 'IMAGE' ? 'IMAGE' : '';
+    t.header = t.headerType === 'IMAGE' ? '' : clip(i.header, 60).trim();
     if (/[{}]/.test(t.header)) return { error: 'Antetul nu poate avea variabile.' };
     const text = clip(i.body, 1024).trim();
     if (!text) return { error: 'Scrie mesajul.' };
@@ -111,9 +115,10 @@ function clean(input, prev) {
   return { t };
 }
 
-function components(t) {
+function components(t, handle) {
   const c = [];
-  if (t.header) c.push({ type: 'HEADER', format: 'TEXT', text: t.header });
+  if (t.headerType === 'IMAGE') c.push({ type: 'HEADER', format: 'IMAGE', example: { header_handle: [handle || ''] } });
+  else if (t.header) c.push({ type: 'HEADER', format: 'TEXT', text: t.header });
   const body = { type: 'BODY', text: t.body };
   if ((t.map || []).length) body.example = { body_text: [t.map.map((k) => SAMPLE[k] || 'exemplu')] };
   c.push(body);
@@ -130,6 +135,16 @@ async function graph(token, method, path, params) {
   const j = await r.json().catch(() => ({}));
   const e = (j && j.error) || {};
   return { ok: r.ok, j, error: !r.ok ? (e.error_user_msg || e.message || 'eroare ' + r.status) : '' };
+}
+
+// the parts Meta reviews: an image header goes with its example picture, uploaded with the account's access
+async function compsFor(t, a) {
+  if (t.headerType !== 'IMAGE') return { c: components(t) };
+  const buf = t.samplePath ? await readBinary(t.samplePath) : null;
+  if (!buf) return { error: 'lipsește poza exemplu' };
+  const h = await WA.resumableHandle(a.token, buf, 'image/jpeg');
+  if (h.error) return { error: 'poza exemplu: ' + h.error };
+  return { c: components(t, h.h) };
 }
 
 // send it to Meta for approval, in every connected account that doesn't have it yet (or refused it)
@@ -151,8 +166,11 @@ async function submit(d, id, cities) {
   while (taken.has(name)) name = base + '_' + n++;
   t.name = name;
   const errors = [];
+  if (t.headerType === 'IMAGE' && !t.samplePath) return { error: 'Adaugă poza exemplu (Meta o cere ca să aprobe un șablon cu imagine).' };
   for (const a of todo) {
-    const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: components(t) });
+    const comps = await compsFor(t, a);
+    if (comps.error) { errors.push(a.cities.join(' + ') + ': ' + comps.error); continue; }
+    const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: comps.c });
     if (r.ok) t.meta[a.wabaId] = { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '' };
     else errors.push(a.cities.join(' + ') + ': ' + r.error);
   }
@@ -185,7 +203,7 @@ async function sync(d) {
         const body = String(comp('BODY').text || '');
         const n = (body.match(/\{\{\d+\}\}/g) || []).length;
         t = { id: crypto.randomUUID().slice(0, 12), label: m.name.replace(/_/g, ' '), name: m.name, language: m.language, category: CATEGORIES.includes(m.category) ? m.category : 'MARKETING',
-          header: comp('HEADER').format === 'TEXT' ? comp('HEADER').text || '' : '', body, map: Array.from({ length: n }, (_, k) => (k === 0 ? 'prenume' : '')), footer: comp('FOOTER').text || '',
+          header: comp('HEADER').format === 'TEXT' ? comp('HEADER').text || '' : '', headerType: comp('HEADER').format === 'IMAGE' ? 'IMAGE' : '', body, map: Array.from({ length: n }, (_, k) => (k === 0 ? 'prenume' : '')), footer: comp('FOOTER').text || '',
           buttons: (comp('BUTTONS').buttons || []).map((b) => ({ type: b.type, text: b.text, url: b.url, phone: b.phone_number })), imported: true, meta: {}, updatedAt: nowISO() };
         d.templates.push(t);
       }
@@ -216,7 +234,9 @@ async function spread(d, list, max = 6) {
       if ((t.only || []).length && !a.cities.some((c) => t.only.includes(c))) continue;
       if (!Object.values(t.meta).some((m) => m.status === 'APPROVED')) continue;
       const name = t.name || slug(t.label);
-      const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: components(t) });
+      const comps = await compsFor(t, a);
+      if (comps.error) continue;
+      const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: comps.c });
       t.name = name;
       t.meta[a.wabaId] = r.ok ? { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '' }
         : { id: '', name, status: 'REJECTED', reason: r.error };
@@ -249,7 +269,7 @@ function view(t, cfg) {
   const cities = {};
   if (cfg) WA.CITIES.forEach((c) => { const n = cfg.numbers[c]; const m = n.wabaId ? (t.meta || {})[n.wabaId] : null; cities[c] = n.phoneId && n.token ? (m ? m.status : 'DRAFT') : ''; });
   const reasons = Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean);
-  return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', text: friendly(t), body: t.body, map: t.map || [],
+  return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, text: friendly(t), body: t.body, map: t.map || [],
     footer: t.footer || '', buttons: t.buttons || [], status: overall(t), editable: editable(t), cities, reason: reasons[0] || '', imported: !!t.imported, updatedAt: t.updatedAt || '' };
 }
 

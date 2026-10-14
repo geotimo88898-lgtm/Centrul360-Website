@@ -312,6 +312,14 @@ module.exports = async (req, res) => {
       if (!prev && d.templates.length >= 150) { res.status(400).json({ error: 'too_many', message: 'Cel mult 150 de șabloane.' }); return; }
       const v = T.clean(body.template, prev);
       if (v.error) { res.status(400).json({ error: 'invalid', message: v.error }); return; }
+      // the example picture of an image header (Meta reviews the template with it)
+      const sample = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String((body.template && body.template.sample) || ''));
+      if (sample && v.t.headerType === 'IMAGE') {
+        const buf = Buffer.from(sample[1], 'base64');
+        if (buf.length > 3e6) { res.status(400).json({ error: 'invalid', message: 'Poza exemplu e prea mare.' }); return; }
+        v.t.samplePath = 'wa-media/tpl-' + v.t.id.replace(/[^\w-]/g, '') + '-' + Date.now().toString(36) + '.jpg';
+        await require('./_lib/store').writeBinary(v.t.samplePath, buf, 'image/jpeg');
+      }
       if (prev) Object.assign(prev, v.t); else d.templates.push(v.t);
       let submitted = null;
       if (body.submit) submitted = await T.submit(d, v.t.id, body.cities);

@@ -42,7 +42,7 @@
     const v = sample || (W.d && W.d.sample) || {};
     const fill = (s) => esc(String(s || '')).replace(/\{(\w+)\}/g, (m, k) => (k in v ? '<mark>' + esc(v[k]) + '</mark>' : '<mark class="is-bad">' + m + '</mark>')).replace(/\{\{(\d+)\}\}/g, '<mark class="is-bad">{{$1}}</mark>');
     return '<div class="wa-phone"><div class="wa-bubble">' +
-      (t.header ? '<b class="wa-h">' + esc(t.header) + '</b>' : '') +
+      (t.headerType === 'IMAGE' ? '<span class="wa-himg">' + icon('image') + '</span>' : t.header ? '<b class="wa-h">' + esc(t.header) + '</b>' : '') +
       '<div class="wa-b">' + (fill(t.text || t.body) || '<span class="k-muted">Mesajul…</span>') + '</div>' +
       (t.footer ? '<small class="wa-f">' + esc(t.footer) + '</small>' : '') +
       '<span class="wa-time">11:02</span></div>' +
@@ -56,7 +56,14 @@
     const o = opts || {};
     let d;
     try { d = await load(); } catch (e) { K.ui().toast(K.errText(e), 'error'); return; }
-    const t = tpl ? JSON.parse(JSON.stringify(tpl)) : { label: '', category: 'UTILITY', header: '', text: 'Bună, {prenume}! ', footer: '', buttons: [], map: [], editable: true, status: 'DRAFT' };
+    const t = tpl ? JSON.parse(JSON.stringify(tpl)) : { label: '', category: 'UTILITY', header: '', headerType: '', purpose: '', text: 'Bună, {prenume}! ', footer: '', buttons: [], map: [], editable: true, status: 'DRAFT' };
+    let sample = ''; // the example picture of an image header (a JPEG data URL, sent with the save)
+    const sampleOf = (file) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => { const k = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight)); const cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(img.src); resolve(cv.toDataURL('image/jpeg', 0.85)); };
+      img.onerror = () => reject(new Error('Nu pot citi poza.'));
+      img.src = URL.createObjectURL(file);
+    });
     const canEdit = t.editable !== false;
     const vars = d.vars || Object.keys(VLABEL);
     const chips = '<div class="au-vars-chips wa-chips">' + vars.map((k) => '<button type="button" data-var="{' + k + '}" title="' + esc(VLABEL[k] || k) + '">{' + k + '}</button>').join('') + '</div>';
@@ -68,7 +75,11 @@
       ? '<div class="k-form wa-form">' +
           K.field('Numele șablonului', '<input data-tf="label" maxlength="80" placeholder="ex. Confirmare programare" value="' + esc(t.label) + '">', 'full', 'Pentru tine. Meta primește un nume fără diacritice, ex. confirmare_programare.') +
           K.field('Categoria', '<select data-tf="category">' + K.options(Object.keys(CAT).map((k) => [k, CAT[k]]), t.category) + '</select>', 'full', 'Utilitate: confirmări și remindere (se aprobă mai ușor, costă mai puțin). Marketing: orice ofertă sau invitație.') +
-          K.field('Antet (opțional)', '<input data-tf="header" maxlength="60" placeholder="ex. Programarea ta la Centrul360" value="' + esc(t.header || '') + '">', 'full') +
+          K.field('Antet', '<select data-tf="headerType">' + K.options([['', 'Text (sau fără)'], ['IMAGE', 'Imagine (se trimite cu fiecare mesaj)']], t.headerType || '') + '</select>', 'full') +
+          (t.headerType === 'IMAGE'
+            ? K.field('Poză exemplu pentru Meta', '<label class="k-btn is-outline is-sm wa-sample">' + icon('image') + (sample || t.hasSample ? 'Schimbă poza exemplu' : 'Alege o poză exemplu') + '<input type="file" accept="image/*" data-sample hidden></label>', 'full', 'Meta o vede doar la aprobare. La trimitere pleacă imaginea reală (ex. înainte / după).')
+            : K.field('Text antet (opțional)', '<input data-tf="header" maxlength="60" placeholder="ex. Programarea ta la Centrul360" value="' + esc(t.header || '') + '">', 'full')) +
+          '<div class="k-field full"><label class="k-switch"><input type="checkbox" data-results' + (t.purpose === 'results' ? ' checked' : '') + '><i></i><span>Se trimite la „Trimite rezultatele” (pozele înainte / după din profilul clientei)</span></label></div>' +
           K.field('Mesajul', '<textarea data-tf="text" rows="7" maxlength="1024" placeholder="Bună, {prenume}! …">' + esc(t.text || '') + '</textarea>', 'full', 'Variabilele se completează singure pentru fiecare clientă. Mesajul nu poate începe sau se termina cu o variabilă.') +
           chips +
           K.field('Subsol (opțional)', '<input data-tf="footer" maxlength="60" placeholder="ex. Centrul360 · Timișoara & Arad" value="' + esc(t.footer || '') + '">', 'full') +
@@ -103,6 +114,9 @@
         el.addEventListener('change', (e) => {
           const f = e.target;
           if (f.dataset.tf === 'category') t.category = f.value;
+          if (f.dataset.tf === 'headerType') { t.headerType = f.value; repaint(); }
+          if (f.matches('[data-results]')) t.purpose = f.checked ? 'results' : '';
+          if (f.matches('[data-sample]') && f.files && f.files[0]) sampleOf(f.files[0]).then((u) => { sample = u; repaint(); }).catch((err) => K.ui().toast(err.message, 'error'));
           if (f.dataset.map != null) t.map[Number(f.dataset.map)] = f.value;
           const row = f.closest('[data-bi]');
           if (row && f.dataset.bf === 'type') { t.buttons[Number(row.dataset.bi)].type = f.value; repaint(); }
@@ -124,7 +138,7 @@
         });
         const saveIt = (submit) => async (ev) => K.busy(ev.currentTarget, async () => {
           try {
-            const r = await post({ action: 'tpl_save', submit, template: { id: tpl && tpl.id, label: t.label, category: t.category, header: t.header, body: t.text, footer: t.footer, buttons: t.buttons, map: t.map } });
+            const r = await post({ action: 'tpl_save', submit, template: { id: tpl && tpl.id, label: t.label, category: t.category, header: t.header, headerType: t.headerType || '', sample, purpose: t.purpose || '', body: t.text, footer: t.footer, buttons: t.buttons, map: t.map } });
             dr.close();
             if (r.submitError) K.ui().toast('Salvat, dar Meta: ' + r.submitError, 'error');
             else K.ui().toast(submit ? 'Trimis la Meta. Răspunde de obicei în câteva minute.' : 'Salvat.', 'success');

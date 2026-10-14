@@ -470,7 +470,8 @@
           '<div class="ct-slots">' + slotHtml(s, 'before') + slotHtml(s, 'after') + '</div>' +
           (s.before && s.after ? '<div class="ct-pair"><div class="ct-composite" data-pair="' + esc(s.id) + '"><span class="k-spin"></span></div>' +
             '<div class="ct-pair-actions"><a class="k-btn is-sm is-outline" data-dl-pair="' + esc(s.id) + '" download="inainte-dupa-' + slug(st.c.name) + '-s' + s.n + '.jpg" href="#" aria-disabled="true">' + icon('download') + 'Descarcă</a>' +
-            '<button type="button" class="k-btn is-sm is-outline" data-align="' + esc(s.id) + '">' + icon('move') + 'Aliniază</button>' + pubHtml('pair', s.id) + '</div></div>'
+            '<button type="button" class="k-btn is-sm is-outline" data-align="' + esc(s.id) + '">' + icon('move') + 'Aliniază</button>' + pubHtml('pair', s.id) +
+            (st.c.phone ? '<button type="button" class="k-btn is-sm is-primary" data-send-results="' + esc(s.id) + '">' + icon('chat') + 'Trimite rezultatele</button>' : '') + '</div></div>'
             : '<p class="ct-hint">' + icon('info') + (s.before || s.after ? 'Mai adaugă poza ' + (s.before ? 'DUPĂ' : 'ÎNAINTE') + ' și imaginea înainte / după se face singură.' : 'Fă poza ÎNAINTE de tratament și poza DUPĂ, la final.') + '</p>') +
           '</article>').join('') + '</div>'
           : '<div class="ct-empty-photos">' + icon('image') + '<b>Încă nicio ședință cu poze</b><span>Începe cu Ședința 1: poza ÎNAINTE de tratament și poza DUPĂ.</span></div>') +
@@ -576,6 +577,21 @@
       const dp = t.closest('[data-del-photo]');
       if (dp) { if (await K.ui().confirm({ title: 'Ștergi poza?', confirmText: 'Șterge', danger: true })) act('photo_delete', { sessionId: dp.dataset.delPhoto, slot: dp.dataset.slot }); return; }
       if (t.closest('[data-cmp-reset]')) { st.cmp = null; paintPane(); return; }
+      // "Trimite rezultatele": the before / after picture to her WhatsApp (asked first, never by itself)
+      const sr = t.closest('[data-send-results]');
+      if (sr) {
+        const s = st.detail.sessions.find((x) => x.id === sr.dataset.sendResults);
+        if (!s || !s.before || !s.after) return;
+        if (!(await K.ui().confirm({ title: 'Trimiți rezultatele?', message: 'Imaginea înainte / după (Ședința ' + s.n + ') pleacă pe WhatsApp la ' + (st.c.name || '') + ', ' + st.c.phone + '.', confirmText: 'Trimite' }))) return;
+        K.busy(sr, async () => {
+          try {
+            const dataUrl = await compose(s.before, s.after, 'ÎNAINTE', 'DUPĂ', 1100);
+            const r = await K.api('/api/portal-whatsapp', { action: 'send_results', phone: st.c.phone, name: st.c.name, location: st.c.location, treatment: s.treatment || '', dataUrl });
+            K.ui().toast('Rezultatele au plecat pe WhatsApp' + (r.how === 'template' ? ' (cu șablonul aprobat)' : '') + '.', 'success');
+          } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+        });
+        return;
+      }
       const al = t.closest('[data-align]');
       if (al) {
         const tp = totalPair();
