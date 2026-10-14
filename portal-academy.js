@@ -751,7 +751,8 @@
         const box = el.querySelector('[data-cs]');
         const paint = () => {
           const reveal = state !== 'ask';
-          box.innerHTML = sec('Clienta', ul(c.profile) + (c.wants ? '<blockquote class="ac-say">' + esc(c.wants) + '</blockquote>' : '')) + mediaHtml(c.media) +
+          // the drawing: only her problem until she answers, the plan at work after
+          box.innerHTML = (window.C360CaseArt ? window.C360CaseArt.html(c, reveal) : '') + sec('Clienta', ul(c.profile) + (c.wants ? '<blockquote class="ac-say">' + esc(c.wants) + '</blockquote>' : '')) + mediaHtml(c.media) +
             sec('Ce o întrebi la consultație', ul(c.ask)) +
             '<section class="tr-sec"><h5>Ce îi recomanzi?</h5><div class="tr-choices">' + c.options.map((o, i) => {
               const cls = reveal && o.ok !== undefined ? (o.ok ? ' is-right' : i === picked ? ' is-wrong' : '') : (i === picked ? ' is-on' : '');
