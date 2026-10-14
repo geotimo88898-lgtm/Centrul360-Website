@@ -1452,6 +1452,18 @@ main.ad-full{ max-width:none; }
 .mx-tick{ font-style:normal; letter-spacing:-.15em; }
 .mx-tick.is-read{ font-weight:900; color:#53bdeb; }
 .mx-tick.is-failed{ color:var(--bad); font-weight:900; }
+/* photos and files in a message */
+.mx-media-img{ display:block; margin:-.2rem -.3rem .3rem; }
+.mx-media-img img{ display:block; max-width:min(260px, 62vw); max-height:320px; border-radius:12px; object-fit:cover; background:var(--glass); }
+.mx-media-vid{ display:block; max-width:min(260px, 62vw); max-height:320px; border-radius:12px; margin-bottom:.3rem; }
+.mx-media-aud{ display:block; width:min(240px, 60vw); height:40px; margin-bottom:.3rem; }
+.mx-doc{ display:flex; align-items:center; gap:.5rem; max-width:260px; margin-bottom:.3rem; padding:.55rem .7rem; border-radius:12px; background:var(--glass); color:var(--fg); text-decoration:none; font-size:.84rem; }
+.mx-doc span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mx-doc .k-ic{ flex:none; width:18px; height:18px; }
+.mx-doc.is-missing{ color:var(--muted); }
+.mx-attach{ cursor:pointer; }
+.mx-send-file{ display:flex; flex-direction:column; gap:.9rem; }
+.mx-send-file > img{ display:block; max-width:100%; max-height:52vh; margin:0 auto; border-radius:14px; }
 .mx-fail{ display:flex; align-items:center; gap:.3rem; margin-top:.3rem; color:var(--bad); font-size:.74rem; font-weight:700; letter-spacing:.01em; }
 .mx-fail .k-ic{ width:14px; height:14px; flex:none; }
 .mx-tpl-tag{ display:inline-flex; align-items:center; gap:.25rem; margin-bottom:.2rem; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.8; }

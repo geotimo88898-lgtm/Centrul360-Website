@@ -27,7 +27,7 @@
     panel.addEventListener('submit', onSubmit);
     panel.addEventListener('keydown', onKeydown);
     panel.addEventListener('input', onInput);
-    panel.addEventListener('change', (e) => { if (e.target.name === 'waloc') { C.loc = e.target.value; paintList(); } });
+    panel.addEventListener('change', (e) => { if (e.target.name === 'waloc') { C.loc = e.target.value; paintList(); } if (e.target.matches('[data-attach]')) attach(e.target); });
   }
 
   async function load() {
@@ -155,11 +155,25 @@
   // the state of a message we sent, with its times: "Trimis 14:02 · Livrat 14:02 · Văzut 14:05"
   const stateLine = (m) => [['Trimis', m.timestamp], ['Livrat', m.deliveredAt], ['Văzut', m.readAt], ['Nelivrat', m.failedAt]]
     .filter(([, t]) => t).map(([l, t]) => l + ' ' + hm(t)).join(' · ');
+  // a photo, a video, a voice note or a document inside a message (kept privately by the portal)
+  const MEDIA_WORDS = ['Poză', 'Document', 'Mesaj vocal', 'Video', 'Sticker'];
+  const fileUrl = (md) => '/api/portal-file?p=' + encodeURIComponent(md.path) + (md.filename ? '&n=' + encodeURIComponent(md.filename) : '');
+  function mediaHtml(m) {
+    const md = m.media;
+    if (!md) return '';
+    if (!md.path) return '<span class="mx-doc is-missing">' + icon('alert') + 'Fișierul nu a putut fi descărcat de la WhatsApp</span>';
+    const u = esc(fileUrl(md));
+    if (md.kind === 'image') return '<a class="mx-media-img" href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt="" loading="lazy"></a>';
+    if (md.kind === 'video') return '<video class="mx-media-vid" controls preload="metadata" src="' + u + '"></video>';
+    if (md.kind === 'audio') return '<audio class="mx-media-aud" controls preload="none" src="' + u + '"></audio>';
+    return '<a class="mx-doc" href="' + u + '" target="_blank" rel="noopener">' + icon('file') + '<span>' + esc(md.filename || 'Document') + '</span>' + icon('download') + '</a>';
+  }
   function bubble(m) {
     const out = m.direction === 'out';
     return '<div class="mx-msg is-' + (out ? 'out' : 'in') + (m.status === 'failed' ? ' is-failed' : '') + '"><div class="mx-bub">' +
       (m.type === 'template' ? '<span class="mx-tpl-tag">' + icon('file') + 'Șablon</span>' : '') +
-      '<span class="mx-text">' + esc(m.text) + '</span>' +
+      mediaHtml(m) +
+      (m.media && MEDIA_WORDS.includes(m.text) || (m.media && m.text === m.media.filename) ? '' : '<span class="mx-text">' + esc(m.text) + '</span>') +
       (out && m.status === 'failed' ? '<span class="mx-fail">' + icon('alert') + 'NELIVRAT' + (m.error ? ' · ' + esc(m.error) : '') + '</span>' : '') +
       '<span class="mx-meta">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + (out ? ' <i class="mx-tick is-' + esc(m.status || 'sent') + '" title="' + esc(stateLine(m)) + '">' + (TICK[m.status] || '') + '</i>' : '') + '</span></div></div>';
   }
@@ -199,7 +213,8 @@
     box.innerHTML = headHtml(t) +
       '<div class="mx-tbody">' + (msgs || K.empty('chat', 'Nimic încă', '')) + '</div>' +
       (t.within24h
-        ? '<form class="mx-compose" data-send><button type="button" class="k-icon-btn" data-act="snip" title="Mesaje rapide (snippeturi)">' + icon('plus') + '</button><button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
+        ? '<form class="mx-compose" data-send><button type="button" class="k-icon-btn" data-act="snip" title="Mesaje rapide (snippeturi)">' + icon('plus') + '</button><label class="k-icon-btn mx-attach" title="Poză sau fișier">' + icon('image') + '<input type="file" data-attach hidden accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,video/mp4,audio/*"></label>' +
+          '<button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
           '<textarea name="text" maxlength="4000" placeholder="Scrie un mesaj…" rows="1">' + esc(draft) + '</textarea>' +
           '<button type="submit" class="mx-send-btn" aria-label="Trimite">' + SEND + '</button></form>' +
           '<p class="mx-window">' + windowLine + '</p>'
@@ -462,6 +477,58 @@
         try { const r = await K.api('/api/portal-whatsapp', { action: 'snip_delete', id: del.dataset.snipDel }); C.snippets = r.snippets || []; editing = null; paint(); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
       }
     }
+  }
+
+  // ------------------------------------------------------------------ photos and files
+  // a photo goes smaller first (WhatsApp shows them at most ~1600 px anyway), as JPEG
+  const smaller = (file) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      resolve(cv.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => reject(new Error('Nu pot citi poza.'));
+    img.src = URL.createObjectURL(file);
+  });
+  const asDataUrl = (file) => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = () => reject(new Error('Nu pot citi fișierul.')); fr.readAsDataURL(file); });
+  async function attach(input) {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file || !C.selectedPhone) return;
+    const isPhoto = /^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type) || /\.(jpe?g|png|webp|heic)$/i.test(file.name);
+    let dataUrl, name = file.name;
+    try {
+      if (isPhoto) { dataUrl = await smaller(file); name = name.replace(/\.\w+$/, '') + '.jpg'; }
+      else {
+        if (file.size > 3e6) return K.ui().toast('Fișierul e prea mare (cel mult 3 MB).', 'error');
+        dataUrl = await asDataUrl(file);
+      }
+    } catch (err) { return K.ui().toast(err.message, 'error'); }
+    const ph = C.selectedPhone;
+    const ta = panel.querySelector('.mx-compose textarea');
+    const dr = K.drawer({
+      title: isPhoto ? 'Trimite poza' : 'Trimite fișierul', icon: isPhoto ? 'image' : 'file', width: 460,
+      body: '<div class="mx-send-file">' + (isPhoto ? '<img src="' + dataUrl + '" alt="">' : '<div class="mx-doc">' + icon('file') + '<span>' + esc(name) + '</span></div>') +
+        K.field('Text (opțional)', '<textarea data-cap rows="2" maxlength="1024">' + esc(ta && isPhoto ? ta.value.trim() : '') + '</textarea>', 'full') + '</div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-go>' + SEND + 'Trimite</button>',
+      onMount(el) {
+        el.querySelector('[data-cancel]').addEventListener('click', () => dr.close());
+        el.querySelector('[data-go]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+          const caption = el.querySelector('[data-cap]').value.trim();
+          try {
+            await K.api('/api/portal-whatsapp', { action: 'send_media', phone: ph, dataUrl, filename: name, caption });
+            if (ta && isPhoto && caption && ta.value.trim() === caption) { ta.value = ''; autoGrow(ta); }
+            dr.close();
+            await loadThread(ph, false);
+            scrollToBottom();
+            load();
+          } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+        }));
+      } });
   }
 
   function onInput(e) {

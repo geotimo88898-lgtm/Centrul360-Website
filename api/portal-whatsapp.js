@@ -23,6 +23,7 @@ const WT = require('./_lib/wa-templates');
 const { normalizePhone } = require('./_lib/clients');
 
 const { sendWhatsApp, toE164 } = WA;
+const { writeBinary } = require('./_lib/store');
 const KEY = 'data/whatsapp-conversations.json';
 const SNIP_KEY = 'data/wa-snippets.json'; // [{ id, title, text, by, createdAt, updatedAt, updatedBy }]
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -169,6 +170,36 @@ module.exports = async (req, res) => {
       Object.assign(row, { title, text, updatedAt: nowISO(), updatedBy: session.employeeId });
       await writeJSON(SNIP_KEY, list);
       res.status(200).json({ ok: true, snippets: list, savedId: row.id });
+      return;
+    }
+
+    // a photo or a file to her (inside the 24h window, like a free answer), with an optional caption
+    if (action === 'send_media') {
+      const phone = String(body.phone || '').trim();
+      const m = /^data:([\w.+/-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
+      if (!phone || !toE164(phone)) return fail(400, 'invalid_phone');
+      if (!m) return fail(400, 'invalid_file', 'Fișierul nu a putut fi citit.');
+      const mime = m[1].toLowerCase();
+      const ext = WA.mediaExt(mime);
+      if (!ext) return fail(400, 'invalid_file', 'Tipul ăsta de fișier nu se poate trimite pe WhatsApp (poze, PDF, Word, Excel, video, audio).');
+      const buf = Buffer.from(m[2], 'base64');
+      if (buf.length > 3e6) return fail(400, 'too_big', 'Fișierul e prea mare (cel mult 3 MB).');
+      const caption = String(body.caption || '').trim().slice(0, 1024);
+      const filename = String(body.filename || '').replace(/[\\/:*?"<>|]+/g, '').trim().slice(0, 120) || 'fisier.' + ext;
+      const conversations = await readJSON(KEY, []);
+      const convo = conversations.find((c) => c.phone === phone);
+      if (!convo) return fail(404, 'conversation_not_found');
+      if (!within24h(convo)) return fail(409, 'outside_24h_window', 'Au trecut 24 de ore de la ultimul ei mesaj: trimite un șablon.');
+      const result = await WA.sendMedia({ phone, from: convo.location || '', buf, mime, filename, caption });
+      if (!result.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis fișierul' + (result.error ? ': ' + result.error : '.'));
+      const id = result.id || crypto.randomUUID();
+      const path = 'wa-media/' + String(id).replace(/[^\w-]/g, '').slice(-60) + '.' + ext;
+      await writeBinary(path, buf, mime);
+      convo.messages.push({ id, direction: 'out', type: 'other', media: { kind: result.kind, mime, filename, path }, text: caption || (result.kind === 'image' ? 'Poză' : filename),
+        status: 'sent', timestamp: nowISO(), sentBy: session.employeeId });
+      convo.lastMessageAt = nowISO();
+      await writeJSON(KEY, conversations);
+      res.status(200).json({ ok: true, id });
       return;
     }
 

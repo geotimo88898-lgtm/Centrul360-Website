@@ -17,7 +17,7 @@
 // else, and one bad message/status entry must never take the whole delivery down with it.
 
 const crypto = require('crypto');
-const { readJSON, writeJSON } = require('./_lib/store');
+const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
 const { normalizePhone } = require('./_lib/clients');
 const { sendPush } = require('./_lib/push');
 const { appCreds } = require('./_lib/facebook');
@@ -74,7 +74,27 @@ function textFor(message) {
     const i = message.interactive || {};
     return (i.button_reply && i.button_reply.title) || (i.list_reply && i.list_reply.title) || '[răspuns interactiv]';
   }
+  // a photo, a PDF, a voice note: its caption, else what it is (the file itself shows in Mesaje)
+  const media = type && message[type];
+  if (media && MEDIA_TYPES.includes(type)) return media.caption || (type === 'document' && media.filename ? media.filename : MEDIA_LABEL[type]);
   return '[tip mesaj: ' + (type || 'necunoscut') + ']';
+}
+const MEDIA_TYPES = ['image', 'document', 'audio', 'video', 'sticker'];
+const MEDIA_LABEL = { image: 'Poză', document: 'Document', audio: 'Mesaj vocal', video: 'Video', sticker: 'Sticker' };
+// her file, kept in the portal (Meta's copy expires): { path, mime, filename } on the message
+async function keepMedia(message, phoneNumberId) {
+  const type = message && message.type;
+  const m = type && message[type];
+  if (!m || !MEDIA_TYPES.includes(type) || !m.id) return null;
+  const WAL = require('./_lib/whatsapp');
+  const got = await WAL.fetchMedia(phoneNumberId, m.id).catch(() => null);
+  const mime = (got && got.mime) || m.mime_type || '';
+  const out = { kind: type === 'sticker' ? 'image' : type, mime, filename: m.filename || '' };
+  const ext = WAL.mediaExt(mime);
+  if (!got || got.tooBig || !got.buf || !ext) return Object.assign(out, { missing: true });
+  const path = 'wa-media/' + String(message.id || crypto.randomUUID()).replace(/[^\w-]/g, '').slice(-60) + '.' + ext;
+  await writeBinary(path, got.buf, mime);
+  return Object.assign(out, { path });
 }
 
 // who hears a client's message on the phone: the owner, and reception of the clinic she wrote to
@@ -131,10 +151,12 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
 
   const type = message.type === 'text' ? 'text' : 'other';
   const ts = message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : nowISO();
+  const media = await keepMedia(message, phoneNumberId).catch((err) => { console.error('webhook-whatsapp: media', err.message); return null; });
   convo.messages.push({
     id: message.id || crypto.randomUUID(),
     direction: 'in',
     type,
+    ...(media ? { media } : {}),
     text: textFor(message),
     status: 'received',
     timestamp: ts,
