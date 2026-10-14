@@ -190,8 +190,35 @@ async function sync(d) {
     const ids = new Set(all.map((m) => String(m.id)));
     d.templates.forEach((t) => { const m = t.meta[a.wabaId]; if (m && m.id && !ids.has(m.id)) m.status = 'DELETED'; });
   }
+  await spread(d, list).catch((e) => errors.push('copierea șabloanelor: ' + e.message));
   d.syncedAt = nowISO(); d.syncError = errors.join(' · ');
   return { ok: !errors.length };
+}
+
+// A number connected in another (new) account: the templates that already work elsewhere go to it too,
+// a few on each sync, so the automations can write from it. Ours and the ones the automations use;
+// the ones only imported from WhatsApp Manager (an older tool's) stay where they were.
+async function spread(d, list, max = 6) {
+  if (list.length < 1) return 0;
+  const wf = await readJSON('data/workflows.json', {});
+  const used = new Set();
+  (wf.workflows || []).forEach((w) => (function walk(steps) { (steps || []).forEach((s) => { if (s.templateId) used.add(s.templateId); if (s.type === 'if') { walk(s.yes); walk(s.no); } }); })(w.steps));
+  let sent = 0;
+  for (const a of list) {
+    for (const t of d.templates) {
+      if (sent >= max) return sent;
+      if (t.meta[a.wabaId] || (t.imported && !used.has(t.id))) continue;
+      if (!Object.values(t.meta).some((m) => m.status === 'APPROVED')) continue;
+      const name = t.name || slug(t.label);
+      const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: components(t) });
+      t.name = name;
+      t.meta[a.wabaId] = r.ok ? { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '' }
+        : { id: '', name, status: 'REJECTED', reason: r.error };
+      t.updatedAt = nowISO();
+      sent++;
+    }
+  }
+  return sent;
 }
 
 async function remove(d, id) {
