@@ -153,13 +153,14 @@
     const light = t === 'light';
     if (light === isLight() && read('c360_theme') === (light ? 'light' : 'dark')) return;
     const root = document.documentElement;
-    root.classList.add('c360-theming'); // one smooth change, no half-switched frames
+    root.classList.add('c360-theming'); // no transitions while it switches: the whole page changes in one frame
     if (light) root.setAttribute('data-theme', 'light'); else root.removeAttribute('data-theme');
     write('c360_theme', light ? 'light' : 'dark');
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', light ? '#f4f5f9' : '#07080b');
     apply(state(), true, true); // the accent, tuned for the theme
-    setTimeout(() => root.classList.remove('c360-theming'), 350);
+    void root.offsetHeight; // the new colours applied now, everywhere
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('c360-theming')));
     if (!fromAccount && typeof window.C360Accent.onTheme === 'function') window.C360Accent.onTheme(light ? 'light' : 'dark');
   }
 

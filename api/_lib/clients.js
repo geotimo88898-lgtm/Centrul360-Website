@@ -93,4 +93,27 @@ function searchClients(query, allClients) {
     .slice(0, MAX_RESULTS);
 }
 
-module.exports = { normalizePhone, upsertClient, searchClients };
+// Someone who wrote on WhatsApp and isn't in Contacte yet (no client, no lead with that number) becomes a
+// contact: source "whatsapp", the city of the number she wrote to, her WhatsApp name if it shows one.
+// people: [{ phone, name, location }]. One read, at most one write. Returns how many were added.
+async function ensureContacts(people, { readJSON, writeJSON }) {
+  const key = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  const want = (people || []).filter((p) => key(p.phone).length === 9);
+  if (!want.length) return 0;
+  const [clients, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', [])]);
+  const known = new Set(clients.map((c) => key(c.phone)).concat(leads.map((l) => key(l.phone))));
+  const today = todayISO();
+  let added = 0;
+  want.forEach((p) => {
+    const k = key(p.phone);
+    if (known.has(k)) return;
+    known.add(k);
+    clients.push({ id: crypto.randomUUID(), name: String(p.name || '').trim().slice(0, 150), phone: normalizePhone(p.phone) || String(p.phone).trim().slice(0, 30),
+      source: 'whatsapp', location: p.location || '', createdAt: today, lastVisit: today });
+    added++;
+  });
+  if (added) await writeJSON('data/clients.json', clients);
+  return added;
+}
+
+module.exports = { normalizePhone, upsertClient, searchClients, ensureContacts };

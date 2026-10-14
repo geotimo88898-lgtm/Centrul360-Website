@@ -1476,10 +1476,16 @@ main.ad-full{ max-width:none; }
 .mx-msg.is-out .mx-bub{ border-radius:16px 16px 5px 16px; background:var(--accent); border-color:transparent; color:var(--accent-fg, #fff); }
 .mx-msg.is-failed .mx-bub{ background:var(--bad-soft); border-color:var(--bad); color:var(--fg); }
 .mx-text{ display:block; white-space:pre-wrap; word-break:break-word; font-size:.9rem; line-height:1.42; }
-.mx-meta{ display:block; margin-top:.15rem; text-align:right; font-size:.66rem; opacity:.72; white-space:nowrap; }
-.mx-tick{ font-style:normal; letter-spacing:-.15em; }
-.mx-tick.is-read{ font-weight:900; color:#53bdeb; }
-.mx-tick.is-failed{ color:var(--bad); font-weight:900; }
+.mx-meta{ display:flex; align-items:center; justify-content:flex-end; gap:.28rem; margin-top:.15rem; font-size:.66rem; white-space:nowrap; }
+.mx-time{ opacity:.72; }
+.mx-tick{ display:inline-flex; align-items:center; font-style:normal; line-height:0; }
+.mx-tk{ width:16px; height:12px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; opacity:.78; }
+.mx-tick.is-pending .mx-tk, .mx-tick.is-failed .mx-tk{ width:13px; height:13px; }
+.mx-tick.is-read .mx-tk{ opacity:1; stroke:#4fc3f7; stroke-width:1.9; filter:drop-shadow(0 0 .5px rgba(0,0,0,.35)); }
+.mx-msg.is-out .mx-tick.is-read .mx-tk{ stroke:#8fe3ff; stroke-width:2.1; filter:drop-shadow(0 0 1px rgba(0,40,80,.45)); }
+.mx-tick.is-failed .mx-tk{ opacity:1; stroke:var(--bad); stroke-width:2; }
+.mx-row-prev .mx-tick{ margin-right:.25rem; vertical-align:-1px; color:var(--muted); }
+.mx-row-prev .mx-tick.is-read .mx-tk{ stroke:#34b7f1; filter:none; }
 /* photos and files in a message */
 .mx-media-img{ display:block; margin:-.2rem -.3rem .3rem; }
 .mx-media-img img{ display:block; max-width:min(260px, 62vw); max-height:320px; border-radius:12px; object-fit:cover; background:var(--glass); }

@@ -163,6 +163,71 @@
     addEventListener('scroll', keep, { passive: true });
     hold = { keep, t: setTimeout(() => { removeEventListener('scroll', keep); keep(); main.style.minHeight = ''; hold = null; }, 2500) };
   }
+  // ------------------------------------------------------------------ pull to refresh (phones)
+  // At the top of a page: pull down past the header and let go once the circle turns accent. Everything on
+  // screen loads again: the portal's data, the pipeline, the open page's own list (K.emit('pull') for the
+  // pages that read elsewhere, e.g. Reclame from Meta).
+  async function refreshAll() {
+    const jobs = [load(true)];
+    if (frontDesk()) jobs.push(K.leads(true).catch(() => {}));
+    K.emit('remote');
+    K.emit('pull');
+    await Promise.race([Promise.all(jobs), new Promise((r) => setTimeout(r, 8000))]);
+  }
+  (function pullToRefresh() {
+    if (!window.matchMedia || !matchMedia('(pointer: coarse)').matches) return;
+    document.documentElement.classList.add('c360-pull');
+    const el = document.createElement('div');
+    el.className = 'c360-ptr';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<span>' + icon('refresh') + '</span>';
+    document.body.appendChild(el);
+    const MAX = 110, ARM = 72;
+    let y0 = null, d = 0, busy = false;
+    const spin = el.firstChild;
+    const set = (px, armed) => {
+      el.style.transform = 'translate(-50%,' + Math.round(px - 52) + 'px)';
+      el.style.opacity = String(Math.min(1, px / 40));
+      el.classList.toggle('is-armed', !!armed);
+      if (!busy) spin.style.transform = 'rotate(' + Math.round(px * 3.2) + 'deg)';
+    };
+    // where it starts: right under the header
+    const place = () => { const h = document.querySelector('header.topbar'); el.style.top = (h ? Math.max(0, h.getBoundingClientRect().bottom) : 0) + 'px'; };
+    const blocked = (t) => K.drawerOpen || !!document.querySelector('.fb-root, .c360-dialog-root, .k-menu, .pl-stage-root, .c360-palette-root') ||
+      !!(t && t.closest && t.closest('.mx-tbody, .mx-thread, input, textarea, select, [contenteditable="true"], .k-drawer-root'));
+    // a list that scrolls on its own and isn't at its top keeps the gesture
+    const innerScrolled = (t) => { for (let n = t; n && n !== document.body && n !== document.documentElement; n = n.parentElement) { if (n.scrollTop > 0 && n.scrollHeight > n.clientHeight + 2) return true; } return false; };
+    addEventListener('touchstart', (e) => {
+      y0 = null;
+      if (busy || e.touches.length !== 1 || window.scrollY > 0 || blocked(e.target) || innerScrolled(e.target)) return;
+      y0 = e.touches[0].clientY; d = 0;
+      el.classList.remove('is-back');
+      place();
+    }, { passive: true });
+    addEventListener('touchmove', (e) => {
+      if (y0 == null) return;
+      const dy = e.touches[0].clientY - y0;
+      if (dy <= 0 || window.scrollY > 0) { if (d) { d = 0; set(0, false); } return; }
+      d = Math.min(MAX, dy * 0.55);
+      set(d, d >= ARM);
+    }, { passive: true });
+    const end = async () => {
+      if (y0 == null) return;
+      y0 = null;
+      el.classList.add('is-back');
+      if (d < ARM) { d = 0; set(0, false); return; }
+      busy = true;
+      if (navigator.vibrate) try { navigator.vibrate(10); } catch (x) { /* not allowed */ }
+      el.classList.add('is-spin');
+      set(ARM - 8, true);
+      try { await refreshAll(); } finally {
+        setTimeout(() => { busy = false; el.classList.remove('is-spin'); d = 0; set(0, false); }, 300);
+      }
+    };
+    addEventListener('touchend', end, { passive: true });
+    addEventListener('touchcancel', end, { passive: true });
+  })();
+
   function applyRemote() {
     if (busyEditing()) { pendingRemote = true; return; }
     pendingRemote = false;

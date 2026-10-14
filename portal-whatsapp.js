@@ -12,7 +12,18 @@
   const C = { snippets: [], conversations: [], numbers: {}, templates: [], q: '', show: 'all', loc: 'all', selectedPhone: null, thread: null, loadingThread: false, loaded: false, pushed: false };
   let panel;
   const CITY_SHORT = { 'Timișoara': 'TM', Arad: 'AR' };
-  const TICK = { sent: '✓', delivered: '✓✓', read: '✓✓', failed: '!', received: '' };
+  // the delivery marks, drawn (sent: one check · delivered: two · read: two, blue · failed: ! · leaving: a clock)
+  const CHECK1 = '<path d="M1.6 6.4 5 9.8 12.2 1.8"/>';
+  const CHECK2 = '<path d="M1.2 6.4 4.6 9.8 11.8 1.8"/><path d="M7.4 9.6 7.6 9.8 14.8 1.8"/>';
+  const TICK_SVG = {
+    sent: '<svg class="mx-tk" viewBox="0 0 16 12" aria-hidden="true">' + CHECK1 + '</svg>',
+    delivered: '<svg class="mx-tk" viewBox="0 0 16 12" aria-hidden="true">' + CHECK2 + '</svg>',
+    read: '<svg class="mx-tk" viewBox="0 0 16 12" aria-hidden="true">' + CHECK2 + '</svg>',
+    failed: '<svg class="mx-tk" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.8v3.6M8 11.1v.1"/></svg>',
+    pending: '<svg class="mx-tk" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.9V8l2 1.3"/></svg>',
+  };
+  const TICK = { sent: 1, delivered: 1, read: 1, failed: 1 };
+  const tickHtml = (status, title) => { const s = TICK_SVG[status] ? status : 'pending'; return '<i class="mx-tick is-' + s + '"' + (title ? ' title="' + esc(title) + '"' : '') + ' aria-label="' + ({ sent: 'Trimis', delivered: 'Livrat', read: 'Văzut', failed: 'Nelivrat', pending: 'Se trimite' })[s] + '">' + TICK_SVG[s] + '</i>'; };
   const SEND = '<svg class="k-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>';
   const phone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
 
@@ -143,11 +154,11 @@
         : K.empty('chat', 'Nicio conversație încă', connected().length ? 'Când îți scrie o clientă pe WhatsApp, apare aici imediat. Poți și să scrii tu primul, cu „Mesaj nou”.' : 'După ce se conectează numerele, mesajele clientelor apar aici singure.');
   }
   function row(c) {
-    const preview = (c.lastDirection === 'out' ? (TICK[c.lastStatus] ? TICK[c.lastStatus] + ' ' : 'Tu: ') : '') + (c.lastText || '');
+    const preview = (c.lastDirection === 'out' ? (TICK[c.lastStatus] ? tickHtml(c.lastStatus) : 'Tu: ') : '') + esc(c.lastText || '');
     return '<button type="button" class="mx-row' + (c.phone === C.selectedPhone ? ' is-on' : '') + (c.unreadCount ? ' is-unread' : '') + '" data-pick="' + esc(c.phone) + '">' +
       face(c, 44) +
       '<span class="mx-row-main"><span class="mx-row-top"><b>' + esc(nameOf(c)) + '</b><small>' + esc(fmtTime(c.lastMessageAt)) + '</small></span>' +
-        '<span class="mx-row-bottom"><span class="mx-row-prev">' + esc(preview) + '</span>' +
+        '<span class="mx-row-bottom"><span class="mx-row-prev">' + preview + '</span>' +
         (c.location ? '<em class="mx-city">' + esc(CITY_SHORT[c.location] || c.location) + '</em>' : '') +
         (c.unreadCount ? '<i class="mx-unread">' + (c.unreadCount > 99 ? '99+' : c.unreadCount) + '</i>' : '') + '</span></span></button>';
   }
@@ -175,7 +186,7 @@
       mediaHtml(m) +
       (m.media && MEDIA_WORDS.includes(m.text) || (m.media && m.text === m.media.filename) ? '' : '<span class="mx-text">' + esc(m.text) + '</span>') +
       (out && m.status === 'failed' ? '<span class="mx-fail">' + icon('alert') + 'NELIVRAT' + (m.error ? ' · ' + esc(m.error) : '') + '</span>' : '') +
-      '<span class="mx-meta">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + (out ? ' <i class="mx-tick is-' + esc(m.status || 'sent') + '" title="' + esc(stateLine(m)) + '">' + (TICK[m.status] || '') + '</i>' : '') + '</span></div></div>';
+      '<span class="mx-meta"><span class="mx-time">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + '</span>' + (out ? tickHtml(m.status || 'sent', stateLine(m)) : '') + '</span></div></div>';
   }
   function dayLabel(day) {
     const t = K.today();

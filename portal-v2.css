@@ -314,8 +314,18 @@ html[data-role="cosmetician"] [data-section-toggle="book"], html[data-role="cosm
 .acc-theme button.is-on{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; background:var(--accent-soft); }
 .acc-theme i{ width:14px; height:14px; border-radius:50%; border:1px solid var(--line); }
 .acc-theme i.is-dark{ background:#0c0e13; } .acc-theme i.is-light{ background:#ffffff; }
-/* switching the theme: one smooth change */
-html.c360-theming, html.c360-theming *{ transition:background-color .3s ease, color .3s ease, border-color .3s ease, fill .3s ease !important; }
+/* pull to refresh (phones): the page doesn't bounce or reload by itself, the circle comes from under the header */
+html.c360-pull, html.c360-pull body{ overscroll-behavior-y:none; }
+.c360-ptr{ position:fixed; left:50%; top:64px; z-index:19; width:42px; height:42px; border-radius:50%; background:var(--paper); border:1px solid var(--line);
+  box-shadow:0 8px 24px rgba(0,0,0,.22); display:flex; align-items:center; justify-content:center; color:var(--muted); transform:translate(-50%,-52px); opacity:0; pointer-events:none; }
+.c360-ptr.is-back{ transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
+.c360-ptr span{ display:inline-flex; }
+.c360-ptr .k-ic{ width:20px; height:20px; stroke-width:2.2; }
+.c360-ptr.is-armed{ color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
+.c360-ptr.is-spin span{ animation:c360-ptr-spin .75s linear infinite; }
+@keyframes c360-ptr-spin{ to{ transform:rotate(360deg); } }
+/* switching the theme: instant, in one frame (no transition anywhere while it switches) */
+html.c360-theming, html.c360-theming *, html.c360-theming *::before, html.c360-theming *::after{ transition:none !important; animation-play-state:paused !important; }
 .acc-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:.55rem .4rem; padding:.3rem .6rem .75rem; justify-items:center; }
 .acc-sw{ position:relative; width:28px; height:28px; padding:0; border:0; border-radius:50%; cursor:pointer;
   background:linear-gradient(135deg, var(--a) 0%, var(--b) 100%); box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);

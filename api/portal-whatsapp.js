@@ -107,6 +107,9 @@ module.exports = async (req, res) => {
   try {
     if (action === 'list') {
       const conversations = await readJSON(KEY, []);
+      // the chats from before every writer became a contact: theirs now (once; nothing is written when all are known)
+      await require('./_lib/clients').ensureContacts(conversations.filter((c) => (c.messages || []).some((m) => m.direction === 'in'))
+        .map((c) => ({ phone: c.phone, name: c.clientName && c.clientName !== c.phone ? c.clientName : '', location: c.location || '' })), { readJSON, writeJSON }).catch(() => 0);
       const leads = await readJSON('data/leads.json', []);
       const names = new Map();
       leads.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).forEach((l) => { if (l.name && digits9(l.phone).length === 9) names.set(digits9(l.phone), String(l.name).trim()); });

@@ -18,7 +18,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
-const { normalizePhone } = require('./_lib/clients');
+const { normalizePhone, ensureContacts } = require('./_lib/clients');
 const { sendPush } = require('./_lib/push');
 const { appCreds } = require('./_lib/facebook');
 
@@ -126,7 +126,7 @@ async function knownName(phone) {
   return c ? String(contacts[c]).trim() : '';
 }
 
-async function handleInboundMessage(conversations, message, phoneNumberId) {
+async function handleInboundMessage(conversations, message, phoneNumberId, contacts) {
   const from = message && message.from;
   if (!from) return;
   const phone = normalizePhone(from) || from;
@@ -148,6 +148,14 @@ async function handleInboundMessage(conversations, message, phoneNumberId) {
     const loc = await locationForPhoneNumberId(phoneNumberId);
     if (loc) convo.location = loc;
   }
+  // a number the portal doesn't know becomes a contact (Contacte), with her WhatsApp name if she has one
+  try {
+    const wa = (contacts || []).find((c) => c && String(c.wa_id) === String(from)) || (contacts || [])[0];
+    const waName = wa && wa.profile && wa.profile.name ? String(wa.profile.name).trim() : '';
+    if (await ensureContacts([{ phone, name: waName, location: convo.location || '' }], { readJSON, writeJSON })) {
+      if (waName && (!convo.clientName || convo.clientName === phone)) convo.clientName = waName;
+    }
+  } catch (err) { console.error('webhook-whatsapp: contact', err.message); }
 
   const type = message.type === 'text' ? 'text' : 'other';
   const ts = message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : nowISO();
@@ -336,7 +344,7 @@ module.exports = async (req, res) => {
 
         for (const message of value.messages || []) {
           try {
-            const m = await handleInboundMessage(conversations, message, phoneNumberId);
+            const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts);
             if (m) fresh.set(m.phone, m);
             changed = true;
           } catch (err) {

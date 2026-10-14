@@ -714,4 +714,5 @@
   const fresh = (ms) => { if (A.d && K.isActive('reclame') && !document.hidden && !K.drawerOpen && Date.now() - (A.at || 0) > ms) load(true); };
   setInterval(() => fresh(55e3), 60e3);
   K.on('remote', () => fresh(30e3));
+  K.on('pull', () => fresh(0));
 })();
