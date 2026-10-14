@@ -254,7 +254,8 @@ function validateWorkflow(input) {
   if (t.type === 'stage_changed') { trigger.stage = clip(t.stage, 60); if (!trigger.stage) return { error: 'invalid_trigger' }; }
   if (t.type === 'lead_idle') trigger.hours = Math.min(720, Math.max(1, Math.round(Number(t.hours) || 2)));
   if (t.type === 'appointment_before') trigger.hours = Math.min(168, Math.max(1, Math.round(Number(t.hours) || 24)));
-  if (t.type === 'appointment_after') trigger.days = Math.min(365, Math.max(0, Math.round(Number(t.days) || 1)));
+  // 0 = the day of the treatment (a wait step then sets the hour), not missing
+  if (t.type === 'appointment_after') trigger.days = t.days === '' || t.days == null || !Number.isFinite(Number(t.days)) ? 1 : Math.min(365, Math.max(0, Math.round(Number(t.days))));
   if (t.type === 'appointment_status') { trigger.status = STATUSES.includes(t.status) ? t.status : ''; if (!trigger.status) return { error: 'invalid_trigger' }; }
   if (t.type.startsWith('appointment')) trigger.location = LOCATIONS.includes(t.location) ? t.location : 'any';
   const c = cleanSteps(w.steps, 0, { n: 0, ids: new Set() });
