@@ -343,6 +343,22 @@ module.exports = async (req, res) => {
       return;
     }
     if (a === 'tpl_sync') { res.status(200).json(await payload(true)); return; }
+    // "Verifică șabloanele": one kept (to Meta in its cities, with its picture), or the rest hidden / shown
+    if (a === 'tpl_review') {
+      const cities = (Array.isArray(body.cities) ? body.cities : []).filter((c) => WA.CITIES.includes(c));
+      if (!cities.length) { res.status(400).json({ error: 'invalid', message: 'Alege orașul.' }); return; }
+      const r = await T.review(d, String(body.id || ''), cities);
+      await T.save(d);
+      res.status(200).json({ ok: !r.error, error: r.error || '' });
+      return;
+    }
+    if (a === 'tpl_hide') {
+      const ids = new Set((Array.isArray(body.ids) ? body.ids : []).map(String));
+      d.templates.forEach((t) => { if (ids.has(t.id)) t.hidden = body.show ? false : true; });
+      await T.save(d);
+      res.status(200).json(await payload(false));
+      return;
+    }
     // the pictures of another account's templates (the old LeadConnector ones): which had one, and with
     // apply, the same-named templates here get them (kept in the portal, sent with every message)
     if (a === 'tpl_old_images') {

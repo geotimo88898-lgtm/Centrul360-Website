@@ -42,7 +42,7 @@
     const v = sample || (W.d && W.d.sample) || {};
     const fill = (s) => esc(String(s || '')).replace(/\{(\w+)\}/g, (m, k) => (k in v ? '<mark>' + esc(v[k]) + '</mark>' : '<mark class="is-bad">' + m + '</mark>')).replace(/\{\{(\d+)\}\}/g, '<mark class="is-bad">{{$1}}</mark>');
     return '<div class="wa-phone"><div class="wa-bubble">' +
-      (t.headerType === 'IMAGE' ? '<span class="wa-himg">' + icon('image') + '</span>' : t.header ? '<b class="wa-h">' + esc(t.header) + '</b>' : '') +
+      (t.headerType === 'IMAGE' ? (t.image ? '<img class="wa-himg-pic" src="/api/portal-file?p=' + encodeURIComponent(t.image) + '" alt="" loading="lazy">' : '<span class="wa-himg">' + icon('image') + '</span>') : t.header ? '<b class="wa-h">' + esc(t.header) + '</b>' : '') +
       '<div class="wa-b">' + (fill(t.text || t.body) || '<span class="k-muted">Mesajul…</span>') + '</div>' +
       (t.footer ? '<small class="wa-f">' + esc(t.footer) + '</small>' : '') +
       '<span class="wa-time">11:02</span></div>' +
@@ -168,11 +168,13 @@
     const conn = Object.keys(d.numbers || {}).filter((c) => d.numbers[c].connected);
     box.innerHTML =
       '<div class="ad-bar au-bar"><button type="button" class="k-btn is-accent" data-tpl-new>' + icon('plus') + 'Șablon nou</button>' +
+        (d.ready && d.templates.length ? '<button type="button" class="k-btn is-primary" data-tpl-review>' + icon('check') + 'Verifică șabloanele</button>' : '') +
         (d.ready ? '<button type="button" class="k-btn is-outline" data-tpl-sync>' + icon('refresh') + 'Citește din Meta</button><span class="k-muted wa-sync">' + (d.syncedAt ? 'citit ' + esc(K.ago(d.syncedAt)) : '') + '</span>' : '') + '</div>' +
       (!d.ready ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>WhatsApp nu e conectat încă. Șabloanele rămân ciorne până conectezi numerele.</span><button type="button" class="k-btn is-sm" data-goto-int>Conectează</button></div>'
         : '<p class="k-muted wa-conn">' + icon('check') + conn.map((c) => esc(c) + (d.numbers[c].display ? ' (' + esc(d.numbers[c].display) + ')' : '')).join(' · ') + '</p>') +
       (d.syncError ? '<p class="wa-reason">' + icon('alert') + 'Meta: ' + esc(d.syncError) + '</p>' : '') +
-      (d.templates.length ? '<div class="ad-list">' + d.templates.map((t) => '<article class="k-card ad-camp wa-row"><div class="wa-row-in">' +
+      (d.templates.some((t) => t.hidden) ? '<p class="k-muted wa-hidden-note">' + icon('eye') + d.templates.filter((t) => t.hidden).length + ' ascunse · <a href="#" data-tpl-showhidden>' + (L.showHidden ? 'ascunde-le' : 'arată-le') + '</a></p>' : '') +
+      (d.templates.length ? '<div class="ad-list">' + d.templates.filter((t) => L.showHidden || !t.hidden).map((t) => '<article class="k-card ad-camp wa-row"><div class="wa-row-in">' +
           '<button type="button" class="ad-title" data-tpl-open="' + esc(t.id) + '"><b>' + esc(t.label) + '</b><small>' + (t.category === 'MARKETING' ? 'Marketing' : 'Utilitate') + (t.name ? ' · ' + esc(t.name) : '') + (t.imported ? ' · din WhatsApp Manager' : '') + '</small></button>' +
           '<div class="wa-row-status">' + cityTags(t) + (t.reason ? '<small class="wa-row-reason">' + esc(t.reason) + '</small>' : '') + '</div>' +
           '<div class="wa-row-used k-muted">' + (t.usedIn.length ? 'în ' + K.plural(t.usedIn.length, 'automatizare', 'automatizări') : 'nefolosit') + '</div>' +
@@ -187,6 +189,8 @@
   async function listClick(e) {
     const t = e.target;
     if (t.closest('[data-tpl-new]')) return edit(null, again);
+    if (t.closest('[data-tpl-review]')) return review();
+    if (t.closest('[data-tpl-showhidden]')) { e.preventDefault(); L.showHidden = !L.showHidden; return paintList(); }
     if (t.closest('[data-goto-int]')) return K.emit('integrari:int');
     const sy = t.closest('[data-tpl-sync]');
     if (sy) return K.busy(sy, async () => { try { await post({ action: 'tpl_sync' }); paintList(); K.ui().toast('Citit din Meta.', 'success'); } catch (err) { errMsg(err); } });
@@ -209,6 +213,83 @@
       });
     }
   }
+  // ------------------------------------------------------------------ "Verifică șabloanele" (for now)
+  // Every template as the client sees it, with its picture: tick the good ones and their cities; "Aplică"
+  // sends each ticked one to Meta there with its picture and hides the rest. Then the normal list.
+  async function review() {
+    let d;
+    try { d = await load(true); } catch (e) { return errMsg(e); }
+    const ready = Object.keys(d.numbers || {}).filter((c) => d.numbers[c].connected);
+    const guess = (t) => {
+      const n = (t.name || '') + ' ' + (t.label || '');
+      const on = Object.keys(t.cities || {}).filter((c) => t.cities[c] && t.cities[c] !== 'DRAFT');
+      if (on.length) return on;
+      if ((t.only || []).length) return t.only.slice();
+      if (/(_|\b)(tm|timisoara)(_|\b)/i.test(n)) return ['Timișoara'];
+      if (/(_|\b)(ar|arad)(_|\b)/i.test(n)) return ['Arad'];
+      return ready.slice();
+    };
+    const pick = new Map(); // id → cities, for the ticked ones
+    d.templates.forEach((t) => { if (Object.values(t.cities || {}).some((s) => s && s !== 'DRAFT') || t.reviewed) pick.set(t.id, guess(t)); });
+    let show = 'all';
+    const SH = { TIMIȘOARA: 'TM', ARAD: 'AR' };
+    const card = (t) => {
+      const on = pick.has(t.id), cs = pick.get(t.id) || guess(t);
+      return '<article class="wa-rv' + (on ? ' is-on' : '') + '" data-rv="' + esc(t.id) + '">' +
+        '<header><label class="wa-rv-keep"><input type="checkbox" data-rv-keep' + (on ? ' checked' : '') + '><span><b>' + esc(t.label) + '</b><small>' + esc(t.name || '') + ' · ' + (t.category === 'MARKETING' ? 'Marketing' : 'Utilitate') + '</small></span></label>' +
+        '<span class="wa-rv-cities">' + ready.map((c) => '<button type="button" data-rv-city="' + esc(c) + '" class="' + (cs.includes(c) ? 'is-on' : '') + '">' + (SH[c.toUpperCase()] || esc(c)) + '</button>').join('') + '</span></header>' +
+        bubble(t) + '<footer>' + cityTags(t) + '</footer></article>';
+    };
+    const grid = () => d.templates.filter((t) => show === 'all' || (show === 'img' ? t.headerType === 'IMAGE' : pick.has(t.id))).map(card).join('') || K.empty('chat', 'Nimic aici', '');
+    const dr = K.drawer({
+      title: 'Verifică șabloanele', icon: 'check', width: 1100,
+      body: '<div class="wa-rv-top">' + K.seg('rvshow', [['all', 'Toate'], ['img', 'Cu poză'], ['on', 'Bifate']], 'all') + '<span class="k-muted" data-rv-count></span></div><div class="wa-rv-grid" data-rv-grid>' + grid() + '</div>',
+      footer: '<span class="k-muted wa-rv-progress" data-rv-progress></span><span class="k-grow"></span><button type="button" class="k-btn" data-rv-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-rv-apply>' + icon('check') + 'Aplică</button>',
+      onMount(el) {
+        const count = () => { el.querySelector('[data-rv-count]').textContent = pick.size + ' bifate din ' + d.templates.length; };
+        count();
+        el.addEventListener('change', (e) => {
+          if (e.target.name === 'rvshow') { show = e.target.value; el.querySelector('[data-rv-grid]').innerHTML = grid(); return; }
+          if (e.target.matches('[data-rv-keep]')) {
+            const art = e.target.closest('[data-rv]'), id = art.dataset.rv, t = d.templates.find((x) => x.id === id);
+            if (e.target.checked) pick.set(id, guess(t)); else pick.delete(id);
+            art.classList.toggle('is-on', e.target.checked); count();
+          }
+        });
+        el.addEventListener('click', (e) => {
+          const cb = e.target.closest('[data-rv-city]');
+          if (cb) {
+            const art = cb.closest('[data-rv]'), id = art.dataset.rv, t = d.templates.find((x) => x.id === id);
+            const cs = (pick.get(id) || guess(t)).slice(), c = cb.dataset.rvCity, i = cs.indexOf(c);
+            if (i >= 0 && cs.length > 1) cs.splice(i, 1); else if (i < 0) cs.push(c);
+            pick.set(id, cs);
+            art.classList.add('is-on'); art.querySelector('[data-rv-keep]').checked = true;
+            art.querySelectorAll('[data-rv-city]').forEach((b) => b.classList.toggle('is-on', cs.includes(b.dataset.rvCity)));
+            count();
+          }
+          if (e.target.closest('[data-rv-cancel]')) dr.close();
+        });
+        el.querySelector('[data-rv-apply]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          if (!(await K.ui().confirm({ title: 'Aplici?', message: pick.size + ' șabloane pleacă la Meta (cu poza, unde au), restul de ' + (d.templates.length - pick.size) + ' se ascund.', confirmText: 'Aplică' }))) return;
+          const prog = el.querySelector('[data-rv-progress]');
+          const errs = [];
+          let i = 0;
+          for (const [id, cities] of pick) {
+            i++;
+            const t = d.templates.find((x) => x.id === id);
+            prog.textContent = 'Trimit ' + i + ' din ' + pick.size + ': ' + (t ? t.label : '') + '…';
+            try { const r = await post({ action: 'tpl_review', id, cities }); if (r.error) errs.push((t ? t.label : id) + ': ' + r.error); } catch (err) { errs.push((t ? t.label : id) + ': ' + ((err.data && err.data.message) || K.errText(err))); }
+          }
+          const rest = d.templates.filter((t) => !pick.has(t.id)).map((t) => t.id);
+          if (rest.length) { prog.textContent = 'Ascund restul…'; try { await post({ action: 'tpl_hide', ids: rest }); } catch (err) { errs.push('ascunderea: ' + K.errText(err)); } }
+          dr.close();
+          paintList(true);
+          if (errs.length) K.ui().toast('Gata, dar: ' + errs.slice(0, 3).join(' · '), 'error'); else K.ui().toast('Gata: ' + pick.size + ' trimise la Meta, restul ascunse.', 'success');
+        }));
+      },
+    });
+  }
+
   // the ⋯ menu of a template
   let menuEl = null;
   function closeMenu() { if (!menuEl) return; const m = menuEl; menuEl = null; m.classList.remove('is-open'); setTimeout(() => m.remove(), 180); document.removeEventListener('mousedown', outside, true); }

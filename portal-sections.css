@@ -1489,6 +1489,24 @@ main.ad-full{ max-width:none; }
 .wa-himg{ display:grid; place-items:center; height:120px; margin:-.35rem -.45rem .45rem; border-radius:10px; background:var(--glass); color:var(--muted); }
 .wa-himg .k-ic{ width:30px; height:30px; }
 .wa-sample{ cursor:pointer; align-self:flex-start; }
+.wa-himg-pic{ display:block; width:calc(100% + .9rem); max-height:190px; margin:-.35rem -.45rem .45rem; border-radius:10px; object-fit:cover; }
+.wa-hidden-note{ display:flex; align-items:center; gap:.35rem; margin:.2rem 0 .7rem; font-size:.84rem; }
+/* "Verifică șabloanele" */
+.wa-rv-top{ display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; margin-bottom:1rem; }
+.wa-rv-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:.9rem; align-items:start; }
+.wa-rv{ display:flex; flex-direction:column; gap:.6rem; padding:.75rem; border:1px solid var(--line); border-radius:16px; background:var(--paper); opacity:.6; transition:opacity .15s ease, border-color .15s ease; }
+.wa-rv.is-on{ opacity:1; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+.wa-rv header{ display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem; }
+.wa-rv-keep{ display:flex; align-items:flex-start; gap:.5rem; min-width:0; cursor:pointer; }
+.wa-rv-keep input{ width:18px; height:18px; margin-top:.1rem; accent-color:var(--accent); flex:none; }
+.wa-rv-keep span{ display:flex; flex-direction:column; min-width:0; }
+.wa-rv-keep b{ font-size:.88rem; } .wa-rv-keep small{ color:var(--muted); font-size:.74rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wa-rv-cities{ display:flex; gap:.25rem; flex:none; }
+.wa-rv-cities button{ height:28px; min-width:36px; padding:0 .45rem; border:1px solid var(--line); border-radius:8px; background:none; color:var(--muted); font:inherit; font-size:.74rem; font-weight:700; cursor:pointer; }
+.wa-rv-cities button.is-on{ background:var(--accent); border-color:var(--accent); color:var(--accent-fg, #fff); }
+.wa-rv .wa-phone{ margin:0; }
+.wa-rv footer{ display:flex; flex-wrap:wrap; gap:.3rem; font-size:.75rem; }
+.wa-rv-progress{ font-size:.82rem; }
 .mx-send-file{ display:flex; flex-direction:column; gap:.9rem; }
 .mx-send-file > img{ display:block; max-width:100%; max-height:52vh; margin:0 auto; border-radius:14px; }
 .mx-fail{ display:flex; align-items:center; gap:.3rem; margin-top:.3rem; color:var(--bad); font-size:.74rem; font-weight:700; letter-spacing:.01em; }

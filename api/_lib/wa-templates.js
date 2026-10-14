@@ -171,7 +171,7 @@ async function submit(d, id, cities) {
     const comps = await compsFor(t, a);
     if (comps.error) { errors.push(a.cities.join(' + ') + ': ' + comps.error); continue; }
     const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: comps.c });
-    if (r.ok) t.meta[a.wabaId] = { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '' };
+    if (r.ok) t.meta[a.wabaId] = { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '', withImage: t.headerType === 'IMAGE' };
     else errors.push(a.cities.join(' + ') + ': ' + r.error);
   }
   t.updatedAt = nowISO();
@@ -207,7 +207,9 @@ async function sync(d) {
           buttons: (comp('BUTTONS').buttons || []).map((b) => ({ type: b.type, text: b.text, url: b.url, phone: b.phone_number })), imported: true, meta: {}, updatedAt: nowISO() };
         d.templates.push(t);
       }
-      t.meta[a.wabaId] = { id: String(m.id), name: m.name, status: String(m.status || '').toUpperCase(), reason: m.rejected_reason && m.rejected_reason !== 'NONE' ? String(m.rejected_reason) : '' };
+      const had = t.meta[a.wabaId] || {};
+      const hasImage = (m.components || []).some((c) => c.type === 'HEADER' && c.format === 'IMAGE');
+      t.meta[a.wabaId] = { id: String(m.id), name: m.name, status: String(m.status || '').toUpperCase(), reason: m.rejected_reason && m.rejected_reason !== 'NONE' ? String(m.rejected_reason) : '', withImage: hasImage || !!had.withImage };
     });
     // sent from here but gone from Meta (deleted in WhatsApp Manager)
     const ids = new Set(all.map((m) => String(m.id)));
@@ -238,13 +240,37 @@ async function spread(d, list, max = 6) {
       if (comps.error) continue;
       const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: comps.c });
       t.name = name;
-      t.meta[a.wabaId] = r.ok ? { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '' }
+      t.meta[a.wabaId] = r.ok ? { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '', withImage: t.headerType === 'IMAGE' }
         : { id: '', name, status: 'REJECTED', reason: r.error };
       t.updatedAt = nowISO();
       sent++;
     }
   }
   return sent;
+}
+
+// "Verifică șabloanele": a template kept, for these cities. In each city's account it goes to Meta with
+// its picture; one there without the picture (sent text-only before) is deleted there and sent again
+// (under a new name: Meta keeps a deleted name for a while). Not in the chosen cities: left alone.
+async function review(d, id, cities) {
+  const t = d.templates.find((x) => x.id === id);
+  if (!t) return { error: 'Șablonul nu mai există.' };
+  t.hidden = false; t.reviewed = true;
+  const { list } = await accounts();
+  const want = list.filter((a) => a.cities.some((c) => (cities || []).includes(c)));
+  const errors = [];
+  if (t.headerType === 'IMAGE' && t.purpose !== 'results') {
+    for (const a of want) {
+      const m = t.meta[a.wabaId];
+      if (!m || !m.id || m.withImage || ['DELETED', 'REJECTED'].includes(m.status)) continue;
+      const r = await graph(a.token, 'DELETE', '/' + a.wabaId + '/message_templates', { name: m.name, hsm_id: m.id });
+      if (!r.ok && !/does not exist|not found/i.test(r.error)) { errors.push(a.cities.join(' + ') + ': ' + r.error); continue; }
+      m.status = 'DELETED';
+    }
+  }
+  const s = await submit(d, id, cities);
+  if (s.error && !/deja trimis/.test(s.error)) errors.push(s.error);
+  return errors.length ? { error: errors.join(' · ') } : { ok: true };
 }
 
 async function remove(d, id) {
@@ -273,8 +299,8 @@ function view(t, cfg) {
   const cities = {};
   if (cfg) WA.CITIES.forEach((c) => { const n = cfg.numbers[c]; const m = n.wabaId ? (t.meta || {})[n.wabaId] : null; cities[c] = n.phoneId && n.token ? (m ? m.status : 'DRAFT') : ''; });
   const reasons = Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean);
-  return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, image: t.headerImagePath || t.samplePath || '', text: friendly(t), body: t.body, map: t.map || [],
+  return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, image: t.headerImagePath || t.samplePath || '', hidden: !!t.hidden, reviewed: !!t.reviewed, only: t.only || [], text: friendly(t), body: t.body, map: t.map || [],
     footer: t.footer || '', buttons: t.buttons || [], status: overall(t), editable: editable(t), cities, reason: reasons[0] || '', imported: !!t.imported, updatedAt: t.updatedAt || '' };
 }
 
-module.exports = { KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, imageOf, view, slug, toMeta };
+module.exports = { review, KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, imageOf, view, slug, toMeta };
