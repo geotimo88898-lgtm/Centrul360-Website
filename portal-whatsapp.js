@@ -208,11 +208,13 @@
     const last = msgs[msgs.length - 1];
     return !!(last && last.direction === 'out' && last.type === 'template');
   }
+  // a number a phone can dial: 40755… (how WhatsApp keeps it) → +40755…, 0755… stays as it is
+  const telOf = (p) => { const d = String(p || '').replace(/[^\d+]/g, ''); return /^\+/.test(d) || /^0/.test(d) ? d : d.length >= 11 ? '+' + d : d; };
   function headHtml(t) {
     return '<header class="mx-thead"><button type="button" class="k-icon-btn mx-back" data-act="back" aria-label="Înapoi">' + icon('left') + '</button>' +
       face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
       esc([named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : ''].filter(Boolean).join(' · ')) + '</small></div>' +
-      '<a class="k-icon-btn" href="tel:' + esc(String(t.phone || '').replace(/[^\d+]/g, '')) + '" title="Sună" data-act="call">' + icon('phone') + '</a>' +
+      '<a class="k-icon-btn" href="tel:' + esc(telOf(t.phone)) + '" title="Sună" data-act="call">' + icon('phone') + '</a>' +
       (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>';
   }
   function autoGrow(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + 'px'; ta.style.overflowY = ta.scrollHeight > 138 ? 'auto' : 'hidden'; }
@@ -345,12 +347,12 @@
       if (a === 'new') return openNew();
       if (a === 'connect') { K.go('integrari'); return; }
       if (a === 'back') return goBack();
-      // a computer can't dial: the number is copied instead (on a phone the link opens the call)
-      if (a === 'call' && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
-        e.preventDefault();
-        const num = pretty(C.thread ? C.thread.phone : C.selectedPhone);
-        (navigator.clipboard ? navigator.clipboard.writeText(num.replace(/\s/g, '')) : Promise.reject()).catch(() => {});
-        return K.ui().toast('Am copiat numărul ' + num + '. De pe calculator nu se poate suna, sună de pe telefon.', 'info');
+      // the call: the link opens the phone's dialer (on a computer, the calls app, as in Pipeline);
+      // the number is copied too, for a computer with nothing to call from
+      if (a === 'call') {
+        const num = telOf(C.thread ? C.thread.phone : C.selectedPhone);
+        if (navigator.clipboard && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) navigator.clipboard.writeText(num).catch(() => {});
+        return;
       }
       if (a === 'tpl' && C.thread) return pickTemplate({ phone: C.thread.phone, name: named(C.thread) ? C.thread.clientName : '', city: C.thread.location, interest: C.thread.lead ? C.thread.lead.interest : '' });
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);

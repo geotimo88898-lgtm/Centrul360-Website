@@ -40,6 +40,43 @@ async function graphPost(token, path, body) {
   return { ok: r.ok, j, error: !r.ok ? (((j && j.error) || {}).message || 'eroare ' + r.status) : '' };
 }
 
+// the categories Meta knows for a business profile
+const VERTICALS = ['BEAUTY', 'HEALTH', 'PROF_SERVICES', 'RETAIL', 'OTHER', 'APPAREL', 'AUTO', 'EDU', 'ENTERTAIN', 'EVENT_PLAN', 'FINANCE', 'GROCERY', 'HOTEL', 'NONPROFIT', 'RESTAURANT', 'TRAVEL', 'GOVT'];
+// a picture for the profile: Meta's resumable upload gives a handle the profile takes
+async function uploadHandle(token, buf, type) {
+  const app = await graph(token, '/app', {}); // the app this access belongs to
+  if (!app.ok || !app.j.id) return { error: app.error || 'nu găsesc aplicația Meta a accesului' };
+  const s = await fetch(WA.GRAPH + '/' + app.j.id + '/uploads?' + new URLSearchParams({ file_name: 'profil.' + (type === 'image/png' ? 'png' : 'jpg'), file_length: String(buf.length), file_type: type, access_token: token }), { method: 'POST' });
+  const sj = await s.json().catch(() => ({}));
+  if (!s.ok || !sj.id) return { error: ((sj && sj.error) || {}).message || 'eroare ' + s.status };
+  const u = await fetch(WA.GRAPH + '/' + sj.id, { method: 'POST', headers: { Authorization: 'OAuth ' + token, file_offset: '0' }, body: buf });
+  const uj = await u.json().catch(() => ({}));
+  if (!u.ok || !uj.h) return { error: ((uj && uj.error) || {}).message || 'eroare ' + u.status };
+  return { h: uj.h };
+}
+// what a number shows clients: its profile and its name (with Meta's review of the name)
+async function profileOf(n) {
+  const prof = await graph(n.token, '/' + n.phoneId + '/whatsapp_business_profile', { fields: 'about,address,description,email,profile_picture_url,websites,vertical' });
+  if (!prof.ok) return { error: prof.error };
+  const ph = await graph(n.token, '/' + n.phoneId, { fields: 'verified_name,name_status,new_name_status,display_phone_number' });
+  return { profile: ((prof.j.data || [])[0]) || {}, number: ph.ok ? ph.j : {} };
+}
+// the fields she typed, as Meta takes them ({ p } or { error })
+function profileBody(b) {
+  const p = { messaging_product: 'whatsapp' };
+  const about = clip(b.about, 139).trim();
+  if (about) p.about = about;
+  ['address', 'description'].forEach((k) => { const v = clip(b[k], k === 'address' ? 256 : 512).trim(); if (v) p[k] = v; });
+  const email = clip(b.email, 128).trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Adresa de e-mail nu e validă.' };
+  if (email) p.email = email;
+  const sites = (Array.isArray(b.websites) ? b.websites : []).map((s) => clip(s, 256).trim()).filter(Boolean).slice(0, 2);
+  if (sites.some((s) => !/^https?:\/\/\S+$/.test(s))) return { error: 'Site-ul trebuie să înceapă cu https://' };
+  if (sites.length) p.websites = sites;
+  if (VERTICALS.includes(b.vertical)) p.vertical = b.vertical;
+  return { p };
+}
+
 async function payload(forceSync) {
   const cfg = await WA.loadConfig(true);
   const d = await T.load();
@@ -142,6 +179,42 @@ module.exports = async (req, res) => {
       const r = await WC.repairNumber({ readJSON, writeJSON }, siteOrigin(req), city);
       if (r.error) { res.status(400).json({ error: 'repair_failed', message: r.error }); return; }
       res.status(200).json({ ok: true, done: r.done });
+      return;
+    }
+    // the profile clients see on a number (Integrări → WhatsApp → Profil)
+    if (a === 'profile_get' || a === 'profile_save') {
+      if (!city) { res.status(400).json({ error: 'invalid_city' }); return; }
+      const cfg = await WA.loadConfig(true);
+      const n = cfg.numbers[city];
+      if (!n.phoneId || !n.token) { res.status(400).json({ error: 'not_connected', message: 'Conectează întâi numărul ' + city + '.' }); return; }
+      if (a === 'profile_save') {
+        const v = profileBody(body);
+        if (v.error) { res.status(400).json({ error: 'invalid', message: v.error }); return; }
+        let handle = '';
+        if (body.photo) {
+          const m = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/=]+)$/.exec(String(body.photo));
+          if (!m) { res.status(400).json({ error: 'invalid_photo', message: 'Poza trebuie să fie JPG sau PNG.' }); return; }
+          const buf = Buffer.from(m[2], 'base64');
+          if (buf.length > 5e6) { res.status(400).json({ error: 'invalid_photo', message: 'Poza e prea mare (cel mult 5 MB).' }); return; }
+          const up = await uploadHandle(n.token, buf, 'image/' + m[1]);
+          if (up.error) { res.status(400).json({ error: 'photo_failed', message: 'Poza: ' + up.error }); return; }
+          handle = up.h;
+        }
+        // this number, and the other one too when asked (same photo and texts, its own address)
+        const targets = [[city, n]];
+        const other = WA.CITIES.find((c) => c !== city);
+        if (body.both && cfg.numbers[other].phoneId && cfg.numbers[other].token) targets.push([other, cfg.numbers[other]]);
+        for (const [c, num] of targets) {
+          const p = Object.assign({}, v.p);
+          if (c !== city) delete p.address;
+          if (handle) p.profile_picture_handle = num.token === n.token ? handle : (await uploadHandle(num.token, Buffer.from(/base64,(.*)$/.exec(body.photo)[1], 'base64'), 'image/jpeg')).h;
+          const r = await graphPost(num.token, '/' + num.phoneId + '/whatsapp_business_profile', p);
+          if (!r.ok) { res.status(400).json({ error: 'meta_refused', message: c + ': Meta: ' + r.error }); return; }
+        }
+      }
+      const out = await profileOf(n);
+      if (out.error) { res.status(400).json({ error: 'meta_refused', message: 'Meta: ' + out.error }); return; }
+      res.status(200).json(Object.assign({ ok: true }, out));
       return;
     }
     if (a === 'test_send') {

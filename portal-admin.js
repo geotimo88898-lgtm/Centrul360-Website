@@ -644,13 +644,14 @@
       const n = d.numbers[c];
       return '<div class="st-fb-status wa-num ' + (n.connected ? 'is-ok' : 'is-wait') + '">' + icon(n.connected ? 'checkCircle' : 'pin') +
         '<div><b>' + esc(c) + '</b><span>' + (n.connected ? esc(n.display || n.phoneId) + (n.name ? ' · ' + esc(n.name) : '') + (n.coex ? ' · și în aplicația de pe telefon' : '') : 'Neconectat') + '</span></div>' +
-        (n.connected ? '<button type="button" class="k-btn is-ghost is-sm" data-wa-connect="' + esc(c) + '">Schimbă</button><button type="button" class="k-icon-btn" data-wa-off="' + esc(c) + '" title="Deconectează ' + esc(c) + '">' + icon('x') + '</button>'
+        (n.connected ? '<button type="button" class="k-btn is-ghost is-sm" data-wa-profile="' + esc(c) + '">Profil</button><button type="button" class="k-btn is-ghost is-sm" data-wa-connect="' + esc(c) + '">Schimbă</button><button type="button" class="k-icon-btn" data-wa-off="' + esc(c) + '" title="Deconectează ' + esc(c) + '">' + icon('x') + '</button>'
           : '<button type="button" class="k-btn is-primary is-sm" data-wa-connect="' + esc(c) + '" title="Conectează numărul ' + esc(c) + '">' + icon('plus') + 'Conectează</button>') + '</div>';
     }).join('') + '</div>' +
       '<div class="st-int-row">' +
         (ok ? '<button type="button" class="k-btn is-outline is-sm" data-goto="mesaje">Mesaje' + icon('arrow') + '</button>' : '<span class="k-muted">Până la conectare, mesajele automatizărilor nu pleacă.</span>') +
         '<button type="button" class="k-btn is-ghost is-sm" data-wa-check>' + icon('shield') + 'Verifică</button></div>';
     box.querySelectorAll('[data-wa-connect]').forEach((b) => b.addEventListener('click', () => window.C360Wa.connect(b.dataset.waConnect, { onDone: () => paintWa(box) })));
+    box.querySelectorAll('[data-wa-profile]').forEach((b) => b.addEventListener('click', () => window.C360Wa.profile(b.dataset.waProfile)));
     box.querySelectorAll('[data-wa-off]').forEach((b) => b.addEventListener('click', async () => {
       const c = b.dataset.waOff;
       if (!(await K.ui().confirm({ title: 'Deconectezi numărul ' + c + '?', message: 'Mesajele automatizărilor nu mai pleacă de pe el până îl conectezi la loc.', confirmText: 'Deconectează', danger: true }))) return;

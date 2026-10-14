@@ -1195,6 +1195,13 @@ main.ad-full{ max-width:none; }
 .wa-pick-main small{ font-size:.78rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wa-relogin{ margin-top:.6rem; }
 /* Verifică WhatsApp: per number what works (green) and what doesn't (red), Meta's words under it */
+/* WhatsApp profile (Integrări → WhatsApp → Profil) */
+.wa-prof-top{ display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
+.wa-prof-top > div{ display:flex; flex-direction:column; align-items:flex-start; gap:.25rem; min-width:0; }
+.wa-prof-top small{ color:var(--muted); font-size:.8rem; }
+.wa-prof-pic{ flex:none; display:grid; place-items:center; width:84px; height:84px; border-radius:50%; background:var(--paper-2) center/cover no-repeat; border:1px solid var(--line); color:var(--muted); }
+.wa-prof-pic .k-ic{ width:28px; height:28px; }
+.wa-prof-up{ margin-top:.35rem; cursor:pointer; }
 .wa-check{ padding:.9rem 0 1.1rem; border-bottom:1px solid var(--line); }
 .wa-check:last-child{ border-bottom:0; }
 .wa-check h4{ display:flex; align-items:center; gap:.5rem; margin:0 0 .6rem; font-size:1rem; }

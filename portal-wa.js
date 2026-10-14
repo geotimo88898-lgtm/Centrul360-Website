@@ -474,6 +474,83 @@
     if (K.data) once(); else K.on('data', once);
   }
 
+  // ------------------------------------------------------------------ the profile clients see
+  // Integrări → WhatsApp → Profil: photo, about, description, address, e-mail, site, category, through
+  // Meta's API (no phone app). The name shows with Meta's review of it; it changes in WhatsApp Manager.
+  const VERT = [['BEAUTY', 'Frumusețe, spa și salon'], ['HEALTH', 'Medical și sănătate'], ['PROF_SERVICES', 'Servicii profesionale'], ['RETAIL', 'Magazin'], ['OTHER', 'Altele']];
+  const NAMEST = { APPROVED: 'aprobat', AVAILABLE_WITHOUT_REVIEW: 'aprobat', PENDING_REVIEW: 'în analiză la Meta', DECLINED: 'respins de Meta', EXPIRED: 'expirat', NONE: '' };
+  const ADDR = { 'Timișoara': 'Strada Bucegi nr. 7, Timișoara', 'Arad': 'Strada Ioan Alexandru 16-18, Arad' };
+  // a picture as Meta wants it: square, 640 px, JPEG
+  const squarePhoto = (file) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(img.naturalWidth, img.naturalHeight), size = Math.min(640, s);
+      const cv = document.createElement('canvas'); cv.width = cv.height = size;
+      cv.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+      URL.revokeObjectURL(img.src);
+      resolve(cv.toDataURL('image/jpeg', 0.9));
+    };
+    img.onerror = () => reject(new Error('Nu pot citi poza.'));
+    img.src = URL.createObjectURL(file);
+  });
+  function profile(city) {
+    const other = city === 'Timișoara' ? 'Arad' : 'Timișoara';
+    let photo = '', el = null;
+    const dr = K.drawer({
+      title: 'Profil WhatsApp · ' + city, icon: 'chat', width: 520,
+      body: '<div data-prof><div class="k-skel" style="height:320px"></div></div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button><button type="button" class="k-btn is-primary" data-save disabled>' + icon('check') + 'Salvează</button>',
+      onMount(root) {
+        el = root;
+        el.querySelector('[data-cancel]').addEventListener('click', () => dr.close());
+        el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, save));
+        load();
+      } });
+    async function load() {
+      const box = el.querySelector('[data-prof]');
+      let r;
+      try { r = await K.api('/api/portal-wa', { action: 'profile_get', city }); } catch (err) { box.innerHTML = K.empty('alert', 'Nu am putut citi profilul', (err.data && err.data.message) || K.errText(err)); return; }
+      const p = r.profile || {}, n = r.number || {};
+      const st = NAMEST[n.name_status] || (n.name_status || '').toLowerCase().replace(/_/g, ' ');
+      const sites = p.websites || [];
+      const otherOn = W.d && W.d.numbers && W.d.numbers[other] && W.d.numbers[other].connected;
+      box.innerHTML = '<div class="wa-prof">' +
+        '<div class="wa-prof-top"><span class="wa-prof-pic" data-pic' + (p.profile_picture_url ? ' style="background-image:url(&quot;' + esc(p.profile_picture_url) + '&quot;)"' : '') + '>' + (p.profile_picture_url ? '' : icon('image')) + '</span>' +
+          '<div><b>' + esc(n.verified_name || city) + '</b><small>' + esc(n.display_phone_number || '') + (st ? ' · nume ' + esc(st) : '') + '</small>' +
+          '<label class="k-btn is-outline is-sm wa-prof-up">' + icon('share') + 'Schimbă poza<input type="file" accept="image/jpeg,image/png" data-file hidden></label></div></div>' +
+        '<div class="k-form wa-form">' +
+          K.field('Despre (apare sub nume)', '<input data-f="about" maxlength="139" value="' + esc(p.about || '') + '" placeholder="Ex. Remodelare corporală și tratamente faciale">', 'full') +
+          K.field('Descriere', '<textarea data-f="description" rows="3" maxlength="512">' + esc(p.description || '') + '</textarea>', 'full') +
+          K.field('Adresă', '<input data-f="address" maxlength="256" value="' + esc(p.address || ADDR[city] || '') + '">', 'full') +
+          K.field('E-mail', '<input data-f="email" type="email" maxlength="128" value="' + esc(p.email || '') + '">', '') +
+          K.field('Categorie', '<select data-f="vertical">' + K.options(VERT.concat(VERT.some((v) => v[0] === p.vertical) || !p.vertical ? [] : [[p.vertical, p.vertical]]), p.vertical || 'BEAUTY') + '</select>', '') +
+          K.field('Site', '<input data-f="site1" type="url" maxlength="256" value="' + esc(sites[0] || 'https://www.centrul360.com') + '">', 'full') +
+          K.field('Al doilea site (opțional)', '<input data-f="site2" type="url" maxlength="256" value="' + esc(sites[1] || '') + '">', 'full') +
+          (otherOn ? '<div class="k-field full"><label class="k-switch"><input type="checkbox" data-both checked><i></i><span>Aceeași poză și texte și la ' + esc(other) + ' (adresa rămâne a fiecăruia)</span></label></div>' : '') +
+        '</div></div>';
+      el.querySelector('[data-save]').disabled = false;
+      el.querySelector('[data-file]').addEventListener('change', async (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        try {
+          photo = await squarePhoto(f);
+          const pic = el.querySelector('[data-pic]');
+          pic.style.backgroundImage = 'url("' + photo + '")'; pic.innerHTML = '';
+        } catch (err) { K.ui().toast(err.message, 'error'); }
+      });
+    }
+    async function save() {
+      const v = (k) => { const x = el.querySelector('[data-f="' + k + '"]'); return x ? x.value.trim() : ''; };
+      const both = el.querySelector('[data-both]');
+      try {
+        await K.api('/api/portal-wa', { action: 'profile_save', city, about: v('about'), description: v('description'), address: v('address'), email: v('email'), vertical: v('vertical'),
+          websites: [v('site1'), v('site2')].filter(Boolean), photo, both: !!(both && both.checked) });
+        K.ui().toast('Profilul WhatsApp e salvat' + (both && both.checked ? ' pe ambele numere' : '') + '. Clienții îl văd în câteva minute.', 'success');
+        dr.close();
+      } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+    }
+  }
+
   // ------------------------------------------------------------------ check the numbers
   async function check() {
     const dr = K.drawer({ title: 'Verifică WhatsApp', icon: 'shield', width: 560, body: '<div data-checks><div class="k-skel" style="height:260px"></div></div>',
@@ -522,5 +599,5 @@
     }
   }
 
-  window.C360Wa = { check, load, post, edit, connect, list, tag, cityTags, bubble, STATUS, CAT, VLABEL, get d() { return W.d; } };
+  window.C360Wa = { check, load, post, edit, connect, profile, list, tag, cityTags, bubble, STATUS, CAT, VLABEL, get d() { return W.d; } };
 })();
