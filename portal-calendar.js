@@ -26,6 +26,8 @@
   const PICK = ['programata', 'confirmata', 'reprogramata', 'anulata'];
   const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false };
   const phone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
+  const PHONE_VIEW = 'c360_cal_phone_view';
+  const keepPhoneView = () => { if (phone()) try { localStorage.setItem(PHONE_VIEW, S.view); } catch (e) { /* private mode */ } };
   let panel, gridEl, nowTimer = 0;
   // Front desk + owner edit the calendar; a cosmetician sees it read-only (server enforces the same).
   const canEdit = () => !!(K.frontDesk && K.frontDesk());
@@ -50,7 +52,8 @@
     if (locked) S.loc = K.data.city;
     // A cosmetician opens on her own clients; reception/admin see everyone.
     if (K.data && !K.data.isAdmin && K.data.me.role === 'cosmetician') S.emp = K.data.me.id;
-    if (window.innerWidth < 720) S.view = 'day';
+    // a phone: day or week (agenda), as it was last picked on this phone
+    if (window.innerWidth < 720) { let v = 'day'; try { v = localStorage.getItem(PHONE_VIEW) === 'week' ? 'week' : 'day'; } catch (e) { /* private mode */ } S.view = v; }
     panel.innerHTML =
       '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2></div>' +
       (canEdit() ? '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
@@ -70,7 +73,7 @@
     gridEl = panel.querySelector('[data-grid]');
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', (e) => {
-      if (e.target.name === 'calview') { S.view = e.target.value; load(); }
+      if (e.target.name === 'calview') { S.view = e.target.value; keepPhoneView(); load(); }
       if (e.target.name === 'calloc') {
         S.loc = e.target.value;
         // the cosmetician filter only offers people from the chosen city
@@ -102,7 +105,7 @@
     else if (k === 'z') setView('day');
     else if (k === 's') setView('week');
   }
-  function setView(v) { S.view = v; const seg = panel.querySelector('[data-k-seg="calview"]'); seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); seg.querySelector('input').value = v; load(); }
+  function setView(v) { S.view = v; keepPhoneView(); const seg = panel.querySelector('[data-k-seg="calview"]'); seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); seg.querySelector('input').value = v; load(); }
   function shift(dir) { S.date = K.addDays(S.date, dir * (S.view === 'day' ? 1 : 7)); inRange() ? (renderTitle(), render()) : load(); }
   // a phone has the whole month loaded: moving inside it needs no reload
   const inRange = () => { if (!phone() || !S.range) return false; const [a, b] = S.range.split('|'); return S.date >= a && S.date <= b; };
@@ -121,6 +124,15 @@
     }
     const mday = e.target.closest('[data-mday]');
     if (mday) return pickDay(mday.dataset.mday);
+    // the week strip: to that day in the agenda
+    const wday = e.target.closest('[data-wday]');
+    if (wday) {
+      const sec = gridEl.querySelector('[data-agday="' + wday.dataset.wday + '"]');
+      if (sec) { const top = sec.getBoundingClientRect().top + window.scrollY - stickTop(); window.scrollTo({ top, behavior: 'smooth' }); }
+      return;
+    }
+    const nd = e.target.closest('[data-newday]');
+    if (nd) return openNew({ date: nd.dataset.newday, location: S.loc !== 'all' ? S.loc : '' });
     const mm = e.target.closest('[data-mmonth]');
     if (mm) {
       // another month: its first day (today, when it's this month)
@@ -138,7 +150,7 @@
   // ------------------------------------------------------------------ data
   function rangeFor() {
     // a phone: the whole month (the month on top shows which days have bookings)
-    if (phone()) { const m = S.date.slice(0, 7); return [m + '-01', m + '-' + K.pad(K.daysIn(m))]; }
+    if (phone() && S.view === 'day') { const m = S.date.slice(0, 7); return [m + '-01', m + '-' + K.pad(K.daysIn(m))]; }
     if (S.view === 'day') return [S.date, S.date];
     const mon = K.mondayOf(S.date);
     return [mon, K.addDays(mon, 6)];
@@ -174,11 +186,22 @@
     if (!gridEl) return;
     const mbox = panel.querySelector('[data-mbox]');
     mbox.hidden = !phone();
+    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
+      (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
+    if (phone() && S.view === 'week') {
+      mbox.innerHTML = weekStripHtml(visible);
+      renderSummary(visible);
+      gridEl.style.removeProperty('--cols');
+      gridEl.classList.remove('is-week');
+      gridEl.classList.add('is-agenda');
+      gridEl.innerHTML = agendaHtml(visible);
+      if (!keepScroll) { const t = gridEl.querySelector('.cal-ag-day.is-today'); if (t) requestAnimationFrame(() => window.scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + window.scrollY - stickTop()), behavior: 'auto' })); }
+      return;
+    }
+    gridEl.classList.remove('is-agenda');
     if (phone()) mbox.innerHTML = monthHtml();
     const prevScroll = gridEl.parentElement.scrollTop;
     const cols = columns();
-    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
-      (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
     renderSummary(phone() ? visible.filter((a) => a.date === S.date) : visible); // a phone has the month loaded: the day's numbers
     const H = (END - START) * 60 * PPM;
     const hours = Array.from({ length: END - START + 1 }, (_, i) => START + i);
@@ -229,6 +252,41 @@
     return '<div class="cal-mbox-head"><button type="button" class="k-icon-btn" data-mmonth="-1" aria-label="Luna trecută">' + icon('left') + '</button>' +
       '<b>' + K.monthLabel(m) + '</b><button type="button" class="k-icon-btn" data-mmonth="1" aria-label="Luna viitoare">' + icon('right') + '</button></div>' +
       '<div class="cal-mbox-grid">' + ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((x) => '<em>' + x + '</em>').join('') + cells.join('') + '</div>';
+  }
+
+  // ------------------------------------------------------------------ the phone week (agenda)
+  // how far down the sticky header and week strip reach (a day jumps to just under them)
+  const stickTop = () => { const s = panel && panel.querySelector(".cal-mbox"); return (s && !s.hidden ? s.getBoundingClientRect().height : 0) + 74; };
+  const weekDays = () => { const mon = K.mondayOf(S.date); return Array.from({ length: 7 }, (_, i) => K.addDays(mon, i)); };
+  const live = (a) => a.status !== 'anulata' && a.status !== 'concediu';
+  function weekStripHtml(visible) {
+    const today = K.today();
+    return '<div class="cal-wstrip">' + weekDays().map((d) => {
+      const n = visible.filter((a) => a.date === d && live(a)).length;
+      return '<button type="button" data-wday="' + d + '" class="' + (d === today ? 'is-today ' : '') + (d < today ? 'is-past' : '') + '">' +
+        '<em>' + K.DOW_S[K.parse(d).getDay()] + '</em><b>' + K.parse(d).getDate() + '</b><i' + (n ? '' : ' class="is-none"') + '>' + (n || '') + '</i></button>';
+    }).join('') + '</div>';
+  }
+  function agendaHtml(visible) {
+    const today = K.today();
+    const multi = S.loc === 'all';
+    return '<div class="cal-agenda">' + weekDays().map((d) => {
+      const list = visible.filter((a) => a.date === d).sort((x, y) => (toMin(x.time) == null ? -1 : toMin(x.time)) - (toMin(y.time) == null ? -1 : toMin(y.time)));
+      const n = list.filter(live).length;
+      const dt = K.parse(d);
+      return '<section class="cal-ag-day' + (d === today ? ' is-today' : '') + (d < today ? ' is-past' : '') + '" data-agday="' + d + '">' +
+        '<button type="button" class="cal-ag-head" data-goday="' + d + '"><b>' + esc(K.DOW[dt.getDay()].replace(/^./, (c) => c.toUpperCase())) + '</b><span>' + esc(K.dateShort(d)) + (d === today ? ' · azi' : '') + '</span>' +
+          '<em>' + (n ? K.plural(n, 'programare', 'programări') : 'liber') + '</em>' + icon('right') + '</button>' +
+        (list.length ? list.map((a) => {
+          const st = STATUS[a.status] || STATUS.programata;
+          return '<button type="button" class="cal-ag-row is-' + esc(a.status) + '" data-open="' + esc(a.id) + '">' +
+            '<span class="cal-ag-time">' + (a.time ? '<b>' + esc(a.time) + '</b>' + (toMin(a.endTime) > toMin(a.time) ? '<small>' + esc(a.endTime) + '</small>' : '') : '<b>toată</b><small>ziua</small>') + '</span>' +
+            '<span class="cal-ag-main"><b>' + esc(a.clientName || '-') + '</b><small>' + esc([a.treatment, a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
+            '<span class="cal-ag-meta">' + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' + esc(a.cosmeticianName.split(' ')[0]) : '') + (multi && a.location ? '<em>' + esc(a.location) + '</em>' : '') +
+            (a.package ? '<em>pachet</em>' : '') + '<em class="is-st">' + esc(st.label) + '</em></span></span></button>';
+        }).join('') : '<div class="cal-ag-empty"><span>Nicio programare</span>' + (canEdit() && d >= today ? '<button type="button" class="k-btn is-ghost is-sm" data-newday="' + d + '">' + icon('plus') + 'Programează</button>' : '') + '</div>') +
+        '</section>';
+    }).join('') + '</div>';
   }
 
   // Overlapping appointments share the column width (simple lane packing).

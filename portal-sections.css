@@ -1397,9 +1397,9 @@ main.ad-full{ max-width:none; }
   .cal-nav .cal-title .k-ic{ display:none; }
   .cal-nav [data-act="today"]{ order:9; }
   .cal-bar-right{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.45rem; }
-  .cal-bar-right [data-k-seg="calview"]{ display:none; }
+  .cal-bar-right [data-k-seg="calview"]{ grid-column:2; grid-row:2; }
   .cal-bar-right [data-k-seg="calloc"]{ grid-column:1 / -1; grid-row:1; }
-  .cal-bar-right select[data-emp]{ grid-column:1 / -1; grid-row:2; min-width:0; font-size:.82rem; }
+  .cal-bar-right select[data-emp], .cal-bar-right .c360-select{ grid-column:1; grid-row:2; min-width:0; font-size:.82rem; }
   .cal-bar-right [data-k-seg="calonly"]{ display:none; }
   .cal-bar-right .k-seg button{ padding-left:.55rem; padding-right:.55rem; font-size:.78rem; }
   .cal-summary{ flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-bottom:.7rem; }
@@ -1421,6 +1421,43 @@ main.ad-full{ max-width:none; }
   .cal-mbox-grid button.is-sel{ background:var(--fg); }
   .cal-mbox-grid button.is-sel b{ color:var(--ink); font-weight:750; }
   .cal-mbox-grid button.is-sel i:not(.is-none){ background:var(--ink); }
+  /* the week, as an agenda */
+  .cal-mbox:has(.cal-wstrip){ position:sticky; top:calc(env(safe-area-inset-top, 0px) + 62px); z-index:7; padding:.4rem .4rem .45rem; box-shadow:0 10px 24px -18px rgba(0,0,0,.45); }
+  .cal-wstrip{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:2px; }
+  .cal-wstrip button{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:.35rem 0 .4rem; border:0; border-radius:14px; background:none; color:var(--fg); font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .cal-wstrip em{ font-style:normal; font-size:.64rem; font-weight:700; color:var(--muted-2); text-transform:uppercase; letter-spacing:.04em; }
+  .cal-wstrip b{ font-size:1rem; font-weight:650; font-variant-numeric:tabular-nums; width:32px; height:32px; display:grid; place-items:center; border-radius:50%; }
+  .cal-wstrip i{ font-style:normal; min-width:18px; height:18px; padding:0 .3rem; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:.68rem; font-weight:700; display:grid; place-items:center; }
+  .cal-wstrip i.is-none{ background:transparent; }
+  .cal-wstrip button.is-past b{ color:var(--muted); }
+  .cal-wstrip button.is-today b{ background:var(--grad, var(--accent)); color:var(--accent-fg, #fff); }
+  .cal-wrap:has(.cal-grid.is-agenda){ background:none; border:0; box-shadow:none; }
+  .cal-grid.is-agenda{ display:block; }
+  .cal-agenda{ display:flex; flex-direction:column; gap:.7rem; padding-bottom:5rem; }
+  .cal-ag-day{ border-radius:18px; background:var(--paper); border:1px solid var(--line); overflow:hidden; scroll-margin-top:180px; }
+  .cal-ag-day.is-today{ border-color:color-mix(in srgb, var(--accent) 55%, var(--line)); }
+  .cal-ag-day.is-past{ opacity:.78; }
+  .cal-ag-head{ display:flex; align-items:baseline; gap:.5rem; width:100%; padding:.7rem .85rem .55rem; border:0; background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
+  .cal-ag-head b{ font-size:.98rem; font-weight:700; }
+  .cal-ag-head span{ font-size:.82rem; color:var(--muted); }
+  .cal-ag-head em{ margin-left:auto; font-style:normal; font-size:.74rem; font-weight:650; color:var(--muted); }
+  .cal-ag-head .k-ic{ width:15px; height:15px; color:var(--muted-2); align-self:center; }
+  .cal-ag-day.is-today .cal-ag-head b, .cal-ag-day.is-today .cal-ag-head span{ color:var(--accent); }
+  .cal-ag-row{ --bc:var(--accent); display:flex; gap:.7rem; width:100%; padding:.6rem .85rem .65rem; border:0; border-top:1px solid var(--line); background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; position:relative; }
+  .cal-ag-row::before{ content:""; position:absolute; left:0; top:.55rem; bottom:.55rem; width:3px; border-radius:0 3px 3px 0; background:var(--bc); }
+  .cal-ag-row.is-confirmata{ --bc:var(--good); } .cal-ag-row.is-reprogramata{ --bc:var(--warn); } .cal-ag-row.is-finalizata, .cal-ag-row.is-concediu{ --bc:var(--muted-2); }
+  .cal-ag-row.is-anulata{ --bc:var(--bad); opacity:.6; } .cal-ag-row.is-anulata .cal-ag-main > b{ text-decoration:line-through; }
+  .cal-ag-row:active{ background:var(--glass); }
+  .cal-ag-time{ flex:0 0 3.1rem; display:flex; flex-direction:column; font-variant-numeric:tabular-nums; }
+  .cal-ag-time b{ font-size:.9rem; font-weight:700; } .cal-ag-time small{ font-size:.72rem; color:var(--muted); }
+  .cal-ag-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.12rem; }
+  .cal-ag-main > b{ font-size:.92rem; font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cal-ag-main > small{ font-size:.78rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cal-ag-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:.3rem; margin-top:.15rem; font-size:.72rem; color:var(--muted); }
+  .cal-ag-meta i{ font-style:normal; width:18px; height:18px; border-radius:50%; background:var(--glass-2); display:inline-grid; place-items:center; font-size:.58rem; font-weight:700; color:var(--fg); margin-right:.1rem; }
+  .cal-ag-meta em{ font-style:normal; padding:.05rem .45rem; border-radius:999px; background:var(--glass-2); }
+  .cal-ag-meta em.is-st{ background:color-mix(in srgb, var(--bc) 14%, transparent); color:var(--bc); font-weight:650; }
+  .cal-ag-empty{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.55rem .85rem .7rem; border-top:1px solid var(--line); font-size:.82rem; color:var(--muted-2); }
 }
 
 /* ---------------- Mesaje: the WhatsApp inbox ---------------- */
