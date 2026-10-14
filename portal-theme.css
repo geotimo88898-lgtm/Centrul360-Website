@@ -147,9 +147,13 @@ nav.tabs button{
   transition:color .2s ease, background .2s ease, transform .15s var(--ease);
 }
 nav.tabs button svg{ width:18px; height:18px; opacity:.7; transition:opacity .2s ease, transform .3s var(--spring); }
-nav.tabs button:hover{ background:var(--glass); color:var(--fg); }
-nav.tabs button:hover svg{ opacity:1; transform:scale(1.08); }
-nav.tabs button:active{ transform:scale(.98); }
+/* only with a mouse: on a phone the finger scrolling the menu would light up every row it passes */
+@media (hover:hover) and (pointer:fine){
+  nav.tabs button:hover{ background:var(--glass); color:var(--fg); }
+  nav.tabs button:hover svg{ opacity:1; transform:scale(1.08); }
+  nav.tabs button:active{ transform:scale(.98); }
+}
+nav.tabs button{ -webkit-tap-highlight-color:transparent; }
 nav.tabs button.active{ background:transparent; color:var(--fg); font-weight:600; box-shadow:none; border-left:0; }
 nav.tabs button.active svg{ opacity:1; color:var(--accent); }
 nav.tabs.has-indicator button.active{ background:transparent; }
