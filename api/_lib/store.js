@@ -47,7 +47,8 @@ async function readJSON(pathname, fallback) {
 }
 
 // Writes a JSON document to Blob storage, overwriting whatever is at that pathname.
-async function writeJSON(pathname, data) {
+// opts.quiet: a write the open portals don't need to refresh for (the activity log)
+async function writeJSON(pathname, data, opts) {
   const body = JSON.stringify(data, null, 2);
   await put(pathname, body, {
     access: 'private',
@@ -55,7 +56,7 @@ async function writeJSON(pathname, data) {
     allowOverwrite: true,
     contentType: 'application/json',
   });
-  if (pathname !== REV_PATH) await bumpRev(pathname);
+  if (pathname !== REV_PATH && !(opts && opts.quiet)) await bumpRev(pathname);
   return data;
 }
 

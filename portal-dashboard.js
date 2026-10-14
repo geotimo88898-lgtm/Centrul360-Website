@@ -6,6 +6,17 @@
   const K = window.K;
   const { esc, icon } = K;
   let panel = null, timer = 0, leadsData = null, firstPaint = true, tasksOpen = 0;
+  let actData = null, actTimer = 0; // today's changes by the whole team (Activitate), for the owner
+  function loadAct() {
+    if (!K.data || !K.data.isAdmin) return;
+    K.api('/api/portal-activity?days=1').then((j) => {
+      actData = j.lines || [];
+      const box = panel && panel.querySelector('[data-team]');
+      if (box && leadsData) box.innerHTML = teamHtml(leadsData.leads || []);
+    }).catch(() => {});
+  }
+  // a change anywhere: the card follows (the line is written a moment after the change)
+  K.on('remote', () => { if (!panel || !K.isActive('panou')) return; loadAct(); clearTimeout(actTimer); actTimer = setTimeout(loadAct, 2500); });
   let customizeCtx = null; // what Personalizează offers this account (set by render)
   K.on('tasks', (list) => { tasksOpen = list.length; });
 
@@ -234,7 +245,7 @@
       today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
         '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>',
       bonus: () => bonusCard,
-      team: () => '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa în pipeline</h3><a class="k-btn is-sm is-outline" href="#pipeline" data-go="pipeline">Pipeline' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>',
+      team: () => '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa</h3><a class="k-btn is-sm is-outline" href="#activitate" data-go="activitate">Activitate' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>',
     };
 
     const root = panel.querySelector('.db-root');
@@ -298,13 +309,20 @@
       if (a.type === 'booking') p.booking++;
       if (a.type === 'stage') p.stage++;
     });
-    const people = Object.keys(per).sort((a, b) => per[b].total - per[a].total);
+    // everything the team changed today (Activitate), not only the pipeline
+    const all = {};
+    (actData || []).filter((l) => K.iso(new Date(l.at)) === today).forEach((l) => { all[l.name] = (all[l.name] || 0) + 1; if (!per[l.name]) per[l.name] = { contact: 0, booking: 0, stage: 0, total: 0 }; });
+    Object.keys(per).forEach((n) => { per[n].all = all[n] || per[n].total; });
+    const people = Object.keys(per).sort((a, b) => per[b].all - per[a].all);
     const verb = (a) => a.type === 'contact' ? (a.channel === 'whatsapp' ? 'a scris pe WhatsApp' : 'a sunat') : a.type === 'booking' ? 'a programat' : a.type === 'stage' ? 'a mutat' : a.type === 'note' ? 'a notat la' : a.type === 'followup' ? 'a setat follow-up la' : 'a actualizat';
     const OUT = { raspuns: 'a răspuns', interesat: 'interesată', programat: 'vrea programare', revine: 'revine', nu_raspunde: 'nu răspunde', refuz: 'nu e interesată', numar_gresit: 'număr greșit' };
     return (people.length ? '<div class="db-team-people">' + people.map((n) =>
-      '<div class="db-person">' + K.avatar(n, 34) + '<div><b>' + esc(n) + '</b><span>azi: ' + per[n].contact + ' contactări · ' + per[n].booking + ' programări · ' + per[n].stage + ' mutări</span></div></div>').join('') + '</div>'
-      : '<p class="k-muted" style="margin:0 0 .8rem">Nimeni n-a lucrat încă în pipeline azi.</p>') +
-      (acts.length ? '<ol class="db-feed">' + acts.slice(0, 7).map(({ a, l }) =>
+      '<div class="db-person">' + K.avatar(n, 34) + '<div><b>' + esc(n) + '</b><span>azi: ' + per[n].all + (per[n].all === 1 ? ' modificare' : ' modificări') + (per[n].contact || per[n].booking ? ' · ' + per[n].contact + ' contactări · ' + per[n].booking + ' programări' : '') + '</span></div></div>').join('') + '</div>'
+      : '<p class="k-muted" style="margin:0 0 .8rem">Nimeni n-a lucrat încă azi.</p>') +
+      ((actData || []).length ? '<ol class="db-feed">' + actData.slice(0, 7).map((l) =>
+        '<li data-go="' + esc(l.go || 'activitate') + '">' + K.avatar(l.name, 26) + '<div><span><b>' + esc(l.name) + '</b> ' + esc(l.verb) + (l.subject ? ' <b>' + esc(l.subject) + '</b>' : '') +
+        (l.detail ? ' · ' + esc(l.detail) : '') + '</span><small data-ago="' + esc(l.at) + '">' + K.ago(l.at) + '</small></div></li>').join('') + '</ol>'
+      : acts.length ? '<ol class="db-feed">' + acts.slice(0, 7).map(({ a, l }) =>
         '<li data-lead="' + esc(l.id) + '">' + K.avatar(a.author, 26) + '<div><span><b>' + esc(a.author) + '</b> ' + verb(a) + ' <b>' + esc(l.name) + '</b>' +
         (a.type === 'contact' && OUT[a.outcome] ? ' · ' + OUT[a.outcome] : a.type === 'stage' ? ' · ' + esc(a.text) : '') + '</span><small data-ago="' + esc(a.at) + '">' + K.ago(a.at) + '</small></div></li>').join('') + '</ol>'
         : K.empty('users', 'Încă nicio activitate', 'Apelurile, programările și mutările din pipeline apar aici în timp real.'));
@@ -377,6 +395,7 @@
     mount,
     show() {
       firstPaint = true; // entering the tab animates; silent refreshes don't
+      loadAct();
       if (!K.frontDesk()) leadsData = { leads: [] }; // cosmeticians don't work the pipeline
       if (!leadsData) {
         // Give the leads a moment so the first paint (and its animations) is the complete one.

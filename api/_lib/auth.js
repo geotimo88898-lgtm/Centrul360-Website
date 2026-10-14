@@ -161,6 +161,8 @@ function requireAuth(req, res) {
     res.status(403).json({ error: 'preview_only' });
     return null;
   }
+  // every change that answers OK gets its line in Activitate (_lib/activity.js)
+  require('./activity').watch(req, res, session);
   return session;
 }
 
@@ -176,6 +178,7 @@ function requireAdmin(req, res) {
     return null;
   }
   renew(res, session);
+  require('./activity').watch(req, res, session);
   return session;
 }
 
