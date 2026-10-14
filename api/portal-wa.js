@@ -226,7 +226,7 @@ module.exports = async (req, res) => {
       const cfg = await WA.loadConfig(true);
       const n = cfg.numbers[city];
       const mine = (doc.templates || []).find((t) => T.approvedFor(t, n.wabaId) && !(t.map || []).length);
-      const r = await WA.sendWhatsApp({ phone, from: city, template: mine ? ((mine.meta || {})[n.wabaId] || {}).name || mine.name : 'hello_world', language: mine ? mine.language || 'ro' : 'en_US' });
+      const r = await WA.sendWhatsApp({ phone, from: city, template: mine ? ((mine.meta || {})[n.wabaId] || {}).name || mine.name : 'hello_world', language: mine ? mine.language || 'ro' : 'en_US', headerImagePath: mine ? T.imageOf(mine) : '' });
       // a new account: nothing approved yet (ours go to Meta's review by themselves)
       if (!r.sent && !mine && /132001/.test(r.error)) { res.status(400).json({ error: 'send_failed', message: 'Niciun șablon aprobat încă pe numărul ăsta. Șabloanele sunt la Meta în aprobare (de obicei câteva minute până la câteva ore). Până atunci: scrie-i numărului de pe telefonul tău și răspunde din Mesaje.' }); return; }
       if (!r.sent) { res.status(400).json({ error: 'send_failed', message: 'Nu a plecat: ' + r.error }); return; }
@@ -343,6 +343,47 @@ module.exports = async (req, res) => {
       return;
     }
     if (a === 'tpl_sync') { res.status(200).json(await payload(true)); return; }
+    // the pictures of another account's templates (the old LeadConnector ones): which had one, and with
+    // apply, the same-named templates here get them (kept in the portal, sent with every message)
+    if (a === 'tpl_old_images') {
+      if (!okId(body.wabaId)) { res.status(400).json({ error: 'invalid', message: 'ID-ul contului WhatsApp.' }); return; }
+      const cfg = await WA.loadConfig(true);
+      const token = cfg.token || (cfg.numbers['Timișoara'] || {}).token || (cfg.numbers.Arad || {}).token;
+      const found = [];
+      let r = await graph(token, '/' + body.wabaId + '/message_templates', { fields: 'name,language,status,components', limit: '200' });
+      for (let i = 0; i < 5 && r.ok; i++) {
+        (r.j.data || []).forEach((m) => {
+          const h = (m.components || []).find((c) => c.type === 'HEADER');
+          if (h && h.format && h.format !== 'TEXT') found.push({ name: m.name, language: m.language, format: h.format, url: ((h.example || {}).header_handle || [])[0] || '' });
+        });
+        const next = r.j.paging && r.j.paging.next;
+        if (!next) break;
+        const u = new URL(next);
+        r = await graph(token, u.pathname.replace(/^\/v\d+\.\d+/, ''), Object.fromEntries([...u.searchParams].filter(([k]) => k !== 'access_token')));
+      }
+      if (!r.ok) { res.status(400).json({ error: 'meta_refused', message: 'Meta: ' + r.error }); return; }
+      const out = [];
+      for (const f of found) {
+        const t = d.templates.find((x) => x.name === f.name && (x.language || 'ro') === f.language);
+        const row = { name: f.name, format: f.format, here: !!t, saved: false };
+        if (body.apply && t && f.format === 'IMAGE' && f.url) {
+          try {
+            const img = await fetch(f.url);
+            const buf = Buffer.from(await img.arrayBuffer());
+            if (img.ok && buf.length > 100) {
+              const p = 'wa-media/tpl-' + t.id.replace(/[^\w-]/g, '') + '-' + Date.now().toString(36) + '.jpg';
+              await require('./_lib/store').writeBinary(p, buf, 'image/jpeg');
+              t.headerType = 'IMAGE'; t.header = ''; t.samplePath = p; t.headerImagePath = p;
+              row.saved = true;
+            }
+          } catch (e) { row.error = e.message; }
+        }
+        out.push(row);
+      }
+      if (body.apply) await T.save(d);
+      res.status(200).json({ ok: true, found: out });
+      return;
+    }
     res.status(400).json({ error: 'invalid_action' });
   } catch (err) {
     console.error('portal-wa error:', err.message);

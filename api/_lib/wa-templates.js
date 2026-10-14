@@ -261,6 +261,10 @@ async function remove(d, id) {
   return { ok: true };
 }
 
+// the picture that goes with every message of a template (a template made for "Trimite rezultatele" takes
+// the client's picture instead, so it has none of its own)
+function imageOf(t) { return t && t.headerType === 'IMAGE' && t.purpose !== 'results' ? (t.headerImagePath || t.samplePath || '') : ''; }
+
 // may this template leave from that number? (approved in the number's account)
 function approvedFor(t, wabaId) { const m = t && (t.meta || {})[wabaId]; return !!(m && m.status === 'APPROVED'); }
 
@@ -269,8 +273,8 @@ function view(t, cfg) {
   const cities = {};
   if (cfg) WA.CITIES.forEach((c) => { const n = cfg.numbers[c]; const m = n.wabaId ? (t.meta || {})[n.wabaId] : null; cities[c] = n.phoneId && n.token ? (m ? m.status : 'DRAFT') : ''; });
   const reasons = Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean);
-  return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, text: friendly(t), body: t.body, map: t.map || [],
+  return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, image: t.headerImagePath || t.samplePath || '', text: friendly(t), body: t.body, map: t.map || [],
     footer: t.footer || '', buttons: t.buttons || [], status: overall(t), editable: editable(t), cities, reason: reasons[0] || '', imported: !!t.imported, updatedAt: t.updatedAt || '' };
 }
 
-module.exports = { KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, view, slug, toMeta };
+module.exports = { KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, imageOf, view, slug, toMeta };

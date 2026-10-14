@@ -454,7 +454,7 @@ async function sendTemplate(wa, templateId, from, phone, v) {
   const city = ready.includes(from) ? from : ready[0];
   const n = wa.cfg.numbers[city];
   if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city };
-  const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city });
+  const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl) });
   return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
 }
 const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';

@@ -17,7 +17,7 @@
 // Meta's rule: the clinic writes first only with an approved template (Integrări → Șabloane
 // WhatsApp); free text only as a reply within 24 h of the client's last message (Mesaje).
 
-const { readJSON } = require('./store');
+const { readJSON, readBinary } = require('./store');
 
 const GRAPH = 'https://graph.facebook.com/v21.0';
 const CONFIG_KEY = 'data/whatsapp-config.json';
@@ -76,11 +76,19 @@ function toE164(phone) {
 
 // from: 'Timișoara' | 'Arad' (the number it leaves from); when that one isn't connected, the other
 // connected number sends it and the answer says so (fromCity).
-async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId }) {
+async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId, headerImagePath }) {
   const cfg = await loadConfig();
   const ready = readyNumbers(cfg);
   if (!ready.length) return { sent: false, error: 'not_configured' };
   const city = ready.includes(from) ? from : ready[0];
+  // a template's own picture (kept in the portal): up to Meta from this number, then in the header
+  if (template && !headerImageId && headerImagePath) {
+    const buf = await readBinary(headerImagePath);
+    if (!buf) return { sent: false, error: 'poza șablonului lipsește', fromCity: city };
+    const up = await uploadMedia(city, buf, 'image/jpeg', 'sablon.jpg');
+    if (up.error) return { sent: false, error: 'poza șablonului: ' + up.error, fromCity: city };
+    headerImageId = up.id;
+  }
   const n = cfg.numbers[city];
   const to = toE164(phone);
   if (!to) return { sent: false, error: 'telefon invalid', fromCity: city };

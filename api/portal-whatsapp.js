@@ -313,7 +313,7 @@ module.exports = async (req, res) => {
       const v = W.vars(ctx, settings);
       if (name) { v.prenume = name.split(/\s+/)[0]; v.nume = name; }
       v.locatie = v.locatie || city; v.adresa = (settings.addresses || {})[v.locatie] || v.adresa || v.locatie;
-      const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city });
+      const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl) });
       if (!r.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis șablonul' + (r.error ? ': ' + r.error : '.'));
       if (!convo) {
         convo = { phone, clientName: name || phone, location: city, lastMessageAt: nowISO(), unreadCount: 0, messages: [] };
