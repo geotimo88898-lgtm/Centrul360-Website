@@ -115,14 +115,15 @@ async function checkNumber(store, origin, city) {
     // it when the token was made; without this one, Meta answers #200 to every message
     const msgScope = scopes.granular.find((g) => g.scope === 'whatsapp_business_messaging');
     const targets = msgScope ? (msgScope.target_ids || []).map(String) : [];
-    const send = !!n.wabaId && (msgScope ? targets.includes(String(n.wabaId)) : can('whatsapp_business_messaging'));
-    if (n.wabaId && msgScope && !targets.includes(String(n.wabaId))) {
+    // no list = every account the system user may use (an admin of the portfolio)
+    const send = !!n.wabaId && (msgScope ? !targets.length || targets.includes(String(n.wabaId)) : can('whatsapp_business_messaging'));
+    if (n.wabaId && msgScope && targets.length && !targets.includes(String(n.wabaId))) {
       const me = await call('GET', '/me', n.token, { fields: 'name' });
       const who = (me.ok && me.j.name) || 'utilizatorul de sistem al tokenului';
       const owner = (wb && wb.ok && (wb.j.owner_business_info || {}).name) || 'firma care deține contul';
       const acct = (wb && wb.ok && wb.j.name) || n.wabaId;
       line(false, 'Contul WhatsApp nu e atribuit accesului pentru trimitere',
-        (targets.length ? 'Meta îl lasă să trimită doar pentru: ' + targets.join(', ') + '. ' : 'Meta nu-i dă niciun cont WhatsApp pentru trimitere. ') +
+        'Meta îl lasă să trimită doar pentru: ' + targets.join(', ') + '. ' +
         'Repară în Meta Business, portofoliul ' + owner + ': Utilizatori de sistem → ' + who + ' → Atribuie active → Conturi WhatsApp → ' + acct +
         ' → Control total. Apoi Generează token NOU pe același utilizator (cel vechi nu se actualizează) și lipește-l la Conectează → Am un token.');
     }
