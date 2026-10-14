@@ -241,14 +241,14 @@ module.exports = async (req, res) => {
       if (v.error) { res.status(400).json({ error: 'invalid', message: v.error }); return; }
       if (prev) Object.assign(prev, v.t); else d.templates.push(v.t);
       let submitted = null;
-      if (body.submit) submitted = await T.submit(d, v.t.id);
+      if (body.submit) submitted = await T.submit(d, v.t.id, body.cities);
       await T.save(d);
       const out = await payload(false);
       res.status(200).json(Object.assign(out, { savedId: v.t.id, submitError: submitted && submitted.error ? submitted.error : '' }));
       return;
     }
     if (a === 'tpl_submit') {
-      const r = await T.submit(d, String(body.id || ''));
+      const r = await T.submit(d, String(body.id || ''), body.cities);
       await T.save(d);
       if (r.error && !r.partial) { res.status(400).json({ error: 'submit_failed', message: r.error }); return; }
       res.status(200).json(Object.assign(await payload(false), { submitError: r.error || '' }));

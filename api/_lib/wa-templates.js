@@ -73,9 +73,11 @@ function overall(t) {
 const editable = (t) => ['DRAFT', 'REJECTED'].includes(overall(t));
 
 // what she typed, checked against Meta's rules; returns { t } or { error }
+const onlyOf = (v) => (Array.isArray(v) ? WA.CITIES.filter((c) => v.includes(c)) : []);
 function clean(input, prev) {
   const i = input || {};
   const t = prev ? JSON.parse(JSON.stringify(prev)) : { id: crypto.randomUUID().slice(0, 12), language: 'ro', name: '', meta: {} };
+  if (i.only !== undefined) t.only = onlyOf(i.only);
   t.label = clip(i.label, 80).trim() || t.label || '';
   if (!t.label) return { error: 'Dă-i un nume șablonului.' };
   if (!prev || editable(prev)) {
@@ -131,10 +133,13 @@ async function graph(token, method, path, params) {
 }
 
 // send it to Meta for approval, in every connected account that doesn't have it yet (or refused it)
-async function submit(d, id) {
+async function submit(d, id, cities) {
   const t = d.templates.find((x) => x.id === id);
   if (!t) return { error: 'Șablonul nu mai există.' };
-  const { list } = await accounts();
+  if (Array.isArray(cities)) t.only = onlyOf(cities);
+  const all = (await accounts()).list;
+  // a template for one clinic goes only to that number's account
+  const list = (t.only || []).length ? all.filter((a) => a.cities.some((c) => t.only.includes(c))) : all;
   if (!list.length) return { error: 'Conectează întâi un număr de WhatsApp (Integrări → WhatsApp). Până atunci șablonul rămâne ciornă.' };
   const todo = list.filter((a) => !t.meta[a.wabaId] || ['REJECTED', 'DELETED'].includes(t.meta[a.wabaId].status));
   if (!todo.length) return { error: 'Șablonul e deja trimis.' };
@@ -208,6 +213,7 @@ async function spread(d, list, max = 6) {
     for (const t of d.templates) {
       if (sent >= max) return sent;
       if (t.meta[a.wabaId] || (t.imported && !used.has(t.id))) continue;
+      if ((t.only || []).length && !a.cities.some((c) => t.only.includes(c))) continue;
       if (!Object.values(t.meta).some((m) => m.status === 'APPROVED')) continue;
       const name = t.name || slug(t.label);
       const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: components(t) });
