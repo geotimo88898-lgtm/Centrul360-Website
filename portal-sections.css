@@ -1456,6 +1456,21 @@ main.ad-full{ max-width:none; }
 .mx-tpl-tag{ display:inline-flex; align-items:center; gap:.25rem; margin-bottom:.2rem; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.8; }
 .mx-tpl-tag .k-ic{ width:11px; height:11px; }
 .mx-compose{ display:flex; align-items:flex-end; gap:.45rem; padding:.6rem .7rem .4rem; border-top:1px solid var(--line); background:var(--paper); }
+/* snippets: the quick answers above the box, and their editor */
+.mx-snips{ display:flex; flex-direction:column; max-height:min(46vh, 360px); margin:0 .7rem .4rem; border:1px solid var(--line); border-radius:16px; background:var(--paper-2); box-shadow:var(--shadow-lg); overflow:hidden; animation:k-rise .18s var(--ease) both; }
+.mx-snips-top{ display:flex; align-items:center; gap:.4rem; padding:.5rem; border-bottom:1px solid var(--line); }
+.mx-snips-top input{ flex:1; min-width:0; height:38px; padding:0 .8rem; border:1px solid var(--line); border-radius:12px; background:var(--glass); color:var(--fg); font:inherit; font-size:.9rem; outline:none; }
+.mx-snips-list{ overflow-y:auto; overscroll-behavior:contain; padding:.3rem; }
+.mx-snip{ display:flex; flex-direction:column; align-items:flex-start; gap:.15rem; width:100%; padding:.6rem .7rem; border:0; border-radius:12px; background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.mx-snip b{ font-size:.88rem; font-weight:650; }
+.mx-snip span{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--muted); font-size:.8rem; line-height:1.35; white-space:pre-line; }
+.mx-snip.is-on{ background:var(--accent-soft); }
+.mx-snip-none{ margin:.6rem .7rem; }
+.mx-snip-new{ width:100%; margin-bottom:.8rem; }
+.mx-snip-all{ display:flex; flex-direction:column; gap:.2rem; }
+.mx-snip-form{ margin-bottom:1rem; padding:.9rem; border:1px solid var(--line); border-radius:16px; background:var(--glass); }
+.mx-snip-acts{ display:flex; align-items:center; gap:.4rem; }
+@media (hover:hover) and (pointer:fine){ .mx-snip:hover{ background:var(--glass); } }
 .mx-compose textarea{ flex:1; min-width:0; min-height:42px; max-height:140px; padding:.62rem .9rem; border:1px solid var(--line); border-radius:21px; background:var(--glass); color:var(--fg); font:inherit; font-size:.92rem; line-height:1.35; resize:none; outline:none; }
 .mx-compose textarea:focus{ border-color:var(--accent); }
 .mx-compose .k-icon-btn{ flex:none; width:42px; height:42px; }

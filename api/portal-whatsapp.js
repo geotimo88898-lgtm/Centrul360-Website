@@ -10,6 +10,8 @@
 //                    (last INBOUND message < 24h ago), from the number she wrote to.
 //   send_template -> { phone, templateId, name?, location? } an approved template, the client's details
 //                    filled in (from her lead / appointment); also starts a new conversation.
+//   snip_save     -> { snippet: { id?, title, text } } a quick answer the whole team shares (snippet)
+//   snip_delete   -> { id }
 //
 // Data: data/whatsapp-conversations.json (see api/webhook-whatsapp.js for the inbound side).
 
@@ -22,6 +24,7 @@ const { normalizePhone } = require('./_lib/clients');
 
 const { sendWhatsApp, toE164 } = WA;
 const KEY = 'data/whatsapp-conversations.json';
+const SNIP_KEY = 'data/wa-snippets.json'; // [{ id, title, text, by, createdAt, updatedAt, updatedBy }]
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const nowISO = () => new Date().toISOString();
 const digits9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
@@ -112,7 +115,7 @@ module.exports = async (req, res) => {
         .map(listItem)
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));
       const s = await setup();
-      res.status(200).json({ ok: true, conversations: list, numbers: s.numbers, templates: s.templates });
+      res.status(200).json({ ok: true, conversations: list, numbers: s.numbers, templates: s.templates, snippets: await readJSON(SNIP_KEY, []) });
       return;
     }
 
@@ -141,6 +144,31 @@ module.exports = async (req, res) => {
         lead: who.lead ? { id: who.lead.id, name: who.lead.name, interest: who.lead.interest || '' } : null,
         appointment: who.appointment ? { id: who.appointment.id, date: who.appointment.date, time: who.appointment.time, treatment: who.appointment.treatment || '' } : null,
       });
+      return;
+    }
+
+    // snippets: the team's quick answers (anyone in Mesaje uses, adds and edits them)
+    if (action === 'snip_save' || action === 'snip_delete') {
+      const list = await readJSON(SNIP_KEY, []);
+      if (action === 'snip_delete') {
+        const next = list.filter((x) => x.id !== String(body.id || ''));
+        await writeJSON(SNIP_KEY, next);
+        res.status(200).json({ ok: true, snippets: next });
+        return;
+      }
+      const s = body.snippet || {};
+      const title = String(s.title || '').trim().slice(0, 60), text = String(s.text || '').trim().slice(0, 2000);
+      if (!title || !text) return fail(400, 'invalid', 'Scrie un nume și textul.');
+      let row = s.id ? list.find((x) => x.id === String(s.id)) : null;
+      if (s.id && !row) return fail(404, 'not_found', 'Snippetul nu mai există.');
+      if (!row) {
+        if (list.length >= 200) return fail(400, 'too_many', 'Cel mult 200 de snippeturi.');
+        row = { id: crypto.randomUUID().slice(0, 10), by: session.employeeId, createdAt: nowISO() };
+        list.push(row);
+      }
+      Object.assign(row, { title, text, updatedAt: nowISO(), updatedBy: session.employeeId });
+      await writeJSON(SNIP_KEY, list);
+      res.status(200).json({ ok: true, snippets: list, savedId: row.id });
       return;
     }
 

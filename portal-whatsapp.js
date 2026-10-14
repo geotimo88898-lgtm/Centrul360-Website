@@ -9,7 +9,7 @@
   const K = window.K;
   const { esc, icon } = K;
 
-  const C = { conversations: [], numbers: {}, templates: [], q: '', show: 'all', loc: 'all', selectedPhone: null, thread: null, loadingThread: false, loaded: false, pushed: false };
+  const C = { snippets: [], conversations: [], numbers: {}, templates: [], q: '', show: 'all', loc: 'all', selectedPhone: null, thread: null, loadingThread: false, loaded: false, pushed: false };
   let panel;
   const CITY_SHORT = { 'Timișoara': 'TM', Arad: 'AR' };
   const TICK = { sent: '✓', delivered: '✓✓', read: '✓✓', failed: '!', received: '' };
@@ -21,7 +21,7 @@
     panel.classList.add('k-panel', 'mx');
     panel.innerHTML =
       '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Mesaje</h2></div>' +
-      '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-act="new">' + icon('pen') + 'Mesaj nou</button></div></div>' +
+      '<div class="k-head-actions"><button type="button" class="k-btn is-ghost" data-act="snips">' + icon('zap') + 'Snippeturi</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('pen') + 'Mesaj nou</button></div></div>' +
       '<div data-body><div class="k-skel" style="height:320px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('submit', onSubmit);
@@ -36,6 +36,7 @@
       C.conversations = j.conversations || [];
       C.numbers = j.numbers || {};
       C.templates = j.templates || [];
+      C.snippets = j.snippets || [];
       C.loaded = true;
       if (C.selectedPhone && !C.conversations.find((c) => c.phone === C.selectedPhone)) closeThread();
       if (!panel.querySelector('[data-mx-list]')) render(); else { paintStatus(); paintList(); }
@@ -198,7 +199,7 @@
     box.innerHTML = headHtml(t) +
       '<div class="mx-tbody">' + (msgs || K.empty('chat', 'Nimic încă', '')) + '</div>' +
       (t.within24h
-        ? '<form class="mx-compose" data-send><button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
+        ? '<form class="mx-compose" data-send><button type="button" class="k-icon-btn" data-act="snip" title="Mesaje rapide (snippeturi)">' + icon('plus') + '</button><button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
           '<textarea name="text" maxlength="4000" placeholder="Scrie un mesaj…" rows="1">' + esc(draft) + '</textarea>' +
           '<button type="submit" class="mx-send-btn" aria-label="Trimite">' + SEND + '</button></form>' +
           '<p class="mx-window">' + windowLine + '</p>'
@@ -360,12 +361,109 @@
       }
       if (a === 'tpl' && C.thread) return pickTemplate({ phone: C.thread.phone, name: named(C.thread) ? C.thread.clientName : '', city: C.thread.location, interest: C.thread.lead ? C.thread.lead.interest : '' });
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);
+      if (a === 'snip') return toggleSnips(act);
+      if (a === 'snips') return manageSnips();
     }
     const sh = e.target.closest('[data-show]');
     if (sh) { C.show = sh.dataset.show; return paintList(); }
     const pick = e.target.closest('[data-pick]');
     if (pick) openThread(pick.dataset.pick);
   }
+  // ------------------------------------------------------------------ snippets
+  // "+" in the chat: the team's quick answers above the box; a tap puts one in, her name filled in
+  function fillSnip(text) {
+    const t = C.thread || {};
+    const full = named(t) ? String(t.clientName).trim() : '';
+    const first = full.split(/\s+/)[0] || '';
+    return String(text)
+      .replace(/\s*\{prenume\}/g, (m) => (first ? m.replace('{prenume}', first) : ''))
+      .replace(/\{nume\}/g, full).replace(/\{locatie\}/g, t.location || '');
+  }
+  function snipRows(q) {
+    const n = K.norm ? K.norm(q || '') : String(q || '').toLowerCase();
+    const list = C.snippets.filter((s) => !n || (K.norm ? K.norm(s.title + ' ' + s.text) : (s.title + ' ' + s.text).toLowerCase()).includes(n));
+    return list.length ? list.map((s) => '<button type="button" class="mx-snip" data-snip="' + esc(s.id) + '"><b>' + esc(s.title) + '</b><span>' + esc(s.text) + '</span></button>').join('')
+      : '<p class="k-muted mx-snip-none">' + (C.snippets.length ? 'Niciun snippet găsit.' : 'Niciun snippet încă.') + '</p>';
+  }
+  function closeSnips() { const pop = panel.querySelector('.mx-snips'); if (pop) pop.remove(); document.removeEventListener('pointerdown', outsideSnips, true); }
+  function outsideSnips(e) { if (!e.target.closest('.mx-snips') && !e.target.closest('[data-act="snip"]')) closeSnips(); }
+  function toggleSnips() {
+    if (panel.querySelector('.mx-snips')) return closeSnips();
+    const form = panel.querySelector('.mx-compose');
+    if (!form) return;
+    const pop = document.createElement('div');
+    pop.className = 'mx-snips';
+    pop.innerHTML = '<div class="mx-snips-top"><input type="search" data-snip-q placeholder="Caută un snippet…" autocomplete="off"><button type="button" class="k-btn is-ghost is-sm" data-act="snips">' + icon('pen') + 'Editează</button></div>' +
+      '<div class="mx-snips-list" data-snip-list>' + snipRows('') + '</div>';
+    form.parentNode.insertBefore(pop, form);
+    pop.addEventListener('input', (e) => { if (e.target.matches('[data-snip-q]')) pop.querySelector('[data-snip-list]').innerHTML = snipRows(e.target.value); });
+    pop.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-snip]');
+      if (!b) return;
+      const s = C.snippets.find((x) => x.id === b.dataset.snip);
+      const ta = form.querySelector('textarea');
+      if (s && ta) {
+        const add = fillSnip(s.text);
+        ta.value = ta.value.trim() ? ta.value.replace(/\s*$/, '') + '\n' + add : add;
+        autoGrow(ta); ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      }
+      closeSnips();
+    });
+    if (!phone()) pop.querySelector('[data-snip-q]').focus();
+    document.addEventListener('pointerdown', outsideSnips, true);
+  }
+  // "Snippeturi": add, edit, delete (shared by the whole team)
+  function manageSnips() {
+    closeSnips();
+    let el = null, editing = null;
+    const dr = K.drawer({
+      title: 'Snippeturi', icon: 'zap', width: 520,
+      body: '<div data-snip-box></div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-close>Închide</button>',
+      onMount(root) {
+        el = root;
+        el.querySelector('[data-close]').addEventListener('click', () => dr.close());
+        el.addEventListener('click', onClickBox);
+        paint();
+      } });
+    const formHtml = (s) => '<form class="k-form wa-form mx-snip-form" data-snip-form>' +
+      K.field('Nume', '<input name="title" maxlength="60" required value="' + esc(s.title || '') + '" placeholder="Ex. Adresa Timișoara">', 'full') +
+      K.field('Text', '<textarea name="text" rows="5" maxlength="2000" required>' + esc(s.text || '') + '</textarea>', 'full', '{prenume} se înlocuiește cu prenumele clientei.') +
+      '<div class="k-field full mx-snip-acts">' + (s.id ? '<button type="button" class="k-btn is-ghost is-sm" data-snip-del="' + esc(s.id) + '">' + icon('trash') + 'Șterge</button>' : '') +
+      '<span class="k-grow"></span><button type="button" class="k-btn is-sm" data-snip-cancel>Renunță</button><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează</button></div></form>';
+    function paint() {
+      const box = el.querySelector('[data-snip-box]');
+      box.innerHTML = (editing ? formHtml(editing) : '<button type="button" class="k-btn is-primary mx-snip-new" data-snip-new>' + icon('plus') + 'Snippet nou</button>') +
+        '<div class="mx-snip-all">' + (C.snippets.length ? C.snippets.map((s) => '<button type="button" class="mx-snip' + (editing && editing.id === s.id ? ' is-on' : '') + '" data-snip-edit="' + esc(s.id) + '"><b>' + esc(s.title) + '</b><span>' + esc(s.text) + '</span></button>').join('')
+          : K.empty('zap', 'Niciun snippet încă', '')) + '</div>';
+      const f = box.querySelector('[data-snip-form]');
+      if (f) {
+        f.addEventListener('submit', (e) => { e.preventDefault(); K.busy(f.querySelector('[type=submit]'), () => save(f)); });
+        if (!phone()) f.querySelector('[name=title]').focus();
+      }
+    }
+    async function save(f) {
+      try {
+        const r = await K.api('/api/portal-whatsapp', { action: 'snip_save', snippet: { id: editing && editing.id, title: f.title.value, text: f.text.value } });
+        C.snippets = r.snippets || [];
+        editing = null; paint();
+        K.ui().toast('Snippet salvat.', 'success');
+      } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+    }
+    async function onClickBox(e) {
+      if (e.target.closest('[data-snip-new]')) { editing = {}; return paint(); }
+      if (e.target.closest('[data-snip-cancel]')) { editing = null; return paint(); }
+      const ed = e.target.closest('[data-snip-edit]');
+      if (ed) { editing = Object.assign({}, C.snippets.find((x) => x.id === ed.dataset.snipEdit)); return paint(); }
+      const del = e.target.closest('[data-snip-del]');
+      if (del) {
+        if (!(await K.ui().confirm({ title: 'Ștergi snippetul?', confirmText: 'Șterge', danger: true }))) return;
+        try { const r = await K.api('/api/portal-whatsapp', { action: 'snip_delete', id: del.dataset.snipDel }); C.snippets = r.snippets || []; editing = null; paint(); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      }
+    }
+  }
+
   function onInput(e) {
     if (e.target.matches('[data-q]')) { C.q = e.target.value; paintList(); }
     if (e.target.matches('.mx-compose textarea')) autoGrow(e.target);
