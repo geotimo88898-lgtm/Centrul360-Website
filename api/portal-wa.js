@@ -352,6 +352,17 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: !r.error, error: r.error || '' });
       return;
     }
+    // a template takes another one's picture (sent with it from now on; the review sends it to Meta)
+    if (a === 'tpl_image_from') {
+      const t = d.templates.find((x) => x.id === String(body.id || ''));
+      const src = d.templates.find((x) => x.id === String(body.fromId || ''));
+      const img = src && (src.headerImagePath || src.samplePath);
+      if (!t || !img) { res.status(400).json({ error: 'invalid', message: 'Nu găsesc șablonul sau poza.' }); return; }
+      t.headerType = 'IMAGE'; t.header = ''; t.headerImagePath = img; t.samplePath = img;
+      await T.save(d);
+      res.status(200).json(await payload(false));
+      return;
+    }
     if (a === 'tpl_hide') {
       const ids = new Set((Array.isArray(body.ids) ? body.ids : []).map(String));
       d.templates.forEach((t) => { if (ids.has(t.id)) t.hidden = body.show ? false : true; });
