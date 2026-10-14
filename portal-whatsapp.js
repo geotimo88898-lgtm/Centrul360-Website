@@ -151,12 +151,16 @@
         (c.unreadCount ? '<i class="mx-unread">' + (c.unreadCount > 99 ? '99+' : c.unreadCount) + '</i>' : '') + '</span></span></button>';
   }
 
+  // the state of a message we sent, with its times: "Trimis 14:02 · Livrat 14:02 · Văzut 14:05"
+  const stateLine = (m) => [['Trimis', m.timestamp], ['Livrat', m.deliveredAt], ['Văzut', m.readAt], ['Nelivrat', m.failedAt]]
+    .filter(([, t]) => t).map(([l, t]) => l + ' ' + hm(t)).join(' · ');
   function bubble(m) {
     const out = m.direction === 'out';
     return '<div class="mx-msg is-' + (out ? 'out' : 'in') + (m.status === 'failed' ? ' is-failed' : '') + '"><div class="mx-bub">' +
       (m.type === 'template' ? '<span class="mx-tpl-tag">' + icon('file') + 'Șablon</span>' : '') +
       '<span class="mx-text">' + esc(m.text) + '</span>' +
-      '<span class="mx-meta">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + (out ? ' <i class="mx-tick' + (m.status === 'read' ? ' is-read' : '') + '">' + (TICK[m.status] || '') + '</i>' : '') + '</span></div></div>';
+      (out && m.status === 'failed' ? '<span class="mx-fail">' + icon('alert') + 'NELIVRAT' + (m.error ? ' · ' + esc(m.error) : '') + '</span>' : '') +
+      '<span class="mx-meta">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + (out ? ' <i class="mx-tick is-' + esc(m.status || 'sent') + '" title="' + esc(stateLine(m)) + '">' + (TICK[m.status] || '') + '</i>' : '') + '</span></div></div>';
   }
   function dayLabel(day) {
     const t = K.today();

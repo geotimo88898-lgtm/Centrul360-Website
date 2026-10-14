@@ -195,14 +195,50 @@ async function handleStateSync(conversations, items) {
   return changedConvos;
 }
 
-function handleStatusUpdate(conversations, status) {
+// A state never goes back (Meta can send "delivered" after "read"); a failure keeps Meta's reason, in
+// words the front desk understands, and is collected for the UNDELIVERED alert.
+const RANK = { sent: 1, delivered: 2, read: 3 };
+const WHY = {
+  131026: 'numărul nu are WhatsApp sau nu poate primi mesaje', 131049: 'Meta nu l-a livrat (limita de mesaje de marketing pentru clientă)',
+  131050: 'clienta a oprit mesajele de marketing', 131047: 'au trecut 24h de la ultimul ei mesaj, trebuie un șablon',
+  130472: 'Meta nu l-a livrat (un test al Meta pe numărul ei)', 131042: 'problemă cu plata în contul WhatsApp',
+  131056: 'prea multe mesaje către același număr, mai încearcă peste puțin', 131051: 'tip de mesaj nesuportat', 131053: 'fișierul nu a putut fi trimis',
+};
+function handleStatusUpdate(conversations, status, failed) {
   const id = status && status.id;
   if (!id) return;
+  const st = String((status && status.status) || '');
+  const at = status.timestamp ? new Date(Number(status.timestamp) * 1000).toISOString() : new Date().toISOString();
   for (const convo of conversations) {
     const msg = convo.messages.find((m) => m.id === id);
-    if (msg) { msg.status = status.status || msg.status; return; }
+    if (!msg) continue;
+    if (msg.status === 'failed') return;
+    if (st === 'failed') {
+      const e = (status.errors || [])[0] || {};
+      msg.status = 'failed'; msg.failedAt = at; msg.errorCode = e.code || '';
+      msg.error = WHY[e.code] || (e.error_data && e.error_data.details) || e.title || e.message || 'Meta nu l-a livrat';
+      if (failed) failed.push({ convo, msg });
+      return;
+    }
+    if ((RANK[st] || 0) > (RANK[msg.status] || 0)) msg.status = st;
+    if (st === 'delivered' && !msg.deliveredAt) msg.deliveredAt = at;
+    if (st === 'read') { if (!msg.readAt) msg.readAt = at; if (!msg.deliveredAt) msg.deliveredAt = at; }
+    return;
   }
   // No matching outbound message found (e.g. sent before this feature existed), nothing to update.
+}
+
+// a message that didn't reach her: the admin and her city's front desk hear it at once (bell + phone)
+async function alertUndelivered(list) {
+  if (!list.length) return;
+  const { notifyMany } = require('./_lib/notify');
+  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
+  for (const { convo, msg } of list) {
+    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!convo.location || !e.location || e.location === convo.location))).map((e) => e.id));
+    const who = convo.clientName || ('+' + convo.phone);
+    const said = String(msg.text || '').replace(/\s+/g, ' ').slice(0, 60);
+    await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'bad', title: 'UNDELIVERED · ' + who, text: msg.error + (said ? ' · „' + said + '”' : ''), go: 'mesaje', tag: 'undelivered-' + msg.id });
+  }
 }
 
 module.exports = async (req, res) => {
@@ -267,6 +303,7 @@ module.exports = async (req, res) => {
     const conversations = await readJSON(KEY, []);
     let changed = false;
     const fresh = new Map(); // the newest message per client, for the phones
+    const failed = []; // messages Meta couldn't deliver, for the UNDELIVERED alert
 
     const entries = payload.entry || [];
     for (const entry of entries) {
@@ -313,7 +350,7 @@ module.exports = async (req, res) => {
 
         for (const status of value.statuses || []) {
           try {
-            handleStatusUpdate(conversations, status);
+            handleStatusUpdate(conversations, status, failed);
             changed = true;
           } catch (err) {
             console.error('webhook-whatsapp: error processing status', err.message);
@@ -325,6 +362,7 @@ module.exports = async (req, res) => {
     if (changed) await writeJSON(KEY, conversations);
     // before answering Meta: once the response is sent the function may be stopped
     try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
+    try { await alertUndelivered(failed); } catch (err) { console.error('webhook-whatsapp: undelivered alert failed', err.message); }
   } catch (err) {
     console.error('webhook-whatsapp: error handling payload', err.message);
   }

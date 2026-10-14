@@ -1449,7 +1449,10 @@ main.ad-full{ max-width:none; }
 .mx-text{ display:block; white-space:pre-wrap; word-break:break-word; font-size:.9rem; line-height:1.42; }
 .mx-meta{ display:block; margin-top:.15rem; text-align:right; font-size:.66rem; opacity:.72; white-space:nowrap; }
 .mx-tick{ font-style:normal; letter-spacing:-.15em; }
-.mx-tick.is-read{ font-weight:900; }
+.mx-tick.is-read{ font-weight:900; color:#53bdeb; }
+.mx-tick.is-failed{ color:var(--bad); font-weight:900; }
+.mx-fail{ display:flex; align-items:center; gap:.3rem; margin-top:.3rem; color:var(--bad); font-size:.74rem; font-weight:700; letter-spacing:.01em; }
+.mx-fail .k-ic{ width:14px; height:14px; flex:none; }
 .mx-tpl-tag{ display:inline-flex; align-items:center; gap:.25rem; margin-bottom:.2rem; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.8; }
 .mx-tpl-tag .k-ic{ width:11px; height:11px; }
 .mx-compose{ display:flex; align-items:flex-end; gap:.45rem; padding:.6rem .7rem .4rem; border-top:1px solid var(--line); background:var(--paper); }
