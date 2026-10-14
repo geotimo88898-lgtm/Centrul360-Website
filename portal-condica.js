@@ -27,7 +27,7 @@
   let panel;
 
   function isAdmin() { return !!(K.data && K.data.isAdmin); }
-  function employees() { return isAdmin() ? (K.data.admin.employees || []).filter((e) => e.id !== 'admin') : []; }
+  function employees() { return isAdmin() ? (K.data.admin.employees || []).filter((e) => e.id !== 'admin' && e.role !== 'admin') : []; }
   function empName(id) {
     if (id === 'admin') return 'Admin';
     const e = employees().find((x) => x.id === id);

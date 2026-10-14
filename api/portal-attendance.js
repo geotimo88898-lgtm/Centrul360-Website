@@ -221,7 +221,7 @@ module.exports = async (req, res) => {
       const today = serverToday();
       const tbAll = await TB.loadAll(readJSON);
       const list = [];
-      for (const emp of employees.filter((e) => e.id !== 'admin' && e.active !== false)) {
+      for (const emp of employees.filter((e) => e.id !== 'admin' && e.role !== 'admin' && e.active !== false)) {
         const balance = await computeBalance(emp.id, entries);
         const todayEntry = entries.find((e) => e.employeeId === emp.id && e.date === today) || null;
         const tb = TB.ledger(emp.id, tbAll);

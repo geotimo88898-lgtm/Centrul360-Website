@@ -10,8 +10,9 @@
 //     never through this app, and this path disappears the moment employees.json exists).
 //     This lets the owner log in on day one and create real accounts from Setări.
 
-const { readJSON } = require('./_lib/store');
-const { verifyPassword, setSessionCookie, getSession, renew, OWNER_ALIASES } = require('./_lib/auth');
+const crypto = require('crypto');
+const { readJSON, writeJSON } = require('./_lib/store');
+const { hashPassword, verifyPassword, setSessionCookie, getSession, renew, OWNER_ALIASES } = require('./_lib/auth');
 
 module.exports = async (req, res) => {
   res.req = res.req || req; // cookie scope follows the host (see _lib/auth.js cookieDomain)
@@ -45,18 +46,32 @@ module.exports = async (req, res) => {
     // all, which returned 401 before ever consulting ADMIN_USERNAME/ADMIN_PASSWORD).
     const adminUser = process.env.ADMIN_USERNAME;
     const adminPass = process.env.ADMIN_PASSWORD;
-    // the owner's second login: "George" (any capitals), the same password
-    const ownerLogin = username === adminUser || OWNER_ALIASES.includes(String(username).trim().toLowerCase());
     const isBootstrapAdmin = Boolean(
-      adminUser && adminPass && ownerLogin && password === adminPass
+      adminUser && adminPass && username === adminUser && password === adminPass
     );
 
     const employees = await readJSON('data/employees.json', []);
-    const employee = employees.find((e) => e.username === username && e.active !== false);
+    // the exact spelling first, then any capitals when only one account has that name
+    const typed = String(username).trim().toLowerCase();
+    const sameName = employees.filter((e) => String(e.username || '').toLowerCase() === typed && e.active !== false);
+    const employee = employees.find((e) => e.username === username && e.active !== false) || (sameName.length === 1 ? sameName[0] : null);
 
     if (employee && verifyPassword(password, employee.passwordSalt, employee.passwordHash)) {
       setSessionCookie(res, employee.id, employee.role);
       res.status(200).json({ ok: true, role: employee.role, name: employee.name });
+      return;
+    }
+
+    // George: a second admin account of his own (own name, photo, password), same powers as the owner.
+    // Made the first time he signs in with the owner's password; after that it's an account like any other.
+    if (!employee && OWNER_ALIASES.includes(typed) && adminPass && password === adminPass && !employees.some((e) => String(e.username || '').toLowerCase() === typed)) {
+      const { salt, hash } = hashPassword(password);
+      const george = { id: crypto.randomUUID(), name: typed.charAt(0).toUpperCase() + typed.slice(1), location: '-', role: 'admin',
+        username: typed.charAt(0).toUpperCase() + typed.slice(1), passwordHash: hash, passwordSalt: salt, active: true, createdAt: new Date().toISOString() };
+      employees.push(george);
+      await writeJSON('data/employees.json', employees);
+      setSessionCookie(res, george.id, 'admin');
+      res.status(200).json({ ok: true, role: 'admin', name: george.name });
       return;
     }
 
