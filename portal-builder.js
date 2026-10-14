@@ -35,7 +35,14 @@
     future_appt: { label: 'Are deja o programare viitoare' },
     appt_confirmed: { label: 'Programarea e confirmată', appt: true },
     appt_inactive: { label: 'Programarea e anulată / finalizată', appt: true },
+    category: { label: 'Categoria procedurii este', value: 'cat', appt: true },
+    package: { label: 'E ședință din pachet', appt: true },
+    appt_done: { label: 'Tratamentul e finalizat', appt: true },
+    appt_cancelled: { label: 'Programarea e anulată', appt: true },
   };
+  const CATS = { corporale: 'Corporale', faciale: 'Faciale', 'epilare-laser': 'Epilare laser' };
+  const WAIT = { for: 'O perioadă', before: 'Până la … înainte de programare', after: '… după programare' };
+  const MAX_BRANCHES = 6;
   const STATUS = { programata: 'Programată', confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată', finalizata: 'Finalizată' };
   const SOURCE = { any: 'Orice sursă', facebook: 'Reclamă Facebook', instagram: 'Instagram', site: 'Site', telefon: 'Telefon', recomandare: 'Recomandare', 'walk-in': 'Walk-in', manual: 'Adăugat manual' };
   const ROLE = { admin: 'Admin', receptie: 'Recepție', cosmetician: 'Cosmeticiene' };
@@ -54,9 +61,14 @@
   const clone = (v) => JSON.parse(JSON.stringify(v));
   const isLead = () => !B.W.trigger.type.startsWith('appointment');
   function ensureIds(list) {
-    (list || []).forEach((s) => { if (!s.id) s.id = uid(); if (s.type === 'if') { s.yes = s.yes || []; s.no = s.no || []; ensureIds(s.yes); ensureIds(s.no); } });
+    (list || []).forEach((s) => {
+      if (!s.id) s.id = uid();
+      if (s.type === 'if') { s.yes = s.yes || []; s.no = s.no || []; ensureIds(s.yes); ensureIds(s.no); (s.more || []).forEach((b) => { if (!b.id) b.id = uid(); b.steps = b.steps || []; ensureIds(b.steps); }); }
+    });
     return list;
   }
+  // every list inside an "if": Da, the selector's other branches, Nu / Altfel
+  const lists = (s) => [s.yes, s.no].concat((s.more || []).map((b) => b.steps));
 
   // ------------------------------------------------------------------ tree helpers
   // where a step lives: its list, its index, and the path of that list ('' = main line, 'id.yes' …)
@@ -65,7 +77,10 @@
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
       if (s.id === id) return { list, i, s, path };
-      if (s.type === 'if') { const r = locate(id, s.yes, s.id + '.yes') || locate(id, s.no, s.id + '.no'); if (r) return r; }
+      if (s.type === 'if') {
+        const r = locate(id, s.yes, s.id + '.yes') || locate(id, s.no, s.id + '.no') || (s.more || []).reduce((f, b) => f || locate(id, b.steps, s.id + '.' + b.id), null);
+        if (r) return r;
+      }
     }
     return null;
   }
@@ -73,7 +88,10 @@
     if (!path) return B.W.steps;
     const [id, br] = path.split('.');
     const r = locate(id);
-    return r ? r.s[br] : null;
+    if (!r) return null;
+    if (br === 'yes' || br === 'no') return r.s[br];
+    const b = (r.s.more || []).find((x) => x.id === br);
+    return b ? b.steps : null;
   }
   // how many "if"s a list sits inside
   function depthOf(path) {
@@ -81,9 +99,9 @@
     const r = locate(path.split('.')[0]);
     return r ? 1 + depthOf(r.path) : 0;
   }
-  const ifDepth = (s) => (s.type === 'if' ? 1 + Math.max(0, ...s.yes.concat(s.no).map(ifDepth)) : 0);
-  const count = (list) => list.reduce((n, s) => n + 1 + (s.type === 'if' ? count(s.yes) + count(s.no) : 0), 0);
-  const inside = (path, s) => s.type === 'if' && path && (path.startsWith(s.id + '.') || [].concat(s.yes, s.no).some((x) => inside(path, x)));
+  const ifDepth = (s) => (s.type === 'if' ? 1 + Math.max(0, ...[].concat(...lists(s)).map(ifDepth)) : 0);
+  const count = (list) => list.reduce((n, s) => n + 1 + (s.type === 'if' ? lists(s).reduce((m, l) => m + count(l), 0) : 0), 0);
+  const inside = (path, s) => s.type === 'if' && path && (path.startsWith(s.id + '.') || [].concat(...lists(s)).some((x) => inside(path, x)));
 
   // ------------------------------------------------------------------ texts
   const offerOpts = () => (B.meta.offers || []);
@@ -99,7 +117,9 @@
     if (t.type === 'appointment_status') return 'Programare devenită „' + (STATUS[t.status] || 'alege statusul') + '”';
     return (TRIG[t.type] || {}).label || t.type;
   }
-  const condText = (s) => (COND[s.cond] || { label: s.cond }).label + (COND[s.cond] && COND[s.cond].value ? ' ' + (s.value || '…') : '');
+  const condText = (s) => (COND[s.cond] || { label: s.cond }).label + (COND[s.cond] && COND[s.cond].value ? ' ' + ((COND[s.cond].value === 'cat' ? CATS[s.value] : s.value) || '…') : '');
+  const waitSum = (s) => (s.mode === 'before' ? (s.amount || 0) + ' ' + UNIT[s.unit || 'h'] + ' înainte de programare' : s.mode === 'after' ? (s.amount || 0) + ' ' + UNIT[s.unit || 'h'] + ' după programare' : (s.amount || 1) + ' ' + UNIT[s.unit || 'h']);
+  const branchName = (b) => b.name || condText(b);
   const toText = (to) => (to || []).map((x) => (x.startsWith('role:') ? ROLE[x.slice(5)] : ((B.meta.team || []).find((p) => 'emp:' + p.id === x) || { name: '?' }).name)).join(', ');
   // the WhatsApp templates and numbers (from /api/portal-workflows, refreshed after a new template)
   const tplOf = (id) => (B.meta.waTemplates || []).find((t) => t.id === id) || null;
@@ -118,7 +138,8 @@
         : '<p class="fb-hint">' + icon('info') + 'Pe WhatsApp scriem primii doar cu șabloane aprobate de Meta. Alege unul sau fă unul nou.</p>');
   }
   function summary(s) {
-    if (s.type === 'wait') return (s.amount || 1) + ' ' + UNIT[s.unit || 'h'];
+    if (s.type === 'wait') return waitSum(s);
+    if (s.type === 'if' && s.more && s.more.length) return 'Selector: ' + [branchName(s)].concat(s.more.map(branchName)).join(' · ');
     if (s.type === 'if' || s.type === 'stop_if') return condText(s);
     if (s.type === 'move_stage') return '→ ' + ((B.meta.stages.find((x) => x.id === s.stage) || {}).name || 'alege etapa');
     if (s.type === 'notify') return s.to && s.to.length ? 'Către ' + toText(s.to) : 'Alege cui';
@@ -135,6 +156,9 @@
     if (s.type === 'notify' && (!s.to || !s.to.length)) return 'alege cui';
     if (s.type === 'notify' && !String(s.title || '').trim()) return 'fără titlu';
     if ((s.type === 'if' || s.type === 'stop_if') && COND[s.cond] && COND[s.cond].value && !s.value) return 'alege valoarea';
+    if (s.type === 'if' && (s.more || []).some((b) => COND[b.cond] && COND[b.cond].value && !b.value)) return 'alege valoarea';
+    if (s.type === 'if' && isLead() && (s.more || []).some((b) => COND[b.cond] && COND[b.cond].appt)) return 'doar la programări';
+    if (s.type === 'wait' && s.mode && s.mode !== 'for' && isLead()) return 'doar la programări';
     if ((s.type === 'move_stage' || (COND[s.cond] && COND[s.cond].lead && (s.type === 'if' || s.type === 'stop_if'))) && !isLead()) return 'doar la leaduri';
     if ((s.type === 'if' || s.type === 'stop_if') && COND[s.cond] && COND[s.cond].appt && isLead()) return 'doar la programări';
     return '';
@@ -163,10 +187,13 @@
   function listHtml(list, path) {
     let h = slot(path, 0);
     list.forEach((s, i) => {
+      const multi = s.type === 'if' && s.more && s.more.length;
+      const col = (cls, ic, tag, list, p) => '<div class="fb-branch ' + cls + '"><i class="fb-vl"></i><span class="fb-tag">' + icon(ic) + esc(tag) + '</span>' + listHtml(list, p) + '<i class="fb-fill"></i></div>';
       h += s.type === 'if'
         ? '<div class="fb-if">' + nodeHtml(s) + '<i class="fb-vl"></i><div class="fb-branches">' +
-            '<div class="fb-branch is-yes"><i class="fb-vl"></i><span class="fb-tag">' + icon('check') + 'Da</span>' + listHtml(s.yes, s.id + '.yes') + '<i class="fb-fill"></i></div>' +
-            '<div class="fb-branch is-no"><i class="fb-vl"></i><span class="fb-tag">' + icon('x') + 'Nu</span>' + listHtml(s.no, s.id + '.no') + '<i class="fb-fill"></i></div>' +
+            (multi
+              ? col('is-pick', 'filter', branchName(s), s.yes, s.id + '.yes') + s.more.map((b) => col('is-pick', 'filter', branchName(b), b.steps, s.id + '.' + b.id)).join('') + col('is-no', 'x', 'Altfel', s.no, s.id + '.no')
+              : col('is-yes', 'check', 'Da', s.yes, s.id + '.yes') + col('is-no', 'x', 'Nu', s.no, s.id + '.no')) +
           '</div></div>'
         : nodeHtml(s);
       h += slot(path, i + 1);
@@ -213,8 +240,21 @@
     let val = '';
     if (c.value === 'offer') val = '<select data-f="value">' + K.options([['', 'Alege procedura…']].concat(offerOpts().map((o) => [o, o])), s.value || '') + '</select>';
     if (c.value === 'city') val = '<select data-f="value">' + K.options([['', 'Alege orașul…'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], s.value || '') + '</select>';
+    if (c.value === 'cat') val = '<select data-f="value">' + K.options([['', 'Alege categoria…']].concat(Object.keys(CATS).map((k) => [k, CATS[k]])), s.value || '') + '</select>';
     if (c.value === 'source') val = '<select data-f="value">' + K.options([['', 'Alege sursa…']].concat(Object.keys(SOURCE).filter((x) => x !== 'any').map((x) => [x, SOURCE[x]])), s.value || '') + '</select>';
     return K.field('Condiția', '<select data-f="cond">' + K.options(conds.map((k) => [k, COND[k].label]), s.cond) + '</select>', 'full') + (val ? K.field('Valoarea', val, 'full') : '');
+  }
+  // a selector branch's condition (same choices as the first one), bound by data-bf / data-br
+  function branchCond(b) {
+    const conds = Object.keys(COND).filter((c) => (isLead() ? !COND[c].appt : !COND[c].lead));
+    const c = COND[b.cond] || {};
+    let val = '';
+    const sel = (opts) => '<select data-bf="value" data-br="' + esc(b.id) + '">' + K.options(opts, b.value || '') + '</select>';
+    if (c.value === 'cat') val = sel([['', 'Alege categoria…']].concat(Object.keys(CATS).map((k) => [k, CATS[k]])));
+    if (c.value === 'offer') val = sel([['', 'Alege procedura…']].concat(offerOpts().map((o) => [o, o])));
+    if (c.value === 'city') val = sel([['', 'Alege orașul…'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']]);
+    if (c.value === 'source') val = sel([['', 'Alege sursa…']].concat(Object.keys(SOURCE).filter((x) => x !== 'any').map((x) => [x, SOURCE[x]])));
+    return K.field('Condiția', '<select data-bf="cond" data-br="' + esc(b.id) + '">' + K.options(conds.map((k) => [k, COND[k].label]), b.cond) + '</select>', 'full') + (val ? K.field('Valoarea', val, 'full') : '');
   }
   function panelHtml() {
     if (B.sel === 'trigger') return trigPanel();
@@ -223,11 +263,27 @@
     const s = r.s, st = STEP[s.type];
     const v = sample();
     let body = '';
-    if (s.type === 'wait') body = K.field('Cât așteaptă', '<div class="au-inline"><input type="number" min="1" max="999" data-f="amount" value="' + esc(s.amount || 1) + '"><select data-f="unit">' + K.options(Object.keys(UNIT).map((u) => [u, UNIT[u]]), s.unit || 'h') + '</select></div>', 'full', 'Apoi merge la pasul următor.');
+    if (s.type === 'wait') {
+      const mode = s.mode || 'for';
+      body = (isLead() ? '' : K.field('Cum', '<select data-f="mode">' + K.options(Object.keys(WAIT).map((m) => [m, WAIT[m]]), mode) + '</select>', 'full')) +
+        K.field(mode === 'before' ? 'Cu cât înainte de ora programării' : mode === 'after' ? 'Cât după ce se termină programarea' : 'Cât așteaptă',
+          '<div class="au-inline"><input type="number" min="' + (mode === 'for' ? 1 : 0) + '" max="999" data-f="amount" value="' + esc(s.amount == null ? 1 : s.amount) + '"><select data-f="unit">' + K.options(Object.keys(UNIT).map((u) => [u, UNIT[u]]), s.unit || 'h') + '</select></div>', 'full',
+          mode === 'before' ? 'Dacă programarea se mută, se mută și mesajul. Dacă ora a trecut deja (programare făcută mai târziu), mesajul de după e sărit.' : mode === 'after' ? 'Se socotește de la ora de final a programării. Dacă se mută, se mută și mesajul.' : 'Apoi merge la pasul următor.');
+    }
     if (s.type === 'whatsapp') body = waFields(s);
     if (s.type === 'task') body = K.field('Ce face recepția', '<textarea rows="3" data-f="text" maxlength="300" placeholder="ex. Sună-l pe {nume} ({telefon}) pentru {procedura}">' + esc(s.text || '') + '</textarea>', 'full') + chips;
     if (s.type === 'move_stage') body = K.field('Etapa', '<select data-f="stage">' + K.options([['', 'Alege etapa…']].concat(B.meta.stages.map((x) => [x.id, x.name])), s.stage || '') + '</select>', 'full');
-    if (s.type === 'if') body = condFields(s) + '<p class="fb-hint">' + icon('info') + 'Dacă e adevărat, merge pe ramura <b>Da</b>; altfel pe <b>Nu</b>. După ramuri, continuă cu pașii de dedesubt.</p>';
+    if (s.type === 'if') {
+      const more = s.more || [];
+      body = more.length
+        ? '<div class="fb-br"><div class="fb-br-head"><b>Ramura 1</b></div>' + K.field('Numele ramurii', '<input data-f="name" maxlength="40" value="' + esc(s.name || '') + '" placeholder="' + esc(condText(s)) + '">', 'full') + condFields(s) + '</div>' +
+          more.map((b, i) => '<div class="fb-br"><div class="fb-br-head"><b>Ramura ' + (i + 2) + '</b><button type="button" class="k-icon-btn" data-br-rm="' + esc(b.id) + '" aria-label="Scoate ramura">' + icon('trash') + '</button></div>' +
+            K.field('Numele ramurii', '<input data-bf="name" data-br="' + esc(b.id) + '" maxlength="40" value="' + esc(b.name || '') + '" placeholder="' + esc(condText(b)) + '">', 'full') + branchCond(b) + '</div>').join('') +
+          (more.length < MAX_BRANCHES - 1 ? '<button type="button" class="k-btn is-outline is-sm" data-br-add>' + icon('plus') + 'Adaugă ramură</button>' : '') +
+          '<p class="fb-hint">' + icon('info') + 'Merge pe prima ramură a cărei condiție e adevărată, de sus în jos. Dacă niciuna, pe <b>Altfel</b>. După ramuri, continuă cu pașii de dedesubt.</p>'
+        : condFields(s) + '<button type="button" class="k-btn is-outline is-sm" data-br-add>' + icon('plus') + 'Mai multe ramuri (selector)</button>' +
+          '<p class="fb-hint">' + icon('info') + 'Dacă e adevărat, merge pe ramura <b>Da</b>; altfel pe <b>Nu</b>. Cu „Mai multe ramuri” devine selector: o ramură pentru fiecare variantă (ex. corporale, faciale, epilare laser). După ramuri, continuă cu pașii de dedesubt.</p>';
+    }
     if (s.type === 'stop_if') body = condFields(s) + '<p class="fb-hint">' + icon('info') + 'Dacă e adevărat, automatizarea se oprește aici pentru acest client.</p>';
     if (s.type === 'notify') {
       const to = new Set(s.to || []);
@@ -304,7 +360,7 @@
 
   // ------------------------------------------------------------------ add / remove / move
   function defaults(type) {
-    if (type === 'wait') return { type, amount: 1, unit: 'h' };
+    if (type === 'wait') return { type, amount: 1, unit: 'h', mode: 'for' };
     if (type === 'whatsapp') return { type, templateId: '', from: 'auto', text: '' };
     if (type === 'task') return { type, text: '' };
     if (type === 'move_stage') return { type, stage: '' };
@@ -347,8 +403,9 @@
   async function removeStep(id) {
     const r = locate(id);
     if (!r) return;
-    if (r.s.type === 'if' && count(r.s.yes) + count(r.s.no) > 0 &&
-      !(await K.ui().confirm({ title: 'Ștergi „Dacă / Altfel”?', message: 'Se șterg și pașii din ramurile Da și Nu (' + (count(r.s.yes) + count(r.s.no)) + ').', confirmText: 'Șterge', danger: true }))) return;
+    const inBranches = r.s.type === 'if' ? lists(r.s).reduce((n, l) => n + count(l), 0) : 0;
+    if (inBranches > 0 &&
+      !(await K.ui().confirm({ title: 'Ștergi „Dacă / Altfel”?', message: 'Se șterg și pașii din ramurile lui (' + inBranches + ').', confirmText: 'Șterge', danger: true }))) return;
     r.list.splice(r.i, 1);
     changed();
     if (B.sel === id || (B.sel && !locate(B.sel) && B.sel !== 'trigger')) closePanel(); else paint();
@@ -583,6 +640,29 @@
     if (t.closest('[data-fit]')) return fit();
     const add = t.closest('[data-add]'); if (add) { if (B.menu && B.menu.dataset.for === add.dataset.add) return closeMenu(); openMenu(add); B.menu.dataset.for = add.dataset.add; return; }
     const rm = t.closest('[data-rm]'); if (rm) return removeStep(rm.dataset.rm);
+    if (t.closest('[data-br-add]')) {
+      const r = locate(B.sel);
+      if (!r || r.s.type !== 'if') return;
+      r.s.more = r.s.more || [];
+      if (r.s.more.length >= MAX_BRANCHES - 1) return;
+      const appt = !isLead();
+      r.s.more.push({ id: uid(), name: '', cond: appt ? 'category' : 'interest', value: '', steps: [] });
+      changed(); openPanel(B.sel);
+      return;
+    }
+    const brm = t.closest('[data-br-rm]');
+    if (brm) {
+      const r = locate(B.sel);
+      if (!r) return;
+      const b = (r.s.more || []).find((x) => x.id === brm.dataset.brRm);
+      if (!b) return;
+      (async () => {
+        if (count(b.steps) && !(await K.ui().confirm({ title: 'Scoți ramura?', message: 'Se șterg și pașii din ea (' + count(b.steps) + ').', confirmText: 'Scoate', danger: true }))) return;
+        r.s.more = r.s.more.filter((x) => x !== b);
+        changed(); openPanel(B.sel);
+      })();
+      return;
+    }
     const vb = t.closest('[data-var]');
     if (vb) {
       const f = B.lastField && B.lastField.isConnected ? B.lastField : B.root.querySelector('[data-panel] [data-f="text"]');
@@ -603,9 +683,14 @@
     r.s[k] = f.type === 'checkbox' ? f.checked : f.type === 'number' ? Number(f.value) : f.value;
     return r;
   }
+  function branchOf(f) {
+    const r = locate(B.sel);
+    return r ? (r.s.more || []).find((x) => x.id === f.dataset.br) || null : null;
+  }
   function onInput(e) {
     const f = e.target;
     if (f.matches('[data-name]')) { changed(); return; }
+    if (f.dataset.bf && f.tagName !== 'SELECT') { const b = branchOf(f); if (b) { b[f.dataset.bf] = f.value; changed(); paint(); } return; }
     if (f.dataset.f && f.type !== 'checkbox' && f.tagName !== 'SELECT') { setField(f); changed(); paint(); refreshPanelBits(); }
   }
   function onChange(e) {
@@ -622,6 +707,15 @@
       changed(); openPanel('trigger');
       return;
     }
+    if (f.dataset.bf) {
+      const b = branchOf(f);
+      if (!b) return;
+      b[f.dataset.bf] = f.value;
+      if (f.dataset.bf === 'cond') b.value = '';
+      changed();
+      if (f.tagName === 'SELECT') openPanel(B.sel); else paint();
+      return;
+    }
     if (f.dataset.to) {
       const r = locate(B.sel);
       if (!r) return;
@@ -635,6 +729,7 @@
       const r = setField(f);
       if (!r) return;
       if (f.dataset.f === 'cond') r.s.value = '';
+      if (f.dataset.f === 'mode' && r.s.mode !== 'for' && (r.s.amount == null || r.s.amount === 1)) { r.s.amount = r.s.mode === 'before' ? 24 : 2; r.s.unit = 'h'; }
       if (f.dataset.f === 'templateId') { const tp = tplOf(f.value); r.s.text = tp ? tp.text : ''; }
       changed();
       // a select or a checkbox can change what the panel shows (a value list, the template field)

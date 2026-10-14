@@ -821,6 +821,10 @@ html[data-role="cosmetician"] .cal-col{ cursor:default; }
 .fb-tag .k-ic{ width:12px; height:12px; }
 .fb-branch.is-yes .fb-tag{ background:var(--good-soft); color:var(--good); }
 .fb-branch.is-no .fb-tag{ background:var(--glass-2); color:var(--muted); }
+.fb-branch.is-pick .fb-tag{ background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); max-width:250px; }
+.fb-br{ border:1px solid var(--line); border-radius:14px; padding:.7rem .8rem .2rem; margin-bottom:.7rem; background:var(--glass); }
+.fb-br-head{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-bottom:.35rem; font-size:.85rem; }
+.fb-br-head .k-icon-btn{ width:30px; height:30px; }
 
 /* dragging a step */
 .fb-ghost{ position:fixed; left:0; top:0; z-index:400; pointer-events:none; box-shadow:var(--shadow-lg); border-color:var(--accent); opacity:.95; transition:none; }

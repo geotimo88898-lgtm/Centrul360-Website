@@ -117,6 +117,8 @@ async function validateAndBuildFields(body, employees) {
       cosmeticianId: cleanCosmeticianId,
       cosmeticianName,
       status,
+      // a session of a package already bought: the reminders go, the booking confirmation and the review request don't
+      package: !!(body && body.package),
     },
   };
 }
@@ -242,6 +244,7 @@ module.exports = async (req, res) => {
       }
       const before = { date: appointment.date, time: appointment.time, status: appointment.status };
       if (!('endTime' in req.body)) result.fields.endTime = appointment.endTime || ''; // older clients don't send it
+      if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
       await writeJSON('data/appointments.json', appointments);
       // Automations: a moved appointment gets its reminders recalculated; a status change can start a flow.

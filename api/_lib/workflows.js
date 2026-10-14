@@ -42,11 +42,16 @@ const TRIGGERS = {
   appointment_after: { label: 'După tratament', entity: 'appointment' },
 };
 const STEP_TYPES = ['wait', 'whatsapp', 'notify', 'task', 'move_stage', 'if', 'stop_if'];
-const STOP_CONDS = ['contacted', 'booked', 'appt_inactive', 'appt_confirmed', 'future_appt'];
+const STOP_CONDS = ['contacted', 'booked', 'appt_inactive', 'appt_confirmed', 'future_appt', 'package', 'appt_done', 'appt_cancelled'];
 // conditions that compare with a value the owner picks (an "if" or a "stop if" can use them too)
-const VALUE_CONDS = ['interest', 'location', 'source'];
+const VALUE_CONDS = ['interest', 'location', 'source', 'category'];
 const LEAD_CONDS = ['contacted', 'booked', 'source'];
-const APPT_CONDS = ['appt_inactive', 'appt_confirmed'];
+const APPT_CONDS = ['appt_inactive', 'appt_confirmed', 'package', 'appt_done', 'appt_cancelled', 'category'];
+// the treatment categories of an appointment (_lib/cats.js), for "categoria procedurii este"
+const CATS = { corporale: 'corporale', faciale: 'faciale', 'epilare-laser': 'epilare laser' };
+// "Așteaptă": a period, or until a moment tied to the appointment (N before its start, N after its end)
+const WAIT_MODES = ['for', 'before', 'after'];
+const MAX_BRANCHES = 6;
 const NOTIFY_TO = /^(role:(admin|receptie|cosmetician)|emp:[\w-]{1,60})$/;
 const MAX_STEPS = 40;
 // Automations don't put tasks in reception's Sarcini (the owner's choice): a WhatsApp that can't go
@@ -141,9 +146,10 @@ const LEAD_ALERT = {
 };
 RECIPES.unshift(LEAD_ALERT);
 
-const withIds = (list) => (list || []).map((s) => Object.assign({ id: uid() }, s, s.type === 'if' ? { yes: withIds(s.yes), no: withIds(s.no) } : {}));
+const withIds = (list) => (list || []).map((s) => Object.assign({ id: uid() }, s, s.type === 'if' ? { yes: withIds(s.yes), no: withIds(s.no) } : {},
+  s.type === 'if' && s.more ? { more: s.more.map((b) => Object.assign({ id: uid() }, b, { steps: withIds(b.steps) })) } : {}));
 // every step of a tree, branches included
-const flat = (steps) => (steps || []).reduce((a, s) => a.concat(s, s.type === 'if' ? flat(s.yes).concat(flat(s.no)) : []), []);
+const flat = (steps) => (steps || []).reduce((a, s) => a.concat(s, s.type === 'if' ? flat(s.yes).concat(flat(s.no), ...(s.more || []).map((b) => flat(b.steps))) : []), []);
 
 function fromRecipe(r, active) {
   return { id: uid(), name: r.name, note: r.note || '', active: !!active, trigger: Object.assign({}, r.trigger), steps: withIds(r.steps), recipe: r.key, createdAt: nowISO(), updatedAt: nowISO() };
@@ -192,6 +198,7 @@ function saveRuns(doc) {
 function cleanCond(s, st) {
   st.cond = STOP_CONDS.concat(VALUE_CONDS).includes(s.cond) ? s.cond : 'contacted';
   if (VALUE_CONDS.includes(st.cond)) { st.value = clip(s.value, 80).trim(); if (!st.value) return false; }
+  if (st.cond === 'category' && !CATS[st.value]) return false;
   return true;
 }
 // Steps form a tree: an "if" holds two lists of its own (yes / no), at most MAX_DEPTH deep.
@@ -205,7 +212,7 @@ function cleanSteps(list, depth, seen) {
     seen.ids.add(id);
     const st = { id, type: s.type };
     let ok = true;
-    if (s.type === 'wait') { st.amount = Math.min(999, Math.max(1, Math.round(Number(s.amount) || 1))); st.unit = unitMs[s.unit] ? s.unit : 'h'; }
+    if (s.type === 'wait') { st.amount = Math.min(999, Math.max(s.mode === 'after' || s.mode === 'before' ? 0 : 1, Math.round(Number(s.amount) || 0) || (s.mode === 'for' || !s.mode ? 1 : 0))); st.unit = unitMs[s.unit] ? s.unit : 'h'; st.mode = WAIT_MODES.includes(s.mode) ? s.mode : 'for'; }
     if (s.type === 'whatsapp') { waFields(s, st); st.text = clip(s.text, 1100).trim(); ok = !!st.templateId; }
     if (s.type === 'task') { st.text = clip(s.text, 300).trim(); ok = !!st.text; }
     if (s.type === 'move_stage') { st.stage = clip(s.stage, 60); ok = !!st.stage; }
@@ -227,6 +234,20 @@ function cleanSteps(list, depth, seen) {
       if (no.error) return no;
       st.yes = yes.steps;
       st.no = no.steps;
+      st.name = clip(s.name, 40).trim();
+      // more branches (a selector): each its own condition and steps, checked in order after the first
+      st.more = [];
+      for (const br of (Array.isArray(s.more) ? s.more : []).slice(0, MAX_BRANCHES - 1)) {
+        const b = { id: br && /^[\w-]{6,40}$/.test(br.id) && !seen.ids.has(br.id) ? br.id : uid() };
+        seen.ids.add(b.id);
+        if (!br || !cleanCond(br, b)) return { error: 'invalid_step' };
+        b.name = clip(br.name, 40).trim();
+        const bs = cleanSteps(br.steps, depth + 1, seen);
+        if (bs.error) return bs;
+        b.steps = bs.steps;
+        st.more.push(b);
+      }
+      if (!st.more.length) delete st.more;
     }
     if (!ok) return { error: 'invalid_step' };
     out.push(st);
@@ -263,9 +284,10 @@ function validateWorkflow(input) {
   const steps = c.steps;
   if (!steps.length) return { error: 'missing_steps' };
   const all = flat(steps);
+  const conds = all.map((s) => s.cond).concat(...all.map((s) => (s.more || []).map((b) => b.cond))).filter(Boolean);
   const entity = TRIGGERS[trigger.type].entity;
-  if (entity === 'appointment' && all.some((s) => s.type === 'move_stage' || LEAD_CONDS.includes(s.cond))) return { error: 'step_needs_lead' };
-  if (entity === 'lead' && all.some((s) => APPT_CONDS.includes(s.cond))) return { error: 'step_needs_appointment' };
+  if (entity === 'appointment' && (all.some((s) => s.type === 'move_stage') || conds.some((c) => LEAD_CONDS.includes(c)))) return { error: 'step_needs_lead' };
+  if (entity === 'lead' && (conds.some((c) => APPT_CONDS.includes(c)) || all.some((s) => s.type === 'wait' && s.mode !== 'for'))) return { error: 'step_needs_appointment' };
   return { workflow: { name, note: clip(w.note, 160), active: w.active !== false, folder: clip(w.folder, 40), trigger, steps } };
 }
 
@@ -315,17 +337,30 @@ async function emit(event, payload) {
     const ent = p.appointment ? { type: 'appointment', id: p.appointment.id } : p.lead ? { type: 'lead', id: p.lead.id } : null;
     if (!ent) return;
     const now = Date.now();
+    const fresh0 = [];
     // A moved / cancelled / deleted appointment: its pending "before" reminders are recalculated or dropped.
     if (ent.type === 'appointment' && (event === 'appointment_rescheduled' || event === 'appointment_deleted' || (event === 'appointment_status' && (p.status === 'anulata' || p.status === 'reprogramata')))) {
       runsDoc.runs.forEach((r) => {
         if (r.status !== 'waiting' || r.ent.id !== ent.id) return;
         const wf = doc.workflows.find((w) => w.id === r.wf);
-        if (event === 'appointment_deleted' || (wf && wf.trigger.type === 'appointment_before')) {
+        const waitStep = wf && r.waitId ? flat(wf.steps).find((s) => s.id === r.waitId && s.type === 'wait' && s.mode !== 'for') : null;
+        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before') {
+          const target = waitTarget(waitStep, p.appointment);
+          if (!Number.isFinite(target)) return;
+          const late = waitStep.mode === 'before' && target < now - 15 * 60e3;
+          r.dueAt = new Date(Math.max(target, now)).toISOString();
+          if (late) r.skipNext = true; else delete r.skipNext;
+          r.updatedAt = nowISO();
+          r.log.push({ at: nowISO(), text: 'Programarea s-a mutat: ' + (late ? 'ora (' + waitText(waitStep) + ') a trecut, mesajul următor e sărit' : 'așteaptă până la ' + roStamp(target)) });
+          if (r.dueAt <= new Date(now).toISOString()) fresh0.push(r.id);
+          return;
+        }
+        if (event === 'appointment_deleted' || (wf && (wf.trigger.type === 'appointment_before' || (wf.trigger.type === 'appointment_created' && event !== 'appointment_rescheduled')))) {
           r.status = 'stopped'; r.updatedAt = nowISO(); r.log.push({ at: nowISO(), text: event === 'appointment_deleted' ? 'Programarea a fost ștearsă' : 'Programarea s-a mutat / anulat' });
         }
       });
     }
-    const fresh = [];
+    const fresh = fresh0;
     if (event !== 'appointment_deleted' && !(event === 'appointment_rescheduled' && ['anulata', 'finalizata'].includes(p.appointment && p.appointment.status))) {
       doc.workflows.filter((wf) => matches(wf, event, p)).forEach((wf) => {
         const due = dueFor(wf, p, now);
@@ -393,6 +428,9 @@ function stopHit(cond, ctx) {
   if (cond === 'booked') return !!(l && ctx.appointments.some((x) => x.leadId === l.id && x.status !== 'anulata'));
   if (cond === 'appt_inactive') return !a || a.status === 'anulata' || a.status === 'finalizata';
   if (cond === 'appt_confirmed') return !!(a && a.status === 'confirmata');
+  if (cond === 'package') return !!(a && a.package);
+  if (cond === 'appt_done') return !!(a && a.status === 'finalizata');
+  if (cond === 'appt_cancelled') return !a || a.status === 'anulata';
   if (cond === 'future_appt') {
     const key = digits(person.phone).slice(-9);
     const now = Date.now();
@@ -414,6 +452,20 @@ async function moveLead(lead, stage, wfName) {
   return true;
 }
 
+// "Așteaptă până la ...": the moment, from the appointment (start - N for before, end + N for after)
+function waitTarget(s, a) {
+  if (!a) return NaN;
+  const start = apptStart(a);
+  if (!Number.isFinite(start)) return NaN;
+  const amt = (Number(s.amount) || 0) * unitMs[s.unit || 'h'];
+  if (s.mode === 'before') return start - amt;
+  const [sh, sm] = String(a.time || '10:00').split(':').map(Number), [eh, em] = String(a.endTime || '').split(':').map(Number);
+  const len = Number.isFinite(eh) && eh * 60 + (em || 0) > sh * 60 + (sm || 0) ? (eh * 60 + (em || 0) - sh * 60 - (sm || 0)) * 60e3 : 3600e3;
+  return start + len + amt;
+}
+const waitText = (s) => (s.amount || 0) + ' ' + ({ min: 'min', h: 'h', d: 'zile' }[s.unit || 'h']) + (s.mode === 'before' ? ' înainte de programare' : ' după programare');
+const roStamp = (ms) => new Date(ms).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
 // Steps form a tree (an "if" holds its own yes / no lists). They run through a map of
 // id → what comes next, so a waiting run keeps only the id of the step it continues with
 // ('^' = from the start, '$' = nothing left) and editing the workflow doesn't derail runs in flight.
@@ -423,7 +475,7 @@ function compile(steps) {
     let entry = next;
     for (let i = list.length - 1; i >= 0; i--) {
       const s = list[i];
-      if (s.type === 'if') ops.set(s.id, { s, yes: walk(s.yes || [], entry), no: walk(s.no || [], entry) });
+      if (s.type === 'if') ops.set(s.id, { s, yes: walk(s.yes || [], entry), more: (s.more || []).map((b) => ({ b, at: walk(b.steps || [], entry) })), no: walk(s.no || [], entry) });
       else ops.set(s.id, { s, next: entry });
       entry = s.id;
     }
@@ -435,13 +487,15 @@ function compile(steps) {
 const COND_TEXT = {
   contacted: 'leadul a fost contactat', booked: 'leadul are programare', appt_inactive: 'programarea e anulată / finalizată',
   appt_confirmed: 'programarea e confirmată', future_appt: 'are deja o programare viitoare',
+  package: 'e ședință din pachet', appt_done: 'tratamentul e finalizat', appt_cancelled: 'programarea e anulată',
 };
-const condText = (s) => ({ interest: 'procedura e ' + s.value, location: 'orașul e ' + s.value, source: 'sursa e ' + s.value })[s.cond] || COND_TEXT[s.cond] || s.cond;
+const condText = (s) => ({ interest: 'procedura e ' + s.value, location: 'orașul e ' + s.value, source: 'sursa e ' + s.value, category: 'categoria e ' + (CATS[s.value] || s.value) })[s.cond] || COND_TEXT[s.cond] || s.cond;
 function condHit(s, ctx) {
   const a = ctx.appointment, l = ctx.lead;
   if (s.cond === 'interest') return [l && l.interest, a && a.treatment].some((x) => x && fold(x).includes(fold(s.value)));
   if (s.cond === 'location') return ((a && a.location) || (l && l.location) || '') === s.value;
   if (s.cond === 'source') return !!(l && l.source === s.value);
+  if (s.cond === 'category') return !!(a && (Array.isArray(a.categories) && a.categories.length ? a.categories : [a.category]).includes(s.value));
   return stopHit(s.cond, ctx);
 }
 
@@ -508,6 +562,13 @@ async function runOne(run, wf, settings, counters) {
     if (!op) { run.status = 'stopped'; log('Pasul următor a fost șters din automatizare'); return; }
     const s = op.s;
     if (s.type === 'if') {
+      if (op.more.length) {
+        const pick = condHit(s, ctx) ? { at: op.yes, name: s.name || condText(s) } : (op.more.find((x) => condHit(x.b, ctx)) || null);
+        const name = pick ? (pick.b ? pick.b.name || condText(pick.b) : pick.name) : 'Altfel';
+        log('Ramura: ' + name);
+        id = pick ? pick.at : op.no;
+        continue;
+      }
       const hit = condHit(s, ctx);
       log((hit ? 'Da: ' : 'Nu: ') + condText(s));
       id = hit ? op.yes : op.no;
@@ -516,10 +577,26 @@ async function runOne(run, wf, settings, counters) {
     id = op.next;
     run.at = id;
     if (s.type === 'wait') {
+      run.skipNext = false;
+      if (s.mode === 'before' || s.mode === 'after') {
+        const target = waitTarget(s, ctx.appointment);
+        if (!Number.isFinite(target)) { run.status = 'stopped'; log('Programarea nu mai există'); return; }
+        if (target <= Date.now()) {
+          // booked too late for this moment (a same-day booking and a 24h reminder): the message after it is skipped
+          if (s.mode === 'before' && target < Date.now() - 15 * 60e3) { run.skipNext = true; log('Ora (' + waitText(s) + ') a trecut deja, mesajul următor e sărit'); }
+          continue;
+        }
+        run.dueAt = new Date(target).toISOString();
+        run.waitId = s.id;
+        log('Așteaptă până la ' + waitText(s) + ' (' + roStamp(target) + ')');
+        return;
+      }
+      run.waitId = '';
       run.dueAt = new Date(Date.now() + s.amount * unitMs[s.unit]).toISOString();
       log('Așteaptă ' + s.amount + ' ' + ({ min: 'min', h: 'h', d: 'zile' }[s.unit]));
       return;
     }
+    if (run.skipNext && (s.type === 'whatsapp' || s.type === 'notify')) { run.skipNext = false; log('Sărit: ' + (s.type === 'whatsapp' ? 'mesajul' : 'anunțul') + ' venea după o oră care trecuse'); continue; }
     if (s.type === 'stop_if') {
       if (condHit(s, ctx)) { run.status = 'done'; log('Oprit: ' + condText(s)); return; }
       continue;
@@ -598,4 +675,4 @@ async function tick(force) {
   }
 }
 
-module.exports = { TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat };
+module.exports = { CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat };
