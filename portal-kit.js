@@ -6,6 +6,8 @@
 (function () {
   'use strict';
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // an app, not a web page: no pinch zoom on the iPhone (Safari ignores user-scalable=no)
+  ['gesturestart', 'gesturechange'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
   // No long dashes on screen: text from the data (offers, notes, messages saved earlier) gets a comma
   // or a plain hyphen instead of "—" / "–" (same rules as api/_lib/dedash.js).
   const WORDCH = /[\p{L}\p{N}]/u;

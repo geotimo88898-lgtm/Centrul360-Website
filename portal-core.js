@@ -142,9 +142,31 @@
   // seconds and refreshes what's on screen when it moves, never while someone is mid-edit.
   // (the drawer's panel stays in the page once opened, so only an open one counts)
   const busyEditing = () => (K.typing(document.activeElement) && !document.activeElement.closest('.mx-compose')) || !!document.querySelector('.k-drawer-root.is-open .k-drawer, .c360-dialog-root, .pl-stage-root, .k-menu');
+  // A live refresh never moves the page: while the sections repaint (a list can be empty for a moment)
+  // the page keeps its height and the scroll stays where it was. Scrolling by hand takes over.
+  let lastInput = 0, hold = null;
+  ['wheel', 'touchstart', 'touchmove', 'keydown', 'pointerdown'].forEach((ev) => addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true, capture: true }));
+  function holdScroll() {
+    const main = document.querySelector('main');
+    if (!main || window.scrollY < 2) return;
+    if (hold) { clearTimeout(hold.t); removeEventListener('scroll', hold.keep); }
+    const y = window.scrollY, from = Date.now();
+    const mine = () => lastInput > from - 600; // the person is scrolling (or just was)
+    main.style.minHeight = main.offsetHeight + 'px';
+    const keep = () => {
+      if (mine() || Math.abs(window.scrollY - y) <= 1) return;
+      const de = document.documentElement;
+      de.style.scrollBehavior = 'auto'; // a jump back, not a smooth glide
+      window.scrollTo(0, y);
+      de.style.scrollBehavior = '';
+    };
+    addEventListener('scroll', keep, { passive: true });
+    hold = { keep, t: setTimeout(() => { removeEventListener('scroll', keep); keep(); main.style.minHeight = ''; hold = null; }, 2500) };
+  }
   function applyRemote() {
     if (busyEditing()) { pendingRemote = true; return; }
     pendingRemote = false;
+    holdScroll();
     load(true);
     if (frontDesk()) K.leads(true).catch(() => {});
     K.emit('remote');

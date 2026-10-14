@@ -71,6 +71,8 @@
 
 /* ---------------- base ---------------- */
 html{ scroll-behavior:smooth; }
+/* an app, not a web page: scrolling yes, pinch and double-tap zoom no */
+html, body{ touch-action:pan-x pan-y; }
 body{
   background:var(--ink); color:var(--fg);
   font-family:'Inter',system-ui,-apple-system,sans-serif; font-feature-settings:"cv11","ss01";
