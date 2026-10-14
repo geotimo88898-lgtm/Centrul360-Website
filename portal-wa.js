@@ -270,7 +270,7 @@
           if (e.target.closest('[data-rv-cancel]')) dr.close();
         });
         el.querySelector('[data-rv-apply]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          if (!(await K.ui().confirm({ title: 'Aplici?', message: pick.size + ' șabloane pleacă la Meta (cu poza, unde au), restul de ' + (d.templates.length - pick.size) + ' se ascund.', confirmText: 'Aplică' }))) return;
+          if (!(await K.ui().confirm({ title: 'Aplici?', message: pick.size + ' șabloane pleacă la Meta (cu poza, unde au), celelalte se ascund (le poți readuce oricând).', confirmText: 'Aplică' }))) return;
           const prog = el.querySelector('[data-rv-progress]');
           const errs = [];
           let i = 0;
@@ -280,7 +280,8 @@
             prog.textContent = 'Trimit ' + i + ' din ' + pick.size + ': ' + (t ? t.label : '') + '…';
             try { const r = await post({ action: 'tpl_review', id, cities }); if (r.error) errs.push((t ? t.label : id) + ': ' + r.error); } catch (err) { errs.push((t ? t.label : id) + ': ' + ((err.data && err.data.message) || K.errText(err))); }
           }
-          const rest = d.templates.filter((t) => !pick.has(t.id)).map((t) => t.id);
+          // the results template stays in sight (it is edited and sent to Meta on its own)
+          const rest = d.templates.filter((t) => !pick.has(t.id) && t.purpose !== 'results').map((t) => t.id);
           if (rest.length) { prog.textContent = 'Ascund restul…'; try { await post({ action: 'tpl_hide', ids: rest }); } catch (err) { errs.push('ascunderea: ' + K.errText(err)); } }
           dr.close();
           paintList(true);
