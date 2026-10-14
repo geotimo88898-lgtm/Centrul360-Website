@@ -9,7 +9,7 @@
   'use strict';
 
   var WEBHOOK = "https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68";
-  var WA = { 'Timișoara': '40750204243', 'Arad': '40750263054' };
+  var WA = { 'Timișoara': '40750452002', 'Arad': '40750277394' };
 
   function digits(s) { return (s || '').replace(/\D/g, ''); }
 

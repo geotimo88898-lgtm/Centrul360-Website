@@ -97,7 +97,7 @@
           <label class="cq-ok"><input type="checkbox" name="ok"><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360, inclusiv cu oferte.</span></label>
         </div>
         <div class="cq-nav"><button type="button" class="cq-back" data-cq-back>← Înapoi</button><button type="submit" class="cq-send" data-cq-send>Trimite</button></div>
-        <p class="cq-foot">Preferi să scrii? <a href="https://wa.me/40750204243?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener">WhatsApp</a></p>
+        <p class="cq-foot">Preferi să scrii? <a href="https://wa.me/40750452002?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita." target="_blank" rel="noopener">WhatsApp</a></p>
       </form>`;
     document.body.appendChild(root);
     const form = root.querySelector('form');

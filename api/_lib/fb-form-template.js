@@ -16,7 +16,7 @@ const FIELDS = 'name,status,locale,questions,privacy_policy_url,follow_up_action
 
 const clip = (v, n) => dedash(String(v == null ? '' : v)).trim().slice(0, n);
 const digits = (s) => String(s || '').replace(/\D/g, '');
-// "+40 750 204 243", "0750204243", "wa.me/40750204243", "api.whatsapp.com/send?phone=40…" → "40750204243"
+// "+40 750 452 002", "0750452002", "wa.me/40750452002", "api.whatsapp.com/send?phone=40…" → "40750452002"
 function phoneOf(s) {
   const t = String(s || '');
   const m = /wa\.me\/(\+?\d{8,15})/.exec(t) || /[?&]phone=(\+?\d{8,15})/.exec(t);

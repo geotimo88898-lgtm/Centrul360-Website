@@ -22,7 +22,7 @@
   let byKey = null, list = [];
 
   function waFor(o) {
-    return 'https://wa.me/40750204243?text=' + encodeURIComponent('Buna ziua! Vreau sa rezerv oferta ' + o.title.normalize('NFD').replace(/[̀-ͯ]/g, '') + ' la ' + Math.round(o.priceNew) + ' lei.');
+    return 'https://wa.me/40750452002?text=' + encodeURIComponent('Buna ziua! Vreau sa rezerv oferta ' + o.title.normalize('NFD').replace(/[̀-ͯ]/g, '') + ' la ' + Math.round(o.priceNew) + ' lei.');
   }
   function buildLists() {
     document.querySelectorAll('[data-offer-cat]').forEach((box) => {

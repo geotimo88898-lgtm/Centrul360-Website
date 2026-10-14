@@ -69,7 +69,7 @@
     const chips = '<div class="au-vars-chips wa-chips">' + vars.map((k) => '<button type="button" data-var="{' + k + '}" title="' + esc(VLABEL[k] || k) + '">{' + k + '}</button>').join('') + '</div>';
     const btnRow = (b, i) => '<div class="wa-btn-row" data-bi="' + i + '"><select data-bf="type">' + K.options(Object.keys(BTN).map((k) => [k, BTN[k]]), b.type) + '</select>' +
       '<input data-bf="text" maxlength="25" placeholder="Textul butonului" value="' + esc(b.text || '') + '">' +
-      (b.type === 'URL' ? '<input data-bf="url" placeholder="https://…" value="' + esc(b.url || '') + '">' : b.type === 'PHONE_NUMBER' ? '<input data-bf="phone" placeholder="+40750204243" value="' + esc(b.phone || '') + '">' : '') +
+      (b.type === 'URL' ? '<input data-bf="url" placeholder="https://…" value="' + esc(b.url || '') + '">' : b.type === 'PHONE_NUMBER' ? '<input data-bf="phone" placeholder="+40750452002" value="' + esc(b.phone || '') + '">' : '') +
       '<button type="button" class="k-icon-btn" data-brm="' + i + '" aria-label="Scoate butonul">' + icon('x') + '</button></div>';
     const formHtml = () => (canEdit
       ? '<div class="k-form wa-form">' +

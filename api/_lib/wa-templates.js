@@ -104,7 +104,7 @@ function clean(input, prev) {
     if (buttons.filter((b) => b.type === 'QUICK_REPLY').length > 3) return { error: 'Cel mult 3 butoane de răspuns rapid.' };
     if (buttons.filter((b) => b.type !== 'QUICK_REPLY').length > 2) return { error: 'Cel mult un buton cu link și unul de apel.' };
     if (buttons.some((b) => b.type === 'URL' && !/^https:\/\/\S+$/.test(b.url))) return { error: 'Linkul unui buton trebuie să înceapă cu https://.' };
-    if (buttons.some((b) => b.type === 'PHONE_NUMBER' && !/^\+\d{8,15}$/.test(b.phone))) return { error: 'Numărul unui buton de apel: cu prefix, ex. +40750204243.' };
+    if (buttons.some((b) => b.type === 'PHONE_NUMBER' && !/^\+\d{8,15}$/.test(b.phone))) return { error: 'Numărul unui buton de apel: cu prefix, ex. +40750452002.' };
     t.buttons = buttons.map((b) => (b.type === 'URL' ? { type: b.type, text: b.text, url: b.url } : b.type === 'PHONE_NUMBER' ? { type: b.type, text: b.text, phone: b.phone } : { type: b.type, text: b.text }));
   } else if (Array.isArray(i.map)) {
     // sent / imported: only which variable fills each {{n}} can change (that part is ours, not Meta's)
