@@ -11,7 +11,7 @@
 //     This lets the owner log in on day one and create real accounts from Setări.
 
 const { readJSON } = require('./_lib/store');
-const { verifyPassword, setSessionCookie, getSession, renew } = require('./_lib/auth');
+const { verifyPassword, setSessionCookie, getSession, renew, OWNER_ALIASES } = require('./_lib/auth');
 
 module.exports = async (req, res) => {
   res.req = res.req || req; // cookie scope follows the host (see _lib/auth.js cookieDomain)
@@ -45,8 +45,10 @@ module.exports = async (req, res) => {
     // all, which returned 401 before ever consulting ADMIN_USERNAME/ADMIN_PASSWORD).
     const adminUser = process.env.ADMIN_USERNAME;
     const adminPass = process.env.ADMIN_PASSWORD;
+    // the owner's second login: "George" (any capitals), the same password
+    const ownerLogin = username === adminUser || OWNER_ALIASES.includes(String(username).trim().toLowerCase());
     const isBootstrapAdmin = Boolean(
-      adminUser && adminPass && username === adminUser && password === adminPass
+      adminUser && adminPass && ownerLogin && password === adminPass
     );
 
     const employees = await readJSON('data/employees.json', []);

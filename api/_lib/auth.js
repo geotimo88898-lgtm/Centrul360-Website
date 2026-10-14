@@ -9,6 +9,8 @@ const crypto = require('crypto');
 const SESSION_COOKIE = 'c360_portal_session';
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days, renewed while the portal is used (see renew)
 const VIEW_TTL_MS = 12 * 60 * 60 * 1000;          // looking at an employee's account: 12 h
+// the owner's other login names (with the owner's password), reserved for team accounts too
+const OWNER_ALIASES = ['george'];
 
 // ---- Password hashing -------------------------------------------------------------
 
@@ -190,6 +192,7 @@ function requireRole(req, res, roles) {
 }
 
 module.exports = {
+  OWNER_ALIASES,
   renew,
   requireRole,
   hashPassword,

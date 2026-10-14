@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'invalid_role' });
         return;
       }
-      if (employees.some((e) => e.username === username)) {
+      if (employees.some((e) => e.username === username) || require('./_lib/auth').OWNER_ALIASES.includes(String(username).trim().toLowerCase())) {
         res.status(409).json({ error: 'username_taken' });
         return;
       }

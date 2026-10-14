@@ -109,7 +109,7 @@ module.exports = async (req, res) => {
       if (!/^[a-zA-Z0-9._-]{3,40}$/.test(username)) return fail(400, 'invalid_username');
       if (!verifyPassword(String(body.currentPassword || ''), acc.passwordSalt, acc.passwordHash)) return fail(403, 'wrong_password');
       // the owner's login (Vercel) and "admin" are reserved, so nobody's user can look like the owner's
-      const reserved = ['admin', String(process.env.ADMIN_USERNAME || '').toLowerCase()].filter(Boolean);
+      const reserved = ['admin', String(process.env.ADMIN_USERNAME || '').toLowerCase(), ...require('./_lib/auth').OWNER_ALIASES].filter(Boolean);
       if (reserved.includes(username.toLowerCase()) || employees.some((e) => e.id !== acc.id && String(e.username || '').toLowerCase() === username.toLowerCase())) return fail(409, 'username_taken');
       acc.username = username;
       return done();
