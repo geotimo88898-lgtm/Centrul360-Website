@@ -517,7 +517,8 @@
       box.innerHTML = '<div class="wa-prof">' +
         '<div class="wa-prof-top"><span class="wa-prof-pic" data-pic' + (p.profile_picture_url ? ' style="background-image:url(&quot;' + esc(p.profile_picture_url) + '&quot;)"' : '') + '>' + (p.profile_picture_url ? '' : icon('image')) + '</span>' +
           '<div><b>' + esc(n.verified_name || city) + '</b><small>' + esc(n.display_phone_number || '') + (st ? ' · nume ' + esc(st) : '') + '</small>' +
-          '<label class="k-btn is-outline is-sm wa-prof-up">' + icon('share') + 'Schimbă poza<input type="file" accept="image/jpeg,image/png" data-file hidden></label></div></div>' +
+          '<span class="wa-prof-btns"><label class="k-btn is-outline is-sm wa-prof-up">' + icon('share') + 'Schimbă poza<input type="file" accept="image/jpeg,image/png" data-file hidden></label>' +
+          '<a class="k-btn is-ghost is-sm" href="https://business.facebook.com/latest/whatsapp_manager/phone_numbers" target="_blank" rel="noopener" title="Numele se schimbă doar în WhatsApp Manager, cu aprobarea Meta">' + icon('pen') + 'Schimbă numele</a></span></div></div>' +
         '<div class="k-form wa-form">' +
           K.field('Despre (apare sub nume)', '<input data-f="about" maxlength="139" value="' + esc(p.about || '') + '" placeholder="Ex. Remodelare corporală și tratamente faciale">', 'full') +
           K.field('Descriere', '<textarea data-f="description" rows="3" maxlength="512">' + esc(p.description || '') + '</textarea>', 'full') +

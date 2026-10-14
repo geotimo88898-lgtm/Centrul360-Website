@@ -1201,7 +1201,8 @@ main.ad-full{ max-width:none; }
 .wa-prof-top small{ color:var(--muted); font-size:.8rem; }
 .wa-prof-pic{ flex:none; display:grid; place-items:center; width:84px; height:84px; border-radius:50%; background:var(--paper-2) center/cover no-repeat; border:1px solid var(--line); color:var(--muted); }
 .wa-prof-pic .k-ic{ width:28px; height:28px; }
-.wa-prof-up{ margin-top:.35rem; cursor:pointer; }
+.wa-prof-btns{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.35rem; }
+.wa-prof-up{ cursor:pointer; }
 .wa-check{ padding:.9rem 0 1.1rem; border-bottom:1px solid var(--line); }
 .wa-check:last-child{ border-bottom:0; }
 .wa-check h4{ display:flex; align-items:center; gap:.5rem; margin:0 0 .6rem; font-size:1rem; }
