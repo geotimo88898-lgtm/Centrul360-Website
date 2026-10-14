@@ -327,10 +327,17 @@
         K.field('Configuration ID', '<input data-app-config inputmode="numeric" value="' + esc(app.configId || '') + '">', 'full',
           'Facebook Login for Business → Configurații → Creează: tip „WhatsApp Embedded Signup”, cu whatsapp_business_management și whatsapp_business_messaging.') +
         '<div class="k-field full"><button type="button" class="k-btn is-outline" data-app-save>' + icon('check') + 'Salvează aplicația</button></div></div></details>';
-    const manualHtml = () => '<details class="wa-manual"><summary>Am un token</summary><div class="k-form wa-form">' +
-      K.field('Token WhatsApp', '<textarea data-tok rows="3" placeholder="Token de System User cu whatsapp_business_messaging" autocomplete="off"></textarea>', 'full') +
+    // the token never comes back to the browser: once the city is connected, a line says it's saved
+    const manualHtml = () => {
+      const n = d.numbers[city] || {};
+      const when = n.connectedAt ? new Date(n.connectedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      return '<details class="wa-manual"' + (n.connected || !(d.login && d.login.configId) ? ' open' : '') + '><summary>Am un token</summary>' +
+      (n.connected ? '<p class="wa-mnote is-ok">' + icon('check') + 'Token salvat pentru ' + esc(city) + (when ? ' · ' + esc(when) : '') + '</p>' : '') +
+      '<div class="k-form wa-form">' +
+      K.field('Token WhatsApp', '<textarea data-tok rows="3" placeholder="' + (n.connected ? 'Lipește un token nou doar ca să-l schimbi' : 'Token de System User cu whatsapp_business_messaging') + '" autocomplete="off"></textarea>', 'full') +
       K.field('ID cont WhatsApp Business (opțional)', '<input data-waba inputmode="numeric" autocomplete="off">', 'full') +
       '<div class="k-field full"><button type="button" class="k-btn is-outline" data-discover>' + icon('search') + 'Caută numerele</button></div></div><div data-mfound></div></details>';
+    };
     const paint = () => {
       if (!el) return;
       el.querySelector('[data-step]').innerHTML = st.pin ? pinHtml() : st.found ? listHtml() : (d.tokenSaved ? '<div class="k-skel" style="height:120px"></div>' : loginHtml());
@@ -350,7 +357,7 @@
       try {
         const r = await K.api('/api/portal-wa', { action: 'discover', city, token: token || '', wabaId: wabaId || '' });
         st.mfound = r.found || [];
-        box.innerHTML = st.mfound.length ? '<p class="wa-mnote">' + (st.mfound.length === 1 ? 'Un număr găsit' : st.mfound.length + ' numere găsite') + '. Apasă pe cel pentru ' + esc(city) + ':</p>' + rowsHtml(st.mfound, 'data-mpick')
+        box.innerHTML = st.mfound.length ? '<p class="wa-mnote">' + (st.mfound.length === 1 ? 'Un număr găsit' : st.mfound.length + ' numere găsite') + '. Apasă pe numărul pentru ' + esc(city) + ' ca să-l conectezi și să salvezi tokenul:</p>' + rowsHtml(st.mfound, 'data-mpick')
           : '<p class="wa-mnote is-bad">' + icon('alert') + esc(r.message || 'Tokenul nu vede niciun număr. Verifică ID-ul contului WhatsApp Business și că tokenul are contul atribuit.') + '</p>';
       } catch (err) { box.innerHTML = '<p class="wa-mnote is-bad">' + icon('alert') + esc(errMsg(err)) + '</p>'; }
       box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

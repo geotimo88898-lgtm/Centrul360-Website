@@ -1217,6 +1217,7 @@ main.ad-full{ max-width:none; }
 .wa-coex summary{ cursor:pointer; font-size:.82rem; font-weight:600; color:var(--muted); }
 .wa-mnote{ display:flex; align-items:flex-start; gap:.4rem; margin:.7rem 0 .5rem; font-size:.84rem; color:var(--muted); }
 .wa-mnote.is-bad{ color:var(--bad); }
+.wa-mnote.is-ok{ color:var(--good); font-weight:600; }
 .wa-mnote .k-ic{ flex:none; width:16px; height:16px; margin-top:.1rem; }
 .wa-coex > small{ font-size:.78rem; color:var(--muted); line-height:1.4; }
 .wa-coex [data-appform]{ width:100%; margin-top:.4rem; }
