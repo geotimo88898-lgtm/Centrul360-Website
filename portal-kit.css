@@ -1,7 +1,7 @@
 /* Centrul360 portal, shared components for the section modules (pairs with portal-kit.js). */
 
 .k-ic{ width:16px; height:16px; flex:none; }
-.k-panel{ min-width:0; }
+.k-panel{ min-width:0; container:panel / inline-size; }
 main.k-wide{ max-width:1320px; min-width:0; }
 
 /* ---------------- page head ---------------- */

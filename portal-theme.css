@@ -482,6 +482,16 @@ html.c360-noscroll{ overflow:hidden; }
 @keyframes c360-toast-in{ from{ opacity:0; transform:translateY(12px) scale(.96); } to{ opacity:1; transform:none; } }
 @keyframes c360-toast-out{ to{ opacity:0; transform:translateX(16px); } }
 
+/* between a phone and a wide screen: the avatar instead of the name and the Deconectare button (its menu has them) */
+@media (min-width:721px) and (max-width:1180px){
+  .who, .logoutBtn{ display:none !important; }
+  .c360-avatar{ display:inline-grid !important; margin-left:.3rem; }
+  .c360-search-btn kbd{ display:none; }
+}
+@media (min-width:721px) and (max-width:960px){
+  .c360-search-btn{ min-width:0; }
+  .c360-search-btn span{ display:none; }
+}
 @media (max-width:720px){
   .c360-search-btn{ min-width:0; margin-right:.5rem; }
   .c360-search-btn span, .c360-search-btn kbd, .c360-rail-toggle{ display:none; }

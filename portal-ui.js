@@ -371,9 +371,22 @@
     window.addEventListener('resize', () => placeIndicator(true));
     placeIndicator(true);
   }
+  // between a phone and a wide screen (an iPad, a narrow window) the menu folds to its icons by itself;
+  // the toggle opens it there for this visit only, the saved choice is the wide screen's
+  const midWidth = () => window.innerWidth > 720 && window.innerWidth <= 1180;
+  let midChoice = null;
+  function applyRail() {
+    const w = window.innerWidth;
+    const want = w > 720 && (midWidth() ? (midChoice == null ? true : midChoice) : store.get('c360_rail') === '1');
+    if (document.documentElement.classList.contains('c360-rail') === want) return;
+    document.documentElement.classList.toggle('c360-rail', want);
+    setTimeout(() => placeIndicator(true), reduceMotion ? 0 : 320);
+  }
+  let railT = 0;
+  window.addEventListener('resize', () => { clearTimeout(railT); railT = setTimeout(applyRail, 120); });
   function setRail(collapsed) {
     document.documentElement.classList.toggle('c360-rail', collapsed);
-    store.set('c360_rail', collapsed ? '1' : '0');
+    if (midWidth()) midChoice = collapsed; else store.set('c360_rail', collapsed ? '1' : '0');
     const t = document.querySelector('.c360-rail-toggle');
     if (t) t.setAttribute('aria-label', collapsed ? 'Extinde meniul' : 'Strânge meniul');
     setTimeout(() => placeIndicator(true), reduceMotion ? 0 : 320);
@@ -560,7 +573,7 @@
   }
 
   function init() {
-    if (store.get('c360_rail') === '1' && window.innerWidth > 720) document.documentElement.classList.add('c360-rail');
+    if (window.innerWidth > 720 && (window.innerWidth <= 1180 || store.get('c360_rail') === '1')) document.documentElement.classList.add('c360-rail');
     mountBrand();
     mountNav();
     mountAvatar();

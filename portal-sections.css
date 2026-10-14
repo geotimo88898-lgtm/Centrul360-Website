@@ -172,6 +172,22 @@
   .db-actions .k-btn{ flex:1; }
   .db-goal-meta{ grid-template-columns:1fr 1fr 1fr; }
 }
+/* the hero on a narrow page (an iPad, a narrow window): the clock under the greeting, the buttons in one row */
+@container panel (max-width:760px){
+  .k-panel .db-hero{ flex-direction:column-reverse; align-items:flex-start; padding:1.4rem 1.3rem; gap:.7rem; }
+  .db-hero h2{ font-size:1.75rem; }
+  .db-time{ font-size:3.4rem; } .db-secs{ width:50px; height:50px; }
+}
+@container panel (max-width:1000px){ .k-panel .db-row-a, .k-panel .db-row-b{ grid-template-columns:1fr; } }
+/* the week on an iPad or a narrow window: all 7 days fit */
+@container panel (min-width:560px) and (max-width:1000px){
+  .k-panel .cal-grid.is-week{ grid-template-columns:48px repeat(var(--cols), minmax(76px, 1fr)); }
+  .k-panel .cal-grid.is-week .cal-colhead{ gap:.25rem; padding:.6rem .2rem; font-size:.72rem; }
+  .k-panel .cal-grid.is-week .cal-colhead b{ width:26px; height:26px; font-size:.95rem; }
+  .k-panel .cal-grid.is-week .cal-block{ padding:.3rem .4rem; }
+}
+/* Mesaje on an iPad or a narrow window: a narrower list, more room for the chat */
+@container panel (min-width:560px) and (max-width:1000px){ .k-panel .mx-wrap{ grid-template-columns:minmax(240px, 300px) minmax(0,1fr); } }
 @media (prefers-reduced-motion: reduce){ .db-aurora i{ animation:none; } }
 
 /* =============================== CALENDAR =============================== */
