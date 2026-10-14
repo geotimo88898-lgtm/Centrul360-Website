@@ -106,10 +106,26 @@ async function checkNumber(store, origin, city) {
   line(true, 'Accesul la Meta merge', '');
   // what this access may do: asked through each app we have the secret of (the one that made it answers)
   const scopes = await tokenScopes(store, n.token);
+  // whose the WhatsApp account is (read once, used by the lines below)
+  const wb = n.wabaId ? await call('GET', '/' + n.wabaId, n.token, { fields: 'name,owner_business_info,on_behalf_of_business_info,account_review_status,business_verification_status' }) : null;
   if (scopes) {
     const can = (perm) => scopes.granular.some((g) => g.scope === perm && (!(g.target_ids || []).length || (g.target_ids || []).map(String).includes(String(n.wabaId)))) ||
       (scopes.scopes.includes(perm) && !scopes.granular.some((g) => g.scope === perm));
-    const send = !!n.wabaId && can('whatsapp_business_messaging');
+    // the accounts Meta gave this access for sending: a system user's token lists the accounts assigned to
+    // it when the token was made; without this one, Meta answers #200 to every message
+    const msgScope = scopes.granular.find((g) => g.scope === 'whatsapp_business_messaging');
+    const targets = msgScope ? (msgScope.target_ids || []).map(String) : [];
+    const send = !!n.wabaId && (msgScope ? targets.includes(String(n.wabaId)) : can('whatsapp_business_messaging'));
+    if (n.wabaId && msgScope && !targets.includes(String(n.wabaId))) {
+      const me = await call('GET', '/me', n.token, { fields: 'name' });
+      const who = (me.ok && me.j.name) || 'utilizatorul de sistem al tokenului';
+      const owner = (wb && wb.ok && (wb.j.owner_business_info || {}).name) || 'firma care deține contul';
+      const acct = (wb && wb.ok && wb.j.name) || n.wabaId;
+      line(false, 'Contul WhatsApp nu e atribuit accesului pentru trimitere',
+        (targets.length ? 'Meta îl lasă să trimită doar pentru: ' + targets.join(', ') + '. ' : 'Meta nu-i dă niciun cont WhatsApp pentru trimitere. ') +
+        'Repară în Meta Business, portofoliul ' + owner + ': Utilizatori de sistem → ' + who + ' → Atribuie active → Conturi WhatsApp → ' + acct +
+        ' → Control total. Apoi Generează token NOU pe același utilizator (cel vechi nu se actualizează) și lipește-l la Conectează → Am un token.');
+    }
     const kind = scopes.type === 'SYSTEM_USER' ? 'utilizator de sistem' : scopes.type === 'USER' ? 'cont de persoană' : (scopes.type || '?').toLowerCase();
     const exp = scopes.expiresAt ? 'expiră ' + new Date(scopes.expiresAt * 1000).toLocaleDateString('ro-RO') : 'nu expiră';
     line(send, send ? 'Accesul are voie să trimită mesaje' : 'Accesul NU are voie să trimită mesaje pentru contul ăsta',
@@ -120,7 +136,6 @@ async function checkNumber(store, origin, city) {
   }
   // whose the WhatsApp account is (a shared one, e.g. by HighLevel, can refuse sending)
   if (n.wabaId) {
-    const wb = await call('GET', '/' + n.wabaId, n.token, { fields: 'name,owner_business_info,on_behalf_of_business_info,account_review_status,business_verification_status' });
     if (wb.ok) {
       const own = (wb.j.owner_business_info || {}), obo = (wb.j.on_behalf_of_business_info || {});
       const review = wb.j.account_review_status || '?';
