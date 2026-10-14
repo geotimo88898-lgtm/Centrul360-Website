@@ -33,6 +33,7 @@ function cleanPrefs(input, prev) {
   const i = input || {};
   if (i.fontSize !== undefined) p.fontSize = ['normal', 'lg', 'xl'].includes(i.fontSize) ? i.fontSize : 'normal';
   if (i.motion !== undefined) p.motion = i.motion === 'reduced' ? 'reduced' : 'normal';
+  if (i.theme !== undefined) p.theme = i.theme === 'light' ? 'light' : 'dark';
   if (i.startPage !== undefined) p.startPage = START_PAGES.includes(i.startPage) ? i.startPage : '';
   if (i.accent !== undefined) {
     const a = i.accent || {};

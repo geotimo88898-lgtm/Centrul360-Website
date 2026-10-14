@@ -6,7 +6,7 @@
 /* Cool, clean neutrals + one vivid accent pair (--accent → --accent-2) used as a gradient for the
    moments that matter. Any accent colour / gradient can be picked in the avatar menu (portal-accent.js). */
 :root{
-  color-scheme: dark;
+  color-scheme: light;
   --ink:#f4f5f9;            /* page */
   --paper:#ffffff;          /* raised surfaces */
   --paper-2:#f9fafc;        /* cards, sidebar */
@@ -36,8 +36,9 @@
   --ease:cubic-bezier(.2,.8,.2,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
 }
-@media all{ /* always dark */
-  :root{
+@media all{ /* dark, unless Light is picked (avatar menu → Temă) */
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
     --ink:#07080b;
     --paper:#101218;
     --paper-2:#0c0e13;
@@ -68,6 +69,9 @@
    inline on <html>; the values above are the default violet. Text on the status colours (good / warn /
    bad backgrounds) uses --on-color, which reads on all of them. */
 :root{ --on-color:#0b0d12; }
+
+/* ---------------- Light: the dark logo on the light top bar ---------------- */
+:root[data-theme="light"] .brand-logo{ content:url("/brand_asset/portal/logo-black.png"); }
 
 /* ---------------- base ---------------- */
 html{ scroll-behavior:smooth; }

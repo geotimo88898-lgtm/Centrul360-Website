@@ -29,6 +29,7 @@
     try { localStorage.setItem('c360_prefs', JSON.stringify({ fontSize: p.fontSize || 'normal', motion: p.motion || 'normal' })); } catch (e) { /* private mode */ }
     // the accent colour follows the account: a device that still shows another one takes it over
     const A = window.C360Accent;
+    if (A && (p.theme === 'light' || p.theme === 'dark') && A.theme() !== p.theme) A.setTheme(p.theme, true);
     if (A && p.accent && (p.accent.a || p.accent.id)) {
       const cur = A.state();
       if (cur.id !== p.accent.id || cur.a !== p.accent.a || (cur.mode === 'grad' && cur.b !== p.accent.b)) {
@@ -47,6 +48,7 @@
   }
   // A colour picked anywhere (avatar menu or here) is saved on the account.
   if (window.C360Accent) window.C360Accent.onChange = (st) => savePrefs({ accent: { id: st.id, mode: st.mode, a: st.a, b: st.b || '' } });
+  if (window.C360Accent) window.C360Accent.onTheme = (t) => savePrefs({ theme: t });
 
   // Square profile photo, 480 px, from the centre of whatever was picked / shot.
   async function squarePhoto(file) {

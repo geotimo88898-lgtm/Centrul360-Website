@@ -88,8 +88,14 @@
   // ------------------------------------------------------------------ colour → theme variables
   // Readable on the dark surfaces: saturated colours keep their hue and chroma, lightness is kept in
   // a band that shows up on near-black; greys (black, white, slate) become a light neutral.
+  // On Light, the same colour a step darker (it has to read on white); greys become a dark neutral.
+  const isLight = () => document.documentElement.getAttribute('data-theme') === 'light';
   function tone(rgb) {
     const [L, C, H] = rgbToOklch(rgb);
+    if (isLight()) {
+      if (C < 0.035) return oklchToRgb([clamp(L, 0.2, 0.34), C, H]);
+      return oklchToRgb([clamp(L, 0.46, 0.62), C, H]);
+    }
     if (C < 0.035) return oklchToRgb([clamp(L, 0.8, 0.96), C, H]);
     return oklchToRgb([clamp(L, 0.64, 0.86), C, H]);
   }
@@ -98,10 +104,11 @@
     const [La, Ca, Ha] = rgbToOklch(A);
     const neutral = Ca < 0.035;
     const rawB = bHex && hexToRgb(bHex);
-    const B = rawB ? tone(rawB) : neutral ? oklchToRgb([La - 0.2, Ca, Ha]) : oklchToRgb([Math.min(La + 0.07, 0.92), Ca * 0.85, Ha + 12]);
+    const B = rawB ? tone(rawB) : neutral ? oklchToRgb([isLight() ? La + 0.2 : La - 0.2, Ca, Ha]) : oklchToRgb([Math.min(La + 0.07, isLight() ? 0.7 : 0.92), Ca * 0.85, Ha + 12]);
     const [, Cb, Hb] = rgbToOklch(B);
     // the deeper partner used for ambient glows and the eyebrow text gradient (still readable as text)
-    const third = neutral ? oklchToRgb([0.6, 0, 0]) : rawB ? oklchToRgb([0.6, Cb * 0.9, Hb]) : oklchToRgb([0.6, Ca * 0.9, Ha - 40]);
+    const L3 = isLight() ? 0.5 : 0.6;
+    const third = neutral ? oklchToRgb([L3, 0, 0]) : rawB ? oklchToRgb([L3, Cb * 0.9, Hb]) : oklchToRgb([L3, Ca * 0.9, Ha - 40]);
     // text on the accent: white or a near-black tinted with the hue, whichever reads better on BOTH stops
     const ink = oklchToRgb([0.17, Math.min(Ca, 0.05), Ha]);
     const score = (c) => Math.min(contrast(c, A), contrast(c, B), contrast(c, third)); // lava buttons blend all three
@@ -140,6 +147,22 @@
     }
     return vars;
   }
+  // ------------------------------------------------------------------ Light / Dark
+  const theme = () => (isLight() ? 'light' : 'dark');
+  function setTheme(t, fromAccount) {
+    const light = t === 'light';
+    if (light === isLight() && read('c360_theme') === (light ? 'light' : 'dark')) return;
+    const root = document.documentElement;
+    root.classList.add('c360-theming'); // one smooth change, no half-switched frames
+    if (light) root.setAttribute('data-theme', 'light'); else root.removeAttribute('data-theme');
+    write('c360_theme', light ? 'light' : 'dark');
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', light ? '#f4f5f9' : '#07080b');
+    apply(state(), true, true); // the accent, tuned for the theme
+    setTimeout(() => root.classList.remove('c360-theming'), 350);
+    if (!fromAccount && typeof window.C360Accent.onTheme === 'function') window.C360Accent.onTheme(light ? 'light' : 'dark');
+  }
+
   // First load after the update: an old preset key ("ocean") gets its variables saved once.
   if (!read(KEY_V)) apply(state(), !!read(KEY));
 
@@ -153,6 +176,9 @@
   function menuHtml() {
     const st = state();
     return '<div class="acc" data-acc>' +
+      '<div class="k-menu-label acc-label">Temă</div>' +
+      '<div class="acc-theme" role="radiogroup" aria-label="Temă">' + [['dark', 'Dark'], ['light', 'Light']].map(([v, l]) =>
+        '<button type="button" role="radio" aria-checked="' + (theme() === v) + '" class="' + (theme() === v ? 'is-on' : '') + '" data-theme-set="' + v + '"><i class="is-' + v + '"></i>' + l + '</button>').join('') + '</div>' +
       '<div class="k-menu-label acc-label">Culoare accent<span data-acc-name>' + esc(nameOf(st)) + '</span></div>' +
       '<div class="acc-grid" role="radiogroup" aria-label="Culoare accent">' +
       PRESETS.map((p) => '<button type="button" role="radio" aria-checked="' + (p.id === st.id) + '" class="acc-sw' + (p.grad ? ' is-grad' : '') + (p.id === st.id ? ' is-on' : '') + '" data-acc-id="' + p.id + '" title="' + esc(p.name) + '" aria-label="' + esc(p.name) + '" style="--a:' + p.a + ';--b:' + p.b + '"></button>').join('') +
@@ -234,6 +260,12 @@
     }
 
     box.addEventListener('click', (e) => {
+      const th = e.target.closest('[data-theme-set]');
+      if (th) {
+        setTheme(th.dataset.themeSet);
+        box.querySelectorAll('[data-theme-set]').forEach((b) => { const on = b.dataset.themeSet === theme(); b.classList.toggle('is-on', on); b.setAttribute('aria-checked', on); });
+        return;
+      }
       const p = e.target.closest('[data-acc-id]');
       if (p) {
         const pr = PRESETS.find((x) => x.id === p.dataset.accId);
@@ -301,5 +333,5 @@
     if (st.id === 'custom') { panel.hidden = false; box.classList.add('is-custom-open'); }
   }
 
-  window.C360Accent = { PRESETS, derive, menuHtml, wire, state, apply, contrast, hexToRgb, justDragged: () => Date.now() - lastDrag < 400 };
+  window.C360Accent = { PRESETS, derive, menuHtml, wire, state, apply, contrast, hexToRgb, theme, setTheme, justDragged: () => Date.now() - lastDrag < 400 };
 })();
