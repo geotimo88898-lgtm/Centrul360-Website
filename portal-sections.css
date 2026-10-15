@@ -1810,3 +1810,6 @@ main.ad-full{ max-width:none; }
   .k-panel .of-grid:not(.is-single) .of-feat{ top:auto; bottom:.4rem; left:.4rem; right:auto; padding:.15rem .4rem; font-size:.64rem; }
 }
 
+
+.st-ghl-sync{ flex-wrap:wrap; gap:.5rem; align-items:center; }
+.st-ghl-sync input[type=date]{ width:auto; }

@@ -185,15 +185,107 @@ async function stepContacts(conn, aj, until) {
   }
 }
 
+// one GHL appointment as the portal's: { fields (what an update may change), appt (a new one) }, null when its
+// calendar isn't brought or it has no time. conn.ctx: the mapping, calendars and employees, read once.
+function apptOf(e, conn, client) {
+  const { map, cals, empById } = conn.ctx;
+  const mapped = map.calendars[e.calendarId] || G.guessCalendar((cals.get(e.calendarId) || {}).name, conn.city);
+  if (mapped.skip) return null;
+  const s = G.local(e.startTime), en = e.endTime ? G.local(e.endTime) : null;
+  if (!s) return null;
+  const st = G.statusOf(e, G.msOf(e.startTime));
+  const emp = empById.get(map.users[e.assignedUserId] || '');
+  const fields = {
+    date: s.date, time: s.time, endTime: en && en.date === s.date && en.time > s.time ? en.time : '',
+    status: st.status, noShow: !!st.noShow, location: CITIES.includes(mapped.city) ? mapped.city : conn.city || 'Timișoara',
+    cosmeticianId: emp ? emp.id : '', cosmeticianName: emp ? emp.name : '',
+  };
+  const cat = CATS.includes(mapped.category) ? mapped.category : 'corporale';
+  const calName = (cals.get(e.calendarId) || {}).name || '';
+  const appt = Object.assign({
+    id: G.uid(), ghlId: e.id, clientId: client.id, clientName: client.name, clientPhone: client.phone || '',
+    treatment: (calName || String(e.title || '').trim() || 'Programare HighLevel').slice(0, 200), categories: [cat], category: cat, amount: 0, package: false,
+    note: G.text(e.notes || e.description, 500), createdBy: 'highlevel', createdAt: e.dateAdded || nowISO(), updatedAt: nowISO(), importedAt: nowISO(), tzFixed: true,
+  }, fields);
+  return { fields, appt };
+}
+const ctxOf = (conn, employees) => ({
+  map: conn.mapping || { calendars: {}, users: {} },
+  cals: new Map((conn.calendars || []).map((c) => [c.id, c])),
+  empById: new Map(employees.map((e) => [e.id, e])),
+});
+
+// ------------------------------------------------------------------ the calendars, by date: what the contacts missed
+// Every appointment in the brought calendars from `from` (YYYY-MM-DD, Bucharest) for `days` days: the ones the
+// portal doesn't have are added (a client made from GHL's contact when she isn't here yet, even without a phone);
+// the ones it has stay as they are (changes made in the portal win). Runs again any time, nothing doubles.
+async function syncAppts(conns, from, days, state) {
+  const until = Date.now() + BUDGET;
+  const [clients, appointments, employees] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/employees.json', [])]);
+  const apptByGhl = new Map(appointments.filter((a) => a.ghlId).map((a) => [a.ghlId, a]));
+  const byGhl = new Map(); clients.forEach((c) => ghlIdsOf(c).forEach((g) => byGhl.set(g, c)));
+  const byPhone = new Map(clients.filter((c) => c.phone).map((c) => [G.normalizePhone(c.phone), c]));
+  const byEmail = new Map(clients.filter((c) => c.email).map((c) => [String(c.email).toLowerCase(), c]));
+  const out = state || { added: 0, existing: 0, clients: 0, skipped: 0, done: [] };
+  const startMs = G.msOf(from + ' 00:00:00'), endMs = startMs + days * 86400e3;
+  let apptsChanged = false, clientsChanged = false, left = false;
+  try {
+    for (const k of Object.keys(ACCS)) {
+      const conn = conns[k];
+      if (!conn || !conn.token) continue;
+      conn.city = ACCS[k];
+      conn.ctx = ctxOf(conn, employees);
+      for (const cal of conn.calendars || []) {
+        const key = k + ':' + cal.id;
+        if (out.done.includes(key)) continue;
+        if ((conn.ctx.map.calendars[cal.id] || {}).skip) { out.done.push(key); continue; }
+        if (Date.now() > until) { left = true; break; }
+        // a month at a time (GHL answers a range per call)
+        for (let t = startMs; t < endMs; t += 31 * 86400e3) {
+          const events = await G.calendarEvents(conn, cal.id, t, Math.min(endMs, t + 31 * 86400e3));
+          for (const e of events) {
+            if (!e || !e.id || e.deleted || apptByGhl.has(e.id)) { if (e && apptByGhl.has(e.id)) out.existing++; continue; }
+            if (!e.contactId) { out.skipped++; continue; }
+            let client = byGhl.get(e.contactId);
+            if (!client) {
+              let g = null;
+              try { g = await G.contactOf(conn, e.contactId); } catch (err) { if (err.code !== 'ghl_not_found') throw err; }
+              const phone = g ? G.normalizePhone(g.phone) : '';
+              const email = g ? String(g.email || '').trim().toLowerCase().slice(0, 150) : '';
+              const name = (g ? G.fullName(g) : '') || String(e.title || '').trim() || email || phone || 'Clientă HighLevel';
+              client = (phone && byPhone.get(phone)) || (email && byEmail.get(email));
+              if (!client) {
+                client = { id: G.uid(), name: name.slice(0, 150), phone, email, tags: [], source: 'highlevel', createdAt: todayISO(), lastVisit: todayISO(), importedAt: nowISO(), location: conn.city };
+                clients.push(client); out.clients++;
+                if (phone) byPhone.set(phone, client); if (email) byEmail.set(email, client);
+              }
+              client.ghlIds = Array.from(new Set(ghlIdsOf(client).concat(e.contactId)));
+              byGhl.set(e.contactId, client); clientsChanged = true;
+            }
+            const b = apptOf(e, conn, client);
+            if (!b) { out.skipped++; continue; }
+            appointments.push(b.appt); apptByGhl.set(e.id, b.appt);
+            out.added++; apptsChanged = true;
+          }
+        }
+        out.done.push(key);
+      }
+      if (left) break;
+    }
+  } finally {
+    if (apptsChanged) await writeJSON('data/appointments.json', appointments);
+    if (clientsChanged) await writeJSON('data/clients.json', clients);
+  }
+  return Object.assign(out, { left });
+}
+
 // ------------------------------------------------------------------ each contact: notes, conversations, appointments
 async function stepDetails(conn, aj, until) {
   const [clients, appointments, employees] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/employees.json', [])]);
   const clientById = new Map(clients.map((c) => [c.id, c]));
   const apptByGhl = new Map(appointments.filter((a) => a.ghlId).map((a) => [a.ghlId, a]));
   const users = new Map((conn.users || []).map((u) => [u.id, u.name]));
-  const cals = new Map((conn.calendars || []).map((c) => [c.id, c]));
-  const map = conn.mapping || { calendars: {}, users: {} };
-  const empById = new Map(employees.map((e) => [e.id, e]));
+  conn.ctx = ctxOf(conn, employees);
   let clientsChanged = false, apptsChanged = false;
   try {
     while (aj.pos < aj.queue.length && Date.now() < until) {
@@ -236,33 +328,16 @@ async function stepDetails(conn, aj, until) {
 
       // the appointments → the Calendar, as they are (no automation)
       for (const e of events) {
-        const mapped = map.calendars[e.calendarId] || G.guessCalendar((cals.get(e.calendarId) || {}).name, conn.city);
-        if (mapped.skip) continue;
-        const startMs = G.msOf(e.startTime);
-        const s = G.local(e.startTime), en = e.endTime ? G.local(e.endTime) : null;
-        if (!s) continue;
-        const st = G.statusOf(e, startMs);
-        const emp = empById.get(map.users[e.assignedUserId] || '');
-        const fields = {
-          date: s.date, time: s.time, endTime: en && en.date === s.date && en.time > s.time ? en.time : '',
-          status: st.status, noShow: !!st.noShow, location: CITIES.includes(mapped.city) ? mapped.city : conn.city || 'Timișoara',
-          cosmeticianId: emp ? emp.id : '', cosmeticianName: emp ? emp.name : '',
-        };
+        const b = apptOf(e, conn, client);
+        if (!b) continue;
         const cur = apptByGhl.get(e.id);
         if (cur) {
-          if (Object.keys(fields).some((k) => cur[k] !== fields[k])) { Object.assign(cur, fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
+          if (Object.keys(b.fields).some((k) => cur[k] !== b.fields[k])) { Object.assign(cur, b.fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
           continue;
         }
-        const cat = CATS.includes(mapped.category) ? mapped.category : 'corporale';
-        const calName = (cals.get(e.calendarId) || {}).name || '';
-        const a = Object.assign({
-          id: G.uid(), ghlId: e.id, clientId: client.id, clientName: client.name, clientPhone: client.phone || '',
-          treatment: (calName || String(e.title || '').trim() || 'Programare HighLevel').slice(0, 200), categories: [cat], category: cat, amount: 0, package: false,
-          note: G.text(e.notes || e.description, 500), createdBy: 'highlevel', createdAt: e.dateAdded || nowISO(), updatedAt: nowISO(), importedAt: nowISO(),
-        }, fields);
-        appointments.push(a); apptByGhl.set(e.id, a);
+        appointments.push(b.appt); apptByGhl.set(e.id, b.appt);
         aj.counts.appointments++; apptsChanged = true;
-        if (s.date > (client.lastVisit || '') && st.status === 'finalizata') { client.lastVisit = s.date; clientsChanged = true; }
+        if (b.appt.date > (client.lastVisit || '') && b.appt.status === 'finalizata') { client.lastVisit = b.appt.date; clientsChanged = true; }
       }
       aj.pos++;
     }
@@ -333,6 +408,17 @@ module.exports = async (req, res) => {
       conn.mapping = m;
       await saveConns(conns, true);
       res.status(200).json(await status());
+      return;
+    }
+
+    if (b.action === 'sync_appts') {
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(b.from || '') ? b.from : todayISO();
+      const days = Math.max(1, Math.min(400, Number(b.days) || 180));
+      const state = b.state && Array.isArray(b.state.done) ? { added: +b.state.added || 0, existing: +b.state.existing || 0, clients: +b.state.clients || 0, skipped: +b.state.skipped || 0, done: b.state.done.slice(0, 50).map(String) } : null;
+      try {
+        const r = await syncAppts(conns, from, days, state);
+        res.status(200).json(Object.assign(await status(), { sync: r }));
+      } catch (e) { res.status(400).json({ error: e.code || 'ghl_failed', status: e.status || 0, message: e.message || '' }); }
       return;
     }
 

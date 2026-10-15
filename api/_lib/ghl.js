@@ -66,6 +66,9 @@ async function contactsPage(conn, cursor) {
   return { list, next, total: meta.total || j.total || j.count || 0 };
 }
 const notesOf = (conn, id) => call(conn, '/contacts/' + encodeURIComponent(id) + '/notes', V_CONTACTS).then((j) => j.notes || []);
+// a calendar's appointments between two moments (ms), whoever they are for (GET /calendars/events)
+const calendarEvents = (conn, calendarId, startMs, endMs) => call(conn, '/calendars/events' + q({ locationId: conn.locationId, calendarId, startTime: startMs, endTime: endMs }), V_CAL).then((j) => j.events || []);
+const contactOf = (conn, id) => call(conn, '/contacts/' + encodeURIComponent(id), V_CONTACTS).then((j) => j.contact || null);
 const apptsOf = (conn, id) => call(conn, '/contacts/' + encodeURIComponent(id) + '/appointments', V_CONTACTS).then((j) => j.events || []);
 async function conversationsOf(conn, id) {
   const j = await call(conn, '/conversations/search' + q({ locationId: conn.locationId, contactId: id, limit: 50 }), V_CONV);
@@ -151,4 +154,4 @@ function guessUser(name, employees) {
   return e ? e.id : '';
 }
 
-module.exports = { msOf, BASE, CONN, JOB, GhlError, call, listCalendars, listUsers, contactsPage, notesOf, apptsOf, conversationsOf, messagesOf, text, fullName, channelOf, isActivity, local, statusOf, guessCalendar, guessUser, normalizePhone, uid: () => crypto.randomUUID() };
+module.exports = { msOf, calendarEvents, contactOf, BASE, CONN, JOB, GhlError, call, listCalendars, listUsers, contactsPage, notesOf, apptsOf, conversationsOf, messagesOf, text, fullName, channelOf, isActivity, local, statusOf, guessCalendar, guessUser, normalizePhone, uid: () => crypto.randomUUID() };
