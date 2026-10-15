@@ -318,9 +318,9 @@
     const a = it.a, st = STATUS[a.status] || STATUS.programata;
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
     const w = 100 / it.lanes;
-    // as many lines for the name as the block's height holds, so a long title shows whole; a short block (half an
-    // hour) has the hour in front of the name, in smaller letters, on up to two lines
-    const short = h < 64;
+    // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
+    // an hour) has the hour in front of the name, in smaller letters, on up to two lines
+    const short = it.e - it.s < 45; // under 45 minutes; an hour keeps the big letters whatever the screen
     const lines = short ? Math.max(1, Math.floor((h - 6) / 13.5)) : Math.max(1, Math.floor((h - 28) / 17));
     return '<button type="button" class="cal-block is-' + a.status + (short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + nameOf(a) + (a.ghlTitle ? ' · ' + a.clientName : '') + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
