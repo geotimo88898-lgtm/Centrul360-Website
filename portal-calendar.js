@@ -220,7 +220,7 @@
         const untimed = list.filter((a) => toMin(a.time) == null);
         return '<div class="cal-col' + (c.date === today ? ' is-today' : '') + (c.date < today ? ' is-past' : '') + '" data-date="' + c.date + '" data-loc="' + esc(c.loc) + '" style="height:' + H + 'px">' +
           hours.slice(0, -1).map((h) => '<i class="cal-hour" style="top:' + ((h - START) * 60 * PPM) + 'px"></i>').join('') +
-          (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(a.clientName) + '</button>').join('') + '</div>' : '') +
+          (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(nameOf(a)) + '</button>').join('') + '</div>' : '') +
           layout(timed).map(blockHtml).join('') + '</div>';
       }).join('');
     placeNow();
@@ -281,7 +281,7 @@
           const st = STATUS[a.status] || STATUS.programata;
           return '<button type="button" class="cal-ag-row is-' + esc(a.status) + '" data-open="' + esc(a.id) + '">' +
             '<span class="cal-ag-time">' + (a.time ? '<b>' + esc(a.time) + '</b>' + (toMin(a.endTime) > toMin(a.time) ? '<small>' + esc(a.endTime) + '</small>' : '') : '<b>toată</b><small>ziua</small>') + '</span>' +
-            '<span class="cal-ag-main"><b>' + esc(a.clientName || '-') + '</b><small>' + esc([a.treatment, a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
+            '<span class="cal-ag-main"><b>' + esc(nameOf(a)) + '</b><small>' + esc([subOf(a), a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
             '<span class="cal-ag-meta">' + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' + esc(a.cosmeticianName.split(' ')[0]) : '') + (multi && a.location ? '<em>' + esc(a.location) + '</em>' : '') +
             (a.package ? '<em>pachet</em>' : '') + '<em class="is-st">' + esc(st.label) + '</em></span></span></button>';
         }).join('') : '<div class="cal-ag-empty"><span>Nicio programare</span>' + (canEdit() && d >= today ? '<button type="button" class="k-btn is-ghost is-sm" data-newday="' + d + '">' + icon('plus') + 'Programează</button>' : '') + '</div>') +
@@ -304,6 +304,16 @@
     });
     return items;
   }
+  // what an appointment is called: the title it had in HighLevel (as reception wrote it there), else the client;
+  // the line under it: the client when the title doesn't name her, else the treatment
+  const plainTxt = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const nameOf = (a) => a.ghlTitle || a.clientName || '-';
+  function subOf(a) {
+    if (!a.ghlTitle) return a.treatment || '';
+    const first = plainTxt(a.clientName).split(/\s+/)[0];
+    const named = first && plainTxt(a.ghlTitle).includes(first);
+    return [named ? '' : a.clientName, a.treatment && a.treatment !== a.ghlTitle ? a.treatment : ''].filter(Boolean).join(' · ');
+  }
   function blockHtml(it) {
     const a = it.a, st = STATUS[a.status] || STATUS.programata;
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
@@ -311,7 +321,7 @@
     return '<button type="button" class="cal-block is-' + a.status + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px)"' +
       ' title="' + esc(span(a) + ' · ' + a.clientName + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
       '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
-      '<b>' + esc(a.clientName || '-') + '</b><span class="cal-b-sub">' + esc(a.treatment || '') + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
+      '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');

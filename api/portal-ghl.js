@@ -260,9 +260,11 @@ async function syncAppts(conns, from, days, state) {
             if (cur) {
               out.existing++;
               // the title from GHL, where the treatment is still what the import wrote (the calendar's name)
+              // its title from GHL (what the Calendar shows); the treatment too, where it is still the calendar's name
               const b = !cur.ghlTitle && apptOf(e, conn, clientById.get(cur.clientId) || { name: cur.clientName });
-              if (b && b.title && (cur.treatment === b.calName || !cur.treatment || cur.treatment === 'Programare HighLevel')) {
-                cur.treatment = b.title; cur.ghlTitle = b.title; out.titled++; apptsChanged = true;
+              if (b && b.title) {
+                cur.ghlTitle = b.title; out.titled++; apptsChanged = true;
+                if (cur.treatment === b.calName || !cur.treatment || cur.treatment === 'Programare HighLevel') cur.treatment = b.title;
               }
               continue;
             }
