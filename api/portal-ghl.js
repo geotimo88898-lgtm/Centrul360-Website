@@ -164,7 +164,7 @@ async function stepDetails(conn, aj, until) {
       for (const e of events) {
         const mapped = map.calendars[e.calendarId] || G.guessCalendar((cals.get(e.calendarId) || {}).name, conn.city);
         if (mapped.skip) continue;
-        const startMs = typeof e.startTime === 'number' ? e.startTime : Date.parse(e.startTime);
+        const startMs = G.msOf(e.startTime);
         const s = G.local(e.startTime), en = e.endTime ? G.local(e.endTime) : null;
         if (!s) continue;
         const st = G.statusOf(e, startMs);
