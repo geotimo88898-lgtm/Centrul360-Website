@@ -169,6 +169,16 @@ div.pay-appt{ cursor:default; }
 .ct-note-new textarea{ width:100%; min-height:84px; border-radius:12px; border:1px solid var(--line); background:var(--surface-3); color:var(--fg); padding:.7rem .8rem; font:inherit; font-size:.92rem; }
 .ct-notes{ display:flex; flex-direction:column; gap:.5rem; }
 .ct-note{ padding:.75rem .85rem; border-radius:14px; background:var(--paper-2); border:1px solid var(--line); }
+/* Istoric: the conversations brought from HighLevel */
+.ct-ghl h4 .k-muted{ font-weight:500; margin-left:.3rem; }
+.ct-ghl-day{ margin:.4rem 0 -.2rem; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.ct-ghl-msg{ max-width:88%; padding:.55rem .75rem; border-radius:14px; background:var(--paper-2); border:1px solid var(--line); }
+.ct-ghl-msg.is-out{ align-self:flex-end; background:color-mix(in srgb, var(--accent) 9%, var(--paper-2)); }
+.ct-ghl-meta{ display:flex; gap:.5rem; align-items:baseline; font-size:.74rem; color:var(--muted); }
+.ct-ghl-meta b{ color:var(--fg); font-weight:600; }
+.ct-ghl-msg p{ margin:.2rem 0 0; font-size:.88rem; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere; }
+.ct-ghl-msg em{ font-style:normal; color:var(--muted); font-size:.8rem; }
+.ct-ghl > button{ align-self:flex-start; }
 .ct-note p{ margin:0 0 .5rem; white-space:pre-wrap; font-size:.92rem; line-height:1.5; }
 .ct-note footer{ display:flex; align-items:center; gap:.45rem; font-size:.76rem; color:var(--muted); } .ct-note footer > span:not(.k-avatar){ flex:1; } .ct-note footer .k-avatar{ flex:none; }
 .ct-consent{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.8rem; padding:.9rem 1rem; border-radius:16px; border:1.5px solid var(--line); background:var(--paper-2); }

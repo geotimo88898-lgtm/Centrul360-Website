@@ -695,6 +695,7 @@
     else {
       const fb = ipanel.querySelector('[data-fb]'); if (fb) loadFb(fb);
       const mp = ipanel.querySelector('[data-mypos]'); if (mp && !mp.contains(document.activeElement)) loadMypos(mp);
+      const gh = ipanel.querySelector('[data-ghl]'); if (gh && !ghlRun && !gh.contains(document.activeElement)) loadGhl(gh);
     }
   });
   function renderIntegrations() {
@@ -703,6 +704,7 @@
     body.innerHTML = '<div class="st-integrations">' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Două numere: Timișoara și Arad. De pe ele pleacă șabloanele din automatizări și răspunsurile din Mesaje.</span></div></div><div data-wa><div class="k-skel" style="height:96px"></div></div></section>' +
+      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-info">' + icon('download') + '</span><div><b>HighLevel</b><span>Mută din GHL contactele, mențiunile, conversațiile și programările. Se poate rula din nou: ce e deja adus nu se dublează.</span></div></div><div data-ghl><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-warn">' + icon('card') + '</span><div><b>myPOS</b><span>Plățile cu cardul de pe POS, puse lângă încasările din portal, în Încasări.</span></div></div><div data-mypos><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="creative">Deschide Creative' + icon('arrow') + '</button></div></section>' +
@@ -711,10 +713,122 @@
     body.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
     loadFb(body.querySelector('[data-fb]'));
     loadMypos(body.querySelector('[data-mypos]'));
+    loadGhl(body.querySelector('[data-ghl]'));
     (async () => {
       const box = body.querySelector('[data-wa]');
       if (box && window.C360Wa) paintWa(box);
     })();
+  }
+
+  // HighLevel: the Private Integration token + Location ID, which calendar is which city and category, which
+  // GHL user is which person here, then the import, step by step while this page is open (it can stop and
+  // go on later). The token never comes back from the server.
+  const GHL_ERR = {
+    invalid_location: 'Location ID are doar litere și cifre. Îl găsești în GHL: Settings → Business Profile.', invalid_token: 'Tokenul nu arată bine. Copiază-l din nou.',
+    ghl_auth: 'HighLevel nu a acceptat tokenul. Verifică că e tokenul integrării și Location ID-ul corect.', ghl_scope: 'Tokenul nu are acces: verifică Location ID-ul și permisiunile (citire pentru contacte, conversații, mesaje, calendare și utilizatori).',
+    ghl_not_found: 'Location ID nu a fost găsit în HighLevel.', ghl_busy: 'HighLevel e ocupat acum. Mai încearcă puțin.', ghl_failed: 'HighLevel a dat o eroare. Încearcă din nou.', not_connected: 'HighLevel nu e conectat.',
+  };
+  const ghlFail = (err) => K.ui().toast(GHL_ERR[err.code] || K.errText(err), 'error');
+  const CAT_OPTS = [['corporale', 'Corporale'], ['faciale', 'Faciale'], ['epilare-laser', 'Epilare laser']];
+  let ghlRun = null; // the import loop, while this page is open
+  const ghlKeys = (open, has) => '<details class="st-fb-manual"' + (open ? ' open' : '') + '><summary>' + (has ? 'Schimbă tokenul' : 'Conectează HighLevel') + '</summary>' +
+    '<form class="st-manual" data-ghl-connect autocomplete="off">' +
+      '<label class="k-field full"><span>Location ID</span><input name="locationId" autocomplete="off" spellcheck="false"></label>' +
+      '<label class="k-field full"><span>Token (Private Integration)</span><input name="token" type="password" autocomplete="new-password" spellcheck="false"></label>' +
+      '<small class="k-muted">În GHL: Settings → Private Integrations → Create, cu citire pentru contacte, conversații, mesaje, calendare, evenimente și utilizatori. Location ID e în Settings → Business Profile.</small>' +
+      '<button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Conectează</button></form></details>';
+  function ghlJobHtml(j) {
+    if (!j || j.status === 'idle') return '';
+    const c = j.counts || {};
+    const pct = j.phase === 'contacts' ? (j.total ? Math.min(30, Math.round((j.read / j.total) * 30)) : 5) : j.read ? 30 + Math.round((j.pos / j.read) * 70) : 100;
+    const head = j.status === 'done' ? 'Import terminat' + (j.finishedAt ? ' · ' + mpWhen(j.finishedAt) : '') : j.status === 'paused' ? 'Import oprit' : j.phase === 'contacts' ? 'Citesc contactele…' : 'Aduc mențiunile, conversațiile și programările…';
+    return '<div class="st-ghl-job is-' + j.status + '"><div class="st-ghl-job-h"><b>' + esc(head) + '</b><span>' + (j.status === 'done' ? '' : pct + '%') + '</span></div>' +
+      (j.status === 'done' ? '' : '<div class="k-bar"><i style="--w:' + pct + '%"></i></div>') +
+      '<div class="st-ghl-counts"><span><b>' + K.num(c.contacts || 0) + '</b> contacte' + (c.created ? ' (' + K.num(c.created) + ' noi)' : '') + '</span><span><b>' + K.num(c.notes || 0) + '</b> mențiuni</span>' +
+      '<span><b>' + K.num(c.messages || 0) + '</b> mesaje</span><span><b>' + K.num(c.appointments || 0) + '</b> programări</span></div>' +
+      (j.phase === 'details' && j.status !== 'done' ? '<small class="k-muted">' + K.num(j.pos) + ' din ' + K.num(j.read) + ' contacte. Lasă pagina deschisă; dacă o închizi, continui de aici.</small>' : '') +
+      (j.lastError ? '<small class="st-ghl-err">' + esc(GHL_ERR[j.lastError] || 'HighLevel a dat o eroare.') + '</small>' : '') + '</div>';
+  }
+  async function loadGhl(box) {
+    if (!box) return;
+    let d;
+    try { d = await K.api('/api/portal-ghl'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica HighLevel.</span>'; return; }
+    paintGhl(box, d);
+  }
+  function paintGhl(box, d) {
+    const j = d.job;
+    const running = j && j.status === 'running';
+    if (!d.connected) {
+      box.innerHTML = (j && j.status === 'done' ? ghlJobHtml(j) : '') + ghlKeys(true, false);
+    } else {
+      const emps = ((K.data && K.data.activeEmployees) || []).filter((e) => e.role !== 'admin');
+      box.innerHTML =
+        '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><span class="k-muted st-mp-id">Location ' + esc(d.locationId) + '</span></div>' +
+        '<details class="st-ghl-map"' + (j ? '' : ' open') + '><summary>Potrivirea: calendare și oameni</summary>' +
+          '<p class="st-ghl-h">Calendarele din GHL</p><div class="st-ghl-rows">' + (d.calendars || []).map((c) => '<div class="st-ghl-row" data-cal="' + esc(c.id) + '"><b>' + esc(c.name) + '</b>' +
+            '<select data-k="city"' + (running ? ' disabled' : '') + '>' + K.options([['Timișoara', 'Timișoara'], ['Arad', 'Arad']], c.city) + '</select>' +
+            '<select data-k="category"' + (running ? ' disabled' : '') + '>' + K.options(CAT_OPTS, c.category) + '</select>' +
+            '<label class="st-ghl-skip"><input type="checkbox" data-k="skip"' + (c.skip ? ' checked' : '') + (running ? ' disabled' : '') + '>nu aduce</label></div>').join('') + '</div>' +
+          '<p class="st-ghl-h">Utilizatorii din GHL</p><div class="st-ghl-rows">' + (d.users || []).map((u) => '<div class="st-ghl-row is-user" data-user="' + esc(u.id) + '"><b>' + esc(u.name) + '</b>' +
+            '<select data-k="employee"' + (running ? ' disabled' : '') + '>' + K.options([['', 'Nimeni']].concat(emps.map((e) => [e.id, e.name])), u.employeeId || '') + '</select></div>').join('') + '</div>' +
+          (running ? '' : '<button type="button" class="k-btn is-outline is-sm" data-ghl-save>' + icon('check') + 'Salvează potrivirea</button>') + '</details>' +
+        ghlJobHtml(j) +
+        '<div class="st-int-row st-ghl-actions">' +
+          (running ? '<button type="button" class="k-btn is-ghost is-sm" data-ghl-pause>Oprește</button>'
+            : j && j.status === 'paused' ? '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="resume">' + icon('refresh') + 'Continuă importul</button><button type="button" class="k-btn is-ghost is-sm" data-ghl-go="new">De la capăt</button>'
+            : '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="new">' + icon('download') + (j && j.status === 'done' ? 'Importă din nou' : 'Importă tot') + '</button>') + '</div>' +
+        ghlKeys(false, true) +
+        '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-ghl-off>Deconectează HighLevel</button>';
+    }
+    const f = box.querySelector('[data-ghl-connect]');
+    if (f) f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(f);
+      K.busy(f.querySelector('[type="submit"]'), async () => {
+        try { const r = await K.api('/api/portal-ghl', { action: 'connect', locationId: v.locationId, token: v.token }); f.reset(); K.ui().toast('HighLevel e conectat. Verifică potrivirea, apoi „Importă tot”.', 'success'); paintGhl(box, r); }
+        catch (err) { ghlFail(err); }
+      });
+    });
+    const mapping = () => {
+      const calendars = {}, users = {};
+      box.querySelectorAll('[data-cal]').forEach((r) => { calendars[r.dataset.cal] = { city: r.querySelector('[data-k="city"]').value, category: r.querySelector('[data-k="category"]').value, skip: r.querySelector('[data-k="skip"]').checked }; });
+      box.querySelectorAll('[data-user]').forEach((r) => { users[r.dataset.user] = r.querySelector('[data-k="employee"]').value; });
+      return { calendars, users };
+    };
+    const sv = box.querySelector('[data-ghl-save]');
+    if (sv) sv.addEventListener('click', () => K.busy(sv, async () => {
+      try { const r = await K.api('/api/portal-ghl', Object.assign({ action: 'mapping' }, mapping())); K.ui().toast('Potrivirea e salvată.', 'success'); paintGhl(box, r); } catch (err) { ghlFail(err); }
+    }));
+    box.querySelectorAll('[data-ghl-go]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
+      try {
+        if (box.querySelector('[data-ghl-save]')) await K.api('/api/portal-ghl', Object.assign({ action: 'mapping' }, mapping()));
+        const r = await K.api('/api/portal-ghl', { action: 'start', resume: b.dataset.ghlGo === 'resume' });
+        paintGhl(box, r); ghlLoop(box);
+      } catch (err) { ghlFail(err); }
+    })));
+    const pz = box.querySelector('[data-ghl-pause]');
+    if (pz) pz.addEventListener('click', async () => { ghlRun = null; try { paintGhl(box, await K.api('/api/portal-ghl', { action: 'pause' })); } catch (err) { ghlFail(err); } });
+    const off = box.querySelector('[data-ghl-off]');
+    if (off) off.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Deconectezi HighLevel?', message: 'Tokenul se șterge din portal. Ce a fost importat rămâne.', confirmText: 'Deconectează', danger: true }))) return;
+      try { ghlRun = null; paintGhl(box, await K.api('/api/portal-ghl', { action: 'disconnect' })); } catch (err) { ghlFail(err); }
+    });
+    if (running && !ghlRun) ghlLoop(box);
+  }
+  // one step after another while the page is open and the import runs
+  async function ghlLoop(box) {
+    const me = {};
+    ghlRun = me;
+    while (ghlRun === me) {
+      let r;
+      try { r = await K.api('/api/portal-ghl', { action: 'step' }); }
+      catch (err) { await new Promise((ok) => setTimeout(ok, 5000)); continue; }
+      const live = document.body.contains(box) ? box : document.querySelector('[data-ghl]');
+      if (!live) { ghlRun = null; return; }
+      if (!r.job || r.job.status !== 'running') { ghlRun = null; paintGhl(live, r); if (r.job && r.job.status === 'done') K.ui().toast('Importul din HighLevel e gata.', 'success'); return; }
+      const jb = live.querySelector('.st-ghl-job');
+      if (jb) jb.outerHTML = ghlJobHtml(r.job); else paintGhl(live, r);
+    }
   }
 
   // myPOS: the REST API credentials from the myPOS account (ID Client + Secret), then the terminals and their

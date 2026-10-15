@@ -508,7 +508,26 @@
         '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
         (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
           '<div class="k-row-end">' + (a.amount ? '<span class="k-amount">' + K.lei(a.amount) + '</span>' : '') + '<span class="k-tag">' + esc(ST[a.status] || a.status) + '</span></div></div>').join('') + '</div>'
-          : K.empty('calendar', 'Nicio programare încă', ''));
+          : K.empty('calendar', 'Nicio programare încă', '')) + ghlHistoryHtml();
+    }
+    // what she wrote with the clinic in HighLevel (WhatsApp, SMS, email, Facebook …), newest first
+    const CH = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email', facebook: 'Facebook', instagram: 'Instagram', call: 'Apel', chat: 'Chat', comment: 'Comentariu intern', form: 'Formular', google: 'Google', tiktok: 'TikTok', other: 'Mesaj' };
+    function ghlHistoryHtml() {
+      const h = (st.detail && st.detail.history) || [];
+      if (!h.length) return '';
+      const list = st.allHist ? h : h.slice(0, 40);
+      let day = '';
+      return '<section class="ct-sec ct-ghl"><h4>' + icon('chat') + 'Conversații din HighLevel <span class="k-muted">' + h.length + '</span></h4>' +
+        list.map((m) => {
+          const d = String(m.at || '').slice(0, 10);
+          const head = d && d !== day ? '<div class="ct-ghl-day">' + esc(K.relDay(d) === K.dateLong(d) ? K.dateLong(d) : K.relDay(d)) + '</div>' : '';
+          day = d || day;
+          const t = new Date(m.at);
+          return head + '<div class="ct-ghl-msg is-' + (m.dir === 'out' ? 'out' : 'in') + '"><div class="ct-ghl-meta"><b>' + esc(CH[m.ch] || 'Mesaj') + '</b>' +
+            '<span>' + (m.dir === 'out' ? (m.auto ? 'automat' : esc(m.by || 'clinica')) : 'clienta') + (Number.isFinite(t.getTime()) ? ' · ' + K.pad(t.getHours()) + ':' + K.pad(t.getMinutes()) : '') + '</span></div>' +
+            '<p>' + esc(m.text || '') + (m.att ? (m.text ? ' ' : '') + '<em>' + K.plural(m.att, 'atașament', 'atașamente') + '</em>' : '') + '</p></div>';
+        }).join('') +
+        (h.length > 40 ? '<button type="button" class="k-btn is-ghost is-sm" data-ghl-all>' + (st.allHist ? 'Mai puține' : 'Toate (' + h.length + ')') + '</button>' : '') + '</section>';
     }
 
     // ---------------- actions
@@ -554,6 +573,7 @@
     }
     async function onPaneClick(e) {
       const t = e.target;
+      if (t.closest('[data-ghl-all]')) { st.allHist = !st.allHist; paintPane(); return; }
       if (t.closest('[data-add-note]')) {
         const ta = d.el.querySelector('[data-note]');
         const text = ta.value.trim();

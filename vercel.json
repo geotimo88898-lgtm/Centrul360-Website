@@ -70,6 +70,9 @@
     },
     "api/portal-mypos.js": {
       "maxDuration": 60
+    },
+    "api/portal-ghl.js": {
+      "maxDuration": 60
     }
   }
 }
