@@ -1,6 +1,7 @@
 // HighLevel (GHL, LeadConnector) → the portal: everything the clinic had there, moved once (and again, for what
-// came in since: nothing is copied twice). The owner makes a Private Integration in GHL (Settings → Private
-// Integrations, read-only scopes) and pastes its token and the Location ID in Admin → Integrări → HighLevel.
+// came in since: nothing is copied twice). The clinic has two GHL sub-accounts, Timișoara and Arad; for each, the
+// owner makes a Private Integration (Settings → Private Integrations, read-only scopes) and pastes its token and
+// Location ID in Admin → Integrări → HighLevel. A person in both is one contact here.
 //
 //   contacts       → Contacte (data/clients.json), matched by GHL id, then phone, then email
 //   notes          → the contact's Mențiuni (data/contacts/<id>.json), with their date and author
@@ -9,8 +10,8 @@
 //                    written as they are: no automation runs for them (no confirmation, no reminder)
 //
 // The import runs in steps (each under a minute), driven by the open Integrări page; it can stop and go on
-// from where it was. data/ghl-connection.json { locationId, token, calendars, users, mapping } (the token
-// never leaves the server) · data/ghl-import.json { status, phase, cursor, queue, pos, counts, … }.
+// from where it was. data/ghl-connection.json { accounts: { tm|ar: { locationId, token, calendars, users, mapping } } }
+// (the tokens never leave the server) · data/ghl-import.json { status, accs: { tm|ar: { phase, cursor, queue, pos } }, counts }.
 // API: services.leadconnectorhq.com (developers' docs: github.com/GoHighLevel/highlevel-api-docs).
 
 const crypto = require('crypto');
@@ -115,10 +116,10 @@ function statusOf(e, startMs) {
   if (startMs < Date.now() - 6 * 3600e3) return { status: 'finalizata' }; // past and never cancelled
   return { status: s === 'confirmed' ? 'confirmata' : 'programata' };
 }
-// a guess for each calendar: the city in its name (Arad, else Timișoara) and the category from the treatments in it
-function guessCalendar(name) {
+// a guess for each calendar: the city in its name (else the sub-account's city) and the category from the treatments in it
+function guessCalendar(name, city0) {
   const n = String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  const city = /arad/.test(n) ? 'Arad' : 'Timișoara';
+  const city = /arad/.test(n) ? 'Arad' : /timi/.test(n) ? 'Timișoara' : city0 || 'Timișoara';
   const category = /epil|laser/.test(n) ? 'epilare-laser' : /facial|fata|hifu|antirid|microneedl|hidrat|sebum|ten\b|riduri|rf sculpt/.test(n) ? 'faciale' : 'corporale';
   return { city, category, skip: false };
 }
