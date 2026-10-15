@@ -202,12 +202,22 @@ function apptOf(e, conn, client) {
   };
   const cat = CATS.includes(mapped.category) ? mapped.category : 'corporale';
   const calName = (cals.get(e.calendarId) || {}).name || '';
+  const t = titleOf(e, client);
   const appt = Object.assign({
     id: G.uid(), ghlId: e.id, clientId: client.id, clientName: client.name, clientPhone: client.phone || '',
-    treatment: (calName || String(e.title || '').trim() || 'Programare HighLevel').slice(0, 200), categories: [cat], category: cat, amount: 0, package: false,
+    treatment: (t || calName || 'Programare HighLevel').slice(0, 200), ghlTitle: t, categories: [cat], category: cat, amount: 0, package: false,
     note: G.text(e.notes || e.description, 500), createdBy: 'highlevel', createdAt: e.dateAdded || nowISO(), updatedAt: nowISO(), importedAt: nowISO(), tzFixed: true,
   }, fields);
-  return { fields, appt };
+  return { fields, appt, title: t, calName };
+}
+// the title the clinic wrote on a GHL appointment ("Liposonix 2 zone"), not when it is only her name
+const plainName = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function titleOf(e, client) {
+  const t = String(e.title || '').trim().slice(0, 200);
+  if (!t) return '';
+  const p = plainName(t), n = plainName(client && client.name);
+  if (n && (p === n || p === 'appointment with ' + n || p === 'programare ' + n)) return '';
+  return t;
 }
 const ctxOf = (conn, employees) => ({
   map: conn.mapping || { calendars: {}, users: {} },
@@ -226,7 +236,8 @@ async function syncAppts(conns, from, days, state) {
   const byGhl = new Map(); clients.forEach((c) => ghlIdsOf(c).forEach((g) => byGhl.set(g, c)));
   const byPhone = new Map(clients.filter((c) => c.phone).map((c) => [G.normalizePhone(c.phone), c]));
   const byEmail = new Map(clients.filter((c) => c.email).map((c) => [String(c.email).toLowerCase(), c]));
-  const out = state || { added: 0, existing: 0, clients: 0, skipped: 0, done: [] };
+  const clientById = new Map(clients.map((c) => [c.id, c]));
+  const out = state || { added: 0, existing: 0, titled: 0, clients: 0, skipped: 0, done: [] };
   const startMs = G.msOf(from + ' 00:00:00'), endMs = startMs + days * 86400e3;
   let apptsChanged = false, clientsChanged = false, left = false;
   try {
@@ -244,7 +255,17 @@ async function syncAppts(conns, from, days, state) {
         for (let t = startMs; t < endMs; t += 31 * 86400e3) {
           const events = await G.calendarEvents(conn, cal.id, t, Math.min(endMs, t + 31 * 86400e3));
           for (const e of events) {
-            if (!e || !e.id || e.deleted || apptByGhl.has(e.id)) { if (e && apptByGhl.has(e.id)) out.existing++; continue; }
+            if (!e || !e.id || e.deleted) continue;
+            const cur = apptByGhl.get(e.id);
+            if (cur) {
+              out.existing++;
+              // the title from GHL, where the treatment is still what the import wrote (the calendar's name)
+              const b = !cur.ghlTitle && apptOf(e, conn, clientById.get(cur.clientId) || { name: cur.clientName });
+              if (b && b.title && (cur.treatment === b.calName || !cur.treatment || cur.treatment === 'Programare HighLevel')) {
+                cur.treatment = b.title; cur.ghlTitle = b.title; out.titled++; apptsChanged = true;
+              }
+              continue;
+            }
             if (!e.contactId) { out.skipped++; continue; }
             let client = byGhl.get(e.contactId);
             if (!client) {
@@ -413,8 +434,10 @@ module.exports = async (req, res) => {
 
     if (b.action === 'sync_appts') {
       const from = /^\d{4}-\d{2}-\d{2}$/.test(b.from || '') ? b.from : todayISO();
-      const days = Math.max(1, Math.min(400, Number(b.days) || 180));
-      const state = b.state && Array.isArray(b.state.done) ? { added: +b.state.added || 0, existing: +b.state.existing || 0, clients: +b.state.clients || 0, skipped: +b.state.skipped || 0, done: b.state.done.slice(0, 50).map(String) } : null;
+      // from that day to half a year ahead (a date in the past brings, and titles, the ones since then too)
+      const back = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(from)) / 86400e3));
+      const days = Math.max(1, Math.min(1500, back + (Number(b.days) || 180)));
+      const state = b.state && Array.isArray(b.state.done) ? { added: +b.state.added || 0, existing: +b.state.existing || 0, titled: +b.state.titled || 0, clients: +b.state.clients || 0, skipped: +b.state.skipped || 0, done: b.state.done.slice(0, 50).map(String) } : null;
       try {
         const r = await syncAppts(conns, from, days, state);
         res.status(200).json(Object.assign(await status(), { sync: r }));

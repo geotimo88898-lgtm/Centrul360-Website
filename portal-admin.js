@@ -847,7 +847,7 @@
         }
         const f = r.sync || {};
         K.ui().toast(K.plural(f.added || 0, 'programare nouă adusă', 'programări noi aduse') + (f.clients ? ', ' + K.plural(f.clients, 'clientă nouă', 'cliente noi') : '') +
-          '; ' + (f.existing || 0) + ' erau deja în portal.', 'success');
+          '; ' + (f.existing || 0) + ' erau deja în portal' + (f.titled ? ', ' + K.plural(f.titled, 'a primit titlul', 'au primit titlul') + ' din HighLevel' : '') + '.', 'success');
         paintGhl(box, r);
         K.reload && K.reload();
       } catch (err) { ghlFail(err); }
