@@ -4,7 +4,8 @@
 //                                                         their mapping; the import
 //   POST { action: 'connect', acc: 'tm'|'ar', locationId, token }  checks them with GHL, reads calendars and users
 //   POST { action: 'mapping', acc, calendars: { id: { city, category, skip } }, users: { id: employeeId } }
-//   POST { action: 'start' }    a new import of every connected sub-account ({ resume: true }: go on)
+//   POST { action: 'start' }    a new import of every connected sub-account ({ resume: true }: go on;
+//                               { acc: 'tm'|'ar' }: only that one)
 //   POST { action: 'step' }     one step of it (under a minute); the Integrări page calls it until it's done
 //   POST { action: 'pause' }
 //   POST { action: 'disconnect', acc }  removes that token (what was imported stays)
@@ -459,8 +460,10 @@ module.exports = async (req, res) => {
       let job = await readJSON(G.JOB, null);
       if (job && !job.accs) job = null; // an older single-account job
       if (job && job.status === 'running' && Date.now() - Date.parse(job.updatedAt || 0) < 90e3) { res.status(200).json(await status()); return; }
-      if (!(b.resume && job && job.status !== 'done')) job = { accs: {}, startedAt: nowISO(), finishedAt: '' };
-      live.forEach((k) => { if (!job.accs[k]) job.accs[k] = newAccJob(); });
+      // { acc }: only that sub-account (Arad connected later, without Timișoara's again); a resumed one keeps its own
+      const only = ACCS[b.acc] && live.includes(b.acc) ? b.acc : '';
+      if (!(b.resume && job && job.status !== 'done')) job = { accs: {}, only, startedAt: nowISO(), finishedAt: '' };
+      live.filter((k) => !job.only || k === job.only).forEach((k) => { if (!job.accs[k]) job.accs[k] = newAccJob(); });
       job.status = 'running'; job.lastError = ''; job.updatedAt = nowISO();
       await writeJSON(G.JOB, job, { quiet: true });
       res.status(200).json(await status());

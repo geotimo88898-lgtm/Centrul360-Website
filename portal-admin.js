@@ -751,6 +751,7 @@
         '<p class="st-ghl-h">Utilizatorii</p><div class="st-ghl-rows">' + (a.users || []).map((u) => '<div class="st-ghl-row is-user" data-user="' + esc(u.id) + '"><b>' + esc(u.name) + '</b>' +
           '<select data-k="employee"' + dis + '>' + K.options([['', 'Nimeni']].concat(emps.map((e) => [e.id, e.name + (e.location && e.location !== '-' ? ' · ' + e.location : '')])), u.employeeId || '') + '</select></div>').join('') + '</div>' +
         (running ? '' : '<button type="button" class="k-btn is-outline is-sm" data-ghl-save="' + acc + '">' + icon('check') + 'Salvează potrivirea</button>') + '</details>' +
+      (running ? '' : '<button type="button" class="k-btn is-outline is-sm" data-ghl-go="new" data-ghl-acc="' + acc + '">' + icon('download') + 'Importă doar ' + label + '</button>') +
       ghlKeys(acc, false, true) +
       '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-ghl-off="' + acc + '">Deconectează ' + label + '</button></section>';
   }
@@ -818,7 +819,9 @@
     box.querySelectorAll('[data-ghl-go]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
       try {
         await saveAll();
-        const r = await K.api('/api/portal-ghl', { action: 'start', resume: b.dataset.ghlGo === 'resume' });
+        const acc = b.dataset.ghlAcc || '';
+        if (acc && !(await K.ui().confirm({ title: 'Importă doar ' + ((GHL_ACC.find((x) => x[0] === acc) || ['', ''])[1]) + '?', message: 'Aduce contactele, mențiunile, conversațiile și programările doar din acest subcont. Celălalt nu se mai importă; ce e deja adus nu se dublează.', confirmText: 'Importă' }))) return;
+        const r = await K.api('/api/portal-ghl', { action: 'start', resume: b.dataset.ghlGo === 'resume', acc });
         paintGhl(box, r); ghlLoop(box);
       } catch (err) { ghlFail(err); }
     })));
