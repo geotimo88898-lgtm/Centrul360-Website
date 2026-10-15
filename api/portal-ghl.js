@@ -8,6 +8,9 @@
 //   POST { action: 'step' }     one step of it (under a minute); the Integrări page calls it until it's done
 //   POST { action: 'pause' }
 //   POST { action: 'disconnect', acc }  removes that token (what was imported stays)
+//   POST { action: 'fix_times' }  the appointments imported before TIME_FIX 2–3 hours late, put back at their hour
+//                                 (no new import: untouched ones are moved here, ones changed since in the portal
+//                                 are checked with HighLevel one by one and left alone when someone moved them)
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
@@ -23,6 +26,24 @@ const nowISO = () => new Date().toISOString();
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 const zero = () => ({ contacts: 0, created: 0, updated: 0, skipped: 0, notes: 0, messages: 0, appointments: 0, apptsUpdated: 0 });
 const newAccJob = () => ({ phase: 'contacts', cursor: null, queue: [], pos: 0, total: 0, counts: zero(), done: false });
+// imports before this read GHL's zoneless times as UTC (see G.local); the fix was live a few minutes after
+const TIME_FIX = Date.parse('2026-10-15T15:35:00Z');
+const needsTimeFix = (a) => a.ghlId && !a.tzFixed && a.date && a.time && Date.parse(a.importedAt || a.createdAt || 0) < TIME_FIX;
+const pad2 = (n) => String(n).padStart(2, '0');
+// the clinic's clock → the one the old import showed for it (GHL's "09:00" read as 09:00 UTC → 12:00 here)
+const lateOf = (date, time) => G.local(Date.parse(date + 'T' + time + ':00Z'));
+// and back: what the old import showed → the clinic's real hour (the UTC clock of that Bucharest moment)
+function realOf(date, time) {
+  const d = new Date(G.msOf(date + ' ' + time + ':00'));
+  return { date: d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()), time: pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()) };
+}
+function moveBack(a) {
+  const r = realOf(a.date, a.time);
+  const end = a.endTime ? realOf(a.date, a.endTime) : null;
+  a.date = r.date; a.time = r.time;
+  a.endTime = end && end.date === r.date && end.time > r.time ? end.time : '';
+}
+
 const ghlIdsOf = (c) => (Array.isArray(c.ghlIds) ? c.ghlIds : []).concat(c.ghlId ? [c.ghlId] : []);
 
 async function loadConns() {
@@ -56,7 +77,52 @@ async function status() {
       users: (c.users || []).map((u) => Object.assign({}, u, { employeeId: m.users[u.id] || '' })),
     };
   });
-  return { accounts, job: pubJob(job) };
+  const appts = await readJSON('data/appointments.json', []);
+  return { accounts, job: pubJob(job), timesToFix: appts.filter(needsTimeFix).length };
+}
+
+// one appointment as HighLevel has it now (null: none of the sub-accounts knows it)
+async function ghlEvent(conns, a) {
+  const live = Object.keys(ACCS).filter((k) => conns[k] && conns[k].token);
+  const order = live.filter((k) => ACCS[k] === a.location).concat(live.filter((k) => ACCS[k] !== a.location)); // its city's first
+  for (const k of order) {
+    try {
+      const j = await G.call(conns[k], '/calendars/events/appointments/' + encodeURIComponent(a.ghlId), '2021-04-15');
+      const e = j.appointment || j.event || j;
+      if (e && e.startTime) return e;
+    } catch (err) {
+      if (err.code !== 'ghl_not_found') throw err;
+    }
+  }
+  return null;
+}
+async function fixTimes(conns) {
+  const until = Date.now() + BUDGET;
+  const appts = await readJSON('data/appointments.json', []);
+  const out = { fixed: 0, checked: 0, kept: 0, unknown: 0, left: 0 };
+  let changed = false;
+  for (const a of appts) {
+    if (!needsTimeFix(a)) continue;
+    const touched = Date.parse(a.updatedAt || 0) - Date.parse(a.importedAt || a.createdAt || 0) > 120e3;
+    if (!touched) { moveBack(a); a.tzFixed = true; out.fixed++; changed = true; continue; }
+    // changed in the portal since: HighLevel says the real hour; moved by hand → as it is
+    if (Date.now() > until) { out.left++; continue; }
+    let e = null;
+    try { e = await ghlEvent(conns, a); } catch (err) { out.left++; continue; }
+    out.checked++;
+    if (!e) { a.tzFixed = true; out.unknown++; changed = true; continue; }
+    const real = G.local(e.startTime);
+    const late = lateOf(real.date, real.time);
+    if (a.date === late.date && a.time === late.time) {
+      const en = e.endTime ? G.local(e.endTime) : null;
+      a.date = real.date; a.time = real.time;
+      a.endTime = en && en.date === real.date && en.time > real.time ? en.time : '';
+      out.fixed++;
+    } else out.kept++;
+    a.tzFixed = true; changed = true;
+  }
+  if (changed) await writeJSON('data/appointments.json', appts);
+  return out;
 }
 
 // ------------------------------------------------------------------ the contacts: into Contacte
@@ -259,6 +325,12 @@ module.exports = async (req, res) => {
       conn.mapping = m;
       await saveConns(conns, true);
       res.status(200).json(await status());
+      return;
+    }
+
+    if (b.action === 'fix_times') {
+      const r = await fixTimes(conns);
+      res.status(200).json(Object.assign(await status(), { fix: r }));
       return;
     }
 

@@ -785,6 +785,9 @@
     const any = GHL_ACC.some(([k]) => d.accounts[k] && d.accounts[k].connected);
     box.innerHTML = '<div class="st-ghl-accs">' + GHL_ACC.map(([k, l]) => ghlAccHtml(k, l, d.accounts[k], running)).join('') + '</div>' +
       ghlJobHtml(j) +
+      // the appointments the first import put 2–3 hours late (GHL's times have no zone)
+      (d.timesToFix && !running ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>' + K.plural(d.timesToFix, 'programare importată are', 'programări importate au') + ' ora mutată cu 2–3 ore (ex. 9:00 apare la 12:00). Le pun la ora lor, fără import din nou.</span>' +
+        '<button type="button" class="k-btn is-primary is-sm" data-ghl-fix>' + icon('check') + 'Corectează orele</button></div>' : '') +
       (any ? '<div class="st-int-row st-ghl-actions">' +
         (running ? '<button type="button" class="k-btn is-ghost is-sm" data-ghl-pause>Oprește</button>'
           : j && j.status === 'paused' ? '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="resume">' + icon('refresh') + 'Continuă importul</button><button type="button" class="k-btn is-ghost is-sm" data-ghl-go="new">De la capăt</button>'
@@ -815,6 +818,17 @@
         paintGhl(box, r); ghlLoop(box);
       } catch (err) { ghlFail(err); }
     })));
+    const fx = box.querySelector('[data-ghl-fix]');
+    if (fx) fx.addEventListener('click', () => K.busy(fx, async () => {
+      try {
+        const r = await K.api('/api/portal-ghl', { action: 'fix_times' });
+        const f = r.fix || {};
+        K.ui().toast(K.plural(f.fixed || 0, 'programare corectată', 'programări corectate') + (f.kept ? '; ' + K.plural(f.kept, 'mutată de mână, lăsată așa', 'mutate de mână, lăsate așa') : '') +
+          (f.left ? '; mai sunt ' + f.left + ', apasă din nou' : '') + '.', f.left ? 'info' : 'success');
+        paintGhl(box, r);
+        K.reload && K.reload();
+      } catch (err) { ghlFail(err); }
+    }));
     const pz = box.querySelector('[data-ghl-pause]');
     if (pz) pz.addEventListener('click', async () => { ghlRun = null; try { paintGhl(box, await K.api('/api/portal-ghl', { action: 'pause' })); } catch (err) { ghlFail(err); } });
     box.querySelectorAll('[data-ghl-off]').forEach((off) => off.addEventListener('click', async () => {
