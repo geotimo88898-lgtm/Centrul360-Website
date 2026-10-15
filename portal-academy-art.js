@@ -1,4 +1,7 @@
-// Traininguri → Cazuri: a drawing for each practice case, in the style of the "Cum funcționează" diagrams on the
+// Traininguri → Cazuri: a photo of the client for each of the twelve practice cases (academy-cases/<id>.webp: a
+// fictional woman of that age with that problem, made with the image generator, so marked "Ilustrativ"); the
+// plan and the aim under it once she has answered.
+// A case without a photo (one the owner adds) gets a drawing, in the style of the "Cum funcționează" diagrams on the
 // site (skin, fat and muscle in section; the face in profile; the hair follicles; the two cities). Still, no motion:
 // the case is read at her own pace. Two states, so the drawing never gives the answer away:
 //   before she answers: only the client's problem
@@ -190,8 +193,17 @@
     if (names.some((x) => x === 'Împachetare' || x === 'Radiofrecvență')) fx.push('heat');
     return [corp, { fx }, keys, aim];
   }
+  const PHOTOS = ['caz-abdomen-tm', 'caz-abdomen-ar', 'caz-riduri-50', 'caz-gusa', 'caz-acnee', 'caz-celulita-tm', 'caz-slaba', 'caz-sarcina', 'caz-pacemaker', 'caz-arad-ems', 'caz-epilare', 'caz-ten-tern'];
   function html(c, plan) {
     const [scene, o, keys, aim] = ART[c.id] || generic(c);
+    if (PHOTOS.includes(c.id)) {
+      const src = '/academy-cases/' + c.id + '.webp';
+      const legend = plan && ((keys && keys.length) || aim)
+        ? '<figcaption class="ta-key"><em class="ta-key-l">Planul</em>' + (keys || []).map(([t]) => '<span class="ta-chip">' + esc(t) + '</span>').join('') + (aim ? '<b>' + esc(aim) + '</b>' : '') + '</figcaption>'
+        : '';
+      return '<figure class="ta is-photo"><div class="ta-ph"><span class="ta-ph-bg" style="background-image:url(' + src + ')"></span>' +
+        '<img src="' + src + '" alt="' + esc(c.title || '') + '" width="800" height="993" decoding="async"></div><em class="ta-tag">Ilustrativ</em>' + legend + '</figure>';
+    }
     const legend = plan && ((keys && keys.length) || aim)
       ? '<figcaption class="ta-key">' + (keys || []).map(([t, col]) => '<span><i style="background:' + col + '"></i>' + esc(t) + '</span>').join('') +
         (aim ? '<b>' + esc(aim) + '</b>' : '') + '</figcaption>'
@@ -209,6 +221,12 @@ figure.ta .ta-key{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .
 figure.ta .ta-key span{ display:inline-flex; align-items:center; gap:.4rem; }
 figure.ta .ta-key i{ width:10px; height:10px; border-radius:50%; flex:none; box-shadow:0 0 0 2px rgba(255,255,255,.08); }
 figure.ta .ta-key b{ flex-basis:100%; font-weight:600; color:#ffe1cf; }
+figure.ta.is-photo .ta-ph{ position:relative; overflow:hidden; background:#0c0b12; }
+figure.ta.is-photo .ta-ph-bg{ position:absolute; inset:-24px; background:center / cover no-repeat; filter:blur(22px) brightness(.45) saturate(1.1); }
+figure.ta.is-photo img{ position:relative; display:block; margin:0 auto; width:auto; max-width:100%; height:auto; max-height:min(460px, 62vh); aspect-ratio:800 / 993; object-fit:cover; }
+figure.ta.is-photo .ta-tag{ z-index:1; color:rgba(255,255,255,.75); background:rgba(0,0,0,.35); padding:.2rem .45rem; border-radius:6px; }
+figure.ta .ta-key-l{ font-style:normal; font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(233,230,225,.6); }
+figure.ta .ta-chip{ padding:.2rem .6rem; border-radius:999px; background:rgba(255,255,255,.1); font-weight:600; }
 `;
   document.head.appendChild(st);
 
