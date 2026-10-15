@@ -577,6 +577,55 @@
 .st-fb-status span{ font-size:.8rem; opacity:.85; }
 .st-fb-status.is-ok{ background:var(--good-soft); color:var(--good); }
 .st-fb-status.is-wait{ background:var(--glass); color:var(--muted); }
+/* Traininguri → Fișa consultației: the sheet page by page, the example in pen, the parts numbered */
+.tr-fisa{ display:flex; flex-direction:column; gap:1rem; container:fisa / inline-size; }
+.tr-fs-flow{ display:flex; align-items:center; gap:.35rem; overflow-x:auto; scrollbar-width:none; padding:.1rem 0 .2rem; }
+.tr-fs-flow::-webkit-scrollbar{ display:none; }
+.tr-fs-tab{ flex:none; display:flex; align-items:center; gap:.5rem; padding:.45rem .75rem .45rem .45rem; border-radius:12px; border:1px solid var(--line); background:var(--surface, var(--glass)); color:inherit; font:inherit; cursor:pointer; text-align:left; }
+.tr-fs-tab b{ display:grid; place-items:center; width:26px; height:26px; border-radius:8px; background:var(--glass); font-size:.85rem; }
+.tr-fs-tab span{ display:flex; flex-direction:column; font-size:.82rem; font-weight:600; line-height:1.2; white-space:nowrap; }
+.tr-fs-tab em{ font-style:normal; font-size:.72rem; font-weight:700; color:var(--accent); }
+.tr-fs-tab.is-on{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+.tr-fs-tab.is-on b{ background:var(--accent); color:#fff; }
+.tr-fs-arrow{ flex:none; color:var(--muted); font-size:1.1rem; }
+.tr-fs-body{ display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1fr); gap:1.25rem; align-items:start; }
+@container fisa (max-width:820px){ .tr-fs-body{ grid-template-columns:1fr; } }
+.tr-fs-page{ display:flex; flex-direction:column; gap:.5rem; }
+.tr-sheet{ position:relative; container-type:inline-size; width:100%; aspect-ratio:595 / 842; background:#fff center / 100% 100% no-repeat; border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,.08), 0 10px 30px -12px rgba(0,0,0,.25); border:1px solid var(--line); overflow:hidden; }
+.tr-ink{ position:absolute; font-family:Caveat, 'Segoe Print', 'Bradley Hand', cursive; font-weight:500; font-size:2.35cqw; line-height:1; color:#1f4fd1; white-space:nowrap; pointer-events:none; transition:opacity .2s; }
+.tr-ink.is-big{ font-size:2.9cqw; font-weight:700; }
+.tr-ink.is-sig{ font-size:3cqw; font-weight:700; transform:rotate(-4deg); transform-origin:left center; }
+.tr-ink.is-tick{ font-size:2.6cqw; font-weight:700; }
+.tr-sheet.no-ink .tr-ink{ opacity:0; }
+.tr-hl{ position:absolute; border-radius:1.4cqw; border:2px solid transparent; background:transparent; pointer-events:none; transition:background .2s, border-color .2s; }
+.tr-hl.is-on{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, transparent); }
+.tr-mark{ position:absolute; left:.6%; transform:translateX(-10%); width:max(20px, 4.4cqw); height:max(20px, 4.4cqw); border-radius:50%; border:2px solid #fff; background:var(--accent); color:#fff; font:700 max(11px, 2.3cqw)/1 Inter, system-ui, sans-serif; display:grid; place-items:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.25); padding:0; }
+.tr-mark.is-on{ background:#111; transform:translateX(-10%) scale(1.12); }
+.tr-sheet.is-big{ min-width:760px; }
+.tr-sheet.is-big .tr-mark{ display:none; }
+.tr-fs-zoom{ overflow-x:auto; }
+.tr-fs-tools{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; flex-wrap:wrap; }
+.tr-fs-ink{ display:inline-flex; align-items:center; gap:.45rem; font-size:.84rem; cursor:pointer; }
+.tr-fs-ink input{ width:18px; height:18px; accent-color:var(--accent); }
+.tr-fs-notes{ display:flex; flex-direction:column; gap:.75rem; }
+.tr-fs-head small{ font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
+.tr-fs-head h4{ margin:.15rem 0 .35rem; font-size:1.1rem; }
+.tr-fs-head p{ margin:0; font-size:.9rem; line-height:1.5; color:var(--muted); }
+.tr-fs-notes ol{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.45rem; }
+.tr-fs-note{ width:100%; display:flex; gap:.7rem; align-items:flex-start; padding:.7rem .8rem; border-radius:12px; border:1px solid var(--line); background:var(--surface, transparent); color:inherit; font:inherit; text-align:left; cursor:pointer; transition:border-color .15s, background .15s; }
+.tr-fs-note:hover{ border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.tr-fs-note.is-on{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 7%, transparent); }
+.tr-fs-n{ flex:none; display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:.78rem; font-weight:700; }
+.tr-fs-note.is-on .tr-fs-n{ background:#111; }
+:root[data-theme="dark"] .tr-fs-note.is-on .tr-fs-n, :root[data-theme="dark"] .tr-fs-tab.is-on b{ color:#fff; }
+.tr-fs-note > span:last-child{ display:flex; flex-direction:column; gap:.15rem; font-size:.88rem; line-height:1.5; }
+.tr-fs-note b{ font-size:.92rem; }
+.tr-fs-next{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.75rem .9rem; border-radius:12px; border:1px dashed var(--accent); background:transparent; color:var(--accent); font:inherit; font-weight:600; font-size:.88rem; text-align:left; cursor:pointer; }
+.tr-fs-next b{ font-size:1.2rem; }
+.tr-fs-check{ padding:1rem 1.1rem; border-radius:14px; border:1px solid var(--line); background:var(--glass); }
+.tr-fs-check h4{ margin:0 0 .5rem; font-size:.98rem; }
+.tr-fs-check ul{ margin:0 0 .8rem; padding-left:1.1rem; display:flex; flex-direction:column; gap:.3rem; font-size:.88rem; line-height:1.5; }
+.tr-fs-files{ display:flex; gap:.5rem; flex-wrap:wrap; }
 /* Încasări → POS myPOS */
 .mo-pos .k-card-head{ margin-bottom:.8rem; }
 .mo-pos-sum{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.6rem; }

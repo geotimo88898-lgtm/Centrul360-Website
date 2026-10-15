@@ -14,7 +14,7 @@
   const K = window.K;
   const { esc, icon } = K;
 
-  const A = { tab: '', manual: '', schemeGroup: 'all', caseGroup: 'all', openDay: null, role: 'cosmetician', pick: {} };
+  const A = { tab: '', manual: '', schemeGroup: 'all', caseGroup: 'all', openDay: null, role: 'cosmetician', pick: {}, fisa: { page: 0, ink: true, on: -1 } };
   let panel;
 
   // ------------------------------------------------------------------ body → html
@@ -212,6 +212,7 @@
     if (subOf() === 'calc' && v.querySelector('[data-calc]')) { paintCalcResults(); return; } // keep what she's typing
     v.innerHTML = ({ drum: drumHtml, vanzari: () => areaHtml('vanzari'), tratamente: () => areaHtml('tratamente'), fise: printHtml, echipa: teamHtml })[A.tab]();
     if (subOf() === 'calc') paintCalcResults();
+    if (subOf() === 'fisa' && window.C360Fisa) window.C360Fisa.bind(v, A.fisa, render);
     if (isAdmin()) K.badge('traininguri', pendingTasks().length);
     else { const ps = pathStats(meId()); K.badge('traininguri', ps ? todayLeft(ps) : 0); }
   }
@@ -271,6 +272,8 @@
     });
     const visible = (D().schemes || []).length;
     if (area === 'vanzari' && role === 'cosmetician') {
+      // the consultation sheet, page by page, right after the Consultația manual
+      if (window.C360Fisa) cards.splice(cards.findIndex((c) => c.id === 'm:consultatie') + 1, 0, { id: 'fisa', title: 'Fișa consultației', icon: 'file', sub: '5 pagini, explicate pe fișă' });
       cards.push({ id: 'calc', title: 'Calculator ofertă', icon: 'percent', sub: 'Programul și cele 4 oferte' });
       cards.push({ id: 'cases', title: 'Cazuri', icon: 'users', sub: (D().cases || []).length + ' exerciții' });
     }
@@ -295,7 +298,7 @@
     const cards = areaCards(area, role);
     const pick = subOf();
     if (pick.indexOf('m:') === 0) A.manual = pick.slice(2);
-    const sub = pick.indexOf('m:') === 0 ? manualHtml(current()) : pick === 'calc' ? calcHtml() : pick === 'cases' ? casesHtml() : pick === 'schemes' ? schemesHtml() : pick === 'summary' ? summariesHtml() : pick === 'combos' ? combosHtml() : '';
+    const sub = pick.indexOf('m:') === 0 ? manualHtml(current()) : pick === 'fisa' ? window.C360Fisa.html(A.fisa) : pick === 'calc' ? calcHtml() : pick === 'cases' ? casesHtml() : pick === 'schemes' ? schemesHtml() : pick === 'summary' ? summariesHtml() : pick === 'combos' ? combosHtml() : '';
     return (isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], role) + '</div>' : '') +
       (cards.length ? '<div class="ac-manuals">' + cards.map((c) => '<button type="button" class="ac-mcard' + (c.id === pick ? ' is-on' : '') + '" data-sub="' + esc(c.id) + '"><span class="k-icon-chip is-accent">' + icon(c.icon) + '</span>' +
         '<div><b>' + esc(c.title) + '</b><span>' + esc(c.sub) + '</span></div></button>').join('') + '</div>' : '') +
