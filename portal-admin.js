@@ -788,6 +788,7 @@
       // the appointments the first import put 2–3 hours late (GHL's times have no zone)
       (d.timesToFix && !running ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>' + K.plural(d.timesToFix, 'programare importată are', 'programări importate au') + ' ora mutată cu 2–3 ore (ex. 9:00 apare la 12:00). Le pun la ora lor, fără import din nou.</span>' +
         '<button type="button" class="k-btn is-primary is-sm" data-ghl-fix>' + icon('check') + 'Corectează orele</button></div>' : '') +
+      (!d.timesToFix && !running && j && j.status === 'done' ? '<div class="st-int-row"><button type="button" class="k-btn is-ghost is-sm" data-ghl-fix>' + icon('refresh') + 'Verifică orele programărilor importate</button></div>' : '') +
       (any ? '<div class="st-int-row st-ghl-actions">' +
         (running ? '<button type="button" class="k-btn is-ghost is-sm" data-ghl-pause>Oprește</button>'
           : j && j.status === 'paused' ? '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="resume">' + icon('refresh') + 'Continuă importul</button><button type="button" class="k-btn is-ghost is-sm" data-ghl-go="new">De la capăt</button>'
@@ -824,7 +825,8 @@
         const r = await K.api('/api/portal-ghl', { action: 'fix_times' });
         const f = r.fix || {};
         K.ui().toast(K.plural(f.fixed || 0, 'programare corectată', 'programări corectate') + (f.kept ? '; ' + K.plural(f.kept, 'mutată de mână, lăsată așa', 'mutate de mână, lăsate așa') : '') +
-          (f.left ? '; mai sunt ' + f.left + ', apasă din nou' : '') + '.', f.left ? 'info' : 'success');
+          (f.left ? '; mai sunt ' + f.left + ', apasă din nou' : '') + '. Din HighLevel: ' + (f.total || 0) + ' programări' + (f.done ? ', ' + f.done + ' corectate deja' : '') +
+          (f.newer ? ', ' + f.newer + ' aduse după corectură' : '') + (f.noTime ? ', ' + f.noTime + ' fără oră' : '') + '.', f.left ? 'info' : 'success');
         paintGhl(box, r);
         K.reload && K.reload();
       } catch (err) { ghlFail(err); }

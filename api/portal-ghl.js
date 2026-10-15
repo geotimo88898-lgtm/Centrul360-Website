@@ -99,7 +99,15 @@ async function ghlEvent(conns, a) {
 async function fixTimes(conns) {
   const until = Date.now() + BUDGET;
   const appts = await readJSON('data/appointments.json', []);
-  const out = { fixed: 0, checked: 0, kept: 0, unknown: 0, left: 0 };
+  const out = { fixed: 0, checked: 0, kept: 0, unknown: 0, left: 0, total: 0, done: 0, newer: 0, noTime: 0 };
+  // what the clinic's appointments from HighLevel are, so a 0 says why
+  appts.forEach((a) => {
+    if (!a.ghlId) return;
+    out.total++;
+    if (a.tzFixed) out.done++;
+    else if (!a.date || !a.time) out.noTime++;
+    else if (!(Date.parse(a.importedAt || a.createdAt || 0) < TIME_FIX)) out.newer++;
+  });
   let changed = false;
   for (const a of appts) {
     if (!needsTimeFix(a)) continue;
