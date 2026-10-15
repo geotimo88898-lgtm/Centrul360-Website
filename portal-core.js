@@ -56,7 +56,7 @@
 
   async function load(quiet) {
     // Baseline revision first, so a save that lands while this loads still triggers a refresh.
-    if (rev === null) { try { rev = (await K.api('/api/portal-pulse')).rev; } catch (e) { /* first pulse sets it */ } }
+    if (rev === null) { try { const p = await K.api('/api/portal-pulse'); rev = p.rev; seeBuild(p.build); } catch (e) { /* first pulse sets it */ } }
     try {
       DATA = await K.api('/api/portal-data');
     } catch (e) {
@@ -168,6 +168,9 @@
   // screen loads again: the portal's data, the pipeline, the open page's own list (K.emit('pull') for the
   // pages that read elsewhere, e.g. Reclame from Meta).
   async function refreshAll() {
+    // a new version of the portal is out: the pull loads it (the whole page, not just the data)
+    try { const p = await K.api('/api/portal-pulse'); seeBuild(p.build); } catch (e) { /* the data still refreshes */ }
+    if (newCode(true)) return new Promise(() => {}); // the page is reloading
     const jobs = [load(true)];
     if (frontDesk()) jobs.push(K.leads(true).catch(() => {}));
     K.emit('remote');
@@ -227,6 +230,26 @@
     addEventListener('touchcancel', end, { passive: true });
   })();
 
+  // ------------------------------------------------------------------ a new version of the portal
+  // The portal is one page that stays open (a tab, the phone app in the background) and only its data
+  // refreshes; new code would wait for a full reload. Each deploy has its own id (the pulse says it): when it
+  // changes, the portal reloads itself at a moment that loses nothing: when it comes back to the screen, on
+  // pull to refresh, or after 10 minutes without a touch; never over an open drawer or text being typed.
+  let build = null, updateReady = false;
+  const openedAt = Date.now();
+  function seeBuild(b) {
+    if (!b) return;
+    if (build === null) build = b;
+    else if (b !== build) updateReady = true;
+  }
+  function newCode(now) {
+    if (!updateReady || busyEditing()) return false;
+    if (!now && Date.now() - Math.max(lastInput, openedAt) < 10 * 60e3) return false;
+    updateReady = false;
+    location.reload();
+    return true;
+  }
+  K.newCode = () => updateReady;
   function applyRemote() {
     if (busyEditing()) { pendingRemote = true; return; }
     pendingRemote = false;
@@ -246,13 +269,21 @@
     }
     try {
       const p = await K.api('/api/portal-pulse');
+      seeBuild(p.build);
+      if (newCode(false)) return;
       if (rev !== null && p.rev !== rev) applyRemote();
       else if (pendingRemote) applyRemote();
       rev = p.rev;
     } catch (e) { /* next tick */ }
   }
   setInterval(pulse, 5000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) pulse(); });
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden) return;
+    // back on screen (the phone app reopened, the tab picked again): a new version loads right away
+    if (DATA) { try { seeBuild((await K.api('/api/portal-pulse')).build); } catch (e) { /* the pulse below tries again */ } }
+    if (newCode(true)) return;
+    pulse();
+  });
 
   const frontDesk = () => !!DATA && (DATA.isAdmin || DATA.me.role === 'receptie');
   K.frontDesk = frontDesk;

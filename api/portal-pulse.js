@@ -1,7 +1,8 @@
 // GET /api/portal-pulse, the live-sync heartbeat. Returns the current data revision (bumped on
 // every save, see _lib/store.js); the portal polls it and refreshes only when it moves. It also
 // drives the automations (Admin → Automatizări), throttled inside tick(), and the reading of new
-// Facebook leads (_lib/fb-leads.js, at most once a minute).
+// Facebook leads (_lib/fb-leads.js, at most once a minute). And which version of the portal is live (the
+// deploy's commit), so a portal left open loads the new one by itself.
 
 const { readRev } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
@@ -20,5 +21,6 @@ module.exports = async (req, res) => {
   // and the clock for reading new leads from the Facebook forms (at most once a minute)
   await pollLeads();
   const r = await readRev();
-  res.status(200).json({ rev: r.rev, changed: r.changed });
+  const build = String(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_URL || '').slice(0, 40);
+  res.status(200).json({ rev: r.rev, changed: r.changed, build });
 };
