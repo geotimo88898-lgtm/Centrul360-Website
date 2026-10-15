@@ -318,7 +318,9 @@
     const a = it.a, st = STATUS[a.status] || STATUS.programata;
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
     const w = 100 / it.lanes;
-    return '<button type="button" class="cal-block is-' + a.status + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px)"' +
+    // as many lines for the name as the block's height holds (under the time row), so a long title shows whole
+    const lines = Math.max(1, Math.floor((h - 28) / 17));
+    return '<button type="button" class="cal-block is-' + a.status + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + a.clientName + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
       '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
       '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
