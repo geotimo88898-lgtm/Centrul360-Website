@@ -626,6 +626,20 @@
 .tr-fs-check h4{ margin:0 0 .5rem; font-size:.98rem; }
 .tr-fs-check ul{ margin:0 0 .8rem; padding-left:1.1rem; display:flex; flex-direction:column; gap:.3rem; font-size:.88rem; line-height:1.5; }
 .tr-fs-files{ display:flex; gap:.5rem; flex-wrap:wrap; }
+/* Consultația: the chapters and their tests, under the sheet */
+.tr-ctests{ margin-top:1rem; padding:1rem 1.1rem; border-radius:14px; border:1px solid var(--line); }
+.tr-ctests-h{ display:flex; align-items:center; gap:.4rem; margin-bottom:.4rem; }
+.tr-ctests-h h4{ margin:0; font-size:.98rem; }
+.tr-ctests-h .k-grow{ flex:1; }
+.tr-ctests ul{ list-style:none; margin:0; padding:0; }
+.tr-ctests li{ display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:.7rem; padding:.6rem 0; border-top:1px solid var(--line); }
+.tr-ctests li:first-child{ border-top:0; }
+.tr-ctests-t{ display:flex; flex-direction:column; gap:.25rem; min-width:0; }
+.tr-ctests-t b{ font-size:.9rem; }
+.tr-ctests-t > span{ display:flex; gap:.3rem; flex-wrap:wrap; }
+.tr-ctests-t > span:empty{ display:none; }
+.tr-ctests-a{ display:flex; gap:.3rem; flex-wrap:wrap; justify-content:flex-end; }
+@container panel (max-width:520px){ .tr-ctests li{ grid-template-columns:auto minmax(0,1fr); } .tr-ctests-a{ grid-column:2; justify-content:flex-start; } }
 /* Încasări → POS myPOS */
 .mo-pos .k-card-head{ margin-bottom:.8rem; }
 .mo-pos-sum{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.6rem; }

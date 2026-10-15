@@ -1,4 +1,4 @@
-// Traininguri → Vânzări → Fișa consultației: the "Program recomandat și ofertă" sheet, page by page, explained on
+// Traininguri → Vânzări → Consultația: the "Program recomandat și ofertă" sheet, page by page, explained on
 // the page itself, the way the owner's "Ghid de utilizare" explains it. Each page is the real sheet (academy-fisa/
 // p1-p5.webp, rendered from fise/program-recomandat-si-oferta.pdf) with the guide's worked example written in on it
 // in pen (the 9.600 lei abdomen program) and numbered marks on its parts; next to it, what each part is for and how

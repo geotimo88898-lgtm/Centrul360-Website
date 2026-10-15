@@ -212,7 +212,7 @@
     if (subOf() === 'calc' && v.querySelector('[data-calc]')) { paintCalcResults(); return; } // keep what she's typing
     v.innerHTML = ({ drum: drumHtml, vanzari: () => areaHtml('vanzari'), tratamente: () => areaHtml('tratamente'), fise: printHtml, echipa: teamHtml })[A.tab]();
     if (subOf() === 'calc') paintCalcResults();
-    if (subOf() === 'fisa' && window.C360Fisa) window.C360Fisa.bind(v, A.fisa, render);
+    if (subOf() === 'm:consultatie' && window.C360Fisa) window.C360Fisa.bind(v, A.fisa, render);
     if (isAdmin()) K.badge('traininguri', pendingTasks().length);
     else { const ps = pathStats(meId()); K.badge('traininguri', ps ? todayLeft(ps) : 0); }
   }
@@ -268,12 +268,11 @@
     const p = mine();
     const cards = manuals().filter((m) => (m.area || 'vanzari') === area && (m.roles || []).includes(role)).map((m) => {
       const r = m.chapters.filter((c) => p.read[cref(m, c)]).length;
+      if (m.id === 'consultatie' && window.C360Fisa) return { id: 'm:' + m.id, title: m.title, icon: 'file', sub: 'Fișa, pagină cu pagină' };
       return { id: 'm:' + m.id, title: m.title, icon: m.icon || 'book', sub: r ? r + ' din ' + m.chapters.length + ' citite' : m.chapters.length + ' capitole' };
     });
     const visible = (D().schemes || []).length;
     if (area === 'vanzari' && role === 'cosmetician') {
-      // the consultation sheet, page by page, right after the Consultația manual
-      if (window.C360Fisa) cards.splice(cards.findIndex((c) => c.id === 'm:consultatie') + 1, 0, { id: 'fisa', title: 'Fișa consultației', icon: 'file', sub: '5 pagini, explicate pe fișă' });
       cards.push({ id: 'calc', title: 'Calculator ofertă', icon: 'percent', sub: 'Programul și cele 4 oferte' });
       cards.push({ id: 'cases', title: 'Cazuri', icon: 'users', sub: (D().cases || []).length + ' exerciții' });
     }
@@ -298,11 +297,30 @@
     const cards = areaCards(area, role);
     const pick = subOf();
     if (pick.indexOf('m:') === 0) A.manual = pick.slice(2);
-    const sub = pick.indexOf('m:') === 0 ? manualHtml(current()) : pick === 'fisa' ? window.C360Fisa.html(A.fisa) : pick === 'calc' ? calcHtml() : pick === 'cases' ? casesHtml() : pick === 'schemes' ? schemesHtml() : pick === 'summary' ? summariesHtml() : pick === 'combos' ? combosHtml() : '';
+    const sub = pick === 'm:consultatie' && window.C360Fisa ? consultHtml(current()) : pick.indexOf('m:') === 0 ? manualHtml(current()) : pick === 'calc' ? calcHtml() : pick === 'cases' ? casesHtml() : pick === 'schemes' ? schemesHtml() : pick === 'summary' ? summariesHtml() : pick === 'combos' ? combosHtml() : '';
     return (isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], role) + '</div>' : '') +
       (cards.length ? '<div class="ac-manuals">' + cards.map((c) => '<button type="button" class="ac-mcard' + (c.id === pick ? ' is-on' : '') + '" data-sub="' + esc(c.id) + '"><span class="k-icon-chip is-accent">' + icon(c.icon) + '</span>' +
         '<div><b>' + esc(c.title) + '</b><span>' + esc(c.sub) + '</span></div></button>').join('') + '</div>' : '') +
       (sub || K.empty('book', 'Nimic aici încă', ''));
+  }
+
+  // ------------------------------------------------------------------ Consultația
+  // The consultation is the sheet, page by page (portal-academy-fisa.js). The manual's chapters stay under it
+  // as a short list: their tests, "Drumul meu" and everyone's progress hang on them.
+  function consultHtml(m) {
+    if (!m) return window.C360Fisa.html(A.fisa);
+    const p = mine();
+    return window.C360Fisa.html(A.fisa) +
+      '<section class="tr-ctests"><div class="tr-ctests-h"><h4>Capitolele și testele</h4><span class="k-grow"></span>' +
+        (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-edit>' + icon('pen') + 'Capitole</button>' : '') +
+        '<button type="button" class="k-btn is-ghost is-sm" data-pdf-all>' + icon('download') + 'PDF</button></div>' +
+      '<ul>' + m.chapters.map((c, i) => {
+        const ref = cref(m, c), q = p.quiz[ref], read = !!p.read[ref];
+        return '<li><span class="ac-num">' + num(i) + '</span><div class="tr-ctests-t"><b>' + esc(c.title) + '</b>' +
+          '<span>' + (read ? '<span class="k-tag is-good">' + icon('check') + 'Citit</span>' : '') + (q ? '<span class="k-tag ' + (q.best === q.total ? 'is-good' : 'is-warn') + '">Test ' + q.best + '/' + q.total + '</span>' : '') + '</span></div>' +
+          '<div class="tr-ctests-a"><button type="button" class="k-btn is-ghost is-sm" data-read="' + i + '">' + icon('book') + 'Citește</button>' +
+          ((c.quiz || []).length ? '<button type="button" class="k-btn is-outline is-sm" data-quiz="' + i + '">' + icon('listCheck') + (q ? 'Din nou' : 'Test') + '</button>' : '') + '</div></li>';
+      }).join('') + '</ul></section>';
   }
 
   // ------------------------------------------------------------------ a manual
