@@ -19,7 +19,6 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
 const { normalizePhone, ensureContacts } = require('./_lib/clients');
-const { sendPush } = require('./_lib/push');
 const { appCreds } = require('./_lib/facebook');
 
 module.exports.config = { api: { bodyParser: false } };
@@ -97,17 +96,7 @@ async function keepMedia(message, phoneNumberId) {
   return Object.assign(out, { path });
 }
 
-// who hears a client's message on the phone: the owner, and reception of the clinic she wrote to
-// (both receptions while the number isn't tied to a city)
-async function pushMessages(fresh) {
-  if (!fresh.length) return;
-  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  for (const m of fresh) {
-    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
-    const text = m.text.length > 140 ? m.text.slice(0, 139) + '…' : m.text;
-    await sendPush({ readJSON, writeJSON }, ids, { title: 'MESAJ 💬 - ' + m.name + (m.location ? ', ' + m.location : ''), body: (m.count > 1 ? m.count + ' mesaje: ' : '') + text, url: '/#mesaje', tag: 'msg-' + m.phone });
-  }
-}
+// A client's message rings no phone from the portal (the owner, 17.10): it arrives on the clinic's WhatsApp itself.
 
 // her name as the portal knows it: the client base first, then her newest lead (same phone)
 async function knownName(phone) {
@@ -391,7 +380,6 @@ module.exports = async (req, res) => {
 
     if (changed) await writeJSON(KEY, conversations);
     // before answering Meta: once the response is sent the function may be stopped
-    try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
     try { await alertUndelivered(failed); } catch (err) { console.error('webhook-whatsapp: undelivered alert failed', err.message); }
   } catch (err) {
     console.error('webhook-whatsapp: error handling payload', err.message);
