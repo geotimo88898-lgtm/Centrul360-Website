@@ -556,6 +556,29 @@
     });
   }
 
+  // "Clienta" in an appointment: what her sheet says, in short, and the button to the whole sheet (it opens over
+  // the Calendar, and closing it leaves you there)
+  async function clientCard(box, a) {
+    let j;
+    try { j = await K.api('/api/portal-contacts', { action: 'get', id: a.clientId }); }
+    catch (e) { box.remove(); return; }
+    if (!box.isConnected) return;
+    const c = j.contact || {}, appts = j.appointments || [], pays = j.payments || [];
+    const notes = ((j.detail && j.detail.notes) || []).slice(0, 2);
+    const done = appts.filter((x) => x.status === 'finalizata');
+    const last = done.map((x) => x.date).filter((x) => x < K.today()).sort().pop();
+    const paid = pays.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const photos = c.photosCount || 0;
+    box.innerHTML = '<h4>' + icon('user') + 'Clienta</h4>' +
+      '<div class="cal-client-top"><div><b>' + esc(c.name || a.clientName) + '</b><span>' + esc([c.phone, c.email].filter(Boolean).join(' · ')) + '</span></div>' +
+        ((c.tags || []).length ? '<div class="cal-client-tags">' + c.tags.slice(0, 4).map((t) => '<span class="k-tag">' + esc(t) + '</span>').join('') + '</div>' : '') + '</div>' +
+      '<div class="cal-client-stats"><span><b>' + appts.length + '</b>' + (appts.length === 1 ? 'programare' : 'programări') + '</span>' +
+        '<span><b>' + (last ? esc(K.dateShort(last)) : '-') + '</b>ultima vizită</span>' +
+        '<span><b>' + K.lei(paid) + '</b>plătit</span>' + (photos ? '<span><b>' + photos + '</b>' + (photos === 1 ? 'poză' : 'poze') + '</span>' : '') + '</div>' +
+      (notes.length ? '<div class="cal-client-notes">' + notes.map((n) => '<p>' + esc(String(n.text || '').slice(0, 160)) + (String(n.text || '').length > 160 ? '…' : '') + '<small>' + esc(n.author || '') + (n.at ? ' · ' + esc(K.ago(n.at)) : '') + '</small></p>').join('') + '</div>' : '') +
+      '<button type="button" class="k-btn is-outline cal-client-open" data-open-client>' + icon('user') + 'Deschide fișa clientei' + icon('arrow') + '</button>';
+    box.querySelector('[data-open-client]').addEventListener('click', () => K.emit('contacts:open', { id: a.clientId, tab: 'fise' }));
+  }
   function openAppt(id) {
     const a = S.appts.find((x) => x.id === id);
     if (!a) return;
@@ -603,16 +626,16 @@
         (a.clientPhone ? '<div class="cal-contact">' +
           '<a class="k-btn is-outline" href="' + K.tel(a.clientPhone) + '">' + icon('phone') + 'Sună</a>' +
           '<a class="k-btn is-outline cal-wa" target="_blank" rel="noopener" href="' + K.wa(a.clientPhone, waText(a, a.date === K.today() ? 'reminder' : 'confirm')) + '">' + icon('chat') + (a.date === K.today() ? 'Reminder WhatsApp' : 'Confirmare WhatsApp') + '</a></div>' : '') +
+        (a.clientId ? '<section class="k-section cal-client" data-client><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:72px"></div></section>' : '') +
         '<section class="k-section"><h4>' + icon('pen') + 'Detalii</h4>' + formHtml(a, false) + '</section>' +
         '<div class="k-muted">' + esc(a.clientPhone || 'Fără telefon salvat') + (a.cosmeticianName ? ' · cu ' + esc(a.cosmeticianName) : '') + '</div>',
       footer: '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button><span class="k-grow"></span>' +
-        (a.clientId ? '<button type="button" class="k-icon-btn" data-contact title="Fișa clientei și pozele">' + icon('user') + '</button>' : '') +
         (a.paidSaleId ? '' : '<button type="button" class="k-btn is-outline" data-pay>' + icon('wallet') + 'Încasează</button>') + '<button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
         wireForm(el, f);
-        const ct = el.querySelector('[data-contact]');
-        if (ct) ct.addEventListener('click', () => { d.close(); K.go('contacte'); setTimeout(() => K.emit('contacts:open', a.clientId), 250); });
+        const cl = el.querySelector('[data-client]');
+        if (cl) clientCard(cl, a);
         el.querySelectorAll('[data-status]').forEach((b) => b.addEventListener('click', async () => {
           const before = a.status;
           if (before === b.dataset.status) return;

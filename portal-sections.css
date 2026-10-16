@@ -260,6 +260,19 @@
 .cal-status button.is-on.is-bad{ background:var(--bad); }
 .cal-status button.is-on.is-mute{ background:var(--fg); color:var(--ink); }
 .cal-contact{ display:grid; grid-template-columns:1fr 1.6fr; gap:.5rem; }
+/* the appointment's client, in short */
+.cal-client-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+.cal-client-top > div:first-child{ display:flex; flex-direction:column; min-width:0; }
+.cal-client-top b{ font-size:.95rem; }
+.cal-client-top span{ font-size:.82rem; color:var(--muted); overflow-wrap:anywhere; }
+.cal-client-tags{ display:flex; gap:.25rem; flex-wrap:wrap; }
+.cal-client-stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(90px, 1fr)); gap:.4rem; margin:.7rem 0 .2rem; }
+.cal-client-stats span{ display:flex; flex-direction:column; padding:.5rem .6rem; border-radius:10px; background:var(--glass); border:1px solid var(--line); font-size:.74rem; color:var(--muted); }
+.cal-client-stats b{ font-size:.95rem; color:var(--fg); font-variant-numeric:tabular-nums; }
+.cal-client-notes{ display:flex; flex-direction:column; gap:.35rem; margin-top:.5rem; }
+.cal-client-notes p{ margin:0; padding:.5rem .65rem; border-radius:10px; background:var(--paper-2, var(--glass)); border:1px solid var(--line); font-size:.84rem; line-height:1.45; white-space:pre-wrap; }
+.cal-client-notes small{ display:block; margin-top:.2rem; font-size:.72rem; color:var(--muted); }
+.cal-client-open{ width:100%; justify-content:center; margin-top:.6rem; }
 .cal-wa:hover{ background:#25d366 !important; color:#fff; box-shadow:none; }
 .cal-month{ min-width:280px; padding:.6rem; }
 .cal-month-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:.4rem; }

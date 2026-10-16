@@ -820,7 +820,8 @@
   }
 
   K.section('contacte', { mount, show() { load(); } });
-  K.on('contacts:open', (id) => { if (id) openContact(id, 'poze'); });
+  // from elsewhere (Calendar, Încasări …): an id (her photos) or { id, tab }
+  K.on('contacts:open', (x) => { const id = x && x.id ? x.id : x; if (id) openContact(id, (x && x.tab) || 'poze'); });
   // from a conversation (Mesaje): her profile, found by her phone
   K.on('contacts:open-phone', async (phone) => {
     const digits = String(phone || '').replace(/\D/g, '').slice(-9);
