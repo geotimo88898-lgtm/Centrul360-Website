@@ -13,14 +13,19 @@
 //     ("Ore libere"), which needs no making up.
 // Missing time is taken from the bank first, what the bank can't cover goes to the debt.
 //
+// The owner can also set the hours to make up by hand (Condică → a person → De recuperat → Modifică):
+// from that moment the debt is the number she wrote, and everything decided after counts from there.
+//
 // Stored: data/time-adjust.json (the day differences), data/time-payouts.json (overtime paid with
-// the salary); leave requests stay in data/leave-requests.json. Balances are always recomputed.
+// the salary), data/time-corrections.json (the debt set by hand); leave requests stay in
+// data/leave-requests.json. Balances are always recomputed.
 
 const BASE_MINUTES = 480;
 const TOLERANCE = 15;
 const OVERTIME_LEI_PER_HOUR = 40;
 const ADJ = 'data/time-adjust.json';
 const PAYOUTS = 'data/time-payouts.json';
+const CORR = 'data/time-corrections.json';
 
 // Bucharest wall clock, whatever the server's timezone.
 function bucharestNow() {
@@ -95,7 +100,7 @@ async function syncAdjust(entry, store, ctx) {
 }
 
 // Both balances for one person, replaying every decision in the order it was taken.
-function ledger(employeeId, { adjustments, leaveRequests, payouts }) {
+function ledger(employeeId, { adjustments, leaveRequests, payouts, corrections }) {
   const events = [];
   (leaveRequests || []).forEach((r) => {
     if (r.employeeId !== employeeId || r.status !== 'approved') return;
@@ -106,11 +111,13 @@ function ledger(employeeId, { adjustments, leaveRequests, payouts }) {
     if (a.employeeId === employeeId && a.status === 'approved') events.push({ at: a.decidedAt, kind: 'adjust', minutes: Number(a.approvedMinutes) || 0, ref: a.id });
   });
   (payouts || []).forEach((p) => { if (p.employeeId === employeeId) events.push({ at: p.at, kind: 'paid', minutes: p.minutes, ref: p.id }); });
+  (corrections || []).forEach((c) => { if (c.employeeId === employeeId) events.push({ at: c.at, kind: 'setDebt', minutes: Math.max(0, Number(c.minutes) || 0), ref: c.id }); });
   events.sort((x, y) => String(x.at).localeCompare(String(y.at)));
   let debt = 0, bank = 0, recovered = 0, paid = 0, used = 0;
   const effects = {};
   events.forEach((e) => {
     if (e.kind === 'debt') debt += e.minutes;
+    else if (e.kind === 'setDebt') debt = e.minutes;
     else if (e.kind === 'use') { const take = Math.min(bank, e.minutes); bank -= take; used += take; }
     else if (e.kind === 'paid') { const take = Math.min(bank, e.minutes); bank -= take; paid += take; }
     else if (e.minutes > 0) { const cover = Math.min(debt, e.minutes); debt -= cover; recovered += cover; bank += e.minutes - cover; effects[e.ref] = { covered: cover, toBank: e.minutes - cover }; }
@@ -127,11 +134,11 @@ function preview(bal, minutes) {
 }
 
 async function loadAll(readJSON) {
-  const [adjustments, leaveRequests, payouts] = await Promise.all([readJSON(ADJ, []), readJSON('data/leave-requests.json', []), readJSON(PAYOUTS, [])]);
-  return { adjustments, leaveRequests, payouts };
+  const [adjustments, leaveRequests, payouts, corrections] = await Promise.all([readJSON(ADJ, []), readJSON('data/leave-requests.json', []), readJSON(PAYOUTS, []), readJSON(CORR, [])]);
+  return { adjustments, leaveRequests, payouts, corrections };
 }
 
 module.exports = {
-  BASE_MINUTES, TOLERANCE, OVERTIME_LEI_PER_HOUR, ADJ, PAYOUTS,
+  BASE_MINUTES, TOLERANCE, OVERTIME_LEI_PER_HOUR, ADJ, PAYOUTS, CORR,
   bucharestNow, isWeekend, workedMinutes, weekdaysBetween, dayDiff, syncAdjust, ledger, preview, loadAll,
 };

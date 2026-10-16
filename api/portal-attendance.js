@@ -189,6 +189,26 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // the hours to make up, set by hand by the owner (from now on her debt is this number)
+    if (action === 'set_debt') {
+      if (!requireAdmin(req, res)) return;
+      const targetId = String(body.employeeId || '');
+      const employees = await readJSON('data/employees.json', []);
+      if (!employees.some((e) => e.id === targetId)) return fail(404, 'employee_not_found');
+      const m = Math.round(Number(body.minutes));
+      if (!Number.isFinite(m) || m < 0 || m > 1000 * 60) return fail(400, 'invalid_minutes');
+      const all = await TB.loadAll(readJSON);
+      const before = TB.ledger(targetId, all).debt;
+      const c = { id: crypto.randomUUID(), employeeId: targetId, minutes: m, before, note: String(body.note || '').trim().slice(0, 200), at: new Date().toISOString(), by: session.employeeId };
+      all.corrections.push(c);
+      await writeJSON(TB.CORR, all.corrections);
+      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'Orele de recuperat au fost corectate', text: 'Acum ai de recuperat ' + (m ? fmtMin(m) : '0') + '.' + (c.note ? ' ' + c.note : ''), go: 'condica' });
+      const bal = TB.ledger(targetId, all);
+      delete bal.effects;
+      res.status(200).json({ ok: true, correction: c, ...bal });
+      return;
+    }
+
     if (action === 'list') {
       let list = entries;
       if (!isAdmin) {

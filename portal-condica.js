@@ -83,7 +83,9 @@
     return '<section class="k-card cd-hours"><div class="k-card-head"><h3>' + icon('clock') + 'Orele ' + (isAdmin() ? 'ei' : 'mele') + esc(who) + '</h3>' +
         (!isAdmin() && t.bank > 0 ? '<button type="button" class="k-btn is-sm is-outline" data-use-overtime>' + icon('sun') + 'Folosește ore libere</button>' : '') + '</div>' +
       '<div class="k-grid c4 cd-hstats">' +
-        '<div class="k-stat' + (t.debt ? ' is-warn' : '') + '"><div class="k-stat-top">' + icon('refresh') + 'De recuperat</div><div class="k-stat-value">' + hoursText(t.debt) + '</div><div class="k-stat-sub">' + (t.debt ? 'Orele în plus de la program se scad de aici.' : 'Nimic de recuperat.') + '</div></div>' +
+        '<div class="k-stat' + (t.debt ? ' is-warn' : '') + '"><div class="k-stat-top">' + icon('refresh') + 'De recuperat' +
+          (isAdmin() && C.empFilter ? '<button type="button" class="k-btn is-ghost is-sm cd-setdebt" data-set-debt="' + esc(C.empFilter) + '">' + icon('pen') + 'Modifică</button>' : '') + '</div>' +
+          '<div class="k-stat-value">' + hoursText(t.debt) + '</div><div class="k-stat-sub">' + (t.debt ? 'Orele în plus de la program se scad de aici.' : 'Nimic de recuperat.') + '</div></div>' +
         '<div class="k-stat' + (t.bank ? ' is-good' : '') + '"><div class="k-stat-top">' + icon('trend') + 'Ore suplimentare</div><div class="k-stat-value">' + hoursText(t.bank) + '</div><div class="k-stat-sub">' + (t.bank ? K.lei(t.bankLei) + ', se plătesc cu salariul (' + t.rate + ' lei/oră)' : t.rate + ' lei/oră, cu salariul') + '</div></div>' +
         '<div class="k-stat' + (t.pendingCount ? ' is-info' : '') + '"><div class="k-stat-top">' + icon('clock') + 'La aprobare</div><div class="k-stat-value">' + (t.pendingCount ? fmt(t.pendingMinutes, true) : '0') + '</div><div class="k-stat-sub">' + (t.pendingCount ? K.plural(t.pendingCount, 'zi', 'zile') + ' peste / sub program' : 'nimic în așteptare') + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Zile de concediu</div><div class="k-stat-value">' + b.daysLeft + '</div><div class="k-stat-sub">din ' + b.annualLeaveDays + ', ' + b.daysUsed + ' folosite anul acesta</div></div>' +
@@ -95,6 +97,32 @@
       '<p class="cd-rule">' + icon('info') + 'Program: luni-vineri, 8 ore (cu pauza). De la ' + t.tolerance + ' minute în plus sau în minus, ziua merge la aprobare. Sâmbăta, tot timpul e oră suplimentară.</p>' +
       (isAdmin() && C.empFilter && t.bank > 0 ? '<div class="cd-payout"><span>' + icon('wallet') + 'De plătit cu salariul: <b>' + fmt(t.bank) + ' = ' + K.lei(t.bankLei) + '</b></span><button type="button" class="k-btn is-good" data-payout="' + esc(C.empFilter) + '">' + icon('check') + 'Plătite cu salariul</button></div>' : '') +
       '</section>';
+  }
+
+  // "2", "2,5", "2h 30", "2:30", "90 min" → minutes (null when it isn't a duration)
+  function parseHours(txt) {
+    const v = String(txt || '').trim().toLowerCase().replace(',', '.');
+    if (!v) return null;
+    let m;
+    if ((m = /^(\d+):(\d{1,2})$/.exec(v))) return Number(m[1]) * 60 + Number(m[2]);
+    if ((m = /^(\d+(?:\.\d+)?)\s*(?:h|ore|ora|oră)?\s*(?:(\d{1,2})\s*(?:m|min)?)?$/.exec(v)) && !/^\d+\s*min$/.test(v)) return Math.round(Number(m[1]) * 60) + Number(m[2] || 0);
+    if ((m = /^(\d+)\s*min$/.exec(v))) return Number(m[1]);
+    return null;
+  }
+  // the owner sets her hours to make up by hand; what's decided after counts from this number
+  async function setDebt(empId) {
+    const cur = C.tb && C.tb.debt || 0;
+    const h = Math.floor(cur / 60), r = cur % 60;
+    const txt = await K.ui().prompt({ title: 'Ore de recuperat, ' + empName(empId), message: 'Câte ore are de recuperat de acum încolo. Orele în plus aprobate de acum se scad din numărul acesta. Ea primește o notificare.',
+      label: 'Ore (ex. 3, 2,5 sau 2h 30)', value: cur ? (h + (r ? 'h ' + r : '')) : '0', confirmText: 'Salvează' });
+    if (txt == null) return;
+    const min = parseHours(txt);
+    if (min == null || min > 1000 * 60) { K.ui().toast('Scrie orele, de ex. 3, 2,5 sau 2h 30.', 'error'); return; }
+    try {
+      await K.api('/api/portal-attendance', { action: 'set_debt', employeeId: empId, minutes: min });
+      K.ui().toast(empName(empId) + ': de recuperat ' + (min ? hoursText(min) : '0') + '.', 'success');
+      load();
+    } catch (err) { K.ui().toast(K.errText(err), 'error'); }
   }
 
   function minutes(hhmm) { const m = /^(\d{2}):(\d{2})$/.exec(hhmm || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; }
@@ -386,6 +414,8 @@
     if (t.closest('[data-admin-new-leave]')) return adminNewLeaveDrawer();
     const po = t.closest('[data-payout]');
     if (po) return payout(po.dataset.payout);
+    const sd = t.closest('[data-set-debt]');
+    if (sd) return setDebt(sd.dataset.setDebt);
     const pick = t.closest('[data-pick-emp]');
     if (pick) { C.empFilter = pick.dataset.pickEmp; return load(); }
     const row = t.closest('[data-edit-att]');

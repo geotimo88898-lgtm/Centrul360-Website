@@ -1831,3 +1831,5 @@ main.ad-full{ max-width:none; }
 
 .st-ghl-sync{ flex-wrap:wrap; gap:.5rem; align-items:center; }
 .st-ghl-sync input[type=date]{ width:auto; }
+
+.cd-setdebt{ margin-left:auto; padding:.1rem .45rem; font-size:.72rem; }
