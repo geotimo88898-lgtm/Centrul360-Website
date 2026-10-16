@@ -500,7 +500,28 @@ function condHit(s, ctx) {
 }
 
 // One template to one phone, from a number: { sent, why, city }. wa = { tpls, cfg } (read once per tick).
-async function sendTemplate(wa, templateId, from, phone, v) {
+// A message sent to a client by the automations also goes in her WhatsApp chat (Mesaje), marked "automat": the team
+// sees what she got, and Panou → KPI counts who read it and who answered. Never throws.
+async function logSent(tpl, phone, city, id, v) {
+  try {
+    const { normalizePhone } = require('./clients');
+    const p = normalizePhone(phone) || String(phone || '');
+    if (!p) return;
+    const KEY = 'data/whatsapp-conversations.json';
+    const conversations = await readJSON(KEY, []);
+    let convo = conversations.find((c) => c.phone === p);
+    if (!convo) { convo = { phone: p, clientName: v.nume || p, location: city, lastMessageAt: nowISO(), unreadCount: 0, messages: [] }; conversations.push(convo); }
+    if (!convo.location) convo.location = city;
+    if (convo.messages.some((m) => m.id === id)) return;
+    const text = WT.friendly(tpl).replace(/\{(\w+)\}/g, (m, k) => v[k] || '-');
+    convo.messages.push({ id: id || uid(), direction: 'out', type: 'template', templateId: tpl.id, text: [tpl.header, text, tpl.footer].filter(Boolean).join('\n'),
+      status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true });
+    convo.lastMessageAt = nowISO();
+    await writeJSON(KEY, conversations);
+  } catch (err) { console.error('workflows.logSent error:', err.message); }
+}
+
+async function sendTemplate(wa, templateId, from, phone, v, opts) {
   const tpl = (wa.tpls || []).find((t) => t.id === templateId);
   if (!tpl) return { why: 'șablonul WhatsApp nu mai există' };
   if (!phone) return { why: 'fără telefon' };
@@ -510,6 +531,7 @@ async function sendTemplate(wa, templateId, from, phone, v) {
   const n = wa.cfg.numbers[city];
   if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city };
   const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl), headerLocation: tpl.headerType === 'LOCATION' });
+  if (r.sent && !(opts && opts.nolog)) await logSent(tpl, phone, r.fromCity || city, r.id, v);
   return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
 }
 const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';
@@ -575,7 +597,7 @@ async function notifyTeam(s, v, ctx, wa) {
     for (const id of ids) {
       const phone = id === 'admin' ? admin.phone : (employees.find((e) => e.id === id) || {}).phone;
       if (!phone) continue;
-      const r = await sendTemplate(wa || {}, s.templateId, s.from === 'auto' ? cityOf(ctx) : s.from, phone, v);
+      const r = await sendTemplate(wa || {}, s.templateId, s.from === 'auto' ? cityOf(ctx) : s.from, phone, v, { nolog: true }); // to the team, not a client
       if (r.sent) waSent++;
     }
   }

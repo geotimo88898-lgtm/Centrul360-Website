@@ -543,7 +543,20 @@
       '<div class="of-flow">' + ['Site public', 'Recepție & încasări', 'Comision', 'Creative · reclame'].map((x, i) => '<span>' + icon(['globe', 'wallet', 'percent', 'sparkles'][i] || 'tag') + x + '</span>').join(icon('arrow')) + '</div>' +
       '<div data-kpi></div><div data-body><div class="k-skel" style="height:260px"></div></div>';
     opanel.addEventListener('click', onOfferClick);
-    opanel.addEventListener('click', (e) => { const p = e.target.closest('[data-kpi-period]'); if (p) { KPI.period = p.dataset.kpiPeriod; loadKpi(true); } });
+    opanel.addEventListener('click', (e) => {
+      const p = e.target.closest('[data-kpi-period]');
+      if (!p) return;
+      KPI.period = p.dataset.kpiPeriod;
+      if (KPI.period === 'custom' && !(KPI.since && KPI.until)) { paintKpi(); const i = opanel.querySelector('[data-kpi-range] input'); if (i) i.focus(); return; }
+      loadKpi(true);
+    });
+    opanel.addEventListener('submit', (e) => {
+      const f = e.target.closest('[data-kpi-range]');
+      if (!f) return;
+      e.preventDefault();
+      KPI.since = f.since.value; KPI.until = f.until.value;
+      if (KPI.since && KPI.until) loadKpi(true);
+    });
     opanel.addEventListener('change', (e) => {
       const sw = e.target.closest('.of-toggles .k-switch input');
       if (!sw) return;
@@ -552,14 +565,16 @@
     });
   }
   // What each offer brought through the door: the payments of the clients its leads became (upsells included), the
-  // leads, the clients, and its share of the ad spend (/api/offers-kpi). Biggest first.
-  const KPI = { period: 'max', d: null };
-  const KPI_PERIODS = [['max', 'Tot timpul'], ['90d', '90 zile'], ['30d', '30 zile'], ['7d', '7 zile']];
+  // leads, the clients, and its share of the ad spend (/api/offers-kpi). Biggest first. From 16.10.2026, 22:05 on (what
+  // came before was brought over from HighLevel); "Alege" picks the days.
+  const KPI = { period: 'max', since: '', until: '', d: null };
+  const KPI_PERIODS = [['max', 'Tot timpul'], ['today', 'Azi'], ['7d', '7 zile'], ['30d', '30 zile'], ['custom', 'Alege']];
   async function loadKpi(force) {
     const box = opanel && opanel.querySelector('[data-kpi]');
     if (!box) return;
     if (!KPI.d || force) box.innerHTML = '<section class="k-card of-kpi"><div class="k-skel" style="height:180px"></div></section>';
-    try { KPI.d = await K.api('/api/offers-kpi?period=' + KPI.period); } catch (e) { box.innerHTML = ''; return; }
+    const q = KPI.period === 'custom' && KPI.since && KPI.until ? '&since=' + KPI.since + '&until=' + KPI.until : '';
+    try { KPI.d = await K.api('/api/offers-kpi?period=' + KPI.period + q); } catch (e) { box.innerHTML = ''; return; }
     paintKpi();
   }
   function paintKpi() {
@@ -571,8 +586,13 @@
     const roas = sp.ready && sp.total > 0 ? Math.round(((t.ads || 0) / sp.total) * 10) / 10 : null; // what the ads brought, per leu they cost
     const cell = (label, v, cls) => '<div class="of-kpi-c' + (cls ? ' ' + cls : '') + '" data-l="' + label + '">' + v + '</div>';
     const dash = '<span class="k-muted">-</span>';
-    box.innerHTML = '<section class="k-card of-kpi"><div class="of-kpi-h"><h3>' + icon('trend') + 'Bani aduși de fiecare ofertă</h3>' +
-        '<div class="k-chips">' + KPI_PERIODS.map(([k, l]) => '<button type="button" class="k-chip' + (KPI.period === k ? ' is-on' : '') + '" data-kpi-period="' + k + '">' + l + '</button>').join('') + '</div></div>' +
+    const rg = d.range || {};
+    box.innerHTML = '<section class="k-card of-kpi"><div class="of-kpi-h"><h3>' + icon('trend') + 'Bani aduși de fiecare ofertă<small class="of-kpi-from">' +
+        esc(rg.since === rg.until ? K.dateLong(rg.since) : K.dateShort(rg.since) + ' → ' + K.dateShort(rg.until)) + ' · de la 16 oct</small></h3>' +
+        '<div class="of-kpi-per"><div class="k-chips">' + KPI_PERIODS.map(([k, l]) => '<button type="button" class="k-chip' + (KPI.period === k ? ' is-on' : '') + '" data-kpi-period="' + k + '">' + (k === 'custom' ? icon('calendar') : '') + l + '</button>').join('') + '</div>' +
+        (KPI.period === 'custom' ? '<form class="kp-range" data-kpi-range><label><span>De la</span><input type="date" name="since" value="' + esc(KPI.since || rg.since || '') + '" min="2026-10-16" required></label>' +
+          '<label><span>Până la</span><input type="date" name="until" value="' + esc(KPI.until || rg.until || '') + '" min="2026-10-16" required></label><button type="submit" class="k-btn is-sm is-accent">' + icon('check') + 'Arată</button></form>' : '') +
+        '</div></div>' +
       '<div class="of-kpi-sum">' +
         '<div><span>Încasat</span><b>' + K.lei(t.revenue) + '</b><small>din care upsell ' + K.lei(t.upsell) + '</small></div>' +
         '<div><span>Din reclame</span><b>' + K.lei(t.ads || 0) + '</b><small>' + (t.revenue ? Math.round(((t.ads || 0) / t.revenue) * 100) + '% din încasat' : 'Facebook') + '</small></div>' +

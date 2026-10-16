@@ -54,7 +54,21 @@
     K.everySecond(tick);
   }
 
+  // the owner's two pages of the Panou: the day (Azi) and every number of the clinic (KPI, portal-kpi.js)
+  let view = 'azi';
+  try { view = localStorage.getItem('c360.dash.view') === 'kpi' ? 'kpi' : 'azi'; } catch (e) { /* the day */ }
+  const viewsHtml = () => '<div class="db-views"><div class="k-seg">' + [['azi', 'sun', 'Azi'], ['kpi', 'trend', 'KPI']].map(([k, ic, l]) =>
+    '<button type="button" data-view="' + k + '" class="' + (view === k ? 'is-on' : '') + '">' + icon(ic) + l + '</button>').join('') + '</div></div>';
+
   function onClick(e) {
+    const v = e.target.closest('[data-view]');
+    if (v) {
+      view = v.dataset.view;
+      try { localStorage.setItem('c360.dash.view', view); } catch (err) { /* this visit only */ }
+      firstPaint = true;
+      render();
+      return;
+    }
     if (e.target.closest('[data-act="customize"]')) return customizeDash();
     const a = e.target.closest('[data-go]');
     if (a) { e.preventDefault(); K.go(a.dataset.go); if (a.dataset.then) setTimeout(() => K.emit(a.dataset.then, a.dataset.arg || null), 250); return; }
@@ -90,6 +104,13 @@
   function render() {
     if (!panel || !K.data) return;
     const D = K.data;
+    if (D.isAdmin && view === 'kpi' && window.C360Kpi) {
+      const root = panel.querySelector('.db-root');
+      let box = root.querySelector('[data-kpi-root]');
+      if (!box) { root.innerHTML = viewsHtml() + '<div data-kpi-root></div>'; box = root.querySelector('[data-kpi-root]'); }
+      window.C360Kpi.mount(box);
+      return;
+    }
     const me = D.me, first = String(me.name || '').split(' ')[0];
     const today = K.today();
     const inc = D.incasari || [];
@@ -249,7 +270,7 @@
     };
 
     const root = panel.querySelector('.db-root');
-    root.innerHTML =
+    root.innerHTML = (D.isAdmin && window.C360Kpi ? viewsHtml() : '') +
       // ---------------- hero
       '<section class="db-hero">' +
         '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +

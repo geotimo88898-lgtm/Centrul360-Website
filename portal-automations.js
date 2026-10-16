@@ -343,10 +343,23 @@
   const cityState = (t, cities) => cities.map((c) => (cities.length > 1 ? '<small class="au-msg-city">' + esc(c) + '</small>' : '') + window.C360Wa.tag((t.cities || {})[c] || 'DRAFT')).join('');
   const flowCities = (w, t) => { const l = String((w.trigger || {}).location || ''); return /arad/i.test(l) ? ['Arad'] : /timi/i.test(l) ? ['Timișoara'] : Object.keys(t.cities || {}).filter((c) => (t.cities || {})[c]); };
   const tplBtn = (t) => '<button type="button" class="k-btn is-ghost is-sm" data-tpl="' + esc(t.id) + '">' + icon('pen') + 'Mesajul</button>';
+  // how each message did, from 16.10 on (/api/kpi, part=messages; all the versions of a message together): sent,
+  // read, answered, booked within 7 days. The same numbers are in Panou → KPI.
+  let msgStats = null, msgStatsAt = 0;
+  const loadStats = () => (Date.now() - msgStatsAt < 30e3 && msgStats ? Promise.resolve(msgStats)
+    : K.api('/api/kpi?period=max&part=messages').then((j) => { msgStats = new Map(((j.messages || {}).rows || []).map((x) => [x.id, x])); msgStatsAt = Date.now(); return msgStats; }).catch(() => msgStats || new Map()));
+  const statHtml = (stats, ids) => {
+    const rows = ids.map((id) => stats.get(id)).filter(Boolean);
+    const sum = (k) => rows.reduce((n, x) => n + (x[k] || 0), 0);
+    const sent = sum('sent'), base = sent - sum('failed');
+    if (!sent) return '<span class="au-msg-stat is-none">încă netrimis</span>';
+    const p = (k) => (base ? Math.round((sum(k) / base) * 100) + '%' : '-');
+    return '<span class="au-msg-stat" title="de la 16 oct"><b>' + K.num(sent) + '</b> ' + (sent === 1 ? 'trimis' : 'trimise') + '<i></i>' + p('read') + ' citite<i></i><b>' + p('replied') + '</b> răspund<i></i>' + p('booked') + ' se programează</span>';
+  };
   async function paintMsgs() {
     const box = panel.querySelector('[data-msgs]'); if (!box || S.tab !== 'msgs') return;
-    let wa;
-    try { wa = await window.C360Wa.load(); } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.'); return; }
+    let wa, stats;
+    try { [wa, stats] = await Promise.all([window.C360Wa.load(), loadStats()]); } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.'); return; }
     if (!box.isConnected) return;
     const tpls = wa.templates || [];
     const byId = new Map(tpls.map((t) => [t.id, t]));
@@ -361,7 +374,7 @@
         (numbers ? '<button type="button" class="k-btn ' + (missing || stale ? 'is-primary' : 'is-ghost') + ' is-sm" data-leadmsg-go>' + icon(missing || stale ? 'plus' : 'refresh') + (missing ? (rows.length === missing ? 'Creează mesajele' : 'Creează ce lipsește') : stale ? 'Actualizează mesajele' : 'Verifică din nou') + '</button>' : '') + '</header>' +
         (numbers ? '' : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
         (rows.length ? rows.map((r) => '<div class="au-msg-row">' + (r.t ? '<label class="k-switch ad-sw" title="' + (r.on ? 'Pornit, apasă ca să-l oprești' : 'Oprit, apasă ca să-l pornești') + '"><input type="checkbox" data-leadsw="' + esc(r.t.id) + '" data-key="' + esc(r.o.key) + '"' + (r.on ? ' checked' : '') + '><i></i></label>' : '<span class="au-msg-gap"></span>') +
-          '<span class="au-msg-name"><b>' + esc(r.o.title) + '</b><small>' + esc(leadCities(r.o).join(' · ')) + '</small></span>' +
+          '<span class="au-msg-name"><b>' + esc(r.o.title) + '</b><small>' + esc(leadCities(r.o).join(' · ')) + '</small>' + (r.t ? statHtml(stats, [...new Set(r.mine.concat(r.goes, [r.t]).map((x) => x.id))]) : '') + '</span>' +
           '<span class="au-msg-tags">' + (r.t ? cityState(r.t, leadCities(r.o)) : '<span class="k-tag">Lipsește</span>') + '</span>' +
           (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
       '</section>' +
@@ -369,7 +382,7 @@
         (numbers ? '<button type="button" class="k-btn ' + (remTodo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(remTodo ? 'plus' : 'refresh') + (remTodo ? 'Creează reamintirile' : 'Verifică din nou') + '</button>' : '') + '</header>' +
         (reminders.length ? reminders.map((w) => '<div class="au-msg-flow"><div class="au-msg-fhead">' + flowSwitch(w) +
             '<button type="button" class="au-msg-fname" data-open="' + esc(w.id) + '" title="Deschide pe schemă"><b>' + esc(w.name) + '</b>' + icon('right') + '</button></div>' +
-            tplIds(w.steps).map((id) => { const t = byId.get(id); return '<div class="au-msg-row is-sub"><span class="au-msg-name"><b>' + esc(t ? t.label : 'Șablon șters') + '</b></span>' +
+            tplIds(w.steps).map((id) => { const t = byId.get(id); return '<div class="au-msg-row is-sub"><span class="au-msg-name"><b>' + esc(t ? t.label : 'Șablon șters') + '</b>' + (t ? statHtml(stats, [id]) : '') + '</span>' +
               '<span class="au-msg-tags">' + (t ? (flowCities(w, t).length ? cityState(t, flowCities(w, t)) : window.C360Wa.tag(t.status)) : '<span class="k-tag is-bad">Alege alt șablon pe schemă</span>') + '</span>' + (t ? tplBtn(t) : '') + '</div>'; }).join('') +
           '</div>').join('') : '<p class="k-muted au-msg-none">Nicio reamintire încă.</p>') +
       '</section></div>';

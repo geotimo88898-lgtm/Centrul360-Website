@@ -190,6 +190,12 @@
     },
     "api/daily-report.js": {
       "maxDuration": 60
+    },
+    "api/kpi.js": {
+      "maxDuration": 60
+    },
+    "api/offers-kpi.js": {
+      "maxDuration": 60
     }
   }
 }

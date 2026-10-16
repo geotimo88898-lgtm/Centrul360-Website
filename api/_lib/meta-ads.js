@@ -383,4 +383,29 @@ async function adSpend(conn, period, range) {
   return { rows: r.data.map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0 })) };
 }
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl, adSpend };
+// Every ad of a period for Panou → KPI: what Meta counted (spend, impressions, reach, link clicks, its own leads) with the
+// ad's name, campaign, status and picture (the deleted / archived ones too, without a picture), and the account's spend
+// day by day.
+async function adStats(conn, range) {
+  const when = { time_range: JSON.stringify({ since: range.since, until: range.until }) };
+  const every = JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: LIVE.concat(['ARCHIVED', 'DELETED']) }]);
+  const act = '/' + conn.adAccountId, tok = conn.userToken;
+  const [ins, ads, daily] = await Promise.all([
+    all(act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,ad_name,adset_name,campaign_id,campaign_name,' + RESULTS, limit: '500', filtering: every }, when), 20),
+    all(act + '/ads', tok, { fields: 'id,effective_status,creative{thumbnail_url,image_url}', limit: '200', effective_status: JSON.stringify(LIVE) }, 3),
+    all(act + '/insights', tok, Object.assign({ level: 'account', fields: 'spend', time_increment: '1', limit: '120' }, when), 2),
+  ]);
+  if (ins.error) return { error: ins.error };
+  const meta = new Map((ads.data || []).map((a) => [String(a.id), a]));
+  return {
+    rows: ins.data.map((x) => {
+      const a = meta.get(String(x.ad_id)) || {};
+      return { adId: String(x.ad_id || ''), adName: x.ad_name || '', adsetName: x.adset_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '',
+        spend: Number(x.spend) || 0, impressions: Number(x.impressions) || 0, reach: Number(x.reach) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x),
+        status: a.effective_status || 'ARCHIVED', thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '' };
+    }),
+    daily: (daily.data || []).map((d) => ({ day: d.date_start, spend: Number(d.spend) || 0 })),
+  };
+}
+
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl, adSpend, adStats };
