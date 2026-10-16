@@ -372,4 +372,15 @@ async function act(conn, a) {
 
 const adsManagerUrl = (actId, campaignId) => 'https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=' + String(actId).replace(/^act_/, '') + (campaignId ? '&selected_campaign_ids=' + campaignId : '');
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl };
+// What every ad spent in a period, deleted and archived ones too (Admin → Oferte: the spend of each offer):
+// [{ adId, adName, campaignId, campaignName, spend }]
+async function adSpend(conn, period, range) {
+  const when = range ? { time_range: JSON.stringify({ since: range.since, until: range.until }) } : { date_preset: PERIODS[period] || 'maximum' };
+  const every = LIVE.concat(['ARCHIVED', 'DELETED']);
+  const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, Object.assign({ level: 'ad', fields: 'ad_id,ad_name,campaign_id,campaign_name,spend', limit: '500',
+    filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: every }]) }, when), 20);
+  if (r.error) return { error: r.error };
+  return { rows: r.data.map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0 })) };
+}
+
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl, adSpend };

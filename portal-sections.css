@@ -689,6 +689,38 @@
 .mo-pos-bal-res{ display:flex; flex-direction:column; font-size:.78rem; color:var(--muted); }
 .mo-pos-bal-res b{ font-size:1rem; color:var(--fg); }
 .mo-pos-bal > .k-btn{ align-self:flex-start; }
+/* Admin → Oferte: what each offer brought */
+.of-kpi{ display:flex; flex-direction:column; gap:.9rem; padding:1.1rem; margin-bottom:1rem; }
+.of-kpi-h{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+.of-kpi-h h3{ display:flex; align-items:center; gap:.45rem; margin:0; font-size:1.02rem; }
+.of-kpi-h h3 svg{ width:18px; height:18px; color:var(--accent); }
+.of-kpi-sum{ display:grid; grid-template-columns:repeat(auto-fit, minmax(135px, 1fr)); gap:.6rem; }
+.of-kpi-sum > div{ display:flex; flex-direction:column; gap:.1rem; padding:.75rem .85rem; border:1px solid var(--line); border-radius:14px; }
+.of-kpi-sum > div.is-good{ border-color:color-mix(in srgb, var(--good) 45%, var(--line)); background:color-mix(in srgb, var(--good) 8%, transparent); }
+.of-kpi-sum span{ font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.of-kpi-sum b{ font-size:1.3rem; font-variant-numeric:tabular-nums; }
+.of-kpi-sum small{ font-size:.74rem; color:var(--muted); }
+.of-kpi-t{ display:flex; flex-direction:column; }
+.of-kpi-r{ display:grid; grid-template-columns:minmax(150px, 1.5fr) repeat(8, minmax(0, 1fr)); gap:.5rem; align-items:center; padding:.6rem .4rem; border-top:1px solid var(--line); font-size:.86rem; font-variant-numeric:tabular-nums; }
+.of-kpi-r > div:not(.of-kpi-name){ text-align:right; }
+.of-kpi-r.is-head > div:first-child{ text-align:left; }
+.of-kpi-r.is-head{ border-top:0; font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding-top:0; }
+.of-kpi-r.is-top{ background:color-mix(in srgb, var(--accent) 7%, transparent); border-radius:12px; }
+.of-kpi-r.is-other .of-kpi-name b{ color:var(--muted); font-weight:600; }
+.of-kpi-name{ display:flex; flex-direction:column; gap:.3rem; min-width:0; }
+.of-kpi-name b{ overflow-wrap:anywhere; }
+.of-kpi-name i{ display:block; height:4px; width:var(--w); min-width:2px; border-radius:4px; background:var(--accent); opacity:.7; }
+.of-kpi-c small{ color:var(--muted); font-size:.72rem; }
+.of-kpi-c.is-good{ color:var(--good); font-weight:700; }
+.of-kpi-note{ display:flex; align-items:center; gap:.4rem; margin:0; font-size:.8rem; }
+.of-kpi-note svg{ width:15px; height:15px; flex:0 0 auto; }
+@media (max-width:1100px){
+  .of-kpi-r.is-head{ display:none; }
+  .of-kpi-r{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.35rem .8rem; padding:.75rem .5rem; }
+  .of-kpi-name{ grid-column:1 / -1; }
+  .of-kpi-r > div:not(.of-kpi-name){ display:flex; justify-content:space-between; gap:.5rem; text-align:right; }
+  .of-kpi-r > div:not(.of-kpi-name)::before{ content:attr(data-l); color:var(--muted); font-size:.76rem; text-align:left; }
+}
 /* Încasări → POS myPOS: each POS of the period */
 .mo-pos-devs{ display:flex; flex-direction:column; gap:.45rem; margin:.1rem 0 .8rem; }
 .mo-pos-dev{ display:flex; align-items:center; gap:.7rem; padding:.6rem .75rem; border:1px solid var(--line); border-radius:14px; }

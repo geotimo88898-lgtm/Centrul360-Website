@@ -541,8 +541,9 @@
     opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Oferte</h2></div>' +
       '<div class="k-head-actions"><a class="k-btn is-outline" href="/oferte" target="_blank" rel="noopener">' + icon('eye') + 'Vezi pe site</a><button type="button" class="k-btn is-accent" data-new>' + icon('plus') + 'Ofertă nouă</button></div></div>' +
       '<div class="of-flow">' + ['Site public', 'Recepție & încasări', 'Comision', 'Creative · reclame'].map((x, i) => '<span>' + icon(['globe', 'wallet', 'percent', 'sparkles'][i] || 'tag') + x + '</span>').join(icon('arrow')) + '</div>' +
-      '<div data-body><div class="k-skel" style="height:260px"></div></div>';
+      '<div data-kpi></div><div data-body><div class="k-skel" style="height:260px"></div></div>';
     opanel.addEventListener('click', onOfferClick);
+    opanel.addEventListener('click', (e) => { const p = e.target.closest('[data-kpi-period]'); if (p) { KPI.period = p.dataset.kpiPeriod; loadKpi(true); } });
     opanel.addEventListener('change', (e) => {
       const sw = e.target.closest('.of-toggles .k-switch input');
       if (!sw) return;
@@ -550,7 +551,54 @@
       if (o) quickSave(o, { [sw.name]: sw.checked });
     });
   }
+  // What each offer brought through the door: the payments of the clients its leads became (upsells included), the
+  // leads, the clients, and its share of the ad spend (/api/offers-kpi). Biggest first.
+  const KPI = { period: 'max', d: null };
+  const KPI_PERIODS = [['max', 'Tot timpul'], ['90d', '90 zile'], ['30d', '30 zile'], ['7d', '7 zile']];
+  async function loadKpi(force) {
+    const box = opanel && opanel.querySelector('[data-kpi]');
+    if (!box) return;
+    if (!KPI.d || force) box.innerHTML = '<section class="k-card of-kpi"><div class="k-skel" style="height:180px"></div></section>';
+    try { KPI.d = await K.api('/api/offers-kpi?period=' + KPI.period); } catch (e) { box.innerHTML = ''; return; }
+    paintKpi();
+  }
+  function paintKpi() {
+    const box = opanel && opanel.querySelector('[data-kpi]');
+    const d = KPI.d;
+    if (!box || !d) return;
+    const t = d.totals, sp = d.spend || {};
+    const top = Math.max(1, ...d.rows.map((x) => x.revenue));
+    const roas = sp.ready && t.spend > 0 ? Math.round((t.revenue / t.spend) * 10) / 10 : null;
+    const cell = (label, v, cls) => '<div class="of-kpi-c' + (cls ? ' ' + cls : '') + '" data-l="' + label + '">' + v + '</div>';
+    const dash = '<span class="k-muted">-</span>';
+    box.innerHTML = '<section class="k-card of-kpi"><div class="of-kpi-h"><h3>' + icon('trend') + 'Bani aduși de fiecare ofertă</h3>' +
+        '<div class="k-chips">' + KPI_PERIODS.map(([k, l]) => '<button type="button" class="k-chip' + (KPI.period === k ? ' is-on' : '') + '" data-kpi-period="' + k + '">' + l + '</button>').join('') + '</div></div>' +
+      '<div class="of-kpi-sum">' +
+        '<div><span>Încasat</span><b>' + K.lei(t.revenue) + '</b><small>din care upsell ' + K.lei(t.upsell) + '</small></div>' +
+        '<div><span>Leaduri</span><b>' + K.num(t.leads) + '</b><small>' + K.plural(t.clients, 'client', 'clienți') + ' au plătit</small></div>' +
+        (sp.ready ? '<div><span>Reclame</span><b>' + K.lei(sp.total) + '</b><small>cheltuit în perioadă</small></div>' +
+          '<div class="' + (roas && roas >= 1 ? 'is-good' : '') + '"><span>La 1 leu în reclame</span><b>' + (roas != null ? K.num(roas) + ' lei' : '-') + '</b><small>încasați</small></div>' : '') +
+      '</div>' +
+      (d.rows.length ? '<div class="of-kpi-t"><div class="of-kpi-r is-head"><div>Ofertă</div><div>Încasat</div><div>Upsell</div><div>Leaduri</div><div>Clienți</div><div>Încasat / lead</div><div>Reclame</div><div>La 1 leu</div><div>Cost / lead</div></div>' +
+        d.rows.map((x, i) => '<div class="of-kpi-r' + (i === 0 && x.revenue > 0 ? ' is-top' : '') + (x.key.charAt(0) === '_' ? ' is-other' : '') + '">' +
+          '<div class="of-kpi-name"><b>' + esc(x.title) + '</b><i style="--w:' + Math.round((x.revenue / top) * 100) + '%"></i></div>' +
+          cell('Încasat', '<b>' + K.lei(x.revenue) + '</b>') +
+          cell('Upsell', x.upsell ? K.lei(x.upsell) + ' <small>' + K.plural(x.upsells, 'dată', 'ori') + '</small>' : dash) +
+          cell('Leaduri', K.num(x.leads)) + cell('Clienți', K.num(x.clients)) +
+          cell('Încasat / lead', x.perLead != null ? K.lei(x.perLead) : dash) +
+          cell('Reclame', sp.ready && x.spend ? K.lei(x.spend) : dash) +
+          cell('La 1 leu', x.roas != null ? K.num(x.roas) + ' lei' : dash, x.roas != null && x.roas >= 1 ? 'is-good' : '') +
+          cell('Cost / lead', x.cpl != null ? K.lei(x.cpl) : dash) + '</div>').join('') + '</div>'
+        : K.empty('trend', 'Nimic în perioada asta', '')) +
+      (!sp.ready ? '<p class="k-muted of-kpi-note">' + icon('info') + (sp.error ? 'Meta: ' + esc(sp.error) : 'Cheltuiala pe reclame apare după ce lipești tokenul pentru reclame (Integrări → Facebook).') + '</p>'
+        : sp.unassigned > 0 ? '<p class="k-muted of-kpi-note">' + icon('info') + K.lei(sp.unassigned) + ' din reclame nu s-au putut lega de o ofertă (reclame fără leaduri).</p>' : '') +
+      '</section>';
+  }
+  // live: a new payment, lead or booking anywhere redraws the numbers (at most every 15 s, only while Oferte is open)
+  let kpiAt = 0;
+  K.on('remote', () => { if (!opanel || !K.isActive('oferte') || Date.now() - kpiAt < 15e3) return; kpiAt = Date.now(); loadKpi(); });
   async function loadOffers() {
+    loadKpi();
     try { const j = await K.api('/api/portal-offers', { action: 'list' }); O.list = j.offers || []; O.images = j.images || []; renderOffers(); }
     catch (e) { opanel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca ofertele', '', '<button type="button" class="k-btn is-primary" data-reload>Reîncearcă</button>'); }
   }
