@@ -42,7 +42,8 @@
     const v = sample || (W.d && W.d.sample) || {};
     const fill = (s) => esc(String(s || '')).replace(/\{(\w+)\}/g, (m, k) => (k in v ? '<mark>' + esc(v[k]) + '</mark>' : '<mark class="is-bad">' + m + '</mark>')).replace(/\{\{(\d+)\}\}/g, '<mark class="is-bad">{{$1}}</mark>');
     return '<div class="wa-phone"><div class="wa-bubble">' +
-      (t.headerType === 'IMAGE' ? (t.image ? '<img class="wa-himg-pic" src="/api/portal-file?p=' + encodeURIComponent(t.image) + '" alt="" loading="lazy">' : '<span class="wa-himg">' + icon('image') + '</span>') : t.header ? '<b class="wa-h">' + esc(t.header) + '</b>' : '') +
+      (t.headerType === 'IMAGE' ? (t.image ? '<img class="wa-himg-pic" src="/api/portal-file?p=' + encodeURIComponent(t.image) + '" alt="" loading="lazy">' : '<span class="wa-himg">' + icon('image') + '</span>')
+        : t.headerType === 'LOCATION' ? '<span class="wa-hloc">' + icon('pin') + '<b>Centrul360</b><small>harta clinicii, după oraș</small></span>' : t.header ? '<b class="wa-h">' + esc(t.header) + '</b>' : '') +
       '<div class="wa-b">' + (fill(t.text || t.body) || '<span class="k-muted">Mesajul…</span>') + '</div>' +
       (t.footer ? '<small class="wa-f">' + esc(t.footer) + '</small>' : '') +
       '<span class="wa-time">11:02</span></div>' +
@@ -75,7 +76,7 @@
       ? '<div class="k-form wa-form">' +
           K.field('Numele șablonului', '<input data-tf="label" maxlength="80" placeholder="ex. Confirmare programare" value="' + esc(t.label) + '">', 'full', 'Pentru tine. Meta primește un nume fără diacritice, ex. confirmare_programare.') +
           K.field('Categoria', '<select data-tf="category">' + K.options(Object.keys(CAT).map((k) => [k, CAT[k]]), t.category) + '</select>', 'full', 'Utilitate: confirmări și remindere (se aprobă mai ușor, costă mai puțin). Marketing: orice ofertă sau invitație.') +
-          K.field('Antet', '<select data-tf="headerType">' + K.options([['', 'Text (sau fără)'], ['IMAGE', 'Imagine (se trimite cu fiecare mesaj)']], t.headerType || '') + '</select>', 'full') +
+          K.field('Antet', '<select data-tf="headerType">' + K.options([['', 'Text (sau fără)'], ['IMAGE', 'Imagine (se trimite cu fiecare mesaj)'], ['LOCATION', 'Locația clinicii (harta orașului de pe care pleacă)']], t.headerType || '') + '</select>', 'full') +
           (t.headerType === 'IMAGE'
             ? K.field('Poză exemplu pentru Meta', '<label class="k-btn is-outline is-sm wa-sample">' + icon('image') + (sample || t.hasSample ? 'Schimbă poza exemplu' : 'Alege o poză exemplu') + '<input type="file" accept="image/*" data-sample hidden></label>', 'full', 'Meta o vede doar la aprobare. La trimitere pleacă imaginea reală (ex. înainte / după).')
             : K.field('Text antet (opțional)', '<input data-tf="header" maxlength="60" placeholder="ex. Programarea ta la Centrul360" value="' + esc(t.header || '') + '">', 'full')) +

@@ -1375,6 +1375,11 @@ main.ad-full{ max-width:none; }
 .au-hfilters select{ height:36px; min-width:160px; width:auto; }
 .au-hsum{ margin:0 0 .6rem; font-size:.84rem; color:var(--muted); }
 .au-hsum b{ color:var(--fg); }
+/* a template's map pin in the preview */
+.wa-hloc{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.15rem; height:110px; margin:-.2rem -.2rem .45rem; border-radius:10px; background:linear-gradient(135deg, #dfeee0, #e8eef6); color:#304030; }
+.wa-hloc svg{ width:22px; height:22px; color:#d33; }
+.wa-hloc b{ font-size:.8rem; }
+.wa-hloc small{ font-size:.7rem; opacity:.75; }
 /* the template editor: the offers whose new leads get it */
 .wa-lead{ display:flex; flex-direction:column; gap:.35rem; margin-top:1rem; padding:.85rem; border:1px solid var(--line); border-radius:14px; }
 .wa-lead > b{ display:flex; align-items:center; gap:.4rem; font-size:.9rem; }

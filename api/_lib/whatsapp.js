@@ -74,9 +74,16 @@ function toE164(phone) {
   return d.length >= 10 ? d : '';
 }
 
+// The clinics on the map: a template with a location header shows the pin of the city it leaves from.
+// (Timișoara: the street, OpenStreetMap has no number 7; Arad: the building at 16-18.)
+const CLINICS = {
+  'Timișoara': { latitude: 45.7436, longitude: 21.2445, name: 'Centrul360 Timișoara', address: 'Strada Bucegi, nr. 7, Timișoara' },
+  Arad: { latitude: 46.1823977, longitude: 21.3303083, name: 'Centrul360 Arad', address: 'Strada Ioan Alexandru 16-18, Arad' },
+};
+
 // from: 'Timișoara' | 'Arad' (the number it leaves from); when that one isn't connected, the other
-// connected number sends it and the answer says so (fromCity).
-async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId, headerImagePath }) {
+// connected number sends it and the answer says so (fromCity). headerLocation: the pin of that city's clinic.
+async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId, headerImagePath, headerLocation }) {
   const cfg = await loadConfig();
   const ready = readyNumbers(cfg);
   if (!ready.length) return { sent: false, error: 'not_configured' };
@@ -95,6 +102,7 @@ async function sendWhatsApp({ phone, text, template, params, language, from, hea
   const body = template
     ? { messaging_product: 'whatsapp', to, type: 'template', template: { name: template, language: { code: language || 'ro' },
         components: [].concat(headerImageId ? [{ type: 'header', parameters: [{ type: 'image', image: { id: String(headerImageId) } }] }] : [],
+          headerLocation && CLINICS[city] ? [{ type: 'header', parameters: [{ type: 'location', location: CLINICS[city] }] }] : [],
           params && params.length ? [{ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p).slice(0, 1000) })) }] : []) } }
     : { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(text || '').slice(0, 4000) } };
   try {
@@ -212,4 +220,4 @@ async function fetchMedia(phoneNumberId, mediaId) {
   return { buf: Buffer.from(await f.arrayBuffer()), mime: String(mj.mime_type || f.headers.get('content-type') || '').split(';')[0] };
 }
 
-module.exports = { uploadMedia, resumableHandle, mediaExt, mediaKind, sendMedia, fetchMedia, CITIES, CONFIG_KEY, GRAPH, loadConfig, invalidate, webhookSecrets, readyNumbers, whatsappReady, whatsappConfigured, cityForPhoneId, sendWhatsApp, toE164 };
+module.exports = { uploadMedia, resumableHandle, mediaExt, mediaKind, sendMedia, fetchMedia, CITIES, CONFIG_KEY, GRAPH, loadConfig, invalidate, webhookSecrets, readyNumbers, whatsappReady, whatsappConfigured, cityForPhoneId, sendWhatsApp, toE164, CLINICS };

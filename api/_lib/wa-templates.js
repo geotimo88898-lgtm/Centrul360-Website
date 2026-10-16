@@ -91,8 +91,9 @@ function clean(input, prev) {
   if (!prev || editable(prev)) {
     t.category = CATEGORIES.includes(i.category) ? i.category : 'UTILITY';
     // the header: words, or a picture sent with each message (Meta reviews it with an example picture)
-    t.headerType = i.headerType === 'IMAGE' ? 'IMAGE' : '';
-    t.header = t.headerType === 'IMAGE' ? '' : clip(i.header, 60).trim();
+    // the header: words, a picture sent with each message, or the clinic's map pin (the city it leaves from)
+    t.headerType = i.headerType === 'IMAGE' || i.headerType === 'LOCATION' ? i.headerType : '';
+    t.header = t.headerType ? '' : clip(i.header, 60).trim();
     if (/[{}]/.test(t.header)) return { error: 'Antetul nu poate avea variabile.' };
     const text = clip(i.body, 1024).trim();
     if (!text) return { error: 'Scrie mesajul.' };
@@ -124,6 +125,7 @@ function clean(input, prev) {
 function components(t, handle) {
   const c = [];
   if (t.headerType === 'IMAGE') c.push({ type: 'HEADER', format: 'IMAGE', example: { header_handle: [handle || ''] } });
+  else if (t.headerType === 'LOCATION') c.push({ type: 'HEADER', format: 'LOCATION' });
   else if (t.header) c.push({ type: 'HEADER', format: 'TEXT', text: t.header });
   const body = { type: 'BODY', text: t.body };
   if ((t.map || []).length) body.example = { body_text: [t.map.map((k) => SAMPLE[k] || 'exemplu')] };

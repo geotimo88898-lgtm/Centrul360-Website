@@ -489,10 +489,10 @@ const COND_TEXT = {
   appt_confirmed: 'programarea e confirmată', future_appt: 'are deja o programare viitoare',
   package: 'e ședință din pachet', appt_done: 'tratamentul e finalizat', appt_cancelled: 'programarea e anulată',
 };
-const condText = (s) => ({ interest: 'procedura e ' + s.value, location: 'orașul e ' + s.value, source: 'sursa e ' + s.value, category: 'categoria e ' + (CATS[s.value] || s.value) })[s.cond] || COND_TEXT[s.cond] || s.cond;
+const condText = (s) => ({ interest: 'procedura e ' + String(s.value).split('|').join(' sau '), location: 'orașul e ' + s.value, source: 'sursa e ' + s.value, category: 'categoria e ' + (CATS[s.value] || s.value) })[s.cond] || COND_TEXT[s.cond] || s.cond;
 function condHit(s, ctx) {
   const a = ctx.appointment, l = ctx.lead;
-  if (s.cond === 'interest') return [l && l.interest, a && a.treatment].some((x) => x && fold(x).includes(fold(s.value)));
+  if (s.cond === 'interest') return String(s.value).split('|').map(fold).filter(Boolean).some((w) => [l && l.interest, a && a.treatment].some((x) => x && fold(x).includes(w)));
   if (s.cond === 'location') return ((a && a.location) || (l && l.location) || '') === s.value;
   if (s.cond === 'source') return !!(l && l.source === s.value);
   if (s.cond === 'category') return !!(a && (Array.isArray(a.categories) && a.categories.length ? a.categories : [a.category]).includes(s.value));
@@ -509,7 +509,7 @@ async function sendTemplate(wa, templateId, from, phone, v) {
   const city = ready.includes(from) ? from : ready[0];
   const n = wa.cfg.numbers[city];
   if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city };
-  const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl) });
+  const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl), headerLocation: tpl.headerType === 'LOCATION' });
   return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
 }
 const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';

@@ -227,7 +227,7 @@ module.exports = async (req, res) => {
       const cfg = await WA.loadConfig(true);
       const n = cfg.numbers[city];
       const mine = (doc.templates || []).find((t) => T.approvedFor(t, n.wabaId) && !(t.map || []).length);
-      const r = await WA.sendWhatsApp({ phone, from: city, template: mine ? ((mine.meta || {})[n.wabaId] || {}).name || mine.name : 'hello_world', language: mine ? mine.language || 'ro' : 'en_US', headerImagePath: mine ? T.imageOf(mine) : '' });
+      const r = await WA.sendWhatsApp({ phone, from: city, template: mine ? ((mine.meta || {})[n.wabaId] || {}).name || mine.name : 'hello_world', language: mine ? mine.language || 'ro' : 'en_US', headerImagePath: mine ? T.imageOf(mine) : '', headerLocation: !!mine && mine.headerType === 'LOCATION' });
       // a new account: nothing approved yet (ours go to Meta's review by themselves)
       if (!r.sent && !mine && /132001/.test(r.error)) { res.status(400).json({ error: 'send_failed', message: 'Niciun șablon aprobat încă pe numărul ăsta. Șabloanele sunt la Meta în aprobare (de obicei câteva minute până la câteva ore). Până atunci: scrie-i numărului de pe telefonul tău și răspunde din Mesaje.' }); return; }
       if (!r.sent) { res.status(400).json({ error: 'send_failed', message: 'Nu a plecat: ' + r.error }); return; }
