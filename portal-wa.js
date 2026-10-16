@@ -92,7 +92,7 @@
         '</div>');
     // which offers' new leads get it at once (no flow needed)
     const leadHtml = () => {
-      const offers = ((K.data && K.data.offers) || []).filter((x) => x.key && x.active !== false).sort((a, b) => (b.ads ? 1 : 0) - (a.ads ? 1 : 0));
+      const offers = [{ key: 'site', title: 'Lead de pe site' }].concat(((K.data && K.data.offers) || []).filter((x) => x.key && x.active !== false).sort((a, b) => (b.ads ? 1 : 0) - (a.ads ? 1 : 0)));
       if (!offers.length) return '';
       const on = new Set(t.leadOffers || []);
       return '<div class="wa-lead"><b>' + icon('userPlus') + 'Se trimite singur la lead nou</b><small>Pentru ofertele bifate, de pe numărul orașului clientei.</small><div class="wa-lead-list">' +
@@ -186,7 +186,7 @@
       (d.templates.length ? '<div class="ad-list">' + d.templates.filter((t) => L.showHidden || !t.hidden).map((t) => '<article class="k-card ad-camp wa-row"><div class="wa-row-in">' +
           '<button type="button" class="ad-title" data-tpl-open="' + esc(t.id) + '"><b>' + esc(t.label) + '</b><small>' + (t.category === 'MARKETING' ? 'Marketing' : 'Utilitate') + (t.name ? ' · ' + esc(t.name) : '') + (t.imported ? ' · din WhatsApp Manager' : '') + '</small></button>' +
           '<div class="wa-row-status">' + cityTags(t) + (t.reason ? '<small class="wa-row-reason">' + esc(t.reason) + '</small>' : '') + '</div>' +
-          '<div class="wa-row-used k-muted">' + ((t.leadOffers || []).length ? 'la lead nou · ' + esc(t.leadOffers.map((k) => (((K.data && K.data.offers) || []).find((x) => x.key === k) || {}).title || k).join(', ')) : t.usedIn.length ? 'în ' + K.plural(t.usedIn.length, 'automatizare', 'automatizări') : 'nefolosit') + '</div>' +
+          '<div class="wa-row-used k-muted">' + ((t.leadOffers || []).length ? 'la lead nou · ' + esc(t.leadOffers.map((k) => (k === 'site' ? 'de pe site' : (((K.data && K.data.offers) || []).find((x) => x.key === k) || {}).title || k)).join(', ')) : t.usedIn.length ? 'în ' + K.plural(t.usedIn.length, 'automatizare', 'automatizări') : 'nefolosit') + '</div>' +
           '<div class="ad-acts">' + (t.editable && d.ready ? '<button type="button" class="k-btn is-sm is-primary" data-tpl-send="' + esc(t.id) + '">' + icon('zap') + 'Trimite la aprobare</button>' : '') +
             '<button type="button" class="k-icon-btn" data-tpl-more="' + esc(t.id) + '" title="Mai mult">' + icon('more') + '</button></div>' +
         '</div></article>').join('') + '</div>'

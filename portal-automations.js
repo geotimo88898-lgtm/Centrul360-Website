@@ -183,7 +183,11 @@
   // Timișoara / Arad); when it changes, a new version goes to Meta and the offer moves to it ("Actualizează").
   // No flow sends it: the template names its offers (leadOffers) and _lib/workflows.js welcome() sends it.
   // Reamintiri: the appointment flows with the messages they send. A message opens in the template editor.
-  const LEAD_TPL = (o) => 'Lead nou · ' + o.title;
+  // the site's leads: one message for all, short, morning or evening (the city they picked on the form)
+  const SITE = { key: 'site', title: 'Lead de pe site', locations: ['timisoara', 'arad'], site: true };
+  const SITE_TEXT = 'Bună {prenume}! 👋 Mulțumim că ne-ai scris. Ca să îți găsim o oră potrivită, când ți-e mai ușor să vii, dimineața sau seara? ❤️';
+  const SITE_BTNS = [{ type: 'QUICK_REPLY', text: 'Dimineața' }, { type: 'QUICK_REPLY', text: 'Seara' }];
+  const LEAD_TPL = (o) => (o.site ? 'Lead site · dimineața sau seara' : 'Lead nou · ' + o.title);
   const LEAD_WF = (o) => 'Lead nou · ' + o.title + ' → mesaj cu oferta';
   // the owner's own message (as in HighLevel), each offer named her way, the prices from Oferte
   const leadPrices = (o) => ({ now: Math.round(Number(o.priceNew) || 0), was: Math.round(Number(o.priceOld) || 0) });
@@ -195,11 +199,12 @@
     'cavitatie-1plus1': (p) => '1+1, Cavitație, ' + p.now + ' LEI redus de la ' + p.was + ' LEI',
   };
   const leadPhrase = (o) => { const p = leadPrices(o); const f = LEAD_PHRASE[o.key]; return f ? f(p) : o.title + (p.now ? ' la ' + p.now + ' LEI' + (p.was > p.now ? ', în loc de ' + p.was + ' LEI' : '') : ''); };
-  const leadText = (o) => 'Bună {prenume}! 👋 Mai avem câteva locuri disponibile săptămâna aceasta la oferta ' + leadPhrase(o) + '. 🔥\n\nCa să îți verificăm disponibilitatea, unde ți-ar fi mai ușor să ajungi? ❤️';
+  const leadText = (o) => o.site ? SITE_TEXT : 'Bună {prenume}! 👋 Mai avem câteva locuri disponibile săptămâna aceasta la oferta ' + leadPhrase(o) + '. 🔥\n\nCa să îți verificăm disponibilitatea, unde ți-ar fi mai ușor să ajungi? ❤️';
   const LEAD_BTNS = [{ type: 'QUICK_REPLY', text: 'Timișoara' }, { type: 'QUICK_REPLY', text: 'Arad' }];
   // the picture: the owner's dark creative of the offer (not the site's offer photo, often a before / after)
-  const LEAD_PIC = (o) => '/brand_asset/wa-offers/' + o.key + '.webp';
-  const sameMsg = (t, o) => !!t && String(t.text || '').trim() === leadText(o).trim() && JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(LEAD_BTNS.map((b) => b.text)) && t.pic === LEAD_PIC(o);
+  const LEAD_PIC = (o) => (o.site ? '' : '/brand_asset/wa-offers/' + o.key + '.webp');
+  const btnsOf = (o) => (o.site ? SITE_BTNS : LEAD_BTNS);
+  const sameMsg = (t, o) => !!t && String(t.text || '').trim() === leadText(o).trim() && JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(btnsOf(o).map((b) => b.text)) && (t.pic || '') === LEAD_PIC(o);
   // a single-city offer goes only to the leads of that city
   const leadWhere = (o) => { const c = leadCities(o); return c.length === 1 ? c[0] : 'any'; };
   const leadCities = (o) => [...new Set((o.locations || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
@@ -230,7 +235,7 @@
   // No flow for it any more: the template names the offers whose new leads get it ("Se trimite singur la lead
   // nou", leadOffers). Per offer: every version of its message ("Lead nou · X", "… · v2" …); the one with today's
   // text, else the one that goes now, else the newest. Up to date when exactly that one goes and no old flow is left.
-  const leadRows = (tpls) => leadOffers().map((o) => {
+  const leadRows = (tpls) => leadOffers().concat([SITE]).map((o) => {
     const mine = tpls.filter((x) => x.label === LEAD_TPL(o) || String(x.label || '').startsWith(LEAD_TPL(o) + ' · v'));
     const goes = tpls.filter((x) => (x.leadOffers || []).includes(o.key));
     const w = S.d.workflows.find((x) => x.name === LEAD_WF(o)); // the old way, removed by "Actualizează"
@@ -285,12 +290,12 @@
           if (!t) {
             // a template sent to Meta can't change its text: a new version, the flow moves to it
             let sample;
-            try { sample = await toJpeg(LEAD_PIC(r.o)); } catch (e) { errs.push(r.o.title + ': lipsește poza ofertei pentru WhatsApp'); continue; }
+            if (!r.o.site) { try { sample = await toJpeg(LEAD_PIC(r.o)); } catch (e) { errs.push(r.o.title + ': lipsește poza ofertei pentru WhatsApp'); continue; } }
             const labels = new Set((wa.templates || []).map((x) => x.label));
             let label = LEAD_TPL(r.o), v = 1;
             while (labels.has(label)) label = LEAD_TPL(r.o) + ' · v' + (++v);
             wa = await window.C360Wa.post({ action: 'tpl_save', submit: true, cities: leadCities(r.o),
-              template: { label, category: 'MARKETING', headerType: 'IMAGE', body: leadText(r.o), footer: '', buttons: LEAD_BTNS, sample, leadOffers: [], pic: LEAD_PIC(r.o) } });
+              template: { label, category: r.o.site ? 'UTILITY' : 'MARKETING', headerType: r.o.site ? '' : 'IMAGE', body: leadText(r.o), footer: '', buttons: btnsOf(r.o), sample, leadOffers: [], pic: LEAD_PIC(r.o) } });
             if (wa.submitError) errs.push(r.o.title + ': ' + wa.submitError);
             t = (wa.templates || []).find((x) => x.id === wa.savedId);
             made++;

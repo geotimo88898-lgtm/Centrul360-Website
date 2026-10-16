@@ -100,11 +100,9 @@
 
       function done() { window.location.href = '/multumesc-cadou'; }
 
-      fetch(WEBHOOK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(done).catch(done);
+      // to HighLevel (as before) and to the portal (Pipeline, the team's notification, the WhatsApp from the city's number)
+      var send = function (url) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(function () {}); };
+      Promise.all([send(WEBHOOK), send('/api/site-lead')]).then(done, done);
     });
   }
 

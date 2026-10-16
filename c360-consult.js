@@ -188,7 +188,9 @@
       consimtamant_whatsapp: true, pagina: location.href
     };
     const done = () => { location.href = '/multumesc-cadou'; };
-    fetch(WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(done).catch(done);
+    // to HighLevel (as before) and to the portal (Pipeline, the team's notification, the WhatsApp from the city's number)
+    const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
+    Promise.all([send(WEBHOOK), send('/api/site-lead')]).then(done, done);
   }
 
   // Which buttons sell the consultation: booking verbs, unless they explicitly say WhatsApp / a phone.

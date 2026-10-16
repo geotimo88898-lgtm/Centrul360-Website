@@ -1688,16 +1688,9 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       const QUIZ_WEBHOOK = "https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68";
       // ⇧⇧⇧ Webhook HighLevel ⇧⇧⇧
 
-      if(QUIZ_WEBHOOK.indexOf('http') === 0){
-        fetch(QUIZ_WEBHOOK, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).then(done).catch(done); // lead-ul e trimis chiar dacă CORS blochează citirea răspunsului
-      } else {
-        // webhook neconfigurat încă (preview), mergem direct la pagina de mulțumire
-        done();
-      }
+      // la HighLevel (ca până acum) și în portal (Pipeline, notificarea echipei, WhatsApp de pe numărul orașului)
+      const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
+      Promise.all([QUIZ_WEBHOOK.indexOf('http') === 0 ? send(QUIZ_WEBHOOK) : null, send('/api/site-lead')]).then(done, done);
     });
   })();
 

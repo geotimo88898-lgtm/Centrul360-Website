@@ -516,18 +516,25 @@ const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.le
 
 // A new lead from the ads gets the welcome message of its offer at once, no flow: every WhatsApp template that names
 // the offer in "Se trimite singur la lead nou" (Șabloane / Automatizări → Mesaje). From the lead's city number; an
-// offer of one city only for the leads of that city. What happened is written on the lead (Pipeline → its history):
+// offer of one city only for the leads of that city. A lead from a form of the site gets the templates marked
+// "Lead de pe site" (key 'site'), from the city it picked. What happened is written on the lead (Pipeline → its history):
 // sent, or why not (a template not approved by Meta yet is skipped). Never throws.
 async function welcome(lead) {
   try {
-    if (!lead || lead.source !== 'facebook' || !lead.phone || !lead.interest) return;
-    const offers = await require('./offers').loadOffers(readJSON);
-    const offer = offers.find((o) => fold(o.title) === fold(lead.interest) || o.key === lead.interest);
-    if (!offer) return;
-    const cities = [...new Set((offer.locations || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
-    if (cities.length === 1 && lead.location && lead.location !== cities[0]) return;
+    if (!lead || !lead.phone || !['facebook', 'site'].includes(lead.source)) return;
+    let key, cities = ['Timișoara', 'Arad'];
+    if (lead.source === 'site') key = 'site';
+    else {
+      if (!lead.interest) return;
+      const offers = await require('./offers').loadOffers(readJSON);
+      const offer = offers.find((o) => fold(o.title) === fold(lead.interest) || o.key === lead.interest);
+      if (!offer) return;
+      key = offer.key;
+      cities = [...new Set((offer.locations || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
+      if (cities.length === 1 && lead.location && lead.location !== cities[0]) return;
+    }
     const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
-    const tpls = wa.tpls.filter((t) => (t.leadOffers || []).includes(offer.key));
+    const tpls = wa.tpls.filter((t) => (t.leadOffers || []).includes(key));
     if (!tpls.length) return;
     const settings = (await loadDoc()).settings || {};
     const v = vars({ lead }, settings);
