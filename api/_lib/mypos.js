@@ -250,4 +250,57 @@ function validSignature(raw, header, secret) {
   });
 }
 
-module.exports = { CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf };
+// ------------------------------------------------------------------ the account's balance
+// myPOS gives no balance call to these keys; its daily MT940 statement (Transactions API) carries it: :62F: the
+// booked closing balance, :64: the available one ("C251016RON12345,67", D for a minus). Read for today (or
+// yesterday, when today's isn't out yet), kept 10 minutes.
+const BAL = 'data/mypos-balance.json';
+async function listAccounts(conn) {
+  const j = await call(conn, 'GET', TRX + '/accounts?' + new URLSearchParams({ page: '1', size: '100' }));
+  return (j.accounts || []).map((a) => ({ number: String(a.account_number || ''), name: String(a.name || ''), currency: String(a.currency || ''), iban: String(a.iban || ''), reserve: !!a.is_reserve })).filter((a) => a.number);
+}
+function parseMt940(txt) {
+  const f = (tag) => {
+    const m = String(txt).match(new RegExp(':' + tag + ':([CD])(\\d{6})([A-Z]{3})([\\d.,]+)'));
+    return m ? { amount: (m[1] === 'D' ? -1 : 1) * Number(m[4].replace(/\./g, '').replace(',', '.')), currency: m[3], date: '20' + m[2].slice(0, 2) + '-' + m[2].slice(2, 4) + '-' + m[2].slice(4, 6) } : null;
+  };
+  return { opening: f('60F') || f('60M'), closing: f('62F') || f('62M'), available: f('64') };
+}
+async function statement(conn, number, date) {
+  const tok = await token(conn);
+  const r = await fetch(TRX + '/accounts/statement', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + tok, 'API-Key': conn.clientId, 'X-Request-ID': uuid(), 'Content-Type': 'application/json', Accept: 'application/json, text/plain' },
+    body: JSON.stringify({ document_type: 1, account_number: number, date }),
+  });
+  let text = await r.text();
+  if (!r.ok) throw new MyposError(r.status === 401 || r.status === 403 ? 'mypos_denied' : 'mypos_failed', r.status, text.slice(0, 160));
+  if (/^\s*"/.test(text)) { try { text = JSON.parse(text); } catch (e) { /* the raw file */ } }
+  if (text && typeof text === 'object') text = text.statement || text.data || JSON.stringify(text);
+  return parseMt940(text);
+}
+async function balance(store, fresh) {
+  const conn = await loadConn(store.readJSON);
+  if (!connected(conn)) return { connected: false };
+  const cached = await store.readJSON(BAL, null);
+  if (!fresh && cached && cached.at && Date.now() - Date.parse(cached.at) < 10 * 60e3) return Object.assign({ connected: true }, cached);
+  const today = dayOf(Date.now()), yesterday = dayOf(Date.now() - 86400e3);
+  try {
+    const accounts = (await listAccounts(conn)).slice(0, 6);
+    const out = [];
+    for (const a of accounts) {
+      let s = null;
+      try { s = await statement(conn, a.number, today); } catch (e) { s = null; }
+      if (!s || (!s.available && !s.closing)) { try { s = await statement(conn, a.number, yesterday); } catch (e) { s = null; } }
+      out.push({ number: a.number.slice(-4), name: a.name, currency: (s && (s.available || s.closing || {}).currency) || a.currency, reserve: a.reserve,
+        available: s && s.available ? s.available.amount : null, closing: s && s.closing ? s.closing.amount : null, date: s && (s.closing || s.available || {}).date || '' });
+    }
+    const v = { at: new Date().toISOString(), accounts: out, error: out.length && out.every((x) => x.available == null && x.closing == null) ? 'no_statement' : '' };
+    await store.writeJSON(BAL, v, { quiet: true });
+    return Object.assign({ connected: true }, v);
+  } catch (e) {
+    return Object.assign({ connected: true }, cached || {}, { error: e.code || 'mypos_failed', status: e.status || 0 });
+  }
+}
+
+module.exports = { CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940 };

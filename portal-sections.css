@@ -678,6 +678,17 @@
 @container panel (max-width:520px){ .tr-ctests li{ grid-template-columns:auto minmax(0,1fr); } .tr-ctests-a{ grid-column:2; justify-content:flex-start; } }
 /* Încasări → POS myPOS */
 .mo-pos .k-card-head{ margin-bottom:.8rem; }
+.mo-pos-bal{ display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; margin-bottom:.7rem; padding:.85rem 1rem; border-radius:16px; background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--accent) 4%, transparent)); border:1px solid color-mix(in srgb, var(--accent) 25%, var(--line)); }
+.mo-pos-bal.is-empty{ background:var(--glass); border-color:var(--line); font-size:.85rem; color:var(--muted); }
+.mo-pos-bal.is-empty svg{ width:18px; height:18px; }
+.mo-pos-bal-main{ display:flex; flex-direction:column; gap:.1rem; flex:1 1 220px; min-width:0; }
+.mo-pos-bal-main > span{ display:flex; align-items:center; gap:.35rem; font-size:.78rem; color:var(--muted); }
+.mo-pos-bal-main > span svg{ width:15px; height:15px; }
+.mo-pos-bal-main b{ font-size:1.6rem; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.mo-pos-bal-main small{ font-size:.75rem; color:var(--muted); }
+.mo-pos-bal-res{ display:flex; flex-direction:column; font-size:.78rem; color:var(--muted); }
+.mo-pos-bal-res b{ font-size:1rem; color:var(--fg); }
+.mo-pos-bal > .k-btn{ align-self:flex-start; }
 .mo-pos-sum{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.6rem; }
 .mo-pos-sum > div{ display:flex; flex-direction:column; gap:.15rem; padding:.75rem .9rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); min-width:0; }
 .mo-pos-sum span{ font-size:.78rem; color:var(--muted); }

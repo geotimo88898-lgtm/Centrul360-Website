@@ -22,6 +22,7 @@ const { upsertClient } = require('./_lib/clients');
 const { CATEGORIES, normalizeCategories, categoriesOf, commissionOf, profitOf } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
 const { cityOf, inCity } = require('./_lib/city');
+const N = require('./_lib/notify');
 
 // The three treatment categories (see _lib/cats.js); kept under this name for older importers.
 const VALID_CATEGORIES = CATEGORIES;
@@ -190,6 +191,18 @@ async function handleIncasare(req, res, session) {
     Object.assign(appt, { status: 'finalizata', paidSaleId: entry.id, paidAt: entry.createdAt, updatedAt: entry.createdAt });
     await writeJSON('data/appointments.json', appointments);
     if (before !== 'finalizata') { try { await workflows.emit('appointment_status', { appointment: appt, status: 'finalizata' }); } catch (e) { /* never blocks a payment */ } }
+    // cash in: the owner hears it (a card payment rings from the POS itself, api/mypos-webhook.js)
+    const cashIn = method === 'cash' ? amount : method === 'cash_card' && split ? split.cash : 0;
+    if (cashIn > 0 && !N.isOwner(session)) {
+      try {
+        const by = ((await readJSON('data/employees.json', [])).find((e) => e.id === session.employeeId) || {}).name || '';
+        await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
+          kind: 'money', tone: 'good', go: 'incasari', tag: 'cash-' + entry.id,
+          title: 'Cash ' + N.leiTxt(cashIn) + (entry.location ? ' · ' + entry.location : ''),
+          text: [entry.client, entry.treatment, by ? 'încasat de ' + by : ''].filter(Boolean).join(' · '),
+        });
+      } catch (e) { /* never blocks a payment */ }
+    }
 
     res.status(200).json({ ok: true, entry, upsell: upsellEntry });
   } catch (err) {

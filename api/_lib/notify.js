@@ -15,8 +15,17 @@ const KEY = 'data/notifications.json';
 const KEEP = 60;
 const SAME_WITHIN = 10 * 60 * 1000;
 
-// the owner's own login ('admin') gets only the alerts meant for it (new leads), not decisions
-const wants = (id, n) => id && (id !== 'admin' || n.kind === 'lead' || n.kind === 'alert');
+// the owner's own login ('admin') gets only the alerts meant for it (new leads, a booking, money in, the day's
+// report), not decisions about the team
+const OWNER_KINDS = ['lead', 'alert', 'booking', 'money', 'report'];
+const wants = (id, n) => id && (id !== 'admin' || OWNER_KINDS.includes(n.kind));
+// the owner: her own login and anyone with the admin role
+async function adminIds(store) {
+  const employees = await store.readJSON('data/employees.json', []);
+  return ['admin'].concat(employees.filter((e) => e.active !== false && e.role === 'admin').map((e) => e.id));
+}
+const isOwner = (session) => !!session && (session.employeeId === 'admin' || session.role === 'admin');
+const leiTxt = (n) => (Math.round(Number(n) * 100) / 100).toLocaleString('ro-RO') + ' lei';
 
 // The same notification for one or several people (a new lead → admin + reception), with one read and
 // one write, then on their phones. Returns how many devices got it. Never throws: a notification never
@@ -51,4 +60,4 @@ const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);
 
 const mine = async (store, employeeId) => (await store.readJSON(KEY, [])).filter((x) => x.employeeId === employeeId).slice(-40).reverse();
 
-module.exports = { notify, notifyMany, mine, KEY };
+module.exports = { notify, notifyMany, mine, KEY, adminIds, isOwner, leiTxt };

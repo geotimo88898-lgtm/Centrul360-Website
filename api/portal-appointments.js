@@ -33,6 +33,7 @@ const { normalizeCategories } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
 const { bonusPush } = require('./_lib/bonus');
 const { cityOf, inCity } = require('./_lib/city');
+const N = require('./_lib/notify');
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records), kept as a literal list
@@ -220,6 +221,18 @@ module.exports = async (req, res) => {
       await workflows.emit('appointment_created', { appointment: entry });
       // reception's booking bonus may have moved: the new line goes to her phone
       await bonusPush({ readJSON, writeJSON }, session.employeeId);
+      // the owner hears about every booking someone else makes (in the bell and on her phone)
+      if (!N.isOwner(session)) {
+        try {
+          const by = (employees.find((e) => e.id === session.employeeId) || {}).name || '';
+          const when = entry.date === new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()) ? 'azi' : entry.date.split('-').reverse().slice(0, 2).join('.');
+          await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
+            kind: 'booking', tone: 'good', go: 'programari', tag: 'appt-' + entry.id,
+            title: 'Programare nouă: ' + entry.clientName,
+            text: [entry.treatment, when + (entry.time ? ' ' + entry.time : ''), entry.location, by ? 'de ' + by : ''].filter(Boolean).join(' · '),
+          });
+        } catch (e) { /* a notification never blocks a booking */ }
+      }
 
       res.status(200).json({ ok: true, appointment: entry });
       return;

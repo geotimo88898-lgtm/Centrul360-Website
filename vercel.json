@@ -59,6 +59,10 @@
     {
       "path": "/api/automation-tick",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/daily-report",
+      "schedule": "0 19 * * *"
     }
   ],
   "functions": {

@@ -2,6 +2,7 @@
 //   GET  ?view=status                         connected?, the terminals and their city, the live link, the history
 //   GET  ?view=payments&from=YYYY-MM-DD&to=…   the POS payments of those days (reads the history first when it is
 //                                             older than 10 minutes, or when those days were never read)
+//   GET  ?view=balance                        the myPOS account's balance (from its daily statement, kept 10 min)
 //   POST { action: 'connect', clientId, clientSecret }  checks them with myPOS, finds the terminals, makes the
 //        webhook for the live payments, reads the last 60 days
 //   POST { action: 'device', tid, city }      which clinic a terminal is in (Timișoara / Arad)
@@ -44,6 +45,11 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET') {
       const view = String(req.query.view || 'status');
+      if (view === 'balance') {
+        res.setHeader('Cache-Control', 'no-store');
+        res.status(200).json(await M.balance(store, req.query.fresh === '1'));
+        return;
+      }
       if (view === 'payments') {
         const from = String(req.query.from || ''), to = String(req.query.to || '');
         if (!isDay(from) || !isDay(to)) { res.status(400).json({ error: 'invalid_range' }); return; }

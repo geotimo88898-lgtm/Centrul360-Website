@@ -6,6 +6,7 @@
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const M = require('./_lib/mypos');
+const N = require('./_lib/notify');
 
 module.exports.config = { api: { bodyParser: false } };
 
@@ -57,5 +58,15 @@ module.exports = async (req, res) => {
   const m = M.merge(data.list || [], [p]);
   await writeJSON(M.PAY, Object.assign({}, data, { list: m.list }));
   await logDelivery({ at, ok: true, event, amount: p.amount, tid: p.tid });
+  if (!p.cancelled && p.amount > 0) {
+    try {
+      const dev = (conn.devices || []).find((d) => d.tid === p.tid) || {};
+      await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
+        kind: 'money', tone: 'good', go: 'incasari', tag: 'pos-' + p.id,
+        title: 'Card POS ' + N.leiTxt(p.amount) + (dev.city ? ' · ' + dev.city : ''),
+        text: [dev.model ? 'myPOS ' + dev.model : 'myPOS', p.pan ? 'card ••' + p.pan : ''].filter(Boolean).join(' · '),
+      });
+    } catch (e) { /* myPOS must get its 200 */ }
+  }
   res.status(200).json({ ok: true });
 };

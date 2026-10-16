@@ -219,7 +219,26 @@
   }
 
   // ---------------- myPOS (owner only): the card payments on the POS next to the card payments recorded here
-  const POS = { key: '', at: 0, data: null, loading: null, r: null, all: false };
+  const POS = { key: '', at: 0, data: null, loading: null, r: null, all: false, bal: null, balAt: 0 };
+  // the myPOS account's balance (the server reads it from the day's statement and keeps it 10 minutes)
+  function loadBal(force) {
+    if (!force && POS.bal && Date.now() - POS.balAt < 5 * 60e3) return Promise.resolve(false);
+    POS.balAt = Date.now();
+    return K.api('/api/portal-mypos?view=balance' + (force ? '&fresh=1' : '')).then((b) => { POS.bal = b; return true; }, () => false);
+  }
+  function balHtml() {
+    const b = POS.bal;
+    if (!b || !b.connected) return '';
+    const acc = (b.accounts || []).filter((a) => !a.reserve && (a.available != null || a.closing != null));
+    const reserve = (b.accounts || []).filter((a) => a.reserve && (a.available != null || a.closing != null));
+    if (!acc.length) return '<div class="mo-pos-bal is-empty">' + icon('wallet') + '<span>Soldul contului myPOS nu s-a putut citi' + (b.error ? '' : ' încă') + '.</span><button type="button" class="k-btn is-ghost is-sm" data-bal-refresh>' + icon('refresh') + '</button></div>';
+    const money = (v, cur) => (cur && cur !== 'RON' ? K.num(Math.round(v * 100) / 100) + ' ' + cur : K.lei(v, 2));
+    return '<div class="mo-pos-bal">' + acc.map((a) => '<div class="mo-pos-bal-main"><span>' + icon('wallet') + 'Sold cont myPOS' + (acc.length > 1 ? ' · ' + esc(a.name || '••' + a.number) : '') + '</span>' +
+        '<b>' + money(a.available != null ? a.available : a.closing, a.currency) + '</b>' +
+        '<small>' + (a.available != null && a.closing != null && Math.abs(a.available - a.closing) > 0.009 ? 'disponibil · contabil ' + money(a.closing, a.currency) + ' · ' : a.available != null ? 'disponibil · ' : '') + (a.date && a.date !== K.today() ? 'extras din ' + esc(K.dateShort(a.date)) : 'actualizat ' + esc(K.ago(b.at))) + '</small></div>').join('') +
+      reserve.map((a) => '<div class="mo-pos-bal-res"><span>Rezervă</span><b>' + money(a.available != null ? a.available : a.closing, a.currency) + '</b></div>').join('') +
+      '<button type="button" class="k-btn is-ghost is-sm" data-bal-refresh title="Citește acum">' + icon('refresh') + '</button></div>';
+  }
   const cardPart = (s) => (s.method === 'card' ? Number(s.amount || 0) : s.method === 'cash_card' && s.split ? Number(s.split.card || 0) : 0);
   K.on('remote', () => { POS.at = 0; });
   function loadPos(from, to) {
@@ -273,6 +292,7 @@
       '<div class="k-row-sub">' + esc([dayTxt(x.s.date), x.s.treatment, S.loc === 'all' ? x.s.location : ''].filter(Boolean).join(' · ')) + '</div></div><div class="k-row-end"><span class="k-amount">' + K.lei(x.amt, 2) + '</span></div></div>';
     const more = (list) => (list.length > 6 ? '<button type="button" class="k-btn is-ghost is-sm" data-pos-all>' + (POS.all ? 'Mai puține' : 'Vezi toate (' + list.length + ')') + '</button>' : '');
     return '<section class="k-card mo-pos"><div class="k-card-head"><h3>' + icon('card') + 'POS myPOS</h3><span class="k-sub">' + (d.syncedAt ? 'citit ' + esc(K.ago(d.syncedAt)) : '') + '</span></div>' +
+      balHtml() +
       '<div class="mo-pos-sum">' +
         '<div><span>Pe POS</span><b>' + K.lei(r.posTotal) + '</b><small>' + K.plural(r.pos.length, 'plată', 'plăți') + '</small></div>' +
         '<div><span>În portal, pe card</span><b>' + K.lei(r.portalCard) + '</b><small>' + K.plural(r.matched.size + r.portalOnly.length, 'încasare', 'încasări') + '</small></div>' +
@@ -299,10 +319,13 @@
       all.forEach((b) => b.addEventListener('click', () => { POS.all = !POS.all; draw(); }));
       const gi = slot.querySelector('[data-goto-int]');
       if (gi) gi.addEventListener('click', () => K.go('integrari'));
+      const br = slot.querySelector('[data-bal-refresh]');
+      if (br) br.addEventListener('click', () => K.busy(br, async () => { await loadBal(true); draw(); }));
       renderList();
     };
     draw();
     loadPos(from, to).then((changed) => { if (changed) draw(); });
+    loadBal(false).then((changed) => { if (changed) draw(); });
   }
 
   // the owner sees on each card payment whether it is on the POS too
