@@ -82,6 +82,8 @@ function clean(input, prev) {
   if (i.only !== undefined) t.only = onlyOf(i.only);
   // the offers whose new leads get it (ours, not Meta's: can change on a sent template too)
   if (i.leadOffers !== undefined) t.leadOffers = leadOffersOf(i.leadOffers);
+  // the picture it was made with (Automatizări → Mesaje: the offer's creative), to know when it changes
+  if (i.pic !== undefined) t.pic = clip(i.pic, 200);
   // the template "Trimite rezultatele" (Contacte → before / after) sends
   if (i.purpose !== undefined) t.purpose = i.purpose === 'results' ? 'results' : '';
   t.label = clip(i.label, 80).trim() || t.label || '';
@@ -305,7 +307,7 @@ function view(t, cfg) {
   const reasons = Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean);
   return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, image: t.headerImagePath || t.samplePath || '', hidden: !!t.hidden, reviewed: !!t.reviewed, only: t.only || [], text: friendly(t), body: t.body, map: t.map || [],
     footer: t.footer || '', buttons: t.buttons || [], status: overall(t), editable: editable(t), cities, reason: reasons[0] || '', imported: !!t.imported, updatedAt: t.updatedAt || '',
-    leadOffers: t.leadOffers || [] };
+    leadOffers: t.leadOffers || [], pic: t.pic || '' };
 }
 
 module.exports = { review, KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, imageOf, view, slug, toMeta, leadOffersOf };

@@ -197,7 +197,9 @@
   const leadPhrase = (o) => { const p = leadPrices(o); const f = LEAD_PHRASE[o.key]; return f ? f(p) : o.title + (p.now ? ' la ' + p.now + ' LEI' + (p.was > p.now ? ', în loc de ' + p.was + ' LEI' : '') : ''); };
   const leadText = (o) => 'Bună {prenume}! 👋 Mai avem câteva locuri disponibile săptămâna aceasta la oferta ' + leadPhrase(o) + '. 🔥\n\nCa să îți verificăm disponibilitatea, unde ți-ar fi mai ușor să ajungi? ❤️';
   const LEAD_BTNS = [{ type: 'QUICK_REPLY', text: 'Timișoara' }, { type: 'QUICK_REPLY', text: 'Arad' }];
-  const sameMsg = (t, o) => !!t && String(t.text || '').trim() === leadText(o).trim() && JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(LEAD_BTNS.map((b) => b.text));
+  // the picture: the owner's dark creative of the offer (not the site's offer photo, often a before / after)
+  const LEAD_PIC = (o) => '/brand_asset/wa-offers/' + o.key + '.webp';
+  const sameMsg = (t, o) => !!t && String(t.text || '').trim() === leadText(o).trim() && JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(LEAD_BTNS.map((b) => b.text)) && t.pic === LEAD_PIC(o);
   // a single-city offer goes only to the leads of that city
   const leadWhere = (o) => { const c = leadCities(o); return c.length === 1 ? c[0] : 'any'; };
   const leadCities = (o) => [...new Set((o.locations || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
@@ -276,21 +278,19 @@
     await K.busy(btn, async () => {
       try {
         let wa = await window.C360Wa.load(true);
-        const pub = ((await K.api('/api/offers-public')).offers || []);
         let made = 0;
         const errs = [];
         for (const r of leadRows(wa.templates || [])) {
           let t = r.good;
           if (!t) {
             // a template sent to Meta can't change its text: a new version, the flow moves to it
-            const p = pub.find((x) => x.id === r.o.id || x.key === r.o.key);
-            if (!p || !p.imageUrl) { errs.push(r.o.title + ': oferta n-are poză'); continue; }
-            const sample = await toJpeg(p.imageUrl);
+            let sample;
+            try { sample = await toJpeg(LEAD_PIC(r.o)); } catch (e) { errs.push(r.o.title + ': lipsește poza ofertei pentru WhatsApp'); continue; }
             const labels = new Set((wa.templates || []).map((x) => x.label));
             let label = LEAD_TPL(r.o), v = 1;
             while (labels.has(label)) label = LEAD_TPL(r.o) + ' · v' + (++v);
             wa = await window.C360Wa.post({ action: 'tpl_save', submit: true, cities: leadCities(r.o),
-              template: { label, category: 'MARKETING', headerType: 'IMAGE', body: leadText(r.o), footer: '', buttons: LEAD_BTNS, sample, leadOffers: [] } });
+              template: { label, category: 'MARKETING', headerType: 'IMAGE', body: leadText(r.o), footer: '', buttons: LEAD_BTNS, sample, leadOffers: [], pic: LEAD_PIC(r.o) } });
             if (wa.submitError) errs.push(r.o.title + ': ' + wa.submitError);
             t = (wa.templates || []).find((x) => x.id === wa.savedId);
             made++;
