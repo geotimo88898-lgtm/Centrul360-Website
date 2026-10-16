@@ -701,6 +701,9 @@
 .of-kpi-sum b{ font-size:1.3rem; font-variant-numeric:tabular-nums; }
 .of-kpi-sum small{ font-size:.74rem; color:var(--muted); }
 .of-kpi-t{ display:flex; flex-direction:column; }
+.of-kpi-g{ display:flex; align-items:center; gap:.45rem; margin:.4rem 0 -.3rem; font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+.of-kpi-g svg{ width:15px; height:15px; color:var(--accent); }
+.of-kpi-g span{ margin-left:auto; color:var(--fg); font-size:.9rem; letter-spacing:0; text-transform:none; font-variant-numeric:tabular-nums; }
 .of-kpi-r{ display:grid; grid-template-columns:minmax(150px, 1.5fr) repeat(8, minmax(0, 1fr)); gap:.5rem; align-items:center; padding:.6rem .4rem; border-top:1px solid var(--line); font-size:.86rem; font-variant-numeric:tabular-nums; }
 .of-kpi-r > div:not(.of-kpi-name){ text-align:right; }
 .of-kpi-r.is-head > div:first-child{ text-align:left; }

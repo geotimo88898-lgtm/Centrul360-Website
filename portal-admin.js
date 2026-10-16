@@ -568,27 +568,33 @@
     if (!box || !d) return;
     const t = d.totals, sp = d.spend || {};
     const top = Math.max(1, ...d.rows.map((x) => x.revenue));
-    const roas = sp.ready && t.spend > 0 ? Math.round((t.revenue / t.spend) * 10) / 10 : null;
+    const roas = sp.ready && sp.total > 0 ? Math.round(((t.ads || 0) / sp.total) * 10) / 10 : null; // what the ads brought, per leu they cost
     const cell = (label, v, cls) => '<div class="of-kpi-c' + (cls ? ' ' + cls : '') + '" data-l="' + label + '">' + v + '</div>';
     const dash = '<span class="k-muted">-</span>';
     box.innerHTML = '<section class="k-card of-kpi"><div class="of-kpi-h"><h3>' + icon('trend') + 'Bani aduși de fiecare ofertă</h3>' +
         '<div class="k-chips">' + KPI_PERIODS.map(([k, l]) => '<button type="button" class="k-chip' + (KPI.period === k ? ' is-on' : '') + '" data-kpi-period="' + k + '">' + l + '</button>').join('') + '</div></div>' +
       '<div class="of-kpi-sum">' +
         '<div><span>Încasat</span><b>' + K.lei(t.revenue) + '</b><small>din care upsell ' + K.lei(t.upsell) + '</small></div>' +
-        '<div><span>Leaduri</span><b>' + K.num(t.leads) + '</b><small>' + K.plural(t.clients, 'client', 'clienți') + ' au plătit</small></div>' +
+        '<div><span>Din reclame</span><b>' + K.lei(t.ads || 0) + '</b><small>' + (t.revenue ? Math.round(((t.ads || 0) / t.revenue) * 100) + '% din încasat' : 'Facebook') + '</small></div>' +
+        '<div><span>Organic</span><b>' + K.lei(t.organic || 0) + '</b><small>site, recomandări, veniți direct</small></div>' +
         (sp.ready ? '<div><span>Reclame</span><b>' + K.lei(sp.total) + '</b><small>cheltuit în perioadă</small></div>' +
           '<div class="' + (roas && roas >= 1 ? 'is-good' : '') + '"><span>La 1 leu în reclame</span><b>' + (roas != null ? K.num(roas) + ' lei' : '-') + '</b><small>încasați</small></div>' : '') +
       '</div>' +
-      (d.rows.length ? '<div class="of-kpi-t"><div class="of-kpi-r is-head"><div>Ofertă</div><div>Încasat</div><div>Upsell</div><div>Leaduri</div><div>Clienți</div><div>Încasat / lead</div><div>Reclame</div><div>La 1 leu</div><div>Cost / lead</div></div>' +
-        d.rows.map((x, i) => '<div class="of-kpi-r' + (i === 0 && x.revenue > 0 ? ' is-top' : '') + (x.key.charAt(0) === '_' ? ' is-other' : '') + '">' +
+      (d.rows.length ? [['ads', 'Din reclame (Facebook)', 'Ofertă'], ['organic', 'Organic', 'Sursă']].map(([g, gl, first]) => {
+        const rows = d.rows.filter((x) => (x.group || 'ads') === g);
+        if (!rows.length) return '';
+        return '<h4 class="of-kpi-g">' + icon(g === 'ads' ? 'zap' : 'globe') + gl + '<span>' + K.lei(rows.reduce((a, x) => a + x.revenue, 0)) + '</span></h4>' +
+        '<div class="of-kpi-t"><div class="of-kpi-r is-head"><div>' + first + '</div><div>Încasat</div><div>Upsell</div><div>Leaduri</div><div>Clienți</div><div>Încasat / lead</div><div>Reclame</div><div>La 1 leu</div><div>Cost / lead</div></div>' +
+        rows.map((x, i) => '<div class="of-kpi-r' + (i === 0 && x.revenue > 0 ? ' is-top' : '') + (x.key === '_ads' || x.key === 'org:direct' ? ' is-other' : '') + '">' +
           '<div class="of-kpi-name"><b>' + esc(x.title) + '</b><i style="--w:' + Math.round((x.revenue / top) * 100) + '%"></i></div>' +
           cell('Încasat', '<b>' + K.lei(x.revenue) + '</b>') +
           cell('Upsell', x.upsell ? K.lei(x.upsell) + ' <small>' + K.plural(x.upsells, 'dată', 'ori') + '</small>' : dash) +
-          cell('Leaduri', K.num(x.leads)) + cell('Clienți', K.num(x.clients)) +
+          cell('Leaduri', x.key === 'org:direct' ? dash : K.num(x.leads)) + cell('Clienți', K.num(x.clients)) +
           cell('Încasat / lead', x.perLead != null ? K.lei(x.perLead) : dash) +
           cell('Reclame', sp.ready && x.spend ? K.lei(x.spend) : dash) +
           cell('La 1 leu', x.roas != null ? K.num(x.roas) + ' lei' : dash, x.roas != null && x.roas >= 1 ? 'is-good' : '') +
-          cell('Cost / lead', x.cpl != null ? K.lei(x.cpl) : dash) + '</div>').join('') + '</div>'
+          cell('Cost / lead', x.cpl != null ? K.lei(x.cpl) : dash) + '</div>').join('') + '</div>';
+      }).join('')
         : K.empty('trend', 'Nimic în perioada asta', '')) +
       (!sp.ready ? '<p class="k-muted of-kpi-note">' + icon('info') + (sp.error ? 'Meta: ' + esc(sp.error) : 'Cheltuiala pe reclame apare după ce lipești tokenul pentru reclame (Integrări → Facebook).') + '</p>'
         : sp.unassigned > 0 ? '<p class="k-muted of-kpi-note">' + icon('info') + K.lei(sp.unassigned) + ' din reclame nu s-au putut lega de o ofertă (reclame fără leaduri).</p>' : '') +

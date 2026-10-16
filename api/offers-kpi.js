@@ -1,6 +1,8 @@
 // GET /api/offers-kpi?period=max|90d|30d|7d, Admin → Oferte: what each offer brought through the door (admin only).
-// Each lead counts for its offer (the interest it came with: the offer's title from its form, or the one picked by
-// the team). Every payment (Încasări, upsells included) counts for the lead it came from: the lead of its
+// Two parts. From the ads: a lead that came through an ad's lead form (the Facebook form, with its ad / campaign)
+// counts for its offer (its form's offer, or the one picked by the team), or "fără ofertă". Organic: every other
+// lead by its source (site, recomandare, telefon, walk-in, Facebook / Instagram without an ad…), and the clients who
+// paid without ever being a lead ("direct", counted by the day they paid). Every payment (Încasări, upsells included) counts for the lead it came from: the lead of its
 // appointment, else the client's latest lead before it; a client with no lead (walk-in, old client) counts nowhere.
 // The period picks the leads (by the day they came); their payments count until today. Ad spend (Meta) goes to an
 // offer by the leads each ad brought (split by their offers), else by its campaign's leads, else by the name
@@ -14,6 +16,7 @@ const ads = require('./_lib/meta-ads');
 const { periodRange, bucharestDay } = require('./_lib/ads-funnel');
 
 const DAY = 864e5;
+const SOURCES = { facebook: 'Facebook, fără reclamă (mesaje)', instagram: 'Instagram', site: 'Site', recomandare: 'Recomandare', telefon: 'Telefon', walk_in: 'Walk-in', altul: 'Altă sursă', direct: 'Clienți fără lead (veniți direct)' };
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 const r2 = (n) => Math.round(n * 100) / 100;
 
@@ -53,7 +56,9 @@ module.exports = async (req, res) => {
       const at = Date.parse(l.createdAt) || 0;
       const clients = new Set([l.clientId].concat(appointments.filter((a) => a.leadId === l.id).map((a) => a.clientId)).filter(Boolean));
       const o = offerOf(l.interest);
-      return { id: l.id, at, day: bucharestDay(at), clients, key: o ? o.key : '', interest: l.interest || '', forms: Array.isArray(l.forms) ? l.forms : [] };
+      const fromAds = l.createdBy === 'facebook-webhook' || (Array.isArray(l.forms) && l.forms.length > 0); // came through an ad's lead form
+      return { id: l.id, at, day: bucharestDay(at), clients, key: fromAds ? (o ? o.key : '_ads') : 'org:' + (SOURCES[l.source] ? l.source : 'altul'),
+        interest: l.interest || '', forms: Array.isArray(l.forms) ? l.forms : [] };
     }).filter((x) => x.at);
     const leadById = new Map(L.map((x) => [x.id, x]));
     const byClient = new Map();
@@ -67,19 +72,21 @@ module.exports = async (req, res) => {
       return rows.get(key);
     };
     const inPeriod = (x) => !r || (x.day >= r.since && x.day <= r.until);
-    L.filter(inPeriod).forEach((x) => { rowOf(x.key || (x.interest ? '_other' : '_none')).leads++; });
+    L.filter(inPeriod).forEach((x) => { rowOf(x.key).leads++; });
     sales.forEach((s) => {
       if (s.source !== 'incasare') return;
       const t = Date.parse(s.createdAt || s.date) || 0;
       const appt = s.appointmentId ? apptById.get(s.appointmentId) : null;
       let lead = appt && appt.leadId ? leadById.get(appt.leadId) : null;
       if (!lead && s.clientId) lead = (byClient.get(s.clientId) || []).filter((x) => x.at <= t + DAY).pop() || null;
-      if (!lead || !inPeriod(lead)) return;
-      const row = rowOf(lead.key || (lead.interest ? '_other' : '_none'));
+      // no lead at all: organic, "direct", in the period of the payment itself
+      if (!lead) { if (!inPeriod({ day: bucharestDay(t) })) return; }
+      else if (!inPeriod(lead)) return;
+      const row = rowOf(lead ? lead.key : 'org:direct');
       row.revenue += Number(s.amount) || 0;
       row.payments++;
       if (Number(s.upsell) > 0) { row.upsell += Number(s.upsell); row.upsells++; }
-      row.clients.add(s.clientId || lead.id);
+      row.clients.add(s.clientId || (lead ? lead.id : s.id));
     });
 
     // the ad spend of the period, by the offers of the leads each ad brought
@@ -113,16 +120,17 @@ module.exports = async (req, res) => {
       }
     }
 
-    const title = (key) => (key === '_other' ? 'Alte interese (site, recomandări)' : key === '_none' ? 'Fără procedură' : ((offers.find((o) => o.key === key) || {}).title || key));
+    const title = (key) => (key === '_ads' ? 'Facebook, fără ofertă' : key.startsWith('org:') ? SOURCES[key.slice(4)] || 'Altă sursă' : ((offers.find((o) => o.key === key) || {}).title || key));
     const list = [...rows.values()].map((x) => {
       const clients = x.clients.size;
-      return { key: x.key, title: title(x.key), active: !x.key.startsWith('_') && !!(offers.find((o) => o.key === x.key) || {}).active,
+      return { key: x.key, group: x.key.startsWith('org:') ? 'organic' : 'ads', title: title(x.key), active: !!(offers.find((o) => o.key === x.key) || {}).active,
         leads: x.leads, clients, payments: x.payments, revenue: r2(x.revenue), upsell: r2(x.upsell), upsells: x.upsells, spend: r2(x.spend),
         roas: x.spend > 0 ? r2(x.revenue / x.spend) : null, perLead: x.leads ? r2(x.revenue / x.leads) : null, cpl: x.spend > 0 && x.leads ? r2(x.spend / x.leads) : null };
     }).filter((x) => x.leads || x.revenue || x.spend).sort((a, b) => b.revenue - a.revenue || b.leads - a.leads);
-    const sum = (k) => r2(list.reduce((a, x) => a + (x[k] || 0), 0));
+    const sum = (k, g) => r2(list.filter((x) => !g || x.group === g).reduce((a, x) => a + (x[k] || 0), 0));
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ period, range: r, rows: list, totals: { revenue: sum('revenue'), upsell: sum('upsell'), leads: sum('leads'), clients: sum('clients'), spend: sum('spend') },
+    res.status(200).json({ period, range: r, rows: list,
+      totals: { revenue: sum('revenue'), upsell: sum('upsell'), leads: sum('leads'), clients: sum('clients'), spend: sum('spend'), ads: sum('revenue', 'ads'), organic: sum('revenue', 'organic') },
       spend: { ready: spend.ready, error: spend.error, total: r2(spend.total), unassigned: r2(spend.unassigned) } });
   } catch (err) {
     console.error('offers-kpi error:', err.message);
