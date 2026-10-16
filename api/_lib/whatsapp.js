@@ -76,9 +76,10 @@ function toE164(phone) {
 
 // The clinics on the map: a template with a location header shows the pin of the city it leaves from.
 // (Timișoara: the street, OpenStreetMap has no number 7; Arad: the building at 16-18.)
+// the clinics' pins, as on their Google Maps listings (the review links lead to them), checked 17.10.2026
 const CLINICS = {
-  'Timișoara': { latitude: 45.7436, longitude: 21.2445, name: 'Centrul360 Timișoara', address: 'Strada Bucegi, nr. 7, Timișoara' },
-  Arad: { latitude: 46.1823977, longitude: 21.3303083, name: 'Centrul360 Arad', address: 'Strada Ioan Alexandru 16-18, Arad' },
+  'Timișoara': { latitude: 45.7448045, longitude: 21.2440549, name: 'Centrul360 Timișoara', address: 'Strada Bucegi, nr. 7, Timișoara' },
+  Arad: { latitude: 46.1824148, longitude: 21.3302344, name: 'Centrul360 Arad', address: 'Strada Ioan Alexandru 16-18, Arad' },
 };
 
 // from: 'Timișoara' | 'Arad' (the number it leaves from); when that one isn't connected, the other
