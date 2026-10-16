@@ -304,7 +304,8 @@ async function gwGet(g, path) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     if (r.status === 401) { gwCache.delete('s|' + g.merchantId); gwCache.delete('t|' + g.clientId); } // ran out: the next read starts anew
-    throw new MyposError(r.status === 401 || r.status === 403 ? 'gw_denied' : r.status === 429 ? 'mypos_busy' : 'mypos_failed', r.status, gwMsg(j));
+    const said = gwMsg(j) || (r.headers.get('www-authenticate') || '').slice(0, 160);
+    throw new MyposError(r.status === 401 || r.status === 403 ? 'gw_denied' : r.status === 429 ? 'mypos_busy' : 'mypos_failed', r.status, path.split('?')[0] + (said ? ': ' + said : ''));
   }
   return j;
 }
@@ -356,7 +357,10 @@ async function saveGateway(store, input, by) {
   if (g.merchantSecret === g.clientSecret) return { error: 'gw_format', field: 'merchantSecret' };
   gwCache.delete('t|' + g.clientId); gwCache.delete('s|' + g.merchantId);
   let accounts;
-  try { accounts = await gwBalances(g); } catch (e) { return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
+  try { accounts = await gwBalances(g); } catch (e) {
+    console.error('mypos gateway save:', e.code, e.status, e.message);
+    return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' };
+  }
   Object.assign(g, { savedAt: new Date().toISOString(), by: by || '' });
   await store.writeJSON(GW_KEY, g);
   await store.writeJSON(BAL, { at: new Date().toISOString(), live: true, accounts, error: '' }, { quiet: true });

@@ -1175,7 +1175,7 @@
           loadMypos(box);
         } catch (err) {
           const f = err.data && err.data.field;
-          K.ui().toast(err.code === 'gw_format' && f ? (f === 'merchantSecret' ? 'Merchant Secret trebuie să înceapă cu sec_ (Partner Secret începe cu secret_). Îl iei din Merchants → Generate sau Regenerate.' : GW_LABEL[f] + ' nu arată bine (începe cu ' + GW_HINT[f].replace('…', '') + ').') : GW_ERR[err.code] || MP_ERR[err.code] || K.errText(err), 'error');
+          K.ui().toast(err.code === 'gw_format' && f ? (f === 'merchantSecret' ? 'Merchant Secret trebuie să înceapă cu sec_ (Partner Secret începe cu secret_). Îl iei din Merchants → Generate sau Regenerate.' : GW_LABEL[f] + ' nu arată bine (începe cu ' + GW_HINT[f].replace('…', '') + ').') : (GW_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + (err.data.message ? ' · ' + err.data.message : '') + ']' : ''), 'error');
         }
       });
     });
