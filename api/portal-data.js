@@ -75,7 +75,7 @@ function computeGoalCurrent(goal, employeeId, sales, appointments, today, month,
     case 'programari_finalizate_luna':
       return appointments.filter((a) => a.cosmeticianId === employeeId && a.status === 'finalizata' && monthKey(a.date) === month).length;
     case 'vanzari_aprobate_luna':
-      return sales.filter((s) => s.source !== 'incasare' && s.employeeId === employeeId && s.status === 'approved' && monthKey(s.date) === month).length;
+      return sales.filter((s) => s.source !== 'incasare' && s.source !== 'manual' && s.employeeId === employeeId && s.status === 'approved' && monthKey(s.date) === month).length;
     case 'incasari_inregistrate_luna':
       return sales.filter((s) => s.source === 'incasare' && s.employeeId === employeeId && monthKey(s.date) === month).reduce((sum, s) => sum + Number(s.amount || 0), 0);
     case 'leaduri_contactate_luna':

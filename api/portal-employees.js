@@ -1,12 +1,28 @@
 // POST /api/portal-employees, admin-only employee management (Setări → Angajați).
-// One endpoint, five actions via body.action: 'create' | 'update_details' |
-// 'reset_password' | 'set_active' | 'set_goals'. Passwords are hashed server-side
+// One endpoint, actions via body.action: 'create' | 'update_details' |
+// 'reset_password' | 'set_active' | 'set_goals' | 'manual_list' | 'manual_add' | 'manual_delete' (Ajustări). Passwords are hashed server-side
 // (scrypt, see _lib/auth.js) before ever touching storage.
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { hashPassword } = require('./_lib/auth');
+const TB = require('./_lib/timebank');
+const { notify } = require('./_lib/notify');
+
+// Echipa → Ajustări: what the automatic count missed or got wrong, set right by the owner. A commission is
+// an approved line in data/sales.json (source 'manual', lei, plus or minus) counted in that month's pay; overtime
+// is an approved difference in data/time-adjust.json (manual: true, minutes, plus or minus) that moves the
+// overtime balance exactly like an approved day (it pays the hours to make up first). The person is told.
+const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || ''));
+const hm = (m) => { const a = Math.abs(m), h = Math.floor(a / 60), r = a % 60; return (m < 0 ? '-' : '+') + (h ? h + 'h' + (r ? ' ' + String(r).padStart(2, '0') : '') : r + ' min'); };
+const leiTxt = (v) => (v > 0 ? '+' : '') + (Math.round(v * 100) / 100).toLocaleString('ro-RO') + ' lei';
+async function manualList() {
+  const [sales, adjs] = await Promise.all([readJSON('data/sales.json', []), readJSON(TB.ADJ, [])]);
+  return sales.filter((s) => s.source === 'manual').map((s) => ({ id: s.id, kind: 'commission', employeeId: s.employeeId, date: s.date, value: Number(s.commission) || 0, note: s.note || '', by: s.addedBy || '', createdAt: s.createdAt }))
+    .concat(adjs.filter((a) => a.manual).map((a) => ({ id: a.id, kind: 'overtime', employeeId: a.employeeId, date: a.date, value: Number(a.approvedMinutes) || 0, note: a.note || '', by: a.by || '', createdAt: a.createdAt })))
+    .sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt))).slice(0, 300);
+}
 
 const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
 
@@ -161,6 +177,52 @@ module.exports = async (req, res) => {
       employee.active = active;
       await writeJSON('data/employees.json', employees);
       res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === 'manual_list') {
+      res.status(200).json({ items: await manualList() });
+      return;
+    }
+    if (action === 'manual_add') {
+      const b = req.body || {};
+      const emp = employees.find((e) => e.id === b.employeeId && e.id !== 'admin');
+      if (!emp) { res.status(404).json({ error: 'employee_not_found' }); return; }
+      const date = isDay(b.date) ? b.date : TB.bucharestNow().date;
+      const note = String(b.note || '').trim().slice(0, 200);
+      const now = new Date().toISOString();
+      if (b.kind === 'commission') {
+        const lei = Math.round(Number(b.value) * 100) / 100;
+        if (!Number.isFinite(lei) || !lei || Math.abs(lei) > 50000) { res.status(400).json({ error: 'invalid_value' }); return; }
+        const sales = await readJSON('data/sales.json', []);
+        sales.push({ id: crypto.randomUUID(), source: 'manual', employeeId: emp.id, date, categories: [], category: '', treatment: 'Comision adăugat manual', amount: 0, commission: lei, note, clientId: '', client: '', status: 'approved', createdAt: now, decidedAt: now, addedBy: session.employeeId });
+        await writeJSON('data/sales.json', sales);
+        await notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: lei > 0 ? 'good' : 'info', title: (lei > 0 ? 'Comision adăugat: ' : 'Comision corectat: ') + leiTxt(lei), text: note || 'Adăugat de admin.', go: 'comision' });
+      } else if (b.kind === 'overtime') {
+        const minutes = Math.round(Number(b.value));
+        if (!Number.isFinite(minutes) || !minutes || Math.abs(minutes) > 100 * 60) { res.status(400).json({ error: 'invalid_value' }); return; }
+        const adjs = await readJSON(TB.ADJ, []);
+        adjs.push({ id: crypto.randomUUID(), manual: true, employeeId: emp.id, date, minutes, approvedMinutes: minutes, worked: null, expected: null, weekend: false, location: emp.location || '', note, status: 'approved', createdAt: now, decidedAt: now, updatedAt: now, by: session.employeeId });
+        await writeJSON(TB.ADJ, adjs);
+        await notify({ readJSON, writeJSON }, emp.id, { kind: 'time', tone: minutes > 0 ? 'good' : 'info', title: (minutes > 0 ? 'Ore suplimentare adăugate: ' : 'Ore suplimentare corectate: ') + hm(minutes), text: note || 'Adăugate de admin.', go: 'condica' });
+      } else { res.status(400).json({ error: 'invalid_kind' }); return; }
+      res.status(200).json({ ok: true, items: await manualList() });
+      return;
+    }
+    if (action === 'manual_delete') {
+      const { kind, id } = req.body || {};
+      if (kind === 'commission') {
+        const sales = await readJSON('data/sales.json', []);
+        const next = sales.filter((s) => !(s.id === id && s.source === 'manual'));
+        if (next.length === sales.length) { res.status(404).json({ error: 'not_found' }); return; }
+        await writeJSON('data/sales.json', next);
+      } else if (kind === 'overtime') {
+        const adjs = await readJSON(TB.ADJ, []);
+        const next = adjs.filter((a) => !(a.id === id && a.manual));
+        if (next.length === adjs.length) { res.status(404).json({ error: 'not_found' }); return; }
+        await writeJSON(TB.ADJ, next);
+      } else { res.status(400).json({ error: 'invalid_kind' }); return; }
+      res.status(200).json({ ok: true, items: await manualList() });
       return;
     }
 

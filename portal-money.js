@@ -747,6 +747,7 @@
           tile('clock', 'Ore suplimentare', lei2(pay.overtimeLei), pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' + (pay.overtimeDueLei ? ', vin cu salariul' : '') : 'nicio oră luna asta') +
           (pay.hasBonus ? tile('trophy', 'Bonus programări', K.lei(pay.bonus), pay.booking && pay.booking.days ? 'media ' + K.num(pay.booking.avg) + ' pe zi' : 'nicio zi pontată încă', pay.bonus ? 'is-good' : '')
             : tile('percent', 'Comision', lei2(pay.commission), K.plural(pay.upsells, 'upsell', 'upsell-uri') + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : ''))) +
+          (pay.manual ? tile('sliders', 'Comision adăugat', (pay.manual > 0 ? '+' : '') + lei2(pay.manual), 'de admin, luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
         '</div></section>';
 
     // the treatments and upsells (cosmeticians)

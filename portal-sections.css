@@ -721,6 +721,18 @@
 .st-mp-none{ margin:0 0 .75rem; font-size:.84rem; }
 .st-mp-id{ font-size:.8rem; }
 .st-mp-off{ margin-top:.5rem; color:var(--bad); }
+/* Echipa → Ajustări */
+.tm-man-acts{ display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem; }
+.tm-man-list{ padding:.35rem .9rem; }
+.tm-man-row{ display:flex; align-items:center; gap:.7rem; padding:.65rem 0; }
+.tm-man-row + .tm-man-row{ border-top:1px solid var(--line); }
+.tm-man-main{ display:flex; flex-direction:column; flex:1 1 auto; min-width:0; }
+.tm-man-main b{ font-size:.9rem; }
+.tm-man-main span{ font-size:.78rem; color:var(--muted); overflow-wrap:anywhere; }
+.tm-man-row .k-tag{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.tm-man-hm{ display:flex; gap:.6rem; }
+.tm-man-hm label{ display:flex; align-items:center; gap:.4rem; flex:1 1 0; }
+.tm-man-hm small{ color:var(--muted); font-size:.8rem; }
 .st-mp-gw-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.5rem .6rem; }
 .st-mp-gw-grid input{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.82rem; }
 @media (max-width:560px){ .st-mp-gw-grid{ grid-template-columns:1fr; } }

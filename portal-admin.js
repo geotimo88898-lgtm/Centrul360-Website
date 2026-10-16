@@ -230,20 +230,25 @@
     epanel.querySelectorAll('[data-pane]').forEach((x) => { x.hidden = x.dataset.pane !== TEAM.tab; });
     if (TEAM.tab === 'salarii') renderPayroll();
     if (TEAM.tab === 'condica' && K.mountCondica) K.mountCondica(epanel.querySelector('[data-cond]'));
+    if (TEAM.tab === 'manual') loadManual();
   }
   function mountTeam(p) {
     epanel = p;
     epanel.classList.add('k-panel', 'ad');
     epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
-      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
-      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
+      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
+      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();
       const c = e.target.closest('[data-emp]');
       if (c) openEmployee(c.dataset.emp);
       const po = e.target.closest('[data-payout]');
       if (po) payOvertime(po.dataset.payout);
+      const ma = e.target.closest('[data-man-add]');
+      if (ma) openManual(ma.dataset.manAdd);
+      const md = e.target.closest('[data-man-del]');
+      if (md) delManual(md.dataset.manDel, md.dataset.kind);
     });
     epanel.addEventListener('change', (e) => { if (e.target.name === 'teamtab') { TEAM.tab = e.target.value; showTeamTab(); } });
   }
@@ -432,7 +437,7 @@
         '<div class="k-stat is-accent"><div class="k-stat-top">' + icon('wallet') + 'Total de plată</div><div class="k-stat-value">' + K.lei(sum('total')) + '</div><div class="k-stat-sub">' + esc(K.monthLabel(K.thisMonth())) + ', până azi</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('users') + 'Salarii de bază</div><div class="k-stat-value">' + K.lei(sum('base')) + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('clock') + 'Ore suplimentare</div><div class="k-stat-value">' + K.lei(sum('overtimeLei')) + '</div></div>' +
-        '<div class="k-stat"><div class="k-stat-top">' + icon('percent') + 'Comision + bonus</div><div class="k-stat-value">' + K.lei(sum('commission') + sum('bonus')) + '</div></div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('percent') + 'Comision + bonus</div><div class="k-stat-value">' + K.lei(sum('commission') + sum('bonus') + sum('manual')) + '</div></div>' +
       '</div>' +
       (rows.length ? '<div class="pr-list">' + rows.map((r) => {
         const extra = r.hasBonus
@@ -441,9 +446,75 @@
         return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + '</small></span></button>' +
           '<dl class="pr-kv"><div><dt>Salariu net</dt><dd>' + (r.base ? K.lei(r.base) : '<em>nesetat</em>') + '</dd></div>' +
           '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
+          (r.manual ? '<div><dt>Comision manual</dt><dd>' + (r.manual > 0 ? '+' : '') + K.lei(r.manual, r.manual % 1 ? 2 : 0) + '</dd><small>din Ajustări</small></div>' : '') +
           '<div class="pr-total"><dt>Total</dt><dd>' + K.lei(r.total, r.total % 1 ? 2 : 0) + '</dd></div></dl>' +
           (r.overtimeDueLei ? '<button type="button" class="k-btn is-sm is-good" data-payout="' + esc(r.id) + '">' + icon('check') + 'Ore plătite cu salariul</button>' : '') + '</article>';
       }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', ''));
+  }
+  // ---------------- Ajustări: commissions and overtime added by hand, when the automatic count missed something
+  // or got it wrong. Plus or minus; the person is told (bell + phone). The automatic count goes on as before.
+  const MAN = { items: null };
+  const empName = (id) => ((K.data.admin.employees || []).find((x) => x.id === id) || {}).name || 'Cont șters';
+  const manHm = (m) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return (m < 0 ? '-' : '+') + (h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min'); };
+  async function loadManual(force) {
+    const box = epanel && epanel.querySelector('[data-man]');
+    if (!box) return;
+    if (!MAN.items || force) {
+      if (!MAN.items) box.innerHTML = '<div class="k-skel" style="height:160px"></div>';
+      try { MAN.items = (await K.api('/api/portal-employees', { action: 'manual_list' })).items || []; } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca ajustările', K.errText(e)); return; }
+    }
+    paintManual();
+  }
+  function paintManual() {
+    const box = epanel && epanel.querySelector('[data-man]');
+    if (!box || !MAN.items) return;
+    const val = (x) => (x.kind === 'commission' ? (x.value > 0 ? '+' : '-') + K.lei(Math.abs(x.value), x.value % 1 ? 2 : 0) : manHm(x.value));
+    box.innerHTML = '<div class="tm-man-acts"><button type="button" class="k-btn is-accent" data-man-add="commission">' + icon('percent') + 'Adaugă comision</button>' +
+        '<button type="button" class="k-btn is-outline" data-man-add="overtime">' + icon('clock') + 'Adaugă ore suplimentare</button></div>' +
+      (MAN.items.length ? '<div class="k-card tm-man-list">' + MAN.items.map((x) => '<div class="tm-man-row">' + K.avatar(empName(x.employeeId), 36) +
+          '<div class="tm-man-main"><b>' + esc(empName(x.employeeId)) + '</b><span>' + (x.kind === 'commission' ? 'Comision' : 'Ore suplimentare') + ' · ' + esc(K.dateShort(x.date)) + (x.note ? ' · „' + esc(x.note) + '”' : '') + '</span></div>' +
+          '<span class="k-tag is-' + (x.value > 0 ? 'good' : 'warn') + '">' + esc(val(x)) + '</span>' +
+          '<button type="button" class="k-icon-btn" data-man-del="' + esc(x.id) + '" data-kind="' + esc(x.kind) + '" title="Șterge">' + icon('trash') + '</button></div>').join('') + '</div>'
+        : K.empty('sliders', 'Nicio ajustare', 'Comisioanele și orele adăugate de mână apar aici.'));
+  }
+  function openManual(kind) {
+    const people = (K.data.admin.employees || []).filter((e) => e.id !== 'admin' && e.active);
+    const d = K.drawer({
+      title: kind === 'commission' ? 'Comision adăugat manual' : 'Ore suplimentare adăugate manual', icon: kind === 'commission' ? 'percent' : 'clock', width: 520,
+      body: '<form class="k-form" data-man-form>' +
+        K.field('Persoana', '<select name="employeeId" required>' + K.options([['', 'Alege…']].concat(people.map((e) => [e.id, e.name + ' · ' + K.roleLabel(e.role)])), '') + '</select>', 'full') +
+        K.field('Ce faci', K.seg('sign', [['plus', kind === 'commission' ? 'Adaug' : 'Adaug ore', 'plus'], ['minus', kind === 'commission' ? 'Scad (corectez)' : 'Scad ore', 'minus']], 'plus', 'is-big'), 'full') +
+        (kind === 'commission'
+          ? K.field('Suma', '<div class="k-money"><input name="lei" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" required></div>', 'full')
+          : '<div class="k-field full"><span>Cât</span><div class="tm-man-hm"><label><input name="h" type="number" min="0" max="100" step="1" inputmode="numeric" placeholder="0"><small>ore</small></label><label><input name="m" type="number" min="0" max="59" step="1" inputmode="numeric" placeholder="0"><small>minute</small></label></div></div>') +
+        K.field('Data', '<input name="date" type="date" value="' + esc(K.today()) + '" required>', 'full', kind === 'commission' ? 'Intră în salariul lunii acestei date.' : 'Intră în soldul de ore suplimentare (acoperă întâi orele de recuperat, ca o zi aprobată).') +
+        K.field('Motivul (îl vede și persoana)', '<input name="note" maxlength="200" placeholder="ex. upsell nebifat la încasare, 12.10">', 'full') +
+        '</form>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Adaugă</button>',
+      onMount(el) {
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(el.querySelector('[data-man-form]'));
+          const sign = v.sign === 'minus' ? -1 : 1;
+          const value = kind === 'commission' ? Math.round(Number(v.lei) * 100) / 100 : (Number(v.h) || 0) * 60 + (Number(v.m) || 0);
+          if (!v.employeeId) { K.ui().toast('Alege persoana.', 'error'); return; }
+          if (!(value > 0)) { K.ui().toast(kind === 'commission' ? 'Scrie suma.' : 'Scrie orele sau minutele.', 'error'); return; }
+          try {
+            MAN.items = (await K.api('/api/portal-employees', { action: 'manual_add', kind, employeeId: v.employeeId, value: sign * value, date: v.date, note: v.note })).items || [];
+            d.close();
+            K.ui().toast((kind === 'commission' ? 'Comision ' : 'Ore ') + (sign > 0 ? 'adăugat' : 'scăzut') + (kind === 'commission' ? '' : 'e') + ' pentru ' + empName(v.employeeId) + '.', 'success');
+            paintManual();
+            K.reload();
+          } catch (err) { K.ui().toast(err.code === 'invalid_value' ? 'Valoarea nu e bună.' : K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+  async function delManual(id, kind) {
+    const x = (MAN.items || []).find((i) => i.id === id);
+    if (!x || !(await K.ui().confirm({ title: 'Ștergi ajustarea?', message: empName(x.employeeId) + ': ' + (kind === 'commission' ? 'comisionul' : 'orele') + ' adăugate de mână ies din calcul.', confirmText: 'Șterge', danger: true }))) return;
+    try { MAN.items = (await K.api('/api/portal-employees', { action: 'manual_delete', kind, id })).items || []; paintManual(); K.ui().toast('Ștearsă.', 'success'); K.reload(); }
+    catch (err) { K.ui().toast(K.errText(err), 'error'); }
   }
   async function payOvertime(id) {
     const r = (K.data.admin.payroll || []).find((x) => x.id === id);

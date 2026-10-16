@@ -159,12 +159,12 @@
     const payCard = D.isAdmin
       ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salarii · ' + esc(K.monthLabel(month)) + '</h3></div>' +
         '<b class="db-pay-total" data-count="' + Math.round(tsum('total')) + '" data-fmt="lei" data-key="db-payt">0 lei</b><span class="db-pay-sub">de plată până azi, toată echipa</span>' +
-        '<div class="db-pay-lines"><div><span>Salarii de bază</span><b>' + K.lei(tsum('base')) + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(tsum('overtimeLei')) + '</b></div><div><span>Comision + bonus</span><b>' + lei2(tsum('commission') + tsum('bonus')) + '</b></div></div>' +
+        '<div class="db-pay-lines"><div><span>Salarii de bază</span><b>' + K.lei(tsum('base')) + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(tsum('overtimeLei')) + '</b></div><div><span>Comision + bonus</span><b>' + lei2(tsum('commission') + tsum('bonus') + tsum('manual')) + '</b></div></div>' +
         '<button type="button" class="k-btn is-sm is-outline" data-go="angajati">' + icon('users') + 'Echipa · Salarii</button></section>'
       : myPay ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salariul meu · ' + esc(K.monthLabel(month)) + '</h3></div>' +
         '<b class="db-pay-total" data-count="' + myPay.total + '" data-fmt="lei" data-key="db-payme">0 lei</b><span class="db-pay-sub">în mână, până azi</span>' +
         '<div class="db-pay-lines"><div><span>Salariu de bază</span><b>' + (myPay.base ? K.lei(myPay.base) : '-') + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(myPay.overtimeLei) + '</b></div>' +
-        (myPay.hasBonus ? '<div><span>Bonus programări</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '<div><span>Comision</span><b>' + lei2(myPay.commission) + '</b></div>') + '</div>' +
+        (myPay.hasBonus ? '<div><span>Bonus programări</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '<div><span>Comision</span><b>' + lei2(myPay.commission) + '</b></div>') + (myPay.manual ? '<div><span>Comision adăugat</span><b>' + lei2(myPay.manual) + '</b></div>' : '') + '</div>' +
         '<button type="button" class="k-btn is-sm is-outline" data-go="comision">' + icon('wallet') + 'Detalii</button></section>' : '';
     // Reception: the booking bonus at a glance (average per clocked-in day, the steps)
     const bk = myPay && myPay.booking;

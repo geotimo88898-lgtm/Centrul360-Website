@@ -5,6 +5,8 @@
 // + commission (cosmeticians): approved upsell commission dated that month (_lib/cats.js)
 // + bonus (reception): the booking bonus, on the average number of appointments she books per day,
 //   over the days she clocked in: 24+ = 500 lei, 27+ = 700 lei, 30+ = 1.500 lei.
+// + added by hand (Echipa → Ajustări, anyone): commission lines the owner wrote herself, plus or minus, dated
+//   that month (data/sales.json, source 'manual'). Overtime added by hand is already in the overtime balance.
 // Reception has no commission and the cosmeticians no bonus.
 
 const BOOKING_TIERS = [{ min: 30, lei: 1500 }, { min: 27, lei: 700 }, { min: 24, lei: 500 }];
@@ -45,18 +47,20 @@ function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, app
   let commission = 0, waiting = 0, upsells = 0;
   if (hasCommission(emp)) {
     (sales || []).forEach((s) => {
-      if (s.source === 'incasare' || s.employeeId !== emp.id || String(s.date).slice(0, 7) !== month) return;
+      if (s.source === 'incasare' || s.source === 'manual' || s.employeeId !== emp.id || String(s.date).slice(0, 7) !== month) return;
       if (s.status === 'approved') { commission += Number(s.commission) || 0; upsells += 1; }
       if (s.status === 'pending') waiting += Number(s.commission) || 0;
     });
   }
+  let manual = 0;
+  (sales || []).forEach((s) => { if (s.source === 'manual' && s.status === 'approved' && s.employeeId === emp.id && String(s.date).slice(0, 7) === month) manual += Number(s.commission) || 0; });
   const booking = hasBookingBonus(emp) ? bookingBonus(emp.id, month, attendance, appointments) : null;
   const bonus = booking ? booking.lei : 0;
   const r2 = (v) => Math.round(v * 100) / 100;
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
-    commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking,
-    total: r2(base + paidLei + dueLei + commission + bonus), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp),
+    commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
+    total: r2(base + paidLei + dueLei + commission + bonus + manual), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp),
   };
 }
 
