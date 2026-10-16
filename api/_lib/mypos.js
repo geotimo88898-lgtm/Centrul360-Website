@@ -267,10 +267,9 @@ const BAL = 'data/mypos-balance.json';
 //                              error ('gw_partner' | 'gw_merchant'), errorAt, status, message }
 const GW = 'https://api-gateway.mypos.com';
 const GW_KEY = 'data/mypos-gateway.json';
-// the IDs have fixed beginnings (a key pasted in the wrong box is caught before myPOS counts a failed try); a
-// secret only must not look like an ID and have no spaces (myPOS's real secrets don't all follow its docs)
-const SECRET = /^(?!(client_|cli_|mps-))\S{8,400}$/;
-const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: SECRET, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: SECRET };
+// Every key has its fixed beginning (myPOS's API reference: the merchant secret is "sec_…", the partner one
+// "secret_…"): a key pasted in the wrong box is caught here, before myPOS counts a failed try (three lock it).
+const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: /^secret_\S{8,400}$/, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: /^sec_\S{8,400}$/ };
 const gwReady = (g) => !!g && Object.keys(GW_FIELDS).every((k) => g[k]);
 const gwMsg = (j) => String(j.message || j.error_description || j.error || j.title || (j.errors && JSON.stringify(j.errors)) || '').slice(0, 200);
 const gwCache = new Map(); // 't|…' token, 's|…' session → { v, until } (per warm function instance)
@@ -354,6 +353,7 @@ async function saveGateway(store, input, by) {
     if (!GW_FIELDS[k].test(v)) return { error: 'gw_format', field: k };
     g[k] = v;
   }
+  if (g.merchantSecret === g.clientSecret) return { error: 'gw_format', field: 'merchantSecret' };
   gwCache.delete('t|' + g.clientId); gwCache.delete('s|' + g.merchantId);
   let accounts;
   try { accounts = await gwBalances(g); } catch (e) { return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
