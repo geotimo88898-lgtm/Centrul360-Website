@@ -361,6 +361,11 @@
     let wa, stats;
     try { [wa, stats] = await Promise.all([window.C360Wa.load(), loadStats()]); } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.'); return; }
     if (!box.isConnected) return;
+    if (!picsChecked) {
+      picsChecked = true;
+      const old = leadRows(wa.templates || []).some((r) => !r.o.site && r.mine.concat(r.goes).some((x) => x.headerType === 'IMAGE' && (x.pic || '') !== LEAD_PIC(r.o)));
+      if (old) { try { await fixPics(wa); return paintMsgs(); } catch (e) { /* drawn as they are */ } }
+    }
     const tpls = wa.templates || [];
     const byId = new Map(tpls.map((t) => [t.id, t]));
     const rows = leadRows(tpls);
@@ -374,6 +379,7 @@
         (numbers ? '<button type="button" class="k-btn ' + (missing || stale ? 'is-primary' : 'is-ghost') + ' is-sm" data-leadmsg-go>' + icon(missing || stale ? 'plus' : 'refresh') + (missing ? (rows.length === missing ? 'Creează mesajele' : 'Creează ce lipsește') : stale ? 'Actualizează mesajele' : 'Verifică din nou') + '</button>' : '') + '</header>' +
         (numbers ? '' : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
         (rows.length ? rows.map((r) => '<div class="au-msg-row">' + (r.t ? '<label class="k-switch ad-sw" title="' + (r.on ? 'Pornit, apasă ca să-l oprești' : 'Oprit, apasă ca să-l pornești') + '"><input type="checkbox" data-leadsw="' + esc(r.t.id) + '" data-key="' + esc(r.o.key) + '"' + (r.on ? ' checked' : '') + '><i></i></label>' : '<span class="au-msg-gap"></span>') +
+          '<span class="au-msg-pic">' + (r.t && r.t.image ? '<img src="/api/portal-file?p=' + encodeURIComponent(r.t.image) + '" alt="" loading="lazy">' : icon(r.o.site ? 'chat' : 'image')) + '</span>' +
           '<span class="au-msg-name"><b>' + esc(r.o.title) + '</b><small>' + esc(leadCities(r.o).join(' · ')) + '</small>' + (r.t ? statHtml(stats, [...new Set(r.mine.concat(r.goes, [r.t]).map((x) => x.id))]) : '') + '</span>' +
           '<span class="au-msg-tags">' + (r.t ? cityState(r.t, leadCities(r.o)) : '<span class="k-tag">Lipsește</span>') + '</span>' +
           (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
@@ -387,10 +393,24 @@
           '</div>').join('') : '<p class="k-muted au-msg-none">Nicio reamintire încă.</p>') +
       '</section></div>';
   }
+  // The offer's dark creative on every version of its message (the picture goes with each message; Meta approved only
+  // the text, so it changes at once, no new version). Returns the templates as they are after.
+  async function fixPics(wa) {
+    for (const r of leadRows(wa.templates || [])) {
+      if (r.o.site) continue;
+      const list = [...new Map(r.mine.concat(r.goes, r.t ? [r.t] : []).map((x) => [x.id, x])).values()].filter((x) => x.headerType === 'IMAGE' && (x.pic || '') !== LEAD_PIC(r.o));
+      if (!list.length) continue;
+      let sample;
+      try { sample = await toJpeg(LEAD_PIC(r.o)); } catch (e) { continue; }
+      for (const x of list) wa = await window.C360Wa.post({ action: 'tpl_set_pic', id: x.id, sample, pic: LEAD_PIC(r.o) });
+    }
+    return wa;
+  }
+  let picsChecked = false;
   async function makeLeadMsgs(btn) {
     await K.busy(btn, async () => {
       try {
-        let wa = await window.C360Wa.load(true);
+        let wa = await fixPics(await window.C360Wa.load(true));
         let made = 0;
         const errs = [];
         for (const r of leadRows(wa.templates || [])) {

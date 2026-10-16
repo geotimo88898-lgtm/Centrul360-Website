@@ -373,6 +373,22 @@ module.exports = async (req, res) => {
       res.status(200).json(await payload(false));
       return;
     }
+    // a template's picture changed here only (Automatizări → Mesaje, the offer's creative): it goes with every message
+    // from now on; Meta approved the text, so nothing goes back to Meta and the template stays approved
+    if (a === 'tpl_set_pic') {
+      const t = d.templates.find((x) => x.id === String(body.id || ''));
+      const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(body.sample || ''));
+      if (!t || t.headerType !== 'IMAGE' || !m) { res.status(400).json({ error: 'invalid', message: 'Nu găsesc șablonul sau poza.' }); return; }
+      const buf = Buffer.from(m[1], 'base64');
+      if (buf.length < 1000 || buf.length > 3e6) { res.status(400).json({ error: 'invalid', message: 'Poza e prea mare.' }); return; }
+      const p = 'wa-media/tpl-' + t.id.replace(/[^\w-]/g, '') + '-' + Date.now().toString(36) + '.jpg';
+      await require('./_lib/store').writeBinary(p, buf, 'image/jpeg');
+      t.headerImagePath = p;
+      t.pic = String(body.pic || '').slice(0, 200);
+      await T.save(d);
+      res.status(200).json(await payload(false));
+      return;
+    }
     if (a === 'tpl_hide') {
       const ids = new Set((Array.isArray(body.ids) ? body.ids : []).map(String));
       d.templates.forEach((t) => { if (ids.has(t.id)) t.hidden = body.show ? false : true; });
