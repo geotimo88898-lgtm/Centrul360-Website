@@ -310,16 +310,28 @@ async function gwGet(g, path) {
   }
   return j;
 }
-// every account (not the suspense ones) with its balance now
+// every account (not the suspense ones) with its balance now. The list may carry the balance itself; otherwise
+// each account's details are read, by number, then by IBAN. myPOS may refuse the details of one account (a
+// reserve, say: 403): that one is left out and the others are read. Only when no account gives a balance is it
+// an error (with myPOS's words, to know which call it refused).
+const num2 = (v) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Math.round(Number(v) * 100) / 100 : null);
 async function gwBalances(g) {
   const list = await gwGet(g, '/accounting/v1/accounts?' + new URLSearchParams({ page: '1', size: '50' }));
   const items = (list.items || []).filter((a) => a && a.account_number && !a.is_suspense_account).slice(0, 8);
   const out = [];
+  let refused = null;
   for (const a of items) {
-    const d = await gwGet(g, '/accounting/v1/accounts/' + encodeURIComponent(a.account_number));
-    const bal = d.balance != null && d.balance !== '' && Number.isFinite(Number(d.balance)) ? Math.round(Number(d.balance) * 100) / 100 : null;
+    let bal = num2(a.balance != null ? a.balance : a.available_balance != null ? a.available_balance : a.current_balance);
+    let d = {};
+    if (bal == null) {
+      for (const key of [a.account_number, a.iban].filter((x, i, l) => x && l.indexOf(x) === i)) {
+        try { d = await gwGet(g, '/accounting/v1/accounts/' + encodeURIComponent(key)); bal = num2(d.balance); break; }
+        catch (e) { if (e.code !== 'gw_denied' && e.status !== 404) throw e; refused = e; }
+      }
+    }
     out.push({ number: String(a.account_number).slice(-4), name: String(a.name || d.account_name || ''), currency: String(d.currency || a.currency || ''), reserve: !!a.is_reserve, available: bal, closing: null, date: '', live: true });
   }
+  if (!out.some((x) => x.available != null)) throw refused || new MyposError('gw_denied', 0, items.length ? 'niciun cont nu are sold' : 'niciun cont în listă');
   return out;
 }
 // the keys as the portal may show them (never a secret)
