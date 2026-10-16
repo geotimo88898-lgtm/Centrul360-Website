@@ -1140,8 +1140,8 @@
         '<div class="st-fb-status ' + (hist && hist.ok ? 'is-ok' : 'is-wait') + '">' + icon(hist && hist.ok ? 'checkCircle' : hist ? 'alert' : 'clock') + '<div><b>Istoricul plăților</b><span>' +
           (hist && hist.ok ? 'Citit ' + esc(mpWhen(d.syncedAt || hist.at)) + (d.lastPayment ? ' · ultima plată ' + esc(K.lei(d.lastPayment.amount)) + ', ' + esc(mpWhen(d.lastPayment.at)) : '') : hist ? esc('Nu s-a putut citi. ' + errLine(hist)) : 'Încă necitit.') + '</span></div></div>' +
         gwStatus(d.gateway) +
-        (devs.length ? '<div class="st-mp-devs">' + devs.map((x) => '<label class="st-mp-dev"><span><b>' + esc(x.model || 'POS') + '</b><small>TID ' + esc(x.tid) + '</small></span>' +
-          '<select data-mp-city="' + esc(x.tid) + '">' + K.options([['', 'Alege orașul'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], x.city || '') + '</select></label>').join('') + '</div>'
+        (devs.length ? '<div class="st-mp-devs">' + devs.map((x) => '<label class="st-mp-dev"><span class="st-mp-dev-ic">' + icon('card') + '</span><span class="st-mp-dev-txt"><b>' + esc(x.model || 'POS') + '</b><small>TID ' + esc(x.tid) + '</small></span>' +
+          '<select data-mp-city="' + esc(x.tid) + '">' + K.options([['', 'Orașul'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], x.city || '') + '</select></label>').join('') + '</div>'
           : '<p class="k-muted st-mp-none">' + (d.devicesHealth && !d.devicesHealth.ok ? esc('Nu am putut citi aparatele. ' + errLine(d.devicesHealth)) : 'Niciun aparat POS găsit în cont.') + '</p>') +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><span class="k-muted st-mp-id">ID ' + esc(d.clientId) + '</span><span class="k-grow"></span>' +
           '<button type="button" class="k-btn is-ghost is-sm" data-mp-sync>' + icon('refresh') + 'Citește acum</button>' +

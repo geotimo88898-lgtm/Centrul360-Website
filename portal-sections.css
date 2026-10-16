@@ -713,11 +713,16 @@
 }
 /* myPOS: the terminals and their city */
 .st-mp-devs{ display:flex; flex-direction:column; gap:.4rem; margin-bottom:.75rem; }
-.st-mp-dev{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.55rem .7rem; border:1px solid var(--line); border-radius:12px; }
-.st-mp-dev span{ display:flex; flex-direction:column; min-width:0; }
-.st-mp-dev b{ font-size:.88rem; }
-.st-mp-dev small{ font-size:.76rem; color:var(--muted); white-space:nowrap; }
-.st-mp-dev select{ width:auto; min-width:9.5rem; }
+/* a terminal: its icon, model and TID in full, the city picked on the right at a fixed width */
+.st-mp-dev{ display:flex; align-items:center; gap:.75rem; padding:.6rem .65rem .6rem .6rem; border:1px solid var(--line); border-radius:14px; background:var(--glass); }
+.st-mp-dev-ic{ display:grid; place-items:center; width:40px; height:40px; flex:0 0 40px; border-radius:12px; background:var(--accent-soft); color:var(--accent); }
+.st-mp-dev-ic svg{ width:19px; height:19px; }
+.st-mp-dev-txt{ display:flex; flex-direction:column; gap:.1rem; flex:1 1 auto; min-width:0; }
+.st-mp-dev-txt b{ font-size:.92rem; letter-spacing:.01em; }
+.st-mp-dev-txt small{ font-size:.76rem; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.st-mp-dev select, .st-mp-dev .c360-select{ width:160px; flex:0 0 160px; min-width:0; }
+.st-mp-dev .c360-select-btn{ height:40px; padding-top:0; padding-bottom:0; background:var(--surface-3); border-color:var(--line); }
+@media (max-width:420px){ .st-mp-dev select, .st-mp-dev .c360-select{ width:132px; flex-basis:132px; } }
 .st-mp-none{ margin:0 0 .75rem; font-size:.84rem; }
 .st-mp-id{ font-size:.8rem; }
 .st-mp-off{ margin-top:.5rem; color:var(--bad); }
