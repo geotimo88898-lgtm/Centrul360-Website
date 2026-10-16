@@ -236,7 +236,7 @@
     const money = (v, cur) => (Number(v) || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (cur && cur !== 'RON' ? cur : 'lei');
     return '<div class="mo-pos-bal">' + acc.map((a) => '<div class="mo-pos-bal-main"><span>' + icon('wallet') + 'Sold cont myPOS' + (acc.length > 1 ? ' · ' + esc(a.name || '••' + a.number) : '') + '</span>' +
         '<b>' + money(a.available != null ? a.available : a.closing, a.currency) + '</b>' +
-        '<small>' + (a.live ? 'sold actual · citit ' + esc(K.ago(b.at)) + (b.error ? ' · nu s-a putut reciti' : '')
+        '<small>' + (a.live ? 'sold actual · ' + (a.computed ? 'extrasul din ' + esc(K.dateShort(a.computed.from)) + ' + ' + K.plural(a.computed.moves, 'mișcare', 'mișcări') + ' de atunci · ' : '') + 'citit ' + esc(K.ago(b.at)) + (b.error ? ' · nu s-a putut reciti' : '')
           : (a.available != null && a.closing != null && Math.abs(a.available - a.closing) > 0.009 ? 'disponibil · contabil ' + money(a.closing, a.currency) + ' · ' : a.available != null ? 'disponibil · ' : '') + (a.date && a.date !== K.today() ? 'extras din ' + esc(K.dateShort(a.date)) : 'extras de azi')) + '</small></div>').join('') +
       reserve.map((a) => '<div class="mo-pos-bal-res"><span>Rezervă</span><b>' + money(a.available != null ? a.available : a.closing, a.currency) + '</b></div>').join('') +
       (acc.some((a) => !a.live) ? '<button type="button" class="k-btn is-ghost is-sm mo-pos-bal-go" data-goto-int>' + (b.gateway && b.gateway.error ? 'Soldul de acum s-a oprit' : 'Soldul de acum') + icon('arrow') + '</button>' : '') +

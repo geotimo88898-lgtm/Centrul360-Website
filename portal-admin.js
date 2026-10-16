@@ -1108,7 +1108,7 @@
   };
   function gwStatus(g) {
     g = g || { on: false };
-    const st = g.on ? ['is-ok', 'checkCircle', 'Pornit · citit direct din cont']
+    const st = g.on ? ['is-ok', 'checkCircle', 'Pornit · din cont, la minut']
       : g.error ? ['is-wait', 'alert', (g.error === 'gw_merchant' ? 'Oprit: myPOS a refuzat cheile clinicii.' : 'Oprit: myPOS a refuzat cheile integrării.') + ' Pune-le din nou mai jos.']
       : ['is-wait', 'clock', 'Acum din extrasul zilnic. Cu cheile de mai jos, soldul de acum.'];
     return '<div class="st-fb-status ' + st[0] + '">' + icon(st[1]) + '<div><b>Sold în timp real</b><span>' + esc(st[2]) + '</span></div></div>';

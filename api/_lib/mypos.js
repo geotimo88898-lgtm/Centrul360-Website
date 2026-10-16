@@ -322,7 +322,7 @@ async function gwGet(g, path) {
 // reserve, say: 403): that one is left out and the others are read. Only when no account gives a balance is it
 // an error (with myPOS's words, to know which call it refused).
 const num2 = (v) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Math.round(Number(v) * 100) / 100 : null);
-async function gwBalances(g) {
+async function gwBalances(g, store) {
   const list = await gwGet(g, '/accounting/v1/accounts?' + new URLSearchParams({ page: '1', size: '50' }));
   const items = (list.items || []).filter((a) => a && a.account_number && !a.is_suspense_account).slice(0, 8);
   const out = [];
@@ -338,8 +338,65 @@ async function gwBalances(g) {
     }
     out.push({ number: String(a.account_number).slice(-4), name: String(a.name || d.account_name || ''), currency: String(d.currency || a.currency || ''), reserve: !!a.is_reserve, available: bal, closing: null, date: '', live: true });
   }
-  if (!out.some((x) => x.available != null)) throw refused || new MyposError('gw_denied', 0, items.length ? 'niciun cont nu are sold' : 'niciun cont în listă');
+  if (!out.some((x) => x.available != null)) {
+    // the details closed to this integration (403): the balance worked out from what is open to it
+    const comp = refused && refused.status === 403 && store ? await gwComputed(g, store, items) : null;
+    if (comp) return comp;
+    throw refused || new MyposError('gw_denied', 0, items.length ? 'niciun cont nu are sold' : 'niciun cont în listă');
+  }
   return out;
+}
+
+// When myPOS doesn't open the account details to the integration (it gives account.read / transaction.read but
+// not the balance), the balance now is worked out from what it does give: the booked closing balance of the
+// latest daily statement (REST keys, MT940 :62F:, kept per day in data/mypos-balance-base.json) plus every
+// movement of the account since that day ended, in and out (API Gateway transactions: sign Credit / Debit, in the
+// account's currency; fees and refunds included). As soon as myPOS opens the details, the exact balance is used.
+const BASE = 'data/mypos-balance-base.json';
+// midnight in Bucharest (the statements' day) as a UTC moment
+function midnightUtc(day) {
+  const at = Date.parse(day + 'T00:00:00Z');
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date(at)));
+  return new Date(at - h * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
+}
+const nextDay = (day) => new Date(Date.parse(day + 'T12:00:00Z') + 86400e3).toISOString().slice(0, 10);
+async function gwComputed(g, store, items) {
+  const conn = await loadConn(store.readJSON);
+  if (!connected(conn)) return null;
+  const bases = (await store.readJSON(BASE, {})) || {};
+  let changed = false;
+  const out = [];
+  for (const a of items.filter((x) => !x.is_reserve).slice(0, 4)) {
+    const num = String(a.account_number);
+    let base = bases[num];
+    // the latest statement with a closing balance, from yesterday back (kept once found for that day)
+    if (!base || base.day !== dayOf(Date.now() - 86400e3)) {
+      for (let back = 1; back <= 6; back++) {
+        const day = dayOf(Date.now() - back * 86400e3);
+        if (base && base.day === day) break;
+        let s = null;
+        try { s = await statement(conn, num, day); } catch (e) { s = null; }
+        if (s && s.closing) { base = { day, closing: s.closing.amount, currency: s.closing.currency, at: new Date().toISOString() }; bases[num] = base; changed = true; break; }
+      }
+    }
+    if (!base) continue;
+    let sum = 0, moves = 0;
+    for (let page = 1; page <= 30; page++) {
+      const j = await gwGet(g, '/accounting/v1/transactions?' + new URLSearchParams({ account_number: num, from_date: midnightUtc(nextDay(base.day)), order: 'Ascending', page: String(page), size: '100' }));
+      (j.items || []).forEach((t) => {
+        if (t.account_number && String(t.account_number) !== num) return;
+        if (t.transaction_currency && base.currency && t.transaction_currency !== base.currency) return;
+        const v = Math.abs(Number(t.transaction_amount) || 0);
+        sum += String(t.sign || '').toLowerCase() === 'debit' ? -v : v;
+        moves++;
+      });
+      if (!j.has_next_page) break;
+    }
+    out.push({ number: num.slice(-4), name: String(a.name || ''), currency: base.currency || String(a.currency || ''), reserve: false,
+      available: Math.round((base.closing + sum) * 100) / 100, closing: null, date: '', live: true, computed: { from: base.day, moves } });
+  }
+  if (changed) await store.writeJSON(BASE, bases, { quiet: true });
+  return out.length ? out : null;
 }
 // the keys as the portal may show them (never a secret)
 function gwPublic(g) {
@@ -351,7 +408,7 @@ async function liveBalance(store, g, fresh) {
   const cached = await store.readJSON(BAL, null);
   if (!fresh && cached && cached.live && cached.at && Date.now() - Date.parse(cached.at) < 60e3) return Object.assign({ connected: true, gateway: gwPublic(g) }, cached);
   try {
-    const v = { at: new Date().toISOString(), live: true, accounts: await gwBalances(g), error: '' };
+    const v = { at: new Date().toISOString(), live: true, accounts: await gwBalances(g, store), error: '' };
     await store.writeJSON(BAL, v, { quiet: true });
     return Object.assign({ connected: true, gateway: gwPublic(g) }, v);
   } catch (e) {
@@ -377,7 +434,7 @@ async function saveGateway(store, input, by) {
   if (g.merchantSecret === g.clientSecret) return { error: 'gw_format', field: 'merchantSecret', same: true }; // surely refused: not worth a try
   gwCache.delete('t|' + g.clientId); gwCache.delete('s|' + g.merchantId);
   let accounts;
-  try { accounts = await gwBalances(g); } catch (e) {
+  try { accounts = await gwBalances(g, store); } catch (e) {
     console.error('mypos gateway save:', e.code, e.status, e.message);
     return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' };
   }
