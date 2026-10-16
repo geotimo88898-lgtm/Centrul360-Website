@@ -4,10 +4,14 @@
 //                                                         their mapping; the import
 //   POST { action: 'connect', acc: 'tm'|'ar', locationId, token }  checks them with GHL, reads calendars and users
 //   POST { action: 'mapping', acc, calendars: { id: { city, category, skip } }, users: { id: employeeId } }
-//   POST { action: 'start' }    a new import of every connected sub-account ({ resume: true }: go on)
+//   POST { action: 'start' }    a new import of every connected sub-account ({ resume: true }: go on;
+//                               { acc: 'tm'|'ar' }: only that one)
 //   POST { action: 'step' }     one step of it (under a minute); the Integrări page calls it until it's done
 //   POST { action: 'pause' }
 //   POST { action: 'disconnect', acc }  removes that token (what was imported stays)
+//   POST { action: 'fix_times' }  the appointments imported before TIME_FIX 2–3 hours late, put back at their hour
+//                                 (no new import: untouched ones are moved here, ones changed since in the portal
+//                                 are checked with HighLevel one by one and left alone when someone moved them)
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
@@ -23,6 +27,24 @@ const nowISO = () => new Date().toISOString();
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 const zero = () => ({ contacts: 0, created: 0, updated: 0, skipped: 0, notes: 0, messages: 0, appointments: 0, apptsUpdated: 0 });
 const newAccJob = () => ({ phase: 'contacts', cursor: null, queue: [], pos: 0, total: 0, counts: zero(), done: false });
+// imports before this read GHL's zoneless times as UTC (see G.local); the fix was live a few minutes after
+const TIME_FIX = Date.parse('2026-10-15T15:35:00Z');
+const needsTimeFix = (a) => a.ghlId && !a.tzFixed && a.date && a.time && Date.parse(a.importedAt || a.createdAt || 0) < TIME_FIX;
+const pad2 = (n) => String(n).padStart(2, '0');
+// the clinic's clock → the one the old import showed for it (GHL's "09:00" read as 09:00 UTC → 12:00 here)
+const lateOf = (date, time) => G.local(Date.parse(date + 'T' + time + ':00Z'));
+// and back: what the old import showed → the clinic's real hour (the UTC clock of that Bucharest moment)
+function realOf(date, time) {
+  const d = new Date(G.msOf(date + ' ' + time + ':00'));
+  return { date: d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()), time: pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()) };
+}
+function moveBack(a) {
+  const r = realOf(a.date, a.time);
+  const end = a.endTime ? realOf(a.date, a.endTime) : null;
+  a.date = r.date; a.time = r.time;
+  a.endTime = end && end.date === r.date && end.time > r.time ? end.time : '';
+}
+
 const ghlIdsOf = (c) => (Array.isArray(c.ghlIds) ? c.ghlIds : []).concat(c.ghlId ? [c.ghlId] : []);
 
 async function loadConns() {
@@ -56,7 +78,60 @@ async function status() {
       users: (c.users || []).map((u) => Object.assign({}, u, { employeeId: m.users[u.id] || '' })),
     };
   });
-  return { accounts, job: pubJob(job) };
+  const appts = await readJSON('data/appointments.json', []);
+  return { accounts, job: pubJob(job), timesToFix: appts.filter(needsTimeFix).length };
+}
+
+// one appointment as HighLevel has it now (null: none of the sub-accounts knows it)
+async function ghlEvent(conns, a) {
+  const live = Object.keys(ACCS).filter((k) => conns[k] && conns[k].token);
+  const order = live.filter((k) => ACCS[k] === a.location).concat(live.filter((k) => ACCS[k] !== a.location)); // its city's first
+  for (const k of order) {
+    try {
+      const j = await G.call(conns[k], '/calendars/events/appointments/' + encodeURIComponent(a.ghlId), '2021-04-15');
+      const e = j.appointment || j.event || j;
+      if (e && e.startTime) return e;
+    } catch (err) {
+      if (err.code !== 'ghl_not_found') throw err;
+    }
+  }
+  return null;
+}
+async function fixTimes(conns) {
+  const until = Date.now() + BUDGET;
+  const appts = await readJSON('data/appointments.json', []);
+  const out = { fixed: 0, checked: 0, kept: 0, unknown: 0, left: 0, total: 0, done: 0, newer: 0, noTime: 0 };
+  // what the clinic's appointments from HighLevel are, so a 0 says why
+  appts.forEach((a) => {
+    if (!a.ghlId) return;
+    out.total++;
+    if (a.tzFixed) out.done++;
+    else if (!a.date || !a.time) out.noTime++;
+    else if (!(Date.parse(a.importedAt || a.createdAt || 0) < TIME_FIX)) out.newer++;
+  });
+  let changed = false;
+  for (const a of appts) {
+    if (!needsTimeFix(a)) continue;
+    const touched = Date.parse(a.updatedAt || 0) - Date.parse(a.importedAt || a.createdAt || 0) > 120e3;
+    if (!touched) { moveBack(a); a.tzFixed = true; out.fixed++; changed = true; continue; }
+    // changed in the portal since: HighLevel says the real hour; moved by hand → as it is
+    if (Date.now() > until) { out.left++; continue; }
+    let e = null;
+    try { e = await ghlEvent(conns, a); } catch (err) { out.left++; continue; }
+    out.checked++;
+    if (!e) { a.tzFixed = true; out.unknown++; changed = true; continue; }
+    const real = G.local(e.startTime);
+    const late = lateOf(real.date, real.time);
+    if (a.date === late.date && a.time === late.time) {
+      const en = e.endTime ? G.local(e.endTime) : null;
+      a.date = real.date; a.time = real.time;
+      a.endTime = en && en.date === real.date && en.time > real.time ? en.time : '';
+      out.fixed++;
+    } else out.kept++;
+    a.tzFixed = true; changed = true;
+  }
+  if (changed) await writeJSON('data/appointments.json', appts);
+  return out;
 }
 
 // ------------------------------------------------------------------ the contacts: into Contacte
@@ -111,15 +186,130 @@ async function stepContacts(conn, aj, until) {
   }
 }
 
+// one GHL appointment as the portal's: { fields (what an update may change), appt (a new one) }, null when its
+// calendar isn't brought or it has no time. conn.ctx: the mapping, calendars and employees, read once.
+function apptOf(e, conn, client) {
+  const { map, cals, empById } = conn.ctx;
+  const mapped = map.calendars[e.calendarId] || G.guessCalendar((cals.get(e.calendarId) || {}).name, conn.city);
+  if (mapped.skip) return null;
+  const s = G.local(e.startTime), en = e.endTime ? G.local(e.endTime) : null;
+  if (!s) return null;
+  const st = G.statusOf(e, G.msOf(e.startTime));
+  const emp = empById.get(map.users[e.assignedUserId] || '');
+  const fields = {
+    date: s.date, time: s.time, endTime: en && en.date === s.date && en.time > s.time ? en.time : '',
+    status: st.status, noShow: !!st.noShow, location: CITIES.includes(mapped.city) ? mapped.city : conn.city || 'Timișoara',
+    cosmeticianId: emp ? emp.id : '', cosmeticianName: emp ? emp.name : '',
+  };
+  const cat = CATS.includes(mapped.category) ? mapped.category : 'corporale';
+  const calName = (cals.get(e.calendarId) || {}).name || '';
+  const t = titleOf(e, client);
+  const appt = Object.assign({
+    id: G.uid(), ghlId: e.id, clientId: client.id, clientName: client.name, clientPhone: client.phone || '',
+    treatment: (t || calName || 'Programare HighLevel').slice(0, 200), ghlTitle: t, categories: [cat], category: cat, amount: 0, package: false,
+    note: G.text(e.notes || e.description, 500), createdBy: 'highlevel', createdAt: e.dateAdded || nowISO(), updatedAt: nowISO(), importedAt: nowISO(), tzFixed: true,
+  }, fields);
+  return { fields, appt, title: t, calName };
+}
+// the title the clinic wrote on a GHL appointment ("Liposonix 2 zone"), not when it is only her name
+const plainName = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function titleOf(e, client) {
+  const t = String(e.title || '').trim().slice(0, 200);
+  if (!t) return '';
+  const p = plainName(t), n = plainName(client && client.name);
+  if (n && (p === n || p === 'appointment with ' + n || p === 'programare ' + n)) return '';
+  return t;
+}
+const ctxOf = (conn, employees) => ({
+  map: conn.mapping || { calendars: {}, users: {} },
+  cals: new Map((conn.calendars || []).map((c) => [c.id, c])),
+  empById: new Map(employees.map((e) => [e.id, e])),
+});
+
+// ------------------------------------------------------------------ the calendars, by date: what the contacts missed
+// Every appointment in the brought calendars from `from` (YYYY-MM-DD, Bucharest) for `days` days: the ones the
+// portal doesn't have are added (a client made from GHL's contact when she isn't here yet, even without a phone);
+// the ones it has stay as they are (changes made in the portal win). Runs again any time, nothing doubles.
+async function syncAppts(conns, from, days, state) {
+  const until = Date.now() + BUDGET;
+  const [clients, appointments, employees] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/employees.json', [])]);
+  const apptByGhl = new Map(appointments.filter((a) => a.ghlId).map((a) => [a.ghlId, a]));
+  const byGhl = new Map(); clients.forEach((c) => ghlIdsOf(c).forEach((g) => byGhl.set(g, c)));
+  const byPhone = new Map(clients.filter((c) => c.phone).map((c) => [G.normalizePhone(c.phone), c]));
+  const byEmail = new Map(clients.filter((c) => c.email).map((c) => [String(c.email).toLowerCase(), c]));
+  const clientById = new Map(clients.map((c) => [c.id, c]));
+  const out = state || { added: 0, existing: 0, titled: 0, clients: 0, skipped: 0, done: [] };
+  const startMs = G.msOf(from + ' 00:00:00'), endMs = startMs + days * 86400e3;
+  let apptsChanged = false, clientsChanged = false, left = false;
+  try {
+    for (const k of Object.keys(ACCS)) {
+      const conn = conns[k];
+      if (!conn || !conn.token) continue;
+      conn.city = ACCS[k];
+      conn.ctx = ctxOf(conn, employees);
+      for (const cal of conn.calendars || []) {
+        const key = k + ':' + cal.id;
+        if (out.done.includes(key)) continue;
+        if ((conn.ctx.map.calendars[cal.id] || {}).skip) { out.done.push(key); continue; }
+        if (Date.now() > until) { left = true; break; }
+        // a month at a time (GHL answers a range per call)
+        for (let t = startMs; t < endMs; t += 31 * 86400e3) {
+          const events = await G.calendarEvents(conn, cal.id, t, Math.min(endMs, t + 31 * 86400e3));
+          for (const e of events) {
+            if (!e || !e.id || e.deleted) continue;
+            const cur = apptByGhl.get(e.id);
+            if (cur) {
+              out.existing++;
+              // the title from GHL, where the treatment is still what the import wrote (the calendar's name)
+              // its title from GHL (what the Calendar shows); the treatment too, where it is still the calendar's name
+              const b = !cur.ghlTitle && apptOf(e, conn, clientById.get(cur.clientId) || { name: cur.clientName });
+              if (b && b.title) {
+                cur.ghlTitle = b.title; out.titled++; apptsChanged = true;
+                if (cur.treatment === b.calName || !cur.treatment || cur.treatment === 'Programare HighLevel') cur.treatment = b.title;
+              }
+              continue;
+            }
+            if (!e.contactId) { out.skipped++; continue; }
+            let client = byGhl.get(e.contactId);
+            if (!client) {
+              let g = null;
+              try { g = await G.contactOf(conn, e.contactId); } catch (err) { if (err.code !== 'ghl_not_found') throw err; }
+              const phone = g ? G.normalizePhone(g.phone) : '';
+              const email = g ? String(g.email || '').trim().toLowerCase().slice(0, 150) : '';
+              const name = (g ? G.fullName(g) : '') || String(e.title || '').trim() || email || phone || 'Clientă HighLevel';
+              client = (phone && byPhone.get(phone)) || (email && byEmail.get(email));
+              if (!client) {
+                client = { id: G.uid(), name: name.slice(0, 150), phone, email, tags: [], source: 'highlevel', createdAt: todayISO(), lastVisit: todayISO(), importedAt: nowISO(), location: conn.city };
+                clients.push(client); out.clients++;
+                if (phone) byPhone.set(phone, client); if (email) byEmail.set(email, client);
+              }
+              client.ghlIds = Array.from(new Set(ghlIdsOf(client).concat(e.contactId)));
+              byGhl.set(e.contactId, client); clientsChanged = true;
+            }
+            const b = apptOf(e, conn, client);
+            if (!b) { out.skipped++; continue; }
+            appointments.push(b.appt); apptByGhl.set(e.id, b.appt);
+            out.added++; apptsChanged = true;
+          }
+        }
+        out.done.push(key);
+      }
+      if (left) break;
+    }
+  } finally {
+    if (apptsChanged) await writeJSON('data/appointments.json', appointments);
+    if (clientsChanged) await writeJSON('data/clients.json', clients);
+  }
+  return Object.assign(out, { left });
+}
+
 // ------------------------------------------------------------------ each contact: notes, conversations, appointments
 async function stepDetails(conn, aj, until) {
   const [clients, appointments, employees] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/employees.json', [])]);
   const clientById = new Map(clients.map((c) => [c.id, c]));
   const apptByGhl = new Map(appointments.filter((a) => a.ghlId).map((a) => [a.ghlId, a]));
   const users = new Map((conn.users || []).map((u) => [u.id, u.name]));
-  const cals = new Map((conn.calendars || []).map((c) => [c.id, c]));
-  const map = conn.mapping || { calendars: {}, users: {} };
-  const empById = new Map(employees.map((e) => [e.id, e]));
+  conn.ctx = ctxOf(conn, employees);
   let clientsChanged = false, apptsChanged = false;
   try {
     while (aj.pos < aj.queue.length && Date.now() < until) {
@@ -162,33 +352,16 @@ async function stepDetails(conn, aj, until) {
 
       // the appointments → the Calendar, as they are (no automation)
       for (const e of events) {
-        const mapped = map.calendars[e.calendarId] || G.guessCalendar((cals.get(e.calendarId) || {}).name, conn.city);
-        if (mapped.skip) continue;
-        const startMs = typeof e.startTime === 'number' ? e.startTime : Date.parse(e.startTime);
-        const s = G.local(e.startTime), en = e.endTime ? G.local(e.endTime) : null;
-        if (!s) continue;
-        const st = G.statusOf(e, startMs);
-        const emp = empById.get(map.users[e.assignedUserId] || '');
-        const fields = {
-          date: s.date, time: s.time, endTime: en && en.date === s.date && en.time > s.time ? en.time : '',
-          status: st.status, noShow: !!st.noShow, location: CITIES.includes(mapped.city) ? mapped.city : conn.city || 'Timișoara',
-          cosmeticianId: emp ? emp.id : '', cosmeticianName: emp ? emp.name : '',
-        };
+        const b = apptOf(e, conn, client);
+        if (!b) continue;
         const cur = apptByGhl.get(e.id);
         if (cur) {
-          if (Object.keys(fields).some((k) => cur[k] !== fields[k])) { Object.assign(cur, fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
+          if (Object.keys(b.fields).some((k) => cur[k] !== b.fields[k])) { Object.assign(cur, b.fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
           continue;
         }
-        const cat = CATS.includes(mapped.category) ? mapped.category : 'corporale';
-        const calName = (cals.get(e.calendarId) || {}).name || '';
-        const a = Object.assign({
-          id: G.uid(), ghlId: e.id, clientId: client.id, clientName: client.name, clientPhone: client.phone || '',
-          treatment: (calName || String(e.title || '').trim() || 'Programare HighLevel').slice(0, 200), categories: [cat], category: cat, amount: 0, package: false,
-          note: G.text(e.notes || e.description, 500), createdBy: 'highlevel', createdAt: e.dateAdded || nowISO(), updatedAt: nowISO(), importedAt: nowISO(),
-        }, fields);
-        appointments.push(a); apptByGhl.set(e.id, a);
+        appointments.push(b.appt); apptByGhl.set(e.id, b.appt);
         aj.counts.appointments++; apptsChanged = true;
-        if (s.date > (client.lastVisit || '') && st.status === 'finalizata') { client.lastVisit = s.date; clientsChanged = true; }
+        if (b.appt.date > (client.lastVisit || '') && b.appt.status === 'finalizata') { client.lastVisit = b.appt.date; clientsChanged = true; }
       }
       aj.pos++;
     }
@@ -262,14 +435,35 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (b.action === 'sync_appts') {
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(b.from || '') ? b.from : todayISO();
+      // from that day to half a year ahead (a date in the past brings, and titles, the ones since then too)
+      const back = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(from)) / 86400e3));
+      const days = Math.max(1, Math.min(1500, back + (Number(b.days) || 180)));
+      const state = b.state && Array.isArray(b.state.done) ? { added: +b.state.added || 0, existing: +b.state.existing || 0, titled: +b.state.titled || 0, clients: +b.state.clients || 0, skipped: +b.state.skipped || 0, done: b.state.done.slice(0, 50).map(String) } : null;
+      try {
+        const r = await syncAppts(conns, from, days, state);
+        res.status(200).json(Object.assign(await status(), { sync: r }));
+      } catch (e) { res.status(400).json({ error: e.code || 'ghl_failed', status: e.status || 0, message: e.message || '' }); }
+      return;
+    }
+
+    if (b.action === 'fix_times') {
+      const r = await fixTimes(conns);
+      res.status(200).json(Object.assign(await status(), { fix: r }));
+      return;
+    }
+
     const live = Object.keys(ACCS).filter((k) => conns[k] && conns[k].token);
     if (b.action === 'start') {
       if (!live.length) { res.status(400).json({ error: 'not_connected' }); return; }
       let job = await readJSON(G.JOB, null);
       if (job && !job.accs) job = null; // an older single-account job
       if (job && job.status === 'running' && Date.now() - Date.parse(job.updatedAt || 0) < 90e3) { res.status(200).json(await status()); return; }
-      if (!(b.resume && job && job.status !== 'done')) job = { accs: {}, startedAt: nowISO(), finishedAt: '' };
-      live.forEach((k) => { if (!job.accs[k]) job.accs[k] = newAccJob(); });
+      // { acc }: only that sub-account (Arad connected later, without Timișoara's again); a resumed one keeps its own
+      const only = ACCS[b.acc] && live.includes(b.acc) ? b.acc : '';
+      if (!(b.resume && job && job.status !== 'done')) job = { accs: {}, only, startedAt: nowISO(), finishedAt: '' };
+      live.filter((k) => !job.only || k === job.only).forEach((k) => { if (!job.accs[k]) job.accs[k] = newAccJob(); });
       job.status = 'running'; job.lastError = ''; job.updatedAt = nowISO();
       await writeJSON(G.JOB, job, { quiet: true });
       res.status(200).json(await status());

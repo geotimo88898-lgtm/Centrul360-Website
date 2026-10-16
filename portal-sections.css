@@ -227,7 +227,11 @@
   font:inherit; overflow:hidden; cursor:pointer; color:var(--fg); background:var(--paper); box-shadow:var(--shadow-sm), inset 3px 0 0 var(--bc, var(--accent));
   background:color-mix(in srgb, var(--bc, var(--accent)) 11%, var(--paper)); transition:transform .15s var(--ease), box-shadow .2s ease, opacity .2s ease; animation:k-rise .4s var(--ease) both; touch-action:none; }
 .cal-block:hover{ transform:translateY(-1px); box-shadow:var(--shadow), inset 3px 0 0 var(--bc, var(--accent)); z-index:3; }
-.cal-block b{ font-size:.8rem; font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.cal-block b{ font-size:.8rem; font-weight:650; line-height:1.3; max-width:100%; overflow:hidden; overflow-wrap:anywhere;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:var(--lines, 1); line-clamp:var(--lines, 1); flex-shrink:0; }
+.cal-block.is-short{ padding:.2rem .45rem; justify-content:center; }
+.cal-block.is-short b{ font-size:.7rem; line-height:1.2; }
+.cal-b-t{ margin-right:.3rem; font-size:.66rem; font-weight:700; color:var(--bc, var(--accent)); font-variant-numeric:tabular-nums; text-decoration:none; display:inline-block; }
 .cal-b-time{ display:flex; align-items:center; gap:.3rem; font-size:.68rem; font-weight:700; color:var(--bc, var(--accent)); font-variant-numeric:tabular-nums; width:100%; }
 .cal-b-time i{ font-style:normal; margin-left:auto; font-size:.6rem; padding:.02rem .3rem; border-radius:5px; background:var(--glass-2); color:var(--muted); }
 .cal-b-sub{ font-size:.7rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
@@ -1823,3 +1827,6 @@ main.ad-full{ max-width:none; }
   .k-panel .of-grid:not(.is-single) .of-feat{ top:auto; bottom:.4rem; left:.4rem; right:auto; padding:.15rem .4rem; font-size:.64rem; }
 }
 
+
+.st-ghl-sync{ flex-wrap:wrap; gap:.5rem; align-items:center; }
+.st-ghl-sync input[type=date]{ width:auto; }

@@ -751,6 +751,7 @@
         '<p class="st-ghl-h">Utilizatorii</p><div class="st-ghl-rows">' + (a.users || []).map((u) => '<div class="st-ghl-row is-user" data-user="' + esc(u.id) + '"><b>' + esc(u.name) + '</b>' +
           '<select data-k="employee"' + dis + '>' + K.options([['', 'Nimeni']].concat(emps.map((e) => [e.id, e.name + (e.location && e.location !== '-' ? ' · ' + e.location : '')])), u.employeeId || '') + '</select></div>').join('') + '</div>' +
         (running ? '' : '<button type="button" class="k-btn is-outline is-sm" data-ghl-save="' + acc + '">' + icon('check') + 'Salvează potrivirea</button>') + '</details>' +
+      (running ? '' : '<button type="button" class="k-btn is-outline is-sm" data-ghl-go="new" data-ghl-acc="' + acc + '">' + icon('download') + 'Importă doar ' + label + '</button>') +
       ghlKeys(acc, false, true) +
       '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-ghl-off="' + acc + '">Deconectează ' + label + '</button></section>';
   }
@@ -785,6 +786,13 @@
     const any = GHL_ACC.some(([k]) => d.accounts[k] && d.accounts[k].connected);
     box.innerHTML = '<div class="st-ghl-accs">' + GHL_ACC.map(([k, l]) => ghlAccHtml(k, l, d.accounts[k], running)).join('') + '</div>' +
       ghlJobHtml(j) +
+      // the appointments the first import put 2–3 hours late (GHL's times have no zone)
+      (d.timesToFix && !running ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>' + K.plural(d.timesToFix, 'programare importată are', 'programări importate au') + ' ora mutată cu 2–3 ore (ex. 9:00 apare la 12:00). Le pun la ora lor, fără import din nou.</span>' +
+        '<button type="button" class="k-btn is-primary is-sm" data-ghl-fix>' + icon('check') + 'Corectează orele</button></div>' : '') +
+      (!d.timesToFix && !running && j && j.status === 'done' ? '<div class="st-int-row"><button type="button" class="k-btn is-ghost is-sm" data-ghl-fix>' + icon('refresh') + 'Verifică orele programărilor importate</button></div>' : '') +
+      // straight from the calendars, by date: the appointments the import missed or that came in since
+      (any && !running ? '<div class="st-int-row st-ghl-sync"><span class="k-muted">Programările din calendarele HighLevel, de la</span><input type="date" data-ghl-from value="' + K.today() + '">' +
+        '<button type="button" class="k-btn is-outline is-sm" data-ghl-sync>' + icon('download') + 'Adu programările</button></div>' : '') +
       (any ? '<div class="st-int-row st-ghl-actions">' +
         (running ? '<button type="button" class="k-btn is-ghost is-sm" data-ghl-pause>Oprește</button>'
           : j && j.status === 'paused' ? '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="resume">' + icon('refresh') + 'Continuă importul</button><button type="button" class="k-btn is-ghost is-sm" data-ghl-go="new">De la capăt</button>'
@@ -811,10 +819,42 @@
     box.querySelectorAll('[data-ghl-go]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
       try {
         await saveAll();
-        const r = await K.api('/api/portal-ghl', { action: 'start', resume: b.dataset.ghlGo === 'resume' });
+        const acc = b.dataset.ghlAcc || '';
+        if (acc && !(await K.ui().confirm({ title: 'Importă doar ' + ((GHL_ACC.find((x) => x[0] === acc) || ['', ''])[1]) + '?', message: 'Aduce contactele, mențiunile, conversațiile și programările doar din acest subcont. Celălalt nu se mai importă; ce e deja adus nu se dublează.', confirmText: 'Importă' }))) return;
+        const r = await K.api('/api/portal-ghl', { action: 'start', resume: b.dataset.ghlGo === 'resume', acc });
         paintGhl(box, r); ghlLoop(box);
       } catch (err) { ghlFail(err); }
     })));
+    const fx = box.querySelector('[data-ghl-fix]');
+    if (fx) fx.addEventListener('click', () => K.busy(fx, async () => {
+      try {
+        const r = await K.api('/api/portal-ghl', { action: 'fix_times' });
+        const f = r.fix || {};
+        K.ui().toast(K.plural(f.fixed || 0, 'programare corectată', 'programări corectate') + (f.kept ? '; ' + K.plural(f.kept, 'mutată de mână, lăsată așa', 'mutate de mână, lăsate așa') : '') +
+          (f.left ? '; mai sunt ' + f.left + ', apasă din nou' : '') + '. Din HighLevel: ' + (f.total || 0) + ' programări' + (f.done ? ', ' + f.done + ' corectate deja' : '') +
+          (f.newer ? ', ' + f.newer + ' aduse după corectură' : '') + (f.noTime ? ', ' + f.noTime + ' fără oră' : '') + '.', f.left ? 'info' : 'success');
+        paintGhl(box, r);
+        K.reload && K.reload();
+      } catch (err) { ghlFail(err); }
+    }));
+    const sy = box.querySelector('[data-ghl-sync]');
+    if (sy) sy.addEventListener('click', () => K.busy(sy, async () => {
+      const from = (box.querySelector('[data-ghl-from]') || {}).value || K.today();
+      let state = null, r;
+      try {
+        // a step at a time (each under a minute), until every calendar is read
+        for (let i = 0; i < 20; i++) {
+          r = await K.api('/api/portal-ghl', { action: 'sync_appts', from, days: 180, state });
+          state = r.sync;
+          if (!state.left) break;
+        }
+        const f = r.sync || {};
+        K.ui().toast(K.plural(f.added || 0, 'programare nouă adusă', 'programări noi aduse') + (f.clients ? ', ' + K.plural(f.clients, 'clientă nouă', 'cliente noi') : '') +
+          '; ' + (f.existing || 0) + ' erau deja în portal' + (f.titled ? ', ' + K.plural(f.titled, 'a primit titlul', 'au primit titlul') + ' din HighLevel' : '') + '.', 'success');
+        paintGhl(box, r);
+        K.reload && K.reload();
+      } catch (err) { ghlFail(err); }
+    }));
     const pz = box.querySelector('[data-ghl-pause]');
     if (pz) pz.addEventListener('click', async () => { ghlRun = null; try { paintGhl(box, await K.api('/api/portal-ghl', { action: 'pause' })); } catch (err) { ghlFail(err); } });
     box.querySelectorAll('[data-ghl-off]').forEach((off) => off.addEventListener('click', async () => {

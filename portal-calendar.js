@@ -220,7 +220,7 @@
         const untimed = list.filter((a) => toMin(a.time) == null);
         return '<div class="cal-col' + (c.date === today ? ' is-today' : '') + (c.date < today ? ' is-past' : '') + '" data-date="' + c.date + '" data-loc="' + esc(c.loc) + '" style="height:' + H + 'px">' +
           hours.slice(0, -1).map((h) => '<i class="cal-hour" style="top:' + ((h - START) * 60 * PPM) + 'px"></i>').join('') +
-          (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(a.clientName) + '</button>').join('') + '</div>' : '') +
+          (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(nameOf(a)) + '</button>').join('') + '</div>' : '') +
           layout(timed).map(blockHtml).join('') + '</div>';
       }).join('');
     placeNow();
@@ -281,7 +281,7 @@
           const st = STATUS[a.status] || STATUS.programata;
           return '<button type="button" class="cal-ag-row is-' + esc(a.status) + '" data-open="' + esc(a.id) + '">' +
             '<span class="cal-ag-time">' + (a.time ? '<b>' + esc(a.time) + '</b>' + (toMin(a.endTime) > toMin(a.time) ? '<small>' + esc(a.endTime) + '</small>' : '') : '<b>toată</b><small>ziua</small>') + '</span>' +
-            '<span class="cal-ag-main"><b>' + esc(a.clientName || '-') + '</b><small>' + esc([a.treatment, a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
+            '<span class="cal-ag-main"><b>' + esc(nameOf(a)) + '</b><small>' + esc([subOf(a), a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
             '<span class="cal-ag-meta">' + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' + esc(a.cosmeticianName.split(' ')[0]) : '') + (multi && a.location ? '<em>' + esc(a.location) + '</em>' : '') +
             (a.package ? '<em>pachet</em>' : '') + '<em class="is-st">' + esc(st.label) + '</em></span></span></button>';
         }).join('') : '<div class="cal-ag-empty"><span>Nicio programare</span>' + (canEdit() && d >= today ? '<button type="button" class="k-btn is-ghost is-sm" data-newday="' + d + '">' + icon('plus') + 'Programează</button>' : '') + '</div>') +
@@ -304,14 +304,30 @@
     });
     return items;
   }
+  // what an appointment is called: the title it had in HighLevel (as reception wrote it there), else the client;
+  // the line under it: the client when the title doesn't name her, else the treatment
+  const plainTxt = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const nameOf = (a) => a.ghlTitle || a.clientName || '-';
+  function subOf(a) {
+    if (!a.ghlTitle) return a.treatment || '';
+    const first = plainTxt(a.clientName).split(/\s+/)[0];
+    const named = first && plainTxt(a.ghlTitle).includes(first);
+    return [named ? '' : a.clientName, a.treatment && a.treatment !== a.ghlTitle ? a.treatment : ''].filter(Boolean).join(' · ');
+  }
   function blockHtml(it) {
     const a = it.a, st = STATUS[a.status] || STATUS.programata;
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
     const w = 100 / it.lanes;
-    return '<button type="button" class="cal-block is-' + a.status + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px)"' +
-      ' title="' + esc(span(a) + ' · ' + a.clientName + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
-      '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
-      '<b>' + esc(a.clientName || '-') + '</b><span class="cal-b-sub">' + esc(a.treatment || '') + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span></button>';
+    // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
+    // an hour) has the hour in front of the name, in smaller letters, on up to two lines
+    const short = it.e - it.s < 45; // under 45 minutes; an hour keeps the big letters whatever the screen
+    const lines = short ? Math.max(1, Math.floor((h - 6) / 13.5)) : Math.max(1, Math.floor((h - 28) / 17));
+    return '<button type="button" class="cal-block is-' + a.status + (short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
+      ' title="' + esc(span(a) + ' · ' + nameOf(a) + (a.ghlTitle ? ' · ' + a.clientName : '') + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
+      (short
+        ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>'
+        : '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
+          '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span>') + '</button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
@@ -540,7 +556,8 @@
           if (!v.clientName || !v.clientPhone) { K.ui().toast('Completează clientul și telefonul.', 'error'); return; }
           if (!v.treatment) { K.ui().toast('Completează tratamentul.', 'error'); f.treatment.focus(); return; }
           if (!formCats(v).length) { K.ui().toast('Alege cel puțin o categorie.', 'error'); return; }
-          if (!(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării.', 'error'); f.amount.focus(); return; }
+          // a session from a package is already paid: 0 is fine there
+          if (!v.package && !(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării (sau bifează „Ședință din pachet”).', 'error'); f.amount.focus(); return; }
           if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
           try {
             await K.api('/api/portal-appointments', Object.assign({ action: 'create', clientId: picker.id() }, v, { categories: formCats(v), amount: Number(v.amount) }));

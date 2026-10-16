@@ -66,6 +66,9 @@ async function contactsPage(conn, cursor) {
   return { list, next, total: meta.total || j.total || j.count || 0 };
 }
 const notesOf = (conn, id) => call(conn, '/contacts/' + encodeURIComponent(id) + '/notes', V_CONTACTS).then((j) => j.notes || []);
+// a calendar's appointments between two moments (ms), whoever they are for (GET /calendars/events)
+const calendarEvents = (conn, calendarId, startMs, endMs) => call(conn, '/calendars/events' + q({ locationId: conn.locationId, calendarId, startTime: startMs, endTime: endMs }), V_CAL).then((j) => j.events || []);
+const contactOf = (conn, id) => call(conn, '/contacts/' + encodeURIComponent(id), V_CONTACTS).then((j) => j.contact || null);
 const apptsOf = (conn, id) => call(conn, '/contacts/' + encodeURIComponent(id) + '/appointments', V_CONTACTS).then((j) => j.events || []);
 async function conversationsOf(conn, id) {
   const j = await call(conn, '/conversations/search' + q({ locationId: conn.locationId, contactId: id, limit: 50 }), V_CONV);
@@ -99,13 +102,32 @@ const channelOf = (m) => CHANNEL[m.messageType] || (typeof m.type === 'string' ?
 // the activity lines GHL keeps in a conversation ("appointment booked", "opportunity moved") aren't messages
 const isActivity = (m) => /^TYPE_ACTIVITY_(?!WHATSAPP)/.test(m.messageType || '') || m.messageType === 'TYPE_LIVE_CHAT_INFO_MESSAGE';
 
-// "2026-10-15T10:30:00+03:00" (or ms) → { date, time } in Bucharest
+// Bucharest's wall clock for an instant (ms)
+function wall(ms) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+    .formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  return { date: p.year + '-' + p.month + '-' + p.day, time: (p.hour === '24' ? '00' : p.hour) + ':' + p.minute };
+}
+// a time GHL wrote without a zone ("2026-10-15 09:00:00", how /contacts/{id}/appointments answers) is
+// the clinic's own clock, never UTC: read as UTC it landed 2–3 hours late in the Calendar
+const NAIVE = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/;
+// "2026-10-15T10:30:00+03:00", "2026-10-15 09:00:00" (Bucharest) or ms → { date, time } in Bucharest
 function local(ts) {
+  const m = typeof ts === 'string' && NAIVE.exec(ts.trim());
+  if (m) return { date: m[1], time: m[2] + ':' + m[3] };
   const d = new Date(typeof ts === 'number' ? ts : Date.parse(ts));
   if (!Number.isFinite(d.getTime())) return null;
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-    .formatToParts(d).map((x) => [x.type, x.value]));
-  return { date: p.year + '-' + p.month + '-' + p.day, time: (p.hour === '24' ? '00' : p.hour) + ':' + p.minute };
+  return wall(d.getTime());
+}
+// the instant of a GHL time (a zoneless one is Bucharest's clock)
+function msOf(ts) {
+  if (typeof ts === 'number') return ts;
+  const m = typeof ts === 'string' && NAIVE.exec(ts.trim());
+  if (!m) return Date.parse(ts);
+  const guess = Date.parse(m[1] + 'T' + m[2] + ':' + m[3] + ':00Z');
+  // Bucharest is 2 or 3 hours ahead; take the one whose wall clock matches
+  for (const h of [3, 2]) { const ms = guess - h * 3600e3, w = wall(ms); if (w.date === m[1] && w.time === m[2] + ':' + m[3]) return ms; }
+  return guess - 3 * 3600e3;
 }
 // GHL status → the portal's (no "no show" there: cancelled, marked noShow)
 function statusOf(e, startMs) {
@@ -132,4 +154,4 @@ function guessUser(name, employees) {
   return e ? e.id : '';
 }
 
-module.exports = { BASE, CONN, JOB, GhlError, call, listCalendars, listUsers, contactsPage, notesOf, apptsOf, conversationsOf, messagesOf, text, fullName, channelOf, isActivity, local, statusOf, guessCalendar, guessUser, normalizePhone, uid: () => crypto.randomUUID() };
+module.exports = { msOf, calendarEvents, contactOf, BASE, CONN, JOB, GhlError, call, listCalendars, listUsers, contactsPage, notesOf, apptsOf, conversationsOf, messagesOf, text, fullName, channelOf, isActivity, local, statusOf, guessCalendar, guessUser, normalizePhone, uid: () => crypto.randomUUID() };
