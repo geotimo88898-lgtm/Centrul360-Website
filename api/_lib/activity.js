@@ -31,6 +31,7 @@ const ROUTES = {
   'portal-integrations': { area: 'Integrări', go: 'integrari' },
   'portal-mypos': { area: 'Integrări', go: 'integrari' },
   'portal-ghl': { area: 'Integrări', go: 'integrari' },
+  'portal-live': { area: 'Integrări', go: 'integrari' },
   'portal-config': { area: 'Setări', go: 'integrari' },
   'portal-academy': { area: 'Traininguri', go: 'traininguri' },
   'portal-account': { area: 'Contul meu', go: '' },
@@ -39,7 +40,7 @@ const ROUTES = {
 };
 // what is only read (never a line), and routes that are not changes of the clinic's work
 const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list', 'check', 'discover', 'profile_get',
-  'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause'];
+  'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause', 'test'];
 const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-creative-sso', 'portal-file', 'portal-leave-pdf', 'portal-avatar', 'portal-data', 'portal-login', 'portal-logout', 'portal-activity'];
 
 // the words for each change (route:action; route: for the routes without actions)
@@ -56,6 +57,7 @@ const VERBS = {
   'portal-contacts:unpublish': 'a scos de pe site rezultatele',
   'portal-incasari:update': 'a modificat încasarea', 'portal-incasari:delete': 'a șters încasarea',
   'portal-ghl:connect': 'a conectat HighLevel', 'portal-ghl:mapping': 'a potrivit calendarele HighLevel', 'portal-ghl:start': 'a pornit importul din HighLevel', 'portal-ghl:disconnect': 'a deconectat HighLevel',
+  'portal-live:connect': 'a pornit sincronizarea instantă', 'portal-live:disconnect': 'a oprit sincronizarea instantă',
   'portal-mypos:connect': 'a conectat myPOS', 'portal-mypos:device': 'a ales orașul unui aparat POS', 'portal-mypos:disconnect': 'a deconectat myPOS',
   'portal-sale:': 'a înregistrat o încasare la', 'portal-approve:': 'a decis vânzarea',
   'portal-employees:create': 'a adăugat în echipă pe', 'portal-employees:update_details': 'a modificat datele pentru', 'portal-employees:reset_password': 'a resetat parola pentru',

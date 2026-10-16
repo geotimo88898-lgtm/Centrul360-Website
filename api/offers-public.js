@@ -49,9 +49,9 @@ module.exports = async (req, res) => {
         };
       });
 
-    // Cacheable for a short window, this is read by every oferte.html / preturi.html
-    // visit but changes only when the admin edits an offer in the portal.
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    // Read by every oferte.html / preturi.html visit: the CDN keeps it 2 seconds, so an offer edited in the
+    // portal is on the site within seconds (browsers always ask again).
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=2, stale-while-revalidate=10');
     res.status(200).json({ offers: dedashDeep(result) });
   } catch (err) {
     console.error('offers-public error:', err.message);

@@ -61,8 +61,8 @@ async function writeJSON(pathname, data, opts) {
 }
 
 // ---- Live sync ----------------------------------------------------------------------
-// Every write bumps a tiny revision document; open portals poll /api/portal-pulse and reload
-// only when it changed, so a booking made at the front desk shows up everywhere within seconds.
+// Every write bumps a tiny revision document and announces it at once on the instant-sync channel (_lib/live.js,
+// Supabase Realtime): the open portals reload right away. They also poll /api/portal-pulse as a safety net.
 const REV_PATH = 'data/_rev.json';
 let revMemo = { at: 0, value: null };
 
@@ -70,11 +70,12 @@ async function bumpRev(changed) {
   const value = { rev: Date.now() + '-' + Math.random().toString(36).slice(2, 7), changed: changed.replace(/^data\/|\.json$/g, '') };
   revMemo = { at: Date.now(), value };
   try { await writeJSON(REV_PATH, value); } catch (err) { console.error('store.bumpRev error:', err.message); }
+  try { await require('./live').announce(value); } catch (err) { console.error('store.announce error:', err.message); }
 }
 
-// Current revision, memoised for a couple of seconds per instance so many open tabs cost one read.
+// Current revision, memoised for a second per instance so many open tabs cost one read.
 async function readRev() {
-  if (revMemo.value && Date.now() - revMemo.at < 2500) return revMemo.value;
+  if (revMemo.value && Date.now() - revMemo.at < 1000) return revMemo.value;
   const value = await readJSON(REV_PATH, { rev: '0', changed: '' });
   revMemo = { at: Date.now(), value };
   return value;

@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'GET') { res.status(405).json({ error: 'method_not_allowed' }); return; }
   try {
     const cases = await readJSON('data/cases.json', []);
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=600'); // browsers always ask; the CDN keeps it a minute
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=5, stale-while-revalidate=30'); // browsers always ask; the CDN keeps it 5 seconds
     res.status(200).json({
       cases: cases.map((c) => ({
         id: c.id, kind: c.kind, title: c.title, category: c.category, location: c.location || '', sessions: c.sessions || 1, publishedAt: c.publishedAt,

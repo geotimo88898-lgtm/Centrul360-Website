@@ -716,6 +716,7 @@
 .st-ghl-acc-h b{ font-size:.95rem; margin-right:.2rem; }
 .st-ghl-acc .st-fb-manual{ margin-top:.5rem; }
 .st-ghl-acc .st-mp-off{ margin-top:.3rem; }
+.st-live-res{ font-size:.82rem; }
 .st-ghl-help{ display:block; margin-top:.6rem; font-size:.78rem; line-height:1.45; }
 .st-fb-log + .st-int-row{ margin-top:.75rem; }
 .st-fb-settings{ margin-top:.9rem; padding:.7rem .8rem; border-radius:12px; border:1px solid var(--line); }

@@ -9,6 +9,15 @@ const { requireAuth } = require('./_lib/auth');
 const { tick } = require('./_lib/workflows');
 const { pollLeads } = require('./_lib/fb-leads');
 
+// Vercel keeps the function alive for work after the answer (its request context's waitUntil)
+function waitUntil() {
+  try {
+    const c = globalThis[Symbol.for('@vercel/request-context')];
+    const ctx = c && typeof c.get === 'function' ? c.get() : null;
+    return ctx && typeof ctx.waitUntil === 'function' ? (p) => ctx.waitUntil(p) : null;
+  } catch (e) { return null; }
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'method_not_allowed' });
@@ -16,10 +25,12 @@ module.exports = async (req, res) => {
   }
   if (!requireAuth(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
-  // Open portals are the automations' clock: due steps (reminders, waits) run from here.
-  await tick();
-  // and the clock for reading new leads from the Facebook forms (at most once a minute)
-  await pollLeads();
+  // Open portals are the automations' clock (due steps: reminders, waits) and the clock for reading new leads from
+  // the Facebook forms (at most once a minute). That runs after the answer, so the revision comes back at once.
+  const chores = () => tick().catch(() => 0).then(() => pollLeads()).catch(() => 0);
+  const wu = waitUntil();
+  if (wu) wu(chores());
+  else await chores();
   const r = await readRev();
   const build = String(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_URL || '').slice(0, 40);
   res.status(200).json({ rev: r.rev, changed: r.changed, build });

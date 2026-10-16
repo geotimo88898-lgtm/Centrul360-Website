@@ -704,6 +704,7 @@
     body.innerHTML = '<div class="st-integrations">' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Două numere: Timișoara și Arad. De pe ele pleacă șabloanele din automatizări și răspunsurile din Mesaje.</span></div></div><div data-wa><div class="k-skel" style="height:96px"></div></div></section>' +
+      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('refresh') + '</span><div><b>Sincronizare instantă</b><span>O programare, un mesaj, orice salvare apare imediat la toată lumea: admin, recepție, cosmeticiene, telefoane. Prin Supabase Realtime.</span></div></div><div data-live><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-info">' + icon('download') + '</span><div><b>HighLevel</b><span>Mută din cele două subconturi GHL (Timișoara, Arad) contactele, mențiunile, conversațiile și programările. Se poate rula din nou: ce e deja adus nu se dublează.</span></div></div><div data-ghl><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-warn">' + icon('card') + '</span><div><b>myPOS</b><span>Plățile cu cardul de pe POS, puse lângă încasările din portal, în Încasări.</span></div></div><div data-mypos><div class="k-skel" style="height:44px"></div></div></section>' +
       '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
@@ -714,11 +715,66 @@
     loadFb(body.querySelector('[data-fb]'));
     loadMypos(body.querySelector('[data-mypos]'));
     loadGhl(body.querySelector('[data-ghl]'));
+    loadLive(body.querySelector('[data-live]'));
     (async () => {
       const box = body.querySelector('[data-wa]');
       if (box && window.C360Wa) paintWa(box);
     })();
   }
+
+  // Instant sync: the Supabase project (URL, anon key, service_role key), whether this portal is listening, and a
+  // test that times a message there and back. The service_role key never comes back from the server.
+  const LIVE_ERR = { invalid_url: 'Project URL arată așa: https://xxxx.supabase.co (din Project Settings → API).', invalid_anon: 'Cheia anon nu arată bine. Copiaz-o din nou.',
+    invalid_service: 'Cheia service_role nu arată bine. Copiaz-o din nou.', live_failed: 'Supabase n-a primit mesajul. Verifică URL-ul și cheile.', not_configured: 'Sincronizarea instantă nu e pornită.' };
+  const liveFail = (err) => K.ui().toast(LIVE_ERR[err.code] || K.errText(err), 'error');
+  async function loadLive(box) {
+    if (!box) return;
+    let d;
+    try { d = await K.api('/api/portal-live'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica sincronizarea.</span>'; return; }
+    const form = (open) => '<details class="st-fb-manual"' + (open ? ' open' : '') + '><summary>' + (d.configured ? 'Schimbă cheile' : 'Pornește sincronizarea instantă') + '</summary>' +
+      '<form class="st-manual" data-live-connect autocomplete="off">' +
+        '<label class="k-field full"><span>Project URL</span><input name="url" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false"></label>' +
+        '<label class="k-field full"><span>anon public key</span><input name="anonKey" autocomplete="off" spellcheck="false"></label>' +
+        '<label class="k-field full"><span>service_role key</span><input name="serviceKey" type="password" autocomplete="new-password" spellcheck="false"></label>' +
+        '<small class="k-muted">supabase.com → New project (gratuit) → Project Settings → API: Project URL, anon public și service_role.</small>' +
+        '<button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Pornește</button></form></details>';
+    if (!d.configured) box.innerHTML = '<div class="st-fb-status is-wait">' + icon('clock') + '<div><b>Acum: verificare la câteva secunde</b><span>Cu Supabase, orice schimbare apare la toți pe loc.</span></div></div>' + form(true);
+    else {
+      const up = K.liveUp && K.liveUp();
+      box.innerHTML =
+        '<div class="st-fb-status ' + (up ? 'is-ok' : 'is-wait') + '">' + icon(up ? 'checkCircle' : 'alert') + '<div><b>' + (up ? 'Pornită' : 'Pornită, dar portalul ăsta încă se conectează') + '</b><span>' + esc(d.url) + (d.source === 'env' ? ' · din Vercel' : '') + '</span></div></div>' +
+        (d.lastError ? '<div class="st-fb-status is-wait">' + icon('alert') + '<div><b>Ultimul anunț n-a plecat</b><span>' + esc(d.lastError) + '</span></div></div>' : '') +
+        '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-live-test>' + icon('refresh') + 'Testează</button><span class="k-muted st-live-res" data-live-res></span></div>' +
+        (d.source === 'env' ? '' : form(false) + '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-live-off>Oprește sincronizarea instantă</button>');
+    }
+    const f = box.querySelector('[data-live-connect]');
+    if (f) f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(f);
+      K.busy(f.querySelector('[type="submit"]'), async () => {
+        try { await K.api('/api/portal-live', { action: 'connect', url: v.url, anonKey: v.anonKey, serviceKey: v.serviceKey }); f.reset(); K.ui().toast('Sincronizarea instantă e pornită. Portalurile deschise o iau la următoarea reîncărcare.', 'success'); K.reload(); setTimeout(() => loadLive(box), 2500); }
+        catch (err) { liveFail(err); }
+      });
+    });
+    // a message there and back: from this server to Supabase to this portal
+    const t = box.querySelector('[data-live-test]');
+    if (t) t.addEventListener('click', () => K.busy(t, async () => {
+      const out = box.querySelector('[data-live-res]');
+      const id = Math.random().toString(36).slice(2, 10);
+      const t0 = performance.now();
+      let got = false;
+      const arrived = new Promise((ok) => { K.on('live:ping', (p) => { if (!got && p && p.id === id) { got = true; ok(Math.round(performance.now() - t0)); } }); setTimeout(() => ok(0), 6000); });
+      try { await K.api('/api/portal-live', { action: 'test', id }); } catch (err) { liveFail(err); return; }
+      const ms = await arrived;
+      out.textContent = ms ? 'A ajuns înapoi în ' + ms + ' ms.' : (K.liveUp && K.liveUp() ? 'Nu a ajuns în 6 secunde.' : 'Portalul ăsta nu e încă conectat. Reîncarcă pagina și încearcă din nou.');
+    }));
+    const off = box.querySelector('[data-live-off]');
+    if (off) off.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Oprești sincronizarea instantă?', message: 'Portalurile revin la verificarea la câteva secunde.', confirmText: 'Oprește', danger: true }))) return;
+      try { await K.api('/api/portal-live', { action: 'disconnect' }); K.ui().toast('Oprită.', 'success'); loadLive(box); } catch (err) { liveFail(err); }
+    });
+  }
+  K.on('live:status', () => { const b = document.querySelector('[data-live]'); if (b && K.isActive('integrari') && !b.contains(document.activeElement)) loadLive(b); });
 
   // HighLevel: the clinic's two sub-accounts, Timișoara and Arad, each with its Private Integration token + Location
   // ID, which calendar is which city and category, which GHL user is which person here; then one import of both,

@@ -17,6 +17,7 @@ const { deviceCounts } = require('./_lib/push');
 const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
 const { mergeAcademy, forStaff } = require('./_lib/academy');
 const { loadOffers, discountOf } = require('./_lib/offers');
+const live = require('./_lib/live');
 
 // The full set of statuses an appointment can carry on the new shared Calendar (see
 // api/portal-appointments.js). 'programata' is the default for a freshly booked slot.
@@ -269,6 +270,8 @@ module.exports = async (req, res) => {
         discountPercent: discountOf(o), category: o.category, locations: o.locations, ads: !!o.ads, guarantee: o.guarantee || '', featured: !!o.featured,
       })),
       isAdmin,
+      // instant sync: where this portal listens for "the data changed" (Supabase Realtime), when it is set up
+      live: await live.publicConfig(),
       // Set while the owner previews this employee's account (read-only, banner + "Înapoi la Admin").
       impersonating: !!session.viewer,
     };

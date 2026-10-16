@@ -85,6 +85,7 @@
     document.querySelectorAll('[data-roles]').forEach((el) => el.classList.toggle('hidden', !el.dataset.roles.split(',').includes(role)));
     K.setData(DATA);
     badges();
+    if (DATA.live) connectLive(DATA.live);
     if (first) {
       first = false;
       document.getElementById('loadingScreen').classList.add('hidden');
@@ -276,7 +277,45 @@
       rev = p.rev;
     } catch (e) { /* next tick */ }
   }
-  setInterval(pulse, 5000);
+  // ------------------------------------------------------------------ instant sync (Supabase Realtime)
+  // A save anywhere is announced on a broadcast channel (api/_lib/live.js): every open portal refreshes right away
+  // instead of waiting for its next check. The check stays as the safety net: every 20 s while the channel is up,
+  // every 3 s when it isn't. Only "the data changed" travels there; the data itself comes from this server.
+  let live = null, liveUp = false, liveTimer = 0, pulseTimer = 0;
+  const loadScript = (src) => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.async = true; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+  async function connectLive(cfg) {
+    if (!cfg || !cfg.url || live) return;
+    live = 'starting';
+    try {
+      if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js');
+      const client = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+      live = client.channel(cfg.channel, { config: { broadcast: { self: true } } })
+        .on('broadcast', { event: 'rev' }, (m) => onLive(m && m.payload))
+        .on('broadcast', { event: 'ping' }, (m) => K.emit('live:ping', m && m.payload))
+        .subscribe((st) => {
+          const up = st === 'SUBSCRIBED';
+          if (up === liveUp) return;
+          liveUp = up;
+          K.emit('live:status', up);
+          if (up) pulse(); // anything missed while it was connecting
+          schedulePulse();
+        });
+    } catch (e) { live = null; }
+  }
+  K.liveUp = () => liveUp;
+  function onLive(p) {
+    if (!p || !p.rev || p.rev === rev) return;
+    clearTimeout(liveTimer);
+    // one save writes a few documents in a row: one refresh for all of them
+    liveTimer = setTimeout(() => { rev = p.rev; applyRemote(); }, 120);
+  }
+  function schedulePulse() {
+    clearTimeout(pulseTimer);
+    pulseTimer = setTimeout(async () => { await pulse(); schedulePulse(); }, liveUp ? 20000 : 3000);
+  }
+  schedulePulse();
+  // a refresh held back while she was editing goes as soon as she's done (the drawer closed, the field left)
+  setInterval(() => { if (pendingRemote && DATA && !busyEditing()) applyRemote(); }, 700);
   document.addEventListener('visibilitychange', async () => {
     if (document.hidden) return;
     // back on screen (the phone app reopened, the tab picked again): a new version loads right away
