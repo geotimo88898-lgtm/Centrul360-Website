@@ -3,6 +3,50 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/portal",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://admin.centrul360.com/portal",
+      "permanent": false
+    },
+    {
+      "source": "/portal.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://admin.centrul360.com/portal",
+      "permanent": false
+    },
+    {
+      "source": "/portal-login",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://admin.centrul360.com/portal-login",
+      "permanent": false
+    },
+    {
+      "source": "/portal-login.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://admin.centrul360.com/portal-login",
+      "permanent": false
+    },
+    {
       "source": "/",
       "has": [
         {
