@@ -267,9 +267,10 @@ const BAL = 'data/mypos-balance.json';
 //                              error ('gw_partner' | 'gw_merchant'), errorAt, status, message }
 const GW = 'https://api-gateway.mypos.com';
 const GW_KEY = 'data/mypos-gateway.json';
-// Every key has its fixed beginning (myPOS's API reference: the merchant secret is "sec_…", the partner one
-// "secret_…"): a key pasted in the wrong box is caught here, before myPOS counts a failed try (three lock it).
-const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: /^secret_\S{8,400}$/, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: /^sec_\S{8,400}$/ };
+// The IDs have their fixed beginnings; the secrets go as pasted (the owner's choice: no check on how they
+// start). Keys never hold spaces, so whatever a copy-paste brings along (spaces, invisible characters) is dropped.
+const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: /^\S{6,400}$/, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: /^\S{6,400}$/ };
+const cleanKey = (v) => String(v == null ? '' : v).replace(/[\s​-‍⁠﻿]/g, '');
 const gwReady = (g) => !!g && Object.keys(GW_FIELDS).every((k) => g[k]);
 const gwMsg = (j) => String(j.message || j.error_description || j.error || j.title || (j.errors && JSON.stringify(j.errors)) || '').slice(0, 200);
 const gwCache = new Map(); // 't|…' token, 's|…' session → { v, until } (per warm function instance)
@@ -349,12 +350,12 @@ async function saveGateway(store, input, by) {
   const prev = (await store.readJSON(GW_KEY, null)) || {};
   const g = {};
   for (const k of Object.keys(GW_FIELDS)) {
-    let v = String((input || {})[k] || '').trim();
+    let v = cleanKey((input || {})[k]);
     if (!v && (k === 'clientSecret' || k === 'merchantSecret') && prev[k] && prev[k === 'clientSecret' ? 'clientId' : 'merchantId'] === g[k === 'clientSecret' ? 'clientId' : 'merchantId']) v = prev[k];
     if (!GW_FIELDS[k].test(v)) return { error: 'gw_format', field: k };
     g[k] = v;
   }
-  if (g.merchantSecret === g.clientSecret) return { error: 'gw_format', field: 'merchantSecret' };
+  if (g.merchantSecret === g.clientSecret) return { error: 'gw_format', field: 'merchantSecret', same: true }; // surely refused: not worth a try
   gwCache.delete('t|' + g.clientId); gwCache.delete('s|' + g.merchantId);
   let accounts;
   try { accounts = await gwBalances(g); } catch (e) {
