@@ -267,7 +267,10 @@ const BAL = 'data/mypos-balance.json';
 //                              error ('gw_partner' | 'gw_merchant'), errorAt, status, message }
 const GW = 'https://api-gateway.mypos.com';
 const GW_KEY = 'data/mypos-gateway.json';
-const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: /^secret_[\w-]{8,300}$/, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: /^sec_[\w-]{8,300}$/ };
+// the IDs have fixed beginnings (a key pasted in the wrong box is caught before myPOS counts a failed try); a
+// secret only must not look like an ID and have no spaces (myPOS's real secrets don't all follow its docs)
+const SECRET = /^(?!(client_|cli_|mps-))\S{8,400}$/;
+const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: SECRET, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: SECRET };
 const gwReady = (g) => !!g && Object.keys(GW_FIELDS).every((k) => g[k]);
 const gwMsg = (j) => String(j.message || j.error_description || j.error || j.title || (j.errors && JSON.stringify(j.errors)) || '').slice(0, 200);
 const gwCache = new Map(); // 't|…' token, 's|…' session → { v, until } (per warm function instance)
