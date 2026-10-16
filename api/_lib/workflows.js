@@ -142,7 +142,7 @@ function defaultSettings() {
 const LEAD_ALERT = {
   key: 'alerta_lead', name: 'Lead nou: anunță echipa', note: 'Adminul și recepția primesc pe loc numele, procedura și orașul, în portal și pe telefon.',
   trigger: { type: 'lead_created', source: 'any', location: 'any', interest: 'any', returning: true },
-  steps: [{ type: 'notify', to: ['role:admin', 'role:receptie'], title: 'Lead nou: {nume}', text: '{procedura} · {locatie} · {telefon}', whatsapp: false }],
+  steps: [{ type: 'notify', to: ['role:admin', 'role:receptie'], title: 'LEAD NOU 🔥 - {procedura}', text: '{nume}, {locatie}', whatsapp: false }],
 };
 RECIPES.unshift(LEAD_ALERT);
 

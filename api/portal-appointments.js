@@ -226,7 +226,7 @@ module.exports = async (req, res) => {
         try {
           await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
             kind: 'booking', tone: 'good', go: 'programari', tag: 'appt-' + entry.id,
-            title: 'PROGRAMARE 📅' + (entry.treatment ? ' - ' + entry.treatment : ''),
+            title: 'PROGRAMARE 📅' + (entry.treatment ? ' - ' + require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), entry.treatment) : ''), // "Lipo 640"
             text: entry.clientName,
           });
         } catch (e) { /* a notification never blocks a booking */ }

@@ -48,8 +48,8 @@ module.exports = async (req, res) => {
 
     await writeJSON('data/sales.json', sales);
     await notify({ readJSON, writeJSON }, sale.employeeId, sale.status === 'approved'
-      ? { kind: 'commission', tone: 'good', title: 'Comision aprobat: +' + sale.commission + ' lei', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : '') + '.', go: 'comision' }
-      : { kind: 'commission', tone: 'bad', title: 'Comision respins', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.decisionNote ? '. ' + sale.decisionNote : '.'), go: 'comision' });
+      ? { kind: 'commission', tone: 'good', title: 'COMISION ✅ - +' + sale.commission + ' lei', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : ''), go: 'comision' }
+      : { kind: 'commission', tone: 'bad', title: 'COMISION ❌ - respins', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.decisionNote ? '. ' + sale.decisionNote : ''), go: 'comision' });
 
     res.status(200).json({ ok: true, sale });
   } catch (err) {

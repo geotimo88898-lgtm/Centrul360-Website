@@ -14,14 +14,14 @@ function bookingNotes(bk, month, today) {
   const dim = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
   const daysLeft = dim - Number(today.slice(8, 10)) + 1;
   const avg = bk.avg.toLocaleString('ro-RO');
-  if (bk.lei) notes.push({ id: 'book:' + month + ':' + bk.lei, kind: 'bonus', tone: 'good', live: true, go: 'comision', title: '🏆 Bonus ' + bk.lei.toLocaleString('ro-RO') + ' lei', text: 'Media ta: ' + avg + ' programări pe zi.' });
+  if (bk.lei) notes.push({ id: 'book:' + month + ':' + bk.lei, kind: 'bonus', tone: 'good', live: true, go: 'comision', title: 'BONUS 🏆 - ' + bk.lei.toLocaleString('ro-RO') + ' lei', text: 'Faci ' + avg + ' programări pe zi.' });
   if (bk.next && bk.next.min - bk.avg <= 3) {
     const need = (Math.ceil((bk.next.min - bk.avg) * 10) / 10).toLocaleString('ro-RO');
     const stage = daysLeft > 10 ? 'a' : daysLeft > 3 ? 'b' : 'c';
-    const text = stage === 'a' ? 'Încă ' + need + ' programări pe zi în medie și urci la ' + bk.next.lei + ' lei. 🎯'
-      : stage === 'b' ? 'Încă ' + need + ' pe zi în ' + daysLeft + ' zile pentru ' + bk.next.lei + ' lei. 💪'
-        : (daysLeft === 1 ? 'Ultima zi! ' : 'Doar ' + daysLeft + ' zile! ') + 'Încă ' + need + ' pe zi pentru ' + bk.next.lei + ' lei. ⏳';
-    notes.push({ id: 'book:' + month + ':next' + bk.next.min + ':' + stage, kind: 'bonus', tone: stage === 'c' ? 'warn' : 'info', live: true, go: 'comision', title: 'Bonus ' + bk.next.lei + ' lei', text });
+    const text = stage === 'a' ? 'Încă ' + need + ' programări pe zi și ajungi la ' + bk.next.lei + ' lei.'
+      : stage === 'b' ? 'Încă ' + need + ' pe zi, mai ai ' + daysLeft + ' zile.'
+        : (daysLeft === 1 ? 'Ultima zi! ' : 'Mai ai ' + daysLeft + ' zile! ') + 'Încă ' + need + ' pe zi.';
+    notes.push({ id: 'book:' + month + ':next' + bk.next.min + ':' + stage, kind: 'bonus', tone: stage === 'c' ? 'warn' : 'info', live: true, go: 'comision', title: 'BONUS 🎯 - ' + bk.next.lei + ' lei', text });
   }
   return notes;
 }

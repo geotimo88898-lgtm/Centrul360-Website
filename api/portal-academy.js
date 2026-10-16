@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
       if (b.done) {
         const employees = await readJSON('data/employees.json', []);
         const who = (employees.find((e) => e.id === me) || {}).name || 'Cineva';
-        await notifyMany({ readJSON, writeJSON }, admins(employees), { kind: 'alert', tone: 'info', title: 'De confirmat · ' + who, text: item.text, go: 'traininguri', tag: 'task-' + me + '-' + item.id });
+        await notifyMany({ readJSON, writeJSON }, admins(employees), { kind: 'alert', tone: 'info', title: 'DE CONFIRMAT ✅ - ' + who, text: item.text, go: 'traininguri', tag: 'task-' + me + '-' + item.id });
       }
       return res.status(200).json({ ok: true, progress });
     }
@@ -129,8 +129,8 @@ module.exports = async (req, res) => {
         else delete p.tasks[item.id];
       });
       await notify({ readJSON, writeJSON }, emp.id, b.ok
-        ? { kind: 'info', tone: 'good', title: 'Sarcină confirmată', text: item.text, go: 'traininguri' }
-        : { kind: 'info', tone: 'bad', title: 'Sarcină de refăcut', text: item.text, go: 'traininguri' });
+        ? { kind: 'info', tone: 'good', title: 'SARCINĂ ✅ - confirmată', text: item.text, go: 'traininguri' }
+        : { kind: 'info', tone: 'bad', title: 'SARCINĂ 🔁 - de refăcut', text: item.text, go: 'traininguri' });
       return res.status(200).json({ ok: true, progress });
     }
 

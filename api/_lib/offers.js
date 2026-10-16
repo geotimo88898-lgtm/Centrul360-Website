@@ -51,7 +51,7 @@ const ADDED = [
   },
 ];
 
-const MARKETING_DEFAULTS = { ads: false, locations: ['timisoara', 'arad'], adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
+const MARKETING_DEFAULTS = { ads: false, locations: ['timisoara', 'arad'], short: '', adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
 
 // Clinic rule: laser hair removal and EMS exist only in Timișoara. Offers that never had their
 // locations set default to that, until the owner picks otherwise in Oferte.
@@ -94,7 +94,7 @@ function cleanMarketing(body) {
   return {
     ads: !!body.ads,
     locations: list(body.locations, 2).filter((l) => LOCATIONS.includes(l)),
-    adName: str(body.adName, 120), mechanic: str(body.mechanic), includes: str(body.includes), device: str(body.device, 160),
+    short: str(body.short, 40), adName: str(body.adName, 120), mechanic: str(body.mechanic), includes: str(body.includes), device: str(body.device, 160),
     dreamOutcome: str(body.dreamOutcome), mechanism: str(body.mechanism), objections: list(body.objections), zones: list(body.zones),
     guarantee: str(body.guarantee, 160), notes: str(body.notes, 600),
   };
@@ -102,4 +102,26 @@ function cleanMarketing(body) {
 
 const discountOf = (o) => (Number(o.priceOld) > 0 ? Math.round(100 - (Number(o.priceNew) / Number(o.priceOld)) * 100) : 0);
 
-module.exports = { loadOffers, cleanMarketing, withMarketing, discountOf, LOCATIONS, SITE_CATEGORIES };
+// How the notifications name an offer (the owner's words, 17.10): short, with its price, "Lipo 640", "Cav Ems 280".
+// The offer's own "Nume scurt" (Oferte) wins; these are the defaults of the offers she had then.
+const SHORT = { 'liposonix-2zone': 'Lipo', 'facial-restart': 'Facial', 'cavitatie-ems': 'Cav Ems', 'cavitatie-1plus1': 'Cav Cav', 'epilare-full-body': 'Laser Full Body' };
+const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+// the offer a lead's interest / a booking's treatment names: its title, key or ad name; else the one offer whose name it
+// contains or that contains it ("Liposonix" → "Liposonix · 2 zone"); two that would fit: none
+function offerNamed(offers, text) {
+  const t = fold(text);
+  if (!t) return null;
+  const exact = offers.find((o) => fold(o.title) === t || o.key === text || (o.adName && fold(o.adName) === t) || (o.short && fold(o.short) === t));
+  if (exact) return exact;
+  const head = (o) => fold(String(o.title).split('·')[0]);
+  const fits = offers.filter((o) => head(o).length > 3 && (t.includes(head(o)) || head(o).includes(t)));
+  return fits.length === 1 ? fits[0] : null;
+}
+function shortName(offers, text) {
+  const o = offerNamed(offers || [], text);
+  if (!o) return String(text || '');
+  const name = String(o.short || SHORT[o.key] || String(o.title).split('·')[0]).trim();
+  return name + (Number(o.priceNew) > 0 ? ' ' + Math.round(Number(o.priceNew)) : '');
+}
+
+module.exports = { loadOffers, cleanMarketing, withMarketing, discountOf, offerNamed, shortName, SHORT, LOCATIONS, SITE_CATEGORIES };

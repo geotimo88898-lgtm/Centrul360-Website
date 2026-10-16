@@ -155,7 +155,7 @@ module.exports = async (req, res) => {
       if (body.decision === 'reject') {
         a.status = 'rejected'; a.approvedMinutes = 0;
         await writeJSON(TB.ADJ, adjs);
-        await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'bad', title: 'Pontaj ' + day + ' respins', text: (a.minutes > 0 ? 'Cele ' + fmtMin(a.minutes) + ' în plus nu au fost aprobate.' : 'Diferența de ' + fmtMin(a.minutes) + ' nu a fost aprobată.') + (a.decisionNote ? ' ' + a.decisionNote : ''), go: 'condica' });
+        await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'bad', title: 'PONTAJ ❌ - ' + day + ' respins', text: (a.minutes > 0 ? 'Cele ' + fmtMin(a.minutes) + ' în plus n-au fost aprobate.' : 'Cele ' + fmtMin(a.minutes) + ' n-au fost aprobate.') + (a.decisionNote ? ' ' + a.decisionNote : ''), go: 'condica' });
         res.status(200).json({ ok: true, adjustment: a });
         return;
       }
@@ -170,7 +170,7 @@ module.exports = async (req, res) => {
       const text = m > 0
         ? '+' + fmtMin(m) + (ef.covered ? ', ' + fmtMin(ef.covered) + ' din orele de recuperat' : '') + (ef.toBank ? (ef.covered ? ', ' : ' ') + fmtMin(ef.toBank) + ' la ore suplimentare' : '') + '.'
         : fmtMin(m) + ' lipsă' + (ef.fromBank ? ', luate din orele suplimentare' : '') + (ef.toDebt ? (ef.fromBank ? ', ' : ', ') + fmtMin(ef.toDebt) + ' de recuperat' : '') + '.';
-      await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'good', title: 'Pontaj ' + day + ' aprobat', text, go: 'condica' });
+      await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'good', title: 'PONTAJ ✅ - ' + day + ' aprobat', text, go: 'condica' });
       res.status(200).json({ ok: true, adjustment: a, effect: ef });
       return;
     }
@@ -184,7 +184,7 @@ module.exports = async (req, res) => {
       const p = { id: crypto.randomUUID(), employeeId: targetId, minutes: bal.bank, lei: bal.bankLei, at: new Date().toISOString(), month: serverToday().slice(0, 7), by: session.employeeId };
       all.payouts.push(p);
       await writeJSON(TB.PAYOUTS, all.payouts);
-      await notify({ readJSON, writeJSON }, targetId, { kind: 'paid', tone: 'good', title: 'Ore suplimentare plătite', text: fmtMin(p.minutes) + ' = ' + p.lei + ' lei, cu salariul.', go: 'condica' });
+      await notify({ readJSON, writeJSON }, targetId, { kind: 'paid', tone: 'good', title: 'ORE PLĂTITE 💵 - ' + fmtMin(p.minutes) + ' = ' + p.lei + ' lei', text: 'Le primești cu salariul.', go: 'condica' });
       res.status(200).json({ ok: true, payout: p });
       return;
     }
@@ -202,7 +202,7 @@ module.exports = async (req, res) => {
       const c = { id: crypto.randomUUID(), employeeId: targetId, minutes: m, before, note: String(body.note || '').trim().slice(0, 200), at: new Date().toISOString(), by: session.employeeId };
       all.corrections.push(c);
       await writeJSON(TB.CORR, all.corrections);
-      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'Orele de recuperat au fost corectate', text: 'Acum ai de recuperat ' + (m ? fmtMin(m) : '0') + '.' + (c.note ? ' ' + c.note : ''), go: 'condica' });
+      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'RECUPERARE 🕐 - ' + (m ? 'mai ai ' + fmtMin(m) : 'nimic de recuperat'), text: c.note || 'Corectat de admin.', go: 'condica' });
       const bal = TB.ledger(targetId, all);
       delete bal.effects;
       res.status(200).json({ ok: true, correction: c, ...bal });

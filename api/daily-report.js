@@ -98,10 +98,11 @@ async function numbers(day) {
 function words(n) {
   const d = new Date(n.day + 'T12:00:00Z');
   const title = 'RAPORTUL ZILEI 📊 - ' + RO_DAYS[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + RO_MONTHS[d.getUTCMonth()];
-  const parts = ['Încasat ' + lei(n.total) + (n.total ? ' (card ' + lei(n.methods.card) + ', cash ' + lei(n.methods.cash) + (n.methods.transfer ? ', transfer ' + lei(n.methods.transfer) : '') + ')' : '')];
-  if (n.pos.connected) parts.push('POS ' + lei(n.pos.total) + (n.pos.count ? ' (' + plural(n.pos.count, 'plată', 'plăți') + ', bon mediu ' + lei(n.pos.avg) + ')' : ''));
-  parts.push(n.appointments.done + ' din ' + n.appointments.total + ' programări făcute');
-  parts.push(n.booked + ' programări noi', n.leads + ' leaduri');
+  const num = (v) => Math.round(v).toLocaleString('ro-RO');
+  const parts = [lei(n.total) + (n.total ? ' (card ' + num(n.methods.card) + ', cash ' + num(n.methods.cash) + (n.methods.transfer ? ', transfer ' + num(n.methods.transfer) : '') + ')' : '')];
+  parts.push('au venit ' + n.appointments.done + ' din ' + n.appointments.total);
+  parts.push(plural(n.booked, 'programare nouă', 'programări noi'), plural(n.leads, 'lead', 'leaduri'));
+  if (n.pos.connected && n.pos.count) parts.push('POS ' + lei(n.pos.total) + ' (' + plural(n.pos.count, 'plată', 'plăți') + ', în medie ' + lei(n.pos.avg) + ')');
   return { title, text: parts.join(' · ') };
 }
 
@@ -121,7 +122,7 @@ async function adAlerts(store, ids, day) {
   const top = view.rows.filter((a) => a.flag === 'top' && fresh(a)).slice(0, 2);
   for (const a of bad.concat(top)) {
     await notifyMany(store, ids, { kind: 'alert', tone: a.flag === 'bad' ? 'bad' : 'good', go: 'panou', tag: 'ad-' + a.id + '-' + day,
-      title: (a.flag === 'bad' ? 'ATENȚIE ⚠️ - reclama ' : 'RECLAMĂ TOP 🚀 - ') + String(a.name || 'fără nume').slice(0, 60), text: 'Ultimele 3 zile: ' + a.why.join(' · ') });
+      title: (a.flag === 'bad' ? 'ATENȚIE ⚠️ - reclama ' : 'RECLAMĂ TOP 🚀 - ') + String(a.name || 'fără nume').slice(0, 60), text: 'În 3 zile: ' + a.why.join(' · ') });
     said[a.id] = day;
   }
   if (bad.length || top.length) await writeJSON(AD_SAID, said);
@@ -150,10 +151,10 @@ module.exports = async (req, res) => {
   const pushed = await notifyMany(store, ids, { kind: 'report', tone: 'info', title: w.title, text: w.text, go: 'incasari', tag: 'report-' + n.day });
   const un = n.pos.unrecorded || [];
   if (un.length) {
-    const line = (p) => lei2(p.amount) + ', ' + hhmm(p.at) + (p.city ? ', ' + p.city : '');
+    const line = (p) => lei2(p.amount) + ' la ' + hhmm(p.at) + (p.city ? ', ' + p.city : '');
     await notifyMany(store, ids, {
       kind: 'alert', tone: 'bad', go: 'incasari', tag: 'unrec-' + n.day,
-      title: 'ATENȚIE ⚠️ - ' + (un.length === 1 ? '1 plată pe POS neînregistrată' : plural(un.length, 'plată', 'plăți') + ' pe POS neînregistrate'),
+      title: 'ATENȚIE ⚠️ - ' + (un.length === 1 ? 'o plată pe POS nepusă în portal' : plural(un.length, 'plată', 'plăți') + ' pe POS nepuse în portal'),
       text: un.slice(0, 4).map(line).join(' · ') + (un.length > 4 ? ' · și încă ' + (un.length - 4) : ''),
     });
   }
@@ -165,8 +166,8 @@ module.exports = async (req, res) => {
       const dd = new Date(p.last + 'T12:00:00Z');
       await notifyMany(store, ids, {
         kind: 'alert', tone: 'bad', go: 'incasari', tag: 'idle-' + p.tid + '-' + n.day,
-        title: 'ATENȚIE ⚠️ - POS ' + p.city + ' fără plăți de ' + plural(p.days, 'zi', 'zile'),
-        text: 'Ultima plată: ' + RO_DAYS[dd.getUTCDay()] + ' ' + dd.getUTCDate() + ' ' + RO_MONTHS[dd.getUTCMonth()] + ' · ' + p.model + ' · TID ' + p.tid,
+        title: 'ATENȚIE ⚠️ - POS ' + p.city + ', nicio plată de ' + plural(p.days, 'zi', 'zile'),
+        text: 'Ultima plată: ' + RO_DAYS[dd.getUTCDay()] + ', ' + dd.getUTCDate() + ' ' + RO_MONTHS[dd.getUTCMonth()],
       });
     }
   } catch (e) { /* the report went */ }

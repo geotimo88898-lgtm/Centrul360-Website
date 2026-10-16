@@ -264,14 +264,14 @@ function adsOf(M, r, ads) {
   rows.forEach((a) => {
     const good = [], bad = [], soft = [];
     const lead = a.leads || a.metaLeads;
-    if (avgCpl && lead >= 3 && a.cpl <= avgCpl * 0.7) good.push(lead + ' leaduri la ' + ro(a.cpl) + ' lei / lead, media e ' + ro(avgCpl));
-    if (a.roas && a.roas >= 3 && a.clients >= 2 && (!avgRoas || a.roas >= avgRoas * 1.3)) good.push(ro(a.roas) + ' lei încasați la 1 leu, media e ' + ro(avgRoas));
-    if (a.leads >= 4 && a.bookRate >= 50 && (!avgBook || a.bookRate >= avgBook * 1.3)) good.push(ro(a.bookRate) + '% din leaduri s-au programat, media e ' + Math.round(avgBook || 0) + '%');
-    if (!lead && a.spend >= Math.max(50, (avgCpl || 0) * 2)) bad.push(ro(a.spend) + ' lei cheltuiți, niciun lead');
-    if (avgCpl && lead >= 3 && a.cpl >= avgCpl * 1.6) bad.push(ro(a.cpl) + ' lei / lead, media e ' + ro(avgCpl));
+    if (avgCpl && lead >= 3 && a.cpl <= avgCpl * 0.7) good.push(lead + ' leaduri, ' + ro(a.cpl) + ' lei unul (de obicei ' + ro(avgCpl) + ')');
+    if (a.roas && a.roas >= 3 && a.clients >= 2 && (!avgRoas || a.roas >= avgRoas * 1.3)) good.push('aduce ' + ro(a.roas) + ' lei la 1 leu dat (de obicei ' + ro(avgRoas) + ')');
+    if (a.leads >= 4 && a.bookRate >= 50 && (!avgBook || a.bookRate >= avgBook * 1.3)) good.push(ro(a.bookRate) + '% se programează (de obicei ' + Math.round(avgBook || 0) + '%)');
+    if (!lead && a.spend >= Math.max(50, (avgCpl || 0) * 2)) bad.push(ro(a.spend) + ' lei dați, niciun lead');
+    if (avgCpl && lead >= 3 && a.cpl >= avgCpl * 1.6) bad.push(ro(a.cpl) + ' lei un lead (de obicei ' + ro(avgCpl) + ')');
     if (a.leads >= 6 && !a.booked) bad.push(a.leads + ' leaduri, nicio programare');
-    if (a.impressions >= 3000 && a.ctr != null && a.ctr < 0.6) soft.push('doar ' + ro(a.ctr) + '% dau click');
-    if (a.freq && a.freq >= 3.5) soft.push('aceleași persoane au văzut-o de ' + ro(a.freq) + ' ori');
+    if (a.impressions >= 3000 && a.ctr != null && a.ctr < 0.6) soft.push('puțini dau click (' + ro(a.ctr) + '%)');
+    if (a.freq && a.freq >= 3.5) soft.push('aceleași femei au văzut-o de ' + ro(a.freq) + ' ori');
     a.flag = bad.length ? 'bad' : good.length ? 'top' : soft.length ? 'watch' : '';
     a.why = bad.length ? bad.concat(soft) : good.length ? good.concat(soft) : soft;
   });

@@ -184,11 +184,11 @@ module.exports = async (req, res) => {
       // tell her, one short line
       const when = request.startDate === request.endDate ? request.startDate.slice(8, 10) + '.' + request.startDate.slice(5, 7) : request.startDate.slice(8, 10) + '.' + request.startDate.slice(5, 7) + '-' + request.endDate.slice(8, 10) + '.' + request.endDate.slice(5, 7);
       const isOff = request.type === 'suplimentare';
-      const what = isOff ? 'Ore libere' : (LEAVE_LABELS[request.type] || 'Concediu');
-      const ok = isOff ? ' aprobate (' + fmtMin(request.minutes) + ')' : ' aprobat', no = isOff ? ' respinse (' + fmtMin(request.minutes) + ')' : ' respins';
+      const what = (isOff ? 'ORE LIBERE' : String(LEAVE_LABELS[request.type] || 'Concediu').toLocaleUpperCase('ro-RO'));
+      const ok = isOff ? fmtMin(request.minutes) + ' aprobate' : 'aprobat', no = isOff ? fmtMin(request.minutes) + ' respinse' : 'respins';
       await notify({ readJSON, writeJSON }, request.employeeId, request.status === 'approved'
-        ? { kind: 'leave', tone: 'good', title: what + ok, text: when + (request.recovery ? '. Ai de recuperat ' + fmtMin(request.recovery.minutes) + ', după planul tău.' : '.'), go: 'condica' }
-        : { kind: 'leave', tone: 'bad', title: what + no, text: when + (request.rejectionNote ? '. ' + request.rejectionNote : '.'), go: 'condica' });
+        ? { kind: 'leave', tone: 'good', title: what + ' ✅ - ' + ok, text: when + (request.recovery ? ' · ai de recuperat ' + fmtMin(request.recovery.minutes) : ''), go: 'condica' }
+        : { kind: 'leave', tone: 'bad', title: what + ' ❌ - ' + no, text: when + (request.rejectionNote ? ' · ' + request.rejectionNote : ''), go: 'condica' });
       res.status(200).json({ ok: true, request });
       return;
     }

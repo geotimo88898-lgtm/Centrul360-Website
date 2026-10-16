@@ -185,7 +185,7 @@
   // Reamintiri: the appointment flows with the messages they send. A message opens in the template editor.
   // the site's leads: one message for all, short, morning or evening (the city they picked on the form)
   const SITE = { key: 'site', title: 'Lead de pe site', locations: ['timisoara', 'arad'], site: true };
-  const SITE_TEXT = 'Bună {prenume}! 👋 Mulțumim că ne-ai scris. Ca să îți găsim o oră potrivită, când ți-e mai ușor să vii, dimineața sau seara? ❤️';
+  const SITE_TEXT = 'Bună {prenume}! 👋 Mulțumim că te-ai înscris la consultația gratuită și masajul facial cadou. Când ți-e mai ușor să vii, dimineața sau seara? ❤️';
   const SITE_BTNS = [{ type: 'QUICK_REPLY', text: 'Dimineața' }, { type: 'QUICK_REPLY', text: 'Seara' }];
   const LEAD_TPL = (o) => (o.site ? 'Lead site · dimineața sau seara' : 'Lead nou · ' + o.title);
   const LEAD_WF = (o) => 'Lead nou · ' + o.title + ' → mesaj cu oferta';

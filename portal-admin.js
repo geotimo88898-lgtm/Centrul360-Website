@@ -659,7 +659,9 @@
     } catch (e) { Object.assign(o, before); renderOffers(); K.ui().toast(K.errText(e), 'error'); }
   }
   const siteFields = (o) => ({ title: o.title, description: o.description || '', priceNew: Number(o.priceNew), priceOld: Number(o.priceOld), category: o.category, featured: !!o.featured, imageKey: o.imageKey, active: !!o.active, order: o.order });
-  const marketingFields = (o) => ({ ads: !!o.ads, locations: o.locations, adName: o.adName, mechanic: o.mechanic, includes: o.includes, device: o.device, dreamOutcome: o.dreamOutcome, mechanism: o.mechanism, objections: o.objections, zones: o.zones, guarantee: o.guarantee, notes: o.notes });
+  // the short names the notifications use when an offer has none of its own (api/_lib/offers.js SHORT)
+  const SHORT_DEF = { 'liposonix-2zone': 'Lipo', 'facial-restart': 'Facial', 'cavitatie-ems': 'Cav Ems', 'cavitatie-1plus1': 'Cav Cav', 'epilare-full-body': 'Laser Full Body' };
+  const marketingFields = (o) => ({ ads: !!o.ads, locations: o.locations, short: o.short || '', adName: o.adName, mechanic: o.mechanic, includes: o.includes, device: o.device, dreamOutcome: o.dreamOutcome, mechanism: o.mechanism, objections: o.objections, zones: o.zones, guarantee: o.guarantee, notes: o.notes });
 
   function onOfferClick(e) {
     const t = e.target;
@@ -700,7 +702,7 @@
   function openOffer(id) {
     const src = id ? O.list.find((x) => x.id === id) : null;
     const o = src ? JSON.parse(JSON.stringify(src)) : { title: '', description: '', priceNew: '', priceOld: '', category: 'remodelare', featured: false, imageKey: (O.images[0] || {}).key, active: true,
-      ads: false, locations: ['timisoara', 'arad'], adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
+      ads: false, locations: ['timisoara', 'arad'], short: '', adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
     const lines = (a) => (a || []).join('\n');
     const d = K.drawer({
       title: src ? o.title : 'Ofertă nouă', icon: 'tag', width: 720, subtitle: 'Se vede pe site, la recepție și în Creative imediat ce salvezi.',
@@ -719,6 +721,7 @@
         '<section class="k-section of-ads"><h4>' + icon('sparkles') + 'Reclame · Creative</h4>' +
           '<div class="of-flags">' + K.toggle('ads', o.ads, 'Promovată în reclame (Creative face creative doar pentru ofertele bifate)') + '</div>' +
           '<form class="k-form" data-mk>' +
+          K.field('Nume scurt în notificări', '<input name="short" maxlength="40" value="' + esc(o.short || '') + '" placeholder="' + esc(SHORT_DEF[o.key] || 'ex: Lipo') + '">', 'full', 'Pe telefon apare cu prețul: ' + esc((o.short || SHORT_DEF[o.key] || 'Lipo') + ' ' + (Number(o.priceNew) || 640)) + '.') +
           K.field('Nume în reclamă', '<input name="adName" maxlength="120" value="' + esc(o.adName) + '" placeholder="ex: LipoSonix · 2 zone la preț de una">', 'full') +
           K.field('Mecanica ofertei', '<input name="mechanic" value="' + esc(o.mechanic) + '" placeholder="ex: 1+1: 2 zone la prețul uneia">', 'full') +
           K.field('Rezultatul dorit de clientă', '<input name="dreamOutcome" value="' + esc(o.dreamOutcome) + '" placeholder="ex: talie mai definită, haine care vin mai bine">', 'full') +
