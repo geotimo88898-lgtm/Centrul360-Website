@@ -28,6 +28,7 @@ const N = require('./_lib/notify');
 const VALID_CATEGORIES = CATEGORIES;
 
 const VALID_METHODS = ['card', 'cash', 'transfer', 'cash_card'];
+const METHOD_WORD = { card: 'card', cash: 'cash', transfer: 'transfer', cash_card: 'cash + card' };
 
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 
@@ -191,15 +192,18 @@ async function handleIncasare(req, res, session) {
     Object.assign(appt, { status: 'finalizata', paidSaleId: entry.id, paidAt: entry.createdAt, updatedAt: entry.createdAt });
     await writeJSON('data/appointments.json', appointments);
     if (before !== 'finalizata') { try { await workflows.emit('appointment_status', { appointment: appt, status: 'finalizata' }); } catch (e) { /* never blocks a payment */ } }
-    // cash in: the owner hears it (a card payment rings from the POS itself, api/mypos-webhook.js)
-    const cashIn = method === 'cash' ? amount : method === 'cash_card' && split ? split.cash : 0;
-    if (cashIn > 0 && !N.isOwner(session)) {
+    // every payment the desk records rings for the owner; the card part may have rung already from the POS
+    // (api/mypos-webhook.js): this line, with the client and the upsell, takes that one's place (_lib/notify.js claim)
+    if (!N.isOwner(session)) {
       try {
-        const by = ((await readJSON('data/employees.json', [])).find((e) => e.id === session.employeeId) || {}).name || '';
-        await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
-          kind: 'money', tone: 'good', go: 'incasari', tag: 'cash-' + entry.id,
-          title: 'Cash ' + N.leiTxt(cashIn) + (entry.location ? ' · ' + entry.location : ''),
-          text: [entry.client, entry.treatment, by ? 'încasat de ' + by : ''].filter(Boolean).join(' · '),
+        const store = { readJSON, writeJSON };
+        const cardIn = method === 'card' ? amount : method === 'cash_card' && split ? split.card : 0;
+        const pos = cardIn > 0 ? await N.claim(store, N.payRef('pos', cardIn), true) : null;
+        await N.notifyMany(store, await N.adminIds(store), {
+          kind: 'money', tone: 'good', go: 'incasari', tag: pos ? pos.tag : 'pay-' + entry.id, quiet: !!pos,
+          ref: cardIn > 0 ? N.payRef('desk', cardIn) : '',
+          title: 'ÎNCASARE - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method],
+          text: (upsell > 0 ? 'Upsell' + (upsell < amount ? ' ' + N.leiTxt(upsell) : '') : 'Fără upsell') + (entry.client ? ' · ' + entry.client : ''),
         });
       } catch (e) { /* never blocks a payment */ }
     }

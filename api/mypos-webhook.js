@@ -58,14 +58,20 @@ module.exports = async (req, res) => {
   const m = M.merge(data.list || [], [p]);
   await writeJSON(M.PAY, Object.assign({}, data, { list: m.list }));
   await logDelivery({ at, ok: true, event, amount: p.amount, tid: p.tid });
-  if (!p.cancelled && p.amount > 0) {
+  // a new card payment rings for the owner at once, unless the desk recorded it already (that line, with the
+  // client and the upsell, was its notification: _lib/notify.js claim); a repeat delivery adds nothing, rings nothing
+  if (!p.cancelled && p.amount > 0 && m.added) {
     try {
+      const store = { readJSON, writeJSON };
       const dev = (conn.devices || []).find((d) => d.tid === p.tid) || {};
-      await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
-        kind: 'money', tone: 'good', go: 'incasari', tag: 'pos-' + p.id,
-        title: 'Card POS ' + N.leiTxt(p.amount) + (dev.city ? ' · ' + dev.city : ''),
-        text: [dev.model ? 'myPOS ' + dev.model : 'myPOS', p.pan ? 'card ••' + p.pan : ''].filter(Boolean).join(' · '),
-      });
+      const desk = await N.claim(store, N.payRef('desk', p.amount), false);
+      if (!desk) {
+        await N.notifyMany(store, await N.adminIds(store), {
+          kind: 'money', tone: 'good', go: 'incasari', tag: 'pos-' + p.id, ref: N.payRef('pos', p.amount),
+          title: 'ÎNCASARE - ' + N.leiTxt(p.amount) + ' card',
+          text: ['POS' + (dev.city ? ' ' + dev.city : ''), p.pan ? 'card ••' + p.pan : ''].filter(Boolean).join(' · '),
+        });
+      }
     } catch (e) { /* myPOS must get its 200 */ }
   }
   res.status(200).json({ ok: true });

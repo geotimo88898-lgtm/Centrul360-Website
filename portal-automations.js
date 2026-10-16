@@ -1,7 +1,8 @@
 // Centrul360 portal - Admin → Automatizări: the owner's flows in folders (Intake for the leads from the
 // ads, Reminders for the appointments, any others she makes). Each flow is one row like in Reclame:
 // tick, on / off, the name, the numbers she picked; a tap opens it on the canvas editor
-// (portal-builder.js). Istoric: every run, filtered by flow, folder, form, status, period.
+// (portal-builder.js). Mesaje: the WhatsApp messages of the new leads and of the reminders, each with its
+// state at Meta and its flow's switch. Istoric: every run, filtered by flow, folder, form, status, period.
 // The engine lives in api/_lib/workflows.js, the data comes from /api/portal-workflows.
 (function () {
   'use strict';
@@ -86,7 +87,7 @@
     const folders = d.folders || [];
     panel.querySelector('[data-body]').innerHTML =
       '<div data-stats></div>' +
-      '<div class="ad-tabs">' + K.seg('autab', [['flows', 'Automatizări', 'zap'], ['log', 'Istoric', 'clock']], S.tab, 'is-big') + '</div>' +
+      '<div class="ad-tabs">' + K.seg('autab', [['flows', 'Automatizări', 'zap'], ['msgs', 'Mesaje', 'chat'], ['log', 'Istoric', 'clock']], S.tab, 'is-big') + '</div>' +
       '<div data-pane="flows"' + (S.tab === 'flows' ? '' : ' hidden') + '>' +
         '<div class="ad-bar au-bar"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o automatizare…" value="' + esc(S.q) + '"></label>' +
           '<div class="k-chips">' + [['all', 'Toate'], ['on', 'Pornite'], ['off', 'Oprite']].map(([k, l]) => '<button type="button" class="k-chip' + (S.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + d.workflows.filter((w) => k === 'all' || (k === 'on') === !!w.active).length + '</span></button>').join('') + '</div>' +
@@ -96,8 +97,9 @@
         '<div data-bulk></div>' +
         '<div data-flows></div>' +
       '</div>' +
+      '<div data-pane="msgs"' + (S.tab === 'msgs' ? '' : ' hidden') + '><div data-msgs><div class="k-skel" style="height:220px"></div></div></div>' +
       '<div data-pane="log"' + (S.tab === 'log' ? '' : ' hidden') + '>' + logFilters() + '<div data-log></div></div>';
-    paintStats(); paintFlows(); paintLog();
+    paintStats(); paintFlows(); paintLog(); paintMsgs();
   }
 
   // the cards on top: of the ticked flows, or of all of them
@@ -170,6 +172,103 @@
       '<button type="button" class="k-btn is-sm" data-bulk="on">' + icon('zap') + 'Pornește</button><button type="button" class="k-btn is-sm" data-bulk="off">' + icon('ban') + 'Oprește</button>' +
       '<button type="button" class="k-btn is-sm" data-bulk="move">' + icon('folder') + 'Mută în folder</button><button type="button" class="k-btn is-sm is-danger" data-bulk="delete">' + icon('trash') + 'Șterge</button>' +
       '<span class="k-grow"></span><button type="button" class="k-btn is-ghost is-sm" data-sel-clear>Deselectează</button></div>' : '';
+  }
+
+  // ------------------------------------------------------------------ Mesaje
+  // Lead nou: a new lead gets a WhatsApp at once, from her city's number, about the offer she signed up for, with
+  // the offer's picture. For each offer in the ads: a template (the picture as its header, sent to Meta for the
+  // numbers of the offer's cities) and a flow "Lead nou · <ofertă>" in Intake that sends it. Until Meta approves
+  // a template its message is skipped (and noted in Istoric); then it goes by itself. Run again when an offer is
+  // added. Reamintiri: the appointment flows with the messages they send. A message opens in the template editor.
+  const LEAD_TPL = (o) => 'Lead nou · ' + o.title;
+  const LEAD_WF = (o) => 'Lead nou · ' + o.title + ' → mesaj cu oferta';
+  const leadText = (o) => 'Bună, {prenume}! Mulțumim că te-ai înscris pentru ' + o.title + '. Mai sus ai oferta. O colegă te sună în scurt timp ca să-ți găsim o oră potrivită. Dacă vrei, scrie-ne aici ce zi îți convine.';
+  const leadCities = (o) => [...new Set((o.locations || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
+  const leadOffers = () => { const all = (K.data && K.data.offers) || []; const ads = all.filter((o) => o.ads); return ads.length ? ads : all; };
+  const intakeId = () => ((S.d.folders || []).find((f) => f.id === 'intake') || (S.d.folders || []).find((f) => /intake|lead/i.test(f.name)) || {}).id || '';
+  // every template a flow sends, branches included, once
+  const tplIds = (steps) => [...new Set((function walk(l) { return (l || []).reduce((a, s) => a.concat(s.type === 'whatsapp' && s.templateId ? [s.templateId] : [], s.type === 'if' ? walk(s.yes).concat(walk(s.no), ...(s.more || []).map((b) => walk(b.steps))) : []), []); })(steps))];
+  const remindFlows = () => S.d.workflows.filter((w) => (w.folder === 'reminders' || /^appointment_/.test(w.trigger.type)) && tplIds(w.steps).length);
+  // the offer's picture as a JPEG (Meta takes JPEG/PNG for a header), at most 1600 px wide
+  async function toJpeg(url) {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const w = Math.min(1600, img.naturalWidth), h = Math.round(img.naturalHeight * w / img.naturalWidth);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+    let q = 0.9, out = c.toDataURL('image/jpeg', q);
+    while (out.length > 3.8e6 && q > 0.5) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+    return out;
+  }
+  const leadRows = (tpls) => leadOffers().map((o) => ({ o, t: tpls.find((x) => x.label === LEAD_TPL(o)), w: S.d.workflows.find((x) => x.name === LEAD_WF(o)) }));
+  const flowSwitch = (w) => '<label class="k-switch ad-sw" title="' + (w.active ? 'Pornită, apasă ca s-o oprești' : 'Oprită, apasă ca s-o pornești') + '"><input type="checkbox" data-toggle="' + esc(w.id) + '"' + (w.active ? ' checked' : '') + '><i></i></label>';
+  // a template's state in the given cities only (a lead offer's cities, a reminder flow's city)
+  const cityState = (t, cities) => cities.map((c) => (cities.length > 1 ? '<small class="au-msg-city">' + esc(c) + '</small>' : '') + window.C360Wa.tag((t.cities || {})[c] || 'DRAFT')).join('');
+  const flowCities = (w, t) => { const l = String((w.trigger || {}).location || ''); return /arad/i.test(l) ? ['Arad'] : /timi/i.test(l) ? ['Timișoara'] : Object.keys(t.cities || {}).filter((c) => (t.cities || {})[c]); };
+  const tplBtn = (t) => '<button type="button" class="k-btn is-ghost is-sm" data-tpl="' + esc(t.id) + '">' + icon('pen') + 'Mesajul</button>';
+  async function paintMsgs() {
+    const box = panel.querySelector('[data-msgs]'); if (!box || S.tab !== 'msgs') return;
+    let wa;
+    try { wa = await window.C360Wa.load(); } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.'); return; }
+    if (!box.isConnected) return;
+    const tpls = wa.templates || [];
+    const byId = new Map(tpls.map((t) => [t.id, t]));
+    const rows = leadRows(tpls);
+    const missing = rows.filter((r) => !r.t || !r.w).length;
+    const numbers = Object.keys(wa.numbers || {}).some((c) => wa.numbers[c].connected);
+    const reminders = remindFlows();
+    box.innerHTML = '<div class="au-msgs">' +
+      '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('userPlus') + '</span><div><b>Lead nou</b><small>cu poza ofertei, de pe numărul orașului</small></div>' +
+        (numbers ? '<button type="button" class="k-btn ' + (missing ? 'is-primary' : 'is-ghost') + ' is-sm" data-leadmsg-go>' + icon(missing ? 'plus' : 'refresh') + (missing ? (rows.length === missing ? 'Creează mesajele' : 'Creează ce lipsește') : 'Verifică din nou') + '</button>' : '') + '</header>' +
+        (numbers ? '' : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
+        (rows.length ? rows.map((r) => '<div class="au-msg-row">' + (r.w ? flowSwitch(r.w) : '<span class="au-msg-gap"></span>') +
+          '<span class="au-msg-name"><b>' + esc(r.o.title) + '</b><small>' + esc(leadCities(r.o).join(' · ')) + '</small></span>' +
+          '<span class="au-msg-tags">' + (r.t ? cityState(r.t, leadCities(r.o)) : '<span class="k-tag">Lipsește</span>') + '</span>' +
+          (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
+      '</section>' +
+      '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('clock') + '</span><div><b>Reamintiri</b><small>confirmare, înainte de programare, recenzie</small></div>' +
+        '<button type="button" class="k-btn is-ghost is-sm" data-new-in="reminders">' + icon('plus') + 'Automatizare nouă</button></header>' +
+        (reminders.length ? reminders.map((w) => '<div class="au-msg-flow"><div class="au-msg-fhead">' + flowSwitch(w) +
+            '<button type="button" class="au-msg-fname" data-open="' + esc(w.id) + '" title="Deschide pe schemă"><b>' + esc(w.name) + '</b>' + icon('right') + '</button></div>' +
+            tplIds(w.steps).map((id) => { const t = byId.get(id); return '<div class="au-msg-row is-sub"><span class="au-msg-name"><b>' + esc(t ? t.label : 'Șablon șters') + '</b></span>' +
+              '<span class="au-msg-tags">' + (t ? (flowCities(w, t).length ? cityState(t, flowCities(w, t)) : window.C360Wa.tag(t.status)) : '<span class="k-tag is-bad">Alege alt șablon pe schemă</span>') + '</span>' + (t ? tplBtn(t) : '') + '</div>'; }).join('') +
+          '</div>').join('') : '<p class="k-muted au-msg-none">Nicio reamintire încă.</p>') +
+      '</section></div>';
+  }
+  async function makeLeadMsgs(btn) {
+    await K.busy(btn, async () => {
+      try {
+        let wa = await window.C360Wa.load(true);
+        const pub = ((await K.api('/api/offers-public')).offers || []);
+        let made = 0;
+        const errs = [];
+        for (const r of leadRows(wa.templates || [])) {
+          let t = r.t;
+          if (!t) {
+            const p = pub.find((x) => x.id === r.o.id || x.key === r.o.key);
+            if (!p || !p.imageUrl) { errs.push(r.o.title + ': oferta n-are poză'); continue; }
+            const sample = await toJpeg(p.imageUrl);
+            wa = await window.C360Wa.post({ action: 'tpl_save', submit: true, cities: leadCities(r.o),
+              template: { label: LEAD_TPL(r.o), category: 'MARKETING', headerType: 'IMAGE', body: leadText(r.o), footer: 'Centrul360', sample } });
+            if (wa.submitError) errs.push(r.o.title + ': ' + wa.submitError);
+            t = (wa.templates || []).find((x) => x.id === wa.savedId);
+            made++;
+          }
+          if (!t) continue;
+          // the flow keeps its switch; a new one starts on (its message waits for Meta anyway)
+          S.d = await K.api('/api/portal-workflows', { action: 'save', workflow: {
+            id: r.w ? r.w.id : undefined, name: LEAD_WF(r.o), note: 'Mesajul de bun venit cu poza ofertei, de pe numărul orașului.', active: r.w ? !!r.w.active : true, folder: intakeId(),
+            trigger: { type: 'lead_created', source: 'facebook', location: 'any', interest: r.o.title, returning: false },
+            steps: [{ type: 'whatsapp', templateId: t.id, from: 'auto' }],
+          } });
+        }
+        K.ui().toast(errs.length ? errs.join(' · ') : made ? 'Gata: ' + K.plural(made, 'mesaj trimis', 'mesaje trimise') + ' la aprobare. Pornesc singure când Meta le aprobă.' : 'Toate ofertele au mesajul lor.', errs.length ? 'error' : 'success');
+      } catch (err) { fail(err); }
+      render();
+    });
   }
 
   // ------------------------------------------------------------------ Istoric, with its filters
@@ -270,6 +369,9 @@
       }
     }
     if (t.closest('[data-sel-clear]')) { S.sel.clear(); paintStats(); return paintFlows(); }
+    const lg = t.closest('[data-leadmsg-go]'); if (lg) return makeLeadMsgs(lg);
+    const tp = t.closest('[data-tpl]');
+    if (tp) { const tpl = ((window.C360Wa.d || {}).templates || []).find((x) => x.id === tp.dataset.tpl); if (tpl) window.C360Wa.edit(tpl, { onSaved: () => paintMsgs() }); return; }
     const sh = t.closest('[data-show]'); if (sh) { S.show = sh.dataset.show; panel.querySelectorAll('[data-show]').forEach((b) => b.classList.toggle('is-on', b === sh)); return paintFlows(); }
     const fo = t.closest('[data-fold]'); if (fo) { const id = fo.dataset.fold; if (S.closed.has(id)) S.closed.delete(id); else S.closed.add(id); return paintFlows(); }
     const ni = t.closest('[data-new-in]'); if (ni) return openEditor(null, ni.dataset.newIn);
@@ -289,7 +391,7 @@
   }
   async function onChange(e) {
     const t = e.target;
-    if (t.name === 'autab') { S.tab = t.value; panel.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== S.tab; }); return; }
+    if (t.name === 'autab') { S.tab = t.value; panel.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== S.tab; }); return paintMsgs(); }
     if (t.matches('[data-ffolder]')) { S.folder = t.value; return paintFlows(); }
     if (t.matches('[data-ftrig]')) { S.trig = t.value; return paintFlows(); }
     if (t.dataset.h) { S.h[t.dataset.h] = t.value; return paintLog(); }
@@ -323,7 +425,7 @@
       onSaved(d) { S.d = d; render(); },
     });
   }
-  K.on('wa', (d) => { if (S.d && S.d.meta) S.d.meta.waTemplates = d.templates; });
+  K.on('wa', (d) => { if (S.d && S.d.meta) S.d.meta.waTemplates = d.templates; if (S.d && panel && K.isActive('fluxuri')) paintMsgs(); });
   K.section('fluxuri', { mount, show: load });
   K.on('remote', async () => {
     if (!S.d || !K.isActive('fluxuri') || S.loading || document.querySelector('.fb-root.is-open')) return;

@@ -224,12 +224,10 @@ module.exports = async (req, res) => {
       // the owner hears about every booking someone else makes (in the bell and on her phone)
       if (!N.isOwner(session)) {
         try {
-          const by = (employees.find((e) => e.id === session.employeeId) || {}).name || '';
-          const when = entry.date === new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()) ? 'azi' : entry.date.split('-').reverse().slice(0, 2).join('.');
           await N.notifyMany({ readJSON, writeJSON }, await N.adminIds({ readJSON }), {
             kind: 'booking', tone: 'good', go: 'programari', tag: 'appt-' + entry.id,
-            title: 'Programare nouă: ' + entry.clientName,
-            text: [entry.treatment, when + (entry.time ? ' ' + entry.time : ''), entry.location, by ? 'de ' + by : ''].filter(Boolean).join(' · '),
+            title: 'PROGRAMARE' + (entry.treatment ? ' - ' + entry.treatment : ''),
+            text: entry.clientName,
           });
         } catch (e) { /* a notification never blocks a booking */ }
       }

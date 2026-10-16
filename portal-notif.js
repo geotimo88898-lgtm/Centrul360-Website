@@ -12,8 +12,8 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const IC = { leave: 'calendar', time: 'clock', commission: 'percent', paid: 'wallet', bonus: 'trophy', lead: 'userPlus', alert: 'bell' };
-  const ALERT_KINDS = ['lead', 'alert'];
+  const IC = { leave: 'calendar', time: 'clock', commission: 'percent', paid: 'wallet', bonus: 'trophy', lead: 'userPlus', alert: 'bell', booking: 'calendar', money: 'wallet', report: 'trend' };
+  const ALERT_KINDS = ['lead', 'alert', 'booking', 'money', 'report'];
   let btn = null;
 
   const me = () => (K.data && K.data.me && K.data.me.id) || '';
@@ -192,9 +192,9 @@
     const admin = K.data && K.data.isAdmin;
     const d = K.drawer({
       title: 'Notificări', icon: 'bell', width: 460,
-      subtitle: admin ? 'Leadurile noi și alertele din automatizări.' : 'Leaduri noi, bonusuri și răspunsurile la cererile tale, pe scurt.',
+      subtitle: admin ? 'Leaduri, programări, încasări și raportul zilei.' : 'Leaduri noi, bonusuri și răspunsurile la cererile tale, pe scurt.',
       body: '<div class="nt-push" data-push-box><span class="k-skel" style="height:40px"></span></div>' +
-        (list.length ? (alerts.length ? '<h4 class="nt-h">' + icon('userPlus') + 'Leaduri și alerte</h4><div class="nt-list">' + alerts.map(row).join('') + '</div>' : '') +
+        (list.length ? (alerts.length ? '<h4 class="nt-h">' + icon('userPlus') + (admin ? 'Leaduri, programări, încasări' : 'Leaduri și alerte') + '</h4><div class="nt-list">' + alerts.map(row).join('') + '</div>' : '') +
           (live.length ? '<h4 class="nt-h">' + icon('trophy') + 'Bonusuri</h4><div class="nt-list">' + live.map(row).join('') + '</div>' : '') +
           (past.length ? '<h4 class="nt-h">' + icon('bell') + 'Răspunsuri la cereri</h4><div class="nt-list">' + past.map(row).join('') + '</div>' : '')
         : K.empty('bell', 'Nicio notificare', admin ? 'Aici apar leadurile noi, imediat ce intră.' : 'Aici apar leadurile noi și răspunsurile la cererile tale.')),

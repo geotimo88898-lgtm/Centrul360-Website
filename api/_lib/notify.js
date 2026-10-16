@@ -27,6 +27,25 @@ async function adminIds(store) {
 const isOwner = (session) => !!session && (session.employeeId === 'admin' || session.role === 'admin');
 const leiTxt = (n) => (Math.round(Number(n) * 100) / 100).toLocaleString('ro-RO') + ' lei';
 
+// One payment, one notification. A card payment is seen twice: by the POS at once (api/mypos-webhook.js) and by
+// the desk when it records it (portal-sale.js, with the client and the upsell). Each line carries a ref (who saw it
+// + the sum); whichever comes second finds the first within 30 minutes: the desk's line takes the POS one's place
+// (removed from the bell, replaced quietly on the phone by the same tag), a POS payment the desk already recorded
+// doesn't ring again (the desk's line is marked as paired, so it pairs once).
+const PAIR_WITHIN = 30 * 60 * 1000;
+const payRef = (who, sum) => who + ':' + Math.round(Number(sum) * 100);
+async function claim(store, ref, remove) {
+  try {
+    const list = await store.readJSON(KEY, []);
+    const since = Date.now() - PAIR_WITHIN;
+    const hit = list.filter((x) => x.ref === ref && !x.paired && Date.parse(x.at) > since).pop();
+    if (!hit) return null;
+    const same = (x) => x.ref === ref && x.tag === hit.tag && !x.paired;
+    await store.writeJSON(KEY, remove ? list.filter((x) => !same(x)) : list.map((x) => (same(x) ? Object.assign(x, { paired: true }) : x)));
+    return { tag: hit.tag };
+  } catch (err) { console.error('notify claim error:', err.message); return null; }
+}
+
 // The same notification for one or several people (a new lead → admin + reception), with one read and
 // one write, then on their phones. Returns how many devices got it. Never throws: a notification never
 // blocks the decision or the lead that caused it.
@@ -44,7 +63,7 @@ async function notifyMany(store, employeeIds, n) {
       if (!ids.length) return 0;
     }
     ids.forEach((employeeId) => list.push({
-      id: crypto.randomUUID(), employeeId, at, kind: n.kind || 'info', tone: n.tone || 'info', title, text, go: n.go || '', tag: n.tag || '',
+      id: crypto.randomUUID(), employeeId, at, kind: n.kind || 'info', tone: n.tone || 'info', title, text, go: n.go || '', tag: n.tag || '', ref: n.ref || '',
     }));
     const drop = new Set();
     ids.forEach((employeeId) => {
@@ -53,11 +72,11 @@ async function notifyMany(store, employeeIds, n) {
     });
     await store.writeJSON(KEY, list.filter((x) => !drop.has(x.id)));
   } catch (err) { console.error('notify error:', err.message); }
-  return sendPush(store, ids, { title, body: text, url: '/portal' + (n.go ? '#' + n.go : ''), tag: n.tag || '' });
+  return sendPush(store, ids, { title, body: text, url: '/portal' + (n.go ? '#' + n.go : ''), tag: n.tag || '', quiet: !!n.quiet });
 }
 
 const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);
 
 const mine = async (store, employeeId) => (await store.readJSON(KEY, [])).filter((x) => x.employeeId === employeeId).slice(-40).reverse();
 
-module.exports = { notify, notifyMany, mine, KEY, adminIds, isOwner, leiTxt };
+module.exports = { notify, notifyMany, mine, KEY, adminIds, isOwner, leiTxt, payRef, claim };

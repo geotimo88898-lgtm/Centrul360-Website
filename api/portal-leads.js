@@ -187,10 +187,11 @@ async function alertTeam(lead, returning) {
   if (lead.createdBy !== 'facebook-webhook' && !(returning && lead.source === 'facebook')) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie').map((e) => e.id));
+  const what = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
-    title: (returning ? 'A revenit: ' : 'Lead nou: ') + lead.name,
-    text: [lead.interest, lead.location, lead.phone].filter(Boolean).join(' · '),
+    title: (returning ? 'LEAD REVENIT' : 'LEAD NOU') + (what ? ' - ' + what : ''),
+    text: lead.name,
   });
 }
 
