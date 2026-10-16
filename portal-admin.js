@@ -693,33 +693,100 @@
     if (I.tab === 'forms' && window.C360Forms) window.C360Forms.load();
     else if (I.tab === 'wa' && window.C360Wa) window.C360Wa.list(ipanel.querySelector('[data-pane="wa"]'), true);
     else {
-      const fb = ipanel.querySelector('[data-fb]'); if (fb) loadFb(fb);
-      const mp = ipanel.querySelector('[data-mypos]'); if (mp && !mp.contains(document.activeElement)) loadMypos(mp);
-      const gh = ipanel.querySelector('[data-ghl]'); if (gh && !ghlRun && !gh.contains(document.activeElement)) loadGhl(gh);
+      const open = document.querySelector('.k-drawer-root.is-open .k-drawer');
+      if (!open) { refreshTiles(); return; }
+      const fb = open.querySelector('[data-fb]'); if (fb && !fb.contains(document.activeElement)) loadFb(fb);
+      const mp = open.querySelector('[data-mypos]'); if (mp && !mp.contains(document.activeElement)) loadMypos(mp);
+      const gh = open.querySelector('[data-ghl]'); if (gh && !ghlRun && !gh.contains(document.activeElement)) loadGhl(gh);
     }
   });
+  // The page: one tile per connection, with its state and one useful line. A tap opens everything about it
+  // (keys, mapping, tests, logs) in a drawer; the page itself stays a glance.
+  const TILES = [
+    { key: 'fb', title: 'Facebook Lead Ads', ic: 'facebook', style: 'background:rgba(24,119,242,.12);color:#1877f2' },
+    { key: 'wa', title: 'WhatsApp', ic: 'chat', cls: 'is-good' },
+    { key: 'live', title: 'Sincronizare instantă', ic: 'refresh', cls: 'is-good' },
+    { key: 'mypos', title: 'myPOS', ic: 'card', cls: 'is-warn' },
+    { key: 'ghl', title: 'HighLevel', ic: 'download', cls: 'is-info' },
+    { key: 'creative', title: 'Creative', ic: 'sparkles', cls: 'is-accent' },
+    { key: 'site', title: 'Site centrul360.com', ic: 'globe', cls: 'is-info' },
+  ];
+  const ST = { ok: 'Conectat', warn: 'De verificat', off: 'Neconectat' };
   function renderIntegrations() {
     if (!ipanel || I.tab !== 'int') return;
     const body = ipanel.querySelector('[data-int-body]');
-    body.innerHTML = '<div class="st-integrations">' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip" style="background:rgba(24,119,242,.12);color:#1877f2">' + icon('facebook') + '</span><div><b>Facebook Lead Ads</b><span>Leadurile din formulare intră automat în Pipeline, cu procedura și orașul. Adminul și recepția primesc pe loc o notificare.</span></div></div><div data-fb><div class="k-skel" style="height:44px"></div></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('chat') + '</span><div><b>WhatsApp Business</b><span>Două numere: Timișoara și Arad. De pe ele pleacă șabloanele din automatizări și răspunsurile din Mesaje.</span></div></div><div data-wa><div class="k-skel" style="height:96px"></div></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-good">' + icon('refresh') + '</span><div><b>Sincronizare instantă</b><span>O programare, un mesaj, orice salvare apare imediat la toată lumea: admin, recepție, cosmeticiene, telefoane. Prin Supabase Realtime.</span></div></div><div data-live><div class="k-skel" style="height:44px"></div></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-info">' + icon('download') + '</span><div><b>HighLevel</b><span>Mută din cele două subconturi GHL (Timișoara, Arad) contactele, mențiunile, conversațiile și programările. Se poate rula din nou: ce e deja adus nu se dublează.</span></div></div><div data-ghl><div class="k-skel" style="height:44px"></div></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-warn">' + icon('card') + '</span><div><b>myPOS</b><span>Plățile cu cardul de pe POS, puse lângă încasările din portal, în Încasări.</span></div></div><div data-mypos><div class="k-skel" style="height:44px"></div></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-accent">' + icon('sparkles') + '</span><div><b>Creative</b><span>Mașina de creative citește ofertele direct din secțiunea Oferte.</span></div></div>' +
-        '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><button type="button" class="k-btn is-outline is-sm" data-goto="creative">Deschide Creative' + icon('arrow') + '</button></div></section>' +
-      '<section class="k-card st-int"><div class="st-int-head"><span class="k-icon-chip is-info">' + icon('globe') + '</span><div><b>Site centrul360.com</b><span>Paginile Oferte și Prețuri se actualizează din secțiunea Oferte, în câteva minute.</span></div></div>' +
-        '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Sincronizat</span><a class="k-btn is-outline is-sm" href="https://centrul360.com/oferte" target="_blank" rel="noopener">Vezi pagina' + icon('arrow') + '</a></div></section></div>';
-    body.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
-    loadFb(body.querySelector('[data-fb]'));
-    loadMypos(body.querySelector('[data-mypos]'));
-    loadGhl(body.querySelector('[data-ghl]'));
-    loadLive(body.querySelector('[data-live]'));
-    (async () => {
-      const box = body.querySelector('[data-wa]');
-      if (box && window.C360Wa) paintWa(box);
-    })();
+    body.innerHTML = '<div class="st-tiles">' + TILES.map((t) => '<button type="button" class="st-tile" data-tile="' + t.key + '">' +
+      '<span class="k-icon-chip' + (t.cls ? ' ' + t.cls : '') + '"' + (t.style ? ' style="' + t.style + '"' : '') + '>' + icon(t.ic) + '</span>' +
+      '<span class="st-pill" data-tile-st><i></i><em></em></span>' +
+      '<b>' + esc(t.title) + '</b><span class="st-tile-sub" data-tile-sub><span class="k-skel" style="height:12px;width:70%"></span></span>' +
+      '<span class="st-tile-go">' + icon(t.key === 'site' ? 'arrow' : 'right') + '</span></button>').join('') + '</div>';
+    body.querySelectorAll('[data-tile]').forEach((x) => x.addEventListener('click', () => openTile(x.dataset.tile)));
+    refreshTiles();
+  }
+  function setTile(key, state, sub, label) {
+    const t = ipanel && ipanel.querySelector('[data-tile="' + key + '"]');
+    if (!t) return;
+    const pill = t.querySelector('[data-tile-st]');
+    pill.className = 'st-pill is-' + state;
+    pill.querySelector('em').textContent = label || ST[state];
+    t.querySelector('[data-tile-sub]').textContent = sub || '';
+  }
+  function ghlTile(d) {
+    const accs = d.accounts || {}, n = Object.values(accs).filter((x) => x && x.connected).length, j = d.job;
+    if (!n && !(j && j.status === 'done')) return setTile('ghl', 'off', 'Timișoara și Arad');
+    if (j && j.status === 'running') return setTile('ghl', 'ok', 'Import în curs · ' + K.num((j.counts && j.counts.contacts) || 0) + ' contacte', 'Importă');
+    if (j && j.status === 'paused') return setTile('ghl', 'warn', 'Importul s-a oprit');
+    if (j && j.status === 'done') return setTile('ghl', 'ok', 'Importat ' + mpWhen(j.finishedAt) + ' · ' + K.num((j.counts && j.counts.contacts) || 0) + ' contacte', n ? ST.ok : 'Importat');
+    setTile('ghl', 'ok', K.plural(n, 'subcont', 'subconturi') + ' · gata de import');
+  }
+  // every tile's state, all at once
+  function refreshTiles() {
+    if (!ipanel || I.tab !== 'int') return;
+    K.api('/api/fb-connection-status').then((d) => {
+      if (!d.connected) return setTile('fb', 'off', d.notConfigured ? 'Aplicația Meta nesetată' : 'Pagina neconectată');
+      // what needs looking at, in a few words; otherwise the Page and the last check
+      const ads = d.ads || {}, days = ads.expiresAt ? Math.round((ads.expiresAt - Date.now()) / 864e5) : null;
+      const why = d.poll && d.poll.ok === false ? 'Ultima citire a leadurilor n-a mers'
+        : !ads.set ? 'Lipsește tokenul pentru reclame' : ads.valid === false ? 'Tokenul pentru reclame a expirat' : ads.publish === false ? 'Tokenul n-are ads_management'
+        : days != null && days < 14 ? 'Tokenul pentru reclame expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) : '';
+      setTile('fb', why ? 'warn' : 'ok', why || (d.pageName || 'Pagina') + (d.poll && d.poll.at ? ' · verificat ' + K.ago(d.poll.at) : ''));
+    }).catch(() => setTile('fb', 'warn', 'Nu am putut verifica'));
+    (window.C360Wa ? window.C360Wa.load() : Promise.reject()).then((d) => {
+      const all = Object.keys(d.numbers || {}), on = all.filter((c) => d.numbers[c].connected);
+      const off = all.filter((c) => !d.numbers[c].connected);
+      setTile('wa', !off.length && all.length ? 'ok' : on.length ? 'warn' : 'off', !on.length ? 'Niciun număr' : off.length ? off.join(', ') + ' neconectat' : on.join(' · '));
+    }).catch(() => setTile('wa', 'warn', 'Nu am putut verifica'));
+    K.api('/api/portal-live').then((d) => {
+      if (!d.configured) return setTile('live', 'off', 'Acum: verificare la 3 secunde', 'Oprită');
+      if (d.lastError) return setTile('live', 'warn', 'Ultimul anunț n-a plecat');
+      setTile('live', 'ok', (K.liveUp && K.liveUp() ? 'Activă pe portalul ăsta' : 'Pornită') + (d.lastMs ? ' · ' + d.lastMs + ' ms' : ''), 'Pornită');
+    }).catch(() => setTile('live', 'warn', 'Nu am putut verifica'));
+    K.api('/api/portal-mypos').then((d) => {
+      if (!d.connected) return setTile('mypos', 'off', 'Plățile de pe POS');
+      const why = !(d.live && d.live.ok) ? 'Plățile live nu sunt pornite' : d.history && !d.history.ok ? 'Istoricul nu s-a putut citi' : (d.devices || []).some((x) => !x.city) ? 'Alege orașul aparatelor' : '';
+      if (why) return setTile('mypos', 'warn', why);
+      setTile('mypos', 'ok', d.lastPayment ? 'Ultima plată ' + K.lei(d.lastPayment.amount) + ', ' + mpWhen(d.lastPayment.at) : K.plural((d.devices || []).length, 'aparat', 'aparate'));
+    }).catch(() => setTile('mypos', 'warn', 'Nu am putut verifica'));
+    K.api('/api/portal-ghl').then(ghlTile).catch(() => setTile('ghl', 'warn', 'Nu am putut verifica'));
+    setTile('creative', 'ok', 'Citește ofertele din Oferte');
+    setTile('site', 'ok', 'Oferte și prețuri, în câteva secunde', 'Sincronizat');
+  }
+  // everything about one connection, in a drawer (the same parts as before: keys, mapping, tests, logs)
+  function openTile(key) {
+    if (key === 'creative') return K.go('creative');
+    if (key === 'site') return window.open('https://centrul360.com/oferte', '_blank', 'noopener');
+    const t = TILES.find((x) => x.key === key);
+    const d = K.drawer({
+      title: t.title, icon: t.ic, width: 640, focus: false,
+      body: '<div class="st-tile-body" data-' + key + '><div class="k-skel" style="height:120px"></div></div>',
+      onClose() { refreshTiles(); },
+      onMount(el) {
+        const box = el.querySelector('[data-' + key + ']');
+        // a link to another page closes the drawer first
+        el.addEventListener('click', (e) => { if (e.target.closest('[data-goto]')) d.close(); }, true);
+        ({ fb: loadFb, wa: (x) => window.C360Wa && paintWa(x), live: loadLive, mypos: loadMypos, ghl: loadGhl })[key](box);
+      },
+    });
   }
 
   // Instant sync: the Supabase project (URL, anon key, service_role key), whether this portal is listening, and a
@@ -774,7 +841,11 @@
       try { await K.api('/api/portal-live', { action: 'disconnect' }); K.ui().toast('Oprită.', 'success'); loadLive(box); } catch (err) { liveFail(err); }
     });
   }
-  K.on('live:status', () => { const b = document.querySelector('[data-live]'); if (b && K.isActive('integrari') && !b.contains(document.activeElement)) loadLive(b); });
+  K.on('live:status', () => {
+    if (!K.isActive('integrari')) return;
+    const b = document.querySelector('[data-live]'); if (b && !b.contains(document.activeElement)) loadLive(b);
+    if (!K.drawerOpen) refreshTiles();
+  });
 
   // HighLevel: the clinic's two sub-accounts, Timișoara and Arad, each with its Private Integration token + Location
   // ID, which calendar is which city and category, which GHL user is which person here; then one import of both,
@@ -929,8 +1000,9 @@
       try { r = await K.api('/api/portal-ghl', { action: 'step' }); }
       catch (err) { await new Promise((ok) => setTimeout(ok, 5000)); continue; }
       const live = document.body.contains(box) ? box : document.querySelector('[data-ghl]');
-      if (!live) { ghlRun = null; return; }
-      if (!r.job || r.job.status !== 'running') { ghlRun = null; paintGhl(live, r); if (r.job && r.job.status === 'done') K.ui().toast('Importul din HighLevel e gata.', 'success'); return; }
+      if (!r.job || r.job.status !== 'running') { ghlRun = null; if (live) paintGhl(live, r); ghlTile(r); if (r.job && r.job.status === 'done') K.ui().toast('Importul din HighLevel e gata.', 'success'); return; }
+      ghlTile(r); // the drawer may be closed: the import goes on, the tile shows it
+      if (!live) continue;
       const jb = live.querySelector('.st-ghl-job');
       if (jb) jb.outerHTML = ghlJobHtml(r.job); else paintGhl(live, r);
     }
