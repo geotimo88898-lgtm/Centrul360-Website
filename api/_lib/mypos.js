@@ -274,16 +274,22 @@ const cleanKey = (v) => String(v == null ? '' : v).replace(/[\s​-‍⁠﻿]/g,
 const gwReady = (g) => !!g && Object.keys(GW_FIELDS).every((k) => g[k]);
 const gwMsg = (j) => String(j.message || j.error_description || j.error || j.title || (j.errors && JSON.stringify(j.errors)) || '').slice(0, 200);
 const gwCache = new Map(); // 't|…' token, 's|…' session → { v, until } (per warm function instance)
+// The balance lives behind the Banking scopes: the token asks for them by name (accounting + banking, read only);
+// a partner whose integration isn't given them gets a token without (the scopes it does have are kept, to show
+// them when myPOS refuses a call).
+const GW_SCOPE = 'accounting.read banking.read';
 async function gwToken(g) {
   const k = 't|' + g.clientId, c = gwCache.get(k);
   if (c && c.until > Date.now() + 30e3) return c.v;
-  const r = await fetch(GW + '/api/v1/oauth/token', {
+  const ask = (scope) => fetch(GW + '/api/v1/oauth/token', {
     method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ client_id: g.clientId, client_secret: g.clientSecret, grant_type: 'client_credentials' }),
+    body: new URLSearchParams(Object.assign({ client_id: g.clientId, client_secret: g.clientSecret, grant_type: 'client_credentials' }, scope ? { scope } : {})),
   });
-  const j = await r.json().catch(() => ({}));
+  let r = await ask(GW_SCOPE);
+  let j = await r.json().catch(() => ({}));
+  if (!r.ok && r.status === 400) { r = await ask(''); j = await r.json().catch(() => ({})); } // scopes it may not ask for: the default ones
   if (!r.ok || !j.access_token) throw new MyposError(r.status >= 400 && r.status < 500 && r.status !== 429 ? 'gw_partner' : 'mypos_down', r.status, gwMsg(j));
-  gwCache.set(k, { v: j.access_token, until: Date.now() + (Number(j.expires_in) || 3600) * 1000 });
+  gwCache.set(k, { v: j.access_token, until: Date.now() + (Number(j.expires_in) || 3600) * 1000, scope: String(j.scope || '') });
   return j.access_token;
 }
 async function gwSession(g, tok) {
@@ -306,7 +312,8 @@ async function gwGet(g, path) {
   if (!r.ok) {
     if (r.status === 401) { gwCache.delete('s|' + g.merchantId); gwCache.delete('t|' + g.clientId); } // ran out: the next read starts anew
     const said = gwMsg(j) || (r.headers.get('www-authenticate') || '').slice(0, 160);
-    throw new MyposError(r.status === 401 || r.status === 403 ? 'gw_denied' : r.status === 429 ? 'mypos_busy' : 'mypos_failed', r.status, path.split('?')[0] + (said ? ': ' + said : ''));
+    const scope = r.status === 403 ? ((gwCache.get('t|' + g.clientId) || {}).scope || '-') : '';
+    throw new MyposError(r.status === 401 || r.status === 403 ? 'gw_denied' : r.status === 429 ? 'mypos_busy' : 'mypos_failed', r.status, path.split('?')[0] + (said ? ': ' + said : '') + (scope ? ' · scope: ' + scope : ''));
   }
   return j;
 }
