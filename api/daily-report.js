@@ -1,5 +1,7 @@
 // GET /api/daily-report: the owner's report at the end of the day, on her phone and in the bell. Called by the
-// Vercel cron in vercel.json each evening; with CRON_SECRET set, only requests that carry it are accepted.
+// Vercel cron in vercel.json each evening. Only the cron sends it: with CRON_SECRET set, the requests that carry it;
+// without, Vercel's own cron caller (its user agent); or the owner signed in. Anyone else gets 401 (it pushes to her
+// phone, so it isn't open to the world).
 // ?preview=1 (signed in as the owner) shows the numbers without sending anything.
 //   paid today (both cities, by method), the card on the POS (myPOS: total, payments, average), the
 //   appointments of the day (done, cancelled), the bookings made today and the new leads.
@@ -111,7 +113,8 @@ module.exports = async (req, res) => {
     return;
   }
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== 'Bearer ' + secret && !owner) { res.status(401).json({ error: 'unauthorized' }); return; }
+  const cron = secret ? req.headers.authorization === 'Bearer ' + secret : /vercel-cron/i.test(String(req.headers['user-agent'] || ''));
+  if (!cron && !owner) { res.status(401).json({ error: 'unauthorized' }); return; }
   const store = { readJSON, writeJSON };
   // any POS payment the live notice missed comes in first (a failed read only leaves the check to what is known)
   try { if (M.connected(await M.loadConn(readJSON))) await M.sync(store, {}); } catch (e) { /* the report goes anyway */ }
