@@ -72,7 +72,7 @@ async function notifyMany(store, employeeIds, n) {
     });
     await store.writeJSON(KEY, list.filter((x) => !drop.has(x.id)));
   } catch (err) { console.error('notify error:', err.message); }
-  return sendPush(store, ids, { title, body: text, url: '/portal' + (n.go ? '#' + n.go : ''), tag: n.tag || '', quiet: !!n.quiet });
+  return sendPush(store, ids, { title, body: text, url: '/' + (n.go ? '#' + n.go : ''), tag: n.tag || '', quiet: !!n.quiet });
 }
 
 const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);

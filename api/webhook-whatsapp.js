@@ -105,7 +105,7 @@ async function pushMessages(fresh) {
   for (const m of fresh) {
     const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
     const text = m.text.length > 140 ? m.text.slice(0, 139) + '…' : m.text;
-    await sendPush({ readJSON, writeJSON }, ids, { title: m.name + (m.location ? ' · ' + m.location : ''), body: (m.count > 1 ? '(' + m.count + ' mesaje) ' : '') + text, url: '/portal#mesaje', tag: 'msg-' + m.phone });
+    await sendPush({ readJSON, writeJSON }, ids, { title: m.name + (m.location ? ' · ' + m.location : ''), body: (m.count > 1 ? '(' + m.count + ' mesaje) ' : '') + text, url: '/#mesaje', tag: 'msg-' + m.phone });
   }
 }
 

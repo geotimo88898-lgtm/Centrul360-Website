@@ -125,7 +125,7 @@
         body: JSON.stringify(Object.assign({ action }, payload || {})),
       });
     } catch (e) { throw Object.assign(new Error('network'), { code: 'network' }); }
-    if (r.status === 401) { location.href = '/portal-login'; throw new Error('auth'); }
+    if (r.status === 401) { location.href = '/login'; throw new Error('auth'); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error(j.error || 'failed'), { code: j.error });
     return j;

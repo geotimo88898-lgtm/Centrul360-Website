@@ -125,7 +125,7 @@
           const body = el.querySelector('.k-dbody');
           if (window.C360Accent) window.C360Accent.wire(body);
           el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
-          el.querySelector('[data-logout]').addEventListener('click', () => { d.close(); fetch('/api/portal-logout', { method: 'POST' }).finally(() => { location.href = '/portal-login'; }); });
+          el.querySelector('[data-logout]').addEventListener('click', () => { d.close(); fetch('/api/portal-logout', { method: 'POST' }).finally(() => { location.href = '/login'; }); });
           body.addEventListener('change', onChange);
           body.addEventListener('click', onClick);
           body.addEventListener('input', onInput);

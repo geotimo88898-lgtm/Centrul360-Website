@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   appName: 'Centrul360',
   webDir: 'www',
   server: {
-    url: 'https://www.centrul360.com/portal-login',
+    url: 'https://admin.centrul360.com/login',
     cleartext: false,
   },
 };

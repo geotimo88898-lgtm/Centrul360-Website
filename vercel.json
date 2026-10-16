@@ -10,7 +10,7 @@
           "value": "www.centrul360.com"
         }
       ],
-      "destination": "https://admin.centrul360.com/portal",
+      "destination": "https://admin.centrul360.com/",
       "permanent": false
     },
     {
@@ -21,7 +21,7 @@
           "value": "www.centrul360.com"
         }
       ],
-      "destination": "https://admin.centrul360.com/portal",
+      "destination": "https://admin.centrul360.com/",
       "permanent": false
     },
     {
@@ -32,7 +32,7 @@
           "value": "www.centrul360.com"
         }
       ],
-      "destination": "https://admin.centrul360.com/portal-login",
+      "destination": "https://admin.centrul360.com/login",
       "permanent": false
     },
     {
@@ -43,29 +43,95 @@
           "value": "www.centrul360.com"
         }
       ],
-      "destination": "https://admin.centrul360.com/portal-login",
+      "destination": "https://admin.centrul360.com/login",
       "permanent": false
     },
     {
-      "source": "/",
+      "source": "/portal",
       "has": [
         {
           "type": "host",
           "value": "admin.centrul360.com"
         }
       ],
-      "destination": "/portal",
+      "destination": "/",
       "permanent": false
     },
     {
-      "source": "/",
+      "source": "/portal.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.centrul360.com"
+        }
+      ],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/portal-login",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.centrul360.com"
+        }
+      ],
+      "destination": "/login",
+      "permanent": false
+    },
+    {
+      "source": "/portal-login.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.centrul360.com"
+        }
+      ],
+      "destination": "/login",
+      "permanent": false
+    },
+    {
+      "source": "/portal",
       "has": [
         {
           "type": "host",
           "value": "staff.centrul360.com"
         }
       ],
-      "destination": "/portal",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/portal.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "staff.centrul360.com"
+        }
+      ],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/portal-login",
+      "has": [
+        {
+          "type": "host",
+          "value": "staff.centrul360.com"
+        }
+      ],
+      "destination": "/login",
+      "permanent": false
+    },
+    {
+      "source": "/portal-login.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "staff.centrul360.com"
+        }
+      ],
+      "destination": "/login",
       "permanent": false
     }
   ],

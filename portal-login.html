@@ -11,7 +11,7 @@
     try {
       fetch('/api/portal-login', { credentials: 'same-origin', cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : {}; })
-        .then(function (j) { if (j && j.signedIn) location.replace('/portal' + location.hash); else show(); })
+        .then(function (j) { if (j && j.signedIn) location.replace('/' + location.hash); else show(); })
         .catch(show);
     } catch (e) { show(); }
   })();
@@ -189,7 +189,7 @@
           throw new Error('server');
         }
         submitLabel.textContent = 'Bine ai venit…';
-        location.href = '/portal';
+        location.href = '/';
       } catch (err) {
         fail('A apărut o eroare. Încearcă din nou.');
       }

@@ -13,6 +13,10 @@ self.addEventListener('fetch', () => {
   // Intentionally a no-op passthrough, required for installability, no offline caching.
 });
 
+// The portal lives on admin.centrul360.com / staff.centrul360.com (at /). A phone that turned the notifications on
+// back when the portal was also on www.centrul360.com still gets them through that site's worker: its taps go to admin.
+const home = (u) => (/(^|\.)centrul360\.com$/.test(self.location.hostname) && !/^(admin|staff)\./.test(self.location.hostname) && u.charAt(0) === '/' ? 'https://admin.centrul360.com' + u : u);
+
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: 'Centrul360', body: event.data ? event.data.text() : '' }; }
@@ -21,7 +25,7 @@ self.addEventListener('push', (event) => {
     body: data.body || '',
     icon: '/brand_asset/portal/icon-192.png?v=3',
     badge: '/brand_asset/portal/badge-96.png?v=3',
-    data: { url: data.url || '/portal' },
+    data: { url: home(data.url || '/') },
     // the same lead twice (e.g. it filled the form again) replaces its notification and rings again;
     // quiet: the same payment, now with the client's name from the desk, replaces the POS line without ringing
     tag: data.tag || undefined,
@@ -34,7 +38,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || '/portal';
+  const url = (event.notification.data && event.notification.data.url) || home('/');
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {

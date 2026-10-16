@@ -225,7 +225,7 @@
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
       const st = await pushState();
       if (st.supported && !st.sub) {
-        try { const reg = await swReady(); fresh.slice(-3).forEach((n) => reg.showNotification(n.title, { body: n.text || '', icon: '/brand_asset/portal/icon-192.png?v=3', tag: 'c360-' + n.id, data: { url: '/portal#' + (n.go || 'pipeline') } })); } catch (e) { /* no worker */ }
+        try { const reg = await swReady(); fresh.slice(-3).forEach((n) => reg.showNotification(n.title, { body: n.text || '', icon: '/brand_asset/portal/icon-192.png?v=3', tag: 'c360-' + n.id, data: { url: '/#' + (n.go || 'pipeline') } })); } catch (e) { /* no worker */ }
       }
     }
   }

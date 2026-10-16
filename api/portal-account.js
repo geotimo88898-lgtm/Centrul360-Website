@@ -90,7 +90,7 @@ module.exports = async (req, res) => {
       if (mine[device]) { res.status(200).json({ ok: true, sent: 0, already: true }); return; }
       mine[device] = new Date().toISOString();
       await writeJSON('data/push-tested.json', tested, { quiet: true });
-      const sent = await push.sendPush(store, [acc.id], { title: 'Centrul360', body: 'Notificările merg pe acest telefon. Așa vei primi leadurile noi.', url: '/portal', tag: 'test' });
+      const sent = await push.sendPush(store, [acc.id], { title: 'Centrul360', body: 'Notificările merg pe acest telefon. Așa vei primi leadurile noi.', url: '/', tag: 'test' });
       res.status(200).json({ ok: true, sent });
       return;
     }

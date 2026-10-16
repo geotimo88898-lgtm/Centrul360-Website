@@ -42,7 +42,7 @@ async function bonusPush(store, employeeId) {
     sent[emp.id] = [...had, ...fresh.map((n) => n.id)].slice(-60);
     await store.writeJSON(SENT, sent);
     let n = 0;
-    for (const x of fresh) n += await sendPush(store, [emp.id], { title: x.title, body: x.text, url: '/portal#' + x.go, tag: 'bonus' });
+    for (const x of fresh) n += await sendPush(store, [emp.id], { title: x.title, body: x.text, url: '/#' + x.go, tag: 'bonus' });
     return n;
   } catch (err) {
     console.error('bonusPush:', err.message);

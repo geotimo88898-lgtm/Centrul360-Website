@@ -108,7 +108,7 @@
     const h = location.hostname;
     const to = h === 'admin.centrul360.com' && !DATA.isAdmin ? 'staff' : h === 'staff.centrul360.com' && DATA.isAdmin ? 'admin' : '';
     if (!to) return false;
-    location.replace('https://' + to + '.centrul360.com/portal' + location.hash);
+    location.replace('https://' + to + '.centrul360.com/' + location.hash);
     return true;
   }
 
@@ -129,12 +129,12 @@
     bar.querySelector('[data-stop]').addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
       try { await K.api('/api/portal-impersonate', {}, { method: 'DELETE' }); } catch (err) { /* back to login at worst */ }
-      history.replaceState(null, '', '/portal#angajati');
+      history.replaceState(null, '', '/#angajati');
       location.reload();
     });
   }
   K.previewAs = async (id) => {
-    try { await K.api('/api/portal-impersonate', { employeeId: id }); history.replaceState(null, '', '/portal#panou'); location.reload(); }
+    try { await K.api('/api/portal-impersonate', { employeeId: id }); history.replaceState(null, '', '/#panou'); location.reload(); }
     catch (err) { K.ui().toast(K.errText(err, 'Nu am putut deschide contul.'), 'error'); }
   };
 
@@ -524,7 +524,7 @@
 
   async function logout() {
     try { await fetch('/api/portal-logout', { method: 'POST' }); } catch (e) { /* leaving anyway */ }
-    location.href = '/portal-login';
+    location.href = '/login';
   }
   document.getElementById('logoutBtn').addEventListener('click', logout);
 

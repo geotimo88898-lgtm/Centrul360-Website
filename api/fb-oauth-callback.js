@@ -43,11 +43,11 @@ function waDone(res, ok, message) {
     '<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#07080b;color:#eef0f7;font:15px system-ui,sans-serif">' +
     '<p>' + (ok ? 'Gata, te întorci în portal…' : 'Nu a mers, te întorci în portal…') + '</p><script>(function(){var d=' + data + ';' +
     'try{if(window.opener&&!window.opener.closed){window.opener.postMessage(d,location.origin);window.close();return;}}catch(e){}' +
-    'location.replace("/portal?wa="+(d.ok?"ok":"error")+"#integrari");})();</script></body></html>');
+    'location.replace("/?wa="+(d.ok?"ok":"error")+"#integrari");})();</script></body></html>');
 }
 
 function redirectToPortal(res, flag) {
-  res.writeHead(302, { Location: `/portal?fb=${flag}#setari` });
+  res.writeHead(302, { Location: `/?fb=${flag}#setari` });
   res.end();
 }
 

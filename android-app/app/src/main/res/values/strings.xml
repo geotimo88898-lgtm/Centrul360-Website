@@ -2,7 +2,7 @@
 <resources>
     <string name="appName">Centrul360</string>
     <string name="launcherName">Centrul360</string>
-    <string name="launchUrl">https://admin.centrul360.com/portal</string>
+    <string name="launchUrl">https://admin.centrul360.com/</string>
     <!-- both portal domains (the owner's and the team's) open as the app, never as a web page -->
     <string name="assetStatements" translatable="false">[{ \"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": { \"namespace\": \"web\", \"site\": \"https://admin.centrul360.com\" } }, { \"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": { \"namespace\": \"web\", \"site\": \"https://staff.centrul360.com\" } }]</string>
     <string-array name="additionalTrustedOrigins" translatable="false">

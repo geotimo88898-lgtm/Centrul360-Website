@@ -59,7 +59,7 @@
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
     } catch (e) { throw Object.assign(new Error('network'), { code: 'network' }); }
-    if (r.status === 401) { location.href = '/portal-login'; throw Object.assign(new Error('auth'), { code: 'auth' }); }
+    if (r.status === 401) { location.href = '/login'; throw Object.assign(new Error('auth'), { code: 'auth' }); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error(j.error || 'failed'), { code: j.error || 'failed', status: r.status, data: j });
     return j;

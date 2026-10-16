@@ -59,7 +59,7 @@ async function sendPush(store, employeeIds, msg) {
     const mine = list.filter((x) => ids.has(x.employeeId));
     if (!mine.length) return 0;
     const v = await vapid(store);
-    const payload = JSON.stringify({ title: String(msg.title || 'Centrul360').slice(0, 80), body: String(msg.body || '').slice(0, 200), url: msg.url || '/portal', tag: msg.tag || '', quiet: !!msg.quiet });
+    const payload = JSON.stringify({ title: String(msg.title || 'Centrul360').slice(0, 80), body: String(msg.body || '').slice(0, 200), url: msg.url || '/', tag: msg.tag || '', quiet: !!msg.quiet });
     const dead = new Set();
     let sent = 0;
     await Promise.all(mine.map(async (s) => {
