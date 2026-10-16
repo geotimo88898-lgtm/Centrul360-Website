@@ -1,6 +1,6 @@
 // POST /api/site-lead: the sign-up forms of the site (the home page quiz, the treatment pages, "Consultație
 // gratuită") send their lead here too, with the city the person picked. It goes into the Pipeline as source "Site":
-// the owner and reception are told at once (LEAD NOU 🔥), and the WhatsApp template meant for site leads goes from
+// the owner and reception are told at once (LEAD SITE 🌐, not the ads' LEAD NOU 🔥), and the WhatsApp template meant for site leads goes from
 // that city's number (_lib/workflows.js welcome, "Lead de pe site" in Automatizări → Mesaje).
 // Public, so: our own pages only (Origin), a hidden trap field, the consent box, a few tries per address.
 

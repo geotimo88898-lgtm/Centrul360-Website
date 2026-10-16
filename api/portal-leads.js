@@ -184,14 +184,15 @@ function cleanForm(f) {
 // A lead that came by itself (a Facebook form, a form of the site) rings at once for the owner and reception: in
 // the bell and on their phones. Leads the team types in don't (they know already). Built in, not an automation.
 const SELF = ['facebook-webhook', 'site-form'];
-async function alertTeam(lead, returning) {
+// From the site's forms the title says LEAD SITE (the owner tells them apart from the ads' LEAD NOU at a glance).
+async function alertTeam(lead, returning, fromSite) {
   if (!SELF.includes(lead.createdBy) && !(returning && (lead.source === 'facebook' || lead.source === 'site'))) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie').map((e) => e.id));
   const what = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
-    title: (returning ? 'LEAD REVENIT 🔁' : 'LEAD NOU 🔥') + (what ? ' - ' + what : ''),
+    title: (fromSite ? (returning ? 'LEAD SITE REVENIT 🔁' : 'LEAD SITE 🌐') : returning ? 'LEAD REVENIT 🔁' : 'LEAD NOU 🔥') + (what ? ' - ' + what : ''),
     text: lead.name,
   });
 }
@@ -226,7 +227,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     await writeJSON(LEADS_KEY, leads);
     // someone already in the Pipeline filled the form again: worth an alert, not a second welcome
     await workflows.emit('lead_created', { lead: existing, returning: true });
-    if (SELF.includes(createdBy)) await alertTeam(existing, true);
+    if (SELF.includes(createdBy)) await alertTeam(existing, true, createdBy === 'site-form');
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
   }
 
@@ -250,7 +251,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   await writeJSON(LEADS_KEY, leads);
   await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
   await workflows.welcome(lead); // the welcome WhatsApp of its offer (the templates that name it)
-  await alertTeam(lead, false);
+  await alertTeam(lead, false, createdBy === 'site-form');
   return { lead: withComputedFields(lead, stages) };
 }
 
