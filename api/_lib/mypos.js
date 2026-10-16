@@ -251,10 +251,119 @@ function validSignature(raw, header, secret) {
 }
 
 // ------------------------------------------------------------------ the account's balance
-// myPOS gives no balance call to these keys; its daily MT940 statement (Transactions API) carries it: :62F: the
-// booked closing balance, :64: the available one ("C251016RON12345,67", D for a minus). Read for today (or
-// yesterday, when today's isn't out yet), kept 10 minutes.
+// Now: myPOS's API Gateway (below), when its keys are saved, kept 1 minute. Without them: the daily MT940
+// statement of the REST keys (Transactions API): :62F: the booked closing balance, :64: the available one
+// ("C251016RON12345,67", D for a minus), read for today (or yesterday, when today's isn't out yet), kept 10 minutes.
 const BAL = 'data/mypos-balance.json';
+
+// The balance as it is right now comes only from myPOS's API Gateway (developers.mypos.com → Banking API →
+// Get Account Details: "balance", the current available balance). Its keys come from the myPOS Partner Portal
+// (partners.mypos.com): an "Account management" integration (Partner ID mps-p-…, Application ID mps-app-…,
+// Partner Client ID client_…, Partner Secret secret_…) that the clinic's myPOS account approved (Merchant Client
+// ID cli_…, Merchant Secret sec_…). A bearer token (1 h) from the partner keys, then a session (5 min) from the
+// merchant keys. Three failed sessions in a row lock the merchant at myPOS: after one refusal nothing is tried
+// again until the keys are saved anew.
+//   data/mypos-gateway.json  { partnerId, appId, clientId, clientSecret, merchantId, merchantSecret, savedAt, by,
+//                              error ('gw_partner' | 'gw_merchant'), errorAt, status, message }
+const GW = 'https://api-gateway.mypos.com';
+const GW_KEY = 'data/mypos-gateway.json';
+const GW_FIELDS = { partnerId: /^mps-p-[\w-]{2,120}$/, appId: /^mps-app-[\w-]{2,120}$/, clientId: /^client_[\w-]{6,200}$/, clientSecret: /^secret_[\w-]{8,300}$/, merchantId: /^cli_[\w-]{6,200}$/, merchantSecret: /^sec_[\w-]{8,300}$/ };
+const gwReady = (g) => !!g && Object.keys(GW_FIELDS).every((k) => g[k]);
+const gwMsg = (j) => String(j.message || j.error_description || j.error || j.title || (j.errors && JSON.stringify(j.errors)) || '').slice(0, 200);
+const gwCache = new Map(); // 't|…' token, 's|…' session → { v, until } (per warm function instance)
+async function gwToken(g) {
+  const k = 't|' + g.clientId, c = gwCache.get(k);
+  if (c && c.until > Date.now() + 30e3) return c.v;
+  const r = await fetch(GW + '/api/v1/oauth/token', {
+    method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: g.clientId, client_secret: g.clientSecret, grant_type: 'client_credentials' }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) throw new MyposError(r.status >= 400 && r.status < 500 && r.status !== 429 ? 'gw_partner' : 'mypos_down', r.status, gwMsg(j));
+  gwCache.set(k, { v: j.access_token, until: Date.now() + (Number(j.expires_in) || 3600) * 1000 });
+  return j.access_token;
+}
+async function gwSession(g, tok) {
+  const k = 's|' + g.merchantId, c = gwCache.get(k);
+  if (c && c.until > Date.now() + 20e3) return c.v;
+  const r = await fetch(GW + '/api/v1/auth/session', {
+    method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+    body: JSON.stringify({ client_id: g.merchantId, client_secret: g.merchantSecret }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.session) throw new MyposError(r.status >= 400 && r.status < 500 && r.status !== 429 ? 'gw_merchant' : 'mypos_down', r.status, gwMsg(j));
+  gwCache.set(k, { v: j.session, until: Date.now() + (Number(j.expires_in) || 300) * 1000 });
+  return j.session;
+}
+async function gwGet(g, path) {
+  const tok = await gwToken(g);
+  const ses = await gwSession(g, tok);
+  const r = await fetch(GW + path, { headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, 'X-Session': ses, 'X-Partner-Id': g.partnerId, 'X-Application-Id': g.appId } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401) { gwCache.delete('s|' + g.merchantId); gwCache.delete('t|' + g.clientId); } // ran out: the next read starts anew
+    throw new MyposError(r.status === 401 || r.status === 403 ? 'gw_denied' : r.status === 429 ? 'mypos_busy' : 'mypos_failed', r.status, gwMsg(j));
+  }
+  return j;
+}
+// every account (not the suspense ones) with its balance now
+async function gwBalances(g) {
+  const list = await gwGet(g, '/accounting/v1/accounts?' + new URLSearchParams({ page: '1', size: '50' }));
+  const items = (list.items || []).filter((a) => a && a.account_number && !a.is_suspense_account).slice(0, 8);
+  const out = [];
+  for (const a of items) {
+    const d = await gwGet(g, '/accounting/v1/accounts/' + encodeURIComponent(a.account_number));
+    const bal = d.balance != null && d.balance !== '' && Number.isFinite(Number(d.balance)) ? Math.round(Number(d.balance) * 100) / 100 : null;
+    out.push({ number: String(a.account_number).slice(-4), name: String(a.name || d.account_name || ''), currency: String(d.currency || a.currency || ''), reserve: !!a.is_reserve, available: bal, closing: null, date: '', live: true });
+  }
+  return out;
+}
+// the keys as the portal may show them (never a secret)
+function gwPublic(g) {
+  if (!gwReady(g)) return { on: false };
+  const mask = (v) => (v.length > 12 ? v.slice(0, 8) + '…' + v.slice(-4) : v);
+  return { on: !g.error, partnerId: g.partnerId, appId: g.appId, merchantId: mask(g.merchantId), savedAt: g.savedAt || '', error: g.error || '', errorAt: g.errorAt || '', status: g.status || 0, message: g.message || '' };
+}
+async function liveBalance(store, g, fresh) {
+  const cached = await store.readJSON(BAL, null);
+  if (!fresh && cached && cached.live && cached.at && Date.now() - Date.parse(cached.at) < 60e3) return Object.assign({ connected: true, gateway: gwPublic(g) }, cached);
+  try {
+    const v = { at: new Date().toISOString(), live: true, accounts: await gwBalances(g), error: '' };
+    await store.writeJSON(BAL, v, { quiet: true });
+    return Object.assign({ connected: true, gateway: gwPublic(g) }, v);
+  } catch (e) {
+    // refused keys: noted, and not tried again (myPOS locks after three) until they are saved anew
+    if (e.code === 'gw_partner' || e.code === 'gw_merchant') {
+      g = Object.assign({}, g, { error: e.code, errorAt: new Date().toISOString(), status: e.status || 0, message: e.message || '' });
+      await store.writeJSON(GW_KEY, g, { quiet: true });
+    }
+    return Object.assign({ connected: true, gateway: gwPublic(g) }, cached || {}, { error: e.code || 'mypos_failed', status: e.status || 0 });
+  }
+}
+// Integrări → myPOS → "Sold în timp real": checks the keys once (token, session, the accounts), saves them only when
+// all three worked. Empty secrets with the same IDs: the saved ones.
+async function saveGateway(store, input, by) {
+  const prev = (await store.readJSON(GW_KEY, null)) || {};
+  const g = {};
+  for (const k of Object.keys(GW_FIELDS)) {
+    let v = String((input || {})[k] || '').trim();
+    if (!v && (k === 'clientSecret' || k === 'merchantSecret') && prev[k] && prev[k === 'clientSecret' ? 'clientId' : 'merchantId'] === g[k === 'clientSecret' ? 'clientId' : 'merchantId']) v = prev[k];
+    if (!GW_FIELDS[k].test(v)) return { error: 'gw_format', field: k };
+    g[k] = v;
+  }
+  gwCache.delete('t|' + g.clientId); gwCache.delete('s|' + g.merchantId);
+  let accounts;
+  try { accounts = await gwBalances(g); } catch (e) { return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
+  Object.assign(g, { savedAt: new Date().toISOString(), by: by || '' });
+  await store.writeJSON(GW_KEY, g);
+  await store.writeJSON(BAL, { at: new Date().toISOString(), live: true, accounts, error: '' }, { quiet: true });
+  return { ok: true, gateway: gwPublic(g) };
+}
+async function dropGateway(store) {
+  await store.writeJSON(GW_KEY, {});
+  await store.writeJSON(BAL, {}, { quiet: true });
+}
+const loadGateway = async (store) => gwPublic(await store.readJSON(GW_KEY, null));
 async function listAccounts(conn) {
   const j = await call(conn, 'GET', TRX + '/accounts?' + new URLSearchParams({ page: '1', size: '100' }));
   return (j.accounts || []).map((a) => ({ number: String(a.account_number || ''), name: String(a.name || ''), currency: String(a.currency || ''), iban: String(a.iban || ''), reserve: !!a.is_reserve })).filter((a) => a.number);
@@ -280,10 +389,12 @@ async function statement(conn, number, date) {
   return parseMt940(text);
 }
 async function balance(store, fresh) {
+  const g = await store.readJSON(GW_KEY, null);
+  if (gwReady(g) && !g.error) return liveBalance(store, g, fresh);
   const conn = await loadConn(store.readJSON);
-  if (!connected(conn)) return { connected: false };
+  if (!connected(conn)) return { connected: false, gateway: gwPublic(g) };
   const cached = await store.readJSON(BAL, null);
-  if (!fresh && cached && cached.at && Date.now() - Date.parse(cached.at) < 10 * 60e3) return Object.assign({ connected: true }, cached);
+  if (!fresh && cached && cached.at && !cached.live && Date.now() - Date.parse(cached.at) < 10 * 60e3) return Object.assign({ connected: true, gateway: gwPublic(g) }, cached);
   const today = dayOf(Date.now()), yesterday = dayOf(Date.now() - 86400e3);
   try {
     const accounts = (await listAccounts(conn)).slice(0, 6);
@@ -297,10 +408,10 @@ async function balance(store, fresh) {
     }
     const v = { at: new Date().toISOString(), accounts: out, error: out.length && out.every((x) => x.available == null && x.closing == null) ? 'no_statement' : '' };
     await store.writeJSON(BAL, v, { quiet: true });
-    return Object.assign({ connected: true }, v);
+    return Object.assign({ connected: true, gateway: gwPublic(g) }, v);
   } catch (e) {
-    return Object.assign({ connected: true }, cached || {}, { error: e.code || 'mypos_failed', status: e.status || 0 });
+    return Object.assign({ connected: true, gateway: gwPublic(g) }, cached && !cached.live ? cached : {}, { error: e.code || 'mypos_failed', status: e.status || 0 });
   }
 }
 
-module.exports = { CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940 };
+module.exports = { CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };

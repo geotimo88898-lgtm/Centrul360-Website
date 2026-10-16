@@ -2,12 +2,15 @@
 //   GET  ?view=status                         connected?, the terminals and their city, the live link, the history
 //   GET  ?view=payments&from=YYYY-MM-DD&to=…   the POS payments of those days (reads the history first when it is
 //                                             older than 10 minutes, or when those days were never read)
-//   GET  ?view=balance                        the myPOS account's balance (from its daily statement, kept 10 min)
+//   GET  ?view=balance                        the myPOS account's balance: now (API Gateway keys, kept 1 min) or from
+//                                             its daily statement (kept 10 min)
 //   POST { action: 'connect', clientId, clientSecret }  checks them with myPOS, finds the terminals, makes the
 //        webhook for the live payments, reads the last 60 days
 //   POST { action: 'device', tid, city }      which clinic a terminal is in (Timișoara / Arad)
 //   POST { action: 'sync' }                   read the history now
 //   POST { action: 'disconnect' }             removes the webhook and the credentials (the payments read stay)
+//   POST { action: 'gateway', partnerId, appId, clientId, clientSecret, merchantId, merchantSecret }  the keys for the
+//        balance now (myPOS Partner Portal), saved once myPOS accepted them; { action: 'gateway_off' } removes them
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
@@ -20,7 +23,8 @@ const origin = (req) => 'https://' + req.headers.host;
 
 async function status() {
   const conn = await M.loadConn(readJSON);
-  if (!M.connected(conn)) return { connected: false };
+  const gateway = await M.loadGateway(store);
+  if (!M.connected(conn)) return { connected: false, gateway };
   const pay = await readJSON(M.PAY, { list: [] });
   const log = await readJSON('data/mypos-webhook-log.json', []);
   const last = (pay.list || []).filter((p) => p.amount > 0).slice(-1)[0] || null;
@@ -36,6 +40,7 @@ async function status() {
     syncedAt: pay.syncedAt || '',
     lastPayment: last ? { at: last.at, amount: last.amount, tid: last.tid } : null,
     lastHook: (log || [])[0] || null,
+    gateway,
   };
 }
 
@@ -134,6 +139,18 @@ module.exports = async (req, res) => {
       const r = await M.sync(store, {});
       if (!r.ok) { res.status(400).json({ error: r.error || 'mypos_failed' }); return; }
       res.status(200).json(Object.assign(await status(), { added: r.added }));
+      return;
+    }
+
+    if (b.action === 'gateway') {
+      const r = await M.saveGateway(store, b, session.employeeId);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'gateway_off') {
+      await M.dropGateway(store);
+      res.status(200).json(await status());
       return;
     }
 

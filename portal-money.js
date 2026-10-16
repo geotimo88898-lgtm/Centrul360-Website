@@ -220,9 +220,10 @@
 
   // ---------------- myPOS (owner only): the card payments on the POS next to the card payments recorded here
   const POS = { key: '', at: 0, data: null, loading: null, r: null, all: false, bal: null, balAt: 0 };
-  // the myPOS account's balance (the server reads it from the day's statement and keeps it 10 minutes)
+  // the myPOS account's balance: now, straight from the account (myPOS API Gateway keys, the server keeps it a minute),
+  // or from the daily statement until those keys are saved
   function loadBal(force) {
-    if (!force && POS.bal && Date.now() - POS.balAt < 5 * 60e3) return Promise.resolve(false);
+    if (!force && POS.bal && Date.now() - POS.balAt < (POS.bal.live ? 60e3 : 5 * 60e3)) return Promise.resolve(false);
     POS.balAt = Date.now();
     return K.api('/api/portal-mypos?view=balance' + (force ? '&fresh=1' : '')).then((b) => { POS.bal = b; return true; }, () => false);
   }
@@ -232,11 +233,13 @@
     const acc = (b.accounts || []).filter((a) => !a.reserve && (a.available != null || a.closing != null));
     const reserve = (b.accounts || []).filter((a) => a.reserve && (a.available != null || a.closing != null));
     if (!acc.length) return '<div class="mo-pos-bal is-empty">' + icon('wallet') + '<span>Soldul contului myPOS nu s-a putut citi' + (b.error ? '' : ' încă') + '.</span><button type="button" class="k-btn is-ghost is-sm" data-bal-refresh>' + icon('refresh') + '</button></div>';
-    const money = (v, cur) => (cur && cur !== 'RON' ? K.num(Math.round(v * 100) / 100) + ' ' + cur : K.lei(v, 2));
+    const money = (v, cur) => (Number(v) || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (cur && cur !== 'RON' ? cur : 'lei');
     return '<div class="mo-pos-bal">' + acc.map((a) => '<div class="mo-pos-bal-main"><span>' + icon('wallet') + 'Sold cont myPOS' + (acc.length > 1 ? ' · ' + esc(a.name || '••' + a.number) : '') + '</span>' +
         '<b>' + money(a.available != null ? a.available : a.closing, a.currency) + '</b>' +
-        '<small>' + (a.available != null && a.closing != null && Math.abs(a.available - a.closing) > 0.009 ? 'disponibil · contabil ' + money(a.closing, a.currency) + ' · ' : a.available != null ? 'disponibil · ' : '') + (a.date && a.date !== K.today() ? 'extras din ' + esc(K.dateShort(a.date)) : 'actualizat ' + esc(K.ago(b.at))) + '</small></div>').join('') +
+        '<small>' + (a.live ? 'sold actual · citit ' + esc(K.ago(b.at)) + (b.error ? ' · nu s-a putut reciti' : '')
+          : (a.available != null && a.closing != null && Math.abs(a.available - a.closing) > 0.009 ? 'disponibil · contabil ' + money(a.closing, a.currency) + ' · ' : a.available != null ? 'disponibil · ' : '') + (a.date && a.date !== K.today() ? 'extras din ' + esc(K.dateShort(a.date)) : 'extras de azi')) + '</small></div>').join('') +
       reserve.map((a) => '<div class="mo-pos-bal-res"><span>Rezervă</span><b>' + money(a.available != null ? a.available : a.closing, a.currency) + '</b></div>').join('') +
+      (acc.some((a) => !a.live) ? '<button type="button" class="k-btn is-ghost is-sm mo-pos-bal-go" data-goto-int>' + (b.gateway && b.gateway.error ? 'Soldul de acum s-a oprit' : 'Soldul de acum') + icon('arrow') + '</button>' : '') +
       '<button type="button" class="k-btn is-ghost is-sm" data-bal-refresh title="Citește acum">' + icon('refresh') + '</button></div>';
   }
   const cardPart = (s) => (s.method === 'card' ? Number(s.amount || 0) : s.method === 'cash_card' && s.split ? Number(s.split.card || 0) : 0);
@@ -317,8 +320,7 @@
       slot.innerHTML = posHtml(POS.r, d);
       const all = slot.querySelectorAll('[data-pos-all]');
       all.forEach((b) => b.addEventListener('click', () => { POS.all = !POS.all; draw(); }));
-      const gi = slot.querySelector('[data-goto-int]');
-      if (gi) gi.addEventListener('click', () => K.go('integrari'));
+      slot.querySelectorAll('[data-goto-int]').forEach((x) => x.addEventListener('click', () => K.go('integrari')));
       const br = slot.querySelector('[data-bal-refresh]');
       if (br) br.addEventListener('click', () => K.busy(br, async () => { await loadBal(true); draw(); }));
       renderList();

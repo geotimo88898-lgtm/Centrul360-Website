@@ -1019,12 +1019,40 @@
   };
   const mpFail = (err) => K.ui().toast(MP_ERR[err.code] || K.errText(err), 'error');
   const mpWhen = (iso) => { if (!iso) return ''; const r = K.relDay(dayOf(iso)); return (r === 'Azi' ? 'azi' : r === 'Ieri' ? 'ieri' : K.dateShort(dayOf(iso))) + ', ' + hhmm(iso); };
-  const mpKeysForm = (open, has) => '<details class="st-fb-manual"' + (open ? ' open' : '') + '><summary>' + (has ? 'Schimbă cheile' : 'Cheile myPOS') + '</summary>' +
+  const mpKeysForm = (open, has) => '<details class="st-fb-manual"' + (open ? ' open' : '') + '><summary>' + (has ? 'Schimbă cheile REST' : 'Cheile myPOS') + '</summary>' +
     '<form class="st-manual" data-mp-connect autocomplete="off">' +
       '<label class="k-field full"><span>ID Client</span><input name="clientId" autocomplete="off" spellcheck="false"></label>' +
       '<label class="k-field full"><span>Secretul clientului</span><input name="clientSecret" type="password" autocomplete="new-password" spellcheck="false"></label>' +
       '<small class="k-muted">Din contul myPOS: Integrări → REST API → Generați acreditări noi.</small>' +
       '<button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Conectează</button></form></details>';
+  // The balance now: the six keys from the myPOS Partner Portal (an "Account management" integration the clinic's
+  // myPOS account approved). The server tries them once and keeps them only if myPOS takes them; secrets never
+  // come back. myPOS locks the clinic's keys after three refusals in a row, hence the warning.
+  const GW_LABEL = { partnerId: 'Partner ID', appId: 'Application ID', clientId: 'Partner Client ID', clientSecret: 'Partner Secret', merchantId: 'Merchant Client ID', merchantSecret: 'Merchant Secret' };
+  const GW_HINT = { partnerId: 'mps-p-…', appId: 'mps-app-…', clientId: 'client_…', clientSecret: 'secret_…', merchantId: 'cli_…', merchantSecret: 'sec_…' };
+  const GW_ERR = {
+    gw_partner: 'myPOS n-a primit cheile integrării (Partner Client ID / Partner Secret). Copiază-le din nou din Partner Portal.',
+    gw_merchant: 'myPOS n-a primit cheile clinicii (Merchant Client ID / Merchant Secret). Verifică-le bine: după 3 încercări greșite la rând myPOS blochează accesul.',
+    gw_denied: 'myPOS nu dă voie integrării la conturi. Trebuie să fie de tip Account management, aprobată de myPOS și din contul clinicii.',
+  };
+  function gwStatus(g) {
+    g = g || { on: false };
+    const st = g.on ? ['is-ok', 'checkCircle', 'Pornit · citit direct din cont']
+      : g.error ? ['is-wait', 'alert', (g.error === 'gw_merchant' ? 'Oprit: myPOS a refuzat cheile clinicii.' : 'Oprit: myPOS a refuzat cheile integrării.') + ' Pune-le din nou mai jos.']
+      : ['is-wait', 'clock', 'Acum din extrasul zilnic. Cu cheile de mai jos, soldul de acum.'];
+    return '<div class="st-fb-status ' + st[0] + '">' + icon(st[1]) + '<div><b>Sold în timp real</b><span>' + esc(st[2]) + '</span></div></div>';
+  }
+  function gwForm(g) {
+    g = g || {};
+    const has = !!(g.on || g.error);
+    return '<details class="st-fb-manual"' + (g.on ? '' : ' open') + '><summary>' + (has ? 'Schimbă cheile pentru sold' : 'Cheile pentru sold') + '</summary>' +
+      '<form class="st-manual st-mp-gw" data-mp-gw autocomplete="off"><div class="st-mp-gw-grid">' +
+        Object.keys(GW_LABEL).map((k) => '<label class="k-field"><span>' + GW_LABEL[k] + '</span><input name="' + k + '"' + (/Secret/.test(k) ? ' type="password" autocomplete="new-password"' : ' autocomplete="off"') +
+          ' spellcheck="false" placeholder="' + GW_HINT[k] + '" value="' + esc(k === 'partnerId' || k === 'appId' ? g[k] || '' : '') + '"></label>').join('') + '</div>' +
+        '<small class="k-muted">Din partners.mypos.com: integrare Account management, aprobată din contul myPOS al clinicii.</small>' +
+        '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează</button>' +
+          (has ? '<button type="button" class="k-btn is-ghost is-sm" data-mp-gw-off>Scoate cheile</button>' : '') + '</div></form></details>';
+  }
   async function loadMypos(box) {
     if (!box) return;
     let d;
@@ -1040,12 +1068,14 @@
           (live ? (d.lastHook && d.lastHook.ok && d.lastHook.amount ? 'Ultima: ' + esc(K.lei(d.lastHook.amount)) + ' · ' + esc(mpWhen(d.lastHook.at)) : 'Pornite. Prima plată pe POS apare aici.') : esc('Nu s-au putut porni. ' + errLine(d.live))) + '</span></div></div>' +
         '<div class="st-fb-status ' + (hist && hist.ok ? 'is-ok' : 'is-wait') + '">' + icon(hist && hist.ok ? 'checkCircle' : hist ? 'alert' : 'clock') + '<div><b>Istoricul plăților</b><span>' +
           (hist && hist.ok ? 'Citit ' + esc(mpWhen(d.syncedAt || hist.at)) + (d.lastPayment ? ' · ultima plată ' + esc(K.lei(d.lastPayment.amount)) + ', ' + esc(mpWhen(d.lastPayment.at)) : '') : hist ? esc('Nu s-a putut citi. ' + errLine(hist)) : 'Încă necitit.') + '</span></div></div>' +
+        gwStatus(d.gateway) +
         (devs.length ? '<div class="st-mp-devs">' + devs.map((x) => '<label class="st-mp-dev"><span><b>' + esc(x.model || 'POS') + '</b><small>TID ' + esc(x.tid) + '</small></span>' +
           '<select data-mp-city="' + esc(x.tid) + '">' + K.options([['', 'Alege orașul'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], x.city || '') + '</select></label>').join('') + '</div>'
           : '<p class="k-muted st-mp-none">' + (d.devicesHealth && !d.devicesHealth.ok ? esc('Nu am putut citi aparatele. ' + errLine(d.devicesHealth)) : 'Niciun aparat POS găsit în cont.') + '</p>') +
         '<div class="st-int-row"><span class="k-tag is-good">' + icon('check') + 'Conectat</span><span class="k-muted st-mp-id">ID ' + esc(d.clientId) + '</span><span class="k-grow"></span>' +
           '<button type="button" class="k-btn is-ghost is-sm" data-mp-sync>' + icon('refresh') + 'Citește acum</button>' +
           '<button type="button" class="k-btn is-outline is-sm" data-goto="incasari">Încasări' + icon('arrow') + '</button></div>' +
+        gwForm(d.gateway) +
         mpKeysForm(false, true) +
         '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-mp-off>Deconectează myPOS</button>';
     }
@@ -1062,6 +1092,26 @@
           loadMypos(box);
         } catch (err) { mpFail(err); }
       });
+    });
+    const gf = box.querySelector('[data-mp-gw]');
+    if (gf) gf.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(gf);
+      K.busy(gf.querySelector('[type="submit"]'), async () => {
+        try {
+          await K.api('/api/portal-mypos', Object.assign({ action: 'gateway' }, v));
+          K.ui().toast('Gata: soldul vine direct din contul myPOS.', 'success');
+          loadMypos(box);
+        } catch (err) {
+          const f = err.data && err.data.field;
+          K.ui().toast(err.code === 'gw_format' && f ? GW_LABEL[f] + ' nu arată bine (începe cu ' + GW_HINT[f].replace('…', '') + ').' : GW_ERR[err.code] || MP_ERR[err.code] || K.errText(err), 'error');
+        }
+      });
+    });
+    const go = box.querySelector('[data-mp-gw-off]');
+    if (go) go.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Scoți cheile pentru sold?', message: 'Soldul se citește din nou din extrasul zilnic.', confirmText: 'Scoate', danger: true }))) return;
+      try { await K.api('/api/portal-mypos', { action: 'gateway_off' }); K.ui().toast('Cheile pentru sold sunt scoase.', 'success'); loadMypos(box); } catch (err) { mpFail(err); }
     });
     box.querySelectorAll('[data-mp-city]').forEach((s) => s.addEventListener('change', async () => {
       try { await K.api('/api/portal-mypos', { action: 'device', tid: s.dataset.mpCity, city: s.value }); K.ui().toast(s.value ? 'Aparatul e în ' + s.value + '.' : 'Orașul aparatului e scos.', 'success'); }
