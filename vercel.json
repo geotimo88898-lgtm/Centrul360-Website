@@ -187,6 +187,9 @@
     },
     "api/portal-ghl.js": {
       "maxDuration": 60
+    },
+    "api/daily-report.js": {
+      "maxDuration": 60
     }
   }
 }

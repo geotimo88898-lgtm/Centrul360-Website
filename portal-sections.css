@@ -689,6 +689,23 @@
 .mo-pos-bal-res{ display:flex; flex-direction:column; font-size:.78rem; color:var(--muted); }
 .mo-pos-bal-res b{ font-size:1rem; color:var(--fg); }
 .mo-pos-bal > .k-btn{ align-self:flex-start; }
+/* Încasări → POS myPOS: each POS of the period */
+.mo-pos-devs{ display:flex; flex-direction:column; gap:.45rem; margin:.1rem 0 .8rem; }
+.mo-pos-dev{ display:flex; align-items:center; gap:.7rem; padding:.6rem .75rem; border:1px solid var(--line); border-radius:14px; }
+.mo-pos-dev-ic{ display:grid; place-items:center; width:36px; height:36px; flex:0 0 36px; border-radius:11px; background:var(--accent-soft); color:var(--accent); }
+.mo-pos-dev-ic svg{ width:17px; height:17px; }
+.mo-pos-dev-name{ display:flex; flex-direction:column; flex:1 1 140px; min-width:0; }
+.mo-pos-dev-name b{ font-size:.88rem; }
+.mo-pos-dev-name small{ font-size:.74rem; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.mo-pos-dev-nums{ display:flex; gap:1.1rem; flex-wrap:wrap; }
+.mo-pos-dev-n{ display:flex; flex-direction:column; align-items:flex-end; min-width:3.5rem; }
+.mo-pos-dev-n b{ font-size:.92rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.mo-pos-dev-n small{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+@media (max-width:560px){
+  .mo-pos-dev{ flex-wrap:wrap; }
+  .mo-pos-dev-nums{ width:100%; justify-content:space-between; gap:.6rem; padding-left:calc(36px + .7rem); }
+  .mo-pos-dev-n{ align-items:flex-start; min-width:0; }
+}
 .mo-pos-sum{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.6rem; }
 .mo-pos-sum > div{ display:flex; flex-direction:column; gap:.15rem; padding:.75rem .9rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); min-width:0; }
 .mo-pos-sum span{ font-size:.78rem; color:var(--muted); }

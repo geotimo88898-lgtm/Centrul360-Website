@@ -190,7 +190,7 @@ async function alertTeam(lead, returning) {
   const what = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
-    title: (returning ? 'LEAD REVENIT' : 'LEAD NOU') + (what ? ' - ' + what : ''),
+    title: (returning ? 'LEAD REVENIT 🔁' : 'LEAD NOU 🔥') + (what ? ' - ' + what : ''),
     text: lead.name,
   });
 }

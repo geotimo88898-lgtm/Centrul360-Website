@@ -297,16 +297,33 @@
     return '<section class="k-card mo-pos"><div class="k-card-head"><h3>' + icon('card') + 'POS myPOS</h3><span class="k-sub">' + (d.syncedAt ? 'citit ' + esc(K.ago(d.syncedAt)) : '') + '</span></div>' +
       balHtml() +
       '<div class="mo-pos-sum">' +
-        '<div><span>Pe POS</span><b>' + K.lei(r.posTotal) + '</b><small>' + K.plural(r.pos.length, 'plată', 'plăți') + '</small></div>' +
+        '<div><span>Pe POS</span><b>' + K.lei(r.posTotal) + '</b><small>' + K.plural(r.pos.length, 'plată', 'plăți') + (r.pos.length ? ' · bon mediu ' + K.lei(r.posTotal / r.pos.length) : '') + '</small></div>' +
         '<div><span>În portal, pe card</span><b>' + K.lei(r.portalCard) + '</b><small>' + K.plural(r.matched.size + r.portalOnly.length, 'încasare', 'încasări') + '</small></div>' +
         '<div class="' + (Math.abs(diff) < 0.01 && ok ? 'is-good' : 'is-warn') + '"><span>Diferență</span><b>' + (diff > 0 ? '+' : '') + K.lei(diff) + '</b><small>' + (ok ? (r.pos.length ? 'totul se potrivește' : 'nicio plată pe card') : K.plural(r.posOnly.length + r.portalOnly.length, 'plată nepotrivită', 'plăți nepotrivite')) + '</small></div>' +
       '</div>' +
+      posDevsHtml(r, devices) +
       (r.unknown && S.loc !== 'all' ? '<p class="mo-pos-note">' + icon('info') + K.plural(r.unknown, 'plată vine', 'plăți vin') + ' de pe un aparat fără oraș. <button type="button" class="k-btn is-ghost is-sm" data-goto-int>Alege orașul aparatelor</button></p>' : '') +
       (r.posOnly.length ? '<h4 class="mo-pos-h">Pe POS, dar nu în portal · ' + r.posOnly.length + '</h4><div class="k-list">' + cap(r.posOnly).map(posRow).join('') + '</div>' + more(r.posOnly) : '') +
       (r.portalOnly.length ? '<h4 class="mo-pos-h">În portal pe card, dar nu pe POS · ' + r.portalOnly.length + '</h4><div class="k-list">' + cap(r.portalOnly).map(saleRow).join('') + '</div>' + more(r.portalOnly) : '') +
       (r.refunds.length ? '<h4 class="mo-pos-h">Returnări pe POS · ' + r.refunds.length + '</h4><div class="k-list">' + r.refunds.map(posRow).join('') + '</div>' : '') +
       (ok && r.pos.length ? '<p class="mo-pos-ok">' + icon('checkCircle') + 'Fiecare plată de pe POS are încasarea ei în portal.</p>' : '') +
       '</section>';
+  }
+  // each POS of the period: payments, total, the average payment; on more than one day, payments per day
+  function posDevsHtml(r, devices) {
+    if (!r.pos.length) return '';
+    const by = new Map();
+    r.pos.forEach((p) => { const x = by.get(p.tid) || { tid: p.tid, n: 0, sum: 0, days: new Set() }; x.n++; x.sum += p.amount; x.days.add(p.day); by.set(p.tid, x); });
+    const days = new Set(r.pos.map((p) => p.day)).size;
+    const rows = Array.from(by.values()).sort((a, b) => b.sum - a.sum);
+    const cell = (v, l) => '<div class="mo-pos-dev-n"><b>' + v + '</b><small>' + l + '</small></div>';
+    return '<div class="mo-pos-devs">' + rows.map((x) => {
+      const dv = devices[x.tid] || {};
+      return '<div class="mo-pos-dev"><span class="mo-pos-dev-ic">' + icon('card') + '</span>' +
+        '<div class="mo-pos-dev-name"><b>' + esc((dv.model || 'POS') + (dv.city ? ' · ' + dv.city : '')) + '</b><small>TID ' + esc(x.tid) + '</small></div>' +
+        '<div class="mo-pos-dev-nums">' + cell(K.num(x.n), x.n === 1 ? 'plată' : 'plăți') + cell(K.lei(x.sum), 'total') + cell(K.lei(x.sum / x.n), 'bon mediu') +
+          (days > 1 ? cell(K.num(Math.round((x.n / days) * 10) / 10), 'pe zi') : '') + '</div></div>';
+    }).join('') + '</div>';
   }
   function paintPos(from, to) {
     const draw = () => {
