@@ -287,7 +287,7 @@
     if (!cfg || !cfg.url || live) return;
     live = 'starting';
     try {
-      if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js');
+      if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js');
       const client = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
       live = client.channel(cfg.channel, { config: { broadcast: { self: true } } })
         .on('broadcast', { event: 'rev' }, (m) => onLive(m && m.payload))

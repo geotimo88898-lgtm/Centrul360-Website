@@ -41,7 +41,8 @@ async function send(cfg, event, payload) {
   try {
     const r = await fetch(cfg.url.replace(/\/+$/, '') + '/realtime/v1/api/broadcast', {
       method: 'POST', signal: ctl.signal,
-      headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+      // the legacy keys are JWTs (apikey + Bearer); the new sb_publishable_ / sb_secret_ keys go only as apikey
+      headers: Object.assign({ apikey: key, 'Content-Type': 'application/json' }, /^sb_/.test(key) ? {} : { Authorization: 'Bearer ' + key }),
       body: JSON.stringify({ messages: [{ topic: cfg.channel, event, payload, private: false }] }),
     });
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 120));
