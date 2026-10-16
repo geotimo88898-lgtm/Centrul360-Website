@@ -610,6 +610,14 @@ async function runOne(run, wf, settings, counters) {
   if (!ctx.lead && !ctx.appointment) { run.status = 'stopped'; log('Leadul / programarea nu mai există'); return; }
   // runs saved before branches existed kept an index into the list of steps
   if (run.at === undefined) run.at = !run.step ? '^' : ((wf.steps[run.step] || {}).id || '$');
+  // the clock came late (no portal open and the scheduler delayed): a message meant for a moment before the appointment
+  // that is more than 45 minutes late is not sent (a "see you tomorrow" on the day itself)
+  const late = run.dueWas ? Date.now() - Date.parse(run.dueWas) : 0;
+  delete run.dueWas;
+  if (run.waitId && late > 45 * 60e3) {
+    const w = flat(wf.steps).find((x) => x.id === run.waitId);
+    if (w && w.type === 'wait' && w.mode === 'before') { run.skipNext = true; log('Ora (' + waitText(w) + ') a trecut de ' + Math.round(late / 60e3) + ' min, mesajul următor e sărit'); }
+  }
   // "Lead necontactat": only fires if nobody has reached the lead in the meantime.
   if (run.at === '^' && wf.trigger.type === 'lead_idle' && stopHit('contacted', ctx)) { run.status = 'done'; log('Leadul a fost contactat între timp'); return; }
   const prog = compile(wf.steps);
@@ -699,7 +707,7 @@ async function processRuns(runsDoc, doc, onlyIds) {
   const due = runsDoc.runs.filter((r) => r.status === 'waiting' && (onlyIds ? onlyIds.includes(r.id) : Date.parse(r.dueAt) <= now)).slice(0, 25);
   if (!due.length) { if (onlyIds) await saveRuns(runsDoc); return 0; }
   const lease = new Date(now + 2 * 60e3).toISOString();
-  due.forEach((r) => { r.dueAt = lease; }); // claim
+  due.forEach((r) => { r.dueWas = r.dueAt; r.dueAt = lease; }); // claim (when it was due: a late "before" message is skipped)
   await saveRuns(runsDoc);
   const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
   const settings = Object.assign({}, doc.settings, { _wa: wa });
@@ -736,4 +744,33 @@ async function tick(force) {
   }
 }
 
-module.exports = { CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };
+// A reminder flow ("appointment booked") switched on: the bookings already in the calendar (its city, from today on, not
+// cancelled / finished) get it too, from its first wait on (24h before, 2h before, the review), without the
+// confirmation (they booked before). A booking that already has a run of this flow is left alone. Returns how many.
+async function enrollUpcoming(wf) {
+  try {
+    if (!wf || !wf.active || !wf.trigger || wf.trigger.type !== 'appointment_created') return 0;
+    const first = (wf.steps || []).find((s) => s.type === 'wait');
+    if (!first) return 0;
+    const [appointments, runsDoc] = await Promise.all([readJSON('data/appointments.json', []), loadRuns()]);
+    const now = Date.now();
+    const has = new Set(runsDoc.runs.filter((r) => r.wf === wf.id).map((r) => r.ent && r.ent.id));
+    const loc = wf.trigger.location && wf.trigger.location !== 'any' ? wf.trigger.location : '';
+    const list = appointments.filter((a) => a && a.id && !has.has(a.id) && a.time && !['anulata', 'finalizata', 'concediu'].includes(a.status) &&
+      (!loc || a.location === loc) && apptStart(a) > now);
+    list.forEach((a) => {
+      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at: first.id, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
+        log: [{ at: nowISO(), text: 'Pornit: programare deja în calendar când s-a pornit automatizarea (fără confirmare)' }] });
+      const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
+      c.runs++;
+    });
+    if (!list.length) return 0;
+    await processRuns(runsDoc, await loadDoc(), runsDoc.runs.slice(-list.length).map((r) => r.id));
+    return list.length;
+  } catch (err) {
+    console.error('workflows.enrollUpcoming error:', err.message);
+    return 0;
+  }
+}
+
+module.exports = { enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };

@@ -1,0 +1,36 @@
+# The automations' clock: every 5 minutes it asks the portal to send what is due (reminders 24h / 2h before, the review
+# after a treatment, the waits of any flow) and to read new Facebook leads, so they go on time even when nobody has the
+# portal open. Vercel's own cron (vercel.json) runs only once a day. GitHub may start a run a few minutes late; the
+# portal skips a "before the appointment" message that would come more than 45 minutes late.
+# If CRON_SECRET is ever set in Vercel, put the same value in this repository's secrets (Settings → Secrets → Actions).
+name: Ceasul automatizărilor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: automations-clock
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trimite ce e la rând
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          auth=()
+          if [ -n "$CRON_SECRET" ]; then auth=(-H "Authorization: Bearer $CRON_SECRET"); fi
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -m 60 -w "%{http_code}" "${auth[@]}" "https://admin.centrul360.com/api/automation-tick?light=1") || code=000
+            echo "automation-tick: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          exit 1

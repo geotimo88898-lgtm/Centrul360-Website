@@ -105,8 +105,11 @@ module.exports = async (req, res) => {
     } else if (body.action === 'toggle') {
       const wf = doc.workflows.find((w) => w.id === body.id);
       if (!wf) { res.status(404).json({ error: 'workflow_not_found' }); return; }
+      const was = !!wf.active;
       wf.active = !!body.active; wf.updatedAt = new Date().toISOString();
       await W.saveDoc(doc);
+      // a reminder flow switched on: the bookings already in the calendar get it too
+      if (!was && wf.active) await W.enrollUpcoming(wf);
     } else if (body.action === 'delete') {
       const before = doc.workflows.length;
       doc.workflows = doc.workflows.filter((w) => w.id !== body.id);
