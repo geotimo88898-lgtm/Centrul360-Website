@@ -1118,7 +1118,7 @@
     const has = !!(g.on || g.error);
     return '<details class="st-fb-manual"' + (g.on ? '' : ' open') + '><summary>' + (has ? 'Schimbă cheile pentru sold' : 'Cheile pentru sold') + '</summary>' +
       '<form class="st-manual st-mp-gw" data-mp-gw autocomplete="off"><div class="st-mp-gw-grid">' +
-        Object.keys(GW_LABEL).map((k) => '<label class="k-field"><span>' + GW_LABEL[k] + '</span><input name="' + k + '"' + (/Secret/.test(k) ? ' type="password" autocomplete="new-password"' : ' autocomplete="off"') +
+        Object.keys(GW_LABEL).map((k) => '<label class="k-field"><span>' + GW_LABEL[k] + '</span><input name="' + k + '" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore' +
           ' spellcheck="false" placeholder="' + GW_HINT[k] + '" value="' + esc(k === 'partnerId' || k === 'appId' ? g[k] || '' : '') + '"></label>').join('') + '</div>' +
         '<small class="k-muted">Din partners.mypos.com: integrare Account management, aprobată din contul myPOS al clinicii.</small>' +
         '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează</button>' +
@@ -1165,9 +1165,11 @@
       });
     });
     const gf = box.querySelector('[data-mp-gw]');
-    if (gf) gf.addEventListener('submit', (e) => {
+    if (gf) gf.addEventListener('submit', async (e) => {
       e.preventDefault();
       const v = K.formValues(gf);
+      const ms = String(v.merchantSecret || '').replace(/[\s\u200B-\u200D\u2060\uFEFF]/g, '');
+      if (ms && !/^sec_/.test(ms) && !(await K.ui().confirm({ title: 'Merchant Secret nu începe cu sec_', message: 'myPOS dă secretul clinicii cu sec_ la început (începe cu: ' + ms.slice(0, 7) + '…). Un secret greșit se numără la cele 3 încercări după care myPOS blochează accesul. Îl trimit oricum?', confirmText: 'Trimite oricum', cancelText: 'Verific întâi' }))) return;
       K.busy(gf.querySelector('[type="submit"]'), async () => {
         try {
           await K.api('/api/portal-mypos', Object.assign({ action: 'gateway' }, v));
