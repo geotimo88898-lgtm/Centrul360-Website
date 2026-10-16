@@ -247,7 +247,8 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   if (note) lead.activities.push({ id: crypto.randomUUID(), type: 'note', text: clip(note, 1000), author, at: now });
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);
-  await workflows.emit('lead_created', { lead }); // e.g. welcome WhatsApp + "call in 5 min"
+  await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
+  await workflows.welcome(lead); // the welcome WhatsApp of its offer (the templates that name it)
   await alertTeam(lead, false);
   return { lead: withComputedFields(lead, stages) };
 }

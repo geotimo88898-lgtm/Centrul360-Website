@@ -10,6 +10,7 @@
 //     header, body (Meta's form, {{1}} {{2}} …), map (our variable for each {{n}}), footer,
 //     buttons [{ type QUICK_REPLY | URL | PHONE_NUMBER, text, url?, phone? }],
 //     meta: { [wabaId]: { id, name, status APPROVED | PENDING | REJECTED | PAUSED | DISABLED | DELETED, reason } },
+//     leadOffers: [offer key] (a new lead from the ads for one of these offers gets it at once, _lib/workflows.js welcome),
 //     updatedAt }] }
 
 const crypto = require('crypto');
@@ -74,10 +75,13 @@ const editable = (t) => ['DRAFT', 'REJECTED'].includes(overall(t));
 
 // what she typed, checked against Meta's rules; returns { t } or { error }
 const onlyOf = (v) => (Array.isArray(v) ? WA.CITIES.filter((c) => v.includes(c)) : []);
+const leadOffersOf = (v) => [...new Set((Array.isArray(v) ? v : []).map((k) => clip(k, 60).trim()).filter((k) => /^[\w-]+$/.test(k)))].slice(0, 40);
 function clean(input, prev) {
   const i = input || {};
   const t = prev ? JSON.parse(JSON.stringify(prev)) : { id: crypto.randomUUID().slice(0, 12), language: 'ro', name: '', meta: {} };
   if (i.only !== undefined) t.only = onlyOf(i.only);
+  // the offers whose new leads get it (ours, not Meta's: can change on a sent template too)
+  if (i.leadOffers !== undefined) t.leadOffers = leadOffersOf(i.leadOffers);
   // the template "Trimite rezultatele" (Contacte → before / after) sends
   if (i.purpose !== undefined) t.purpose = i.purpose === 'results' ? 'results' : '';
   t.label = clip(i.label, 80).trim() || t.label || '';
@@ -300,7 +304,8 @@ function view(t, cfg) {
   if (cfg) WA.CITIES.forEach((c) => { const n = cfg.numbers[c]; const m = n.wabaId ? (t.meta || {})[n.wabaId] : null; cities[c] = n.phoneId && n.token ? (m ? m.status : 'DRAFT') : ''; });
   const reasons = Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean);
   return { id: t.id, label: t.label, name: t.name, category: t.category, language: t.language, header: t.header || '', headerType: t.headerType || '', purpose: t.purpose || '', hasSample: !!t.samplePath, image: t.headerImagePath || t.samplePath || '', hidden: !!t.hidden, reviewed: !!t.reviewed, only: t.only || [], text: friendly(t), body: t.body, map: t.map || [],
-    footer: t.footer || '', buttons: t.buttons || [], status: overall(t), editable: editable(t), cities, reason: reasons[0] || '', imported: !!t.imported, updatedAt: t.updatedAt || '' };
+    footer: t.footer || '', buttons: t.buttons || [], status: overall(t), editable: editable(t), cities, reason: reasons[0] || '', imported: !!t.imported, updatedAt: t.updatedAt || '',
+    leadOffers: t.leadOffers || [] };
 }
 
-module.exports = { review, KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, imageOf, view, slug, toMeta };
+module.exports = { review, KEY, VARS, SAMPLE, load, save, accounts, clean, submit, sync, remove, friendly, overall, approvedFor, imageOf, view, slug, toMeta, leadOffersOf };

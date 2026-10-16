@@ -16,6 +16,7 @@
 //   POST { action: 'tpl_save', template }        a new one or changes (a sent one: only its name / variables)
 //   POST { action: 'tpl_submit', id }            to Meta for approval
 //   POST { action: 'tpl_delete', id }
+//   POST { action: 'tpl_lead', id, leadOffers }  the offers whose new leads get it at once
 //   POST { action: 'tpl_sync' }                  read Meta's answers now
 
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -333,6 +334,15 @@ module.exports = async (req, res) => {
       await T.save(d);
       if (r.error && !r.partial) { res.status(400).json({ error: 'submit_failed', message: r.error }); return; }
       res.status(200).json(Object.assign(await payload(false), { submitError: r.error || '' }));
+      return;
+    }
+    if (a === 'tpl_lead') {
+      const t = d.templates.find((x) => x.id === body.id);
+      if (!t) { res.status(404).json({ error: 'not_found' }); return; }
+      t.leadOffers = T.leadOffersOf(body.leadOffers);
+      t.updatedAt = new Date().toISOString();
+      await T.save(d);
+      res.status(200).json(await payload(false));
       return;
     }
     if (a === 'tpl_delete') {

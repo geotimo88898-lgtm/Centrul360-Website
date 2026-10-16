@@ -514,6 +514,38 @@ async function sendTemplate(wa, templateId, from, phone, v) {
 }
 const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';
 
+// A new lead from the ads gets the welcome message of its offer at once, no flow: every WhatsApp template that names
+// the offer in "Se trimite singur la lead nou" (Șabloane / Automatizări → Mesaje). From the lead's city number; an
+// offer of one city only for the leads of that city. What happened is written on the lead (Pipeline → its history):
+// sent, or why not (a template not approved by Meta yet is skipped). Never throws.
+async function welcome(lead) {
+  try {
+    if (!lead || lead.source !== 'facebook' || !lead.phone || !lead.interest) return;
+    const offers = await require('./offers').loadOffers(readJSON);
+    const offer = offers.find((o) => fold(o.title) === fold(lead.interest) || o.key === lead.interest);
+    if (!offer) return;
+    const cities = [...new Set((offer.locations || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
+    if (cities.length === 1 && lead.location && lead.location !== cities[0]) return;
+    const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
+    const tpls = wa.tpls.filter((t) => (t.leadOffers || []).includes(offer.key));
+    if (!tpls.length) return;
+    const settings = (await loadDoc()).settings || {};
+    const v = vars({ lead }, settings);
+    const notes = [];
+    for (const t of tpls) {
+      const r = await sendTemplate(wa, t.id, lead.location || cities[0], lead.phone, v);
+      notes.push(r.sent ? 'WhatsApp de bun venit trimis („' + t.label + '”, de pe numărul ' + r.city + ')' : 'Mesajul de bun venit n-a plecat: ' + r.why);
+    }
+    const leads = await readJSON(LEADS_KEY, []);
+    const l = leads.find((x) => x.id === lead.id);
+    if (!l) return;
+    notes.forEach((text) => (l.activities = l.activities || []).push({ id: uid(), type: 'note', text, author: 'WhatsApp automat', at: nowISO() }));
+    await writeJSON(LEADS_KEY, leads);
+  } catch (err) {
+    console.error('workflows.welcome error:', err.message);
+  }
+}
+
 // "Anunță echipa": the bell in the portal and the phone (Web Push) of everyone picked, plus, if
 // asked, a WhatsApp template to their own number.
 async function notifyTeam(s, v, ctx, wa) {
@@ -675,4 +707,4 @@ async function tick(force) {
   }
 }
 
-module.exports = { CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat };
+module.exports = { CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };

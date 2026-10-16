@@ -90,11 +90,19 @@
         '<div class="k-form wa-form">' + K.field('Numele șablonului', '<input data-tf="label" maxlength="80" value="' + esc(t.label) + '">', 'full') +
           ((t.map || []).length ? '<div class="k-field full"><span>Variabilele</span>' + t.map.map((k, i) => '<label class="wa-map"><b>{{' + (i + 1) + '}}</b><select data-map="' + i + '">' + K.options([['', 'Alege…']].concat(vars.map((x) => [x, VLABEL[x] || x])), k) + '</select></label>').join('') + '</div>' : '') +
         '</div>');
+    // which offers' new leads get it at once (no flow needed)
+    const leadHtml = () => {
+      const offers = ((K.data && K.data.offers) || []).filter((x) => x.key && x.active !== false).sort((a, b) => (b.ads ? 1 : 0) - (a.ads ? 1 : 0));
+      if (!offers.length) return '';
+      const on = new Set(t.leadOffers || []);
+      return '<div class="wa-lead"><b>' + icon('userPlus') + 'Se trimite singur la lead nou</b><small>Pentru ofertele bifate, de pe numărul orașului clientei.</small><div class="wa-lead-list">' +
+        offers.map((x) => '<label class="wa-lead-o' + (on.has(x.key) ? ' is-on' : '') + '"><input type="checkbox" data-lo="' + esc(x.key) + '"' + (on.has(x.key) ? ' checked' : '') + '><span>' + esc(x.title) + '</span></label>').join('') + '</div></div>';
+    };
     const ready = d.ready;
     const dr = K.drawer({
       title: tpl ? 'Șablon: ' + (t.label || '') : 'Șablon WhatsApp nou', icon: 'chat', width: 760,
       subtitle: canEdit ? 'Scrie-l ca pe un mesaj obișnuit. Meta îl verifică o singură dată, apoi pleacă singur din automatizări.' : 'Trimis la Meta · ' + (STATUS[t.status] || [t.status])[0],
-      body: '<div class="wa-edit"><div data-wform>' + formHtml() + '</div><aside class="wa-side"><small>Așa îl primește clienta</small><div data-wprev>' + bubble(t) + '</div>' +
+      body: '<div class="wa-edit"><div><div data-wform>' + formHtml() + '</div>' + leadHtml() + '</div><aside class="wa-side"><small>Așa îl primește clienta</small><div data-wprev>' + bubble(t) + '</div>' +
         (t.reason ? '<p class="wa-reason">' + icon('alert') + 'Meta: ' + esc(t.reason) + '</p>' : '') +
         (!ready && canEdit ? '<p class="k-muted wa-note">' + icon('info') + 'WhatsApp nu e conectat încă: îl salvezi ca ciornă și îl trimiți la aprobare după ce conectezi numerele (Integrări → WhatsApp).</p>' : '') + '</aside></div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button>' +
@@ -118,6 +126,7 @@
           if (f.matches('[data-results]')) t.purpose = f.checked ? 'results' : '';
           if (f.matches('[data-sample]') && f.files && f.files[0]) sampleOf(f.files[0]).then((u) => { sample = u; repaint(); }).catch((err) => K.ui().toast(err.message, 'error'));
           if (f.dataset.map != null) t.map[Number(f.dataset.map)] = f.value;
+          if (f.dataset.lo) { const s = new Set(t.leadOffers || []); if (f.checked) s.add(f.dataset.lo); else s.delete(f.dataset.lo); t.leadOffers = [...s]; f.closest('.wa-lead-o').classList.toggle('is-on', f.checked); }
           const row = f.closest('[data-bi]');
           if (row && f.dataset.bf === 'type') { t.buttons[Number(row.dataset.bi)].type = f.value; repaint(); }
         });
@@ -138,7 +147,7 @@
         });
         const saveIt = (submit) => async (ev) => K.busy(ev.currentTarget, async () => {
           try {
-            const r = await post({ action: 'tpl_save', submit, template: { id: tpl && tpl.id, label: t.label, category: t.category, header: t.header, headerType: t.headerType || '', sample, purpose: t.purpose || '', body: t.text, footer: t.footer, buttons: t.buttons, map: t.map } });
+            const r = await post({ action: 'tpl_save', submit, template: { id: tpl && tpl.id, label: t.label, category: t.category, header: t.header, headerType: t.headerType || '', sample, purpose: t.purpose || '', body: t.text, footer: t.footer, buttons: t.buttons, map: t.map, leadOffers: t.leadOffers || [] } });
             dr.close();
             if (r.submitError) K.ui().toast('Salvat, dar Meta: ' + r.submitError, 'error');
             else K.ui().toast(submit ? 'Trimis la Meta. Răspunde de obicei în câteva minute.' : 'Salvat.', 'success');
@@ -177,7 +186,7 @@
       (d.templates.length ? '<div class="ad-list">' + d.templates.filter((t) => L.showHidden || !t.hidden).map((t) => '<article class="k-card ad-camp wa-row"><div class="wa-row-in">' +
           '<button type="button" class="ad-title" data-tpl-open="' + esc(t.id) + '"><b>' + esc(t.label) + '</b><small>' + (t.category === 'MARKETING' ? 'Marketing' : 'Utilitate') + (t.name ? ' · ' + esc(t.name) : '') + (t.imported ? ' · din WhatsApp Manager' : '') + '</small></button>' +
           '<div class="wa-row-status">' + cityTags(t) + (t.reason ? '<small class="wa-row-reason">' + esc(t.reason) + '</small>' : '') + '</div>' +
-          '<div class="wa-row-used k-muted">' + (t.usedIn.length ? 'în ' + K.plural(t.usedIn.length, 'automatizare', 'automatizări') : 'nefolosit') + '</div>' +
+          '<div class="wa-row-used k-muted">' + ((t.leadOffers || []).length ? 'la lead nou · ' + esc(t.leadOffers.map((k) => (((K.data && K.data.offers) || []).find((x) => x.key === k) || {}).title || k).join(', ')) : t.usedIn.length ? 'în ' + K.plural(t.usedIn.length, 'automatizare', 'automatizări') : 'nefolosit') + '</div>' +
           '<div class="ad-acts">' + (t.editable && d.ready ? '<button type="button" class="k-btn is-sm is-primary" data-tpl-send="' + esc(t.id) + '">' + icon('zap') + 'Trimite la aprobare</button>' : '') +
             '<button type="button" class="k-icon-btn" data-tpl-more="' + esc(t.id) + '" title="Mai mult">' + icon('more') + '</button></div>' +
         '</div></article>').join('') + '</div>'

@@ -180,7 +180,8 @@
   // numbers of the offer's cities) and a flow "Lead nou · <ofertă>" in Intake that sends it. Until Meta approves
   // a template its message is skipped (and noted in Istoric); then it goes by itself. Run again when an offer is
   // added. The message is the owner's own from HighLevel (her words per offer, prices from Oferte, quick replies
-  // Timișoara / Arad); when it changes, a new version goes to Meta and the flow moves to it ("Actualizează").
+  // Timișoara / Arad); when it changes, a new version goes to Meta and the offer moves to it ("Actualizează").
+  // No flow sends it: the template names its offers (leadOffers) and _lib/workflows.js welcome() sends it.
   // Reamintiri: the appointment flows with the messages they send. A message opens in the template editor.
   const LEAD_TPL = (o) => 'Lead nou · ' + o.title;
   const LEAD_WF = (o) => 'Lead nou · ' + o.title + ' → mesaj cu oferta';
@@ -224,16 +225,17 @@
     while (out.length > 3.8e6 && q > 0.5) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
     return out;
   }
-  // every version of an offer's message ("Lead nou · X", "… · v2" …): the one with today's text, else the one its
-  // flow sends, else the newest; it is up to date when the flow sends the template with today's text
+  // No flow for it any more: the template names the offers whose new leads get it ("Se trimite singur la lead
+  // nou", leadOffers). Per offer: every version of its message ("Lead nou · X", "… · v2" …); the one with today's
+  // text, else the one that goes now, else the newest. Up to date when exactly that one goes and no old flow is left.
   const leadRows = (tpls) => leadOffers().map((o) => {
     const mine = tpls.filter((x) => x.label === LEAD_TPL(o) || String(x.label || '').startsWith(LEAD_TPL(o) + ' · v'));
-    const w = S.d.workflows.find((x) => x.name === LEAD_WF(o));
-    const sent = w && w.steps && w.steps[0] ? mine.find((x) => x.id === w.steps[0].templateId) : null;
+    const goes = tpls.filter((x) => (x.leadOffers || []).includes(o.key));
+    const w = S.d.workflows.find((x) => x.name === LEAD_WF(o)); // the old way, removed by "Actualizează"
     const good = mine.find((x) => sameMsg(x, o));
-    const t = good || sent || mine[mine.length - 1] || null;
-    const fresh = !!(good && w && sent && sent.id === good.id && (w.trigger || {}).location === leadWhere(o));
-    return { o, t, w, mine, good, fresh };
+    const t = good || goes[0] || mine[mine.length - 1] || null;
+    const fresh = !!(good && !w && goes.length === 1 && goes[0].id === good.id);
+    return { o, t, w, mine, good, goes, fresh, on: !!(t && (t.leadOffers || []).includes(o.key)) };
   });
   const flowSwitch = (w) => '<label class="k-switch ad-sw" title="' + (w.active ? 'Pornită, apasă ca s-o oprești' : 'Oprită, apasă ca s-o pornești') + '"><input type="checkbox" data-toggle="' + esc(w.id) + '"' + (w.active ? ' checked' : '') + '><i></i></label>';
   // a template's state in the given cities only (a lead offer's cities, a reminder flow's city)
@@ -248,15 +250,15 @@
     const tpls = wa.templates || [];
     const byId = new Map(tpls.map((t) => [t.id, t]));
     const rows = leadRows(tpls);
-    const missing = rows.filter((r) => !r.t || !r.w).length;
-    const stale = rows.filter((r) => r.t && r.w && !r.fresh).length;
+    const missing = rows.filter((r) => !r.t).length;
+    const stale = rows.filter((r) => r.t && !r.fresh && (r.on || r.w || !r.good)).length;
     const numbers = Object.keys(wa.numbers || {}).some((c) => wa.numbers[c].connected);
     const reminders = remindFlows();
     box.innerHTML = '<div class="au-msgs">' +
       '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('userPlus') + '</span><div><b>Lead nou</b><small>cu poza ofertei, de pe numărul orașului</small></div>' +
         (numbers ? '<button type="button" class="k-btn ' + (missing || stale ? 'is-primary' : 'is-ghost') + ' is-sm" data-leadmsg-go>' + icon(missing || stale ? 'plus' : 'refresh') + (missing ? (rows.length === missing ? 'Creează mesajele' : 'Creează ce lipsește') : stale ? 'Actualizează mesajele' : 'Verifică din nou') + '</button>' : '') + '</header>' +
         (numbers ? '' : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
-        (rows.length ? rows.map((r) => '<div class="au-msg-row">' + (r.w ? flowSwitch(r.w) : '<span class="au-msg-gap"></span>') +
+        (rows.length ? rows.map((r) => '<div class="au-msg-row">' + (r.t ? '<label class="k-switch ad-sw" title="' + (r.on ? 'Pornit, apasă ca să-l oprești' : 'Oprit, apasă ca să-l pornești') + '"><input type="checkbox" data-leadsw="' + esc(r.t.id) + '" data-key="' + esc(r.o.key) + '"' + (r.on ? ' checked' : '') + '><i></i></label>' : '<span class="au-msg-gap"></span>') +
           '<span class="au-msg-name"><b>' + esc(r.o.title) + '</b><small>' + esc(leadCities(r.o).join(' · ')) + '</small></span>' +
           '<span class="au-msg-tags">' + (r.t ? cityState(r.t, leadCities(r.o)) : '<span class="k-tag">Lipsește</span>') + '</span>' +
           (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
@@ -288,18 +290,21 @@
             let label = LEAD_TPL(r.o), v = 1;
             while (labels.has(label)) label = LEAD_TPL(r.o) + ' · v' + (++v);
             wa = await window.C360Wa.post({ action: 'tpl_save', submit: true, cities: leadCities(r.o),
-              template: { label, category: 'MARKETING', headerType: 'IMAGE', body: leadText(r.o), footer: '', buttons: LEAD_BTNS, sample } });
+              template: { label, category: 'MARKETING', headerType: 'IMAGE', body: leadText(r.o), footer: '', buttons: LEAD_BTNS, sample, leadOffers: [] } });
             if (wa.submitError) errs.push(r.o.title + ': ' + wa.submitError);
             t = (wa.templates || []).find((x) => x.id === wa.savedId);
             made++;
           }
           if (!t) continue;
-          // the flow keeps its switch; a new one starts on (its message waits for Meta anyway)
-          S.d = await K.api('/api/portal-workflows', { action: 'save', workflow: {
-            id: r.w ? r.w.id : undefined, name: LEAD_WF(r.o), note: 'Mesajul de bun venit cu poza ofertei, de pe numărul orașului.', active: r.w ? !!r.w.active : true, folder: intakeId(),
-            trigger: { type: 'lead_created', source: 'facebook', location: leadWhere(r.o), interest: r.o.title, returning: false },
-            steps: [{ type: 'whatsapp', templateId: t.id, from: 'auto' }],
-          } });
+          // this one goes for the offer (it stays off if it was switched off), no other version, no old flow
+          const keep = r.w ? (!!r.w.active || r.on) : (r.t ? r.on : true);
+          for (const x of (wa.templates || []).filter((y) => y.id !== t.id && (y.leadOffers || []).includes(r.o.key))) {
+            wa = await window.C360Wa.post({ action: 'tpl_lead', id: x.id, leadOffers: x.leadOffers.filter((k) => k !== r.o.key) });
+          }
+          const cur = new Set(((wa.templates || []).find((y) => y.id === t.id) || t).leadOffers || []);
+          if (keep) cur.add(r.o.key); else cur.delete(r.o.key);
+          wa = await window.C360Wa.post({ action: 'tpl_lead', id: t.id, leadOffers: [...cur] });
+          if (r.w) S.d = await K.api('/api/portal-workflows', { action: 'delete', id: r.w.id });
         }
         K.ui().toast(errs.length ? errs.join(' · ') : made ? 'Gata: ' + K.plural(made, 'mesaj trimis', 'mesaje trimise') + ' la aprobare. Pornesc singure când Meta le aprobă.' : 'Toate ofertele au mesajul lor.', errs.length ? 'error' : 'success');
       } catch (err) { fail(err); }
@@ -433,6 +438,15 @@
     if (t.dataset.h) { S.h[t.dataset.h] = t.value; return paintLog(); }
     if (t.matches('[data-pick]')) { if (t.checked) S.sel.add(t.dataset.pick); else S.sel.delete(t.dataset.pick); t.closest('.ad-camp').classList.toggle('is-picked', t.checked); syncPickAll(); paintBulk(); return paintStats(); }
     if (t.matches('[data-pick-all]')) { visible().forEach((w) => { if (t.checked) S.sel.add(w.id); else S.sel.delete(w.id); }); paintFlows(); return paintStats(); }
+    if (t.dataset.leadsw) {
+      const on = t.checked, key = t.dataset.key;
+      const tpl = ((window.C360Wa.d || {}).templates || []).find((x) => x.id === t.dataset.leadsw);
+      if (!tpl) return;
+      const s = new Set(tpl.leadOffers || []); if (on) s.add(key); else s.delete(key);
+      try { await window.C360Wa.post({ action: 'tpl_lead', id: tpl.id, leadOffers: [...s] }); K.ui().toast(on ? 'Pornit: leadurile noi îl primesc.' : 'Oprit.', 'success'); paintMsgs(); }
+      catch (err) { t.checked = !on; K.ui().toast(K.errText(err), 'error'); }
+      return;
+    }
     if (t.dataset.toggle) {
       const on = t.checked;
       try { await post({ action: 'toggle', id: t.dataset.toggle, active: on }); K.ui().toast(on ? 'Pornită.' : 'Oprită.', 'success'); }
