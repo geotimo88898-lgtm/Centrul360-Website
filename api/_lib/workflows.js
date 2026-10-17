@@ -611,12 +611,20 @@ async function runOne(run, wf, settings, counters) {
   // runs saved before branches existed kept an index into the list of steps
   if (run.at === undefined) run.at = !run.step ? '^' : ((wf.steps[run.step] || {}).id || '$');
   // the clock came late (no portal open and the scheduler delayed): a message meant for a moment before the appointment
-  // that is more than 45 minutes late is not sent (a "see you tomorrow" on the day itself)
+  // still goes while it is still right: a "mâine" one (12h or more before) while it is still the day before, a
+  // "peste ~2 ore" one while there is still half an hour to go; otherwise it is skipped
   const late = run.dueWas ? Date.now() - Date.parse(run.dueWas) : 0;
   delete run.dueWas;
   if (run.waitId && late > 45 * 60e3) {
     const w = flat(wf.steps).find((x) => x.id === run.waitId);
-    if (w && w.type === 'wait' && w.mode === 'before') { run.skipNext = true; log('Ora (' + waitText(w) + ') a trecut de ' + Math.round(late / 60e3) + ' min, mesajul următor e sărit'); }
+    if (w && w.type === 'wait' && w.mode === 'before') {
+      const start = apptStart(ctx.appointment);
+      const hours = (Number(w.amount) || 0) * (unitMs[w.unit] || unitMs.h) / 3600e3;
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+      const still = Number.isFinite(start) && (hours >= 12 ? today < String((ctx.appointment || {}).date || '') : Date.now() < start - 30 * 60e3);
+      if (still) log('Vine cu ' + Math.round(late / 60e3) + ' min întârziere, dar mesajul e încă potrivit');
+      else { run.skipNext = true; log('Ora (' + waitText(w) + ') a trecut de ' + Math.round(late / 60e3) + ' min, mesajul următor e sărit'); }
+    }
   }
   // "Lead necontactat": only fires if nobody has reached the lead in the meantime.
   if (run.at === '^' && wf.trigger.type === 'lead_idle' && stopHit('contacted', ctx)) { run.status = 'done'; log('Leadul a fost contactat între timp'); return; }
