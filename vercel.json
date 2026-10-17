@@ -196,6 +196,9 @@
     },
     "api/offers-kpi.js": {
       "maxDuration": 60
+    },
+    "api/portal-integrations.js": {
+      "maxDuration": 60
     }
   }
 }

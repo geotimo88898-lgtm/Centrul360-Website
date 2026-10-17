@@ -9,6 +9,8 @@
 //   POST { action: 'fb_form_create', form }      a new lead form on the Page (_lib/fb-form-create.js)
 //   POST { action: 'fb_form_template', refresh } what new forms copy (ending, WhatsApp per city…), read again from Meta on refresh
 //   POST { action: 'fb_form_template_save', template }   "Setări formulare"
+//   POST { action: 'fb_forms_renumber_plan' }    "Numere noi la final": the active forms, the number at their end now and the new one
+//   POST { action: 'fb_form_copy', id }          one form copied with the city's new number at the end (_lib/fb-form-copy.js)
 
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -17,6 +19,7 @@ const { loadOffers } = require('./_lib/offers');
 const { loadConnection, fetchFormInfo } = require('./_lib/facebook');
 const { createForm } = require('./_lib/fb-form-create');
 const { getTemplate, saveTemplate } = require('./_lib/fb-form-template');
+const FC = require('./_lib/fb-form-copy');
 
 const FORMS_KEY = 'data/fb-forms.json';
 const LOCATIONS = ['Timișoara', 'Arad'];
@@ -63,6 +66,13 @@ module.exports = async (req, res) => {
       const r = await saveTemplate({ readJSON, writeJSON }, body.template);
       if (r.error) { res.status(400).json({ error: 'invalid', message: r.error }); return; }
       res.status(200).json({ ok: true, template: r.template });
+      return;
+    }
+    if (body.action === 'fb_forms_renumber_plan') { res.status(200).json(Object.assign({ ok: true }, await FC.plan({ readJSON, writeJSON }))); return; }
+    if (body.action === 'fb_form_copy') {
+      const r = await FC.copyOne({ readJSON, writeJSON }, String(body.id || ''), body.numbers);
+      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      res.status(200).json({ ok: true, copy: r });
       return;
     }
     // a new form has no id yet

@@ -51,6 +51,7 @@
         '<div class="k-chips">' + [['active', 'Active', active], ['leads', 'Cu leaduri în portal', withLeads], ['archived', 'Arhivate', all.length - active], ['all', 'Toate', all.length]]
           .map(([k, l, n]) => '<button type="button" class="k-chip' + (F.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + n + '</span></button>').join('') + '</div>' +
         '<button type="button" class="k-btn is-outline fm-new" data-act="settings">' + icon('sliders') + 'Setări formulare</button>' +
+        '<button type="button" class="k-btn is-outline fm-new" data-act="renumber">' + icon('phone') + 'Numere noi la final</button>' +
         '<button type="button" class="k-btn is-accent fm-new" data-act="new">' + icon('plus') + 'Formular nou</button>' +
         '<button type="button" class="k-icon-btn fm-reload" data-act="reload" title="Actualizează">' + icon('refresh') + '</button></div>' +
       '<div class="fm-list" data-list></div>';
@@ -89,6 +90,7 @@
     if (t.closest('[data-act="reload"]')) return load();
     if (t.closest('[data-act="new"]')) return openCreate();
     if (t.closest('[data-act="settings"]')) return openSettings();
+    if (t.closest('[data-act="renumber"]')) return openRenumber();
     if (t.closest('[data-act="integrari"]')) return K.emit('integrari:int');
     const sh = t.closest('[data-show]');
     if (sh) { F.show = sh.dataset.show; F.limit = 40; return render(); }
@@ -297,5 +299,52 @@
     });
   }
 
-  window.C360Forms = { mount, load, isMounted: () => !!panel, create: openCreate, settings: openSettings };
+  // "Numere noi la final": every active form copied as it is, with the city's new number at the end (a published form
+  // can't change). One form at a time, each row says how it went; the copies keep the procedure and the city.
+  async function openRenumber() {
+    let p;
+    try { p = await K.api('/api/portal-integrations', { action: 'fb_forms_renumber_plan' }); } catch (err) { return errMsg(err); }
+    const st = { nums: { 'Timișoara': p.numbers['Timișoara'] || '', Arad: p.numbers.Arad || '' }, done: {}, running: false };
+    const go = () => p.forms.filter((f) => f.city && !st.done[f.id]);
+    const row = (f) => {
+      const d = st.done[f.id];
+      const num = st.nums[f.city] || '';
+      return '<div class="fm-rn' + (d ? (d.ok ? ' is-ok' : ' is-bad') : '') + '"><span class="fm-rn-ic">' + icon(d ? (d.ok ? 'checkCircle' : 'alert') : 'file') + '</span>' +
+        '<div class="fm-rn-t"><b>' + esc(f.name) + '</b><small>' + (f.city ? esc(f.city) : '<span class="is-bad">fără oraș</span>') + (f.leads ? ' · ' + K.plural(f.leads, 'lead', 'leaduri') : '') + '</small>' +
+        (d ? '<small>' + (d.ok ? 'Creat: „' + esc(d.name) + '”' : esc(d.error)) + '</small>'
+          : f.city ? '<small>La final acum: <b>' + esc(f.oldPretty || '-') + '</b> → nou: <b>' + esc(num || '-') + '</b></small>' : '<small>' + esc(f.why || 'alege-i orașul în listă') + '</small>') + '</div></div>';
+    };
+    const body = () => '<div class="k-form">' +
+      K.field('Numărul nou · Timișoara', '<input data-rn="Timișoara" value="' + esc(st.nums['Timișoara']) + '" inputmode="tel" placeholder="+40 7xx xxx xxx">') +
+      K.field('Numărul nou · Arad', '<input data-rn="Arad" value="' + esc(st.nums.Arad) + '" inputmode="tel" placeholder="+40 7xx xxx xxx">') +
+      '</div><div class="fm-rn-list">' + (p.forms.length ? p.forms.map(row).join('') : K.empty('file', 'Niciun formular activ', '')) + '</div>';
+    const d = K.drawer({
+      title: 'Numere noi la final', icon: 'phone', width: 620,
+      subtitle: 'Fiecare formular activ e copiat la fel, doar cu numărul orașului la final.',
+      body: '<div data-rnbody>' + body() + '</div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn is-accent" data-rngo>' + icon('check') + 'Creează ' + K.plural(go().length, 'formular nou', 'formulare noi') + '</button>',
+      onMount(el) {
+        el.addEventListener('input', (e) => { const f = e.target; if (f.dataset.rn) st.nums[f.dataset.rn] = f.value; });
+        el.addEventListener('change', (e) => { if (e.target.dataset.rn) el.querySelector('[data-rnbody]').innerHTML = body(); });
+        const btn = el.querySelector('[data-rngo]');
+        btn.addEventListener('click', () => K.busy(btn, async () => {
+          if (st.running) return;
+          st.running = true;
+          let ok = 0, bad = 0;
+          for (const f of go()) {
+            try {
+              const r = await K.api('/api/portal-integrations', { action: 'fb_form_copy', id: f.id, numbers: st.nums });
+              st.done[f.id] = { ok: true, name: r.copy.name }; ok++;
+            } catch (err) { st.done[f.id] = { ok: false, error: (err.data && err.data.message) || K.errText(err) }; bad++; }
+            el.querySelector('[data-rnbody]').innerHTML = body();
+          }
+          st.running = false;
+          K.ui().toast(ok ? K.plural(ok, 'formular nou creat', 'formulare noi create') + (bad ? ', ' + bad + ' cu probleme' : '') + '. Pune-le pe reclame în Ads Manager.' : 'Niciun formular creat.', bad ? 'error' : 'success');
+          load();
+        }).then(() => { btn.innerHTML = icon('check') + 'Creează ' + K.plural(go().length, 'formular nou', 'formulare noi'); btn.disabled = !go().length; }));
+      },
+    });
+  }
+
+  window.C360Forms = { mount, load, isMounted: () => !!panel, create: openCreate, settings: openSettings, renumber: openRenumber };
 })();

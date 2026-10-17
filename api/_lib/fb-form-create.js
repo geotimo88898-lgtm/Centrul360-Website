@@ -87,11 +87,8 @@ async function pageTokenFromAds(conn) {
   } catch (e) { return ''; }
 }
 
-// Makes the form and puts it in the portal's list. { form } or { error } (in words).
-async function createForm(store, input, deps) {
-  const template = await T.getTemplate(store);
-  const c = clean(input, template);
-  if (c.error) return { error: c.error };
+// A form on the Page from Meta's parameters: { id } or { error } (in words).
+async function postForm(store, params, deps) {
   const conn = await loadConnection(store.readJSON);
   if (!conn.pageId) return { error: 'Facebook nu e conectat (Integrări → Facebook).' };
   const send = (deps && deps.post) || post;
@@ -101,18 +98,26 @@ async function createForm(store, input, deps) {
     const token = k === 0 ? conn.pageAccessToken : await pageTokenFromAds(conn);
     if (!token || (k === 1 && tokens.includes(token))) continue;
     tokens.push(token);
-    r = await send(conn.pageId, token, c.params);
+    r = await send(conn.pageId, token, params);
     // a language Meta doesn't take for forms: the same form without it
-    if (r.error && /locale/i.test(r.error)) { const p = Object.assign({}, c.params); delete p.locale; r = await send(conn.pageId, token, p); }
+    if (r.error && /locale/i.test(r.error)) { const p = Object.assign({}, params); delete p.locale; r = await send(conn.pageId, token, p); }
     // only a permission problem is worth the other token; a wrong field stays wrong
     if (r.id || ![10, 200, 190, 3].includes(Number(r.code))) break;
   }
-  if (!r.id) {
-    const perm = [10, 200, 190].includes(Number(r.code)) || /permission|permis/i.test(r.error);
-    return { error: perm
-      ? 'Meta nu ne lasă să creăm formulare pe Pagină: conexiunea are nevoie de permisiunea pages_manage_ads. Reconectează Facebook în Integrări (sau dă-i utilizatorului de sistem Pagina cu drept de reclame).'
-      : 'Meta: ' + r.error };
-  }
+  if (r.id) return { id: r.id };
+  const perm = [10, 200, 190].includes(Number(r.code)) || /permission|permis/i.test(r.error);
+  return { error: perm
+    ? 'Meta nu ne lasă să creăm formulare pe Pagină: conexiunea are nevoie de permisiunea pages_manage_ads. Reconectează Facebook în Integrări (sau dă-i utilizatorului de sistem Pagina cu drept de reclame).'
+    : 'Meta: ' + r.error };
+}
+
+// Makes the form and puts it in the portal's list. { form } or { error } (in words).
+async function createForm(store, input, deps) {
+  const template = await T.getTemplate(store);
+  const c = clean(input, template);
+  if (c.error) return { error: c.error };
+  const r = await postForm(store, c.params, deps);
+  if (r.error) return { error: r.error };
   const now = new Date().toISOString();
   const [doc, poll] = await Promise.all([store.readJSON(FORMS_KEY, {}), store.readJSON(POLL_KEY, {})]);
   doc.forms = doc.forms || {};
@@ -123,4 +128,4 @@ async function createForm(store, input, deps) {
   return { form: { id: r.id, name: c.params.name, location: c.reg.location, offerId: c.reg.offerId, whatsapp: c.reg.whatsapp } };
 }
 
-module.exports = { createForm, clean, SCREENING };
+module.exports = { createForm, postForm, clean, SCREENING };

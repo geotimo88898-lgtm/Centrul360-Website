@@ -155,4 +155,4 @@ function endingFor(t, city, over) {
   return { page, number: num };
 }
 
-module.exports = { getTemplate, saveTemplate, endingFor, phoneOf, pretty, STANDARD, LOCATIONS };
+module.exports = { getTemplate, saveTemplate, endingFor, phoneOf, pretty, readForm, waNumbers, STANDARD, LOCATIONS };
