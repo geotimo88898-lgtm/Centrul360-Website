@@ -25,9 +25,9 @@ function variants(d) {
   const sp = (s, parts) => { let i = 0; return parts.map((n) => { const x = s.slice(i, i + n); i += n; return x; }).join(' '); };
   return [...new Set(['+' + d, d, local, '+' + sp(d, [2, 3, 3, 3]), sp(local, [4, 3, 3]), sp(local, [4, 2, 2, 2])])].sort((a, b) => b.length - a.length);
 }
-// an old number in a text → the new one, in the same style
+// an old number in a text → the new one, in the same style (and no long dash: a comma, the owner's rule)
 function swapIn(text, oldD, newD) {
-  let out = String(text || '');
+  let out = require('./dedash').dedash(String(text || ''));
   if (!oldD || !newD || oldD === newD) return out;
   const o = variants(oldD), n = variants(newD);
   o.forEach((v, i) => { out = out.split(v).join(n[i] || '+' + newD); });
