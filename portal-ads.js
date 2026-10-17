@@ -205,7 +205,7 @@
         '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie sau o reclamă…" value="' + esc(A.q) + '"></label>' +
         '<div class="k-chips"><button type="button" class="k-chip' + (A.show === 'active' ? ' is-on' : '') + '" data-show="active">Pornite<span>' + active + '</span></button><button type="button" class="k-chip' + (A.show === 'all' ? ' is-on' : '') + '" data-show="all">Toate<span>' + d.campaigns.length + '</span></button></div>' +
         '<button type="button" class="k-btn is-outline is-sm" data-act="customize" title="Coloane și KPI">' + icon('sliders') + '<span class="ad-sm-hide">Coloane și KPI</span></button>' +
-        '<button type="button" class="k-icon-btn" data-act="refresh" title="Actualizează" aria-label="Actualizează">' + icon('refresh') + '</button>' +
+        '<button type="button" class="k-icon-btn ad-refresh' + (A.loading ? ' is-spinning' : '') + '" data-act="refresh" title="Actualizează" aria-label="Actualizează">' + icon('refresh') + '</button>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div data-stats></div>' +
       (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
@@ -655,7 +655,15 @@
   async function onClick(e) {
     const t = e.target;
     if (t.closest('[data-pick-clear]')) { A.sel.clear(); paintList(); return paintStats(); }
-    if (t.closest('[data-act="refresh"]')) { A.cache.delete(qsOf()); return load(); }
+    const rf = t.closest('[data-act="refresh"]');
+    if (rf) {
+      // the icon turns while the numbers come (at least one full turn, so a fast answer still shows it)
+      if (rf.classList.contains('is-spinning')) return;
+      rf.classList.add('is-spinning');
+      A.cache.delete(qsOf());
+      const min = new Promise((r) => setTimeout(r, 700));
+      return Promise.all([load(true), min]).finally(() => { panel.querySelectorAll('[data-act="refresh"]').forEach((b) => b.classList.remove('is-spinning')); });
+    }
     if (t.closest('[data-act="reload"]')) { panel.querySelector('[data-body]').innerHTML = '<div class="k-skel" style="height:360px"></div>'; return load(); }
     if (t.closest('[data-act="defaults"]')) return openDefaults();
     if (t.closest('[data-act="customize"]')) return customizeAds();

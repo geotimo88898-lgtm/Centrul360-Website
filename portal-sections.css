@@ -2283,3 +2283,6 @@ main.ad-full{ max-width:none; }
 .fm-cur{ font-style:normal; font-size:.68rem; font-weight:700; padding:.08rem .45rem; border-radius:99px; background:var(--good-soft); color:var(--good); margin-left:.35rem; white-space:nowrap; }
 .of-forms{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.6rem; }
 @media (max-width:640px){ .of-forms{ grid-template-columns:minmax(0, 1fr); } }
+.ad-refresh.is-spinning .k-ic{ animation:k-spin .7s linear infinite; }
+.ad-refresh.is-spinning{ color:var(--accent); pointer-events:none; }
+@media (prefers-reduced-motion: reduce){ .ad-refresh.is-spinning .k-ic{ animation-duration:1.6s; } }
