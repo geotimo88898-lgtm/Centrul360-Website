@@ -16,20 +16,46 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
 const ads = require('./_lib/meta-ads');
-const { funnel } = require('./_lib/ads-funnel');
+const { funnel, periodRange, bucharestDay } = require('./_lib/ads-funnel');
+const KPI = require('./_lib/kpi');
 const edit = require('./_lib/ads-edit');
 
-// after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad
-async function withFunnel(view, period, range) {
-  const [leads, appointments, sales, stages] = await Promise.all([
+// after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad. From 16.10.2026, 22:05
+// on (the owner's call: what came before was brought over from HighLevel): only the leads from then on, the bookings
+// made in the portal from then on (not imported), their payments; and "spendNew", what the ads spent in the same days,
+// so the cost per booking / visit / client compares like with like.
+async function withFunnel(view, period, range, conn) {
+  const [allLeads, allAppts, allSales, stages] = await Promise.all([
     readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/pipeline-stages.json', null),
   ]);
+  const START = KPI.cfg.start;
+  const at = (x) => Date.parse(x) || 0;
+  const leads = allLeads.filter((l) => at(l.createdAt) >= START || (l.activities || []).some((a) => a.type === 'returned' && at(a.at) >= START));
+  const appointments = allAppts.filter((a) => at(a.createdAt) >= START && a.createdBy !== 'highlevel' && !a.importedAt && !a.ghlId);
+  const fresh = new Set(appointments.map((a) => a.id));
+  const sales = allSales.filter((s) => (s.appointmentId ? fresh.has(s.appointmentId) : at(s.createdAt || s.date) >= START));
   const flat = [];
   view.campaigns.forEach((c) => c.adsets.forEach((s) => s.ads.forEach((a) => flat.push({ id: a.id, name: a.name, adsetId: s.id, campaignId: c.id, campaignName: c.name }))));
   const f = funnel({ leads, appointments, sales, stages: Array.isArray(stages) && stages.length ? stages : DEFAULT_STAGES, ads: flat, period, range });
   const put = (x, m) => Object.assign(x, { pLeads: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }, renameLeads(m.get(x.id)));
   view.campaigns.forEach((c) => { put(c, f.campaigns); c.adsets.forEach((s) => { put(s, f.adsets); s.ads.forEach((a) => put(a, f.ads)); }); });
   view.unmatched = renameLeads(f.unmatched);
+  // the spend of the same days (the period, from START's day on), per ad, added up per ad set and campaign
+  const today = bucharestDay(Date.now()), first = bucharestDay(START);
+  const r0 = periodRange(period, range) || { since: first, until: today };
+  const days = { since: r0.since < first ? first : r0.since, until: r0.until };
+  const perAd = new Map(), perSet = new Map(), perCamp = new Map();
+  if (days.since <= days.until && conn) {
+    const st = await KPI.adsFor(conn, days);
+    (st.rows || []).forEach((x) => {
+      perAd.set(x.adId, (perAd.get(x.adId) || 0) + x.spend);
+      if (x.adsetId) perSet.set(x.adsetId, (perSet.get(x.adsetId) || 0) + x.spend);
+      if (x.campaignId) perCamp.set(x.campaignId, (perCamp.get(x.campaignId) || 0) + x.spend);
+    });
+  }
+  const r2 = (n) => Math.round(n * 100) / 100;
+  view.campaigns.forEach((c) => { c.spendNew = r2(perCamp.get(c.id) || 0); c.adsets.forEach((s) => { s.spendNew = r2(perSet.get(s.id) || 0); s.ads.forEach((a) => { a.spendNew = r2(perAd.get(a.id) || 0); }); }); });
+  view.since = new Date(START).toISOString();
   return view;
 }
 const renameLeads = (x) => { if (!x) return {}; const o = Object.assign({}, x); o.pLeads = o.leads; delete o.leads; return o; };
@@ -95,7 +121,7 @@ module.exports = async (req, res) => {
       }
       // without ads_management the page only reads (the switches would be refused)
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
-      await withFunnel(view, period, range).catch((e) => { console.error('ads-manager funnel:', e.message); });
+      await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
       res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId) }, view));
       return;
     }

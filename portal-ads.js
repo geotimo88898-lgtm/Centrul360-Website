@@ -10,7 +10,7 @@
   const { esc, icon } = K;
   // sel: the campaigns picked (the numbers on top are theirs; none picked = the whole account)
   // range: { since, until } when "Personalizat" is chosen
-  const A = { d: null, period: '7d', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false, cache: new Map(), seq: 0 };
+  const A = { d: null, period: 'today', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false, cache: new Map(), seq: 0 };
   let panel;
 
   const PERIODS = [['today', 'Azi'], ['yesterday', 'Ieri'], ['7d', '7 zile'], ['30d', '30 zile'], ['max', 'Tot']];
@@ -109,20 +109,20 @@
     budget: { label: 'Buget / zi', group: 'Bani', only: ['cols'] },
     spend: { label: 'Cheltuit', group: 'Bani', fmt: 'money', val: (x) => x.spend },
     revenue: { label: 'Încasări', group: 'Bani', fmt: 'money', val: (x) => x.revenue, hint: 'Ce au plătit clientele venite din reclamă' },
-    profit: { label: 'Încasări minus cheltuit', group: 'Bani', fmt: 'money', val: (x) => x.revenue - x.spend },
-    roas: { label: 'ROAS', group: 'Bani', fmt: 'x', val: (x) => per(x.revenue, x.spend), hint: 'Câți lei încasați pe 1 leu cheltuit' },
+    profit: { label: 'Încasări minus cheltuit', group: 'Bani', fmt: 'money', val: (x) => x.revenue - sNew(x) },
+    roas: { label: 'ROAS', group: 'Bani', fmt: 'x', val: (x) => per(x.revenue, sNew(x)), hint: 'Câți lei încasați pe 1 leu cheltuit (de pe 16 oct)' },
     upsellValue: { label: 'Valoare upsell', group: 'Bani', fmt: 'money', val: (x) => x.upsellValue },
     leads: { label: 'Leaduri', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.leads, hint: 'Cum le numără Meta' },
     cpl: { label: 'Cost / lead', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spend, x.leads) },
     pLeads: { label: 'Leaduri în portal', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.pLeads, hint: 'Leadurile intrate în Pipeline din reclamă' },
     booked: { label: 'Programări', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.booked },
-    costBooked: { label: 'Cost / programare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spend, x.booked) },
+    costBooked: { label: 'Cost / programare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.booked), hint: 'Cheltuiala de pe 16 oct încoace / programările de atunci' },
     showed: { label: 'Prezentări', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.showed, hint: 'Au venit la programare' },
-    costShowed: { label: 'Cost / prezentare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spend, x.showed) },
+    costShowed: { label: 'Cost / prezentare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.showed), hint: 'Cheltuiala de pe 16 oct încoace / prezentările de atunci' },
     clients: { label: 'Clienți', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.clients, hint: 'Au plătit cel puțin o dată' },
-    costClient: { label: 'Cost / client', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spend, x.clients) },
+    costClient: { label: 'Cost / client', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.clients) },
     upsells: { label: 'Upselluri', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.upsells },
-    costUpsell: { label: 'Cost / upsell', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spend, x.upsells) },
+    costUpsell: { label: 'Cost / upsell', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.upsells) },
     rateBooked: { label: '% programate', group: 'Rate', fmt: 'pct', val: (x) => per(x.booked, x.pLeads), hint: 'Din leadurile din portal' },
     rateShowed: { label: '% prezentate', group: 'Rate', fmt: 'pct', val: (x) => per(x.showed, x.booked), hint: 'Din programări' },
     rateClient: { label: '% clienți', group: 'Rate', fmt: 'pct', val: (x) => per(x.clients, x.pLeads), hint: 'Din leadurile din portal' },
@@ -141,7 +141,9 @@
   const GROUPS = ['Bani', 'Leaduri și programări', 'Rate', 'Meta'];
   const DEF_COLS = ['budget', 'spend', 'leads', 'cpl', 'booked', 'costBooked', 'showed', 'costShowed', 'revenue', 'roas'];
   const DEF_CARDS = ['spend', 'leads', 'cpl', 'booked', 'costBooked', 'showed', 'costShowed', 'revenue'];
-  const SUMS = ['spend', 'leads', 'impressions', 'reach', 'clicks', 'linkClicks', 'pLeads', 'booked', 'showed', 'clients', 'revenue', 'upsells', 'upsellValue'];
+  const SUMS = ['spend', 'spendNew', 'leads', 'impressions', 'reach', 'clicks', 'linkClicks', 'pLeads', 'booked', 'showed', 'clients', 'revenue', 'upsells', 'upsellValue'];
+  // what the ads spent in the days our own data counts (from 16.10.2026, 22:05): the costs after the form use it
+  const sNew = (x) => (x.spendNew != null ? x.spendNew : x.spend);
   // a card's icon: by what it counts
   const iconOf = (id) => {
     const m = M[id];
@@ -203,6 +205,7 @@
         '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie sau o reclamă…" value="' + esc(A.q) + '"></label>' +
         '<div class="k-chips"><button type="button" class="k-chip' + (A.show === 'active' ? ' is-on' : '') + '" data-show="active">Pornite<span>' + active + '</span></button><button type="button" class="k-chip' + (A.show === 'all' ? ' is-on' : '') + '" data-show="all">Toate<span>' + d.campaigns.length + '</span></button></div>' +
         '<button type="button" class="k-btn is-outline is-sm" data-act="customize" title="Coloane și KPI">' + icon('sliders') + '<span class="ad-sm-hide">Coloane și KPI</span></button>' +
+        '<button type="button" class="k-icon-btn" data-act="refresh" title="Actualizează" aria-label="Actualizează">' + icon('refresh') + '</button>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div data-stats></div>' +
       (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
@@ -230,6 +233,7 @@
       (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
       '<div class="ad-hero">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
       '<div class="ad-stats">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id)).join('') + '</div>' +
+      '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' +
       (un ? '<p class="k-muted ad-partial">' + K.plural(un, 'lead din reclame care nu mai sunt în listă nu intră', 'leaduri din reclame care nu mai sunt în listă nu intră') + ' în cifre.</p>' : '');
     syncPickAll();
   }
@@ -651,6 +655,7 @@
   async function onClick(e) {
     const t = e.target;
     if (t.closest('[data-pick-clear]')) { A.sel.clear(); paintList(); return paintStats(); }
+    if (t.closest('[data-act="refresh"]')) { A.cache.delete(qsOf()); return load(); }
     if (t.closest('[data-act="reload"]')) { panel.querySelector('[data-body]').innerHTML = '<div class="k-skel" style="height:360px"></div>'; return load(); }
     if (t.closest('[data-act="defaults"]')) return openDefaults();
     if (t.closest('[data-act="customize"]')) return customizeAds();

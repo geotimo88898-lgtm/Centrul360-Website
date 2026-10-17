@@ -406,7 +406,7 @@ async function adStats(conn, range) {
   const every = JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: LIVE.concat(['ARCHIVED', 'DELETED']) }]);
   const act = '/' + conn.adAccountId, tok = conn.userToken;
   const [ins, ads, daily] = await Promise.all([
-    all(act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,ad_name,adset_name,campaign_id,campaign_name,' + RESULTS, limit: '500', filtering: every }, when), 20),
+    all(act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,' + RESULTS, limit: '500', filtering: every }, when), 20),
     all(act + '/ads', tok, { fields: 'id,effective_status,creative{thumbnail_url,image_url}', limit: '200', effective_status: JSON.stringify(LIVE) }, 3),
     all(act + '/insights', tok, Object.assign({ level: 'account', fields: 'spend', time_increment: '1', limit: '120' }, when), 2),
   ]);
@@ -415,7 +415,7 @@ async function adStats(conn, range) {
   return {
     rows: ins.data.map((x) => {
       const a = meta.get(String(x.ad_id)) || {};
-      return { adId: String(x.ad_id || ''), adName: x.ad_name || '', adsetName: x.adset_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '',
+      return { adId: String(x.ad_id || ''), adName: x.ad_name || '', adsetId: String(x.adset_id || ''), adsetName: x.adset_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '',
         spend: Number(x.spend) || 0, impressions: Number(x.impressions) || 0, reach: Number(x.reach) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x),
         status: a.effective_status || 'ARCHIVED', thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '' };
     }),
