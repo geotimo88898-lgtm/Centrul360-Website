@@ -9,7 +9,7 @@
 
 const { loadConnection } = require('./facebook');
 const T = require('./fb-form-template');
-const { postForm } = require('./fb-form-create');
+const { postForm, archiveForm } = require('./fb-form-create');
 
 const FORMS_KEY = 'data/fb-forms.json';
 const POLL_KEY = 'data/fb-poll.json';
@@ -68,18 +68,20 @@ async function plan(store, opts) {
     out.push({ id: f.id, name: f.name || r.name || '', city, button: tp.button_type || '', old, oldPretty: T.pretty(old), number: nums[city] || '', pretty: T.pretty(nums[city] || ''),
       ads: ads.length, activeAds: ads.filter((a) => a.status === 'ACTIVE').length,
       leads: f.count || 0, ok: !!(j && j.thank_you_page && city && nums[city]),
+      intro: j && j.context_card ? [j.context_card.title].concat(j.context_card.content || []).filter(Boolean).join(' / ') : '', ending: [tp.title, tp.body].filter(Boolean).join(' / '),
+      offerId: r.offerId || '',
       why: !j ? 'nu l-am putut citi de pe Facebook' : !j.thank_you_page ? 'nu i-am putut citi finalul' : !city ? 'alege-i orașul mai jos' : !nums[city] ? 'lipsește numărul de WhatsApp pentru ' + city : '' });
   }
   out.sort((a, b) => b.activeAds - a.activeAds || b.ads - a.ads || b.leads - a.leads);
   return { forms: out, numbers: Object.fromEntries(T.LOCATIONS.map((c) => [c, T.pretty(nums[c] || '')])) };
 }
 
-async function copyOne(store, id, over) {
+async function copyOne(store, id, over, opts) {
   const [doc, nums] = await Promise.all([store.readJSON(FORMS_KEY, {}), numbers(store)]);
   T.LOCATIONS.forEach((c) => { const d = T.phoneOf(over && over[c]); if (d) nums[c] = d; });
   const reg = doc.forms || {};
   const r = reg[id] || {};
-  if (r.replacedBy) return { error: 'are deja copie: ' + ((reg[r.replacedBy] || {}).name || r.replacedBy) };
+  if (r.replacedBy && !(reg[r.replacedBy] || {}).archived) return { error: 'are deja copie: ' + ((reg[r.replacedBy] || {}).name || r.replacedBy) };
   const conn = await loadConnection(store.readJSON);
   if (!conn.pageAccessToken) return { error: 'Facebook nu e conectat (Integrări → Facebook).' };
   const j = await T.readForm(id, conn.pageAccessToken);
@@ -102,7 +104,7 @@ async function copyOne(store, id, over) {
   if (tp.country_code) page.country_code = tp.country_code;
   if (tp.enable_messenger) page.enable_messenger = true;
   const params = {
-    name: (name + SUFFIX).slice(0, 200), questions, locale: String(j.locale || 'RO_RO').toUpperCase(),
+    name: String((opts && opts.name) || name + SUFFIX).replace(/\s+/g, ' ').trim().slice(0, 200), questions, locale: String(j.locale || 'RO_RO').toUpperCase(),
     privacy_policy: { url: j.privacy_policy_url || PRIVACY, link_text: 'Politica de confidențialitate' },
     follow_up_action_url: j.follow_up_action_url || SITE, block_display_for_non_targeted_viewer: true,
     is_optimized_for_quality: !!j.is_optimized_for_quality, thank_you_page: page,
@@ -128,4 +130,19 @@ async function copyOne(store, id, over) {
   return { id: made.id, name: params.name, number: T.pretty(num), old: T.pretty(old), kept: T.pretty(kept), button: (back && back.thank_you_page && back.thank_you_page.button_type) || '' };
 }
 
-module.exports = { plan, copyOne, swapIn, variants, SUFFIX };
+// a form archived on the Page; in the portal: archived, and its original can be copied again
+async function archive(store, id) {
+  const r = await archiveForm(store, id);
+  if (r.error) return r;
+  const doc = await store.readJSON(FORMS_KEY, {});
+  doc.forms = doc.forms || {};
+  const f = doc.forms[id] = doc.forms[id] || {};
+  f.archived = new Date().toISOString();
+  if (f.copyOf && doc.forms[f.copyOf] && doc.forms[f.copyOf].replacedBy === id) delete doc.forms[f.copyOf].replacedBy;
+  const p = await store.readJSON(POLL_KEY, {});
+  (p.forms || []).forEach((x) => { if (x.id === id) x.status = 'ARCHIVED'; });
+  await Promise.all([store.writeJSON(FORMS_KEY, doc), store.writeJSON(POLL_KEY, p)]);
+  return { ok: true };
+}
+
+module.exports = { plan, copyOne, archive, swapIn, variants, SUFFIX };

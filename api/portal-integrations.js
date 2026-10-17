@@ -10,7 +10,8 @@
 //   POST { action: 'fb_form_template', refresh } what new forms copy (ending, WhatsApp per city…), read again from Meta on refresh
 //   POST { action: 'fb_form_template_save', template }   "Setări formulare"
 //   POST { action: 'fb_forms_renumber_plan' }    "Numere noi la final": the active forms, the number at their end now and the new one
-//   POST { action: 'fb_form_copy', id }          one form copied with the city's new number at the end (_lib/fb-form-copy.js)
+//   POST { action: 'fb_form_copy', id, name? }   one form copied with the city's new number at the end (_lib/fb-form-copy.js)
+//   POST { action: 'fb_form_archive', id }       a form archived on the Page
 
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -70,9 +71,15 @@ module.exports = async (req, res) => {
     }
     if (body.action === 'fb_forms_renumber_plan') { res.status(200).json(Object.assign({ ok: true }, await FC.plan({ readJSON, writeJSON }, { all: !!body.all }))); return; }
     if (body.action === 'fb_form_copy') {
-      const r = await FC.copyOne({ readJSON, writeJSON }, String(body.id || ''), body.numbers);
+      const r = await FC.copyOne({ readJSON, writeJSON }, String(body.id || ''), body.numbers, { name: body.name ? String(body.name).slice(0, 200) : '' });
       if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
       res.status(200).json({ ok: true, copy: r });
+      return;
+    }
+    if (body.action === 'fb_form_archive') {
+      const r = await FC.archive({ readJSON, writeJSON }, String(body.id || ''));
+      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      res.status(200).json({ ok: true });
       return;
     }
     // a new form has no id yet

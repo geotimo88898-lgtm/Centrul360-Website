@@ -128,4 +128,19 @@ async function createForm(store, input, deps) {
   return { form: { id: r.id, name: c.params.name, location: c.reg.location, offerId: c.reg.offerId, whatsapp: c.reg.whatsapp } };
 }
 
-module.exports = { createForm, postForm, clean, SCREENING };
+// A form archived on the Page (it stays in Meta's list, the ads can't pick it any more): { ok } or { error }.
+async function archiveForm(store, id, deps) {
+  const conn = await loadConnection(store.readJSON);
+  if (!conn.pageId) return { error: 'Facebook nu e conectat (Integrări → Facebook).' };
+  const send = (deps && deps.fetch) || fetch;
+  let last = 'fără token';
+  for (const token of [conn.pageAccessToken, await pageTokenFromAds(conn)].filter(Boolean)) {
+    const r = await send(GRAPH_BASE + '/' + encodeURIComponent(id), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'ARCHIVED', access_token: token }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && (j.success || j.id)) return { ok: true };
+    last = (j.error && (j.error.error_user_msg || j.error.message)) || 'eroare ' + r.status;
+  }
+  return { error: 'Meta: ' + last };
+}
+
+module.exports = { createForm, postForm, archiveForm, clean, SCREENING };
