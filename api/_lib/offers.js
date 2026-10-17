@@ -51,7 +51,7 @@ const ADDED = [
   },
 ];
 
-const MARKETING_DEFAULTS = { ads: false, locations: ['timisoara', 'arad'], short: '', adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
+const MARKETING_DEFAULTS = { ads: false, locations: ['timisoara', 'arad'], short: '', forms: {}, adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
 
 // Clinic rule: laser hair removal and EMS exist only in Timișoara. Offers that never had their
 // locations set default to that, until the owner picks otherwise in Oferte.
@@ -66,6 +66,7 @@ function withMarketing(o) {
   out.locations = (Array.isArray(o.locations) ? o.locations : []).filter((l) => LOCATIONS.includes(l));
   if (!out.locations.length) out.locations = defaultLocations(o);
   out.objections = Array.isArray(out.objections) ? out.objections : [];
+  out.forms = out.forms && typeof out.forms === 'object' ? out.forms : {};
   out.zones = Array.isArray(out.zones) ? out.zones : [];
   return out;
 }
@@ -87,6 +88,20 @@ async function loadOffers(readJSON, writeJSON) {
   return offers.map(withMarketing);
 }
 
+// The offer's lead form per city: { 'Timișoara': '123…', Arad: '456…' } (Facebook form ids)
+const FORM_CITIES = ['Timișoara', 'Arad'];
+function cleanForms(v) {
+  const out = {};
+  if (v && typeof v === 'object') FORM_CITIES.forEach((c) => { const id = String(v[c] || '').trim(); if (/^\d{5,25}$/.test(id)) out[c] = id; });
+  return out;
+}
+// the forms the offers use now (the active offers'): [{ formId, offerId, offerTitle, city }]
+function offerForms(offers) {
+  const out = [];
+  (offers || []).filter((o) => o.active !== false).forEach((o) => FORM_CITIES.forEach((c) => { const id = (o.forms || {})[c]; if (id) out.push({ formId: id, offerId: o.id, offerTitle: o.title, city: c }); }));
+  return out;
+}
+
 // Cleans the marketing part of an admin edit (site fields are validated by portal-offers.js).
 function cleanMarketing(body) {
   const list = (v, n) => (Array.isArray(v) ? v : String(v || '').split('\n')).map((s) => String(s).trim()).filter(Boolean).slice(0, n || 12).map((s) => s.slice(0, 160));
@@ -94,7 +109,7 @@ function cleanMarketing(body) {
   return {
     ads: !!body.ads,
     locations: list(body.locations, 2).filter((l) => LOCATIONS.includes(l)),
-    short: str(body.short, 40), adName: str(body.adName, 120), mechanic: str(body.mechanic), includes: str(body.includes), device: str(body.device, 160),
+    short: str(body.short, 40), forms: cleanForms(body.forms), adName: str(body.adName, 120), mechanic: str(body.mechanic), includes: str(body.includes), device: str(body.device, 160),
     dreamOutcome: str(body.dreamOutcome), mechanism: str(body.mechanism), objections: list(body.objections), zones: list(body.zones),
     guarantee: str(body.guarantee, 160), notes: str(body.notes, 600),
   };
@@ -124,4 +139,4 @@ function shortName(offers, text) {
   return name + (Number(o.priceNew) > 0 ? ' ' + Math.round(Number(o.priceNew)) : '');
 }
 
-module.exports = { loadOffers, cleanMarketing, withMarketing, discountOf, offerNamed, shortName, SHORT, LOCATIONS, SITE_CATEGORIES };
+module.exports = { loadOffers, cleanMarketing, cleanForms, offerForms, FORM_CITIES, withMarketing, discountOf, offerNamed, shortName, SHORT, LOCATIONS, SITE_CATEGORIES };

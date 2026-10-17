@@ -30,6 +30,7 @@ async function payload() {
     readJSON(FORMS_KEY, {}), loadOffers(readJSON, writeJSON), readJSON('data/fb-poll.json', {}), readJSON('data/leads.json', []),
   ]);
   const reg = doc.forms || {};
+  const cur = new Map(require('./_lib/offers').offerForms(offers).map((x) => [x.formId, x]));
   // leads in the Pipeline per form (from the form saved on each lead)
   const inPortal = {};
   (leads || []).forEach((l) => (l.forms || []).forEach((f) => { if (f.id) inPortal[f.id] = (inPortal[f.id] || 0) + 1; }));
@@ -41,6 +42,7 @@ async function payload() {
       id, name: f.name || r.name || '', status: f.status || '', fbLeads: f.count || 0, created: f.created || '',
       lastAt: f.lastAt ? new Date(f.lastAt * 1000).toISOString() : r.lastAt || '',
       leads: inPortal[id] || 0, offerId: r.offerId || '', location: r.location || '', detected: r.detected || null,
+      current: cur.has(id) ? cur.get(id).offerTitle + ' · ' + cur.get(id).city : '',
       questions: Array.isArray(r.questions) ? r.questions.map((q) => ({ label: q.label || q.key, type: q.type || '', options: (q.options || []).map((o) => o.value) })) : null,
     };
   }).sort((a, b) => (b.lastAt || b.created || '').localeCompare(a.lastAt || a.created || ''));

@@ -122,6 +122,20 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // the offer's lead form in a city (Oferte → Reclame · Creative): '' takes it off
+    if (action === 'set_form') {
+      const { id, city, formId } = req.body || {};
+      const offer = offers.find((o) => o.id === id);
+      if (!offer || !['Timișoara', 'Arad'].includes(city)) { res.status(400).json({ error: 'invalid' }); return; }
+      const f = String(formId || '').trim();
+      if (f && !/^\d{5,25}$/.test(f)) { res.status(400).json({ error: 'invalid' }); return; }
+      offer.forms = Object.assign({}, offer.forms);
+      if (f) offer.forms[city] = f; else delete offer.forms[city];
+      await writeJSON('data/offers.json', offers);
+      res.status(200).json({ ok: true, offer, offers });
+      return;
+    }
+
     if (action === 'reorder') {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {

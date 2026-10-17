@@ -125,6 +125,11 @@ async function createForm(store, input, deps) {
     { questions: c.params.questions.map((q) => ({ key: q.key || q.type.toLowerCase(), label: q.label || '', type: q.type, options: q.options || [] })) });
   poll.forms = [{ id: r.id, name: c.params.name, status: 'ACTIVE', count: 0, created: now, lastAt: 0 }].concat((poll.forms || []).filter((f) => f.id !== r.id));
   await Promise.all([store.writeJSON(FORMS_KEY, doc), store.writeJSON(POLL_KEY, poll)]);
+  if (c.reg.offerId && c.reg.location) {
+    const offers = await store.readJSON('data/offers.json', null);
+    const o = Array.isArray(offers) && offers.find((x) => x.id === c.reg.offerId);
+    if (o) { o.forms = Object.assign({}, o.forms, { [c.reg.location]: r.id }); await store.writeJSON('data/offers.json', offers); }
+  }
   return { form: { id: r.id, name: c.params.name, location: c.reg.location, offerId: c.reg.offerId, whatsapp: c.reg.whatsapp } };
 }
 

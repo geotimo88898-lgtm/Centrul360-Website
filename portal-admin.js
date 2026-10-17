@@ -659,9 +659,28 @@
     } catch (e) { Object.assign(o, before); renderOffers(); K.ui().toast(K.errText(e), 'error'); }
   }
   const siteFields = (o) => ({ title: o.title, description: o.description || '', priceNew: Number(o.priceNew), priceOld: Number(o.priceOld), category: o.category, featured: !!o.featured, imageKey: o.imageKey, active: !!o.active, order: o.order });
+  // the offer's lead form per city (one form per offer and city): the active forms of the Page to pick from
+  let fbForms = null;
+  const FORM_CITY = { timisoara: 'Timișoara', arad: 'Arad' };
+  function offerFormsHtml(o) {
+    if (!o.id) return '';
+    const cities = (o.locations && o.locations.length ? o.locations : ['timisoara', 'arad']).map((l) => FORM_CITY[l]).filter(Boolean);
+    if (!fbForms) return '<span class="k-muted">Se încarcă formularele…</span>';
+    const act = fbForms.filter((f) => !f.status || f.status === 'ACTIVE');
+    return cities.map((c) => {
+      const cur = (o.forms || {})[c] || '';
+      const list = act.filter((f) => f.id === cur || f.current || (f.location || (f.detected || {}).location) === c).sort((a, b) => Number(b.id === cur) - Number(a.id === cur) || Number(!!b.current) - Number(!!a.current));
+      return K.field('Formular Facebook · ' + c, '<select data-oform="' + esc(c) + '">' + K.options([['', 'Niciunul']].concat(list.map((f) => [f.id, f.name + (f.current && f.id !== cur ? ' (al altei oferte)' : '')])), cur) + '</select>');
+    }).join('');
+  }
+  async function loadFbForms(el, o) {
+    try { if (!fbForms) fbForms = (await K.api('/api/portal-integrations')).fbForms || []; } catch (e) { fbForms = []; }
+    const box = el.querySelector('[data-offer-forms]');
+    if (box) box.innerHTML = offerFormsHtml(o);
+  }
   // the short names the notifications use when an offer has none of its own (api/_lib/offers.js SHORT)
   const SHORT_DEF = { 'liposonix-2zone': 'Lipo', 'facial-restart': 'Facial', 'cavitatie-ems': 'Cav Ems', 'cavitatie-1plus1': 'Cav Cav', 'epilare-full-body': 'Laser Full Body' };
-  const marketingFields = (o) => ({ ads: !!o.ads, locations: o.locations, short: o.short || '', adName: o.adName, mechanic: o.mechanic, includes: o.includes, device: o.device, dreamOutcome: o.dreamOutcome, mechanism: o.mechanism, objections: o.objections, zones: o.zones, guarantee: o.guarantee, notes: o.notes });
+  const marketingFields = (o) => ({ ads: !!o.ads, locations: o.locations, short: o.short || '', forms: o.forms || {}, adName: o.adName, mechanic: o.mechanic, includes: o.includes, device: o.device, dreamOutcome: o.dreamOutcome, mechanism: o.mechanism, objections: o.objections, zones: o.zones, guarantee: o.guarantee, notes: o.notes });
 
   function onOfferClick(e) {
     const t = e.target;
@@ -721,6 +740,7 @@
         '<section class="k-section of-ads"><h4>' + icon('sparkles') + 'Reclame · Creative</h4>' +
           '<div class="of-flags">' + K.toggle('ads', o.ads, 'Promovată în reclame (Creative face creative doar pentru ofertele bifate)') + '</div>' +
           '<form class="k-form" data-mk>' +
+          '<div class="full of-forms" data-offer-forms>' + offerFormsHtml(o) + '</div>' +
           K.field('Nume scurt în notificări', '<input name="short" maxlength="40" value="' + esc(o.short || '') + '" placeholder="' + esc(SHORT_DEF[o.key] || 'ex: Lipo') + '">', 'full', 'Pe telefon apare cu prețul: ' + esc((o.short || SHORT_DEF[o.key] || 'Lipo') + ' ' + (Number(o.priceNew) || 640)) + '.') +
           K.field('Nume în reclamă', '<input name="adName" maxlength="120" value="' + esc(o.adName) + '" placeholder="ex: LipoSonix · 2 zone la preț de una">', 'full') +
           K.field('Mecanica ofertei', '<input name="mechanic" value="' + esc(o.mechanic) + '" placeholder="ex: 1+1: 2 zone la prețul uneia">', 'full') +
@@ -736,6 +756,19 @@
       footer: (src ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button>' : '') + '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + (src ? 'Salvează' : 'Publică oferta') + '</button>',
       onMount(el) {
         const site = el.querySelector('[data-site]'), mk = el.querySelector('[data-mk]');
+        loadFbForms(el, o);
+        el.addEventListener('change', async (ev) => {
+          const sel = ev.target.closest('[data-oform]');
+          if (!sel || !o.id) return;
+          ev.stopPropagation();
+          try {
+            const j = await K.api('/api/portal-offers', { action: 'set_form', id: o.id, city: sel.dataset.oform, formId: sel.value });
+            o.forms = j.offer.forms || {};
+            const x = O.list.find((y) => y.id === o.id); if (x) x.forms = o.forms;
+            fbForms = null;
+            K.ui().toast(sel.value ? 'Formularul ofertei pentru ' + sel.dataset.oform + ' e salvat.' : 'Oferta n-are formular pentru ' + sel.dataset.oform + '.', 'success');
+          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        }, true);
         const collect = () => {
           const s = K.formValues(site), m = K.formValues(mk);
           const ads = el.querySelector('.of-ads input[name=ads]').checked;

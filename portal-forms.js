@@ -8,7 +8,7 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const F = { d: null, q: '', show: 'active', open: null, limit: 40 };
+  const F = { d: null, q: '', show: '', open: null, limit: 40 };
   let panel;
 
   // mounted inside Integrări (its "Formulare Facebook" tab, see portal-admin.js)
@@ -31,6 +31,8 @@
   function visible() {
     const q = fold(F.q);
     return (F.d.fbForms || []).filter((f) => {
+      if (F.show === 'current' && !f.current) return false;
+      if (F.show === 'old' && (f.current || (f.status && f.status !== 'ACTIVE'))) return false;
       if (F.show === 'active' && f.status && f.status !== 'ACTIVE') return false;
       if (F.show === 'archived' && (!f.status || f.status === 'ACTIVE')) return false;
       if (F.show === 'leads' && !f.leads) return false;
@@ -42,13 +44,15 @@
     const all = F.d.fbForms || [];
     const active = all.filter((f) => !f.status || f.status === 'ACTIVE').length;
     const withLeads = all.filter((f) => f.leads).length;
+    const current = all.filter((f) => f.current).length;
+    if (!F.show) F.show = current ? 'current' : 'active';
     if (!all.length) {
       panel.querySelector('[data-body]').innerHTML = K.empty('facebook', 'Niciun formular încă', 'Formularele apar aici la un minut după ce Facebook e conectat (Integrări → Facebook).', '<button type="button" class="k-btn is-primary" data-act="new">' + icon('plus') + 'Formular nou</button>');
       return;
     }
     panel.querySelector('[data-body]').innerHTML =
       '<div class="fm-bar"><label class="fm-search">' + icon('search') + '<input data-q type="search" placeholder="Caută un formular…" value="' + esc(F.q) + '"></label>' +
-        '<div class="k-chips">' + [['active', 'Active', active], ['leads', 'Cu leaduri în portal', withLeads], ['archived', 'Arhivate', all.length - active], ['all', 'Toate', all.length]]
+        '<div class="k-chips">' + (current ? [['current', 'Pe oferte', current], ['old', 'Vechi', active - current], ['archived', 'Arhivate', all.length - active]] : [['active', 'Active', active], ['leads', 'Cu leaduri în portal', withLeads], ['archived', 'Arhivate', all.length - active], ['all', 'Toate', all.length]])
           .map(([k, l, n]) => '<button type="button" class="k-chip' + (F.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + '<span>' + n + '</span></button>').join('') + '</div>' +
         '<button type="button" class="k-btn is-outline fm-new" data-act="settings">' + icon('sliders') + 'Setări formulare</button>' +
         '<button type="button" class="k-btn is-outline fm-new" data-act="renumber">' + icon('phone') + 'Numere noi la final</button>' +
@@ -73,7 +77,7 @@
     const archived = f.status && f.status !== 'ACTIVE';
     return '<article class="k-card fm-row' + (open ? ' is-open' : '') + '" data-form="' + esc(f.id) + '">' +
       '<div class="fm-top"><span class="k-icon-chip fm-ic">' + icon('facebook') + '</span>' +
-        '<div class="fm-name"><b>' + esc(f.name || 'Formular ' + f.id) + '</b><small>' +
+        '<div class="fm-name"><b>' + esc(f.name || 'Formular ' + f.id) + (f.current ? ' <em class="fm-cur">' + esc(f.current) + '</em>' : '') + '</b><small>' +
           [archived ? 'arhivat' : 'activ', f.fbLeads ? K.plural(f.fbLeads, 'lead pe Facebook', 'leaduri pe Facebook') : '', f.leads ? K.plural(f.leads, 'în portal', 'în portal') : '', f.lastAt ? 'ultimul ' + K.ago(f.lastAt) : ''].filter(Boolean).map(esc).join(' · ') + '</small></div>' +
         (f.leads ? '<button type="button" class="k-btn is-ghost is-sm" data-leads="' + esc(f.name) + '">' + icon('users') + 'Vezi leadurile</button>' : '') +
         '<button type="button" class="k-icon-btn" data-toggle-form aria-label="Detalii formular">' + icon(open ? 'up' : 'down') + '</button></div>' +

@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { getSession } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
-const { loadOffers } = require('./_lib/offers');
+const { loadOffers, offerForms } = require('./_lib/offers');
 const { createForm } = require('./_lib/fb-form-create');
 const { getTemplate } = require('./_lib/fb-form-template');
 const { fetchFormInfo } = require('./_lib/facebook');
@@ -60,11 +60,14 @@ async function options() {
   // publishing needs ads_management on the token
   if (info.ready && token && token.valid && !(token.scopes || []).includes('ads_management')) Object.assign(info, { ready: false, reason: 'no_ads_permission', message: '' });
   const offerTitle = (id) => ((offers.find((o) => o.id === id) || {}).title || '');
-  const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').map((f) => {
+  // one form per offer and city (Oferte): only those, with their offer and city; none set yet: every active form
+  const cur = new Map(offerForms(offers).map((x) => [x.formId, x]));
+  const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').filter((f) => !cur.size || cur.has(f.id)).map((f) => {
     const r = (reg.forms || {})[f.id] || {};
     const det = r.detected || {};
+    const c = cur.get(f.id);
     return { id: f.id, name: f.name, lastAt: f.lastAt ? new Date(f.lastAt * 1000).toISOString() : '', created: f.created || '',
-      offer: offerTitle(r.offerId || det.offerId), location: r.location || det.location || '' };
+      offer: c ? c.offerTitle : offerTitle(r.offerId || det.offerId), location: c ? c.city : r.location || det.location || '' };
   }).sort((a, b) => (b.lastAt || b.created || '').localeCompare(a.lastAt || a.created || ''));
   return {
     ok: true, ready: !!info.ready, reason: info.reason || '', message: info.message || REASONS[info.reason] || '',
@@ -84,7 +87,8 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET' && req.query && req.query.action === 'form_setup') {
       const [template, poll, reg, offersAll] = await Promise.all([getTemplate({ readJSON, writeJSON }), readJSON('data/fb-poll.json', {}), readJSON('data/fb-forms.json', {}), loadOffers(readJSON, writeJSON)]);
-      const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').map((f) => { const r = (reg.forms || {})[f.id] || {}; return { id: f.id, name: f.name, location: r.location || (r.detected && r.detected.location) || '' }; });
+      const cur = new Map(offerForms(offersAll).map((x) => [x.formId, x]));
+      const forms = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').filter((f) => !cur.size || cur.has(f.id)).map((f) => { const r = (reg.forms || {})[f.id] || {}; const c = cur.get(f.id); return { id: f.id, name: f.name, location: c ? c.city : r.location || (r.detected && r.detected.location) || '' }; });
       res.status(200).json({ ok: true, template, forms, offers: offersAll.filter((o) => o.active !== false).map((o) => ({ id: o.id, title: o.title })) });
       return;
     }
