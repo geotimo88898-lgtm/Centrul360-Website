@@ -158,6 +158,9 @@ function cleanSettings(x) {
   s.formId = /^\d{5,25}$/.test(String(x.formId || '')) ? String(x.formId) : '';
   s.primaryText = str(x.primaryText, 2000);
   s.headline = str(x.headline, 255);
+  // a second text and title, tested by Meta in the same ad (Creative writes 2 of each)
+  s.primaryText2 = str(x.primaryText2, 2000);
+  s.headline2 = str(x.headline2, 255);
   s.description = str(x.description, 255);
   s.cta = CTAS.includes(x.cta) ? x.cta : 'LEARN_MORE';
   s.startNow = x.startNow !== false;
@@ -237,7 +240,19 @@ async function publish(conn, image, s) {
     // the Instagram account linked to the Page signs the ad on Instagram (without one, Meta uses the Page)
     const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
     if (ig.ok && ig.j.instagram_business_account) spec.instagram_user_id = ig.j.instagram_business_account.id;
-    const creative = await call('POST', '/' + act + '/adcreatives', tok, { name: s.adName, object_story_spec: spec });
+    // two texts / two titles: Meta shows each person the mix that works best (more text options in the same ad)
+    const bodies = [s.primaryText, s.primaryText2].filter(Boolean);
+    const titles = [s.headline, s.headline2].filter(Boolean);
+    const multi = bodies.length > 1 || titles.length > 1;
+    const feed = multi ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })), descriptions: s.description ? [{ text: s.description }] : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
+    let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, feed ? { asset_feed_spec: feed } : {}));
+    let textNote = '';
+    // Meta refusing the second text: the ad goes with the first one, and says so
+    if (!creative.ok && feed) {
+      const why = metaError(creative.j, '');
+      creative = await call('POST', '/' + act + '/adcreatives', tok, { name: s.adName, object_story_spec: spec });
+      if (creative.ok) textNote = 'Meta n-a primit al doilea text / titlu (' + why + '), reclama are doar primul.';
+    }
     if (!creative.ok) { await undo(); return { error: metaError(creative.j, 'Reclama (textele și imaginea)') }; }
     made.push(creative.j.id);
 
@@ -250,9 +265,9 @@ async function publish(conn, image, s) {
     if (!s.adsetId) {
       const a = await call('POST', '/' + adsetId, tok, { status: 'ACTIVE' });
       const c = s.startNow ? await call('POST', '/' + campaignId, tok, { status: 'ACTIVE' }) : { ok: true };
-      if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: metaError(!a.ok ? a.j : c.j, 'Pornirea') };
+      if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: [metaError(!a.ok ? a.j : c.j, 'Pornirea'), textNote].filter(Boolean).join(' ') };
     }
-    return { ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow };
+    return Object.assign({ ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow, texts: textNote ? 1 : Math.max(bodies.length, titles.length) }, textNote ? { warning: textNote } : {});
   } catch (err) {
     await undo();
     return { error: 'Rețea: ' + err.message };
