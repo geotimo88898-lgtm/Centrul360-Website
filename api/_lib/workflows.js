@@ -514,8 +514,11 @@ async function logSent(tpl, phone, city, id, v) {
     if (!convo.location) convo.location = city;
     if (convo.messages.some((m) => m.id === id)) return;
     const text = WT.friendly(tpl).replace(/\{(\w+)\}/g, (m, k) => v[k] || '-');
-    convo.messages.push({ id: id || uid(), direction: 'out', type: 'template', templateId: tpl.id, text: [tpl.header, text, tpl.footer].filter(Boolean).join('\n'),
-      status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true });
+    // the picture of the header goes in the chat too (the client got it); the map pin as a line
+    const img = WT.imageOf(tpl);
+    const pin = tpl.headerType === 'LOCATION' ? '📍 Locația clinicii' + (city ? ' (' + city + ')' : '') : '';
+    convo.messages.push(Object.assign({ id: id || uid(), direction: 'out', type: 'template', templateId: tpl.id, text: [pin, tpl.header, text, tpl.footer].filter(Boolean).join('\n'),
+      status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true }, img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: img } } : {}));
     convo.lastMessageAt = nowISO();
     await writeJSON(KEY, conversations);
   } catch (err) { console.error('workflows.logSent error:', err.message); }

@@ -20,6 +20,8 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const WA = require('./_lib/whatsapp');
 const WT = require('./_lib/wa-templates');
+// a template message without its picture (saved before pictures were kept): the template's picture
+const withPic = (m, pics) => (m.type === 'template' && m.templateId && !m.media && pics.get(m.templateId) ? Object.assign({}, m, { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: pics.get(m.templateId) } }) : m);
 const { normalizePhone } = require('./_lib/clients');
 
 const { sendWhatsApp, toE164 } = WA;
@@ -137,6 +139,8 @@ module.exports = async (req, res) => {
       if ((!convo.clientName || convo.clientName === convo.phone) && who.lead && who.lead.name) convo.clientName = who.lead.name;
       const employees = await readJSON('data/employees.json', []);
       const nameOf = (id) => (id === 'admin' ? 'Admin' : ((employees.find((e) => e.id === id) || {}).name || ''));
+      // template messages saved before their picture was kept: the template's picture of now
+      const tplPics = new Map(((await WT.load()).templates || []).map((t) => [t.id, WT.imageOf(t)]).filter(([, p]) => p));
       res.status(200).json({
         ok: true,
         phone: convo.phone,
@@ -144,7 +148,7 @@ module.exports = async (req, res) => {
         location: convo.location || '',
         within24h: within24h(convo),
         windowEnds: windowEnds(convo),
-        messages: (convo.messages || []).map((m) => (m.sentBy ? Object.assign({}, m, { sentByName: nameOf(m.sentBy) }) : m)),
+        messages: (convo.messages || []).map((m) => withPic(m.sentBy ? Object.assign({}, m, { sentByName: nameOf(m.sentBy) }) : m, tplPics)),
         lead: who.lead ? { id: who.lead.id, name: who.lead.name, interest: who.lead.interest || '' } : null,
         appointment: who.appointment ? { id: who.appointment.id, date: who.appointment.date, time: who.appointment.time, treatment: who.appointment.treatment || '' } : null,
       });
@@ -325,7 +329,9 @@ module.exports = async (req, res) => {
       if (!convo.location) convo.location = city;
       if (name && (!convo.clientName || convo.clientName === convo.phone)) convo.clientName = name;
       const text = WT.friendly(tpl).replace(/\{(\w+)\}/g, (m, k) => v[k] || '-');
-      convo.messages.push({ id: r.id || crypto.randomUUID(), direction: 'out', type: 'template', templateId: tpl.id, text: [tpl.header, text, tpl.footer].filter(Boolean).join('\n'), status: 'sent', timestamp: nowISO(), sentBy: session.employeeId });
+      const img = WT.imageOf(tpl);
+      convo.messages.push(Object.assign({ id: r.id || crypto.randomUUID(), direction: 'out', type: 'template', templateId: tpl.id, text: [tpl.header, text, tpl.footer].filter(Boolean).join('\n'), status: 'sent', timestamp: nowISO(), sentBy: session.employeeId },
+        img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: img } } : {}));
       convo.lastMessageAt = nowISO();
       await writeJSON(KEY, conversations);
       res.status(200).json({ ok: true, phone: convo.phone, messages: convo.messages });
