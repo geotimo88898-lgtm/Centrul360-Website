@@ -408,4 +408,12 @@ async function adStats(conn, range) {
   };
 }
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl, adSpend, adStats };
+// The lead form each ad sends to (the ones not deleted / archived): [{ adId, adName, status, formId }]
+async function adForms(conn) {
+  const r = await all('/' + conn.adAccountId + '/ads', conn.userToken, { fields: 'id,name,effective_status,creative{object_story_spec,asset_feed_spec}', limit: '200', effective_status: JSON.stringify(LIVE) }, 5);
+  if (r.error) return { error: r.error };
+  const find = (o) => { if (!o || typeof o !== 'object') return ''; if (o.lead_gen_form_id) return String(o.lead_gen_form_id); for (const k of Object.keys(o)) { const v = find(o[k]); if (v) return v; } return ''; };
+  return { rows: r.data.map((a) => ({ adId: String(a.id), adName: a.name || '', status: a.effective_status || '', formId: find(a.creative || {}) })).filter((x) => x.formId) };
+}
+
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl, adSpend, adStats, adForms };

@@ -43,11 +43,20 @@ async function numbers(store) {
   return out;
 }
 
-async function plan(store) {
+// the forms worth copying: the ones the ads send to now (active or paused, not deleted), and the ones with a lead in the
+// last 14 days; all: every active form of the Page
+async function plan(store, opts) {
   const [doc, poll, nums] = await Promise.all([store.readJSON(FORMS_KEY, {}), store.readJSON(POLL_KEY, {}), numbers(store)]);
   const reg = doc.forms || {};
   const conn = await loadConnection(store.readJSON);
-  const list = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').filter((f) => !(reg[f.id] || {}).copyOf && !(reg[f.id] || {}).replacedBy);
+  const used = new Map();
+  if (conn.userToken && conn.adAccountId) {
+    const ads = await require('./meta-ads').adForms(conn);
+    (ads.rows || []).forEach((a) => { const u = used.get(a.formId) || []; u.push(a); used.set(a.formId, u); });
+  }
+  const recent = (f) => f.lastAt && Date.now() / 1000 - f.lastAt < 14 * 86400;
+  const list = (poll.forms || []).filter((f) => !f.status || f.status === 'ACTIVE').filter((f) => !(reg[f.id] || {}).copyOf && !(reg[f.id] || {}).replacedBy)
+    .filter((f) => (opts && opts.all) || used.has(f.id) || recent(f));
   const out = [];
   for (const f of list) {
     const r = reg[f.id] || {};
@@ -55,10 +64,13 @@ async function plan(store) {
     const j = conn.pageAccessToken ? await T.readForm(f.id, conn.pageAccessToken) : null;
     const tp = (j && j.thank_you_page) || {};
     const old = T.phoneOf(tp.business_phone_number) || T.phoneOf(tp.website_url);
+    const ads = used.get(f.id) || [];
     out.push({ id: f.id, name: f.name || r.name || '', city, button: tp.button_type || '', old, oldPretty: T.pretty(old), number: nums[city] || '', pretty: T.pretty(nums[city] || ''),
+      ads: ads.length, activeAds: ads.filter((a) => a.status === 'ACTIVE').length,
       leads: f.count || 0, ok: !!(j && j.thank_you_page && city && nums[city]),
       why: !j ? 'nu l-am putut citi de pe Facebook' : !j.thank_you_page ? 'nu i-am putut citi finalul' : !city ? 'alege-i orașul mai jos' : !nums[city] ? 'lipsește numărul de WhatsApp pentru ' + city : '' });
   }
+  out.sort((a, b) => b.activeAds - a.activeAds || b.ads - a.ads || b.leads - a.leads);
   return { forms: out, numbers: Object.fromEntries(T.LOCATIONS.map((c) => [c, T.pretty(nums[c] || '')])) };
 }
 
@@ -111,7 +123,9 @@ async function copyOne(store, id, over) {
   const p = await store.readJSON(POLL_KEY, {});
   p.forms = [{ id: made.id, name: params.name, status: 'ACTIVE', count: 0, created: now, lastAt: 0 }].concat((p.forms || []).filter((f) => f.id !== made.id));
   await Promise.all([store.writeJSON(FORMS_KEY, fresh), store.writeJSON(POLL_KEY, p)]);
-  return { id: made.id, name: params.name, number: T.pretty(num), old: T.pretty(old) };
+  const back = await T.readForm(made.id, conn.pageAccessToken);
+  const kept = back && back.thank_you_page ? T.phoneOf(back.thank_you_page.business_phone_number) || T.phoneOf(back.thank_you_page.website_url) : '';
+  return { id: made.id, name: params.name, number: T.pretty(num), old: T.pretty(old), kept: T.pretty(kept), button: (back && back.thank_you_page && back.thank_you_page.button_type) || '' };
 }
 
 module.exports = { plan, copyOne, swapIn, variants, SUFFIX };

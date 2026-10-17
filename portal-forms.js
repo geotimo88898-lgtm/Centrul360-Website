@@ -310,7 +310,7 @@
       const d = st.done[f.id];
       const num = st.nums[f.city] || '';
       return '<div class="fm-rn' + (d ? (d.ok ? ' is-ok' : ' is-bad') : '') + '"><span class="fm-rn-ic">' + icon(d ? (d.ok ? 'checkCircle' : 'alert') : 'file') + '</span>' +
-        '<div class="fm-rn-t"><b>' + esc(f.name) + '</b><small>' + (f.city ? esc(f.city) : '<span class="is-bad">fără oraș</span>') + (f.leads ? ' · ' + K.plural(f.leads, 'lead', 'leaduri') : '') + '</small>' +
+        '<div class="fm-rn-t"><b>' + esc(f.name) + '</b><small>' + (f.city ? esc(f.city) : '<span class="is-bad">fără oraș</span>') + (f.activeAds ? ' · pe ' + K.plural(f.activeAds, 'reclamă activă', 'reclame active') : f.ads ? ' · pe ' + K.plural(f.ads, 'reclamă oprită', 'reclame oprite') : '') + (f.leads ? ' · ' + K.plural(f.leads, 'lead', 'leaduri') : '') + '</small>' +
         (d ? '<small>' + (d.ok ? 'Creat: „' + esc(d.name) + '”' : esc(d.error)) + '</small>'
           : f.city ? '<small>La final acum: <b>' + esc(f.oldPretty || '-') + '</b> → nou: <b>' + esc(num || '-') + '</b></small>' : '<small>' + esc(f.why || 'alege-i orașul în listă') + '</small>') + '</div></div>';
     };
@@ -320,7 +320,7 @@
       '</div><div class="fm-rn-list">' + (p.forms.length ? p.forms.map(row).join('') : K.empty('file', 'Niciun formular activ', '')) + '</div>';
     const d = K.drawer({
       title: 'Numere noi la final', icon: 'phone', width: 620,
-      subtitle: 'Fiecare formular activ e copiat la fel, doar cu numărul orașului la final.',
+      subtitle: 'Formularele de pe reclame (și cele cu leaduri în ultimele 14 zile), copiate la fel, doar cu numărul orașului la final.',
       body: '<div data-rnbody>' + body() + '</div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-accent" data-rngo>' + icon('check') + 'Creează ' + K.plural(go().length, 'formular nou', 'formulare noi') + '</button>',
       onMount(el) {

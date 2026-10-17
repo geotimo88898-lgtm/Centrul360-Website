@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, template: r.template });
       return;
     }
-    if (body.action === 'fb_forms_renumber_plan') { res.status(200).json(Object.assign({ ok: true }, await FC.plan({ readJSON, writeJSON }))); return; }
+    if (body.action === 'fb_forms_renumber_plan') { res.status(200).json(Object.assign({ ok: true }, await FC.plan({ readJSON, writeJSON }, { all: !!body.all }))); return; }
     if (body.action === 'fb_form_copy') {
       const r = await FC.copyOne({ readJSON, writeJSON }, String(body.id || ''), body.numbers);
       if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
