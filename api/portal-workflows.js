@@ -102,6 +102,9 @@ module.exports = async (req, res) => {
         doc.workflows.push(Object.assign({ id: require('crypto').randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, v.workflow));
       }
       await W.saveDoc(doc);
+      // a reminder flow saved while on (e.g. "Creează reamintirile"): the bookings already in the calendar get it too
+      const saved = existing || doc.workflows[doc.workflows.length - 1];
+      if (saved && saved.active) await W.enrollUpcoming(saved);
     } else if (body.action === 'toggle') {
       const wf = doc.workflows.find((w) => w.id === body.id);
       if (!wf) { res.status(404).json({ error: 'workflow_not_found' }); return; }

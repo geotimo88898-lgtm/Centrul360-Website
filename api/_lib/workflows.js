@@ -529,7 +529,7 @@ async function sendTemplate(wa, templateId, from, phone, v, opts) {
   if (!ready.length) return { why: 'WhatsApp nu e conectat' };
   const city = ready.includes(from) ? from : ready[0];
   const n = wa.cfg.numbers[city];
-  if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city };
+  if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city, pending: /PENDING|IN_REVIEW/i.test(String((tpl.meta[n.wabaId] || {}).status || '')) };
   const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl), headerLocation: tpl.headerType === 'LOCATION' });
   if (r.sent && !(opts && opts.nolog)) await logSent(tpl, phone, r.fromCity || city, r.id, v);
   return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
@@ -677,7 +677,16 @@ async function runOne(run, wf, settings, counters) {
     }
     if (s.type === 'whatsapp') {
       const r = await sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v);
-      if (r.sent) { c.sent++; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
+      if (r.sent) { delete run.retryUntil; c.sent++; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
+      // Meta is still reviewing the template (just made): the same message again in 10 minutes, for at most 45
+      if (r.pending && (!run.retryUntil || Date.now() < Date.parse(run.retryUntil))) {
+        run.retryUntil = run.retryUntil || new Date(Date.now() + 45 * 60e3).toISOString();
+        run.at = s.id;
+        run.dueAt = new Date(Date.now() + 10 * 60e3).toISOString();
+        log('Mesajul e încă la Meta pentru aprobare, încerc din nou peste 10 minute');
+        return;
+      }
+      delete run.retryUntil;
       log((r.why || 'nu a plecat') + ', mesajul n-a plecat');
       continue;
     }
@@ -744,9 +753,10 @@ async function tick(force) {
   }
 }
 
-// A reminder flow ("appointment booked") switched on: the bookings already in the calendar (its city, from today on, not
-// cancelled / finished) get it too, from its first wait on (24h before, 2h before, the review), without the
-// confirmation (they booked before). A booking that already has a run of this flow is left alone. Returns how many.
+// A reminder flow ("appointment booked") switched on or saved while on: the bookings already in the calendar (its city,
+// from today on, not cancelled / finished) get it too, from its first wait on (24h before, 2h before, the review),
+// without the confirmation (they booked before). A booking that already has a run of this flow is left alone.
+// Returns how many.
 async function enrollUpcoming(wf) {
   try {
     if (!wf || !wf.active || !wf.trigger || wf.trigger.type !== 'appointment_created') return 0;
