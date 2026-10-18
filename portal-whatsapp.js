@@ -179,12 +179,18 @@
     if (md.kind === 'audio') return '<audio class="mx-media-aud" controls preload="none" src="' + u + '"></audio>';
     return '<a class="mx-doc" href="' + u + '" target="_blank" rel="noopener">' + icon('file') + '<span>' + esc(md.filename || 'Document') + '</span>' + icon('download') + '</a>';
   }
+  // the clinic's pin, as the client got it on WhatsApp (a tap opens the map)
+  const pinHtml = (p) => '<a class="mx-pin" href="https://www.google.com/maps?q=' + encodeURIComponent(p.lat + ',' + p.lng) + '" target="_blank" rel="noopener">' +
+    '<span class="mx-pin-ic">' + icon('pin') + '</span><span><b>' + esc(p.name) + '</b><small>' + esc(p.address) + '</small></span></a>';
   function bubble(m) {
     const out = m.direction === 'out';
+    const text = m.pin ? String(m.text || '').replace(/^📍 Locația clinicii[^\n]*\n?/, '') : m.text;
     return '<div class="mx-msg is-' + (out ? 'out' : 'in') + (m.status === 'failed' ? ' is-failed' : '') + '"><div class="mx-bub">' +
       (m.type === 'template' ? '<span class="mx-tpl-tag">' + icon('file') + 'Șablon</span>' : '') +
+      (m.pin ? pinHtml(m.pin) : '') +
       mediaHtml(m) +
-      (m.media && MEDIA_WORDS.includes(m.text) || (m.media && m.text === m.media.filename) ? '' : '<span class="mx-text">' + esc(m.text) + '</span>') +
+      (m.media && MEDIA_WORDS.includes(text) || (m.media && text === m.media.filename) ? '' : '<span class="mx-text">' + esc(text) + '</span>') +
+      (m.buttons && m.buttons.length ? '<span class="mx-btns">' + m.buttons.map((b) => '<span class="mx-btn">' + icon('undo') + esc(b) + '</span>').join('') + '</span>' : '') +
       (out && m.status === 'failed' ? '<span class="mx-fail">' + icon('alert') + 'NELIVRAT' + (m.error ? ' · ' + esc(m.error) : '') + '</span>' : '') +
       '<span class="mx-meta"><span class="mx-time">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + '</span>' + (out ? tickHtml(m.status || 'sent', stateLine(m)) : '') + '</span></div></div>';
   }

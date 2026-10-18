@@ -22,6 +22,23 @@ const WA = require('./_lib/whatsapp');
 const WT = require('./_lib/wa-templates');
 // a template message without its picture (saved before pictures were kept): the template's picture
 const withPic = (m, pics) => (m.type === 'template' && m.templateId && !m.media && pics.get(m.templateId) ? Object.assign({}, m, { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: pics.get(m.templateId) } }) : m);
+// a template message as the client saw it: its buttons, and the clinic's map pin (the city from the pin line, the
+// template's name or the conversation)
+function withTpl(m, tpls, convoCity) {
+  if (m.type !== 'template' || !m.templateId) return m;
+  const t = tpls.get(m.templateId);
+  if (!t) return m;
+  const out = Object.assign({}, m);
+  const btns = (t.buttons || []).map((b) => b.text).filter(Boolean);
+  if (btns.length && !out.buttons) out.buttons = btns;
+  if (t.headerType === 'LOCATION' && !out.pin) {
+    const said = /📍 Locația clinicii \(([^)]+)\)/.exec(m.text || '');
+    const city = (said && said[1]) || (/Arad/.test(t.label || '') ? 'Arad' : /Timi/.test(t.label || '') ? 'Timișoara' : convoCity);
+    const c = WA.CLINICS[city] || WA.CLINICS[convoCity];
+    if (c) out.pin = { name: c.name, address: c.address, lat: c.latitude, lng: c.longitude };
+  }
+  return out;
+}
 const { normalizePhone } = require('./_lib/clients');
 
 const { sendWhatsApp, toE164 } = WA;
@@ -140,7 +157,9 @@ module.exports = async (req, res) => {
       const employees = await readJSON('data/employees.json', []);
       const nameOf = (id) => (id === 'admin' ? 'Admin' : ((employees.find((e) => e.id === id) || {}).name || ''));
       // template messages saved before their picture was kept: the template's picture of now
-      const tplPics = new Map(((await WT.load()).templates || []).map((t) => [t.id, WT.imageOf(t)]).filter(([, p]) => p));
+      const tplList = (await WT.load()).templates || [];
+      const tplPics = new Map(tplList.map((t) => [t.id, WT.imageOf(t)]).filter(([, p]) => p));
+      const tplById = new Map(tplList.map((t) => [t.id, t]));
       res.status(200).json({
         ok: true,
         phone: convo.phone,
@@ -148,7 +167,7 @@ module.exports = async (req, res) => {
         location: convo.location || '',
         within24h: within24h(convo),
         windowEnds: windowEnds(convo),
-        messages: (convo.messages || []).map((m) => withPic(m.sentBy ? Object.assign({}, m, { sentByName: nameOf(m.sentBy) }) : m, tplPics)),
+        messages: (convo.messages || []).map((m) => withTpl(withPic(m.sentBy ? Object.assign({}, m, { sentByName: nameOf(m.sentBy) }) : m, tplPics), tplById, convo.location || '')),
         lead: who.lead ? { id: who.lead.id, name: who.lead.name, interest: who.lead.interest || '' } : null,
         appointment: who.appointment ? { id: who.appointment.id, date: who.appointment.date, time: who.appointment.time, treatment: who.appointment.treatment || '' } : null,
       });

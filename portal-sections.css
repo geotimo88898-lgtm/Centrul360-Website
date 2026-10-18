@@ -1869,6 +1869,17 @@ main.ad-full{ max-width:none; }
 .mx-fail .k-ic{ width:14px; height:14px; flex:none; }
 .mx-tpl-tag{ display:inline-flex; align-items:center; gap:.25rem; margin-bottom:.2rem; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.8; }
 .mx-tpl-tag .k-ic{ width:11px; height:11px; }
+/* a template's map pin and buttons, as the client saw them */
+.mx-pin{ display:flex; align-items:center; gap:.55rem; margin:.15rem 0 .4rem; padding:.5rem .6rem; border-radius:12px; background:rgba(255,255,255,.16); color:inherit; text-decoration:none; }
+.mx-msg.is-in .mx-pin{ background:var(--paper-2, rgba(0,0,0,.05)); }
+.mx-pin-ic{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:none; border-radius:10px; background:rgba(255,255,255,.22); }
+.mx-pin-ic .k-ic{ width:18px; height:18px; }
+.mx-pin b{ display:block; font-size:.84rem; line-height:1.2; }
+.mx-pin small{ display:block; font-size:.74rem; opacity:.85; line-height:1.25; }
+.mx-btns{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.45rem; }
+.mx-btn{ display:inline-flex; align-items:center; gap:.3rem; padding:.32rem .65rem; border-radius:999px; border:1px solid rgba(255,255,255,.45); font-size:.78rem; font-weight:600; }
+.mx-msg.is-in .mx-btn{ border-color:var(--line); }
+.mx-btn .k-ic{ width:13px; height:13px; }
 .mx-compose{ display:flex; align-items:flex-end; gap:.45rem; padding:.6rem .7rem .4rem; border-top:1px solid var(--line); background:var(--paper); }
 /* snippets: the quick answers above the box, and their editor */
 .mx-snips{ display:flex; flex-direction:column; max-height:min(46vh, 360px); margin:0 .7rem .4rem; border:1px solid var(--line); border-radius:16px; background:var(--paper-2); box-shadow:var(--shadow-lg); overflow:hidden; animation:k-rise .18s var(--ease) both; }

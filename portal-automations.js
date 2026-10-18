@@ -216,8 +216,9 @@
   const remindFlows = () => S.d.workflows.filter((w) => (w.folder === 'reminders' || /^appointment_/.test(w.trigger.type)) && tplIds(w.steps).length);
 
   // The reminders, the owner's own messages from HighLevel. Per city: the confirmation at once with the care sheet
-  // of its group (Epilare · HIFU / Liposonix · Recomandări generale; not for a package session), 24h before and 2h
-  // before with the clinic's map pin, the review 2h after a finished treatment (not for a package session).
+  // of its group (Epilare · HIFU / Liposonix · Recomandări generale; not for a package session) and right after it
+  // the clinic's map pin (a template has one header: the sheet is the confirmation's), 24h before and 2h before with
+  // the map pin, the review 2h after a finished treatment (not for a package session).
   // "Creează reamintirile" makes the templates (a changed text or picture: a new version) and sets the steps of
   // the flows "Reamintiri · <oraș>" (their switch stays as it is; a new one starts off).
   const CARE = { epilare: '/brand_asset/wa-care/epilare-laser.webp', hifu: '/brand_asset/wa-care/hifu-liposonix.webp', gen: '/brand_asset/wa-care/recomandari-generale.webp' };
@@ -233,6 +234,9 @@
   const remSpec = (c) => {
     const C = REM_CITY[c];
     const list = C.groups.map((g) => ({ key: 'confirm-' + g, label: 'Reamintiri · Confirmare · ' + GROUP[g] + ' · ' + c, category: 'UTILITY', headerType: 'IMAGE', pic: CARE[g], body: confirmText(g, c), buttons: [] }));
+    // every message that speaks of the address has the pin: the confirmation's comes right after it
+    list.push({ key: 'loc', label: 'Reamintiri · Locația · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
+      body: 'Ne vedem pe {data}, la ora {ora}. Aici ne găsiți 📍 ' + C.near + '\n\nPe curând! Raluca - Centrul360' });
     list.push({ key: '24h', label: 'Reamintiri · 24h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [{ type: 'QUICK_REPLY', text: 'Reușesc să ajung' }],
       body: 'Bună {prenume}! 📅 Vă reamintesc cu drag programarea de mâine, {data}, ora {ora}. Reușiți să ajungeți?\nNe găsiți aici: 📍 ' + C.near + '\n\nVă aștept! Raluca - Centrul360' });
     list.push({ key: '2h', label: 'Reamintiri · 2h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
@@ -255,7 +259,7 @@
       ? { type: 'if', cond: 'category', value: 'epilare-laser', name: 'Epilare', yes: [wa('confirm-epilare')], more: [hifu, { cond: 'interest', value: 'epilare', name: 'Epilare (după nume)', steps: [wa('confirm-epilare')] }], no: [wa('confirm-gen')] }
       : { type: 'if', cond: 'interest', value: 'hifu|liposonix', name: 'HIFU / Liposonix', yes: [wa('confirm-hifu')], no: [wa('confirm-gen')] };
     return [
-      { type: 'if', cond: 'package', name: 'Ședință din pachet', yes: [], no: [pick] },
+      { type: 'if', cond: 'package', name: 'Ședință din pachet', yes: [], no: [pick, wa('loc')] },
       { type: 'wait', mode: 'before', amount: 24, unit: 'h' }, wa('24h'),
       { type: 'wait', mode: 'before', amount: 2, unit: 'h' }, wa('2h'),
       { type: 'if', cond: 'package', name: 'Ședință din pachet', yes: [], no: [{ type: 'wait', mode: 'after', amount: 2, unit: 'h' }, { type: 'if', cond: 'appt_done', name: 'Tratament finalizat', yes: [wa('review')], no: [] }] },
@@ -299,7 +303,7 @@
           if (remSpec(c).some((s) => !ids[s.key])) continue; // a template missing: the flow stays as it was
           const w = S.d.workflows.find((x) => x.name === remFlowName(c));
           S.d = await K.api('/api/portal-workflows', { action: 'save', workflow: {
-            id: w ? w.id : undefined, name: remFlowName(c), note: 'Confirmare cu fișa grupei, 24h și 2h înainte cu harta, recenzia după tratament.',
+            id: w ? w.id : undefined, name: remFlowName(c), note: 'Confirmare cu fișa grupei și harta, 24h și 2h înainte cu harta, recenzia după tratament.',
             active: w ? !!w.active : false, folder: 'reminders', trigger: { type: 'appointment_created', location: c }, steps: remSteps(c, ids),
           } });
         }
