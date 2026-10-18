@@ -325,7 +325,8 @@ async function syncAppts(conns, from, days, state) {
 // skipped without asking HighLevel. Notes and messages only, each once: the appointments are not touched.
 async function stepHistory(conn, aj, h, until) {
   const users = new Map((conn.users || []).map((u) => [u.id, u.name]));
-  const counts = new Map(); // client id → her number of notes now
+  const counts = new Map(); // client id → { notesCount, filesCount, photosCount, sessionsCount } from her file
+  const tally = (cid, d) => counts.set(cid, { notesCount: d.notes.length, filesCount: d.files.length, photosCount: d.sessions.reduce((n, s) => n + (s.before ? 1 : 0) + (s.after ? 1 : 0), 0), sessionsCount: d.sessions.length });
   const soft = (e) => { if (e.code === 'ghl_auth' || e.code === 'ghl_scope') throw e; return []; };
   // 4 contacts at a time (never the same contact twice in one go): GHL's pace (ghl.js) still holds for the calls
   const one = async ([gid, cid]) => {
@@ -357,22 +358,34 @@ async function stepHistory(conn, aj, h, until) {
         detail.notes.sort((a, b) => (a.at < b.at ? 1 : -1));
         detail.history = history.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 2000);
         await writeJSON(detailPath(cid), detail, { quiet: true });
-        counts.set(cid, detail.notes.length);
         h.contacts = (h.contacts || 0) + 1;
       }
     }
+    tally(cid, detail);
   };
+  // only her file, for the numbers (the contacts passed before the numbers were counted)
+  const countOnly = async ([, cid]) => tally(cid, Object.assign(emptyDetail(), await readJSON(detailPath(cid), {})));
+  if (aj.cfrom == null) { aj.cfrom = aj.hpos || 0; aj.cpos = 0; }
   while ((aj.hpos || 0) < aj.queue.length && Date.now() < until) {
     const batch = [], seen = new Set();
     for (let i = aj.hpos || 0; i < aj.queue.length && batch.length < 4 && !seen.has(aj.queue[i][1]); i++) { batch.push(aj.queue[i]); seen.add(aj.queue[i][1]); }
     await Promise.all(batch.map(one));
     aj.hpos = (aj.hpos || 0) + batch.length;
   }
+  while ((aj.hpos || 0) >= aj.queue.length && aj.cpos < aj.cfrom && Date.now() < until) {
+    const batch = aj.queue.slice(aj.cpos, Math.min(aj.cfrom, aj.cpos + 10));
+    await Promise.all(batch.map(countOnly));
+    aj.cpos += batch.length;
+  }
   // the notes' number on the contacts (Contacte shows it): read fresh right before writing, nothing else changes
   if (counts.size) {
     const clients = await readJSON('data/clients.json', []);
     let any = false;
-    clients.forEach((c) => { if (counts.has(c.id) && c.notesCount !== counts.get(c.id)) { c.notesCount = counts.get(c.id); any = true; } });
+    clients.forEach((c) => {
+      const n = counts.get(c.id);
+      if (!n) return;
+      Object.keys(n).forEach((k) => { if ((c[k] || 0) !== n[k]) { c[k] = n[k]; any = true; } });
+    });
     if (any) await writeJSON('data/clients.json', clients);
   }
 }
@@ -597,7 +610,7 @@ module.exports = async (req, res) => {
       if (b.action === 'history_start') {
         if (!rj.history || rj.history.status !== 'running') {
           rj.history = { status: 'running', startedAt: nowISO(), notes: 0, messages: 0, contacts: 0 };
-          Object.values(rj.accs || {}).forEach((a) => { a.hpos = 0; });
+          Object.values(rj.accs || {}).forEach((a) => { a.hpos = 0; a.cfrom = null; a.cpos = 0; });
         }
       } else if (rj.history && rj.history.status === 'running' && !(rj.history.leaseUntil > Date.now())) {
         const until = Date.now() + BUDGET;
@@ -606,14 +619,14 @@ module.exports = async (req, res) => {
         try {
           for (const k of Object.keys(ACCS)) {
             const aj = rj.accs[k];
-            if (!aj || (aj.hpos || 0) >= aj.queue.length) continue;
+            if (!aj || ((aj.hpos || 0) >= aj.queue.length && (aj.cfrom == null || aj.cpos >= aj.cfrom))) continue;
             const conn = conns[k];
             if (!conn || !conn.token) { aj.hpos = aj.queue.length; continue; }
             conn.city = ACCS[k];
             await stepHistory(conn, aj, rj.history, until);
-            if ((aj.hpos || 0) < aj.queue.length) break;
+            if ((aj.hpos || 0) < aj.queue.length || aj.cpos < aj.cfrom) break;
           }
-          if (Object.values(rj.accs || {}).every((a) => (a.hpos || 0) >= a.queue.length)) { rj.history.status = 'done'; rj.history.finishedAt = nowISO(); }
+          if (Object.values(rj.accs || {}).every((a) => (a.hpos || 0) >= a.queue.length && (a.cfrom == null || a.cpos >= a.cfrom))) { rj.history.status = 'done'; rj.history.finishedAt = nowISO(); }
           rj.history.lastError = '';
         } catch (e) {
           rj.history.lastError = e.code || 'ghl_failed';
