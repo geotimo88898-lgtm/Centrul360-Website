@@ -14,7 +14,7 @@
 //   - get(pathname, { access: 'private' }) reads a blob's content back as a stream;
 //     resolves to null if the blob doesn't exist yet (used for first-run bootstrapping).
 
-const { put, get, del } = require('@vercel/blob');
+const { put, get, del, head } = require('@vercel/blob');
 
 async function streamToString(stream) {
   const chunks = [];
@@ -24,32 +24,52 @@ async function streamToString(stream) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-// Reads a JSON document from Blob storage. Returns `fallback` if the blob doesn't exist
-// yet (first run) or fails to parse (defensive, should not happen in normal operation).
+// Reads a JSON document from Blob storage. Returns `fallback` only when the blob doesn't exist yet
+// (first run). Any other failure (a timeout, a storage error, a half-read big file) is retried, then
+// THROWN: answering `fallback` there once made a caller save a near-empty list over data/clients.json
+// (9 000 contacts lost). A request that can't read its data must fail, never write over it.
+const isNotFound = (err) => err && (err.name === 'BlobNotFoundError' || /not.?found/i.test(err.message || ''));
 async function readJSON(pathname, fallback) {
-  try {
-    // useCache:false, the portal always reads right after writing (every save reloads
-    // the whole payload to show the result), so a cached stale read would look exactly
-    // like "my change didn't save" even though it did.
-    const result = await get(pathname, { access: 'private', useCache: false });
-    if (!result) return fallback;
-    const text = await streamToString(result.stream);
-    if (!text) return fallback;
-    return JSON.parse(text);
-  } catch (err) {
-    // BlobNotFoundError or similar, treat as "not created yet".
-    if (err && (err.name === 'BlobNotFoundError' || /not.?found/i.test(err.message || ''))) {
-      return fallback;
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      // useCache:false, the portal always reads right after writing (every save reloads
+      // the whole payload to show the result), so a cached stale read would look exactly
+      // like "my change didn't save" even though it did.
+      const result = await get(pathname, { access: 'private', useCache: false });
+      if (!result) return fallback;
+      const text = await streamToString(result.stream);
+      if (!text) return fallback;
+      return JSON.parse(text);
+    } catch (err) {
+      if (isNotFound(err)) return fallback;
+      lastErr = err;
+      console.error(`store.readJSON(${pathname}) error (attempt ${attempt + 1}):`, err.message);
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
     }
-    console.error(`store.readJSON(${pathname}) error:`, err.message);
-    return fallback;
   }
+  const e = new Error('store_read_failed: ' + pathname + ': ' + (lastErr && lastErr.message));
+  e.code = 'store_read_failed';
+  throw e;
 }
 
 // Writes a JSON document to Blob storage, overwriting whatever is at that pathname.
 // opts.quiet: a write the open portals don't need to refresh for (the activity log)
+// The big lists the whole portal leans on: a write that would cut one to less than half (and it is
+// big) is refused, whatever bug or failed read led to it. Deleting that much by hand never happens.
+const GUARDED = new Set(['data/clients.json', 'data/appointments.json', 'data/leads.json', 'data/sales.json']);
 async function writeJSON(pathname, data, opts) {
   const body = JSON.stringify(data, null, 2);
+  if (GUARDED.has(pathname) && !(opts && opts.allowShrink)) {
+    let before = 0;
+    try { const h = await head(pathname); before = (h && h.size) || 0; } catch (err) { before = 0; }
+    if (before > 200 * 1024 && Buffer.byteLength(body) < before * 0.5) {
+      console.error(`store.writeJSON(${pathname}) refused: ${Buffer.byteLength(body)} bytes over ${before}`);
+      const e = new Error('store_write_refused: ' + pathname);
+      e.code = 'store_write_refused';
+      throw e;
+    }
+  }
   await put(pathname, body, {
     access: 'private',
     addRandomSuffix: false,

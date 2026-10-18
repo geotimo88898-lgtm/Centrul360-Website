@@ -1099,6 +1099,8 @@
       (d.timesToFix && !running ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>' + K.plural(d.timesToFix, 'programare importată are', 'programări importate au') + ' ora mutată cu 2–3 ore (ex. 9:00 apare la 12:00). Le pun la ora lor, fără import din nou.</span>' +
         '<button type="button" class="k-btn is-primary is-sm" data-ghl-fix>' + icon('check') + 'Corectează orele</button></div>' : '') +
       (!d.timesToFix && !running && j && j.status === 'done' ? '<div class="st-int-row"><button type="button" class="k-btn is-ghost is-sm" data-ghl-fix>' + icon('refresh') + 'Verifică orele programărilor importate</button></div>' : '') +
+      // the contacts lost from Contacte, back from HighLevel with their old ids (api/portal-ghl.js, restore)
+      (any && !running ? restoreHtml(d.restore) : '') +
       // straight from the calendars, by date: the appointments the import missed or that came in since
       (any && !running ? '<div class="st-int-row st-ghl-sync"><span class="k-muted">Programările din calendarele HighLevel, de la</span><input type="date" data-ghl-from value="' + K.today() + '">' +
         '<button type="button" class="k-btn is-outline is-sm" data-ghl-sync>' + icon('download') + 'Adu programările</button></div>' : '') +
@@ -1146,6 +1148,11 @@
         K.reload && K.reload();
       } catch (err) { ghlFail(err); }
     }));
+    const rg = box.querySelector('[data-restore-go]');
+    if (rg) rg.addEventListener('click', () => K.busy(rg, async () => {
+      try { const r = await K.api('/api/portal-ghl', { action: 'restore_start' }); paintGhl(box, r); restoreLoop(box); } catch (err) { ghlFail(err); }
+    }));
+    if (d.restore && d.restore.status === 'running' && !restoreRun) restoreLoop(box);
     const sy = box.querySelector('[data-ghl-sync]');
     if (sy) sy.addEventListener('click', () => K.busy(sy, async () => {
       const from = (box.querySelector('[data-ghl-from]') || {}).value || K.today();
@@ -1174,6 +1181,32 @@
     if (running && !ghlRun) ghlLoop(box);
   }
   // one step after another while the page is open and the import runs
+  function restoreHtml(r) {
+    const c = (r && r.counts) || {};
+    const acc = r ? Object.values(r.accs || {}) : [];
+    const read = acc.reduce((x, a) => x + (a.read || 0), 0), total = acc.reduce((x, a) => x + (a.total || 0), 0);
+    if (r && r.status === 'running') return '<div class="k-card ad-note is-info" data-restore>' + icon('refresh') + '<span>Refac contactele din HighLevel… ' + K.num(read) + (total ? ' din ' + K.num(total) : '') + '. Lasă pagina deschisă.</span></div>';
+    if (r && r.status === 'done') return '<div class="k-card ad-note is-good" data-restore>' + icon('check') + '<span>Contacte refăcute: ' + K.num(c.created || 0) + ' aduse înapoi' + (r.fromAppts ? ', ' + K.num(r.fromAppts) + ' din programări' : '') + ', ' + K.num(c.updated || 0) + ' erau deja.</span>' +
+      '<button type="button" class="k-btn is-ghost is-sm" data-restore-go>' + icon('refresh') + 'Din nou</button></div>';
+    return '<div class="k-card ad-note is-warn" data-restore>' + icon('info') + '<span>' + (r && r.status === 'paused' ? 'Refacerea s-a oprit (' + esc(r.lastError || 'HighLevel') + '). ' : 'Lipsesc contacte importate din HighLevel? ') + 'Le aduc înapoi, cu programările, mențiunile și conversațiile lor.</span>' +
+      '<button type="button" class="k-btn is-primary is-sm" data-restore-go>' + icon('download') + 'Refă contactele</button></div>';
+  }
+  let restoreRun = null;
+  async function restoreLoop(box) {
+    const me = {};
+    restoreRun = me;
+    while (restoreRun === me) {
+      let r;
+      try { r = await K.api('/api/portal-ghl', { action: 'restore_step' }); }
+      catch (err) { await new Promise((ok) => setTimeout(ok, 5000)); continue; }
+      const live = document.body.contains(box) ? box : document.querySelector('[data-ghl]');
+      const st = r.restore && r.restore.status;
+      if (st !== 'running') { restoreRun = null; if (live) paintGhl(live, r); if (st === 'done') { K.ui().toast('Contactele sunt înapoi.', 'success'); K.reload && K.reload(); } return; }
+      const el = live && live.querySelector('[data-restore]');
+      if (el) el.outerHTML = restoreHtml(r.restore);
+    }
+  }
+
   async function ghlLoop(box) {
     const me = {};
     ghlRun = me;

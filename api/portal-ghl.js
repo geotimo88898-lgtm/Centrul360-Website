@@ -45,6 +45,17 @@ function moveBack(a) {
   a.endTime = end && end.date === r.date && end.time > r.time ? end.time : '';
 }
 
+// ------------------------------------------------------------------ restoring the contacts
+// data/clients.json once lost the imported contacts (a failed read answered as an empty list, then
+// written over; _lib/store.js now refuses both). The restore puts them back WITH THEIR OLD IDS, so
+// their appointments, notes and conversations (kept under those ids) line up again:
+//   1. the clients named in the appointments (id, name, phone) come back at once;
+//   2. HighLevel's contacts are read again (contacts only, no notes / messages / appointments: those
+//      are still here), each one with the id the import had given it (the import job's queue keeps
+//      GHL id → client id) or found by phone / email, else a new one.
+// data/ghl-restore.json { status, ids: { ghlId: clientId }, accs: { tm|ar: <contacts step> }, counts }
+const RESTORE = 'data/ghl-restore.json';
+
 const ghlIdsOf = (c) => (Array.isArray(c.ghlIds) ? c.ghlIds : []).concat(c.ghlId ? [c.ghlId] : []);
 
 async function loadConns() {
@@ -79,7 +90,9 @@ async function status() {
     };
   });
   const appts = await readJSON('data/appointments.json', []);
-  return { accounts, job: pubJob(job), timesToFix: appts.filter(needsTimeFix).length };
+  const rj = await readJSON(RESTORE, null);
+  const restore = rj ? { status: rj.status, counts: rj.counts, fromAppts: rj.fromAppts || 0, idsKnown: Object.keys(rj.ids || {}).length, accs: Object.fromEntries(Object.entries(rj.accs || {}).map(([k, a]) => [k, { read: a.queue.length, total: a.total, done: a.done }])), updatedAt: rj.updatedAt, lastError: rj.lastError || '' } : null;
+  return { accounts, job: pubJob(job), timesToFix: appts.filter(needsTimeFix).length, restore };
 }
 
 // one appointment as HighLevel has it now (null: none of the sub-accounts knows it)
@@ -141,6 +154,7 @@ async function stepContacts(conn, aj, until) {
   clients.forEach((c) => ghlIdsOf(c).forEach((g) => byGhl.set(g, c)));
   const byPhone = new Map(clients.filter((c) => c.phone).map((c) => [G.normalizePhone(c.phone), c]));
   const byEmail = new Map(clients.filter((c) => c.email).map((c) => [String(c.email).toLowerCase(), c]));
+  const byId = new Map(clients.map((c) => [c.id, c]));
   const queued = new Set(aj.queue.map((x) => x[0]));
   let changed = false;
   try {
@@ -154,7 +168,7 @@ async function stepContacts(conn, aj, until) {
         const name = G.fullName(g).slice(0, 150);
         if (!phone && !email) { aj.counts.skipped++; continue; }
         const tags = (g.tags || []).map((t) => String(t).trim()).filter(Boolean).slice(0, 20);
-        let c = byGhl.get(g.id) || (phone && byPhone.get(phone)) || (email && byEmail.get(email));
+        let c = byGhl.get(g.id) || (aj.ids && aj.ids[g.id] && byId.get(aj.ids[g.id])) || (phone && byPhone.get(phone)) || (email && byEmail.get(email));
         if (c) {
           if (!c.name && name) c.name = name;
           if (!c.email && email) c.email = email;
@@ -164,14 +178,15 @@ async function stepContacts(conn, aj, until) {
           aj.counts.updated++;
         } else {
           const created = g.dateAdded && /^\d{4}-\d{2}-\d{2}/.test(g.dateAdded) ? g.dateAdded.slice(0, 10) : todayISO();
-          c = { id: G.uid(), name: name || email || phone, phone, email, tags, source: 'highlevel', createdAt: created, lastVisit: created, importedAt: nowISO() };
+          // a restore gives her back the id she had (her appointments and history point to it)
+          c = { id: (aj.ids && aj.ids[g.id]) || G.uid(), name: name || email || phone, phone, email, tags, source: 'highlevel', createdAt: created, lastVisit: created, importedAt: nowISO() };
           clients.push(c);
           aj.counts.created++;
         }
         c.ghlIds = Array.from(new Set(ghlIdsOf(c).concat(g.id)));
         delete c.ghlId;
         if (!c.location && conn.city) c.location = conn.city;
-        byGhl.set(g.id, c); if (phone) byPhone.set(phone, c); if (email) byEmail.set(email, c);
+        byGhl.set(g.id, c); byId.set(c.id, c); if (phone) byPhone.set(phone, c); if (email) byEmail.set(email, c);
         aj.queue.push([g.id, c.id]);
         queued.add(g.id);
         aj.counts.contacts++;
@@ -445,6 +460,75 @@ module.exports = async (req, res) => {
         const r = await syncAppts(conns, from, days, state);
         res.status(200).json(Object.assign(await status(), { sync: r }));
       } catch (e) { res.status(400).json({ error: e.code || 'ghl_failed', status: e.status || 0, message: e.message || '' }); }
+      return;
+    }
+
+    if (b.action === 'restore_start') {
+      const live0 = Object.keys(ACCS).filter((k) => conns[k] && conns[k].token);
+      if (!live0.length) { res.status(400).json({ error: 'not_connected' }); return; }
+      const prev = await readJSON(RESTORE, null);
+      const job0 = await readJSON(G.JOB, null);
+      // GHL id → the client id each import gave (every import job kept its queue), and the ones known already
+      const ids = Object.assign({}, prev && prev.ids);
+      Object.values((job0 && job0.accs) || {}).forEach((a) => (a.queue || []).forEach(([gid, cid]) => { if (gid && cid && !ids[gid]) ids[gid] = cid; }));
+      // 1. the clients the appointments name, back with their ids
+      const [clients, appts] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', [])]);
+      const have = new Set(clients.map((c) => c.id));
+      const byPhone = new Set(clients.map((c) => G.normalizePhone(c.phone)).filter(Boolean));
+      let fromAppts = 0;
+      const back = new Map();
+      appts.forEach((a) => {
+        if (!a.clientId || have.has(a.clientId)) return;
+        const cur = back.get(a.clientId) || { id: a.clientId, name: '', phone: '', email: '', tags: [], source: 'highlevel', createdAt: '', lastVisit: '', location: '', restoredAt: nowISO() };
+        if (!cur.name && a.clientName) cur.name = String(a.clientName).slice(0, 150);
+        if (!cur.phone && a.clientPhone) cur.phone = G.normalizePhone(a.clientPhone) || String(a.clientPhone);
+        if (!cur.location && a.location) cur.location = a.location;
+        if (!cur.createdAt || a.date < cur.createdAt) cur.createdAt = a.date;
+        if (a.status === 'finalizata' && a.date > cur.lastVisit) cur.lastVisit = a.date;
+        back.set(a.clientId, cur);
+      });
+      back.forEach((c) => {
+        if (c.phone && byPhone.has(G.normalizePhone(c.phone))) return; // she is here already under a new id
+        if (!c.lastVisit) c.lastVisit = c.createdAt;
+        clients.push(c); fromAppts++;
+        if (c.phone) byPhone.add(G.normalizePhone(c.phone));
+      });
+      if (fromAppts) await writeJSON('data/clients.json', clients);
+      // 2. HighLevel's contacts again, step by step
+      const rj = { status: 'running', ids, fromAppts: ((prev && prev.fromAppts) || 0) + fromAppts, accs: {}, counts: zero(), startedAt: nowISO(), updatedAt: nowISO() };
+      live0.forEach((k) => { rj.accs[k] = newAccJob(); });
+      await writeJSON(RESTORE, rj, { quiet: true });
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'restore_step') {
+      const rj = await readJSON(RESTORE, null);
+      if (!rj || rj.status !== 'running') { res.status(200).json(await status()); return; }
+      const until = Date.now() + BUDGET;
+      try {
+        for (const k of Object.keys(ACCS)) {
+          const aj = rj.accs[k];
+          if (!aj || aj.done) continue;
+          const conn = conns[k];
+          if (!conn || !conn.token) { aj.done = true; continue; }
+          conn.city = ACCS[k];
+          aj.ids = rj.ids;
+          await stepContacts(conn, aj, until);
+          delete aj.ids;
+          if (aj.phase !== 'contacts') aj.done = true; // contacts only: the rest is still here
+          if (!aj.done) break;
+        }
+        Object.values(rj.accs).forEach((a) => ['created', 'updated', 'skipped', 'contacts'].forEach((x) => { rj.counts[x] = 0; }));
+        Object.values(rj.accs).forEach((a) => ['created', 'updated', 'skipped', 'contacts'].forEach((x) => { rj.counts[x] += (a.counts && a.counts[x]) || 0; }));
+        if (Object.values(rj.accs).every((a) => a.done)) { rj.status = 'done'; rj.finishedAt = nowISO(); }
+        rj.lastError = '';
+      } catch (e) {
+        rj.lastError = e.code || 'ghl_failed';
+        if (e.code === 'ghl_auth' || e.code === 'ghl_scope') rj.status = 'paused';
+      }
+      rj.updatedAt = nowISO();
+      await writeJSON(RESTORE, rj, { quiet: true });
+      res.status(200).json(await status());
       return;
     }
 
