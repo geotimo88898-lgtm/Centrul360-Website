@@ -97,7 +97,7 @@ async function keepMedia(message, phoneNumberId) {
   return Object.assign(out, { path });
 }
 
-// A client's message rings on the phones (the owner, 18.10): "MESAJ NOU de la NUME", the message itself under it.
+// A client's message rings on the phones (the owner, 18.10): "Mesaj de la NUME", the message itself under it.
 // Who hears it: the owner, and reception of the clinic she wrote to (both receptions while the number isn't tied to a city).
 async function pushMessages(fresh) {
   if (!fresh.length) return;
@@ -105,7 +105,7 @@ async function pushMessages(fresh) {
   for (const m of fresh) {
     const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
     const text = m.text.length > 160 ? m.text.slice(0, 159) + '…' : m.text;
-    await sendPush({ readJSON, writeJSON }, ids, { title: 'MESAJ NOU de la ' + m.name, body: text, url: '/#mesaje', tag: 'msg-' + m.phone });
+    await sendPush({ readJSON, writeJSON }, ids, { title: 'Mesaj de la ' + m.name, body: text, url: '/#mesaje', tag: 'msg-' + m.phone });
   }
 }
 
