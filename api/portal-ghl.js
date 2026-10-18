@@ -91,7 +91,8 @@ async function status() {
   });
   const appts = await readJSON('data/appointments.json', []);
   const rj = await readJSON(RESTORE, null);
-  const restore = rj ? { status: rj.status, counts: rj.counts, fromAppts: rj.fromAppts || 0, idsKnown: Object.keys(rj.ids || {}).length, accs: Object.fromEntries(Object.entries(rj.accs || {}).map(([k, a]) => [k, { read: a.queue.length, total: a.total, done: a.done }])), updatedAt: rj.updatedAt, lastError: rj.lastError || '' } : null;
+  const restore = rj ? { status: rj.status, counts: rj.counts, fromAppts: rj.fromAppts || 0, idsKnown: Object.keys(rj.ids || {}).length, accs: Object.fromEntries(Object.entries(rj.accs || {}).map(([k, a]) => [k, { read: a.queue.length, total: a.total, done: a.done }])), updatedAt: rj.updatedAt, lastError: rj.lastError || '',
+    history: rj.history ? { status: rj.history.status, pos: Object.values(rj.accs || {}).reduce((n, a) => n + (a.hpos || 0), 0), total: Object.values(rj.accs || {}).reduce((n, a) => n + a.queue.length, 0), notes: rj.history.notes || 0, messages: rj.history.messages || 0, contacts: rj.history.contacts || 0, lastError: rj.history.lastError || '' } : null } : null;
   return { accounts, job: pubJob(job), timesToFix: appts.filter(needsTimeFix).length, restore };
 }
 
@@ -318,6 +319,59 @@ async function syncAppts(conns, from, days, state) {
   return Object.assign(out, { left });
 }
 
+// ------------------------------------------------------------------ restoring the history
+// After "Refă contactele": the notes (Mențiuni) and conversations (Istoric) from HighLevel, for every contact the
+// restore read, into its current id. A contact whose history is here already (it came back with its old id) is
+// skipped without asking HighLevel. Notes and messages only, each once: the appointments are not touched.
+async function stepHistory(conn, aj, h, until) {
+  const users = new Map((conn.users || []).map((u) => [u.id, u.name]));
+  const counts = new Map(); // client id → her number of notes now
+  const soft = (e) => { if (e.code === 'ghl_auth' || e.code === 'ghl_scope') throw e; return []; };
+  while ((aj.hpos || 0) < aj.queue.length && Date.now() < until) {
+    const [gid, cid] = aj.queue[aj.hpos || 0];
+    const detail = Object.assign(emptyDetail(), await readJSON(detailPath(cid), {}));
+    const fromGhl = (x) => String(x.id || '').startsWith('ghl:');
+    if (!detail.notes.some(fromGhl) && !(detail.history || []).some(fromGhl)) {
+      const [notes, convs] = await Promise.all([G.notesOf(conn, gid).catch(soft), G.conversationsOf(conn, gid).catch(soft)]);
+      const msgs = [];
+      for (const cv of convs) (await G.messagesOf(conn, cv.id, 400).catch(soft)).forEach((m) => msgs.push(m));
+      let changed = false;
+      for (const n of notes) {
+        const body = G.text(n.body, 4000);
+        if (!body) continue;
+        detail.notes.push({ id: 'ghl:' + n.id, text: (n.title ? G.text(n.title, 200) + '\n' : '') + body, author: users.get(n.userId) || 'HighLevel', authorId: '', at: n.dateAdded || nowISO(), from: 'highlevel' });
+        h.notes = (h.notes || 0) + 1; changed = true;
+      }
+      const history = Array.isArray(detail.history) ? detail.history : [];
+      const have = new Set(history.map((x) => x.id));
+      for (const m of msgs) {
+        const id = 'ghl:' + m.id;
+        if (have.has(id) || G.isActivity(m)) continue;
+        const body = G.text(m.body, 2000);
+        const att = (m.attachments || []).length;
+        if (!body && !att) continue;
+        history.push({ id, at: m.dateAdded || '', ch: G.channelOf(m), dir: m.direction === 'outbound' ? 'out' : 'in', text: body, att, by: m.userId ? users.get(m.userId) || '' : '', auto: ['workflow', 'campaign', 'bulk_actions'].includes(m.source), city: conn.city || '' });
+        have.add(id); h.messages = (h.messages || 0) + 1; changed = true;
+      }
+      if (changed) {
+        detail.notes.sort((a, b) => (a.at < b.at ? 1 : -1));
+        detail.history = history.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 2000);
+        await writeJSON(detailPath(cid), detail, { quiet: true });
+        counts.set(cid, detail.notes.length);
+        h.contacts = (h.contacts || 0) + 1;
+      }
+    }
+    aj.hpos = (aj.hpos || 0) + 1;
+  }
+  // the notes' number on the contacts (Contacte shows it): read fresh right before writing, nothing else changes
+  if (counts.size) {
+    const clients = await readJSON('data/clients.json', []);
+    let any = false;
+    clients.forEach((c) => { if (counts.has(c.id) && c.notesCount !== counts.get(c.id)) { c.notesCount = counts.get(c.id); any = true; } });
+    if (any) await writeJSON('data/clients.json', clients);
+  }
+}
+
 // ------------------------------------------------------------------ each contact: notes, conversations, appointments
 async function stepDetails(conn, aj, until) {
   const [clients, appointments, employees] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/employees.json', [])]);
@@ -525,6 +579,39 @@ module.exports = async (req, res) => {
       } catch (e) {
         rj.lastError = e.code || 'ghl_failed';
         if (e.code === 'ghl_auth' || e.code === 'ghl_scope') rj.status = 'paused';
+      }
+      rj.updatedAt = nowISO();
+      await writeJSON(RESTORE, rj, { quiet: true });
+      res.status(200).json(await status());
+      return;
+    }
+
+    if (b.action === 'history_start' || b.action === 'history_step') {
+      const rj = await readJSON(RESTORE, null);
+      if (!rj || rj.status !== 'done') { res.status(200).json(await status()); return; }
+      if (b.action === 'history_start') {
+        if (!rj.history || rj.history.status !== 'running') {
+          rj.history = { status: 'running', startedAt: nowISO(), notes: 0, messages: 0, contacts: 0 };
+          Object.values(rj.accs || {}).forEach((a) => { a.hpos = 0; });
+        }
+      } else if (rj.history && rj.history.status === 'running') {
+        const until = Date.now() + BUDGET;
+        try {
+          for (const k of Object.keys(ACCS)) {
+            const aj = rj.accs[k];
+            if (!aj || (aj.hpos || 0) >= aj.queue.length) continue;
+            const conn = conns[k];
+            if (!conn || !conn.token) { aj.hpos = aj.queue.length; continue; }
+            conn.city = ACCS[k];
+            await stepHistory(conn, aj, rj.history, until);
+            if ((aj.hpos || 0) < aj.queue.length) break;
+          }
+          if (Object.values(rj.accs || {}).every((a) => (a.hpos || 0) >= a.queue.length)) { rj.history.status = 'done'; rj.history.finishedAt = nowISO(); }
+          rj.history.lastError = '';
+        } catch (e) {
+          rj.history.lastError = e.code || 'ghl_failed';
+          if (e.code === 'ghl_auth' || e.code === 'ghl_scope') rj.history.status = 'paused';
+        }
       }
       rj.updatedAt = nowISO();
       await writeJSON(RESTORE, rj, { quiet: true });

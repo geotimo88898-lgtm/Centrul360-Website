@@ -1153,6 +1153,11 @@
       try { const r = await K.api('/api/portal-ghl', { action: 'restore_start' }); paintGhl(box, r); restoreLoop(box); } catch (err) { ghlFail(err); }
     }));
     if (d.restore && d.restore.status === 'running' && !restoreRun) restoreLoop(box);
+    const hg = box.querySelector('[data-history-go]');
+    if (hg) hg.addEventListener('click', () => K.busy(hg, async () => {
+      try { const r = await K.api('/api/portal-ghl', { action: 'history_start' }); paintGhl(box, r); historyLoop(box); } catch (err) { ghlFail(err); }
+    }));
+    if (d.restore && d.restore.history && d.restore.history.status === 'running' && !historyRun) historyLoop(box);
     const sy = box.querySelector('[data-ghl-sync]');
     if (sy) sy.addEventListener('click', () => K.busy(sy, async () => {
       const from = (box.querySelector('[data-ghl-from]') || {}).value || K.today();
@@ -1186,7 +1191,11 @@
     const acc = r ? Object.values(r.accs || {}) : [];
     const read = acc.reduce((x, a) => x + (a.read || 0), 0), total = acc.reduce((x, a) => x + (a.total || 0), 0);
     if (r && r.status === 'running') return '<div class="k-card ad-note is-info" data-restore>' + icon('refresh') + '<span>Refac contactele din HighLevel… ' + K.num(read) + (total ? ' din ' + K.num(total) : '') + '. Lasă pagina deschisă.</span></div>';
-    if (r && r.status === 'done') return '<div class="k-card ad-note is-good" data-restore>' + icon('check') + '<span>Contacte refăcute: ' + K.num(c.created || 0) + ' aduse înapoi' + (r.fromAppts ? ', ' + K.num(r.fromAppts) + ' din programări' : '') + ', ' + K.num(c.updated || 0) + ' erau deja.</span>' +
+    const hi = r && r.history;
+    if (r && r.status === 'done' && hi && hi.status === 'running') return '<div class="k-card ad-note is-info" data-restore>' + icon('refresh') + '<span>Aduc mențiunile și conversațiile din HighLevel… ' + K.num(hi.pos) + ' din ' + K.num(hi.total) + ' contacte. Lasă pagina deschisă.</span></div>';
+    if (r && r.status === 'done') return '<div class="k-card ad-note is-good" data-restore>' + icon('check') + '<span>Contacte refăcute: ' + K.num(c.created || 0) + ' aduse înapoi' + (r.fromAppts ? ', ' + K.num(r.fromAppts) + ' din programări' : '') + ', ' + K.num(c.updated || 0) + ' erau deja.' +
+      (hi && hi.status === 'done' ? ' Istoric adus: ' + K.num(hi.notes) + ' mențiuni, ' + K.num(hi.messages) + ' mesaje.' : hi && hi.status === 'paused' ? ' Istoricul s-a oprit (' + esc(hi.lastError || 'HighLevel') + ').' : '') + '</span>' +
+      (!hi || hi.status !== 'done' ? '<button type="button" class="k-btn is-primary is-sm" data-history-go>' + icon('download') + 'Adu mențiunile și conversațiile</button>' : '') +
       '<button type="button" class="k-btn is-ghost is-sm" data-restore-go>' + icon('refresh') + 'Din nou</button></div>';
     return '<div class="k-card ad-note is-warn" data-restore>' + icon('info') + '<span>' + (r && r.status === 'paused' ? 'Refacerea s-a oprit (' + esc(r.lastError || 'HighLevel') + '). ' : 'Lipsesc contacte importate din HighLevel? ') + 'Le aduc înapoi, cu programările, mențiunile și conversațiile lor.</span>' +
       '<button type="button" class="k-btn is-primary is-sm" data-restore-go>' + icon('download') + 'Refă contactele</button></div>';
@@ -1203,6 +1212,22 @@
       const st = r.restore && r.restore.status;
       if (st !== 'running') { restoreRun = null; if (live) paintGhl(live, r); if (st === 'done') { K.ui().toast('Contactele sunt înapoi.', 'success'); K.reload && K.reload(); } return; }
       const el = live && live.querySelector('[data-restore]');
+      if (el) el.outerHTML = restoreHtml(r.restore);
+    }
+  }
+
+  let historyRun = null;
+  async function historyLoop(box) {
+    const me = {};
+    historyRun = me;
+    while (historyRun === me) {
+      let r;
+      try { r = await K.api('/api/portal-ghl', { action: 'history_step' }); }
+      catch (err) { await new Promise((ok) => setTimeout(ok, 5000)); continue; }
+      const live = document.body.contains(box) ? box : document.querySelector('[data-ghl]');
+      const hi = r.restore && r.restore.history;
+      const el = live && live.querySelector('[data-restore]');
+      if (!hi || hi.status !== 'running') { historyRun = null; if (live) paintGhl(live, r); if (hi && hi.status === 'done') K.ui().toast('Mențiunile și conversațiile sunt înapoi.', 'success'); return; }
       if (el) el.outerHTML = restoreHtml(r.restore);
     }
   }
