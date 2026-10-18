@@ -10,7 +10,7 @@ const { defaultOffers } = require('./offer-defaults');
 
 const LOCATIONS = ['timisoara', 'arad'];
 const SITE_CATEGORIES = ['epilare', 'faciale', 'remodelare'];
-const SCHEMA = 3;
+const SCHEMA = 4;
 
 // Marketing briefs for the offers that run in ads today (ported 1:1 from the Creative
 // machine's old offers.json, which is retired - Creative now reads this feed).
@@ -18,8 +18,8 @@ const BRIEFS = {
   'liposonix-2zone': {
     ads: true, locations: ['timisoara', 'arad'], adName: 'LipoSonix · 2 zone la preț de una', mechanic: '1+1: 2 zone tratate la prețul uneia',
     dreamOutcome: 'talie/abdomen/șolduri mai definite, haine care vin mai bine', mechanism: 'ultrasunete focalizate care țintesc grăsimea localizată rezistentă la dietă și sport',
-    objections: ['fără operație', 'fără timp de recuperare', 'fără ace/anestezie', 'rezultate din prima ședință'],
-    zones: ['abdomen', 'flancuri/talie', 'coapse', 'brațe', 'zona lombară'], notes: 'Cea mai dovedită ofertă, toate creativele câștigătoare de până acum sunt LipoSonix.',
+    objections: ['fără efort', 'fără diete stricte', 'fără sală', 'fără ace', 'rezultate din prima ședință'],
+    zones: ['abdomen', 'flancuri/talie', 'coapse', 'brațe', 'zona lombară'], notes: 'Cea mai dovedită ofertă.',
   },
   'facial-restart': {
     ads: true, locations: ['timisoara', 'arad'], adName: 'Tratament facial Restart',
@@ -71,14 +71,46 @@ function withMarketing(o) {
   return out;
 }
 
-// Reads data/offers.json, upgrading older files in place (once) to schema 3.
+// Schema 4 (18.10): HIFU gușă, the clinic's best offer, back at 190 lei in both cities and in ads; "fără operație"
+// (and the like) never brought a winner, so it leaves the objections; the body offers lead with no effort / no diets.
+const HIFU = {
+  key: 'hifu-gusa-1sedinta', title: 'HIFU · Gușă', priceNew: 190, priceOld: 290, active: true, ads: true, locations: ['timisoara', 'arad'],
+  short: 'HIFU Gușă', adName: 'HIFU gușă', dreamOutcome: 'bărbie și gât mai definite, pielea de sub bărbie mai strânsă',
+  mechanism: 'ultrasunete focalizate (HIFU) care strâng pielea de sub bărbie și ajută la reducerea gușei',
+  objections: ['fără ace', 'fără pauză, te întorci la treabă', 'o singură ședință'], zones: ['gușă / bărbie dublă', 'linia maxilarului'],
+  notes: 'Cea mai bună ofertă a clinicii (omul, 18.10).',
+};
+const NOT_SOLD = /operați|chirurg|bisturiu|invaziv/i;
+function schema4(offers) {
+  const out = offers.map((o) => {
+    const x = Object.assign({}, o);
+    if (Array.isArray(x.objections)) {
+      x.objections = x.objections.filter((t) => !NOT_SOLD.test(t));
+      if (x.category === 'remodelare' || /lipo|cavita/i.test(x.key || '')) x.objections = ['fără efort', 'fără diete stricte'].concat(x.objections.filter((t) => !/efort|diet/i.test(t)));
+    }
+    if (x.key === 'liposonix-2zone' && /toate creativele câștigătoare/i.test(x.notes || '')) x.notes = 'Cea mai dovedită ofertă.';
+    return x;
+  });
+  const h = out.find((o) => o.key === HIFU.key);
+  if (h) Object.assign(h, HIFU);
+  else {
+    const seed = defaultOffers().find((o) => o.key === HIFU.key) || { id: 'seed-' + HIFU.key, description: '', category: 'faciale', featured: false, imageKey: 'gusa-ba-premium', order: 3 };
+    out.push(Object.assign({}, seed, HIFU));
+  }
+  return out;
+}
+
+// Reads data/offers.json, upgrading older files in place (once) to the current schema.
 async function loadOffers(readJSON, writeJSON) {
   const raw = await readJSON('data/offers.json', null);
   let offers = Array.isArray(raw) ? raw : defaultOffers();
   const meta = (await readJSON('data/offers-meta.json', null)) || { schema: 1 };
   if (meta.schema < SCHEMA) {
-    offers = offers.map((o) => (BRIEFS[o.key] ? Object.assign({}, o, BRIEFS[o.key]) : o));
-    ADDED.forEach((a) => { if (!offers.some((o) => o.key === a.key)) offers.push(a); });
+    if (meta.schema < 3) {
+      offers = offers.map((o) => (BRIEFS[o.key] ? Object.assign({}, o, BRIEFS[o.key]) : o));
+      ADDED.forEach((a) => { if (!offers.some((o) => o.key === a.key)) offers.push(a); });
+    }
+    if (meta.schema < 4) offers = schema4(offers);
     offers = offers.map(withMarketing);
     if (writeJSON) {
       await writeJSON('data/offers.json', offers);
