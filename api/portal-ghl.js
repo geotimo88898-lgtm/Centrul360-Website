@@ -327,8 +327,8 @@ async function stepHistory(conn, aj, h, until) {
   const users = new Map((conn.users || []).map((u) => [u.id, u.name]));
   const counts = new Map(); // client id → her number of notes now
   const soft = (e) => { if (e.code === 'ghl_auth' || e.code === 'ghl_scope') throw e; return []; };
-  while ((aj.hpos || 0) < aj.queue.length && Date.now() < until) {
-    const [gid, cid] = aj.queue[aj.hpos || 0];
+  // 4 contacts at a time (never the same contact twice in one go): GHL's pace (ghl.js) still holds for the calls
+  const one = async ([gid, cid]) => {
     const detail = Object.assign(emptyDetail(), await readJSON(detailPath(cid), {}));
     const fromGhl = (x) => String(x.id || '').startsWith('ghl:');
     if (!detail.notes.some(fromGhl) && !(detail.history || []).some(fromGhl)) {
@@ -361,7 +361,12 @@ async function stepHistory(conn, aj, h, until) {
         h.contacts = (h.contacts || 0) + 1;
       }
     }
-    aj.hpos = (aj.hpos || 0) + 1;
+  };
+  while ((aj.hpos || 0) < aj.queue.length && Date.now() < until) {
+    const batch = [], seen = new Set();
+    for (let i = aj.hpos || 0; i < aj.queue.length && batch.length < 4 && !seen.has(aj.queue[i][1]); i++) { batch.push(aj.queue[i]); seen.add(aj.queue[i][1]); }
+    await Promise.all(batch.map(one));
+    aj.hpos = (aj.hpos || 0) + batch.length;
   }
   // the notes' number on the contacts (Contacte shows it): read fresh right before writing, nothing else changes
   if (counts.size) {
@@ -594,8 +599,10 @@ module.exports = async (req, res) => {
           rj.history = { status: 'running', startedAt: nowISO(), notes: 0, messages: 0, contacts: 0 };
           Object.values(rj.accs || {}).forEach((a) => { a.hpos = 0; });
         }
-      } else if (rj.history && rj.history.status === 'running') {
+      } else if (rj.history && rj.history.status === 'running' && !(rj.history.leaseUntil > Date.now())) {
         const until = Date.now() + BUDGET;
+        rj.history.leaseUntil = until + 15e3;
+        await writeJSON(RESTORE, rj, { quiet: true });
         try {
           for (const k of Object.keys(ACCS)) {
             const aj = rj.accs[k];
@@ -612,6 +619,10 @@ module.exports = async (req, res) => {
           rj.history.lastError = e.code || 'ghl_failed';
           if (e.code === 'ghl_auth' || e.code === 'ghl_scope') rj.history.status = 'paused';
         }
+        rj.history.leaseUntil = 0;
+      } else if (rj.history && rj.history.status === 'running') {
+        res.status(200).json(Object.assign(await status(), { busy: true }));
+        return;
       }
       rj.updatedAt = nowISO();
       await writeJSON(RESTORE, rj, { quiet: true });

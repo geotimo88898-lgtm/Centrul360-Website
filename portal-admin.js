@@ -1224,6 +1224,8 @@
       let r;
       try { r = await K.api('/api/portal-ghl', { action: 'history_step' }); }
       catch (err) { await new Promise((ok) => setTimeout(ok, 5000)); continue; }
+      // another open portal is working on it: wait and look again
+      if (r.busy) await new Promise((ok) => setTimeout(ok, 15000));
       const live = document.body.contains(box) ? box : document.querySelector('[data-ghl]');
       const hi = r.restore && r.restore.history;
       const el = live && live.querySelector('[data-restore]');
@@ -1231,6 +1233,15 @@
       if (el) el.outerHTML = restoreHtml(r.restore);
     }
   }
+
+  // the history restore goes on from any page of an admin's open portal (a reload or another page doesn't stop it)
+  setTimeout(async () => {
+    try {
+      if (!(K.data && K.data.isAdmin) || historyRun) return;
+      const d = await K.api('/api/portal-ghl');
+      if (d.restore && d.restore.history && d.restore.history.status === 'running' && !historyRun) historyLoop(null);
+    } catch (e) { /* not now */ }
+  }, 8000);
 
   async function ghlLoop(box) {
     const me = {};
