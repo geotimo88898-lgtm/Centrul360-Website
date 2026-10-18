@@ -1,0 +1,34 @@
+# One portal. admin.centrul360.com and staff.centrul360.com are served from the branch claude/loving-bardeen-f8cpzj
+# (Vercel's domain setting), the site from main. A change pushed only to main used to reach the site but not the
+# portal ("some changes in one system, some in the other"). Now every push to main moves the portal branches to the
+# same commit, so main is the only place to push and admin always shows it.
+name: Portalul urmează main
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portal-follows-main
+  cancel-in-progress: false
+
+jobs:
+  follow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Move the portal branches to main
+        run: |
+          for b in claude/loving-bardeen-f8cpzj portal-mobile-nav; do
+            if git rev-parse --verify --quiet "origin/$b" >/dev/null && ! git merge-base --is-ancestor "origin/$b" HEAD; then
+              # the branch has commits main doesn't: keep them on a side branch before moving it
+              git push origin "origin/$b:refs/heads/kept/$b-$(date +%Y%m%d%H%M%S)"
+            fi
+            git push --force origin "HEAD:refs/heads/$b"
+          done
