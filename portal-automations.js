@@ -197,6 +197,7 @@
     'epilare-full-body': (p) => 'Epilare Laser Full Body la ' + p.now + ' LEI, în loc de ' + p.was + ' LEI',
     'cavitatie-ems': (p) => '1+1, Cavitație + EMS cadou, ' + p.now + ' LEI redus de la ' + p.was + ' LEI',
     'cavitatie-1plus1': (p) => '1+1, Cavitație, ' + p.now + ' LEI redus de la ' + p.was + ' LEI',
+    'hifu-gusa-1sedinta': (p) => 'HIFU gușă la ' + p.now + ' LEI, în loc de ' + p.was + ' LEI',
   };
   const leadPhrase = (o) => { const p = leadPrices(o); const f = LEAD_PHRASE[o.key]; return f ? f(p) : o.title + (p.now ? ' la ' + p.now + ' LEI' + (p.was > p.now ? ', în loc de ' + p.was + ' LEI' : '') : ''); };
   const leadText = (o) => o.site ? SITE_TEXT : 'Bună {prenume}! 👋 Mai avem câteva locuri disponibile săptămâna aceasta la oferta ' + leadPhrase(o) + '. 🔥\n\nCa să îți verificăm disponibilitatea, unde ți-ar fi mai ușor să ajungi? ❤️';
