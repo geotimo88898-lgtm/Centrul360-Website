@@ -157,3 +157,6 @@ module.exports = async (req, res) => {
 };
 
 module.exports.config = { maxDuration: 60 };
+// for Creative's results (api/ads-publish.js ?action=results)
+module.exports.withFunnel = withFunnel;
+module.exports.connection = connection;

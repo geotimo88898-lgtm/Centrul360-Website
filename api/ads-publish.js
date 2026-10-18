@@ -6,6 +6,8 @@
 //   POST { action: 'form_create', form }   a new lead form on the Page, offered in the window at once
 //   GET  ?action=form_setup                what the "Creează formular" window starts from (the template, the forms)
 //   POST { action: 'form_info', id }       an existing form's screening questions (to copy them)
+//   GET  ?action=results&since=YYYY-MM-DD  every ad's spend and leads (Meta) and what came after the form (portal), so
+//                                          Creative makes more of what brought cheap leads and bookings
 //                            campaign + ad set + ad, see _lib/meta-ads.js; kept in data/ads-published.json
 // The publishing itself lives in _lib/meta-ads.js.
 
@@ -79,6 +81,28 @@ async function options() {
   };
 }
 
+// every ad from `since` (default: 30 days back) to today: Meta's spend / leads, the portal's leads / bookings / visits /
+// clients (counted from 16.10.2026, 22:05, like Reclame) and the spend of those days
+async function results(sinceQ) {
+  const AM = require('./ads-manager');
+  const { conn, problem } = await AM.connection();
+  if (problem) return { ok: false, reason: problem, ads: [] };
+  const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+  const back = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  const since = /^\d{4}-\d{2}-\d{2}$/.test(String(sinceQ || '')) && sinceQ <= today ? String(sinceQ) : back;
+  const range = { since, until: today };
+  const view = await ads.overview(conn, 'custom', range);
+  if (view.error) return { ok: false, reason: 'meta_error', message: view.error, ads: [] };
+  await AM.withFunnel(view, 'custom', range, conn).catch((e) => { console.error('results funnel:', e.message); });
+  const out = [];
+  (view.campaigns || []).forEach((c) => (c.adsets || []).forEach((s) => (s.ads || []).forEach((a) => out.push({
+    adId: a.id, name: a.name, campaign: c.name, status: a.effective || a.status, created: a.created,
+    spend: a.spend, leads: a.leads, clicks: a.linkClicks, impressions: a.impressions,
+    spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
+  }))));
+  return { ok: true, since, until: today, ads: out };
+}
+
 module.exports = async (req, res) => {
   const session = getSession(req);
   const allowed = fromCreative(req) || (session && session.role === 'admin');
@@ -92,6 +116,7 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, template, forms, offers: offersAll.filter((o) => o.active !== false).map((o) => ({ id: o.id, title: o.title })) });
       return;
     }
+    if (req.method === 'GET' && req.query && req.query.action === 'results') { res.status(200).json(await results(req.query.since)); return; }
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
