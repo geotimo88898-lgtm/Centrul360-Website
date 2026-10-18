@@ -227,6 +227,7 @@
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div data-stats></div>' +
       (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
+      (d.stale ? '<p class="k-muted ad-partial">Meta limitează acum citirile contului: cifrele sunt de la ' + esc(new Date(d.stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.</p>' : '') +
       '<div class="ad-scroll"><div class="ad-table" style="--ad-cols:minmax(300px,1.6fr) repeat(' + C.length + ',minmax(116px,1fr)) 84px;--ad-minw:' + minw + 'px">' +
         '<div class="ad-head-row"><span class="ad-head-name"><label class="ad-pick" title="Selectează toate campaniile afișate"><input type="checkbox" data-pick-all></label>Campanie</span>' +
           C.map((id) => '<span title="' + esc(M[id].hint || '') + '">' + esc(M[id].label) + '</span>').join('') + '<span></span></div>' +
@@ -781,7 +782,8 @@
 
   K.section('reclame', { mount, show: () => (A.d ? (Date.now() - (A.at || 0) > 20e3 ? load(true) : null) : load()) });
   const fresh = (ms) => { if (A.d && K.isActive('reclame') && !document.hidden && !K.drawerOpen && Date.now() - (A.at || 0) > ms) load(true); };
-  setInterval(() => fresh(55e3), 60e3);
-  K.on('remote', () => fresh(30e3));
+  // every 3 minutes while the page is open (Meta limits how often the ad account is read; the server keeps the
+  // numbers for everyone), not on every change made elsewhere in the portal
+  setInterval(() => fresh(170e3), 60e3);
   K.on('pull', () => fresh(0));
 })();

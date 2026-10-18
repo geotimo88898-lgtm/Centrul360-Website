@@ -19,6 +19,7 @@ const ads = require('./_lib/meta-ads');
 const { funnel, periodRange, bucharestDay } = require('./_lib/ads-funnel');
 const KPI = require('./_lib/kpi');
 const edit = require('./_lib/ads-edit');
+const AC = require('./_lib/ads-cache');
 
 // after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad. From 16.10.2026, 22:05
 // on (the owner's call: what came before was brought over from HighLevel): only the leads from then on, the bookings
@@ -111,7 +112,14 @@ module.exports = async (req, res) => {
       if (problem) { res.status(200).json({ ok: true, ready: false, reason: problem, message: REASONS[problem], defaults }); return; }
       const period = ads.PERIODS[req.query && req.query.period] ? req.query.period : '7d';
       const range = dayRange(req.query || {});
-      const [view, token] = await Promise.all([ads.overview(conn, period, range), ads.tokenInfo(conn.userToken, await appCreds(readJSON))]);
+      // read from Meta at most every 3 minutes for today, every 20 for past days (the same for every open portal)
+      const today = bucharestDay(Date.now());
+      const past = range ? range.until < today : ['yesterday', '7d', '30d'].includes(period);
+      const creds = await appCreds(readJSON);
+      const [view, token] = await Promise.all([
+        AC.cached('ov-' + (range ? range.since + '_' + range.until : period) + '-' + today, past ? 20 * 60e3 : 3 * 60e3, () => ads.overview(conn, period, range)),
+        AC.cached('token', 10 * 60e3, () => ads.tokenInfo(conn.userToken, creds)),
+      ]);
       if (view.error) {
         const expired = token && !token.valid;
         const noScope = token && token.valid && !(token.scopes || []).some((x) => x === 'ads_management' || x === 'ads_read');
@@ -135,6 +143,8 @@ module.exports = async (req, res) => {
     }
     if (problem) { res.status(400).json({ error: problem, message: REASONS[problem] }); return; }
     // Previzualizare / Editează a running campaign
+    // a change from here: the next reading comes from Meta
+    if (body.action !== 'details') await AC.clear().catch(() => {});
     if (body.action === 'details') {
       const d = await edit.details(conn, body.campaignId);
       if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }

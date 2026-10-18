@@ -452,7 +452,9 @@ async function adsFor(conn, r) {
   const key = conn.adAccountId + '|' + r.since + '|' + r.until;
   const hit = adsCache.get(key);
   if (hit && Date.now() - hit.at < 120e3) return hit.v;
-  const v = await require('./meta-ads').adStats(conn, r);
+  // shared by every open portal, at most every 5 minutes for today, 30 for past days (Meta limits the reads)
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+  const v = await require('./ads-cache').cached('stats-' + r.since + '_' + r.until, r.until < today ? 30 * 60e3 : 5 * 60e3, () => require('./meta-ads').adStats(conn, r));
   if (!v.error) { adsCache.set(key, { at: Date.now(), v }); if (adsCache.size > 30) adsCache.delete(adsCache.keys().next().value); }
   return v;
 }

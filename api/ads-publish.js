@@ -91,7 +91,9 @@ async function results(sinceQ) {
   const back = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
   const since = /^\d{4}-\d{2}-\d{2}$/.test(String(sinceQ || '')) && sinceQ <= today ? String(sinceQ) : back;
   const range = { since, until: today };
-  const view = await ads.overview(conn, 'custom', range);
+  // the same answer for half an hour (Meta limits how often the account is read)
+  const AC = require('./_lib/ads-cache');
+  const view = await AC.cached('results-' + since + '_' + today, 30 * 60e3, () => ads.overview(conn, 'custom', range));
   if (view.error) return { ok: false, reason: 'meta_error', message: view.error, ads: [] };
   await AM.withFunnel(view, 'custom', range, conn).catch((e) => { console.error('results funnel:', e.message); });
   const out = [];
@@ -144,6 +146,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (body.action !== 'publish') { res.status(400).json({ error: 'invalid_action' }); return; }
+    await require('./_lib/ads-cache').clear().catch(() => {});
 
     const conn = await loadConnection(readJSON);
     if (!conn.pageId) { res.status(400).json({ error: 'not_connected', message: REASONS.not_connected }); return; }
