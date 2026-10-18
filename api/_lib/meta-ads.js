@@ -161,6 +161,7 @@ function cleanSettings(x) {
   // a second text and title, tested by Meta in the same ad (Creative writes 2 of each)
   s.primaryText2 = str(x.primaryText2, 2000);
   s.headline2 = str(x.headline2, 255);
+  s.headline3 = str(x.headline3, 255);
   s.description = str(x.description, 255);
   s.cta = CTAS.includes(x.cta) ? x.cta : 'LEARN_MORE';
   s.startNow = x.startNow !== false;
@@ -240,9 +241,9 @@ async function publish(conn, image, s) {
     // the Instagram account linked to the Page signs the ad on Instagram (without one, Meta uses the Page)
     const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
     if (ig.ok && ig.j.instagram_business_account) spec.instagram_user_id = ig.j.instagram_business_account.id;
-    // two texts / two titles: Meta shows each person the mix that works best (more text options in the same ad)
+    // two texts / up to three titles: Meta shows each person the mix that works best (more text options in the same ad)
     const bodies = [s.primaryText, s.primaryText2].filter(Boolean);
-    const titles = [s.headline, s.headline2].filter(Boolean);
+    const titles = [s.headline, s.headline2, s.headline3].filter(Boolean);
     const multi = bodies.length > 1 || titles.length > 1;
     const feed = multi ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })), descriptions: s.description ? [{ text: s.description }] : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
     let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, feed ? { asset_feed_spec: feed } : {}));
