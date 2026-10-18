@@ -35,7 +35,7 @@ const LEAD_ACTIONS = ['onsite_conversion.lead_grouped', 'lead', 'leadgen_grouped
 const DEFAULTS = {
   budget: 50, radiusKm: 7, women: true,
   ages: { body: [28, 64], facial: [20, 60] },
-  placements: Object.keys(PLACEMENTS), cta: 'LEARN_MORE', startNow: true,
+  placements: Object.keys(PLACEMENTS), cta: 'SIGN_UP', startNow: true,
   // {oras_scurt} TM / AR, {proc} LIPO / CAV 1+1 / RESTART…, {unghi} the ad in 2-3 words,
   // {oferta} {oras} {km} {varsta} {hook} {data}; filled in by Creative's publish window
   names: { campaign: '{oras_scurt} {proc} · {unghi}', adset: '{oras} {km} km · femei {varsta}', ad: '{hook}' },
