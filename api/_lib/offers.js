@@ -119,7 +119,7 @@ const discountOf = (o) => (Number(o.priceOld) > 0 ? Math.round(100 - (Number(o.p
 
 // How the notifications name an offer (the owner's words, 17.10): short, with its price, "Lipo 640", "Cav Ems 280".
 // The offer's own "Nume scurt" (Oferte) wins; these are the defaults of the offers she had then.
-const SHORT = { 'liposonix-2zone': 'Lipo', 'facial-restart': 'Facial', 'cavitatie-ems': 'Cav Ems', 'cavitatie-1plus1': 'Cav Cav', 'epilare-full-body': 'Laser Full Body' };
+const SHORT = { 'liposonix-2zone': 'Lipo', 'facial-restart': 'Facial', 'cavitatie-ems': 'Cav Ems', 'cavitatie-1plus1': 'Cav Cav', 'epilare-full-body': 'Laser Full Body', 'hifu-gusa-1sedinta': 'HIFU Gușă' };
 const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 // the offer a lead's interest / a booking's treatment names: its title, key or ad name; else the one offer whose name it
 // contains or that contains it ("Liposonix" → "Liposonix · 2 zone"); two that would fit: none

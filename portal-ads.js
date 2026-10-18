@@ -10,7 +10,7 @@
   const { esc, icon } = K;
   // sel: the campaigns picked (the numbers on top are theirs; none picked = the whole account)
   // range: { since, until } when "Personalizat" is chosen
-  const A = { d: null, period: 'today', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false, cache: new Map(), seq: 0 };
+  const A = { d: null, period: 'today', range: null, show: 'active', q: '', open: new Set(), keep: new Set(), sel: new Set(), loading: false, cache: new Map(), seq: 0, want: new Map(), drawn: '' };
   let panel;
 
   const PERIODS = [['today', 'Azi'], ['yesterday', 'Ieri'], ['7d', '7 zile'], ['30d', '30 zile'], ['max', 'Tot']];
@@ -75,14 +75,32 @@
     finally { if (seq === A.seq) { A.loading = false; body.classList.remove('is-loading'); } }
   }
   function show(d, body) {
+    applyWant(d);
     // nothing changed: the page stays exactly as it is (no redraw, no jump)
     const key = JSON.stringify(d);
     if (key === A.key && body.querySelector('[data-list]')) return;
+    // the same period, already on screen: only the numbers and the cards that changed move (the page isn't redrawn)
+    const inPlace = A.d && A.d.ready && d.ready && A.drawn === qsOf() && body.querySelector('[data-list]') && !!A.d.readOnly === !!d.readOnly && (A.d.partial || '') === (d.partial || '');
     A.d = d; A.key = key;
     // a picked campaign that no longer exists drops out of the pick
     if (A.d.campaigns) { const ids = new Set(A.d.campaigns.map((c) => c.id)); A.sel.forEach((id) => { if (!ids.has(id)) A.sel.delete(id); }); }
-    render();
+    if (inPlace) paintAll(); else render();
   }
+  // what was just switched shows as chosen, also in numbers Meta sends a moment later (its own status can lag)
+  const WANT_MS = 3 * 60e3;
+  const setStatus = (x, status) => { if (!x) return; x.status = status; if (!x.effective || x.effective === 'ACTIVE' || x.effective === 'PAUSED') x.effective = status; };
+  function applyWant(d) {
+    if (!d || !d.campaigns || !A.want.size) return;
+    const now = Date.now();
+    A.want.forEach((w, id) => { if (!w.busy && now - w.at > WANT_MS) A.want.delete(id); });
+    d.campaigns.forEach((c) => { const w = A.want.get(c.id); if (w) setStatus(c, w.status); });
+  }
+  function paintChips() {
+    const a = panel.querySelector('[data-show="active"] span'), b = panel.querySelector('[data-show="all"] span');
+    if (a) a.textContent = A.d.campaigns.filter((c) => c.status === 'ACTIVE').length;
+    if (b) b.textContent = A.d.campaigns.length;
+  }
+  function paintAll() { paintChips(); paintStats(); paintList(); }
   // the other periods load quietly, one after another, so Azi / Ieri / 30 zile show at once
   let prefetching = false;
   async function prefetch() {
@@ -213,6 +231,7 @@
         '<div class="ad-head-row"><span class="ad-head-name"><label class="ad-pick" title="Selectează toate campaniile afișate"><input type="checkbox" data-pick-all></label>Campanie</span>' +
           C.map((id) => '<span title="' + esc(M[id].hint || '') + '">' + esc(M[id].label) + '</span>').join('') + '<span></span></div>' +
         '<div class="ad-list" data-list></div></div></div>';
+    A.drawn = qsOf();
     paintStats();
     paintList();
     if (sx) body.querySelector('.ad-scroll').scrollLeft = sx;
@@ -262,8 +281,19 @@
     if (!box) return;
     const list = visible();
     setTimeout(syncPickAll, 0);
-    box.innerHTML = list.length ? list.map(campHtml).join('')
+    const html = list.map(campHtml);
+    const now = [...box.children];
+    if (list.length && now.length === list.length && list.every((c, i) => now[i].dataset && now[i].dataset.camp === c.id)) {
+      list.forEach((c, i) => {
+        if (now[i]._h === html[i]) return;
+        const tmp = document.createElement('div'); tmp.innerHTML = html[i];
+        const card = tmp.firstElementChild; card._h = html[i]; now[i].replaceWith(card);
+      });
+      return;
+    }
+    box.innerHTML = list.length ? html.join('')
       : K.empty('zap', A.show === 'active' ? 'Nicio campanie pornită' : 'Nicio campanie', A.show === 'active' ? 'Vezi „Toate” pentru cele oprite, sau publică un creative din Creative.' : 'Publică un creative din Creative („Publică pe Meta”).');
+    [...box.children].forEach((n, i) => { n._h = html[i]; });
   }
   function budgetCell(x, kind) {
     const val = x.daily ? money(x.daily) : x.lifetime ? money(x.lifetime) + ' total' : '-';
@@ -319,20 +349,45 @@
       visible().forEach((c) => { if (t.checked) A.sel.add(c.id); else A.sel.delete(c.id); });
       paintList(); return paintStats();
     }
-    if (t.dataset.sw) {
-      const x = findAny(t.dataset.sw);
-      const status = t.checked ? 'ACTIVE' : 'PAUSED';
-      t.disabled = true;
-      try {
-        await post({ action: 'status', id: t.dataset.sw, status });
-        if (x) { x.status = status; x.effective = status; }
-        if (t.dataset.kind === 'campaign') A.keep.add(t.dataset.sw);
-        K.ui().toast(t.checked ? 'Pornită.' : 'Oprită.', 'success');
-        paintList();
-        reloadChanged();
-      } catch (err) { t.checked = !t.checked; K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
-      finally { t.disabled = false; }
+    if (t.dataset.sw) flip(t.dataset.sw, t.dataset.kind, t.checked);
+  }
+  // A switch moves at once: the card, the numbers on top and the "Pornite" count follow without waiting for Meta. Each
+  // campaign's requests go one after another (the last choice wins when it's tapped twice quickly); many campaigns can
+  // be switched at the same time. A refused change goes back, with Meta's reason.
+  const sending = new Map();
+  let quietT = 0;
+  function flip(id, kind, on) {
+    const status = on ? 'ACTIVE' : 'PAUSED';
+    const x = findAny(id), w = A.want.get(id);
+    A.want.set(id, { status, base: w ? w.base : (x ? x.status : (on ? 'PAUSED' : 'ACTIVE')), at: Date.now(), busy: true });
+    setStatus(x, status);
+    if (kind === 'campaign') A.keep.add(id);
+    A.cache.clear(); // the other periods kept the old status
+    paintAll();
+    if (!sending.has(id)) sending.set(id, send(id).finally(() => sending.delete(id)));
+  }
+  async function send(id) {
+    let sent = null;
+    for (;;) {
+      const w = A.want.get(id);
+      if (!w || w.status === sent) break;
+      const s = w.status;
+      try { await post({ action: 'status', id, status: s }); sent = s; w.base = s; }
+      catch (err) {
+        const back = (A.want.get(id) || {}).base || (s === 'ACTIVE' ? 'PAUSED' : 'ACTIVE');
+        A.want.delete(id);
+        setStatus(findAny(id), back);
+        paintAll();
+        K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error');
+        return;
+      }
     }
+    const w = A.want.get(id);
+    if (w) { w.busy = false; w.at = Date.now(); }
+    if (sent) K.ui().toast(sent === 'ACTIVE' ? 'Pornită.' : 'Oprită.', 'success');
+    // the statuses that follow (ad sets, spend) come quietly a little later, once nothing is being switched
+    clearTimeout(quietT);
+    quietT = setTimeout(() => { if (!sending.size && K.isActive('reclame')) load(true); }, 12e3);
   }
   function editBudget(box) {
     const x = findAny(box.dataset.id);
