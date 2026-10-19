@@ -623,7 +623,7 @@
       if (k === 'j' || e.key === 'ArrowDown') { e.preventDefault(); stepDrawer(1); return; }
       if (k === 'k' || e.key === 'ArrowUp') { e.preventDefault(); stepDrawer(-1); return; }
       if (k === 'l') { e.preventDefault(); showSection('log'); return; }
-      if (k === 'p') { e.preventDefault(); showSection('book'); return; }
+      if (k === 'p') { e.preventDefault(); const l = leadById(S.drawer.id); if (l) bookInCalendar(l); return; }
     }
     if (S.drawer) return;
     if (k === 'n') { e.preventDefault(); openNew(); }
@@ -1037,9 +1037,10 @@
         '<div class="pl-contact">' +
           '<a class="pl-big-action" href="' + telLink(l) + '" data-dial="call">' + ic('phone') + '<span><b>Sună</b><small>' + esc(l.phone) + '</small></span></a>' +
           '<a class="pl-big-action is-wa" href="#mesaje" data-dial="whatsapp" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" data-chat-interest="' + esc(l.interest || '') + '">' + ic('chat') + '<span><b>WhatsApp</b><small>conversația din Mesaje</small></span></a>' +
-          '<button type="button" class="pl-big-action is-book' + (d.section === 'book' ? ' is-on' : '') + '" data-section-toggle="book">' + ic('calPlus') + '<span><b>Programează</b><small>' + (l.appointmentAt ? esc(apptWhen(l.appointmentAt)) : 'direct în calendar') + '</small></span></button>' +
+          '<button type="button" class="pl-big-action is-book" data-book>' + ic('calPlus') + '<span><b>' + (l.appointmentId ? 'Altă programare' : 'Programează') + '</b><small>direct în calendar</small></span></button>' +
         '</div>' +
-        (d.section === 'book' ? bookHtml(l) : '') +
+        (l.appointmentId && l.kind !== 'won' ? '<div class="pl-appt"><span>' + ic('calendar') + '<b>Programare</b> ' + esc(apptWhen(l.appointmentAt)) + '</span><button type="button" class="pl-btn is-ghost is-sm" data-open-appt>' + ic('pen') + 'Modifică</button></div>' : '') +
+
         tabsBar(l) +
         '<div class="pl-pane"' + pane(l, 'contact') + '>' +
         // log contact
@@ -1109,28 +1110,6 @@
       '<div class="pl-tl-meta" title="' + esc(fullDate(a.at)) + '">' + (a.author ? esc(a.author) + ' · ' : '') + agoLong(a.at) + '</div></div></li>';
   }
 
-  function guessCategory(l) {
-    const offer = OFFERS.find((o) => o.label === l.interest);
-    if (offer && S.ctx.categories[offer.category]) return offer.category;
-    const n = norm(l.interest);
-    const keys = Object.keys(S.ctx.categories || {});
-    return keys.find((k) => n && n.includes(k.split('-')[0])) || (keys.includes('altele') ? 'altele' : keys[0] || '');
-  }
-  function bookHtml(l) {
-    const t = new Date(); t.setDate(t.getDate() + 1);
-    const date = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
-    const cats = S.ctx.categories || {};
-    const cat = guessCategory(l);
-    return '<section class="pl-card-sec is-focus pl-book" data-section="book"><div class="pl-sec-head"><h4>' + ic('calPlus') + 'Programare nouă</h4><span class="pl-muted">Apare în Calendar + sarcină de confirmare WhatsApp</span></div>' +
-      '<form class="pl-form" data-form="book"><div class="pl-grid">' +
-        field('Data', '<input name="date" type="date" required value="' + date + '">') +
-        field('Ora', '<input name="time" type="time" step="900" value="10:00">') +
-        field('Categorie', '<select name="category">' + Object.keys(cats).map((k) => '<option value="' + k + '"' + (k === cat ? ' selected' : '') + '>' + esc(cats[k]) + '</option>').join('') + '</select>') +
-        field('Locație', '<select name="location">' + locationOptions(l.location) + '</select>') +
-        field('Tratament', '<input name="treatment" required maxlength="200" value="' + esc(l.interest || '') + '" placeholder="ex: Facial Restart">', 'full') +
-      '</div><div class="pl-form-actions"><button type="button" class="pl-btn is-ghost" data-section-toggle="book">Renunță</button><button type="submit" class="pl-btn is-primary">' + ic('check') + 'Programează</button></div></form></section>';
-  }
-
   // ------------------------------------------------------------------ drawer events
   function onDrawerClick(e) {
     const t = e.target;
@@ -1151,6 +1130,12 @@
       d.tab = lt.dataset.ltab;
       drawerEl().querySelectorAll('[data-ltab]').forEach((b) => { const on = b === lt; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
       drawerEl().querySelectorAll('.pl-pane').forEach((p) => { p.hidden = p.dataset.pane !== d.tab; });
+      return;
+    }
+    if (t.closest('[data-book]')) { const l = leadById(d.id); if (l) bookInCalendar(l); return; }
+    if (t.closest('[data-open-appt]')) {
+      const l = leadById(d.id);
+      if (l && l.appointmentId && K.openAppointment) { closeDrawer(); K.openAppointment(l.appointmentId, String(l.appointmentAt || '').slice(0, 10)); }
       return;
     }
     const sect = t.closest('[data-section-toggle]');
@@ -1223,7 +1208,6 @@
     if (!l) return;
     if (kind === 'details') return submitDetails(form, l);
     if (kind === 'note') return submitNote(form, l);
-    if (kind === 'book') return submitBook(form, l);
   }
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && drawerRoot && drawerRoot.contains(document.activeElement)) {
@@ -1317,21 +1301,11 @@
       } catch (e) { ui().toast(errText(e), 'error'); }
     });
   }
-  async function submitBook(form, l) {
-    const data = formData(form);
-    await busy(form.querySelector('[type=submit]'), async () => {
-      try {
-        const a = await api('create', {
-          date: data.date, time: data.time, treatment: data.treatment, category: data.category, location: data.location, amount: Number(l.value) || 0,
-          status: 'programata', clientName: l.name, clientPhone: l.phone, leadId: l.id,
-        }, '/api/portal-appointments');
-        const appt = a.appointment || {};
-        const j = await api('link_appointment', { leadId: l.id, appointmentId: appt.id, date: data.date, time: data.time, treatment: data.treatment });
-        replaceLead(j.lead); S.drawer.section = ''; renderAll(); renderDrawer();
-        ui().toast('Programat ' + when(new Date(data.date + 'T' + (data.time || '10:00')).toISOString()) + '. Apare în Calendar.', 'success');
-        if (typeof window.loadWeek === 'function') { try { window.loadWeek(); } catch (_) { /* calendar refreshes on its own */ } }
-      } catch (e) { ui().toast(errText(e), 'error'); }
-    });
+  // "Programează": the Calendar's own form (cosmetician, end, price, a package, a note, the checks for a blocked time and
+  // for a second booking that day); the booking links and moves her lead on the server (api/portal-appointments.js)
+  function bookInCalendar(l) {
+    closeDrawer();
+    window.K.emit('calendar:new', { clientName: l.name, clientPhone: l.phone, location: l.location, treatment: l.interest || '', amount: l.value || '', leadId: l.id });
   }
   async function deleteLead(l) {
     const ok = await ui().confirm({ title: 'Ștergi definitiv leadul?', message: l.name + ' și tot istoricul lui dispar. Dacă doar nu mai e interesat, folosește „Marchează pierdut”.', confirmText: 'Șterge definitiv', danger: true });
@@ -1473,6 +1447,8 @@
     window.K.on('remote', () => { if (isActive()) refresh(); });
     window.K.on('pipeline:new', () => { if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX); mount(); openNew(); });
     window.K.on('pipeline:queue', () => { mount(); (S.loaded ? Promise.resolve() : load()).then(openQueue); });
+    // booked from her card (or anywhere): her lead shows it at once
+    window.K.on('appointment:created', (a) => { if (a && a.leadId && S.loaded) load(true); });
   }
   // Plain fetch (no login redirect), this is a background nicety, not a page load.
   document.addEventListener('DOMContentLoaded', () => setTimeout(() => {

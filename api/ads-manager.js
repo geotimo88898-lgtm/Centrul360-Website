@@ -38,7 +38,7 @@ async function withFunnel(view, period, range, conn) {
   const flat = [];
   view.campaigns.forEach((c) => c.adsets.forEach((s) => s.ads.forEach((a) => flat.push({ id: a.id, name: a.name, adsetId: s.id, campaignId: c.id, campaignName: c.name }))));
   const f = funnel({ leads, appointments, sales, stages: Array.isArray(stages) && stages.length ? stages : DEFAULT_STAGES, ads: flat, period, range });
-  const put = (x, m) => Object.assign(x, { pLeads: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }, renameLeads(m.get(x.id)));
+  const put = (x, m) => Object.assign(x, { pLeads: 0, booked: 0, confirmed: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }, renameLeads(m.get(x.id)));
   view.campaigns.forEach((c) => { put(c, f.campaigns); c.adsets.forEach((s) => { put(s, f.adsets); s.ads.forEach((a) => put(a, f.ads)); }); });
   view.unmatched = renameLeads(f.unmatched);
   // the spend of the same days (the period, from START's day on), per ad, added up per ad set and campaign

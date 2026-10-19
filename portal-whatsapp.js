@@ -221,6 +221,7 @@
     const windowLine = icon('clock') + 'Poți răspunde liber încă ' + (left < 1 ? 'mai puțin de o oră' : left === 1 ? 'o oră' : left + (left >= 20 ? ' de ore' : ' ore')) + '.';
     // the same conversation, still open for answers: only the messages change, the answer box stays
     if (t.within24h && box.dataset.for === t.phone && box.querySelector('.mx-compose')) {
+      box.querySelectorAll('.mx-appt').forEach((x) => x.remove());
       box.querySelector('.mx-thead').outerHTML = headHtml(t);
       box.querySelector('.mx-tbody').innerHTML = msgs;
       box.querySelector('.mx-window').innerHTML = windowLine;
@@ -260,7 +261,9 @@
       esc([named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : ''].filter(Boolean).join(' · ')) + '</small></div></button>' +
       '<a class="k-icon-btn" href="tel:' + esc(telOf(t.phone)) + '" title="Sună" data-act="call">' + icon('phone') + '</a>' +
       (K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="book" title="Programează">' + icon('calendar') + '</button>' : '') +
-      (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>';
+      (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>' +
+      // her next appointment: a tap opens it in the Calendar, to change it
+      (t.appointment && t.appointment.id ? '<button type="button" class="mx-appt" data-act="appt">' + icon('calendar') + '<span>Programare ' + esc(K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '')) + (t.appointment.treatment ? ' · ' + esc(t.appointment.treatment) : '') + '</span><b>' + (K.frontDesk && K.frontDesk() ? 'Modifică' : 'Vezi') + '</b></button>' : '');
   }
   function autoGrow(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + 'px'; ta.style.overflowY = ta.scrollHeight > 138 ? 'auto' : 'hidden'; }
 
@@ -402,6 +405,7 @@
       if (a === 'tpl' && C.thread) return pickTemplate({ phone: C.thread.phone, name: named(C.thread) ? C.thread.clientName : '', city: C.thread.location, interest: C.thread.lead ? C.thread.lead.interest : '' });
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);
       // book her from the conversation: the Calendar's form over the chat, her name, phone and city filled in
+      if (a === 'appt' && C.thread && C.thread.appointment && K.openAppointment) return K.openAppointment(C.thread.appointment.id, C.thread.appointment.date);
       if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : '', clientPhone: localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
       if (a === 'snip') return toggleSnips(act);
       if (a === 'contact') return K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
@@ -622,6 +626,7 @@
     if (!C.loaded) return;
     const convo = C.conversations.find((c) => tail(c.phone) === tail(ph));
     if (convo) { if (o.text) C.draftFor = { phone: convo.phone, text: o.text }; return openThread(convo.phone); }
+    if (o.none) return o.none(); // no conversation yet: what the caller wants instead (Contacte: her sheet)
     const on = connected();
     if (!on.length) return K.ui().toast('WhatsApp nu e conectat încă.', 'info');
     const mine = K.data && K.data.me && K.data.me.location;

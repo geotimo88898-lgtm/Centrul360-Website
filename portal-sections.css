@@ -250,6 +250,15 @@
 .pay-due .pay-check + .pay-check{ margin-top:.5rem; }
 /* the new-booking drawer on a phone: "Blochează intervalul" as an icon, so "Programează" fits */
 @media (max-width:720px){ .cal-to-block span{ display:none; } }
+/* her appointment, to change: in the lead (Pipeline) and under the conversation's header (Mesaje) */
+.pl-appt{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin:.6rem 0 0; padding:.55rem .7rem; border:1px solid var(--line); border-radius:12px; background:var(--paper); font-size:.85rem; }
+.pl-appt > span{ display:flex; align-items:center; gap:.4rem; min-width:0; }
+.pl-appt b{ font-weight:650; }
+.mx-appt{ display:flex; align-items:center; gap:.5rem; width:100%; padding:.45rem .9rem; border:0; border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--accent) 7%, var(--paper)); color:inherit; font:inherit; font-size:.82rem; text-align:left; cursor:pointer; }
+.mx-appt span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mx-appt b{ color:var(--accent); font-weight:650; }
+.ct-appt{ cursor:pointer; }
+.ct-appt:hover{ background:color-mix(in srgb, var(--accent) 5%, transparent); }
 .cal-block.is-src{ opacity:.25; }
 .cal-block.is-ghost{ z-index:8; opacity:.95; box-shadow:0 20px 40px -14px rgba(0,0,0,.45), inset 3px 0 0 var(--bc, var(--accent)); transform:scale(1.03); transition:top .08s linear; cursor:grabbing; animation:none; }
 .cal-grid.is-dragging, .cal-grid.is-dragging *{ cursor:grabbing !important; user-select:none; }

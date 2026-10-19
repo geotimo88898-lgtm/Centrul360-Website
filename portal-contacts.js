@@ -83,7 +83,7 @@
       // the front desk lands in her conversation (Mesaje), her sheet one tap away from its header; a cosmetician, or a
       // contact with no phone, opens the sheet
       const c = S.list.find((x) => x.id === o.dataset.open);
-      if (c && K.frontDesk && K.frontDesk() && K.chat && String(c.phone || '').replace(/\D/g, '').length >= 9) return K.chat(c.phone, { name: c.name || '', city: c.location || '' });
+      if (c && K.frontDesk && K.frontDesk() && K.chat && String(c.phone || '').replace(/\D/g, '').length >= 9) return K.chat(c.phone, { name: c.name || '', city: c.location || '', none: () => { K.go('contacte'); openContact(c.id); } });
       return openContact(o.dataset.open);
     }
     const a = t.closest('[data-act]');
@@ -512,7 +512,7 @@
       const paid = st.pays.reduce((a, p) => a + Number(p.amount || 0), 0);
       return '<div class="k-grid c2 ct-kpis"><div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Programări</div><div class="k-stat-value">' + st.appts.length + '</div></div>' +
         '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
-        (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
+        (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row ct-appt" data-appt="' + esc(a.id) + '" data-appt-date="' + esc(a.date || '') + '" role="button" tabindex="0" title="Deschide programarea"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
           '<div class="k-row-end">' + (a.amount ? '<span class="k-amount">' + K.lei(a.amount) + '</span>' : '') + '<span class="k-tag">' + esc(ST[a.status] || a.status) + '</span></div></div>').join('') + '</div>'
           : K.empty('calendar', 'Nicio programare încă', '')) + ghlHistoryHtml();
     }
@@ -579,6 +579,9 @@
     }
     async function onPaneClick(e) {
       const t = e.target;
+      // an appointment in her history: opens in the Calendar (to change it, or to see it)
+      const ap = t.closest('[data-appt]');
+      if (ap && K.openAppointment) { d.close(); K.openAppointment(ap.dataset.appt, ap.dataset.apptDate); return; }
       if (t.closest('[data-ghl-all]')) { st.allHist = !st.allHist; paintPane(); return; }
       if (t.closest('[data-add-note]')) {
         const ta = d.el.querySelector('[data-note]');

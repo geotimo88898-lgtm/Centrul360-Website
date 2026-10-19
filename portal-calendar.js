@@ -437,6 +437,8 @@
       const a = S.appts.find((x) => x.id === d.id);
       const date = d.target.dataset.date, loc = d.target.dataset.loc || a.location, time = toHM(d.min);
       if (!a || (a.date === date && a.time === time && a.location === loc)) { render(true); return; }
+      const clash = await blockedAt(Object.assign({}, a, { date, time, location: loc, endTime: d.dur ? toHM(Math.min(d.min + d.dur, 24 * 60 - 15)) : a.endTime }));
+      if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: blockText(clash) + '. Muți programarea oricum?', confirmText: 'Mută oricum' }))) { render(true); return; }
       const before = Object.assign({}, a);
       Object.assign(a, { date, time, location: loc });
       if (d.dur) a.endTime = toHM(Math.min(d.min + d.dur, 24 * 60 - 15)); // same length, new place
@@ -461,6 +463,7 @@
     return {
       action: 'update', id: a.id, date: a.date, time: a.time, endTime: a.endTime || '', clientId: a.clientId, clientName: a.clientName, clientPhone: a.clientPhone,
       treatment: a.treatment, categories: K.catsOf(a), amount: a.amount || 0, location: a.location, cosmeticianId: a.cosmeticianId || '', status: a.status, package: !!a.package,
+      note: a.note || '',
     };
   }
   const save = (a) => K.api('/api/portal-appointments', payload(a));
@@ -506,9 +509,8 @@
 
   function formHtml(a, isNew) {
     return '<form class="k-form" data-form>' +
-      (isNew ? K.field('Client', '<input name="clientName" required maxlength="150" placeholder="Caută sau scrie un nume nou" autofocus>', 'full') +
-        K.field('Telefon', '<input name="clientPhone" type="tel" required maxlength="30" placeholder="07xx xxx xxx">', 'full') :
-        !a.clientPhone ? K.field('Telefon clientă', '<input name="clientPhone" type="tel" maxlength="30" placeholder="Lipsește - adaugă-l ca să poți suna / trimite WhatsApp">', 'full') : '') +
+      K.field('Client', '<input name="clientName" required maxlength="150" placeholder="Caută sau scrie un nume nou" value="' + esc(isNew ? '' : a.clientName || '') + '"' + (isNew ? ' autofocus' : '') + '>', 'full') +
+      K.field('Telefon', '<input name="clientPhone" type="tel" required maxlength="30" placeholder="07xx xxx xxx" value="' + esc(isNew ? '' : a.clientPhone || '') + '">', 'full') +
       K.field('Data', '<input name="date" type="date" required value="' + esc(a.date) + '">', 'full') +
       K.field('Începe la', '<select name="time" data-start>' + slotOptions(a.time || '10:00') + '</select>') +
       K.field('Se termină la', '<select name="endTime" data-end>' + endOptions(a.time || '10:00', formEnd(a)) + '</select>') +
@@ -519,6 +521,7 @@
       K.field('Suma programării', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="0" step="1" value="' + esc(a.amount || '') + '" placeholder="0"></div>', 'full', 'Cât plătește clienta pentru ce s-a programat. Un upsell (pachet, zonă în plus) se bifează la încasare.') +
       K.field('Cosmeticiană', '<select name="cosmeticianId" data-cos>' + empOptions(a.cosmeticianId || '', a.location || LOCS[0]) + '</select>', 'full') +
       '<div class="k-field full">' + K.toggle('package', !!a.package, 'Ședință din pachet') + '<small>Primește doar reamintirile, fără confirmarea programării și fără cererea de recenzie.</small></div>' +
+      K.field('Observații', '<textarea name="note" rows="2" maxlength="500" placeholder="ex. vine cu prietena, zona: abdomen">' + esc(a.note || '') + '</textarea>', 'full') +
       (isNew ? K.field('Status', K.seg('status', [['programata', 'Programată'], ['confirmata', 'Confirmată']], 'programata', 'is-big'), 'full') : '') +
       '</form>';
   }
@@ -573,6 +576,9 @@
         picker = K.clientPicker(f.clientName, f.clientPhone);
         wireForm(el, f);
         if (pre.clientName) { f.clientName.value = pre.clientName; f.clientPhone.value = pre.clientPhone || ''; }
+        // the treatment she asked for (her lead's offer): its chip fills the price and the categories, as a tap would
+        if (pre.treatment) { const chip = Array.from(f.querySelectorAll('[data-offer]')).find((b) => { const o = (K.data.offers || []).find((x) => x.id === b.dataset.offer); return o && o.title === pre.treatment; }); if (chip) chip.click(); }
+        if (pre.amount && !Number(f.amount.value)) f.amount.value = pre.amount;
         el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
         el.querySelector('[data-to-block]').addEventListener('click', () => { const v = K.formValues(f); d.close(); setTimeout(() => openBlock({ date: v.date, time: v.time, endTime: v.endTime, location: v.location, cosmeticianId: v.cosmeticianId }), 230); });
         f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
@@ -584,10 +590,19 @@
           // a session from a package is already paid: 0 is fine there
           if (!v.package && !(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării (sau bifează „Ședință din pachet”).', 'error'); f.amount.focus(); return; }
           if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
-          const clash = blockedAt(v);
-          if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: (clash.clientName || 'Timp blocat') + ' · ' + (span(clash) || 'toată ziua') + (clash.cosmeticianName ? ' · ' + clash.cosmeticianName : '') + '. Programezi oricum?', confirmText: 'Programează oricum' }))) return;
+          const clash = await blockedAt(v);
+          if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: blockText(clash) + '. Programezi oricum?', confirmText: 'Programează oricum' }))) return;
+          const body = Object.assign({ action: 'create', clientId: picker.id(), leadId: pre.leadId || '' }, v, { categories: formCats(v), amount: Number(v.amount) });
           try {
-            const made = await K.api('/api/portal-appointments', Object.assign({ action: 'create', clientId: picker.id() }, v, { categories: formCats(v), amount: Number(v.amount) }));
+            let made;
+            try { made = await K.api('/api/portal-appointments', body); }
+            catch (err) {
+              if (err.code !== 'same_day') throw err;
+              // she already has an appointment that day: a second one only when the desk says so
+              const list = ((err.data && err.data.existing) || []).map((x) => (x.time ? x.time + (x.endTime ? '-' + x.endTime : '') : 'fără oră') + (x.treatment ? ' · ' + x.treatment : '')).join(', ');
+              if (!(await K.ui().confirm({ title: v.clientName + ' are deja o programare în ziua asta', message: list + '. Faci încă una?', confirmText: 'Da, încă una' }))) return;
+              made = await K.api('/api/portal-appointments', Object.assign(body, { force: true }));
+            }
             d.close();
             K.ui().toast('Programat: ' + v.clientName + ' · ' + K.relDay(v.date) + ' ' + span(v), 'success');
             S.date = v.date;
@@ -601,33 +616,44 @@
     });
   }
 
-  // a blocked time over this booking (same day and city, the whole clinic or this cosmetician), or null
-  function blockedAt(v) {
+  // a blocked time over this booking (same day and city, the whole clinic or this cosmetician), or null; the day's rows
+  // come from the server when the Calendar has another range loaded
+  async function blockedAt(v) {
+    const [from, to] = String(S.range || '|').split('|');
+    let rows = S.appts;
+    if (!(from && v.date >= from && v.date <= to)) {
+      try { rows = (await K.api('/api/portal-appointments', { action: 'list', from: v.date, to: v.date })).appointments || []; } catch (e) { rows = []; }
+    }
     const s = toMin(v.time), e = toMin(v.endTime) > s ? toMin(v.endTime) : s + DUR;
-    return S.appts.find((b) => b.block && b.date === v.date && b.location === v.location && (!b.cosmeticianId || b.cosmeticianId === v.cosmeticianId) &&
+    return rows.find((b) => b.block && b.id !== v.id && b.date === v.date && b.location === v.location && (!b.cosmeticianId || b.cosmeticianId === v.cosmeticianId) &&
       (!b.time || (s != null && s < endMin(b) && e > toMin(b.time)))) || null;
   }
+  const blockText = (b) => (b.clientName || 'Timp blocat') + ' · ' + (span(b) || 'toată ziua') + (b.cosmeticianName ? ' · ' + b.cosmeticianName : '');
+  const digits = (p) => String(p || '').replace(/\D/g, '').slice(-9);
   function openBlock(pre) {
     if (!canEdit()) return;
     const loc = pre.location || (S.loc !== 'all' ? S.loc : K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]);
+    const editing = !!pre.id;
+    const allDay0 = editing && !pre.time;
     const start = pre.time || '13:00';
     const a = { time: start, endTime: pre.endTime || '' };
     const d = K.drawer({
-      title: 'Blochează timp', icon: 'ban', subtitle: esc(K.dateLong(pre.date || S.date)) + ' · ' + esc(loc),
+      title: editing ? 'Modifică intervalul blocat' : 'Blochează timp', icon: 'ban', subtitle: esc(K.dateLong(pre.date || S.date)) + ' · ' + esc(loc),
       body: '<form class="k-form" data-form>' +
-        K.field('Motiv', '<input name="label" maxlength="80" placeholder="ex. Pauză de masă, ședință, curățenie" autofocus>', 'full') +
+        K.field('Motiv', '<input name="label" maxlength="80" placeholder="ex. Pauză de masă, ședință, curățenie" value="' + esc(pre.label || '') + '"' + (editing ? '' : ' autofocus') + '>', 'full') +
         K.field('Data', '<input name="date" type="date" required value="' + esc(pre.date || S.date) + '">', 'full') +
-        '<div class="k-field full">' + K.toggle('allDay', false, 'Toată ziua') + '</div>' +
+        '<div class="k-field full">' + K.toggle('allDay', allDay0, 'Toată ziua') + '</div>' +
         K.field('Începe la', '<select name="time" data-start>' + slotOptions(start) + '</select>') +
         K.field('Se termină la', '<select name="endTime" data-end>' + endOptions(start, formEnd(a)) + '</select>') +
         K.field('Locație', K.seg('location', LOCS.map((l) => [l, l, 'pin']), loc, 'is-big'), 'full') +
         K.field('Pentru', '<select name="cosmeticianId" data-cos>' + blockFor(pre.cosmeticianId || '', loc) + '</select>', 'full') +
         '</form>',
-      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('ban') + 'Blochează</button>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon(editing ? 'check' : 'ban') + (editing ? 'Salvează' : 'Blochează') + '</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
         let lastStart = f.time.value;
         const hours = () => { const all = f.querySelector('input[name=allDay]').checked; [f.time, f.endTime].forEach((x) => { const box = x.closest('.k-field'); if (box) box.hidden = all; }); };
+        hours();
         f.addEventListener('change', (e) => {
           if (e.target.name === 'allDay') return hours();
           if (e.target.name === 'time') {
@@ -646,9 +672,9 @@
           const v = K.formValues(f);
           const all = !!f.querySelector('input[name=allDay]').checked;
           try {
-            await K.api('/api/portal-appointments', { action: 'block', date: v.date, time: all ? '' : v.time, endTime: all ? '' : v.endTime, location: v.location, cosmeticianId: v.cosmeticianId || '', label: v.label || '' });
+            await K.api('/api/portal-appointments', { action: 'block', id: pre.id || '', date: v.date, time: all ? '' : v.time, endTime: all ? '' : v.endTime, location: v.location, cosmeticianId: v.cosmeticianId || '', label: v.label || '' });
             d.close();
-            K.ui().toast('Blocat: ' + K.relDay(v.date) + (all ? ', toată ziua' : ' ' + v.time + ' - ' + v.endTime) + ' · ' + v.location, 'success');
+            K.ui().toast((editing ? 'Interval schimbat: ' : 'Blocat: ') + K.relDay(v.date) + (all ? ', toată ziua' : ' ' + v.time + ' - ' + v.endTime) + ' · ' + v.location, 'success');
             S.date = v.date;
             if (panel) load(true);
           } catch (err) { K.ui().toast(err.code === 'invalid_time' ? 'Ora de sfârșit trebuie să fie după cea de început.' : K.errText(err), 'error'); }
@@ -694,8 +720,10 @@
         subtitle: '<span class="k-tag is-mute">' + icon('ban') + 'Blocat</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'toată ziua') + ' · ' + esc(a.location),
         body: '<dl class="k-kv cal-kv"><dt>Motiv</dt><dd>' + esc(a.clientName || '-') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || 'Toată ziua') + '</dd>' +
           '<dt>Locație</dt><dd>' + esc(a.location) + '</dd><dt>Pentru</dt><dd>' + esc(a.cosmeticianName || 'Toată clinica') + '</dd></dl>',
-        footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Deblochează</button>' : '',
+        footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Deblochează</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-edit-block>' + icon('pen') + 'Modifică</button>' : '',
         onMount(el) {
+          const eb = el.querySelector('[data-edit-block]');
+          if (eb) eb.addEventListener('click', () => { K.closeDrawer(); setTimeout(() => openBlock(Object.assign({ id: a.id, label: a.clientName }, a)), 230); });
           const del = el.querySelector('[data-del]');
           if (del) del.addEventListener('click', async () => {
             try { await K.api('/api/portal-appointments', { action: 'delete', id: a.id }); K.closeDrawer(); K.ui().toast('Interval deblocat.', 'success'); load(true); }
@@ -754,6 +782,9 @@
       onMount(el) {
         const f = el.querySelector('[data-form]');
         wireForm(el, f);
+        const picker = K.clientPicker(f.clientName, f.clientPhone);
+        // Enter in a field saves (it used to send the page away)
+        f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
         const cl = el.querySelector('[data-client]');
         if (cl) clientCard(cl, a);
         el.querySelectorAll('[data-status]').forEach((b) => b.addEventListener('click', async () => {
@@ -766,15 +797,26 @@
         }));
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(f);
-          if (!v.clientPhone) delete v.clientPhone;
+          // another client picked from the list, or her name / phone changed: linked by the phone (the directory is
+          // updated, a new number makes a new client); the same client stays as she is (an older booking with no phone too)
+          const sameClient = !picker.id() && v.clientName === (a.clientName || '') && digits(v.clientPhone) === digits(a.clientPhone);
+          if (!sameClient && (!v.clientName || digits(v.clientPhone).length < 9)) { K.ui().toast('Completează clientul și telefonul.', 'error'); return; }
+          if (!v.treatment) { K.ui().toast('Completează tratamentul.', 'error'); f.treatment.focus(); return; }
           v.categories = formCats(v);
           v.amount = Number(v.amount) || 0;
           if (!v.categories.length) { K.ui().toast('Alege cel puțin o categorie.', 'error'); return; }
           const next = Object.assign({}, a, v);
-          // A phone added here links the appointment to the client directory (upsert by phone).
-          if (v.clientPhone) next.clientId = '';
-          try { await save(next); Object.assign(a, v); d.close(); K.ui().toast('Programare salvată.', 'success'); load(true); }
-          catch (err) { K.ui().toast(K.errText(err), 'error'); }
+          next.clientId = picker.id() || (sameClient ? a.clientId : '');
+          const placed = next.date !== a.date || next.time !== a.time || next.location !== a.location || next.cosmeticianId !== a.cosmeticianId || next.endTime !== a.endTime;
+          const clash = placed ? await blockedAt(next) : null;
+          if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: blockText(clash) + '. Muți programarea oricum?', confirmText: 'Mută oricum' }))) return;
+          try {
+            const j = await save(next);
+            Object.assign(a, (j && j.appointment) || v);
+            d.close();
+            K.ui().toast('Programare salvată.', 'success');
+            load(true);
+          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
         const pay = el.querySelector('[data-pay]');
         if (pay) pay.addEventListener('click', () => {
@@ -831,6 +873,19 @@
   });
   K.on('remote', () => { if (panel && K.isActive('programari')) load(true); });
   K.on('calendar:new', (pre) => openNew(pre || {}));
+  // Pipeline, Mesaje, Contacte: "change the appointment" opens it here, on its day
+  K.openAppointment = async (id, date) => {
+    if (!id) return;
+    K.go('programari');
+    const until = Date.now() + 5000;
+    while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));
+    if (!panel) return;
+    if (date) S.date = String(date).slice(0, 10);
+    S.view = 'day';
+    await load();
+    if (S.appts.some((x) => x.id === id)) openAppt(id);
+    else K.ui().toast('Programarea nu mai e în calendar (a fost ștearsă).', 'info');
+  };
   K.on('calendar:open', async (o) => {
     if (!o) return;
     S.date = o.date || S.date; S.view = 'day';

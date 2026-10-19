@@ -127,6 +127,8 @@ async function validateAndBuildFields(body, employees) {
       status,
       // a session of a package already bought: the reminders go, the booking confirmation and the review request don't
       package: !!(body && body.package),
+      // what the desk wants remembered about this booking ("vine cu prietena", "zona: abdomen")
+      note: String((body && body.note) || '').trim().slice(0, 500),
     },
   };
 }
@@ -226,6 +228,15 @@ module.exports = async (req, res) => {
         createdAt: now,
         updatedAt: now,
       };
+      // the same client that day: the same booking sent twice (a double tap, a slow connection) gives back the one made;
+      // another booking that day is confirmed by the desk first (two treatments are fine, a double booking isn't)
+      const sameDay = appointments.filter((x) => x.clientId === entry.clientId && x.date === entry.date && !['anulata', 'concediu'].includes(x.status));
+      const twin = sameDay.find((x) => x.time === entry.time && x.treatment === entry.treatment && Date.now() - Date.parse(x.createdAt || 0) < 3 * 60e3);
+      if (twin) { res.status(200).json({ ok: true, appointment: twin, duplicate: true }); return; }
+      if (sameDay.length && !(req.body && req.body.force)) {
+        res.status(409).json({ error: 'same_day', existing: sameDay.map((x) => ({ id: x.id, time: x.time || '', endTime: x.endTime || '', treatment: x.ghlTitle || x.treatment || '' })) });
+        return;
+      }
       // the person's lead moves to "Programare stabilită" (a booking from the Calendar, Mesaje or the lead's card alike)
       if (entry.status !== 'concediu') {
         const lead = await require('./portal-leads').bookLead(entry, { leadId: req.body && req.body.leadId, author: await whoName(session) });
@@ -268,8 +279,18 @@ module.exports = async (req, res) => {
         if (!emp) { res.status(400).json({ error: 'invalid_cosmetician' }); return; }
         cosmeticianName = emp.name;
       }
+      const label = String(b.label || '').trim().slice(0, 80) || 'Timp blocat';
+      // changing one already there (its hours, reason, city, for whom)
+      if (b.id) {
+        const row = appointments.find((x) => x.id === b.id && x.block);
+        if (!row) { res.status(404).json({ error: 'appointment_not_found' }); return; }
+        Object.assign(row, { date: b.date, time: start, endTime: start ? end : '', location: b.location, cosmeticianId: cid, cosmeticianName, clientName: label, treatment: label, updatedAt: new Date().toISOString() });
+        await writeJSON('data/appointments.json', appointments);
+        res.status(200).json({ ok: true, appointment: row });
+        return;
+      }
       const entry = await createBlockingAppointment({
-        date: b.date, location: b.location, cosmeticianId: cid, cosmeticianName, label: String(b.label || '').trim().slice(0, 80) || 'Timp blocat',
+        date: b.date, location: b.location, cosmeticianId: cid, cosmeticianName, label,
         time: start, endTime: start ? end : '', block: true, createdBy: session.employeeId,
       });
       res.status(200).json({ ok: true, appointment: entry });
@@ -293,13 +314,17 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: result.error });
         return;
       }
-      const before = { date: appointment.date, time: appointment.time, status: appointment.status };
+      const before = { date: appointment.date, time: appointment.time, status: appointment.status, location: appointment.location, clientId: appointment.clientId };
       if (!('endTime' in req.body)) result.fields.endTime = appointment.endTime || ''; // older clients don't send it
+      if (!('note' in req.body)) result.fields.note = appointment.note || '';
       if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
       const moved = before.date !== appointment.date || before.time !== appointment.time;
+      // another client on it (the wrong one picked, a new phone): her own lead, not the one of the client before
+      const otherClient = before.clientId !== appointment.clientId;
+      if (otherClient) delete appointment.leadId;
       // a moved appointment: the date on its lead follows (a lead not linked yet gets linked and moves to booked)
-      if (moved && appointment.status !== 'concediu' && !['anulata', 'finalizata'].includes(appointment.status)) {
+      if ((moved || otherClient) && appointment.status !== 'concediu' && !['anulata', 'finalizata'].includes(appointment.status)) {
         const lead = await require('./portal-leads').bookLead(appointment, { leadId: appointment.leadId, author: await whoName(session) });
         if (lead) appointment.leadId = lead.id;
       }
@@ -307,7 +332,8 @@ module.exports = async (req, res) => {
       // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the
       // booking messages again for the new date (confirmation, location, reminders).
       if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });
-      if (moved) await workflows.emit('appointment_rescheduled', { appointment });
+      // moved, to the other clinic or to another client: the booking messages start again (for a date still ahead)
+      if (moved || otherClient || before.location !== appointment.location) await workflows.emit('appointment_rescheduled', { appointment });
       res.status(200).json({ ok: true, appointment });
       return;
     }

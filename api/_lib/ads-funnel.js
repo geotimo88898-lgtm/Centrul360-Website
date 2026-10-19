@@ -3,8 +3,11 @@
 // that brought it (by the ad's id, or by the campaign + ad names for leads saved before the ids were
 // kept), and so for its ad set and campaign.
 //
-//   booked   an appointment made for her (not cancelled), or the lead reached the "booked" stage
-//   showed   an appointment finished or paid, or the lead went past the "booked" stage
+//   booked     an appointment made for her (not cancelled), or the lead is in the booked stage or the ones after it up
+//              to "won" ("Venit la programare", "Luat pachet"); the side stages placed after them in the list ("In
+//              asteptare", "Contraindicatii") never count
+//   confirmed  an appointment of hers confirmed (or finished / paid), or she came
+//   showed     she came to the clinic: an appointment finished or paid, a payment, or the stages after "booked" up to "won"
 //   client   at least one payment (Încasări) from her, or the lead is "won"
 //   revenue  her payments since the lead; upsells: payments with "Upsell efectuat" (count and value)
 
@@ -32,6 +35,10 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
   const r = periodRange(period, range);
   const stageList = Array.isArray(stages) ? stages : [];
   const bookedIdx = stageList.findIndex((s) => s.kind === 'booked');
+  const wonIdx = stageList.findIndex((s) => s.kind === 'won');
+  // the stages from "booked" to "won" (booked → came → won), not the side ones placed after "won"
+  const flowEnd = wonIdx > bookedIdx ? wonIdx : bookedIdx;
+  const inFlow = (i, from) => bookedIdx >= 0 && i >= from && i <= flowEnd;
   const idxOf = (id) => stageList.findIndex((s) => s.id === id);
   const kindOf = (id) => (stageList.find((s) => s.id === id) || {}).kind || 'open';
 
@@ -75,15 +82,16 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
     const pays = (l.clientId ? (paysByClient.get(l.clientId) || []) : []).filter((s) => Date.parse(s.createdAt || s.date) >= since);
     const stIdx = idxOf(l.stage), kind = kindOf(l.stage);
     const lost = kind === 'lost';
-    const ev = { leads: 1, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
-    ev.booked = appts.length || l.appointmentId || (!lost && bookedIdx >= 0 && stIdx >= bookedIdx) ? 1 : 0;
-    ev.showed = appts.some((a) => a.status === 'finalizata' || a.paidSaleId) || pays.length || (!lost && bookedIdx >= 0 && stIdx > bookedIdx) ? 1 : 0;
+    const ev = { leads: 1, booked: 0, confirmed: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
+    ev.booked = appts.length || l.appointmentId || (!lost && inFlow(stIdx, bookedIdx)) ? 1 : 0;
+    ev.showed = appts.some((a) => (a.status === 'finalizata' && !a.noShow) || a.paidSaleId) || pays.length || (!lost && inFlow(stIdx, bookedIdx + 1)) ? 1 : 0;
+    ev.confirmed = ev.showed || appts.some((a) => a.status === 'confirmata') ? 1 : 0;
     ev.clients = pays.length || kind === 'won' ? 1 : 0;
     ev.revenue = pays.reduce((n, s) => n + (Number(s.amount) || 0), 0);
     ev.upsells = pays.filter((s) => Number(s.upsell) > 0).length;
     ev.upsellValue = pays.reduce((n, s) => n + (Number(s.upsell) || 0), 0);
-    if (ev.showed) ev.booked = 1;
-    if (ev.clients) { ev.booked = 1; ev.showed = 1; }
+    if (ev.showed) { ev.booked = 1; ev.confirmed = 1; }
+    if (ev.clients) { ev.booked = 1; ev.confirmed = 1; ev.showed = 1; }
 
     const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad ? adByNames.get('|' + norm(f.ad)) : null);
     if (ad) { add(out.ads, ad.id, ev); add(out.adsets, ad.adsetId, ev); add(out.campaigns, ad.campaignId, ev); return; }
@@ -93,7 +101,7 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
   });
   return out;
 }
-function zero() { return { leads: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }; }
+function zero() { return { leads: 0, booked: 0, confirmed: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }; }
 function plus(x, ev) { Object.keys(ev).forEach((k) => { x[k] = (x[k] || 0) + ev[k]; }); }
 
 module.exports = { funnel, periodRange, bucharestDay, zero };

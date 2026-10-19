@@ -313,7 +313,7 @@ function matches(wf, event, p) {
   if (event === 'appointment_created') return t.type === 'appointment_created' || t.type === 'appointment_before';
   // a moved appointment is booked again: its booking flows start over (confirmation with the new date, location,
   // reminders), its "before" reminders are made again for the new hour
-  if (event === 'appointment_rescheduled') return t.type === 'appointment_before' || t.type === 'appointment_created';
+  if (event === 'appointment_rescheduled') return t.type === 'appointment_before' || (t.type === 'appointment_created' && !!p.restart);
   if (event === 'appointment_status') return (t.type === 'appointment_status' && t.status === p.status) || (t.type === 'appointment_after' && p.status === 'finalizata');
   return false;
 }
@@ -340,13 +340,16 @@ async function emit(event, payload) {
     if (!ent) return;
     const now = Date.now();
     const fresh0 = [];
+    // a move to a date still ahead books it again (confirmation, location, reminders from the start); one into the past
+    // (a correction after the visit) only moves the waits, so the review request after it still goes
+    if (event === 'appointment_rescheduled') p.restart = apptStart(p.appointment) > now;
     // A moved / cancelled / deleted appointment: its pending "before" reminders are recalculated or dropped.
     if (ent.type === 'appointment' && (event === 'appointment_rescheduled' || event === 'appointment_deleted' || (event === 'appointment_status' && (p.status === 'anulata' || p.status === 'reprogramata')))) {
       runsDoc.runs.forEach((r) => {
         if (r.status !== 'waiting' || r.ent.id !== ent.id) return;
         const wf = doc.workflows.find((w) => w.id === r.wf);
         const waitStep = wf && r.waitId ? flat(wf.steps).find((s) => s.id === r.waitId && s.type === 'wait' && s.mode !== 'for') : null;
-        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before' && wf.trigger.type !== 'appointment_created') {
+        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before' && !(p.restart && wf.trigger.type === 'appointment_created')) {
           const target = waitTarget(waitStep, p.appointment);
           if (!Number.isFinite(target)) return;
           const late = waitStep.mode === 'before' && target < now - 15 * 60e3;
@@ -357,7 +360,7 @@ async function emit(event, payload) {
           if (r.dueAt <= new Date(now).toISOString()) fresh0.push(r.id);
           return;
         }
-        if (event === 'appointment_deleted' || (wf && (wf.trigger.type === 'appointment_before' || wf.trigger.type === 'appointment_created'))) {
+        if (event === 'appointment_deleted' || (wf && (wf.trigger.type === 'appointment_before' || (wf.trigger.type === 'appointment_created' && (event !== 'appointment_rescheduled' || p.restart))))) {
           r.status = 'stopped'; r.updatedAt = nowISO(); r.log.push({ at: nowISO(), text: event === 'appointment_deleted' ? 'Programarea a fost ștearsă' : event === 'appointment_rescheduled' ? 'Programarea s-a mutat: mesajele pornesc din nou pentru noua dată' : 'Programarea s-a mutat / anulat' });
         }
       });
