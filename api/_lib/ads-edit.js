@@ -123,6 +123,7 @@ async function editAd(conn, a) {
   if (cr.instagram_user_id && !spec.instagram_user_id) spec.instagram_user_id = cr.instagram_user_id;
   delete spec.instagram_actor_id;
   let feed = cr.asset_feed_spec ? JSON.parse(JSON.stringify(cr.asset_feed_spec)) : null;
+  let single = false;
   if (feed) {
     // several texts / headlines: the lists change, the rest of the creative stays
     feed.bodies = texts.map((text) => ({ text }));
@@ -142,6 +143,13 @@ async function editAd(conn, a) {
     if (cta) ld.call_to_action.type = cta;
     if (formId) ld.call_to_action.value = Object.assign({}, ld.call_to_action.value, { lead_gen_form_id: formId });
     delete ld.picture; // the image is the hash
+    // an ad with one text gets its second text / more titles the way a new one is published (Meta tests the mix)
+    if (texts.length > 1 || heads.length > 1) {
+      feed = { bodies: texts.map((text) => ({ text })), titles: (heads.length ? heads : [ld.name || '']).filter(Boolean).map((text) => ({ text })), optimization_type: 'DEGREES_OF_FREEDOM' };
+      if (descs.length) feed.descriptions = descs.map((text) => ({ text }));
+      if (!feed.titles.length) delete feed.titles;
+      single = true;
+    }
   } else if (spec.video_data) {
     const vd = spec.video_data;
     vd.message = texts[0];
@@ -152,11 +160,18 @@ async function editAd(conn, a) {
 
   const params = { name: (cr.name || ad.j.name || 'Reclamă') + ' · editată', object_story_spec: spec };
   if (feed) params.asset_feed_spec = feed;
-  const made = await call('POST', '/' + conn.adAccountId + '/adcreatives', tok, params);
+  let made = await call('POST', '/' + conn.adAccountId + '/adcreatives', tok, params);
+  let note = '';
+  // Meta refusing the extra texts on an ad that had one: it keeps the first text and title, and says so
+  if (!made.ok && single) {
+    note = 'Meta n-a primit al doilea text / titlu (' + err(made.j) + '), reclama are doar primul.';
+    delete params.asset_feed_spec;
+    made = await call('POST', '/' + conn.adAccountId + '/adcreatives', tok, params);
+  }
   if (!made.ok) return { error: err(made.j, 'Reclama nouă') };
   const sw = await call('POST', '/' + a.adId, tok, { creative: { creative_id: made.j.id } });
   if (!sw.ok) { await call('DELETE', '/' + made.j.id, tok); return { error: err(sw.j, 'Schimbarea reclamei') }; }
-  return { ok: true, creativeId: made.j.id };
+  return Object.assign({ ok: true, creativeId: made.j.id }, note ? { note } : {});
 }
 
 const PLACEMENTS = {
