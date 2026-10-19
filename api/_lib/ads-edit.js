@@ -163,6 +163,8 @@ async function editAd(conn, a) {
     if (vd.call_to_action) { if (cta) vd.call_to_action.type = cta; if (formId) vd.call_to_action.value = Object.assign({}, vd.call_to_action.value, { lead_gen_form_id: formId }); }
   } else return { error: 'Reclama asta nu se poate edita de aici. Deschide-o în Ads Manager.' };
 
+  // a video's cover comes back from Meta both as a link and as a hash, but a new creative takes only one: the hash
+  if (spec.video_data && spec.video_data.image_hash && spec.video_data.image_url) delete spec.video_data.image_url;
   const params = { name: (cr.name || ad.j.name || 'Reclamă') + ' · editată', object_story_spec: spec };
   if (feed) params.asset_feed_spec = feed;
   let made = await call('POST', '/' + conn.adAccountId + '/adcreatives', tok, params);
