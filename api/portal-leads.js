@@ -121,6 +121,91 @@ function addActivity(lead, entry) {
   lead.updatedAt = at;
 }
 
+// A booking moves the lead to the booked stage from any stage before it and from the side ones (waiting,
+// contraindications, lost, undelivered); one already booked, come or won stays where it is.
+function applyBooking(lead, stages, appt, author) {
+  const at = String(appt.date || '').slice(0, 10) + (appt.time ? ' ' + String(appt.time).slice(0, 5) : '');
+  if (lead.appointmentId && lead.appointmentId === appt.id) {
+    // the same appointment again (moved in the Calendar): only the date on the lead changes
+    if (lead.appointmentAt !== at) { lead.appointmentAt = at; addActivity(lead, { type: 'booking', text: 'Mutată: ' + at, author }); return true; }
+    return false;
+  }
+  lead.appointmentId = clip(appt.id, 60);
+  lead.appointmentAt = at;
+  lead.followUpAt = '';
+  lead.nextAction = '';
+  addActivity(lead, { type: 'booking', text: at + (appt.treatment ? ' · ' + clip(appt.treatment, 120) : ''), author });
+  const booked = stages.find((x) => x.kind === 'booked');
+  if (!booked || lead.stage === booked.id) return true;
+  const order = (id) => stages.findIndex((x) => x.id === id);
+  const won = stages.findIndex((x) => x.kind === 'won');
+  const i = order(lead.stage), b = order(booked.id);
+  const kind = stageKind(stages, lead.stage);
+  const stays = kind === 'won' || (i > b && won > b && i < won);
+  if (stays) return true;
+  addActivity(lead, { type: 'stage', author, text: (stages.find((x) => x.id === lead.stage) || { name: lead.stage }).name + ' → ' + booked.name });
+  lead.stage = booked.id;
+  lead.stageChangedAt = nowISO();
+  lead.lostReason = '';
+  return true;
+}
+
+// A booking made anywhere (Calendar, Mesaje, the lead's card): that person's lead (the one named, else the newest
+// one with the same phone that isn't a client yet) moves to the booked stage. Returns the lead, or null. Never throws.
+async function bookLead(appt, opts) {
+  try {
+    const o = opts || {};
+    const stages = await loadStages();
+    const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
+    const key = normPhone(appt.clientPhone);
+    let lead = o.leadId ? leads.find((l) => l.id === o.leadId) : null;
+    if (!lead && key.length >= 6) {
+      lead = leads.filter((l) => normPhone(l.phone) === key && stageKind(stages, l.stage) !== 'won')
+        .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))[0] || null;
+    }
+    if (!lead) return null;
+    if (applyBooking(lead, stages, appt, o.author || 'Calendar')) await writeJSON(LEADS_KEY, leads);
+    return lead;
+  } catch (err) {
+    console.error('bookLead error:', err.message);
+    return null;
+  }
+}
+
+// A WhatsApp message that didn't reach a new lead (no WhatsApp on the number, a wrong number, Meta refused it): the
+// lead goes to "Undelivered" (made the first time, right after the first stage), so the desk calls her instead.
+// Only leads not yet booked move (a booked client's failed reminder doesn't take her out of her stage). Never throws.
+const UNDELIVERED = { id: 'undelivered', name: 'Undelivered', color: '#d64545', kind: 'open' };
+async function markUndelivered(phone, why) {
+  try {
+    const key = normPhone(phone);
+    if (key.length < 6) return [];
+    const stages = await loadStages();
+    let st = stages.find((x) => x.id === UNDELIVERED.id) || stages.find((x) => /undeliver|nelivrat/i.test(x.name || ''));
+    if (!st) {
+      st = Object.assign({}, UNDELIVERED);
+      const first = stages.findIndex((x) => x.kind === 'open');
+      stages.splice(first < 0 ? 0 : first + 1, 0, st);
+      await writeJSON(STAGES_KEY, stages);
+    }
+    const booked = stages.find((x) => x.kind === 'booked');
+    const order = (id) => stages.findIndex((x) => x.id === id);
+    const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
+    const hits = leads.filter((l) => normPhone(l.phone) === key && l.stage !== st.id && stageKind(stages, l.stage) === 'open' && (!booked || order(l.stage) < order(booked.id)));
+    if (!hits.length) return [];
+    hits.forEach((l) => {
+      addActivity(l, { type: 'stage', author: 'WhatsApp automat', text: (stages.find((x) => x.id === l.stage) || { name: l.stage }).name + ' → ' + st.name + (why ? ' · ' + clip(why, 120) : '') });
+      l.stage = st.id;
+      l.stageChangedAt = nowISO();
+    });
+    await writeJSON(LEADS_KEY, leads);
+    return hits;
+  } catch (err) {
+    console.error('markUndelivered error:', err.message);
+    return [];
+  }
+}
+
 function withComputedFields(lead, stages) {
   const now = Date.now();
   const kind = stageKind(stages, lead.stage);
@@ -427,21 +512,8 @@ module.exports = async (req, res) => {
     // (so the calendar, the WhatsApp-confirmation task and the client directory all run through
     // their normal path). Records it on the lead and moves it into the 'booked' stage.
     if (action === 'link_appointment') {
-      lead.appointmentId = clip(body.appointmentId, 60);
-      lead.appointmentAt = clip(body.date, 10) + (body.time ? ' ' + clip(body.time, 5) : '');
-      lead.followUpAt = '';
-      lead.nextAction = '';
-      addActivity(lead, { type: 'booking', text: lead.appointmentAt + (body.treatment ? ' · ' + clip(body.treatment, 120) : ''), author });
-      const booked = stages.find((s) => s.kind === 'booked');
-      const order = (id) => stages.findIndex((s) => s.id === id);
-      if (booked && stageKind(stages, lead.stage) !== 'won' && order(lead.stage) < order(booked.id)) {
-        addActivity(lead, { type: 'stage', author, text: (stages.find((s) => s.id === lead.stage) || {}).name + ' → ' + booked.name });
-        lead.stage = booked.id;
-        lead.stageChangedAt = nowISO();
-      } else if (booked && stageKind(stages, lead.stage) === 'lost') {
-        lead.stage = booked.id;
-        lead.stageChangedAt = nowISO();
-      }
+      // the booking itself already moved it (api/portal-appointments.js): then this changes nothing
+      applyBooking(lead, stages, { id: body.appointmentId, date: body.date, time: body.time, treatment: body.treatment }, author);
       return save();
     }
 
@@ -464,3 +536,5 @@ module.exports.STAGE_ORDER = STAGE_ORDER;
 module.exports.ALL_STAGES = ALL_STAGES;
 module.exports.createLead = createLead;
 module.exports.loadStages = loadStages;
+module.exports.bookLead = bookLead;
+module.exports.markUndelivered = markUndelivered;

@@ -393,6 +393,8 @@ module.exports = async (req, res) => {
     // before answering Meta: once the response is sent the function may be stopped
     try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
     try { await alertUndelivered(failed); } catch (err) { console.error('webhook-whatsapp: undelivered alert failed', err.message); }
+    // a new lead the message didn't reach goes to Undelivered in the Pipeline (the desk calls her instead)
+    for (const { convo, msg } of failed) await require('./portal-leads').markUndelivered(convo.phone, msg.error);
   } catch (err) {
     console.error('webhook-whatsapp: error handling payload', err.message);
   }

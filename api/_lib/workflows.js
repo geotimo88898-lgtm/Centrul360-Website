@@ -311,7 +311,9 @@ function matches(wf, event, p) {
   }
   if (event === 'stage_changed') return t.type === 'stage_changed' && t.stage === p.stage;
   if (event === 'appointment_created') return t.type === 'appointment_created' || t.type === 'appointment_before';
-  if (event === 'appointment_rescheduled') return t.type === 'appointment_before';
+  // a moved appointment is booked again: its booking flows start over (confirmation with the new date, location,
+  // reminders), its "before" reminders are made again for the new hour
+  if (event === 'appointment_rescheduled') return t.type === 'appointment_before' || t.type === 'appointment_created';
   if (event === 'appointment_status') return (t.type === 'appointment_status' && t.status === p.status) || (t.type === 'appointment_after' && p.status === 'finalizata');
   return false;
 }
@@ -344,7 +346,7 @@ async function emit(event, payload) {
         if (r.status !== 'waiting' || r.ent.id !== ent.id) return;
         const wf = doc.workflows.find((w) => w.id === r.wf);
         const waitStep = wf && r.waitId ? flat(wf.steps).find((s) => s.id === r.waitId && s.type === 'wait' && s.mode !== 'for') : null;
-        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before') {
+        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before' && wf.trigger.type !== 'appointment_created') {
           const target = waitTarget(waitStep, p.appointment);
           if (!Number.isFinite(target)) return;
           const late = waitStep.mode === 'before' && target < now - 15 * 60e3;
@@ -355,8 +357,8 @@ async function emit(event, payload) {
           if (r.dueAt <= new Date(now).toISOString()) fresh0.push(r.id);
           return;
         }
-        if (event === 'appointment_deleted' || (wf && (wf.trigger.type === 'appointment_before' || (wf.trigger.type === 'appointment_created' && event !== 'appointment_rescheduled')))) {
-          r.status = 'stopped'; r.updatedAt = nowISO(); r.log.push({ at: nowISO(), text: event === 'appointment_deleted' ? 'Programarea a fost ștearsă' : 'Programarea s-a mutat / anulat' });
+        if (event === 'appointment_deleted' || (wf && (wf.trigger.type === 'appointment_before' || wf.trigger.type === 'appointment_created'))) {
+          r.status = 'stopped'; r.updatedAt = nowISO(); r.log.push({ at: nowISO(), text: event === 'appointment_deleted' ? 'Programarea a fost ștearsă' : event === 'appointment_rescheduled' ? 'Programarea s-a mutat: mesajele pornesc din nou pentru noua dată' : 'Programarea s-a mutat / anulat' });
         }
       });
     }
@@ -564,15 +566,18 @@ async function welcome(lead) {
     const settings = (await loadDoc()).settings || {};
     const v = vars({ lead }, settings);
     const notes = [];
+    let refused = '';
     for (const t of tpls) {
       const r = await sendTemplate(wa, t.id, lead.location || cities[0], lead.phone, v);
       notes.push(r.sent ? 'WhatsApp de bun venit trimis („' + t.label + '”, de pe numărul ' + r.city + ')' : 'Mesajul de bun venit n-a plecat: ' + r.why);
+      if (!r.sent && /^Meta a refuzat/.test(r.why || '')) refused = r.why;
     }
     const leads = await readJSON(LEADS_KEY, []);
     const l = leads.find((x) => x.id === lead.id);
     if (!l) return;
     notes.forEach((text) => (l.activities = l.activities || []).push({ id: uid(), type: 'note', text, author: 'WhatsApp automat', at: nowISO() }));
     await writeJSON(LEADS_KEY, leads);
+    if (refused) await require('../portal-leads').markUndelivered(lead.phone, refused);
   } catch (err) {
     console.error('workflows.welcome error:', err.message);
   }

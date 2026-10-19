@@ -73,6 +73,13 @@ async function resolveClient({ clientId, clientName, clientPhone }) {
   return upsertClient({ name: cleanName, phone: cleanPhone }, { readJSON, writeJSON });
 }
 
+// who did it, for the lead's history
+async function whoName(session) {
+  if (!session || session.employeeId === 'admin') return 'Admin';
+  const e = (await readJSON('data/employees.json', [])).find((x) => x.id === session.employeeId);
+  return e ? e.name : 'Calendar';
+}
+
 async function validateAndBuildFields(body, employees) {
   const { date, time, endTime, treatment, location, cosmeticianId, status } = body || {};
   // One or more of: epilare-laser, faciale, corporale (older single `category` keys still accepted).
@@ -214,6 +221,11 @@ module.exports = async (req, res) => {
         createdAt: now,
         updatedAt: now,
       };
+      // the person's lead moves to "Programare stabilită" (a booking from the Calendar, Mesaje or the lead's card alike)
+      if (entry.status !== 'concediu') {
+        const lead = await require('./portal-leads').bookLead(entry, { leadId: req.body && req.body.leadId, author: await whoName(session) });
+        if (lead) entry.leadId = lead.id;
+      }
       appointments.push(entry);
       await writeJSON('data/appointments.json', appointments);
 
@@ -257,10 +269,17 @@ module.exports = async (req, res) => {
       if (!('endTime' in req.body)) result.fields.endTime = appointment.endTime || ''; // older clients don't send it
       if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
+      const moved = before.date !== appointment.date || before.time !== appointment.time;
+      // a moved appointment: the date on its lead follows (a lead not linked yet gets linked and moves to booked)
+      if (moved && appointment.status !== 'concediu' && !['anulata', 'finalizata'].includes(appointment.status)) {
+        const lead = await require('./portal-leads').bookLead(appointment, { leadId: appointment.leadId, author: await whoName(session) });
+        if (lead) appointment.leadId = lead.id;
+      }
       await writeJSON('data/appointments.json', appointments);
-      // Automations: a moved appointment gets its reminders recalculated; a status change can start a flow.
-      if (before.date !== appointment.date || before.time !== appointment.time) await workflows.emit('appointment_rescheduled', { appointment });
+      // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the
+      // booking messages again for the new date (confirmation, location, reminders).
       if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });
+      if (moved) await workflows.emit('appointment_rescheduled', { appointment });
       res.status(200).json({ ok: true, appointment });
       return;
     }
