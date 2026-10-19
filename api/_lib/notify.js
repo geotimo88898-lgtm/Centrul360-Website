@@ -17,7 +17,7 @@ const SAME_WITHIN = 10 * 60 * 1000;
 
 // the owner's own login ('admin') gets only the alerts meant for it (new leads, a booking, money in, the day's
 // report), not decisions about the team
-const OWNER_KINDS = ['lead', 'alert', 'booking', 'money', 'report'];
+const OWNER_KINDS = ['lead', 'alert', 'booking', 'money', 'report', 'approval']; // approval: a commission a cosmetician added
 const wants = (id, n) => id && (id !== 'admin' || OWNER_KINDS.includes(n.kind));
 // the owner: her own login and anyone with the admin role
 async function adminIds(store) {

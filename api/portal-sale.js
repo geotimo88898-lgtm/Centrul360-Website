@@ -37,10 +37,12 @@ function isValidDate(date) {
 }
 
 async function handleComision(req, res, session) {
-  const { date, category, treatment, amount, note, clientId, clientName, clientPhone } =
+  const { date, treatment, amount, note, clientId, clientName, clientPhone } =
     req.body || {};
+  // one category or several (Salariu → "+ Adaugă comision" sends the list)
+  const category = Array.isArray(req.body && req.body.categories) && req.body.categories.length ? req.body.categories : req.body && req.body.category;
 
-  if (!date || !category || !treatment || amount === undefined) {
+  if (!date || !category || !String(treatment || '').trim() || amount === undefined) {
     res.status(400).json({ error: 'missing_fields' });
     return;
   }
@@ -53,7 +55,7 @@ async function handleComision(req, res, session) {
     res.status(400).json({ error: 'invalid_amount' });
     return;
   }
-  if (!isValidDate(date)) {
+  if (!isValidDate(date) || date > todayISO()) {
     res.status(400).json({ error: 'invalid_date' });
     return;
   }
@@ -82,6 +84,8 @@ async function handleComision(req, res, session) {
       );
       linkedClientId = client.id;
       linkedClientName = client.name;
+    } else if (clientName) {
+      linkedClientName = String(clientName).trim().slice(0, 150); // only her name: shown, no client record made
     }
 
     const entry = {
@@ -97,13 +101,29 @@ async function handleComision(req, res, session) {
       clientId: linkedClientId,
       client: linkedClientName,
       status: 'pending',
-      commission: 0,
+      // added by hand (not from a payment): what she'd get, shown while it waits; approving fixes it
+      origin: 'manual',
+      profit: profitOf(numAmount),
+      commission: commissionOf(numAmount),
       createdAt: new Date().toISOString(),
       decidedAt: null,
     };
 
     sales.push(entry);
     await writeJSON('data/sales.json', sales);
+
+    // the owner hears there is one to approve (bell + phone)
+    if (!N.isOwner(session)) {
+      try {
+        const store = { readJSON, writeJSON };
+        const emp = (await readJSON('data/employees.json', [])).find((e) => e.id === session.employeeId);
+        await N.notifyMany(store, await N.adminIds(store), {
+          kind: 'approval', tone: 'info', go: 'aprobari', tag: 'comm-' + entry.id,
+          title: 'COMISION DE APROBAT 🧾 - ' + (emp ? emp.name : 'Cosmeticiana'),
+          text: entry.treatment + ' · upsell ' + N.leiTxt(numAmount) + (entry.client ? ' · ' + entry.client : ''),
+        });
+      } catch (e) { /* a notification never blocks the request */ }
+    }
 
     res.status(200).json({ ok: true, entry });
   } catch (err) {
@@ -260,6 +280,23 @@ function upsellFor(entry, employeeId) {
   };
 }
 
+// Salariu: she takes back a commission she added by hand, while it still waits for the owner
+async function handleComisionCancel(req, res, session) {
+  const id = String((req.body && req.body.id) || '');
+  try {
+    const sales = await readJSON('data/sales.json', []);
+    const s = sales.find((x) => x.id === id && x.source === 'comision');
+    if (!s) { res.status(404).json({ error: 'sale_not_found' }); return; }
+    if (s.employeeId !== session.employeeId || s.origin !== 'manual') { res.status(403).json({ error: 'forbidden' }); return; }
+    if (s.status !== 'pending') { res.status(409).json({ error: 'already_decided' }); return; }
+    await writeJSON('data/sales.json', sales.filter((x) => x !== s));
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('portal-sale (comision cancel) error:', err.message);
+    res.status(500).json({ error: 'sale_failed' });
+  }
+}
+
 const handler = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' });
@@ -274,6 +311,8 @@ const handler = async (req, res) => {
   if (source === 'incasare') {
     // Whoever is at the desk takes the payment (in Arad that can be the cosmetician herself).
     await handleIncasare(req, res, session);
+  } else if (source === 'comision_cancel') {
+    await handleComisionCancel(req, res, session);
   } else {
     await handleComision(req, res, session);
   }

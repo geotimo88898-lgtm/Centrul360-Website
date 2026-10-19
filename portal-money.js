@@ -693,7 +693,7 @@
     cpanel = p;
     cpanel.classList.add('k-panel', 'mo', 'cb');
     cpanel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Salariul meu</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline" data-sal-custom>' + icon('sliders') + 'Personalizează</button></div></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Salariul meu</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-accent" data-comm-new hidden>' + icon('plus') + 'Adaugă comision</button><button type="button" class="k-btn is-outline" data-sal-custom>' + icon('sliders') + 'Personalizează</button></div></div>' +
       '<div data-body></div>';
     cpanel.addEventListener('click', (e) => {
       const m = e.target.closest('[data-m]');
@@ -702,7 +702,62 @@
       if (h) { C.month = h.dataset.month; renderComision(); cpanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       if (e.target.closest('[data-go-train]')) K.go('traininguri');
       if (e.target.closest('[data-sal-custom]')) customizeSal();
+      if (e.target.closest('[data-comm-new]')) openCommNew();
+      const cc = e.target.closest('[data-comm-cancel]');
+      if (cc) cancelComm(cc.dataset.commCancel);
     });
+  }
+
+  // "+ Adaugă comision": an upsell of hers the payment didn't carry (a package she sold, a zone added); it waits for the
+  // owner's approval, the commission shown is what it would bring (upsell - 60% costs, 10% of the profit)
+  function openCommNew() {
+    const RULE = K.commissionRule();
+    const d = K.drawer({
+      title: 'Adaugă comision', icon: 'percent', width: 520, subtitle: 'Se aprobă de admin, apoi intră în salariu.',
+      body: '<form class="k-form" data-form>' +
+        K.field('Data', '<input name="date" type="date" required value="' + K.today() + '" max="' + K.today() + '">', 'full') +
+        K.field('Clienta', '<input name="clientName" required maxlength="150" placeholder="Caută sau scrie numele" autocomplete="off">', 'full') +
+        K.field('Telefon (opțional)', '<input name="clientPhone" type="tel" maxlength="30" placeholder="07xx xxx xxx">', 'full') +
+        K.field('Ce ai vândut', '<input name="treatment" required maxlength="200" placeholder="ex. pachet 6 ședințe LipoSonix, o zonă în plus">', 'full') +
+        K.field('Categorie', K.catPicker([]), 'full') +
+        K.field('Valoarea upsell-ului', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="1" step="1" required placeholder="0"></div>', 'full') +
+        '<div class="pay-note" data-comm-est></div>' +
+        K.field('Notă pentru admin (opțional)', '<textarea name="note" rows="2" maxlength="500" placeholder="ex. a plătit la recepție, nu s-a bifat upsell"></textarea>', 'full') +
+        '</form>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Trimite la aprobare</button>',
+      onMount(el) {
+        const f = el.querySelector('[data-form]');
+        const picker = K.clientPicker(f.clientName, f.clientPhone);
+        const est = () => {
+          const v = Number(f.amount.value) || 0;
+          el.querySelector('[data-comm-est]').innerHTML = v > 0 ? '<span>Comision: <b>' + K.lei(K.commissionOf(v), 2) + '</b> (' + K.lei(v) + ' - ' + RULE.cost + '% = ' + K.lei(K.profitOf(v), 2) + ', × ' + RULE.rate + '%), după aprobare.</span>' : '';
+        };
+        f.amount.addEventListener('input', est);
+        el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
+        f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
+        el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+          const v = K.formValues(f);
+          const cats = String(v.categories || '').split(',').filter(Boolean);
+          if (!v.clientName) { K.ui().toast('Scrie numele clientei.', 'error'); f.clientName.focus(); return; }
+          if (!v.treatment) { K.ui().toast('Scrie ce ai vândut.', 'error'); f.treatment.focus(); return; }
+          if (!cats.length) { K.ui().toast('Alege categoria.', 'error'); return; }
+          if (!(Number(v.amount) > 0)) { K.ui().toast('Scrie valoarea upsell-ului.', 'error'); f.amount.focus(); return; }
+          try {
+            await K.api('/api/portal-sale', { source: 'comision', date: v.date, categories: cats, treatment: v.treatment, amount: Number(v.amount), note: v.note || '',
+              clientId: picker.id(), clientName: v.clientName, clientPhone: v.clientPhone || '' });
+            d.close();
+            K.ui().toast('Trimis la aprobare: ' + K.lei(K.commissionOf(Number(v.amount)), 2) + ' comision.', 'success');
+            K.reload();
+          } catch (err) { K.ui().toast(err.code === 'invalid_date' ? 'Data nu poate fi în viitor.' : K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+  // her own, still waiting: taken back
+  async function cancelComm(id) {
+    if (!(await K.ui().confirm({ title: 'Retragi cererea de comision?', message: 'Dispare din lista de aprobat. O poți trimite din nou oricând.', confirmText: 'Retrage', danger: true }))) return;
+    try { await K.api('/api/portal-sale', { source: 'comision_cancel', id }); K.ui().toast('Cerere retrasă.', 'success'); K.reload(); }
+    catch (err) { K.ui().toast(err.code === 'already_decided' ? 'Adminul a decis deja asupra ei.' : K.errText(err), 'error'); }
   }
 
   // "Salariu": what she takes home this month (salary + overtime + commission, or the booking bonus
@@ -763,6 +818,8 @@
     const pay = months.find((m) => m.month === C.month) || null;
     const RULE = K.commissionRule();
     const isDesk = me.role === 'receptie';
+    const addBtn = cpanel.querySelector('[data-comm-new]');
+    if (addBtn) addBtn.hidden = me.role !== 'cosmetician';
 
     // ---- commission lines (cosmeticians)
     const sales = (D.mySales || []);
@@ -811,9 +868,9 @@
               const val = s.status === 'approved' ? Number(s.commission || 0) : (s.commission ? Number(s.commission) : K.commissionOf(s.amount));
               return '<div class="k-row' + (s.status === 'pending' ? ' is-wait' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(String(s.treatment || '').replace(/^Upsell · /, '')) + '</div>' +
                 '<div class="cb-calc"><span>Upsell <b>' + K.lei(s.amount) + '</b></span><span>- ' + RULE.cost + '%</span><span>= <b>' + K.lei(K.profitOf(s.amount), 2) + '</b></span><span>× ' + RULE.rate + '%</span></div></div>' +
-                '<div class="k-row-end">' + (s.status === 'approved' ? '' : '<span class="k-tag is-' + st.tone + '">' + st.label + '</span>') + '<span class="k-amount">+' + K.lei(val, 2) + '</span></div></div>';
+                '<div class="k-row-end">' + (s.status === 'pending' && s.origin === 'manual' ? '<button type="button" class="k-btn is-ghost is-sm" data-comm-cancel="' + esc(s.id) + '">Retrage</button>' : '') + (s.status === 'approved' ? '' : '<span class="k-tag is-' + st.tone + '">' + st.label + '</span>') + '<span class="k-amount">+' + K.lei(val, 2) + '</span></div></div>';
             }).join('') + '</div>'
-              : K.empty('trend', 'Niciun upsell încă', 'Upsell-urile la tratamentele făcute de tine apar aici, cu comisionul lor.')) + '</section>' +
+              : K.empty('trend', 'Niciun upsell încă', 'Upsell-urile la tratamentele făcute de tine apar aici, cu comisionul lor.', me.role === 'cosmetician' ? '<button type="button" class="k-btn is-accent is-sm" data-comm-new>' + icon('plus') + 'Adaugă comision</button>' : '')) + '</section>' +
         '</div>';
 
     // ---- last months
