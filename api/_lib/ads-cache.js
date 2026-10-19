@@ -20,7 +20,7 @@ async function cached(name, ttlMs, fn) {
     return at(data, t);
   }
   // Meta refused (often: too many calls for now): the last numbers of the last 6 hours, marked
-  if (hit && hit.data && Date.now() - hit.at < 6 * 3600e3) return Object.assign({}, hit.data, { stale: hit.at, readAt: hit.at });
+  if (hit && hit.data && Date.now() - hit.at < 6 * 3600e3) return Object.assign({}, hit.data, { stale: hit.at, readAt: hit.at, staleWhy: String((data && data.error) || '') });
   return data;
 }
 
