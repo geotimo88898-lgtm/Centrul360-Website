@@ -117,7 +117,11 @@ module.exports = async (req, res) => {
       const past = range ? range.until < today : ['yesterday', '7d', '30d'].includes(period);
       const creds = await appCreds(readJSON);
       const [view, token] = await Promise.all([
-        AC.cached('ov-' + (range ? range.since + '_' + range.until : period) + '-' + today, past ? 20 * 60e3 : 3 * 60e3, () => ads.overview(conn, period, range)),
+        AC.cached('ov-' + (range ? range.since + '_' + range.until : period) + '-' + today, past ? 20 * 60e3 : 3 * 60e3, async () => {
+          const recent = await AC.cached('recent-campaigns', 30 * 60e3, () => ads.recentCampaigns(conn), { keep: true });
+          if (recent.error) return { error: recent.error };
+          return ads.overview(conn, period, range, recent.ids);
+        }),
         AC.cached('token', 10 * 60e3, () => ads.tokenInfo(conn.userToken, creds)),
       ]);
       if (view.error) {

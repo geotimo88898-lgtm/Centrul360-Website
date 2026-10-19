@@ -304,20 +304,53 @@ const setsBudget = (sets) => {
 
 // Campaigns with their ad sets and ads, and the results of the period, for the Reclame page.
 // range = { since, until } (YYYY-MM-DD, the account's days) wins over the period
-async function overview(conn, period, range) {
+// the campaigns Reclame shows: the running ones, and the paused ones that spent in the period or the last 30 days.
+// The account keeps hundreds of old paused campaigns: reading them all cut Meta's list (the new ones fell out) and used
+// up the account's allowance of calls. (Running = not paused by the owner: on, in review, with issues.)
+const RUNNING = ['ACTIVE', 'IN_PROCESS', 'WITH_ISSUES'];
+const CAMP_FIELDS = 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time';
+const chunks = (list, n) => { const out = []; for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n)); return out; };
+async function campaignsOf(conn, spentIds) {
+  const tok = conn.userToken, act = conn.adAccountId;
+  const on = await all('/' + act + '/campaigns', tok, { fields: CAMP_FIELDS, limit: '100', effective_status: JSON.stringify(RUNNING) }, 3);
+  if (on.error) return on;
+  const have = new Set(on.data.map((c) => c.id));
+  const more = [...new Set(spentIds)].filter((id) => id && !have.has(id));
+  const out = on.data.slice();
+  for (const part of chunks(more, 50)) {
+    const r = await call('GET', '/', tok, { ids: part.join(','), fields: CAMP_FIELDS + ',account_id' });
+    if (!r.ok) return { error: metaError(r.j) };
+    Object.values(r.j || {}).forEach((c) => { if (c && c.id && 'act_' + c.account_id === act && c.effective_status !== 'DELETED' && c.effective_status !== 'ARCHIVED') out.push(c); });
+  }
+  return { data: out };
+}
+// the ad sets / ads of those campaigns only, every status but deleted / archived
+async function childrenOf(conn, edge, fields, ids, limit) {
+  const out = [];
+  for (const part of chunks(ids, 100)) {
+    const r = await all('/' + conn.adAccountId + '/' + edge, conn.userToken, { fields, limit, effective_status: JSON.stringify(LIVE), filtering: JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: part }]) }, 5);
+    if (r.error) return r;
+    out.push(...r.data);
+  }
+  return { data: out };
+}
+
+async function overview(conn, period, range, recentIds) {
   const tok = conn.userToken, act = conn.adAccountId;
   const when = range ? { time_range: JSON.stringify({ since: range.since, until: range.until }) } : { date_preset: PERIODS[period] || 'last_7d' };
-  const live = JSON.stringify(LIVE);
-  const [camps, sets, ads, iC, iS, iA, acc] = await Promise.all([
-    all('/' + act + '/campaigns', tok, { fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time', limit: '100', effective_status: live }, 2),
-    all('/' + act + '/adsets', tok, { fields: 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', limit: '200', effective_status: live }, 3),
-    all('/' + act + '/ads', tok, { fields: 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', limit: '200', effective_status: live }, 3),
-    all('/' + act + '/insights', tok, Object.assign({ level: 'campaign', fields: 'campaign_id,' + RESULTS, limit: '200' }, when), 3),
+  const iC = await all('/' + act + '/insights', tok, Object.assign({ level: 'campaign', fields: 'campaign_id,' + RESULTS, limit: '500' }, when), 3);
+  // Meta saying "too many calls" to the first reading: nothing more is asked now
+  if (iC.error) return { error: iC.error };
+  const camps = await campaignsOf(conn, (iC.data || []).map((r) => r.campaign_id).concat(recentIds || []));
+  if (camps.error) return { error: camps.error };
+  const ids = camps.data.map((c) => c.id);
+  const [sets, ads, iS, iA, acc] = await Promise.all([
+    childrenOf(conn, 'adsets', 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', ids, '200'),
+    childrenOf(conn, 'ads', 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', ids, '200'),
     all('/' + act + '/insights', tok, Object.assign({ level: 'adset', fields: 'adset_id,' + RESULTS, limit: '500' }, when), 3),
     all('/' + act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,' + RESULTS, limit: '500' }, when), 3),
     call('GET', '/' + act, tok, { fields: 'name,currency,account_status,amount_spent' }),
   ]);
-  if (camps.error) return { error: camps.error };
   // the ad sets or the ads refused (often Meta's "too many calls"): no half picture (campaigns without their ads) that
   // could be kept as if whole; the last whole one is shown instead (ads-cache.js)
   if (sets.error || ads.error) return { error: sets.error || ads.error };
@@ -358,7 +391,7 @@ async function overview(conn, period, range) {
   const totals = campaigns.reduce((t, c) => ({ spend: t.spend + c.spend, leads: t.leads + c.leads }), { spend: 0, leads: 0 });
   return {
     ok: true, period: range ? 'custom' : period, range: range || null, account: { id: act, name: (acc.ok && acc.j.name) || conn.adAccountName || act, currency: (acc.ok && acc.j.currency) || 'RON', status: acc.ok ? acc.j.account_status : null },
-    totals, campaigns, partial: [iC, iS, iA].some((x) => x.error) ? 'Rezultatele n-au venit toate de la Meta.' : '',
+    totals, campaigns, partial: [iS, iA].some((x) => x.error) ? 'Rezultatele n-au venit toate de la Meta.' : '',
   };
 }
 
@@ -435,4 +468,11 @@ async function adForms(conn) {
   return { rows: r.data.map((a) => ({ adId: String(a.id), adName: a.name || '', status: a.effective_status || '', formId: find(a.creative || {}) })).filter((x) => x.formId) };
 }
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, act, adsManagerUrl, adSpend, adStats, adForms };
+// the campaigns that spent in the last 30 days (paused ones among them stay in Reclame, to switch them back on)
+async function recentCampaigns(conn) {
+  const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'campaign', fields: 'campaign_id', date_preset: 'last_30d', limit: '500' }, 3);
+  if (r.error) return { error: r.error };
+  return { ok: true, ids: r.data.map((x) => x.campaign_id).filter(Boolean) };
+}
+
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, act, adsManagerUrl, adSpend, adStats, adForms };

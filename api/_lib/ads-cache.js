@@ -7,18 +7,24 @@ const { readJSON, writeJSON } = require('./store');
 const VER = 'data/ads-cache/v.json';
 const pathOf = (name) => 'data/ads-cache/' + String(name).replace(/[^\w.-]+/g, '_') + '.json';
 
-async function cached(name, ttlMs, fn) {
+// keep: a change made from the portal doesn't throw it away (the list of recent campaigns: a switch doesn't change it)
+const BACKOFF = 2 * 60e3;
+async function cached(name, ttlMs, fn, opts) {
   const v = ((await readJSON(VER, {}).catch(() => ({}))) || {}).v || 0;
   const hit = await readJSON(pathOf(name), null).catch(() => null);
   // readAt: when these numbers were read from Meta (a change made after it is laid over them, api/ads-manager.js)
   const at = (data, t) => (data && typeof data === 'object' && !Array.isArray(data) ? Object.assign({}, data, { readAt: t }) : data);
-  if (hit && hit.v === v && Date.now() - hit.at < ttlMs) return at(hit.data, hit.at);
-  const data = await fn();
+  const fresh = hit && (hit.v === v || (opts && opts.keep)) && Date.now() - hit.at < ttlMs;
+  if (fresh) return at(hit.data, hit.at);
+  // Meta refused a moment ago: not asked again for 2 minutes (every try counts against the account's allowance)
+  const failed = hit && hit.failAt && Date.now() - hit.failAt < BACKOFF;
+  const data = failed ? { error: hit.failWhy || 'Meta a refuzat citirea.' } : await fn();
   if (data && !data.error) {
     const t = Date.now();
     await writeJSON(pathOf(name), { v, at: t, data }, { quiet: true }).catch(() => {});
     return at(data, t);
   }
+  if (!failed) await writeJSON(pathOf(name), Object.assign({}, hit || { v, at: 0, data: null }, { failAt: Date.now(), failWhy: String((data && data.error) || '') }), { quiet: true }).catch(() => {});
   // Meta refused (often: too many calls for now): the last numbers of the last 6 hours, marked
   if (hit && hit.data && Date.now() - hit.at < 6 * 3600e3) return Object.assign({}, hit.data, { stale: hit.at, readAt: hit.at, staleWhy: String((data && data.error) || '') });
   return data;
