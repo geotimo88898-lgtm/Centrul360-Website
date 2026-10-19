@@ -318,6 +318,9 @@ async function overview(conn, period, range) {
     call('GET', '/' + act, tok, { fields: 'name,currency,account_status,amount_spent' }),
   ]);
   if (camps.error) return { error: camps.error };
+  // the ad sets or the ads refused (often Meta's "too many calls"): no half picture (campaigns without their ads) that
+  // could be kept as if whole; the last whole one is shown instead (ads-cache.js)
+  if (sets.error || ads.error) return { error: sets.error || ads.error };
   const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], {
     spend: Number(r.spend) || 0, leads: leadsOf(r), impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
     clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0,
