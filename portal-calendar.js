@@ -631,8 +631,7 @@
     if (v.cosmeticianId) {
       const leave = rows.find((x) => x.status === 'concediu' && !x.block && x.date === v.date && x.cosmeticianId === v.cosmeticianId);
       if (leave) out.push((leave.cosmeticianName || 'Cosmeticiana') + ' e în concediu în ziua asta');
-      rows.filter((x) => x.id !== v.id && x.date === v.date && x.cosmeticianId === v.cosmeticianId && !['anulata', 'concediu'].includes(x.status) && over(x))
-        .forEach((x) => out.push((x.cosmeticianName || empName(x.cosmeticianId) || 'Cosmeticiana') + ' are deja pe ' + nameOf(x) + ' la ' + span(x)));
+      // two clients of hers at the same hour are allowed without a word (the owner, 19.10: it is useful)
     }
     return out.join('. ');
   }
