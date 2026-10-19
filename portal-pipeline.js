@@ -803,11 +803,10 @@
       renderAll();
       if (S.drawer && S.drawer.id === id) renderDrawer();
       if (!changed) return;
+      // moved by hand into the booked stage: it just moves (the desk may have booked her elsewhere); "Programează" stays on
+      // her card for when the Calendar still needs it
       if (target.kind === 'won') ui().toast('Felicitări - ' + lead.name + ' e client nou. L-am adăugat în baza de clienți.', 'success');
-      else if (target.kind === 'booked' && !j.lead.appointmentId) {
-        ui().toast('Pune și programarea în calendar, ca să primească confirmarea.', 'info');
-        openLead(id, { section: 'book' });
-      } else ui().toast(lead.name + ' → ' + target.name, 'success');
+      else ui().toast(lead.name + ' → ' + target.name, 'success');
     } catch (e) {
       Object.assign(lead, before);
       renderAll();
