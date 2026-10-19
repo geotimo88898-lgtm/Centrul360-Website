@@ -41,6 +41,29 @@ function partsOf(cr) {
   return out;
 }
 
+// every running ad of the account with its words, button, form, place and Meta's review, in ONE call (a check of all
+// the ads without one call per campaign, which Meta answers with "too many calls")
+async function activeAds(conn) {
+  const r = await call('GET', '/' + conn.adAccountId + '/ads', conn.userToken, {
+    fields: 'id,name,effective_status,ad_review_feedback,campaign{id,name},adset{id,name,targeting},creative{' + CREATIVE_FIELDS + '}',
+    effective_status: JSON.stringify(['ACTIVE', 'PENDING_REVIEW', 'IN_PROCESS', 'WITH_ISSUES', 'DISAPPROVED', 'PENDING_BILLING_INFO']),
+    limit: '150',
+  });
+  if (!r.ok) return { error: err(r.j, 'Reclamele') };
+  const ads = (r.j.data || []).map((a) => {
+    const p = partsOf(a.creative || {});
+    const geo = ((a.adset || {}).targeting || {}).geo_locations || {};
+    delete p.hashes;
+    return Object.assign({
+      id: a.id, name: a.name, status: a.effective_status, review: a.ad_review_feedback || null,
+      campaignId: (a.campaign || {}).id, campaign: (a.campaign || {}).name, adsetId: (a.adset || {}).id, adset: (a.adset || {}).name,
+      places: [].concat((geo.custom_locations || []).map((l) => (l.address_string || l.name || (l.latitude + ',' + l.longitude)) + ' ' + (l.radius || '') + (l.distance_unit || '')), (geo.cities || []).map((c) => c.name)),
+      creativeId: (a.creative || {}).id,
+    }, p);
+  });
+  return { ok: true, ads };
+}
+
 // Previzualizare / Editează: the campaign's ad sets (audience, budget) and ads (texts, images)
 async function details(conn, campaignId) {
   const tok = conn.userToken;
@@ -185,4 +208,4 @@ async function media(url) {
   return { type, buf };
 }
 
-module.exports = { details, editAd, editAdset, media, partsOf };
+module.exports = { details, activeAds, editAd, editAdset, media, partsOf };

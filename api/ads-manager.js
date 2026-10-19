@@ -144,7 +144,13 @@ module.exports = async (req, res) => {
     if (problem) { res.status(400).json({ error: problem, message: REASONS[problem] }); return; }
     // Previzualizare / Editează a running campaign
     // a change from here: the next reading comes from Meta
-    if (body.action !== 'details') await AC.clear().catch(() => {});
+    if (body.action !== 'details' && body.action !== 'active_ads') await AC.clear().catch(() => {});
+    if (body.action === 'active_ads') {
+      const d = await edit.activeAds(conn);
+      if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }
+      res.status(200).json(d);
+      return;
+    }
     if (body.action === 'details') {
       const d = await edit.details(conn, body.campaignId);
       if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }
