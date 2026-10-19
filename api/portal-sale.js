@@ -152,6 +152,15 @@ async function handleIncasare(req, res, session) {
     const upsellDone = req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1;
     const upsell = upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : amount) : 0;
     if (upsellDone && !(upsell > 0 && upsell <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+    // a package paid in parts: its whole value (above what she pays now) is kept, the rest shows at her next payments (_lib/dues.js)
+    const packageTotal = upsellDone ? Math.round((Number(req.body.packageTotal) || 0) * 100) / 100 : 0;
+    if (packageTotal && packageTotal < amount) { res.status(400).json({ error: 'invalid_package' }); return; }
+    const D = require('./_lib/dues');
+    const store = { readJSON, writeJSON };
+    // this payment pays down what she still owes for a package (at most what is left)
+    const dueId = String(req.body.dueId || '');
+    const owed = dueId ? await D.find(store, dueId) : null;
+    if (dueId && (!owed || (appt.clientId && owed.clientId !== appt.clientId))) { res.status(400).json({ error: 'invalid_due' }); return; }
 
     const entry = {
       id: crypto.randomUUID(),
@@ -169,6 +178,8 @@ async function handleIncasare(req, res, session) {
       amount,
       bookedAmount: booked,
       upsell,
+      ...(packageTotal > amount ? { packageTotal } : {}),
+      ...(owed ? { dueId: owed.id, toDue: Math.min(amount, D.rest(owed)) } : {}),
       method,
       split,
       status: 'recorded',
@@ -185,6 +196,9 @@ async function handleIncasare(req, res, session) {
       sales.push(upsellEntry);
     }
     await writeJSON('data/sales.json', sales);
+    let due = null;
+    if (entry.packageTotal) due = await D.start(store, entry, entry.packageTotal);
+    if (owed) { const p = await D.pay(store, owed.id, appt.clientId, entry, amount); due = p && p.due; }
 
     // Paid = done: the appointment is closed in the Calendar (and the "after treatment"
     // automations, like the review request, can start).
@@ -208,7 +222,7 @@ async function handleIncasare(req, res, session) {
       } catch (e) { /* never blocks a payment */ }
     }
 
-    res.status(200).json({ ok: true, entry, upsell: upsellEntry });
+    res.status(200).json({ ok: true, entry, upsell: upsellEntry, due });
   } catch (err) {
     console.error('portal-sale (incasare) error:', err.message);
     res.status(500).json({ error: 'sale_failed' });

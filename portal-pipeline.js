@@ -202,19 +202,6 @@
   const isWorking = (l) => l.kind === 'open' || l.kind === 'booked';
   const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || '';
   const fmtLei = (n) => Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei';
-  function intlPhone(p) {
-    let d = String(p || '').replace(/\D/g, '');
-    if (d.startsWith('00')) d = d.slice(2);
-    if (d.startsWith('0')) d = '4' + d;
-    else if (d.length === 9 && d.startsWith('7')) d = '40' + d;
-    return d;
-  }
-  function waLink(l) {
-    const offer = l.interest ? ' pentru ' + l.interest : '';
-    const msg = 'Bună, ' + firstName(l.name) + '! Sunt de la Centrul360 ' + (l.location || '') + '. Ai lăsat datele' + offer +
-      ' și voiam să te ajut cu o programare. Când ți-ar fi bine să vii?';
-    return 'https://wa.me/' + intlPhone(l.phone) + '?text=' + encodeURIComponent(msg);
-  }
   const telLink = (l) => 'tel:' + String(l.phone || '').replace(/[^\d+]/g, '');
   function avatarColor(name) {
     let h = 0;
@@ -582,7 +569,7 @@
       (chips.length ? '<div class="pl-tags">' + chips.join('') + '</div>' : '') +
       '<div class="pl-quick">' +
         '<a href="' + telLink(l) + '" class="pl-qbtn" title="Sună" data-quick="call">' + ic('phone') + '</a>' +
-        '<a href="' + waLink(l) + '" target="_blank" rel="noopener" class="pl-qbtn is-wa" title="WhatsApp" data-quick="wa">' + ic('chat') + '</a>' +
+        '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-quick="wa" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" data-chat-interest="' + esc(l.interest || '') + '">' + ic('chat') + '</a>' +
       '</div>' +
     '</article>';
   }
@@ -614,7 +601,8 @@
     if (quick) {
       const card = quick.closest('.pl-card');
       const l = card && leadById(card.dataset.id);
-      // After dialing / opening WhatsApp, land on the outcome form so the call gets logged.
+      // WhatsApp opens her conversation in Mesaje (portal-whatsapp.js); after a call, land on the outcome form so it gets logged
+      if (quick.dataset.quick === 'wa') return;
       if (l) setTimeout(() => openLead(l.id, { section: 'log', channel: quick.dataset.quick === 'wa' ? 'whatsapp' : 'call' }), 250);
       return;
     }
@@ -1049,7 +1037,7 @@
         // contact row
         '<div class="pl-contact">' +
           '<a class="pl-big-action" href="' + telLink(l) + '" data-dial="call">' + ic('phone') + '<span><b>Sună</b><small>' + esc(l.phone) + '</small></span></a>' +
-          '<a class="pl-big-action is-wa" href="' + waLink(l) + '" target="_blank" rel="noopener" data-dial="whatsapp">' + ic('chat') + '<span><b>WhatsApp</b><small>mesaj pregătit</small></span></a>' +
+          '<a class="pl-big-action is-wa" href="#mesaje" data-dial="whatsapp" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" data-chat-interest="' + esc(l.interest || '') + '">' + ic('chat') + '<span><b>WhatsApp</b><small>conversația din Mesaje</small></span></a>' +
           '<button type="button" class="pl-big-action is-book' + (d.section === 'book' ? ' is-on' : '') + '" data-section-toggle="book">' + ic('calPlus') + '<span><b>Programează</b><small>' + (l.appointmentAt ? esc(apptWhen(l.appointmentAt)) : 'direct în calendar') + '</small></span></button>' +
         '</div>' +
         (d.section === 'book' ? bookHtml(l) : '') +
@@ -1170,6 +1158,7 @@
     if (sect) return showSection(sect.dataset.sectionToggle);
     const dial = t.closest('[data-dial]');
     if (dial) {
+      if (dial.dataset.dial === 'whatsapp') { closeDrawer(); return; } // her conversation opens in Mesaje
       d.channel = dial.dataset.dial;
       setTimeout(() => { d.section = 'log'; d.tab = 'contact'; renderDrawer(); const s = drawerEl().querySelector('[data-section="log"]'); s && s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
       return;
@@ -1335,7 +1324,7 @@
       try {
         const a = await api('create', {
           date: data.date, time: data.time, treatment: data.treatment, category: data.category, location: data.location, amount: Number(l.value) || 0,
-          status: 'programata', clientName: l.name, clientPhone: l.phone,
+          status: 'programata', clientName: l.name, clientPhone: l.phone, leadId: l.id,
         }, '/api/portal-appointments');
         const appt = a.appointment || {};
         const j = await api('link_appointment', { leadId: l.id, appointmentId: appt.id, date: data.date, time: data.time, treatment: data.treatment });

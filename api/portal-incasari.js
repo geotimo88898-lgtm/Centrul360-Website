@@ -48,6 +48,8 @@ module.exports = async (req, res) => {
       const drop = new Set([entry.id]);
       if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) drop.add(upsellEntry.id);
       await writeJSON('data/sales.json', sales.filter((s) => !drop.has(s.id)));
+      // a package paid in parts: this payment's part goes (and the package, when it was its only one)
+      await require('./_lib/dues').resync({ readJSON, writeJSON }, entry.id, null);
       if (entry.appointmentId) {
         const appointments = await readJSON('data/appointments.json', []);
         const a = appointments.find((x) => x.id === entry.appointmentId);
@@ -110,6 +112,7 @@ module.exports = async (req, res) => {
       }
 
       await writeJSON('data/sales.json', next);
+      await require('./_lib/dues').resync({ readJSON, writeJSON }, entry.id, amount); // its part follows the new sum (never above the package)
       res.status(200).json({ ok: true, entry });
       return;
     }

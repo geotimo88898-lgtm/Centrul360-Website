@@ -135,16 +135,19 @@ async function validateAndBuildFields(body, employees) {
 // pattern as portal-leads.js's createLead(), reused by the Facebook webhook. No real client: an
 // all-day marker (no `time`, so it renders as an untimed chip, naturally spanning the whole
 // day) tied to the employee via cosmeticianId, so reception sees the clash immediately.
-async function createBlockingAppointment({ date, location, cosmeticianId, cosmeticianName, label }) {
+// Also the Calendar's "Blochează timp" (like HighLevel's blocked time): a block with hours (time / endTime), a reason as
+// its name, for one cosmetician or (none) the whole clinic of that city; block: true tells it from a leave.
+async function createBlockingAppointment({ date, location, cosmeticianId, cosmeticianName, label, time, endTime, block, createdBy }) {
   const appointments = await readJSON('data/appointments.json', []);
   const now = new Date().toISOString();
   const entry = {
-    id: crypto.randomUUID(), date, time: '',
+    id: crypto.randomUUID(), date, time: time || '', endTime: endTime || '',
     clientId: '', clientName: label, clientPhone: '',
     treatment: label, category: 'altele', location,
     cosmeticianId: cosmeticianId || '', cosmeticianName: cosmeticianName || '',
     status: 'concediu',
-    createdBy: 'leave-approval', createdAt: now, updatedAt: now,
+    ...(block ? { block: true } : {}),
+    createdBy: createdBy || 'leave-approval', createdAt: now, updatedAt: now,
   };
   appointments.push(entry);
   await writeJSON('data/appointments.json', appointments);
@@ -175,7 +178,9 @@ module.exports = async (req, res) => {
       const list = appointments
         .filter((a) => a.date >= from && a.date <= today && !a.paidSaleId && !['anulata', 'concediu', 'finalizata'].includes(a.status) && inCity(city, a.location))
         .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.time || '').localeCompare(b.time || '')));
-      res.status(200).json({ ok: true, appointments: list });
+      // what these clients still owe for a package paid in parts (shown at the payment, Încasări)
+      const dues = await require('./_lib/dues').openFor({ readJSON, writeJSON }, list.map((a) => a.clientId));
+      res.status(200).json({ ok: true, appointments: list, dues });
       return;
     }
 
@@ -244,6 +249,29 @@ module.exports = async (req, res) => {
         } catch (e) { /* a notification never blocks a booking */ }
       }
 
+      res.status(200).json({ ok: true, appointment: entry });
+      return;
+    }
+
+    // Blochează timp: nobody gets booked over it (the Calendar warns), it counts nowhere (like a leave)
+    if (action === 'block') {
+      const b = req.body || {};
+      if (!isValidDate(b.date)) { res.status(400).json({ error: 'invalid_date' }); return; }
+      if (!VALID_LOCATIONS.includes(b.location)) { res.status(400).json({ error: 'invalid_location' }); return; }
+      const start = cleanTime(b.time), end = cleanTime(b.endTime);
+      const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+      if (start && (!end || mins(end) <= mins(start))) { res.status(400).json({ error: 'invalid_time' }); return; }
+      let cosmeticianName = '';
+      const cid = b.cosmeticianId ? String(b.cosmeticianId) : '';
+      if (cid) {
+        const emp = (await readJSON('data/employees.json', [])).find((e) => e.id === cid);
+        if (!emp) { res.status(400).json({ error: 'invalid_cosmetician' }); return; }
+        cosmeticianName = emp.name;
+      }
+      const entry = await createBlockingAppointment({
+        date: b.date, location: b.location, cosmeticianId: cid, cosmeticianName, label: String(b.label || '').trim().slice(0, 80) || 'Timp blocat',
+        time: start, endTime: start ? end : '', block: true, createdBy: session.employeeId,
+      });
       res.status(200).json({ ok: true, appointment: entry });
       return;
     }

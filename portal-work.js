@@ -83,7 +83,7 @@
           (l.location ? '<span class="k-tag">' + icon('pin') + esc(l.location) + '</span>' : '') + '</div>' +
           '<div class="wk-task-sub">' + esc([l.interest, l.nextAction].filter(Boolean).join(' · ') || 'Revin la ea, din Pipeline') + '</div></div>' +
         '<div class="wk-task-actions">' +
-          (l.phone && /\d{6}/.test(String(l.phone).replace(/\D/g, '')) ? '<a class="k-icon-btn" href="' + K.tel(l.phone) + '" title="Sună">' + icon('phone') + '</a><a class="k-icon-btn" target="_blank" rel="noopener" href="' + K.wa(l.phone) + '" title="WhatsApp">' + icon('chat') + '</a>' : '') +
+          (l.phone && /\d{6}/.test(String(l.phone).replace(/\D/g, '')) ? '<a class="k-icon-btn" href="' + K.tel(l.phone) + '" title="Sună">' + icon('phone') + '</a><a class="k-icon-btn" href="#mesaje" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" title="Conversația pe WhatsApp">' + icon('chat') + '</a>' : '') +
           '<button type="button" class="k-btn is-sm is-primary" data-lead="' + esc(l.id) + '">' + icon('user') + 'Deschide</button>' +
         '</div></article>';
     }).join('') + '</div>';
@@ -99,7 +99,7 @@
       '<div class="wk-task-sub">' + (a ? esc(K.relDay(a.date) + ' · ' + (a.time || 'fără oră') + ' · ' + (a.treatment || '') + (a.cosmeticianName ? ' · cu ' + a.cosmeticianName : '')) : esc(t.text)) + '</div>' +
       (a && ty.msg ? '<div class="wk-msg">' + esc(waText(a, ty.msg)) + '</div>' : '') + '</div>' +
       '<div class="wk-task-actions">' +
-        (phone && ty.msg ? '<a class="k-btn is-sm wk-wa" target="_blank" rel="noopener" data-sent="' + esc(t.id) + '" href="' + K.wa(phone, waText(a, ty.msg)) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
+        (phone && ty.msg ? '<a class="k-btn is-sm wk-wa" href="#mesaje" data-sent="' + esc(t.id) + '" data-chat="' + esc(phone) + '" data-chat-text="' + esc(waText(a, ty.msg)) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
         (phone ? '<a class="k-icon-btn" href="' + K.tel(phone) + '" title="Sună">' + icon('phone') + '</a>' : '') +
         (a ? '<button type="button" class="k-icon-btn" data-open="' + esc(a.id) + '" data-date="' + esc(a.date) + '" title="Deschide programarea">' + icon('calendar') + '</button>' : '') +
         '<button type="button" class="k-btn is-sm is-primary wk-done" data-done="' + esc(t.id) + '">' + icon('check') + 'Gata</button>' +
@@ -117,7 +117,7 @@
       '<div class="wk-task-sub">' + (a ? esc(K.relDay(a.date) + ' · ' + (a.time || 'fără oră') + ' · ' + (a.treatment || '')) : msg ? '' : esc(t.text)) + '</div>' +
       (msg ? '<div class="wk-msg">' + esc(msg) + '</div>' : '') + '</div>' +
       '<div class="wk-task-actions">' +
-        (phone && msg ? '<a class="k-btn is-sm wk-wa" target="_blank" rel="noopener" data-sent="' + esc(t.id) + '" href="' + K.wa(phone, msg) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
+        (phone && msg ? '<a class="k-btn is-sm wk-wa" href="#mesaje" data-sent="' + esc(t.id) + '" data-chat="' + esc(phone) + '" data-chat-text="' + esc(msg) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
         (phone ? '<a class="k-icon-btn" href="' + K.tel(phone) + '" title="Sună">' + icon('phone') + '</a>' : '') +
         (t.relatedLeadId ? '<button type="button" class="k-icon-btn" data-lead="' + esc(t.relatedLeadId) + '" title="Deschide leadul">' + icon('user') + '</button>' : '') +
         (a ? '<button type="button" class="k-icon-btn" data-open="' + esc(a.id) + '" data-date="' + esc(a.date) + '" title="Deschide programarea">' + icon('calendar') + '</button>' : '') +

@@ -378,7 +378,7 @@
           return '<div class="k-row is-click" data-pay="' + esc(s.id) + '"><span class="k-icon-chip" style="color:' + mm.color + '">' + icon(mm.ic) + '</span>' +
             '<div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(s.treatment) + (K.catLabel(s) ? ' · ' + esc(K.catLabel(s)) : '') +
             (s.performedByName && s.performedByName !== '-' ? ' · ' + esc(s.performedByName) : '') + (S.loc === 'all' && s.location ? ' · ' + esc(s.location) : '') + '</div></div>' +
-            '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + posTag(s) + '<span class="k-tag">' + mm.label + '</span><span class="k-amount">' + K.lei(s.amount, 2) + '</span></div></div>';
+            '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">+' + K.lei(s.upsell) + ' upsell</span>' : '') + (s.packageTotal ? '<span class="k-tag is-warn" title="Pachet plătit în tranșe">pachet ' + K.lei(s.packageTotal) + '</span>' : '') + (s.toDue ? '<span class="k-tag is-info">din restul pachetului</span>' : '') + posTag(s) + '<span class="k-tag">' + mm.label + '</span><span class="k-amount">' + K.lei(s.amount, 2) + '</span></div></div>';
         }).join('') + '</div>').join('');
   }
 
@@ -386,7 +386,7 @@
   async function openNew(pre) {
     pre = pre || {};
     // Step 1 = city (Timișoara / Arad) → day (today by default) → that day's unpaid appointments in a dropdown.
-    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(), upsell: false,
+    const st = { list: null, apptId: pre.appointmentId || '', method: 'card', who: '', day: K.today(), upsell: false, pkg: '', dueId: '', dues: {},
       city: K.data && K.data.city ? K.data.city : (K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]) };
     const d = K.drawer({
       title: 'Încasare', icon: 'wallet', width: 600, focus: false,
@@ -406,6 +406,7 @@
     try {
       const j = await K.api('/api/portal-appointments', { action: 'unpaid' });
       st.list = j.appointments || [];
+      st.dues = j.dues || {}; // what her clients still owe for packages paid in parts
     } catch (e) { root().innerHTML = K.empty('alert', 'Nu am putut încărca programările', 'Verifică conexiunea și reîncearcă.'); return; }
     const appt = () => st.list.find((a) => a.id === st.apptId);
     function whoOk() { return cosmeticians(st.city).some((x) => x.id === st.who); }
@@ -453,7 +454,11 @@
       const booked = Number(a.amount) || 0;
       // only the cosmeticians of the chosen city
       const team = cosmeticians(st.city);
+      const owed = (a.clientId && st.dues[a.clientId]) || [];
       root().innerHTML = step1 +
+        (owed.length ? '<section class="pay-step pay-due"><h4><i>' + icon('wallet') + '</i>Mai are de plătit dintr-un pachet</h4>' + owed.map((o) =>
+          '<label class="pay-check"><input type="checkbox" data-due="' + esc(o.id) + '" data-rest="' + o.rest + '"' + (st.dueId === o.id ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span>' +
+            '<span><b>Rest de achitat: ' + K.lei(o.rest, 2) + '</b><small>' + esc(o.what || 'Pachet') + ' · plătit ' + K.lei(o.paid, 2) + ' din ' + K.lei(o.total, 2) + '. Bifează dacă plata asta e din rest.</small></span></label>').join('') + '</section>' : '') +
         '<section class="pay-step"><h4><i>2</i>Cum a plătit?</h4><div class="pay-methods">' + Object.keys(METHODS).map((k) =>
           '<button type="button" data-m="' + k + '" class="' + (st.method === k ? 'is-on' : '') + '"><span>' + icon(METHODS[k].ic) + '</span>' + METHODS[k].label + '</button>').join('') + '</div>' +
           '<div class="pay-amounts">' +
@@ -467,8 +472,18 @@
         '<section class="pay-step pay-ups' + (st.upsell ? ' is-on' : '') + '"><h4><i>4</i>A vândut ceva în plus?</h4>' +
           '<label class="pay-check"><input type="checkbox" data-upsell' + (st.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span>' +
             '<span><b>Upsell efectuat</b><small>Bifează dacă a vândut un pachet, o zonă în plus sau alt tratament.</small></span></label>' +
+          '<div class="pay-pkg"><label class="k-field"><span>Valoarea întregului pachet (dacă plătește în tranșe)</span><div class="k-money"><input data-pkg type="number" inputmode="decimal" min="0" step="1" value="' + esc(st.pkg) + '" placeholder="ex. 3000"></div></label>' +
+          '<div class="pay-note" data-pkg-rest></div></div>' +
         '</section>';
-      note(); updateSave();
+      note(); pkgNote(); updateSave();
+    }
+    // the rest of a package paid in parts, as the desk types its value
+    function pkgNote() {
+      const box = d.el.querySelector('[data-pkg-rest]');
+      if (!box) return;
+      const { amt, pkg } = vals();
+      box.innerHTML = !pkg ? '' : pkg < amt ? '<span class="pay-warn">' + icon('alert') + 'Pachetul nu poate valora mai puțin decât suma încasată.</span>'
+        : pkg > amt ? '<span>Rest de achitat: <b>' + K.lei(pkg - amt, 2) + '</b>. Apare la următoarele ei încasări.</span>' : '<span>Pachetul e plătit integral acum.</span>';
     }
     function vals() {
       const a = appt();
@@ -476,7 +491,8 @@
       const cash = Number((d.el.querySelector('[data-cash]') || {}).value) || 0;
       const card = Number((d.el.querySelector('[data-card]') || {}).value) || 0;
       const ups = st.upsell ? amt : 0; // "Upsell efectuat" = the whole amount paid is the upsell
-      return { a, amt, cash, card, ups };
+      const pkg = st.upsell ? Number(st.pkg) || 0 : 0; // a package paid in parts: its whole value
+      return { a, amt, cash, card, ups, pkg };
     }
     function note() {
       const box = d.el.querySelector('[data-note]');
@@ -492,6 +508,7 @@
     function ready() {
       const { a, amt, cash, card } = vals();
       if (!a || !(amt > 0) || !st.who || !whoOk()) return false;
+      if (st.upsell && Number(st.pkg) > 0 && Number(st.pkg) < amt) return false;
       if (st.method === 'cash_card' && (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amt) > 0.01)) return false;
       return true;
     }
@@ -531,10 +548,20 @@
       if (t.matches('[data-upsell]')) {
         st.upsell = t.checked;
         t.closest('.pay-ups').classList.toggle('is-on', st.upsell);
+        pkgNote(); updateSave();
+        return;
+      }
+      // paying down a package: the sum becomes what is left of it (the desk can change it)
+      if (t.matches('[data-due]')) {
+        st.dueId = t.checked ? t.dataset.due : '';
+        d.el.querySelectorAll('[data-due]').forEach((x) => { if (x !== t) x.checked = false; });
+        const amt = d.el.querySelector('[data-amount]');
+        if (t.checked && amt) { amt.value = t.dataset.rest; keepInputs(); }
+        note(); pkgNote(); updateSave();
         return;
       }
       if (t.matches('[data-appt-select]')) {
-        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = ''; st.upsell = false;
+        st.apptId = t.value; st.amount = null; st.cash = ''; st.card = ''; st.upsell = false; st.pkg = ''; st.dueId = '';
         st.who = (appt() && appt().cosmeticianId) || '';
         return paint();
       }
@@ -550,20 +577,23 @@
       const amt = Number((d.el.querySelector('[data-amount]') || {}).value) || 0;
       if (e.target.matches('[data-cash]') && amt) d.el.querySelector('[data-card]').value = Math.max(0, Math.round((amt - (Number(e.target.value) || 0)) * 100) / 100) || '';
       if (e.target.matches('[data-card]') && amt) d.el.querySelector('[data-cash]').value = Math.max(0, Math.round((amt - (Number(e.target.value) || 0)) * 100) / 100) || '';
-      keepInputs(); note(); updateSave();
+      if (e.target.matches('[data-pkg]')) st.pkg = e.target.value;
+      keepInputs(); note(); pkgNote(); updateSave();
     }
     async function save() {
       if (!ready()) return;
-      const { a, amt, cash, card, ups } = vals();
+      const { a, amt, cash, card, ups, pkg } = vals();
       try {
-        const r = await K.api('/api/portal-sale', { source: 'incasare', appointmentId: a.id, method: st.method, amount: amt, cashAmount: cash, cardAmount: card, performedBy: st.who, upsell: st.upsell, upsellAmount: ups });
+        const r = await K.api('/api/portal-sale', { source: 'incasare', appointmentId: a.id, method: st.method, amount: amt, cashAmount: cash, cardAmount: card, performedBy: st.who, upsell: st.upsell, upsellAmount: ups,
+          packageTotal: pkg > amt ? pkg : 0, dueId: st.dueId || '' });
         d.close();
-        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + '.' : ''), 'success');
+        const dueTxt = r.due ? (r.due.rest > 0 ? ' Rest de achitat: ' + K.lei(r.due.rest, 2) + '.' : st.dueId ? ' Pachetul e achitat integral.' : '') : '';
+        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + '.' : '') + dueTxt, 'success');
         if (!(a.date >= range()[0] && a.date <= range()[1])) { S.period = a.date === K.today() ? 'today' : 'month'; }
         K.reload();
         K.emit('remote');
       } catch (err) {
-        const msg = { invalid_upsell: 'Valoarea upsell-ului trebuie să fie între 1 leu și suma încasată.', already_paid: 'Programarea e deja încasată.', missing_performer: 'Alege cine a făcut tratamentul.', invalid_split: 'Cash + card trebuie să dea suma totală.', appointment_not_found: 'Programarea nu mai există.' }[err.code];
+        const msg = { invalid_package: 'Pachetul nu poate valora mai puțin decât suma încasată.', invalid_due: 'Restul pachetului nu mai există. Redeschide încasarea.', invalid_upsell: 'Valoarea upsell-ului trebuie să fie între 1 leu și suma încasată.', already_paid: 'Programarea e deja încasată.', missing_performer: 'Alege cine a făcut tratamentul.', invalid_split: 'Cash + card trebuie să dea suma totală.', appointment_not_found: 'Programarea nu mai există.' }[err.code];
         K.ui().toast(msg || K.errText(err), 'error');
       }
     }

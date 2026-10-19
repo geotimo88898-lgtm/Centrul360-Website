@@ -79,7 +79,13 @@
     const f = t.closest('[data-filter]');
     if (f) { S.filter = f.dataset.filter; S.limit = 60; return load(); }
     const o = t.closest('[data-open]');
-    if (o) return openContact(o.dataset.open);
+    if (o) {
+      // the front desk lands in her conversation (Mesaje), her sheet one tap away from its header; a cosmetician, or a
+      // contact with no phone, opens the sheet
+      const c = S.list.find((x) => x.id === o.dataset.open);
+      if (c && K.frontDesk && K.frontDesk() && K.chat && String(c.phone || '').replace(/\D/g, '').length >= 9) return K.chat(c.phone, { name: c.name || '', city: c.location || '' });
+      return openContact(o.dataset.open);
+    }
     const a = t.closest('[data-act]');
     if (!a) return;
     if (a.dataset.act === 'new') return newContact();
@@ -357,7 +363,7 @@
       d.set({
         title: c.name || '(fără nume)', lead: K.avatar(c.name || '?', 46), icon: '',
         subtitle: (c.isClient ? '<span class="k-tag is-accent">Clientă</span>' : '<span class="k-tag is-info">Lead</span>') + esc(c.phone || '') + (c.location ? ' · ' + esc(c.location) : '') + (c.source ? ' · ' + esc(SOURCES[c.source] || c.source) : ''),
-        body: '<div class="ct-quick">' + (c.phone ? '<a class="k-btn is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + 'Sună</a><a class="k-btn is-outline" target="_blank" rel="noopener" href="' + K.wa(c.phone) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
+        body: '<div class="ct-quick">' + (c.phone ? '<a class="k-btn is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + 'Sună</a><a class="k-btn is-outline" href="#mesaje" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + icon('chat') + 'Mesaje</a>' : '') +
             '<button type="button" class="k-btn is-outline" data-edit>' + icon('pen') + 'Editează</button></div>' +
           formsHtml() +
           '<div class="ct-tabs">' + K.seg('cttab', [['fise', 'Fișe & mențiuni', 'file'], ['poze', 'Poze înainte / după', 'image'], ['istoric', 'Istoric', 'clock']], st.tab, 'is-big') + '</div>' +

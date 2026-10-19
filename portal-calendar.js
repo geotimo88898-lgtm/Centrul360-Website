@@ -24,6 +24,9 @@
   // Statuses the front desk picks by hand. "Finalizată" comes by itself when the appointment is paid
   // (Încasări); "Concediu" is a leave block created by an approved leave request.
   const PICK = ['programata', 'confirmata', 'reprogramata', 'anulata'];
+  // "Blochează timp": a leave-like row (status concediu) with block: true, hours and a reason
+  const BLOCKED = { label: 'Blocat', plural: 'blocate', tone: 'mute', ic: 'ban' };
+  const stOf = (a) => (a.block ? BLOCKED : STATUS[a.status] || STATUS.programata);
   const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false };
   const phone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
   const PHONE_VIEW = 'c360_cal_phone_view';
@@ -56,7 +59,7 @@
     if (window.innerWidth < 720) { let v = 'day'; try { v = localStorage.getItem(PHONE_VIEW) === 'week' ? 'week' : 'day'; } catch (e) { /* private mode */ } S.view = v; }
     panel.innerHTML =
       '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2></div>' +
-      (canEdit() ? '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
+      (canEdit() ? '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
@@ -117,6 +120,7 @@
     if (act) {
       const a = act.dataset.act;
       if (a === 'new') return openNew({});
+      if (a === 'block') return openBlock({});
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
       if (a === 'next') return shift(1);
@@ -278,8 +282,8 @@
         '<button type="button" class="cal-ag-head" data-goday="' + d + '"><b>' + esc(K.DOW[dt.getDay()].replace(/^./, (c) => c.toUpperCase())) + '</b><span>' + esc(K.dateShort(d)) + (d === today ? ' · azi' : '') + '</span>' +
           '<em>' + (n ? K.plural(n, 'programare', 'programări') : 'liber') + '</em>' + icon('right') + '</button>' +
         (list.length ? list.map((a) => {
-          const st = STATUS[a.status] || STATUS.programata;
-          return '<button type="button" class="cal-ag-row is-' + esc(a.status) + '" data-open="' + esc(a.id) + '">' +
+          const st = stOf(a);
+          return '<button type="button" class="cal-ag-row is-' + esc(a.status) + (a.block ? ' is-block' : '') + '" data-open="' + esc(a.id) + '">' +
             '<span class="cal-ag-time">' + (a.time ? '<b>' + esc(a.time) + '</b>' + (toMin(a.endTime) > toMin(a.time) ? '<small>' + esc(a.endTime) + '</small>' : '') : '<b>toată</b><small>ziua</small>') + '</span>' +
             '<span class="cal-ag-main"><b>' + esc(nameOf(a)) + '</b><small>' + esc([subOf(a), a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
             '<span class="cal-ag-meta">' + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' + esc(a.cosmeticianName.split(' ')[0]) : '') + (multi && a.location ? '<em>' + esc(a.location) + '</em>' : '') +
@@ -309,20 +313,21 @@
   const plainTxt = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const nameOf = (a) => a.ghlTitle || a.clientName || '-';
   function subOf(a) {
+    if (a.block) return a.cosmeticianName || 'Toată clinica'; // a blocked time: for whom
     if (!a.ghlTitle) return a.treatment || '';
     const first = plainTxt(a.clientName).split(/\s+/)[0];
     const named = first && plainTxt(a.ghlTitle).includes(first);
     return [named ? '' : a.clientName, a.treatment && a.treatment !== a.ghlTitle ? a.treatment : ''].filter(Boolean).join(' · ');
   }
   function blockHtml(it) {
-    const a = it.a, st = STATUS[a.status] || STATUS.programata;
+    const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
     const w = 100 / it.lanes;
     // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
     // an hour) has the hour in front of the name, in smaller letters, on up to two lines
     const short = it.e - it.s < 45; // under 45 minutes; an hour keeps the big letters whatever the screen
     const lines = short ? Math.max(1, Math.floor((h - 6) / 13.5)) : Math.max(1, Math.floor((h - 28) / 17));
-    return '<button type="button" class="cal-block is-' + a.status + (short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
+    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + nameOf(a) + (a.ghlTitle ? ' · ' + a.clientName : '') + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
       (short
         ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>'
@@ -331,10 +336,13 @@
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
-    const c = (s) => list.filter((a) => a.status === s).length;
-    const live = list.filter((a) => a.status !== 'anulata').length;
+    // a blocked time is counted apart from the leaves, and neither is an appointment
+    const c = (s) => list.filter((a) => a.status === s && !a.block).length;
+    const blocked = list.filter((a) => a.block).length;
+    const live = list.filter((a) => a.status !== 'anulata' && a.status !== 'concediu').length;
     el.innerHTML = '<span class="cal-sum-main">' + K.plural(live, 'programare', 'programări') + (S.view === 'day' ? '' : ' săptămâna aceasta') + '</span>' +
       Object.keys(STATUS).filter((s) => c(s)).map((s) => '<span class="k-tag is-' + STATUS[s].tone + '">' + icon(STATUS[s].ic) + c(s) + ' ' + (c(s) === 1 ? STATUS[s].label.toLowerCase() : STATUS[s].plural) + '</span>').join('') +
+      (blocked ? '<span class="k-tag is-mute">' + icon('ban') + blocked + ' ' + (blocked === 1 ? 'interval blocat' : 'intervale blocate') + '</span>' : '') +
       (c('programata') ? '<span class="cal-hint">' + icon('info') + 'Programările neconfirmate apar cu albastru, confirmă-le cu un click.</span>' : '');
   }
   function placeNow() {
@@ -360,16 +368,37 @@
     if (!col) return;
     drag = { block, col, sx: e.clientX, sy: e.clientY, started: false, id: block && block.dataset.id, type: e.pointerType, timer: 0 };
     if (!canEdit()) { drag.readOnly = true; }
-    if (block && e.pointerType !== 'mouse' && canEdit()) drag.timer = setTimeout(() => { if (drag && !drag.started) startDrag(e); }, 350);
+    if (block && block.classList.contains('is-concediu')) drag.readOnly = true; // a leave / a blocked time is not moved
+    if (block && !drag.readOnly && e.pointerType !== 'mouse' && canEdit()) drag.timer = setTimeout(() => { if (drag && !drag.started) startDrag(e); }, 350);
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp, { once: true });
+    // a finger: the page scrolls from anywhere, a block too (the browser then cancels the pointer); only a held
+    // block (dragging) stops the scroll
+    window.addEventListener('pointercancel', onCancel, { once: true });
+    if (e.pointerType !== 'mouse') window.addEventListener('touchmove', onTouchMove, { passive: false });
+  }
+  function onTouchMove(e) { if (drag && drag.started) e.preventDefault(); }
+  function unbind() {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onCancel);
+    window.removeEventListener('touchmove', onTouchMove);
+  }
+  // the browser took the finger for a scroll: nothing opens, a drag in progress goes back
+  function onCancel() {
+    const d = drag; drag = null;
+    unbind();
+    if (!d) return;
+    clearTimeout(d.timer);
+    if (d.started) { gridEl.classList.remove('is-dragging'); render(true); }
   }
   function onMove(e) {
     if (!drag) return;
     const dist = Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy);
     if (!drag.started) {
       if (drag.block && !drag.readOnly && drag.type === 'mouse' && dist > 5 && drag.block.classList.contains('cal-block')) startDrag(e);
-      else if (dist > 10) { clearTimeout(drag.timer); if (!drag.block) drag.cancel = true; }
+      // moved before a hold: it was a scroll, not a tap (nothing opens, nothing is booked)
+      else if (dist > 10) { clearTimeout(drag.timer); drag.cancel = true; }
       return;
     }
     e.preventDefault();
@@ -399,7 +428,7 @@
     if (navigator.vibrate && d.type !== 'mouse') navigator.vibrate(8);
   }
   async function onUp(e) {
-    window.removeEventListener('pointermove', onMove);
+    unbind();
     const d = drag; drag = null;
     if (!d) return;
     clearTimeout(d.timer);
@@ -474,11 +503,6 @@
   }
   // The end shown in the form: the saved one, or 1h after the start.
   const formEnd = (a) => (toMin(a.endTime) > toMin(a.time || '10:00') ? a.endTime : toHM(Math.min((toMin(a.time || '10:00')) + DUR, 23 * 60 + 45)));
-  function waText(a, kind) {
-    const when = K.relDay(a.date).toLowerCase() === 'azi' ? 'azi' : K.relDay(a.date) === 'Mâine' ? 'mâine' : 'pe ' + K.dateLong(a.date).toLowerCase();
-    if (kind === 'reminder') return 'Bună, ' + String(a.clientName || '').split(' ')[0] + '! Îți reamintim de programarea de ' + when + ' la ora ' + a.time + ' la Centrul360 ' + a.location + '. Te așteptăm!';
-    return 'Bună, ' + String(a.clientName || '').split(' ')[0] + '! Îți confirmăm programarea la Centrul360 ' + a.location + ' ' + when + ' la ora ' + a.time + (a.treatment ? ', pentru ' + a.treatment : '') + '. Răspunde cu DA pentru confirmare. Mulțumim!';
-  }
 
   function formHtml(a, isNew) {
     return '<form class="k-form" data-form>' +
@@ -543,13 +567,14 @@
     const d = K.drawer({
       title: 'Programare nouă', icon: 'calendar', subtitle: esc(K.dateLong(a.date)) + (a.time ? ' · ' + a.time : '') + ' · ' + esc(loc),
       body: formHtml(a, true),
-      footer: '<span class="k-grow k-muted">Se creează și sarcina de confirmare pe WhatsApp.</span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Programează</button>',
+      footer: '<button type="button" class="k-btn is-ghost is-sm cal-to-block" data-to-block title="Blochează intervalul" aria-label="Blochează intervalul">' + icon('ban') + '<span>Blochează intervalul</span></button><span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Programează</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
         picker = K.clientPicker(f.clientName, f.clientPhone);
         wireForm(el, f);
         if (pre.clientName) { f.clientName.value = pre.clientName; f.clientPhone.value = pre.clientPhone || ''; }
         el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
+        el.querySelector('[data-to-block]').addEventListener('click', () => { const v = K.formValues(f); d.close(); setTimeout(() => openBlock({ date: v.date, time: v.time, endTime: v.endTime, location: v.location, cosmeticianId: v.cosmeticianId }), 230); });
         f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(f);
@@ -559,19 +584,80 @@
           // a session from a package is already paid: 0 is fine there
           if (!v.package && !(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării (sau bifează „Ședință din pachet”).', 'error'); f.amount.focus(); return; }
           if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
+          const clash = blockedAt(v);
+          if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: (clash.clientName || 'Timp blocat') + ' · ' + (span(clash) || 'toată ziua') + (clash.cosmeticianName ? ' · ' + clash.cosmeticianName : '') + '. Programezi oricum?', confirmText: 'Programează oricum' }))) return;
           try {
-            await K.api('/api/portal-appointments', Object.assign({ action: 'create', clientId: picker.id() }, v, { categories: formCats(v), amount: Number(v.amount) }));
+            const made = await K.api('/api/portal-appointments', Object.assign({ action: 'create', clientId: picker.id() }, v, { categories: formCats(v), amount: Number(v.amount) }));
             d.close();
             K.ui().toast('Programat: ' + v.clientName + ' · ' + K.relDay(v.date) + ' ' + span(v), 'success');
             S.date = v.date;
             if (S.view === 'day' && S.loc !== 'all' && S.loc !== v.location) { S.loc = 'all'; }
-            load(true);
+            if (panel) load(true); // booked from Mesaje: the Calendar may not be open yet
             K.emit('tasks:changed');
+            K.emit('appointment:created', made && made.appointment);
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
       },
     });
   }
+
+  // a blocked time over this booking (same day and city, the whole clinic or this cosmetician), or null
+  function blockedAt(v) {
+    const s = toMin(v.time), e = toMin(v.endTime) > s ? toMin(v.endTime) : s + DUR;
+    return S.appts.find((b) => b.block && b.date === v.date && b.location === v.location && (!b.cosmeticianId || b.cosmeticianId === v.cosmeticianId) &&
+      (!b.time || (s != null && s < endMin(b) && e > toMin(b.time)))) || null;
+  }
+  function openBlock(pre) {
+    if (!canEdit()) return;
+    const loc = pre.location || (S.loc !== 'all' ? S.loc : K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]);
+    const start = pre.time || '13:00';
+    const a = { time: start, endTime: pre.endTime || '' };
+    const d = K.drawer({
+      title: 'Blochează timp', icon: 'ban', subtitle: esc(K.dateLong(pre.date || S.date)) + ' · ' + esc(loc),
+      body: '<form class="k-form" data-form>' +
+        K.field('Motiv', '<input name="label" maxlength="80" placeholder="ex. Pauză de masă, ședință, curățenie" autofocus>', 'full') +
+        K.field('Data', '<input name="date" type="date" required value="' + esc(pre.date || S.date) + '">', 'full') +
+        '<div class="k-field full">' + K.toggle('allDay', false, 'Toată ziua') + '</div>' +
+        K.field('Începe la', '<select name="time" data-start>' + slotOptions(start) + '</select>') +
+        K.field('Se termină la', '<select name="endTime" data-end>' + endOptions(start, formEnd(a)) + '</select>') +
+        K.field('Locație', K.seg('location', LOCS.map((l) => [l, l, 'pin']), loc, 'is-big'), 'full') +
+        K.field('Pentru', '<select name="cosmeticianId" data-cos>' + blockFor(pre.cosmeticianId || '', loc) + '</select>', 'full') +
+        '</form>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('ban') + 'Blochează</button>',
+      onMount(el) {
+        const f = el.querySelector('[data-form]');
+        let lastStart = f.time.value;
+        const hours = () => { const all = f.querySelector('input[name=allDay]').checked; [f.time, f.endTime].forEach((x) => { const box = x.closest('.k-field'); if (box) box.hidden = all; }); };
+        f.addEventListener('change', (e) => {
+          if (e.target.name === 'allDay') return hours();
+          if (e.target.name === 'time') {
+            const dur = Math.max(15, (toMin(f.endTime.value) || 0) - (toMin(lastStart) || 0));
+            const end = toHM(Math.min(toMin(f.time.value) + dur, 23 * 60 + 45));
+            f.endTime.innerHTML = endOptions(f.time.value, end); f.endTime.value = end;
+            f.endTime.dispatchEvent(new Event('change'));
+            lastStart = f.time.value;
+            return;
+          }
+          if (e.target.name === 'location') { const sel = f.querySelector('[data-cos]'); sel.innerHTML = blockFor('', e.target.value); sel.value = ''; }
+        });
+        el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
+        f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
+        el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+          const v = K.formValues(f);
+          const all = !!f.querySelector('input[name=allDay]').checked;
+          try {
+            await K.api('/api/portal-appointments', { action: 'block', date: v.date, time: all ? '' : v.time, endTime: all ? '' : v.endTime, location: v.location, cosmeticianId: v.cosmeticianId || '', label: v.label || '' });
+            d.close();
+            K.ui().toast('Blocat: ' + K.relDay(v.date) + (all ? ', toată ziua' : ' ' + v.time + ' - ' + v.endTime) + ' · ' + v.location, 'success');
+            S.date = v.date;
+            if (panel) load(true);
+          } catch (err) { K.ui().toast(err.code === 'invalid_time' ? 'Ora de sfârșit trebuie să fie după cea de început.' : K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+  // "Pentru": the whole clinic of the city, or one cosmetician
+  function blockFor(sel, loc) { return '<option value="">Toată clinica</option>' + K.options(cosmeticians(loc).map((e) => [e.id, e.name]), sel); }
 
   // "Clienta" in an appointment: what her sheet says, in short, and the button to the whole sheet (it opens over
   // the Calendar, and closing it leaves you there)
@@ -587,7 +673,7 @@
     const paid = pays.reduce((s, p) => s + Number(p.amount || 0), 0);
     const photos = c.photosCount || 0;
     box.innerHTML = '<h4>' + icon('user') + 'Clienta</h4>' +
-      '<div class="cal-client-top"><div><b>' + esc(c.name || a.clientName) + '</b><span>' + esc([c.phone, c.email].filter(Boolean).join(' · ')) + '</span></div>' +
+      '<div class="cal-client-top">' + (a.clientPhone ? '<a href="#mesaje" class="cal-client-who" data-chat="' + esc(a.clientPhone) + '" data-chat-name="' + esc(a.clientName || '') + '" data-chat-city="' + esc(a.location || '') + '" title="Deschide conversația">' : '<div>') + '<b>' + esc(c.name || a.clientName) + '</b><span>' + esc([c.phone, c.email].filter(Boolean).join(' · ')) + '</span>' + (a.clientPhone ? '</a>' : '</div>') +
         ((c.tags || []).length ? '<div class="cal-client-tags">' + c.tags.slice(0, 4).map((t) => '<span class="k-tag">' + esc(t) + '</span>').join('') + '</div>' : '') + '</div>' +
       '<div class="cal-client-stats"><span><b>' + appts.length + '</b>' + (appts.length === 1 ? 'programare' : 'programări') + '</span>' +
         '<span><b>' + (last ? esc(K.dateShort(last)) : '-') + '</b>ultima vizită</span>' +
@@ -602,6 +688,23 @@
     const st = STATUS[a.status] || STATUS.programata;
     // A leave block isn't a real appointment, show it read-only, with just a delete button
     // for whoever can edit the calendar (undoing the approval's calendar side, if ever needed).
+    if (a.status === 'concediu' && a.block) {
+      K.drawer({
+        title: a.clientName || 'Timp blocat', icon: 'ban',
+        subtitle: '<span class="k-tag is-mute">' + icon('ban') + 'Blocat</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'toată ziua') + ' · ' + esc(a.location),
+        body: '<dl class="k-kv cal-kv"><dt>Motiv</dt><dd>' + esc(a.clientName || '-') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || 'Toată ziua') + '</dd>' +
+          '<dt>Locație</dt><dd>' + esc(a.location) + '</dd><dt>Pentru</dt><dd>' + esc(a.cosmeticianName || 'Toată clinica') + '</dd></dl>',
+        footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Deblochează</button>' : '',
+        onMount(el) {
+          const del = el.querySelector('[data-del]');
+          if (del) del.addEventListener('click', async () => {
+            try { await K.api('/api/portal-appointments', { action: 'delete', id: a.id }); K.closeDrawer(); K.ui().toast('Interval deblocat.', 'success'); load(true); }
+            catch (err) { K.ui().toast(K.errText(err), 'error'); }
+          });
+        },
+      });
+      return;
+    }
     if (a.status === 'concediu') {
       K.drawer({
         title: a.clientName || 'Concediu', lead: K.avatar(a.cosmeticianName || '?', 42),
@@ -642,7 +745,7 @@
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +
           '<a class="k-btn is-outline" href="' + K.tel(a.clientPhone) + '">' + icon('phone') + 'Sună</a>' +
-          '<a class="k-btn is-outline cal-wa" target="_blank" rel="noopener" href="' + K.wa(a.clientPhone, waText(a, a.date === K.today() ? 'reminder' : 'confirm')) + '">' + icon('chat') + (a.date === K.today() ? 'Reminder WhatsApp' : 'Confirmare WhatsApp') + '</a></div>' : '') +
+          '<a class="k-btn is-outline cal-wa" href="#mesaje" data-chat="' + esc(a.clientPhone) + '" data-chat-name="' + esc(a.clientName || '') + '" data-chat-city="' + esc(a.location || '') + '">' + icon('chat') + 'Mesaje</a></div>' : '') +
         (a.clientId ? '<section class="k-section cal-client" data-client><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:72px"></div></section>' : '') +
         '<section class="k-section"><h4>' + icon('pen') + 'Detalii</h4>' + formHtml(a, false) + '</section>' +
         '<div class="k-muted">' + esc(a.clientPhone || 'Fără telefon salvat') + (a.cosmeticianName ? ' · cu ' + esc(a.cosmeticianName) : '') + '</div>',

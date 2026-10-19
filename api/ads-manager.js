@@ -127,6 +127,8 @@ module.exports = async (req, res) => {
           message: expired ? 'Conexiunea pentru reclame a expirat. Integrări → Facebook → Reclame: lipește un token nou.' : noScope ? REASONS.no_ads_permission : 'Meta: ' + view.error });
         return;
       }
+      // a switch made from the portal shows switched also in a reading older than it (Meta's own status lags behind)
+      await AC.laySwitches(view);
       // without ads_management the page only reads (the switches would be refused)
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
       await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
@@ -165,6 +167,7 @@ module.exports = async (req, res) => {
     }
     const r = await ads.act(conn, body);
     if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+    if (body.action === 'status') await AC.switched(String(body.id), body.status);
     res.status(200).json({ ok: true });
   } catch (err) {
     console.error('ads-manager error:', err.message);

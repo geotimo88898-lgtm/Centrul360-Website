@@ -225,7 +225,7 @@
 .cal-col:hover .cal-hour{ border-top-color:var(--line-on-dark); }
 .cal-block{ position:absolute; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:1px; padding:.35rem .5rem; border:0; border-radius:10px; text-align:left;
   font:inherit; overflow:hidden; cursor:pointer; color:var(--fg); background:var(--paper); box-shadow:var(--shadow-sm), inset 3px 0 0 var(--bc, var(--accent));
-  background:color-mix(in srgb, var(--bc, var(--accent)) 11%, var(--paper)); transition:transform .15s var(--ease), box-shadow .2s ease, opacity .2s ease; animation:k-rise .4s var(--ease) both; touch-action:none; }
+  background:color-mix(in srgb, var(--bc, var(--accent)) 11%, var(--paper)); transition:transform .15s var(--ease), box-shadow .2s ease, opacity .2s ease; animation:k-rise .4s var(--ease) both; touch-action:pan-x pan-y; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
 .cal-block:hover{ transform:translateY(-1px); box-shadow:var(--shadow), inset 3px 0 0 var(--bc, var(--accent)); z-index:3; }
 .cal-block b{ font-size:.8rem; font-weight:650; line-height:1.3; max-width:100%; overflow:hidden; overflow-wrap:anywhere;
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:var(--lines, 1); line-clamp:var(--lines, 1); flex-shrink:0; }
@@ -242,6 +242,14 @@
 .cal-block.is-anulata{ --bc:var(--bad); opacity:.55; }
 .cal-block.is-anulata b{ text-decoration:line-through; }
 .cal-block.is-concediu{ --bc:var(--muted-2); opacity:.7; }
+.cal-block.is-block{ opacity:.9; background:repeating-linear-gradient(135deg, color-mix(in srgb, var(--muted-2) 16%, var(--paper)) 0 7px, var(--paper) 7px 14px); box-shadow:inset 3px 0 0 var(--muted-2); }
+.cal-block.is-block b{ color:var(--muted); }
+/* Încasări: a package paid in parts */
+.pay-ups .pay-pkg{ display:none; }
+.pay-ups.is-on .pay-pkg{ display:grid; gap:.4rem; margin-top:.7rem; }
+.pay-due .pay-check + .pay-check{ margin-top:.5rem; }
+/* the new-booking drawer on a phone: "Blochează intervalul" as an icon, so "Programează" fits */
+@media (max-width:720px){ .cal-to-block span{ display:none; } }
 .cal-block.is-src{ opacity:.25; }
 .cal-block.is-ghost{ z-index:8; opacity:.95; box-shadow:0 20px 40px -14px rgba(0,0,0,.45), inset 3px 0 0 var(--bc, var(--accent)); transform:scale(1.03); transition:top .08s linear; cursor:grabbing; animation:none; }
 .cal-grid.is-dragging, .cal-grid.is-dragging *{ cursor:grabbing !important; user-select:none; }
@@ -266,7 +274,9 @@
 .cal-contact{ display:grid; grid-template-columns:1fr 1.6fr; gap:.5rem; }
 /* the appointment's client, in short */
 .cal-client-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
-.cal-client-top > div:first-child{ display:flex; flex-direction:column; min-width:0; }
+.cal-client-top > div:first-child, .cal-client-top > .cal-client-who{ display:flex; flex-direction:column; min-width:0; }
+.cal-client-who{ color:inherit; text-decoration:none; border-radius:8px; }
+.cal-client-who:hover b, .cal-client-who:focus-visible b{ text-decoration:underline; text-underline-offset:3px; }
 .cal-client-top b{ font-size:.95rem; }
 .cal-client-top span{ font-size:.82rem; color:var(--muted); overflow-wrap:anywhere; }
 .cal-client-tags{ display:flex; gap:.25rem; flex-wrap:wrap; }

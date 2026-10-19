@@ -93,7 +93,11 @@
     if (!d || !d.campaigns || !A.want.size) return;
     const now = Date.now();
     A.want.forEach((w, id) => { if (!w.busy && now - w.at > WANT_MS) A.want.delete(id); });
-    d.campaigns.forEach((c) => { const w = A.want.get(c.id); if (w) setStatus(c, w.status); });
+    // campaigns, ad sets and ads alike
+    d.campaigns.forEach((c) => {
+      const w = A.want.get(c.id); if (w) setStatus(c, w.status);
+      (c.adsets || []).forEach((s) => { const ws = A.want.get(s.id); if (ws) setStatus(s, ws.status); (s.ads || []).forEach((a) => { const wa = A.want.get(a.id); if (wa) setStatus(a, wa.status); }); });
+    });
   }
   function paintChips() {
     const a = panel.querySelector('[data-show="active"] span'), b = panel.querySelector('[data-show="all"] span');
@@ -367,14 +371,22 @@
     paintAll();
     if (!sending.has(id)) sending.set(id, send(id).finally(() => sending.delete(id)));
   }
+  // Meta's "too many calls for this ad account": a moment later it goes (the switch stays as chosen meanwhile)
+  const busyMeta = (err) => /prea multe apeluri|too many calls|request limit|limit reached/i.test(String((err && err.data && err.data.message) || (err && err.message) || ''));
   async function send(id) {
-    let sent = null;
+    let sent = null, tries = 0;
     for (;;) {
       const w = A.want.get(id);
       if (!w || w.status === sent) break;
       const s = w.status;
       try { await post({ action: 'status', id, status: s }); sent = s; w.base = s; }
       catch (err) {
+        if (busyMeta(err) && tries < 4) {
+          tries++;
+          if (tries === 1) K.ui().toast('Meta e ocupat acum, reîncerc singur în câteva secunde.', 'info');
+          await new Promise((r) => setTimeout(r, 15000 * tries));
+          continue;
+        }
         const back = (A.want.get(id) || {}).base || (s === 'ACTIVE' ? 'PAUSED' : 'ACTIVE');
         A.want.delete(id);
         setStatus(findAny(id), back);

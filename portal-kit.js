@@ -675,5 +675,6 @@
     prefs, customize,
     get data() { return data; },
     get drawerOpen() { return !!current; },
+    closeDrawer() { if (current) current.close(); },
   };
 })();

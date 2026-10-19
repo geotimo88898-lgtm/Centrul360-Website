@@ -49,6 +49,7 @@
       C.templates = j.templates || [];
       C.snippets = j.snippets || [];
       C.loaded = true;
+      C.loads = (C.loads || 0) + 1;
       if (C.selectedPhone && !C.conversations.find((c) => c.phone === C.selectedPhone)) closeThread();
       if (!panel.querySelector('[data-mx-list]')) render(); else { paintStatus(); paintList(); }
       fitWrap();
@@ -238,6 +239,12 @@
         : '<div class="mx-closed">' + icon('info') + '<span>' + (waiting(t) ? 'Șablonul a plecat. Când îți răspunde, îi poți scrie liber.' : (t.messages || []).some((m) => m.direction === 'in') ? 'Au trecut 24 de ore de la ultimul ei mesaj. Îi poți scrie doar cu un șablon aprobat.' : 'Primul mesaj către ea pleacă doar cu un șablon aprobat.') + '</span>' +
           '<button type="button" class="k-btn ' + (waiting(t) ? '' : 'is-primary ') + 'is-sm" data-act="tpl">' + icon('file') + (waiting(t) ? 'Alt șablon' : 'Trimite un șablon') + '</button></div>');
     autoGrow(box.querySelector('textarea'));
+    // a message prepared elsewhere (a task's text): in the answer box, to check and send
+    if (C.draftFor && C.draftFor.phone === t.phone) {
+      const ta = box.querySelector('textarea');
+      if (ta && !ta.value) { ta.value = C.draftFor.text; autoGrow(ta); }
+      C.draftFor = null;
+    }
   }
   // our template is the last word: we wait for her answer
   function waiting(t) {
@@ -252,6 +259,7 @@
       '<button type="button" class="mx-thead-who" data-act="contact" title="Deschide profilul ei">' + face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
       esc([named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : ''].filter(Boolean).join(' · ')) + '</small></div></button>' +
       '<a class="k-icon-btn" href="tel:' + esc(telOf(t.phone)) + '" title="Sună" data-act="call">' + icon('phone') + '</a>' +
+      (K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="book" title="Programează">' + icon('calendar') + '</button>' : '') +
       (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>';
   }
   function autoGrow(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + 'px'; ta.style.overflowY = ta.scrollHeight > 138 ? 'auto' : 'hidden'; }
@@ -393,6 +401,8 @@
       }
       if (a === 'tpl' && C.thread) return pickTemplate({ phone: C.thread.phone, name: named(C.thread) ? C.thread.clientName : '', city: C.thread.location, interest: C.thread.lead ? C.thread.lead.interest : '' });
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);
+      // book her from the conversation: the Calendar's form over the chat, her name, phone and city filled in
+      if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : '', clientPhone: localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
       if (a === 'snip') return toggleSnips(act);
       if (a === 'contact') return K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
       if (a === 'snips') return manageSnips();
@@ -596,6 +606,38 @@
     if (e && e.type === 'resize' && C.selectedPhone && phone()) scrollToBottom();
   }
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitViewport); window.visualViewport.addEventListener('scroll', fitViewport); }
+
+  // Any "WhatsApp" in the portal (a contact, an appointment, a lead, a task) opens her conversation here, not the
+  // phone's WhatsApp app: the clinic's numbers live in the portal. No conversation with her yet: the first message,
+  // with an approved template (Meta's rule), and then the conversation.
+  const tail = (p) => String(p || '').replace(/D/g, '').slice(-9);
+  function localPhone(p) { const d = String(p || '').replace(/D/g, ''); return d.length >= 9 ? '0' + d.slice(-9) : String(p || ''); }
+  async function chatWith(ph, o) {
+    o = o || {};
+    if (tail(ph).length < 9) return K.ui().toast('Numărul de telefon nu e complet.', 'error');
+    const before = C.loads || 0;
+    K.go('mesaje');
+    const until = Date.now() + 8000;
+    while ((C.loads || 0) <= before && Date.now() < until) await new Promise((r) => setTimeout(r, 120));
+    if (!C.loaded) return;
+    const convo = C.conversations.find((c) => tail(c.phone) === tail(ph));
+    if (convo) { if (o.text) C.draftFor = { phone: convo.phone, text: o.text }; return openThread(convo.phone); }
+    const on = connected();
+    if (!on.length) return K.ui().toast('WhatsApp nu e conectat încă.', 'info');
+    const mine = K.data && K.data.me && K.data.me.location;
+    const city = on.includes(o.city) ? o.city : on.includes(mine) ? mine : on[0];
+    pickTemplate({ phone: localPhone(ph), name: o.name || '', city, interest: o.interest || '' });
+  }
+  K.chat = chatWith;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-chat]');
+    if (!a) return;
+    e.preventDefault();
+    if (K.drawerOpen && K.closeDrawer) K.closeDrawer();
+    chatWith(a.dataset.chat, { name: a.dataset.chatName || '', city: a.dataset.chatCity || '', interest: a.dataset.chatInterest || '', text: a.dataset.chatText || '' });
+  });
+  // booked from the conversation: its header shows the new appointment
+  K.on('appointment:created', (a) => { if (panel && C.selectedPhone && a && tail(a.clientPhone) === tail(C.selectedPhone)) loadThread(C.selectedPhone, false); });
 
   K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); requestAnimationFrame(fitWrap); } load(); } });
   K.on('remote', () => { if (panel && K.isActive('mesaje')) load(); });
