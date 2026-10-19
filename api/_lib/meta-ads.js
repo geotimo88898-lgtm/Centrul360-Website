@@ -317,10 +317,11 @@ async function campaignsOf(conn, spentIds) {
   const have = new Set(on.data.map((c) => c.id));
   const more = [...new Set(spentIds)].filter((id) => id && !have.has(id));
   const out = on.data.slice();
-  for (const part of chunks(more, 50)) {
-    const r = await call('GET', '/', tok, { ids: part.join(','), fields: CAMP_FIELDS + ',account_id' });
-    if (!r.ok) return { error: metaError(r.j) };
-    Object.values(r.j || {}).forEach((c) => { if (c && c.id && 'act_' + c.account_id === act && c.effective_status !== 'DELETED' && c.effective_status !== 'ARCHIVED') out.push(c); });
+  // (Meta no longer takes ?ids=: the account's own list, filtered by those ids)
+  for (const part of chunks(more, 100)) {
+    const r = await all('/' + act + '/campaigns', tok, { fields: CAMP_FIELDS, limit: '100', effective_status: JSON.stringify(LIVE), filtering: JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: part }]) }, 2);
+    if (r.error) return r;
+    out.push(...r.data.filter((c) => !have.has(c.id)));
   }
   return { data: out };
 }
