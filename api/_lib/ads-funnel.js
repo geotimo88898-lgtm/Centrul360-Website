@@ -6,7 +6,6 @@
 //   booked     an appointment made for her (not cancelled), or the lead is in the booked stage or the ones after it up
 //              to "won" ("Venit la programare", "Luat pachet"); the side stages placed after them in the list ("In
 //              asteptare", "Contraindicatii") never count
-//   confirmed  an appointment of hers confirmed (or finished / paid), or she came
 //   showed     she came to the clinic: an appointment finished or paid, a payment, or the stages after "booked" up to "won"
 //   client   at least one payment (Încasări) from her, or the lead is "won"
 //   revenue  her payments since the lead; upsells: payments with "Upsell efectuat" (count and value)
@@ -28,6 +27,7 @@ function periodRange(period, range) {
   return { since: back(7), until: back(1) }; // 7d, like Meta's last_7d (without today)
 }
 
+const digits9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 // leads → per ad / ad set / campaign: { leads, booked, showed, clients, revenue, upsells, upsellValue }
@@ -42,15 +42,22 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
   const idxOf = (id) => stageList.findIndex((s) => s.id === id);
   const kindOf = (id) => (stageList.find((s) => s.id === id) || {}).kind || 'open';
 
-  const apptsByLead = new Map(), apptsByClient = new Map();
+  // a lead's appointments: linked to her (leadId), the one on her card (appointmentId), her client's, her phone's
+  const apptsByLead = new Map(), apptsByClient = new Map(), apptsByPhone = new Map(), apptById = new Map();
+  const push = (m, k, v) => { const l = m.get(k) || []; l.push(v); m.set(k, l); };
   (appointments || []).forEach((a) => {
-    if (a.leadId) { const l = apptsByLead.get(a.leadId) || []; l.push(a); apptsByLead.set(a.leadId, l); }
-    if (a.clientId) { const l = apptsByClient.get(a.clientId) || []; l.push(a); apptsByClient.set(a.clientId, l); }
+    apptById.set(a.id, a);
+    if (a.leadId) push(apptsByLead, a.leadId, a);
+    if (a.clientId) push(apptsByClient, a.clientId, a);
+    const p = digits9(a.clientPhone);
+    if (p.length === 9) push(apptsByPhone, p, a);
   });
-  const paysByClient = new Map();
+  // payments: by her client, and by the appointment paid (a lead rarely has a client id before she's won)
+  const paysByClient = new Map(), paysByAppt = new Map();
   (sales || []).forEach((s) => {
-    if (s.source !== 'incasare' || !s.clientId) return;
-    const l = paysByClient.get(s.clientId) || []; l.push(s); paysByClient.set(s.clientId, l);
+    if (s.source !== 'incasare') return;
+    if (s.clientId) push(paysByClient, s.clientId, s);
+    if (s.appointmentId) push(paysByAppt, s.appointmentId, s);
   });
 
   // the ads, to find a lead's ad by id or by names
@@ -76,22 +83,25 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
     const pick = inRange.sort((a, b) => b.t - a.t)[0];
     const f = pick.f, since = pick.t - DAY;
 
-    const appts = (apptsByLead.get(l.id) || []).concat(l.clientId ? (apptsByClient.get(l.clientId) || []) : [])
+    const own = l.appointmentId && apptById.get(l.appointmentId);
+    const phone = digits9(l.phone);
+    const appts = (apptsByLead.get(l.id) || []).concat(l.clientId ? (apptsByClient.get(l.clientId) || []) : [], own ? [own] : [], phone.length === 9 ? (apptsByPhone.get(phone) || []) : [])
       .filter((a, i, arr) => arr.findIndex((b) => b.id === a.id) === i)
       .filter((a) => Date.parse(a.createdAt || a.date) >= since && a.status !== 'anulata' && a.status !== 'concediu');
-    const pays = (l.clientId ? (paysByClient.get(l.clientId) || []) : []).filter((s) => Date.parse(s.createdAt || s.date) >= since);
+    const pays = (l.clientId ? (paysByClient.get(l.clientId) || []) : []).concat(...appts.map((a) => paysByAppt.get(a.id) || []))
+      .filter((s, i, arr) => arr.findIndex((x) => x.id === s.id) === i)
+      .filter((s) => Date.parse(s.createdAt || s.date) >= since);
     const stIdx = idxOf(l.stage), kind = kindOf(l.stage);
     const lost = kind === 'lost';
-    const ev = { leads: 1, booked: 0, confirmed: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
+    const ev = { leads: 1, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
     ev.booked = appts.length || l.appointmentId || (!lost && inFlow(stIdx, bookedIdx)) ? 1 : 0;
     ev.showed = appts.some((a) => (a.status === 'finalizata' && !a.noShow) || a.paidSaleId) || pays.length || (!lost && inFlow(stIdx, bookedIdx + 1)) ? 1 : 0;
-    ev.confirmed = ev.showed || appts.some((a) => a.status === 'confirmata') ? 1 : 0;
     ev.clients = pays.length || kind === 'won' ? 1 : 0;
     ev.revenue = pays.reduce((n, s) => n + (Number(s.amount) || 0), 0);
     ev.upsells = pays.filter((s) => Number(s.upsell) > 0).length;
     ev.upsellValue = pays.reduce((n, s) => n + (Number(s.upsell) || 0), 0);
-    if (ev.showed) { ev.booked = 1; ev.confirmed = 1; }
-    if (ev.clients) { ev.booked = 1; ev.confirmed = 1; ev.showed = 1; }
+    if (ev.showed) ev.booked = 1;
+    if (ev.clients) { ev.booked = 1; ev.showed = 1; }
 
     const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad ? adByNames.get('|' + norm(f.ad)) : null);
     if (ad) { add(out.ads, ad.id, ev); add(out.adsets, ad.adsetId, ev); add(out.campaigns, ad.campaignId, ev); return; }
@@ -101,7 +111,7 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
   });
   return out;
 }
-function zero() { return { leads: 0, booked: 0, confirmed: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }; }
+function zero() { return { leads: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }; }
 function plus(x, ev) { Object.keys(ev).forEach((k) => { x[k] = (x[k] || 0) + ev[k]; }); }
 
 module.exports = { funnel, periodRange, bucharestDay, zero };

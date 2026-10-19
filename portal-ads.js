@@ -139,8 +139,6 @@
     pLeads: { label: 'Leaduri în portal', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.pLeads, hint: 'Leadurile intrate în Pipeline din reclamă' },
     booked: { label: 'Programări', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.booked },
     costBooked: { label: 'Cost / programare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.booked), hint: 'Cheltuiala de pe 16 oct încoace / programările de atunci' },
-    confirmed: { label: 'Programări confirmate', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.confirmed, hint: 'Programarea e confirmată (sau a venit deja)' },
-    costConfirmed: { label: 'Cost / programare confirmată', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.confirmed), hint: 'Cheltuiala de pe 16 oct încoace / programările confirmate de atunci' },
     showed: { label: 'Prezentări', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.showed, hint: 'Au venit la salon: programare finalizată sau plătită, ori leadul e la „Venit la programare” / „Luat pachet”' },
     costShowed: { label: 'Cost / prezentare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.showed), hint: 'Cheltuiala de pe 16 oct încoace / prezentările de atunci' },
     clients: { label: 'Clienți', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.clients, hint: 'Au plătit cel puțin o dată' },
@@ -148,7 +146,6 @@
     upsells: { label: 'Upselluri', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.upsells },
     costUpsell: { label: 'Cost / upsell', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.upsells) },
     rateBooked: { label: '% programate', group: 'Rate', fmt: 'pct', val: (x) => per(x.booked, x.pLeads), hint: 'Din leadurile din portal' },
-    rateConfirmed: { label: '% confirmate', group: 'Rate', fmt: 'pct', val: (x) => per(x.confirmed, x.booked), hint: 'Din programări' },
     rateShowed: { label: '% prezentate', group: 'Rate', fmt: 'pct', val: (x) => per(x.showed, x.booked), hint: 'Din programări' },
     rateClient: { label: '% clienți', group: 'Rate', fmt: 'pct', val: (x) => per(x.clients, x.pLeads), hint: 'Din leadurile din portal' },
     rateLead: { label: '% click → lead', group: 'Rate', fmt: 'pct', val: (x) => per(x.leads, x.linkClicks) },
@@ -164,16 +161,16 @@
     campaignsOn: { label: 'Campanii pornite', group: 'Meta', fmt: 'num', only: ['cards'], val: (x) => x.on },
   };
   const GROUPS = ['Bani', 'Leaduri și programări', 'Rate', 'Meta'];
-  const DEF_COLS = ['budget', 'spend', 'leads', 'cpl', 'booked', 'costBooked', 'confirmed', 'costConfirmed', 'showed', 'costShowed', 'revenue', 'roas'];
+  const DEF_COLS = ['budget', 'spend', 'leads', 'cpl', 'booked', 'costBooked', 'showed', 'costShowed', 'revenue', 'roas'];
   const DEF_CARDS = ['spend', 'leads', 'cpl', 'booked', 'costBooked', 'showed', 'costShowed', 'revenue'];
-  const SUMS = ['spend', 'spendNew', 'leads', 'impressions', 'reach', 'clicks', 'linkClicks', 'pLeads', 'booked', 'confirmed', 'showed', 'clients', 'revenue', 'upsells', 'upsellValue'];
+  const SUMS = ['spend', 'spendNew', 'leads', 'impressions', 'reach', 'clicks', 'linkClicks', 'pLeads', 'booked', 'showed', 'clients', 'revenue', 'upsells', 'upsellValue'];
   // what the ads spent in the days our own data counts (from 16.10.2026, 22:05): the costs after the form use it
   const sNew = (x) => (x.spendNew != null ? x.spendNew : x.spend);
   // a card's icon: by what it counts
   const iconOf = (id) => {
     const m = M[id];
     if (m.fmt === 'pct') return 'percent';
-    if (/^(booked|confirmed|showed|costBooked|costConfirmed|costShowed)$/.test(id)) return 'calendar';
+    if (/^(booked|showed|costBooked|costShowed)$/.test(id)) return 'calendar';
     if (/^(clients|costClient)$/.test(id)) return 'users';
     if (/^(leads|pLeads|cpl)$/.test(id)) return 'userPlus';
     if (/^(impressions|reach|frequency|cpm)$/.test(id)) return 'eye';
@@ -190,10 +187,11 @@
     return K.num(v);
   };
   const okIds = (list, part) => (Array.isArray(list) ? list : []).filter((id) => M[id] && (!M[id].only || M[id].only.includes(part)));
-  // the confirmed bookings (added 19.10) join a table chosen before them once, right after the cost per booking
+  // a table chosen before 19.10 gets "Încasări" and ROAS at its end once (what each ad brought in), until the owner
+  // changes the columns again
   const cols = () => {
     let c = K.prefs.get('ads.cols', DEF_COLS);
-    if (Array.isArray(c) && !K.prefs.get('ads.cols.v2', false) && !c.includes('confirmed')) { c = c.slice(); const i = c.indexOf('costBooked'); c.splice(i >= 0 ? i + 1 : c.length, 0, 'confirmed', 'costConfirmed'); }
+    if (Array.isArray(c) && !K.prefs.get('ads.cols.v2', false)) c = c.filter((id) => id !== 'revenue' && id !== 'roas').concat(['revenue', 'roas']);
     return okIds(c, 'cols');
   };
   const cards = () => okIds(K.prefs.get('ads.cards', DEF_CARDS), 'cards');

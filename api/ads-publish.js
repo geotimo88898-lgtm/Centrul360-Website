@@ -100,7 +100,7 @@ async function results(sinceQ) {
   (view.campaigns || []).forEach((c) => (c.adsets || []).forEach((s) => (s.ads || []).forEach((a) => out.push({
     adId: a.id, name: a.name, campaign: c.name, status: a.effective || a.status, created: a.created, text: String(a.text || '').slice(0, 300),
     spend: a.spend, leads: a.leads, clicks: a.linkClicks, impressions: a.impressions,
-    spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, booked: a.booked || 0, confirmed: a.confirmed || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
+    spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
   }))));
   return { ok: true, since, until: today, ads: out };
 }
