@@ -45,7 +45,7 @@ function partsOf(cr) {
 // the ads without one call per campaign, which Meta answers with "too many calls")
 async function activeAds(conn) {
   const r = await call('GET', '/' + conn.adAccountId + '/ads', conn.userToken, {
-    fields: 'id,name,effective_status,ad_review_feedback,campaign{id,name},adset{id,name,targeting},creative{' + CREATIVE_FIELDS + '}',
+    fields: 'id,name,effective_status,ad_review_feedback,issues_info,campaign{id,name,effective_status},adset{id,name,targeting},creative{' + CREATIVE_FIELDS + '}',
     effective_status: JSON.stringify(['ACTIVE', 'PENDING_REVIEW', 'IN_PROCESS', 'WITH_ISSUES', 'DISAPPROVED', 'PENDING_BILLING_INFO']),
     limit: '150',
   });
@@ -55,7 +55,7 @@ async function activeAds(conn) {
     const geo = ((a.adset || {}).targeting || {}).geo_locations || {};
     delete p.hashes;
     return Object.assign({
-      id: a.id, name: a.name, status: a.effective_status, review: a.ad_review_feedback || null,
+      id: a.id, name: a.name, status: a.effective_status, review: a.ad_review_feedback || null, issues: a.issues_info || null, campaignStatus: (a.campaign || {}).effective_status || '',
       campaignId: (a.campaign || {}).id, campaign: (a.campaign || {}).name, adsetId: (a.adset || {}).id, adset: (a.adset || {}).name,
       places: [].concat((geo.custom_locations || []).map((l) => (l.address_string || l.name || (l.latitude + ',' + l.longitude)) + ' ' + (l.radius || '') + (l.distance_unit || '')), (geo.cities || []).map((c) => c.name)),
       creativeId: (a.creative || {}).id,
