@@ -191,9 +191,11 @@ async function alertTeam(lead, returning, fromSite) {
   const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie').map((e) => e.id));
   const raw = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
   const what = require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), raw); // "Lipo 640"
+  const city = ({ 'Timișoara': ' TM', Arad: ' AR' })[lead.location] || '';
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
-    title: (fromSite ? (returning ? 'LEAD SITE REVENIT 🔁' : 'LEAD SITE 🌐') : returning ? 'LEAD REVENIT 🔁' : 'LEAD NOU 🔥') + (what ? ' - ' + what : ''),
+    // the city, short, right after the kind (the owner, 19.10): LEAD NOU TM 🔥 - Lipo 640
+    title: (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD NOU' + city + ' 🔥') + (what ? ' - ' + what : ''),
     text: lead.name,
   });
 }
