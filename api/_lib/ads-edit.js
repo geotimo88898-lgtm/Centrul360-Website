@@ -64,6 +64,16 @@ async function activeAds(conn) {
   return { ok: true, ads };
 }
 
+// one ad's creative as Meta keeps it (which fields its video / image carry), to see why an edit is refused; read only
+async function creativeOf(conn, adId) {
+  if (!/^\d{5,25}$/.test(String(adId || ''))) return { error: 'ID invalid' };
+  const ad = await call('GET', '/' + adId, conn.userToken, { fields: 'account_id,creative{' + CREATIVE_FIELDS + '}' });
+  if (!ad.ok) return { error: err(ad.j) };
+  if ('act_' + ad.j.account_id !== conn.adAccountId) return { error: 'Nu e în contul de reclame conectat.' };
+  const cr = ad.j.creative || {};
+  return { ok: true, spec: cr.object_story_spec || null, feed: cr.asset_feed_spec || null };
+}
+
 // Previzualizare / Editează: the campaign's ad sets (audience, budget) and ads (texts, images)
 async function details(conn, campaignId) {
   const tok = conn.userToken;
@@ -230,4 +240,4 @@ async function media(url) {
   return { type, buf };
 }
 
-module.exports = { details, activeAds, editAd, editAdset, media, partsOf };
+module.exports = { details, activeAds, creativeOf, editAd, editAdset, media, partsOf };
