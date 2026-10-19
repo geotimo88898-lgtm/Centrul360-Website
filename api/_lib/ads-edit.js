@@ -134,6 +134,11 @@ async function editAd(conn, a) {
       if (cta) spec.link_data.call_to_action.type = cta;
       if (formId) spec.link_data.call_to_action.value = Object.assign({}, spec.link_data.call_to_action.value, { lead_gen_form_id: formId });
     }
+    // a video ad with several texts keeps its button and form in video_data
+    if (spec.video_data && spec.video_data.call_to_action) {
+      if (cta) spec.video_data.call_to_action.type = cta;
+      if (formId) spec.video_data.call_to_action.value = Object.assign({}, spec.video_data.call_to_action.value, { lead_gen_form_id: formId });
+    }
   } else if (spec.link_data) {
     const ld = spec.link_data;
     ld.message = texts[0];
