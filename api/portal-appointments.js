@@ -329,6 +329,8 @@ module.exports = async (req, res) => {
         if (lead) appointment.leadId = lead.id;
       }
       await writeJSON('data/appointments.json', appointments);
+      // cancelled: her lead no longer shows it
+      if (before.status !== appointment.status && appointment.status === 'anulata') await require('./portal-leads').unbookLead(appointment, 'Programare anulată', await whoName(session));
       // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the
       // booking messages again for the new date (confirmation, location, reminders).
       if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });
@@ -351,6 +353,7 @@ module.exports = async (req, res) => {
       }
       const [removed] = appointments.splice(idx, 1);
       await writeJSON('data/appointments.json', appointments);
+      if (!removed.block && removed.status !== 'concediu') await require('./portal-leads').unbookLead(removed, 'Programare ștearsă', await whoName(session));
       await workflows.emit('appointment_deleted', { appointment: removed });
       res.status(200).json({ ok: true });
       return;

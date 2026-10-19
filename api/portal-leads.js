@@ -127,7 +127,7 @@ function applyBooking(lead, stages, appt, author) {
   const at = String(appt.date || '').slice(0, 10) + (appt.time ? ' ' + String(appt.time).slice(0, 5) : '');
   if (lead.appointmentId && lead.appointmentId === appt.id) {
     // the same appointment again (moved in the Calendar): only the date on the lead changes
-    if (lead.appointmentAt !== at) { lead.appointmentAt = at; addActivity(lead, { type: 'booking', text: 'Mutată: ' + at, author }); return true; }
+    if (lead.appointmentAt !== at) { lead.appointmentAt = at; addActivity(lead, { type: 'booking_change', text: 'Programare mutată: ' + at, author }); return true; }
     return false;
   }
   lead.appointmentId = clip(appt.id, 60);
@@ -168,6 +168,24 @@ async function bookLead(appt, opts) {
     return lead;
   } catch (err) {
     console.error('bookLead error:', err.message);
+    return null;
+  }
+}
+
+// An appointment deleted or cancelled: the lead it was linked to no longer shows it (its card would point at nothing),
+// its history says what happened; the stage stays as the desk left it. Never throws.
+async function unbookLead(appt, why, author) {
+  try {
+    if (!appt || !appt.id) return null;
+    const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
+    const hits = leads.filter((l) => l.appointmentId === appt.id);
+    if (!hits.length) return null;
+    const at = String(appt.date || '').slice(0, 10) + (appt.time ? ' ' + String(appt.time).slice(0, 5) : '');
+    hits.forEach((l) => { l.appointmentId = ''; l.appointmentAt = ''; addActivity(l, { type: 'booking_change', text: why + ': ' + at, author: author || 'Calendar' }); });
+    await writeJSON(LEADS_KEY, leads);
+    return hits;
+  } catch (err) {
+    console.error('unbookLead error:', err.message);
     return null;
   }
 }
@@ -537,4 +555,5 @@ module.exports.ALL_STAGES = ALL_STAGES;
 module.exports.createLead = createLead;
 module.exports.loadStages = loadStages;
 module.exports.bookLead = bookLead;
+module.exports.unbookLead = unbookLead;
 module.exports.markUndelivered = markUndelivered;

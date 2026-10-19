@@ -1097,6 +1097,8 @@
       contact: [a.channel === 'whatsapp' ? 'chat' : 'phone', (CHANNELS[a.channel] || 'Contact') + ' · ' + ((OUTCOMES[a.outcome] || {}).label || '')],
       followup: ['clock', 'Follow-up'],
       booking: ['calendar', 'Programare făcută · ' + esc(String(a.text || '').replace(/^\d{4}-\d{2}-\d{2}(?: \d{1,2}:\d{2})?/, (m) => apptWhen(m)))],
+      // moved, cancelled or deleted in the Calendar ("Programare mutată: 2026-10-22 14:00")
+      booking_change: ['calendar', esc(String(a.text || '').replace(/\d{4}-\d{2}-\d{2}(?: \d{1,2}:\d{2})?/, (m) => apptWhen(m)))],
       edit: ['pen', 'Detalii modificate: ' + esc(String(a.text || '').split(', ').map((k) => FIELD_LABELS[k] || k).join(', '))],
       returned: ['repeat', esc(a.text)],
     };

@@ -437,8 +437,7 @@
       const a = S.appts.find((x) => x.id === d.id);
       const date = d.target.dataset.date, loc = d.target.dataset.loc || a.location, time = toHM(d.min);
       if (!a || (a.date === date && a.time === time && a.location === loc)) { render(true); return; }
-      const clash = await blockedAt(Object.assign({}, a, { date, time, location: loc, endTime: d.dur ? toHM(Math.min(d.min + d.dur, 24 * 60 - 15)) : a.endTime }));
-      if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: blockText(clash) + '. Muți programarea oricum?', confirmText: 'Mută oricum' }))) { render(true); return; }
+      if (!(await placeOk(Object.assign({}, a, { date, time, location: loc, endTime: d.dur ? toHM(Math.min(d.min + d.dur, 24 * 60 - 15)) : a.endTime }), 'Muți programarea', 'Mută oricum'))) { render(true); return; }
       const before = Object.assign({}, a);
       Object.assign(a, { date, time, location: loc });
       if (d.dur) a.endTime = toHM(Math.min(d.min + d.dur, 24 * 60 - 15)); // same length, new place
@@ -590,8 +589,7 @@
           // a session from a package is already paid: 0 is fine there
           if (!v.package && !(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării (sau bifează „Ședință din pachet”).', 'error'); f.amount.focus(); return; }
           if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
-          const clash = await blockedAt(v);
-          if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: blockText(clash) + '. Programezi oricum?', confirmText: 'Programează oricum' }))) return;
+          if (!(await placeOk(v, 'Programezi', 'Programează oricum'))) return;
           const body = Object.assign({ action: 'create', clientId: picker.id(), leadId: pre.leadId || '' }, v, { categories: formCats(v), amount: Number(v.amount) });
           try {
             let made;
@@ -616,17 +614,32 @@
     });
   }
 
-  // a blocked time over this booking (same day and city, the whole clinic or this cosmetician), or null; the day's rows
-  // come from the server when the Calendar has another range loaded
-  async function blockedAt(v) {
+  // what is already at this time, in words ('' when nothing): a blocked time (the whole clinic of the city or this
+  // cosmetician), her leave that day, another client of hers at the same hour. The day's rows come from the server when
+  // the Calendar shows another range (a booking from Mesaje or the Pipeline).
+  async function clashAt(v) {
     const [from, to] = String(S.range || '|').split('|');
     let rows = S.appts;
     if (!(from && v.date >= from && v.date <= to)) {
       try { rows = (await K.api('/api/portal-appointments', { action: 'list', from: v.date, to: v.date })).appointments || []; } catch (e) { rows = []; }
     }
     const s = toMin(v.time), e = toMin(v.endTime) > s ? toMin(v.endTime) : s + DUR;
-    return rows.find((b) => b.block && b.id !== v.id && b.date === v.date && b.location === v.location && (!b.cosmeticianId || b.cosmeticianId === v.cosmeticianId) &&
-      (!b.time || (s != null && s < endMin(b) && e > toMin(b.time)))) || null;
+    const over = (x) => s != null && x.time && s < endMin(x) && e > toMin(x.time);
+    const out = [];
+    const b = rows.find((x) => x.block && x.id !== v.id && x.date === v.date && x.location === v.location && (!x.cosmeticianId || x.cosmeticianId === v.cosmeticianId) && (!x.time || over(x)));
+    if (b) out.push('Interval blocat: ' + blockText(b));
+    if (v.cosmeticianId) {
+      const leave = rows.find((x) => x.status === 'concediu' && !x.block && x.date === v.date && x.cosmeticianId === v.cosmeticianId);
+      if (leave) out.push((leave.cosmeticianName || 'Cosmeticiana') + ' e în concediu în ziua asta');
+      rows.filter((x) => x.id !== v.id && x.date === v.date && x.cosmeticianId === v.cosmeticianId && !['anulata', 'concediu'].includes(x.status) && over(x))
+        .forEach((x) => out.push((x.cosmeticianName || empName(x.cosmeticianId) || 'Cosmeticiana') + ' are deja pe ' + nameOf(x) + ' la ' + span(x)));
+    }
+    return out.join('. ');
+  }
+  // nothing in the way, or the desk says go on anyway
+  async function placeOk(v, ask, go) {
+    const why = await clashAt(v);
+    return !why || K.ui().confirm({ title: 'Ora nu e liberă', message: why + '. ' + ask + ' oricum?', confirmText: go });
   }
   const blockText = (b) => (b.clientName || 'Timp blocat') + ' · ' + (span(b) || 'toată ziua') + (b.cosmeticianName ? ' · ' + b.cosmeticianName : '');
   const digits = (p) => String(p || '').replace(/\D/g, '').slice(-9);
@@ -808,8 +821,7 @@
           const next = Object.assign({}, a, v);
           next.clientId = picker.id() || (sameClient ? a.clientId : '');
           const placed = next.date !== a.date || next.time !== a.time || next.location !== a.location || next.cosmeticianId !== a.cosmeticianId || next.endTime !== a.endTime;
-          const clash = placed ? await blockedAt(next) : null;
-          if (clash && !(await K.ui().confirm({ title: 'Intervalul e blocat', message: blockText(clash) + '. Muți programarea oricum?', confirmText: 'Mută oricum' }))) return;
+          if (placed && !(await placeOk(next, 'Muți programarea', 'Mută oricum'))) return;
           try {
             const j = await save(next);
             Object.assign(a, (j && j.appointment) || v);
