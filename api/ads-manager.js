@@ -20,6 +20,7 @@ const { funnel, periodRange, bucharestDay } = require('./_lib/ads-funnel');
 const KPI = require('./_lib/kpi');
 const edit = require('./_lib/ads-edit');
 const AC = require('./_lib/ads-cache');
+const guard = require('./_lib/ads-guard');
 
 // after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad. From 16.10.2026, 22:05
 // on (the owner's call: what came before was brought over from HighLevel): only the leads from then on, the bookings
@@ -136,7 +137,8 @@ module.exports = async (req, res) => {
       // without ads_management the page only reads (the switches would be refused)
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
       await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
-      res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId) }, view));
+      const stopped = await guard.recent().catch(() => null);
+      res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped }, view));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -150,7 +152,12 @@ module.exports = async (req, res) => {
     if (problem) { res.status(400).json({ error: problem, message: REASONS[problem] }); return; }
     // Previzualizare / Editează a running campaign
     // a change from here: the next reading comes from Meta
-    if (body.action !== 'details' && body.action !== 'active_ads' && body.action !== 'creative_of') await AC.clear().catch(() => {});
+    if (body.action !== 'details' && body.action !== 'active_ads' && body.action !== 'creative_of' && body.action !== 'guard_run') await AC.clear().catch(() => {});
+    // the guard now, not at its next turn (dry: only what would go off)
+    if (body.action === 'guard_run') {
+      res.status(200).json(await guard.guard({ force: true, dry: !!body.dry }));
+      return;
+    }
     if (body.action === 'creative_of') {
       const d = await edit.creativeOf(conn, body.adId);
       if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }

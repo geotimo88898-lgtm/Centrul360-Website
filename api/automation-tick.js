@@ -20,6 +20,8 @@ module.exports = async (req, res) => {
   const ran = await tick(true);
   // myPOS: the POS payments of the last days (the live ones come by webhook; this catches what it missed)
   const pos = req.query && req.query.light ? { ok: true, added: 'skipped' } : await mypos.sync({ readJSON, writeJSON }, {}).catch((e) => ({ ok: false, error: e.message }));
+  // the ads that don't bring leads go off (every 30 minutes, api/_lib/ads-guard.js)
+  const ads = await require('./_lib/ads-guard').guard().catch((e) => ({ error: e.message }));
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error });
+  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads });
 };

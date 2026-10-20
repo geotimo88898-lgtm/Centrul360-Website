@@ -469,6 +469,21 @@ async function adForms(conn) {
   return { rows: r.data.map((a) => ({ adId: String(a.id), adName: a.name || '', status: a.effective_status || '', formId: find(a.creative || {}) })).filter((x) => x.formId) };
 }
 
+// the guard (api/_lib/ads-guard.js): what each running ad spent and the leads Meta counted, over some days
+async function adResults(conn, range) {
+  const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'ad', fields: 'ad_id,ad_name,campaign_id,campaign_name,spend,actions', limit: '500',
+    time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: ['ACTIVE'] }]) }, 5);
+  if (r.error) return { error: r.error };
+  return { rows: r.data.map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.adId) };
+}
+// a campaign's ads still running (or about to: in review)
+async function runningAdsOf(conn, campaignId) {
+  if (!/^\d{5,25}$/.test(String(campaignId || ''))) return { error: 'ID invalid' };
+  const r = await call('GET', '/' + campaignId + '/ads', conn.userToken, { fields: 'id', limit: '100', effective_status: JSON.stringify(['ACTIVE', 'IN_PROCESS', 'WITH_ISSUES', 'PENDING_REVIEW', 'PREAPPROVED']) });
+  if (!r.ok) return { error: metaError(r.j) };
+  return { ids: (r.j.data || []).map((a) => String(a.id)) };
+}
+
 // the campaigns that spent in the last 30 days (paused ones among them stay in Reclame, to switch them back on)
 async function recentCampaigns(conn) {
   const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'campaign', fields: 'campaign_id', date_preset: 'last_30d', limit: '500' }, 3);
@@ -476,4 +491,4 @@ async function recentCampaigns(conn) {
   return { ok: true, ids: r.data.map((x) => x.campaign_id).filter(Boolean) };
 }
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, act, adsManagerUrl, adSpend, adStats, adForms };
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
