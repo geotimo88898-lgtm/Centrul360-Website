@@ -483,6 +483,14 @@ async function campaignDays(conn, range) {
   if (r.error) return { error: r.error };
   return { rows: r.data.map((x) => ({ campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.campaignId) };
 }
+// how often the same women saw some campaigns over some days (frequency doesn't add up day by day: read whole)
+async function campaignReach(conn, range, ids) {
+  if (!ids.length) return { freq: new Map() };
+  const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'campaign', fields: 'campaign_id,reach,impressions,frequency', limit: '500',
+    time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]) }, 3);
+  if (r.error) return { error: r.error };
+  return { freq: new Map(r.data.map((x) => [String(x.campaign_id), Number(x.frequency) || (Number(x.reach) ? Number(x.impressions) / Number(x.reach) : 0)])) };
+}
 // where a campaign's daily budget sits: on the campaign, or on its one running ad set (several ad sets: not touched)
 async function budgetOf(conn, campaignId) {
   if (!/^\d{5,25}$/.test(String(campaignId || ''))) return { error: 'ID invalid' };
@@ -510,4 +518,4 @@ async function recentCampaigns(conn) {
   return { ok: true, ids: r.data.map((x) => x.campaign_id).filter(Boolean) };
 }
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };

@@ -155,7 +155,8 @@ module.exports = async (req, res) => {
     if (body.action !== 'details' && body.action !== 'active_ads' && body.action !== 'creative_of' && body.action !== 'guard_run') await AC.clear().catch(() => {});
     // the guard now, not at its next turn (dry: only what would go off)
     if (body.action === 'guard_run') {
-      res.status(200).json(await guard.guard({ force: true, dry: !!body.dry }));
+      const at = body.dry && Number(body.at) > 0 ? Number(body.at) : undefined;
+      res.status(200).json(await guard.guard({ force: true, dry: !!body.dry, now: at }));
       return;
     }
     if (body.action === 'creative_of') {
