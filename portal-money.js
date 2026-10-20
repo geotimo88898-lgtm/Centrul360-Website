@@ -37,7 +37,7 @@
   // ÎNCASĂRI
   // =====================================================================================
   const PERIODS = [['today', 'Azi'], ['yesterday', 'Ieri'], ['week', 'Săptămâna asta'], ['month', 'Luna asta'], ['prev', 'Luna trecută'], ['custom', 'Alte date']];
-  const S = { period: 'month', from: '', to: '', loc: 'all', method: '', q: '', day: '' };
+  const S = { period: 'today', from: '', to: '', loc: 'all', method: '', q: '', day: '' }; // opens on today (the owner, 20.10)
   let panel;
 
   function range() {

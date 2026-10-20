@@ -567,8 +567,8 @@
   // What each offer brought through the door: the payments of the clients its leads became (upsells included), the
   // leads, the clients, and its share of the ad spend (/api/offers-kpi). Biggest first. From 16.10.2026, 22:05 on (what
   // came before was brought over from HighLevel); "Alege" picks the days.
-  const KPI = { period: 'max', since: '', until: '', d: null };
-  const KPI_PERIODS = [['max', 'Tot timpul'], ['today', 'Azi'], ['7d', '7 zile'], ['30d', '30 zile'], ['custom', 'Alege']];
+  const KPI = { period: 'today', since: '', until: '', d: null }; // opens on today (the owner, 20.10)
+  const KPI_PERIODS = [['today', 'Azi'], ['7d', '7 zile'], ['30d', '30 zile'], ['max', 'Tot timpul'], ['custom', 'Alege']];
   async function loadKpi(force) {
     const box = opanel && opanel.querySelector('[data-kpi]');
     if (!box) return;

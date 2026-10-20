@@ -9,9 +9,9 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const S = { period: '7d', since: '', until: '', d: null, el: null, at: 0, busy: false, trend: 'money', src: 'revenue', err: '' };
-  try { const p = JSON.parse(localStorage.getItem('c360.kpi') || '{}'); if (p.period) Object.assign(S, { period: p.period, since: p.since || '', until: p.until || '' }); } catch (e) { /* defaults */ }
-  const keep = () => { try { localStorage.setItem('c360.kpi', JSON.stringify({ period: S.period, since: S.since, until: S.until })); } catch (e) { /* fine */ } };
+  // opens on today; a period picked stays while the portal is open (the owner, 20.10)
+  const S = { period: 'today', since: '', until: '', d: null, el: null, at: 0, busy: false, trend: 'money', src: 'revenue', err: '' };
+  try { localStorage.removeItem('c360.kpi'); } catch (e) { /* the period once kept between openings */ }
   const PERIODS = [['today', 'Azi'], ['yesterday', 'Ieri'], ['7d', '7 zile'], ['30d', '30 zile'], ['month', 'Luna asta'], ['max', 'Tot timpul'], ['custom', 'Alege']];
 
   // ------------------------------------------------------------------ formatting
@@ -284,7 +284,6 @@
     const p = e.target.closest('[data-kp-period]');
     if (p) {
       S.period = p.dataset.kpPeriod;
-      keep();
       if (S.period === 'custom' && !(S.since && S.until)) { paint(false); const i = S.el.querySelector('[data-kp-range] input'); if (i) i.focus(); return; }
       load();
       return;
@@ -303,7 +302,6 @@
     e.preventDefault();
     S.since = f.since.value; S.until = f.until.value;
     if (!S.since || !S.until) return;
-    keep();
     load();
   }
 

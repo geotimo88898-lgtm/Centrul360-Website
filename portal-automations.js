@@ -17,7 +17,7 @@
   const RUN = { waiting: ['Programat', 'info'], done: ['Terminat', 'good'], stopped: ['Oprit', ''], error: ['Eroare', 'bad'] };
   // sel: the flows ticked; closed: the folders folded; h: the history filters
   const S = { d: null, tab: 'flows', loading: false, q: '', show: 'all', folder: '', trig: '', sel: new Set(), closed: new Set(),
-    h: { wf: '', folder: '', form: '', status: '', period: '30d', q: '' } };
+    h: { wf: '', folder: '', form: '', status: '', period: 'today', q: '' } }; // the history opens on today
   let panel;
 
   const NONE = '__none';
