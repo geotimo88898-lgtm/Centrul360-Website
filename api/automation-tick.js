@@ -2,7 +2,7 @@
 // Called by the Vercel cron in vercel.json (daily, the portal heartbeat covers the rest of the day)
 // and can be pinged by any external scheduler. With CRON_SECRET set in Vercel, only requests that
 // carry it (Vercel's own cron sends it automatically) are accepted.
-// The GitHub clock (.github/workflows/automations-clock.yml) calls it every 5 minutes with ?light=1: the due steps and
+// The GitHub clock (.github/workflows/automations-clock.yml) calls it once an hour with ?light=1: the due steps and
 // the new Facebook leads, without the myPOS reading (that stays with the daily cron and the webhook).
 
 const { tick } = require('./_lib/workflows');

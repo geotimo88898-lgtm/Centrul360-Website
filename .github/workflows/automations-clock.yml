@@ -1,4 +1,5 @@
-# The automations' clock: every 5 minutes it asks the portal to send what is due (reminders 24h / 2h before, the review
+# The automations' clock: once an hour (the owner, 20.10: "odată pe oră e de ajuns"; at */5 GitHub ran it only every
+# ~5 hours anyway) it asks the portal to send what is due (reminders 24h / 2h before, the review
 # after a treatment, the waits of any flow) and to read new Facebook leads, so they go on time even when nobody has the
 # portal open. Vercel's own cron (vercel.json) runs only once a day. GitHub may start a run a few minutes late; the
 # portal skips a "before the appointment" message that would come more than 45 minutes late.
@@ -7,7 +8,7 @@ name: Ceasul automatizărilor
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions: {}
