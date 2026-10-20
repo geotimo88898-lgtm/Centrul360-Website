@@ -476,6 +476,25 @@ async function adResults(conn, range) {
   if (r.error) return { error: r.error };
   return { rows: r.data.map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.adId) };
 }
+// and each running campaign's days (spend, Meta's leads), to see if it still does well and uses its budget
+async function campaignDays(conn, range) {
+  const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'campaign', fields: 'campaign_id,campaign_name,spend,actions', time_increment: '1', limit: '500',
+    time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'campaign.effective_status', operator: 'IN', value: ['ACTIVE'] }]) }, 5);
+  if (r.error) return { error: r.error };
+  return { rows: r.data.map((x) => ({ campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.campaignId) };
+}
+// where a campaign's daily budget sits: on the campaign, or on its one running ad set (several ad sets: not touched)
+async function budgetOf(conn, campaignId) {
+  if (!/^\d{5,25}$/.test(String(campaignId || ''))) return { error: 'ID invalid' };
+  const r = await call('GET', '/' + campaignId, conn.userToken, { fields: 'account_id,daily_budget,lifetime_budget,adsets.limit(20){id,daily_budget,lifetime_budget,effective_status}' });
+  if (!r.ok) return { error: metaError(r.j) };
+  if ('act_' + r.j.account_id !== conn.adAccountId) return { error: 'Nu e în contul de reclame conectat.' };
+  if (Number(r.j.daily_budget) > 0) return { id: String(campaignId), level: 'campaign', daily: Number(r.j.daily_budget) / 100 };
+  if (Number(r.j.lifetime_budget) > 0) return { error: 'buget pe toată durata' };
+  const on = ((r.j.adsets && r.j.adsets.data) || []).filter((s) => s.effective_status === 'ACTIVE');
+  if (on.length === 1 && Number(on[0].daily_budget) > 0) return { id: String(on[0].id), level: 'adset', daily: Number(on[0].daily_budget) / 100 };
+  return { error: 'mai multe seturi' };
+}
 // a campaign's ads still running (or about to: in review)
 async function runningAdsOf(conn, campaignId) {
   if (!/^\d{5,25}$/.test(String(campaignId || ''))) return { error: 'ID invalid' };
@@ -491,4 +510,4 @@ async function recentCampaigns(conn) {
   return { ok: true, ids: r.data.map((x) => x.campaign_id).filter(Boolean) };
 }
 
-module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
+module.exports = { CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
