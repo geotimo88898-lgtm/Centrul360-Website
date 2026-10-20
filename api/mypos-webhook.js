@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
       if (!desk) {
         await N.notifyMany(store, await N.adminIds(store), {
           kind: 'money', tone: 'good', go: 'incasari', tag: 'pos-' + p.id, ref: N.payRef('pos', p.amount),
-          title: 'ÎNCASARE 💵 - ' + N.leiTxt(p.amount) + ' card',
+          title: 'ÎNCASARE' + N.cityTag(dev.city) + ' 💵 - ' + N.leiTxt(p.amount) + ' card',
           text: 'pe POS' + (dev.city ? ', ' + dev.city : ''),
         });
       }

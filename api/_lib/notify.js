@@ -26,6 +26,8 @@ async function adminIds(store) {
 }
 const isOwner = (session) => !!session && (session.employeeId === 'admin' || session.role === 'admin');
 const leiTxt = (n) => (Math.round(Number(n) * 100) / 100).toLocaleString('ro-RO') + ' lei';
+// a clinic, short, for the titles (ÎNCASARE TM, like LEAD NOU TM): ' TM' / ' AR', or nothing
+const cityTag = (c) => (/arad/i.test(String(c || '')) ? ' AR' : /timi/i.test(String(c || '')) ? ' TM' : '');
 
 // One payment, one notification. A card payment is seen twice: by the POS at once (api/mypos-webhook.js) and by
 // the desk when it records it (portal-sale.js, with the client and the upsell). Each line carries a ref (who saw it
@@ -79,4 +81,4 @@ const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);
 
 const mine = async (store, employeeId) => (await store.readJSON(KEY, [])).filter((x) => x.employeeId === employeeId).slice(-40).reverse();
 
-module.exports = { notify, notifyMany, mine, KEY, adminIds, isOwner, leiTxt, payRef, claim };
+module.exports = { notify, notifyMany, mine, KEY, adminIds, isOwner, leiTxt, cityTag, payRef, claim };

@@ -236,7 +236,7 @@ async function handleIncasare(req, res, session) {
         await N.notifyMany(store, await N.adminIds(store), {
           kind: 'money', tone: 'good', go: 'incasari', tag: pos ? pos.tag : 'pay-' + entry.id, quiet: !!pos,
           ref: cardIn > 0 ? N.payRef('desk', cardIn) : '',
-          title: 'ÎNCASARE ' + (upsell > 0 ? '💵💵' : '💵') + ' - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method], // an upsell: two banknotes
+          title: 'ÎNCASARE' + N.cityTag(entry.location) + ' ' + (upsell > 0 ? '💵💵' : '💵') + ' - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method], // an upsell: two banknotes
           text: (upsell > 0 ? 'Upsell' + (upsell < amount ? ' ' + N.leiTxt(upsell) : '') : 'Fără upsell') + (entry.client ? ' · ' + entry.client : ''),
         });
       } catch (e) { /* never blocks a payment */ }
