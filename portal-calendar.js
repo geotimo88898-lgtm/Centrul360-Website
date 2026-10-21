@@ -128,15 +128,6 @@
     }
     const mday = e.target.closest('[data-mday]');
     if (mday) return pickDay(mday.dataset.mday);
-    // the week strip: to that day in the agenda
-    const wday = e.target.closest('[data-wday]');
-    if (wday) {
-      const sec = gridEl.querySelector('[data-agday="' + wday.dataset.wday + '"]');
-      if (sec) { const top = sec.getBoundingClientRect().top + window.scrollY - stickTop(); window.scrollTo({ top, behavior: 'smooth' }); }
-      return;
-    }
-    const nd = e.target.closest('[data-newday]');
-    if (nd) return openNew({ date: nd.dataset.newday, location: S.loc !== 'all' ? S.loc : '' });
     const mm = e.target.closest('[data-mmonth]');
     if (mm) {
       // another month: its first day (today, when it's this month)
@@ -189,24 +180,13 @@
   function render(keepScroll) {
     if (!gridEl) return;
     const mbox = panel.querySelector('[data-mbox]');
-    mbox.hidden = !phone();
+    mbox.hidden = !phone() || S.view === 'week'; // a phone's week: the 7 days' grid, like Google's
     const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
       (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
-    if (phone() && S.view === 'week') {
-      mbox.innerHTML = weekStripHtml(visible);
-      renderSummary(visible);
-      gridEl.style.removeProperty('--cols');
-      gridEl.classList.remove('is-week');
-      gridEl.classList.add('is-agenda');
-      gridEl.innerHTML = agendaHtml(visible);
-      if (!keepScroll) { const t = gridEl.querySelector('.cal-ag-day.is-today'); if (t) requestAnimationFrame(() => window.scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + window.scrollY - stickTop()), behavior: 'auto' })); }
-      return;
-    }
-    gridEl.classList.remove('is-agenda');
-    if (phone()) mbox.innerHTML = monthHtml();
+    if (phone() && S.view === 'day') mbox.innerHTML = monthHtml();
     const prevScroll = gridEl.parentElement.scrollTop;
     const cols = columns();
-    renderSummary(phone() ? visible.filter((a) => a.date === S.date) : visible); // a phone has the month loaded: the day's numbers
+    renderSummary(phone() && S.view === 'day' ? visible.filter((a) => a.date === S.date) : visible); // a phone has the month loaded: the day's numbers
     const H = (END - START) * 60 * PPM;
     const hours = Array.from({ length: END - START + 1 }, (_, i) => START + i);
     const today = K.today();
@@ -258,41 +238,6 @@
       '<div class="cal-mbox-grid">' + ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((x) => '<em>' + x + '</em>').join('') + cells.join('') + '</div>';
   }
 
-  // ------------------------------------------------------------------ the phone week (agenda)
-  // how far down the sticky header and week strip reach (a day jumps to just under them)
-  const stickTop = () => { const s = panel && panel.querySelector(".cal-mbox"); return (s && !s.hidden ? s.getBoundingClientRect().height : 0) + 74; };
-  const weekDays = () => { const mon = K.mondayOf(S.date); return Array.from({ length: 7 }, (_, i) => K.addDays(mon, i)); };
-  const live = (a) => a.status !== 'anulata' && a.status !== 'concediu';
-  function weekStripHtml(visible) {
-    const today = K.today();
-    return '<div class="cal-wstrip">' + weekDays().map((d) => {
-      const n = visible.filter((a) => a.date === d && live(a)).length;
-      return '<button type="button" data-wday="' + d + '" class="' + (d === today ? 'is-today ' : '') + (d < today ? 'is-past' : '') + '">' +
-        '<em>' + K.DOW_S[K.parse(d).getDay()] + '</em><b>' + K.parse(d).getDate() + '</b><i' + (n ? '' : ' class="is-none"') + '>' + (n || '') + '</i></button>';
-    }).join('') + '</div>';
-  }
-  function agendaHtml(visible) {
-    const today = K.today();
-    const multi = S.loc === 'all';
-    return '<div class="cal-agenda">' + weekDays().map((d) => {
-      const list = visible.filter((a) => a.date === d).sort((x, y) => (toMin(x.time) == null ? -1 : toMin(x.time)) - (toMin(y.time) == null ? -1 : toMin(y.time)));
-      const n = list.filter(live).length;
-      const dt = K.parse(d);
-      return '<section class="cal-ag-day' + (d === today ? ' is-today' : '') + (d < today ? ' is-past' : '') + '" data-agday="' + d + '">' +
-        '<button type="button" class="cal-ag-head" data-goday="' + d + '"><b>' + esc(K.DOW[dt.getDay()].replace(/^./, (c) => c.toUpperCase())) + '</b><span>' + esc(K.dateShort(d)) + (d === today ? ' · azi' : '') + '</span>' +
-          '<em>' + (n ? K.plural(n, 'programare', 'programări') : 'liber') + '</em>' + icon('right') + '</button>' +
-        (list.length ? list.map((a) => {
-          const st = stOf(a);
-          return '<button type="button" class="cal-ag-row is-' + esc(a.status) + (a.block ? ' is-block' : '') + '" data-open="' + esc(a.id) + '">' +
-            '<span class="cal-ag-time">' + (a.time ? '<b>' + esc(a.time) + '</b>' + (toMin(a.endTime) > toMin(a.time) ? '<small>' + esc(a.endTime) + '</small>' : '') : '<b>toată</b><small>ziua</small>') + '</span>' +
-            '<span class="cal-ag-main"><b>' + esc(nameOf(a)) + '</b><small>' + esc([subOf(a), a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ')) + '</small>' +
-            '<span class="cal-ag-meta">' + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' + esc(a.cosmeticianName.split(' ')[0]) : '') + (multi && a.location ? '<em>' + esc(a.location) + '</em>' : '') +
-            (a.package ? '<em>pachet</em>' : '') + '<em class="is-st">' + esc(st.label) + '</em></span></span></button>';
-        }).join('') : '<div class="cal-ag-empty"><span>Nicio programare</span>' + (canEdit() && d >= today ? '<button type="button" class="k-btn is-ghost is-sm" data-newday="' + d + '">' + icon('plus') + 'Programează</button>' : '') + '</div>') +
-        '</section>';
-    }).join('') + '</div>';
-  }
-
   // Overlapping appointments share the column width (simple lane packing).
   function layout(list) {
     const items = list.map((a) => ({ a, s: toMin(a.time), e: endMin(a) })).sort((x, y) => x.s - y.s);
@@ -326,10 +271,11 @@
     // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
     // an hour) has the hour in front of the name, in smaller letters, on up to two lines
     const short = it.e - it.s < 45; // under 45 minutes; an hour keeps the big letters whatever the screen
-    const lines = short ? Math.max(1, Math.floor((h - 6) / 13.5)) : Math.max(1, Math.floor((h - 28) / 17));
-    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
+    const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the name
+    const lines = tiny ? Math.max(1, Math.floor((h - 4) / 11.5)) : short ? Math.max(1, Math.floor((h - 6) / 13.5)) : Math.max(1, Math.floor((h - 28) / 17));
+    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + nameOf(a) + (a.ghlTitle ? ' · ' + a.clientName : '') + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
-      (short
+      (tiny ? '<b>' + esc(nameOf(a)) + '</b>' : short
         ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>'
         : '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
           '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span>') + '</button>';
