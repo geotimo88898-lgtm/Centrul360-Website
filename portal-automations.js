@@ -241,7 +241,7 @@
       body: 'Bună {prenume}! 📅 Vă reamintesc cu drag programarea de mâine, {data}, ora {ora}. Reușiți să ajungeți?\nNe găsiți aici: 📍 ' + C.near + '\n\nVă aștept! Raluca - Centrul360' });
     list.push({ key: '2h', label: 'Reamintiri · 2h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
       body: c === 'Arad'
-        ? 'Dragă {prenume}, vă reamintim că întâlnirea noastră este în 2 ore.\n📍Adresa: Strada Ioan Alexandru 16-18, Arad.\nIndicații: Cum veniți de pe Blvd. Iuliu Maniu este în clădirea albă la penultima ușă de termopan. Dacă nu găsiți ne puteți contacta la +40750204243. Vă așteptăm cu drag!\nEchipa Centrul360'
+        ? 'Dragă {prenume}, vă reamintim că întâlnirea noastră este în 2 ore.\n📍Adresa: Strada Ioan Alexandru 16-18, Arad.\nIndicații: Cum veniți de pe Blvd. Iuliu Maniu este în clădirea albă la penultima ușă de termopan. Dacă nu găsiți ne puteți contacta la +40 750 277 394. Vă așteptăm cu drag!\nEchipa Centrul360'
         : 'Bună {prenume}! ⏰ Vă aștept peste ~2 ore, la ora {ora}. Reușiți să ajungeți?\n📍 ' + C.near + '\n\nPe curând! Raluca - Centrul360' });
     list.push({ key: 'review', label: 'Reamintiri · Recenzie · ' + c, category: 'MARKETING', headerType: '', pic: '', buttons: [],
       body: 'Bună, {prenume}! 🥰 Ne-a bucurat tare mult vizita ta la Centrul360! Dacă ți-a plăcut experiența, ne-ar ajuta enorm o recenzie sinceră pe Google. 💛 Ca mulțumire, îți oferim un masaj facial GRATUIT la următoarea vizită, un răsfăț din partea noastră 🎁\n\nLasă recenzia aici 👉 ' + C.review + ' și scrie-ne când ai făcut-o ca să-ți activăm cadoul. Abia așteptăm să te răsfățăm din nou! ❤️\nEchipa Centrul360' });

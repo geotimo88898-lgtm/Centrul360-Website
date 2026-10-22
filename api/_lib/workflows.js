@@ -405,12 +405,17 @@ function personOf(ctx) {
   const phone = (a && a.clientPhone) || (client && client.phone) || (l && l.phone) || '';
   return { name, phone };
 }
+// the first name as a client reads it: "evelin" / "EVELIN" (as typed in a form) → "Evelin"; one written with care stays
+function firstName(name) {
+  const w = String(name || '').trim().split(/\s+/)[0] || '';
+  return w === w.toLowerCase() || w === w.toUpperCase() ? w.toLowerCase().replace(/(^|[-'])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : w;
+}
 function vars(ctx, settings) {
   const a = ctx.appointment || {}, l = ctx.lead || {};
   const person = personOf(ctx);
   const loc = a.location || l.location || '';
   return {
-    prenume: person.name.trim().split(/\s+/)[0] || '', nume: person.name, telefon: person.phone,
+    prenume: firstName(person.name), nume: person.name, telefon: person.phone,
     data: roDate(a.date), ora: a.time || '', zi: a.date ? relDay(a.date) : '', tratament: a.treatment || l.interest || 'tratament',
     locatie: loc, adresa: (settings.addresses || {})[loc] || loc, interes: l.interest || a.treatment || 'tratamentele noastre',
     procedura: l.interest || a.treatment || 'tratament',
@@ -802,4 +807,5 @@ async function enrollUpcoming(wf) {
   }
 }
 
-module.exports = { enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };
+module.exports = {
+  firstName, enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };

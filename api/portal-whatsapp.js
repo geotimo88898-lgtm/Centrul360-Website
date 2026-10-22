@@ -283,7 +283,7 @@ module.exports = async (req, res) => {
       const tpl = all.find((t) => WT.approvedFor(t, n.wabaId)) || null;
       const name = String(body.name || (convo && convo.clientName !== convo.phone && convo.clientName) || '').trim().slice(0, 120);
       const treat = String(body.treatment || '').trim().slice(0, 150);
-      const v = { prenume: name.split(/\s+/)[0] || '', nume: name, tratament: treat || 'tratament', procedura: treat || 'tratament', interes: treat || 'tratament', locatie: city, telefon: phone };
+      const v = { prenume: require('./_lib/workflows').firstName(name), nume: name, tratament: treat || 'tratament', procedura: treat || 'tratament', interes: treat || 'tratament', locatie: city, telefon: phone };
       const fill = (t) => WT.friendly(t).replace(/\{(\w+)\}/g, (m, k) => v[k] || '');
       let r, text, type, templateId;
       if (convo && within24h(convo)) {
