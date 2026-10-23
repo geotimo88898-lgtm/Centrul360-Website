@@ -247,6 +247,7 @@
           C.map((id) => '<span title="' + esc(M[id].hint || '') + '">' + esc(M[id].label) + '</span>').join('') + '<span></span></div>' +
         '<div class="ad-list" data-list></div></div></div>';
     A.drawn = qsOf();
+    dockPeriod();
     paintStats();
     paintList();
     if (sx) body.querySelector('.ad-scroll').scrollLeft = sx;
@@ -329,6 +330,15 @@
       return '<div class="ad-cell' + (KEY.includes(id) ? ' is-key' : '') + '" data-l="' + esc(M[id].label) + '">' + (M[id].strong ? '<b>' + esc(v) + '</b>' : esc(v)) + '</div>';
     }).join('');
   }
+  // a phone: the period sits at the bottom of the screen, beside "Meniu" (on <body>: the panel's animation would carry a
+  // fixed bar along with the page); its changes go to the same handler
+  let dock = null;
+  function dockPeriod() {
+    const seg = panel.querySelector('.ad-bar > [data-k-seg="adperiod"]');
+    if (!seg || !(window.matchMedia && window.matchMedia('(max-width:720px)').matches)) return;
+    if (!dock) { dock = document.createElement('div'); dock.className = 'ad-dock'; dock.addEventListener('change', onChange); document.body.appendChild(dock); }
+    dock.replaceChildren(seg);
+  }
   // under a campaign: what the notifications said about it (last 3 days) and what the guard did to it, with the why
   const NOTE = { top: ['is-good', '🚀 TOP'], bad: ['is-bad', '⚠️ ATENȚIE'], watch: ['is-warn', '👀 De urmărit'] };
   function notesHtml(c) {
@@ -337,7 +347,7 @@
       (e.type === 'stop' && e.adName && e.adName !== e.campaignName ? e.adName + ': ' : '') + (e.why || '') + ' · ' + K.ago(e.at)]);
     const n = (c.notes || []).map((x) => [NOTE[x.flag][0], NOTE[x.flag][1], (x.ad ? x.ad + ': ' : '') + x.why.join(' · ') + ' (ultimele 3 zile)']);
     const all = g.concat(n);
-    return all.length ? '<div class="ad-notes">' + all.map(([tone, label, text]) => '<p class="ad-note ' + tone + '"><b>' + esc(label) + '</b><span>' + esc(text) + '</span></p>').join('') + '</div>' : '';
+    return all.length ? '<div class="ad-flags">' + all.map(([tone, label, text]) => '<p class="ad-flag ' + tone + '"><b>' + esc(label) + '</b><span>' + esc(text) + '</span></p>').join('') + '</div>' : '';
   }
   function campHtml(c) {
     return '<article class="k-card ad-camp' + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
@@ -451,7 +461,7 @@
     document.removeEventListener('mousedown', outsideRange, true);
     document.removeEventListener('keydown', escRange, true);
     // cancelled: the period chosen before stays lit
-    if (!apply) panel.querySelectorAll('[data-k-seg="adperiod"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === (A.range ? 'custom' : A.period)));
+    if (!apply) document.querySelectorAll('[data-k-seg="adperiod"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === (A.range ? 'custom' : A.period)));
   }
   const outsideRange = (e) => { if (rangeEl && !rangeEl.contains(e.target) && !e.target.closest('[data-v="custom"]')) closeRange(false); };
   const escRange = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeRange(false); } };
@@ -469,7 +479,8 @@
       '<div class="ad-range-acts"><button type="button" class="k-btn is-ghost is-sm" data-range-cancel>Renunță</button><button type="button" class="k-btn is-primary is-sm" data-range-ok>' + icon('check') + 'Aplică</button></div>';
     document.body.appendChild(m);
     const b = anchor.getBoundingClientRect();
-    m.style.top = (b.bottom + 6) + 'px';
+    // under its button, or above it when the button is at the bottom of the screen (a phone)
+    m.style.top = (b.bottom + 6 + m.offsetHeight > window.innerHeight ? Math.max(8, b.top - 6 - m.offsetHeight) : b.bottom + 6) + 'px';
     m.style.left = Math.max(8, Math.min(b.left, window.innerWidth - m.offsetWidth - 8)) + 'px';
     m.style.transformOrigin = 'top left';
     requestAnimationFrame(() => m.classList.add('is-open'));
