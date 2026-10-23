@@ -60,6 +60,29 @@ async function withFunnel(view, period, range, conn) {
   view.since = new Date(START).toISOString();
   return view;
 }
+// what the owner's notifications say about the ads (api/daily-report.js: the last 3 days' very good / very bad ones,
+// the same rules), laid on their campaign so Reclame shows which one each notification meant
+async function adNotes(conn, view) {
+  const today = bucharestDay(Date.now());
+  const n = await AC.cached('notes-' + today, 20 * 60e3, async () => {
+    const r = KPI.rangeOf('custom', { since: bucharestDay(Date.now() - 2 * 864e5), until: today });
+    const st = await KPI.adsFor(conn, r);
+    if (!st.rows) return { error: st.error || 'no rows' };
+    const [offers, leads, appointments, sales, clients] = await Promise.all([require('./_lib/offers').loadOffers(readJSON), readJSON('data/leads.json', []),
+      readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/clients.json', [])]);
+    const v = KPI.adsOf(KPI.model({ offers, leads, appointments, sales, clients }), r, st);
+    return { rows: v.rows.filter((a) => a.flag).map((a) => ({ id: a.id, name: a.name, flag: a.flag, why: a.why, active: a.status === 'ACTIVE' })) };
+  });
+  if (!n || !n.rows) return;
+  const byAd = new Map(n.rows.map((a) => [a.id, a]));
+  view.campaigns.forEach((c) => {
+    const ads = [];
+    c.adsets.forEach((s) => s.ads.forEach((a) => ads.push(a)));
+    // a bad one only while it runs (the notification said so too); one ad: its name is the campaign's, not repeated
+    c.notes = ads.map((a) => byAd.get(a.id)).filter((x) => x && (x.flag !== 'bad' && x.flag !== 'watch' || x.active))
+      .map((x) => ({ flag: x.flag, why: x.why, ad: ads.length > 1 ? x.name : '' }));
+  });
+}
 const renameLeads = (x) => { if (!x) return {}; const o = Object.assign({}, x); o.pLeads = o.leads; delete o.leads; return o; };
 // the pipeline's first stages, if none were ever saved (same as api/portal-leads.js)
 const DEFAULT_STAGES = [
@@ -137,6 +160,7 @@ module.exports = async (req, res) => {
       // without ads_management the page only reads (the switches would be refused)
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
       await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
+      await adNotes(conn, view).catch((e) => { console.error('ads-manager notes:', e.message); });
       const stopped = await guard.recent().catch(() => null);
       res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped }, view));
       return;

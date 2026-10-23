@@ -121,7 +121,7 @@ async function adAlerts(store, ids, day) {
   const bad = view.rows.filter((a) => a.flag === 'bad' && a.status === 'ACTIVE' && fresh(a)).slice(0, 3);
   const top = view.rows.filter((a) => a.flag === 'top' && fresh(a)).slice(0, 2);
   for (const a of bad.concat(top)) {
-    await notifyMany(store, ids, { kind: 'alert', tone: a.flag === 'bad' ? 'bad' : 'good', go: 'panou', tag: 'ad-' + a.id + '-' + day,
+    await notifyMany(store, ids, { kind: 'alert', tone: a.flag === 'bad' ? 'bad' : 'good', go: 'reclame', tag: 'ad-' + a.id + '-' + day,
       title: (a.flag === 'bad' ? 'ATENȚIE ⚠️ - reclama ' : 'RECLAMĂ TOP 🚀 - ') + String(a.name || 'fără nume').slice(0, 60), text: 'În 3 zile: ' + a.why.join(' · ') });
     said[a.id] = day;
   }
