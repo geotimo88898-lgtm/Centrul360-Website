@@ -13,7 +13,7 @@ const { createForm } = require('./fb-form-create');
 
 const KEY = 'data/hire-once.json';
 const JOBS = [
-  { id: 'cosmeticiana-tm-2026-10-24', city: 'Timișoara', job: 'Cosmeticiană', brut: '',
+  { id: 'cosmeticiana-tm-2026-10-24', city: 'Timișoara', job: 'Cosmeticiană', brut: '5.100', // ≈ 3.000 lei net
     picture: 'https://admin.centrul360.com/brand_asset/angajare-cosmeticiana-tm.jpg',
     form: {
       name: 'Angajare cosmeticiană Timișoara', location: 'Timișoara', fields: ['FULL_NAME', 'PHONE'],
