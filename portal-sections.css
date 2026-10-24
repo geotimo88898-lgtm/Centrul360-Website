@@ -2310,7 +2310,7 @@ main.ad-full{ max-width:none; }
 .cand-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; }
 .cand-top b{ display:block; font-size:1rem; }
 .cand-top small{ color:var(--muted); font-size:.78rem; }
-.cand-top select{ height:34px; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; padding:0 .5rem; }
+.cand-top select{ flex:none; width:auto; height:34px; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; padding:0 .5rem; }
 .cand-ans{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.3rem; font-size:.82rem; }
 .cand-ans li{ display:flex; justify-content:space-between; gap:.6rem; }
 .cand-ans span{ color:var(--muted); }
