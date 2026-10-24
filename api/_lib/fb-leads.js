@@ -55,6 +55,24 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   const phone = String(f.phone).replace(/\D/g, '').length >= 6 ? f.phone : isTest ? '0700 000 000' : (f.phone || 'fără telefon');
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email || '') ? f.email : '';
   const answers = extraAnswers(lead.field_data, form.questions);
+  // a job ad's form (api/_lib/hire-once.js): a candidate, kept apart from the clients, and the admins are told
+  if (form.kind === 'hiring') {
+    form.leads = (form.leads || 0) + 1;
+    form.lastAt = new Date().toISOString();
+    doc.seen = doc.seen.concat(leadgenId).slice(-1000);
+    await writeJSON(FORMS_KEY, doc);
+    const list = await readJSON('data/candidates.json', []);
+    const pairs = answerPairs(lead.field_data, form.questions);
+    list.unshift({ id: leadgenId, at: new Date().toISOString(), name: name || 'fără nume', phone, email, location: form.location || '', job: form.job || form.name,
+      answers: pairs, ad: lead.ad_name || '', formId, test: isTest || undefined });
+    await writeJSON('data/candidates.json', list.slice(0, 1000));
+    const employees = await readJSON('data/employees.json', []);
+    const ids = ['admin'].concat((employees || []).filter((e) => e.role === 'admin' && e.active !== false).map((e) => e.id));
+    const { notifyMany } = require('./notify');
+    await notifyMany({ readJSON, writeJSON }, [...new Set(ids)], { kind: 'alert', tone: 'info', go: 'angajati', tag: 'cand-' + leadgenId,
+      title: 'CANDIDAT NOU 💼 - ' + (name || 'fără nume'), text: [phone].concat(pairs.map((x) => x.q + ': ' + x.a)).join(' · ') });
+    return 'candidat nou: ' + (name || 'fără nume') + ' · ' + (form.job || form.name);
+  }
   const text = [form.name, lead.ad_name, lead.adset_name, lead.campaign_name].concat(answers).filter(Boolean).join(' · ');
   const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
   // what the person answered ("Oraș: Arad") says the city better than the form's name

@@ -35,6 +35,7 @@ jobs:
             [ -f tick.json ] && jq -c '{once} + (.ads | {checked, skipped, error, done: ((.done // []) | map(split(":")[0]) | group_by(.) | map({(.[0]): length}) | add)})' tick.json 2>/dev/null || true
             # the creative orders asked for in chat: how far they got, with the links to see them (ads that go public anyway)
             [ -f tick.json ] && jq -c '.creative // empty' tick.json 2>/dev/null || true
+            [ -f tick.json ] && jq -c '.hire // empty' tick.json 2>/dev/null || true
             [ "$code" = "200" ] && exit 0
             sleep 10
           done

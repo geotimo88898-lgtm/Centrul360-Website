@@ -26,6 +26,8 @@ module.exports = async (req, res) => {
   const once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   // the creative orders asked for in chat (api/_lib/creative-once.js)
   const creative = await require('./_lib/creative-once').run().catch((e) => ({ error: e.message }));
+  // the job ads asked for in chat (api/_lib/hire-once.js)
+  const hire = await require('./_lib/hire-once').run().catch((e) => ({ error: e.message }));
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative });
+  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire });
 };

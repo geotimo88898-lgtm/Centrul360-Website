@@ -2303,3 +2303,15 @@ main.ad-full{ max-width:none; }
 .ad-refresh.is-spinning .k-ic{ animation:k-spin .7s linear infinite; }
 .ad-refresh.is-spinning{ color:var(--accent); pointer-events:none; }
 @media (prefers-reduced-motion: reduce){ .ad-refresh.is-spinning .k-ic{ animation-duration:1.6s; } }
+
+/* Echipa → Candidați */
+.cand-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:.8rem; }
+.cand{ display:flex; flex-direction:column; gap:.7rem; padding:1rem; }
+.cand-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; }
+.cand-top b{ display:block; font-size:1rem; }
+.cand-top small{ color:var(--muted); font-size:.78rem; }
+.cand-top select{ height:34px; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; padding:0 .5rem; }
+.cand-ans{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.3rem; font-size:.82rem; }
+.cand-ans li{ display:flex; justify-content:space-between; gap:.6rem; }
+.cand-ans span{ color:var(--muted); }
+.cand-acts{ display:flex; gap:.5rem; flex-wrap:wrap; }

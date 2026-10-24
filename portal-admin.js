@@ -231,14 +231,28 @@
     if (TEAM.tab === 'salarii') renderPayroll();
     if (TEAM.tab === 'condica' && K.mountCondica) K.mountCondica(epanel.querySelector('[data-cond]'));
     if (TEAM.tab === 'manual') loadManual();
+    if (TEAM.tab === 'candidati') loadCandidates();
+  }
+  // ---- Candidați: who applied through a job ad's form (api/portal-candidates.js)
+  const CAND_ST = [['nou', 'Nou'], ['sunat', 'Sunat'], ['interviu', 'Interviu'], ['angajat', 'Angajat'], ['respins', 'Respins']];
+  async function loadCandidates(list) {
+    const box = epanel.querySelector('[data-cand]');
+    if (!list) { box.innerHTML = K.skeleton ? K.skeleton(3) : ''; try { list = (await K.api('/api/portal-candidates')).candidates || []; } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca candidații', K.errText(e)); return; } }
+    box.innerHTML = list.length ? '<div class="cand-list">' + list.map((c) => '<article class="k-card cand">' +
+      '<div class="cand-top"><div><b>' + esc(c.name) + '</b><small>' + esc([c.job, c.location, K.ago(c.at)].filter(Boolean).join(' · ')) + '</small></div>' +
+        '<select data-cand-st="' + esc(c.id) + '">' + CAND_ST.map(([v, l]) => '<option value="' + v + '"' + ((c.status || 'nou') === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
+      (c.answers && c.answers.length ? '<ul class="cand-ans">' + c.answers.map((x) => '<li><span>' + esc(x.q) + '</span><b>' + esc(x.a) + '</b></li>').join('') + '</ul>' : '') +
+      '<div class="cand-acts"><a class="k-btn is-sm is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + esc(c.phone) + '</a>' +
+        '<a class="k-btn is-sm is-ghost" href="https://wa.me/' + esc(K.intlPhone ? K.intlPhone(c.phone) : String(c.phone).replace(/\D/g, '')) + '" target="_blank" rel="noopener">WhatsApp</a></div>' +
+      '</article>').join('') + '</div>' : K.empty('userPlus', 'Niciun candidat încă', 'Cei care aplică la reclamele de angajare apar aici.');
   }
   function mountTeam(p) {
     epanel = p;
     epanel.classList.add('k-panel', 'ad');
     epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
-      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
-      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
+      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
+      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();
       const c = e.target.closest('[data-emp]');
@@ -250,7 +264,11 @@
       const md = e.target.closest('[data-man-del]');
       if (md) delManual(md.dataset.manDel, md.dataset.kind);
     });
-    epanel.addEventListener('change', (e) => { if (e.target.name === 'teamtab') { TEAM.tab = e.target.value; showTeamTab(); } });
+    epanel.addEventListener('change', async (e) => {
+      if (e.target.name === 'teamtab') { TEAM.tab = e.target.value; showTeamTab(); }
+      const cs = e.target.closest('[data-cand-st]');
+      if (cs) { try { loadCandidates((await K.api('/api/portal-candidates', { id: cs.dataset.candSt, status: cs.value })).candidates); } catch (err) { K.ui().toast(K.errText(err), 'error'); } }
+    });
   }
   function empStats(e) {
     const A = K.data.admin, month = K.thisMonth();

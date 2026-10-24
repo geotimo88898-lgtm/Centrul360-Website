@@ -165,6 +165,7 @@ function cleanSettings(x) {
   s.description = str(x.description, 255);
   s.cta = CTAS.includes(x.cta) ? x.cta : 'LEARN_MORE';
   s.startNow = x.startNow !== false;
+  s.employment = x.employment === true; // a job ad (api/_lib/hire-once.js)
   if (!s.adName) return { error: 'missing_names' };
   if (!s.formId) return { error: 'missing_form' };
   if (!s.primaryText) return { error: 'missing_text' };
@@ -188,7 +189,9 @@ function targeting(s) {
     // exactly the audience she set (no Advantage+ widening)
     targeting_automation: { advantage_audience: 0 },
   };
-  if (s.women) t.genders = [2];
+  if (s.women && !s.employment) t.genders = [2];
+  // a job ad: Meta's rules for employment (everyone 18-65, at least 15 miles / 25 km around, no detailed targeting)
+  if (s.employment) { t.age_min = 18; t.age_max = 65; t.geo_locations.custom_locations[0].radius = Math.max(25, s.radiusKm); delete t.targeting_automation; }
   if (fb.length) t.facebook_positions = fb;
   if (ig.length) t.instagram_positions = ig;
   return t;
@@ -210,7 +213,8 @@ async function publish(conn, image, s) {
     let campaignId = '', adsetId = s.adsetId;
     if (!adsetId) {
       const camp = await call('POST', '/' + act + '/campaigns', tok, {
-        name: s.campaignName, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: [], buying_type: 'AUCTION',
+        name: s.campaignName, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: s.employment ? ['EMPLOYMENT'] : [], buying_type: 'AUCTION',
+        special_ad_category_country: s.employment ? ['RO'] : undefined,
         is_adset_budget_sharing_enabled: false,
       });
       if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
