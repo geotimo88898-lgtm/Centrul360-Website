@@ -22,8 +22,8 @@ const JOBS = [
 const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u'] };
 // the ones that weren't good enough: redone once with this instruction (Creative's own "Refă"), then looked at again
 const REWORK = {
-  cmvmsbvkiwxyqoo: { mode: 'edit', instruction: 'Corectează titlul: „8 locuri pe săptămână la” (lipsește ă la final în „săptămână”). Agenda de jos trebuie să fie în română: „PROGRAMĂRI RECEPȚIE” în loc de „RECEPTION APPOINTMENT”, zilele „Luni”, „Marți”, „Miercuri” în loc de Monday/Tuesday/Wednesday. Restul rămâne la fel.' },
-  cmvmsbv5e47rt32: { mode: 'regen', instruction: '' },
+  cmvmsbvkiwxyqoo: { mode: 'edit', instruction: 'Rescrie titlul din caseta albă EXACT așa: „8 locuri pe săptămână la” (cuvântul „săptămână” are 9 litere și se termină cu „ă”: s-ă-p-t-ă-m-â-n-ă). Pe aparat scrie corect „LipoSonix”. Agenda rămâne în română. Nimic altceva nu se schimbă.' },
+  cmvmsbv5e47rt32: { mode: 'edit', instruction: 'Scoate complet cele două X-uri roșii de peste text: textul rămâne curat „FĂRĂ ACE. FĂRĂ EFORT.” fără nimic tăiat. Sus stânga pune logo-ul corect „CENTRUL360” (scoate „6%”). Restul rămâne la fel.' },
 };
 
 // Creative names an offer by its key (a few old ones by their old name, web/src/lib/data.ts LEGACY_IDS)
@@ -97,9 +97,9 @@ async function run() {
     st.reworked = st.reworked || {};
     for (const c of mine) {
       const w = REWORK[c.id];
-      if (!w || st.reworked[c.id] || c.status !== 'approved') continue;
-      try { await api(cookie, '/api/creatives/' + c.id + '/rework', { method: 'POST', body: JSON.stringify(w) }); st.reworked[c.id] = new Date().toISOString(); }
-      catch (e) { st.reworked[c.id] = 'error: ' + e.message; }
+      if (!w || st.reworked[c.id + '|' + w.instruction] || c.status !== 'approved') continue; // each instruction once
+      try { await api(cookie, '/api/creatives/' + c.id + '/rework', { method: 'POST', body: JSON.stringify(w) }); st.reworked[c.id + '|' + w.instruction] = new Date().toISOString(); }
+      catch (e) { st.reworked[c.id + '|' + w.instruction] = 'error: ' + e.message; }
     }
     const pub = [];
     for (const id of (PUBLISH[job.id] || []).filter((x) => !st.published[x]).slice(0, 2)) { // 2 a tick (each takes ~20 s)
