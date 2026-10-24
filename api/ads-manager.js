@@ -162,6 +162,10 @@ module.exports = async (req, res) => {
       await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
       await adNotes(conn, view).catch((e) => { console.error('ads-manager notes:', e.message); });
       const stopped = await guard.recent().catch(() => null);
+      // the one-off changes asked for (api/_lib/ads-once.js) show with the guard's, under their campaign
+      const once = (await readJSON('data/ads-once.json', {}).catch(() => ({}))) || {};
+      if (stopped) stopped.log = (once.log || []).filter((e) => Date.parse(e.at) > Date.now() - 3 * 864e5)
+        .map((e) => Object.assign({ type: 'up', why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1));
       res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped }, view));
       return;
     }

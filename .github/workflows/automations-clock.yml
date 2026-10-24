@@ -32,7 +32,7 @@ jobs:
             code=$(curl -s -o tick.json -m 60 -w "%{http_code}" "${auth[@]}" "https://admin.centrul360.com/api/automation-tick?light=1") || code=000
             echo "automation-tick: $code"
             # what the ads guard did, counts only (the repository is public: no campaign names in its logs)
-            [ -f tick.json ] && jq -c '.ads | {checked, skipped, error, done: ((.done // []) | map(split(":")[0]) | group_by(.) | map({(.[0]): length}) | add)}' tick.json 2>/dev/null || true
+            [ -f tick.json ] && jq -c '{once} + (.ads | {checked, skipped, error, done: ((.done // []) | map(split(":")[0]) | group_by(.) | map({(.[0]): length}) | add)})' tick.json 2>/dev/null || true
             [ "$code" = "200" ] && exit 0
             sleep 10
           done
