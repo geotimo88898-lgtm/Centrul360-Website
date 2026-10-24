@@ -19,7 +19,7 @@ const JOBS = [
     note: 'Exact 2 creative LipoSonix și 2 creative HIFU gușă, toate 4 pentru Arad. Fiecare alt tip de reclamă, să se vadă clar ce vindem (corp, siluetă, bărbie, clinica sau aparatul).' },
 ];
 // the creatives seen and good to go (ids), per job
-const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u', 'cmvmsbv5e47rt32'] };
+const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u', 'cmvmsbv5e47rt32', 'cmvmsbvkiwxyqoo'] };
 // the ones that weren't good enough: redone once with this instruction (Creative's own "Refă"), then looked at again
 const REWORK = {
   cmvmsbvkiwxyqoo: { mode: 'edit', instruction: 'Șterge tot scrisul de pe agenda de jos (titlul „Reception Appointment book”, „Weekly agenda” și orice altceva scris pe ea): rămân doar căsuțele, unele bifate. Șterge și scrisul de pe aparat („LipeSonix”): aparatul rămâne alb, fără text. Titlul din caseta albă, prețurile și restul rămân exact cum sunt.' },
