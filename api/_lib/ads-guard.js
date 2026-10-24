@@ -148,7 +148,9 @@ async function guard(opts) {
   if (res.error) return { error: res.error };
   const allLeads = await readJSON('data/leads.json', []);
   const mine = portalLeads(allLeads, since, until);
-  const rows = res.rows.map((x) => Object.assign({}, x, { leads: Math.max(x.metaLeads, mine.ad.get(x.adId) || 0) }));
+  // a job ad (api/_lib/hire-once.js) brings candidates, not clients: no booking or money to judge it by
+  const job = (name) => /angajare/i.test(String(name || ''));
+  const rows = res.rows.filter((x) => !job(x.campaignName)).map((x) => Object.assign({}, x, { leads: Math.max(x.metaLeads, mine.ad.get(x.adId) || 0) }));
   const spent = rows.reduce((n, x) => n + x.spend, 0), got = rows.reduce((n, x) => n + x.leads, 0);
   if (spent >= SUSPECT_SPEND && !got) return { skipped: 'no_leads_counted', spent };
 
@@ -188,7 +190,7 @@ async function guard(opts) {
   // ---- BUDGET (per campaign, on its days)
   const days = await ads.campaignDays(conn, { since, until });
   const camps = new Map();
-  if (!days.error) days.rows.forEach((d) => {
+  if (!days.error) days.rows.filter((d) => !job(d.campaignName)).forEach((d) => {
     const c = camps.get(d.campaignId) || { id: d.campaignId, name: d.campaignName, spend7: 0, leads7: 0, spend3: 0, leads3: 0, spendY: 0, days: [] };
     const leads = Math.max(d.metaLeads, mine.campDay.get(d.campaignId + '|' + d.day) || 0);
     c.days.push({ day: d.day, spend: d.spend, leads });
