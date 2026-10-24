@@ -21,6 +21,9 @@ const JOBS = [
 // the creatives seen and good to go (ids), per job
 const PUBLISH = {};
 
+// Creative names an offer by its key (a few old ones by their old name, web/src/lib/data.ts LEGACY_IDS)
+const LEGACY = { 'liposonix-2zone': 'liposonix', 'cavitatie-ems': 'cavitatie-ems-tm', 'cavitatie-1plus1': 'cavitatie-1plus1-arad' };
+const creativeId = (o) => LEGACY[o.key] || o.key;
 const sign = (secret, s) => crypto.createHmac('sha256', secret).update(s).digest('hex');
 function previewLink(secret, path) {
   return 'https://admin.centrul360.com/api/creative-preview?p=' + encodeURIComponent(path) + '&k=' + sign(secret, 'preview:' + path).slice(0, 32);
@@ -70,7 +73,7 @@ async function run() {
   for (const job of open) {
     const st = doc.jobs[job.id] = doc.jobs[job.id] || { published: {} };
     if (!st.requestId) {
-      const ids = job.offers.map((re) => (offers.find((o) => o.active !== false && re.test(o.title || o.key || '')) || {}).id).filter(Boolean);
+      const ids = job.offers.map((re) => offers.find((o) => o.active !== false && o.ads !== false && re.test(o.title || o.key || ''))).filter(Boolean).map(creativeId);
       if (ids.length !== job.offers.length) { out[job.id] = { error: 'offer_missing' }; continue; }
       const r = await api(cookie, '/api/requests', { method: 'POST', body: JSON.stringify({ count: job.count, offerIds: ids, cities: [job.cityId], ratios: ['4:5'], note: job.note }) });
       st.requestId = r.id; st.at = new Date().toISOString();
@@ -79,13 +82,18 @@ async function run() {
     }
     const [reqs, all] = await Promise.all([api(cookie, '/api/requests'), api(cookie, '/api/creatives')]);
     const req = (Array.isArray(reqs) ? reqs : []).find((x) => x.id === st.requestId) || {};
+    // failed (a wrong offer name, 24.10): ordered again on this tick, at most 3 times
+    if (req.status === 'failed' && (st.tries || 1) < 3) { st.tries = (st.tries || 1) + 1; st.failed = (st.failed || []).concat(st.requestId); delete st.requestId; }
+    if (!st.requestId) { const ids = job.offers.map((re) => offers.find((o) => o.active !== false && o.ads !== false && re.test(o.title || o.key || ''))).filter(Boolean).map(creativeId);
+      const r = await api(cookie, '/api/requests', { method: 'POST', body: JSON.stringify({ count: job.count, offerIds: ids, cities: [job.cityId], ratios: ['4:5'], note: job.note }) });
+      st.requestId = r.id; out[job.id] = { ordered: r.id, offers: ids }; continue; }
     const mine = (Array.isArray(all) ? all : []).filter((c) => c.requestId === st.requestId);
     const d = await ads.loadDefaults(readJSON);
     const pub = [];
     for (const id of (PUBLISH[job.id] || []).filter((x) => !st.published[x]).slice(0, 2)) { // 2 a tick (each takes ~20 s)
       const c = mine.find((x) => x.id === id);
       if (!c || st.published[id] || c.status !== 'approved' || (c.meta && c.meta.length)) continue;
-      const offer = offers.find((o) => o.id === c.offerId);
+      const offer = offers.find((o) => creativeId(o) === c.offerId);
       if (!offer) { pub.push(id + ': offer_missing'); continue; }
       try {
         const r = await api(cookie, '/api/creatives/' + id + '/publish', { method: 'POST', body: JSON.stringify({ settings: settingsFor(c, offer, job, d) }) });
@@ -94,7 +102,7 @@ async function run() {
       } catch (e) { pub.push(id + ': ' + e.message); }
     }
     out[job.id] = { request: req.status, error: req.error, log: (req.log || []).slice(-4).map((l) => l.msg), published: pub, creatives: mine.map((c) => { const v = (c.versions || []).slice(-1)[0];
-      return { id: c.id, offer: (offers.find((o) => o.id === c.offerId) || {}).title, status: c.status, format: c.format, preview: v ? previewLink(secret, v.path) : '',
+      return { id: c.id, offer: (offers.find((o) => creativeId(o) === c.offerId) || {}).title, status: c.status, format: c.format, preview: v ? previewLink(secret, v.path) : '',
         hook: c.copy && c.copy.hook, text: c.copy && ((c.copy.primary_texts || [])[0] || c.copy.primary_text), headline: c.copy && ((c.copy.headlines || [])[0] || c.copy.headline) }; }) };
     if ((PUBLISH[job.id] || []).length && (PUBLISH[job.id] || []).every((id) => st.published[id])) st.closed = true;
   }
