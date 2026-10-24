@@ -240,7 +240,7 @@
       (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
       (d.stale ? '<p class="k-muted ad-partial">Meta limitează acum citirile contului: cifrele sunt de la ' + esc(new Date(d.stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.</p>' : '') +
       // the ads the guard stopped in the last 3 days (api/_lib/ads-guard.js)
-      (d.guard && d.guard.log && d.guard.log.length ? '<p class="k-muted ad-partial">Automat: ' + d.guard.log.slice(0, 6).map((e) => (e.type === 'up' ? '📈 ' : e.type === 'down' ? '📉 ' : '⛔ ') + '<b>' + esc(e.campaignName || e.adName) + '</b> ' +
+      (d.guard && d.guard.log && d.guard.log.length ? '<p class="k-muted ad-partial">Automat: ' + d.guard.log.slice(0, 6).map((e) => (e.type === 'up' ? '📈 ' : e.trim ? '✂️ ' : e.type === 'down' ? '📉 ' : '⛔ ') + '<b>' + esc(e.campaignName || e.adName) + '</b> ' +
         (e.type === 'stop' ? '(' + esc(e.why || (money(e.spend) + ', ' + (e.leads ? K.plural(e.leads, 'lead', 'leaduri') : 'niciun lead'))) + ')' : esc(e.from + ' → ' + e.to + ' lei/zi'))).join(' · ') + '</p>' : '') +
       '<div class="ad-scroll"><div class="ad-table" style="--ad-cols:minmax(300px,1.6fr) repeat(' + C.length + ',minmax(116px,1fr)) 84px;--ad-minw:' + minw + 'px">' +
         '<div class="ad-head-row"><span class="ad-head-name"><label class="ad-pick" title="Selectează toate campaniile afișate"><input type="checkbox" data-pick-all></label>Campanie</span>' +
@@ -343,7 +343,7 @@
   const NOTE = { top: ['is-good', '🚀 TOP'], bad: ['is-bad', '⚠️ ATENȚIE'], watch: ['is-warn', '👀 De urmărit'] };
   function notesHtml(c) {
     const g = (A.d.guard && A.d.guard.log || []).filter((e) => e.campaignId === c.id).map((e) => [e.type === 'up' ? 'is-good' : 'is-bad',
-      e.type === 'up' ? '📈 Buget mărit ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'down' ? '📉 Buget înapoi ' + e.from + ' → ' + e.to + ' lei/zi' : '⛔ Oprită automat',
+      e.type === 'up' ? '📈 Buget mărit ' + e.from + ' → ' + e.to + ' lei/zi' : e.trim ? '✂️ Buget scăzut ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'down' ? '📉 Buget înapoi ' + e.from + ' → ' + e.to + ' lei/zi' : '⛔ Oprită automat',
       (e.type === 'stop' && e.adName && e.adName !== e.campaignName ? e.adName + ': ' : '') + (e.why || '') + ' · ' + K.ago(e.at)]);
     const n = (c.notes || []).map((x) => [NOTE[x.flag][0], NOTE[x.flag][1], (x.ad ? x.ad + ': ' : '') + x.why.join(' · ') + ' (ultimele 3 zile)']);
     const all = g.concat(n);

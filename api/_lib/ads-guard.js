@@ -51,6 +51,11 @@ const BOOK = { age: 2, days: 30, killLeads: 8, kill: 0.30, killFloor: 60, junkLe
 const MONEY = { age: 28, days: 90, booked: 5, spend: 100, kill: 1, raise: 2 };
 const SCALE = { cpl7: 12, leads7: 4, cpl3: 13, leads3: 2, used: 0.7, step: 1.2, cap: 150, gapH: 48, backGapH: 7 * 24, perRun: 3, from: 6, to: 12, maxFreq: 2.5, perCityDay: 2 };
 const BACK = { cpl: 15, noLeadSpend: 30 };
+// the owners, 24.10: Timișoara has more bookings than room ("nu am unde să mai pun programările"), less spent overall,
+// Arad as it is. Timișoara's budgets come down once by 40% and aren't raised again (till this changes here); Arad keeps
+// the usual rules.
+const NO_RAISE = new Set(['TM']);
+const TRIM = { id: 'tm-2026-10-24', city: 'TM', factor: 0.6, min: 10, why: 'Timișoara e plină de programări: mai puțin buget acolo (decizia voastră din 24.10)' };
 const DEFAULT_PRICE = 190;
 // the city a campaign is for, from its name (AR… / TM…, Arad / Timișoara)
 const cityOf = (name) => (/(^|[^a-z])ar([^a-z]|$)|arad/i.test(String(name)) ? 'AR' : /(^|[^a-z])tm([^a-z]|$)|timi/i.test(String(name)) ? 'TM' : '?' + name);
@@ -203,6 +208,7 @@ async function guard(opts) {
   const no = (c, why) => { skipped.push({ campaign: c.name, why }); };
   for (const c of camps.values()) {
     if (offCamps.has(c.id)) continue;
+    if (NO_RAISE.has(cityOf(c.name))) continue; // no raise, and a trim isn't "taken back"
     const last = lastBudget(c.id);
     const since48 = !last || now - Date.parse(last.at) >= (last.type === 'down' ? SCALE.backGapH : SCALE.gapH) * 3600e3;
     // back: a raise that made the leads dearer, judged on the days since it
@@ -295,6 +301,18 @@ async function guard(opts) {
     if (r.error) { console.error('ads-guard down:', c.id, r.error); continue; }
     done.push({ type: 'down', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to: last.from, why: whyDown(c) });
     await tell({ tone: 'bad', tag: 'guard-down-' + c.id, title: '📉 Buget înapoi: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + last.from + ' lei/zi', text: whyDown(c) + '.' });
+  }
+  // the one-off trim: each campaign of that city that spent this week, once (a campaign already trimmed isn't again)
+  const trimmed = new Set((doc.log || []).filter((e) => e.trim === TRIM.id).map((e) => e.campaignId));
+  for (const c of camps.values()) {
+    if (cityOf(c.name) !== TRIM.city || trimmed.has(c.id) || offCamps.has(c.id)) continue;
+    const b = await ads.budgetOf(conn, c.id);
+    if (b.error || !(b.daily > TRIM.min)) continue;
+    const to = Math.max(TRIM.min, Math.round(b.daily * TRIM.factor));
+    const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
+    if (r.error) { console.error('ads-guard trim:', c.id, r.error); continue; }
+    done.push({ type: 'down', trim: TRIM.id, at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why: TRIM.why });
+    await tell({ tone: 'bad', tag: 'guard-trim-' + c.id, title: '✂️ Buget scăzut: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + to + ' lei/zi', text: TRIM.why + '.' });
   }
   if (done.length) {
     const cur = Object.assign({ on: true, log: [] }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
