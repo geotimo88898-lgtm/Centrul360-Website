@@ -22,7 +22,7 @@ const JOBS = [
         { label: 'Câtă experiență ai?', options: ['Abia am terminat cursul', 'Sub 1 an', '1-3 ani', 'Peste 3 ani'] },
         { label: 'Când poți începe?', options: ['Imediat', 'În 2 săptămâni', 'Într-o lună sau mai mult'] },
       ],
-      ending: { title: 'Mulțumim!', body: 'Ne uităm peste răspunsuri și te sunăm noi în zilele următoare.' },
+      ending: { title: 'Mulțumim!', body: 'Ne uităm peste răspunsuri și te sunăm noi în zilele următoare.', whatsapp: '+40750452002' }, // the Timișoara clinic's (site)
     },
     text: (brut) => 'Angajăm cosmeticiană în Timișoara.\n\n💰 Salariu de bază ' + brut + ' lei brut + comision din vânzări\n📈 Creștere salarială după performanță și vechime\n🎓 Cerem doar diploma de cosmeticiană\n📅 Clientele vin din reclamele noastre, agenda e deja plină\n\n👉 Aplică în 30 de secunde din formular, te sunăm noi.',
     headline: 'Angajăm cosmeticiană în Timișoara', description: 'Centrul360 Timișoara' },
