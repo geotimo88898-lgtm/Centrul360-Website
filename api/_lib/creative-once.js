@@ -93,7 +93,7 @@ async function run() {
         pub.push(id + ': ' + (r.record && r.record.campaignId));
       } catch (e) { pub.push(id + ': ' + e.message); }
     }
-    out[job.id] = { request: req.status, published: pub, creatives: mine.map((c) => { const v = (c.versions || []).slice(-1)[0];
+    out[job.id] = { request: req.status, error: req.error, log: (req.log || []).slice(-4).map((l) => l.msg), published: pub, creatives: mine.map((c) => { const v = (c.versions || []).slice(-1)[0];
       return { id: c.id, offer: (offers.find((o) => o.id === c.offerId) || {}).title, status: c.status, format: c.format, preview: v ? previewLink(secret, v.path) : '',
         hook: c.copy && c.copy.hook, text: c.copy && ((c.copy.primary_texts || [])[0] || c.copy.primary_text), headline: c.copy && ((c.copy.headlines || [])[0] || c.copy.headline) }; }) };
     if ((PUBLISH[job.id] || []).length && (PUBLISH[job.id] || []).every((id) => st.published[id])) st.closed = true;
