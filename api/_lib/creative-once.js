@@ -19,7 +19,12 @@ const JOBS = [
     note: 'Exact 2 creative LipoSonix și 2 creative HIFU gușă, toate 4 pentru Arad. Fiecare alt tip de reclamă, să se vadă clar ce vindem (corp, siluetă, bărbie, clinica sau aparatul).' },
 ];
 // the creatives seen and good to go (ids), per job
-const PUBLISH = {};
+const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u'] };
+// the ones that weren't good enough: redone once with this instruction (Creative's own "Refă"), then looked at again
+const REWORK = {
+  cmvmsbvkiwxyqoo: { mode: 'edit', instruction: 'Corectează titlul: „8 locuri pe săptămână la” (lipsește ă la final în „săptămână”). Agenda de jos trebuie să fie în română: „PROGRAMĂRI RECEPȚIE” în loc de „RECEPTION APPOINTMENT”, zilele „Luni”, „Marți”, „Miercuri” în loc de Monday/Tuesday/Wednesday. Restul rămâne la fel.' },
+  cmvmsbv5e47rt32: { mode: 'regen', instruction: '' },
+};
 
 // Creative names an offer by its key (a few old ones by their old name, web/src/lib/data.ts LEGACY_IDS)
 const LEGACY = { 'liposonix-2zone': 'liposonix', 'cavitatie-ems': 'cavitatie-ems-tm', 'cavitatie-1plus1': 'cavitatie-1plus1-arad' };
@@ -89,6 +94,13 @@ async function run() {
       st.requestId = r.id; out[job.id] = { ordered: r.id, offers: ids }; continue; }
     const mine = (Array.isArray(all) ? all : []).filter((c) => c.requestId === st.requestId);
     const d = await ads.loadDefaults(readJSON);
+    st.reworked = st.reworked || {};
+    for (const c of mine) {
+      const w = REWORK[c.id];
+      if (!w || st.reworked[c.id] || c.status !== 'approved') continue;
+      try { await api(cookie, '/api/creatives/' + c.id + '/rework', { method: 'POST', body: JSON.stringify(w) }); st.reworked[c.id] = new Date().toISOString(); }
+      catch (e) { st.reworked[c.id] = 'error: ' + e.message; }
+    }
     const pub = [];
     for (const id of (PUBLISH[job.id] || []).filter((x) => !st.published[x]).slice(0, 2)) { // 2 a tick (each takes ~20 s)
       const c = mine.find((x) => x.id === id);
