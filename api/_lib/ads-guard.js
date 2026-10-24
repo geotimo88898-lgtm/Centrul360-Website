@@ -56,6 +56,9 @@ const BACK = { cpl: 15, noLeadSpend: 30 };
 // the usual rules.
 const NO_RAISE = new Set(['TM']);
 const TRIM = { id: 'tm-2026-10-24', city: 'TM', factor: 0.6, min: 10, why: 'Timișoara e plină de programări: mai puțin buget acolo (decizia voastră din 24.10)' };
+// and Arad's LipoSonix / gușă campaigns get more, once, +30% (at most the usual 150 lei a day); like any raise, it goes
+// back after 48 hours if the lead got dearer
+const BOOST = { id: 'ar-lipo-gusa-2026-10-24', city: 'AR', match: /lipo|gu[sș][aă]|b[aă]rbi|hifu/i, factor: 1.3, why: 'Arad are loc de programări: mai mult buget la LipoSonix și gușă (decizia voastră din 24.10)' };
 const DEFAULT_PRICE = 190;
 // the city a campaign is for, from its name (AR… / TM…, Arad / Timișoara)
 const cityOf = (name) => (/(^|[^a-z])ar([^a-z]|$)|arad/i.test(String(name)) ? 'AR' : /(^|[^a-z])tm([^a-z]|$)|timi/i.test(String(name)) ? 'TM' : '?' + name);
@@ -313,6 +316,18 @@ async function guard(opts) {
     if (r.error) { console.error('ads-guard trim:', c.id, r.error); continue; }
     done.push({ type: 'down', trim: TRIM.id, at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why: TRIM.why });
     await tell({ tone: 'bad', tag: 'guard-trim-' + c.id, title: '✂️ Buget scăzut: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + to + ' lei/zi', text: TRIM.why + '.' });
+  }
+  const boosted = new Set((doc.log || []).filter((e) => e.boost === BOOST.id).map((e) => e.campaignId));
+  for (const c of camps.values()) {
+    if (cityOf(c.name) !== BOOST.city || !BOOST.match.test(c.name) || boosted.has(c.id) || offCamps.has(c.id)) continue;
+    const b = await ads.budgetOf(conn, c.id);
+    if (b.error || !(b.daily > 0) || b.daily >= SCALE.cap) continue;
+    const to = Math.min(SCALE.cap, Math.round(b.daily * BOOST.factor));
+    if (to <= b.daily) continue;
+    const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
+    if (r.error) { console.error('ads-guard boost:', c.id, r.error); continue; }
+    done.push({ type: 'up', boost: BOOST.id, at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why: BOOST.why });
+    await tell({ tone: 'good', tag: 'guard-boost-' + c.id, title: '📈 Buget mărit: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + to + ' lei/zi', text: BOOST.why + '.' });
   }
   if (done.length) {
     const cur = Object.assign({ on: true, log: [] }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
