@@ -19,11 +19,10 @@ const JOBS = [
     note: 'Exact 2 creative LipoSonix și 2 creative HIFU gușă, toate 4 pentru Arad. Fiecare alt tip de reclamă, să se vadă clar ce vindem (corp, siluetă, bărbie, clinica sau aparatul).' },
 ];
 // the creatives seen and good to go (ids), per job
-const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u'] };
+const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u', 'cmvmsbv5e47rt32'] };
 // the ones that weren't good enough: redone once with this instruction (Creative's own "Refă"), then looked at again
 const REWORK = {
-  cmvmsbvkiwxyqoo: { mode: 'edit', instruction: 'Rescrie titlul din caseta albă EXACT așa: „8 locuri pe săptămână la” (cuvântul „săptămână” are 9 litere și se termină cu „ă”: s-ă-p-t-ă-m-â-n-ă). Pe aparat scrie corect „LipoSonix”. Agenda rămâne în română. Nimic altceva nu se schimbă.' },
-  cmvmsbv5e47rt32: { mode: 'edit', instruction: 'Scoate complet cele două X-uri roșii de peste text: textul rămâne curat „FĂRĂ ACE. FĂRĂ EFORT.” fără nimic tăiat. Sus stânga pune logo-ul corect „CENTRUL360” (scoate „6%”). Restul rămâne la fel.' },
+  cmvmsbvkiwxyqoo: { mode: 'regen', instruction: 'regen-2' }, // the title's typo stayed after 2 fixes: made anew
 };
 
 // Creative names an offer by its key (a few old ones by their old name, web/src/lib/data.ts LEGACY_IDS)
