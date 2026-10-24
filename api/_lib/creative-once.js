@@ -70,7 +70,7 @@ async function run() {
   const secret = process.env.CREATIVE_SSO_SECRET;
   if (!secret) return { skipped: 'no_secret' };
   const doc = Object.assign({ jobs: {} }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
-  const open = JOBS.filter((j) => !(doc.jobs[j.id] && doc.jobs[j.id].closed));
+  const open = JOBS.filter((j) => !(doc.jobs[j.id] && doc.jobs[j.id].done));
   if (!open.length) return { skipped: 'nothing' };
   const cookie = await session(secret);
   const offers = await loadOffers(readJSON);
@@ -116,7 +116,8 @@ async function run() {
     out[job.id] = { request: req.status, error: req.error, log: (req.log || []).slice(-4).map((l) => l.msg), published: pub, creatives: mine.map((c) => { const v = (c.versions || []).slice(-1)[0];
       return { id: c.id, offer: (offers.find((o) => creativeId(o) === c.offerId) || {}).title, status: c.status, format: c.format, preview: v ? previewLink(secret, v.path) : '',
         hook: c.copy && c.copy.hook, text: c.copy && ((c.copy.primary_texts || [])[0] || c.copy.primary_text), headline: c.copy && ((c.copy.headlines || [])[0] || c.copy.headline) }; }) };
-    if ((PUBLISH[job.id] || []).length && (PUBLISH[job.id] || []).every((id) => st.published[id])) st.closed = true;
+    // done: every creative of the order went to Meta, or 3 days passed (the ones left aren't wanted)
+    if ((mine.length && mine.every((c) => st.published[c.id])) || Date.now() - Date.parse(st.at || 0) > 3 * 864e5) st.done = true;
   }
   await writeJSON(KEY, doc, { quiet: true });
   return out;
