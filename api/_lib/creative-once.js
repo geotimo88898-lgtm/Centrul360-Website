@@ -22,7 +22,7 @@ const JOBS = [
 const PUBLISH = { 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u', 'cmvmsbv5e47rt32'] };
 // the ones that weren't good enough: redone once with this instruction (Creative's own "Refă"), then looked at again
 const REWORK = {
-  cmvmsbvkiwxyqoo: { mode: 'regen', instruction: 'regen-2' }, // the title's typo stayed after 2 fixes: made anew
+  cmvmsbvkiwxyqoo: { mode: 'edit', instruction: 'Șterge tot scrisul de pe agenda de jos (titlul „Reception Appointment book”, „Weekly agenda” și orice altceva scris pe ea): rămân doar căsuțele, unele bifate. Șterge și scrisul de pe aparat („LipeSonix”): aparatul rămâne alb, fără text. Titlul din caseta albă, prețurile și restul rămân exact cum sunt.' },
 };
 
 // Creative names an offer by its key (a few old ones by their old name, web/src/lib/data.ts LEGACY_IDS)
