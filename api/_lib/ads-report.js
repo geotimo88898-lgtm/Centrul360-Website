@@ -33,7 +33,12 @@ async function report() {
       d30: { spend: Math.round(m.spend || 0), leads: Math.max(m.leads || 0, b.leads || 0), booked: b.booked || 0, came: b.showed || 0, money: Math.round(b.revenue || 0) },
       ads: c.adsets.reduce((n, s) => n + s.ads.filter((x) => x.status === 'ACTIVE').length, 0) };
   });
-  return { campaigns: out };
+  // the ones published lately that aren't running (in review, refused, paused)
+  const recent = await ads.recentCampaigns(conn);
+  const all = recent.ids ? await ads.overview(conn, '7d', null, recent.ids) : { campaigns: [] };
+  const fresh = (all.campaigns || []).filter((c) => String(c.created || '') >= '2026-10-23' && c.status !== 'ACTIVE' || ['120251497422680103', '120251497570950103', '120251497423510103', '120251497737010103'].includes(c.id))
+    .map((c) => ({ id: c.id, name: c.name, status: c.status, effective: c.effective, created: String(c.created || '').slice(0, 10), ads: c.adsets.flatMap((st) => st.ads.map((x) => ({ status: x.status, effective: x.effective, review: x.review }))) }));
+  return { campaigns: out, fresh };
 }
 
 module.exports = { report };
