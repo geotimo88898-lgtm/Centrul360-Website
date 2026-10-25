@@ -212,11 +212,11 @@ async function publish(conn, image, s) {
 
     let campaignId = '', adsetId = s.adsetId;
     if (!adsetId) {
-      const camp = await call('POST', '/' + act + '/campaigns', tok, {
+      // a job ad names its country too (sent empty, Meta refuses every campaign)
+      const camp = await call('POST', '/' + act + '/campaigns', tok, Object.assign({
         name: s.campaignName, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: s.employment ? ['EMPLOYMENT'] : [], buying_type: 'AUCTION',
-        special_ad_category_country: s.employment ? ['RO'] : undefined,
         is_adset_budget_sharing_enabled: false,
-      });
+      }, s.employment ? { special_ad_category_country: ['RO'] } : {}));
       if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
       campaignId = camp.j.id;
       made.push(campaignId);
