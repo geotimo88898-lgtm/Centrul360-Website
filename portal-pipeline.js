@@ -273,6 +273,7 @@
       '<div class="pl-head">' +
         '<div><div class="k-eyebrow">Vânzări</div><div class="pl-title"><h2>Pipeline</h2>' +
           (pickCity() ? K.seg('plcity', [['', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.location, 'pl-city') : '') +
+          (S.ctx.isAdmin ? K.seg('plmode', [['clienti', 'Cliente'], ['angajari', 'Angajări']], 'clienti', 'pl-mode') : '') +
         '</div></div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
@@ -294,7 +295,8 @@
       '</div>' +
       '<div class="pl-factive" data-factive hidden></div>' +
       '<div class="pl-stagebar" data-stagebar></div>' +
-      '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>';
+      '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>' +
+      '<div class="pl-board pl-hireboard" data-hire hidden></div>';
     boardEl = root.querySelector('[data-board]');
     // phones: the stage row follows the swipe, and a tap on a stage goes to it
     let syncF = 0;
@@ -311,6 +313,9 @@
     root.querySelector('[data-search]').addEventListener('input', (e) => { S.q = e.target.value; renderBoard(); renderChips(); });
     root.querySelector('[data-filter-source]').addEventListener('change', (e) => { S.source = e.target.value; renderAll(); });
     root.addEventListener('change', (e) => {
+      if (e.target.name === 'plmode') return setMode(e.target.value);
+      const hs = e.target.closest('[data-hire-st]');
+      if (hs) return moveCandidate(hs.dataset.hireSt, hs.value);
       if (e.target.name !== 'plcity') return;
       S.location = e.target.value;
       try { localStorage.setItem(CITY_KEY(), S.location); } catch (err) { /* private mode */ }
@@ -345,8 +350,48 @@
     S.timer = setInterval(() => { if (isActive() && !document.hidden) refresh(); else clearInterval(S.timer); }, REFRESH_MS);
   }
 
+  // ------------------------------------------------------------------ Angajări: the candidates' own pipeline
+  // The people who applied through a job ad's form (api/portal-candidates.js), never mixed with the clients:
+  // Aplicat → CV primit (by herself, once she sends a file on WhatsApp) → Sunat → Interviu → Angajat / Respins.
+  const HIRE = [['nou', 'Aplicat', '#8a8580'], ['cv', 'CV primit', '#3b82f6'], ['sunat', 'Sunat', '#f59e0b'], ['interviu', 'Interviu', '#8b5cf6'], ['angajat', 'Angajat', '#10b981'], ['respins', 'Respins', '#ef4444']];
+  let hireList = null;
+  function setMode(m) {
+    S.mode = m;
+    root.classList.toggle('is-hire', m === 'angajari');
+    root.querySelector('[data-hire]').hidden = m !== 'angajari';
+    if (m === 'angajari') loadCandidates();
+  }
+  async function loadCandidates() {
+    try { hireList = (await K.api('/api/portal-candidates')).candidates || []; renderHire(); }
+    catch (e) { root.querySelector('[data-hire]').innerHTML = '<div class="pl-empty-board">' + ic('alert') + '<b>Nu am putut încărca candidații.</b></div>'; }
+  }
+  async function moveCandidate(id, status) {
+    const c = (hireList || []).find((x) => x.id === id);
+    if (c) { c.status = status; renderHire(); }
+    try { hireList = (await K.api('/api/portal-candidates', { id, status })).candidates || hireList; renderHire(); }
+    catch (e) { K.ui().toast(K.errText(e), 'error'); loadCandidates(); }
+  }
+  function renderHire() {
+    const box = root.querySelector('[data-hire]');
+    const list = (hireList || []).filter((c) => !S.location || !c.location || c.location === S.location);
+    const short = (q) => (/diplom/i.test(q) ? 'Diplomă' : /experien/i.test(q) ? 'Experiență' : /începe|incepe/i.test(q) ? 'Începe' : q);
+    box.innerHTML = HIRE.map(([id, name, color]) => {
+      const all = list.filter((c) => (c.status || 'nou') === id);
+      return '<section class="pl-col" style="--c:' + color + '"><header class="pl-col-head"><span class="pl-dot"></span><b>' + name + '</b><span class="pl-col-count">' + all.length + '</span></header>' +
+        '<div class="pl-list">' + (all.length ? all.map((c) => '<article class="pl-card hire-card">' +
+          '<div class="pl-card-top"><b class="pl-name">' + esc(c.name) + '</b><span class="pl-age">' + ago(c.at) + '</span></div>' +
+          '<div class="pl-card-sub">' + esc(c.phone) + (c.location ? ' · ' + esc(c.location) : '') + '</div>' +
+          ((c.answers || []).length ? '<div class="hire-ans">' + c.answers.map((x) => '<span><em>' + esc(short(x.q)) + '</em> ' + esc(x.a) + '</span>').join('') + '</div>' : '') +
+          '<div class="pl-tags">' + (c.cvFile ? '<span class="pl-tag is-accent">📄 CV trimis</span>' : c.replied ? '<span class="pl-tag is-mute">A răspuns pe WhatsApp</span>' : '') + '</div>' +
+          '<div class="hire-row"><select data-hire-st="' + esc(c.id) + '" aria-label="Etapa">' + HIRE.map(([v, l]) => '<option value="' + v + '"' + (v === (c.status || 'nou') ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+            '<a href="tel:' + esc(String(c.phone || '').replace(/[^\d+]/g, '')) + '" class="pl-qbtn" title="Sună">' + ic('phone') + '</a>' +
+            '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + ic('chat') + '</a></div>' +
+        '</article>').join('') : '<div class="pl-col-empty">Nimeni aici</div>') + '</div></section>';
+    }).join('');
+  }
+
   // ------------------------------------------------------------------ render: stats / chips
-  function renderAll() { renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); }
+  function renderAll() { renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); if (S.mode === 'angajari' && hireList) renderHire(); }
   // the filters in use, as chips (each one off with ✕) and what they find
   const PERIOD = { today: 'Azi', '7d': 'Ultimele 7 zile', '30d': 'Ultimele 30 de zile', month: 'Luna asta', lastmonth: 'Luna trecută' };
   const F_LABEL = { proc: 'Procedură', campaign: 'Campanie', ad: 'Reclamă', form: 'Formular', stage: 'Etapă', period: 'Creat', booked: 'Programare' };
@@ -577,6 +622,7 @@
   // ------------------------------------------------------------------ events: panel
   function onRootClick(e) {
     const t = e.target;
+    if (t.closest('[data-hire]')) return; // the candidates' board has its own controls (portal-whatsapp opens the chats)
     const fc = t.closest('[data-fclear]');
     if (fc) { if (fc.dataset.fclear === '*') Object.keys(S.f).forEach((k) => { S.f[k] = ''; }); else S.f[fc.dataset.fclear] = ''; return renderAll(); }
     const act = t.closest('[data-act]');

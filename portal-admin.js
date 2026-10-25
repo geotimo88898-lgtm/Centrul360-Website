@@ -234,7 +234,7 @@
     if (TEAM.tab === 'candidati') loadCandidates();
   }
   // ---- Candidați: who applied through a job ad's form (api/portal-candidates.js)
-  const CAND_ST = [['nou', 'Nou'], ['sunat', 'Sunat'], ['interviu', 'Interviu'], ['angajat', 'Angajat'], ['respins', 'Respins']];
+  const CAND_ST = [['nou', 'Aplicat'], ['cv', 'CV primit'], ['sunat', 'Sunat'], ['interviu', 'Interviu'], ['angajat', 'Angajat'], ['respins', 'Respins']];
   async function loadCandidates(list) {
     const box = epanel.querySelector('[data-cand]');
     if (!list) { box.innerHTML = K.skeleton ? K.skeleton(3) : ''; try { list = (await K.api('/api/portal-candidates')).candidates || []; } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca candidații', K.errText(e)); return; } }

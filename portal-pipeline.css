@@ -518,3 +518,20 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
   .pl-head-actions [data-act="stages"] span{ display:none; }
   .pl-team{ display:none; }
 }
+
+/* ---------------- Angajări: the candidates' own pipeline ---------------- */
+.pl-mode{ margin-left:.4rem; }
+.pl-panel.is-hire [data-stats], .pl-panel.is-hire [data-team], .pl-panel.is-hire .pl-toolbar, .pl-panel.is-hire [data-factive],
+.pl-panel.is-hire [data-stagebar], .pl-panel.is-hire [data-board], .pl-panel.is-hire .pl-head-actions{ display:none !important; }
+.pl-hireboard{ height:auto; min-height:60vh; align-items:flex-start; }
+.pl-hireboard .pl-list{ overflow:visible; }
+.hire-card{ cursor:default; }
+.hire-ans{ display:flex; flex-direction:column; gap:.15rem; margin:.4rem 0 .2rem; font-size:.76rem; color:var(--fg); }
+.hire-ans em{ font-style:normal; color:var(--muted); }
+.hire-row{ display:flex; align-items:center; gap:.4rem; margin-top:.5rem; }
+.hire-row select{ flex:1; min-width:0; height:32px; border-radius:9px; border:1px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; font-size:.78rem; padding:0 .4rem; }
+@media (max-width:720px){
+  /* a phone: the candidates' stages one under the other (the clients' board swipes, this one is short) */
+  .pl-hireboard{ display:flex; flex-direction:column; gap:.7rem; overflow:visible; scroll-snap-type:none; height:auto; padding-bottom:6rem; }
+  .pl-hireboard .pl-col{ flex:none; width:100%; }
+}
