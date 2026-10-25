@@ -78,6 +78,7 @@
     }
     paintThread();
     if (atBottom || showSkeleton) scrollToBottom();
+    keepPicked();
   }
   function scrollToBottom() { const b = panel && panel.querySelector('.mx-tbody'); if (b) b.scrollTop = b.scrollHeight; }
 
@@ -122,6 +123,7 @@
     if (phone()) { w.style.height = ''; return; }
     const top = w.getBoundingClientRect().top + window.scrollY;
     w.style.height = Math.max(440, window.innerHeight - top - 20) + 'px';
+    keepPicked();
   }
   window.addEventListener('resize', () => { if (panel && K.isActive('mesaje')) fitWrap(); });
 
@@ -150,9 +152,26 @@
     panel.querySelector('[data-chips]').innerHTML = [['all', 'Toate', C.conversations.length], ['unread', 'Necitite', unread], ['open', 'Deschise 24h', open]]
       .map(([k, l, n]) => '<button type="button" class="k-chip' + (C.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + (n ? '<span>' + n + '</span>' : '') + '</button>').join('');
     const list = visible();
+    // the list stays where she scrolled it (picking a conversation repaints it: it jumped back to the top)
+    const top = box.scrollTop;
     box.innerHTML = list.length ? list.map(row).join('')
       : C.conversations.length ? K.empty('search', 'Nimic aici', 'Schimbă filtrul sau căutarea.')
         : K.empty('chat', 'Nicio conversație încă', connected().length ? 'Când îți scrie o clientă pe WhatsApp, apare aici imediat. Poți și să scrii tu primul, cu „Mesaj nou”.' : 'După ce se conectează numerele, mesajele clientelor apar aici singure.');
+    box.scrollTop = top;
+    keepPicked();
+  }
+  // the conversation she picked stays in sight in the list (Safari on a Mac reset the list to the top while the
+  // conversation opened)
+  function keepPicked() {
+    const box = panel && panel.querySelector('[data-mx-list]');
+    const r = box && box.querySelector('.mx-row.is-on');
+    if (!r || phone()) return;
+    const y = r.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    // far from it (the list was reset): back to it, in the middle; just at an edge: only as much as it takes
+    const far = y + r.offsetHeight < box.scrollTop || y > box.scrollTop + box.clientHeight;
+    if (far) box.scrollTop = Math.max(0, y - (box.clientHeight - r.offsetHeight) / 2);
+    else if (y < box.scrollTop) box.scrollTop = y;
+    else if (y + r.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = y + r.offsetHeight - box.clientHeight;
   }
   function row(c) {
     const preview = (c.lastDirection === 'out' ? (TICK[c.lastStatus] ? tickHtml(c.lastStatus) : 'Tu: ') : '') + esc(c.lastText || '');
