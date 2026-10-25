@@ -22,7 +22,7 @@ const JOBS = [
     note: 'Exact 2 creative LipoSonix și 2 creative HIFU gușă, toate 4 pentru Arad. Fiecare alt tip de reclamă, să se vadă clar ce vindem (corp, siluetă, bărbie, clinica sau aparatul).' },
 ];
 // the creatives seen and good to go (ids), per job
-const PUBLISH = { 'tm-lipo-2026-10-26': ['cmvo0tsr4boe0f5'], 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u', 'cmvmsbv5e47rt32', 'cmvmsbvkiwxyqoo'] };
+const PUBLISH = { 'tm-lipo-2026-10-26': ['cmvo0tsr4boe0f5', 'cmvo0tsju9tqg99'], 'ar-lipo-gusa-2026-10-24': ['cmvmsbvqw96apgn', 'cmvmsbutthwge0u', 'cmvmsbv5e47rt32', 'cmvmsbvkiwxyqoo'] };
 // the ones that weren't good enough: redone once with this instruction (Creative's own "Refă"), then looked at again
 const REWORK = {
   cmvo0tsju9tqg99: { mode: 'edit', instruction: 'Scoate complet cele două X-uri roșii: textul rămâne curat, nimic tăiat. Schimbă rândurile mari în „FĂRĂ EFORT.” și „FĂRĂ DIETE STRICTE.” (în loc de „FĂRĂ OPERAȚIE.”). Restul rămâne la fel.' },
