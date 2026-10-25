@@ -9,6 +9,7 @@ const day = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Buchares
 const initials = (n) => String(n || '?').trim().split(/\s+/).map((w) => w[0] || '').join('').toUpperCase().slice(0, 3);
 
 async function check() {
+  const repaired = await require('./workflows').repairReminders().catch((e) => 'error: ' + e.message);
   const tomorrow = day(Date.now() + 864e5);
   const [appts, runsDoc, wfDoc, convos] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/workflow-runs.json', {}),
     readJSON('data/workflows.json', {}), readJSON('data/whatsapp-conversations.json', [])]);
@@ -26,7 +27,7 @@ async function check() {
       phone: !!a.clientPhone, runs, whatsapp: outs.map((m) => String(m.timestamp).slice(11, 16) + ' ' + (m.type || '') + (m.status ? ' ' + m.status : '') + (m.error ? ' ' + String(m.error).slice(0, 60) : '')) };
   });
   const reminderFlows = [...flows.values()].filter((w) => /^Reamintiri/.test(w.name || '')).map((w) => ({ name: w.name, active: !!w.active, trigger: w.trigger }));
-  return { tomorrow, count: rows.length, flows: reminderFlows, rows };
+  return { repaired, tomorrow, count: rows.length, flows: reminderFlows, rows };
 }
 
 module.exports = { check };

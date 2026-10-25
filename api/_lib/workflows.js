@@ -652,7 +652,15 @@ async function runOne(run, wf, settings, counters) {
   for (let guard = 0; id !== '$'; guard++) {
     if (guard > 100) { run.status = 'error'; log('Prea mulți pași la rând'); return; }
     const op = prog.ops.get(id);
-    if (!op) { run.status = 'stopped'; log('Pasul următor a fost șters din automatizare'); return; }
+    if (!op) {
+      // the flow was saved again (its steps got new ids, 25.10: the reminders' were remade and 8 waiting appointments
+      // stopped): go on from the same wait in the new steps
+      const sp = run.waitSpec;
+      const w = sp && flat(wf.steps).find((x) => x.type === 'wait' && x.mode === sp.mode && Number(x.amount) === Number(sp.amount) && x.unit === sp.unit);
+      const to = w && (sp.self ? w.id : (prog.ops.get(w.id) || {}).next);
+      if (to && to !== id && prog.ops.has(to)) { log('Automatizarea s-a schimbat: continuă de la același pas'); id = to; run.at = to; continue; }
+      run.status = 'stopped'; log('Pasul următor a fost șters din automatizare'); return;
+    }
     const s = op.s;
     if (s.type === 'if') {
       if (op.more.length) {
@@ -681,6 +689,7 @@ async function runOne(run, wf, settings, counters) {
         }
         run.dueAt = new Date(target).toISOString();
         run.waitId = s.id;
+        run.waitSpec = { mode: s.mode, amount: s.amount, unit: s.unit };
         log('Așteaptă până la ' + waitText(s) + ' (' + roStamp(target) + ')');
         return;
       }
@@ -793,7 +802,7 @@ async function enrollUpcoming(wf) {
     const list = appointments.filter((a) => a && a.id && !has.has(a.id) && a.time && !['anulata', 'finalizata', 'concediu'].includes(a.status) &&
       (!loc || a.location === loc) && apptStart(a) > now);
     list.forEach((a) => {
-      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at: first.id, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
+      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at: first.id, waitSpec: { mode: first.mode, amount: first.amount, unit: first.unit, self: true }, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
         log: [{ at: nowISO(), text: 'Pornit: programare deja în calendar când s-a pornit automatizarea (fără confirmare)' }] });
       const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
       c.runs++;
@@ -807,5 +816,41 @@ async function enrollUpcoming(wf) {
   }
 }
 
+// The appointments whose reminders stopped because the flow was saved again (before the fix above): started again at the
+// right step. Before the day before: at the 24h wait. The day before: the 24h message now. On the day: at the 2h wait.
+// Only appointments that have no other run of that flow. Run by the automations' clock; does nothing once they're back.
+async function repairReminders() {
+  const doc = await loadDoc();
+  const flows = (doc.workflows || []).filter((w) => w.active && w.trigger && w.trigger.type === 'appointment_created' && /^Reamintiri/.test(w.name || ''));
+  if (!flows.length) return 0;
+  const [appointments, runsDoc] = await Promise.all([readJSON('data/appointments.json', []), loadRuns()]);
+  const now = Date.now(), today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+  const made = [];
+  for (const wf of flows) {
+    const prog = compile(wf.steps);
+    const waits = flat(wf.steps).filter((s) => s.type === 'wait' && s.mode === 'before');
+    const w24 = waits.find((s) => Number(s.amount) * (unitMs[s.unit] || unitMs.h) >= 12 * 3600e3), w2 = waits.find((s) => Number(s.amount) * (unitMs[s.unit] || unitMs.h) < 12 * 3600e3);
+    const broken = new Set(runsDoc.runs.filter((r) => r.wf === wf.id && r.status === 'stopped' && /fost șters/.test(((r.log || []).slice(-1)[0] || {}).text || '')).map((r) => r.ent && r.ent.id));
+    const live = new Set(runsDoc.runs.filter((r) => r.wf === wf.id && !(r.status === 'stopped' && /fost șters/.test(((r.log || []).slice(-1)[0] || {}).text || ''))).map((r) => r.ent && r.ent.id));
+    for (const a of appointments) {
+      if (!broken.has(a.id) || live.has(a.id) || ['anulata', 'finalizata', 'concediu'].includes(a.status) || !(apptStart(a) > now)) continue;
+      const left = apptStart(a) - now;
+      let at, spec;
+      if (w24 && left > Number(w24.amount) * (unitMs[w24.unit] || unitMs.h)) { at = w24.id; spec = w24; }
+      else if (w24 && today < a.date) { at = (prog.ops.get(w24.id) || {}).next; spec = null; }
+      else if (w2) { at = w2.id; spec = w2; }
+      if (!at) continue;
+      const run = { id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
+        log: [{ at: nowISO(), text: 'Pornit din nou: reamintirile se opriseră când automatizarea a fost salvată din nou' }] };
+      if (spec) run.waitSpec = { mode: spec.mode, amount: spec.amount, unit: spec.unit, self: true };
+      runsDoc.runs.push(run);
+      made.push(run.id);
+    }
+  }
+  if (!made.length) return 0;
+  await processRuns(runsDoc, doc, made);
+  return made.length;
+}
+
 module.exports = {
-  firstName, sendTemplate, enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };
+  firstName, sendTemplate, repairReminders, enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };
