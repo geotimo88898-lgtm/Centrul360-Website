@@ -14,6 +14,9 @@ const { loadOffers } = require('./offers');
 const KEY = 'data/creative-once.json';
 const BASE = 'https://centrul360-creative-machine-centrul360.vercel.app/creative';
 const JOBS = [
+  // 26.10: Timișoara only LipoSonix and gușă; its gușă ads work very well (more budget), its LipoSonix ones so-so: 2 new
+  { id: 'tm-lipo-2026-10-26', city: 'Timișoara', cityId: 'timisoara', offers: [/lipo/i], count: 2, budget: 30,
+    note: 'Exact 2 creative LipoSonix pentru Timișoara, două tipuri de reclamă diferite între ele și diferite de ce rulează deja. Să se vadă clar ce vindem (corp, talie, aparatul pe abdomen). Fără scris în engleză pe imagine.' },
   // 24.10: Arad has room for bookings, Timișoara is full: 2 LipoSonix and 2 gușă ads for Arad
   { id: 'ar-lipo-gusa-2026-10-24', city: 'Arad', cityId: 'arad', offers: [/lipo/i, /gu[sș]/i], count: 4,
     note: 'Exact 2 creative LipoSonix și 2 creative HIFU gușă, toate 4 pentru Arad. Fiecare alt tip de reclamă, să se vadă clar ce vindem (corp, siluetă, bărbie, clinica sau aparatul).' },
@@ -56,9 +59,9 @@ function settingsFor(c, offer, job, d) {
   const heads = (k.headlines && k.headlines.length ? k.headlines : [k.headline || k.offer_label || '']).filter(Boolean);
   const proc = /lipo/i.test(offer.title) ? 'LIPO' : /gu[sș]/i.test(offer.title) ? 'GUSA' : String(offer.adName || offer.title).toUpperCase();
   return {
-    adsetId: '', campaignName: 'AR ' + proc + ' · ' + String(c.angle || c.format || '').slice(0, 40), adsetName: job.city + ' ' + d.radiusKm + ' km · femei ' + ageMin + '-' + ageMax,
+    adsetId: '', campaignName: (/arad/i.test(job.city) ? 'AR ' : 'TM ') + proc + ' · ' + String(c.angle || c.format || '').slice(0, 40), adsetName: job.city + ' ' + d.radiusKm + ' km · femei ' + ageMin + '-' + ageMax,
     adName: String(k.hook || proc).slice(0, 80), city: job.city, radiusKm: d.radiusKm, women: d.women !== false, ageMin, ageMax,
-    placements: d.placements, budget: d.budget, formId: (offer.forms || {})[job.city] || '',
+    placements: d.placements, budget: job.budget || d.budget, formId: (offer.forms || {})[job.city] || '',
     primaryText: (k.primary_texts && k.primary_texts[0]) || k.primary_text || '', primaryText2: (k.primary_texts && k.primary_texts[1]) || '',
     headline: heads[0] || '', headline2: heads[1] || '', headline3: heads[2] || '', description: k.description || 'Centrul360 ' + job.city,
     cta: d.cta, startNow: d.startNow !== false,
