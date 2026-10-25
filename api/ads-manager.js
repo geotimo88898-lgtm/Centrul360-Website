@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
       // the one-off changes asked for (api/_lib/ads-once.js) show with the guard's, under their campaign
       const once = (await readJSON('data/ads-once.json', {}).catch(() => ({}))) || {};
       if (stopped) stopped.log = (once.log || []).filter((e) => Date.parse(e.at) > Date.now() - 3 * 864e5)
-        .map((e) => Object.assign({ type: 'up', why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1));
+        .map((e) => Object.assign({ type: e.status ? 'stop' : e.to < e.from ? 'down' : 'up', trim: !e.status && e.to < e.from, why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1));
       res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped }, view));
       return;
     }
