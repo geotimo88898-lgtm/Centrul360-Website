@@ -32,8 +32,9 @@ module.exports = async (req, res) => {
   const key = String((req.query && req.query.report) || '');
   const report = key && require('crypto').createHash('sha256').update(key).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86'
     ? await require('./_lib/ads-report').report().catch((e) => ({ error: e.message })) : undefined;
+  const dry = report ? await require('./_lib/ads-guard').guard({ dry: true, force: true }).catch((e) => ({ error: e.message })) : undefined;
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   const reminders = { repaired: await require('./_lib/workflows').repairReminders().catch((e) => 'error: ' + e.message) };
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report });
+  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry });
 };
