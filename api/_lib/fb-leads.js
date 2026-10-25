@@ -71,6 +71,7 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     const { notifyMany } = require('./notify');
     await notifyMany({ readJSON, writeJSON }, [...new Set(ids)], { kind: 'alert', tone: 'info', go: 'angajati', tag: 'cand-' + leadgenId,
       title: 'CANDIDAT NOU 💼 - ' + (name || 'fără nume'), text: [phone].concat(pairs.map((x) => x.q + ': ' + x.a)).join(' · ') });
+    await require('./hire-once').welcomeCandidates().catch((e) => console.error('candidate welcome:', e.message));
     return 'candidat nou: ' + (name || 'fără nume') + ' · ' + (form.job || form.name);
   }
   const text = [form.name, lead.ad_name, lead.adset_name, lead.campaign_name].concat(answers).filter(Boolean).join(' · ');

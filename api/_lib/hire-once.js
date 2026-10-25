@@ -10,6 +10,42 @@ const { readJSON, writeJSON } = require('./store');
 const { loadConnection } = require('./facebook');
 const ads = require('./meta-ads');
 const { createForm } = require('./fb-form-create');
+const WT = require('./wa-templates');
+const WA = require('./whatsapp');
+
+// the WhatsApp message a candidate gets (25.10: the job's leads got none, the clients' welcome is about an offer), friendly
+// like the treatments' one, asking for her CV (it comes back in Mesaje):
+// its own template, from the Timișoara number, sent once Meta approves it, to everyone who applied (those before it too)
+const CAND_TPL = {
+  label: 'Angajare · Candidat nou · Timișoara', category: 'UTILITY', only: ['Timișoara'],
+  body: 'Bună {prenume}! 👋 Mulțumim mult că ai aplicat pentru postul de cosmeticiană la Centrul360 Timișoara. 💛\n\nNe poți trimite CV-ul tău aici, pe WhatsApp? 📄 Cum îl primim, te sunăm pentru o discuție scurtă. ❤️',
+};
+async function welcomeCandidates() {
+  const d = await WT.load();
+  let t = d.templates.find((x) => x.label === CAND_TPL.label);
+  if (!t) {
+    const v = WT.clean(CAND_TPL);
+    if (v.error) return { template: v.error };
+    d.templates.push(v.t);
+    const sub = await WT.submit(d, v.t.id, CAND_TPL.only);
+    await WT.save(d);
+    return { template: sub.error || 'submitted' };
+  }
+  if (!d.syncedAt || Date.now() - Date.parse(d.syncedAt) > 3 * 60e3) { await WT.sync(d).catch(() => {}); await WT.save(d); t = d.templates.find((x) => x.label === CAND_TPL.label); }
+  const list = await readJSON('data/candidates.json', []);
+  const todo = list.filter((c) => !c.test && !c.welcomed && (c.welcomeTries || 0) < 3 && String(c.phone || '').replace(/\D/g, '').length >= 9).slice(0, 30);
+  if (!todo.length) return { sent: 0 };
+  const wa = { tpls: d.templates, cfg: await WA.loadConfig() };
+  const { sendTemplate, firstName } = require('./workflows');
+  let sent = 0, why = '';
+  for (const c of todo) {
+    const r = await sendTemplate(wa, t.id, 'Timișoara', c.phone, { prenume: firstName(c.name), nume: c.name });
+    if (r.pending) { why = 'waiting for Meta'; break; } // not approved yet: tried again on the next tick
+    if (r.sent) { c.welcomed = new Date().toISOString(); sent++; } else { c.welcomeTries = (c.welcomeTries || 0) + 1; c.welcomeError = r.why; why = r.why; }
+  }
+  await writeJSON('data/candidates.json', list);
+  return { sent, why: why || undefined };
+}
 
 const KEY = 'data/hire-once.json';
 const JOBS = [
@@ -29,9 +65,10 @@ const JOBS = [
 ];
 
 async function run() {
+  const welcome = await welcomeCandidates().catch((e) => ({ error: e.message }));
   const doc = Object.assign({ jobs: {} }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
   const open = JOBS.filter((j) => !(doc.jobs[j.id] && doc.jobs[j.id].campaignId));
-  if (!open.length) return { skipped: 'nothing' };
+  if (!open.length) return { welcome };
   const conn = await loadConnection(readJSON);
   if (!conn.userToken || !conn.adAccountId || !conn.pageId) return { skipped: 'not_connected' };
   const out = {};
@@ -65,7 +102,7 @@ async function run() {
     out[j.id] = Object.assign(out[j.id] || {}, { ad: 'published', campaignId: r.campaignId, warning: r.warning });
   }
   await writeJSON(KEY, doc, { quiet: true });
-  return out;
+  return Object.assign(out, { welcome });
 }
 
-module.exports = { run };
+module.exports = { run, welcomeCandidates };
