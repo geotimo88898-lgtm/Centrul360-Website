@@ -614,8 +614,8 @@
   // Any "WhatsApp" in the portal (a contact, an appointment, a lead, a task) opens her conversation here, not the
   // phone's WhatsApp app: the clinic's numbers live in the portal. No conversation with her yet: the first message,
   // with an approved template (Meta's rule), and then the conversation.
-  const tail = (p) => String(p || '').replace(/D/g, '').slice(-9);
-  function localPhone(p) { const d = String(p || '').replace(/D/g, ''); return d.length >= 9 ? '0' + d.slice(-9) : String(p || ''); }
+  const tail = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  function localPhone(p) { const d = String(p || '').replace(/\D/g, ''); return d.length >= 9 ? '0' + d.slice(-9) : String(p || ''); }
   async function chatWith(ph, o) {
     o = o || {};
     if (tail(ph).length < 9) return K.ui().toast('Numărul de telefon nu e complet.', 'error');
