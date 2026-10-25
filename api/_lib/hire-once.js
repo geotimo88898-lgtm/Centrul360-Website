@@ -17,11 +17,13 @@ const WA = require('./whatsapp');
 // like the treatments' one, asking for her CV (it comes back in Mesaje):
 // its own template, from the Timișoara number, sent once Meta approves it, to everyone who applied (those before it too)
 const CAND_TPL = {
-  label: 'Angajare · Candidat nou · Timișoara', category: 'UTILITY', only: ['Timișoara'],
-  body: 'Bună {prenume}! 👋 Mulțumim mult că ai aplicat pentru postul de cosmeticiană la Centrul360 Timișoara. 💛\n\nNe poți trimite CV-ul tău aici, pe WhatsApp? 📄 Cum îl primim, te sunăm pentru o discuție scurtă. ❤️',
+  label: 'Angajare · Candidat nou · Timișoara · v2', category: 'UTILITY', only: ['Timișoara'],
+  body: 'Bună {prenume}! 👋 Mulțumim mult că ai aplicat pentru postul de cosmeticiană la Centrul360 Timișoara. 💛\n\nNe poți trimite CV-ul tău aici, pe WhatsApp? 📄❤️',
 };
 async function welcomeCandidates() {
   const d = await WT.load();
+  // the first version (it said "we'll call you once it comes", 25.10: taken out) is deleted, never sent
+  for (const old of d.templates.filter((x) => x.label === 'Angajare · Candidat nou · Timișoara')) { const r = await WT.remove(d, old.id); if (!r.error) await WT.save(d); }
   let t = d.templates.find((x) => x.label === CAND_TPL.label);
   if (!t) {
     const v = WT.clean(CAND_TPL);
