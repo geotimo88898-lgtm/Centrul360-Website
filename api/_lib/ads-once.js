@@ -12,6 +12,11 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 26.10 night: the other new LipoSonix ad in Timișoara too, 25 lei a day ("Fără efort. Fără diete stricte.")
+  { id: 'tm-lipo-new2-2026-10-26', why: 'cerut de voi pe 26.10', actions: [
+    { campaignId: '120251505980700103', name: 'TM LIPO · fără diete', status: 'ACTIVE', why: 'TM: încă o reclamă LipoSonix, 25 lei/zi' },
+    { campaignId: '120251505980700103', name: 'TM LIPO · fără diete', daily: 25, why: 'TM: încă o reclamă LipoSonix, 25 lei/zi' },
+  ] },
   // 26.10 night: one more LipoSonix ad in Timișoara, 25 lei a day: the "Stai întinsă" one made today (paused before it ran)
   { id: 'tm-lipo-new-2026-10-26', why: 'cerut de voi pe 26.10', actions: [
     { campaignId: '120251505897650103', name: 'TM LIPO · stai întinsă', daily: 25, why: 'TM: încă o reclamă LipoSonix, 25 lei/zi' },
