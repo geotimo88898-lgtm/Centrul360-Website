@@ -28,7 +28,8 @@ module.exports = async (req, res) => {
   const creative = await require('./_lib/creative-once').run().catch((e) => ({ error: e.message }));
   // the job ads asked for in chat (api/_lib/hire-once.js)
   const hire = await require('./_lib/hire-once').run().catch((e) => ({ error: e.message }));
-  const reminders = await require('./_lib/reminder-check').check().catch((e) => ({ error: e.message }));
+  // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
+  const reminders = { repaired: await require('./_lib/workflows').repairReminders().catch((e) => 'error: ' + e.message) };
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders });
 };
