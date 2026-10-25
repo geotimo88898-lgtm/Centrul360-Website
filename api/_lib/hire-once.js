@@ -39,14 +39,18 @@ async function welcomeCandidates() {
   if (!todo.length) return { sent: 0 };
   const wa = { tpls: d.templates, cfg: await WA.loadConfig() };
   const { sendTemplate, firstName } = require('./workflows');
-  let sent = 0, why = '';
+  // someone already talked with her on WhatsApp (the cofounder, the desk, or she wrote first): left to them
+  const { normalizePhone } = require('./clients');
+  const talked = new Set((await readJSON('data/whatsapp-conversations.json', [])).filter((x) => (x.messages || []).length).map((x) => x.phone));
+  let sent = 0, skipped = 0, why = '';
   for (const c of todo) {
+    if (talked.has(normalizePhone(c.phone) || String(c.phone))) { c.welcomed = 'skipped: conversation'; skipped++; continue; }
     const r = await sendTemplate(wa, t.id, 'Timișoara', c.phone, { prenume: firstName(c.name), nume: c.name });
     if (r.pending) { why = 'waiting for Meta'; break; } // not approved yet: tried again on the next tick
     if (r.sent) { c.welcomed = new Date().toISOString(); sent++; } else { c.welcomeTries = (c.welcomeTries || 0) + 1; c.welcomeError = r.why; why = r.why; }
   }
   await writeJSON('data/candidates.json', list);
-  return { sent, why: why || undefined };
+  return { sent, skipped, why: why || undefined };
 }
 
 const KEY = 'data/hire-once.json';
