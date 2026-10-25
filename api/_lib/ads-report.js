@@ -38,7 +38,7 @@ async function report() {
   const all = recent.ids ? await ads.overview(conn, '7d', null, recent.ids) : { campaigns: [] };
   const fresh = (all.campaigns || []).filter((c) => String(c.created || '') >= '2026-10-23' && c.status !== 'ACTIVE' || ['120251497422680103', '120251497570950103', '120251497423510103', '120251497737010103'].includes(c.id))
     .map((c) => ({ id: c.id, name: c.name, status: c.status, effective: c.effective, created: String(c.created || '').slice(0, 10), ads: c.adsets.flatMap((st) => st.ads.map((x) => ({ status: x.status, effective: x.effective, review: x.review }))) }));
-  const slow = await Promise.all(out.filter((c) => c.daily >= 20 && c.d7.spend < 10 && c.created < day(Date.now() - 864e5)).map(async (c) => ({ name: c.name, id: c.id, delivery: await ads.delivery(conn, c.id) })));
+  const slow = await Promise.all(out.filter((c) => c.daily >= 20 && c.d7.spend < 10 && c.created <= day(Date.now() - 864e5)).map(async (c) => ({ name: c.name, id: c.id, delivery: await ads.delivery(conn, c.id) })));
   return { campaigns: out, fresh, slow };
 }
 
