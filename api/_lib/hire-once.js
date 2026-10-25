@@ -37,7 +37,8 @@ async function welcomeCandidates() {
   const list = await readJSON('data/candidates.json', []);
   const todo = list.filter((c) => !c.test && !c.welcomed && (c.welcomeTries || 0) < 3 && String(c.phone || '').replace(/\D/g, '').length >= 9).slice(0, 30);
   const totals = () => ({ candidates: list.filter((c) => !c.test).length, welcomed: list.filter((c) => /^\d{4}-/.test(String(c.welcomed || ''))).length,
-    skipped: list.filter((c) => /^skipped/.test(String(c.welcomed || ''))).length, failed: list.filter((c) => !c.welcomed && (c.welcomeTries || 0) >= 3).length });
+    skipped: list.filter((c) => /^skipped/.test(String(c.welcomed || ''))).length, failed: list.filter((c) => !c.welcomed && (c.welcomeTries || 0) >= 3).length,
+    times: [...new Set(list.map((c) => String(c.welcomed || '').slice(0, 16)).filter((x) => /^\d{4}-/.test(x)))].sort() });
   if (!todo.length) return Object.assign({ sent: 0 }, totals());
   const wa = { tpls: d.templates, cfg: await WA.loadConfig() };
   const { sendTemplate, firstName } = require('./workflows');
