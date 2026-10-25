@@ -10,14 +10,12 @@
 // myPOS's history is read first, for any payment its live notice missed.
 // And a warning for each POS that has taken no payment for 3 days or more (switched off, broken, the payments
 // going through another one), again every 3 days while it lasts.
-// And the ads of the last 3 days doing very well (RECLAMĂ TOP 🚀) or very badly (ATENȚIE ⚠️), marked the same way as in
-// Panou → KPI (_lib/kpi.js): the same ad at most once every 3 days, at most 3 bad and 2 good ones an evening.
+// The ads' TOP / ATENȚIE are the guard's now (api/_lib/ads-guard.js), when it sees them.
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { getSession } = require('./_lib/auth');
 const { notifyMany, adminIds } = require('./_lib/notify');
 const M = require('./_lib/mypos');
-const KPI = require('./_lib/kpi');
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 const dayOf = (iso) => (iso ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(iso)) : '');
@@ -106,28 +104,6 @@ function words(n) {
   return { title, text: parts.join(' · ') };
 }
 
-const AD_SAID = 'data/ad-alerts.json'; // { adId: the day it was last said }
-async function adAlerts(store, ids, day) {
-  const conn = await require('./_lib/facebook').loadConnection(readJSON);
-  if (!conn || !conn.userToken || !conn.adAccountId) return 0;
-  const r = KPI.rangeOf('custom', { since: new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(Date.now() - 2 * 864e5)), until: day });
-  const ads = await KPI.adsFor(conn, r);
-  if (!ads.rows) return 0;
-  const [offers, leads, appointments, sales, clients] = await Promise.all([require('./_lib/offers').loadOffers(readJSON), readJSON('data/leads.json', []),
-    readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/clients.json', [])]);
-  const view = KPI.adsOf(KPI.model({ offers, leads, appointments, sales, clients }), r, ads);
-  const said = await readJSON(AD_SAID, {});
-  const fresh = (a) => !said[a.id] || daysBetween(said[a.id], day) >= 3;
-  const bad = view.rows.filter((a) => a.flag === 'bad' && a.status === 'ACTIVE' && fresh(a)).slice(0, 3);
-  const top = view.rows.filter((a) => a.flag === 'top' && fresh(a)).slice(0, 2);
-  for (const a of bad.concat(top)) {
-    await notifyMany(store, ids, { kind: 'alert', tone: a.flag === 'bad' ? 'bad' : 'good', go: 'reclame', tag: 'ad-' + a.id + '-' + day,
-      title: (a.flag === 'bad' ? 'ATENȚIE ⚠️ - reclama ' : 'RECLAMĂ TOP 🚀 - ') + String(a.name || 'fără nume').slice(0, 60), text: 'În 3 zile: ' + a.why.join(' · ') });
-    said[a.id] = day;
-  }
-  if (bad.length || top.length) await writeJSON(AD_SAID, said);
-  return bad.length + top.length;
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -171,7 +147,6 @@ module.exports = async (req, res) => {
       });
     }
   } catch (e) { /* the report went */ }
-  let ads = 0;
-  try { ads = await adAlerts(store, ids, n.day); } catch (e) { console.error('daily-report ads:', e.message); }
-  res.status(200).json({ ok: true, pushed, words: w, unrecorded: un.length, idle: idle.length, ads });
+  // the ads' TOP / ATENȚIE come from the guard now, when it sees them, on the days they really ran (api/_lib/ads-guard.js)
+  res.status(200).json({ ok: true, pushed, words: w, unrecorded: un.length, idle: idle.length });
 };

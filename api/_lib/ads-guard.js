@@ -76,7 +76,9 @@ const DEFAULT_STAGES = [
 ];
 
 // spent enough, and a lead would still cost too much even if the next one came now
-const losing = (spend, leads) => spend >= RULE.minSpend && spend / (leads + 1) > RULE.maxCpl;
+// spent enough, and a lead would still cost too much even if the next one came now; or a lead already costs 40 lei or
+// more (the owner, 25.10: "o reclamă, indiferent că e nouă, cu 40 lei pe lead nu o lăsăm să cheltuie aiurea")
+const losing = (spend, leads) => spend >= RULE.minSpend && (spend / (leads + 1) > RULE.maxCpl || (leads > 0 && spend / leads >= 2 * RULE.maxCpl));
 
 // who hears about it: the admin account named George (the owner, 20.10: "doar mie, contului de admin numit george")
 async function ownerIds() {
@@ -276,12 +278,37 @@ async function guard(opts) {
     perCity.set(k, n + 1);
   }
 
+  // ---- VERDICT per campaign, on the days it really ran (the owner, 25.10: the notifications and Reclame's notes say what
+  // the guard sees, with real numbers, not a fixed 3 days): TOP / ATENȚIE / DE URMĂRIT, what it is based on, which days
+  const verdicts = {};
+  const dd = (d) => d.slice(8, 10) + '.' + d.slice(5, 7);
+  for (const c of camps.values()) {
+    const ran = c.days.filter((d) => d.spend > 0).sort((a, b) => (a.day < b.day ? -1 : 1));
+    if (!ran.length || c.spend7 < 20) continue; // too little to say anything
+    const price = priceOfCamp(c.id);
+    const b = bookOn && B.campaigns.get(c.id), y = young.campaigns.get(c.id) || {};
+    const ripe = b && b.leads >= BOOK.ripeLeads;
+    const cpl = c.leads7 ? c.spend7 / c.leads7 : null, cpb = ripe && b.booked ? b.spend / b.booked : null;
+    const facts = ['în ' + (ran.length === 1 ? '1 zi' : ran.length + ' zile') + ' în care a rulat (' + (ran.length === 1 ? dd(ran[0].day) : dd(ran[0].day) + '-' + dd(ran[ran.length - 1].day)) + '): ' + lei(c.spend7) + ', ' +
+      (c.leads7 ? leadsTxt(c.leads7) + ' (' + lei(cpl) + ' unul)' : 'niciun lead')];
+    if (ripe) facts.push(b.booked ? bookTxt(b.booked) + ' din ' + leadsTxt(b.leads) + ' (' + lei(cpb) + ' una)' : 'nicio programare din ' + leadsTxt(b.leads));
+    else if ((y.leads || 0) >= 3) facts.push((y.booked || 0) + ' din ' + y.leads + ' s-au programat');
+    const m = moneyOn && M.campaigns.get(c.id);
+    if (m && m.booked >= MONEY.booked && m.spend > 0) facts.push(lei(m.revenue) + ' încasați din ' + lei(m.spend) + ' (leadurile de acum 4+ săptămâni)');
+    const killBar = Math.max(BOOK.killFloor, BOOK.kill * price);
+    let flag = 'ok';
+    if (losing(c.spend7, c.leads7) || (ripe && b.leads >= BOOK.junkLeads && !b.booked) || (cpb && cpb > killBar) || (m && m.booked >= MONEY.booked && m.spend >= MONEY.spend && m.revenue < m.spend)) flag = 'bad';
+    else if (cpl != null && cpl <= SCALE.cpl7 && c.leads7 >= SCALE.leads7 && (cpb ? cpb <= BOOK.raise * price : !ripe && (y.leads || 0) >= BOOK.youngMin && (y.booked || 0) / y.leads >= 0.3)) flag = 'top';
+    else if ((cpl != null && cpl > SCALE.cpl3) || (cpb && cpb > BOOK.raise * price) || (!c.leads7 && c.spend7 >= 20)) flag = 'watch';
+    verdicts[c.id] = { flag, name: c.name, why: facts, at: new Date(now).toISOString() };
+  }
+
   if (o.dry) {
     const layerOf = (x) => { const b = B.ads && B.ads.get(x.adId), m = M.ads && M.ads.get(x.adId); return { campaign: x.campaignName, cpl: x.leads ? r2(x.spend / x.leads) : null, leads7: x.leads, spend7: r2(x.spend), price: priceOfAd(x.adId),
       book: b ? { leads: b.leads, booked: b.booked, spend: r2(b.spend), cpb: b.booked ? r2(b.spend / b.booked) : null } : null, money: m && m.booked ? { booked: m.booked, revenue: m.revenue, spend: r2(m.spend), roas: m.spend ? r2(m.revenue / m.spend) : null } : null }; };
     return { checked: rows.length, layers: { bookings: bookOn ? 'on' : 'off', money: moneyOn ? 'on' : 'off', bookDays: B.error ? B.error : clamp({ since: day(now - BOOK.days * DAY), until: day(now - BOOK.age * DAY) }), moneyDays: clamp({ since: day(now - MONEY.days * DAY), until: day(now - MONEY.age * DAY) }) },
       wouldStop: off.map((x) => ({ campaign: x.campaignName, ad: x.adName, why: reasonOf(x) })), wouldRaise: ups.slice(0, SCALE.perRun).map(({ c }) => ({ campaign: c.name, why: whyUp(c) })),
-      wouldLower: downs.map(({ c }) => ({ campaign: c.name, why: whyDown(c) })), wouldSoso: lows.map(({ c }) => ({ campaign: c.name, cpb: r2(c.cpb) })), notRaised: skipped, ads: rows.map(layerOf) };
+      wouldLower: downs.map(({ c }) => ({ campaign: c.name, why: whyDown(c) })), wouldSoso: lows.map(({ c }) => ({ campaign: c.name, cpb: r2(c.cpb) })), verdicts, notRaised: skipped, ads: rows.map(layerOf) };
   }
 
   const done = [];
@@ -330,12 +357,22 @@ async function guard(opts) {
     done.push({ type: 'down', trim: 'soso', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why });
     await tell({ tone: 'bad', tag: 'guard-soso-' + c.id, title: '✂️ Buget scăzut: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + to + ' lei/zi', text: why + '.' });
   }
-  if (done.length) {
-    const cur = Object.assign({ on: true, log: [] }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
-    cur.log = (cur.log || []).concat(done).slice(-200);
-    await writeJSON(KEY, cur, { quiet: true });
-    await AC.clear().catch(() => {});
+  // the verdicts: kept for Reclame; a campaign that turns TOP or ATENȚIE is told at once (once for each change; not the
+  // ones it just switched off, that has its own message)
+  const cur = Object.assign({ on: true, log: [] }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
+  const before = cur.verdicts || {};
+  const offNow = new Set(done.filter((e) => e.type === 'stop').map((e) => e.campaignId));
+  for (const [id, v] of Object.entries(verdicts)) {
+    const was = before[id] && before[id].flag;
+    if (!cur.verdictsAt || v.flag === was || offNow.has(id) || (v.flag !== 'top' && v.flag !== 'bad')) continue; // the first time: only kept
+    await tell({ tone: v.flag === 'top' ? 'good' : 'bad', tag: 'guard-verdict-' + id + '-' + v.flag,
+      title: (v.flag === 'top' ? 'TOP 🚀 - ' : 'ATENȚIE ⚠️ - ') + String(v.name || 'campanie').slice(0, 60), text: v.why.join(' · ') + '.' });
   }
+  cur.verdicts = verdicts;
+  cur.verdictsAt = new Date(now).toISOString();
+  if (done.length) cur.log = (cur.log || []).concat(done).slice(-200);
+  await writeJSON(KEY, cur, { quiet: true });
+  if (done.length) await AC.clear().catch(() => {});
   return { checked: rows.length, done: done.map((e) => e.type + ': ' + (e.campaignName || e.adName)) };
 }
 
@@ -349,7 +386,7 @@ function whyDown(c) { const a = c.after || { spend: 0, leads: 0 }; return a.lead
 async function recent() {
   const doc = (await readJSON(KEY, {}).catch(() => ({}))) || {};
   const since = Date.now() - 3 * DAY;
-  return { on: doc.on !== false, log: (doc.log || []).filter((e) => Date.parse(e.at) > since).map((e) => Object.assign({ type: 'stop' }, e)).reverse() };
+  return { on: doc.on !== false, verdicts: doc.verdicts || {}, verdictsAt: doc.verdictsAt || '', log: (doc.log || []).filter((e) => Date.parse(e.at) > since).map((e) => Object.assign({ type: 'stop' }, e)).reverse() };
 }
 
 module.exports = { guard, recent, losing, RULE, BOOK, MONEY, SCALE };

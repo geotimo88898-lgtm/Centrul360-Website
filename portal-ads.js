@@ -345,7 +345,7 @@
     const g = (A.d.guard && A.d.guard.log || []).filter((e) => e.campaignId === c.id).map((e) => [e.type === 'up' ? 'is-good' : 'is-bad',
       e.type === 'up' ? '📈 Buget mărit ' + e.from + ' → ' + e.to + ' lei/zi' : e.trim ? '✂️ Buget scăzut ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'down' ? '📉 Buget înapoi ' + e.from + ' → ' + e.to + ' lei/zi' : '⛔ Oprită automat',
       (e.type === 'stop' && e.adName && e.adName !== e.campaignName ? e.adName + ': ' : '') + (e.why || '') + ' · ' + K.ago(e.at)]);
-    const n = (c.notes || []).map((x) => [NOTE[x.flag][0], NOTE[x.flag][1], (x.ad ? x.ad + ': ' : '') + x.why.join(' · ') + ' (ultimele 3 zile)']);
+    const n = (c.notes || []).map((x) => [NOTE[x.flag][0], NOTE[x.flag][1], (x.ad ? x.ad + ': ' : '') + x.why.join(' · ')]);
     const all = g.concat(n);
     return all.length ? '<div class="ad-flags">' + all.map(([tone, label, text]) => '<p class="ad-flag ' + tone + '"><b>' + esc(label) + '</b><span>' + esc(text) + '</span></p>').join('') + '</div>' : '';
   }
