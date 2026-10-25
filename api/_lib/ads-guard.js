@@ -51,6 +51,10 @@ const BOOK = { age: 2, days: 30, killLeads: 8, kill: 0.30, killFloor: 60, junkLe
 const MONEY = { age: 28, days: 90, booked: 5, spend: 100, kill: 1, raise: 2 };
 const SCALE = { cpl7: 12, leads7: 4, cpl3: 13, leads3: 2, used: 0.7, step: 1.2, cap: 150, gapH: 48, backGapH: 7 * 24, perRun: 3, from: 6, to: 12, maxFreq: 2.5, perCityDay: 2 };
 const BACK = { cpl: 15, noLeadSpend: 30 };
+// LESS BUDGET for a so-so campaign (the owner, 26.10: "dacă merg okish scădem bugetul să facem loc pentru reclamele noi"):
+// 8+ leads 2 days old and a booking between 15% and 30% of the offer's price (bad enough to stop is past that): -20%,
+// at least 20 lei a day, once in 7 days, in the morning like a raise; it isn't raised again for 7 days.
+const SOSO = { leads: 8, step: 0.8, floor: 20, gapH: 7 * 24 };
 const DEFAULT_PRICE = 190;
 // the city a campaign is for, from its name (AR… / TM…, Arad / Timișoara)
 const cityOf = (name) => (/(^|[^a-z])ar([^a-z]|$)|arad/i.test(String(name)) ? 'AR' : /(^|[^a-z])tm([^a-z]|$)|timi/i.test(String(name)) ? 'TM' : '?' + name);
@@ -200,7 +204,10 @@ async function guard(opts) {
     camps.set(d.campaignId, c);
   });
   const offCamps = new Set(off.map((x) => x.campaignId));
-  const lastBudget = (id) => (doc.log || []).filter((e) => (e.type === 'up' || e.type === 'down') && e.campaignId === id).pop();
+  // the budget changes asked for in chat (api/_lib/ads-once.js) count too: a campaign just changed by hand isn't changed again
+  const onceLog = (((await readJSON('data/ads-once.json', {}).catch(() => ({}))) || {}).log || []).filter((e) => e.to != null)
+    .map((e) => Object.assign({}, e, { type: e.to < e.from ? 'down' : 'up', byHand: true }));
+  const lastBudget = (id) => (doc.log || []).concat(onceLog).filter((e) => (e.type === 'up' || e.type === 'down') && e.campaignId === id).sort((a, b) => (a.at < b.at ? -1 : 1)).pop();
   const ups = [], downs = [], skipped = [];
   const no = (c, why) => { skipped.push({ campaign: c.name, why }); };
   for (const c of camps.values()) {
@@ -211,7 +218,7 @@ async function guard(opts) {
     if (last && last.type === 'up' && since48) {
       const from = day(Date.parse(last.at));
       c.after = c.days.filter((d) => d.day >= from).reduce((t, d) => ({ spend: t.spend + d.spend, leads: t.leads + d.leads }), { spend: 0, leads: 0 });
-      if ((c.after.leads && c.after.spend / c.after.leads > BACK.cpl) || (!c.after.leads && c.after.spend >= BACK.noLeadSpend)) { downs.push({ c, last }); continue; }
+      if (!last.byHand && ((c.after.leads && c.after.spend / c.after.leads > BACK.cpl) || (!c.after.leads && c.after.spend >= BACK.noLeadSpend))) { downs.push({ c, last }); continue; }
     }
     const h = hour(now);
     if (!since48 || h < SCALE.from || h >= SCALE.to) continue;
@@ -236,6 +243,17 @@ async function guard(opts) {
     ups.push({ c });
   }
   ups.sort((a, b) => a.c.spend7 / a.c.leads7 - b.c.spend7 / b.c.leads7);
+  // so-so: bookings neither good nor bad
+  const lows = [];
+  if (bookOn && hour(now) >= SCALE.from && hour(now) < SCALE.to) for (const c of camps.values()) {
+    if (offCamps.has(c.id) || ups.some((u) => u.c.id === c.id) || downs.some((d) => d.c.id === c.id)) continue;
+    const last = lastBudget(c.id);
+    if (last && now - Date.parse(last.at) < SOSO.gapH * 3600e3) continue;
+    const b = B.campaigns.get(c.id);
+    if (!b || b.leads < SOSO.leads || !b.booked) continue;
+    const price = priceOfCamp(c.id), cpb = b.spend / b.booked;
+    if (cpb > BOOK.raise * price && cpb <= Math.max(BOOK.killFloor, BOOK.kill * price)) { c.cpb = cpb; c.book = b; lows.push({ c }); }
+  }
   // how often their women saw them (7 days): only for the ones that would get more budget
   if (ups.length) {
     const reach = await ads.campaignReach(conn, { since, until }, ups.map((u) => u.c.id));
@@ -261,7 +279,7 @@ async function guard(opts) {
       book: b ? { leads: b.leads, booked: b.booked, spend: r2(b.spend), cpb: b.booked ? r2(b.spend / b.booked) : null } : null, money: m && m.booked ? { booked: m.booked, revenue: m.revenue, spend: r2(m.spend), roas: m.spend ? r2(m.revenue / m.spend) : null } : null }; };
     return { checked: rows.length, layers: { bookings: bookOn ? 'on' : 'off', money: moneyOn ? 'on' : 'off', bookDays: B.error ? B.error : clamp({ since: day(now - BOOK.days * DAY), until: day(now - BOOK.age * DAY) }), moneyDays: clamp({ since: day(now - MONEY.days * DAY), until: day(now - MONEY.age * DAY) }) },
       wouldStop: off.map((x) => ({ campaign: x.campaignName, ad: x.adName, why: reasonOf(x) })), wouldRaise: ups.slice(0, SCALE.perRun).map(({ c }) => ({ campaign: c.name, why: whyUp(c) })),
-      wouldLower: downs.map(({ c }) => ({ campaign: c.name, why: whyDown(c) })), notRaised: skipped, ads: rows.map(layerOf) };
+      wouldLower: downs.map(({ c }) => ({ campaign: c.name, why: whyDown(c) })), wouldSoso: lows.map(({ c }) => ({ campaign: c.name, cpb: r2(c.cpb) })), notRaised: skipped, ads: rows.map(layerOf) };
   }
 
   const done = [];
@@ -297,6 +315,17 @@ async function guard(opts) {
     if (r.error) { console.error('ads-guard down:', c.id, r.error); continue; }
     done.push({ type: 'down', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to: last.from, why: whyDown(c) });
     await tell({ tone: 'bad', tag: 'guard-down-' + c.id, title: '📉 Buget înapoi: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + last.from + ' lei/zi', text: whyDown(c) + '.' });
+  }
+  for (const { c } of lows) {
+    const b = await ads.budgetOf(conn, c.id);
+    if (b.error || !(b.daily > SOSO.floor)) continue;
+    const to = Math.max(SOSO.floor, Math.round(b.daily * SOSO.step));
+    if (to >= b.daily) continue;
+    const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
+    if (r.error) { console.error('ads-guard soso:', c.id, r.error); continue; }
+    const why = 'Merge so-so: programarea la ' + lei(c.cpb) + ' (' + bookTxt(c.book.booked) + ' din ' + leadsTxt(c.book.leads) + '), mai puțin buget pentru reclame noi';
+    done.push({ type: 'down', trim: 'soso', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why });
+    await tell({ tone: 'bad', tag: 'guard-soso-' + c.id, title: '✂️ Buget scăzut: ' + String(c.name).slice(0, 50) + ' ' + b.daily + ' → ' + to + ' lei/zi', text: why + '.' });
   }
   if (done.length) {
     const cur = Object.assign({ on: true, log: [] }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
