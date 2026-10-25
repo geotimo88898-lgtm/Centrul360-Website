@@ -36,7 +36,9 @@ async function welcomeCandidates() {
   if (!d.syncedAt || Date.now() - Date.parse(d.syncedAt) > 3 * 60e3) { await WT.sync(d).catch(() => {}); await WT.save(d); t = d.templates.find((x) => x.label === CAND_TPL.label); }
   const list = await readJSON('data/candidates.json', []);
   const todo = list.filter((c) => !c.test && !c.welcomed && (c.welcomeTries || 0) < 3 && String(c.phone || '').replace(/\D/g, '').length >= 9).slice(0, 30);
-  if (!todo.length) return { sent: 0 };
+  const totals = () => ({ candidates: list.filter((c) => !c.test).length, welcomed: list.filter((c) => /^\d{4}-/.test(String(c.welcomed || ''))).length,
+    skipped: list.filter((c) => /^skipped/.test(String(c.welcomed || ''))).length, failed: list.filter((c) => !c.welcomed && (c.welcomeTries || 0) >= 3).length });
+  if (!todo.length) return Object.assign({ sent: 0 }, totals());
   const wa = { tpls: d.templates, cfg: await WA.loadConfig() };
   const { sendTemplate, firstName } = require('./workflows');
   // someone already talked with her on WhatsApp (the cofounder, the desk, or she wrote first): left to them
@@ -50,7 +52,7 @@ async function welcomeCandidates() {
     if (r.sent) { c.welcomed = new Date().toISOString(); sent++; } else { c.welcomeTries = (c.welcomeTries || 0) + 1; c.welcomeError = r.why; why = r.why; }
   }
   await writeJSON('data/candidates.json', list);
-  return { sent, skipped, why: why || undefined };
+  return Object.assign({ sent, skippedNow: skipped, why: why || undefined }, totals());
 }
 
 const KEY = 'data/hire-once.json';
