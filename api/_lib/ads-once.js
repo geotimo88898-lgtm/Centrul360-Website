@@ -12,6 +12,24 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 26.10 evening, the owners: Timișoara one campaign only, the LipoSonix one that works (75 lei a day), the job ad off;
+  // Arad proper leads: its 2 new gușă ads on, the good ones +20%, the day's cuts taken back.
+  { id: 'plan-2026-10-26-b', why: 'decizia voastră din 26.10 seara', actions: [
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', daily: 75, why: 'TM: singura campanie, LipoSonix care merge' },
+    { campaignId: '120251498280800103', name: 'TM ANGAJARE · Cosmeticiană', status: 'PAUSED', why: 'angajarea oprită' },
+    { campaignId: '120251418158480103', name: 'tm vid 8 - copie', status: 'PAUSED', why: 'TM: o singură campanie (LipoSonix vid 3)' },
+    { campaignId: '120251401225110103', name: 'TM HIFU G · rezultat real', status: 'PAUSED', why: 'TM: o singură campanie (LipoSonix vid 3)' },
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', status: 'PAUSED', why: 'TM: o singură campanie (LipoSonix vid 3)' },
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', status: 'PAUSED', why: 'TM: o singură campanie (LipoSonix vid 3)' },
+    { campaignId: '120251505897650103', name: 'TM LIPO · stai întinsă', status: 'PAUSED', why: 'TM: o singură campanie (LipoSonix vid 3)' },
+    { campaignId: '120251505980700103', name: 'TM LIPO · fără efort', status: 'PAUSED', why: 'TM: o singură campanie (LipoSonix vid 3)' },
+    { campaignId: '120251497570950103', name: 'AR GUSA · fără efort', status: 'ACTIVE', why: 'Arad: mai multe leaduri' },
+    { campaignId: '120251497422680103', name: 'AR GUSA · fără ace', status: 'ACTIVE', why: 'Arad: mai multe leaduri' },
+    { campaignId: '120251418133050103', name: 'AR HIFU G · sezon', factor: 1.2, why: 'Arad: mai mult (programarea la 34 lei)' },
+    { campaignId: '120251418285690103', name: 'AR RESTART · fără ace', factor: 1.2, why: 'Arad: mai mult (programarea la 31 lei)' },
+    { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', daily: 65, why: 'Arad: bugetul de dimineață înapoi' },
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', daily: 60, why: 'Arad: bugetul de dimineață înapoi' },
+  ] },
   // 26.10, the owner: Timișoara only LipoSonix and gușă (Restart off); what works very well gets more, so-so less.
   // Last 7 days, a booking's cost against the offer's price (15% very good, 30% bad):
   { id: 'plan-2026-10-26', why: 'decizia voastră din 26.10', actions: [
@@ -58,7 +76,7 @@ async function run() {
       else {
         const b = await ads.budgetOf(conn, a.campaignId);
         if (b.error) { failed++; console.error('ads-once:', a.campaignId, b.error); continue; }
-        const to = Math.max(10, Math.min(150, Math.round(b.daily * a.factor)));
+        const to = Math.max(10, Math.min(150, a.daily || Math.round(b.daily * a.factor)));
         r = await ads.act(conn, { action: 'budget', id: b.id, daily: to }); rec = { budgetId: b.id, from: b.daily, to };
       }
       if (r.error) { failed++; console.error('ads-once:', a.campaignId, r.error); continue; }

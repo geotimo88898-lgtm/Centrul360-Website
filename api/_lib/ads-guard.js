@@ -55,6 +55,8 @@ const BACK = { cpl: 15, noLeadSpend: 30 };
 // 8+ leads 2 days old and a booking between 15% and 30% of the offer's price (bad enough to stop is past that): -20%,
 // at least 20 lei a day, once in 7 days, in the morning like a raise; it isn't raised again for 7 days.
 const SOSO = { leads: 8, step: 0.8, floor: 20, gapH: 7 * 24 };
+// a city's most a day per campaign (the owners, 26.10: Timișoara is full, one LipoSonix campaign at 75 lei a day)
+const CITY_MAX = { TM: 75 };
 const DEFAULT_PRICE = 190;
 // the city a campaign is for, from its name (AR… / TM…, Arad / Timișoara)
 const cityOf = (name) => (/(^|[^a-z])ar([^a-z]|$)|arad/i.test(String(name)) ? 'AR' : /(^|[^a-z])tm([^a-z]|$)|timi/i.test(String(name)) ? 'TM' : '?' + name);
@@ -297,10 +299,11 @@ async function guard(opts) {
   }
   for (const { c } of ups.slice(0, SCALE.perRun)) {
     const b = await ads.budgetOf(conn, c.id);
-    if (b.error || !(b.daily > 0) || b.daily >= SCALE.cap) continue;
+    const capC = Math.min(SCALE.cap, CITY_MAX[cityOf(c.name)] || SCALE.cap);
+    if (b.error || !(b.daily > 0) || b.daily >= capC) continue;
     // it must be using its budget (raising one it doesn't spend changes nothing)
     if (c.spendY < b.daily * SCALE.used) continue;
-    const to = Math.min(SCALE.cap, Math.round(b.daily * SCALE.step));
+    const to = Math.min(capC, Math.round(b.daily * SCALE.step));
     if (to <= b.daily) continue;
     const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
     if (r.error) { console.error('ads-guard up:', c.id, r.error); continue; }
