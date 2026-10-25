@@ -296,8 +296,17 @@
       '<div class="pl-factive" data-factive hidden></div>' +
       '<div class="pl-stagebar" data-stagebar></div>' +
       '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>' +
+      '<div class="pl-stagebar pl-hirebar" data-hirebar></div>' +
       '<div class="pl-board pl-hireboard" data-hire hidden></div>';
     boardEl = root.querySelector('[data-board]');
+    const hireEl = root.querySelector('[data-hire]');
+    let hireF = 0;
+    hireEl.addEventListener('scroll', () => { if (!hireF) hireF = requestAnimationFrame(() => { hireF = 0; syncHirebar(); }); }, { passive: true });
+    root.querySelector('[data-hirebar]').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-hgo]');
+      const col = b && hireEl.querySelector('.pl-col[data-hstage="' + b.dataset.hgo + '"]');
+      if (col) hireEl.scrollTo({ left: col.offsetParent === hireEl ? col.offsetLeft : col.offsetLeft - hireEl.offsetLeft, behavior: 'smooth' });
+    });
     // phones: the stage row follows the swipe, and a tap on a stage goes to it
     let syncF = 0;
     boardEl.addEventListener('scroll', () => { if (!syncF) syncF = requestAnimationFrame(() => { syncF = 0; syncStagebar(); }); }, { passive: true });
@@ -375,9 +384,10 @@
     const box = root.querySelector('[data-hire]');
     const list = (hireList || []).filter((c) => !S.location || !c.location || c.location === S.location);
     const short = (q) => (/diplom/i.test(q) ? 'Diplomă' : /experien/i.test(q) ? 'Experiență' : /începe|incepe/i.test(q) ? 'Începe' : q);
+    const left = box.scrollLeft;
     box.innerHTML = HIRE.map(([id, name, color]) => {
       const all = list.filter((c) => (c.status || 'nou') === id);
-      return '<section class="pl-col" style="--c:' + color + '"><header class="pl-col-head"><span class="pl-dot"></span><b>' + name + '</b><span class="pl-col-count">' + all.length + '</span></header>' +
+      return '<section class="pl-col" data-hstage="' + id + '" style="--c:' + color + '"><header class="pl-col-head"><span class="pl-dot"></span><b>' + name + '</b><span class="pl-col-count">' + all.length + '</span></header>' +
         '<div class="pl-list">' + (all.length ? all.map((c) => '<article class="pl-card hire-card">' +
           '<div class="pl-card-top"><b class="pl-name">' + esc(c.name) + '</b><span class="pl-age">' + ago(c.at) + '</span></div>' +
           '<div class="pl-card-sub">' + esc(c.phone) + (c.location ? ' · ' + esc(c.location) : '') + '</div>' +
@@ -388,6 +398,21 @@
             '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + ic('chat') + '</a></div>' +
         '</article>').join('') : '<div class="pl-col-empty">Nimeni aici</div>') + '</div></section>';
     }).join('');
+    box.scrollLeft = left;
+    // the stage row (phones): each stage with its count, the one on screen lit, a tap goes to it
+    root.querySelector('[data-hirebar]').innerHTML = HIRE.map(([id, name, color]) => '<button type="button" data-hgo="' + id + '" style="--c:' + color + '"><i></i>' + name +
+      '<b>' + list.filter((c) => (c.status || 'nou') === id).length + '</b></button>').join('');
+    syncHirebar();
+  }
+  function syncHirebar() {
+    const box = root.querySelector('[data-hire]'), bar = root.querySelector('[data-hirebar]');
+    let best = null, d = Infinity;
+    box.querySelectorAll('.pl-col').forEach((c) => { const x = Math.abs((c.offsetParent === box ? c.offsetLeft : c.offsetLeft - box.offsetLeft) - box.scrollLeft); if (x < d) { d = x; best = c; } });
+    bar.querySelectorAll('[data-hgo]').forEach((b) => {
+      const on = !!best && b.dataset.hgo === best.dataset.hstage;
+      if (on && !b.classList.contains('is-on')) bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.offsetWidth) / 2, behavior: 'smooth' });
+      b.classList.toggle('is-on', on);
+    });
   }
 
   // ------------------------------------------------------------------ render: stats / chips

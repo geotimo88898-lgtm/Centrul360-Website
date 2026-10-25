@@ -530,8 +530,6 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .hire-ans em{ font-style:normal; color:var(--muted); }
 .hire-row{ display:flex; align-items:center; gap:.4rem; margin-top:.5rem; }
 .hire-row select{ flex:1; min-width:0; height:32px; border-radius:9px; border:1px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; font-size:.78rem; padding:0 .4rem; }
-@media (max-width:720px){
-  /* a phone: the candidates' stages one under the other (the clients' board swipes, this one is short) */
-  .pl-hireboard{ display:flex; flex-direction:column; gap:.7rem; overflow:visible; scroll-snap-type:none; height:auto; padding-bottom:6rem; }
-  .pl-hireboard .pl-col{ flex:none; width:100%; }
-}
+/* a phone: like the clients' board, one stage on the screen, swiped left / right, the stage row above it */
+.pl-hirebar{ display:none; }
+@media (max-width:720px){ .pl-panel.is-hire .pl-hirebar{ display:flex; } }
