@@ -28,8 +28,12 @@ module.exports = async (req, res) => {
   const creative = await require('./_lib/creative-once').run().catch((e) => ({ error: e.message }));
   // the job ads asked for in chat (api/_lib/hire-once.js)
   const hire = await require('./_lib/hire-once').run().catch((e) => ({ error: e.message }));
+  // the ads report for Claude (api/_lib/ads-report.js): only with its key (the clock's address has no password)
+  const key = String((req.query && req.query.report) || '');
+  const report = key && require('crypto').createHash('sha256').update(key).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86'
+    ? await require('./_lib/ads-report').report().catch((e) => ({ error: e.message })) : undefined;
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   const reminders = { repaired: await require('./_lib/workflows').repairReminders().catch((e) => 'error: ' + e.message) };
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders });
+  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report });
 };

@@ -12,6 +12,11 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 26.10 night: one more LipoSonix ad in Timișoara, 25 lei a day: the "Stai întinsă" one made today (paused before it ran)
+  { id: 'tm-lipo-new-2026-10-26', why: 'cerut de voi pe 26.10', actions: [
+    { campaignId: '120251505897650103', name: 'TM LIPO · stai întinsă', daily: 25, why: 'TM: încă o reclamă LipoSonix, 25 lei/zi' },
+    { campaignId: '120251505897650103', name: 'TM LIPO · stai întinsă', status: 'ACTIVE', why: 'TM: încă o reclamă LipoSonix, 25 lei/zi' },
+  ] },
   // 26.10 evening, the owners: Timișoara one campaign only, the LipoSonix one that works (75 lei a day), the job ad off;
   // Arad proper leads: its 2 new gușă ads on, the good ones +20%, the day's cuts taken back.
   { id: 'plan-2026-10-26-b', why: 'decizia voastră din 26.10 seara', actions: [
@@ -70,7 +75,7 @@ async function run() {
   for (const j of todo.filter((x) => x.actions)) {
     let failed = 0;
     for (const a of j.actions) {
-      if (doc.log.some((e) => e.job === j.id && e.campaignId === a.campaignId)) continue;
+      if (doc.log.some((e) => e.job === j.id && e.campaignId === a.campaignId && (e.status || 'budget') === (a.status || 'budget'))) continue; // a budget and a switch on the same campaign are two
       let r, rec;
       if (a.status) { r = await ads.act(conn, { action: 'status', id: a.campaignId, status: a.status }); rec = { status: a.status }; if (!r.error) await AC.switched(a.campaignId, a.status).catch(() => {}); }
       else {
