@@ -216,6 +216,28 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // the results catalog (brand_asset/, the same file for everyone): sent as a PDF inside her 24h window
+    if (action === 'send_catalog') {
+      const phone = String(body.phone || '').trim();
+      if (!phone || !toE164(phone)) return fail(400, 'invalid_phone');
+      const conversations = await readJSON(KEY, []);
+      const convo = conversations.find((c) => c.phone === phone);
+      if (!convo) return fail(404, 'conversation_not_found');
+      if (!within24h(convo)) return fail(409, 'outside_24h_window', 'Au trecut 24 de ore de la ultimul ei mesaj: întâi un șablon, catalogul după ce răspunde.');
+      const href = '/brand_asset/catalog-rezultate-centrul360.pdf', filename = 'Catalog rezultate Centrul360.pdf';
+      const r = await fetch('https://' + req.headers.host + href);
+      if (!r.ok) return fail(502, 'catalog_missing', 'Nu găsesc catalogul.');
+      const buf = Buffer.from(await r.arrayBuffer());
+      const result = await WA.sendMedia({ phone, from: convo.location || '', buf, mime: 'application/pdf', filename, caption: '' });
+      if (!result.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis catalogul' + (result.error ? ': ' + result.error : '.'));
+      convo.messages.push({ id: result.id || crypto.randomUUID(), direction: 'out', type: 'other', media: { kind: 'document', mime: 'application/pdf', filename, href }, text: filename,
+        status: 'sent', timestamp: nowISO(), sentBy: session.employeeId });
+      convo.lastMessageAt = nowISO();
+      await saveConversations(conversations);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     // a photo or a file to her (inside the 24h window, like a free answer), with an optional caption
     if (action === 'send_media') {
       const phone = String(body.phone || '').trim();

@@ -188,11 +188,11 @@
     .filter(([, t]) => t).map(([l, t]) => l + ' ' + hm(t)).join(' · ');
   // a photo, a video, a voice note or a document inside a message (kept privately by the portal)
   const MEDIA_WORDS = ['Poză', 'Document', 'Mesaj vocal', 'Video', 'Sticker'];
-  const fileUrl = (md) => '/api/portal-file?p=' + encodeURIComponent(md.path) + (md.filename ? '&n=' + encodeURIComponent(md.filename) : '');
+  const fileUrl = (md) => md.href || '/api/portal-file?p=' + encodeURIComponent(md.path) + (md.filename ? '&n=' + encodeURIComponent(md.filename) : '');
   function mediaHtml(m) {
     const md = m.media;
     if (!md) return '';
-    if (!md.path) return '<span class="mx-doc is-missing">' + icon('alert') + 'Fișierul nu a putut fi descărcat de la WhatsApp</span>';
+    if (!md.path && !md.href) return '<span class="mx-doc is-missing">' + icon('alert') + 'Fișierul nu a putut fi descărcat de la WhatsApp</span>';
     const u = esc(fileUrl(md));
     // a photo and a document open in a preview over the portal (the app has no "back" from a file opened outside it)
     const pv = (kind) => ' data-preview="' + u + '" data-pv-kind="' + kind + '" data-pv-name="' + esc(md.filename || '') + '"';
@@ -257,6 +257,7 @@
       (t.within24h
         ? '<form class="mx-compose" data-send><button type="button" class="k-icon-btn" data-act="snip" title="Mesaje rapide (snippeturi)">' + icon('plus') + '</button><label class="k-icon-btn mx-attach" title="Poză sau fișier">' + icon('image') + '<input type="file" data-attach hidden accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,video/mp4,audio/*"></label>' +
           '<button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
+          '<button type="button" class="k-icon-btn" data-act="catalog" title="Catalogul de rezultate">' + icon('book') + '</button>' +
           '<textarea name="text" maxlength="4000" placeholder="Scrie un mesaj…" rows="1">' + esc(draft) + '</textarea>' +
           '<button type="submit" class="mx-send-btn" aria-label="Trimite">' + SEND + '</button></form>' +
           '<p class="mx-window">' + windowLine + '</p>'
@@ -432,6 +433,7 @@
       if (a === 'appt' && C.thread && C.thread.appointment && K.openAppointment) return K.openAppointment(C.thread.appointment.id, C.thread.appointment.date);
       if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : '', clientPhone: localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
       if (a === 'snip') return toggleSnips(act);
+      if (a === 'catalog' && C.selectedPhone) return catalog(C.selectedPhone);
       if (a === 'contact') return K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
       if (a === 'snips') return manageSnips();
     }
@@ -551,6 +553,28 @@
     img.src = URL.createObjectURL(file);
   });
   const asDataUrl = (file) => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = () => reject(new Error('Nu pot citi fișierul.')); fr.readAsDataURL(file); });
+  // the results catalog (before / after, PDF in brand_asset/): seen here, or sent to her in one tap
+  const CATALOG = '/brand_asset/catalog-rezultate-centrul360.pdf';
+  function catalog(ph) {
+    const dr = K.drawer({
+      title: 'Catalogul de rezultate', icon: 'book', width: 420,
+      body: '<p class="k-muted">Rezultate reale înainte și după, cu acordul clientelor. PDF, 9 MB.</p>' +
+        '<button type="button" class="k-btn is-outline" data-cat-see>' + icon('eye') + 'Vezi catalogul</button>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-cat-send>' + SEND + 'Trimite catalogul</button>',
+      onMount(el) {
+        el.querySelector('[data-cancel]').addEventListener('click', () => dr.close());
+        el.querySelector('[data-cat-see]').addEventListener('click', () => openPreview(CATALOG, 'pdf', 'Catalog rezultate Centrul360.pdf'));
+        el.querySelector('[data-cat-send]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+          try {
+            await K.api('/api/portal-whatsapp', { action: 'send_catalog', phone: ph });
+            dr.close();
+            await loadThread(ph, false);
+            scrollToBottom();
+            load();
+          } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+        }));
+      } });
+  }
   // the browser's uploader to storage (the same as Traininguri's videos)
   let blobLib = null;
   function uploader() {
@@ -718,7 +742,7 @@
       if (pvEl !== mine) return;
       box.innerHTML = '';
       const w = Math.min(box.clientWidth - 16, 900), dpr = Math.min(2, window.devicePixelRatio || 1);
-      for (let n = 1; n <= Math.min(doc.numPages, 20); n++) {
+      for (let n = 1; n <= Math.min(doc.numPages, 60); n++) {
         const page = await doc.getPage(n);
         if (pvEl !== mine) return;
         const vp = page.getViewport({ scale: 1 }), scale = (w / vp.width) * dpr, v = page.getViewport({ scale });

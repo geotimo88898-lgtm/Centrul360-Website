@@ -2318,7 +2318,7 @@ main.ad-full{ max-width:none; }
 
 /* Mesaje: the preview of a photo or a document (a CV), over the portal */
 html.mx-pv-open{ overflow:hidden; }
-.mx-pv{ position:fixed; inset:0; z-index:200; display:flex; flex-direction:column; background:rgba(8,8,12,.92); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+.mx-pv{ position:fixed; inset:0; z-index:1200; display:flex; flex-direction:column; background:rgba(8,8,12,.92); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
   padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); animation:k-rise .18s var(--ease) both; }
 .mx-pv-head{ display:flex; align-items:center; gap:.5rem; padding:.7rem .9rem; color:#fff; }
 .mx-pv-head b{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.95rem; }
