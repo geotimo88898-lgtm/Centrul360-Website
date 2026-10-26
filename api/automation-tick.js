@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
     ((tpl && tpl.templates) || []).forEach((t) => {
       const text = [t.header, t.body, t.footer].concat((t.buttons || []).map((b) => (b.text || '') + ' ' + (b.phone || '') + ' ' + (b.url || ''))).join(' ');
       const nums = [...new Set((text.match(re) || []).map(norm))];
-      found.push({ kind: 'template', label: t.label, nums, status: Object.values(t.meta || {}).map((m) => m.status).join('/'), leadOffers: t.leadOffers || [], body: String(t.body || '').slice(0, 140) });
+      found.push({ kind: 'template', id: t.id, sig: /Raluca/.test(text) ? 'Raluca' : /Giovanna/.test(text) ? 'Giovanna' : '', label: t.label, nums, status: Object.values(t.meta || {}).map((m) => m.status).join('/'), leadOffers: t.leadOffers || [], body: String(t.body || '').slice(0, 140) });
     });
     const used = new Set();
     const walk = (steps) => (steps || []).forEach((s) => { if (s.templateId) used.add(s.templateId); walk(s.yes); walk(s.no); (s.more || []).forEach((b) => walk(b.steps)); if (s.type === 'whatsapp' && s.text) { const nums = [...new Set((s.text.match(re) || []).map(norm))]; if (nums.length) found.push({ kind: 'flow-text', nums, text: s.text.slice(0, 140) }); } });
