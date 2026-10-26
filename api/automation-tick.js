@@ -41,9 +41,27 @@ module.exports = async (req, res) => {
       clients: clients.filter((c) => String(c.name || '').toLowerCase().includes(q)).map((c) => ({ id: c.id, name: c.name, loc: c.location || '' })),
       staff: emps.filter((e) => /m[aă]d[aă]lin/i.test(e.name || e.username || '')).map((e) => ({ name: e.name, role: e.role, location: e.location, active: e.active !== false })) };
   })().catch((e) => ({ error: e.message })) : undefined;
+  // every phone number written in the WhatsApp templates and the automations' texts (Claude, with the key: &phones=1)
+  const phones = report && req.query.phones ? await (async () => {
+    const st = require('./_lib/store');
+    const [tpl, wf] = await Promise.all([st.readJSON('data/wa-templates.json', {}), st.readJSON('data/workflows.json', {})]);
+    const re = /(?:\+?40|0)[\s.]?7\d{2}[\s.]?\d{3}[\s.]?\d{3}/g;
+    const norm = (x) => x.replace(/\D/g, '').replace(/^40/, '0');
+    const found = [];
+    ((tpl && tpl.templates) || []).forEach((t) => {
+      const text = [t.header, t.body, t.footer].concat((t.buttons || []).map((b) => (b.text || '') + ' ' + (b.phone || '') + ' ' + (b.url || ''))).join(' ');
+      const nums = [...new Set((text.match(re) || []).map(norm))];
+      found.push({ kind: 'template', label: t.label, nums, status: Object.values(t.meta || {}).map((m) => m.status).join('/'), leadOffers: t.leadOffers || [], body: String(t.body || '').slice(0, 140) });
+    });
+    const used = new Set();
+    const walk = (steps) => (steps || []).forEach((s) => { if (s.templateId) used.add(s.templateId); walk(s.yes); walk(s.no); (s.more || []).forEach((b) => walk(b.steps)); if (s.type === 'whatsapp' && s.text) { const nums = [...new Set((s.text.match(re) || []).map(norm))]; if (nums.length) found.push({ kind: 'flow-text', nums, text: s.text.slice(0, 140) }); } });
+    ((wf && wf.workflows) || []).forEach((w) => walk(w.steps));
+    found.forEach((f) => { if (f.kind === 'template') f.inFlow = [...used].length && ((tpl.templates || []).find((t) => t.label === f.label) || {}).id ? used.has((tpl.templates || []).find((t) => t.label === f.label).id) : false; });
+    return { found, flows: ((wf && wf.workflows) || []).map((w) => ({ name: w.name, active: !!w.active })) };
+  })().catch((e) => ({ error: e.message })) : undefined;
   const dry = report ? await require('./_lib/ads-guard').guard({ dry: true, force: true }).catch((e) => ({ error: e.message })) : undefined;
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   const reminders = { repaired: await require('./_lib/workflows').repairReminders().catch((e) => 'error: ' + e.message) };
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who });
+  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who, phones });
 };
