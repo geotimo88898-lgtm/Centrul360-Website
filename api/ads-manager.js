@@ -61,9 +61,34 @@ async function withFunnel(view, period, range, conn) {
   return view;
 }
 // what the guard saw on each campaign (api/_lib/ads-guard.js: TOP / ATENȚIE / DE URMĂRIT on the days it really ran,
-// the same as its notifications), laid on the campaign in Reclame
-function adNotes(view, verdicts) {
-  view.campaigns.forEach((c) => { const v = (verdicts || {})[c.id]; c.notes = v && v.flag !== 'ok' ? [{ flag: v.flag, why: v.why, ad: '' }] : []; });
+// the same as its notifications), laid on the campaign in Reclame: only on a running campaign and only a fresh one
+function adNotes(view, verdicts, at) {
+  const fresh = Date.parse(at || '') > Date.now() - 864e5;
+  view.campaigns.forEach((c) => { const v = fresh && c.status === 'ACTIVE' && (verdicts || {})[c.id]; c.notes = v && v.flag !== 'ok' ? [{ flag: v.flag, why: v.why, ad: '' }] : []; });
+}
+// what was done to the campaigns (the guard's and the asked-for changes, last 3 days), only what is still so now (the owner,
+// 27.10: no note that the account says otherwise): for each campaign its last switch and its last budget change, a stop
+// only while the campaign (or the ad) is still off, a budget only while it is still that much; budgets not on a stopped one
+function standing(log, view) {
+  const camps = new Map(view.campaigns.map((c) => [c.id, c]));
+  const ads = new Map(), sets = new Map();
+  view.campaigns.forEach((c) => c.adsets.forEach((s) => { sets.set(s.id, s); s.ads.forEach((a) => ads.set(a.id, a)); }));
+  const seen = new Set();
+  return log.filter((e) => {
+    const c = camps.get(e.campaignId);
+    if (!c) return false;
+    const switched = e.type === 'stop' || e.type === 'start';
+    const k = e.campaignId + '|' + (switched ? (e.job ? 'camp' : 'ad' + e.adId) : 'budget');
+    if (seen.has(k)) return false; // an older one, overtaken
+    seen.add(k);
+    if (switched) {
+      const on = e.job ? c.status === 'ACTIVE' : !!(ads.get(e.adId) && ads.get(e.adId).status === 'ACTIVE' && c.status === 'ACTIVE');
+      return e.type === 'stop' && !on; // switched on and still on: nothing to tell
+    }
+    if (c.status !== 'ACTIVE') return false;
+    const now = e.budgetId && sets.get(e.budgetId) ? sets.get(e.budgetId).daily : c.daily;
+    return Math.abs((Number(now) || 0) - Number(e.to)) < 0.5;
+  });
 }
 const renameLeads = (x) => { if (!x) return {}; const o = Object.assign({}, x); o.pLeads = o.leads; delete o.leads; return o; };
 // the pipeline's first stages, if none were ever saved (same as api/portal-leads.js)
@@ -143,11 +168,11 @@ module.exports = async (req, res) => {
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
       await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
       const stopped = await guard.recent().catch(() => null);
-      adNotes(view, stopped && stopped.verdicts);
+      adNotes(view, stopped && stopped.verdicts, stopped && stopped.verdictsAt);
       // the one-off changes asked for (api/_lib/ads-once.js) show with the guard's, under their campaign
       const once = (await readJSON('data/ads-once.json', {}).catch(() => ({}))) || {};
-      if (stopped) stopped.log = (once.log || []).filter((e) => Date.parse(e.at) > Date.now() - 3 * 864e5)
-        .map((e) => Object.assign({ type: e.status ? 'stop' : e.to < e.from ? 'down' : 'up', trim: !e.status && e.to < e.from, why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1));
+      if (stopped) stopped.log = standing((once.log || []).filter((e) => Date.parse(e.at) > Date.now() - 3 * 864e5)
+        .map((e) => Object.assign({ type: e.status ? (e.status === 'ACTIVE' ? 'start' : 'stop') : e.to < e.from ? 'down' : 'up', trim: !e.status && e.to < e.from, why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1)), view);
       res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped }, view));
       return;
     }
