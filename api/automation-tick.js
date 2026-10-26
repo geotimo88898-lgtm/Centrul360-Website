@@ -32,9 +32,18 @@ module.exports = async (req, res) => {
   const key = String((req.query && req.query.report) || '');
   const report = key && require('crypto').createHash('sha256').update(key).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86'
     ? await require('./_lib/ads-report').report().catch((e) => ({ error: e.message })) : undefined;
+  // a client's appointments and whether each points at her sheet (Claude, with the report's key: ?report=…&who=<name>)
+  const who = report && req.query.who ? await (async () => {
+    const q = String(req.query.who).toLowerCase();
+    const [appts, clients, emps] = await Promise.all([require('./_lib/store').readJSON('data/appointments.json', []), require('./_lib/store').readJSON('data/clients.json', []), require('./_lib/store').readJSON('data/employees.json', [])]);
+    const ids = new Set(clients.map((c) => c.id));
+    return { appts: appts.filter((x) => String(x.clientName || '').toLowerCase().includes(q)).slice(-8).map((x) => ({ date: x.date, time: x.time, loc: x.location, clientId: x.clientId || '', found: ids.has(x.clientId), by: x.createdBy || '', ghl: !!x.ghlId })),
+      clients: clients.filter((c) => String(c.name || '').toLowerCase().includes(q)).map((c) => ({ id: c.id, name: c.name, loc: c.location || '' })),
+      staff: emps.filter((e) => /m[aă]d[aă]lin/i.test(e.name || e.username || '')).map((e) => ({ name: e.name, role: e.role, location: e.location, active: e.active !== false })) };
+  })().catch((e) => ({ error: e.message })) : undefined;
   const dry = report ? await require('./_lib/ads-guard').guard({ dry: true, force: true }).catch((e) => ({ error: e.message })) : undefined;
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   const reminders = { repaired: await require('./_lib/workflows').repairReminders().catch((e) => 'error: ' + e.message) };
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry });
+  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who });
 };
