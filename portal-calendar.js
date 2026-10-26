@@ -725,7 +725,7 @@
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
           (a.clientId ? '<button type="button" class="k-btn is-outline" data-contact>' + icon('user') + 'Fișa clientei și pozele</button>' : ''),
-        onMount(el) { const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => K.emit('contacts:open', a.clientId), 250); }); },
+        onMount(el) { const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => (a.clientPhone ? K.emit('contacts:open-phone', a.clientPhone) : K.emit('contacts:open', a.clientId)), 250); }); }, // by her phone: an old link from HighLevel may point at a sheet that no longer exists
       });
       return;
     }
