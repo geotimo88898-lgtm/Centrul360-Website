@@ -551,6 +551,19 @@
     img.src = URL.createObjectURL(file);
   });
   const asDataUrl = (file) => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = () => reject(new Error('Nu pot citi fișierul.')); fr.readAsDataURL(file); });
+  // the browser's uploader to storage (the same as Traininguri's videos)
+  let blobLib = null;
+  function uploader() {
+    if (window.C360BlobUpload) return Promise.resolve(window.C360BlobUpload);
+    if (!blobLib) blobLib = new Promise((ok, fail) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/blob-upload.js';
+      s.onload = () => ok(window.C360BlobUpload); s.onerror = () => { blobLib = null; fail(new Error('Nu am putut pregăti trimiterea.')); };
+      document.head.appendChild(s);
+    });
+    return blobLib;
+  }
+  const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(12))).map((b) => b.toString(16).padStart(2, '0')).join('');
   async function attach(input) {
     const file = input.files && input.files[0];
     input.value = '';
@@ -559,10 +572,9 @@
     let dataUrl, name = file.name;
     try {
       if (isPhoto) { dataUrl = await smaller(file); name = name.replace(/\.\w+$/, '') + '.jpg'; }
-      else {
-        if (file.size > 3e6) return K.ui().toast('Fișierul e prea mare (cel mult 3 MB).', 'error');
-        dataUrl = await asDataUrl(file);
-      }
+      else if (file.size > 100 * 1024 * 1024) return K.ui().toast('Fișierul e prea mare (WhatsApp primește cel mult 100 MB).', 'error');
+      else if (file.size <= 3e6) dataUrl = await asDataUrl(file);
+      // a big one (a catalog): straight to storage when it's sent, not through the portal (capped at ~4 MB)
     } catch (err) { return K.ui().toast(err.message, 'error'); }
     const ph = C.selectedPhone;
     const ta = panel.querySelector('.mx-compose textarea');
@@ -576,7 +588,14 @@
         el.querySelector('[data-go]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const caption = el.querySelector('[data-cap]').value.trim();
           try {
-            await K.api('/api/portal-whatsapp', { action: 'send_media', phone: ph, dataUrl, filename: name, caption });
+            if (dataUrl) await K.api('/api/portal-whatsapp', { action: 'send_media', phone: ph, dataUrl, filename: name, caption });
+            else {
+              const lib = await uploader();
+              const ext = (name.match(/\.(\w+)$/) || [, 'pdf'])[1].toLowerCase();
+              const path = 'wa-out/' + rid() + '.' + ext;
+              await lib.upload(path, file, { access: 'private', handleUploadUrl: '/api/portal-whatsapp?upload=1', contentType: file.type || 'application/pdf', multipart: file.size > 25 * 1024 * 1024 });
+              await K.api('/api/portal-whatsapp', { action: 'send_media', phone: ph, path, mime: file.type || 'application/pdf', filename: name, caption });
+            }
             if (ta && isPhoto && caption && ta.value.trim() === caption) { ta.value = ''; autoGrow(ta); }
             dr.close();
             await loadThread(ph, false);

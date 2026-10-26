@@ -43,8 +43,10 @@ function withTpl(m, tpls, convoCity) {
 const { normalizePhone } = require('./_lib/clients');
 
 const { sendWhatsApp, toE164 } = WA;
-const { writeBinary } = require('./_lib/store');
+const { writeBinary, readBinary } = require('./_lib/store');
 const KEY = 'data/whatsapp-conversations.json';
+const BIG = /^wa-out\/[\w-]{8,80}\.(pdf|jpe?g|png|webp|docx?|xlsx?|mp4|mov)$/;
+const MAX_BIG = 100 * 1024 * 1024;
 const SNIP_KEY = 'data/wa-snippets.json'; // [{ id, title, text, by, createdAt, updatedAt, updatedBy }]
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const nowISO = () => new Date().toISOString();
@@ -118,6 +120,20 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // a big file (a catalog, a CV) goes from the browser straight to storage (a request through here is capped at ~4 MB),
+  // then "send_media" sends it from there: WhatsApp takes documents up to 100 MB
+  if (req.query && req.query.upload) {
+    if (!requireAuth(req, res)) return;
+    try {
+      const { handleUpload } = require('@vercel/blob/client');
+      const out = await handleUpload({ body: req.body, request: req, onBeforeGenerateToken: async (pathname) => {
+        if (!BIG.test(pathname)) throw new Error('invalid_path');
+        return { maximumSizeInBytes: MAX_BIG, addRandomSuffix: false, allowOverwrite: false };
+      } });
+      res.status(200).json(out);
+    } catch (err) { console.error('wa upload:', err.message); res.status(400).json({ error: 'upload_failed' }); }
+    return;
+  }
   const session = requireAuth(req, res);
   if (!session) return;
   const body = req.body || {};
@@ -204,13 +220,16 @@ module.exports = async (req, res) => {
     if (action === 'send_media') {
       const phone = String(body.phone || '').trim();
       const m = /^data:([\w.+/-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
+      const stored = BIG.test(String(body.path || '')) ? String(body.path) : ''; // a big one, already in storage
       if (!phone || !toE164(phone)) return fail(400, 'invalid_phone');
-      if (!m) return fail(400, 'invalid_file', 'Fișierul nu a putut fi citit.');
-      const mime = m[1].toLowerCase();
+      if (!m && !stored) return fail(400, 'invalid_file', 'Fișierul nu a putut fi citit.');
+      const mime = (m ? m[1] : String(body.mime || '')).toLowerCase();
       const ext = WA.mediaExt(mime);
       if (!ext) return fail(400, 'invalid_file', 'Tipul ăsta de fișier nu se poate trimite pe WhatsApp (poze, PDF, Word, Excel, video, audio).');
-      const buf = Buffer.from(m[2], 'base64');
-      if (buf.length > 3e6) return fail(400, 'too_big', 'Fișierul e prea mare (cel mult 3 MB).');
+      const buf = m ? Buffer.from(m[2], 'base64') : await readBinary(stored);
+      if (!buf) return fail(400, 'invalid_file', 'Fișierul nu s-a urcat. Încearcă din nou.');
+      if (m && buf.length > 3e6) return fail(400, 'too_big', 'Fișierul e prea mare (cel mult 3 MB).');
+      if (buf.length > MAX_BIG) return fail(400, 'too_big', 'Fișierul e prea mare (WhatsApp primește cel mult 100 MB).');
       const caption = String(body.caption || '').trim().slice(0, 1024);
       const filename = String(body.filename || '').replace(/[\\/:*?"<>|]+/g, '').trim().slice(0, 120) || 'fisier.' + ext;
       const conversations = await readJSON(KEY, []);
@@ -220,8 +239,8 @@ module.exports = async (req, res) => {
       const result = await WA.sendMedia({ phone, from: convo.location || '', buf, mime, filename, caption });
       if (!result.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis fișierul' + (result.error ? ': ' + result.error : '.'));
       const id = result.id || crypto.randomUUID();
-      const path = 'wa-media/' + String(id).replace(/[^\w-]/g, '').slice(-60) + '.' + ext;
-      await writeBinary(path, buf, mime);
+      const path = stored || 'wa-media/' + String(id).replace(/[^\w-]/g, '').slice(-60) + '.' + ext;
+      if (!stored) await writeBinary(path, buf, mime);
       convo.messages.push({ id, direction: 'out', type: 'other', media: { kind: result.kind, mime, filename, path }, text: caption || (result.kind === 'image' ? 'Poză' : filename),
         status: 'sent', timestamp: nowISO(), sentBy: session.employeeId });
       convo.lastMessageAt = nowISO();

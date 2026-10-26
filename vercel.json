@@ -182,6 +182,9 @@
     "api/automation-tick.js": {
       "maxDuration": 60
     },
+    "api/portal-whatsapp.js": {
+      "maxDuration": 60
+    },
     "api/ads-manager.js": {
       "maxDuration": 60
     },
