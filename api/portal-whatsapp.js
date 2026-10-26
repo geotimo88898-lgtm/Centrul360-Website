@@ -17,6 +17,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
+const { saveConversations } = require('./_lib/wa-convos');
 const { requireAuth } = require('./_lib/auth');
 const WA = require('./_lib/whatsapp');
 const WT = require('./_lib/wa-templates');
@@ -150,7 +151,7 @@ module.exports = async (req, res) => {
       if (!convo) return fail(404, 'conversation_not_found');
       if (convo.unreadCount) {
         convo.unreadCount = 0;
-        await writeJSON(KEY, conversations);
+        await saveConversations(conversations);
       }
       const who = await whoIs(phone);
       if ((!convo.clientName || convo.clientName === convo.phone) && who.lead && who.lead.name) convo.clientName = who.lead.name;
@@ -224,7 +225,7 @@ module.exports = async (req, res) => {
       convo.messages.push({ id, direction: 'out', type: 'other', media: { kind: result.kind, mime, filename, path }, text: caption || (result.kind === 'image' ? 'Poză' : filename),
         status: 'sent', timestamp: nowISO(), sentBy: session.employeeId });
       convo.lastMessageAt = nowISO();
-      await writeJSON(KEY, conversations);
+      await saveConversations(conversations);
       res.status(200).json({ ok: true, id });
       return;
     }
@@ -255,7 +256,7 @@ module.exports = async (req, res) => {
         sentBy: session.employeeId,
       });
       convo.lastMessageAt = nowISO();
-      await writeJSON(KEY, conversations);
+      await saveConversations(conversations);
       res.status(200).json({ ok: true, messages: convo.messages });
       return;
     }
@@ -307,7 +308,7 @@ module.exports = async (req, res) => {
       await writeBinary(path, buf, 'image/jpeg');
       convo.messages.push(Object.assign({ id, direction: 'out', type, media: { kind: 'image', mime: 'image/jpeg', filename: 'rezultate.jpg', path }, text, status: 'sent', timestamp: nowISO(), sentBy: session.employeeId }, templateId ? { templateId } : {}));
       convo.lastMessageAt = nowISO();
-      await writeJSON(KEY, conversations);
+      await saveConversations(conversations);
       res.status(200).json({ ok: true, how: type === 'template' ? 'template' : 'photo', city });
       return;
     }
@@ -352,7 +353,7 @@ module.exports = async (req, res) => {
       convo.messages.push(Object.assign({ id: r.id || crypto.randomUUID(), direction: 'out', type: 'template', templateId: tpl.id, text: [tpl.header, text, tpl.footer].filter(Boolean).join('\n'), status: 'sent', timestamp: nowISO(), sentBy: session.employeeId },
         img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: img } } : {}));
       convo.lastMessageAt = nowISO();
-      await writeJSON(KEY, conversations);
+      await saveConversations(conversations);
       res.status(200).json({ ok: true, phone: convo.phone, messages: convo.messages });
       return;
     }

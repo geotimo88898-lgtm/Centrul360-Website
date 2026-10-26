@@ -530,7 +530,7 @@ async function logSent(tpl, phone, city, id, v) {
     convo.messages.push(Object.assign({ id: id || uid(), direction: 'out', type: 'template', templateId: tpl.id, text: [pin, tpl.header, text, tpl.footer].filter(Boolean).join('\n'),
       status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true }, img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: img } } : {}));
     convo.lastMessageAt = nowISO();
-    await writeJSON(KEY, conversations);
+    await require('./wa-convos').saveConversations(conversations);
   } catch (err) { console.error('workflows.logSent error:', err.message); }
 }
 

@@ -18,6 +18,7 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
+const { saveConversations } = require('./_lib/wa-convos');
 const { normalizePhone, ensureContacts } = require('./_lib/clients');
 const { sendPush } = require('./_lib/push');
 const { appCreds } = require('./_lib/facebook');
@@ -389,7 +390,7 @@ module.exports = async (req, res) => {
       }
     }
 
-    if (changed) await writeJSON(KEY, conversations);
+    if (changed) await saveConversations(conversations);
     // before answering Meta: once the response is sent the function may be stopped
     try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
     try { await alertUndelivered(failed); } catch (err) { console.error('webhook-whatsapp: undelivered alert failed', err.message); }
