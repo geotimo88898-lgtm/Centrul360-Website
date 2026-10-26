@@ -533,3 +533,5 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 /* a phone: like the clients' board, one stage on the screen, swiped left / right, the stage row above it */
 .pl-hirebar{ display:none; }
 @media (max-width:720px){ .pl-panel.is-hire .pl-hirebar{ display:flex; } }
+.hire-cv{ border:0; font:inherit; font-size:.78rem; padding:.35rem .65rem; cursor:pointer; }
+.hire-cv:active{ transform:scale(.97); }

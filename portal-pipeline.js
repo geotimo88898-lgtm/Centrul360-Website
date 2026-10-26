@@ -392,7 +392,7 @@
           '<div class="pl-card-top"><b class="pl-name">' + esc(c.name) + '</b><span class="pl-age">' + ago(c.at) + '</span></div>' +
           '<div class="pl-card-sub">' + esc(c.phone) + (c.location ? ' · ' + esc(c.location) : '') + '</div>' +
           ((c.answers || []).length ? '<div class="hire-ans">' + c.answers.map((x) => '<span><em>' + esc(short(x.q)) + '</em> ' + esc(x.a) + '</span>').join('') + '</div>' : '') +
-          '<div class="pl-tags">' + (c.cvFile ? '<span class="pl-tag is-accent">📄 CV trimis</span>' : c.replied ? '<span class="pl-tag is-mute">A răspuns pe WhatsApp</span>' : '') + '</div>' +
+          '<div class="pl-tags">' + (c.cv ? '<button type="button" class="pl-tag is-accent hire-cv" data-preview="' + esc(c.cv.url) + '" data-pv-kind="' + esc(c.cv.kind) + '" data-pv-name="' + esc(c.cv.name) + '">📄 Vezi CV-ul</button>' : c.cvFile ? '<span class="pl-tag is-accent">📄 CV trimis</span>' : c.replied ? '<span class="pl-tag is-mute">A răspuns pe WhatsApp</span>' : '') + '</div>' +
           '<div class="hire-row"><select data-hire-st="' + esc(c.id) + '" aria-label="Etapa">' + HIRE.map(([v, l]) => '<option value="' + v + '"' + (v === (c.status || 'nou') ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
             '<a href="tel:' + esc(String(c.phone || '').replace(/[^\d+]/g, '')) + '" class="pl-qbtn" title="Sună">' + ic('phone') + '</a>' +
             '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + ic('chat') + '</a></div>' +

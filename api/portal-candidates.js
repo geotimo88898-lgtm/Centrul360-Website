@@ -17,8 +17,11 @@ async function withChat(list) {
   return list.map((c) => {
     const convo = byPhone.get(normalizePhone(c.phone) || String(c.phone));
     const inn = ((convo && convo.messages) || []).filter((m) => m.direction === 'in');
-    const file = inn.some((m) => m.media && /document|image/.test(m.media.kind || ''));
-    return Object.assign({}, c, { replied: inn.length > 0, cvFile: file, status: c.status || (file ? 'cv' : 'nou') });
+    // her CV: the last file or photo she sent (opened in the portal's preview, from the Pipeline card)
+    const f = inn.filter((m) => m.media && m.media.path && /document|image/.test(m.media.kind || '')).pop();
+    const cv = f ? { url: '/api/portal-file?p=' + encodeURIComponent(f.media.path) + (f.media.filename ? '&n=' + encodeURIComponent(f.media.filename) : ''), name: f.media.filename || 'CV',
+      kind: /pdf/i.test(f.media.mime || '') || /\.pdf$/i.test(f.media.filename || '') ? 'pdf' : f.media.kind === 'image' || /^image\//i.test(f.media.mime || '') ? 'img' : 'other' } : null;
+    return Object.assign({}, c, { replied: inn.length > 0, cvFile: !!f, cv, status: c.status || (f ? 'cv' : 'nou') });
   });
 }
 
