@@ -230,19 +230,19 @@
   const confirmText = (g, c) => 'Bună {prenume}! 🌸 V-am confirmat programarea ' + (g === 'epilare' ? 'pentru epilare laser ' : '') + 'pe {data}, ora {ora}.\n' +
     'V-am pregătit mai sus tot ce e bine să știți înainte și după ședință ☝️\n' +
     'Dacă intervine ceva, anunțați-mă cu cel puțin 24h înainte, ca să pot oferi locul altei cliente. 💛\n' +
-    '📍' + REM_CITY[c].pin + (g === 'epilare' ? '\n' : '\n\n') + 'Cu drag, Raluca - Centrul360';
+    '📍' + REM_CITY[c].pin + (g === 'epilare' ? '\n' : '\n\n') + 'Cu drag, Giovanna - Centrul360';
   const remSpec = (c) => {
     const C = REM_CITY[c];
     const list = C.groups.map((g) => ({ key: 'confirm-' + g, label: 'Reamintiri · Confirmare · ' + GROUP[g] + ' · ' + c, category: 'UTILITY', headerType: 'IMAGE', pic: CARE[g], body: confirmText(g, c), buttons: [] }));
     // every message that speaks of the address has the pin: the confirmation's comes right after it
     list.push({ key: 'loc', label: 'Reamintiri · Locația · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
-      body: 'Ne vedem pe {data}, la ora {ora}. Aici ne găsiți 📍 ' + C.near + '\n\nPe curând! Raluca - Centrul360' });
+      body: 'Ne vedem pe {data}, la ora {ora}. Aici ne găsiți 📍 ' + C.near + '\n\nPe curând! Giovanna - Centrul360' });
     list.push({ key: '24h', label: 'Reamintiri · 24h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [{ type: 'QUICK_REPLY', text: 'Reușesc să ajung' }],
-      body: 'Bună {prenume}! 📅 Vă reamintesc cu drag programarea de mâine, {data}, ora {ora}. Reușiți să ajungeți?\nNe găsiți aici: 📍 ' + C.near + '\n\nVă aștept! Raluca - Centrul360' });
+      body: 'Bună {prenume}! 📅 Vă reamintesc cu drag programarea de mâine, {data}, ora {ora}. Reușiți să ajungeți?\nNe găsiți aici: 📍 ' + C.near + '\n\nVă aștept! Giovanna - Centrul360' });
     list.push({ key: '2h', label: 'Reamintiri · 2h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
       body: c === 'Arad'
         ? 'Dragă {prenume}, vă reamintim că întâlnirea noastră este în 2 ore.\n📍Adresa: Strada Ioan Alexandru 16-18, Arad.\nIndicații: Cum veniți de pe Blvd. Iuliu Maniu este în clădirea albă la penultima ușă de termopan. Dacă nu găsiți ne puteți contacta la +40 750 277 394. Vă așteptăm cu drag!\nEchipa Centrul360'
-        : 'Bună {prenume}! ⏰ Vă aștept peste ~2 ore, la ora {ora}. Reușiți să ajungeți?\n📍 ' + C.near + '\n\nPe curând! Raluca - Centrul360' });
+        : 'Bună {prenume}! ⏰ Vă aștept peste ~2 ore, la ora {ora}. Reușiți să ajungeți?\n📍 ' + C.near + '\n\nPe curând! Giovanna - Centrul360' });
     list.push({ key: 'review', label: 'Reamintiri · Recenzie · ' + c, category: 'MARKETING', headerType: '', pic: '', buttons: [],
       body: 'Bună, {prenume}! 🥰 Ne-a bucurat tare mult vizita ta la Centrul360! Dacă ți-a plăcut experiența, ne-ar ajuta enorm o recenzie sinceră pe Google. 💛 Ca mulțumire, îți oferim un masaj facial GRATUIT la următoarea vizită, un răsfăț din partea noastră 🎁\n\nLasă recenzia aici 👉 ' + C.review + ' și scrie-ne când ai făcut-o ca să-ți activăm cadoul. Abia așteptăm să te răsfățăm din nou! ❤️\nEchipa Centrul360' });
     return list;
