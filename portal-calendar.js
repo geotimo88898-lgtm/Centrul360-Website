@@ -648,7 +648,14 @@
   async function clientCard(box, a) {
     let j;
     try { j = await K.api('/api/portal-contacts', { action: 'get', id: a.clientId }); }
-    catch (e) { box.remove(); return; }
+    catch (e) {
+      // her sheet isn't where the appointment points (an old link from HighLevel): found by her phone instead
+      if (!box.isConnected) return;
+      if (!a.clientPhone) { box.remove(); return; }
+      box.innerHTML = '<h4>' + icon('user') + 'Clienta</h4><button type="button" class="k-btn is-outline cal-client-open" data-open-phone>' + icon('user') + 'Deschide fișa clientei' + icon('arrow') + '</button>';
+      box.querySelector('[data-open-phone]').addEventListener('click', () => K.emit('contacts:open-phone', a.clientPhone));
+      return;
+    }
     if (!box.isConnected) return;
     const c = j.contact || {}, appts = j.appointments || [], pays = j.payments || [];
     const notes = ((j.detail && j.detail.notes) || []).slice(0, 2);
