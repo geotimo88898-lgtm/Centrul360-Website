@@ -2315,3 +2315,15 @@ main.ad-full{ max-width:none; }
 .cand-ans li{ display:flex; justify-content:space-between; gap:.6rem; }
 .cand-ans span{ color:var(--muted); }
 .cand-acts{ display:flex; gap:.5rem; flex-wrap:wrap; }
+
+/* Mesaje: the preview of a photo or a document (a CV), over the portal */
+html.mx-pv-open{ overflow:hidden; }
+.mx-pv{ position:fixed; inset:0; z-index:200; display:flex; flex-direction:column; background:rgba(8,8,12,.92); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); animation:k-rise .18s var(--ease) both; }
+.mx-pv-head{ display:flex; align-items:center; gap:.5rem; padding:.7rem .9rem; color:#fff; }
+.mx-pv-head b{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.95rem; }
+.mx-pv-head .k-icon-btn{ color:#fff; background:rgba(255,255,255,.1); border-color:transparent; }
+.mx-pv-body{ flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; align-items:center; gap:10px; padding:0 8px 16px; }
+.mx-pv-body img{ max-width:100%; max-height:100%; object-fit:contain; margin:auto; }
+.mx-pv-body canvas{ max-width:100%; height:auto; background:#fff; border-radius:4px; box-shadow:0 6px 24px rgba(0,0,0,.4); }
+.mx-pv-wait{ margin:auto; color:#ddd; text-align:center; line-height:1.6; display:flex; flex-direction:column; align-items:center; gap:.8rem; padding:1rem; }

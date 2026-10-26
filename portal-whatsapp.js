@@ -194,10 +194,14 @@
     if (!md) return '';
     if (!md.path) return '<span class="mx-doc is-missing">' + icon('alert') + 'Fișierul nu a putut fi descărcat de la WhatsApp</span>';
     const u = esc(fileUrl(md));
-    if (md.kind === 'image') return '<a class="mx-media-img" href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt="" loading="lazy"></a>';
+    // a photo and a document open in a preview over the portal (the app has no "back" from a file opened outside it)
+    const pv = (kind) => ' data-preview="' + u + '" data-pv-kind="' + kind + '" data-pv-name="' + esc(md.filename || '') + '"';
+    if (md.kind === 'image') return '<a class="mx-media-img" href="' + u + '"' + pv('img') + '><img src="' + u + '" alt="" loading="lazy"></a>';
     if (md.kind === 'video') return '<video class="mx-media-vid" controls preload="metadata" src="' + u + '"></video>';
     if (md.kind === 'audio') return '<audio class="mx-media-aud" controls preload="none" src="' + u + '"></audio>';
-    return '<a class="mx-doc" href="' + u + '" target="_blank" rel="noopener">' + icon('file') + '<span>' + esc(md.filename || 'Document') + '</span>' + icon('download') + '</a>';
+    const pdf = /pdf/i.test(md.mime || '') || /\.pdf$/i.test(md.filename || '');
+    const img = /^image\//i.test(md.mime || '') || /\.(jpe?g|png|webp|heic)$/i.test(md.filename || '');
+    return '<a class="mx-doc" href="' + u + '"' + pv(pdf ? 'pdf' : img ? 'img' : 'other') + '>' + icon('file') + '<span>' + esc(md.filename || 'Document') + '</span>' + icon('download') + '</a>';
   }
   // the clinic's pin, as the client got it on WhatsApp (a tap opens the map)
   const pinHtml = (p) => '<a class="mx-pin" href="https://www.google.com/maps?q=' + encodeURIComponent(p.lat + ',' + p.lng) + '" target="_blank" rel="noopener">' +
@@ -305,6 +309,7 @@
     closeThread();
   }
   window.addEventListener('popstate', () => {
+    if (pvEl || pvBack) { pvBack = false; return; } // back closes the file's preview first (below), the conversation stays open
     if (!C.pushed) return;
     C.pushed = false;
     if (C.selectedPhone) closeThread();
@@ -653,6 +658,67 @@
     pickTemplate({ phone: localPhone(ph), name: o.name || '', city, interest: o.interest || '' });
   }
   K.chat = chatWith;
+
+  // ---- the preview of a photo or a document (a CV in PDF: every page, scrolled; a Word file: download only)
+  let pvEl = null, pvPushed = false, pvBack = false;
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise((ok, no) => {
+      const sc = document.createElement('script');
+      sc.src = '/vendor/pdfjs/pdf.min.js';
+      sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js'; ok(window.pdfjsLib); };
+      sc.onerror = () => no(new Error('pdf.js'));
+      document.head.appendChild(sc);
+    });
+  }
+  function closePreview(fromBack) {
+    if (!pvEl) return;
+    pvEl.remove(); pvEl = null;
+    document.documentElement.classList.remove('mx-pv-open');
+    if (pvPushed && !fromBack) { pvPushed = false; pvBack = true; history.back(); } else pvPushed = false;
+  }
+  window.addEventListener('popstate', () => { if (pvEl) closePreview(true); });
+  async function openPreview(url, kind, name) {
+    closePreview(true);
+    pvEl = document.createElement('div');
+    pvEl.className = 'mx-pv';
+    pvEl.innerHTML = '<div class="mx-pv-head"><b>' + esc(name || (kind === 'img' ? 'Poză' : 'Document')) + '</b>' +
+      '<a class="k-icon-btn" href="' + esc(url) + '" download title="Descarcă" aria-label="Descarcă">' + icon('download') + '</a>' +
+      '<button type="button" class="k-icon-btn" data-pv-close title="Închide" aria-label="Închide">' + icon('x') + '</button></div>' +
+      '<div class="mx-pv-body">' + (kind === 'img' ? '<img src="' + esc(url) + '" alt="">' : kind === 'pdf' ? '<div class="mx-pv-wait">Se deschide…</div>' :
+        '<div class="mx-pv-wait">Fișierul ăsta nu se poate previzualiza aici (merge pentru PDF și poze).<br><a class="k-btn is-primary" href="' + esc(url) + '" download>' + icon('download') + 'Descarcă</a></div>') + '</div>';
+    document.body.appendChild(pvEl);
+    document.documentElement.classList.add('mx-pv-open');
+    try { history.pushState({ mxpv: 1 }, '', location.href); pvPushed = true; } catch (e) { /* no history */ }
+    pvEl.addEventListener('click', (e) => { if (e.target.closest('[data-pv-close]') || e.target === pvEl) closePreview(); });
+    if (kind !== 'pdf') return;
+    const box = pvEl.querySelector('.mx-pv-body'), mine = pvEl;
+    try {
+      const lib = await loadPdfJs();
+      const doc = await lib.getDocument({ url, withCredentials: true }).promise;
+      if (pvEl !== mine) return;
+      box.innerHTML = '';
+      const w = Math.min(box.clientWidth - 16, 900), dpr = Math.min(2, window.devicePixelRatio || 1);
+      for (let n = 1; n <= Math.min(doc.numPages, 20); n++) {
+        const page = await doc.getPage(n);
+        if (pvEl !== mine) return;
+        const vp = page.getViewport({ scale: 1 }), scale = (w / vp.width) * dpr, v = page.getViewport({ scale });
+        const cv = document.createElement('canvas');
+        cv.width = v.width; cv.height = v.height; cv.style.width = (v.width / dpr) + 'px';
+        box.appendChild(cv);
+        await page.render({ canvasContext: cv.getContext('2d'), viewport: v }).promise;
+      }
+    } catch (err) {
+      if (pvEl === mine) box.innerHTML = '<div class="mx-pv-wait">Nu am putut deschide PDF-ul aici.<br><a class="k-btn is-primary" href="' + esc(url) + '" download>' + icon('download') + 'Descarcă</a></div>';
+    }
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pvEl) closePreview(); });
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-preview]');
+    if (!a) return;
+    e.preventDefault();
+    openPreview(a.dataset.preview, a.dataset.pvKind, a.dataset.pvName);
+  });
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-chat]');
     if (!a) return;
