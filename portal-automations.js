@@ -390,7 +390,8 @@
           (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
       '</section>' +
       '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('clock') + '</span><div><b>Reamintiri</b><small>confirmare, înainte de programare, recenzie</small></div>' +
-        (numbers ? '<button type="button" class="k-btn ' + (remTodo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(remTodo ? 'plus' : 'refresh') + (remTodo ? 'Creează reamintirile' : 'Verifică din nou') + '</button>' : '') + '</header>' +
+        (numbers ? (remTodo ? '<span class="k-tag is-warn" title="Șabloanele de reamintire de acum (semnate Giovanna, cu numerele corecte) nu sunt încă la Meta: o apăsare le trimite">' + icon('alert') + 'De făcut</span>' : '') +
+          '<button type="button" class="k-btn ' + (remTodo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(remTodo ? 'plus' : 'refresh') + (remTodo ? 'Creează reamintirile' : 'Verifică din nou') + '</button>' : '') + '</header>' +
         (reminders.length ? reminders.map((w) => '<div class="au-msg-flow"><div class="au-msg-fhead">' + flowSwitch(w) +
             '<button type="button" class="au-msg-fname" data-open="' + esc(w.id) + '" title="Deschide pe schemă"><b>' + esc(w.name) + '</b>' + icon('right') + '</button></div>' +
             tplIds(w.steps).map((id) => { const t = byId.get(id); return '<div class="au-msg-row is-sub"><span class="au-msg-name"><b>' + esc(t ? t.label : 'Șablon șters') + '</b>' + (t ? statHtml(stats, [id]) : '') + '</span>' +

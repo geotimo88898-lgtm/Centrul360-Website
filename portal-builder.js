@@ -44,7 +44,7 @@
   const WAIT = { for: 'O perioadă', before: 'Până la … înainte de programare', after: '… după programare' };
   const MAX_BRANCHES = 6;
   const STATUS = { programata: 'Programată', confirmata: 'Confirmată', anulata: 'Anulată', reprogramata: 'Reprogramată', finalizata: 'Finalizată' };
-  const SOURCE = { any: 'Orice sursă', facebook: 'Reclamă Facebook', instagram: 'Instagram', site: 'Site', telefon: 'Telefon', recomandare: 'Recomandare', 'walk-in': 'Walk-in', manual: 'Adăugat manual' };
+  const SOURCE = { any: 'Orice sursă', facebook: 'Reclamă Facebook', instagram: 'Instagram', site: 'Site', telefon: 'Telefon', recomandare: 'Recomandare', 'walk-in': 'Venită în clinică', manual: 'Adăugat manual' };
   const ROLE = { admin: 'Admin', receptie: 'Recepție', cosmetician: 'Cosmeticiene' };
   const UNIT = { min: 'minute', h: 'ore', d: 'zile' };
   const VARS = [['prenume', 'Prenume'], ['nume', 'Nume complet'], ['telefon', 'Telefon'], ['procedura', 'Procedura (din formular)'], ['locatie', 'Orașul'], ['adresa', 'Adresa'], ['zi', 'Zi (azi / mâine / joi)'], ['data', 'Data'], ['ora', 'Ora'], ['tratament', 'Tratament'], ['link_recenzie', 'Link recenzie']];
