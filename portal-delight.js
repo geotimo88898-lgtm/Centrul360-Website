@@ -44,6 +44,31 @@
   // the day's first payment recorded from this very screen is a moment too
   K.on('sale:recorded', () => cheer());
 
+  // Game Mode (avatar menu → switch): the game's code and styles load only when it is switched on; it stays on
+  // across visits until switched off
+  let gameLoading = null;
+  const loadGame = () => gameLoading || (gameLoading = new Promise((ok, no) => {
+    if (window.C360Game) { ok(); return; }
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/portal-game.css'; document.head.appendChild(l);
+    const s = document.createElement('script'); s.src = '/portal-game.js'; s.onload = () => ok(); s.onerror = () => { gameLoading = null; no(new Error('game_load')); };
+    document.head.appendChild(s);
+  }));
+  const gameOn = () => { try { return localStorage.getItem('c360_game') === '1'; } catch (e) { return false; } };
+  window.C360GameBoot = {
+    isOn: () => !!(window.C360Game && window.C360Game.isOpen()) || gameOn(),
+    async toggle() {
+      if (!admin()) return;
+      try { await loadGame(); } catch (e) { if (K.ui) K.ui().toast('Jocul nu s-a putut încărca. Încearcă din nou.', 'error'); return; }
+      window.C360Game.toggle();
+    },
+  };
+  let gameBooted = false;
+  K.on('data', () => {
+    if (gameBooted) return;
+    gameBooted = true;
+    if (admin() && gameOn()) loadGame().then(() => window.C360Game.enter(true)).catch(() => {});
+  });
+
   // the Panou's pieces rise one after the other the first time it is painted in this visit
   let risen = false;
   K.on('section', (id) => {

@@ -190,7 +190,8 @@
   async function refreshAll() {
     // a new version of the portal is out: the pull loads it (the whole page, not just the data)
     try { const p = await K.api('/api/portal-pulse'); seeBuild(p.build); } catch (e) { /* the data still refreshes */ }
-    if (newCode(true)) return new Promise(() => {}); // the page is reloading
+    // (never in Mesaje: a reload there would close the conversation she is reading; it waits for a quiet moment)
+    if (location.hash.slice(1) !== 'mesaje' && newCode(true)) return new Promise(() => {}); // the page is reloading
     const jobs = [load(true)];
     if (frontDesk()) jobs.push(K.leads(true).catch(() => {}));
     K.emit('remote');
@@ -216,7 +217,8 @@
     // where it starts: right under the header
     const place = () => { const h = document.querySelector('header.topbar'); el.style.top = (h ? Math.max(0, h.getBoundingClientRect().bottom) : 0) + 'px'; };
     const blocked = (t) => K.drawerOpen || !!document.querySelector('.fb-root, .c360-dialog-root, .k-menu, .pl-stage-root, .c360-palette-root') ||
-      !!(t && t.closest && t.closest('.mx-tbody, .mx-thread, input, textarea, select, [contenteditable="true"], .k-drawer-root'));
+      // Mesaje lives on its own (new messages arrive by themselves): a swipe down there only scrolls the list
+      location.hash.slice(1) === 'mesaje' || !!(t && t.closest && t.closest('#panel-mesaje, .mx-tbody, .mx-thread, .mx-list, input, textarea, select, [contenteditable="true"], .k-drawer-root, .gm, .gm-sheet-root'));
     // a list that scrolls on its own and isn't at its top keeps the gesture
     const innerScrolled = (t) => { for (let n = t; n && n !== document.body && n !== document.documentElement; n = n.parentElement) { if (n.scrollTop > 0 && n.scrollHeight > n.clientHeight + 2) return true; } return false; };
     addEventListener('touchstart', (e) => {
@@ -511,6 +513,8 @@
       (phone() ? '<button type="button" class="k-menu-item" data-act="nav">' + icon('layers') + 'Deschide meniul</button>' :
         '<button type="button" class="k-menu-item" data-act="rail">' + icon('layers') + 'Strânge / extinde meniul<kbd>Ctrl B</kbd></button>') +
       '<button type="button" class="k-menu-item" data-act="search">' + icon('search') + 'Caută orice<kbd>Ctrl K</kbd></button>' +
+      // the owners' Game Mode: the business as a game (portal-game.js, loaded when switched on)
+      (DATA && DATA.isAdmin && window.C360GameBoot ? '<button type="button" class="k-menu-item gm-menu-sw' + (window.C360GameBoot.isOn() ? ' is-on' : '') + '" data-act="game" role="switch" aria-checked="' + window.C360GameBoot.isOn() + '">' + icon('sparkles') + 'Game Mode<span class="gm-msw"><i></i></span></button>' : '') +
       '<button type="button" class="k-menu-item" data-act="logout">' + icon('power') + 'Deconectare</button>';
     document.body.appendChild(menu);
     const r = anchor.getBoundingClientRect();
@@ -529,6 +533,7 @@
       if (what === 'nav') { const b = document.querySelector('.c360-mnav'); if (b) setTimeout(() => b.click(), 0); }
       if (what === 'search') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
       if (what === 'logout') logout();
+      if (what === 'game' && window.C360GameBoot) window.C360GameBoot.toggle();
       if (what === 'account' && K.openAccount) K.openAccount();
     });
   }

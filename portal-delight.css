@@ -66,6 +66,12 @@ html.c360-admin .k-head h2::after{
 }
 @keyframes c360-underline{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
 
+/* ---------------- the avatar menu: the Game Mode switch */
+.k-menu-item.gm-menu-sw .gm-msw{ margin-left:auto; position:relative; width:44px; height:26px; border-radius:99px; background:rgba(127,127,127,.3); transition:background .3s var(--ease); flex:none; }
+.k-menu-item.gm-menu-sw .gm-msw i{ position:absolute; left:3px; top:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.35); transition:transform .4s var(--spring); }
+.k-menu-item.gm-menu-sw.is-on .gm-msw{ background:linear-gradient(115deg, #6d5cff, #b14dff, #ff4d9d, #ff8a3d); }
+.k-menu-item.gm-menu-sw.is-on .gm-msw i{ transform:translateX(18px); }
+
 /* ---------------- nothing of this moves for someone who asked for calm */
 @media (prefers-reduced-motion:reduce){
   html.c360-admin .panel.active.c360-stagger > *, html.c360-admin .db-root > *, html.c360-admin .db-hero h2, .k-stat.is-bump, .ad-stat.is-bump, .db-tl-item.is-bump, html.c360-admin .k-stat.is-bump::after,

@@ -163,6 +163,15 @@
           "value": "public, max-age=2592000, immutable"
         }
       ]
+    },
+    {
+      "source": "/game/img/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
     }
   ],
   "crons": [
@@ -204,6 +213,9 @@
       "maxDuration": 60
     },
     "api/portal-integrations.js": {
+      "maxDuration": 60
+    },
+    "api/portal-game.js": {
       "maxDuration": 60
     }
   }
