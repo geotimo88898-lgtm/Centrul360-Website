@@ -470,7 +470,7 @@
   const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
   function creditOf(g) {
     const c = S.credits && S.credits[g.img];
-    return c ? '<p class="gm-credit">Foto: ' + esc(c.author) + ', ' + esc(c.license) + ', <a href="' + esc(c.source) + '" target="_blank" rel="noopener">Wikimedia Commons</a></p>' : '';
+    return c ? '<p class="gm-credit">Foto: ' + esc(c.author) + ' · ' + esc(c.license) + ' · decupată și redimensionată · <a href="' + esc(c.source) + '" target="_blank" rel="noopener">Wikimedia Commons</a></p>' : '';
   }
   function wireGarage(el, fresh) {
     const show = el.querySelector('[data-show]');

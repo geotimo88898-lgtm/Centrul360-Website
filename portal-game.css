@@ -174,7 +174,8 @@ html.gm-on .c360-tabbar{ display:none !important; }
 .gm-lane .car svg{ width:62px; height:auto; display:block; filter:drop-shadow(0 0 10px rgba(255,77,157,.8)); }
 .gm-lane.is-ghost .car{ opacity:.55; }
 .gm-lane.is-ghost .car svg{ filter:drop-shadow(0 0 8px rgba(61,224,255,.8)); }
-.gm-lane .tag{ position:absolute; left:10px; top:50%; transform:translateY(-50%); font-family:var(--gm-disp); font-size:.68rem; letter-spacing:.14em; color:var(--gm-muted); }
+.gm-lane .tag{ position:absolute; z-index:2; left:8px; top:50%; transform:translateY(-50%); padding:2px 7px; border-radius:6px; background:rgba(5,5,11,.72); font-family:var(--gm-disp); font-size:.68rem; letter-spacing:.14em; color:var(--gm-muted); }
+.gm-lane .car{ z-index:1; }
 .gm-lane .car::after{ content:""; position:absolute; right:100%; top:50%; width:calc(var(--p, 0) * 240px); max-width:120px; height:3px; transform:translateY(-50%); background:linear-gradient(90deg, transparent, rgba(255,77,157,.8)); border-radius:3px; }
 .gm-lane.is-ghost .car::after{ background:linear-gradient(90deg, transparent, rgba(61,224,255,.7)); }
 .gm-race-sum{ display:flex; align-items:baseline; justify-content:space-between; gap:.6rem; margin-top:.8rem; }

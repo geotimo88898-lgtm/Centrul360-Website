@@ -1,0 +1,58 @@
+{
+  "rolex": {
+    "file": "rolex.webp",
+    "title": "File:Rolex Submariner Professional.JPG",
+    "author": "Dr.K.",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Rolex_Submariner_Professional.JPG"
+  },
+  "m4": {
+    "file": "m4.webp",
+    "title": "File:G82 M4 Mp look front.jpg",
+    "author": "Duboyong",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:G82_M4_Mp_look_front.jpg"
+  },
+  "vacanta": {
+    "file": "vacanta.webp",
+    "title": "File:Kudadoo YYA.jpg",
+    "author": "Tyler",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Kudadoo_YYA.jpg"
+  },
+  "g63": {
+    "file": "g63.webp",
+    "title": "File:MERCEDES-AMG G 63 (W463) China (3).jpg",
+    "author": "Dinkun Chen",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:MERCEDES-AMG_G_63_(W463)_China_(3).jpg"
+  },
+  "gt3": {
+    "file": "gt3.webp",
+    "title": "File:Porsche 911 GT3 Kaneohe Bay Airshow 2025.jpg",
+    "author": "Sgt. Maj. Andrew Porch, U.S. Army Pacific Public Affairs",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Porsche_911_GT3_Kaneohe_Bay_Airshow_2025.jpg"
+  },
+  "casa": {
+    "file": "casa.webp",
+    "title": "File:Kaufman Desert Home.jpg",
+    "author": "Pmeulbroek",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Kaufman_Desert_Home.jpg"
+  },
+  "lambo": {
+    "file": "lambo.webp",
+    "title": "File:Lamborghini Revuelto (2024) (53622083054).jpg",
+    "author": "Charles from Port Chester, New York",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lamborghini_Revuelto_(2024)_(53622083054).jpg"
+  },
+  "cullinan": {
+    "file": "cullinan.webp",
+    "title": "File:Rolls-Royce Cullinan 001.jpg",
+    "author": "Jengtingchen",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Rolls-Royce_Cullinan_001.jpg"
+  }
+}
