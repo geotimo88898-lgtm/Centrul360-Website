@@ -1,7 +1,8 @@
 // Centrul360 · Game Mode (admins only; loaded on demand by portal-delight.js, styles in portal-game.css, data from
-// /api/portal-game). The clinic as a mobile game: the empire on the map, the season's boss, the race with last month,
-// the garage of goals (unlocked when the business can pay for them), the team's player cards, missions with XP and
-// trophies. Entered and left by the "Game Mode" switch of the avatar menu, through diagonal bands of lava.
+// /api/portal-game). The clinic as a mobile game with fixed rules nobody sets: the stage on Hormozi's Scaling Roadmap,
+// the empire on the map (tap a city), the season's boss, the race with last month, the garage in 3D (unlocked when the
+// game's treasury could buy it twice), the team's player cards, missions with XP and hundreds of badges. Entered and
+// left by the "Game Mode" switch of the avatar menu, through diagonal bands of lava.
 (function () {
   'use strict';
   const K = window.K;
@@ -61,41 +62,69 @@
     clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
     power: '<path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>',
     eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M20 17v5H6.5A2.5 2.5 0 0 1 4 19.5"/>',
+    medal: '<circle cx="12" cy="15" r="6"/><path d="M8.2 10.2 5 2h4l3 6 3-6h4l-3.2 8.2"/><path d="m12 12.4.9 1.9 2.1.3-1.5 1.4.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.4 2.1-.3z"/>',
+    mountain: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
+    music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 2l.6 1.4L7 4l-1.4.6L5 6l-.6-1.4L3 4l1.4-.6z"/>',
+    heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+    drop: '<path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.3 0z"/>',
+    wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+    chart: '<path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16V5"/>',
+    repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+    anchor: '<circle cx="12" cy="5" r="3"/><path d="M12 22V8M5 12H2a10 10 0 0 0 20 0h-3"/>',
+    compass: '<circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/>',
+    yacht: '<path d="M2 18c1.5 1.3 3 2 4.5 2s3-.7 4.5-2c1.5 1.3 3 2 4.5 2s3-.7 4.5-2"/><path d="M4 15 3 11h18l-3 4"/><path d="M7 11V7h7l3 4"/><path d="M10 7V4"/>',
   };
   const ic = (n, cls) => '<svg class="gi' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[n] || IC.star) + '</svg>';
-  const KIND_IC = { car: 'car', house: 'house', watch: 'watch', trip: 'plane', other: 'star' };
-  const imgOf = (img) => (!img ? '' : /^game\//.test(img) ? '/api/portal-file?p=' + encodeURIComponent(img) : '/game/img/' + encodeURIComponent(img) + '.webp');
+  const KIND_IC = { car: 'car', house: 'house', watch: 'watch', trip: 'plane', yacht: 'yacht', jet: 'plane', other: 'star' };
+  const imgOf = (img) => (img ? '/game/img/' + encodeURIComponent(img) + '.webp' : '');
 
   // ------------------------------------------------------------------ the map of Romania (Natural Earth 1:50m, projected)
   const RO_PATH = "M862.1 447.6 L873.2 463.4 L887.6 471.6 L920.3 480.5 L923.0 479.5 L923.4 477.9 L921.1 475.5 L920.7 472.6 L922.2 468.9 L926.8 468.9 L934.4 472.1 L948.5 467.3 L969.0 454.9 L988.0 452.3 L1005.5 459.7 L1014.3 468.4 L1020.0 476.6 L1018.1 486.6 L1017.0 492.9 L1012.4 519.1 L1009.3 528.8 L1004.4 539.9 L950.4 552.9 L953.8 546.8 L952.7 535.7 L950.4 527.5 L955.3 519.9 L943.5 517.2 L938.2 521.2 L934.0 528.6 L937.5 544.9 L931.8 554.2 L929.5 559.2 L929.1 571.3 L925.7 576.6 L924.9 582.2 L933.7 580.8 L929.9 591.1 L913.5 611.2 L907.8 623.1 L909.3 670.6 L902.1 698.8 L901.7 707.2 L884.6 707.5 L879.3 707.0 L863.3 702.8 L845.0 695.1 L834.4 680.6 L827.5 670.0 L812.3 674.8 L809.3 673.5 L805.1 668.5 L793.3 665.0 L779.2 665.0 L746.9 646.0 L743.5 642.6 L718.0 646.0 L680.3 655.3 L651.4 667.1 L621.4 687.7 L609.2 703.6 L595.1 712.0 L575.3 718.1 L539.6 715.7 L502.7 707.8 L462.8 699.3 L441.1 704.1 L411.8 700.6 L368.0 690.4 L335.3 687.2 L303.0 693.3 L297.7 688.8 L296.2 683.5 L297.7 676.1 L302.2 670.0 L309.8 665.5 L314.0 661.1 L314.4 656.3 L305.7 648.7 L287.8 638.4 L280.2 632.0 L278.7 630.4 L277.9 624.6 L274.5 620.2 L267.2 616.7 L261.9 610.7 L258.1 601.9 L258.9 593.8 L264.2 586.1 L271.4 582.7 L279.8 583.7 L283.6 581.4 L282.1 576.1 L273.7 569.2 L258.5 560.8 L242.9 565.3 L226.9 582.9 L215.5 585.8 L208.7 574.0 L196.1 566.8 L178.2 564.7 L167.2 560.2 L163.4 553.4 L155.4 548.1 L138.3 542.6 L137.9 537.0 L141.0 536.0 L147.0 535.4 L155.0 534.1 L156.6 531.2 L156.6 528.6 L150.1 524.9 L143.6 522.5 L140.2 520.1 L137.9 517.5 L137.5 514.9 L139.4 512.7 L142.1 512.7 L144.8 511.2 L145.9 504.6 L149.7 499.3 L152.0 497.4 L152.0 493.7 L149.3 490.0 L145.9 486.9 L140.6 485.0 L124.2 479.5 L115.9 471.8 L110.9 471.6 L102.5 467.3 L94.2 460.5 L86.6 451.0 L78.6 444.9 L76.3 442.5 L76.3 440.2 L77.4 437.5 L77.4 434.6 L75.5 425.4 L76.7 415.4 L76.3 406.4 L76.3 402.2 L74.8 400.8 L73.3 402.2 L71.4 404.0 L69.4 404.3 L63.4 397.7 L55.8 383.9 L50.8 379.5 L40.9 373.1 L32.6 367.8 L26.5 356.5 L20.0 347.5 L24.2 343.8 L48.1 338.8 L59.2 343.8 L64.5 342.0 L69.4 337.8 L72.1 334.6 L72.5 330.9 L74.8 326.7 L83.1 324.6 L104.4 327.2 L113.2 321.1 L116.2 317.7 L118.1 310.6 L120.4 304.5 L128.0 301.3 L128.0 296.1 L126.9 290.3 L131.4 277.1 L134.1 271.8 L138.3 269.7 L143.6 265.7 L152.8 257.0 L150.5 249.6 L152.4 244.1 L161.9 230.6 L169.1 217.7 L169.1 211.1 L170.2 205.3 L176.3 199.2 L183.2 191.0 L191.9 165.7 L195.4 161.5 L201.1 156.7 L205.2 152.0 L205.6 135.3 L209.8 130.6 L217.8 125.0 L225.4 116.3 L231.9 106.3 L236.4 101.3 L242.9 100.2 L250.1 96.0 L257.7 94.7 L265.3 96.5 L270.3 95.5 L277.5 90.5 L295.8 71.7 L298.4 68.0 L302.2 65.4 L317.5 59.1 L321.3 52.5 L326.2 46.7 L333.0 47.2 L354.7 61.4 L377.9 60.6 L382.1 61.2 L383.6 61.4 L386.3 62.8 L417.5 69.9 L422.1 69.1 L423.6 68.3 L435.7 74.4 L446.8 73.6 L457.4 69.4 L468.5 68.0 L478.3 70.4 L486.0 78.9 L505.7 96.3 L511.4 102.9 L520.6 102.1 L530.5 98.7 L540.7 87.0 L571.9 73.6 L595.5 70.4 L618.7 64.9 L645.7 61.2 L653.3 50.4 L657.9 42.7 L660.9 29.0 L675.4 25.0 L689.1 22.4 L694.0 20.5 L703.9 20.0 L711.5 21.1 L723.7 27.9 L732.1 36.4 L735.5 43.2 L742.7 52.7 L750.3 66.2 L758.7 84.1 L760.2 93.1 L763.6 102.9 L769.7 114.8 L781.5 127.9 L783.4 130.6 L788.7 139.8 L799.0 160.4 L807.8 168.6 L815.4 177.6 L818.8 186.5 L824.5 194.7 L837.0 205.5 L847.3 215.3 L855.7 243.5 L861.4 256.7 L865.2 266.8 L863.3 286.8 L865.6 295.5 L861.0 311.4 L852.3 343.0 L850.4 368.1 L851.9 381.8 L851.9 390.5 L854.2 396.1 L856.4 407.7 L856.8 417.7 L853.8 420.6 L849.2 423.0 L847.7 425.1 L851.5 429.6 L856.8 438.1 L862.1 447.6Z";
   const CITY_XY = {"Timișoara": [122.2, 402.3], "Arad": [133.2, 335.7], "Oradea": [197.3, 205.0], "Cluj-Napoca": [377.4, 246.8], "Sibiu": [430.4, 394.7], "Brașov": [585.0, 418.4], "București": [639.3, 603.2], "Iași": [797.7, 188.0], "Constanța": [906.9, 643.8], "Craiova": [395.5, 617.9], "Deva": [300.9, 381.8], "Baia Mare": [373.3, 112.2], "Suceava": [655.5, 113.0], "Galați": [840.6, 449.9], "Pitești": [509.0, 537.9], "Târgu Mureș": [476.1, 282.2]};
 
-  // ------------------------------------------------------------------ sound: made on the spot (no files), off by a tap
+  // ------------------------------------------------------------------ sound: recorded effects + a music loop, through
+  // the Web Audio context opened by the tap on the switch (portal-delight.js), so the iPhone plays it (also on silent:
+  // the audio session is "playback"); effects that did not load yet are made on the spot
   const Sfx = (() => {
-    let ctx = null, master = null;
+    const NAMES = ['whoosh-in', 'whoosh-out', 'impact', 'tap', 'tab', 'coin', 'claim', 'tension', 'unlock', 'level', 'trophy', 'hit', 'boss-down', 'error'];
+    let ctx = null, sfxBus = null, musicBus = null, loading = null, musicBuf = null, musicSrc = null, musicWanted = false;
+    const buf = {};
     let on = store.get('c360_game_sound', '1') !== '0';
+    let musicOn = store.get('c360_game_music', '1') !== '0';
     const ac = () => {
-      if (!on) return null;
       try {
         if (!ctx) {
-          const C = window.AudioContext || window.webkitAudioContext;
-          if (!C) return null;
-          ctx = new C();
+          ctx = window.__gmAudio || null;
+          if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = window.__gmAudio = new C(); }
           const comp = ctx.createDynamicsCompressor();
-          master = ctx.createGain(); master.gain.value = 0.55;
-          master.connect(comp); comp.connect(ctx.destination);
+          comp.connect(ctx.destination);
+          sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(comp);
+          musicBus = ctx.createGain(); musicBus.gain.value = 0; musicBus.connect(comp);
         }
-        if (ctx.state === 'suspended') ctx.resume();
+        if (ctx.state === 'suspended' || ctx.state === 'interrupted') ctx.resume().catch(() => {});
         return ctx;
       } catch (e) { return null; }
     };
+    const fetchBuf = (name) => fetch('/game/sfx/' + name + '.mp3').then((r) => (r.ok ? r.arrayBuffer() : null))
+      .then((ab) => (ab ? new Promise((ok) => { try { const p = ctx.decodeAudioData(ab, ok, () => ok(null)); if (p && p.then) p.then(ok, () => ok(null)); } catch (e) { ok(null); } }) : null)).catch(() => null);
+    function preload() {
+      if (loading || !ac()) return loading;
+      loading = Promise.all(NAMES.map((n) => fetchBuf(n).then((b) => { if (b) buf[n] = b; })));
+      return loading;
+    }
+    // the effects made on the spot (when a file is missing)
     const tone = (f, at, dur, type, vol, f2) => {
       const c = ac(); if (!c) return;
       const t = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
       o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
       if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+      o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur + 0.05);
     };
     let noiseBuf = null;
     const noise = (at, dur, f1, f2, vol, q) => {
@@ -105,24 +134,148 @@
       s.buffer = noiseBuf; f.type = 'bandpass'; f.Q.value = q || 1;
       f.frequency.setValueAtTime(f1, t); f.frequency.exponentialRampToValueAtTime(f2, t + dur);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + dur * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05);
+      s.connect(f); f.connect(g); g.connect(sfxBus); s.start(t); s.stop(t + dur + 0.05);
     };
+    const SYNTH = {
+      'whoosh-in': () => { noise(0, 0.75, 250, 5000, 0.55, 0.9); tone(120, 0, 0.6, 'sine', 0.2, 45); },
+      'whoosh-out': () => noise(0, 0.6, 4500, 300, 0.45, 0.9),
+      impact: () => { tone(150, 0, 0.6, 'sine', 0.7, 35); noise(0, 0.3, 900, 150, 0.4, 0.7); },
+      tap: () => tone(720, 0, 0.05, 'triangle', 0.06, 520),
+      tab: () => tone(420, 0, 0.09, 'sine', 0.06, 780),
+      coin: () => { tone(988, 0, 0.08, 'square', 0.07); tone(1319, 0.07, 0.22, 'square', 0.07); },
+      claim: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.07, 0.3, 'triangle', 0.12)),
+      tension: () => { tone(55, 0, 2.2, 'sawtooth', 0.06, 110); noise(0, 2.2, 200, 1200, 0.05, 2); },
+      unlock: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.1, 0.55, 'triangle', 0.2)); tone(1567.98, 0.42, 1.2, 'sine', 0.12); noise(0.38, 1.1, 3000, 9000, 0.14, 0.5); tone(65.4, 0.38, 1.2, 'sine', 0.5, 40); },
+      level: () => { [392, 523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, i * 0.075, 0.32, 'square', 0.06)); tone(1567.98, 0.45, 0.9, 'triangle', 0.12); },
+      trophy: () => { [1318.5, 1567.98, 2093].forEach((f, i) => tone(f, i * 0.06, 0.6, 'sine', 0.1)); },
+      hit: () => { tone(120, 0, 0.3, 'sawtooth', 0.12, 45); noise(0, 0.18, 1400, 250, 0.3, 0.8); },
+      'boss-down': () => { noise(0, 1.2, 2000, 100, 0.5, 0.6); [392, 523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.3 + i * 0.05, 1.2, 'triangle', 0.15)); },
+      error: () => { tone(220, 0, 0.1, 'square', 0.06); tone(180, 0.12, 0.12, 'square', 0.06); },
+    };
+    function play(name, vol) {
+      if (!on) return;
+      const c = ac(); if (!c) return;
+      const b = buf[name];
+      if (!b) { if (SYNTH[name]) SYNTH[name](); preload(); return; }
+      try { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = vol == null ? 1 : vol; s.connect(g); g.connect(sfxBus); s.start(); } catch (e) { /* nothing */ }
+    }
+    async function music(want) {
+      musicWanted = want;
+      const c = ac(); if (!c) return;
+      const t = c.currentTime;
+      if (!want || !on || !musicOn) {
+        musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(0, t, 0.25);
+        if (musicSrc) { const s = musicSrc; musicSrc = null; setTimeout(() => { try { s.stop(); } catch (e) { /* stopped */ } }, 1200); }
+        return;
+      }
+      if (musicSrc) { musicBus.gain.setTargetAtTime(0.3, t, 0.6); return; }
+      if (!musicBuf) musicBuf = await fetchBuf('music');
+      if (!musicBuf || !musicWanted || musicSrc) return;
+      const s = c.createBufferSource(); s.buffer = musicBuf; s.loop = true; s.connect(musicBus); s.start();
+      musicSrc = s;
+      musicBus.gain.setValueAtTime(0, c.currentTime); musicBus.gain.setTargetAtTime(0.3, c.currentTime, 1.2);
+    }
+    // the music steps back while something big happens
+    function duck(ms) { if (!musicSrc || !ctx) return; const t = ctx.currentTime; musicBus.gain.setTargetAtTime(0.06, t, 0.1); musicBus.gain.setTargetAtTime(0.3, t + ms / 1000, 0.8); }
     return {
-      get on() { return on; },
-      set(v) { on = !!v; store.set('c360_game_sound', on ? '1' : '0'); if (on) this.tap(); },
-      whoosh() { noise(0, 0.75, 250, 5000, 0.55, 0.9); tone(120, 0, 0.6, 'sine', 0.2, 45); },
-      whooshOut() { noise(0, 0.6, 4500, 300, 0.45, 0.9); },
-      impact() { tone(150, 0, 0.6, 'sine', 0.7, 35); noise(0, 0.3, 900, 150, 0.4, 0.7); tone(55, 0.02, 0.8, 'triangle', 0.35, 30); },
-      coin() { tone(988, 0, 0.08, 'square', 0.07); tone(1319, 0.07, 0.22, 'square', 0.07); },
-      tap() { tone(720, 0, 0.05, 'triangle', 0.06, 520); },
-      tab() { tone(420, 0, 0.09, 'sine', 0.06, 780); },
-      hit() { tone(120, 0, 0.3, 'sawtooth', 0.12, 45); noise(0, 0.18, 1400, 250, 0.3, 0.8); },
-      unlock() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.1, 0.55, 'triangle', 0.2)); tone(1567.98, 0.42, 1.2, 'sine', 0.12); tone(2093, 0.5, 1, 'sine', 0.05); noise(0.38, 1.1, 3000, 9000, 0.14, 0.5); tone(65.4, 0.38, 1.2, 'sine', 0.5, 40); },
-      level() { [392, 523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, i * 0.075, 0.32, 'square', 0.06)); tone(1567.98, 0.45, 0.9, 'triangle', 0.12); },
-      tension() { tone(55, 0, 2.2, 'sawtooth', 0.06, 110); noise(0, 2.2, 200, 1200, 0.05, 2); },
+      get on() { return on; }, get musicOn() { return musicOn; },
+      unlock() { ac(); preload(); },
+      set(v) { on = !!v; store.set('c360_game_sound', on ? '1' : '0'); music(musicWanted); if (on) play('tap'); },
+      setMusic(v) { musicOn = !!v; store.set('c360_game_music', musicOn ? '1' : '0'); music(musicWanted); },
+      music, duck, play, preload,
+      suspend() { try { if (ctx && ctx.state === 'running') ctx.suspend(); } catch (e) { /* nothing */ } },
+      resume() { try { if (ctx && ctx.state !== 'running') ctx.resume(); } catch (e) { /* nothing */ } },
+      whoosh() { play('whoosh-in'); }, whooshOut() { play('whoosh-out'); }, impact() { play('impact'); }, coin() { play('coin', 0.65); }, tap() { play('tap', 1); },
+      tab() { play('tab', 0.8); }, hit() { play('hit', 0.8); }, fanfare() { play('unlock'); }, level() { play('level'); }, tension() { play('tension'); },
+      trophy() { play('trophy'); }, claim() { play('claim'); }, bossDown() { play('boss-down'); }, error() { play('error', 0.75); },
     };
   })();
   const buzz = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* no motor */ } };
+
+  // ------------------------------------------------------------------ the cars in 3D: the real photo and its depth map
+  // (game/img/<id>-depth.png) in a WebGL shader: the camera orbits a little by itself and follows the finger or the
+  // mouse; the near parts move more than the far ones, a light sweeps over the body. Without WebGL: the photo.
+  const Car3D = (() => {
+    const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*0.5+0.5;v.y=1.0-v.y;gl_Position=vec4(p,0.0,1.0);}';
+    const FS = 'precision mediump float;varying vec2 v;uniform sampler2D img,dep;uniform vec2 off;uniform float zoom,sat,bright,time,focus,hasDep;uniform vec2 px;' +
+      'void main(){vec2 uv=(v-0.5)/zoom+0.5;vec2 p=uv;float d=0.5;' +
+      'if(hasDep>0.5){for(int i=0;i<7;i++){d=texture2D(dep,p).r;p=uv+off*(d-focus)*0.06;}}' +
+      'vec4 c=texture2D(img,clamp(p,0.002,0.998));' +
+      'float g=dot(c.rgb,vec3(0.299,0.587,0.114));c.rgb=mix(vec3(g),c.rgb,sat)*bright;' +
+      'if(hasDep>0.5){float dx=texture2D(dep,p+vec2(px.x,0.0)).r-texture2D(dep,p-vec2(px.x,0.0)).r;float dy=texture2D(dep,p+vec2(0.0,px.y)).r-texture2D(dep,p-vec2(0.0,px.y)).r;' +
+      'vec3 n=normalize(vec3(-dx*9.0,-dy*9.0,1.0));float a=time*0.55;vec3 L=normalize(vec3(cos(a)*0.9+off.x*0.6,0.35+off.y*0.4,0.75));' +
+      'float spec=pow(max(dot(reflect(-L,n),vec3(0.0,0.0,1.0)),0.0),28.0)*smoothstep(0.45,0.8,d);' +
+      'float sweep=smoothstep(0.08,0.0,abs(uv.x-fract(time*0.09)*1.6+0.3-uv.y*0.25))*smoothstep(0.5,0.85,d)*0.35;' +
+      'c.rgb+=vec3(1.0,0.95,0.88)*(spec*0.55+sweep)*sat;}' +
+      'float vg=smoothstep(1.15,0.35,length((v-0.5)*vec2(1.25,1.0)));c.rgb*=mix(0.55,1.0,vg);gl_FragColor=vec4(c.rgb,1.0);}';
+    function create(canvas) {
+      const gl = canvas.getContext('webgl', { premultipliedAlpha: false, antialias: false, preserveDrawingBuffer: false }) || canvas.getContext('experimental-webgl');
+      if (!gl) return null;
+      const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+      const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+      if (!vs || !fs) return null;
+      const prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+      gl.useProgram(prog);
+      const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      const U = {}; ['img', 'dep', 'off', 'zoom', 'sat', 'bright', 'time', 'focus', 'hasDep', 'px'].forEach((k) => { U[k] = gl.getUniformLocation(prog, k); });
+      gl.uniform1i(U.img, 0); gl.uniform1i(U.dep, 1);
+      const tex = (unit) => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; };
+      const tImg = tex(0), tDep = tex(1);
+      const st = { ox: 0, oy: 0, tx: 0, ty: 0, drag: null, zoom: 1.04, zoomTo: 1.04, sat: 0, satTo: 0, bright: 0.5, brightTo: 0.5, hasDep: 0, raf: 0, t0: performance.now(), visible: true, id: '' };
+      const loadImg = (src) => new Promise((ok) => { if (!src) { ok(null); return; } const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+      function size() {
+        const dpr = Math.min(2, window.devicePixelRatio || 1), w = canvas.clientWidth, h = canvas.clientHeight;
+        if (w && h && (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr))) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+      function frame(now) {
+        st.raf = requestAnimationFrame(frame);
+        if (!st.visible || document.hidden) return;
+        const t = (now - st.t0) / 1000;
+        if (!st.drag) { st.tx = Math.sin(t * 0.42) * 0.85; st.ty = Math.sin(t * 0.29) * 0.35; }
+        const k = st.drag ? 0.25 : 0.05;
+        st.ox += (st.tx - st.ox) * k; st.oy += (st.ty - st.oy) * k;
+        st.zoom += (st.zoomTo - st.zoom) * 0.06; st.sat += (st.satTo - st.sat) * 0.05; st.bright += (st.brightTo - st.bright) * 0.05;
+        size();
+        gl.uniform2f(U.off, st.ox, st.oy); gl.uniform1f(U.zoom, st.zoom); gl.uniform1f(U.sat, st.sat); gl.uniform1f(U.bright, st.bright);
+        gl.uniform1f(U.time, t); gl.uniform1f(U.focus, 0.62); gl.uniform1f(U.hasDep, st.hasDep); gl.uniform2f(U.px, 1 / 700, 1 / 438);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+      const pt = (e) => (e.touches ? e.touches[0] : e);
+      const down = (e) => { const p = pt(e); st.drag = { x: p.clientX, y: p.clientY, ox: st.tx, oy: st.ty }; };
+      const move = (e) => { if (!st.drag) return; const p = pt(e), r = canvas.getBoundingClientRect(); st.tx = clamp(st.drag.ox + (p.clientX - st.drag.x) / r.width * 3, -1.4, 1.4); st.ty = clamp(st.drag.oy + (p.clientY - st.drag.y) / r.height * 2, -0.8, 0.8); };
+      const up = () => { st.drag = null; };
+      const hover = (e) => { if (e.pointerType !== 'mouse' || st.drag) return; const r = canvas.getBoundingClientRect(); st.tx = ((e.clientX - r.left) / r.width - 0.5) * 2.2; st.ty = ((e.clientY - r.top) / r.height - 0.5) * 1.2; st.hoverAt = performance.now(); };
+      canvas.addEventListener('pointerdown', down); window.addEventListener('pointermove', move, { passive: true }); window.addEventListener('pointerup', up); canvas.addEventListener('pointermove', hover);
+      canvas.addEventListener('touchstart', down, { passive: true }); window.addEventListener('touchmove', move, { passive: true }); window.addEventListener('touchend', up);
+      return {
+        async set(id, imgUrl, depthUrl, unlocked) {
+          st.id = id;
+          const [im, dp] = await Promise.all([loadImg(imgUrl), loadImg(depthUrl)]);
+          if (st.id !== id || !im) return false;
+          gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tImg); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
+          gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tDep);
+          if (dp) gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, dp);
+          st.hasDep = dp ? 1 : 0;
+          st.sat = 0; st.bright = 0.2; st.zoom = 1.25;
+          this.mode(unlocked);
+          if (!st.raf) st.raf = requestAnimationFrame(frame);
+          return true;
+        },
+        mode(unlocked) { st.satTo = unlocked ? 1 : 0.08; st.brightTo = unlocked ? 1.05 : 0.62; st.zoomTo = 1.04; },
+        reveal() { st.satTo = 1; st.brightTo = 1.15; st.zoomTo = 1.0; setTimeout(() => { st.brightTo = 1.05; }, 900); },
+        dolly(z) { st.zoomTo = z; },
+        visible(v) { st.visible = v; },
+        destroy() { cancelAnimationFrame(st.raf); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('touchmove', move); window.removeEventListener('touchend', up);
+          try { const x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (e) { /* gone */ } },
+      };
+    }
+    return { create };
+  })();
 
   // ------------------------------------------------------------------ embers rising behind everything (canvas, ~30 fps)
   const Fx = (() => {
@@ -238,7 +391,8 @@
     '<linearGradient id="gmCarGhost" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1b6dff"/><stop offset="1" stop-color="#3de0ff"/></linearGradient>' +
     '<clipPath id="gmRoClip"><path d="' + RO_PATH + '"/></clipPath>' +
     '</defs></svg>';
-  const TABS = [['imperiu', 'Imperiu', 'castle'], ['misiuni', 'Misiuni', 'scroll'], ['garaj', 'Garaj', 'car'], ['echipa', 'Echipa', 'users'], ['trofee', 'Trofee', 'trophy']];
+  const TABS = [['imperiu', 'Imperiu', 'castle'], ['misiuni', 'Misiuni', 'scroll'], ['garaj', 'Garaj', 'car'], ['echipa', 'Echipa', 'users'], ['insigne', 'Insigne', 'medal']];
+  const RAR = ['Comun', 'Rar', 'Epic', 'Legendar', 'Mitic'];
 
   function avatarHtml() {
     const me = (K.data && K.data.me) || {};
@@ -254,8 +408,8 @@
         '<button type="button" class="gm-lvl" data-act="level" aria-label="Nivelul"><svg class="ring" viewBox="0 0 58 58"><circle cx="29" cy="29" r="26" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>' +
           '<circle class="fg" cx="29" cy="29" r="26" fill="none" stroke="url(#gmLavaStroke)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="163.4" style="transition:stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1)"/></svg>' +
           '<span class="hex"><span><small>NIV</small><b data-lv>1</b></span></span></button>' +
-        '<div class="gm-xp"><div class="gm-xp-top"><b data-title>Salon</b><span data-xptxt></span></div><div class="gm-xpbar"><i></i></div></div>' +
-        '<button type="button" class="gm-hud-btn" data-act="sound" aria-label="Sunet">' + ic(Sfx.on ? 'sound' : 'mute') + '</button>' +
+        '<button type="button" class="gm-xp" data-act="stage"><div class="gm-xp-top"><b data-title>Etapa</b><span data-xptxt></span></div><div class="gm-xpbar"><i></i></div></button>' +
+        '<button type="button" class="gm-gold" data-act="treasury" aria-label="Trezoreria">' + ic('coins') + '<span data-treasury>0</span></button>' +
         '<button type="button" class="gm-hud-btn is-av" data-act="menu" aria-label="Profil">' + avatarHtml() + '</button>' +
       '</header>' +
       '<main class="gm-main"></main>' +
@@ -265,29 +419,31 @@
     document.documentElement.classList.add('gm-on');
     S.root = root;
     root.addEventListener('click', onClick);
+    // the first touch inside the game wakes the sound (a game opened by itself at page load, without a tap)
+    root.addEventListener('pointerdown', () => { if (!S.audioOk) { S.audioOk = true; if (window.C360GameBoot && window.C360GameBoot.audio) window.C360GameBoot.audio(); Sfx.unlock(); Sfx.music(true); } }, { passive: true });
     Fx.start(root.querySelector('.gm-fx'));
     return root;
   }
+  const short = (n) => { n = Number(n) || 0; const a = Math.abs(n); return (n < 0 ? '-' : '') + (a >= 1e6 ? ro(a / 1e6, a >= 1e7 ? 0 : 1) + ' mil.' : a >= 1e4 ? ro(Math.round(a / 1000)) + 'k' : ro(Math.round(a))); };
 
   function paintHud() {
     const d = S.d; if (!d || !S.root) return;
     const L = d.level, hud = S.root.querySelector('.gm-hud');
-    const lv = hud.querySelector('.gm-lvl');
-    lv.className = 'gm-lvl t' + L.tier;
+    hud.querySelector('.gm-lvl').className = 'gm-lvl t' + Math.min(5, Math.floor(d.stage.i / 2));
     hud.querySelector('[data-lv]').textContent = L.level;
-    hud.querySelector('[data-title]').textContent = L.title;
+    hud.querySelector('[data-title]').textContent = d.stage.name;
     hud.querySelector('[data-xptxt]').textContent = ro(L.xp - L.from) + ' / ' + ro(L.to - L.from) + ' XP';
+    const tr = hud.querySelector('[data-treasury]'); tr.textContent = short(d.treasury); tr.parentElement.classList.toggle('is-neg', d.treasury < 0);
     requestAnimationFrame(() => {
       hud.querySelector('.gm-xpbar i').style.setProperty('--p', L.progress);
       hud.querySelector('.gm-lvl .fg').style.strokeDashoffset = String(163.4 * (1 - L.progress));
     });
-    // the bar's badges: missions to claim, trophies not seen yet
-    const dots = { misiuni: d.missions.claimable, trofee: d.trophies.filter((t) => t.isNew).length, garaj: d.goals.filter((g) => g.isNew).length };
+    const dots = { misiuni: d.missions.claimable, insigne: d.badges.filter((t) => t.isNew).length, garaj: d.goals.filter((g) => g.isNew).length };
     S.root.querySelectorAll('.gm-nav [data-tab]').forEach((b) => {
       b.classList.toggle('is-on', b.dataset.tab === S.tab);
       const n = dots[b.dataset.tab] || 0, old = b.querySelector('.dot');
       if (old) old.remove();
-      if (n) b.insertAdjacentHTML('beforeend', '<span class="dot">' + n + '</span>');
+      if (n) b.insertAdjacentHTML('beforeend', '<span class="dot">' + (n > 99 ? '99+' : n) + '</span>');
     });
   }
 
@@ -295,19 +451,22 @@
   function show(tab, opts) {
     opts = opts || {};
     if (!S.root || !S.d) return;
+    if (!SCREENS[tab]) tab = 'imperiu';
     const main = S.root.querySelector('.gm-main');
     const old = main.querySelector('.gm-screen:not(.is-out)');
     const same = old && old.dataset.screen === tab;
     if (!same && !opts.silent) Sfx.tab();
+    if (!same && S.car) { S.car.destroy(); S.car = null; }
     S.tab = tab; store.set('c360_game_tab', tab);
     riseI = 0;
-    const html = '<div class="gm-wrap is-' + tab + '">' + (SCREENS[tab] || SCREENS.imperiu)(S.d) + '</div>';
+    const html = '<div class="gm-wrap is-' + tab + '">' + SCREENS[tab](S.d) + '</div>';
     if (same && opts.static) {
       const top = old.scrollTop;
       old.classList.add('gm-static');
-      old.innerHTML = html;
+      if (tab === 'garaj' && S.car) { // the garage keeps its 3D car: only the numbers change
+        const det = old.querySelector('[data-detail]'); if (det) { det.innerHTML = goalDetail(S.d.goals[S.gi]); hydrate(det, false); }
+      } else { old.innerHTML = html; after(tab, old, false); }
       old.scrollTop = top;
-      after(tab, old, false);
       paintHud();
       return;
     }
@@ -322,6 +481,7 @@
   function after(tab, el, fresh) {
     hydrate(el, false);
     if (tab === 'garaj') wireGarage(el, fresh);
+    if (tab === 'imperiu') wireMap(el);
     if (tab === 'imperiu' && fresh) {
       const em = el.querySelector('.gm-boss-em');
       if (em && S.d.season.today > 0) setTimeout(() => { em.classList.add('is-hit'); Sfx.hit(); const b = el.querySelector('.gm-hp b'); if (b) b.classList.add('is-flash'); }, 700);
@@ -337,17 +497,23 @@
   const CAR = (fill) => '<svg viewBox="0 0 64 24" aria-hidden="true"><path d="M3 17C3 14 6 12.5 10 12l10-1c4-3 10-5 18-5 6 0 10 2 14 5l7 1.5c2.5.5 3 2.5 3 4.5v1H3z" fill="url(#' + fill + ')"/>' +
     '<path d="M24 11c4-2.5 8-3.5 13-3.5h3l1 3.5z" fill="rgba(10,8,20,.75)"/><path d="M58 13.5h3" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' +
     '<circle cx="15" cy="18" r="4.6" fill="#0b0918"/><circle cx="15" cy="18" r="2" fill="#bbb"/><circle cx="50" cy="18" r="4.6" fill="#0b0918"/><circle cx="50" cy="18" r="2" fill="#bbb"/></svg>';
+  const fmtDay = (day) => { const p = String(day || '').split('-'); return p.length === 3 ? Number(p[2]) + ' ' + ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec'][Number(p[1]) - 1] : ''; };
+  const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
+  const pct = (v) => Math.round((Number(v) || 0) * 100) + '%';
 
   function imperiu(d) {
-    const s = d.season, m = d.money, e = d.engine, race = d.race;
+    const s = d.season, m = d.money, e = d.engine, race = d.race, st = d.stage;
     let h = '';
-    // the month's money, big
     h += '<section class="gm-card gm-hero a-hero' + rise() + '"><span class="gm-eyebrow">Încasat în ' + esc(d.monthLabel.split(' ')[0]) + (e.partial ? ' (din ' + esc(fmtDay(e.from)) + ')' : '') + '</span>' +
       '<span class="gm-big">' + num(m.month, 'h-month', 'lei') + '<small>LEI</small></span>' +
       '<div class="gm-chips"><span class="gm-chip is-good">' + ic('bolt') + 'Azi ' + num(m.today, 'h-today', 'lei') + ' lei</span>' +
       '<span class="gm-chip">' + ic('trend') + 'Spre ' + num(m.projected, 'h-proj', 'lei') + ' lei</span>' +
       '<span class="gm-chip">' + ic('clock') + 'Ieri ' + lei(m.yesterday) + '</span></div></section>';
-    // the season's boss
+    // the stage on Hormozi's roadmap: a ladder of 10
+    h += '<section class="gm-card gm-roadmap a-stage is-tap' + rise() + '" data-act="stage"><div class="gm-card-h"><h3>' + ic('mountain') + 'Etapa ' + st.i + ' · ' + esc(st.name) + '</h3><span class="gm-chip">' + short(st.yearPace) + ' lei/an</span></div>' +
+      '<div class="gm-ladder">' + st.all.map((x) => '<i class="' + (x.i < st.i ? 'is-done' : x.i === st.i ? 'is-now' : '') + '" style="--i:' + x.i + '"></i>').join('') + '</div>' +
+      (st.next ? '<div class="gm-stage-next"><span>Spre <b>' + esc(st.next.name) + '</b>: ' + short(st.next.min) + ' lei/an</span><span class="gm-num">' + Math.round(st.next.progress * 100) + '%</span></div>' + bar(st.next.progress) +
+        '<p class="gm-note">' + esc(st.focus) + (st.next.eta ? ' În ritmul de acum ajungi acolo în <b>' + esc(st.next.eta.label) + '</b>.' : '') + '</p>' : '<p class="gm-note">Ultima etapă.</p>') + '</section>';
     if (s.target) {
       const left = Math.max(0, s.target - s.done);
       h += '<section class="gm-card gm-boss a-boss is-tap' + rise() + '" data-act="boss"><div class="gm-boss-em">' + BOSS_SVG + '</div><div>' +
@@ -356,14 +522,27 @@
         '<div class="gm-hp-txt"><span>HP <span class="gm-num">' + lei(left) + '</span></span><span>' + s.daysLeft + ' zile</span></div>' +
         '<p class="gm-note" style="margin-top:.45rem">' + (s.defeated ? '<b>Învins.</b> Tot ce intră acum e bonus de sezon.' : 'Lovitura de azi: <b>' + lei(s.today) + '</b>. Ritmul care îl doboară: <b>' + lei(s.needPerDay) + ' pe zi</b>.') + '</p></div>' +
         (s.defeated ? '<span class="gm-stamp">ÎNVINS</span>' : '') + '</section>';
-    } else {
-      h += '<section class="gm-card gm-boss a-boss' + rise() + '"><div class="gm-boss-em">' + BOSS_SVG + '</div><div><span class="gm-eyebrow">' + esc(s.label) + '</span><h4>' + esc(s.boss) + '</h4>' +
-        '<p class="gm-note">Bossul își arată puterea după primele zile ale sezonului.</p></div></section>';
     }
-    // the map
-    h += '<section class="gm-card gm-map a-map' + rise() + '"><div class="gm-card-h"><h3>' + ic('map') + 'Imperiul</h3><span class="gm-chip">' + d.locations + (d.locations === 1 ? ' locație' : ' locații') + ' · ' + d.staff + ' oameni</span></div>' + mapSvg(d) +
-      '<div class="gm-map-legend">' + (d.map.next ? '<span class="gm-chip is-gold">' + ic('flag') + 'Următorul oraș: ' + esc(d.map.next) + ' · ' + Math.round(d.map.readiness * 100) + '% pregătit</span>' : '') + '</div></section>';
-    // the race
+    h += '<section class="gm-card gm-map a-map' + rise() + '"><div class="gm-card-h"><h3>' + ic('map') + 'Imperiul</h3><span class="gm-chip">' + d.locations + (d.locations === 1 ? ' clinică' : ' clinici') + ' · ' + d.staff + ' oameni</span></div>' +
+      '<div class="gm-map-box" data-mapbox>' + mapSvg(d) + '<button type="button" class="gm-map-back" data-act="map-out" hidden>' + ic('x') + 'Toată harta</button></div>' +
+      '<div class="gm-map-legend">' + d.map.active.map((c) => '<button type="button" class="gm-chip" data-city="' + esc(c.name) + '">' + stars(c.stars, true) + esc(c.name) + '</button>').join('') +
+        (d.map.next ? '<button type="button" class="gm-chip is-gold" data-city="' + esc(d.map.next) + '">' + ic('lock') + esc(d.map.next) + ' · ' + Math.round(d.map.readiness * 100) + '%</button>' : '') + '</div>' +
+      '<p class="gm-note">Atinge un oraș.</p></section>';
+    if (d.derby) {
+      const [a, b] = d.derby;
+      const row = (k, label, f) => '<div class="r"><b class="' + (a[k] > b[k] ? 'w' : '') + '">' + f(a[k]) + '</b><span>' + label + '</span><b class="' + (b[k] > a[k] ? 'w' : '') + '">' + f(b[k]) + '</b></div>';
+      h += '<section class="gm-card gm-derby a-derby' + rise() + '"><div class="gm-card-h"><h3>' + ic('sword') + 'Derby-ul săptămânii</h3><span class="gm-chip">' + a.points + ' : ' + b.points + '</span></div>' +
+        '<div class="vs"><span class="' + (a.points > b.points ? 'lead' : '') + '">' + esc(a.name) + '</span><i>VS</i><span class="' + (b.points > a.points ? 'lead' : '') + '">' + esc(b.name) + '</span></div>' +
+        row('revenue', 'Încasat', (v) => short(v)) + row('booked', 'Programări', ro) + row('came', 'Cliente venite', ro) + row('upsells', 'Upselluri', ro) + '</section>';
+    }
+    if (d.constraint) {
+      const c = d.constraint;
+      const v = c.unit === '%' ? Math.round(c.value) + '%' : c.unit === 'min' ? ro(c.value) + ' min' : ro(c.value);
+      const t = c.unit === '%' ? c.target + '%' : c.unit === 'min' ? c.target + ' min' : ro(c.target);
+      h += '<section class="gm-card gm-constraint a-con' + rise() + '"><div class="gm-card-h"><h3>' + ic('target') + 'Blocajul de acum</h3><span class="gm-chip is-bad">cea mai slabă verigă</span></div>' +
+        '<div class="big"><b>' + esc(c.label) + '</b><span><span class="gm-num">' + v + '</span> / ținta ' + t + '</span></div>' + bar(c.lower ? clamp(c.target / Math.max(0.1, c.value), 0, 1) : clamp(c.value / c.target, 0, 1)) +
+        '<p class="gm-note">' + esc(c.tip) + ' Hormozi: rezolvi un singur blocaj odată, cel mai slab.</p></section>';
+    }
     if (race.mode) {
       const fin = Math.max(race.rivalEnd || 0, race.you[race.you.length - 1] || 0, 1) * 1.04;
       const youV = race.you[race.dayNo - 1] || 0, rivV = race.rival[race.dayNo - 1] || 0;
@@ -372,102 +551,133 @@
         '<div class="gm-lane is-ghost"><span class="tag">' + esc(race.rivalLabel.toUpperCase()) + '</span><span class="car" data-p="' + rivV / fin + '">' + CAR('gmCarGhost') + '</span></div></div>' +
         '<div class="gm-race-sum"><span class="gm-eyebrow">' + (race.lead >= 0 ? 'Ești în față cu' : 'Ești în urmă cu') + '</span><span class="gm-num ' + (race.lead >= 0 ? 'is-up' : 'is-down') + '">' + (race.lead >= 0 ? '+' : '-') + lei(Math.abs(race.lead)) + '</span></div></section>';
     }
-    // the engine: where the month's money goes
     const rev = Math.max(1, e.revenue);
     let acc = 0;
     const row = (cls, label, v, a, w, i) => '<div class="row ' + cls + '"><span>' + label + '</span><div class="bar"><i style="--a:' + clamp(a, 0, 1) + ';--w:' + clamp(w, 0, 1) + ';--i:' + i + '"></i></div><span class="gm-num">' + lei(v) + '</span></div>';
-    const outs = [['Salarii', e.payroll], ['Reclame', e.ads], ['Costuri fixe', e.fixed]];
+    const outs = [['Salarii', e.payroll], ['Salariul tău', e.owner], ['Reclame', e.ads], ['Costuri clinici', e.fixed], ['Consumabile', e.consumables]];
     h += '<section class="gm-card gm-engine a-engine' + rise() + '"><div class="gm-card-h"><h3>' + ic('bolt') + 'Motorul lunii</h3>' + (e.margin != null ? '<span class="gm-chip ' + (e.profit >= 0 ? 'is-gold' : 'is-bad') + '">marjă ' + Math.round(e.margin) + '%</span>' : '') + '</div>' +
       row('rev', 'Încasări', e.revenue, 0, 1, 0) +
       outs.map(([label, v], i) => { acc += v; return row('out', '- ' + label, v, 1 - acc / rev, v / rev, i + 1); }).join('') +
-      row('profit' + (e.profit < 0 ? ' is-neg' : ''), 'Profit', e.profit, 0, Math.max(0, e.profit) / rev, 4) +
-      '<p class="gm-note">Luna întreagă, în ritmul de acum' + (e.partial ? ', socotită din ' + esc(fmtDay(e.from)) : '') + '.' + (e.fixedSet ? '' : ' <b>Costurile fixe nu sunt trecute încă</b>: chiriile, utilitățile, consumabilele.') + (e.adsOk ? '' : ' Cheltuiala pe reclame nu s-a putut citi acum.') + '</p>' +
-      (e.fixedSet ? '' : '<div class="gm-acts"><button type="button" class="gm-btn is-sm" data-act="settings">' + ic('gear') + 'Trece costurile fixe</button></div>') + '</section>';
-    // the next unlock
+      row('profit' + (e.profit < 0 ? ' is-neg' : ''), 'Profit', e.profit, 0, Math.max(0, e.profit) / rev, 6) +
+      '<p class="gm-note">Luna întreagă, în ritmul de acum' + (e.partial ? ', socotită din ' + esc(fmtDay(e.from)) : '') + '. Salariul tău de manager, costurile clinicilor și consumabilele sunt standardul jocului, aceleași pentru toți. Înainte de impozit.' + (e.adsEstimated ? ' Reclamele nu s-au putut citi acum: sunt estimate din ultima lună cunoscută.' : '') + '</p></section>';
     const g = d.goals.find((x) => x.id === d.nextGoal);
     if (g) {
-      h += '<section class="gm-card gm-teaser a-teaser is-tap' + rise() + '" data-act="goal" data-id="' + esc(g.id) + '"><div class="pic">' + (g.img ? '<img src="' + esc(imgOf(g.img)) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</div>' +
+      h += '<section class="gm-card gm-teaser a-teaser is-tap' + rise() + '" data-act="goal" data-id="' + esc(g.id) + '"><div class="pic"><img src="' + esc(imgOf(g.img)) + '" alt="" loading="lazy" onerror="this.remove()"></div>' +
         '<div><span class="gm-eyebrow">Următorul din garaj</span><h4>' + esc(g.name) + '</h4><span class="gm-chip">' + ic('clock') + esc(etaShort(g)) + '</span></div>' +
         ring(g.progress, 58, 5, '<span class="gm-num">' + Math.round(g.progress * 100) + '%</span>') + '</section>';
     }
     return h;
   }
-  const fmtDay = (day) => { const p = String(day || '').split('-'); return p.length === 3 ? Number(p[2]) + ' ' + ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec'][Number(p[1]) - 1] : ''; };
-  const etaShort = (g) => (g.unlocked ? 'Deblocat' : !g.eta ? '' : g.eta.month ? (g.eta.inMonths <= 0 ? 'luna asta' : esc(g.eta.label)) + (g.eta.needLocations ? ' + ' + g.eta.needLocations + (g.eta.needLocations === 1 ? ' locație' : ' locații') : '') : 'departe, în ritmul de acum');
+  const etaShort = (g) => (g.unlocked ? 'Deblocat' : !g.eta || !g.eta.month ? 'departe, în ritmul de acum' : g.eta.inMonths <= 0 ? 'luna asta' : g.eta.inMonths >= 24 ? 'peste ' + Math.round(g.eta.inMonths / 12) + ' ani' : esc(g.eta.label));
+  const stars = (n, small) => '<span class="gm-stars' + (small ? ' is-sm' : '') + '">' + [0, 1, 2, 3, 4].map((i) => '<i class="' + (i < n ? 'on' : '') + '" style="--i:' + i + '">' + ic('star') + '</i>').join('') + '</span>';
 
+  // ------------------------------------------------------------------ the map: tap a city, the map flies to it
   function mapSvg(d) {
     const act = d.map.active, maxRev = Math.max(1, ...act.map((a) => a.revenue));
-    let s = '<svg class="ro" viewBox="0 0 1040 740" role="img" aria-label="Harta imperiului">' +
+    let s = '<svg class="ro" viewBox="0 0 1040 740" role="img" aria-label="Harta imperiului" data-map>' +
       '<path class="ro-land" d="' + RO_PATH + '"/><rect class="ro-grid" x="0" y="0" width="1040" height="740" clip-path="url(#gmRoClip)"/><path class="ro-edge" d="' + RO_PATH + '"/>';
-    // the locked cities: small dots; the next one with its ring and how ready the business is
-    d.map.locked.forEach((c) => {
+    d.map.locked.forEach((c, i) => {
       const xy = CITY_XY[c]; if (!xy) return;
       const next = c === d.map.next;
       s += '<g class="gm-city is-locked' + (next ? ' is-next' : '') + '" data-city="' + esc(c) + '">' +
+        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="34" fill="transparent"/>' +
         (next ? '<circle class="ring" cx="' + xy[0] + '" cy="' + xy[1] + '" r="30" fill="none" stroke="#ffd166" stroke-width="3" stroke-dasharray="10 9"/>' : '') +
         '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (next ? 11 : 7) + '" fill="' + (next ? 'rgba(255,209,102,.25)' : '#221d3d') + '" stroke="' + (next ? '#ffd166' : '#4c4870') + '" stroke-width="2.5"/>' +
-        (next ? '<text x="' + (xy[0] + 44) + '" y="' + (xy[1] - 22) + '" font-size="40">' + esc(c) + '</text><text class="sub" x="' + (xy[0] + 44) + '" y="' + (xy[1] + 12) + '" font-size="30" fill="#ffd166">' + Math.round(d.map.readiness * 100) + '% pregătit</text>' : '') +
-        '</g>';
+        (next ? '<text x="' + (xy[0] + 44) + '" y="' + (xy[1] - 22) + '" font-size="40">' + esc(c) + '</text><text class="sub" x="' + (xy[0] + 44) + '" y="' + (xy[1] + 12) + '" font-size="30" fill="#ffd166">' + Math.round(d.map.readiness * 100) + '% pregătit</text>'
+          : '<text class="mini" x="' + (xy[0] + 14) + '" y="' + (xy[1] + 8) + '" font-size="22">' + esc(c) + '</text>') + '</g>';
     });
-    // the clinics: glowing orbs, their size by the month's money, the labels to the right
     const byNorth = act.map((a) => a.name).sort((x, y) => ((CITY_XY[x] || [0, 999])[1] - (CITY_XY[y] || [0, 999])[1]));
     act.forEach((a, i) => {
       const xy = CITY_XY[a.name] || [300 + i * 120, 300];
       const r = 16 + 20 * Math.sqrt(a.revenue / maxRev);
-      const up = byNorth.indexOf(a.name) % 2 === 0; // two clinics close together: one label above, one below
+      const up = byNorth.indexOf(a.name) % 2 === 0;
       const lx = xy[0] + 96, ly = xy[1] + (up ? -46 : 92);
-      s += '<g class="gm-city" data-city="' + esc(a.name) + '" style="--i:' + i + '">' +
+      s += '<g class="gm-city is-active" data-city="' + esc(a.name) + '" style="--i:' + i + '">' +
+        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 26) + '" fill="transparent"/>' +
         '<circle class="beacon" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="none" stroke="#ff4d9d" stroke-width="3"/>' +
         '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 10) + '" fill="rgba(255,77,157,.18)"/>' +
-        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="url(#gmOrb)" filter="url(#gmGlow)"/>' +
-        '<path d="M' + (xy[0] + r * 0.7) + ' ' + (xy[1] + (up ? -r * 0.7 : r * 0.7)) + ' L' + (lx - 10) + ' ' + (ly - 14) + '" stroke="rgba(255,255,255,.4)" stroke-width="2.5" fill="none" stroke-dasharray="5 6"/>' +
+        '<circle class="orb" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="url(#gmOrb)" filter="url(#gmGlow)"/>' +
+        '<path class="lead" d="M' + (xy[0] + r * 0.7) + ' ' + (xy[1] + (up ? -r * 0.7 : r * 0.7)) + ' L' + (lx - 10) + ' ' + (ly - 14) + '" stroke="rgba(255,255,255,.4)" stroke-width="2.5" fill="none" stroke-dasharray="5 6"/>' +
         '<text x="' + lx + '" y="' + ly + '" font-size="46">' + esc(a.name) + '</text>' +
         '<text class="sub" x="' + lx + '" y="' + (ly + 40) + '" font-size="34">' + esc(lei(a.revenue)) + (a.today ? ' · azi +' + esc(ro(a.today)) : '') + '</text></g>';
     });
     return s + '</svg>';
   }
+  function wireMap(el) {
+    const svg = el.querySelector('[data-map]');
+    if (!svg) return;
+    svg._vb = [0, 0, 1040, 740];
+  }
+  function flyTo(svg, to, ms) {
+    if (!svg) return;
+    const from = svg._vb || [0, 0, 1040, 740], t0 = performance.now(), dur = calm() ? 1 : ms || 900;
+    cancelAnimationFrame(svg._fly);
+    (function step(now) {
+      const k = Math.min(1, (now - t0) / dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      const v = from.map((f, i) => f + (to[i] - f) * e);
+      svg.setAttribute('viewBox', v.map((x) => x.toFixed(1)).join(' '));
+      svg._vb = v;
+      if (k < 1) svg._fly = requestAnimationFrame(step);
+    })(t0);
+  }
+  function zoomCity(name) {
+    const svg = S.root && S.root.querySelector('[data-map]');
+    const xy = CITY_XY[name], g = svg && svg.querySelector('.gm-city[data-city="' + (window.CSS && CSS.escape ? CSS.escape(name) : name) + '"]');
+    if (svg && xy) {
+      // the box around the city and its label, in the upper part of the map (the sheet rises over the lower part)
+      let bb = null; try { bb = g && g.getBBox(); } catch (e) { /* not rendered */ }
+      if (!bb || !bb.width) bb = { x: xy[0] - 40, y: xy[1] - 40, width: 80, height: 80 };
+      const w = clamp(bb.width * 1.35, 420, 900), h = w * 740 / 1040;
+      flyTo(svg, [clamp(bb.x + bb.width / 2 - w / 2, -60, 1100 - w), clamp(bb.y - h * 0.1, -60, 800 - h), w, h]);
+      svg.classList.add('is-zoom');
+      svg.querySelectorAll('.gm-city').forEach((g) => g.classList.toggle('is-focus', g.dataset.city === name));
+      const back = S.root.querySelector('[data-act="map-out"]'); if (back) back.hidden = false;
+      const box = svg.closest('.gm-card'), sc = box && box.closest('.gm-screen');
+      if (box && sc) sc.scrollTo({ top: Math.max(0, box.offsetTop - 8), behavior: calm() ? 'auto' : 'smooth' });
+    }
+    Sfx.play('whoosh-out', 0.45); buzz(10);
+  }
+  function zoomOut() {
+    const svg = S.root && S.root.querySelector('[data-map]');
+    if (!svg) return;
+    flyTo(svg, [0, 0, 1040, 740], 700);
+    svg.classList.remove('is-zoom');
+    svg.querySelectorAll('.gm-city').forEach((g) => g.classList.remove('is-focus'));
+    const back = S.root.querySelector('[data-act="map-out"]'); if (back) back.hidden = true;
+  }
 
+  // ------------------------------------------------------------------ the garage: a 3D showroom
   function goalStage(g, i) {
     return '<button type="button" class="gm-slide ' + (g.unlocked ? 'is-unlocked' : 'is-locked') + '" data-slide="' + i + '" data-id="' + esc(g.id) + '">' +
-      '<div class="gm-stage">' + (g.img ? '<img src="' + esc(imgOf(g.img)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" onerror="this.remove()">' : '<div class="noimg">' + ic(KIND_IC[g.kind] || 'star') + '</div>') +
+      '<div class="gm-stage"><img src="' + esc(imgOf(g.img)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" onerror="this.remove()">' +
         (g.unlocked ? '<span class="won">DEBLOCAT</span>' : '<span class="lock">' + ic('lock') + Math.round(g.progress * 100) + '%</span>') +
-        '<div class="cap"><div><h4>' + esc(g.name) + '</h4><small>' + esc(priceTxt(g)) + '</small></div></div></div>' +
+        '<div class="cap"><div><h4>' + esc(g.name) + '</h4><small>' + lei(g.price) + ' · etapa ' + esc(g.stageName) + '</small></div></div></div>' +
       '<div class="gm-floor"></div></button>';
   }
-  const priceTxt = (g) => (g.monthly ? lei(g.monthly) + ' pe lună' : lei(g.price));
   function garaj(d) {
     const won = d.goals.filter((g) => g.unlocked).length;
-    let h = '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Ce construiești</span><h2>Garajul</h2></div><small>' + won + ' / ' + d.goals.length + ' deblocate</small></div>';
-    h += '<div class="gm-show' + rise() + '" data-show>' + d.goals.map(goalStage).join('') +
-      '<button type="button" class="gm-slide is-add" data-act="goal-new" data-slide="' + d.goals.length + '"><div class="gm-stage"><span>' + ic('plus') + 'OBIECTIV NOU</span></div><div class="gm-floor"></div></button></div>';
+    let h = '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Dacă nu-l poți cumpăra de două ori, nu-l cumpăra</span><h2>Garajul</h2></div><small>' + won + ' / ' + d.goals.length + ' deblocate</small></div>';
+    h += '<button type="button" class="gm-card gm-vault is-tap' + rise() + '" data-act="treasury"><span class="gm-eyebrow">Trezoreria jocului</span><b class="' + (d.treasury < 0 ? 'neg' : '') + '">' + num(d.treasury, 'vault', 'lei') + ' lei</b><small>profitul strâns de afacere din ' + esc(fmtDay(d.start)) + ', după impozit</small></button>';
+    h += '<div class="gm-show' + rise() + '" data-show>' + d.goals.map(goalStage).join('') + '</div>';
     h += '<div class="gm-arrows' + rise() + '"><button type="button" data-gstep="-1" aria-label="Înapoi">' + ic('up') + '</button><button type="button" data-gstep="1" aria-label="Înainte">' + ic('up') + '</button></div>';
-    h += '<div class="gm-dots' + rise() + '">' + d.goals.map((g) => '<i class="' + (g.unlocked ? 'is-won' : '') + '"></i>').join('') + '<i></i></div>';
+    h += '<div class="gm-dots' + rise() + '">' + d.goals.map((g) => '<i class="' + (g.unlocked ? 'is-won' : '') + '"></i>').join('') + '</div>';
     h += '<section class="gm-card gm-detail' + rise() + '" data-detail></section>';
     return h;
   }
   function goalDetail(g) {
-    if (!g) return '<div class="gm-card-h"><h3>' + ic('plus') + 'Un obiectiv nou</h3></div><p class="gm-note">O mașină, o casă, o vacanță: îi pui prețul sau rata și condițiile, iar jocul îți arată când ți-l permiți din afacere.</p>' +
-      '<div class="gm-acts"><button type="button" class="gm-btn is-lava" data-act="goal-new">' + ic('plus') + 'Adaugă obiectiv</button></div>';
-    const cond = g.conditions.map((c) => {
-      const val = c.key === 'loc' || c.key === 'streak' ? ro(c.value) + ' / ' + ro(c.target) : lei(c.value) + ' / ' + lei(c.target);
-      const body = c.key === 'streak'
-        ? '<div class="gm-streak">' + Array.from({ length: c.target }, (_, k) => '<i class="' + (k < g.streak ? 'is-on' : k === g.streak && c.now ? 'is-now' : '') + '"></i>').join('') + '</div>'
-        : bar(c.progress, c.ok ? 'is-green' : '');
-      return '<div class="c"><div class="c-top"><span><i class="ok' + (c.ok ? ' is-on' : '') + '">' + (c.ok ? ic('check') : '') + '</i>' + esc(c.label) + '</span><span class="gm-num">' + val + '</span></div>' + body + '</div>';
-    }).join('');
+    if (!g) return '';
+    const c0 = g.conditions[0], c1 = g.conditions[1];
+    const cond = '<div class="c"><div class="c-top"><span><i class="ok' + (c0.ok ? ' is-on' : '') + '">' + (c0.ok ? ic('check') : '') + '</i>' + esc(c0.label) + '</span><span class="gm-num">' + short(c0.value) + ' / ' + short(c0.target) + ' lei</span></div>' + bar(c0.progress, c0.ok ? 'is-green' : '') + '</div>' +
+      '<div class="c"><div class="c-top"><span><i class="ok' + (c1.ok ? ' is-on' : '') + '">' + (c1.ok ? ic('check') : '') + '</i>' + esc(c1.label) + '</span><span class="gm-num">acum: ' + esc(c1.now) + '</span></div>' + bar(c1.progress, c1.ok ? 'is-green' : '') + '</div>';
     const eta = g.unlocked
-      ? '<div class="gm-eta">' + ic('trophy') + '<div><b>Deblocat</b><small>' + esc(new Date(g.unlockedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })) + '. Afacerea îl plătește singură.</small></div></div>'
-      : '<div class="gm-eta">' + ic('clock') + '<div><b>' + (g.eta && g.eta.month ? (g.eta.inMonths <= 0 ? 'La sfârșitul lunii' : esc(cap(g.eta.label))) : 'Încă departe') + '</b><small>' +
-        (g.eta && g.eta.month ? 'În ritmul de acum' + (S.d.growth.known ? ' (+' + ro(S.d.growth.rate, 1) + '% pe lună)' : ', cu o creștere de 5% pe lună') : 'În ritmul de acum nu ajunge în 10 ani; crește încasările sau scade rata.') +
-        (g.eta && g.eta.needLocations ? '. Plus încă ' + g.eta.needLocations + (g.eta.needLocations === 1 ? ' locație deschisă.' : ' locații deschise.') : '.') + '</small></div></div>';
-    return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + esc(priceTxt(g)) + '</span></div>' +
+      ? '<div class="gm-eta">' + ic('trophy') + '<div><b>Deblocat</b><small>' + esc(new Date(g.unlockedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })) + '. Afacerea l-ar plăti de două ori.</small></div></div>'
+      : '<div class="gm-eta">' + ic('clock') + '<div><b>' + (g.eta && g.eta.month ? (g.eta.inMonths <= 0 ? 'Luna asta' : esc(cap(g.eta.label))) : 'Încă departe') + '</b><small>' +
+        (g.eta && g.eta.month ? (g.eta.inMonths >= 12 ? 'Cam ' + (g.eta.inMonths >= 24 ? Math.round(g.eta.inMonths / 12) + ' ani' : 'un an') + ', în ritmul de acum' : 'În ritmul de acum') + (S.d.growth.known ? ' (' + (S.d.growth.rate >= 0 ? '+' : '') + ro(S.d.growth.rate, 1) + '% pe lună).' : ', cu o creștere prudentă de 3% pe lună.') : 'Cu profitul de acum nu se apropie. Crește profitul lunar.') + '</small></div></div>';
+    return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
-      '<div class="gm-acts">' + (g.unlocked ? '<button type="button" class="gm-btn is-gold" data-act="replay" data-id="' + esc(g.id) + '">' + ic('play') + 'Revezi deblocarea</button>'
-        : '<button type="button" class="gm-btn is-lava" data-act="replay" data-id="' + esc(g.id) + '">' + ic('eye') + 'Cum va arăta deblocarea</button>') +
-        '<button type="button" class="gm-btn" data-act="goal-edit" data-id="' + esc(g.id) + '">' + ic('pen') + 'Editează</button></div>' +
-      creditOf(g);
+      '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
+      '<p class="gm-note">Trage cu degetul peste ' + (g.kind === 'car' ? 'mașină' : 'imagine') + ' ca s-o rotești.</p>' + creditOf(g);
   }
-  const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
   function creditOf(g) {
     const c = S.credits && S.credits[g.img];
     return c ? '<p class="gm-credit">Foto: ' + esc(c.author) + ' · ' + esc(c.license) + ' · decupată și redimensionată · <a href="' + esc(c.source) + '" target="_blank" rel="noopener">Wikimedia Commons</a></p>' : '';
@@ -478,24 +688,34 @@
     const slides = Array.from(show.querySelectorAll('.gm-slide'));
     const dots = Array.from(el.querySelectorAll('.gm-dots i'));
     const detail = el.querySelector('[data-detail]');
+    // one WebGL canvas, moved onto the slide in front
+    const cv = document.createElement('canvas');
+    cv.className = 'gm-3d';
+    if (S.car) { S.car.destroy(); S.car = null; }
+    if (!calm()) S.car = Car3D.create(cv);
     let cur = -1, raf = 0;
     const pick = () => {
       raf = 0;
       const mid = show.getBoundingClientRect().left + show.clientWidth / 2;
-      let best = 0, bd = Infinity;
+      let bestI = 0, bd = Infinity;
       slides.forEach((s, i) => {
         const r = s.getBoundingClientRect(), c = r.left + r.width / 2, dd = c - mid;
-        if (Math.abs(dd) < bd) { bd = Math.abs(dd); best = i; }
-        const img = s.querySelector('img');
-        if (img && !calm()) img.style.transform = 'translateX(' + clamp(-dd * 0.06, -30, 30) + 'px) scale(1.08)';
+        if (Math.abs(dd) < bd) { bd = Math.abs(dd); bestI = i; }
       });
-      if (best !== cur) {
-        cur = best; S.gi = best;
-        slides.forEach((s, i) => s.classList.toggle('is-on', i === best));
-        dots.forEach((x, i) => x.classList.toggle('is-on', i === best));
+      if (bestI !== cur) {
+        cur = bestI; S.gi = bestI;
+        const g = S.d.goals[bestI];
+        slides.forEach((s, i) => s.classList.toggle('is-on', i === bestI));
+        dots.forEach((x, i) => x.classList.toggle('is-on', i === bestI));
         detail.classList.add('is-swap');
-        setTimeout(() => { detail.innerHTML = goalDetail(S.d.goals[best]); detail.classList.remove('is-swap'); hydrate(detail, true); }, fresh ? 0 : 120);
-        if (!fresh) Sfx.tap();
+        setTimeout(() => { detail.innerHTML = goalDetail(g); detail.classList.remove('is-swap'); hydrate(detail, true); }, fresh ? 0 : 120);
+        if (S.car) {
+          const stage = slides[bestI].querySelector('.gm-stage');
+          stage.insertBefore(cv, stage.firstChild.nextSibling);
+          slides[bestI].classList.remove('is-3d');
+          S.car.set(g.id, imgOf(g.img), '/game/img/' + encodeURIComponent(g.img) + '-depth.png', g.unlocked).then((ok) => { if (ok && S.gi === bestI) slides[bestI].classList.add('is-3d'); });
+        }
+        if (!fresh) { Sfx.tap(); buzz(6); }
         fresh = false;
       }
     };
@@ -507,13 +727,14 @@
       pick();
     });
   }
-
   function garageStep(dir) {
     const show_ = S.root && S.root.querySelector('[data-show]'); if (!show_) return;
     const slides = show_.querySelectorAll('.gm-slide');
     const to = slides[clamp((S.gi < 0 ? 0 : S.gi) + dir, 0, slides.length - 1)];
     if (to) show_.scrollTo({ left: to.offsetLeft - (show_.clientWidth - to.clientWidth) / 2, behavior: calm() ? 'auto' : 'smooth' });
   }
+
+  // ------------------------------------------------------------------ the team
   const FORM_IC = { up: 'up', down: 'down', flat: '' };
   function card(t, i, big) {
     const face = '<div class="face front"><div class="rt"><b>' + t.rating + '</b><span>' + esc(t.pos) + '</span>' + (FORM_IC[t.form] ? '<i class="' + t.form + '">' + ic(FORM_IC[t.form]) + '</i>' : '') + '</div>' +
@@ -536,10 +757,11 @@
     h += '<section class="gm-card gm-mvp' + rise() + '"><span class="glow"></span>' + card(mvp, 0, true) + '<div><span class="crown">' + ic('crown') + 'MVP</span><h3>' + esc(mvp.name) + '</h3>' +
       '<p>Cel mai bun rating din echipă: <b>' + mvp.rating + '</b>. ' + (mvp.form === 'up' ? 'Formă în creștere în ultima săptămână.' : mvp.form === 'down' ? 'Săptămâna asta a încetinit puțin.' : 'Formă constantă.') + '</p></div></section>';
     h += '<div class="gm-team">' + d.team.slice(1).map((t, i) => card(t, i + 3)).join('') + '</div>';
-    h += '<p class="gm-note' + rise() + '">Ratingul vine din date reale: încasări, upselluri, programări, cliente venite, viteza la leaduri și prezență. Cardurile de aur încep de la 80, cele mov de la 88.</p>';
+    h += '<p class="gm-note' + rise() + '">Ratingul vine din date reale: încasări, upselluri, programări, cliente venite, viteza la leaduri și prezență. Aur de la 80, mov de la 88.</p>';
     return h;
   }
 
+  // ------------------------------------------------------------------ missions
   const hms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h >= 24 ? Math.floor(h / 24) + 'z ' + (h % 24) + 'h' : String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0')); };
   function mission(x) {
     const v = x.unit === 'lei' ? lei(x.value) + ' / ' + lei(x.target) : x.unit === '%' ? x.value + '% / ' + x.target + '%' : ro(x.value) + ' / ' + ro(x.target);
@@ -558,29 +780,35 @@
       '<div class="gm-mis">' + M.weekly.map(mission).join('') + '</div></div></div>';
   }
 
-  const RAR = ['Comun', 'Rar', 'Epic', 'Legendar', 'Mitic'];
-  const badge = (t, i) => '<button type="button" class="gm-t' + (t.got ? ' is-got' : '') + '" data-r="' + t.rank + '" data-trophy="' + esc(t.id) + '" style="--i:' + (i || 0) + '">' +
-    '<span class="gm-badge"><span class="hx"></span><span class="hx2"></span>' + ic(t.got ? t.icon : 'lock') + (t.isNew ? '<span class="new">NOU</span>' : '') + '</span>' +
-    '<span class="nm">' + esc(t.name) + '</span>' + (t.got ? '' : '<span class="mini" style="--p:' + t.progress + '"><i></i></span>') + '</button>';
-  function trofee(d) {
-    const all = d.trophies, got = all.filter((t) => t.got).length;
-    const cats = [['all', 'Toate']].concat([...new Map(all.map((t) => [t.cat, t.catLabel]))]);
-    const list = all.filter((t) => S.filter === 'all' || t.cat === S.filter).sort((a, b) => (b.got - a.got) || (a.rank - b.rank));
-    return '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Pentru totdeauna</span><h2>Trofee</h2></div><small>' + got + ' / ' + all.length + '</small></div>' +
-      '<div class="gm-count' + rise() + '">' + bar(got / all.length, 'is-gold') + '<span class="gm-num">' + Math.round(got / all.length * 100) + '%</span></div>' +
+  // ------------------------------------------------------------------ the badges: hundreds, each on one real number
+  const badge = (t, i) => '<button type="button" class="gm-t' + (t.got ? ' is-got' : '') + (t.secret && !t.got ? ' is-secret' : '') + '" data-r="' + t.rank + '" data-badge="' + esc(t.id) + '" style="--i:' + (i || 0) + '">' +
+    '<span class="gm-badge"><span class="hx"></span><span class="hx2"></span>' + ic(t.secret && !t.got ? 'sparkles' : t.icon) + (t.isNew ? '<span class="new">NOU</span>' : '') + '</span>' +
+    '<span class="nm">' + (t.secret && !t.got ? '???' : esc(t.name)) + '</span>' + (t.got || t.secret ? '' : '<span class="mini" style="--p:' + t.progress + '"><i></i></span>') + '</button>';
+  function insigne(d) {
+    const all = d.badges, got = all.filter((t) => t.got).length;
+    const cats = [['all', 'Toate'], ['got', 'Câștigate'], ['near', 'Aproape']].concat([...new Map(all.map((t) => [t.cat, t.catLabel]))]);
+    let list = all;
+    if (S.filter === 'got') list = all.filter((t) => t.got);
+    else if (S.filter === 'near') list = all.filter((t) => !t.got && !t.secret && t.progress >= 0.5).sort((a, b) => b.progress - a.progress);
+    else if (S.filter !== 'all') list = all.filter((t) => t.cat === S.filter);
+    if (S.filter !== 'near') list = list.slice().sort((a, b) => (b.got - a.got) || (a.rank - b.rank) || (b.progress - a.progress));
+    const byR = [0, 1, 2, 3, 4].map((r) => [all.filter((t) => t.rank === r && t.got).length, all.filter((t) => t.rank === r).length]);
+    return '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Colecția ta</span><h2>Insigne</h2></div><small>' + got + ' / ' + all.length + '</small></div>' +
+      '<div class="gm-count' + rise() + '">' + bar(got / Math.max(1, all.length), 'is-gold') + '<span class="gm-num">' + Math.round(got / Math.max(1, all.length) * 100) + '%</span></div>' +
+      '<div class="gm-rar' + rise() + '">' + byR.map(([g, n], r) => '<span data-r="' + r + '"><i></i>' + RAR[r] + ' <b>' + g + '/' + n + '</b></span>').join('') + '</div>' +
       '<div class="gm-filters' + rise() + '">' + cats.map(([k, l]) => '<button type="button" data-filter="' + k + '" class="' + (S.filter === k ? 'is-on' : '') + '">' + esc(l) + '</button>').join('') + '</div>' +
-      '<div class="gm-tro' + rise() + '">' + list.map(badge).join('') + '</div>';
+      '<div class="gm-tro' + rise() + '">' + (list.length ? list.map((t, i) => badge(t, Math.min(i, 24))).join('') : '<p class="gm-note">Nimic aici încă.</p>') + '</div>';
   }
-  const SCREENS = { imperiu, garaj, echipa, misiuni, trofee };
+  const SCREENS = { imperiu, garaj, echipa, misiuni, insigne };
 
   // ------------------------------------------------------------------ sheets
-  function sheet(html, onMount) {
+  function sheet(html, onMount, onClose, cls) {
     closeSheet(true);
     const root = document.createElement('div');
-    root.className = 'gm-sheet-root';
+    root.className = 'gm-sheet-root' + (cls ? ' ' + cls : '');
     root.innerHTML = '<div class="gm-sheet-bg"></div><div class="gm-sheet" role="dialog" aria-modal="true"><div class="grab"></div><button type="button" class="x" data-x aria-label="Închide">' + ic('x') + '</button>' + html + '</div>';
     document.body.appendChild(root);
-    S.sheet = root;
+    S.sheet = root; root._onClose = onClose;
     root.querySelector('.gm-sheet-bg').addEventListener('click', () => closeSheet());
     root.querySelector('[data-x]').addEventListener('click', () => closeSheet());
     const push = () => { if (S.sheet !== root) return; try { history.pushState({ gms: 1 }, '', location.href); root._pushed = true; } catch (e) { /* no history */ } };
@@ -593,18 +821,18 @@
   function closeSheet(silent, fromPop) {
     const r = S.sheet; if (!r) return;
     S.sheet = null;
+    if (r._onClose) r._onClose();
     if (r._pushed && !fromPop) { S.popPending = true; setTimeout(() => { S.popPending = false; }, 400); try { history.back(); } catch (e) { S.popPending = false; } }
     if (silent) { r.remove(); return; }
     r.classList.add('is-out');
     setTimeout(() => r.remove(), 260);
   }
   window.addEventListener('popstate', () => {
-    if (S.popPending) { S.popPending = false; return; } // the step a sheet closed by its X took back
+    if (S.popPending) { S.popPending = false; return; }
     if (S.sheet) closeSheet(false, true);
   });
-  // a keyboard: Esc closes, 1 to 5 change the screen, the arrows walk the garage
   document.addEventListener('keydown', (e) => {
-    if (!S.open || e.target.closest && e.target.closest('input, select, textarea')) return;
+    if (!S.open || (e.target.closest && e.target.closest('input, select, textarea'))) return;
     if (e.key === 'Escape') { if (S.sheet) closeSheet(); else { const m = document.querySelector('.gm-menu'); if (m) m.remove(); } return; }
     if (S.sheet || S.cer) return;
     const n = Number(e.key);
@@ -612,186 +840,128 @@
     if (S.tab === 'garaj' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); garageStep(e.key === 'ArrowRight' ? 1 : -1); }
   });
 
+  // a clinic: its stars, its numbers, its people; the next city: the declared checklist
+  function spark(list) {
+    const w = 300, h = 70, max = Math.max(1, ...list);
+    const pts = list.map((v, i) => [i * (w / Math.max(1, list.length - 1)), h - 6 - (v / max) * (h - 14)]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    return '<svg class="gm-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><linearGradient id="gmSparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,77,157,.45)"/><stop offset="1" stop-color="rgba(255,77,157,0)"/></linearGradient></defs>' +
+      '<path d="' + line + ' L' + w + ' ' + h + ' L0 ' + h + 'Z" fill="url(#gmSparkFill)"/><path class="ln" d="' + line + '" fill="none" stroke="url(#gmLavaStroke)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/></svg>';
+  }
+  // the map flies to the city first, then its sheet rises (low, so the zoomed map stays in sight)
   function citySheet(name) {
+    if (S.citing) return;
+    S.citing = true;
+    zoomCity(name);
+    setTimeout(() => { S.citing = false; if (S.open && !S.cer) citySheetNow(name); }, calm() ? 0 : 750);
+  }
+  function citySheetNow(name) {
     const d = S.d, a = d.map.active.find((x) => x.name === name);
+    const onClose = () => zoomOut();
     if (a) {
-      sheet('<span class="gm-eyebrow">Locație</span><h3>' + esc(a.name) + '</h3><div class="gm-kv">' +
-        '<div><small>Încasat luna asta</small><b>' + lei(a.revenue) + '</b></div><div><small>Azi</small><b>' + lei(a.today) + '</b></div>' +
-        '<div><small>Spre sfârșitul lunii</small><b>' + lei(a.projected) + '</b></div><div><small>Din total</small><b>' + Math.round(a.share * 100) + '%</b></div>' +
-        '<div><small>Oameni</small><b>' + a.staff + '</b></div><div><small>Cel mai bun card</small><b>' + (a.best ? esc(a.best.name.split(' ')[0]) + ' · ' + a.best.rating : '-') + '</b></div></div>' +
-        '<p class="gm-note">Costuri fixe trecute: <b>' + lei(a.fixed) + ' pe lună</b>.</p>');
+      const nextStar = a.nextStar ? '<div class="gm-starnext"><span>Următoarea stea la <b>' + lei(a.nextStar) + '</b> pe lună</span><span class="gm-num">' + Math.round(clamp(a.projected / a.nextStar, 0, 1) * 100) + '%</span></div>' + bar(clamp(a.projected / a.nextStar, 0, 1)) : '<p class="gm-note"><b>Cinci stele.</b> Clinică de top.</p>';
+      sheet('<span class="gm-eyebrow">Clinica</span><h3>' + esc(a.name) + '</h3>' + stars(a.stars) + nextStar +
+        '<div class="gm-kv">' +
+        '<div><small>Luna asta</small><b>' + lei(a.revenue) + '</b></div><div><small>Azi</small><b>' + lei(a.today) + '</b></div>' +
+        '<div><small>Pe lună, în ritmul de acum</small><b>' + lei(a.projected) + '</b></div><div><small>Profit estimat</small><b class="' + (a.profit < 0 ? 'neg' : 'pos') + '">' + lei(a.profit) + (a.margin != null ? ' · ' + pct(a.margin) : '') + '</b></div>' +
+        '</div>' +
+        '<div class="gm-rings">' +
+          '<div>' + ring(clamp(a.occupancy, 0, 1), 78, 7, '<span class="gm-num">' + pct(a.occupancy) + '</span>') + '<small>Calendar ocupat</small></div>' +
+          '<div>' + ring(a.showRate == null ? 0 : a.showRate / 100, 78, 7, '<span class="gm-num">' + (a.showRate == null ? '-' : a.showRate + '%') + '</span>') + '<small>Cliente venite</small></div>' +
+          '<div>' + ring(clamp(a.share, 0, 1), 78, 7, '<span class="gm-num">' + pct(a.share) + '</span>') + '<small>Din încasări</small></div>' +
+        '</div>' +
+        '<div class="gm-sec"><h4>Ultimele 30 de zile</h4>' + spark(a.spark) + '<div class="gm-spark-k"><span>' + a.leads30 + ' leaduri</span><span>' + a.visits30 + ' vizite</span></div></div>' +
+        (a.top.length ? '<div class="gm-sec"><h4>Ce se vinde</h4>' + a.top.map((t, i) => '<div class="gm-topt"><span>' + (i + 1) + '. ' + esc(t.name) + '</span><b>' + lei(t.lei) + '</b>' + bar(t.lei / a.top[0].lei) + '</div>').join('') + '</div>' : '') +
+        '<div class="gm-sec"><h4>Echipa clinicii</h4><div class="gm-people">' + (a.people.length ? a.people.map((p) => '<span class="t-' + p.tier + '"><i>' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="">' : esc(p.name.charAt(0))) + '</i><b>' + p.rating + '</b><small>' + esc(p.name.split(' ')[0]) + '</small></span>').join('') : '<p class="gm-note">Nimeni încă.</p>') + '</div></div>',
+      (el) => { const ln = el.querySelector('.gm-spark .ln'); if (ln) requestAnimationFrame(() => ln.classList.add('is-on')); }, onClose, 'is-city');
       return;
     }
     const m = d.map, next = name === m.next;
-    sheet('<span class="gm-eyebrow">' + (next ? 'Următoarea extindere' : 'Oraș blocat') + '</span><h3>' + esc(name) + '</h3>' +
-      (next ? '<p class="gm-note">Se deblochează când fiecare clinică face cel puțin <b>' + lei(m.expandAt) + ' pe lună</b>, 3 luni la rând.</p>' +
-        '<div style="margin-top:1rem">' + bar(m.readiness, m.ready ? 'is-gold' : '') + '</div><p class="gm-note">Pregătire: <b>' + Math.round(m.readiness * 100) + '%</b> · luni la rând peste prag: <b>' + m.expStreak + ' / 3</b>.</p>'
-        : '<p class="gm-note">Vine după ' + esc(m.next || 'orașul următor') + '. Ordinea și pragul de extindere le schimbi din setările jocului.</p>') +
-      '<div class="gm-acts"><button type="button" class="gm-btn is-sm" data-act="settings">' + ic('gear') + 'Setări</button></div>');
+    const fmtC = (v, unit) => (v == null ? 'încă nu' : unit === '%' ? pct(v) : unit === 'lei' ? short(v) + ' lei' : unit === 'x' ? ro(v, 1) + 'x' : ro(v));
+    const list = m.checklist.map((x) => {
+      const v = fmtC(x.value, x.unit), t = fmtC(x.target, x.unit);
+      return '<div class="gm-check' + (x.ok ? ' is-ok' : '') + '"><div class="c-top"><span><i class="ok' + (x.ok ? ' is-on' : '') + '">' + (x.ok ? ic('check') : '') + '</i>' + esc(x.label) + '</span><span class="gm-num">' + v + ' / ' + t + '</span></div>' + bar(x.progress, x.ok ? 'is-green' : '') + '<small>' + esc(x.why) + '</small></div>';
+    }).join('');
+    sheet('<span class="gm-eyebrow">' + (next ? 'Următorul oraș · blocat' : 'Oraș blocat') + '</span><h3>' + esc(name) + '</h3>' +
+      '<div class="gm-lockbig">' + ic('lock') + '</div>' +
+      (next ? '<div class="gm-need"><small>Ca să aibă sens a ' + (d.locations + 1) + '-a clinică, fiecare clinică de acum încasează cel puțin</small><b>' + (m.revPerClinicNeed ? lei(m.revPerClinicNeed) + ' pe lună' : 'încă nu se poate calcula') + '</b><small>' + esc(d.rules.expand_short) + '</small></div>' +
+        '<div class="gm-rings one">' + ring(m.readiness, 96, 8, '<span class="gm-num">' + Math.round(m.readiness * 100) + '%</span>') + '<div><b>Pregătire</b><small>' + (m.eta ? 'În ritmul de acum: <b>' + esc(cap(m.eta.label)) + '</b>' : 'În ritmul de acum nu se apropie.') + '</small><small>Investiția: ' + lei(m.investment) + '</small></div></div>' +
+        '<div class="gm-sec"><h4>Regulile (aceleași pentru toți)</h4>' + list + '</div>'
+        : '<p class="gm-note">Vine după ' + esc(m.next || 'orașul următor') + ', în ordinea: ' + esc(m.locked.slice(0, m.locked.indexOf(name) + 1).join(', ')) + '. Se deblochează cu aceleași reguli: calendare pline, marjă, investiția scoasă într-un an, clienta nouă care își plătește reclama, rezervă și echipă completă, 3 luni la rând.</p>'), null, onClose, 'is-city');
   }
-  function trophySheet(id) {
-    const t = S.d.trophies.find((x) => x.id === id); if (!t) return;
-    sheet('<div style="display:grid;justify-items:center;gap:.6rem;text-align:center">' + badge(Object.assign({}, t, { isNew: false })).replace('class="gm-t', 'class="gm-t is-big') +
-      '<span class="gm-chip ' + (t.rank >= 3 ? 'is-gold' : '') + '">' + RAR[t.rank] + ' · +' + t.xp + ' XP</span><h3>' + esc(t.name) + '</h3><p class="gm-note" style="margin:0">' + esc(t.desc) + '</p>' +
-      (t.got ? '<p class="gm-note">Câștigat pe <b>' + esc(new Date(t.at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })) + '</b>.</p>'
-        : '<div style="width:100%;margin-top:.6rem">' + bar(t.progress) + '</div><p class="gm-note">' + ro(t.value) + ' din ' + ro(t.target) + '</p>') + '</div>', (el) => {
-      const b = el.querySelector('.gm-badge'); if (b) { b.style.width = '140px'; b.style.animation = 'gm-pop .7s var(--gm-spring2) both'; }
+  function badgeSheet(id) {
+    const t = S.d.badges.find((x) => x.id === id); if (!t) return;
+    const hidden = t.secret && !t.got;
+    sheet('<div class="gm-bsheet">' + badge(Object.assign({}, t, { isNew: false })) +
+      '<span class="gm-chip ' + (t.rank >= 3 ? 'is-gold' : '') + '">' + RAR[t.rank] + ' · +' + t.xp + ' XP · ' + esc(t.catLabel) + '</span><h3>' + (hidden ? 'Insignă secretă' : esc(t.name)) + '</h3><p class="gm-note" style="margin:0">' + (hidden ? 'Se dezvăluie când o câștigi.' : esc(t.desc)) + '</p>' +
+      (t.got ? '<p class="gm-note">Câștigată pe <b>' + esc(new Date(t.at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })) + '</b>.</p>'
+        : hidden ? '' : '<div style="width:100%;margin-top:.6rem">' + bar(t.progress) + '</div><p class="gm-note">' + (t.value == null ? 'Încă nu se poate măsura.' : (t.op === 'lte' ? 'acum ' + ro(t.value, 1) + ', ținta ' + ro(t.target, 1) : ro(t.value) + ' din ' + ro(t.target))) + '</p>') + '</div>', (el) => {
+      const b = el.querySelector('.gm-badge'); if (b) b.classList.add('is-big');
     });
+  }
+  function rulesSheet() {
+    const d = S.d, R = d.rules;
+    sheet('<span class="gm-eyebrow">Game Mode</span><h3>Cum se joacă</h3>' +
+      '<p class="gm-note">Jocul citește doar portalul. Nimic nu se setează: regulile sunt aceleași pentru toți și nu se schimbă din mers.</p>' +
+      '<div class="gm-sec"><h4>Etapele (Scaling Roadmap, Alex Hormozi)</h4><div class="gm-stages">' + d.stage.all.map((s) => '<div class="' + (s.i === d.stage.i ? 'is-now' : s.i < d.stage.i ? 'is-done' : '') + '"><b>' + s.i + '</b><span>' + esc(s.name) + '</span><small>' + (s.min > 1 ? 'de la ' + short(s.min) + ' lei/an' : s.i ? 'primele încasări' : 'început') + '</small></div>').join('') + '</div><p class="gm-note">' + esc(R.stage) + '</p></div>' +
+      '<div class="gm-sec"><h4>Trezoreria</h4><p class="gm-note">' + esc(R.treasury) + '</p></div>' +
+      '<div class="gm-sec"><h4>Garajul</h4><p class="gm-note">' + esc(R.garage) + '</p></div>' +
+      '<div class="gm-sec"><h4>Orașul următor</h4><p class="gm-note">' + esc(R.expand) + '</p></div>' +
+      '<div class="gm-sec"><h4>Stelele clinicilor</h4><p class="gm-note">După încasările pe lună ale fiecărei clinici: ' + R.stars.map((s, i) => (i + 1) + ' stea' + (i ? 'le' : '') + ' de la ' + short(s) + ' lei').join(', ') + '.</p></div>' +
+      '<div class="gm-sec"><h4>Bossul sezonului</h4><p class="gm-note">' + esc(R.boss) + '</p></div>' +
+      '<div class="gm-sec"><h4>XP și niveluri</h4><p class="gm-note">10 lei încasați = 1 XP. Plus misiunile revendicate și insignele: comun 50, rar 150, epic 400, legendar 1.000, mitic 2.500 XP.</p></div>');
+  }
+  function treasurySheet() {
+    const d = S.d, e = d.engine;
+    sheet('<span class="gm-eyebrow">Trezoreria jocului</span><h3 class="' + (d.treasury < 0 ? 'neg' : '') + '">' + lei(d.treasury) + '</h3>' +
+      '<p class="gm-note">' + esc(d.rules.treasury) + '</p>' +
+      '<div class="gm-sec"><h4>Lună de lună</h4>' + d.months.map((m) => '<div class="gm-topt"><span>' + esc(cap(m.label)) + (m.current ? ' (până azi)' : '') + '</span><b class="' + (m.realProfit < 0 ? 'neg' : 'pos') + '">' + lei(m.realProfit) + '</b></div>').join('') + '</div>' +
+      '<div class="gm-kv"><div><small>Profit pe lună, după impozit, în ritmul de acum</small><b>' + lei(e.fullMonthNet) + '</b></div><div><small>Regula garajului</small><b>de 2 ori prețul</b></div></div>');
+  }
+  function stageSheet() {
+    const d = S.d, st = d.stage, L = d.level;
+    sheet('<span class="gm-eyebrow">Etapa ' + st.i + ' din 9 · nivel ' + L.level + '</span><h3>' + esc(st.name) + '</h3>' +
+      '<p class="gm-note">' + esc(st.focus) + '</p>' +
+      '<div class="gm-kv"><div><small>Ritmul anual</small><b>' + lei(st.yearPace) + '</b></div><div><small>Următoarea etapă</small><b>' + (st.next ? esc(st.next.name) : '-') + '</b></div>' +
+      (st.next ? '<div><small>Pragul ei</small><b>' + short(st.next.min) + ' lei/an</b></div><div><small>În ritmul de acum</small><b>' + (st.next.eta ? esc(cap(st.next.eta.label)) : 'departe') + '</b></div>' : '') + '</div>' +
+      '<div class="gm-sec"><h4>Nivelul ' + L.level + '</h4>' + bar(L.progress) + '<p class="gm-note">' + ro(L.xp - L.from) + ' din ' + ro(L.to - L.from) + ' XP până la nivelul ' + (L.level + 1) + '. Din încasări: ' + ro(L.sources.revenue) + ' XP, misiuni: ' + ro(L.sources.missions) + ', insigne: ' + ro(L.sources.badges) + '.</p></div>' +
+      '<div class="gm-acts"><button type="button" class="gm-btn is-sm" data-sheet-rules>' + ic('book') + 'Cum se joacă</button></div>', (el) => { el.querySelector('[data-sheet-rules]').addEventListener('click', () => rulesSheet()); });
+  }
+  function bossSheet() {
+    const s = S.d.season;
+    sheet('<span class="gm-eyebrow">' + esc(s.label) + '</span><h3>' + esc(s.boss) + '</h3><div class="gm-kv">' +
+      '<div><small>Viața bossului</small><b>' + lei(s.target) + '</b></div><div><small>Lovituri până acum</small><b>' + lei(s.done) + '</b></div>' +
+      '<div><small>Rămas</small><b>' + lei(Math.max(0, s.target - s.done)) + '</b></div><div><small>Zile rămase</small><b>' + s.daysLeft + '</b></div>' +
+      '<div><small>Ritm necesar</small><b>' + lei(s.needPerDay) + '/zi</b></div><div><small>În ritmul de acum</small><b>' + lei(s.pace) + '</b></div></div>' +
+      '<p class="gm-note">' + (s.pace >= s.target ? 'În ritmul ăsta <b>îl dobori</b> înainte de final.' : 'În ritmul ăsta mai lipsesc <b>' + lei(s.target - s.pace) + '</b> la final de sezon.') + ' ' + esc(S.d.rules.boss) + '</p>');
   }
 
-  // the settings: fixed costs, the season, the expansion, the garage, the sound
-  function settingsSheet() {
-    const d = S.d, st = d.settings, costs = st.costs || {};
-    const cityRows = st.cities.map((c) => { const v = costs[c] || {}; return '<div class="gm-sec"><h4>' + esc(c) + '</h4><div class="two">' +
-      [['chirie', 'Chirie'], ['utilitati', 'Utilități'], ['consumabile', 'Consumabile'], ['altele', 'Altele']].map(([k, l]) => '<label>' + l + '<input type="number" inputmode="numeric" min="0" step="100" data-cost="' + esc(c) + '|' + k + '" value="' + (Number(v[k]) || '') + '" placeholder="0"></label>').join('') + '</div></div>'; }).join('');
-    const goalsRows = d.goals.map((g, i) => '<div class="gm-grow"><span class="p">' + (g.img ? '<img src="' + esc(imgOf(g.img)) + '" alt="">' : ic(KIND_IC[g.kind] || 'star')) + '</span><div><b>' + esc(g.name) + '</b><small>' + esc(priceTxt(g)) + ' · ' + g.minLocations + ' loc.</small></div>' +
-      '<span class="ar"><button type="button" data-gmove="' + i + '|-1" aria-label="Mai sus"' + (i ? '' : ' disabled') + '>' + ic('up') + '</button><button type="button" data-gmove="' + i + '|1" aria-label="Mai jos"' + (i < d.goals.length - 1 ? '' : ' disabled') + '>' + ic('down') + '</button><button type="button" data-gedit="' + esc(g.id) + '" aria-label="Editează">' + ic('pen') + '</button></span></div>').join('');
-    sheet('<span class="gm-eyebrow">Game Mode</span><h3>Setările jocului</h3>' +
-      '<div class="gm-form">' +
-      '<div class="gm-switch"><span>Sunete</span><button type="button" class="gm-sw' + (Sfx.on ? ' is-on' : '') + '" data-snd aria-label="Sunete"><i></i></button></div>' +
-      '<div class="gm-sec"><h4>Costuri fixe pe lună</h4><small class="h">Din ele și din salarii și reclame se socotește profitul.</small></div>' + cityRows +
-      '<div class="gm-sec"><h4>Sezonul ' + esc(d.season.id.slice(-1)) + '</h4><label>Ținta sezonului (viața bossului)<input type="number" inputmode="numeric" min="1000" step="1000" data-season value="' + (d.season.target || '') + '"></label></div>' +
-      '<div class="gm-sec"><h4>Extinderea</h4><div class="two"><label>Următorul oraș<select data-next>' + st.next.slice(0, 14).map((c, i) => '<option' + (i === 0 ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>' +
-        '<label>Prag pe clinică (lei/lună)<input type="number" inputmode="numeric" min="10000" step="5000" data-expand value="' + st.expandAt + '"></label></div></div>' +
-      '<button type="button" class="gm-btn is-lava" data-save-settings>' + ic('check') + 'Salvează</button>' +
-      '<div class="gm-sec"><h4>Garajul</h4><div class="gm-glist">' + goalsRows + '</div><div class="gm-acts"><button type="button" class="gm-btn is-sm" data-act="goal-new">' + ic('plus') + 'Obiectiv nou</button></div></div>' +
-      '</div>', (el) => {
-      el.querySelector('[data-snd]').addEventListener('click', (e) => { Sfx.set(!Sfx.on); e.currentTarget.classList.toggle('is-on', Sfx.on); paintSoundBtn(); });
-      el.querySelector('[data-save-settings]').addEventListener('click', (e) => busy(e.currentTarget, async () => {
-        const out = {};
-        el.querySelectorAll('[data-cost]').forEach((i) => { const [c, k] = i.dataset.cost.split('|'); (out[c] = out[c] || {})[k] = Number(i.value) || 0; });
-        const next = el.querySelector('[data-next]').value, order = [next].concat(st.next.filter((c) => c !== next));
-        const body = { action: 'settings', costs: Object.assign({}, costs, out), expandAt: Number(el.querySelector('[data-expand]').value) || st.expandAt, next: order };
-        const t = Number(el.querySelector('[data-season]').value);
-        if (t && t !== d.season.target) body.seasonTarget = t;
-        await api(body);
-        closeSheet();
-        toast('Salvat. Jocul s-a recalculat.', 'success');
-        await refresh();
-      }));
-      el.addEventListener('click', (e) => {
-        const mv = e.target.closest('[data-gmove]');
-        if (mv) { const [i, dir] = mv.dataset.gmove.split('|').map(Number); const list = S.d.goals.map(goalInput); const j = i + dir; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; saveGoals(list).then(() => settingsSheet()); return; }
-        const ge = e.target.closest('[data-gedit]');
-        if (ge) goalSheet(ge.dataset.gedit);
-      });
-    });
-  }
-  const goalInput = (g) => ({ id: g.id, name: g.name, kind: g.kind, img: g.img, monthly: g.monthly, price: g.price, cover: g.cover, minLocations: g.minLocations, minRevPerEmp: g.minRevPerEmp, months: g.months });
-  async function saveGoals(list) {
-    try { await api({ action: 'goals', goals: list }); await refresh(); } catch (e) { toast(K.errText ? K.errText(e) : 'Nu am putut salva.', 'error'); throw e; }
-  }
-
-  // one goal: name, picture, price or monthly rate, conditions
-  function goalSheet(id) {
-    const d = S.d, g0 = d.goals.find((x) => x.id === id);
-    const g = g0 ? goalInput(g0) : { id: '', name: '', kind: 'car', img: '', monthly: 0, price: 0, cover: 3, minLocations: Math.max(2, d.locations), minRevPerEmp: 0, months: 3 };
-    let mode = g.monthly ? 'monthly' : g.price ? 'price' : 'monthly';
-    const lib = d.settings.library.map((x) => '<button type="button" data-img="' + x + '" class="' + (g.img === x ? 'is-on' : '') + '"><img src="' + esc(imgOf(x)) + '" alt="" loading="lazy"></button>').join('');
-    sheet('<span class="gm-eyebrow">' + (g0 ? 'Editează' : 'Obiectiv nou') + '</span><h3>' + esc(g.name || 'Ce vrei să deblochezi?') + '</h3>' +
-      '<div class="gm-form">' +
-      '<label>Numele<input data-f="name" maxlength="60" value="' + esc(g.name) + '" placeholder="ex: BMW M4 Competition"></label>' +
-      '<label>Tipul<select data-f="kind">' + [['car', 'Mașină'], ['house', 'Casă'], ['watch', 'Ceas'], ['trip', 'Vacanță'], ['other', 'Altceva']].map(([k, l]) => '<option value="' + k + '"' + (g.kind === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
-      '<div><label style="margin-bottom:.4rem">Poza</label><div class="gm-lib" data-lib>' + lib +
-        '<button type="button" class="is-up' + (/^game\//.test(g.img) ? ' is-on' : '') + '" data-up>' + (/^game\//.test(g.img) ? '<img src="' + esc(imgOf(g.img)) + '" alt="">' : ic('camera')) + '</button></div><input type="file" accept="image/*" data-file hidden></div>' +
-      '<div class="gm-switch"><span>Plătesc în rate lunare</span><button type="button" class="gm-sw' + (mode === 'monthly' ? ' is-on' : '') + '" data-mode><i></i></button></div>' +
-      '<label data-l-amount>' + (mode === 'monthly' ? 'Rata pe lună (lei)' : 'Prețul (lei)') + '<input type="number" inputmode="numeric" min="0" step="500" data-f="amount" value="' + (mode === 'monthly' ? (g.monthly || '') : (g.price || '')) + '"></label>' +
-      '<div class="two"><label>Profitul o acoperă (ori)<input type="number" inputmode="decimal" min="1" max="20" step="0.5" data-f="cover" value="' + g.cover + '"></label>' +
-        '<label>Luni la rând<input type="number" inputmode="numeric" min="1" max="24" data-f="months" value="' + g.months + '"></label></div>' +
-      '<div class="two"><label>Locații minime<input type="number" inputmode="numeric" min="1" max="100" data-f="minLocations" value="' + g.minLocations + '"></label>' +
-        '<label>Lei pe angajat pe lună<input type="number" inputmode="numeric" min="0" step="1000" data-f="minRevPerEmp" value="' + (g.minRevPerEmp || '') + '" placeholder="fără"></label></div>' +
-      '<button type="button" class="gm-btn is-lava" data-save>' + ic('check') + 'Salvează</button>' +
-      (g0 ? '<button type="button" class="gm-btn" data-del>' + ic('trash') + 'Scoate din garaj</button>' : '') +
-      '</div>', (el) => {
-      el.querySelector('[data-mode]').addEventListener('click', (e) => {
-        mode = mode === 'monthly' ? 'price' : 'monthly';
-        e.currentTarget.classList.toggle('is-on', mode === 'monthly');
-        el.querySelector('[data-l-amount]').firstChild.textContent = mode === 'monthly' ? 'Rata pe lună (lei)' : 'Prețul (lei)';
-      });
-      const libBox = el.querySelector('[data-lib]');
-      libBox.addEventListener('click', (e) => {
-        const b = e.target.closest('[data-img]');
-        if (b) { g.img = b.dataset.img; libBox.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x === b)); Sfx.tap(); return; }
-        if (e.target.closest('[data-up]')) el.querySelector('[data-file]').click();
-      });
-      el.querySelector('[data-file]').addEventListener('change', async (e) => {
-        const f = e.target.files && e.target.files[0]; if (!f) return;
-        const up = libBox.querySelector('[data-up]'); up.classList.add('is-busy');
-        try {
-          const dataUrl = await shrink(f, 1400);
-          const r = await api({ action: 'goal_image', dataUrl });
-          g.img = r.img;
-          up.innerHTML = '<img src="' + esc(imgOf(r.img)) + '" alt="">';
-          libBox.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x === up));
-        } catch (err) { toast('Poza nu s-a putut încărca. Încearcă una mai mică.', 'error'); }
-        up.classList.remove('is-busy');
-      });
-      el.querySelector('[data-save]').addEventListener('click', (e) => busy(e.currentTarget, async () => {
-        const v = (k) => el.querySelector('[data-f="' + k + '"]').value;
-        const amount = Number(v('amount')) || 0;
-        if (!v('name').trim()) { toast('Scrie numele obiectivului.', 'error'); return; }
-        if (!(amount > 0)) { toast(mode === 'monthly' ? 'Scrie rata pe lună.' : 'Scrie prețul.', 'error'); return; }
-        const item = Object.assign({}, g, { name: v('name').trim(), kind: v('kind'), monthly: mode === 'monthly' ? amount : 0, price: mode === 'price' ? amount : 0,
-          cover: Number(v('cover')) || 1, months: Number(v('months')) || 1, minLocations: Number(v('minLocations')) || 1, minRevPerEmp: Number(v('minRevPerEmp')) || 0 });
-        const list = S.d.goals.map(goalInput);
-        if (g0) list[list.findIndex((x) => x.id === g0.id)] = item; else { item.id = 'g' + Date.now().toString(36); list.push(item); }
-        await saveGoals(list);
-        closeSheet();
-        S.gi = S.d.goals.findIndex((x) => x.id === item.id);
-        if (S.tab === 'garaj') show('garaj', { static: false, silent: true }); else show('garaj');
-        toast(g0 ? 'Obiectiv salvat.' : 'Obiectiv adăugat în garaj.', 'success');
-      }));
-      const del = el.querySelector('[data-del]');
-      if (del) del.addEventListener('click', (e) => busy(e.currentTarget, async () => {
-        if (!confirm('Scoți „' + g0.name + '” din garaj?')) return;
-        await saveGoals(S.d.goals.filter((x) => x.id !== g0.id).map(goalInput));
-        closeSheet(); S.gi = 0; if (S.tab === 'garaj') show('garaj', { silent: true });
-      }));
-    });
-  }
-  function shrink(file, max) {
-    return new Promise((ok, no) => {
-      const img = new Image(), url = URL.createObjectURL(file);
-      img.onload = () => {
-        const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
-        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url);
-        let q = 0.85, out = c.toDataURL('image/jpeg', q);
-        while (out.length > 900000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
-        ok(out);
-      };
-      img.onerror = no; img.src = url;
-    });
-  }
-  async function busy(btn, fn) {
-    if (btn.classList.contains('is-busy')) return;
-    btn.classList.add('is-busy');
-    try { await fn(); } catch (e) { if (e && e.code) toast(K.errText ? K.errText(e) : 'Nu am putut salva.', 'error'); } finally { btn.classList.remove('is-busy'); }
-  }
-
-  // ------------------------------------------------------------------ the in-game avatar menu (the switch back)
+  // ------------------------------------------------------------------ the in-game menu (the switch back, sound, music, rules)
   function menu() {
     const old = document.querySelector('.gm-menu');
     if (old) { old.remove(); return; }
     const me = (K.data && K.data.me) || {};
     const m = document.createElement('div');
     m.className = 'gm-menu';
-    m.innerHTML = '<div class="head"><span class="gm-hud-btn is-av">' + avatarHtml() + '</span><div><b>' + esc(me.name || '') + '</b><small>Nivel ' + S.d.level.level + ' · ' + esc(S.d.level.title) + '</small></div></div>' +
+    m.innerHTML = '<div class="head"><span class="gm-hud-btn is-av">' + avatarHtml() + '</span><div><b>' + esc(me.name || '') + '</b><small>Nivel ' + S.d.level.level + ' · ' + esc(S.d.stage.name) + '</small></div></div>' +
       '<button type="button" class="it" data-m="off">' + ic('bolt') + 'Game Mode<span class="gm-sw is-on"><i></i></span></button>' +
       '<button type="button" class="it" data-m="sound">' + ic(Sfx.on ? 'sound' : 'mute') + 'Sunete<span class="gm-sw' + (Sfx.on ? ' is-on' : '') + '"><i></i></span></button>' +
-      '<button type="button" class="it" data-m="settings">' + ic('gear') + 'Setările jocului</button>';
+      '<button type="button" class="it" data-m="music">' + ic('music') + 'Muzică<span class="gm-sw' + (Sfx.musicOn ? ' is-on' : '') + '"><i></i></span></button>' +
+      '<button type="button" class="it" data-m="rules">' + ic('book') + 'Cum se joacă</button>' +
+      '<button type="button" class="it" data-m="intro">' + ic('play') + 'Revezi introducerea</button>';
     document.body.appendChild(m);
     m.addEventListener('click', (e) => {
       const b = e.target.closest('[data-m]'); if (!b) return;
-      if (b.dataset.m === 'off') { b.querySelector('.gm-sw').classList.remove('is-on'); setTimeout(() => { m.remove(); exit(); }, 220); return; }
-      if (b.dataset.m === 'sound') { Sfx.set(!Sfx.on); b.querySelector('.gm-sw').classList.toggle('is-on', Sfx.on); paintSoundBtn(); return; }
+      const what = b.dataset.m;
+      if (what === 'off') { b.querySelector('.gm-sw').classList.remove('is-on'); setTimeout(() => { m.remove(); exit(); }, 220); return; }
+      if (what === 'sound') { Sfx.set(!Sfx.on); b.querySelector('.gm-sw').classList.toggle('is-on', Sfx.on); return; }
+      if (what === 'music') { Sfx.setMusic(!Sfx.musicOn); b.querySelector('.gm-sw').classList.toggle('is-on', Sfx.musicOn); Sfx.tap(); return; }
       m.remove();
-      if (b.dataset.m === 'settings') settingsSheet();
+      if (what === 'rules') rulesSheet();
+      if (what === 'intro') intro(true);
     });
     setTimeout(() => document.addEventListener('click', function off(e) { if (!e.target.closest('.gm-menu') && !e.target.closest('[data-act="menu"]')) { m.remove(); document.removeEventListener('click', off); } }), 0);
   }
-  function paintSoundBtn() { const b = S.root && S.root.querySelector('[data-act="sound"]'); if (b) b.innerHTML = ic(Sfx.on ? 'sound' : 'mute'); }
 
   // ------------------------------------------------------------------ clicks
   function onClick(e) {
@@ -801,53 +971,35 @@
     if (pc) { pc.classList.toggle('is-flip'); Sfx.tap(); buzz(6); return; }
     const city = e.target.closest('[data-city]');
     if (city) { citySheet(city.dataset.city); return; }
-    const tr = e.target.closest('[data-trophy]');
-    if (tr && !tr.closest('.gm-cer')) { trophySheet(tr.dataset.trophy); return; }
+    const bd = e.target.closest('[data-badge]');
+    if (bd && !bd.closest('.gm-cer')) { badgeSheet(bd.dataset.badge); return; }
     const fl = e.target.closest('[data-filter]');
-    if (fl) { S.filter = fl.dataset.filter; show('trofee', { static: true, silent: true }); Sfx.tap(); return; }
+    if (fl) { S.filter = fl.dataset.filter; show('insigne', { static: true, silent: true }); Sfx.tap(); return; }
     const gs = e.target.closest('[data-gstep]');
     if (gs) { garageStep(Number(gs.dataset.gstep)); return; }
     const slide = e.target.closest('.gm-slide[data-id]');
-    if (slide && !slide.classList.contains('is-on')) { const show_ = slide.parentElement; show_.scrollTo({ left: slide.offsetLeft - (show_.clientWidth - slide.clientWidth) / 2, behavior: 'smooth' }); return; }
+    if (slide && !slide.classList.contains('is-on')) { const sh = slide.parentElement; sh.scrollTo({ left: slide.offsetLeft - (sh.clientWidth - slide.clientWidth) / 2, behavior: 'smooth' }); return; }
     const a = e.target.closest('[data-act]');
     if (!a) return;
     const act = a.dataset.act;
-    if (act === 'sound') { Sfx.set(!Sfx.on); paintSoundBtn(); return; }
     if (act === 'menu') { menu(); return; }
-    if (act === 'settings') { settingsSheet(); return; }
-    if (act === 'level') { levelSheet(); return; }
+    if (act === 'level' || act === 'stage') { stageSheet(); return; }
+    if (act === 'treasury') { treasurySheet(); return; }
     if (act === 'boss') { bossSheet(); return; }
+    if (act === 'map-out') { zoomOut(); return; }
     if (act === 'goal') { S.gi = S.d.goals.findIndex((g) => g.id === a.dataset.id); show('garaj'); return; }
-    if (act === 'goal-new') { goalSheet(''); return; }
-    if (act === 'goal-edit') { goalSheet(a.dataset.id); return; }
     if (act === 'replay') { const g = S.d.goals.find((x) => x.id === a.dataset.id); if (g) unlockCer(g, true); return; }
     if (act === 'claim') { claim(a); return; }
-  }
-  function levelSheet() {
-    const L = S.d.level;
-    sheet('<span class="gm-eyebrow">Nivelul imperiului</span><h3>Nivel ' + L.level + ' · ' + esc(L.title) + '</h3>' + '<div style="margin-top:1rem">' + bar(L.progress) + '</div>' +
-      '<p class="gm-note">' + ro(L.xp - L.from) + ' din ' + ro(L.to - L.from) + ' XP până la nivelul ' + (L.level + 1) + (L.nextTitle ? '. La nivelul ' + L.nextTitleAt + ' devii <b>' + esc(L.nextTitle) + '</b>.' : '.') + '</p>' +
-      '<div class="gm-kv"><div><small>Din încasări</small><b>' + ro(L.sources.revenue) + ' XP</b></div><div><small>Din misiuni</small><b>' + ro(L.sources.missions) + ' XP</b></div>' +
-      '<div><small>Din trofee</small><b>' + ro(L.sources.trophies) + ' XP</b></div><div><small>Total</small><b>' + ro(L.xp) + ' XP</b></div></div>' +
-      '<p class="gm-note">Fiecare 10 lei încasați aduc 1 XP. Titlurile: Salon, Clinică (5), Rețea (10), Brand național (20), Imperiu (30), Legendă (50).</p>');
-  }
-  function bossSheet() {
-    const s = S.d.season;
-    sheet('<span class="gm-eyebrow">' + esc(s.label) + '</span><h3>' + esc(s.boss) + '</h3><div class="gm-kv">' +
-      '<div><small>Viața bossului</small><b>' + lei(s.target) + '</b></div><div><small>Lovituri până acum</small><b>' + lei(s.done) + '</b></div>' +
-      '<div><small>Rămas</small><b>' + lei(Math.max(0, s.target - s.done)) + '</b></div><div><small>Zile rămase</small><b>' + s.daysLeft + '</b></div>' +
-      '<div><small>Ritm necesar</small><b>' + lei(s.needPerDay) + '/zi</b></div><div><small>În ritmul de acum</small><b>' + lei(s.pace) + '</b></div></div>' +
-      '<p class="gm-note">' + (s.pace >= s.target ? 'În ritmul ăsta <b>îl dobori</b> înainte de final.' : 'În ritmul ăsta mai lipsesc <b>' + lei(s.target - s.pace) + '</b> la final de sezon.') + ' Ținta se schimbă din setările jocului.</p>');
   }
 
   // ------------------------------------------------------------------ claiming a mission: coins fly into the XP bar
   async function claim(btn) {
     if (btn.classList.contains('is-busy')) return;
     btn.classList.add('is-busy');
-    const before = S.d.level.level;
     try {
       const r = await api({ action: 'claim', id: btn.dataset.id });
       btn.classList.remove('is-busy');
+      Sfx.claim();
       const from = btn.getBoundingClientRect(), to = S.root.querySelector('.gm-xpbar').getBoundingClientRect();
       const fx = from.left + from.width / 2, fy = from.top + from.height / 2, tx = to.left + to.width * 0.6, ty = to.top + to.height / 2;
       const fl = document.createElement('div'); fl.className = 'gm-floatxp'; fl.textContent = '+' + r.xp + ' XP'; fl.style.left = fx + 'px'; fl.style.top = (fy - 20) + 'px';
@@ -866,12 +1018,11 @@
         ], { duration: 900 + i * 60, delay: i * 55, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'forwards' });
         anim.onfinish = () => { c.remove(); Sfx.coin(); const xb = S.root && S.root.querySelector('.gm-xpbar'); if (xb) { xb.classList.remove('is-bump'); void xb.offsetWidth; xb.classList.add('is-bump'); } };
       }
-      if (!n) Sfx.coin();
       await sleep(n ? 1300 : 200);
       await refresh();
-      if (S.d.level.level > before) await levelCer(before, S.d.level.level, S.d.level.title);
     } catch (e) {
       btn.classList.remove('is-busy');
+      Sfx.error();
       toast(e.code === 'already_claimed' ? 'Misiunea e deja revendicată.' : e.code === 'not_done' ? 'Misiunea nu e gata încă.' : 'Nu am putut revendica. Încearcă din nou.', 'error');
       refresh();
     }
@@ -886,16 +1037,19 @@
       el.innerHTML = '<div class="rays"></div><div class="shock"></div><div class="flash"></div><div class="box">' + html + '</div>';
       document.body.appendChild(el);
       S.cer = true;
+      Sfx.duck((opts.delay || 600) + 3000);
+      if (opts.onMount) opts.onMount(el);
       let closed = false;
-      const close = () => { if (closed) return; closed = true; el.classList.add('is-out'); setTimeout(() => { el.remove(); S.cer = false; done(); }, 340); };
+      const close = () => { if (closed) return; closed = true; el.classList.add('is-out'); if (opts.onClose) opts.onClose(); setTimeout(() => { el.remove(); S.cer = false; done(); }, 340); };
       const boom = () => {
         el.classList.add('is-boom');
-        const box = el.querySelector('.card, .bighex, .trow') || el;
+        const box = el.querySelector('.card, .bighex, .trow, .gm-boss-em') || el;
         const r = box.getBoundingClientRect();
         confetti(r.left + r.width / 2, r.top + r.height / 2, 190, opts.gold !== false);
         setTimeout(() => confetti(window.innerWidth * 0.2, window.innerHeight * 0.3, 70, opts.gold !== false), 260);
         setTimeout(() => confetti(window.innerWidth * 0.8, window.innerHeight * 0.3, 70, opts.gold !== false), 420);
-        (opts.sound || Sfx.unlock)();
+        (opts.sound || Sfx.fanfare)();
+        if (opts.onBoom) opts.onBoom(el);
         buzz([40, 60, 40, 60, 120]);
       };
       setTimeout(boom, calm() ? 50 : opts.delay || 600);
@@ -904,44 +1058,92 @@
   }
   function unlockCer(g, preview) {
     Sfx.tension();
-    return cer('<div class="kicker">' + (preview && !g.unlocked ? 'AȘA VA ARĂTA' : 'OBIECTIV DEBLOCAT') + '</div>' +
-      '<div class="card">' + (g.img ? '<img src="' + esc(imgOf(g.img)) + '" alt="" onerror="this.remove()">' : '') + '<div class="chain"><div class="padlock"><div class="shk"></div><div class="bd"></div></div></div></div>' +
-      '<h2 class="gold">' + letters('DEBLOCAT') + '</h2><div class="sub">' + esc(g.name) + (preview && !g.unlocked ? '<br><small style="color:#a29fc4">' + esc(etaShort(g)) + '</small>' : '') + '</div>' +
-      '<button type="button" class="gm-btn is-gold cta" data-close>' + ic('trophy') + 'Spectaculos</button>', { delay: 2400 });
+    let car = null;
+    const pre = preview && !g.unlocked;
+    return cer('<div class="kicker">' + (pre ? 'AȘA VA ARĂTA' : 'OBIECTIV DEBLOCAT') + '</div>' +
+      '<div class="card"><img src="' + esc(imgOf(g.img)) + '" alt="" onerror="this.remove()"><canvas class="gm-3d"></canvas><div class="chain"><div class="padlock"><div class="shk"></div><div class="bd"></div></div></div></div>' +
+      '<h2 class="gold">' + letters('DEBLOCAT') + '</h2><div class="sub">' + esc(g.name) + (pre ? '<br><small style="color:#a29fc4">' + esc(etaShort(g)) + '</small>' : '') + '</div>' +
+      '<button type="button" class="gm-btn is-gold cta" data-close>' + (pre ? ic('car') + 'Înapoi în garaj' : ic('trophy') + 'Spectaculos') + '</button>', {
+      delay: 2400,
+      onMount(el) {
+        const cv = el.querySelector('.gm-3d');
+        if (!calm()) { car = Car3D.create(cv); if (car) car.set(g.id, imgOf(g.img), '/game/img/' + encodeURIComponent(g.img) + '-depth.png', false).then((ok) => { if (ok) { el.querySelector('.card').classList.add('is-3d'); car.dolly(1.3); } }); }
+      },
+      onBoom() { if (car) car.reveal(); },
+      onClose() { if (car) setTimeout(() => car.destroy(), 400); },
+    });
   }
-  function levelCer(from, to, title) {
-    return cer('<div class="kicker">NIVEL NOU</div><div class="bighex' + (S.d.level.tier >= 3 ? ' gold' : '') + '">' + to + '</div><h2 class="gold">' + letters(title.toUpperCase()) + '</h2>' +
+  function levelCer(from, to) {
+    return cer('<div class="kicker">NIVEL NOU</div><div class="bighex">' + to + '</div><h2 class="gold">' + letters('NIVELUL ' + to) + '</h2>' +
       '<div class="sub">De la nivelul ' + from + ' la ' + to + '.</div><button type="button" class="gm-btn is-lava cta" data-close>' + ic('bolt') + 'Continuă</button>', { delay: 650, sound: Sfx.level });
   }
-  function trophiesCer(list) {
+  function stageCer(ev) {
+    return cer('<div class="kicker">ETAPĂ NOUĂ · SCALING ROADMAP</div><div class="bighex gold">' + ev.to + '</div><h2 class="gold">' + letters(String(ev.name).toUpperCase()) + '</h2>' +
+      '<div class="sub">' + esc(S.d.stage.focus) + '</div><button type="button" class="gm-btn is-gold cta" data-close>' + ic('mountain') + 'Mai departe</button>', { delay: 900, sound: Sfx.level });
+  }
+  function badgesCer(list) {
     const xp = list.reduce((n, t) => n + t.xp, 0);
-    return cer('<div class="kicker">' + (list.length === 1 ? 'TROFEU NOU' : list.length + ' TROFEE NOI') + '</div><div class="trow">' + list.slice(0, 8).map((t, i) => badge(Object.assign({}, t, { isNew: false }), i)).join('') + '</div>' +
-      '<h2 class="gold">' + letters('+' + ro(xp) + ' XP') + '</h2><div class="sub">' + esc(list.map((t) => t.name).slice(0, 3).join(', ')) + (list.length > 3 ? ' și încă ' + (list.length - 3) : '') + '</div>' +
-      '<button type="button" class="gm-btn is-gold cta" data-close>' + ic('trophy') + 'Le iau</button>', { delay: 700 });
+    const top = list.slice().sort((a, b) => b.rank - a.rank).slice(0, 8);
+    return cer('<div class="kicker">' + (list.length === 1 ? 'INSIGNĂ NOUĂ' : list.length + ' INSIGNE NOI') + '</div><div class="trow">' + top.map((t, i) => badge(Object.assign({}, t, { isNew: false, secret: false }), i)).join('') + '</div>' +
+      '<h2 class="gold">' + letters('+' + ro(xp) + ' XP') + '</h2><div class="sub">' + esc(top.map((t) => t.name).slice(0, 3).join(', ')) + (list.length > 3 ? ' și încă ' + (list.length - 3) : '') + '</div>' +
+      '<button type="button" class="gm-btn is-gold cta" data-close>' + ic('medal') + 'Le iau</button>', { delay: 700, sound: Sfx.trophy });
   }
   function bossCer() {
     const s = S.d.season;
     return cer('<div class="kicker">SEZON CÂȘTIGAT</div><div class="gm-boss-em" style="width:140px;height:140px;filter:grayscale(.6)">' + BOSS_SVG + '</div><h2 class="gold">' + letters('BOSS ÎNVINS') + '</h2>' +
-      '<div class="sub">' + esc(s.boss) + ' a căzut: ' + lei(s.done) + ' din ' + lei(s.target) + '.</div><button type="button" class="gm-btn is-gold cta" data-close>' + ic('sword') + 'Următorul sezon</button>', { delay: 900 });
+      '<div class="sub">' + esc(s.boss) + ' a căzut: ' + lei(s.done) + ' din ' + lei(s.target) + '.</div><button type="button" class="gm-btn is-gold cta" data-close>' + ic('sword') + 'Următorul sezon</button>', { delay: 900, sound: Sfx.bossDown });
+  }
+
+  // the first time: what the game is, in five steps
+  function intro(again) {
+    return new Promise((done) => {
+      const d = S.d;
+      const steps = [
+        ['bolt', 'Afacerea ta e jocul', 'Fiecare leu încasat e XP. Nimic nu se setează: jocul citește doar portalul, cu reguli fixe, aceleași pentru toți.'],
+        ['mountain', 'Etapa ' + d.stage.i + ': ' + d.stage.name, 'Etapele vin din Scaling Roadmap-ul lui Alex Hormozi, după ritmul anual al încasărilor. Acum: ' + short(d.stage.yearPace) + ' lei pe an.'],
+        ['car', 'Garajul', 'Dacă nu-l poți cumpăra de două ori, nu ți-l permiți. Mașinile, ceasul și casa se deblochează din profitul real al afacerii.'],
+        ['map', 'Imperiul', 'Orașul următor se deblochează singur, când cifrele spun că are sens: calendare pline, marjă, investiția scoasă într-un an.'],
+        ['medal', d.badges.length + ' de insigne', 'Misiuni zilnice, un boss în fiecare sezon, insigne pentru tot ce construiești. Hai să începem.'],
+      ];
+      let i = 0;
+      const el = document.createElement('div');
+      el.className = 'gm-intro';
+      const paint = () => {
+        const [icn, t, p] = steps[i];
+        el.innerHTML = '<div class="gm-intro-in" style="--i:' + i + '"><div class="orb">' + ic(icn) + '</div><span class="gm-eyebrow">' + (i + 1) + ' / ' + steps.length + '</span><h2>' + esc(t) + '</h2><p>' + esc(p) + '</p>' +
+          '<div class="dots">' + steps.map((_, k) => '<i class="' + (k === i ? 'on' : '') + '"></i>').join('') + '</div>' +
+          '<button type="button" class="gm-btn is-lava" data-next>' + (i < steps.length - 1 ? 'Mai departe' : 'Începe jocul') + ic('up', 'r90') + '</button>' +
+          (i < steps.length - 1 ? '<button type="button" class="gm-intro-skip" data-skip>Sari peste</button>' : '') + '</div>';
+      };
+      const end = () => { el.classList.add('is-out'); setTimeout(() => el.remove(), 400); if (!again) api({ action: 'seen', intro: true }).catch(() => {}); Sfx.claim(); done(); };
+      paint();
+      document.body.appendChild(el);
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-skip]')) { end(); return; }
+        if (e.target.closest('[data-next]')) { Sfx.tab(); buzz(8); if (++i >= steps.length) end(); else paint(); }
+      });
+    });
   }
   async function ceremonies() {
     if (S.cer || !S.d) return;
     const ev = S.d.events || {};
     const seen = {};
-    if (ev.levelUp) { await levelCer(ev.levelUp.from, ev.levelUp.to, ev.levelUp.title); seen.level = ev.levelUp.to; }
+    if (ev.intro) { await intro(false); }
+    if (ev.stageUp) { await stageCer(ev.stageUp); seen.stage = ev.stageUp.to; }
+    if (ev.levelUp) { await levelCer(ev.levelUp.from, ev.levelUp.to); seen.level = ev.levelUp.to; }
     for (const id of ev.goals || []) { const g = S.d.goals.find((x) => x.id === id); if (g) await unlockCer(g, false); }
     if (ev.goals && ev.goals.length) seen.goals = ev.goals;
     if (ev.boss) { await bossCer(); seen.season = ev.boss; }
-    const tr = (ev.trophies || []).map((id) => S.d.trophies.find((t) => t.id === id)).filter(Boolean);
-    if (tr.length) { await trophiesCer(tr); seen.trophies = ev.trophies; }
+    const tr = (ev.badges || []).map((id) => S.d.badges.find((t) => t.id === id)).filter(Boolean);
+    if (tr.length) { await badgesCer(tr); seen.badges = ev.badges; }
     if (Object.keys(seen).length) {
       try { await api(Object.assign({ action: 'seen' }, seen)); } catch (e) { /* next time */ }
       S.d.events = {};
-      (seen.trophies || []).forEach((id) => { const t = S.d.trophies.find((x) => x.id === id); if (t) t.isNew = false; });
+      (seen.badges || []).forEach((id) => { const t = S.d.badges.find((x) => x.id === id); if (t) t.isNew = false; });
       (seen.goals || []).forEach((id) => { const g = S.d.goals.find((x) => x.id === id); if (g) g.isNew = false; });
       paintHud();
-      if (S.tab === 'trofee' || S.tab === 'garaj') show(S.tab, { static: true, silent: true });
-    }
+      if (S.tab === 'insigne') show(S.tab, { static: true, silent: true });
+    } else S.d.events = {};
   }
 
   // ------------------------------------------------------------------ live: the game follows the clinic
@@ -978,11 +1180,14 @@
     l.href = 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap';
     document.head.appendChild(l);
   }
+  function onVisibility() { if (!S.open) return; if (document.hidden) Sfx.suspend(); else { Sfx.resume(); if (Date.now() - S.loadedAt > 20000) { S.loadedAt = Date.now(); refresh(); } } }
   async function enter(quick) {
     if (S.open) return;
     S.open = true;
     store.set('c360_game', '1');
     fonts();
+    Sfx.unlock();
+    document.addEventListener('visibilitychange', onVisibility);
     const dataP = load().then(() => true, (e) => { console.error(e); return false; });
     const credP = fetch('/game/img/credits.json').then((r) => (r.ok ? r.json() : null)).then((c) => { S.credits = c; }, () => {});
     if (quick || calm()) {
@@ -991,6 +1196,7 @@
       const ok = await dataP;
       if (!ok) { failOpen(); return; }
       show(S.tab, { silent: true });
+      Sfx.music(true);
       setTimeout(ceremonies, 900);
       startLive();
       return;
@@ -1000,6 +1206,7 @@
     await sleep(560);
     w.classList.add('is-logo'); Sfx.impact(); buzz([30, 30, 70]);
     const root = mount();
+    S.audioOk = true;
     const ok = await Promise.race([dataP, sleep(1500).then(() => null)]);
     await sleep(420);
     root.classList.add('is-enter');
@@ -1010,6 +1217,7 @@
     await credP;
     if (!ready) { failOpen(); return; }
     show(S.tab, { silent: true });
+    Sfx.music(true);
     setTimeout(ceremonies, 1300);
     startLive();
   }
@@ -1029,17 +1237,22 @@
   function teardown() {
     clearInterval(S.timer);
     Fx.stop();
+    Sfx.music(false);
+    if (S.car) { S.car.destroy(); S.car = null; }
     closeSheet(true);
+    document.removeEventListener('visibilitychange', onVisibility);
     const m = document.querySelector('.gm-menu'); if (m) m.remove();
     if (S.root) S.root.remove();
     S.root = null; S.open = false;
     document.documentElement.classList.remove('gm-on');
+    if (window.C360GameBoot && window.C360GameBoot.audioOff) window.C360GameBoot.audioOff();
   }
   async function exit() {
     if (!S.open) return;
     store.set('c360_game', '0');
     if (calm()) { teardown(); return; }
     Sfx.whoosh(); buzz(18);
+    Sfx.music(false);
     const w = wipe(true, 'BUSINESS', 'ÎNAPOI LA PORTAL');
     if (S.root) S.root.classList.add('is-leave');
     await sleep(600);

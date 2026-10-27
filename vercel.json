@@ -165,7 +165,7 @@
       ]
     },
     {
-      "source": "/game/img/(.*)",
+      "source": "/game/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

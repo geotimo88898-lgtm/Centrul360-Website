@@ -1,13 +1,10 @@
 // /api/portal-game, Game Mode (admins only; see _lib/game.js for what the game is made of).
 //   GET                                   the whole game, live from the clinic's data
 //   POST { action: 'claim', id }          a mission done: its XP (checked again here, never trusted from the screen)
-//   POST { action: 'seen', level?, goals?, trophies?, season? }   the ceremonies already shown
-//   POST { action: 'goals', goals: [...] }                         the garage, as the owner wrote it
-//   POST { action: 'settings', costs?, expandAt?, next?, seasonTarget? }
-//   POST { action: 'goal_image', dataUrl }  a photo of his own for a goal (JPEG, up to 700 KB): its path
+//   POST { action: 'seen', level?, stage?, intro?, goals?, badges?, season? }   the ceremonies already shown
+// Nothing else: the rules are declared in _lib/game.js and nobody edits them (the owner plays, he doesn't set it up).
 
-const crypto = require('crypto');
-const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
+const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { loadConnection } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
@@ -15,7 +12,6 @@ const K = require('./_lib/kpi');
 const TB = require('./_lib/timebank');
 const G = require('./_lib/game');
 
-const MAX_PHOTO = 700 * 1024;
 
 async function compute(now) {
   const [offers, leads, appointments, sales, clients, conversations, employees, attendance, tbAll, conn, doc] = await Promise.all([
@@ -52,16 +48,6 @@ module.exports = async (req, res) => {
     const b = req.body || {};
     const fail = (code, error) => res.status(code).json({ error });
 
-    if (b.action === 'goal_image') {
-      const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.dataUrl || ''));
-      const buf = m ? Buffer.from(m[1], 'base64') : null;
-      if (!buf || !buf.length || buf.length > MAX_PHOTO) return fail(400, 'invalid_file');
-      const path = 'game/' + crypto.randomUUID() + '.jpg';
-      await writeBinary(path, buf, 'image/jpeg');
-      res.status(200).json({ ok: true, img: path });
-      return;
-    }
-
     const doc = G.cleanDoc(await readJSON(G.KEY, null));
     if (b.action === 'claim') {
       const id = String(b.id || '');
@@ -80,30 +66,11 @@ module.exports = async (req, res) => {
     }
     if (b.action === 'seen') {
       if (Number(b.level) > 0) doc.seen.level = Math.round(Number(b.level));
-      const add = (key, list) => { if (Array.isArray(list)) doc.seen[key] = [...new Set(doc.seen[key].concat(list.map(String).filter((x) => /^[\w-]{1,40}$/.test(x))))].slice(-500); };
-      add('goals', b.goals); add('trophies', b.trophies);
+      if (Number.isInteger(b.stage) && b.stage >= 0 && b.stage <= 9) doc.seen.stage = b.stage;
+      if (b.intro === true) doc.seen.intro = true;
+      const add = (key, list) => { if (Array.isArray(list)) doc.seen[key] = [...new Set(doc.seen[key].concat(list.map(String).filter((x) => /^[\w-]{1,40}$/.test(x))))].slice(-1000); };
+      add('goals', b.goals); add('badges', b.badges);
       if (b.season) add('seasons', [String(b.season)]);
-      await writeJSON(G.KEY, doc);
-      res.status(200).json({ ok: true });
-      return;
-    }
-    if (b.action === 'goals') {
-      const goals = G.cleanGoals(b.goals);
-      if (!goals) return fail(400, 'invalid_goals');
-      doc.goals = goals;
-      // a goal taken out (or rebuilt) unlocks again from scratch
-      Object.keys(doc.unlocked).forEach((id) => { if (!goals.some((g) => g.id === id)) delete doc.unlocked[id]; });
-      await writeJSON(G.KEY, doc);
-      res.status(200).json({ ok: true, goals });
-      return;
-    }
-    if (b.action === 'settings') {
-      doc.settings = G.cleanSettings(b, doc.settings);
-      if (b.seasonTarget != null) {
-        const t = Math.round(Number(b.seasonTarget));
-        const q = G.quarterOf(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date())).id;
-        if (t >= 1000 && t <= 1e9) doc.seasons[q] = Object.assign({}, doc.seasons[q] || {}, { target: t, manual: true, defeatedAt: null });
-      }
       await writeJSON(G.KEY, doc);
       res.status(200).json({ ok: true });
       return;

@@ -54,5 +54,40 @@
     "author": "Jengtingchen",
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Rolls-Royce_Cullinan_001.jpg"
+  },
+  "paris": {
+    "file": "paris.webp",
+    "title": "File:Pont des Invalides et Tour Eiffel - 02.jpg",
+    "author": "Carlos Delgado",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Pont_des_Invalides_et_Tour_Eiffel_-_02.jpg"
+  },
+  "ferrari": {
+    "file": "ferrari.webp",
+    "title": "File:Ferrari SF90 Stradale Mayfair.jpg",
+    "author": "Calreyn88",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Ferrari_SF90_Stradale_Mayfair.jpg"
+  },
+  "bugatti": {
+    "file": "bugatti.webp",
+    "title": "File:Bugatti Chiron With Lights.jpg",
+    "author": "MrWalkr",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Bugatti_Chiron_With_Lights.jpg"
+  },
+  "yacht": {
+    "file": "yacht.webp",
+    "title": "File:Amadea anchored in Mediterranean Sea near Akti Bouboulinas Rhodes 28 August 2024.jpg",
+    "author": "Pjotr Mahhonin",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Amadea_anchored_in_Mediterranean_Sea_near_Akti_Bouboulinas_Rhodes_28_August_2024.jpg"
+  },
+  "jet": {
+    "file": "jet.webp",
+    "title": "File:Gulfstream G650 departs Bristol 23rdAug2014 arp.jpg",
+    "author": "Adrian Pingstone",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Gulfstream_G650_departs_Bristol_23rdAug2014_arp.jpg"
   }
 }
