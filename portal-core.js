@@ -54,11 +54,24 @@
   let rev = null, pendingRemote = false; // live-sync revision (see "live sync" below)
   const app = document.getElementById('app');
 
+  let loading = false, loadAgain = false, lastKey = '';
   async function load(quiet) {
+    // one reading at a time: signals that pile up while one is on its way make one more reading at its end, not one each
+    if (loading) { loadAgain = true; return; }
+    loading = true;
+    try { await loadNow(quiet); } finally { loading = false; }
+    if (loadAgain) { loadAgain = false; return load(true); }
+  }
+  async function loadNow(quiet) {
     // Baseline revision first, so a save that lands while this loads still triggers a refresh.
     if (rev === null) { try { const p = await K.api('/api/portal-pulse'); rev = p.rev; seeBuild(p.build); } catch (e) { /* first pulse sets it */ } }
     try {
-      DATA = await K.api('/api/portal-data');
+      const fresh = await K.api('/api/portal-data');
+      // the same data again (a save that touched nothing of this account's): nothing is redrawn
+      const key = JSON.stringify(fresh);
+      if (quiet && !first && key === lastKey) return;
+      lastKey = key;
+      DATA = fresh;
     } catch (e) {
       if (e.code === 'auth') return;
       if (!quiet) {

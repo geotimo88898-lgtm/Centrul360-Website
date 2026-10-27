@@ -140,5 +140,18 @@
   new MutationObserver(function () { var r = document.documentElement.getAttribute('data-role') || ''; if (r !== ROLE) { ROLE = r; MAIN = ROLE === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri']; shown = ''; refresh(); } }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-role'] });
   window.addEventListener('hashchange', function () { setTimeout(refresh, 0); });
   MOBILE.addEventListener ? MOBILE.addEventListener('change', function () { close('pick'); }) : null;
+  // the phone keyboard: while a field is being typed in, the bottom bar hides (iOS leaves a fixed bar floating in
+  // the middle of the screen while the keyboard is up, and for a moment after); it comes back when typing ends
+  var kbd = 0;
+  function keyboard(on) {
+    clearTimeout(kbd);
+    kbd = setTimeout(function () { html.classList.toggle('c360-kbd', !!on); }, on ? 0 : 250);
+  }
+  document.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [contenteditable]')) keyboard(true); });
+  document.addEventListener('focusout', function () { keyboard(false); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', function () {
+    var shrunk = window.innerHeight - window.visualViewport.height > 150; // the keyboard, not the address bar
+    if (shrunk) keyboard(true); else if (!document.activeElement || !document.activeElement.matches('input, textarea, select, [contenteditable]')) keyboard(false);
+  });
   refresh();
 })();

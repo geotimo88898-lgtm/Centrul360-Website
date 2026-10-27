@@ -117,9 +117,21 @@
     const stale = d.stale || A.staleSince;
     box.innerHTML = (d.notices || []).map((n) => line(n.tone, esc(n.text))).join('') +
       (d.partial ? line('', esc(d.partial)) : '') +
-      (stale ? line('warn', (d.stale ? 'Meta limitează acum citirile contului: ' : 'Nu am putut reîmprospăta: ') + 'cifrele sunt de la ' + esc(new Date(stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.') : '') +
-      (d.guard && d.guard.log && d.guard.log.length ? line('', 'Schimbări: ' + d.guard.log.slice(0, 6).map((e) => (e.type === 'up' ? '📈 ' : e.trim ? '✂️ ' : e.type === 'down' ? '📉 ' : '⛔ ') + '<b>' + esc(e.adOnly ? e.adName + ' (' + e.campaignName + ')' : e.campaignName || e.adName) + '</b> ' +
-        (e.type === 'stop' ? '(' + esc(e.why || (money(e.spend) + ', ' + (e.leads ? K.plural(e.leads, 'lead', 'leaduri') : 'niciun lead'))) + ')' : esc(e.from + ' → ' + e.to + ' lei/zi'))).join(' · ')) : '');
+      (stale ? line('warn', (d.stale ? 'Meta limitează acum citirile contului: ' : 'Nu am putut reîmprospăta: ') + 'cifrele sunt de la ' + esc(new Date(stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.') : '');
+    const n = (d.guard && d.guard.log || []).length, btn = panel.querySelector('[data-act="changes"] span');
+    if (btn) btn.textContent = n ? String(n) : '';
+  }
+  // the changes of the last 3 days that still hold (the guard's and the ones asked for), in their own list
+  function openChanges() {
+    const log = (A.d && A.d.guard && A.d.guard.log) || [];
+    const what = (e) => e.type === 'up' ? '📈 Buget mărit ' + e.from + ' → ' + e.to + ' lei/zi' : e.trim ? '✂️ Buget scăzut ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'down' ? '📉 Buget înapoi ' + e.from + ' → ' + e.to + ' lei/zi' : e.job ? '⛔ Oprită' : e.adOnly ? '⛔ O reclamă oprită automat' : '⛔ Oprită automat';
+    K.drawer({
+      title: 'Schimbări', icon: 'clock', width: 520, subtitle: 'Ultimele 3 zile, doar ce e încă valabil.',
+      body: log.length ? '<div class="k-list">' + log.map((e) => '<div class="k-row"><span class="k-icon-chip is-' + (e.type === 'up' ? 'good' : 'bad') + '">' + icon(e.type === 'up' ? 'trend' : e.type === 'stop' ? 'ban' : 'sliders') + '</span>' +
+        '<div class="k-row-main"><div class="k-row-title">' + esc(e.campaignName || e.adName || '') + (e.adOnly ? ' <small>„' + esc(e.adName) + '”</small>' : '') + '</div><div class="k-row-sub">' + esc(what(e)) + (e.why ? ' · ' + esc(e.why) : '') + '</div></div>' +
+        '<div class="k-row-end"><small>' + esc(K.ago(e.at)) + '</small></div></div>').join('') + '</div>'
+        : K.empty('clock', 'Nicio schimbare', 'Nimic nu s-a schimbat în ultimele 3 zile.'),
+    });
   }
   function paintAll() { paintChips(); paintStats(); paintNotes(); paintList(); }
   // the other periods load quietly, one after another, so Azi / Ieri / 30 zile show at once
@@ -250,6 +262,7 @@
       '<div class="ad-bar">' + K.seg('adperiod', periodPairs(), A.range ? 'custom' : A.period) +
         '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o campanie sau o reclamă…" value="' + esc(A.q) + '"></label>' +
         '<div class="k-chips"><button type="button" class="k-chip' + (A.show === 'active' ? ' is-on' : '') + '" data-show="active">Pornite<span>' + active + '</span></button><button type="button" class="k-chip' + (A.show === 'all' ? ' is-on' : '') + '" data-show="all">Toate<span>' + d.campaigns.length + '</span></button></div>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-act="changes" title="Schimbările din ultimele 3 zile">' + icon('clock') + '<span class="ad-sm-hide">Schimbări</span><span class="ad-count"></span></button>' +
         '<button type="button" class="k-btn is-outline is-sm" data-act="customize" title="Coloane și KPI">' + icon('sliders') + '<span class="ad-sm-hide">Coloane și KPI</span></button>' +
         '<button type="button" class="k-icon-btn ad-refresh' + (A.spin ? ' is-spinning' : '') + '" data-act="refresh" title="Actualizează" aria-label="Actualizează">' + icon('refresh') + '</button>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
@@ -373,10 +386,13 @@
     const all = g.concat(n);
     return all.length ? '<div class="ad-flags">' + all.map(([tone, label, text]) => '<p class="ad-flag ' + tone + '"><b>' + esc(label) + '</b><span>' + esc(text) + '</span></p>').join('') + '</div>' : '';
   }
+  // the campaign's picture: its first ad's (the running one first)
+  const thumbOf = (c) => { const ads = (c.adsets || []).flatMap((s) => s.ads || []); const a = ads.find((x) => x.thumb && x.status === 'ACTIVE') || ads.find((x) => x.thumb); return a ? a.thumb : ''; };
+  const thumbHtml = (u) => '<span class="ad-thumb">' + (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : icon('image')) + '</span>';
   function campHtml(c) {
     return '<article class="k-card ad-camp' + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
       '<div class="ad-row is-camp">' +
-        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + '<button type="button" class="ad-title" data-preview="' + esc(c.id) + '" title="Previzualizare"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
+        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + thumbHtml(thumbOf(c)) + '<button type="button" class="ad-title" data-preview="' + esc(c.id) + '" title="Previzualizare"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
         '<div class="ad-mkpis">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(c))) + '</b></div>').join('') + '</div>' +
         cellsOf(c, 'campaign') +
         '<div class="ad-acts"><button type="button" class="k-icon-btn" data-preview="' + esc(c.id) + '" title="Previzualizare">' + icon('eye') + '</button>' +
@@ -792,6 +808,7 @@
     if (t.closest('[data-act="reload"]')) { panel.querySelector('[data-body]').innerHTML = '<div class="k-skel" style="height:360px"></div>'; return load(); }
     if (t.closest('[data-act="defaults"]')) return openDefaults();
     if (t.closest('[data-act="customize"]')) return customizeAds();
+    if (t.closest('[data-act="changes"]')) return openChanges();
     if (t.closest('[data-act="creative"]')) { K.go('creative'); K.ui().toast('Deschide un creative aprobat și apasă „Publică pe Meta”.', 'info'); return; }
     const go = t.closest('[data-goto]'); if (go) return K.go(go.dataset.goto);
     const sh = t.closest('[data-show]'); if (sh) { A.show = sh.dataset.show; A.keep.clear(); return render(); }

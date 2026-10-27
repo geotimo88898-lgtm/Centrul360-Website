@@ -548,6 +548,26 @@
     return { id: () => id, reset: () => { id = ''; hide(); } };
   }
 
+  // ------------------------------------------------------------------ a page that changes only where it changed
+  // parts: [{ key, html, children? }], each html one element carrying data-part="key". A piece whose text is the same as
+  // at the last paint stays in the DOM as it is (its animations, its moving background, its open state); only the
+  // pieces that differ are replaced. A different set of pieces rebuilds the container once.
+  function patch(root, parts) {
+    const kids = Array.from(root.children);
+    const same = kids.length === parts.length && kids.every((k, i) => k.dataset && k.dataset.part === parts[i].key);
+    if (!same) { root.innerHTML = parts.map((x) => x.html).join(''); root._parts = new Map(parts.map((x) => [x.key, x.html])); Array.from(root.children).forEach((k, i) => { if (parts[i].children) patch(k, parts[i].children); }); return; }
+    const drawn = root._parts || (root._parts = new Map());
+    parts.forEach((x, i) => {
+      if (drawn.get(x.key) === x.html) { if (x.children) patch(kids[i], x.children); return; }
+      const tmp = document.createElement('div'); tmp.innerHTML = x.html;
+      const el = tmp.firstElementChild;
+      if (!el) return;
+      kids[i].replaceWith(el);
+      drawn.set(x.key, x.html);
+      if (x.children) patch(el, x.children);
+    });
+  }
+
   // ------------------------------------------------------------------ sections + nav
   const sections = {};
   let data = null;
@@ -673,7 +693,7 @@
     on, emit, api, errText, ui, esc, dedash, norm, reduceMotion,
     lei, num, pad, iso, today, parse, addDays, monthOf, thisMonth, addMonths, daysIn, mondayOf, DOW, DOW_S, MON, MON_S,
     dateShort, dateLong, monthLabel, relDay, ago, plural, initials, colorFor, avatar, wa, tel, intlPhone,
-    icon, P, tween, countUp, countAll, everySecond, spark, ring, donut, chart,
+    icon, P, tween, countUp, countAll, everySecond, spark, ring, donut, chart, patch,
     drawer, field, formValues, busy, options, seg, empty, toggle, clientPicker,
     section, show, setData, badge, go, isActive, csv, copy, typing, leads, pageNav, pageWait,
     prefs, customize,

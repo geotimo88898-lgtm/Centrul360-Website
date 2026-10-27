@@ -34,9 +34,15 @@
     if (S.busy) return;
     S.busy = true;
     if (!quiet || !S.d) paint(true);
-    try { S.d = await K.api(url()); S.at = Date.now(); S.err = ''; } catch (e) { S.err = K.errText ? K.errText(e) : 'Nu am putut încărca cifrele'; }
+    let changed = true;
+    try {
+      const d = await K.api(url());
+      const key = JSON.stringify(d);
+      changed = key !== S.key || !quiet;
+      S.key = key; S.d = d; S.at = Date.now(); S.err = '';
+    } catch (e) { S.err = K.errText ? K.errText(e) : 'Nu am putut încărca cifrele'; }
     S.busy = false;
-    paint(false);
+    if (changed) paint(false); else { S.el && S.el.classList.remove('is-loading'); tick(); } // the same numbers: the page stays as it is
   }
 
   // ------------------------------------------------------------------ pieces
@@ -141,7 +147,7 @@
   function trendHtml(d) {
     if (d.trend.length < 2) return '';
     return card('kp-trend', h3('trend', 'Zi cu zi') + '<div class="k-seg"><button type="button" data-kp-trend="money" class="' + (S.trend === 'money' ? 'is-on' : '') + '">Bani</button><button type="button" data-kp-trend="people" class="' + (S.trend === 'people' ? 'is-on' : '') + '">Oameni</button></div>',
-      '<div data-kp-chart></div>');
+      '<div data-kp-chart data-sig="' + d.trend.map((x) => [x.leads, x.made, Math.round(x.revenue || 0), Math.round(x.spend || 0)].join('/')).join(',') + '"></div>');
   }
   function drawTrend(d) {
     const el = S.el && S.el.querySelector('[data-kp-chart]');
@@ -170,16 +176,15 @@
         tile('Cost / clientă care a plătit', L(a.cpa), a.clients + ' au plătit') + tile('La 1 leu', a.roas != null ? dec(a.roas, 2) + ' lei' : '-', K.lei(a.revenue) + ' încasați', a.roas != null ? (a.roas >= 1 ? 'is-good' : 'is-bad') : '') +
         tile('Click pe reclamă', P(a.ctr), K.num(a.clicks) + ' clickuri') + tile('Cost / 1000 afișări', L(a.cpm), 'frecvență ' + dec(a.freq, 1)) +
       '</div>' +
-      (rows.length ? '<div class="kp-ad-t"><div class="kp-ad-r is-head"><div>Reclamă</div><div>Cheltuit</div><div>Leaduri</div><div>Cost / lead</div><div>Programate</div><div>Au venit</div><div>Încasat</div><div>La 1 leu</div><div>Click</div><div>Frecv.</div></div>' +
-        rows.map((x) => '<div class="kp-ad-r' + (x.flag ? ' is-' + x.flag : '') + '" data-kp-adrow="' + esc(x.id) + '">' +
-          '<div class="kp-ad-n">' + (x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="kp-ad-ph">' + icon('image') + '</span>') +
-            '<span><b>' + status(x.status) + esc(x.name || 'Reclamă') + (x.flag === 'top' ? ' <em class="kp-badge is-good">🚀 merge foarte bine</em>' : x.flag === 'bad' ? ' <em class="kp-badge is-bad">⚠️ merge rău</em>' : x.flag === 'watch' ? ' <em class="kp-badge is-warn">de urmărit</em>' : '') + '</b>' +
-            '<small>' + esc(x.campaign) + '</small>' + (x.flag ? '<small class="kp-why">' + esc(x.why.join(' · ')) + '</small>' : '') + '</span></div>' +
-          '<div data-l="Cheltuit">' + K.lei(x.spend) + '</div><div data-l="Leaduri"><b>' + x.leads + '</b>' + (x.metaLeads !== x.leads ? ' <small>' + x.metaLeads + ' Meta</small>' : '') + '</div>' +
-          '<div data-l="Cost / lead">' + L(x.cpl) + '</div><div data-l="Programate">' + x.booked + (x.leads ? ' <small>' + P(x.bookRate) + '</small>' : '') + '</div>' +
-          '<div data-l="Au venit">' + x.came + '</div><div data-l="Încasat">' + (x.revenue ? K.lei(x.revenue) : '-') + '</div>' +
-          '<div data-l="La 1 leu" class="' + (x.roas != null ? (x.roas >= 1 ? 'is-good' : 'is-bad') : '') + '">' + (x.roas != null ? dec(x.roas, 2) : '-') + '</div>' +
-          '<div data-l="Click">' + P(x.ctr) + '</div><div data-l="Frecv." class="' + (x.freq >= 3.5 ? 'is-bad' : '') + '">' + dec(x.freq, 1) + '</div></div>').join('') + '</div>'
+      (rows.length ? '<div class="kp-adc-list">' +
+        rows.map((x) => '<article class="k-card ad-camp kp-adc' + (x.flag ? ' is-' + x.flag : '') + (x.status === 'ACTIVE' ? '' : ' is-off') + '" data-kp-adrow="' + esc(x.id) + '">' +
+          '<div class="ad-name"><span class="ad-thumb">' + (x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : icon('image')) + '</span>' +
+            '<div class="ad-title"><b>' + status(x.status) + esc(x.name || 'Reclamă') + '</b><small>' + esc(x.campaign) +
+            (x.flag === 'top' ? '<em class="kp-badge is-good">🚀 merge foarte bine</em>' : x.flag === 'bad' ? '<em class="kp-badge is-bad">⚠️ merge rău</em>' : x.flag === 'watch' ? '<em class="kp-badge is-warn">👀 de urmărit</em>' : '') + '</small></div></div>' +
+          '<div class="ad-mkpis"><div><small>Leaduri</small><b>' + x.leads + (x.metaLeads !== x.leads ? ' <small>' + x.metaLeads + ' Meta</small>' : '') + '</b></div><div><small>Cost / lead</small><b>' + L(x.cpl) + '</b></div><div><small>Cheltuit</small><b>' + K.lei(x.spend) + '</b></div></div>' +
+          '<div class="kp-adc-more"><div data-l="Programate">' + x.booked + (x.leads ? ' <small>' + P(x.bookRate) + '</small>' : '') + '</div><div data-l="Au venit">' + x.came + '</div><div data-l="Încasat">' + (x.revenue ? K.lei(x.revenue) : '-') + '</div>' +
+            '<div data-l="La 1 leu" class="' + (x.roas != null ? (x.roas >= 1 ? 'is-good' : 'is-bad') : '') + '">' + (x.roas != null ? dec(x.roas, 2) : '-') + '</div><div data-l="Click">' + P(x.ctr) + '</div><div data-l="Frecv." class="' + (x.freq >= 3.5 ? 'is-bad' : '') + '">' + dec(x.freq, 1) + '</div></div>' +
+          (x.flag ? '<div class="kp-why">' + esc(x.why.join(' · ')) + '</div>' : '') + '</article>').join('') + '</div>'
         : none('Nicio reclamă n-a cheltuit în perioada asta.')));
   }
 
@@ -258,20 +263,22 @@
       return;
     }
     S.el.classList.toggle('is-loading', !!loading);
-    S.el.innerHTML = headHtml(d) + pulseHtml(d) +
-      '<div class="kp-grid">' +
-        '<div class="kp-b is-wide">' + paceHtml(d) + '</div><div class="kp-b">' + alertsHtml(d) + '</div>' +
-        '<div class="kp-b is-full">' + funnelHtml(d) + '</div>' +
-        '<div class="kp-b">' + bookingsHtml(d) + '</div><div class="kp-b">' + moneyHtml(d) + '</div><div class="kp-b">' + sourcesHtml(d) + '</div>' +
-        (d.trend.length > 1 ? '<div class="kp-b is-full">' + trendHtml(d) + '</div>' : '') +
-        '<div class="kp-b is-full">' + adsHtml(d) + '</div>' +
-        '<div class="kp-b is-wide">' + offersHtml(d) + '</div><div class="kp-b">' + citiesHtml(d) + '</div>' +
-        '<div class="kp-b is-full">' + messagesHtml(d) + '</div>' +
-        '<div class="kp-b is-full">' + teamHtml(d) + '</div>' +
-      '</div>' +
-      '<p class="kp-foot">' + icon('refresh') + '<span data-kp-ago></span></p>';
-    drawTrend(d);
+    // pieces: only the ones whose text changed are redrawn (the band with its moving background stays put)
+    const wrap = (key, cls, html) => ({ key, html: '<div class="' + cls + '" data-part="' + key + '">' + html + '</div>' });
+    const blocks = [wrap('pace', 'kp-b is-wide', paceHtml(d)), wrap('alerts', 'kp-b', alertsHtml(d)), wrap('funnel', 'kp-b is-full', funnelHtml(d)),
+      wrap('bookings', 'kp-b', bookingsHtml(d)), wrap('money', 'kp-b', moneyHtml(d)), wrap('sources', 'kp-b', sourcesHtml(d))]
+      .concat(d.trend.length > 1 ? [wrap('trend', 'kp-b is-full', trendHtml(d))] : [])
+      .concat([wrap('ads', 'kp-b is-full', adsHtml(d)), wrap('offers', 'kp-b is-wide', offersHtml(d)), wrap('cities', 'kp-b', citiesHtml(d)), wrap('messages', 'kp-b is-full', messagesHtml(d)), wrap('team', 'kp-b is-full', teamHtml(d))]);
+    K.patch(S.el, [
+      { key: 'head', html: headHtml(d).replace('<div class="kp-top">', '<div class="kp-top" data-part="head">') },
+      { key: 'pulse', html: pulseHtml(d).replace('<section class="kp-pulse">', '<section class="kp-pulse" data-part="pulse">') },
+      { key: 'grid', html: '<div class="kp-grid" data-part="grid"></div>', children: blocks },
+      { key: 'foot', html: '<p class="kp-foot" data-part="foot">' + icon('refresh') + '<span data-kp-ago></span></p>' },
+    ]);
+    const tr = S.el.querySelector('[data-kp-chart]');
+    if (tr && !tr.children.length) drawTrend(d); // a new box (its numbers changed): drawn; an old one keeps its drawing
     K.countAll(S.el);
+    S.painted = S.key;
     tick();
   }
   function tick() {
@@ -316,7 +323,7 @@
         el.addEventListener('submit', onSubmit);
       }
       const picking = () => !!(S.el && S.el.querySelector('[data-kp-range] input:focus'));
-      if (S.d && !picking()) paint(false);
+      if (S.d && !picking() && S.painted !== S.key) paint(false); // the data is on the page already: nothing to redraw
       if (!S.d || (Date.now() - S.at > 20e3 && !picking())) load(!!S.d);
       clearInterval(timer);
       timer = setInterval(() => {

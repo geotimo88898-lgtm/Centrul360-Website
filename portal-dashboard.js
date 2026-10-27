@@ -263,7 +263,7 @@
     const blockHtml = {
       chart: () => '<section class="k-card db-chart-card"><div class="k-card-head"><h3>' + icon('trend') + (role === 'cosmetician' ? 'Comisionul meu' : 'Încasări') + ' · ultimele 30 de zile</h3>' +
         '<div class="k-legend"><span><i style="background:var(--accent)"></i>Ultimele 30 zile · ' + K.lei(series30.reduce((a, x) => a + x.v, 0)) + '</span><span><i style="background:var(--muted-2)"></i>Cele 30 dinainte</span></div></div>' +
-        '<div data-chart></div></section>',
+        '<div data-chart data-sig="' + series30.map((x) => Math.round(x.v)).join(',') + '|' + prev30.map((v) => Math.round(v)).join(',') + '"></div></section>',
       pay: () => payCard,
       today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
         '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>',
@@ -272,9 +272,11 @@
     };
 
     const root = panel.querySelector('.db-root');
-    root.innerHTML = (D.isAdmin && window.C360Kpi ? viewsHtml() : '') +
-      // ---------------- hero
-      '<section class="db-hero">' +
+    const parts = [];
+    if (D.isAdmin && window.C360Kpi) parts.push({ key: 'views', html: viewsHtml().replace('<div class="db-views">', '<div class="db-views" data-part="views">') });
+    parts.push({ key: 'hero', html:
+      // ---------------- hero (its moving background stays put between refreshes: the piece is replaced only when its text changes)
+      '<section class="db-hero" data-part="hero">' +
         '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
         '<div class="db-hero-main">' +
           '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">în timp real</span></div>' +
@@ -283,13 +285,17 @@
           '<div class="db-actions">' + actions + custom + '</div>' +
         '</div>' +
         '<div class="db-clock" aria-label="Ora"><div class="db-time" data-time></div>' +'<div class="db-secs"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="db-secs-track"/><circle cx="24" cy="24" r="20" class="db-secs-arc" pathLength="60" data-arc/></svg><b data-sec>--</b></div></div>' +
-      '</section>' +
+      '</section>' });
 
-      // ---------------- the KPIs and blocks she chose (Personalizează)
-      (kpis ? '<div class="db-kpis">' + kpis + '</div>' : '') +
-      '<div class="db-blocks">' + chosenBlocks.map((b) => '<div class="db-b is-' + BLOCK[b].size + '">' + blockHtml[b]() + '</div>').join('') + '</div>';
+    // ---------------- the KPIs and blocks she chose (Personalizează)
+    if (kpis) parts.push({ key: 'kpis', html: '<div class="db-kpis" data-part="kpis">' + kpis + '</div>' });
+    parts.push({ key: 'blocks', html: '<div class="db-blocks" data-part="blocks"></div>',
+      children: chosenBlocks.map((b) => ({ key: 'b:' + b, html: '<div class="db-b is-' + BLOCK[b].size + '" data-part="b:' + b + '">' + blockHtml[b]() + '</div>' })) });
+    K.patch(root, parts);
 
-    if (root.querySelector('[data-chart]')) K.chart(root.querySelector('[data-chart]'), {
+    // the chart is drawn into its box when the box is new (its numbers are in its mark, so a change makes a new box)
+    const chartBox = root.querySelector('[data-chart]');
+    if (chartBox && !chartBox.children.length) K.chart(chartBox, {
       labels: series30.map((x) => K.dateShort(x.d)), height: 230, format: K.lei, axis: (v) => (v >= 1000 ? (Math.round(v / 100) / 10).toLocaleString('ro-RO') + 'k' : Math.round(v)),
       series: [
         { name: 'Perioada anterioară', values: prev30, color: 'var(--muted-2)', kind: 'line', dashed: true },
@@ -298,7 +304,6 @@
       tip: (i) => '<b>' + esc(K.dateLong(series30[i].d)) + '</b><span><i style="background:var(--accent)"></i>' + K.lei(series30[i].v) + '</span><span><i style="background:var(--muted-2)"></i>cu 30 zile înainte: ' + K.lei(prev30[i]) + '</span>',
       onClick: (i) => { K.go('incasari'); setTimeout(() => K.emit('incasari:day', series30[i].d), 250); },
     });
-    if (!firstPaint) root.querySelectorAll('.k-draw, .k-area, .k-ring-bar, .k-bar i').forEach((x) => { x.style.animation = 'none'; });
     firstPaint = false;
     K.countAll(root);
     tick(new Date());
