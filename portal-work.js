@@ -40,15 +40,19 @@
   }
   async function loadTasks() {
     try {
-      const [p, all, lj] = await Promise.all([K.api('/api/portal-automation-tasks'), K.api('/api/portal-automation-tasks?all=1'), K.leads(true).catch(() => null)]);
-      T.tasks = p.tasks || [];
+      // one reading of every task (the ones due now, the ones for later, the ones ticked today): two readings at once
+      // would run the automations twice
+      const [all, lj] = await Promise.all([K.api('/api/portal-automation-tasks?all=1'), K.leads(true).catch(() => null)]);
+      const today = K.today();
+      const mine = (all.tasks || []);
+      T.tasks = mine.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today)).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      T.later = mine.filter((t) => t.status === 'pending' && t.dueDate && t.dueDate > today).sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
       // "Revin la ea" set in Pipeline: due today or already late, still open leads
       const end = new Date(); end.setHours(23, 59, 59, 999);
       T.calls = ((lj && lj.leads) || []).filter((l) => l.followUpAt && new Date(l.followUpAt) <= end && l.kind !== 'won' && l.kind !== 'lost')
         .sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
-      const today = K.today();
-      T.done = (all.tasks || []).filter((t) => t.status === 'done' && t.doneBy !== 'system' && t.doneAt && K.iso(new Date(t.doneAt)) === today);
-      K.badge('automatizari', T.tasks.length + T.calls.length);
+      T.done = mine.filter((t) => t.status === 'done' && t.doneBy !== 'system' && t.doneAt && K.iso(new Date(t.doneAt)) === today);
+      K.badge('automatizari', T.tasks.length); // the tab's number is the tasks due (the leads to call count in Pipeline)
       renderTasks();
     } catch (e) {
       tpanel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca sarcinile', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="refresh">Reîncearcă</button>');
@@ -62,14 +66,29 @@
     const list = T.tasks.filter((t) => !T.filter || t.type === T.filter);
     tpanel.querySelector('[data-body]').innerHTML =
       '<section class="k-card wk-progress">' + K.ring(pct, { size: 86, stroke: 9, inner: '<b class="wk-pct">' + T.done.length + '<small>/' + total + '</small></b>' }) +
-        '<div><b>' + (T.tasks.length ? K.plural(T.tasks.length, 'mesaj de trimis', 'mesaje de trimis') + (T.calls.length ? ' · ' + K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : '') : T.calls.length ? K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : 'Totul e trimis pentru azi') + '</b>' +
-        '<span>' + (T.done.length ? K.plural(T.done.length, 'sarcină bifată azi', 'sarcini bifate azi') : 'Nicio sarcină bifată încă azi') + ' · sarcinile pentru programări anulate se închid singure</span></div>' +
+        '<div><b>' + (T.tasks.length ? K.plural(T.tasks.length, 'sarcină de făcut', 'sarcini de făcut') + (T.calls.length ? ' · ' + K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : '') : T.calls.length ? K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : 'Totul e făcut pentru azi') + '</b>' +
+        '<span>' + (T.done.length ? K.plural(T.done.length, 'sarcină bifată azi', 'sarcini bifate azi') : 'Nicio sarcină bifată încă azi') + '</span></div>' +
         (T.tasks.length > 1 ? '<button type="button" class="k-btn is-outline is-sm" data-act="all">' + icon('check') + 'Bifează toate</button>' : '') + '</section>' +
       (T.tasks.length ? '<div class="k-chips wk-chips"><button type="button" class="k-chip' + (!T.filter ? ' is-on' : '') + '" data-filter="">Toate<span>' + T.tasks.length + '</span></button>' +
         Object.keys(TYPES).filter((k) => counts[k]).map((k) => '<button type="button" class="k-chip' + (T.filter === k ? ' is-on' : '') + '" data-filter="' + k + '">' + icon(TYPES[k].ic) + TYPES[k].label + '<span>' + counts[k] + '</span></button>').join('') + '</div>' : '') +
       callsHtml() +
       (list.length ? '<div class="wk-list">' + list.map(taskHtml).join('') + '</div>'
-        : T.calls.length ? '' : K.empty('checkCircle', 'Inbox zero', 'Nu mai e nimic de trimis. Sarcinile noi apar singure când se fac programări.'));
+        : T.calls.length ? '' : K.empty('checkCircle', 'Nimic de făcut azi', 'Adaugă o sarcină cu butonul de sus când ai ceva de ținut minte.')) +
+      laterHtml() + doneHtml();
+  }
+  // the tasks for another day, folded: seen and removable, so one added for the wrong day isn't added twice
+  function laterHtml() {
+    if (!T.later || !T.later.length) return '';
+    return '<details class="wk-later"><summary>' + icon('calendar') + 'Mai târziu<span>' + T.later.length + '</span></summary><div class="wk-list">' + T.later.map((t) =>
+      '<article class="wk-task" data-task="' + esc(t.id) + '"><span class="k-icon-chip is-accent">' + icon('clock') + '</span><div class="wk-task-main"><div class="wk-task-top"><b>' + esc(t.clientName || 'Sarcină') + '</b><span class="k-tag">' + icon('calendar') + esc(K.relDay(t.dueDate)) + '</span></div>' +
+      '<div class="wk-task-sub">' + esc(t.text || '') + '</div></div><button type="button" class="k-btn is-ghost is-sm" data-done="' + esc(t.id) + '" title="Gata, o scot">' + icon('check') + '</button></article>').join('') + '</div></details>';
+  }
+  // the tasks ticked today, folded: a wrong tap is undone here
+  function doneHtml() {
+    if (!T.done.length) return '';
+    return '<details class="wk-later"><summary>' + icon('checkCircle') + 'Bifate azi<span>' + T.done.length + '</span></summary><div class="wk-list">' + T.done.map((t) =>
+      '<article class="wk-task is-done"><span class="k-icon-chip is-good">' + icon('check') + '</span><div class="wk-task-main"><div class="wk-task-top"><b>' + esc(t.clientName || 'Sarcină') + '</b></div><div class="wk-task-sub">' + esc(t.text || t.message || '') + '</div></div>' +
+      '<button type="button" class="k-btn is-ghost is-sm" data-reopen="' + esc(t.id) + '" title="Pune-o înapoi">' + icon('undo') + 'Înapoi</button></article>').join('') + '</div></details>';
   }
   // leads to call back today: they leave the list once the call is logged in Pipeline
   function callsHtml() {
@@ -79,7 +98,7 @@
       const late = new Date(l.followUpAt).getTime() < now;
       const at = new Date(l.followUpAt);
       return '<article class="wk-task"><span class="k-icon-chip is-' + (late ? 'warn' : 'accent') + '">' + icon('phone') + '</span>' +
-        '<div class="wk-task-main"><div class="wk-task-top"><b>' + esc(l.name) + '</b><span class="k-tag is-' + (late ? 'warn' : 'accent') + '">' + icon('clock') + (late ? 'întârziat, ' : '') + K.pad(at.getHours()) + ':' + K.pad(at.getMinutes()) + '</span>' +
+        '<div class="wk-task-main"><div class="wk-task-top"><b>' + esc(l.name) + '</b><span class="k-tag is-' + (late ? 'warn' : 'accent') + '">' + icon('clock') + (late ? 'întârziat, ' : '') + (K.iso(at) !== K.today() ? K.relDay(K.iso(at)).toLowerCase() + ' ' : '') + K.pad(at.getHours()) + ':' + K.pad(at.getMinutes()) + '</span>' +
           (l.location ? '<span class="k-tag">' + icon('pin') + esc(l.location) + '</span>' : '') + '</div>' +
           '<div class="wk-task-sub">' + esc([l.interest, l.nextAction].filter(Boolean).join(' · ') || 'Revin la ea, din Pipeline') + '</div></div>' +
         '<div class="wk-task-actions">' +
@@ -128,19 +147,23 @@
     if (el) el.classList.add('is-leaving');
     try {
       await K.api('/api/portal-automation-tasks', { action: 'complete', id });
-      const t = T.tasks.find((x) => x.id === id);
+      const t = T.tasks.find((x) => x.id === id) || (T.later || []).find((x) => x.id === id);
       T.tasks = T.tasks.filter((x) => x.id !== id);
+      T.later = (T.later || []).filter((x) => x.id !== id);
       if (t) T.done.push(t);
       K.badge('automatizari', T.tasks.length);
       setTimeout(renderTasks, el ? 280 : 0);
+      K.ui().toast('Gata. O bifare greșită se anulează din „Bifate azi”.', 'success');
     } catch (e) { if (el) el.classList.remove('is-leaving'); K.ui().toast(K.errText(e), 'error'); }
   }
   async function onTaskClick(e) {
     const t = e.target;
     if (t.closest('[data-act="refresh"]')) return loadTasks();
+    const ro = t.closest('[data-reopen]');
+    if (ro) { try { await K.api('/api/portal-automation-tasks', { action: 'reopen', id: ro.dataset.reopen }); K.ui().toast('E din nou pe listă.', 'success'); loadTasks(); } catch (err) { K.ui().toast(K.errText(err), 'error'); } return; }
     if (t.closest('[data-act="add"]')) return addTask();
     if (t.closest('[data-act="all"]')) {
-      if (!(await K.ui().confirm({ title: 'Bifezi toate sarcinile?', message: 'Fă asta doar dacă ai trimis toate mesajele.', confirmText: 'Bifează ' + T.tasks.length })) ) return;
+      if (!(await K.ui().confirm({ title: 'Bifezi toate sarcinile?', message: 'Fă asta doar dacă le-ai terminat pe toate.', confirmText: 'Bifează ' + T.tasks.length })) ) return;
       for (const x of T.tasks.slice()) await complete(x.id, null);
       K.ui().toast('Toate sarcinile sunt bifate.', 'success');
       return;
@@ -201,16 +224,16 @@
   let opanel, oq = '';
   function offersHtml() {
     const q = K.norm(oq);
-    const offers = ((K.data && K.data.offers) || []).filter((o) => !q || K.norm(o.title + ' ' + o.description).includes(q));
-    if (!offers.length) return K.empty('tag', q ? 'Nimic pentru „' + oq + '”' : 'Nicio ofertă activă', '');
     const loc = { timisoara: 'Timișoara', arad: 'Arad' };
+    const offers = ((K.data && K.data.offers) || []).filter((o) => !q || K.norm(o.title + ' ' + o.description + ' ' + (o.locations || []).map((l) => loc[l] || l).join(' ')).includes(q));
+    if (!offers.length) return K.empty('tag', q ? 'Nimic pentru „' + oq + '”' : 'Nicio ofertă activă', '');
     return '<div class="rs-offers">' + offers.map((o) => {
       const lines = String(o.description || '').split('\n').filter(Boolean);
       const pitch = o.title + ': ' + o.priceNew + ' lei' + (o.priceOld > o.priceNew ? ' în loc de ' + o.priceOld + ' lei' : '') + (lines[0] ? '. ' + lines[0] : '');
-      return '<article class="rs-offer"><header><b>' + esc(o.title) + '</b>' + (o.discountPercent ? '<span class="k-tag is-accent">-' + o.discountPercent + '%</span>' : '') + '</header>' +
+      return '<article class="rs-offer"><header><b>' + esc(o.title) + '</b>' + (o.discountPercent > 0 ? '<span class="k-tag is-accent">-' + o.discountPercent + '%</span>' : '') + '</header>' +
         '<div class="rs-price"><b>' + K.lei(o.priceNew) + '</b>' + (o.priceOld > o.priceNew ? '<s>' + K.lei(o.priceOld) + '</s>' : '') + '</div>' +
         (lines.length ? '<ul>' + lines.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ul>' : '') +
-        '<footer>' + (o.locations || []).map((l) => '<span class="k-tag">' + icon('pin') + loc[l] + '</span>').join('') + (o.guarantee ? '<span class="k-tag is-good">' + icon('shield') + 'Garanția banilor înapoi</span>' : '') +
+        '<footer>' + (o.locations || []).map((l) => '<span class="k-tag">' + icon('pin') + loc[l] + '</span>').join('') + (o.guarantee ? '<span class="k-tag is-good">' + icon('shield') + esc(o.guarantee) + '</span>' : '') +
         '<button type="button" class="k-icon-btn" data-copy="' + esc(pitch) + '" title="Copiază pentru WhatsApp">' + icon('copy') + '</button></footer></article>';
     }).join('') + '</div>';
   }
@@ -222,6 +245,6 @@
     opanel.querySelector('[data-q]').addEventListener('input', (e) => { oq = e.target.value.trim(); renderOffers(); });
     opanel.addEventListener('click', (e) => { const cp = e.target.closest('[data-copy]'); if (cp) K.copy(cp.dataset.copy); });
   }
-  function renderOffers() { if (opanel) opanel.querySelector('[data-body]').innerHTML = '<p class="rs-hint">' + icon('info') + 'Aceeași listă ca pe site. Se actualizează singură când administratorul schimbă o ofertă.</p>' + offersHtml(); }
+  function renderOffers() { if (opanel) opanel.querySelector('[data-body]').innerHTML = offersHtml(); }
   K.section('ofertele', { mount: mountOffers, show: renderOffers, data() { if (opanel && K.isActive('ofertele')) renderOffers(); } });
 })();

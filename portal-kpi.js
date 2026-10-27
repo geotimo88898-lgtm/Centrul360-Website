@@ -43,7 +43,7 @@
   function headHtml(d) {
     const r = d && d.range;
     const label = r ? (r.since === r.until ? K.dateLong(r.since) : K.dateShort(r.since) + ' → ' + K.dateShort(r.until)) : '';
-    return '<div class="kp-top"><div class="kp-title"><h2>KPI <span class="k-live">live</span></h2><small>' + esc(label) + (d ? ' · numărăm de la 16 oct, 22:05' : '') + '</small></div>' +
+    return '<div class="kp-top"><div class="kp-title"><h2>KPI <span class="k-live">în timp real</span></h2><small>' + esc(label) + (d ? ' · numărăm de la 16 oct, 22:05' : '') + '</small></div>' +
       '<div class="kp-periods"><div class="k-chips">' + PERIODS.map(([k, l]) => '<button type="button" class="k-chip' + (S.period === k ? ' is-on' : '') + '" data-kp-period="' + k + '">' + (k === 'custom' ? icon('calendar') : '') + l + '</button>').join('') + '</div>' +
       (S.period === 'custom' ? '<form class="kp-range" data-kp-range><label><span>De la</span><input type="date" name="since" value="' + esc(S.since || (r && r.since) || '') + '" min="2026-10-16" max="' + esc(d ? d.today : '') + '" required></label>' +
         '<label><span>Până la</span><input type="date" name="until" value="' + esc(S.until || (r && r.until) || '') + '" min="2026-10-16" max="' + esc(d ? d.today : '') + '" required></label>' +
@@ -315,12 +315,13 @@
         el.addEventListener('click', onClick);
         el.addEventListener('submit', onSubmit);
       }
-      if (S.d) paint(false);
-      if (!S.d || Date.now() - S.at > 20e3) load(!!S.d);
+      const picking = () => !!(S.el && S.el.querySelector('[data-kp-range] input:focus'));
+      if (S.d && !picking()) paint(false);
+      if (!S.d || (Date.now() - S.at > 20e3 && !picking())) load(!!S.d);
       clearInterval(timer);
       timer = setInterval(() => {
         if (!S.el || !S.el.isConnected || !K.isActive('panou')) { clearInterval(timer); return; }
-        if (!document.hidden) load(true);
+        if (!document.hidden && !picking()) load(true);
       }, 60e3);
     },
     active() { return !!(S.el && S.el.isConnected); },

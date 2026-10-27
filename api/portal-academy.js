@@ -23,7 +23,7 @@ const VIDEO = /^academy\/[\w-]{6,80}\.(mp4|mov|webm|m4v)$/;
 const MAX_VIDEO = 500 * 1024 * 1024;
 
 async function uploadVideo(req, res) {
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
   try {
     const { handleUpload } = require('@vercel/blob/client');
@@ -48,7 +48,7 @@ const admins = (employees) => ['admin'].concat(employees.filter((e) => e.role ==
 module.exports = async (req, res) => {
   if (req.query && req.query.upload) return uploadVideo(req, res);
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const b = req.body || {};
   const isAdmin = session.role === 'admin';

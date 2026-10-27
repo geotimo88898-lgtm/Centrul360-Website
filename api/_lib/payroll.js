@@ -29,9 +29,11 @@ function bookingBonus(employeeId, month, attendance, appointments) {
   });
   const days = Object.keys(perDay).sort();
   const total = days.reduce((x, d) => x + perDay[d], 0);
-  const avg = days.length ? Math.round((total / days.length) * 10) / 10 : 0;
-  const tier = BOOKING_TIERS.find((t) => avg >= t.min) || null;
-  const next = BOOKING_TIERS.slice().reverse().find((t) => avg < t.min) || null;
+  // the bonus is judged on the exact average (23,95 a day isn't 24); the average shown is rounded to a decimal
+  const exact = days.length ? total / days.length : 0;
+  const avg = Math.round(exact * 10) / 10;
+  const tier = BOOKING_TIERS.find((t) => exact >= t.min) || null;
+  const next = BOOKING_TIERS.slice().reverse().find((t) => exact < t.min) || null;
   return { days: days.length, total, avg, lei: tier ? tier.lei : 0, next, tiers: BOOKING_TIERS, perDay: days.map((d) => ({ date: d, count: perDay[d] })) };
 }
 

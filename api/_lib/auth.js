@@ -146,13 +146,34 @@ function renew(res, session) {
   try { setSessionCookie(res, session.employeeId, session.role); } catch (e) { /* the old one still works */ }
 }
 
+// The employees, read at most once a minute per instance: the session of someone no longer active (left, paused in
+// Echipa) ends at once, whatever her cookie says, on every endpoint
+let roster = { at: 0, byId: null };
+async function activeEmployee(id) {
+  if (id === 'admin') return true; // the bootstrap owner has no row
+  if (!roster.byId || Date.now() - roster.at > 60e3) {
+    try { const list = await require('./store').readJSON('data/employees.json', []); roster = { at: Date.now(), byId: new Map((Array.isArray(list) ? list : []).map((e) => [e.id, e])) }; }
+    catch (e) { if (!roster.byId) return true; } // the store down: the cookie decides (nothing else works anyway)
+  }
+  const e = roster.byId.get(id);
+  return !!e && e.active !== false;
+}
+const forgetRoster = () => { roster = { at: 0, byId: null }; };
+async function stillActive(req, res, session) {
+  if (session.viewer || (await activeEmployee(session.employeeId))) return true;
+  clearSessionCookie(res);
+  res.status(401).json({ error: 'account_inactive' });
+  return false;
+}
+
 // Returns the session, or writes a 401 JSON response and returns null.
-function requireAuth(req, res) {
+async function requireAuth(req, res) {
   const session = getSession(req);
   if (!session) {
     res.status(401).json({ error: 'not_authenticated' });
     return null;
   }
+  if (!(await stillActive(req, res, session))) return null;
   renew(res, session);
   // Previewing an employee's account is look-only: nothing gets saved in their name.
   // (Some screens read through POST { action: 'list' }, those stay allowed.)
@@ -167,12 +188,13 @@ function requireAuth(req, res) {
 }
 
 // Returns the session if it's an admin, or writes a 401/403 JSON response and returns null.
-function requireAdmin(req, res) {
+async function requireAdmin(req, res) {
   const session = getSession(req);
   if (!session) {
     res.status(401).json({ error: 'not_authenticated' });
     return null;
   }
+  if (!(await stillActive(req, res, session))) return null;
   if (session.role !== 'admin') {
     res.status(403).json({ error: 'forbidden' });
     return null;
@@ -185,8 +207,8 @@ function requireAdmin(req, res) {
 // Returns the session if its role is one of `roles`, or writes a 401/403 JSON response and
 // returns null. Front desk work (calendar edits, payments, pipeline) is admin + receptie;
 // cosmeticians get read-only access to the calendar.
-function requireRole(req, res, roles) {
-  const session = requireAuth(req, res);
+async function requireRole(req, res, roles) {
+  const session = await requireAuth(req, res);
   if (!session) return null;
   if (!roles.includes(session.role)) {
     res.status(403).json({ error: 'forbidden' });
@@ -197,6 +219,7 @@ function requireRole(req, res, roles) {
 
 module.exports = {
   OWNER_ALIASES,
+  forgetRoster,
   renew,
   requireRole,
   hashPassword,

@@ -25,6 +25,8 @@
     finalizata: { label: 'Finalizată', tone: '' }, reprogramata: { label: 'Reprogramată', tone: 'warn' }, anulata: { label: 'Anulată', tone: 'bad' },
   };
 
+  // an average with one decimal (23,9 isn't 24)
+  const avg1 = (v) => (Number(v) || 0).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   function greeting() {
     const h = new Date().getHours();
     return h < 5 ? 'Noapte bună' : h < 12 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara';
@@ -146,13 +148,13 @@
     const summary = [];
     if (role === 'cosmetician') {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(mineToday.filter((a) => a.status !== 'anulata').length, 'clientă', 'cliente') + '</a> azi');
-      if (pendingMine.length) summary.push('<a href="#comision" data-go="comision">' + K.plural(pendingMine.length, 'upsell', 'upsell-uri') + ' în așteptare</a>');
+      if (pendingMine.length) summary.push('<a href="#comision" data-go="comision">' + K.plural(pendingMine.length, 'upsell', 'upselluri') + ' în așteptare</a>');
     } else {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(live.length, 'programare', 'programări') + '</a> azi');
       if (role === 'receptie' && unconfirmed.length) summary.push('<a href="#programari" data-go="programari">' + K.plural(unconfirmed.length, 'programare de confirmat', 'programări de confirmat') + '</a>');
       if (callNow.length) summary.push('<a href="#pipeline" data-go="pipeline" data-then="pipeline:queue">' + K.plural(callNow.length, 'lead de sunat', 'leaduri de sunat') + '</a>');
       if (role === 'receptie' && tasksOpen) summary.push('<a href="#automatizari" data-go="automatizari">' + K.plural(tasksOpen, 'sarcină', 'sarcini') + '</a>');
-      if (pending) summary.push('<a href="#aprobari" data-go="aprobari">' + K.plural(pending, 'upsell de aprobat', 'upsell-uri de aprobat') + '</a>');
+      if (pending) summary.push('<a href="#aprobari" data-go="aprobari">' + K.plural(pending, 'upsell de aprobat', 'upselluri de aprobat') + '</a>');
     }
     const actions = role === 'cosmetician'
       ? '<button type="button" class="k-btn is-accent" data-go="programari">' + icon('calendar') + 'Calendarul meu</button>' +
@@ -190,9 +192,9 @@
     // Reception: the booking bonus at a glance (average per clocked-in day, the steps)
     const bk = myPay && myPay.booking;
     const bonusCard = bk ? '<section class="k-card db-book"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3><a class="k-btn is-sm is-outline" href="#comision" data-go="comision">Detalii' + icon('arrow') + '</a></div>' +
-      '<div class="db-book-row"><div><b>' + K.num(bk.avg) + '</b><span>programări / zi în medie</span></div><div class="' + (bk.lei ? 'is-on' : '') + '"><b>' + K.lei(bk.lei) + '</b><span>bonus acum</span></div></div>' +
+      '<div class="db-book-row"><div><b>' + avg1(bk.avg) + '</b><span>programări / zi în medie</span></div><div class="' + (bk.lei ? 'is-on' : '') + '"><b>' + K.lei(bk.lei) + '</b><span>bonus acum</span></div></div>' +
       '<div class="db-book-steps">' + bk.tiers.slice().sort((a, b) => a.min - b.min).map((t) => '<span class="' + (bk.avg >= t.min ? 'is-on' : '') + '">' + t.min + '+ · ' + K.lei(t.lei) + '</span>').join('') + '</div>' +
-      (bk.next ? '<p class="db-book-next">' + (bk.days ? 'Încă ' + K.num(Math.ceil((bk.next.min - bk.avg) * 10) / 10) + ' pe zi pentru ' + K.lei(bk.next.lei) + '.' : 'Pontează sosirea și pornește media de azi.') + '</p>' : '<p class="db-book-next">Treapta cea mai mare. Bravo!</p>') + '</section>' : '';
+      (bk.next ? '<p class="db-book-next">' + (bk.days ? 'Încă ' + avg1(Math.max(0.1, Math.ceil((bk.next.min - bk.avg) * 10) / 10)) + ' pe zi pentru ' + K.lei(bk.next.lei) + '.' : 'Pontează sosirea și pornește media de azi.') + '</p>' : '<p class="db-book-next">Treapta cea mai mare. Bravo!</p>') + '</section>' : '';
 
     // ---- every KPI this account may put on its Panou (its own choice, K.prefs 'dash.kpis')
     const lastMonthSum = sumBy(inc, prevMonth + '-01', K.addDays(month + '-01', -1));
@@ -230,12 +232,12 @@
       leadsNewToday: { label: 'Leaduri noi azi', group: 'Leaduri', roles: DESK, html: () => stat('is-accent', 'pipeline', '', 'userPlus', 'Leaduri noi azi', newToday.length, '', 'db-lnew', K.plural(newMonth.length, 'lead', 'leaduri') + ' luna asta') },
       leadsNewMonth: { label: 'Leaduri noi luna aceasta', group: 'Leaduri', roles: DESK, html: () => stat('is-accent', 'pipeline', '', 'userPlus', 'Leaduri luna asta', newMonth.length, '', 'db-lmon', newToday.length + ' azi') },
       leadsBooked: { label: 'Leaduri programate', group: 'Leaduri', roles: DESK, html: () => stat('is-info', 'pipeline', '', 'calendar', 'Programați', bookedNow.length, '', 'db-lbook', 'în etapa de programare') },
-      leadsWon: { label: 'Câștigați luna aceasta', group: 'Leaduri', roles: DESK, html: () => stat('is-good', 'pipeline', '', 'trophy', 'Câștigați luna asta', wonMonth.length, '', 'db-lwon', pct(wonMonth.length, newMonth.length) + '% din leadurile lunii') },
-      pendingApprovals: { label: 'Upselluri de aprobat', group: 'Echipa', roles: ['admin'], html: () => stat(pending ? 'is-warn' : 'is-good', 'aprobari', '', 'shield', 'De aprobat', pending, '', 'db-pending', 'upsell-uri în așteptare') },
+      leadsWon: { label: 'Câștigați luna aceasta', group: 'Leaduri', roles: DESK, html: () => stat('is-good', 'pipeline', '', 'trophy', 'Câștigați luna asta', wonMonth.length, '', 'db-lwon', pct(newMonth.filter((l) => l.kind === 'won').length, newMonth.length) + '% din leadurile lunii') },
+      pendingApprovals: { label: 'Upselluri de aprobat', group: 'Echipa', roles: ['admin'], html: () => stat(pending ? 'is-warn' : 'is-good', 'aprobari', '', 'shield', 'De aprobat', pending, '', 'db-pending', 'upselluri în așteptare') },
       payroll: { label: 'Salarii luna aceasta (echipa)', group: 'Echipa', roles: ['admin'], html: () => stat('is-info', 'angajati', '', 'users', 'Salarii luna asta', Math.round(tsum('total')), 'lei', 'db-payroll', 'de plată până azi') },
       tasksOpen: { label: 'Sarcinile mele', group: 'Echipa', roles: ['receptie'], html: () => stat(tasksOpen ? 'is-warn' : 'is-good', 'automatizari', '', 'checkCircle', 'Sarcini', tasksOpen, '', 'db-tasks', 'de făcut') },
       commMonth: { label: 'Comision luna aceasta', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-good', 'comision', '', 'percent', 'Comision luna aceasta', commMonth, 'lei', 'db-comm', delta(commMonth, commPrev) + 'aprobat', K.spark(dailySeries(chartSrc, 14).map((x) => x.v), { color: 'var(--good)' })) },
-      commPending: { label: 'Comision în așteptare', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-warn', 'comision', '', 'clock', 'În așteptare', Math.round(pendingEst), 'lei', 'db-pend', K.plural(pendingMine.length, 'upsell', 'upsell-uri') + ' · estimat') },
+      commPending: { label: 'Comision în așteptare', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-warn', 'comision', '', 'clock', 'În așteptare', Math.round(pendingEst), 'lei', 'db-pend', K.plural(pendingMine.length, 'upsell', 'upselluri') + ' · estimat') },
       attributed: { label: 'Încasări atribuite mie', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-accent', 'incasari', '', 'wallet', 'Încasări atribuite', attributed, 'lei', 'db-attr', 'tratamente efectuate de tine luna asta') },
       myUpsells: { label: 'Upsellurile mele luna aceasta', group: 'Salariul meu', roles: ['cosmetician'], html: () => stat('is-good', 'comision', '', 'trophy', 'Upselluri luna asta', myUpsMonth.length, '', 'db-myups', K.lei(myUpsMonth.reduce((a, s) => a + Number(s.amount || 0), 0)) + ' valoare') },
       myPay: { label: 'Salariul meu până azi', group: 'Salariul meu', roles: STAFF, html: () => stat('is-good', 'comision', '', 'wallet', 'Salariul meu', myPay ? Math.round(myPay.total) : 0, 'lei', 'db-mypay', 'în mână, până azi') },
@@ -275,7 +277,7 @@
       '<section class="db-hero">' +
         '<div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
         '<div class="db-hero-main">' +
-          '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">live</span></div>' +
+          '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">în timp real</span></div>' +
           '<h2>' + greeting() + ', ' + esc(first) + '</h2>' +
           '<p class="db-summary">Ai ' + summary.join(', ').replace(/, ([^,]*)$/, ' și $1') + '.</p>' +
           '<div class="db-actions">' + actions + custom + '</div>' +
@@ -304,7 +306,7 @@
 
   function timelineHtml(appts) {
     const list = appts.slice().sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
-    if (!list.length) return K.empty('calendar', 'Nicio programare azi', 'Când apar programări, le vezi aici în ordinea orei.', '<button type="button" class="k-btn is-sm is-primary" data-go="programari" data-then="calendar:new">' + icon('plus') + 'Adaugă programare</button>');
+    if (!list.length) return K.empty('calendar', 'Nicio programare azi', 'Când apar programări, le vezi aici în ordinea orei.', K.frontDesk && K.frontDesk() ? '<button type="button" class="k-btn is-sm is-primary" data-go="programari" data-then="calendar:new">' + icon('plus') + 'Adaugă programare</button>' : '');
     return '<ol class="db-tl">' + list.map((a) => {
       const st = STATUS[a.status] || { label: a.status, tone: '' };
       return '<li class="db-tl-item is-' + a.status + '" data-appt="' + esc(a.id) + '" data-time="' + esc(a.time || '') + '">' +
@@ -318,7 +320,8 @@
   function teamHtml(L) {
     if (!leadsData) return '<div class="k-skel" style="height:120px"></div>';
     const acts = [];
-    L.forEach((l) => (l.activities || []).forEach((a) => { if (a.author && a.type !== 'created') acts.push({ a, l }); }));
+    const ROBOTS = ['Facebook Lead Ads', 'WhatsApp automat', 'Formular site', 'Automatizare', 'Calendar'];
+    L.forEach((l) => (l.activities || []).forEach((a) => { if (a.author && a.type !== 'created' && !ROBOTS.includes(a.author)) acts.push({ a, l }); }));
     acts.sort((x, y) => (x.a.at < y.a.at ? 1 : -1));
     const today = K.today();
     const per = {};

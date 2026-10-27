@@ -88,6 +88,9 @@ async function handleComision(req, res, session) {
       linkedClientName = String(clientName).trim().slice(0, 150); // only her name: shown, no client record made
     }
 
+    // the same sale asked for twice (ticked at the payment, then added here): one request is enough
+    const sameClient = (x) => (linkedClientId && x.clientId === linkedClientId) || (linkedClientName && String(x.client || '').trim().toLowerCase() === linkedClientName.trim().toLowerCase());
+    if (sales.some((x) => x.source === 'comision' && x.employeeId === session.employeeId && x.date === date && x.status !== 'rejected' && Math.abs(Number(x.amount) - numAmount) < 0.01 && sameClient(x))) { res.status(409).json({ error: 'duplicate_commission' }); return; }
     const entry = {
       id: crypto.randomUUID(),
       source: 'comision',
@@ -169,11 +172,9 @@ async function handleIncasare(req, res, session) {
     const categories = categoriesOf(appt);
     const booked = Number(appt.amount) || 0;
     // "Upsell efectuat": ticked by the desk; the upsell is the amount paid (or a given part of it).
-    const upsellDone = req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1;
-    const upsell = upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : amount) : 0;
-    if (upsellDone && !(upsell > 0 && upsell <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
-    // a package paid in parts: its whole value (above what she pays now) is kept, the rest shows at her next payments (_lib/dues.js)
-    const packageTotal = upsellDone ? Math.round((Number(req.body.packageTotal) || 0) * 100) / 100 : 0;
+    // a package paid in parts, sold now or booked that way: its whole value (above what she pays now) is kept, the rest
+    // shows at her next payments (_lib/dues.js)
+    const packageTotal = Math.round((Number(req.body.packageTotal) || 0) * 100) / 100;
     if (packageTotal && packageTotal < amount) { res.status(400).json({ error: 'invalid_package' }); return; }
     const D = require('./_lib/dues');
     const store = { readJSON, writeJSON };
@@ -181,6 +182,13 @@ async function handleIncasare(req, res, session) {
     const dueId = String(req.body.dueId || '');
     const owed = dueId ? await D.find(store, dueId) : null;
     if (dueId && (!owed || (appt.clientId && owed.clientId !== appt.clientId))) { res.status(400).json({ error: 'invalid_due' }); return; }
+    // "Upsell efectuat": ticked by the desk; the upsell is the amount paid (or a given part of it); a package sold now and
+    // paid in parts earns its one commission on the package's whole value, so a later part of it earns none
+    const upsellDone = !owed && (req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1);
+    const upsell = upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : packageTotal > amount ? packageTotal : amount) : 0;
+    if (upsellDone && !(upsell > 0 && upsell <= Math.max(amount, packageTotal))) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+    // the same sum for the same visit a moment ago: the first try did go through (its second write failed), not a second visit
+    if (sales.some((x) => x.source === 'incasare' && x.appointmentId === appt.id && Math.abs(Number(x.amount) - amount) < 0.01 && Date.now() - Date.parse(x.createdAt || 0) < 10 * 60e3)) { res.status(409).json({ error: 'already_paid' }); return; }
 
     const entry = {
       id: crypto.randomUUID(),
@@ -303,7 +311,7 @@ const handler = async (req, res) => {
     return;
   }
 
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
 
   const { source } = req.body || {};

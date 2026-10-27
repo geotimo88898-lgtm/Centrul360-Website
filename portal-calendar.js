@@ -24,6 +24,8 @@
   // Statuses the front desk picks by hand. "Finalizată" comes by itself when the appointment is paid
   // (Încasări); "Concediu" is a leave block created by an approved leave request.
   const PICK = ['programata', 'confirmata', 'reprogramata', 'anulata'];
+  // a session from a package (no money to take) is closed by hand with „Finalizată”; a paid one closes itself
+  const pickFor = (a) => (a && a.package ? PICK.concat(['finalizata']) : PICK);
   // "Blochează timp": a leave-like row (status concediu) with block: true, hours and a reason
   const BLOCKED = { label: 'Blocat', plural: 'blocate', tone: 'mute', ic: 'ban' };
   const stOf = (a) => (a.block ? BLOCKED : STATUS[a.status] || STATUS.programata);
@@ -108,7 +110,7 @@
     else if (k === 'z') setView('day');
     else if (k === 's') setView('week');
   }
-  function setView(v) { S.view = v; keepPhoneView(); const seg = panel.querySelector('[data-k-seg="calview"]'); seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); seg.querySelector('input').value = v; load(); }
+  function setView(v) { S.view = v; keepPhoneView(); const seg = panel.querySelector('[data-k-seg="calview"]'); if (seg) { seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); seg.querySelector('input').value = v; } return load(); }
   function shift(dir) { S.date = K.addDays(S.date, dir * (S.view === 'day' ? 1 : 7)); inRange() ? (renderTitle(), render()) : load(); }
   // a phone has the whole month loaded: moving inside it needs no reload
   const inRange = () => { if (!phone() || !S.range) return false; const [a, b] = S.range.split('|'); return S.date >= a && S.date <= b; };
@@ -124,7 +126,7 @@
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
       if (a === 'next') return shift(1);
-      if (a === 'month') return phone() ? null : openMonth(act); // a phone has the month open on top
+      if (a === 'month') return phone() && S.view === 'day' ? null : openMonth(act); // a phone's day has the month open on top; its week doesn't
     }
     const mday = e.target.closest('[data-mday]');
     if (mday) return pickDay(mday.dataset.mday);
@@ -196,7 +198,7 @@
       '<div class="cal-corner"></div>' +
       cols.map((c) => '<div class="cal-colhead' + (c.date === today ? ' is-today' : '') + '"' + (S.view === 'week' ? ' data-goday="' + c.date + '"' : '') + '>' +
         (S.view === 'week' ? '<span>' + c.label + '</span><b>' + c.sub + '</b>' : '<span>' + icon('pin') + esc(c.label) + '</span>') +
-        '<em>' + visible.filter((a) => inCol(a, c) && a.status !== 'anulata').length + '</em></div>').join('') +
+        '<em>' + visible.filter((a) => inCol(a, c) && a.status !== 'anulata' && a.status !== 'concediu').length + '</em></div>').join('') +
       '<div class="cal-gutter" style="height:' + H + 'px">' + hours.map((h) => '<span style="top:' + ((h - START) * 60 * PPM) + 'px">' + K.pad(h) + ':00</span>').join('') + '</div>' +
       cols.map((c) => {
         const list = visible.filter((a) => inCol(a, c));
@@ -286,10 +288,10 @@
     const c = (s) => list.filter((a) => a.status === s && !a.block).length;
     const blocked = list.filter((a) => a.block).length;
     const live = list.filter((a) => a.status !== 'anulata' && a.status !== 'concediu').length;
-    el.innerHTML = '<span class="cal-sum-main">' + K.plural(live, 'programare', 'programări') + (S.view === 'day' ? '' : ' săptămâna aceasta') + '</span>' +
+    el.innerHTML = '<span class="cal-sum-main">' + K.plural(live, 'programare', 'programări') + (S.view === 'day' ? '' : K.mondayOf(S.date) === K.mondayOf(K.today()) ? ' săptămâna aceasta' : ' în săptămâna afișată') + '</span>' +
       Object.keys(STATUS).filter((s) => c(s)).map((s) => '<span class="k-tag is-' + STATUS[s].tone + '">' + icon(STATUS[s].ic) + c(s) + ' ' + (c(s) === 1 ? STATUS[s].label.toLowerCase() : STATUS[s].plural) + '</span>').join('') +
       (blocked ? '<span class="k-tag is-mute">' + icon('ban') + blocked + ' ' + (blocked === 1 ? 'interval blocat' : 'intervale blocate') + '</span>' : '') +
-      (c('programata') ? '<span class="cal-hint">' + icon('info') + 'Programările neconfirmate apar cu albastru, confirmă-le cu un click.</span>' : '');
+      (c('programata') && canEdit() ? '<span class="cal-hint">' + icon('info') + 'Programările neconfirmate apar cu albastru, confirmă-le cu un click.</span>' : '');
   }
   function placeNow() {
     if (!gridEl) return;
@@ -734,7 +736,7 @@
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
       body:
         (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită, apare în Încasări.</div>' : '') +
-        '<div class="cal-status" role="group" aria-label="Status">' + PICK.map((s) =>
+        '<div class="cal-status" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +
           '<a class="k-btn is-outline" href="' + K.tel(a.clientPhone) + '">' + icon('phone') + 'Sună</a>' +
@@ -845,15 +847,14 @@
     while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));
     if (!panel) return;
     if (date) S.date = String(date).slice(0, 10);
-    S.view = 'day';
-    await load();
+    await setView('day');
     if (S.appts.some((x) => x.id === id)) openAppt(id);
     else K.ui().toast('Programarea nu mai e în calendar (a fost ștearsă).', 'info');
   };
   K.on('calendar:open', async (o) => {
     if (!o) return;
-    S.date = o.date || S.date; S.view = 'day';
-    await load();
+    S.date = o.date || S.date;
+    await setView('day');
     if (o.id) openAppt(o.id);
   });
 })();

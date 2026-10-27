@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
 
   const { action, id } = req.body || {};
@@ -80,6 +80,7 @@ module.exports = async (req, res) => {
       const categories = normalizeCategories(req.body.categories && req.body.categories.length ? req.body.categories : entry.categories || entry.category);
       if (!categories.length) { res.status(400).json({ error: 'invalid_category' }); return; }
 
+      if (entry.packageTotal && amount > entry.packageTotal) { res.status(400).json({ error: 'invalid_package' }); return; } // more than the package: the rest would vanish
       entry.date = date;
       entry.method = method;
       entry.split = split;

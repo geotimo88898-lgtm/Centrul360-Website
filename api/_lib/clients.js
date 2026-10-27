@@ -59,7 +59,8 @@ async function upsertClient({ name, phone }, { readJSON, writeJSON }) {
 
   const existing = findByPhone(clients, normalizedPhone);
   if (existing) {
-    existing.name = cleanName || existing.name;
+    // her name stays unless the new one says at least as much ("Ana" typed in a hurry doesn't replace "Ana-Maria Popescu")
+    if (cleanName && (!existing.name || cleanName.length >= existing.name.length)) existing.name = cleanName;
     existing.lastVisit = today;
     await writeJSON('data/clients.json', clients);
     return existing;

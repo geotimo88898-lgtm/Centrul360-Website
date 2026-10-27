@@ -97,9 +97,13 @@ function leadRow(l) {
 // the forms filled by a person, newest first
 const formsOf = (leads) => leads.reduce((all, l) => all.concat(l.forms || []), []).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 5);
 
+// a Romanian mobile or landline (10 digits from 0), or a foreign number with its prefix (9+ digits)
+const goodPhone = (p) => { const n = normalizePhone(p); return /^0\d{9}$/.test(n) || /^\d{9,15}$/.test(String(p || '').replace(/\D/g, '')) && String(p || '').trim().startsWith('+'); };
+const goodEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || '').trim());
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const body = req.body || {};
   const { action } = body;
@@ -126,7 +130,8 @@ module.exports = async (req, res) => {
         if (filter === 'photos' && !c.photosCount) return false;
         if (filter === 'fise' && !c.filesCount) return false;
         if (!q) return true;
-        return norm(c.name + ' ' + c.email).includes(q) || (qDigits.length >= 3 && normalizePhone(c.phone).includes(normalizePhone(body.q)));
+        const hay = norm(c.name + ' ' + c.email);
+        return q.split(/\s+/).every((w) => hay.includes(w)) || (qDigits.length >= 3 && normalizePhone(c.phone).includes(normalizePhone(body.q)));
       });
       const recent = (c) => c.lastVisit || c.createdAt || '';
       rows.sort((a, b) => (recent(a) < recent(b) ? 1 : recent(a) > recent(b) ? -1 : 0));
@@ -179,6 +184,10 @@ module.exports = async (req, res) => {
       const name = String(body.name || '').trim().slice(0, 150);
       const phone = String(body.phone || '').trim().slice(0, 30);
       if (!name || !phone) return fail(400, 'invalid_client');
+      if (!goodPhone(phone)) return fail(400, 'invalid_phone');
+      if (body.email && !goodEmail(body.email)) return fail(400, 'invalid_email');
+      const known = clients.find((y) => normalizePhone(y.phone) && normalizePhone(y.phone) === normalizePhone(phone));
+      if (known) { res.status(200).json({ ok: true, id: known.id, existed: true, name: known.name }); return; }
       const c = await upsertClient({ name, phone }, { readJSON, writeJSON });
       if (body.email || body.location) {
         const clients = await readJSON('data/clients.json', []);
@@ -200,6 +209,11 @@ module.exports = async (req, res) => {
       lead = leads.find((l) => l.id === id.slice(5));
       if (!lead) return fail(404, 'contact_not_found');
     } else if (!client) return fail(404, 'contact_not_found');
+    // a cosmetician sees her city only, the sheet as much as the list
+    if (session.role === 'cosmetician') {
+      const myCity = await cityOf(session, readJSON, await readJSON('data/employees.json', []));
+      if (!inCity(myCity, client ? client.location : lead.location)) return fail(403, 'forbidden');
+    }
 
     // ---------------------------------------------------------------- get
     if (action === 'get') {
@@ -214,9 +228,13 @@ module.exports = async (req, res) => {
         .map((a) => ({ id: a.id, date: a.date, time: a.time, treatment: a.treatment, status: a.status, location: a.location, cosmeticianName: a.cosmeticianName || '', amount: a.amount || 0 }));
       const payments = sales.filter((s) => s.source === 'incasare' && s.clientId === client.id).sort((a, b) => (a.date < b.date ? 1 : -1))
         .map((s) => ({ id: s.id, date: s.date, amount: s.amount, treatment: s.treatment, method: s.method }));
+      // what she still owes for a package, and her last visit
+      const D = require('./_lib/dues');
+      const dues = ((await D.openFor({ readJSON, writeJSON }, [client.id]).catch(() => ({})))[client.id] || []).map((d) => ({ id: d.id, name: d.what || 'pachet', total: d.total, rest: d.rest }));
+      const lastCame = appts.filter((a) => a.status === 'finalizata').map((a) => a.date).sort().pop() || '';
       // what she answered in the Facebook forms (kept on her leads, matched by phone)
       const leads = phone ? (await readJSON('data/leads.json', [])).filter((l) => normalizePhone(l.phone) === phone) : [];
-      res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments, forms: formsOf(leads) });
+      res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments, forms: formsOf(leads), dues, lastCame });
       return;
     }
 
@@ -234,12 +252,28 @@ module.exports = async (req, res) => {
     if (action === 'update') {
       const name = String(body.name || '').trim().slice(0, 150);
       if (!name) return fail(400, 'invalid_client');
+      const wasPhone = normalizePhone(client.phone), wasName = client.name;
+      if (body.phone !== undefined) {
+        if (!goodPhone(body.phone)) return fail(400, 'invalid_phone');
+        const np = normalizePhone(body.phone);
+        const other = clients.find((y) => y.id !== client.id && normalizePhone(y.phone) === np);
+        if (other) return fail(409, 'phone_taken', 'Acest număr e deja la ' + (other.name || 'alt contact') + '.');
+        client.phone = np;
+      }
+      if (body.email !== undefined) { if (body.email && !goodEmail(body.email)) return fail(400, 'invalid_email'); client.email = String(body.email || '').trim().slice(0, 150); }
       client.name = name;
-      if (body.phone !== undefined) client.phone = normalizePhone(body.phone) || String(body.phone).trim().slice(0, 30);
-      if (body.email !== undefined) client.email = String(body.email || '').trim().slice(0, 150);
       if (body.location !== undefined) client.location = String(body.location || '').slice(0, 40);
       await writeJSON('data/clients.json', clients);
-      res.status(200).json({ ok: true, id: client.id, contact: contactRow(client) });
+      // her appointments from today on carry her number and her name (the reminders go by them)
+      let moved = 0;
+      if (wasPhone !== normalizePhone(client.phone) || wasName !== client.name) {
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+        const appts = await readJSON('data/appointments.json', []);
+        appts.forEach((a) => { if (a.clientId === client.id && a.date >= today && a.status !== 'anulata') { a.clientPhone = client.phone; a.clientName = client.name; moved++; } });
+        if (moved) await writeJSON('data/appointments.json', appts);
+        if (lead) { lead.phone = client.phone; lead.name = client.name; const leads = await readJSON('data/leads.json', []); const l = leads.find((x) => x.id === lead.id); if (l) { l.phone = client.phone; l.name = client.name; await writeJSON('data/leads.json', leads); } }
+      }
+      res.status(200).json({ ok: true, id: client.id, contact: contactRow(client), moved });
       return;
     }
 

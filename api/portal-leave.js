@@ -83,7 +83,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const isAdmin = session.role === 'admin';
   const body = req.body || {};
@@ -152,7 +152,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'decide') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const request = requests.find((r) => r.id === body.id);
       if (!request) return fail(404, 'request_not_found');
       if (request.status !== 'pending') return fail(400, 'already_decided');
@@ -197,7 +197,7 @@ module.exports = async (req, res) => {
       // Admin manually logs a leave that already happened/was agreed off-portal (e.g. the
       // employee didn't submit it herself), created and approved in one step: no 'pending'
       // state, same PDF-generation + Calendar-block side effects as a normal approval.
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const { employeeId, type, startDate, endDate } = body;
       if (!employeeId || typeof employeeId !== 'string') return fail(400, 'missing_employee');
       if (!VALID_TYPES.includes(type)) return fail(400, 'invalid_type');

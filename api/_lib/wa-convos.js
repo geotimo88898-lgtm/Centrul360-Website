@@ -10,9 +10,11 @@ const KEY = 'data/whatsapp-conversations.json';
 const RANK = { failed: 0, sent: 1, delivered: 2, read: 3 };
 const later = (a, b) => (String(a || '') > String(b || '') ? a : b);
 
+// a failure Meta reported is final on either side (a stale copy saved a moment later doesn't make it "sent" again)
 function mergeMsg(f, c) {
   const m = Object.assign({}, f, c);
-  if ((RANK[f.status] || 0) > (RANK[c.status] || 0) && c.status !== 'failed') m.status = f.status;
+  if (f.status === 'failed' || c.status === 'failed') { const x = f.status === 'failed' ? f : c; m.status = 'failed'; if (x.error) m.error = x.error; if (x.failedAt) m.failedAt = x.failedAt; if (x.errorCode) m.errorCode = x.errorCode; return m; }
+  if ((RANK[f.status] || 0) > (RANK[c.status] || 0)) m.status = f.status;
   return m;
 }
 function mergeConvo(f, c) {

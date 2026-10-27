@@ -133,10 +133,12 @@ function model({ offers = [], leads = [], appointments = [], sales = [], clients
   const P = sales.filter((s) => s && s.source === 'incasare').map((s) => {
     const t = Date.parse(s.createdAt || s.date) || 0;
     const appt = (s.appointmentId && apptById.get(s.appointmentId)) || apptByPaid.get(s.id) || null;
-    const counts = appt ? appt.fresh : t >= START;
+    // money made from the portal's start on counts, whenever its booking was made (Încasări and Panou count it too)
+    const counts = t >= START;
     const lead = (appt && appt.lead) || latestLead(phoneOfClient.get(s.clientId) || '', s.clientId, t + DAY);
     const key = lead && lead.fresh ? lead.key : lead ? 'org:old' : 'org:direct';
-    const p = { id: s.id, t, day: bucharestDay(t), amount: Number(s.amount) || 0, upsell: Number(s.upsell) || 0, appt, lead, key, counts,
+    // its day is the payment's day as the desk wrote it (the same day Încasări and Panou → Azi use), not when it was typed in
+    const p = { id: s.id, t, day: /^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')) ? String(s.date) : bucharestDay(t), amount: Number(s.amount) || 0, upsell: Number(s.upsell) || 0, appt, lead, key, counts,
       city: cityOf(s.location || (appt && appt.city)), by: s.performedBy || (appt && appt.cosmeticianId) || '', clientId: s.clientId || '' };
     if (appt) appt.pays.push(p);
     if (counts && lead && lead.fresh && t >= lead.at - DAY) lead.pays.push(p);

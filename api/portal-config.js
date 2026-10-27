@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
 
   const { commissionRates, retailRate, raceBonus, companyGoal, resources, sops, academy } = req.body || {};

@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
 
   const id = String((req.query || {}).id || '');

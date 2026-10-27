@@ -57,7 +57,7 @@ async function payload() {
 }
 
 module.exports = async (req, res) => {
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
   res.setHeader('Cache-Control', 'no-store');
   try {

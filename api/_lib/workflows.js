@@ -23,6 +23,8 @@ const WT = require('./wa-templates');
 const { dedash } = require('./dedash');
 const { notifyMany } = require('./notify');
 
+// the hands that aren't a person's (a lead moved by them isn't "contacted")
+const AUTO_AUTHORS = ['Facebook Lead Ads', 'WhatsApp automat', 'Formular site', 'Automatizare'];
 const WF_KEY = 'data/workflows.json';
 const RUNS_KEY = 'data/workflow-runs.json';
 const ARCHIVE_KEY = 'data/workflows-archive.json';
@@ -344,7 +346,9 @@ async function emit(event, payload) {
     // (a correction after the visit) only moves the waits, so the review request after it still goes
     if (event === 'appointment_rescheduled') p.restart = apptStart(p.appointment) > now;
     // A moved / cancelled / deleted appointment: its pending "before" reminders are recalculated or dropped.
-    if (ent.type === 'appointment' && (event === 'appointment_rescheduled' || event === 'appointment_deleted' || (event === 'appointment_status' && (p.status === 'anulata' || p.status === 'reprogramata')))) {
+    // (a tap on „Reprogramată” alone changes nothing about the hour: the reminders stay; a real move comes as
+    // appointment_rescheduled and makes them again for the new hour)
+    if (ent.type === 'appointment' && (event === 'appointment_rescheduled' || event === 'appointment_deleted' || (event === 'appointment_status' && p.status === 'anulata'))) {
       runsDoc.runs.forEach((r) => {
         if (r.status !== 'waiting' || r.ent.id !== ent.id) return;
         const wf = doc.workflows.find((w) => w.id === r.wf);
@@ -434,7 +438,7 @@ async function addTask(task) {
 function stopHit(cond, ctx) {
   const a = ctx.appointment, l = ctx.lead;
   const person = personOf(ctx);
-  if (cond === 'contacted') return !!(l && (l.lastContactAt || l.contactCount));
+  if (cond === 'contacted') return !!(l && (l.lastContactAt || l.contactCount || (l.activities || []).some((x) => ['contact', 'stage', 'booking'].includes(x.type) && x.author && !AUTO_AUTHORS.includes(x.author))));
   if (cond === 'booked') return !!(l && ctx.appointments.some((x) => x.leadId === l.id && x.status !== 'anulata'));
   if (cond === 'appt_inactive') return !a || a.status === 'anulata' || a.status === 'finalizata';
   if (cond === 'appt_confirmed') return !!(a && a.status === 'confirmata');

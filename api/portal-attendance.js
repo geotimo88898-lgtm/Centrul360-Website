@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const isAdmin = session.role === 'admin';
   const body = req.body || {};
@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
 
     // ---------------------------------------------------------------- Aprobări: days over / under
     if (action === 'adjust_list') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const all = await TB.loadAll(readJSON);
       const employees = await readJSON('data/employees.json', []);
       const pending = all.adjustments.filter((a) => a.status === 'pending').sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -142,7 +142,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (action === 'adjust_decide') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const adjs = await readJSON(TB.ADJ, []);
       const a = adjs.find((x) => x.id === body.id);
       if (!a) return fail(404, 'not_found');
@@ -176,7 +176,7 @@ module.exports = async (req, res) => {
     }
     // overtime paid with the salary: the whole bank, at 40 lei / hour
     if (action === 'payout') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const targetId = String(body.employeeId || '');
       const all = await TB.loadAll(readJSON);
       const bal = TB.ledger(targetId, all);
@@ -184,14 +184,14 @@ module.exports = async (req, res) => {
       const p = { id: crypto.randomUUID(), employeeId: targetId, minutes: bal.bank, lei: bal.bankLei, at: new Date().toISOString(), month: serverToday().slice(0, 7), by: session.employeeId };
       all.payouts.push(p);
       await writeJSON(TB.PAYOUTS, all.payouts);
-      await notify({ readJSON, writeJSON }, targetId, { kind: 'paid', tone: 'good', title: 'ORE PLĂTITE 💵 - ' + fmtMin(p.minutes) + ' = ' + p.lei + ' lei', text: 'Le primești cu salariul.', go: 'condica' });
+      await notify({ readJSON, writeJSON }, targetId, { kind: 'paid', tone: 'good', title: 'ORE PLĂTITE 💵 - ' + fmtMin(p.minutes) + ' = ' + leiTxt(p.lei), text: 'Le primești cu salariul.', go: 'condica' });
       res.status(200).json({ ok: true, payout: p });
       return;
     }
 
     // the hours to make up, set by hand by the owner (from now on her debt is this number)
     if (action === 'set_debt') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const targetId = String(body.employeeId || '');
       const employees = await readJSON('data/employees.json', []);
       if (!employees.some((e) => e.id === targetId)) return fail(404, 'employee_not_found');
@@ -236,7 +236,7 @@ module.exports = async (req, res) => {
     if (action === 'balance_all') {
       // Admin overview: every employee's balance in one call, plus today's clock status, so
       // the Condică tab can show a team-wide table without a round trip per employee.
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const employees = await readJSON('data/employees.json', []);
       const today = serverToday();
       const tbAll = await TB.loadAll(readJSON);
@@ -253,7 +253,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'update') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const entry = entries.find((e) => e.id === body.id);
       if (!entry) return fail(404, 'entry_not_found');
       if (body.checkIn !== undefined) {

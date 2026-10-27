@@ -10,7 +10,7 @@ const { requireAuth } = require('./_lib/auth');
 const keyOf = (session) => 'data/prefs/' + String(session.employeeId || 'admin').replace(/[^\w-]/g, '_') + '.json';
 
 module.exports = async (req, res) => {
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   res.setHeader('Cache-Control', 'no-store');
   try {

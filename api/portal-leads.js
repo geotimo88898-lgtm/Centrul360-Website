@@ -181,7 +181,18 @@ async function unbookLead(appt, why, author) {
     const hits = leads.filter((l) => l.appointmentId === appt.id);
     if (!hits.length) return null;
     const at = String(appt.date || '').slice(0, 10) + (appt.time ? ' ' + String(appt.time).slice(0, 5) : '');
-    hits.forEach((l) => { l.appointmentId = ''; l.appointmentAt = ''; addActivity(l, { type: 'booking_change', text: why + ': ' + at, author: author || 'Calendar' }); });
+    const stages = await loadStages();
+    const bookedIdx = stages.findIndex((x) => x.kind === 'booked');
+    // out of "Programare stabilită" too: back to the working stage before it (she is to be called again)
+    const back = bookedIdx > 0 ? stages.slice(0, bookedIdx).reverse().find((x) => x.kind === 'open') : null;
+    hits.forEach((l) => {
+      l.appointmentId = ''; l.appointmentAt = '';
+      addActivity(l, { type: 'booking_change', text: why + ': ' + at, author: author || 'Calendar' });
+      if (back && stageKind(stages, l.stage) === 'booked') {
+        addActivity(l, { type: 'stage', author: author || 'Calendar', text: (stages.find((x) => x.id === l.stage) || { name: l.stage }).name + ' → ' + back.name + ' · ' + why.toLowerCase() });
+        l.stage = back.id; l.stageChangedAt = nowISO();
+      }
+    });
     await writeJSON(LEADS_KEY, leads);
     return hits;
   } catch (err) {
@@ -193,13 +204,14 @@ async function unbookLead(appt, why, author) {
 // A WhatsApp message that didn't reach a new lead (no WhatsApp on the number, a wrong number, Meta refused it): the
 // lead goes to "Undelivered" (made the first time, right after the first stage), so the desk calls her instead.
 // Only leads not yet booked move (a booked client's failed reminder doesn't take her out of her stage). Never throws.
-const UNDELIVERED = { id: 'undelivered', name: 'Undelivered', color: '#d64545', kind: 'open' };
+const UNDELIVERED = { id: 'undelivered', name: 'Mesaj nelivrat', color: '#d64545', kind: 'open' };
 async function markUndelivered(phone, why) {
   try {
     const key = normPhone(phone);
     if (key.length < 6) return [];
     const stages = await loadStages();
     let st = stages.find((x) => x.id === UNDELIVERED.id) || stages.find((x) => /undeliver|nelivrat/i.test(x.name || ''));
+    if (st && st.name === 'Undelivered') { st.name = UNDELIVERED.name; await writeJSON(STAGES_KEY, stages); } // in Romanian, like the rest
     if (!st) {
       st = Object.assign({}, UNDELIVERED);
       const first = stages.findIndex((x) => x.kind === 'open');
@@ -235,8 +247,9 @@ function withComputedFields(lead, stages) {
   let followUpState = '';
   if (working && lead.followUpAt) {
     const f = new Date(lead.followUpAt);
-    const end = new Date(); end.setHours(23, 59, 59, 999);
-    followUpState = f.getTime() < now ? 'overdue' : f.getTime() <= end.getTime() ? 'today' : 'upcoming';
+    const todayRO = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    const fDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(f);
+    followUpState = f.getTime() < now ? 'overdue' : fDay <= todayRO ? 'today' : 'upcoming';
   }
   return {
     ...lead,
@@ -246,7 +259,7 @@ function withComputedFields(lead, stages) {
     isInactive: working && idleDays >= INACTIVE_DAYS_THRESHOLD,
     // Only the entry stage counts: a lead someone already moved forward was obviously reached
     // (older leads predate contact logging, so they have no lastContactAt).
-    neverContacted: working && !lead.lastContactAt && !lead.contactCount && lead.stage === firstOpenStage(stages).id,
+    neverContacted: working && !lead.lastContactAt && !lead.contactCount && (lead.stage === firstOpenStage(stages).id || stages.some((x) => x.id === lead.stage && (x.id === UNDELIVERED.id || /undeliver|nelivrat/i.test(x.name || '')))),
     followUpState,
   };
 }
@@ -315,6 +328,8 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   const key = normPhone(result.fields.phone);
   const existing = key.length >= 6 ? leads.find((l) => normPhone(l.phone) === key && stageKind(stages, l.stage) !== 'won') : null;
   if (existing) {
+    // the same form, the same moment: the webhook and the poll met on one submission
+    if (filled && filled.id && filled.sentAt && (existing.forms || []).some((f) => f.id === filled.id && f.sentAt === filled.sentAt)) return { lead: withComputedFields(existing, stages), duplicate: true, same: true };
     const reopened = stageKind(stages, existing.stage) === 'lost';
     if (reopened) {
       existing.stage = firstOpenStage(stages).id;
@@ -356,7 +371,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);
   await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
-  await workflows.welcome(lead); // the welcome WhatsApp of its offer (the templates that name it)
+  if (SELF.includes(createdBy)) await workflows.welcome(lead); // the welcome WhatsApp of its offer, to a lead that came by herself (one typed at the desk is on the phone already)
   await alertTeam(lead, false, createdBy === 'site-form');
   return { lead: withComputedFields(lead, stages) };
 }
@@ -390,7 +405,7 @@ module.exports = async (req, res) => {
   }
   // The pipeline is reception's (and the owner's), cosmeticians don't work leads.
   // Reception works every lead; a cosmetician sees and works only her city's leads (booking stays with reception).
-  const session = requireRole(req, res, ['admin', 'receptie', 'cosmetician']);
+  const session = await requireRole(req, res, ['admin', 'receptie', 'cosmetician']);
   if (!session) return;
   const body = req.body || {};
   const { action } = body;
@@ -409,7 +424,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'stages_save') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       const result = validateStages(body.stages);
       if (result.error) return fail(400, result.error);
       const stages = result.stages;
@@ -521,7 +536,7 @@ module.exports = async (req, res) => {
       if (body.nextAction !== undefined) lead.nextAction = clip(body.nextAction, 160);
       addActivity(lead, {
         type: 'followup', author,
-        text: followUpAt ? (lead.nextAction ? lead.nextAction + ' · ' : '') + followUpAt : 'Follow-up șters',
+        text: followUpAt ? (lead.nextAction ? lead.nextAction + ' · ' : '') + followUpAt : 'Revenirea a fost ștearsă',
       });
       return save();
     }
@@ -536,7 +551,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'delete') {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
       leads.splice(leads.indexOf(lead), 1);
       await writeJSON(LEADS_KEY, leads);
       res.status(200).json({ ok: true });

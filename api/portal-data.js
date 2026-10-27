@@ -3,7 +3,7 @@
 // client redirects to /portal-login.
 
 const { readJSON } = require('./_lib/store');
-const { requireAuth } = require('./_lib/auth');
+const { requireAuth, clearSessionCookie } = require('./_lib/auth');
 const { defaultConfig } = require('./_lib/defaults');
 const { categoriesOf, normalizeCategories, UPSELL_RATE, COST_SHARE } = require('./_lib/cats');
 const { cityOf, inCity } = require('./_lib/city');
@@ -94,7 +94,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
 
   try {
@@ -121,7 +121,8 @@ module.exports = async (req, res) => {
     } else {
       me = employeesRaw.find((e) => e.id === session.employeeId);
       if (!me || me.active === false) {
-        res.status(401).json({ error: 'not_authenticated' });
+        clearSessionCookie(res); // or the login page would send her back here, for ever
+        res.status(401).json({ error: 'account_inactive' });
         return;
       }
     }
@@ -192,7 +193,7 @@ module.exports = async (req, res) => {
     // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
     // is fetched directly from api/portal-appointments.js by portal.html, not here.
     const todaysAppointments = appointments
-      .filter((a) => a.date === today && inCity(city, a.location))
+      .filter((a) => a.date === today && a.status !== 'concediu' && inCity(city, a.location)) // leave and blocked time aren't visits
       .slice()
       .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const countsToday = emptyStatusCounts();

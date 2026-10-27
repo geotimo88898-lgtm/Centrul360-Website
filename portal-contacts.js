@@ -17,8 +17,8 @@
   const fileUrl = (p) => '/api/portal-file?p=' + encodeURIComponent(p);
   const api = (action, body) => K.api('/api/portal-contacts', Object.assign({ action }, body || {}));
   const SOURCES = { highlevel: 'HighLevel', facebook: 'Facebook', instagram: 'Instagram', site: 'Site', manual: 'Adăugat manual', recomandare: 'Recomandare', lead: 'Lead', tiktok: 'TikTok', google: 'Google' };
-  const ERR = { no_consent: 'Clienta nu și-a dat acordul pentru publicare.', missing_title: 'Scrie un titlu.',  invalid_file: 'Fișierul nu e o imagine sau un PDF, sau e prea mare.', contact_not_found: 'Contactul nu mai există.', invalid_client: 'Completează numele și telefonul.', missing_text: 'Scrie mențiunea.' };
-  const errText = (e) => ERR[e && e.code] || K.errText(e);
+  const ERR = { invalid_phone: 'Numărul de telefon nu e complet (10 cifre, începe cu 0).', invalid_email: 'Adresa de email nu e corectă.', phone_taken: 'Acest număr e deja la alt contact.', no_consent: 'Clienta nu și-a dat acordul pentru publicare.', missing_title: 'Scrie un titlu.',  invalid_file: 'Fișierul nu e o imagine sau un PDF, sau e prea mare.', contact_not_found: 'Contactul nu mai există.', invalid_client: 'Completează numele și telefonul.', missing_text: 'Scrie mențiunea.' };
+  const errText = (e) => (e && e.data && e.data.message) || ERR[e && e.code] || K.errText(e);
 
   // =====================================================================================
   // LIST
@@ -82,8 +82,8 @@
     if (o) {
       // the front desk lands in her conversation (Mesaje), her sheet one tap away from its header; a cosmetician, or a
       // contact with no phone, opens the sheet
-      const c = S.list.find((x) => x.id === o.dataset.open);
-      if (c && K.frontDesk && K.frontDesk() && K.chat && String(c.phone || '').replace(/\D/g, '').length >= 9) return K.chat(c.phone, { name: c.name || '', city: c.location || '', none: () => { K.go('contacte'); openContact(c.id); } });
+      // the row opens her sheet (what she owes, when she came, her files); Mesaje is one tap away in the sheet's header
+      return openContact(o.dataset.open);      if (c && K.frontDesk && K.frontDesk() && K.chat && String(c.phone || '').replace(/\D/g, '').length >= 9) return K.chat(c.phone, { name: c.name || '', city: c.location || '', none: () => { K.go('contacte'); openContact(c.id); } });
       return openContact(o.dataset.open);
     }
     const a = t.closest('[data-act]');
@@ -353,7 +353,7 @@
     (async () => {
       try {
         const j = await api('get', { id });
-        Object.assign(st, { c: j.contact, detail: j.detail, appts: j.appointments || [], pays: j.payments || [], forms: j.forms || [] });
+        Object.assign(st, { c: j.contact, detail: j.detail, appts: j.appointments || [], pays: j.payments || [], forms: j.forms || [], dues: j.dues || [], lastCame: j.lastCame || '' });
         paintAll();
       } catch (e) { d.set({ body: K.empty('alert', 'Nu am putut deschide contactul', errText(e)) }); }
     })();
@@ -510,7 +510,11 @@
     function istoricHtml() {
       const ST = { programata: 'Programată', confirmata: 'Confirmată', finalizata: 'Finalizată', reprogramata: 'Reprogramată', anulata: 'Anulată' };
       const paid = st.pays.reduce((a, p) => a + Number(p.amount || 0), 0);
-      return '<div class="k-grid c2 ct-kpis"><div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Programări</div><div class="k-stat-value">' + st.appts.length + '</div></div>' +
+      const owed = (st.dues || []).reduce((a, d) => a + Number(d.rest || 0), 0);
+      return '<div class="k-grid c2 ct-kpis">' +
+        '<div class="k-stat' + (owed > 0 ? ' is-bad' : '') + '"><div class="k-stat-top">' + icon('wallet') + 'Rest de plată</div><div class="k-stat-value">' + K.lei(owed) + '</div>' + (owed > 0 ? '<div class="k-stat-sub">' + esc((st.dues || []).map((d) => d.name + ': ' + K.lei(d.rest)).join(' · ')) + '</div>' : '<div class="k-stat-sub">nu datorează nimic</div>') + '</div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('clock') + 'Ultima vizită</div><div class="k-stat-value">' + (st.lastCame ? esc(K.dateShort(st.lastCame)) : '-') + '</div>' + (st.lastCame ? '<div class="k-stat-sub">' + esc(K.relDay(st.lastCame)) + '</div>' : '<div class="k-stat-sub">n-a venit încă</div>') + '</div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Programări</div><div class="k-stat-value">' + st.appts.length + '</div></div>' +
         '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
         (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row ct-appt" data-appt="' + esc(a.id) + '" data-appt-date="' + esc(a.date || '') + '" role="button" tabindex="0" title="Deschide programarea"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
           '<div class="k-row-end">' + (a.amount ? '<span class="k-amount">' + K.lei(a.amount) + '</span>' : '') + '<span class="k-tag">' + esc(ST[a.status] || a.status) + '</span></div></div>').join('') + '</div>'
@@ -703,8 +707,8 @@
       if (!s) return;
       const sess = st.detail.sessions.find((x) => x.id === s.dataset.session);
       if (!sess) return;
-      if (t.matches('[data-streat]') && t.value.trim() !== (sess.treatment || '')) { sess.treatment = t.value.trim(); api('session_update', { id: st.id, sessionId: sess.id, treatment: sess.treatment }).catch(() => {}); }
-      if (t.matches('[data-sdate]') && t.value && t.value !== sess.date) { sess.date = t.value; api('session_update', { id: st.id, sessionId: sess.id, date: sess.date }).catch(() => {}); }
+      if (t.matches('[data-streat]') && t.value.trim() !== (sess.treatment || '')) { const was = sess.treatment; sess.treatment = t.value.trim(); api('session_update', { id: st.id, sessionId: sess.id, treatment: sess.treatment }).catch((err) => { K.ui().toast(errText(err), 'error'); sess.treatment = was; paintPane(); }); }
+      if (t.matches('[data-sdate]') && t.value && t.value !== sess.date) { const was = sess.date; sess.date = t.value; api('session_update', { id: st.id, sessionId: sess.id, date: sess.date }).catch((err) => { K.ui().toast(errText(err), 'error'); sess.date = was; paintPane(); }); }
     }
   }
 
@@ -723,7 +727,7 @@
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(el.querySelector('[data-form]'));
           if (!v.name) { K.ui().toast('Completează numele.', 'error'); return; }
-          try { const j = await api('update', Object.assign({ id: st.id }, v)); S.dirty = true; K.ui().toast('Contact salvat.', 'success'); openContact(j.id || st.id, st.tab); }
+          try { const j = await api('update', Object.assign({ id: st.id }, v)); S.dirty = true; K.ui().toast(j.moved ? 'Contact salvat. ' + K.plural(j.moved, 'programarea ei viitoare folosește', 'programările ei viitoare folosesc') + ' noile date.' : 'Contact salvat.', 'success'); openContact(j.id || st.id, st.tab); }
           catch (err) { K.ui().toast(errText(err), 'error'); }
         }));
       },
@@ -742,7 +746,7 @@
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(el.querySelector('[data-form]'));
           if (!v.name || !v.phone) { K.ui().toast('Completează numele și telefonul.', 'error'); return; }
-          try { const j = await api('create', v); S.dirty = true; load(); openContact(j.id); }
+          try { const j = await api('create', v); S.dirty = true; load(); if (j.existed) K.ui().toast('Numărul e deja la ' + (j.name || 'un contact') + '. Am deschis fișa ei.', 'info'); openContact(j.id); }
           catch (err) { K.ui().toast(errText(err), 'error'); }
         }));
       },

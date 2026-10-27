@@ -105,13 +105,14 @@ async function setup() {
 async function whoIs(phone) {
   const key = digits9(phone);
   if (key.length < 9) return {};
-  const [leads, appts] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', [])]);
+  const [leads, appts, clients] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/clients.json', [])]);
   const lead = leads.filter((l) => digits9(l.phone) === key).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0] || null;
+  const client = (clients || []).find((c) => digits9(c.phone) === key && c.name) || null;
   const mine = appts.filter((a) => digits9(a.clientPhone) === key && a.status !== 'anulata' && a.status !== 'concediu');
   const today = new Date().toISOString().slice(0, 10);
   const next = mine.filter((a) => a.date >= today).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
   const last = mine.filter((a) => a.date < today).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))[0];
-  return { lead, appointment: next || last || null };
+  return { lead, client, appointment: next || last || null };
 }
 
 module.exports = async (req, res) => {
@@ -123,7 +124,7 @@ module.exports = async (req, res) => {
   // a big file (a catalog, a CV) goes from the browser straight to storage (a request through here is capped at ~4 MB),
   // then "send_media" sends it from there: WhatsApp takes documents up to 100 MB
   if (req.query && req.query.upload) {
-    if (!requireAuth(req, res)) return;
+    if (!(await requireAuth(req, res))) return;
     try {
       const { handleUpload } = require('@vercel/blob/client');
       const out = await handleUpload({ body: req.body, request: req, onBeforeGenerateToken: async (pathname) => {
@@ -134,11 +135,13 @@ module.exports = async (req, res) => {
     } catch (err) { console.error('wa upload:', err.message); res.status(400).json({ error: 'upload_failed' }); }
     return;
   }
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
+  // the inbox is the desk's and the owners': a cosmetician reading a chat would mark it read for the desk
+  if (session.role === 'cosmetician') return fail(403, 'forbidden', 'Mesajele sunt la recepție.');
 
   try {
     if (action === 'list') {
@@ -151,7 +154,7 @@ module.exports = async (req, res) => {
       leads.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).forEach((l) => { if (l.name && digits9(l.phone).length === 9) names.set(digits9(l.phone), String(l.name).trim()); });
       (await readJSON('data/clients.json', [])).forEach((c) => { if (c.name && digits9(c.phone).length === 9) names.set(digits9(c.phone), String(c.name).trim()); });
       const list = conversations
-        .map((c) => (c.clientName && c.clientName !== c.phone ? c : Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || c.phone })))
+        .map((c) => Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || (c.clientName && c.clientName !== c.phone ? c.clientName : c.phone) }))
         .map(listItem)
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));
       const s = await setup();
@@ -170,7 +173,9 @@ module.exports = async (req, res) => {
         await saveConversations(conversations);
       }
       const who = await whoIs(phone);
-      if ((!convo.clientName || convo.clientName === convo.phone) && who.lead && who.lead.name) convo.clientName = who.lead.name;
+      const known = (who.client && who.client.name) || (who.lead && who.lead.name) || '';
+      if (known) convo.clientName = known; // as the desk named her, not as her WhatsApp profile says
+      else if (!convo.clientName) convo.clientName = convo.phone;
       const employees = await readJSON('data/employees.json', []);
       const nameOf = (id) => (id === 'admin' ? 'Admin' : ((employees.find((e) => e.id === id) || {}).name || ''));
       // template messages saved before their picture was kept: the template's picture of now
@@ -283,8 +288,9 @@ module.exports = async (req, res) => {
       if (!convo) return fail(404, 'conversation_not_found');
       if (!within24h(convo)) return fail(409, 'outside_24h_window', 'Au trecut 24 de ore de la ultimul ei mesaj: trimite un șablon.');
 
-      // the answer leaves from the number she wrote to (Timișoara / Arad)
-      const result = await sendWhatsApp({ phone, text, from: convo.location || '' });
+      // the answer leaves from the number she last wrote to (Timișoara / Arad), else the conversation's clinic
+      const lastIn = (convo.messages || []).slice().reverse().find((m) => m.direction === 'in' && m.city);
+      const result = await sendWhatsApp({ phone, text, from: (lastIn && lastIn.city) || convo.location || '' });
       if (!result.sent) return fail(502, 'send_failed', 'WhatsApp nu a trimis mesajul' + (result.error ? ': ' + result.error : '.'));
 
       convo.messages.push({
@@ -363,8 +369,9 @@ module.exports = async (req, res) => {
       const conversations = await readJSON(KEY, []);
       let convo = conversations.find((c) => c.phone === phone);
       const who = await whoIs(phone);
-      const city = (convo && convo.location) || (WA.CITIES.includes(body.location) ? body.location : '') ||
-        (who.appointment && who.appointment.location) || (who.lead && who.lead.location) || s.ready[0];
+      // the clinic the desk chose wins; else her appointment's, her lead's, the conversation's
+      const city = (WA.CITIES.includes(body.location) && s.ready.includes(body.location) ? body.location : '') ||
+        (who.appointment && who.appointment.location) || (who.lead && who.lead.location) || (convo && convo.location) || s.ready[0];
       if (!s.ready.includes(city)) return fail(409, 'not_connected', 'Numărul de WhatsApp pentru ' + city + ' nu e conectat încă.');
       const doc = await WT.load();
       const tpl = (doc.templates || []).find((t) => t.id === body.templateId);

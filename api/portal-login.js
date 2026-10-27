@@ -14,6 +14,9 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { hashPassword, verifyPassword, setSessionCookie, getSession, renew, OWNER_ALIASES } = require('./_lib/auth');
 
+const TRIES_KEY = 'data/login-attempts.json';
+const MAX_TRIES = 5, TRY_WINDOW = 15 * 60e3;
+
 module.exports = async (req, res) => {
   res.req = res.req || req; // cookie scope follows the host (see _lib/auth.js cookieDomain)
   // GET: is this browser still signed in? The login page asks, and a signed-in person goes straight
@@ -53,10 +56,22 @@ module.exports = async (req, res) => {
     const employees = await readJSON('data/employees.json', []);
     // the exact spelling first, then any capitals when only one account has that name
     const typed = String(username).trim().toLowerCase();
+    // five wrong passwords in 15 minutes: that name waits (the portal's address and the first-name logins are no secret)
+    const tries = (await readJSON(TRIES_KEY, {}).catch(() => ({}))) || {};
+    const tr = tries[typed];
+    if (tr && tr.n >= MAX_TRIES && Date.now() - Date.parse(tr.at) < TRY_WINDOW) { res.status(429).json({ error: 'too_many_attempts' }); return; }
+    const wrong = async () => {
+      const cur = tr && Date.now() - Date.parse(tr.at) < TRY_WINDOW ? tr.n : 0;
+      tries[typed] = { n: cur + 1, at: new Date().toISOString() };
+      Object.keys(tries).forEach((k) => { if (Date.now() - Date.parse(tries[k].at) > TRY_WINDOW) delete tries[k]; });
+      await writeJSON(TRIES_KEY, tries, { quiet: true }).catch(() => {});
+    };
+    const right = async () => { if (tr) { delete tries[typed]; await writeJSON(TRIES_KEY, tries, { quiet: true }).catch(() => {}); } };
     const sameName = employees.filter((e) => String(e.username || '').toLowerCase() === typed && e.active !== false);
     const employee = employees.find((e) => e.username === username && e.active !== false) || (sameName.length === 1 ? sameName[0] : null);
 
     if (employee && verifyPassword(password, employee.passwordSalt, employee.passwordHash)) {
+      await right();
       setSessionCookie(res, employee.id, employee.role);
       res.status(200).json({ ok: true, role: employee.role, name: employee.name });
       return;
@@ -76,11 +91,16 @@ module.exports = async (req, res) => {
     }
 
     if (isBootstrapAdmin) {
+      await right();
       setSessionCookie(res, 'admin', 'admin');
       res.status(200).json({ ok: true, role: 'admin', name: 'Admin' });
       return;
     }
 
+    // the right password of an account switched off in Echipa: said as it is, not as a wrong password
+    const off = employees.find((e) => String(e.username || '').toLowerCase() === typed && e.active === false);
+    if (off && verifyPassword(password, off.passwordSalt, off.passwordHash)) { res.status(403).json({ error: 'account_inactive' }); return; }
+    await wrong();
     res.status(401).json({ error: 'invalid_credentials' });
   } catch (err) {
     console.error('portal-login error:', err.message);

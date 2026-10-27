@@ -28,6 +28,18 @@
   head.innerHTML = '<b>Meniu</b><button type="button" class="c360-mclose" aria-label="Închide meniul">' +
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
   nav.insertBefore(head, nav.firstChild);
+  // at the end of the menu, said in words: the account and the way out (on a phone the top-right circle isn't obvious)
+  var foot = document.createElement('div');
+  foot.className = 'c360-mfoot';
+  foot.innerHTML = '<button type="button" data-mfoot="account"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Contul meu</button>' +
+    '<button type="button" data-mfoot="logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Deconectare</button>';
+  nav.appendChild(foot);
+  foot.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-mfoot]'); if (!b) return;
+    if (b.dataset.mfoot === 'account') { if (window.K && window.K.openAccount) window.K.openAccount(); }
+    else { var lb = document.getElementById('logoutBtn'); if (lb) lb.click(); }
+    setTimeout(function () { if (html.classList.contains('c360-mnav-open')) close('pick'); }, 0);
+  });
   var html = document.documentElement;
   var pushed = false;
 
@@ -41,7 +53,9 @@
     return nav.querySelector('button.active:not(.hidden)') || nav.querySelector('button.active');
   }
   // ---- the bottom bar
-  var MAIN = ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri'];
+  // the four big tabs, by what the account does: a cosmetician's day is the calendar, not the leads
+  var ROLE = document.documentElement.getAttribute('data-role') || '';
+  var MAIN = ROLE === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri'];
   var SHORT = { programari: 'Calendar', incasari: 'Încasări', comision: 'Salariu', condica: 'Condică', traininguri: 'Training' };
   var tabbar = document.createElement('nav');
   tabbar.className = 'c360-tabbar';
@@ -121,7 +135,9 @@
     setTimeout(function () { refresh(); if (MOBILE.matches) close('pick'); }, 0);
   });
   // the active entry also changes from elsewhere (links, hash, search): keep the label in step
-  new MutationObserver(refresh).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  new MutationObserver(refresh).observe(nav, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  // the role is set a moment after the shell loads: the tabs follow it
+  new MutationObserver(function () { var r = document.documentElement.getAttribute('data-role') || ''; if (r !== ROLE) { ROLE = r; MAIN = ROLE === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri']; shown = ''; refresh(); } }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-role'] });
   window.addEventListener('hashchange', function () { setTimeout(refresh, 0); });
   MOBILE.addEventListener ? MOBILE.addEventListener('change', function () { close('pick'); }) : null;
   refresh();

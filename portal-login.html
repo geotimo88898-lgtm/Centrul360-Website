@@ -98,6 +98,7 @@
     display:none; margin-top:1rem; padding:.75rem .9rem; border-radius:12px; background:var(--bad-soft); color:var(--bad); font-size:.85rem;
   }
   .err.show{ display:block; animation:shake .4s var(--ease); }
+  .hint{ display:block; margin:.35rem 0 0; color:var(--muted); font-size:.8rem; }
   .back{ display:block; text-align:center; margin-top:1.4rem; color:var(--muted); font-size:.8rem; text-decoration:none; transition:color .2s ease; }
   .back:hover{ color:var(--fg); }
   :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
@@ -131,6 +132,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
+          <small id="capsHint" class="hint" hidden>Caps Lock e activ: literele ies mari.</small>
         </div>
         <button class="pill" type="submit" id="submitBtn"><span class="spin"></span><span id="submitLabel">Intră în portal</span></button>
         <div class="err" id="errBox" role="alert"></div>
@@ -182,18 +184,33 @@
         });
 
         if (resp.status === 401) {
-          fail('Utilizator sau parolă incorectă.');
+          fail('Utilizator sau parolă incorectă. Ai uitat parola? Cere una nouă administratorului.');
           return;
         }
+        if (resp.status === 403) { fail('Contul tău e dezactivat. Vorbește cu administratorul.'); return; }
+        if (resp.status === 429) { fail('Prea multe încercări. Așteaptă 15 minute și încearcă din nou.'); return; }
+        if (resp.status === 400) { fail('Scrie utilizatorul și parola.'); return; }
         if (!resp.ok) {
           throw new Error('server');
         }
         submitLabel.textContent = 'Bine ai venit…';
-        location.href = '/';
+        location.href = '/' + location.hash; // back to the page she was on
       } catch (err) {
-        fail('A apărut o eroare. Încearcă din nou.');
+        fail('Nu am putut verifica acum. Încearcă din nou în câteva secunde.');
       }
     });
+    // Caps Lock on: said under the password, before she tries
+    pw.addEventListener('keyup', function (e) {
+      var on = e.getModifierState && e.getModifierState('CapsLock');
+      var hint = document.getElementById('capsHint');
+      if (hint) hint.hidden = !on;
+    });
+    // why she is here: the session ended, or the account was switched off
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var why = q.get('motiv') === 'inactiv' ? 'Contul tău a fost dezactivat. Vorbește cu administratorul.' : q.get('expirat') ? 'Sesiunea a expirat. Intră din nou.' : '';
+      if (why) { errBox.textContent = why; errBox.classList.add('show'); }
+    })();
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/portal-sw.js').catch(function () {});
     }

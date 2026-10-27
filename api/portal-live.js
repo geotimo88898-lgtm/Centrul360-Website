@@ -20,7 +20,7 @@ async function status() {
 }
 
 module.exports = async (req, res) => {
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
   try {
     if (req.method === 'GET') { res.setHeader('Cache-Control', 'no-store'); res.status(200).json(await status()); return; }

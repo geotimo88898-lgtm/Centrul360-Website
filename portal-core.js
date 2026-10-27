@@ -61,7 +61,12 @@
       DATA = await K.api('/api/portal-data');
     } catch (e) {
       if (e.code === 'auth') return;
-      if (!quiet) document.getElementById('loadingScreen').textContent = 'Eroare la încărcarea portalului. Reîncarcă pagina.';
+      if (!quiet) {
+        const ls = document.getElementById('loadingScreen');
+        ls.classList.add('is-error');
+        ls.innerHTML = '<div class="c360-load-err"><b>Nu am putut încărca portalul.</b><button type="button" class="k-btn is-primary" id="retryLoad">Încearcă din nou</button></div>';
+        document.getElementById('retryLoad').addEventListener('click', () => { ls.classList.remove('is-error'); ls.textContent = 'Se încarcă portalul...'; load(false); });
+      }
       return;
     }
     if (routeHost()) return;

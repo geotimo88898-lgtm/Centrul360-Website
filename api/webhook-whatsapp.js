@@ -78,7 +78,9 @@ function textFor(message) {
   // a photo, a PDF, a voice note: its caption, else what it is (the file itself shows in Mesaje)
   const media = type && message[type];
   if (media && MEDIA_TYPES.includes(type)) return media.caption || (type === 'document' && media.filename ? media.filename : MEDIA_LABEL[type]);
-  return '[tip mesaj: ' + (type || 'necunoscut') + ']';
+  if (type === 'location') return '📍 Mi-a trimis locația' + (message.location && message.location.name ? ': ' + message.location.name : '');
+  if (type === 'contacts') return '👤 Mi-a trimis un contact' + (Array.isArray(message.contacts) && message.contacts[0] && message.contacts[0].name ? ': ' + (message.contacts[0].name.formatted_name || '') : '');
+  return 'Un mesaj pe care nu îl putem afișa aici (deschide WhatsApp pe telefon)';
 }
 const MEDIA_TYPES = ['image', 'document', 'audio', 'video', 'sticker'];
 const MEDIA_LABEL = { image: 'Poză', document: 'Document', audio: 'Mesaj vocal', video: 'Video', sticker: 'Sticker' };
@@ -158,13 +160,21 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
     }
   } catch (err) { console.error('webhook-whatsapp: contact', err.message); }
 
-  const type = message.type === 'text' ? 'text' : 'other';
   const ts = message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : nowISO();
+  if (message.type === 'reaction') {
+    const r = message.reaction || {};
+    const target = r.message_id && (convo.messages || []).find((m) => m.id === r.message_id);
+    if (target) { if (r.emoji) target.reaction = String(r.emoji).slice(0, 8); else delete target.reaction; }
+    return null; // nothing new to read, nothing to ring for
+  }
+  const type = message.type === 'text' ? 'text' : 'other';
+  const city = await locationForPhoneNumberId(phoneNumberId).catch(() => '');
   const media = await keepMedia(message, phoneNumberId).catch((err) => { console.error('webhook-whatsapp: media', err.message); return null; });
   convo.messages.push({
     id: message.id || crypto.randomUUID(),
     direction: 'in',
     type,
+    ...(city ? { city } : {}), // the clinic number she wrote to: the answer leaves from it
     ...(media ? { media } : {}),
     text: textFor(message),
     status: 'received',
@@ -247,7 +257,8 @@ function handleStatusUpdate(conversations, status, failed) {
     if (st === 'failed') {
       const e = (status.errors || [])[0] || {};
       msg.status = 'failed'; msg.failedAt = at; msg.errorCode = e.code || '';
-      msg.error = WHY[e.code] || (e.error_data && e.error_data.details) || e.title || e.message || 'Meta nu l-a livrat';
+      msg.error = WHY[e.code] || ('Meta nu l-a livrat' + (e.code ? ' (cod ' + e.code + ')' : ''));
+      if (!WHY[e.code]) console.error('webhook-whatsapp: delivery failed', e.code, (e.error_data && e.error_data.details) || e.title || e.message || '');
       if (failed) failed.push({ convo, msg });
       return;
     }

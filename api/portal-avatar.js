@@ -7,7 +7,7 @@ const { requireAuth } = require('./_lib/auth');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   try {
     const id = String((req.query && req.query.id) || '');

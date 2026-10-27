@@ -19,7 +19,7 @@ const { loadOffers } = require('./_lib/offers');
 const K = require('./_lib/kpi');
 
 module.exports = async (req, res) => {
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
   try {
     const q = req.query || {};

@@ -413,7 +413,8 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
   .pl-chips{ flex-wrap:nowrap; overflow-x:auto; width:100%; padding-bottom:.2rem; }
   .pl-filters{ margin-left:0; width:100%; }
   .pl-filters select{ flex:1; min-width:0; font-size:.8rem; padding:0 1.6rem 0 .6rem; text-overflow:ellipsis; }
-  .pl-quick{ opacity:1; transform:none; }
+  .pl-quick{ opacity:1; transform:none; gap:.4rem; }
+  .pl-qbtn{ width:40px; height:40px; } .pl-qbtn .pl-ic{ width:18px; height:18px; }
   .pl-card .pl-age{ display:none; }
   .pl-contact{ grid-template-columns:1fr 1fr 1fr; }
   .pl-big-action{ flex-direction:column; text-align:center; padding:.65rem .4rem; }

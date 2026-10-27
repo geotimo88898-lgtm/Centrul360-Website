@@ -6,7 +6,7 @@ const A = require('./_lib/activity');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
   res.setHeader('Cache-Control', 'no-store');
   try {

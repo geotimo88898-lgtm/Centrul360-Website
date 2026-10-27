@@ -622,3 +622,12 @@ body::before{
 }
 
 .c360-mhead{ display:none; }
+
+/* the phone menu's end: the account and the way out, in words */
+.c360-mfoot{ display:none; }
+@media (max-width:720px){
+  .c360-mfoot{ display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin:1rem .75rem calc(1rem + env(safe-area-inset-bottom)); }
+  .c360-mfoot button{ display:flex; align-items:center; justify-content:center; gap:.5rem; min-height:46px; border-radius:12px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-weight:600; font-size:.92rem; }
+  .c360-mfoot button svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .c360-avatar{ cursor:pointer; }
+}

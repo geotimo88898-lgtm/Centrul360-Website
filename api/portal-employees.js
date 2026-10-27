@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
 
   const { action } = req.body || {};
@@ -175,6 +175,7 @@ module.exports = async (req, res) => {
         return;
       }
       employee.active = active;
+      require('./_lib/auth').forgetRoster(); // her sessions end now (the other instances within a minute)
       await writeJSON('data/employees.json', employees);
       res.status(200).json({ ok: true });
       return;

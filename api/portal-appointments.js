@@ -28,7 +28,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
-const { upsertClient } = require('./_lib/clients');
+const { upsertClient, normalizePhone } = require('./_lib/clients');
 const { normalizeCategories } = require('./_lib/cats');
 const workflows = require('./_lib/workflows');
 const { bonusPush } = require('./_lib/bonus');
@@ -65,7 +65,9 @@ async function resolveClient({ clientId, clientName, clientPhone }) {
   if (clientId) {
     const clients = await readJSON('data/clients.json', []);
     const found = clients.find((c) => c.id === clientId);
-    if (found) return found;
+    // picked from the list, then the number corrected by hand: the typed number wins (it goes on by phone, below)
+    const typed = normalizePhone(clientPhone);
+    if (found && (!typed || typed === normalizePhone(found.phone))) return found;
   }
   const cleanName = String(clientName || '').trim().slice(0, 150);
   const cleanPhone = String(clientPhone || '').trim().slice(0, 30);
@@ -162,7 +164,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
 
   const { action } = req.body || {};
@@ -320,8 +322,9 @@ module.exports = async (req, res) => {
       if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
       const moved = before.date !== appointment.date || before.time !== appointment.time;
-      // another client on it (the wrong one picked, a new phone): her own lead, not the one of the client before
-      const otherClient = before.clientId !== appointment.clientId;
+      // another client on it (the wrong one picked, a new phone): her own lead, not the one of the client before.
+      // The same number under a new id (a sheet replaced by an import) is the same client: nothing starts again
+      const otherClient = normalizePhone(before.clientPhone) !== normalizePhone(appointment.clientPhone);
       if (otherClient) delete appointment.leadId;
       // a moved appointment: the date on its lead follows (a lead not linked yet gets linked and moves to booked)
       if ((moved || otherClient) && appointment.status !== 'concediu' && !['anulata', 'finalizata'].includes(appointment.status)) {
@@ -334,8 +337,10 @@ module.exports = async (req, res) => {
       // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the
       // booking messages again for the new date (confirmation, location, reminders).
       if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });
-      // moved, to the other clinic or to another client: the booking messages start again (for a date still ahead)
-      if (moved || otherClient || before.location !== appointment.location) await workflows.emit('appointment_rescheduled', { appointment });
+      // moved, to the other clinic, to another client, or cancelled by mistake and put back: the booking messages
+      // start again (for a date still ahead)
+      const revived = before.status === 'anulata' && !['anulata', 'finalizata', 'concediu'].includes(appointment.status);
+      if (moved || otherClient || revived || before.location !== appointment.location) await workflows.emit('appointment_rescheduled', { appointment });
       res.status(200).json({ ok: true, appointment });
       return;
     }

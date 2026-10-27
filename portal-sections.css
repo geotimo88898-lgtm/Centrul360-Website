@@ -269,7 +269,7 @@
 .cal-now::before{ content:""; position:absolute; left:-5px; top:-4px; width:10px; height:10px; border-radius:50%; background:var(--bad); animation:k-ping 1.8s var(--ease) infinite; color:var(--bad); }
 .cal-now span{ position:absolute; left:-58px; top:-9px; width:50px; text-align:right; font-size:.66rem; font-weight:800; color:var(--bad); font-variant-numeric:tabular-nums; }
 
-.cal-status{ display:grid; grid-template-columns:repeat(5,1fr); gap:.35rem; }
+.cal-status{ display:grid; grid-template-columns:repeat(var(--n, 4),1fr); gap:.35rem; }
 .cal-status button{ display:flex; flex-direction:column; align-items:center; gap:.3rem; padding:.65rem .3rem; border-radius:12px; border:1px solid var(--line); background:transparent;
   color:var(--muted); font:inherit; font-size:.72rem; font-weight:600; cursor:pointer; transition:all .2s var(--ease); }
 .cal-status button .k-ic{ width:18px; height:18px; }
@@ -313,7 +313,7 @@
   .cal-wrap{ max-height:none; }
   .cal-grid{ grid-template-columns:46px repeat(var(--cols), minmax(140px, 1fr)); }
   .cal-hint{ display:none; }
-  .cal-status{ grid-template-columns:repeat(3,1fr); }
+  .cal-status{ grid-template-columns:repeat(2,1fr); }
 }
 .cal-bar-right .c360-select{ width:auto; min-width:170px; }
 .cal-bar-right .c360-select-btn{ height:38px; padding-top:0; padding-bottom:0; }
@@ -2328,3 +2328,7 @@ html.mx-pv-open{ overflow:hidden; }
 .mx-pv-body img{ max-width:100%; max-height:100%; object-fit:contain; margin:auto; }
 .mx-pv-body canvas{ max-width:100%; height:auto; background:#fff; border-radius:4px; box-shadow:0 6px 24px rgba(0,0,0,.4); }
 .mx-pv-wait{ margin:auto; color:#ddd; text-align:center; line-height:1.6; display:flex; flex-direction:column; align-items:center; gap:.8rem; padding:1rem; }
+
+.mx-react{ display:inline-block; margin:.15rem 0 0 .2rem; padding:.05rem .35rem; border-radius:999px; background:var(--surface); border:1px solid var(--line); font-size:.85rem; line-height:1.3; }
+
+.wk-later{ margin-top:1rem; } .wk-later > summary{ cursor:pointer; display:flex; align-items:center; gap:.5rem; font-weight:700; font-size:.9rem; padding:.5rem 0; list-style:none; } .wk-later > summary::-webkit-details-marker{ display:none; } .wk-later > summary span{ font-size:.75rem; color:var(--muted); } .wk-later > summary svg{ width:16px; height:16px; } .wk-task.is-done .wk-task-sub{ text-decoration:line-through; opacity:.7; }

@@ -215,6 +215,7 @@
       mediaHtml(m) +
       (m.media && MEDIA_WORDS.includes(text) || (m.media && text === m.media.filename) ? '' : '<span class="mx-text">' + esc(text) + '</span>') +
       (m.buttons && m.buttons.length ? '<span class="mx-btns">' + m.buttons.map((b) => '<span class="mx-btn">' + icon('undo') + esc(b) + '</span>').join('') + '</span>' : '') +
+      (m.reaction ? '<span class="mx-react">' + esc(m.reaction) + '</span>' : '') +
       (out && m.status === 'failed' ? '<span class="mx-fail">' + icon('alert') + 'NELIVRAT' + (m.error ? ' · ' + esc(m.error) : '') + '</span>' : '') +
       '<span class="mx-meta"><span class="mx-time">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : '') + esc(hm(m.timestamp)) + '</span>' + (out ? tickHtml(m.status || 'sent', stateLine(m)) : '') + '</span></div></div>';
   }
@@ -261,7 +262,7 @@
           '<textarea name="text" maxlength="4000" placeholder="Scrie un mesaj…" rows="1">' + esc(draft) + '</textarea>' +
           '<button type="submit" class="mx-send-btn" aria-label="Trimite">' + SEND + '</button></form>' +
           '<p class="mx-window">' + windowLine + '</p>'
-        : '<div class="mx-closed">' + icon('info') + '<span>' + (waiting(t) ? 'Șablonul a plecat. Când îți răspunde, îi poți scrie liber.' : (t.messages || []).some((m) => m.direction === 'in') ? 'Au trecut 24 de ore de la ultimul ei mesaj. Îi poți scrie doar cu un șablon aprobat.' : 'Primul mesaj către ea pleacă doar cu un șablon aprobat.') + '</span>' +
+        : '<div class="mx-closed">' + icon(bounced(t) ? 'alert' : 'info') + '<span>' + (bounced(t) ? 'Șablonul nu a ajuns la ea: verifică numărul sau sun-o.' : waiting(t) ? 'Șablonul a plecat. Când îți răspunde, îi poți scrie liber.' : (t.messages || []).some((m) => m.direction === 'in') ? 'Au trecut 24 de ore de la ultimul ei mesaj. Îi poți scrie doar cu un șablon aprobat.' : 'Primul mesaj către ea pleacă doar cu un șablon aprobat.') + '</span>' +
           '<button type="button" class="k-btn ' + (waiting(t) ? '' : 'is-primary ') + 'is-sm" data-act="tpl">' + icon('file') + (waiting(t) ? 'Alt șablon' : 'Trimite un șablon') + '</button></div>');
     autoGrow(box.querySelector('textarea'));
     // a message prepared elsewhere (a task's text): in the answer box, to check and send
@@ -275,7 +276,13 @@
   function waiting(t) {
     const msgs = t.messages || [];
     const last = msgs[msgs.length - 1];
-    return !!(last && last.direction === 'out' && last.type === 'template');
+    return !!(last && last.direction === 'out' && last.type === 'template' && last.status !== 'failed');
+  }
+  // the last template didn't reach her (Meta said so)
+  function bounced(t) {
+    const msgs = t.messages || [];
+    const last = msgs[msgs.length - 1];
+    return !!(last && last.direction === 'out' && last.type === 'template' && last.status === 'failed');
   }
   // a number a phone can dial: 40755… (how WhatsApp keeps it) → +40755…, 0755… stays as it is
   const telOf = (p) => { const d = String(p || '').replace(/[^\d+]/g, ''); return /^\+/.test(d) || /^0/.test(d) ? d : d.length >= 11 ? '+' + d : d; };
@@ -596,6 +603,8 @@
     let dataUrl, name = file.name;
     try {
       if (isPhoto) { dataUrl = await smaller(file); name = name.replace(/\.\w+$/, '') + '.jpg'; }
+      else if (/^(video|audio)\//.test(file.type) && file.size > 16 * 1024 * 1024) return K.ui().toast('Un video sau un audio poate avea cel mult 16 MB pe WhatsApp.', 'error');
+      else if (/^video\//.test(file.type) && !/mp4|3gpp/.test(file.type)) return K.ui().toast('WhatsApp primește doar video MP4.', 'error');
       else if (file.size > 100 * 1024 * 1024) return K.ui().toast('Fișierul e prea mare (WhatsApp primește cel mult 100 MB).', 'error');
       else if (file.size <= 3e6) dataUrl = await asDataUrl(file);
       // a big one (a catalog): straight to storage when it's sent, not through the portal (capped at ~4 MB)
@@ -662,8 +671,9 @@
       load();
     }).catch((err) => {
       tmp.status = 'failed';
+      if (err.code === 'outside_24h_window' && C.thread) { C.thread.within24h = false; C.thread.messages = (C.thread.messages || []).filter((m) => m !== tmp); }
       if (C.selectedPhone === ph && C.thread) paintThread();
-      if (!ta.value) { ta.value = text; autoGrow(ta); }
+      if (err.code !== 'outside_24h_window' && !ta.value) { ta.value = text; autoGrow(ta); }
       K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error');
     });
   }
@@ -741,16 +751,32 @@
       const doc = await lib.getDocument({ url, withCredentials: true }).promise;
       if (pvEl !== mine) return;
       box.innerHTML = '';
-      const w = Math.min(box.clientWidth - 16, 900), dpr = Math.min(2, window.devicePixelRatio || 1);
-      for (let n = 1; n <= Math.min(doc.numPages, 60); n++) {
-        const page = await doc.getPage(n);
-        if (pvEl !== mine) return;
-        const vp = page.getViewport({ scale: 1 }), scale = (w / vp.width) * dpr, v = page.getViewport({ scale });
+      const w = Math.min(box.clientWidth - 16, 900), dpr = Math.min(window.innerWidth < 720 ? 1.5 : 2, window.devicePixelRatio || 1);
+      const first = await doc.getPage(1);
+      if (pvEl !== mine) return;
+      const vp0 = first.getViewport({ scale: 1 }), scale = (w / vp0.width) * dpr, v0 = first.getViewport({ scale });
+      const slots = [];
+      for (let n = 1; n <= Math.min(doc.numPages, 80); n++) {
         const cv = document.createElement('canvas');
-        cv.width = v.width; cv.height = v.height; cv.style.width = (v.width / dpr) + 'px';
-        box.appendChild(cv);
-        await page.render({ canvasContext: cv.getContext('2d'), viewport: v }).promise;
+        cv.width = v0.width; cv.height = v0.height; cv.style.width = (v0.width / dpr) + 'px'; cv.dataset.page = n;
+        box.appendChild(cv); slots.push(cv);
       }
+      const drawn = new Set();
+      const draw = async (cv) => {
+        const n = Number(cv.dataset.page);
+        if (drawn.has(n)) return; drawn.add(n);
+        try {
+          const page = n === 1 ? first : await doc.getPage(n);
+          if (pvEl !== mine) return;
+          const v = page.getViewport({ scale });
+          cv.width = v.width; cv.height = v.height; cv.style.width = (v.width / dpr) + 'px';
+          await page.render({ canvasContext: cv.getContext('2d'), viewport: v }).promise;
+        } catch (e) { drawn.delete(n); }
+      };
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => entries.forEach((x) => { if (x.isIntersecting) draw(x.target); }), { root: box.closest('.mx-pv-scroll') || null, rootMargin: '1200px 0px' });
+        slots.forEach((cv) => io.observe(cv));
+      } else for (const cv of slots) await draw(cv);
     } catch (err) {
       if (pvEl === mine) box.innerHTML = '<div class="mx-pv-wait">Nu am putut deschide PDF-ul aici.<br><a class="k-btn is-primary" href="' + esc(url) + '" download>' + icon('download') + 'Descarcă</a></div>';
     }

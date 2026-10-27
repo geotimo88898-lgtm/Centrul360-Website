@@ -59,7 +59,7 @@
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
     } catch (e) { throw Object.assign(new Error('network'), { code: 'network' }); }
-    if (r.status === 401) { location.href = '/login'; throw Object.assign(new Error('auth'), { code: 'auth' }); }
+    if (r.status === 401) { const j = await r.json().catch(() => ({})); location.href = '/login?' + (j.error === 'account_inactive' ? 'motiv=inactiv' : 'expirat=1') + location.hash; throw Object.assign(new Error('auth'), { code: 'auth' }); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error(j.error || 'failed'), { code: j.error || 'failed', status: r.status, data: j });
     return j;
@@ -532,6 +532,7 @@
     const search = async (q) => { try { const j = await api('/api/portal-clients?q=' + encodeURIComponent(q)); items = (j.clients || []).slice(0, 7); active = -1; if (document.activeElement === input) paint(); } catch (e) { /* convenience only */ } };
     input.setAttribute('autocomplete', 'off');
     input.addEventListener('input', () => { id = ''; clearTimeout(t); t = setTimeout(() => search(input.value.trim()), 200); });
+    if (phoneInput) phoneInput.addEventListener('input', () => { id = ''; }); // a corrected number: saved by the number, not the picked sheet
     input.addEventListener('focus', () => { if (!input.value.trim()) search(''); });
     input.addEventListener('blur', () => setTimeout(hide, 160));
     input.addEventListener('keydown', (e) => {

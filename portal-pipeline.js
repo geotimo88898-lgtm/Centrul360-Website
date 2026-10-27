@@ -67,7 +67,7 @@
     site: { label: 'Site', icon: 'globe' },
     recomandare: { label: 'Recomandare', icon: 'users' },
     telefon: { label: 'Telefon', icon: 'phone' },
-    walk_in: { label: 'Walk-in', icon: 'store' },
+    walk_in: { label: 'Venită în clinică', icon: 'store' },
     altul: { label: 'Altul', icon: 'tag' },
   };
   const CHANNELS = { call: 'Apel', whatsapp: 'WhatsApp', sms: 'SMS', in_person: 'În clinică' };
@@ -82,13 +82,21 @@
     numar_gresit: { label: 'Număr greșit', tone: 'bad' },
   };
   // Active offers only, the same list the Creative machine sells.
-  const OFFERS = [
+  // (the shared list, Admin → Oferte, the same the site and the welcome templates use; the literal list only while it
+  // hasn't arrived)
+  const OFFERS_FALLBACK = [
     { label: 'Facial Restart', value: 190, category: 'faciale', where: '' },
     { label: 'LipoSonix 2 zone la preț de 1', value: 640, category: 'corporale', where: '' },
     { label: 'Cavitație + EMS', value: 280, category: 'corporale', where: 'Timișoara' },
     { label: 'Cavitație 1+1', value: 280, category: 'corporale', where: 'Arad' },
     { label: 'Epilare laser Full Body', value: 490, category: 'epilare-laser', where: 'Timișoara' },
   ];
+  const CITY_NAME = { timisoara: 'Timișoara', arad: 'Arad' };
+  const OFFERS = new Proxy([], { get(_, k) {
+    const shared = (window.K && K.data && K.data.offers) || [];
+    const list = shared.length ? shared.map((o) => ({ label: o.title, value: Number(o.priceNew) || 0, category: o.category || '', where: Array.isArray(o.locations) && o.locations.length === 1 ? CITY_NAME[o.locations[0]] || '' : '' })) : OFFERS_FALLBACK;
+    const v = list[k]; return typeof v === 'function' ? v.bind(list) : v;
+  } });
   const LOST_REASONS = ['Preț prea mare', 'Nu răspunde (3+ încercări)', 'A ales altă clinică', 'Nu e momentul', 'Distanță / locație', 'Număr greșit / spam', 'Altul'];
   const KIND_LABELS = { open: 'Lucru', booked: 'Programare', won: 'Câștigat ★', lost: 'Pierdut' };
   const COLORS = ['#4f8fd6', '#6fa8d6', '#2bb3a3', '#c9a227', '#e0835a', '#d97757', '#e05a7a', '#8b6fd0', '#2f9d62', '#8a8580'];
@@ -125,7 +133,7 @@
         body: JSON.stringify(Object.assign({ action }, payload || {})),
       });
     } catch (e) { throw Object.assign(new Error('network'), { code: 'network' }); }
-    if (r.status === 401) { location.href = '/login'; throw new Error('auth'); }
+    if (r.status === 401) { const j = await r.json().catch(() => ({})); location.href = '/login?' + (j.error === 'account_inactive' ? 'motiv=inactiv' : 'expirat=1') + location.hash; throw new Error('auth'); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error(j.error || 'failed'), { code: j.error });
     return j;
@@ -991,7 +999,7 @@
   }
   function openQueue() {
     const q = queueList();
-    if (!q.length) { ui().toast('Coada e goală, toți leadurii au fost contactați la timp.', 'success'); return; }
+    if (!q.length) { ui().toast('Coada e goală, toate leadurile au fost contactate la timp.', 'success'); return; }
     openLead(q[0].id, { queue: q.map((l) => l.id), section: 'log' });
   }
   function stepDrawer(dir) {
@@ -1051,7 +1059,7 @@
           field('Nume', '<input name="name" required maxlength="150" placeholder="ex: Andreea Popescu">', 'full') +
           field('Telefon', '<input name="phone" type="tel" required maxlength="30" placeholder="07xx xxx xxx">') +
           field('Email (opțional)', '<input name="email" type="email" maxlength="150">') +
-          field('Sursă', '<select name="source">' + sourceOptions('facebook') + '</select>') +
+          field('Sursă', '<select name="source">' + sourceOptions('telefon') + '</select>') +
           field('Locație', '<select name="location">' + locationOptions('Timișoara') + '</select>') +
           field('Interesată de', '<select name="interest">' + offerOptions('') + '</select>', 'full') +
           '<div class="pl-field full is-hidden" data-custom-interest><span>Descrie interesul</span><input name="interestCustom" maxlength="120"></div>' +
@@ -1166,7 +1174,7 @@
       stage: ['arrow', esc(a.text)],
       note: ['note', 'Notă'],
       contact: [a.channel === 'whatsapp' ? 'chat' : 'phone', (CHANNELS[a.channel] || 'Contact') + ' · ' + ((OUTCOMES[a.outcome] || {}).label || '')],
-      followup: ['clock', 'Follow-up'],
+      followup: ['clock', 'Revenire'],
       booking: ['calendar', 'Programare făcută · ' + esc(String(a.text || '').replace(/^\d{4}-\d{2}-\d{2}(?: \d{1,2}:\d{2})?/, (m) => apptWhen(m)))],
       // moved, cancelled or deleted in the Calendar ("Programare mutată: 2026-10-22 14:00")
       booking_change: ['calendar', esc(String(a.text || '').replace(/\d{4}-\d{2}-\d{2}(?: \d{1,2}:\d{2})?/, (m) => apptWhen(m)))],

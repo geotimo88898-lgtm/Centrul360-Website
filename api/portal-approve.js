@@ -1,6 +1,7 @@
 // POST /api/portal-approve, admin approves or rejects a pending sale entry.
 // Approving fixes the commission: upsell - 60% costs, then 10% of the profit (_lib/cats.js).
 
+const { leiTxt } = require('./_lib/notify');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { commissionOf } = require('./_lib/cats');
@@ -12,7 +13,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const session = requireAdmin(req, res);
+  const session = await requireAdmin(req, res);
   if (!session) return;
 
   const { saleId, decision, reason } = req.body || {};
@@ -48,7 +49,7 @@ module.exports = async (req, res) => {
 
     await writeJSON('data/sales.json', sales);
     await notify({ readJSON, writeJSON }, sale.employeeId, sale.status === 'approved'
-      ? { kind: 'commission', tone: 'good', title: 'COMISION ✅ - +' + sale.commission + ' lei', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : ''), go: 'comision' }
+      ? { kind: 'commission', tone: 'good', title: 'COMISION ✅ - +' + leiTxt(sale.commission), text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : ''), go: 'comision' }
       : { kind: 'commission', tone: 'bad', title: 'COMISION ❌ - respins', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.decisionNote ? '. ' + sale.decisionNote : ''), go: 'comision' });
 
     res.status(200).json({ ok: true, sale });

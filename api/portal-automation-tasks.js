@@ -20,7 +20,7 @@ function todayISO() {
 
 module.exports = async (req, res) => {
   // Front-desk queue: reception + admin (cosmeticians have no tasks here).
-  const session = requireRole(req, res, ['admin', 'receptie']);
+  const session = await requireRole(req, res, ['admin', 'receptie']);
   if (!session) return;
 
   try {
@@ -32,7 +32,8 @@ module.exports = async (req, res) => {
       ]);
 
       const today = todayISO();
-      await tick(); // anything due from Automatizări lands here before the list is read
+      const showAll = req.query && (req.query.all === '1' || req.query.all === 'true');
+      if (!showAll) await tick(); // anything due from Automatizări lands here before the list is read (once per reading, not twice)
 
       const allTasks = await readJSON('data/automation-tasks.json', []);
 
@@ -58,7 +59,6 @@ module.exports = async (req, res) => {
       if (autoClosed) await writeJSON('data/automation-tasks.json', allTasks);
       const clients = await readJSON('data/clients.json', []);
       const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
-      const showAll = req.query && (req.query.all === '1' || req.query.all === 'true');
       // only the tasks a person wrote ("Adaugă sarcină"); the ones automations made before are not shown
       const own = allTasks.filter((t) => t.createdBy);
       let visible = showAll ? own : own.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today));
@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
         const tasks = await readJSON('data/automation-tasks.json', []);
         const task = {
           id: require('crypto').randomUUID(), type: 'sarcina', status: 'pending', assigneeRole: 'receptie',
-          title: 'Sarcina mea', text, dueDate: due,
+          title: 'Sarcină', by: (me && String(me.name || '').split(' ')[0]) || '', text, dueDate: due,
           clientName: String((req.body && req.body.clientName) || '').trim().slice(0, 150),
           phone: String((req.body && req.body.phone) || '').trim().slice(0, 30),
           location: (me && me.location) || '', createdBy: session.employeeId, createdAt: new Date().toISOString(), doneAt: null, doneBy: null,
@@ -106,7 +106,7 @@ module.exports = async (req, res) => {
         res.status(200).json({ ok: true, task });
         return;
       }
-      if (action !== 'complete') {
+      if (action !== 'complete' && action !== 'reopen') {
         res.status(400).json({ error: 'invalid_action' });
         return;
       }
@@ -120,9 +120,8 @@ module.exports = async (req, res) => {
         res.status(404).json({ error: 'task_not_found' });
         return;
       }
-      task.status = 'done';
-      task.doneAt = new Date().toISOString();
-      task.doneBy = session.employeeId;
+      if (action === 'reopen') { task.status = 'pending'; task.doneAt = null; task.doneBy = null; }
+      else { task.status = 'done'; task.doneAt = new Date().toISOString(); task.doneBy = session.employeeId; }
       await writeJSON('data/automation-tasks.json', tasks);
       res.status(200).json({ ok: true, task });
       return;

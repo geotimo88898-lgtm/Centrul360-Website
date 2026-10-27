@@ -53,7 +53,7 @@ function view(acc, isBootstrapAdmin) {
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const body = req.body || {};
   const fail = (code, error) => res.status(code).json({ error });

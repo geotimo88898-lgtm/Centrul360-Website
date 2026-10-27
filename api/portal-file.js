@@ -44,7 +44,7 @@ const TYPES = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'a
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = requireAuth(req, res);
+  const session = await requireAuth(req, res);
   if (!session) return;
   const p = String((req.query && req.query.p) || '');
   const av = /^academy\/[\w-]{6,80}\.(mp4|mov|webm|m4v)$/.exec(p);

@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
     res.status(405).json({ error: 'method_not_allowed' });
     return;
   }
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
   res.setHeader('Cache-Control', 'no-store');
   // Open portals are the automations' clock (due steps: reminders, waits) and the clock for reading new leads from
   // the Facebook forms (at most once a minute). That runs after the answer, so the revision comes back at once.
