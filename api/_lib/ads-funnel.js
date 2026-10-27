@@ -61,12 +61,13 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
   });
 
   // the ads, to find a lead's ad by id or by names
-  const adById = new Map(), adByNames = new Map(), campByName = new Map();
+  const adById = new Map(), adByNames = new Map(), campByName = new Map(), nameCount = new Map();
   (ads || []).forEach((a) => {
     adById.set(a.id, a);
     const k = norm(a.campaignName) + '|' + norm(a.name);
     if (!adByNames.has(k)) adByNames.set(k, a);
     if (!adByNames.has('|' + norm(a.name))) adByNames.set('|' + norm(a.name), a);
+    nameCount.set(norm(a.name), (nameCount.get(norm(a.name)) || 0) + 1);
     if (a.campaignName && !campByName.has(norm(a.campaignName))) campByName.set(norm(a.campaignName), a.campaignId);
   });
 
@@ -75,19 +76,20 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
 
   (leads || []).forEach((l) => {
     const forms = Array.isArray(l.forms) ? l.forms : [];
-    if (!forms.length && l.source !== 'facebook') return;
-    // the submission of the period (the newest one), its day in Romania
-    const entries = (forms.length ? forms : [{ at: l.createdAt }]).map((f) => ({ f, t: Date.parse(f.sentAt || f.at || l.createdAt) })).filter((x) => Number.isFinite(x.t));
+    if (!forms.length) return; // a lead typed by the desk ("Facebook (mesaje)") isn't an ad's
+    // the submission of the period: the first one, and what she did from then on (a second form later, for another
+    // offer, doesn't take her visit and her money away from the ad that brought her)
+    const entries = forms.map((f) => ({ f, t: Date.parse(f.sentAt || f.at || l.createdAt) })).filter((x) => Number.isFinite(x.t));
     const inRange = entries.filter((x) => { const d = bucharestDay(x.t); return !r || (d >= r.since && d <= r.until); });
     if (!inRange.length) return;
-    const pick = inRange.sort((a, b) => b.t - a.t)[0];
-    const f = pick.f, since = pick.t - DAY;
+    const pick = inRange.sort((a, b) => a.t - b.t)[0];
+    const f = pick.f, since = pick.t - DAY, formDay = bucharestDay(pick.t);
 
     const own = l.appointmentId && apptById.get(l.appointmentId);
     const phone = digits9(l.phone);
     const appts = (apptsByLead.get(l.id) || []).concat(l.clientId ? (apptsByClient.get(l.clientId) || []) : [], own ? [own] : [], phone.length === 9 ? (apptsByPhone.get(phone) || []) : [])
       .filter((a, i, arr) => arr.findIndex((b) => b.id === a.id) === i)
-      .filter((a) => Date.parse(a.createdAt || a.date) >= since && a.status !== 'anulata' && a.status !== 'concediu');
+      .filter((a) => (Date.parse(a.createdAt || a.date) >= since || (Date.parse(a.createdAt || a.date) >= pick.t - 14 * DAY && String(a.date) >= formDay)) && a.status !== 'anulata' && a.status !== 'concediu');
     const pays = (l.clientId ? (paysByClient.get(l.clientId) || []) : []).concat(...appts.map((a) => paysByAppt.get(a.id) || []))
       .filter((s, i, arr) => arr.findIndex((x) => x.id === s.id) === i)
       .filter((s) => Date.parse(s.createdAt || s.date) >= since);
@@ -103,9 +105,9 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
     if (ev.showed) ev.booked = 1;
     if (ev.clients) { ev.booked = 1; ev.showed = 1; }
 
-    const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad ? adByNames.get('|' + norm(f.ad)) : null);
-    if (ad) { add(out.ads, ad.id, ev); add(out.adsets, ad.adsetId, ev); add(out.campaigns, ad.campaignId, ev); return; }
     const campId = (f.campaignId && String(f.campaignId)) || campByName.get(norm(f.campaign));
+    const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad && !campId && nameCount.get(norm(f.ad)) === 1 ? adByNames.get('|' + norm(f.ad)) : null);
+    if (ad) { add(out.ads, ad.id, ev); add(out.adsets, ad.adsetId, ev); add(out.campaigns, ad.campaignId, ev); return; }
     if (campId) add(out.campaigns, campId, ev);
     else plus(out.unmatched, ev);
   });

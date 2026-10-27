@@ -62,67 +62,116 @@ const JOBS = [
     why: 'Arad are loc de programări: mai mult buget la LipoSonix și gușă (cerut de voi pe 24.10)' },
 ];
 
-// who hears about it: the admin account named George (as the guard)
-async function ownerIds() {
-  const emps = await readJSON('data/employees.json', []);
-  const g = (emps || []).filter((e) => e.active !== false && e.role === 'admin' && /^george$/i.test(String(e.username || e.name || '').trim()));
-  return g.length ? g.map((e) => e.id) : ['admin'];
-}
+// who hears about it: the admin account named George (as the guard; api/_lib/notify.js ownerIds)
+const { ownerIds } = require('./notify');
+const day = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(t));
+// a job's day is in its id; one still undone 3 days later is given up (its intent is stale by then), with a word
+const dayOf = (j) => (String(j.id).match(/\d{4}-\d{2}-\d{2}/) || [''])[0];
+const expired = (j) => !!dayOf(j) && Date.now() - Date.parse(dayOf(j) + 'T00:00:00+02:00') > 3 * 864e5;
+const short = (s) => String(s || '').replace(/^(TM|AR) /, '').slice(0, 40);
+const same = (a, b) => Math.round(Number(a) * 100) === Math.round(Number(b) * 100);
 
 async function run() {
-  const doc = Object.assign({ done: {}, log: [] }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
+  // a read that fails throws: nothing is applied and nothing overwritten this hour (a doc read as empty would apply
+  // every job again, on an account that is already as the owners want it)
+  const doc = Object.assign({ done: {}, log: [] }, (await readJSON(KEY, {})) || {});
   const todo = JOBS.filter((j) => !doc.done[j.id]);
   if (!todo.length) return { skipped: 'nothing' };
-  const conn = await loadConnection(readJSON);
-  if (!conn.userToken || !conn.adAccountId) return { skipped: 'not_connected' };
-  const day = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(t));
-  // the campaigns that spent this week (the running ones and those paused a moment ago)
-  const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
-  if (days.error) return { error: days.error };
-  const camps = new Map();
-  days.rows.forEach((d) => { if (d.spend > 0) camps.set(d.campaignId, d.campaignName); });
-  const ids = await ownerIds();
-  const out = [];
-  // a list of decided changes: a campaign switched off, or its budget times a factor (at least 10 lei, at most 150)
-  for (const j of todo.filter((x) => x.actions)) {
-    let failed = 0;
-    for (const a of j.actions) {
-      if (doc.log.some((e) => e.job === j.id && e.campaignId === a.campaignId && (e.status || 'budget') === (a.status || 'budget'))) continue; // a budget and a switch on the same campaign are two
-      let r, rec;
-      if (a.status) { r = await ads.act(conn, { action: 'status', id: a.campaignId, status: a.status }); rec = { status: a.status }; if (!r.error) await AC.switched(a.campaignId, a.status).catch(() => {}); }
-      else {
-        const b = await ads.budgetOf(conn, a.campaignId);
-        if (b.error) { failed++; console.error('ads-once:', a.campaignId, b.error); continue; }
-        const to = Math.max(10, Math.min(150, a.daily || Math.round(b.daily * a.factor)));
-        r = await ads.act(conn, { action: 'budget', id: b.id, daily: to }); rec = { budgetId: b.id, from: b.daily, to };
-      }
-      if (r.error) { failed++; console.error('ads-once:', a.campaignId, r.error); continue; }
-      doc.log.push(Object.assign({ job: j.id, at: new Date().toISOString(), campaignId: a.campaignId, campaignName: a.name, why: a.why }, rec));
-      out.push(a.campaignId);
-    }
-    if (!failed) doc.done[j.id] = new Date().toISOString();
-  }
-  for (const j of todo.filter((x) => !x.actions)) {
-    const did = new Set(doc.log.filter((e) => e.job === j.id).map((e) => e.campaignId));
-    let failed = 0;
-    for (const [id, name] of camps) {
-      if (did.has(id) || !j.city.test(name) || !j.match.test(name)) continue;
-      const b = await ads.budgetOf(conn, id);
-      if (b.error || !(b.daily > 0) || b.daily >= j.cap) continue;
-      const to = Math.min(j.cap, Math.round(b.daily * j.factor));
-      if (to <= b.daily) continue;
-      const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
-      if (r.error) { failed++; console.error('ads-once:', id, r.error); continue; }
-      doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: id, campaignName: name, budgetId: b.id, from: b.daily, to });
-      out.push(name + ' ' + b.daily + ' → ' + to);
-      await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', go: 'reclame', tone: 'good', tag: 'once-' + j.id + '-' + id,
-        title: '📈 Buget mărit: ' + String(name).slice(0, 50) + ' ' + b.daily + ' → ' + to + ' lei/zi', text: j.why + '.' });
-    }
-    if (!failed) doc.done[j.id] = new Date().toISOString(); // a refused one is tried again on the next tick
-  }
+  // one run at a time: two clocks landing together (GitHub's late run and Vercel's cron) would apply a job twice
+  if (doc.running && Date.now() - Date.parse(doc.running) < 5 * 60e3) return { skipped: 'running' };
+  doc.running = new Date().toISOString();
   await writeJSON(KEY, doc, { quiet: true });
-  if (out.length) await AC.clear().catch(() => {});
-  return { changed: out.length };
+  const save = () => writeJSON(KEY, doc, { quiet: true });
+  const out = [], problems = [];
+  try {
+    const conn = await loadConnection(readJSON);
+    if (!conn.userToken || !conn.adAccountId) return { skipped: 'not_connected' };
+    const ids = await ownerIds({ readJSON });
+    // a word to the owner, each tag once a day (a refusal that lasts isn't repeated every hour)
+    const tell = async (n) => {
+      doc.told = doc.told || {};
+      if (doc.told[n.tag] === day(Date.now())) return;
+      doc.told[n.tag] = day(Date.now());
+      await save();
+      return notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', go: 'reclame' }, n)).catch((e) => console.error('ads-once tell:', e.message));
+    };
+    const logged = (j, a) => doc.log.some((e) => e.job === j.id && e.campaignId === a.campaignId && (e.status || 'budget') === (a.status || 'budget')); // a budget and a switch on the same campaign are two
+    // a list of decided changes: a campaign switched on / off, or its budget (a number, or times a factor; 10 to 150 lei).
+    // Every change is written down the moment Meta confirms it (a run cut short never repeats it); one already in
+    // place is written down as such (not shown as a change); a refused one is told once, and tried again next hour
+    for (const j of todo.filter((x) => x.actions)) {
+      const failed = [];
+      for (const a of j.actions) {
+        if (logged(j, a)) continue;
+        const base = { job: j.id, at: new Date().toISOString(), campaignId: a.campaignId, campaignName: a.name, why: a.why };
+        if (a.status) {
+          const r = await ads.act(conn, { action: 'status', id: a.campaignId, status: a.status });
+          if (r.error) { failed.push(short(a.name) + ': ' + r.error); console.error('ads-once:', a.campaignId, r.error); continue; }
+          await AC.switched(a.campaignId, a.status).catch(() => {});
+          doc.log.push(Object.assign(base, { status: a.status }));
+          out.push(a.campaignId);
+        } else {
+          const b = await ads.budgetOf(conn, a.campaignId);
+          if (b.error) { failed.push(short(a.name) + ': ' + b.error); console.error('ads-once:', a.campaignId, b.error); continue; }
+          const to = Math.max(10, Math.min(150, a.daily || Math.round(b.daily * a.factor)));
+          if (same(b.daily, to)) { doc.log.push(Object.assign(base, { budgetId: b.id, from: b.daily, to, unchanged: true })); await save(); continue; }
+          const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
+          if (r.error) { failed.push(short(a.name) + ': ' + r.error); console.error('ads-once:', a.campaignId, r.error); continue; }
+          doc.log.push(Object.assign(base, { budgetId: b.id, from: b.daily, to }));
+          out.push(a.campaignId);
+        }
+        await save();
+      }
+      if (!failed.length) {
+        doc.done[j.id] = new Date().toISOString();
+        await save();
+        // one word when the whole list is done: what changed (a job that found everything already in place says nothing)
+        const did = doc.log.filter((e) => e.job === j.id && !e.unchanged);
+        if (did.length) await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + (j.why || 'ce ați cerut'),
+          text: did.map((e) => short(e.campaignName) + ': ' + (e.status ? (e.status === 'ACTIVE' ? 'pornită' : 'oprită') : e.to + ' lei/zi')).join(' · ') });
+      } else if (expired(j)) {
+        doc.done[j.id] = new Date().toISOString();
+        doc.log.push({ job: j.id, at: new Date().toISOString(), expired: true, why: failed.join(' · ') });
+        await save();
+        await tell({ tone: 'bad', tag: 'once-expired-' + j.id, title: 'NEFĂCUT ⚠️ - ' + (j.why || 'ce ați cerut'), text: 'Meta a refuzat 3 zile la rând, renunț: ' + failed.join(' · ') });
+      } else {
+        problems.push(...failed);
+        await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + (j.why || 'ce ați cerut'), text: 'Meta a refuzat, mai încerc din oră în oră: ' + failed.join(' · ') });
+      }
+    }
+    // a rule over the campaigns that spent this week (the running ones and those paused a moment ago): its budget times a
+    // factor, up to a cap
+    const rules = todo.filter((x) => !x.actions);
+    if (rules.length) {
+      const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
+      if (days.error) return { changed: out.length, error: days.error };
+      const camps = new Map();
+      days.rows.forEach((d) => { if (d.spend > 0) camps.set(d.campaignId, d.campaignName); });
+      for (const j of rules) {
+        const did = new Set(doc.log.filter((e) => e.job === j.id).map((e) => e.campaignId));
+        let failed = 0;
+        for (const [id, name] of camps) {
+          if (did.has(id) || !j.city.test(name) || !j.match.test(name)) continue;
+          const b = await ads.budgetOf(conn, id);
+          if (b.error || !(b.daily > 0) || b.daily >= j.cap) continue;
+          const to = Math.min(j.cap, Math.round(b.daily * j.factor));
+          if (to <= b.daily) continue;
+          const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
+          if (r.error) { failed++; console.error('ads-once:', id, r.error); continue; }
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: id, campaignName: name, budgetId: b.id, from: b.daily, to, why: j.why });
+          await save();
+          out.push(name + ' ' + b.daily + ' → ' + to);
+          await tell({ tone: 'good', tag: 'once-' + j.id + '-' + id, title: 'BUGET MĂRIT 📈 - ' + String(name).slice(0, 50), text: b.daily + ' → ' + to + ' lei/zi. ' + j.why + '.' });
+        }
+        if (!failed || expired(j)) { doc.done[j.id] = new Date().toISOString(); await save(); } // a refused one is tried again on the next tick
+      }
+    }
+    return { changed: out.length, failed: problems.length || undefined };
+  } finally {
+    doc.running = null;
+    await save().catch((e) => console.error('ads-once save:', e.message));
+    if (out.length) await AC.clear().catch(() => {});
+  }
 }
 
-module.exports = { run };
+module.exports = { run, JOBS };

@@ -47,8 +47,11 @@ async function withFunnel(view, period, range, conn) {
   const r0 = periodRange(period, range) || { since: first, until: today };
   const days = { since: r0.since < first ? first : r0.since, until: r0.until };
   const perAd = new Map(), perSet = new Map(), perCamp = new Map();
+  let known = false;
   if (days.since <= days.until && conn) {
     const st = await KPI.adsFor(conn, days);
+    known = !!st.rows; // Meta refused it: the costs after the form use the period's spend and the page says so
+    if (!known) view.spendNote = 'Meta n-a dat acum cheltuiala de pe 16 oct încoace: costurile de după formular sunt pe cheltuiala perioadei.';
     (st.rows || []).forEach((x) => {
       perAd.set(x.adId, (perAd.get(x.adId) || 0) + x.spend);
       if (x.adsetId) perSet.set(x.adsetId, (perSet.get(x.adsetId) || 0) + x.spend);
@@ -56,7 +59,8 @@ async function withFunnel(view, period, range, conn) {
     });
   }
   const r2 = (n) => Math.round(n * 100) / 100;
-  view.campaigns.forEach((c) => { c.spendNew = r2(perCamp.get(c.id) || 0); c.adsets.forEach((s) => { s.spendNew = r2(perSet.get(s.id) || 0); s.ads.forEach((a) => { a.spendNew = r2(perAd.get(a.id) || 0); }); }); });
+  const sn = (m, id) => (known ? r2(m.get(id) || 0) : null);
+  view.campaigns.forEach((c) => { c.spendNew = sn(perCamp, c.id); c.adsets.forEach((s) => { s.spendNew = sn(perSet, s.id); s.ads.forEach((a) => { a.spendNew = sn(perAd, a.id); }); }); });
   view.since = new Date(START).toISOString();
   return view;
 }
@@ -76,19 +80,36 @@ function standing(log, view) {
   const seen = new Set();
   return log.filter((e) => {
     const c = camps.get(e.campaignId);
-    if (!c) return false;
+    if (!c || e.unchanged || e.expired) return false;
     const switched = e.type === 'stop' || e.type === 'start';
     const k = e.campaignId + '|' + (switched ? (e.job ? 'camp' : 'ad' + e.adId) : 'budget');
     if (seen.has(k)) return false; // an older one, overtaken
     seen.add(k);
+    e.campaignName = c.name; // as it is called now (a job's list names it as it was)
     if (switched) {
-      const on = e.job ? c.status === 'ACTIVE' : !!(ads.get(e.adId) && ads.get(e.adId).status === 'ACTIVE' && c.status === 'ACTIVE');
-      return e.type === 'stop' && !on; // switched on and still on: nothing to tell
+      // a whole campaign off (asked for, or its last ad stopped by the guard), or one ad of a campaign that goes on
+      const whole = !!e.job || !!e.campaignOff;
+      if (whole) return e.type === 'stop' && c.status !== 'ACTIVE';
+      const a = ads.get(e.adId);
+      if (!a) return false; // the ad is gone (deleted, or out of the list)
+      e.adOnly = true; e.adName = a.name;
+      return e.type === 'stop' && a.status !== 'ACTIVE' && c.status === 'ACTIVE';
     }
-    if (c.status !== 'ACTIVE') return false;
+    if (c.status !== 'ACTIVE' || Number(e.from) === Number(e.to)) return false;
     const now = e.budgetId && sets.get(e.budgetId) ? sets.get(e.budgetId).daily : c.daily;
     return Math.abs((Number(now) || 0) - Number(e.to)) < 0.5;
   });
+}
+// what the page says on top of the list: the account not delivering, the guard silent for too long
+const ACCOUNT_WHY = { 2: 'Contul de reclame e dezactivat de Meta: nimic nu rulează.', 3: 'Plata contului de reclame n-a trecut: Meta a oprit livrarea. De rezolvat în Ads Manager.', 7: 'Contul de reclame e în verificare la Meta.', 9: 'Contul de reclame e în perioadă de grație la plată.', 100: 'Contul de reclame se închide.', 101: 'Contul de reclame e închis.' };
+function notices(view, g) {
+  const out = [];
+  const st = view.account && view.account.status;
+  if (st != null && st !== 1) out.push({ tone: 'bad', text: ACCOUNT_WHY[st] || 'Meta a oprit livrarea contului de reclame (stare ' + st + ').' });
+  if (g && g.on === false) out.push({ tone: 'warn', text: 'Garda reclamelor e oprită: nimic nu se oprește sau se mărește singur.' });
+  else if (g && g.lastOk && Date.now() - g.lastOk > guard.DEAD_H * 3600e3) out.push({ tone: 'warn', text: 'Garda n-a mai verificat reclamele de ' + Math.round((Date.now() - g.lastOk) / 3600e3) + ' ore' + (g.lastError && g.lastError.why ? ': ' + g.lastError.why : '') + '.' });
+  if (view.spendNote) out.push({ tone: 'warn', text: view.spendNote });
+  return out;
 }
 const renameLeads = (x) => { if (!x) return {}; const o = Object.assign({}, x); o.pLeads = o.leads; delete o.leads; return o; };
 // the pipeline's first stages, if none were ever saved (same as api/portal-leads.js)
@@ -109,7 +130,7 @@ function dayRange(qs) {
   const ok = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !isNaN(Date.parse(s + 'T00:00:00Z'));
   if (!ok(qs.since) || !ok(qs.until)) return null;
   let [since, until] = [String(qs.since), String(qs.until)].sort();
-  const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+  const today = bucharestDay(Date.now());
   if (until > today) until = today;
   if (since > until) since = until;
   return { since, until };
@@ -151,7 +172,8 @@ module.exports = async (req, res) => {
         AC.cached('ov-' + (range ? range.since + '_' + range.until : period) + '-' + today, past ? 20 * 60e3 : 3 * 60e3, async () => {
           const recent = await AC.cached('recent-campaigns', 30 * 60e3, () => ads.recentCampaigns(conn), { keep: true });
           if (recent.error) return { error: recent.error };
-          return ads.overview(conn, period, range, recent.ids);
+          const noted = await guard.recent().then((g) => g.log.map((e) => e.campaignId)).catch(() => []);
+          return ads.overview(conn, period, range, (recent.ids || []).concat(noted));
         }),
         AC.cached('token', 10 * 60e3, () => ads.tokenInfo(conn.userToken, creds)),
       ]);
@@ -171,9 +193,9 @@ module.exports = async (req, res) => {
       adNotes(view, stopped && stopped.verdicts, stopped && stopped.verdictsAt);
       // the one-off changes asked for (api/_lib/ads-once.js) show with the guard's, under their campaign
       const once = (await readJSON('data/ads-once.json', {}).catch(() => ({}))) || {};
-      if (stopped) stopped.log = standing((once.log || []).filter((e) => Date.parse(e.at) > Date.now() - 3 * 864e5)
+      if (stopped) stopped.log = standing((once.log || []).filter((e) => e.campaignId && Date.parse(e.at) > Date.now() - 3 * 864e5)
         .map((e) => Object.assign({ type: e.status ? (e.status === 'ACTIVE' ? 'start' : 'stop') : e.to < e.from ? 'down' : 'up', trim: !e.status && e.to < e.from, why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1)), view);
-      res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped }, view));
+      res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped, notices: notices(view, stopped) }, view));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -186,8 +208,8 @@ module.exports = async (req, res) => {
     }
     if (problem) { res.status(400).json({ error: problem, message: REASONS[problem] }); return; }
     // Previzualizare / Editează a running campaign
-    // a change from here: the next reading comes from Meta
-    if (body.action !== 'details' && body.action !== 'active_ads' && body.action !== 'creative_of' && body.action !== 'guard_run') await AC.clear().catch(() => {});
+    // a change from here: the next reading comes from Meta (thrown away once the change is made, below)
+    const changes = !['details', 'active_ads', 'creative_of', 'guard_run'].includes(body.action);
     // the guard now, not at its next turn (dry: only what would go off)
     if (body.action === 'guard_run') {
       const at = body.dry && Number(body.at) > 0 ? Number(body.at) : undefined;
@@ -215,12 +237,14 @@ module.exports = async (req, res) => {
     if (body.action === 'edit_ad' || body.action === 'edit_adset') {
       const r = body.action === 'edit_ad' ? await edit.editAd(conn, body) : await edit.editAdset(conn, body);
       if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      if (changes) await AC.clear().catch(() => {});
       res.status(200).json(r);
       return;
     }
     const r = await ads.act(conn, body);
     if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
     if (body.action === 'status') await AC.switched(String(body.id), body.status);
+    if (changes) await AC.clear().catch(() => {});
     res.status(200).json({ ok: true });
   } catch (err) {
     console.error('ads-manager error:', err.message);
@@ -232,3 +256,6 @@ module.exports.config = { maxDuration: 60 };
 // for Creative's results (api/ads-publish.js ?action=results)
 module.exports.withFunnel = withFunnel;
 module.exports.connection = connection;
+// (api/_lib tests)
+module.exports.standing = standing;
+module.exports.notices = notices;

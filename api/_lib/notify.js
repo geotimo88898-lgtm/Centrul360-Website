@@ -24,7 +24,18 @@ async function adminIds(store) {
   const employees = await store.readJSON('data/employees.json', []);
   return ['admin'].concat(employees.filter((e) => e.active !== false && e.role === 'admin').map((e) => e.id));
 }
+// who hears about the ads (the guard, the one-off changes, the job ads): the admin account named George (the owner,
+// 20.10: "doar mie, contului de admin numit george"), by username or by name; none found: the shared 'admin' login,
+// said once in the log
+async function ownerIds(store) {
+  const emps = await store.readJSON('data/employees.json', []);
+  const g = (emps || []).filter((e) => e.active !== false && e.role === 'admin' && (/^george$/i.test(String(e.username || '').trim()) || /^george(\s|$)/i.test(String(e.name || '').trim())));
+  if (!g.length) console.warn('notify.ownerIds: no active admin named George, the ads alerts go to the admin login');
+  return g.length ? g.map((e) => e.id) : ['admin'];
+}
 const isOwner = (session) => !!session && (session.employeeId === 'admin' || session.role === 'admin');
+// a text that must fit: cut at a word, with a mark that there was more (a number cut in two would read as another number)
+const cut = (s, n) => { if (s.length <= n) return s; const t = s.slice(0, n - 1); const i = t.lastIndexOf(' '); return (i > n * 0.6 ? t.slice(0, i) : t).replace(/[\s,;:·.-]+$/, '') + '…'; };
 const leiTxt = (n) => (Math.round(Number(n) * 100) / 100).toLocaleString('ro-RO') + ' lei';
 // a clinic, short, for the titles (ÎNCASARE TM, like LEAD NOU TM): ' TM' / ' AR', or nothing
 const cityTag = (c) => (/arad/i.test(String(c || '')) ? ' AR' : /timi/i.test(String(c || '')) ? ' TM' : '');
@@ -54,7 +65,7 @@ async function claim(store, ref, remove) {
 async function notifyMany(store, employeeIds, n) {
   let ids = [...new Set(employeeIds)].filter((id) => wants(id, n));
   if (!ids.length) return 0;
-  const title = dedash(String(n.title || '')).slice(0, 80), text = dedash(String(n.text || '')).slice(0, 160);
+  const title = cut(dedash(String(n.title || '')), 80), text = cut(dedash(String(n.text || '')), 160);
   try {
     const list = await store.readJSON(KEY, []);
     const at = new Date().toISOString();
@@ -81,4 +92,4 @@ const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);
 
 const mine = async (store, employeeId) => (await store.readJSON(KEY, [])).filter((x) => x.employeeId === employeeId).slice(-40).reverse();
 
-module.exports = { notify, notifyMany, mine, KEY, adminIds, isOwner, leiTxt, cityTag, payRef, claim };
+module.exports = { notify, notifyMany, mine, KEY, adminIds, ownerIds, isOwner, leiTxt, cityTag, payRef, claim, cut };

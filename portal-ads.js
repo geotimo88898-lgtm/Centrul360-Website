@@ -67,11 +67,15 @@
       const [d] = await Promise.all([K.api('/api/ads-manager?' + qs), K.prefs.load()]);
       A.cache.set(qs, { d, at: Date.now() });
       if (seq !== A.seq) return; // a newer pick is on screen: this one is only kept for later
-      A.at = Date.now();
+      A.at = Date.now(); A.staleSince = 0;
       show(d, body);
       prefetch();
     }
-    catch (e) { if (seq === A.seq && !kept) body.innerHTML = K.empty('alert', 'Nu am putut încărca reclamele', K.errText(e), '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>'); }
+    catch (e) {
+      if (seq !== A.seq) return;
+      if (!kept && !A.d) body.innerHTML = K.empty('alert', 'Nu am putut încărca reclamele', esc(K.errText(e)), '<button type="button" class="k-btn is-primary" data-act="reload">Reîncearcă</button>');
+      else if (A.d) { A.staleSince = A.staleSince || A.at || Date.now(); paintNotes(); } // the old numbers stay, marked as old
+    }
     finally { if (seq === A.seq) { A.loading = false; body.classList.remove('is-loading'); } }
   }
   function show(d, body) {
@@ -104,7 +108,20 @@
     if (a) a.textContent = A.d.campaigns.filter((c) => c.status === 'ACTIVE').length;
     if (b) b.textContent = A.d.campaigns.length;
   }
-  function paintAll() { paintChips(); paintStats(); paintList(); }
+  // what the page says on top of the list, true at this reading: the account not delivering, the guard silent, Meta
+  // limiting, the costs on a fallback, and the changes of the last 3 days that still hold (api/ads-manager.js)
+  function paintNotes() {
+    const box = panel.querySelector('[data-notes]'), d = A.d;
+    if (!box || !d) return;
+    const line = (tone, html) => '<p class="k-muted ad-partial' + (tone ? ' is-' + tone : '') + '">' + html + '</p>';
+    const stale = d.stale || A.staleSince;
+    box.innerHTML = (d.notices || []).map((n) => line(n.tone, esc(n.text))).join('') +
+      (d.partial ? line('', esc(d.partial)) : '') +
+      (stale ? line('warn', (d.stale ? 'Meta limitează acum citirile contului: ' : 'Nu am putut reîmprospăta: ') + 'cifrele sunt de la ' + esc(new Date(stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.') : '') +
+      (d.guard && d.guard.log && d.guard.log.length ? line('', 'Schimbări: ' + d.guard.log.slice(0, 6).map((e) => (e.type === 'up' ? '📈 ' : e.trim ? '✂️ ' : e.type === 'down' ? '📉 ' : '⛔ ') + '<b>' + esc(e.adOnly ? e.adName + ' (' + e.campaignName + ')' : e.campaignName || e.adName) + '</b> ' +
+        (e.type === 'stop' ? '(' + esc(e.why || (money(e.spend) + ', ' + (e.leads ? K.plural(e.leads, 'lead', 'leaduri') : 'niciun lead'))) + ')' : esc(e.from + ' → ' + e.to + ' lei/zi'))).join(' · ')) : '');
+  }
+  function paintAll() { paintChips(); paintStats(); paintNotes(); paintList(); }
   // the other periods load quietly, one after another, so Azi / Ieri / 30 zile show at once
   let prefetching = false;
   async function prefetch() {
@@ -237,16 +254,13 @@
         '<button type="button" class="k-icon-btn ad-refresh' + (A.spin ? ' is-spinning' : '') + '" data-act="refresh" title="Actualizează" aria-label="Actualizează">' + icon('refresh') + '</button>' +
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div data-stats></div>' +
-      (d.partial ? '<p class="k-muted ad-partial">' + esc(d.partial) + '</p>' : '') +
-      (d.stale ? '<p class="k-muted ad-partial">Meta limitează acum citirile contului: cifrele sunt de la ' + esc(new Date(d.stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.</p>' : '') +
-      // what was changed in the last 3 days and is still so (api/ads-manager.js standing())
-      (d.guard && d.guard.log && d.guard.log.length ? '<p class="k-muted ad-partial">Schimbări: ' + d.guard.log.slice(0, 6).map((e) => (e.type === 'up' ? '📈 ' : e.type === 'start' ? '▶️ ' : e.trim ? '✂️ ' : e.type === 'down' ? '📉 ' : '⛔ ') + '<b>' + esc(e.campaignName || e.adName) + '</b> ' +
-        (e.type === 'stop' || e.type === 'start' ? '(' + esc(e.why || (money(e.spend) + ', ' + (e.leads ? K.plural(e.leads, 'lead', 'leaduri') : 'niciun lead'))) + ')' : esc(e.from + ' → ' + e.to + ' lei/zi'))).join(' · ') + '</p>' : '') +
+      '<div data-notes></div>' +
       '<div class="ad-scroll"><div class="ad-table" style="--ad-cols:minmax(300px,1.6fr) repeat(' + C.length + ',minmax(116px,1fr)) 84px;--ad-minw:' + minw + 'px">' +
         '<div class="ad-head-row"><span class="ad-head-name"><label class="ad-pick" title="Selectează toate campaniile afișate"><input type="checkbox" data-pick-all></label>Campanie</span>' +
           C.map((id) => '<span title="' + esc(M[id].hint || '') + '">' + esc(M[id].label) + '</span>').join('') + '<span></span></div>' +
         '<div class="ad-list" data-list></div></div></div>';
     A.drawn = qsOf();
+    paintNotes();
     dockPeriod();
     paintStats();
     paintList();
@@ -268,10 +282,12 @@
       (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
       '<div class="ad-hero">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
       '<div class="ad-stats">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id)).join('') + '</div>' +
-      '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' +
+      (reachesBack() ? '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' : '') +
       (un ? '<p class="k-muted ad-partial">' + K.plural(un, 'lead din reclame care nu mai sunt în listă nu intră', 'leaduri din reclame care nu mai sunt în listă nu intră') + ' în cifre.</p>' : '');
     syncPickAll();
   }
+  // the period starts before the portal's own data (16.10.2026): the after-form numbers cover only part of it
+  const reachesBack = () => (A.range ? A.range.since < '2026-10-16' : A.period === '30d' || A.period === 'max');
   // the "all" box in the header: on when every shown campaign is picked, half when some are
   function syncPickAll() {
     const all = panel.querySelector('[data-pick-all]');
@@ -301,7 +317,7 @@
     const now = [...box.children];
     if (list.length && now.length === list.length && list.every((c, i) => now[i].dataset && now[i].dataset.camp === c.id)) {
       list.forEach((c, i) => {
-        if (now[i]._h === html[i]) return;
+        if (now[i]._h === html[i] || now[i].querySelector('[data-budget-input]')) return;
         const tmp = document.createElement('div'); tmp.innerHTML = html[i];
         const card = tmp.firstElementChild; card._h = html[i]; now[i].replaceWith(card);
       });
@@ -333,18 +349,26 @@
   // a phone: the period sits at the bottom of the screen, beside "Meniu" (on <body>: the panel's animation would carry a
   // fixed bar along with the page); its changes go to the same handler
   let dock = null;
+  const phone = window.matchMedia ? window.matchMedia('(max-width:640px)') : null;
   function dockPeriod() {
+    if (!phone) return;
+    if (!phone.matches) { // a window grown past a phone's: the period goes back into the toolbar
+      const bar = panel.querySelector('.ad-bar'), seg = dock && dock.querySelector('[data-k-seg="adperiod"]');
+      if (bar && seg) bar.insertBefore(seg, bar.firstChild);
+      return;
+    }
     const seg = panel.querySelector('.ad-bar > [data-k-seg="adperiod"]');
-    if (!seg || !(window.matchMedia && window.matchMedia('(max-width:720px)').matches)) return;
+    if (!seg) return;
     if (!dock) { dock = document.createElement('div'); dock.className = 'ad-dock'; dock.addEventListener('change', onChange); document.body.appendChild(dock); }
     dock.replaceChildren(seg);
   }
+  if (phone && phone.addEventListener) phone.addEventListener('change', () => { if (panel) dockPeriod(); });
   // under a campaign: what the guard sees on it now and what was changed on it that still holds, with the why
   const NOTE = { top: ['is-good', '🚀 TOP'], bad: ['is-bad', '⚠️ ATENȚIE'], watch: ['is-warn', '👀 De urmărit'] };
   function notesHtml(c) {
     const g = (A.d.guard && A.d.guard.log || []).filter((e) => e.campaignId === c.id).map((e) => [e.type === 'up' || e.type === 'start' ? 'is-good' : 'is-bad',
-      e.type === 'up' ? '📈 Buget mărit ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'start' ? '▶️ Pornită' : e.trim ? '✂️ Buget scăzut ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'down' ? '📉 Buget înapoi ' + e.from + ' → ' + e.to + ' lei/zi' : e.job ? '⛔ Oprită' : '⛔ Oprită automat',
-      (e.type === 'stop' && e.adName && e.adName !== e.campaignName ? e.adName + ': ' : '') + (e.why || '') + ' · ' + K.ago(e.at)]);
+      e.type === 'up' ? '📈 Buget mărit ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'start' ? '▶️ Pornită' : e.trim ? '✂️ Buget scăzut ' + e.from + ' → ' + e.to + ' lei/zi' : e.type === 'down' ? '📉 Buget înapoi ' + e.from + ' → ' + e.to + ' lei/zi' : e.job ? '⛔ Oprită' : e.adOnly ? '⛔ O reclamă oprită automat' : '⛔ Oprită automat',
+      (e.type === 'stop' && e.adOnly ? '„' + e.adName + '”: ' : '') + (e.why || '') + (e.adOnly ? '. Campania merge cu celelalte reclame' : '') + ' · ' + K.ago(e.at)]);
     const n = (c.notes || []).map((x) => [NOTE[x.flag][0], NOTE[x.flag][1], (x.ad ? x.ad + ': ' : '') + x.why.join(' · ')]);
     const all = g.concat(n);
     return all.length ? '<div class="ad-flags">' + all.map(([tone, label, text]) => '<p class="ad-flag ' + tone + '"><b>' + esc(label) + '</b><span>' + esc(text) + '</span></p>').join('') + '</div>' : '';
@@ -438,9 +462,10 @@
     const inp = box.querySelector('input'); inp.focus(); inp.select();
   }
   async function saveBudget(box) {
+    const btn = box.querySelector('[data-budget-save]');
+    if (!btn || btn.disabled) return; // already on its way
     const v = Number(box.querySelector('input').value);
     if (!(v >= 5)) { K.ui().toast('Bugetul minim e 5 lei pe zi.', 'error'); return; }
-    const btn = box.querySelector('[data-budget-save]');
     await K.busy(btn, async () => {
       try {
         await post({ action: 'budget', id: box.dataset.id, daily: v });
@@ -547,7 +572,7 @@
           : '<div class="ad-pv-noimg">' + icon(a.video ? 'play' : 'image') + '<span>' + (a.video ? 'Reclamă video: o vezi în Ads Manager.' : 'Fără imagine') + '</span></div>') + '</div>' +
         '<div class="ad-pv-texts">' + variants('Text principal', a.texts) + variants('Titlu', a.headlines) + variants('Descriere', a.descriptions) +
           '<div class="ad-pv-meta"><span><small>Buton</small><b>' + esc(CTA_RO[a.cta] || a.cta || '-') + '</b></span><span><small>Formular</small><b>' + esc(form ? form.name : a.formId || '-') + '</b></span>' +
-          '<span><small>Stare</small><b>' + (a.status === 'ACTIVE' ? 'Pornită' : 'Oprită') + '</b></span></div></div>';
+          '<span><small>Stare</small><b>' + (a.status !== 'ACTIVE' ? 'Oprită' : c && c.status !== 'ACTIVE' ? 'Oprită (campania e oprită)' : 'Pornită') + '</b></span></div></div>';
     };
     const dr = K.drawer({
       title: c ? c.name : 'Previzualizare', icon: 'eye', width: 560, subtitle: 'Ce văd clientele: imaginea, textele, titlurile. Fiecare se copiază separat.',
@@ -562,7 +587,7 @@
           if (e.target.closest('[data-pv-edit]')) { dr.close(); setTimeout(() => openEdit(campaignId, d, at), 220); }
         });
         Promise.all([details(campaignId), forms()]).then(([x, f]) => { d = x; list = f; paint(el); })
-          .catch((err) => { el.querySelector('[data-pv]').innerHTML = K.empty('alert', 'Nu am putut citi reclama', err.data && err.data.message ? err.data.message : K.errText(err)); });
+          .catch((err) => { el.querySelector('[data-pv]').innerHTML = K.empty('alert', 'Nu am putut citi reclama', esc(err.data && err.data.message ? err.data.message : K.errText(err))); });
       },
     });
   }
@@ -668,7 +693,7 @@
           } catch (err) { K.ui().toast(err.data && err.data.message ? err.data.message : err.message || K.errText(err), 'error'); }
         }));
         Promise.all([d ? Promise.resolve(d) : details(campaignId), forms()]).then(([x, f]) => { d = x; list = f; paint(el); })
-          .catch((err) => { el.querySelector('[data-ed]').innerHTML = K.empty('alert', 'Nu am putut citi reclama', err.data && err.data.message ? err.data.message : K.errText(err)); });
+          .catch((err) => { el.querySelector('[data-ed]').innerHTML = K.empty('alert', 'Nu am putut citi reclama', esc(err.data && err.data.message ? err.data.message : K.errText(err))); });
       },
     });
   }

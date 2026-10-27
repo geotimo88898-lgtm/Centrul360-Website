@@ -9,6 +9,9 @@ const { requireAuth } = require('./_lib/auth');
 const { tick } = require('./_lib/workflows');
 const { pollLeads } = require('./_lib/fb-leads');
 
+const ADS_EVERY = 10 * 60e3;
+let lastAds = 0;
+
 // Vercel keeps the function alive for work after the answer (its request context's waitUntil)
 function waitUntil() {
   try {
@@ -27,7 +30,11 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   // Open portals are the automations' clock (due steps: reminders, waits) and the clock for reading new leads from
   // the Facebook forms (at most once a minute). That runs after the answer, so the revision comes back at once.
-  const chores = () => tick().catch(() => 0).then(() => pollLeads()).catch(() => 0);
+  // The ads' guard and the owners' one-off changes ride along too (api/automation-tick.js runs them hourly; a clock
+  // that skips an hour costs nothing while a portal is open): looked at by this instance at most every 10 minutes, and
+  // each keeps its own claim (the guard's 30 minutes, the changes' done list), so nothing runs twice.
+  const adsToo = Date.now() - lastAds > ADS_EVERY ? (lastAds = Date.now(), () => require('./_lib/ads-guard').guard().catch(() => 0).then(() => require('./_lib/ads-once').run()).catch(() => 0)) : () => Promise.resolve();
+  const chores = () => tick().catch(() => 0).then(() => pollLeads()).catch(() => 0).then(adsToo);
   const wu = waitUntil();
   if (wu) wu(chores());
   else await chores();

@@ -220,7 +220,7 @@
     const fresh = list.filter((n) => String(n.at) > since).sort((a, b) => (a.at < b.at ? -1 : 1));
     if (!fresh.length) return;
     since = newest;
-    fresh.slice(-3).forEach((n) => K.ui().toast(n.title + (n.text ? ' · ' + n.text : ''), 'success'));
+    fresh.slice(-3).forEach((n) => K.ui().toast(n.title + (n.text ? ' · ' + n.text : ''), n.tone === 'bad' ? 'error' : n.tone === 'good' ? 'success' : 'info'));
     // portal open in a background tab, no phone notifications on this device: the browser shows it
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
       const st = await pushState();

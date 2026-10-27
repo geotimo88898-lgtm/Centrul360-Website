@@ -127,6 +127,13 @@ async function accountInfo(conn) {
   };
 }
 
+// whether the account delivers at all (1 = active; 2 disabled, 3 unsettled, 7 in review, 9 grace period, 100 / 101 closing)
+async function accountStatus(conn) {
+  const r = await call('GET', '/' + conn.adAccountId, conn.userToken, { fields: 'account_status' });
+  if (!r.ok) return { error: metaError(r.j, 'Contul de reclame') };
+  return { status: r.j.account_status === undefined ? 1 : Number(r.j.account_status) };
+}
+
 // The ad sets an ad can join (not deleted), newest first, with their campaign.
 async function listAdsets(conn) {
   const r = await all('/' + conn.adAccountId + '/adsets', conn.userToken, {
@@ -358,7 +365,8 @@ async function overview(conn, period, range, recentIds) {
   ]);
   // the ad sets or the ads refused (often Meta's "too many calls"): no half picture (campaigns without their ads) that
   // could be kept as if whole; the last whole one is shown instead (ads-cache.js)
-  if (sets.error || ads.error) return { error: sets.error || ads.error };
+  // (the same for the ad sets' or the ads' numbers: zeros under real campaign numbers would read as real)
+  if (sets.error || ads.error || iS.error || iA.error) return { error: sets.error || ads.error || iS.error || iA.error };
   const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], {
     spend: Number(r.spend) || 0, leads: leadsOf(r), impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
     clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0,
@@ -396,7 +404,7 @@ async function overview(conn, period, range, recentIds) {
   const totals = campaigns.reduce((t, c) => ({ spend: t.spend + c.spend, leads: t.leads + c.leads }), { spend: 0, leads: 0 });
   return {
     ok: true, period: range ? 'custom' : period, range: range || null, account: { id: act, name: (acc.ok && acc.j.name) || conn.adAccountName || act, currency: (acc.ok && acc.j.currency) || 'RON', status: acc.ok ? acc.j.account_status : null },
-    totals, campaigns, partial: [iS, iA].some((x) => x.error) ? 'Rezultatele n-au venit toate de la Meta.' : '',
+    totals, campaigns, partial: [iC, iS, iA, sets, ads].some((x) => x.truncated) ? 'Lista e lungă: Meta n-a dat tot, unele cifre pot lipsi.' : '',
   };
 }
 
@@ -453,6 +461,7 @@ async function adStats(conn, range) {
     all(act + '/insights', tok, Object.assign({ level: 'account', fields: 'spend', time_increment: '1', limit: '120' }, when), 2),
   ]);
   if (ins.error) return { error: ins.error };
+  if (ads.error) return { error: ads.error }; // without the list, a running ad would read as stopped
   const meta = new Map((ads.data || []).map((a) => [String(a.id), a]));
   return {
     rows: ins.data.map((x) => {
@@ -503,9 +512,13 @@ async function budgetOf(conn, campaignId) {
   if ('act_' + r.j.account_id !== conn.adAccountId) return { error: 'Nu e în contul de reclame conectat.' };
   if (Number(r.j.daily_budget) > 0) return { id: String(campaignId), level: 'campaign', daily: Number(r.j.daily_budget) / 100 };
   if (Number(r.j.lifetime_budget) > 0) return { error: 'buget pe toată durata' };
-  const on = ((r.j.adsets && r.j.adsets.data) || []).filter((s) => s.effective_status === 'ACTIVE');
-  if (on.length === 1 && Number(on[0].daily_budget) > 0) return { id: String(on[0].id), level: 'adset', daily: Number(on[0].daily_budget) / 100 };
-  return { error: 'mai multe seturi' };
+  const sets = ((r.j.adsets && r.j.adsets.data) || []).filter((s) => !['DELETED', 'ARCHIVED'].includes(s.effective_status));
+  const on = sets.filter((s) => RUNNING.includes(s.effective_status));
+  // the running one; a paused campaign (nothing runs) with one ad set: that one, so a budget can be set before it goes on
+  const pool = on.length ? on : sets;
+  if (pool.length === 1 && Number(pool[0].daily_budget) > 0) return { id: String(pool[0].id), level: 'adset', daily: Number(pool[0].daily_budget) / 100, off: !on.length };
+  if (pool.length === 1 && Number(pool[0].lifetime_budget) > 0) return { error: 'setul are buget pe toată durata' };
+  return { error: pool.length > 1 ? 'mai multe seturi pornite' : pool.length ? 'setul n-are buget zilnic' : 'niciun set' };
 }
 // a campaign's ads still running (or about to: in review)
 async function runningAdsOf(conn, campaignId) {
@@ -527,4 +540,4 @@ async function delivery(conn, id) {
   const r = await call('GET', '/' + id, conn.userToken, { fields: 'effective_status,adsets{effective_status,daily_budget,learning_stage_info,start_time,promoted_object,targeting{age_min,age_max,genders,geo_locations}},ads{effective_status,issues_info,ad_review_feedback}' });
   return r.ok ? r.j : { error: metaError(r.j) };
 }
-module.exports = { delivery, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
+module.exports = { delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };

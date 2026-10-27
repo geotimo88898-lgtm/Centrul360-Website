@@ -3,12 +3,33 @@
 // and can be pinged by any external scheduler. With CRON_SECRET set in Vercel, only requests that
 // carry it (Vercel's own cron sends it automatically) are accepted.
 // The GitHub clock (.github/workflows/automations-clock.yml) calls it once an hour with ?light=1: the due steps and
-// the new Facebook leads, without the myPOS reading (that stays with the daily cron and the webhook).
+// the new Facebook leads, without the myPOS reading (that stays with the daily cron and the webhook). Every open
+// portal's heartbeat (api/portal-pulse.js) runs the same steps too, so a clock that skips an hour costs nothing.
 
 const { tick } = require('./_lib/workflows');
 const { pollLeads } = require('./_lib/fb-leads');
 const { readJSON, writeJSON } = require('./_lib/store');
 const mypos = require('./_lib/mypos');
+
+// the steps, in the order that matters when the hour is short (Vercel ends the request at 60 s: what comes after a
+// slow step would be skipped every hour, silently): the clients' messages and the new leads first, then the ads'
+// guard and the owners' one-off changes, then the rest; a step is started only while there is time for it, and the
+// answer says which ones waited. Every step keeps its own state, so a skipped one simply runs at the next tick.
+const BUDGET_MS = 50e3;
+const STEPS = [
+  ['leads', () => pollLeads(true)], // new Facebook leads first, so their automations run now too
+  ['ran', () => tick(true)],
+  // the ads that don't bring leads go off (api/_lib/ads-guard.js)
+  ['ads', () => require('./_lib/ads-guard').guard()],
+  // the changes the owners asked for once (api/_lib/ads-once.js)
+  ['once', () => require('./_lib/ads-once').run()],
+  // the creative orders asked for in chat (api/_lib/creative-once.js)
+  ['creative', () => require('./_lib/creative-once').run()],
+  // the job ads asked for in chat (api/_lib/hire-once.js)
+  ['hire', () => require('./_lib/hire-once').run()],
+  // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
+  ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
+];
 
 module.exports = async (req, res) => {
   const secret = process.env.CRON_SECRET;
@@ -16,18 +37,17 @@ module.exports = async (req, res) => {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }
-  const leads = await pollLeads(true); // new Facebook leads first, so their automations run now too
-  const ran = await tick(true);
+  const t0 = Date.now();
+  const out = { ok: true, waited: [] };
+  for (const [name, fn] of STEPS) {
+    if (Date.now() - t0 > BUDGET_MS) { out.waited.push(name); continue; }
+    out[name] = await fn().catch((e) => ({ error: e.message }));
+  }
+  const { leads, ran, ads, once, creative, hire, reminders } = out;
+  if (!out.waited.length) delete out.waited;
+  out.ms = Date.now() - t0;
   // myPOS: the POS payments of the last days (the live ones come by webhook; this catches what it missed)
   const pos = req.query && req.query.light ? { ok: true, added: 'skipped' } : await mypos.sync({ readJSON, writeJSON }, {}).catch((e) => ({ ok: false, error: e.message }));
-  // the ads that don't bring leads go off (every 30 minutes, api/_lib/ads-guard.js)
-  const ads = await require('./_lib/ads-guard').guard().catch((e) => ({ error: e.message }));
-  // the budget changes the owners asked for once (api/_lib/ads-once.js)
-  const once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
-  // the creative orders asked for in chat (api/_lib/creative-once.js)
-  const creative = await require('./_lib/creative-once').run().catch((e) => ({ error: e.message }));
-  // the job ads asked for in chat (api/_lib/hire-once.js)
-  const hire = await require('./_lib/hire-once').run().catch((e) => ({ error: e.message }));
   // the ads report for Claude (api/_lib/ads-report.js): only with its key (the clock's address has no password)
   const key = String((req.query && req.query.report) || '');
   const report = key && require('crypto').createHash('sha256').update(key).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86'
@@ -60,8 +80,6 @@ module.exports = async (req, res) => {
     return { found, flows: ((wf && wf.workflows) || []).map((w) => ({ name: w.name, active: !!w.active })) };
   })().catch((e) => ({ error: e.message })) : undefined;
   const dry = report ? await require('./_lib/ads-guard').guard({ dry: true, force: true }).catch((e) => ({ error: e.message })) : undefined;
-  // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
-  const reminders = { repaired: await require('./_lib/workflows').repairReminders().catch((e) => 'error: ' + e.message) };
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ ok: true, ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who, phones });
+  res.status(200).json(Object.assign(out, { ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who, phones }));
 };
