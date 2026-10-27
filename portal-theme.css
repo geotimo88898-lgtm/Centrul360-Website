@@ -35,6 +35,7 @@
   --radius:16px;
   --ease:cubic-bezier(.2,.8,.2,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-in:cubic-bezier(.4,0,1,1); /* exits only: what leaves, leaves fast */
 }
 @media all{ /* dark, unless Light is picked (avatar menu → Temă) */
   :root:not([data-theme="light"]){
@@ -472,7 +473,7 @@ html.c360-noscroll{ overflow:hidden; }
   background:var(--fg); color:var(--ink); border-radius:14px; box-shadow:var(--shadow-lg); font-size:.86rem; line-height:1.4;
   animation:c360-toast-in .38s var(--spring) both;
 }
-.c360-toast.is-leaving{ animation:c360-toast-out .22s ease both; }
+.c360-toast.is-leaving{ animation:c360-toast-out .22s var(--ease-in) both; }
 .c360-toast-dot{ width:8px; height:8px; border-radius:50%; flex:none; background:var(--accent); }
 .c360-toast.is-error .c360-toast-dot{ background:#ff8a8a; }
 .c360-toast.is-success .c360-toast-dot{ background:#7fe0a5; }

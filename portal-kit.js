@@ -265,6 +265,8 @@
     const from = el._kv == null ? 0 : el._kv;
     el._kv = to;
     if (from === to) { el.textContent = fmt(to); return; }
+    // a number that moved while the page was open: its card breathes once (portal-delight.css)
+    if (el._kv != null && from !== 0) { const card = el.closest('.k-stat, .ad-stat, .db-tl-item'); if (card) { card.classList.remove('is-bump'); void card.offsetWidth; card.classList.add('is-bump'); setTimeout(() => card.classList.remove('is-bump'), 1000); } }
     tween(from, to, dur || 1100, (v) => { el.textContent = fmt(v); });
     // Background tabs pause requestAnimationFrame, make sure the final number always lands.
     setTimeout(() => { if (el._kv === to) el.textContent = fmt(to); }, (dur || 1100) + 200);
@@ -556,6 +558,7 @@
     const panel = document.getElementById('panel-' + id);
     if (!s.mounted && s.mount && panel) { s.mount(panel); s.mounted = true; if (data && s.data) s.data(data); }
     if (s.show) s.show(panel);
+    emit('section', id);
     requestAnimationFrame(() => countAll(panel));
   }
   function setData(d) {

@@ -590,7 +590,7 @@
           packageTotal: pkg > amt ? pkg : 0, dueId: st.dueId || '' });
         d.close();
         const dueTxt = r.due ? (r.due.rest > 0 ? ' Rest de achitat: ' + K.lei(r.due.rest, 2) + '.' : st.dueId ? ' Pachetul e achitat integral.' : '') : '';
-        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + '.' : '') + dueTxt, 'success');
+        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + '.' : '') + dueTxt, 'success'); K.emit('sale:recorded');
         if (!(a.date >= range()[0] && a.date <= range()[1])) { S.period = a.date === K.today() ? 'today' : 'month'; }
         K.reload();
         K.emit('remote');

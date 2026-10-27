@@ -85,6 +85,7 @@
     // clients and commission, the owner sees everything except a personal commission screen.
     const role = DATA.isAdmin ? 'admin' : DATA.me.role;
     document.documentElement.setAttribute('data-role', role);
+    document.documentElement.classList.toggle('c360-admin', !!DATA.isAdmin); // the owners' layer (portal-delight.css / .js)
     const sub = document.querySelector('.brand .brand-sub');
     if (sub) sub.textContent = DATA.isAdmin ? 'Admin' : 'Echipă';
     document.querySelectorAll('[data-roles]').forEach((el) => el.classList.toggle('hidden', !el.dataset.roles.split(',').includes(role)));

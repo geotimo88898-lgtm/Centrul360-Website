@@ -1,0 +1,74 @@
+/* Centrul360 portal, the owners' layer (html.c360-admin, set by portal-core.js): the entry, the Panou and the
+   moments worth a smile, in the style of the login (the lava accent, the glow), at no cost to the work itself.
+   Only transforms and opacity move (the browser composites them, nothing is laid out again); everything stops
+   when the person asked for less motion.
+   The owner's guide (27.10): entrances ease out (--ease), exits ease in (--ease-in), the interface springs with a
+   slight overshoot (--spring), nothing linear. */
+
+/* ---------------- the entry: the Panou's pieces rise one after the other, once per visit of the page */
+html.c360-admin .panel.active.c360-stagger > *{ animation:c360-rise .55s var(--ease) both; }
+html.c360-admin .panel.active.c360-stagger > *:nth-child(2){ animation-delay:.06s; }
+html.c360-admin .panel.active.c360-stagger > *:nth-child(3){ animation-delay:.12s; }
+html.c360-admin .panel.active.c360-stagger > *:nth-child(4){ animation-delay:.18s; }
+html.c360-admin .panel.active.c360-stagger > *:nth-child(n+5){ animation-delay:.24s; }
+html.c360-admin .db-root > *{ animation:c360-rise .6s var(--ease) both; }
+html.c360-admin .db-root > *:nth-child(2){ animation-delay:.08s; }
+html.c360-admin .db-root > *:nth-child(3){ animation-delay:.16s; }
+html.c360-admin .db-root > *:nth-child(4){ animation-delay:.24s; }
+html.c360-admin .db-root > *:nth-child(5){ animation-delay:.32s; }
+html.c360-admin .db-root > *:nth-child(n+6){ animation-delay:.4s; }
+/* the greeting glows once as it lands */
+html.c360-admin .db-hero h2{ animation:c360-hello 1.4s var(--ease) both .15s; }
+@keyframes c360-hello{
+  0%{ opacity:0; transform:translateY(10px); text-shadow:0 0 0 rgba(140,120,255,0); }
+  45%{ opacity:1; transform:none; text-shadow:0 0 28px rgba(140,120,255,.55); }
+  100%{ text-shadow:0 0 0 rgba(140,120,255,0); }
+}
+
+/* ---------------- a number that just changed says so (the card breathes once; portal-kit.js countUp marks it) */
+.k-stat.is-bump, .ad-stat.is-bump, .db-tl-item.is-bump{ animation:c360-bump .9s var(--spring) both; }
+html.c360-admin .k-stat.is-bump::after{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 24px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+  animation:c360-bump-glow .9s var(--ease) both;
+}
+@keyframes c360-bump{ 0%{ transform:scale(1); } 40%{ transform:scale(1.03); } 100%{ transform:scale(1); } }
+@keyframes c360-bump-glow{ 0%{ opacity:0; } 30%{ opacity:1; } 100%{ opacity:0; } }
+
+/* ---------------- a moment worth a smile: money in, a booking, a new lead (portal-delight.js throws the confetti) */
+.c360-confetti{ position:fixed; z-index:1300; left:0; top:0; width:0; height:0; pointer-events:none; }
+.c360-confetti i{
+  position:absolute; left:-4px; top:-6px; width:8px; height:12px; border-radius:2px; opacity:0;
+  background:var(--c, var(--accent)); transform:translate3d(0,0,0) rotate(0deg);
+  animation:c360-confetti var(--t, 1s) var(--ease) both var(--d, 0s);
+}
+.c360-confetti i:nth-child(3n){ border-radius:50%; width:7px; height:7px; }
+@keyframes c360-confetti{
+  0%{ opacity:0; transform:translate3d(0,0,0) rotate(0deg) scale(.6); }
+  12%{ opacity:1; transform:translate3d(calc(var(--x) * .35), calc(var(--y) * .55), 0) rotate(90deg) scale(1); }
+  100%{ opacity:0; transform:translate3d(var(--x), calc(var(--y) + 120px), 0) rotate(540deg) scale(.8); }
+}
+/* the bell pulses once when something good arrived */
+.c360-bell.is-cheer{ animation:c360-cheer .9s var(--spring) both; }
+@keyframes c360-cheer{ 0%{ transform:scale(1); } 30%{ transform:scale(1.25) rotate(-8deg); } 55%{ transform:scale(1.1) rotate(6deg); } 100%{ transform:scale(1) rotate(0); } }
+
+/* ---------------- a hand that presses feels it (every button, the owners' accounts): pressed in, lifted on hover */
+html.c360-admin .k-btn:active, html.c360-admin .k-icon-btn:active, html.c360-admin .k-chip:active, html.c360-admin .c360-tabbar button:active{ transform:scale(.96); transition:transform .12s var(--spring); }
+@media (pointer:fine){
+  html.c360-admin .k-card.is-click:hover, html.c360-admin button.k-stat:hover, html.c360-admin .ad-camp:hover{ transform:translateY(-2px); transition:transform .22s var(--spring), box-shadow .22s var(--ease); box-shadow:var(--shadow); }
+}
+/* the live accent on the active section's eyebrow (the lava already runs on the eyebrow; the title's underline follows it) */
+html.c360-admin .k-head h2{ position:relative; }
+html.c360-admin .k-head h2::after{
+  content:""; display:block; height:3px; width:44px; margin-top:.35rem; border-radius:3px;
+  background:var(--lava); background-size:220% 220%, 240% 240%, 200% 200%, 100% 100%; animation:c360-lava 7s ease-in-out infinite;
+  transform-origin:left; animation-name:c360-lava, c360-underline; animation-duration:7s, .6s; animation-timing-function:ease-in-out, var(--spring); animation-iteration-count:infinite, 1; animation-fill-mode:none, both;
+}
+@keyframes c360-underline{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+
+/* ---------------- nothing of this moves for someone who asked for calm */
+@media (prefers-reduced-motion:reduce){
+  html.c360-admin .panel.active.c360-stagger > *, html.c360-admin .db-root > *, html.c360-admin .db-hero h2, .k-stat.is-bump, .ad-stat.is-bump, .db-tl-item.is-bump, html.c360-admin .k-stat.is-bump::after,
+  .c360-confetti i, .c360-bell.is-cheer, html.c360-admin .k-head h2::after{ animation:none !important; }
+  .c360-confetti{ display:none; }
+}
