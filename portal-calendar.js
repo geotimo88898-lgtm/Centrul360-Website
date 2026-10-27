@@ -812,7 +812,7 @@
         const iso = m + '-' + K.pad(d);
         cells.push('<button type="button" data-d="' + iso + '" class="' + (iso === K.today() ? 'is-today ' : '') + (iso === S.date ? 'is-sel' : '') + '">' + d + '</button>');
       }
-      pop.innerHTML = '<div class="cal-month-head"><button type="button" class="k-icon-btn" data-m="-1">' + icon('left') + '</button><b>' + K.monthLabel(m) + '</b><button type="button" class="k-icon-btn" data-m="1">' + icon('right') + '</button></div>' +
+      pop.innerHTML = '<div class="cal-month-head"><button type="button" class="k-icon-btn" data-m="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + K.monthLabel(m) + '</b><button type="button" class="k-icon-btn" data-m="1" aria-label="Luna următoare">' + icon('right') + '</button></div>' +
         '<div class="cal-month-grid">' + ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((x) => '<em>' + x + '</em>').join('') + cells.join('') + '</div>';
     };
     paint();

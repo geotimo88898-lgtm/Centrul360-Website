@@ -248,8 +248,10 @@ async function spread(d, list, max = 6) {
       if (comps.error) continue;
       const r = await graph(a.token, 'POST', '/' + a.wabaId + '/message_templates', { name, language: t.language || 'ro', category: t.category, components: comps.c });
       t.name = name;
-      t.meta[a.wabaId] = r.ok ? { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '', withImage: t.headerType === 'IMAGE' }
-        : { id: '', name, status: 'REJECTED', reason: r.error };
+      // Meta refusing the call (a token, a limit) is not a rejection of the template: it stays a draft for that number and is tried again next time
+      if (!r.ok) { t.spreadError = { wabaId: a.wabaId, error: r.error, at: nowISO() }; continue; }
+      delete t.spreadError;
+      t.meta[a.wabaId] = { id: String(r.j.id || ''), name, status: String(r.j.status || 'PENDING').toUpperCase(), reason: '', withImage: t.headerType === 'IMAGE' };
       t.updatedAt = nowISO();
       sent++;
     }

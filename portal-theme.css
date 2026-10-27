@@ -13,7 +13,7 @@
   --surface-3:#eef0f5;      /* inputs, wells */
   --fg:#0d0f14;
   --muted:#5d6271;
-  --muted-2:#979dab;
+  --muted-2:#6f7584;
   --line:#e3e6ee;
   --line-on-dark:#d4d8e2;
   --glass:rgba(13,15,20,.04);
@@ -46,7 +46,7 @@
     --surface-3:#181b23;
     --fg:#eef0f7;
     --muted:#8f96a7;
-    --muted-2:#6a7083;  /* ≥3:1 on the dark surfaces, so secondary labels stay readable */
+    --muted-2:#7c8396;  /* 4.5:1 on the dark surfaces, so small secondary labels stay readable */
     --line:#1d2029;
     --line-on-dark:#282c37;
     --glass:rgba(255,255,255,.04);
@@ -500,7 +500,7 @@ html.c360-noscroll{ overflow:hidden; }
   .c360-avatar{ display:inline-grid !important; margin-left:.2rem; }
   /* phone: one small pill, low and centered, tap to hide */
   .c360-toasts{ left:1rem; right:1rem; bottom:calc(.8rem + env(safe-area-inset-bottom)); align-items:center; pointer-events:none; }
-  .c360-toast{ pointer-events:auto; min-width:0; max-width:100%; gap:.5rem; padding:.42rem .85rem; border-radius:999px; font-size:.78rem; line-height:1.3;
+  .c360-toast{ pointer-events:auto; min-width:0; max-width:100%; gap:.5rem; padding:.5rem .95rem; border-radius:999px; font-size:.88rem; line-height:1.3;
     background:color-mix(in srgb, var(--paper) 86%, transparent); color:var(--fg); border:1px solid var(--line);
     -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:var(--shadow-sm); animation-duration:.26s; }
   .c360-toast-dot{ width:6px; height:6px; }

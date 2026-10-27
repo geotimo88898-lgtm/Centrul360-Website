@@ -29,7 +29,7 @@
     const phone = window.matchMedia('(max-width:720px)').matches;
     const live = Array.from(toastHost.children).filter((x) => !x.classList.contains('is-leaving'));
     const same = live.find((x) => x.dataset.msg === message && x.dataset.tone === tone);
-    const life = tone === 'error' ? (phone ? 4500 : 6000) : (phone ? 2200 : 3800);
+    const life = tone === 'error' ? (phone ? 5000 : 6000) : (phone ? 3200 : 3800);
     if (same) { clearTimeout(same._t); same._t = setTimeout(same._close, life); return; }
     live.slice(0, phone ? live.length : Math.max(0, live.length - 2)).forEach((x) => x._close());
     const el = document.createElement('div');

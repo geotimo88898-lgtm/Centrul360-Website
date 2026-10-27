@@ -62,6 +62,7 @@ const VERBS = {
   'portal-sale:': 'a înregistrat o încasare la', 'portal-approve:': 'a decis vânzarea',
   'portal-employees:create': 'a adăugat în echipă pe', 'portal-employees:update_details': 'a modificat datele pentru', 'portal-employees:reset_password': 'a resetat parola pentru',
   'portal-employees:set_active': 'a schimbat accesul pentru', 'portal-employees:set_goals': 'a setat obiectivele pentru',
+  'portal-employees:manual_add': 'a adăugat o ajustare pentru', 'portal-employees:manual_delete': 'a șters o ajustare',
   'portal-attendance:clock_in': 'a pontat intrarea', 'portal-attendance:clock_out': 'a pontat ieșirea', 'portal-attendance:update': 'a modificat pontajul',
   'portal-attendance:adjust_decide': 'a decis o corecție de pontaj', 'portal-attendance:payout': 'a plătit ore suplimentare',
   'portal-leave:create': 'a cerut concediu', 'portal-leave:decide': 'a decis o cerere de concediu', 'portal-leave:admin_create': 'a adăugat un concediu',
@@ -134,6 +135,7 @@ function describe(route, action, body, before, after, out) {
   const verb = VERBS[route + ':' + (action || '')] || VERBS[route + ':*'] || generic(action || '');
   let subject = nameOfThing(after) || nameOfThing(before) || b.clientName || b.name || b.title || b.label ||
     (b.snippet && b.snippet.title) || (b.template && b.template.label) || (b.workflow && b.workflow.name) || '';
+  if (route === 'portal-approve') { const x = after || before; if (x) subject = [x.treatment, x.client].filter(Boolean).join(' · ') || subject; }
   if (!subject && b.phone) subject = String(b.phone);
   if (route === 'portal-wa' && b.city) subject = subject || b.city;
   if (route === 'portal-config' && b.academy) {
@@ -147,7 +149,8 @@ function describe(route, action, body, before, after, out) {
   else if (route === 'portal-leads' && action === 'add_note') detail = clip(b.text, 80);
   else if (route === 'portal-whatsapp' && (action === 'send' || action === 'send_media')) detail = clip(b.text || b.caption || b.filename, 80);
   else if (route === 'portal-sale') detail = [b.amount ? b.amount + ' lei' : '', b.cashAmount ? 'cash ' + b.cashAmount : '', b.cardAmount ? 'card ' + b.cardAmount : ''].filter(Boolean).join(' · ');
-  else if (route === 'portal-approve') detail = b.decision === 'approve' || b.decision === 'approved' ? 'aprobată' : b.decision ? 'respinsă' + (b.reason ? ': ' + clip(b.reason, 60) : '') : '';
+  else if (route === 'portal-approve') detail = (b.decision === 'approve' || b.decision === 'approved' ? 'aprobată' : b.decision ? 'respinsă' + (b.reason ? ': ' + clip(b.reason, 60) : '') : '') + ((after || before) && Number((after || before).amount) ? ' · ' + Number((after || before).amount) + ' lei' : '');
+  else if (route === 'portal-employees' && action === 'manual_add') detail = (b.kind === 'commission' ? b.value + ' lei' : b.value + ' min') + (b.note ? ' · ' + clip(b.note, 60) : '');
   else if (route === 'portal-leave' && action === 'decide') detail = b.decision === 'approve' || b.decision === 'approved' ? 'aprobată' : 'respinsă';
   else if (route === 'portal-employees' && action === 'set_active') detail = b.active ? 'activ' : 'dezactivat';
   else if (route === 'portal-academy' && action === 'quiz' && out) detail = out.score + ' din ' + out.total;

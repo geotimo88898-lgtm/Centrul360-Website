@@ -67,8 +67,17 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'invalid_role' });
         return;
       }
-      if (employees.some((e) => e.username === username) || require('./_lib/auth').OWNER_ALIASES.includes(String(username).trim().toLowerCase())) {
+      const uname = String(username).trim().toLowerCase().slice(0, 60);
+      if (!uname) {
+        res.status(400).json({ error: 'missing_fields' });
+        return;
+      }
+      if (employees.some((e) => String(e.username || '').trim().toLowerCase() === uname) || require('./_lib/auth').OWNER_ALIASES.includes(uname)) {
         res.status(409).json({ error: 'username_taken' });
+        return;
+      }
+      if (String(password).length < 6) {
+        res.status(400).json({ error: 'weak_password' });
         return;
       }
       const { salt, hash } = hashPassword(password);
@@ -77,7 +86,7 @@ module.exports = async (req, res) => {
         name: String(name).slice(0, 100),
         location: String(location).slice(0, 100),
         role,
-        username: String(username).slice(0, 60),
+        username: uname,
         passwordHash: hash,
         passwordSalt: salt,
         active: true,
@@ -115,6 +124,7 @@ module.exports = async (req, res) => {
       }
       employee.name = String(name).slice(0, 100);
       employee.location = String(location).slice(0, 100);
+      if (employee.role !== role) require('./_lib/auth').forgetRoster(); // her open session takes the new role at once
       employee.role = role;
       // Optional, feed the "Condică" leave-balance / hours-owed numbers (api/portal-attendance.js,
       // action 'balance'). Left unset, those default to 21 days / 8h per day. Never required.
@@ -155,9 +165,15 @@ module.exports = async (req, res) => {
         res.status(404).json({ error: 'employee_not_found' });
         return;
       }
+      if (String(newPassword).length < 6) {
+        res.status(400).json({ error: 'weak_password' });
+        return;
+      }
       const { salt, hash } = hashPassword(newPassword);
       employee.passwordHash = hash;
       employee.passwordSalt = salt;
+      employee.passwordChangedAt = new Date().toISOString(); // the phone that had the old password is signed out
+      require('./_lib/auth').forgetRoster();
       await writeJSON('data/employees.json', employees);
       res.status(200).json({ ok: true });
       return;
@@ -172,6 +188,10 @@ module.exports = async (req, res) => {
       const employee = employees.find((e) => e.id === employeeId);
       if (!employee) {
         res.status(404).json({ error: 'employee_not_found' });
+        return;
+      }
+      if (employee.id === session.employeeId) {
+        res.status(400).json({ error: 'cannot_deactivate_self' });
         return;
       }
       employee.active = active;

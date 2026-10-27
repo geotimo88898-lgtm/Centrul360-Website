@@ -81,6 +81,16 @@ fbq('track', 'Lead');
     </a>
     <a href="tel:+40750452002" class="pill pill-glass">Sună acum · +40 750 452 002</a>
   </div>
+  <script>
+    // the request came from Arad: the buttons lead to Arad's number
+    (function () {
+      if (!/(^|[?&])oras=arad/.test(location.search)) return;
+      document.querySelectorAll('.ty-actions a').forEach(function (a) {
+        a.href = a.href.replace('wa.me/40750452002', 'wa.me/40750277394').replace('tel:+40750452002', 'tel:+40750277394');
+        if (a.href.indexOf('tel:') === 0) a.textContent = 'Sună acum · +40 750 277 394';
+      });
+    })();
+  </script>
 
   <p class="ty-back"><a href="/">← Înapoi la centrul360.com</a></p>
 </div>

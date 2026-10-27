@@ -46,6 +46,8 @@
   const mine = () => progOf(meId());
   const setMine = (p) => { if (!K.data.academyProgress) K.data.academyProgress = {}; K.data.academyProgress[meId()] = p; };
   const manuals = () => D().manuals || [];
+  // the manuals one person can open (her role's; everything for the owner or an unknown role)
+  const manualsFor = (e) => (e && e.role && e.role !== 'admin' ? manuals().filter((m) => !(m.roles || []).length || (m.roles || []).includes(e.role)) : manuals());
   const current = () => manuals().find((m) => m.id === A.manual) || manuals()[0];
   const cref = (m, c) => 'm:' + m.id + '/' + c.id;
   const sref = (s) => 's:' + s.id;
@@ -327,7 +329,7 @@
   function manualHtml(m) {
     if (!m) return K.empty('book', 'Niciun training încă', '');
     const p = mine();
-    return '<div class="ac-head"><div><h3>' + esc(m.title) + '</h3><p>' + esc(m.lede || '') + '</p></div><div class="ac-head-actions">' +
+    return '<div class="ac-head"><div><h3>' + esc(m.title) + '</h3></div><div class="ac-head-actions">' +
       (isAdmin() ? '<button type="button" class="k-btn is-outline is-sm" data-edit>' + icon('pen') + 'Capitole</button>' : '') +
       '<button type="button" class="k-btn is-primary is-sm" data-pdf-all>' + icon('download') + 'Tot manualul (PDF)</button></div></div>' +
       '<div class="ac-grid">' + m.chapters.map((c, i) => {
@@ -352,7 +354,7 @@
       footer: (i > 0 ? '<button type="button" class="k-btn" data-prev aria-label="Capitolul anterior">' + icon('left') + '</button>' : '') + '<span class="k-grow"></span>' +
         '<button type="button" class="k-btn is-ghost" data-pdf aria-label="Descarcă PDF">' + icon('download') + '</button>' +
         (mine().read[ref] ? '<span class="k-tag is-good tr-readtag">' + icon('check') + 'Citit</span>' : '<button type="button" class="k-btn is-outline" data-did>' + icon('check') + 'Am citit</button>') +
-        ((c.quiz || []).length ? '<button type="button" class="k-btn is-primary" data-q>' + icon('listCheck') + 'Testul</button>' : i < m.chapters.length - 1 ? '<button type="button" class="k-btn is-primary" data-next>Următorul' + icon('right') + '</button>' : ''),
+        ((c.quiz || []).length ? '<button type="button" class="k-btn is-primary" data-q>' + icon('listCheck') + 'Testul</button>' : '') + (i < m.chapters.length - 1 ? '<button type="button" class="k-btn ' + ((c.quiz || []).length ? '' : 'is-primary') + '" data-next>Următorul' + icon('right') + '</button>' : ''),
       onMount(el) {
         el.querySelector('[data-pdf]').addEventListener('click', (ev) => downloadPdf(m, i, ev.currentTarget));
         const did = el.querySelector('[data-did]');
@@ -422,8 +424,8 @@
         const paint = () => {
           box.innerHTML = list.map((x, i) => '<div class="rs-ed" data-i="' + i + '"><div class="rs-ed-head"><b class="ac-num is-sm">' + num(i) + '</b>' +
             '<input data-f="title" value="' + esc(x.title) + '" placeholder="Titlul capitolului">' +
-            '<button type="button" class="k-icon-btn" data-up="' + i + '"' + (i ? '' : ' disabled') + '>' + icon('up') + '</button><button type="button" class="k-icon-btn" data-down="' + i + '"' + (i < list.length - 1 ? '' : ' disabled') + '>' + icon('down') + '</button>' +
-            '<button type="button" class="k-icon-btn" data-rm="' + i + '">' + icon('trash') + '</button></div>' +
+            '<button type="button" class="k-icon-btn" data-up="' + i + '" aria-label="Mai sus"' + (i ? '' : ' disabled') + '>' + icon('up') + '</button><button type="button" class="k-icon-btn" data-down="' + i + '" aria-label="Mai jos"' + (i < list.length - 1 ? '' : ' disabled') + '>' + icon('down') + '</button>' +
+            '<button type="button" class="k-icon-btn" data-rm="' + i + '" aria-label="Scoate">' + icon('trash') + '</button></div>' +
             '<input data-f="summary" value="' + esc(x.summary || '') + '" placeholder="Pe scurt, despre ce e capitolul"></div>').join('');
         };
         paint();
@@ -835,7 +837,7 @@
         };
         const paint = () => {
           oBox.innerHTML = c.options.map((o, i) => '<div class="tr-qed" data-oi="' + i + '"><label class="tr-qed-o"><input type="radio" name="ook" data-ook' + (o.ok ? ' checked' : '') + '><input data-ot maxlength="300" value="' + esc(o.text) + '" placeholder="Varianta ' + (i + 1) + '">' +
-            (c.options.length > 2 ? '<button type="button" class="k-icon-btn" data-opt-rm="' + i + '">' + icon('x') + '</button>' : '') + '</label><input data-ow maxlength="300" value="' + esc(o.why) + '" placeholder="De ce (apare după răspuns)"></div>').join('');
+            (c.options.length > 2 ? '<button type="button" class="k-icon-btn" data-opt-rm="' + i + '" aria-label="Scoate varianta">' + icon('x') + '</button>' : '') + '</label><input data-ow maxlength="300" value="' + esc(o.why) + '" placeholder="De ce (apare după răspuns)"></div>').join('');
           pBox.innerHTML = c.program.map((l, i) => '<div class="tr-line" data-li="' + i + '">' + priceSelect('data-lp', l.price, '') +
             '<input data-ls inputmode="decimal" value="' + esc(l.sessions || '') + '" placeholder="Ședințe"><input data-lz maxlength="60" value="' + esc(l.zone || '') + '" placeholder="Zona"><input data-lv maxlength="60" value="' + esc(l.interval || '') + '" placeholder="Interval">' +
             '<button type="button" class="k-icon-btn" data-line-rm="' + i + '">' + icon('trash') + '</button></div>').join('') || '<p class="k-muted">Fără program (de ex. o contraindicație).</p>';
@@ -1025,7 +1027,8 @@
   }
   function statsOf(id) {
     const p = progOf(id);
-    const chapters = manuals().flatMap((m) => m.chapters.map((c) => ({ m, c, ref: cref(m, c) })));
+    const e = ((K.data && K.data.activeEmployees) || []).find((x) => x.id === id);
+    const chapters = manualsFor(e).flatMap((m) => m.chapters.map((c) => ({ m, c, ref: cref(m, c) })));
     const read = chapters.filter((x) => p.read[x.ref]).length;
     const qs = Object.values(p.quiz || {});
     const avg = qs.length ? Math.round(qs.reduce((a, q) => a + (q.total ? q.best / q.total : 0), 0) / qs.length * 100) : null;
@@ -1066,7 +1069,7 @@
         '<div class="tr-path-btns">' + (p.path ? '<button type="button" class="k-btn is-ghost is-sm" data-path-off>' + icon('x') + 'Oprește drumul</button>' : '') +
         '<button type="button" class="k-btn is-outline is-sm" data-path-on>' + icon('target') + (p.path ? 'Schimbă' : 'Pornește drumul') + '</button></div>' +
         (s.path ? '<ul class="tr-items is-compact">' + s.path.days.map((dd, di) => '<li class="tr-item-day">Ziua ' + (di + 1) + ' · ' + esc(dd.title) + '</li>' + dd.items.map((x) => itemHtml(x, p, false)).join('')).join('') + '</ul>' : '') + '</section>' +
-        manuals().map((m) => '<section class="tr-sec"><h5>' + esc(m.title) + '</h5><ul class="tr-prog">' + m.chapters.map((c) => {
+        manualsFor(e).map((m) => '<section class="tr-sec"><h5>' + esc(m.title) + '</h5><ul class="tr-prog">' + m.chapters.map((c) => {
           const ref = cref(m, c), q = p.quiz[ref];
           return '<li><span class="' + (p.read[ref] ? 'is-on' : '') + '">' + icon(p.read[ref] ? 'check' : 'minus') + '</span>' + esc(c.title) + (q ? '<b class="' + (q.best === q.total ? 'is-good' : 'is-warn') + '">' + q.best + '/' + q.total + (q.tries > 1 ? ' · ' + q.tries + ' încercări' : '') + '</b>' : '') + '</li>';
         }).join('') + '</ul></section>').join('') +

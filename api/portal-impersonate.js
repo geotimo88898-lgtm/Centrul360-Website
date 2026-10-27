@@ -4,19 +4,17 @@
 //   DELETE                 back to the admin session.
 
 const { readJSON } = require('./_lib/store');
-const { getSession, setSessionCookie } = require('./_lib/auth');
+const { getSession, setSessionCookie, requireAdmin } = require('./_lib/auth');
 
 module.exports = async (req, res) => {
   res.req = res.req || req; // cookie scope follows the host (see _lib/auth.js cookieDomain)
-  const session = getSession(req);
-  if (!session) {
-    res.status(401).json({ error: 'not_authenticated' });
-    return;
-  }
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'POST') {
-    if (session.role !== 'admin' || session.viewer) {
+    // the roster decides (a deactivated admin cannot open anyone's account), not the cookie alone
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    if (session.viewer) {
       res.status(403).json({ error: 'forbidden' });
       return;
     }

@@ -302,6 +302,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .menu-overlay.open .menu-link:nth-child(6){ transition-delay:.31s }
   .menu-foot{ display:flex; flex-wrap:wrap; gap:1.25rem 2rem; align-items:flex-end; justify-content:space-between;
     padding:2rem 0 2.5rem; border-top:1px solid rgba(255,255,255,.12); }
+  .menu-foot a{ display:inline-block; padding:.4rem 0; }
 
   /* ---------- dark band / process ---------- */
   .band-dark{ background:linear-gradient(180deg,#101015 0%,#0c0c10 100%); color:#fff;
@@ -737,15 +738,15 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
   .qopt:focus-visible{ outline:2px solid var(--fg); outline-offset:2px; }
   .qopt.sel{ background:var(--fg); color:#0b0b0d; border-color:var(--fg); }
   .quiz-field{ margin-bottom:.85rem; }
-  .quiz-field label{ display:block; font-size:12px; font-weight:600; letter-spacing:.03em; color:var(--muted); margin:0 0 .35rem; }
+  .quiz-field label{ display:block; font-size:14px; font-weight:600; letter-spacing:.03em; color:var(--muted); margin:0 0 .35rem; }
   .quiz-field input{ width:100%; background:rgba(0,0,0,.28); border:1px solid var(--line-on-dark); border-radius:13px; color:var(--fg);
     padding:.85rem 1rem; font-size:15px; font-family:inherit; }
   .quiz-field input:focus{ outline:none; border-color:rgba(212,175,110,.6); background:rgba(0,0,0,.4); }
   .quiz-field input::placeholder{ color:var(--muted-2); }
   .quiz-field.err input{ border-color:#e0736b; }
-  .quiz-field .qmsg{ display:none; color:#e79a94; font-size:12px; margin-top:.3rem; }
+  .quiz-field .qmsg{ display:none; color:#e79a94; font-size:14px; margin-top:.3rem; }
   .quiz-field.err .qmsg{ display:block; }
-  .quiz-consent{ display:flex; align-items:flex-start; gap:.6rem; font-size:12px; line-height:1.5; color:var(--muted-2); margin:1rem 0 0; cursor:pointer; }
+  .quiz-consent{ display:flex; align-items:flex-start; gap:.6rem; font-size:14px; line-height:1.5; color:var(--muted-2); margin:1rem 0 0; cursor:pointer; }
   .quiz-consent input{ margin-top:.2rem; flex:none; }
   .quiz-consent.err{ color:#e79a94; }
   .quiz-hp{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
@@ -827,8 +828,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
             <span class="qmsg">Te rugăm scrie un număr de telefon valid.</span>
           </div>
           <div class="quiz-field">
-            <label for="qEmail">Email</label>
-            <input type="email" id="qEmail" name="email" placeholder="ex: maria@exemplu.ro" autocomplete="email" required>
+            <label for="qEmail">Email (opțional)</label>
+            <input type="email" id="qEmail" name="email" placeholder="ex: maria@exemplu.ro" autocomplete="email">
             <span class="qmsg">Te rugăm scrie o adresă de email validă.</span>
           </div>
           <label class="quiz-consent" id="qConsentLabel">
@@ -1659,7 +1660,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
       if(digits(tel.value).length < 9){ tel.closest('.quiz-field').classList.add('err'); ok=false; }
       else { tel.closest('.quiz-field').classList.remove('err'); }
 
-      if(!email.checkValidity() || !email.value.trim()){ email.closest('.quiz-field').classList.add('err'); ok=false; }
+      if(email.value.trim() && !email.checkValidity()){ email.closest('.quiz-field').classList.add('err'); ok=false; }
       else { email.closest('.quiz-field').classList.remove('err'); }
 
       if(!consent.checked){ document.getElementById('qConsentLabel').classList.add('err'); ok=false; }
@@ -1682,15 +1683,21 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
         pagina: location.href
       };
 
-      function done(){ window.location.href = '/multumesc-cadou'; }
+      function done(){ window.location.href = '/multumesc-cadou' + (/arad/i.test(payload.oras || '') ? '?oras=arad' : ''); }
+      function failed(){
+        submitBtn.disabled = false; submitBtn.innerHTML = 'Trimite și rezervă <span class="arrow">→</span>';
+        let m = form.querySelector('.qfail');
+        if(!m){ m = document.createElement('p'); m.className = 'qfail'; m.style.cssText = 'color:#e79a94;font-size:14px;margin:.8rem 0 0;line-height:1.5'; form.appendChild(m); }
+        m.textContent = 'Nu am putut trimite. Verifică internetul și apasă din nou, sau scrie-ne pe WhatsApp.';
+      }
 
       // ⇩⇩⇩ Webhook HighLevel (Inbound Webhook trigger), lipește URL-ul aici ⇩⇩⇩
       const QUIZ_WEBHOOK = "https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68";
       // ⇧⇧⇧ Webhook HighLevel ⇧⇧⇧
 
       // la HighLevel (ca până acum) și în portal (Pipeline, notificarea echipei, WhatsApp de pe numărul orașului)
-      const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
-      Promise.all([QUIZ_WEBHOOK.indexOf('http') === 0 ? send(QUIZ_WEBHOOK) : null, send('/api/site-lead')]).then(done, done);
+      const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((r) => r.ok, () => false);
+      Promise.all([QUIZ_WEBHOOK.indexOf('http') === 0 ? send(QUIZ_WEBHOOK) : false, send('/api/site-lead')]).then((r) => (r[0] || r[1] ? done() : failed()), failed);
     });
   })();
 
@@ -1870,7 +1877,8 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
     const cardCount = sequence.length;
     const thickness = [-1.2, 0, 1.2]; // volumetric 3D thickness slices (3 layers, lighter to composite on mobile)
 
-    const waUrl = o => 'https://wa.me/40750452002?text=' + encodeURIComponent(`Bună ziua! Vreau să rezerv oferta ${o.name} la ${o.price} lei.`);
+    const waNum = o => /arad/i.test(o.name || '') ? '40750277394' : '40750452002'; // an Arad offer writes to Arad's number
+    const waUrl = o => 'https://wa.me/' + waNum(o) + '?text=' + encodeURIComponent(`Bună ziua! Vreau să rezerv oferta ${o.name} la ${o.price} lei.`);
     const priceHTML = o => `<span class="o3d-price" data-ok="${o.key||''}"><span data-ov="new">${o.price}</span><span class="u">lei</span></span><span class="o3d-old" data-ok="${o.key||''}" data-ov="oldlei">${o.old} lei</span>`;
     const checkSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
     // final CTA card (same metallic 3D card → links to the full offers page)
@@ -2328,7 +2336,7 @@ function animate(){
     document.getElementById('offpop-cert').hidden = !o.cert;
     document.getElementById('offpop-prices').innerHTML = '<span class="offpop-price">'+o.price+'<span>lei</span></span><span class="offpop-old">'+o.old+' lei</span>';
     document.getElementById('offpop-bullets').innerHTML = o.bullets.map(b=>'<li>'+chk+'<span>'+b+'</span></li>').join('');
-    document.getElementById('offpop-wa').href = 'https://wa.me/40750452002?text=' + encodeURIComponent('Bună ziua! Vreau să rezerv oferta ' + o.wa + '.');
+    document.getElementById('offpop-wa').href = 'https://wa.me/' + waNum(o) + '?text=' + encodeURIComponent('Bună ziua! Vreau să rezerv oferta ' + o.wa + '.');
     pop.classList.add('open'); pop.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
   }
   function close(){ pop.classList.remove('open'); pop.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }

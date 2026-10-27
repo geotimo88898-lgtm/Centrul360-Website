@@ -4,7 +4,7 @@
 //   Vânzări · cosmeticiană   "Consultația" (the program and the 4 offers, academy-extra.js) and "Vânzarea la consultație"
 //   Tratamente · cosmeticiană "În cabină" (before, during, after a treatment; hygiene), next to the treatment sheets
 // A chapter body is one line per block: "## " sub-heading · "- " bullet · "1. " step · "> " what to say ·
-// "! " important rule · anything else a paragraph. Prices are never written here: they come from Oferte active.
+// "! " important rule · anything else a paragraph. Prices are never written here: they come from Oferte.
 
 const L = (s) => s.trim().split('\n').map((x) => x.trim()).filter(Boolean);
 
@@ -70,7 +70,7 @@ Apoi, în ordinea asta:
 2. De ce va funcționa: aparatură certificată medical, 5 stele din peste 300 de recenzii pe Google.
 3. Cât durează și că nu are nevoie de recuperare.
 4. Ce i se cere: nimic de pregătit, evaluarea e gratuită.
-5. Prețul, cu ancoră: prețul de listă, apoi prețul din campanie (din Oferte active).
+5. Prețul, cu ancoră: prețul de listă, apoi prețul din campanie (din Oferte).
 ## Stiva, imediat după preț
 Spui tot ce intră în preț, pe rând. La Restart: evaluarea gratuită, apoi cele opt etape (demachiere, tonifiere, curățare cu ultrasunete, gomaj, radiofrecvență, masaj facial, mască aleasă pentru pielea ei, cremă de final), iar la final recomandarea pentru mai departe, fără nicio obligație.
 Enumerarea face mai mult decât orice adjectiv: clienta numără singură etapele în cap.
@@ -103,7 +103,7 @@ Din momentul în care își dictează numele, programarea e a ei.
 `) },
     { id: 't-oferte', title: 'Ce recomanzi, după ce a bifat', summary: 'Ședința de intrare după formular, cele două oferte care nu se amestecă și consultația gratuită ca ultimă variantă.',
       body: L(`
-Structura apelului nu se schimbă. Se schimbă doar recomandarea, după ce a bifat în formular. Prețurile le iei din Oferte active.
+Structura apelului nu se schimbă. Se schimbă doar recomandarea, după ce a bifat în formular. Prețurile le iei din Oferte.
 - Ten fără strălucire, riduri fine: Tratament facial Restart.
 - Gușă, bărbie dublă: HIFU gușă.
 - Riduri, lifting facial: HIFU Full Face.
@@ -190,7 +190,7 @@ Leadul a completat formularul acum câteva minute. Încă se gândește la noi. 
     { id: 'p-programare', title: 'Programarea corectă', summary: 'Ce trebuie să conțină fiecare programare, ca să nu avem surprize.',
       body: L(`
 O programare bine făcută înseamnă o clientă care vine și o cosmeticiană pregătită.
-1. Tratamentul și oferta exactă, din Oferte active.
+1. Tratamentul și oferta exactă, din Oferte.
 2. Orașul corect: EMS, împachetarea la cald și epilarea laser doar în Timișoara, cavitația 1+1 doar în Arad.
 3. Telefonul clientei, obligatoriu.
 4. Cosmeticiana alocată.

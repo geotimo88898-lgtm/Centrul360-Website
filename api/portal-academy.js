@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
       const f = findRef(ac, b.ref);
       if (!f || f.kind !== 'chapter' || !f.chapter.quiz.length) return fail(400, 'invalid_ref');
       const answers = Array.isArray(b.answers) ? b.answers : [];
-      const results = f.chapter.quiz.map((q, i) => ({ ok: Number(answers[i]) === q.answer, answer: q.answer, why: q.why || '' }));
+      const results = f.chapter.quiz.map((q, i) => ({ ok: answers[i] != null && Number(answers[i]) === q.answer, answer: q.answer, why: q.why || '' }));
       const score = results.filter((r) => r.ok).length, total = results.length;
       b.title = f.chapter.title;
       const progress = await P.update(me, (p) => {

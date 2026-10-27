@@ -49,6 +49,8 @@
     request_not_found: 'Cererea nu mai există.', entry_not_found: 'Intrarea nu mai există.', invalid_time: 'Ora nu e validă.',
     invalid_phone: 'Numărul de telefon nu e valid.', missing_text: 'Scrie un mesaj.', conversation_not_found: 'Conversația nu mai există.',
     outside_24h_window: 'Fereastra de 24h a expirat, clientul trebuie să scrie el primul din nou, sau trimite un șablon aprobat.', send_failed: 'Trimiterea a eșuat. Încearcă din nou.',
+    wa_failed: 'WhatsApp n-a răspuns. Încearcă din nou.', weak_password: 'Parola trebuie să aibă minim 6 caractere.', cannot_deactivate_self: 'Nu-ți poți dezactiva propriul cont.',
+    overlapping_request: 'Există deja o cerere pentru zilele astea.', no_work_days: 'Perioada nu are zile lucrătoare (luni-vineri).', workflow_not_found: 'Automatizarea nu mai există (ștearsă din alt loc). Fă una nouă cu „Automatizare nouă”.',
   };
   const errText = (e, fallback) => ERR[e && e.code] || fallback || 'Nu am putut salva. Încearcă din nou.';
   async function api(url, body, opts) {
@@ -430,7 +432,7 @@
   }
 
   // ------------------------------------------------------------------ drawer
-  let drawerRoot = null, current = null, openRaf = 0;
+  let drawerRoot = null, current = null, openRaf = 0, pushed = false;
   function drawer(opts) {
     if (!drawerRoot) {
       drawerRoot = document.createElement('div');
@@ -438,6 +440,8 @@
       drawerRoot.innerHTML = '<div class="k-drawer-backdrop"></div><aside class="k-drawer" role="dialog" aria-modal="true"></aside>';
       document.body.appendChild(drawerRoot);
       drawerRoot.querySelector('.k-drawer-backdrop').addEventListener('click', () => current && current.close());
+      // on a phone the drawer fills the screen: the phone's Back button closes it (one history entry while it is open)
+      window.addEventListener('popstate', () => { if (pushed) { pushed = false; K.drawerPopped = Date.now(); if (current) current.close(); } });
       document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape' || !current) return;
         if (document.querySelector('.c360-dialog-root, .c360-palette-root, .c360-select.is-open')) return;
@@ -458,7 +462,7 @@
         aside.innerHTML =
           '<header class="k-dhead">' + (opts.lead || (opts.icon ? '<span class="k-dicon">' + icon(opts.icon) + '</span>' : '')) +
           '<div class="k-dtitle"><h3>' + esc(opts.title || '') + '</h3>' + (opts.subtitle ? '<p>' + opts.subtitle + '</p>' : '') + '</div>' +
-          (opts.actions || '') + '<button type="button" class="k-icon-btn" data-k-close aria-label="Închide (Esc)">' + icon('x') + '</button></header>' +
+          (opts.actions || '') + '<button type="button" class="k-icon-btn" data-k-close aria-label="Închide">' + icon('x') + '</button></header>' +
           '<div class="k-dbody">' + (opts.body || '') + '</div>' + (opts.footer ? '<footer class="k-dfoot">' + opts.footer + '</footer>' : '');
         aside.querySelector('[data-k-close]').addEventListener('click', () => handle.close());
         handle.body = aside.querySelector('.k-dbody');
@@ -471,9 +475,13 @@
         // a drawer closed before its first frame (a background tab) must not open afterwards
         if (!silent) { cancelAnimationFrame(openRaf); drawerRoot.classList.remove('is-open'); document.documentElement.classList.remove('c360-noscroll'); }
         if (opts.onClose) opts.onClose();
+        // closed from the X or the backdrop: the history entry goes too (silent: another drawer takes its place and keeps it)
+        // (checked a moment later: if the code that closed it also moved to another section, that step stays)
+        if (!silent && pushed) setTimeout(() => { if (!pushed) return; pushed = false; if (history.state && history.state.kd) { try { history.back(); } catch (e) { /* nothing */ } } }, 0);
       },
     };
     current = handle;
+    if (!pushed && window.matchMedia && window.matchMedia('(max-width:720px)').matches) { try { history.pushState({ kd: 1 }, '', location.href); pushed = true; } catch (e) { /* no history */ } }
     handle.set({});
     aside.classList.remove('is-swap'); void aside.offsetWidth; aside.classList.add('is-swap');
     document.documentElement.classList.add('c360-noscroll');

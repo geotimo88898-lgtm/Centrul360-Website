@@ -51,9 +51,10 @@ function base64urlDecode(str) {
   return Buffer.from(str, 'base64url').toString('utf8');
 }
 
-function createSessionCookieValue(employeeId, role, viewer) {
+function createSessionCookieValue(employeeId, role, viewer, iat) {
   const expiry = Date.now() + (viewer ? VIEW_TTL_MS : SESSION_TTL_MS);
-  const payload = `${employeeId}.${role}.${expiry}${viewer ? '.' + viewer : ''}`;
+  // the sign-in time rides along (5th part), so a password change ends the sessions opened before it
+  const payload = `${employeeId}.${role}.${expiry}.${viewer || ''}.${iat || Date.now()}`;
   const encoded = base64urlEncode(payload);
   const sig = sign(encoded);
   return `${encoded}.${sig}`;
@@ -80,8 +81,8 @@ function buildSetCookieHeader(value, { clear = false, domain = '', maxAgeMs = SE
   return parts.join('; ');
 }
 
-function setSessionCookie(res, employeeId, role, viewer) {
-  const value = createSessionCookieValue(employeeId, role, viewer);
+function setSessionCookie(res, employeeId, role, viewer, iat) {
+  const value = createSessionCookieValue(employeeId, role, viewer, iat);
   const domain = cookieDomain(res);
   const maxAgeMs = viewer ? VIEW_TTL_MS : SESSION_TTL_MS;
   // An older host-only cookie would shadow the shared one, clear it in the same response.
@@ -129,11 +130,11 @@ function getSession(req) {
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
     const payload = base64urlDecode(encoded);
-    const [employeeId, role, expiryStr, viewer] = payload.split('.');
+    const [employeeId, role, expiryStr, viewer, iatStr] = payload.split('.');
     const expiry = Number(expiryStr);
     if (!employeeId || !role || !expiry || Date.now() > expiry) return null;
 
-    return { employeeId, role, viewer: viewer || null, expiry };
+    return { employeeId, role, viewer: viewer || null, expiry, iat: Number(iatStr) || 0 };
   } catch (err) {
     return null;
   }
@@ -143,7 +144,7 @@ function getSession(req) {
 function renew(res, session) {
   if (!session || session.viewer || !res || typeof res.setHeader !== 'function') return;
   if (session.expiry - Date.now() > SESSION_TTL_MS - 24 * 60 * 60 * 1000) return;
-  try { setSessionCookie(res, session.employeeId, session.role); } catch (e) { /* the old one still works */ }
+  try { setSessionCookie(res, session.employeeId, session.role, null, session.iat); } catch (e) { /* the old one still works */ }
 }
 
 // The employees, read at most once a minute per instance: the session of someone no longer active (left, paused in
@@ -156,14 +157,32 @@ async function activeEmployee(id) {
     catch (e) { if (!roster.byId) return true; } // the store down: the cookie decides (nothing else works anyway)
   }
   const e = roster.byId.get(id);
-  return !!e && e.active !== false;
+  return e && e.active !== false ? e : false;
 }
 const forgetRoster = () => { roster = { at: 0, byId: null }; };
 async function stillActive(req, res, session) {
-  if (session.viewer || (await activeEmployee(session.employeeId))) return true;
-  clearSessionCookie(res);
-  res.status(401).json({ error: 'account_inactive' });
-  return false;
+  // a preview (the owner inside an employee's account) ends with the owner's own account
+  const e = await activeEmployee(session.viewer || session.employeeId);
+  if (!e) {
+    clearSessionCookie(res);
+    res.status(401).json({ error: 'account_inactive' });
+    return false;
+  }
+  if (session.viewer) return true;
+  if (e !== true) {
+    // the password was changed after this sign-in (a lost phone, a reset): that session ends
+    if (e.passwordChangedAt && session.iat && session.iat < Date.parse(e.passwordChangedAt)) {
+      clearSessionCookie(res);
+      res.status(401).json({ error: 'not_authenticated' });
+      return false;
+    }
+    // a role changed in Echipa reaches the live session at once (the cookie follows the roster)
+    if (e.role && e.role !== session.role) {
+      session.role = e.role;
+      try { setSessionCookie(res, session.employeeId, e.role, null, session.iat); } catch (err) { /* next request */ }
+    }
+  }
+  return true;
 }
 
 // Returns the session, or writes a 401 JSON response and returns null.

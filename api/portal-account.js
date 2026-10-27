@@ -16,12 +16,12 @@
 
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary, removeBinary } = require('./_lib/store');
-const { requireAuth, hashPassword, verifyPassword } = require('./_lib/auth');
+const { requireAuth, hashPassword, verifyPassword, setSessionCookie } = require('./_lib/auth');
 const { dedash } = require('./_lib/dedash');
 const push = require('./_lib/push');
 
 const ADMIN_PROFILE = 'data/admin-profile.json';
-const START_PAGES = ['panou', 'programari', 'mesaje', 'incasari', 'pipeline', 'contacte', 'automatizari', 'comision', 'traininguri', 'condica', 'ofertele', 'aprobari', 'angajati'];
+const START_PAGES = ['panou', 'programari', 'mesaje', 'incasari', 'pipeline', 'contacte', 'automatizari', 'comision', 'traininguri', 'condica', 'ofertele', 'aprobari', 'angajati', 'activitate', 'fluxuri', 'integrari', 'oferte', 'reclame', 'kpi', 'setari'];
 const MAX_PHOTO = 600 * 1024;
 
 const clip = (v, n) => dedash(String(v == null ? '' : v).trim()).slice(0, n);
@@ -130,7 +130,11 @@ module.exports = async (req, res) => {
       if (!verifyPassword(String(body.currentPassword || ''), acc.passwordSalt, acc.passwordHash)) return fail(403, 'wrong_password');
       const { salt, hash } = hashPassword(next);
       acc.passwordSalt = salt; acc.passwordHash = hash;
-      acc.passwordChangedAt = new Date().toISOString();
+      const t = Date.now();
+      acc.passwordChangedAt = new Date(t).toISOString(); // every other device is signed out (_lib/auth.js stillActive)
+      require('./_lib/auth').forgetRoster();
+      res.req = res.req || req;
+      setSessionCookie(res, acc.id, acc.role, null, t + 1); // this device stays signed in
       return done();
     }
 

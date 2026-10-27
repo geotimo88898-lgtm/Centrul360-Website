@@ -62,7 +62,7 @@ module.exports = async (req, res) => {
 
   const { appId, appSecret } = await appCreds(readJSON);
   if (!appId || !appSecret) {
-    res.status(400).json({ error: 'fb_not_configured' });
+    redirectToPortal(res, 'notconfigured');
     return;
   }
 
@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
   const portalSecret = process.env.PORTAL_SECRET || '';
   const purpose = verifyState(state, portalSecret);
   if (!purpose) {
-    res.status(400).json({ error: 'invalid_state' });
+    redirectToPortal(res, 'expired');
     return;
   }
 

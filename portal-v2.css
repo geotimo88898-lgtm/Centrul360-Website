@@ -576,6 +576,8 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .nt-push p{ display:flex; gap:.5rem; align-items:flex-start; margin:0; font-size:.86rem; line-height:1.45; color:var(--muted); }
 .nt-push p svg{ width:16px; height:16px; flex:none; margin-top:.15rem; }
 .nt-push p b{ color:var(--fg); }
+.nt-push .nt-push-on{ align-items:center; width:100%; }
+.nt-push .nt-push-on span{ flex:1 1 auto; }
 .nt-push p.is-on svg{ color:var(--good); }
 .nt-list{ display:flex; flex-direction:column; gap:.45rem; }
 .nt-item{ display:flex; align-items:flex-start; gap:.7rem; width:100%; padding:.75rem .8rem; border-radius:14px; border:1px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:border-color .2s ease, background .2s ease; }

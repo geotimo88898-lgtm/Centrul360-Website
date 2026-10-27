@@ -408,7 +408,7 @@ src="https://www.facebook.com/tr?id=2276074362800484&ev=PageView&noscript=1"
             <h3>Cavitație 1+1 · Arad</h3>
             <p class="pkg-sub" style="margin:0;">Două ședințe de cavitație la preț de una.</p>
             <div class="o-price"><b>280<span class="u">lei</span></b><s>560 lei</s></div>
-            <a href="https://wa.me/40750452002?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Cavitatie%201%2B1%20(Arad)%20la%20280%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
+            <a href="https://wa.me/40750277394?text=Buna%20ziua!%20Vreau%20sa%20rezerv%20oferta%20Cavitatie%201%2B1%20(Arad)%20la%20280%20lei." target="_blank" rel="noopener" class="pill pill-on-dark px-5 py-3 text-[13px] w-full">Rezervă oferta <span class="arrow">→</span></a>
           </div>
         </article>
     </div>
@@ -920,7 +920,8 @@ function animate(){
   const WA_NUMBER = '40750452002';
   const DIACRITICS = { 'ă':'a','â':'a','î':'i','ș':'s','ş':'s','ț':'t','ţ':'t','Ă':'A','Â':'A','Î':'I','Ș':'S','Ş':'S','Ț':'T','Ţ':'T' };
   function stripDiacritics(s){ return String(s||'').replace(/[ăâîșşțţĂÂÎȘŞȚŢ]/g, c => DIACRITICS[c] || c); }
-  function waLink(text){ return 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(stripDiacritics(text)); }
+  // an Arad offer writes to Arad's number
+  function waLink(text){ return 'https://wa.me/' + (/arad/i.test(text) ? '40750277394' : WA_NUMBER) + '?text=' + encodeURIComponent(stripDiacritics(text)); }
   const CHK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   const DELAYS = ['', 'd1', 'd2', 'd3', 'd4', 'd5'];
 

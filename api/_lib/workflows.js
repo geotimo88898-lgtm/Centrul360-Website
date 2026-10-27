@@ -111,10 +111,10 @@ const RECIPES = [
   { key: 'lead_nou', name: 'Lead nou din reclamă → mesaj + sună în 5 min', note: 'Viteza contează: primul care sună câștigă clientul.',
     trigger: { type: 'lead_created', source: 'facebook', location: 'any' },
     steps: [{ type: 'whatsapp', text: 'Bună, {prenume}! Sunt de la Centrul360, am primit cererea ta pentru {interes}. Te sunăm în câteva minute să-ți găsim o oră care ți se potrivește. 💜' },
-      { type: 'task', text: 'Sună-l acum pe {nume} ({telefon}), lead nou din reclamă: {interes}.' }] },
+      { type: 'notify', to: ['role:receptie'], title: 'DE SUNAT ACUM - {nume}', text: '{telefon} · lead nou din reclamă: {interes}', whatsapp: false }] },
   { key: 'necontactat', name: 'Lead necontactat în 2 ore → alertă', note: 'Niciun lead nu rămâne nesunat.',
     trigger: { type: 'lead_idle', hours: 2 },
-    steps: [{ type: 'task', text: '⚠️ {nume} ({telefon}) așteaptă de 2 ore să fie sunat, {interes}.' }] },
+    steps: [{ type: 'notify', to: ['role:admin', 'role:receptie'], title: 'LEAD NESUNAT ⚠️ - {nume}', text: '{telefon} · așteaptă de 2 ore, {interes}', whatsapp: false }] },
   { key: 'anulare', name: 'Programare anulată → propune altă oră', note: 'Recuperează programările pierdute.',
     trigger: { type: 'appointment_status', status: 'anulata' },
     steps: [{ type: 'wait', amount: 30, unit: 'min' },
@@ -129,7 +129,7 @@ const RECIPES = [
       { type: 'whatsapp', text: 'Bună, {prenume}! Au trecut 3 săptămâni de la {tratament}. Pentru rezultat complet e momentul ședinței următoare, îți rezervăm o oră? 💜' },
       { type: 'wait', amount: 1, unit: 'd' },
       { type: 'stop_if', cond: 'future_appt' },
-      { type: 'task', text: 'Sun-o pe {nume} ({telefon}) pentru următoarea ședință de {tratament}.' }] },
+      { type: 'notify', to: ['role:receptie'], title: 'DE SUNAT - {nume}', text: '{telefon} · următoarea ședință de {tratament}', whatsapp: false }] },
 ];
 const DEFAULT_ACTIVE = ['confirmare', 'reminder24'];
 
@@ -825,7 +825,7 @@ async function enrollUpcoming(wf) {
 // Only appointments that have no other run of that flow. Run by the automations' clock; does nothing once they're back.
 async function repairReminders() {
   const doc = await loadDoc();
-  const flows = (doc.workflows || []).filter((w) => w.active && w.trigger && w.trigger.type === 'appointment_created' && /^Reamintiri/.test(w.name || ''));
+  const flows = (doc.workflows || []).filter((w) => w.active && w.trigger && w.trigger.type === 'appointment_created' && (w.folder === 'reminders' || /^Reamintiri/.test(w.name || '')));
   if (!flows.length) return 0;
   const [appointments, runsDoc] = await Promise.all([readJSON('data/appointments.json', []), loadRuns()]);
   const now = Date.now(), today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());

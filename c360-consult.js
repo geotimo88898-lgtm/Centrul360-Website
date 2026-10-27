@@ -46,7 +46,7 @@
     padding:22px 20px 20px; color:#f5f4f2; font-family:'Inter',system-ui,sans-serif; box-shadow:0 30px 80px -30px rgba(0,0,0,.9); transform:translateY(16px); opacity:0; transition:transform .35s cubic-bezier(.16,1,.3,1), opacity .3s ease; }
   .cq-root.open .cq{ transform:none; opacity:1; }
   @media (max-width:640px){ .cq-root{ align-items:flex-end; padding:0; } .cq{ max-width:none; border-radius:22px 22px 0 0; padding:20px 18px calc(18px + env(safe-area-inset-bottom)); max-height:92dvh; } }
-  .cq-x{ position:absolute; top:12px; right:12px; width:36px; height:36px; border-radius:50%; border:0; background:rgba(255,255,255,.08); color:#fff; font-size:20px; line-height:1; cursor:pointer; }
+  .cq-x{ position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:50%; border:0; background:rgba(255,255,255,.08); color:#fff; font-size:20px; line-height:1; cursor:pointer; }
   .cq-top{ padding-right:40px; }
   .cq-top b{ display:block; font-size:18px; font-weight:800; letter-spacing:-.02em; }
   .cq-top span{ display:block; margin-top:4px; font-size:13.5px; color:rgba(245,244,242,.6); line-height:1.45; }
@@ -59,13 +59,13 @@
   .cq-opt:hover{ border-color:rgba(255,255,255,.3); }
   .cq-opt.sel{ border-color:#f5f4f2; background:rgba(255,255,255,.1); }
   .cq-f{ margin-bottom:12px; }
-  .cq-f label{ display:block; font-size:12.5px; color:rgba(245,244,242,.6); margin-bottom:6px; }
+  .cq-f label{ display:block; font-size:14px; color:rgba(245,244,242,.6); margin-bottom:6px; }
   .cq-f input{ width:100%; height:50px; padding:0 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.25); color:#f5f4f2; font:inherit; font-size:16px; }
   .cq-f input:focus{ outline:none; border-color:#f5f4f2; }
   .cq-f.err input{ border-color:#e79a94; }
-  .cq-msg{ display:none; color:#e79a94; font-size:12px; margin-top:5px; }
+  .cq-msg{ display:none; color:#e79a94; font-size:14px; margin-top:5px; }
   .cq-f.err .cq-msg{ display:block; }
-  .cq-ok{ display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.5; color:rgba(245,244,242,.6); cursor:pointer; margin-top:4px; }
+  .cq-ok{ display:flex; gap:10px; align-items:flex-start; font-size:14px; line-height:1.5; color:rgba(245,244,242,.6); cursor:pointer; margin-top:4px; }
   .cq-ok input{ width:18px; height:18px; margin:1px 0 0; flex:none; accent-color:#f5f4f2; }
   .cq-ok.err{ color:#e79a94; }
   .cq-nav{ display:flex; align-items:center; gap:10px; margin-top:18px; }
@@ -93,7 +93,7 @@
         <div data-s="contact"><h3>Unde te sunăm?</h3>
           <div class="cq-f"><label for="cqN">Numele tău</label><input id="cqN" name="nume" autocomplete="name" placeholder="ex: Maria Popescu"><span class="cq-msg">Te rugăm scrie numele.</span></div>
           <div class="cq-f"><label for="cqT">Telefon (WhatsApp)</label><input id="cqT" name="telefon" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx"><span class="cq-msg">Te rugăm scrie un număr de telefon valid.</span></div>
-          <div class="cq-f"><label for="cqE">Email</label><input id="cqE" name="email" type="email" autocomplete="email" placeholder="maria@exemplu.ro"><span class="cq-msg">Te rugăm scrie o adresă de email validă.</span></div>
+          <div class="cq-f"><label for="cqE">Email (opțional)</label><input id="cqE" name="email" type="email" autocomplete="email" placeholder="maria@exemplu.ro"><span class="cq-msg">Te rugăm scrie o adresă de email validă.</span></div>
           <label class="cq-ok"><input type="checkbox" name="ok"><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360, inclusiv cu oferte.</span></label>
         </div>
         <div class="cq-nav"><button type="button" class="cq-back" data-cq-back>← Înapoi</button><button type="submit" class="cq-send" data-cq-send>Trimite</button></div>
@@ -125,8 +125,10 @@
     root.querySelectorAll('[data-s="oras"] .cq-opt').forEach((b) => b.classList.toggle('sel', b.dataset.v === state.oras));
     state.path = ['interes'].concat(zones.length ? ['zona'] : [], tmOnly ? [] : ['oras'], ['contact']);
   }
+  const waHref = () => (/arad/i.test(state.oras || '') ? 'https://wa.me/40750277394?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita%20la%20clinica%20din%20Arad.' : 'https://wa.me/40750452002?text=Buna%20ziua!%20As%20dori%20o%20consultatie%20gratuita.');
   function render() {
     const cur = state.path[state.i];
+    const wa = root.querySelector('.cq-foot a'); if (wa) wa.href = waHref();
     root.querySelectorAll('[data-s]').forEach((s) => { s.hidden = s.dataset.s !== cur; });
     root.querySelector('.cq-bar i').style.width = Math.round(((state.i + 1) / state.path.length) * 100) + '%';
     root.querySelector('[data-cq-back]').hidden = state.i === 0;
@@ -165,8 +167,15 @@
     render();
     root.classList.add('open');
     document.documentElement.style.overflow = 'hidden';
+    // the phone's back button closes the form instead of leaving the page
+    if (!pushed) { try { history.pushState({ cq: 1 }, '', location.href); pushed = true; } catch (e) { /* no history */ } }
   }
-  function close() { root.classList.remove('open'); document.documentElement.style.overflow = ''; }
+  let pushed = false;
+  window.addEventListener('popstate', () => { if (pushed) { pushed = false; if (root) { root.classList.remove('open'); document.documentElement.style.overflow = ''; } } });
+  function close() {
+    root.classList.remove('open'); document.documentElement.style.overflow = '';
+    if (pushed) { pushed = false; try { history.back(); } catch (e) { /* nothing */ } }
+  }
   function submit(e) {
     e.preventDefault();
     const f = e.currentTarget;
@@ -177,7 +186,7 @@
     const flag = (el, bad) => { el.closest('.cq-f, .cq-ok').classList.toggle('err', bad); if (bad) ok = false; };
     flag(fld('nume'), !fld('nume').value.trim());
     flag(fld('telefon'), digits(fld('telefon').value).length < 9);
-    flag(fld('email'), !fld('email').value.trim() || !fld('email').checkValidity());
+    flag(fld('email'), !!fld('email').value.trim() && !fld('email').checkValidity());
     flag(fld('ok'), !fld('ok').checked);
     if (!ok) return;
     const btn = f.querySelector('[data-cq-send]'); btn.disabled = true; btn.textContent = 'Se trimite…';
@@ -187,10 +196,16 @@
       sursa: 'Website - Consultatie gratuita (' + PAGE + ')' + (offerNote ? ' - ' + offerNote : ''),
       consimtamant_whatsapp: true, pagina: location.href
     };
-    const done = () => { location.href = '/multumesc-cadou'; };
+    const done = () => { location.href = '/multumesc-cadou' + (/arad/i.test(state.oras || '') ? '?oras=arad' : ''); };
+    // nothing went through (no internet, a refusal): she is told, the button comes back, nothing is lost
+    const failed = () => {
+      btn.disabled = false; btn.textContent = 'Trimite';
+      const foot = f.querySelector('.cq-foot');
+      foot.innerHTML = '<span style="color:#e79a94">Nu am putut trimite. Verifică internetul și apasă din nou, sau scrie-ne pe </span><a href="' + waHref() + '" target="_blank" rel="noopener">WhatsApp</a>';
+    };
     // to HighLevel (as before) and to the portal (Pipeline, the team's notification, the WhatsApp from the city's number)
-    const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
-    Promise.all([send(WEBHOOK), send('/api/site-lead')]).then(done, done);
+    const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((r) => r.ok, () => false);
+    Promise.all([send(WEBHOOK), send('/api/site-lead')]).then((r) => (r[0] || r[1] ? done() : failed()), failed);
   }
 
   // Which buttons sell the consultation: booking verbs, unless they explicitly say WhatsApp / a phone.

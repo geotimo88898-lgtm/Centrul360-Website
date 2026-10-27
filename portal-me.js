@@ -44,7 +44,8 @@
     if (!me) return;
     me.prefs = Object.assign({}, me.prefs || {}, patch);
     clearTimeout(prefsTimer);
-    prefsTimer = setTimeout(() => { api('prefs', { prefs: patch }).catch(() => {}); }, 600);
+    // the word comes after the save, not before it (offline, or in a preview of someone's account, nothing is saved)
+    prefsTimer = setTimeout(() => { api('prefs', { prefs: patch }).then(() => K.ui().toast('Salvat.', 'success')).catch((err) => K.ui().toast(errText(err), 'error')); }, 600);
   }
   // A colour picked anywhere (avatar menu or here) is saved on the account.
   if (window.C360Accent) window.C360Accent.onChange = (st) => savePrefs({ accent: { id: st.id, mode: st.mode, a: st.a, b: st.b || '' } });
@@ -95,7 +96,6 @@
       const pwField = (name, label, ac) => K.field(label, '<div class="me-pw"><input name="' + name + '" type="password" autocomplete="' + ac + '" minlength="' + (name === 'currentPassword' ? 1 : 8) + '"><button type="button" class="k-icon-btn" data-showpw title="Arată parola" aria-label="Arată parola">' + icon('eye') + '</button></div>', 'full');
       d.set({
         title: 'Contul meu', lead: acc.photo ? '<span class="k-avatar has-photo" style="--s:42px"><img src="' + esc(acc.photo) + '" alt=""></span>' : K.avatar(acc.name || '?', 42), icon: '',
-        subtitle: 'Datele tale, conectarea și cum arată portalul pentru tine.',
         body: heroHtml() +
           '<section class="k-section"><h4>' + icon('pen') + 'Date personale</h4><form class="k-form" data-profile>' +
             K.field('Numele afișat', '<input name="name" maxlength="100" required value="' + esc(acc.name) + '">', 'full', 'Așa apari în calendar, la încasări și în echipă.') +
@@ -105,7 +105,7 @@
           '<section class="k-section"><h4>' + icon('shield') + 'Conectare</h4>' +
           (acc.canChangeLogin ?
             '<form class="k-form" data-user autocomplete="off">' + K.field('Utilizator nou', '<input name="username" autocomplete="username" maxlength="40" value="' + esc(acc.username) + '">', 'full', 'Fără spații și fără diacritice. Cu el te conectezi de acum.') +
-              pwField('currentPassword', 'Parola ta actuală (ca să confirmi)', 'current-password') + '</form>' +
+              '<div class="full" data-user-pw hidden>' + pwField('currentPassword', 'Parola ta actuală (ca să confirmi)', 'current-password') + '</div></form>' +
               '<div class="k-form-actions"><button type="button" class="k-btn is-outline" data-save-user>' + icon('user') + 'Schimbă utilizatorul</button></div>' +
             '<div class="me-sep"></div>' +
             '<form class="k-form" data-pass autocomplete="off">' + pwField('currentPassword', 'Parola actuală', 'current-password') +
@@ -114,7 +114,7 @@
               '<div class="k-form-actions"><button type="button" class="k-btn is-outline" data-save-pass>' + icon('shield') + 'Schimbă parola</button></div>'
             : '<p class="ct-hint">' + icon('info') + 'Utilizatorul și parola contului de proprietar se schimbă din Vercel (setările proiectului), ca să nu te poți bloca singur pe dinafară.</p>') +
           '</section>' +
-          '<section class="k-section"><h4>' + icon('sparkles') + 'Preferințe</h4><p class="k-muted me-note">Se salvează singure și te urmează pe orice telefon sau calculator.</p>' +
+          '<section class="k-section"><h4>' + icon('sparkles') + 'Preferințe</h4>' +
             '<div class="me-pref"><span>Culoarea portalului</span>' + (window.C360Accent ? window.C360Accent.menuHtml() : '') + '</div>' +
             '<div class="me-pref"><span>Pagina de start</span><select data-start>' + K.options(startOptions(), p.startPage || '') + '</select><small>Ce se deschide când intri în portal.</small></div>' +
             '<div class="me-pref"><span>Mărimea textului</span>' + K.seg('mefs', [['normal', 'Normal'], ['lg', 'Mare'], ['xl', 'Foarte mare']], p.fontSize || 'normal', 'is-big') + '</div>' +
@@ -144,11 +144,13 @@
         catch (err) { lab.classList.remove('is-busy'); K.ui().toast(errText(err), 'error'); }
         return;
       }
-      if (t.matches('[data-start]')) { savePrefs({ startPage: t.value }); acc.prefs = Object.assign({}, acc.prefs, { startPage: t.value }); K.ui().toast('Pagina de start a fost salvată.', 'success'); return; }
+      if (t.matches('[data-start]')) { savePrefs({ startPage: t.value }); acc.prefs = Object.assign({}, acc.prefs, { startPage: t.value });  return; }
       if (t.name === 'mefs') { const p = Object.assign({}, acc.prefs, { fontSize: t.value }); acc.prefs = p; applyPrefs(p); savePrefs({ fontSize: t.value }); return; }
       if (t.name === 'memotion') { const p = Object.assign({}, acc.prefs, { motion: t.value }); acc.prefs = p; applyPrefs(p); savePrefs({ motion: t.value }); }
     }
     function onInput(e) {
+      // the username form asks for the password only once the username is really changed
+      if (e.target.name === 'username') { const pw = e.target.closest('form').querySelector('[data-user-pw]'); if (pw) pw.hidden = e.target.value.trim().toLowerCase() === String(acc.username || '').toLowerCase(); return; }
       if (e.target.name !== 'newPassword') return;
       const v = e.target.value, box = e.target.closest('form').querySelector('[data-strength]');
       const score = (v.length >= 8) + (v.length >= 12) + (/[A-Z]/.test(v) && /[a-z]/.test(v)) + /\d/.test(v) + /[^\w]/.test(v);

@@ -5,7 +5,7 @@
 //
 // Schemes, combinations and cases are DRAFTS until the owner marks them checked ("Verificat"): only then
 // does the team see them. Device settings are never written here; the clinic fills them in.
-// Contraindications come from the clinic's own client sheets (Fișe de printat).
+// Contraindications come from the clinic's own client sheets (De printat).
 
 const L = (s) => s.trim().split('\n').map((x) => x.trim()).filter(Boolean);
 
@@ -19,7 +19,7 @@ const CONSULTATIE = {
     {
       id: 'k-flux', title: 'Fluxul consultației, pas cu pas', summary: 'Opt pași, în aceeași ordine, de la salut până la oferta pe care o semnează.',
       body: L(`
-Folosești documentul „Program recomandat și ofertă” (Fișe de printat). Are 5 pagini. Pagina 1 e programul recomandat și rămâne la clientă, capsată de fișa ei. Paginile 2-5 sunt ofertele, de la cea mai avantajoasă ca reducere la cea mai accesibilă ca sumă.
+Folosești documentul „Program recomandat și ofertă” (De printat). Are 5 pagini. Pagina 1 e programul recomandat și rămâne la clientă, capsată de fișa ei. Paginile 2-5 sunt ofertele, de la cea mai avantajoasă ca reducere la cea mai accesibilă ca sumă.
 1. Completezi sus: Client, Data consultației și Specialist. (pagina 1)
 2. Afli ce o deranjează și scrii obiectivul ei în caseta Obiectiv, cu cuvintele ei. (pagina 1)
 3. Scrii tratamentele recomandate, câte o linie pentru fiecare procedură: zona, numărul de ședințe, intervalul, prețul de listă pe ședință și subtotalul. (pagina 1)

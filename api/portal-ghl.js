@@ -9,7 +9,7 @@
 //   POST { action: 'step' }     one step of it (under a minute); the Integrări page calls it until it's done
 //   POST { action: 'pause' }
 //   POST { action: 'disconnect', acc }  removes that token (what was imported stays)
-//   POST { action: 'fix_times' }  the appointments imported before TIME_FIX 2–3 hours late, put back at their hour
+//   POST { action: 'fix_times' }  the appointments imported before TIME_FIX 2 or 3 hours late, put back at their hour
 //                                 (no new import: untouched ones are moved here, ones changed since in the portal
 //                                 are checked with HighLevel one by one and left alone when someone moved them)
 
@@ -443,7 +443,9 @@ async function stepDetails(conn, aj, until) {
         if (!b) continue;
         const cur = apptByGhl.get(e.id);
         if (cur) {
-          if (Object.keys(b.fields).some((k) => cur[k] !== b.fields[k])) { Object.assign(cur, b.fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
+          // moved or edited in the portal since the import: what the team set stays
+          const touched = Date.parse(cur.updatedAt || 0) - Date.parse(cur.importedAt || cur.createdAt || 0) > 120e3;
+          if (!touched && Object.keys(b.fields).some((k) => cur[k] !== b.fields[k])) { Object.assign(cur, b.fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
           continue;
         }
         appointments.push(b.appt); apptByGhl.set(e.id, b.appt);

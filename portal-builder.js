@@ -151,7 +151,7 @@
   function problem(s) {
     if (s.type === 'whatsapp' && !s.templateId) return 'alege șablonul';
     if (s.type === 'notify' && s.whatsapp && !s.templateId) return 'alege șablonul';
-    if (s.type === 'task' && !String(s.text || '').trim()) return 'gol';
+    if (s.type === 'task') return 'nu mai rulează';
     if (s.type === 'move_stage' && !s.stage) return 'alege etapa';
     if (s.type === 'notify' && (!s.to || !s.to.length)) return 'alege cui';
     if (s.type === 'notify' && !String(s.title || '').trim()) return 'fără titlu';
@@ -529,7 +529,7 @@
     const root = document.createElement('div');
     root.className = 'fb-root';
     root.innerHTML =
-      '<header class="fb-top"><button type="button" class="k-btn is-sm" data-back>' + icon('left') + '<span>Automatizări</span></button>' +
+      '<header class="fb-top"><button type="button" class="k-btn is-sm" data-back title="Înapoi la Automatizări" aria-label="Înapoi la Automatizări">' + icon('left') + '<span>Automatizări</span></button>' +
         '<input class="fb-name" data-name maxlength="80" placeholder="Numele automatizării" value="' + esc(W.name) + '">' +
         '<span class="fb-dirty" data-dirty hidden>Nesalvat</span><span class="fb-count" data-count></span><span class="k-grow"></span>' +
         K.toggle('active', W.active !== false, 'Activă') +

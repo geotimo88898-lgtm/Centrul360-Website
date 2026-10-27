@@ -318,6 +318,7 @@
   }
   window.addEventListener('popstate', () => {
     if (pvEl || pvBack) { pvBack = false; return; } // back closes the file's preview first (below), the conversation stays open
+    if (K.drawerPopped && Date.now() - K.drawerPopped < 100) return; // that Back closed a drawer, the conversation stays
     if (!C.pushed) return;
     C.pushed = false;
     if (C.selectedPhone) closeThread();

@@ -75,7 +75,7 @@
       await K.api('/api/portal-approve', { saleId: id, decision, reason });
       K.ui().toast(decision === 'approve' ? 'Aprobată.' : 'Respinsă.', decision === 'approve' ? 'success' : 'info');
       setTimeout(() => K.reload(), 260);
-    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(K.errText(e), 'error'); }
+    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(e.code === 'already_decided' ? 'Ziua a fost deja decisă.' : K.errText(e), 'error'); }
   }
   async function onApprovalClick(e) {
     const a = e.target.closest('[data-approve]'); if (a) return decide(a.dataset.approve, 'approve');
@@ -87,8 +87,9 @@
     if (e.target.closest('[data-all]')) {
       const pend = K.data.admin.pendingSales;
       if (!(await K.ui().confirm({ title: 'Aprobi toate cele ' + pend.length + ' vânzări?', message: 'Comisionul se calculează pentru fiecare cu regulile de acum.', confirmText: 'Aprobă toate' }))) return;
-      for (const s of pend) { try { await K.api('/api/portal-approve', { saleId: s.id, decision: 'approve' }); } catch (err) { /* already decided elsewhere */ } }
-      K.ui().toast('Toate vânzările au fost aprobate.', 'success');
+      let bad = 0;
+      for (const s of pend) { try { await K.api('/api/portal-approve', { saleId: s.id, decision: 'approve' }); } catch (err) { if (err.code !== 'already_decided') bad++; } }
+      K.ui().toast(bad ? 'Aprobate ' + (pend.length - bad) + ' din ' + pend.length + ', restul nu. Încearcă din nou.' : 'Toate vânzările au fost aprobate.', bad ? 'error' : 'success');
       K.reload();
     }
   }
@@ -206,7 +207,7 @@
       K.ui().toast(decision === 'approved' ? 'Cerere aprobată, PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
       setTimeout(loadLeaveApprovals, 260);
       K.reload();
-    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(e.code === 'not_enough_overtime' ? 'Nu mai are destule ore suplimentare pentru cererea asta.' : K.errText(e), 'error'); }
+    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(e.code === 'not_enough_overtime' ? 'Nu mai are destule ore suplimentare pentru cererea asta.' : e.code === 'already_decided' ? 'Cererea a fost deja decisă.' : K.errText(e), 'error'); }
   }
 
   // =====================================================================================
@@ -335,8 +336,8 @@
           K.field('Zile de concediu pe an', '<input name="annualLeaveDays" type="number" min="0" max="60" value="' + esc(e.annualLeaveDays != null ? e.annualLeaveDays : 21) + '">', '', 'Minimul legal e 20; implicit 21.') +
           K.field('Ore contractate / zi', '<input name="contractedHoursPerDay" type="number" min="1" max="16" step="0.5" value="' + esc(e.contractedHoursPerDay != null ? e.contractedHoursPerDay : 8) + '">') + '</form>' +
           '<div class="ad-access"><button type="button" class="k-btn is-outline" data-pass>' + icon('key') + 'Resetează parola</button>' +
-          '<button type="button" class="k-btn ' + (e.active ? 'is-danger' : 'is-good') + '" data-toggle>' + icon('power') + (e.active ? 'Dezactivează contul' : 'Reactivează contul') + '</button></div>' +
-          '<p class="k-muted">Dezactivarea blochează logarea, dar păstrează istoricul și comisioanele.</p></div>' +
+          (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<button type="button" class="k-btn ' + (e.active ? 'is-danger' : 'is-good') + '" data-toggle>' + icon('power') + (e.active ? 'Dezactivează contul' : 'Reactivează contul') + '</button>') + '</div>' +
+          (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<p class="k-muted">Dezactivarea blochează logarea, dar păstrează istoricul și comisioanele.</p>') + '</div>' +
         '<div data-pane="condica" hidden><div data-balance><div class="k-skel" style="height:90px"></div></div></div>' +
         '<div data-pane="sales" hidden><div class="k-grid c3" style="margin-bottom:.8rem">' +
           '<div class="k-stat is-good"><div class="k-stat-top">Comision luna</div><div class="k-stat-value">' + K.lei(st.comm) + '</div></div>' +
@@ -345,7 +346,7 @@
           (sales.length ? '<div class="k-list">' + sales.map((s) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(cat(s.category)) + ' · ' + K.lei(s.amount) + '</div></div>' +
             '<span class="k-tag is-' + (s.status === 'approved' ? 'good' : s.status === 'pending' ? 'warn' : 'bad') + '">' + (s.status === 'approved' ? K.lei(s.commission, 2) : s.status === 'pending' ? 'În așteptare' : 'Respinsă') + '</span></div>').join('') + '</div>'
             : K.empty('receipt', 'Nicio vânzare logată', '')) + '</div>',
-      footer: (e.active ? '<button type="button" class="k-btn is-outline" data-preview title="Vezi portalul exact cum îl vede ' + esc(e.name.split(' ')[0]) + '">' + icon('eye') + 'Intră în cont</button>' : '') +
+      footer: (e.active && e.role !== 'admin' ? '<button type="button" class="k-btn is-outline" data-preview title="Vezi portalul exact cum îl vede ' + esc(e.name.split(' ')[0]) + '">' + icon('eye') + 'Intră în cont</button>' : '') +
         '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         const box = el.querySelector('[data-goals]');
@@ -387,7 +388,8 @@
           try { await K.api('/api/portal-employees', { action: 'reset_password', employeeId: e.id, newPassword: pw }); K.ui().toast('Parola a fost resetată.', 'success'); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         });
-        el.querySelector('[data-toggle]').addEventListener('click', async () => {
+        const tg = el.querySelector('[data-toggle]');
+        if (tg) tg.addEventListener('click', async () => {
           if (e.active && !(await K.ui().confirm({ title: 'Dezactivezi contul lui ' + e.name + '?', message: 'Nu se mai poate loga. Istoricul și comisioanele rămân.', confirmText: 'Dezactivează', danger: true }))) return;
           try { await K.api('/api/portal-employees', { action: 'set_active', employeeId: e.id, active: !e.active }); d.close(); K.ui().toast(e.active ? 'Cont dezactivat.' : 'Cont reactivat.', 'success'); K.reload(); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
@@ -423,7 +425,7 @@
         K.field('Username', '<input name="username" required maxlength="60" autocomplete="off">') +
         K.field('Parolă temporară', '<div class="ad-pass"><input name="password" required minlength="6" autocomplete="off" value="' + gen() + '"><button type="button" class="k-icon-btn" data-gen title="Generează alta">' + icon('refresh') + '</button></div>') +
         '</form>',
-      footer: '<span class="k-grow k-muted">Spune-i username-ul și parola; o poate schimba cerându-ți ție.</span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Creează contul</button>',
+      footer: '<span class="k-grow k-muted">Spune-i username-ul și parola; și-o schimbă singură din Contul meu.</span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Creează contul</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
         f.name.addEventListener('input', () => { if (!f.username.dataset.touched) f.username.value = K.norm(f.name.value).trim().split(/\s+/)[0] || ''; });
@@ -436,7 +438,8 @@
           try {
             await K.api('/api/portal-employees', Object.assign({ action: 'create' }, v));
             d.close();
-            K.ui().toast('Cont creat pentru ' + v.name + ' · username: ' + v.username, 'success');
+            // the password is shown once more, here: after this nothing shows it again
+            await K.ui().confirm({ title: 'Cont creat pentru ' + v.name, message: 'Username: ' + String(v.username).trim().toLowerCase() + '\nParolă: ' + v.password + '\n\nSpune-i-le acum. Parola nu se mai vede după; și-o schimbă singură din Contul meu.', confirmText: 'Am notat' });
             K.reload();
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
@@ -461,7 +464,7 @@
         const extra = r.hasBonus
           ? '<div><dt>Bonus programări</dt><dd>' + K.lei(r.bonus) + '</dd><small>' + (r.booking && r.booking.days ? 'media ' + K.num(r.booking.avg) + '/zi' : 'fără zile pontate') + '</small></div>'
           : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upsell-uri')) + '</small></div>';
-        return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + '</small></span></button>' +
+        return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + (r.active === false ? ' · cont dezactivat' : '') + '</small></span></button>' +
           '<dl class="pr-kv"><div><dt>Salariu net</dt><dd>' + (r.base ? K.lei(r.base) : '<em>nesetat</em>') + '</dd></div>' +
           '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
           (r.manual ? '<div><dt>Comision manual</dt><dd>' + (r.manual > 0 ? '+' : '') + K.lei(r.manual, r.manual % 1 ? 2 : 0) + '</dd><small>din Ajustări</small></div>' : '') +
@@ -943,7 +946,7 @@
   function refreshTiles() {
     if (!ipanel || I.tab !== 'int') return;
     K.api('/api/fb-connection-status').then((d) => {
-      if (!d.connected) return setTile('fb', 'off', d.notConfigured ? 'Aplicația Meta nesetată' : 'Pagina neconectată');
+      if (!d.connected) return setTile('fb', d.pending ? 'warn' : 'off', d.notConfigured ? 'Aplicația Meta nesetată' : d.pending ? 'Alege Pagina clinicii' : 'Pagina neconectată');
       // what needs looking at, in a few words; otherwise the Page and the last check
       const ads = d.ads || {}, days = ads.expiresAt ? Math.round((ads.expiresAt - Date.now()) / 864e5) : null;
       const why = d.poll && d.poll.ok === false ? 'Ultima citire a leadurilor n-a mers'
@@ -1113,8 +1116,8 @@
     const any = GHL_ACC.some(([k]) => d.accounts[k] && d.accounts[k].connected);
     box.innerHTML = '<div class="st-ghl-accs">' + GHL_ACC.map(([k, l]) => ghlAccHtml(k, l, d.accounts[k], running)).join('') + '</div>' +
       ghlJobHtml(j) +
-      // the appointments the first import put 2–3 hours late (GHL's times have no zone)
-      (d.timesToFix && !running ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>' + K.plural(d.timesToFix, 'programare importată are', 'programări importate au') + ' ora mutată cu 2–3 ore (ex. 9:00 apare la 12:00). Le pun la ora lor, fără import din nou.</span>' +
+      // the appointments the first import put 2 or 3 hours late (GHL's times have no zone)
+      (d.timesToFix && !running ? '<div class="k-card ad-note is-warn">' + icon('info') + '<span>' + K.plural(d.timesToFix, 'programare importată are', 'programări importate au') + ' ora mutată cu 2 sau 3 ore (ex. 9:00 apare la 12:00). Le pun la ora lor, fără import din nou.</span>' +
         '<button type="button" class="k-btn is-primary is-sm" data-ghl-fix>' + icon('check') + 'Corectează orele</button></div>' : '') +
       (!d.timesToFix && !running && j && j.status === 'done' ? '<div class="st-int-row"><button type="button" class="k-btn is-ghost is-sm" data-ghl-fix>' + icon('refresh') + 'Verifică orele programărilor importate</button></div>' : '') +
       // the contacts lost from Contacte, back from HighLevel with their old ids (api/portal-ghl.js, restore)
@@ -1125,7 +1128,7 @@
       (any ? '<div class="st-int-row st-ghl-actions">' +
         (running ? '<button type="button" class="k-btn is-ghost is-sm" data-ghl-pause>Oprește</button>'
           : j && j.status === 'paused' ? '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="resume">' + icon('refresh') + 'Continuă importul</button><button type="button" class="k-btn is-ghost is-sm" data-ghl-go="new">De la capăt</button>'
-          : '<button type="button" class="k-btn is-primary is-sm" data-ghl-go="new">' + icon('download') + (j && j.status === 'done' ? 'Importă din nou' : 'Importă tot') + '</button>') + '</div>'
+          : '<button type="button" class="k-btn ' + (j && j.status === 'done' ? 'is-ghost' : 'is-primary') + ' is-sm" data-ghl-go="new">' + icon('download') + (j && j.status === 'done' ? 'Importă din nou' : 'Importă tot') + '</button>') + '</div>'
         : '<small class="k-muted st-ghl-help">În fiecare subcont din GHL: Settings → Private Integrations → Create, cu citire pentru contacte, conversații, mesaje, calendare, evenimente și utilizatori. Location ID e în Settings → Business Profile.</small>');
     box.querySelectorAll('[data-ghl-connect]').forEach((f) => f.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1149,6 +1152,7 @@
       try {
         await saveAll();
         const acc = b.dataset.ghlAcc || '';
+        if (!acc && b.dataset.ghlGo === 'new' && b.classList.contains('is-ghost') && !(await K.ui().confirm({ title: 'Imporți din nou tot?', message: 'Aduce ce e nou în HighLevel. Programările mutate sau editate în portal rămân cum sunt.', confirmText: 'Importă' }))) return;
         if (acc && !(await K.ui().confirm({ title: 'Importă doar ' + ((GHL_ACC.find((x) => x[0] === acc) || ['', ''])[1]) + '?', message: 'Aduce contactele, mențiunile, conversațiile și programările doar din acest subcont. Celălalt nu se mai importă; ce e deja adus nu se dublează.', confirmText: 'Importă' }))) return;
         const r = await K.api('/api/portal-ghl', { action: 'start', resume: b.dataset.ghlGo === 'resume', acc });
         paintGhl(box, r); ghlLoop(box);
@@ -1412,6 +1416,7 @@
       : a.valid === false ? ['is-wait', 'alert', 'Tokenul pentru reclame a expirat. Lipește unul nou mai jos.']
       : a.publish === false ? ['is-wait', 'alert', 'Tokenul n-are permisiunea ads_management. Lipește unul care o are.']
       : a.valid == null ? ['is-wait', 'clock', 'Token salvat; Meta nu l-a putut verifica acum.']
+      : days != null && days < 14 ? ['is-wait', 'clock', 'Tokenul pentru reclame expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) + '. Apasă „Reconectează” sau lipește un token de utilizator de sistem (nu expiră).']
       : ['is-ok', 'checkCircle', 'Merge' + (a.expiresAt ? ' · expiră ' + (days <= 0 ? 'azi' : 'în ' + K.plural(days, 'zi', 'zile')) : ' · nu expiră')];
     return { a, st, needs: st[0] !== 'is-ok' || (days != null && days < 14) };
   }
@@ -1685,7 +1690,7 @@
     params.delete('fb');
     const qs = params.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#integrari');
-    const msg = { connected: ['Facebook conectat. Leadurile noi intră singure.', 'success'], choose: ['Alege acum Pagina clinicii, în Integrări → Facebook.', 'success'], nopages: ['Contul de Facebook nu administrează nicio Pagină.', 'error'], nosub: ['Facebook n-a lăsat portalul să primească leadurile Paginii: lipsește permisiunea pages_manage_metadata. Folosește „Conectare cu token”.', 'error'] }[flag] || ['Conectarea la Facebook a eșuat.', 'error'];
+    const msg = { connected: ['Facebook conectat. Leadurile noi intră singure.', 'success'], choose: ['Alege acum Pagina clinicii, în Integrări → Facebook.', 'success'], nopages: ['Contul de Facebook nu administrează nicio Pagină.', 'error'], nosub: ['Facebook n-a lăsat portalul să primească leadurile Paginii: lipsește permisiunea pages_manage_metadata. Folosește „Conectare cu token”.', 'error'], expired: ['Fereastra de Facebook a expirat. Apasă din nou „Conectează cu Facebook”.', 'error'], notconfigured: ['Aplicația Meta nu e setată încă (App ID și App secret, în Integrări → Facebook).', 'error'] }[flag] || ['Conectarea la Facebook a eșuat.', 'error'];
     setTimeout(() => K.ui().toast(msg[0], msg[1]), 1200);
   })();
 })();

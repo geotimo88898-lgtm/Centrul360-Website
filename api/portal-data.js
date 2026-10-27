@@ -281,7 +281,8 @@ module.exports = async (req, res) => {
       const devices = await deviceCounts({ readJSON });
       payload.admin = {
         // Echipa > Salarii: this month's pay of every active person
-        payroll: activeEmployees.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => Object.assign({ id: e.id, name: e.name, role: e.role, location: e.location, photo: photoOf(e), netSalary: Number(e.netSalary) || 0 }, payOf(e, month))),
+        payroll: employeesRaw.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => Object.assign({ id: e.id, name: e.name, role: e.role, location: e.location, photo: photoOf(e), netSalary: Number(e.netSalary) || 0, active: e.active !== false }, payOf(e, month)))
+          .filter((r) => r.active || Number(r.total) > 0), // someone who left this month is still paid for it
         // waiting in Aprobări besides the commissions: days over / under 8 hours, leave requests
         pendingTime: (await readJSON('data/time-adjust.json', [])).filter((a) => a.status === 'pending').length,
         pendingLeave: (await readJSON('data/leave-requests.json', [])).filter((r) => r.status === 'pending').length,

@@ -97,9 +97,19 @@
     } else if (st.perm === 'denied') {
       h = '<p>' + icon('alert') + '<span>Notificările sunt blocate pentru portal. Le pornești din setările browserului (iconița de lângă adresă → Notificări → Permite), apoi revii aici.</span></p>';
     } else if (st.perm === 'granted') {
-      // on (or allowed and only the subscription missing: made now, without asking): nothing to show
-      box.hidden = true; box.innerHTML = '';
-      if (!st.sub) pushOn(true).catch(() => {});
+      // on (or allowed and only the subscription missing: made now, without asking): one quiet line, with the way off
+      if (!st.sub) { box.hidden = true; box.innerHTML = ''; pushOn(true).catch(() => {}); return; }
+      box.hidden = false;
+      box.innerHTML = '<p class="nt-push-on">' + icon('bell') + '<span>Notificările sunt pornite pe acest dispozitiv.</span><button type="button" class="k-btn is-ghost is-sm" data-push="off">Oprește</button></p>';
+      box.querySelector('[data-push="off"]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+        try {
+          const endpoint = st.sub.endpoint;
+          await st.sub.unsubscribe();
+          await K.api('/api/portal-account', { action: 'push_off', endpoint });
+          K.ui().toast('Notificările sunt oprite pe acest dispozitiv.', 'info');
+        } catch (e) { K.ui().toast('Nu am putut opri notificările. Încearcă din nou.', 'error'); }
+        paintPush(box);
+      }));
       return;
     } else {
       h = '<p>' + icon('bell') + '<span>Leadurile noi, bonusurile și răspunsurile, pe ecran, chiar și cu portalul închis.</span></p><button type="button" class="k-btn is-primary is-sm" data-push="on">' + icon('bell') + 'Pornește pe acest dispozitiv</button>';

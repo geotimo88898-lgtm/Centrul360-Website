@@ -37,7 +37,6 @@
     stopped: { label: 'Oprite', group: 'Rulări', hint: 'Oprite de o condiție sau de o schimbare', val: (x) => x.stopped },
     errors: { label: 'Erori', group: 'Rulări', val: (x) => x.errors },
     sent: { label: 'Mesaje trimise', group: 'Ce au făcut', val: (x) => x.counters.sent },
-    tasks: { label: 'Sarcini create', group: 'Ce au făcut', val: (x) => x.counters.tasks },
     lastRun: { label: 'Ultima rulare', group: 'Detalii', text: true, only: ['cols'], val: (x) => (x.last ? ago(x.last) : '-') },
     trigger: { label: 'Declanșator', group: 'Detalii', text: true, only: ['cols'], val: (x, w) => TRIG[w.trigger.type] || w.trigger.type },
     steps: { label: 'Pași', group: 'Detalii', only: ['cols'], val: (x, w) => stepsOf(w) },
@@ -251,6 +250,14 @@
     JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(s.buttons.map((b) => b.text));
   const remFind = (tpls, s) => tpls.filter((x) => x.label === s.label || String(x.label || '').startsWith(s.label + ' · v'));
   const remFlowName = (c) => 'Reamintiri · ' + c;
+  const remFlow = (c) => S.d.workflows.find((x) => x.name === remFlowName(c)) || S.d.workflows.find((x) => x.folder === 'reminders' && x.trigger && x.trigger.type === 'appointment_created' && x.trigger.location === c);
+  // the template a city's flow should use for a spec: the version the owner picked on the canvas (a copy with her own
+  // words, as long as Meta did not reject it), else the one with today's text
+  const remPick = (tpls, s, w) => {
+    const all = remFind(tpls, s);
+    const used = w ? tplIds(w.steps) : [];
+    return all.find((x) => used.includes(x.id) && x.status !== 'REJECTED') || all.find((x) => remSame(x, s));
+  };
   // the steps of a city's flow, from its templates (id by spec key)
   function remSteps(c, ids) {
     const wa = (k) => ({ type: 'whatsapp', templateId: ids[k], from: 'auto' });
@@ -270,8 +277,8 @@
     let todo = 0;
     Object.keys(REM_CITY).forEach((c) => {
       const ids = {};
-      remSpec(c).forEach((s) => { const good = remFind(tpls, s).find((x) => remSame(x, s)); if (!good) todo++; else ids[s.key] = good.id; });
-      const w = S.d.workflows.find((x) => x.name === remFlowName(c));
+      const w = remFlow(c);
+      remSpec(c).forEach((s) => { const good = remPick(tpls, s, w); if (!good) todo++; else ids[s.key] = good.id; });
       if (!w || Object.values(ids).some((id) => !tplIds(w.steps).includes(id))) todo++;
     });
     return todo;
@@ -284,8 +291,9 @@
         let made = 0;
         for (const c of Object.keys(REM_CITY)) {
           const ids = {};
+          const w = remFlow(c);
           for (const s of remSpec(c)) {
-            let t = remFind(wa.templates || [], s).find((x) => remSame(x, s));
+            let t = remPick(wa.templates || [], s, w);
             if (!t) {
               let sample;
               if (s.headerType === 'IMAGE') { try { sample = await toJpeg(s.pic); } catch (e) { errs.push(s.label + ': lipsește poza'); continue; } }
@@ -301,13 +309,15 @@
             if (t) ids[s.key] = t.id;
           }
           if (remSpec(c).some((s) => !ids[s.key])) continue; // a template missing: the flow stays as it was
-          const w = S.d.workflows.find((x) => x.name === remFlowName(c));
+          // the flow already uses these messages: nothing to rewrite (a save would restart its waiting runs)
+          if (w && Object.values(ids).every((id) => tplIds(w.steps).includes(id))) continue;
+          if (w && !(await K.ui().confirm({ title: 'Refaci „' + w.name + '”?', message: 'Pașii ei se înlocuiesc cu mesajele standard de reamintire.', confirmText: 'Refă' }))) continue;
           S.d = await K.api('/api/portal-workflows', { action: 'save', workflow: {
-            id: w ? w.id : undefined, name: remFlowName(c), note: 'Confirmare cu fișa grupei și harta, 24h și 2h înainte cu harta, recenzia după tratament.',
+            id: w ? w.id : undefined, name: w ? w.name : remFlowName(c), note: 'Confirmare cu fișa grupei și harta, 24h și 2h înainte cu harta, recenzia după tratament.',
             active: w ? !!w.active : false, folder: 'reminders', trigger: { type: 'appointment_created', location: c }, steps: remSteps(c, ids),
           } });
         }
-        K.ui().toast(errs.length ? errs.join(' · ') : made ? 'Gata: ' + K.plural(made, 'mesaj trimis', 'mesaje trimise') + ' la aprobare. Reamintirile pleacă după ce Meta le aprobă și pornești fluxurile.' : 'Reamintirile sunt la zi.', errs.length ? 'error' : 'success');
+        K.ui().toast(errs.length ? errs.join(' · ') : made ? 'Gata: ' + K.plural(made, 'mesaj trimis', 'mesaje trimise') + ' la aprobare. Reamintirile pleacă după ce Meta le aprobă, dacă automatizarea orașului e pornită.' : 'Reamintirile sunt la zi.', errs.length ? 'error' : 'success');
       } catch (err) { fail(err); }
       render();
     });
@@ -390,12 +400,14 @@
           (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
       '</section>' +
       '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('clock') + '</span><div><b>Reamintiri</b><small>confirmare, înainte de programare, recenzie</small></div>' +
-        (numbers ? (remTodo ? '<span class="k-tag is-warn" title="Șabloanele de reamintire de acum (semnate Giovanna, cu numerele corecte) nu sunt încă la Meta: o apăsare le trimite">' + icon('alert') + 'De făcut</span>' : '') +
-          '<button type="button" class="k-btn ' + (remTodo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(remTodo ? 'plus' : 'refresh') + (remTodo ? 'Creează reamintirile' : 'Verifică din nou') + '</button>' : '') + '</header>' +
+        (numbers ? (remTodo ? '<span class="k-tag is-warn">' + icon('alert') + 'De făcut</span>' : '') +
+          '<button type="button" class="k-btn ' + (remTodo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(remTodo ? 'plus' : 'refresh') + (remTodo ? (reminders.length ? 'Actualizează reamintirile' : 'Creează reamintirile') : 'Verifică din nou') + '</button>' : '') + '</header>' +
+        (numbers ? (remTodo ? '<p class="k-muted au-msg-none">Mesajele standard de reamintire nu sunt încă la Meta sau nu sunt pe schemă. Butonul le trimite și le pune.</p>' : '') : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
         (reminders.length ? reminders.map((w) => '<div class="au-msg-flow"><div class="au-msg-fhead">' + flowSwitch(w) +
             '<button type="button" class="au-msg-fname" data-open="' + esc(w.id) + '" title="Deschide pe schemă"><b>' + esc(w.name) + '</b>' + icon('right') + '</button></div>' +
             tplIds(w.steps).map((id) => { const t = byId.get(id); return '<div class="au-msg-row is-sub"><span class="au-msg-name"><b>' + esc(t ? t.label : 'Șablon șters') + '</b>' + (t ? statHtml(stats, [id]) : '') + '</span>' +
-              '<span class="au-msg-tags">' + (t ? (flowCities(w, t).length ? cityState(t, flowCities(w, t)) : window.C360Wa.tag(t.status)) : '<span class="k-tag is-bad">Alege alt șablon pe schemă</span>') + '</span>' + (t ? tplBtn(t) : '') + '</div>'; }).join('') +
+              '<span class="au-msg-tags">' + (t ? (flowCities(w, t).length ? cityState(t, flowCities(w, t)) : window.C360Wa.tag(t.status)) : '<span class="k-tag is-bad">Alege alt șablon pe schemă</span>') + '</span>' + (t ? tplBtn(t) : '') + '</div>' +
+              (t && (t.status === 'REJECTED' || Object.values(t.meta || {}).some((m) => m && m.status === 'REJECTED')) ? '<p class="k-muted au-msg-none">Respins de Meta: deschide „Mesajul”, fă o copie cu alt text și alege-o pe schemă.</p>' : ''); }).join('') +
           '</div>').join('') : '<p class="k-muted au-msg-none">Nicio reamintire încă.</p>') +
       '</section></div>';
   }
@@ -471,7 +483,7 @@
     const wfFolder = new Map(S.d.workflows.map((w) => [w.id, w.folder]));
     const since = h.period === 'today' ? new Date(new Date().setHours(0, 0, 0, 0)).getTime() : h.period === '7d' ? Date.now() - 7 * 864e5 : h.period === '30d' ? Date.now() - 30 * 864e5 : 0;
     return (S.d.recent || []).filter((r) => (!h.wf || r.workflowId === h.wf) && (!h.folder || wfFolder.get(r.workflowId) === h.folder) &&
-      (!h.form || r.form === h.form) && (!h.status || r.status === h.status) && (!since || Date.parse(r.updatedAt) >= since) &&
+      (!h.form || r.form === h.form) && (!h.status || r.status === h.status) && (!since || r.status === 'waiting' || Date.parse(r.updatedAt) >= since) &&
       (!q || K.norm(r.who + ' ' + r.workflow).includes(q)));
   }
   function paintLog() {

@@ -23,7 +23,7 @@ const { requireAuth, requireAdmin } = require('./_lib/auth');
 const { buildLeaveRequestPdf } = require('./_lib/pdf-leave');
 const { createBlockingAppointment } = require('./portal-appointments');
 const TB = require('./_lib/timebank');
-const { notify } = require('./_lib/notify');
+const { notify, notifyMany, adminIds } = require('./_lib/notify');
 
 const KEY = 'data/leave-requests.json';
 const VALID_TYPES = ['odihna', 'fara_plata', 'medical', 'alta', 'suplimentare'];
@@ -100,6 +100,8 @@ module.exports = async (req, res) => {
       if (endDate < startDate) return fail(400, 'invalid_range');
       const reason = String(body.reason || '').trim().slice(0, MAX_REASON);
       if (REASON_REQUIRED.includes(type) && !reason) return fail(400, 'missing_reason');
+      if (requests.some((r) => r.employeeId === session.employeeId && r.status !== 'rejected' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
+      if (type !== 'suplimentare' && !workDaysBetween(startDate, endDate)) return fail(400, 'no_work_days');
 
       // "Altul" + "cu recuperare": how many hours she misses and when she'll make them up
       let recovery = null;
@@ -208,6 +210,8 @@ module.exports = async (req, res) => {
 
       const employees = await readJSON('data/employees.json', []);
       if (employeeId !== 'admin' && !employees.some((e) => e.id === employeeId)) return fail(404, 'employee_not_found');
+      if (requests.some((r) => r.employeeId === employeeId && r.status !== 'rejected' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
+      if (type !== 'suplimentare' && !workDaysBetween(startDate, endDate)) return fail(400, 'no_work_days');
 
       const request = {
         id: crypto.randomUUID(),

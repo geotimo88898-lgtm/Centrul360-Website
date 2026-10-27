@@ -18,6 +18,7 @@
     recovery_plan_mismatch: 'Orele din plan trebuie să dea exact totalul orelor lipsă.',
     invalid_recovery: 'Scrie câte ore lipsești.',
     not_enough_overtime: 'Nu ai destule ore suplimentare pentru asta.',
+    overlapping_request: 'Ai deja o cerere pentru zilele astea.', no_work_days: 'Perioada nu are zile lucrătoare (luni-vineri).',
     invalid_minutes: 'Scrie câte ore folosești.',
     nothing_to_pay: 'Nu are ore suplimentare de plătit.',
   };
@@ -142,6 +143,8 @@
           (adj.weekend ? 'Azi e zi de weekend: ' + fmt(adj.minutes) + ' suplimentare' : fmt(adj.minutes, true) + (adj.minutes > 0 ? ' peste program' : ' sub program')) + ', ' + (ADJ_LABEL[adj.status] || '') + '.</div>'
         : '<div class="cd-today-note is-ok">' + icon('checkCircle') + 'Zi completă. Mulțumim!</div>';
     } else if (weekend) line = '<div class="cd-today-note">' + icon('info') + 'Azi e weekend: tot timpul lucrat e oră suplimentară.</div>';
+    // no arrival yet in the afternoon: she probably forgot, and the owner can correct the hour
+    else if (!(mine && mine.checkIn) && new Date().getHours() >= 13) line = '<div class="cd-today-note">' + icon('info') + 'Ai uitat să pontezi dimineața? Pontează oricum și spune-i adminului ora reală, o corectează el.</div>';
     return '<section class="k-card cd-today"><div class="k-card-head"><h3>' + icon('clock') + 'Azi, ' + esc(K.dateLong(today)) + '</h3></div>' +
       '<div class="cd-today-row">' +
         '<div class="cd-today-stat"><span>Sosire</span><b>' + (mine && mine.checkIn ? esc(mine.checkIn) : '-') + '</b></div>' +
@@ -284,7 +287,7 @@
           '</div></div>' +
         // Ore libere din orele suplimentare
         '<div class="full lv-sup" data-sup hidden><label class="k-field"><span>Câte ore folosești</span><label class="lv-hours is-big"><input type="number" data-sup-hours min="0.5" step="0.5" inputmode="decimal" placeholder="0"><span>ore</span></label></label>' +
-          '<p class="ct-hint">' + icon('info') + 'Ai ' + fmt(tb.bank) + ' ore suplimentare. Le folosești în loc de bani și nu mai ai nimic de recuperat.</p></div>' +
+          '<p class="ct-hint">' + icon('info') + 'Ai ' + fmt(tb.bank) + ' suplimentare. Le folosești în loc de bani și nu mai ai nimic de recuperat.</p></div>' +
         K.field('Motiv', '<textarea name="reason" rows="3" maxlength="500" placeholder="Opțional la odihnă / fără plată / ore libere, obligatoriu la medical / altul"></textarea>', 'full') +
         '</form>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Trimite cererea</button>',
@@ -400,7 +403,8 @@
   async function payout(id) {
     const t = C.tb;
     if (!(await K.ui().confirm({ title: 'Plătite cu salariul?', message: fmt(t.bank) + ' ore suplimentare = ' + K.lei(t.bankLei) + '. Orele ies din sold.', confirmText: 'Da, plătite' }))) return;
-    try { await K.api('/api/portal-attendance', { action: 'payout', employeeId: id }); K.ui().toast('Ore suplimentare marcate plătite.', 'success'); load(); }
+    const month = C.year + '-' + String(C.month).padStart(2, '0'); // booked to the month on screen
+    try { await K.api('/api/portal-attendance', { action: 'payout', employeeId: id, month }); K.ui().toast('Ore suplimentare marcate plătite.', 'success'); load(); }
     catch (e) { K.ui().toast(errText(e), 'error'); }
   }
 

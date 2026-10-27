@@ -18,7 +18,7 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth, requireAdmin } = require('./_lib/auth');
 const TB = require('./_lib/timebank');
-const { notify } = require('./_lib/notify');
+const { notify, leiTxt } = require('./_lib/notify');
 
 const KEY = 'data/attendance.json';
 // Same literal location list as api/portal-leads.js / api/portal-appointments.js.
@@ -88,10 +88,13 @@ module.exports = async (req, res) => {
   const fail = (code, error) => res.status(code).json({ error });
 
   try {
-    const entries = await readJSON(KEY, []);
+    let entries = await readJSON(KEY, []);
 
     if (action === 'clock_in' || action === 'clock_out') {
       const date = serverToday();
+      // two people tapping at the same second: the file is read again right before it is written
+      const location = await employeeLocation(session.employeeId);
+      entries = await readJSON(KEY, entries);
       let entry = entries.find((e) => e.employeeId === session.employeeId && e.date === date);
       const field = action === 'clock_in' ? 'checkIn' : 'checkOut';
       if (entry) {
@@ -100,7 +103,7 @@ module.exports = async (req, res) => {
       } else {
         entry = {
           id: crypto.randomUUID(), employeeId: session.employeeId, date,
-          checkIn: null, checkOut: null, location: await employeeLocation(session.employeeId), note: '',
+          checkIn: null, checkOut: null, location, note: '',
           createdAt: nowISO(), updatedAt: nowISO(),
         };
         entry[field] = serverTime();
@@ -155,7 +158,7 @@ module.exports = async (req, res) => {
       if (body.decision === 'reject') {
         a.status = 'rejected'; a.approvedMinutes = 0;
         await writeJSON(TB.ADJ, adjs);
-        await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'bad', title: 'PONTAJ ❌ - ' + day + ' respins', text: (a.minutes > 0 ? 'Cele ' + fmtMin(a.minutes) + ' în plus n-au fost aprobate.' : 'Cele ' + fmtMin(a.minutes) + ' n-au fost aprobate.') + (a.decisionNote ? ' ' + a.decisionNote : ''), go: 'condica' });
+        await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'bad', title: 'PONTAJ ❌ - ' + day + ' respins', text: (a.minutes > 0 ? 'Cele ' + fmtMin(a.minutes) + ' în plus nu se numără.' : 'Lipsa de ' + fmtMin(a.minutes) + ' n-au fost aprobate.') + (a.decisionNote ? ' ' + a.decisionNote : ''), go: 'condica' });
         res.status(200).json({ ok: true, adjustment: a });
         return;
       }
@@ -181,7 +184,9 @@ module.exports = async (req, res) => {
       const all = await TB.loadAll(readJSON);
       const bal = TB.ledger(targetId, all);
       if (!(bal.bank > 0)) return fail(400, 'nothing_to_pay');
-      const p = { id: crypto.randomUUID(), employeeId: targetId, minutes: bal.bank, lei: bal.bankLei, at: new Date().toISOString(), month: serverToday().slice(0, 7), by: session.employeeId };
+      // booked to the month on the owner's screen (October's overtime paid on 3.11 belongs to October's salary)
+      const month = /^\d{4}-\d{2}$/.test(String(body.month || '')) && String(body.month) <= serverToday().slice(0, 7) ? String(body.month) : serverToday().slice(0, 7);
+      const p = { id: crypto.randomUUID(), employeeId: targetId, minutes: bal.bank, lei: bal.bankLei, at: new Date().toISOString(), month, by: session.employeeId };
       all.payouts.push(p);
       await writeJSON(TB.PAYOUTS, all.payouts);
       await notify({ readJSON, writeJSON }, targetId, { kind: 'paid', tone: 'good', title: 'ORE PLĂTITE 💵 - ' + fmtMin(p.minutes) + ' = ' + leiTxt(p.lei), text: 'Le primești cu salariul.', go: 'condica' });
