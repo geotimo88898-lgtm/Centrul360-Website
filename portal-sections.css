@@ -806,6 +806,12 @@
 /* Echipa → Ajustări */
 .tm-man-acts{ display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem; }
 .tm-man-list{ padding:.35rem .9rem; }
+/* Echipa → persoana → Vânzări: one or several upsells added by hand */
+.up-row{ margin:0 0 .9rem; padding:.9rem .95rem 1rem; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
+.up-row legend{ display:flex; align-items:center; gap:.6rem; padding:0 .4rem; font-size:.8rem; font-weight:650; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+.up-row legend b{ color:var(--fg); }
+.up-row legend .k-btn{ margin-left:.2rem; }
+.up-row .k-form{ margin:0; }
 .tm-man-row{ display:flex; align-items:center; gap:.7rem; padding:.65rem 0; }
 .tm-man-row .k-icon-btn{ width:44px; height:44px; }
 .tm-man-row + .tm-man-row{ border-top:1px solid var(--line); }

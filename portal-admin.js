@@ -316,9 +316,10 @@
       (g.current != null && g.metric !== 'manual' ? '<div class="ad-goal-now">' + icon('trend') + 'Acum: <b>' + (METRICS[g.metric] && METRICS[g.metric].ron ? K.lei(g.current) : g.current) + '</b> din ' + (METRICS[g.metric] && METRICS[g.metric].ron ? K.lei(g.target) : g.target) + '</div>' : '') + '</div>';
   }
 
-  function openEmployee(id) {
+  function openEmployee(id, tab) {
     const e = K.data.admin.employees.find((x) => x.id === id);
     if (!e) return;
+    tab = tab || 'profile';
     let goals = JSON.parse(JSON.stringify(e.goals || []));
     const st = empStats(e);
     const sales = K.data.admin.allSales.filter((s) => s.employeeId === e.id).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25);
@@ -326,9 +327,9 @@
       title: e.name, lead: K.avatar(e.name, 44), width: 600,
       subtitle: '<span class="k-tag is-' + (e.role === 'receptie' ? 'info' : 'good') + '">' + esc(K.roleLabel(e.role)) + '</span>' + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>dezactivat</b>'),
       body:
-        '<div class="ad-tabs">' + K.seg('emptab', [['profile', 'Profil & salariu', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], 'profile', 'is-big') + '</div>' +
+        '<div class="ad-tabs">' + K.seg('emptab', [['profile', 'Profil & salariu', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], tab, 'is-big') + '</div>' +
         '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
-        '<div data-pane="profile"><form class="k-form" data-profile>' +
+        '<div data-pane="profile"' + (tab === 'profile' ? '' : ' hidden') + '><form class="k-form" data-profile>' +
           K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'receptie' ? 'bonusul de programări.' : 'comisionul.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
           K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full') +
@@ -338,8 +339,10 @@
           '<div class="ad-access"><button type="button" class="k-btn is-outline" data-pass>' + icon('key') + 'Resetează parola</button>' +
           (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<button type="button" class="k-btn ' + (e.active ? 'is-danger' : 'is-good') + '" data-toggle>' + icon('power') + (e.active ? 'Dezactivează contul' : 'Reactivează contul') + '</button>') + '</div>' +
           (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<p class="k-muted">Dezactivarea blochează logarea, dar păstrează istoricul și comisioanele.</p>') + '</div>' +
-        '<div data-pane="condica" hidden><div data-balance><div class="k-skel" style="height:90px"></div></div></div>' +
-        '<div data-pane="sales" hidden><div class="k-grid c3" style="margin-bottom:.8rem">' +
+        '<div data-pane="condica"' + (tab === 'condica' ? '' : ' hidden') + '><div data-balance><div class="k-skel" style="height:90px"></div></div></div>' +
+        '<div data-pane="sales"' + (tab === 'sales' ? '' : ' hidden') + '>' +
+          (e.role === 'admin' ? '' : '<div class="ad-bar" style="margin-bottom:.8rem"><button type="button" class="k-btn is-accent" data-add-ups>' + icon('plus') + 'Adaugă upsell</button><span class="k-muted">Unul sau mai multe, intră direct aprobate.</span></div>') +
+          '<div class="k-grid c3" style="margin-bottom:.8rem">' +
           '<div class="k-stat is-good"><div class="k-stat-top">Comision luna</div><div class="k-stat-value">' + K.lei(st.comm) + '</div></div>' +
           '<div class="k-stat"><div class="k-stat-top">Aprobate</div><div class="k-stat-value">' + st.approved + '</div></div>' +
           '<div class="k-stat is-warn"><div class="k-stat-top">În așteptare</div><div class="k-stat-value">' + st.pending + '</div></div></div>' +
@@ -347,10 +350,13 @@
             '<span class="k-tag is-' + (s.status === 'approved' ? 'good' : s.status === 'pending' ? 'warn' : 'bad') + '">' + (s.status === 'approved' ? K.lei(s.commission, 2) : s.status === 'pending' ? 'În așteptare' : 'Respinsă') + '</span></div>').join('') + '</div>'
             : K.empty('receipt', 'Nicio vânzare logată', '')) + '</div>',
       footer: (e.active && e.role !== 'admin' ? '<button type="button" class="k-btn is-outline" data-preview title="Vezi portalul exact cum îl vede ' + esc(e.name.split(' ')[0]) + '">' + icon('eye') + 'Intră în cont</button>' : '') +
-        '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+        '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button><button type="button" class="k-btn is-primary" data-save' + (tab === 'profile' ? '' : ' hidden') + '>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         const box = el.querySelector('[data-goals]');
         const pv = el.querySelector('[data-preview]');
+        const au = el.querySelector('[data-add-ups]');
+        if (au) au.addEventListener('click', () => openUpsells(e));
+        if (tab === 'condica') loadBalance();
         if (pv) pv.addEventListener('click', () => K.busy(pv, () => K.previewAs(e.id)));
         const readGoals = () => { box.querySelectorAll('[data-g]').forEach((row) => { const g = goals[+row.dataset.g]; row.querySelectorAll('[data-f]').forEach((f) => { g[f.dataset.f] = f.value; }); }); };
         const paint = () => {
@@ -497,6 +503,63 @@
           '<span class="k-tag is-' + (x.value > 0 ? 'good' : 'warn') + '">' + esc(val(x)) + '</span>' +
           '<button type="button" class="k-icon-btn" data-man-del="' + esc(x.id) + '" data-kind="' + esc(x.kind) + '" title="Șterge">' + icon('trash') + '</button></div>').join('') + '</div>'
         : K.empty('sliders', 'Nicio ajustare', 'Comisioanele și orele adăugate de mână apar aici.'));
+  }
+  // one or several upsells for a team member, added by the owner and approved on the spot
+  function openUpsells(e) {
+    let n = 0;
+    const rowHtml = () => {
+      n++;
+      return '<fieldset class="up-row" data-up-row><legend>Upsell <b data-up-n></b><button type="button" class="k-btn is-ghost is-sm" data-up-rm>' + icon('x') + 'Scoate</button></legend>' +
+        '<div class="k-form">' +
+        K.field('Ce a vândut', '<input data-f="treatment" required maxlength="200" placeholder="ex. pachet 6 ședințe LipoSonix, o zonă în plus">', 'full') +
+        K.field('Categorie', K.catPicker([]), 'full') +
+        K.field('Valoarea upsell-ului', '<div class="k-money"><input data-f="amount" type="number" inputmode="decimal" min="1" step="1" required placeholder="0"></div>') +
+        K.field('Data', '<input data-f="date" type="date" value="' + K.today() + '" max="' + K.today() + '">') +
+        K.field('Clienta (opțional)', '<input data-f="client" maxlength="150" placeholder="numele clientei">', 'full') +
+        '</div></fieldset>';
+    };
+    const d = K.drawer({
+      title: 'Upselluri pentru ' + e.name.split(' ')[0], icon: 'percent', width: 560,
+      body: '<div data-up-list>' + rowHtml() + '</div><button type="button" class="k-btn is-outline" data-up-add>' + icon('plus') + 'Încă un upsell</button>',
+      footer: '<span class="k-grow k-muted" data-up-est></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Adaugă</button>',
+      onMount(el) {
+        const list = el.querySelector('[data-up-list]'), est = el.querySelector('[data-up-est]'), save = el.querySelector('[data-save]');
+        const rows = () => Array.from(list.querySelectorAll('[data-up-row]'));
+        const read = () => rows().map((r) => ({
+          treatment: r.querySelector('[data-f=treatment]').value.trim(), categories: String(r.querySelector('input[name=categories]').value || '').split(',').filter(Boolean),
+          amount: Number(r.querySelector('[data-f=amount]').value) || 0, date: r.querySelector('[data-f=date]').value, clientName: r.querySelector('[data-f=client]').value.trim(),
+        }));
+        const paint = () => {
+          rows().forEach((r, i) => { r.querySelector('[data-up-n]').textContent = i + 1; r.querySelector('[data-up-rm]').hidden = rows().length < 2; });
+          const items = read(), sum = items.reduce((a, x) => a + K.commissionOf(x.amount), 0);
+          est.innerHTML = items.length > 1 || sum > 0 ? K.plural(items.length, 'upsell', 'upselluri') + ' · comision <b>' + K.lei(sum, 2) + '</b>' : '';
+          save.innerHTML = icon('check') + (items.length > 1 ? 'Adaugă ' + items.length + ' upselluri' : 'Adaugă');
+        };
+        paint();
+        el.addEventListener('input', paint);
+        el.addEventListener('change', paint);
+        el.querySelector('[data-up-add]').addEventListener('click', () => { list.insertAdjacentHTML('beforeend', rowHtml()); paint(); const last = rows().pop(); last.querySelector('[data-f=treatment]').focus(); });
+        list.addEventListener('click', (ev) => { const rm = ev.target.closest('[data-up-rm]'); if (rm && rows().length > 1) { rm.closest('[data-up-row]').remove(); paint(); } });
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        save.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const items = read();
+          for (let i = 0; i < items.length; i++) {
+            const x = items[i], w = 'Upsell ' + (i + 1) + ': ';
+            if (!x.treatment) { K.ui().toast(w + 'scrie ce a vândut.', 'error'); return; }
+            if (!x.categories.length) { K.ui().toast(w + 'alege categoria.', 'error'); return; }
+            if (!(x.amount > 0)) { K.ui().toast(w + 'scrie valoarea.', 'error'); return; }
+            if (!x.date) { K.ui().toast(w + 'alege data.', 'error'); return; }
+          }
+          try {
+            const r = await K.api('/api/portal-sale', { source: 'comision_admin', employeeId: e.id, items });
+            d.close();
+            K.ui().toast(K.plural(items.length, 'upsell adăugat', 'upselluri adăugate') + ' pentru ' + e.name.split(' ')[0] + ': ' + K.lei(r.commission || 0, 2) + ' comision.', 'success');
+            await K.reload();
+            openEmployee(e.id, 'sales');
+          } catch (err) { K.ui().toast(err.code === 'invalid_date' ? 'Data nu poate fi în viitor.' : K.errText(err), 'error'); }
+        }));
+      },
+    });
   }
   function openManual(kind) {
     const people = (K.data.admin.employees || []).filter((e) => e.id !== 'admin' && e.active);

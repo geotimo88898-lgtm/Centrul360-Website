@@ -135,6 +135,55 @@ async function handleComision(req, res, session) {
   }
 }
 
+// The owner adds one or several upsells for a team member by hand (Echipa → the person → Vânzări), already
+// approved: they count in her commission and in the goals at once. body: { employeeId, items: [{ date, treatment,
+// categories|category, amount, clientName?, note? }] }
+async function handleComisionAdmin(req, res, session) {
+  if (session.role !== 'admin' || session.viewer) { res.status(403).json({ error: 'forbidden' }); return; }
+  const b = req.body || {};
+  const employeeId = String(b.employeeId || '');
+  const items = Array.isArray(b.items) ? b.items.slice(0, 30) : [];
+  if (!employeeId || !items.length) { res.status(400).json({ error: 'missing_fields' }); return; }
+  const today = todayISO();
+  const clean = [];
+  for (const it of items) {
+    const cats = normalizeCategories(Array.isArray(it.categories) && it.categories.length ? it.categories : it.category);
+    const amount = Number(it.amount);
+    const treatment = String(it.treatment || '').trim();
+    if (!treatment) { res.status(400).json({ error: 'missing_treatment' }); return; }
+    if (!cats.length) { res.status(400).json({ error: 'invalid_category' }); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+    if (!isValidDate(it.date) || it.date > today) { res.status(400).json({ error: 'invalid_date' }); return; }
+    clean.push({ date: it.date, treatment: treatment.slice(0, 200), cats, amount: Math.round(amount * 100) / 100, client: String(it.clientName || '').trim().slice(0, 150), note: String(it.note || '').trim().slice(0, 500) });
+  }
+  try {
+    const employees = await readJSON('data/employees.json', []);
+    const emp = employees.find((e) => e.id === employeeId && e.id !== 'admin');
+    if (!emp) { res.status(404).json({ error: 'employee_not_found' }); return; }
+    const sales = await readJSON('data/sales.json', []);
+    const now = new Date().toISOString();
+    const made = clean.map((c) => ({
+      id: crypto.randomUUID(), source: 'comision', employeeId: emp.id, date: c.date,
+      categories: c.cats, category: c.cats[0], treatment: c.treatment, amount: c.amount, note: c.note, clientId: '', client: c.client,
+      status: 'approved', origin: 'manual', addedBy: session.employeeId,
+      profit: profitOf(c.amount), commission: commissionOf(c.amount),
+      createdAt: now, decidedAt: now, decisionNote: '',
+    }));
+    sales.push(...made);
+    await writeJSON('data/sales.json', sales);
+    const total = made.reduce((a, x) => a + x.commission, 0);
+    try {
+      await N.notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: 'good', go: 'comision',
+        title: 'COMISION ✅ - +' + N.leiTxt(Math.round(total * 100) / 100),
+        text: made.length === 1 ? made[0].treatment + (made[0].client ? ', ' + made[0].client : '') + ', upsell ' + N.leiTxt(made[0].amount) : made.length + ' upselluri adăugate de admin: ' + made.map((x) => x.treatment).join(', ') });
+    } catch (e) { /* a notification never blocks the request */ }
+    res.status(200).json({ ok: true, entries: made, commission: total });
+  } catch (err) {
+    console.error('portal-sale (comision_admin) error:', err.message);
+    res.status(500).json({ error: 'sale_failed' });
+  }
+}
+
 // "Încasare" = an appointment gets paid. The desk picks WHICH appointment, HOW it was paid (card /
 // cash / transfer / cash + card) and WHO did the treatment. When that person sold something extra
 // ("Upsell efectuat" ticked: the amount paid is the upsell), she earns a commission on it: value - 60% costs, then
@@ -321,6 +370,8 @@ const handler = async (req, res) => {
     await handleIncasare(req, res, session);
   } else if (source === 'comision_cancel') {
     await handleComisionCancel(req, res, session);
+  } else if (source === 'comision_admin') {
+    await handleComisionAdmin(req, res, session);
   } else {
     await handleComision(req, res, session);
   }
