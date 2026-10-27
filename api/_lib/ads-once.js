@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 27.10 night, the owner: Arad's Restart off; what runs is the LipoSonix TM that works at 75 lei a day (it had been put
+  // back to 50 by hand), its two 25 lei tests, Arad's two gușă and its LipoSonix; the job ad stays on
+  { id: 'plan-2026-10-27', why: 'cerut de voi pe 27.10', actions: [
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', daily: 75, why: 'TM: LipoSonix care merge, 75 lei/zi' },
+    { campaignId: '120251418285690103', name: 'AR RESTART · fără ace', status: 'PAUSED', why: 'Arad: Restart oprit' },
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', status: 'PAUSED', why: 'Arad: Restart oprit' },
+  ] },
   // 26.10 night: the other new LipoSonix ad in Timișoara too, 25 lei a day ("Fără efort. Fără diete stricte.")
   { id: 'tm-lipo-new2-2026-10-26', why: 'cerut de voi pe 26.10', actions: [
     { campaignId: '120251505980700103', name: 'TM LIPO · fără diete', status: 'ACTIVE', why: 'TM: încă o reclamă LipoSonix, 25 lei/zi' },
