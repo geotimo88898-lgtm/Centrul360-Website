@@ -38,6 +38,8 @@ jobs:
             [ -f tick.json ] && jq -c '{waited, ms}' tick.json 2>/dev/null || true
             [ -f tick.json ] && jq -c '.hire // empty' tick.json 2>/dev/null || true
             [ -f tick.json ] && jq -c '.reminders // empty' tick.json 2>/dev/null || true
+            # the changes to the automations asked for in chat: counts only
+            [ -f tick.json ] && jq -c '.flows // empty | with_entries(.value |= (if type == "object" then {removed: ((.removed // []) | length), kept: ((.kept // []) | length), skipped, error} else . end))' tick.json 2>/dev/null || true
             [ "$code" = "200" ] && exit 0
             sleep 10
           done
