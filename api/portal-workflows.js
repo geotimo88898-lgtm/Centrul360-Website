@@ -11,6 +11,7 @@
 //   POST { action: 'many', ids, op, folder? }   op: on | off | move | delete (the ones ticked)
 //   POST { action: 'folder', id?, name }        a new folder, or a new name
 //   POST { action: 'folder_delete', id }        its flows stay, without a folder
+//   POST { action: 'reminders' }                the booking messages (_lib/reminders.js): to Meta, into the flows once approved
 
 const { requireAdmin } = require('./_lib/auth');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -75,6 +76,7 @@ async function payload() {
       waNumbers: WA.CITIES.map((c) => ({ city: c, connected: !!(waCfg.numbers[c].phoneId && waCfg.numbers[c].token), display: waCfg.numbers[c].display || '' })),
       waTemplates: waDoc.templates.map((t) => WT.view(t, waCfg)),
     },
+    reminders: require('./_lib/reminders').status(waDoc, waCfg, doc),
   };
 }
 
@@ -177,6 +179,10 @@ module.exports = async (req, res) => {
       await W.saveDoc(doc);
     } else if (body.action === 'run_now') {
       await W.tick(true);
+    } else if (body.action === 'reminders') {
+      const r = await require('./_lib/reminders').apply();
+      res.status(200).json(Object.assign(await payload(), { applied: r }));
+      return;
     } else {
       res.status(400).json({ error: 'invalid_action' });
       return;

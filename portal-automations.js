@@ -214,110 +214,33 @@
   const tplIds = (steps) => [...new Set((function walk(l) { return (l || []).reduce((a, s) => a.concat(s.type === 'whatsapp' && s.templateId ? [s.templateId] : [], s.type === 'if' ? walk(s.yes).concat(walk(s.no), ...(s.more || []).map((b) => walk(b.steps))) : []), []); })(steps))];
   const remindFlows = () => S.d.workflows.filter((w) => (w.folder === 'reminders' || /^appointment_/.test(w.trigger.type)) && tplIds(w.steps).length);
 
-  // The reminders, the owner's own messages from HighLevel. Per city: the confirmation at once with the care sheet
-  // of its group (Epilare · HIFU / Liposonix · Recomandări generale; not for a package session) and right after it
-  // the clinic's map pin (a template has one header: the sheet is the confirmation's), 24h before and 2h before with
-  // the map pin, the review 2h after a finished treatment (not for a package session).
-  // "Creează reamintirile" makes the templates (a changed text or picture: a new version) and sets the steps of
-  // the flows "Reamintiri · <oraș>" (their switch stays as it is; a new one starts off).
-  const CARE = { epilare: '/brand_asset/wa-care/epilare-laser.webp', hifu: '/brand_asset/wa-care/hifu-liposonix.webp', gen: '/brand_asset/wa-care/recomandari-generale.webp' };
-  const REM_CITY = {
-    'Timișoara': { pin: 'Strada Bucegi, nr. 7, Timișoara.', near: 'Strada Bucegi, nr. 7, Timișoara (a nu se confunda cu strada din Chișoda)', review: 'https://g.page/r/CX3t4AVIOVHpEBE/review', groups: ['epilare', 'hifu', 'gen'] },
-    Arad: { pin: 'Strada Ioan Alexandru, 16-18, Arad', near: 'Strada Ioan Alexandru 16-18, Arad', review: 'https://g.page/r/CV_i6zWLF5yVEBI/review', groups: ['hifu', 'gen'] },
-  };
-  const GROUP = { epilare: 'Epilare', hifu: 'HIFU / Liposonix', gen: 'Recomandări generale' };
-  const confirmText = (g, c) => 'Bună {prenume}! 🌸 V-am confirmat programarea ' + (g === 'epilare' ? 'pentru epilare laser ' : '') + 'pe {data}, ora {ora}.\n' +
-    'V-am pregătit mai sus tot ce e bine să știți înainte și după ședință ☝️\n' +
-    'Dacă intervine ceva, anunțați-mă cu cel puțin 24h înainte, ca să pot oferi locul altei cliente. 💛\n' +
-    '📍' + REM_CITY[c].pin + (g === 'epilare' ? '\n' : '\n\n') + 'Cu drag, Giovanna - Centrul360';
-  const remSpec = (c) => {
-    const C = REM_CITY[c];
-    const list = C.groups.map((g) => ({ key: 'confirm-' + g, label: 'Reamintiri · Confirmare · ' + GROUP[g] + ' · ' + c, category: 'UTILITY', headerType: 'IMAGE', pic: CARE[g], body: confirmText(g, c), buttons: [] }));
-    // every message that speaks of the address has the pin: the confirmation's comes right after it
-    list.push({ key: 'loc', label: 'Reamintiri · Locația · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
-      body: 'Ne vedem pe {data}, la ora {ora}. Aici ne găsiți 📍 ' + C.near + '\n\nPe curând! Giovanna - Centrul360' });
-    list.push({ key: '24h', label: 'Reamintiri · 24h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [{ type: 'QUICK_REPLY', text: 'Reușesc să ajung' }],
-      body: 'Bună {prenume}! 📅 Vă reamintesc cu drag programarea de mâine, {data}, ora {ora}. Reușiți să ajungeți?\nNe găsiți aici: 📍 ' + C.near + '\n\nVă aștept! Giovanna - Centrul360' });
-    list.push({ key: '2h', label: 'Reamintiri · 2h înainte · ' + c, category: 'UTILITY', headerType: 'LOCATION', pic: '', buttons: [],
-      body: c === 'Arad'
-        ? 'Dragă {prenume}, vă reamintim că întâlnirea noastră este în 2 ore.\n📍Adresa: Strada Ioan Alexandru 16-18, Arad.\nIndicații: Cum veniți de pe Blvd. Iuliu Maniu este în clădirea albă la penultima ușă de termopan. Dacă nu găsiți ne puteți contacta la +40 750 277 394. Vă așteptăm cu drag!\nEchipa Centrul360'
-        : 'Bună {prenume}! ⏰ Vă aștept peste ~2 ore, la ora {ora}. Reușiți să ajungeți?\n📍 ' + C.near + '\n\nPe curând! Giovanna - Centrul360' });
-    list.push({ key: 'review', label: 'Reamintiri · Recenzie · ' + c, category: 'MARKETING', headerType: '', pic: '', buttons: [],
-      body: 'Bună, {prenume}! 🥰 Ne-a bucurat tare mult vizita ta la Centrul360! Dacă ți-a plăcut experiența, ne-ar ajuta enorm o recenzie sinceră pe Google. 💛 Ca mulțumire, îți oferim un masaj facial GRATUIT la următoarea vizită, un răsfăț din partea noastră 🎁\n\nLasă recenzia aici 👉 ' + C.review + ' și scrie-ne când ai făcut-o ca să-ți activăm cadoul. Abia așteptăm să te răsfățăm din nou! ❤️\nEchipa Centrul360' });
-    return list;
-  };
-  const remSame = (t, s) => !!t && String(t.text || '').trim() === s.body.trim() && (t.headerType || '') === s.headerType && (t.pic || '') === s.pic &&
-    JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(s.buttons.map((b) => b.text));
-  const remFind = (tpls, s) => tpls.filter((x) => x.label === s.label || String(x.label || '').startsWith(s.label + ' · v'));
-  const remFlowName = (c) => 'Reamintiri · ' + c;
-  const remFlow = (c) => S.d.workflows.find((x) => x.name === remFlowName(c)) || S.d.workflows.find((x) => x.folder === 'reminders' && x.trigger && x.trigger.type === 'appointment_created' && x.trigger.location === c);
-  // the template a city's flow should use for a spec: the version the owner picked on the canvas (a copy with her own
-  // words, as long as Meta did not reject it), else the one with today's text
-  const remPick = (tpls, s, w) => {
-    const all = remFind(tpls, s);
-    const used = w ? tplIds(w.steps) : [];
-    return all.find((x) => used.includes(x.id) && x.status !== 'REJECTED') || all.find((x) => remSame(x, s));
-  };
-  // the steps of a city's flow, from its templates (id by spec key)
-  function remSteps(c, ids) {
-    const wa = (k) => ({ type: 'whatsapp', templateId: ids[k], from: 'auto' });
-    const hifu = { cond: 'interest', value: 'hifu|liposonix', name: 'HIFU / Liposonix', steps: [wa('confirm-hifu')] };
-    const pick = REM_CITY[c].groups.includes('epilare')
-      ? { type: 'if', cond: 'category', value: 'epilare-laser', name: 'Epilare', yes: [wa('confirm-epilare')], more: [hifu, { cond: 'interest', value: 'epilare', name: 'Epilare (după nume)', steps: [wa('confirm-epilare')] }], no: [wa('confirm-gen')] }
-      : { type: 'if', cond: 'interest', value: 'hifu|liposonix', name: 'HIFU / Liposonix', yes: [wa('confirm-hifu')], no: [wa('confirm-gen')] };
-    return [
-      { type: 'if', cond: 'package', name: 'Ședință din pachet', yes: [], no: [pick, wa('loc')] },
-      { type: 'wait', mode: 'before', amount: 24, unit: 'h' }, wa('24h'),
-      { type: 'wait', mode: 'before', amount: 2, unit: 'h' }, wa('2h'),
-      { type: 'if', cond: 'package', name: 'Ședință din pachet', yes: [], no: [{ type: 'wait', mode: 'after', amount: 2, unit: 'h' }, { type: 'if', cond: 'appt_done', name: 'Tratament finalizat', yes: [wa('review')], no: [] }] },
-    ];
-  }
-  // what is missing or out of date (per city: templates with today's text + the flow using exactly them)
-  function remState(tpls) {
-    let todo = 0;
-    Object.keys(REM_CITY).forEach((c) => {
-      const ids = {};
-      const w = remFlow(c);
-      remSpec(c).forEach((s) => { const good = remPick(tpls, s, w); if (!good) todo++; else ids[s.key] = good.id; });
-      if (!w || Object.values(ids).some((id) => !tplIds(w.steps).includes(id))) todo++;
-    });
-    return todo;
+  // The booking messages (the owner, 28.10, api/_lib/reminders.js): the confirmation, the day before at 9:00 with
+  // „Da, ajung” / „Nu ajung”, 2 hours before with the parking. The server sends them to Meta and puts them in the flows
+  // "Reamintiri · <oraș>" once Meta approved them (the automations' clock does it by itself); the button does it now.
+  const remCities = () => (S.d.reminders || {}).cities || {};
+  const remTodo = () => (S.d.reminders || {}).todo || 0;
+  // what the card says under its title: on its way at Meta, refused, or to do
+  function remNote() {
+    const all = Object.values(remCities());
+    const bad = all.find((x) => x.state === 'rejected');
+    if (bad) return 'Meta a respins „' + bad.label + '”' + (bad.reason ? ' (' + bad.reason + ')' : '') + '. Rămân mesajele de acum.';
+    if (all.some((x) => x.state === 'pending')) return 'Mesajele noi sunt la Meta pentru aprobare. Intră singure în reamintiri după aprobare.';
+    if (all.some((x) => x.state === 'ready')) return 'Mesajele noi sunt aprobate de Meta. Intră singure în reamintiri în cel mult o oră, sau acum din buton.';
+    return remTodo() ? 'Mesajele noi de programare nu sunt încă la Meta sau nu sunt în reamintiri. Butonul le trimite și le pune.' : '';
   }
   async function makeReminders(btn) {
     await K.busy(btn, async () => {
       try {
-        let wa = await window.C360Wa.load(true);
-        const errs = [];
-        let made = 0;
-        for (const c of Object.keys(REM_CITY)) {
-          const ids = {};
-          const w = remFlow(c);
-          for (const s of remSpec(c)) {
-            let t = remPick(wa.templates || [], s, w);
-            if (!t) {
-              let sample;
-              if (s.headerType === 'IMAGE') { try { sample = await toJpeg(s.pic); } catch (e) { errs.push(s.label + ': lipsește poza'); continue; } }
-              const labels = new Set((wa.templates || []).map((x) => x.label));
-              let label = s.label, v = 1;
-              while (labels.has(label)) label = s.label + ' · v' + (++v);
-              wa = await window.C360Wa.post({ action: 'tpl_save', submit: true, cities: [c],
-                template: { label, category: s.category, headerType: s.headerType, body: s.body, footer: '', buttons: s.buttons, sample, pic: s.pic } });
-              if (wa.submitError) errs.push(s.label + ': ' + wa.submitError);
-              t = (wa.templates || []).find((x) => x.id === wa.savedId);
-              made++;
-            }
-            if (t) ids[s.key] = t.id;
-          }
-          if (remSpec(c).some((s) => !ids[s.key])) continue; // a template missing: the flow stays as it was
-          // the flow already uses these messages: nothing to rewrite (a save would restart its waiting runs)
-          if (w && Object.values(ids).every((id) => tplIds(w.steps).includes(id))) continue;
-          if (w && !(await K.ui().confirm({ title: 'Refaci „' + w.name + '”?', message: 'Pașii ei se înlocuiesc cu mesajele standard de reamintire.', confirmText: 'Refă' }))) continue;
-          S.d = await K.api('/api/portal-workflows', { action: 'save', workflow: {
-            id: w ? w.id : undefined, name: w ? w.name : remFlowName(c), note: 'Confirmare cu fișa grupei și harta, 24h și 2h înainte cu harta, recenzia după tratament.',
-            active: w ? !!w.active : false, folder: 'reminders', trigger: { type: 'appointment_created', location: c }, steps: remSteps(c, ids),
-          } });
-        }
-        K.ui().toast(errs.length ? errs.join(' · ') : made ? 'Gata: ' + K.plural(made, 'mesaj trimis', 'mesaje trimise') + ' la aprobare. Reamintirile pleacă după ce Meta le aprobă, dacă automatizarea orașului e pornită.' : 'Reamintirile sunt la zi.', errs.length ? 'error' : 'success');
+        const names = Object.values(remCities()).filter((x) => x.state === 'ready' && x.flow).map((x) => (S.d.workflows.find((w) => w.id === x.flow) || {}).name).filter(Boolean);
+        if (names.length && !(await K.ui().confirm({ title: 'Pui mesajele noi în ' + names.map((n) => '„' + n + '”').join(' și ') + '?',
+          message: 'Pașii se înlocuiesc cu: confirmarea, ziua dinainte la 9:00 cu Da / Nu ajung, cu 2 ore înainte cu parcarea. Programările din calendar continuă cu mesajele noi.', confirmText: 'Pune-le' }))) return;
+        S.d = await K.api('/api/portal-workflows', { action: 'reminders' });
+        await window.C360Wa.load(true).catch(() => null);
+        const st = Object.values((S.d.applied || {}).cities || {});
+        const bad = st.find((x) => x.error || x.state === 'rejected');
+        K.ui().toast(bad ? bad.error || 'Meta a respins „' + bad.label + '”' + (bad.reason ? ': ' + bad.reason : '')
+          : st.some((x) => x.switched) ? 'Gata: mesajele noi sunt în reamintiri.'
+          : st.some((x) => x.state === 'pending') ? 'Mesajele sunt la Meta. Intră singure în reamintiri după aprobare.' : 'Reamintirile sunt la zi.', bad ? 'error' : 'success');
       } catch (err) { fail(err); }
       render();
     });
@@ -388,7 +311,7 @@
     const stale = rows.filter((r) => r.t && !r.fresh && (r.on || r.w || !r.good)).length;
     const numbers = Object.keys(wa.numbers || {}).some((c) => wa.numbers[c].connected);
     const reminders = remindFlows();
-    const remTodo = remState(tpls);
+    const todo = remTodo(), note = remNote();
     box.innerHTML = '<div class="au-msgs">' +
       '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('userPlus') + '</span><div><b>Lead nou</b><small>cu poza ofertei, de pe numărul orașului</small></div>' +
         (numbers ? '<button type="button" class="k-btn ' + (missing || stale ? 'is-primary' : 'is-ghost') + ' is-sm" data-leadmsg-go>' + icon(missing || stale ? 'plus' : 'refresh') + (missing ? (rows.length === missing ? 'Creează mesajele' : 'Creează ce lipsește') : stale ? 'Actualizează mesajele' : 'Verifică din nou') + '</button>' : '') + '</header>' +
@@ -399,10 +322,10 @@
           '<span class="au-msg-tags">' + (r.t ? cityState(r.t, leadCities(r.o)) : '<span class="k-tag">Lipsește</span>') + '</span>' +
           (r.t ? tplBtn(r.t) : '') + '</div>').join('') : '<p class="k-muted au-msg-none">Nicio ofertă bifată „Reclame”.</p>') +
       '</section>' +
-      '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('clock') + '</span><div><b>Reamintiri</b><small>confirmare, înainte de programare, recenzie</small></div>' +
-        (numbers ? (remTodo ? '<span class="k-tag is-warn">' + icon('alert') + 'De făcut</span>' : '') +
-          '<button type="button" class="k-btn ' + (remTodo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(remTodo ? 'plus' : 'refresh') + (remTodo ? (reminders.length ? 'Actualizează reamintirile' : 'Creează reamintirile') : 'Verifică din nou') + '</button>' : '') + '</header>' +
-        (numbers ? (remTodo ? '<p class="k-muted au-msg-none">Mesajele standard de reamintire nu sunt încă la Meta sau nu sunt pe schemă. Butonul le trimite și le pune.</p>' : '') : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
+      '<section class="k-card au-msg"><header class="au-msg-h"><span class="k-icon-chip is-accent">' + icon('clock') + '</span><div><b>Reamintiri</b><small>confirmare, ziua dinainte la 9:00, cu 2 ore înainte</small></div>' +
+        (numbers ? (todo ? '<span class="k-tag is-warn">' + icon('alert') + 'De făcut</span>' : '') +
+          '<button type="button" class="k-btn ' + (todo ? 'is-primary' : 'is-ghost') + ' is-sm" data-rem-go>' + icon(todo ? 'plus' : 'refresh') + (todo ? (reminders.length ? 'Actualizează reamintirile' : 'Creează reamintirile') : 'Verifică din nou') + '</button>' : '') + '</header>' +
+        (numbers ? (note ? '<p class="k-muted au-msg-none">' + esc(note) + '</p>' : '') : '<p class="k-muted au-msg-none">Conectează numerele WhatsApp din Integrări.</p>') +
         (reminders.length ? reminders.map((w) => '<div class="au-msg-flow"><div class="au-msg-fhead">' + flowSwitch(w) +
             '<button type="button" class="au-msg-fname" data-open="' + esc(w.id) + '" title="Deschide pe schemă"><b>' + esc(w.name) + '</b>' + icon('right') + '</button></div>' +
             tplIds(w.steps).map((id) => { const t = byId.get(id); return '<div class="au-msg-row is-sub"><span class="au-msg-name"><b>' + esc(t ? t.label : 'Șablon șters') + '</b>' + (t ? statHtml(stats, [id]) : '') + '</span>' +

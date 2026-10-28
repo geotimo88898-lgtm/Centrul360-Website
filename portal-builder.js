@@ -118,7 +118,10 @@
     return (TRIG[t.type] || {}).label || t.type;
   }
   const condText = (s) => (COND[s.cond] || { label: s.cond }).label + (COND[s.cond] && COND[s.cond].value ? ' ' + ((COND[s.cond].value === 'cat' ? CATS[s.value] : s.value) || '…') : '');
-  const waitSum = (s) => (s.mode === 'before' ? (s.amount || 0) + ' ' + UNIT[s.unit || 'h'] + ' înainte de programare' : s.mode === 'after' ? (s.amount || 0) + ' ' + UNIT[s.unit || 'h'] + ' după programare' : (s.amount || 1) + ' ' + UNIT[s.unit || 'h']);
+  const unitOf = (n, u) => (Number(n) === 1 ? { min: 'minut', h: 'oră', d: 'zi' } : UNIT)[u || 'h'];
+  // "1 zi înainte de programare, la ora 09:00": a day tied to the appointment can have its own hour
+  const atOf = (s) => (s.mode !== 'for' && s.mode && s.unit === 'd' && s.at ? ', la ora ' + s.at : '');
+  const waitSum = (s) => (s.mode === 'before' ? (s.amount || 0) + ' ' + unitOf(s.amount || 0, s.unit) + ' înainte de programare' + atOf(s) : s.mode === 'after' ? (s.amount || 0) + ' ' + unitOf(s.amount || 0, s.unit) + ' după programare' + atOf(s) : (s.amount || 1) + ' ' + unitOf(s.amount || 1, s.unit));
   const branchName = (b) => b.name || condText(b);
   const toText = (to) => (to || []).map((x) => (x.startsWith('role:') ? ROLE[x.slice(5)] : ((B.meta.team || []).find((p) => 'emp:' + p.id === x) || { name: '?' }).name)).join(', ');
   // the WhatsApp templates and numbers (from /api/portal-workflows, refreshed after a new template)
@@ -268,7 +271,8 @@
       body = (isLead() ? '' : K.field('Cum', '<select data-f="mode">' + K.options(Object.keys(WAIT).map((m) => [m, WAIT[m]]), mode) + '</select>', 'full')) +
         K.field(mode === 'before' ? 'Cu cât înainte de ora programării' : mode === 'after' ? 'Cât după ce se termină programarea' : 'Cât așteaptă',
           '<div class="au-inline"><input type="number" min="' + (mode === 'for' ? 1 : 0) + '" max="999" data-f="amount" value="' + esc(s.amount == null ? 1 : s.amount) + '"><select data-f="unit">' + K.options(Object.keys(UNIT).map((u) => [u, UNIT[u]]), s.unit || 'h') + '</select></div>', 'full',
-          mode === 'before' ? 'Dacă programarea se mută, se mută și mesajul. Dacă ora a trecut deja (programare făcută mai târziu), mesajul de după e sărit.' : mode === 'after' ? 'Se socotește de la ora de final a programării. Dacă se mută, se mută și mesajul.' : 'Apoi merge la pasul următor.');
+          mode === 'before' ? 'Dacă programarea se mută, se mută și mesajul. Dacă ora a trecut deja (programare făcută mai târziu), mesajul de după e sărit.' : mode === 'after' ? 'Se socotește de la ora de final a programării. Dacă se mută, se mută și mesajul.' : 'Apoi merge la pasul următor.') +
+        (mode !== 'for' && s.unit === 'd' ? K.field('La ora', '<input type="time" data-f="at" value="' + esc(s.at || '') + '">', 'full', 'Gol: la ora programării. Cu o oră, ex. 09:00: în ziua aceea, la ora asta.') : '');
     }
     if (s.type === 'whatsapp') body = waFields(s);
     if (s.type === 'task') body = K.field('Ce face recepția', '<textarea rows="3" data-f="text" maxlength="300" placeholder="ex. Sună-l pe {nume} ({telefon}) pentru {procedura}">' + esc(s.text || '') + '</textarea>', 'full') + chips;

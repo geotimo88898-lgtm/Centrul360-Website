@@ -94,6 +94,7 @@ function relDay(iso) {
   return diff > 0 && diff < 7 ? wd : 'pe ' + roDate(iso);
 }
 const unitMs = { min: 60e3, h: 3600e3, d: 86400e3 };
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 // ---------------------------------------------------------------- recipes + defaults
 const RECIPES = [
@@ -214,7 +215,9 @@ function cleanSteps(list, depth, seen) {
     seen.ids.add(id);
     const st = { id, type: s.type };
     let ok = true;
-    if (s.type === 'wait') { st.amount = Math.min(999, Math.max(s.mode === 'after' || s.mode === 'before' ? 0 : 1, Math.round(Number(s.amount) || 0) || (s.mode === 'for' || !s.mode ? 1 : 0))); st.unit = unitMs[s.unit] ? s.unit : 'h'; st.mode = WAIT_MODES.includes(s.mode) ? s.mode : 'for'; }
+    if (s.type === 'wait') { st.amount = Math.min(999, Math.max(s.mode === 'after' || s.mode === 'before' ? 0 : 1, Math.round(Number(s.amount) || 0) || (s.mode === 'for' || !s.mode ? 1 : 0))); st.unit = unitMs[s.unit] ? s.unit : 'h'; st.mode = WAIT_MODES.includes(s.mode) ? s.mode : 'for';
+      // a day tied to the appointment can have its own hour ("1 zi înainte, la ora 09:00")
+      if (st.mode !== 'for' && st.unit === 'd' && HHMM.test(String(s.at || ''))) st.at = s.at; }
     if (s.type === 'whatsapp') { waFields(s, st); st.text = clip(s.text, 1100).trim(); ok = !!st.templateId; }
     if (s.type === 'task') { st.text = clip(s.text, 300).trim(); ok = !!st.text; }
     if (s.type === 'move_stage') { st.stage = clip(s.stage, 60); ok = !!st.stage; }
@@ -482,13 +485,22 @@ function waitTarget(s, a) {
   if (!a) return NaN;
   const start = apptStart(a);
   if (!Number.isFinite(start)) return NaN;
+  // N days before / after the appointment's day, at that hour (Bucharest)
+  if (s.at && s.unit === 'd' && (s.mode === 'before' || s.mode === 'after')) {
+    const [y, m, d] = String(a.date).split('-').map(Number);
+    const day = new Date(Date.UTC(y, m - 1, d + (s.mode === 'before' ? -1 : 1) * (Number(s.amount) || 0))).toISOString().slice(0, 10);
+    return apptStart({ date: day, time: s.at });
+  }
   const amt = (Number(s.amount) || 0) * unitMs[s.unit || 'h'];
   if (s.mode === 'before') return start - amt;
   const [sh, sm] = String(a.time || '10:00').split(':').map(Number), [eh, em] = String(a.endTime || '').split(':').map(Number);
   const len = Number.isFinite(eh) && eh * 60 + (em || 0) > sh * 60 + (sm || 0) ? (eh * 60 + (em || 0) - sh * 60 - (sm || 0)) * 60e3 : 3600e3;
   return start + len + amt;
 }
-const waitText = (s) => (s.amount || 0) + ' ' + ({ min: 'min', h: 'h', d: 'zile' }[s.unit || 'h']) + (s.mode === 'before' ? ' înainte de programare' : ' după programare');
+const waitText = (s) => (s.amount || 0) + ' ' + (s.unit === 'd' ? (Number(s.amount) === 1 ? 'zi' : 'zile') : ({ min: 'min', h: 'h' }[s.unit || 'h'])) + (s.mode === 'before' ? ' înainte de programare' : ' după programare') + (s.at && s.unit === 'd' ? ', la ora ' + s.at : '');
+// what a wait is, for a run that waits on it (the flow saved again: the same wait found in the new steps)
+const specOf = (s, self) => Object.assign({ mode: s.mode, amount: s.amount, unit: s.unit }, s.at ? { at: s.at } : {}, self ? { self: true } : {});
+const sameWait = (x, sp) => x.type === 'wait' && x.mode === sp.mode && Number(x.amount) === Number(sp.amount) && x.unit === sp.unit && (x.at || '') === (sp.at || '');
 const roStamp = (ms) => new Date(ms).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 // Steps form a tree (an "if" holds its own yes / no lists). They run through a map of
@@ -527,7 +539,7 @@ function condHit(s, ctx) {
 // One template to one phone, from a number: { sent, why, city }. wa = { tpls, cfg } (read once per tick).
 // A message sent to a client by the automations also goes in her WhatsApp chat (Mesaje), marked "automat": the team
 // sees what she got, and Panou → KPI counts who read it and who answered. Never throws.
-async function logSent(tpl, phone, city, id, v) {
+async function logSent(tpl, phone, city, id, v, appt) {
   try {
     const { normalizePhone } = require('./clients');
     const p = normalizePhone(phone) || String(phone || '');
@@ -543,7 +555,7 @@ async function logSent(tpl, phone, city, id, v) {
     const img = WT.imageOf(tpl);
     const pin = tpl.headerType === 'LOCATION' ? '📍 Locația clinicii' + (city ? ' (' + city + ')' : '') : '';
     convo.messages.push(Object.assign({ id: id || uid(), direction: 'out', type: 'template', templateId: tpl.id, text: [pin, tpl.header, text, tpl.footer].filter(Boolean).join('\n'),
-      status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true }, img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: img } } : {}));
+      status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true }, appt ? { appt } : {}, img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'poza.jpg', path: img } } : {}));
     convo.lastMessageAt = nowISO();
     await require('./wa-convos').saveConversations(conversations);
   } catch (err) { console.error('workflows.logSent error:', err.message); }
@@ -559,7 +571,7 @@ async function sendTemplate(wa, templateId, from, phone, v, opts) {
   const n = wa.cfg.numbers[city];
   if (!WT.approvedFor(tpl, n.wabaId)) return { why: 'șablonul „' + tpl.label + '” nu e aprobat de Meta pentru numărul ' + city, city, pending: /PENDING|IN_REVIEW/i.test(String((tpl.meta[n.wabaId] || {}).status || '')) };
   const r = await sendWhatsApp({ phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: tpl.language || 'ro', params: (tpl.map || []).map((k) => v[k] || '-'), from: city, headerImagePath: WT.imageOf(tpl), headerLocation: tpl.headerType === 'LOCATION' });
-  if (r.sent && !(opts && opts.nolog)) await logSent(tpl, phone, r.fromCity || city, r.id, v);
+  if (r.sent && !(opts && opts.nolog)) await logSent(tpl, phone, r.fromCity || city, r.id, v, opts && opts.appt);
   return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
 }
 const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';
@@ -664,6 +676,7 @@ async function runOne(run, wf, settings, counters) {
   const person = personOf(ctx);
   const c = counters[wf.id] = counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
   let id = run.at === '^' ? prog.start : run.at;
+  let sentHere = false;
   for (let guard = 0; id !== '$'; guard++) {
     if (guard > 100) { run.status = 'error'; log('Prea mulți pași la rând'); return; }
     const op = prog.ops.get(id);
@@ -671,7 +684,7 @@ async function runOne(run, wf, settings, counters) {
       // the flow was saved again (its steps got new ids, 25.10: the reminders' were remade and 8 waiting appointments
       // stopped): go on from the same wait in the new steps
       const sp = run.waitSpec;
-      const w = sp && flat(wf.steps).find((x) => x.type === 'wait' && x.mode === sp.mode && Number(x.amount) === Number(sp.amount) && x.unit === sp.unit);
+      const w = sp && flat(wf.steps).find((x) => sameWait(x, sp));
       const to = w && (sp.self ? w.id : (prog.ops.get(w.id) || {}).next);
       if (to && to !== id && prog.ops.has(to)) { log('Automatizarea s-a schimbat: continuă de la același pas'); id = to; run.at = to; continue; }
       run.status = 'stopped'; log('Pasul următor a fost șters din automatizare'); return;
@@ -698,13 +711,14 @@ async function runOne(run, wf, settings, counters) {
         const target = waitTarget(s, ctx.appointment);
         if (!Number.isFinite(target)) { run.status = 'stopped'; log('Programarea nu mai există'); return; }
         if (target <= Date.now()) {
-          // booked too late for this moment (a same-day booking and a 24h reminder): the message after it is skipped
-          if (s.mode === 'before' && target < Date.now() - 15 * 60e3) { run.skipNext = true; log('Ora (' + waitText(s) + ') a trecut deja, mesajul următor e sărit'); }
+          // booked too late for this moment (a same-day booking and a 24h reminder): the message after it is skipped;
+          // a fixed hour gone by while a message just went (booked at 9:05 for tomorrow: the 9:00 reminder) too
+          if (s.mode === 'before' && (target < Date.now() - 15 * 60e3 || (s.at && sentHere))) { run.skipNext = true; log('Ora (' + waitText(s) + ') a trecut deja, mesajul următor e sărit'); }
           continue;
         }
         run.dueAt = new Date(target).toISOString();
         run.waitId = s.id;
-        run.waitSpec = { mode: s.mode, amount: s.amount, unit: s.unit };
+        run.waitSpec = specOf(s);
         log('Așteaptă până la ' + waitText(s) + ' (' + roStamp(target) + ')');
         return;
       }
@@ -724,8 +738,8 @@ async function runOne(run, wf, settings, counters) {
       continue;
     }
     if (s.type === 'whatsapp') {
-      const r = await sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v);
-      if (r.sent) { delete run.retryUntil; c.sent++; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
+      const r = await sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v, { appt: ctx.appointment ? ctx.appointment.id : '' });
+      if (r.sent) { delete run.retryUntil; c.sent++; sentHere = true; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
       // Meta is still reviewing the template (just made): the same message again in 10 minutes, for at most 45
       if (r.pending && (!run.retryUntil || Date.now() < Date.parse(run.retryUntil))) {
         run.retryUntil = run.retryUntil || new Date(Date.now() + 45 * 60e3).toISOString();
@@ -817,7 +831,7 @@ async function enrollUpcoming(wf) {
     const list = appointments.filter((a) => a && a.id && !has.has(a.id) && a.time && !['anulata', 'finalizata', 'concediu'].includes(a.status) &&
       (!loc || a.location === loc) && apptStart(a) > now);
     list.forEach((a) => {
-      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at: first.id, waitSpec: { mode: first.mode, amount: first.amount, unit: first.unit, self: true }, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
+      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at: first.id, waitSpec: specOf(first, true), dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
         log: [{ at: nowISO(), text: 'Pornit: programare deja în calendar când s-a pornit automatizarea (fără confirmare)' }] });
       const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
       c.runs++;
@@ -849,15 +863,14 @@ async function repairReminders() {
     const live = new Set(runsDoc.runs.filter((r) => r.wf === wf.id && !(r.status === 'stopped' && /fost șters/.test(((r.log || []).slice(-1)[0] || {}).text || ''))).map((r) => r.ent && r.ent.id));
     for (const a of appointments) {
       if (!broken.has(a.id) || live.has(a.id) || ['anulata', 'finalizata', 'concediu'].includes(a.status) || !(apptStart(a) > now)) continue;
-      const left = apptStart(a) - now;
       let at, spec;
-      if (w24 && left > Number(w24.amount) * (unitMs[w24.unit] || unitMs.h)) { at = w24.id; spec = w24; }
+      if (w24 && waitTarget(w24, a) > now) { at = w24.id; spec = w24; }
       else if (w24 && today < a.date) { at = (prog.ops.get(w24.id) || {}).next; spec = null; }
       else if (w2) { at = w2.id; spec = w2; }
       if (!at) continue;
       const run = { id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
         log: [{ at: nowISO(), text: 'Pornit din nou: reamintirile se opriseră când automatizarea a fost salvată din nou' }] };
-      if (spec) run.waitSpec = { mode: spec.mode, amount: spec.amount, unit: spec.unit, self: true };
+      if (spec) run.waitSpec = specOf(spec, true);
       runsDoc.runs.push(run);
       made.push(run.id);
     }
@@ -867,5 +880,50 @@ async function repairReminders() {
   return made.length;
 }
 
+// A booking flow given new steps (api/_lib/reminders.js): the appointments waiting in it go on in the new steps from the
+// same moment of the visit. The day-before message not sent yet (it waits 12h or more before the hour) → the new
+// day-before wait, or that message now while it is still the day before and its hour went by; on the day (a wait under
+// 12h before) → the new one of the day; after the visit → the new wait after it. Nothing like it in the new steps, a
+// cancelled / finished / past appointment: the run ends. A message already sent is never sent again. Returns counts.
+async function moveRuns(wf, oldSteps) {
+  const out = { moved: 0, ended: 0 };
+  const [appointments, runsDoc] = await Promise.all([readJSON('data/appointments.json', []), loadRuns()]);
+  const now = Date.now(), today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+  const prog = compile(wf.steps);
+  const waits = flat(wf.steps).filter((s) => s.type === 'wait' && s.mode !== 'for');
+  const old = flat(oldSteps);
+  const kindOf = (w, a) => (w.mode === 'after' ? 'after' : apptStart(a) - waitTarget(w, a) >= 12 * 3600e3 ? 'day' : 'hours');
+  const fresh = [];
+  for (const r of runsDoc.runs) {
+    if (r.wf !== wf.id || r.status !== 'waiting' || !r.ent || r.ent.type !== 'appointment' || r.at === '^') continue;
+    const a = appointments.find((x) => x.id === r.ent.id);
+    if (!a) continue; // the run stops by itself
+    const end = (text) => { r.status = 'done'; r.updatedAt = nowISO(); r.log.push({ at: nowISO(), text }); out.ended++; };
+    // what it waits for in the old steps (a message held back by Meta: by the day)
+    const ow = (r.waitId && old.find((x) => x.id === r.waitId && x.type === 'wait' && x.mode !== 'for')) || (r.waitSpec && r.waitSpec.mode !== 'for' ? r.waitSpec : null);
+    const was = ow ? kindOf(ow, a) : today < a.date ? 'day' : 'hours';
+    if (['anulata', 'finalizata', 'concediu'].includes(a.status) || (was !== 'after' && !(apptStart(a) > now))) { end('Mesajele s-au schimbat, programarea nu mai așteaptă nimic'); continue; }
+    const pick = (k) => waits.find((x) => kindOf(x, a) === k);
+    let at = '', spec = null;
+    if (was === 'day') {
+      const d = pick('day'), h = pick('hours');
+      if (d && waitTarget(d, a) > now) { at = d.id; spec = d; }
+      else if (d && today < a.date) at = (prog.ops.get(d.id) || {}).next || '';
+      else if (h) { at = h.id; spec = h; }
+    } else { const w = pick(was); if (w) { at = w.id; spec = w; } }
+    if (!at || at === '$') { end('Mesajele s-au schimbat, pasul ăsta nu mai e în automatizare'); continue; }
+    r.at = at; r.waitId = ''; r.dueAt = new Date(now).toISOString(); r.updatedAt = nowISO();
+    if (spec) r.waitSpec = specOf(spec, true); else delete r.waitSpec;
+    delete r.skipNext; delete r.retryUntil;
+    r.log.push({ at: nowISO(), text: 'Mesajele s-au schimbat: continuă cu cele noi' + (spec ? '' : ' (mesajul de mâine pleacă acum, ora lui a trecut)') });
+    fresh.push(r.id);
+    out.moved++;
+  }
+  if (fresh.length) await processRuns(runsDoc, await loadDoc(), fresh);
+  else if (out.ended) await saveRuns(runsDoc);
+  return out;
+}
+
 module.exports = {
+  moveRuns, waitTarget, apptStart, specOf,
   firstName, sendTemplate, repairReminders, enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };

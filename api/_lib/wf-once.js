@@ -6,6 +6,9 @@
 //   tied to the appointment's hour stay as they are. Done only if a booking flow does send the location message at
 //   once, so a booking is never left with no message at all. (The first try, …-28, found the location message behind
 //   a short wait or a branch and changed nothing.)
+//   28.10, later: the booking messages the owner wrote (confirmation, the day before at 9:00 with „Da, ajung” / „Nu
+//   ajung”, 2 hours before with the parking), api/_lib/reminders.js: sent to Meta, and each clinic's flow switched once
+//   Meta approved its three. A job that answers { wait: true } runs again at the next tick.
 // data/wf-once.json: { done: { <job id>: { at, removed: [{ flow, template }], kept: [...], skipped? } } }
 
 const { readJSON, writeJSON } = require('./store');
@@ -65,7 +68,9 @@ async function onlyLocationAtBooking() {
 
 const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
   ? { title: 'Automatizări: la programare pleacă doar „Ne vedem pe…”', text: 'Am scos ' + r.removed.map((x) => '„' + x.template + '”').join(', ') + ' din ' + [...new Set(r.removed.map((x) => '„' + x.flow + '”'))].join(', ') + '. Remindere rămân la fel.' }
-  : null) }];
+  : null) },
+// the admins hear about each clinic from reminders.js itself (switched, or a message Meta refused)
+{ id: 'booking-messages-2026-10-28', run: () => require('./reminders').apply(), tell: () => null }];
 
 async function run() {
   const state = (await readJSON(KEY, null)) || { done: {} };
@@ -75,9 +80,10 @@ async function run() {
     if (state.done[job.id]) continue;
     try {
       const r = await job.run();
+      out[job.id] = r;
+      if (r && r.wait) continue;
       state.done[job.id] = Object.assign({ at: nowISO() }, r);
       await writeJSON(KEY, state, { quiet: true });
-      out[job.id] = r;
       const msg = job.tell(r);
       if (msg) {
         const ids = await adminIds({ readJSON });
