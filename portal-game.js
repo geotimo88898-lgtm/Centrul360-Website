@@ -584,7 +584,7 @@
       '<p class="gm-note">Luna întreagă, în ritmul de acum' + (e.partial ? ', socotită din ' + esc(fmtDay(e.from)) : '') + '. Costurile clinicilor sunt cele reale (chiria cu utilitățile, contabilitatea, leasingul aparatelor). Salariul tău de manager și consumabilele sunt standardul jocului. Înainte de impozit.' + (e.adsEstimated ? ' Reclamele nu s-au putut citi acum: sunt estimate ' + (e.adsStd ? 'la ' + Math.round(d.rules.std.adsRatio * 100) + '% din încasări (standardul jocului).' : 'din ultima lună cunoscută.') : '') + '</p></section>';
     const g = d.goals.find((x) => x.id === d.nextGoal);
     if (g) {
-      h += '<section class="gm-card gm-teaser a-teaser is-tap' + rise() + '" data-act="goal" data-id="' + esc(g.id) + '"><div class="pic"><img src="' + esc(srcOf(g)) + '" alt="" loading="lazy" onerror="this.remove()"></div>' +
+      h += '<section class="gm-card gm-teaser a-teaser is-tap' + rise() + '" data-act="goal" data-id="' + esc(g.id) + '"><div class="pic">' + (CUT[g.img] ? '<img class="cut" src="' + esc(cutOf(g)) + '" alt="" loading="lazy" onerror="this.remove()">' : '<img src="' + esc(srcOf(g)) + '" alt="" loading="lazy" onerror="this.remove()">') + '</div>' +
         '<div><span class="gm-eyebrow">Următorul din garaj</span><h4>' + esc(g.name) + '</h4><span class="gm-chip">' + ic('clock') + esc(etaShort(g)) + '</span></div>' +
         ring(g.progress, 58, 5, '<span class="gm-num">' + Math.round(g.progress * 100) + '%</span>') + '</section>';
     }
@@ -1117,13 +1117,13 @@
     let car = null, boomed = false;
     const pre = preview && !g.unlocked;
     return cer('<div class="kicker">' + (pre ? 'AȘA VA ARĂTA' : 'OBIECTIV DEBLOCAT') + '</div>' +
-      '<div class="card"><img src="' + esc(srcOf(g)) + '" alt="" onerror="this.remove()"><canvas class="gm-3d"></canvas><div class="chain"><div class="padlock"><div class="shk"></div><div class="bd"></div></div></div></div>' +
+      '<div class="card">' + (CUT[g.img] ? showroom(g, 0) : '<img src="' + esc(srcOf(g)) + '" alt="" onerror="this.remove()"><canvas class="gm-3d"></canvas>') + '<div class="chain"><div class="padlock"><div class="shk"></div><div class="bd"></div></div></div></div>' +
       '<h2 class="gold">' + letters('DEBLOCAT') + '</h2><div class="sub">' + esc(g.name) + (pre ? '<br><small style="color:#a29fc4">' + esc(etaShort(g)) + '</small>' : '') + '</div>' +
       '<button type="button" class="gm-btn is-gold cta" data-close>' + (pre ? ic('car') + 'Înapoi în garaj' : ic('trophy') + 'Spectaculos') + '</button>', {
       delay: 2400,
       onMount(el) {
         const cv = el.querySelector('.gm-3d');
-        if (!calm()) { car = Car3D.create(cv); if (car) car.set(g.id, srcOf(g), depthOf(g), false).then((ok) => { if (ok) { el.querySelector('.card').classList.add('is-3d'); if (boomed) car.reveal(); else car.dolly(1.3); } }); }
+        if (!calm() && !CUT[g.img]) { car = Car3D.create(cv); if (car) car.set(g.id, srcOf(g), depthOf(g), false).then((ok) => { if (ok) { el.querySelector('.card').classList.add('is-3d'); if (boomed) car.reveal(); else car.dolly(1.3); } }); }
       },
       onBoom() { boomed = true; if (car) car.reveal(); },
       onClose() { if (car) setTimeout(() => car.destroy(), 400); },
