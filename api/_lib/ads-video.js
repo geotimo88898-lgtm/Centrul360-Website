@@ -174,12 +174,13 @@ async function videos(since) {
     { id: 'venit_la_programare', kind: 'open' }, { id: 'client_fidel', kind: 'won' }, { id: 'pierdut', kind: 'lost' }];
   const f = funnel({ leads, appointments, sales, stages: sts, ads: st.rows.map((r) => ({ id: r.adId, name: r.adName, adsetId: r.adsetId, campaignId: r.campaignId, campaignName: r.campaignName })), range });
   const rows = st.rows.filter((r) => r.spend >= 50).sort((a, b) => b.spend - a.spend).slice(0, 60);
-  // the creatives, 50 ads a call
+  // the creatives, 10 ads at a time
   const info = {};
-  for (let i = 0; i < rows.length; i += 50) {
-    const r = await G('GET', '/', conn, { ids: rows.slice(i, i + 50).map((x) => x.adId).join(','), fields: 'created_time,creative{video_id,object_type,title,body,object_story_spec,asset_feed_spec}' });
-    if (r.ok) Object.assign(info, r.j);
-    else info.error = why(r.j);
+  for (let i = 0; i < rows.length; i += 10) {
+    await Promise.all(rows.slice(i, i + 10).map(async (x) => {
+      const r = await G('GET', '/' + x.adId, conn, { fields: 'created_time,creative{video_id,object_type,title,body,object_story_spec,asset_feed_spec}' });
+      if (r.ok) info[x.adId] = r.j; else info.error = why(r.j);
+    }));
   }
   const out = [];
   for (const r of rows) {
