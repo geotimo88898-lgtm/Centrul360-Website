@@ -12,6 +12,19 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 28.10, the owner (plan 1 after the calendars: both clinics have room for about twice the bookings, with ~50% coming):
+  // more to what brings bookings cheaply, the two best TM gușă ads back on, off what brings almost nothing
+  { id: 'plan-2026-10-28', why: 'planul 1, aprobat de voi pe 28.10', actions: [
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', daily: 100, why: 'TM abdomen: programarea la ~29 lei, loc în calendar' },
+    { campaignId: '120251418133050103', name: 'AR HIFU G · sezon', daily: 95, why: 'Arad gușă: programarea la ~30 lei, vin 65%' },
+    { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', daily: 80, why: 'Arad gușă: programarea la ~30 lei, vin 65%' },
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', daily: 50, why: 'TM gușă pornită din nou: programarea la 21 lei' },
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', status: 'ACTIVE', why: 'TM gușă pornită din nou: programarea la 21 lei' },
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', daily: 50, why: 'TM gușă pornită din nou: programarea la 27 lei' },
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', status: 'ACTIVE', why: 'TM gușă pornită din nou: programarea la 27 lei' },
+    { campaignId: '120251505897650103', name: 'TM LIPO · fără efort', status: 'PAUSED', why: 'leaduri scumpe, nicio venire' },
+    { campaignId: '120251497423510103', name: 'AR LIPO · raritate', status: 'PAUSED', why: 'o programare din 9 leaduri; LipoSonix nu se mai face' },
+  ] },
   // 27.10 night, the owner: Arad's Restart off; what runs is the LipoSonix TM that works at 75 lei a day (it had been put
   // back to 50 by hand), its two 25 lei tests, Arad's two gușă and its LipoSonix; the job ad stays on
   { id: 'plan-2026-10-27', why: 'cerut de voi pe 27.10', actions: [

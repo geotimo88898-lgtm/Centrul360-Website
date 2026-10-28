@@ -1,1 +1,1 @@
-report-readonly
+ads-once-now

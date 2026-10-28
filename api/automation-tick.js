@@ -43,6 +43,8 @@ module.exports = async (req, res) => {
   const out = { ok: true, waited: [] };
   // Claude's read with the report key only reads: the clock's steps stay with the clock (28.10)
   const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
+  // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
+  if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
     if (Date.now() - t0 > BUDGET_MS) { out.waited.push(name); continue; }
     out[name] = await fn().catch((e) => ({ error: e.message }));
