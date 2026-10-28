@@ -188,7 +188,8 @@ async function videos(since) {
     const c = cr.j.creative || {};
     const oss = c.object_story_spec || {};
     const afs = c.asset_feed_spec || {};
-    const vid = c.video_id || (oss.video_data || {}).video_id || ((afs.videos || [])[0] || {}).video_id || '';
+    // the story's video id is the one with a file to watch (the creative's own points at the published post)
+    const vid = (oss.video_data || {}).video_id || ((afs.videos || [])[0] || {}).video_id || c.video_id || '';
     const text = (oss.video_data || {}).message || (oss.link_data || {}).message || c.body || ((afs.bodies || [])[0] || {}).text || '';
     const title = (oss.video_data || {}).title || (oss.link_data || {}).name || c.title || ((afs.titles || [])[0] || {}).text || '';
     const x = f.ads.get(r.adId) || {};
