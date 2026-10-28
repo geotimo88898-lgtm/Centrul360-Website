@@ -81,7 +81,9 @@ module.exports = async (req, res) => {
     found.forEach((f) => { if (f.kind === 'template') f.inFlow = [...used].length && ((tpl.templates || []).find((t) => t.label === f.label) || {}).id ? used.has((tpl.templates || []).find((t) => t.label === f.label).id) : false; });
     return { found, flows: ((wf && wf.workflows) || []).map((w) => ({ name: w.name, active: !!w.active })) };
   })().catch((e) => ({ error: e.message })) : undefined;
+  // the calendars of both clinics for planning the ads (with the key: &cal=1), counts only
+  const cal = report && req.query.cal ? await require('./_lib/ads-report').calendar().catch((e) => ({ error: e.message })) : undefined;
   const dry = report ? await require('./_lib/ads-guard').guard({ dry: true, force: true }).catch((e) => ({ error: e.message })) : undefined;
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json(Object.assign(out, { ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who, phones }));
+  res.status(200).json(Object.assign(out, { ran, leads, pos: pos && pos.ok ? pos.added : pos && pos.error, ads, once, creative, hire, reminders, report, dry, who, phones, cal }));
 };
