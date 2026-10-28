@@ -687,7 +687,6 @@
     let h = '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Dacă nu-l poți cumpăra de două ori, nu-l cumpăra</span><h2>Garajul</h2></div><small>' + won + ' / ' + d.goals.length + ' deblocate</small></div>';
     h += '<button type="button" class="gm-card gm-vault is-tap' + rise() + '" data-act="treasury"><span class="gm-eyebrow">Seiful</span><b class="' + (d.treasury < 0 ? 'neg' : '') + '">' + num(d.treasury, 'vault', 'lei') + ' lei</b><small>profitul strâns de afacere din ' + esc(fmtDay(d.start)) + ', după impozit</small></button>';
     h += '<div class="gm-show' + rise() + '" data-show>' + d.goals.map(goalStage).join('') + '</div>';
-    h += '<div class="gm-arrows' + rise() + '"><button type="button" data-gstep="-1" aria-label="Înapoi">' + ic('up') + '</button><button type="button" data-gstep="1" aria-label="Înainte">' + ic('up') + '</button></div>';
     h += '<div class="gm-dots' + rise() + '">' + d.goals.map((g) => '<i class="' + (g.unlocked ? 'is-won' : '') + '"></i>').join('') + '</div>';
     h += '<section class="gm-card gm-detail' + rise() + '" data-detail></section>';
     return h;
@@ -704,7 +703,7 @@
     return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
       '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
-      '<p class="gm-note">Pe telefon glisezi între mașini; pe calculator le schimbi cu săgețile.</p>' + creditOf(g);
+      '<p class="gm-note">Glisezi între mașini.</p>' + creditOf(g);
   }
   function creditOf(g) {
     const c = S.credits && S.credits[g.img];
@@ -748,6 +747,25 @@
       }
     };
     show.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(pick); }, { passive: true });
+    // with a mouse the cars are dragged sideways too (a finger or a trackpad scrolls them by itself)
+    let drag = null, dragEnd = 0;
+    show.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button === 0) { drag = { x: e.clientX, left: show.scrollLeft, moved: false }; show.setPointerCapture(e.pointerId); } });
+    show.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x;
+      if (!drag.moved && Math.abs(dx) > 5) { drag.moved = true; show.style.scrollSnapType = 'none'; }
+      if (drag.moved) show.scrollLeft = drag.left - dx;
+    });
+    const drop = () => {
+      if (!drag) return;
+      const moved = drag.moved; drag = null;
+      if (!moved) return;
+      dragEnd = Date.now(); show.style.scrollSnapType = '';
+      const s = slides[cur]; if (s) show.scrollTo({ left: s.offsetLeft - (show.clientWidth - s.clientWidth) / 2, behavior: calm() ? 'auto' : 'smooth' });
+    };
+    show.addEventListener('pointerup', drop); show.addEventListener('pointercancel', drop);
+    show.addEventListener('click', (e) => { if (Date.now() - dragEnd < 300) { e.stopPropagation(); e.preventDefault(); } }, true);
+    show.addEventListener('dragstart', (e) => e.preventDefault());
     const start = S.gi >= 0 ? Math.min(S.gi, slides.length - 1) : Math.max(0, S.d.goals.findIndex((g) => g.id === S.d.nextGoal));
     requestAnimationFrame(() => {
       const s = slides[start];
