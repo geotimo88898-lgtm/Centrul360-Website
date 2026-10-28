@@ -319,6 +319,8 @@ function matches(wf, event, p) {
   if (event === 'appointment_status') return (t.type === 'appointment_status' && t.status === p.status) || (t.type === 'appointment_after' && p.status === 'finalizata');
   return false;
 }
+// what a booking is, for its messages: the day, the hour, the clinic and the phone they go to
+const apptKey = (a) => [a && a.date, a && a.time, a && a.location, String((a && a.clientPhone) || '').replace(/\D/g, '').slice(-9)].join('|');
 function dueFor(wf, p, now) {
   const t = wf.trigger;
   if (t.type === 'lead_idle') return now + t.hours * 3600e3;
@@ -345,6 +347,14 @@ async function emit(event, payload) {
     // a move to a date still ahead books it again (confirmation, location, reminders from the start); one into the past
     // (a correction after the visit) only moves the waits, so the review request after it still goes
     if (event === 'appointment_rescheduled') p.restart = apptStart(p.appointment) > now;
+    // the booking messages already went for this very day, hour, clinic and phone: nothing to send again (whatever
+    // edit made the change look like a move)
+    if (p.restart) {
+      const key = apptKey(p.appointment);
+      const booked = runsDoc.runs.filter((r) => r.ent && r.ent.id === ent.id && r.akey && (doc.workflows.find((x) => x.id === r.wf) || {}).trigger && doc.workflows.find((x) => x.id === r.wf).trigger.type === 'appointment_created')
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+      if (booked && booked.akey === key) p.restart = false;
+    }
     // A moved / cancelled / deleted appointment: its pending "before" reminders are recalculated or dropped.
     // (a tap on „Reprogramată” alone changes nothing about the hour: the reminders stay; a real move comes as
     // appointment_rescheduled and makes them again for the new hour)
@@ -375,6 +385,7 @@ async function emit(event, payload) {
         const due = dueFor(wf, p, now);
         if (due == null) return;
         const run = { id: uid(), wf: wf.id, ent, at: '^', dueAt: new Date(due).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(), log: [{ at: nowISO(), text: 'Pornit: ' + TRIGGERS[wf.trigger.type].label }] };
+        if (ent.type === 'appointment') run.akey = apptKey(p.appointment);
         runsDoc.runs.push(run);
         const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
         c.runs++;

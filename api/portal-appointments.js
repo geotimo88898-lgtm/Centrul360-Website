@@ -316,7 +316,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: result.error });
         return;
       }
-      const before = { date: appointment.date, time: appointment.time, status: appointment.status, location: appointment.location, clientId: appointment.clientId };
+      const before = { date: appointment.date, time: appointment.time, status: appointment.status, location: appointment.location, clientId: appointment.clientId, clientPhone: appointment.clientPhone };
       if (!('endTime' in req.body)) result.fields.endTime = appointment.endTime || ''; // older clients don't send it
       if (!('note' in req.body)) result.fields.note = appointment.note || '';
       if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it

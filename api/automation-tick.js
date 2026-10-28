@@ -27,6 +27,8 @@ const STEPS = [
   ['creative', () => require('./_lib/creative-once').run()],
   // the job ads asked for in chat (api/_lib/hire-once.js)
   ['hire', () => require('./_lib/hire-once').run()],
+  // the changes to the automations asked for in chat (api/_lib/wf-once.js)
+  ['flows', () => require('./_lib/wf-once').run()],
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
 ];
