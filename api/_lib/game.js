@@ -19,7 +19,8 @@
 //   team       a player card per person, rated on the last 30 days; the derby: Timișoara vs Arad, this week
 //   constraint the one weakest link of the funnel against its benchmark (Hormozi: fix the bottleneck first)
 //
-// The game's own document: data/game.json { claims, badges, unlocked, seasons, seen, adsMonths, best } (memory only).
+// The game's own document: data/game.json { v, claims, badges, unlocked, seasons, seen, adsMonths, best } (memory only).
+// v 2: the first game's unlocks, trophies and seasons were won under rules the owner could set; they start over.
 
 const { bucharestDay } = require('./ads-funnel');
 const PAY = require('./payroll');
@@ -38,6 +39,7 @@ const monthAdd = (month, n) => new Date(Date.UTC(+month.slice(0, 4), +month.slic
 const MONTHS_RO = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
 const monthLabel = (m) => MONTHS_RO[+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4);
 const roLei = (n) => Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei';
+const nDe = (n, noun) => { const a = Math.abs(n), r = a % 100; return n + (a >= 20 && (r === 0 || r >= 20) ? ' de ' : ' ') + noun; }; // 24 de programări
 const median = (list) => { const l = list.filter((x) => Number.isFinite(x)); if (!l.length) return null; const s = l.slice().sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const toMin = (hhmm) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
 function dayFraction(now) {
@@ -85,21 +87,12 @@ const EXPAND = {
 // a clinic's stars, by its monthly revenue (lei)
 const STARS = [30000, 60000, 100000, 160000, 250000];
 // the garage: "if you can't buy it twice, don't buy it once" (Hormozi), plus the stage the business must be at;
-// the prices: Romania, 2026 (dealers and list prices)
+// three cars for now; the prices: Romania, October 2026 (the M4 new at the dealer; the GT3 RS and the SVJ at what a
+// buyer really pays for a near-new or collector car)
 const GOALS = [
-  { id: 'paris', name: 'Weekend la Paris', kind: 'trip', price: 20000, stage: 1 },
-  { id: 'rolex', name: 'Rolex Submariner', kind: 'watch', price: 56000, stage: 2 },
-  { id: 'vacanta', name: 'Maldive, vilă pe apă', kind: 'trip', price: 110000, stage: 2 },
-  { id: 'm4', name: 'BMW M4 Competition', kind: 'car', price: 620000, stage: 3 },
-  { id: 'gt3', name: 'Porsche 911 GT3', kind: 'car', price: 1100000, stage: 3 },
-  { id: 'g63', name: 'Mercedes-AMG G 63', kind: 'car', price: 1250000, stage: 3 },
-  { id: 'cullinan', name: 'Rolls-Royce Cullinan', kind: 'car', price: 2100000, stage: 4 },
-  { id: 'ferrari', name: 'Ferrari SF90 Stradale', kind: 'car', price: 2200000, stage: 4 },
-  { id: 'lambo', name: 'Lamborghini Revuelto', kind: 'car', price: 2600000, stage: 4 },
-  { id: 'casa', name: 'Vila cu piscină', kind: 'house', price: 3000000, stage: 5 },
-  { id: 'bugatti', name: 'Bugatti Chiron', kind: 'car', price: 17000000, stage: 6 },
-  { id: 'yacht', name: 'Superyacht de 30 m', kind: 'yacht', price: 74000000, stage: 7 },
-  { id: 'jet', name: 'Gulfstream G650', kind: 'jet', price: 320000000, stage: 8 },
+  { id: 'm4', name: 'BMW M4 Competition', kind: 'car', price: 600000, stage: 3 },
+  { id: 'gt3rs', name: 'Porsche 911 GT3 RS', kind: 'car', price: 1700000, stage: 4 },
+  { id: 'svj', name: 'Lamborghini Aventador SVJ', kind: 'car', price: 3750000, stage: 5 },
 ];
 const RULES_TEXT = {
   garage: '„Dacă nu-l poți cumpăra de două ori, nu-l cumpăra nici măcar o dată.” (Alex Hormozi) Un obiectiv se deblochează când trezoreria jocului are de două ori prețul lui și afacerea a ajuns la etapa lui. Prețurile sunt cele din România, 2026.',
@@ -107,7 +100,7 @@ const RULES_TEXT = {
   stage: 'Etapa vine din ritmul anual al încasărilor (ultimele 90 de zile), pe Scaling Roadmap-ul lui Alex Hormozi: zece etape, de la 0 la 100 de milioane de dolari pe an.',
   expand: 'Un oraș nou are sens când nu mai ai unde crește în clinicile de acum (Hormozi: mai mult și mai bine, abia apoi nou): calendare pline (' + Math.round(EXPAND.occupancy * 100) + '%), marjă netă de ' + Math.round(EXPAND.margin * 100) + '%, fiecare clinică își scoate în ' + EXPAND.paybackMonths + ' luni investiția într-una nouă (' + roLei(STD.newClinic) + '), clienta nouă își plătește reclama în primele 30 de zile, trezoreria are investiția plus ' + EXPAND.reserveNew + ' luni de costuri ale clinicii noi și ' + EXPAND.reserveOld + ' luni ale celor de acum, iar fiecare clinică are echipă completă. Toate, ' + EXPAND.months + ' luni la rând.',
   expand_short: EXPAND.months + ' luni la rând, cu calendarul plin ' + Math.round(EXPAND.occupancy * 100) + '% și marjă netă de ' + Math.round(EXPAND.margin * 100) + '%, socotit din costurile reale ale clinicilor',
-  boss: 'Bossul fiecărui trimestru: trimestrul trecut + 20%. Primul trimestru: ritmul lui + 15%. Nu se mai schimbă după ce apare.',
+  boss: 'Bossul fiecărui trimestru: încasările trimestrului trecut + 20% (dacă jocul l-a prins doar în parte, ritmul lui + 20%). Primul trimestru: ritmul primelor zile lucrătoare + 15%. Nu se mai schimbă după ce apare.',
 };
 
 // ================================================================ the map
@@ -135,23 +128,29 @@ const CATS = { bani: 'Bani', profit: 'Profit', clienti: 'Cliente', vanzari: 'Vâ
 const BOSSES = ['Regele Iernii', 'Titanul Primăverii', 'Dragonul Verii', 'Colosul de Sărbători'];
 const quarterOf = (day) => { const q = Math.floor((+day.slice(5, 7) - 1) / 3); return { id: day.slice(0, 4) + '-Q' + (q + 1), q, start: day.slice(0, 4) + '-' + String(q * 3 + 1).padStart(2, '0') + '-01' }; };
 
+const DOC_V = 2;
 function cleanDoc(d) {
   d = d && typeof d === 'object' ? d : {};
   const obj = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+  const old = d.v !== DOC_V; // a first-game document: only the claimed missions and the ads months carry over
+  const seen = old ? {} : obj(d.seen);
   return {
-    claims: obj(d.claims), badges: Object.assign({}, obj(d.trophies), obj(d.badges)), unlocked: obj(d.unlocked), seasons: obj(d.seasons),
-    seen: Object.assign({ level: 0, goals: [], badges: [], seasons: [], stage: -1, intro: false }, obj(d.seen), { badges: [].concat((d.seen && (d.seen.badges || d.seen.trophies)) || []) }),
-    adsMonths: obj(d.adsMonths), best: obj(d.best),
+    v: DOC_V,
+    claims: obj(d.claims), badges: old ? {} : obj(d.badges), unlocked: old ? {} : obj(d.unlocked), seasons: old ? {} : obj(d.seasons),
+    seen: Object.assign({ level: 0, goals: [], badges: [], seasons: [], stage: -1, intro: false }, seen, {
+      goals: Array.isArray(seen.goals) ? seen.goals : [], badges: Array.isArray(seen.badges) ? seen.badges : [], seasons: Array.isArray(seen.seasons) ? seen.seasons : [] }),
+    adsMonths: obj(d.adsMonths), payMonths: old ? {} : obj(d.payMonths), best: old ? {} : obj(d.best),
   };
 }
 
 // ================================================================ the whole game, from the data
-// input: { M (kpi model), employees, sales, attendance, tbAll, appointments, adsDaily, adsOk, doc, now, photoOf }
+// input: { M (kpi model), employees, sales, attendance, tbAll, appointments, adsDaily, adsOk, adsFrom (the first day Meta was
+// read for), doc, now, photoOf }
 function build(input) {
   const { M, employees = [], sales = [], attendance = [], tbAll = { payouts: [] }, appointments = [], adsDaily = [], adsOk = false, photoOf = () => '' } = input;
   const now = input.now || Date.now();
   const doc = cleanDoc(input.doc);
-  let changed = !input.doc;
+  let changed = !input.doc || input.doc.v !== DOC_V;
   const today = bucharestDay(now), month = today.slice(0, 7);
   const firstDay = bucharestDay(M.start), startMonth = firstDay.slice(0, 7);
   const frac = dayFraction(now);
@@ -185,10 +184,25 @@ function build(input) {
   const locations = Math.max(1, cities.length);
 
   // ---- month by month: cashed in, salaries, ads, standard costs, profit (the current month projected)
+  // someone who left counts only in the months she still worked (a payment, a clock-in, a booking of hers)
+  const inMonth = (d, m) => String(d || '').slice(0, 7) === m;
+  const workedIn = (e, m) => sales.some((x) => x && (x.performedBy === e.id || x.employeeId === e.id) && inMonth(x.date, m))
+    || attendance.some((a) => a && a.employeeId === e.id && a.checkIn && inMonth(a.date, m))
+    || appointments.some((a) => a && (a.createdBy === e.id || a.cosmeticianId === e.id) && inMonth(a.date, m));
   const payrollOf = (m, list) => (list || staffAll).reduce((n, e) => {
+    if (e.active === false && !workedIn(e, m)) return n;
     const pay = PAY.monthPay({ emp: e, month: m, isCurrent: m === month, sales, payouts: tbAll.payouts || [], bank: m === month ? TB.ledger(e.id, tbAll) : null, attendance, appointments });
-    return n + (e.active === false && !pay.total ? 0 : pay.total);
+    return n + pay.total;
   }, 0);
+  // the salaries of a month that ended more than 5 days ago are kept (the payroll is heavy to recompute every time)
+  const payrollMonth = (m, last) => {
+    const settled = m !== month && addDay(last, 5) < today;
+    if (settled && doc.payMonths[m] != null) return Number(doc.payMonths[m]) || 0;
+    const v = payrollOf(m);
+    if (settled) { doc.payMonths[m] = r2(v); changed = true; }
+    return v;
+  };
+  const adsFrom = input.adsFrom || firstDay;
   const months = [];
   const net = (v) => (v > 0 ? v * (1 - STD.tax) : v); // the profit after the tax (a loss is not taxed)
   let adsRatioKnown = null; // ads / cashed in of the last month Meta could be read for: the estimate when it can't be
@@ -200,16 +214,23 @@ function build(input) {
     const elapsed = current ? Math.max(0.5, dayIndex(today) - dayIndex(first) + frac) : windowDays;
     const revenue = sumDays(revDay, first, current ? today : last);
     let ads = sumDays(spendDay, first, current ? today : last);
+    // Meta is read for the last ~110 days: a month wholly inside that window is counted (and kept); an older one uses
+    // what was kept while it was inside
+    const covered = adsOk && first >= adsFrom;
     if (!current) {
-      if (doc.adsMonths[m] != null && !(ads > 0)) ads = Number(doc.adsMonths[m]) || 0;
-      else if (adsOk && doc.adsMonths[m] !== r2(ads) && first >= addDay(today, -110)) { doc.adsMonths[m] = r2(ads); changed = true; }
+      if (doc.adsMonths[m] != null && (!covered || !(ads > 0))) ads = Number(doc.adsMonths[m]) || 0;
+      else if (covered && doc.adsMonths[m] !== r2(ads)) { doc.adsMonths[m] = r2(ads); changed = true; }
     }
     // Meta could not be read: the ads are estimated (never counted as nothing, that would inflate the profit)
-    const adsKnown = adsOk || (!current && doc.adsMonths[m] != null);
+    const adsKnown = current ? adsOk : covered || doc.adsMonths[m] != null;
     if (!adsKnown) ads = revenue * (adsRatioKnown != null ? adsRatioKnown : STD.adsRatio);
     else if (revenue > 0 && ads > 0) adsRatioKnown = ads / revenue;
-    const payroll = payrollOf(m) * share;
-    const fixed = STD.fixedPerClinic * locations * share;
+    const byCity = {};
+    revDayCity.forEach((v, k) => { const [d, c] = k.split('|'); if (d >= first && d <= last) byCity[c] = (byCity[c] || 0) + v; });
+    // the clinics of that month: those that cashed in (the current month: the clinics there are now)
+    const clinicsThen = current ? locations : Math.max(1, Object.keys(byCity).filter((c) => c !== 'Fără oraș' && byCity[c] > 0).length);
+    const payroll = payrollMonth(m, last) * share;
+    const fixed = STD.fixedPerClinic * clinicsThen * share;
     const owner = STD.ownerSalary * share;
     let projected = current ? revenue / elapsed * windowDays : revenue;
     let adsProjected = current ? ads / elapsed * windowDays : ads;
@@ -220,9 +241,7 @@ function build(input) {
     // what the month has really made so far (the treasury counts this, not the projection)
     const soFarShare = current ? elapsed / windowDays : 1;
     const realProfit = revenue - (payroll + fixed + owner) * soFarShare - ads - revenue * STD.consumables;
-    const byCity = {};
-    revDayCity.forEach((v, k) => { const [d, c] = k.split('|'); if (d >= first && d <= last) byCity[c] = (byCity[c] || 0) + v; });
-    months.push({ month: m, label: monthLabel(m), first, last, share: r2(share), windowDays, elapsed: r2(elapsed), current, complete: !current,
+    months.push({ month: m, label: monthLabel(m), first, last, share, windowDays, elapsed: r2(elapsed), current, complete: !current,
       revenue: r2(revenue), projected: r2(projected), payroll: r2(payroll), owner: r2(owner), ads: r2(adsM), adsSoFar: r2(ads), adsKnown, fixed: r2(fixed), consumables: r2(consumables),
       profit: r2(rev - payroll - owner - adsM - fixed - consumables), realProfit: r2(realProfit), margin: rev > 0 ? r2((rev - payroll - owner - adsM - fixed - consumables) / rev) : null,
       revPerEmp: r2(rev / share / staffCount), byCity });
@@ -267,7 +286,7 @@ function build(input) {
   const monthsToTreasury = (target) => {
     if (treasury >= target) return 0;
     let g = grossTreasury;
-    for (let k = 0; k <= 240; k++) { g += profitIn(k) * (k === 0 ? Math.max(0, 1 - cur.elapsed / cur.windowDays) : 1); if (net(g) >= target) return k; }
+    for (let k = 0; k <= 240; k++) { g += profitIn(k) * (k === 0 ? Math.max(0, cur.windowDays - cur.elapsed) / dim(cur.month) : 1); if (net(g) >= target) return k; }
     return null;
   };
   const monthsToStage = (si) => { const need = STAGES[si].min; if (yearPace >= need) return 0; return monthsUntil(yearPace, need); };
@@ -342,7 +361,7 @@ function build(input) {
   if (team.length) team[0].mvp = true;
 
   // ---- the clinics: occupancy (booked hours / the cosmeticians' hours, last 30 days), stars, details
-  const workdays30 = TB.weekdaysBetween(d30, today).length + Math.floor((dayIndex(today) - dayIndex(d30) + 1) / 7); // + Saturdays
+  const workdays30 = TB.weekdaysBetween(d30, today).length; // the clinics work Monday to Friday
   const apptsOf = (c) => appointments.filter((a) => a && cityName(a.location) === c && !a.block && a.status !== 'concediu' && a.status !== 'anulata' && inR(String(a.date), d30, today));
   const cityInfo = cities.map((c) => {
     const rd = cityDays(c);
@@ -388,10 +407,11 @@ function build(input) {
   const teamOk = cityInfo.length ? cityInfo.filter((c) => c.rec >= 1 && c.cosm >= 2).length / cityInfo.length : 0;
   // the 30-day CAC: what a new client brings in her first 30 days (gross) against what the ads paid to bring her
   const firstPay = new Map(); P.forEach((p) => { if (p.clientId && (!firstPay.has(p.clientId) || p.day < firstPay.get(p.clientId))) firstPay.set(p.clientId, p.day); });
-  const newClients = [...firstPay.entries()].filter(([, d]) => inR(d, d30, today));
+  const oldClients = new Set(sales.filter((x) => x && x.source === 'incasare' && x.clientId && String(x.date) < firstDay).map((x) => x.clientId)); // clients from before the game
+  const newClients = [...firstPay.entries()].filter(([id, d]) => inR(d, d30, today) && !oldClients.has(id));
   const newGross = newClients.reduce((n, [id, d]) => n + P.filter((p) => p.clientId === id && inR(p.day, d, addDay(d, 29))).reduce((x, p) => x + p.amount, 0), 0) * (1 - STD.consumables);
-  const spend30 = adsOk ? sumDays(spendDay, d30, today) : sumDays(revDay, d30, today) * (adsRatioKnown != null ? adsRatioKnown : STD.adsRatio);
-  const cacRatio = newClients.length >= 10 && spend30 > 0 ? (newGross / newClients.length) / (spend30 / newClients.length) : null;
+  const spend30 = adsOk ? sumDays(spendDay, d30, today) : 0;
+  const cacRatio = adsOk && newClients.length >= 10 && spend30 > 0 ? (newGross / newClients.length) / (spend30 / newClients.length) : null;
   // what each clinic has to cash in a month for the next one to make sense: solved from the real costs (its team,
   // its fixed costs, its share of the manager's salary, the ads and consumables ratios) for both the payback profit
   // and the margin
@@ -401,7 +421,7 @@ function build(input) {
   const needB = kept - EXPAND.margin > 0 ? costsPerClinic / (kept - EXPAND.margin) : Infinity;
   const revPerClinicNeed = Number.isFinite(Math.max(needA, needB)) ? Math.ceil(Math.max(needA, needB) / 1000) * 1000 : null;
   const checklist = [
-    { key: 'occ', label: 'Calendare pline', value: r2(minOcc), target: EXPAND.occupancy, unit: '%', ok: minOcc >= EXPAND.occupancy, why: 'Cererea e deja mai mare decât clinicile de acum. Sub 65% înseamnă loc liber de umplut, nu oraș nou.' },
+    { key: 'occ', label: 'Calendare pline', value: r2(minOcc), target: EXPAND.occupancy, unit: '%', ok: minOcc >= EXPAND.occupancy, why: 'Cererea e deja mai mare decât clinicile de acum. Sub ' + Math.round(EXPAND.occupancy * 100) + '% e încă loc liber de umplut, nu e nevoie de oraș nou.' },
     { key: 'margin', label: 'Marjă netă', value: r2(marginNow), target: EXPAND.margin, unit: '%', ok: marginNow >= EXPAND.margin, why: 'Fiecare clinică lasă bani după toate costurile, inclusiv salariul tău.' },
     { key: 'payback', label: 'Profit pe clinică pe lună', value: r2(minClinicProfit), target: r2(paybackNeed), unit: 'lei', ok: minClinicProfit >= paybackNeed, why: 'O clinică nouă (' + roLei(STD.newClinic) + ') se scoate în ' + EXPAND.paybackMonths + ' luni.' },
     { key: 'cac', label: 'Clienta nouă plătește reclama în 30 de zile', value: cacRatio == null ? null : r2(cacRatio), target: EXPAND.cacPayback, unit: 'x', ok: cacRatio != null && cacRatio >= EXPAND.cacPayback, why: 'Hormozi: recuperezi costul clientei în prima lună, altfel creșterea mănâncă banii. Se măsoară de la 10 cliente noi.' },
@@ -425,17 +445,32 @@ function build(input) {
   const qElapsed = Math.max(0.5, dayIndex(today) - dayIndex(qStart) + frac);
   let season = doc.seasons[Q.id];
   if (!season || !(season.target > 0) || season.manual) {
+    // last quarter + 20%; a last quarter the game saw only in part: its pace + 20%; the very first quarter: its own
+    // pace + 15%, once it has a week and a half of working days
     const prevQ = quarterOf(addDay(Q.start, -1));
-    const prevDone = sumDays(revDay, prevQ.start < firstDay ? firstDay : prevQ.start, addDay(Q.start, -1));
-    const prevFull = prevQ.start >= firstDay && prevDone > 0;
-    if (prevFull || qElapsed >= 3) {
-      const base = prevFull ? prevDone * 1.2 : qDone / qElapsed * qDays * 1.15;
+    const pFrom = prevQ.start < firstDay ? firstDay : prevQ.start, pTo = addDay(Q.start, -1);
+    const prevDays = pFrom <= pTo ? dayIndex(pTo) - dayIndex(pFrom) + 1 : 0;
+    const prevDone = prevDays ? sumDays(revDay, pFrom, pTo) : 0;
+    const prevQDays = dayIndex(pTo) - dayIndex(prevQ.start) + 1;
+    let base = null;
+    if (prevDone > 0 && prevQ.start >= firstDay) base = prevDone * 1.2;
+    else if (prevDone > 0 && prevDays >= 30) base = prevDone / prevDays * prevQDays * 1.2;
+    else if (TB.weekdaysBetween(qStart, today).length >= 7) base = qDone / qElapsed * qDays * 1.15;
+    if (base != null) {
       season = { target: Math.max(10000, Math.ceil(base / 5000) * 5000), setAt: new Date(now).toISOString() };
       doc.seasons[Q.id] = season; changed = true;
     }
   }
   const target = season && season.target > 0 ? season.target : null;
   if (target && qDone >= target && !season.defeatedAt) { season.defeatedAt = new Date(now).toISOString(); changed = true; }
+  // a boss beaten at the end of a quarter the game was not opened in still counts
+  Object.keys(doc.seasons).forEach((id) => {
+    const x = doc.seasons[id], mm = /^(\d{4})-Q([1-4])$/.exec(id);
+    if (id === Q.id || !mm || !x || !(x.target > 0) || x.defeatedAt) return;
+    const st = mm[1] + '-' + String((+mm[2] - 1) * 3 + 1).padStart(2, '0') + '-01', en = addDay(monthAdd(st.slice(0, 7), 3) + '-01', -1);
+    if (en >= today) return;
+    if (sumDays(revDay, st < firstDay ? firstDay : st, en) >= x.target) { x.defeatedAt = new Date(Date.parse(en + 'T19:00:00Z')).toISOString(); changed = true; }
+  });
   const bosses = Object.values(doc.seasons).filter((s) => s && s.defeatedAt).length;
   const seasonOut = { id: Q.id, label: 'Sezonul ' + (Q.q + 1) + ' · ' + Q.id.slice(0, 4), boss: BOSSES[Q.q], start: qStart, end: qLast, days: qDays,
     daysLeft: Math.max(0, dayIndex(qLast) - dayIndex(today)), target, done: r2(qDone), pct: target ? clamp(qDone / target, 0, 1) : 0,
@@ -503,11 +538,11 @@ function build(input) {
   const doy = dayIndex(today);
   const daily = [
     { key: 'rev', icon: 'coins', title: 'Încasează azi ' + roLei(Math.max(1000, up100(avgRev * 1.1))), value: r2(revDay.get(today) || 0), target: Math.max(1000, up100(avgRev * 1.1)), unit: 'lei', xp: 150 },
-    { key: 'book', icon: 'calendar', title: 'Fă ' + Math.max(3, Math.ceil(avgMade * 1.1)) + ' programări noi azi', value: madeBy(today, today), target: Math.max(3, Math.ceil(avgMade * 1.1)), unit: '', xp: 100 },
+    { key: 'book', icon: 'calendar', title: 'Fă ' + nDe(Math.max(3, Math.ceil(avgMade * 1.1)), 'programări noi azi'), value: madeBy(today, today), target: Math.max(3, Math.ceil(avgMade * 1.1)), unit: '', xp: 100 },
     [
       { key: 'speed', icon: 'bolt', title: 'Sună fiecare lead de azi în sub 15 minute', value: fastToday, target: Math.max(3, leadsToday.length), unit: '', xp: 120, hint: 'minim 3 leaduri' },
       { key: 'ups', icon: 'rocket', title: 'Fă un upsell azi', value: upsDay.get(today) || 0, target: 1, unit: '', xp: 150 },
-      { key: 'came', icon: 'users', title: Math.max(3, Math.ceil(avgCame * 1.05)) + ' cliente venite azi', value: cameBy(today, today), target: Math.max(3, Math.ceil(avgCame * 1.05)), unit: '', xp: 100 },
+      { key: 'came', icon: 'users', title: nDe(Math.max(3, Math.ceil(avgCame * 1.05)), 'cliente venite azi'), value: cameBy(today, today), target: Math.max(3, Math.ceil(avgCame * 1.05)), unit: '', xp: 100 },
     ][doy % 3],
   ].map((x) => Object.assign(x, { id: 'd:' + today + ':' + x.key }));
   const wRev = sumDays(revDay, wStart, today), lwRev = sumDays(revDay, lwStart, lwEnd);
@@ -517,7 +552,7 @@ function build(input) {
   const wRevTarget = Math.max(5000, up500(Math.max(lwRev, avgRev * 7) * 1.05));
   const weekly = [
     { key: 'wrev', icon: 'coins', title: 'Încasează ' + roLei(wRevTarget) + ' săptămâna asta', value: r2(wRev), target: wRevTarget, unit: 'lei', xp: 600 },
-    { key: 'wups', icon: 'rocket', title: Math.max(3, lwUps + 1) + ' upselluri săptămâna asta', value: wUps, target: Math.max(3, lwUps + 1), unit: '', xp: 500 },
+    { key: 'wups', icon: 'rocket', title: nDe(Math.max(3, lwUps + 1), 'upselluri săptămâna asta'), value: wUps, target: Math.max(3, lwUps + 1), unit: '', xp: 500 },
     { key: 'wbook', icon: 'target', title: 'Programează 40% din leadurile săptămânii', value: wLeads.length ? Math.round(wBooked / wLeads.length * 100) : 0, target: 40, unit: '%', xp: 500, hint: 'minim 10 leaduri', min: wLeads.length >= 10 },
   ].map((x) => Object.assign(x, { id: 'w:' + wStart + ':' + x.key }));
   const missionState = (x) => Object.assign(x, { done: x.value >= x.target && x.min !== false, claimed: !!doc.claims[x.id], progress: r2(clamp(x.target ? x.value / x.target : 0, 0, 1)) });
@@ -528,17 +563,19 @@ function build(input) {
   // ---- the badges: the numbers they are measured on
   const days = []; for (let d = firstDay; d <= today; d = addDay(d, 1)) days.push(d);
   const weeks = []; for (let w = addDay(firstDay, -((new Date(firstDay + 'T12:00:00Z').getUTCDay() + 6) % 7)); w <= today; w = addDay(w, 7)) weeks.push([w, addDay(w, 6)]);
-  let streak = 0, run = 0; days.forEach((d) => { if ((revDay.get(d) || 0) > 0) { run++; streak = Math.max(streak, run); } else if (d !== today) run = 0; });
+  const weekend = (d) => { const w = new Date(d + 'T12:00:00Z').getUTCDay(); return w === 0 || w === 6; };
+  let streak = 0, run = 0; days.forEach((d) => { if ((revDay.get(d) || 0) > 0) { run++; streak = Math.max(streak, run); } else if (d !== today && !weekend(d)) run = 0; }); // working days in a row
   const weekRev = weeks.map(([a, b]) => sumDays(revDay, a, b));
   let wGrowth = 0, wrun = 0; for (let i = 1; i < weekRev.length; i++) { if (weekRev[i] > weekRev[i - 1] && weekRev[i - 1] > 0) { wrun++; wGrowth = Math.max(wGrowth, wrun); } else if (i < weekRev.length - 1) wrun = 0; }
   const payDays = new Map(); P.forEach((p) => { if (!p.clientId) return; const s = payDays.get(p.clientId) || new Set(); s.add(p.day); payDays.set(p.clientId, s); });
   const leadDay = new Map(), madeDay = new Map(), cameDay = new Map();
-  M.L.forEach((l) => { if (l.fresh) add(leadDay, l.day, 1); });
+  const adLeadDay = new Map();
+  M.L.forEach((l) => { if (l.fresh) { add(leadDay, l.day, 1); if (l.fromAds) add(adLeadDay, l.day, 1); } });
   M.A.forEach((a) => { if (a.fresh) { add(madeDay, a.madeDay, 1); if (a.came) add(cameDay, a.date, 1); } });
   const best = (map) => Math.max(0, ...map.values());
   const monthOfDay = (map) => { const m = new Map(); map.forEach((v, d) => add(m, d.slice(0, 7), v)); return m; };
-  const leadsMonth = monthOfDay(leadDay);
-  const cplBest = (() => { let b = null; months.forEach((m) => { const n = leadsMonth.get(m.month) || 0, spend = m.current ? m.adsSoFar : m.ads; if (n >= 20 && spend > 0) { const v = spend / n; if (b == null || v < b) b = v; } }); return b; })();
+  const adLeadsMonth = monthOfDay(adLeadDay);
+  const cplBest = (() => { let b = null; months.forEach((m) => { if (!m.adsKnown) return; const n = adLeadsMonth.get(m.month) || 0, spend = m.current ? m.adsSoFar : m.ads; if (n >= 20 && spend > 0) { const v = spend / n; if (b == null || v < b) b = v; } }); return b; })();
   const weekStat = (fn) => weeks.map(fn).filter((x) => x != null);
   const ctx = {
     revLifetime: P.reduce((n, p) => n + p.amount, 0), revBestMonth: Math.max(0, ...months.map((m) => m.revenue)), revBestWeek: Math.max(0, ...weekRev), revBestDay: best(revDay),
@@ -548,8 +585,8 @@ function build(input) {
     upsells: [...upsDay.values()].reduce((n, v) => n + v, 0), upsellValue: P.reduce((n, p) => n + p.upsell, 0), upsellBest: Math.max(0, ...P.map((p) => p.upsell)),
     clients: new Set(P.map((p) => p.clientId).filter(Boolean)).size, returning: [...payDays.values()].filter((s) => s.size >= 2).length, payments: P.length,
     ticketMax: Math.max(0, ...P.map((p) => p.amount)), ticketAvgBestMonth: Math.max(0, ...months.map((m) => { const l = P.filter((p) => p.day >= m.first && p.day <= m.last); return l.length >= 10 ? l.reduce((n, p) => n + p.amount, 0) / l.length : 0; })),
-    packages: P.filter((p) => { const s = rawSale.get(p.id); return (s && Number(s.packageTotal) > 0) || (p.appt && p.appt.package); }).length,
-    roasBestMonth: Math.max(0, ...months.map((m) => { const adsRev = P.filter((p) => p.day >= m.first && p.day <= m.last && !String(p.key).startsWith('org:')).reduce((n, p) => n + p.amount, 0); const spend = m.current ? m.adsSoFar : m.ads; return spend >= 1000 ? adsRev / spend : 0; })),
+    packages: P.filter((p) => { const s = rawSale.get(p.id); return s && Number(s.packageTotal) > 0; }).length, // a package starts with its first payment
+    roasBestMonth: Math.max(0, ...months.map((m) => { if (!m.adsKnown) return 0; const adsRev = P.filter((p) => p.day >= m.first && p.day <= m.last && !String(p.key).startsWith('org:')).reduce((n, p) => n + p.amount, 0); const spend = m.current ? m.adsSoFar : m.ads; return spend >= 1000 ? adsRev / spend : 0; })),
     cplBestMonth: cplBest,
     showRateBestWeek: Math.max(0, ...weekStat(([a, b]) => { const due = M.A.filter((x) => x.fresh && x.due && inR(x.date, a, b)); return due.length >= 20 ? due.filter((x) => x.came).length / due.length * 100 : null; })),
     bookRateBestWeek: Math.max(0, ...weekStat(([a, b]) => { const l = M.L.filter((x) => x.fresh && inR(x.day, a, b)); return l.length >= 20 ? l.filter((x) => x.appts.length).length / l.length * 100 : null; })),
@@ -558,12 +595,11 @@ function build(input) {
     cities: locations, team: staff.length, goldCards: team.filter((t) => t.rating >= 80).length, iconCards: team.filter((t) => t.rating >= 88).length,
     revEpilare: catRev['epilare-laser'], revFaciale: catRev.faciale, revCorporale: catRev.corporale,
     cityBestMonth: Math.max(0, ...months.map((m) => Math.max(0, ...Object.values(m.byCity)))),
-    missions: Object.keys(doc.claims).length, bosses, goals: Object.keys(doc.unlocked).length, stage: Math.max(stage.i, doc.best.stage || 0),
+    missions: Object.keys(doc.claims).length, bosses, goals: GOALS.filter((g) => doc.unlocked[g.id]).length, stage: Math.max(stage.i, doc.best.stage || 0),
   };
   const xpRevenue = ctx.revLifetime / 10, xpMissions = Object.values(doc.claims).reduce((n, c) => n + (Number(c.xp) || 0), 0);
   // the level comes before the badges that need it: the badges' XP is added in a second pass
-  ctx.level = levelOf(xpRevenue + xpMissions).level;
-  const badges = BADGES.map((b) => {
+  const badgeOf = (b) => {
     const v = ctx[b.metric];
     const got = v != null && (b.op === 'lte' ? v > 0 && v <= b.target : v >= b.target);
     if (got && !doc.badges[b.id]) { doc.badges[b.id] = new Date(now).toISOString(); changed = true; }
@@ -571,7 +607,13 @@ function build(input) {
     const progress = v == null ? 0 : b.op === 'lte' ? (v > 0 ? clamp(b.target / v, 0, 1) : 0) : clamp(v / b.target, 0, 1);
     return { id: b.id, cat: b.cat, catLabel: CATS[b.cat] || b.cat, name: b.name, desc: b.desc, rarity: b.rarity, rank: RANK[b.rarity] || 0, xp: RARITY_XP[b.rarity] || 50, icon: b.icon,
       secret: !!b.secret, got: has, at: doc.badges[b.id] || null, isNew: has && !doc.seen.badges.includes(b.id), value: v == null ? null : r2(v), target: b.target, op: b.op, progress: r2(progress) };
-  });
+  };
+  // the badges measured on the level come last: the level they read includes the XP of all the others
+  const byId = new Map(BADGES.filter((b) => b.metric !== 'level').map((b) => [b.id, badgeOf(b)]));
+  const xpOthers = [...byId.values()].filter((b) => b.got).reduce((n, b) => n + b.xp, 0);
+  ctx.level = levelOf(xpRevenue + xpMissions + xpOthers).level;
+  BADGES.filter((b) => b.metric === 'level').forEach((b) => byId.set(b.id, badgeOf(b)));
+  const badges = BADGES.map((b) => byId.get(b.id));
   const xpBadges = badges.filter((b) => b.got).reduce((n, b) => n + b.xp, 0);
   const level = levelOf(xpRevenue + xpMissions + xpBadges);
   level.sources = { revenue: Math.round(xpRevenue), missions: xpMissions, badges: xpBadges };
@@ -582,7 +624,12 @@ function build(input) {
     stageUp: doc.seen.stage >= 0 && stage.i > doc.seen.stage ? { from: doc.seen.stage, to: stage.i, name: stage.name } : null,
     goals: goals.filter((g) => g.isNew).map((g) => g.id),
     badges: badges.filter((b) => b.isNew).map((b) => b.id),
-    boss: seasonOut.defeated && !doc.seen.seasons.includes(Q.id) ? Q.id : null,
+    boss: (() => {
+      const id = Object.keys(doc.seasons).sort().find((k) => doc.seasons[k] && doc.seasons[k].defeatedAt && !doc.seen.seasons.includes(k));
+      if (!id) return null;
+      const qq = /-Q([1-4])$/.exec(id), x = doc.seasons[id];
+      return { id, boss: BOSSES[(qq ? +qq[1] : 1) - 1], target: x.target, label: 'Sezonul ' + (qq ? qq[1] : '') + ' · ' + id.slice(0, 4) };
+    })(),
     intro: !doc.seen.intro,
   };
   if (!doc.seen.level) { doc.seen.level = level.level; changed = true; }

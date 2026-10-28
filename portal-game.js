@@ -15,6 +15,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const store = { get: (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
   const toast = (m, t) => { try { K.ui().toast(m, t || 'info'); } catch (e) { /* no toasts */ } };
+  const de = (n) => { const a = Math.abs(Number(n) || 0), r = a % 100; return a >= 20 && (r === 0 || r >= 20) ? ' de ' : ' '; }; // 20 de zile, 3 zile
 
   // ------------------------------------------------------------------ icons (24px, stroke)
   const IC = {
@@ -232,11 +233,13 @@
         if (w && h && (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr))) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
         gl.viewport(0, 0, canvas.width, canvas.height);
       }
+      let dead = false;
       function frame(now) {
+        if (dead) return;
         st.raf = requestAnimationFrame(frame);
         if (!st.visible || document.hidden) return;
         const t = (now - st.t0) / 1000;
-        if (!st.drag) { st.tx = Math.sin(t * 0.42) * 0.85; st.ty = Math.sin(t * 0.29) * 0.35; }
+        if (!st.drag && !(st.hoverAt && now - st.hoverAt < 1500)) { st.tx = Math.sin(t * 0.42) * 0.85; st.ty = Math.sin(t * 0.29) * 0.35; }
         const k = st.drag ? 0.25 : 0.05;
         st.ox += (st.tx - st.ox) * k; st.oy += (st.ty - st.oy) * k;
         st.zoom += (st.zoomTo - st.zoom) * 0.06; st.sat += (st.satTo - st.sat) * 0.05; st.bright += (st.brightTo - st.bright) * 0.05;
@@ -256,7 +259,7 @@
         async set(id, imgUrl, depthUrl, unlocked) {
           st.id = id;
           const [im, dp] = await Promise.all([loadImg(imgUrl), loadImg(depthUrl)]);
-          if (st.id !== id || !im) return false;
+          if (dead || st.id !== id || !im) return false;
           gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tImg); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
           gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tDep);
           if (dp) gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, dp);
@@ -270,7 +273,7 @@
         reveal() { st.satTo = 1; st.brightTo = 1.15; st.zoomTo = 1.0; setTimeout(() => { st.brightTo = 1.05; }, 900); },
         dolly(z) { st.zoomTo = z; },
         visible(v) { st.visible = v; },
-        destroy() { cancelAnimationFrame(st.raf); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('touchmove', move); window.removeEventListener('touchend', up);
+        destroy() { dead = true; cancelAnimationFrame(st.raf); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('touchmove', move); window.removeEventListener('touchend', up);
           try { const x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (e) { /* gone */ } },
       };
     }
@@ -342,7 +345,7 @@
   const api = (body) => K.api('/api/portal-game', body);
   async function load() {
     const d = await K.api('/api/portal-game');
-    S.d = d;
+    S.d = d; S.loadedAt = Date.now(); // the countdowns and the next refresh count from here
     return d;
   }
 
@@ -463,9 +466,8 @@
     if (same && opts.static) {
       const top = old.scrollTop;
       old.classList.add('gm-static');
-      if (tab === 'garaj' && S.car) { // the garage keeps its 3D car: only the numbers change
-        const det = old.querySelector('[data-detail]'); if (det) { det.innerHTML = goalDetail(S.d.goals[S.gi]); hydrate(det, false); }
-      } else { old.innerHTML = html; after(tab, old, false); }
+      if (tab === 'garaj' && S.car) refreshGarage(old); // the garage keeps its 3D car: only what changed is redrawn
+      else { old.innerHTML = html; after(tab, old, false, true); }
       old.scrollTop = top;
       paintHud();
       return;
@@ -478,9 +480,9 @@
     after(tab, el, true);
     paintHud();
   }
-  function after(tab, el, fresh) {
+  function after(tab, el, fresh, quiet) {
     hydrate(el, false);
-    if (tab === 'garaj') wireGarage(el, fresh);
+    if (tab === 'garaj') wireGarage(el, fresh || quiet);
     if (tab === 'imperiu') wireMap(el);
     if (tab === 'imperiu' && fresh) {
       const em = el.querySelector('.gm-boss-em');
@@ -519,7 +521,7 @@
       h += '<section class="gm-card gm-boss a-boss is-tap' + rise() + '" data-act="boss"><div class="gm-boss-em">' + BOSS_SVG + '</div><div>' +
         '<span class="gm-eyebrow">' + esc(s.label) + ' · bossul</span><h4>' + esc(s.boss) + '</h4>' +
         '<div class="gm-hp"><i data-w="' + (1 - s.pct) + '" style="width:100%"></i><b style="left:' + ((1 - s.pct) * 100) + '%;width:' + Math.min(30, (s.today / s.target) * 100) + '%"></b></div>' +
-        '<div class="gm-hp-txt"><span>HP <span class="gm-num">' + lei(left) + '</span></span><span>' + s.daysLeft + ' zile</span></div>' +
+        '<div class="gm-hp-txt"><span>HP <span class="gm-num">' + lei(left) + '</span></span><span>' + (s.daysLeft === 1 ? '1 zi' : s.daysLeft + de(s.daysLeft) + 'zile') + '</span></div>' +
         '<p class="gm-note" style="margin-top:.45rem">' + (s.defeated ? '<b>Învins.</b> Tot ce intră acum e bonus de sezon.' : 'Lovitura de azi: <b>' + lei(s.today) + '</b>. Ritmul care îl doboară: <b>' + lei(s.needPerDay) + ' pe zi</b>.') + '</p></div>' +
         (s.defeated ? '<span class="gm-stamp">ÎNVINS</span>' : '') + '</section>';
     }
@@ -549,7 +551,7 @@
       h += '<section class="gm-card gm-race a-race' + rise() + '"><div class="gm-card-h"><h3>' + ic('flag') + 'Cursa lunii</h3><span class="gm-chip">ziua ' + race.dayNo + ' din ' + race.days + '</span></div>' +
         '<div class="gm-track"><div class="gm-lane"><span class="tag">TU</span><span class="car" data-p="' + youV / fin + '">' + CAR('gmCarYou') + '</span></div>' +
         '<div class="gm-lane is-ghost"><span class="tag">' + esc(race.rivalLabel.toUpperCase()) + '</span><span class="car" data-p="' + rivV / fin + '">' + CAR('gmCarGhost') + '</span></div></div>' +
-        '<div class="gm-race-sum"><span class="gm-eyebrow">' + (race.lead >= 0 ? 'Ești în față cu' : 'Ești în urmă cu') + '</span><span class="gm-num ' + (race.lead >= 0 ? 'is-up' : 'is-down') + '">' + (race.lead >= 0 ? '+' : '-') + lei(Math.abs(race.lead)) + '</span></div></section>';
+        '<div class="gm-race-sum"><span class="gm-eyebrow">' + (race.lead >= 0 ? 'Ești în față cu' : 'Ești în urmă cu') + '</span><span class="gm-num ' + (race.lead >= 0 ? 'is-up' : 'is-down') + '">' + (race.lead >= 0 ? '+' : '') + lei(Math.abs(race.lead)) + '</span></div></section>';
     }
     const rev = Math.max(1, e.revenue);
     let acc = 0;
@@ -568,7 +570,7 @@
     }
     return h;
   }
-  const etaShort = (g) => (g.unlocked ? 'Deblocat' : !g.eta || !g.eta.month ? 'departe, în ritmul de acum' : g.eta.inMonths <= 0 ? 'luna asta' : g.eta.inMonths >= 24 ? 'peste ' + Math.round(g.eta.inMonths / 12) + ' ani' : esc(g.eta.label));
+  const etaShort = (g) => (g.unlocked ? 'Deblocat' : !g.eta || !g.eta.month ? 'departe, în ritmul de acum' : g.eta.inMonths <= 0 ? 'luna asta' : g.eta.inMonths >= 24 ? 'peste ' + Math.round(g.eta.inMonths / 12) + de(Math.round(g.eta.inMonths / 12)) + 'ani' : esc(g.eta.label));
   const stars = (n, small) => '<span class="gm-stars' + (small ? ' is-sm' : '') + '">' + [0, 1, 2, 3, 4].map((i) => '<i class="' + (i < n ? 'on' : '') + '" style="--i:' + i + '">' + ic('star') + '</i>').join('') + '</span>';
 
   // ------------------------------------------------------------------ the map: tap a city, the map flies to it
@@ -672,7 +674,7 @@
     const eta = g.unlocked
       ? '<div class="gm-eta">' + ic('trophy') + '<div><b>Deblocat</b><small>' + esc(new Date(g.unlockedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })) + '. Afacerea l-ar plăti de două ori.</small></div></div>'
       : '<div class="gm-eta">' + ic('clock') + '<div><b>' + (g.eta && g.eta.month ? (g.eta.inMonths <= 0 ? 'Luna asta' : esc(cap(g.eta.label))) : 'Încă departe') + '</b><small>' +
-        (g.eta && g.eta.month ? (g.eta.inMonths >= 12 ? 'Cam ' + (g.eta.inMonths >= 24 ? Math.round(g.eta.inMonths / 12) + ' ani' : 'un an') + ', în ritmul de acum' : 'În ritmul de acum') + (S.d.growth.known ? ' (' + (S.d.growth.rate >= 0 ? '+' : '') + ro(S.d.growth.rate, 1) + '% pe lună).' : ', cu o creștere prudentă de 3% pe lună.') : 'Cu profitul de acum nu se apropie. Crește profitul lunar.') + '</small></div></div>';
+        (g.eta && g.eta.month ? (g.eta.inMonths >= 12 ? 'Cam ' + (g.eta.inMonths >= 24 ? Math.round(g.eta.inMonths / 12) + de(Math.round(g.eta.inMonths / 12)) + 'ani' : 'un an') + ', în ritmul de acum' : 'În ritmul de acum') + (S.d.growth.known ? ' (' + (S.d.growth.rate >= 0 ? '+' : '') + ro(S.d.growth.rate, 1) + '% pe lună).' : ', cu o creștere prudentă de 3% pe lună.') : 'Cu profitul de acum nu se apropie. Crește profitul lunar.') + '</small></div></div>';
     return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
       '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
@@ -712,7 +714,7 @@
         if (S.car) {
           const stage = slides[bestI].querySelector('.gm-stage');
           stage.insertBefore(cv, stage.firstChild.nextSibling);
-          slides[bestI].classList.remove('is-3d');
+          slides.forEach((x) => x.classList.remove('is-3d')); // the photo comes back where the canvas left
           S.car.set(g.id, imgOf(g.img), '/game/img/' + encodeURIComponent(g.img) + '-depth.png', g.unlocked).then((ok) => { if (ok && S.gi === bestI) slides[bestI].classList.add('is-3d'); });
         }
         if (!fresh) { Sfx.tap(); buzz(6); }
@@ -726,6 +728,22 @@
       if (s) show.scrollLeft = s.offsetLeft - (show.clientWidth - s.clientWidth) / 2;
       pick();
     });
+  }
+  function refreshGarage(el) {
+    const d = S.d, fresh = document.createElement('div');
+    fresh.innerHTML = garaj(d);
+    const swap = (sel) => { const a = el.querySelector(sel), b = fresh.querySelector(sel); if (a && b) a.innerHTML = b.innerHTML; };
+    swap('.gm-title'); swap('.gm-vault');
+    el.querySelectorAll('.gm-slide').forEach((s, i) => {
+      const g = d.goals[i]; if (!g) return;
+      s.classList.toggle('is-unlocked', g.unlocked); s.classList.toggle('is-locked', !g.unlocked);
+      const tag = s.querySelector('.gm-stage .won, .gm-stage .lock');
+      if (tag) tag.outerHTML = g.unlocked ? '<span class="won">DEBLOCAT</span>' : '<span class="lock">' + ic('lock') + Math.round(g.progress * 100) + '%</span>';
+    });
+    el.querySelectorAll('.gm-dots i').forEach((x, i) => x.classList.toggle('is-won', !!(d.goals[i] && d.goals[i].unlocked)));
+    const det = el.querySelector('[data-detail]'); if (det) det.innerHTML = goalDetail(d.goals[S.gi]);
+    hydrate(el, false);
+    if (S.car && d.goals[S.gi]) S.car.mode(d.goals[S.gi].unlocked);
   }
   function garageStep(dir) {
     const show_ = S.root && S.root.querySelector('[data-show]'); if (!show_) return;
@@ -870,7 +888,7 @@
           '<div>' + ring(a.showRate == null ? 0 : a.showRate / 100, 78, 7, '<span class="gm-num">' + (a.showRate == null ? '-' : a.showRate + '%') + '</span>') + '<small>Cliente venite</small></div>' +
           '<div>' + ring(clamp(a.share, 0, 1), 78, 7, '<span class="gm-num">' + pct(a.share) + '</span>') + '<small>Din încasări</small></div>' +
         '</div>' +
-        '<div class="gm-sec"><h4>Ultimele 30 de zile</h4>' + spark(a.spark) + '<div class="gm-spark-k"><span>' + a.leads30 + ' leaduri</span><span>' + a.visits30 + ' vizite</span></div></div>' +
+        '<div class="gm-sec"><h4>Ultimele 30 de zile</h4>' + spark(a.spark) + '<div class="gm-spark-k"><span>' + (a.leads30 === 1 ? '1 lead' : a.leads30 + de(a.leads30) + 'leaduri') + '</span><span>' + (a.visits30 === 1 ? '1 vizită' : a.visits30 + de(a.visits30) + 'vizite') + '</span></div></div>' +
         (a.top.length ? '<div class="gm-sec"><h4>Ce se vinde</h4>' + a.top.map((t, i) => '<div class="gm-topt"><span>' + (i + 1) + '. ' + esc(t.name) + '</span><b>' + lei(t.lei) + '</b>' + bar(t.lei / a.top[0].lei) + '</div>').join('') + '</div>' : '') +
         '<div class="gm-sec"><h4>Echipa clinicii</h4><div class="gm-people">' + (a.people.length ? a.people.map((p) => '<span class="t-' + p.tier + '"><i>' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="">' : esc(p.name.charAt(0))) + '</i><b>' + p.rating + '</b><small>' + esc(p.name.split(' ')[0]) + '</small></span>').join('') : '<p class="gm-note">Nimeni încă.</p>') + '</div></div>',
       (el) => { const ln = el.querySelector('.gm-spark .ln'); if (ln) requestAnimationFrame(() => ln.classList.add('is-on')); }, onClose, 'is-city');
@@ -920,7 +938,7 @@
   }
   function stageSheet() {
     const d = S.d, st = d.stage, L = d.level;
-    sheet('<span class="gm-eyebrow">Etapa ' + st.i + ' din 9 · nivel ' + L.level + '</span><h3>' + esc(st.name) + '</h3>' +
+    sheet('<span class="gm-eyebrow">Etapa ' + st.i + ' · nivel ' + L.level + '</span><h3>' + esc(st.name) + '</h3>' +
       '<p class="gm-note">' + esc(st.focus) + '</p>' +
       '<div class="gm-kv"><div><small>Ritmul anual</small><b>' + lei(st.yearPace) + '</b></div><div><small>Următoarea etapă</small><b>' + (st.next ? esc(st.next.name) : '-') + '</b></div>' +
       (st.next ? '<div><small>Pragul ei</small><b>' + short(st.next.min) + ' lei/an</b></div><div><small>În ritmul de acum</small><b>' + (st.next.eta ? esc(cap(st.next.eta.label)) : 'departe') + '</b></div>' : '') + '</div>' +
@@ -933,7 +951,7 @@
       '<div><small>Viața bossului</small><b>' + lei(s.target) + '</b></div><div><small>Lovituri până acum</small><b>' + lei(s.done) + '</b></div>' +
       '<div><small>Rămas</small><b>' + lei(Math.max(0, s.target - s.done)) + '</b></div><div><small>Zile rămase</small><b>' + s.daysLeft + '</b></div>' +
       '<div><small>Ritm necesar</small><b>' + lei(s.needPerDay) + '/zi</b></div><div><small>În ritmul de acum</small><b>' + lei(s.pace) + '</b></div></div>' +
-      '<p class="gm-note">' + (s.pace >= s.target ? 'În ritmul ăsta <b>îl dobori</b> înainte de final.' : 'În ritmul ăsta mai lipsesc <b>' + lei(s.target - s.pace) + '</b> la final de sezon.') + ' ' + esc(S.d.rules.boss) + '</p>');
+      '<p class="gm-note">' + (s.defeated ? '<b>Învins</b> pe ' + esc(new Date(s.defeatedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long' })) + '. Tot ce intră acum e bonus de sezon.' : s.pace >= s.target ? 'În ritmul ăsta <b>îl dobori</b> înainte de final.' : 'În ritmul ăsta mai lipsesc <b>' + lei(s.target - s.pace) + '</b> la final de sezon.') + ' ' + esc(S.d.rules.boss) + '</p>');
   }
 
   // ------------------------------------------------------------------ the in-game menu (the switch back, sound, music, rules)
@@ -943,7 +961,7 @@
     const me = (K.data && K.data.me) || {};
     const m = document.createElement('div');
     m.className = 'gm-menu';
-    m.innerHTML = '<div class="head"><span class="gm-hud-btn is-av">' + avatarHtml() + '</span><div><b>' + esc(me.name || '') + '</b><small>Nivel ' + S.d.level.level + ' · ' + esc(S.d.stage.name) + '</small></div></div>' +
+    m.innerHTML = '<div class="head"><span class="gm-hud-btn is-av">' + avatarHtml() + '</span><div><b>' + esc(me.name || '') + '</b><small>' + (S.d ? 'Nivel ' + S.d.level.level + ' · ' + esc(S.d.stage.name) : 'Game Mode') + '</small></div></div>' +
       '<button type="button" class="it" data-m="off">' + ic('bolt') + 'Game Mode<span class="gm-sw is-on"><i></i></span></button>' +
       '<button type="button" class="it" data-m="sound">' + ic(Sfx.on ? 'sound' : 'mute') + 'Sunete<span class="gm-sw' + (Sfx.on ? ' is-on' : '') + '"><i></i></span></button>' +
       '<button type="button" class="it" data-m="music">' + ic('music') + 'Muzică<span class="gm-sw' + (Sfx.musicOn ? ' is-on' : '') + '"><i></i></span></button>' +
@@ -983,6 +1001,7 @@
     if (!a) return;
     const act = a.dataset.act;
     if (act === 'menu') { menu(); return; }
+    if (!S.d) return;
     if (act === 'level' || act === 'stage') { stageSheet(); return; }
     if (act === 'treasury') { treasurySheet(); return; }
     if (act === 'boss') { bossSheet(); return; }
@@ -1084,14 +1103,13 @@
   function badgesCer(list) {
     const xp = list.reduce((n, t) => n + t.xp, 0);
     const top = list.slice().sort((a, b) => b.rank - a.rank).slice(0, 8);
-    return cer('<div class="kicker">' + (list.length === 1 ? 'INSIGNĂ NOUĂ' : list.length + ' INSIGNE NOI') + '</div><div class="trow">' + top.map((t, i) => badge(Object.assign({}, t, { isNew: false, secret: false }), i)).join('') + '</div>' +
+    return cer('<div class="kicker">' + (list.length === 1 ? 'INSIGNĂ NOUĂ' : list.length + de(list.length).toUpperCase() + 'INSIGNE NOI') + '</div><div class="trow">' + top.map((t, i) => badge(Object.assign({}, t, { isNew: false, secret: false }), i)).join('') + '</div>' +
       '<h2 class="gold">' + letters('+' + ro(xp) + ' XP') + '</h2><div class="sub">' + esc(top.map((t) => t.name).slice(0, 3).join(', ')) + (list.length > 3 ? ' și încă ' + (list.length - 3) : '') + '</div>' +
       '<button type="button" class="gm-btn is-gold cta" data-close>' + ic('medal') + 'Le iau</button>', { delay: 700, sound: Sfx.trophy });
   }
-  function bossCer() {
-    const s = S.d.season;
-    return cer('<div class="kicker">SEZON CÂȘTIGAT</div><div class="gm-boss-em" style="width:140px;height:140px;filter:grayscale(.6)">' + BOSS_SVG + '</div><h2 class="gold">' + letters('BOSS ÎNVINS') + '</h2>' +
-      '<div class="sub">' + esc(s.boss) + ' a căzut: ' + lei(s.done) + ' din ' + lei(s.target) + '.</div><button type="button" class="gm-btn is-gold cta" data-close>' + ic('sword') + 'Următorul sezon</button>', { delay: 900, sound: Sfx.bossDown });
+  function bossCer(b) {
+    return cer('<div class="kicker">' + esc(String(b.label || 'SEZON').toUpperCase()) + ' · CÂȘTIGAT</div><div class="gm-boss-em" style="width:140px;height:140px;filter:grayscale(.6)">' + BOSS_SVG + '</div><h2 class="gold">' + letters('BOSS ÎNVINS') + '</h2>' +
+      '<div class="sub">' + esc(b.boss) + ' a căzut: ținta de ' + lei(b.target) + ' e atinsă.</div><button type="button" class="gm-btn is-gold cta" data-close>' + ic('sword') + 'Următorul sezon</button>', { delay: 900, sound: Sfx.bossDown });
   }
 
   // the first time: what the game is, in five steps
@@ -1101,7 +1119,7 @@
       const steps = [
         ['bolt', 'Afacerea ta e jocul', 'Fiecare leu încasat e XP. Nimic nu se setează: jocul citește doar portalul, cu reguli fixe, aceleași pentru toți.'],
         ['mountain', 'Etapa ' + d.stage.i + ': ' + d.stage.name, 'Etapele vin din Scaling Roadmap-ul lui Alex Hormozi, după ritmul anual al încasărilor. Acum: ' + short(d.stage.yearPace) + ' lei pe an.'],
-        ['car', 'Garajul', 'Dacă nu-l poți cumpăra de două ori, nu ți-l permiți. Mașinile, ceasul și casa se deblochează din profitul real al afacerii.'],
+        ['car', 'Garajul', 'Dacă nu-l poți cumpăra de două ori, nu-l cumpăra. Cele trei mașini se deblochează doar din profitul real al afacerii.'],
         ['map', 'Imperiul', 'Orașul următor se deblochează singur, când cifrele spun că are sens: calendare pline, marjă, investiția scoasă într-un an.'],
         ['medal', d.badges.length + ' de insigne', 'Misiuni zilnice, un boss în fiecare sezon, insigne pentru tot ce construiești. Hai să începem.'],
       ];
@@ -1125,17 +1143,23 @@
     });
   }
   async function ceremonies() {
-    if (S.cer || !S.d) return;
+    if (S.cerRun || S.cer || !S.d || !S.open) return;
+    S.cerRun = true;
+    try { await ceremoniesNow(); } finally { S.cerRun = false; }
+  }
+  async function ceremoniesNow() {
     const ev = S.d.events || {};
     const seen = {};
-    if (ev.intro) { await intro(false); }
-    if (ev.stageUp) { await stageCer(ev.stageUp); seen.stage = ev.stageUp.to; }
-    if (ev.levelUp) { await levelCer(ev.levelUp.from, ev.levelUp.to); seen.level = ev.levelUp.to; }
-    for (const id of ev.goals || []) { const g = S.d.goals.find((x) => x.id === id); if (g) await unlockCer(g, false); }
-    if (ev.goals && ev.goals.length) seen.goals = ev.goals;
-    if (ev.boss) { await bossCer(); seen.season = ev.boss; }
+    const on = () => S.open;
+    if (ev.intro && on()) { await intro(false); }
+    if (ev.stageUp && on()) { await stageCer(ev.stageUp); seen.stage = ev.stageUp.to; }
+    if (ev.levelUp && on()) { await levelCer(ev.levelUp.from, ev.levelUp.to); seen.level = ev.levelUp.to; }
+    for (const id of ev.goals || []) { const g = S.d.goals.find((x) => x.id === id); if (g && on()) await unlockCer(g, false); }
+    if (ev.goals && ev.goals.length && on()) seen.goals = ev.goals;
+    if (ev.boss && on()) { await bossCer(ev.boss); seen.season = ev.boss.id; }
     const tr = (ev.badges || []).map((id) => S.d.badges.find((t) => t.id === id)).filter(Boolean);
-    if (tr.length) { await badgesCer(tr); seen.badges = ev.badges; }
+    if (tr.length && on()) { await badgesCer(tr); seen.badges = ev.badges; }
+    if (!on()) return;
     if (Object.keys(seen).length) {
       try { await api(Object.assign({ action: 'seen' }, seen)); } catch (e) { /* next time */ }
       S.d.events = {};
@@ -1180,7 +1204,7 @@
     l.href = 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap';
     document.head.appendChild(l);
   }
-  function onVisibility() { if (!S.open) return; if (document.hidden) Sfx.suspend(); else { Sfx.resume(); if (Date.now() - S.loadedAt > 20000) { S.loadedAt = Date.now(); refresh(); } } }
+  function onVisibility() { if (!S.open) return; if (document.hidden) Sfx.suspend(); else { Sfx.resume(); if (Date.now() - S.loadedAt > 20000 && !S.cerRun) refresh(); } }
   async function enter(quick) {
     if (S.open) return;
     S.open = true;
@@ -1197,7 +1221,7 @@
       if (!ok) { failOpen(); return; }
       show(S.tab, { silent: true });
       Sfx.music(true);
-      setTimeout(ceremonies, 900);
+      S.cerT = setTimeout(ceremonies, 900);
       startLive();
       return;
     }
@@ -1218,7 +1242,7 @@
     if (!ready) { failOpen(); return; }
     show(S.tab, { silent: true });
     Sfx.music(true);
-    setTimeout(ceremonies, 1300);
+    S.cerT = setTimeout(ceremonies, 1300);
     startLive();
   }
   function failOpen() {
@@ -1227,15 +1251,17 @@
     store.set('c360_game', '0');
   }
   function startLive() {
-    S.loadedAt = Date.now();
     clearInterval(S.timer);
     S.timer = setInterval(() => {
       tickTimers();
-      if (!document.hidden && Date.now() - S.loadedAt > 45000 && !S.sheet && !S.cer) { S.loadedAt = Date.now(); refresh(); }
+      if (!document.hidden && Date.now() - S.loadedAt > 45000 && !S.sheet && !S.cer && !S.cerRun && !S.citing) refresh();
     }, 1000);
   }
   function teardown() {
     clearInterval(S.timer);
+    clearTimeout(S.cerT);
+    document.querySelectorAll('.gm-intro, .gm-cer').forEach((x) => x.remove());
+    S.cer = false;
     Fx.stop();
     Sfx.music(false);
     if (S.car) { S.car.destroy(); S.car = null; }

@@ -246,7 +246,7 @@ html.gm-on .c360-tabbar{ display:none !important; }
 .gm-cond .c-top .ok, .gm-check .c-top .ok{ width:20px; height:20px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08); flex:none; }
 .gm-cond .c-top .ok.is-on, .gm-check .c-top .ok.is-on{ background:var(--gm-green); color:#03140b; box-shadow:0 0 12px rgba(61,255,168,.6); }
 .gm-cond .c-top .ok svg.gi, .gm-check .c-top .ok svg.gi{ width:12px; height:12px; stroke-width:3; }
-.gm-cond .c-top .gm-num, .gm-check .c-top .gm-num{ font-size:.86rem; color:#fff; }
+.gm-cond .c-top .gm-num, .gm-check .c-top .gm-num{ font-size:.86rem; color:#fff; white-space:nowrap; }
 .gm-eta{ display:flex; align-items:center; gap:.9rem; margin-top:1rem; padding:.85rem 1rem; border-radius:16px; background:linear-gradient(120deg, rgba(109,92,255,.18), rgba(255,77,157,.12)); border:1px solid rgba(177,77,255,.3); }
 .gm-eta svg.gi{ width:26px; height:26px; color:var(--gm-pink); }
 .gm-eta b{ display:block; font-family:var(--gm-disp); font-size:1.1rem; letter-spacing:.03em; }

@@ -27,8 +27,10 @@ async function compute(now) {
   try { ads = await Promise.race([K.adsFor(conn, { since: first, until: today }), new Promise((r) => setTimeout(() => r({ error: 'timeout' }), 8000))]); } catch (e) { ads = { error: e.message }; }
   const { photoUrl } = require('./portal-account');
   const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
-  const out = G.build({ M, employees, sales, attendance, tbAll, appointments, adsDaily: ads && ads.daily ? ads.daily : [], adsOk: !!(ads && ads.daily && !ads.error), doc, now, photoOf });
-  out.state.adsState = ads.none ? 'none' : ads.error ? 'error' : 'ok';
+  // Meta read for real: no error, and the day by day spend came back (an empty list next to ads that spent is a failed read)
+  const adsOk = !!(ads && Array.isArray(ads.daily) && !ads.error && !ads.dailyError && !(ads.daily.length === 0 && (ads.rows || []).some((r) => r.spend > 0)));
+  const out = G.build({ M, employees, sales, attendance, tbAll, appointments, adsDaily: adsOk ? ads.daily : [], adsOk, adsFrom: first, doc, now, photoOf });
+  out.state.adsState = ads.none ? 'none' : adsOk ? 'ok' : 'error';
   return out;
 }
 

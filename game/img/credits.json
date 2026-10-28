@@ -89,5 +89,19 @@
     "author": "Adrian Pingstone",
     "license": "Public domain",
     "source": "https://commons.wikimedia.org/wiki/File:Gulfstream_G650_departs_Bristol_23rdAug2014_arp.jpg"
+  },
+  "gt3rs": {
+    "file": "gt3rs.webp",
+    "title": "File:Porsche 911 GT3 RS (2023).jpg",
+    "author": "Y.Leclercq",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Porsche_911_GT3_RS_(2023).jpg"
+  },
+  "svj": {
+    "file": "svj.webp",
+    "title": "File:Lamborghini Aventador SVJ Yellow.jpg",
+    "author": "Blue0ne87",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lamborghini_Aventador_SVJ_Yellow.jpg"
   }
 }
