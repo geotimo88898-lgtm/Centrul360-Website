@@ -19,26 +19,40 @@ const JOBS = {
     campaignName: 'AR VIDEO · HIFU abdomen · Arad', adsetName: 'Arad · femei', adName: 'video Arad',
     text: (t) => String(t || '').replace(/^\s*TIMIȘOARA!/, 'ARAD!'),
   },
+  // 28.10 evening, the owner ("hai să încercăm cu alea"): the HIFU gușă video on the iPad (September: cheap leads on a small
+  // test, never grown; the voice says the price of now and no city) in Timișoara, with everything of the best Timișoara
+  // gușă ad (audience, form, its texts); the video and its cover are the September ad's own
+  'tm-gusa-vid-2026-10-28': {
+    fromAd: '120251400890900103', city: 'Timișoara', daily: 40, video: '28021255054211921', cover: '73d1636d010a7361edb36b2d85bccb1b',
+    campaignName: 'TM VIDEO · HIFU gușă · iPad', adsetName: 'Timișoara · femei', adName: 'video gușă iPad',
+    text: (t) => String(t || ''),
+  },
 };
 
 const G = (method, path, conn, params) => ads.call(method, path, conn.userToken, params);
 const why = (j) => (j && j.error && (j.error.error_user_msg || j.error.message)) || 'Meta n-a răspuns';
 
-// what the Timișoara ad is made of, and what the new one will be
+// what the ad it copies is made of, and what the new one will be
 async function plan(conn, job) {
   const j = JOBS[job];
   const src = await G('GET', '/' + j.fromAd, conn, { fields: 'account_id,name,creative{object_story_spec,asset_feed_spec},adset{name,targeting,optimization_goal,billing_event,bid_strategy,bid_amount,promoted_object,destination_type,attribution_spec,daily_budget},campaign{name,objective,special_ad_categories,buying_type,bid_strategy,daily_budget}' });
-  if (!src.ok) return { error: 'Reclama din Timișoara: ' + why(src.j) };
-  if ('act_' + src.j.account_id !== conn.adAccountId) return { error: 'Reclama din Timișoara nu e în contul conectat.' };
+  if (!src.ok) return { error: 'Reclama copiată: ' + why(src.j) };
+  if ('act_' + src.j.account_id !== conn.adAccountId) return { error: 'Reclama copiată nu e în contul conectat.' };
   const set = src.j.adset || {}, camp = src.j.campaign || {};
   const spec = ((src.j.creative || {}).object_story_spec) || {};
-  const vd = spec.video_data;
-  if (!vd || !vd.call_to_action) return { error: 'Reclama din Timișoara nu e un video cu formular.' };
+  // a video or a picture: the texts (all of them, when Meta mixes several), the title and the form are taken over
+  const vd = spec.video_data || spec.link_data;
+  if (!vd || !vd.call_to_action) return { error: 'Reclama copiată nu are formular.' };
+  const afs = (src.j.creative || {}).asset_feed_spec || {};
+  const list = (xs, one) => { const out = (xs || []).map((x) => x.text).filter(Boolean); return out.length ? out : one ? [one] : []; };
+  const bodies = list(afs.bodies, vd.message).map(j.text), titles = list(afs.titles, vd.title || vd.name), descriptions = list(afs.descriptions, vd.description);
   const t = JSON.parse(JSON.stringify(set.targeting || {}));
   const geo = t.geo_locations || {};
   const near = (geo.custom_locations || [])[0];
   const c = ads.CITIES[j.city];
-  t.geo_locations = { custom_locations: [{ latitude: c.lat, longitude: c.lng, radius: near ? Number(near.radius) : 7, distance_unit: near ? near.distance_unit || 'kilometer' : 'kilometer' }],
+  // the same city: its own point and radius as they are; another city: that city's centre, the same radius
+  const here = near && Math.abs(near.latitude - c.lat) < 0.08 && Math.abs(near.longitude - c.lng) < 0.1;
+  t.geo_locations = { custom_locations: [{ latitude: here ? near.latitude : c.lat, longitude: here ? near.longitude : c.lng, radius: near ? Number(near.radius) : 7, distance_unit: near ? near.distance_unit || 'kilometer' : 'kilometer' }],
     location_types: geo.location_types || ['home', 'recent'] };
   const adset = { name: j.adsetName, daily_budget: String(j.daily * 100), billing_event: set.billing_event || 'IMPRESSIONS', optimization_goal: set.optimization_goal || 'LEAD_GENERATION',
     bid_strategy: set.bid_strategy || 'LOWEST_COST_WITHOUT_CAP', destination_type: set.destination_type || 'ON_AD', promoted_object: set.promoted_object || { page_id: conn.pageId }, targeting: t, status: 'PAUSED' };
@@ -57,11 +71,13 @@ async function plan(conn, job) {
   const others = Object.entries(reg).filter(([, x]) => cityOf(x) === j.city && x.kind !== 'hiring').map(([id, x]) => ({ id, name: x.name, offer: x.offerId || (x.detected || {}).offerId || '', leads: x.leads || 0, lastAt: x.lastAt || '' }));
   const cta = JSON.parse(JSON.stringify(vd.call_to_action));
   if (pick) cta.value = Object.assign({}, cta.value, { lead_gen_form_id: pick.id });
-  const video_data = { title: vd.title, message: j.text(vd.message), call_to_action: cta };
+  const video_data = { title: titles[0], message: bodies[0], call_to_action: cta };
+  const feed = bodies.length > 1 || titles.length > 1 ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })),
+    descriptions: descriptions.length ? descriptions.map((text) => ({ text })) : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
   return {
     source: { ad: src.j.name, adset: set.name, campaign: camp.name, objective: camp.objective, campaignBudget: camp.daily_budget || null, sourceGeo: geo },
     campaign: { name: j.campaignName, objective: camp.objective || 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: camp.special_ad_categories || [], buying_type: camp.buying_type || 'AUCTION', is_adset_budget_sharing_enabled: false },
-    adset, spec: { page_id: spec.page_id || conn.pageId, instagram_user_id: spec.instagram_user_id, video_data },
+    adset, spec: { page_id: spec.page_id || conn.pageId, instagram_user_id: spec.instagram_user_id, video_data }, feed,
     form: { id: formId, name: f.name || '', location: f.location || '', offerId: f.offerId || '', detected: f.detected || null },
     useForm: pick ? { id: pick.id, name: pick.name || '', location: cityOf(pick), offerId: pick.offerId || (pick.detected || {}).offerId || '', leads: pick.leads || 0, lastAt: pick.lastAt || '' } : null,
     cityForms: others,
@@ -100,7 +116,8 @@ async function look(job) {
   if (!conn.userToken || !conn.adAccountId) return { error: 'not_connected' };
   const d = (await readJSON(KEY, {}))[job] || {};
   const p = await plan(conn, job);
-  const video = d.videoId ? await G('GET', '/' + d.videoId, conn, { fields: 'status,length' }) : null;
+  const vid = JOBS[job].video || d.videoId;
+  const video = vid ? await G('GET', '/' + vid, conn, { fields: 'status,length' }) : null;
   return Object.assign({ have: d, video: video && (video.ok ? video.j : { error: why(video.j) }) }, p);
 }
 
@@ -110,7 +127,9 @@ async function make(job) {
   const doc = await readJSON(KEY, {});
   const d = doc[job] = doc[job] || {};
   if (d.adId) return { ok: true, already: true, campaignId: d.campaignId, adsetId: d.adsetId, adId: d.adId };
-  if (!d.videoId || !d.hash) return { error: 'întâi video-ul și coperta' };
+  // the video and its cover: sent by Claude, or ones the account already has
+  const videoId = JOBS[job].video || d.videoId, hash = JOBS[job].cover || d.hash;
+  if (!videoId || !hash) return { error: 'întâi video-ul și coperta' };
   if (d.making && Date.now() - Date.parse(d.making) < 10 * 60e3) return { error: 'se face deja (de acum ' + Math.round((Date.now() - Date.parse(d.making)) / 1000) + ' s)' };
   const p = await plan(conn, job);
   if (p.error) return p;
@@ -128,19 +147,25 @@ async function make(job) {
     const set = await G('POST', '/' + act + '/adsets', conn, Object.assign({ campaign_id: camp.j.id }, p.adset));
     if (!set.ok) return fail('Setul de reclame', set.j);
     made.push(set.j.id);
-    const spec = Object.assign({}, p.spec, { video_data: Object.assign({}, p.spec.video_data, { video_id: d.videoId, image_hash: d.hash }) });
+    const spec = Object.assign({}, p.spec, { video_data: Object.assign({}, p.spec.video_data, { video_id: videoId, image_hash: hash }) });
     if (!spec.instagram_user_id) delete spec.instagram_user_id;
-    const cr = await G('POST', '/' + act + '/adcreatives', conn, { name: JOBS[job].adName, object_story_spec: spec });
+    let cr = await G('POST', '/' + act + '/adcreatives', conn, Object.assign({ name: JOBS[job].adName, object_story_spec: spec }, p.feed ? { asset_feed_spec: p.feed } : {}));
+    // Meta refusing the several texts: the first text and title only (like publish())
+    let textNote;
+    if (!cr.ok && p.feed) {
+      textNote = 'un singur text: ' + why(cr.j);
+      cr = await G('POST', '/' + act + '/adcreatives', conn, { name: JOBS[job].adName, object_story_spec: spec });
+    }
     if (!cr.ok) return fail('Reclama (video și texte)', cr.j);
     made.push(cr.j.id);
     const ad = await G('POST', '/' + act + '/ads', conn, { name: JOBS[job].adName, adset_id: set.j.id, creative: { creative_id: cr.j.id }, status: 'ACTIVE' });
     if (!ad.ok) return fail('Reclama', ad.j);
-    Object.assign(d, { campaignId: camp.j.id, adsetId: set.j.id, creativeId: cr.j.id, adId: ad.j.id, at: new Date().toISOString() });
+    Object.assign(d, { videoId, hash, campaignId: camp.j.id, adsetId: set.j.id, creativeId: cr.j.id, adId: ad.j.id, at: new Date().toISOString() }, textNote ? { textNote } : {});
     delete d.making;
     await writeJSON(KEY, doc);
     const a = await G('POST', '/' + set.j.id, conn, { status: 'ACTIVE' });
     const c = await G('POST', '/' + camp.j.id, conn, { status: 'ACTIVE' });
-    return { ok: true, campaignId: camp.j.id, adsetId: set.j.id, adId: ad.j.id, started: a.ok && c.ok, warning: !a.ok ? why(a.j) : !c.ok ? why(c.j) : undefined };
+    return { ok: true, campaignId: camp.j.id, adsetId: set.j.id, adId: ad.j.id, started: a.ok && c.ok, warning: !a.ok ? why(a.j) : !c.ok ? why(c.j) : undefined, textNote };
   } catch (err) {
     return fail('Rețea', { error: { message: err.message } });
   }

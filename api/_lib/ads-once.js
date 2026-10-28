@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 28.10 evening, the owner ("hai să încercăm cu alea"): the side-view LipoSonix / HIFU abdomen video (vid 8, the cheapest
+  // abdomen leads in September) back on in Timișoara next to vid 3, a new face for the same women
+  { id: 'tm-vid8-2026-10-28', why: 'vid 8 pornit din nou, cerut de voi pe 28.10', actions: [
+    { campaignId: '120251418158480103', name: 'tm vid 8 - copie', daily: 50, why: 'TM abdomen: al doilea video, cele mai ieftine lead-uri în septembrie' },
+    { campaignId: '120251418158480103', name: 'tm vid 8 - copie', status: 'ACTIVE', why: 'TM abdomen: al doilea video, cele mai ieftine lead-uri în septembrie' },
+  ] },
   // 28.10, the owner (plan 1 after the calendars: both clinics have room for about twice the bookings, with ~50% coming):
   // more to what brings bookings cheaply, the two best TM gușă ads back on, off what brings almost nothing
   { id: 'plan-2026-10-28', why: 'planul 1, aprobat de voi pe 28.10', actions: [
