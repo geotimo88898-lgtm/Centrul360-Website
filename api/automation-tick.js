@@ -43,6 +43,24 @@ module.exports = async (req, res) => {
   const out = { ok: true, waited: [] };
   // Claude's read with the report key only reads: the clock's steps stay with the clock (28.10)
   const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
+  // with the key, &vad=<job>: the video ad the owner approved in chat (api/_lib/ads-video.js): the file and its cover
+  // sent with POST (&put=video / &put=thumb), then &step=look, make or status; &vids=<since>: the account's ads with
+  // what they brought, &vfile=<video id>: one video's file. Answered alone (no report).
+  if (readOnly && (req.query.vad || req.query.vids || req.query.vfile)) {
+    const v = require('./_lib/ads-video');
+    const job = String(req.query.vad || '');
+    let r;
+    try {
+      if (req.query.vids) r = await v.videos(String(req.query.vids));
+      else if (/^\d{6,25}$/.test(String(req.query.vfile || ''))) r = await v.videoFile(String(req.query.vfile));
+      else if (!v.JOBS[job]) r = { error: 'job necunoscut' };
+      else if (req.method === 'POST') r = await v.put(job, String(req.query.put || ''), Buffer.isBuffer(req.body) ? req.body : null);
+      else r = await ({ look: v.look, make: v.make, status: v.status }[String(req.query.step || 'look')] || v.look)(job);
+    } catch (e) { r = { error: e.message }; }
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json(r);
+    return;
+  }
   // with the key, &ad=<campaign id>: its ads as Meta has them (texts, picture or video, the video's file), to look at
   if (readOnly && /^\d{6,25}$/.test(String(req.query.ad || ''))) out.ad = await (async () => {
     const { loadConnection } = require('./_lib/facebook');

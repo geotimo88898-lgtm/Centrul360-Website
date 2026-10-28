@@ -541,4 +541,4 @@ async function delivery(conn, id) {
   const r = await call('GET', '/' + id, conn.userToken, { fields: 'effective_status,adsets{effective_status,daily_budget,learning_stage_info,start_time,promoted_object,targeting{age_min,age_max,genders,geo_locations}},ads{effective_status,issues_info,ad_review_feedback}' });
   return r.ok ? r.j : { error: metaError(r.j) };
 }
-module.exports = { delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
+module.exports = { call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
