@@ -44,16 +44,27 @@ async function plan(conn, job) {
     bid_strategy: set.bid_strategy || 'LOWEST_COST_WITHOUT_CAP', destination_type: set.destination_type || 'ON_AD', promoted_object: set.promoted_object || { page_id: conn.pageId }, targeting: t, status: 'PAUSED' };
   if (set.bid_amount) adset.bid_amount = set.bid_amount;
   if (set.attribution_spec) adset.attribution_spec = set.attribution_spec;
-  const video_data = { title: vd.title, message: j.text(vd.message), call_to_action: vd.call_to_action };
-  // the portal's sheet of this form: a city written there wins over the campaign's name (api/_lib/fb-leads.js)
-  const forms = await readJSON('data/fb-forms.json', {});
+  // the form: the portal keeps each form's city, and that wins over the campaign's name (api/_lib/fb-leads.js), so a
+  // Timișoara form would bring Arad's women in as Timișoara's: the same procedure's form of the new city, the one with
+  // the latest lead
+  const reg = ((await readJSON('data/fb-forms.json', {})) || {}).forms || {};
   const formId = String((vd.call_to_action.value || {}).lead_gen_form_id || '');
-  const f = ((forms && forms.forms) || {})[formId] || {};
+  const f = reg[formId] || {};
+  const cityOf = (x) => x.location || (x.detected && x.detected.location) || '';
+  const pick = j.formId ? Object.assign({ id: j.formId }, reg[j.formId] || {}) : cityOf(f) === j.city ? Object.assign({ id: formId }, f)
+    : Object.entries(reg).filter(([, x]) => cityOf(x) === j.city && x.kind !== 'hiring' && (x.offerId || (x.detected || {}).offerId) === (f.offerId || (f.detected || {}).offerId))
+      .map(([id, x]) => Object.assign({ id }, x)).sort((a, b) => String(b.lastAt || '').localeCompare(String(a.lastAt || '')))[0];
+  const others = Object.entries(reg).filter(([, x]) => cityOf(x) === j.city && x.kind !== 'hiring').map(([id, x]) => ({ id, name: x.name, offer: x.offerId || (x.detected || {}).offerId || '', leads: x.leads || 0, lastAt: x.lastAt || '' }));
+  const cta = JSON.parse(JSON.stringify(vd.call_to_action));
+  if (pick) cta.value = Object.assign({}, cta.value, { lead_gen_form_id: pick.id });
+  const video_data = { title: vd.title, message: j.text(vd.message), call_to_action: cta };
   return {
     source: { ad: src.j.name, adset: set.name, campaign: camp.name, objective: camp.objective, campaignBudget: camp.daily_budget || null, sourceGeo: geo },
     campaign: { name: j.campaignName, objective: camp.objective || 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: camp.special_ad_categories || [], buying_type: camp.buying_type || 'AUCTION', is_adset_budget_sharing_enabled: false },
     adset, spec: { page_id: spec.page_id || conn.pageId, instagram_user_id: spec.instagram_user_id, video_data },
     form: { id: formId, name: f.name || '', location: f.location || '', offerId: f.offerId || '', detected: f.detected || null },
+    useForm: pick ? { id: pick.id, name: pick.name || '', location: cityOf(pick), offerId: pick.offerId || (pick.detected || {}).offerId || '', leads: pick.leads || 0, lastAt: pick.lastAt || '' } : null,
+    cityForms: others,
   };
 }
 
@@ -103,6 +114,7 @@ async function make(job) {
   if (d.making && Date.now() - Date.parse(d.making) < 10 * 60e3) return { error: 'se face deja (de acum ' + Math.round((Date.now() - Date.parse(d.making)) / 1000) + ' s)' };
   const p = await plan(conn, job);
   if (p.error) return p;
+  if (!p.useForm) return { error: 'niciun formular pentru ' + JOBS[job].city, cityForms: p.cityForms };
   d.making = new Date().toISOString();
   await writeJSON(KEY, doc);
   const act = conn.adAccountId;
