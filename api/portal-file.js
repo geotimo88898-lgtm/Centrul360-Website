@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
   const p = String((req.query && req.query.p) || '');
   const av = /^academy\/[\w-]{6,80}\.(mp4|mov|webm|m4v)$/.exec(p);
   if (av) return academyVideo(req, res, p, av[1]);
-  const m = /^academy\/[\w-]{6,80}\.(jpg|png|webp)$/.exec(p) || /^game\/[\w-]{6,80}\.(jpg)$/.exec(p) || /^contacts\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf)$/.exec(p) || /^wa-media\/[\w-]+\.(jpg|png|webp|pdf|mp4|3gp|ogg|mp3|m4a|aac|amr|doc|docx|xls|xlsx|txt)$/.exec(p)
+  const m = /^academy\/[\w-]{6,80}\.(jpg|png|webp)$/.exec(p) || /^contacts\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf)$/.exec(p) || /^wa-media\/[\w-]+\.(jpg|png|webp|pdf|mp4|3gp|ogg|mp3|m4a|aac|amr|doc|docx|xls|xlsx|txt)$/.exec(p)
     || /^wa-out\/[\w-]+\.(jpe?g|png|webp|pdf|docx?|xlsx?|mp4|mov)$/.exec(p); // the big files sent from Mesaje
   if (!m) { res.status(400).json({ error: 'invalid_path' }); return; }
   const buf = await readBinary(p);

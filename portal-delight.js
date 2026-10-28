@@ -54,11 +54,40 @@
     document.head.appendChild(s);
   }));
   const gameOn = () => { try { return localStorage.getItem('c360_game') === '1'; } catch (e) { return false; } };
+  // the game's sound has to be woken inside the tap itself (iPhone): the audio session plays even on silent, the
+  // Web Audio context opens now (the game uses it), and a silent loop keeps the media channel open
+  let silent = null;
+  const quiet = () => { try { return localStorage.getItem('c360_game_sound') === '0' && localStorage.getItem('c360_game_music') === '0'; } catch (e) { return false; } };
+  function audio() {
+    if (quiet()) return; // both switches off: the owner's own music keeps playing
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older Safari */ }
+    try {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (C && !window.__gmAudio) window.__gmAudio = new C();
+      const ctx = window.__gmAudio;
+      if (ctx) {
+        if (ctx.state !== 'running') ctx.resume().catch(() => {});
+        const b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource();
+        s.buffer = b; s.connect(ctx.destination); s.start(0);
+      }
+    } catch (e) { /* no Web Audio */ }
+    try {
+      if (!silent) { silent = new Audio('/game/sfx/silence.mp3'); silent.loop = true; silent.setAttribute('playsinline', ''); silent.volume = 0.01; }
+      const p = silent.play(); if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* no media element */ }
+  }
   window.C360GameBoot = {
     isOn: () => !!(window.C360Game && window.C360Game.isOpen()) || gameOn(),
+    audio,
+    audioOff() {
+      try { if (silent) silent.pause(); } catch (e) { /* gone */ }
+      try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch (e) { /* older Safari */ }
+    },
+    audioPause(hidden) { try { if (!silent) return; if (hidden) silent.pause(); else if (!quiet()) { const p = silent.play(); if (p && p.catch) p.catch(() => {}); } } catch (e) { /* gone */ } },
     async toggle() {
       if (!admin()) return;
-      try { await loadGame(); } catch (e) { if (K.ui) K.ui().toast('Jocul nu s-a putut încărca. Încearcă din nou.', 'error'); return; }
+      if (!(window.C360Game && window.C360Game.isOpen())) audio();
+      try { await loadGame(); } catch (e) { window.C360GameBoot.audioOff(); if (K.ui) K.ui().toast('Jocul nu s-a putut încărca. Încearcă din nou.', 'error'); return; }
       window.C360Game.toggle();
     },
   };

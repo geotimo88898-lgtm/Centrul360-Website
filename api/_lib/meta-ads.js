@@ -471,6 +471,7 @@ async function adStats(conn, range) {
         status: a.effective_status || 'ARCHIVED', thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '' };
     }),
     daily: (daily.data || []).map((d) => ({ day: d.date_start, spend: Number(d.spend) || 0 })),
+    dailyError: daily.error || null, // the day by day spend did not come back (the totals per ad did)
   };
 }
 

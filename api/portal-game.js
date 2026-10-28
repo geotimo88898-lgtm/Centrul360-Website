@@ -1,13 +1,10 @@
 // /api/portal-game, Game Mode (admins only; see _lib/game.js for what the game is made of).
 //   GET                                   the whole game, live from the clinic's data
 //   POST { action: 'claim', id }          a mission done: its XP (checked again here, never trusted from the screen)
-//   POST { action: 'seen', level?, goals?, trophies?, season? }   the ceremonies already shown
-//   POST { action: 'goals', goals: [...] }                         the garage, as the owner wrote it
-//   POST { action: 'settings', costs?, expandAt?, next?, seasonTarget? }
-//   POST { action: 'goal_image', dataUrl }  a photo of his own for a goal (JPEG, up to 700 KB): its path
+//   POST { action: 'seen', level?, stage?, intro?, goals?, badges?, season? }   the ceremonies already shown
+// Nothing else: the rules are declared in _lib/game.js and nobody edits them (the owner plays, he doesn't set it up).
 
-const crypto = require('crypto');
-const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
+const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { loadConnection } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
@@ -15,7 +12,6 @@ const K = require('./_lib/kpi');
 const TB = require('./_lib/timebank');
 const G = require('./_lib/game');
 
-const MAX_PHOTO = 700 * 1024;
 
 async function compute(now) {
   const [offers, leads, appointments, sales, clients, conversations, employees, attendance, tbAll, conn, doc] = await Promise.all([
@@ -31,8 +27,10 @@ async function compute(now) {
   try { ads = await Promise.race([K.adsFor(conn, { since: first, until: today }), new Promise((r) => setTimeout(() => r({ error: 'timeout' }), 8000))]); } catch (e) { ads = { error: e.message }; }
   const { photoUrl } = require('./portal-account');
   const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
-  const out = G.build({ M, employees, sales, attendance, tbAll, appointments, adsDaily: ads && ads.daily ? ads.daily : [], adsOk: !!(ads && ads.daily && !ads.error), doc, now, photoOf });
-  out.state.adsState = ads.none ? 'none' : ads.error ? 'error' : 'ok';
+  // Meta read for real: no error, and the day by day spend came back (an empty list next to ads that spent is a failed read)
+  const adsOk = !!(ads && Array.isArray(ads.daily) && !ads.error && !ads.dailyError && !(ads.daily.length === 0 && (ads.rows || []).some((r) => r.spend > 0)));
+  const out = G.build({ M, employees, sales, attendance, tbAll, appointments, adsDaily: adsOk ? ads.daily : [], adsOk, adsFrom: first, doc, now, photoOf });
+  out.state.adsState = ads.none ? 'none' : adsOk ? 'ok' : 'error';
   return out;
 }
 
@@ -42,25 +40,17 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (session.viewer) { res.status(403).json({ error: 'forbidden' }); return; }
   try {
+    // the game's document is written quietly (no other screen reads it) and merged with the newest copy first
+    const save = async (doc) => writeJSON(G.KEY, G.mergeDoc(await readJSON(G.KEY, null), doc), { quiet: true });
     if (req.method === 'GET') {
       const { state, doc, changed } = await compute();
-      if (changed) await writeJSON(G.KEY, doc);
+      if (changed) await save(doc).catch((e) => console.error('game save:', e.message)); // a failed save never hides the game
       res.status(200).json(state);
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const b = req.body || {};
     const fail = (code, error) => res.status(code).json({ error });
-
-    if (b.action === 'goal_image') {
-      const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.dataUrl || ''));
-      const buf = m ? Buffer.from(m[1], 'base64') : null;
-      if (!buf || !buf.length || buf.length > MAX_PHOTO) return fail(400, 'invalid_file');
-      const path = 'game/' + crypto.randomUUID() + '.jpg';
-      await writeBinary(path, buf, 'image/jpeg');
-      res.status(200).json({ ok: true, img: path });
-      return;
-    }
 
     const doc = G.cleanDoc(await readJSON(G.KEY, null));
     if (b.action === 'claim') {
@@ -69,42 +59,25 @@ module.exports = async (req, res) => {
       if (doc.claims[id]) return fail(409, 'already_claimed');
       const { state } = await compute();
       const mis = state.missions.daily.concat(state.missions.weekly).find((x) => x.id === id);
-      if (!mis) return fail(404, 'mission_gone');
+      if (!mis) return fail(410, 'mission_gone');
       if (!mis.done) return fail(400, 'not_done');
       const fresh = G.cleanDoc(await readJSON(G.KEY, null)); // the newest copy: two phones claiming at once count once
       if (fresh.claims[id]) return fail(409, 'already_claimed');
       fresh.claims[id] = { at: new Date().toISOString(), xp: mis.xp };
-      await writeJSON(G.KEY, fresh);
+      await save(fresh);
       res.status(200).json({ ok: true, xp: mis.xp });
       return;
     }
     if (b.action === 'seen') {
-      if (Number(b.level) > 0) doc.seen.level = Math.round(Number(b.level));
-      const add = (key, list) => { if (Array.isArray(list)) doc.seen[key] = [...new Set(doc.seen[key].concat(list.map(String).filter((x) => /^[\w-]{1,40}$/.test(x))))].slice(-500); };
-      add('goals', b.goals); add('trophies', b.trophies);
-      if (b.season) add('seasons', [String(b.season)]);
-      await writeJSON(G.KEY, doc);
-      res.status(200).json({ ok: true });
-      return;
-    }
-    if (b.action === 'goals') {
-      const goals = G.cleanGoals(b.goals);
-      if (!goals) return fail(400, 'invalid_goals');
-      doc.goals = goals;
-      // a goal taken out (or rebuilt) unlocks again from scratch
-      Object.keys(doc.unlocked).forEach((id) => { if (!goals.some((g) => g.id === id)) delete doc.unlocked[id]; });
-      await writeJSON(G.KEY, doc);
-      res.status(200).json({ ok: true, goals });
-      return;
-    }
-    if (b.action === 'settings') {
-      doc.settings = G.cleanSettings(b, doc.settings);
-      if (b.seasonTarget != null) {
-        const t = Math.round(Number(b.seasonTarget));
-        const q = G.quarterOf(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date())).id;
-        if (t >= 1000 && t <= 1e9) doc.seasons[q] = Object.assign({}, doc.seasons[q] || {}, { target: t, manual: true, defeatedAt: null });
-      }
-      await writeJSON(G.KEY, doc);
+      // only forward, and only what exists: the ceremonies are never replayed or hidden by an old or a wrong value
+      if (Number(b.level) > 0) doc.seen.level = Math.max(doc.seen.level || 0, Math.min(100, Math.trunc(Number(b.level))));
+      if (Number.isInteger(b.stage) && b.stage >= 0 && b.stage <= 9) doc.seen.stage = Math.max(doc.seen.stage, b.stage);
+      if (b.intro === true) doc.seen.intro = true;
+      const known = { goals: new Set(G.GOALS.map((g) => g.id)), badges: new Set(G.BADGES.map((x) => x.id)) };
+      const add = (key, list, ok) => { if (Array.isArray(list)) doc.seen[key] = [...new Set(doc.seen[key].concat(list.filter((x) => typeof x === 'string' && ok(x))))].slice(-1000); };
+      add('goals', b.goals, (x) => known.goals.has(x)); add('badges', b.badges, (x) => known.badges.has(x));
+      if (b.season) add('seasons', [b.season], (x) => /^\d{4}-Q[1-4]$/.test(x));
+      await save(doc);
       res.status(200).json({ ok: true });
       return;
     }

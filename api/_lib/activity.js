@@ -41,7 +41,7 @@ const ROUTES = {
 // what is only read (never a line), and routes that are not changes of the clinic's work
 const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list', 'check', 'discover', 'profile_get',
   'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause', 'test'];
-const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-creative-sso', 'portal-file', 'portal-leave-pdf', 'portal-avatar', 'portal-data', 'portal-login', 'portal-logout', 'portal-activity'];
+const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-creative-sso', 'portal-file', 'portal-leave-pdf', 'portal-avatar', 'portal-data', 'portal-login', 'portal-logout', 'portal-activity', 'portal-game'];
 
 // the words for each change (route:action; route: for the routes without actions)
 const VERBS = {
