@@ -2,8 +2,10 @@
 // it, api/automation-tick.js), on their own flows (Admin → Automatizări), so nothing has to be rebuilt by hand.
 //   28.10: at a booking the client gets only the "Ne vedem pe {data}, la ora {ora}" message with the clinic's location
 //   (the owner: "doar pe ăla, atât"): the other messages sent the moment a booking is made (the confirmation with the
-//   before / after picture) come out of the booking flows. The reminders after a wait stay as they are. Done only if a
-//   booking flow does send the location message, so a booking is never left with no message at all.
+//   before / after picture) come out of the booking flows, through their if / else and short waits too. The reminders
+//   tied to the appointment's hour stay as they are. Done only if a booking flow does send the location message at
+//   once, so a booking is never left with no message at all. (The first try, …-28, found the location message behind
+//   a short wait or a branch and changed nothing.)
 // data/wf-once.json: { done: { <job id>: { at, removed: [{ flow, template }], kept: [...], skipped? } } }
 
 const { readJSON, writeJSON } = require('./store');
@@ -16,11 +18,28 @@ const nowISO = () => new Date().toISOString();
 
 // the "Ne vedem pe …" template: the clinic's location as its header, or those words in its text
 const isLocation = (t) => !!t && (t.headerType === 'LOCATION' || /ne vedem/i.test(String(t.body || '')));
-// the steps a booking flow runs the moment the booking is made: the ones before its first wait
-function atBooking(wf) {
-  const out = [];
-  for (const s of wf.steps || []) { if (s.type === 'wait') break; out.push(s); }
-  return out;
+const unitMs = { min: 60e3, h: 3600e3, d: 86400e3 };
+// a wait that ends the moment of the booking: one tied to the appointment's hour, or longer than an hour
+const longWait = (s) => s.type === 'wait' && (s.mode === 'before' || s.mode === 'after' || (Number(s.amount) || 0) * (unitMs[s.unit] || 60e3) > 3600e3);
+const branches = (s) => [s.yes || [], s.no || []].concat((s.more || []).map((b) => b.steps || []));
+// the WhatsApp steps a booking flow runs the moment the booking is made (through its if / else too, a branch joins the
+// flow again after it); true when every path stopped at a long wait
+function atBooking(list, out) {
+  for (const s of list || []) {
+    if (longWait(s)) return true;
+    if (s.type === 'whatsapp') out.push(s);
+    if (s.type === 'if' && branches(s).map((b) => atBooking(b, out)).every(Boolean)) return true;
+  }
+  return false;
+}
+const drop = (list, gone) => (list || []).filter((s) => !gone.has(s)).map((s) => (s.type === 'if'
+  ? Object.assign(s, { yes: drop(s.yes, gone), no: drop(s.no, gone), more: (s.more || []).map((b) => Object.assign(b, { steps: drop(b.steps, gone) })) }) : s));
+// what a flow looks like, without its texts (for the clock's public log): W(L) a location message, W(I) one with a
+// picture, W(T) another, wait(for 1min), if[ … | … ]
+function shape(list, tplOf) {
+  return (list || []).map((s) => (s.type === 'whatsapp' ? 'W(' + (isLocation(tplOf(s)) ? 'L' : (tplOf(s) || {}).headerType === 'IMAGE' ? 'I' : 'T') + ')'
+    : s.type === 'wait' ? 'wait(' + (s.mode || 'for') + ' ' + (s.amount || 0) + (s.unit || 'min') + ')'
+    : s.type === 'if' ? 'if[' + branches(s).map((b) => shape(b, tplOf)).join('|') + ']' : s.type)).join('>');
 }
 
 async function onlyLocationAtBooking() {
@@ -28,21 +47,23 @@ async function onlyLocationAtBooking() {
   const tpls = (await WT.load()).templates;
   const tplOf = (s) => tpls.find((t) => t.id === s.templateId);
   const booking = doc.workflows.filter((wf) => wf.active && wf.trigger && wf.trigger.type === 'appointment_created');
+  const shapes = booking.map((wf) => shape(wf.steps, tplOf).slice(0, 300));
+  const now = booking.map((wf) => { const out = []; atBooking(wf.steps, out); return { wf, out }; });
   const kept = [], removed = [];
-  booking.forEach((wf) => atBooking(wf).forEach((s) => { if (s.type === 'whatsapp' && isLocation(tplOf(s))) kept.push({ flow: wf.name, template: tplOf(s).label }); }));
-  if (!kept.length) return { skipped: 'no booking flow sends the location message', flows: booking.map((wf) => wf.name) };
-  booking.forEach((wf) => {
-    const now = new Set(atBooking(wf).filter((s) => s.type === 'whatsapp' && !isLocation(tplOf(s))));
-    if (!now.size) return;
-    now.forEach((s) => removed.push({ flow: wf.name, template: (tplOf(s) || {}).label || s.templateId }));
-    wf.steps = wf.steps.filter((s) => !now.has(s));
+  now.forEach(({ wf, out }) => out.forEach((s) => { if (isLocation(tplOf(s))) kept.push({ flow: wf.name, template: tplOf(s).label }); }));
+  if (!kept.length) return { skipped: 'no booking flow sends the location message', shapes };
+  now.forEach(({ wf, out }) => {
+    const gone = new Set(out.filter((s) => !isLocation(tplOf(s))));
+    if (!gone.size) return;
+    gone.forEach((s) => removed.push({ flow: wf.name, template: (tplOf(s) || {}).label || s.templateId }));
+    wf.steps = drop(wf.steps, gone);
     wf.updatedAt = nowISO();
   });
   if (removed.length) await WF.saveDoc(doc);
-  return { removed, kept };
+  return { removed, kept, shapes };
 }
 
-const JOBS = [{ id: 'booking-only-location-2026-10-28', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
+const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
   ? { title: 'Automatizări: la programare pleacă doar „Ne vedem pe…”', text: 'Am scos ' + r.removed.map((x) => '„' + x.template + '”').join(', ') + ' din ' + [...new Set(r.removed.map((x) => '„' + x.flow + '”'))].join(', ') + '. Remindere rămân la fel.' }
   : null) }];
 
