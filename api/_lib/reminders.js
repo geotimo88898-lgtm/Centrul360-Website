@@ -10,7 +10,8 @@
 // it go on with the new messages (_lib/workflows.js moveRuns). Run by the automations' clock (_lib/wf-once.js) until
 // both clinics have them, and by Automatizări → Mesaje → Reamintiri.
 
-const { readJSON, writeJSON } = require('./store');
+const store = require('./store');
+const { readJSON, writeJSON } = store;
 const WF = require('./workflows');
 const WT = require('./wa-templates');
 const WA = require('./whatsapp');
@@ -141,6 +142,7 @@ async function apply(opts) {
     const o = Object.assign(cityState(d, cfg, doc, c, m), out.cities[c] && out.cities[c].error ? out.cities[c] : {});
     out.cities[c] = o;
     if (o.state === 'rejected') await tell('rejected:' + o.label, 'Meta a respins un mesaj de programare' + cityTag(c), '„' + o.label + '”' + (o.reason ? ': ' + o.reason : '') + '. Rămân mesajele de acum.');
+    if (o.state === 'on' && !m.switched[c]) { m = await mem(); m.switched[c] = { at: nowISO(), ids: Object.fromEntries(o.templates.map((x) => [x.key, x.id])), by: 'flow' }; await writeJSON(KEY, m, { quiet: true }); }
     if (o.state === 'stopped') await tell('stopped:' + o.label + ':' + new Date().toISOString().slice(0, 10), 'Meta a oprit un mesaj de programare' + cityTag(c), '„' + o.label + '” nu mai pleacă până îl repornește Meta.');
     if (!(o.state === 'ready' || (force && o.state === 'custom'))) continue;
     const ids = {};
@@ -169,35 +171,17 @@ async function apply(opts) {
   return out;
 }
 
-// One answer changes an appointment once: two taps that come together (a double tap, Meta sending twice) are one.
-// A claim per appointment and answer, read back after a moment: the one whose mark stayed goes on.
-const CLAIMS = 'data/reply-claims.json';
-async function claim(id) {
-  const token = Math.random().toString(36).slice(2);
-  for (let i = 0; i < 3; i++) {
-    const now = Date.now();
-    const c = (await readJSON(CLAIMS, null)) || {};
-    Object.keys(c).forEach((k) => { if (now - c[k].at > 10 * 60e3) delete c[k]; });
-    if (c[id] && c[id].token !== token && now - c[id].at < 60e3) return false;
-    c[id] = { token, at: now };
-    await writeJSON(CLAIMS, c, { quiet: true });
-    await new Promise((r) => setTimeout(r, 400));
-    const back = ((await readJSON(CLAIMS, null)) || {})[id];
-    if (back && back.token === token) return true;
-    if (back) return false; // another one has it
-    // lost to a write about another appointment at the same moment: again
-  }
-  return false;
-}
-
 // A client tapped a button of a reminder (api/webhook-whatsapp.js): „Da, ajung” confirms her appointment, „Nu ajung”
 // cancels it (the owner, 28.10: "se anulează singură"), and admins + the clinic's reception hear it on the bell and the
 // phone. b = { phone, name, text, appt + akey (the appointment the reminder was sent for and its day, hour, clinic,
 // phone then), templateId, msgId }. Only the answers of the reminders ("Reamintiri · …"), and only for the very
-// appointment the reminder was about: moved, deleted or given to another client since, nothing changes and the desk
-// is asked to call her. A reminder sent before this (no appointment on it): her next one in the next 3 days.
+// appointment the reminder was about, before its hour: moved, deleted, past or given to another client since, nothing
+// changes and the desk is asked to call her. Without the appointment on the answered message (a reminder sent before
+// this): only the old „Reușesc să ajung” confirms her next one in the next 3 days; „Da” / „Nu ajung” go to the desk.
+// The change is written only over the calendar as it was read (two answers at the same moment: one after the other).
 // Returns true when it was such an answer (the desk hears it from here, not as a plain message).
 const TAPS = [YES, NO, 'Reușesc să ajung'].map(fold);
+const ME = 'Clienta, pe WhatsApp';
 async function reply(b) {
   const tap = fold(b.text);
   if (!TAPS.includes(tap)) return false;
@@ -205,7 +189,6 @@ async function reply(b) {
   const tpl = b.templateId ? (await WT.load()).templates.find((t) => t.id === b.templateId) : null;
   if (tpl && !String(tpl.label || '').startsWith('Reamintiri · ')) return false;
   const KEYA = 'data/appointments.json';
-  const appts = await readJSON(KEYA, []);
   const key = digits(b.phone).slice(-9), now = Date.now();
   const hers = (x) => x && !x.block && key.length >= 9 && digits(x.clientPhone).slice(-9) === key;
   const emps = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
@@ -213,42 +196,45 @@ async function reply(b) {
   const ddmm = (date, time) => String(date || '').slice(8, 10) + '.' + String(date || '').slice(5, 7) + (time ? ' ' + time : '');
   const ring = (x, title, text, tone) => notifyMany({ readJSON, writeJSON }, who(x && x.location), { kind: 'booking', tone, title: title + cityTag(x && x.location), text, go: 'programari',
     tag: 'reply-' + (x ? x.id : key) + '-' + (b.msgId || now) });
+  const ask = (x, text) => ring(x, 'RĂSPUNS LA REAMINTIRE', text, 'info');
   let name = b.name || b.phone;
-  // the reminder went to her number for this appointment (the phone on her sheet can differ from the one on it)
-  let a = null;
-  if (b.appt) {
-    a = appts.find((x) => x.id === b.appt && !x.block) || null;
-    if (!a) { await ring(null, 'RĂSPUNS LA REAMINTIRE', name + ' a răspuns „' + b.text + '”, dar programarea pentru care a primit reamintirea nu mai există. Sun-o.', 'info'); return true; }
-    name = a.clientName || name;
-    const [d0, t0] = String(b.akey || '').split('|');
-    if (b.akey && WF.apptKey(a) !== b.akey) { await ring(a, 'RĂSPUNS LA REAMINTIRE', name + ' a răspuns „' + b.text + '” la reamintirea pentru ' + ddmm(d0, t0) + ', dar programarea e acum ' + ddmm(a.date, a.time) + '. Nu am schimbat nimic: sun-o.', 'info'); return true; }
-  } else {
-    a = appts.filter((x) => hers(x) && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now && WF.apptStart(x) - now < 3 * 86400e3)
-      .sort((x, y) => WF.apptStart(x) - WF.apptStart(y))[0] || null;
-    if (!a) { await ring(null, 'RĂSPUNS LA REAMINTIRE', name + ' a răspuns „' + b.text + '”, dar nu-i găsesc programarea. Sun-o.', 'info'); return true; }
-    name = a.clientName || name;
-  }
-  const when = ddmm(a.date, a.time);
-  const from = a.status;
-  if (yes && ['anulata', 'finalizata'].includes(from)) { await ring(a, 'RĂSPUNS LA REAMINTIRE', name + ' · ' + when + ' · a răspuns „' + b.text + '”, dar programarea e ' + (from === 'anulata' ? 'anulată' : 'finalizată') + '. Sun-o.', 'info'); return true; }
-  if (no && from === 'anulata') return true; // tapped again: already cancelled, already told
-  if (no && (from === 'finalizata' || !(WF.apptStart(a) > now))) { await ring(a, 'RĂSPUNS LA REAMINTIRE', name + ' · ' + when + ' · a răspuns „' + b.text + '” după ora programării. Programarea nu s-a schimbat.', 'info'); return true; }
   const to = yes ? 'confirmata' : 'anulata';
-  if (from !== to) {
-    if (!(await claim(a.id + ':' + to))) return true; // the same answer is being handled by the other delivery
-    const fresh = await readJSON(KEYA, []);
-    const x = fresh.find((y) => y.id === a.id);
-    if (!x || x.status === to) return true;
-    x.status = to;
-    x.updatedAt = nowISO();
-    x.statusBy = 'Clienta, pe WhatsApp';
-    await writeJSON(KEYA, fresh);
-    if (no) await require('../portal-leads').unbookLead(x, 'Anulată de clientă pe WhatsApp („' + NO + '”)', 'WhatsApp automat');
+  for (let round = 0; round < 5; round++) {
+    const { data: appts, etag } = await store.readJSONTagged(KEYA, []);
+    let a = null;
+    if (b.appt) {
+      // the reminder went to her number for this appointment (the phone on her sheet can differ from the one on it)
+      a = appts.find((x) => x.id === b.appt && !x.block) || null;
+      if (!a) { await ask(null, name + ' a răspuns „' + b.text + '”, dar programarea pentru care a primit reamintirea nu mai există. Sun-o.'); return true; }
+      name = a.clientName || name;
+      const [d0, t0] = String(b.akey || '').split('|');
+      if (b.akey && WF.apptKey(a) !== b.akey) { await ask(a, name + ' a răspuns „' + b.text + '” la reamintirea pentru ' + ddmm(d0, t0) + ', dar programarea e acum ' + ddmm(a.date, a.time) + '. Nu am schimbat nimic: sun-o.'); return true; }
+    } else {
+      a = appts.filter((x) => hers(x) && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now && WF.apptStart(x) - now < 3 * 86400e3)
+        .sort((x, y) => WF.apptStart(x) - WF.apptStart(y))[0] || null;
+      if (a) name = a.clientName || name;
+      if (!a || tap !== fold('Reușesc să ajung')) { await ask(a, name + ' a răspuns „' + b.text + '”, dar nu știu sigur la ce programare' + (a ? ' (următoarea: ' + ddmm(a.date, a.time) + ')' : '') + '. Nu am schimbat nimic: sun-o.'); return true; }
+    }
+    const when = ddmm(a.date, a.time), from = a.status;
+    if (from === to) {
+      // tapped again, or two deliveries at once and the other one changed it: already told
+      if (from !== 'anulata' || a.statusBy === ME) return true;
+      await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '”. Programarea era deja anulată.');
+      return true;
+    }
+    if (!(WF.apptStart(a) > now) || from === 'finalizata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '” după ora programării. Programarea nu s-a schimbat.'); return true; }
+    if (yes && from === 'anulata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '”, dar programarea e anulată. Sun-o.'); return true; }
+    a.status = to;
+    a.updatedAt = nowISO();
+    a.statusBy = ME;
+    if (!(await store.writeJSONIf(KEYA, appts, etag))) continue; // the calendar changed meanwhile: read it again
+    if (no) await require('../portal-leads').unbookLead(a, 'Anulată de clientă pe WhatsApp („' + NO + '”)', 'WhatsApp automat');
     // the reminders still waiting stop on a cancel; a flow on "Confirmată" / "Anulată" runs
-    await WF.emit('appointment_status', { appointment: x, status: to });
+    await WF.emit('appointment_status', { appointment: a, status: to });
+    await ring(a, yes ? 'CONFIRMATĂ DE CLIENTĂ ✅' : 'ANULATĂ DE CLIENTĂ ❌', name + ' · ' + when + ' · a răspuns „' + b.text + '” pe WhatsApp' + (no ? '. Programarea s-a anulat singură.' : ''), yes ? 'good' : 'bad');
+    return true;
   }
-  await ring(a, yes ? 'CONFIRMATĂ DE CLIENTĂ ✅' : 'ANULATĂ DE CLIENTĂ ❌', name + ' · ' + when + ' · a răspuns „' + b.text + '” pe WhatsApp' + (no ? '. Programarea s-a anulat singură.' : ''), yes ? 'good' : 'bad');
-  return true;
+  return false; // the calendar kept changing: her answer stays a plain message for the desk
 }
 
 module.exports = { apply, status, reply, flowOf, templates, steps, YES, NO, CITY };

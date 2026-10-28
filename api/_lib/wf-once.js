@@ -76,7 +76,9 @@ const LIPO = 'liposonix-2zone', PIC_OLD = '/brand_asset/wa-offers/liposonix-2zon
 async function leadPicHifu() {
   const d = await WT.load();
   const list = d.templates.filter((t) => t.headerType === 'IMAGE' && t.purpose !== 'results' && t.pic !== PIC_NEW && (t.pic === PIC_OLD || (t.leadOffers || []).includes(LIPO)));
-  if (!list.length) return { skipped: 'no template with the LipoSonix picture' };
+  // it keeps looking for a week: anything that puts the old picture back gets the new one again
+  const wait = Date.now() < Date.parse('2026-11-04T00:00:00Z');
+  if (!list.length) return { changed: [], wait };
   let buf = null;
   for (const host of ['https://admin.centrul360.com', 'https://www.centrul360.com']) {
     const r = await fetch(host + PIC_NEW.replace(/\.webp$/, '.jpg')).catch(() => null);
@@ -92,7 +94,8 @@ async function leadPicHifu() {
     t.updatedAt = nowISO();
   }
   await WT.save(d);
-  return { changed: list.map((t) => t.label) };
+  if (wait) await tellOnce('lead-pic-hifu', { title: 'Lead nou abdomen: poza cu HIFU', text: 'Mesajul de bun venit al ofertei de abdomen pleacă de acum cu poza nouă. Textul și reclamele rămân la fel.' });
+  return { changed: list.map((t) => t.label), wait };
 }
 
 const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
@@ -100,8 +103,18 @@ const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBook
   : null) },
 // the admins hear about each clinic from reminders.js itself (switched, or a message Meta refused)
 { id: 'booking-messages-2026-10-28', run: () => require('./reminders').apply(), tell: () => null },
-{ id: 'lead-pic-hifu-2026-10-28', run: leadPicHifu, tell: (r) => (r.changed && r.changed.length
-  ? { title: 'Lead nou abdomen: poza cu HIFU', text: 'Mesajul de bun venit al ofertei de abdomen pleacă de acum cu poza nouă. Textul și reclamele rămân la fel.' } : null) }];
+{ id: 'lead-pic-hifu-2026-10-28', run: leadPicHifu, tell: () => null }];
+
+// a notice to the admins once (a job that runs again and again)
+async function tellOnce(key, msg) {
+  const state = (await readJSON(KEY, null)) || { done: {} };
+  state.told = state.told || [];
+  if (state.told.includes(key)) return;
+  state.told.push(key);
+  await writeJSON(KEY, state, { quiet: true });
+  const ids = await adminIds({ readJSON });
+  await notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', tone: 'good', go: 'fluxuri' }, msg)).catch((e) => console.error('wf-once tell:', e.message));
+}
 
 async function run() {
   const state = (await readJSON(KEY, null)) || { done: {} };
@@ -113,8 +126,11 @@ async function run() {
       const r = await job.run();
       out[job.id] = r;
       if (r && r.wait) continue;
-      state.done[job.id] = Object.assign({ at: nowISO() }, r);
-      await writeJSON(KEY, state, { quiet: true });
+      // read again: a job may have written its own notes here meanwhile
+      const now = (await readJSON(KEY, null)) || { done: {} };
+      now.done = Object.assign({}, now.done, { [job.id]: Object.assign({ at: nowISO() }, r) });
+      state.done = now.done;
+      await writeJSON(KEY, now, { quiet: true });
       const msg = job.tell(r);
       if (msg) {
         const ids = await adminIds({ readJSON });

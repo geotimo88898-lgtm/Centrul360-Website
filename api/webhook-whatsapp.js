@@ -188,7 +188,10 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
   // appointment (_lib/reminders.js reply)
   if (message.type === 'button' || (message.type === 'interactive' && (message.interactive || {}).button_reply)) {
     const ctxId = message.context && message.context.id;
-    const sent = ctxId ? convo.messages.find((m) => m.id === ctxId && m.direction === 'out') : null;
+    // in her chat, else in any (a number written another way on her appointment files the reminder elsewhere)
+    const pick = (c) => (c.messages || []).find((m) => m.id === ctxId && m.direction === 'out');
+    let sent = ctxId ? pick(convo) : null;
+    if (ctxId && !sent) for (const c of conversations) { sent = pick(c); if (sent) break; }
     out.tap = { phone: convo.phone, name: convo.clientName || '', text: textFor(message), appt: (sent && sent.appt) || '', akey: (sent && sent.akey) || '', templateId: (sent && sent.templateId) || '', msgId: message.id || '' };
   }
   return out;

@@ -28,6 +28,9 @@ const WC = require('./_lib/wa-connect');
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
 const okId = (v) => /^\d{5,25}$/.test(String(v || ''));
+// pictures no message may go out with any more (28.10: no LipoSonix cartridges left, the abdomen offer's picture says
+// HIFU; a portal tab opened before that would put the old one back)
+const RETIRED_PICS = ['/brand_asset/wa-offers/liposonix-2zone.webp'];
 
 async function graph(token, path, params) {
   const r = await fetch(WA.GRAPH + path + '?' + new URLSearchParams(Object.assign(token ? { access_token: token } : {}, params || {})));
@@ -311,6 +314,7 @@ module.exports = async (req, res) => {
       const prev = body.template && body.template.id ? d.templates.find((t) => t.id === body.template.id) : null;
       if (body.template && body.template.id && !prev) { res.status(404).json({ error: 'not_found' }); return; }
       if (!prev && d.templates.length >= 150) { res.status(400).json({ error: 'too_many', message: 'Cel mult 150 de șabloane.' }); return; }
+      if (RETIRED_PICS.includes(String((body.template && body.template.pic) || ''))) { res.status(409).json({ error: 'retired_pic', message: 'Poza asta nu se mai folosește. Reîncarcă pagina.' }); return; }
       const v = T.clean(body.template, prev);
       if (v.error) { res.status(400).json({ error: 'invalid', message: v.error }); return; }
       // the example picture of an image header (Meta reviews the template with it)
@@ -376,6 +380,7 @@ module.exports = async (req, res) => {
     // a template's picture changed here only (Automatizări → Mesaje, the offer's creative): it goes with every message
     // from now on; Meta approved the text, so nothing goes back to Meta and the template stays approved
     if (a === 'tpl_set_pic') {
+      if (RETIRED_PICS.includes(String(body.pic || ''))) { res.status(409).json({ error: 'retired_pic', message: 'Poza asta nu se mai folosește. Reîncarcă pagina.' }); return; }
       const t = d.templates.find((x) => x.id === String(body.id || ''));
       const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(body.sample || ''));
       if (!t || t.headerType !== 'IMAGE' || !m) { res.status(400).json({ error: 'invalid', message: 'Nu găsesc șablonul sau poza.' }); return; }
