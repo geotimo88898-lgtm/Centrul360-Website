@@ -2,6 +2,8 @@
 //   GET                                   the whole game, live from the clinic's data
 //   POST { action: 'claim', id }          a mission done: its XP (checked again here, never trusted from the screen)
 //   POST { action: 'seen', level?, stage?, intro?, goals?, badges?, season? }   the ceremonies already shown
+//   GET ?img=<car>[-depth]                a garage render (public: a picture of a car)
+//   GET ?render=1                         makes the next missing garage render (public, once per version, capped: _lib/game-renders.js)
 // Nothing else: the rules are declared in _lib/game.js and nobody edits them (the owner plays, he doesn't set it up).
 
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -11,6 +13,7 @@ const { loadOffers } = require('./_lib/offers');
 const K = require('./_lib/kpi');
 const TB = require('./_lib/timebank');
 const G = require('./_lib/game');
+const R = require('./_lib/game-renders');
 
 
 async function compute(now) {
@@ -35,6 +38,20 @@ async function compute(now) {
 }
 
 module.exports = async (req, res) => {
+  const q = req.query || {};
+  if (req.method === 'GET' && q.img) {
+    const buf = await R.image(String(q.img)).catch(() => null);
+    if (!buf) { res.status(404).end(); return; }
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.status(200).send(buf);
+    return;
+  }
+  if (req.method === 'GET' && q.render) {
+    res.setHeader('Cache-Control', 'no-store');
+    try { res.status(200).json(await R.step('https://' + req.headers.host)); } catch (e) { res.status(500).json({ error: e.message }); }
+    return;
+  }
   const session = await requireAdmin(req, res);
   if (!session) return;
   res.setHeader('Cache-Control', 'no-store');
@@ -44,6 +61,7 @@ module.exports = async (req, res) => {
     const save = async (doc) => writeJSON(G.KEY, G.mergeDoc(await readJSON(G.KEY, null), doc), { quiet: true });
     if (req.method === 'GET') {
       const { state, doc, changed } = await compute();
+      state.renders = await R.ready().catch(() => ({}));
       if (changed) await save(doc).catch((e) => console.error('game save:', e.message)); // a failed save never hides the game
       res.status(200).json(state);
       return;
