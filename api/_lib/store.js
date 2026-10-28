@@ -119,10 +119,16 @@ async function writeJSONIf(pathname, data, etag, opts) {
   try {
     await put(pathname, body, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ifMatch: etag });
   } catch (err) {
-    if (err && (err.name === 'BlobPreconditionFailedError' || /precondition/i.test(err.message || ''))) return false;
-    console.error(`store.writeJSONIf(${pathname}) without the version check:`, err.message);
-    await writeJSON(pathname, data, opts);
-    return true;
+    if (err && (err.name === 'BlobPreconditionFailedError' || /precondition/i.test(err.message || ''))) {
+      // the library retries a write whose answer got lost: the first try may have landed, and then it is ours
+      let mine = false;
+      try { const now = await get(pathname, { access: 'private', useCache: false }); mine = !!now && (await streamToString(now.stream)) === body; } catch (e) { mine = false; }
+      if (!mine) return false;
+    } else {
+      console.error(`store.writeJSONIf(${pathname}) without the version check:`, err.message);
+      await writeJSON(pathname, data, opts);
+      return true;
+    }
   }
   if (pathname !== REV_PATH && !(opts && opts.quiet)) await bumpRev(pathname);
   return true;

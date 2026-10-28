@@ -350,20 +350,29 @@ async function emit(event, payload) {
     // a move to a date still ahead books it again (confirmation, location, reminders from the start); one into the past
     // (a correction after the visit) only moves the waits, so the review request after it still goes
     if (event === 'appointment_rescheduled') p.restart = apptStart(p.appointment) > now;
-    // the booking messages already went for this very day, hour, clinic and phone: nothing to send again (whatever
-    // edit made the change look like a move)
-    // Put back after a cancel with nothing else changed: the runs the cancel stopped go on from where they were (the
-    // waits below set their moment again), so nothing she already got comes again
+    const revived = new Set(), keep = new Set(); // runs put back as they were; booking flows that need no new run
     if (p.restart) {
       const key = apptKey(p.appointment);
       const created = (r) => ((doc.workflows.find((x) => x.id === r.wf) || {}).trigger || {}).type === 'appointment_created';
-      const booked = runsDoc.runs.filter((r) => r.ent && r.ent.id === ent.id && r.akey && created(r)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
-      if (booked && booked.akey === key) {
-        p.restart = false;
-        if (p.revived) runsDoc.runs.forEach((r) => {
-          if (!r.ent || r.ent.id !== ent.id || r.akey !== key || r.status !== 'stopped' || !created(r) || !/mutat \/ anulat/.test(((r.log || []).slice(-1)[0] || {}).text || '')) return;
+      if (!p.revived) {
+        // the booking messages already went for this very day, hour, clinic and phone: nothing to send again (whatever
+        // edit made the change look like a move)
+        const booked = runsDoc.runs.filter((r) => r.ent && r.ent.id === ent.id && r.akey && created(r)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+        if (booked && booked.akey === key) p.restart = false;
+      } else {
+        // Put back after a cancel, same day, hour, clinic and phone. Per booking flow, its newest run for her: all its
+        // messages went (done): nothing more; stopped by the cancel and its step still in the flow: it goes on from
+        // there (the waits below set its moment again), so nothing she already got comes again; else the flow starts over
+        doc.workflows.filter((wf) => wf.trigger && wf.trigger.type === 'appointment_created').forEach((wf) => {
+          const r = runsDoc.runs.filter((x) => x.wf === wf.id && x.ent && x.ent.id === ent.id).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+          if (!r || r.akey !== key) return;
+          if (r.status === 'done') { keep.add(wf.id); return; }
+          const prog = compile(wf.steps);
+          const still = (r.at === '^' || prog.ops.has(r.at)) && (!r.waitId || flat(wf.steps).some((x) => x.id === r.waitId));
+          if (r.status !== 'stopped' || !/mutat \/ anulat/.test(((r.log || []).slice(-1)[0] || {}).text || '') || !still) return;
           r.status = 'waiting'; r.updatedAt = nowISO();
           r.log.push({ at: nowISO(), text: 'Programarea a fost pusă la loc: continuă de unde rămăsese' });
+          revived.add(r.id); keep.add(wf.id);
         });
       }
     }
@@ -380,14 +389,15 @@ async function emit(event, payload) {
         if (r.status !== 'waiting' || r.ent.id !== ent.id) return;
         const wf = doc.workflows.find((w) => w.id === r.wf);
         const waitStep = wf && r.waitId ? flat(wf.steps).find((s) => s.id === r.waitId && s.type === 'wait' && s.mode !== 'for') : null;
-        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before' && !(p.restart && wf.trigger.type === 'appointment_created')) {
+        if (event === 'appointment_rescheduled' && waitStep && wf.trigger.type !== 'appointment_before' && (revived.has(r.id) || !(p.restart && wf.trigger.type === 'appointment_created'))) {
           const target = waitTarget(waitStep, p.appointment);
           if (!Number.isFinite(target)) return;
           let late = waitStep.mode === 'before' && target < now - 15 * 60e3, due = Math.max(target, now);
-          // a fixed hour gone by: still that day before 20:00, now; else a "before" one is skipped, an "after" one waits for the hour next day
+          // a fixed hour gone by: a "before" one still goes that day until 20:00, else it is skipped; an "after" one goes
+          // now in the daytime (8:00 to 20:00), else at its hour
           if (waitStep.at && target < now) {
-            const ok = roDay(now) === roDay(target) && roHour(now) < 20;
-            if (waitStep.mode === 'before') late = !ok; else if (!ok) due = nextAt(waitStep.at, now);
+            if (waitStep.mode === 'before') late = !(roDay(now) === roDay(target) && roHour(now) < 20);
+            else if (!daytime(now)) due = nextAt(waitStep.at, now);
           }
           r.dueAt = new Date(due).toISOString();
           if (late) r.skipNext = true; else delete r.skipNext;
@@ -396,6 +406,7 @@ async function emit(event, payload) {
           if (r.dueAt <= new Date(now).toISOString()) fresh0.push(r.id);
           return;
         }
+        if (revived.has(r.id)) return;
         if (event === 'appointment_deleted' || (wf && (wf.trigger.type === 'appointment_before' || (wf.trigger.type === 'appointment_created' && (event !== 'appointment_rescheduled' || p.restart))))) {
           r.status = 'stopped'; r.updatedAt = nowISO(); r.log.push({ at: nowISO(), text: event === 'appointment_deleted' ? 'Programarea a fost ștearsă' : event === 'appointment_rescheduled' ? 'Programarea s-a mutat: mesajele pornesc din nou pentru noua dată' : 'Programarea s-a mutat / anulat' });
         }
@@ -403,7 +414,7 @@ async function emit(event, payload) {
     }
     const fresh = fresh0;
     if (event !== 'appointment_deleted' && !(event === 'appointment_rescheduled' && ['anulata', 'finalizata'].includes(p.appointment && p.appointment.status))) {
-      doc.workflows.filter((wf) => matches(wf, event, p)).forEach((wf) => {
+      doc.workflows.filter((wf) => matches(wf, event, p) && !keep.has(wf.id)).forEach((wf) => {
         const due = dueFor(wf, p, now);
         if (due == null) return;
         const run = { id: uid(), wf: wf.id, ent, at: '^', dueAt: new Date(due).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(), log: [{ at: nowISO(), text: 'Pornit: ' + TRIGGERS[wf.trigger.type].label }] };
@@ -525,6 +536,7 @@ const specOf = (s, self) => Object.assign({ mode: s.mode, amount: s.amount, unit
 const sameWait = (x, sp) => x.type === 'wait' && x.mode === sp.mode && Number(x.amount) === Number(sp.amount) && x.unit === sp.unit && (x.at || '') === (sp.at || '');
 const roDay = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(ms));
 const roHour = (ms) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date(ms)));
+const daytime = (ms) => roHour(ms) >= 8 && roHour(ms) < 20;
 // the next HH:MM in Bucharest after ms (today's, else tomorrow's)
 function nextAt(hhmm, ms) {
   const t = apptStart({ date: roDay(ms), time: hhmm });
@@ -742,8 +754,8 @@ async function runOne(run, wf, settings, counters) {
       if (s.mode === 'before' || s.mode === 'after') {
         const target = waitTarget(s, ctx.appointment);
         if (!Number.isFinite(target)) { run.status = 'stopped'; log('Programarea nu mai există'); return; }
-        if (target <= Date.now() && s.at && s.mode === 'after' && !(roDay(Date.now()) === roDay(target) && roHour(Date.now()) < 20)) {
-          // its day is over (or it is evening): at that hour the next day, never at night
+        if (target <= Date.now() && s.at && s.mode === 'after' && !daytime(Date.now())) {
+          // gone by in the evening or at night: at its hour, never at night
           const next = nextAt(s.at, Date.now());
           run.dueAt = new Date(next).toISOString(); run.waitId = s.id; run.waitSpec = specOf(s);
           log('Ora (' + waitText(s) + ') a trecut, pleacă la ' + roStamp(next));
@@ -873,7 +885,7 @@ async function enrollUpcoming(wf) {
     const list = appointments.filter((a) => a && a.id && !has.has(a.id) && a.time && !['anulata', 'finalizata', 'concediu'].includes(a.status) &&
       (!loc || a.location === loc) && apptStart(a) > now);
     list.forEach((a) => {
-      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at: first.id, waitSpec: specOf(first, true), dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
+      runsDoc.runs.push({ id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, akey: apptKey(a), at: first.id, waitSpec: specOf(first, true), dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
         log: [{ at: nowISO(), text: 'Pornit: programare deja în calendar când s-a pornit automatizarea (fără confirmare)' }] });
       const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
       c.runs++;
@@ -910,7 +922,7 @@ async function repairReminders() {
       else if (w24 && today < a.date) { at = w24.at ? w24.id : (prog.ops.get(w24.id) || {}).next; spec = w24.at ? w24 : null; }
       else if (w2) { at = w2.id; spec = w2; }
       if (!at) continue;
-      const run = { id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, at, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
+      const run = { id: uid(), wf: wf.id, ent: { type: 'appointment', id: a.id }, akey: apptKey(a), at, dueAt: new Date(now).toISOString(), status: 'waiting', createdAt: nowISO(), updatedAt: nowISO(),
         log: [{ at: nowISO(), text: 'Pornit din nou: reamintirile se opriseră când automatizarea a fost salvată din nou' }] };
       if (spec) run.waitSpec = specOf(spec, true);
       runsDoc.runs.push(run);

@@ -217,9 +217,9 @@ async function reply(b) {
     }
     const when = ddmm(a.date, a.time), from = a.status;
     if (from === to) {
-      // tapped again, or two deliveries at once and the other one changed it: already told
-      if (from !== 'anulata' || a.statusBy === ME) return true;
-      await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '”. Programarea era deja anulată.');
+      // tapped again, or two deliveries at once and the other one changed it: already told; set by the desk: told now
+      if (a.statusBy === ME) return true;
+      await ring(a, 'RĂSPUNS LA REAMINTIRE', name + ' · ' + when + ' · a răspuns „' + b.text + '”. Programarea era deja ' + (yes ? 'confirmată.' : 'anulată.'), yes ? 'good' : 'info');
       return true;
     }
     if (!(WF.apptStart(a) > now) || from === 'finalizata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '” după ora programării. Programarea nu s-a schimbat.'); return true; }
