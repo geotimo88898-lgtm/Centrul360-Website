@@ -43,6 +43,21 @@ module.exports = async (req, res) => {
   const out = { ok: true, waited: [] };
   // Claude's read with the report key only reads: the clock's steps stay with the clock (28.10)
   const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
+  // with the key, &ad=<campaign id>: its ads as Meta has them (texts, picture or video, the video's file), to look at
+  if (readOnly && /^\d{6,25}$/.test(String(req.query.ad || ''))) out.ad = await (async () => {
+    const { loadConnection } = require('./_lib/facebook');
+    const conn = await loadConnection(readJSON);
+    const g = (path, params) => fetch('https://graph.facebook.com/v25.0/' + path + '?' + new URLSearchParams(Object.assign({ access_token: conn.userToken }, params || {}))).then((r) => r.json());
+    const list = await g(req.query.ad + '/ads', { fields: 'id,name,effective_status,creative{id,video_id,thumbnail_url,image_url,body,title,object_story_spec,asset_feed_spec}', limit: '20' });
+    const ads = (list.data || []);
+    for (const a of ads) {
+      const c = a.creative || {};
+      const vids = [c.video_id, ((c.object_story_spec || {}).video_data || {}).video_id].concat(((c.asset_feed_spec || {}).videos || []).map((v) => v.video_id)).filter(Boolean);
+      a.videos = [];
+      for (const v of [...new Set(vids)]) a.videos.push(await g(v, { fields: 'id,source,picture,length,title,description' }));
+    }
+    return list.error ? { error: list.error.message } : ads;
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
