@@ -9,24 +9,20 @@
 
 const { readJSON, writeJSON, writeBinary, readBinary } = require('./store');
 
-const V = 5;
+const V = 6;
 const MAX = 5; // paid generations per version: 3 needed, 2 to redo one
 const KEY = 'data/game-renders.json';
 const MODEL = 'gemini-3-pro-image';
 const path = (id, v) => 'game/renders/v' + (v || V) + '/' + id + '.png';
-// v3 made the cars in the owner's colours, v4 put the GT3 RS and the SVJ at the M4's angle; v5 stands each one on the same
-// round platform, lit together (the M4 first, the others matching it)
-const SRC = { m4: 3, gt3rs: 4, svj: 4 };
-const STAGE = 'standing with all four tyres firmly on a round display platform: a wide, low, dark graphite turntable about 30 cm thick with a softly ' +
-  'brushed metal top and a slightly rounded edge, a little wider than the car on every side, centred under it. Real soft contact shadows under each tyre ' +
-  'and under the car on the platform\'s top, a faint soft reflection of the car on the platform top. The platform floats: nothing under it, no floor. ' +
-  'Plain seamless light grey studio background, soft studio lighting from above, the whole platform and car in frame with a small margin.';
-const FIRST = 'Keep this car exactly as it is (make, model, paint, carbon parts, wheels, every detail) and the same camera angle, height and distance, ' +
-  'the car ' + STAGE + ' Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
-const MATCH = 'The first image is the car: keep it exactly as it is (make, model, paint, carbon parts, wheels, every detail). ' +
-  'The second image is the reference scene: put the first car on exactly the same platform, from exactly the same camera angle, height, distance and lens, ' +
-  'the nose pointing the same way, the car the same size and at the same place on the platform, with the same lighting, shadows and background. ' +
-  'All four tyres firmly on the platform. Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
+// v3 made the cars in the owner's colours, v4 put them at one angle, v5 on one platform; v6 takes the v5 scene into a dark
+// showroom that blends into the game's background (nothing is cut out)
+const SRC = { m4: 5, gt3rs: 5, svj: 5 };
+const DARK = 'Keep the car exactly as it is (make, model, paint, carbon parts, wheels, every detail), and keep the camera angle, the composition, ' +
+  'the car\'s size and place and the round platform\'s shape and size exactly as in this image. Change only the scene: a dark, quiet luxury showroom like an ' +
+  'Aston Martin reveal. The background a pure, even near-black (#0b0c0d) with no visible floor, walls or horizon, so the platform floats in darkness. ' +
+  'The platform deep glossy black with a thin satin champagne-metal rim, showing a soft real reflection of the car. One large soft light from above ' +
+  'and a faint cool rim light along the body, deep soft contact shadows under the tyres; elegant, moody, not flashy. ' +
+  'Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
 
 // the owner's colours (October 2026)
 const PAINT = {
@@ -78,8 +74,8 @@ async function step(origin) {
   if (Date.now() - d.busy < 70000) return Object.assign({ state: 'busy' }, status());
   d.busy = Date.now();
   await writeJSON(KEY, d, { quiet: true });
-  const car = await readBinary(path(next, SRC[next])), ref = next === 'm4' ? null : await readBinary(path('m4'));
-  const out = !car || (next !== 'm4' && !ref) ? { error: 'no source image', billed: false } : await generate(next === 'm4' ? FIRST : MATCH, ref ? [car, ref] : [car]);
+  const car = await readBinary(path(next, SRC[next]));
+  const out = car ? await generate(DARK, [car]) : { error: 'no source image', billed: false };
   if (out.png) { await writeBinary(path(next), out.png, 'image/jpeg'); d.done[next] = new Date().toISOString(); }
   if (out.billed) d.spent++;
   if (out.error) d.errors = d.errors.concat(next + ': ' + out.error).slice(-10);
