@@ -147,11 +147,15 @@ async function apply(opts) {
     if (!(o.state === 'ready' || (force && o.state === 'custom'))) continue;
     const ids = {};
     o.templates.forEach((x) => { ids[x.key] = x.id; });
+    // one switch at a time: the clock and the open portals' heartbeats may get here together
+    const { data: lk, etag } = await store.readJSONTagged(KEY, {});
+    const busy = lk && lk.switching && Date.now() - Date.parse(lk.switching) < 5 * 60e3;
+    if (busy || !(await store.writeJSONIf(KEY, Object.assign({}, lk || {}, { switching: nowISO() }), etag, { quiet: true }))) { o.state = 'ready'; o.busy = true; continue; }
     doc = await WF.loadDoc();
     const wf = flowOf(doc, c);
     const v = WF.validateWorkflow({ name: wf ? wf.name : 'Reamintiri · ' + c, note: NOTE, active: wf ? wf.active : false, folder: wf ? wf.folder : 'reminders',
       trigger: { type: 'appointment_created', location: c }, steps: steps(ids) });
-    if (v.error) { o.state = 'error'; o.error = v.error; continue; }
+    if (v.error) { o.state = 'error'; o.error = v.error; m = await mem(); delete m.switching; await writeJSON(KEY, m, { quiet: true }); continue; }
     const old = wf ? wf.steps : [];
     let flow = wf;
     if (wf) Object.assign(wf, { steps: v.workflow.steps, note: NOTE, updatedAt: nowISO() });
@@ -159,6 +163,7 @@ async function apply(opts) {
     await WF.saveDoc(doc);
     m = await mem();
     m.switched[c] = { at: nowISO(), ids };
+    delete m.switching;
     await writeJSON(KEY, m, { quiet: true });
     const moved = wf ? await WF.moveRuns(flow, old) : { moved: 0, ended: 0, busy: 0 };
     const added = flow.active ? await WF.enrollUpcoming(flow) : 0;

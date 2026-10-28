@@ -58,6 +58,12 @@ module.exports = async (req, res) => {
     }
     return list.error ? { error: list.error.message } : ads;
   })().catch((e) => ({ error: e.message }));
+  // with the key, &rem=1: where the booking messages are (Meta's answers as last read, each clinic's flow), read only
+  if (readOnly && req.query.rem) out.rem = await (async () => {
+    const [d, cfg, doc, once] = await Promise.all([require('./_lib/wa-templates').load(), require('./_lib/whatsapp').loadConfig(), require('./_lib/workflows').loadDoc(), readJSON('data/wf-once.json', {})]);
+    const st = await require('./_lib/reminders').status(d, cfg, doc);
+    return { syncedAt: d.syncedAt, todo: st.todo, cities: Object.fromEntries(Object.entries(st.cities).map(([c, x]) => [c, { state: x.state, templates: (x.templates || []).map((t) => t.key + ':' + t.status) }])), done: Object.keys((once && once.done) || {}) };
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
