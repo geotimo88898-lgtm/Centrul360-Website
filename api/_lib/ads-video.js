@@ -177,8 +177,9 @@ async function videos(since) {
   // the creatives, 50 ads a call
   const info = {};
   for (let i = 0; i < rows.length; i += 50) {
-    const r = await G('GET', '/', conn, { ids: rows.slice(i, i + 50).map((x) => x.adId).join(','), fields: 'created_time,creative{video_id,object_type,title,body,object_story_spec{video_data{video_id,title,message},link_data{name,message}},asset_feed_spec{videos,bodies,titles}}' });
+    const r = await G('GET', '/', conn, { ids: rows.slice(i, i + 50).map((x) => x.adId).join(','), fields: 'created_time,creative{video_id,object_type,title,body,object_story_spec,asset_feed_spec}' });
     if (r.ok) Object.assign(info, r.j);
+    else info.error = why(r.j);
   }
   const out = [];
   for (const r of rows) {
@@ -194,7 +195,7 @@ async function videos(since) {
       kind: vid ? 'video' : c.object_type || '', videoId: vid, spend: Math.round(r.spend), metaLeads: r.metaLeads, leads: x.leads || 0, booked: x.booked || 0, came: x.showed || 0, money: Math.round(x.revenue || 0),
       title, text: text.slice(0, 220) });
   }
-  return { range, total: st.rows.length, rows: out };
+  return { range, total: st.rows.length, creativesError: info.error, rows: out };
 }
 // a video's file, to watch it (Claude)
 async function videoFile(id) {
