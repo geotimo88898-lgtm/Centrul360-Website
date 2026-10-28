@@ -742,8 +742,8 @@ canvas.gm-3d{ position:absolute; inset:0; width:100%; height:100%; display:block
   -webkit-mask:var(--m) center / 100% 100% no-repeat; mask:var(--m) center / 100% 100% no-repeat; }
 .gm-slide.is-on .gm-room .car .sheen{ animation:gm-sheen 7s var(--gm-ease) 1s infinite; }
 @keyframes gm-sheen{ 0%{ background-position:130% 0; opacity:1; } 35%, 100%{ background-position:-30% 0; opacity:1; } }
-.gm-slide.is-locked .gm-stage.is-room .car img{ filter:saturate(.55) brightness(.62); }
-.gm-slide.is-locked .gm-stage.is-room .car .body{ filter:saturate(.55) brightness(.62) drop-shadow(0 0 1px rgba(210,200,255,.4)) drop-shadow(0 14px 14px rgba(0,0,0,.6)); }
+.gm-slide.is-locked .gm-stage.is-room .car img{ filter:saturate(.9) brightness(.86); }
+.gm-slide.is-locked .gm-stage.is-room .car .body{ filter:saturate(.9) brightness(.86) drop-shadow(0 0 1px rgba(210,200,255,.4)) drop-shadow(0 14px 14px rgba(0,0,0,.6)); }
 .gm-slide.is-unlocked .gm-room .disc{ box-shadow:0 0 0 2px rgba(255,209,102,.8), 0 0 40px rgba(255,209,102,.45), inset 0 -8px 20px rgba(0,0,0,.6), inset 0 5px 12px rgba(255,255,255,.08); }
 .gm-slide.is-unlocked .gm-room .strips{ background:repeating-linear-gradient(90deg, transparent 0 7.5%, rgba(255,226,160,.28) 7.5% 8.1%, transparent 8.1% 16.5%); }
 @media (prefers-reduced-motion: reduce){ .gm-slide.is-on .gm-room .car .sheen{ animation:none; } }
