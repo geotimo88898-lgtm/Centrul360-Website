@@ -293,65 +293,7 @@
     return { create };
   })();
 
-  // ------------------------------------------------------------------ embers rising behind everything (canvas, ~30 fps)
-  const Fx = (() => {
-    let cv = null, cx = null, parts = [], raf = 0, last = 0, w = 0, h = 0;
-    const COLS = ['255,77,157', '177,77,255', '255,138,61', '255,209,102', '109,92,255'];
-    const size = () => { const dpr = Math.min(1.5, window.devicePixelRatio || 1); w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
-    const spawn = (anyY) => ({ x: Math.random() * w, y: anyY ? Math.random() * h : h + 10, r: 0.6 + Math.random() * 2.2, vy: 0.15 + Math.random() * 0.55, vx: (Math.random() - 0.5) * 0.25, a: 0.25 + Math.random() * 0.6, c: COLS[(Math.random() * COLS.length) | 0], t: Math.random() * 6.28 });
-    const tick = (now) => {
-      raf = requestAnimationFrame(tick);
-      if (now - last < 32 || document.hidden) return;
-      last = now;
-      cx.clearRect(0, 0, w, h);
-      cx.globalCompositeOperation = 'lighter';
-      parts.forEach((p, i) => {
-        p.y -= p.vy; p.t += 0.02; p.x += p.vx + Math.sin(p.t) * 0.2;
-        if (p.y < -10) parts[i] = spawn(false);
-        const g = cx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-        g.addColorStop(0, 'rgba(' + p.c + ',' + p.a + ')'); g.addColorStop(1, 'rgba(' + p.c + ',0)');
-        cx.fillStyle = g; cx.beginPath(); cx.arc(p.x, p.y, p.r * 4, 0, 6.283); cx.fill();
-      });
-    };
-    return {
-      start(canvas) {
-        if (calm()) return;
-        cv = canvas; cx = cv.getContext('2d'); size();
-        const n = w < 600 ? 34 : 54;
-        parts = Array.from({ length: n }, () => spawn(true));
-        window.addEventListener('resize', size);
-        raf = requestAnimationFrame(tick);
-      },
-      stop() { cancelAnimationFrame(raf); window.removeEventListener('resize', size); parts = []; cv = null; },
-    };
-  })();
 
-  // ------------------------------------------------------------------ confetti (a burst from a point, gold and lava)
-  function confetti(x, y, n, gold) {
-    if (calm()) return;
-    const cv = document.createElement('canvas');
-    cv.className = 'gm-confetti';
-    document.body.appendChild(cv);
-    const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
-    const cx = cv.getContext('2d'); cx.scale(dpr, dpr);
-    const cols = gold ? ['#ffd166', '#fff2b8', '#f5a524', '#ffe08a', '#ff8a3d', '#ffffff'] : ['#6d5cff', '#b14dff', '#ff4d9d', '#ff8a3d', '#ffd166', '#3de0ff'];
-    const P = Array.from({ length: n || 160 }, () => {
-      const a = Math.random() * Math.PI * 2, s = 4 + Math.random() * 11;
-      return { x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 6, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, w: 5 + Math.random() * 7, h: 3 + Math.random() * 5, c: cols[(Math.random() * cols.length) | 0], life: 0 };
-    });
-    const t0 = performance.now();
-    (function step(now) {
-      const t = now - t0;
-      cx.clearRect(0, 0, W, H);
-      P.forEach((p) => {
-        p.vy += 0.28; p.vx *= 0.985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
-        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.globalAlpha = Math.max(0, 1 - t / 2600);
-        cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 2)) + 1); cx.restore();
-      });
-      if (t < 2700) requestAnimationFrame(step); else cv.remove();
-    })(t0);
-  }
 
   // ------------------------------------------------------------------ state
   const S = { d: null, open: false, root: null, tab: store.get('c360_game_tab', 'imperiu'), last: new Map(), timer: 0, gi: -1, filter: 'all', busy: false, cer: false, credits: null, sheet: null };
@@ -395,16 +337,15 @@
 
   // ------------------------------------------------------------------ the shell
   const DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
-    '<linearGradient id="gmLavaStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5cff"/><stop offset=".5" stop-color="#ff4d9d"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient>' +
-    '<linearGradient id="gmGoldStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2b8"/><stop offset=".5" stop-color="#ffd166"/><stop offset="1" stop-color="#f5a524"/></linearGradient>' +
-    '<linearGradient id="gmEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5cff"/><stop offset=".45" stop-color="#c04dff"/><stop offset=".75" stop-color="#ff4d9d"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient>' +
-    '<radialGradient id="gmLand" cx="40%" cy="40%" r="75%"><stop offset="0" stop-color="#2b2156"/><stop offset=".6" stop-color="#151030"/><stop offset="1" stop-color="#0b0918"/></radialGradient>' +
-    '<pattern id="gmDots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.6" fill="rgba(177,77,255,.45)"/></pattern>' +
-    '<filter id="gmGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
-    '<radialGradient id="gmOrb" cx="40%" cy="35%" r="65%"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ff9ad0"/><stop offset=".7" stop-color="#ff4d9d"/><stop offset="1" stop-color="#8b1d5b"/></radialGradient>' +
-    '<radialGradient id="gmBossCore" cx="50%" cy="42%" r="58%"><stop offset="0" stop-color="#fff3c4"/><stop offset=".3" stop-color="#ff8a3d"/><stop offset=".72" stop-color="#ff2d55"/><stop offset="1" stop-color="#4a0014"/></radialGradient>' +
-    '<linearGradient id="gmCarYou" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6d5cff"/><stop offset=".55" stop-color="#ff4d9d"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient>' +
-    '<linearGradient id="gmCarGhost" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1b6dff"/><stop offset="1" stop-color="#3de0ff"/></linearGradient>' +
+    '<linearGradient id="gmLavaStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9cba9"/><stop offset="1" stop-color="#b9a173"/></linearGradient>' +
+    '<linearGradient id="gmGoldStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4d8bc"/><stop offset="1" stop-color="#c3ad84"/></linearGradient>' +
+    '<linearGradient id="gmEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.22)"/><stop offset="1" stop-color="rgba(255,255,255,.08)"/></linearGradient>' +
+    '<radialGradient id="gmLand" cx="40%" cy="40%" r="75%"><stop offset="0" stop-color="#1a1c1f"/><stop offset="1" stop-color="#111214"/></radialGradient>' +
+    '<pattern id="gmDots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="rgba(255,255,255,.12)"/></pattern>' +
+    '<radialGradient id="gmOrb" cx="40%" cy="35%" r="65%"><stop offset="0" stop-color="#e9e1cd"/><stop offset=".55" stop-color="#c3ad84"/><stop offset="1" stop-color="#8a7550"/></radialGradient>' +
+    '<radialGradient id="gmBossCore" cx="50%" cy="42%" r="58%"><stop offset="0" stop-color="#e4e2df"/><stop offset="1" stop-color="#6b4a4a"/></radialGradient>' +
+    '<linearGradient id="gmCarYou" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c3ad84"/><stop offset="1" stop-color="#e4d8bc"/></linearGradient>' +
+    '<linearGradient id="gmCarGhost" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5d6166"/><stop offset="1" stop-color="#8b9096"/></linearGradient>' +
     '<clipPath id="gmRoClip"><path d="' + RO_PATH + '"/></clipPath>' +
     '</defs></svg>';
   const TABS = [['imperiu', 'Imperiu', 'castle'], ['misiuni', 'Misiuni', 'scroll'], ['garaj', 'Garaj', 'car'], ['echipa', 'Echipa', 'users'], ['insigne', 'Insigne', 'medal']];
@@ -419,7 +360,7 @@
     root.className = 'gm';
     root.setAttribute('role', 'application');
     root.setAttribute('aria-label', 'Game Mode');
-    root.innerHTML = '<div class="gm-bg"><i></i><i></i><i></i><div class="gm-grid"></div></div><canvas class="gm-fx"></canvas><div class="gm-scan"></div>' + DEFS +
+    root.innerHTML = '<div class="gm-bg"></div>' + DEFS +
       '<header class="gm-hud">' +
         '<button type="button" class="gm-lvl" data-act="level" aria-label="Nivelul"><svg class="ring" viewBox="0 0 58 58"><circle cx="29" cy="29" r="26" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>' +
           '<circle class="fg" cx="29" cy="29" r="26" fill="none" stroke="url(#gmLavaStroke)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="163.4" style="transition:stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1)"/></svg>' +
@@ -444,7 +385,6 @@
       if (ctx && ctx.state === 'running') { S.audioOk = true; ['pointerup', 'touchend', 'click', 'keydown'].forEach((t) => root.removeEventListener(t, wake, true)); }
     };
     ['pointerup', 'touchend', 'click', 'keydown'].forEach((t) => root.addEventListener(t, wake, { capture: true, passive: true }));
-    Fx.start(root.querySelector('.gm-fx'));
     return root;
   }
   const short = (n) => { n = Number(n) || 0; const a = Math.abs(n); return (n < 0 ? '-' : '') + (a >= 1e6 ? ro(a / 1e6, a >= 1e7 ? 0 : 1) + ' mil.' : a >= 1e4 ? ro(Math.round(a / 1000)) + 'k' : ro(Math.round(a))); };
@@ -511,14 +451,14 @@
   }
 
   const BOSS_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-    '<path d="M20 40 L4 8 L34 28 Z" fill="#ff4d5e"/><path d="M80 40 L96 8 L66 28 Z" fill="#ff4d5e"/>' +
-    '<path d="M28 26 L34 8 L43 19 L50 2 L57 19 L66 8 L72 26 Z" fill="#ffd166" stroke="#a5650a" stroke-width="1.5"/>' +
+    '<path d="M20 40 L4 8 L34 28 Z" fill="#cb8181"/><path d="M80 40 L96 8 L66 28 Z" fill="#cb8181"/>' +
+    '<path d="M28 26 L34 8 L43 19 L50 2 L57 19 L66 8 L72 26 Z" fill="#cebc97" stroke="#846d3e" stroke-width="1.5"/>' +
     '<circle class="core" cx="50" cy="58" r="34" fill="url(#gmBossCore)"/>' +
-    '<g class="eye"><ellipse cx="50" cy="54" rx="17" ry="9.5" fill="#14000a"/><ellipse cx="50" cy="54" rx="4.5" ry="8.5" fill="#ffd166"/></g>' +
-    '<path d="M33 74 L37.5 81 L42 74 L46.5 81 L51 74 L55.5 81 L60 74 L64.5 81 L68 74" stroke="#14000a" stroke-width="3.2" fill="none" stroke-linejoin="round"/></svg>';
+    '<g class="eye"><ellipse cx="50" cy="54" rx="17" ry="9.5" fill="#090a0b"/><ellipse cx="50" cy="54" rx="4.5" ry="8.5" fill="#cebc97"/></g>' +
+    '<path d="M33 74 L37.5 81 L42 74 L46.5 81 L51 74 L55.5 81 L60 74 L64.5 81 L68 74" stroke="#090a0b" stroke-width="3.2" fill="none" stroke-linejoin="round"/></svg>';
   const CAR = (fill) => '<svg viewBox="0 0 64 24" aria-hidden="true"><path d="M3 17C3 14 6 12.5 10 12l10-1c4-3 10-5 18-5 6 0 10 2 14 5l7 1.5c2.5.5 3 2.5 3 4.5v1H3z" fill="url(#' + fill + ')"/>' +
-    '<path d="M24 11c4-2.5 8-3.5 13-3.5h3l1 3.5z" fill="rgba(10,8,20,.75)"/><path d="M58 13.5h3" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' +
-    '<circle cx="15" cy="18" r="4.6" fill="#0b0918"/><circle cx="15" cy="18" r="2" fill="#bbb"/><circle cx="50" cy="18" r="4.6" fill="#0b0918"/><circle cx="50" cy="18" r="2" fill="#bbb"/></svg>';
+    '<path d="M24 11c4-2.5 8-3.5 13-3.5h3l1 3.5z" fill="rgba(13,14,15,.75)"/><path d="M58 13.5h3" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<circle cx="15" cy="18" r="4.6" fill="#0f1012"/><circle cx="15" cy="18" r="2" fill="#bbbbbb"/><circle cx="50" cy="18" r="4.6" fill="#0f1012"/><circle cx="50" cy="18" r="2" fill="#bbbbbb"/></svg>';
   const fmtDay = (day) => { const p = String(day || '').split('-'); return p.length === 3 ? Number(p[2]) + ' ' + ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec'][Number(p[1]) - 1] : ''; };
   const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
   const pct = (v) => Math.round((Number(v) || 0) * 100) + '%';
@@ -603,9 +543,9 @@
       const next = c === d.map.next;
       s += '<g class="gm-city is-locked' + (next ? ' is-next' : '') + '" data-city="' + esc(c) + '">' +
         '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="34" fill="transparent"/>' +
-        (next ? '<circle class="ring" cx="' + xy[0] + '" cy="' + xy[1] + '" r="30" fill="none" stroke="#ffd166" stroke-width="3" stroke-dasharray="10 9"/>' : '') +
-        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (next ? 11 : 7) + '" fill="' + (next ? 'rgba(255,209,102,.25)' : '#221d3d') + '" stroke="' + (next ? '#ffd166' : '#4c4870') + '" stroke-width="2.5"/>' +
-        (next ? '<text x="' + (xy[0] + 44) + '" y="' + (xy[1] - 22) + '" font-size="40">' + esc(c) + '</text><text class="sub" x="' + (xy[0] + 44) + '" y="' + (xy[1] + 12) + '" font-size="30" fill="#ffd166">' + Math.round(d.map.readiness * 100) + '% pregătit</text>'
+        (next ? '<circle class="ring" cx="' + xy[0] + '" cy="' + xy[1] + '" r="30" fill="none" stroke="#cebc97" stroke-width="3" stroke-dasharray="10 9"/>' : '') +
+        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (next ? 11 : 7) + '" fill="' + (next ? 'rgba(206,188,151,.25)' : '#262e34') + '" stroke="' + (next ? '#cebc97' : '#4d5e6b') + '" stroke-width="2.5"/>' +
+        (next ? '<text x="' + (xy[0] + 44) + '" y="' + (xy[1] - 22) + '" font-size="40">' + esc(c) + '</text><text class="sub" x="' + (xy[0] + 44) + '" y="' + (xy[1] + 12) + '" font-size="30" fill="#cebc97">' + Math.round(d.map.readiness * 100) + '% pregătit</text>'
           : '<text class="mini" x="' + (xy[0] + 14) + '" y="' + (xy[1] + 8) + '" font-size="22">' + esc(c) + '</text>') + '</g>';
     });
     const byNorth = act.map((a) => a.name).sort((x, y) => ((CITY_XY[x] || [0, 999])[1] - (CITY_XY[y] || [0, 999])[1]));
@@ -616,9 +556,9 @@
       const lx = xy[0] + 96, ly = xy[1] + (up ? -46 : 92);
       s += '<g class="gm-city is-active" data-city="' + esc(a.name) + '" style="--i:' + i + '">' +
         '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 26) + '" fill="transparent"/>' +
-        '<circle class="beacon" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="none" stroke="#ff4d9d" stroke-width="3"/>' +
-        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 10) + '" fill="rgba(255,77,157,.18)"/>' +
-        '<circle class="orb" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="url(#gmOrb)" filter="url(#gmGlow)"/>' +
+        '<circle class="beacon" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="none" stroke="#52987c" stroke-width="3"/>' +
+        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 10) + '" fill="rgba(82,152,124,.18)"/>' +
+        '<circle class="orb" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="url(#gmOrb)"/>' +
         '<path class="lead" d="M' + (xy[0] + r * 0.7) + ' ' + (xy[1] + (up ? -r * 0.7 : r * 0.7)) + ' L' + (lx - 10) + ' ' + (ly - 14) + '" stroke="rgba(255,255,255,.4)" stroke-width="2.5" fill="none" stroke-dasharray="5 6"/>' +
         '<text x="' + lx + '" y="' + ly + '" font-size="46">' + esc(a.name) + '</text>' +
         '<text class="sub" x="' + lx + '" y="' + (ly + 40) + '" font-size="34">' + esc(lei(a.revenue)) + (a.today ? ' · azi +' + esc(ro(a.today)) : '') + '</text></g>';
@@ -669,11 +609,12 @@
   }
 
   // ------------------------------------------------------------------ the garage: a 3D showroom
-  // the cars on their platforms, cut out of their pictures (game/img/<id>-cut.webp): they float over the game's background
+  // the cars on their platforms in a dark showroom (game/img/<id>-scene.webp): the picture's edges melt into the game's
+  // background, so each car floats on its own
   const CUT = { m4: 1, gt3rs: 1, svj: 1 };
-  const cutOf = (g) => (CUT[g.img] ? '/game/img/' + encodeURIComponent(g.img) + '-cut.webp' : '');
+  const cutOf = (g) => (CUT[g.img] ? '/game/img/' + encodeURIComponent(g.img) + '-scene.webp' : '');
   function showroom(g, i) {
-    return '<div class="gm-room"><i class="under"></i><div class="piece"><img src="' + esc(cutOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"></div></div>';
+    return '<div class="gm-room"><img class="scene" src="' + esc(cutOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"></div>';
   }
   function goalStage(g, i) {
     return '<button type="button" class="gm-slide ' + (g.unlocked ? 'is-unlocked' : 'is-locked') + '" data-slide="' + i + '" data-id="' + esc(g.id) + '">' +
@@ -685,8 +626,9 @@
   function garaj(d) {
     const won = d.goals.filter((g) => g.unlocked).length;
     let h = '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Dacă nu-l poți cumpăra de două ori, nu-l cumpăra</span><h2>Garajul</h2></div><small>' + won + ' / ' + d.goals.length + ' deblocate</small></div>';
-    h += '<button type="button" class="gm-card gm-vault is-tap' + rise() + '" data-act="treasury"><span class="gm-eyebrow">Seiful</span><b class="' + (d.treasury < 0 ? 'neg' : '') + '">' + num(d.treasury, 'vault', 'lei') + ' lei</b><small>profitul strâns de afacere din ' + esc(fmtDay(d.start)) + ', după impozit</small></button>';
-    h += '<div class="gm-show' + rise() + '" data-show>' + d.goals.map(goalStage).join('') + '</div>';
+    h += '<button type="button" class="gm-card gm-vault is-tap' + rise() + '" data-act="treasury"><span class="gm-eyebrow">Seiful</span><b class="' + (d.treasury < 0 ? 'neg' : '') + '">' + num(d.treasury, 'vault', 'lei') + ' lei</b><small>profitul strâns de afacere din ' + esc(fmtDay(d.start)) + ', după impozit' + (d.debt ? ' și datoriile la stat' : '') + '</small></button>';
+    h += '<div class="gm-showbox' + rise() + '"><div class="gm-show" data-show>' + d.goals.map(goalStage).join('') + '</div>' +
+      '<button type="button" class="gm-arr is-l" data-gstep="-1" aria-label="Mașina dinainte">' + ic('up') + '</button><button type="button" class="gm-arr is-r" data-gstep="1" aria-label="Mașina următoare">' + ic('up') + '</button></div>';
     h += '<div class="gm-dots' + rise() + '">' + d.goals.map((g) => '<i class="' + (g.unlocked ? 'is-won' : '') + '"></i>').join('') + '</div>';
     h += '<section class="gm-card gm-detail' + rise() + '" data-detail></section>';
     return h;
@@ -703,7 +645,7 @@
     return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
       '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
-      '<p class="gm-note">Glisezi între mașini.</p>' + creditOf(g);
+      '<p class="gm-note">Glisezi între mașini; pe calculator și cu săgețile.</p>' + creditOf(g);
   }
   function creditOf(g) {
     const c = S.credits && S.credits[g.img];
@@ -719,7 +661,7 @@
     const cv = document.createElement('canvas');
     cv.className = 'gm-3d';
     if (S.car) { S.car.destroy(); S.car = null; }
-    if (!calm()) S.car = Car3D.create(cv);
+    if (!calm() && S.d.goals.some((g) => !CUT[g.img])) S.car = Car3D.create(cv); // the WebGL car only for a car without a showroom picture
     let cur = -1, raf = 0;
     const pick = () => {
       raf = 0;
@@ -734,6 +676,7 @@
         const g = S.d.goals[bestI];
         slides.forEach((s, i) => s.classList.toggle('is-on', i === bestI));
         dots.forEach((x, i) => x.classList.toggle('is-on', i === bestI));
+        el.querySelectorAll('.gm-arr').forEach((x) => { x.disabled = x.classList.contains('is-l') ? bestI === 0 : bestI === slides.length - 1; });
         detail.classList.add('is-swap');
         setTimeout(() => { detail.innerHTML = goalDetail(g); detail.classList.remove('is-swap'); hydrate(detail, true); }, fresh ? 0 : 120);
         if (S.car && !CUT[g.img]) {
@@ -835,7 +778,7 @@
   }
   function misiuni(d) {
     const M = d.missions;
-    return '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">XP din treaba de zi cu zi</span><h2>Misiuni</h2></div>' + (M.claimable ? '<small style="color:#ffd166">' + M.claimable + ' de revendicat</small>' : '') + '</div>' +
+    return '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">XP din treaba de zi cu zi</span><h2>Misiuni</h2></div>' + (M.claimable ? '<small style="color:#cebc97">' + M.claimable + ' de revendicat</small>' : '') + '</div>' +
       '<div class="gm-cols"><div class="gm-col"><div class="gm-card-h' + rise() + '" style="margin:0 0 .75rem"><h3>' + ic('bolt') + 'Azi</h3><span class="gm-timer" data-timer="d">' + ic('clock') + hms(M.dailyResetIn) + '</span></div>' +
       '<div class="gm-mis">' + M.daily.map(mission).join('') + '</div></div>' +
       '<div class="gm-col"><div class="gm-card-h' + rise() + '" style="margin:0 0 .75rem"><h3>' + ic('calendar') + 'Săptămâna asta</h3><span class="gm-timer" data-timer="w">' + ic('clock') + hms(M.weeklyResetIn) + '</span></div>' +
@@ -907,7 +850,7 @@
     const w = 300, h = 70, max = Math.max(1, ...list);
     const pts = list.map((v, i) => [i * (w / Math.max(1, list.length - 1)), h - 6 - (v / max) * (h - 14)]);
     const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    return '<svg class="gm-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><linearGradient id="gmSparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,77,157,.45)"/><stop offset="1" stop-color="rgba(255,77,157,0)"/></linearGradient></defs>' +
+    return '<svg class="gm-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><linearGradient id="gmSparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(82,152,124,.45)"/><stop offset="1" stop-color="rgba(82,152,124,0)"/></linearGradient></defs>' +
       '<path d="' + line + ' L' + w + ' ' + h + ' L0 ' + h + 'Z" fill="url(#gmSparkFill)"/><path class="ln" d="' + line + '" fill="none" stroke="url(#gmLavaStroke)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/></svg>';
   }
   // the map flies to the city first, then its sheet rises (low, so the zoomed map stays in sight)
@@ -1114,11 +1057,6 @@
       const close = () => { if (closed) return; closed = true; el.classList.add('is-out'); if (opts.onClose) opts.onClose(); setTimeout(() => { el.remove(); S.cer = false; done(); }, 340); };
       const boom = () => {
         el.classList.add('is-boom');
-        const box = el.querySelector('.card, .bighex, .trow, .gm-boss-em') || el;
-        const r = box.getBoundingClientRect();
-        confetti(r.left + r.width / 2, r.top + r.height / 2, 190, opts.gold !== false);
-        setTimeout(() => confetti(window.innerWidth * 0.2, window.innerHeight * 0.3, 70, opts.gold !== false), 260);
-        setTimeout(() => confetti(window.innerWidth * 0.8, window.innerHeight * 0.3, 70, opts.gold !== false), 420);
         (opts.sound || Sfx.fanfare)();
         if (opts.onBoom) opts.onBoom(el);
         buzz([40, 60, 40, 60, 120]);
@@ -1133,7 +1071,7 @@
     const pre = preview && !g.unlocked;
     return cer('<div class="kicker">' + (pre ? 'AȘA VA ARĂTA' : 'OBIECTIV DEBLOCAT') + '</div>' +
       '<div class="card">' + (CUT[g.img] ? showroom(g, 0) : '<img src="' + esc(srcOf(g)) + '" alt="" onerror="this.remove()"><canvas class="gm-3d"></canvas>') + '<div class="chain"><div class="padlock"><div class="shk"></div><div class="bd"></div></div></div></div>' +
-      '<h2 class="gold">' + letters('DEBLOCAT') + '</h2><div class="sub">' + esc(g.name) + (pre ? '<br><small style="color:#a29fc4">' + esc(etaShort(g)) + '</small>' : '') + '</div>' +
+      '<h2 class="gold">' + letters('DEBLOCAT') + '</h2><div class="sub">' + esc(g.name) + (pre ? '<br><small style="color:#a5b4be">' + esc(etaShort(g)) + '</small>' : '') + '</div>' +
       '<button type="button" class="gm-btn is-gold cta" data-close>' + (pre ? ic('car') + 'Înapoi în garaj' : ic('trophy') + 'Spectaculos') + '</button>', {
       delay: 2400,
       onMount(el) {
@@ -1253,7 +1191,7 @@
     if (document.getElementById('gm-font')) return;
     const l = document.createElement('link');
     l.id = 'gm-font'; l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap';
+    l.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap';
     document.head.appendChild(l);
   }
   function onVisibility() {
@@ -1320,7 +1258,6 @@
     clearTimeout(S.cerT);
     document.querySelectorAll('.gm-intro, .gm-cer').forEach((x) => x.remove());
     S.cer = false; S.cerRun = false;
-    Fx.stop();
     Sfx.music(false);
     if (S.car) { S.car.destroy(); S.car = null; }
     closeSheet(true);
