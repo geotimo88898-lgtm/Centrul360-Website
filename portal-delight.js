@@ -95,7 +95,8 @@
   K.on('data', () => {
     if (gameBooted) return;
     gameBooted = true;
-    if (admin() && gameOn()) loadGame().then(() => window.C360Game.enter(true)).catch(() => {});
+    const noGame = () => document.documentElement.classList.remove('gm-boot'); // the game's loading screen (portal.html) goes
+    if (admin() && gameOn()) loadGame().then(() => window.C360Game.enter(true)).catch(noGame); else noGame();
   });
 
   // the Panou's pieces rise one after the other the first time it is painted in this visit

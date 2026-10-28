@@ -22,6 +22,8 @@
   try { if (localStorage.getItem('c360_theme') === 'light') { document.documentElement.setAttribute('data-theme', 'light'); document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f4f5f9'); } } catch (e) {}
   // Accent colour before first paint (picked in the avatar menu; computed by portal-accent.js).
   try { var v = JSON.parse(localStorage.getItem('c360_accent_v') || 'null'); if (v) for (var k in v) if (/^--accent/.test(k)) document.documentElement.style.setProperty(k, v[k]); } catch (e) {}
+  // Game Mode left on: the game's own loading screen instead of the portal's (portal-game.js lifts it; 15 s at most)
+  try { if (localStorage.getItem('c360_game') === '1') { document.documentElement.classList.add('gm-boot'); setTimeout(function () { document.documentElement.classList.remove('gm-boot'); }, 15000); } } catch (e) {}
   // Text size and motion (Contul meu → Preferințe), also before the first paint.
   try { var pf = JSON.parse(localStorage.getItem('c360_prefs') || 'null'); if (pf) { if (pf.fontSize === 'lg' || pf.fontSize === 'xl') document.documentElement.setAttribute('data-fs', pf.fontSize); if (pf.motion === 'reduced') document.documentElement.classList.add('c360-reduce'); } } catch (e) {}
 </script>
@@ -36,6 +38,16 @@
   #loadingScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; }
   #loadingScreen.is-error::before{ animation:none !important; opacity:.4; }
   .c360-load-err{ display:grid; gap:1rem; justify-items:center; text-align:center; padding:1rem; }
+  /* Game Mode's loading screen (html.gm-boot, set above): the name in thin capitals, a gold light running under it */
+  html.gm-boot::before{ content:""; position:fixed; inset:0; z-index:2147483600; background:#08090a; transition:opacity .5s ease; }
+  html.gm-boot::after{ content:"CENTRUL360"; position:fixed; left:50%; top:50%; z-index:2147483601; transform:translate(-50%, -50%); padding:0 0 20px .5em; white-space:nowrap;
+    font:200 clamp(1.3rem, 6vw, 2.2rem)/1 Inter, -apple-system, system-ui, sans-serif; letter-spacing:.5em; color:#ece8dd; transition:opacity .5s ease;
+    background:linear-gradient(90deg, transparent, #c9a45c, transparent) no-repeat; background-size:38% 1px; background-position:-60% 100%; animation:gm-boot 1.5s cubic-bezier(.65,0,.35,1) infinite; }
+  @keyframes gm-boot{ to{ background-position:160% 100%; } }
+  html.gm-boot.gm-boot-out::before, html.gm-boot.gm-boot-out::after{ opacity:0; }
+  html.gm-boot #loadingScreen{ visibility:hidden; }
+  html.gm-boot:has(#loadingScreen.is-error)::before, html.gm-boot:has(#loadingScreen.is-error)::after{ display:none; }
+  html.gm-boot #loadingScreen.is-error{ visibility:visible; }
   header.topbar{ position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; }
   .brand{ display:flex; align-items:center; }
   .who{ text-align:right; line-height:1.3; }

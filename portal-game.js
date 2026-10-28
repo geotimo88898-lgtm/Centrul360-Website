@@ -2,7 +2,7 @@
 // /api/portal-game). The clinic as a mobile game with fixed rules nobody sets: the stage on Hormozi's Scaling Roadmap,
 // the empire on the map (tap a city), the season's boss, the race with last month, the garage in 3D (unlocked when the
 // game's treasury could buy it twice), the team's player cards, missions with XP and hundreds of badges. Entered and
-// left by the "Game Mode" switch of the avatar menu, through diagonal bands of lava.
+// left by the "Game Mode" switch of the avatar menu, through a cinematic reveal.
 (function () {
   'use strict';
   const K = window.K;
@@ -337,14 +337,14 @@
 
   // ------------------------------------------------------------------ the shell
   const DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
-    '<linearGradient id="gmLavaStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9cba9"/><stop offset="1" stop-color="#b9a173"/></linearGradient>' +
-    '<linearGradient id="gmGoldStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4d8bc"/><stop offset="1" stop-color="#c3ad84"/></linearGradient>' +
+    '<linearGradient id="gmLavaStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0c896"/><stop offset="1" stop-color="#cca557"/></linearGradient>' +
+    '<linearGradient id="gmGoldStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7d4ac"/><stop offset="1" stop-color="#d3b06a"/></linearGradient>' +
     '<linearGradient id="gmEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.22)"/><stop offset="1" stop-color="rgba(255,255,255,.08)"/></linearGradient>' +
     '<radialGradient id="gmLand" cx="40%" cy="40%" r="75%"><stop offset="0" stop-color="#1a1c1f"/><stop offset="1" stop-color="#111214"/></radialGradient>' +
     '<pattern id="gmDots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="rgba(255,255,255,.12)"/></pattern>' +
-    '<radialGradient id="gmOrb" cx="40%" cy="35%" r="65%"><stop offset="0" stop-color="#e9e1cd"/><stop offset=".55" stop-color="#c3ad84"/><stop offset="1" stop-color="#8a7550"/></radialGradient>' +
+    '<radialGradient id="gmOrb" cx="40%" cy="35%" r="65%"><stop offset="0" stop-color="#ecdcbd"/><stop offset=".55" stop-color="#d3b06a"/><stop offset="1" stop-color="#8a7550"/></radialGradient>' +
     '<radialGradient id="gmBossCore" cx="50%" cy="42%" r="58%"><stop offset="0" stop-color="#e4e2df"/><stop offset="1" stop-color="#6b4a4a"/></radialGradient>' +
-    '<linearGradient id="gmCarYou" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c3ad84"/><stop offset="1" stop-color="#e4d8bc"/></linearGradient>' +
+    '<linearGradient id="gmCarYou" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d3b06a"/><stop offset="1" stop-color="#e7d4ac"/></linearGradient>' +
     '<linearGradient id="gmCarGhost" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5d6166"/><stop offset="1" stop-color="#8b9096"/></linearGradient>' +
     '<clipPath id="gmRoClip"><path d="' + RO_PATH + '"/></clipPath>' +
     '</defs></svg>';
@@ -452,9 +452,9 @@
 
   const BOSS_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
     '<path d="M20 40 L4 8 L34 28 Z" fill="#cb8181"/><path d="M80 40 L96 8 L66 28 Z" fill="#cb8181"/>' +
-    '<path d="M28 26 L34 8 L43 19 L50 2 L57 19 L66 8 L72 26 Z" fill="#cebc97" stroke="#846d3e" stroke-width="1.5"/>' +
+    '<path d="M28 26 L34 8 L43 19 L50 2 L57 19 L66 8 L72 26 Z" fill="#dabc80" stroke="#846d3e" stroke-width="1.5"/>' +
     '<circle class="core" cx="50" cy="58" r="34" fill="url(#gmBossCore)"/>' +
-    '<g class="eye"><ellipse cx="50" cy="54" rx="17" ry="9.5" fill="#090a0b"/><ellipse cx="50" cy="54" rx="4.5" ry="8.5" fill="#cebc97"/></g>' +
+    '<g class="eye"><ellipse cx="50" cy="54" rx="17" ry="9.5" fill="#090a0b"/><ellipse cx="50" cy="54" rx="4.5" ry="8.5" fill="#dabc80"/></g>' +
     '<path d="M33 74 L37.5 81 L42 74 L46.5 81 L51 74 L55.5 81 L60 74 L64.5 81 L68 74" stroke="#090a0b" stroke-width="3.2" fill="none" stroke-linejoin="round"/></svg>';
   const CAR = (fill) => '<svg viewBox="0 0 64 24" aria-hidden="true"><path d="M3 17C3 14 6 12.5 10 12l10-1c4-3 10-5 18-5 6 0 10 2 14 5l7 1.5c2.5.5 3 2.5 3 4.5v1H3z" fill="url(#' + fill + ')"/>' +
     '<path d="M24 11c4-2.5 8-3.5 13-3.5h3l1 3.5z" fill="rgba(13,14,15,.75)"/><path d="M58 13.5h3" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>' +
@@ -543,9 +543,9 @@
       const next = c === d.map.next;
       s += '<g class="gm-city is-locked' + (next ? ' is-next' : '') + '" data-city="' + esc(c) + '">' +
         '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="34" fill="transparent"/>' +
-        (next ? '<circle class="ring" cx="' + xy[0] + '" cy="' + xy[1] + '" r="30" fill="none" stroke="#cebc97" stroke-width="3" stroke-dasharray="10 9"/>' : '') +
-        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (next ? 11 : 7) + '" fill="' + (next ? 'rgba(206,188,151,.25)' : '#262e34') + '" stroke="' + (next ? '#cebc97' : '#4d5e6b') + '" stroke-width="2.5"/>' +
-        (next ? '<text x="' + (xy[0] + 44) + '" y="' + (xy[1] - 22) + '" font-size="40">' + esc(c) + '</text><text class="sub" x="' + (xy[0] + 44) + '" y="' + (xy[1] + 12) + '" font-size="30" fill="#cebc97">' + Math.round(d.map.readiness * 100) + '% pregătit</text>'
+        (next ? '<circle class="ring" cx="' + xy[0] + '" cy="' + xy[1] + '" r="30" fill="none" stroke="#dabc80" stroke-width="3" stroke-dasharray="10 9"/>' : '') +
+        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (next ? 11 : 7) + '" fill="' + (next ? 'rgba(218,188,128,.25)' : '#262e34') + '" stroke="' + (next ? '#dabc80' : '#4d5e6b') + '" stroke-width="2.5"/>' +
+        (next ? '<text x="' + (xy[0] + 44) + '" y="' + (xy[1] - 22) + '" font-size="40">' + esc(c) + '</text><text class="sub" x="' + (xy[0] + 44) + '" y="' + (xy[1] + 12) + '" font-size="30" fill="#dabc80">' + Math.round(d.map.readiness * 100) + '% pregătit</text>'
           : '<text class="mini" x="' + (xy[0] + 14) + '" y="' + (xy[1] + 8) + '" font-size="22">' + esc(c) + '</text>') + '</g>';
     });
     const byNorth = act.map((a) => a.name).sort((x, y) => ((CITY_XY[x] || [0, 999])[1] - (CITY_XY[y] || [0, 999])[1]));
@@ -556,8 +556,8 @@
       const lx = xy[0] + 96, ly = xy[1] + (up ? -46 : 92);
       s += '<g class="gm-city is-active" data-city="' + esc(a.name) + '" style="--i:' + i + '">' +
         '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 26) + '" fill="transparent"/>' +
-        '<circle class="beacon" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="none" stroke="#52987c" stroke-width="3"/>' +
-        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 10) + '" fill="rgba(82,152,124,.18)"/>' +
+        '<circle class="beacon" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="none" stroke="#6f757b" stroke-width="3"/>' +
+        '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + (r + 10) + '" fill="rgba(111,117,123,.18)"/>' +
         '<circle class="orb" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '" fill="url(#gmOrb)"/>' +
         '<path class="lead" d="M' + (xy[0] + r * 0.7) + ' ' + (xy[1] + (up ? -r * 0.7 : r * 0.7)) + ' L' + (lx - 10) + ' ' + (ly - 14) + '" stroke="rgba(255,255,255,.4)" stroke-width="2.5" fill="none" stroke-dasharray="5 6"/>' +
         '<text x="' + lx + '" y="' + ly + '" font-size="46">' + esc(a.name) + '</text>' +
@@ -778,7 +778,7 @@
   }
   function misiuni(d) {
     const M = d.missions;
-    return '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">XP din treaba de zi cu zi</span><h2>Misiuni</h2></div>' + (M.claimable ? '<small style="color:#cebc97">' + M.claimable + ' de revendicat</small>' : '') + '</div>' +
+    return '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">XP din treaba de zi cu zi</span><h2>Misiuni</h2></div>' + (M.claimable ? '<small style="color:#dabc80">' + M.claimable + ' de revendicat</small>' : '') + '</div>' +
       '<div class="gm-cols"><div class="gm-col"><div class="gm-card-h' + rise() + '" style="margin:0 0 .75rem"><h3>' + ic('bolt') + 'Azi</h3><span class="gm-timer" data-timer="d">' + ic('clock') + hms(M.dailyResetIn) + '</span></div>' +
       '<div class="gm-mis">' + M.daily.map(mission).join('') + '</div></div>' +
       '<div class="gm-col"><div class="gm-card-h' + rise() + '" style="margin:0 0 .75rem"><h3>' + ic('calendar') + 'Săptămâna asta</h3><span class="gm-timer" data-timer="w">' + ic('clock') + hms(M.weeklyResetIn) + '</span></div>' +
@@ -850,7 +850,7 @@
     const w = 300, h = 70, max = Math.max(1, ...list);
     const pts = list.map((v, i) => [i * (w / Math.max(1, list.length - 1)), h - 6 - (v / max) * (h - 14)]);
     const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    return '<svg class="gm-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><linearGradient id="gmSparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(82,152,124,.45)"/><stop offset="1" stop-color="rgba(82,152,124,0)"/></linearGradient></defs>' +
+    return '<svg class="gm-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><linearGradient id="gmSparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(111,117,123,.45)"/><stop offset="1" stop-color="rgba(111,117,123,0)"/></linearGradient></defs>' +
       '<path d="' + line + ' L' + w + ' ' + h + ' L0 ' + h + 'Z" fill="url(#gmSparkFill)"/><path class="ln" d="' + line + '" fill="none" stroke="url(#gmLavaStroke)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/></svg>';
   }
   // the map flies to the city first, then its sheet rises (low, so the zoomed map stays in sight)
@@ -1177,15 +1177,35 @@
   }
 
   // ------------------------------------------------------------------ the transition in and out
-  function wipe(rev, word, sub) {
+  // the way in and out (.gm-tr in portal-game.css): two shutters close, a gold light, the name; then the game opens in
+  // a circle edged in gold (iris), or the shutters part on the portal
+  function curtain(word, sub) {
     const w = document.createElement('div');
-    w.className = 'gm-wipe' + (rev ? ' is-rev' : '');
-    w.innerHTML = '<div class="tilt">' + Array.from({ length: 6 }, (_, i) => '<div class="band" style="--i:' + i + '"></div>').join('') + '</div>' +
-      '<div class="glitch"></div><div class="ring"></div><div class="logo"><div><b>' + esc(word) + '</b><small>' + esc(sub) + '</small></div></div>';
+    w.className = 'gm-tr';
+    w.innerHTML = '<i class="sh t"></i><i class="sh b"></i><i class="streak"></i><div class="word"><b>' + esc(word) + '</b><small>' + esc(sub) + '</small></div>';
     document.body.appendChild(w);
     void w.offsetWidth;
-    w.classList.add('is-in');
+    w.classList.add('is-close');
     return w;
+  }
+  function iris(root) {
+    const R = Math.ceil(Math.hypot(window.innerWidth, window.innerHeight) / 2) + 4; // centre to the corners
+    const ring = document.createElement('i');
+    ring.className = 'gm-tr-ring';
+    ring.style.width = ring.style.height = 2 * R + 'px';
+    document.body.appendChild(ring);
+    root.style.setProperty('--gm-iris', R + 'px');
+    void ring.offsetWidth;
+    root.classList.add('is-iris'); ring.classList.add('is-on');
+    setTimeout(() => { root.classList.remove('is-iris'); ring.remove(); }, 1000);
+  }
+  // the game's own loading screen, drawn by portal.html before anything else when the game was left on (html.gm-boot):
+  // it fades once the game is on screen, or once the portal knows the game won't open
+  function bootDone() {
+    const h = document.documentElement;
+    if (!h.classList.contains('gm-boot')) return;
+    h.classList.add('gm-boot-out');
+    setTimeout(() => h.classList.remove('gm-boot', 'gm-boot-out'), 550);
   }
   function fonts() {
     if (document.getElementById('gm-font')) return;
@@ -1211,36 +1231,35 @@
     const credP = fetch('/game/img/credits.json').then((r) => (r.ok ? r.json() : null)).then((c) => { S.credits = c; }, () => {});
     if (quick || calm()) {
       const root = mount();
-      root.classList.add('is-enter');
       const ok = await dataP;
       if (!ok) { failOpen(); return; }
       show(S.tab, { silent: true });
+      root.classList.add('is-enter');
+      bootDone();
       Sfx.music(true);
       S.cerT = setTimeout(ceremonies, 900);
       startLive();
       return;
     }
     Sfx.whoosh(); buzz(18);
-    const w = wipe(false, 'GAME MODE', 'CENTRUL360');
-    await sleep(560);
-    w.classList.add('is-logo'); Sfx.impact(); buzz([30, 30, 70]);
-    const root = mount();
+    const w = curtain('CENTRUL360', 'GAME MODE');
+    await sleep(500);
+    w.classList.add('is-light'); Sfx.impact(); buzz([30, 30, 70]);
+    const root = mount(); // under the closed shutters
     S.audioOk = true;
-    const ok = await Promise.race([dataP, sleep(1500).then(() => null)]);
-    await sleep(420);
-    root.classList.add('is-enter');
-    w.classList.remove('is-in', 'is-logo'); w.classList.add('is-out');
-    setTimeout(() => w.remove(), 900);
-    Sfx.whooshOut();
-    const ready = ok === null ? await dataP : ok;
-    await credP;
-    if (!ready) { failOpen(); return; }
+    const [ready] = await Promise.all([dataP, credP.catch(() => {}), sleep(1250)]); // the name stays long enough to be read
+    if (!ready) { w.remove(); failOpen(); return; }
     show(S.tab, { silent: true });
+    w.classList.add('is-fade');
+    await sleep(260);
+    iris(root); Sfx.whooshOut();
+    setTimeout(() => w.remove(), 1000);
     Sfx.music(true);
-    S.cerT = setTimeout(ceremonies, 1300);
+    S.cerT = setTimeout(ceremonies, 1500);
     startLive();
   }
   function failOpen() {
+    bootDone();
     toast('Jocul nu s-a putut încărca acum. Încearcă din nou.', 'error');
     teardown();
     const e = S.loadErr || {};
@@ -1275,16 +1294,17 @@
     if (calm()) { teardown(); return; }
     Sfx.whoosh(); buzz(18);
     Sfx.music(false);
-    const w = wipe(true, 'BUSINESS', 'ÎNAPOI LA PORTAL');
-    if (S.root) S.root.classList.add('is-leave');
-    await sleep(600);
-    w.classList.add('is-logo'); Sfx.impact();
-    teardown();
-    await sleep(650);
-    w.classList.remove('is-in', 'is-logo'); w.classList.add('is-out');
-    Sfx.whooshOut();
-    setTimeout(() => w.remove(), 900);
+    const w = curtain('CENTRUL360', 'BUSINESS');
+    await sleep(500);
+    w.classList.add('is-light'); Sfx.impact();
+    teardown(); // the game goes under the closed shutters
     if (K.reload) K.reload();
+    await sleep(1150);
+    w.classList.add('is-fade');
+    await sleep(220);
+    w.classList.remove('is-close'); w.classList.add('is-open');
+    Sfx.whooshOut();
+    setTimeout(() => w.remove(), 800);
   }
 
   window.C360Game = { enter, exit, isOpen: () => S.open, toggle: () => (S.open ? exit() : enter()) };
