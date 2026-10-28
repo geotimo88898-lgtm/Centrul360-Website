@@ -85,10 +85,8 @@
   const ic = (n, cls) => '<svg class="gi' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[n] || IC.star) + '</svg>';
   const KIND_IC = { car: 'car', house: 'house', watch: 'watch', trip: 'plane', yacht: 'yacht', jet: 'plane', other: 'star' };
   const imgOf = (img) => (img ? '/game/img/' + encodeURIComponent(img) + '.webp' : '');
-  // a car's picture and depth map: the clean showroom render when it is made (api/_lib/game-renders.js), else the photo
-  const rendOf = (g) => (S.d && S.d.renders && S.d.renders[g.img]) || null;
-  const srcOf = (g) => (rendOf(g) ? rendOf(g).src : imgOf(g.img));
-  const depthOf = (g) => (rendOf(g) ? rendOf(g).depth : '/game/img/' + encodeURIComponent(g.img) + '-depth.png');
+  const srcOf = (g) => imgOf(g.img);
+  const depthOf = (g) => '/game/img/' + encodeURIComponent(g.img) + '-depth.png';
 
   // ------------------------------------------------------------------ the map of Romania (Natural Earth 1:50m, projected)
   const RO_PATH = "M862.1 447.6 L873.2 463.4 L887.6 471.6 L920.3 480.5 L923.0 479.5 L923.4 477.9 L921.1 475.5 L920.7 472.6 L922.2 468.9 L926.8 468.9 L934.4 472.1 L948.5 467.3 L969.0 454.9 L988.0 452.3 L1005.5 459.7 L1014.3 468.4 L1020.0 476.6 L1018.1 486.6 L1017.0 492.9 L1012.4 519.1 L1009.3 528.8 L1004.4 539.9 L950.4 552.9 L953.8 546.8 L952.7 535.7 L950.4 527.5 L955.3 519.9 L943.5 517.2 L938.2 521.2 L934.0 528.6 L937.5 544.9 L931.8 554.2 L929.5 559.2 L929.1 571.3 L925.7 576.6 L924.9 582.2 L933.7 580.8 L929.9 591.1 L913.5 611.2 L907.8 623.1 L909.3 670.6 L902.1 698.8 L901.7 707.2 L884.6 707.5 L879.3 707.0 L863.3 702.8 L845.0 695.1 L834.4 680.6 L827.5 670.0 L812.3 674.8 L809.3 673.5 L805.1 668.5 L793.3 665.0 L779.2 665.0 L746.9 646.0 L743.5 642.6 L718.0 646.0 L680.3 655.3 L651.4 667.1 L621.4 687.7 L609.2 703.6 L595.1 712.0 L575.3 718.1 L539.6 715.7 L502.7 707.8 L462.8 699.3 L441.1 704.1 L411.8 700.6 L368.0 690.4 L335.3 687.2 L303.0 693.3 L297.7 688.8 L296.2 683.5 L297.7 676.1 L302.2 670.0 L309.8 665.5 L314.0 661.1 L314.4 656.3 L305.7 648.7 L287.8 638.4 L280.2 632.0 L278.7 630.4 L277.9 624.6 L274.5 620.2 L267.2 616.7 L261.9 610.7 L258.1 601.9 L258.9 593.8 L264.2 586.1 L271.4 582.7 L279.8 583.7 L283.6 581.4 L282.1 576.1 L273.7 569.2 L258.5 560.8 L242.9 565.3 L226.9 582.9 L215.5 585.8 L208.7 574.0 L196.1 566.8 L178.2 564.7 L167.2 560.2 L163.4 553.4 L155.4 548.1 L138.3 542.6 L137.9 537.0 L141.0 536.0 L147.0 535.4 L155.0 534.1 L156.6 531.2 L156.6 528.6 L150.1 524.9 L143.6 522.5 L140.2 520.1 L137.9 517.5 L137.5 514.9 L139.4 512.7 L142.1 512.7 L144.8 511.2 L145.9 504.6 L149.7 499.3 L152.0 497.4 L152.0 493.7 L149.3 490.0 L145.9 486.9 L140.6 485.0 L124.2 479.5 L115.9 471.8 L110.9 471.6 L102.5 467.3 L94.2 460.5 L86.6 451.0 L78.6 444.9 L76.3 442.5 L76.3 440.2 L77.4 437.5 L77.4 434.6 L75.5 425.4 L76.7 415.4 L76.3 406.4 L76.3 402.2 L74.8 400.8 L73.3 402.2 L71.4 404.0 L69.4 404.3 L63.4 397.7 L55.8 383.9 L50.8 379.5 L40.9 373.1 L32.6 367.8 L26.5 356.5 L20.0 347.5 L24.2 343.8 L48.1 338.8 L59.2 343.8 L64.5 342.0 L69.4 337.8 L72.1 334.6 L72.5 330.9 L74.8 326.7 L83.1 324.6 L104.4 327.2 L113.2 321.1 L116.2 317.7 L118.1 310.6 L120.4 304.5 L128.0 301.3 L128.0 296.1 L126.9 290.3 L131.4 277.1 L134.1 271.8 L138.3 269.7 L143.6 265.7 L152.8 257.0 L150.5 249.6 L152.4 244.1 L161.9 230.6 L169.1 217.7 L169.1 211.1 L170.2 205.3 L176.3 199.2 L183.2 191.0 L191.9 165.7 L195.4 161.5 L201.1 156.7 L205.2 152.0 L205.6 135.3 L209.8 130.6 L217.8 125.0 L225.4 116.3 L231.9 106.3 L236.4 101.3 L242.9 100.2 L250.1 96.0 L257.7 94.7 L265.3 96.5 L270.3 95.5 L277.5 90.5 L295.8 71.7 L298.4 68.0 L302.2 65.4 L317.5 59.1 L321.3 52.5 L326.2 46.7 L333.0 47.2 L354.7 61.4 L377.9 60.6 L382.1 61.2 L383.6 61.4 L386.3 62.8 L417.5 69.9 L422.1 69.1 L423.6 68.3 L435.7 74.4 L446.8 73.6 L457.4 69.4 L468.5 68.0 L478.3 70.4 L486.0 78.9 L505.7 96.3 L511.4 102.9 L520.6 102.1 L530.5 98.7 L540.7 87.0 L571.9 73.6 L595.5 70.4 L618.7 64.9 L645.7 61.2 L653.3 50.4 L657.9 42.7 L660.9 29.0 L675.4 25.0 L689.1 22.4 L694.0 20.5 L703.9 20.0 L711.5 21.1 L723.7 27.9 L732.1 36.4 L735.5 43.2 L742.7 52.7 L750.3 66.2 L758.7 84.1 L760.2 93.1 L763.6 102.9 L769.7 114.8 L781.5 127.9 L783.4 130.6 L788.7 139.8 L799.0 160.4 L807.8 168.6 L815.4 177.6 L818.8 186.5 L824.5 194.7 L837.0 205.5 L847.3 215.3 L855.7 243.5 L861.4 256.7 L865.2 266.8 L863.3 286.8 L865.6 295.5 L861.0 311.4 L852.3 343.0 L850.4 368.1 L851.9 381.8 L851.9 390.5 L854.2 396.1 L856.4 407.7 L856.8 417.7 L853.8 420.6 L849.2 423.0 L847.7 425.1 L851.5 429.6 L856.8 438.1 L862.1 447.6Z";
@@ -671,9 +669,18 @@
   }
 
   // ------------------------------------------------------------------ the garage: a 3D showroom
+  // the cars cut out of their photos (game/img/<id>-cut.webp): they stand in a showroom built here, lit like a game's
+  const CUT = { m4: 1, gt3rs: 1, svj: 1 };
+  const cutOf = (g) => (CUT[g.img] ? '/game/img/' + encodeURIComponent(g.img) + '-cut.webp' : '');
+  function showroom(g, i) {
+    const src = esc(cutOf(g)), ld = i < 2 ? 'eager' : 'lazy';
+    return '<div class="gm-room"><i class="wall"></i><i class="strips"></i><i class="floor"></i><i class="spot"></i><i class="disc"></i>' +
+      '<div class="car"><img class="refl" src="' + src + '" alt="" loading="' + ld + '" decoding="async"><i class="shadow"></i>' +
+      '<img class="body" src="' + src + '" alt="" loading="' + ld + '" decoding="async"><i class="sheen" style="--m:url(' + src + ')"></i></div></div>';
+  }
   function goalStage(g, i) {
     return '<button type="button" class="gm-slide ' + (g.unlocked ? 'is-unlocked' : 'is-locked') + '" data-slide="' + i + '" data-id="' + esc(g.id) + '">' +
-      '<div class="gm-stage"><img src="' + esc(srcOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" onerror="this.remove()">' +
+      '<div class="gm-stage' + (CUT[g.img] ? ' is-room' : '') + '">' + (CUT[g.img] ? showroom(g, i) : '<img src="' + esc(srcOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" onerror="this.remove()">') +
         (g.unlocked ? '<span class="won">DEBLOCAT</span>' : '<span class="lock">' + ic('lock') + Math.round(g.progress * 100) + '%</span>') +
         '<div class="cap"><div><h4>' + esc(g.name) + '</h4><small>' + lei(g.price) + ' · ' + clinici(g.clinics) + '</small></div></div></div>' +
       '<div class="gm-floor"></div></button>';
@@ -700,7 +707,7 @@
     return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
       '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
-      '<p class="gm-note">Mașina stă în showroom, în 3D: pe calculator o înclini cu mouse-ul, pe telefon glisezi între mașini.</p>' + creditOf(g);
+      '<p class="gm-note">Pe telefon glisezi între mașini; pe calculator le schimbi cu săgețile.</p>' + creditOf(g);
   }
   function creditOf(g) {
     const c = S.credits && S.credits[g.img];
@@ -733,7 +740,7 @@
         dots.forEach((x, i) => x.classList.toggle('is-on', i === bestI));
         detail.classList.add('is-swap');
         setTimeout(() => { detail.innerHTML = goalDetail(g); detail.classList.remove('is-swap'); hydrate(detail, true); }, fresh ? 0 : 120);
-        if (S.car) {
+        if (S.car && !CUT[g.img]) {
           const stage = slides[bestI].querySelector('.gm-stage');
           stage.insertBefore(cv, stage.firstChild.nextSibling);
           slides.forEach((x) => x.classList.remove('is-3d')); // the photo comes back where the canvas left

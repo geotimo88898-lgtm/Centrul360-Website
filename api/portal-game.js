@@ -61,7 +61,6 @@ module.exports = async (req, res) => {
     const save = async (doc) => writeJSON(G.KEY, G.mergeDoc(await readJSON(G.KEY, null), doc), { quiet: true });
     if (req.method === 'GET') {
       const { state, doc, changed } = await compute();
-      state.renders = await R.ready().catch(() => ({}));
       if (changed) await save(doc).catch((e) => console.error('game save:', e.message)); // a failed save never hides the game
       res.status(200).json(state);
       return;

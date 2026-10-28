@@ -1,32 +1,34 @@
-// Game Mode, the garage's cars as clean showroom renders: made once by Google's image generator (Gemini, the owner's
-// key in GEMINI_API_KEY, his OK to spend a little) from the real photo of each car (game/img/<id>.webp), then its depth
-// map (near = white) for the 3D in the garage. Kept in the portal's storage (game/renders/v<V>/<id>.png,
-// <id>-depth.png); nothing is generated again unless V changes here.
-//   step(origin)   makes the next missing image (one per call, a generation takes up to a minute); a capped number of
+// Game Mode, the garage's cars: made once by Google's image generator (Gemini, the owner's key in GEMINI_API_KEY, his
+// OK to spend a little) from the real photo of each car (game/img/<id>.webp), all from the same angle, in the colours
+// the owner chose, on a plain studio background. They are kept in the portal's storage (game/renders/v<V>/<id>.png),
+// then looked at, cut out of their background and published with the game (game/img/<id>-cut.webp), where the garage
+// stands them in its showroom. Nothing is generated again unless V changes here.
+//   step(origin)   makes the next missing car (one per call, a generation takes up to a minute); a capped number of
 //                  paid generations per version, never more
-//   image(name)    the bytes of a finished image, for /api/portal-game?img=<name>
-//   ready()        { <id>: { src, depth } } of the cars whose render and depth are done, once LIVE
+//   image(name)    the bytes of a finished car, for /api/portal-game?img=<id>
 
 const { readJSON, writeJSON, writeBinary, readBinary } = require('./store');
 
-const V = 1;
-const LIVE = false; // the renders show in the game only after they were looked at
-const IDS = ['m4', 'gt3rs', 'svj'];
-const MAX = 9; // paid generations per version: 6 needed, 3 to redo a failed one
+const V = 3;
+const MAX = 6; // paid generations per version: 3 needed, 3 to redo one
 const KEY = 'data/game-renders.json';
 const MODEL = 'gemini-3-pro-image';
-const path = (name) => 'game/renders/v' + V + '/' + name + '.png';
+const path = (id) => 'game/renders/v' + V + '/' + id + '.png';
 
-const RENDER = 'Using the car in this photo as the exact reference (same make, model, generation, body kit, wheels, brake calipers and paint colour), ' +
-  'create a clean high-end video game showroom render of it, like the car selection screen of Gran Turismo 7 or Forza Motorsport. ' +
-  'Three-quarter front view from the front left, camera at headlight height, the whole car in frame and centred, with generous empty space around it. ' +
-  'A dark minimal studio: a deep charcoal backdrop fading to near black with a very subtle purple tint, a polished dark floor with a soft clean reflection of the car, ' +
-  'one large soft overhead light panel drawing long clean highlights along the bodywork, thin cool rim lights outlining the silhouette, a soft contact shadow under the tyres. ' +
-  'Photoreal, razor sharp, perfectly clean paint, no noise. No text, no watermark, no logo overlay, no people, no other objects, a blank licence plate.';
-const DEPTH = 'Turn this image into its depth map: grayscale only, the nearest parts white and the farthest black, smooth gradients, ' +
-  'the car clearly separated from the background, the floor going from white at the bottom edge to dark at the back, the backdrop black. ' +
-  'Exactly the same framing and composition, nothing added or removed.';
+// the owner's colours (October 2026)
+const PAINT = {
+  m4: 'a subtle, very dark brown metallic paint leaning toward burgundy (deep brown-maroon, elegant, not red, not black); the rest of the car exactly as in the photo',
+  gt3rs: 'gloss white paint with exposed carbon fibre details, like the Weissach package: a bare carbon fibre front bonnet, carbon roof, carbon mirror caps and a carbon rear wing; dark wheels',
+  svj: 'a super clean matte grey paint (satin, flat, no gloss, like Lamborghini\'s Grigio Telesto matt) with red details: red brake calipers, thin red accents on the front splitter, side skirts and rear diffuser',
+};
+const prompt = (id) => 'Using the car in this photo as the exact reference (same make, model, generation, body kit, wheels design and proportions), ' +
+  'make a studio product shot of it painted in ' + PAINT[id] + '. ' +
+  'Front three-quarter view, the nose of the car pointing toward the lower right of the frame, so we see the front and the car\'s left side; ' +
+  'camera slightly above headlight height, about 35 degrees off the car\'s axis, the whole car in frame, centred, filling about 85% of the width, the wheels straight. ' +
+  'A plain seamless light grey studio background, soft even studio lighting with long clean highlights on the bodywork, no visible floor line, no reflections or shadows on the background. ' +
+  'Ultra realistic, photoreal, razor sharp, perfectly clean paint. No text, no watermark, no logo overlay, no people, no other objects, a blank licence plate.';
 
+const IDS = Object.keys(PAINT);
 const blank = () => ({ v: V, spent: 0, done: {}, errors: [], busy: 0 });
 async function load() { const d = await readJSON(KEY, null); return d && d.v === V ? Object.assign(blank(), d) : blank(); }
 
@@ -39,13 +41,13 @@ function findImage(x) {
   return null;
 }
 
-async function generate(prompt, img, mime) {
+async function generate(text, img, mime) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 55000);
   try {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST', signal: ac.signal,
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({ model: MODEL, input: [{ type: 'text', text: prompt }, { type: 'image', mime_type: mime, data: img.toString('base64') }],
+      body: JSON.stringify({ model: MODEL, input: [{ type: 'text', text }, { type: 'image', mime_type: mime, data: img.toString('base64') }],
         response_format: { type: 'image', mime_type: 'image/png', aspect_ratio: '16:9', image_size: '2K' } }),
     });
     const j = await r.json().catch(() => null);
@@ -60,18 +62,16 @@ async function generate(prompt, img, mime) {
 async function step(origin) {
   const d = await load();
   if (!process.env.GEMINI_API_KEY) return { state: 'no_key' };
-  const next = IDS.map((id) => (!d.done[id] ? id : !d.done[id + '-depth'] ? id + '-depth' : null)).find(Boolean);
-  const status = () => ({ v: V, live: LIVE, spent: d.spent, max: MAX, done: Object.keys(d.done), next: next || null, errors: d.errors.slice(-3) });
+  const next = IDS.find((id) => !d.done[id]) || null;
+  const status = () => ({ v: V, spent: d.spent, max: MAX, done: Object.keys(d.done), next, errors: d.errors.slice(-3) });
   if (!next) return Object.assign({ state: 'complete' }, status());
   if (d.spent >= MAX) return Object.assign({ state: 'cap_reached' }, status());
   if (Date.now() - d.busy < 70000) return Object.assign({ state: 'busy' }, status());
   d.busy = Date.now();
   await writeJSON(KEY, d, { quiet: true });
-  const depth = next.endsWith('-depth'), id = next.replace(/-depth$/, '');
-  let src, mime;
-  if (depth) { src = await readBinary(path(id)); mime = 'image/png'; }
-  else { const r = await fetch(origin + '/game/img/' + id + '.webp'); src = r.ok ? Buffer.from(await r.arrayBuffer()) : null; mime = 'image/webp'; }
-  let out = src ? await generate(depth ? DEPTH : RENDER, src, mime) : { error: 'no source image', billed: false };
+  const r = await fetch(origin + '/game/img/' + next + '.webp');
+  const src = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+  const out = src ? await generate(prompt(next), src, 'image/webp') : { error: 'no source image', billed: false };
   if (out.png) { await writeBinary(path(next), out.png, 'image/png'); d.done[next] = new Date().toISOString(); }
   if (out.billed) d.spent++;
   if (out.error) d.errors = d.errors.concat(next + ': ' + out.error).slice(-10);
@@ -80,13 +80,6 @@ async function step(origin) {
   return Object.assign({ state: out.png ? 'made' : 'failed', made: out.png ? next : null }, status());
 }
 
-const image = (name) => (IDS.some((id) => name === id || name === id + '-depth') ? readBinary(path(name)) : Promise.resolve(null));
+const image = (name) => (IDS.includes(name) ? readBinary(path(name)) : Promise.resolve(null));
 
-async function ready() {
-  if (!LIVE) return {};
-  const d = await load(), out = {};
-  IDS.forEach((id) => { if (d.done[id] && d.done[id + '-depth']) out[id] = { src: '/api/portal-game?img=' + id + '&v=' + V, depth: '/api/portal-game?img=' + id + '-depth&v=' + V }; });
-  return out;
-}
-
-module.exports = { V, step, image, ready };
+module.exports = { V, step, image };

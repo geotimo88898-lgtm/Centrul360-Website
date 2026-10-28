@@ -714,3 +714,36 @@ canvas.gm-3d{ position:absolute; inset:0; width:100%; height:100%; display:block
   .gm *, .gm *::before, .gm *::after, .gm-wipe *, .gm-cer *, .gm-cer{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
   .gm-bg i, .gm-grid{ animation:none !important; }
 }
+
+/* the garage's showroom: the car cut out of its photo, standing on a lit turntable in a dark hall (nothing spins) */
+.gm-stage.is-room{ background:#07060d; aspect-ratio:4 / 3; }
+@media (min-width: 700px){ .gm-stage.is-room{ aspect-ratio:16 / 10; } }
+.gm-stage.is-room::before{ display:none; }
+.gm-room{ position:absolute; inset:0; overflow:hidden; perspective:700px; }
+.gm-room > i{ position:absolute; display:block; pointer-events:none; }
+.gm-room .wall{ inset:0 0 34% 0; background:radial-gradient(70% 120% at 50% 0%, rgba(140,110,255,.30), transparent 70%), linear-gradient(#17132c, #0c0a19); }
+.gm-room .strips{ left:4%; right:4%; top:7%; bottom:42%; background:repeating-linear-gradient(90deg, transparent 0 7.5%, rgba(214,206,255,.20) 7.5% 8.1%, transparent 8.1% 16.5%);
+  -webkit-mask-image:linear-gradient(transparent, #000 25%, #000 70%, transparent); mask-image:linear-gradient(transparent, #000 25%, #000 70%, transparent); }
+.gm-room .floor{ left:-60%; right:-60%; bottom:-6%; height:58%; transform:rotateX(70deg); transform-origin:50% 100%;
+  background:linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px) 0 0 / 64px 64px, linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px) 0 0 / 64px 64px, radial-gradient(60% 70% at 50% 45%, #2a2448, #0b0915 75%);
+  -webkit-mask-image:radial-gradient(70% 90% at 50% 55%, #000 40%, transparent 85%); mask-image:radial-gradient(70% 90% at 50% 55%, #000 40%, transparent 85%); }
+.gm-room .spot{ left:50%; top:-8%; width:90%; height:100%; transform:translateX(-50%); clip-path:polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+  background:linear-gradient(rgba(255,255,255,.13), rgba(255,255,255,.02) 70%, transparent); mix-blend-mode:screen; }
+.gm-room .disc{ left:12%; right:12%; bottom:27%; height:20%; border-radius:50%; background:radial-gradient(closest-side, #221d3d 55%, #120f22);
+  box-shadow:0 0 0 2px rgba(177,77,255,.45), 0 0 34px rgba(177,77,255,.35), inset 0 -8px 20px rgba(0,0,0,.6), inset 0 5px 12px rgba(255,255,255,.07); }
+.gm-room .car{ position:absolute; left:17%; right:17%; bottom:34%; }
+.gm-stage.is-room .car img{ position:static; inset:auto; display:block; width:100%; height:auto; object-fit:contain; transform:none; transition:filter 1.2s var(--gm-ease); }
+.gm-room .car .body{ position:relative; z-index:2; filter:drop-shadow(0 0 1px rgba(210,200,255,.55)) drop-shadow(0 14px 14px rgba(0,0,0,.6)); }
+.gm-room .car .refl{ position:absolute; left:0; top:100%; z-index:1; transform:scaleY(-1); transform-origin:50% 0; opacity:.2;
+  -webkit-mask-image:linear-gradient(to top, #000, transparent 38%); mask-image:linear-gradient(to top, #000, transparent 38%); }
+.gm-room .car .shadow{ position:absolute; z-index:1; left:5%; right:5%; bottom:-7%; height:16%; border-radius:50%; background:radial-gradient(closest-side, rgba(0,0,0,.85), transparent); }
+.gm-room .car .sheen{ position:absolute; inset:0; z-index:3; pointer-events:none; mix-blend-mode:overlay; opacity:0;
+  background:linear-gradient(105deg, transparent 42%, rgba(255,255,255,.75) 50%, transparent 58%) 0 0 / 260% 100% no-repeat;
+  -webkit-mask:var(--m) center / 100% 100% no-repeat; mask:var(--m) center / 100% 100% no-repeat; }
+.gm-slide.is-on .gm-room .car .sheen{ animation:gm-sheen 7s var(--gm-ease) 1s infinite; }
+@keyframes gm-sheen{ 0%{ background-position:130% 0; opacity:1; } 35%, 100%{ background-position:-30% 0; opacity:1; } }
+.gm-slide.is-locked .gm-stage.is-room .car img{ filter:saturate(.55) brightness(.62); }
+.gm-slide.is-locked .gm-stage.is-room .car .body{ filter:saturate(.55) brightness(.62) drop-shadow(0 0 1px rgba(210,200,255,.4)) drop-shadow(0 14px 14px rgba(0,0,0,.6)); }
+.gm-slide.is-unlocked .gm-room .disc{ box-shadow:0 0 0 2px rgba(255,209,102,.8), 0 0 40px rgba(255,209,102,.45), inset 0 -8px 20px rgba(0,0,0,.6), inset 0 5px 12px rgba(255,255,255,.08); }
+.gm-slide.is-unlocked .gm-room .strips{ background:repeating-linear-gradient(90deg, transparent 0 7.5%, rgba(255,226,160,.28) 7.5% 8.1%, transparent 8.1% 16.5%); }
+@media (prefers-reduced-motion: reduce){ .gm-slide.is-on .gm-room .car .sheen{ animation:none; } }
