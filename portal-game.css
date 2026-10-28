@@ -992,3 +992,10 @@ svg.gi{ stroke-width:1.6; }
   .gm-show{ margin:0; padding-left:calc(50vw - 300px); padding-right:calc(50vw - 300px);
     -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%); }
 }
+/* a refresh in the background redraws a screen quietly: nothing rises, grows or pops again */
+.gm-static *, .gm-static *::before, .gm-static *::after{ animation:none !important; transition:none !important; }
+/* the showroom pictures fade to transparent at their own edges (game/img/<id>-scene.webp): no mask, no visible box */
+.gm-stage.is-room{ aspect-ratio:1500 / 793; }
+.gm-stage.is-room .gm-room img.scene{ -webkit-mask-image:none; mask-image:none; object-fit:contain; }
+.gm-bg{ background:radial-gradient(120% 55% at 50% -20%, #141518 0%, #0a0b0c 62%); }
+.gm{ background:#0a0b0c; }

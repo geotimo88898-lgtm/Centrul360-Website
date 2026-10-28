@@ -426,7 +426,7 @@
     if (same && opts.static) {
       const top = old.scrollTop;
       old.classList.add('gm-static');
-      if (tab === 'garaj' && S.car) refreshGarage(old); // the garage keeps its 3D car: only what changed is redrawn
+      if (tab === 'garaj' && old.querySelector('[data-show]')) refreshGarage(old); // the cars stay put: only what changed is redrawn
       else { old.innerHTML = html; after(tab, old, false, true); }
       old.scrollTop = top;
       paintHud();
