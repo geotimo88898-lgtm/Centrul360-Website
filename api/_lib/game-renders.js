@@ -48,7 +48,7 @@ async function generate(text, img, mime) {
       method: 'POST', signal: ac.signal,
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
       body: JSON.stringify({ model: MODEL, input: [{ type: 'text', text }, { type: 'image', mime_type: mime, data: img.toString('base64') }],
-        response_format: { type: 'image', mime_type: 'image/png', aspect_ratio: '16:9', image_size: '2K' } }),
+        response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: '16:9', image_size: '2K' } }),
     });
     const j = await r.json().catch(() => null);
     if (!r.ok) return { error: 'http ' + r.status + ': ' + String((j && j.error && j.error.message) || '').slice(0, 300), billed: false };
@@ -72,7 +72,7 @@ async function step(origin) {
   const r = await fetch(origin + '/game/img/' + next + '.webp');
   const src = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
   const out = src ? await generate(prompt(next), src, 'image/webp') : { error: 'no source image', billed: false };
-  if (out.png) { await writeBinary(path(next), out.png, 'image/png'); d.done[next] = new Date().toISOString(); }
+  if (out.png) { await writeBinary(path(next), out.png, 'image/jpeg'); d.done[next] = new Date().toISOString(); }
   if (out.billed) d.spent++;
   if (out.error) d.errors = d.errors.concat(next + ': ' + out.error).slice(-10);
   d.busy = 0;

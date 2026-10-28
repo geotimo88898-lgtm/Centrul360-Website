@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET' && q.img) {
     const buf = await R.image(String(q.img)).catch(() => null);
     if (!buf) { res.status(404).end(); return; }
-    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.status(200).send(buf);
     return;
