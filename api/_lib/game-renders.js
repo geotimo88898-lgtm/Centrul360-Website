@@ -9,11 +9,18 @@
 
 const { readJSON, writeJSON, writeBinary, readBinary } = require('./store');
 
-const V = 3;
-const MAX = 6; // paid generations per version: 3 needed, 3 to redo one
+const V = 4;
+const MAX = 4; // paid generations per version: 2 needed, 2 to redo one
 const KEY = 'data/game-renders.json';
 const MODEL = 'gemini-3-pro-image';
-const path = (id) => 'game/renders/v' + V + '/' + id + '.png';
+const path = (id, v) => 'game/renders/v' + (v || V) + '/' + id + '.png';
+// v3 made the three cars in the owner's colours; v4 shoots the GT3 RS and the SVJ again from the M4's exact camera angle
+const REF = 'm4', FROM = 3;
+const MATCH = 'The first image is the car: keep it exactly as it is (make, model, paint, carbon parts, wheels, every detail). ' +
+  'The second image is only a camera reference: show the first car from exactly the same camera angle, height, distance and lens as the second image, ' +
+  'the nose pointing the same way, the same three-quarter angle, the car the same size and at the same place in the frame, the wheels straight. ' +
+  'The same plain seamless light grey studio background and soft even lighting as the second image, no floor line, no reflections. ' +
+  'Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
 
 // the owner's colours (October 2026)
 const PAINT = {
@@ -21,14 +28,10 @@ const PAINT = {
   gt3rs: 'gloss white paint with exposed carbon fibre details, like the Weissach package: a bare carbon fibre front bonnet, carbon roof, carbon mirror caps and a carbon rear wing; dark wheels',
   svj: 'a super clean matte grey paint (satin, flat, no gloss, like Lamborghini\'s Grigio Telesto matt) with red details: red brake calipers, thin red accents on the front splitter, side skirts and rear diffuser',
 };
-const prompt = (id) => 'Using the car in this photo as the exact reference (same make, model, generation, body kit, wheels design and proportions), ' +
-  'make a studio product shot of it painted in ' + PAINT[id] + '. ' +
-  'Front three-quarter view, the nose of the car pointing toward the lower right of the frame, so we see the front and the car\'s left side; ' +
-  'camera slightly above headlight height, about 35 degrees off the car\'s axis, the whole car in frame, centred, filling about 85% of the width, the wheels straight. ' +
-  'A plain seamless light grey studio background, soft even studio lighting with long clean highlights on the bodywork, no visible floor line, no reflections or shadows on the background. ' +
-  'Ultra realistic, photoreal, razor sharp, perfectly clean paint. No text, no watermark, no logo overlay, no people, no other objects, a blank licence plate.';
+// (v3 asked for: a studio product shot of the photo's car painted in PAINT[id], front three-quarter, the nose toward the
+// lower right, on a plain light grey background)
 
-const IDS = Object.keys(PAINT);
+const IDS = Object.keys(PAINT).filter((id) => id !== REF);
 const blank = () => ({ v: V, spent: 0, done: {}, errors: [], busy: 0 });
 async function load() { const d = await readJSON(KEY, null); return d && d.v === V ? Object.assign(blank(), d) : blank(); }
 
@@ -41,13 +44,13 @@ function findImage(x) {
   return null;
 }
 
-async function generate(text, img, mime) {
+async function generate(text, images) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 55000);
   try {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST', signal: ac.signal,
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({ model: MODEL, input: [{ type: 'text', text }, { type: 'image', mime_type: mime, data: img.toString('base64') }],
+      body: JSON.stringify({ model: MODEL, input: [{ type: 'text', text }].concat(images.map((b) => ({ type: 'image', mime_type: 'image/jpeg', data: b.toString('base64') }))),
         response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: '16:9', image_size: '2K' } }),
     });
     const j = await r.json().catch(() => null);
@@ -69,9 +72,8 @@ async function step(origin) {
   if (Date.now() - d.busy < 70000) return Object.assign({ state: 'busy' }, status());
   d.busy = Date.now();
   await writeJSON(KEY, d, { quiet: true });
-  const r = await fetch(origin + '/game/img/' + next + '.webp');
-  const src = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
-  const out = src ? await generate(prompt(next), src, 'image/webp') : { error: 'no source image', billed: false };
+  const [car, ref] = await Promise.all([readBinary(path(next, FROM)), readBinary(path(REF, FROM))]);
+  const out = car && ref ? await generate(MATCH, [car, ref]) : { error: 'no source image', billed: false };
   if (out.png) { await writeBinary(path(next), out.png, 'image/jpeg'); d.done[next] = new Date().toISOString(); }
   if (out.billed) d.spent++;
   if (out.error) d.errors = d.errors.concat(next + ': ' + out.error).slice(-10);
@@ -80,6 +82,6 @@ async function step(origin) {
   return Object.assign({ state: out.png ? 'made' : 'failed', made: out.png ? next : null }, status());
 }
 
-const image = (name) => (IDS.includes(name) ? readBinary(path(name)) : Promise.resolve(null));
+const image = (name) => (IDS.includes(name) ? readBinary(path(name)) : name === REF ? readBinary(path(REF, FROM)) : Promise.resolve(null));
 
 module.exports = { V, step, image };
