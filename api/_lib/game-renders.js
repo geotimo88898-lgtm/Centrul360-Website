@@ -59,7 +59,7 @@ async function generate(prompt, img, mime) {
 
 async function step(origin) {
   const d = await load();
-  if (!process.env.GEMINI_API_KEY) return { state: 'no_key' };
+  if (!process.env.GEMINI_API_KEY) return { state: 'no_key', named: Object.keys(process.env).filter((k) => /GEMINI|GOOGLE|GAME_/.test(k)) };
   const next = IDS.map((id) => (!d.done[id] ? id : !d.done[id + '-depth'] ? id + '-depth' : null)).find(Boolean);
   const status = () => ({ v: V, live: LIVE, spent: d.spent, max: MAX, done: Object.keys(d.done), next: next || null, errors: d.errors.slice(-3) });
   if (!next) return Object.assign({ state: 'complete' }, status());
