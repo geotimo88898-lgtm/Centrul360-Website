@@ -669,14 +669,12 @@
   }
 
   // ------------------------------------------------------------------ the garage: a 3D showroom
-  // the cars cut out of their photos (game/img/<id>-cut.webp): they stand in a showroom built here, lit like a game's
+  // the cars cut out of their pictures (game/img/<id>-cut.webp), each one standing on a floating platform built here
   const CUT = { m4: 1, gt3rs: 1, svj: 1 };
   const cutOf = (g) => (CUT[g.img] ? '/game/img/' + encodeURIComponent(g.img) + '-cut.webp' : '');
   function showroom(g, i) {
-    const src = esc(cutOf(g)), ld = i < 2 ? 'eager' : 'lazy';
-    return '<div class="gm-room"><i class="wall"></i><i class="strips"></i><i class="floor"></i><i class="spot"></i><i class="disc"></i>' +
-      '<div class="car"><img class="refl" src="' + src + '" alt="" loading="' + ld + '" decoding="async"><i class="shadow"></i>' +
-      '<img class="body" src="' + src + '" alt="" loading="' + ld + '" decoding="async"><i class="sheen" style="--m:url(' + src + ')"></i></div></div>';
+    return '<div class="gm-room"><div class="plat"><i class="under"></i><i class="side"></i><i class="top"></i></div>' +
+      '<div class="car"><i class="shadow"></i><img class="body" src="' + esc(cutOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"></div></div>';
   }
   function goalStage(g, i) {
     return '<button type="button" class="gm-slide ' + (g.unlocked ? 'is-unlocked' : 'is-locked') + '" data-slide="' + i + '" data-id="' + esc(g.id) + '">' +
