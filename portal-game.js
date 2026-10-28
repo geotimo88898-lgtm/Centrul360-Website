@@ -571,7 +571,7 @@
       row('rev', 'Încasări', e.revenue, 0, 1, 0) +
       outs.map(([label, v], i) => { acc += v; return row('out', '- ' + label, v, 1 - acc / rev, v / rev, i + 1); }).join('') +
       row('profit' + (e.profit < 0 ? ' is-neg' : ''), 'Profit', e.profit, 0, Math.max(0, e.profit) / rev, 6) +
-      '<p class="gm-note">Luna întreagă, în ritmul de acum' + (e.partial ? ', socotită din ' + esc(fmtDay(e.from)) : '') + '. Salariul tău de manager, costurile clinicilor și consumabilele sunt standardul jocului, aceleași pentru toți. Înainte de impozit.' + (e.adsEstimated ? ' Reclamele nu s-au putut citi acum: sunt estimate ' + (e.adsStd ? 'la ' + Math.round(d.rules.std.adsRatio * 100) + '% din încasări (standardul jocului).' : 'din ultima lună cunoscută.') : '') + '</p></section>';
+      '<p class="gm-note">Luna întreagă, în ritmul de acum' + (e.partial ? ', socotită din ' + esc(fmtDay(e.from)) : '') + '. Costurile clinicilor sunt cele reale (chiria cu utilitățile, contabilitatea, leasingul aparatelor). Salariul tău de manager și consumabilele sunt standardul jocului. Înainte de impozit.' + (e.adsEstimated ? ' Reclamele nu s-au putut citi acum: sunt estimate ' + (e.adsStd ? 'la ' + Math.round(d.rules.std.adsRatio * 100) + '% din încasări (standardul jocului).' : 'din ultima lună cunoscută.') : '') + '</p></section>';
     const g = d.goals.find((x) => x.id === d.nextGoal);
     if (g) {
       h += '<section class="gm-card gm-teaser a-teaser is-tap' + rise() + '" data-act="goal" data-id="' + esc(g.id) + '"><div class="pic"><img src="' + esc(imgOf(g.img)) + '" alt="" loading="lazy" onerror="this.remove()"></div>' +
@@ -678,14 +678,13 @@
   }
   function goalDetail(g) {
     if (!g) return '';
-    const c0 = g.conditions[0], c1 = g.conditions[1];
-    const cond = '<div class="c"><div class="c-top"><span><i class="ok' + (c0.ok ? ' is-on' : '') + '">' + (c0.ok ? ic('check') : '') + '</i>' + esc(c0.label) + '</span><span class="gm-num">' + short(c0.value) + ' / ' + short(c0.target) + ' lei</span></div>' + bar(c0.progress, c0.ok ? 'is-green' : '') + '</div>' +
-      '<div class="c"><div class="c-top"><span><i class="ok' + (c1.ok ? ' is-on' : '') + '">' + (c1.ok ? ic('check') : '') + '</i>' + esc(c1.label) + '</span><span class="gm-num">' + ro(c1.value) + ' / ' + ro(c1.target) + '</span></div>' + bar(c1.progress, c1.ok ? 'is-green' : '') + '</div>';
+    const cond = g.conditions.map((c) => '<div class="c"><div class="c-top"><span><i class="ok' + (c.ok ? ' is-on' : '') + '">' + (c.ok ? ic('check') : '') + '</i>' + esc(c.label) + '</span><span class="gm-num">' +
+      (c.unit === 'lei' ? short(c.value) + ' / ' + short(c.target) + ' lei' : ro(c.value) + ' / ' + ro(c.target)) + '</span></div>' + bar(c.progress, c.ok ? 'is-green' : '') + '</div>').join('');
     const short_ = g.eta && g.eta.clinicsShort ? ' Și mai trebuie ' + (g.eta.clinicsShort === 1 ? 'o clinică' : clinici(g.eta.clinicsShort)) + ': mai multe clinici, mai mult profit.' : '';
     const eta = g.unlocked
       ? '<div class="gm-eta">' + ic('trophy') + '<div><b>Deblocat</b><small>' + esc(new Date(g.unlockedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })) + '. Afacerea l-ar plăti de două ori.</small></div></div>'
       : '<div class="gm-eta">' + ic('clock') + '<div><b>' + (g.eta && g.eta.month ? (g.eta.inMonths <= 0 ? 'Luna asta' : esc(cap(g.eta.label))) : 'Încă departe') + '</b><small>' +
-        (g.eta && g.eta.month ? 'Trezoreria ajunge acolo ' + (g.eta.inMonths >= 12 ? 'în cam ' + yearsTxt(g.eta.inMonths) + ', ' : '') + 'în ritmul de acum' + (S.d.growth.known ? ' (' + (S.d.growth.rate >= 0 ? '+' : '') + ro(S.d.growth.rate, 1) + '% pe lună).' : ', cu o creștere prudentă de 3% pe lună.') : 'Cu profitul de acum trezoreria nu se apropie. Crește profitul lunar.') + short_ + '</small></div></div>';
+        (g.eta && g.eta.month ? 'Ajungi acolo ' + (g.eta.inMonths >= 12 ? 'în cam ' + yearsTxt(g.eta.inMonths) + ', ' : '') + 'în ritmul de acum' + (S.d.growth.known ? ' (' + (S.d.growth.rate >= 0 ? '+' : '') + ro(S.d.growth.rate, 1) + '% pe lună).' : ', cu o creștere prudentă de 3% pe lună.') : 'Cu profitul de acum nu se apropie. Crește profitul lunar.') + short_ + '</small></div></div>';
     return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
       '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
@@ -952,7 +951,7 @@
           (d.debt ? '<div class="gm-topt"><span>Datorii la stat</span><b class="neg">' + lei(-d.debt) + '</b></div>' : '') +
           '<div class="gm-topt"><span><b>Trezoreria</b></span><b class="' + (d.treasury < 0 ? 'neg' : 'pos') + '">' + lei(d.treasury) + '</b></div></div>';
       })() +
-      '<div class="gm-kv"><div><small>Profit pe lună, după impozit, în ritmul de acum</small><b>' + lei(e.fullMonthNet) + '</b></div><div><small>Regula garajului</small><b>de 2 ori prețul</b></div></div>');
+      '<div class="gm-kv"><div><small>Profit pe lună, după impozit, în ritmul de acum</small><b>' + lei(e.fullMonthNet) + '</b></div><div><small>Regula garajului</small><b>de 2 ori prețul, din profitul a ' + (d.rules.garageMonths || 3) + ' luni</b></div></div>');
   }
   function stageSheet() {
     const d = S.d, st = d.stage, L = d.level;

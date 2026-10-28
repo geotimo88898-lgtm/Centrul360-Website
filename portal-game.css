@@ -574,7 +574,6 @@ canvas.gm-3d{ position:absolute; inset:0; width:100%; height:100%; display:block
 .gm-nav button.is-on::after{ content:""; position:absolute; bottom:-4px; width:18px; height:3px; border-radius:3px; background:var(--gm-lava); box-shadow:0 0 10px rgba(255,77,157,.9); }
 .gm-nav .big{ margin-top:-30px; }
 .gm-nav .big .orb{ width:62px; height:62px; border-radius:50%; display:grid; place-items:center; background:var(--gm-lava); color:#fff; box-shadow:0 10px 30px -6px rgba(255,77,157,.85), inset 0 2px 0 rgba(255,255,255,.3); position:relative; }
-.gm-nav .big .orb::before{ content:""; position:absolute; inset:-5px; border-radius:50%; background:conic-gradient(from 0deg, transparent, rgba(255,209,102,.9), transparent 40%); animation:gm-rot 3.5s linear infinite; z-index:-1; }
 .gm-nav .big .orb svg.gi{ width:28px; height:28px; }
 .gm-nav .big.is-on::after{ display:none; }
 .gm-nav .big.is-on .orb{ transform:scale(1.06); }
