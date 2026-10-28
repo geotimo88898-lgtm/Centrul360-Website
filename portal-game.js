@@ -700,7 +700,7 @@
     return '<div class="gm-card-h"><h3>' + ic(KIND_IC[g.kind] || 'star') + esc(g.name) + '</h3><span class="gm-chip' + (g.unlocked ? ' is-gold' : '') + '">' + lei(g.price) + '</span></div>' +
       '<div class="gm-cond">' + cond + '</div>' + eta +
       '<div class="gm-acts"><button type="button" class="gm-btn ' + (g.unlocked ? 'is-gold' : 'is-lava') + '" data-act="replay" data-id="' + esc(g.id) + '">' + ic(g.unlocked ? 'play' : 'eye') + (g.unlocked ? 'Revezi deblocarea' : 'Cum va arăta deblocarea') + '</button></div>' +
-      '<p class="gm-note">Mașina se mișcă singură în 3D; pe calculator o rotești cu mouse-ul, pe telefon glisezi între mașini.</p>' + creditOf(g);
+      '<p class="gm-note">Mașina stă în showroom, în 3D: pe calculator o înclini cu mouse-ul, pe telefon glisezi între mașini.</p>' + creditOf(g);
   }
   function creditOf(g) {
     const c = S.credits && S.credits[g.img];
