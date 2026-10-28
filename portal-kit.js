@@ -69,10 +69,11 @@
 
   // ------------------------------------------------------------------ a slow page
   // Moving to a page opens a short window: the portal's own requests started in it (any screen, its
-  // own fetch included) hold the cover; it shows only if they're still running after 400 ms, and goes
-  // when the last one is back. The window closes when they're all back, so what a page loads later
-  // in the background (prefetch, live refresh) never brings it up.
-  const PG = { gen: 0, open: false, pending: 0, timer: 0, close: 0, el: null, shownAt: 0, safety: 0 };
+  // own fetch included) hold the cover; it shows only if they're still running after 400 ms AND the page
+  // shows nothing yet, and goes when the last one is back. The window closes when they're all back, and
+  // at the latest 1.5 s after the move (the owner, 28.10: only where a wait is real), so a save, a toggle,
+  // a refresh behind a page already drawn or a request that never ends never brings it up.
+  const PG = { gen: 0, open: false, pending: 0, timer: 0, close: 0, shut: 0, el: null, shownAt: 0, safety: 0 };
   function coverEl() {
     if (PG.el) return PG.el;
     PG.el = document.createElement('div');
@@ -102,10 +103,13 @@
   }
   // the page on screen has nothing to show yet (only its loading placeholders); a page already
   // drawn that refreshes behind is never covered
+  // (only what is on screen counts: a hidden tab's placeholder doesn't make a drawn page empty)
   function pageEmpty() {
     const p = document.querySelector('main > .panel.active');
     if (!p) return false;
-    return !!p.querySelector('.k-skel, .pl-skeleton, .cr-skel, [data-grid]:empty') || p.textContent.trim().length < 20;
+    const seen = (el) => el.getClientRects().length > 0;
+    const text = (p.innerText || '').trim().length;
+    return text < 20 || (text < 160 && [...p.querySelectorAll('.k-skel, .pl-skeleton, .cr-skel, [data-grid]:empty')].some(seen));
   }
   // a page starts loading: earlier requests no longer count, the cover (if any) goes at once; a page
   // that asks for nothing right away closes the window by itself
@@ -114,6 +118,8 @@
     hideCover(true);
     clearTimeout(PG.close);
     PG.close = setTimeout(() => { if (!PG.pending) PG.open = false; }, 300);
+    clearTimeout(PG.shut);
+    PG.shut = setTimeout(() => { PG.open = false; }, 1500); // what starts later is not the page's first load
   }
   // something the page waits for: +1 when it starts, -1 when it's back (gen: the page it belongs to)
   function pageHold(d, gen) {
