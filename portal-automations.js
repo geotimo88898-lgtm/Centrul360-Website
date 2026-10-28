@@ -201,8 +201,10 @@
   const leadPhrase = (o) => { const p = leadPrices(o); const f = LEAD_PHRASE[o.key]; return f ? f(p) : o.title + (p.now ? ' la ' + p.now + ' LEI' + (p.was > p.now ? ', în loc de ' + p.was + ' LEI' : '') : ''); };
   const leadText = (o) => o.site ? SITE_TEXT : 'Bună {prenume}! 👋 Mai avem câteva locuri disponibile săptămâna aceasta la oferta ' + leadPhrase(o) + '. 🔥\n\nCa să îți verificăm disponibilitatea, unde ți-ar fi mai ușor să ajungi? ❤️';
   const LEAD_BTNS = [{ type: 'QUICK_REPLY', text: 'Timișoara' }, { type: 'QUICK_REPLY', text: 'Arad' }];
-  // the picture: the owner's dark creative of the offer (not the site's offer photo, often a before / after)
-  const LEAD_PIC = (o) => (o.site ? '' : '/brand_asset/wa-offers/' + o.key + '.webp');
+  // the picture: the owner's dark creative of the offer (not the site's offer photo, often a before / after). 28.10: no
+  // LipoSonix cartridges left, the same abdomen treatment with HIFU at the same price: its picture says HIFU, the text stays
+  const LEAD_PIC_FILE = { 'liposonix-2zone': 'liposonix-2zone-hifu' };
+  const LEAD_PIC = (o) => (o.site ? '' : '/brand_asset/wa-offers/' + (LEAD_PIC_FILE[o.key] || o.key) + '.webp');
   const btnsOf = (o) => (o.site ? SITE_BTNS : LEAD_BTNS);
   const sameMsg = (t, o) => !!t && String(t.text || '').trim() === leadText(o).trim() && JSON.stringify((t.buttons || []).map((b) => b.text)) === JSON.stringify(btnsOf(o).map((b) => b.text)) && (t.pic || '') === LEAD_PIC(o);
   // a single-city offer goes only to the leads of that city

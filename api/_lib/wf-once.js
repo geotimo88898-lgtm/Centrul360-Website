@@ -9,6 +9,9 @@
 //   28.10, later: the booking messages the owner wrote (confirmation, the day before at 9:00 with „Da, ajung” / „Nu
 //   ajung”, 2 hours before with the parking), api/_lib/reminders.js: sent to Meta, and each clinic's flow switched once
 //   Meta approved its three. A job that answers { wait: true } runs again at the next tick.
+//   28.10: no LipoSonix cartridges left, the same abdomen treatment is done with HIFU at the same price: the picture of
+//   the new-lead message of the offer says HIFU (brand_asset/wa-offers/liposonix-2zone-hifu), its text and the ads stay.
+//   The picture goes with every message (Meta approved the text only), so it changes at once, no new template.
 // data/wf-once.json: { done: { <job id>: { at, removed: [{ flow, template }], kept: [...], skipped? } } }
 
 const { readJSON, writeJSON } = require('./store');
@@ -17,6 +20,7 @@ const WT = require('./wa-templates');
 const { notifyMany, adminIds } = require('./notify');
 
 const KEY = 'data/wf-once.json';
+const { writeBinary } = require('./store');
 const nowISO = () => new Date().toISOString();
 
 // the "Ne vedem pe …" template: the clinic's location as its header, or those words in its text
@@ -66,11 +70,38 @@ async function onlyLocationAtBooking() {
   return { removed, kept, shapes };
 }
 
+// The new-lead templates of the abdomen offer get the HIFU picture (every version, the one the UI made with the offer's
+// picture or the ones the offer is ticked on). The JPEG Meta takes, from the site itself.
+const LIPO = 'liposonix-2zone', PIC_OLD = '/brand_asset/wa-offers/liposonix-2zone.webp', PIC_NEW = '/brand_asset/wa-offers/liposonix-2zone-hifu.webp';
+async function leadPicHifu() {
+  const d = await WT.load();
+  const list = d.templates.filter((t) => t.headerType === 'IMAGE' && t.purpose !== 'results' && t.pic !== PIC_NEW && (t.pic === PIC_OLD || (t.leadOffers || []).includes(LIPO)));
+  if (!list.length) return { skipped: 'no template with the LipoSonix picture' };
+  let buf = null;
+  for (const host of ['https://admin.centrul360.com', 'https://www.centrul360.com']) {
+    const r = await fetch(host + PIC_NEW.replace(/\.webp$/, '.jpg')).catch(() => null);
+    const b = r && r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+    if (b && b.length > 1000 && b.length < 3e6 && b[0] === 0xff && b[1] === 0xd8) { buf = b; break; }
+  }
+  if (!buf) throw new Error('the HIFU picture is not on the site yet');
+  for (const t of list) {
+    const p = 'wa-media/tpl-' + t.id.replace(/[^\w-]/g, '') + '-' + Date.now().toString(36) + '.jpg';
+    await writeBinary(p, buf, 'image/jpeg');
+    t.headerImagePath = p;
+    t.pic = PIC_NEW;
+    t.updatedAt = nowISO();
+  }
+  await WT.save(d);
+  return { changed: list.map((t) => t.label) };
+}
+
 const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
   ? { title: 'Automatizări: la programare pleacă doar „Ne vedem pe…”', text: 'Am scos ' + r.removed.map((x) => '„' + x.template + '”').join(', ') + ' din ' + [...new Set(r.removed.map((x) => '„' + x.flow + '”'))].join(', ') + '. Remindere rămân la fel.' }
   : null) },
 // the admins hear about each clinic from reminders.js itself (switched, or a message Meta refused)
-{ id: 'booking-messages-2026-10-28', run: () => require('./reminders').apply(), tell: () => null }];
+{ id: 'booking-messages-2026-10-28', run: () => require('./reminders').apply(), tell: () => null },
+{ id: 'lead-pic-hifu-2026-10-28', run: leadPicHifu, tell: (r) => (r.changed && r.changed.length
+  ? { title: 'Lead nou abdomen: poza cu HIFU', text: 'Mesajul de bun venit al ofertei de abdomen pleacă de acum cu poza nouă. Textul și reclamele rămân la fel.' } : null) }];
 
 async function run() {
   const state = (await readJSON(KEY, null)) || { done: {} };
@@ -94,4 +125,4 @@ async function run() {
   return out;
 }
 
-module.exports = { run, onlyLocationAtBooking, isLocation, atBooking };
+module.exports = { run, onlyLocationAtBooking, isLocation, atBooking, leadPicHifu };
