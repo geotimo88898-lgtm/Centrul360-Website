@@ -986,3 +986,9 @@ svg.gi{ stroke-width:1.6; }
 .gm-stages .is-now b{ background:var(--gm-white); color:#141516; }
 .gm-stages .is-now{ background:rgba(255,255,255,.06); }
 .gm-count .gm-bar i{ background:var(--gm-white); }
+/* on a computer the cars run the screen's full width (no edge cutting the next car), the one in front centred */
+@media (min-width:980px){
+  .gm-showbox{ width:100vw; margin-left:calc(50% - 50vw); }
+  .gm-show{ margin:0; padding-left:calc(50vw - 300px); padding-right:calc(50vw - 300px);
+    -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%); }
+}
