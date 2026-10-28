@@ -53,6 +53,28 @@ async function readJSON(pathname, fallback) {
   throw e;
 }
 
+// The same document with its version (the blob's ETag), for a change that must not overwrite one made meanwhile
+// (writeJSONIf). { data, etag }; a document that doesn't exist yet: { data: fallback, etag: '' }. Throws like readJSON.
+async function readJSONTagged(pathname, fallback) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await get(pathname, { access: 'private', useCache: false });
+      if (!result) return { data: fallback, etag: '' };
+      const text = await streamToString(result.stream);
+      return { data: text ? JSON.parse(text) : fallback, etag: (result.blob && result.blob.etag) || '' };
+    } catch (err) {
+      if (isNotFound(err)) return { data: fallback, etag: '' };
+      lastErr = err;
+      console.error(`store.readJSONTagged(${pathname}) error (attempt ${attempt + 1}):`, err.message);
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+    }
+  }
+  const e = new Error('store_read_failed: ' + pathname + ': ' + (lastErr && lastErr.message));
+  e.code = 'store_read_failed';
+  throw e;
+}
+
 // Writes a JSON document to Blob storage, overwriting whatever is at that pathname.
 // opts.quiet: a write the open portals don't need to refresh for (the activity log)
 // The big lists the whole portal leans on: a write that would cut one to less than half (and it is
@@ -78,6 +100,38 @@ async function writeJSON(pathname, data, opts) {
   });
   if (pathname !== REV_PATH && !(opts && opts.quiet)) await bumpRev(pathname);
   return data;
+}
+
+// Writes it only while it is still the version read with readJSONTagged: false when someone wrote it since (read it
+// again and redo the change). Without a version (a new document), or a store that can't compare: a plain write.
+async function writeJSONIf(pathname, data, etag, opts) {
+  if (!etag) { await writeJSON(pathname, data, opts); return true; }
+  const body = JSON.stringify(data, null, 2);
+  if (GUARDED.has(pathname) && !(opts && opts.allowShrink)) {
+    let before = 0;
+    try { const h = await head(pathname); before = (h && h.size) || 0; } catch (err) { before = 0; }
+    if (before > 200 * 1024 && Buffer.byteLength(body) < before * 0.5) {
+      const e = new Error('store_write_refused: ' + pathname);
+      e.code = 'store_write_refused';
+      throw e;
+    }
+  }
+  try {
+    await put(pathname, body, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ifMatch: etag });
+  } catch (err) {
+    if (err && (err.name === 'BlobPreconditionFailedError' || /precondition/i.test(err.message || ''))) {
+      // the library retries a write whose answer got lost: the first try may have landed, and then it is ours
+      let mine = false;
+      try { const now = await get(pathname, { access: 'private', useCache: false }); mine = !!now && (await streamToString(now.stream)) === body; } catch (e) { mine = false; }
+      if (!mine) return false;
+    } else {
+      console.error(`store.writeJSONIf(${pathname}) without the version check:`, err.message);
+      await writeJSON(pathname, data, opts);
+      return true;
+    }
+  }
+  if (pathname !== REV_PATH && !(opts && opts.quiet)) await bumpRev(pathname);
+  return true;
 }
 
 // ---- Live sync ----------------------------------------------------------------------
@@ -133,4 +187,4 @@ async function removeBinary(pathname) {
   try { await del(pathname); } catch (err) { console.error(`store.removeBinary(${pathname}) error:`, err.message); }
 }
 
-module.exports = { readJSON, writeJSON, readRev, writeBinary, readBinary, removeBinary };
+module.exports = { readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary };

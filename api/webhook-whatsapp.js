@@ -183,7 +183,18 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
   });
   convo.lastMessageAt = ts;
   convo.unreadCount = (convo.unreadCount || 0) + 1;
-  return { phone: convo.phone, name: convo.clientName || convo.phone, location: convo.location || '', text: textFor(message), count: convo.unreadCount };
+  const out = { phone: convo.phone, name: convo.clientName || convo.phone, location: convo.location || '', text: textFor(message), count: convo.unreadCount };
+  // a button of a template tapped („Da, ajung” / „Nu ajung” of a reminder): the message it answers says which
+  // appointment (_lib/reminders.js reply)
+  if (message.type === 'button' || (message.type === 'interactive' && (message.interactive || {}).button_reply)) {
+    const ctxId = message.context && message.context.id;
+    // in her chat, else in any (a number written another way on her appointment files the reminder elsewhere)
+    const pick = (c) => (c.messages || []).find((m) => m.id === ctxId && m.direction === 'out');
+    let sent = ctxId ? pick(convo) : null;
+    if (ctxId && !sent) for (const c of conversations) { sent = pick(c); if (sent) break; }
+    out.tap = { phone: convo.phone, name: convo.clientName || '', text: textFor(message), appt: (sent && sent.appt) || '', akey: (sent && sent.akey) || '', templateId: (sent && sent.templateId) || '', msgId: message.id || '' };
+  }
+  return out;
 }
 
 // a message in its place by time (the app's history arrives after newer messages)
@@ -346,6 +357,7 @@ module.exports = async (req, res) => {
     let changed = false;
     const fresh = new Map(); // the newest message per client, for the phones
     const failed = []; // messages Meta couldn't deliver, for the UNDELIVERED alert
+    const taps = []; // buttons tapped on a reminder
 
     const entries = payload.entry || [];
     for (const entry of entries) {
@@ -358,6 +370,7 @@ module.exports = async (req, res) => {
           try {
             const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts);
             if (m) fresh.set(m.phone, m);
+            if (m && m.tap) taps.push(m);
             changed = true;
           } catch (err) {
             console.error('webhook-whatsapp: error processing message', err.message);
@@ -402,6 +415,10 @@ module.exports = async (req, res) => {
     }
 
     if (changed) await saveConversations(conversations);
+    // „Da, ajung” confirms the appointment, „Nu ajung” cancels it; the desk hears that instead of the plain message
+    for (const m of taps) {
+      try { if (await require('./_lib/reminders').reply(m.tap) && fresh.get(m.phone) === m) fresh.delete(m.phone); } catch (err) { console.error('webhook-whatsapp: reminder answer', err.message); }
+    }
     // before answering Meta: once the response is sent the function may be stopped
     try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
     try { await alertUndelivered(failed); } catch (err) { console.error('webhook-whatsapp: undelivered alert failed', err.message); }

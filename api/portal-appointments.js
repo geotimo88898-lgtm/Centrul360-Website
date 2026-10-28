@@ -340,7 +340,7 @@ module.exports = async (req, res) => {
       // moved, to the other clinic, to another client, or cancelled by mistake and put back: the booking messages
       // start again (for a date still ahead)
       const revived = before.status === 'anulata' && !['anulata', 'finalizata', 'concediu'].includes(appointment.status);
-      if (moved || otherClient || revived || before.location !== appointment.location) await workflows.emit('appointment_rescheduled', { appointment });
+      if (moved || otherClient || revived || before.location !== appointment.location) await workflows.emit('appointment_rescheduled', { appointment, revived });
       res.status(200).json({ ok: true, appointment });
       return;
     }
