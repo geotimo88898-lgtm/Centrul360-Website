@@ -612,7 +612,7 @@
   // the cars on their platforms in a dark showroom (game/img/<id>-scene.webp): the picture's edges melt into the game's
   // background, so each car floats on its own
   const CUT = { m4: 1, gt3rs: 1, svj: 1 };
-  const SCENE_V = 2; // raised whenever the pictures change: /game/ is cached for a day
+  const SCENE_V = 3; // raised whenever the pictures change: /game/ is cached for a day
   const cutOf = (g) => (CUT[g.img] ? '/game/img/' + encodeURIComponent(g.img) + '-scene.webp?v=' + SCENE_V : '');
   function showroom(g, i) {
     return '<div class="gm-room"><img class="scene" src="' + esc(cutOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"></div>';

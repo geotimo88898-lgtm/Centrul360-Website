@@ -999,3 +999,7 @@ svg.gi{ stroke-width:1.6; }
 .gm-stage.is-room .gm-room img.scene{ -webkit-mask-image:none; mask-image:none; object-fit:contain; }
 .gm-bg{ background:radial-gradient(120% 55% at 50% -20%, #141518 0%, #0a0b0c 62%); }
 .gm{ background:#0a0b0c; }
+/* one flat black for the whole game: the showroom pictures are drawn on exactly this colour, so they have no edge */
+.gm, .gm-bg{ background:#0a0b0c; }
+.gm-cer .card{ background:#0a0b0c; }
+.gm-slide.is-locked .gm-stage.is-room .gm-room img.scene{ filter:none; }
