@@ -9,18 +9,24 @@
 
 const { readJSON, writeJSON, writeBinary, readBinary } = require('./store');
 
-const V = 4;
-const MAX = 4; // paid generations per version: 2 needed, 2 to redo one
+const V = 5;
+const MAX = 5; // paid generations per version: 3 needed, 2 to redo one
 const KEY = 'data/game-renders.json';
 const MODEL = 'gemini-3-pro-image';
 const path = (id, v) => 'game/renders/v' + (v || V) + '/' + id + '.png';
-// v3 made the three cars in the owner's colours; v4 shoots the GT3 RS and the SVJ again from the M4's exact camera angle
-const REF = 'm4', FROM = 3;
+// v3 made the cars in the owner's colours, v4 put the GT3 RS and the SVJ at the M4's angle; v5 stands each one on the same
+// round platform, lit together (the M4 first, the others matching it)
+const SRC = { m4: 3, gt3rs: 4, svj: 4 };
+const STAGE = 'standing with all four tyres firmly on a round display platform: a wide, low, dark graphite turntable about 30 cm thick with a softly ' +
+  'brushed metal top and a slightly rounded edge, a little wider than the car on every side, centred under it. Real soft contact shadows under each tyre ' +
+  'and under the car on the platform\'s top, a faint soft reflection of the car on the platform top. The platform floats: nothing under it, no floor. ' +
+  'Plain seamless light grey studio background, soft studio lighting from above, the whole platform and car in frame with a small margin.';
+const FIRST = 'Keep this car exactly as it is (make, model, paint, carbon parts, wheels, every detail) and the same camera angle, height and distance, ' +
+  'the car ' + STAGE + ' Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
 const MATCH = 'The first image is the car: keep it exactly as it is (make, model, paint, carbon parts, wheels, every detail). ' +
-  'The second image is only a camera reference: show the first car from exactly the same camera angle, height, distance and lens as the second image, ' +
-  'the nose pointing the same way, the same three-quarter angle, the car the same size and at the same place in the frame, the wheels straight. ' +
-  'The same plain seamless light grey studio background and soft even lighting as the second image, no floor line, no reflections. ' +
-  'Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
+  'The second image is the reference scene: put the first car on exactly the same platform, from exactly the same camera angle, height, distance and lens, ' +
+  'the nose pointing the same way, the car the same size and at the same place on the platform, with the same lighting, shadows and background. ' +
+  'All four tyres firmly on the platform. Ultra realistic, photoreal, razor sharp. No text, no watermark, no people, no other objects, a blank licence plate.';
 
 // the owner's colours (October 2026)
 const PAINT = {
@@ -31,7 +37,7 @@ const PAINT = {
 // (v3 asked for: a studio product shot of the photo's car painted in PAINT[id], front three-quarter, the nose toward the
 // lower right, on a plain light grey background)
 
-const IDS = Object.keys(PAINT).filter((id) => id !== REF);
+const IDS = ['m4', 'gt3rs', 'svj'];
 const blank = () => ({ v: V, spent: 0, done: {}, errors: [], busy: 0 });
 async function load() { const d = await readJSON(KEY, null); return d && d.v === V ? Object.assign(blank(), d) : blank(); }
 
@@ -72,8 +78,8 @@ async function step(origin) {
   if (Date.now() - d.busy < 70000) return Object.assign({ state: 'busy' }, status());
   d.busy = Date.now();
   await writeJSON(KEY, d, { quiet: true });
-  const [car, ref] = await Promise.all([readBinary(path(next, FROM)), readBinary(path(REF, FROM))]);
-  const out = car && ref ? await generate(MATCH, [car, ref]) : { error: 'no source image', billed: false };
+  const car = await readBinary(path(next, SRC[next])), ref = next === 'm4' ? null : await readBinary(path('m4'));
+  const out = !car || (next !== 'm4' && !ref) ? { error: 'no source image', billed: false } : await generate(next === 'm4' ? FIRST : MATCH, ref ? [car, ref] : [car]);
   if (out.png) { await writeBinary(path(next), out.png, 'image/jpeg'); d.done[next] = new Date().toISOString(); }
   if (out.billed) d.spent++;
   if (out.error) d.errors = d.errors.concat(next + ': ' + out.error).slice(-10);
@@ -82,6 +88,6 @@ async function step(origin) {
   return Object.assign({ state: out.png ? 'made' : 'failed', made: out.png ? next : null }, status());
 }
 
-const image = (name) => (IDS.includes(name) ? readBinary(path(name)) : name === REF ? readBinary(path(REF, FROM)) : Promise.resolve(null));
+const image = (name) => (IDS.includes(name) ? readBinary(path(name)) : Promise.resolve(null));
 
 module.exports = { V, step, image };
