@@ -943,3 +943,46 @@ svg.gi{ stroke-width:1.6; }
 @keyframes gm-iris{ from{ clip-path:circle(0px at 50% 50%); } to{ clip-path:circle(var(--gm-iris, 120vmax) at 50% 50%); } }
 .gm.is-iris .gm-main{ animation:gm-iris-zoom 1.2s cubic-bezier(.16,1,.3,1) both; }
 @keyframes gm-iris-zoom{ from{ transform:scale(1.07); } to{ transform:none; } }
+
+/* gold only where something is truly won (an unlocked car, the MVP, a legendary badge, a clinic's stars, the reveal),
+   and a metallic gold, not a yellow; everything else is white on grey (the owner's choice) */
+.gm, .gm-cer, .gm-sheet-root, .gm-menu, .gm-tr, .gm-coin, .gm-floatxp, .gm-intro{
+  --gm-gold:#b8955c; --gm-gold2:#8f6c35; --gm-goldg:linear-gradient(135deg, #e6d0a1 0%, #c19d62 45%, #8d6a36 100%);
+  --gm-green:#ecebe7; --gm-pink:#ecebe7; --gm-white:#ecebe7;
+}
+.gm-bar i, .gm-t .mini i, .gm-dots i.is-on, .gm-ladder i.is-now, .gm-engine .row.profit i, .gm-xpbar i{ background:var(--gm-white); }
+.gm-bar.is-gold i{ background:var(--gm-goldg); }
+.gm-ladder i.is-done, .gm-engine .row.rev i{ background:#6f7277; }
+.gm-dots i.is-won{ background:var(--gm-gold); }
+.gm-card-h h3 svg, .gm-card-h h3 svg.gi, .gm-eta svg.gi{ color:#a3a5a9; }
+.gm-chip.is-good{ color:var(--gm-white); background:rgba(255,255,255,.08); }
+.gm-chip.is-gold{ color:#d7bd8c; background:rgba(184,149,92,.12); }
+.gm-cond .c-top .ok.is-on, .gm-check .c-top .ok.is-on{ background:var(--gm-white); color:#141516; }
+.gm-race-sum .is-up, .gm-sheet .pos, .gm-kv b.pos, .gm-derby .vs span.lead{ color:var(--gm-white); }
+.gm-derby .vs span.lead{ font-weight:600; }
+.gm-nav .big .orb{ background:#26282b; color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+.gm-nav button.is-on::after{ background:var(--gm-white); }
+.gm-nav .dot, .gm-t .new{ background:var(--gm-white); color:#141516; }
+.gm-btn.is-lava{ background:#3a3d41; color:#fff; }
+.gm-btn.is-gold{ background:var(--gm-white); color:#141516; }
+.gm-sw.is-on{ background:#6f7277; }
+.gm-gold{ color:var(--gm-white); }
+.gm-lvl .hex{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); }
+.gm-lvl.t3 .hex, .gm-lvl.t4 .hex, .gm-lvl.t5 .hex{ background:var(--gm-goldg); color:#1a160e; }
+.gm-ring circle.fg{ stroke:var(--gm-white); }
+.gm-m .ic{ color:#d9d8d4; }
+.gm-m.is-done .ic{ background:var(--gm-white); color:#141516; }
+.gm-m .xp, .gm-floatxp, .gm-engine .row.profit span, .gm-engine .row.profit .gm-num{ color:var(--gm-white); }
+.gm-lockbig{ color:#d9d8d4; }
+.gm-intro .dots i.on{ background:var(--gm-white); }
+.gm-stage .won{ background:var(--gm-goldg); color:#1a160e; }
+.gm-mvp .crown{ background:var(--gm-goldg); color:#1a160e; }
+.gm-city text.sub{ fill:#bdbfc2; }
+.gm-tr .streak{ background:linear-gradient(90deg, transparent 8%, #8d6a36 30%, #f3e4c2 50%, #8d6a36 70%, transparent 92%); box-shadow:0 0 14px rgba(184,149,92,.55); }
+.gm-tr .word b{ background-image:linear-gradient(100deg, #9f9b92 0%, #f6f2e7 38%, #dcc08a 50%, #f6f2e7 62%, #9f9b92 100%); }
+.gm-tr .word small{ color:#c19d62; }
+.gm-tr-ring{ border-color:rgba(214,186,134,.95); box-shadow:0 0 22px rgba(184,149,92,.45), inset 0 0 22px rgba(184,149,92,.25); }
+.gm-stage .lock svg.gi{ color:#a3a5a9; }
+.gm-stages .is-now b{ background:var(--gm-white); color:#141516; }
+.gm-stages .is-now{ background:rgba(255,255,255,.06); }
+.gm-count .gm-bar i{ background:var(--gm-white); }

@@ -337,14 +337,14 @@
 
   // ------------------------------------------------------------------ the shell
   const DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
-    '<linearGradient id="gmLavaStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0c896"/><stop offset="1" stop-color="#cca557"/></linearGradient>' +
+    '<linearGradient id="gmLavaStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f3ef"/><stop offset="1" stop-color="#9a9da2"/></linearGradient>' +
     '<linearGradient id="gmGoldStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7d4ac"/><stop offset="1" stop-color="#d3b06a"/></linearGradient>' +
     '<linearGradient id="gmEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.22)"/><stop offset="1" stop-color="rgba(255,255,255,.08)"/></linearGradient>' +
     '<radialGradient id="gmLand" cx="40%" cy="40%" r="75%"><stop offset="0" stop-color="#1a1c1f"/><stop offset="1" stop-color="#111214"/></radialGradient>' +
     '<pattern id="gmDots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="rgba(255,255,255,.12)"/></pattern>' +
-    '<radialGradient id="gmOrb" cx="40%" cy="35%" r="65%"><stop offset="0" stop-color="#ecdcbd"/><stop offset=".55" stop-color="#d3b06a"/><stop offset="1" stop-color="#8a7550"/></radialGradient>' +
+    '<radialGradient id="gmOrb" cx="40%" cy="35%" r="65%"><stop offset="0" stop-color="#f4f3ef"/><stop offset=".6" stop-color="#b9bcc0"/><stop offset="1" stop-color="#6c7075"/></radialGradient>' +
     '<radialGradient id="gmBossCore" cx="50%" cy="42%" r="58%"><stop offset="0" stop-color="#e4e2df"/><stop offset="1" stop-color="#6b4a4a"/></radialGradient>' +
-    '<linearGradient id="gmCarYou" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d3b06a"/><stop offset="1" stop-color="#e7d4ac"/></linearGradient>' +
+    '<linearGradient id="gmCarYou" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9d8d4"/><stop offset="1" stop-color="#f4f3ef"/></linearGradient>' +
     '<linearGradient id="gmCarGhost" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5d6166"/><stop offset="1" stop-color="#8b9096"/></linearGradient>' +
     '<clipPath id="gmRoClip"><path d="' + RO_PATH + '"/></clipPath>' +
     '</defs></svg>';
