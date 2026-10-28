@@ -64,6 +64,17 @@ module.exports = async (req, res) => {
     const st = await require('./_lib/reminders').status(d, cfg, doc);
     return { syncedAt: d.syncedAt, todo: st.todo, cities: Object.fromEntries(Object.entries(st.cities).map(([c, x]) => [c, { state: x.state, templates: (x.templates || []).map((t) => t.key + ':' + t.status) }])), done: Object.keys((once && once.done) || {}) };
   })().catch((e) => ({ error: e.message }));
+  // with the key, &runs=<phone digits>: that client's appointments and what the automations did for each (to answer
+  // "why did she get this"), read only
+  if (readOnly && /^\d{6,12}$/.test(String(req.query.runs || ''))) out.runs = await (async () => {
+    const key = String(req.query.runs).slice(-9);
+    const [appts, runsDoc, doc] = await Promise.all([readJSON('data/appointments.json', []), require('./_lib/workflows').loadRuns(), require('./_lib/workflows').loadDoc()]);
+    const mine = appts.filter((a) => String(a.clientPhone || '').replace(/\D/g, '').slice(-9) === key);
+    const ids = new Set(mine.map((a) => a.id));
+    const wfName = (id) => (doc.workflows.find((w) => w.id === id) || {}).name || id;
+    return { appts: mine.map((a) => ({ id: a.id, date: a.date, time: a.time, status: a.status, loc: a.location, created: a.createdAt, updated: a.updatedAt, by: a.createdBy || '' })),
+      runs: runsDoc.runs.filter((r) => r.ent && ids.has(r.ent.id)).map((r) => ({ appt: r.ent.id, wf: wfName(r.wf), status: r.status, created: r.createdAt, akey: r.akey ? 'yes' : 'no', log: (r.log || []).map((l) => l.at.slice(11, 19) + ' ' + l.text) })) };
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
