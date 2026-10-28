@@ -425,7 +425,7 @@
           '<circle class="fg" cx="29" cy="29" r="26" fill="none" stroke="url(#gmLavaStroke)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="163.4" style="transition:stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1)"/></svg>' +
           '<span class="hex"><span><small>NIV</small><b data-lv>1</b></span></span></button>' +
         '<button type="button" class="gm-xp" data-act="stage"><div class="gm-xp-top"><b data-title>Etapa</b><span data-xptxt></span></div><div class="gm-xpbar"><i></i></div></button>' +
-        '<button type="button" class="gm-gold" data-act="treasury" aria-label="Trezoreria">' + ic('coins') + '<span data-treasury>0</span></button>' +
+        '<button type="button" class="gm-gold" data-act="treasury" aria-label="Seiful">' + ic('coins') + '<span data-treasury>0</span></button>' +
         '<button type="button" class="gm-hud-btn is-av" data-act="menu" aria-label="Profil">' + avatarHtml() + '</button>' +
       '</header>' +
       '<main class="gm-main"></main>' +
@@ -669,12 +669,11 @@
   }
 
   // ------------------------------------------------------------------ the garage: a 3D showroom
-  // the cars cut out of their pictures (game/img/<id>-cut.webp), each one standing on a floating platform built here
+  // the cars on their platforms, cut out of their pictures (game/img/<id>-cut.webp): they float over the game's background
   const CUT = { m4: 1, gt3rs: 1, svj: 1 };
   const cutOf = (g) => (CUT[g.img] ? '/game/img/' + encodeURIComponent(g.img) + '-cut.webp' : '');
   function showroom(g, i) {
-    return '<div class="gm-room"><div class="plat"><i class="under"></i><i class="side"></i><i class="top"></i></div>' +
-      '<div class="car"><i class="shadow"></i><img class="body" src="' + esc(cutOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"></div></div>';
+    return '<div class="gm-room"><i class="under"></i><div class="piece"><img src="' + esc(cutOf(g)) + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"></div></div>';
   }
   function goalStage(g, i) {
     return '<button type="button" class="gm-slide ' + (g.unlocked ? 'is-unlocked' : 'is-locked') + '" data-slide="' + i + '" data-id="' + esc(g.id) + '">' +
@@ -686,7 +685,7 @@
   function garaj(d) {
     const won = d.goals.filter((g) => g.unlocked).length;
     let h = '<div class="gm-title' + rise() + '"><div><span class="gm-eyebrow">Dacă nu-l poți cumpăra de două ori, nu-l cumpăra</span><h2>Garajul</h2></div><small>' + won + ' / ' + d.goals.length + ' deblocate</small></div>';
-    h += '<button type="button" class="gm-card gm-vault is-tap' + rise() + '" data-act="treasury"><span class="gm-eyebrow">Trezoreria jocului</span><b class="' + (d.treasury < 0 ? 'neg' : '') + '">' + num(d.treasury, 'vault', 'lei') + ' lei</b><small>profitul strâns de afacere din ' + esc(fmtDay(d.start)) + ', după impozit</small></button>';
+    h += '<button type="button" class="gm-card gm-vault is-tap' + rise() + '" data-act="treasury"><span class="gm-eyebrow">Seiful</span><b class="' + (d.treasury < 0 ? 'neg' : '') + '">' + num(d.treasury, 'vault', 'lei') + ' lei</b><small>profitul strâns de afacere din ' + esc(fmtDay(d.start)) + ', după impozit</small></button>';
     h += '<div class="gm-show' + rise() + '" data-show>' + d.goals.map(goalStage).join('') + '</div>';
     h += '<div class="gm-arrows' + rise() + '"><button type="button" data-gstep="-1" aria-label="Înapoi">' + ic('up') + '</button><button type="button" data-gstep="1" aria-label="Înainte">' + ic('up') + '</button></div>';
     h += '<div class="gm-dots' + rise() + '">' + d.goals.map((g) => '<i class="' + (g.unlocked ? 'is-won' : '') + '"></i>').join('') + '</div>';
@@ -950,7 +949,7 @@
     sheet('<span class="gm-eyebrow">Game Mode</span><h3>Cum se joacă</h3>' +
       '<p class="gm-note">Jocul citește doar portalul. Nimic nu se setează: regulile sunt aceleași pentru toți și nu se schimbă din mers.</p>' +
       '<div class="gm-sec"><h4>Etapele (Scaling Roadmap, Alex Hormozi)</h4><div class="gm-stages">' + d.stage.all.map((s) => '<div class="' + (s.i === d.stage.i ? 'is-now' : s.i < d.stage.i ? 'is-done' : '') + '"><b>' + s.i + '</b><span>' + esc(s.name) + '</span><small>' + (s.min > 1 ? 'de la ' + short(s.min) + ' lei/an' : s.i ? 'primele încasări' : 'început') + '</small></div>').join('') + '</div><p class="gm-note">' + esc(R.stage) + '</p></div>' +
-      '<div class="gm-sec"><h4>Trezoreria</h4><p class="gm-note">' + esc(R.treasury) + '</p></div>' +
+      '<div class="gm-sec"><h4>Seiful</h4><p class="gm-note">' + esc(R.treasury) + '</p></div>' +
       '<div class="gm-sec"><h4>Garajul</h4><p class="gm-note">' + esc(R.garage) + '</p></div>' +
       '<div class="gm-sec"><h4>Orașul următor</h4><p class="gm-note">' + esc(R.expand) + '</p></div>' +
       '<div class="gm-sec"><h4>Stelele clinicilor</h4><p class="gm-note">După încasările pe lună ale fiecărei clinici: ' + R.stars.map((s, i) => (i + 1) + ' stea' + (i ? 'le' : '') + ' de la ' + short(s) + ' lei').join(', ') + '.</p></div>' +
@@ -959,14 +958,14 @@
   }
   function treasurySheet() {
     const d = S.d, e = d.engine;
-    sheet('<span class="gm-eyebrow">Trezoreria jocului</span><h3 class="' + (d.treasury < 0 ? 'neg' : '') + '">' + lei(d.treasury) + '</h3>' +
+    sheet('<span class="gm-eyebrow">Seiful</span><h3 class="' + (d.treasury < 0 ? 'neg' : '') + '">' + lei(d.treasury) + '</h3>' +
       '<p class="gm-note">' + esc(d.rules.treasury) + '</p>' +
       (() => {
         const gross = d.months.reduce((n, m) => n + m.realProfit, 0), tax = gross > 0 ? gross * d.rules.tax : 0;
         return '<div class="gm-sec"><h4>Lună de lună</h4>' + d.months.map((m) => '<div class="gm-topt"><span>' + esc(cap(m.label)) + (m.current ? ' (până azi)' : '') + (m.opened ? ' · o clinică nouă' : '') + '</span><b class="' + (m.realProfit < 0 ? 'neg' : 'pos') + '">' + lei(m.realProfit) + '</b></div>').join('') +
           '<div class="gm-topt"><span>Impozit ' + Math.round(d.rules.tax * 100) + '% pe profit</span><b class="neg">' + lei(-tax) + '</b></div>' +
           (d.debt ? '<div class="gm-topt"><span>Datorii la stat</span><b class="neg">' + lei(-d.debt) + '</b></div>' : '') +
-          '<div class="gm-topt"><span><b>Trezoreria</b></span><b class="' + (d.treasury < 0 ? 'neg' : 'pos') + '">' + lei(d.treasury) + '</b></div></div>';
+          '<div class="gm-topt"><span><b>Seiful</b></span><b class="' + (d.treasury < 0 ? 'neg' : 'pos') + '">' + lei(d.treasury) + '</b></div></div>';
       })() +
       '<div class="gm-kv"><div><small>Profit pe lună, după impozit, în ritmul de acum</small><b>' + lei(e.fullMonthNet) + '</b></div><div><small>Regula garajului</small><b>de 2 ori prețul, din profitul a ' + (d.rules.garageMonths || 3) + ' luni</b></div></div>');
   }

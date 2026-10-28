@@ -213,7 +213,7 @@ html.gm-on .c360-tabbar{ display:none !important; }
 .gm-ring .gm-num{ font-size:.92rem; }
 
 /* ---------------- Garaj ---------------- */
-.gm-show{ display:flex; gap:1rem; overflow-x:auto; scroll-snap-type:x mandatory; padding:.6rem 9vw 1.2rem; margin:0 calc(-1 * max(1rem, env(safe-area-inset-left))); scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.gm-show{ display:flex; gap:1rem; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; touch-action:pan-x pan-y; scroll-snap-type:x mandatory; padding:.6rem 9vw 1.2rem; margin:0 calc(-1 * max(1rem, env(safe-area-inset-left))); scrollbar-width:none; -webkit-overflow-scrolling:touch; }
 .gm-show::-webkit-scrollbar{ display:none; }
 .gm-slide{ position:relative; flex:0 0 min(82vw, 560px); scroll-snap-align:center; border:0; padding:0; background:none; text-align:left; transition:transform .5s var(--gm-ease), opacity .5s var(--gm-ease); transform:scale(.9); opacity:.55; }
 .gm-slide.is-on{ transform:scale(1); opacity:1; }
@@ -724,22 +724,23 @@ canvas.gm-3d{ position:absolute; inset:0; width:100%; height:100%; display:block
 .gm-stage.is-room .cap{ top:2px; bottom:auto; left:4px; right:84px; }
 .gm-stage.is-room .lock, .gm-stage.is-room .won{ top:4px; }
 .gm-room{ position:absolute; inset:0; }
-.gm-room .plat{ position:absolute; left:8%; width:84%; top:56%; aspect-ratio:4 / 1.25; }
-.gm-room .plat i{ position:absolute; display:block; left:0; right:0; }
-.gm-room .plat .under{ left:12%; right:12%; top:118%; height:34%; border-radius:50%; background:radial-gradient(closest-side, rgba(0,0,0,.6), transparent); filter:blur(6px); }
-.gm-room .plat .side{ top:38%; height:62%; border-radius:0 0 50% 50% / 0 0 61.3% 61.3%;
-  background:linear-gradient(90deg, #0c0b10, #2f2c37 38%, #3b3843 52%, #1d1b23 74%, #0a090d); box-shadow:inset 0 -2px 2px rgba(255,255,255,.06); }
-.gm-room .plat .top{ top:0; height:76%; border-radius:50%;
-  background:radial-gradient(ellipse 60% 70% at 50% 38%, #4b4757, #2c2935 48%, #1a1820 82%, #141218);
-  box-shadow:inset 0 2px 1px rgba(255,255,255,.16), inset 0 -3px 4px rgba(0,0,0,.45); }
-.gm-slide.is-unlocked .gm-room .plat .top{ box-shadow:inset 0 0 0 1px rgba(255,209,102,.55), inset 0 2px 1px rgba(255,255,255,.18), inset 0 -3px 4px rgba(0,0,0,.45); }
-.gm-room .car{ position:absolute; left:14%; width:72%; bottom:29%; }
-.gm-room .car img{ position:relative; z-index:2; inset:auto; display:block; width:100%; height:auto; object-fit:contain; transform:none; transition:filter 1.2s var(--gm-ease); }
-.gm-room .car .shadow{ position:absolute; z-index:1; left:3%; right:1%; bottom:-4%; height:18%; border-radius:50%;
-  background:radial-gradient(closest-side, rgba(0,0,0,.92), rgba(0,0,0,.55) 55%, transparent); filter:blur(3px); }
-.gm-slide.is-locked .gm-stage.is-room .car img{ filter:saturate(.92) brightness(.9); }
+.gm-room .piece{ position:absolute; z-index:1; left:4%; width:92%; bottom:12%; }
+.gm-room .piece img{ position:static; inset:auto; display:block; width:100%; height:auto; object-fit:contain; transform:none; transition:filter 1.2s var(--gm-ease); }
+.gm-room .under{ position:absolute; left:16%; right:16%; bottom:2%; height:10%; border-radius:50%; background:radial-gradient(closest-side, rgba(0,0,0,.55), transparent); filter:blur(8px); }
+.gm-slide.is-locked .gm-stage.is-room .piece img{ filter:saturate(.92) brightness(.9); }
 
 /* the same showroom in the unlock ceremony and the car on the home screen */
 .gm-cer .card .gm-room{ filter:grayscale(1) brightness(.45); transition:filter 1.4s var(--gm-ease); }
 .gm-cer.is-boom .card .gm-room{ filter:none; }
 .gm-teaser .pic img.cut{ object-fit:contain; padding:6px 4px; filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
+
+/* calm, Apple-like surfaces: no outlines, no glow, more air */
+.gm-card{ border:0; background:rgba(255,255,255,.045); box-shadow:none; border-radius:24px; padding:1.25rem; }
+.gm-card::before{ display:none; }
+.gm-chip{ border:0; background:rgba(255,255,255,.07); }
+.gm-eta{ border:0; background:rgba(255,255,255,.05); }
+.gm-arrows button{ border:0; background:rgba(255,255,255,.07); }
+.gm-cond .c-top .ok.is-on, .gm-check .c-top .ok.is-on{ box-shadow:none; }
+.gm-vault, .gm-vault.gm-card{ background:none; padding:.4rem 0 0; border:0; }
+.gm-vault b{ filter:none; }
+.gm-show{ padding-top:1rem; padding-bottom:.6rem; }
