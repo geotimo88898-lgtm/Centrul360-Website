@@ -41,7 +41,9 @@ module.exports = async (req, res) => {
   }
   const t0 = Date.now();
   const out = { ok: true, waited: [] };
-  for (const [name, fn] of STEPS) {
+  // Claude's read with the report key only reads: the clock's steps stay with the clock (28.10)
+  const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
+  for (const [name, fn] of readOnly ? [] : STEPS) {
     if (Date.now() - t0 > BUDGET_MS) { out.waited.push(name); continue; }
     out[name] = await fn().catch((e) => ({ error: e.message }));
   }
@@ -49,7 +51,7 @@ module.exports = async (req, res) => {
   if (!out.waited.length) delete out.waited;
   out.ms = Date.now() - t0;
   // myPOS: the POS payments of the last days (the live ones come by webhook; this catches what it missed)
-  const pos = req.query && req.query.light ? { ok: true, added: 'skipped' } : await mypos.sync({ readJSON, writeJSON }, {}).catch((e) => ({ ok: false, error: e.message }));
+  const pos = readOnly || (req.query && req.query.light) ? { ok: true, added: 'skipped' } : await mypos.sync({ readJSON, writeJSON }, {}).catch((e) => ({ ok: false, error: e.message }));
   // the ads report for Claude (api/_lib/ads-report.js): only with its key (the clock's address has no password)
   const key = String((req.query && req.query.report) || '');
   const report = key && require('crypto').createHash('sha256').update(key).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86'
