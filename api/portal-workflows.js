@@ -76,7 +76,7 @@ async function payload() {
       waNumbers: WA.CITIES.map((c) => ({ city: c, connected: !!(waCfg.numbers[c].phoneId && waCfg.numbers[c].token), display: waCfg.numbers[c].display || '' })),
       waTemplates: waDoc.templates.map((t) => WT.view(t, waCfg)),
     },
-    reminders: require('./_lib/reminders').status(waDoc, waCfg, doc),
+    reminders: await require('./_lib/reminders').status(waDoc, waCfg, doc),
   };
 }
 
@@ -180,7 +180,8 @@ module.exports = async (req, res) => {
     } else if (body.action === 'run_now') {
       await W.tick(true);
     } else if (body.action === 'reminders') {
-      const r = await require('./_lib/reminders').apply();
+      // the button: after the owner said yes, also a flow she changed since
+      const r = await require('./_lib/reminders').apply({ force: true });
       res.status(200).json(Object.assign(await payload(), { applied: r }));
       return;
     } else {

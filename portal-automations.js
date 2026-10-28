@@ -226,6 +226,8 @@
     const all = Object.values(remCities());
     const bad = all.find((x) => x.state === 'rejected');
     if (bad) return 'Meta a respins „' + bad.label + '”' + (bad.reason ? ' (' + bad.reason + ')' : '') + '. Rămân mesajele de acum.';
+    const off = all.find((x) => x.state === 'stopped');
+    if (off) return 'Meta a oprit „' + off.label + '”: mesajul nu pleacă până îl repornește Meta.';
     if (all.some((x) => x.state === 'pending')) return 'Mesajele noi sunt la Meta pentru aprobare. Intră singure în reamintiri după aprobare.';
     if (all.some((x) => x.state === 'ready')) return 'Mesajele noi sunt aprobate de Meta. Intră singure în reamintiri în cel mult o oră, sau acum din buton.';
     return remTodo() ? 'Mesajele noi de programare nu sunt încă la Meta sau nu sunt în reamintiri. Butonul le trimite și le pune.' : '';
@@ -233,7 +235,8 @@
   async function makeReminders(btn) {
     await K.busy(btn, async () => {
       try {
-        const names = Object.values(remCities()).filter((x) => x.state === 'ready' && x.flow).map((x) => (S.d.workflows.find((w) => w.id === x.flow) || {}).name).filter(Boolean);
+        // a flow about to get the standard messages (approved, or changed by hand since): she says yes first
+        const names = Object.values(remCities()).filter((x) => (x.state === 'ready' || x.state === 'custom') && x.flow).map((x) => (S.d.workflows.find((w) => w.id === x.flow) || {}).name).filter(Boolean);
         if (names.length && !(await K.ui().confirm({ title: 'Pui mesajele noi în ' + names.map((n) => '„' + n + '”').join(' și ') + '?',
           message: 'Pașii se înlocuiesc cu: confirmarea, ziua dinainte la 9:00 cu Da / Nu ajung, cu 2 ore înainte cu parcarea. Programările din calendar continuă cu mesajele noi.', confirmText: 'Pune-le' }))) return;
         S.d = await K.api('/api/portal-workflows', { action: 'reminders' });

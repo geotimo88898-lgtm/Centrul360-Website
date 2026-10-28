@@ -189,7 +189,7 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
   if (message.type === 'button' || (message.type === 'interactive' && (message.interactive || {}).button_reply)) {
     const ctxId = message.context && message.context.id;
     const sent = ctxId ? convo.messages.find((m) => m.id === ctxId && m.direction === 'out') : null;
-    out.tap = { phone: convo.phone, name: convo.clientName || '', text: textFor(message), appt: (sent && sent.appt) || '', templateId: (sent && sent.templateId) || '' };
+    out.tap = { phone: convo.phone, name: convo.clientName || '', text: textFor(message), appt: (sent && sent.appt) || '', akey: (sent && sent.akey) || '', templateId: (sent && sent.templateId) || '', msgId: message.id || '' };
   }
   return out;
 }
