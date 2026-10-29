@@ -98,4 +98,24 @@ async function calendar() {
   return out;
 }
 
-module.exports = { report, calendar };
+// The appointments some campaigns' leads have (29.10, the owner: "wann sind diese Termine"): per lead, when she filled
+// in the form, her stage, and each appointment made for her since (date, hour, how it ended). Her first name only.
+async function bookingsOf(ids) {
+  const want = new Set(String(ids || '').split(',').filter((x) => /^\d{6,25}$/.test(x)));
+  const [leads, appts] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', [])]);
+  const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  const out = {};
+  for (const l of leads || []) {
+    const forms = (Array.isArray(l.forms) ? l.forms : []).filter((f) => want.has(String(f.campaignId || '')));
+    if (!forms.length) continue;
+    const f = forms.sort((a, b) => String(a.sentAt || a.at || '').localeCompare(String(b.sentAt || b.at || '')))[0];
+    const t = Date.parse(f.sentAt || f.at || l.createdAt);
+    const mine = (appts || []).filter((a) => (a.leadId === l.id || a.id === l.appointmentId || (l.clientId && a.clientId === l.clientId) || (d9(a.clientPhone).length === 9 && d9(a.clientPhone) === d9(l.phone)))
+      && Date.parse(a.createdAt || a.date) >= t - 864e5);
+    (out[f.campaignId] = out[f.campaignId] || []).push({ name: String(l.name || '').trim().split(/\s+/)[0], form: day(t), stage: l.stage || '',
+      appts: mine.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((a) => ({ date: a.date, time: a.time, status: a.status || '', noShow: !!a.noShow, paid: !!a.paidSaleId, treatment: a.treatment || '', loc: a.location || '' })) });
+  }
+  return out;
+}
+
+module.exports = { bookingsOf, report, calendar };
