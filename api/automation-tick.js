@@ -47,6 +47,19 @@ module.exports = async (req, res) => {
   // sent with POST (&put=video / &put=thumb), then &step=look, make or status; &vids=<since>: the account's ads with
   // what they brought, &camps=<since>: every campaign with its bookings and budget, &vfile=<video id>: one video's file.
   // Answered alone (no report).
+  // with the key, &days=<YYYY-MM-DD>: each clinic's appointments per day from then on (to see which days it works), alone
+  if (readOnly && /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.days || ''))) {
+    const appts = await readJSON('data/appointments.json', []);
+    const out = {};
+    appts.filter((a) => a.date >= req.query.days && a.status !== 'concediu').forEach((a) => {
+      const c = out[a.location || '?'] = out[a.location || '?'] || {};
+      const d = c[a.date] = c[a.date] || { all: 0, cancelled: 0 };
+      d.all++; if (a.status === 'anulata') d.cancelled++;
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json(out);
+    return;
+  }
   if (readOnly && (req.query.vad || req.query.vids || req.query.vfile || req.query.camps)) {
     const v = require('./_lib/ads-video');
     const job = String(req.query.vad || '');
