@@ -12,6 +12,15 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 29.10, the owner: "on: whatever books under 30 lei, under 40 if it's LipoSonix", HIFU gușă and HIFU abdomen /
+  // LipoSonix only (no Restart); the paused ones that pass, at their own budgets (bookings counted since the portal keeps them)
+  { id: 'rule-2026-10-29', why: 'regula voastră din 29.10: gușă sub 30 lei, abdomen sub 40 lei pe programare', actions: [
+    { campaignId: '120251401198430103', name: 'AR HIFU G · fără efort', status: 'ACTIVE', why: 'Arad gușă: 2 programări la 20 lei' },
+    { campaignId: '120251401230830103', name: 'AR HIFU G · orașul', status: 'ACTIVE', why: 'Arad gușă: 2 programări la 20 lei, au venit amândouă' },
+    { campaignId: '120251418148270103', name: 'AR HIFU G · vrei bărbia mai definită', status: 'ACTIVE', why: 'Arad gușă: o programare la 25 lei' },
+    { campaignId: '120251505897650103', name: 'TM LIPO · fără efort', status: 'ACTIVE', why: 'TM abdomen: 2 programări la ~31 lei' },
+    { campaignId: '120251497737010103', name: 'AR LIPO · raritate', status: 'ACTIVE', why: 'Arad abdomen: o programare la 35 lei' },
+  ] },
   // 28.10 evening, the owner ("hai să încercăm cu alea"): the side-view LipoSonix / HIFU abdomen video (vid 8, the cheapest
   // abdomen leads in September) back on in Timișoara next to vid 3, a new face for the same women
   { id: 'tm-vid8-2026-10-28', why: 'vid 8 pornit din nou, cerut de voi pe 28.10', actions: [
