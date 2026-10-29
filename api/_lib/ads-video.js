@@ -34,6 +34,14 @@ const JOBS = {
     campaignName: 'AR VIDEO · HIFU gușă · iPad', adsetName: 'Arad · femei', adName: 'video gușă iPad Arad',
     text: (t) => String(t || ''),
   },
+  // 29.10, the owner ("un video iPad care merge la TM și nu-l avem la Arad: editează-l și pune-l"): vid 8, the side view,
+  // in its Arad version (the "Arad" label), without the 24 hours' EMS gift its voice promised (EMS is Timișoara's only),
+  // with everything of the Timișoara vid 8 ad; the form becomes Arad's
+  'ar-vid8-2026-10-29': {
+    fromAd: '120251418158490103', city: 'Arad', daily: 40,
+    campaignName: 'AR VIDEO · HIFU abdomen · vid 8', adsetName: 'Arad · femei', adName: 'video 8 Arad',
+    text: (t) => String(t || '').replace(/^\s*TIMIȘOARA!/, 'ARAD!'),
+  },
 };
 
 const G = (method, path, conn, params) => ads.call(method, path, conn.userToken, params);
