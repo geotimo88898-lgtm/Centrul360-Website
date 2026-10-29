@@ -1488,6 +1488,15 @@
     return '<div class="st-fb-status st-fb-ads ' + st[0] + '">' + icon(st[1]) + '<div><b>Reclame</b><span>' + esc(st[2]) + '</span></div>' +
       (st[0] === 'is-ok' ? '<button type="button" class="k-btn is-ghost is-sm" data-goto="reclame">Deschide' + icon('arrow') + '</button>' : '') + '</div>';
   }
+  // the clinic's Instagram messages in Mesaje: on, or the two steps that turn them on
+  function igStatus(x) {
+    if (!x) return '';
+    if (x.ready) return '<div class="st-fb-status is-ok">' + icon('checkCircle') + '<div><b>Instagram în Mesaje</b><span>' + esc((x.account ? '@' + x.account + ' · ' : '') + 'mesajele intră automat') + '</span></div>' +
+      '<button type="button" class="k-btn is-ghost is-sm" data-goto="mesaje">Deschide' + icon('arrow') + '</button></div>';
+    return '<div class="st-fb-status is-wait">' + icon('clock') + '<div><b>Instagram în Mesaje: nu încă</b><span>1. În aplicația Instagram: Setări → Mesaje și răspunsuri la story → Controlul mesajelor → Instrumente conectate → Permite accesul la mesaje. ' +
+      '2. Apasă Conectează și bifează tot ce cere Facebook.</span></div>' +
+      '<a class="k-btn is-primary is-sm" href="/api/fb-oauth-start?scopes=1">' + icon('facebook') + 'Conectează</a></div>';
+  }
   function adsToken(x) {
     const { a, needs } = adsState(x);
     return '<details class="st-fb-manual"' + (needs ? ' open' : '') + '><summary>' + (a.set ? 'Schimbă tokenul pentru reclame' : 'Lipește tokenul pentru reclame') + '</summary>' +
@@ -1646,7 +1655,7 @@
         '<div class="st-fb-status ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') +
           '<div><b>Conectat la ' + esc(d.pageName || 'Pagină') + '</b><span>' + (live ? 'Leadurile intră automat · verificat ' + esc(K.ago(poll.at))
             : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur.' : 'Prima verificare se face în cel mult un minut.') + '</span></div></div>' +
-        adsStatus(d.ads) +
+        adsStatus(d.ads) + igStatus(d.instagram) +
         '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
           '<div data-fb-leads><div class="k-skel" style="height:58px"></div></div></div>' +
         adsToken(d.ads) +

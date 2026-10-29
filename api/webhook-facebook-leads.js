@@ -81,6 +81,13 @@ module.exports = async (req, res) => {
   // storm or a half-processed batch.
   try {
     const payload = JSON.parse(rawBody.toString('utf8'));
+    // the clinic's Instagram messages (api/_lib/ig-inbox.js): into Mesaje, and the phones ring
+    if (payload.object === 'instagram') {
+      const IG = require('./_lib/ig-inbox');
+      try { await IG.ring(await IG.ingest(payload)); } catch (err) { console.error('webhook instagram:', err.message); }
+      res.status(200).json({ ok: true });
+      return;
+    }
     const conn = await loadConnection(readJSON);
     const entries = payload.entry || [];
     for (const entry of entries) {

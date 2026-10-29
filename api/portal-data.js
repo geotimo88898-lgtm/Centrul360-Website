@@ -228,7 +228,9 @@ module.exports = async (req, res) => {
     // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city)
     const waConvos = await readJSON('data/whatsapp-conversations.json', []);
     const myCity = !isAdmin && me.role === 'receptie' ? me.location : '';
-    const waUnread = waConvos.filter((c) => c.unreadCount && (!myCity || !c.location || c.location === myCity)).length;
+    const waUnread = waConvos.filter((c) => c.unreadCount && (!myCity || !c.location || c.location === myCity)).length
+      // and the clinic's Instagram (both clinics'), for whoever answers Mesaje
+      + (isAdmin || me.role === 'receptie' ? await require('./_lib/ig-inbox').unread().catch(() => 0) : 0);
     const payload = {
       // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
       waUnread,

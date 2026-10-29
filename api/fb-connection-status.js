@@ -67,6 +67,8 @@ async function status(req) {
       ? { set: true, at: conn.userTokenAt || '', valid: t ? t.valid : null, expiresAt: t ? t.expiresAt : null, publish: t ? (t.scopes || []).includes('ads_management') : null }
       : { set: false };
   }
+  // the clinic's Instagram messages in Mesaje (api/_lib/ig-inbox.js)
+  if (conn.pageId) out.instagram = await require('./_lib/ig-inbox').brief().catch((e) => ({ ready: false, error: e.message }));
   if (conn.pageId) Object.assign(out, {
     pageName: conn.pageName, connectedAt: conn.connectedAt, pageId: conn.pageId,
     pages: pub(conn.pages), adAccounts: pub(conn.adAccounts), adAccountId: conn.adAccountId || '', adAccountName: conn.adAccountName || '',
