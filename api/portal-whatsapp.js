@@ -11,8 +11,9 @@
 //   send_template -> { phone, templateId, name?, location? } an approved template, the client's details
 //                    filled in (from her lead / appointment); also starts a new conversation.
 //   snip_save     -> { snippet: { id?, title, text } } a quick answer the whole team shares (snippet)
-// The clinic's Instagram messages are in the same list (api/_lib/ig-inbox.js): their key is "ig:<her id>" where a
-// WhatsApp one has the phone; thread and send work for them, a free answer only (no templates, files, catalog).
+// The clinic's Instagram and Facebook (Messenger) messages are in the same list (api/_lib/social-inbox.js): their key is
+// "ig:<her id>" / "fb:<her id>" where a WhatsApp one has the phone; thread and send work for them, a free answer only
+// (no templates, files, catalog).
 //   snip_delete   -> { id }
 //
 // Data: data/whatsapp-conversations.json (see api/webhook-whatsapp.js for the inbound side).
@@ -146,9 +147,9 @@ module.exports = async (req, res) => {
   if (session.role === 'cosmetician') return fail(403, 'forbidden', 'Mesajele sunt la recepție.');
 
   try {
-    const IG = require('./_lib/ig-inbox');
-    const ig = String(body.phone || '').startsWith(IG.PREFIX);
-    if (ig && action !== 'thread' && action !== 'send') return fail(400, 'instagram_text_only', 'Pe Instagram se pot trimite din portal doar mesaje scrise.');
+    const IG = require('./_lib/social-inbox');
+    const ig = IG.isKey(body.phone);
+    if (ig && action !== 'thread' && action !== 'send') return fail(400, 'social_text_only', 'Pe Instagram și Facebook se pot trimite din portal doar mesaje scrise.');
     if (action === 'list') {
       const conversations = await readJSON(KEY, []);
       // the chats from before every writer became a contact: theirs now (once; nothing is written when all are known)
@@ -161,7 +162,7 @@ module.exports = async (req, res) => {
       const list = conversations
         .map((c) => Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || (c.clientName && c.clientName !== c.phone ? c.clientName : c.phone) }))
         .map(listItem)
-        // Instagram's (a failure there never empties the WhatsApp list)
+        // Instagram's and Facebook's (a failure there never empties the WhatsApp list)
         .concat(await IG.list().catch((e) => { console.error('instagram list:', e.message); return []; }))
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));
       const s = await setup();

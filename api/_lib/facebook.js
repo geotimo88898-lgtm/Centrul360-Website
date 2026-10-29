@@ -209,8 +209,8 @@ async function connectPage(store, { page, pages, adAccounts, adAccountId, by, vi
     userToken: userToken || '', userTokenAt: userToken ? new Date().toISOString() : '',
   });
   await store.writeJSON(PENDING_KEY, {});
-  // the clinic's Instagram messages into Mesaje (api/_lib/ig-inbox.js), when the login gave their permissions
-  await require('./ig-inbox').setup().catch((e) => console.error('instagram setup:', e.message));
+  // the clinic's Instagram and Facebook messages into Mesaje (api/_lib/social-inbox.js), when the login gave their permissions
+  await require('./social-inbox').setup().catch((e) => console.error('messages setup:', e.message));
   return { ok: true, pageName: page.name };
 }
 

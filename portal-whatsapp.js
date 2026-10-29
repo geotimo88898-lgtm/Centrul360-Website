@@ -100,8 +100,11 @@
   const face = (c, size) => (named(c) ? K.avatar(c.clientName, size) : '<span class="k-avatar mx-anon" style="--s:' + size + 'px">' + icon('user') + '</span>');
   const connected = () => Object.keys(C.numbers).filter((c) => C.numbers[c].connected);
   const isAdmin = () => !!(K.data && K.data.isAdmin);
-  // a conversation of the clinic's Instagram (its key is "ig:<her id>" where WhatsApp has the phone)
-  const isIg = (c) => !!c && (c.channel === 'ig' || String(c.phone || '').startsWith('ig:'));
+  // a conversation of the clinic's Instagram or Facebook Page (its key is "ig:<her id>" / "fb:<her id>" where WhatsApp
+  // has the phone): a written answer only
+  const chanOf = (c) => (c && (c.channel === 'ig' || c.channel === 'fb') ? c.channel : (/^(ig|fb):/.exec(String((c && c.phone) || '')) || [])[1] || '');
+  const isIg = (c) => !!chanOf(c);
+  const CHAN = { ig: 'Instagram', fb: 'Facebook' };
 
   // ------------------------------------------------------------------ the page
   function render() {
@@ -109,7 +112,7 @@
       '<div data-mx-status></div>' +
       '<div class="mx-wrap">' +
         '<section class="k-card mx-list-col"><div class="mx-tools"><label class="mx-search">' + icon('search') + '<input data-q type="search" placeholder="Caută o clientă sau un număr…" value="' + esc(C.q) + '"></label>' +
-          '<div class="mx-filters"><div class="k-chips" data-chips></div>' + K.seg('waloc', [['all', 'Toate'], ['Timișoara', 'TM'], ['Arad', 'AR'], ['ig', 'Insta']], C.loc) + '</div></div>' +
+          '<div class="mx-filters"><div class="k-chips" data-chips></div>' + K.seg('waloc', [['all', 'Toate'], ['Timișoara', 'TM'], ['Arad', 'AR'], ['ig', 'Insta'], ['fb', 'FB']], C.loc) + '</div></div>' +
           '<div class="mx-list" data-mx-list></div></section>' +
         '<section class="k-card mx-thread-col" data-mx-thread></section>' +
       '</div>';
@@ -143,7 +146,7 @@
 
   function visible() {
     const q = K.norm(C.q || ''), qd = C.q.replace(/\D/g, '');
-    return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' ? c.channel === 'ig' : c.location === C.loc)) && (C.show === 'all' || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h)) &&
+    return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' || C.loc === 'fb' ? c.channel === C.loc : c.location === C.loc)) && (C.show === 'all' || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h)) &&
       (!q || K.norm(nameOf(c)).includes(q) || (qd.length >= 3 && String(c.phone).replace(/\D/g, '').includes(qd))));
   }
   function paintList() {
@@ -181,7 +184,7 @@
       face(c, 44) +
       '<span class="mx-row-main"><span class="mx-row-top"><b>' + esc(nameOf(c)) + '</b><small>' + esc(fmtTime(c.lastMessageAt)) + '</small></span>' +
         '<span class="mx-row-bottom"><span class="mx-row-prev">' + preview + '</span>' +
-        (c.channel === 'ig' ? '<em class="mx-city mx-ig">Insta</em>' : c.location ? '<em class="mx-city">' + esc(CITY_SHORT[c.location] || c.location) + '</em>' : '') +
+        (isIg(c) ? '<em class="mx-city mx-' + chanOf(c) + '">' + (chanOf(c) === 'ig' ? 'Insta' : 'FB') + '</em>' : c.location ? '<em class="mx-city">' + esc(CITY_SHORT[c.location] || c.location) + '</em>' : '') +
         (c.unreadCount ? '<i class="mx-unread">' + (c.unreadCount > 99 ? '99+' : c.unreadCount) + '</i>' : '') + '</span></span></button>';
   }
 
@@ -219,7 +222,7 @@
       (m.buttons && m.buttons.length ? '<span class="mx-btns">' + m.buttons.map((b) => '<span class="mx-btn">' + icon('undo') + esc(b) + '</span>').join('') + '</span>' : '') +
       (m.reaction ? '<span class="mx-react">' + esc(m.reaction) + '</span>' : '') +
       (out && m.status === 'failed' ? '<span class="mx-fail">' + icon('alert') + 'NELIVRAT' + (m.error ? ' · ' + esc(m.error) : '') + '</span>' : '') +
-      '<span class="mx-meta"><span class="mx-time">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : out && m.fromApp ? 'din Instagram · ' : '') + esc(hm(m.timestamp)) + '</span>' + (out ? tickHtml(m.status || 'sent', stateLine(m)) : '') + '</span></div></div>';
+      '<span class="mx-meta"><span class="mx-time">' + (out && m.sentByName ? esc(m.sentByName) + ' · ' : out && m.fromApp ? 'din aplicație · ' : '') + esc(hm(m.timestamp)) + '</span>' + (out ? tickHtml(m.status || 'sent', stateLine(m)) : '') + '</span></div></div>';
   }
   function dayLabel(day) {
     const t = K.today();
@@ -262,10 +265,10 @@
           (isIg(t) ? '' : '<label class="k-icon-btn mx-attach" title="Poză sau fișier">' + icon('image') + '<input type="file" data-attach hidden accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,video/mp4,audio/*"></label>' +
           '<button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
           '<button type="button" class="k-icon-btn" data-act="catalog" title="Catalogul de rezultate">' + icon('book') + '</button>') +
-          '<textarea name="text" maxlength="' + (isIg(t) ? 1000 : 4000) + '" placeholder="' + (isIg(t) ? 'Scrie un mesaj pe Instagram…' : 'Scrie un mesaj…') + '" rows="1">' + esc(draft) + '</textarea>' +
+          '<textarea name="text" maxlength="' + (isIg(t) ? (chanOf(t) === 'ig' ? 1000 : 2000) : 4000) + '" placeholder="' + (isIg(t) ? 'Scrie un mesaj pe ' + CHAN[chanOf(t)] + '…' : 'Scrie un mesaj…') + '" rows="1">' + esc(draft) + '</textarea>' +
           '<button type="submit" class="mx-send-btn" aria-label="Trimite">' + SEND + '</button></form>' +
           '<p class="mx-window">' + windowLine + '</p>'
-        : isIg(t) ? '<div class="mx-closed">' + icon('info') + '<span>Au trecut 24 de ore de la ultimul ei mesaj. Pe Instagram îi poți răspunde acum doar din aplicația Instagram.</span></div>'
+        : isIg(t) ? '<div class="mx-closed">' + icon('info') + '<span>Au trecut 24 de ore de la ultimul ei mesaj. Îi poți răspunde acum doar din ' + (chanOf(t) === 'ig' ? 'aplicația Instagram' : 'Meta Business Suite sau Messenger') + '.</span></div>'
         : '<div class="mx-closed">' + icon(bounced(t) ? 'alert' : 'info') + '<span>' + (bounced(t) ? 'Șablonul nu a ajuns la ea: verifică numărul sau sun-o.' : waiting(t) ? 'Șablonul a plecat. Când îți răspunde, îi poți scrie liber.' : (t.messages || []).some((m) => m.direction === 'in') ? 'Au trecut 24 de ore de la ultimul ei mesaj. Îi poți scrie doar cu un șablon aprobat.' : 'Primul mesaj către ea pleacă doar cu un șablon aprobat.') + '</span>' +
           '<button type="button" class="k-btn ' + (waiting(t) ? '' : 'is-primary ') + 'is-sm" data-act="tpl">' + icon('file') + (waiting(t) ? 'Alt șablon' : 'Trimite un șablon') + '</button></div>');
     autoGrow(box.querySelector('textarea'));
@@ -292,8 +295,8 @@
   const telOf = (p) => { const d = String(p || '').replace(/[^\d+]/g, ''); return /^\+/.test(d) || /^0/.test(d) ? d : d.length >= 11 ? '+' + d : d; };
   function headHtml(t) {
     return '<header class="mx-thead"><button type="button" class="k-icon-btn mx-back" data-act="back" aria-label="Înapoi">' + icon('left') + '</button>' +
-      '<button type="button" class="mx-thead-who" data-act="contact" title="' + (isIg(t) ? 'Instagram' : 'Deschide profilul ei') + '">' + face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
-      esc((isIg(t) ? ['Instagram', t.username && '@' + t.username !== nameOf(t) ? '@' + t.username : ''] : [named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : '']).filter(Boolean).join(' · ')) + '</small></div></button>' +
+      '<button type="button" class="mx-thead-who" data-act="contact" title="' + (isIg(t) ? CHAN[chanOf(t)] : 'Deschide profilul ei') + '">' + face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
+      esc((isIg(t) ? [CHAN[chanOf(t)], t.username && '@' + t.username !== nameOf(t) ? '@' + t.username : ''] : [named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : '']).filter(Boolean).join(' · ')) + '</small></div></button>' +
       (isIg(t) ? '' : '<a class="k-icon-btn" href="tel:' + esc(telOf(t.phone)) + '" title="Sună" data-act="call">' + icon('phone') + '</a>') +
       (K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="book" title="Programează">' + icon('calendar') + '</button>' : '') +
       (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>' +

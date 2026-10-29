@@ -1824,6 +1824,7 @@ main.ad-full{ max-width:none; }
 .mx-row.is-unread .mx-row-prev{ color:var(--fg); }
 .mx-city{ flex:none; font-style:normal; font-size:.62rem; font-weight:750; letter-spacing:.04em; padding:.1rem .35rem; border-radius:6px; background:var(--glass); color:var(--muted); }
 .mx-city.mx-ig{ background:linear-gradient(135deg,#f58529,#dd2a7b 55%,#8134af); color:#fff; }
+.mx-city.mx-fb{ background:#1877f2; color:#fff; }
 .mx-unread{ flex:none; display:grid; place-items:center; min-width:20px; height:20px; padding:0 .35rem; border-radius:999px; background:var(--good); color:#fff; font-style:normal; font-size:.7rem; font-weight:800; }
 .mx-thead{ display:flex; align-items:center; gap:.65rem; padding:.7rem .9rem; border-bottom:1px solid var(--line); background:var(--paper); }
 .mx-thead-main{ flex:1; min-width:0; display:flex; flex-direction:column; }

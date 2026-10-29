@@ -53,8 +53,8 @@ module.exports = async (req, res) => {
     if (wa.loginConfigId) { params.set('config_id', wa.loginConfigId); params.set('override_default_response_type', 'true'); }
     else params.set('scope', 'whatsapp_business_management,whatsapp_business_messaging,business_management');
   } else if (creds.configId && (req.query || {}).scopes !== '1') { params.set('config_id', creds.configId); params.set('override_default_response_type', 'true'); }
-  // and the clinic's Instagram messages (Mesaje): instagram_basic, instagram_manage_messages, pages_messaging.
-  // ?scopes=1 (Integrări → Instagram "Conectează"): these permissions asked by name, past the saved configuration
+  // and the clinic's Instagram and Facebook messages (Mesaje): instagram_basic, instagram_manage_messages, pages_messaging.
+  // ?scopes=1 (Integrări → "Mesaje Instagram și Facebook" → Conectează): asked by name, past the saved configuration
   // (which may not have them), with the WhatsApp ones the configuration gave
   else params.set('scope', 'pages_show_list,leads_retrieval,pages_manage_metadata,pages_read_engagement,pages_manage_ads,ads_management,ads_read,business_management,instagram_basic,instagram_manage_messages,pages_messaging'
     + (creds.configId ? ',whatsapp_business_management,whatsapp_business_messaging' : ''));
