@@ -27,6 +27,13 @@ const JOBS = {
     campaignName: 'TM VIDEO · HIFU gușă · iPad', adsetName: 'Timișoara · femei', adName: 'video gușă iPad',
     text: (t) => String(t || ''),
   },
+  // 29.10, the owner ("dann du kannst das machen"): the same gușă video for Arad at 40 lei a day (it names no city), with
+  // everything of Arad's gușă ad that brings the most women in (audience, form, its texts)
+  'ar-gusa-vid-2026-10-29': {
+    fromAd: '120251418099810103', city: 'Arad', daily: 40, video: '28021255054211921', cover: '73d1636d010a7361edb36b2d85bccb1b',
+    campaignName: 'AR VIDEO · HIFU gușă · iPad', adsetName: 'Arad · femei', adName: 'video gușă iPad Arad',
+    text: (t) => String(t || ''),
+  },
 };
 
 const G = (method, path, conn, params) => ads.call(method, path, conn.userToken, params);
