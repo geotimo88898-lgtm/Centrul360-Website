@@ -224,6 +224,39 @@ async function videos(since) {
   }
   return { range, total: st.rows.length, creativesError: info.error, rows: out };
 }
+// every campaign, paused ones and small ones too, with what its leads became and its daily budget, for a rule like the
+// owner's of 29.10 ("on: whatever books under 30 lei, under 40 if it's LipoSonix"). Read only.
+async function campaigns(since) {
+  const conn = await loadConnection(readJSON);
+  if (!conn.userToken || !conn.adAccountId) return { error: 'not_connected' };
+  const day = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(t));
+  const range = { since: /^\d{4}-\d{2}-\d{2}$/.test(String(since || '')) ? since : '2026-01-01', until: day(Date.now()) };
+  const st = await ads.adStats(conn, range);
+  if (st.error) return { error: st.error };
+  const [leads, appts, sales, stages] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/pipeline-stages.json', null)]);
+  const appointments = (appts || []).filter((a) => a.createdBy !== 'highlevel' && !a.importedAt && !a.ghlId);
+  const sts = Array.isArray(stages) && stages.length ? stages : [{ id: 'lead_nou', kind: 'open' }, { id: 'contactat', kind: 'open' }, { id: 'programare_stabilita', kind: 'booked' },
+    { id: 'venit_la_programare', kind: 'open' }, { id: 'client_fidel', kind: 'won' }, { id: 'pierdut', kind: 'lost' }];
+  const f = funnel({ leads, appointments, sales, stages: sts, ads: st.rows.map((r) => ({ id: r.adId, name: r.adName, adsetId: r.adsetId, campaignId: r.campaignId, campaignName: r.campaignName })), range });
+  const by = new Map();
+  for (const r of st.rows) {
+    const c = by.get(r.campaignId) || { id: r.campaignId, name: r.campaignName, spend: 0, metaLeads: 0, ads: [] };
+    c.spend += r.spend; c.metaLeads += r.metaLeads; c.ads.push(r.status);
+    by.set(r.campaignId, c);
+  }
+  const out = [];
+  for (const c of by.values()) {
+    const x = f.campaigns.get(c.id) || {};
+    Object.assign(c, { spend: Math.round(c.spend), leads: x.leads || 0, booked: x.booked || 0, came: x.showed || 0, money: Math.round(x.revenue || 0) });
+    if (c.booked) {
+      const [b, s] = await Promise.all([ads.budgetOf(conn, c.id), G('GET', '/' + c.id, conn, { fields: 'effective_status' })]);
+      c.daily = b.daily || null; c.budgetNote = b.error || undefined; c.status = s.ok ? s.j.effective_status : why(s.j);
+    }
+    out.push(c);
+  }
+  return { range, rows: out.filter((c) => c.booked).sort((a, b) => a.spend / a.booked - b.spend / b.booked), noBookings: out.filter((c) => !c.booked && c.spend >= 30).map((c) => ({ id: c.id, name: c.name, spend: c.spend, metaLeads: c.metaLeads, leads: c.leads })) };
+}
+
 // a video's file, to watch it (Claude)
 async function videoFile(id) {
   const conn = await loadConnection(readJSON);
@@ -231,4 +264,4 @@ async function videoFile(id) {
   return v.ok ? v.j : { error: why(v.j) };
 }
 
-module.exports = { JOBS, put, look, make, status, videos, videoFile };
+module.exports = { JOBS, put, look, make, status, videos, videoFile, campaigns };

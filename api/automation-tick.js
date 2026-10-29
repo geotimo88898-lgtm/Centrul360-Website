@@ -45,13 +45,15 @@ module.exports = async (req, res) => {
   const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
   // with the key, &vad=<job>: the video ad the owner approved in chat (api/_lib/ads-video.js): the file and its cover
   // sent with POST (&put=video / &put=thumb), then &step=look, make or status; &vids=<since>: the account's ads with
-  // what they brought, &vfile=<video id>: one video's file. Answered alone (no report).
-  if (readOnly && (req.query.vad || req.query.vids || req.query.vfile)) {
+  // what they brought, &camps=<since>: every campaign with its bookings and budget, &vfile=<video id>: one video's file.
+  // Answered alone (no report).
+  if (readOnly && (req.query.vad || req.query.vids || req.query.vfile || req.query.camps)) {
     const v = require('./_lib/ads-video');
     const job = String(req.query.vad || '');
     let r;
     try {
-      if (req.query.vids) r = await v.videos(String(req.query.vids));
+      if (req.query.camps) r = await v.campaigns(String(req.query.camps));
+      else if (req.query.vids) r = await v.videos(String(req.query.vids));
       else if (/^\d{6,25}$/.test(String(req.query.vfile || ''))) r = await v.videoFile(String(req.query.vfile));
       else if (!v.JOBS[job]) r = { error: 'job necunoscut' };
       else if (req.method === 'POST') r = await v.put(job, String(req.query.put || ''), Buffer.isBuffer(req.body) ? req.body : null);
