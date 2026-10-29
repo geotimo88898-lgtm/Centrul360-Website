@@ -12,6 +12,10 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 29.10 evening, the owner ("aprinde"): Arad's best gușă ad, found off (not by the portal), back on at its budget
+  { id: 'ar-gusa80-on-2026-10-29', why: 'pornită din nou pe 29.10, cerut de voi', actions: [
+    { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', status: 'ACTIVE', why: 'Arad gușă: cea mai bună din Arad (15 programări, 8 venite)' },
+  ] },
   // 29.10 afternoon, the owner ("die nicht gut laufen, ausschalten"): the three Arad gușă ads turned back on this morning
   // by the rule (gușă under 30 lei a booking) are over it now, a lead between them today, and they share Arad's women
   // with the two that work
