@@ -78,6 +78,8 @@ module.exports = async (req, res) => {
     }
     return list.error ? { error: list.error.message } : ads;
   })().catch((e) => ({ error: e.message }));
+  // with the key, &ig=1: where Instagram's messages stand (the login's permissions, the webhooks), read only
+  if (readOnly && req.query.ig) out.ig = await require('./_lib/ig-inbox').status().catch((e) => ({ error: e.message }));
   // with the key, &rem=1: where the booking messages are (Meta's answers as last read, each clinic's flow), read only
   if (readOnly && req.query.rem) out.rem = await (async () => {
     const [d, cfg, doc, once] = await Promise.all([require('./_lib/wa-templates').load(), require('./_lib/whatsapp').loadConfig(), require('./_lib/workflows').loadDoc(), readJSON('data/wf-once.json', {})]);
