@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 29.10 afternoon, the owner ("die nicht gut laufen, ausschalten"): the three Arad gușă ads turned back on this morning
+  // by the rule (gușă under 30 lei a booking) are over it now, a lead between them today, and they share Arad's women
+  // with the two that work
+  { id: 'stop-2026-10-29', why: 'oprite pe 29.10: peste regula de 30 lei pe programare la gușă', actions: [
+    { campaignId: '120251401198430103', name: 'AR HIFU G · fără efort', status: 'PAUSED', why: 'Arad gușă: 39 lei pe programare, niciun lead azi' },
+    { campaignId: '120251401230830103', name: 'AR HIFU G · orașul', status: 'PAUSED', why: 'Arad gușă: 40 lei pe programare' },
+    { campaignId: '120251418148270103', name: 'AR HIFU G · vrei bărbia mai definită', status: 'PAUSED', why: 'Arad gușă: 31 lei pe programare, niciun lead azi' },
+  ] },
   // 29.10, the owner: "on: whatever books under 30 lei, under 40 if it's LipoSonix", HIFU gușă and HIFU abdomen /
   // LipoSonix only (no Restart); the paused ones that pass, at their own budgets (bookings counted since the portal keeps them)
   { id: 'rule-2026-10-29', why: 'regula voastră din 29.10: gușă sub 30 lei, abdomen sub 40 lei pe programare', actions: [
