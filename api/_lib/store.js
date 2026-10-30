@@ -16,12 +16,53 @@
 
 const { put, get, del, head } = require('@vercel/blob');
 
-async function streamToString(stream) {
+async function streamToBuffer(stream) {
   const chunks = [];
   for await (const chunk of stream) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
-  return Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks);
+}
+async function streamToString(stream) {
+  return (await streamToBuffer(stream)).toString('utf8');
+}
+
+// ---- Read cache ----------------------------------------------------------------------
+// Every read still asks the store for the latest version (useCache:false), but tells it which version this instance
+// already holds (If-None-Match): an unchanged document comes back as "not modified", without its content. The portal
+// reads its big lists tens of thousands of times a day and changes them a few hundred times, and every full read
+// from the store is billed as transfer: this keeps the answer exactly as fresh and drops most of that bill.
+const CACHE_LIMIT = 64 * 1024 * 1024, ITEM_LIMIT = 8 * 1024 * 1024;
+const cache = new Map();
+let cachedBytes = 0;
+function forget(pathname) {
+  const c = cache.get(pathname);
+  if (c) { cache.delete(pathname); cachedBytes -= c.buf.length; }
+}
+function keep(pathname, etag, buf) {
+  forget(pathname);
+  if (!etag || buf.length > ITEM_LIMIT) return;
+  cache.set(pathname, { etag, buf });
+  cachedBytes += buf.length;
+  for (const [k, v] of cache) { // the least recently read go first
+    if (cachedBytes <= CACHE_LIMIT) break;
+    cache.delete(k); cachedBytes -= v.buf.length;
+  }
+}
+// The latest content as { buf, etag }, or null when the document doesn't exist. Throws like get().
+async function fetchLatest(pathname) {
+  const c = cache.get(pathname);
+  let result = await get(pathname, c ? { access: 'private', useCache: false, ifNoneMatch: c.etag } : { access: 'private', useCache: false });
+  if (result && result.statusCode === 304) {
+    const now = cache.get(pathname);
+    if (now) { cache.delete(pathname); cache.set(pathname, now); return { buf: now.buf, etag: now.etag }; }
+    result = await get(pathname, { access: 'private', useCache: false });
+  }
+  if (!result) { forget(pathname); return null; }
+  const buf = await streamToBuffer(result.stream);
+  const etag = (result.blob && result.blob.etag) || '';
+  keep(pathname, etag, buf);
+  return { buf, etag };
 }
 
 // Reads a JSON document from Blob storage. Returns `fallback` only when the blob doesn't exist yet
@@ -36,9 +77,9 @@ async function readJSON(pathname, fallback) {
       // useCache:false, the portal always reads right after writing (every save reloads
       // the whole payload to show the result), so a cached stale read would look exactly
       // like "my change didn't save" even though it did.
-      const result = await get(pathname, { access: 'private', useCache: false });
+      const result = await fetchLatest(pathname);
       if (!result) return fallback;
-      const text = await streamToString(result.stream);
+      const text = result.buf.toString('utf8');
       if (!text) return fallback;
       return JSON.parse(text);
     } catch (err) {
@@ -59,10 +100,10 @@ async function readJSONTagged(pathname, fallback) {
   let lastErr = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const result = await get(pathname, { access: 'private', useCache: false });
+      const result = await fetchLatest(pathname);
       if (!result) return { data: fallback, etag: '' };
-      const text = await streamToString(result.stream);
-      return { data: text ? JSON.parse(text) : fallback, etag: (result.blob && result.blob.etag) || '' };
+      const text = result.buf.toString('utf8');
+      return { data: text ? JSON.parse(text) : fallback, etag: result.etag };
     } catch (err) {
       if (isNotFound(err)) return { data: fallback, etag: '' };
       lastErr = err;
@@ -170,11 +211,9 @@ async function writeBinary(pathname, buffer, contentType) {
 
 async function readBinary(pathname) {
   try {
-    const result = await get(pathname, { access: 'private', useCache: false });
+    const result = await fetchLatest(pathname);
     if (!result) return null;
-    const chunks = [];
-    for await (const chunk of result.stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    return Buffer.concat(chunks);
+    return Buffer.from(result.buf); // a copy: what is kept for the next read can't be changed by a caller
   } catch (err) {
     if (err && (err.name === 'BlobNotFoundError' || /not.?found/i.test(err.message || ''))) return null;
     console.error(`store.readBinary(${pathname}) error:`, err.message);
