@@ -350,7 +350,9 @@
 
   async function load(silent) {
     try {
-      const j = await api('list');
+      const j = await api('list', { v: silent ? S.v : undefined }); // a first draw always gets the whole list
+      if (j.unchanged) return; // the list is the one on screen: the server sent only its version
+      S.v = j.v;
       if (window.K) window.K.emit('leads', j); // nav badge + dashboard stay in sync
       const sig = JSON.stringify([j.stages, j.leads]);
       S.stages = j.stages || [];

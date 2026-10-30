@@ -66,8 +66,9 @@
     // Baseline revision first, so a save that lands while this loads still triggers a refresh.
     if (rev === null) { try { const p = await K.api('/api/portal-pulse'); rev = p.rev; seeBuild(p.build); } catch (e) { /* first pulse sets it */ } }
     try {
-      const fresh = await K.api('/api/portal-data');
-      // the same data again (a save that touched nothing of this account's): nothing is redrawn
+      const fresh = await K.api('/api/portal-data' + (quiet && !first && DATA && DATA.v ? '?v=' + encodeURIComponent(DATA.v) : ''));
+      // the same data again (a save that touched nothing of this account's): the server sent only its version
+      if (fresh.unchanged) return;
       const key = JSON.stringify(fresh);
       if (quiet && !first && key === lastKey) return;
       lastKey = key;

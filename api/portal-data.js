@@ -3,6 +3,7 @@
 // client redirects to /portal-login.
 
 const { readJSON } = require('./_lib/store');
+const { sendVersioned } = require('./_lib/versioned');
 const { requireAuth, clearSessionCookie } = require('./_lib/auth');
 const { defaultConfig } = require('./_lib/defaults');
 const { categoriesOf, normalizeCategories, UPSELL_RATE, COST_SHARE } = require('./_lib/cats');
@@ -328,7 +329,7 @@ module.exports = async (req, res) => {
       };
     }
 
-    res.status(200).json(payload);
+    sendVersioned(res, payload, req.query && req.query.v);
   } catch (err) {
     console.error('portal-data error:', err.message);
     res.status(500).json({ error: 'data_failed' });

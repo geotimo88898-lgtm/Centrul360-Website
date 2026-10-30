@@ -31,6 +31,7 @@
 // `activities` on read, and the folded form is what gets written back.
 
 const crypto = require('crypto');
+const { sendVersioned } = require('./_lib/versioned');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { cityOf, inCity } = require('./_lib/city');
 const { requireRole, requireAdmin } = require('./_lib/auth');
@@ -98,10 +99,11 @@ async function authorName(session) {
 
 function normalizeLead(lead) {
   if (!Array.isArray(lead.activities)) {
-    lead.activities = (lead.notes || []).map((n) => ({
-      id: n.id || crypto.randomUUID(), type: 'note', text: n.text, author: n.author || '', at: n.createdAt || lead.createdAt,
+    // ids built from the lead's own id, so an old lead reads the same every time (the list's version stays stable)
+    lead.activities = (lead.notes || []).map((n, i) => ({
+      id: n.id || lead.id + '-n' + i, type: 'note', text: n.text, author: n.author || '', at: n.createdAt || lead.createdAt,
     }));
-    lead.activities.unshift({ id: crypto.randomUUID(), type: 'created', text: '', author: '', at: lead.createdAt });
+    lead.activities.unshift({ id: lead.id + '-created', type: 'created', text: '', author: '', at: lead.createdAt });
   }
   delete lead.notes;
   if (lead.position == null) lead.position = -new Date(lead.createdAt || 0).getTime() / 1000; // newest on top
@@ -452,10 +454,10 @@ module.exports = async (req, res) => {
     if (action === 'list') {
       const city = await cityOf(session, readJSON);
       const sorted = leads.filter((l) => inCity(city, l.location)).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((l) => withComputedFields(l, stages));
-      res.status(200).json({
+      sendVersioned(res, {
         ok: true, stages, leads: sorted,
         meta: { sources: VALID_SOURCES, locations: VALID_LOCATIONS, outcomes: VALID_OUTCOMES, channels: VALID_CHANNELS, inactiveDays: INACTIVE_DAYS_THRESHOLD },
-      });
+      }, body.v);
       return;
     }
 

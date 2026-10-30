@@ -630,8 +630,12 @@
   function leads(force) {
     if (!force && leadsCache && Date.now() - leadsAt < 15000) return Promise.resolve(leadsCache);
     if (leadsP) return leadsP;
-    leadsP = api('/api/portal-leads', { action: 'list' })
-      .then((j) => { leadsCache = j; leadsAt = Date.now(); leadsP = null; emit('leads', j); return j; })
+    leadsP = api('/api/portal-leads', { action: 'list', v: leadsCache && leadsCache.v })
+      .then((j) => {
+        leadsP = null; leadsAt = Date.now();
+        if (j.unchanged && leadsCache) return leadsCache; // same list as we have: nothing was sent, nothing to redraw
+        leadsCache = j; emit('leads', j); return j;
+      })
       .catch((e) => { leadsP = null; throw e; });
     return leadsP;
   }
