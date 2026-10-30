@@ -25,7 +25,8 @@ jobs:
           fetch-depth: 0
       - name: Move the portal branches to main
         run: |
-          for b in claude/loving-bardeen-f8cpzj portal-mobile-nav; do
+          # portal-mobile-nav is no longer moved: no domain points at it, and each move cost a full Vercel build
+          for b in claude/loving-bardeen-f8cpzj; do
             if git rev-parse --verify --quiet "origin/$b" >/dev/null && ! git merge-base --is-ancestor "origin/$b" HEAD; then
               # the branch has commits main doesn't: keep them on a side branch before moving it
               git push origin "origin/$b:refs/heads/kept/$b-$(date +%Y%m%d%H%M%S)"
