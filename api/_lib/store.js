@@ -50,7 +50,9 @@ function keep(pathname, etag, buf) {
   }
 }
 // The latest content as { buf, etag }, or null when the document doesn't exist. Throws like get().
-async function fetchLatest(pathname) {
+// A body shorter than the store said (a cut-off read, it happens) is never kept, so the retry reads it whole;
+// strict (files): kept only when the store gave the size and it matches.
+async function fetchLatest(pathname, strict) {
   const c = cache.get(pathname);
   let result = await get(pathname, c ? { access: 'private', useCache: false, ifNoneMatch: c.etag } : { access: 'private', useCache: false });
   if (result && result.statusCode === 304) {
@@ -61,7 +63,9 @@ async function fetchLatest(pathname) {
   if (!result) { forget(pathname); return null; }
   const buf = await streamToBuffer(result.stream);
   const etag = (result.blob && result.blob.etag) || '';
-  keep(pathname, etag, buf);
+  const size = (result.blob && result.blob.size) || 0;
+  if (size ? size === buf.length : !strict) keep(pathname, etag, buf);
+  else forget(pathname);
   return { buf, etag };
 }
 
@@ -85,6 +89,7 @@ async function readJSON(pathname, fallback) {
     } catch (err) {
       if (isNotFound(err)) return fallback;
       lastErr = err;
+      forget(pathname);
       console.error(`store.readJSON(${pathname}) error (attempt ${attempt + 1}):`, err.message);
       await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
     }
@@ -107,6 +112,7 @@ async function readJSONTagged(pathname, fallback) {
     } catch (err) {
       if (isNotFound(err)) return { data: fallback, etag: '' };
       lastErr = err;
+      forget(pathname);
       console.error(`store.readJSONTagged(${pathname}) error (attempt ${attempt + 1}):`, err.message);
       await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
     }
@@ -211,7 +217,7 @@ async function writeBinary(pathname, buffer, contentType) {
 
 async function readBinary(pathname) {
   try {
-    const result = await fetchLatest(pathname);
+    const result = await fetchLatest(pathname, true);
     if (!result) return null;
     return Buffer.from(result.buf); // a copy: what is kept for the next read can't be changed by a caller
   } catch (err) {
