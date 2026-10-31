@@ -126,6 +126,7 @@ module.exports = async (req, res) => {
       candidates: pick(cands, (x) => x.phone).map((x) => ({ at: x.at || '', job: x.job || '', welcomed: x.welcomed || '' })),
       chats: pick(convos, (x) => x.phone).map((x) => ({ phoneStored: x.phone, location: x.location || '', last: x.lastMessageAt || '', messages: (x.messages || []).length, in: (x.messages || []).filter((m) => m.direction === 'in').length })),
       waContacts: pick(wcont, (x) => x.phone || x.id).length,
+      counts: (() => { const l = list(clients), leadsNoClient = list(leads).length; const by = (c) => l.filter((x) => (x.location || '') === c).length; return { clients: l.length, timisoara: by('Timișoara'), arad: by('Arad'), noCity: by(''), leads: leadsNoClient }; })(),
       appointments: pick(appts, (x) => x.clientPhone).map((x) => ({ date: x.date, status: x.status || '' })),
     };
   })().catch((e) => ({ error: e.message }));
