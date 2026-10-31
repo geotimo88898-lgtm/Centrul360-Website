@@ -112,6 +112,21 @@ module.exports = async (req, res) => {
     return { appts: mine.map((a) => ({ id: a.id, date: a.date, time: a.time, status: a.status, loc: a.location, created: a.createdAt, updated: a.updatedAt, by: a.createdBy || '' })),
       runs: runsDoc.runs.filter((r) => r.ent && ids.has(r.ent.id)).map((r) => ({ appt: r.ent.id, wf: wfName(r.wf), status: r.status, created: r.createdAt, akey: r.akey ? 'yes' : 'no', log: (r.log || []).map((l) => l.at.slice(11, 19) + ' ' + l.text) })) };
   })().catch((e) => ({ error: e.message }));
+  // with the key, &find=<phone digits>: where that number is kept (clients, leads, candidates, WhatsApp chats, appointments): kinds and dates only
+  if (readOnly && /^\d{6,15}$/.test(String(req.query.find || ''))) out.find = await (async () => {
+    const k = String(req.query.find).slice(-9), d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+    const [clients, leads, cands, convos, wcont, appts, contactsDoc] = await Promise.all(['data/clients.json', 'data/leads.json', 'data/candidates.json', 'data/whatsapp-conversations.json', 'data/whatsapp-contacts.json', 'data/appointments.json', 'data/contacts.json'].map((f) => readJSON(f, [])));
+    const list = (x) => (Array.isArray(x) ? x : Object.values(x || {}));
+    const pick = (arr, f) => list(arr).filter((x) => d9(f(x)) === k);
+    return {
+      clients: pick(clients, (x) => x.phone).map((x) => ({ source: x.source || '', created: x.createdAt || '', loc: x.location || '', hasName: !!x.name })),
+      leads: pick(leads, (x) => x.phone).map((x) => ({ created: x.createdAt || '', stage: x.stage || '', loc: x.location || '', hasName: !!x.name })),
+      candidates: pick(cands, (x) => x.phone).map((x) => ({ at: x.at || '', job: x.job || '', welcomed: x.welcomed || '' })),
+      chats: pick(convos, (x) => x.phone).map((x) => ({ phoneStored: x.phone, location: x.location || '', last: x.lastMessageAt || '', messages: (x.messages || []).length, in: (x.messages || []).filter((m) => m.direction === 'in').length })),
+      waContacts: pick(wcont, (x) => x.phone || x.id).length,
+      appointments: pick(appts, (x) => x.clientPhone).map((x) => ({ date: x.date, status: x.status || '' })),
+    };
+  })().catch((e) => ({ error: e.message }));
   // with the key, &hire=1 makes the job ads the owners approved now (api/_lib/hire-once.js), nothing sent to anyone
   if (readOnly && req.query.hire) out.hire = await require('./_lib/hire-once').publishJobs().catch((e) => ({ error: e.message }));
   // with the key, &hiretpl=1: the interview template for candidates (made and sent to Meta once, then its status), nothing sent to anyone
