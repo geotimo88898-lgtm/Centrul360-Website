@@ -59,6 +59,33 @@ async function welcomeCandidates() {
   return Object.assign({ sent, skippedNow: skipped, why: why || undefined }, totals());
 }
 
+// 31.10, the owner: a template to write to a candidate who applied, to set up the interview (sent by hand from Mesaje, never
+// automatically). Her words as they were given.
+const INTERVIEW_TPL = {
+  label: 'Angajare · Interviu · Timișoara', category: 'UTILITY', only: ['Timișoara'],
+  body: 'Bună seara! Mulțumim frumos. Când ați avea disponibilitate pentru a stabili un interviu?',
+};
+// made once and sent to Meta for approval (until then it isn't offered in Mesaje); asked again, it only reports where it is
+async function interviewTemplate() {
+  const d = await WT.load();
+  let t = d.templates.find((x) => x.label === INTERVIEW_TPL.label);
+  let did = '';
+  if (!t) {
+    const v = WT.clean(INTERVIEW_TPL);
+    if (v.error) return { error: v.error };
+    d.templates.push(v.t);
+    t = v.t;
+    const sub = await WT.submit(d, v.t.id, INTERVIEW_TPL.only);
+    await WT.save(d);
+    did = sub.error ? 'made, not sent: ' + sub.error : 'made and sent to Meta';
+  } else if (!d.syncedAt || Date.now() - Date.parse(d.syncedAt) > 60e3) {
+    await WT.sync(d).catch(() => {});
+    await WT.save(d);
+    t = d.templates.find((x) => x.label === INTERVIEW_TPL.label) || t;
+  }
+  return { did: did || 'already there', name: t.name, body: t.body, category: t.category, only: t.only, status: Object.values(t.meta || {}).map((m) => m.status + (m.reason ? ' (' + m.reason + ')' : '')) };
+}
+
 const KEY = 'data/hire-once.json';
 const JOBS = [
   { id: 'cosmeticiana-tm-2026-10-24', city: 'Timișoara', job: 'Cosmeticiană', brut: '5.100', // ≈ 3.000 lei net
@@ -143,4 +170,4 @@ async function publishJobs() {
   return out;
 }
 
-module.exports = { run, publishJobs, welcomeCandidates };
+module.exports = { run, publishJobs, welcomeCandidates, interviewTemplate };
