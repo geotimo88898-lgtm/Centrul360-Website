@@ -142,6 +142,14 @@ module.exports = async (req, res) => {
     });
     return r;
   })().catch((e) => ({ error: e.message }));
+  // with the key, &blog=<days>: the budget changes of the last days (the guard's and the once-jobs'), to see who changed what
+  if (readOnly && /^\d{1,3}$/.test(String(req.query.blog || ''))) out.blog = await (async () => {
+    const since = Date.now() - Number(req.query.blog) * 864e5;
+    const [g, o] = await Promise.all([readJSON('data/ads-guard.json', {}), readJSON('data/ads-once.json', {})]);
+    const row = (src) => (e) => ({ src, at: e.at, type: e.type || (e.status ? 'status ' + e.status : 'budget'), name: e.campaignName || e.name || '', from: e.from, to: e.to, job: e.job, why: String(e.why || '').slice(0, 90) });
+    return [].concat(((g && g.log) || []).filter((e) => Date.parse(e.at) > since && e.type && e.type !== 'stop').map(row('guard')), ((o && o.log) || []).filter((e) => Date.parse(e.at) > since && (e.to != null || e.status)).map(row('once')))
+      .sort((a, b) => (a.at < b.at ? -1 : 1));
+  })().catch((e) => ({ error: e.message }));
   // with the key, &hire=1 makes the job ads the owners approved now (api/_lib/hire-once.js), nothing sent to anyone
   if (readOnly && req.query.hire) out.hire = await require('./_lib/hire-once').publishJobs().catch((e) => ({ error: e.message }));
   // with the key, &hiretpl=1: the interview template for candidates (made and sent to Meta once, then its status), nothing sent to anyone
