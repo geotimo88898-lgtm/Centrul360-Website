@@ -12,6 +12,16 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 31.10 evening, the owner (the economical variant for next week; "dai push la 100 la abdomenul care merge", "cele care merg
+  // extrem de bine, lasă-le la bugetul normal"): the four Timișoara HIFU gușă / abdomen ads that book cheaply back on at the
+  // budgets they already have (hifu gușă 50, gușă iPad 48, abdomen video 3 at 100, abdomen video 8 at 50); Arad stays as it is
+  { id: 'plan-2026-10-31', why: 'săptămâna viitoare: reclamele din Timișoara pornite din nou, la bugetele lor, cerut de voi pe 31.10', actions: [
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', status: 'ACTIVE', why: 'TM gușă: programarea la 17 lei' },
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'ACTIVE', why: 'TM gușă: programarea la 11 lei' },
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', daily: 100, why: 'TM abdomen: cel mai bun, 100 lei/zi' },
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', status: 'ACTIVE', why: 'TM abdomen: cel mai bun, 100 lei/zi' },
+    { campaignId: '120251418158480103', name: 'tm vid 8 - copie', status: 'ACTIVE', why: 'TM abdomen: programarea la 24-30 lei' },
+  ] },
   // 29.10 evening, the owner ("aprinde"): Arad's best gușă ad, found off (not by the portal), back on at its budget
   { id: 'ar-gusa80-on-2026-10-29', why: 'pornită din nou pe 29.10, cerut de voi', actions: [
     { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', status: 'ACTIVE', why: 'Arad gușă: cea mai bună din Arad (15 programări, 8 venite)' },
