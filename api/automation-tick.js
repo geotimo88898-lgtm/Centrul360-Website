@@ -130,6 +130,18 @@ module.exports = async (req, res) => {
       appointments: pick(appts, (x) => x.clientPhone).map((x) => ({ date: x.date, status: x.status || '' })),
     };
   })().catch((e) => ({ error: e.message }));
+  // with the key, &stages=<days>: the leads of the last days by city and stage, and how many are still untouched (counts only)
+  if (readOnly && /^\d{1,3}$/.test(String(req.query.stages || ''))) out.stages = await (async () => {
+    const leads = await readJSON('data/leads.json', []);
+    const since = Date.now() - Number(req.query.stages) * 864e5;
+    const r = {};
+    (leads || []).filter((l) => Date.parse(l.createdAt) >= since && Array.isArray(l.forms) && l.forms.length).forEach((l) => {
+      const c = r[l.location || '?'] = r[l.location || '?'] || { total: 0, stages: {}, byDay: {} };
+      c.total++; c.stages[l.stage || '?'] = (c.stages[l.stage || '?'] || 0) + 1;
+      const d = String(l.createdAt).slice(0, 10); c.byDay[d] = (c.byDay[d] || 0) + 1;
+    });
+    return r;
+  })().catch((e) => ({ error: e.message }));
   // with the key, &hire=1 makes the job ads the owners approved now (api/_lib/hire-once.js), nothing sent to anyone
   if (readOnly && req.query.hire) out.hire = await require('./_lib/hire-once').publishJobs().catch((e) => ({ error: e.message }));
   // with the key, &hiretpl=1: the interview template for candidates (made and sent to Meta once, then its status), nothing sent to anyone
