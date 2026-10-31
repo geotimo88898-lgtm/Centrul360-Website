@@ -147,7 +147,7 @@
   function visible() {
     const q = K.norm(C.q || ''), qd = C.q.replace(/\D/g, '');
     return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' || C.loc === 'fb' ? c.channel === C.loc : c.location === C.loc)) && (C.show === 'all' || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h)) &&
-      (!q || K.norm(nameOf(c)).includes(q) || (qd.length >= 3 && String(c.phone).replace(/\D/g, '').includes(qd))));
+      (!q || K.norm(nameOf(c)).includes(q) || (!isIg(c) && K.phoneHit(c.phone, C.q))));
   }
   function paintList() {
     const box = panel.querySelector('[data-mx-list]');

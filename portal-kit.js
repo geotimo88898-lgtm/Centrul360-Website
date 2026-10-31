@@ -28,6 +28,15 @@
   }
   const esc = (s) => dedash(String(s == null ? '' : s)).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  // a typed number ("+40 768 262 367", "0768 262", "768262367", also as copied from WhatsApp) against a stored one
+  const phoneHit = (phone, raw) => {
+    const qd = String(raw || '').replace(/\D/g, '');
+    if (qd.length < 3) return false;
+    const pd = String(phone || '').replace(/\D/g, '');
+    const alts = [qd];
+    if (/^(0040|40)/.test(qd)) alts.push('0' + qd.replace(/^(0040|40)/, ''));
+    return alts.some((a) => pd.includes(a)) || (qd.length >= 9 && pd.slice(-9) === qd.slice(-9));
+  };
   const ui = () => window.c360 || { toast: (m) => window.alert(m), confirm: async (o) => window.confirm(o.message || o.title), prompt: async (o) => window.prompt(o.title, o.value || '') };
 
   // ------------------------------------------------------------------ events + data hub
@@ -708,7 +717,7 @@
   }
 
   window.K = {
-    on, emit, api, errText, ui, esc, dedash, norm, reduceMotion,
+    on, emit, api, errText, ui, esc, dedash, norm, phoneHit, reduceMotion,
     lei, num, pad, iso, today, parse, addDays, monthOf, thisMonth, addMonths, daysIn, mondayOf, DOW, DOW_S, MON, MON_S,
     dateShort, dateLong, monthLabel, relDay, ago, plural, initials, colorFor, avatar, wa, tel, intlPhone,
     icon, P, tween, countUp, countAll, everySecond, spark, ring, donut, chart, patch,

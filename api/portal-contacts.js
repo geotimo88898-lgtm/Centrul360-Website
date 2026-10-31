@@ -26,7 +26,7 @@
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary, removeBinary } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
-const { normalizePhone, upsertClient } = require('./_lib/clients');
+const { normalizePhone, phoneMatches, upsertClient } = require('./_lib/clients');
 const { cityOf, inCity } = require('./_lib/city');
 const { dedash } = require('./_lib/dedash');
 
@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
         if (filter === 'fise' && !c.filesCount) return false;
         if (!q) return true;
         const hay = norm(c.name + ' ' + c.email);
-        return q.split(/\s+/).every((w) => hay.includes(w)) || (qDigits.length >= 3 && normalizePhone(c.phone).includes(normalizePhone(body.q)));
+        return q.split(/\s+/).every((w) => hay.includes(w)) || (qDigits.length >= 3 && phoneMatches(c.phone, body.q));
       });
       const recent = (c) => c.lastVisit || c.createdAt || '';
       rows.sort((a, b) => (recent(a) < recent(b) ? 1 : recent(a) > recent(b) ? -1 : 0));

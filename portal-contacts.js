@@ -40,10 +40,13 @@
       clearTimeout(typingTimer); typingTimer = setTimeout(load, 220);
     });
   }
+  let loadSeq = 0;
   async function load() {
     S.loading = true;
+    const mine = ++loadSeq;
     try {
       const j = await api('list', { q: S.q, filter: S.filter, limit: S.limit });
+      if (mine !== loadSeq) return; // a newer search was started meanwhile: its answer is the one to show
       S.list = j.contacts || []; S.total = j.total || 0; S.counts = j.counts || {};
       render();
     } catch (e) {

@@ -23,7 +23,8 @@ function todayISO() {
 // not a full phone-validation library, just enough for a stable dedupe key.
 function normalizePhone(raw) {
   if (!raw) return '';
-  let digits = String(raw).replace(/[\s\-()]/g, '');
+  // a number copied from WhatsApp comes wrapped in invisible direction marks (U+202A … U+202C, U+200E): they hid the +40
+  let digits = String(raw).replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g, '').replace(/[\s\-()]/g, '');
 
   if (digits.startsWith('+40')) {
     digits = '0' + digits.slice(3);
@@ -38,6 +39,16 @@ function normalizePhone(raw) {
   digits = digits.replace(/\D/g, '');
 
   return digits;
+}
+
+// Whether a typed search ("+40 768 262 367", "0768 262", "768262367") is part of / the same as a stored number
+function phoneMatches(phone, raw) {
+  const qd = String(raw || '').replace(/\D/g, '');
+  if (qd.length < 3) return false;
+  const pd = String(phone || '').replace(/\D/g, ''), np = normalizePhone(phone);
+  const alts = [qd];
+  if (/^(0040|40)/.test(qd)) alts.push('0' + qd.replace(/^(0040|40)/, ''));
+  return alts.some((a) => pd.includes(a) || np.includes(a)) || (qd.length >= 9 && pd.slice(-9) === qd.slice(-9));
 }
 
 // Finds an existing client by normalized phone. Returns undefined if not found or
@@ -117,4 +128,4 @@ async function ensureContacts(people, { readJSON, writeJSON }) {
   return added;
 }
 
-module.exports = { normalizePhone, upsertClient, searchClients, ensureContacts };
+module.exports = { normalizePhone, phoneMatches, upsertClient, searchClients, ensureContacts };

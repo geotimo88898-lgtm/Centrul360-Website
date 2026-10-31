@@ -265,7 +265,7 @@
     if (S.q) {
       const q = norm(S.q), qd = S.q.replace(/\D/g, '');
       const hay = norm([l.name, l.email, l.interest, l.nextAction, l.location].concat((l.forms || []).map((f) => f.name)).join(' '));
-      if (!hay.includes(q) && !(qd.length >= 3 && String(l.phone).replace(/\D/g, '').includes(qd))) return false;
+      if (!hay.includes(q) && !K.phoneHit(l.phone, S.q)) return false;
     }
     return true;
   }
