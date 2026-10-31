@@ -119,7 +119,9 @@ module.exports = async (req, res) => {
     const list = (x) => (Array.isArray(x) ? x : Object.values(x || {}));
     const pick = (arr, f) => list(arr).filter((x) => d9(f(x)) === k);
     return {
-      clients: pick(clients, (x) => x.phone).map((x) => ({ source: x.source || '', created: x.createdAt || '', loc: x.location || '', hasName: !!x.name })),
+      clients: pick(clients, (x) => x.phone).map((x) => { const { normalizePhone } = require('./_lib/clients'), { inCity } = require('./_lib/city'), q = normalizePhone('+40 ' + k.slice(0, 3) + ' ' + k.slice(3, 6) + ' ' + k.slice(6));
+        return { source: x.source || '', created: x.createdAt || '', loc: x.location || '', hasName: !!x.name, format: String(x.phone || '').replace(/\d/g, '9'), normalized: normalizePhone(x.phone).replace(/\d/g, '9'),
+          searchFinds: { admin: normalizePhone(x.phone).includes(q), receptieTimisoara: normalizePhone(x.phone).includes(q) && inCity('Timișoara', x.location || ''), receptieArad: normalizePhone(x.phone).includes(q) && inCity('Arad', x.location || '') } }; }),
       leads: pick(leads, (x) => x.phone).map((x) => ({ created: x.createdAt || '', stage: x.stage || '', loc: x.location || '', hasName: !!x.name })),
       candidates: pick(cands, (x) => x.phone).map((x) => ({ at: x.at || '', job: x.job || '', welcomed: x.welcomed || '' })),
       chats: pick(convos, (x) => x.phone).map((x) => ({ phoneStored: x.phone, location: x.location || '', last: x.lastMessageAt || '', messages: (x.messages || []).length, in: (x.messages || []).filter((m) => m.direction === 'in').length })),
