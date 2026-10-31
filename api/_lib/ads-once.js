@@ -12,6 +12,11 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 31.10 evening, the owner ("cele cu ROAS clar la normal, restul pe economie"): the ads with a clear return keep their normal
+  // budgets (abdomen video 3 at 100, hifu gușă 50); video 8 has no visit paid yet, so it goes to the economical 40
+  { id: 'plan-2026-10-31-b', why: 'cele fără ROAS încă, pe economie, cerut de voi pe 31.10', actions: [
+    { campaignId: '120251418158480103', name: 'tm vid 8 - copie', daily: 40, why: 'TM abdomen video 8: nicio venire plătită încă, 40 lei/zi' },
+  ] },
   // 31.10 evening, the owner (the economical variant for next week; "dai push la 100 la abdomenul care merge", "cele care merg
   // extrem de bine, lasă-le la bugetul normal"): the four Timișoara HIFU gușă / abdomen ads that book cheaply back on at the
   // budgets they already have (hifu gușă 50, gușă iPad 48, abdomen video 3 at 100, abdomen video 8 at 50); Arad stays as it is
