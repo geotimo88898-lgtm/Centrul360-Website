@@ -4,6 +4,9 @@
 //   24.10: a cosmetician for Timișoara, base pay + sales commission, a raise on performance and seniority, only the
 //   cosmetician's diploma asked. The ad shows the gross pay (the owner: "reclama spune direct brutul"); it goes out
 //   once BRUT is set.
+//   31.10 (the owner, "pune una cu alt brut ... fără să mă mai întrebi"): the same ad with the gross that leaves 4.000 lei
+//   net (6.838 → 6.900, rounded up to the hundred; net = gross × 0.585: CAS 25%, CASS 10%, tax 10% of the rest), its
+//   picture redone with the new figure, the same form; the 5.100 one goes off once the new one is live.
 // data/hire-once.json: { jobs: { <id>: { formId, campaignId, at } } }
 
 const { readJSON, writeJSON } = require('./store');
@@ -71,19 +74,35 @@ const JOBS = [
     },
     text: (brut) => 'Angajăm cosmeticiană în Timișoara.\n\n💰 Salariu de bază ' + brut + ' lei brut + comision din vânzări\n📈 Creștere salarială după performanță și vechime\n🎓 Cerem doar diploma de cosmeticiană\n📅 Clientele vin din reclamele noastre, agenda e deja plină\n\n👉 Aplică în 30 de secunde din formular, te sunăm noi.',
     headline: 'Angajăm cosmeticiană în Timișoara', description: 'Centrul360 Timișoara' },
+  // the same ad, the same form (its candidates stay in one place), the same 50 lei a day; only the gross (and the picture
+  // that says it) changes; the first one goes off when this one is made
+  { id: 'cosmeticiana-tm-2026-10-31', city: 'Timișoara', job: 'Cosmeticiană', brut: '6.900', // ≈ 4.000 lei net
+    picture: 'https://admin.centrul360.com/brand_asset/angajare-cosmeticiana-tm-6900.jpg', suffix: ' · 6.900 brut', budget: 50,
+    formFrom: 'cosmeticiana-tm-2026-10-24', replaces: { campaignId: '120251498280800103', name: 'TM ANGAJARE · Cosmeticiană' },
+    text: null, headline: null, description: null },
 ];
+// the same texts as the first job's, for the ones that say "like that one"
+JOBS.forEach((j) => { if (j.text === null) Object.assign(j, { text: JOBS[0].text, headline: JOBS[0].headline, description: JOBS[0].description, form: JOBS[0].form }); });
 
 async function run() {
   const welcome = await welcomeCandidates().catch((e) => ({ error: e.message }));
+  return Object.assign(await publishJobs(), { welcome });
+}
+
+// the ads of the jobs not made yet (nothing is sent to anyone here: the candidates' welcome is run() above)
+async function publishJobs() {
   const doc = Object.assign({ jobs: {} }, (await readJSON(KEY, {}).catch(() => ({}))) || {});
   const open = JOBS.filter((j) => !(doc.jobs[j.id] && doc.jobs[j.id].campaignId));
-  if (!open.length) return { welcome };
+  if (!open.length) return {};
   const conn = await loadConnection(readJSON);
   if (!conn.userToken || !conn.adAccountId || !conn.pageId) return { skipped: 'not_connected' };
   const out = {};
   for (const j of open) {
     const st = doc.jobs[j.id] = doc.jobs[j.id] || {};
-    // 1. its own form, marked as a job's (its leads become candidates)
+    // the clock, an open portal and Claude's key may all come here: one at a time
+    if (st.making && Date.now() - Date.parse(st.making) < 10 * 60e3) { out[j.id] = { ad: 'already being made' }; continue; }
+    // 1. its own form, marked as a job's (its leads become candidates), or the one of the job it repeats
+    if (!st.formId && j.formFrom && doc.jobs[j.formFrom] && doc.jobs[j.formFrom].formId) st.formId = doc.jobs[j.formFrom].formId;
     if (!st.formId) {
       const r = await createForm({ readJSON, writeJSON }, j.form);
       if (r.error) { out[j.id] = { form: r.error }; continue; }
@@ -99,19 +118,29 @@ async function run() {
     const img = await fetch(j.picture);
     if (!img.ok) { out[j.id] = Object.assign(out[j.id] || {}, { ad: 'picture ' + img.status }); continue; }
     const d = await ads.loadDefaults(readJSON);
+    st.making = new Date().toISOString();
+    await writeJSON(KEY, doc, { quiet: true });
     const c = ads.cleanSettings({
-      adsetId: '', campaignName: 'TM ANGAJARE · ' + j.job, adsetName: j.city + ' 25 km · toți 18-65', adName: 'Angajăm ' + j.job.toLowerCase() + ' · ' + j.city,
-      city: j.city, radiusKm: 25, women: false, ageMin: 18, ageMax: 65, placements: d.placements, budget: d.budget, formId: st.formId,
+      adsetId: '', campaignName: 'TM ANGAJARE · ' + j.job + (j.suffix || ''), adsetName: j.city + ' 25 km · toți 18-65', adName: 'Angajăm ' + j.job.toLowerCase() + ' · ' + j.city,
+      city: j.city, radiusKm: 25, women: false, ageMin: 18, ageMax: 65, placements: d.placements, budget: j.budget || d.budget, formId: st.formId,
       primaryText: j.text(j.brut), headline: j.headline, description: j.description, cta: 'APPLY_NOW', startNow: true, employment: true,
     });
-    if (c.error) { out[j.id] = Object.assign(out[j.id] || {}, { ad: c.error }); continue; }
+    if (c.error) { delete st.making; out[j.id] = Object.assign(out[j.id] || {}, { ad: c.error }); continue; }
     const r = await ads.publish(conn, { base64: Buffer.from(await img.arrayBuffer()).toString('base64'), name: 'angajare-' + j.id + '.jpg' }, c.s);
-    if (r.error) { out[j.id] = Object.assign(out[j.id] || {}, { ad: r.error }); continue; }
-    st.campaignId = r.campaignId; st.at = new Date().toISOString();
-    out[j.id] = Object.assign(out[j.id] || {}, { ad: 'published', campaignId: r.campaignId, warning: r.warning });
+    if (r.error) { delete st.making; out[j.id] = Object.assign(out[j.id] || {}, { ad: r.error }); continue; }
+    st.campaignId = r.campaignId; st.at = new Date().toISOString(); delete st.making;
+    out[j.id] = Object.assign(out[j.id] || {}, { ad: 'published', campaignId: r.campaignId, started: r.started, warning: r.warning });
+    await writeJSON(KEY, doc, { quiet: true }); // the ad is made: written down before anything else
+    // the one it replaces goes off (only once this one is live: no day without a job ad)
+    if (j.replaces && r.started) {
+      const off = await ads.act(conn, { action: 'status', id: j.replaces.campaignId, status: 'PAUSED' });
+      if (!off.error) await require('./ads-cache').switched(j.replaces.campaignId, 'PAUSED').catch(() => {});
+      out[j.id].replaced = off.error ? 'not off: ' + off.error : 'off';
+      if (!off.error) st.replacedAt = new Date().toISOString();
+    }
   }
   await writeJSON(KEY, doc, { quiet: true });
-  return Object.assign(out, { welcome });
+  return out;
 }
 
-module.exports = { run, welcomeCandidates };
+module.exports = { run, publishJobs, welcomeCandidates };
