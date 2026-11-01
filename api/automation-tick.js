@@ -150,6 +150,8 @@ module.exports = async (req, res) => {
     return [].concat(((g && g.log) || []).filter((e) => Date.parse(e.at) > since && e.type && e.type !== 'stop').map(row('guard')), ((o && o.log) || []).filter((e) => Date.parse(e.at) > since && (e.to != null || e.status)).map(row('once')))
       .sort((a, b) => (a.at < b.at ? -1 : 1));
   })().catch((e) => ({ error: e.message }));
+  // with the key, &trend=<days>: the running campaigns' spend and leads per day and their frequency (read only)
+  if (readOnly && req.query.trend) out.trend = await require('./_lib/ads-report').trend(req.query.trend).catch((e) => ({ error: e.message }));
   // with the key, &hire=1 makes the job ads the owners approved now (api/_lib/hire-once.js), nothing sent to anyone
   if (readOnly && req.query.hire) out.hire = await require('./_lib/hire-once').publishJobs().catch((e) => ({ error: e.message }));
   // with the key, &hiretpl=1: the interview template for candidates (made and sent to Meta once, then its status), nothing sent to anyone

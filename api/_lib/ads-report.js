@@ -118,4 +118,20 @@ async function bookingsOf(ids) {
   return out;
 }
 
-module.exports = { bookingsOf, report, calendar };
+// How the running campaigns do day by day (1.11, the owner: "poate s-au saturat și alea bune"): spend and Meta's leads per day
+// for the last days, and how often the same women saw each over the week (frequency). Read only.
+async function trend(days) {
+  const conn = await loadConnection(readJSON);
+  if (!conn.userToken || !conn.adAccountId) return { error: 'not_connected' };
+  const n = Math.min(14, Math.max(3, Number(days) || 7));
+  const range = { since: day(Date.now() - (n - 1) * 864e5), until: day(Date.now()) };
+  const r = await ads.campaignDays(conn, range);
+  if (r.error) return { error: r.error };
+  const ids = [...new Set(r.rows.map((x) => x.campaignId))];
+  const fr = await ads.campaignReach(conn, range, ids);
+  const by = {};
+  r.rows.forEach((x) => { const c = by[x.campaignId] = by[x.campaignId] || { name: x.campaignName, days: {} }; c.days[x.day] = { spend: Math.round(x.spend), leads: x.metaLeads }; });
+  return { range, campaigns: Object.entries(by).map(([id, c]) => ({ id, name: c.name, freq: fr.freq && fr.freq.get(id) ? Math.round(fr.freq.get(id) * 100) / 100 : null, days: c.days })) };
+}
+
+module.exports = { trend, bookingsOf, report, calendar };
