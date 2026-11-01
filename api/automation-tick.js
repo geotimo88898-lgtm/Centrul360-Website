@@ -184,6 +184,26 @@ module.exports = async (req, res) => {
       return { time: a.time, loc: String(a.location || '').slice(0, 3), status: a.status, treatment: String(a.treatment || '').slice(0, 14), engineSaysSent: sentLine.map((x) => String(x).slice(5, 16)), inChat, hasChat: !!c, hasPhone: !!a.clientPhone, runStatus: runs.map((r) => r.status) };
     }).sort((a, b) => a.time.localeCompare(b.time));
   })().catch((e) => ({ error: e.message }));
+  // with the key, &lostmsgs=1: the automatic messages the engine says it sent, and how many are in the chats, by day (counts only)
+  if (readOnly && req.query.lostmsgs) out.lostmsgs = await (async () => {
+    const [runsDoc, convos, appts] = await Promise.all([require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', []), readJSON('data/appointments.json', [])]);
+    const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+    const apptById = new Map(appts.map((a) => [a.id, a]));
+    const chatByPhone = new Map(); convos.forEach((c) => chatByPhone.set(d9(c.phone), c));
+    const days = {};
+    runsDoc.runs.forEach((r) => {
+      const a = r.ent && apptById.get(r.ent.id); const chat = a && chatByPhone.get(d9(a.clientPhone));
+      (r.log || []).filter((l) => /^WhatsApp de pe/.test(l.text) && !/Candidat/.test(l.text)).forEach((l) => {
+        const day = l.at.slice(0, 10); const kind = /Locația/.test(l.text) ? 'loc' : /Ziua dinainte|24h/.test(l.text) ? 'day' : /2h/.test(l.text) ? '2h' : /Confirmare/.test(l.text) ? 'conf' : 'other';
+        const x = days[day] = days[day] || {}; const k = x[kind] = x[kind] || { said: 0, inChat: 0 };
+        k.said++;
+        // in the chat: an automatic message for this appointment within 3 minutes of the log line
+        const t = Date.parse(l.at);
+        if (chat && (chat.messages || []).some((m) => m.auto && m.appt === r.ent.id && Math.abs(Date.parse(m.timestamp) - t) < 3 * 60e3)) k.inChat++;
+      });
+    });
+    return days;
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
