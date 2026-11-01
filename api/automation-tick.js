@@ -163,9 +163,12 @@ module.exports = async (req, res) => {
     const ids = new Set(mine.map((a) => a.id));
     const wfName = (id) => (doc.workflows.find((w) => w.id === id) || {}).name || id;
     const phone = String((mine[0] || {}).clientPhone || '').replace(/\D/g, '').slice(-9);
-    const chat = convos.find((c) => String(c.phone || '').replace(/\D/g, '').slice(-9) === phone && phone.length === 9);
+    const chats = convos.filter((c) => String(c.phone || '').replace(/\D/g, '').slice(-9) === phone && phone.length === 9);
+    const chat = chats[0];
     return { appts: mine.map((a) => ({ id: a.id, date: a.date, time: a.time, status: a.status, loc: a.location, created: a.createdAt, updated: a.updatedAt, phone: a.clientPhone ? 'yes' : 'NO', treatment: a.treatment || '' })),
       runs: runsDoc.runs.filter((r) => r.ent && ids.has(r.ent.id)).map((r) => ({ appt: r.ent.id, wf: wfName(r.wf), status: r.status, created: r.createdAt, akey: r.akey ? 'yes' : 'no', log: (r.log || []).map((l) => l.at.slice(5, 16) + ' ' + l.text) })),
+      chatCount: chats.length, chatKeys: chats.map((c) => String(c.phone).replace(/\d/g, '9') + ' / ' + (c.messages || []).length + ' msgs'),
+      autoSent: [].concat(...chats.map((c) => (c.messages || []).filter((m) => m.auto || m.sentBy === null).filter((m) => String(m.timestamp) >= '2026-10-31').map((m) => ({ key: String(c.phone).replace(/\d/g, '9'), at: String(m.timestamp).slice(5, 16), status: m.status, err: m.error || '', text: String(m.text || '').slice(0, 60) })))),
       chat: chat ? { location: chat.location, messages: (chat.messages || []).slice(-8).map((m) => ({ at: String(m.timestamp).slice(5, 16), dir: m.direction, type: m.type, status: m.status, by: m.sentBy ? 'staff' : m.auto ? 'auto' : '', text: String(m.text || '').slice(0, 90), tpl: m.templateId ? 'tpl' : '' })) } : null };
   })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
