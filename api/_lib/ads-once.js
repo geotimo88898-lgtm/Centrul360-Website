@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 1.11, the owner ("oprește ce nu merge, că se cheltuie aiurea"): Arad's abdomen video 8 after 4 days: 128 lei, 8 leads, 1 booking
+  // from 6 (65 lei one, over the 60 line), the leads' price up to 31 lei today; the others book under their lines or have
+  // a clear return, so they stay
+  { id: 'stop-2026-11-01', why: 'oprită pe 1.11: 65 lei pe programare, 1 din 6 lead-uri', actions: [
+    { campaignId: '120251598142680103', name: 'AR VIDEO · HIFU abdomen · vid 8', status: 'PAUSED', why: 'Arad abdomen video 8: 128 lei, o programare din 6 lead-uri' },
+  ] },
   // 31.10 evening, the owner ("cele cu ROAS clar la normal, restul pe economie"): the ads with a clear return keep their normal
   // budgets (abdomen video 3 at 100, hifu gușă 50); video 8 has no visit paid yet, so it goes to the economical 40
   { id: 'plan-2026-10-31-b', why: 'cele fără ROAS încă, pe economie, cerut de voi pe 31.10', actions: [
