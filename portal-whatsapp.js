@@ -170,7 +170,7 @@
   function keepPicked() {
     const box = panel && panel.querySelector('[data-mx-list]');
     const r = box && box.querySelector('.mx-row.is-on');
-    if (!r || phone()) return;
+    if (!r || phone() || Date.now() > (C.keepUntil || 0)) return; // later refreshes pulled her back up to the open conversation
     const y = r.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
     // far from it (the list was reset): back to it, in the middle; just at an edge: only as much as it takes
     const far = y + r.offsetHeight < box.scrollTop || y > box.scrollTop + box.clientHeight;
@@ -309,6 +309,7 @@
     const box = panel.querySelector('[data-mx-thread]');
     if (box && box.dataset.for !== ph) { delete box.dataset.for; box.innerHTML = ''; }
     C.selectedPhone = ph; C.thread = null;
+    C.keepUntil = Date.now() + 2500; // the list shows the picked row for a moment (Safari reset it), never again while she reads on
     // on a phone the conversation is a screen of its own: the phone's back button returns to the list
     if (phone() && !C.pushed) { try { history.pushState({ mx: 1 }, '', location.href); C.pushed = true; } catch (e) { /* no history */ } }
     paintList();

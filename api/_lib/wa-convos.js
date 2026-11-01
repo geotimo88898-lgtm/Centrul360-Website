@@ -4,7 +4,7 @@
 // from the portal vanished, the status of it saved over it). Now each copy is merged into the newest file: messages by
 // id (the furthest status wins), conversations by phone; none is ever dropped.
 
-const { readJSON, writeJSON } = require('./store');
+const { readJSON, writeJSON, readJSONTagged, writeJSONIf } = require('./store');
 
 const KEY = 'data/whatsapp-conversations.json';
 const RANK = { failed: 0, sent: 1, delivered: 2, read: 3 };
@@ -27,11 +27,24 @@ function mergeConvo(f, c) {
 }
 
 // writes this copy merged into the newest file; returns what was written
-async function saveConversations(mine) {
-  const fresh = await readJSON(KEY, []);
-  const byPhone = new Map(fresh.map((c) => [c.phone, c]));
+function mergeAll(fresh, mine) {
+  const byPhone = new Map((Array.isArray(fresh) ? fresh : []).map((c) => [c.phone, c]));
   const out = mine.map((c) => { const f = byPhone.get(c.phone); byPhone.delete(c.phone); return f ? mergeConvo(f, c) : c; });
   byPhone.forEach((c) => out.push(c)); // started by someone else meanwhile
+  return out;
+}
+// Merging into the newest file was not enough: two writers that read the same version a moment apart each wrote theirs
+// over the other's (the webhook's statuses arrive in a burst while the automations send, 1.11: a third of the reminders
+// sent never reached the chats). Now a write lands only on the version it merged into; if someone wrote first, it merges
+// again into theirs. After 8 tries it still writes (as before), so a change is never dropped.
+async function saveConversations(mine) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { data, etag } = await readJSONTagged(KEY, []);
+    const out = mergeAll(data, mine);
+    if (await writeJSONIf(KEY, out, etag)) return out;
+    await new Promise((r) => setTimeout(r, 25 + Math.random() * 80 * (attempt + 1)));
+  }
+  const out = mergeAll(await readJSON(KEY, []), mine);
   await writeJSON(KEY, out);
   return out;
 }
