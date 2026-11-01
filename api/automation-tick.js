@@ -171,6 +171,19 @@ module.exports = async (req, res) => {
       autoSent: [].concat(...chats.map((c) => (c.messages || []).filter((m) => m.auto || m.sentBy === null).filter((m) => String(m.timestamp) >= '2026-10-31').map((m) => ({ key: String(c.phone).replace(/\d/g, '9'), at: String(m.timestamp).slice(5, 16), status: m.status, err: m.error || '', text: String(m.text || '').slice(0, 60) })))),
       chat: chat ? { location: chat.location, messages: (chat.messages || []).slice(-8).map((m) => ({ at: String(m.timestamp).slice(5, 16), dir: m.direction, type: m.type, status: m.status, by: m.sentBy ? 'staff' : m.auto ? 'auto' : '', text: String(m.text || '').slice(0, 90), tpl: m.templateId ? 'tpl' : '' })) } : null };
   })().catch((e) => ({ error: e.message }));
+  // with the key, &dayrem=<YYYY-MM-DD>: for that day's appointments, whether the "day before" reminder was sent by the engine and is in the chat (counts)
+  if (readOnly && /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.dayrem || ''))) out.dayrem = await (async () => {
+    const [appts, runsDoc, convos] = await Promise.all([readJSON('data/appointments.json', []), require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', [])]);
+    const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+    const byPhone = new Map(); convos.forEach((c) => byPhone.set(d9(c.phone), c));
+    return appts.filter((a) => a.date === req.query.dayrem && a.status !== 'anulata' && a.status !== 'concediu').map((a) => {
+      const runs = runsDoc.runs.filter((r) => r.ent && r.ent.id === a.id);
+      const sentLine = [].concat(...runs.map((r) => (r.log || []).filter((l) => /Ziua dinainte|24h|înainte/.test(l.text) && /^WhatsApp/.test(l.text)).map((l) => l.at)));
+      const c = byPhone.get(d9(a.clientPhone));
+      const inChat = c ? (c.messages || []).filter((m) => m.auto && /reamintesc/i.test(m.text || '') && String(m.timestamp).slice(0, 10) >= '2026-10-31').map((m) => String(m.timestamp).slice(5, 16)) : null;
+      return { time: a.time, loc: String(a.location || '').slice(0, 3), status: a.status, treatment: String(a.treatment || '').slice(0, 14), engineSaysSent: sentLine.map((x) => String(x).slice(5, 16)), inChat, hasChat: !!c, hasPhone: !!a.clientPhone, runStatus: runs.map((r) => r.status) };
+    }).sort((a, b) => a.time.localeCompare(b.time));
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
