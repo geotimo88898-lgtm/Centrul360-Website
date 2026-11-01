@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 1.11 afternoon, the owner ("stinge ce nu merge, poate s-au saturat și alea bune, fă cum crezi, doar să nu se cheltuie aiurea"):
+  // by the days' numbers, Arad's second gușă ad is saturated (frequency 2.2, the last three days 129 lei for 4 leads, a lead at
+  // 32 lei against 12-15 before, a booking over the 30 line); abdomen video 3 shows the same fatigue (the last two days a lead at
+  // 26 lei against 8-12, today 69 lei for one) but its visits pay ~690 lei each, so it is cut to 70, not stopped
+  { id: 'stop-2026-11-01-b', why: 'saturate pe 1.11: oprită cea de-a doua gușă din Arad, abdomenul video 3 la 70', actions: [
+    { campaignId: '120251418133050103', name: 'AR HIFU G · sezon', status: 'PAUSED', why: 'Arad gușă (a doua): saturată, 129 lei pentru 4 lead-uri în 3 zile' },
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', daily: 70, why: 'TM abdomen video 3: lead-ul a ajuns la 26 lei, 70 lei/zi până se echilibrează' },
+  ] },
   // 1.11, the owner ("oprește ce nu merge, că se cheltuie aiurea"): Arad's abdomen video 8 after 4 days: 128 lei, 8 leads, 1 booking
   // from 6 (65 lei one, over the 60 line), the leads' price up to 31 lei today; the others book under their lines or have
   // a clear return, so they stay
