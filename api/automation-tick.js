@@ -156,6 +156,18 @@ module.exports = async (req, res) => {
   if (readOnly && req.query.hire) out.hire = await require('./_lib/hire-once').publishJobs().catch((e) => ({ error: e.message }));
   // with the key, &hiretpl=1: the interview template for candidates (made and sent to Meta once, then its status), nothing sent to anyone
   if (readOnly && req.query.hiretpl) out.hiretpl = await require('./_lib/hire-once').interviewTemplate().catch((e) => ({ error: e.message }));
+  // with the key, &cruns=<client id>: that client's appointments and what the automations did for each (like &runs, by client), read only
+  if (readOnly && /^[\w-]{8,60}$/.test(String(req.query.cruns || ''))) out.cruns = await (async () => {
+    const [appts, runsDoc, doc, convos] = await Promise.all([readJSON('data/appointments.json', []), require('./_lib/workflows').loadRuns(), require('./_lib/workflows').loadDoc(), readJSON('data/whatsapp-conversations.json', [])]);
+    const mine = appts.filter((a) => a.clientId === String(req.query.cruns));
+    const ids = new Set(mine.map((a) => a.id));
+    const wfName = (id) => (doc.workflows.find((w) => w.id === id) || {}).name || id;
+    const phone = String((mine[0] || {}).clientPhone || '').replace(/\D/g, '').slice(-9);
+    const chat = convos.find((c) => String(c.phone || '').replace(/\D/g, '').slice(-9) === phone && phone.length === 9);
+    return { appts: mine.map((a) => ({ id: a.id, date: a.date, time: a.time, status: a.status, loc: a.location, created: a.createdAt, updated: a.updatedAt, phone: a.clientPhone ? 'yes' : 'NO', treatment: a.treatment || '' })),
+      runs: runsDoc.runs.filter((r) => r.ent && ids.has(r.ent.id)).map((r) => ({ appt: r.ent.id, wf: wfName(r.wf), status: r.status, created: r.createdAt, akey: r.akey ? 'yes' : 'no', log: (r.log || []).map((l) => l.at.slice(5, 16) + ' ' + l.text) })),
+      chat: chat ? { location: chat.location, messages: (chat.messages || []).slice(-8).map((m) => ({ at: String(m.timestamp).slice(5, 16), dir: m.direction, type: m.type, status: m.status, by: m.sentBy ? 'staff' : m.auto ? 'auto' : '', text: String(m.text || '').slice(0, 90), tpl: m.templateId ? 'tpl' : '' })) } : null };
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
