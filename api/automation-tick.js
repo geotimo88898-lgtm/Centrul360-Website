@@ -204,6 +204,22 @@ module.exports = async (req, res) => {
     });
     return days;
   })().catch((e) => ({ error: e.message }));
+  // with the key, &dups=<days>: appointments that got the same automatic message more than once (chat and engine), counts and times only
+  if (readOnly && /^\d{1,2}$/.test(String(req.query.dups || ''))) out.dups = await (async () => {
+    const since = new Date(Date.now() - Number(req.query.dups) * 864e5).toISOString();
+    const [runsDoc, convos, doc] = await Promise.all([require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', []), require('./_lib/workflows').loadDoc()]);
+    const wf = (id) => (doc.workflows.find((w) => w.id === id) || {}).name || id;
+    const engine = {};
+    runsDoc.runs.forEach((r) => (r.log || []).filter((l) => l.at >= since && /^WhatsApp de pe/.test(l.text)).forEach((l) => { const k = (r.ent && r.ent.id) + '|' + l.text; (engine[k] = engine[k] || []).push(wf(r.wf) + ' ' + l.at.slice(5, 16)); }));
+    const dupEngine = Object.entries(engine).filter(([, v]) => v.length > 1).map(([k, v]) => ({ msg: k.split('|')[1], times: v }));
+    const chat = [];
+    convos.forEach((c) => { const by = {}; (c.messages || []).filter((m) => m.auto && m.timestamp >= since).forEach((m) => { const k = (m.appt || '') + '|' + m.templateId; (by[k] = by[k] || []).push(String(m.timestamp).slice(5, 16)); });
+      Object.entries(by).filter(([, v]) => v.length > 1).forEach(([k, v]) => chat.push({ appt: !!k.split('|')[0], times: v })); });
+    const flows = (doc.workflows || []).map((w) => ({ name: w.name, active: !!w.active, trigger: w.trigger && (w.trigger.type || w.trigger) }));
+    // appointments with more than one running run
+    const per = {}; runsDoc.runs.filter((r) => r.ent && r.status === 'waiting').forEach((r) => { per[r.ent.id] = (per[r.ent.id] || 0) + 1; });
+    return { dupEngineLines: dupEngine.length, dupEngine: dupEngine.slice(0, 6), dupChat: chat.length, dupChatSample: chat.slice(0, 8), flows, apptsWithManyWaitingRuns: Object.values(per).filter((n) => n > 1).length };
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
