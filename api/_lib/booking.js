@@ -14,16 +14,17 @@ const KEY = 'data/booking.json';
 const CITIES = ['Timișoara', 'Arad'];
 const CITY_KEY = { 'Timișoara': 'timisoara', Arad: 'arad' };
 
-// From the Calendar's last weeks (4.11): Timișoara Monday to Friday 9 to about 20:30, two clients at once most of the
-// day; Arad Monday to Friday 10 to 19, one at a time; no bookings on Saturdays lately (closed), none on Sundays.
-const week = (from, to, at) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, { on: d >= 1 && d <= 5, from, to, at }]));
+// From the Calendar's last weeks (4.11): Timișoara Monday to Friday 9 to about 20:30, Arad Monday to Friday 10 to 19;
+// no bookings on Saturdays lately (closed), none on Sundays. One client at a time, two in Timișoara on Tuesdays and
+// Fridays (the owner, 4.11: a second cosmetician comes those days). Changed in Calendar → Online.
+const week = (from, to, at, two) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, { on: d >= 1 && d <= 5, from, to, at: (two || []).includes(d) ? 2 : at }]));
 const DEFAULTS = {
   on: true,
   step: 30,      // the grid of start times, minutes
   notice: 120,   // the earliest start from now, minutes
   ahead: 21,     // how many days ahead can be booked
   cities: {
-    'Timișoara': { days: week('09:00', '20:00', 2), closed: [] },
+    'Timișoara': { days: week('09:00', '20:00', 1, [2, 5]), closed: [] },
     Arad: { days: week('10:00', '19:00', 1), closed: [] },
   },
 };
