@@ -70,14 +70,22 @@
   .bk-pr s{ display:block; font-size:12px; color:rgba(245,244,242,.38); }
   .bk-pr .free{ color:#e9cfa3; font-weight:700; font-size:13px; }
   .bk-svc.gift{ border-color:rgba(233,207,163,.35); }
+  .bk-city{ padding:16px; }
+  .bk-opt{ padding:18px; align-items:flex-start; }
+  .bk-opt .bk-pr{ align-self:center; }
+  .bk-tag{ display:inline-block; font-style:normal; font-size:10.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:#e9cfa3; margin-bottom:6px; }
+  .bk-opt b{ font-size:16px; }
+  .bk-opt small{ line-height:1.45; max-width:30ch; }
+  .bk-pin{ width:44px; height:44px; flex:none; border-radius:50%; display:grid; place-items:center; color:#e9cfa3; background:rgba(233,207,163,.08); border:1px solid rgba(233,207,163,.25); }
+  .bk-city b{ font-size:16.5px; }
+  .bk-go{ margin-left:auto; flex:none; color:rgba(245,244,242,.4); display:grid; place-items:center; transition:transform .25s cubic-bezier(.16,1,.3,1), color .2s; }
+  .bk-city:hover .bk-go{ transform:translateX(3px); color:#f5f4f2; }
   .bk-chip{ display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin-bottom:14px; }
   .bk-chip div{ min-width:0; }
   .bk-chip b{ display:block; font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .bk-chip small{ display:block; font-size:12.5px; color:rgba(245,244,242,.5); margin-top:2px; }
   .bk-link{ margin-left:auto; flex:none; border:0; background:rgba(255,255,255,.07); color:#f5f4f2; font:inherit; font-size:12.5px; font-weight:600; padding:8px 12px; border-radius:999px; cursor:pointer; }
   .bk-link:hover{ background:rgba(255,255,255,.13); }
-  .bk-alt{ margin:-6px 0 14px; font-size:12.5px; color:rgba(245,244,242,.5); line-height:1.5; }
-  .bk-alt button{ border:0; background:none; padding:0; color:#e9cfa3; font:inherit; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
   .bk-month{ display:flex; align-items:baseline; justify-content:space-between; margin:4px 0 10px; }
   .bk-month b{ font-size:13px; font-weight:600; color:rgba(245,244,242,.7); text-transform:capitalize; }
   .bk-month span{ font-size:12px; color:rgba(245,244,242,.4); }
@@ -160,6 +168,7 @@
     pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
     spark: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg>',
     wa: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>',
+    next: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="#e9cfa3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
   };
 
@@ -181,7 +190,7 @@
     el.innerHTML = (mount ? '' : '<div class="bk-bg" data-bk-close></div>') +
       '<div class="bk"><span class="bk-grab"></span><div class="bk-head">' +
       '<button type="button" class="bk-ico" data-bk-back aria-label="Înapoi">' + ICON.back + '</button>' +
-      '<div class="bk-prog" aria-hidden="true"><i></i><i></i><i></i></div>' +
+      '<div class="bk-prog" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
       (mount ? '<span class="bk-ico" style="visibility:hidden"></span>' : '<button type="button" class="bk-ico" data-bk-close aria-label="Închide">' + ICON.x + '</button>') +
       '</div><div class="bk-body" aria-live="polite"></div></div>';
     if (mount) { mount.innerHTML = ''; mount.appendChild(el); } else document.body.appendChild(el);
@@ -229,8 +238,10 @@
     }
     paint();
   }
-  // the treatments of the city (the first step); a treatment asked by the button goes straight to the hours
-  async function loadServices() {
+  // What can be booked in the city: the procedure the client came from (the button she pressed) and the free
+  // consultation, nothing else (the owner, 4.11). mode 'enter': after the city is known; 'switch': the city changed
+  // on the hours' step
+  async function loadServices(mode) {
     const my = ++seq;
     S.services = null;
     paint();
@@ -241,16 +252,27 @@
       S.services = d.services || []; S.off = d.on === false; S.err = '';
     } catch (e) { if (my === seq) { S.err = 'net'; S.services = []; } }
     if (my !== seq) return;
-    const w = S.want; S.want = null;
-    if (w && !S.off) {
+    S.proc = null; S.note = '';
+    const w = S.pick;
+    if (w && w.svc && w.svc !== 'consult' && !S.off && S.err !== 'net') {
       const id = pick(w);
-      if (id && w.jump) { S.svc = id; S.label = w.label || S.label; S.service = byId(id); if (S.step !== 'when') go('when'); load(); return; }
-      if (id) S.svc = id; // marked in the list, she confirms it
-      if (w.svc && w.svc !== 'consult') S.want = w; // kept: switching the clinic tries it again
-      if (w.svc && w.svc !== 'consult') S.note = (w.label || 'Tratamentul ales') + (S.city === 'Arad' ? ' se face doar la Timișoara.' : ' nu se face la ' + S.city + '.') + ' Alege din lista clinicii sau schimbă orașul.';
-      if (S.step !== 'svc') { go('svc', 'back'); return; }
+      if (id && id !== 'consult') { S.label = w.label || S.label; S.proc = byId(id); }
+      else S.note = (w.label || 'Procedura aleasă') + (S.city === 'Arad' ? ' se face doar la Timișoara.' : ' nu se face la ' + S.city + '.') + ' Poți veni la consultația gratuită sau schimbi orașul.';
     }
-    paint();
+    if (S.off || S.err === 'net') { paint(); return; }
+    if (mode === 'switch') {
+      if (S.svc !== 'consult' && !S.proc) { go('svc', 'back'); return; }
+      choose(S.svc === 'consult' ? 'consult' : S.proc.id, true);
+      return;
+    }
+    if (S.proc || S.note) { if (S.step !== 'svc') go('svc'); else paint(); return; } // the choice: the procedure or the free consultation
+    choose('consult', S.step === 'when');
+  }
+  const consultSvc = () => (S.services || []).find((x) => x.id === 'consult') || { id: 'consult', title: 'Consultație gratuită', minutes: 30, price: 0 };
+  function choose(id, stay) {
+    S.svc = id; S.service = id === 'consult' ? consultSvc() : S.proc; S.time = '';
+    if (stay && S.step === 'when') paint(); else go('when');
+    load();
   }
   // which service of the city a button meant: the same offer, an offer whose name it carries, else the treatment by its name
   function pick(w) {
@@ -273,9 +295,9 @@
     if (!root) return;
     body = root.querySelector('.bk-body');
     const back = root.querySelector('[data-bk-back]');
-    back.hidden = S.step === 'svc' || S.step === 'done';
-    const html = S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'you' ? youHtml() : doneHtml();
-    prog(S.step === 'svc' ? 1 : S.step === 'when' ? 2 : 3);
+    back.hidden = S.step === 'city' || S.step === 'done';
+    const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'you' ? youHtml() : doneHtml();
+    prog({ city: 1, svc: 2, when: 3, you: 4, done: 4 }[S.step] || 1);
     const anim = S.dir;
     body.innerHTML = '<div class="bk-step' + (anim === 'back' ? ' back' : '') + '">' + html + '</div>';
     if (!anim) body.firstChild.style.animation = 'none';
@@ -291,27 +313,30 @@
     if (!s.price) return '';
     return '<span class="bk-pr"><strong>' + lei(s.price) + '</strong>' + (s.old > s.price ? '<s>' + lei(s.old) + '</s>' : '') + '</span>';
   }
+  // first: the clinic (when the page or the button didn't say it)
+  function cityHtml() {
+    return '<p class="bk-eyebrow">Programare online</p><h2 class="bk-h">În ce <em>oraș</em> vii?</h2><div class="bk-list">' +
+      ['Timișoara', 'Arad'].map((c) => '<button type="button" class="bk-svc bk-city' + (S.city === c ? ' on' : '') + '" data-city="' + c + '"><span class="bk-pin">' + ICON.pin + '</span>' +
+        '<span><b>' + c + '</b><small>' + esc(ADDR[c].split(',')[0]) + '</small></span><span class="bk-go">' + ICON.next + '</span></button>').join('') + '</div>';
+  }
   function svcHtml() {
-    let h = '<p class="bk-eyebrow">Programare online</p><h2 class="bk-h">Ce <em>programezi?</em></h2>' + segHtml();
-    if (!S.city) return h + '<div class="bk-empty">Alege clinica la care vii.</div>';
+    if (!S.city) return cityHtml();
+    let h = '<p class="bk-eyebrow">' + esc(S.city) + '</p><h2 class="bk-h">Ce <em>programezi?</em></h2>' +
+      '<div class="bk-chip"><div><b>Centrul360 ' + esc(S.city) + '</b><small>' + esc(ADDR[S.city]) + '</small></div><button type="button" class="bk-link" data-go="city">Schimbă orașul</button></div>';
     if (S.off) return h + offHtml();
-    if (!S.services) return h + '<div class="bk-list">' + '<div class="bk-skel" style="height:66px"></div>'.repeat(4) + '</div>';
+    if (S.err === 'net') return h + '<div class="bk-empty">Nu am putut încărca programările.<br><button type="button" class="bk-link" data-retry style="margin-top:12px">Încearcă din nou</button></div>' + waNote();
+    if (!S.services) return h + '<div class="bk-list">' + '<div class="bk-skel" style="height:78px;border-radius:18px"></div>'.repeat(2) + '</div>';
     if (S.note) h += '<div class="bk-alert">' + esc(S.note) + '</div>';
-    const list = S.services.slice();
-    if (S.svc === 'custom' && S.label) list.splice(1, 0, { id: 'custom', title: S.label, minutes: 60, price: 0 });
-    // two ways in: not sure yet → the free consultation; sure → the procedure itself
-    const card = (s) => '<button type="button" class="bk-svc' + (s.id === 'consult' ? ' gift' : '') + (s.id === S.svc ? ' on' : '') + '" data-svc="' + esc(s.id) + '">' +
-      '<span><b>' + esc(s.title) + '</b><small>' + (s.id === 'consult' ? 'Nu știi încă ce ți se potrivește? Evaluăm zona și îți spunem sincer. ' + mins(s.minutes) + ', fără obligații.' : mins(s.minutes)) + '</small></span>' + priceHtml(s) + '</button>';
-    const consult = list.filter((s) => s.id === 'consult'), procs = list.filter((s) => s.id !== 'consult');
-    return h + '<p class="bk-part" style="margin-top:0">Nu ești sigură?</p><div class="bk-list">' + consult.map(card).join('') + '</div>' +
-      (procs.length ? '<p class="bk-part">Știi ce vrei? Programează direct procedura</p><div class="bk-list">' + procs.map(card).join('') + '</div>' : '');
+    const c = consultSvc(), p = S.proc;
+    return h + '<div class="bk-list">' +
+      (p ? '<button type="button" class="bk-svc bk-opt' + (S.svc === p.id ? ' on' : '') + '" data-svc="' + esc(p.id) + '"><span><i class="bk-tag">Procedura aleasă</i><b>' + esc(p.title) + '</b><small>' + mins(p.minutes) + (p.price ? '' : ' · prețul ți-l spunem la clinică') + '</small></span>' + priceHtml(p) + '</button>' : '') +
+      '<button type="button" class="bk-svc bk-opt gift' + (S.svc === 'consult' ? ' on' : '') + '" data-svc="consult"><span><i class="bk-tag">Nu ești sigură?</i><b>' + esc(c.title) + '</b><small>Evaluăm zona și îți spunem sincer ce ți se potrivește. ' + mins(c.minutes) + ', fără obligații.</small></span>' + priceHtml(c) + '</button>' +
+      '</div>';
   }
   function chipHtml() {
     const s = S.service || {};
     return '<div class="bk-chip"><div><b>' + esc(s.title || '') + '</b><small>' + mins(s.minutes || 60) + (s.id === 'consult' ? ' · gratuit' : s.price ? ' · ' + lei(s.price) : '') + '</small></div>' +
-      '<button type="button" class="bk-link" data-go="svc">Schimbă</button></div>' +
-      // straight from a procedure's button: the free consultation is one tap away
-      (s.id && s.id !== 'consult' ? '<p class="bk-alt">Nu ești sigură că e potrivit pentru tine? <button type="button" data-svc="consult">Alege consultația gratuită</button></p>' : '');
+      (S.proc || S.note ? '<button type="button" class="bk-link" data-go="svc">Schimbă</button>' : '') + '</div>';
   }
   function whenHtml() {
     let h = '<p class="bk-eyebrow">' + esc(S.city) + '</p><h2 class="bk-h">Alege <em>ziua și ora</em></h2>' + segHtml();
@@ -378,23 +403,28 @@
     if (t.hasAttribute('data-bk-close')) { close(); return; }
     if (t.hasAttribute('data-bk-back')) {
       if (S.step === 'you') go('when', 'back');
-      else if (S.step === 'when') { go('svc', 'back'); if (!S.services || S.err === 'net') loadServices(); }
+      else if (S.step === 'when') go(S.proc || S.note ? 'svc' : 'city', 'back');
+      else if (S.step === 'svc') go('city', 'back');
       return;
     }
-    if (t.dataset.city) {
+    if (t.dataset.city && S.step === 'city') {
+      S.city = t.dataset.city; store.set('c360-book-city', S.city);
+      S.date = ''; S.time = ''; S.svc = '';
+      go(S.pick && S.pick.svc && S.pick.svc !== 'consult' ? 'svc' : 'when');
+      loadServices('enter');
+      return;
+    }
+    if (t.dataset.city) { // the clinic switched on the hours' step
       if (S.city === t.dataset.city) return;
       S.city = t.dataset.city; store.set('c360-book-city', S.city);
-      S.date = ''; S.time = ''; S.note = '';
-      if (S.step === 'when' && S.svc) { S.want = { svc: S.svc, label: S.label, jump: true }; S.days = null; S.service = null; }
-      loadServices();
+      S.date = ''; S.time = ''; S.days = null;
+      loadServices('switch');
       return;
     }
-    if (t.dataset.svc) {
-      S.svc = t.dataset.svc; S.service = byId(S.svc); S.note = ''; S.want = null;
-      S.time = ''; go('when'); load(); return;
-    }
-    if (t.dataset.go === 'svc') { go('svc', 'back'); if (!S.services || S.err === 'net') loadServices(); return; }
-    if (t.hasAttribute('data-retry')) { if (S.service) load(); else loadServices(); return; }
+    if (t.dataset.svc) { choose(t.dataset.svc); return; }
+    if (t.dataset.go === 'city') { go('city', 'back'); return; }
+    if (t.dataset.go === 'svc') { go('svc', 'back'); return; }
+    if (t.hasAttribute('data-retry')) { if (S.service) load(); else loadServices('enter'); return; }
     if (t.dataset.date) { S.date = t.dataset.date; S.time = ''; paint(); return; }
     if (t.dataset.time) { S.time = t.dataset.time; paint(); setTimeout(() => go('you'), 160); return; }
     if (t.hasAttribute('data-ics')) { ics(); return; }
@@ -455,14 +485,12 @@
   // ---------------------------------------------------------------- open / close
   function start(o) {
     S = fresh(o || {});
-    // straight to the hours when the button named the treatment and the clinic is known, or named an offer (the
-    // clinic is the only question left); a plain "Programează" with no clinic shows the list first
-    S.want = S.svc ? { svc: S.svc, label: S.label, jump: !!S.city || S.svc !== 'consult' } : null;
+    S.pick = S.svc ? { svc: S.svc, label: S.label } : null; // what the button named
     S.svc = '';
-    // a button that names the treatment and the clinic opens straight on the hours
-    S.step = S.want && S.city ? 'when' : 'svc';
+    if (!S.city) { S.step = 'city'; paint(); return; }
+    S.step = S.pick && S.pick.svc !== 'consult' ? 'svc' : 'when';
     paint();
-    if (S.city) loadServices();
+    loadServices('enter');
   }
   function open(o) {
     lastFocus = document.activeElement;
