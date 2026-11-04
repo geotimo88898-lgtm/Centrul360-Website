@@ -98,12 +98,29 @@ async function leadPicHifu() {
   return { changed: list.map((t) => t.label), wait };
 }
 
+// 4.11: the owner switched the two reminder flows off over the doubled messages (fixed: one mark per message, claims,
+// per-run saves, the store's merge) and asked them back on: both on, the bookings in the calendar enrolled again (a
+// message whose hour went by meanwhile is skipped, the late rule)
+async function remindersOn() {
+  const doc = await WF.loadDoc();
+  const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const names = ['reamintiri · timisoara', 'reamintiri · arad'];
+  const flows = doc.workflows.filter((w) => names.includes(fold(w.name)));
+  const off = flows.filter((w) => !w.active);
+  off.forEach((w) => { w.active = true; w.updatedAt = nowISO(); });
+  if (off.length) await WF.saveDoc(doc);
+  const enrolled = {};
+  for (const w of flows) enrolled[w.name] = await WF.enrollUpcoming(w);
+  return { on: off.map((w) => w.name), already: flows.filter((w) => !off.includes(w)).map((w) => w.name), enrolled };
+}
+
 const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
   ? { title: 'Automatizări: la programare pleacă doar „Ne vedem pe…”', text: 'Am scos ' + r.removed.map((x) => '„' + x.template + '”').join(', ') + ' din ' + [...new Set(r.removed.map((x) => '„' + x.flow + '”'))].join(', ') + '. Remindere rămân la fel.' }
   : null) },
 // the admins hear about each clinic from reminders.js itself (switched, or a message Meta refused)
 { id: 'booking-messages-2026-10-28', run: () => require('./reminders').apply(), tell: () => null },
-{ id: 'lead-pic-hifu-2026-10-28', run: leadPicHifu, tell: () => null }];
+{ id: 'lead-pic-hifu-2026-10-28', run: leadPicHifu, tell: () => null },
+{ id: 'reminders-on-2026-11-04', run: remindersOn, tell: () => null }];
 
 // a notice to the admins once (a job that runs again and again)
 async function tellOnce(key, msg) {
@@ -141,4 +158,4 @@ async function run() {
   return out;
 }
 
-module.exports = { run, onlyLocationAtBooking, isLocation, atBooking, leadPicHifu };
+module.exports = { run, onlyLocationAtBooking, isLocation, atBooking, leadPicHifu, remindersOn };
