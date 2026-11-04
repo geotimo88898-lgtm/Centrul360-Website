@@ -232,4 +232,16 @@ async function removeBinary(pathname) {
   try { await del(pathname); } catch (err) { console.error(`store.removeBinary(${pathname}) error:`, err.message); }
 }
 
-module.exports = { readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary };
+// Makes a small document only when it isn't there yet: true when this call made it, false when it was already there (two
+// requests at once: exactly one gets true). A "done once" mark: an automatic message is sent once (api/_lib/workflows.js).
+async function createOnce(pathname, text) {
+  try {
+    await put(pathname, String(text || '1'), { access: 'private', addRandomSuffix: false, allowOverwrite: false, contentType: 'text/plain' });
+    return true;
+  } catch (err) {
+    if (/already exists/i.test(String((err && err.message) || ''))) return false;
+    throw err;
+  }
+}
+
+module.exports = { readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary, createOnce };

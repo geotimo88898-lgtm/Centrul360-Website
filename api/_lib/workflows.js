@@ -16,7 +16,7 @@
 // A template not yet approved for that number, or WhatsApp not connected: logged, nothing sent.
 
 const crypto = require('crypto');
-const { readJSON, writeJSON } = require('./store');
+const { readJSON, writeJSON, readJSONTagged, writeJSONIf, createOnce, removeBinary } = require('./store');
 const WA = require('./whatsapp');
 const { sendWhatsApp } = WA;
 const WT = require('./wa-templates');
@@ -186,15 +186,75 @@ async function loadDoc() {
   return seeded;
 }
 const saveDoc = (doc) => writeJSON(WF_KEY, doc);
+// The runs as read, with what each looked like then (to know later which ones this request changed)
+function withOrig(doc) {
+  Object.defineProperty(doc, '_orig', { value: new Map(doc.runs.map((r) => [r.id, JSON.stringify(r)])), enumerable: false, configurable: true, writable: true });
+  return doc;
+}
 async function loadRuns() {
   const r = await readJSON(RUNS_KEY, null);
-  return r && Array.isArray(r.runs) ? Object.assign({ counters: {} }, r) : { runs: [], counters: {} };
+  return withOrig(r && Array.isArray(r.runs) ? Object.assign({ counters: {} }, r) : { runs: [], counters: {} });
 }
-function saveRuns(doc) {
+function trimRuns(doc) {
   const waiting = doc.runs.filter((r) => r.status === 'waiting');
   const finished = doc.runs.filter((r) => r.status !== 'waiting').sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)).slice(0, MAX_FINISHED);
   doc.runs = waiting.concat(finished);
-  return writeJSON(RUNS_KEY, doc);
+  return doc;
+}
+// my copy into the newest file, run by run: only the runs I changed go in; one somebody else changed meanwhile keeps
+// theirs when it is claimed by another tick (its message is being sent there) or theirs is the newer change
+function mergeRuns(latest, mine) {
+  const orig = mine._orig || new Map();
+  const now = Date.now();
+  const byId = new Map(latest.runs.map((r) => [r.id, r]));
+  (mine.runs || []).forEach((r) => {
+    const was = orig.get(r.id);
+    const json = JSON.stringify(r);
+    if (was !== undefined && was === json) return; // not changed here
+    const l = byId.get(r.id);
+    if (l && was !== undefined && JSON.stringify(l) !== was) {
+      if (l.claim && l.claim !== r.claim && Date.parse(l.dueAt) > now) return;
+      if (String(l.updatedAt || '') > String(r.updatedAt || '')) return;
+    }
+    byId.set(r.id, r);
+  });
+  const counters = Object.assign({}, latest.counters);
+  Object.entries(mine.counters || {}).forEach(([k, c]) => {
+    const l = counters[k] || {};
+    counters[k] = { runs: Math.max(l.runs || 0, c.runs || 0), sent: Math.max(l.sent || 0, c.sent || 0), tasks: Math.max(l.tasks || 0, c.tasks || 0) };
+  });
+  return trimRuns(Object.assign({}, latest, { runs: [...byId.values()], counters }));
+}
+// Two requests that read the runs a moment apart used to write their copy over each other (2.11: a reminder whose "sent" was
+// lost went out again with the next tick): now each merges into the newest file and writes only on the version it merged
+// into. After a save, `doc` is the file as written (what this request reads on from).
+async function saveRuns(doc) {
+  let out = null;
+  for (let attempt = 0; attempt < 8 && !out; attempt++) {
+    const { data, etag } = await readJSONTagged(RUNS_KEY, null);
+    const latest = data && Array.isArray(data.runs) ? Object.assign({ counters: {} }, data) : { runs: [], counters: {} };
+    const merged = mergeRuns(latest, doc);
+    if (await writeJSONIf(RUNS_KEY, merged, etag)) out = merged;
+    else await new Promise((r) => setTimeout(r, 30 + Math.random() * 90 * (attempt + 1)));
+  }
+  if (!out) { out = mergeRuns(await loadRuns(), doc); await writeJSON(RUNS_KEY, out); }
+  doc.runs = out.runs; doc.counters = out.counters;
+  withOrig(doc);
+  return out;
+}
+
+// One automatic message, once: a small mark made only if it isn't there yet. Two ticks at once, a batch cut by the
+// server's time limit and taken again, a lead read twice: the second finds the mark and sends nothing (2.11: reminders went
+// out 2 to 5 times). A message that didn't go frees its mark, so it can be tried again.
+const markKey = (s) => crypto.createHash('sha1').update(String(s)).digest('hex').slice(0, 16);
+async function sendOnce(key, send) {
+  const path = 'locks/wa/' + markKey(key) + '.txt';
+  let mine = true;
+  try { mine = await createOnce(path, key + ' ' + nowISO()); } catch (err) { console.error('workflows.sendOnce mark:', err.message); } // the store unsure: it goes (a missing reminder is worse)
+  if (!mine) return { dup: true };
+  const r = await send();
+  if (!r.sent) await removeBinary(path).catch(() => {});
+  return r;
 }
 
 // ---------------------------------------------------------------- validation (editor → API)
@@ -646,7 +706,8 @@ async function welcome(lead) {
     const notes = [];
     let refused = '';
     for (const t of tpls) {
-      const r = await sendTemplate(wa, t.id, lead.location || cities[0], lead.phone, v);
+      const r = await sendOnce('lead|' + lead.id + '|' + t.id, () => sendTemplate(wa, t.id, lead.location || cities[0], lead.phone, v));
+      if (r.dup) continue; // the same lead read twice (webhook and the forms' reading): it went already
       notes.push(r.sent ? 'WhatsApp de bun venit trimis („' + t.label + '”, de pe numărul ' + r.city + ')' : 'Mesajul de bun venit n-a plecat: ' + r.why);
       if (!r.sent && /^Meta a refuzat/.test(r.why || '')) refused = r.why;
     }
@@ -792,7 +853,9 @@ async function runOne(run, wf, settings, counters) {
       continue;
     }
     if (s.type === 'whatsapp') {
-      const r = await sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v, ctx.appointment ? { appt: ctx.appointment.id, akey: apptKey(ctx.appointment) } : {});
+      const once = ctx.appointment ? 'appt|' + ctx.appointment.id + '|' + apptKey(ctx.appointment) + '|' + s.templateId : 'run|' + run.id + '|' + s.id;
+      const r = await sendOnce(once, () => sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v, ctx.appointment ? { appt: ctx.appointment.id, akey: apptKey(ctx.appointment) } : {}));
+      if (r.dup) { log('Mesajul „' + (((settings._wa || {}).tpls || []).find((t) => t.id === s.templateId) || {}).label + '” plecase deja, nu se trimite a doua oară'); continue; }
       if (r.sent) { delete run.retryUntil; c.sent++; sentHere = true; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
       // Meta is still reviewing the template (just made): the same message again in 10 minutes, for at most 45
       if (r.pending && (!run.retryUntil || Date.now() < Date.parse(run.retryUntil))) {
@@ -827,30 +890,44 @@ async function runOne(run, wf, settings, counters) {
 
 // Walks the given runs (or every due one). Each run is claimed before it executes, so two
 // overlapping ticks don't send the same message twice.
+// 2.11: a batch of reminders ran past the server's time limit (it is stopped at 60 s), so the runs were never saved as
+// sent; the claim ran out after 2 minutes and the next tick sent them again (up to 5 times). Now: the claim lasts 10
+// minutes and lands only on the newest version (another tick can't take the same run), each run is saved the moment it is
+// done, no new run starts after 30 s (the rest go back for the next tick), and every message is sent once (sendOnce).
+// A switched-off flow's runs are left waiting as they are: they go on (if still in time) when it is switched on again.
 async function processRuns(runsDoc, doc, onlyIds) {
-  const now = Date.now();
-  const due = runsDoc.runs.filter((r) => r.status === 'waiting' && (onlyIds ? onlyIds.includes(r.id) : Date.parse(r.dueAt) <= now)).slice(0, 25);
+  const t0 = Date.now();
+  const flowOf = (r) => doc.workflows.find((w) => w.id === r.wf);
+  const free = (r) => !r.claim || !(Date.parse(r.dueAt) > t0);
+  const due = runsDoc.runs.filter((r) => r.status === 'waiting' && free(r) && (onlyIds ? onlyIds.includes(r.id) : Date.parse(r.dueAt) <= t0) && (!flowOf(r) || flowOf(r).active)).slice(0, 25);
   if (!due.length) { if (onlyIds) await saveRuns(runsDoc); return 0; }
-  const lease = new Date(now + 2 * 60e3).toISOString();
-  due.forEach((r) => { r.dueWas = r.dueAt; r.dueAt = lease; }); // claim (when it was due: a late "before" message is skipped)
+  const token = uid();
+  const lease = new Date(t0 + 10 * 60e3).toISOString();
+  due.forEach((r) => { r.dueWas = r.heldDue || r.dueAt; delete r.heldDue; r.dueAt = lease; r.claim = token; r.updatedAt = nowISO(); }); // when it was due: a late "before" message is skipped
   await saveRuns(runsDoc);
+  const got = runsDoc.runs.filter((r) => r.claim === token).map((r) => r.id); // what this claim really holds (another tick may have been first)
+  if (!got.length) return 0;
   const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
   const settings = Object.assign({}, doc.settings, { _wa: wa });
-  for (const run of due) {
-    const wf = doc.workflows.find((w) => w.id === run.wf);
-    if (!wf || !wf.active) { run.status = 'stopped'; run.log.push({ at: nowISO(), text: wf ? 'Automatizarea a fost oprită' : 'Automatizarea a fost ștearsă' }); run.updatedAt = nowISO(); continue; }
-    try { await runOne(run, wf, settings, runsDoc.counters); }
-    catch (err) { run.status = 'error'; run.log.push({ at: nowISO(), text: 'Eroare: ' + clip(err.message, 120) }); }
+  let done = 0;
+  for (const id of got) {
+    // the run as it is in the runs after the last save (each save gives the file's own copies)
+    const run = runsDoc.runs.find((r) => r.id === id);
+    if (!run || run.claim !== token) continue;
+    if (Date.now() - t0 > 30e3) { run.dueAt = run.dueWas || run.dueAt; delete run.dueWas; delete run.claim; run.updatedAt = nowISO(); continue; } // the next tick takes it
+    const wf = flowOf(run);
+    if (!wf) { run.status = 'stopped'; run.log.push({ at: nowISO(), text: 'Automatizarea a fost ștearsă' }); }
+    else {
+      try { await runOne(run, wf, settings, runsDoc.counters); }
+      catch (err) { run.status = 'error'; run.log.push({ at: nowISO(), text: 'Eroare: ' + clip(err.message, 120) }); }
+    }
+    delete run.claim;
     run.updatedAt = nowISO();
+    done++;
+    await saveRuns(runsDoc);
   }
-  // Re-read so runs created meanwhile (another request) aren't overwritten, then merge ours in.
-  const latest = await loadRuns();
-  const mine = new Map(due.map((r) => [r.id, r]));
-  latest.runs = latest.runs.map((r) => mine.get(r.id) || r);
-  due.forEach((r) => { if (!latest.runs.some((x) => x.id === r.id)) latest.runs.push(r); });
-  latest.counters = Object.assign({}, latest.counters, runsDoc.counters);
-  await saveRuns(latest);
-  return due.length;
+  await saveRuns(runsDoc);
+  return done;
 }
 
 let lastTick = 0;
@@ -880,6 +957,15 @@ async function enrollUpcoming(wf) {
     if (!first) return 0;
     const [appointments, runsDoc] = await Promise.all([readJSON('data/appointments.json', []), loadRuns()]);
     const now = Date.now();
+    // the runs a switch-off ended (until 4.11 a switched-off flow stopped its runs as they came due): waiting again from
+    // where they were; the message that came due meanwhile goes if still in time (the late rule), else it is skipped
+    const upcoming = new Set(appointments.filter((a) => a && a.id && !['anulata', 'finalizata', 'concediu'].includes(a.status) && apptStart(a) > now).map((a) => a.id));
+    const back = runsDoc.runs.filter((r) => r.wf === wf.id && r.status === 'stopped' && r.ent && upcoming.has(r.ent.id) && /Automatizarea a fost oprită/.test(((r.log || []).slice(-1)[0] || {}).text || '')
+      && !runsDoc.runs.some((x) => x !== r && x.wf === wf.id && x.ent && x.ent.id === r.ent.id && x.status === 'waiting'));
+    back.forEach((r) => {
+      r.status = 'waiting'; r.heldDue = r.dueWas || r.dueAt; delete r.dueWas; delete r.claim; r.dueAt = new Date(now).toISOString(); r.updatedAt = nowISO();
+      r.log.push({ at: nowISO(), text: 'Automatizarea a fost pornită din nou: continuă de unde rămăsese' });
+    });
     const has = new Set(runsDoc.runs.filter((r) => r.wf === wf.id).map((r) => r.ent && r.ent.id));
     const loc = wf.trigger.location && wf.trigger.location !== 'any' ? wf.trigger.location : '';
     const list = appointments.filter((a) => a && a.id && !has.has(a.id) && a.time && !['anulata', 'finalizata', 'concediu'].includes(a.status) &&
@@ -890,9 +976,9 @@ async function enrollUpcoming(wf) {
       const c = runsDoc.counters[wf.id] = runsDoc.counters[wf.id] || { runs: 0, sent: 0, tasks: 0 };
       c.runs++;
     });
-    if (!list.length) return 0;
-    await processRuns(runsDoc, await loadDoc(), runsDoc.runs.slice(-list.length).map((r) => r.id));
-    return list.length;
+    if (!list.length && !back.length) return 0;
+    await processRuns(runsDoc, await loadDoc(), runsDoc.runs.slice(-list.length).map((r) => r.id).slice(0, list.length).concat(back.map((r) => r.id)));
+    return list.length + back.length;
   } catch (err) {
     console.error('workflows.enrollUpcoming error:', err.message);
     return 0;

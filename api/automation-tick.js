@@ -220,6 +220,12 @@ module.exports = async (req, res) => {
     const per = {}; runsDoc.runs.filter((r) => r.ent && r.status === 'waiting').forEach((r) => { per[r.ent.id] = (per[r.ent.id] || 0) + 1; });
     return { dupEngineLines: dupEngine.length, dupEngine: dupEngine.slice(0, 6), dupChat: chat.length, dupChatSample: chat.slice(0, 8), flows, apptsWithManyWaitingRuns: Object.values(per).filter((n) => n > 1).length };
   })().catch((e) => ({ error: e.message }));
+  // with the key, &marktest=1: the "sent once" mark works on the store (made once, refused the second time), then removed
+  if (readOnly && req.query.marktest) out.marktest = await (async () => {
+    const st = require('./_lib/store'); const p = 'locks/test/' + Date.now() + '.txt';
+    const a = await st.createOnce(p, 'x'); const b = await st.createOnce(p, 'y'); await st.removeBinary(p);
+    return { first: a, second: b };
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
