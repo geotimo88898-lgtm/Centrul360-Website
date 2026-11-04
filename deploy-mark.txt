@@ -1,1 +1,1 @@
-once-send
+store-merge

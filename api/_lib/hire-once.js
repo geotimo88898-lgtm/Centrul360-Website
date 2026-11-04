@@ -51,7 +51,9 @@ async function welcomeCandidates() {
   let sent = 0, skipped = 0, why = '';
   for (const c of todo) {
     if (talked.has(normalizePhone(c.phone) || String(c.phone))) { c.welcomed = 'skipped: conversation'; skipped++; continue; }
-    const r = await sendTemplate(wa, t.id, 'Timișoara', c.phone, { prenume: firstName(c.name), nume: c.name });
+    // once per candidate (the clock and an open portal at the same moment don't both send it)
+    const r = await require('./workflows').sendOnce('cand|' + (c.id || c.phone) + '|' + t.id, () => sendTemplate(wa, t.id, 'Timișoara', c.phone, { prenume: firstName(c.name), nume: c.name }));
+    if (r.dup) { c.welcomed = c.welcomed || new Date().toISOString(); continue; }
     if (r.pending) { why = 'waiting for Meta'; break; } // not approved yet: tried again on the next tick
     if (r.sent) { c.welcomed = new Date().toISOString(); sent++; } else { c.welcomeTries = (c.welcomeTries || 0) + 1; c.welcomeError = r.why; why = r.why; }
   }

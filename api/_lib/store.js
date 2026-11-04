@@ -85,7 +85,9 @@ async function readJSON(pathname, fallback) {
       if (!result) return fallback;
       const text = result.buf.toString('utf8');
       if (!text) return fallback;
-      return JSON.parse(text);
+      const data = JSON.parse(text);
+      remember(pathname, data, text, result.etag);
+      return data;
     } catch (err) {
       if (isNotFound(err)) return fallback;
       lastErr = err;
@@ -122,29 +124,142 @@ async function readJSONTagged(pathname, fallback) {
   throw e;
 }
 
-// Writes a JSON document to Blob storage, overwriting whatever is at that pathname.
-// opts.quiet: a write the open portals don't need to refresh for (the activity log)
-// The big lists the whole portal leans on: a write that would cut one to less than half (and it is
-// big) is refused, whatever bug or failed read led to it. Deleting that much by hand never happens.
-const GUARDED = new Set(['data/clients.json', 'data/appointments.json', 'data/leads.json', 'data/sales.json']);
-async function writeJSON(pathname, data, opts) {
-  const body = JSON.stringify(data, null, 2);
-  if (GUARDED.has(pathname) && !(opts && opts.allowShrink)) {
-    let before = 0;
-    try { const h = await head(pathname); before = (h && h.size) || 0; } catch (err) { before = 0; }
+// ---- Two writers at once --------------------------------------------------------------
+// Most writers read a document, change it and write it back. Two that read the same version a moment apart used to write
+// over each other: the later one's copy lost what the other had just saved (a lead's new stage, a booking's status, a sent
+// message's line, 1-3.11). Each read now remembers what the document was (its text and version), tied to the object it
+// returned and to each item of a list; a write of that object goes only onto that version, and when someone wrote in
+// between, its changes are put on top of theirs (merge3) instead of over them. A write of an object never read (or
+// read elsewhere) writes as before.
+const baseOf = new WeakMap();
+function remember(pathname, data, text, etag) {
+  if (!data || typeof data !== 'object' || !etag) return;
+  const b = { pathname, text, etag };
+  baseOf.set(data, b);
+  if (Array.isArray(data)) for (const x of data) if (x && typeof x === 'object') baseOf.set(x, b);
+}
+function findBase(pathname, data) {
+  if (!data || typeof data !== 'object') return null;
+  const b = baseOf.get(data);
+  if (b && b.pathname === pathname) return b;
+  // a list made from the one read (a filter, a map): its items still point at that read
+  if (Array.isArray(data)) for (const x of data) { const e = x && typeof x === 'object' && baseOf.get(x); if (e && e.pathname === pathname) return e; }
+  return null;
+}
+const isPlain = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+const js = (x) => (x === undefined ? '\u0000' : JSON.stringify(x));
+// the key a list's items are matched by: their id (or phone, or key) when every item has a different one, else the item itself
+function listKeys(lists) {
+  for (const f of ['id', 'phone', 'key']) {
+    const ok = lists.every((l) => { const seen = new Set(); return l.every((x) => isPlain(x) && x[f] != null && x[f] !== '' && !seen.has(String(x[f])) && seen.add(String(x[f]))); });
+    if (ok) return (l) => l.map((x) => 'k:' + String(x[f]));
+  }
+  return (l) => { const n = new Map(); return l.map((x) => { const j = js(x); const c = (n.get(j) || 0) + 1; n.set(j, c); return 'v:' + j + '#' + c; }); };
+}
+function mergeList(b, m, t) {
+  const keys = listKeys([b, m, t]);
+  const kb = keys(b), km = keys(m), kt = keys(t);
+  const B = new Map(kb.map((k, i) => [k, b[i]])), M = new Map(km.map((k, i) => [k, m[i]]));
+  const out = [], seen = new Set();
+  kt.forEach((k, i) => {
+    const x = t[i];
+    seen.add(k);
+    if (!M.has(k)) {
+      if (B.has(k) && js(x) === js(B.get(k))) return; // I took it out and they didn't touch it: out
+      out.push(x); return; // theirs (new, or changed by them after I took it out)
+    }
+    out.push(B.has(k) ? merge3(B.get(k), M.get(k), x) : M.get(k));
+  });
+  km.forEach((k, i) => {
+    if (seen.has(k)) return;
+    const x = m[i];
+    if (B.has(k) && js(x) === js(B.get(k))) return; // they took it out and I didn't change it: stays out
+    out.splice(Math.min(i, out.length), 0, x); // mine: new here (or changed by me after they took it out), where I put it
+  });
+  return out;
+}
+function mergeObj(b, m, t) {
+  const out = {};
+  for (const k of new Set(Object.keys(t).concat(Object.keys(m)))) {
+    const inB = Object.prototype.hasOwnProperty.call(b, k), inM = Object.prototype.hasOwnProperty.call(m, k), inT = Object.prototype.hasOwnProperty.call(t, k);
+    if (inM && inT) out[k] = merge3(inB ? b[k] : undefined, m[k], t[k]);
+    else if (inM) { if (!(inB && js(m[k]) === js(b[k]))) out[k] = m[k]; } // they took it out: out, unless I changed it
+    else if (inT) { if (!(inB && js(t[k]) === js(b[k]))) out[k] = t[k]; } // I took it out: out, unless they changed it
+  }
+  return out;
+}
+// base: what I read; mine: what I write; theirs: what is there now. What only one side changed is kept; a value both
+// changed is mine (the last writer, as before).
+function merge3(b, m, t) {
+  const jm = js(m), jt = js(t);
+  if (jm === jt) return m;
+  if (b !== undefined) { const jb = js(b); if (jm === jb) return t; if (jt === jb) return m; }
+  if (Array.isArray(m) && Array.isArray(t)) return mergeList(Array.isArray(b) ? b : [], m, t);
+  if (isPlain(m) && isPlain(t)) return mergeObj(isPlain(b) ? b : {}, m, t);
+  return m;
+}
+// the caller's object becomes what was written (it reads on from it)
+function replaceInPlace(data, merged) {
+  if (Array.isArray(data) && Array.isArray(merged)) { data.length = 0; merged.forEach((x) => data.push(x)); return true; }
+  if (isPlain(data) && isPlain(merged)) { Object.keys(data).forEach((k) => { delete data[k]; }); Object.assign(data, merged); return true; }
+  return false;
+}
+const isPrecondition = (err) => err && (err.name === 'BlobPreconditionFailedError' || /precondition/i.test(err.message || ''));
+function shrinkCheck(pathname, body, opts) {
+  if (!GUARDED.has(pathname) || (opts && opts.allowShrink)) return Promise.resolve();
+  return head(pathname).then((h) => (h && h.size) || 0, () => 0).then((before) => {
     if (before > 200 * 1024 && Buffer.byteLength(body) < before * 0.5) {
       console.error(`store.writeJSON(${pathname}) refused: ${Buffer.byteLength(body)} bytes over ${before}`);
       const e = new Error('store_write_refused: ' + pathname);
       e.code = 'store_write_refused';
       throw e;
     }
+  });
+}
+
+// Writes a JSON document to Blob storage, overwriting whatever is at that pathname.
+// opts.quiet: a write the open portals don't need to refresh for (the activity log)
+// The big lists the whole portal leans on: a write that would cut one to less than half (and it is
+// big) is refused, whatever bug or failed read led to it. Deleting that much by hand never happens.
+const GUARDED = new Set(['data/clients.json', 'data/appointments.json', 'data/leads.json', 'data/sales.json']);
+async function writeJSON(pathname, data, opts) {
+  let body = JSON.stringify(data, null, 2);
+  let base = pathname === REV_PATH ? null : findBase(pathname, data);
+  let mine = data;
+  // the version this request read: written only onto it; someone wrote since: my changes on top of theirs, again
+  // (many tries: under a burst every writer gets its turn; a blind write after them is the old behaviour, kept as a last resort)
+  for (let attempt = 0; base && attempt < 25; attempt++) {
+    await shrinkCheck(pathname, body, opts);
+    try {
+      const res = await put(pathname, body, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ifMatch: base.etag });
+      if (mine !== data) replaceInPlace(data, mine);
+      remember(pathname, data, body, res && res.etag);
+      if (!(opts && opts.quiet)) await bumpRev(pathname);
+      return data;
+    } catch (err) {
+      if (!isPrecondition(err)) throw err;
+      let latest = null;
+      try { forget(pathname); latest = await fetchLatest(pathname); } catch (e) { latest = null; }
+      if (!latest) break; // can't read theirs: written as before
+      const text = latest.buf.toString('utf8');
+      let theirs;
+      try { theirs = text ? JSON.parse(text) : null; } catch (e) { break; }
+      if (text === body) { if (mine !== data) replaceInPlace(data, mine); remember(pathname, data, text, latest.etag); return data; } // a lost answer: it was mine
+      mine = theirs == null ? mine : merge3(JSON.parse(base.text), mine, theirs);
+      body = JSON.stringify(mine, null, 2);
+      base = { pathname, text, etag: latest.etag };
+      await new Promise((r) => setTimeout(r, 20 + Math.random() * 40 * Math.min(attempt + 1, 8)));
+    }
   }
-  await put(pathname, body, {
+  await shrinkCheck(pathname, body, opts);
+  const res = await put(pathname, body, {
     access: 'private',
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: 'application/json',
   });
+  if (mine !== data) replaceInPlace(data, mine);
+  if (pathname !== REV_PATH) remember(pathname, data, body, res && res.etag);
   if (pathname !== REV_PATH && !(opts && opts.quiet)) await bumpRev(pathname);
   return data;
 }
@@ -244,4 +359,4 @@ async function createOnce(pathname, text) {
   }
 }
 
-module.exports = { readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary, createOnce };
+module.exports = { readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary, createOnce, merge3 };

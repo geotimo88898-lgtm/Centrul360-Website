@@ -724,7 +724,7 @@ async function welcome(lead) {
 
 // "Anunță echipa": the bell in the portal and the phone (Web Push) of everyone picked, plus, if
 // asked, a WhatsApp template to their own number.
-async function notifyTeam(s, v, ctx, wa) {
+async function notifyTeam(s, v, ctx, wa, once) {
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   const ids = new Set();
   for (const to of s.to || []) {
@@ -744,7 +744,8 @@ async function notifyTeam(s, v, ctx, wa) {
     for (const id of ids) {
       const phone = id === 'admin' ? admin.phone : (employees.find((e) => e.id === id) || {}).phone;
       if (!phone) continue;
-      const r = await sendTemplate(wa || {}, s.templateId, s.from === 'auto' ? cityOf(ctx) : s.from, phone, v, { nolog: true }); // to the team, not a client
+      // to the team, not a client; once per run, step and person (a tick taken twice doesn't ring twice)
+      const r = await sendOnce('team|' + (once || '') + '|' + s.id + '|' + id, () => sendTemplate(wa || {}, s.templateId, s.from === 'auto' ? cityOf(ctx) : s.from, phone, v, { nolog: true }));
       if (r.sent) waSent++;
     }
   }
@@ -848,7 +849,7 @@ async function runOne(run, wf, settings, counters) {
       continue;
     }
     if (s.type === 'notify') {
-      const r = await notifyTeam(s, v, ctx, settings._wa);
+      const r = await notifyTeam(s, v, ctx, settings._wa, run.id);
       log(r.people ? 'Echipa anunțată: ' + r.people + (r.people === 1 ? ' persoană' : ' persoane') + (r.pushed ? ', ' + r.pushed + ' pe telefon' : '') + (r.wa ? ', ' + r.wa + ' pe WhatsApp' : '') : 'Nimeni de anunțat (rol fără oameni activi)');
       continue;
     }
@@ -1069,4 +1070,4 @@ async function moveRuns(wf, oldSteps) {
 
 module.exports = {
   moveRuns, waitTarget, apptStart, specOf, apptKey,
-  firstName, sendTemplate, repairReminders, enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };
+  firstName, sendTemplate, sendOnce, repairReminders, enrollUpcoming, CATS, WAIT_MODES, TRIGGERS, STEP_TYPES, STOP_CONDS, VALUE_CONDS, STATUSES, SOURCES, LOCATIONS, RECIPES, MAX_STEPS, loadDoc, saveDoc, loadRuns, validateWorkflow, fromRecipe, emit, tick, render, vars, compile, flat, welcome };
