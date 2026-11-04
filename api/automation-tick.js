@@ -184,6 +184,14 @@ module.exports = async (req, res) => {
       return { time: a.time, loc: String(a.location || '').slice(0, 3), status: a.status, treatment: String(a.treatment || '').slice(0, 14), engineSaysSent: sentLine.map((x) => String(x).slice(5, 16)), inChat, hasChat: !!c, hasPhone: !!a.clientPhone, runStatus: runs.map((r) => r.status) };
     }).sort((a, b) => a.time.localeCompare(b.time));
   })().catch((e) => ({ error: e.message }));
+  // with the key, &dayruns=<YYYY-MM-DD>: that day's appointments and their runs' logs (no names, no phones), read only
+  if (readOnly && /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.dayruns || ''))) out.dayruns = await (async () => {
+    const [appts, runsDoc, doc] = await Promise.all([readJSON('data/appointments.json', []), require('./_lib/workflows').loadRuns(), require('./_lib/workflows').loadDoc()]);
+    const wfName = (id) => (doc.workflows.find((w) => w.id === id) || {}).name || id;
+    return appts.filter((a) => a.date === req.query.dayruns && a.status !== 'anulata' && a.status !== 'concediu').map((a) => ({ time: a.time, loc: String(a.location || '').slice(0, 3), status: a.status,
+      runs: runsDoc.runs.filter((r) => r.ent && r.ent.id === a.id).map((r) => ({ wf: wfName(r.wf), status: r.status, due: r.dueAt, log: (r.log || []).slice(-6).map((l) => String(l.at).slice(5, 16) + ' ' + String(l.text).replace(/\+?\d[\d\s]{7,}/g, '#').slice(0, 120)) })) }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+  })().catch((e) => ({ error: e.message }));
   // with the key, &lostmsgs=1: the automatic messages the engine says it sent, and how many are in the chats, by day (counts only)
   if (readOnly && req.query.lostmsgs) out.lostmsgs = await (async () => {
     const [runsDoc, convos, appts] = await Promise.all([require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', []), readJSON('data/appointments.json', [])]);
