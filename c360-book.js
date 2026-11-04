@@ -181,6 +181,18 @@
   const store = { get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } } };
 
   let root, sheet, body, S, inline = false, pushed = false, lastFocus = null, seq = 0;
+  // a city's treatments with the consultation's free hours, asked once and kept a minute: asked for both cities the
+  // moment the window opens, so the hours are there when she taps her city
+  const early = {};
+  function cityData(city) {
+    const e = early[city];
+    if (e && Date.now() - e.at < 60e3) return e.p;
+    const p = fetch('/api/booking?' + new URLSearchParams({ city, service: 'consult' }).toString(), { headers: { Accept: 'application/json' } })
+      .then((r) => r.json().then((d) => { if (!r.ok) throw new Error(d.error || 'failed'); return d; }));
+    p.catch(() => { delete early[city]; });
+    early[city] = { at: Date.now(), p };
+    return p;
+  }
 
   function build(mount) {
     if (!document.getElementById('bk-css')) { const st = document.createElement('style'); st.id = 'bk-css'; st.textContent = CSS; document.head.appendChild(st); }
@@ -214,12 +226,13 @@
     const me = store.get('c360-book-me') || {};
     return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '' };
   }
-  async function load() {
+  async function load(fresh) {
     const my = ++seq;
     S.days = null;
     paint();
     try {
       const q = new URLSearchParams({ city: S.city || 'Timișoara', service: S.svc || 'consult' });
+      if (fresh) q.set('t', Date.now()); // past the edge's few seconds: the hours as they are now
       if (S.svc === 'custom' && S.label) q.set('label', S.label);
       const r = await fetch('/api/booking?' + q.toString(), { headers: { Accept: 'application/json' } });
       const d = await r.json();
@@ -246,10 +259,10 @@
     S.services = null;
     paint();
     try {
-      const r = await fetch('/api/booking?' + new URLSearchParams({ city: S.city || 'Timișoara', service: 'consult' }).toString(), { headers: { Accept: 'application/json' } });
-      const d = await r.json();
+      const d = await cityData(S.city || 'Timișoara');
       if (my !== seq) return;
       S.services = d.services || []; S.off = d.on === false; S.err = '';
+      S.pre = d.on === false ? null : { city: d.city, service: d.service, days: d.days };
     } catch (e) { if (my === seq) { S.err = 'net'; S.services = []; } }
     if (my !== seq) return;
     S.proc = null; S.note = '';
@@ -271,8 +284,16 @@
   const consultSvc = () => (S.services || []).find((x) => x.id === 'consult') || { id: 'consult', title: 'Consultație gratuită', minutes: 30, price: 0 };
   function choose(id, stay) {
     S.svc = id; S.service = id === 'consult' ? consultSvc() : S.proc; S.time = '';
+    // the consultation's hours came with the city's list: no second wait
+    if (id === 'consult' && S.pre && S.pre.city === S.city && S.pre.days) { S.days = S.pre.days; S.service = S.pre.service || S.service; pickDay(); }
+    else S.days = null;
     if (stay && S.step === 'when') paint(); else go('when');
-    load();
+    if (!S.days) load();
+  }
+  // the day shown: the one picked if it still has hours, else the first that has
+  function pickDay() {
+    const has = (x) => x && x.slots.length;
+    if (!has(S.days.find((x) => x.date === S.date))) { const f = S.days.find(has); S.date = f ? f.date : ''; S.time = ''; }
   }
   // which service of the city a button meant: the same offer, an offer whose name it carries, else the treatment by its name
   function pick(w) {
@@ -449,13 +470,14 @@
       S.busy = false;
       if (r.ok && d.ok) {
         store.set('c360-book-me', { name: S.name, phone: S.phone });
+        Object.keys(early).forEach((k) => delete early[k]);
         S.done = d.appointment || { date: S.date, time: S.time, location: S.city, treatment: (S.service || {}).title };
         track();
         go('done');
         return;
       }
       const e2 = d.error;
-      if (e2 === 'taken') { S.err = ''; S.time = ''; go('when', 'back'); load(); setTimeout(() => { const b = root.querySelector('.bk-body .bk-step'); if (b) b.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
+      if (e2 === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.err = ''; S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b = root.querySelector('.bk-body .bk-step'); if (b) b.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
       S.err = e2 === 'has_booking' && d.at ? 'Ai deja o programare ' + esc(d.at.nice) + ', la ora ' + esc(d.at.time) + '. Pentru a o muta, <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.'
         : e2 === 'bad_phone' ? 'Numărul de telefon nu pare corect. Verifică-l, te rog.'
         : e2 === 'too_many' || e2 === 'too_many_bookings' ? 'Ai făcut deja mai multe programări. Pentru încă una, <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.'
@@ -487,6 +509,7 @@
     S = fresh(o || {});
     S.pick = S.svc ? { svc: S.svc, label: S.label } : null; // what the button named
     S.svc = '';
+    ['Timișoara', 'Arad'].forEach((c) => cityData(c).catch(() => {}));
     if (!S.city) { S.step = 'city'; paint(); return; }
     S.step = S.pick && S.pick.svc !== 'consult' ? 'svc' : 'when';
     paint();
