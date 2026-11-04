@@ -1738,6 +1738,11 @@ main.ad-full{ max-width:none; }
 .cal-fab, .cal-mbox{ display:none; }
 @media (max-width:720px){
   .cal .k-head-actions{ display:none; }
+  /* the admin's Online (the site's booking hours) stays reachable on a phone */
+  .cal .k-head-actions:has([data-act="online"]){ display:flex; position:absolute; top:0; right:0; width:auto; }
+  .cal .k-head-actions .k-btn{ display:none; }
+  .cal .k-head-actions .k-btn[data-act="online"]{ display:inline-flex; flex:none; }
+  .cal .k-head{ position:relative; }
   /* one scroll on a phone, the page: the day's grid is as tall as it needs, its heads stay under the header */
   .cal-wrap{ overflow:clip; max-height:none; min-height:0; }
   .cal-corner, .cal-colhead{ top:60px; }
@@ -2369,3 +2374,37 @@ html.mx-pv-open{ overflow:hidden; }
 .ad-count:empty{ display:none; } .ad-count{ font-size:.7rem; padding:.03rem .38rem; border-radius:999px; background:var(--glass-2); font-variant-numeric:tabular-nums; }
 .kp-adc.is-flash{ box-shadow:0 0 0 2px var(--accent); }
 .kp-adc.is-off{ opacity:.7; }
+
+/* Calendar → Online: the site's booking hours (portal-calendar.js openOnline) */
+.onl{ display:flex; flex-direction:column; gap:1rem; }
+.onl-top{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.6rem 1rem; padding:.85rem 1rem; border-radius:14px; border:1px solid var(--line); background:var(--glass); }
+.onl-link{ display:inline-flex; align-items:center; gap:.4rem; font-size:.82rem; color:var(--muted); text-decoration:none; }
+.onl-link:hover{ color:var(--fg); }
+.onl-link .k-ic{ width:14px; height:14px; }
+.onl-city{ border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+.onl-city-h{ display:flex; align-items:baseline; justify-content:space-between; gap:.6rem; padding:.75rem 1rem; border-bottom:1px solid var(--line); background:var(--glass); }
+.onl-city-h b{ display:inline-flex; align-items:center; gap:.4rem; font-size:.92rem; }
+.onl-city-h b .k-ic{ width:15px; height:15px; opacity:.7; }
+.onl-city-h span{ font-size:.76rem; color:var(--muted); }
+.onl-days{ display:flex; flex-direction:column; }
+.onl-cap{ display:flex; justify-content:space-between; padding:.45rem 1rem 0; font-size:.7rem; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); }
+.onl-day{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.45rem .6rem; padding:.5rem 1rem; border-bottom:1px solid var(--line); }
+.onl-day .k-switch{ min-width:110px; }
+.onl-set{ display:inline-flex; align-items:center; gap:.3rem; transition:opacity .2s; }
+.onl-set i{ font-style:normal; color:var(--muted-2); }
+.onl-day.is-off .onl-set{ opacity:.35; pointer-events:none; }
+.onl-day select{ height:34px; padding:0 .45rem; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; font-variant-numeric:tabular-nums; }
+.onl-at{ margin-left:.25rem; }
+.onl-closed{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.7rem 1rem; }
+.onl-closed > span{ font-size:.8rem; color:var(--muted); margin-right:.2rem; }
+.onl-chips{ display:flex; flex-wrap:wrap; gap:.35rem; }
+.onl-chip{ display:inline-flex; align-items:center; gap:.25rem; padding:.2rem .25rem .2rem .6rem; border-radius:999px; background:var(--glass-2); font-size:.78rem; }
+.onl-chip button{ width:20px; height:20px; display:grid; place-items:center; border:0; border-radius:50%; background:transparent; color:var(--muted); cursor:pointer; padding:0; }
+.onl-chip button .k-ic{ width:12px; height:12px; }
+.onl-add{ display:inline-flex; gap:.35rem; margin-left:auto; }
+.onl-add input{ height:32px; padding:0 .5rem; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; }
+.onl-gen{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; }
+@media (max-width:560px){
+  .onl-gen{ grid-template-columns:1fr; }
+  .onl-add{ margin-left:0; }
+}

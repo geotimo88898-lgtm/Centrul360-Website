@@ -61,7 +61,7 @@
     if (window.innerWidth < 720) { let v = 'day'; try { v = localStorage.getItem(PHONE_VIEW) === 'week' ? 'week' : 'day'; } catch (e) { /* private mode */ } S.view = v; }
     panel.innerHTML =
       '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2></div>' +
-      (canEdit() ? '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
+      (canEdit() ? '<div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
@@ -123,6 +123,7 @@
       const a = act.dataset.act;
       if (a === 'new') return openNew({});
       if (a === 'block') return openBlock({});
+      if (a === 'online') return openOnline();
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
       if (a === 'next') return shift(1);
@@ -280,7 +281,7 @@
       (tiny ? '<b>' + esc(nameOf(a)) + '</b>' : short
         ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>'
         : '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
-          '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span>') + '</button>';
+          '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + (a.online ? '🌐 ' : '') + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span>') + '</button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
@@ -675,6 +676,71 @@
       '<button type="button" class="k-btn is-outline cal-client-open" data-open-client>' + icon('user') + 'Deschide fișa clientei' + icon('arrow') + '</button>';
     box.querySelector('[data-open-client]').addEventListener('click', () => K.emit('contacts:open', { id: a.clientId, tab: 'fise' }));
   }
+  // ------------------------------------------------------------------ online booking (the site, /programare)
+  // When the clinics take bookings from the site: the hours per weekday, how many clients at once, the days closed.
+  // The free hours the site shows are these minus what is in this Calendar (bookings, blocked time, leaves).
+  const WD_ONLINE = [[1, 'Luni'], [2, 'Marți'], [3, 'Miercuri'], [4, 'Joi'], [5, 'Vineri'], [6, 'Sâmbătă'], [0, 'Duminică']];
+  async function openOnline() {
+    let d;
+    try { d = await K.api('/api/portal-booking', { action: 'get' }); } catch (err) { K.ui().toast(K.errText(err), 'error'); return; }
+    const st = d.settings;
+    const times = (v) => { const out = []; for (let m = 7 * 60; m <= 22 * 60; m += 30) out.push(K.pad(Math.floor(m / 60)) + ':' + K.pad(m % 60)); if (v && !out.includes(v)) out.push(v); return out.sort().map((t) => [t, t]); };
+    const cityHtml = (c) => {
+      const x = st.cities[c];
+      return '<section class="onl-city"><div class="onl-city-h"><b>' + icon('pin') + esc(c) + '</b><span>' + K.plural(d.upcoming[c] || 0, 'programare online', 'programări online') + ' de acum încolo</span></div>' +
+        '<div class="onl-cap"><span>Ziua</span><span>Program · cliente în paralel</span></div>' +
+        '<div class="onl-days">' + WD_ONLINE.map(([n, name]) => { const y = x.days[n]; const k = c + '|' + n;
+          return '<div class="onl-day' + (y.on ? '' : ' is-off') + '" data-day="' + esc(k) + '">' + K.toggle('on|' + k, y.on, name) +
+            '<span class="onl-set"><select name="from|' + esc(k) + '" aria-label="De la">' + K.options(times(y.from), y.from) + '</select><i>-</i><select name="to|' + esc(k) + '" aria-label="Până la">' + K.options(times(y.to), y.to) + '</select>' +
+            '<select name="at|' + esc(k) + '" class="onl-at" aria-label="Câte cliente în paralel">' + K.options([1, 2, 3, 4].map((v) => [String(v), v + (v === 1 ? ' clientă' : ' cliente')]), String(y.at || 1)) + '</select></span></div>'; }).join('') + '</div>' +
+        '<div class="onl-closed"><span>Zile închise</span><div class="onl-chips" data-closed="' + esc(c) + '">' + x.closed.map((dt) => chip(dt)).join('') + '</div>' +
+        '<span class="onl-add"><input type="date" data-add-date="' + esc(c) + '" min="' + K.today() + '" aria-label="Zi închisă"><button type="button" class="k-btn is-outline is-sm" data-add="' + esc(c) + '">' + icon('plus') + 'Adaugă</button></span></div></section>';
+    };
+    const chip = (dt) => '<span class="onl-chip" data-date="' + dt + '">' + esc(K.dateShort(dt)) + '<button type="button" aria-label="Scoate" data-rm>' + icon('x') + '</button></span>';
+    const url = 'https://www.centrul360.com/programare';
+    K.drawer({
+      title: 'Programări online', icon: 'globe',
+      body: '<form class="onl" data-onl novalidate>' +
+        '<div class="onl-top">' + K.toggle('on', st.on, 'Programările de pe site sunt pornite') +
+        '<a class="onl-link" href="' + url + '" target="_blank" rel="noopener">' + icon('link') + 'centrul360.com/programare</a></div>' +
+        cityHtml('Timișoara') + cityHtml('Arad') +
+        '<div class="onl-gen">' + K.field('Cel mai devreme', '<select name="notice">' + K.options([[60, 'peste 1 oră'], [120, 'peste 2 ore'], [180, 'peste 3 ore'], [240, 'peste 4 ore'], [720, 'din ziua următoare (12 ore)'], [1440, 'cu o zi înainte']].map(([v, l]) => [String(v), l]), String(st.notice)) + '</select>') +
+        K.field('Cât de departe', '<select name="ahead">' + K.options([[7, 'o săptămână'], [14, '2 săptămâni'], [21, '3 săptămâni'], [30, 'o lună'], [60, '2 luni']].map(([v, l]) => [String(v), l]), String(st.ahead)) + '</select>') +
+        K.field('Orele din 30 în 30', '<select name="step">' + K.options([[15, 'din 15 în 15 min'], [30, 'din 30 în 30 min'], [60, 'la fix']].map(([v, l]) => [String(v), l]), String(st.step)) + '</select>') + '</div>' +
+        '<div class="mo-note">' + icon('info') + 'Pe site apar doar orele libere: programul de mai sus, minus ce e deja în Calendar (programări, timp blocat, concedii). Ziua cu un concediu are o clientă în minus.</div>' +
+        '</form>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+      onMount(el) {
+        const f = el.querySelector('[data-onl]');
+        f.addEventListener('change', (e) => { const row = e.target.closest('.onl-day'); if (row && e.target.name && e.target.name.startsWith('on|')) row.classList.toggle('is-off', !e.target.checked); });
+        el.addEventListener('click', (e) => {
+          const rm = e.target.closest('[data-rm]'); if (rm) { rm.closest('.onl-chip').remove(); return; }
+          const add = e.target.closest('[data-add]');
+          if (add) {
+            const c = add.dataset.add, inp = el.querySelector('[data-add-date="' + c + '"]'), box = el.querySelector('[data-closed="' + c + '"]');
+            if (!inp.value) { inp.focus(); return; }
+            if (!box.querySelector('[data-date="' + inp.value + '"]')) box.insertAdjacentHTML('beforeend', chip(inp.value));
+            inp.value = '';
+          }
+        });
+        el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+          const v = K.formValues(f);
+          const out = { on: !!v.on, notice: Number(v.notice), ahead: Number(v.ahead), step: Number(v.step), cities: {} };
+          ['Timișoara', 'Arad'].forEach((c) => {
+            const days = {};
+            WD_ONLINE.forEach(([n]) => { const k = c + '|' + n; days[n] = { on: !!v['on|' + k], from: v['from|' + k], to: v['to|' + k], at: Number(v['at|' + k]) || 1 }; });
+            const bad = Object.values(days).find((x) => x.on && x.to <= x.from);
+            if (bad) throw Object.assign(new Error('În ' + c + ', o zi se termină înainte să înceapă.'), { shown: true });
+            out.cities[c] = { days, closed: [...el.querySelectorAll('[data-closed="' + c + '"] [data-date]')].map((x) => x.dataset.date) };
+          });
+          await K.api('/api/portal-booking', { action: 'save', settings: out });
+          K.ui().toast(out.on ? 'Salvat. Site-ul arată noile ore libere.' : 'Salvat. Programările de pe site sunt oprite.', 'success');
+          K.closeDrawer();
+        }).catch((err) => K.ui().toast(err.shown ? err.message : K.errText(err), 'error')));
+      },
+    });
+  }
+
   function openAppt(id) {
     const a = S.appts.find((x) => x.id === id);
     if (!a) return;
@@ -721,7 +787,7 @@
     if (!canEdit()) {
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
-        subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
+        subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + (a.online ? '<span class="k-tag is-info" title="Clienta s-a programat singură pe site">' + icon('globe') + 'Online</span> ' : '') + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
         body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
@@ -733,7 +799,7 @@
     }
     const d = K.drawer({
       title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
-      subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
+      subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + (a.online ? '<span class="k-tag is-info" title="Clienta s-a programat singură pe site">' + icon('globe') + 'Online</span> ' : '') + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
       body:
         (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită, apare în Încasări.</div>' : '') +
         '<div class="cal-status" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
