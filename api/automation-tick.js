@@ -226,6 +226,17 @@ module.exports = async (req, res) => {
     const a = await st.createOnce(p, 'x'); const b = await st.createOnce(p, 'y'); await st.removeBinary(p);
     return { first: a, second: b };
   })().catch((e) => ({ error: e.message }));
+  // with the key, &storetest=1: two saves at once on a test document (data/_store-test.json) both stay
+  if (readOnly && req.query.storetest) out.storetest = await (async () => {
+    const st = require('./_lib/store');
+    await st.writeJSON('data/_store-test.json', [{ id: 'base', v: 0 }], { quiet: true });
+    const one = async (id) => { const l = await st.readJSON('data/_store-test.json', []); await new Promise((r) => setTimeout(r, 300)); l.push({ id, v: 1 }); await st.writeJSON('data/_store-test.json', l, { quiet: true }); };
+    const a = await st.readJSON('data/_store-test.json', []);
+    await Promise.all([one('a'), one('b'), one('c')]);
+    a.find((x) => x.id === 'base').v = 9; await st.writeJSON('data/_store-test.json', a, { quiet: true }); // a stale copy, written last
+    const fin = await st.readJSON('data/_store-test.json', []);
+    return fin.map((x) => x.id + ':' + x.v);
+  })().catch((e) => ({ error: e.message }));
   // with the key, &once=1 applies the ads changes the owners approved now (api/_lib/ads-once.js), nothing else
   if (readOnly && req.query.once) out.once = await require('./_lib/ads-once').run().catch((e) => ({ error: e.message }));
   for (const [name, fn] of readOnly ? [] : STEPS) {
