@@ -14,7 +14,7 @@
   const K = window.K;
   const { esc, icon } = K;
 
-  const A = { tab: '', zone: '', manual: '', schemeGroup: 'all', caseGroup: 'all', openDay: null, role: 'cosmetician', pick: {}, fisa: { page: 0, ink: true, on: -1 } };
+  const A = { tab: '', zone: '', manual: '', schemeGroup: 'all', caseGroup: 'all', openDay: null, role: 'cosmetician', pick: {}, fisa: { sheet: 'corporale', page: 0, ink: true, on: -1 } };
   // three pages of the menu share this module (the owner, 5.11): Traininguri, Fișe de printat, Calculator ofertă.
   // Only one shows at a time: `panel` is the one on screen, MODE which of them it is.
   const PANELS = {};
@@ -393,7 +393,6 @@
   function psave(set) { try { localStorage.setItem(PKEY, JSON.stringify([...set])); } catch (e) { /* private mode */ } }
   // the stops on the map, in % of its box: a winding road, wide on a computer, tall on a phone
   const MAPW = [[7, 30], [24, 16], [41, 30], [58, 16], [76, 26], [91, 52], [76, 78], [57, 86], [38, 74], [18, 84]];
-  const MAPT = [[22, 4], [72, 12], [30, 21], [74, 31], [26, 41], [72, 51], [28, 61], [74, 71], [30, 81], [68, 93]];
   const STAGES = [[0, 2, 'Înainte să vină'], [2, 8, 'Cu clienta'], [8, 10, 'După']];
   // a smooth road through the stops (Catmull-Rom as curves)
   function road(pts) {
@@ -414,6 +413,15 @@
           '<span class="tr-stop-dot">' + (done.has(i) ? icon('check') : icon(x.ic)) + '</span><span class="tr-stop-l"><small>' + (i + 1) + '</small>' + esc(x.t) + '</span></button>';
       }).join('') + '</div>';
   }
+  // on a phone: one straight path from top to bottom, every stop on it, its name next to it (the owner, 5.11:
+  // "clean nice", the stretched curve looked deformed on a narrow screen)
+  function vmapHtml(done, cur) {
+    const last = Math.max(-1, ...[...done]);
+    return '<div class="tr-vmap' + (A.mapEnter ? ' is-enter' : '') + '" style="--fill:' + ((last + 1) / PARCURS.length * 100).toFixed(1) + '%">' +
+      PARCURS.map((x, i) => '<button type="button" class="tr-vstop' + (done.has(i) ? ' is-done' : '') + (i === cur ? ' is-cur' : '') + '" data-pstep="' + i + '" style="--i:' + i + '">' +
+        '<span class="tr-vdot">' + (done.has(i) ? icon('check') : icon(x.ic)) + '</span>' +
+        '<span class="tr-vtxt"><small>Pasul ' + (i + 1) + '</small><b>' + esc(x.t) + '</b></span>' + (i === cur ? '<span class="tr-vnow">Acum</span>' : '') + '</button>').join('') + '</div>';
+  }
   function parcursHtml() {
     const done = pdone();
     if (A.pstep == null || A.pstep < 0) { A.pstep = PARCURS.findIndex((x, i) => !done.has(i)); if (A.pstep < 0) A.pstep = 0; }
@@ -421,7 +429,7 @@
     const stage = (STAGES.find(([a, b]) => i >= a && i < b) || STAGES[0])[2];
     return '<div class="tr-jhead"><div><b>' + done.size + ' din ' + PARCURS.length + '</b><span>pași învățați</span></div><div class="tr-jbar"><i style="--w:' + Math.round(done.size / PARCURS.length * 100) + '%"></i></div>' +
         '<span class="tr-draft-s">' + icon('pen') + 'Schiță</span></div>' +
-      mapHtml(MAPW, 'is-wide', done, i) + mapHtml(MAPT, 'is-tall', done, i) + (A.mapEnter = false, '') +
+      mapHtml(MAPW, 'is-wide', done, i) + vmapHtml(done, i) + (A.mapEnter = false, '') +
       '<div class="tr-step" data-sheet>' +
         '<div class="tr-step-top"><span class="tr-step-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-step-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
         '<h3 class="tr-step-t"><span>' + icon(x.ic) + '</span>' + esc(x.t) + '</h3>' +
@@ -1639,28 +1647,42 @@
 .tr-map{ position:relative; width:100%; border-radius:28px; margin-bottom:1rem; overflow:hidden;
   background:radial-gradient(60% 80% at 20% 0%, rgba(91,140,255,.16), transparent 60%), radial-gradient(50% 70% at 100% 100%, rgba(168,85,247,.16), transparent 60%), var(--paper);
   border:1px solid rgba(255,255,255,.08); }
-.tr-map.is-wide{ height:400px; } .tr-map.is-tall{ display:none; height:1050px; }
-.tr-map svg{ position:absolute; inset:6% 4%; width:92%; height:88%; overflow:visible; }
+.tr-map.is-wide{ height:420px; }
+.tr-map > svg{ position:absolute; inset:6% 4%; width:92%; height:88%; overflow:visible; }
 .tr-road-bg{ fill:none; stroke:rgba(255,255,255,.07); stroke-width:16px; vector-effect:non-scaling-stroke; stroke-linecap:round; }
 .tr-road{ fill:none; stroke:rgba(255,255,255,.35); stroke-width:3px; vector-effect:non-scaling-stroke; stroke-linecap:round; stroke-dasharray:2 3; animation:trDash 20s linear infinite; }
 .tr-map.is-enter .tr-road{ animation:trRoad 1.6s ease-out both, trDash 20s linear infinite; }
 @keyframes trRoad{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes trDash{ to{ stroke-dashoffset:-100; } }
-.tr-stop{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.35rem; border:0; background:none; color:var(--fg); font:inherit; cursor:pointer; padding:0; width:110px;
-}
-.tr-map.is-enter .tr-stop{ animation:trPop .6s cubic-bezier(.34,1.56,.64,1) both; animation-delay:calc(.3s + var(--i) * 70ms); }
-.tr-stop-dot{ width:54px; height:54px; border-radius:18px; display:grid; place-items:center; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.14); color:var(--fg);
-  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:0 10px 24px -12px rgba(0,0,0,.8); transition:transform .3s cubic-bezier(.34,1.56,.64,1), background .3s; }
-.tr-stop-dot .k-ic{ width:24px; height:24px; }
+.tr-stop{ position:absolute; width:0; height:0; border:0; background:none; padding:0; color:var(--fg); font:inherit; cursor:pointer; }
+.tr-stop-dot{ position:absolute; left:0; top:0; width:52px; height:52px; margin:-26px 0 0 -26px; border-radius:17px; display:grid; place-items:center; background:rgba(30,32,42,.92); border:1px solid rgba(255,255,255,.14); color:var(--fg);
+  box-shadow:0 10px 24px -12px rgba(0,0,0,.8); transition:transform .3s cubic-bezier(.34,1.56,.64,1), background .3s; }
+.tr-map.is-enter .tr-stop-dot, .tr-map.is-enter .tr-stop-l{ animation:trPop .6s cubic-bezier(.34,1.56,.64,1) both; animation-delay:calc(.3s + var(--i) * 70ms); }
+.tr-stop-dot .k-ic{ width:23px; height:23px; }
 .tr-stop:hover .tr-stop-dot{ transform:translateY(-3px) scale(1.06); }
 .tr-stop.is-done .tr-stop-dot{ background:linear-gradient(145deg,#22c55e,#10b981); border-color:transparent; color:#fff; }
-.tr-stop.is-cur .tr-stop-dot{ background:linear-gradient(145deg,#5b8cff,#a855f7); border-color:transparent; color:#fff; transform:scale(1.12); }
-.tr-stop.is-cur .tr-stop-dot::after{ content:''; position:absolute; inset:-8px; border-radius:24px; border:2px solid rgba(124,140,255,.6); animation:trPulse 1.8s ease-out infinite; }
-.tr-stop-dot{ position:relative; }
-.tr-stop-l{ font-size:.78rem; font-weight:600; line-height:1.25; text-align:center; text-shadow:0 1px 6px rgba(0,0,0,.6); }
-.tr-stop-l small{ display:block; font-size:.66rem; color:var(--muted); font-weight:700; }
-@keyframes trPop{ from{ opacity:0; transform:translate(-50%,-50%) scale(.4); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
-@keyframes trPulse{ from{ opacity:1; transform:scale(.92); } to{ opacity:0; transform:scale(1.35); } }
+.tr-stop.is-cur .tr-stop-dot{ background:linear-gradient(145deg,#5b8cff,#a855f7); border-color:transparent; color:#fff; box-shadow:0 0 0 5px rgba(124,140,255,.22), 0 14px 30px -12px #7c6cff; }
+.tr-stop-l{ position:absolute; left:0; top:36px; transform:translateX(-50%); white-space:nowrap; display:flex; align-items:center; gap:.35rem; padding:.22rem .65rem .22rem .3rem; border-radius:999px;
+  background:rgba(14,16,24,.85); border:1px solid rgba(255,255,255,.08); font-size:.76rem; font-weight:600; line-height:1.2; }
+.tr-stop-l small{ display:grid; place-items:center; width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.1); font-size:.64rem; font-weight:800; color:var(--muted); }
+.tr-stop.is-cur .tr-stop-l{ border-color:rgba(124,140,255,.55); }
+@keyframes trPop{ from{ opacity:0; scale:.5; } to{ opacity:1; scale:1; } }
+/* the phone's path */
+.tr-vmap{ display:none; position:relative; margin-bottom:1rem; padding:.4rem 0; }
+.tr-vmap::before, .tr-vmap::after{ content:''; position:absolute; left:27px; top:36px; bottom:36px; width:3px; margin-left:-1.5px; border-radius:3px; background:rgba(255,255,255,.1); }
+.tr-vmap::after{ bottom:auto; height:calc((100% - 72px) * var(--fill) / 100); background:linear-gradient(180deg,#22c55e,#10b981); transition:height .8s cubic-bezier(.16,1,.3,1); }
+.tr-vstop{ position:relative; z-index:1; display:flex; align-items:center; gap:.9rem; width:100%; padding:.45rem 0; border:0; background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
+.tr-vmap.is-enter .tr-vstop{ animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 45ms); }
+.tr-vdot{ flex:none; width:54px; height:54px; border-radius:18px; display:grid; place-items:center; background:var(--paper); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 20px -12px rgba(0,0,0,.9); transition:transform .3s cubic-bezier(.34,1.56,.64,1); }
+.tr-vdot .k-ic{ width:23px; height:23px; }
+.tr-vstop:active .tr-vdot{ transform:scale(.94); }
+.tr-vstop.is-done .tr-vdot{ background:linear-gradient(145deg,#22c55e,#10b981); border-color:transparent; color:#fff; }
+.tr-vstop.is-cur .tr-vdot{ background:linear-gradient(145deg,#5b8cff,#a855f7); border-color:transparent; color:#fff; box-shadow:0 0 0 5px rgba(124,140,255,.22), 0 14px 30px -12px #7c6cff; }
+.tr-vtxt{ display:flex; flex-direction:column; min-width:0; }
+.tr-vtxt small{ font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+.tr-vtxt b{ font-size:1.05rem; font-weight:700; letter-spacing:-.01em; }
+.tr-vstop.is-done .tr-vtxt b{ color:var(--muted); }
+.tr-vnow{ margin-left:auto; padding:.25rem .65rem; border-radius:999px; background:rgba(124,140,255,.16); color:#a5b4ff; font-size:.72rem; font-weight:700; }
 /* the step's card */
 .tr-step{ position:relative; min-width:0; max-width:100%; box-sizing:border-box; padding:1.6rem; border-radius:28px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01)), var(--paper);
   box-shadow:0 30px 60px -40px rgba(0,0,0,.9); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }
@@ -1684,8 +1706,8 @@
 .tr-burst{ position:fixed; z-index:500; width:0; height:0; pointer-events:none; }
 .tr-burst i{ position:absolute; width:8px; height:8px; border-radius:50%; background:hsl(calc(var(--a) / 1), 90%, 65%); animation:trBurst .75s cubic-bezier(.16,1,.3,1) forwards; }
 @keyframes trBurst{ from{ transform:rotate(var(--a)) translateX(0) scale(1); opacity:1; } to{ transform:rotate(var(--a)) translateX(var(--d)) scale(.2); opacity:0; } }
-@media (max-width:900px){ .tr-map.is-wide{ display:none; } .tr-map.is-tall{ display:block; } }
-@media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop, .tr-road, .tr-step, .tr-dos li, .tr-stop.is-cur .tr-stop-dot::after{ animation:none !important; } }
+@media (max-width:900px){ .tr-map.is-wide{ display:none; } .tr-vmap{ display:block; } }
+@media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop-dot, .tr-stop-l, .tr-vstop, .tr-road, .tr-step, .tr-dos li{ animation:none !important; } }
 @media (max-width:760px){
   .tr-doors{ grid-template-columns:1fr; min-height:0; }
   .tr-door{ min-height:170px; padding:1.3rem 1.3rem 1.3rem 6rem; justify-content:center; border-radius:26px; }
