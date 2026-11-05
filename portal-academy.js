@@ -332,14 +332,14 @@
   // in the order she learns them (the owner, 5.11): first how a client goes through the salon, then the consultation,
   // then the treatments
   const ZONES = [
-    { id: 'parcurs', title: '1. Parcursul clientei', sub: 'Ce faci de când vine clienta până pleacă', icon: 'users' },
-    { id: 'consult', title: '2. Consultația', sub: 'Cum vorbești cu clienta și cum îi faci oferta', icon: 'file' },
-    { id: 'tratamente', title: '3. Tratamentele', sub: 'Cum faci fiecare tratament', icon: 'sparkles' },
+    { id: 'parcurs', title: '1. Parcursul clientei', sub: 'Ce fac de când vine clienta până pleacă.', icon: 'users' },
+    { id: 'consult', title: '2. Consultația', sub: 'Ce îi spun clientei și ce îi recomand.', icon: 'file' },
+    { id: 'tratamente', title: '3. Tratamentele', sub: 'Cum fac fiecare tratament.', icon: 'sparkles' },
   ];
   function zonesHtml() {
     const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
     if (!A.zone) {
-      return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door" data-zone="' + z.id + '" style="--i:' + i + '">' +
+      return roleBar + '<h3 class="tr-learn">Vreau să învăț:</h3><div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door" data-zone="' + z.id + '" style="--i:' + i + '">' +
         '<span class="tr-door-ic">' + icon(z.icon) + '</span><b>' + esc(z.title) + '</b><span>' + esc(z.sub) + '</span><i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
     }
     const z = ZONES.find((x) => x.id === A.zone) || ZONES[0];
@@ -1537,6 +1537,7 @@
 }
 `;
   const css2 = `
+.tr-learn{ margin:.2rem 0 1rem; font-size:clamp(1.6rem,4vw,2.4rem); font-weight:800; letter-spacing:-.03em; }
 .tr-doors{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; min-height:calc(100dvh - 260px); }
 .tr-door{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; gap:.55rem; padding:1.6rem; min-height:260px; text-align:left;
   border-radius:24px; border:1px solid var(--line); background:linear-gradient(160deg, var(--accent-soft), var(--paper) 60%); color:var(--fg); font:inherit; cursor:pointer; overflow:hidden;
