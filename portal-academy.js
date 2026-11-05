@@ -14,8 +14,11 @@
   const K = window.K;
   const { esc, icon } = K;
 
-  const A = { tab: '', manual: '', schemeGroup: 'all', caseGroup: 'all', openDay: null, role: 'cosmetician', pick: {}, fisa: { page: 0, ink: true, on: -1 } };
-  let panel;
+  const A = { tab: '', zone: '', manual: '', schemeGroup: 'all', caseGroup: 'all', openDay: null, role: 'cosmetician', pick: {}, fisa: { page: 0, ink: true, on: -1 } };
+  // three pages of the menu share this module (the owner, 5.11): Traininguri, Fișe de printat, Calculator ofertă.
+  // Only one shows at a time: `panel` is the one on screen, MODE which of them it is.
+  const PANELS = {};
+  let panel, MODE = 'train';
 
   // ------------------------------------------------------------------ body → html
   // "## " sub-heading · "- " bullet · "1. " step · "> " what to say · "! " rule · else paragraph
@@ -191,28 +194,43 @@
     const t = [];
     const ps = pathStats(meId());
     if (ps) t.push(['drum', 'Drumul meu', 'target', ps.done < ps.items ? ps.items - ps.done : 0]);
-    t.push(['vanzari', 'Vânzări', 'trend'], ['tratamente', 'Tratamente', 'sparkles'], ['fise', 'De printat', 'printer']);
+    // the cosmetician's trainings (and the owner looking as one): one page with three big doors (zonesHtml)
+    if (viewRole() === 'cosmetician') t.push(['acasa', 'Traininguri', 'book']);
+    else t.push(['vanzari', 'Vânzări', 'trend'], ['tratamente', 'Tratamente', 'sparkles']);
     if (isAdmin()) t.push(['echipa', 'Progres echipă', 'trend', pendingTasks().length]);
     return t;
   }
 
-  function mount(p) {
-    panel = p;
-    panel.classList.add('k-panel', 'ac');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Traininguri</h2></div></div>' +
-      '<nav class="tr-tabs" data-tabs></nav><div data-view></div>';
-    panel.addEventListener('click', onClick);
-    panel.addEventListener('input', onCalcInput);
-    panel.addEventListener('change', onCalcInput);
+  const TITLES = { train: ['Echipă', 'Traininguri'], fise: ['Echipă', 'Fișe de printat'], calc: ['Vânzări', 'Calculator ofertă'] };
+  function mountAs(mode) {
+    return (p) => {
+      PANELS[mode] = p;
+      p.classList.add('k-panel', 'ac');
+      p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">' + TITLES[mode][0] + '</div><h2>' + TITLES[mode][1] + '</h2></div></div>' +
+        (mode === 'train' ? '<nav class="tr-tabs" data-tabs></nav>' : '') + '<div data-view></div>';
+      p.addEventListener('click', onClick);
+      p.addEventListener('input', onCalcInput);
+      p.addEventListener('change', onCalcInput);
+    };
   }
+  const mount = mountAs('train');
+  function showAs(mode) { return () => { MODE = mode; panel = PANELS[mode]; render(); }; }
   function render() {
     if (!panel || !K.data) return;
+    if (MODE === 'fise') { panel.querySelector('[data-view]').innerHTML = printHtml(); return; }
+    if (MODE === 'calc') {
+      const v = panel.querySelector('[data-view]');
+      if (!v.querySelector('[data-calc]')) v.innerHTML = calcHtml();
+      paintCalcResults();
+      return;
+    }
     const t = tabs();
-    if (!A.tab || !t.some((x) => x[0] === A.tab)) A.tab = t[0][0] === 'drum' && pathStats(meId()).done < pathStats(meId()).items ? 'drum' : 'vanzari';
+    if (!A.tab || !t.some((x) => x[0] === A.tab)) A.tab = t[0][0] === 'drum' && pathStats(meId()).done < pathStats(meId()).items ? 'drum' : viewRole() === 'cosmetician' ? 'acasa' : 'vanzari';
+    panel.querySelector('[data-tabs]').hidden = t.length < 2; // one tab alone is no choice
     panel.querySelector('[data-tabs]').innerHTML = t.map(([id, l, ic, n]) => '<button type="button" class="tr-tab' + (A.tab === id ? ' is-on' : '') + '" data-tab="' + id + '">' + icon(ic) + '<span>' + esc(l) + '</span>' + (n ? '<b class="tr-tab-n">' + n + '</b>' : '') + '</button>').join('');
     const v = panel.querySelector('[data-view]');
     if (subOf() === 'calc' && v.querySelector('[data-calc]')) { paintCalcResults(); return; } // keep what she's typing
-    v.innerHTML = ({ drum: drumHtml, vanzari: () => areaHtml('vanzari'), tratamente: () => areaHtml('tratamente'), fise: printHtml, echipa: teamHtml })[A.tab]();
+    v.innerHTML = ({ drum: drumHtml, acasa: zonesHtml, vanzari: () => areaHtml('vanzari'), tratamente: () => areaHtml('tratamente'), echipa: teamHtml })[A.tab]();
     if (subOf() === 'calc') paintCalcResults();
     if (subOf() === 'm:consultatie' && window.C360Fisa) window.C360Fisa.bind(v, A.fisa, render);
     if (isAdmin()) K.badge('traininguri', pendingTasks().length);
@@ -275,7 +293,6 @@
     });
     const visible = (D().schemes || []).length;
     if (area === 'vanzari' && role === 'cosmetician') {
-      cards.push({ id: 'calc', title: 'Calculator ofertă', icon: 'percent', sub: 'Programul și cele 4 oferte' });
       cards.push({ id: 'cases', title: 'Cazuri', icon: 'users', sub: (D().cases || []).length + ' exerciții' });
     }
     if (area === 'tratamente') {
@@ -287,23 +304,95 @@
     return cards;
   }
   // the part shown under the cards in the current tab
+  // the area the sub-cards belong to: a tab (Recepție), or a door of the cosmetician's trainings
+  const areaNow = () => (A.tab === 'acasa' ? (A.zone === 'consult' ? 'vanzari' : A.zone === 'tratamente' ? 'tratamente' : '') : A.tab === 'vanzari' || A.tab === 'tratamente' ? A.tab : '');
   function subOf() {
-    if (A.tab !== 'vanzari' && A.tab !== 'tratamente') return '';
-    const cards = areaCards(A.tab, viewRole());
-    const key = A.tab + ':' + viewRole();
+    const area = areaNow();
+    if (!area) return '';
+    const cards = areaCards(area, viewRole());
+    const key = area + ':' + viewRole();
     if (!cards.some((c) => c.id === A.pick[key])) A.pick[key] = cards[0] ? cards[0].id : '';
     return A.pick[key];
   }
-  function areaHtml(area) {
+  function areaHtml(area, inZone) {
     const role = viewRole();
     const cards = areaCards(area, role);
     const pick = subOf();
     if (pick.indexOf('m:') === 0) A.manual = pick.slice(2);
     const sub = pick === 'm:consultatie' && window.C360Fisa ? consultHtml(current()) : pick.indexOf('m:') === 0 ? manualHtml(current()) : pick === 'calc' ? calcHtml() : pick === 'cases' ? casesHtml() : pick === 'schemes' ? schemesHtml() : pick === 'summary' ? summariesHtml() : pick === 'combos' ? combosHtml() : '';
-    return (isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], role) + '</div>' : '') +
+    return (isAdmin() && !inZone ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], role) + '</div>' : '') +
       (cards.length ? '<div class="ac-manuals">' + cards.map((c) => '<button type="button" class="ac-mcard' + (c.id === pick ? ' is-on' : '') + '" data-sub="' + esc(c.id) + '"><span class="k-icon-chip is-accent">' + icon(c.icon) + '</span>' +
         '<div><b>' + esc(c.title) + '</b><span>' + esc(c.sub) + '</span></div></button>').join('') + '</div>' : '') +
       (sub || K.empty('book', 'Nimic aici încă', ''));
+  }
+
+  // ------------------------------------------------------------------ the cosmetician's three doors
+  // (the owner, 5.11) "un selector mare pe tot ecranul": the consultation, the client's way through the salon (what she
+  // does from the door to the door, explained very simply), the treatments
+  const ZONES = [
+    { id: 'consult', title: 'Consultația', sub: 'Fișa pas cu pas, ce spui, cum faci oferta, exerciții', icon: 'file' },
+    { id: 'parcurs', title: 'Parcursul clientei', sub: 'De la ușă până la ușă: ce faci tu la fiecare pas', icon: 'users' },
+    { id: 'tratamente', title: 'Tratamentele', sub: 'Schemele, combinațiile, cum lucrezi în cabinet', icon: 'sparkles' },
+  ];
+  function zonesHtml() {
+    const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
+    if (!A.zone) {
+      return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door" data-zone="' + z.id + '" style="--i:' + i + '">' +
+        '<span class="tr-door-ic">' + icon(z.icon) + '</span><b>' + esc(z.title) + '</b><span>' + esc(z.sub) + '</span><i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
+    }
+    const z = ZONES.find((x) => x.id === A.zone) || ZONES[0];
+    const others = ZONES.filter((x) => x.id !== z.id);
+    return roleBar + '<div class="tr-zonebar"><button type="button" class="k-btn is-ghost is-sm" data-zone="">' + icon('left') + 'Toate</button><h3>' + icon(z.icon) + esc(z.title) + '</h3><span class="k-grow"></span>' +
+      others.map((x) => '<button type="button" class="k-chip" data-zone="' + x.id + '">' + esc(x.title) + '</button>').join('') + '</div>' +
+      (z.id === 'parcurs' ? parcursHtml() : areaHtml(z.id === 'consult' ? 'vanzari' : 'tratamente', true));
+  }
+
+  // ------------------------------------------------------------------ Parcursul clientei
+  // Each step, said simply (as to a 5-year-old): what you do, why it matters, what never to forget. A draft to fill:
+  // the owner will give the exact words and the photos.
+  const PARCURS = [
+    { t: 'Când ajungi prima la salon', when: 'Dimineața, înainte de prima clientă', ic: 'clock',
+      do: ['Descui ușa și aprinzi luminile.', 'Pornești aparatele și verifici că merg.', 'Pui apă la rece, pregătești cafeaua și ceaiul.', 'Te uiți în Calendar: cine vine azi și la ce oră.'],
+      why: 'Clienta trebuie să intre într-un salon gata pregătit, nu să aștepte să se aprindă luminile.', never: '' },
+    { t: 'Pregătești cabinetul', when: 'Înainte de fiecare clientă', ic: 'sparkles',
+      do: ['Pui un cearceaf curat pe pat și un prosop curat.', 'Pui pe măsuță doar ce îți trebuie pentru tratamentul ei.', 'Aparatul e pornit și curat.'],
+      why: 'Așa nu cauți nimic cât timp ea așteaptă.', never: 'Nu folosești niciodată același cearceaf sau prosop la două cliente.' },
+    { t: 'Când vine clienta', when: 'În primul minut', ic: 'users',
+      do: ['Zâmbești și o saluți pe nume.', 'O inviți să stea jos.', 'O întrebi: „Vă pot oferi un pahar cu apă, o cafea sau un ceai?”'],
+      why: 'Primul minut hotărăște dacă se simte bine la noi.', never: '' },
+    { t: 'Fișa clientei', when: 'La prima ei vizită', ic: 'file',
+      do: ['Îi dai fișa (o găsești la Fișe de printat) și o ajuți să o completeze.', 'Verifici că a semnat.', 'Lași fișa la recepție.'],
+      why: 'Fișa ne spune dacă tratamentul e sigur pentru ea.', never: 'Fără fișă semnată nu începi tratamentul.' },
+    { t: 'Pozele „înainte”', when: 'Înainte să începi tratamentul', ic: 'image',
+      do: ['O așezi în locul cu lumină bună, mereu același.', 'Faci pozele din față și din lateral, de la aceeași distanță.', 'Le încarci în portal: Contacte → clienta → Poze înainte / după → Înainte.'],
+      why: 'Fără poza „înainte” nu putem arăta rezultatul.', never: '' },
+    { t: 'Tratamentul', when: 'În cabinet', ic: 'sparkles',
+      do: ['Îi spui pe scurt ce urmează să faci.', 'O întrebi din când în când cum se simte.', 'Faci tratamentul după schema lui (Traininguri → Tratamentele).'],
+      why: 'Când știe ce urmează, se relaxează.', never: '' },
+    { t: 'Pozele „după”', when: 'Imediat după tratament', ic: 'image',
+      do: ['Aceeași lumină, același loc, aceeași poziție ca la „înainte”.', 'Le încarci la „După”, la aceeași clientă.'],
+      why: 'Așa se vede corect diferența.', never: '' },
+    { t: 'Când pleacă', when: 'La final', ic: 'calendar',
+      do: ['Îi spui ce să facă acasă (sfaturile tratamentului).', 'O conduci la recepție pentru plată și pentru următoarea programare.', 'Îi mulțumești și o saluți pe nume.'],
+      why: 'Ultimul minut contează la fel de mult ca primul.', never: '' },
+    { t: 'Curățenia după fiecare clientă', when: 'Imediat ce a plecat', ic: 'refresh',
+      do: ['Dezinfectezi patul, aparatul și măsuța.', 'Scoți cearceaful și prosopul folosite.', 'Arunci ce e de unică folosință.'],
+      why: 'Următoarea clientă trebuie să găsească totul ca nou.', never: '' },
+    { t: 'Când pleci ultima', when: 'Seara, după ultima clientă', ic: 'power',
+      do: ['Oprești aparatele.', 'Faci curat în cabinet și scoți gunoiul.', 'Verifici că totul e pregătit pentru mâine.', 'Stingi luminile și închizi ușa.'],
+      why: 'Cine vine mâine dimineață găsește salonul gata de lucru.', never: '' },
+  ];
+  function parcursHtml() {
+    if (A.pstep == null) A.pstep = 0;
+    return '<p class="tr-draft">' + icon('pen') + 'Schiță: pașii sunt aici, textul exact și pozele se completează.</p>' +
+      '<ol class="tr-path">' + PARCURS.map((x, i) => {
+        const open = A.pstep === i;
+        return '<li class="tr-pstep' + (open ? ' is-open' : '') + '"><button type="button" class="tr-pstep-h" data-pstep="' + i + '"><span class="tr-pstep-n">' + (i + 1) + '</span>' +
+          '<span class="tr-pstep-t"><small>' + esc(x.when) + '</small><b>' + esc(x.t) + '</b></span>' + icon(open ? 'up' : 'down') + '</button>' +
+          (open ? '<div class="tr-pstep-b"><h5>Ce faci</h5><ol>' + x.do.map((d) => '<li>' + esc(d) + '</li>').join('') + '</ol>' +
+            '<p class="tr-why"><b>De ce:</b> ' + esc(x.why) + '</p>' + (x.never ? '<p class="ac-rule">' + esc(x.never) + '</p>' : '') +
+            '<div class="tr-photo">' + icon('image') + 'Aici vine poza sau filmulețul</div></div>' : '') + '</li>';
+      }).join('') + '</ol>';
   }
 
   // ------------------------------------------------------------------ Consultația
@@ -885,12 +974,8 @@
   function toCalc(c) {
     C = { city: c.city === 'ar' ? 'ar' : 'tm', lines: (c.program || []).map((l) => Object.assign({}, l)), low: !!c.low, duration: c.duration || '', result: c.result || '' };
     keepCalc();
-    A.tab = 'vanzari';
-    if (isAdmin()) A.role = 'cosmetician';
-    A.pick['vanzari:' + viewRole()] = 'calc';
-    const v = panel.querySelector('[data-view]'); v.innerHTML = '';
-    render();
-    panel.scrollIntoView({ block: 'start' });
+    if (PANELS.calc) PANELS.calc.querySelector('[data-view]').innerHTML = '';
+    K.go('calculator');
   }
   function calcHtml() {
     const s = calcState();
@@ -1239,7 +1324,11 @@
     const cr = t.closest('[data-cl-rm]'); if (cr) { const s = calcState(); s.lines.splice(+cr.dataset.clRm, 1); if (!s.lines.length) s.lines.push({ price: '', sessions: 1, zone: '', interval: '' }); keepCalc(); panel.querySelector('[data-lines]').innerHTML = linesHtml(); return paintCalcResults(); }
     if (t.closest('[data-calc-clear]')) { C = null; try { localStorage.removeItem(CALC_KEY); } catch (x) { /* private */ } panel.querySelector('[data-view]').innerHTML = ''; return render(); }
     const sb = t.closest('[data-sub]');
-    if (sb) { A.pick[A.tab + ':' + viewRole()] = sb.dataset.sub; panel.querySelector('[data-view]').innerHTML = ''; return render(); }
+    if (sb) { A.pick[areaNow() + ':' + viewRole()] = sb.dataset.sub; panel.querySelector('[data-view]').innerHTML = ''; return render(); }
+    const zn = t.closest('[data-zone]');
+    if (zn) { A.zone = zn.dataset.zone; panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' }); return; }
+    const ps = t.closest('[data-pstep]');
+    if (ps) { const i = +ps.dataset.pstep; A.pstep = A.pstep === i ? -1 : i; return render(); }
     const sm = t.closest('[data-summary]'); if (sm) return openSummary(sm.dataset.summary);
     const ce2 = t.closest('[data-cb-edit],[data-cb-new]'); if (ce2) return editCombo(ce2.dataset.cbEdit ? (D().combos || []).find((x) => x.id === ce2.dataset.cbEdit) : null);
     if (t.closest('[data-calc-copy]')) return K.copy(calcText());
@@ -1445,11 +1534,50 @@
   .tr-hero{ padding:.85rem; }
 }
 `;
+  const css2 = `
+.tr-doors{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; min-height:calc(100dvh - 260px); }
+.tr-door{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; gap:.55rem; padding:1.6rem; min-height:260px; text-align:left;
+  border-radius:24px; border:1px solid var(--line); background:linear-gradient(160deg, var(--accent-soft), var(--paper) 60%); color:var(--fg); font:inherit; cursor:pointer; overflow:hidden;
+  transition:transform .35s cubic-bezier(.16,1,.3,1), border-color .25s, box-shadow .3s; animation:trDoor .5s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 70ms); }
+.tr-door:hover{ transform:translateY(-3px); border-color:var(--accent); box-shadow:0 18px 40px -22px var(--accent); }
+.tr-door-ic{ position:absolute; top:1.4rem; left:1.4rem; width:56px; height:56px; border-radius:18px; display:grid; place-items:center; background:var(--accent); color:var(--on-accent, #fff); }
+.tr-door-ic .k-ic{ width:28px; height:28px; }
+.tr-door b{ font-size:1.55rem; font-weight:800; letter-spacing:-.03em; }
+.tr-door > span:not(.tr-door-ic){ font-size:.92rem; color:var(--muted); line-height:1.45; max-width:28ch; }
+.tr-door-go{ position:absolute; top:1.6rem; right:1.4rem; color:var(--muted); font-style:normal; }
+@keyframes trDoor{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+.tr-zonebar{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin-bottom:1rem; }
+.tr-zonebar h3{ display:inline-flex; align-items:center; gap:.45rem; margin:0 .4rem; font-size:1.1rem; }
+.tr-zonebar h3 .k-ic{ width:18px; height:18px; color:var(--accent); }
+.tr-draft{ display:flex; align-items:center; gap:.45rem; padding:.6rem .85rem; border-radius:12px; background:var(--warn-soft); color:var(--warn); font-size:.84rem; margin:0 0 1rem; }
+.tr-draft .k-ic{ width:15px; height:15px; }
+.tr-path{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.6rem; position:relative; }
+.tr-pstep{ border:1px solid var(--line); border-radius:18px; background:var(--paper); overflow:hidden; }
+.tr-pstep.is-open{ border-color:var(--accent); }
+.tr-pstep-h{ width:100%; display:flex; align-items:center; gap:.9rem; padding:.95rem 1.1rem; border:0; background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
+.tr-pstep-n{ width:38px; height:38px; flex:none; border-radius:50%; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); font-weight:800; }
+.tr-pstep.is-open .tr-pstep-n{ background:var(--accent); color:var(--on-accent, #fff); }
+.tr-pstep-t{ flex:1; min-width:0; } .tr-pstep-t small{ display:block; font-size:.76rem; color:var(--muted); } .tr-pstep-t b{ display:block; font-size:1.02rem; }
+.tr-pstep-b{ padding:0 1.1rem 1.1rem 4.1rem; }
+.tr-pstep-b h5{ margin:.2rem 0 .4rem; font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.tr-pstep-b ol{ margin:0 0 .7rem; padding-left:1.1rem; display:flex; flex-direction:column; gap:.35rem; font-size:1rem; line-height:1.5; }
+.tr-why{ display:block !important; margin:.4rem 0; font-size:.92rem; color:var(--muted); }
+.tr-photo{ display:flex; align-items:center; justify-content:center; gap:.5rem; height:120px; margin-top:.7rem; border-radius:14px; border:1.5px dashed var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:760px){
+  .tr-doors{ grid-template-columns:1fr; min-height:0; }
+  .tr-door{ min-height:150px; padding:1.2rem 1.2rem 1.2rem 5.6rem; justify-content:center; }
+  .tr-door-ic{ top:50%; transform:translateY(-50%); left:1.1rem; width:52px; height:52px; }
+  .tr-door b{ font-size:1.3rem; }
+  .tr-pstep-b{ padding-left:1.1rem; }
+}
+`;
   const st = document.createElement('style');
-  st.textContent = css;
+  st.textContent = css + css2;
   document.head.appendChild(st);
 
-  K.section('traininguri', { mount, show: render, data() { if (panel && K.isActive('traininguri')) render(); else badgeOnly(); } });
+  K.section('traininguri', { mount, show: showAs('train'), data() { if (K.isActive('traininguri')) { MODE = 'train'; panel = PANELS.train; render(); } else badgeOnly(); } });
+  K.section('fise', { mount: mountAs('fise'), show: showAs('fise') });
+  K.section('calculator', { mount: mountAs('calc'), show: showAs('calc'), data() { if (K.isActive('calculator')) { MODE = 'calc'; panel = PANELS.calc; render(); } } });
   // the nav badge stays right while she's elsewhere in the portal
   function badgeOnly() {
     if (!K.data) return;
@@ -1457,5 +1585,5 @@
     const ps = pathStats(meId());
     K.badge('traininguri', ps ? todayLeft(ps) : 0);
   }
-  K.on('academy:print', () => { A.tab = 'fise'; if (panel) { panel.querySelector('[data-view]').innerHTML = ''; render(); } });
+  K.on('academy:print', () => K.go('fise'));
 })();
