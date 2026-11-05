@@ -217,6 +217,15 @@ module.exports = async (req, res) => {
     const copy = JSON.parse(JSON.stringify(src));
     const r = { kb: Math.round(JSON.stringify(copy, null, 2).length / 1024), kbCompact: Math.round(JSON.stringify(copy).length / 1024) };
     let t = Date.now();
+    if (req.query.writetime === '3') {
+      // the copy is already there from the earlier checks: read it, change it, save it through the store, at most 12 s
+      const a = await st.readJSON(T, []); r.readMs = Date.now() - t;
+      a.push({ id: 'speed-' + Date.now(), date: '2000-01-01' });
+      t = Date.now();
+      const done = await Promise.race([st.writeJSON(T, a, { quiet: true }).then(() => 'saved', (e) => 'error ' + e.message), new Promise((ok) => setTimeout(() => ok('still going after 12 s'), 12e3))]);
+      r.result = done; r.changeWriteMs = Date.now() - t; r.log = st.writeLog.filter((x) => x.pathname === T).slice(-1);
+      return r;
+    }
     if (req.query.writetime === 'raw') { await require('@vercel/blob').put(T, JSON.stringify(copy), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' }); r.rawPutMs = Date.now() - t; return r; }
     await st.writeJSON(T, copy, { quiet: true }); r.firstWriteMs = Date.now() - t;
     if (req.query.writetime === '1') return r;
@@ -233,7 +242,7 @@ module.exports = async (req, res) => {
     }
     if (req.query.writetime === '3') {
       t = Date.now();
-      await Promise.race([st.writeJSON(T, a, { quiet: true }), new Promise((ok) => setTimeout(ok, 40e3))]);
+      await Promise.race([st.writeJSON(T, a, { quiet: true }), new Promise((ok) => setTimeout(ok, 12e3))]);
       r.changeWriteMs = Date.now() - t; r.log = st.writeLog.filter((x) => x.pathname === T).slice(-2);
       return r;
     }
