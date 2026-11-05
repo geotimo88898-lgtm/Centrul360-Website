@@ -329,10 +329,12 @@
   // ------------------------------------------------------------------ the cosmetician's three doors
   // (the owner, 5.11) "un selector mare pe tot ecranul": the consultation, the client's way through the salon (what she
   // does from the door to the door, explained very simply), the treatments
+  // in the order she learns them (the owner, 5.11): first how a client goes through the salon, then the consultation,
+  // then the treatments
   const ZONES = [
-    { id: 'consult', title: 'Consultația', sub: 'Fișa pas cu pas, ce spui, cum faci oferta, exerciții', icon: 'file' },
-    { id: 'parcurs', title: 'Parcursul clientei', sub: 'De la ușă până la ușă: ce faci tu la fiecare pas', icon: 'users' },
-    { id: 'tratamente', title: 'Tratamentele', sub: 'Schemele, combinațiile, cum lucrezi în cabinet', icon: 'sparkles' },
+    { id: 'parcurs', title: '1. Parcursul clientei', sub: 'Ce faci de când vine clienta până pleacă', icon: 'users' },
+    { id: 'consult', title: '2. Consultația', sub: 'Cum vorbești cu clienta și cum îi faci oferta', icon: 'file' },
+    { id: 'tratamente', title: '3. Tratamentele', sub: 'Cum faci fiecare tratament', icon: 'sparkles' },
   ];
   function zonesHtml() {
     const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
@@ -351,46 +353,46 @@
   // Each step, said simply (as to a 5-year-old): what you do, why it matters, what never to forget. A draft to fill:
   // the owner will give the exact words and the photos.
   const PARCURS = [
-    { t: 'Când ajungi prima la salon', when: 'Dimineața, înainte de prima clientă', ic: 'clock',
-      do: ['Descui ușa și aprinzi luminile.', 'Pornești aparatele și verifici că merg.', 'Pui apă la rece, pregătești cafeaua și ceaiul.', 'Te uiți în Calendar: cine vine azi și la ce oră.'],
-      why: 'Clienta trebuie să intre într-un salon gata pregătit, nu să aștepte să se aprindă luminile.', never: '' },
+    { t: 'Deschizi salonul', when: 'Dimineața, dacă ajungi prima', ic: 'clock',
+      do: ['Deschide ușa.', 'Aprinde luminile.', 'Pornește aparatele.', 'Pregătește apa, cafeaua și ceaiul.', 'Uită-te în Calendar cine vine azi.'],
+      why: 'Clienta intră într-un salon gata pregătit.', never: '' },
     { t: 'Pregătești cabinetul', when: 'Înainte de fiecare clientă', ic: 'sparkles',
-      do: ['Pui un cearceaf curat pe pat și un prosop curat.', 'Pui pe măsuță doar ce îți trebuie pentru tratamentul ei.', 'Aparatul e pornit și curat.'],
-      why: 'Așa nu cauți nimic cât timp ea așteaptă.', never: 'Nu folosești niciodată același cearceaf sau prosop la două cliente.' },
-    { t: 'Când vine clienta', when: 'În primul minut', ic: 'users',
-      do: ['Zâmbești și o saluți pe nume.', 'O inviți să stea jos.', 'O întrebi: „Vă pot oferi un pahar cu apă, o cafea sau un ceai?”'],
-      why: 'Primul minut hotărăște dacă se simte bine la noi.', never: '' },
-    { t: 'Fișa clientei', when: 'La prima ei vizită', ic: 'file',
-      do: ['Îi dai fișa (o găsești la Fișe de printat) și o ajuți să o completeze.', 'Verifici că a semnat.', 'Lași fișa la recepție.'],
-      why: 'Fișa ne spune dacă tratamentul e sigur pentru ea.', never: 'Fără fișă semnată nu începi tratamentul.' },
-    { t: 'Pozele „înainte”', when: 'Înainte să începi tratamentul', ic: 'image',
-      do: ['O așezi în locul cu lumină bună, mereu același.', 'Faci pozele din față și din lateral, de la aceeași distanță.', 'Le încarci în portal: Contacte → clienta → Poze înainte / după → Înainte.'],
-      why: 'Fără poza „înainte” nu putem arăta rezultatul.', never: '' },
-    { t: 'Tratamentul', when: 'În cabinet', ic: 'sparkles',
-      do: ['Îi spui pe scurt ce urmează să faci.', 'O întrebi din când în când cum se simte.', 'Faci tratamentul după schema lui (Traininguri → Tratamentele).'],
-      why: 'Când știe ce urmează, se relaxează.', never: '' },
-    { t: 'Pozele „după”', when: 'Imediat după tratament', ic: 'image',
-      do: ['Aceeași lumină, același loc, aceeași poziție ca la „înainte”.', 'Le încarci la „După”, la aceeași clientă.'],
-      why: 'Așa se vede corect diferența.', never: '' },
-    { t: 'Când pleacă', when: 'La final', ic: 'calendar',
-      do: ['Îi spui ce să facă acasă (sfaturile tratamentului).', 'O conduci la recepție pentru plată și pentru următoarea programare.', 'Îi mulțumești și o saluți pe nume.'],
-      why: 'Ultimul minut contează la fel de mult ca primul.', never: '' },
-    { t: 'Curățenia după fiecare clientă', when: 'Imediat ce a plecat', ic: 'refresh',
-      do: ['Dezinfectezi patul, aparatul și măsuța.', 'Scoți cearceaful și prosopul folosite.', 'Arunci ce e de unică folosință.'],
-      why: 'Următoarea clientă trebuie să găsească totul ca nou.', never: '' },
-    { t: 'Când pleci ultima', when: 'Seara, după ultima clientă', ic: 'power',
-      do: ['Oprești aparatele.', 'Faci curat în cabinet și scoți gunoiul.', 'Verifici că totul e pregătit pentru mâine.', 'Stingi luminile și închizi ușa.'],
-      why: 'Cine vine mâine dimineață găsește salonul gata de lucru.', never: '' },
+      do: ['Pune un cearceaf curat pe pat.', 'Pune un prosop curat.', 'Pune pe masă doar ce îți trebuie.'],
+      why: 'Nu cauți nimic cât clienta așteaptă.', never: 'Un cearceaf și un prosop sunt doar pentru o clientă.' },
+    { t: 'Primești clienta', when: 'Când intră pe ușă', ic: 'users',
+      do: ['Zâmbește.', 'Spune-i „Bună ziua” și numele ei.', 'Invit-o să stea jos.', 'Întreab-o: „Doriți apă, cafea sau ceai?”'],
+      why: 'Așa se simte binevenită.', never: '' },
+    { t: 'Fișa clientei', when: 'Prima dată când vine', ic: 'file',
+      do: ['Dă-i fișa să o completeze.', 'Verifică să fie semnată.', 'Du fișa la recepție.'],
+      why: 'Fișa ne arată dacă tratamentul e sigur pentru ea.', never: 'Fără fișă semnată nu începi tratamentul.' },
+    { t: 'Poza „înainte”', when: 'Înainte de tratament', ic: 'image',
+      do: ['Pune clienta în același loc, cu lumină bună.', 'Fă o poză din față și una din lateral.', 'Pune pozele în portal: Contacte → clienta → Poze → Înainte.'],
+      why: 'Așa vedem rezultatul.', never: '' },
+    { t: 'Faci tratamentul', when: 'În cabinet', ic: 'sparkles',
+      do: ['Spune-i pe scurt ce urmează.', 'Întreab-o din când în când dacă e bine.', 'Fă tratamentul cum scrie la Tratamente.'],
+      why: 'Când știe ce urmează, e liniștită.', never: '' },
+    { t: 'Poza „după”', when: 'Imediat după tratament', ic: 'image',
+      do: ['Același loc și aceeași lumină ca la „înainte”.', 'Pune pozele la „După”.'],
+      why: 'Așa se vede diferența.', never: '' },
+    { t: 'Conduci clienta', when: 'La final', ic: 'calendar',
+      do: ['Spune-i ce să facă acasă.', 'Du-o la recepție pentru plată și următoarea programare.', 'Mulțumește-i și spune-i „La revedere” pe nume.'],
+      why: 'Și finalul contează.', never: '' },
+    { t: 'Faci curat', when: 'După fiecare clientă', ic: 'refresh',
+      do: ['Dezinfectează patul, aparatul și masa.', 'Scoate cearceaful și prosopul folosite.', 'Aruncă ce e de unică folosință.'],
+      why: 'Următoarea clientă găsește totul curat.', never: '' },
+    { t: 'Închizi salonul', when: 'Seara, dacă pleci ultima', ic: 'power',
+      do: ['Oprește aparatele.', 'Fă curat și scoate gunoiul.', 'Stinge luminile.', 'Încuie ușa.'],
+      why: 'Mâine dimineață totul e gata de lucru.', never: '' },
   ];
   function parcursHtml() {
     if (A.pstep == null) A.pstep = 0;
-    return '<p class="tr-draft">' + icon('pen') + 'Schiță: pașii sunt aici, textul exact și pozele se completează.</p>' +
+    return '<p class="tr-draft">' + icon('pen') + 'Schiță: pozele și detaliile vin în curând.</p>' +
       '<ol class="tr-path">' + PARCURS.map((x, i) => {
         const open = A.pstep === i;
         return '<li class="tr-pstep' + (open ? ' is-open' : '') + '"><button type="button" class="tr-pstep-h" data-pstep="' + i + '"><span class="tr-pstep-n">' + (i + 1) + '</span>' +
           '<span class="tr-pstep-t"><small>' + esc(x.when) + '</small><b>' + esc(x.t) + '</b></span>' + icon(open ? 'up' : 'down') + '</button>' +
           (open ? '<div class="tr-pstep-b"><h5>Ce faci</h5><ol>' + x.do.map((d) => '<li>' + esc(d) + '</li>').join('') + '</ol>' +
-            '<p class="tr-why"><b>De ce:</b> ' + esc(x.why) + '</p>' + (x.never ? '<p class="ac-rule">' + esc(x.never) + '</p>' : '') +
+            '<p class="tr-why"><b>De ce?</b> ' + esc(x.why) + '</p>' + (x.never ? '<p class="ac-rule">' + esc(x.never) + '</p>' : '') +
             '<div class="tr-photo">' + icon('image') + 'Aici vine poza sau filmulețul</div></div>' : '') + '</li>';
       }).join('') + '</ol>';
   }
