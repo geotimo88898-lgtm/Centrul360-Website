@@ -51,6 +51,12 @@ function siteTemplate(c) {
   return { key: 'site', label: siteLabel(c), category: 'UTILITY', headerType: 'LOCATION', footer: '', buttons: [{ type: 'QUICK_REPLY', text: CONFIRM }],
     body: 'Bună, {prenume}! 🌸 Pentru a confirma programarea dvs. de pe {data}, la ora {ora}, la Centrul360 ' + c + ', vă rugăm să răspundeți la acest mesaj cu „' + CONFIRM + '”.\n📍 ' + C.addr + '\n\nCu drag, ' + SIGN };
 }
+// 4 hours later, still not confirmed (_lib/site-confirm.js): the last call, the same button
+const lastLabel = (c) => 'Reamintiri · Ultima confirmare site · ' + c;
+function lastTemplate(c) {
+  return { key: 'last', label: lastLabel(c), category: 'UTILITY', headerType: '', footer: '', buttons: [{ type: 'QUICK_REPLY', text: CONFIRM }],
+    body: 'Bună, {prenume}! Nu ați confirmat încă programarea de pe {data}, la ora {ora}, la Centrul360 ' + c + '. Dacă nu o confirmați acum, programarea se anulează. Vă rugăm să răspundeți la acest mesaj cu „' + CONFIRM + '”.\n\nCu drag, ' + SIGN };
+}
 function steps(ids) {
   const wa = (k) => ({ type: 'whatsapp', templateId: ids[k], from: 'auto' });
   return [
@@ -194,31 +200,43 @@ async function ensureSite() {
   let dirty = false;
   for (const c of WA.CITIES) {
     if (!WA.readyNumbers(cfg).includes(c)) { out[c] = 'NO_NUMBER'; continue; }
-    const s = siteTemplate(c);
-    let t = findTpl(d, s);
-    if (!t) {
-      const labels = new Set(d.templates.map((x) => x.label));
-      let label = s.label, v = 1;
-      while (labels.has(label)) label = s.label + ' · v' + (++v);
-      const r = WT.clean(Object.assign({}, s, { label, only: [c] }));
-      if (r.error) { out[c] = 'ERROR: ' + r.error; continue; }
-      t = r.t; d.templates.push(t); dirty = true;
-    }
     const waba = cfg.numbers[c].wabaId;
-    if (!t.meta[waba] || t.meta[waba].status === 'DELETED') {
-      const r = await WT.submit(d, t.id, [c]);
-      dirty = true;
-      if (r.error) { out[c] = 'ERROR: ' + r.error; continue; }
+    const st = [];
+    for (const s of [siteTemplate(c), lastTemplate(c)]) {
+      let t = findTpl(d, s);
+      if (!t) {
+        const labels = new Set(d.templates.map((x) => x.label));
+        let label = s.label, v = 1;
+        while (labels.has(label)) label = s.label + ' · v' + (++v);
+        const r = WT.clean(Object.assign({}, s, { label, only: [c] }));
+        if (r.error) { st.push('ERROR: ' + r.error); continue; }
+        t = r.t; d.templates.push(t); dirty = true;
+      }
+      if (!t.meta[waba] || t.meta[waba].status === 'DELETED') {
+        const r = await WT.submit(d, t.id, [c]);
+        dirty = true;
+        if (r.error) { st.push('ERROR: ' + r.error); continue; }
+      }
+      st.push((t.meta[waba] || {}).status || 'PENDING');
     }
-    out[c] = (t.meta[waba] || {}).status || 'PENDING';
+    // the worst of the two: approved once both are
+    out[c] = st.find((x) => /^ERROR/.test(x)) || st.find((x) => x === 'REJECTED') || st.find((x) => x !== 'APPROVED') || 'APPROVED';
   }
   if (!dirty && Object.values(out).some((x) => !['APPROVED', 'NO_NUMBER', 'REJECTED'].includes(x) && !/^ERROR/.test(x))) {
     await WT.sync(d); dirty = true;
-    WA.CITIES.forEach((c) => { const t = findTpl(d, siteTemplate(c)); const waba = cfg.numbers[c] && cfg.numbers[c].wabaId; if (t && waba && t.meta[waba]) out[c] = t.meta[waba].status; });
+    WA.CITIES.forEach((c) => {
+      const waba = cfg.numbers[c] && cfg.numbers[c].wabaId;
+      if (!waba) return;
+      const st = [siteTemplate(c), lastTemplate(c)].map((s) => { const t = findTpl(d, s); return t && t.meta[waba] ? t.meta[waba].status : 'PENDING'; });
+      out[c] = st.find((x) => x === 'REJECTED') || st.find((x) => x !== 'APPROVED') || 'APPROVED';
+    });
   }
   if (dirty) await WT.save(d);
   for (const c of WA.CITIES) {
-    if (out[c] === 'REJECTED') { const t = findTpl(d, siteTemplate(c)); await tell('rejected:' + (t ? t.label : c), 'Meta a respins mesajul pentru programările de pe site' + cityTag(c), (t && t.meta[cfg.numbers[c].wabaId].reason) || 'Programările de pe site primesc confirmarea obișnuită.'); }
+    if (out[c] === 'REJECTED') {
+      const t = [siteTemplate(c), lastTemplate(c)].map((s) => findTpl(d, s)).find((x) => x && x.meta[cfg.numbers[c].wabaId] && x.meta[cfg.numbers[c].wabaId].status === 'REJECTED');
+      await tell('rejected:' + (t ? t.label : c), 'Meta a respins un mesaj pentru programările de pe site' + cityTag(c), (t ? '„' + t.label + '”' + (t.meta[cfg.numbers[c].wabaId].reason ? ': ' + t.meta[cfg.numbers[c].wabaId].reason : '') + '. ' : '') + 'Până atunci, Giovanna le sună.');
+    }
   }
   return { cities: out, wait: Object.values(out).some((x) => !['APPROVED', 'NO_NUMBER', 'REJECTED'].includes(x)) };
 }
@@ -295,4 +313,4 @@ async function reply(b) {
   return false; // the calendar kept changing: her answer stays a plain message for the desk
 }
 
-module.exports = { apply, status, reply, flowOf, templates, steps, YES, NO, CITY, CONFIRM, siteTemplate, siteLabel, ensureSite };
+module.exports = { apply, status, reply, flowOf, templates, steps, YES, NO, CITY, CONFIRM, siteTemplate, siteLabel, lastTemplate, lastLabel, ensureSite };

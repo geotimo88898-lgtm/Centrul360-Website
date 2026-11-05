@@ -29,6 +29,8 @@ const STEPS = [
   ['hire', () => require('./_lib/hire-once').run()],
   // the changes to the automations asked for in chat (api/_lib/wf-once.js)
   ['flows', () => require('./_lib/wf-once').run()],
+  // the bookings from the site not confirmed yet: the last message after 4 hours, the cancel, Giovanna's calls
+  ['siteconfirm', () => require('./_lib/site-confirm').tick()],
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
 ];

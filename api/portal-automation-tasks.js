@@ -52,7 +52,8 @@ module.exports = async (req, res) => {
         if (t.status !== 'pending' || !t.relatedAppointmentId) return;
         if (t.workflowId && !t.autoClose) return; // e.g. a review request after a finished treatment
         const a = apptById.get(t.relatedAppointmentId);
-        if (!a || a.status === 'anulata' || a.status === 'finalizata' || a.date < today) {
+        // "Sună și confirmă" (a booking from the site): done once she is confirmed
+        if (!a || a.status === 'anulata' || a.status === 'finalizata' || a.date < today || (t.confirmAppt && a.status === 'confirmata')) {
           t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++;
         }
       });

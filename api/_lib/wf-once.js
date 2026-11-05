@@ -123,7 +123,9 @@ const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBook
 { id: 'reminders-on-2026-11-04', run: remindersOn, tell: () => null },
 // 5.11: the message that asks a booking from the site to be confirmed with a button, sent to Meta for both clinics;
 // runs again at every tick until Meta answered (the engine uses it from the moment it is approved)
-{ id: 'site-confirm-2026-11-05', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null }];
+{ id: 'site-confirm-2026-11-05', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null },
+// 5.11, later: the last call after 4 hours ("dacă nu o confirmați acum, se anulează"), sent to Meta the same way
+{ id: 'site-confirm-2026-11-05b', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null }];
 
 // a notice to the admins once (a job that runs again and again)
 async function tellOnce(key, msg) {

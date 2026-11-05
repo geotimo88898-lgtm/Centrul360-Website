@@ -125,6 +125,7 @@ module.exports = async (req, res) => {
     // the confirmation and the reminders (Automatizări), as for a booking made at the desk
     await workflows.emit('appointment_created', { appointment: entry });
 
+
     // the owner and reception: in the bell and on their phones
     try {
       const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
@@ -138,6 +139,17 @@ module.exports = async (req, res) => {
         text: entry.clientName,
       });
     } catch (e) { /* a notification never blocks a booking */ }
+
+    // valid once she confirms it (_lib/site-confirm.js): the message asking for it went → the reminder after 4 hours
+    // and the cancel; it didn't (no WhatsApp, not approved, the flow off) or the booking is too close → Giovanna calls
+    try {
+      const R = require('./_lib/reminders');
+      const [convos, tdoc] = await Promise.all([readJSON('data/whatsapp-conversations.json', []), require('./_lib/wa-templates').load()]);
+      const sent = [].concat(...convos.map((c) => (c.messages || []).filter((m) => m.appt === entry.id && m.direction === 'out')));
+      const label = (m) => ((tdoc.templates || []).find((t) => t.id === m.templateId) || {}).label || '';
+      const asked = sent.some((m) => label(m).startsWith(R.siteLabel(city)));
+      await require('./_lib/site-confirm').start(entry, asked ? '' : sent.length ? 'tpl' : 'nowa');
+    } catch (e) { console.error('booking site-confirm:', e.message); }
 
     res.status(200).json({ ok: true, appointment: { date, time, endTime: entry.endTime, nice: nice(date), location: city, treatment: svc.title } });
   } catch (err) {

@@ -424,6 +424,10 @@ module.exports = async (req, res) => {
     // before answering Meta: once the response is sent the function may be stopped
     try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }
     try { await alertUndelivered(failed); } catch (err) { console.error('webhook-whatsapp: undelivered alert failed', err.message); }
+    // a booking from the site whose message didn't reach her: Giovanna calls her to confirm it
+    for (const { msg } of failed) {
+      if (msg && msg.appt) { try { await require('./_lib/site-confirm').undelivered(msg.appt); } catch (err) { console.error('webhook-whatsapp: site confirm', err.message); } }
+    }
     // a new lead the message didn't reach goes to Undelivered in the Pipeline (the desk calls her instead)
     for (const { convo, msg } of failed) await require('./portal-leads').markUndelivered(convo.phone, msg.error);
   } catch (err) {
