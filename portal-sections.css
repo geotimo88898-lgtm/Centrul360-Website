@@ -635,6 +635,31 @@
 .st-fb-status.is-wait{ background:var(--glass); color:var(--muted); }
 /* Traininguri → Fișa consultației: the sheet page by page, the example in pen, the parts numbered */
 .tr-fisa{ display:flex; flex-direction:column; gap:1rem; container:fisa / inline-size; }
+/* Consultația → "Vreau să învăț": the four sheets, Apple-like cards */
+.tr-fpick-l{ font-size:.8rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 .55rem .15rem; }
+.tr-fpick-row{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.75rem; }
+.tr-fpick-c{ --g1:#5b8cff; --g2:#a855f7; position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:.15rem; padding:1rem 1rem .9rem; min-height:150px; border-radius:22px;
+  border:1px solid var(--line); background:linear-gradient(160deg, color-mix(in srgb, var(--g1) 10%, transparent), transparent 60%), var(--surface, var(--glass)); color:inherit; font:inherit; text-align:left; cursor:pointer; overflow:hidden;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s; animation:trPickIn .55s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--k) * 60ms); }
+.tr-fpick-c.is-b{ --g1:#ec4899; --g2:#f59e0b; } .tr-fpick-c.is-c{ --g1:#06b6d4; --g2:#6366f1; } .tr-fpick-c.is-d{ --g1:#10b981; --g2:#0ea5e9; }
+.tr-fpick-c:hover{ transform:translateY(-3px); box-shadow:0 18px 40px -24px color-mix(in srgb, var(--g1) 70%, transparent); }
+.tr-fpick-c:active{ transform:scale(.97); }
+.tr-fpick-c.is-on{ border-color:transparent; box-shadow:0 0 0 2px var(--g1), 0 20px 44px -22px color-mix(in srgb, var(--g1) 80%, transparent); }
+.tr-fpick-c.is-on::after{ content:""; position:absolute; inset:auto -30% -60% auto; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, color-mix(in srgb, var(--g2) 35%, transparent), transparent 70%); pointer-events:none; }
+.tr-fpick-ic{ width:42px; height:42px; border-radius:14px; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg, var(--g1), var(--g2)); box-shadow:0 10px 22px -12px var(--g1); margin-bottom:.45rem; transition:transform .4s cubic-bezier(.34,1.56,.64,1); }
+.tr-fpick-c.is-on .tr-fpick-ic, .tr-fpick-c:hover .tr-fpick-ic{ transform:rotate(-8deg) scale(1.08); }
+.tr-fpick-ic .k-ic{ width:22px; height:22px; }
+.tr-fpick-c small{ font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+.tr-fpick-c b{ font-size:1.12rem; font-weight:800; letter-spacing:-.02em; line-height:1.15; }
+.tr-fpick-s{ font-size:.8rem; color:var(--muted); line-height:1.3; }
+.tr-fpick-n{ margin-top:auto; padding-top:.5rem; font-size:.72rem; font-weight:700; color:var(--g1); }
+@keyframes trPickIn{ from{ opacity:0; transform:translateY(10px) scale(.97); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce){ .tr-fpick-c, .tr-fpick-ic{ animation:none; transition:none; } }
+@container fisa (max-width:720px){ .tr-fpick-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); } .tr-fpick-c{ min-height:132px; padding:.85rem; } }
+.tr-sheet.is-land{ aspect-ratio:842 / 595; }
+.tr-sheet.is-land .tr-ink{ font-size:1.66cqw; } .tr-sheet.is-land .tr-ink.is-sig{ font-size:2.1cqw; } .tr-sheet.is-land .tr-ink.is-tick{ font-size:1.85cqw; }
+.tr-sheet.is-land .tr-mark{ width:max(20px, 3.1cqw); height:max(20px, 3.1cqw); font-size:max(11px, 1.6cqw); }
+.tr-sheet.is-big.is-land{ min-width:1040px; }
 .tr-fs-flow{ display:flex; align-items:center; gap:.35rem; overflow-x:auto; scrollbar-width:none; padding:.1rem 0 .2rem; }
 .tr-fs-flow::-webkit-scrollbar{ display:none; }
 .tr-fs-tab{ flex:none; display:flex; align-items:center; gap:.5rem; padding:.45rem .75rem .45rem .45rem; border-radius:12px; border:1px solid var(--line); background:var(--surface, var(--glass)); color:inherit; font:inherit; cursor:pointer; text-align:left; }
