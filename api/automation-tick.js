@@ -215,8 +215,11 @@ module.exports = async (req, res) => {
     const T = 'data/_speedtest.json';
     const src = await st.readJSON('data/appointments.json', []);
     const copy = JSON.parse(JSON.stringify(src));
-    const r = {};
-    let t = Date.now(); await st.writeJSON(T, copy, { quiet: true }); r.firstWriteMs = Date.now() - t;
+    const r = { kb: Math.round(JSON.stringify(copy, null, 2).length / 1024), kbCompact: Math.round(JSON.stringify(copy).length / 1024) };
+    let t = Date.now();
+    if (req.query.writetime === 'raw') { await require('@vercel/blob').put(T, JSON.stringify(copy), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' }); r.rawPutMs = Date.now() - t; return r; }
+    await st.writeJSON(T, copy, { quiet: true }); r.firstWriteMs = Date.now() - t;
+    if (req.query.writetime === '1') return r;
     t = Date.now(); const a = await st.readJSON(T, []); r.readMs = Date.now() - t;
     a.push({ id: 'speed-a', date: '2000-01-01' });
     t = Date.now(); await st.writeJSON(T, a, { quiet: true }); r.changeWriteMs = Date.now() - t;
