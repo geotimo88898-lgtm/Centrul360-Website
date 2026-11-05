@@ -8,7 +8,7 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const START = 8, END = 21, PPM = 1.1; // grid hours + pixels per minute
+  const START = 8, END = 21, PPM = 2; // grid hours + pixels per minute (an hour is 120px: the treatment fits on each, the owner 5.11)
   const DUR = 60;                        // an appointment with no end time is drawn as 1h
   const LOCS = ['Timișoara', 'Arad'];
   const STATUS = {
@@ -60,8 +60,8 @@
     // a phone: day or week (agenda), as it was last picked on this phone
     if (window.innerWidth < 720) { let v = 'day'; try { v = localStorage.getItem(PHONE_VIEW) === 'week' ? 'week' : 'day'; } catch (e) { /* private mode */ } S.view = v; }
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Calendar</h2></div>' +
-      (canEdit() ? '<div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div>' : '') + '</div>' +
+      // no page title (the owner, 5.11: more room for the calendar); the buttons stay, on the right
+      (canEdit() ? '<div class="k-head cal-head"><div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div></div>' : '') +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
@@ -259,29 +259,34 @@
   // what an appointment is called: the title it had in HighLevel (as reception wrote it there), else the client;
   // the line under it: the client when the title doesn't name her, else the treatment
   const plainTxt = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const nameOf = (a) => a.ghlTitle || a.clientName || '-';
-  function subOf(a) {
+  // the client's name first, the treatment on its own line under it, seen without opening the booking (the owner,
+  // 5.11); an imported booking with no treatment shows its title there
+  const nameOf = (a) => (a.block ? a.clientName || 'Timp blocat' : a.clientName || a.ghlTitle || '-');
+  function treatOf(a) {
     if (a.block) return a.cosmeticianName || 'Toată clinica'; // a blocked time: for whom
-    if (!a.ghlTitle) return a.treatment || '';
-    const first = plainTxt(a.clientName).split(/\s+/)[0];
-    const named = first && plainTxt(a.ghlTitle).includes(first);
-    return [named ? '' : a.clientName, a.treatment && a.treatment !== a.ghlTitle ? a.treatment : ''].filter(Boolean).join(' · ');
+    if (a.treatment) return a.treatment;
+    return a.ghlTitle && plainTxt(a.ghlTitle) !== plainTxt(a.clientName) ? a.ghlTitle : '';
   }
+  const subOf = (a) => [a.online ? '🌐 online' : '', a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
     const w = 100 / it.lanes;
     // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
     // an hour) has the hour in front of the name, in smaller letters, on up to two lines
-    const short = it.e - it.s < 45; // under 45 minutes; an hour keeps the big letters whatever the screen
+    const short = it.e - it.s < 30; // under half an hour: one line
+    const half = !short && it.e - it.s < 45; // half an hour: the hour in front of the name, the treatment under
     const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the name
-    const lines = tiny ? Math.max(1, Math.floor((h - 4) / 11.5)) : short ? Math.max(1, Math.floor((h - 6) / 13.5)) : Math.max(1, Math.floor((h - 28) / 17));
+    const tr = treatOf(a);
+    const lines = tiny ? Math.max(1, Math.floor((h - 4) / 23)) : short ? 1 : Math.max(1, Math.min(2, Math.floor((h - 44) / 34)));
     return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
-      ' title="' + esc(span(a) + ' · ' + nameOf(a) + (a.ghlTitle ? ' · ' + a.clientName : '') + ' · ' + (a.treatment || '') + ' · ' + st.label) + '">' +
-      (tiny ? '<b>' + esc(nameOf(a)) + '</b>' : short
-        ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>'
+      ' title="' + esc(span(a) + ' · ' + nameOf(a) + ' · ' + tr + ' · ' + st.label) + '">' +
+      (tiny ? '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') : short
+        ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + (tr ? ' · ' + esc(tr) : '') + '</b>'
+        : half ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '')
         : '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
-          '<b>' + esc(nameOf(a)) + '</b><span class="cal-b-sub">' + (a.online ? '🌐 ' : '') + esc(subOf(a)) + (a.amount ? ' · ' + K.lei(a.amount) : '') + (a.paidSaleId ? ' · plătit' : '') + '</span>') + '</button>';
+          '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') +
+          (subOf(a) && h > 80 ? '<span class="cal-b-sub">' + esc(subOf(a)) + '</span>' : '')) + '</button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
@@ -358,7 +363,8 @@
     drag.min = m; drag.target = target;
     if (drag.ghost.parentElement !== target) target.appendChild(drag.ghost);
     drag.ghost.style.top = ((m - START * 60) * PPM) + 'px';
-    drag.ghost.querySelector('.cal-b-time').firstChild.textContent = toHM(m) + (drag.dur ? ' - ' + toHM(Math.min(m + drag.dur, 24 * 60 - 1)) : '');
+    const gt = drag.ghost.querySelector('.cal-b-time') || drag.ghost.querySelector('.cal-b-t');
+    if (gt && gt.firstChild) gt.firstChild.textContent = toHM(m) + (drag.dur ? ' - ' + toHM(Math.min(m + drag.dur, 24 * 60 - 1)) : '');
   }
   function colAt(x) { return Array.from(gridEl.querySelectorAll('.cal-col')).find((c) => { const r = c.getBoundingClientRect(); return x >= r.left && x <= r.right; }); }
   function startDrag(e) {
