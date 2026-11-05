@@ -339,8 +339,8 @@
   function zonesHtml() {
     const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
     if (!A.zone) {
-      return roleBar + '<h3 class="tr-learn">Vreau să învăț:</h3><div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door" data-zone="' + z.id + '" style="--i:' + i + '">' +
-        '<span class="tr-door-ic">' + icon(z.icon) + '</span><b>' + esc(z.title) + '</b><span>' + esc(z.sub) + '</span><i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
+      return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door" data-zone="' + z.id + '" style="--i:' + i + '">' +
+        '<span class="tr-door-ic">' + icon(z.icon) + '</span><small class="tr-door-k">Vreau să învăț:</small><b>' + esc(z.title) + '</b><span>' + esc(z.sub) + '</span><i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
     }
     const z = ZONES.find((x) => x.id === A.zone) || ZONES[0];
     const others = ZONES.filter((x) => x.id !== z.id);
@@ -1537,7 +1537,7 @@
 }
 `;
   const css2 = `
-.tr-learn{ margin:.2rem 0 1rem; font-size:clamp(1.6rem,4vw,2.4rem); font-weight:800; letter-spacing:-.03em; }
+.tr-door-k{ font-size:.82rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:-.3rem; }
 .tr-doors{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; min-height:calc(100dvh - 260px); }
 .tr-door{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; gap:.55rem; padding:1.6rem; min-height:260px; text-align:left;
   border-radius:24px; border:1px solid var(--line); background:linear-gradient(160deg, var(--accent-soft), var(--paper) 60%); color:var(--fg); font:inherit; cursor:pointer; overflow:hidden;
