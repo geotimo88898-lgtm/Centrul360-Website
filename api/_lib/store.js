@@ -62,7 +62,9 @@ async function fetchLatest(pathname, strict) {
   }
   if (!result) { forget(pathname); return null; }
   const buf = await streamToBuffer(result.stream);
-  const etag = (result.blob && result.blob.etag) || '';
+  // a read gives the version as weak (W/"…", the answer was compressed), a save compares it strong: the same version,
+  // without the prefix (with it, no save ever matched and each went through every retry: minutes on the big lists)
+  const etag = String((result.blob && result.blob.etag) || '').replace(/^W\//, '');
   const size = (result.blob && result.blob.size) || 0;
   if (size ? size === buf.length : !strict) keep(pathname, etag, buf);
   else forget(pathname);
