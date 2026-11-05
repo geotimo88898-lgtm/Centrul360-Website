@@ -415,7 +415,7 @@
         '</div>' +
         (st.busy === 'file' ? '<div class="ct-uploading"><span class="k-spin"></span>Se încarcă…</div>' : '') +
         (det.files.length ? '<div class="ct-files">' + det.files.map((f) => '<div class="ct-file">' +
-          '<a href="' + fileUrl(f.path) + '" target="_blank" rel="noopener" class="ct-file-thumb">' + (f.mime === 'application/pdf' ? '<span class="ct-pdf">' + icon('file') + 'PDF</span>' : '<img src="' + fileUrl(f.path) + '" alt="" loading="lazy">') + '</a>' +
+          '<a href="' + fileUrl(f.path) + '" target="_blank" rel="noopener" class="ct-file-thumb"' + (f.mime === 'application/pdf' ? ' data-pdf-view data-pdf-title="' + esc(f.name || 'PDF') + '"' : '') + '>' + (f.mime === 'application/pdf' ? '<span class="ct-pdf">' + icon('file') + 'PDF</span>' : '<img src="' + fileUrl(f.path) + '" alt="" loading="lazy">') + '</a>' +
           '<div class="ct-file-meta"><b>' + esc(f.name || 'Fișă') + '</b><small>' + esc(K.dateShort(String(f.at).slice(0, 10))) + (f.author ? ' · ' + esc(f.author) : '') + '</small></div>' +
           (canRemove(f) ? '<button type="button" class="k-icon-btn ct-x" data-del-file="' + esc(f.id) + '" aria-label="Șterge">' + icon('trash') + '</button>' : '') + '</div>').join('') + '</div>'
           : '<p class="ct-hint">' + icon('info') + 'Nicio fișă încă. Apasă „Scanează fișa” și fotografiază foaia completată de clientă.</p>') +
