@@ -422,14 +422,14 @@
     return '<div class="tr-jhead"><div><b>' + done.size + ' din ' + PARCURS.length + '</b><span>pași învățați</span></div><div class="tr-jbar"><i style="--w:' + Math.round(done.size / PARCURS.length * 100) + '%"></i></div>' +
         '<span class="tr-draft-s">' + icon('pen') + 'Schiță</span></div>' +
       mapHtml(MAPW, 'is-wide', done, i) + mapHtml(MAPT, 'is-tall', done, i) + (A.mapEnter = false, '') +
-      '<div class="tr-sheet" data-sheet>' +
-        '<div class="tr-sheet-top"><span class="tr-sheet-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-sheet-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
-        '<h3 class="tr-sheet-t"><span>' + icon(x.ic) + '</span>' + esc(x.t) + '</h3>' +
+      '<div class="tr-step" data-sheet>' +
+        '<div class="tr-step-top"><span class="tr-step-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-step-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
+        '<h3 class="tr-step-t"><span>' + icon(x.ic) + '</span>' + esc(x.t) + '</h3>' +
         '<ul class="tr-dos">' + x.do.map((d2, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i>' + esc(d2) + '</li>').join('') + '</ul>' +
         '<div class="tr-whybox"><b>De ce?</b><span>' + esc(x.why) + '</span></div>' +
         (x.never ? '<div class="tr-never">' + icon('alert') + '<span>' + esc(x.never) + '</span></div>' : '') +
         '<div class="tr-photo">' + icon('image') + 'Aici vine poza sau filmulețul</div>' +
-        '<div class="tr-sheet-nav"><button type="button" class="k-btn is-ghost" data-pgo="' + (i - 1) + '"' + (i ? '' : ' disabled') + '>' + icon('left') + 'Înapoi</button><span class="k-grow"></span>' +
+        '<div class="tr-step-nav"><button type="button" class="k-btn is-ghost" data-pgo="' + (i - 1) + '"' + (i ? '' : ' disabled') + '>' + icon('left') + 'Înapoi</button><span class="k-grow"></span>' +
           '<button type="button" class="k-btn is-primary is-lg tr-got" data-pdone="' + i + '">' + (done.has(i) ? icon('check') + 'Învățat' : 'Am înțeles') + (i < PARCURS.length - 1 ? icon('right') : '') + '</button></div>' +
       '</div>';
   }
@@ -1662,14 +1662,14 @@
 @keyframes trPop{ from{ opacity:0; transform:translate(-50%,-50%) scale(.4); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
 @keyframes trPulse{ from{ opacity:1; transform:scale(.92); } to{ opacity:0; transform:scale(1.35); } }
 /* the step's card */
-.tr-sheet{ position:relative; min-width:0; max-width:100%; box-sizing:border-box; padding:1.6rem; border-radius:28px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01)), var(--paper);
+.tr-step{ position:relative; min-width:0; max-width:100%; box-sizing:border-box; padding:1.6rem; border-radius:28px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01)), var(--paper);
   box-shadow:0 30px 60px -40px rgba(0,0,0,.9); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }
 @keyframes trSheet{ from{ opacity:0; transform:translateY(16px); } to{ opacity:1; transform:none; } }
-.tr-sheet-top{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:.3rem .6rem; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:.5rem; }
-.tr-sheet-stage{ color:color-mix(in srgb, #5b8cff 75%, #fff); text-transform:uppercase; letter-spacing:.08em; }
-.tr-sheet-t{ display:flex; align-items:center; gap:.75rem; margin:0 0 1.1rem; font-size:1.9rem; font-weight:800; letter-spacing:-.035em; }
-.tr-sheet-t span{ width:48px; height:48px; border-radius:16px; display:grid; place-items:center; background:linear-gradient(145deg,#5b8cff,#a855f7); color:#fff; flex:none; }
-.tr-sheet-t .k-ic{ width:24px; height:24px; }
+.tr-step-top{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:.3rem .6rem; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:.5rem; }
+.tr-step-stage{ color:color-mix(in srgb, #5b8cff 75%, #fff); text-transform:uppercase; letter-spacing:.08em; }
+.tr-step-t{ display:flex; align-items:center; gap:.75rem; margin:0 0 1.1rem; font-size:1.9rem; font-weight:800; letter-spacing:-.035em; }
+.tr-step-t span{ width:48px; height:48px; border-radius:16px; display:grid; place-items:center; background:linear-gradient(145deg,#5b8cff,#a855f7); color:#fff; flex:none; }
+.tr-step-t .k-ic{ width:24px; height:24px; }
 .tr-dos{ list-style:none; margin:0 0 1rem; padding:0; display:flex; flex-direction:column; gap:.55rem; }
 .tr-dos li{ display:flex; align-items:center; gap:.85rem; padding:.85rem 1rem; border-radius:18px; background:var(--glass); font-size:1.12rem; font-weight:500; line-height:1.35;
   animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.1s + var(--k) * 80ms); }
@@ -1679,13 +1679,13 @@
 .tr-never{ display:flex; gap:.6rem; align-items:center; padding:.9rem 1.1rem; border-radius:18px; background:var(--bad-soft); color:var(--bad); font-weight:600; margin-bottom:.6rem; }
 .tr-never .k-ic{ width:20px; height:20px; flex:none; }
 .tr-photo{ display:flex; align-items:center; justify-content:center; gap:.5rem; height:140px; margin-top:.4rem; border-radius:18px; border:1.5px dashed rgba(255,255,255,.14); color:var(--muted); font-size:.85rem; }
-.tr-sheet-nav{ display:flex; align-items:center; gap:.6rem; margin-top:1.2rem; }
+.tr-step-nav{ display:flex; align-items:center; gap:.6rem; margin-top:1.2rem; }
 .tr-got{ background:linear-gradient(145deg,#5b8cff,#a855f7) !important; border:0 !important; color:#fff !important; box-shadow:0 14px 30px -14px #7c6cff; }
 .tr-burst{ position:fixed; z-index:500; width:0; height:0; pointer-events:none; }
 .tr-burst i{ position:absolute; width:8px; height:8px; border-radius:50%; background:hsl(calc(var(--a) / 1), 90%, 65%); animation:trBurst .75s cubic-bezier(.16,1,.3,1) forwards; }
 @keyframes trBurst{ from{ transform:rotate(var(--a)) translateX(0) scale(1); opacity:1; } to{ transform:rotate(var(--a)) translateX(var(--d)) scale(.2); opacity:0; } }
 @media (max-width:900px){ .tr-map.is-wide{ display:none; } .tr-map.is-tall{ display:block; } }
-@media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop, .tr-road, .tr-sheet, .tr-dos li, .tr-stop.is-cur .tr-stop-dot::after{ animation:none !important; } }
+@media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop, .tr-road, .tr-step, .tr-dos li, .tr-stop.is-cur .tr-stop-dot::after{ animation:none !important; } }
 @media (max-width:760px){
   .tr-doors{ grid-template-columns:1fr; min-height:0; }
   .tr-door{ min-height:170px; padding:1.3rem 1.3rem 1.3rem 6rem; justify-content:center; border-radius:26px; }
@@ -1693,7 +1693,7 @@
   .tr-door b{ font-size:1.4rem; }
   .tr-door-n{ font-size:3.2rem; }
   .tr-door-go{ display:none; }
-  .tr-sheet{ padding:1.2rem; } .tr-sheet-t{ font-size:1.5rem; } .tr-dos li{ font-size:1.02rem; }
+  .tr-step{ padding:1.2rem; } .tr-step-t{ font-size:1.5rem; } .tr-dos li{ font-size:1.02rem; }
 }
 `;
   const st = document.createElement('style');
