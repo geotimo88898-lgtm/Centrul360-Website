@@ -41,6 +41,16 @@ function templates(c) {
       body: 'Ne vedem în 2 ore, {prenume}! 💛\n📍 ' + C.addr + '\n🚗 Parcare: ' + C.parking + (C.more ? '\n' + C.more : '') + '\n\nPe curând! ' + SIGN },
   ].map((t) => Object.assign({ category: 'UTILITY', headerType: 'LOCATION', footer: '' }, t));
 }
+// A booking made on the site (c360-book.js) gets, instead of „a fost confirmată”, this one: it is valid once she
+// confirms it with the button (the owner, 5.11). The engine sends it in place of the confirmation (workflows.js siteSwap);
+// made and sent to Meta by ensureSite() (the clock, _lib/wf-once.js) until both clinics have it.
+const CONFIRM = 'Confirm';
+const siteLabel = (c) => 'Reamintiri · Confirmare site · ' + c;
+function siteTemplate(c) {
+  const C = CITY[c];
+  return { key: 'site', label: siteLabel(c), category: 'UTILITY', headerType: 'LOCATION', footer: '', buttons: [{ type: 'QUICK_REPLY', text: CONFIRM }],
+    body: 'Bună, {prenume}! 🌸 Pentru a confirma programarea dvs. de pe {data}, la ora {ora}, la Centrul360 ' + c + ', vă rugăm să răspundeți la acest mesaj cu „' + CONFIRM + '”.\n📍 ' + C.addr + '\n\nCu drag, ' + SIGN };
+}
 function steps(ids) {
   const wa = (k) => ({ type: 'whatsapp', templateId: ids[k], from: 'auto' });
   return [
@@ -176,6 +186,43 @@ async function apply(opts) {
   return out;
 }
 
+// The site's confirmation, per clinic: made, sent to Meta, Meta's answer read. { cities: { <oraș>: status }, wait }
+async function ensureSite() {
+  const cfg = await WA.loadConfig();
+  const d = await WT.load();
+  const out = {};
+  let dirty = false;
+  for (const c of WA.CITIES) {
+    if (!WA.readyNumbers(cfg).includes(c)) { out[c] = 'NO_NUMBER'; continue; }
+    const s = siteTemplate(c);
+    let t = findTpl(d, s);
+    if (!t) {
+      const labels = new Set(d.templates.map((x) => x.label));
+      let label = s.label, v = 1;
+      while (labels.has(label)) label = s.label + ' · v' + (++v);
+      const r = WT.clean(Object.assign({}, s, { label, only: [c] }));
+      if (r.error) { out[c] = 'ERROR: ' + r.error; continue; }
+      t = r.t; d.templates.push(t); dirty = true;
+    }
+    const waba = cfg.numbers[c].wabaId;
+    if (!t.meta[waba] || t.meta[waba].status === 'DELETED') {
+      const r = await WT.submit(d, t.id, [c]);
+      dirty = true;
+      if (r.error) { out[c] = 'ERROR: ' + r.error; continue; }
+    }
+    out[c] = (t.meta[waba] || {}).status || 'PENDING';
+  }
+  if (!dirty && Object.values(out).some((x) => !['APPROVED', 'NO_NUMBER', 'REJECTED'].includes(x) && !/^ERROR/.test(x))) {
+    await WT.sync(d); dirty = true;
+    WA.CITIES.forEach((c) => { const t = findTpl(d, siteTemplate(c)); const waba = cfg.numbers[c] && cfg.numbers[c].wabaId; if (t && waba && t.meta[waba]) out[c] = t.meta[waba].status; });
+  }
+  if (dirty) await WT.save(d);
+  for (const c of WA.CITIES) {
+    if (out[c] === 'REJECTED') { const t = findTpl(d, siteTemplate(c)); await tell('rejected:' + (t ? t.label : c), 'Meta a respins mesajul pentru programările de pe site' + cityTag(c), (t && t.meta[cfg.numbers[c].wabaId].reason) || 'Programările de pe site primesc confirmarea obișnuită.'); }
+  }
+  return { cities: out, wait: Object.values(out).some((x) => !['APPROVED', 'NO_NUMBER', 'REJECTED'].includes(x)) };
+}
+
 // A client tapped a button of a reminder (api/webhook-whatsapp.js): „Da, ajung” confirms her appointment, „Nu ajung”
 // cancels it (the owner, 28.10: "se anulează singură"), and admins + the clinic's reception hear it on the bell and the
 // phone. b = { phone, name, text, appt + akey (the appointment the reminder was sent for and its day, hour, clinic,
@@ -185,10 +232,11 @@ async function apply(opts) {
 // this): only the old „Reușesc să ajung” confirms her next one in the next 3 days; „Da” / „Nu ajung” go to the desk.
 // The change is written only over the calendar as it was read (two answers at the same moment: one after the other).
 // Returns true when it was such an answer (the desk hears it from here, not as a plain message).
-const TAPS = [YES, NO, 'Reușesc să ajung'].map(fold);
+const TAPS = [YES, NO, 'Reușesc să ajung', CONFIRM].map(fold);
 const ME = 'Clienta, pe WhatsApp';
 async function reply(b) {
-  const tap = fold(b.text);
+  // „Confirm” typed by hand counts too („confirm”, „Confirm programarea”, „confirmat”)
+  const tap = /^confirm/.test(fold(b.text)) && fold(b.text).length <= 30 ? fold(CONFIRM) : fold(b.text);
   if (!TAPS.includes(tap)) return false;
   const yes = tap !== fold(NO), no = !yes;
   const tpl = b.templateId ? (await WT.load()).templates.find((t) => t.id === b.templateId) : null;
@@ -215,10 +263,15 @@ async function reply(b) {
       const [d0, t0] = String(b.akey || '').split('|');
       if (b.akey && WF.apptKey(a) !== b.akey) { await ask(a, name + ' a răspuns „' + b.text + '” la reamintirea pentru ' + ddmm(d0, t0) + ', dar programarea e acum ' + ddmm(a.date, a.time) + '. Nu am schimbat nimic: sun-o.'); return true; }
     } else {
-      a = appts.filter((x) => hers(x) && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now && WF.apptStart(x) - now < 3 * 86400e3)
+      // „Confirm” not on the message itself: her next booking from the site that still waits for it
+      if (tap === fold(CONFIRM)) {
+        a = appts.filter((x) => hers(x) && x.online && x.status === 'programata' && WF.apptStart(x) > now).sort((x, y) => WF.apptStart(x) - WF.apptStart(y))[0] || null;
+        if (!a) return false; // nothing to confirm: a plain message for the desk
+        name = a.clientName || name;
+      } else a = appts.filter((x) => hers(x) && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now && WF.apptStart(x) - now < 3 * 86400e3)
         .sort((x, y) => WF.apptStart(x) - WF.apptStart(y))[0] || null;
       if (a) name = a.clientName || name;
-      if (!a || tap !== fold('Reușesc să ajung')) { await ask(a, name + ' a răspuns „' + b.text + '”, dar nu știu sigur la ce programare' + (a ? ' (următoarea: ' + ddmm(a.date, a.time) + ')' : '') + '. Nu am schimbat nimic: sun-o.'); return true; }
+      if (!a || (tap !== fold('Reușesc să ajung') && tap !== fold(CONFIRM))) { await ask(a, name + ' a răspuns „' + b.text + '”, dar nu știu sigur la ce programare' + (a ? ' (următoarea: ' + ddmm(a.date, a.time) + ')' : '') + '. Nu am schimbat nimic: sun-o.'); return true; }
     }
     const when = ddmm(a.date, a.time), from = a.status;
     if (from === to) {
@@ -242,4 +295,4 @@ async function reply(b) {
   return false; // the calendar kept changing: her answer stays a plain message for the desk
 }
 
-module.exports = { apply, status, reply, flowOf, templates, steps, YES, NO, CITY };
+module.exports = { apply, status, reply, flowOf, templates, steps, YES, NO, CITY, CONFIRM, siteTemplate, siteLabel, ensureSite };

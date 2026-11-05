@@ -145,3 +145,17 @@
   .cvz-bar{display:flex;}
   body{padding-bottom:76px;}
 }
+
+/* ---------- the booking in the "Consultație gratuită" block (c360-convert.js build) ---------- */
+.cvz-book{gap:.6rem;align-content:start;}
+.cvz-bk-h{margin:0;font-weight:800;font-size:1.15rem;letter-spacing:-.02em;color:var(--fg);}
+.cvz-bk-sub{margin:0 0 .4rem;font-size:.88rem;line-height:1.55;color:var(--muted);}
+.cvz-bk-city{display:flex;align-items:center;gap:1rem;width:100%;text-align:left;padding:1rem 1.1rem;border-radius:16px;
+  border:1px solid var(--line-on-dark);background:rgba(255,255,255,.04);color:var(--fg);font:inherit;cursor:pointer;
+  transition:border-color .2s ease,background-color .2s ease,transform .2s ease;}
+.cvz-bk-city:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.07);}
+.cvz-bk-city:active{transform:scale(.99);}
+.cvz-bk-city b{display:block;font-size:1rem;font-weight:700;}
+.cvz-bk-city small{display:block;margin-top:.15rem;font-size:.8rem;color:var(--muted-2);}
+.cvz-bk-city i{margin-left:auto;font-style:normal;color:var(--muted);transition:transform .25s ease,color .2s;}
+.cvz-bk-city:hover i{transform:translateX(3px);color:var(--fg);}

@@ -408,19 +408,20 @@
       '<div class="bk-f"><label for="bkN">Nume și prenume</label><input id="bkN" name="name" autocomplete="name" placeholder="ex: Maria Popescu" value="' + esc(S.name) + '"><span class="msg">Scrie numele tău.</span></div>' +
       '<div class="bk-f"><label for="bkT">Telefon (WhatsApp)</label><input id="bkT" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" value="' + esc(S.phone) + '"><span class="msg">Scrie un număr de telefon valid.</span></div>' +
       '<label class="bk-ok"><input type="checkbox" name="ok"' + (S.ok ? ' checked' : '') + '><span>Sunt de acord să primesc pe WhatsApp sau telefonic confirmarea și reamintirile programării de la Centrul360.</span></label>' +
-      '<button type="submit" class="bk-cta"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spin"></span>Se programează…' : 'Confirmă programarea') + '</button>' +
-      '<p class="bk-note">Confirmarea vine pe WhatsApp în câteva secunde. Dacă nu mai poți ajunge, ne anunți din același mesaj.</p></form>';
+      '<button type="submit" class="bk-cta"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spin"></span>Se programează…' : 'Programează-mă') + '</button>' +
+      '<p class="bk-note">Îți trimitem imediat un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând „Confirm”.</p></form>';
   }
   function doneHtml() {
     const a = S.done || {};
-    return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare confirmată</p>' +
-      '<h2 class="bk-h">Te așteptăm <em>cu drag.</em></h2><p>Îți trimitem acum confirmarea pe WhatsApp, iar cu o zi înainte primești o reamintire.</p>' +
+    return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
+      '<h2 class="bk-h">Mai e <em>un pas.</em></h2><p>Ți-am trimis un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând la el cu „Confirm” (sau apasă butonul din mesaj).</p>' +
       '<div class="bk-card">' +
       '<div class="bk-row">' + ICON.cal + '<div><b>' + esc(niceDay(a.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time) + '</b><small>' + mins(minsBetween(a.time, a.endTime)) + '</small></div></div>' +
       '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + (S.service && S.service.id === 'consult' ? 'Gratuit, fără obligații' : S.service && S.service.price ? lei(S.service.price) + ', plătești la clinică' : 'Prețul ți-l spunem la clinică') + '</small></div></div>' +
       '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
-      '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div>' +
-      (inline ? '' : '<button type="button" class="bk-cta" data-bk-close style="margin-top:10px">Gata</button>') + '</div>';
+      // the one thing left: her answer to the message (the chat with the clinic's number opens)
+      '<a class="bk-cta" href="https://wa.me/' + (WA[a.location] || WA['Timișoara']) + '" target="_blank" rel="noopener" style="margin:0 0 10px;text-decoration:none">' + ICON.wa + 'Deschide WhatsApp și confirmă</a>' +
+      '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
   }
   function offHtml() { return '<div class="bk-empty">Programările online sunt închise momentan.<br>Scrie-ne și îți găsim noi o oră.</div>' + waNote(true); }
   function waLink() { return 'https://wa.me/' + (WA[S.city] || WA['Timișoara']) + '?text=' + encodeURIComponent('Bună ziua! Aș dori o programare' + (S.service && S.service.id !== 'consult' ? ' pentru ' + S.service.title : '') + '.'); }

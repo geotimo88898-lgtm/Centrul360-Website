@@ -186,7 +186,9 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
   const out = { phone: convo.phone, name: convo.clientName || convo.phone, location: convo.location || '', text: textFor(message), count: convo.unreadCount };
   // a button of a template tapped („Da, ajung” / „Nu ajung” of a reminder): the message it answers says which
   // appointment (_lib/reminders.js reply)
-  if (message.type === 'button' || (message.type === 'interactive' && (message.interactive || {}).button_reply)) {
+  // „Confirm” typed by hand (a booking from the site asks for it) counts like the button
+  const typedConfirm = message.type === 'text' && /^\s*confirm/i.test(textFor(message)) && textFor(message).trim().length <= 30;
+  if (message.type === 'button' || (message.type === 'interactive' && (message.interactive || {}).button_reply) || typedConfirm) {
     const ctxId = message.context && message.context.id;
     // in her chat, else in any (a number written another way on her appointment files the reminder elsewhere)
     const pick = (c) => (c.messages || []).find((m) => m.id === ctxId && m.direction === 'out');

@@ -678,6 +678,22 @@ async function sendTemplate(wa, templateId, from, phone, v, opts) {
   return r.sent ? { sent: true, city: r.fromCity || city, label: tpl.label } : { why: 'Meta a refuzat (' + r.error + ')', city };
 }
 const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.lead && ctx.lead.location) || '';
+// A booking made on the site gets, in place of the confirmation („Reamintiri · Confirmare · <oraș>”), the message that
+// asks her to confirm it with a button (_lib/reminders.js siteTemplate; the owner, 5.11), once Meta approved it for the
+// number it leaves from; before that, the usual confirmation.
+function siteSwap(wa, id, ctx, from) {
+  const a = ctx && ctx.appointment;
+  if (!a || !a.online) return id;
+  const tpls = wa.tpls || [];
+  const t = tpls.find((x) => x.id === id);
+  if (!t || !/^Reamintiri · Confirmare · /.test(t.label || '')) return id;
+  const city = from || a.location;
+  const n = wa.cfg && wa.cfg.numbers && wa.cfg.numbers[city];
+  const base = 'Reamintiri · Confirmare site · ' + city;
+  const alt = n && tpls.filter((x) => (x.label === base || String(x.label || '').startsWith(base + ' · v')) && WT.approvedFor(x, n.wabaId))
+    .sort((x, y) => String(y.updatedAt || '').localeCompare(String(x.updatedAt || '')))[0];
+  return alt ? alt.id : id;
+}
 
 // A new lead from the ads gets the welcome message of its offer at once, no flow: every WhatsApp template that names
 // the offer in "Se trimite singur la lead nou" (Șabloane / Automatizări → Mesaje). From the lead's city number; an
@@ -855,7 +871,9 @@ async function runOne(run, wf, settings, counters) {
     }
     if (s.type === 'whatsapp') {
       const once = ctx.appointment ? 'appt|' + ctx.appointment.id + '|' + apptKey(ctx.appointment) + '|' + s.templateId : 'run|' + run.id + '|' + s.id;
-      const r = await sendOnce(once, () => sendTemplate(settings._wa || {}, s.templateId, s.from === 'auto' || !s.from ? cityOf(ctx) : s.from, person.phone, v, ctx.appointment ? { appt: ctx.appointment.id, akey: apptKey(ctx.appointment) } : {}));
+      const from = s.from === 'auto' || !s.from ? cityOf(ctx) : s.from;
+      const tid = siteSwap(settings._wa || {}, s.templateId, ctx, from);
+      const r = await sendOnce(once, () => sendTemplate(settings._wa || {}, tid, from, person.phone, v, ctx.appointment ? { appt: ctx.appointment.id, akey: apptKey(ctx.appointment) } : {}));
       if (r.dup) { log('Mesajul „' + (((settings._wa || {}).tpls || []).find((t) => t.id === s.templateId) || {}).label + '” plecase deja, nu se trimite a doua oară'); continue; }
       if (r.sent) { delete run.retryUntil; c.sent++; sentHere = true; log('WhatsApp de pe ' + r.city + ': „' + r.label + '”'); continue; }
       // Meta is still reviewing the template (just made): the same message again in 10 minutes, for at most 45

@@ -704,7 +704,7 @@
         '<div class="onl-top">' + K.toggle('on', st.on, 'Programările de pe site sunt pornite') +
         '<a class="onl-link" href="' + url + '" target="_blank" rel="noopener">' + icon('link') + 'centrul360.com/programare</a></div>' +
         cityHtml('Timișoara') + cityHtml('Arad') +
-        '<div class="onl-gen">' + K.field('Cel mai devreme', '<select name="notice">' + K.options([[60, 'peste 1 oră'], [120, 'peste 2 ore'], [180, 'peste 3 ore'], [240, 'peste 4 ore'], [720, 'din ziua următoare (12 ore)'], [1440, 'cu o zi înainte']].map(([v, l]) => [String(v), l]), String(st.notice)) + '</select>') +
+        '<div class="onl-gen">' + K.field('Cel mai devreme', '<select name="notice">' + K.options([[180, 'peste 3 ore'], [240, 'peste 4 ore'], [360, 'peste 6 ore'], [720, 'peste 12 ore'], [1440, 'cu o zi înainte']].map(([v, l]) => [String(v), l]), String(st.notice)) + '</select>') +
         K.field('Cât de departe', '<select name="ahead">' + K.options([[7, 'o săptămână'], [14, '2 săptămâni'], [21, '3 săptămâni'], [30, 'o lună'], [60, '2 luni']].map(([v, l]) => [String(v), l]), String(st.ahead)) + '</select>') +
         K.field('Orele din 30 în 30', '<select name="step">' + K.options([[15, 'din 15 în 15 min'], [30, 'din 30 în 30 min'], [60, 'la fix']].map(([v, l]) => [String(v), l]), String(st.step)) + '</select>') + '</div>' +
         '<div class="mo-note">' + icon('info') + 'Pe site apar doar orele libere: programul de mai sus, minus ce e deja în Calendar (programări, timp blocat, concedii). Ziua cu un concediu are o clientă în minus.</div>' +

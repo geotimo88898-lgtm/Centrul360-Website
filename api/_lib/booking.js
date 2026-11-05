@@ -21,7 +21,7 @@ const week = (from, to, at, two) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map
 const DEFAULTS = {
   on: true,
   step: 30,      // the grid of start times, minutes
-  notice: 120,   // the earliest start from now, minutes
+  notice: 180,   // the earliest start from now, minutes: the same day too, but 3 hours ahead at least (the owner, 5.11)
   ahead: 21,     // how many days ahead can be booked
   cities: {
     'Timișoara': { days: week('09:00', '20:00', 1, [2, 5]), closed: [] },
@@ -55,7 +55,7 @@ function clean(input) {
   const out = {
     on: s.on === undefined ? DEFAULTS.on : !!s.on,
     step: [15, 30, 60].includes(Number(s.step)) ? Number(s.step) : DEFAULTS.step,
-    notice: num(s.notice, 0, 72 * 60, DEFAULTS.notice),
+    notice: num(s.notice, 180, 72 * 60, DEFAULTS.notice),
     ahead: num(s.ahead, 1, 90, DEFAULTS.ahead),
     cities: {},
   };
