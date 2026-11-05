@@ -15,7 +15,7 @@ globalThis.fetch = function fetch(input, init) {
     const route = globalThis.__C360_ROUTE;
     if (route) {
       const u = new URL(input instanceof Request ? input.url : String(input));
-      if (SELF.test(u.hostname) || u.hostname === globalThis.__C360_SELF_HOST) return route(new Request(input, init));
+      if (SELF.test(u.hostname) || u.host === globalThis.__C360_SELF_HOST) return route(new Request(input, init));
     }
     if (env.C360_OFFLINE_TEST === "1") {
       const u = new URL(input instanceof Request ? input.url : String(input));

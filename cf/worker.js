@@ -128,7 +128,7 @@ globalThis.__C360_ROUTE = (request) => {
 
 export default {
   fetch(request, env, ctx) {
-    globalThis.__C360_SELF_HOST = new URL(request.url).hostname;
+    globalThis.__C360_SELF_HOST = new URL(request.url).host;
     return als.run({ ctx }, () => route(request, env, ctx));
   },
   // aceleași ore ca în vercel.json (UTC): 05:00 producția automată de creative, 06:00 automatizările, 19:00 raportul

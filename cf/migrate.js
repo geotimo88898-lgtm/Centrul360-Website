@@ -7,7 +7,8 @@ import { env } from "cloudflare:workers";
 import auth from "../api/_lib/auth.js";
 const { requireAdmin } = auth;
 
-const API = "https://vercel.com/api/blob/";
+// C360_BLOB_API: doar pentru teste locale (un server care imită API-ul Blob)
+const API = env.C360_BLOB_API || "https://vercel.com/api/blob/";
 const STORES = {
   site: { token: () => env.BLOB_READ_WRITE_TOKEN, bucket: () => env.BLOB },
   creative: { token: () => env.CREATIVE_BLOB_READ_WRITE_TOKEN, bucket: () => env.CREATIVE_BLOB }
