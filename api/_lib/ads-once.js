@@ -12,6 +12,15 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 5.11 afternoon, the owner ("stinge toate reclamele active temporar"): every running campaign off (the hiring one was
+  // already off); they come back on when the owner says so, in Reclame or by a new job here
+  { id: 'stop-all-2026-11-05', why: 'oprite toate temporar pe 5.11, cerut de voi', actions: [
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'PAUSED', why: 'oprită temporar, cerut de voi' },
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', status: 'PAUSED', why: 'oprită temporar, cerut de voi' },
+    { campaignId: '120251418158480103', name: 'tm vid 8 - copie', status: 'PAUSED', why: 'oprită temporar, cerut de voi' },
+    { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', status: 'PAUSED', why: 'oprită temporar, cerut de voi' },
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', status: 'PAUSED', why: 'oprită temporar, cerut de voi' },
+  ] },
   // 1.11 afternoon, the owner ("stinge ce nu merge, poate s-au saturat și alea bune, fă cum crezi, doar să nu se cheltuie aiurea"):
   // by the days' numbers, Arad's second gușă ad is saturated (frequency 2.2, the last three days 129 lei for 4 leads, a lead at
   // 32 lei against 12-15 before, a booking over the 30 line); abdomen video 3 shows the same fatigue (the last two days a lead at
