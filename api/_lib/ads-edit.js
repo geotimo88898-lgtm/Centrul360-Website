@@ -50,7 +50,7 @@ async function activeAds(conn) {
     limit: '150',
   });
   if (!r.ok) return { error: err(r.j, 'Reclamele') };
-  const ads = (r.j.data || []).map((a) => {
+  const ads = (r.j.data || []).filter((a) => require('./meta-ads').ours(conn, (a.campaign || {}).name)).map((a) => {
     const p = partsOf(a.creative || {});
     const geo = ((a.adset || {}).targeting || {}).geo_locations || {};
     delete p.hashes;

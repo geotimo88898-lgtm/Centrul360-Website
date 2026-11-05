@@ -116,6 +116,7 @@
     const line = (tone, html) => '<p class="k-muted ad-partial' + (tone ? ' is-' + tone : '') + '">' + html + '</p>';
     const stale = d.stale || A.staleSince;
     box.innerHTML = (d.notices || []).map((n) => line(n.tone, esc(n.text))).join('') +
+      (d.scope && d.scope.text ? line('', esc(d.scope.text)) : '') +
       (d.partial ? line('', esc(d.partial)) : '') +
       (stale ? line('warn', (d.stale ? 'Meta limitează acum citirile contului: ' : 'Nu am putut reîmprospăta: ') + 'cifrele sunt de la ' + esc(new Date(stale).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })) + '.') : '');
     const n = (d.guard && d.guard.log || []).length, btn = panel.querySelector('[data-act="changes"] span');
@@ -826,6 +827,7 @@
     const d = (A.d && A.d.defaults) || {};
     const ages = d.ages || { body: [28, 64], facial: [20, 60] };
     const names = d.names || {};
+    const sc = (A.d && A.d.scope) || { exclude: ['ARANCA', 'BRAZI'], include: '' };
     const dr = K.drawer({
       title: 'Setări implicite', icon: 'sliders', width: 560,
       subtitle: 'Cu ce pornește fereastra „Publică pe Meta” din Creative. Le poți schimba acolo, la fiecare reclamă.',
@@ -841,6 +843,7 @@
         K.field('Numele campaniei', '<input name="n_campaign" value="' + esc(names.campaign || '') + '">', 'full') +
         K.field('Numele setului de reclame', '<input name="n_adset" value="' + esc(names.adset || '') + '">', 'full') +
         K.field('Numele reclamei', '<input name="n_ad" value="' + esc(names.ad || '') + '">', 'full', 'Poți folosi {oras_scurt} (TM, AR), {proc} (LIPO, CAV 1+1, RESTART…), {unghi} (reclama în 2-3 cuvinte), {oferta}, {oras}, {km}, {varsta}, {hook}, {data}.') +
+        K.field('Campaniile altor afaceri (prefixe)', '<input name="sc_exclude" value="' + esc((sc.exclude || []).join(', ')) + '">', 'full', 'Contul de reclame e comun cu Aranca și Brazi. Campaniile al căror nume începe cu aceste cuvinte nu intră aici (nici în cheltuială, nici în ROAS, nici în gardă).') +
         '</form>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
@@ -857,6 +860,12 @@
           try {
             const r = await post({ action: 'defaults', defaults });
             if (A.d) A.d.defaults = r.defaults;
+            const ex = String(v.sc_exclude || '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean);
+            if (ex.join(',') !== (sc.exclude || []).join(',')) {
+              const s2 = await post({ action: 'scope', scope: { exclude: ex, include: sc.include || '' } });
+              if (A.d) A.d.scope = s2.scope;
+              A.cache.clear(); load(true);
+            }
             dr.close();
             K.ui().toast('Salvat. Fereastra „Publică pe Meta” pornește de acum cu ele.', 'success');
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }

@@ -21,6 +21,7 @@ const KPI = require('./_lib/kpi');
 const edit = require('./_lib/ads-edit');
 const AC = require('./_lib/ads-cache');
 const guard = require('./_lib/ads-guard');
+const SCOPE = require('./_lib/ads-scope');
 
 // after the form: booked, showed, clients, revenue, upsells, on every campaign / ad set / ad. From 16.10.2026, 22:05
 // on (the owner's call: what came before was brought over from HighLevel): only the leads from then on, the bookings
@@ -151,6 +152,9 @@ module.exports = async (req, res) => {
   try {
     const { conn, problem } = await connection();
     const defaults = await ads.loadDefaults(readJSON);
+    // which campaigns of the shared account are Centrul360's (_lib/ads-scope.js), shown on the page
+    const sc = await SCOPE.load(readJSON);
+    const scope = Object.assign({ text: SCOPE.describe(sc) }, sc);
     // a picture of an ad, to save it (?media=<Meta link>)
     if (req.method === 'GET' && req.query && req.query.media) {
       const m = await edit.media(req.query.media);
@@ -161,7 +165,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET') {
-      if (problem) { res.status(200).json({ ok: true, ready: false, reason: problem, message: REASONS[problem], defaults }); return; }
+      if (problem) { res.status(200).json({ ok: true, ready: false, reason: problem, message: REASONS[problem], defaults, scope }); return; }
       const period = ads.PERIODS[req.query && req.query.period] ? req.query.period : '7d';
       const range = dayRange(req.query || {});
       // read from Meta at most every 3 minutes for today, every 20 for past days (the same for every open portal)
@@ -180,7 +184,7 @@ module.exports = async (req, res) => {
       if (view.error) {
         const expired = token && !token.valid;
         const noScope = token && token.valid && !(token.scopes || []).some((x) => x === 'ads_management' || x === 'ads_read');
-        res.status(200).json({ ok: true, ready: false, reason: expired ? 'token_expired' : noScope ? 'no_ads_permission' : 'meta_error', defaults,
+        res.status(200).json({ ok: true, ready: false, reason: expired ? 'token_expired' : noScope ? 'no_ads_permission' : 'meta_error', defaults, scope,
           message: expired ? 'Conexiunea pentru reclame a expirat. Integrări → Facebook → Reclame: lipește un token nou.' : noScope ? REASONS.no_ads_permission : 'Meta: ' + view.error });
         return;
       }
@@ -195,11 +199,19 @@ module.exports = async (req, res) => {
       const once = (await readJSON('data/ads-once.json', {}).catch(() => ({}))) || {};
       if (stopped) stopped.log = standing((once.log || []).filter((e) => e.campaignId && Date.parse(e.at) > Date.now() - 3 * 864e5)
         .map((e) => Object.assign({ type: e.status ? (e.status === 'ACTIVE' ? 'start' : 'stop') : e.to < e.from ? 'down' : 'up', trim: !e.status && e.to < e.from, why: 'cerut de voi' }, e)).concat(stopped.log).sort((a, b) => (a.at < b.at ? 1 : -1)), view);
-      res.status(200).json(Object.assign({ ready: true, defaults, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped, notices: notices(view, stopped) }, view));
+      res.status(200).json(Object.assign({ ready: true, defaults, scope, token, readOnly, adsManager: ads.adsManagerUrl(conn.adAccountId), guard: stopped, notices: notices(view, stopped) }, view));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
+    // the prefixes of the other businesses in the same ad account (or the one prefix that is ours)
+    if (body.action === 'scope') {
+      const c = SCOPE.clean(body.scope);
+      await writeJSON(SCOPE.KEY, c);
+      await AC.clear().catch(() => {});
+      res.status(200).json({ ok: true, scope: Object.assign({ text: SCOPE.describe(c) }, c) });
+      return;
+    }
     if (body.action === 'defaults') {
       const d = ads.cleanDefaults(body.defaults);
       await writeJSON(ads.DEFAULTS_KEY, d);
