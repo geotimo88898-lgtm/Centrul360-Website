@@ -79,11 +79,12 @@ module.exports = async (req, res) => {
       const { date, method, performedBy } = req.body || {};
       // a payment made of parts (since 5.11): the parts are corrected, the total is their sum
       const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
-      const P = entry.parts && req.body.parts && typeof req.body.parts === 'object' ? req.body.parts : null;
+      // an older payment (one sum) can be split into parts too (the owner, 5.11: some were recorded wrong)
+      const P = req.body.parts && typeof req.body.parts === 'object' ? req.body.parts : null;
       let np = null;
       if (P) {
         const ups = P.upsell === true || P.upsell === 'true';
-        np = { session: r2(P.session), upsellValue: ups ? r2(P.upsellValue) : 0, upsellPaid: ups ? r2(P.upsellPaid) : 0, due: r2(entry.parts.due) };
+        np = { session: r2(P.session), upsellValue: ups ? r2(P.upsellValue) : 0, upsellPaid: ups ? r2(P.upsellPaid) : 0, due: r2(entry.parts ? entry.parts.due : entry.toDue || 0) };
         if (np.session < 0 || np.upsellPaid < 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
         if (ups && !(np.upsellValue > 0)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
         if (np.upsellPaid > np.upsellValue) { res.status(400).json({ error: 'invalid_package' }); return; }
@@ -118,7 +119,13 @@ module.exports = async (req, res) => {
         entry.upsell = np.upsellValue;
         if (P.upsellWhat !== undefined) entry.upsellWhat = String(P.upsellWhat || '').trim().slice(0, 120);
         if (!np.upsellValue) delete entry.upsellWhat;
-        if (entry.crossSell) entry.crossSell.amount = np.session;
+        // a cross-sell set or taken off in the correction: what she came for stays the booked treatment
+        const to = P.crossTo !== undefined ? String(P.crossTo || '').trim().slice(0, 120) : entry.crossSell ? entry.crossSell.to : '';
+        if (to) {
+          const from = entry.crossSell ? entry.crossSell.from : entry.treatment;
+          entry.crossSell = { to, from, fromAmount: entry.crossSell ? entry.crossSell.fromAmount : Number(entry.bookedAmount) || 0, amount: np.session };
+          entry.treatment = to;
+        } else if (entry.crossSell) { entry.treatment = entry.crossSell.from; delete entry.crossSell; }
         const owes = np.upsellValue > np.upsellPaid;
         startDue = owes && !entry.packageTotal; // now paid in parts, it wasn't before: its rest starts now
         if (owes) entry.packageTotal = np.upsellValue; else delete entry.packageTotal;
