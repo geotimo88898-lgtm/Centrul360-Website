@@ -130,11 +130,12 @@ module.exports = async (req, res) => {
       const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
       const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!e.location || e.location === city))).map((e) => e.id));
       const offers = require('./_lib/offers');
-      const what = svc.id === 'consult' ? 'Consultație' : svc.id === 'custom' ? svc.title : offers.shortName(await offers.loadOffers(readJSON), svc.title);
+      const what = svc.id === 'consult' ? 'Consultație gratuită' : svc.id === 'custom' ? svc.title : offers.shortName(await offers.loadOffers(readJSON), svc.title);
       await N.notifyMany({ readJSON, writeJSON }, [...new Set(ids)], {
         kind: 'booking', tone: 'good', go: 'programari', tag: 'appt-' + entry.id,
-        title: 'PROGRAMARE ONLINE ' + ({ 'Timișoara': 'TM', Arad: 'AR' })[city] + ' 🌐' + (what ? ' - ' + what : ''),
-        text: entry.clientName + ' · ' + nice(date) + ', ' + time,
+        // its own look (the owner, 5.11): PROGRAMARE SITE TM 📅🌐 - HIFU Gușă 190, the client's name under it
+        title: 'PROGRAMARE SITE ' + ({ 'Timișoara': 'TM', Arad: 'AR' })[city] + ' 📅🌐' + (what ? ' - ' + what : ''),
+        text: entry.clientName,
       });
     } catch (e) { /* a notification never blocks a booking */ }
 
