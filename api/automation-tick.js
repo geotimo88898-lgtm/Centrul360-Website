@@ -194,6 +194,20 @@ module.exports = async (req, res) => {
       runs: runsDoc.runs.filter((r) => r.ent && r.ent.id === a.id).map((r) => ({ wf: wfName(r.wf), status: r.status, due: r.dueAt, log: (r.log || []).slice(-6).map((l) => String(l.at).slice(5, 16) + ' ' + String(l.text).replace(/\+?\d[\d\s]{7,}/g, '#').slice(0, 120)) })) }))
       .sort((a, b) => a.time.localeCompare(b.time));
   })().catch((e) => ({ error: e.message }));
+  // with the key, &storetime=1: how big the main documents are and how long reading each takes (speed check), read only
+  if (readOnly && req.query.storetime) out.storetime = await (async () => {
+    const { head } = require('@vercel/blob');
+    const st = require('./_lib/store');
+    const docs = ['data/sales.json', 'data/appointments.json', 'data/leads.json', 'data/clients.json', 'data/whatsapp-conversations.json', 'data/workflow-runs.json', 'data/employees.json', 'data/config.json', 'data/notifications.json', 'data/automation-tasks.json', 'data/client-dues.json', 'data/offers.json', 'data/academy-progress.json', 'data/_rev.json'];
+    const rows = [];
+    for (const d of docs) {
+      let size = 0; try { const h = await head(d); size = h.size; } catch (e) { size = -1; }
+      const t0 = Date.now(); try { await st.readJSON(d, null); } catch (e) { /* timed anyway */ }
+      const t1 = Date.now(); try { await st.readJSON(d, null); } catch (e) { /* again: the instance's copy */ }
+      rows.push({ doc: d.replace(/^data\//, ''), kb: Math.round(size / 1024), firstMs: t1 - t0, againMs: Date.now() - t1 });
+    }
+    return rows;
+  })().catch((e) => ({ error: e.message }));
   // with the key, &lostmsgs=1: the automatic messages the engine says it sent, and how many are in the chats, by day (counts only)
   if (readOnly && req.query.lostmsgs) out.lostmsgs = await (async () => {
     const [runsDoc, convos, appts] = await Promise.all([require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', []), readJSON('data/appointments.json', [])]);
