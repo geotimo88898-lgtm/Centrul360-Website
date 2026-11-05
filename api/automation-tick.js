@@ -231,8 +231,13 @@ module.exports = async (req, res) => {
       catch (e) { r.bigIfMatch = 'FAIL ' + (Date.now() - t) + 'ms ' + String(e.message || '').slice(0, 140); }
       return r;
     }
+    if (req.query.writetime === '3') {
+      t = Date.now();
+      await Promise.race([st.writeJSON(T, a, { quiet: true }), new Promise((ok) => setTimeout(ok, 40e3))]);
+      r.changeWriteMs = Date.now() - t; r.log = st.writeLog.filter((x) => x.pathname === T).slice(-2);
+      return r;
+    }
     t = Date.now(); await st.writeJSON(T, a, { quiet: true }); r.changeWriteMs = Date.now() - t;
-    if (req.query.writetime === '3') return r;
     // two readers, the second saves after the first: the merge
     const x = await st.readJSON(T, []); const y = JSON.parse(JSON.stringify(x));
     x.push({ id: 'speed-b', date: '2000-01-02' }); await st.writeJSON(T, x, { quiet: true });

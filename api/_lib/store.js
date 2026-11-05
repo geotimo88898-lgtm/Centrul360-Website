@@ -222,21 +222,31 @@ function shrinkCheck(pathname, body, opts) {
 // The big lists the whole portal leans on: a write that would cut one to less than half (and it is
 // big) is refused, whatever bug or failed read led to it. Deleting that much by hand never happens.
 const GUARDED = new Set(['data/clients.json', 'data/appointments.json', 'data/leads.json', 'data/sales.json']);
+// what the last saves did (the speed check, api/automation-tick.js &writetime): tries, why each failed, how long
+const writeLog = [];
 async function writeJSON(pathname, data, opts) {
+  const t0 = Date.now(), log = { pathname, tries: 0, errors: [], steps: [] };
+  writeLog.push(log); if (writeLog.length > 20) writeLog.shift();
   let body = JSON.stringify(data, null, 2);
   let base = pathname === REV_PATH ? null : findBase(pathname, data);
   let mine = data;
   // the version this request read: written only onto it; someone wrote since: my changes on top of theirs, again
   // (many tries: under a burst every writer gets its turn; a blind write after them is the old behaviour, kept as a last resort)
+  log.hasBase = !!base;
   for (let attempt = 0; base && attempt < 25; attempt++) {
+    log.tries++;
+    let ts = Date.now();
     await shrinkCheck(pathname, body, opts);
+    log.steps.push('check ' + (Date.now() - ts)); ts = Date.now();
     try {
       const res = await put(pathname, body, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ifMatch: base.etag });
+      log.steps.push('put ' + (Date.now() - ts)); log.ms = Date.now() - t0;
       if (mine !== data) replaceInPlace(data, mine);
       remember(pathname, data, body, res && res.etag);
       if (!(opts && opts.quiet)) await bumpRev(pathname);
       return data;
     } catch (err) {
+      log.errors.push(String((err && err.message) || err).slice(0, 100) + ' ' + (Date.now() - ts) + 'ms');
       if (!isPrecondition(err)) throw err;
       let latest = null;
       try { forget(pathname); latest = await fetchLatest(pathname); } catch (e) { latest = null; }
@@ -359,4 +369,4 @@ async function createOnce(pathname, text) {
   }
 }
 
-module.exports = { readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary, createOnce, merge3 };
+module.exports = { writeLog, readJSON, writeJSON, readJSONTagged, writeJSONIf, readRev, writeBinary, readBinary, removeBinary, createOnce, merge3 };
