@@ -231,6 +231,24 @@ module.exports = async (req, res) => {
     t = Date.now(); const m = st.merge3(src, a, x); r.merge3Ms = Date.now() - t; r.items = src.length; r.mergedItems = m.length;
     return r;
   })().catch((e) => ({ error: e.message }));
+  // with the key, &etagtest=1: does a save onto the version just read go through (the ETag check), on a test document
+  if (readOnly && req.query.etagtest) out.etagtest = await (async () => {
+    const { put, get } = require('@vercel/blob');
+    const T = 'data/_etagtest.json';
+    const p1 = await put(T, JSON.stringify({ n: 1 }), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' });
+    const g = await get(T, { access: 'private', useCache: false });
+    const r = { putEtag: p1.etag, getEtag: g && g.blob && g.blob.etag };
+    for (const [name, tag] of [['withGetEtag', r.getEtag], ['withPutEtag', r.putEtag]]) {
+      const t = Date.now();
+      try { const x = await put(T, JSON.stringify({ n: 2, name }), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ifMatch: tag }); r[name] = 'ok ' + (Date.now() - t) + 'ms'; r.lastEtag = x.etag; }
+      catch (e) { r[name] = 'FAIL ' + (Date.now() - t) + 'ms ' + (e.name || '') + ' ' + String(e.message || '').slice(0, 120); }
+    }
+    // the store's own write, timed, onto a fresh read
+    const st = require('./_lib/store');
+    const d = await st.readJSON(T, {}); d.n = 3;
+    const t = Date.now(); await st.writeJSON(T, d, { quiet: true }); r.storeWriteMs = Date.now() - t;
+    return r;
+  })().catch((e) => ({ error: e.message }));
   // with the key, &lostmsgs=1: the automatic messages the engine says it sent, and how many are in the chats, by day (counts only)
   if (readOnly && req.query.lostmsgs) out.lostmsgs = await (async () => {
     const [runsDoc, convos, appts] = await Promise.all([require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', []), readJSON('data/appointments.json', [])]);
