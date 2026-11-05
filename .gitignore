@@ -1,1 +1,10 @@
 node_modules/
+# Cloudflare (cf/build.mjs)
+.wrangler/
+dist/
+.creative/
+.creative-build/
+.cf-mods/
+cf/api.gen.js
+cf/creative.gen.js
+.dev.vars

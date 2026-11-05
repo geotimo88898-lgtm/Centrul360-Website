@@ -1,0 +1,39 @@
+// Cloudflare Workers: Centrul360 (site, portal admin/staff, api/, mașina de creative la /creative), un singur Worker.
+// Build: `node cf/build.mjs` (vezi comentariul de acolo), apoi `npx wrangler deploy`. Pe Vercel nu se folosește.
+// Fișierele (fostul Vercel Blob) sunt în R2: BLOB = portalul, CREATIVE_BLOB = creativele, cu aceleași căi.
+// Orele programate: o singură expresie (05, 06, 19 UTC, ca în vercel.json), oprite cu CRON_ON = "0" până la mutarea
+// domeniului, ca să nu ruleze de două ori (Vercel + Cloudflare).
+{
+  "name": "centrul360-website",
+  "main": "cf/worker.js",
+  "minify": true,
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "enable_nodejs_fs_module"],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "html_handling": "drop-trailing-slash",
+    "run_worker_first": ["/", "/login", "/portal", "/portal.html", "/portal-login", "/portal-login.html", "/fise/*", "/academy-fisa/*", "/api/*", "/creative", "/creative/*", "/__c360/*"]
+  },
+  "alias": {
+    "@vercel/blob": "./cf/blob-r2.js",
+    "@vercel/blob/client": "./cf/blob-client-r2.js"
+  },
+  // seed/ al mașinii de creative, citit cu node:fs (la /bundle/seed)
+  "base_dir": ".cf-mods",
+  "find_additional_modules": true,
+  "rules": [
+    { "type": "Text", "globs": ["seed/**/*.json", "seed/**/*.md"], "fallthrough": true },
+    { "type": "Data", "globs": ["seed/**/*.png", "seed/**/*.jpg", "seed/**/*.jpeg", "seed/**/*.webp"], "fallthrough": true }
+  ],
+  "r2_buckets": [
+    { "binding": "BLOB", "bucket_name": "centrul360-private" },
+    { "binding": "CREATIVE_BLOB", "bucket_name": "centrul360-creatives" }
+  ],
+  "workflows": [
+    { "name": "centrul360-creative-jobs", "binding": "CREATIVE_JOBS", "class_name": "CreativeJobs" }
+  ],
+  "triggers": { "crons": ["0 5,6,19 * * *"] },
+  "vars": { "CRON_ON": "0", "BLOB_STORE_ID": "r2" },
+  "observability": { "enabled": true }
+}
