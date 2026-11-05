@@ -114,6 +114,19 @@ async function remindersOn() {
   return { on: off.map((w) => w.name), already: flows.filter((w) => !off.includes(w)).map((w) => w.name), enrolled };
 }
 
+// 5.11: the second cosmetician doesn't come any more: Timișoara takes one client at a time on Tuesdays and Fridays too,
+// in the settings saved from Calendar → Online as well (without them the defaults already say so)
+async function tmOneAtATime() {
+  const { readJSON: rj, writeJSON: wj } = require('./store');
+  const s = await rj('data/booking.json', null);
+  if (!s || !s.cities || !s.cities['Timișoara'] || !s.cities['Timișoara'].days) return { saved: false };
+  const days = s.cities['Timișoara'].days;
+  const changed = [2, 5].filter((d) => days[d] && Number(days[d].at) > 1);
+  changed.forEach((d) => { days[d].at = 1; });
+  if (changed.length) await wj('data/booking.json', Object.assign(s, { updatedAt: new Date().toISOString(), updatedBy: 'claude' }));
+  return { saved: true, changed };
+}
+
 const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
   ? { title: 'Automatizări: la programare pleacă doar „Ne vedem pe…”', text: 'Am scos ' + r.removed.map((x) => '„' + x.template + '”').join(', ') + ' din ' + [...new Set(r.removed.map((x) => '„' + x.flow + '”'))].join(', ') + '. Remindere rămân la fel.' }
   : null) },
@@ -125,6 +138,7 @@ const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBook
 // runs again at every tick until Meta answered (the engine uses it from the moment it is approved)
 { id: 'site-confirm-2026-11-05', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null },
 // 5.11, later: the last call after 4 hours ("dacă nu o confirmați acum, se anulează"), sent to Meta the same way
+{ id: 'tm-one-at-a-time-2026-11-05', run: tmOneAtATime, tell: () => null },
 { id: 'site-confirm-2026-11-05b', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null }];
 
 // a notice to the admins once (a job that runs again and again)
