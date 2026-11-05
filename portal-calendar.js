@@ -267,7 +267,9 @@
     if (a.treatment) return a.treatment;
     return a.ghlTitle && plainTxt(a.ghlTitle) !== plainTxt(a.clientName) ? a.ghlTitle : '';
   }
-  const subOf = (a) => [a.online ? '🌐 online' : '', a.amount ? K.lei(a.amount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
+  // the treatment and its price together, on every booking (the owner, 5.11: see the procedure and the sum without opening it)
+  const trLine = (a) => (a.block ? treatOf(a) : [treatOf(a), Number(a.amount) > 0 ? K.lei(a.amount) : ''].filter(Boolean).join(' · '));
+  const subOf = (a) => [a.online ? '🌐 online' : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
@@ -277,7 +279,7 @@
     const short = it.e - it.s < 30; // under half an hour: one line
     const half = !short && it.e - it.s < 45; // half an hour: the hour in front of the name, the treatment under
     const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the name
-    const tr = treatOf(a);
+    const tr = trLine(a);
     const lines = tiny ? Math.max(1, Math.floor((h - 4) / 23)) : short ? 1 : Math.max(1, Math.min(2, Math.floor((h - 44) / 34)));
     return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + nameOf(a) + ' · ' + tr + ' · ' + st.label) + '">' +
