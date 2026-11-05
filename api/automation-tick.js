@@ -208,6 +208,26 @@ module.exports = async (req, res) => {
     }
     return rows;
   })().catch((e) => ({ error: e.message }));
+  // with the key, &writetime=1: a save of a copy of the appointments (data/_speedtest.json, never the real one) timed:
+  // the plain write, and one whose version moved meanwhile (the merge path), speed check
+  if (readOnly && req.query.writetime) out.writetime = await (async () => {
+    const st = require('./_lib/store');
+    const T = 'data/_speedtest.json';
+    const src = await st.readJSON('data/appointments.json', []);
+    const copy = JSON.parse(JSON.stringify(src));
+    const r = {};
+    let t = Date.now(); await st.writeJSON(T, copy, { quiet: true }); r.firstWriteMs = Date.now() - t;
+    t = Date.now(); const a = await st.readJSON(T, []); r.readMs = Date.now() - t;
+    a.push({ id: 'speed-a', date: '2000-01-01' });
+    t = Date.now(); await st.writeJSON(T, a, { quiet: true }); r.changeWriteMs = Date.now() - t;
+    // two readers, the second saves after the first: the merge
+    const x = await st.readJSON(T, []); const y = JSON.parse(JSON.stringify(x));
+    x.push({ id: 'speed-b', date: '2000-01-02' }); await st.writeJSON(T, x, { quiet: true });
+    y.push({ id: 'speed-c', date: '2000-01-03' });
+    t = Date.now(); await st.writeJSON(T, y, { quiet: true }); r.mergeWriteMs = Date.now() - t;
+    t = Date.now(); const m = st.merge3(src, a, x); r.merge3Ms = Date.now() - t; r.items = src.length; r.mergedItems = m.length;
+    return r;
+  })().catch((e) => ({ error: e.message }));
   // with the key, &lostmsgs=1: the automatic messages the engine says it sent, and how many are in the chats, by day (counts only)
   if (readOnly && req.query.lostmsgs) out.lostmsgs = await (async () => {
     const [runsDoc, convos, appts] = await Promise.all([require('./_lib/workflows').loadRuns(), readJSON('data/whatsapp-conversations.json', []), readJSON('data/appointments.json', [])]);
