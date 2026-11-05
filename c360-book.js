@@ -2,9 +2,10 @@
    Centrul360, online booking on every page of the site.
    The client picks the clinic, the treatment, the day and a free hour (the portal's Calendar, api/booking.js)
    and is booked at once: the confirmation and the reminders come on WhatsApp from the clinic's number.
-   Every "Programează" / "Rezervă" button opens it (also the ones that used to open WhatsApp); the
-   free consultation with the gift (c360-consult.js, the lead magnet) and the plain WhatsApp contacts
-   ("Întreabă", the phone numbers, "Preferi WhatsApp?") stay as they are.
+   Every "Programează" / "Rezervă" / "Consultație gratuită" button opens it (also the ones that used to open
+   WhatsApp or the call-back form); the forms of the lead magnet (the home page's quiz, the treatment pages'
+   "Consultație gratuită" form with the gift) and the plain WhatsApp contacts ("Întreabă", the phone numbers,
+   "Preferi WhatsApp?") stay as they are.
    C360Book.open({ service, city, label }) from code, #programare in the address, /programare as a page.
    ============================================================ */
 (function () {
@@ -86,21 +87,23 @@
   .bk-chip small{ display:block; font-size:12.5px; color:rgba(245,244,242,.5); margin-top:2px; }
   .bk-link{ margin-left:auto; flex:none; border:0; background:rgba(255,255,255,.07); color:#f5f4f2; font:inherit; font-size:12.5px; font-weight:600; padding:8px 12px; border-radius:999px; cursor:pointer; }
   .bk-link:hover{ background:rgba(255,255,255,.13); }
-  .bk-month{ display:flex; align-items:baseline; justify-content:space-between; margin:4px 0 10px; }
-  .bk-month b{ font-size:13px; font-weight:600; color:rgba(245,244,242,.7); text-transform:capitalize; }
-  .bk-month span{ font-size:12px; color:rgba(245,244,242,.4); }
-  .bk-days{ display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; margin:0 -22px; padding-left:22px; padding-right:22px; scroll-snap-type:x proximity; scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%); mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%); }
-  .bk-days::-webkit-scrollbar{ display:none; }
-  .bk-day{ flex:none; width:58px; padding:10px 0 9px; border-radius:16px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.035); color:#f5f4f2; font:inherit; cursor:pointer; scroll-snap-align:start; display:flex; flex-direction:column; align-items:center; gap:3px; transition:border-color .2s, background-color .2s, color .2s; }
-  .bk-day small{ font-size:11px; font-weight:600; letter-spacing:.04em; color:rgba(245,244,242,.5); text-transform:uppercase; }
-  .bk-day b{ font-size:19px; font-weight:800; letter-spacing:-.03em; line-height:1; }
-  .bk-day i{ width:4px; height:4px; border-radius:50%; background:#e9cfa3; margin-top:2px; }
-  .bk-day:hover:not(:disabled){ border-color:rgba(255,255,255,.28); }
-  .bk-day.on{ background:#f5f4f2; border-color:#f5f4f2; color:#0b0b0d; }
-  .bk-day.on small{ color:rgba(11,11,13,.55); }
-  .bk-day.on i{ background:#0b0b0d; }
-  .bk-day:disabled{ opacity:.28; cursor:default; }
-  .bk-day:disabled i{ visibility:hidden; }
+  .bk-cal{ margin:2px 0 4px; }
+  .bk-cal-h{ display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 10px; }
+  .bk-cal-h b{ font-size:14px; font-weight:700; letter-spacing:-.01em; }
+  .bk-cal-h span{ font-size:12px; color:rgba(245,244,242,.42); }
+  .bk-cal-wd, .bk-cal-g{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+  .bk-cal-wd span{ text-align:center; font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:rgba(245,244,242,.36); padding-bottom:6px; }
+  .bk-cd{ position:relative; height:44px; display:grid; place-items:center; border:0; border-radius:13px; background:transparent; color:rgba(245,244,242,.2); font:inherit; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; padding:0; cursor:default; transition:background-color .2s, color .2s, transform .15s; }
+  .bk-cd.has{ color:#f5f4f2; background:rgba(255,255,255,.05); cursor:pointer; }
+  .bk-cd.has::after{ content:''; position:absolute; bottom:6px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:#e9cfa3; }
+  .bk-cd.has:hover{ background:rgba(255,255,255,.11); }
+  .bk-cd.has:active{ transform:scale(.95); }
+  .bk-cd.on, .bk-cd.on:hover{ background:#f5f4f2; color:#0b0b0d; }
+  @media (hover:none){ .bk-cd.has:hover:not(.on){ background:rgba(255,255,255,.05); } }
+  .bk-cd.on::after{ background:#0b0b0d; }
+  .bk-cd.today:not(.on){ box-shadow:inset 0 0 0 1px rgba(233,207,163,.45); }
+  .bk-daylbl{ margin:18px 0 0 !important; font-size:13px !important; color:rgba(245,244,242,.85) !important; font-weight:700 !important; }
+  .bk-daylbl + .bk-part{ margin-top:8px; }
   .bk-part{ margin:14px 0 8px; font-size:12px; font-weight:600; color:rgba(245,244,242,.45); letter-spacing:.02em; }
   .bk-times{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
   @media (max-width:380px){ .bk-times{ grid-template-columns:repeat(3,1fr); } }
@@ -110,7 +113,7 @@
   .bk-time.on{ background:#f5f4f2; color:#0b0b0d; border-color:#f5f4f2; }
   .bk-empty{ padding:22px 16px; border-radius:16px; border:1px dashed rgba(255,255,255,.12); text-align:center; color:rgba(245,244,242,.55); font-size:14px; line-height:1.5; }
   .bk-skel{ height:46px; border-radius:14px; background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04)); background-size:200% 100%; animation:bkSh 1.2s ease-in-out infinite; }
-  .bk-skel.day{ width:58px; height:68px; flex:none; border-radius:16px; }
+  .bk-skel.cd{ height:44px; border-radius:13px; }
   @keyframes bkSh{ 0%{ background-position:100% 0; } 100%{ background-position:-100% 0; } }
   .bk-sum{ position:relative; padding:16px 18px; border-radius:20px; background:radial-gradient(120% 140% at 100% 0%,rgba(233,207,163,.13),transparent 55%),rgba(255,255,255,.04); border:1px solid rgba(233,207,163,.22); margin-bottom:18px; }
   .bk-sum .when{ font-size:20px; font-weight:800; letter-spacing:-.03em; }
@@ -323,10 +326,6 @@
     body.innerHTML = '<div class="bk-step' + (anim === 'back' ? ' back' : '') + '">' + html + '</div>';
     if (!anim) body.firstChild.style.animation = 'none';
     S.dir = '';
-    if (S.step === 'when') {
-      const on = body.querySelector('.bk-day.on');
-      if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
-    }
   }
   const segHtml = () => '<div class="bk-seg" role="tablist" aria-label="Clinica">' + ['Timișoara', 'Arad'].map((c) => '<button type="button" role="tab" aria-selected="' + (S.city === c) + '" class="' + (S.city === c ? 'on' : '') + '" data-city="' + c + '">' + c + '</button>').join('') + '</div>';
   function priceHtml(s) {
@@ -356,25 +355,40 @@
   }
   function chipHtml() {
     const s = S.service || {};
-    return '<div class="bk-chip"><div><b>' + esc(s.title || '') + '</b><small>' + mins(s.minutes || 60) + (s.id === 'consult' ? ' · gratuit' : s.price ? ' · ' + lei(s.price) : '') + '</small></div>' +
+    return '<div class="bk-chip"><div><b>' + esc(s.title || '') + '</b><small>Centrul360 ' + esc(S.city) + ' · ' + mins(s.minutes || 60) + (s.id === 'consult' ? ' · gratuit' : s.price ? ' · ' + lei(s.price) : '') + '</small></div>' +
       (S.proc || S.note ? '<button type="button" class="bk-link" data-go="svc">Schimbă</button>' : '') + '</div>';
   }
+  const addD = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const WDH = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
+  // the bookable days as a small month: weeks from Monday, the days with free hours marked
+  function calHtml() {
+    const by = new Map(S.days.map((d) => [d.date, d]));
+    const first = S.days[0].date, last = S.days[S.days.length - 1].date;
+    const mon = (d) => addD(d, -((dt(d).getUTCDay() + 6) % 7));
+    const cells = [];
+    for (let d = mon(first); d <= addD(mon(last), 6); d = addD(d, 1)) cells.push(d);
+    const free = S.days.filter((d) => d.slots.length);
+    const m1 = dt(free[0].date).getUTCMonth(), m2 = dt(free[free.length - 1].date).getUTCMonth();
+    const title = MO[m1].replace(/^./, (c) => c.toUpperCase()) + (m2 !== m1 ? ' - ' + MO[m2] : '') + ' ' + dt(free[free.length - 1].date).getUTCFullYear();
+    return '<div class="bk-cal"><div class="bk-cal-h"><b>' + title + '</b><span>' + free.length + ' zile cu locuri</span></div>' +
+      '<div class="bk-cal-wd">' + WDH.map((w) => '<span>' + w + '</span>').join('') + '</div>' +
+      '<div class="bk-cal-g" role="listbox" aria-label="Ziua">' + cells.map((d) => {
+        const x = by.get(d), n = dt(d).getUTCDate();
+        if (!x || !x.slots.length) return '<span class="bk-cd' + (d === first ? ' today' : '') + '" aria-hidden="true">' + n + '</span>';
+        return '<button type="button" class="bk-cd has' + (d === S.date ? ' on' : '') + (d === first ? ' today' : '') + '" data-date="' + d + '" aria-label="' + niceDay(d) + '" aria-selected="' + (d === S.date) + '">' + n + '</button>';
+      }).join('') + '</div></div>';
+  }
   function whenHtml() {
-    let h = '<p class="bk-eyebrow">' + esc(S.city) + '</p><h2 class="bk-h">Alege <em>ziua și ora</em></h2>' + segHtml();
+    let h = '<p class="bk-eyebrow">' + esc(S.city) + '</p><h2 class="bk-h">Alege <em>ziua și ora</em></h2>';
     if (S.off) return h + offHtml();
     h += S.service ? chipHtml() : '<div class="bk-skel" style="height:60px;margin-bottom:14px;border-radius:16px"></div>';
     if (S.err === 'net') return h + '<div class="bk-empty">Nu am putut încărca orele libere.<br><button type="button" class="bk-link" data-retry style="margin-top:12px">Încearcă din nou</button></div>' + waNote();
-    if (!S.days) return h + '<div class="bk-days">' + '<span class="bk-skel day"></span>'.repeat(7) + '</div><div class="bk-times" style="margin-top:22px">' + '<span class="bk-skel"></span>'.repeat(8) + '</div>';
+    if (!S.days) return h + '<div class="bk-cal"><div class="bk-cal-g" style="margin-top:28px">' + '<span class="bk-skel cd"></span>'.repeat(21) + '</div></div>';
     if (!S.days.some((d) => d.slots.length)) return h + '<div class="bk-empty">Nu mai sunt ore libere online în următoarele săptămâni.<br>Scrie-ne și îți găsim noi un loc.</div>' + waNote(true);
-    const first = dt(S.date || S.days[0].date);
-    h += '<div class="bk-month"><b>' + MO[first.getUTCMonth()] + ' ' + first.getUTCFullYear() + '</b><span>' + S.days.filter((d) => d.slots.length).length + ' zile cu locuri</span></div>';
-    h += '<div class="bk-days" role="listbox" aria-label="Ziua">' + S.days.map((d) => {
-      const x = dt(d.date);
-      return '<button type="button" class="bk-day' + (d.date === S.date ? ' on' : '') + '" data-date="' + d.date + '"' + (d.slots.length ? '' : ' disabled') + ' aria-label="' + niceDay(d.date) + (d.slots.length ? '' : ', fără locuri') + '">' +
-        '<small>' + WD[x.getUTCDay()] + '</small><b>' + x.getUTCDate() + '</b><i></i></button>';
-    }).join('') + '</div>';
+    h += calHtml();
     const day = S.days.find((d) => d.date === S.date);
     if (!day) return h;
+    h += '<p class="bk-part bk-daylbl">' + esc(niceDay(day.date).replace(/^./, (c) => c.toUpperCase())) + '</p>';
     const parts = [['Dimineața', (t) => t < '12:00'], ['După-amiaza', (t) => t >= '12:00' && t < '17:00'], ['Seara', (t) => t >= '17:00']];
     parts.forEach(([name, ok]) => {
       const ts = day.slots.filter(ok);
@@ -524,7 +538,7 @@
     root.classList.add('open');
     document.documentElement.style.overflow = 'hidden';
     if (!pushed) { try { history.pushState({ bk: 1 }, '', location.href.replace(/#programare$/, '')); pushed = true; } catch (e) { /* no history */ } }
-    setTimeout(() => { const f = root.querySelector('.bk-seg .on, .bk-svc, .bk-day.on, [data-bk-close]'); if (f) f.focus({ preventScroll: true }); }, 60);
+    setTimeout(() => { const f = root.querySelector('.bk-svc, .bk-cd.on, [data-bk-close]'); if (f) f.focus({ preventScroll: true }); }, 60);
   }
   function close() {
     if (!root || inline) return;
@@ -539,12 +553,12 @@
   // what a button books: from data-book-* first, else from the WhatsApp text it carried (the offer, the city)
   function intentOf(a) {
     if (a.hasAttribute('data-book')) return { service: a.dataset.bookService || '', city: a.dataset.bookCity || '', label: a.dataset.bookLabel || '' };
+    if (a.hasAttribute('data-sim-consult')) return { service: 'consult', city: '', label: '' }; // the home page's results: the free consultation
     const href = a.getAttribute('href') || '';
     if (!/wa\.me\//.test(href)) return null;
     const label = (a.textContent || '').replace(/\s+/g, ' ').trim();
-    if (a.id !== 'fab' && !/programeaz|rezerv|vreau/i.test(label)) return null; // "Scrie-ne", "Întreabă", the phone numbers: WhatsApp
+    if (a.id !== 'fab' && !/programeaz|rezerv|vreau|consulta/i.test(label)) return null; // "Scrie-ne", "Întreabă", the phone numbers: WhatsApp
     if (a.id === 'fab' || (/programeaz[ăa]-te/i.test(label) && a.id !== 'offpop-wa')) return { service: '', city: /40750277394/.test(href) || /arad/i.test(label) ? 'Arad' : /timi/i.test(label) ? 'Timișoara' : '', label: '' }; // the general ones: she picks
-    if (/consulta/i.test(label) && !/whatsapp/i.test(label)) return null;        // "Consultație gratuită": the lead magnet (c360-consult.js)
     const p = a.closest('p'); if (p && /preferi/i.test(p.textContent || '')) return null;
     let msg = '';
     try { msg = new URL(a.href).searchParams.get('text') || ''; } catch (e) { /* none */ }
@@ -573,7 +587,7 @@
   }
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return;
-    const a = e.target.closest('a[href], button[data-book]');
+    const a = e.target.closest('a[href], button[data-book], button[data-sim-consult]');
     if (!a || (root && root.contains(a))) return;
     const o = intentOf(a);
     if (!o) return;

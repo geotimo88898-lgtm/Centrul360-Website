@@ -113,19 +113,13 @@
     var el = document.createElement('div');
     el.className = 'cvz-bar';
     el.innerHTML =
-      '<a class="cvz-bar-a" href="#cvz-form">Consultație gratuită</a>' +
-      '<a class="cvz-bar-b" href="https://wa.me/' + WA['Timișoara'] + '" target="_blank" rel="noopener">WhatsApp</a>';
+      '<a class="cvz-bar-a" href="/programare" data-book data-book-service="consult">Programează-te online</a>';
     document.body.appendChild(el);
     if (mount) mount.id = 'cvz-form';
     // one bar at the bottom, not two stacked: this one replaces the page's own booking bar
     var old = document.getElementById('bookbar');
     if (old) old.remove();
-    // the consultation opens right where the visitor is (c360-consult.js); without it, jump to the form
-    el.querySelector('.cvz-bar-a').addEventListener('click', function (e) {
-      if (!window.C360Consult) return;
-      e.preventDefault();
-      window.C360Consult.open('');
-    });
+    // the booking opens right where the visitor is (c360-book.js), on the free consultation
   }
 
   document.addEventListener('DOMContentLoaded', function () {
