@@ -736,3 +736,19 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .ad-emp-push svg{ width:13px; height:13px; }
 .ad-emp-push.is-on{ color:var(--good); }
 .nt-apk{ width:100%; justify-content:center; margin-bottom:1rem; }
+
+/* Încasare in parts (portal-money.js openNew, 5.11): the total on top, then the session, the upsell, a package's rest */
+.pay-sum{ display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:.15rem 1rem; padding:.9rem 1.1rem; border-radius:16px; background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+.pay-sum span{ font-size:.82rem; font-weight:600; color:var(--muted); }
+.pay-sum b{ font-size:1.45rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.pay-sum small{ grid-column:1 / -1; font-size:.8rem; color:var(--muted); }
+.pay-part{ display:flex; flex-direction:column; gap:.6rem; padding:.9rem; border-radius:16px; border:1px solid var(--line); background:var(--glass); }
+.pay-part-h b{ display:block; font-size:.92rem; }
+.pay-part-h small{ display:block; margin-top:.1rem; font-size:.8rem; color:var(--muted); }
+.pay-part .pay-check{ background:var(--paper); }
+.pay-cross.is-on{ border-color:var(--accent); background:var(--accent-soft); }
+.pay-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+.pay-grid .full{ grid-column:1 / -1; }
+.pay-grid[hidden], .pay-part [hidden]{ display:none !important; }
+@media (max-width:560px){ .pay-grid{ grid-template-columns:1fr; } }
+.pay-part .k-field, .pay-part .k-money, .pay-part input{ min-width:0; max-width:100%; box-sizing:border-box; }

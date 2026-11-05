@@ -185,15 +185,32 @@ async function handleComisionAdmin(req, res, session) {
 }
 
 // "Încasare" = an appointment gets paid. The desk picks WHICH appointment, HOW it was paid (card /
-// cash / transfer / cash + card) and WHO did the treatment. When that person sold something extra
-// ("Upsell efectuat" ticked: the amount paid is the upsell), she earns a commission on it: value - 60% costs, then
-// 10% of the profit (_lib/cats.js). It goes to the owner's Aprobări first and counts only once
-// approved; until then she sees it as "în așteptare".
+// cash / transfer / cash + card) and WHO did the treatment, and (since 5.11) what the sum is made of: the session she
+// came for, or a cross-sell (what she did instead), an upsell (its whole value, what she paid of it now: the rest is
+// owed, _lib/dues.js) and a payment on an older package's rest. The upsell earns whoever did the treatment a commission
+// on its whole value: value - 60% costs, then 10% of the profit (_lib/cats.js). It goes to the owner's Aprobări first
+// and counts only once approved; until then she sees it as "în așteptare".
 async function handleIncasare(req, res, session) {
   const { appointmentId, method, performedBy } = req.body || {};
   if (!appointmentId) { res.status(400).json({ error: 'missing_appointment' }); return; }
   if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
-  const amount = Math.round(Number(req.body.amount) * 100) / 100;
+  // 5.11 (the owner): the payment in parts: the session she came for (or what she did instead, the cross-sell), the
+  // upsell (its whole value: the commission's base; and what she paid of it now: the rest is owed), a payment on what
+  // she still owes for an older package. The total is their sum. Without `parts`: the older single sum.
+  const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+  const P = req.body.parts && typeof req.body.parts === 'object' ? req.body.parts : null;
+  let parts = null, cross = null, upsellWhat = '';
+  if (P) {
+    const ups = P.upsell === true || P.upsell === 'true';
+    parts = { session: r2(P.session), upsellValue: ups ? r2(P.upsellValue) : 0, upsellPaid: ups ? r2(P.upsellPaid) : 0, due: r2(P.duePaid) };
+    if (parts.session < 0 || parts.upsellPaid < 0 || parts.due < 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+    if (ups && !(parts.upsellValue > 0)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+    if (parts.upsellPaid > parts.upsellValue) { res.status(400).json({ error: 'invalid_package' }); return; }
+    const to = String(P.crossTo || '').trim().slice(0, 120);
+    if (to) cross = { to };
+    upsellWhat = ups ? String(P.upsellWhat || '').trim().slice(0, 120) : '';
+  }
+  const amount = parts ? r2(parts.session + parts.upsellPaid + parts.due) : Math.round(Number(req.body.amount) * 100) / 100;
   if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
   let split = null;
   if (method === 'cash_card') {
@@ -218,24 +235,27 @@ async function handleIncasare(req, res, session) {
 
     const today = todayISO();
     const date = appt.date && appt.date <= today ? appt.date : today;
-    const categories = categoriesOf(appt);
     const booked = Number(appt.amount) || 0;
+    // a cross-sell: she came for one treatment and did another; the payment carries what she did
+    if (cross) Object.assign(cross, { from: String(appt.treatment || '').slice(0, 200), fromAmount: booked, amount: parts.session });
+    const categories = cross ? normalizeCategories(require('./_lib/booking').catOf({ title: cross.to })) : categoriesOf(appt);
     // "Upsell efectuat": ticked by the desk; the upsell is the amount paid (or a given part of it).
     // a package paid in parts, sold now or booked that way: its whole value (above what she pays now) is kept, the rest
     // shows at her next payments (_lib/dues.js)
-    const packageTotal = Math.round((Number(req.body.packageTotal) || 0) * 100) / 100;
-    if (packageTotal && packageTotal < amount) { res.status(400).json({ error: 'invalid_package' }); return; }
+    const packageTotal = parts ? (parts.upsellValue > parts.upsellPaid ? parts.upsellValue : 0) : Math.round((Number(req.body.packageTotal) || 0) * 100) / 100;
+    if (!parts && packageTotal && packageTotal < amount) { res.status(400).json({ error: 'invalid_package' }); return; }
     const D = require('./_lib/dues');
     const store = { readJSON, writeJSON };
     // this payment pays down what she still owes for a package (at most what is left)
     const dueId = String(req.body.dueId || '');
     const owed = dueId ? await D.find(store, dueId) : null;
     if (dueId && (!owed || (appt.clientId && owed.clientId !== appt.clientId))) { res.status(400).json({ error: 'invalid_due' }); return; }
+    if (parts && parts.due > 0 && (!owed || parts.due > D.rest(owed) + 0.01)) { res.status(400).json({ error: 'invalid_due' }); return; }
     // "Upsell efectuat": ticked by the desk; the upsell is the amount paid (or a given part of it); a package sold now and
     // paid in parts earns its one commission on the package's whole value, so a later part of it earns none
-    const upsellDone = !owed && (req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1);
-    const upsell = upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : packageTotal > amount ? packageTotal : amount) : 0;
-    if (upsellDone && !(upsell > 0 && upsell <= Math.max(amount, packageTotal))) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+    const upsellDone = parts ? parts.upsellValue > 0 : !owed && (req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1);
+    const upsell = parts ? parts.upsellValue : upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : packageTotal > amount ? packageTotal : amount) : 0;
+    if (!parts && upsellDone && !(upsell > 0 && upsell <= Math.max(amount, packageTotal))) { res.status(400).json({ error: 'invalid_upsell' }); return; }
     // the same sum for the same visit a moment ago: the first try did go through (its second write failed), not a second visit
     if (sales.some((x) => x.source === 'incasare' && x.appointmentId === appt.id && Math.abs(Number(x.amount) - amount) < 0.01 && Date.now() - Date.parse(x.createdAt || 0) < 10 * 60e3)) { res.status(409).json({ error: 'already_paid' }); return; }
 
@@ -251,12 +271,15 @@ async function handleIncasare(req, res, session) {
       location: appt.location || performer.location || '',
       categories,
       category: categories[0] || '',
-      treatment: String(appt.treatment || '').slice(0, 200),
+      treatment: cross ? cross.to : String(appt.treatment || '').slice(0, 200),
       amount,
       bookedAmount: booked,
       upsell,
-      ...(packageTotal > amount ? { packageTotal } : {}),
-      ...(owed ? { dueId: owed.id, toDue: Math.min(amount, D.rest(owed)) } : {}),
+      ...(parts ? { parts: { session: parts.session, upsell: parts.upsellPaid, due: parts.due } } : {}),
+      ...(upsellWhat ? { upsellWhat } : {}),
+      ...(cross ? { crossSell: cross } : {}),
+      ...(parts ? (packageTotal ? { packageTotal } : {}) : packageTotal > amount ? { packageTotal } : {}),
+      ...(owed && (!parts || parts.due > 0) ? { dueId: owed.id, toDue: parts ? parts.due : Math.min(amount, D.rest(owed)) } : {}),
       method,
       split,
       status: 'recorded',
@@ -274,8 +297,8 @@ async function handleIncasare(req, res, session) {
     }
     await writeJSON('data/sales.json', sales);
     let due = null;
-    if (entry.packageTotal) due = await D.start(store, entry, entry.packageTotal);
-    if (owed) { const p = await D.pay(store, owed.id, appt.clientId, entry, amount); due = p && p.due; }
+    if (entry.packageTotal) due = parts ? await D.start(store, entry, entry.packageTotal, parts.upsellPaid, upsellWhat || 'Upsell · ' + entry.treatment) : await D.start(store, entry, entry.packageTotal);
+    if (owed && entry.toDue > 0) { const p = await D.pay(store, owed.id, appt.clientId, entry, entry.toDue); due = (p && p.due) || due; }
 
     // Paid = done: the appointment is closed in the Calendar (and the "after treatment"
     // automations, like the review request, can start).
@@ -294,7 +317,8 @@ async function handleIncasare(req, res, session) {
           kind: 'money', tone: 'good', go: 'incasari', tag: pos ? pos.tag : 'pay-' + entry.id, quiet: !!pos,
           ref: cardIn > 0 ? N.payRef('desk', cardIn) : '',
           title: 'ÎNCASARE' + N.cityTag(entry.location) + ' ' + (upsell > 0 ? '💵💵' : '💵') + ' - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method], // an upsell: two banknotes
-          text: (upsell > 0 ? 'Upsell' + (upsell < amount ? ' ' + N.leiTxt(upsell) : '') : 'Fără upsell') + (entry.client ? ' · ' + entry.client : ''),
+          text: (upsell > 0 ? 'Upsell' + (parts ? ' ' + N.leiTxt(upsell) + (parts.upsellPaid < upsell ? ', avans ' + N.leiTxt(parts.upsellPaid) : '') : upsell < amount ? ' ' + N.leiTxt(upsell) : '') : 'Fără upsell') +
+            (cross ? ' · cross-sell: ' + cross.to + ' în loc de ' + cross.from : '') + (entry.toDue > 0 && parts ? ' · ' + N.leiTxt(entry.toDue) + ' din restul pachetului' : '') + (entry.client ? ' · ' + entry.client : ''),
         });
       } catch (e) { /* never blocks a payment */ }
     }
@@ -321,7 +345,7 @@ function upsellFor(entry, employeeId) {
     date: entry.date,
     categories: entry.categories,
     category: entry.category,
-    treatment: 'Upsell · ' + entry.treatment,
+    treatment: 'Upsell · ' + (entry.upsellWhat || entry.treatment),
     amount,
     paidAmount: entry.amount,
     profit,

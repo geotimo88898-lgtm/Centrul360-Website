@@ -10,7 +10,7 @@
 //   - delete: the appointment becomes unpaid again and a still-waiting request goes with it.
 
 const { readJSON, writeJSON } = require('./_lib/store');
-const { requireAdmin } = require('./_lib/auth');
+const { requireAdmin, requireRole } = require('./_lib/auth');
 const { normalizeCategories, commissionOf, profitOf } = require('./_lib/cats');
 const portalSale = require('./portal-sale');
 
@@ -23,6 +23,17 @@ function isValidDate(date) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' });
+    return;
+  }
+
+  // Încasări → "Rest de plată din pachete" (the desk and the owner): every package still being paid in their city
+  if ((req.body || {}).action === 'dues') {
+    const who = await requireRole(req, res, ['admin', 'receptie']);
+    if (!who) return;
+    try {
+      const city = await require('./_lib/city').cityOf(who, readJSON);
+      res.status(200).json({ ok: true, dues: await require('./_lib/dues').openAll({ readJSON, writeJSON }, city || '') });
+    } catch (err) { console.error('portal-incasari dues error:', err.message); res.status(500).json({ error: 'incasari_failed' }); }
     return;
   }
 
@@ -66,7 +77,18 @@ module.exports = async (req, res) => {
 
     if (action === 'update') {
       const { date, method, performedBy } = req.body || {};
-      const amount = Math.round(Number(req.body.amount) * 100) / 100;
+      // a payment made of parts (since 5.11): the parts are corrected, the total is their sum
+      const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+      const P = entry.parts && req.body.parts && typeof req.body.parts === 'object' ? req.body.parts : null;
+      let np = null;
+      if (P) {
+        const ups = P.upsell === true || P.upsell === 'true';
+        np = { session: r2(P.session), upsellValue: ups ? r2(P.upsellValue) : 0, upsellPaid: ups ? r2(P.upsellPaid) : 0, due: r2(entry.parts.due) };
+        if (np.session < 0 || np.upsellPaid < 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+        if (ups && !(np.upsellValue > 0)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+        if (np.upsellPaid > np.upsellValue) { res.status(400).json({ error: 'invalid_package' }); return; }
+      }
+      const amount = np ? r2(np.session + np.upsellPaid + np.due) : Math.round(Number(req.body.amount) * 100) / 100;
       if (!isValidDate(date)) { res.status(400).json({ error: 'invalid_date' }); return; }
       if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
       if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
@@ -80,7 +102,7 @@ module.exports = async (req, res) => {
       const categories = normalizeCategories(req.body.categories && req.body.categories.length ? req.body.categories : entry.categories || entry.category);
       if (!categories.length) { res.status(400).json({ error: 'invalid_category' }); return; }
 
-      if (entry.packageTotal && amount > entry.packageTotal) { res.status(400).json({ error: 'invalid_package' }); return; } // more than the package: the rest would vanish
+      if (!np && entry.packageTotal && amount > entry.packageTotal) { res.status(400).json({ error: 'invalid_package' }); return; } // more than the package: the rest would vanish
       entry.date = date;
       entry.method = method;
       entry.split = split;
@@ -90,8 +112,18 @@ module.exports = async (req, res) => {
       if (req.body.treatment) entry.treatment = String(req.body.treatment).slice(0, 200);
       if (req.body.client) entry.client = String(req.body.client).slice(0, 150);
       entry.performedBy = performedBy ? String(performedBy).slice(0, 100) : '';
-      // "Upsell efectuat" + its value can be corrected too; left out = unchanged.
-      if (req.body.upsell !== undefined) {
+      let startDue = false;
+      if (np) {
+        entry.parts = { session: np.session, upsell: np.upsellPaid, due: np.due };
+        entry.upsell = np.upsellValue;
+        if (P.upsellWhat !== undefined) entry.upsellWhat = String(P.upsellWhat || '').trim().slice(0, 120);
+        if (!np.upsellValue) delete entry.upsellWhat;
+        if (entry.crossSell) entry.crossSell.amount = np.session;
+        const owes = np.upsellValue > np.upsellPaid;
+        startDue = owes && !entry.packageTotal; // now paid in parts, it wasn't before: its rest starts now
+        if (owes) entry.packageTotal = np.upsellValue; else delete entry.packageTotal;
+      } else if (req.body.upsell !== undefined) {
+        // "Upsell efectuat" + its value can be corrected too; left out = unchanged.
         const done = req.body.upsell === true || req.body.upsell === 'true';
         const value = done ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : amount) : 0;
         if (done && !(value > 0 && value <= amount)) { res.status(400).json({ error: 'invalid_upsell' }); return; }
@@ -113,7 +145,12 @@ module.exports = async (req, res) => {
       }
 
       await writeJSON('data/sales.json', next);
-      await require('./_lib/dues').resync({ readJSON, writeJSON }, entry.id, amount); // its part follows the new sum (never above the package)
+      const D = require('./_lib/dues');
+      if (np) {
+        // its advance on the package it started (whose value may have changed) and its payment on an older one
+        await D.resync({ readJSON, writeJSON }, entry.id, amount, { started: np.upsellPaid, total: np.upsellValue > np.upsellPaid ? np.upsellValue : np.upsellPaid, paid: np.due, dropStarted: !np.upsellValue });
+        if (startDue) await D.start({ readJSON, writeJSON }, entry, np.upsellValue, np.upsellPaid, entry.upsellWhat || 'Upsell · ' + entry.treatment);
+      } else await D.resync({ readJSON, writeJSON }, entry.id, amount); // its part follows the new sum (never above the package)
       res.status(200).json({ ok: true, entry });
       return;
     }
