@@ -2,15 +2,28 @@
 //
 // 1) Satisfies PWA installability (Chrome/Android requires a registered service worker with
 //    a fetch handler before it will offer "Add to Home Screen" / let the app be installed).
-//    No caching strategy here, the portal is always fetched fresh, same as the browser tab.
+//    The portal's own files are kept on the device and refreshed in the background (below); pages and data are not.
 // 2) Shows the Web Push notifications the portal sends (a new lead, other alerts from the automations,
 //    api/_lib/push.js); a tap opens the portal on the right section.
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
 
-self.addEventListener('fetch', () => {
-  // Intentionally a no-op passthrough, required for installability, no offline caching.
+// The portal's own files (scripts, styles, pictures, fonts) come from this device at once and are refreshed in the
+// background (the owner, 5.11: "flash speed"); a new version of the portal empties this cache (portal-core.js
+// seeBuild), so the next reload has the new files. Pages and /api always go to the network.
+const STATIC = 'c360-static-v1';
+const MINE = /^\/(portal-[\w-]+\.(?:js|css)|vendor\/|brand_asset\/|game\/)/;
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin || !MINE.test(url.pathname) || url.pathname === '/portal-sw.js' || req.headers.get('range')) return;
+  event.respondWith(caches.open(STATIC).then((cache) => cache.match(req).then((hit) => {
+    const net = fetch(req).then((res) => { if (res && res.status === 200 && res.type === 'basic') cache.put(req, res.clone()).catch(() => {}); return res; });
+    if (hit) { event.waitUntil(net.catch(() => {})); return hit; }
+    return net;
+  })));
 });
 
 // The portal lives on admin.centrul360.com / staff.centrul360.com (at /). A phone that turned the notifications on

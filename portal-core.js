@@ -62,17 +62,37 @@
     try { await loadNow(quiet); } finally { loading = false; }
     if (loadAgain) { loadAgain = false; return load(true); }
   }
+  // Instant start (the owner, 5.11: "flash speed"): the data this device had last time shows at once, the fresh data
+  // replaces it a moment later (only its version is asked when nothing changed). Kept 3 days, per address, never while
+  // looking at someone else's account; gone at logout.
+  const SNAP = 'c360_snap_v1';
+  function snapRead() {
+    try { const x = JSON.parse(localStorage.getItem(SNAP) || 'null'); return x && x.data && x.host === location.hostname && Date.now() - x.at < 3 * 864e5 ? x.data : null; } catch (e) { return null; }
+  }
+  function snapWrite(d) {
+    try {
+      if (!d || d.impersonating) { localStorage.removeItem(SNAP); return; }
+      const txt = JSON.stringify({ at: Date.now(), host: location.hostname, data: d });
+      if (txt.length < 3e6) localStorage.setItem(SNAP, txt); else localStorage.removeItem(SNAP);
+    } catch (e) { try { localStorage.removeItem(SNAP); } catch (x) { /* storage off */ } }
+  }
+  let fromSnap = false;
   async function loadNow(quiet) {
-    // Baseline revision first, so a save that lands while this loads still triggers a refresh.
-    if (rev === null) { try { const p = await K.api('/api/portal-pulse'); rev = p.rev; seeBuild(p.build); } catch (e) { /* first pulse sets it */ } }
+    // the revision, asked together with the data (one wait, not two)
+    const pulse = rev === null ? K.api('/api/portal-pulse').then((p) => { if (rev === null) rev = p.rev; seeBuild(p.build); }, () => { /* the next pulse sets it */ }) : null;
     try {
       const fresh = await K.api('/api/portal-data' + (quiet && !first && DATA && DATA.v ? '?v=' + encodeURIComponent(DATA.v) : ''));
+      if (pulse) await pulse;
       // the same data again (a save that touched nothing of this account's): the server sent only its version
-      if (fresh.unchanged) return;
+      if (fresh.unchanged) { fromSnap = false; return; }
+      // the last time's data was someone else's (another account signed in on this device): start over clean
+      if (fromSnap && DATA && DATA.me && fresh.me && DATA.me.id !== fresh.me.id) { snapWrite(fresh); location.reload(); return; }
+      fromSnap = false;
       const key = JSON.stringify(fresh);
       if (quiet && !first && key === lastKey) return;
       lastKey = key;
       DATA = fresh;
+      snapWrite(fresh);
     } catch (e) {
       if (e.code === 'auth') return;
       if (!quiet) {
@@ -83,6 +103,9 @@
       }
       return;
     }
+    apply();
+  }
+  function apply() {
     if (routeHost()) return;
     previewBar();
     window.C360_CTX = { isAdmin: !!DATA.isAdmin, me: DATA.me, categories: K.cats };
@@ -262,8 +285,13 @@
   const openedAt = Date.now();
   function seeBuild(b) {
     if (!b) return;
+    // a version other than the one this device's saved files came from: they go, a reload brings the new ones
+    try {
+      const was = localStorage.getItem('c360_build');
+      if (was !== b) { localStorage.setItem('c360_build', b); if (was && window.caches) caches.delete('c360-static-v1').then(() => { updateReady = true; }, () => {}); }
+    } catch (e) { /* storage off */ }
     if (build === null) build = b;
-    else if (b !== build) updateReady = true;
+    else if (b !== build) { updateReady = true; try { if (window.caches) caches.delete('c360-static-v1'); } catch (e) { /* none */ } }
   }
   function newCode(now) {
     if (!updateReady || busyEditing()) return false;
@@ -548,10 +576,18 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && menu) closeMenu(); });
 
   async function logout() {
+    try { localStorage.removeItem(SNAP); } catch (e) { /* storage off */ }
+    try { if (window.caches) await caches.delete('c360-static-v1'); } catch (e) { /* none */ }
     try { await fetch('/api/portal-logout', { method: 'POST' }); } catch (e) { /* leaving anyway */ }
     location.href = '/login';
   }
   document.getElementById('logoutBtn').addEventListener('click', logout);
 
-  load(false);
+  // the last time's data at once, then the fresh one
+  const snap = snapRead();
+  if (snap) {
+    DATA = snap; fromSnap = true;
+    try { apply(); } catch (e) { DATA = null; fromSnap = false; first = true; }
+    load(!first);
+  } else load(false);
 })();
