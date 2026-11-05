@@ -226,6 +226,16 @@ module.exports = async (req, res) => {
       r.result = done; r.changeWriteMs = Date.now() - t; r.log = st.writeLog.filter((x) => x.pathname === T).slice(-1);
       return r;
     }
+    if (req.query.writetime === 'tags') {
+      const B = require('@vercel/blob');
+      const out2 = {};
+      for (const d of ['data/_speedtest.json', 'data/appointments.json', 'data/clients.json', 'data/sales.json', 'data/employees.json']) {
+        const h = await B.head(d); const g = await B.get(d, { access: 'private', useCache: false });
+        if (g && g.stream) { try { g.stream.cancel(); } catch (e) { /* closed */ } }
+        out2[d] = { size: h.size, head: h.etag, get: g && g.blob && g.blob.etag };
+      }
+      return out2;
+    }
     if (req.query.writetime === 'raw') { await require('@vercel/blob').put(T, JSON.stringify(copy), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' }); r.rawPutMs = Date.now() - t; return r; }
     await st.writeJSON(T, copy, { quiet: true }); r.firstWriteMs = Date.now() - t;
     if (req.query.writetime === '1') return r;
