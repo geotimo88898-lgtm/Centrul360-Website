@@ -332,15 +332,18 @@
   // in the order she learns them (the owner, 5.11): first how a client goes through the salon, then the consultation,
   // then the treatments
   const ZONES = [
-    { id: 'parcurs', title: '1. Parcursul clientei', sub: 'Ce fac de când vine clienta până pleacă.', icon: 'users' },
-    { id: 'consult', title: '2. Consultația', sub: 'Ce îi spun clientei și ce îi recomand.', icon: 'file' },
-    { id: 'tratamente', title: '3. Tratamentele', sub: 'Cum fac fiecare tratament.', icon: 'sparkles' },
+    { id: 'parcurs', n: 1, title: 'Parcursul clientei', sub: 'Ce fac de când vine clienta până pleacă.', icon: 'users', hue: 'a' },
+    { id: 'consult', n: 2, title: 'Consultația', sub: 'Ce îi spun clientei și ce îi recomand.', icon: 'file', hue: 'b' },
+    { id: 'tratamente', n: 3, title: 'Tratamentele', sub: 'Cum fac fiecare tratament.', icon: 'sparkles', hue: 'c' },
   ];
   function zonesHtml() {
     const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
     if (!A.zone) {
-      return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door" data-zone="' + z.id + '" style="--i:' + i + '">' +
-        '<span class="tr-door-ic">' + icon(z.icon) + '</span><small class="tr-door-k">Vreau să învăț:</small><b>' + esc(z.title) + '</b><span>' + esc(z.sub) + '</span><i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
+      return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door is-' + z.hue + '" data-zone="' + z.id + '" data-tilt style="--i:' + i + '">' +
+        '<span class="tr-door-glow"></span><span class="tr-door-n">' + z.n + '</span>' +
+        '<span class="tr-door-ic">' + icon(z.icon) + '</span><small class="tr-door-k">Vreau să învăț</small><b>' + esc(z.title) + '</b><span class="tr-door-sub">' + esc(z.sub) + '</span>' +
+        (z.id === 'parcurs' ? '<span class="tr-door-prog"><i style="--w:' + Math.round(pdone().size / PARCURS.length * 100) + '%"></i></span>' : '') +
+        '<i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
     }
     const z = ZONES.find((x) => x.id === A.zone) || ZONES[0];
     const others = ZONES.filter((x) => x.id !== z.id);
@@ -384,18 +387,68 @@
       do: ['Oprește aparatele.', 'Fă curat și scoate gunoiul.', 'Stinge luminile.', 'Încuie ușa.'],
       why: 'Mâine dimineață totul e gata de lucru.', never: '' },
   ];
-  function parcursHtml() {
-    if (A.pstep == null) A.pstep = 0;
-    return '<p class="tr-draft">' + icon('pen') + 'Schiță: pozele și detaliile vin în curând.</p>' +
-      '<ol class="tr-path">' + PARCURS.map((x, i) => {
-        const open = A.pstep === i;
-        return '<li class="tr-pstep' + (open ? ' is-open' : '') + '"><button type="button" class="tr-pstep-h" data-pstep="' + i + '"><span class="tr-pstep-n">' + (i + 1) + '</span>' +
-          '<span class="tr-pstep-t"><small>' + esc(x.when) + '</small><b>' + esc(x.t) + '</b></span>' + icon(open ? 'up' : 'down') + '</button>' +
-          (open ? '<div class="tr-pstep-b"><h5>Ce faci</h5><ol>' + x.do.map((d) => '<li>' + esc(d) + '</li>').join('') + '</ol>' +
-            '<p class="tr-why"><b>De ce?</b> ' + esc(x.why) + '</p>' + (x.never ? '<p class="ac-rule">' + esc(x.never) + '</p>' : '') +
-            '<div class="tr-photo">' + icon('image') + 'Aici vine poza sau filmulețul</div></div>' : '') + '</li>';
-      }).join('') + '</ol>';
+  // what she marked "Am înțeles" (this device), the step open
+  const PKEY = 'c360_parcurs_done';
+  function pdone() { try { return new Set(JSON.parse(localStorage.getItem(PKEY) || '[]')); } catch (e) { return new Set(); } }
+  function psave(set) { try { localStorage.setItem(PKEY, JSON.stringify([...set])); } catch (e) { /* private mode */ } }
+  // the stops on the map, in % of its box: a winding road, wide on a computer, tall on a phone
+  const MAPW = [[7, 30], [24, 16], [41, 30], [58, 16], [76, 26], [91, 52], [76, 78], [57, 86], [38, 74], [18, 84]];
+  const MAPT = [[22, 4], [72, 12], [30, 21], [74, 31], [26, 41], [72, 51], [28, 61], [74, 71], [30, 81], [68, 93]];
+  const STAGES = [[0, 2, 'Înainte să vină'], [2, 8, 'Cu clienta'], [8, 10, 'După']];
+  // a smooth road through the stops (Catmull-Rom as curves)
+  function road(pts) {
+    let d = 'M' + pts[0][0] + ' ' + pts[0][1];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6) + ' ' + (p1[1] + (p2[1] - p0[1]) / 6) + ' ' + (p2[0] - (p3[0] - p1[0]) / 6) + ' ' + (p2[1] - (p3[1] - p1[1]) / 6) + ' ' + p2[0] + ' ' + p2[1];
+    }
+    return d;
   }
+  function mapHtml(pts, cls, done, cur) {
+    const d = road(pts);
+    return '<div class="tr-map ' + cls + (A.mapEnter ? ' is-enter' : '') + '"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+      '<path class="tr-road-bg" d="' + d + '"/><path class="tr-road" d="' + d + '" pathLength="100"/></svg>' +
+      PARCURS.map((x, i) => {
+        const st = done.has(i) ? ' is-done' : '';
+        return '<button type="button" class="tr-stop' + st + (i === cur ? ' is-cur' : '') + '" data-pstep="' + i + '" style="left:' + (4 + pts[i][0] * 0.92).toFixed(2) + '%;top:' + (6 + pts[i][1] * 0.88).toFixed(2) + '%;--i:' + i + '" aria-label="' + (i + 1) + '. ' + esc(x.t) + '">' +
+          '<span class="tr-stop-dot">' + (done.has(i) ? icon('check') : icon(x.ic)) + '</span><span class="tr-stop-l"><small>' + (i + 1) + '</small>' + esc(x.t) + '</span></button>';
+      }).join('') + '</div>';
+  }
+  function parcursHtml() {
+    const done = pdone();
+    if (A.pstep == null || A.pstep < 0) { A.pstep = PARCURS.findIndex((x, i) => !done.has(i)); if (A.pstep < 0) A.pstep = 0; }
+    const i = A.pstep, x = PARCURS[i];
+    const stage = (STAGES.find(([a, b]) => i >= a && i < b) || STAGES[0])[2];
+    return '<div class="tr-jhead"><div><b>' + done.size + ' din ' + PARCURS.length + '</b><span>pași învățați</span></div><div class="tr-jbar"><i style="--w:' + Math.round(done.size / PARCURS.length * 100) + '%"></i></div>' +
+        '<span class="tr-draft-s">' + icon('pen') + 'Schiță</span></div>' +
+      mapHtml(MAPW, 'is-wide', done, i) + mapHtml(MAPT, 'is-tall', done, i) + (A.mapEnter = false, '') +
+      '<div class="tr-sheet" data-sheet>' +
+        '<div class="tr-sheet-top"><span class="tr-sheet-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-sheet-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
+        '<h3 class="tr-sheet-t"><span>' + icon(x.ic) + '</span>' + esc(x.t) + '</h3>' +
+        '<ul class="tr-dos">' + x.do.map((d2, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i>' + esc(d2) + '</li>').join('') + '</ul>' +
+        '<div class="tr-whybox"><b>De ce?</b><span>' + esc(x.why) + '</span></div>' +
+        (x.never ? '<div class="tr-never">' + icon('alert') + '<span>' + esc(x.never) + '</span></div>' : '') +
+        '<div class="tr-photo">' + icon('image') + 'Aici vine poza sau filmulețul</div>' +
+        '<div class="tr-sheet-nav"><button type="button" class="k-btn is-ghost" data-pgo="' + (i - 1) + '"' + (i ? '' : ' disabled') + '>' + icon('left') + 'Înapoi</button><span class="k-grow"></span>' +
+          '<button type="button" class="k-btn is-primary is-lg tr-got" data-pdone="' + i + '">' + (done.has(i) ? icon('check') + 'Învățat' : 'Am înțeles') + (i < PARCURS.length - 1 ? icon('right') : '') + '</button></div>' +
+      '</div>';
+  }
+
+  function burst(el) {
+    const r = el.getBoundingClientRect();
+    const box = document.createElement('div'); box.className = 'tr-burst'; box.style.left = (r.left + r.width / 2) + 'px'; box.style.top = (r.top + r.height / 2) + 'px';
+    box.innerHTML = Array.from({ length: 14 }, (_, k) => '<i style="--a:' + (k * 360 / 14) + 'deg;--d:' + (40 + (k % 3) * 18) + 'px"></i>').join('');
+    document.body.appendChild(box); setTimeout(() => box.remove(), 800);
+  }
+  // the cards lean toward the pointer (a computer)
+  document.addEventListener('pointermove', (e) => {
+    const c = e.target.closest && e.target.closest('[data-tilt]');
+    document.querySelectorAll('[data-tilt].is-tilt').forEach((x) => { if (x !== c) { x.classList.remove('is-tilt'); x.style.removeProperty('--rx'); x.style.removeProperty('--ry'); } });
+    if (!c || e.pointerType !== 'mouse') return;
+    const r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
+    c.classList.add('is-tilt'); c.style.setProperty('--rx', (-py * 7).toFixed(2) + 'deg'); c.style.setProperty('--ry', (px * 9).toFixed(2) + 'deg');
+    c.style.setProperty('--mx', ((px + 0.5) * 100).toFixed(1) + '%'); c.style.setProperty('--my', ((py + 0.5) * 100).toFixed(1) + '%');
+  });
 
   // ------------------------------------------------------------------ Consultația
   // The consultation is the sheet, page by page (portal-academy-fisa.js). The manual's chapters stay under it
@@ -1328,9 +1381,17 @@
     const sb = t.closest('[data-sub]');
     if (sb) { A.pick[areaNow() + ':' + viewRole()] = sb.dataset.sub; panel.querySelector('[data-view]').innerHTML = ''; return render(); }
     const zn = t.closest('[data-zone]');
-    if (zn) { A.zone = zn.dataset.zone; panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' }); return; }
-    const ps = t.closest('[data-pstep]');
-    if (ps) { const i = +ps.dataset.pstep; A.pstep = A.pstep === i ? -1 : i; return render(); }
+    if (zn) { A.zone = zn.dataset.zone; A.mapEnter = true; panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' }); return; }
+    const ps = t.closest('[data-pstep],[data-pgo]');
+    if (ps && !ps.disabled) { A.pstep = +(ps.dataset.pstep != null ? ps.dataset.pstep : ps.dataset.pgo); render(); const sh = panel.querySelector('[data-sheet]'); if (sh && window.innerWidth < 900) sh.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const pd = t.closest('[data-pdone]');
+    if (pd) {
+      const i = +pd.dataset.pdone, set = pdone();
+      set.add(i); psave(set);
+      burst(pd);
+      setTimeout(() => { A.pstep = Math.min(PARCURS.length - 1, i + 1); render(); if (set.size === PARCURS.length && i === PARCURS.length - 1) K.ui().toast('Bravo! Ai învățat tot parcursul clientei.', 'success'); }, 380);
+      return;
+    }
     const sm = t.closest('[data-summary]'); if (sm) return openSummary(sm.dataset.summary);
     const ce2 = t.closest('[data-cb-edit],[data-cb-new]'); if (ce2) return editCombo(ce2.dataset.cbEdit ? (D().combos || []).find((x) => x.id === ce2.dataset.cbEdit) : null);
     if (t.closest('[data-calc-copy]')) return K.copy(calcText());
@@ -1537,41 +1598,102 @@
 }
 `;
   const css2 = `
-.tr-door-k{ font-size:.82rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:-.3rem; }
-.tr-doors{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; min-height:calc(100dvh - 260px); }
-.tr-door{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; gap:.55rem; padding:1.6rem; min-height:260px; text-align:left;
-  border-radius:24px; border:1px solid var(--line); background:linear-gradient(160deg, var(--accent-soft), var(--paper) 60%); color:var(--fg); font:inherit; cursor:pointer; overflow:hidden;
-  transition:transform .35s cubic-bezier(.16,1,.3,1), border-color .25s, box-shadow .3s; animation:trDoor .5s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 70ms); }
-.tr-door:hover{ transform:translateY(-3px); border-color:var(--accent); box-shadow:0 18px 40px -22px var(--accent); }
-.tr-door-ic{ position:absolute; top:1.4rem; left:1.4rem; width:56px; height:56px; border-radius:18px; display:grid; place-items:center; background:var(--accent); color:var(--on-accent, #fff); }
-.tr-door-ic .k-ic{ width:28px; height:28px; }
-.tr-door b{ font-size:1.55rem; font-weight:800; letter-spacing:-.03em; }
-.tr-door > span:not(.tr-door-ic){ font-size:.92rem; color:var(--muted); line-height:1.45; max-width:28ch; }
-.tr-door-go{ position:absolute; top:1.6rem; right:1.4rem; color:var(--muted); font-style:normal; }
-@keyframes trDoor{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+.tr-doors{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.1rem; min-height:calc(100dvh - 240px); perspective:1200px; }
+.tr-door{ --c1:#5b8cff; --c2:#22d3ee; position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; gap:.4rem; padding:1.8rem; min-height:300px; text-align:left;
+  border-radius:30px; border:1px solid rgba(255,255,255,.09); color:var(--fg); font:inherit; cursor:pointer; overflow:hidden; isolation:isolate;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015)), var(--paper);
+  box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 30px 60px -40px rgba(0,0,0,.8);
+  transform:rotateX(var(--rx,0)) rotateY(var(--ry,0)); transform-style:preserve-3d;
+  transition:transform .5s cubic-bezier(.16,1,.3,1), box-shadow .4s, border-color .3s; animation:trRise .7s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 90ms); }
+.tr-door.is-b{ --c1:#a855f7; --c2:#ec4899; } .tr-door.is-c{ --c1:#f97316; --c2:#f43f5e; }
+.tr-door.is-tilt{ transition:transform .12s linear, box-shadow .4s, border-color .3s; }
+.tr-door:hover{ border-color:rgba(255,255,255,.2); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 40px 80px -40px color-mix(in srgb, var(--c1) 70%, transparent); }
+.tr-door:active{ transform:scale(.98); }
+.tr-door-glow{ position:absolute; inset:-30%; z-index:-1; background:radial-gradient(40% 40% at var(--mx,70%) var(--my,20%), color-mix(in srgb, var(--c1) 55%, transparent), transparent 70%),
+  radial-gradient(45% 45% at 15% 95%, color-mix(in srgb, var(--c2) 35%, transparent), transparent 70%); opacity:.55; transition:opacity .4s; animation:trFloat 9s ease-in-out infinite alternate; }
+.tr-door:hover .tr-door-glow{ opacity:.9; }
+.tr-door-n{ position:absolute; top:1.3rem; right:1.5rem; font-size:4.5rem; font-weight:800; letter-spacing:-.06em; line-height:1; color:rgba(255,255,255,.07); }
+.tr-door-ic{ position:absolute; top:1.5rem; left:1.5rem; width:62px; height:62px; border-radius:20px; display:grid; place-items:center; color:#fff;
+  background:linear-gradient(145deg, var(--c1), var(--c2)); box-shadow:0 12px 30px -10px var(--c1), inset 0 1px 0 rgba(255,255,255,.4); transform:translateZ(30px); animation:trBob 4s ease-in-out infinite; animation-delay:calc(var(--i) * .6s); }
+.tr-door-ic .k-ic{ width:30px; height:30px; }
+.tr-door-k{ font-size:.78rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in srgb, var(--c2) 70%, #fff); }
+.tr-door b{ font-size:1.75rem; font-weight:800; letter-spacing:-.035em; line-height:1.1; transform:translateZ(20px); }
+.tr-door-sub{ font-size:.98rem; color:var(--muted); line-height:1.45; max-width:30ch; }
+.tr-door-prog{ width:100%; max-width:220px; height:6px; border-radius:6px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:.5rem; }
+.tr-door-prog i{ display:block; height:100%; width:var(--w); border-radius:inherit; background:linear-gradient(90deg, var(--c1), var(--c2)); }
+.tr-door-go{ position:absolute; bottom:1.6rem; right:1.5rem; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08); color:var(--fg); font-style:normal; transition:transform .3s cubic-bezier(.16,1,.3,1), background .3s; }
+.tr-door:hover .tr-door-go{ transform:translateX(4px); background:linear-gradient(145deg, var(--c1), var(--c2)); color:#fff; }
+@keyframes trRise{ from{ opacity:0; transform:translateY(24px) scale(.97); } to{ opacity:1; transform:none; } }
+@keyframes trFloat{ from{ transform:translate(0,0); } to{ transform:translate(4%, -3%); } }
+@keyframes trBob{ 0%,100%{ transform:translateZ(30px) translateY(0); } 50%{ transform:translateZ(30px) translateY(-5px); } }
 .tr-zonebar{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin-bottom:1rem; }
 .tr-zonebar h3{ display:inline-flex; align-items:center; gap:.45rem; margin:0 .4rem; font-size:1.1rem; }
 .tr-zonebar h3 .k-ic{ width:18px; height:18px; color:var(--accent); }
-.tr-draft{ display:flex; align-items:center; gap:.45rem; padding:.6rem .85rem; border-radius:12px; background:var(--warn-soft); color:var(--warn); font-size:.84rem; margin:0 0 1rem; }
-.tr-draft .k-ic{ width:15px; height:15px; }
-.tr-path{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.6rem; position:relative; }
-.tr-pstep{ border:1px solid var(--line); border-radius:18px; background:var(--paper); overflow:hidden; }
-.tr-pstep.is-open{ border-color:var(--accent); }
-.tr-pstep-h{ width:100%; display:flex; align-items:center; gap:.9rem; padding:.95rem 1.1rem; border:0; background:none; color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
-.tr-pstep-n{ width:38px; height:38px; flex:none; border-radius:50%; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); font-weight:800; }
-.tr-pstep.is-open .tr-pstep-n{ background:var(--accent); color:var(--on-accent, #fff); }
-.tr-pstep-t{ flex:1; min-width:0; } .tr-pstep-t small{ display:block; font-size:.76rem; color:var(--muted); } .tr-pstep-t b{ display:block; font-size:1.02rem; }
-.tr-pstep-b{ padding:0 1.1rem 1.1rem 4.1rem; }
-.tr-pstep-b h5{ margin:.2rem 0 .4rem; font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
-.tr-pstep-b ol{ margin:0 0 .7rem; padding-left:1.1rem; display:flex; flex-direction:column; gap:.35rem; font-size:1rem; line-height:1.5; }
-.tr-why{ display:block !important; margin:.4rem 0; font-size:.92rem; color:var(--muted); }
-.tr-photo{ display:flex; align-items:center; justify-content:center; gap:.5rem; height:120px; margin-top:.7rem; border-radius:14px; border:1.5px dashed var(--line); color:var(--muted); font-size:.85rem; }
+/* the journey map */
+.tr-jhead{ display:flex; align-items:center; gap:1rem; margin-bottom:.6rem; }
+.tr-jhead b{ display:block; font-size:1.3rem; font-weight:800; letter-spacing:-.02em; } .tr-jhead span{ font-size:.8rem; color:var(--muted); }
+.tr-jbar{ flex:1; height:8px; border-radius:8px; background:var(--glass); overflow:hidden; }
+.tr-jbar i{ display:block; height:100%; width:var(--w); border-radius:inherit; background:linear-gradient(90deg,#22d3ee,#5b8cff,#a855f7); transition:width .8s cubic-bezier(.16,1,.3,1); }
+.tr-draft-s{ display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .6rem; border-radius:999px; background:var(--warn-soft); color:var(--warn) !important; font-size:.72rem !important; font-weight:700; }
+.tr-draft-s .k-ic{ width:12px; height:12px; }
+.tr-map{ position:relative; width:100%; border-radius:28px; margin-bottom:1rem; overflow:hidden;
+  background:radial-gradient(60% 80% at 20% 0%, rgba(91,140,255,.16), transparent 60%), radial-gradient(50% 70% at 100% 100%, rgba(168,85,247,.16), transparent 60%), var(--paper);
+  border:1px solid rgba(255,255,255,.08); }
+.tr-map.is-wide{ height:400px; } .tr-map.is-tall{ display:none; height:1050px; }
+.tr-map svg{ position:absolute; inset:6% 4%; width:92%; height:88%; overflow:visible; }
+.tr-road-bg{ fill:none; stroke:rgba(255,255,255,.07); stroke-width:16px; vector-effect:non-scaling-stroke; stroke-linecap:round; }
+.tr-road{ fill:none; stroke:rgba(255,255,255,.35); stroke-width:3px; vector-effect:non-scaling-stroke; stroke-linecap:round; stroke-dasharray:2 3; animation:trDash 20s linear infinite; }
+.tr-map.is-enter .tr-road{ animation:trRoad 1.6s ease-out both, trDash 20s linear infinite; }
+@keyframes trRoad{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes trDash{ to{ stroke-dashoffset:-100; } }
+.tr-stop{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.35rem; border:0; background:none; color:var(--fg); font:inherit; cursor:pointer; padding:0; width:110px;
+}
+.tr-map.is-enter .tr-stop{ animation:trPop .6s cubic-bezier(.34,1.56,.64,1) both; animation-delay:calc(.3s + var(--i) * 70ms); }
+.tr-stop-dot{ width:54px; height:54px; border-radius:18px; display:grid; place-items:center; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.14); color:var(--fg);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:0 10px 24px -12px rgba(0,0,0,.8); transition:transform .3s cubic-bezier(.34,1.56,.64,1), background .3s; }
+.tr-stop-dot .k-ic{ width:24px; height:24px; }
+.tr-stop:hover .tr-stop-dot{ transform:translateY(-3px) scale(1.06); }
+.tr-stop.is-done .tr-stop-dot{ background:linear-gradient(145deg,#22c55e,#10b981); border-color:transparent; color:#fff; }
+.tr-stop.is-cur .tr-stop-dot{ background:linear-gradient(145deg,#5b8cff,#a855f7); border-color:transparent; color:#fff; transform:scale(1.12); }
+.tr-stop.is-cur .tr-stop-dot::after{ content:''; position:absolute; inset:-8px; border-radius:24px; border:2px solid rgba(124,140,255,.6); animation:trPulse 1.8s ease-out infinite; }
+.tr-stop-dot{ position:relative; }
+.tr-stop-l{ font-size:.78rem; font-weight:600; line-height:1.25; text-align:center; text-shadow:0 1px 6px rgba(0,0,0,.6); }
+.tr-stop-l small{ display:block; font-size:.66rem; color:var(--muted); font-weight:700; }
+@keyframes trPop{ from{ opacity:0; transform:translate(-50%,-50%) scale(.4); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
+@keyframes trPulse{ from{ opacity:1; transform:scale(.92); } to{ opacity:0; transform:scale(1.35); } }
+/* the step's card */
+.tr-sheet{ position:relative; min-width:0; max-width:100%; box-sizing:border-box; padding:1.6rem; border-radius:28px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01)), var(--paper);
+  box-shadow:0 30px 60px -40px rgba(0,0,0,.9); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }
+@keyframes trSheet{ from{ opacity:0; transform:translateY(16px); } to{ opacity:1; transform:none; } }
+.tr-sheet-top{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:.3rem .6rem; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:.5rem; }
+.tr-sheet-stage{ color:color-mix(in srgb, #5b8cff 75%, #fff); text-transform:uppercase; letter-spacing:.08em; }
+.tr-sheet-t{ display:flex; align-items:center; gap:.75rem; margin:0 0 1.1rem; font-size:1.9rem; font-weight:800; letter-spacing:-.035em; }
+.tr-sheet-t span{ width:48px; height:48px; border-radius:16px; display:grid; place-items:center; background:linear-gradient(145deg,#5b8cff,#a855f7); color:#fff; flex:none; }
+.tr-sheet-t .k-ic{ width:24px; height:24px; }
+.tr-dos{ list-style:none; margin:0 0 1rem; padding:0; display:flex; flex-direction:column; gap:.55rem; }
+.tr-dos li{ display:flex; align-items:center; gap:.85rem; padding:.85rem 1rem; border-radius:18px; background:var(--glass); font-size:1.12rem; font-weight:500; line-height:1.35;
+  animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.1s + var(--k) * 80ms); }
+.tr-dos li i{ width:30px; height:30px; flex:none; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.1); font-style:normal; font-weight:800; font-size:.85rem; }
+.tr-whybox{ display:flex; gap:.6rem; align-items:baseline; padding:.9rem 1.1rem; border-radius:18px; background:rgba(91,140,255,.12); color:var(--fg); font-size:1.02rem; margin-bottom:.6rem; }
+.tr-whybox b{ color:#8fb0ff; }
+.tr-never{ display:flex; gap:.6rem; align-items:center; padding:.9rem 1.1rem; border-radius:18px; background:var(--bad-soft); color:var(--bad); font-weight:600; margin-bottom:.6rem; }
+.tr-never .k-ic{ width:20px; height:20px; flex:none; }
+.tr-photo{ display:flex; align-items:center; justify-content:center; gap:.5rem; height:140px; margin-top:.4rem; border-radius:18px; border:1.5px dashed rgba(255,255,255,.14); color:var(--muted); font-size:.85rem; }
+.tr-sheet-nav{ display:flex; align-items:center; gap:.6rem; margin-top:1.2rem; }
+.tr-got{ background:linear-gradient(145deg,#5b8cff,#a855f7) !important; border:0 !important; color:#fff !important; box-shadow:0 14px 30px -14px #7c6cff; }
+.tr-burst{ position:fixed; z-index:500; width:0; height:0; pointer-events:none; }
+.tr-burst i{ position:absolute; width:8px; height:8px; border-radius:50%; background:hsl(calc(var(--a) / 1), 90%, 65%); animation:trBurst .75s cubic-bezier(.16,1,.3,1) forwards; }
+@keyframes trBurst{ from{ transform:rotate(var(--a)) translateX(0) scale(1); opacity:1; } to{ transform:rotate(var(--a)) translateX(var(--d)) scale(.2); opacity:0; } }
+@media (max-width:900px){ .tr-map.is-wide{ display:none; } .tr-map.is-tall{ display:block; } }
+@media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop, .tr-road, .tr-sheet, .tr-dos li, .tr-stop.is-cur .tr-stop-dot::after{ animation:none !important; } }
 @media (max-width:760px){
   .tr-doors{ grid-template-columns:1fr; min-height:0; }
-  .tr-door{ min-height:150px; padding:1.2rem 1.2rem 1.2rem 5.6rem; justify-content:center; }
-  .tr-door-ic{ top:50%; transform:translateY(-50%); left:1.1rem; width:52px; height:52px; }
-  .tr-door b{ font-size:1.3rem; }
-  .tr-pstep-b{ padding-left:1.1rem; }
+  .tr-door{ min-height:170px; padding:1.3rem 1.3rem 1.3rem 6rem; justify-content:center; border-radius:26px; }
+  .tr-door-ic{ top:50%; margin-top:-28px; left:1.2rem; width:56px; height:56px; }
+  .tr-door b{ font-size:1.4rem; }
+  .tr-door-n{ font-size:3.2rem; }
+  .tr-door-go{ display:none; }
+  .tr-sheet{ padding:1.2rem; } .tr-sheet-t{ font-size:1.5rem; } .tr-dos li{ font-size:1.02rem; }
 }
 `;
   const st = document.createElement('style');
