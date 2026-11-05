@@ -222,6 +222,15 @@ module.exports = async (req, res) => {
     if (req.query.writetime === '1') return r;
     t = Date.now(); const a = await st.readJSON(T, []); r.readMs = Date.now() - t;
     a.push({ id: 'speed-a', date: '2000-01-01' });
+    if (req.query.writetime === '2') {
+      // straight onto the version read, with the store's ETag, no retries: does a big document take the check?
+      const { put } = require('@vercel/blob');
+      const tag = (await require('@vercel/blob').head(T)).etag;
+      t = Date.now();
+      try { await put(T, JSON.stringify(a, null, 2), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ifMatch: tag }); r.bigIfMatch = 'ok ' + (Date.now() - t) + 'ms'; }
+      catch (e) { r.bigIfMatch = 'FAIL ' + (Date.now() - t) + 'ms ' + String(e.message || '').slice(0, 140); }
+      return r;
+    }
     t = Date.now(); await st.writeJSON(T, a, { quiet: true }); r.changeWriteMs = Date.now() - t;
     // two readers, the second saves after the first: the merge
     const x = await st.readJSON(T, []); const y = JSON.parse(JSON.stringify(x));
