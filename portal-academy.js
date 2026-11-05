@@ -1030,7 +1030,7 @@
   function calcState() {
     if (C) return C;
     try { C = JSON.parse(localStorage.getItem(CALC_KEY) || 'null'); } catch (e) { C = null; }
-    if (!C || !Array.isArray(C.lines)) C = { city: (K.data && K.data.me && K.data.me.location === 'Arad') ? 'ar' : 'tm', lines: [{ price: '', sessions: 1, zone: '', interval: '' }], low: false, duration: '', result: '' };
+    if (!C || !Array.isArray(C.lines)) C = { lines: [], low: false, duration: '', result: '', grp: 'corp' };
     return C;
   }
   const keepCalc = () => { try { localStorage.setItem(CALC_KEY, JSON.stringify(C)); } catch (e) { /* private mode */ } };
@@ -1040,41 +1040,72 @@
     if (PANELS.calc) PANELS.calc.querySelector('[data-view]').innerHTML = '';
     K.go('calculator');
   }
+  // (the owner, 5.11) "să înțeleagă și un copil de 5 ani să-l folosească": three steps one under the other, big
+  // and plain. 1: tap what you recommend, set the sessions with − and +. 2: the total. 3: the 4 offers in the order
+  // she shows them. No city to choose: everyone works with her own clinic's prices (her location; an admin with
+  // no clinic sees both, each marked)
+  const calcCity = () => { const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : ''; };
+  const priceOk = (p) => { const c = calcCity(); return !c || p.city === 'both' || p.city === c; };
   function calcHtml() {
-    const s = calcState();
-    return '<div class="tr-calc" data-calc>' +
-      '<div class="tr-bar">' + K.seg('ccity', [['tm', 'Timișoara', 'pin'], ['ar', 'Arad', 'pin']], s.city) + '<span class="k-grow"></span>' +
-      (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-prices>' + icon('tag') + 'Prețuri și reguli</button>' : '') +
-      '<button type="button" class="k-btn is-ghost is-sm" data-calc-clear>' + icon('refresh') + 'Golește</button></div>' +
-      '<div class="tr-lines" data-lines>' + linesHtml() + '</div>' +
-      '<button type="button" class="k-btn is-outline is-sm" data-calc-add>' + icon('plus') + 'Adaugă procedură</button>' +
+    const s = calcState(), city = calcCity();
+    const groups = Object.keys(GROUP).filter((g) => (D().prices || []).some((p) => p.group === g && priceOk(p)));
+    if (!groups.includes(s.grp)) s.grp = groups[0] || 'corp';
+    const tiles = (D().prices || []).filter((p) => p.group === s.grp && priceOk(p));
+    const picked = new Set(s.lines.map((l) => l.price));
+    return '<div class="tr-calc tr-c2" data-calc>' +
+      '<div class="tr-c2-top"><span class="tr-c2-city">' + icon('pin') + (city === 'ar' ? 'Prețuri Arad' : city === 'tm' ? 'Prețuri Timișoara' : 'Prețuri Timișoara și Arad') + '</span><span class="k-grow"></span>' +
+        (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-prices>' + icon('tag') + 'Prețuri și reguli</button>' : '') +
+        '<button type="button" class="k-btn is-ghost is-sm" data-calc-clear>' + icon('refresh') + 'De la capăt</button></div>' +
+      // 1
+      '<section class="tr-c2-step"><h3><i>1</i>Ce îi recomanzi?<small>Apasă pe tratament. Apoi alegi câte ședințe.</small></h3>' +
+        '<div class="tr-c2-grp">' + groups.map((g) => '<button type="button" class="tr-c2-chip' + (g === s.grp ? ' is-on' : '') + '" data-cgrp="' + g + '">' + esc(GROUP[g]) + '</button>').join('') + '</div>' +
+        '<div class="tr-c2-tiles">' + tiles.map((p) => '<button type="button" class="tr-c2-tile' + (picked.has(p.id) ? ' is-on' : '') + '" data-cadd="' + esc(p.id) + '">' +
+          '<span class="tr-c2-tn">' + esc(p.name) + (!city && p.city !== 'both' ? ' <em>' + (p.city === 'tm' ? 'TM' : 'AR') + '</em>' : '') + '</span><span class="tr-c2-tp">' + esc(K.lei(p.price)) + ' <small>/ ședință</small></span>' +
+          '<span class="tr-c2-tick">' + icon(picked.has(p.id) ? 'check' : 'plus') + '</span></button>').join('') + '</div>' +
+        '<div class="tr-c2-lines" data-lines>' + linesHtml() + '</div></section>' +
+      // 2 and 3
       '<div data-calc-out></div>' +
-      '<div class="k-form tr-calc-extra"><div class="k-field full">' + K.toggle('clow', s.low, 'Clientă cu foarte puțină grăsime (programul poate fi sub minim)') + '</div>' +
-      K.field('Durata estimată', '<input data-cx="duration" maxlength="60" value="' + esc(s.duration) + '" placeholder="ex. 3 luni">') +
-      K.field('Rezultatul estimat', '<input data-cx="result" maxlength="300" value="' + esc(s.result) + '" placeholder="ex. abdomen mai plat și mai ferm">') + '</div>' +
+      '<details class="tr-c2-more"' + (s.duration || s.result || s.low ? ' open' : '') + '><summary>Durata, rezultatul și excepția</summary><div class="k-form tr-calc-extra">' +
+        '<div class="k-field full">' + K.toggle('clow', s.low, 'Clientă cu foarte puțină grăsime (programul pentru corp poate fi sub minim)') + '</div>' +
+        K.field('Cât durează programul', '<input data-cx="duration" maxlength="60" value="' + esc(s.duration) + '" placeholder="ex. 3 luni">') +
+        K.field('Ce rezultat estimezi', '<input data-cx="result" maxlength="300" value="' + esc(s.result) + '" placeholder="ex. abdomen mai plat și mai ferm">') + '</div></details>' +
       '<div class="tr-calc-actions"><button type="button" class="k-btn is-ghost" data-calc-copy>' + icon('file') + 'Copiază</button><button type="button" class="k-btn is-primary" data-calc-client>' + icon('user') + 'Salvează la clientă</button></div></div>';
   }
   function linesHtml() {
     const s = calcState();
-    return s.lines.map((l, i) => '<div class="tr-cline" data-ci="' + i + '"><div class="tr-cline-main">' + priceSelect('data-cp', l.price, s.city) +
-      '<button type="button" class="k-icon-btn" data-cl-rm="' + i + '" aria-label="Scoate">' + icon('trash') + '</button></div>' +
-      '<div class="tr-cline-sub"><label><span>Ședințe</span><input data-cs inputmode="decimal" value="' + esc(l.sessions === '' ? '' : l.sessions) + '"></label>' +
-      '<label><span>Zona</span><input data-cz maxlength="60" value="' + esc(l.zone || '') + '" placeholder="abdomen"></label>' +
-      '<label><span>Interval</span><input data-cv maxlength="60" value="' + esc(l.interval || '') + '" placeholder="1 pe săptămână"></label>' +
-      '<div class="tr-cline-sum" data-csum="' + i + '"></div></div></div>').join('');
+    const rows = s.lines.map((l, i) => [l, i, priceOf(l.price)]).filter((x) => x[2]);
+    if (!rows.length) return '<div class="tr-c2-empty">' + icon('sparkles') + '<span>Programul ei e gol. Apasă pe un tratament de mai sus.</span></div>';
+    return '<h4 class="tr-c2-h">Programul ei</h4>' + rows.map(([l, i, p]) => '<div class="tr-c2-line" data-ci="' + i + '">' +
+      '<div class="tr-c2-ln"><b>' + esc(p.name) + '</b><small>' + esc(K.lei(p.price)) + ' o ședință</small>' +
+        '<input data-cz maxlength="60" value="' + esc(l.zone || '') + '" placeholder="Zona (ex. abdomen)" aria-label="Zona"></div>' +
+      '<div class="tr-c2-stp"><button type="button" data-cstep="' + i + '|-1" aria-label="Mai puține">−</button><input data-cs inputmode="decimal" value="' + esc(l.sessions === '' ? '' : l.sessions) + '" aria-label="Ședințe"><button type="button" data-cstep="' + i + '|1" aria-label="Mai multe">+</button><small>ședințe</small></div>' +
+      '<div class="tr-c2-sum" data-csum="' + i + '"></div>' +
+      '<button type="button" class="tr-c2-rm" data-cl-rm="' + i + '" aria-label="Scoate">' + icon('x') + '</button></div>').join('');
   }
   function paintCalcResults() {
     const out = panel.querySelector('[data-calc-out]');
     if (!out) return;
     const s = calcState();
     const o = offer(s.lines, s.low);
-    s.lines.forEach((l, i) => { const p = priceOf(l.price); const cell = panel.querySelector('[data-csum="' + i + '"]'); if (cell) cell.innerHTML = p ? dec(Number(l.sessions) || 0) + ' × ' + lei(p.price) + ' = <b>' + lei((Number(l.sessions) || 0) * p.price) + '</b>' : ''; });
-    const wrongCity = s.lines.map((l) => priceOf(l.price)).filter((p) => p && p.city !== 'both' && p.city !== s.city);
-    out.innerHTML = o.rows.length
-      ? '<div class="tr-total"><span>Total la preț de listă</span><b>' + lei(o.total) + '</b><small>Jumătate de pachet: ' + lei(o.half) + '</small></div>' +
-        (wrongCity.length ? '<p class="tr-warn">' + icon('alert') + esc(wrongCity.map((p) => p.name).join(', ')) + ': doar în ' + (wrongCity[0].city === 'tm' ? 'Timișoara' : 'Arad') + '.</p>' : '') +
-        minNote(o, s.low) + offersHtml(o)
-      : '<p class="k-muted tr-calc-empty">Alege procedurile și numărul de ședințe. Totalul și cele 4 oferte apar aici.</p>';
+    s.lines.forEach((l, i) => { const p = priceOf(l.price); const cell = panel.querySelector('[data-csum="' + i + '"]'); if (cell) cell.innerHTML = p ? '<small>' + dec(Number(l.sessions) || 0) + ' × ' + lei(p.price) + ' =</small><b>' + lei((Number(l.sessions) || 0) * p.price) + '</b>' : ''; });
+    if (!o.rows.length) { out.innerHTML = ''; return; }
+    const minBox = (o.kind === 'corp' || o.kind === 'fata') ? (() => {
+      const pct = Math.min(100, o.total / o.min * 100);
+      const ok = o.total >= o.min || s.low;
+      return '<div class="tr-c2-min' + (ok ? ' is-ok' : '') + '"><div class="tr-c2-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div><span>' +
+        (o.total >= o.min ? icon('check') + '<span>Bun! Programul trece de minimul de ' + lei(o.min) + '.</span>' : s.low ? icon('info') + '<span>Sub minim, pentru că e o clientă cu foarte puțină grăsime.</span>' :
+          icon('alert') + '<span>Programul pentru ' + (o.kind === 'corp' ? 'corp' : 'față') + ' trebuie să fie de cel puțin ' + lei(o.min) + '. Mai adaugă ședințe sau tratamente: lipsesc <b>' + lei(o.short) + '</b>.</span>') + '</span></div>';
+    })() : '';
+    const SAY = ['Îi arăți întâi asta. E cea mai mare reducere.', 'Dacă spune „nu”, îi arăți asta: plătește puțin câte puțin.', 'Tot „nu”? Îi propui jumătate din program.', 'Ultima variantă: jumătate din program, în rate.'];
+    const NAME = ['Tot programul, plătit azi', 'Tot programul, în ' + o.R.parts + ' rate', 'Jumătate de program, plătit azi', 'Jumătate de program, în ' + o.R.parts + ' rate'];
+    out.innerHTML =
+      '<section class="tr-c2-step"><h3><i>2</i>Cât costă tot programul<small>Prețul întreg, fără reducere. Îl scrii pe pagina 1 a fișei.</small></h3>' +
+        '<div class="tr-c2-total"><b>' + lei(o.total) + '</b><span>Jumătate de program: ' + lei(o.half) + '</span></div>' + minBox + '</section>' +
+      '<section class="tr-c2-step"><h3><i>3</i>Cele 4 oferte, pe rând<small>Le arăți una câte una, în ordinea asta. Pe masă e doar una.</small></h3>' +
+        '<ol class="tr-c2-offers">' + o.pages.map((p, k) => '<li class="tr-c2-off is-' + 'abcd'[k] + '" style="--k:' + k + '">' +
+          '<div class="tr-c2-oh"><span class="tr-c2-on">' + (k + 1) + '</span><div><b>' + esc(NAME[k]) + '</b><small>' + esc(SAY[k]) + '</small></div><em>-' + dec(p.off) + '%</em></div>' +
+          '<div class="tr-c2-op"><b>' + lei(p.pay) + '</b>' + (p.parts ? '<span>adică <b>' + lei(p.pay / p.parts) + '</b> la fiecare din primele ' + p.parts + ' ședințe</span>' : '<span>plătește tot azi</span>') + '</div>' +
+          '<small class="tr-c2-how">Cum am calculat: ' + lei(p.base) + ' − ' + dec(p.off) + '% = ' + lei(p.pay) + (p.parts ? ', împărțit la ' + p.parts : '') + ' · fișa, pagina ' + p.page + '</small></li>').join('') + '</ol></section>';
   }
   function onCalcInput(e) {
     const t = e.target;
@@ -1090,7 +1121,6 @@
     }
     if (t.matches('[data-cx]')) s[t.dataset.cx] = t.value;
     if (t.name === 'clow') s.low = t.checked;
-    if (t.name === 'ccity' && e.type === 'change') { s.city = t.value; keepCalc(); panel.querySelector('[data-lines]').innerHTML = linesHtml(); }
     keepCalc();
     paintCalcResults();
   }
@@ -1098,7 +1128,7 @@
     const s = calcState();
     const o = offer(s.lines, s.low);
     const me = (K.data && K.data.me && K.data.me.name) || '';
-    return ['Program recomandat (' + K.dateShort(K.today()) + ', ' + (s.city === 'ar' ? 'Arad' : 'Timișoara') + (me ? ', ' + me : '') + '):']
+    return ['Program recomandat (' + K.dateShort(K.today()) + ', ' + (calcCity() === 'ar' ? 'Arad' : calcCity() === 'tm' ? 'Timișoara' : '') + (me ? ', ' + me : '') + '):']
       .concat(o.rows.map((r) => '• ' + r.p.name + (r.l.zone ? ', ' + r.l.zone : '') + ': ' + dec(r.s) + ' ședințe × ' + lei(r.unit) + ' = ' + lei(r.sub) + (r.l.interval ? ' (' + r.l.interval + ')' : '')))
       .concat(['Total la preț de listă: ' + lei(o.total)], o.pages.map((p) => 'Pagina ' + p.page + ', ' + p.title.toLowerCase() + ' (-' + dec(p.off) + '%): ' + lei(p.pay) + (p.parts ? ', adică ' + lei(p.pay / p.parts) + ' pe tranșă' : '')),
         s.duration ? ['Durata estimată: ' + s.duration] : [], s.result ? ['Rezultat estimat: ' + s.result] : []).join('\n');
@@ -1383,8 +1413,19 @@
     if (t.closest('[data-scheme-new]')) return editScheme(null);
     const cs = t.closest('[data-case]'); if (cs) return openCase(cs.dataset.case);
     if (t.closest('[data-case-new]')) return editCase(null);
-    if (t.closest('[data-calc-add]')) { calcState().lines.push({ price: '', sessions: 1, zone: '', interval: '' }); keepCalc(); panel.querySelector('[data-lines]').innerHTML = linesHtml(); return paintCalcResults(); }
-    const cr = t.closest('[data-cl-rm]'); if (cr) { const s = calcState(); s.lines.splice(+cr.dataset.clRm, 1); if (!s.lines.length) s.lines.push({ price: '', sessions: 1, zone: '', interval: '' }); keepCalc(); panel.querySelector('[data-lines]').innerHTML = linesHtml(); return paintCalcResults(); }
+    // the calculator: a whole repaint keeps the page where it is
+    const recalc = () => { keepCalc(); const v = panel.querySelector('[data-calc]'); if (!v) return; const y = window.scrollY; v.outerHTML = calcHtml(); paintCalcResults(); window.scrollTo(0, y); };
+    const cg = t.closest('[data-cgrp]'); if (cg) { calcState().grp = cg.dataset.cgrp; return recalc(); }
+    const ca = t.closest('[data-cadd]');
+    if (ca) {
+      const s = calcState(), id = ca.dataset.cadd;
+      s.lines = s.lines.filter((l) => l.price);
+      if (s.lines.some((l) => l.price === id)) s.lines = s.lines.filter((l) => l.price !== id); else s.lines.push({ price: id, sessions: 1, zone: '', interval: '' });
+      return recalc();
+    }
+    const cst = t.closest('[data-cstep]');
+    if (cst) { const [i, d] = cst.dataset.cstep.split('|'); const l = calcState().lines[+i]; if (l) l.sessions = Math.max(1, Math.min(60, Math.round((Number(l.sessions) || 0) + Number(d)))); return recalc(); }
+    const cr = t.closest('[data-cl-rm]'); if (cr) { calcState().lines.splice(+cr.dataset.clRm, 1); return recalc(); }
     if (t.closest('[data-calc-clear]')) { C = null; try { localStorage.removeItem(CALC_KEY); } catch (x) { /* private */ } panel.querySelector('[data-view]').innerHTML = ''; return render(); }
     const sb = t.closest('[data-sub]');
     if (sb) { A.pick[areaNow() + ':' + viewRole()] = sb.dataset.sub; panel.querySelector('[data-view]').innerHTML = ''; return render(); }
@@ -1708,6 +1749,62 @@
 @keyframes trBurst{ from{ transform:rotate(var(--a)) translateX(0) scale(1); opacity:1; } to{ transform:rotate(var(--a)) translateX(var(--d)) scale(.2); opacity:0; } }
 @media (max-width:900px){ .tr-map.is-wide{ display:none; } .tr-vmap{ display:block; } }
 @media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop-dot, .tr-stop-l, .tr-vstop, .tr-road, .tr-step, .tr-dos li{ animation:none !important; } }
+/* the offer calculator, step by step */
+.tr-c2{ gap:1.1rem; }
+.tr-c2-top{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.tr-c2-city{ display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .75rem; border-radius:999px; background:var(--glass); font-size:.82rem; font-weight:600; }
+.tr-c2-city .k-ic{ width:14px; height:14px; color:#7c8cff; }
+.tr-c2-step{ padding:1.3rem; border-radius:26px; border:1px solid var(--line); background:linear-gradient(180deg, rgba(255,255,255,.04), transparent), var(--paper); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }
+.tr-c2-step h3{ display:flex; flex-wrap:wrap; align-items:center; gap:.2rem .7rem; margin:0 0 1rem; font-size:1.35rem; font-weight:800; letter-spacing:-.02em; }
+.tr-c2-step h3 i{ font-style:normal; width:34px; height:34px; border-radius:12px; display:grid; place-items:center; font-size:1rem; color:#fff; background:linear-gradient(145deg,#5b8cff,#a855f7); box-shadow:0 10px 22px -12px #7c6cff; }
+.tr-c2-step h3 small{ flex-basis:100%; font-size:.9rem; font-weight:500; letter-spacing:0; color:var(--muted); }
+.tr-c2-grp{ display:inline-flex; gap:.25rem; padding:.25rem; border-radius:14px; background:var(--glass); margin-bottom:.9rem; }
+.tr-c2-chip{ border:0; background:none; color:var(--muted); font:inherit; font-weight:600; font-size:.9rem; padding:.45rem 1rem; border-radius:11px; cursor:pointer; transition:background .2s, color .2s; }
+.tr-c2-chip.is-on{ background:var(--paper); color:var(--fg); box-shadow:0 4px 14px -6px rgba(0,0,0,.5); }
+.tr-c2-tiles{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:.55rem; }
+.tr-c2-tile{ position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:.3rem; min-height:86px; padding:.8rem 2.6rem .8rem .9rem; border-radius:18px; border:1px solid var(--line); background:var(--glass); color:inherit; font:inherit; text-align:left; cursor:pointer;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1), border-color .2s, background .2s; }
+.tr-c2-tile:hover{ transform:translateY(-2px); } .tr-c2-tile:active{ transform:scale(.97); }
+.tr-c2-tn{ font-weight:600; font-size:.9rem; line-height:1.25; } .tr-c2-tn em{ font-style:normal; font-size:.68rem; font-weight:800; color:#a5b4ff; }
+.tr-c2-tp{ white-space:nowrap; margin-top:auto; font-weight:800; font-size:1rem; font-variant-numeric:tabular-nums; } .tr-c2-tp small{ font-weight:500; color:var(--muted); font-size:.72rem; }
+.tr-c2-tick{ position:absolute; top:.7rem; right:.7rem; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08); transition:background .2s, transform .3s cubic-bezier(.34,1.56,.64,1); }
+.tr-c2-tick .k-ic{ width:15px; height:15px; }
+.tr-c2-tile.is-on{ border-color:transparent; background:linear-gradient(160deg, rgba(91,140,255,.22), rgba(168,85,247,.14)); box-shadow:0 0 0 2px #7c8cff inset; }
+.tr-c2-tile.is-on .tr-c2-tick{ background:linear-gradient(145deg,#5b8cff,#a855f7); color:#fff; transform:scale(1.1); }
+.tr-c2-h{ margin:1.3rem 0 .6rem; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.tr-c2-empty{ display:flex; align-items:center; gap:.6rem; margin-top:1rem; padding:1rem 1.1rem; border-radius:18px; border:1.5px dashed var(--line); color:var(--muted); }
+.tr-c2-line{ position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:1rem; padding:.9rem 2.8rem .9rem 1rem; border-radius:20px; background:var(--glass); margin-bottom:.5rem; animation:trSheet .4s cubic-bezier(.16,1,.3,1) both; }
+.tr-c2-ln{ display:flex; flex-direction:column; gap:.15rem; min-width:0; } .tr-c2-ln b{ font-size:1rem; } .tr-c2-ln small{ color:var(--muted); font-size:.78rem; }
+.tr-c2-ln input{ margin-top:.35rem; max-width:240px; font-size:.85rem; padding:.4rem .6rem; }
+.tr-c2-stp{ display:flex; align-items:center; gap:.3rem; }
+.tr-c2-stp button{ width:40px; height:40px; border-radius:50%; border:0; background:rgba(255,255,255,.1); color:var(--fg); font-size:1.35rem; font-weight:600; line-height:1; cursor:pointer; transition:transform .2s; }
+.tr-c2-stp button:active{ transform:scale(.88); }
+.tr-c2-stp input{ width:52px; text-align:center; font-size:1.25rem; font-weight:800; padding:.3rem 0; border-radius:12px; font-variant-numeric:tabular-nums; }
+.tr-c2-stp small{ color:var(--muted); font-size:.78rem; margin-left:.2rem; }
+.tr-c2-sum{ display:flex; flex-direction:column; align-items:flex-end; min-width:110px; } .tr-c2-sum small{ color:var(--muted); font-size:.74rem; } .tr-c2-sum b{ font-size:1.15rem; font-variant-numeric:tabular-nums; }
+.tr-c2-rm{ position:absolute; top:.6rem; right:.6rem; width:28px; height:28px; border-radius:50%; border:0; background:none; color:var(--muted); display:grid; place-items:center; cursor:pointer; }
+.tr-c2-rm:hover{ background:rgba(255,255,255,.08); color:var(--fg); } .tr-c2-rm .k-ic{ width:15px; height:15px; }
+.tr-c2-total{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.3rem 1rem; } .tr-c2-total b{ font-size:2.6rem; font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums; } .tr-c2-total span{ color:var(--muted); }
+.tr-c2-min{ margin-top:.9rem; display:flex; flex-direction:column; gap:.55rem; padding:.85rem 1rem; border-radius:18px; background:var(--warn-soft); color:var(--warn); font-weight:600; }
+.tr-c2-min.is-ok{ background:var(--good-soft); color:var(--good); }
+.tr-c2-min > span{ display:flex; gap:.5rem; align-items:flex-start; } .tr-c2-min .k-ic{ width:18px; height:18px; flex:none; margin-top:.1rem; }
+.tr-c2-bar{ height:8px; border-radius:8px; background:rgba(255,255,255,.1); overflow:hidden; } .tr-c2-bar i{ display:block; height:100%; border-radius:inherit; background:currentColor; transition:width .6s cubic-bezier(.16,1,.3,1); }
+.tr-c2-offers{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.6rem; counter-reset:none; }
+.tr-c2-off{ --g1:#22c55e; position:relative; padding:1rem 1.1rem; border-radius:20px; background:var(--glass); border:1px solid var(--line); animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--k) * 70ms); }
+.tr-c2-off.is-b{ --g1:#5b8cff; } .tr-c2-off.is-c{ --g1:#f59e0b; } .tr-c2-off.is-d{ --g1:#ec4899; }
+.tr-c2-off:not(:last-child)::after{ content:'↓ dacă spune „nu”'; position:absolute; left:2.9rem; bottom:-.62rem; z-index:1; padding:0 .5rem; border-radius:999px; background:var(--paper); color:var(--muted); font-size:.7rem; font-weight:600; }
+.tr-c2-oh{ display:flex; align-items:center; gap:.8rem; } .tr-c2-oh div{ flex:1; min-width:0; display:flex; flex-direction:column; } .tr-c2-oh b{ font-size:1.02rem; } .tr-c2-oh small{ color:var(--muted); font-size:.82rem; }
+.tr-c2-on{ width:34px; height:34px; flex:none; border-radius:12px; display:grid; place-items:center; font-weight:800; color:#fff; background:var(--g1); box-shadow:0 10px 20px -12px var(--g1); }
+.tr-c2-oh em{ font-style:normal; font-weight:800; font-size:.85rem; padding:.25rem .6rem; border-radius:999px; color:var(--g1); background:color-mix(in srgb, var(--g1) 15%, transparent); }
+.tr-c2-op{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .8rem; margin:.7rem 0 .3rem 2.9rem; } .tr-c2-op > b{ font-size:1.7rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; } .tr-c2-op span{ color:var(--muted); } .tr-c2-op span b{ color:var(--fg); }
+.tr-c2-how{ display:block; margin-left:2.9rem; color:var(--muted); font-size:.74rem; }
+.tr-c2-more{ border-radius:20px; border:1px solid var(--line); padding:.2rem 1rem; } .tr-c2-more summary{ cursor:pointer; padding:.7rem 0; font-weight:600; }
+@media (max-width:760px){
+  .tr-c2-step{ padding:1rem; border-radius:22px; } .tr-c2-tiles{ grid-template-columns:1fr 1fr; } .tr-c2-tile{ min-height:96px; }
+  .tr-c2-line{ grid-template-columns:1fr; gap:.7rem; padding-right:1rem; } .tr-c2-ln{ padding-right:1.8rem; } .tr-c2-ln input{ max-width:none; }
+  .tr-c2-sum{ flex-direction:row; align-items:baseline; justify-content:space-between; gap:.5rem; min-width:0; padding-top:.6rem; border-top:1px solid var(--line); } .tr-c2-sum small{ white-space:nowrap; }
+  .tr-c2-total b{ font-size:2.1rem; } .tr-c2-op{ margin-left:0; } .tr-c2-how{ margin-left:0; }
+}
 @media (max-width:760px){
   .tr-doors{ grid-template-columns:1fr; min-height:0; }
   .tr-door{ min-height:170px; padding:1.3rem 1.3rem 1.3rem 6rem; justify-content:center; border-radius:26px; }
