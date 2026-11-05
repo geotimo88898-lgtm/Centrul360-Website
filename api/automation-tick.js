@@ -232,10 +232,15 @@ module.exports = async (req, res) => {
       return r;
     }
     t = Date.now(); await st.writeJSON(T, a, { quiet: true }); r.changeWriteMs = Date.now() - t;
+    if (req.query.writetime === '3') return r;
     // two readers, the second saves after the first: the merge
     const x = await st.readJSON(T, []); const y = JSON.parse(JSON.stringify(x));
     x.push({ id: 'speed-b', date: '2000-01-02' }); await st.writeJSON(T, x, { quiet: true });
     y.push({ id: 'speed-c', date: '2000-01-03' });
+    // the merge's own pieces, timed apart (the store does: read theirs, merge3, write)
+    t = Date.now(); const theirs = await st.readJSON(T, []); r.readTheirsMs = Date.now() - t;
+    t = Date.now(); const mm = st.merge3(JSON.parse(JSON.stringify(x)), y, theirs); r.merge3BigMs = Date.now() - t; r.mergedLen = mm.length;
+    if (req.query.writetime === '4') return r;
     t = Date.now(); await st.writeJSON(T, y, { quiet: true }); r.mergeWriteMs = Date.now() - t;
     t = Date.now(); const m = st.merge3(src, a, x); r.merge3Ms = Date.now() - t; r.items = src.length; r.mergedItems = m.length;
     return r;
