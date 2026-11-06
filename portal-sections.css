@@ -682,6 +682,9 @@
 .tr-ink.is-big{ font-size:2.9cqw; font-weight:700; }
 .tr-ink.is-sig{ font-size:3cqw; font-weight:700; transform:rotate(-4deg); transform-origin:left center; }
 .tr-ink.is-tick{ font-size:2.6cqw; font-weight:700; }
+/* a tick on its box: the point is the box's centre (found on the page's picture) */
+.tr-ink.is-box{ font-size:2.4cqw; font-weight:700; transform:translate(-40%,-60%); }
+.tr-sheet.is-land .tr-ink.is-box{ font-size:1.9cqw; }
 .tr-sheet.no-ink .tr-ink{ opacity:0; }
 .tr-hl{ position:absolute; border-radius:1.4cqw; border:2px solid transparent; background:transparent; pointer-events:none; transition:background .2s, border-color .2s; }
 .tr-hl.is-on{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, transparent); }
