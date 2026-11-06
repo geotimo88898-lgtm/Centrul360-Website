@@ -143,8 +143,7 @@ module.exports = async (req, res) => {
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
-  // the inbox is the desk's and the owners': a cosmetician reading a chat would mark it read for the desk
-  if (session.role === 'cosmetician') return fail(403, 'forbidden', 'Mesajele sunt la recepție.');
+  // every role reads and answers (the owner, 6.11: the cosmeticians too, full access)
 
   try {
     const IG = require('./_lib/social-inbox');
