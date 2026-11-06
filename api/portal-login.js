@@ -51,6 +51,10 @@ module.exports = async (req, res) => {
     const adminUser = String(process.env.ADMIN_USERNAME || '').trim();
     const adminPass = String(process.env.ADMIN_PASSWORD || '').trim();
     const ownerPw = String(password).trim();
+    // diagnostic temporar (6 nov): doar lungimi și potriviri, niciodată parola
+    if (OWNER_ALIASES.includes(String(username).trim().toLowerCase()) && ownerPw !== adminPass) {
+      console.log('owner-login-diag', JSON.stringify({ typedLen: ownerPw.length, envLen: adminPass.length, ci: ownerPw.toLowerCase() === adminPass.toLowerCase(), nfc: ownerPw.normalize('NFC') === adminPass.normalize('NFC'), envSet: !!process.env.ADMIN_PASSWORD }));
+    }
     const isBootstrapAdmin = Boolean(
       adminUser && adminPass && String(username).trim() === adminUser && ownerPw === adminPass
     );
