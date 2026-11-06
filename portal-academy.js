@@ -355,6 +355,7 @@
   // ------------------------------------------------------------------ Parcursul clientei
   // Each step, said simply (as to a 5-year-old): what you do, why it matters, what never to forget. A draft to fill:
   // the owner will give the exact words and the photos.
+  // more: the details of a step (where things are in the portal); go: buttons to the guide that explains it
   const PARCURS = [
     { t: 'Deschizi salonul', when: 'Dimineața, dacă ajungi prima', ic: 'clock',
       do: ['Deschide ușa.', 'Aprinde luminile.', 'Pornește aparatele.', 'Pregătește apa, cafeaua și ceaiul.', 'Uită-te în Calendar cine vine azi.'],
@@ -365,17 +366,26 @@
     { t: 'Primești clienta', when: 'Când intră pe ușă', ic: 'users',
       do: ['Zâmbește.', 'Spune-i „Bună ziua” și numele ei.', 'Invit-o să stea jos.', 'Întreab-o: „Doriți apă, cafea sau ceai?”'],
       why: 'Așa se simte binevenită.', never: '' },
-    { t: 'Fișa clientei', when: 'Prima dată când vine', ic: 'file',
-      do: ['Dă-i fișa să o completeze.', 'Verifică să fie semnată.', 'Du fișa la recepție.'],
-      why: 'Fișa ne arată dacă tratamentul e sigur pentru ea.', never: 'Fără fișă semnată nu începi tratamentul.' },
+    { t: 'Fișa clientei', when: 'Prima dată când vine, înainte de tratament', ic: 'file',
+      do: ['Alege fișa potrivită: corp, față sau epilare laser.', 'Stai lângă ea. O completezi tu, împreună cu ea: o întrebi rubrică cu rubrică și scrii.', 'Citiți împreună întrebările de sănătate și bifezi „Da” sau „Nu” la fiecare.', 'Faci evaluarea de pe pagina 2: măsori, te uiți la piele.', 'Ea citește acordul și semnează. Semnezi și tu.'],
+      more: ['Fișa o scanezi în portal: Contacte → clienta → Fișe & mențiuni → „Scanează fișa”. Fotografiezi fiecare pagină cu telefonul.', 'Foaia de hârtie o pui la dosarul ei.', 'Dacă e un „Da” la sănătate, nu începi tratamentul până nu întrebi dacă se poate.'],
+      go: [['Vezi cum se completează fișa', 'consult:corporale']],
+      why: 'Fișa ne arată dacă tratamentul e sigur pentru ea. Când o completați împreună, nu sare nimic și ea simte că ai grijă de ea.', never: 'Nu-i dai fișa să o completeze singură. Și fără fișă semnată nu începi tratamentul.' },
     { t: 'Poza „înainte”', when: 'Înainte de tratament', ic: 'image',
-      do: ['Pune clienta în același loc, cu lumină bună.', 'Fă o poză din față și una din lateral.', 'Pune pozele în portal: Contacte → clienta → Poze → Înainte.'],
-      why: 'Așa vedem rezultatul.', never: '' },
+      do: ['Pune clienta în același loc, cu lumină bună, pe un fundal simplu.', 'Fă o poză din față și una din profil, la zona tratată.', 'Pune pozele în portal, la ședința de azi.'],
+      more: ['Unde: Contacte → caută clienta → „Poze înainte / după” → Ședința de azi (Ședința 1 la prima vizită) → ÎNAINTE.', 'La fiecare ședință faci pozele din același loc și din același unghi. Așa se vede clar diferența.', 'Întreab-o dacă e de acord ca pozele să fie folosite pe site și în reclame (fără față). Bifează răspunsul ei tot acolo, la „Publicare”.', 'Pozele stau doar în portal, în fișa ei.'],
+      why: 'Așa vedem rezultatul, și ea îl vede.', never: 'Fără acordul ei, pozele nu se publică nicăieri.' },
+    { t: 'Programul și oferta', when: 'La prima vizită, după fișă și poze', ic: 'wallet',
+      do: ['Spune-i ce ai văzut: ce o deranjează și ce se poate face.', 'Faci programul în Calculatorul de ofertă: alegi tratamentele și ședințele.', 'Scrii programul pe pagina 1 a fișei „Program recomandat și ofertă”.', 'Îi arăți oferta 1. Dacă spune „nu”, oferta 2, apoi 3, apoi 4.', 'Când alege, semnează pagina aleasă. Plata și programările ședințelor le faceți pe loc.'],
+      more: ['Toate ofertele și cum se completează fiecare pagină sunt explicate la Consultația → „Programul și oferta”.', 'Pe masă e mereu o singură ofertă. Pagina de dinainte o iei înapoi.'],
+      go: [['Vezi programul și oferta, pagină cu pagină', 'consult:program'], ['Deschide calculatorul', 'calc']],
+      why: 'Clienta pleacă cu un plan clar: ce face, de câte ori și cât costă.', never: 'Nu pui mai multe oferte pe masă deodată.' },
     { t: 'Faci tratamentul', when: 'În cabinet', ic: 'sparkles',
       do: ['Spune-i pe scurt ce urmează.', 'Întreab-o din când în când dacă e bine.', 'Fă tratamentul cum scrie la Tratamente.'],
       why: 'Când știe ce urmează, e liniștită.', never: '' },
     { t: 'Poza „după”', when: 'Imediat după tratament', ic: 'image',
-      do: ['Același loc și aceeași lumină ca la „înainte”.', 'Pune pozele la „După”.'],
+      do: ['Același loc, aceeași lumină și același unghi ca la „înainte”.', 'Pune pozele la aceeași ședință, la DUPĂ.'],
+      more: ['Unde: Contacte → clienta → „Poze înainte / după” → Ședința de azi → DUPĂ.', 'Portalul pune singur pozele una lângă alta. Poți să i le arăți pe loc.'],
       why: 'Așa se vede diferența.', never: '' },
     { t: 'Conduci clienta', when: 'La final', ic: 'calendar',
       do: ['Spune-i ce să facă acasă.', 'Du-o la recepție pentru plată și următoarea programare.', 'Mulțumește-i și spune-i „La revedere” pe nume.'],
@@ -387,13 +397,13 @@
       do: ['Oprește aparatele.', 'Fă curat și scoate gunoiul.', 'Stinge luminile.', 'Încuie ușa.'],
       why: 'Mâine dimineață totul e gata de lucru.', never: '' },
   ];
-  // what she marked "Am înțeles" (this device), the step open
-  const PKEY = 'c360_parcurs_done';
+  // what she marked "Am înțeles" (this device), the step open; v2 since the steps changed (6.11)
+  const PKEY = 'c360_parcurs_done_v2';
   function pdone() { try { return new Set(JSON.parse(localStorage.getItem(PKEY) || '[]')); } catch (e) { return new Set(); } }
   function psave(set) { try { localStorage.setItem(PKEY, JSON.stringify([...set])); } catch (e) { /* private mode */ } }
   // the stops on the map, in % of its box: a winding road, wide on a computer, tall on a phone
-  const MAPW = [[7, 30], [24, 16], [41, 30], [58, 16], [76, 26], [91, 52], [76, 78], [57, 86], [38, 74], [18, 84]];
-  const STAGES = [[0, 2, 'Înainte să vină'], [2, 8, 'Cu clienta'], [8, 10, 'După']];
+  const MAPW = [[6, 30], [20, 16], [34, 30], [49, 16], [64, 26], [79, 16], [92, 50], [76, 80], [57, 86], [38, 74], [18, 84]];
+  const STAGES = [[0, 2, 'Înainte să vină'], [2, 9, 'Cu clienta'], [9, 11, 'După']];
   // a smooth road through the stops (Catmull-Rom as curves)
   function road(pts) {
     let d = 'M' + pts[0][0] + ' ' + pts[0][1];
@@ -429,6 +439,8 @@
     const stage = (STAGES.find(([a, b]) => i >= a && i < b) || STAGES[0])[2];
     return '<div class="tr-jhead"><div><b>' + done.size + ' din ' + PARCURS.length + '</b><span>pași învățați</span></div><div class="tr-jbar"><i style="--w:' + Math.round(done.size / PARCURS.length * 100) + '%"></i></div>' +
         '<span class="tr-draft-s">' + icon('pen') + 'Schiță</span></div>' +
+      // one film for the whole journey (the owner, 6.11), not one per step
+      '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul cu tot parcursul</b><span>Un singur film care arată tot drumul clientei, de la deschiderea salonului până la închidere. Vine în curând.</span></div></div>' +
       mapHtml(MAPW, 'is-wide', done, i) + vmapHtml(done, i) + (A.mapEnter = false, '') +
       '<div class="tr-step" data-sheet>' +
         '<div class="tr-step-top"><span class="tr-step-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-step-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
@@ -436,7 +448,8 @@
         '<ul class="tr-dos">' + x.do.map((d2, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i>' + esc(d2) + '</li>').join('') + '</ul>' +
         '<div class="tr-whybox"><b>De ce?</b><span>' + esc(x.why) + '</span></div>' +
         (x.never ? '<div class="tr-never">' + icon('alert') + '<span>' + esc(x.never) + '</span></div>' : '') +
-        '<div class="tr-photo">' + icon('image') + 'Aici vine poza sau filmulețul</div>' +
+        (x.more ? '<div class="tr-more"><b>' + icon('info') + 'Mai multe detalii</b><ul>' + x.more.map((m) => '<li>' + esc(m) + '</li>').join('') + '</ul></div>' : '') +
+        (x.go ? '<div class="tr-golinks">' + x.go.map(([l, to]) => '<button type="button" class="k-btn is-outline" data-pgoto="' + to + '">' + esc(l) + icon('right') + '</button>').join('') + '</div>' : '') +
         '<div class="tr-step-nav"><button type="button" class="k-btn is-ghost" data-pgo="' + (i - 1) + '"' + (i ? '' : ' disabled') + '>' + icon('left') + 'Înapoi</button><span class="k-grow"></span>' +
           '<button type="button" class="k-btn is-primary is-lg tr-got" data-pdone="' + i + '">' + (done.has(i) ? icon('check') + 'Învățat' : 'Am înțeles') + (i < PARCURS.length - 1 ? icon('right') : '') + '</button></div>' +
       '</div>';
@@ -1433,6 +1446,16 @@
     if (zn) { A.zone = zn.dataset.zone; A.mapEnter = true; panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' }); return; }
     const ps = t.closest('[data-pstep],[data-pgo]');
     if (ps && !ps.disabled) { A.pstep = +(ps.dataset.pstep != null ? ps.dataset.pstep : ps.dataset.pgo); render(); const sh = panel.querySelector('[data-sheet]'); if (sh && window.innerWidth < 900) sh.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const pg2 = t.closest('[data-pgoto]');
+    if (pg2) {
+      const to = pg2.dataset.pgoto;
+      if (to === 'calc') return K.go('calculator');
+      const sheet = to.split(':')[1];
+      A.fisa.sheet = sheet; A.fisa.page = 0; A.fisa.on = -1;
+      A.zone = 'consult'; A.pick['vanzari:' + viewRole()] = 'm:consultatie';
+      panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' });
+      return;
+    }
     const pd = t.closest('[data-pdone]');
     if (pd) {
       const i = +pd.dataset.pdone, set = pdone();
@@ -1805,6 +1828,14 @@
   .tr-c2-sum{ flex-direction:row; align-items:baseline; justify-content:space-between; gap:.5rem; min-width:0; padding-top:.6rem; border-top:1px solid var(--line); } .tr-c2-sum small{ white-space:nowrap; }
   .tr-c2-total b{ font-size:2.1rem; } .tr-c2-op{ margin-left:0; } .tr-c2-how{ margin-left:0; }
 }
+.tr-vsl{ display:flex; align-items:center; gap:1rem; padding:1rem 1.2rem; margin-bottom:1rem; border-radius:24px; border:1.5px dashed color-mix(in srgb, var(--fg) 16%, transparent); background:var(--glass); }
+.tr-vsl-play{ flex:none; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#5b8cff,#a855f7); box-shadow:0 12px 26px -12px #7c6cff; }
+.tr-vsl-play .k-ic{ width:24px; height:24px; }
+.tr-vsl div{ display:flex; flex-direction:column; gap:.15rem; } .tr-vsl b{ font-size:1.05rem; } .tr-vsl span{ color:var(--muted); font-size:.88rem; }
+.tr-more{ margin:.2rem 0 .6rem; padding:1rem 1.1rem; border-radius:18px; background:var(--glass); }
+.tr-more b{ display:flex; align-items:center; gap:.45rem; font-size:.95rem; margin-bottom:.4rem; } .tr-more b .k-ic{ width:17px; height:17px; color:var(--accent); }
+.tr-more ul{ margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.35rem; } .tr-more li{ line-height:1.45; }
+.tr-golinks{ display:flex; flex-wrap:wrap; gap:.5rem; margin:.3rem 0 .4rem; }
 /* the light theme: soft shadows instead of the dark ones */
 :root[data-theme="light"] .tr-door, :root[data-theme="light"] .tr-step{ box-shadow:0 20px 40px -30px rgba(13,15,20,.35); }
 :root[data-theme="light"] .tr-stop-dot, :root[data-theme="light"] .tr-vdot{ box-shadow:0 6px 16px -10px rgba(13,15,20,.3); }
