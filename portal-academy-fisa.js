@@ -46,6 +46,8 @@
     {
       tab: 'Integral', badge: '-50%', head: 'Oferta 1 · pachet complet, plată integrală', tone: 'is-a',
       role: 'Prima ofertă, cea mai avantajoasă ca reducere. Pe masă e doar pagina asta: nu arăți și nu pomenești paginile următoare.',
+      say: ['„Pentru că începeți azi tot programul, aveți 50% reducere, cu plata integrală. Practic, plătiți jumătate.”'],
+      tip: 'Cel mai bine e ca totul să se oprească aici. Paginile următoare sunt doar dacă ea spune că e prea mult.',
       fills: [
         ...money([8.6, 11.2, 14.0, 16.6], ['9.600', '50', '4.800', '4.800']),
         [18.1, 22.0, '✓', 'is-tick'], [24.5, 25.4, DAY], [66.5, 25.4, '4.800'],
@@ -59,11 +61,12 @@
         { box: [58.4, 11.7], t: 'Condițiile', d: 'Oferta e valabilă doar în ziua consultației. Spune-i clar, înainte să semneze: anularea sau mutarea cu mai puțin de 24 de ore înainte face ca ședința să fie considerată efectuată.' },
         { box: [74.5, 6.9], t: 'Semnăturile', d: 'Semnează clienta și semnezi tu. Pagina 1 și pagina acceptată se capsează de fișa clientei. Un exemplar rămâne la centru, clienta primește o copie.' },
       ],
-      next: 'Nu îi convine? Iei pagina înapoi și îi dai pagina 3.',
+      next: 'Spune că e prea mult? Nu insiști. Iei pagina înapoi și treci firesc la pagina 3.',
     },
     {
       tab: '4 tranșe', badge: '-30%', head: 'Oferta 2 · pachet complet, plata în 4 tranșe', tone: 'is-b',
-      role: 'A doua ofertă, doar dacă prima nu i-a convenit. Pagina 2 nu mai e pe masă.',
+      role: 'A doua ofertă, doar dacă prima i s-a părut prea mult. Pagina 2 nu mai e pe masă.',
+      say: ['„Înțeleg. Atunci ce putem face pentru dvs. este o reducere puțin mai mică, de 30%, și puteți achita în 4 tranșe, câte una la fiecare ședință.”'],
       fills: [
         ...money([8.6, 11.2, 14.0, 16.6, 19.4], ['9.600', '30', '2.880', '6.720', '1.680']),
         ...[0, 1, 2, 3].map((i) => { const t = [28.5, 31.1, 33.7, 36.4][i]; return [[21, t, 'ședința ' + (i + 1)], [36.2, t, '1.680'], [53, t, SCHED[i][1]]].concat(i === 0 ? [[73.4, t, '16.10 ✓']] : []); }).flat(),
@@ -77,11 +80,12 @@
         { box: [58.2, 11.8], t: 'Condițiile', d: 'Aceleași ca la oferta 1, plus una: fiecare tranșă se achită la ședința ei.' },
         { box: [74.1, 6.9], t: 'Semnăturile', d: 'Clienta și tu. Capsezi pagina 1 și pagina asta de fișa clientei.' },
       ],
-      next: 'Nu îi convine? Îi propui jumătate din pachet: pagina 4.',
+      next: 'Tot e greu pentru ea? Treci firesc la pagina 4.',
     },
     {
       tab: '½ integral', badge: '-50%', head: 'Oferta 3 · jumătate din pachet, plată integrală', tone: 'is-c',
-      role: 'Jumătate din ședințele programului din pagina 1, cu aceeași reducere ca prima ofertă.',
+      role: 'Jumătate din ședințele programului din pagina 1, cu aceeași reducere ca prima ofertă. Nu e un „pachet mai mic”: e un început.',
+      say: ['„Înțeleg perfect. Atunci corect din partea noastră ar fi să vă oferim ocazia să puneți un picior pe ușă: începeți cu jumătate din program, tot cu 50% reducere.”', '„Așa vă obișnuiți cu noi și vedem împreună cum răspunde corpul dvs. la aparate.”'],
       fills: [
         ...HALF(8.3),
         ...money([18.3, 20.9, 23.6, 26.4], ['4.800', '50', '2.400', '2.400']),
@@ -96,11 +100,12 @@
         { box: [40.9, 15.5], t: 'Programarea ședințelor', d: 'Toate ședințele pachetului redus, programate pe loc.' },
         { box: [58.8, 20.1], t: 'Condițiile și semnăturile', d: 'Ca la oferta 1: valabilă doar azi, regula de 24 de ore spusă clar, semnează clienta și tu.' },
       ],
-      next: 'Nu îi convine? Ultima variantă: pagina 5.',
+      next: 'Tot e greu pentru ea? Ultima variantă: pagina 5.',
     },
     {
       tab: '½ în tranșe', badge: '-30%', head: 'Oferta 4 · jumătate din pachet, plata în 4 tranșe', tone: 'is-d',
-      role: 'Cea mai accesibilă ca sumă. Același pachet redus ca pe pagina 4, plătit în 4 tranșe.',
+      role: 'Cea mai accesibilă ca sumă. Același început ca pe pagina 4, plătit în 4 tranșe.',
+      say: ['„Și ca să fie cât mai ușor pentru dvs.: aceeași jumătate de program, cu 30% reducere, în 4 tranșe, câte una la fiecare ședință.”'],
       fills: [
         ...HALF(8.3),
         ...money([18.3, 20.9, 23.6, 26.4, 29.1], ['4.800', '30', '1.440', '3.360', '840']),
@@ -152,16 +157,20 @@
 
   const icon = (n) => (window.K && window.K.icon ? window.K.icon(n) : '');
   // "Vreau să învăț": the four sheets of a consultation, in the order they are filled in
-  const picker = (st) => '<div class="tr-fpick"><div class="tr-fpick-l">Vreau să învăț:</div><div class="tr-fpick-row" role="tablist">' +
-    SHEETS.map((S, k) => '<button type="button" role="tab" aria-selected="' + (S === cur(st)) + '" class="tr-fpick-c is-' + S.hue + (S === cur(st) ? ' is-on' : '') + '" data-fs-sheet="' + S.id + '" style="--k:' + k + '">' +
+  const picker = (st, big) => '<div class="tr-fpick' + (big ? ' is-big' : '') + '"><div class="tr-fpick-l">Vreau să învăț:</div><div class="tr-fpick-row" role="tablist">' +
+    SHEETS.map((S, k) => '<button type="button" role="tab" aria-selected="' + (!big && S === cur(st)) + '" class="tr-fpick-c is-' + S.hue + (!big && S === cur(st) ? ' is-on' : '') + '" data-fs-sheet="' + S.id + '" style="--k:' + k + '">' +
       '<span class="tr-fpick-ic">' + icon(S.icon) + '</span><small>' + esc(S.kind) + '</small><b>' + esc(S.title) + '</b><span class="tr-fpick-s">' + esc(S.sub) + '</span>' +
       '<span class="tr-fpick-n">' + S.pages.length + ' pagini</span></button>').join('') + '</div></div>';
 
   function html(st) {
+    if (!st.chosen) return '<div class="tr-fisa is-pick">' + picker(st, true) + '</div>';
     const S = cur(st), PG = S.pages;
     if (!(st.page >= 0 && st.page < PG.length)) st.page = 0;
     const i = st.page, pg = PG[i];
-    return '<div class="tr-fisa">' + picker(st) +
+    return '<div class="tr-fisa">' +
+      '<div class="tr-fs-top"><button type="button" class="k-btn is-ghost is-sm" data-fs-back>' + icon('left') + 'Toate fișele</button>' +
+        '<span class="tr-fs-who is-' + S.hue + '"><i>' + icon(S.icon) + '</i><b>' + esc(S.kind + ' · ' + S.title) + '</b></span></div>' +
+      '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(S.title) + '</b><span>Totul explicat pe înțeles, cu exemple. Vine în curând.</span></div></div>' +
       '<div class="tr-fs-flow" role="tablist">' + PG.map((p, k) => (k ? '<span class="tr-fs-arrow" aria-hidden="true">›</span>' : '') +
         '<button type="button" role="tab" class="tr-fs-tab ' + p.tone + (k === i ? ' is-on' : '') + '" data-fs-page="' + k + '" aria-selected="' + (k === i) + '"><b>' + (k + 1) + '</b><span>' + esc(p.tab) + (p.badge ? '<em>' + esc(p.badge) + '</em>' : '') + '</span></button>').join('') + '</div>' +
       '<div class="tr-fs-body">' +
@@ -170,6 +179,8 @@
           '<button type="button" class="k-btn is-ghost is-sm" data-fs-zoom>Mărește pagina</button></div></div>' +
         '<div class="tr-fs-notes">' +
           '<div class="tr-fs-head"><small>' + esc(S.kind + ' · ' + S.title) + ' · pagina ' + (i + 1) + ' din ' + PG.length + '</small><h4>' + esc(pg.head) + '</h4><p>' + esc(pg.role) + '</p></div>' +
+          (pg.say ? '<div class="tr-fs-say"><b>Cum o spui</b>' + pg.say.map((q) => '<blockquote>' + esc(q) + '</blockquote>').join('') +
+            '<small>Ca într-o conversație: o asculți, o înțelegi, îi propui. Nu sună niciodată a „reducere de ultim moment”.</small>' + (pg.tip ? '<p class="tr-fs-tip">' + esc(pg.tip) + '</p>' : '') + '</div>' : '') +
           '<ol>' + pg.notes.map((n, k) => '<li><button type="button" class="tr-fs-note' + (st.on === k ? ' is-on' : '') + '" data-fs-note="' + k + '"><span class="tr-fs-n">' + (k + 1) + '</span><span><b>' + esc(n.t) + '</b>' + esc(n.d) + '</span></button></li>').join('') + '</ol>' +
           (pg.next ? '<button type="button" class="tr-fs-next" data-fs-page="' + (i + 1) + '"><span>' + esc(pg.next) + '</span><b>›</b></button>' : '') +
         '</div>' +
@@ -207,7 +218,8 @@
     };
     box.addEventListener('click', (e) => {
       const sh = e.target.closest('[data-fs-sheet]');
-      if (sh) { if (st.sheet !== sh.dataset.fsSheet) { st.sheet = sh.dataset.fsSheet; st.page = 0; st.on = -1; repaint(); } return; }
+      if (sh) { st.sheet = sh.dataset.fsSheet; st.page = 0; st.on = -1; st.chosen = true; repaint(); const t = root.querySelector('.tr-fisa'); if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ block: 'start' }); return; }
+      if (e.target.closest('[data-fs-back]')) { st.chosen = false; st.on = -1; repaint(); return; }
       const p = e.target.closest('[data-fs-page]');
       if (p) { st.page = +p.dataset.fsPage; st.on = -1; repaint(); const t = root.querySelector('.tr-fs-flow'); if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       const m = e.target.closest('[data-fs-mark]');

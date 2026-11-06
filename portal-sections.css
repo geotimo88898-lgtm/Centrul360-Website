@@ -640,6 +640,22 @@
 .st-fb-status.is-wait{ background:var(--glass); color:var(--muted); }
 /* Traininguri → Fișa consultației: the sheet page by page, the example in pen, the parts numbered */
 .tr-fisa{ display:flex; flex-direction:column; gap:1rem; container:fisa / inline-size; }
+/* Consultația: the guide of one sheet, its header, how the offers are said */
+.tr-fs-top{ display:flex; align-items:center; gap:.7rem; flex-wrap:wrap; }
+.tr-fs-who{ display:inline-flex; align-items:center; gap:.5rem; font-size:1.05rem; }
+.tr-fs-who i{ width:30px; height:30px; border-radius:10px; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#5b8cff,#a855f7); }
+.tr-fs-who.is-b i{ background:linear-gradient(145deg,#ec4899,#f59e0b); } .tr-fs-who.is-c i{ background:linear-gradient(145deg,#06b6d4,#6366f1); } .tr-fs-who.is-d i{ background:linear-gradient(145deg,#10b981,#0ea5e9); }
+.tr-fs-who i .k-ic{ width:16px; height:16px; }
+.tr-fs-say{ margin:.2rem 0 .9rem; padding:1rem 1.1rem; border-radius:18px; background:color-mix(in srgb, var(--accent) 9%, transparent); border:1px solid color-mix(in srgb, var(--accent) 22%, transparent); }
+.tr-fs-say > b{ display:block; font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-bottom:.45rem; }
+.tr-fs-say blockquote{ margin:0 0 .5rem; padding:.7rem .9rem; border-radius:16px 16px 16px 4px; background:var(--paper); font-size:1rem; line-height:1.45; box-shadow:0 6px 16px -12px rgba(0,0,0,.4); animation:trPickIn .45s cubic-bezier(.16,1,.3,1) both; }
+.tr-fs-say small{ display:block; color:var(--muted); font-size:.8rem; }
+.tr-fs-tip{ margin:.55rem 0 0; font-weight:600; font-size:.88rem; color:var(--good); }
+.tr-fpick.is-big .tr-fpick-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:1rem; }
+.tr-fpick.is-big .tr-fpick-c{ min-height:200px; padding:1.4rem; border-radius:26px; }
+.tr-fpick.is-big .tr-fpick-ic{ width:56px; height:56px; border-radius:18px; } .tr-fpick.is-big .tr-fpick-ic .k-ic{ width:28px; height:28px; }
+.tr-fpick.is-big .tr-fpick-c b{ font-size:1.5rem; } .tr-fpick.is-big .tr-fpick-s{ font-size:.92rem; }
+@container fisa (max-width:560px){ .tr-fpick.is-big .tr-fpick-row{ grid-template-columns:1fr; } .tr-fpick.is-big .tr-fpick-c{ min-height:150px; } }
 /* Consultația → "Vreau să învăț": the four sheets, Apple-like cards */
 .tr-fpick-l{ font-size:.8rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 .55rem .15rem; }
 .tr-fpick-row{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.75rem; }

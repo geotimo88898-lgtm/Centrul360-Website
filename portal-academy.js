@@ -286,19 +286,20 @@
   const viewRole = () => (isAdmin() ? A.role : (K.data && K.data.me && K.data.me.role === 'receptie' ? 'receptie' : 'cosmetician'));
   function areaCards(area, role) {
     const p = mine();
-    const cards = manuals().filter((m) => (m.area || 'vanzari') === area && (m.roles || []).includes(role)).map((m) => {
+    const HIDE = role === 'cosmetician' ? ['vanzari', 'cabina'] : [];
+    const cards = manuals().filter((m) => (m.area || 'vanzari') === area && (m.roles || []).includes(role) && !HIDE.includes(m.id)).map((m) => {
       const r = m.chapters.filter((c) => p.read[cref(m, c)]).length;
-      if (m.id === 'consultatie' && window.C360Fisa) return { id: 'm:' + m.id, title: m.title, icon: 'file', sub: 'Fișa, pagină cu pagină' };
+      if (m.id === 'consultatie' && window.C360Fisa) return { id: 'm:' + m.id, title: m.title, icon: 'file', sub: 'Cele 4 fișe, pagină cu pagină' };
       return { id: 'm:' + m.id, title: m.title, icon: m.icon || 'book', sub: r ? r + ' din ' + m.chapters.length + ' citite' : m.chapters.length + ' capitole' };
     });
     const visible = (D().schemes || []).length;
     if (area === 'vanzari' && role === 'cosmetician') {
-      cards.push({ id: 'cases', title: 'Cazuri', icon: 'users', sub: (D().cases || []).length + ' exerciții' });
+      cards.push({ id: 'cases', title: 'Cazuri', icon: 'users', sub: (D().cases || []).length + ' cazuri' });
     }
     if (area === 'tratamente') {
       cards.unshift(role === 'receptie'
         ? { id: 'summary', title: 'Tratamentele, pe scurt', icon: 'sparkles', sub: visible + ' tratamente' }
-        : { id: 'schemes', title: 'Scheme de tratament', icon: 'sparkles', sub: visible + ' tratamente' });
+        : { id: 'schemes', title: 'Tratamentele', icon: 'sparkles', sub: visible + ' tratamente' });
       cards.splice(1, 0, { id: 'combos', title: 'Combinații', icon: 'layers', sub: (D().combos || []).length + ' combinații' });
     }
     return cards;
@@ -370,10 +371,12 @@
       do: ['Alege fișa potrivită: corp, față sau epilare laser.', 'Stai lângă ea. O completezi tu, împreună cu ea: o întrebi rubrică cu rubrică și scrii.', 'Citiți împreună întrebările de sănătate și bifezi „Da” sau „Nu” la fiecare.', 'Faci evaluarea de pe pagina 2: măsori, te uiți la piele.', 'Ea citește acordul și semnează. Semnezi și tu.'],
       more: ['Fișa o scanezi în portal: Contacte → clienta → Fișe & mențiuni → „Scanează fișa”. Fotografiezi fiecare pagină cu telefonul.', 'Foaia de hârtie o pui la dosarul ei.', 'Dacă e un „Da” la sănătate, nu începi tratamentul până nu întrebi dacă se poate.'],
       go: [['Vezi cum se completează fișa', 'consult:corporale']],
+      shot: ['scan-fisa', 'Contacte → clienta → Fișe & mențiuni → „Scanează fișa”'],
       why: 'Fișa ne arată dacă tratamentul e sigur pentru ea. Când o completați împreună, nu sare nimic și ea simte că ai grijă de ea.', never: 'Nu-i dai fișa să o completeze singură. Și fără fișă semnată nu începi tratamentul.' },
     { t: 'Poza „înainte”', when: 'Înainte de tratament', ic: 'image',
       do: ['Pune clienta în același loc, cu lumină bună, pe un fundal simplu.', 'Fă o poză din față și una din profil, la zona tratată.', 'Pune pozele în portal, la ședința de azi.'],
       more: ['Unde: Contacte → caută clienta → „Poze înainte / după” → Ședința de azi (Ședința 1 la prima vizită) → ÎNAINTE.', 'La fiecare ședință faci pozele din același loc și din același unghi. Așa se vede clar diferența.', 'Întreab-o dacă e de acord ca pozele să fie folosite pe site și în reclame (fără față). Bifează răspunsul ei tot acolo, la „Publicare”.', 'Pozele stau doar în portal, în fișa ei.'],
+      shot: ['poza-inainte', 'Contacte → clienta → Poze înainte / după → Ședința de azi → ÎNAINTE'],
       why: 'Așa vedem rezultatul, și ea îl vede.', never: 'Fără acordul ei, pozele nu se publică nicăieri.' },
     { t: 'Programul și oferta', when: 'La prima vizită, după fișă și poze', ic: 'wallet',
       do: ['Spune-i ce ai văzut: ce o deranjează și ce se poate face.', 'Faci programul în Calculatorul de ofertă: alegi tratamentele și ședințele.', 'Scrii programul pe pagina 1 a fișei „Program recomandat și ofertă”.', 'Îi arăți oferta 1. Dacă spune „nu”, oferta 2, apoi 3, apoi 4.', 'Când alege, semnează pagina aleasă. La final o duci la recepție: recepția face plata și programările.'],
@@ -386,6 +389,7 @@
     { t: 'Poza „după”', when: 'Imediat după tratament', ic: 'image',
       do: ['Același loc, aceeași lumină și același unghi ca la „înainte”.', 'Pune pozele la aceeași ședință, la DUPĂ.'],
       more: ['Unde: Contacte → clienta → „Poze înainte / după” → Ședința de azi → DUPĂ.', 'Portalul pune singur pozele una lângă alta. Poți să i le arăți pe loc.'],
+      shot: ['poza-dupa', 'Aceeași ședință → DUPĂ. Imaginea înainte / după se face singură.'],
       why: 'Așa se vede diferența.', never: '' },
     { t: 'Conduci clienta', when: 'La final', ic: 'calendar',
       do: ['Spune-i ce să facă acasă.', 'Du-o la recepție.', 'Spune-i recepției cât durează următoarele ședințe și la ce interval vin (de exemplu: „60 de minute, o dată pe săptămână”). Recepția face plata și toate programările.', 'Mulțumește-i și spune-i „La revedere” pe nume.'],
@@ -450,6 +454,7 @@
         '<div class="tr-whybox"><b>De ce?</b><span>' + esc(x.why) + '</span></div>' +
         (x.never ? '<div class="tr-never">' + icon('alert') + '<span>' + esc(x.never) + '</span></div>' : '') +
         (x.more ? '<div class="tr-more"><b>' + icon('info') + 'Mai multe detalii</b><ul>' + x.more.map((m) => '<li>' + esc(m) + '</li>').join('') + '</ul></div>' : '') +
+        (x.shot ? '<figure class="tr-shot"><img src="/academy-shots/' + x.shot[0] + '.webp" alt="" loading="lazy"><figcaption>' + icon('info') + esc(x.shot[1]) + '</figcaption></figure>' : '') +
         (x.go ? '<div class="tr-golinks">' + x.go.map(([l, to]) => '<button type="button" class="k-btn is-outline" data-pgoto="' + to + '">' + esc(l) + icon('right') + '</button>').join('') + '</div>' : '') +
         '<div class="tr-step-nav"><button type="button" class="k-btn is-ghost" data-pgo="' + (i - 1) + '"' + (i ? '' : ' disabled') + '>' + icon('left') + 'Înapoi</button><span class="k-grow"></span>' +
           '<button type="button" class="k-btn is-primary is-lg tr-got" data-pdone="' + i + '">' + (done.has(i) ? icon('check') + 'Învățat' : 'Am înțeles') + (i < PARCURS.length - 1 ? icon('right') : '') + '</button></div>' +
@@ -476,7 +481,8 @@
   // The consultation is the sheet, page by page (portal-academy-fisa.js). The manual's chapters stay under it
   // as a short list: their tests, "Drumul meu" and everyone's progress hang on them.
   function consultHtml(m) {
-    if (!m) return window.C360Fisa.html(A.fisa);
+    // a sheet open: only its guide; the chapters and tests stay with the four sheets (less on the screen)
+    if (!m || A.fisa.chosen) return window.C360Fisa.html(A.fisa);
     const p = mine();
     return window.C360Fisa.html(A.fisa) +
       '<section class="tr-ctests"><div class="tr-ctests-h"><h4>Capitolele și testele</h4><span class="k-grow"></span>' +
@@ -675,21 +681,52 @@
 
   // ------------------------------------------------------------------ Scheme de tratament
   const draftTag = (x) => (isAdmin() && !x.verified ? '<span class="k-tag is-warn">Ciornă</span>' : '');
+  // (the owner, 6.11) the treatments as important documents, not the app's usual cards: each one a protocol on paper,
+  // read top to bottom, simple; a film for each one comes later
   function schemesHtml() {
     const all = D().schemes || [];
+    const open = A.schemeOpen && all.find((s) => s.id === A.schemeOpen);
+    if (open) return schemeDoc(open);
     const g = A.schemeGroup;
     const list = all.filter((s) => g === 'all' || s.group === g);
     const drafts = all.filter((s) => !s.verified).length;
     const p = mine();
     return '<div class="tr-bar">' + K.seg('sgroup', [['all', 'Toate'], ['fata', 'Față'], ['corp', 'Corp'], ['epilare', 'Epilare']], g) +
       (isAdmin() ? '<span class="k-grow"></span>' + (drafts ? '<span class="k-tag is-warn">' + drafts + ' de verificat</span>' : '') + '<button type="button" class="k-btn is-outline is-sm" data-scheme-new>' + icon('plus') + 'Schemă nouă</button>' : '') + '</div>' +
-      (isAdmin() && drafts ? '<p class="tr-note">' + icon('info') + 'Ciornele le vezi doar tu. Le citești, completezi setările aparatelor și apeși „Marchează verificat”, apoi le vede echipa.</p>' : '') +
-      (list.length ? '<div class="ac-grid">' + list.map((s) => '<button type="button" class="ac-ch tr-card" data-scheme="' + esc(s.id) + '">' +
-        '<div class="tr-ch-top"><span class="k-tag">' + esc(GROUP[s.group]) + '</span>' + (s.city !== 'both' ? '<span class="k-tag is-info">' + esc(CITY[s.city]) + '</span>' : '') + draftTag(s) +
-        (p.read[sref(s)] ? '<span class="k-tag is-good">' + icon('check') + 'Citit</span>' : '') + '</div>' +
-        '<h4>' + esc(s.name) + '</h4><p>' + esc(s.what || '') + '</p>' +
-        '<footer class="tr-meta">' + (s.minutes ? '<span>' + icon('clock') + s.minutes + ' min</span>' : '') + (s.sessions ? '<span>' + icon('layers') + esc(s.sessions) + ' ședințe</span>' : '') + (s.interval ? '<span>' + icon('calendar') + esc(s.interval) + '</span>' : '') + '</footer></button>').join('') + '</div>'
+      (list.length ? '<div class="tr-docs">' + list.map((s, i) => '<button type="button" class="tr-doc is-' + esc(s.group) + '" data-scheme="' + esc(s.id) + '" style="--i:' + i + '">' +
+        '<span class="tr-doc-k">Protocol · ' + esc(GROUP[s.group]) + '<i>PT-' + String(all.indexOf(s) + 1).padStart(2, '0') + '</i></span>' +
+        '<b>' + esc(s.name) + '</b><span class="tr-doc-w">' + esc(s.what || '') + '</span>' +
+        '<span class="tr-doc-m">' + (s.minutes ? '<em>' + s.minutes + ' min</em>' : '') + (s.sessions ? '<em>' + esc(s.sessions) + ' ședințe</em>' : '') + (s.city !== 'both' ? '<em>' + esc(CITY[s.city]) + '</em>' : '') +
+          (isAdmin() && !s.verified ? '<em class="is-warn">ciornă</em>' : '') + (p.read[sref(s)] ? '<em class="is-ok">citit</em>' : '') + '</span></button>').join('') + '</div>'
         : K.empty('sparkles', isAdmin() ? 'Nicio schemă aici' : 'Schemele sunt în pregătire', ''));
+  }
+  function schemeDoc(s) {
+    const all = D().schemes || [];
+    const prices = (s.prices || []).map(priceOf).filter(Boolean);
+    const combos = (s.combos || []).map(schemeOf).filter(Boolean);
+    const read = !!mine().read[sref(s)];
+    let n = 0;
+    const part = (title, inner, cls) => (inner ? '<section class="tr-pd-s' + (cls ? ' ' + cls : '') + '" style="--k:' + n + '"><h4><i>' + (++n) + '</i>' + title + '</h4>' + inner + '</section>' : '');
+    const list = (l) => ((l || []).length ? '<ul>' + l.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
+    return '<div class="tr-pd-wrap"><div class="tr-case2-top"><button type="button" class="k-btn is-ghost is-sm" data-scheme-back>' + icon('left') + 'Toate tratamentele</button><span class="k-grow"></span>' +
+        (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-scheme-edit="' + esc(s.id) + '">' + icon('pen') + 'Editează</button><button type="button" class="k-btn is-ghost is-sm" data-scheme-ver="' + esc(s.id) + '">' + icon(s.verified ? 'x' : 'check') + (s.verified ? 'Scoate verificarea' : 'Marchează verificat') + '</button>' : '') + '</div>' +
+      '<article class="tr-pd is-' + esc(s.group) + '">' +
+        '<header class="tr-pd-h"><span class="tr-pd-org">Centrul360 · Protocol de tratament</span><span class="tr-pd-no">PT-' + String(all.indexOf(s) + 1).padStart(2, '0') + '</span>' +
+          '<h2>' + esc(s.name) + '</h2>' + (s.what ? '<p class="tr-pd-what">' + esc(s.what) + '</p>' : '') +
+          '<span class="tr-pd-stamp' + (s.verified ? '' : ' is-draft') + '">' + (s.verified ? 'Verificat' : 'Ciornă') + '</span></header>' +
+        '<div class="tr-pd-facts">' + [['Durata', s.minutes ? s.minutes + ' minute' : ''], ['Ședințe', s.sessions || ''], ['Interval', s.interval || ''], ['Preț / ședință', prices.length ? prices.map((x) => lei(x.price)).join(' · ') : ''], ['Unde', CITY[s.city] || '']]
+          .filter((x) => x[1]).map(([k, v]) => '<div><small>' + esc(k) + '</small><b>' + esc(v) + '</b></div>').join('') + '</div>' +
+        '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(s.name) + '</b><span>Tratamentul arătat pas cu pas. Vine în curând.</span></div></div>' +
+        part('Pentru cine e', list(s.forWho)) +
+        part('Nu faci tratamentul dacă', list(s.contra), 'is-bad') +
+        part('Pașii', (s.steps || []).length ? '<ol class="tr-pd-steps">' + s.steps.map((x, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i><span>' + esc(x) + '</span></li>').join('') + '</ol>' : missing('Pașii nu sunt scriși.')) +
+        part('Setările aparatului', list(s.settings) || missing('De completat de specialistă.')) +
+        part('Ce îi spui clientei', (s.say || []).map((x) => '<blockquote>' + esc(x) + '</blockquote>').join('')) +
+        part('După tratament', list(s.after)) +
+        part('Se combină cu', combos.length ? '<div class="tr-chips">' + combos.map((x) => '<button type="button" class="k-chip" data-scheme="' + esc(x.id) + '">' + esc(x.name) + '</button>').join('') + '</div>' : '') +
+        mediaHtml(s.media) +
+        '<footer class="tr-pd-f">' + (read ? '<span class="k-tag is-good">' + icon('check') + 'Citit</span>' : '<button type="button" class="k-btn is-primary is-lg tr-got" data-scheme-read="' + esc(s.id) + '">Am citit' + icon('check') + '</button>') + '</footer>' +
+      '</article></div>';
   }
   const sec = (title, inner, cls) => (inner ? '<section class="tr-sec' + (cls ? ' ' + cls : '') + '"><h5>' + title + '</h5>' + inner + '</section>' : '');
   const ul = (l) => ((l || []).length ? '<ul>' + l.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
@@ -900,22 +937,62 @@
       : low && o.total < o.min ? '<p class="tr-note">' + icon('info') + 'Sub minim, pentru că e o clientă cu foarte puțină grăsime (excepția din ghid).</p>' : '') : '');
 
   // ------------------------------------------------------------------ Cazuri
+  // (the owner, 6.11) only the cases and their recommendation: the client (her picture, who she is, what she wants),
+  // the program recommended for her, then the offer in its 4 steps said as a conversation. Simple, animated, no quiz.
+  const OFFER_NAME = (R) => ['Tot programul, plătit azi', 'Tot programul, în ' + R.parts + ' tranșe', 'Jumătate de program, plătit azi', 'Jumătate de program, în ' + R.parts + ' tranșe'];
   function casesHtml() {
     const all = D().cases || [];
+    const open = A.caseOpen && all.find((c) => c.id === A.caseOpen);
+    if (open) return caseHtml(open);
     const g = A.caseGroup;
     const list = all.filter((c) => g === 'all' || c.group === g);
     const p = mine();
     const drafts = all.filter((c) => !c.verified).length;
     return '<div class="tr-bar">' + K.seg('cgroup', [['all', 'Toate'], ['fata', 'Față'], ['corp', 'Corp'], ['epilare', 'Epilare']], g) +
       (isAdmin() ? '<span class="k-grow"></span>' + (drafts ? '<span class="k-tag is-warn">' + drafts + ' de verificat</span>' : '') + '<button type="button" class="k-btn is-outline is-sm" data-case-new>' + icon('plus') + 'Caz nou</button>' : '') + '</div>' +
-      (isAdmin() && drafts ? '<p class="tr-note">' + icon('info') + 'Cazurile le-am scris ca exercițiu. Verifică recomandarea fiecăruia, apoi „Marchează verificat” ca să le vadă echipa.</p>' : '') +
-      (list.length ? '<div class="ac-grid">' + list.map((c) => {
+      (list.length ? '<div class="tr-czs">' + list.map((c, i) => {
         const r = p.cases[c.id];
-        return '<button type="button" class="ac-ch tr-card" data-case="' + esc(c.id) + '"><div class="tr-ch-top"><span class="k-tag">' + esc(GROUP[c.group]) + '</span>' +
-          (c.city !== 'both' ? '<span class="k-tag is-info">' + esc(c.city === 'tm' ? 'Timișoara' : 'Arad') + '</span>' : '') + draftTag(c) +
-          (r ? '<span class="k-tag ' + (r.everOk ? 'is-good">' + icon('check') + 'Rezolvat' : 'is-warn">Mai încearcă') + '</span>' : '') + '</div>' +
-          '<h4>' + esc(c.title) + '</h4><p>' + esc(c.wants || '') + '</p></button>';
+        const o = offer(c.program || [], c.low);
+        return '<button type="button" class="tr-cz" data-case="' + esc(c.id) + '" style="--i:' + i + '">' +
+          '<span class="tr-cz-ph">' + (window.C360CaseArt ? window.C360CaseArt.html(c, false) : '') + '</span>' +
+          '<span class="tr-cz-b"><span class="tr-cz-tags"><em>' + esc(GROUP[c.group]) + '</em>' + (c.city !== 'both' ? '<em>' + esc(c.city === 'tm' ? 'Timișoara' : 'Arad') + '</em>' : '') +
+            (isAdmin() && !c.verified ? '<em class="is-warn">ciornă</em>' : '') + (r && r.everOk ? '<em class="is-ok">' + icon('check') + 'Învățat</em>' : '') + '</span>' +
+          '<b>' + esc(c.title) + '</b><span class="tr-cz-w">' + esc(c.wants || '') + '</span>' +
+          '<span class="tr-cz-f">' + (o.rows.length ? 'Program de ' + esc(lei(o.total)) + ' · 4 pași' : 'Fără tratament: află de ce') + icon('right') + '</span></span></button>';
       }).join('') + '</div>' : K.empty('users', isAdmin() ? 'Niciun caz aici' : 'Cazurile sunt în pregătire', ''));
+  }
+  function caseHtml(c) {
+    const o = offer(c.program || [], c.low);
+    const right = (c.options || []).find((x) => x.ok) || null;
+    const done = mine().cases[c.id] && mine().cases[c.id].everOk;
+    const N = OFFER_NAME(o.R);
+    return '<div class="tr-case2">' +
+      '<div class="tr-case2-top"><button type="button" class="k-btn is-ghost is-sm" data-case-back>' + icon('left') + 'Toate cazurile</button><span class="k-grow"></span>' +
+        (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-case-edit="' + esc(c.id) + '">' + icon('pen') + 'Editează</button>' : '') + '</div>' +
+      // 1 · the client
+      '<section class="tr-c2-step tr-case2-hero"><div class="tr-case2-ph">' + (window.C360CaseArt ? window.C360CaseArt.html(c, true) : '') + '</div>' +
+        '<div class="tr-case2-who"><span class="tr-cz-tags"><em>' + esc(GROUP[c.group]) + '</em>' + (c.city !== 'both' ? '<em>' + esc(c.city === 'tm' ? 'Timișoara' : 'Arad') + '</em>' : '') + '</span>' +
+        '<h3>' + esc(c.title) + '</h3>' + ((c.profile || []).length ? '<ul class="tr-case2-pro">' + c.profile.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') +
+        (c.wants ? '<blockquote class="tr-case2-q">' + esc(c.wants) + '</blockquote>' : '') + '</div></section>' +
+      // 2 · what she is recommended, and why
+      '<section class="tr-c2-step"><h3><i>1</i>Ce îi recomanzi' + (right && right.why ? '<small>Și de ce, pe înțeles.</small>' : '') + '</h3>' +
+        (right ? '<p class="tr-case2-rec">' + esc(right.text) + '</p>' + (right.why ? '<div class="tr-whybox"><b>De ce?</b><span>' + esc(right.why) + '</span></div>' : '') : '') +
+        (o.rows.length ? '' : '<div class="tr-never">' + icon('alert') + '<span>Aici nu se face tratament. Îi explici cu blândețe de ce și o rugăm să revină când se poate.</span></div>') + '</section>' +
+      (o.rows.length
+        // 3 · the program
+        ? '<section class="tr-c2-step"><h3><i>2</i>Programul recomandat<small>Prețul întreg, fără reducere. Îl scrii pe pagina 1 a fișei.</small></h3>' +
+          '<div class="tr-case2-prog">' + o.rows.map((r, k) => '<div class="tr-case2-line" style="--k:' + k + '"><span><b>' + esc(r.p.name) + '</b>' + (r.l.zone || r.l.interval ? '<small>' + esc([r.l.zone, r.l.interval].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+            '<em>' + dec(r.s) + ' × ' + esc(lei(r.unit)) + '</em><b>' + esc(lei(r.sub)) + '</b></div>').join('') +
+          '<div class="tr-case2-tot"><span>Total</span><b>' + esc(lei(o.total)) + '</b></div></div>' +
+          ((c.duration || c.result) ? '<p class="tr-case2-res">' + icon('clock') + esc([c.duration, c.result].filter(Boolean).join(' · ')) + '</p>' : '') + minNote(o, c.low) + '</section>' +
+          // 4 · the offer, in 4 steps
+          '<section class="tr-c2-step"><h3><i>3</i>Oferta, în 4 pași<small>Ca o conversație. Cel mai bine e să vă opriți la pasul 1.</small></h3><ol class="tr-c2-offers">' +
+          o.pages.map((pg, k) => '<li class="tr-c2-off is-' + 'abcd'[k] + '" style="--k:' + k + '"><div class="tr-c2-oh"><span class="tr-c2-on">' + (k + 1) + '</span><div><b>' + esc(N[k]) + '</b><small>' + esc(SAYS[k]) + '</small></div><em>-' + dec(pg.off) + '%</em></div>' +
+            '<div class="tr-c2-op"><b>' + esc(lei(pg.pay)) + '</b>' + (pg.parts ? '<span>adică <b>' + esc(lei(pg.pay / pg.parts)) + '</b> la fiecare din primele ' + pg.parts + ' ședințe</span>' : '<span>plătește tot azi</span>') + '</div></li>').join('') + '</ol></section>'
+        : '') +
+      '<div class="tr-case2-end">' + (o.rows.length ? '<button type="button" class="k-btn is-outline" data-case-calc="' + esc(c.id) + '">' + icon('wallet') + 'Deschide în calculator</button>' : '') + '<span class="k-grow"></span>' +
+        (done ? '<span class="k-tag is-good">' + icon('check') + 'Învățat</span>' : '<button type="button" class="k-btn is-primary is-lg tr-got" data-case-got="' + esc(c.id) + '">Am înțeles cazul' + icon('check') + '</button>') + '</div>' +
+      '</div>';
   }
   function solutionHtml(c) {
     const o = offer(c.program || [], c.low);
@@ -1096,6 +1173,14 @@
       '<div class="tr-c2-sum" data-csum="' + i + '"></div>' +
       '<button type="button" class="tr-c2-rm" data-cl-rm="' + i + '" aria-label="Scoate">' + icon('x') + '</button></div>').join('');
   }
+  // the four offers said as one conversation (the owner, 6.11): never a "discount, take it or leave it"; the best is
+  // to stop at the first one
+  const SAYS = [
+    '„Pentru că începeți azi tot programul, aveți 50% reducere, cu plata integrală.” Cel mai bine e să vă opriți aici.',
+    'E prea mult? „Înțeleg. Atunci ce putem face pentru dvs. este o reducere puțin mai mică, de 30%, și puteți achita în 4 tranșe.”',
+    'Tot e greu? „Înțeleg perfect. Corect din partea noastră ar fi să puneți un picior pe ușă: începeți cu jumătate din program, tot cu 50% reducere. Vă obișnuiți cu noi și vedem cum răspunde corpul dvs. la aparate.”',
+    'Ultima variantă: „Ca să fie cât mai ușor: aceeași jumătate de program, cu 30% reducere, în 4 tranșe.”',
+  ];
   function paintCalcResults() {
     const out = panel.querySelector('[data-calc-out]');
     if (!out) return;
@@ -1110,7 +1195,7 @@
         (o.total >= o.min ? icon('check') + '<span>Bun! Programul trece de minimul de ' + lei(o.min) + '.</span>' : s.low ? icon('info') + '<span>Sub minim, pentru că e o clientă cu foarte puțină grăsime.</span>' :
           icon('alert') + '<span>Programul pentru ' + (o.kind === 'corp' ? 'corp' : 'față') + ' trebuie să fie de cel puțin ' + lei(o.min) + '. Mai adaugă ședințe sau tratamente: lipsesc <b>' + lei(o.short) + '</b>.</span>') + '</span></div>';
     })() : '';
-    const SAY = ['Îi arăți întâi asta. E cea mai mare reducere.', 'Dacă spune „nu”, îi arăți asta: plătește puțin câte puțin.', 'Tot „nu”? Îi propui jumătate din program.', 'Ultima variantă: jumătate din program, în rate.'];
+    const SAY = SAYS;
     const NAME = ['Tot programul, plătit azi', 'Tot programul, în ' + o.R.parts + ' rate', 'Jumătate de program, plătit azi', 'Jumătate de program, în ' + o.R.parts + ' rate'];
     out.innerHTML =
       '<section class="tr-c2-step"><h3><i>2</i>Cât costă tot programul<small>Prețul întreg, fără reducere. Îl scrii pe pagina 1 a fișei.</small></h3>' +
@@ -1423,9 +1508,29 @@
       try { const j = await post({ action: 'task', id: td.dataset.taskDone || td.dataset.taskUndo, done: !!td.dataset.taskDone }); setMine(j.progress); render(); if (td.dataset.taskDone) K.ui().toast('Trimis la confirmare.', 'success'); }
       catch (err) { K.ui().toast(K.errText(err), 'error'); }
     });
-    const sc = t.closest('[data-scheme]'); if (sc) return openScheme(sc.dataset.scheme);
+    const sc = t.closest('[data-scheme]');
+    if (sc) { A.schemeOpen = sc.dataset.scheme; panel.querySelector('[data-view]').innerHTML = ''; render(); const v = panel.querySelector('.tr-pd-wrap'); if (v) v.scrollIntoView({ block: 'start' }); return; }
+    if (t.closest('[data-scheme-back]')) { A.schemeOpen = ''; panel.querySelector('[data-view]').innerHTML = ''; return render(); }
+    const sed = t.closest('[data-scheme-edit]'); if (sed) return editScheme(schemeOf(sed.dataset.schemeEdit));
+    const sve = t.closest('[data-scheme-ver]');
+    if (sve) { const s0 = schemeOf(sve.dataset.schemeVer); return K.busy(sve, async () => { try { await save({ upsert: { kind: 'scheme', item: Object.assign({}, s0, { verified: !s0.verified }) } }); K.ui().toast(s0.verified ? 'Scoasă de la echipă.' : 'Verificată. O vede toată echipa.', 'success'); K.reload(); } catch (err) { K.ui().toast(K.errText(err), 'error'); } }); }
+    const srd = t.closest('[data-scheme-read]');
+    if (srd) { const s0 = schemeOf(srd.dataset.schemeRead); return K.busy(srd, async () => { try { const j = await post({ action: 'read', ref: sref(s0) }); setMine(j.progress); burst(srd); setTimeout(render, 380); } catch (err) { K.ui().toast(K.errText(err), 'error'); } }); }
     if (t.closest('[data-scheme-new]')) return editScheme(null);
-    const cs = t.closest('[data-case]'); if (cs) return openCase(cs.dataset.case);
+    const cs = t.closest('[data-case]');
+    if (cs) { A.caseOpen = cs.dataset.case; panel.querySelector('[data-view]').innerHTML = ''; render(); const v = panel.querySelector('.tr-case2'); if (v) v.scrollIntoView({ block: 'start' }); return; }
+    if (t.closest('[data-case-back]')) { A.caseOpen = ''; panel.querySelector('[data-view]').innerHTML = ''; return render(); }
+    const ced = t.closest('[data-case-edit]'); if (ced) return editCase(caseOf(ced.dataset.caseEdit));
+    const ccl = t.closest('[data-case-calc]'); if (ccl) return toCalc(caseOf(ccl.dataset.caseCalc));
+    const cgot = t.closest('[data-case-got]');
+    if (cgot) {
+      const c = caseOf(cgot.dataset.caseGot);
+      const ok = c ? (c.options || []).findIndex((x) => x.ok) : -1;
+      return K.busy(cgot, async () => {
+        try { const j = await post({ action: 'case', id: c.id, choice: Math.max(0, ok) }); setMine(j.progress); burst(cgot); setTimeout(render, 380); }
+        catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      });
+    }
     if (t.closest('[data-case-new]')) return editCase(null);
     // the calculator: a whole repaint keeps the page where it is
     const recalc = () => { keepCalc(); const v = panel.querySelector('[data-calc]'); if (!v) return; const y = window.scrollY; v.outerHTML = calcHtml(); paintCalcResults(); window.scrollTo(0, y); };
@@ -1452,7 +1557,7 @@
       const to = pg2.dataset.pgoto;
       if (to === 'calc') return K.go('calculator');
       const sheet = to.split(':')[1];
-      A.fisa.sheet = sheet; A.fisa.page = 0; A.fisa.on = -1;
+      A.fisa.sheet = sheet; A.fisa.page = 0; A.fisa.on = -1; A.fisa.chosen = true;
       A.zone = 'consult'; A.pick['vanzari:' + viewRole()] = 'm:consultatie';
       panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' });
       return;
@@ -1837,6 +1942,80 @@
 .tr-more b{ display:flex; align-items:center; gap:.45rem; font-size:.95rem; margin-bottom:.4rem; } .tr-more b .k-ic{ width:17px; height:17px; color:var(--accent); }
 .tr-more ul{ margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.35rem; } .tr-more li{ line-height:1.45; }
 .tr-golinks{ display:flex; flex-wrap:wrap; gap:.5rem; margin:.3rem 0 .4rem; }
+/* Cazuri: picture cards, then the case page */
+.tr-czs{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:1rem; }
+.tr-cz{ display:flex; flex-direction:column; padding:0; border-radius:24px; overflow:hidden; border:1px solid var(--line); background:var(--paper); color:inherit; font:inherit; text-align:left; cursor:pointer;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s; animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 50ms); }
+.tr-cz:hover{ transform:translateY(-4px); box-shadow:0 24px 50px -30px rgba(91,140,255,.6); }
+.tr-cz-ph{ display:block; height:190px; overflow:hidden; position:relative; }
+.tr-cz-ph figure.ta{ margin:0; border:0; border-radius:0; height:100%; }
+.tr-cz-ph figure.ta.is-photo .ta-ph{ height:190px; } .tr-cz-ph figure.ta.is-photo img{ max-height:none; height:190px; width:100%; object-fit:cover; object-position:center 25%; }
+.tr-cz-ph figure.ta svg{ height:190px; width:100%; object-fit:cover; } .tr-cz-ph .ta-tag{ display:none; }
+.tr-cz-b{ display:flex; flex-direction:column; gap:.35rem; padding:1rem 1.1rem 1.1rem; flex:1; }
+.tr-cz-b > b{ font-size:1.08rem; letter-spacing:-.01em; }
+.tr-cz-w{ color:var(--muted); font-size:.88rem; line-height:1.4; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.tr-cz-tags{ display:flex; flex-wrap:wrap; gap:.3rem; } .tr-cz-tags em{ display:inline-flex; align-items:center; gap:.25rem; font-style:normal; font-size:.7rem; font-weight:700; padding:.18rem .55rem; border-radius:999px; background:var(--glass-2); color:var(--muted); }
+.tr-cz-tags em.is-ok{ color:var(--good); background:var(--good-soft); } .tr-cz-tags em.is-warn{ color:var(--warn); background:var(--warn-soft); } .tr-cz-tags .k-ic{ width:12px; height:12px; }
+.tr-cz-f{ margin-top:auto; padding-top:.5rem; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:.84rem; color:var(--accent); } .tr-cz-f .k-ic{ width:16px; height:16px; }
+.tr-case2{ display:flex; flex-direction:column; gap:1rem; }
+.tr-case2-top{ display:flex; align-items:center; gap:.5rem; }
+.tr-case2-hero{ display:grid; grid-template-columns:minmax(0, 340px) minmax(0, 1fr); gap:1.4rem; align-items:start; }
+.tr-case2-ph figure.ta{ margin:0; border-radius:20px; }
+.tr-case2-who h3{ margin:.5rem 0 .8rem; font-size:1.7rem; font-weight:800; letter-spacing:-.03em; line-height:1.15; }
+.tr-case2-pro{ margin:0 0 .9rem; padding:0; list-style:none; display:flex; flex-direction:column; gap:.4rem; }
+.tr-case2-pro li{ padding:.6rem .85rem; border-radius:14px; background:var(--glass); animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; }
+.tr-case2-q{ margin:0; padding:.85rem 1rem; border-radius:18px 18px 18px 4px; background:color-mix(in srgb, var(--accent) 12%, transparent); font-size:1.02rem; font-style:italic; }
+.tr-case2-rec{ margin:0 0 .7rem; font-size:1.15rem; font-weight:700; line-height:1.4; }
+.tr-case2-prog{ display:flex; flex-direction:column; gap:.4rem; }
+.tr-case2-line{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:1rem; padding:.75rem 1rem; border-radius:16px; background:var(--glass); animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--k) * 70ms); }
+.tr-case2-line span{ display:flex; flex-direction:column; } .tr-case2-line small{ color:var(--muted); font-size:.78rem; } .tr-case2-line em{ font-style:normal; color:var(--muted); font-size:.85rem; white-space:nowrap; } .tr-case2-line > b{ white-space:nowrap; }
+.tr-case2-tot{ display:flex; justify-content:space-between; align-items:baseline; padding:.8rem 1rem 0; } .tr-case2-tot b{ font-size:1.8rem; font-weight:800; letter-spacing:-.02em; }
+.tr-case2-res{ display:flex; gap:.4rem; align-items:center; color:var(--muted); margin:.6rem 0 0; } .tr-case2-res .k-ic{ width:15px; height:15px; }
+.tr-case2-end{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+@media (max-width:760px){ .tr-case2-hero{ grid-template-columns:1fr; } .tr-case2-line{ grid-template-columns:1fr auto; } .tr-case2-line em{ grid-column:1; grid-row:2; } .tr-czs{ grid-template-columns:1fr; } }
+/* Tratamente: protocols on paper */
+.tr-docs{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:1rem; }
+.tr-doc{ --band:#5b8cff; position:relative; display:flex; flex-direction:column; gap:.45rem; min-height:200px; padding:1.3rem 1.3rem 1.1rem; border-radius:6px 22px 22px 22px; border:1px solid #e7e2d8; background:linear-gradient(180deg, #fffdf8, #f6f2ea);
+  color:#1d1b18; font:inherit; text-align:left; cursor:pointer; box-shadow:0 1px 0 #fff inset, 0 18px 40px -28px rgba(0,0,0,.6); transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+  animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 40ms); }
+.tr-doc::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:5px; border-radius:6px 0 0 22px; background:var(--band); }
+.tr-doc.is-corp{ --band:#10b981; } .tr-doc.is-epilare{ --band:#f59e0b; }
+.tr-doc:hover{ transform:translateY(-4px) rotate(-.3deg); box-shadow:0 1px 0 #fff inset, 0 28px 50px -26px rgba(0,0,0,.6); }
+.tr-doc-k{ display:flex; justify-content:space-between; font-size:.68rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#8a8172; } .tr-doc-k i{ font-style:normal; letter-spacing:.05em; }
+.tr-doc > b{ font-family:'Iowan Old Style', 'Palatino Linotype', Georgia, serif; font-size:1.3rem; font-weight:700; line-height:1.2; color:#16140f; }
+.tr-doc-w{ font-size:.86rem; line-height:1.45; color:#5c564b; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+.tr-doc-m{ margin-top:auto; display:flex; flex-wrap:wrap; gap:.3rem; } .tr-doc-m em{ font-style:normal; font-size:.7rem; font-weight:700; padding:.18rem .5rem; border-radius:6px; background:#ece6da; color:#5c564b; }
+.tr-doc-m em.is-ok{ background:#d8f0e3; color:#11764a; } .tr-doc-m em.is-warn{ background:#f8e7c6; color:#8a5a00; }
+.tr-pd-wrap{ display:flex; flex-direction:column; gap:1rem; }
+.tr-pd{ --band:#5b8cff; position:relative; box-sizing:border-box; min-width:0; max-width:900px; width:100%; margin:0 auto; padding:2.2rem 2.4rem 1.8rem; border-radius:8px 28px 28px 28px; background:linear-gradient(180deg, #fffdf8, #f7f3eb); color:#1d1b18;
+  border:1px solid #e7e2d8; box-shadow:0 40px 80px -50px rgba(0,0,0,.8); animation:trSheet .55s cubic-bezier(.16,1,.3,1) both; }
+.tr-pd.is-corp{ --band:#10b981; } .tr-pd.is-epilare{ --band:#f59e0b; }
+.tr-pd::before{ content:''; position:absolute; left:0; right:0; top:0; height:6px; border-radius:8px 28px 0 0; background:var(--band); }
+.tr-pd-h{ position:relative; padding-bottom:1.2rem; border-bottom:1px solid #e5dfd3; }
+.tr-pd-org{ font-size:.7rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:#8a8172; } .tr-pd-no{ float:right; font-size:.78rem; font-weight:700; color:#8a8172; }
+.tr-pd-h h2{ margin:.6rem 0 .5rem; font-family:'Iowan Old Style', 'Palatino Linotype', Georgia, serif; font-size:2.3rem; line-height:1.1; letter-spacing:-.01em; color:#16140f; padding-right:7rem; }
+.tr-pd-what{ margin:0; font-size:1.08rem; line-height:1.55; color:#3d3830; max-width:60ch; }
+.tr-pd-stamp{ position:absolute; right:0; top:2rem; transform:rotate(-8deg); padding:.35rem .8rem; border:2.5px solid #11764a; border-radius:8px; color:#11764a; font-weight:800; font-size:.8rem; letter-spacing:.14em; text-transform:uppercase; opacity:.85; animation:trStamp .5s .3s cubic-bezier(.34,1.56,.64,1) both; }
+.tr-pd-stamp.is-draft{ border-color:#b7791f; color:#b7791f; }
+@keyframes trStamp{ from{ opacity:0; transform:rotate(-8deg) scale(1.8); } to{ opacity:.85; transform:rotate(-8deg) scale(1); } }
+.tr-pd-facts{ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:1px; margin:1.2rem 0; border-radius:14px; overflow:hidden; background:#e5dfd3; border:1px solid #e5dfd3; }
+.tr-pd-facts div{ display:flex; flex-direction:column; gap:.15rem; padding:.75rem .9rem; background:#fffdf8; } .tr-pd-facts small{ font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#8a8172; } .tr-pd-facts b{ font-size:1rem; color:#16140f; }
+.tr-pd .tr-vsl{ background:#f1ece2; border-color:#d9d1c2; } .tr-pd .tr-vsl span{ color:#6b6457; } .tr-pd .tr-vsl b{ color:#16140f; }
+.tr-pd-s{ padding:1.1rem 0; border-top:1px solid #ece6da; animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.1s + var(--k) * 60ms); }
+.tr-pd-s h4{ display:flex; align-items:center; gap:.6rem; margin:0 0 .7rem; font-family:'Iowan Old Style', 'Palatino Linotype', Georgia, serif; font-size:1.25rem; color:#16140f; }
+.tr-pd-s h4 i{ font-style:normal; font-family:Inter, system-ui, sans-serif; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:.8rem; font-weight:800; color:#fff; background:var(--band); flex:none; }
+.tr-pd-s ul{ margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.35rem; } .tr-pd-s li{ line-height:1.5; color:#2c2822; }
+.tr-pd-s.is-bad{ margin:.3rem 0; padding:1rem 1.1rem; border-radius:16px; border:1.5px solid #e9b4b4; background:#fdf1f1; } .tr-pd-s.is-bad h4{ color:#a12a2a; } .tr-pd-s.is-bad h4 i{ background:#c53030; } .tr-pd-s.is-bad li{ color:#5b1f1f; }
+.tr-pd-steps{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.5rem; position:relative; }
+.tr-pd-steps li{ display:flex; gap:.85rem; align-items:flex-start; padding:.7rem .9rem; border-radius:14px; background:#f3eee5; animation:trSheet .4s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.15s + var(--k) * 70ms); }
+.tr-pd-steps li i{ font-style:normal; flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.8rem; background:#fff; color:#16140f; border:1px solid #ddd5c6; }
+.tr-pd-s blockquote{ margin:0 0 .5rem; padding:.75rem 1rem; border-radius:16px 16px 16px 4px; background:#fff; border:1px solid #e5dfd3; color:#2c2822; font-size:1rem; }
+.tr-pd .tr-missing{ color:#8a5a00; } .tr-pd .k-chip{ color:#16140f; }
+.tr-pd-f{ display:flex; justify-content:flex-end; padding-top:1.2rem; border-top:1px solid #ece6da; }
+@media (max-width:760px){ .tr-pd{ padding:1.5rem 1.2rem 1.2rem; } .tr-pd-h h2{ font-size:1.7rem; padding-right:0; } .tr-pd-stamp{ position:static; display:inline-block; margin-top:.6rem; } .tr-docs{ grid-template-columns:1fr; } }
+.tr-shot{ margin:.3rem 0 .7rem; display:flex; flex-direction:column; align-items:center; gap:.6rem; padding:1rem; border-radius:20px; background:var(--glass); }
+.tr-shot img{ display:block; width:100%; max-width:320px; border-radius:22px; border:6px solid #0b0c10; box-shadow:0 20px 40px -24px rgba(0,0,0,.8); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }
+.tr-shot figcaption{ display:flex; gap:.4rem; align-items:flex-start; font-size:.85rem; font-weight:600; color:var(--muted); text-align:center; } .tr-shot .k-ic{ width:15px; height:15px; flex:none; margin-top:.1rem; color:var(--accent); }
 /* the light theme: soft shadows instead of the dark ones */
 :root[data-theme="light"] .tr-door, :root[data-theme="light"] .tr-step{ box-shadow:0 20px 40px -30px rgba(13,15,20,.35); }
 :root[data-theme="light"] .tr-stop-dot, :root[data-theme="light"] .tr-vdot{ box-shadow:0 6px 16px -10px rgba(13,15,20,.3); }
