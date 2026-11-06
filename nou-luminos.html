@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ro" data-theme="luminos">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cut">
+<meta name="robots" content="noindex,nofollow">
+<title>Centrul360 · Previzualizare luminoasă</title>
+<link rel="icon" href="/brand_asset/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{ --r:22px; --max:1180px; --ease:cubic-bezier(.16,1,.3,1); }
+[data-theme="luminos"]{ --bg:#f6f5f2; --bg2:#ffffff; --card:#ffffff; --ink:#101216; --muted:#5d636e; --line:#e6e3dc; --acc:#1f9e8f; --acc2:#d9f2ee; --accInk:#0d6b60; --glow:rgba(31,158,143,.18); --shadow:0 24px 60px -36px rgba(16,18,22,.35); --btnInk:#fff; }
+[data-theme="inchis"]{ --bg:#0b0b0d; --bg2:#121216; --card:#16161b; --ink:#f5f4f2; --muted:#a3a7b0; --line:#25252c; --acc:#5fd3c3; --acc2:rgba(95,211,195,.12); --accInk:#7fe3d5; --glow:rgba(95,211,195,.22); --shadow:0 30px 70px -40px rgba(0,0,0,.9); --btnInk:#06201c; }
+*{ box-sizing:border-box; } html{ scroll-behavior:smooth; }
+body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 Inter, system-ui, sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+img{ max-width:100%; display:block; }
+a{ color:inherit; }
+.wrap{ max-width:var(--max); margin:0 auto; padding:0 20px; }
+h1,h2,h3{ font-family:Fraunces, Georgia, serif; font-weight:600; letter-spacing:-.02em; line-height:1.08; margin:0; }
+.eyebrow{ display:inline-flex; align-items:center; gap:.5rem; font-size:.78rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accInk); }
+.eyebrow::before{ content:''; width:7px; height:7px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 4px var(--acc2); }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:.55rem; min-height:54px; padding:0 1.6rem; border-radius:999px; border:0; font:700 1rem Inter, sans-serif; cursor:pointer; text-decoration:none; transition:transform .25s var(--ease), box-shadow .25s; }
+.btn:active{ transform:scale(.97); }
+.btn-p{ background:var(--acc); color:var(--btnInk); box-shadow:0 16px 34px -14px var(--acc); }
+.btn-p:hover{ transform:translateY(-2px); box-shadow:0 22px 40px -14px var(--acc); }
+.btn-g{ background:transparent; color:var(--ink); border:1.5px solid var(--line); }
+.btn-g:hover{ border-color:var(--acc); }
+/* header */
+.hd{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); background:color-mix(in srgb, var(--bg) 82%, transparent); border-bottom:1px solid var(--line); }
+.hd .wrap{ display:flex; align-items:center; gap:1rem; height:68px; }
+.logo{ display:flex; align-items:center; gap:.55rem; font-weight:800; letter-spacing:.02em; text-decoration:none; font-size:1.05rem; }
+.logo img{ width:30px; height:30px; } [data-theme="inchis"] .logo img{ filter:invert(1); }
+.hd nav{ display:flex; gap:1.4rem; margin-left:1.6rem; font-size:.92rem; color:var(--muted); } .hd nav a{ text-decoration:none; } .hd nav a:hover{ color:var(--ink); }
+.hd .rate{ margin-left:auto; display:flex; align-items:center; gap:.4rem; font-size:.86rem; color:var(--muted); } .hd .rate b{ color:var(--ink); } .stars{ color:#f5b301; letter-spacing:1px; }
+.hd .btn{ min-height:44px; padding:0 1.2rem; font-size:.92rem; }
+/* hero */
+.hero{ position:relative; padding:56px 0 40px; overflow:hidden; }
+.hero::before{ content:''; position:absolute; inset:-20% -10% auto auto; width:720px; height:720px; border-radius:50%; background:radial-gradient(circle, var(--glow), transparent 65%); pointer-events:none; }
+.hero .wrap{ display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; position:relative; }
+.hero h1{ font-size:clamp(2.4rem, 5.2vw, 4.3rem); margin:.9rem 0 1.1rem; }
+.hero h1 em{ font-style:italic; color:var(--accInk); }
+.hero p.lead{ font-size:1.15rem; color:var(--muted); max-width:34rem; margin:0 0 1.6rem; }
+.gift{ display:flex; gap:.8rem; align-items:center; padding:.9rem 1.1rem; border-radius:18px; background:var(--acc2); color:var(--ink); margin:0 0 1.6rem; max-width:34rem; font-size:.97rem; }
+.gift b{ color:var(--accInk); } .gift i{ font-style:normal; font-size:1.5rem; }
+.ctas{ display:flex; flex-wrap:wrap; gap:.8rem; }
+.trust{ display:flex; flex-wrap:wrap; gap:.6rem 1.4rem; margin-top:1.6rem; font-size:.88rem; color:var(--muted); } .trust span{ display:inline-flex; align-items:center; gap:.4rem; } .trust b{ color:var(--ink); }
+.trust span::before{ content:'✓'; color:var(--acc); font-weight:800; }
+.hero-vis{ position:relative; min-height:520px; }
+.ba{ position:absolute; right:0; top:10px; width:88%; border-radius:26px; overflow:hidden; box-shadow:var(--shadow); border:1px solid var(--line); background:var(--card); transform:rotate(1.5deg); }
+.ba img{ width:100%; height:auto; } .ba figcaption{ padding:.75rem 1rem .75rem 40%; font-size:.85rem; color:var(--muted); display:flex; flex-direction:column; align-items:flex-end; text-align:right; } .ba figcaption b{ color:var(--ink); }
+.masc{ position:absolute; left:-40px; bottom:-30px; width:42%; filter:drop-shadow(0 30px 30px rgba(0,0,0,.28)); animation:float 5s ease-in-out infinite; }
+@keyframes float{ 0%,100%{ transform:translateY(0) rotate(-1deg); } 50%{ transform:translateY(-14px) rotate(1deg); } }
+.bubble{ position:absolute; left:30%; bottom:46%; max-width:220px; padding:.8rem 1rem; border-radius:18px 18px 18px 4px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); font-size:.88rem; font-weight:600; animation:pop .6s .6s var(--ease) both; }
+@keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.9); } to{ opacity:1; transform:none; } }
+/* objection strip */
+.strip{ border-block:1px solid var(--line); background:var(--bg2); }
+.strip .wrap{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; }
+.strip div{ padding:1.3rem .5rem; text-align:center; font-weight:700; font-size:1.02rem; } .strip small{ display:block; font-weight:500; color:var(--muted); font-size:.82rem; margin-top:.15rem; }
+/* sections */
+section.s{ padding:84px 0; } .sh{ max-width:42rem; margin-bottom:2.4rem; } .sh h2{ font-size:clamp(2rem, 3.6vw, 3rem); margin:.7rem 0 .6rem; } .sh p{ color:var(--muted); font-size:1.08rem; margin:0; }
+.center{ text-align:center; margin-left:auto; margin-right:auto; }
+.grid{ display:grid; gap:18px; }
+.res{ grid-template-columns:repeat(3,1fr); }
+.res figure{ margin:0; border-radius:var(--r); overflow:hidden; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); }
+.res img{ width:100%; aspect-ratio:3/2; object-fit:cover; } .res figcaption{ padding:.9rem 1.1rem; } .res figcaption b{ display:block; } .res figcaption span{ color:var(--muted); font-size:.88rem; }
+.note{ font-size:.82rem; color:var(--muted); margin-top:1rem; }
+/* offers */
+.off{ grid-template-columns:repeat(3,1fr); }
+.oc{ position:relative; display:flex; flex-direction:column; gap:.5rem; padding:1.5rem; border-radius:var(--r); background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .3s var(--ease); }
+.oc:hover{ transform:translateY(-4px); }
+.oc .pct{ position:absolute; top:1.1rem; right:1.1rem; padding:.3rem .65rem; border-radius:999px; background:var(--acc); color:var(--btnInk); font-weight:800; font-size:.85rem; }
+.oc .cat{ font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.oc h3{ font-size:1.45rem; padding-right:3.6rem; }
+.oc .pr{ display:flex; align-items:baseline; gap:.6rem; margin:.4rem 0 .2rem; } .oc .pr b{ font-size:2.2rem; font-family:Fraunces, serif; } .oc .pr s{ color:var(--muted); font-size:1.05rem; }
+.oc .save{ font-size:.9rem; font-weight:600; color:var(--accInk); } .oc .where{ font-size:.85rem; color:var(--muted); }
+.oc .btn{ margin-top:auto; width:100%; min-height:48px; }
+/* steps */
+.steps{ display:grid; grid-template-columns:.8fr 1.2fr; gap:40px; align-items:center; }
+.steps .m{ position:relative; } .steps .m img{ width:80%; margin:0 auto; animation:float 6s ease-in-out infinite; filter:drop-shadow(0 30px 30px rgba(0,0,0,.25)); }
+.st{ display:flex; gap:1rem; padding:1.2rem 1.3rem; border-radius:var(--r); background:var(--card); border:1px solid var(--line); margin-bottom:12px; }
+.st i{ font-style:normal; flex:none; width:42px; height:42px; border-radius:14px; display:grid; place-items:center; font-weight:800; background:var(--acc2); color:var(--accInk); }
+.st b{ display:block; font-size:1.08rem; } .st span{ color:var(--muted); font-size:.95rem; }
+/* treatments */
+.tre{ grid-template-columns:repeat(3,1fr); }
+.tc{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; min-height:360px; padding:1.5rem; border-radius:var(--r); overflow:hidden; color:#fff; text-decoration:none; isolation:isolate; }
+.tc img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; transition:transform .6s var(--ease); } .tc:hover img{ transform:scale(1.05); }
+.tc::after{ content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, transparent 35%, rgba(0,0,0,.75)); }
+.tc h3{ font-size:1.7rem; } .tc span{ opacity:.85; font-size:.95rem; } .tc em{ font-style:normal; margin-top:.6rem; font-weight:700; }
+/* reviews */
+.rv{ grid-template-columns:repeat(3,1fr); }
+.rc{ padding:1.5rem; border-radius:var(--r); background:var(--card); border:1px solid var(--line); } .rc p{ font-size:1.02rem; margin:.6rem 0 1rem; } .rc small{ color:var(--muted); }
+.score{ display:flex; align-items:center; gap:1rem; margin-bottom:1.6rem; } .score b{ font-family:Fraunces, serif; font-size:3rem; } .score span{ color:var(--muted); }
+/* guarantee */
+.gar{ display:grid; grid-template-columns:auto 1fr auto; gap:1.4rem; align-items:center; padding:1.6rem 1.8rem; border-radius:var(--r); border:1.5px solid var(--acc); background:var(--acc2); }
+.gar .seal{ width:74px; height:74px; border-radius:50%; display:grid; place-items:center; background:var(--acc); color:var(--btnInk); font-weight:800; font-size:.72rem; text-align:center; line-height:1.15; transform:rotate(-10deg); }
+.gar h3{ font-size:1.4rem; } .gar p{ margin:.3rem 0 0; color:var(--muted); }
+/* lead form */
+.lf{ display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:center; padding:40px; border-radius:30px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); }
+.lf h2{ font-size:clamp(1.8rem,3vw,2.5rem); margin:.6rem 0; } .lf p{ color:var(--muted); }
+form{ display:grid; gap:12px; }
+label.f{ display:grid; gap:6px; font-size:.85rem; font-weight:600; color:var(--muted); }
+input, select{ width:100%; min-height:52px; padding:0 14px; border-radius:14px; border:1.5px solid var(--line); background:var(--bg); color:var(--ink); font:500 1rem Inter, sans-serif; }
+input:focus, select:focus{ outline:none; border-color:var(--acc); box-shadow:0 0 0 4px var(--acc2); }
+.chk{ display:flex; gap:.6rem; align-items:flex-start; font-size:.82rem; color:var(--muted); } .chk input{ width:20px; min-height:20px; margin-top:2px; accent-color:var(--acc); }
+.err{ color:#e0564f; font-size:.85rem; min-height:1em; }
+/* locations */
+.loc{ grid-template-columns:1fr 1fr; }
+.lc{ border-radius:var(--r); overflow:hidden; background:var(--card); border:1px solid var(--line); } .lc img{ width:100%; aspect-ratio:16/9; object-fit:cover; }
+.lc div{ padding:1.3rem 1.4rem; display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; } .lc h3{ font-size:1.5rem; width:100%; } .lc span{ color:var(--muted); font-size:.95rem; } .lc .btn{ margin-left:auto; min-height:46px; }
+/* faq */
+.faq details{ border-bottom:1px solid var(--line); padding:1.1rem 0; } .faq summary{ cursor:pointer; list-style:none; font-weight:700; font-size:1.08rem; display:flex; justify-content:space-between; gap:1rem; }
+.faq summary::after{ content:'+'; color:var(--acc); font-size:1.4rem; line-height:1; transition:transform .3s; } .faq details[open] summary::after{ transform:rotate(45deg); } .faq p{ color:var(--muted); margin:.6rem 0 0; }
+/* final */
+.fin{ position:relative; display:grid; grid-template-columns:1.2fr .8fr; align-items:center; gap:20px; padding:48px; border-radius:32px; background:linear-gradient(135deg, var(--acc2), transparent 70%), var(--card); border:1px solid var(--line); overflow:hidden; }
+.fin h2{ font-size:clamp(2rem,3.6vw,3rem); margin:.6rem 0 1rem; } .fin img{ width:85%; justify-self:center; animation:float 5s ease-in-out infinite; }
+footer{ padding:40px 0 110px; color:var(--muted); font-size:.85rem; text-align:center; }
+.mbar{ display:none; }
+.reveal{ opacity:0; transform:translateY(24px); transition:opacity .8s var(--ease), transform .8s var(--ease); } .reveal.in{ opacity:1; transform:none; }
+.preview{ position:fixed; left:12px; bottom:12px; z-index:60; padding:.45rem .8rem; border-radius:999px; background:#111; color:#fff; font-size:.75rem; font-weight:700; opacity:.85; }
+.preview a{ color:#5fd3c3; margin-left:.4rem; }
+@media (max-width:900px){
+  .hd nav, .hd .rate{ display:none; } .hd .btn{ margin-left:auto; }
+  .hero{ padding-top:28px; } .hero .wrap, .steps, .lf, .fin{ grid-template-columns:1fr; } .hero-vis{ min-height:420px; }
+  .strip .wrap{ grid-template-columns:1fr 1fr; } .res, .off, .tre, .rv, .loc{ grid-template-columns:1fr; }
+  .gar{ grid-template-columns:auto 1fr; } .gar .btn{ grid-column:1 / -1; }
+  section.s{ padding:60px 0; } .lf, .fin{ padding:26px; } .fin img{ width:60%; }
+  .mbar{ display:flex; position:fixed; left:12px; right:12px; bottom:12px; z-index:55; } .mbar .btn{ width:100%; }
+  .preview{ bottom:auto; top:76px; left:auto; right:12px; }
+}
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } .reveal{ opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+<header class="hd"><div class="wrap">
+  <a class="logo" href="#top"><img src="/brand_asset/logo-mark.png" alt="">CENTRUL360</a>
+  <nav><a href="#rezultate">Rezultate</a><a href="#oferte">Oferte</a><a href="#tratamente">Tratamente</a><a href="#locatii">Locații</a></nav>
+  <span class="rate"><span class="stars">★★★★★</span><b>5,0</b> · 300+ recenzii Google</span>
+  <button type="button" class="btn btn-p" data-book data-book-service="consult">Programează-te</button>
+</div></header>
+
+<section class="hero" id="top"><div class="wrap">
+  <div>
+    <span class="eyebrow">Timișoara &amp; Arad · consultație gratuită</span>
+    <h1>Corpul și tenul pe care le vrei. <em>Fără ace, fără operație.</em></h1>
+    <p class="lead">Aparate medicale certificate, un plan făcut doar pentru tine și rezultate pe care le vezi din prima ședință.</p>
+    <div class="gift"><i>🎁</i><span>Vii la <b>consultația gratuită</b> și primești <b>un masaj facial cadou</b>. Fără obligații.</span></div>
+    <div class="ctas"><button type="button" class="btn btn-p" data-book data-book-service="consult">Programează consultația gratuită →</button><a class="btn btn-g" href="#oferte">Vezi ofertele lunii</a></div>
+    <div class="trust"><span><b>5,0</b> pe Google, 300+ recenzii</span><span>Aparate medicale certificate</span><span>2 clinici</span></div>
+  </div>
+  <div class="hero-vis">
+    <figure class="ba"><img src="/brand_asset/ba-liposonix-premium.webp" alt="Înainte și după LipoSonix, rezultat real Centrul360" width="1100" height="733"><figcaption><b>LipoSonix · abdomen</b><span>Rezultat real, clienta noastră</span></figcaption></figure>
+    <div class="bubble">Bună! Îți arăt eu tot ce trebuie să știi. 👋</div>
+    <img class="masc" src="/brand_asset/mascota/web/mascota-salut.webp" alt="Mascota Centrul360">
+  </div>
+</div></section>
+
+<div class="strip"><div class="wrap">
+  <div>Fără ace<small>nimic nu înțeapă</small></div><div>Fără operație<small>nicio anestezie</small></div><div>Fără diete stricte<small>mănânci normal</small></div><div>Fără efort<small>tu doar te relaxezi</small></div>
+</div></div>
+
+<section class="s" id="rezultate"><div class="wrap">
+  <div class="sh reveal"><span class="eyebrow">Rezultate reale</span><h2>Nu promitem. Îți arătăm.</h2><p>Poze făcute la noi în clinică, la clientele noastre, înainte și după tratament.</p></div>
+  <div class="grid res">
+    <figure class="reveal"><img src="/brand_asset/ba-liposonix.webp" alt="" loading="lazy"><figcaption><b>Grăsime pe abdomen</b><span>LipoSonix</span></figcaption></figure>
+    <figure class="reveal"><img src="/brand_asset/gusa-ba-premium.webp" alt="" loading="lazy"><figcaption><b>Gușă și contur</b><span>HIFU</span></figcaption></figure>
+    <figure class="reveal"><img src="/brand_asset/ba-epilare.webp" alt="" loading="lazy"><figcaption><b>Epilare definitivă</b><span>Laser Elysion Pro</span></figcaption></figure>
+  </div>
+  <p class="note">Rezultatele diferă de la o persoană la alta.</p>
+</div></section>
+
+<section class="s" id="oferte" style="background:var(--bg2)"><div class="wrap">
+  <div class="sh reveal"><span class="eyebrow">Ofertele de acum</span><h2>Prețuri bune, doar cât sunt active.</h2><p>Alegi oferta, apoi ziua și ora care îți convin. Confirmarea vine pe WhatsApp.</p></div>
+  <div class="grid off" id="offers"></div>
+</div></section>
+
+<section class="s"><div class="wrap steps">
+  <div class="m reveal"><img src="/brand_asset/mascota/web/mascota-explica.webp" alt="" loading="lazy"></div>
+  <div>
+    <div class="sh reveal"><span class="eyebrow">Cum decurge</span><h2>Simplu, în 3 pași.</h2></div>
+    <div class="st reveal"><i>1</i><div><b>Consultația gratuită</b><span>Ne spui ce te deranjează. Ne uităm, măsurăm și îți spunem sincer ce funcționează pentru tine.</span></div></div>
+    <div class="st reveal"><i>2</i><div><b>Planul tău</b><span>Primești un program făcut doar pentru tine: ce tratamente, câte ședințe și cât costă. Fără surprize.</span></div></div>
+    <div class="st reveal"><i>3</i><div><b>Rezultatele</b><span>Măsurăm și fotografiem la fiecare ședință, ca să vezi exact cât ai progresat.</span></div></div>
+  </div>
+</div></section>
+
+<section class="s" id="tratamente" style="padding-top:20px"><div class="wrap">
+  <div class="sh reveal"><span class="eyebrow">Tratamente</span><h2>Ce putem face pentru tine.</h2></div>
+  <div class="grid tre">
+    <a class="tc reveal" href="/grasime-localizata.html"><img src="/brand_asset/concern-belly-1.webp" alt="" loading="lazy"><h3>Corp</h3><span>Grăsime localizată, celulită, tonifiere, detox</span><em>Vezi tratamentele →</em></a>
+    <a class="tc reveal" href="/riduri-linii-fine.html"><img src="/brand_asset/faciale-closeup.webp" alt="" loading="lazy"><h3>Față</h3><span>Riduri, gușă, pete, ten fără strălucire</span><em>Vezi tratamentele →</em></a>
+    <a class="tc reveal" href="/epilare-laser.html"><img src="/brand_asset/epilare-legs.webp" alt="" loading="lazy"><h3>Epilare laser</h3><span>Definitivă, cu laser medical Elysion Pro</span><em>Vezi tratamentele →</em></a>
+  </div>
+</div></section>
+
+<section class="s" style="background:var(--bg2)"><div class="wrap">
+  <div class="score reveal"><b>5,0</b><div><div class="stars">★★★★★</div><span>300+ recenzii pe Google, Timișoara și Arad</span></div></div>
+  <div class="grid rv">
+    <div class="rc reveal"><div class="stars">★★★★★</div><p>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</p><small>Maria M. · Timișoara</small></div>
+    <div class="rc reveal"><div class="stars">★★★★★</div><p>„O experiență minunată, d-na Andreea m-a abordat cu căldură și profesionalism.”</p><small>Alina G. · Arad</small></div>
+    <div class="rc reveal"><div class="stars">★★★★★</div><p>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</p><small>Simona-Mihaela J. · Timișoara</small></div>
+  </div>
+</div></section>
+
+<section class="s" style="padding-bottom:20px"><div class="wrap">
+  <div class="gar reveal"><div class="seal">GARANȚIE<br>SCRISĂ</div><div><h3>Epilare laser: dacă părul crește la loc, continuăm gratuit.</h3><p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine, mai faci ședințe pe cheltuiala noastră. Fără plafon.</p></div><a class="btn btn-p" href="/epilare-laser.html">Vezi oferta</a></div>
+</div></section>
+
+<section class="s" id="cadou"><div class="wrap">
+  <div class="lf reveal">
+    <div><span class="eyebrow">Nu știi ce ți se potrivește?</span><h2>Primești consultația gratuită și un masaj facial cadou.</h2><p>Lasă-ne numele și numărul. Te sunăm noi, îți explicăm totul și îți facem programarea.</p></div>
+    <form id="lead" novalidate>
+      <label class="f">Ce te interesează?<select name="interes"><option>Slăbit / conturare corp</option><option>Fermitate față / anti-îmbătrânire</option><option>Epilare laser</option><option>Ten problematic / pete / luminozitate</option><option>Celulită</option><option>Nu știu exact, vreau o recomandare</option></select></label>
+      <label class="f">Clinica<select name="oras"><option>Timișoara</option><option>Arad</option></select></label>
+      <label class="f">Numele tău<input name="nume" autocomplete="name"></label>
+      <label class="f">Telefon (WhatsApp)<input name="tel" type="tel" inputmode="tel" autocomplete="tel"></label>
+      <label class="chk"><input type="checkbox" name="ok"><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360.</span></label>
+      <div class="err" id="leadErr"></div>
+      <button class="btn btn-p" type="submit">Vreau consultația și cadoul →</button>
+    </form>
+  </div>
+</div></section>
+
+<section class="s" id="locatii" style="padding-top:20px"><div class="wrap">
+  <div class="sh reveal"><span class="eyebrow">Locații</span><h2>Două clinici, aceeași grijă.</h2></div>
+  <div class="grid loc">
+    <div class="lc reveal"><img src="/brand_asset/loc-timisoara.webp" alt="" loading="lazy"><div><h3>Timișoara</h3><span>Str. Bucegi 7</span><span>Luni - Vineri · 09:00 - 20:00</span><button type="button" class="btn btn-p" data-book data-book-service="consult" data-book-city="Timișoara">Programează-te</button></div></div>
+    <div class="lc reveal"><img src="/brand_asset/loc-arad.webp" alt="" loading="lazy"><div><h3>Arad</h3><span>Str. Ioan Alexandru 16-18</span><span>Luni - Vineri · 11:00 - 19:00</span><button type="button" class="btn btn-p" data-book data-book-service="consult" data-book-city="Arad">Programează-te</button></div></div>
+  </div>
+</div></section>
+
+<section class="s faq" style="padding-top:20px"><div class="wrap" style="max-width:820px">
+  <div class="sh reveal"><span class="eyebrow">Întrebări</span><h2>Ce ne întreabă clientele.</h2></div>
+  <details><summary>Cum mă programez?</summary><p>Direct aici: apeși „Programează-te”, alegi clinica, ziua și ora care îți convin. Confirmarea vine pe WhatsApp.</p></details>
+  <details><summary>Consultația chiar e gratuită?</summary><p>Da, prima consultație e gratuită și fără obligații. Discutăm ce îți dorești, evaluăm zona și îți spunem ce ți se potrivește.</p></details>
+  <details><summary>Doare?</summary><p>Tratamentele noastre sunt fără ace și fără operație. Cele mai multe se simt ca o căldură plăcută sau o vibrație ușoară.</p></details>
+  <details><summary>Când văd rezultatele?</summary><p>Multe se văd din prima ședință. Rezultatul complet vine după programul recomandat, iar noi îl măsurăm și fotografiem la fiecare ședință.</p></details>
+  <details><summary>Unde vă găsesc?</summary><p>Timișoara, Str. Bucegi 7 și Arad, Str. Ioan Alexandru 16-18.</p></details>
+</div></section>
+
+<section class="s" style="padding-top:10px"><div class="wrap">
+  <div class="fin reveal"><div><span class="eyebrow">Primul pas</span><h2>O consultație gratuită. Atât.</h2><p style="color:var(--muted)">Afli ce ți se potrivește și cât costă, fără nicio obligație. Plus masajul facial cadou.</p><button type="button" class="btn btn-p" data-book data-book-service="consult">Programează-te acum →</button></div><img src="/brand_asset/mascota/web/mascota-salut.webp" alt="" loading="lazy"></div>
+</div></section>
+
+<footer><div class="wrap">Centrul360 · Timișoara 0750 452 002 · Arad 0750 277 394 · <a href="/politica-de-confidentialitate.html">Confidențialitate</a></div></footer>
+<div class="mbar"><button type="button" class="btn btn-p" data-book data-book-service="consult">Programează consultația gratuită</button></div>
+<div class="preview">Previzualizare · luminoasă<a href="/nou-inchis.html">vezi varianta închisă</a></div>
+
+<script>
+(function () {
+  // the offers: exactly the active ones of Admin → Oferte
+  var CAT = { epilare: 'Epilare laser', faciale: 'Față', remodelare: 'Corp' };
+  var CITY = { timisoara: 'Timișoara', arad: 'Arad' };
+  function card(o) {
+    var cities = (o.locations || []).map(function (c) { return CITY[c] || c; });
+    var one = cities.length === 1 ? cities[0] : '';
+    var pct = o.priceOld > o.priceNew ? Math.round((1 - o.priceNew / o.priceOld) * 100) : 0;
+    return '<div class="oc reveal">' + (pct ? '<span class="pct">-' + pct + '%</span>' : '') + '<span class="cat">' + (CAT[o.category] || '') + '</span><h3>' + o.title.replace(/</g, '&lt;') + '</h3>' +
+      '<div class="pr"><b>' + Math.round(o.priceNew) + ' lei</b>' + (o.priceOld > o.priceNew ? '<s>' + Math.round(o.priceOld) + ' lei</s>' : '') + '</div>' +
+      (o.priceOld > o.priceNew ? '<span class="save">Economisești ' + Math.round(o.priceOld - o.priceNew) + ' lei</span>' : '') +
+      '<span class="where">' + (cities.length ? cities.join(' și ') : 'Timișoara și Arad') + '</span>' +
+      '<button type="button" class="btn btn-p" data-book data-book-service="' + o.key + '"' + (one ? ' data-book-city="' + one + '"' : '') + '>Rezervă oferta</button></div>';
+  }
+  fetch('/api/offers-public').then(function (r) { return r.json(); }).then(function (d) {
+    var list = (d.offers || d || []).filter(function (o) { return o && o.title; });
+    document.getElementById('offers').innerHTML = list.map(card).join('');
+    watch();
+  }).catch(function () { document.getElementById('offers').innerHTML = '<p>Ofertele se încarcă imediat. <a href="/oferte.html">Vezi toate ofertele</a></p>'; });
+  // appear on scroll
+  // appear when they come near the screen; anything already scrolled past shows at once, and nothing stays hidden
+  function check() {
+    var h = window.innerHeight;
+    document.querySelectorAll('.reveal:not(.in)').forEach(function (el, i) {
+      var r = el.getBoundingClientRect();
+      if (r.top < h * 0.92) { el.style.transitionDelay = Math.min(i, 4) * 60 + 'ms'; el.classList.add('in'); }
+    });
+  }
+  function watch() { check(); }
+  window.addEventListener('scroll', check, { passive: true }); window.addEventListener('resize', check);
+  setTimeout(function () { document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); }); }, 4000);
+  watch();
+  // the lead magnet: the same as the home page's (HighLevel + the portal), then the thank-you page
+  var f = document.getElementById('lead');
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var err = document.getElementById('leadErr'), nume = f.nume.value.trim(), tel = f.tel.value.replace(/[^\d+]/g, '');
+    if (nume.length < 2) { err.textContent = 'Scrie-ne numele tău.'; return; }
+    if (tel.replace(/\D/g, '').length < 10) { err.textContent = 'Scrie un număr de telefon valid.'; return; }
+    if (!f.ok.checked) { err.textContent = 'Bifează acordul ca să te putem contacta.'; return; }
+    err.textContent = ''; var b = f.querySelector('button'); b.disabled = true; b.textContent = 'Se trimite…';
+    var payload = { nume: nume, telefon: tel, email: '', interes_principal: f.interes.value, zona: '', oras: f.oras.value, sursa: 'Website - Pagina nouă (previzualizare) Masaj Cadou', consimtamant_whatsapp: true, pagina: location.href };
+    var send = function (u) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(function (r) { return r.ok; }, function () { return false; }); };
+    Promise.all([send('https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68'), send('/api/site-lead')]).then(function (r) {
+      if (r[0] || r[1]) location.href = '/multumesc-cadou' + (/arad/i.test(payload.oras) ? '?oras=arad' : '');
+      else { b.disabled = false; b.textContent = 'Vreau consultația și cadoul →'; err.textContent = 'Nu am putut trimite. Încearcă din nou.'; }
+    });
+  });
+})();
+</script>
+<script src="/c360-book.js" defer></script>
+</body>
+</html>
