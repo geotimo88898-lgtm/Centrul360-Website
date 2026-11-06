@@ -6,6 +6,7 @@
 // gratuit are 5 ore programate pe tot contul și sunt folosite de alte Workere. Cu Workers Paid: "crons": ["0 5,6,19 * * *"].
 {
   "name": "centrul360-website",
+  "keep_vars": true,
   "main": "cf/worker.js",
   "minify": true,
   "compatibility_date": "2025-09-01",
