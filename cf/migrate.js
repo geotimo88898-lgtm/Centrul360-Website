@@ -15,7 +15,7 @@ const STORES = {
 };
 const PAGE = 8;
 
-async function batch(store, cursor) {
+export async function batch(store, cursor) {
   const s = STORES[store];
   if (!s) return { error: "store_necunoscut" };
   const token = s.token(), bucket = s.bucket();

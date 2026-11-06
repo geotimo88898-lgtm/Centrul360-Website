@@ -3,7 +3,7 @@
 // Fișierele (fostul Vercel Blob) sunt în R2: BLOB = portalul, CREATIVE_BLOB = creativele, cu aceleași căi.
 // Orele programate: o singură expresie, "0 5,6,19 * * *" (05, 06, 19 UTC, ca în vercel.json), oprite cu CRON_ON = "0"
 // până la mutarea domeniului, ca să nu ruleze de două ori (Vercel + Cloudflare). Deocamdată lista e goală: planul
-// gratuit are 5 ore programate pe tot contul și sunt folosite de alte Workere. Cu Workers Paid: "crons": ["0 5,6,19 * * *"].
+// gratuit are 5 ore programate pe tot contul și sunt folosite de alte Workere. Cu Workers Paid: "crons": ["0 5,6,19 * * *", "*/2 * * * *"].
 {
   "name": "centrul360-website",
   "keep_vars": true,
