@@ -20,6 +20,9 @@ import vercel from "../vercel.json";
 import { makeBlob } from "./blob-r2.js";
 import { makeJobs } from "./creative-jobs.js";
 import { loadSecrets } from "./secrets.js";
+import BUILD_ID from "./build-id.gen.js";
+// the version, for the portal (api/portal-pulse.js): a new one makes the open portals drop their cached files
+process.env.C360_BUILD = BUILD_ID;
 const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY", "FB_APP_ID", "FB_APP_SECRET"];
 
 const als = new AsyncLocalStorage();

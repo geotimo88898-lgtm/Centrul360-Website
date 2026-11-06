@@ -26,6 +26,13 @@ fs.writeFileSync(r("cf/api.gen.js"), "// Generat de cf/build.mjs din api/*.js. N
   apis.map((f, i) => `import a${i} from "../api/${f}";`).join("\n") + "\nexport default {\n" +
   apis.map((f, i) => `  ${JSON.stringify(f.replace(/\.js$/, ""))}: a${i},`).join("\n") + "\n};\n");
 log("api:", apis.length, "funcții");
+// the version of this build: the portal sees it in /api/portal-pulse and, when it changes, drops its cached files
+// (on Vercel this was VERCEL_GIT_COMMIT_SHA; Cloudflare's build gives WORKERS_CI_COMMIT_SHA)
+let buildId = process.env.WORKERS_CI_COMMIT_SHA || "";
+if (!buildId) { try { buildId = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim(); } catch (e) { buildId = ""; } }
+buildId = (buildId || "b").slice(0, 12) + "-" + Date.now().toString(36);
+fs.writeFileSync(r("cf/build-id.gen.js"), "// Generat de cf/build.mjs.\nexport default " + JSON.stringify(buildId.slice(0, 60)) + ";\n");
+log("build:", buildId);
 
 // 2. dist/
 const SKIP = new Set(["api", "cf", "node_modules", "dist", ".git", ".github", ".creative", ".creative-build", ".cf-mods", ".wrangler",

@@ -39,6 +39,6 @@ module.exports = async (req, res) => {
   if (wu) wu(chores());
   else await chores();
   const r = await readRev();
-  const build = String(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_URL || '').slice(0, 40);
+  const build = String(process.env.C360_BUILD || process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_URL || '').slice(0, 40);
   res.status(200).json({ rev: r.rev, changed: r.changed, build });
 };
