@@ -15,24 +15,27 @@ const STORES = {
 };
 const PAGE = 8;
 
-export async function batch(store, cursor) {
+export async function batch(store, cursor, opt) {
+  opt = opt || {};
   const s = STORES[store];
   if (!s) return { error: "store_necunoscut" };
   const token = s.token(), bucket = s.bucket();
   if (!token) return { error: "lipseste_tokenul_blob" };
   if (!bucket) return { error: "lipseste_bucketul_r2" };
-  const q = new URLSearchParams({ limit: String(PAGE) });
+  const q = new URLSearchParams({ limit: String(opt.limit || PAGE) });
+  if (opt.prefix) q.set("prefix", opt.prefix);
   if (cursor) q.set("cursor", cursor);
   const r = await fetch(API + "?" + q, { headers: { authorization: "Bearer " + token, "x-api-version": "12" } });
   if (!r.ok) return { error: "blob_list_" + r.status };
   const page = await r.json();
   let copied = 0, skipped = 0, failed = 0, bytes = 0;
-  for (const b of page.blobs || []) {
+  // câte 10 deodată (la Cron); din pagină câte unul, ca înainte
+  const one = async (b) => {
     try {
       const have = await bucket.head(b.pathname);
-      if (have && have.size === b.size) { skipped++; continue; }
+      if (have && have.size === b.size) { skipped++; return; }
       const d = await fetch(b.url, { headers: { authorization: "Bearer " + token } });
-      if (!d.ok || !d.body) { failed++; continue; }
+      if (!d.ok || !d.body) { failed++; return; }
       const len = Number(d.headers.get("content-length")) || b.size;
       const body = len === b.size ? d.body.pipeThrough(new FixedLengthStream(b.size)) : await d.arrayBuffer();
       await bucket.put(b.pathname, body, { httpMetadata: { contentType: d.headers.get("content-type") || "application/octet-stream" } });
@@ -41,7 +44,9 @@ export async function batch(store, cursor) {
       failed++;
       console.error("migrate:", (e && e.message) || e);
     }
-  }
+  };
+  const list = page.blobs || [], par = opt.parallel || 1;
+  for (let i = 0; i < list.length; i += par) await Promise.all(list.slice(i, i + par).map(one));
   return { copied, skipped, failed, bytes, cursor: page.hasMore ? page.cursor : null, done: !page.hasMore };
 }
 

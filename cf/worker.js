@@ -156,14 +156,16 @@ export default {
 };
 
 async function copyFromBlob(env) {
+  // întâi data/ (conturi, programări, leaduri, mesaje), apoi tot store-ul portalului, apoi creativele
   const KEY = "cf-migrate/state.json";
   const st = (await env.BLOB.get(KEY).then((o) => (o ? o.json() : null)).catch(() => null)) || {};
   const t0 = Date.now();
-  for (const store of ["site", "creative"]) {
-    const s = st[store] || (st[store] = { cursor: "", done: false, copied: 0, skipped: 0, failed: 0, bytes: 0 });
+  const steps = [["data", "site", "data/"], ["site", "site", ""], ["creative", "creative", ""]];
+  for (const [name, store, prefix] of steps) {
+    const s = st[name] || (st[name] = { cursor: "", done: false, copied: 0, skipped: 0, failed: 0, bytes: 0 });
     if (s.done) continue;
     while (Date.now() - t0 < 100e3) {
-      const r = await migrateBatch(store, s.cursor);
+      const r = await migrateBatch(store, s.cursor, { prefix, limit: 100, parallel: 10 });
       if (r.error) { s.error = r.error; if (r.error === "lipseste_tokenul_blob") s.done = true; break; }
       s.copied += r.copied; s.skipped += r.skipped; s.failed += r.failed; s.bytes += r.bytes; s.cursor = r.cursor || ""; s.done = r.done; delete s.error;
       if (r.done) break;

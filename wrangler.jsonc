@@ -35,7 +35,7 @@
   "workflows": [
     { "name": "centrul360-creative-jobs", "binding": "CREATIVE_JOBS", "class_name": "CreativeJobs" }
   ],
-  "triggers": { "crons": ["*/2 * * * *"] },
+  "triggers": { "crons": ["0 5,6,19 * * *", "*/2 * * * *"] },
   "vars": { "CRON_ON": "1", "BLOB_STORE_ID": "r2" },
   // cheile comune din Secrets Store (ANTHROPIC, GEMINI, FB_APP_ID, FB_APP_SECRET; comune cu celelalte afaceri)
   "secrets_store_secrets": [
