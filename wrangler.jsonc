@@ -3,7 +3,7 @@
 // Fișierele (fostul Vercel Blob) sunt în R2: BLOB = portalul, CREATIVE_BLOB = creativele, cu aceleași căi.
 // Orele programate: o singură expresie, "0 5,6,19 * * *" (05, 06, 19 UTC, ca în vercel.json), oprite cu CRON_ON = "0"
 // până la mutarea domeniului, ca să nu ruleze de două ori (Vercel + Cloudflare). Deocamdată lista e goală: planul
-// gratuit are 5 ore programate pe tot contul și sunt folosite de alte Workere. Cu Workers Paid: "crons": ["0 5,6,19 * * *", "*/2 * * * *"].
+// gratuit are 5 ore programate pe tot contul și sunt folosite de alte Workere. Cu Workers Paid: "crons": ["0 5,6,19 * * *"].
 {
   "name": "centrul360-website",
   "keep_vars": true,
@@ -35,7 +35,7 @@
   "workflows": [
     { "name": "centrul360-creative-jobs", "binding": "CREATIVE_JOBS", "class_name": "CreativeJobs" }
   ],
-  "triggers": { "crons": [] },
+  "triggers": { "crons": ["*/2 * * * *"] },
   "vars": { "CRON_ON": "1", "BLOB_STORE_ID": "r2" },
   // cheile comune din Secrets Store (ANTHROPIC, GEMINI, FB_APP_ID, FB_APP_SECRET; comune cu celelalte afaceri)
   "secrets_store_secrets": [
