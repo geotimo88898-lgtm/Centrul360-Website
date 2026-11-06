@@ -20,7 +20,7 @@ import vercel from "../vercel.json";
 import { makeBlob } from "./blob-r2.js";
 import { makeJobs } from "./creative-jobs.js";
 import { loadSecrets } from "./secrets.js";
-const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY"];
+const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY", "FB_APP_ID", "FB_APP_SECRET"];
 
 const als = new AsyncLocalStorage();
 
