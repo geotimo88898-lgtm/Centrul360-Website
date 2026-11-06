@@ -35,7 +35,7 @@
     { "name": "centrul360-creative-jobs", "binding": "CREATIVE_JOBS", "class_name": "CreativeJobs" }
   ],
   "triggers": { "crons": [] },
-  "vars": { "CRON_ON": "0", "BLOB_STORE_ID": "r2" },
+  "vars": { "CRON_ON": "1", "BLOB_STORE_ID": "r2" },
   // cheile comune din Secrets Store (ANTHROPIC, GEMINI, FB_APP_ID, FB_APP_SECRET; comune cu celelalte afaceri)
   "secrets_store_secrets": [
     { "binding": "ANTHROPIC_API_KEY", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "ANTHROPIC_API_KEY" },
