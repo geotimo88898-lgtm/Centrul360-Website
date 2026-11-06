@@ -36,5 +36,10 @@
   ],
   "triggers": { "crons": [] },
   "vars": { "CRON_ON": "0", "BLOB_STORE_ID": "r2" },
+  // cheile comune din Secrets Store (ANTHROPIC / GEMINI, aceleași ca la SummitLane)
+  "secrets_store_secrets": [
+    { "binding": "ANTHROPIC_API_KEY", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "ANTHROPIC_API_KEY" },
+    { "binding": "GEMINI_API_KEY", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "GEMINI_API_KEY" }
+  ],
   "observability": { "enabled": true }
 }

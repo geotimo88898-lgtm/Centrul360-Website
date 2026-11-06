@@ -19,6 +19,8 @@ import middleware from "../middleware.js";
 import vercel from "../vercel.json";
 import { makeBlob } from "./blob-r2.js";
 import { makeJobs } from "./creative-jobs.js";
+import { loadSecrets } from "./secrets.js";
+const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY"];
 
 const als = new AsyncLocalStorage();
 
@@ -127,13 +129,15 @@ globalThis.__C360_ROUTE = (request) => {
 };
 
 export default {
-  fetch(request, env, ctx) {
+  async fetch(request, env, ctx) {
     globalThis.__C360_SELF_HOST = new URL(request.url).host;
+    await loadSecrets(env, SHARED);
     return als.run({ ctx }, () => route(request, env, ctx));
   },
   // aceleași ore ca în vercel.json (UTC): 05:00 producția automată de creative, 06:00 automatizările, 19:00 raportul
   async scheduled(event, env, ctx) {
     if (env.CRON_ON !== "1") return console.log("cron oprit (CRON_ON):", event.cron);
+    await loadSecrets(env, SHARED);
     const hour = new Date(event.scheduledTime).getUTCHours();
     const path = hour === 5 ? "/creative/api/cron/auto" : hour === 6 ? "/api/automation-tick" : hour === 19 ? "/api/daily-report" : "";
     if (!path) return console.log("cron fără lucru la ora", hour);
