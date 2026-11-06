@@ -70,6 +70,8 @@ async function route(request, env, ctx) {
   internalToken();
   const url = new URL(request.url);
   const p = url.pathname;
+  // adresa fără www trimite pe www, ca pe Vercel
+  if (url.hostname === "centrul360.com") return Response.redirect("https://www.centrul360.com" + p + url.search, 308);
 
   // adresa de test: comută între site și portal
   const sw = url.searchParams.get("c360host");
