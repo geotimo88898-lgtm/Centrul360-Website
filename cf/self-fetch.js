@@ -9,6 +9,7 @@ import { env } from "cloudflare:workers";
 const realFetch = globalThis.fetch;
 const PAID = /(^|\.)(anthropic\.com|googleapis\.com|facebook\.com|resend\.com|mypos\.com|mypos\.eu)$/;
 const SELF = /^(www\.|admin\.|staff\.)?centrul360\.com$/;
+const UA = "Centrul360/1.0 (+https://www.centrul360.com)";
 
 globalThis.fetch = function fetch(input, init) {
   try {
@@ -21,6 +22,15 @@ globalThis.fetch = function fetch(input, init) {
       const u = new URL(input instanceof Request ? input.url : String(input));
       if (PAID.test(u.hostname)) return Promise.resolve(Response.json({ error: { type: "invalid_request_error", message: "test offline: fără apeluri reale (" + u.hostname + ")" } }, { status: 400 }));
     }
+    // Un Worker trimite cererile fără User-Agent, iar unele servicii le refuză așa (myPOS: 403 de la firewall-ul lor,
+    // 6.11, după mutare). Pe Vercel Node punea unul singur; aici îl punem noi când lipsește.
+    const req = new Request(input, init);
+    if (!req.headers.has("user-agent")) {
+      const h = new Headers(req.headers);
+      h.set("user-agent", UA);
+      return realFetch(new Request(req, { headers: h }));
+    }
+    return realFetch(req);
   } catch (e) { /* o adresă pe care nu o pot citi: merge pe drumul obișnuit */ }
   return realFetch(input, init);
 };
