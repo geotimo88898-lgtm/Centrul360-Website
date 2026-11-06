@@ -160,17 +160,17 @@ async function copyFromBlob(env) {
   const KEY = "cf-migrate/state.json";
   const st = (await env.BLOB.get(KEY).then((o) => (o ? o.json() : null)).catch(() => null)) || {};
   const t0 = Date.now();
-  const steps = [["data", "site", "data/"], ["site", "site", ""], ["creative", "creative", ""]];
+  const steps = [["data", "site", "data/"], ["creative", "creative", ""], ["site", "site", ""]];
   for (const [name, store, prefix] of steps) {
     const s = st[name] || (st[name] = { cursor: "", done: false, copied: 0, skipped: 0, failed: 0, bytes: 0 });
     if (s.done) continue;
     while (Date.now() - t0 < 100e3) {
       const r = await migrateBatch(store, s.cursor, { prefix, limit: 100, parallel: 10 });
-      if (r.error) { s.error = r.error; if (r.error === "lipseste_tokenul_blob") s.done = true; break; }
+      if (r.error) { s.error = r.error; break; }
       s.copied += r.copied; s.skipped += r.skipped; s.failed += r.failed; s.bytes += r.bytes; s.cursor = r.cursor || ""; s.done = r.done; delete s.error;
       if (r.done) break;
     }
-    if (!s.done) break;
+    if (!s.done && !s.error) break;
   }
   st.at = new Date().toISOString();
   await env.BLOB.put(KEY, JSON.stringify(st));
