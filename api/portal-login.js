@@ -47,10 +47,12 @@ module.exports = async (req, res) => {
     // below rather than nested per-branch (the earlier per-branch version missed the
     // case where employees.json exists but no employee matches the typed username at
     // all, which returned 401 before ever consulting ADMIN_USERNAME/ADMIN_PASSWORD).
-    const adminUser = process.env.ADMIN_USERNAME;
-    const adminPass = process.env.ADMIN_PASSWORD;
+    // spațiile sau o linie nouă de la capete (lipite din greșeală în panoul Cloudflare) nu contează la parola de proprietar
+    const adminUser = String(process.env.ADMIN_USERNAME || '').trim();
+    const adminPass = String(process.env.ADMIN_PASSWORD || '').trim();
+    const ownerPw = String(password).trim();
     const isBootstrapAdmin = Boolean(
-      adminUser && adminPass && username === adminUser && password === adminPass
+      adminUser && adminPass && String(username).trim() === adminUser && ownerPw === adminPass
     );
 
     const employees = await readJSON('data/employees.json', []);
@@ -79,7 +81,7 @@ module.exports = async (req, res) => {
 
     // George: a second admin account of his own (own name, photo, password), same powers as the owner.
     // Made the first time he signs in with the owner's password; after that it's an account like any other.
-    if (!employee && OWNER_ALIASES.includes(typed) && adminPass && password === adminPass && !employees.some((e) => String(e.username || '').toLowerCase() === typed)) {
+    if (!employee && OWNER_ALIASES.includes(typed) && adminPass && ownerPw === adminPass && !employees.some((e) => String(e.username || '').toLowerCase() === typed)) {
       const { salt, hash } = hashPassword(password);
       const george = { id: crypto.randomUUID(), name: typed.charAt(0).toUpperCase() + typed.slice(1), location: '-', role: 'admin',
         username: typed.charAt(0).toUpperCase() + typed.slice(1), passwordHash: hash, passwordSalt: salt, active: true, createdAt: new Date().toISOString() };
