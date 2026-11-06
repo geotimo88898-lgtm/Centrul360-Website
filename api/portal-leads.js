@@ -174,6 +174,16 @@ async function bookLead(appt, opts) {
   }
 }
 
+// Another booking of the same client still on, today or later (not the one given), or null
+async function otherBooking(appt) {
+  const appts = await readJSON('data/appointments.json', []);
+  const key = normPhone(appt.clientPhone);
+  const today = new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 10); // Bucharest, near enough for a date
+  return appts.filter((a) => a && a.id !== appt.id && !a.block && ['programata', 'confirmata', 'reprogramata'].includes(a.status) && String(a.date) >= today &&
+    ((appt.clientId && a.clientId === appt.clientId) || (key.length >= 6 && normPhone(a.clientPhone) === key)))
+    .sort((a, b) => (String(a.date) + String(a.time || '')).localeCompare(String(b.date) + String(b.time || '')))[0] || null;
+}
+
 // An appointment deleted or cancelled: the lead it was linked to no longer shows it (its card would point at nothing),
 // its history says what happened; the stage stays as the desk left it. Never throws.
 async function unbookLead(appt, why, author) {
@@ -187,9 +197,16 @@ async function unbookLead(appt, why, author) {
     const bookedIdx = stages.findIndex((x) => x.kind === 'booked');
     // out of "Programare stabilită" too: back to the working stage before it (she is to be called again)
     const back = bookedIdx > 0 ? stages.slice(0, bookedIdx).reverse().find((x) => x.kind === 'open') : null;
+    // (the owner, 6.11: booked clients sometimes fell back to "Day 2") she may have another booking still on (a
+    // reschedule makes the new one, then cancels the old): then she stays booked, her card shows that one
+    const live = await otherBooking(appt);
     hits.forEach((l) => {
       l.appointmentId = ''; l.appointmentAt = '';
       addActivity(l, { type: 'booking_change', text: why + ': ' + at, author: author || 'Calendar' });
+      if (live) {
+        l.appointmentId = live.id; l.appointmentAt = String(live.date || '').slice(0, 10) + (live.time ? ' ' + String(live.time).slice(0, 5) : '');
+        return;
+      }
       if (back && stageKind(stages, l.stage) === 'booked') {
         addActivity(l, { type: 'stage', author: author || 'Calendar', text: (stages.find((x) => x.id === l.stage) || { name: l.stage }).name + ' → ' + back.name + ' · ' + why.toLowerCase() });
         l.stage = back.id; l.stageChangedAt = nowISO();

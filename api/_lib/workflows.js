@@ -563,6 +563,16 @@ async function moveLead(lead, stage, wfName) {
   const from = l.stage;
   const stored = await readJSON('data/pipeline-stages.json', null);
   const list = Array.isArray(stored) ? stored : (stored && stored.stages) || [];
+  // (the owner, 6.11) a flow never takes a booked client (or one further on) back to a working stage like "Day 2":
+  // a follow-up that started before she booked keeps waiting, then would move her when it wakes
+  const idx = (id) => list.findIndex((x) => x.id === id);
+  const kindOf = (id) => (list.find((x) => x.id === id) || {}).kind;
+  const bi = list.findIndex((x) => x.kind === 'booked');
+  if (bi >= 0 && kindOf(stage) === 'open' && kindOf(from) !== 'lost' && (kindOf(from) === 'booked' || kindOf(from) === 'won' || idx(from) > bi)) return false;
+  if (kindOf(stage) === 'open' && l.appointmentId) {
+    const a = (await readJSON('data/appointments.json', [])).find((x) => x.id === l.appointmentId);
+    if (a && ['programata', 'confirmata', 'reprogramata'].includes(a.status) && apptStart(a) > Date.now()) return false;
+  }
   const nameOf = (id) => (list.find((s) => s.id === id) || { name: id }).name;
   l.stage = stage; l.stageChangedAt = nowISO(); l.updatedAt = nowISO();
   (l.activities = l.activities || []).push({ id: uid(), type: 'stage', text: nameOf(from) + ' → ' + nameOf(stage) + ' (automatizare: ' + wfName + ')', author: 'Automatizare', at: nowISO() });
