@@ -1,9 +1,10 @@
-// Centrul360 portal, aspectul nou: primul ecran din Panou → Azi, pentru admin (doar sub html.ui-nou).
-// Scena de bani: „Bună seara, George.” (salutul după ora zilei, numele din cont), încasat azi (numără), față de ieri la ora asta,
-// luna asta, reclamele de azi (cheltuit, cost pe lead, cost pe clientă, câte ori se întoarce leul), reclama care merge și cea care
-// cheltuie fără rezultat, banda cu încasările zilei. În dreapta, Nuki în lumină, într-un HUD de inele care se rotesc. La o încasare
-// nouă: o cometă intră în Nuki, banii explodează din cifră, Nuki sare de bucurie. Totul din datele portalului (K.data) și din
-// /api/kpi?period=today; ce nu există azi nu se arată (fără „-”). Doar transform și opacity; nimic nu rulează când nu se vede.
+// Centrul360 portal, aspectul nou: primul ecran din Panou → Azi, pentru admin (doar sub html.ui-nou). UN singur bloc, fără card,
+// direct pe fundalul portalului: sus „Bună seara, George.” (salutul după ora zilei, numele din cont) și Nuki, mic, cu bula lui;
+// dedesubt scena: cosmeticienele (portal-nou-prism.js le pune în [data-flow]) trimit dungi de spectru în prismă, raza albă iese spre
+// numărul mare „Încasat azi” (numără), cu „față de ieri” la ora asta și „N încasări · bon mediu”; apoi butoanele, luna asta și,
+// doar când există date, reclamele de azi, reclama care merge și cea fără rezultat, banda încasărilor. La o încasare nouă: pulsul
+// pleacă de la cosmeticiană prin prismă la număr, apoi cometa intră în Nuki, banii explodează din cifră, Nuki sare. Totul din datele
+// portalului (K.data) și din /api/kpi?period=today; ce nu există azi nu se arată. Doar transform și opacity; nimic nu rulează când nu se vede.
 (function () {
   'use strict';
   var html = document.documentElement;
@@ -52,49 +53,37 @@
 
   // ------------------------------------------------------------------ the block
   var st = null, shown = 0, seen = null, lineI = 0;
-  function rings() {
-    var t = '';
-    for (var i = 0; i < 72; i++) { var a = i * 5 * Math.PI / 180, r1 = 238, r2 = i % 6 ? 244 : 252; t += '<line x1="' + (250 + Math.cos(a) * r1).toFixed(1) + '" y1="' + (250 + Math.sin(a) * r1).toFixed(1) + '" x2="' + (250 + Math.cos(a) * r2).toFixed(1) + '" y2="' + (250 + Math.sin(a) * r2).toFixed(1) + '"/>'; }
-    // each ring its own layer (an HTML element that turns): the compositor turns it, nothing is repainted
-    var sv = function (cls, inner) { return '<svg class="' + cls + '" viewBox="0 0 500 500" aria-hidden="true" fill="none">' + inner + '</svg>'; };
-    return sv('r1', '<g stroke="rgba(191,248,240,.32)" stroke-width="1">' + t + '</g>') +
-      sv('r2', '<circle cx="250" cy="250" r="214" stroke="rgba(47,214,195,.55)" stroke-width="1.4" stroke-dasharray="120 40 8 40 260 60" stroke-linecap="round"/>') +
-      sv('r3', '<circle cx="250" cy="250" r="190" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="2 6"/>') +
-      sv('r4', '<circle cx="250" cy="250" r="168" stroke="rgba(191,248,240,.5)" stroke-width="2.2" stroke-dasharray="60 470" stroke-linecap="round"/><circle cx="250" cy="250" r="168" stroke="rgba(47,214,195,.35)" stroke-width="1" stroke-dasharray="14 18"/>');
-  }
-  function motes() {
-    var s = '';
-    for (var i = 0; i < 18; i++) s += '<i style="--x:' + ((i * 53) % 100) + '%;--s:' + (1.5 + (i % 4) * 0.9) + 'px;--t:' + (7 + (i % 5) * 1.6) + 's;--d:-' + ((i * 1.37) % 9).toFixed(2) + 's;--o:' + (0.35 + (i % 3) * 0.2) + ';--dx:' + (((i * 29) % 60) - 30) + 'px"></i>';
-    return s;
-  }
+  var small = function () { return window.innerWidth < 700; };
   function mount(panel) {
     st = document.createElement('section');
     st.className = 'sx-stage';
     st.setAttribute('aria-label', 'Banii de azi');
     st.innerHTML =
-      '<div class="sx-s-copy">' +
-        '<div class="sx-s-eye"><i></i><span data-date></span></div>' +
-        '<h1 class="sx-s-hi" data-hi></h1>' +
-        '<div class="sx-s-lbl"><span>Încasat azi</span> <span class="sx-s-delta" data-delta hidden></span></div>' +
-        '<div class="sx-s-num" data-num><span data-v>0</span><small>lei</small></div>' +
-        '<div class="sx-s-sub" data-sub></div>' +
-        '<div class="sx-hud" data-hud></div>' +
-        '<div class="sx-ads" data-ads></div>' +
-        '<div class="sx-feed" data-feed hidden><div></div></div>' +
-        '<div class="sx-acts">' +
-          '<button type="button" data-proxy="incasari">' + ICON.wallet + 'Încasare</button>' +
-          '<button type="button" data-proxy="programari">' + ICON.cal + 'Programare</button>' +
-          '<button type="button" data-proxy="pipeline">' + ICON.lead + 'Lead</button>' +
+      '<div class="sx-s-head">' +
+        '<div class="sx-s-hello">' +
+          '<div class="sx-s-eye"><i></i><span data-date></span></div>' +
+          '<h1 class="sx-s-hi" data-hi></h1>' +
+        '</div>' +
+        '<div class="sx-s-nk">' +
+          '<span class="sx-s-glow" aria-hidden="true"></span>' +
+          '<button type="button" class="sx-nuki" aria-label="Nuki"><span class="fl"><img alt="" decoding="async" src="' + POSE + 'bucurie.webp"></span></button>' +
+          '<div class="sx-say" data-say aria-live="polite"></div>' +
         '</div>' +
       '</div>' +
-      '<div class="sx-s-scene">' +
-        '<div class="sx-motes" aria-hidden="true">' + motes() + '</div>' +
-        '<div class="sx-beam" aria-hidden="true"></div>' +
-        '<div class="sx-core" aria-hidden="true"></div>' +
-        '<div class="sx-hudrings" aria-hidden="true">' + rings() + '</div>' +
-        '<div class="sx-floor" aria-hidden="true"></div>' +
-        '<button type="button" class="sx-nuki" aria-label="Nuki"><span class="fl"><img alt="" decoding="async" src="' + POSE + 'bucurie.webp"></span></button>' +
-        '<div class="sx-say" data-say aria-live="polite"></div>' +
+      '<div class="sx-flow" data-flow>' +
+        '<div class="sx-s-money">' +
+          '<div class="sx-s-lbl"><span>Încasat azi</span> <span class="sx-s-delta" data-delta hidden></span></div>' +
+          '<div class="sx-s-num" data-num><span data-v>0</span><small>lei</small></div>' +
+          '<div class="sx-s-sub" data-sub></div>' +
+          '<div class="sx-acts">' +
+            '<button type="button" data-proxy="incasari">' + ICON.wallet + 'Încasare</button>' +
+            '<button type="button" data-proxy="programari">' + ICON.cal + 'Programare</button>' +
+            '<button type="button" data-proxy="pipeline">' + ICON.lead + 'Lead</button>' +
+          '</div>' +
+          '<div class="sx-hud" data-hud></div>' +
+          '<div class="sx-ads" data-ads></div>' +
+          '<div class="sx-feed" data-feed hidden><div></div></div>' +
+        '</div>' +
       '</div>';
     panel.insertBefore(st, panel.firstChild);
     panel.classList.add('sx-host');
@@ -106,15 +95,17 @@
     });
     st.querySelector('.sx-nuki').addEventListener('click', function (e) { lineI++; jump(); say(); burst(e.clientX, e.clientY, 14); });
     paint(true);
-    setTimeout(say, 1400);
-    kpi(function () { paint(false); say(); });
+    // on a phone the bubble waits for a tap (it would cover the cosmeticians); on a computer it greets once
+    if (!small()) setTimeout(say, 1400);
+    kpi(function () { paint(false); });
+    if (window.C360Prism) window.C360Prism.place();
   }
 
   function paint(first) {
     if (!st || !st.isConnected) return;
     var m = model(); if (!m) return;
     var d = D();
-    st.querySelector('[data-date]').textContent = (K().dateLong ? K().dateLong(today()) : today()) + ' · în timp real';
+    st.querySelector('[data-date]').innerHTML = esc(K().dateLong ? K().dateLong(today()) : today()) + '<span class="sx-rt"> · în timp real</span>';
     st.querySelector('[data-hi]').innerHTML = esc(greeting()) + (firstName() ? ', <em>' + esc(firstName()) + '</em>.' : '.');
     countTo(m.total, first);
     var dl = st.querySelector('[data-delta]');
@@ -133,9 +124,8 @@
       if (tot.cpa) cells.push(['Cost pe clientă', lei(tot.cpa), tot.clients ? tot.clients + ' cliente din reclame' : '']);
       else if (tot.perBooked) cells.push(['Cost pe programare', lei(tot.perBooked), tot.booked ? tot.booked + ' programări' : '']);
       if (tot.roas) cells.push(['Leul se întoarce', String(tot.roas).replace('.', ',') + '×', tot.revenue ? lei(tot.revenue) + ' din reclame' : '']);
-    } else if (KPI.d && KPI.d.money && KPI.d.money.ticket) cells.push(['Bon mediu', lei(KPI.d.money.ticket), '']);
-    if (cells.length < 4 && KPI.d && KPI.d.funnel && KPI.d.funnel.leads) cells.push(['Leaduri azi', num(KPI.d.funnel.leads), KPI.d.funnel.ads ? KPI.d.funnel.ads + ' din reclame' : '']);
-    if (cells.length < 4 && d && d.appointmentsToday) { var ap = (d.appointmentsToday.list || []).filter(function (x) { return x.status !== 'anulata'; }).length; if (ap) cells.push(['Programări azi', num(ap), '']); }
+    }
+    st.querySelector('[data-hud]').dataset.n = Math.min(4, cells.length);
     st.querySelector('[data-hud]').innerHTML = cells.slice(0, 4).map(function (c) { return '<div><small>' + esc(c[0]) + '</small><b>' + esc(c[1]) + '</b>' + (c[2] ? '<span>' + esc(c[2]) + '</span>' : '') + '</div>'; }).join('');
     // the ads: the best and the one that spends without a result
     var ads = '';
@@ -197,7 +187,8 @@
     var b = document.createElement('div');
     b.className = 'sx-burst';
     b.style.transform = 'translate3d(' + (x - r.left) + 'px,' + (y - r.top) + 'px,0)';
-    var cols = ['#bff8f0', '#2fd6c3', '#ffd27a', '#ffffff', '#8be9ff'];
+    var ac = (getComputedStyle(html).getPropertyValue('--accent') || '#2fd6c3').trim(), ac3 = (getComputedStyle(html).getPropertyValue('--accent-3') || '#bff8f0').trim();
+    var cols = [ac3, ac, '#ffd27a', '#ffffff', ac];
     for (var i = 0; i < n; i++) {
       var s = document.createElement('i');
       var coin = coins && i % 3 === 0;
@@ -246,7 +237,10 @@
     if (seen === null) { seen = new Set(m.ids); return; }
     var fresh = m.ids.filter(function (x) { return !seen.has(x); });
     m.ids.forEach(function (x) { seen.add(x); });
-    if (fresh.length) pay(); else paint(false);
+    if (fresh.length) {
+      var sales = m.day.filter(function (s) { return fresh.indexOf(s.id) >= 0; });
+      if (!(window.C360Prism && window.C360Prism.send(sales, pay))) pay();
+    } else paint(false);
     KPI.at = Math.min(KPI.at, Date.now() - 3 * 60e3 + 30e3);
     kpi(function () { paint(false); });
   }
