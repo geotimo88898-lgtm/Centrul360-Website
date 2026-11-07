@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     const offers = await loadOffers(readJSON, null);
 
     const result = offers
-      .filter((o) => o && o.active)
+      .filter((o) => o && o.active && o.site !== false) // an offer only for the ads (site: false) stays off the site
       .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0))
       .map((o) => {
         const priceNew = Number(o.priceNew) || 0;

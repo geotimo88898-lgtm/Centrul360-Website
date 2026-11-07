@@ -25,6 +25,8 @@ const STEPS = [
   ['once', () => require('./_lib/ads-once').run()],
   // once: Arad's WhatsApp number in the lead forms' settings, so the RF gușă forms can be made (the owner, 7.11)
   ['formwa', () => require('./_lib/form-wa-once').run()],
+  // once: the RF gușă offer for Arad in Oferte (off the site) and its new-lead WhatsApp message sent to Meta (the owner, 7.11)
+  ['rfgusa', () => require('./_lib/rf-gusa-once').run()],
   // read only, once: who owns the shared ad account and the site's pixel (api/_lib/pixel-diag.js); the pixel of the
   // owner's own Business (api/_lib/pixel-once.js) waits for what this finds
   ['pixeldiag', () => require('./_lib/pixel-diag').run()],
