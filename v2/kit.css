@@ -406,6 +406,12 @@ footer .lk b{ margin-bottom:4px; }
 
 /* ---- phone: the bottom bar */
 .dock{ display:none; }
+/* a row of four real figures (results page, home page) */
+.rez-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:28px 20px; text-align:center; }
+.rez-stats b{ display:block; font-size:clamp(2.7rem,5.4vw,4rem); font-weight:800; letter-spacing:-.055em; line-height:1; font-variant-numeric:tabular-nums; }
+.rez-stats span{ display:block; margin-top:12px; font-size:14px; color:var(--mute); line-height:1.45; }
+.rez-stats .stars{ display:block; margin-top:8px; font-size:12px; }
+@media (max-width:640px){ .rez-stats{ grid-template-columns:1fr 1fr; gap:36px 12px; } }
 /* the owner's open questions on this page (preview only) */
 .prevq{ position:fixed; z-index:71; left:16px; bottom:56px; max-width:min(380px, calc(100vw - 32px)); font-size:13px; }
 .prevq summary{ list-style:none; display:inline-flex; padding:7px 12px; border-radius:999px; cursor:pointer; font-weight:600; color:#6b5300; background:#fff6d1;
@@ -503,8 +509,19 @@ footer .lk b{ margin-bottom:4px; }
 .slip .btn.book.gold{ box-shadow:0 0 0 1px rgba(255,255,255,.55) inset, 0 1px 0 rgba(255,255,255,.95) inset, 0 -6px 14px -6px rgba(150,80,65,.35) inset, 0 14px 34px -10px rgba(233,160,140,.55); }
 .eye.bf{ color:#0b0b0d; }
 .eye.bf::before{ background:#0b0b0d; box-shadow:0 0 0 4px rgba(233,184,168,.45); }
-.top nav .nl.bf{ color:#0b0b0d; font-weight:600; }
-.top nav .nl.bf::after{ content:''; display:inline-block; width:6px; height:6px; margin-left:7px; vertical-align:middle; border-radius:50%; background:linear-gradient(125deg,#d99d8c,#f8dccf); box-shadow:0 0 0 3px rgba(233,184,168,.3); }
+.bf-pill{ display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 18px 0 12px; margin-left:14px; border-radius:999px; flex:none; text-decoration:none;
+  font-size:14px; font-weight:600; letter-spacing:-.01em; color:#fff; background:linear-gradient(160deg,#1d1e22,#0b0b0d);
+  box-shadow:0 0 0 1px rgba(233,184,168,.45) inset, 0 10px 24px -12px rgba(214,140,120,.6); transition:transform .5s var(--e), box-shadow .4s; -webkit-tap-highlight-color:transparent; }
+.bf-pill:hover{ transform:translateY(-1px); box-shadow:0 0 0 1px rgba(246,214,203,.85) inset, 0 14px 30px -12px rgba(214,140,120,.75); }
+.bf-pill:active{ transform:scale(.97); }
+.bf-pill + .top-cta{ margin-left:8px; }
+.bfi{ width:20px; height:20px; flex:none; filter:drop-shadow(0 2px 6px rgba(214,140,120,.5)); }
+.btn.bfb .bfi{ width:22px; height:22px; margin-right:2px; }
+@media (max-width:920px){ .bf-pill{ margin-left:auto; } .bf-pill + .top-cta{ margin-left:8px; } }
+@media (max-width:640px){ .top .bar{ gap:6px; } .bf-pill{ height:40px; padding:0 11px 0 8px; font-size:12.5px; gap:5px; letter-spacing:-.015em; } .bf-pill .bfi{ width:18px; height:18px; } }
+/* the full logo stays on every common phone (390 and up); only on very narrow screens the .COM steps back */
+@media (max-width:379px){ .top .brand .wm > span{ display:none; } }
+@media (max-width:330px){ .bf-pill span{ display:none; } .bf-pill{ padding:0 10px; } }
 .btn.ghost.bfb{ color:#fff; background:linear-gradient(160deg,#1d1e22,#0b0b0d); box-shadow:0 0 0 1px rgba(233,184,168,.55) inset, 0 14px 30px -12px rgba(214,140,120,.6); }
 .btn.ghost.bfb:hover{ background:#000; box-shadow:0 0 0 1px rgba(246,214,203,.9) inset, 0 18px 38px -12px rgba(214,140,120,.75); }
 @media (prefers-reduced-motion:reduce){ .slip::after{ animation:none; } }
