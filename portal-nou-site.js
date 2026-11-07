@@ -69,16 +69,27 @@
       '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Site</h2></div><div class="k-head-actions">' +
         '<a class="k-btn is-outline" href="https://www.centrul360.com/" target="_blank" rel="noopener">' + ic('globe') + 'Deschide site-ul</a>' +
         '<button type="button" class="k-btn is-accent" data-act="check">' + ic('refresh') + 'Verifică acum</button></div></div>' +
-      '<section class="st2-globe" data-globe><div class="st2-globe-stage" data-gstage></div><div class="st2-globe-side"><div class="st2-globe-n"><span class="n-live-dot"></span><b data-gn>0</b><small>pe site acum</small></div><ol data-gplaces></ol></div></section>' +
+      // the live band, ported from Summitlane's Live: the globe on black, the people on the site now, the list that turns it
+      '<section class="sx-lv island" data-lv><div class="lv-hero"><div class="lv-stage" data-lvstage><div class="glabels" data-glabels></div>' +
+        '<div class="lv-txt"><p class="eb"><i class="dot"></i>Live · se actualizează singur</p><h1><b data-lt>0</b> <span data-lw>vizitatori chiar acum</span></h1><p data-ls>&nbsp;</p></div>' +
+        '<div class="lv-leg"><span><i style="background:var(--accent)"></i>vizitator</span><span><i style="background:#bcd3ff"></i>pe Programare</span><span><i style="background:#fff"></i>clinica</span></div></div>' +
+        '<aside class="lv-feed"><h3>Pe site acum<span data-rate></span></h3><ul class="ev" data-feed></ul></aside></div>' +
+        '<div class="lv-stats">' +
+          '<div class="lv-c"><small><i class="dot"></i>Pe site acum</small><b data-s="now">0</b><span>oameni pe pagini</span></div>' +
+          '<div class="lv-c"><small><i class="k" style="background:var(--accent)"></i>Vizitatori azi</small><b data-s="vis">0</b><span data-ss="vis">&nbsp;</span></div>' +
+          '<div class="lv-c"><small><i class="k" style="background:#bcd3ff"></i>Formulare azi</small><b data-s="forms">0</b><span>de pe site, în Pipeline</span></div>' +
+          '<div class="lv-c"><small><i class="k" style="background:#fff"></i>Programări online azi</small><b data-s="books">0</b><span>din pagina de programare</span></div>' +
+        '</div></section>' +
       '<div data-body><div class="k-skel" style="height:260px;border-radius:28px"></div><div class="k-skel" style="height:120px;margin-top:1rem"></div></div>';
     panel.addEventListener('click', function (e) {
       if (e.target.closest('[data-act="check"]')) { health(true); stats(); }
     });
   }
   function show() {
+    lvEnter();
     stats(); health(false);
     clearInterval(timer); clearInterval(htimer);
-    timer = setInterval(function () { if (K().isActive('site') && !document.hidden) stats(); else clearInterval(timer); }, 15000);
+    timer = setInterval(function () { if (K().isActive('site') && !document.hidden) stats(); else { clearInterval(timer); lvLeave(); } }, 15000);
     htimer = setInterval(function () { if (K().isActive('site') && !document.hidden) health(false); else clearInterval(htimer); }, 60000);
   }
 
@@ -210,22 +221,85 @@
     gload = new Promise(function (ok, no) { var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'; sc.onload = function () { ok(window.THREE); }; sc.onerror = no; document.head.appendChild(sc); });
     return gload;
   }
-  function globe(d) {
-    var host = panel && panel.querySelector('[data-globe]'); if (!host) return;
-    var live = (d.live || []);
-    var places = {};
-    live.forEach(function (v) { var g = v.geo; var k = g ? (g[1] || g[0]) + (g[1] ? ', ' + g[0] : '') : 'Fără locație'; places[k] = (places[k] || 0) + 1; });
-    var top = Object.keys(places).map(function (k) { return [k, places[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6);
-    var n = host.querySelector('[data-gn]');
-    if (n.textContent !== String(live.length)) { n.textContent = live.length; n.classList.remove('n-bump'); void n.offsetWidth; n.classList.add('n-bump'); }
-    host.querySelector('[data-gplaces]').innerHTML = top.map(function (x, i) { return '<li style="--i:' + i + '"><span>' + esc(x[0]) + '</span><b>' + x[1] + '</b></li>'; }).join('');
-    if (G) { G.pins(live); return; }
-    if (G === false) return;
-    var hasGL = false; try { var c = document.createElement('canvas'); hasGL = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { /* none */ }
-    if (!hasGL) { G = false; host.classList.add('is-flat'); return; }
-    G = false;
-    three().then(function (T) { G = makeGlobe(T, host.querySelector('[data-gstage]')); G.pins(live); }, function () { host.classList.add('is-flat'); });
+  // ---- the live band (Summitlane's Live, ported): the WebGL globe from portal-scene/, the list, the numbers
+  var LV = { m: null, p: null, seen: null, events: [] };
+  var cityKey = function (g) { return '@' + Number(g[2]).toFixed(2) + ',' + Number(g[3]).toFixed(2); };
+  var cityName = function (g) { return g ? (g[1] || g[0] || '') : ''; };
+  var ago = function (at) { var s2 = Math.max(0, Math.round((Date.now() - at) / 1000)); return s2 < 60 ? 'acum' : 'acum ' + Math.round(s2 / 60) + ' min'; };
+  var ICON = '/brand_asset/portal/icon-192.png?v=3';
+  function stacked() { return innerWidth < 1100; }
+  function lvLayout(st) {
+    var r = st.getBoundingClientRect(), W = r.width, H = r.height;
+    if (stacked()) {
+      var tb = st.querySelector('.lv-txt').getBoundingClientRect().bottom - r.top, R = Math.max(80, Math.min(W * 0.42, (H - tb - 56) / 2.15, 168));
+      return { W: W, H: H, cx: W / 2, cy: tb + 20 + R * 1.06, R: R, phone: true };
+    }
+    return { W: W, H: H, cx: W * 0.56, cy: H * 0.56, R: Math.min(H * 0.35, W * 0.33), phone: false };
   }
+  function scene() {
+    if (LV.p) return LV.p;
+    var home = null, d0 = K().data, emps = (d0 && ((d0.admin && d0.admin.employees) || d0.activeEmployees)) || [];
+    var CITY = { 'timisoara': [45.75, 21.23], 'arad': [46.18, 21.31] }, fold = function (x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    emps.some(function (e) { var c = CITY[fold(e.location)]; if (c) { home = { name: e.location, lat: c[0], lon: c[1] }; return true; } return false; });
+    LV.p = Promise.all([import('/portal-scene/geo.js'), import('/portal-scene/globe.js')]).then(function (m) {
+      if (home) { m[0].HOME.name = home.name; m[0].HOME.lat = home.lat; m[0].HOME.lon = home.lon; }
+      return m[1].createGlobe();
+    }).catch(function () { return null; });
+    return LV.p;
+  }
+  function globe(d) {
+    var host = panel && panel.querySelector('[data-lv]'); if (!host) return;
+    var live = (d.live || []).slice().sort(function (a, b) { return b.at - a.at; });
+    var geo = live.filter(function (v) { return v.geo && (v.geo[2] || v.geo[3]); });
+    // the numbers
+    var lt = host.querySelector('[data-lt]'); if (lt.textContent !== String(live.length)) lt.textContent = live.length;
+    host.querySelector('[data-lw]').textContent = live.length === 1 ? 'vizitator chiar acum' : 'vizitatori chiar acum';
+    var cities = {}; geo.forEach(function (v) { cities[cityName(v.geo)] = 1; });
+    var nc = Object.keys(cities).length, ph = live.filter(function (v) { return v.dev === 'm'; }).length;
+    host.querySelector('[data-ls]').textContent = live.length ? ph + ' pe telefon, ' + (live.length - ph) + ' pe calculator' + (nc ? ', din ' + nc + (nc === 1 ? ' oraș' : ' orașe') : '') + '.' : 'Nimeni în ultimele minute.';
+    var setN = function (k, v) { var e = host.querySelector('[data-s="' + k + '"]'); if (e && e.textContent !== num(v)) e.textContent = num(v); };
+    setN('now', live.length); setN('vis', d.today.visitors); setN('forms', d.brought.today.forms); setN('books', d.brought.today.books);
+    host.querySelector('[data-ss="vis"]').textContent = num(d.today.views) + ' pagini văzute';
+    // the list: who is on the site, on which page, from where; a tap turns the globe to them
+    var key = function (v) { return v.at + '|' + v.path + '|' + (v.geo ? v.geo.join(',') : ''); };
+    var fresh = LV.seen ? live.filter(function (v) { return !LV.seen[key(v)]; }) : [];
+    LV.events = live.slice(0, 14);
+    var ul = host.querySelector('[data-feed]');
+    ul.innerHTML = LV.events.length ? LV.events.map(function (v, i) {
+      var book = /programare|multumesc|avans/.test(v.path || ''), g = v.geo && (v.geo[2] || v.geo[3]);
+      return '<li class="' + (LV.seen && fresh.indexOf(v) >= 0 ? 'new' : '') + (g ? ' go" data-i="' + i + '" role="button" tabindex="0" title="Arată pe glob' : '') + '"><img alt="" src="' + ICON + '"><div class="t"><b>' + esc(pageName(v.path)) + '</b><span data-ago="' + v.at + '">' + esc((cityName(v.geo) ? cityName(v.geo) + ' · ' : '') + ago(v.at)) + '</span></div><span class="k ' + (book ? 'c' : 'v') + '">' + (book ? 'programare' : (v.dev === 'm' ? 'telefon' : 'calculator')) + '</span></li>';
+    }).join('') : '<li class="none"><span>Nimeni pe site acum.</span></li>';
+    LV.seen = {}; live.forEach(function (v) { LV.seen[key(v)] = 1; });
+    // the globe: a green light for each visitor in their city, a marker with the city's name and how many are there
+    var byCity = {};
+    geo.forEach(function (v) { var k = cityKey(v.geo); (byCity[k] = byCity[k] || { cc: k, n: 0, name: cityName(v.geo), book: 0 }).n++; if (/programare|multumesc|avans/.test(v.path || '')) byCity[k].book++; });
+    var vis = Object.keys(byCity).map(function (k) { return { cc: k, n: byCity[k].n }; });
+    var spots = Object.keys(byCity).map(function (k) { var c = byCity[k]; return { key: 'site|' + k, app: 'site', cc: k, n: c.n, label: c.name, icon: ICON }; });
+    LV.vis = vis; LV.spots = spots;
+    if (LV.m) { LV.m.setVisitors(vis); LV.m.setSpots(spots); fresh.slice(0, 6).forEach(function (v, i) { if (v.geo && (v.geo[2] || v.geo[3])) setTimeout(function () { if (LV.m) LV.m.event({ kind: /programare|multumesc|avans/.test(v.path || '') ? 'c' : 'v', cc: cityKey(v.geo) }); }, i * 300); }); return; }
+    if (LV.wait) return;
+    LV.wait = true;
+    scene().then(function (G) {
+      if (!G || !host.isConnected) { LV.wait = false; return; }
+      var st = host.querySelector('[data-lvstage]');
+      G.mount(st, host.querySelector('[data-glabels]'), function () { return lvLayout(st); });
+      G.enter(); LV.m = G;
+      G.setVisitors(LV.vis || []); G.setSpots(LV.spots || []);
+      ul.addEventListener('click', focusRow); ul.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focusRow(e); } });
+    });
+  }
+  function focusRow(e) {
+    var li = e.target.closest('li[data-i]'); if (!li || !LV.m) return;
+    var v = LV.events[+li.getAttribute('data-i')]; if (!v || !v.geo) return;
+    var k = cityKey(v.geo);
+    if (!LV.m.focus({ app: 'site', cc: k, spot: { key: 'site|' + k, app: 'site', cc: k, n: 1, label: cityName(v.geo), icon: ICON } })) return;
+    li.parentNode.querySelectorAll('li.sel').forEach(function (x) { x.classList.remove('sel'); }); li.classList.add('sel');
+    var st = panel.querySelector('[data-lvstage]'), r = st.getBoundingClientRect();
+    if (r.bottom < 80 || r.top > innerHeight - 80) st.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // the band sleeps when Site is left (the one WebGL canvas is not drawn behind other screens)
+  function lvLeave() { if (LV.m && !K().isActive('site')) LV.m.leave(); }
+  function lvEnter() { if (LV.m && panel && panel.querySelector('[data-lvstage]')) LV.m.enter(); }
   function makeGlobe(T, stage) {
     var W = stage.clientWidth || 600, H = stage.clientHeight || 420;
     var r = new T.WebGLRenderer({ antialias: true, alpha: true });
@@ -310,6 +384,7 @@
     var k = K(); if (!k) return;
     addNav();
     k.section('site', { mount: mount, show: show });
+    addEventListener('hashchange', function () { setTimeout(lvLeave, 50); });
     if (k.on) k.on('data', function () { addNav(); syncRole(); });
     syncRole();
     // a link straight to #site, opened before this page was there: open it now
