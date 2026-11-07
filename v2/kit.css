@@ -385,6 +385,8 @@ footer .soc a:hover{ background:var(--tint); transform:translateY(-2px); }
 footer .soc svg{ width:17px; height:17px; }
 footer .legal{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:56px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color:var(--mute2); }
 footer .legal span{ display:flex; gap:18px; }
+footer .legal .credit{ flex-basis:100%; justify-content:flex-start; font-size:12px; color:var(--mute2); }
+footer .legal .credit a:hover{ color:var(--teal2); }
 footer b{ display:block; color:var(--ink); font-weight:600; margin-bottom:10px; }
 footer a{ text-decoration:none; transition:color .3s; }
 footer a:hover{ color:var(--ink); }
