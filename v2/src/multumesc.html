@@ -64,6 +64,14 @@ pixel: Lead
 </div></section>
 
 <script>
+// the request came from Arad: the buttons lead to Arad's number
+(function () {
+  if (!/(^|[?&])oras=arad/.test(location.search)) return;
+  document.querySelectorAll('.ty-acts a').forEach(function (a) {
+    a.href = a.href.replace('wa.me/40750452002', 'wa.me/40750277394').replace('tel:+40750452002', 'tel:+40750277394');
+    if (a.href.indexOf('tel:') === 0) a.querySelector('span').textContent = 'Sună acum · +40 750 277 394';
+  });
+})();
 /* The happy moment: a small, soft burst of light around Nuki once the page is in, and again on every tap. */
 (function () {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
