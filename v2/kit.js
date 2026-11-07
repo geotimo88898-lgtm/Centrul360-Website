@@ -275,4 +275,11 @@
       else { b.disabled = false; b.textContent = 'Vreau consultația și cadoul'; err.textContent = 'Nu am putut trimite. Încearcă din nou.'; }
     });
   });
+
+  // a page's film: one tap starts it with sound and shows the controls; leaving the screen pauses it
+  document.querySelectorAll('.film-v').forEach(function (f) {
+    var v = f.querySelector('video'), b = f.querySelector('.film-play'); if (!v || !b) return;
+    b.addEventListener('click', function () { f.classList.add('on'); v.controls = true; v.muted = false; var p = v.play(); if (p && p.catch) p.catch(function () {}); });
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting && !v.paused) v.pause(); }); }, { threshold: .2 }).observe(v);
+  });
 })();
