@@ -23,6 +23,8 @@ const STEPS = [
   ['ads', () => require('./_lib/ads-guard').guard()],
   // the changes the owners asked for once (api/_lib/ads-once.js)
   ['once', () => require('./_lib/ads-once').run()],
+  // the site's own web pixel in the owner's Business, asked in chat on 7.11 (api/_lib/pixel-once.js); runs once
+  ['pixel', () => require('./_lib/pixel-once').run()],
   // the creative orders asked for in chat (api/_lib/creative-once.js)
   ['creative', () => require('./_lib/creative-once').run()],
   // the job ads asked for in chat (api/_lib/hire-once.js)
