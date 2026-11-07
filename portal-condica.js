@@ -271,7 +271,7 @@
     const types = [['odihna', 'Odihnă'], ['fara_plata', 'Fără plată'], ['medical', 'Medical'], ['alta', 'Altul']].concat(tb.bank > 0 ? [['suplimentare', 'Ore libere']] : []);
     const d = K.drawer({
       title: 'Cerere de concediu', icon: 'calendar', width: 540,
-      subtitle: 'Completează și trimite. Primești răspunsul în notificări.',
+      
       body: '<form class="k-form" data-form>' +
         K.field('Tip concediu', '<div class="lv-types">' + K.seg('type', types, preset || 'odihna', 'is-big') + '</div>', 'full') +
         K.field('Data început', '<input name="startDate" type="date" required value="' + esc(K.today()) + '">') +
@@ -351,7 +351,7 @@
     const opts = employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('');
     const d = K.drawer({
       title: 'Notează concediu pentru un angajat', icon: 'calendar', width: 520,
-      subtitle: 'Se marchează direct ca aprobat, pentru cazul în care angajatul nu a trecut-o singur în portal.',
+      
       body: '<form class="k-form" data-form>' +
         K.field('Angajat', '<select name="employeeId" required><option value="">Alege...</option>' + opts + '</select>', 'full') +
         K.field('Tip concediu', K.seg('type', [['odihna', 'Odihnă'], ['fara_plata', 'Fără plată'], ['medical', 'Medical'], ['alta', 'Altul']], 'odihna', 'is-big'), 'full') +

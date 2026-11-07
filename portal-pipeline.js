@@ -465,7 +465,7 @@
     };
     const foot = () => { const n = cityLeads().filter(matches).length; return '<b>' + n + '</b> ' + (n === 1 ? 'lead' : 'leaduri'); };
     const dr = K.drawer({
-      title: 'Filtre', icon: 'filter', width: 460, subtitle: 'Se aplică pe loc. Sursa și orașul sunt lângă căutare.',
+      title: 'Filtre', icon: 'filter', width: 460, 
       body: '<div data-fbody>' + body() + '</div>',
       footer: '<span class="pl-fcount-foot" data-ffoot>' + foot() + '</span><span class="k-grow"></span><button type="button" class="k-btn is-ghost" data-fx>Șterge filtrele</button><button type="button" class="k-btn is-primary" data-fok>Gata</button>',
       onMount(el) {

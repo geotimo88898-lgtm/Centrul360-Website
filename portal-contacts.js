@@ -798,7 +798,7 @@
     let rows = [];
     const d = K.drawer({
       title: 'Importă contactele din HighLevel', icon: 'download', width: 620,
-      subtitle: 'O singură dată: toate contactele curente intră aici. Cele care există deja (același telefon) nu se dublează.',
+      
       body: '<ol class="ct-steps"><li>În HighLevel: <b>Contacts</b> → bifează toate contactele → <b>Export</b> → descarcă fișierul CSV.</li><li>Alege fișierul aici.</li><li>Verifică și apasă <b>Importă</b>.</li></ol>' +
         '<label class="ct-big is-accent ct-csv"><input type="file" accept=".csv,text/csv" data-csv hidden>' + icon('file') + '<b>Alege fișierul CSV</b><small>Exportul de contacte din HighLevel</small></label>' +
         '<div data-preview></div>',

@@ -22,7 +22,7 @@
     apanel.classList.add('k-panel', 'ad');
     apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2></div>' +
       '<div class="k-head-actions" data-head></div></div><div data-body></div>' +
-      '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Pontaj: ore peste / sub program</h3><span class="k-sub">luni-vineri 8 ore, sâmbăta totul e suplimentar</span></div><div data-time></div></section>' +
+      '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Pontaj: ore peste / sub program</h3></div><div data-time></div></section>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('calendar') + 'Cereri de concediu</h3></div><div data-leave></div></section>';
     apanel.addEventListener('click', onApprovalClick);
     loadLeaveApprovals();
@@ -423,7 +423,7 @@
   function openNewEmployee() {
     const gen = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; const r = crypto.getRandomValues(new Uint32Array(10)); for (let i = 0; i < 10; i++) s += a[r[i] % a.length]; return s; };
     const d = K.drawer({
-      title: 'Angajat nou', icon: 'userPlus', subtitle: 'Primește cont în portal, cu acces potrivit rolului.',
+      title: 'Angajat nou', icon: 'userPlus', 
       body: '<form class="k-form" data-form>' +
         K.field('Nume complet', '<input name="name" required maxlength="100" placeholder="ex: Giovanna Marin" autofocus>', 'full') +
         K.field('Rol', K.seg('role', ROLES.slice(0, 2), 'receptie', 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei.') +
@@ -431,7 +431,7 @@
         K.field('Username', '<input name="username" required maxlength="60" autocomplete="off">') +
         K.field('Parolă temporară', '<div class="ad-pass"><input name="password" required minlength="6" autocomplete="off" value="' + gen() + '"><button type="button" class="k-icon-btn" data-gen title="Generează alta">' + icon('refresh') + '</button></div>') +
         '</form>',
-      footer: '<span class="k-grow k-muted">Spune-i username-ul și parola; și-o schimbă singură din Contul meu.</span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Creează contul</button>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Creează contul</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
         f.name.addEventListener('input', () => { if (!f.username.dataset.touched) f.username.value = K.norm(f.name.value).trim().split(/\s+/)[0] || ''; });
@@ -700,7 +700,7 @@
           cell('Cost / lead', x.cpl != null ? K.lei(x.cpl) : dash) + '</div>').join('') + '</div>';
       }).join('')
         : K.empty('trend', 'Nimic în perioada asta', '')) +
-      (!sp.ready ? '<p class="k-muted of-kpi-note">' + icon('info') + (sp.error ? 'Meta: ' + esc(sp.error) : 'Cheltuiala pe reclame apare după ce lipești tokenul pentru reclame (Integrări → Facebook).') + '</p>'
+      (!sp.ready ? '<p class="k-muted of-kpi-note">' + icon(sp.error ? 'alert' : 'info') + (sp.error ? 'Meta: ' + esc(sp.error) : 'Cheltuiala pe reclame apare după ce lipești tokenul pentru reclame (Integrări → Facebook).') + '</p>'
         : sp.unassigned > 0 ? '<p class="k-muted of-kpi-note">' + icon('info') + K.lei(sp.unassigned) + ' din reclame nu s-au putut lega de o ofertă (reclame fără leaduri).</p>' : '') +
       '</section>';
   }
@@ -808,7 +808,7 @@
       ads: false, locations: ['timisoara', 'arad'], short: '', adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
     const lines = (a) => (a || []).join('\n');
     const d = K.drawer({
-      title: src ? o.title : 'Ofertă nouă', icon: 'tag', width: 720, subtitle: 'Se vede pe site, la recepție și în Creative imediat ce salvezi.',
+      title: src ? o.title : 'Ofertă nouă', icon: 'tag', width: 720, 
       body:
         '<div class="of-preview" data-preview></div>' +
         '<section class="k-section"><h4>' + icon('globe') + 'Pe site</h4><form class="k-form" data-site>' +

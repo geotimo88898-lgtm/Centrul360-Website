@@ -199,7 +199,7 @@
     j.addEventListener('click', function (e) { j.querySelector('img').src = JERRY + 'bucurie.webp'; boing(j); confetti(e.clientX, e.clientY, 18); setTimeout(hide, 650); });
     setTimeout(hide, 9000);
   }
-  setInterval(peek, 20e3);
+  // (Jerry's tips from the corner are off: the owner wants no instructions on screen, 7.11)
 
   // ================================================================ a small Nuki by every section's title
   var SEC = {
@@ -234,7 +234,7 @@
     b.className = 'n-sn';
     b.setAttribute('aria-label', 'Nuki');
     b.innerHTML = '<img alt="" decoding="async" src="' + POSE + s[0] + '.webp">';
-    b.addEventListener('click', function (e) { e.stopPropagation(); boing(b); say(b, s[1], 4500); confetti(e.clientX, e.clientY, 10); });
+    b.addEventListener('click', function (e) { e.stopPropagation(); boing(b); confetti(e.clientX, e.clientY, 10); });
     h2.appendChild(b);
   }
 

@@ -202,7 +202,7 @@
     const admin = K.data && K.data.isAdmin;
     const d = K.drawer({
       title: 'Notificări', icon: 'bell', width: 460,
-      subtitle: admin ? 'Leaduri, programări, încasări și raportul zilei.' : 'Leaduri noi, bonusuri și răspunsurile la cererile tale, pe scurt.',
+      
       body: '<div class="nt-push" data-push-box><span class="k-skel" style="height:40px"></span></div>' +
         (list.length ? (alerts.length ? '<h4 class="nt-h">' + icon('userPlus') + (admin ? 'Leaduri, programări, încasări' : 'Leaduri și alerte') + '</h4><div class="nt-list">' + alerts.map(row).join('') + '</div>' : '') +
           (live.length ? '<h4 class="nt-h">' + icon('trophy') + 'Bonusuri</h4><div class="nt-list">' + live.map(row).join('') + '</div>' : '') +

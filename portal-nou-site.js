@@ -116,7 +116,7 @@
       body.innerHTML =
         // ---- live: the site's stations, a dot for every visitor on it now
         '<section class="st2-live"><div class="st2-live-head"><div><span class="n-live-dot"></span><b data-live-n>0</b><span>pe site acum</span></div>' +
-          '<small>' + (d.counting ? 'se actualizează la 15 secunde · vizitele din ultimele 5 minute' : 'contorul pornește la primele vizite de pe site') + '</small></div>' +
+          '</div>' +
           '<div class="st2-map">' + ZONES.map(function (z, i) { return '<div class="st2-zone" data-z="' + z.k + '" style="--i:' + i + '"><b>' + esc(z.t) + '</b><div class="st2-dots" data-dots></div><small data-zn>0</small></div>'; }).join('<i class="st2-path"></i>') + '</div>' +
           '<div class="st2-hours" aria-label="Vizitele de azi, pe ore">' + t.hours.map(function (v, i) {
             var mx = Math.max.apply(null, t.hours.concat([1]));
@@ -132,7 +132,7 @@
           tile('clock', 'Se încarcă în', sec(w.load), 'media la vizitatori, 7 zile', w.load && w.load > 4000 ? 'is-warn' : '') +
         '</div>' +
         // ---- 30 days
-        '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('trend') + 'Ultimele 30 de zile</h3><small>vizitatori pe zi · formulare și programări de pe site</small></div><div data-chart></div></section>' +
+        '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('trend') + 'Ultimele 30 de zile</h3></div><div data-chart></div></section>' +
         '<div class="st2-row">' +
           '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('file') + 'Paginile cele mai văzute</h3><small>7 zile</small></div>' + bars(w.pages.map(function (x) { return { k: x.k, label: pageName(x.k), n: x.n }; })) + '</section>' +
           '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('send') + 'De unde vin</h3><small>7 zile</small></div>' + bars(w.from) +

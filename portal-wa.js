@@ -102,7 +102,7 @@
     const ready = d.ready;
     const dr = K.drawer({
       title: tpl ? 'Șablon: ' + (t.label || '') : 'Șablon WhatsApp nou', icon: 'chat', width: 760,
-      subtitle: canEdit ? 'Scrie-l ca pe un mesaj obișnuit. Meta îl verifică o singură dată, apoi pleacă singur din automatizări.' : 'Trimis la Meta · ' + (STATUS[t.status] || [t.status])[0],
+      subtitle: canEdit ? '' : 'Trimis la Meta · ' + (STATUS[t.status] || [t.status])[0],
       body: '<div class="wa-edit"><div><div data-wform>' + formHtml() + '</div>' + leadHtml() + '</div><aside class="wa-side"><small>Așa îl primește clienta</small><div data-wprev>' + bubble(t) + '</div>' +
         (t.reason ? '<p class="wa-reason">' + icon('alert') + 'Meta: ' + esc(t.reason) + '</p>' : '') +
         (!ready && canEdit ? '<p class="k-muted wa-note">' + icon('info') + 'WhatsApp nu e conectat încă: îl salvezi ca ciornă și îl trimiți la aprobare după ce conectezi numerele (Integrări → WhatsApp).</p>' : '') + '</aside></div>',

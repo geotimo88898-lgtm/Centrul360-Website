@@ -140,7 +140,7 @@
     if (on.length === cities.length && cities.length) { box.innerHTML = ''; return; }
     box.innerHTML = '<div class="k-card mx-status">' + icon(on.length ? 'info' : 'chat') + '<div><b>' + (on.length ? 'Un număr nu e conectat încă' : 'WhatsApp nu e conectat încă') + '</b><span>' +
       cities.map((c) => '<i class="' + (C.numbers[c].connected ? 'is-on' : '') + '">' + esc(c) + (C.numbers[c].connected ? ' · ' + esc(C.numbers[c].display) : ' · neconectat') + '</i>').join('') +
-      '</span><small>' + (on.length ? 'Conversațiile numărului conectat merg deja.' : 'Totul e pregătit: după ce conectezi numerele, mesajele clientelor apar aici singure, iar tu răspunzi direct de aici.') + '</small></div>' +
+      '</span></div>' +
       (isAdmin() ? '<button type="button" class="k-btn is-sm is-primary" data-act="connect">Conectează</button>' : '') + '</div>';
   }
 
@@ -358,7 +358,7 @@
     }
     const v = sampleFor(opts.name, city, opts.interest);
     const d = K.drawer({
-      title: 'Alege șablonul', icon: 'file', width: 520, subtitle: 'Se completează singur cu datele ei' + (city ? ', de pe numărul ' + esc(city) : '') + '.',
+      title: 'Alege șablonul', icon: 'file', width: 520, 
       body: '<div class="mx-tpls">' + list.map((t) => '<button type="button" class="mx-tpl" data-tpl="' + esc(t.id) + '"><b>' + esc(t.label) + '</b>' +
         '<span class="mx-tpl-text">' + (t.header ? '<strong>' + esc(t.header) + '</strong>\n' : '') + fill(t.text, v) + '</span></button>').join('') + '</div>',
       onMount(el) {
@@ -386,7 +386,7 @@
     if (!on.length) return K.ui().toast('WhatsApp nu e conectat încă.', 'info');
     const st = { phone: '', name: '', city: on.includes(K.data && K.data.me && K.data.me.location) ? K.data.me.location : on[0] };
     const d = K.drawer({
-      title: 'Mesaj nou', icon: 'pen', width: 480, subtitle: 'Primul mesaj către o clientă pleacă doar cu un șablon aprobat de Meta.',
+      title: 'Mesaj nou', icon: 'pen', width: 480, 
       body: '<div class="k-form">' +
         K.field('Telefonul clientei', '<input data-n="phone" type="tel" inputmode="tel" placeholder="07xx xxx xxx" autocomplete="off">', 'full') +
         K.field('Numele (opțional)', '<input data-n="name" placeholder="ex. Ioana Pop" autocomplete="off">', 'full') +

@@ -202,7 +202,7 @@
     };
     const dr = K.drawer({
       title: 'Formular nou', icon: 'file', width: 840,
-      subtitle: 'Se creează pe Pagina de Facebook; apare imediat aici și în „Publică pe Meta”.',
+      
       body: '<div class="fm-create"><div data-cform>' + formHtml() + '</div><aside class="fm-create-side"><small>Așa îl vede clienta</small><div data-cpv>' + preview() + '</div></aside></div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-create>' + icon('check') + 'Creează formularul</button>',
       onMount(el) {
@@ -277,7 +277,7 @@
       '</div>';
     const d = K.drawer({
       title: 'Setări formulare', icon: 'sliders', width: 560,
-      subtitle: 'Ce copiază fiecare formular nou. Orașul formularului alege numărul de WhatsApp.',
+      
       body: '<div data-sbody>' + body() + '</div>',
       footer: '<button type="button" class="k-btn is-ghost" data-reread>' + icon('refresh') + 'Citește din nou din formulare</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-ssave>' + icon('check') + 'Salvează</button>',
       onMount(el) {
@@ -324,7 +324,7 @@
       '</div><div class="fm-rn-list">' + (p.forms.length ? p.forms.map(row).join('') : K.empty('file', 'Niciun formular activ', '')) + '</div>';
     const d = K.drawer({
       title: 'Numere noi la final', icon: 'phone', width: 620,
-      subtitle: 'Formularele de pe reclame (și cele cu leaduri în ultimele 14 zile), copiate la fel, doar cu numărul orașului la final.',
+      
       body: '<div data-rnbody>' + body() + '</div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-accent" data-rngo>' + icon('check') + 'Creează ' + K.plural(go().length, 'formular nou', 'formulare noi') + '</button>',
       onMount(el) {

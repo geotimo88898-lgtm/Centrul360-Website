@@ -261,7 +261,7 @@
     globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     video: '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>', undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>',
   };
-  const icon = (name, cls) => '<svg class="k-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || '') + '</svg>';
+  const icon = (name, cls) => '<svg class="k-ic' + (cls ? ' ' + cls : '') + '" data-ic="' + name + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || '') + '</svg>';
 
   // ------------------------------------------------------------------ motion
   function tween(from, to, dur, step, done) {
@@ -688,7 +688,7 @@
     let el;
     const paint = () => { const box = el.querySelector('[data-cz]'); const y = box.parentElement.scrollTop; box.innerHTML = o.parts.map(partHtml).join(''); box.parentElement.scrollTop = y; };
     const dr = drawer({
-      title: o.title || 'Personalizează', icon: 'sliders', width: 560, subtitle: o.subtitle || 'Alegi ce vezi și în ce ordine. Se păstrează pe contul tău.',
+      title: o.title || 'Personalizează', icon: 'sliders', width: 560, subtitle: o.subtitle || '',
       body: '<div class="k-cz" data-cz></div>',
       footer: '<button type="button" class="k-btn is-ghost" data-reset>' + icon('refresh') + 'Implicit</button><span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(root) {

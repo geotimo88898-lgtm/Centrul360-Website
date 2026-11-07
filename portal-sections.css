@@ -2469,3 +2469,13 @@ html.mx-pv-open{ overflow:hidden; }
   .au .ad-row .ad-title{ min-width:0; flex:1; text-align:left; }
   .au .ad-row .ad-title b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 }
+
+/* =============================== no instructions (the owner, 7.11: „nu vreau instrucțiuni; eu am făcut totul”) ===============================
+   Titles, data, short labels and buttons only. The help notes (the "i" icon), the how-it-works lines, the explanations under
+   empty states and the hints go, in both looks. Warnings about a state (not connected, the 24 h window, a failed sync) stay.
+   Traininguri is training: its notes and texts stay. */
+:is(.ct-hint, .fb-hint:not(.is-warn), .fb-tip, .cal-hint, .cd-rule, .ad-keys, .of-drag-hint, .pl-lede, .kp-hint, .wa-note, .k-empty > p),
+:is(.mo-note, .cd-today-note, p.k-muted, .k-muted):has(> svg[data-ic="info"]),
+#panel-calculator .tr-c2-step h3 small, .k-field > small:not(.is-warn):not(.is-bad){ display:none !important; }
+#panel-traininguri :is(.ct-hint, .k-empty > p, .mo-note, p.k-muted){ display:revert !important; }
+.cb-tip ol{ display:none; }

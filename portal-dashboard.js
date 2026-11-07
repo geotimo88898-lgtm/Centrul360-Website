@@ -88,7 +88,7 @@
     Object.keys(c.BLOCK).filter((b) => c.BLOCK[b].ok).forEach((b) => { catalog['b:' + b] = { label: c.BLOCK[b].label, group: 'Secțiuni', only: ['blocks'] }; });
     const groups = []; c.mineKpi.forEach((k) => { if (!groups.includes(c.KPI[k].group)) groups.push(c.KPI[k].group); });
     K.customize({
-      title: 'Personalizează panoul', subtitle: 'Alegi cifrele de sus și secțiunile, în ordinea ta. Se păstrează pe contul tău.',
+      title: 'Personalizează panoul', 
       catalog, groups: groups.concat(['Secțiuni']),
       parts: [
         { key: 'kpis', label: 'Cifrele de sus', hint: 'Oricâte; se așază pe rânduri.', value: c.kpiNow, def: c.DEF },

@@ -116,9 +116,9 @@
           '</section>' +
           '<section class="k-section"><h4>' + icon('sparkles') + 'Preferințe</h4>' +
             '<div class="me-pref"><span>Culoarea portalului</span>' + (window.C360Accent ? window.C360Accent.menuHtml() : '') + '</div>' +
-            '<div class="me-pref"><span>Pagina de start</span><select data-start>' + K.options(startOptions(), p.startPage || '') + '</select><small>Ce se deschide când intri în portal.</small></div>' +
+            '<div class="me-pref"><span>Pagina de start</span><select data-start>' + K.options(startOptions(), p.startPage || '') + '</select></div>' +
             '<div class="me-pref"><span>Mărimea textului</span>' + K.seg('mefs', [['normal', 'Normal'], ['lg', 'Mare'], ['xl', 'Foarte mare']], p.fontSize || 'normal', 'is-big') + '</div>' +
-            '<div class="me-pref"><span>Animații</span>' + K.seg('memotion', [['normal', 'Normale'], ['reduced', 'Reduse']], p.motion || 'normal', 'is-big') + '<small>„Reduse” face portalul mai liniștit și mai rapid pe telefoane mai vechi.</small></div>' +
+            '<div class="me-pref"><span>Animații</span>' + K.seg('memotion', [['normal', 'Normale'], ['reduced', 'Reduse']], p.motion || 'normal', 'is-big') + '</div>' +
           '</section>',
         footer: '<button type="button" class="k-btn is-danger is-sm" data-logout>' + icon('power') + 'Deconectare</button><span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Închide</button>',
         onMount(el) {

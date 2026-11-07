@@ -124,7 +124,7 @@
     Object.keys(c.INC).forEach((k) => { catalog[k] = { label: c.INC[k].label, group: c.INC[k].group, only: ['kpis'] }; });
     Object.keys(INC_BLOCKS).forEach((b) => { catalog['b:' + b] = { label: INC_BLOCKS[b], group: 'Secțiuni', only: ['blocks'] }; });
     K.customize({
-      title: 'Personalizează Încasări', subtitle: 'Alegi cifrele de sus și secțiunile, în ordinea ta. Se păstrează pe contul tău.',
+      title: 'Personalizează Încasări', 
       catalog, groups: ['Bani', 'Metode', 'Categorii și orașe', 'Upsell', 'Secțiuni'],
       parts: [
         { key: 'kpis', label: 'Cifrele de sus', hint: 'Oricâte; se așază pe rânduri. Toate sunt pentru orașul și perioada alese.', value: c.kpis, def: INC_DEF },
@@ -194,14 +194,14 @@
     incCtx = { INC, kpis, blocks };
 
     const BLOCK = {
-      chart: () => (days.length > 1 ? '<section class="k-card"><div class="k-card-head"><h3>' + icon('trend') + 'Pe zile</h3><span class="k-sub">apasă pe o zi ca s-o vezi separat</span></div><div data-chart></div></section>' : ''),
+      chart: () => (days.length > 1 ? '<section class="k-card"><div class="k-card-head"><h3>' + icon('trend') + 'Pe zile</h3></div><div data-chart></div></section>' : ''),
       split: () => '<div class="mo-row">' +
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('sparkles') + 'Pe categorii</h3></div>' +
           (catKeys.length ? catKeys.map((k) => '<div class="mo-bar"><span>' + esc(K.cats[k]) + '</span><b>' + K.lei(byCat[k]) + '</b><div class="k-bar"><i style="--w:' + (byCat[k] / byCat[catKeys[0]]) * 100 + '%"></i></div></div>').join('') : '<p class="k-muted">Nicio încasare în perioada aleasă.</p>') + '</section>' +
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('users') + 'Cine a făcut tratamentele</h3></div>' +
           (people.length ? '<div class="mo-people-grid">' + people.map((n) => '<div class="mo-person">' + K.avatar(n, 34) + '<div><b>' + esc(n) + '</b><span>' + K.lei(byPerson[n]) + ' · ' + pct(byPerson[n]) + '%</span><div class="k-bar"><i style="--w:' + (byPerson[n] / byPerson[people[0]]) * 100 + '%"></i></div></div></div>').join('') + '</div>' : '<p class="k-muted">-</p>') + '</section>' +
         '</div>',
-      dues: () => '<section class="k-card"><div class="k-card-head"><h3>' + icon('wallet') + 'Rest de plată din pachete</h3><span class="k-sub">ce mai au de achitat clientele, de acum, nu doar din perioada aleasă</span></div><div data-dues>' + duesHtml() + '</div></section>',
+      dues: () => '<section class="k-card"><div class="k-card-head"><h3>' + icon('wallet') + 'Rest de plată din pachete</h3></div><div data-dues>' + duesHtml() + '</div></section>',
       list: () => '<section class="k-card"><div class="k-toolbar"><label class="k-search">' + icon('search') + '<input data-q placeholder="Caută clientă sau tratament…" value="' + esc(S.q) + '"></label>' +
         '<div class="k-chips">' + Object.keys(METHODS).map((k) => '<button type="button" class="k-chip' + (S.method === k ? ' is-on' : '') + '" data-method="' + k + '">' + icon(METHODS[k].ic) + METHODS[k].label + '</button>').join('') + '</div>' +
         (S.day ? '<button type="button" class="k-chip is-on" data-act="clear-day">' + esc(K.dateLong(S.day)) + icon('x') + '</button>' : '') + '</div>' +
@@ -431,7 +431,7 @@
       city: K.data && K.data.city ? K.data.city : (K.data && LOCS.includes(K.data.me.location) ? K.data.me.location : LOCS[0]) };
     const d = K.drawer({
       title: 'Încasare', icon: 'wallet', width: 600, focus: false,
-      subtitle: 'Alegi programarea, cum a plătit și cine a făcut tratamentul.',
+      
       body: '<div data-pay-body><div class="k-skel" style="height:220px"></div></div>',
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-accent is-lg" data-save disabled>' + icon('check') + '<span data-save-label>Încasează</span></button>',
       onMount(el) {
@@ -828,7 +828,7 @@
   function openCommNew() {
     const RULE = K.commissionRule();
     const d = K.drawer({
-      title: 'Adaugă comision', icon: 'percent', width: 520, subtitle: 'Se aprobă de admin, apoi intră în salariu.',
+      title: 'Adaugă comision', icon: 'percent', width: 520, 
       body: '<form class="k-form" data-form>' +
         K.field('Data', '<input name="date" type="date" required value="' + K.today() + '" max="' + K.today() + '">', 'full') +
         K.field('Clienta', '<input name="clientName" required maxlength="150" placeholder="Caută sau scrie numele" autocomplete="off">', 'full') +
@@ -886,7 +886,7 @@
     const max = tiers[tiers.length - 1].min + 4;
     const pct = (v) => Math.min(100, (v / max) * 100);
     const days = K.daysIn(C.month), daysLeft = isNow ? days - Number(K.today().slice(8, 10)) + 1 : 0;
-    return '<section class="k-card sl-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3><span class="k-sub">media pe zi, în zilele pontate</span></div>' +
+    return '<section class="k-card sl-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3></div>' +
       '<div class="sl-bk-top"><div><span>Media ta</span><b>' + K.num(bk.avg) + '</b><small>programări / zi · ' + K.plural(bk.days, 'zi pontată', 'zile pontate') + ', ' + bk.total + ' programări</small></div>' +
         '<div class="sl-bk-now' + (bk.lei ? ' is-on' : '') + '"><span>Bonus</span><b>' + K.lei(bk.lei) + '</b>' +
         (bk.next ? '<small>' + (bk.days ? 'Încă ' + avg1(Math.max(0.1, Math.ceil((bk.next.min - bk.avg) * 10) / 10)) + ' pe zi pentru ' + K.lei(bk.next.lei) : 'de la ' + bk.next.min + ' pe zi') + (isNow && daysLeft ? ' · ' + K.plural(daysLeft, 'zi rămasă', 'zile rămase') : '') + '</small>' : '<small>Treapta cea mai mare. Bravo!</small>') + '</div></div>' +
@@ -906,7 +906,7 @@
     Object.keys(c.BLOCKS).forEach((b) => { catalog['b:' + b] = { label: c.BLOCKS[b], group: 'Secțiuni', only: ['blocks'] }; });
     const groups = []; c.mineSal.forEach((k) => { if (!groups.includes(c.SAL[k].group)) groups.push(c.SAL[k].group); });
     K.customize({
-      title: 'Personalizează Salariul', subtitle: 'Alegi cifrele și secțiunile, în ordinea ta. Se păstrează pe contul tău.',
+      title: 'Personalizează Salariul', 
       catalog, groups: groups.concat(['Secțiuni']),
       parts: [
         { key: 'kpis', label: 'Cifrele', hint: 'Oricâte; se așază pe rânduri.', value: c.kpis, def: c.def },
@@ -1036,7 +1036,7 @@
         : '<section class="cb-sec"><h3>' + icon('percent') + 'Comisionul meu · ' + esc(K.monthLabel(C.month)) + '</h3>' +
           '<p class="cd-rule">' + icon('info') + 'Din valoarea upsell-ului se scad ' + RULE.cost + '% (cheltuielile medii ale procedurii), iar din ce rămâne primești ' + RULE.rate + '%. Exemplu: 3.000 lei upsell, 120 lei comision.</p>' + kpiRow + '</section>'),
       bonus: () => (pay && pay.hasBonus && pay.booking ? bookingHtml(pay.booking, isNow) : ''),
-      chart: () => (done.length ? '<section class="k-card cb-sec"><div class="k-card-head"><h3>' + icon('trend') + 'Pe zile</h3><span class="k-sub">valoarea tratamentelor făcute de tine</span></div><div data-cbchart></div></section>' : ''),
+      chart: () => (done.length ? '<section class="k-card cb-sec"><div class="k-card-head"><h3>' + icon('trend') + 'Pe zile</h3></div><div data-cbchart></div></section>' : ''),
       lists: () => listsHtml,
       history: () => histHtml,
       tips: () => tips,

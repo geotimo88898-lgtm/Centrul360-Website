@@ -535,7 +535,7 @@
   }
   function customize() {
     K.customize({
-      title: 'Coloane și KPI', subtitle: 'Alegi cifrele de sus și coloanele listei, în ordinea ta. Se păstrează pe contul tău.',
+      title: 'Coloane și KPI', 
       catalog: M, groups: GROUPS,
       parts: [
         { key: 'cards', label: 'Cifrele de sus', hint: 'Pentru automatizările bifate, sau pentru toate. Oricâte.', value: cards(), def: DEF_CARDS },
