@@ -148,7 +148,9 @@ const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 const STOP = new Set(['tratament', 'tratamentul', 'zone', 'zona', 'pret', 'oferta', 'sedinta', 'sedinte', 'pentru', 'full', 'body', 'lei', 'una', 'doua', 'the',
   // a city in an offer's name ("Cavitație 1+1 · Arad") is not a procedure word: the city is matched on its own
   'arad', 'timisoara', 'timis']);
-const words = (s) => norm(s).split(/[^a-z0-9]+/).filter((t) => t.length >= 3 && !STOP.has(t));
+// a two-letter procedure name counts too („RF” gușă is not HIFU gușă)
+const SHORT_OK = new Set(['rf']);
+const words = (s) => norm(s).split(/[^a-z0-9]+/).filter((t) => (t.length >= 3 || SHORT_OK.has(t)) && !STOP.has(t));
 const CITY = { 'Timișoara': /timis|\btm\b/, 'Arad': /\barad/ };
 const CITY_ID = { 'Timișoara': 'timisoara', 'Arad': 'arad' };
 function detectCity(text) {

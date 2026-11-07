@@ -136,7 +136,8 @@ module.exports = async (req, res) => {
       const input = Object.assign({}, body.form || {});
       if (!input.offerId && input.offer) {
         const t = fold(input.offer);
-        const o = offersAll.find((x) => fold(x.title) === t || fold(x.adName) === t) || offersAll.find((x) => t && (t.includes(fold(x.title)) || fold(x.title).includes(t)));
+        const o = offersAll.find((x) => x.id === input.offer || x.key === input.offer) // its id or key
+          || offersAll.find((x) => fold(x.title) === t || fold(x.adName) === t) || offersAll.find((x) => t && (t.includes(fold(x.title)) || fold(x.title).includes(t)));
         if (o) input.offerId = o.id;
       }
       const r = await createForm({ readJSON, writeJSON }, input);
