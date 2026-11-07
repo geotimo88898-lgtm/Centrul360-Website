@@ -196,7 +196,7 @@
     if (ps) t.push(['drum', 'Drumul meu', 'target', ps.done < ps.items ? ps.items - ps.done : 0]);
     // the cosmetician's trainings (and the owner looking as one): one page with three big doors (zonesHtml)
     if (viewRole() === 'cosmetician') t.push(['acasa', 'Traininguri', 'book']);
-    else t.push(['vanzari', 'Vânzări', 'trend'], ['tratamente', 'Tratamente', 'sparkles']);
+    else t.push(['vanzari', 'Vânzări', 'trend'], ['tratamente', 'Tratamente', 'sparkles'], ['portal', 'Portalul', 'sliders']);
     if (isAdmin()) t.push(['echipa', 'Progres echipă', 'trend', pendingTasks().length]);
     return t;
   }
@@ -230,7 +230,7 @@
     panel.querySelector('[data-tabs]').innerHTML = t.map(([id, l, ic, n]) => '<button type="button" class="tr-tab' + (A.tab === id ? ' is-on' : '') + '" data-tab="' + id + '">' + icon(ic) + '<span>' + esc(l) + '</span>' + (n ? '<b class="tr-tab-n">' + n + '</b>' : '') + '</button>').join('');
     const v = panel.querySelector('[data-view]');
     if (subOf() === 'calc' && v.querySelector('[data-calc]')) { paintCalcResults(); return; } // keep what she's typing
-    v.innerHTML = ({ drum: drumHtml, acasa: zonesHtml, vanzari: () => areaHtml('vanzari'), tratamente: () => areaHtml('tratamente'), echipa: teamHtml })[A.tab]();
+    v.innerHTML = ({ drum: drumHtml, acasa: zonesHtml, vanzari: () => areaHtml('vanzari'), tratamente: () => areaHtml('tratamente'), portal: guideHtml, echipa: teamHtml })[A.tab]();
     if (subOf() === 'calc') paintCalcResults();
     if (subOf() === 'm:consultatie' && window.C360Fisa) window.C360Fisa.bind(v, A.fisa, render);
     if (isAdmin()) K.badge('traininguri', pendingTasks().length);
@@ -336,6 +336,8 @@
     { id: 'parcurs', n: 1, title: 'Parcursul clientei', sub: 'Ce fac de când vine clienta până pleacă.', icon: 'users', hue: 'a' },
     { id: 'consult', n: 2, title: 'Consultația', sub: 'Ce îi spun clientei și ce îi recomand.', icon: 'file', hue: 'b' },
     { id: 'tratamente', n: 3, title: 'Tratamentele', sub: 'Cum fac fiecare tratament.', icon: 'sparkles', hue: 'c' },
+    // (the owner, 7.11) how to use the portal itself, next to the three
+    { id: 'portal', n: 4, title: 'Portalul', sub: 'Cum folosesc portalul, pas cu pas.', icon: 'sliders', hue: 'd' },
   ];
   function zonesHtml() {
     const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
@@ -344,13 +346,30 @@
         '<span class="tr-door-glow"></span><span class="tr-door-n">' + z.n + '</span>' +
         '<span class="tr-door-ic">' + icon(z.icon) + '</span><small class="tr-door-k">Vreau să învăț</small><b>' + esc(z.title) + '</b><span class="tr-door-sub">' + esc(z.sub) + '</span>' +
         (z.id === 'parcurs' ? '<span class="tr-door-prog"><i style="--w:' + Math.round(pdone().size / PARCURS.length * 100) + '%"></i></span>' : '') +
+        (z.id === 'portal' ? '<span class="tr-door-prog"><i style="--w:' + guidePct() + '%"></i></span>' : '') +
         '<i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';
     }
     const z = ZONES.find((x) => x.id === A.zone) || ZONES[0];
     const others = ZONES.filter((x) => x.id !== z.id);
     return roleBar + '<div class="tr-zonebar"><button type="button" class="k-btn is-ghost is-sm" data-zone="">' + icon('left') + 'Toate</button><h3>' + icon(z.icon) + esc(z.title) + '</h3><span class="k-grow"></span>' +
       others.map((x) => '<button type="button" class="k-chip" data-zone="' + x.id + '">' + esc(x.title) + '</button>').join('') + '</div>' +
-      (z.id === 'parcurs' ? parcursHtml() : areaHtml(z.id === 'consult' ? 'vanzari' : 'tratamente', true));
+      (z.id === 'parcurs' ? parcursHtml() : z.id === 'portal' ? guideHtml() : areaHtml(z.id === 'consult' ? 'vanzari' : 'tratamente', true));
+  }
+
+  // ------------------------------------------------------------------ Portalul (portal-academy-guide.js)
+  // the lessons of her role, one open, what she marked „Am înțeles” kept on this device
+  function gdone() { try { return new Set(JSON.parse(localStorage.getItem(window.C360Guide ? window.C360Guide.KEY : '') || '[]')); } catch (e) { return new Set(); } }
+  function gsave(set) { try { localStorage.setItem(window.C360Guide.KEY, JSON.stringify([...set])); } catch (e) { /* private mode */ } }
+  function guidePct() {
+    if (!window.C360Guide) return 0;
+    const list = window.C360Guide.lessons(viewRole()), d = gdone();
+    return list.length ? Math.round(list.filter((x) => d.has(x.id)).length / list.length * 100) : 0;
+  }
+  function guideHtml() {
+    if (!window.C360Guide) return K.empty('book', 'Se încarcă', '');
+    const list = window.C360Guide.lessons(viewRole()), d = gdone();
+    if (A.gstep == null || A.gstep < 0 || A.gstep >= list.length) { A.gstep = list.findIndex((x) => !d.has(x.id)); if (A.gstep < 0) A.gstep = 0; }
+    return window.C360Guide.html(viewRole(), A.gstep, d, icon);
   }
 
   // ------------------------------------------------------------------ Parcursul clientei
@@ -1555,6 +1574,17 @@
     if (zn) { A.zone = zn.dataset.zone; A.mapEnter = true; panel.querySelector('[data-view]').innerHTML = ''; render(); panel.scrollIntoView({ block: 'start' }); return; }
     const ps = t.closest('[data-pstep],[data-pgo]');
     if (ps && !ps.disabled) { A.pstep = +(ps.dataset.pstep != null ? ps.dataset.pstep : ps.dataset.pgo); render(); const sh = panel.querySelector('[data-sheet]'); if (sh && window.innerWidth < 900) sh.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const gl = t.closest('[data-glesson]');
+    if (gl && !gl.disabled) { A.gstep = +gl.dataset.glesson; render(); const sh = panel.querySelector('[data-gsheet]'); if (sh && window.innerWidth < 900) sh.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const gd = t.closest('[data-gdone]');
+    if (gd) {
+      const list = window.C360Guide.lessons(viewRole()), i = +gd.dataset.gdone, set = gdone();
+      set.add(list[i].id); gsave(set); burst(gd);
+      setTimeout(() => { A.gstep = Math.min(list.length - 1, i + 1); render(); if (list.every((x) => set.has(x.id)) && i === list.length - 1) K.ui().toast('Bravo! Știi tot portalul.', 'success'); }, 380);
+      return;
+    }
+    const gg = t.closest('[data-ggo]');
+    if (gg) { const to = gg.dataset.ggo; if (to === 'account') return K.openAccount && K.openAccount(); if (to === 'notif') return K.openNotifications && K.openNotifications(); return K.go(to); }
     const pg2 = t.closest('[data-pgoto]');
     if (pg2) {
       const to = pg2.dataset.pgoto;
@@ -1786,7 +1816,22 @@
   box-shadow:0 1px 0 color-mix(in srgb, var(--fg) 8%, transparent) inset, 0 30px 60px -40px rgba(0,0,0,.8);
   transform:rotateX(var(--rx,0)) rotateY(var(--ry,0)); transform-style:preserve-3d;
   transition:transform .5s cubic-bezier(.16,1,.3,1), box-shadow .4s, border-color .3s; animation:trRise .7s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 90ms); }
-.tr-door.is-b{ --c1:#a855f7; --c2:#ec4899; } .tr-door.is-c{ --c1:#f97316; --c2:#f43f5e; }
+.tr-door.is-b{ --c1:#a855f7; --c2:#ec4899; } .tr-door.is-c{ --c1:#f97316; --c2:#f43f5e; } .tr-door.is-d{ --c1:#10b981; --c2:#06b6d4; }
+@media (min-width:1101px){ .tr-doors{ grid-template-columns:repeat(4,minmax(0,1fr)); } .tr-door{ padding:1.6rem; } .tr-door b{ font-size:1.6rem; } }
+.gd-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:.6rem; margin:.4rem 0 1.1rem; }
+.gd-l{ display:flex; align-items:center; gap:.65rem; min-width:0; padding:.7rem .8rem; border-radius:18px; border:1px solid color-mix(in srgb, var(--fg) 9%, transparent); background:var(--glass);
+  color:var(--fg); text-align:left; cursor:pointer; font:inherit; transition:transform .35s cubic-bezier(.16,1,.3,1), border-color .3s, box-shadow .3s; animation:gdIn .5s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--i) * 30ms); }
+.gd-l:hover{ transform:translateY(-2px); border-color:color-mix(in srgb, var(--fg) 18%, transparent); }
+.gd-l b{ font-size:.95rem; font-weight:700; letter-spacing:-.01em; line-height:1.25; min-width:0; }
+.gd-ic{ width:34px; height:34px; flex:none; border-radius:12px; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#10b981,#06b6d4); }
+.gd-ic .k-ic{ width:18px; height:18px; }
+.gd-l.is-done .gd-ic{ background:color-mix(in srgb, #10b981 22%, transparent); color:#10b981; }
+.gd-l.is-cur{ border-color:#10b981; box-shadow:0 0 0 3px color-mix(in srgb, #10b981 22%, transparent); }
+.gd-step .tr-step-stage{ color:#10b981; }
+.gd-step .tr-step-t span{ background:linear-gradient(145deg,#10b981,#06b6d4); }
+@keyframes gdIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+@media (max-width:760px){ .gd-step .tr-whybox{ flex-direction:column; gap:.15rem; } .gd-list{ grid-template-columns:1fr 1fr; } .gd-l{ padding:.6rem .65rem; gap:.5rem; } .gd-ic{ width:30px; height:30px; border-radius:10px; } .gd-l b{ font-size:.88rem; } }
+@media (prefers-reduced-motion:reduce){ .gd-l{ animation:none; } }
 .tr-door.is-tilt{ transition:transform .12s linear, box-shadow .4s, border-color .3s; }
 .tr-door:hover{ border-color:color-mix(in srgb, var(--fg) 20%, transparent); box-shadow:0 1px 0 color-mix(in srgb, var(--fg) 10%, transparent) inset, 0 40px 80px -40px color-mix(in srgb, var(--c1) 70%, transparent); }
 .tr-door:active{ transform:scale(.98); }

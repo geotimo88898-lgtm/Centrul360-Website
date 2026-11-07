@@ -60,8 +60,9 @@ module.exports = async (req, res) => {
       if (autoClosed) await writeJSON('data/automation-tasks.json', allTasks);
       const clients = await readJSON('data/clients.json', []);
       const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
-      // only the tasks a person wrote ("Adaugă sarcină"); the ones automations made before are not shown
-      const own = allTasks.filter((t) => t.createdBy);
+      // the tasks a person wrote ("Adaugă sarcină"), plus "Sună și confirmă programarea" for a booking from the site
+      // (api/_lib/site-confirm.js; it closes itself once she is confirmed); the ones old automations made are not shown
+      const own = allTasks.filter((t) => t.createdBy || t.confirmAppt);
       let visible = showAll ? own : own.filter((t) => t.status === 'pending' && (!t.dueDate || t.dueDate <= today));
 
       const isAdmin = session.role === 'admin';

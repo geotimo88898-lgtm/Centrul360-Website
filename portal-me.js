@@ -15,7 +15,7 @@
     invalid_email: 'Adresa de email nu pare corectă.',
     invalid_name: 'Scrie numele (cel puțin 2 litere).',
     invalid_file: 'Poza nu a putut fi folosită. Încearcă altă poză.',
-    admin_login_in_vercel: 'Utilizatorul și parola contului de proprietar se schimbă din Vercel.',
+    admin_login_in_vercel: 'Utilizatorul și parola contului de proprietar se schimbă din setările serverului (Cloudflare).',
   };
   const errText = (e) => ERR[e && e.code] || K.errText(e);
   const api = (action, body) => K.api('/api/portal-account', Object.assign({ action }, body || {}));
@@ -112,7 +112,7 @@
               pwField('newPassword', 'Parola nouă (cel puțin 8 caractere)', 'new-password') + pwField('confirm', 'Scrie din nou parola nouă', 'new-password') +
               '<div class="me-strength full" data-strength hidden><i></i><span></span></div></form>' +
               '<div class="k-form-actions"><button type="button" class="k-btn is-outline" data-save-pass>' + icon('shield') + 'Schimbă parola</button></div>'
-            : '<p class="ct-hint">' + icon('info') + 'Utilizatorul și parola contului de proprietar se schimbă din Vercel (setările proiectului), ca să nu te poți bloca singur pe dinafară.</p>') +
+            : '<p class="ct-hint">' + icon('info') + 'Utilizatorul și parola contului de proprietar se schimbă din setările serverului (Cloudflare), ca să nu te poți bloca singur pe dinafară.</p>') +
           '</section>' +
           '<section class="k-section"><h4>' + icon('sparkles') + 'Preferințe</h4>' +
             '<div class="me-pref"><span>Culoarea portalului</span>' + (window.C360Accent ? window.C360Accent.menuHtml() : '') + '</div>' +
