@@ -29,7 +29,7 @@
     { id: 'citrus', name: 'Citrice', a: '#a3e635', b: '#fbbf24', grad: true },
     { id: 'peach', name: 'Piersică', a: '#fb7185', b: '#fbbf24', grad: true },
   ];
-  const DEFAULT = PRESETS[0];
+  const DEFAULT = PRESETS.find((p) => p.id === 'teal'); // the clinic's teal (George, 7.11: no violet)
 
   // ------------------------------------------------------------------ colour math (sRGB ⇄ OKLCH ⇄ HSV)
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));

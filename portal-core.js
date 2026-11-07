@@ -288,10 +288,10 @@
     // a version other than the one this device's saved files came from: they go, a reload brings the new ones
     try {
       const was = localStorage.getItem('c360_build');
-      if (was !== b) { localStorage.setItem('c360_build', b); if (was && window.caches) caches.delete('c360-static-v1').then(() => { updateReady = true; }, () => {}); }
+      if (was !== b) { localStorage.setItem('c360_build', b); if (was && window.caches) caches.delete('c360-static-v2').then(() => { updateReady = true; }, () => {}); }
     } catch (e) { /* storage off */ }
     if (build === null) build = b;
-    else if (b !== build) { updateReady = true; try { if (window.caches) caches.delete('c360-static-v1'); } catch (e) { /* none */ } }
+    else if (b !== build) { updateReady = true; try { if (window.caches) caches.delete('c360-static-v2'); } catch (e) { /* none */ } }
   }
   function newCode(now) {
     if (!updateReady || busyEditing()) return false;
@@ -577,7 +577,7 @@
 
   async function logout() {
     try { localStorage.removeItem(SNAP); } catch (e) { /* storage off */ }
-    try { if (window.caches) await caches.delete('c360-static-v1'); } catch (e) { /* none */ }
+    try { if (window.caches) await caches.delete('c360-static-v2'); } catch (e) { /* none */ }
     try { await fetch('/api/portal-logout', { method: 'POST' }); } catch (e) { /* leaving anyway */ }
     location.href = '/login';
   }

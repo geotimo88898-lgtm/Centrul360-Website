@@ -7,12 +7,13 @@
 //    api/_lib/push.js); a tap opens the portal on the right section.
 
 self.addEventListener('install', () => { self.skipWaiting(); });
-self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
+// a new worker drops every older copy of the portal's files (v1 kept the KPI scene of before, 7.11)
+self.addEventListener('activate', (event) => { event.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => /^c360-static-/.test(k) && k !== STATIC).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 
 // The portal's own files (scripts, styles, pictures, fonts) come from this device at once and are refreshed in the
 // background (the owner, 5.11: "flash speed"); a new version of the portal empties this cache (portal-core.js
 // seeBuild), so the next reload has the new files. Pages and /api always go to the network.
-const STATIC = 'c360-static-v1';
+const STATIC = 'c360-static-v2';
 const MINE = /^\/(portal-[\w-]+\.(?:js|css)|vendor\/|brand_asset\/|game\/)/;
 self.addEventListener('fetch', (event) => {
   const req = event.request;
