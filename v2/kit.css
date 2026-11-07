@@ -113,14 +113,20 @@ html.locked{ overflow:hidden; }
 @keyframes halo{ 0%,58%{ box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 12px 28px -12px rgba(16,145,132,.7), 0 0 0 0 rgba(20,165,150,.35); } 90%,100%{ box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 12px 28px -12px rgba(16,145,132,.7), 0 0 0 16px rgba(20,165,150,0); } }
 .btn.ghost{ color:var(--ink); background:#fff; box-shadow:0 0 0 1.5px rgba(11,11,13,.82) inset, 0 8px 22px -14px rgba(11,11,13,.3); }
 .btn.ghost:hover{ background:var(--ink); color:#fff; box-shadow:0 0 0 1.5px var(--ink) inset, 0 14px 28px -14px rgba(11,11,13,.45); }
-/* the offers' own button: brushed rose gold, so an offer feels special (the owner's swatch, 7.11) */
-.btn.book.gold{ color:#3d1f16; text-shadow:0 1px 0 rgba(255,255,255,.35);
-  background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1px, rgba(80,30,20,.045) 1px 2px, transparent 2px 3px),
-    linear-gradient(180deg,#c1847a 0%,#e4b1a3 34%,#f5d2c6 50%,#dda899 64%,#b6796b 100%);
-  box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 -1px 0 rgba(90,40,30,.25) inset, 0 12px 28px -12px rgba(160,92,78,.65), 0 2px 6px -2px rgba(160,92,78,.4); }
-.btn.book.gold:hover{ box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 -1px 0 rgba(90,40,30,.25) inset, 0 20px 40px -14px rgba(160,92,78,.7), 0 2px 6px -2px rgba(160,92,78,.4); }
-.btn.book.gold::before{ background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.7) 48%,transparent 64%); }
+/* the offers' own button: rose gold glass, Apple-like (owner, 7.11): a translucent rose gold body whose light drifts
+   slowly on the diagonal, a soft gloss on the upper half, a bright rim, a warm glow under it */
+.btn.book.gold{ color:#3b1c14; text-shadow:0 1px 0 rgba(255,255,255,.45);
+  background:linear-gradient(125deg,rgba(214,150,135,.92) 0%,rgba(240,196,182,.9) 30%,rgba(250,224,215,.92) 45%,rgba(226,170,155,.9) 62%,rgba(205,140,125,.92) 82%,rgba(238,190,176,.92) 100%);
+  background-size:240% 240%; animation:roseDrift 10s var(--e2) infinite alternate;
+  -webkit-backdrop-filter:blur(14px) saturate(170%); backdrop-filter:blur(14px) saturate(170%);
+  box-shadow:0 0 0 1px rgba(255,255,255,.7) inset, 0 1px 0 rgba(255,255,255,.95) inset, 0 -6px 14px -6px rgba(150,80,65,.35) inset,
+    0 0 0 1px rgba(176,108,92,.28), 0 14px 30px -12px rgba(176,108,92,.55), 0 2px 6px -2px rgba(176,108,92,.3); }
+.btn.book.gold::after{ content:''; position:absolute; z-index:-1; left:3%; right:3%; top:1px; height:56%; border-radius:999px 999px 60% 60% / 999px 999px 40% 40%; pointer-events:none; filter:blur(.6px);
+  background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.18) 60%,rgba(255,255,255,0) 100%); }
+.btn.book.gold:hover{ box-shadow:0 0 0 1px rgba(255,255,255,.75) inset, 0 1px 0 rgba(255,255,255,.95) inset, 0 -6px 14px -6px rgba(150,80,65,.35) inset,
+    0 0 0 1px rgba(176,108,92,.32), 0 22px 42px -14px rgba(176,108,92,.65), 0 2px 6px -2px rgba(176,108,92,.3); }
+.btn.book.gold::before{ background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.6) 46%,transparent 62%); }
+@keyframes roseDrift{ 0%{ background-position:0% 30%; } 100%{ background-position:100% 70%; } }
 .spark{ position:fixed; z-index:200; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; pointer-events:none; background:var(--teal3); }
 
 /* ---- hero */
