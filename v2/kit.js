@@ -22,7 +22,7 @@
     var cut = o.priceOld > o.priceNew;
     var pct = cut ? Math.round((1 - o.priceNew / o.priceOld) * 100) : 0;
     return '<div class="slip rv">' + (pct ? '<span class="pct">-' + pct + '%</span>' : '') +
-      '<span class="k">' + esc(CAT[o.category] || 'Tratament') + '</span><h3>' + esc(o.title) + '</h3>' +
+      '<span class="k"><b>Black Friday</b> · ' + esc(CAT[o.category] || 'Tratament') + '</span><h3>' + esc(o.title) + '</h3>' +
       '<div class="pr"><b data-count="' + Math.round(o.priceNew) + '" data-suffix=" lei">' + lei(o.priceNew) + '</b>' + (cut ? '<s>' + lei(o.priceOld) + '</s>' : '') + '</div>' +
       (cut ? '<span class="save">Economisești ' + lei(o.priceOld - o.priceNew) + '</span>' : '') +
       '<span class="where">' + esc(cities.length ? cities.join(' și ') : 'Timișoara și Arad') + '</span>' +
