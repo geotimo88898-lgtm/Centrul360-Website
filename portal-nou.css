@@ -974,3 +974,47 @@ html.ui-nou .st2-globe.is-flat .st2-globe-stage{ display:none; }
 }
 html.ui-nou .db-summary.n-owner-sum b{ color:var(--fg); font-weight:750; font-variant-numeric:tabular-nums; }
 html.ui-nou .db-summary.n-owner-sum .is-up{ color:var(--good); font-weight:650; } html.ui-nou .db-summary.n-owner-sum .is-down{ color:var(--bad); font-weight:650; }
+
+/* ---------------- KPI scene, v2 (7.11, the owner: like Summit Lane's home, cosmeticians instead of apps, the logo in the middle) */
+/* a night stage in both themes: light only reads as light on the dark */
+html.ui-nou .n-p3{ display:grid; grid-template-columns:minmax(220px,300px) 1fr minmax(220px,auto); align-items:center; gap:24px; height:auto; min-height:420px; padding:28px 32px;
+  color:#eef0f7; background:radial-gradient(90% 120% at 50% 50%, color-mix(in srgb, var(--accent) 22%, #07080d), #05060a 72%) !important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 70px -40px rgba(0,0,0,.7); }
+html.ui-nou .n-p3::before{ background:radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 0) 0 0 / 24px 24px; -webkit-mask-image:radial-gradient(70% 80% at 50% 50%, #000, transparent); mask-image:radial-gradient(70% 80% at 50% 50%, #000, transparent); }
+html.ui-nou .n-p3 > canvas{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+html.ui-nou .n-p3-people{ position:relative; z-index:1; list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+html.ui-nou .n-p3-people li{ position:relative; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; padding:9px 26px 9px 10px; border-radius:16px;
+  background:rgba(255,255,255,.06); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation:n-rise .7s var(--e) calc(var(--i) * 70ms) both; transition:background-color .4s, box-shadow .6s var(--e); }
+html.ui-nou .n-p3-people li > i, html.ui-nou .n-p3-people li > img{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font:700 12px/1 'Inter',sans-serif; font-style:normal; object-fit:cover;
+  color:#fff; background:var(--c); box-shadow:0 0 0 2px rgba(255,255,255,.25), 0 0 18px color-mix(in srgb, var(--c) 70%, transparent); }
+html.ui-nou .n-p3-people span{ display:grid; min-width:0; }
+html.ui-nou .n-p3-people b{ font-size:14px; font-weight:650; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.ui-nou .n-p3-people small{ font-size:11.5px; color:rgba(238,240,247,.55); }
+html.ui-nou .n-p3-people em{ font-style:normal; font-size:13.5px; font-weight:750; font-variant-numeric:tabular-nums; color:#fff; }
+html.ui-nou .n-p3-people u{ position:absolute; right:8px; top:50%; width:8px; height:8px; margin-top:-4px; border-radius:50%; background:var(--c); box-shadow:0 0 12px var(--c); text-decoration:none; }
+html.ui-nou .n-p3-people li.is-zero{ opacity:.62; }
+html.ui-nou .n-p3-people li.is-zero em{ color:rgba(238,240,247,.6); font-weight:600; }
+html.ui-nou .n-p3-people li.n-p3-hit{ animation:n-p3hit 1.2s var(--e); }
+@keyframes n-p3hit{ 0%{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 0 var(--c); } 30%{ box-shadow:inset 0 0 0 1.5px var(--c), 0 0 30px 4px color-mix(in srgb, var(--c) 60%, transparent); background:rgba(255,255,255,.14); } 100%{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); } }
+html.ui-nou .n-p3-logo{ position:relative; z-index:1; justify-self:center; width:clamp(90px, 10vw, 130px); aspect-ratio:1; color:#fff; filter:drop-shadow(0 0 14px rgba(255,255,255,.7)) drop-shadow(0 0 30px color-mix(in srgb, var(--accent) 80%, transparent)); }
+html.ui-nou .n-p3-logo svg{ width:100%; height:100%; overflow:visible; }
+html.ui-nou .n-p3-logo .v, html.ui-nou .n-p3-logo .h{ transform-box:fill-box; transform-origin:50% 50%; }
+html.ui-nou .n-p3-logo .v{ animation:n-mkY 6s var(--e2) infinite; }
+html.ui-nou .n-p3-logo .h{ animation:n-mkX 6s var(--e2) 3s infinite; }
+html.ui-nou .n-p3-logo svg{ animation:n-logo-spin 18s linear infinite; }
+@keyframes n-logo-spin{ to{ transform:rotate(360deg); } }
+html.ui-nou .n-p3 .n-p3-total{ position:relative; z-index:1; right:auto; top:auto; justify-items:start; text-align:left; }
+html.ui-nou .n-p3 .n-p3-total small{ color:rgba(238,240,247,.6); }
+html.ui-nou .n-p3 .n-p3-total b{ color:#fff; text-shadow:0 0 30px color-mix(in srgb, var(--accent) 70%, transparent), 0 0 60px rgba(255,255,255,.15); }
+html.ui-nou .n-p3 .n-p3-total span{ color:rgba(238,240,247,.6); }
+html.ui-nou .n-p3.n-p3-ding .n-p3-total b{ animation:n-num .8s var(--spring); }
+@media (max-width:640px){
+  html.ui-nou .n-p3{ grid-template-columns:1fr; gap:22px; padding:18px 14px 22px; min-height:0; height:auto; }
+  html.ui-nou .n-p3-people{ grid-template-columns:1fr 1fr; gap:8px; }
+  html.ui-nou .n-p3-people li{ grid-template-columns:auto 1fr; padding:8px 10px; }
+  html.ui-nou .n-p3-people li em{ grid-column:2; font-size:12.5px; }
+  html.ui-nou .n-p3-people u{ right:auto; left:50%; top:auto; bottom:-4px; margin:0 0 0 -4px; }
+  html.ui-nou .n-p3-logo{ width:96px; }
+  html.ui-nou .n-p3 .n-p3-total{ position:relative; left:auto; bottom:auto; justify-items:center; text-align:center; }
+}
