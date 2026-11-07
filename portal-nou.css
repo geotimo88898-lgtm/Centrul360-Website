@@ -972,3 +972,5 @@ html.ui-nou .st2-globe.is-flat .st2-globe-stage{ display:none; }
   html.ui-nou .st2-globe-stage{ height:320px; }
   html.ui-nou .st2-globe-side{ padding:0 12px; }
 }
+html.ui-nou .db-summary.n-owner-sum b{ color:var(--fg); font-weight:750; font-variant-numeric:tabular-nums; }
+html.ui-nou .db-summary.n-owner-sum .is-up{ color:var(--good); font-weight:650; } html.ui-nou .db-summary.n-owner-sum .is-down{ color:var(--bad); font-weight:650; }

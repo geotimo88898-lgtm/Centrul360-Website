@@ -78,8 +78,53 @@
 
   // ================================================================ PANOU: Nuki in the hero
   // what the day looks like, in one line, with the pose that goes with it
+  // the owner wants to hear only about money and ads (7.11): what came in today, this month, vs yesterday, and the ads
+  // (spent, cost per client, what works); leads, messages, bookings stay on their own screens
+  var KPI = { at: 0, d: null, busy: false };
+  function kpiToday(cb) {
+    if (KPI.busy || Date.now() - KPI.at < 5 * 60e3) { if (cb && KPI.d) cb(); return; }
+    KPI.busy = true;
+    K().api('/api/kpi?period=today').then(function (x) { KPI.d = x; KPI.at = Date.now(); KPI.busy = false; if (cb) cb(); }, function () { KPI.busy = false; KPI.at = Date.now(); });
+  }
+  function moneyNow(d) {
+    var t = today(), y = K().addDays ? K().addDays(t, -1) : '', m = t.slice(0, 7);
+    var now = new Date(), hm = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+    var tm = function (s) { if (s.time) return s.time; var dd = s.createdAt ? new Date(s.createdAt) : null; return dd && !isNaN(dd) ? ('0' + dd.getHours()).slice(-2) + ':' + ('0' + dd.getMinutes()).slice(-2) : ''; };
+    var inc = d.incasari || [], sum = function (a) { return a.reduce(function (x, s) { return x + (Number(s.amount) || 0); }, 0); };
+    var yAll = inc.filter(function (s) { return s.date === y; });
+    var timed = yAll.length && yAll.every(function (s) { return tm(s); });
+    return { today: sum(inc.filter(function (s) { return s.date === t; })), month: sum(inc.filter(function (s) { return String(s.date || '').slice(0, 7) === m; })), yday: timed ? sum(yAll.filter(function (s) { return tm(s) <= hm; })) : null };
+  }
+  function ownerLines(d) {
+    var out = [], mo = moneyNow(d);
+    var diff = mo.yday == null ? null : mo.today - mo.yday;
+    out.push({ pose: diff != null && diff < 0 ? 'gandeste' : mo.today ? 'bucurie' : 'prezinta', t: 'Azi: <b>' + esc(lei(mo.today)) + '</b>' + (diff == null ? '.' : diff >= 0 ? ', cu <b>' + esc(lei(diff)) + '</b> peste ieri la ora asta.' : ', cu ' + esc(lei(-diff)) + ' sub ieri la ora asta.') });
+    out.push({ pose: 'cadou', t: 'Luna asta: <b>' + esc(lei(mo.month)) + '</b> încasați.' });
+    var k = KPI.d, a = k && k.ads, tot = a && a.totals;
+    if (tot && tot.spend) {
+      out.push({ pose: 'aparat-foto', t: 'Reclamele azi: <b>' + esc(lei(tot.spend)) + '</b> cheltuiți' + (tot.cpa ? ', <b>' + esc(lei(tot.cpa)) + '</b> pe clientă' : '') + (tot.roas ? ', fiecare leu adus înapoi de <b>' + String(tot.roas).replace('.', ',') + '</b> ori' : '') + '.' });
+      var rows = (a.rows || []).filter(function (r) { return r.spend > 0; });
+      var best = rows.filter(function (r) { return r.roas; }).sort(function (x, y) { return y.roas - x.roas; })[0];
+      var worst = rows.filter(function (r) { return !r.clients; }).sort(function (x, y) { return y.spend - x.spend; })[0];
+      if (best) out.push({ pose: 'stea-google', t: 'Merge cel mai bine: <b>' + esc(best.name || best.campaign || 'o reclamă') + '</b>.' });
+      if (worst && worst.spend > 30) out.push({ pose: 'gandeste', t: '<b>' + esc(worst.name || worst.campaign || 'O reclamă') + '</b> a cheltuit ' + esc(lei(worst.spend)) + ' fără nicio clientă azi.' });
+    } else if (k && (k.adsState || k.adsError)) out.push({ pose: 'gandeste', t: 'Reclamele: nu am cifrele de la Meta acum.' });
+    return out;
+  }
+  // the hero's line under the greeting, for the owner: the money (and the ads), not the to-do list
+  function ownerSummary(hero) {
+    var d = D(); if (!d || !d.isAdmin) return;
+    var sm = hero.querySelector('.db-summary'); if (!sm) return;
+    var mo = moneyNow(d), diff = mo.yday == null ? null : mo.today - mo.yday;
+    var h = 'Azi <b>' + esc(lei(mo.today)) + '</b>' + (diff == null ? '' : ' <span class="' + (diff >= 0 ? 'is-up' : 'is-down') + '">' + (diff >= 0 ? '↑ ' : '↓ ') + esc(lei(Math.abs(diff))) + ' față de ieri</span>') + ' · luna asta <b>' + esc(lei(mo.month)) + '</b>';
+    var k = KPI.d, tot = k && k.ads && k.ads.totals;
+    if (tot && tot.spend) h += ' · reclame <b>' + esc(lei(tot.spend)) + '</b>' + (tot.cpa ? ', ' + esc(lei(tot.cpa)) + ' / clientă' : '');
+    sm.classList.add('n-owner-sum');
+    sm.innerHTML = h + '.';
+  }
   function moodLines() {
     var d = D(); if (!d) return [{ pose: 'salut-pa', t: 'Salut! Sunt aici dacă ai nevoie.' }];
+    if (d.isAdmin) return ownerLines(d);
     var out = [];
     var h = new Date().getHours();
     var call = badgeOf('pipeline'), appr = badgeOf('aprobari'), msg = d.waUnread || 0;
@@ -115,6 +160,8 @@
     };
     b.addEventListener('click', function (e) { e.stopPropagation(); i++; lines = moodLines(); boing(b); show(); confetti(e.clientX, e.clientY, 14); });
     setTimeout(show, 1100);
+    ownerSummary(hero);
+    if (D() && D().isAdmin) kpiToday(function () { lines = moodLines(); if (hero.isConnected) ownerSummary(hero); });
   }
 
   // ================================================================ PANOU: the day, live, as a moving band
@@ -128,6 +175,7 @@
     ((d.appointmentsToday && d.appointmentsToday.list) || []).filter(function (a) { return a.status !== 'anulata' && a.status !== 'finalizata'; }).slice(0, 8).forEach(function (a) {
       out.push('<i class="is-cal"></i><b>' + esc(a.time || '') + '</b> ' + esc(first(a.clientName)) + (a.treatment ? ' · ' + esc(a.treatment) : '') + (a.location ? ' · ' + esc(a.location) : ''));
     });
+    if (d.isAdmin) return out.filter(function (x) { return x.indexOf('is-pay') >= 0; }); // the owner: only the money
     var call = badgeOf('pipeline'); if (call) out.push('<i class="is-hot"></i><b>' + call + '</b> leaduri de sunat');
     if (d.waUnread) out.push('<i class="is-msg"></i><b>' + d.waUnread + '</b> conversații necitite');
     return out;
