@@ -63,7 +63,7 @@
       what: 'Lista ta de făcut azi și leadurile de sunat azi.',
       do: ['„Adaugă sarcină”: scrii ce trebuie făcut, alegi „Când” și apeși „Adaugă”.', 'Bifezi cu „Gata” ce ai terminat.',
         '„De sunat azi” arată leadurile la care ai ales „Revin la ea” pentru azi.'],
-      know: ['Un lead iese singur din „De sunat azi” după ce îi salvezi contactul în Pipeline.'] },
+      know: ['Pentru o programare făcută pe site apare singură sarcina „Sună și confirmă programarea”. Dispare singură când programarea e confirmată.', 'Un lead iese singur din „De sunat azi” după ce îi salvezi contactul în Pipeline.'] },
     { id: 'incasari', t: 'Încasări', ic: 'wallet', roles: [R], go: 'incasari', goL: 'Deschide Încasări',
       what: 'Banii încasați. Orice încasare pornește de la o programare.',
       do: ['Apasă „Încasare” sau „Încasează” din programare.', 'Alegi orașul, ziua și programarea.',
