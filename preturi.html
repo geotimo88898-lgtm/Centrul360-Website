@@ -501,7 +501,6 @@ var v=get();if(v==='y')yes();else if(!v)show();
 b.addEventListener('click',function(e){var t=e.target.closest('[data-ck]');if(!t)return;var y=t.getAttribute('data-ck')==='y';try{localStorage.setItem(K,JSON.stringify({v:y?'y':'n',at:Date.now()}))}catch(x){}b.classList.remove('in');setTimeout(function(){b.hidden=true},600);if(y)yes();else{window.C360_CONSENT=false;c('denied')}});
 document.addEventListener('click',function(e){if(e.target.closest('[data-cookies]')){e.preventDefault();show()}})})();</script>
 <script src="/v2/kit.js" defer></script>
-<script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>
 </body>
 </html>
