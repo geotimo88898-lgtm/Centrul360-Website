@@ -221,7 +221,8 @@
     fluxuri: ['gandeste', 'Automatizările lucrează și când dormi.'],
     integrari: ['gandeste', 'Verde înseamnă conectat. Restul așteaptă un clic.'],
     oferte: ['cadou', 'O ofertă nouă apare pe site imediat.'],
-    reclame: ['aparat-foto', 'Reclamele bune încep cu o poză bună.']
+    reclame: ['aparat-foto', 'Reclamele bune încep cu o poză bună.'],
+    site: ['oglinda', 'Site-ul e vitrina clinicii. Aici vezi cine se uită, chiar acum.']
   };
   function secNuki(h2) {
     var p = h2.closest('.panel'); if (!p) return;
