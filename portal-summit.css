@@ -752,3 +752,26 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
   .sx-p-logo{ width:60px; margin-top:clamp(84px,24vw,104px); }
   .sx-s-money{ margin-top:clamp(36px,10vw,48px) !important; }
 }
+
+/* ================================================================ phones: the bars are solid, nothing reads through them; the grid stays under the
+   content (cards and lists get their own opaque ground); long filter rows scroll sideways on one line (George, 8.11, iPhone) */
+@media (max-width:860px){
+  html.ui-nou:not([data-theme="light"]) header.topbar{ background:#000 !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  html.ui-nou:not([data-theme="light"]) .c360-tabbar{ background:#0b0b0d !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08), 0 18px 40px -16px rgba(0,0,0,.9) !important; }
+  html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){
+    background:
+      linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
+      linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
+      linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)), #0a0a0c !important;
+    -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  html.ui-nou:not([data-theme="light"]) main :is(.pl-col, .ct-list, .mx-list){ background-color:#0a0a0c; }
+  html.ui-nou .mx-tools{ top:var(--sx-top, 60px) !important; background:#0d0d0f !important; z-index:3; }
+  html.ui-nou .mx-filters .k-chips{ flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; -webkit-overflow-scrolling:touch; margin:0 -2px; padding:0 2px; }
+  html.ui-nou .mx-filters .k-chips::-webkit-scrollbar{ display:none; }
+  html.ui-nou .mx-filters .k-chip{ flex:none; }
+  /* the phone menu: it only scrolls up and down */
+  html.ui-nou nav.tabs{ overflow-x:hidden !important; touch-action:pan-y; overscroll-behavior:contain; }
+  html.ui-nou:not([data-theme="light"]) nav.tabs{ border-right:0 !important; }
+  html.ui-nou nav.tabs .c360-mhead{ margin-left:calc(-1 * var(--c360-navpad, .8rem)); margin-right:calc(-1 * var(--c360-navpad, .8rem)); }
+}

@@ -428,6 +428,8 @@
   function pdone() { try { return new Set(JSON.parse(localStorage.getItem(PKEY) || '[]')); } catch (e) { return new Set(); } }
   function psave(set) { try { localStorage.setItem(PKEY, JSON.stringify([...set])); } catch (e) { /* private mode */ } }
   // the stops on the map, in % of its box: a winding road, wide on a computer, tall on a phone
+  // the same road on a phone, standing up: it winds from top to bottom (left, middle, right, middle, ...), every stop on it
+  const MAPV = Array.from({ length: 11 }, (_, i) => [[16, 50, 84, 50][i % 4], i * 10]);
   const MAPW = [[6, 30], [20, 16], [34, 30], [49, 16], [64, 26], [79, 16], [92, 50], [76, 80], [57, 86], [38, 74], [18, 84]];
   const STAGES = [[0, 2, 'Înainte să vină'], [2, 9, 'Cu clienta'], [9, 11, 'După']];
   // a smooth road through the stops (Catmull-Rom as curves)
@@ -445,7 +447,8 @@
       '<path class="tr-road-bg" d="' + d + '"/><path class="tr-road" d="' + d + '" pathLength="100"/></svg>' +
       PARCURS.map((x, i) => {
         const st = done.has(i) ? ' is-done' : '';
-        return '<button type="button" class="tr-stop' + st + (i === cur ? ' is-cur' : '') + '" data-pstep="' + i + '" style="left:' + (4 + pts[i][0] * 0.92).toFixed(2) + '%;top:' + (6 + pts[i][1] * 0.88).toFixed(2) + '%;--i:' + i + '" aria-label="' + (i + 1) + '. ' + esc(x.t) + '">' +
+        const side = cls === 'is-tall' ? (pts[i][0] > 60 ? ' is-l' : pts[i][0] > 40 ? ' is-r is-c' : ' is-r') : '';
+        return '<button type="button" class="tr-stop' + st + side + (i === cur ? ' is-cur' : '') + '" data-pstep="' + i + '" style="left:' + (4 + pts[i][0] * 0.92).toFixed(2) + '%;top:' + (6 + pts[i][1] * 0.88).toFixed(2) + '%;--i:' + i + '" aria-label="' + (i + 1) + '. ' + esc(x.t) + '">' +
           '<span class="tr-stop-dot">' + (done.has(i) ? icon('check') : icon(x.ic)) + '</span><span class="tr-stop-l"><small>' + (i + 1) + '</small>' + esc(x.t) + '</span></button>';
       }).join('') + '</div>';
   }
@@ -467,7 +470,7 @@
         '<span class="tr-draft-s">' + icon('pen') + 'Schiță</span></div>' +
       // one film for the whole journey (the owner, 6.11), not one per step
       vsl('parcurs', 'Filmulețul cu tot parcursul', '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul cu tot parcursul</b><span>Un singur film care arată tot drumul clientei, de la deschiderea salonului până la închidere. Vine în curând.</span></div></div>') +
-      mapHtml(MAPW, 'is-wide', done, i) + vmapHtml(done, i) + (A.mapEnter = false, '') +
+      mapHtml(MAPW, 'is-wide', done, i) + mapHtml(MAPV, 'is-tall', done, i) + (A.mapEnter = false, '') +
       '<div class="tr-step" data-sheet>' +
         '<div class="tr-step-top"><span class="tr-step-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-step-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
         '<h3 class="tr-step-t"><span>' + icon(x.ic) + '</span>' + esc(x.t) + '</h3>' +
@@ -1924,7 +1927,19 @@
 .tr-burst{ position:fixed; z-index:500; width:0; height:0; pointer-events:none; }
 .tr-burst i{ position:absolute; width:8px; height:8px; border-radius:50%; background:hsl(calc(var(--a) / 1), 90%, 65%); animation:trBurst .75s cubic-bezier(.16,1,.3,1) forwards; }
 @keyframes trBurst{ from{ transform:rotate(var(--a)) translateX(0) scale(1); opacity:1; } to{ transform:rotate(var(--a)) translateX(var(--d)) scale(.2); opacity:0; } }
-@media (max-width:900px){ .tr-map.is-wide{ display:none; } .tr-vmap{ display:block; } }
+@media (max-width:900px){ .tr-map.is-wide{ display:none; } }
+/* the phone: the same map as on a computer (the road, the stops with their icons, the colours of done and now), standing up; each
+   name sits beside its stop, on the side with room, and may take two lines (nothing cut, nothing wider than the screen) */
+.tr-map.is-tall{ display:none; }
+@media (max-width:900px){
+  .tr-map.is-tall{ display:block; height:calc(11 * 86px); border-radius:24px; }
+  .tr-map.is-tall .tr-stop-dot{ width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:15px; }
+  .tr-map.is-tall .tr-stop-dot .k-ic{ width:21px; height:21px; }
+  .tr-map.is-tall .tr-stop-l{ top:0; transform:translateY(-50%); white-space:normal; width:max-content; max-width:min(56vw, 210px); padding:.32rem .7rem .32rem .32rem; border-radius:14px; font-size:.8rem; }
+  .tr-map.is-tall .tr-stop.is-r .tr-stop-l{ left:32px; }
+  .tr-map.is-tall .tr-stop.is-c .tr-stop-l{ max-width:calc(50vw - 64px); }
+  .tr-map.is-tall .tr-stop.is-l .tr-stop-l{ left:auto; right:32px; flex-direction:row-reverse; padding:.32rem .32rem .32rem .7rem; text-align:right; }
+}
 @media (prefers-reduced-motion:reduce){ .tr-door, .tr-door-ic, .tr-door-glow, .tr-stop-dot, .tr-stop-l, .tr-vstop, .tr-road, .tr-step, .tr-dos li{ animation:none !important; } }
 /* the offer calculator, step by step */
 .tr-c2{ gap:1.1rem; }
