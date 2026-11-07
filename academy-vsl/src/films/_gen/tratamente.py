@@ -35,7 +35,7 @@ STEP_IC = ['1', '2', '3', '4', '5', '6', '7', '8']
 def spoken(s):
     """what the voice says for a line that has abbreviations"""
     r = s
-    for a, b in [('SPF', 'protecție solară'), ('PDRN', 'pe de er en'), (' RF ', ' er ef '), ('1-2 zile', 'una-două zile'), ('24-48 de ore', 'douăzeci și patru până la patruzeci și opt de ore'),
+    for a, b in [('SPF', 'protecție solară'), ('1-2 zile', 'una-două zile'), ('24-48 de ore', 'douăzeci și patru până la patruzeci și opt de ore'),
                  ('48 de ore', 'patruzeci și opt de ore'), ('2 săptămâni', 'două săptămâni'), ('30 de minute', 'treizeci de minute'), ('2 litri', 'doi litri'),
                  ('6 luni', 'șase luni'), ('7 zile', 'șapte zile'), ('2-4 săptămâni', 'două până la patru săptămâni'), ('4 săptămâni', 'patru săptămâni'), ('8 etape', 'opt etape')]:
         r = r.replace(a, b)

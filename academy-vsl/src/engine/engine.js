@@ -31,7 +31,7 @@
     }));
   }
   const icon = (n) => ICONS[n] || ICONS['sparkles'] || '';
-  const BUILTIN_ICONS = ['check', 'x', 'clock', 'sparkles', 'heart', 'triangle-alert', 'info', 'message-circle', 'lightbulb', 'circle-help', 'ban', 'user-round', 'hand-heart', 'star', 'chevron-right', 'arrow-right', 'calendar-days', 'repeat', 'timer'];
+  const BUILTIN_ICONS = ['check', 'x', 'hand', 'settings', 'clock', 'sparkles', 'heart', 'triangle-alert', 'info', 'message-circle', 'lightbulb', 'circle-help', 'ban', 'user-round', 'hand-heart', 'star', 'chevron-right', 'arrow-right', 'calendar-days', 'repeat', 'timer'];
 
   // ---------------------------------------------------------------- state
   let S, TIM = {}, total = 0;
@@ -253,7 +253,7 @@
       if (path) ctx.act(path, 'draw', it.done != null ? it.done : n, { dt: it.done != null ? 0.1 : 0.9 + (it.dt || 0), dur: 0.5, sfx: 'check', gain: 0.8 });
     });
     c.appendChild(list);
-    if (sc.items.length >= 5) { list.style.gap = '12px'; list.querySelectorAll('.li').forEach((li) => { li.style.padding = '13px 26px 13px 16px'; li.querySelector('b').style.fontSize = '34px'; const ic = li.querySelector('.ic'); ic.style.width = ic.style.height = '64px'; }); }
+    if (sc.items.length >= 5) { const six = sc.items.length >= 6; list.style.gap = six ? '10px' : '12px'; list.querySelectorAll('.li').forEach((li) => { li.style.padding = six ? '10px 24px 10px 14px' : '13px 26px 13px 16px'; li.querySelector('b').style.fontSize = six ? '32px' : '34px'; const ic = li.querySelector('.ic'); ic.style.width = ic.style.height = '64px'; }); }
   };
 
   T.note = (el, ctx, sc) => {
@@ -380,10 +380,10 @@
 
   T.sheet = (el, ctx, sc) => {
     const s = ctx.s;
-    const side = sc.nuki || 'rs';
+    const side = sc.nuki || 'off';
     const c = contentBox(el, side === 'rs' ? 'off' : side);
     const land = !!sc.land;
-    const ww = 1030, wh = 770;
+    const ww = 1030, wh = 740;
     const wrap = h('div', 'sheetwrap'); wrap.style.cssText += ';left:10px;top:-20px;width:' + ww + 'px;height:' + wh + 'px';
     const pw = land ? 1684 : 1190, phh = land ? 1190 : 1684; // the page image's own size
     const cam = h('div', 'sheetcam', '<img src="' + ROOT + '/' + sc.img + '" width="' + pw + '" height="' + phh + '">');
@@ -604,7 +604,7 @@
     nukiSegs = nukiSegs.filter((g, i) => i === 0 || g.side !== nukiSegs[i - 1].side || g.pose !== nukiSegs[i - 1].pose);
     nukiSegs.forEach((g, i) => { const p = nukiSegs[i - 1]; if (!p) return; if (g.side !== p.side) cues.push({ t: g.t, sfx: g.side === 'off' ? null : 'swish', gain: 0.4 }); else if (g.pose !== p.pose) cues.push({ t: g.t, sfx: 'blip', gain: 0.55 }); });
   }
-  const DEFAULT_SIDE = { intro: 'r', outro: 'l', shot: 'off', sheet: 'rs', map: 'off' };
+  const DEFAULT_SIDE = { intro: 'r', outro: 'l', shot: 'off', sheet: 'off', map: 'off' };
   const SIDE_X = { l: 330, r: 1590, c: 960, rs: 1745 };
   const SIDE_K = { rs: 0.47 };
   function nukiAt(t) {
@@ -638,6 +638,40 @@
     return o > 0.5 ? 1 : 0;
   }
   function speaking(t) { for (const s of scenes) { if (t < s.t0 || t > s.t1) continue; for (const b of s.beats) if (t >= b.t0 && t <= b.t1) return true; } return false; }
+
+  // ---------------------------------------------------------------- jerry: Nuki's little mouse friend, now and then
+  // A scene with `jerry: { pose, at, x, say }` brings him in (small, at the bottom), with a short bubble.
+  let jerryEl, jerryImgs = {}, jerrySegs = [];
+  function jerryBuild() {
+    jerryEl = document.getElementById('jerry');
+    scenes.forEach((s) => {
+      const j = s.sc.jerry; if (!j) return;
+      const side = s.sc.nuki || DEFAULT_SIDE[s.sc.type] || 'l';
+      const x = j.x != null ? j.x : side === 'l' ? 548 : side === 'r' ? 1372 : 1750;
+      const t0 = at(s, j.at != null ? j.at : 0, j.dt || 0.4);
+      const t1 = j.until != null ? at(s, j.until) : s.end - XF;
+      const pose = j.pose || 'zambeste';
+      if (!jerryImgs[pose]) { const im = h('img'); im.src = ROOT + '/brand_asset/mascota/soricel/ipostaze/' + pose + '.webp'; im.style.opacity = 0; jerryEl.appendChild(im); jerryImgs[pose] = im; }
+      jerrySegs.push({ t0, t1, x, pose, say: j.say || '', flip: !!j.flip });
+      cues.push({ t: t0, sfx: 'pop2', gain: 0.7 });
+      if (j.say) cues.push({ t: t0 + 0.45, sfx: 'bubble', gain: 0.5 });
+      breaks.push(t0);
+    });
+  }
+  function jerryAt(t) {
+    const g = jerrySegs.find((x) => t >= x.t0 - 0.01 && t < x.t1 + 0.4);
+    Object.values(jerryImgs).forEach((im) => { im.style.opacity = 0; });
+    if (!g) { jerryEl.style.opacity = 0; return; }
+    const pin = clamp((t - g.t0) / 0.55), pout = clamp((t - g.t1) / 0.35);
+    const k = (0.2 + 0.8 * E.back(pin)) * (1 - 0.8 * E.out(pout));
+    const hop = Math.abs(Math.sin(t * 3.1)) * 7;
+    jerryEl.style.opacity = (Math.min(1, pin * 3) * (1 - pout)).toFixed(3);
+    jerryEl.style.transform = 'translate(' + (g.x - 110) + 'px,' + (910 - 250 - hop).toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+    const im = jerryImgs[g.pose]; im.style.opacity = 1; im.style.transform = g.flip ? 'scaleX(-1)' : '';
+    const b = jerryEl.querySelector('.jb');
+    if (g.say) { if (b.textContent !== g.say) b.textContent = g.say; const q = clamp((t - g.t0 - 0.45) / 0.35); b.style.opacity = (E.out(q) * (1 - pout)).toFixed(3); b.style.transform = 'translate(-80%,0) scale(' + (0.6 + 0.4 * E.back(q)).toFixed(3) + ')'; }
+    else b.style.opacity = 0;
+  }
 
   // ---------------------------------------------------------------- 3d logo
   let gl = null;
@@ -706,12 +740,17 @@
       stage.appendChild(el); s.el = el;
       const ctx = ctxFor(s);
       (T[s.sc.type] || T.title)(el, ctx, s.sc, s);
+      if (s.t1 - s.t0 > 17 && s.beats.length >= 2) {
+        const mid = s.beats[Math.floor(s.beats.length / 2)].t0 - 0.1;
+        s.punch = mid; breaks.push(mid); cues.push({ t: mid, sfx: 'zoom', gain: 0.5 });
+      }
       el.style.display = 'block';
       el.querySelectorAll('[data-vc]').forEach((b) => { const a = +b.dataset.vc, hh = b.offsetHeight, room = 750 - a; b.style.top = (a + Math.max(0, (room - hh) * 0.46)) + 'px'; });
       el.style.display = 'none';
       if (s.si > 0) cues.push({ t: s.t0, sfx: 'whoosh', gain: 0.45 });
     });
     nukiBuild();
+    jerryBuild();
     capEl = document.getElementById('cap'); capSpan = capEl.querySelector('span');
     progI = document.querySelector('#prog i'); chapEl = document.querySelector('#chap b');
     document.getElementById('ftitle').textContent = S.short || S.title.replace(/\*/g, '');
@@ -725,6 +764,7 @@
       beats: scenes.flatMap((s) => s.beats.map((b) => ({ key: b.key, t0: b.t0, dur: b.dur, text: b.b.tts || b.b.say }))),
       scenes: scenes.map((s) => ({ t0: s.t0, t1: s.t1, type: s.sc.type, side: s.sc.nuki || DEFAULT_SIDE[s.sc.type] || 'l' })),
       breaks: breaks.slice().sort((a, b) => a - b),
+      jerry: jerrySegs.map((g) => ({ t0: g.t0, t1: g.t1, say: g.say })),
     };
     seek(0);
     window.ready = true;
@@ -744,7 +784,9 @@
       if (i > 0 && pin < 1) { const e = E.out5(pin); o = e; x = (1 - e) * 70; b = (1 - e) * 10; }
       const nx = scenes[i + 1];
       if (nx && t > nx.t0) { const e = E.out(clamp((t - nx.t0) / XF)); o *= 1 - e; x -= e * 70; b += e * 8; }
-      s.el.style.opacity = o.toFixed(3); s.el.style.transform = 'translateX(' + x.toFixed(2) + 'px)'; s.el.style.filter = b > 0.05 ? 'blur(' + b.toFixed(2) + 'px)' : '';
+      let k = 1;
+      if (s.punch) { const q = E.inout(clamp((t - s.punch) / 0.7)); k = 1 + 0.035 * q; }
+      s.el.style.opacity = o.toFixed(3); s.el.style.transform = 'translateX(' + x.toFixed(2) + 'px)' + (k !== 1 ? ' scale(' + k.toFixed(4) + ')' : ''); s.el.style.filter = b > 0.05 ? 'blur(' + b.toFixed(2) + 'px)' : '';
       s.ticks.forEach((fn) => fn(t));
     });
     apply(t);
@@ -760,6 +802,7 @@
     }
     if (cap) { const txt = plain(cap.b.cap || cap.b.say); if (capSpan.textContent !== txt) capSpan.textContent = txt; capEl.style.opacity = co.toFixed(3); } else capEl.style.opacity = 0;
     const nk = nukiAt(t);
+    jerryAt(t);
     glAt(t);
     return nk;
   }

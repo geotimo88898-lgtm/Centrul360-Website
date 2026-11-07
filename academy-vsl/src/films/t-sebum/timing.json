@@ -1,0 +1,182 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.273,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm Sebum Off Protocol.",
+"dur": 2.889,
+"file": "voice/8e78d4e9446c4bbd.wav"
+},
+"0.2": {
+"text": "Pe scurt: reglează sebumul, curăță porii și reduce imperfecțiunile.",
+"dur": 5.795,
+"file": "voice/a9a2f0a6900676fb.wav"
+},
+"1.0": {
+"text": "Pentru cine e?",
+"dur": 1.232,
+"file": "voice/63b8214a892c363f.wav"
+},
+"1.1": {
+"text": "Ten gras sau mixt, pori dilatați, imperfecțiuni.",
+"dur": 5.459,
+"file": "voice/3c0c41ac1e2e3d1b.wav"
+},
+"2.0": {
+"text": "Și ce câștigă ea?",
+"dur": 1.391,
+"file": "voice/0a37b28371e4553f.wav"
+},
+"2.1": {
+"text": "Pori mai curați și mai puțin vizibili.",
+"dur": 3.126,
+"file": "voice/5466b9eb7bb93a10.wav"
+},
+"2.2": {
+"text": "Mai puțin sebum, mai puține imperfecțiuni.",
+"dur": 3.302,
+"file": "voice/618f15a21705d82a.wav"
+},
+"2.3": {
+"text": "Ten curat, fără să-l mai acopere cu fond de ten.",
+"dur": 3.57,
+"file": "voice/1b608b4a9c7dffe0.wav"
+},
+"3.0": {
+"text": "Acum, pas cu pas.",
+"dur": 1.912,
+"file": "voice/72437c5f27b4e877.wav"
+},
+"3.1": {
+"text": "Demachiere și curățare.",
+"dur": 2.078,
+"file": "voice/ddbeaadfc0af0fa8.wav"
+},
+"3.2": {
+"text": "Curățare profundă a porilor.",
+"dur": 2.272,
+"file": "voice/eb9d37f1997c93ba.wav"
+},
+"3.3": {
+"text": "Produse care reglează sebumul.",
+"dur": 2.289,
+"file": "voice/d7936b7cf34e5f2e.wav"
+},
+"3.4": {
+"text": "Mască.",
+"dur": 0.742,
+"file": "voice/ca3117d5b78044af.wav"
+},
+"3.5": {
+"text": "Cremă și protecție solară.",
+"dur": 1.935,
+"file": "voice/9e320ce78207f3cb.wav"
+},
+"4.0": {
+"text": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+"dur": 6.503,
+"file": "voice/942f93b8cbafaa2a.wav"
+},
+"4.1": {
+"text": "Și le scrii pe fișa ei, la fiecare ședință.",
+"dur": 3.955,
+"file": "voice/f5139c71fac4b792.wav"
+},
+"5.0": {
+"text": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+"dur": 5.556,
+"file": "voice/3677296805c39548.wav"
+},
+"5.1": {
+"text": "„Curățăm porii în profunzime și liniștim pielea, ca să producă mai puțin sebum.”",
+"dur": 6.564,
+"file": "voice/faeea8028112f573.wav"
+},
+"6.0": {
+"text": "Foarte important: când nu începi tratamentul.",
+"dur": 3.96,
+"file": "voice/348c21bb03b29033.wav"
+},
+"6.1": {
+"text": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+"dur": 5.84,
+"file": "voice/418d593b16554185.wav"
+},
+"6.2": {
+"text": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+"dur": 5.819,
+"file": "voice/214b4dcc5678c1b8.wav"
+},
+"7.0": {
+"text": "La final îi spui ce să facă acasă.",
+"dur": 3.092,
+"file": "voice/48011aa6e8def954.wav"
+},
+"7.1": {
+"text": "protecție solară în fiecare zi.",
+"dur": 2.795,
+"file": "voice/ef43300e5ef5374b.wav"
+},
+"7.2": {
+"text": "Fără soare direct și saună patruzeci și opt de ore.",
+"dur": 4.015,
+"file": "voice/469b38e4d8b92d9c.wav"
+},
+"7.3": {
+"text": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+"dur": 5.439,
+"file": "voice/850b539fe578d3fa.wav"
+},
+"7.4": {
+"text": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+"dur": 4.34,
+"file": "voice/4bd244e9404d09fe.wav"
+},
+"8.0": {
+"text": "Câte ședințe îi trebuie?",
+"dur": 1.772,
+"file": "voice/5113ad779be91a6a.wav"
+},
+"8.1": {
+"text": "Ședințe: patru până la șase.",
+"dur": 3.085,
+"file": "voice/150f1556d0dc5169.wav"
+},
+"8.2": {
+"text": "O ședință durează o sută zece minute.",
+"dur": 3.462,
+"file": "voice/a4ead2a77ea6ec2c.wav"
+},
+"8.3": {
+"text": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+"dur": 6.92,
+"file": "voice/fbdd5e290c57a7f3.wav"
+},
+"9.0": {
+"text": "Merge bine împreună cu Microneedling Exozomi pe de er en.",
+"dur": 5.673,
+"file": "voice/1db21f89b13d7df6.wav"
+},
+"9.1": {
+"text": "Când le combini, le găsești pe toate în programul ei.",
+"dur": 4.387,
+"file": "voice/b6f0923e19a8b6b3.wav"
+},
+"10.0": {
+"text": "Bravo! Acum știi Sebum Off Protocol.",
+"dur": 4.806,
+"file": "voice/df96f4694cc173a8.wav"
+},
+"10.1": {
+"text": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+"dur": 8.526,
+"file": "voice/4835fad86f825f24.wav"
+},
+"10.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.259,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}

@@ -54,6 +54,11 @@ const { start } = require('./serve.cjs');
       // nuki vs content (his body box, a little inside the image)
       const nkEl = document.getElementById('nuki');
       if (nk) { const nr = nkEl.getBoundingClientRect(); const body = { left: nr.left + 90, right: nr.right - 90, top: nr.top + 60, bottom: nr.bottom - 30 }; boxes.forEach((x) => { const ox = Math.min(x.r.right, body.right) - Math.max(x.r.left, body.left), oy = Math.min(x.r.bottom, body.bottom) - Math.max(x.r.top, body.top); if (ox > 30 && oy > 30) out.push('Nuki covers: "' + x.t + '"'); }); }
+      const je = document.getElementById('jerry');
+      if (+je.style.opacity > 0.5) { const jr = je.getBoundingClientRect(), bb = je.querySelector('.jb').getBoundingClientRect();
+        [jr, bb].forEach((r0, i) => { if (i && +je.querySelector('.jb').style.opacity < 0.5) return; const r = i ? r0 : { left: r0.left + 40, right: r0.right - 40, top: r0.top + 30, bottom: r0.bottom };
+          if (r.left < 10 || r.right > 1910) out.push('Jerry out of frame');
+          boxes.forEach((x) => { const ox = Math.min(x.r.right, r.right) - Math.max(x.r.left, r.left), oy = Math.min(x.r.bottom, r.bottom) - Math.max(x.r.top, r.top); if (ox > 10 && oy > 10) out.push('Jerry covers: "' + x.t + '"'); }); }); }
       return { nk, out };
     }, t);
     n++; if (r.nk) nuki++;

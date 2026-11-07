@@ -93,6 +93,7 @@
    ]
   },
   {
+   "nuki": "rs",
    "type": "sheet",
    "kicker": "Pagina 1",
    "head": "Programul *recomandat*",
@@ -392,7 +393,13 @@
      "pose": "cadou",
      "cap": "Oferta 1: tot programul, plătit azi, cu 50% reducere."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "50%!",
+    "at": 0.4,
+    "x": 520
+   }
   },
   {
    "type": "chat",
@@ -590,6 +597,7 @@
   {
    "type": "chat",
    "kicker": "Oferta 2",
+   "nuki": "off",
    "head": "Dacă e *prea mult*",
    "pose": "gandeste",
    "lines": [
@@ -898,6 +906,7 @@
   {
    "type": "chat",
    "kicker": "Oferta 3",
+   "nuki": "off",
    "head": "Un *picior pe ușă*",
    "pose": "mana-inima",
    "lines": [
@@ -946,7 +955,13 @@
      "pose": "aprobare",
      "cap": "Oferta 3 nu e un pachet mai mic. E un început: jumătate din ședințele programului, cu aceeași reducere de 50%."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "zambeste",
+    "say": "Un început!",
+    "at": 0.5,
+    "x": 520
+   }
   },
   {
    "type": "sheet",
@@ -1550,7 +1565,13 @@
      "say": "Așa nu: „Ultima reducere, acum sau niciodată!” Sau toate ofertele pe masă deodată.",
      "pose": "arata-jos"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Așa da!",
+    "at": 0.5,
+    "x": 520
+   }
   },
   {
    "type": "list",
@@ -1607,7 +1628,13 @@
      "pose": "fisa",
      "cap": "Ea a citit condițiile și a semnat, și tu la fel. Iar pagina 1 și pagina aleasă le capsezi de fișa ei. Ea primește o copie."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Verifică!",
+    "at": 0,
+    "x": 520
+   }
   },
   {
    "type": "outro",
@@ -1646,7 +1673,13 @@
      "say": "Ne vedem în filmul următor!",
      "pose": "salut-pa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Bravo!",
+    "at": 0,
+    "x": 520
+   }
   }
  ]
 }

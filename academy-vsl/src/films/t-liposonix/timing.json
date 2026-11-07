@@ -1,0 +1,182 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.059,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm Liposonix.",
+"dur": 2.287,
+"file": "voice/f8d6aeab04407309.wav"
+},
+"0.2": {
+"text": "Pe scurt: ultrasunete focalizate care distrug celulele de grăsime din zona tratată. Corpul le elimină singur în săptămânile următoare.",
+"dur": 10.534,
+"file": "voice/8d48255c78d2a4a0.wav"
+},
+"1.0": {
+"text": "Pentru cine e?",
+"dur": 1.253,
+"file": "voice/63b8214a892c363f.wav"
+},
+"1.1": {
+"text": "Grăsime localizată care nu pleacă cu dietă și sport: abdomen, flancuri, coapse, brațe.",
+"dur": 8.87,
+"file": "voice/d935f85c89a133c5.wav"
+},
+"2.0": {
+"text": "Și ce câștigă ea?",
+"dur": 1.527,
+"file": "voice/0a37b28371e4553f.wav"
+},
+"2.1": {
+"text": "Scade grăsimea localizată care nu pleacă nici cu dietă, nici cu sport.",
+"dur": 6.016,
+"file": "voice/dd91816a6c5dfd2c.wav"
+},
+"2.2": {
+"text": "Fără incizii, fără anestezie, fără recuperare.",
+"dur": 4.078,
+"file": "voice/a74bee91f7487255.wav"
+},
+"2.3": {
+"text": "Rezultatul se vede în câteva săptămâni.",
+"dur": 3.319,
+"file": "voice/da946bb27718fd6f.wav"
+},
+"3.0": {
+"text": "Acum, pas cu pas.",
+"dur": 2.155,
+"file": "voice/72437c5f27b4e877.wav"
+},
+"3.1": {
+"text": "Evaluarea zonei și a stratului de grăsime.",
+"dur": 3.478,
+"file": "voice/6cfcfdf4b99ae160.wav"
+},
+"3.2": {
+"text": "Marcarea grilei de tratament.",
+"dur": 2.555,
+"file": "voice/6c4dc5886c02ce7a.wav"
+},
+"3.3": {
+"text": "Aplicarea după protocolul aparatului.",
+"dur": 3.002,
+"file": "voice/11a6bb1d0a24b4ea.wav"
+},
+"3.4": {
+"text": "Hidratarea zonei.",
+"dur": 1.546,
+"file": "voice/1bd05d2152742d5e.wav"
+},
+"4.0": {
+"text": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+"dur": 6.682,
+"file": "voice/942f93b8cbafaa2a.wav"
+},
+"4.1": {
+"text": "Și le scrii pe fișa ei, la fiecare ședință.",
+"dur": 4.114,
+"file": "voice/f5139c71fac4b792.wav"
+},
+"5.0": {
+"text": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+"dur": 5.285,
+"file": "voice/3677296805c39548.wav"
+},
+"5.1": {
+"text": "„Ultrasunetele ajung în stratul de grăsime fără să afecteze pielea. Celulele de grăsime se distrug, iar corpul le elimină singur în săptămânile următoare.”",
+"dur": 11.895,
+"file": "voice/e452c17aca351709.wav"
+},
+"5.2": {
+"text": "„Nu e o dietă și nu înlocuiește mișcarea. Lucrează pe grăsimea care nu pleacă nici când slăbești în rest.”",
+"dur": 7.572,
+"file": "voice/fda89656f49512c0.wav"
+},
+"6.0": {
+"text": "Foarte important: când nu începi tratamentul.",
+"dur": 4.301,
+"file": "voice/348c21bb03b29033.wav"
+},
+"6.1": {
+"text": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+"dur": 6.162,
+"file": "voice/418d593b16554185.wav"
+},
+"6.2": {
+"text": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+"dur": 5.834,
+"file": "voice/214b4dcc5678c1b8.wav"
+},
+"7.0": {
+"text": "La final îi spui ce să facă acasă.",
+"dur": 3.301,
+"file": "voice/48011aa6e8def954.wav"
+},
+"7.1": {
+"text": "Bea multă apă în zilele următoare (cam doi litri pe zi).",
+"dur": 5.469,
+"file": "voice/5a54dd26070e06b3.wav"
+},
+"7.2": {
+"text": "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+"dur": 4.626,
+"file": "voice/a38c525810b459f6.wav"
+},
+"7.3": {
+"text": "Mișcarea ușoară și plimbările ajută rezultatul.",
+"dur": 4.64,
+"file": "voice/272d756dfa239e3b.wav"
+},
+"7.4": {
+"text": "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie.",
+"dur": 5.598,
+"file": "voice/c9d26cb4ba832327.wav"
+},
+"8.0": {
+"text": "Câte ședințe îi trebuie?",
+"dur": 1.657,
+"file": "voice/5113ad779be91a6a.wav"
+},
+"8.1": {
+"text": "Interval: minimum opt până la douăsprezece săptămâni pe aceeași zonă.",
+"dur": 6.267,
+"file": "voice/c675ab89bdaea37b.wav"
+},
+"8.2": {
+"text": "O ședință durează patruzeci și cinci de minute.",
+"dur": 3.576,
+"file": "voice/702fc7ab560f9231.wav"
+},
+"8.3": {
+"text": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+"dur": 6.386,
+"file": "voice/fbdd5e290c57a7f3.wav"
+},
+"9.0": {
+"text": "Merge bine împreună cu EMS (tonifiere) și cu Cavitație.",
+"dur": 6.333,
+"file": "voice/aae4da0948a9602b.wav"
+},
+"9.1": {
+"text": "Când le combini, le găsești pe toate în programul ei.",
+"dur": 4.756,
+"file": "voice/b6f0923e19a8b6b3.wav"
+},
+"10.0": {
+"text": "Bravo! Acum știi Liposonix.",
+"dur": 3.589,
+"file": "voice/cd57e35680ca4221.wav"
+},
+"10.1": {
+"text": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+"dur": 7.535,
+"file": "voice/4835fad86f825f24.wav"
+},
+"10.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.249,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}

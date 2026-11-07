@@ -42,7 +42,13 @@
      "say": "Când îi știi pe toți, clienta simte că e pe mâini bune.",
      "pose": "mana-inima"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Unsprezece?!",
+    "at": 0.5,
+    "x": 520
+   }
   },
   {
    "type": "cards",
@@ -213,7 +219,13 @@
      "say": "Și te uiți în Calendar, să vezi cine vine azi.",
      "pose": "calendar"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Bună dimineața!",
+    "at": 0,
+    "x": 520
+   }
   },
   {
    "type": "note",
@@ -344,7 +356,13 @@
      "say": "Și ține minte: un cearceaf și un prosop sunt doar pentru o singură clientă.",
      "pose": "arata-jos"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Am reținut!",
+    "at": 0.4,
+    "x": 520
+   }
   },
   {
    "type": "map",
@@ -630,7 +648,13 @@
      "say": "O întrebi rubrică cu rubrică, și tu scrii.",
      "pose": "prezinta"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Împreună!",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "yn",
@@ -670,7 +694,13 @@
      "say": "Dacă e măcar un „Da”, nu începi tratamentul până nu întrebi dacă se poate.",
      "pose": "arata-jos"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Atenție!",
+    "at": 2,
+    "x": 520
+   }
   },
   {
    "type": "list",
@@ -803,7 +833,13 @@
      "say": "Și fotografiezi fiecare pagină cu telefonul. Atât!",
      "pose": "bucurie"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Ce ușor!",
+    "at": 4,
+    "x": 125
+   }
   },
   {
    "type": "list",
@@ -1184,7 +1220,13 @@
      "say": "Ele stau doar în portal, în fișa ei.",
      "pose": "liniste"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Nicăieri!",
+    "at": 0.3,
+    "x": 520
+   }
   },
   {
    "type": "map",
@@ -1338,7 +1380,13 @@
      "say": "Ca într-o conversație. Cel mai bine e să vă opriți la prima.",
      "pose": "aprobare"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Ideal: prima!",
+    "at": 2,
+    "x": 520
+   }
   },
   {
    "type": "note",
@@ -1863,7 +1911,13 @@
      "say": "Durata și intervalul le iei din programul ales, sau din schema tratamentului.",
      "pose": "fisa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Recepția!",
+    "at": 0.5,
+    "x": 520
+   }
   },
   {
    "type": "map",
@@ -1973,7 +2027,13 @@
      "say": "Așa, următoarea clientă găsește totul curat.",
      "pose": "bucurie"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Strălucește!",
+    "at": 3,
+    "x": 520
+   }
   },
   {
    "type": "map",
@@ -2126,7 +2186,13 @@
      "pose": "salut-pa"
     }
    ],
-   "chap": "Recapitulare"
+   "chap": "Recapitulare",
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Bravo!",
+    "at": 0,
+    "x": 520
+   }
   }
  ]
 }

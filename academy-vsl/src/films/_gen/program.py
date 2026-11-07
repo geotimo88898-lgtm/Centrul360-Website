@@ -29,7 +29,7 @@ def tranches(tops, at):
 
 
 def sheet(n, head, kicker, focus, fills, beats, pose='fisa'):
-    return {'type': 'sheet', 'kicker': kicker, 'head': head, 'img': 'academy-fisa/p%d.webp' % n, 'pose': pose, 'focus': focus, 'fills': fills, 'beats': beats, 'backAt': len(beats) - 0.4}
+    return dict({'nuki': 'rs'} if n == 1 else {}, **{'type': 'sheet', 'kicker': kicker, 'head': head, 'img': 'academy-fisa/p%d.webp' % n, 'pose': pose, 'focus': focus, 'fills': fills, 'beats': beats, 'backAt': len(beats) - 0.4})
 
 
 def F(box, t, d, at):
@@ -116,7 +116,7 @@ S = {'id': 'fisa-program', 'title': 'Programul *și oferta*', 'short': 'Programu
          B('Apoi condițiile. Oferta e valabilă doar azi, în ziua consultației.', 'calendar'),
          B('Și îi spui clar: dacă anulează sau mută cu mai puțin de douăzeci și patru de ore înainte, ședința se consideră făcută.', 'arata-jos', cap='Și îi spui clar: dacă anulează sau mută cu mai puțin de 24 de ore înainte, ședința se consideră făcută.'),
          B('La final semnează ea și semnezi tu. Pagina unu și pagina aleasă le capsezi de fișa ei.', 'fisa')]),
-    {'type': 'chat', 'kicker': 'Oferta 2', 'head': 'Dacă e *prea mult*', 'pose': 'gandeste', 'lines': [
+    {'type': 'chat', 'kicker': 'Oferta 2', 'nuki': 'off', 'head': 'Dacă e *prea mult*', 'pose': 'gandeste', 'lines': [
         {'who': 'her', 't': 'E cam mult pentru mine acum.', 'at': 0.2},
         {'who': 'me', 't': SAY2, 'at': 1.1}], 'beats': [
         B('Dar dacă spune că e prea mult? Nu insiști. Iei pagina înapoi.', 'gandeste'),
@@ -136,7 +136,7 @@ S = {'id': 'fisa-program', 'title': 'Programul *și oferta*', 'short': 'Programu
          B('Ședințele, toate programate pe loc.', 'receptie'),
          B('Condițiile sunt ca la oferta unu, plus una: fiecare tranșă se plătește la ședința ei.', 'arata-jos', cap='Condițiile sunt ca la oferta 1, plus una: fiecare tranșă se plătește la ședința ei.'),
          B('Și semnați amândouă.', 'aprobare')]),
-    {'type': 'chat', 'kicker': 'Oferta 3', 'head': 'Un *picior pe ușă*', 'pose': 'mana-inima', 'lines': [
+    {'type': 'chat', 'kicker': 'Oferta 3', 'nuki': 'off', 'head': 'Un *picior pe ușă*', 'pose': 'mana-inima', 'lines': [
         {'who': 'her', 't': 'Tot e greu pentru mine.', 'at': 0.2},
         {'who': 'me', 't': SAY3a, 'at': 1.1},
         {'who': 'me', 't': SAY3b, 'at': 2.1}], 'beats': [
@@ -196,6 +196,15 @@ S = {'id': 'fisa-program', 'title': 'Programul *și oferta*', 'short': 'Programu
         B('Ne vedem în filmul următor!', 'salut-pa')]},
 ]}
 
+for pred, j in [(lambda s: s['type'] == 'big' and s['value'] == 50, {'pose': 'surprins', 'say': '50%!', 'at': 0.4}),
+                (lambda s: s['type'] == 'note' and s.get('variant') == 'tip', {'pose': 'zambeste', 'say': 'Un început!', 'at': 0.5}),
+                (lambda s: s['type'] == 'yn', {'pose': 'arata', 'say': 'Așa da!', 'at': 0.5}),
+                (lambda s: s['type'] == 'list', {'pose': 'arata', 'say': 'Verifică!', 'at': 0}),
+                (lambda s: s['type'] == 'outro', {'pose': 'bucurie', 'say': 'Bravo!', 'at': 0})]:
+    for sc in S['scenes']:
+        if pred(sc) and 'jerry' not in sc:
+            sc['jerry'] = dict(j, x=520)
+            break
 d = os.path.join(HERE, '..', 'fisa-program')
 os.makedirs(d, exist_ok=True)
 txt = json.dumps(S, ensure_ascii=False, indent=1)

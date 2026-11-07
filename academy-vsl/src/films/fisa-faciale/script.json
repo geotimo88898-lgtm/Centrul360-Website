@@ -45,7 +45,13 @@
      "say": "Nu îi dai fișa să o completeze singură. Stai lângă ea, o întrebi și scrii tu.",
      "pose": "fisa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Împreună!",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "title",
@@ -323,7 +329,8 @@
      "pose": "arata-jos"
     }
    ],
-   "backAt": 9.6
+   "backAt": 9.6,
+   "nuki": "rs"
   },
   {
    "type": "title",
@@ -674,7 +681,13 @@
      "pose": "gandeste",
      "cap": "VI înseamnă piele foarte închisă. Restul sunt la mijloc."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "zambeste",
+    "say": "De la I la VI",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "title",
@@ -871,7 +884,9 @@
      "t": "Sus",
      "d": "Numele ei, ședințele din pachet, prima dată.",
      "at": 0,
-     "n": 1
+     "n": 1,
+     "x": 2,
+     "w": 96
     },
     {
      "box": [
@@ -881,7 +896,9 @@
      "t": "La fiecare ședință",
      "d": "Data, procedura, produsele, durata, cum a reacționat pielea, sfatul.",
      "at": 1,
-     "n": 2
+     "n": 2,
+     "x": 2,
+     "w": 96
     }
    ],
    "fills": [
@@ -968,7 +985,8 @@
      "tts": "Și ce îi spui să facă acasă. De exemplu: protecție solară cincizeci. La final semnați amândouă."
     }
    ],
-   "backAt": 3.6
+   "backAt": 3.6,
+   "nuki": "rs"
   },
   {
    "type": "list",
@@ -1024,7 +1042,13 @@
      "say": "Ea a semnat, tu la fel. Pozele doar cu acordul ei. Și la fiecare ședință, un rând pe pagina patru.",
      "pose": "aparat-foto"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Verifică!",
+    "at": 0,
+    "x": 520
+   }
   },
   {
    "type": "outro",
@@ -1064,7 +1088,13 @@
      "say": "Ne vedem în filmul următor!",
      "pose": "salut-pa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Bravo!",
+    "at": 0,
+    "x": 520
+   }
   }
  ]
 }

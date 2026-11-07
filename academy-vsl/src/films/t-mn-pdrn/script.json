@@ -19,8 +19,7 @@
     },
     {
      "say": "Azi învățăm Microneedling Exozomi PDRN.",
-     "pose": "prezinta",
-     "tts": "Azi învățăm Microneedling Exozomi pe de er en."
+     "pose": "prezinta"
     },
     {
      "say": "Pe scurt: microperforații care pornesc regenerarea pielii: urme de acnee, textură și fermitate.",
@@ -397,8 +396,7 @@
    "beats": [
     {
      "say": "Bravo! Acum știi Microneedling Exozomi PDRN.",
-     "pose": "bucurie",
-     "tts": "Bravo! Acum știi Microneedling Exozomi pe de er en."
+     "pose": "bucurie"
     },
     {
      "say": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",

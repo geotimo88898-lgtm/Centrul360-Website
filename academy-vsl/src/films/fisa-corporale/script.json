@@ -45,7 +45,13 @@
      "say": "Fișa nu i-o dai clientei să o completeze singură. Stai lângă ea, o întrebi și scrii tu.",
      "pose": "fisa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Împreună!",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "title",
@@ -333,7 +339,8 @@
      "pose": "arata-jos"
     }
    ],
-   "backAt": 10.6
+   "backAt": 10.6,
+   "nuki": "rs"
   },
   {
    "type": "chat",
@@ -713,7 +720,13 @@
      "pose": "bucurie",
      "tts": "Îți iese douăzeci și cinci. Asta scrii la indicele de masă corporală."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Ușor!",
+    "at": 2,
+    "x": 520
+   }
   },
   {
    "type": "rail",
@@ -752,7 +765,13 @@
      "say": "La „Diferență” scrii câți centimetri a dat jos. Asta o bucură cel mai mult!",
      "pose": "bucurie"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "De 4 ori!",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "title",
@@ -977,7 +996,9 @@
      "t": "Sus",
      "d": "Numele ei, ședințele din pachet, prima dată.",
      "at": 0,
-     "n": 1
+     "n": 1,
+     "x": 2,
+     "w": 96
     },
     {
      "box": [
@@ -987,7 +1008,9 @@
      "t": "La fiecare ședință",
      "d": "Un rând nou: data, procedura, zona, aparatul, cum a reacționat pielea.",
      "at": 1,
-     "n": 2
+     "n": 2,
+     "x": 2,
+     "w": 96
     }
    ],
    "fills": [
@@ -1133,7 +1156,13 @@
      "say": "Pozele le faci doar cu acordul ei. Și la fiecare ședință completezi un rând pe pagina patru.",
      "pose": "aparat-foto"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Verifică!",
+    "at": 0,
+    "x": 520
+   }
   },
   {
    "type": "outro",
@@ -1172,7 +1201,13 @@
      "say": "Ne vedem în filmul următor!",
      "pose": "salut-pa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Bravo!",
+    "at": 0,
+    "x": 520
+   }
   }
  ]
 }

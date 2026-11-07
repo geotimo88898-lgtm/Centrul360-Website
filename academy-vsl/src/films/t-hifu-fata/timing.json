@@ -1,0 +1,197 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.264,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm HIFU față.",
+"dur": 2.563,
+"file": "voice/2bd20121ab7d683c.wav"
+},
+"0.2": {
+"text": "Pe scurt: ultrasunete focalizate care strâng straturile adânci ale pielii. Colagenul nou face pielea mai fermă în lunile următoare.",
+"dur": 12.189,
+"file": "voice/b4ba8f6af06425c9.wav"
+},
+"1.0": {
+"text": "Pentru cine e?",
+"dur": 1.531,
+"file": "voice/63b8214a892c363f.wav"
+},
+"1.1": {
+"text": "Piele lăsată ușor sau mediu, contur șters.",
+"dur": 4.387,
+"file": "voice/93995ac8d27b555c.wav"
+},
+"1.2": {
+"text": "Gușă, gât, contur mandibular (o zonă mică).",
+"dur": 4.965,
+"file": "voice/3024c13ca59e546c.wav"
+},
+"2.0": {
+"text": "Și ce câștigă ea?",
+"dur": 1.716,
+"file": "voice/0a37b28371e4553f.wav"
+},
+"2.1": {
+"text": "Lifting fără bisturiu: pielea se strânge singură.",
+"dur": 4.983,
+"file": "voice/60fed1752ae1000f.wav"
+},
+"2.2": {
+"text": "Contur mai clar la gușă și mandibulă.",
+"dur": 3.706,
+"file": "voice/f4c92daad7c90cef.wav"
+},
+"2.3": {
+"text": "Rezultat progresiv în 2-3 luni, poate ține până la doi ani.",
+"dur": 5.839,
+"file": "voice/b006c495f6668dc8.wav"
+},
+"3.0": {
+"text": "Acum, pas cu pas.",
+"dur": 1.838,
+"file": "voice/72437c5f27b4e877.wav"
+},
+"3.1": {
+"text": "Curățarea tenului.",
+"dur": 1.545,
+"file": "voice/e2f3b8a6e17222a9.wav"
+},
+"3.2": {
+"text": "Marcarea zonelor.",
+"dur": 1.5,
+"file": "voice/6c08261c47a6042c.wav"
+},
+"3.3": {
+"text": "Gel conductor.",
+"dur": 1.284,
+"file": "voice/9cd75a12d7ef5191.wav"
+},
+"3.4": {
+"text": "Treceri după protocolul aparatului, pe fiecare zonă (frunte, obraji, maxilar, gât).",
+"dur": 8.075,
+"file": "voice/53106e121b2181c4.wav"
+},
+"3.5": {
+"text": "Calmare cu mască sau cremă.",
+"dur": 2.317,
+"file": "voice/65e1d75038243a4d.wav"
+},
+"4.0": {
+"text": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+"dur": 6.382,
+"file": "voice/942f93b8cbafaa2a.wav"
+},
+"4.1": {
+"text": "Și le scrii pe fișa ei, la fiecare ședință.",
+"dur": 4.131,
+"file": "voice/f5139c71fac4b792.wav"
+},
+"5.0": {
+"text": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+"dur": 5.621,
+"file": "voice/3677296805c39548.wav"
+},
+"5.1": {
+"text": "„Energia ajunge în straturile adânci ale pielii și o face să se strângă. Pielea arată tot mai fermă în următoarele luni.”",
+"dur": 9.931,
+"file": "voice/99099964b7de77b6.wav"
+},
+"5.2": {
+"text": "„Se simte ca niște înțepături calde și scurte.”",
+"dur": 3.779,
+"file": "voice/51766952438f1039.wav"
+},
+"6.0": {
+"text": "Foarte important: când nu începi tratamentul.",
+"dur": 4.112,
+"file": "voice/348c21bb03b29033.wav"
+},
+"6.1": {
+"text": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+"dur": 6.395,
+"file": "voice/418d593b16554185.wav"
+},
+"6.2": {
+"text": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+"dur": 6.057,
+"file": "voice/214b4dcc5678c1b8.wav"
+},
+"7.0": {
+"text": "La final îi spui ce să facă acasă.",
+"dur": 3.62,
+"file": "voice/48011aa6e8def954.wav"
+},
+"7.1": {
+"text": "protecție solară în fiecare zi.",
+"dur": 3.236,
+"file": "voice/ef43300e5ef5374b.wav"
+},
+"7.2": {
+"text": "Fără soare direct și saună patruzeci și opt de ore.",
+"dur": 4.61,
+"file": "voice/469b38e4d8b92d9c.wav"
+},
+"7.3": {
+"text": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+"dur": 5.96,
+"file": "voice/850b539fe578d3fa.wav"
+},
+"7.4": {
+"text": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+"dur": 5.011,
+"file": "voice/4bd244e9404d09fe.wav"
+},
+"8.0": {
+"text": "Câte ședințe îi trebuie?",
+"dur": 1.932,
+"file": "voice/5113ad779be91a6a.wav"
+},
+"8.1": {
+"text": "Ședințe: una.",
+"dur": 1.601,
+"file": "voice/5c1eeb2ac6292d07.wav"
+},
+"8.2": {
+"text": "Interval: întreținere la douăsprezece până la optsprezece luni.",
+"dur": 5.389,
+"file": "voice/1f4d5115940d4723.wav"
+},
+"8.3": {
+"text": "O ședință durează nouăzeci de minute.",
+"dur": 3.679,
+"file": "voice/7f023e02e0fe85cb.wav"
+},
+"8.4": {
+"text": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+"dur": 6.533,
+"file": "voice/fbdd5e290c57a7f3.wav"
+},
+"9.0": {
+"text": "Merge bine împreună cu RF Sculpt față și cu Tratament intensiv antirid.",
+"dur": 6.762,
+"file": "voice/498098d6db65cf46.wav"
+},
+"9.1": {
+"text": "Când le combini, le găsești pe toate în programul ei.",
+"dur": 4.292,
+"file": "voice/b6f0923e19a8b6b3.wav"
+},
+"10.0": {
+"text": "Bravo! Acum știi HIFU față.",
+"dur": 3.417,
+"file": "voice/470ed60c0883bbeb.wav"
+},
+"10.1": {
+"text": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+"dur": 7.889,
+"file": "voice/4835fad86f825f24.wav"
+},
+"10.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.272,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}
