@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 810">
-  <rect width="810" height="810" rx="177" fill="#ffffff"/>
-  <circle cx="405" cy="405" r="290" fill="none" stroke="#0b0b0d" stroke-width="46"/>
-  <defs>
-    <clipPath id="lens-clip">
-      <ellipse cx="405" cy="405" rx="365" ry="160"/>
-    </clipPath>
-  </defs>
-  <ellipse cx="405" cy="405" rx="160" ry="365" fill="#0b0b0d" clip-path="url(#lens-clip)"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="120 120 570 570" width="810" height="810"><style>g{stroke:#0b0b0d}@media (prefers-color-scheme:dark){g{stroke:#ffffff}}</style><g fill="none" stroke="#0b0b0d" stroke-width="46"><circle cx="405" cy="405" r="262"/><ellipse cx="405" cy="405" rx="104" ry="207"/><ellipse cx="405" cy="405" rx="207" ry="113"/></g></svg>
