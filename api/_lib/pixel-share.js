@@ -1,7 +1,7 @@
 // Once (the owner in his main session, 7.11: „da, partajează pixelul cu contul de reclame”): the site's pixel
 // 2276074362800484 („Meta CAPI CRM”, Business Mellon Vision) is shared with the ad account „centru pls”
 // (act_4502494523405059, Business HairRevive), so the ads can learn from the CRM stages sent by the Conversions API.
-// Nothing else is created or changed. Run by the automations' clock and the portal's pulse; at most 3 tries; the result
+// Nothing else is created or changed. Run by the automations' clock and the portal's pulse, at most once an hour; the result
 // (ids and Meta's answers only, never the token) is kept in data/pixel-share.json and shown by GET /api/portal-capi?public=1.
 
 const { readJSON, writeJSON } = require('./store');
@@ -13,7 +13,7 @@ const PIXEL_BUSINESS = '1107600260509887'; // Mellon Vision, owns the pixel
 const ACCOUNT = '4502494523405059';         // centru pls
 const ACCOUNT_BUSINESS = '1327138448525997'; // HairRevive, owns the ad account
 const GRAPH = 'https://graph.facebook.com/v25.0';
-const MAX_TRIES = 3;
+const MAX_TRIES = 48; // once an hour at most, for two days: it links as soon as the owner gives Mellon Vision access to the ad account
 
 const errOf = (j, r) => { const e = (j && j.error) || {}; return String((e.error_user_msg || e.message || 'HTTP ' + (r && r.status)) + (e.code ? ' (cod ' + e.code + (e.error_subcode ? '/' + e.error_subcode : '') + ')' : '')).slice(0, 300); };
 async function call(method, path, token, params) {
@@ -35,6 +35,7 @@ async function linked(token) {
 async function run() {
   const st = await readJSON(KEY, {});
   if (st.done || (st.tries || 0) >= MAX_TRIES) return { skipped: true };
+  if (st.at && Date.now() - Date.parse(st.at) < 55 * 60e3) return { skipped: true, wait: true };
   const conn = await loadConnection(readJSON).catch(() => null);
   const token = conn && conn.userToken;
   if (!token) { await writeJSON(KEY, Object.assign(st, { tries: (st.tries || 0) + 1, at: new Date().toISOString(), error: 'Lipsește tokenul.' })); return { error: true }; }
