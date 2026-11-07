@@ -94,6 +94,11 @@
     walk(el);
     return $$('.' + cls.split(' ')[0], el);
   }
+  // Nuki's quote: the signature goes under the quote, not inside it (the closing mark stays on the text)
+  $$('.say q > small').forEach(function (s) {
+    var q = s.parentNode, box = document.createElement('div'); box.className = 'sq';
+    q.parentNode.insertBefore(box, q); box.appendChild(q); box.appendChild(s);
+  });
   $$('[data-words]').forEach(function (el) {
     split(el, 'w').forEach(function (w, i) { w.style.transitionDelay = (120 + i * 55) + 'ms'; });
     requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('in'); }); });

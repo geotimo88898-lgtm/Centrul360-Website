@@ -20,9 +20,9 @@ BASE = os.environ.get('V2_BASE', '/v2/')
 ROBOTS = os.environ.get('V2_ROBOTS', 'noindex,nofollow')
 ARROW = '<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
 MARK = ('<svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor">'
-        '<circle class="ring" cx="405" cy="405" r="262" stroke-width="2" vector-effect="non-scaling-stroke" pathLength="100"/>'
-        '<ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.7" vector-effect="non-scaling-stroke"/>'
-        '<ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.7" vector-effect="non-scaling-stroke"/></svg>')
+        '<circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/>'
+        '<ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
+        '<ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>')
 
 def build(name):
     raw = open(os.path.join(SRC, name + '.html'), encoding='utf-8').read()
@@ -37,16 +37,21 @@ def build(name):
     dock = '' if meta.get('dock') == 'off' else (
         '<div class="dock"><div class="t"%s data-slot-mode="dock"><b>Consultație gratuită</b>+ masaj facial cadou</div>'
         '<button type="button" class="btn book" data-book data-book-service="consult"%s>Programează-mă</button></div>' % (slot, citybook))
+    path = meta.get('path', name)
+    url = '' if path == 'index' else path
+    og = path if os.path.exists(os.path.join(HERE, '..', 'brand_asset', 'og', path + '.jpg')) else 'index'
+    title = meta.get('title', 'Centrul360')
+    first = title.split(' | ')[0].split(' · ')[0].strip()
+    ogtitle = meta.get('og-title', title if path == 'index' or 'Centrul360' in first else first + ' · Centrul360')
     shell = open(os.path.join(SRC, '_shell.html'), encoding='utf-8').read()
     out = (shell.replace('{{body}}', body.strip())
-           .replace('{{title}}', meta.get('title', 'Centrul360'))
+           .replace('{{title}}', title).replace('{{ogtitle}}', ogtitle.replace('"', '&quot;')).replace('{{url}}', url).replace('{{og}}', og)
            .replace('{{description}}', meta.get('description', '').replace('"', '&quot;'))
            .replace('{{pixel}}', ''.join("\nfbq('track', '%s');" % e.strip() for e in meta.get('pixel', '').split(',') if e.strip()))
            .replace('{{robots}}', ROBOTS).replace('{{dock}}', dock)
            .replace('{{prev}}', '<div class="prev">Previzualizare v2</div>' if BASE == '/v2/' else '')
            .replace('{{citybook}}', citybook).replace('{{mark}}', MARK).replace('{{arrow}}', ARROW).replace('{{base}}', BASE))
     if '—' in out or '–' in out: sys.exit(name + ': a long dash slipped in')
-    path = meta.get('path', name)
     open(os.path.join(HERE, path + '.html'), 'w', encoding='utf-8').write(out)
     print('built', path + '.html')
 

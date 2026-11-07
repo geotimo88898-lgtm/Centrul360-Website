@@ -1,0 +1,447 @@
+<!--meta
+title: Centrul360 | Medicină estetică non-invazivă în Timișoara și Arad
+description: Tratamente faciale și corporale non-invazive și epilare laser, cu aparatură medicală certificată. Consultație gratuită și masaj facial cadou, în Timișoara și Arad.
+path: index
+-->
+<style>
+/* ---- home: the signature. The real Centrul360 mark, drawn large behind Nuki: the ring draws in once,
+   then the two ellipses turn slowly like a gyroscope (one turn, a rest, the other turn). Transform + opacity. */
+.home-mark{ position:absolute; z-index:0; left:50%; top:47%; width:clamp(100%, calc(100% + 100vw - min(1120px, 100vw - 40px) - 24px), min(148%, 620px)); aspect-ratio:1; transform:translate(-50%,-50%); pointer-events:none; }
+.home-mark > span{ position:absolute; display:block; }
+.home-mark svg{ display:block; width:100%; height:100%; overflow:visible; fill:none; }
+.home-ring{ inset:2.4%; }
+.home-ring svg{ transform:rotate(-90deg); }
+.home-ring circle{ stroke:rgba(20,165,150,.34); stroke-width:.28; stroke-dasharray:100; stroke-dashoffset:0; animation:homeDraw 2.6s var(--e) .35s backwards; }
+@keyframes homeDraw{ from{ stroke-dashoffset:100; } }
+.home-orbit{ inset:2.4%; animation:homeIn 1.4s var(--e) 2.2s backwards; }
+.home-orbit i{ position:absolute; inset:0; animation:homeSpin 36s linear infinite; }
+.home-orbit i::before{ content:''; position:absolute; top:-4px; left:50%; width:8px; height:8px; margin-left:-4px; border-radius:50%; background:var(--teal); box-shadow:0 0 14px rgba(20,165,150,.55); }
+.home-ev{ left:31.1%; top:12.4%; width:37.8%; height:75.3%; animation:homeIn 1.4s var(--e) 1.15s backwards; }
+.home-eh{ left:12.4%; top:29.5%; width:75.3%; height:41.1%; animation:homeIn 1.4s var(--e) 1.4s backwards; }
+.home-ev svg,.home-eh svg{ stroke:rgba(20,165,150,.3); stroke-width:1.6; }
+.home-ev svg{ animation:homeGyY 16s var(--e2) 2.8s infinite; }
+.home-eh svg{ animation:homeGyX 16s var(--e2) 10.8s infinite; }
+@keyframes homeIn{ from{ opacity:0; transform:scale(.6); } }
+@keyframes homeSpin{ to{ transform:rotate(360deg); } }
+@keyframes homeGyY{ 0%,26%{ transform:perspective(1100px) rotateY(0deg); } 50%,76%{ transform:perspective(1100px) rotateY(180deg); } 100%{ transform:perspective(1100px) rotateY(360deg); } }
+@keyframes homeGyX{ 0%,26%{ transform:perspective(1100px) rotateX(0deg); } 50%,76%{ transform:perspective(1100px) rotateX(180deg); } 100%{ transform:perspective(1100px) rotateX(360deg); } }
+
+/* ---- the treatments: clean photo cards */
+.home-tg{ display:grid; grid-template-columns:repeat(5,1fr); gap:40px 18px; }
+.home-tc{ position:relative; display:flex; flex-direction:column; gap:5px; text-decoration:none; color:var(--ink); -webkit-tap-highlight-color:transparent; }
+.home-ph{ position:relative; display:block; overflow:hidden; aspect-ratio:3/4; margin-bottom:14px; border-radius:22px; background:#f2f5f5; box-shadow:0 0 0 1px var(--line), 0 26px 50px -36px rgba(11,40,38,.42); isolation:isolate; }
+.home-ph img{ width:100%; height:100%; object-fit:cover; transition:transform 1.4s var(--e); }
+.home-ph::after{ content:''; position:absolute; inset:0; z-index:1; background:linear-gradient(90deg,#f6fbfa,#eef8f6); transform-origin:100% 50%; transition:transform 1.3s var(--e2); }
+.home-tc.in .home-ph::after{ transform:scaleX(0); }
+.home-tc:hover .home-ph img{ transform:scale(1.05); }
+.home-go{ position:absolute; z-index:2; right:12px; bottom:12px; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--ink);
+  background:rgba(255,255,255,.82); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:0 8px 20px -10px rgba(11,40,38,.4);
+  opacity:0; transform:translateY(8px) scale(.9); transition:opacity .5s var(--e), transform .7s var(--e); }
+.home-go svg{ width:17px; height:17px; transition:transform .6s var(--e); }
+.home-tc:hover .home-go,.home-tc:focus-visible .home-go{ opacity:1; transform:none; }
+.home-tc:hover .home-go svg{ transform:translateX(2px); }
+.home-k{ font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--mute2); }
+.home-tc b{ font-size:1.1rem; font-weight:700; letter-spacing:-.025em; line-height:1.25; }
+.home-d{ font-size:14px; line-height:1.45; color:var(--mute); }
+@media (hover:none){ .home-go{ opacity:1; transform:none; } }
+
+/* ---- the gift: a step-by-step card */
+.home-gift{ display:grid; grid-template-columns:.92fr 1.08fr; gap:clamp(40px,6vw,96px); align-items:center; }
+.home-gi{ display:grid; gap:22px; justify-items:start; }
+.home-gi .lead{ max-width:30rem; }
+.home-gn{ display:block; animation:float 6s var(--e2) infinite alternate; }
+.home-gn img{ width:150px; height:auto; filter:drop-shadow(0 22px 26px rgba(11,60,55,.16)); }
+.home-gl{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.home-gl li{ display:flex; align-items:center; gap:12px; font-size:15px; color:var(--ink2); }
+.home-gl i,.home-ul i{ flex:none; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--tint); color:var(--teal2); }
+.home-gl svg,.home-ul i svg{ width:13px; height:13px; }
+.home-q{ padding:clamp(22px,3vw,36px); }
+.home-qh{ display:flex; align-items:center; gap:14px; margin-bottom:28px; }
+.home-back{ flex:none; width:36px; height:36px; border:0; border-radius:50%; display:grid; place-items:center; cursor:pointer; color:var(--ink); background:rgba(11,11,13,.05);
+  transition:opacity .45s var(--e), transform .6s var(--e), background-color .3s; -webkit-tap-highlight-color:transparent; }
+.home-back:hover{ background:rgba(11,11,13,.09); }
+.home-back svg{ width:16px; height:16px; }
+.home-back.off{ opacity:0; transform:translateX(8px); pointer-events:none; }
+.home-bar{ flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.home-bar i{ position:relative; height:4px; border-radius:4px; overflow:hidden; background:var(--line2); }
+.home-bar i::after{ content:''; position:absolute; inset:0; border-radius:4px; background:linear-gradient(90deg,var(--teal3),var(--teal)); transform:scaleX(0); transform-origin:0 50%; transition:transform .8s var(--e); }
+.home-bar i.on::after{ transform:none; }
+.home-cnt{ flex:none; font-size:13px; font-weight:500; color:var(--mute2); font-variant-numeric:tabular-nums; }
+.home-steps{ display:grid; }
+.home-st{ grid-area:1 / 1; min-width:0; display:grid; gap:10px; align-content:start; opacity:0; visibility:hidden; transform:translateX(32px);
+  transition:opacity .4s var(--e), transform .7s var(--e), visibility 0s .7s; }
+.home-st.prev{ transform:translateX(-32px); }
+.home-st.on{ opacity:1; visibility:visible; transform:none; transition:opacity .6s var(--e) .1s, transform .8s var(--e) .1s, visibility 0s; }
+.home-qt{ margin:0 0 10px; font-size:clamp(1.35rem,2.3vw,1.65rem); font-weight:800; letter-spacing:-.035em; line-height:1.15; color:var(--ink); outline:none; }
+.home-o{ position:relative; display:flex; align-items:center; gap:14px; min-height:58px; padding:10px 14px 10px 20px; border-radius:18px; cursor:pointer; user-select:none;
+  font-size:16px; font-weight:500; line-height:1.3; color:var(--ink2); background:rgba(255,255,255,.7); box-shadow:0 0 0 1px var(--line2) inset;
+  transition:box-shadow .45s var(--e), background-color .45s var(--e), transform .5s var(--e); -webkit-tap-highlight-color:transparent; }
+.home-o:hover{ background:#fff; box-shadow:0 0 0 1px rgba(11,11,13,.2) inset, 0 12px 26px -18px rgba(11,40,38,.35); }
+.home-o:active{ transform:scale(.985); transition-duration:.15s; }
+.home-o input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; pointer-events:none; }
+.home-o span{ flex:1; min-width:0; }
+.home-o small{ display:block; margin-top:2px; font-size:13px; font-weight:400; color:var(--mute); }
+.home-o i,.home-ok i{ flex:none; display:grid; place-items:center; box-shadow:0 0 0 1.5px var(--line2) inset; transition:background-color .4s var(--e), box-shadow .4s var(--e); }
+.home-o i{ width:26px; height:26px; border-radius:50%; }
+.home-o i svg,.home-ok i svg{ width:13px; height:13px; color:#fff; opacity:0; transform:scale(.3) rotate(-20deg); transition:opacity .35s var(--e), transform .6s var(--e); }
+.home-o.sel{ background:#fff; box-shadow:0 0 0 1.5px rgba(20,165,150,.5) inset, 0 12px 26px -18px rgba(11,60,55,.4); }
+.home-o.sel i,.home-ok input:checked + i{ background:var(--teal); box-shadow:none; }
+.home-o.sel i svg,.home-ok input:checked + i svg{ opacity:1; transform:none; }
+.home-o:has(input:focus-visible){ outline:2px solid var(--teal); outline-offset:2px; }
+.home-hint{ margin-top:6px; font-size:13.5px; color:var(--mute); }
+.home-sum{ display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 8px; }
+.home-sum span{ padding:5px 12px; border-radius:999px; font-size:13px; font-weight:500; color:var(--ink2); background:rgba(11,11,13,.045); }
+.home-f{ display:grid; gap:7px; font-size:14px; font-weight:500; color:var(--ink2); }
+.home-f input{ width:100%; height:56px; padding:0 18px; border:0; border-radius:16px; font:inherit; font-size:16px; color:var(--ink); background:rgba(255,255,255,.9);
+  box-shadow:0 0 0 1px var(--line2) inset; transition:box-shadow .45s var(--e); -webkit-appearance:none; appearance:none; }
+.home-f input::placeholder{ color:var(--mute2); }
+.home-f input:focus{ outline:none; box-shadow:0 0 0 1.5px var(--teal) inset, 0 0 0 5px rgba(20,165,150,.12); }
+.home-ok{ position:relative; display:flex; align-items:flex-start; gap:12px; margin-top:4px; font-size:13.5px; line-height:1.45; color:var(--mute); cursor:pointer; }
+.home-ok input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; }
+.home-ok i{ width:22px; height:22px; margin-top:1px; border-radius:7px; }
+.home-ok input:focus-visible + i{ outline:2px solid var(--teal); outline-offset:2px; }
+.home-q .err{ min-height:22px; font-size:14px; font-weight:600; color:var(--ink); }
+.home-q .err:empty{ min-height:0; }
+.home-q .btn{ width:100%; }
+
+/* ---- the offers: on the phone they slide sideways */
+.home-od{ display:none; }
+.home-gar{ display:flex; align-items:flex-start; gap:22px; margin-top:24px; padding:30px; }
+.home-gar .home-seal{ flex:none; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; color:var(--teal2); background:var(--tint); }
+.home-gar .home-seal svg{ width:24px; height:24px; }
+.home-gar > div{ display:grid; gap:10px; justify-items:start; }
+.home-gar b{ font-size:1.2rem; letter-spacing:-.025em; line-height:1.3; }
+.home-gar p{ color:var(--mute); font-size:15px; max-width:44rem; }
+.home-all{ display:flex; justify-content:center; margin-top:36px; }
+
+/* ---- the team */
+.home-team{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(40px,7vw,110px); align-items:center; }
+.home-pp{ display:grid; grid-template-columns:1fr 1fr; gap:16px; padding-bottom:44px; }
+.home-pp img{ width:100%; height:auto; aspect-ratio:3/4; object-fit:cover; object-position:50% 22%; border-radius:var(--r); background:#f2f5f5; box-shadow:0 0 0 1px var(--line), 0 30px 60px -40px rgba(11,40,38,.4); }
+.home-pp img + img{ transform:translateY(44px); }
+.home-tt{ display:grid; gap:24px; justify-items:start; }
+.home-ul{ list-style:none; margin:4px 0 6px; padding:0; display:grid; gap:14px; }
+.home-ul li{ display:flex; align-items:center; gap:14px; font-size:16px; color:var(--ink2); }
+
+/* ---- the two clinics */
+.home-locs{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.home-loc{ overflow:hidden; display:flex; flex-direction:column; }
+.home-lp{ display:block; overflow:hidden; aspect-ratio:16 / 10; }
+.home-lp img{ width:100%; height:100%; object-fit:cover; transition:transform 1.4s var(--e); }
+.home-loc:hover .home-lp img{ transform:scale(1.04); }
+.home-lb{ flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:30px 32px 32px; }
+.home-lb h3{ font-size:1.6rem; letter-spacing:-.035em; margin-bottom:4px; }
+.home-li{ display:flex; align-items:center; gap:10px; font-size:15px; color:var(--mute); text-decoration:none; }
+.home-li svg{ width:16px; height:16px; flex:none; color:var(--mute2); }
+a.home-li:hover{ color:var(--ink); }
+.home-lb .slot{ margin-top:6px; align-items:flex-start; }
+.home-lb .slot .dot{ margin-top:6px; }
+.home-la{ display:flex; flex-wrap:wrap; align-items:center; gap:14px 24px; margin-top:auto; padding-top:18px; }
+.home-la .btn{ height:50px; padding:0 22px; font-size:15px; }
+.home-wa{ display:flex; justify-content:center; margin-top:40px; }
+
+@media (max-width:920px){
+  .home-mark{ width:min(100%,480px); }
+  .home-gift,.home-team{ grid-template-columns:1fr; }
+  .home-tg{ gap:32px 12px; }
+  .home-tc b{ font-size:.98rem; }
+  .home-d{ font-size:13px; }
+}
+@media (max-width:760px){
+  .home-tg{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:640px){
+  .home-mark{ width:min(100vw - 6px,420px); top:46%; }
+  .home-tg{ grid-template-columns:1fr 1fr; gap:30px 12px; }
+  .home-ph{ border-radius:18px; margin-bottom:10px; }
+  .home-tc b{ font-size:1rem; }
+  .home-d{ font-size:13px; }
+  .home-k{ font-size:11px; }
+  .home-go{ right:8px; bottom:8px; width:32px; height:32px; }
+  .home-go svg{ width:15px; height:15px; }
+  .home-gi{ gap:18px; }
+  .home-gn img{ width:120px; }
+  .home-q{ padding:22px 18px 24px; }
+  .home-o{ min-height:56px; padding:10px 12px 10px 16px; font-size:15.5px; }
+  .home-of .offers{ display:flex; justify-content:flex-start; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -16px; padding:6px 16px 22px; scrollbar-width:none; overscroll-behavior-x:contain; }
+  .home-of .offers::-webkit-scrollbar{ display:none; }
+  .home-of .offers .slip{ flex:0 0 84%; scroll-snap-align:center; }
+  .home-od.dots{ display:flex; margin-top:2px; }
+  .home-gar{ flex-direction:column; gap:18px; padding:26px; }
+  .home-pp{ gap:12px; padding-bottom:30px; }
+  .home-pp img + img{ transform:translateY(30px); }
+  .home-locs{ grid-template-columns:1fr; }
+  .home-lb{ padding:24px 24px 26px; }
+}
+</style>
+
+<section class="hero"><div class="wrap">
+  <div class="txt">
+    <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
+    <h1 class="words" data-words>Rezultate pe care le <em>vezi</em> din prima ședință.</h1>
+    <p class="lead rv">Medicină estetică non-invazivă pentru corp și față, plus epilare laser. Aparatură medicală certificată și un plan făcut pentru tine. Două clinici, în Timișoara și Arad.</p>
+    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#tratamente">Vezi tratamentele</a></div>
+    <div class="meta rv">
+      <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
+      <div class="slot" data-slot></div>
+    </div>
+  </div>
+  <div class="stage rv zoom">
+    <span class="orb"></span>
+    <div class="home-mark" aria-hidden="true">
+      <span class="home-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="49.5" pathLength="100"/></svg></span>
+      <span class="home-ev"><svg viewBox="0 0 208 414"><ellipse cx="104" cy="207" rx="103" ry="206" vector-effect="non-scaling-stroke"/></svg></span>
+      <span class="home-eh"><svg viewBox="0 0 414 226"><ellipse cx="207" cy="113" rx="206" ry="112" vector-effect="non-scaling-stroke"/></svg></span>
+      <span class="home-orbit"><i></i></span>
+    </div>
+    <div class="bubble" aria-live="polite"></div>
+    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Salut! Eu sunt Nuki. Bine ai venit la Centrul360.", "Corp, față sau epilare? Îți arăt tot, pas cu pas.", "Prima consultație e gratuită. Și masajul facial e cadou.", "Mai apasă o dată. Îmi place.", "Ne vedem în Timișoara sau în Arad?"]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/salut-pa.webp" alt="Nuki face cu mâna" width="340" height="340"></span></button>
+    <span class="shadow"></span>
+  </div>
+</div></section>
+
+<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ace</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără operație</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără anestezie</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Aparatură medicală certificată</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ace</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără operație</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără anestezie</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Aparatură medicală certificată</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span></div></div>
+
+<section class="s" id="tratamente"><div class="wrap">
+  <div class="head rv"><span class="eye">Tratamente</span><h2>Ce vrei <em>să schimbi?</em></h2><p class="lead">Pentru corp, pentru față și epilare laser. Alege zona și vezi cum lucrăm, cu rezultate reale și prețuri.</p></div>
+  <div class="home-tg">
+    <a class="home-tc rv" href="{{base}}grasime-localizata"><span class="home-ph"><img src="/brand_asset/concern-grasime.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Grăsime localizată</b><span class="home-d">Liposonix, cavitație și HIFU</span></a>
+    <a class="home-tc rv" href="{{base}}celulita"><span class="home-ph"><img src="/brand_asset/concern-celulita.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Celulită</b><span class="home-d">Radiofrecvență, cavitație și EMS</span></a>
+    <a class="home-tc rv" href="{{base}}tonifiere-musculara"><span class="home-ph"><img src="/brand_asset/concern-tonifiere.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Tonifiere musculară</b><span class="home-d">EMS, fără efort · Timișoara</span></a>
+    <a class="home-tc rv" href="{{base}}detox-drenaj"><span class="home-ph"><img src="/brand_asset/concern-detox.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Detox și drenaj</b><span class="home-d">Presoterapie și împachetare · Timișoara</span></a>
+    <a class="home-tc rv" href="{{base}}epilare-laser"><span class="home-ph"><img src="/brand_asset/ba-epilare.webp" alt="" width="900" height="604" loading="lazy" style="object-position:50% 70%"><i class="home-go">{{arrow}}</i></span><span class="home-k">Epilare</span><b>Epilare laser</b><span class="home-d">Elysion Pro, cu garanție scrisă · Timișoara</span></a>
+    <a class="home-tc rv" href="{{base}}riduri-linii-fine"><span class="home-ph"><img src="/brand_asset/concern-riduri.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Riduri și lifting</b><span class="home-d">HIFU, radiofrecvență și RF Sculpt</span></a>
+    <a class="home-tc rv" href="{{base}}gusa-barbie-dubla"><span class="home-ph"><img src="/brand_asset/concern-gusa.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Gușă și bărbie dublă</b><span class="home-d">HIFU și RF Sculpt, fără operație</span></a>
+    <a class="home-tc rv" href="{{base}}pete-pigmentare"><span class="home-ph"><img src="/brand_asset/concern-pete.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Pete și pigmentare</b><span class="home-d">Regenerare și un ten uniform</span></a>
+    <a class="home-tc rv" href="{{base}}ten-problematic"><span class="home-ph"><img src="/brand_asset/concern-ten-problematic.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Ten problematic</b><span class="home-d">Acnee, sebum și pori dilatați</span></a>
+    <a class="home-tc rv" href="{{base}}ten-lipsit-de-stralucire"><span class="home-ph"><img src="/brand_asset/concern-stralucire.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Ten fără strălucire</b><span class="home-d">Hidratare profundă și luminozitate</span></a>
+  </div>
+</div></section>
+
+<section class="s" id="rezultate" style="padding-top:0">
+  <div class="wrap"><div class="head rv"><span class="eye">Poze reale din clinică</span><h2>Nu promitem. <em>Îți arătăm.</em></h2><p class="lead">Clientele noastre, fotografiate la noi, înainte și după tratament.</p></div></div>
+  <div class="cases">
+    <figure class="case"><div class="ph"><img src="/brand_asset/ba-liposonix-premium.webp" alt="Înainte și după Liposonix pe abdomen" loading="lazy" draggable="false"></div><figcaption><b>Abdomen</b><span>Liposonix</span></figcaption></figure>
+    <figure class="case"><div class="ph"><img src="/brand_asset/gusa-ba-premium.webp" alt="Înainte și după HIFU pe gușă" loading="lazy" draggable="false"></div><figcaption><b>Gușă</b><span>HIFU</span></figcaption></figure>
+    <figure class="case"><div class="ph"><img src="/brand_asset/restart-ba-premium.webp" alt="Înainte și după tratamentul facial Restart" loading="lazy" draggable="false"></div><figcaption><b>Ten</b><span>Tratament facial Restart</span></figcaption></figure>
+    <figure class="case"><div class="ph fit"><img src="/brand_asset/catalog/cazul-06-hifu-full-face-tm.webp" alt="Înainte și după HIFU Full Face, Timișoara" loading="lazy" draggable="false"></div><figcaption><b>Față completă</b><span>HIFU Full Face · Timișoara</span></figcaption></figure>
+    <figure class="case"><div class="ph fit"><img src="/brand_asset/catalog/cazul-22-hifu-periocular-arad.webp" alt="Înainte și după HIFU periocular, Arad" loading="lazy" draggable="false"></div><figcaption><b>Zona ochilor</b><span>HIFU periocular · Arad</span></figcaption></figure>
+  </div>
+  <div class="wrap" style="display:grid;gap:26px;justify-items:center"><div class="dots"></div><a class="more" href="{{base}}rezultate">Vezi toate cele 40 de cazuri{{arrow}}</a><p class="fine" style="margin:0">Rezultatele diferă de la o persoană la alta, în funcție de zonă, tratament și stil de viață.</p></div>
+</section>
+
+<section class="s" id="cum" style="padding-top:0"><div class="wrap split">
+  <div>
+    <div class="head left rv"><span class="eye">Cum decurge</span><h2>Tu alegi ora. <em>Noi facem restul.</em></h2><p class="lead">Fiecare plan e făcut pentru tine, iar progresul îl urmărim la fiecare ședință.</p></div>
+    <ol class="tl" data-tl>
+      <li class="rv"><small>Online · în câteva secunde</small><b>Te programezi</b><p>Alegi clinica, ziua și ora care îți convin. Confirmarea îți vine imediat pe WhatsApp.</p></li>
+      <li class="rv"><small>Prima vizită · gratuit</small><b>Consultația gratuită</b><p>Îți evaluăm pielea și nevoile, fără cost și fără obligații. Stabilim împreună ce ți se potrivește.</p></li>
+      <li class="rv"><small>Planul tău</small><b>Protocol personalizat</b><p>Aplicăm tratamentul cu echipamente medicale certificate, adaptat exact pentru tine.</p></li>
+      <li class="rv"><small>La fiecare ședință</small><b>Rezultate vizibile</b><p>Progres natural, monitorizat la fiecare ședință. La multe tratamente, rezultatele se văd încă din prima.</p></li>
+    </ol>
+  </div>
+  <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/fisa.webp" alt="Nuki cu fișa" width="300" height="300" loading="lazy"></span><q>Planul tău e scris doar pentru tine. Eu țin fișa.</q><small>Nuki</small></div>
+</div></section>
+
+<section class="s" style="padding-top:0"><div class="wrap">
+  <span class="eye rv" style="margin-bottom:28px">Nu știi de unde să începi?</span>
+  <p class="scrub" data-scrub>Nu trebuie să știi dinainte ce tratament îți trebuie. La consultația gratuită analizăm nevoile tale și îți propunem cea mai potrivită soluție, în funcție de obiectiv, tip de piele și buget. <em>Fără nicio obligație.</em></p>
+  <div class="say rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/gandeste.webp" alt="" width="96" height="96" loading="lazy"></span><div><q>Și eu am avut o mie de întrebări. Le-am pus pe toate la consultație.</q><small>Nuki</small></div></div>
+</div></section>
+
+<section class="s" id="cadou" style="padding-top:0"><div class="wrap home-gift">
+  <div class="home-gi rv">
+    <span class="home-gn"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="Nuki cu un cadou" width="150" height="150" loading="lazy"></span>
+    <span class="eye">Cadoul tău</span>
+    <h2>Consultația e gratuită. <em>Masajul facial e cadou.</em></h2>
+    <p class="lead">Spune-ne ce te interesează și unde vrei să vii. Te contactăm noi pe WhatsApp sau telefonic și îți facem programarea.</p>
+    <ul class="home-gl"><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Trei întrebări scurte</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Fără obligații</li></ul>
+  </div>
+  <div class="card home-q rv">
+    <div class="home-qh">
+      <button type="button" class="home-back off" aria-label="Pasul anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="home-bar" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+      <span class="home-cnt" aria-live="polite">Pasul 1 din 3</span>
+    </div>
+    <form id="lead" data-sursa="Website v2 - Formular Homepage Masaj Cadou" novalidate>
+      <div class="home-steps">
+        <div class="home-st on" role="group" aria-labelledby="home-q1">
+          <p class="home-qt" id="home-q1" tabindex="-1">Ce te interesează cel mai mult?</p>
+          <label class="home-o"><input type="radio" name="interes" value="Slăbit / conturare corp"><span>Slăbit / conturare corp</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="home-o"><input type="radio" name="interes" value="Fermitate față / anti-îmbătrânire"><span>Fermitate față / anti-îmbătrânire</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="home-o"><input type="radio" name="interes" value="Ten problematic / pete / luminozitate"><span>Ten problematic / pete / luminozitate</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="home-o"><input type="radio" name="interes" value="Celulită"><span>Celulită</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="home-o"><input type="radio" name="interes" value="Epilare laser"><span>Epilare laser</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="home-o"><input type="radio" name="interes" value="Nu știu exact, vreau o recomandare"><span>Nu știu exact, vreau o recomandare</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+        </div>
+        <div class="home-st" role="group" aria-labelledby="home-q2">
+          <p class="home-qt" id="home-q2" tabindex="-1">La ce clinică preferi să vii?</p>
+          <label class="home-o"><input type="radio" name="oras" value="Timișoara"><span>Timișoara<small>Str. Bucegi 7 · Luni - Vineri, 09:00-20:00</small></span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="home-o"><input type="radio" name="oras" value="Arad"><span>Arad<small>Str. Ioan Alexandru 16-18 · Luni - Vineri, 11:00-19:00</small></span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <p class="home-hint">Epilarea laser, EMS și detoxul sunt doar la Timișoara.</p>
+        </div>
+        <div class="home-st" role="group" aria-labelledby="home-q3">
+          <p class="home-qt" id="home-q3" tabindex="-1">Ultimul pas: unde te contactăm?</p>
+          <p class="home-sum"></p>
+          <label class="home-f"><span>Numele tău</span><input name="nume" autocomplete="name" placeholder="ex: Maria Popescu"></label>
+          <label class="home-f"><span>Telefon (WhatsApp)</span><input name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="ex: 07xx xxx xxx"></label>
+          <label class="home-ok"><input type="checkbox" name="ok"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360, inclusiv cu oferte.</span></label>
+          <p class="err" role="alert"></p>
+          <button type="submit" class="btn book">Vreau consultația și cadoul{{arrow}}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div></section>
+
+<section class="s home-of" id="oferte" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Ofertele de acum</span><h2>Promoții care merită <em>văzute.</em></h2><p class="lead">Alegi oferta, apoi ziua și ora. Confirmarea vine pe WhatsApp.</p></div>
+  <div class="offers" data-offers="all"></div>
+  <div class="dots home-od" aria-hidden="true"></div>
+  <div class="card home-gar rv"><span class="home-seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><span class="eye">Garanție scrisă · epilare laser</span><b>Dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie.</b><p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine și tot ai nevoie să te epilezi regulat, mai faci ședințe pe cheltuiala noastră. Fără plafon.</p><a class="more" href="{{base}}epilare-laser">Vezi epilarea laser{{arrow}}</a></div></div>
+  <div class="home-all"><a class="more" href="{{base}}oferte">Vezi toate ofertele și pachetele{{arrow}}</a></div>
+</div></section>
+
+<section class="s" id="recenzii" style="padding-top:0"><div class="wrap">
+  <div class="score"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><span>Google</span></span><div class="n" data-count="5.0">5,0</div><div class="st"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg></div><span><b data-count="300" data-suffix="+">300+</b> recenzii · Timișoara și Arad</span></div>
+  <div class="revs">
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul a fost exact pe măsura așteptărilor.”</span><p>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</p><small>Maria Muntean · Timișoara</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Cu căldură și profesionalism.”</span><p>„O experiență minunată, d-na Andreea m-a abordat cu căldură și profesionalism.”</p><small>Alina Galuțiu · Arad</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul este vizibil.”</span><p>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</p><small>Simona-Mihaela J. · Timișoara</small></div>
+  </div>
+</div></section>
+
+<section class="s" id="echipa" style="padding-top:0"><div class="wrap home-team">
+  <div class="home-pp rv"><img src="/brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39.jpeg" alt="Specialistă Centrul360" width="1200" height="1600" loading="lazy"><img src="/brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39%20(1).jpeg" alt="Specialistă Centrul360" width="1200" height="1600" loading="lazy"></div>
+  <div class="home-tt">
+    <div class="head left rv" style="margin-bottom:0"><span class="eye">Echipa</span><h2>O echipă <em>atentă</em> care lucrează pentru tine.</h2><p class="lead">Specialiste dedicate medicinei estetice non-invazive. Aceeași grijă și aceleași standarde în Timișoara și Arad, fără presiune, doar planuri adaptate ție.</p></div>
+    <ul class="home-ul rv">
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Consultație gratuită, fără obligații</li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Echipamente medicale certificate</li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Plan 100% personalizat</li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Clinici curate, calde, discrete</li>
+    </ul>
+    <a class="btn ghost rv" href="{{base}}echipa">Cunoaște echipa{{arrow}}</a>
+  </div>
+</div></section>
+
+<section class="s" id="locatii" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Două clinici</span><h2>Alege <em>orașul.</em></h2><p class="lead">Două clinici, aceeași grijă. Alegi locația care îți este la îndemână atunci când te programezi.</p></div>
+  <div class="home-locs">
+    <div class="card home-loc rv">
+      <a class="home-lp" href="{{base}}timisoara" tabindex="-1" aria-hidden="true"><img src="/brand_asset/loc-timisoara.webp" alt="" width="900" height="750" loading="lazy"></a>
+      <div class="home-lb">
+        <span class="eye">Timișoara</span>
+        <h3>Str. Bucegi 7</h3>
+        <span class="home-li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Luni - Vineri · 09:00-20:00</span>
+        <a class="home-li" href="tel:+40750452002"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>0750 452 002</a>
+        <div class="slot" data-slot="Timișoara"></div>
+        <div class="home-la"><button type="button" class="btn book" data-book data-book-service="consult" data-book-city="Timișoara">Programează-mă</button><a class="more" href="{{base}}timisoara">Vezi clinica{{arrow}}</a></div>
+      </div>
+    </div>
+    <div class="card home-loc rv">
+      <a class="home-lp" href="{{base}}arad" tabindex="-1" aria-hidden="true"><img src="/brand_asset/loc-arad.webp" alt="" width="900" height="750" loading="lazy"></a>
+      <div class="home-lb">
+        <span class="eye">Arad</span>
+        <h3>Str. Ioan Alexandru 16-18</h3>
+        <span class="home-li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Luni - Vineri · 11:00-19:00</span>
+        <a class="home-li" href="tel:+40750277394"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>0750 277 394</a>
+        <div class="slot" data-slot="Arad"></div>
+        <div class="home-la"><button type="button" class="btn book" data-book data-book-service="consult" data-book-city="Arad">Programează-mă</button><a class="more" href="{{base}}arad">Vezi clinica{{arrow}}</a></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section class="s" id="intrebari" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Întrebări</span><h2>Ai o <em>întrebare?</em></h2></div>
+  <div class="faq rv">
+    <div class="q"><button type="button">Cum mă programez?<span class="pm"></span></button><div class="a"><div><p>Direct aici, pe site: apeși „Programează-mă”, alegi clinica, ziua și ora care îți convin, iar confirmarea îți vine imediat pe WhatsApp. Consultația inițială este gratuită.</p></div></div></div>
+    <div class="q"><button type="button">Consultația este gratuită?<span class="pm"></span></button><div class="a"><div><p>Da, prima consultație este gratuită și fără obligații. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat.</p></div></div></div>
+    <div class="q"><button type="button">Cum aleg tratamentul potrivit pentru mine?<span class="pm"></span></button><div class="a"><div><p>Nu trebuie să știi dinainte. La consultația gratuită analizăm nevoile tale și îți propunem cea mai potrivită soluție, în funcție de obiectiv, tip de piele și buget.</p></div></div></div>
+    <div class="q"><button type="button">Unde vă găsesc?<span class="pm"></span></button><div class="a"><div><p>Avem două clinici: Timișoara (Str. Bucegi 7) și Arad (Str. Ioan Alexandru 16-18). Alegi locația care îți este la îndemână atunci când te programezi.</p></div></div></div>
+    <div class="q"><button type="button">Tratamentele sunt sigure?<span class="pm"></span></button><div class="a"><div><p>Da. Lucrăm cu proceduri non-invazive, personalizate pentru tine și realizate de specialiști cu experiență.</p></div></div></div>
+    <div class="q"><button type="button">Când văd rezultate?<span class="pm"></span></button><div class="a"><div><p>La multe tratamente, rezultatele sunt vizibile încă din prima ședință. Pentru efecte de durată, îți stabilim un plan cu numărul optim de ședințe la consultație.</p></div></div></div>
+  </div>
+  <div class="home-wa rv"><a class="more" href="https://wa.me/40750452002?text=Buna%20ziua!%20Am%20o%20intrebare." target="_blank" rel="noopener">Nu găsești răspunsul? Scrie-ne pe WhatsApp{{arrow}}</a></div>
+</div></section>
+
+<section class="s end" style="padding-top:0"><div class="wrap end">
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span>
+    <div class="bubble"></div>
+    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Te aștept la consultație!", "Adu-ți întrebările. Eu le notez pe toate."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/mana-inima.webp" alt="Nuki cu mâna pe inimă" width="290" height="290" loading="lazy"></span></button>
+    <span class="shadow"></span>
+  </div>
+  <h2 class="rv">Începe <em>transformarea</em> ta astăzi.</h2>
+  <p class="lead rv">Primul pas e o consultație gratuită, fără obligații. Afli ce ți se potrivește și cât costă. Plus masajul facial cadou.</p>
+  <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
+  <div class="slot rv" data-slot></div>
+</div></section>
+
+<script>
+/* home: the gift card, one question at a time (kit.js sends the form), and the offer dots on the phone */
+(function () {
+  var card = document.querySelector('.home-q'), f = document.getElementById('lead');
+  if (card && f) {
+    var steps = [].slice.call(card.querySelectorAll('.home-st')), segs = [].slice.call(card.querySelectorAll('.home-bar i'));
+    var back = card.querySelector('.home-back'), cnt = card.querySelector('.home-cnt'), sum = card.querySelector('.home-sum');
+    var cur = 0, hist = [], ptr = 0;
+    var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var val = function (n) { var r = f.querySelector('input[name="' + n + '"]:checked'); return r ? r.value : ''; };
+    var mark = function () { [].forEach.call(f.querySelectorAll('.home-o'), function (l) { l.classList.toggle('sel', l.querySelector('input').checked); }); };
+    var go = function (n, focus) {
+      cur = n;
+      steps.forEach(function (s, i) { s.classList.toggle('on', i === n); s.classList.toggle('prev', i < n); s.setAttribute('aria-hidden', String(i !== n)); });
+      segs.forEach(function (s, i) { s.classList.toggle('on', i <= n); });
+      cnt.textContent = 'Pasul ' + (n + 1) + ' din 3';
+      back.classList.toggle('off', n === 0);
+      if (n === 2) {
+        var i = val('interes'), o = val('oras');
+        sum.innerHTML = (i ? '<span>' + esc(i) + '</span>' : '') + (o ? '<span>' + (i === 'Epilare laser' ? 'doar la ' : '') + esc(o) + '</span>' : '');
+      }
+      if (focus) { var t = steps[n].querySelector('.home-qt'); if (t) t.focus({ preventScroll: true }); }
+    };
+    var next = function (focus) {
+      if (cur === 0) {
+        if (!val('interes')) return;
+        hist.push(0);
+        if (val('interes') === 'Epilare laser') { var tm = f.querySelector('input[name="oras"][value="Timișoara"]'); tm.checked = true; mark(); go(2, focus); }
+        else go(1, focus);
+      } else if (cur === 1) { if (!val('oras')) return; hist.push(1); go(2, focus); }
+    };
+    card.addEventListener('pointerdown', function (e) { if (e.target.closest('.home-o')) ptr = Date.now(); });
+    f.addEventListener('click', function (e) {
+      var r = e.target.closest('.home-o input');
+      if (!r) return;
+      mark();
+      if (Date.now() - ptr < 1200) { ptr = 0; setTimeout(function () { next(false); }, 380); }
+    });
+    f.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.matches('.home-o input')) { e.preventDefault(); if (!e.target.checked) { e.target.checked = true; mark(); } next(true); }
+    });
+    f.addEventListener('change', mark);
+    var err = f.querySelector('.err');
+    f.addEventListener('input', function (e) { if (err && e.target.matches('input[name="nume"], input[name="tel"], input[name="ok"]')) err.textContent = ''; });
+    back.addEventListener('click', function () { if (hist.length) go(hist.pop(), true); });
+    go(0, false);
+  }
+
+  // the offers slide sideways on the phone: a dot for each one
+  var box = document.querySelector('.home-of .offers'), dots = document.querySelector('.home-od');
+  if (box && dots && window.MutationObserver) {
+    var paint = function () {
+      var items = [].slice.call(box.querySelectorAll('.slip'));
+      dots.innerHTML = items.map(function () { return '<i></i>'; }).join('');
+      var mark = function () {
+        var mid = box.scrollLeft + box.clientWidth / 2, best = 0, bd = 1e9;
+        items.forEach(function (it, k) { var d = Math.abs(it.offsetLeft + it.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = k; } });
+        [].forEach.call(dots.children, function (d, k) { d.classList.toggle('on', k === best); });
+      };
+      box.onscroll = function () { requestAnimationFrame(mark); };
+      mark();
+    };
+    new MutationObserver(paint).observe(box, { childList: true });
+  }
+})();
+</script>

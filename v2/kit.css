@@ -142,8 +142,9 @@ html.locked{ overflow:hidden; }
 @keyframes ping{ 0%{ transform:scale(1); opacity:.6; } 80%,100%{ transform:scale(3.2); opacity:0; } }
 
 /* the headline comes in word by word */
-.words .w{ display:inline-block; opacity:0; transform:translateY(.4em); filter:blur(12px); transition:opacity 1s var(--e), transform 1s var(--e), filter 1s var(--e); }
-.words.in .w{ opacity:1; transform:none; filter:blur(0); }
+[data-words] .w{ display:inline-block; opacity:0; transform:translateY(.4em); filter:blur(12px); transition:opacity 1s var(--e), transform 1s var(--e), filter 1s var(--e); }
+[data-words].in .w{ opacity:1; transform:none; filter:blur(0); }
+.say .sq{ display:grid; gap:8px; }
 
 /* ---- Nuki: floats, breathes, answers a tap */
 .stage{ position:relative; display:grid; place-items:center; min-height:460px; }
@@ -283,7 +284,9 @@ html.locked{ overflow:hidden; }
 .stick small{ font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--mute2); }
 
 /* ---- offers from Admin */
-.offers{ display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:20px; }
+.offers{ display:flex; flex-wrap:wrap; justify-content:center; gap:20px; }
+.offers > .slip{ flex:1 1 290px; max-width:380px; }
+.offers > .fine{ flex:1 1 100%; }
 .slip{ position:relative; overflow:hidden; display:grid; gap:10px; align-content:start; padding:32px; border-radius:var(--r); background:rgba(255,255,255,.9);
   box-shadow:0 0 0 1px var(--line) inset, 0 30px 60px -42px rgba(11,40,38,.35); transition:transform .7s var(--e), box-shadow .7s var(--e); }
 .slip::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .5s; background:radial-gradient(360px circle at var(--mx,50%) var(--my,0%),rgba(95,212,198,.2),transparent 60%); }
