@@ -26,6 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,400&family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/v2/kit.css">
+<link rel="stylesheet" href="/v2/kit-m.css">
 <link rel="stylesheet" href="/v2/book-light.css">
 <script>
 /* tracking waits for consent (the owner, 7.11): the Meta pixel only queues until „Accept” loads it; Google Consent Mode v2, denied by default */
@@ -53,6 +54,7 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 <div class="menu" id="menu" aria-hidden="true">
   <div class="wrap">
     <div class="mh"><a class="brand" href="/"><svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor"><circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/><ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="wm">CENTRUL360<span>.COM</span></span></a><button type="button" class="mx" data-menu-close aria-label="Închide meniul"><i></i><i></i></button></div>
+    <a class="bf-pill bf-menu" href="/oferte" data-menu-close><svg class="bfi" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bfgC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe3d9"/><stop offset=".45" stop-color="#eab5a5"/><stop offset="1" stop-color="#cf8f7d"/></linearGradient></defs><path fill="url(#bfgC)" d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M7.2 6.4a6 6 0 0 1 9.2 1.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/><g fill="#3a1a10"><circle cx="9.3" cy="9.3" r="1.55"/><circle cx="14.7" cy="14.7" r="1.55"/></g><path d="M15.2 8.8 8.8 15.2" stroke="#3a1a10" stroke-width="1.7" stroke-linecap="round"/></svg><span>Ofertele de Black Friday</span></a>
     <div class="mg">
       <div><span class="eye">Corp</span><a href="/grasime-localizata">Grăsime localizată</a><a href="/celulita">Celulită</a><a href="/tonifiere-musculara">Tonifiere musculară</a><a href="/detox-drenaj">Detox și drenaj</a></div>
       <div><span class="eye">Față</span><a href="/riduri-linii-fine">Riduri și lifting</a><a href="/gusa-barbie-dubla">Gușă și bărbie dublă</a><a href="/pete-pigmentare">Pete și pigmentare</a><a href="/ten-problematic">Ten problematic</a><a href="/ten-lipsit-de-stralucire">Ten fără strălucire</a></div>
@@ -134,11 +136,12 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 function c(s){var o={};G.forEach(function(k){o[k]=s});if(window.gtag)gtag('consent','update',o)}
 function get(){try{var x=JSON.parse(localStorage.getItem(K)||'null');if(x&&Date.now()-x.at<1.577e10)return x.v}catch(e){}return''}
 function yes(){window.C360_CONSENT=true;c('granted');if(window.fbq&&!window.__fbl){window.__fbl=1;var s=document.createElement('script');s.async=1;s.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(s)}}
-function show(){b.hidden=false;requestAnimationFrame(function(){b.classList.add('in')})}
+function show(){b.hidden=false;document.body.classList.add('ck-open');requestAnimationFrame(function(){b.classList.add('in')})}
 var v=get();if(v==='y')yes();else if(!v)show();
-b.addEventListener('click',function(e){var t=e.target.closest('[data-ck]');if(!t)return;var y=t.getAttribute('data-ck')==='y';try{localStorage.setItem(K,JSON.stringify({v:y?'y':'n',at:Date.now()}))}catch(x){}b.classList.remove('in');setTimeout(function(){b.hidden=true},600);if(y)yes();else{window.C360_CONSENT=false;c('denied')}});
+b.addEventListener('click',function(e){var t=e.target.closest('[data-ck]');if(!t)return;var y=t.getAttribute('data-ck')==='y';try{localStorage.setItem(K,JSON.stringify({v:y?'y':'n',at:Date.now()}))}catch(x){}b.classList.remove('in');document.body.classList.remove('ck-open');setTimeout(function(){b.hidden=true},600);if(y)yes();else{window.C360_CONSENT=false;c('denied')}});
 document.addEventListener('click',function(e){if(e.target.closest('[data-cookies]')){e.preventDefault();show()}})})();</script>
 <script src="/v2/kit.js" defer></script>
+<script>/* the before/after pictures in the moving rows load at once (lazy ones never started on phones) */addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.cases img').forEach(function(i){i.loading='eager'});/* an offer's title never starts a line with its dot (Epilare laser · Full Body) */var nb=function(){document.querySelectorAll('.slip h3').forEach(function(h){if(h.textContent.indexOf(' · ')>-1)h.textContent=h.textContent.split(' · ').join(' · ')})};nb();document.querySelectorAll('.offers').forEach(function(o){new MutationObserver(nb).observe(o,{childList:true})})});</script>
 <script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>
 </body>
