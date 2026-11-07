@@ -743,4 +743,12 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
 .sx-s-money .sx-s-lbl{ margin-bottom:-12px; }
 .sx-s-money .sx-mcard{ margin-top:8px; }
 .sx-s-money .sx-acts{ margin-top:4px; }
-@media (max-width:699px){ .sx-s-money .sx-s-lbl{ margin-bottom:-6px; } .sx-s-money .sx-mcard{ margin-top:8px; } .sx-p-logo{ margin-top:48px; } }
+@media (max-width:699px){ .sx-s-money .sx-s-lbl{ margin-bottom:-6px; } .sx-s-money .sx-mcard{ margin-top:8px; } }
+/* the phone's scene breathes (George, 8.11): taller between the cosmeticians and the prism and between the prism and the number,
+   the bands longer and their fan wider (portal-nou-prism.js), the cards a little roomier */
+@media (max-width:699px){
+  .sx-p-row{ padding:8px 0 14px; }
+  .sx-p-people li{ padding:10px 16px 10px 10px; gap:10px; }
+  .sx-p-logo{ width:60px; margin-top:clamp(84px,24vw,104px); }
+  .sx-s-money{ margin-top:clamp(36px,10vw,48px) !important; }
+}

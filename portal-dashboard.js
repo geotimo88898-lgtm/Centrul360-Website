@@ -28,10 +28,9 @@
   // an average with one decimal (23,9 isn't 24)
   const avg1 = (v) => (Number(v) || 0).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   function greeting() {
-    const h = new Date().getHours();
-    return h < 5 ? 'Noapte bună' : h < 12 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara';
+    return K.salut(); // the hour in Romania (portal-kit.js)
   }
-  function dayIcon() { const h = new Date().getHours(); return h < 7 ? 'moon' : h < 11 ? 'sunrise' : h < 19 ? 'sun' : 'moon'; }
+  function dayIcon() { const h = K.roHour(); return h < 7 ? 'moon' : h < 11 ? 'sunrise' : h < 19 ? 'sun' : 'moon'; }
 
   function sumBy(list, from, to) {
     return list.filter((s) => s.date >= from && s.date <= to).reduce((a, s) => a + Number(s.amount || 0), 0);

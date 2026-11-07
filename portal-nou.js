@@ -108,10 +108,10 @@
     var key = 'c360_nou_hi_' + (me.id || '');
     if (store.get(key) === today) return;
     store.set(key, today);
-    var h = new Date().getHours();
-    var hi = h < 11 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara';
+    var h = window.K.roHour(); // the hour in Romania (portal-kit.js)
+    var hi = window.K.salut(h);
     var first = String(me.name).split(/\s+/)[0];
-    var line = h < 11 ? 'O zi frumoasă începe acum.' : h < 18 ? 'Hai să facem o zi bună.' : 'Încă puțin și e gata ziua.';
+    var line = h >= 5 && h < 12 ? 'O zi frumoasă începe acum.' : h >= 12 && h < 18 ? 'Hai să facem o zi bună.' : 'Încă puțin și e gata ziua.';
     var el = document.createElement('div');
     el.className = 'n-hello';
     el.setAttribute('role', 'status');

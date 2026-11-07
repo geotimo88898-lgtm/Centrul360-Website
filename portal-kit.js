@@ -157,6 +157,10 @@
   // Local-time ISO date (the old portal used UTC, which flips to "tomorrow" after midnight UTC).
   const iso = (d) => { d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   const today = () => iso(new Date());
+  // the hour in Romania (Europe/Bucharest), whatever the device's clock zone, and the greeting for it:
+  // 05-11 „Bună dimineața”, 12-17 „Bună ziua”, 18-04 „Bună seara” (late at night too: „Noapte bună” sounds like leaving)
+  const roHour = (d) => { try { return Number(new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', hour: 'numeric', hourCycle: 'h23' }).format(d || new Date())) % 24; } catch (e) { return (d || new Date()).getHours(); } };
+  const salut = (h) => { h = h == null ? roHour() : h; return h >= 5 && h < 12 ? 'Bună dimineața' : h >= 12 && h < 18 ? 'Bună ziua' : 'Bună seara'; };
   const parse = (s) => new Date(String(s).slice(0, 10) + 'T00:00:00');
   const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
   const monthOf = (s) => String(s || '').slice(0, 7);
@@ -717,6 +721,7 @@
   }
 
   window.K = {
+    roHour, salut,
     on, emit, api, errText, ui, esc, dedash, norm, phoneHit, reduceMotion,
     lei, num, pad, iso, today, parse, addDays, monthOf, thisMonth, addMonths, daysIn, mondayOf, DOW, DOW_S, MON, MON_S,
     dateShort, dateLong, monthLabel, relDay, ago, plural, initials, colorFor, avatar, wa, tel, intlPhone,
