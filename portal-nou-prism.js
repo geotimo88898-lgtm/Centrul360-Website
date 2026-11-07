@@ -92,14 +92,16 @@
     sprites();
     var r = box.getBoundingClientRect(); if (!r.width) return;
     dpr = Math.min(window.innerWidth < 700 ? 1 : 2, window.devicePixelRatio || 1); // a phone draws at 1x: soft light, a quarter of the pixels
-    var w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
-    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px'; }
     var m = model() || { list: [] }, max = Math.max.apply(null, m.list.map(function (x) { return x.sum; }).concat([1]));
     var L = box.querySelector('.sx-p-logo').getBoundingClientRect();
     var ph = phone();
     var T = box.querySelector(ph ? '.sx-s-lbl' : '[data-num]'); if (!T) return; T = T.getBoundingClientRect();
     logo = { x: L.left - r.left + L.width / 2, y: L.top - r.top + L.height / 2, r: L.width / 2 };
     out = ph ? { x: r.width / 2, y: T.top - r.top - 8 } : { x: T.left - r.left - 18, y: T.top - r.top + T.height * 0.55 };
+    // on a phone the light only lives between the chips and the number: the canvas stops there (fewer pixels to composite each frame)
+    var ch = ph ? Math.min(r.height, out.y + 34) : r.height;
+    var w = Math.round(r.width * dpr), h = Math.round(ch * dpr);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv.style.width = r.width + 'px'; cv.style.height = ch + 'px'; }
     beams = Array.prototype.map.call(box.querySelectorAll('[data-people] li[data-id]'), function (li) {
       var u = li.querySelector('u').getBoundingClientRect();
       var x = m.list.find(function (p) { return p.id === li.dataset.id; }) || { sum: 0, name: '' };
@@ -132,10 +134,14 @@
     var u = 1 - t;
     return { x: u * u * u * b.x0 + 3 * u * u * t * cx + 3 * u * t * t * c2x + t * t * t * logo.x, y: u * u * u * b.y0 + 3 * u * u * t * cy + 3 * u * t * t * c2y + t * t * t * logo.y };
   }
+  var lastF = 0;
   function frame(now) {
     raf = 0;
     if (!box || !box.isConnected || !visible || document.hidden || !logo) return;
     var W = cv.width / dpr, H = cv.height / dpr, t = now / 1000, small = W < 700;
+    // a phone draws the light at 30 fps (every other frame, everything moves twice as far): the scroll keeps the other half
+    if (small && now - lastF < 28) { raf = requestAnimationFrame(frame); return; }
+    var sp = small ? 2 : 1; lastF = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
@@ -147,9 +153,9 @@
       for (var k = small ? 1 : 0; k < SPEC.length; k += small ? 2 : 1) { ctx.globalAlpha = 0.75 * br; ctx.strokeStyle = SPEC[k]; ctx.stroke(b.bands[k]); }
       ctx.globalAlpha = 0.55 * br; ctx.lineWidth = Math.max(0.8, b.w * 0.6); ctx.strokeStyle = '#ffffff'; ctx.stroke(b.core);
       // light running along it
-      if (b.parts.length < (small ? 2 : 6) && Math.random() < b.rate * 5) b.parts.push({ t: 0, v: 0.006 + Math.random() * 0.006 + b.rate * 0.02, s: 6 + Math.random() * 8 });
+      if (b.parts.length < (small ? 2 : 6) && Math.random() < b.rate * 5 * sp) b.parts.push({ t: 0, v: 0.006 + Math.random() * 0.006 + b.rate * 0.02, s: 6 + Math.random() * 8 });
       for (var j = b.parts.length - 1; j >= 0; j--) {
-        var p = b.parts[j]; p.t += p.v; if (p.t >= 1) { b.parts.splice(j, 1); continue; }
+        var p = b.parts[j]; p.t += p.v * sp; if (p.t >= 1) { b.parts.splice(j, 1); continue; }
         var q = pt(b, p.t); ctx.globalAlpha = Math.sin(p.t * Math.PI) * (0.5 + b.k * 0.5); ctx.drawImage(spr, q.x - p.s, q.y - p.s, p.s * 2, p.s * 2);
       }
     });
@@ -165,12 +171,12 @@
     var G = logo.r * (2.6 + flash * 2); ctx.globalAlpha = 0.55 + flash * 0.45; ctx.drawImage(spr, logo.x - G, logo.y - G, G * 2, G * 2);
     // a payment's pulse: from her, through the prism, to the number; there the stage takes over
     for (var c = comets.length - 1; c >= 0; c--) {
-      var cm = comets[c]; cm.t += 0.022; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
+      var cm = comets[c]; cm.t += 0.022 * sp; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
       var q2 = cm.t < 1 ? pt(cm.b, cm.t) : { x: logo.x + (out.x - logo.x) * (cm.t - 1), y: logo.y + (out.y - logo.y) * (cm.t - 1) };
       if (cm.t >= 1 && !cm.hit) { cm.hit = 1; flash = 1; }
       ctx.globalAlpha = 1; ctx.drawImage(spr, q2.x - 30, q2.y - 30, 60, 60);
     }
-    flash *= 0.94;
+    flash *= small ? 0.88 : 0.94;
     ctx.globalCompositeOperation = 'source-over';
     raf = requestAnimationFrame(frame);
   }
