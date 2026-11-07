@@ -1,0 +1,418 @@
+<!--meta
+title: Prețuri | Lista completă de prețuri · Centrul360 Timișoara și Arad
+description: Prețuri transparente pentru tratamente faciale, HIFU, radiofrecvență, Liposonix, EMS, cavitație și epilare laser, în Timișoara și Arad. Prima consultație este gratuită.
+-->
+<style>
+/* Prețuri: the full price list, with a search, a sticky row of categories and the offer prices live from Admin */
+.prt-tools{ display:flex; justify-content:center; margin:0 auto 18px; }
+.prt-q{ position:relative; display:flex; align-items:center; width:min(560px,100%); height:58px; padding:0 20px 0 52px; border-radius:999px; background:rgba(255,255,255,.85);
+  box-shadow:0 0 0 1px var(--line2) inset, 0 16px 34px -24px rgba(11,40,38,.35); transition:box-shadow .5s var(--e); }
+.prt-q:focus-within{ box-shadow:0 0 0 1px rgba(20,165,150,.45) inset, 0 0 0 5px rgba(20,165,150,.1), 0 16px 34px -24px rgba(11,40,38,.35); }
+.prt-q svg{ position:absolute; left:20px; width:20px; height:20px; color:var(--mute); }
+.prt-q input{ width:100%; height:100%; border:0; outline:0; background:none; font:500 16px/1 'Inter',sans-serif; color:var(--ink); letter-spacing:-.01em; }
+.prt-q input::placeholder{ color:var(--mute2); }
+.prt-sent{ height:0; }
+.prt-nav{ position:sticky; top:10px; z-index:40; display:flex; justify-content:center; margin:0 auto 8px; pointer-events:none; }
+.prt-nav.prt-anim{ transition:transform .6s var(--e); }
+.prt-chips{ pointer-events:auto; display:flex; gap:2px; max-width:100%; overflow-x:auto; padding:4px; border-radius:999px; scrollbar-width:none; overscroll-behavior-x:contain;
+  background:rgba(255,255,255,.78); -webkit-backdrop-filter:blur(18px) saturate(180%); backdrop-filter:blur(18px) saturate(180%); box-shadow:0 0 0 1px var(--line2) inset, 0 12px 30px -20px rgba(11,40,38,.35); }
+.prt-chips::-webkit-scrollbar{ display:none; }
+.prt-chips a{ flex:none; display:inline-flex; align-items:center; height:40px; padding:0 15px; border-radius:999px; font-size:14px; font-weight:600; letter-spacing:-.01em; color:var(--mute); text-decoration:none; white-space:nowrap;
+  -webkit-tap-highlight-color:transparent; transition:color .3s, background-color .45s var(--e), box-shadow .45s var(--e); }
+.prt-chips a:hover{ color:var(--ink); }
+.prt-chips a[aria-current]{ color:var(--ink); background:#fff; box-shadow:0 1px 2px rgba(11,11,13,.08), 0 8px 18px -10px rgba(11,40,38,.3); }
+.prt-none{ text-align:center; color:var(--mute); margin:56px auto 0; max-width:28rem; }
+.prt-grp{ padding-top:clamp(56px,7vw,88px); scroll-margin-top:90px; }
+.prt-gh{ display:grid; gap:10px; margin-bottom:24px; max-width:44rem; }
+.prt-gh h3{ font-size:clamp(1.55rem,2.8vw,2.1rem); letter-spacing:-.04em; display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
+.prt-gh p{ color:var(--mute); font-size:16px; text-wrap:pretty; }
+.prt-loc{ display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:999px; font-size:13px; font-weight:600; letter-spacing:0; color:var(--ink2); background:rgba(11,11,13,.04); box-shadow:0 0 0 1px var(--line) inset; }
+.prt-loc svg{ width:14px; height:14px; color:var(--teal2); }
+.prt-list{ padding:4px 32px; }
+.prt-it{ display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,360px); gap:12px 48px; padding:26px 0; border-bottom:1px solid var(--line); }
+.prt-it:last-child{ border-bottom:0; }
+.prt-nm b{ font-size:17px; font-weight:600; letter-spacing:-.015em; }
+.prt-nm .prt-d{ display:inline-block; margin-left:10px; font-size:13px; color:var(--mute2); white-space:nowrap; }
+.prt-flag{ display:inline-flex; align-items:center; height:22px; margin-left:10px; padding:0 9px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--teal2); background:var(--tint); vertical-align:2px; }
+.prt-nm p{ margin-top:6px; color:var(--mute); font-size:15px; line-height:1.55; text-wrap:pretty; }
+.prt-tr{ display:grid; gap:2px; align-content:start; }
+.prt-tr > div{ display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:6px 0; font-size:15px; }
+.prt-tr span{ color:var(--mute); }
+.prt-tr span i{ font-style:normal; font-size:13px; color:var(--mute2); margin-left:4px; }
+.prt-tr b{ font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--ink); }
+.prt-tr .prt-of{ flex-wrap:wrap; padding:12px 14px; margin:2px -14px 6px; border-radius:16px; background:var(--tint); }
+.prt-of span{ color:var(--ink2); font-weight:500; }
+.prt-pct{ font-style:normal; font-size:12px; font-weight:700; color:var(--teal2); margin-left:6px; }
+.prt-of s, .prt-z s{ color:var(--mute2); font-weight:400; margin-right:8px; }
+.prt-of > b{ margin-left:auto; }
+.prt-bk{ display:inline-flex; align-items:center; gap:6px; padding:4px 0 0; border:0; background:none; cursor:pointer; font-size:14px; font-weight:600; color:var(--teal2); }
+.prt-bk .ar{ width:15px; height:15px; transition:transform .5s var(--e); }
+.prt-bk:hover .ar{ transform:translateX(4px); }
+.prt-of .prt-bk{ flex-basis:100%; justify-content:flex-start; }
+.prt-off,.prt-x{ display:none !important; }
+.prt-seg{ display:inline-flex; gap:2px; padding:4px; margin:0 0 20px; border-radius:999px; background:rgba(11,11,13,.04); box-shadow:0 0 0 1px var(--line) inset; }
+.prt-seg button{ height:40px; padding:0 22px; border:0; border-radius:999px; background:transparent; color:var(--mute); font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:color .3s, background-color .45s var(--e), box-shadow .45s var(--e); }
+.prt-seg button[aria-pressed="true"]{ color:var(--ink); background:#fff; box-shadow:0 1px 2px rgba(11,11,13,.08), 0 8px 18px -10px rgba(11,40,38,.3); }
+.prt-epi + .prt-epi{ margin-top:20px; }
+.prt-cap{ padding:22px 0 8px; font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--mute2); }
+.prt-z{ display:grid; grid-template-columns:minmax(0,1fr) 70px auto; align-items:baseline; gap:14px; padding:15px 0; border-top:1px solid var(--line); font-size:16px; }
+.prt-z > span{ color:var(--ink); font-weight:500; }
+.prt-z > span small{ display:block; margin-top:2px; font-size:13px; font-weight:400; color:var(--mute2); }
+.prt-z > small{ font-size:13px; color:var(--mute2); white-space:nowrap; }
+.prt-z > b{ font-weight:600; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.prt-epi[data-g="f"] [data-m], .prt-epi[data-g="m"] [data-f]{ display:none; }
+.prt-epi[data-g="f"] .prt-f0, .prt-epi[data-g="m"] .prt-m0{ display:none; }
+.prt-epo .prt-z{ grid-template-columns:minmax(0,1fr) auto; }
+.prt-epo .prt-bk{ grid-column:1 / -1; padding:0; }
+.prt-fn{ display:grid; gap:12px; margin-top:24px; }
+.prt-fn p{ display:flex; gap:12px; align-items:flex-start; font-size:15px; color:var(--mute); line-height:1.55; }
+.prt-fn svg.ic{ flex:none; width:20px; height:20px; margin-top:1px; color:var(--teal2); }
+.prt-fn a{ color:var(--ink); font-weight:600; text-decoration:none; white-space:nowrap; }
+.prt-fn a .ar{ display:inline-block; width:15px; height:15px; vertical-align:-2px; margin-left:4px; transition:transform .5s var(--e); }
+.prt-fn a:hover .ar{ transform:translateX(4px); }
+.prt-pk{ display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:clamp(64px,8vw,96px); padding:clamp(28px,4vw,44px); }
+.prt-pk h3{ font-size:clamp(1.4rem,2.4vw,1.8rem); letter-spacing:-.035em; margin:12px 0 8px; }
+.prt-pk p{ color:var(--mute); }
+.prt-ends{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; }
+@media (max-width:820px){
+  .prt-it{ grid-template-columns:1fr; gap:14px; }
+  .prt-pk{ flex-direction:column; align-items:flex-start; }
+}
+@media (max-width:640px){
+  .prt-list{ padding:2px 20px; }
+  .prt-it{ padding:22px 0; }
+  .prt-tr .prt-of{ margin:2px -10px 6px; padding:12px 10px; }
+  .prt-nav{ margin-inline:-6px; }
+  .prt-chips a{ padding:0 13px; }
+  .prt-z{ grid-template-columns:minmax(0,1fr) 58px auto; gap:10px; font-size:15px; }
+  .prt-seg{ display:flex; }
+  .prt-seg button{ flex:1; }
+  .prt-pk .btn{ width:100%; }
+  .prt-ends{ width:100%; }
+  .prt-ends .btn{ width:100%; }
+}
+</style>
+
+<section class="hero"><div class="wrap">
+  <div class="txt">
+    <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
+    <h1 data-words>Prețuri <em>transparente</em>, rezultate reale.</h1>
+    <p class="lead rv">Toate tratamentele, cu prețul pe ședință și pe pachete de ședințe. Prima consultație este gratuită.</p>
+    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#lista">Vezi lista</a></div>
+    <div class="meta rv">
+      <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
+      <div class="slot" data-slot></div>
+    </div>
+  </div>
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
+    <div class="bubble" aria-live="polite"></div>
+    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Salut! Eu sunt Nuki. Aici e toată lista de prețuri.", "Caută tratamentul sau zona. Prețul e chiar lângă.", "La mai multe ședințe, prețul pe ședință scade.", "Prima consultație e gratuită. Și masajul facial e cadou.", "Mai apasă o dată. Îmi place."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/fisa.webp" alt="Nuki cu fișa de prețuri" width="340" height="340"></span></button>
+    <span class="shadow"></span>
+  </div>
+</div></section>
+
+<section class="s" id="lista" style="padding-top:clamp(40px,6vw,72px)"><div class="wrap">
+  <div class="head rv"><span class="eye">Lista de prețuri</span><h2>Tot ce facem, <em>cu prețul lângă.</em></h2><p class="lead">EMS, împachetarea la cald și epilarea laser sunt doar în Timișoara. Restul tratamentelor sunt în ambele clinici.</p></div>
+  <div class="prt-tools rv"><label class="prt-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" placeholder="Caută: axile, HIFU, gușă, celulită" aria-label="Caută un tratament sau o zonă" enterkeyhint="search" autocomplete="off" spellcheck="false"></label></div>
+  <div class="prt-body">
+  <div class="prt-sent" aria-hidden="true"></div>
+  <nav class="prt-nav" aria-label="Categorii de tratamente"><div class="prt-chips">
+    <a href="#faciale" data-to="faciale">Faciale</a><a href="#hifu" data-to="hifu">HIFU</a><a href="#radiofrecventa" data-to="radiofrecventa">Radiofrecvență</a><a href="#rfsculpt" data-to="rfsculpt">RF Sculpt</a><a href="#liposonix" data-to="liposonix">Liposonix</a><a href="#ems" data-to="ems">EMS</a><a href="#cavitatie" data-to="cavitatie">Cavitație</a><a href="#impachetare" data-to="impachetare">Împachetare</a><a href="#epilare" data-to="epilare">Epilare laser</a>
+  </div></nav>
+  <p class="prt-none" hidden></p>
+
+  <div class="prt-grp" id="faciale">
+    <div class="prt-gh rv"><h3>Tratamente faciale</h3><p>Proceduri faciale pentru hidratare, anti-aging, ten sensibil sau acneic și regenerare profundă.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>Tratament de hidratare profundă</b><span class="prt-d">60 min</span><p>Reface nivelul optim de apă al pielii și întărește bariera cutanată.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>350 lei</b></div><div><span>2 ședințe <i>-11%</i></span><b>620 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1090 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Tratament intensiv antirid</b><span class="prt-d">60 min</span><p>Diminuează ridurile și liniile fine, stimulând regenerarea pielii.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>370 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>650 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1150 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Redness Relief Protocol</b><span class="prt-d">50 min</span><p>Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>300 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>530 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>940 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Sebum Off Protocol</b><span class="prt-d">110 min</span><p>Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>420 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>740 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1310 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Tratament Restart</b><span class="prt-flag prt-off">Ofertă</span><span class="prt-d">50 min</span><p>Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.</p></div>
+        <div class="prt-tr"><div class="prt-of prt-off" data-prt-offer="facial-restart"><span>Ofertă · 1 ședință<em class="prt-pct">-37%</em></span><b><s>300 lei</s>190 lei</b><button type="button" class="prt-bk" data-book data-book-service="facial-restart">Rezervă oferta{{arrow}}</button></div><div><span>2 ședințe <i>-10%</i></span><b>540 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Microneedling Exozomi PDRN</b><span class="prt-d">60 min</span><p>Regenerare prin microperforații: cicatrici post-acneice, textură și fermitate.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>520 lei</b></div><div><span>3 ședințe <i>-19%</i></span><b>1290 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Microneedling Corector Periocular</b><span class="prt-d">30 min</span><p>Țintit pe zona ochilor: cearcăne, hidratare și linii fine.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>520 lei</b></div><div><span>3 ședințe <i>-19%</i></span><b>1290 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="hifu">
+    <div class="prt-gh rv"><h3>HIFU</h3><p>Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului facial și corporal.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>O zonă mică facială</b><span class="prt-d">20 min</span><p>Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>290 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">90 min</span><p>Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>1020 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>1790 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>HIFU + RF Sculpt</b><span class="prt-flag prt-off">Ofertă</span><span class="prt-d">45 zile</span><p>Program complet gușă: 3× HIFU gușă + 5× RF Sculpt, plan personalizat și monitorizarea evoluției.</p></div>
+        <div class="prt-tr"><div class="prt-of prt-off" data-prt-offer="hifu-program-complet"><span>Ofertă · Program complet<em class="prt-pct">-41%</em></span><b><s>1690 lei</s>990 lei</b><button type="button" class="prt-bk" data-book data-book-service="hifu-program-complet">Rezervă oferta{{arrow}}</button></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">50 min</span><p>Abdomen, brațe, coapse, gambe, zona lombară, zona sutien.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>620 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>1090 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="radiofrecventa">
+    <div class="prt-gh rv"><h3>Radiofrecvență</h3><p>Energie termică controlată: stimulează colagenul și elastina pentru fermitate, reducerea ridurilor și a celulitei.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>O zonă mică facială</b><span class="prt-d">15 min</span><p>Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>170 lei</b></div><div><span>4 ședințe <i>-15%</i></span><b>580 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">30 min</span><p>Laxitate la nivelul întregii fețe, riduri și pierderea elasticității.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>280 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>880 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">30 min</span><p>Abdomen, brațe, coapse: celulită, fermitate și depozite mici de grăsime.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>280 lei</b></div><div><span>4 ședințe <i>-12%</i></span><b>990 lei</b></div><div><span>6 ședințe <i>-26%</i></span><b>1250 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="rfsculpt">
+    <div class="prt-gh rv"><h3>RF Sculpt</h3><p>Radiofrecvență + masaj modelator pentru rezultate accelerate: remodelare, tonifiere și drenaj.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>Gușă + Contur Mandibular</b><span class="prt-d">30 min</span><p>Reduce gușa și redefinește linia mandibulei.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>210 lei</b></div><div><span>4 ședințe <i>-18%</i></span><b>690 lei</b></div><div><span>6 ședințe <i>-27%</i></span><b>890 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">90 min</span><p>Tonifiere și revitalizare la nivelul întregii fețe.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>350 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1090 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>1470 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="liposonix">
+    <div class="prt-gh rv"><h3>Liposonix</h3><p>Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate: remodelare corporală fără recuperare.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-flag prt-off">Ofertă</span><span class="prt-d">45 min</span><p>Abdomen, brațe, coapse, zona lombară: grăsime localizată rezistentă la dietă.</p></div>
+        <div class="prt-tr"><div class="prt-of prt-off" data-prt-offer="liposonix-2zone"><span>Ofertă · 2 zone la preț de una<em class="prt-pct">-50%</em></span><b><s>1280 lei</s>640 lei</b><button type="button" class="prt-bk" data-book data-book-service="liposonix-2zone">Rezervă oferta{{arrow}}</button></div><div><span>2 ședințe <i>-24%</i></span><b>980 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="ems">
+    <div class="prt-gh rv"><h3>Electrostimulare Magnetică (EMS) <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Contracții musculare intense și controlate: tonifiere, fermitate și definirea zonelor corporale.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>O zonă</b><span class="prt-d">30 min</span><p>Abdomen, brațe sau coapse.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>250 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>1050 lei</b></div><div><span>8 ședințe <i>-33%</i></span><b>1340 lei</b></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>2 zone</b><span class="prt-d">60 min</span><p>Două grupe musculare în aceeași ședință.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>390 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>1640 lei</b></div><div><span>8 ședințe <i>-33%</i></span><b>2090 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="cavitatie">
+    <div class="prt-gh rv"><h3>Cavitație</h3><p>Ultrasunete de joasă frecvență pentru reducerea grăsimii localizate și remodelarea siluetei, fără durere, fără recuperare.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>Cavitație + EMS · Timișoara</b><span class="prt-flag prt-off">Ofertă</span><p>O ședință de cavitație + o ședință de electrostimulare (EMS).</p></div>
+        <div class="prt-tr"><div class="prt-of prt-off" data-prt-offer="cavitatie-ems"><span>Ofertă · Cavitație + EMS<em class="prt-pct">-47%</em></span><b><s>530 lei</s>280 lei</b><button type="button" class="prt-bk" data-book data-book-service="cavitatie-ems" data-book-city="Timișoara">Rezervă oferta{{arrow}}</button></div></div></div>
+      <div class="prt-it"><div class="prt-nm"><b>Cavitație 1+1 · Arad</b><span class="prt-flag prt-off">Ofertă</span><p>Două ședințe de cavitație la preț de una.</p></div>
+        <div class="prt-tr"><div class="prt-of prt-off" data-prt-offer="cavitatie-1plus1"><span>Ofertă · 2 ședințe<em class="prt-pct">-50%</em></span><b><s>560 lei</s>280 lei</b><button type="button" class="prt-bk" data-book data-book-service="cavitatie-1plus1" data-book-city="Arad">Rezervă oferta{{arrow}}</button></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="impachetare">
+    <div class="prt-gh rv"><h3>Împachetare la cald <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Tratament relaxant și detoxifiant: stimulează circulația, drenajul și absorbția ingredientelor active.</p></div>
+    <div class="card prt-list rv">
+      <div class="prt-it"><div class="prt-nm"><b>Împachetare la cald</b><span class="prt-d">50 min</span><p>Celulită, retenție de apă și detoxifiere: piele mai netedă și revitalizată.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>190 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>800 lei</b></div><div><span>8 ședințe <i>-33%</i></span><b>1020 lei</b></div></div></div>
+    </div>
+  </div>
+
+  <div class="prt-grp" id="epilare">
+    <div class="prt-gh rv"><h3>Epilare laser · Elysion Pro <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Prețuri per ședință. Pentru rezultat progresiv definitiv sunt necesare în general 6-8 ședințe, în funcție de tipul de păr și de piele.</p></div>
+    <div class="prt-seg rv" role="group" aria-label="Arată prețurile pentru"><button type="button" data-g="f" aria-pressed="true">Femei</button><button type="button" data-g="m" aria-pressed="false">Bărbați</button></div>
+    <div class="card prt-list prt-epi rv" data-g="f">
+      <div class="prt-cap">Zone corporale</div>
+      <div class="prt-z"><span>Axile</span><small>10 min</small><b data-f>120 lei</b><b data-m>140 lei</b></div>
+      <div class="prt-z"><span>Antebrațe</span><small>15 min</small><b data-f>150 lei</b><b data-m>200 lei</b></div>
+      <div class="prt-z"><span>Brațe total</span><small>25 min</small><b data-f>190 lei</b><b data-m>240 lei</b></div>
+      <div class="prt-z"><span>Mâini / Laba piciorului</span><small>10 min</small><b data-f>80 lei</b><b data-m>90 lei</b></div>
+      <div class="prt-z prt-m0"><span>Areole mamare</span><small>5 min</small><b data-f>70 lei</b><b data-m>-</b></div>
+      <div class="prt-z"><span>Piept</span><small>15 min</small><b data-f>150 lei</b><b data-m>210 lei</b></div>
+      <div class="prt-z prt-f0"><span>Umeri</span><small>10 min</small><b data-f>-</b><b data-m>190 lei</b></div>
+      <div class="prt-z"><span>Abdomen</span><small>15 min</small><b data-f>170 lei</b><b data-m>230 lei</b></div>
+      <div class="prt-z prt-m0"><span>Linie bikini</span><small>10 min</small><b data-f>120 lei</b><b data-m>-</b></div>
+      <div class="prt-z prt-m0"><span>Linia albă</span><small>5 min</small><b data-f>80 lei</b><b data-m>-</b></div>
+      <div class="prt-z prt-m0"><span>Inghinal total</span><small>15 min</small><b data-f>220 lei</b><b data-m>-</b></div>
+      <div class="prt-z prt-m0"><span>Fese</span><small>10 min</small><b data-f>160 lei</b><b data-m>-</b></div>
+      <div class="prt-z prt-m0"><span>Labii / Interfesieri</span><small>5 min</small><b data-f>90 lei</b><b data-m>-</b></div>
+      <div class="prt-z"><span>Zona lombară</span><small>15 min</small><b data-f>160 lei</b><b data-m>220 lei</b></div>
+      <div class="prt-z"><span>Spate integral</span><small>25 min</small><b data-f>250 lei</b><b data-m>400 lei</b></div>
+      <div class="prt-z"><span>Picior scurt (până la genunchi)</span><small>20 min</small><b data-f>240 lei</b><b data-m>350 lei</b></div>
+      <div class="prt-z"><span>Picior lung (complet)</span><small>60 min</small><b data-f>390 lei</b><b data-m>530 lei</b></div>
+    </div>
+    <div class="card prt-list prt-epi rv" data-g="f">
+      <div class="prt-cap">Zone faciale</div>
+      <div class="prt-z"><span>O zonă la alegere<small>mustață · bărbie · perciuni · obraji · gât</small></span><small>5 min</small><b data-f>70 lei</b><b data-m>90 lei</b></div>
+      <div class="prt-z"><span>Față complet</span><small>20 min</small><b data-f>200 lei</b><b data-m>240 lei</b></div>
+      <div class="prt-z prt-f0"><span>Contur barbă / gât</span><small>5 min</small><b data-f>-</b><b data-m>160 lei</b></div>
+    </div>
+    <div class="card prt-list prt-epi prt-epo prt-off rv">
+      <div class="prt-cap">Oferte active · o ședință</div>
+      <div data-prt-epo></div>
+    </div>
+    <div class="prt-fn rv">
+      <p><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Seria completă pentru rezultat definitiv (de obicei 6 ședințe) ți-o calculăm gratuit la consultație, pe zonele tale.</span></p>
+      <p><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Epilare laser cu garanție scrisă: dacă părul crește la loc, continuăm gratuit. <a href="{{base}}epilare-laser">Cum funcționează{{arrow}}</a></span></p>
+    </div>
+  </div>
+  </div>
+
+  <div class="card prt-pk rv"><div><span class="eye">Oferte și pachete</span><h3>Ofertele active, cu prețul tăiat</h3><p>Pe pagina Oferte vezi tot ce e la reducere acum, în Timișoara și Arad.</p></div><a class="btn ghost" href="{{base}}oferte">Vezi ofertele{{arrow}}</a></div>
+</div></section>
+
+<section class="s end" style="padding-top:0"><div class="wrap end">
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span>
+    <div class="bubble"></div>
+    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Te aștept la recepție. Prima consultație e gratuită.","Adu-ți întrebările. Eu am lista de prețuri."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/receptie.webp" alt="Nuki la recepție" loading="lazy"></span></button>
+    <span class="shadow"></span>
+  </div>
+  <h2 class="rv">Nu știi de unde să <em>începi?</em></h2>
+  <p class="lead rv">La consultația gratuită îți spunem exact ce ți se potrivește și câte ședințe sunt necesare. Plus masajul facial cadou.</p>
+  <div class="prt-ends rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează-te · Timișoara{{arrow}}</button><button type="button" class="btn ghost" data-book data-book-service="consult" data-book-city="Arad">Programează-te · Arad</button></div>
+  <div class="slot rv" data-slot></div>
+</div></section>
+
+<script>
+/* Prețuri: the offer prices live from Admin (an offer that is no longer active goes, like on the current page),
+   the search, the sticky row of categories that follows the header, and Femei / Bărbați for the laser. */
+(function () {
+  var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var lei = function (n) { return Math.round(n) + ' lei'; };
+  var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); };
+  var groups = $$('.prt-grp'), chips = $$('.prt-chips a'), none = document.querySelector('.prt-none'), input = document.querySelector('.prt-q input');
+
+  // a laser row with no price for the chosen Femei / Bărbați is not shown either
+  var gHid = function (r) { var c = r.closest('.prt-epi[data-g]'); return !!c && r.classList.contains(c.getAttribute('data-g') === 'f' ? 'prt-f0' : 'prt-m0'); };
+  // a row is "off" when its offer is not active (on the row, or on its list for the laser offers);
+  // only the row and its own list count, never the group, so a group can come back after the offers arrive
+  var isOff = function (r) { var l = r.closest('.prt-list'); return r.classList.contains('prt-off') || (!!l && l.classList.contains('prt-off')); };
+  var shown = function (r) { return !isOff(r) && !r.classList.contains('prt-x') && !gHid(r); };
+  // which rows, items, groups are left to show (offers that are not active + the search)
+  function settle() {
+    var q = norm(input && input.value), words = q ? q.split(' ') : [], total = 0;
+    groups.forEach(function (g) {
+      var gname = norm((g.querySelector('h3') || {}).textContent);
+      $$('.prt-it, .prt-z', g).forEach(function (r) {
+        var hay = gname + ' ' + norm(r.textContent);
+        r.classList.toggle('prt-x', words.some(function (w) { return hay.indexOf(w) < 0; }));
+      });
+    });
+    // the laser: a zone found only for the other gender (e.g. „umeri”) switches Femei / Bărbați to it
+    if (q) {
+      var found = $$('#epilare .prt-epi[data-g] .prt-z').filter(function (r) { return !r.classList.contains('prt-x'); });
+      var has = function (x) { return found.some(function (r) { return !r.classList.contains(x === 'f' ? 'prt-f0' : 'prt-m0'); }); };
+      var cur = gender();
+      if (cur && !has(cur) && has(cur === 'f' ? 'm' : 'f')) setG(cur === 'f' ? 'm' : 'f');
+    }
+    groups.forEach(function (g) {
+      $$('.prt-it', g).forEach(function (it) {
+        var tiers = $$('.prt-tr > div', it);
+        it.classList.toggle('prt-off', tiers.length > 0 && tiers.every(function (t) { return t.classList.contains('prt-off'); }));
+      });
+      $$('.prt-list', g).forEach(function (l) {
+        var rows = $$('.prt-it, .prt-z', l);
+        l.classList.toggle('prt-x', rows.length > 0 && !rows.some(shown));
+      });
+      var vis = $$('.prt-it, .prt-z', g).filter(shown).length;
+      var off = !$$('.prt-it, .prt-z', g).some(function (r) { return !isOff(r); });
+      g.classList.toggle('prt-off', off);
+      g.classList.toggle('prt-x', !off && !vis);
+      if (!off) total += vis;
+      var c = chips.filter(function (a) { return a.getAttribute('data-to') === g.id; })[0];
+      if (c) c.classList.toggle('prt-off', off || !vis);
+    });
+    var navEl = document.querySelector('.prt-nav');
+    if (navEl) navEl.classList.toggle('prt-x', !chips.some(function (a) { return !a.classList.contains('prt-off'); }));
+    // the extra notes of the laser follow its group
+    var fn = document.querySelector('#epilare .prt-fn'), seg = document.querySelector('#epilare .prt-seg');
+    var epiRows = $$('#epilare .prt-z').filter(shown).length;
+    if (fn) fn.classList.toggle('prt-x', !!q && !epiRows);
+    if (seg) seg.classList.toggle('prt-x', !!q && !$$('#epilare .prt-epi[data-g] .prt-z').some(function (r) { return !r.classList.contains('prt-x'); }));
+    if (none) { none.hidden = !q || total > 0; none.textContent = 'Nimic pentru „' + (input.value.trim()) + '”. Încearcă alt cuvânt sau întreabă-ne la consultația gratuită.'; }
+    spy();
+  }
+
+  // live: the offers of Admin
+  var EPI = { 'epilare-full-body': 'axile · inghinal total · brațe total · picior lung' };
+  fetch('/api/offers-public').then(function (r) { if (!r.ok) throw new Error('offers'); return r.json(); }).then(function (d) {
+    var byKey = {}; ((d && d.offers) || []).forEach(function (o) { if (o && o.key) byKey[o.key] = o; });
+    $$('[data-prt-offer]').forEach(function (row) {
+      var o = byKey[row.getAttribute('data-prt-offer')], it = row.closest('.prt-it');
+      if (!o) return;
+      row.querySelector('.prt-pct').textContent = '-' + o.discountPercent + '%';
+      row.querySelector('b').innerHTML = (o.priceOld > o.priceNew ? '<s>' + lei(o.priceOld) + '</s>' : '') + lei(o.priceNew);
+      row.classList.remove('prt-off');
+      if (it) $$('.prt-flag', it).forEach(function (f) { f.classList.remove('prt-off'); });
+    });
+    var epi = ((d && d.offers) || []).filter(function (o) { return o && o.category === 'epilare'; });
+    var box = document.querySelector('[data-prt-epo]');
+    if (box && epi.length) {
+      box.innerHTML = epi.map(function (o) {
+        var t = String(o.title || '').replace(/^Epilare laser\s*·\s*/i, '');
+        return '<div class="prt-z"><span>' + esc(t) + (EPI[o.key] ? '<small>' + esc(EPI[o.key]) + '</small>' : '') + '</span><b>' + (o.priceOld > o.priceNew ? '<s>' + lei(o.priceOld) + '</s>' : '') + lei(o.priceNew) + '</b>' +
+          '<button type="button" class="prt-bk" data-book data-book-service="' + esc(o.key) + '" data-book-city="Timișoara">Rezervă oferta{{arrow}}</button></div>';
+      }).join('');
+      box.closest('.prt-epo').classList.remove('prt-off');
+    }
+    settle();
+  }).catch(function () { settle(); });
+
+  // the search
+  if (input) input.addEventListener('input', function () { settle(); });
+
+  // Femei / Bărbați for the laser
+  var seg = document.querySelector('#epilare .prt-seg');
+  function gender() { var c = document.querySelector('#epilare .prt-epi[data-g]'); return c ? c.getAttribute('data-g') : ''; }
+  function setG(x) {
+    if (seg) $$('button', seg).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-g') === x)); });
+    $$('#epilare .prt-epi[data-g]').forEach(function (c) { c.setAttribute('data-g', x); });
+  }
+  if (seg) seg.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    setG(b.getAttribute('data-g')); settle();
+  });
+
+  // the sticky row: it sits under the header when the header is shown, at the top when it hides
+  var nav = document.querySelector('.prt-nav'), sent = document.querySelector('.prt-sent'), top = document.querySelector('.top'), row = document.querySelector('.prt-chips');
+  var lastWant = 0, animT = 0;
+  function full() { var bar = top && top.querySelector('.bar'); return top ? parseFloat(getComputedStyle(top).top) + (bar ? bar.offsetHeight : 58) + 8 : 10; }
+  function want() { return !top || top.classList.contains('away') ? 10 : full(); }
+  function place() {
+    if (!nav || !sent) return;
+    var w = want(), nat = sent.getBoundingClientRect().top;
+    if (w !== lastWant && lastWant) { nav.classList.add('prt-anim'); clearTimeout(animT); animT = setTimeout(function () { nav.classList.remove('prt-anim'); }, 650); }
+    lastWant = w;
+    var t = Math.max(nat, w) - Math.max(nat, 10);
+    nav.style.transform = t > 0.5 ? 'translateY(' + t.toFixed(1) + 'px)' : '';
+  }
+  // which category is on screen
+  function spy() {
+    if (!chips.length) return;
+    var line = (nav ? nav.getBoundingClientRect().bottom : 80) + 40, cur = null;
+    groups.forEach(function (g) { if (!g.classList.contains('prt-off') && !g.classList.contains('prt-x') && g.getBoundingClientRect().top < line) cur = g.id; });
+    chips.forEach(function (a) {
+      var on = a.getAttribute('data-to') === cur;
+      if (on && !a.hasAttribute('aria-current')) {
+        a.setAttribute('aria-current', 'true');
+        if (row && (a.offsetLeft < row.scrollLeft || a.offsetLeft + a.offsetWidth > row.scrollLeft + row.clientWidth)) row.scrollTo({ left: a.offsetLeft - 8, behavior: 'smooth' });
+      } else if (!on) a.removeAttribute('aria-current');
+    });
+  }
+  var ticking = false;
+  var onScroll = function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; place(); spy(); }); };
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  // the header's state changes with the kit's scroll handler; follow it too
+  if (top && 'MutationObserver' in window) new MutationObserver(onScroll).observe(top, { attributes: true, attributeFilter: ['class'] });
+  chips.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var g = document.getElementById(a.getAttribute('data-to')); if (!g) return;
+      e.preventDefault();
+      // land with the title just under the row (the header comes back when scrolling up)
+      var y = g.getBoundingClientRect().top + scrollY + parseFloat(getComputedStyle(g).paddingTop);
+      var off = (y < scrollY ? full() : 10) + (nav ? nav.offsetHeight : 48) + 24;
+      scrollTo({ top: Math.max(0, y - off), behavior: 'smooth' });
+    });
+  });
+  settle(); place();
+})();
+</script>

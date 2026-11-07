@@ -1,0 +1,344 @@
+<!--meta
+title: Rezultate reale înainte și după | Centrul360 Timișoara și Arad
+description: Rezultate reale înainte și după la Centrul360, cu tratamente faciale și corporale non-invazive, în Timișoara și Arad. Fotografii publicate cu acordul clientelor.
+-->
+<style>
+/* Rezultate: the real before / after photos, Față / Corp, a calm lightbox, the cases published from the portal */
+.rez-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:28px 20px; text-align:center; }
+.rez-stats b{ display:block; font-size:clamp(2.7rem,5.4vw,4rem); font-weight:800; letter-spacing:-.055em; line-height:1; font-variant-numeric:tabular-nums; }
+.rez-stats span{ display:block; margin-top:12px; font-size:14px; color:var(--mute); line-height:1.45; }
+.rez-stats .stars{ display:block; margin-top:8px; font-size:12px; }
+.rez-seg{ display:flex; width:max-content; max-width:100%; margin:0 auto clamp(40px,5vw,56px); gap:2px; padding:4px; border-radius:999px; background:rgba(11,11,13,.04); box-shadow:0 0 0 1px var(--line) inset; }
+.rez-seg button{ height:42px; padding:0 20px; border:0; border-radius:999px; background:transparent; color:var(--mute); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:color .3s, background-color .45s var(--e), box-shadow .45s var(--e); }
+.rez-seg button i{ font-style:normal; font-weight:500; color:var(--mute2); margin-left:6px; }
+.rez-seg button[aria-pressed="true"]{ color:var(--ink); background:#fff; box-shadow:0 1px 2px rgba(11,11,13,.08), 0 8px 18px -10px rgba(11,40,38,.3); }
+.rez-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:36px 22px; }
+.rez-c{ margin:0; opacity:0; transform:translateY(26px); transition:opacity 1s var(--e), transform 1s var(--e); }
+.rez-c.rez-in{ opacity:1; transform:none; }
+.rez-x{ display:none !important; }
+.rez-ph{ position:relative; display:block; width:100%; aspect-ratio:4/3; padding:12px; border:0; border-radius:var(--r); background:#f2f5f5; cursor:zoom-in; overflow:hidden; isolation:isolate;
+  box-shadow:0 0 0 1px var(--line) inset, 0 30px 60px -44px rgba(11,40,38,.38); -webkit-tap-highlight-color:transparent; }
+.rez-ph img{ width:100%; height:100%; object-fit:contain; transition:transform 1.3s var(--e); -webkit-user-drag:none; user-select:none; }
+.rez-c:hover .rez-ph img{ transform:scale(1.025); }
+.rez-ph::after{ content:''; position:absolute; inset:0; z-index:1; background:linear-gradient(90deg,#f6fbfa,#eef8f6); transform-origin:100% 50%; transition:transform 1.3s var(--e2); }
+.rez-c.rez-in .rez-ph::after{ transform:scaleX(0); }
+.rez-ph:focus-visible{ outline:2px solid var(--teal); outline-offset:3px; }
+.rez-new{ position:absolute; z-index:2; top:14px; left:14px; height:26px; padding:0 11px; display:inline-flex; align-items:center; border-radius:999px; font-size:12px; font-weight:600; color:var(--ink2); background:rgba(255,255,255,.9); box-shadow:0 0 0 1px var(--line) inset; }
+.rez-c figcaption{ display:grid; gap:4px; padding:16px 6px 0; font-size:15px; }
+.rez-c figcaption b{ font-weight:600; letter-spacing:-.01em; line-height:1.3; }
+.rez-c figcaption span{ color:var(--mute); font-size:14px; line-height:1.4; }
+.rez-say{ margin-inline:auto; width:max-content; max-width:100%; }
+.rez-more{ display:grid; justify-items:center; gap:22px; margin-top:clamp(44px,5vw,64px); }
+.rez-more .btn i{ font-style:normal; font-weight:500; color:var(--mute); }
+.rez-gl{ display:flex; flex-wrap:wrap; justify-content:center; gap:14px 30px; margin-top:36px; }
+/* the lightbox: white glass, the photo exactly as it is, one case at a time */
+.rez-lb{ position:fixed; inset:0; z-index:150; display:flex; align-items:center; justify-content:center; padding:24px; visibility:hidden; opacity:0; transition:opacity .5s var(--e), visibility 0s .5s; }
+.rez-lb.open{ visibility:visible; opacity:1; transition:opacity .5s var(--e); }
+.rez-lb-bg{ position:absolute; inset:0; background:rgba(248,251,251,.84); -webkit-backdrop-filter:blur(24px) saturate(160%); backdrop-filter:blur(24px) saturate(160%); }
+.rez-lb-in{ position:relative; width:min(1180px,100%); max-height:calc(100dvh - 48px); display:grid; grid-template-columns:minmax(0,1.7fr) minmax(290px,1fr); border-radius:32px; overflow:hidden; background:#fff;
+  box-shadow:0 0 0 1px var(--line) inset, 0 60px 120px -50px rgba(11,40,38,.45); transform:translateY(18px) scale(.97); transition:transform .7s var(--e); }
+.rez-lb.open .rez-lb-in{ transform:none; }
+.rez-lb-ph{ position:relative; display:grid; place-items:center; min-height:min(64vh,640px); background:#f2f5f5; touch-action:pan-y; }
+.rez-lb-ph img{ display:block; width:100%; height:100%; max-height:calc(100dvh - 48px); object-fit:contain; padding:18px; transition:opacity .35s var(--e), transform .6s var(--e); -webkit-user-drag:none; user-select:none; }
+.rez-lb-ph img.out{ opacity:0; }
+.rez-lb-info{ display:flex; flex-direction:column; gap:14px; padding:44px 34px 32px; overflow-y:auto; }
+.rez-lb-info h3{ font-size:clamp(1.5rem,2.4vw,1.9rem); letter-spacing:-.04em; }
+.rez-lb-info .m{ color:var(--ink2); font-size:16px; }
+.rez-lb-info .l{ color:var(--mute); font-size:15px; }
+.rez-lb-info .f{ color:var(--mute2); font-size:13px; line-height:1.5; }
+.rez-lb-info .btn{ margin-top:auto; width:100%; }
+.rez-lb-info .more{ align-self:center; }
+.rez-lb-info [hidden]{ display:none !important; }
+.rez-lb-x{ position:absolute; z-index:3; top:14px; right:14px; width:44px; height:44px; border:0; border-radius:50%; background:rgba(255,255,255,.92); box-shadow:0 0 0 1px var(--line2) inset, 0 8px 20px -12px rgba(11,40,38,.4); cursor:pointer; }
+.rez-lb-x i{ position:absolute; left:50%; top:50%; width:16px; height:1.7px; margin:-.85px 0 0 -8px; border-radius:2px; background:var(--ink); }
+.rez-lb-x i:first-child{ transform:rotate(45deg); } .rez-lb-x i:last-child{ transform:rotate(-45deg); }
+.rez-lb-nv{ position:absolute; z-index:2; top:50%; width:46px; height:46px; margin-top:-23px; display:grid; place-items:center; border:0; border-radius:50%; color:var(--ink); background:rgba(255,255,255,.92);
+  box-shadow:0 0 0 1px var(--line2) inset, 0 10px 24px -12px rgba(11,40,38,.45); cursor:pointer; transition:transform .5s var(--e), opacity .3s; }
+.rez-lb-nv:hover{ transform:scale(1.06); }
+.rez-lb-nv:disabled{ opacity:0; pointer-events:none; }
+.rez-lb-nv svg{ width:20px; height:20px; }
+.rez-lb-nv.p{ left:16px; } .rez-lb-nv.n{ right:16px; }
+.rez-lb-k{ position:absolute; z-index:2; left:50%; bottom:16px; transform:translateX(-50%); padding:5px 12px; border-radius:999px; font-size:13px; font-weight:600; color:var(--ink2); background:rgba(255,255,255,.9); box-shadow:0 0 0 1px var(--line) inset; font-variant-numeric:tabular-nums; }
+html.rez-lock{ overflow:hidden; }
+@media (max-width:920px){
+  .rez-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .rez-lb{ padding:0; align-items:flex-end; }
+  .rez-lb-in{ grid-template-columns:1fr; max-height:94dvh; border-radius:28px 28px 0 0; overflow-y:auto; overscroll-behavior:contain; transform:translateY(40px); }
+  .rez-lb-ph{ min-height:0; }
+  .rez-lb-ph img{ max-height:58dvh; padding:14px; }
+  .rez-lb-info{ padding:26px 22px calc(24px + env(safe-area-inset-bottom)); overflow:visible; }
+}
+@media (max-width:640px){
+  .rez-stats{ grid-template-columns:1fr 1fr; gap:36px 12px; }
+  .rez-seg{ width:100%; }
+  .rez-seg button{ flex:1; padding:0 8px; }
+  .rez-grid{ grid-template-columns:1fr; gap:32px; }
+  .rez-c figcaption{ padding-top:14px; }
+  .rez-lb-nv{ width:40px; height:40px; margin-top:-20px; }
+  .rez-lb-nv.p{ left:10px; } .rez-lb-nv.n{ right:10px; }
+  .rez-more .btn{ width:100%; }
+}
+</style>
+
+<section class="hero"><div class="wrap">
+  <div class="txt">
+    <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
+    <h1 data-words>Transformări reale, <em>înainte și după.</em></h1>
+    <p class="lead rv">Rezultate obținute cu tratamente non-invazive, ședință cu ședință. Fotografii reale, publicate cu acordul clientelor. Fără filtre, fără promisiuni goale.</p>
+    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Vreau rezultate ca acestea{{arrow}}</button><a class="btn ghost" href="#galerie">Vezi galeria</a></div>
+    <div class="meta rv">
+      <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
+      <div class="slot" data-slot></div>
+    </div>
+  </div>
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
+    <div class="bubble" aria-live="polite"></div>
+    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Salut! Eu sunt Nuki. Aici sunt pozele reale din clinică.", "Fără filtre. Doar înainte și după.", "Fiecare poză e publicată cu acordul clientei.", "Apasă pe o poză ca s-o vezi mare.", "Mai apasă o dată. Zâmbește!"]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/aparat-foto.webp" alt="Nuki cu aparatul foto" width="340" height="340"></span></button>
+    <span class="shadow"></span>
+  </div>
+</div></section>
+
+<section class="s" style="padding:clamp(24px,4vw,48px) 0 0"><div class="wrap">
+  <div class="rez-stats rv">
+    <div><b data-count="40">40</b><span>cazuri reale, cu acordul clientelor</span></div>
+    <div><b data-count="5.0">5,0</b><span>nota pe Google</span></div>
+    <div><b data-count="300" data-suffix="+">300+</b><span>recenzii Google</span></div>
+    <div><b data-count="2">2</b><span>clinici, Timișoara și Arad</span></div>
+  </div>
+</div></section>
+
+<section class="s" id="galerie"><div class="wrap">
+  <div class="head rv"><span class="eye">Galeria de rezultate</span><h2>Înainte și după, <em>caz cu caz.</em></h2><p class="lead">Filtrează după zonă. Fotografii reale ale clientelor Centrul360, publicate cu acordul lor.</p></div>
+  <div class="rez-seg rv" role="group" aria-label="Filtrează rezultatele"><button type="button" data-a="" aria-pressed="true">Toate<i></i></button><button type="button" data-a="fata" aria-pressed="false">Față<i></i></button><button type="button" data-a="corp" aria-pressed="false">Corp<i></i></button></div>
+  <div class="rez-grid">
+    <figure class="rez-c" data-a="corp" data-n="01"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen total, Arad"><img src="/brand_asset/catalog/cazul-01-hifu-abdomen-total.webp" alt="Înainte și după: HIFU abdomen total, Arad" loading="lazy" decoding="async" width="1400" height="918"></button><figcaption><b>HIFU abdomen total</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="02"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-02-hifu-gusa.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1391" height="1400"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="03"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-03-hifu-gusa-tm.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1400" height="765"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="04"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix abdomen, Timișoara"><img src="/brand_asset/catalog/cazul-04-liposonix-abdomen.webp" alt="Înainte și după: Liposonix abdomen, Timișoara" loading="lazy" decoding="async" width="1287" height="1400"></button><figcaption><b>Liposonix abdomen</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="05"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix șolduri, Timișoara"><img src="/brand_asset/catalog/cazul-05-liposonix-solduri.webp" alt="Înainte și după: Liposonix șolduri, Timișoara" loading="lazy" decoding="async" width="1400" height="944"></button><figcaption><b>Liposonix șolduri</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="06"><button type="button" class="rez-ph" aria-label="Mărește: HIFU Full Face, Timișoara"><img src="/brand_asset/catalog/cazul-06-hifu-full-face-tm.webp" alt="Înainte și după: HIFU Full Face, Timișoara" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>HIFU Full Face</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="07"><button type="button" class="rez-ph" aria-label="Mărește: HIFU Full Face, Arad"><img src="/brand_asset/catalog/cazul-07-hifu-full-face-arad.webp" alt="Înainte și după: HIFU Full Face, Arad" loading="lazy" decoding="async" width="1031" height="1400"></button><figcaption><b>HIFU Full Face</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="08"><button type="button" class="rez-ph" aria-label="Mărește: Pachet Mini Belly, Timișoara"><img src="/brand_asset/catalog/cazul-08-pachet-mini-belly.webp" alt="Înainte și după: Pachet Mini Belly, Timișoara" loading="lazy" decoding="async" width="1287" height="1400"></button><figcaption><b>Pachet Mini Belly</b><span>Timișoara · 1 ș. Liposonix + 4 ș. EMS</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="09"><button type="button" class="rez-ph" aria-label="Mărește: HIFU laxitate abdomen, Timișoara"><img src="/brand_asset/catalog/cazul-09-hifu-laxitate-abdomen-tm.webp" alt="Înainte și după: HIFU laxitate abdomen, Timișoara" loading="lazy" decoding="async" width="1400" height="944"></button><figcaption><b>HIFU laxitate abdomen</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="10"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix abdomen, Timișoara"><img src="/brand_asset/catalog/cazul-10-liposonix-abdomen-profil.webp" alt="Înainte și după: Liposonix abdomen, Timișoara" loading="lazy" decoding="async" width="1032" height="1400"></button><figcaption><b>Liposonix abdomen</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="11"><button type="button" class="rez-ph" aria-label="Mărește: Tratament facial Restart, Arad"><img src="/brand_asset/catalog/cazul-11-facial-restart-arad.webp" alt="Înainte și după: Tratament facial Restart, Arad" loading="lazy" decoding="async" width="1400" height="944"></button><figcaption><b>Tratament facial Restart</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="12"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen inferior, Arad"><img src="/brand_asset/catalog/cazul-12-hifu-abdomen-inferior-arad.webp" alt="Înainte și după: HIFU abdomen inferior, Arad" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>HIFU abdomen inferior</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="13"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix + EMS, Timișoara"><img src="/brand_asset/catalog/cazul-13-liposonix-ems.webp" alt="Înainte și după: Liposonix + EMS, Timișoara" loading="lazy" decoding="async" width="1032" height="1400"></button><figcaption><b>Liposonix + EMS</b><span>Timișoara · 1 ș. Liposonix + 1 ș. EMS</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="14"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix abdomen total, Arad"><img src="/brand_asset/catalog/cazul-14-liposonix-abdomen-total-arad.webp" alt="Înainte și după: Liposonix abdomen total, Arad" loading="lazy" decoding="async" width="1031" height="1400"></button><figcaption><b>Liposonix abdomen total</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="15"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-15-hifu-gusa-tm-3.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1287" height="1400"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="16"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-16-hifu-gusa-tm-4.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1283" height="1400"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="17"><button type="button" class="rez-ph" aria-label="Mărește: Pachet Mini Belly, Timișoara"><img src="/brand_asset/catalog/cazul-17-pachet-mini-belly-2.webp" alt="Înainte și după: Pachet Mini Belly, Timișoara" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>Pachet Mini Belly</b><span>Timișoara · 1 ș. Liposonix + 4 ș. EMS</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="18"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-18-hifu-gusa-tm-5.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="19"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen, Arad"><img src="/brand_asset/catalog/cazul-19-hifu-abdomen-arad.webp" alt="Înainte și după: HIFU abdomen, Arad" loading="lazy" decoding="async" width="1400" height="944"></button><figcaption><b>HIFU abdomen</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="20"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix abdomen, Timișoara"><img src="/brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp" alt="Înainte și după: Liposonix abdomen, Timișoara" loading="lazy" decoding="async" width="1286" height="1400"></button><figcaption><b>Liposonix abdomen</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="21"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen, Arad"><img src="/brand_asset/catalog/cazul-21-hifu-abdomen-arad-2.webp" alt="Înainte și după: HIFU abdomen, Arad" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU abdomen</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="22"><button type="button" class="rez-ph" aria-label="Mărește: HIFU periocular, Arad"><img src="/brand_asset/catalog/cazul-22-hifu-periocular-arad.webp" alt="Înainte și după: HIFU periocular, Arad" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU periocular</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="23"><button type="button" class="rez-ph" aria-label="Mărește: HIFU periocular, Timișoara"><img src="/brand_asset/catalog/cazul-23-hifu-periocular-tm.webp" alt="Înainte și după: HIFU periocular, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU periocular</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="24"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gât, Arad"><img src="/brand_asset/catalog/cazul-24-hifu-gat-arad.webp" alt="Înainte și după: HIFU gât, Arad" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU gât</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="25"><button type="button" class="rez-ph" aria-label="Mărește: Liposonix + EMS, Timișoara"><img src="/brand_asset/catalog/cazul-25-liposonix-ems-tm-2.webp" alt="Înainte și după: Liposonix + EMS, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>Liposonix + EMS</b><span>Timișoara · Liposonix + EMS</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="26"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen inferior, Timișoara"><img src="/brand_asset/catalog/cazul-26-hifu-abdomen-inferior-tm.webp" alt="Înainte și după: HIFU abdomen inferior, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU abdomen inferior</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="27"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-27-hifu-gusa-tm-6.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="28"><button type="button" class="rez-ph" aria-label="Mărește: HIFU periocular, Timișoara"><img src="/brand_asset/catalog/cazul-28-hifu-periocular-tm-2.webp" alt="Înainte și după: HIFU periocular, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU periocular</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="29"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, contur mandibular, Timișoara"><img src="/brand_asset/catalog/cazul-29-hifu-gusa-contur-tm.webp" alt="Înainte și după: HIFU gușă, contur mandibular, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU gușă, contur mandibular</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="30"><button type="button" class="rez-ph" aria-label="Mărește: Tratament facial Restart, Arad"><img src="/brand_asset/catalog/cazul-30-facial-restart-arad-2.webp" alt="Înainte și după: Tratament facial Restart, Arad" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>Tratament facial Restart</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="31"><button type="button" class="rez-ph" aria-label="Mărește: Tratament facial Restart, Arad"><img src="/brand_asset/catalog/cazul-31-facial-restart-arad-3.webp" alt="Înainte și după: Tratament facial Restart, Arad" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>Tratament facial Restart</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="32"><button type="button" class="rez-ph" aria-label="Mărește: Tratament facial Restart, Arad"><img src="/brand_asset/catalog/cazul-32-facial-restart-arad-4.webp" alt="Înainte și după: Tratament facial Restart, Arad" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>Tratament facial Restart</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="33"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, Timișoara"><img src="/brand_asset/catalog/cazul-33-hifu-gusa-tm-7.webp" alt="Înainte și după: HIFU gușă, Timișoara" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>HIFU gușă</b><span>Timișoara · 2 ședințe</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="34"><button type="button" class="rez-ph" aria-label="Mărește: RF Sculpt, Arad"><img src="/brand_asset/catalog/cazul-34-rf-sculpt-arad.webp" alt="Înainte și după: RF Sculpt, Arad" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>RF Sculpt</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="35"><button type="button" class="rez-ph" aria-label="Mărește: RF Sculpt, Timișoara"><img src="/brand_asset/catalog/cazul-35-rf-sculpt-tm.webp" alt="Înainte și după: RF Sculpt, Timișoara" loading="lazy" decoding="async" width="1283" height="1400"></button><figcaption><b>RF Sculpt</b><span>Timișoara · 6 ședințe</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="36"><button type="button" class="rez-ph" aria-label="Mărește: HIFU gușă, contur mandibular, Arad"><img src="/brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp" alt="Înainte și după: HIFU gușă, contur mandibular, Arad" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>HIFU gușă, contur mandibular</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="37"><button type="button" class="rez-ph" aria-label="Mărește: RF Sculpt, Timișoara"><img src="/brand_asset/catalog/cazul-37-rf-sculpt-tm-2.webp" alt="Înainte și după: RF Sculpt, Timișoara" loading="lazy" decoding="async" width="1400" height="945"></button><figcaption><b>RF Sculpt</b><span>Timișoara · 3 ședințe</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="38"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen, Arad"><img src="/brand_asset/catalog/cazul-38-hifu-abdomen-arad-3.webp" alt="Înainte și după: HIFU abdomen, Arad" loading="lazy" decoding="async" width="1400" height="944"></button><figcaption><b>HIFU abdomen</b><span>Arad · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="corp" data-n="39"><button type="button" class="rez-ph" aria-label="Mărește: HIFU abdomen, Timișoara"><img src="/brand_asset/catalog/cazul-39-hifu-abdomen-tm.webp" alt="Înainte și după: HIFU abdomen, Timișoara" loading="lazy" decoding="async" width="1400" height="946"></button><figcaption><b>HIFU abdomen</b><span>Timișoara · 1 ședință</span></figcaption></figure>
+    <figure class="rez-c" data-a="fata" data-n="40"><button type="button" class="rez-ph" aria-label="Mărește: RF Sculpt, Timișoara"><img src="/brand_asset/catalog/cazul-40-rf-sculpt-tm-3.webp" alt="Înainte și după: RF Sculpt, Timișoara" loading="lazy" decoding="async" width="1286" height="1400"></button><figcaption><b>RF Sculpt</b><span>Timișoara · 6 ședințe</span></figcaption></figure>
+  </div>
+  <div class="rez-more">
+    <button type="button" class="btn ghost" data-rez-more>Arată mai multe cazuri <i></i></button>
+    <a class="more" href="{{base}}catalog-rezultate">Vezi catalogul complet, cu detalii pe fiecare caz{{arrow}}</a>
+  </div>
+  <p class="fine">Rezultatele reale variază de la o persoană la alta, în funcție de zonă, tip de piele și numărul de ședințe. Fiecare fotografie e publicată cu acordul scris al clientei.</p>
+</div></section>
+
+<section class="s" id="proces" style="padding-top:0"><div class="wrap split">
+  <div>
+    <div class="head left rv"><span class="eye">Cum ajungem la rezultat</span><h2>Trei pași până la <em>rezultatul tău.</em></h2></div>
+    <ol class="tl" data-tl>
+      <li class="rv"><small>Pasul 1 · gratuit</small><b>Consultație gratuită</b><p>Îți evaluăm pielea și obiectivele, fără cost și fără obligații. Stabilim împreună ce ți se potrivește.</p></li>
+      <li class="rv"><small>Pasul 2</small><b>Protocol personalizat</b><p>Aplicăm tratamentul cu echipamente medicale certificate, adaptat exact pentru tine și ritmul tău.</p></li>
+      <li class="rv"><small>Pasul 3</small><b>Rezultate monitorizate</b><p>Documentăm progresul la fiecare ședință, exact ca în galeria de mai sus, cu acordul tău.</p></li>
+    </ol>
+  </div>
+  <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/centimetru.webp" alt="Nuki cu centimetrul" loading="lazy"></span><q>Documentăm progresul la fiecare ședință. Cu acordul tău.</q><small>Nuki</small></div>
+</div></section>
+
+<section class="s" id="recenzii" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Ce spun clientele</span><h2>Rezultatele, <em>în cuvintele lor.</em></h2></div>
+  <div class="score"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><span>Google</span></span><div class="n" data-count="5.0">5,0</div><div class="st"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg></div><span><b data-count="300" data-suffix="+">300+</b> recenzii · Timișoara și Arad</span></div>
+  <div class="revs">
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul a fost exact pe măsura așteptărilor.”</span><p>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</p><small>Maria Muntean · Timișoara</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Cu căldură și profesionalism.”</span><p>„O experiență minunată, d-na Andreea m-a abordat cu căldură și profesionalism.”</p><small>Alina Galuțiu · Arad</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul este vizibil.”</span><p>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</p><small>Simona-Mihaela J. · Timișoara</small></div>
+  </div>
+  <div class="say rez-say rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/stea-google.webp" alt="" loading="lazy"></span><div><q>Toate cele 300+ recenzii sunt pe Google. Le poți citi chiar tu.</q><small>Nuki</small></div></div>
+  <div class="rez-gl rv"><a class="more" href="https://www.google.com/maps/search/?api=1&amp;query=Centrul360%20Strada%20Bucegi%207%20Timisoara" target="_blank" rel="noopener">Recenzii Timișoara pe Google{{arrow}}</a><a class="more" href="https://www.google.com/maps/search/?api=1&amp;query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad" target="_blank" rel="noopener">Recenzii Arad pe Google{{arrow}}</a></div>
+</div></section>
+
+<section class="s end" style="padding-top:0"><div class="wrap end">
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span>
+    <div class="bubble"></div>
+    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Următorul înainte și după poate fi al tău.","Te aștept la consultație. E gratuită!"]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/bucurie.webp" alt="Nuki se bucură" loading="lazy"></span></button>
+    <span class="shadow"></span>
+  </div>
+  <h2 class="rv">Hai să scriem și rezultatul <em>tău.</em></h2>
+  <p class="lead rv">Vino la o consultație gratuită. Îți arătăm cazuri similare cu al tău și îți spunem sincer ce poți aștepta.</p>
+  <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
+  <div class="slot rv" data-slot></div>
+</div></section>
+
+<div class="rez-lb" role="dialog" aria-modal="true" aria-label="Rezultatul mărit" aria-hidden="true">
+  <div class="rez-lb-bg" data-rez-close></div>
+  <div class="rez-lb-in">
+    <div class="rez-lb-ph"><img alt="" draggable="false"><button type="button" class="rez-lb-nv p" aria-label="Rezultatul anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><button type="button" class="rez-lb-nv n" aria-label="Rezultatul următor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><span class="rez-lb-k"></span></div>
+    <div class="rez-lb-info">
+      <span class="eye"></span>
+      <h3></h3>
+      <p class="m"></p>
+      <p class="l"></p>
+      <p class="f">Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.</p>
+      <button type="button" class="btn book" data-book data-book-service="consult">Vreau un rezultat ca acesta{{arrow}}</button>
+      <a class="more" href="{{base}}catalog-rezultate">Detalii în catalog{{arrow}}</a>
+    </div>
+    <button type="button" class="rez-lb-x" data-rez-close aria-label="Închide"><i></i><i></i></button>
+  </div>
+</div>
+
+<script>
+/* Rezultate: Față / Corp, "more" in calm steps, the reveal, the lightbox (keys, swipe), and the cases published
+   from the portal (Contacte → Poze înainte / după → „Publică pe site”), first in the gallery, like on the current page. */
+(function () {
+  var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var grid = document.querySelector('.rez-grid'), seg = document.querySelector('.rez-seg'), moreBtn = document.querySelector('[data-rez-more]');
+  if (!grid) return;
+  var STEP = matchMedia('(max-width:640px)').matches ? 6 : 9, limit = STEP, area = '';
+  var cards = function () { return $$('.rez-c', grid); };
+  var mine = function () { return cards().filter(function (c) { return !area || c.getAttribute('data-a') === area; }); };
+  var plural = function (k) { return k === 1 ? 'un caz' : (k % 100 === 0 || k % 100 >= 20 ? k + ' de cazuri' : k + ' cazuri'); };
+  function counts() {
+    $$('button', seg).forEach(function (b) {
+      var a = b.getAttribute('data-a'), k = cards().filter(function (c) { return !a || c.getAttribute('data-a') === a; }).length;
+      b.querySelector('i').textContent = k;
+    });
+  }
+  function reveal() {
+    var h = innerHeight, n = 0;
+    cards().forEach(function (c) {
+      if (c.classList.contains('rez-in') || c.classList.contains('rez-x')) return;
+      if (c.getBoundingClientRect().top < h * 0.94) { c.style.transitionDelay = (n++ % 3) * 90 + 'ms'; c.classList.add('rez-in'); }
+    });
+  }
+  function apply(fresh) {
+    var list = mine();
+    cards().forEach(function (c) { c.classList.add('rez-x'); if (fresh) { c.classList.remove('rez-in'); } });
+    list.forEach(function (c, i) { if (i < limit) c.classList.remove('rez-x'); });
+    var left = list.length - limit;
+    moreBtn.hidden = left <= 0;
+    moreBtn.querySelector('i').textContent = left > 0 ? '· încă ' + plural(left) : '';
+    requestAnimationFrame(reveal);
+  }
+  seg.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $$('button', seg).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    area = b.getAttribute('data-a'); limit = STEP; apply(true);
+  });
+  moreBtn.addEventListener('click', function () { limit += STEP; apply(false); });
+  var ticking = false;
+  addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; reveal(); }); }, { passive: true });
+  addEventListener('resize', reveal);
+  setTimeout(function () { cards().forEach(function (c) { if (!c.classList.contains('rez-x')) c.classList.add('rez-in'); }); }, 4500);
+
+  // the lightbox: every case of the current filter, one at a time
+  var lb = document.querySelector('.rez-lb'), img = lb.querySelector('.rez-lb-ph img'), info = lb.querySelector('.rez-lb-info');
+  var slides = [], at = 0, opener = null;
+  function build() {
+    slides = [];
+    mine().forEach(function (c) {
+      var t = c.querySelector('figcaption b').textContent, m = c.querySelector('figcaption span').textContent, n = c.getAttribute('data-n'), live = c._case;
+      if (live) live.images.forEach(function (im, k) { slides.push({ card: c, src: im.url, alt: 'Înainte și după: ' + t + (im.label ? ', ' + im.label : ''), t: t, m: m, l: im.label || '', n: '', city: live.location || '', k: k, of: live.images.length }); });
+      else slides.push({ card: c, src: c.querySelector('img').getAttribute('src'), alt: c.querySelector('img').alt, t: t, m: m, l: '', n: n, city: m.split(' · ')[0] });
+    });
+  }
+  function fill(s) {
+    info.querySelector('.eye').textContent = s.n ? 'Cazul ' + s.n : 'Caz nou, din clinică';
+    info.querySelector('h3').textContent = s.t;
+    info.querySelector('.m').textContent = s.m;
+    var l = info.querySelector('.l'); l.textContent = s.l ? s.l + (s.of > 1 ? ' · imaginea ' + (s.k + 1) + ' din ' + s.of : '') : ''; l.hidden = !s.l;
+    var b = info.querySelector('.btn.book'); if (/^(Timișoara|Arad)$/.test(s.city)) b.setAttribute('data-book-city', s.city); else b.removeAttribute('data-book-city');
+    var a = info.querySelector('a.more'); a.hidden = !s.n; if (s.n) a.setAttribute('href', '{{base}}catalog-rezultate#cazul-' + s.n);
+    lb.querySelector('.rez-lb-k').textContent = (at + 1) + ' / ' + slides.length;
+    lb.querySelector('.rez-lb-nv.p').disabled = at === 0;
+    lb.querySelector('.rez-lb-nv.n').disabled = at === slides.length - 1;
+    [slides[at - 1], slides[at + 1]].forEach(function (x) { if (x) { var p = new Image(); p.src = x.src; } });
+  }
+  function go(i, dir) {
+    if (i < 0 || i >= slides.length) return;
+    at = i; var s = slides[i];
+    var swap = function () {
+      img.style.transform = dir ? 'translateX(' + (dir * 18) + 'px)' : '';
+      img.onload = function () { img.classList.remove('out'); img.style.transform = ''; };
+      img.src = s.src; img.alt = s.alt; fill(s);
+      if (img.complete) { img.classList.remove('out'); requestAnimationFrame(function () { img.style.transform = ''; }); }
+    };
+    if (dir && lb.classList.contains('open')) { img.classList.add('out'); setTimeout(swap, 180); } else swap();
+  }
+  function open(card) {
+    build(); opener = card.querySelector('.rez-ph');
+    var i = 0; slides.some(function (s, k) { if (s.card === card) { i = k; return true; } return false; });
+    go(i, 0);
+    lb.classList.add('open'); lb.setAttribute('aria-hidden', 'false'); document.documentElement.classList.add('rez-lock');
+    setTimeout(function () { lb.querySelector('.rez-lb-x').focus({ preventScroll: true }); }, 60);
+  }
+  function close() {
+    lb.classList.remove('open'); lb.setAttribute('aria-hidden', 'true'); document.documentElement.classList.remove('rez-lock');
+    if (opener) opener.focus({ preventScroll: true });
+  }
+  grid.addEventListener('click', function (e) { var b = e.target.closest('.rez-ph'); if (b) open(b.closest('.rez-c')); });
+  $$('[data-rez-close]', lb).forEach(function (x) { x.addEventListener('click', close); });
+  lb.querySelector('.rez-lb-nv.p').addEventListener('click', function () { go(at - 1, -1); });
+  lb.querySelector('.rez-lb-nv.n').addEventListener('click', function () { go(at + 1, 1); });
+  addEventListener('keydown', function (e) {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') go(at - 1, -1); else if (e.key === 'ArrowRight') go(at + 1, 1);
+  });
+  var ph = lb.querySelector('.rez-lb-ph'), sx = 0, sy = 0, down = false;
+  ph.addEventListener('pointerdown', function (e) { if (e.target.closest('button')) return; down = true; sx = e.clientX; sy = e.clientY; });
+  ph.addEventListener('pointerup', function (e) {
+    if (!down) return; down = false; var dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+  });
+  ph.addEventListener('pointercancel', function () { down = false; });
+  // the booking opens over the lightbox; when it starts, the lightbox steps aside
+  info.querySelector('.btn.book').addEventListener('click', function () { setTimeout(close, 400); });
+
+  // the cases published from the portal, only with the client's consent
+  fetch('/api/cases-public').then(function (r) { return r.ok ? r.json() : { cases: [] }; }).then(function (j) {
+    var list = ((j && j.cases) || []).filter(function (c) { return c && c.images && c.images.length; });
+    if (!list.length) return;
+    var ses = function (k) { return k === 1 ? 'o ședință' : k + ' ședințe'; };
+    list.slice().reverse().forEach(function (c) {
+      var isNew = c.publishedAt && (Date.now() - new Date(c.publishedAt).getTime()) < 30 * 864e5;
+      var f = document.createElement('figure');
+      f.className = 'rez-c'; f.setAttribute('data-a', c.category === 'fata' ? 'fata' : 'corp'); f._case = c;
+      f.innerHTML = '<button type="button" class="rez-ph" aria-label="Mărește: ' + esc(c.title) + '">' + (isNew ? '<span class="rez-new">Caz nou</span>' : '') +
+        '<img src="' + esc(c.images[0].url) + '" alt="Înainte și după: ' + esc(c.title) + '" loading="lazy" decoding="async"></button>' +
+        '<figcaption><b>' + esc(c.title) + '</b><span>' + esc((c.location ? c.location + ' · ' : '') + ses(c.sessions || 1)) + (c.images.length > 1 ? ' · ' + c.images.length + ' imagini' : '') + '</span></figcaption>';
+      grid.insertBefore(f, grid.firstChild);
+    });
+    counts(); apply(false);
+  }).catch(function () {});
+
+  counts(); apply(false);
+})();
+</script>
