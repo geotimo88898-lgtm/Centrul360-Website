@@ -354,6 +354,8 @@ module.exports = async (req, res) => {
   const { leads, ran, ads, once, creative, hire, reminders } = out;
   if (!out.waited.length) delete out.waited;
   out.ms = Date.now() - t0;
+  // the clock's last run (when, how long, what waited, light or full): read publicly at /api/clock-status, nothing secret
+  if (!readOnly) await writeJSON('data/clock-last.json', { at: new Date().toISOString(), ms: out.ms, light: !!(req.query && req.query.light), waited: out.waited || [], by: /vercel-cron/.test(String(req.headers['user-agent'] || '')) ? 'cron' : 'other' }).catch(() => 0);
   // myPOS: the POS payments of the last days (the live ones come by webhook; this catches what it missed)
   const pos = readOnly || (req.query && req.query.light) ? { ok: true, added: 'skipped' } : await mypos.sync({ readJSON, writeJSON }, {}).catch((e) => ({ ok: false, error: e.message }));
   // the ads report for Claude (api/_lib/ads-report.js): only with its key (the clock's address has no password)
