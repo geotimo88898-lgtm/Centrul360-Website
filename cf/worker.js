@@ -189,17 +189,23 @@ export default {
     await loadSecrets(env, SHARED);
     return als.run({ ctx }, () => route(request, env, ctx));
   },
-  // aceleași ore ca în vercel.json (UTC): 05:00 producția automată de creative, 06:00 automatizările, 19:00 raportul
+  // din oră în oră la :17 UTC (wrangler.jsonc): automatizările de fiecare dată (mesajele la rând, leadurile noi, paza
+  // reclamelor, schimbările cerute o dată), la 05 întâi producția automată de creative, la 06 automatizările întregi
+  // (cu sincronizarea încasărilor), la 19 și raportul zilei
   async scheduled(event, env, ctx) {
     if (env.CRON_ON !== "1") return console.log("cron oprit (CRON_ON):", event.cron);
     await loadSecrets(env, SHARED);
     const hour = new Date(event.scheduledTime).getUTCHours();
-    const path = hour === 5 ? "/creative/api/cron/auto" : hour === 6 ? "/api/automation-tick" : hour === 19 ? "/api/daily-report" : "";
-    if (!path) return console.log("cron fără lucru la ora", hour);
-    if (path.startsWith("/creative") && !creative) return console.log("cron: mașina de creative nu e în build");
-    const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (env.CRON_SECRET || ""), "user-agent": "vercel-cron/1.0" } });
-    const r = await als.run({ ctx }, () => route(req, env, ctx));
-    console.log("cron", path, r.status);
+    const paths = [];
+    if (hour === 5) paths.push("/creative/api/cron/auto");
+    paths.push(hour === 6 ? "/api/automation-tick" : "/api/automation-tick?light=1");
+    if (hour === 19) paths.push("/api/daily-report");
+    for (const path of paths) {
+      if (path.startsWith("/creative") && !creative) { console.log("cron: mașina de creative nu e în build"); continue; }
+      const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (env.CRON_SECRET || ""), "user-agent": "vercel-cron/1.0" } });
+      const r = await als.run({ ctx }, () => route(req, env, ctx)).catch((e) => ({ status: "eroare " + e.message }));
+      console.log("cron", path, r.status);
+    }
   }
 };
 

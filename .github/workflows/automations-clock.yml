@@ -3,14 +3,12 @@
 # the waits of any flow) and to read new Facebook leads, so they go on time even when nobody has the
 # portal open. Vercel's own cron (vercel.json) runs only once a day. GitHub may start a run a few minutes late; the
 # portal skips a "before the appointment" message that would come more than 45 minutes late.
-# If CRON_SECRET is ever set in Vercel, put the same value in this repository's secrets (Settings → Secrets → Actions).
+# 7.11: since the move to Cloudflare the portal needs CRON_SECRET and this repository has none, so every run got 401.
+# The clock now runs inside Cloudflare (wrangler.jsonc "17 * * * *", cf/worker.js scheduled), every hour, with the
+# secret it already has. This workflow stays only for a manual run (needs CRON_SECRET in Settings → Secrets → Actions).
 name: Ceasul automatizărilor
 
 on:
-  schedule:
-    - cron: '17 * * * *'
-    # the day-before reminders go at 9:00 (Romanian time: 6:00 UTC in summer, 7:00 in winter)
-    - cron: '2 6,7 * * *'
   workflow_dispatch:
 
 permissions: {}
