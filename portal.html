@@ -33,8 +33,7 @@
     if (ui) { if (ui[1] === 'nou') localStorage.setItem('c360_ui', 'nou'); else localStorage.removeItem('c360_ui');
       history.replaceState(null, '', location.pathname + location.search.replace(/([?&])ui=(nou|vechi)(&|$)/, function (m, a, b, c) { return c ? a : ''; }).replace(/[?&]$/, '') + location.hash); }
     if (localStorage.getItem('c360_ui') === 'nou') {
-      var d = document.documentElement; d.classList.add('ui-nou'); d.setAttribute('data-theme', 'light');
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff');
+      document.documentElement.classList.add('ui-nou');
       var fl = document.createElement('link'); fl.rel = 'stylesheet';
       fl.href = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400&family=Montserrat:wght@300;800&display=swap';
       document.head.appendChild(fl);
@@ -123,6 +122,7 @@
 <script src="/portal-mobile-nav.js" defer></script>
 <script src="/portal-delight.js" defer></script>
 <script src="/portal-nou.js" defer></script>
+<script src="/portal-nou-fx.js" defer></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/portal-sw.js').catch(function () {});

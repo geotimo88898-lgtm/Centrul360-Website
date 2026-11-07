@@ -48,8 +48,6 @@
     });
     var logout = menu.querySelector('[data-act="logout"]');
     menu.insertBefore(b, logout || null);
-    // the dark theme doesn't exist in the new look (it is light, always): its switch steps aside
-    menu.querySelectorAll('[data-theme-pick], .acc-theme, [data-act="theme"]').forEach(function (x) { x.style.display = 'none'; });
   }
 
   // ------------------------------------------------------------------ Nuki in the empty states
