@@ -1,0 +1,47 @@
+/* The phone, first: loaded after kit.css by the new pages only (the preview first, the live pages after the owner's „da”). */
+/* ---- phone first (the owner, 7.11: „vreau să fie pe mobile cel mai bine, acolo o să fie 99% din view-uri”) ---- */
+.menu .bf-menu{ display:none; }
+.slip .k{ padding-right:70px; }
+.film-v{ padding:8px; background:linear-gradient(160deg,#dcf2ef,#ffffff 62%); box-shadow:0 0 0 1px rgba(20,165,150,.2) inset, 0 40px 80px -40px rgba(11,40,38,.55); }
+.film-v video{ border-radius:25px; }
+@media (max-width:920px){
+  .top .bf-pill{ display:none; }
+  .menu .bf-menu{ display:inline-flex; align-self:flex-start; margin:4px 0 26px; height:50px; padding:0 22px 0 14px; font-size:15px; }
+}
+@media (max-width:640px){
+  /* the first screen: the promise and the buttons; Nuki smaller under them */
+  .hero .stage{ min-height:0; height:270px; margin-top:0; }
+  .hero .nuki img{ width:min(210px,54vw); }
+  .hero .stage .orb{ width:62%; }
+  .stick{ margin-top:28px; gap:14px; }
+  .stick img{ width:min(150px,40vw); }
+  .end .nuki img{ width:min(190px,50vw); }
+  /* the film: the title, then the film in its frame; the button is in the bottom bar */
+  .film{ gap:18px; }
+  .film-t .lead, .film-t .ctas{ display:none; }
+  .film-v{ width:100%; padding:6px; border-radius:30px; }
+  .film-v video{ border-radius:24px; }
+  .film-play{ width:72px; height:72px; margin:-36px 0 0 -36px; }
+  /* the offers: one card at a time, swiped sideways, the next one peeking */
+  .offers{ flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    margin:0 -16px; padding:8px 16px 26px; gap:12px; scroll-padding:0 16px; }
+  .offers::-webkit-scrollbar{ display:none; }
+  .offers > .slip{ flex:0 0 84%; max-width:none; scroll-snap-align:center; }
+  .offers > .fine{ flex:0 0 calc(100% - 32px); }
+  .slip{ padding:24px 22px; gap:8px; }
+  .slip h3{ font-size:1.2rem; }
+  .slip .pr b{ font-size:2.3rem; }
+  .slip .btn{ margin-top:12px; }
+  .slip .btn.book.gold{ box-shadow:0 0 0 1px rgba(255,255,255,.55) inset, 0 1px 0 rgba(255,255,255,.95) inset, 0 8px 18px -10px rgba(233,160,140,.55); }
+  .slip:hover{ transform:none; }
+  /* the bottom bar: solid; out of the way while the cookie question is open; the footer clear of it */
+  .dock{ background:#fff; -webkit-backdrop-filter:none; backdrop-filter:none; box-shadow:0 0 0 1px var(--line2) inset, 0 12px 30px -14px rgba(11,40,38,.4); }
+  body.ck-open .dock{ transform:translateY(170%) !important; }
+  .ck{ bottom:calc(10px + env(safe-area-inset-bottom)); flex-wrap:nowrap; gap:8px; padding:10px 10px 10px 14px; font-size:12.5px; line-height:1.35; border-radius:18px; }
+  .ck p{ flex:1 1 auto; flex-basis:auto; padding:0; }
+  .ck button{ flex:none; height:36px; padding:0 13px; font-size:13px; }
+  footer{ padding-bottom:110px; }
+  /* the menu: a solid sheet, nothing of the page shows through */
+  .menu{ background:#fff; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .menu .mg a{ padding:6px 0; }
+}
