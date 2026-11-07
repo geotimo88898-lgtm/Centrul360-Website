@@ -10,6 +10,7 @@ description: one sentence for Google
 path: celulita              (default: the file name; "index" for the home page)
 city: Timișoara             (optional: booking buttons of the header, menu and dock go straight to this clinic)
 dock: off                   (optional: no phone dock, e.g. thank-you pages)
+pixel: Lead                 (optional: Meta pixel events besides PageView, e.g. on a thank-you page)
 -->
 Inside a page, {{base}} is the site root of the preview (/v2/) and {{arrow}} the button arrow."""
 import os, re, sys
@@ -40,6 +41,7 @@ def build(name):
     out = (shell.replace('{{body}}', body.strip())
            .replace('{{title}}', meta.get('title', 'Centrul360'))
            .replace('{{description}}', meta.get('description', '').replace('"', '&quot;'))
+           .replace('{{pixel}}', ''.join("\nfbq('track', '%s');" % e.strip() for e in meta.get('pixel', '').split(',') if e.strip()))
            .replace('{{robots}}', ROBOTS).replace('{{dock}}', dock)
            .replace('{{prev}}', '<div class="prev">Previzualizare v2</div>' if BASE == '/v2/' else '')
            .replace('{{citybook}}', citybook).replace('{{mark}}', MARK).replace('{{arrow}}', ARROW).replace('{{base}}', BASE))
