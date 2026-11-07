@@ -26,18 +26,14 @@
   try { if (localStorage.getItem('c360_game') === '1') { document.documentElement.classList.add('gm-boot'); setTimeout(function () { document.documentElement.classList.remove('gm-boot'); }, 15000); } } catch (e) {}
   // Text size and motion (Contul meu → Preferințe), also before the first paint.
   try { var pf = JSON.parse(localStorage.getItem('c360_prefs') || 'null'); if (pf) { if (pf.fontSize === 'lg' || pf.fontSize === 'xl') document.documentElement.setAttribute('data-fs', pf.fontSize); if (pf.motion === 'reduced') document.documentElement.classList.add('c360-reduce'); } } catch (e) {}
-  // The new look, in preview (portal-nou.css / .js): only for whoever opens the portal with ?ui=nou (kept on this device);
-  // ?ui=vechi, or the avatar menu, brings the current look back. Without it nothing changes.
+  // The new look (portal-nou.css / .js) is the only look, for everyone (George, 7 nov: "lasă doar aspectul nou live, și pentru angajate").
   try {
-    var ui = /[?&]ui=(nou|vechi)(?:&|$)/.exec(location.search);
-    if (ui) { if (ui[1] === 'nou') localStorage.setItem('c360_ui', 'nou'); else localStorage.removeItem('c360_ui');
-      history.replaceState(null, '', location.pathname + location.search.replace(/([?&])ui=(nou|vechi)(&|$)/, function (m, a, b, c) { return c ? a : ''; }).replace(/[?&]$/, '') + location.hash); }
-    if (localStorage.getItem('c360_ui') === 'nou') {
-      document.documentElement.classList.add('ui-nou');
-      var fl = document.createElement('link'); fl.rel = 'stylesheet';
-      fl.href = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400&family=Montserrat:wght@300;800&display=swap';
-      document.head.appendChild(fl);
-    }
+    try { localStorage.removeItem('c360_ui'); } catch (x) {}
+    if (/[?&]ui=(nou|vechi)(?:&|$)/.test(location.search)) history.replaceState(null, '', location.pathname + location.search.replace(/([?&])ui=(nou|vechi)(&|$)/, function (m, a, b, c) { return c ? a : ''; }).replace(/[?&]$/, '') + location.hash);
+    document.documentElement.classList.add('ui-nou');
+    var fl = document.createElement('link'); fl.rel = 'stylesheet';
+    fl.href = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400&family=Montserrat:wght@300;800&display=swap';
+    document.head.appendChild(fl);
   } catch (e) {}
 </script>
 <style>

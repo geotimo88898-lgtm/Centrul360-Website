@@ -148,7 +148,7 @@
     root.querySelectorAll('.k-empty:not([data-nuki])').forEach(dressEmpty);
     if (root.matches && root.matches('.c360-toast')) dressToast(root);
     root.querySelectorAll('.c360-toast:not([data-nuki])').forEach(dressToast);
-    if (root.matches && root.matches('.k-menu.has-acc')) addSwitch(root);
+    // fără drum înapoi la aspectul vechi (George, 7 nov)
     root.querySelectorAll('.db-hero h2:not([data-n])').forEach(accentName);
     root.querySelectorAll('.tr-door:not([data-n])').forEach(dressDoor);
   }
