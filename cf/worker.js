@@ -123,7 +123,46 @@ async function route(request, env, ctx) {
       return env.ASSETS.fetch(new Request(new URL(t.pathname + url.search, url), request));
     }
   }
+  if (p.endsWith(".mp4") && (request.method === "GET" || request.method === "HEAD")) return ranged(request, env, url);
   return env.ASSETS.fetch(request);
+}
+
+// Videos: the static asset store answers a Range request with the whole file (200), and iPhone Safari will not play
+// a video without byte ranges (206). So the .mp4 files (wrangler.jsonc run_worker_first) are sliced here, streamed.
+async function ranged(request, env, url) {
+  const r = await env.ASSETS.fetch(new Request(url, { method: "GET" }));
+  const size = Number(r.headers.get("content-length"));
+  const base = { "content-type": "video/mp4", "accept-ranges": "bytes", "cache-control": "public, max-age=86400" };
+  if (!r.ok || !size) return r;
+  const head = request.method === "HEAD";
+  const m = /^bytes=(\d*)-(\d*)$/.exec((request.headers.get("range") || "").trim());
+  if (!m || (m[1] === "" && m[2] === "")) {
+    if (head) { r.body && r.body.cancel(); return new Response(null, { status: 200, headers: { ...base, "content-length": String(size) } }); }
+    return new Response(r.body, { status: 200, headers: { ...base, "content-length": String(size) } });
+  }
+  const from = m[1] === "" ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+  const to = m[1] === "" || m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
+  if (from >= size || from > to) { r.body && r.body.cancel(); return new Response(null, { status: 416, headers: { ...base, "content-range": "bytes */" + size } }); }
+  const len = to - from + 1;
+  const hdr = { ...base, "content-range": "bytes " + from + "-" + to + "/" + size, "content-length": String(len) };
+  if (head) { r.body && r.body.cancel(); return new Response(null, { status: 206, headers: hdr }); }
+  const { readable, writable } = new FixedLengthStream(len);
+  (async () => {
+    const w = writable.getWriter(), rd = r.body.getReader();
+    let pos = 0;
+    try {
+      for (;;) {
+        const { done, value } = await rd.read();
+        if (done) break;
+        const a = Math.max(0, from - pos), b = Math.min(value.length, to + 1 - pos);
+        pos += value.length;
+        if (b > a) await w.write(value.subarray(a, b));
+        if (pos > to) { await rd.cancel(); break; }
+      }
+      await w.close();
+    } catch (e) { try { await w.abort(e); } catch (_) {} }
+  })();
+  return new Response(readable, { status: 206, headers: hdr });
 }
 
 // cererile spre propriile adrese (creative → portal) se rezolvă aici, fără să iasă din Worker

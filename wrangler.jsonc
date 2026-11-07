@@ -15,7 +15,7 @@
     "directory": "dist",
     "binding": "ASSETS",
     "html_handling": "drop-trailing-slash",
-    "run_worker_first": ["/", "/login", "/portal", "/portal.html", "/portal-login", "/portal-login.html", "/fise/*", "/academy-fisa/*", "/api/*", "/creative", "/creative/*", "/__c360/*"]
+    "run_worker_first": ["/", "/login", "/portal", "/portal.html", "/portal-login", "/portal-login.html", "/fise/*", "/academy-fisa/*", "/api/*", "/creative", "/creative/*", "/__c360/*", "/academy-vsl/*", "/brand_asset/ba-hifu-profil.mp4", "/brand_asset/epilare.mp4", "/brand_asset/hifu-procedura.mp4", "/brand_asset/offer-epilare-4zone.mp4", "/brand_asset/promo-summer.mp4", "/brand_asset/video-client.mp4", "/brand_asset/video-prezentare.mp4"]
   },
   "alias": {
     "@vercel/blob": "./cf/blob-r2.js",
