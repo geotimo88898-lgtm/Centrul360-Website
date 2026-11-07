@@ -159,7 +159,7 @@
 
   // the training films (academy-vsl/<id>.mp4, made with academy-vsl/src): the ones that exist, with their length.
   // C360Vsl.html(id, title, soon) → the player, or `soon` (the "Vine în curând" card) when the film is not made yet
-  const VSL = { parcurs: '9 min' };
+  const VSL = { parcurs: '8 min', 'fisa-corporale': '6 min', 'fisa-faciale': '5 min', 'fisa-epilare': '5 min', 'fisa-program': '7 min' };
   window.C360Vsl = {
     has: (id) => !!VSL[id],
     html: (id, title, soon) => (VSL[id] ? '<figure class="tr-vsl is-on"><video src="/academy-vsl/' + id + '.mp4" poster="/academy-vsl/' + id + '.webp" controls playsinline preload="none"></video>' +
