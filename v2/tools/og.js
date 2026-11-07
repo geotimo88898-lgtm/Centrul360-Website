@@ -53,7 +53,7 @@ h1 .w{display:inline}
 <div class="foot"><div class="pill">Consultație gratuită + masaj facial cadou</div><div class="g">${G}5,0 <small>· 300+ recenzii</small></div></div></div>
 <div class="r"><span class="orb"></span><span class="ring"></span><img src="${img}"><span class="sh"></span></div></body></html>`, { waitUntil: 'networkidle' });
     await p.evaluate(() => document.fonts.ready);
-    const big = 'og-' + k + '.png'; await p.screenshot({ path: big });
+    const big = require('os').tmpdir() + '/og-' + k + '.png'; await p.screenshot({ path: big });
     execSync(`python3 -c "from PIL import Image; Image.open('${big}').convert('RGB').resize((1200,630), Image.LANCZOS).save('${ROOT}/brand_asset/og/${k}.jpg', quality=90, optimize=True, progressive=True)"`);
     console.log('og', k, c.pose);
   }

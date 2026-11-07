@@ -10,7 +10,9 @@ description: one sentence for Google
 path: celulita              (default: the file name; "index" for the home page)
 city: Timișoara             (optional: booking buttons of the header, menu and dock go straight to this clinic)
 dock: off                   (optional: no phone dock, e.g. thank-you pages)
-pixel: Lead                 (optional: Meta pixel events besides PageView, e.g. on a thank-you page)
+robots: noindex,nofollow    (optional: for pages Google should not list, e.g. thank-you pages; the preview is always noindex)
+pixel: Lead                 (optional: Meta pixel events besides PageView, e.g. on a thank-you page; uses ?eid=)
+Tracking (the pixel, Google Ads tags) goes between <!--live--> and <!--/live-->: the /v2/ preview leaves it out.
 -->
 Inside a page, {{base}} is the site root of the preview (/v2/) and {{arrow}} the button arrow."""
 import os, re, sys
@@ -47,10 +49,15 @@ def build(name):
     out = (shell.replace('{{body}}', body.strip())
            .replace('{{title}}', title).replace('{{ogtitle}}', ogtitle.replace('"', '&quot;')).replace('{{url}}', url).replace('{{og}}', og)
            .replace('{{description}}', meta.get('description', '').replace('"', '&quot;'))
-           .replace('{{pixel}}', ''.join("\nfbq('track', '%s');" % e.strip() for e in meta.get('pixel', '').split(',') if e.strip()))
-           .replace('{{robots}}', ROBOTS).replace('{{dock}}', dock)
+           .replace('{{pixel}}', ''.join("\nfbq('track', '%s', {}, EID);" % e.strip() for e in meta.get('pixel', '').split(',') if e.strip()))
+           .replace('{{robots}}', ROBOTS if BASE == '/v2/' else meta.get('robots', 'index,follow')).replace('{{dock}}', dock)
            .replace('{{prev}}', '<div class="prev">Previzualizare v2</div>' if BASE == '/v2/' else '')
            .replace('{{citybook}}', citybook).replace('{{mark}}', MARK).replace('{{arrow}}', ARROW).replace('{{base}}', BASE))
+    # the event id the form put in the address (?eid=), so the browser event and the server's copy count once
+    out = out.replace('EID);', "(function(){var e=new URLSearchParams(location.search).get('eid');return e?{eventID:e}:{};})());")
+    # the preview (/v2/) sends no tracking at all: no pixel, no Google Ads conversions (<!--live--> ... <!--/live-->)
+    if BASE == '/v2/': out = re.sub(r'<!--live-->.*?<!--/live-->', '', out, flags=re.S)
+    else: out = out.replace('<!--live-->', '').replace('<!--/live-->', '')
     if '—' in out or '–' in out: sys.exit(name + ': a long dash slipped in')
     open(os.path.join(HERE, path + '.html'), 'w', encoding='utf-8').write(out)
     print('built', path + '.html')
