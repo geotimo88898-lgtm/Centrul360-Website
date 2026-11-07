@@ -153,7 +153,7 @@
     root.querySelectorAll('.tr-door:not([data-n])').forEach(dressDoor);
   }
   // Traininguri: Nuki stands at each door, in the pose of what is learned behind it
-  var DOOR = { parcurs: 'receptie', consult: 'fisa', tratamente: 'facial' };
+  var DOOR = { parcurs: 'receptie', consult: 'fisa', tratamente: 'facial', portal: 'prezinta' };
   function dressDoor(d) {
     d.setAttribute('data-n', '1');
     var img = new Image();

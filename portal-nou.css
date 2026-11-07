@@ -480,9 +480,9 @@ html.ui-nou .tr-door b{ font-size:1.9rem; letter-spacing:-.045em; }
 html.ui-nou .tr-door-prog i{ background:var(--n-teal); }
 html.ui-nou .tr-door-go{ background:color-mix(in srgb, var(--fg) 5%, transparent); }
 html.ui-nou .tr-door:hover .tr-door-go{ background:var(--fg); }
-html.ui-nou .n-door-nuki{ position:absolute; z-index:-1; top:6%; left:50%; width:min(46%,190px); height:auto; transform:translateX(-50%); pointer-events:none;
+html.ui-nou .n-door-nuki{ position:absolute; z-index:-1; top:6%; left:0; right:0; margin:0 auto; width:min(46%,190px); height:auto; pointer-events:none;
   filter:drop-shadow(0 20px 22px rgb(var(--n-sh) / .16)); animation:n-pop .9s var(--e) both, n-float 5s var(--e2) 1s infinite alternate; animation-delay:calc(var(--i,0) * 120ms + 150ms), calc(var(--i,0) * 400ms + 1s); }
-html.ui-nou .tr-door:hover .n-door-nuki{ transform:translateX(-50%) translateY(-6px) scale(1.03); transition:transform .8s var(--e); }
+html.ui-nou .tr-door:hover .n-door-nuki{ translate:0 -6px; scale:1.03; transition:translate .8s var(--e), scale .8s var(--e); }
 html.ui-nou .tr-jbar i{ background:linear-gradient(90deg,var(--n-teal3),var(--accent)); }
 html.ui-nou .tr-map{ background:radial-gradient(60% 80% at 20% 0%, color-mix(in srgb, var(--n-teal3) 16%, transparent), transparent 60%), radial-gradient(50% 70% at 100% 100%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%), var(--paper); border:0; box-shadow:var(--n-card); }
 html.ui-nou .tr-stop-dot, html.ui-nou .tr-vdot{ border:0; border-radius:50%; box-shadow:0 0 0 1px color-mix(in srgb, var(--fg) 8%, transparent), 0 10px 22px -12px rgb(var(--n-sh) / .4); }
@@ -501,7 +501,7 @@ html.ui-nou .ac-num{ color:var(--n-teal2); }
 html.ui-nou .ac-say{ border-left-color:var(--n-teal); background:var(--n-tint); }
 html.ui-nou .ac-feed{ border:0; box-shadow:var(--n-card); border-radius:22px; }
 html.ui-nou .ac-person{ border:0; box-shadow:0 0 0 1px color-mix(in srgb, var(--fg) 8%, transparent); }
-@media (max-width:720px){ html.ui-nou .n-door-nuki{ width:84px; top:50%; margin-top:-50px; left:.6rem; transform:none; animation:n-pop .9s var(--e) both; } html.ui-nou .tr-door:hover .n-door-nuki{ transform:none; } }
+@media (max-width:720px){ html.ui-nou .n-door-nuki{ width:84px; top:50%; margin:-50px 0 0; left:.6rem; right:auto; transform:none; animation:n-pop .9s var(--e) both; } html.ui-nou .tr-door:hover .n-door-nuki{ translate:none; scale:none; } }
 
 /* the search wells of every page: one white pill, the field inside it bare */
 html.ui-nou .k-search, html.ui-nou .ad-search{ border:0; border-radius:999px; background:var(--paper); box-shadow:0 0 0 1px color-mix(in srgb, var(--fg) 10%, transparent); transition:box-shadow .4s var(--e); }
@@ -695,3 +695,14 @@ html.ui-nou .n-fadein{ animation:n-fade 1.6s var(--e) .3s both; }
 }
 @media (prefers-reduced-motion:reduce){ html.ui-nou .n-tick-in{ animation:none; } }
 @media (max-width:720px){ html.ui-nou .n-jrun{ bottom:calc(96px + env(safe-area-inset-bottom)); } html.ui-nou .n-jrun img{ width:66px; } }
+
+/* Traininguri: the 4th door (Portalul) and its lesson grid, in the same look */
+html.ui-nou .tr-door.is-d{ --c1:var(--accent); --c2:var(--n-teal3); }
+html.ui-nou .gd-l{ border:0; border-radius:18px; background:var(--paper); box-shadow:var(--n-card); transition:transform .5s var(--e), box-shadow .5s var(--e); }
+html.ui-nou .gd-l:hover{ transform:translateY(-2px); box-shadow:var(--n-card-h); }
+html.ui-nou .gd-ic{ border-radius:50%; background:var(--grad); color:var(--accent-fg); }
+html.ui-nou .gd-l.is-done .gd-ic{ background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good); }
+html.ui-nou .gd-l.is-cur{ box-shadow:0 0 0 1.5px var(--accent), var(--n-card); }
+html.ui-nou .gd-step .tr-step-stage{ color:var(--n-teal2); }
+html.ui-nou .gd-step .tr-step-t span{ background:var(--grad); }
+@media (min-width:1101px){ html.ui-nou .n-door-nuki{ width:min(58%,170px); } }
