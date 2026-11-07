@@ -23,7 +23,7 @@ import { loadSecrets } from "./secrets.js";
 import BUILD_ID from "./build-id.gen.js";
 // the version, for the portal (api/portal-pulse.js): a new one makes the open portals drop their cached files
 process.env.C360_BUILD = BUILD_ID;
-const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY", "FB_APP_ID", "FB_APP_SECRET"];
+const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY", "FB_APP_ID", "FB_APP_SECRET", "VERTEX_API_KEY"];
 
 const als = new AsyncLocalStorage();
 

@@ -36,12 +36,13 @@
   ],
   "triggers": { "crons": ["17 * * * *"] },
   "vars": { "CRON_ON": "1", "BLOB_STORE_ID": "r2" },
-  // cheile comune din Secrets Store (ANTHROPIC, GEMINI, FB_APP_ID, FB_APP_SECRET; comune cu celelalte afaceri)
+  // cheile comune din Secrets Store (ANTHROPIC, GEMINI, FB_APP_ID, FB_APP_SECRET; comune cu celelalte afaceri; VERTEX: imaginile, pe creditul GCP, când AI Studio n-are credit)
   "secrets_store_secrets": [
     { "binding": "ANTHROPIC_API_KEY", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "ANTHROPIC_API_KEY" },
     { "binding": "GEMINI_API_KEY", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "GEMINI_API_KEY" },
     { "binding": "FB_APP_ID", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "FB_APP_ID" },
-    { "binding": "FB_APP_SECRET", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "FB_APP_SECRET" }
+    { "binding": "FB_APP_SECRET", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "FB_APP_SECRET" },
+    { "binding": "VERTEX_API_KEY", "store_id": "98ffae7c25e0415ab8515b612df054a9", "secret_name": "VERTEX_API_KEY" }
   ],
   "observability": { "enabled": true }
 }
