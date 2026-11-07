@@ -570,7 +570,7 @@ html.ui-nou{ --sx-ac:var(--accent,#2fd6c3); --sx-spec:linear-gradient(90deg, var
 .sx-amb{ position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden; contain:strict; }
 .sx-amb .g{ position:absolute; inset:-1px; will-change:transform; transform:translateZ(0);
   background-image:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
-    linear-gradient(color-mix(in srgb, var(--sx-ac) 7%, transparent), transparent 3px), linear-gradient(90deg, color-mix(in srgb, var(--sx-ac) 7%, transparent), transparent 3px);
+    linear-gradient(color-mix(in srgb, var(--sx-ac) 4%, transparent), transparent 3px), linear-gradient(90deg, color-mix(in srgb, var(--sx-ac) 4%, transparent), transparent 3px);
   background-size:120px 120px; background-position:-1px -1px; }
 .sx-amb .o{ position:absolute; width:62vmax; height:62vmax; border-radius:50%; opacity:.55; will-change:transform; }
 .sx-amb .o1{ right:-22vmax; top:-30vmax; background:radial-gradient(closest-side, color-mix(in srgb, var(--sx-ac) 20%, transparent), transparent); animation:sx-drift 26s ease-in-out infinite alternate; }
