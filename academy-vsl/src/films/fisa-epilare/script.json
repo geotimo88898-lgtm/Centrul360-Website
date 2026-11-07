@@ -282,7 +282,7 @@
    ],
    "beats": [
     {
-     "say": "Sus scrii numărul fișei, data de azi și numele tău.",
+     "say": "Sus treci numărul fișei, data de azi și numele tău.",
      "pose": "fisa"
     },
     {
@@ -295,7 +295,7 @@
      "cap": "Dacă are sub 18 ani, un părinte completează pagina 3."
     },
     {
-     "say": "Scrii zonele pe care le vrea. De exemplu: axilă și picioare complet.",
+     "say": "Treci zonele pe care le vrea. De exemplu: axilă și picioare complet.",
      "pose": "laser"
     },
     {

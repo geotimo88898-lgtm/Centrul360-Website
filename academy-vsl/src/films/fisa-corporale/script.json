@@ -294,7 +294,7 @@
    ],
    "beats": [
     {
-     "say": "Sus, în colț, scrii numărul fișei, data de azi și numele tău, la „Specialist”.",
+     "say": "Sus, în colț, treci numărul fișei, data de azi și numele tău, la „Specialist”.",
      "pose": "fisa"
     },
     {
@@ -315,7 +315,7 @@
      "pose": "gandeste"
     },
     {
-     "say": "Notezi cu cuvintele ei. De exemplu: „Grăsime pe abdomen după sarcină. A încercat diete, fără rezultat.”",
+     "say": "Le treci cu cuvintele ei. De exemplu: „Grăsime pe abdomen după sarcină. A încercat diete, fără rezultat.”",
      "pose": "fisa"
     },
     {
@@ -920,7 +920,7 @@
      "pose": "fisa"
     },
     {
-     "say": "Ea bifează ce vrea: poze pentru evidență, poze pentru reclamă fără față, mesaje pentru programări și oferte.",
+     "say": "Ea alege ce vrea și bifează: poze pentru evidență, poze pentru reclamă fără față, mesaje pentru programări și oferte.",
      "pose": "prezinta"
     },
     {

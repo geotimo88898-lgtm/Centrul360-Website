@@ -287,7 +287,7 @@
    ],
    "beats": [
     {
-     "say": "Sus, în colț, scrii numărul fișei, data de azi și numele tău, la „Specialist”.",
+     "say": "Sus, în colț, treci numărul fișei, data de azi și numele tău, la „Specialist”.",
      "pose": "fisa"
     },
     {
@@ -312,9 +312,9 @@
      "pose": "gandeste"
     },
     {
-     "say": "Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum doi ani.”",
+     "say": "Le treci cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum doi ani.”",
      "pose": "fisa",
-     "cap": "Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum 2 ani.”"
+     "cap": "Le treci cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum 2 ani.”"
     },
     {
      "say": "Bifezi zilele și orele care îi convin, și scrii când nu poate. Așa, programările se fac repede.",
