@@ -16,18 +16,16 @@ făcut să convertească, plus VSL-uri la tratamente. Tot conținutul real vine 
 - Fără liniuțe lungi. Telefonul primul (390x844), apoi 1440x900. Fără scroll lateral.
 - Meta-safe: fără promisiuni de vindecare sau cifre de slăbit inventate; „rezultatele diferă”.
 
-## Lumea (WORLDS.md, echivalentul pentru o clinică)
-- Lumea: **clinica lui Nuki**, fișa clientei și dosarul de rezultate. Hârtie de fișă, rigla de
-  centimetru, etichete de fișă medicală, ecusonul clinicii.
-- Mascota: **Nuki** (porțelan alb, uniforma Centrul360, fular ADN turcoaz, plutește), 26 de ipostaze
-  decupate în `brand_asset/mascota/ipostaze/`. Ramă: ecusonul clinicii pe șnur (o singură ramă).
-- Fonturi: Fraunces (titluri, prețuri, replicile lui Nuki) + JetBrains Mono (etichete de fișă,
-  butoane mici) + DM Sans (text).
-- Culori: porțelan #F6F4EF, cerneală #13201F, turcoaz #1F9E8F (accent), turcoaz închis #0E3B37 (benzi
-  închise), culoarea de programare (doar pe butoanele de programare) #FF7A59.
-- Etichete în limba lumii: „Fișa 01 · consultație gratuită”, „Din recenziile Google”, „Protocolul”,
-  „Nu e vina ta”, „Ce primești”, „Verificat”, „La recepție: întrebări”, „Nuki spune”.
-- Butonul: „Programează-mă” / „Vreau consultația gratuită”.
+## Stilul (decizia lui din 7 nov, după prima variantă: „prea multă culoare, înghesuit, logo groaznic, fără animații”)
+- Curat, premium, Apple / Vercel: alb cu un gradient turcoaz foarte fin în fundal (aură care se mișcă lent), mult spațiu alb.
+- Fonturile site-ului de acum: Inter (titluri 800, strâns) + Fraunces italic pe cuvintele accent; logo-ul real (Montserrat
+  „CENTRUL360.COM” + semnul cu inelul și cele două elipse), animat: inelul se desenează, elipsele se rotesc ca un giroscop.
+- Culoare doar pe butonul de programare (turcoaz, cu luciu și halou animat). Restul: cerneală, gri, alb.
+- Doar animații curate (aceeași curbă peste tot, doar transform și opacity): titlul vine cuvânt cu cuvânt, secțiunile urcă și
+  se clarifică, cifrele cresc, fraza „Nu e vina ta” se umple la derulare, linia protocolului se umple, animația care arată cum
+  lucrează aparatul, pozele se dezvăluie, întrebările se deschid lin, o mică explozie de lumină la apăsarea butonului.
+- Nuki plutește, respiră și răspunde la atingere (sare și spune altă replică). Fereastra de programare e în același stil alb.
+- VSL-uri la tratamente: nu acum (decizia lui din 7 nov). Pe pagini nu apare niciun loc „video în curând”.
 
 ## Structura unei pagini de tratament (după CONVERSION.md)
 1. Bara subțire de sus, lipită: cadoul + următoarea oră liberă reală.
@@ -48,6 +46,5 @@ făcut să convertească, plus VSL-uri la tratamente. Tot conținutul real vine 
 2. Pagina model de tratament `v2/grasime-localizata.html`, aprobată de el.
 3. Celelalte 9 tratamente din model, cu conținutul real al fiecăreia; apoi oferte, prețuri,
    rezultate, echipa, Timișoara, Arad, programare, mulțumire.
-4. VSL-uri: scripturile pe tratament la aprobare (fără sume rostite, doar pe ecran), apoi randarea
-   cu motorul din `produse/kit/vsl` și vocea Pulcherrima. Nu se randează fără „da”.
+4. VSL-uri la tratamente: doar când spune el.
 5. Când aprobă tot: `v2/` devine site-ul (redirecturi păstrate, SEO păstrat).

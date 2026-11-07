@@ -1,0 +1,67 @@
+/* The booking window (/c360-book.js) in the light v2 look: white sheet, ink text, teal for what is chosen.
+   "html body" in front of each rule wins over the widget's own dark styles, whatever order they load in. */
+html body .bk-bg{ background:rgba(240,247,246,.55); -webkit-backdrop-filter:blur(14px) saturate(160%); backdrop-filter:blur(14px) saturate(160%); }
+html body .bk{ color:#0b0b0d; background:rgba(255,255,255,.96); border:0; box-shadow:0 0 0 1px rgba(11,11,13,.08), 0 50px 100px -40px rgba(11,40,38,.45); }
+html body .bk-grab{ background:rgba(11,11,13,.15); }
+html body .bk-ico{ border:0; background:rgba(11,11,13,.05); color:#0b0b0d; }
+html body .bk-ico:hover{ background:rgba(11,11,13,.09); }
+html body .bk-prog i{ background:rgba(11,11,13,.08); }
+html body .bk-prog i::after{ background:linear-gradient(90deg,#5fd4c6,#14a596); }
+html body .bk-eyebrow{ color:#646b75; }
+html body .bk-eyebrow::before{ background:#14a596; box-shadow:0 0 0 4px rgba(20,165,150,.12); }
+html body .bk-h em{ color:#0b7f74; }
+html body .bk-seg{ background:rgba(11,11,13,.04); border:0; }
+html body .bk-seg button{ color:#646b75; }
+html body .bk-seg button.on{ background:#fff; color:#0b0b0d; box-shadow:0 1px 2px rgba(11,11,13,.08), 0 4px 12px -6px rgba(11,11,13,.2); }
+html body .bk-svc{ border:0; background:#fff; color:#0b0b0d; box-shadow:0 0 0 1px rgba(11,11,13,.09) inset; transition:box-shadow .3s, background-color .3s, transform .3s; }
+html body .bk-svc:hover{ background:#fbfdfd; box-shadow:0 0 0 1px rgba(20,165,150,.35) inset; }
+html body .bk-svc.on{ background:#effaf8; box-shadow:0 0 0 1.5px #14a596 inset; }
+html body .bk-svc small,html body .bk-chip small,html body .bk-row small{ color:#646b75; }
+html body .bk-pr s{ color:#9aa1aa; }
+html body .bk-pr .free,html body .bk-tag{ color:#0b7f74; }
+html body .bk-svc.gift{ box-shadow:0 0 0 1px rgba(20,165,150,.35) inset; }
+html body .bk-pin{ color:#0b7f74; background:#effaf8; border:0; }
+html body .bk-go{ color:#9aa1aa; }
+html body .bk-city:hover .bk-go{ color:#0b0b0d; }
+html body .bk-chip{ background:rgba(11,11,13,.035); border:0; }
+html body .bk-link{ background:#fff; color:#0b0b0d; box-shadow:0 0 0 1px rgba(11,11,13,.1) inset; }
+html body .bk-link:hover{ background:#f6f8f8; }
+html body .bk-cal-h span,html body .bk-cal-wd span,html body .bk-part{ color:#9aa1aa; }
+html body .bk-cd{ color:rgba(11,11,13,.2); }
+html body .bk-cd.has{ color:#0b0b0d; background:rgba(11,11,13,.04); }
+html body .bk-cd.has::after{ background:#14a596; }
+html body .bk-cd.has:hover{ background:rgba(20,165,150,.1); }
+html body .bk-cd.on,html body .bk-cd.on:hover{ background:#14a596; color:#fff; }
+html body .bk-cd.on::after{ background:#fff; }
+html body .bk-cd.today:not(.on){ box-shadow:inset 0 0 0 1px rgba(20,165,150,.5); }
+@media (hover:none){ html body .bk-cd.has:hover:not(.on){ background:rgba(11,11,13,.04); } }
+html body .bk-daylbl{ color:#0b0b0d !important; }
+html body .bk-time{ border:0; background:#fff; color:#0b0b0d; box-shadow:0 0 0 1px rgba(11,11,13,.1) inset; }
+html body .bk-time:hover{ background:#f3fbf9; box-shadow:0 0 0 1px rgba(20,165,150,.4) inset; }
+html body .bk-time.on{ background:#14a596; color:#fff; box-shadow:0 8px 18px -10px rgba(16,145,132,.8); }
+html body .bk-empty{ border-color:rgba(11,11,13,.12); color:#646b75; }
+html body .bk-skel{ background:linear-gradient(90deg,rgba(11,11,13,.03),rgba(11,11,13,.07),rgba(11,11,13,.03)); background-size:200% 100%; }
+html body .bk-sum{ background:radial-gradient(120% 140% at 100% 0%,rgba(95,212,198,.22),transparent 55%),#f7fcfb; border:0; box-shadow:0 0 0 1px rgba(20,165,150,.2) inset; }
+html body .bk-sum .when span{ color:#0b7f74; }
+html body .bk-sum .what{ color:#646b75; }
+html body .bk-f label{ color:#646b75; }
+html body .bk-f input{ border:0; background:#f5f7f7; color:#0b0b0d; box-shadow:0 0 0 1px rgba(11,11,13,.08) inset; }
+html body .bk-f input::placeholder{ color:#9aa1aa; }
+html body .bk-f input:focus{ background:#fff; box-shadow:0 0 0 1.5px #14a596 inset, 0 0 0 5px rgba(20,165,150,.12); }
+html body .bk-f.err input{ box-shadow:0 0 0 1.5px #d9534f inset; }
+html body .bk-f .msg,html body .bk-ok.err{ color:#c8443f; }
+html body .bk-ok{ color:#646b75; }
+html body .bk-ok input{ accent-color:#14a596; }
+html body .bk-cta{ color:#fff; background:linear-gradient(180deg,#1bb9a9 0%,#0f9083 100%); box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 14px 30px -12px rgba(16,145,132,.7); }
+html body .bk-cta .spin{ border-color:rgba(255,255,255,.35); border-top-color:#fff; }
+html body .bk-note{ color:#9aa1aa; }
+html body .bk-note a{ color:#262a30; }
+html body .bk-alert{ background:#fdf1f0; border:0; color:#a2352f; }
+html body .bk-alert a{ color:#a2352f; }
+html body .bk-check{ background:radial-gradient(circle,rgba(95,212,198,.3),rgba(95,212,198,.06) 70%); border:0; box-shadow:0 0 0 1px rgba(20,165,150,.3) inset, 0 0 60px -10px rgba(95,212,198,.7); }
+html body .bk-check path{ stroke:#0b7f74; }
+html body .bk-done p{ color:#646b75; }
+html body .bk-card{ border:0; background:#f7f9f9; }
+html body .bk-row + .bk-row{ border-top-color:rgba(11,11,13,.07); }
+html body .bk-ghost{ border:0; background:#fff; color:#0b0b0d; box-shadow:0 0 0 1px rgba(11,11,13,.12) inset; }
+html body .bk-ghost:hover{ background:#f6f8f8; }
