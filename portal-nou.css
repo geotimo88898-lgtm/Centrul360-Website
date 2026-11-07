@@ -613,11 +613,11 @@ html.ui-nou .n-tick i.is-msg{ background:var(--info); }
 @keyframes n-dot{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.35); } }
 
 /* ---------------- the cards: light that follows the mouse, a fine tilt, a ring on the hot ones */
-html.ui-nou main .k-stat, html.ui-nou main .pl-stat, html.ui-nou main .card, html.ui-nou main .k-card, html.ui-nou main .of-card{ isolation:isolate; }
+:where(html.ui-nou main) :where(.k-stat, .pl-stat, .card, .k-card, .of-card){ isolation:isolate; }
 html.ui-nou main :is(.k-stat, .pl-stat, .card, .k-card, .of-card)::after{ content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; pointer-events:none; opacity:0;
   background:radial-gradient(420px circle at var(--n-mx,50%) var(--n-my,50%), color-mix(in srgb, var(--accent) 11%, transparent), transparent 60%); transition:opacity .5s var(--e); }
 html.ui-nou main :is(.k-stat, .pl-stat, .card, .k-card, .of-card).n-spot::after{ opacity:1; }
-html.ui-nou main :is(.k-stat, .pl-stat, .card, .k-card, .of-card){ position:relative; }
+:where(html.ui-nou main) :where(.k-stat, .pl-stat, .card, .k-card, .of-card){ position:relative; }
 html.ui-nou main :is(.k-stat, .pl-stat).n-spot{ transform:perspective(700px) rotateX(var(--n-rx,0)) rotateY(var(--n-ry,0)) translateY(-3px); transition:transform .25s var(--e), box-shadow .5s var(--e); }
 @property --n-ang{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
 html.ui-nou .db-hot, html.ui-nou .pl-stat.is-hot{ }
@@ -694,3 +694,4 @@ html.ui-nou .n-fadein{ animation:n-fade 1.6s var(--e) .3s both; }
   html.ui-nou .n-tick em{ font-size:12.5px; padding:0 18px; }
 }
 @media (prefers-reduced-motion:reduce){ html.ui-nou .n-tick-in{ animation:none; } }
+@media (max-width:720px){ html.ui-nou .n-jrun{ bottom:calc(96px + env(safe-area-inset-bottom)); } html.ui-nou .n-jrun img{ width:66px; } }
