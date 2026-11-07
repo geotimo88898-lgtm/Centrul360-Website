@@ -116,9 +116,9 @@ path: index
 
 /* ---- the team */
 .home-team{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(40px,7vw,110px); align-items:center; }
-.home-pp{ display:grid; grid-template-columns:1fr 1fr; gap:16px; padding-bottom:44px; }
+.home-pp{ display:grid; grid-template-columns:1fr; max-width:420px; padding-bottom:0; }
 .home-pp img{ width:100%; height:auto; aspect-ratio:3/4; object-fit:cover; object-position:50% 22%; border-radius:var(--r); background:#f2f5f5; box-shadow:0 0 0 1px var(--line), 0 30px 60px -40px rgba(11,40,38,.4); }
-.home-pp img + img{ transform:translateY(44px); }
+
 .home-tt{ display:grid; gap:24px; justify-items:start; }
 .home-ul{ list-style:none; margin:4px 0 6px; padding:0; display:grid; gap:14px; }
 .home-ul li{ display:flex; align-items:center; gap:14px; font-size:16px; color:var(--ink2); }
@@ -168,8 +168,7 @@ a.home-li:hover{ color:var(--ink); }
   .home-of .offers .slip{ flex:0 0 84%; scroll-snap-align:center; }
   .home-od.dots{ display:flex; margin-top:2px; }
   .home-gar{ flex-direction:column; gap:18px; padding:26px; }
-  .home-pp{ gap:12px; padding-bottom:30px; }
-  .home-pp img + img{ transform:translateY(30px); }
+  .home-pp{ max-width:340px; margin:auto; }
   .home-locs{ grid-template-columns:1fr; }
   .home-lb{ padding:24px 24px 26px; }
 }
@@ -180,7 +179,7 @@ a.home-li:hover{ color:var(--ink); }
     <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
     <h1 class="words" data-words>Rezultate pe care le <em>vezi</em> din prima ședință.</h1>
     <p class="lead rv">Medicină estetică non-invazivă pentru corp și față, plus epilare laser. Aparatură medicală certificată și un plan făcut pentru tine. Două clinici, în Timișoara și Arad.</p>
-    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#tratamente">Vezi tratamentele</a></div>
+    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#oferte">Vezi ofertele{{arrow}}</a></div>
     <div class="meta rv">
       <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
       <div class="slot" data-slot></div>
@@ -201,22 +200,6 @@ a.home-li:hover{ color:var(--ink); }
 </div></section>
 
 <div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ace</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără operație</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără anestezie</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Aparatură medicală certificată</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ace</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără operație</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără anestezie</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Aparatură medicală certificată</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span></div></div>
-
-<section class="s" id="tratamente"><div class="wrap">
-  <div class="head rv"><span class="eye">Tratamente</span><h2>Ce vrei <em>să schimbi?</em></h2><p class="lead">Pentru corp, pentru față și epilare laser. Alege zona și vezi cum lucrăm, cu rezultate reale și prețuri.</p></div>
-  <div class="home-tg">
-    <a class="home-tc rv" href="{{base}}grasime-localizata"><span class="home-ph"><img src="/brand_asset/concern-grasime.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Grăsime localizată</b><span class="home-d">Liposonix, cavitație și HIFU</span></a>
-    <a class="home-tc rv" href="{{base}}celulita"><span class="home-ph"><img src="/brand_asset/concern-celulita.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Celulită</b><span class="home-d">Radiofrecvență, cavitație și EMS</span></a>
-    <a class="home-tc rv" href="{{base}}tonifiere-musculara"><span class="home-ph"><img src="/brand_asset/concern-tonifiere.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Tonifiere musculară</b><span class="home-d">EMS, fără efort · Timișoara</span></a>
-    <a class="home-tc rv" href="{{base}}detox-drenaj"><span class="home-ph"><img src="/brand_asset/concern-detox.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Corp</span><b>Detox și drenaj</b><span class="home-d">Presoterapie și împachetare · Timișoara</span></a>
-    <a class="home-tc rv" href="{{base}}epilare-laser"><span class="home-ph"><img src="/brand_asset/ba-epilare.webp" alt="" width="900" height="604" loading="lazy" style="object-position:50% 70%"><i class="home-go">{{arrow}}</i></span><span class="home-k">Epilare</span><b>Epilare laser</b><span class="home-d">Elysion Pro, cu garanție scrisă · Timișoara</span></a>
-    <a class="home-tc rv" href="{{base}}riduri-linii-fine"><span class="home-ph"><img src="/brand_asset/concern-riduri.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Riduri și lifting</b><span class="home-d">HIFU, radiofrecvență și RF Sculpt</span></a>
-    <a class="home-tc rv" href="{{base}}gusa-barbie-dubla"><span class="home-ph"><img src="/brand_asset/concern-gusa.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Gușă și bărbie dublă</b><span class="home-d">HIFU și RF Sculpt, fără operație</span></a>
-    <a class="home-tc rv" href="{{base}}pete-pigmentare"><span class="home-ph"><img src="/brand_asset/concern-pete.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Pete și pigmentare</b><span class="home-d">Regenerare și un ten uniform</span></a>
-    <a class="home-tc rv" href="{{base}}ten-problematic"><span class="home-ph"><img src="/brand_asset/concern-ten-problematic.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Ten problematic</b><span class="home-d">Acnee, sebum și pori dilatați</span></a>
-    <a class="home-tc rv" href="{{base}}ten-lipsit-de-stralucire"><span class="home-ph"><img src="/brand_asset/concern-stralucire.webp" alt="" width="760" height="1014" loading="lazy"><i class="home-go">{{arrow}}</i></span><span class="home-k">Față</span><b>Ten fără strălucire</b><span class="home-d">Hidratare profundă și luminozitate</span></a>
-  </div>
-</div></section>
 
 <section class="s" id="rezultate" style="padding-top:0">
   <div class="wrap"><div class="head rv"><span class="eye">Poze reale din clinică</span><h2>Nu promitem. <em>Îți arătăm.</em></h2><p class="lead">Clientele noastre, fotografiate la noi, înainte și după tratament.</p></div></div>
@@ -312,7 +295,7 @@ a.home-li:hover{ color:var(--ink); }
 </div></section>
 
 <section class="s" id="echipa" style="padding-top:0"><div class="wrap home-team">
-  <div class="home-pp rv"><img src="/brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39.jpeg" alt="Specialistă Centrul360" width="1200" height="1600" loading="lazy"><img src="/brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39%20(1).jpeg" alt="Specialistă Centrul360" width="1200" height="1600" loading="lazy"></div>
+  <div class="home-pp rv"><img src="/brand_asset/WhatsApp%20Image%202026-06-20%20at%2012.05.39%20(1).jpeg" alt="Specialistă Centrul360" width="1200" height="1600" loading="lazy"></div>
   <div class="home-tt">
     <div class="head left rv" style="margin-bottom:0"><span class="eye">Echipa</span><h2>O echipă <em>atentă</em> care lucrează pentru tine.</h2><p class="lead">Specialiste dedicate medicinei estetice non-invazive. Aceeași grijă și aceleași standarde în Timișoara și Arad, fără presiune, doar planuri adaptate ție.</p></div>
     <ul class="home-ul rv">

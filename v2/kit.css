@@ -111,8 +111,13 @@ html.locked{ overflow:hidden; }
 @keyframes shine{ 0%,62%{ transform:translateX(-120%); } 86%,100%{ transform:translateX(120%); } }
 .btn.book.halo{ animation:halo 4.6s var(--e) infinite; }
 @keyframes halo{ 0%,58%{ box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 12px 28px -12px rgba(16,145,132,.7), 0 0 0 0 rgba(20,165,150,.35); } 90%,100%{ box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 12px 28px -12px rgba(16,145,132,.7), 0 0 0 16px rgba(20,165,150,0); } }
-.btn.ghost{ color:var(--ink); background:rgba(255,255,255,.7); box-shadow:0 0 0 1px var(--line2) inset; }
-.btn.ghost:hover{ background:#fff; box-shadow:0 0 0 1px rgba(11,11,13,.2) inset, 0 10px 24px -14px rgba(11,11,13,.25); }
+.btn.ghost{ color:var(--ink); background:#fff; box-shadow:0 0 0 1.5px rgba(11,11,13,.82) inset, 0 8px 22px -14px rgba(11,11,13,.3); }
+.btn.ghost:hover{ background:var(--ink); color:#fff; box-shadow:0 0 0 1.5px var(--ink) inset, 0 14px 28px -14px rgba(11,11,13,.45); }
+/* the offers' own button: gold, so an offer feels special */
+.btn.book.gold{ color:#2a1d05; background:linear-gradient(180deg,#f3d48d 0%,#d9a948 55%,#c8932f 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.55) inset, 0 -1px 0 rgba(120,80,10,.25) inset, 0 12px 28px -12px rgba(184,134,40,.75), 0 2px 6px -2px rgba(184,134,40,.45); }
+.btn.book.gold:hover{ box-shadow:0 1px 0 rgba(255,255,255,.55) inset, 0 20px 40px -14px rgba(184,134,40,.8), 0 2px 6px -2px rgba(184,134,40,.45); }
+.btn.book.gold::before{ background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.65) 48%,transparent 64%); }
 .spark{ position:fixed; z-index:200; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; pointer-events:none; background:var(--teal3); }
 
 /* ---- hero */
@@ -233,6 +238,14 @@ html.locked{ overflow:hidden; }
 
 /* ---- results */
 .cases{ display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px max(20px,calc((100vw - var(--w)) / 2)) 30px; scrollbar-width:none; cursor:grab; overscroll-behavior-x:contain; }
+/* the results as an endless, slow row with soft edges (kit.js builds .loop: the cases twice, moving by half) */
+.cases.loop{ display:block; overflow:hidden; padding:8px 0 30px; cursor:default; scroll-snap-type:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent 100%); mask-image:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent 100%); }
+.cases.loop .track{ display:flex; gap:20px; width:max-content; animation:casesLoop var(--dur,70s) linear infinite; will-change:transform; }
+.cases.loop:hover .track{ animation-play-state:paused; }
+.cases.loop .case{ flex:0 0 min(520px,80vw); }
+.cases.loop ~ .wrap .dots{ display:none; }
+@keyframes casesLoop{ to{ transform:translate3d(calc(-50% - 10px),0,0); } }
 .cases::-webkit-scrollbar{ display:none; }
 .cases.drag{ cursor:grabbing; scroll-snap-type:none; }
 .case{ flex:0 0 min(580px,84vw); scroll-snap-align:center; margin:0; }
@@ -441,6 +454,7 @@ footer .lk b{ margin-bottom:4px; }
   .dock .btn{ height:46px; padding:0 18px; font-size:15px; }
 }
 @media (prefers-reduced-motion:reduce){
+  .cases.loop{ overflow-x:auto; }
   *,*::before,*::after{ animation:none !important; transition-duration:.01ms !important; }
   .rv,.words .w{ opacity:1 !important; transform:none !important; filter:none !important; }
 }

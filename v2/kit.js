@@ -26,7 +26,7 @@
       '<div class="pr"><b data-count="' + Math.round(o.priceNew) + '" data-suffix=" lei">' + lei(o.priceNew) + '</b>' + (cut ? '<s>' + lei(o.priceOld) + '</s>' : '') + '</div>' +
       (cut ? '<span class="save">Economisești ' + lei(o.priceOld - o.priceNew) + '</span>' : '') +
       '<span class="where">' + esc(cities.length ? cities.join(' și ') : 'Timișoara și Arad') + '</span>' +
-      '<button type="button" class="btn book" data-book data-book-service="' + esc(o.key) + '"' + (one ? ' data-book-city="' + esc(one) + '"' : '') + '>Rezervă oferta' + ARROW + '</button></div>';
+      '<button type="button" class="btn book gold" data-book data-book-service="' + esc(o.key) + '"' + (one ? ' data-book-city="' + esc(one) + '"' : '') + '>Rezervă oferta' + ARROW + '</button></div>';
   }
   var boxes = $$('[data-offers]');
   if (boxes.length) {
@@ -205,8 +205,18 @@
     n.addEventListener('click', function () { n.classList.remove('boing'); void n.offsetWidth; n.classList.add('boing'); show(); });
   });
 
-  // the results: drag with the mouse, dots follow
+  // the results: an endless slow row with soft edges (3 cases or more, and not the clinics' photo galleries)
   $$('.cases').forEach(function (c) {
+    var its = $$('.case', c);
+    if (c.hasAttribute('data-static') || its.length < 3) return;
+    var tr = document.createElement('div'); tr.className = 'track';
+    its.forEach(function (it) { it.classList.add('in'); tr.appendChild(it); });
+    its.forEach(function (it) { var k = it.cloneNode(true); k.setAttribute('aria-hidden', 'true'); tr.appendChild(k); });
+    c.appendChild(tr); c.classList.add('loop');
+    requestAnimationFrame(function () { c.style.setProperty('--dur', Math.max(30, Math.round(tr.scrollWidth / 2 / 38)) + 's'); });
+  });
+  // the other rows: drag with the mouse, dots follow
+  $$('.cases:not(.loop)').forEach(function (c) {
     var dots = c.parentNode.querySelector('.dots'), items = $$('.case', c);
     if (dots) dots.innerHTML = items.map(function () { return '<i></i>'; }).join('');
     var mark = function () {

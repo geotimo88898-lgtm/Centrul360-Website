@@ -26,7 +26,9 @@ const crypto = require('crypto');
 const { readJSON, writeJSON, createOnce, removeBinary } = require('./store');
 
 const GRAPH = 'https://graph.facebook.com/v25.0'; // the version the ads use (_lib/meta-ads.js)
-const DEFAULT_PIXEL = ''; // none: the web pixel's id is set in Integrări (nothing is sent while it's empty)
+// the site's pixel ("Meta CAPI CRM", Business Mellon Vision): the saved token can reach it (read-only check, 7.11), so it is
+// the default until another id is saved in Integrări. Nothing leaves without a test code or "Trimite live".
+const DEFAULT_PIXEL = '2276074362800484';
 const CFG_KEY = 'data/meta-capi.json';
 const STATUS_KEY = 'data/meta-capi-status.json';
 const SENT_KEY = 'data/meta-capi-sent.json';
@@ -139,7 +141,7 @@ function cleanMap(m) {
 function cleanConfig(x) {
   const c = x && typeof x === 'object' ? x : {};
   return {
-    pixelId: PIXEL_RE.test(String(c.pixelId || '')) ? String(c.pixelId) : '',
+    pixelId: PIXEL_RE.test(String(c.pixelId === undefined ? DEFAULT_PIXEL : c.pixelId || '')) ? String(c.pixelId === undefined ? DEFAULT_PIXEL : c.pixelId) : '',
     on: c.on !== false,
     testCode: TEST_RE.test(String(c.testCode || '')) ? String(c.testCode) : '',
     live: c.live === true,
