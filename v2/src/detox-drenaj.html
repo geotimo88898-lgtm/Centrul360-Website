@@ -1,0 +1,169 @@
+<!--meta
+title: Detox și drenaj | Împachetare la cald, presoterapie și termocuvertă · Centrul360 Timișoara
+description: Drenaj limfatic, detoxifiere și mai puțină retenție de apă, cu împachetare la cald, presoterapie și termocuvertă. Te simți mai ușoară. Doar în Timișoara. Consultație gratuită.
+city: Timișoara
+-->
+<style>
+/* detox: the explainer (presoterapie, 7 s loop, steps at .36 and .64) */
+.dtx-air{ animation-name:dtxAir; opacity:0; }
+@keyframes dtxAir{ 0%,3%{ opacity:0; } 9%,29%{ opacity:.3; } 37%,100%{ opacity:0; } }
+.dtx-push{ animation-name:dtxPush; opacity:0; }
+@keyframes dtxPush{ 0%,3%{ opacity:0; transform:translateY(0); } 9%{ opacity:1; transform:translateY(var(--py)); } 15%{ transform:translateY(0); } 21%{ transform:translateY(var(--py)); } 29%{ opacity:1; transform:translateY(0); } 35%,100%{ opacity:0; } }
+.dtx-drop{ animation-name:dtxDrop; opacity:0; }
+@keyframes dtxDrop{ 0%,34%{ opacity:0; transform:translate(0,0); } 37%,50%{ opacity:1; } 55%,100%{ opacity:0; transform:translate(-404px,-60px); } }
+.dtx-node{ animation-name:dtxNode; transform-origin:50% 50%; }
+@keyframes dtxNode{ 0%,49%{ transform:scale(1); } 55%{ transform:scale(1.3); } 61%{ transform:scale(1); } 64%{ transform:scale(1.15); } 68%,100%{ transform:scale(1); } }
+.dtx-boot{ animation-name:dtxBoot; }
+@keyframes dtxBoot{ 0%,63%{ opacity:1; transform:none; } 72%,92%{ opacity:0; transform:translateY(-10px); } 100%{ opacity:1; transform:none; } }
+.dtx-puff{ animation-name:dtxPuff; }
+@keyframes dtxPuff{ 0%,64%{ opacity:1; } 76%,92%{ opacity:0; } 100%{ opacity:1; } }
+.dtx-lift{ animation-name:dtxLift; }
+@keyframes dtxLift{ 0%,66%{ transform:none; } 78%,92%{ transform:translateY(-6px); } 100%{ transform:none; } }
+.dtx-shadow{ animation-name:dtxShadow; transform-origin:50% 50%; }
+@keyframes dtxShadow{ 0%,66%{ transform:none; opacity:1; } 78%,92%{ transform:scale(.94); opacity:.55; } 100%{ transform:none; opacity:1; } }
+/* the body offer(s) for Timișoara: centred cards */
+.dtx-offers{ grid-template-columns:repeat(auto-fit,minmax(290px,420px)); justify-content:center; }
+/* the three treatments (no real before/after photos for detox) */
+.dtx-trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.dtx-trio .card{ padding:32px; display:grid; gap:12px; align-content:start; }
+.dtx-trio .k{ font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--mute2); }
+.dtx-trio b{ font-size:1.22rem; font-weight:700; letter-spacing:-.025em; line-height:1.25; }
+.dtx-trio p{ color:var(--mute); font-size:15px; }
+@media (max-width:920px){ .dtx-trio{ grid-template-columns:1fr; } }
+@media (max-width:640px){ .dtx-trio .card{ padding:28px; } }
+</style>
+<section class="hero"><div class="wrap">
+  <div class="txt">
+    <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
+    <h1 data-words>Mai <em>ușoară,</em> de la prima ședință.</h1>
+    <p class="lead rv">Retenție de apă, picioare grele, senzație de balonare sau pur și simplu nevoia de un reset? Stimulăm drenajul limfatic și detoxifierea cu împachetare la cald, presoterapie și termocuvertă.</p>
+    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#cum">Cum funcționează</a></div>
+    <div class="meta rv">
+      <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-11a7 7 0 0 1 14 0c0 6.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>Doar în Timișoara</span></div>
+      <div class="slot" data-slot="Timișoara"></div>
+    </div>
+  </div>
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
+    <div class="bubble" aria-live="polite"></div>
+    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Salut! Eu sunt Nuki. Azi îi facem corpului un reset.", "Căldură plăcută, compresie ușoară. Multe îi spun răsfăț.", "Prima consultație e gratuită. Și masajul facial e cadou.", "Mai apasă o dată. Și bea un pahar cu apă.", "Suntem doar la Timișoara. Te aștept acolo."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/apa.webp" alt="Nuki cu un pahar cu apă" width="340" height="340"></span></button>
+    <span class="shadow"></span>
+  </div>
+</div></section>
+
+<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ace</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Căldură plăcută</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Compresie ușoară</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Un moment de răsfăț</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Doar în Timișoara</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ace</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Căldură plăcută</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Compresie ușoară</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Un moment de răsfăț</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Doar în Timișoara</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span></div></div>
+
+<section class="s" id="cum"><div class="wrap">
+  <div class="head rv"><span class="eye">Cum funcționează</span><h2>Drenajul limfatic, <em>repornit.</em></h2><p class="lead">Presoterapia masează limfatic prin compresie, împachetarea la cald activează eliminarea, iar termocuverta susține detoxifierea. Pentru o senzație reală de ușurare.</p></div>
+  <figure class="card proc rv" data-steps=".36,.64" style="margin:0 auto">
+    <svg viewBox="0 0 640 360" role="img" aria-label="Presoterapia: camerele manșonului se umflă pe rând, de la gleznă spre coapsă, și împing limfa spre ganglioni, unde e eliminată; piciorul rămâne mai ușor, cu mai puțină retenție de apă.">
+<defs>
+<clipPath id="dtxC"><rect x="0" y="60" width="640" height="280" rx="22"/></clipPath>
+<clipPath id="dtxK"><rect x="104" y="60" width="536" height="280"/></clipPath>
+<mask id="dtxM" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="360"><path d="M-20 116C80 116 210 138 300 148C350 152 380 142 420 150C460 158 480 176 506 178L520 176C528 150 536 118 556 112C572 108 582 118 584 132L590 222C592 240 578 248 560 246L506 242C470 244 440 262 400 262C350 262 330 250 300 252C210 258 80 284 -20 284Z" fill="#fff" stroke="#fff" stroke-width="27" stroke-linejoin="round"/></mask>
+<mask id="dtxR" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="360"><path d="M-20 116C80 116 210 138 300 148C350 152 380 142 420 150C460 158 480 176 506 178L520 176C528 150 536 118 556 112C572 108 582 118 584 132L590 222C592 240 578 248 560 246L506 242C470 244 440 262 400 262C350 262 330 250 300 252C210 258 80 284 -20 284Z" fill="none" stroke="#fff" stroke-width="28" stroke-linejoin="round"/><path d="M-20 116C80 116 210 138 300 148C350 152 380 142 420 150C460 158 480 176 506 178L520 176C528 150 536 118 556 112C572 108 582 118 584 132L590 222C592 240 578 248 560 246L506 242C470 244 440 262 400 262C350 262 330 250 300 252C210 258 80 284 -20 284Z" fill="#000" stroke="#000" stroke-width="24.5" stroke-linejoin="round"/></mask>
+<radialGradient id="dtxS"><stop offset="0" stop-color="#0b3c37" stop-opacity=".13"/><stop offset="1" stop-color="#0b3c37" stop-opacity="0"/></radialGradient>
+</defs>
+<g clip-path="url(#dtxC)">
+<rect x="0" y="60" width="640" height="280" fill="#fbfcfc"/>
+<ellipse class="a dtx-shadow" cx="300" cy="316" rx="300" ry="12" fill="url(#dtxS)"/>
+<g class="a dtx-lift"><g transform="translate(0 14)">
+<path class="a dtx-puff" d="M-20 116C80 116 210 138 300 148C350 152 380 142 420 150C460 158 480 176 506 178L520 176C528 150 536 118 556 112C572 108 582 118 584 132L590 222C592 240 578 248 560 246L506 242C470 244 440 262 400 262C350 262 330 250 300 252C210 258 80 284 -20 284Z" fill="#f1e1d6" stroke="#f1e1d6" stroke-width="18" stroke-linejoin="round"/>
+<path d="M-20 116C80 116 210 138 300 148C350 152 380 142 420 150C460 158 480 176 506 178L520 176C528 150 536 118 556 112C572 108 582 118 584 132L590 222C592 240 578 248 560 246L506 242C470 244 440 262 400 262C350 262 330 250 300 252C210 258 80 284 -20 284Z" fill="#f7efe9" stroke="#e8d6c9" stroke-width="1.5"/>
+<path d="M498 212L94 152" stroke="#5fd4c6" stroke-opacity=".5" stroke-width="2" stroke-dasharray="3 7" stroke-linecap="round"/>
+<g class="a dtx-boot"><g clip-path="url(#dtxK)"><g mask="url(#dtxM)"><rect class="a dtx-air" x="476" y="60" width="128" height="280" fill="#5fd4c6" style="animation-delay:0ms"/><rect class="a dtx-air" x="382" y="60" width="94" height="280" fill="#5fd4c6" style="animation-delay:380ms"/><rect class="a dtx-air" x="290" y="60" width="92" height="280" fill="#5fd4c6" style="animation-delay:760ms"/><rect class="a dtx-air" x="196" y="60" width="94" height="280" fill="#5fd4c6" style="animation-delay:1140ms"/><rect class="a dtx-air" x="104" y="60" width="92" height="280" fill="#5fd4c6" style="animation-delay:1520ms"/></g><rect x="0" y="60" width="640" height="280" fill="#0d0f12" mask="url(#dtxR)"/><g mask="url(#dtxM)" stroke="#0d0f12" stroke-width="2" stroke-opacity=".75"><path d="M105 60V340"/><path d="M196 60V340"/><path d="M290 60V340"/><path d="M382 60V340"/><path d="M476 60V340"/></g></g><g fill="none" stroke="#14a596" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path class="a dtx-push" d="M538 86l0 10m-6 -5l6 6l6 -6" style="--py:4px;animation-delay:0ms"/><path class="a dtx-push" d="M538 274l0 -10m-6 5l6 -6l6 6" style="--py:-4px;animation-delay:0ms"/><path class="a dtx-push" d="M429 123l0 10m-6 -5l6 6l6 -6" style="--py:4px;animation-delay:380ms"/><path class="a dtx-push" d="M429 287l0 -10m-6 5l6 -6l6 6" style="--py:-4px;animation-delay:380ms"/><path class="a dtx-push" d="M336 120l0 10m-6 -5l6 6l6 -6" style="--py:4px;animation-delay:760ms"/><path class="a dtx-push" d="M336 284l0 -10m-6 5l6 -6l6 6" style="--py:-4px;animation-delay:760ms"/><path class="a dtx-push" d="M243 112l0 10m-6 -5l6 6l6 -6" style="--py:4px;animation-delay:1140ms"/><path class="a dtx-push" d="M243 286l0 -10m-6 5l6 -6l6 6" style="--py:-4px;animation-delay:1140ms"/><path class="a dtx-push" d="M150 97l0 10m-6 -5l6 6l6 -6" style="--py:4px;animation-delay:1520ms"/><path class="a dtx-push" d="M150 298l0 -10m-6 5l6 -6l6 6" style="--py:-4px;animation-delay:1520ms"/></g><path d="M429 138C429 100 446 74 466 60" fill="none" stroke="#0d0f12" stroke-width="3" stroke-linecap="round"/></g>
+<g fill="#5fd4c6" stroke="#ffffff" stroke-width="1.5"><circle class="a dtx-drop" cx="498" cy="212" r="5.5" style="animation-delay:0ms"/><circle class="a dtx-drop" cx="498" cy="212" r="5.5" style="animation-delay:120ms"/><circle class="a dtx-drop" cx="498" cy="212" r="5.5" style="animation-delay:240ms"/><circle class="a dtx-drop" cx="498" cy="212" r="5.5" style="animation-delay:360ms"/><circle class="a dtx-drop" cx="498" cy="212" r="5.5" style="animation-delay:480ms"/><circle class="a dtx-drop" cx="498" cy="212" r="5.5" style="animation-delay:600ms"/></g>
+<g class="a dtx-node" fill="#14a596"><circle cx="82" cy="150" r="9"/><circle cx="98" cy="138" r="6"/><circle cx="97" cy="163" r="5"/></g>
+</g></g>
+</g>
+<rect x="0.5" y="60.5" width="639" height="279" rx="22" fill="none" stroke="rgba(11,11,13,.08)"/>
+<g font-size="17" font-weight="600" letter-spacing="2" fill="#8a9099"><text x="22" y="90">GANGLIONI LIMFATICI</text><text x="196" y="334" text-anchor="middle">COAPSĂ</text><text x="536" y="334" text-anchor="middle">GLEZNĂ</text><text x="618" y="44" text-anchor="end" letter-spacing="1.6">PRESOTERAPIE</text></g>
+</svg>
+    <ol class="psteps">
+      <li><b>1 · Camerele</b>se umflă pe rând, de la gleznă în sus</li>
+      <li><b>2 · Limfa</b>e împinsă spre ganglioni și eliminată</li>
+      <li><b>3 · Picioarele</b>mai ușoare, mai puțină retenție de apă</li>
+    </ol>
+  </figure>
+</div></section>
+
+<section class="s" id="tratamente" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Ce folosim</span><h2>Trei tratamente, <em>un singur reset.</em></h2><p class="lead">Adesea le combinăm într-o cură de detoxifiere. Planul exact îl stabilim la consultația gratuită.</p></div>
+  <div class="dtx-trio">
+    <div class="card rv"><span class="k">Recomandat</span><b>Împachetare la cald</b><p>Căldura activează eliminarea: detoxifiere, circulație și drenaj, pentru o piele mai netedă.</p></div>
+    <div class="card rv"><span class="k">Compresie</span><b>Presoterapie</b><p>Drenaj limfatic prin compresie ritmică și ușoară: picioare mai ușoare, mai puțină retenție.</p></div>
+    <div class="card rv"><span class="k">Căldură</span><b>Termocuvertă</b><p>Căldură care susține detoxifierea și relaxarea profundă.</p></div>
+  </div>
+</div></section>
+
+<section class="s"><div class="wrap">
+  <span class="eye rv" style="margin-bottom:28px">Nu e vina ta</span>
+  <p class="scrub" data-scrub>Sistemul limfatic e „canalizarea” corpului. Când încetinește, din sedentarism, stres sau alimentație, apar retenția de apă, balonarea, picioarele grele și oboseala. <em>Nu e vina ta.</em></p>
+  <div class="say rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/liniste.webp" alt="" loading="lazy"></span><q>Respiră. Aici nu trebuie să faci nimic, doar să te relaxezi.<small>Nuki</small></q></div>
+</div></section>
+
+<section class="s" id="protocol" style="padding-top:0"><div class="wrap split">
+  <div>
+    <div class="head left rv"><span class="eye">Cum decurge</span><h2>Un reset pentru corp, <em>ședință cu ședință.</em></h2><p class="lead">Detoxul funcționează cel mai bine în cură: un ritm constant care reactivează drenajul.</p></div>
+    <ol class="tl" data-tl>
+      <li class="rv"><small>Prima vizită · gratuit</small><b>Discutăm obiectivul și planul</b><p>Stabilim combinația de detox potrivită: împachetare, presoterapie sau termocuvertă.</p></li>
+      <li class="rv"><small>Ședința 1</small><b>Senzație de ușurare</b><p>Căldură plăcută și o compresie ritmică, ușoară. Efectul se simte adesea chiar de la prima ședință.</p></li>
+      <li class="rv"><small>Ritm 1-2 pe săptămână</small><b>Cura de detoxifiere</b><p>Câteva ședințe într-un interval scurt. Numărul exact depinde de obiectiv.</p></li>
+      <li class="rv"><small>Pe parcursul curei</small><b>Retenție redusă, mai multă energie</b><p>Te simți mai ușoară, în majoritatea cazurilor.</p></li>
+      <li class="rv"><small>Întreținere</small><b>O ședință periodică de reset</b><p>Hidratarea, mișcarea și o alimentație echilibrată mențin efectul.</p></li>
+    </ol>
+  </div>
+  <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/calendar.webp" alt="Nuki cu calendarul" loading="lazy"></span><q>Unu-două pe săptămână. Corpul se obișnuiește repede cu răsfățul.</q><small>Nuki</small></div>
+</div></section>
+
+<section class="s" id="oferta" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Ofertele de acum</span><h2>Prețul de azi, <em>pentru corp.</em></h2><p class="lead">Alegi oferta, apoi ziua și ora. Confirmarea vine pe WhatsApp.</p></div>
+  <div class="offers dtx-offers" data-offers="remodelare" data-match="detox|drenaj|impachet|împachet|presoter|termocuv|cavita" data-city="timisoara"></div>
+  <div class="card list rv">
+    <div><span><span class="t">Împachetare la cald</span>detoxifiere, circulație și drenaj</span><b>de la 190 lei <small>/ ședință</small></b></div>
+    <div><span><span class="t">Pachet 6 ședințe · împachetare</span></span><b>800 lei</b></div>
+    <div><span><span class="t">Pachet 8 ședințe · împachetare</span></span><b>1020 lei</b></div>
+    <div><span><span class="t">Presoterapie</span>drenaj limfatic prin compresie</span><b>la consultație</b></div>
+    <div><span><span class="t">Termocuvertă</span>detoxifiere și relaxare</span><b>la consultație</b></div>
+  </div>
+  <p class="fine">Toate sunt disponibile doar la Timișoara. Prețul pentru presoterapie și termocuvertă îl stabilim personalizat, la consultație.</p>
+  <div class="card gift rv"><span class="fl" style="animation:float 6s var(--e2) infinite alternate"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="" loading="lazy"></span><div><b>Consultația e gratuită. Masajul facial e cadou.</b><p>Afli ce ți se potrivește și cât costă, fără nicio obligație.</p></div></div>
+</div></section>
+
+<section class="s" style="padding-top:0"><div class="wrap">
+  <div class="score"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><span>Google</span></span><div class="n" data-count="5.0">5,0</div><div class="st"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg></div><span><b data-count="300" data-suffix="+">300+</b> recenzii · Timișoara și Arad</span></div>
+  <div class="revs">
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul a fost exact pe măsura așteptărilor.”</span><p>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</p><small>Maria Muntean · Timișoara</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Cu căldură și profesionalism.”</span><p>„O experiență minunată, d-na Andreea m-a abordat cu căldură și profesionalism.”</p><small>Alina Galuțiu · Arad</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul este vizibil.”</span><p>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</p><small>Simona-Mihaela J. · Timișoara</small></div>
+  </div>
+</div></section>
+
+<section class="s" style="padding-top:0"><div class="wrap fit">
+  <div class="card yes"><h3>E pentru tine dacă</h3><ul><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>ai retenție de apă, picioare grele sau senzație de balonare</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>simți nevoia de un reset pentru corp</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>vrei să susții rezultatele tratamentelor anti-celulită sau de remodelare</span></li></ul></div>
+  <div class="card no"><h3>Nu e pentru tine dacă</h3><ul><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M17 7L7 17M7 7l10 10"/></svg></i><span>cauți un înlocuitor pentru un stil de viață sănătos: tratamentele îl susțin, nu îl înlocuiesc</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M17 7L7 17M7 7l10 10"/></svg></i><span>ești însărcinată sau alăptezi</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M17 7L7 17M7 7l10 10"/></svg></i><span>ai o contraindicație medicală: o verificăm împreună la consultație</span></li></ul></div>
+</div></section>
+
+<section class="s" id="intrebari" style="padding-top:0"><div class="wrap">
+  <div class="head rv"><span class="eye">Întrebări</span><h2>Bine <em>de știut.</em></h2></div>
+  <div class="faq rv">
+    <div class="q"><button type="button">Ce simt în timpul tratamentului?<span class="pm"></span></button><div class="a"><div><p>Tratamentele de detox sunt relaxante: căldură plăcută la împachetare și termocuvertă, o compresie ritmică și ușoară la presoterapie. Mulți le descriu ca pe un moment de răsfăț.</p></div></div></div>
+    <div class="q"><button type="button">Mă ajută cu retenția de apă?<span class="pm"></span></button><div class="a"><div><p>Da, drenajul limfatic stimulează eliminarea surplusului de lichide, reducând balonarea și senzația de picioare grele. Efectul se simte adesea chiar de la prima ședință.</p></div></div></div>
+    <div class="q"><button type="button">Câte ședințe îmi trebuie?<span class="pm"></span></button><div class="a"><div><p>Pentru un efect de durată, o cură de câteva ședințe într-un interval scurt, apoi întreținere. Numărul exact depinde de obiectiv. Îl stabilim la consultație.</p></div></div></div>
+    <div class="q"><button type="button">Se combină cu alte tratamente?<span class="pm"></span></button><div class="a"><div><p>Da, foarte bine. Drenajul susține rezultatele tratamentelor anti-celulită și de remodelare, ajutând corpul să elimine ce a fost destabilizat. Le putem integra în același plan.</p></div></div></div>
+    <div class="q"><button type="button">Se face și în Arad?<span class="pm"></span></button><div class="a"><div><p>Aceste tratamente de detox și drenaj sunt disponibile momentan doar la clinica din Timișoara. La Arad îți putem recomanda alternative potrivite.</p></div></div></div>
+  </div>
+</div></section>
+
+<section class="s end" style="padding-top:0"><div class="wrap end">
+  <div class="stage rv zoom">
+    <span class="orb"></span><span class="ring"><i></i></span>
+    <div class="bubble"></div>
+    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Te aștept la consultație, în Timișoara!", "Vino cu întrebările. Le luăm pe rând."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/salut-pa.webp" alt="Nuki face cu mâna" loading="lazy"></span></button>
+    <span class="shadow"></span>
+  </div>
+  <h2 class="rv">Primul pas e o <em>consultație gratuită.</em></h2>
+  <p class="lead rv">În clinica din Timișoara afli ce ți se potrivește și cât costă, fără nicio obligație. Plus masajul facial cadou.</p>
+  <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button></div>
+  <div class="slot rv" data-slot="Timișoara"></div>
+</div></section>
