@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 7.11 night, the owner in his main session („doar active”: in Arad only the Restart, the two LipoSonix 30 and 33 and the
+  // two RF gușă): the third LipoSonix (36) off, and the old static LipoSonix ad that still shows „with issues”
+  { id: 'ar-only-five-2026-11-07', why: 'Arad: rămân active doar Restart, 2 LipoSonix și 2 RF gușă, cerut de voi pe 7.11', actions: [
+    { campaignId: '120251787710030103', name: 'AR LIPO · 640 erou', status: 'PAUSED', why: 'Arad: rămân doar 2 LipoSonix (30 și 33)' },
+    { campaignId: '120250873662240103', name: 'STATICS LIPO AR (reclama)', status: 'PAUSED', why: 'Arad: reclamă veche cu probleme, fără livrare' },
+  ] },
   // 7.11 night, the owner in his main session (the Restart ad with the best return, at 60, then „da”): Arad's Restart
   // ad „Căutăm 10 doamne din Arad.” back on at 60 lei a day, only this campaign
   { id: 'ar-restart-on-2026-11-07', why: 'Restart Arad pornit din nou la 60 lei/zi, cerut de voi pe 7.11', actions: [
