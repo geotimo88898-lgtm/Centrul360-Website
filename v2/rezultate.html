@@ -35,7 +35,8 @@
 
 <header class="top"><div class="bar">
   <a class="brand" href="/v2/" aria-label="Centrul360, acasă"><svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor"><circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/><ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="wm">CENTRUL360<span>.COM</span></span></a>
-  <nav aria-label="Principal"><button type="button" class="nl" data-menu>Tratamente</button><a class="nl" href="/v2/rezultate">Rezultate</a><a class="nl bf" href="/v2/oferte">Black Friday</a><a class="nl" href="/v2/preturi">Prețuri</a><a class="nl" href="/v2/echipa">Echipa</a></nav>
+  <nav aria-label="Principal"><button type="button" class="nl" data-menu>Tratamente</button><a class="nl" href="/v2/rezultate">Rezultate</a><a class="nl" href="/v2/preturi">Prețuri</a></nav>
+  <a class="bf-pill" href="/v2/oferte"><svg class="bfi" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bfgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe3d9"/><stop offset=".45" stop-color="#eab5a5"/><stop offset="1" stop-color="#cf8f7d"/></linearGradient></defs><path fill="url(#bfgA)" d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M7.2 6.4a6 6 0 0 1 9.2 1.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/><g fill="#3a1a10"><circle cx="9.3" cy="9.3" r="1.55"/><circle cx="14.7" cy="14.7" r="1.55"/></g><path d="M15.2 8.8 8.8 15.2" stroke="#3a1a10" stroke-width="1.7" stroke-linecap="round"/></svg><span>Black Friday</span></a>
   <button type="button" class="btn book top-cta" data-book data-book-service="consult">Programează-mă<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   <button type="button" class="burger" data-menu aria-label="Meniu" aria-expanded="false"><i></i><i></i></button>
 </div></header>
@@ -46,7 +47,7 @@
     <div class="mg">
       <div><span class="eye">Corp</span><a href="/v2/grasime-localizata">Grăsime localizată</a><a href="/v2/celulita">Celulită</a><a href="/v2/tonifiere-musculara">Tonifiere musculară</a><a href="/v2/detox-drenaj">Detox și drenaj</a></div>
       <div><span class="eye">Față</span><a href="/v2/riduri-linii-fine">Riduri și lifting</a><a href="/v2/gusa-barbie-dubla">Gușă și bărbie dublă</a><a href="/v2/pete-pigmentare">Pete și pigmentare</a><a href="/v2/ten-problematic">Ten problematic</a><a href="/v2/ten-lipsit-de-stralucire">Ten fără strălucire</a></div>
-      <div><span class="eye">Epilare</span><a href="/v2/epilare-laser">Epilare laser</a><span class="eye" style="margin-top:28px">Clinica</span><a href="/v2/oferte">Oferte Black Friday</a><a href="/v2/preturi">Prețuri</a><a href="/v2/rezultate">Rezultate</a><a href="/v2/echipa">Echipa</a><a href="/v2/timisoara">Timișoara</a><a href="/v2/arad">Arad</a></div>
+      <div><span class="eye">Epilare</span><a href="/v2/epilare-laser">Epilare laser</a><span class="eye" style="margin-top:28px">Clinica</span><a href="/v2/oferte">Oferte Black Friday</a><a href="/v2/preturi">Prețuri</a><a href="/v2/rezultate">Rezultate</a><a href="/v2/timisoara">Timișoara</a><a href="/v2/arad">Arad</a></div>
     </div>
     <button type="button" class="btn book" data-book data-book-service="consult" data-menu-close>Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
@@ -55,10 +56,6 @@
 <main>
 <style>
 /* Rezultate: the real before / after photos, Față / Corp, a calm lightbox, the cases published from the portal */
-.rez-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:28px 20px; text-align:center; }
-.rez-stats b{ display:block; font-size:clamp(2.7rem,5.4vw,4rem); font-weight:800; letter-spacing:-.055em; line-height:1; font-variant-numeric:tabular-nums; }
-.rez-stats span{ display:block; margin-top:12px; font-size:14px; color:var(--mute); line-height:1.45; }
-.rez-stats .stars{ display:block; margin-top:8px; font-size:12px; }
 .rez-seg{ display:flex; width:max-content; max-width:100%; margin:0 auto clamp(40px,5vw,56px); gap:2px; padding:4px; border-radius:999px; background:rgba(11,11,13,.04); box-shadow:0 0 0 1px var(--line) inset; }
 .rez-seg button{ height:42px; padding:0 20px; border:0; border-radius:999px; background:transparent; color:var(--mute); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:color .3s, background-color .45s var(--e), box-shadow .45s var(--e); }
 .rez-seg button i{ font-style:normal; font-weight:500; color:var(--mute2); margin-left:6px; }
@@ -120,7 +117,6 @@ html.rez-lock{ overflow:hidden; }
   .rez-lb-info{ padding:26px 22px calc(24px + env(safe-area-inset-bottom)); overflow:visible; }
 }
 @media (max-width:640px){
-  .rez-stats{ grid-template-columns:1fr 1fr; gap:36px 12px; }
   .rez-seg{ width:100%; }
   .rez-seg button{ flex:1; padding:0 8px; }
   .rez-grid{ grid-template-columns:1fr; gap:32px; }
@@ -152,10 +148,10 @@ html.rez-lock{ overflow:hidden; }
 
 <section class="s" style="padding:clamp(24px,4vw,48px) 0 0"><div class="wrap">
   <div class="rez-stats rv">
+    <div><b data-count="1200" data-suffix="+">1200+</b><span>tratamente realizate</span></div>
+    <div><b data-count="92" data-suffix="%">92%</b><span>văd rezultate din prima ședință</span></div>
+    <div><b data-count="5.0">5,0</b><span>nota pe Google, din 300+ recenzii</span></div>
     <div><b data-count="40">40</b><span>cazuri reale, cu acordul clientelor</span></div>
-    <div><b data-count="5.0">5,0</b><span>nota pe Google</span></div>
-    <div><b data-count="300" data-suffix="+">300+</b><span>recenzii Google</span></div>
-    <div><b data-count="2">2</b><span>clinici, Timișoara și Arad</span></div>
   </div>
 </div></section>
 
