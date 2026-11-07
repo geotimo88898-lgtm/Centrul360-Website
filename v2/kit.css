@@ -405,6 +405,15 @@ footer .lk b{ margin-bottom:4px; }
 
 /* ---- phone: the bottom bar */
 .dock{ display:none; }
+/* the owner's open questions on this page (preview only) */
+.prevq{ position:fixed; z-index:71; left:16px; bottom:56px; max-width:min(380px, calc(100vw - 32px)); font-size:13px; }
+.prevq summary{ list-style:none; display:inline-flex; padding:7px 12px; border-radius:999px; cursor:pointer; font-weight:600; color:#6b5300; background:#fff6d1;
+  box-shadow:0 0 0 1px rgba(160,120,0,.28) inset, 0 10px 24px -14px rgba(120,90,0,.5); -webkit-tap-highlight-color:transparent; }
+.prevq summary::-webkit-details-marker{ display:none; }
+.prevq ol{ margin:8px 0 0; padding:14px 18px 14px 18px; list-style:none; border-radius:16px; background:#fff; color:var(--ink); line-height:1.5;
+  box-shadow:0 0 0 1px var(--line2) inset, 0 24px 50px -22px rgba(11,40,38,.45); }
+.prevq li + li{ margin-top:8px; }
+@media (max-width:760px){ .prevq{ top:80px; bottom:auto; left:12px; } }
 .prev{ position:fixed; z-index:70; left:16px; bottom:16px; padding:7px 12px; border-radius:999px; font-size:12px; font-weight:600; color:var(--mute); background:rgba(255,255,255,.8); box-shadow:0 0 0 1px var(--line2) inset; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
 
 @media (max-width:920px){
