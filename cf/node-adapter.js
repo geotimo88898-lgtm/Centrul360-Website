@@ -10,6 +10,10 @@ async function toReq(request, extra) {
   request.headers.forEach((v, k) => { headers[k] = v; });
   const ip = request.headers.get("cf-connecting-ip") || "";
   if (ip) headers["x-forwarded-for"] = ip;
+  // where the request comes from, as Cloudflare knows it (country, city, its coordinates): for the site's visit counter
+  // (api/site-pulse.js, Admin → Site, the globe); only the city, never the address
+  const cf = request.cf || {};
+  if (cf.country) headers["x-c360-geo"] = [cf.country, cf.city || "", cf.latitude || "", cf.longitude || ""].map((x) => encodeURIComponent(String(x))).join("|");
   headers["x-forwarded-proto"] = u.protocol.replace(":", "");
   headers["x-forwarded-host"] = u.host;
   const raw = request.method === "GET" || request.method === "HEAD" ? Buffer.alloc(0) : Buffer.from(await request.arrayBuffer());

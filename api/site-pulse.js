@@ -43,6 +43,9 @@ async function hit(req, res) {
   if (/bot|crawl|spider|slurp|preview|headless|lighthouse/i.test(ua)) { res.status(204).end(); return; }
   const sid = crypto.createHmac('sha256', String(process.env.PORTAL_SECRET || 'c360')).update(dayOf(new Date(now)) + '|' + ip + '|' + ua).digest('base64url').slice(0, 16);
   const beat = !!b.h; // the page is still open (every minute while it is visible): she is still there, no new view
+  // the city the visit comes from (Cloudflare's, by the address; the address itself is never kept): for the globe
+  const gp = String(req.headers['x-c360-geo'] || '').split('|').map((x) => { try { return decodeURIComponent(x); } catch (e) { return ''; } });
+  const geo = gp[0] ? [clip(gp[0], 2), clip(gp[1], 40), Math.round(Number(gp[2]) * 10) / 10 || 0, Math.round(Number(gp[3]) * 10) / 10 || 0] : null;
   const path = clip(String(b.p || '/').split('?')[0].split('#')[0], 120) || '/';
   if (!sid || /^\/(api|portal|login|creative|fise)\b/.test(path)) { res.status(204).end(); return; }
   let ref = clip(b.r, 80).toLowerCase().replace(/^www\./, '');
@@ -53,14 +56,14 @@ async function hit(req, res) {
   const key = hourKey(new Date(now));
   for (let i = 0; i < 4; i++) {
     const { data, etag } = await readJSONTagged(key, null);
-    const h = data || { v: 1, views: 0, s: {}, p: {}, r: {}, u: {}, d: {}, t: [0, 0] };
+    const h = data || { v: 1, views: 0, s: {}, p: {}, r: {}, u: {}, d: {}, t: [0, 0], g: {} };
     const known = h.s[sid];
     if (beat && !known) break; // a heartbeat from a visit counted in the hour before: nothing to add
     if (!beat) h.views++;
-    if (!known && Object.keys(h.s).length < 6000) h.s[sid] = [now, now, path, dev, ref || utm || ''];
+    if (!known && Object.keys(h.s).length < 6000) h.s[sid] = [now, now, path, dev, ref || utm || '', geo];
     else if (known) { known[1] = now; known[2] = path; }
     if (!beat) bump(h.p, path);
-    if (!known) { bump(h.r, ref || (utm ? 'campanie: ' + utm : 'direct')); bump(h.d, dev); if (utm) bump(h.u, utm); }
+    if (!known) { bump(h.r, ref || (utm ? 'campanie: ' + utm : 'direct')); bump(h.d, dev); if (utm) bump(h.u, utm); if (geo) { h.g = h.g || {}; bump(h.g, geo[1] ? geo[1] + ', ' + geo[0] : geo[0]); } }
     if (ms && !beat) { h.t[0] += ms; h.t[1]++; }
     try {
       const ok = etag ? await writeJSONIf(key, h, etag, { quiet: true }) : (await writeJSON(key, h, { quiet: true }), true);
@@ -71,13 +74,13 @@ async function hit(req, res) {
 }
 
 // ------------------------------------------------------------------ the numbers
-function emptyDay() { return { views: 0, visitors: 0, p: {}, r: {}, d: {}, t: [0, 0], hours: Array(24).fill(0) }; }
+function emptyDay() { return { views: 0, visitors: 0, p: {}, r: {}, d: {}, g: {}, t: [0, 0], hours: Array(24).fill(0) }; }
 function addHour(day, h, hour) {
   if (!h) return;
   day.views += h.views || 0;
   day.visitors += Object.keys(h.s || {}).length;
   day.hours[hour] += h.views || 0;
-  ['p', 'r', 'd'].forEach((k) => Object.keys(h[k] || {}).forEach((x) => bump(day[k], x, h[k][x])));
+  ['p', 'r', 'd', 'g'].forEach((k) => Object.keys(h[k] || {}).forEach((x) => bump(day[k] = day[k] || {}, x, h[k][x])));
   if (h.t) { day.t[0] += h.t[0]; day.t[1] += h.t[1]; }
 }
 async function readDay(date, isToday) {
@@ -104,9 +107,9 @@ async function stats(res) {
   ]);
   // who is on the site now: seen in the last 5 minutes, with the page they are on
   const live = {};
-  [prev, cur].forEach((h) => Object.keys((h && h.s) || {}).forEach((sid) => { const x = h.s[sid]; if (now - x[1] < LIVE_MS) live[sid] = { path: x[2], dev: x[3], from: x[4], at: x[1] }; }));
+  [prev, cur].forEach((h) => Object.keys((h && h.s) || {}).forEach((sid) => { const x = h.s[sid]; if (now - x[1] < LIVE_MS) live[sid] = { path: x[2], dev: x[3], from: x[4], at: x[1], geo: x[5] || null }; }));
   const sum = (arr, k) => arr.reduce((a, d) => a + (d[k] || 0), 0);
-  const merge = (arr) => { const o = emptyDay(); arr.forEach((d) => { o.views += d.views; o.visitors += d.visitors; ['p', 'r', 'd'].forEach((k) => Object.keys(d[k] || {}).forEach((x) => bump(o[k], x, d[k][x]))); o.t[0] += d.t[0]; o.t[1] += d.t[1]; }); return o; };
+  const merge = (arr) => { const o = emptyDay(); arr.forEach((d) => { o.views += d.views; o.visitors += d.visitors; ['p', 'r', 'd', 'g'].forEach((k) => Object.keys(d[k] || {}).forEach((x) => bump(o[k], x, d[k][x]))); o.t[0] += d.t[0]; o.t[1] += d.t[1]; }); return o; };
   const t = byDay[byDay.length - 1], w = merge(byDay.slice(-7)), m = merge(byDay);
   // what the site brought (real, from the Pipeline): sign-ups and online bookings, per day
   const siteLeads = (leads || []).filter((l) => l.source === 'site');
@@ -118,7 +121,7 @@ async function stats(res) {
     now: now.toISOString(), counting: !!(sum(byDay, 'views') || cur),
     live: Object.keys(live).map((k) => live[k]).sort((a, b) => b.at - a.at),
     today: { views: t.views, visitors: t.visitors, hours: t.hours, load: t.t[1] ? Math.round(t.t[0] / t.t[1]) : null, pages: top(t.p, 8), from: top(t.r, 6), dev: t.d },
-    week: { views: w.views, visitors: w.visitors, load: w.t[1] ? Math.round(w.t[0] / w.t[1]) : null, pages: top(w.p, 8), from: top(w.r, 8), dev: w.d },
+    week: { views: w.views, visitors: w.visitors, load: w.t[1] ? Math.round(w.t[0] / w.t[1]) : null, pages: top(w.p, 8), from: top(w.r, 8), dev: w.d, places: top(w.g, 8) },
     month: { views: m.views, visitors: m.visitors },
     days: days.map((d, i) => ({ d, views: byDay[i].views, visitors: byDay[i].visitors, forms: forms[i], books: books[i] })),
     brought: { today: { forms: forms[29], books: books[29] }, week: { forms: s7(forms), books: s7(books) }, month: { forms: s30(forms), books: s30(books) } },

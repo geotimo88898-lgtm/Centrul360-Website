@@ -69,6 +69,7 @@
       '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Site</h2></div><div class="k-head-actions">' +
         '<a class="k-btn is-outline" href="https://www.centrul360.com/" target="_blank" rel="noopener">' + ic('globe') + 'Deschide site-ul</a>' +
         '<button type="button" class="k-btn is-accent" data-act="check">' + ic('refresh') + 'Verifică acum</button></div></div>' +
+      '<section class="st2-globe" data-globe><div class="st2-globe-stage" data-gstage></div><div class="st2-globe-side"><div class="st2-globe-n"><span class="n-live-dot"></span><b data-gn>0</b><small>pe site acum</small></div><ol data-gplaces></ol></div></section>' +
       '<div data-body><div class="k-skel" style="height:260px;border-radius:28px"></div><div class="k-skel" style="height:120px;margin-top:1rem"></div></div>';
     panel.addEventListener('click', function (e) {
       if (e.target.closest('[data-act="check"]')) { health(true); stats(); }
@@ -115,8 +116,7 @@
       body.dataset.key = key;
       body.innerHTML =
         // ---- live: the site's stations, a dot for every visitor on it now
-        '<section class="st2-live"><div class="st2-live-head"><div><span class="n-live-dot"></span><b data-live-n>0</b><span>pe site acum</span></div>' +
-          '</div>' +
+        '<section class="st2-live">' +
           '<div class="st2-map">' + ZONES.map(function (z, i) { return '<div class="st2-zone" data-z="' + z.k + '" style="--i:' + i + '"><b>' + esc(z.t) + '</b><div class="st2-dots" data-dots></div><small data-zn>0</small></div>'; }).join('<i class="st2-path"></i>') + '</div>' +
           '<div class="st2-hours" aria-label="Vizitele de azi, pe ore">' + t.hours.map(function (v, i) {
             var mx = Math.max.apply(null, t.hours.concat([1]));
@@ -157,6 +157,7 @@
       if (sp && h && h.history.length > 1 && K().spark) sp.innerHTML = '<small>Timpul de răspuns, ultimele verificări</small>' + K().spark(h.history.map(function (c) { return c.ms; }), { color: 'var(--accent)' });
     }
     live(d.live || []);
+    globe(d);
   }
   function devSplit(dv) {
     var m = (dv && dv.m) || 0, c = (dv && dv.d) || 0, tot = m + c;
@@ -198,6 +199,110 @@
     map.querySelectorAll('.st2-zone').forEach(function (z) { var n = counts[z.dataset.z] || 0; z.querySelector('[data-zn]').textContent = n ? n + (n === 1 ? ' vizitator' : ' vizitatori') : ''; z.classList.toggle('is-on', !!n); });
     var n = panel.querySelector('[data-live-n]');
     if (n && n.textContent !== String(list.length)) { n.textContent = list.length; n.classList.remove('n-bump'); void n.offsetWidth; n.classList.add('n-bump'); }
+  }
+
+  // ------------------------------------------------------------------ the live globe (WebGL, three.js; the city Cloudflare gives each visit)
+  var G = null, gload = null;
+  var CLINICS = [{ t: 'Timișoara', la: 45.75, lo: 21.23 }, { t: 'Arad', la: 46.18, lo: 21.31 }];
+  function three() {
+    if (window.THREE) return Promise.resolve(window.THREE);
+    if (gload) return gload;
+    gload = new Promise(function (ok, no) { var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'; sc.onload = function () { ok(window.THREE); }; sc.onerror = no; document.head.appendChild(sc); });
+    return gload;
+  }
+  function globe(d) {
+    var host = panel && panel.querySelector('[data-globe]'); if (!host) return;
+    var live = (d.live || []);
+    var places = {};
+    live.forEach(function (v) { var g = v.geo; var k = g ? (g[1] || g[0]) + (g[1] ? ', ' + g[0] : '') : 'Fără locație'; places[k] = (places[k] || 0) + 1; });
+    var top = Object.keys(places).map(function (k) { return [k, places[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6);
+    var n = host.querySelector('[data-gn]');
+    if (n.textContent !== String(live.length)) { n.textContent = live.length; n.classList.remove('n-bump'); void n.offsetWidth; n.classList.add('n-bump'); }
+    host.querySelector('[data-gplaces]').innerHTML = top.map(function (x, i) { return '<li style="--i:' + i + '"><span>' + esc(x[0]) + '</span><b>' + x[1] + '</b></li>'; }).join('');
+    if (G) { G.pins(live); return; }
+    if (G === false) return;
+    var hasGL = false; try { var c = document.createElement('canvas'); hasGL = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { /* none */ }
+    if (!hasGL) { G = false; host.classList.add('is-flat'); return; }
+    G = false;
+    three().then(function (T) { G = makeGlobe(T, host.querySelector('[data-gstage]')); G.pins(live); }, function () { host.classList.add('is-flat'); });
+  }
+  function makeGlobe(T, stage) {
+    var W = stage.clientWidth || 600, H = stage.clientHeight || 420;
+    var r = new T.WebGLRenderer({ antialias: true, alpha: true });
+    r.setPixelRatio(Math.min(W < 500 ? 1.5 : 2, window.devicePixelRatio || 1)); r.setSize(W, H);
+    stage.appendChild(r.domElement);
+    var scene = new T.Scene(), cam = new T.PerspectiveCamera(32, W / H, 0.1, 100);
+    cam.position.set(0, 0, W < 500 ? 9 : 7.6);
+    var cs = getComputedStyle(document.documentElement);
+    var ACC = new T.Color(cs.getPropertyValue('--accent').trim() || '#14a596'), FG = new T.Color(cs.getPropertyValue('--fg').trim() || '#0b0b0d');
+    var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    var R = 2;
+    var vec = function (la, lo, rr) { var ph = (90 - la) * Math.PI / 180, th = (lo + 180) * Math.PI / 180, q = rr || R; return new T.Vector3(-q * Math.sin(ph) * Math.cos(th), q * Math.cos(ph), q * Math.sin(ph) * Math.sin(th)); };
+    var world = new T.Group(); scene.add(world);
+    world.add(new T.Mesh(new T.SphereGeometry(R * 0.995, 64, 48), new T.MeshBasicMaterial({ color: dark ? 0x0c1020 : 0xffffff, transparent: true, opacity: dark ? 0.9 : 0.85 })));
+    var gtex = (function () { var c = document.createElement('canvas'); c.width = c.height = 128; var g = c.getContext('2d'); var rg = g.createRadialGradient(64, 64, 0, 64, 64, 64); rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(.3, 'rgba(255,255,255,.5)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = rg; g.fillRect(0, 0, 128, 128); return new T.CanvasTexture(c); })();
+    var halo = new T.Sprite(new T.SpriteMaterial({ map: gtex, color: ACC, transparent: true, opacity: dark ? 0.55 : 0.35, depthWrite: false })); halo.scale.set(R * 3.3, R * 3.3, 1); scene.add(halo); halo.position.z = -1;
+    // the land, as dots
+    fetch('/portal-globe-land.json').then(function (x) { return x.json(); }).then(function (a) {
+      var pos = new Float32Array(a.length / 2 * 3);
+      for (var i = 0; i < a.length; i += 2) { var v = vec(a[i] / 10, a[i + 1] / 10, R * 1.002); pos[i / 2 * 3] = v.x; pos[i / 2 * 3 + 1] = v.y; pos[i / 2 * 3 + 2] = v.z; }
+      var g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3));
+      world.add(new T.Points(g, new T.PointsMaterial({ color: dark ? 0x9aa4c4 : FG.clone().lerp(new T.Color(0xffffff), 0.55), size: 0.035, transparent: true, opacity: 0.9 })));
+    }).catch(function () {});
+    // the two clinics
+    CLINICS.forEach(function (c) { var p = vec(c.la, c.lo, R * 1.01); var s = new T.Sprite(new T.SpriteMaterial({ map: gtex, color: ACC, transparent: true, depthWrite: false })); s.scale.set(0.42, 0.42, 1); s.position.copy(p); world.add(s); });
+    // start on Romania, then a slow turn; a drag turns it by hand
+    world.rotation.y = -(90 + 22) * Math.PI / 180; world.rotation.x = 40 * Math.PI / 180;
+    var drag = null, spin = 0.0012, idle = 0;
+    stage.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, ry: world.rotation.y, rx: world.rotation.x }; stage.setPointerCapture(e.pointerId); });
+    stage.addEventListener('pointermove', function (e) { if (!drag) return; world.rotation.y = drag.ry + (e.clientX - drag.x) * 0.008; world.rotation.x = Math.max(-1.2, Math.min(1.2, drag.rx + (e.clientY - drag.y) * 0.006)); idle = performance.now(); });
+    stage.addEventListener('pointerup', function () { drag = null; });
+    // the visitors: a pulsing pin each, an arc to the clinic for whoever is on Programare
+    var pins = {};
+    function pinsFor(list) {
+      var seenK = {};
+      list.forEach(function (v, i) {
+        if (!v.geo || (!v.geo[2] && !v.geo[3])) return;
+        var k = v.geo.join('|') + '|' + i; seenK[k] = 1;
+        if (pins[k]) return;
+        var p = vec(v.geo[2], v.geo[3], R * 1.012);
+        var grp = new T.Group(); grp.position.copy(p); grp.lookAt(0, 0, 0);
+        var dot = new T.Mesh(new T.CircleGeometry(0.045, 16), new T.MeshBasicMaterial({ color: 0xff5a6e, side: T.DoubleSide }));
+        var ring = new T.Mesh(new T.RingGeometry(0.06, 0.075, 32), new T.MeshBasicMaterial({ color: 0xff5a6e, transparent: true, side: T.DoubleSide }));
+        grp.add(dot); grp.add(ring);
+        grp.userData = { ring: ring, t: Math.random() };
+        world.add(grp);
+        if (/programare|multumesc|avans/.test(v.path || '')) {
+          var c = CLINICS[0], a = p.clone(), b = vec(c.la, c.lo, R * 1.01), mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(R * (1.15 + a.distanceTo(b) * 0.25));
+          var curve = new T.QuadraticBezierCurve3(a, mid, b);
+          var arc = new T.Mesh(new T.TubeGeometry(curve, 40, 0.012, 6, false), new T.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.85 }));
+          var spark = new T.Sprite(new T.SpriteMaterial({ map: gtex, color: 0xffffff, transparent: true, depthWrite: false })); spark.scale.set(0.18, 0.18, 1);
+          world.add(arc); world.add(spark);
+          grp.userData.arc = arc; grp.userData.curve = curve; grp.userData.spark = spark;
+        }
+        pins[k] = grp;
+      });
+      Object.keys(pins).forEach(function (k) { if (seenK[k]) return; var g = pins[k]; world.remove(g); if (g.userData.arc) { world.remove(g.userData.arc); world.remove(g.userData.spark); } delete pins[k]; });
+    }
+    var visible = true, raf = 0;
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible) go(); }, { threshold: 0.02 }).observe(stage);
+    function frame(now) {
+      raf = 0;
+      if (!stage.isConnected || !visible || document.hidden) return;
+      if (!drag && now - idle > 2500) world.rotation.y += spin;
+      Object.keys(pins).forEach(function (k) {
+        var u = pins[k].userData; u.t = (u.t + 0.012) % 1;
+        u.ring.scale.setScalar(1 + u.t * 3); u.ring.material.opacity = 1 - u.t;
+        if (u.spark) u.curve.getPoint((now / 1600) % 1, u.spark.position);
+      });
+      r.render(scene, cam);
+      raf = requestAnimationFrame(frame);
+    }
+    function go() { if (!raf) raf = requestAnimationFrame(frame); }
+    go();
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) go(); });
+    addEventListener('resize', function () { W = stage.clientWidth || W; H = stage.clientHeight || H; r.setSize(W, H); cam.aspect = W / H; cam.updateProjectionMatrix(); }, { passive: true });
+    return { pins: function (l) { pinsFor(l); go(); } };
   }
 
   // ------------------------------------------------------------------ wiring
