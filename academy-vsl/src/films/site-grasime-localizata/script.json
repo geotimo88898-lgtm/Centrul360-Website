@@ -1,6 +1,6 @@
 {
  "id": "site-grasime-localizata",
- "fmt": "45",
+ "fmt": "169",
  "title": "Grăsime localizată",
  "short": "Grăsime localizată",
  "chap": "Grăsime localizată",
@@ -118,8 +118,7 @@
    "jerry": {
     "pose": "bucurie",
     "say": "Atât de simplu?",
-    "at": 1,
-    "x": 470
+    "at": 1
    }
   },
   {
@@ -127,7 +126,7 @@
    "kicker": "Poze reale din clinică",
    "head": "Nu promitem. *Îți arătăm.*",
    "nuki": "off",
-   "ih": 560,
+   "ih": 430,
    "items": [
     {
      "img": "brand_asset/catalog/cazul-04-liposonix-abdomen.webp",
@@ -174,8 +173,7 @@
    "jerry": {
     "pose": "surprins",
     "say": "Wow!",
-    "at": 0.4,
-    "x": 470
+    "at": 0.4
    }
   },
   {
@@ -214,8 +212,7 @@
    "jerry": {
     "pose": "bucurie",
     "say": "Te așteptăm!",
-    "at": 1,
-    "x": 470
+    "at": 1
    }
   }
  ]

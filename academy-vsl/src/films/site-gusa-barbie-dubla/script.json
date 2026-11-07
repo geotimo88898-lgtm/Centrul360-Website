@@ -1,6 +1,6 @@
 {
  "id": "site-gusa-barbie-dubla",
- "fmt": "45",
+ "fmt": "169",
  "title": "Gușă și bărbie dublă",
  "short": "Gușă și bărbie dublă",
  "chap": "Gușă și bărbie dublă",
@@ -119,8 +119,7 @@
    "jerry": {
     "pose": "bucurie",
     "say": "Fără cicatrici!",
-    "at": 1,
-    "x": 470
+    "at": 1
    }
   },
   {
@@ -128,7 +127,7 @@
    "kicker": "Poze reale din clinică",
    "head": "Nu promitem. *Îți arătăm.*",
    "nuki": "off",
-   "ih": 560,
+   "ih": 430,
    "items": [
     {
      "img": "brand_asset/catalog/cazul-02-hifu-gusa.webp",
@@ -175,8 +174,7 @@
    "jerry": {
     "pose": "surprins",
     "say": "Wow!",
-    "at": 0.4,
-    "x": 470
+    "at": 0.4
    }
   },
   {
@@ -215,8 +213,7 @@
    "jerry": {
     "pose": "bucurie",
     "say": "Te așteptăm!",
-    "at": 1,
-    "x": 470
+    "at": 1
    }
   }
  ]

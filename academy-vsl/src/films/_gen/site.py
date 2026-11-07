@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The three website films (4:5, 60-100 s), from the words already on the site (v2): home, Grăsime localizată,
+"""The three website films (16:9, 1920×1080, 60-100 s; FMT = '45' for the old 4:5), from the words already on the site (v2): home, Grăsime localizată,
 Gușă și bărbie dublă. Real photos only (brand_asset/catalog), the real rating (5,0, 300+ Google reviews),
 no prices, "rezultatele diferă".  python3 site.py"""
 import json, os
@@ -14,7 +14,7 @@ def intro(kicker, title, sub, beats):
 
 
 def proof(items, beats, jerry=None):
-    sc = {'type': 'compare', 'kicker': 'Poze reale din clinică', 'head': 'Nu promitem. *Îți arătăm.*', 'nuki': 'off', 'ih': 560,
+    sc = {'type': 'compare', 'kicker': 'Poze reale din clinică', 'head': 'Nu promitem. *Îți arătăm.*', 'nuki': 'off', 'ih': 560 if FMT == '45' else 430,
           'items': [{'img': CAT + f, 't': t, 'at': a} for f, t, a in items], 'beats': beats, 'fit': 'contain'}
     if jerry: sc['jerry'] = jerry
     return sc
@@ -32,8 +32,9 @@ def cta(beats, items):
             'jerry': {'pose': 'bucurie', 'say': 'Te așteptăm!', 'at': 1, 'x': 470}}
 
 
+FMT = '169'  # the website films are landscape (16:9); '45' makes them 1080×1350
 F = {}
-F['site-acasa'] = {'id': 'site-acasa', 'fmt': '45', 'title': 'Centrul360', 'short': 'Centrul360', 'chap': 'Centrul360', 'scenes': [
+F['site-acasa'] = {'id': 'site-acasa', 'fmt': FMT, 'title': 'Centrul360', 'short': 'Centrul360', 'chap': 'Centrul360', 'scenes': [
     intro('Timișoara și Arad', 'Rezultate pe care le *vezi*', 'Medicină estetică non-invazivă, pentru corp și față.', [
         B('Bună! Eu sunt Nuki, de la Centrul360.', 'salut-pa', tts='Bună! Eu sunt Nuki, de la Centrul trei sute șaizeci.'),
         B('Ai încercat tratamente care promit mult, dar nu se văd?', 'gandeste')]),
@@ -62,7 +63,7 @@ F['site-acasa'] = {'id': 'site-acasa', 'fmt': '45', 'title': 'Centrul360', 'shor
         ['Consultație gratuită', 'Masaj facial cadou', 'Confirmare pe WhatsApp']),
 ]}
 
-F['site-grasime-localizata'] = {'id': 'site-grasime-localizata', 'fmt': '45', 'title': 'Grăsime localizată', 'short': 'Grăsime localizată', 'chap': 'Grăsime localizată', 'scenes': [
+F['site-grasime-localizata'] = {'id': 'site-grasime-localizata', 'fmt': FMT, 'title': 'Grăsime localizată', 'short': 'Grăsime localizată', 'chap': 'Grăsime localizată', 'scenes': [
     intro('Liposonix · Timișoara și Arad', 'Grăsimea care *nu cedează*', 'Fără bisturiu, fără ace, fără recuperare.', [
         B('Mănânci atent, faci mișcare, dar burtica de jos tot nu pleacă?', 'gandeste'),
         B('Bună, eu sunt Nuki. Îți arăt de ce.', 'salut-pa')]),
@@ -91,7 +92,7 @@ F['site-grasime-localizata'] = {'id': 'site-grasime-localizata', 'fmt': '45', 't
         ['Consultație gratuită', 'Măsurăm zona', 'Masaj facial cadou']),
 ]}
 
-F['site-gusa-barbie-dubla'] = {'id': 'site-gusa-barbie-dubla', 'fmt': '45', 'title': 'Gușă și bărbie dublă', 'short': 'Gușă și bărbie dublă', 'chap': 'Gușă și bărbie dublă', 'scenes': [
+F['site-gusa-barbie-dubla'] = {'id': 'site-gusa-barbie-dubla', 'fmt': FMT, 'title': 'Gușă și bărbie dublă', 'short': 'Gușă și bărbie dublă', 'chap': 'Gușă și bărbie dublă', 'scenes': [
     intro('HIFU și RF Sculpt · Timișoara și Arad', 'Bărbia dublă, *și fără kilograme în plus*', 'Fără operație, fără cicatrici, fără recuperare.', [
         B('Ai bărbie dublă, deși nu ai kilograme în plus?', 'gandeste'),
         B('Bună, eu sunt Nuki. Uite ce se întâmplă.', 'salut-pa')]),
@@ -121,6 +122,9 @@ F['site-gusa-barbie-dubla'] = {'id': 'site-gusa-barbie-dubla', 'fmt': '45', 'tit
 ]}
 
 for fid, S in F.items():
+    if FMT != '45':  # Jerry's x was set for the 1080 wide frame: in 16:9 the engine places him by Nuki's side
+        for sc in S['scenes']:
+            if 'jerry' in sc: sc['jerry'].pop('x', None)
     d = os.path.join(HERE, '..', fid)
     os.makedirs(d, exist_ok=True)
     txt = json.dumps(S, ensure_ascii=False, indent=1)

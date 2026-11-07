@@ -567,7 +567,7 @@
     const s = ctx.s;
     const c = contentBox(el, sc.nuki || 'l');
     const top = head(c, ctx, sc);
-    const bw = F45 ? 960 : 1150, bh = 380;
+    const bw = F45 ? 960 : 1000, bh = 380; // 16:9: the drawing on the left, the steps beside it
     const box = h('div', 'box'); box.style.left = '0'; box.style.top = (top + 95) + 'px'; box.style.width = bw + 'px'; box.style.height = bh + 'px';
     c.appendChild(box);
     const lipo = (sc.mode || 'lipo') === 'lipo';
@@ -600,8 +600,10 @@
     const waves = [];
     for (let i = 0; i < 4; i++) { const w = h('div'); w.style.cssText = 'position:absolute;left:' + (cx - 70) + 'px;width:140px;height:44px;border-radius:50%;border:4px solid var(--teal);border-top-color:transparent;border-left-color:transparent;border-right-color:transparent'; box.appendChild(w); waves.push(w); }
     const steps = (sc.steps || []);
-    const st = h('div', 'box'); st.style.left = '0'; st.style.right = '0'; st.style.top = (top + 95 + bh + 26) + 'px'; st.style.display = 'flex'; st.style.flexDirection = 'column'; st.style.gap = '12px';
-    steps.forEach((x, i) => { const d = h('div', 'rs card', '<span class="ic soft">' + (i + 1) + '</span><span>' + rich(x.t) + '</span>'); d.style.fontSize = F45 ? '30px' : '32px'; d.style.padding = '12px 22px 12px 12px'; st.appendChild(d); ctx.act(d, 'rise', x.at, { sfx: 'pop', gain: 0.7 }); ctx.act(d.querySelector('.ic'), 'cls', x.at, { dt: 0.2, name: 'lit', sfx: null, dur: 0.01 }); });
+    const st = h('div', 'box'); st.style.display = 'flex'; st.style.flexDirection = 'column'; st.style.gap = '12px';
+    if (F45) { st.style.left = '0'; st.style.right = '0'; st.style.top = (top + 95 + bh + 26) + 'px'; }
+    else { st.style.left = (bw + 48) + 'px'; st.style.right = '0'; st.style.top = (top + 95) + 'px'; st.style.height = bh + 'px'; st.style.justifyContent = 'center'; st.style.gap = '18px'; }
+    steps.forEach((x, i) => { const d = h('div', 'rs card', '<span class="ic soft">' + (i + 1) + '</span><span>' + rich(x.t) + '</span>'); d.style.fontSize = F45 ? '30px' : '30px'; d.style.padding = '12px 22px 12px 12px'; if (!F45) d.style.lineHeight = '1.22'; st.appendChild(d); ctx.act(d, 'rise', x.at, { sfx: 'pop', gain: 0.7 }); ctx.act(d.querySelector('.ic'), 'cls', x.at, { dt: 0.2, name: 'lit', sfx: null, dur: 0.01 }); });
     c.appendChild(st);
     ctx.act(box, 'rise', -1, { dt: 0.05, sfx: 'swish' });
     ctx.act(ap, 'down', -1, { dt: 0.4, sfx: 'pop2' });
@@ -804,6 +806,7 @@
   async function boot() {
     S = await (await fetch('../films/' + FILM + '/script.json', { cache: 'no-store' })).json();
     if (S.fmt === '45') { F45 = true; W = 1080; H = 1350; document.documentElement.classList.add('f45'); const bs = document.querySelector('#brand small'); if (bs) bs.textContent = ''; const g = document.getElementById('gl'); g.width = W; g.height = H; }
+    if (S.fmt === '169') { const bs = document.querySelector('#brand small'); if (bs) bs.textContent = ''; } // a website film: no "Academia"
     try { const r = await fetch('../films/' + FILM + '/timing.json', { cache: 'no-store' }); if (r.ok) TIM = await r.json(); } catch (e) { /* no voice yet: estimated */ }
     await loadIcons(collectIcons());
     document.fonts && await document.fonts.ready;
