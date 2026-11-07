@@ -121,7 +121,7 @@ html.ui-nou #panel-panou.sx-host{ --sx-rg:clamp(64px,8vw,112px); width:100%; min
 html.ui-nou #panel-panou.sx-host:not(.active){ display:none !important; }
 html.ui-nou #panel-panou.sx-host > *, html.ui-nou #panel-panou.sx-host > .db-root > *, html.ui-nou #panel-panou.sx-host .db-blocks > *{ grid-column:1 / -1; min-width:0; }
 html.ui-nou #panel-panou.sx-host > .db-root, html.ui-nou #panel-panou.sx-host .db-blocks{ display:contents; }
-html.ui-nou #panel-panou.sx-host .db-views{ order:0; margin:0 0 calc(28px - var(--sx-rg)); justify-self:start; }
+html.ui-nou #panel-panou.sx-host .db-views{ order:0; margin:0 0 calc(12px - var(--sx-rg)); justify-self:start; }
 html.ui-nou #panel-panou.sx-host > .sx-stage{ order:1; }
 html.ui-nou #panel-panou.sx-host .db-kpis{ display:none !important; }
 html.ui-nou #panel-panou.sx-host [data-part="b:today"]{ order:2; }
@@ -170,10 +170,10 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
 }
 
 .sx-stage{ --sx-ac:var(--accent,#2fd6c3); --sx-tint:color-mix(in srgb, var(--sx-ac) 42%, #fff); position:relative; isolation:isolate; color:#f4f8f8;
-  overflow-x:clip; overflow-y:visible; padding:8px 4px 6px; display:flex; flex-direction:column; gap:22px; }
+  overflow-x:clip; overflow-y:visible; padding:8px 4px 6px; display:flex; flex-direction:column; gap:clamp(56px,6vw,88px); }
 
 /* the top: the greeting, Nuki beside it */
-.sx-s-head{ position:relative; z-index:3; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; min-width:0; }
+.sx-s-head{ position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; gap:24px; min-width:0; }
 .sx-s-hello{ min-width:0; display:flex; flex-direction:column; gap:14px; }
 .sx-s-eye{ font:500 11px/1 var(--sx-mono); letter-spacing:.16em; text-transform:uppercase; color:rgba(220,240,238,.55); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .sx-s-eye i{ width:7px; height:7px; border-radius:50%; background:var(--sx-ac); box-shadow:0 0 0 4px color-mix(in srgb, var(--sx-ac) 16%, transparent), 0 0 12px var(--sx-ac); animation:sx-live 2s ease-in-out infinite; }
@@ -224,7 +224,7 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
 .sx-p-logo .h{ animation:n-mkX 6s var(--sx-e) 3s infinite; }
 
 /* the money: the one „Încasat azi”, centred under the prism */
-.sx-s-money{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:16px; min-width:0; width:100%; max-width:720px; margin-top:clamp(26px,3vw,40px); text-align:center; }
+.sx-s-money{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:24px; min-width:0; width:100%; max-width:720px; margin-top:clamp(26px,3vw,40px); text-align:center; }
 .sx-s-lbl{ flex-wrap:wrap; justify-content:center; white-space:nowrap; font:500 11px/1 var(--sx-mono); letter-spacing:.16em; text-transform:uppercase; color:rgba(220,240,238,.62); display:flex; align-items:center; gap:10px; }
 .sx-s-delta{ font:600 11px/1 var(--sx-mono); letter-spacing:.02em; padding:5px 8px; border-radius:999px; text-transform:none; }
 .sx-s-delta.up{ color:#7ff5c4; background:rgba(52,211,153,.12); box-shadow:inset 0 0 0 1px rgba(52,211,153,.3); }
@@ -270,7 +270,7 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
 /* ================================================================ a computer: the scene lies down (George: „pe calculator poate să fie orizontal”)
    the cards in a column on the left (a vertical loop when they don't fit), the prism in the middle, the number on the right */
 @media (min-width:1024px){
-  .sx-flow{ display:grid; grid-template-columns:minmax(220px,264px) clamp(96px,8vw,124px) minmax(0,1fr); grid-template-areas:"ppl prism money"; align-items:center; column-gap:clamp(56px,6.5vw,110px); }
+  .sx-flow{ display:grid; grid-template-columns:minmax(220px,264px) clamp(96px,8vw,124px) minmax(0,1fr); grid-template-areas:"ppl prism money"; align-items:center; column-gap:clamp(72px,8vw,136px); }
   .sx-p-row.is-col{ grid-area:ppl; padding:0; align-self:center; }
   .sx-p-row.is-col.is-loop{ cursor:grab; -webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent); mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent); }
   .sx-p-row.is-col .sx-p-people{ flex-direction:column; width:100%; gap:10px; }
@@ -286,7 +286,7 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
 /* ================================================================ phones: thought from 390 up
    the greeting with a small Nuki, the row of cosmeticians, the prism small, the big number, the buttons on one row, then the rest */
 @media (max-width:699px){
-  .sx-stage{ padding:2px 0 4px; gap:14px; }
+  .sx-stage{ padding:2px 0 4px; gap:30px; }
   .sx-s-head{ align-items:center; gap:10px; }
   .sx-s-hello{ gap:10px; }
   .sx-s-eye{ font-size:10px; letter-spacing:.14em; flex-wrap:nowrap; white-space:nowrap; }
@@ -301,7 +301,7 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
   .sx-p-people li > i, .sx-p-people li > img{ width:30px; height:30px; font-size:11px; }
   .sx-p-logo{ width:58px; margin-top:44px; }
   .sx-p-logo .v, .sx-p-logo .h{ animation:none; } /* the ellipses' flip repaints the SVG each frame: on a phone only the whole logo turns (compositor) */
-  .sx-s-money{ gap:12px; margin-top:22px; }
+  .sx-s-money{ gap:16px; margin-top:24px; }
   .sx-s-num{ font-size:clamp(56px,17vw,74px); margin-top:-4px; }
   .sx-s-sub{ font-size:14px; }
   .sx-acts{ flex-wrap:nowrap; gap:6px; margin-top:2px; width:100%; }
@@ -743,3 +743,10 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
   .sx-s-money .sx-acts{ order:3; }
   .sx-s-money .sx-mcard{ order:4; width:100%; margin-top:4px; }
 }
+
+/* spacing (George, 8.11: „puțin mai mult spacing, să arate mai clean”): the greeting stands apart from the scene, the label stays
+   with its number, then air before the card and before the buttons; on a computer the three columns have a wide gutter */
+.sx-s-money .sx-s-lbl{ margin-bottom:-12px; }
+.sx-s-money .sx-mcard{ margin-top:8px; }
+.sx-s-money .sx-acts{ margin-top:4px; }
+@media (max-width:699px){ .sx-s-money .sx-s-lbl{ margin-bottom:-6px; } .sx-s-money .sx-mcard{ margin-top:8px; } .sx-p-logo{ margin-top:48px; } }
