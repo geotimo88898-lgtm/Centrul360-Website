@@ -24,15 +24,16 @@ html.ui-nou body{ font-family:var(--sx-sans); letter-spacing:-.012em; }
 html.ui-nou h1, html.ui-nou h2, html.ui-nou h3{ font-family:var(--sx-sans); }
 html.ui-nou h2{ font-weight:650; letter-spacing:-.045em; }
 html.ui-nou:not([data-theme="light"]) body{ background:var(--sx-bg); }
-/* the stage behind everything: a fine grid that fades out, a cold glow from above, a vignette (static, painted once) */
+/* the stage behind every screen, as on Summitlane's admin: the fine grid (the one the money block used to sit in), a glow in the
+   accent from above, a vignette. A fixed layer of its own, painted once: scrolling moves nothing in it. Discreet, for the tables. */
 html.ui-nou:not([data-theme="light"]) body::before{
   background:
-    radial-gradient(70vw 50vh at 62% -12%, rgba(47,214,195,.10), transparent 70%),
-    radial-gradient(50vw 50vh at 8% 110%, rgba(120,140,255,.06), transparent 70%),
-    linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px) 0 0 / 72px 72px,
-    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px) 0 0 / 72px 72px,
+    radial-gradient(70vw 50vh at 62% -12%, color-mix(in srgb, var(--accent,#2fd6c3) 10%, transparent), transparent 70%),
+    radial-gradient(50vw 50vh at 8% 110%, rgba(120,140,255,.05), transparent 70%),
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 56px 56px,
     var(--sx-bg);
-  -webkit-mask-image:none; mask-image:none;
+  -webkit-mask-image:none; mask-image:none; will-change:transform; transform:translateZ(0);
 }
 html.ui-nou:not([data-theme="light"]) body::after{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
   background:radial-gradient(120% 90% at 50% 30%, transparent 55%, rgba(0,0,0,.55) 100%); }
@@ -118,162 +119,190 @@ html.ui-nou.sx-boot::after{ content:""; position:fixed; inset:0; z-index:9998; b
 @keyframes sx-i-wm{ to{ opacity:1; transform:translate3d(-50%,0,0); } }
 @keyframes sx-i-spark{ 0%{ opacity:0; transform:translate(-50%,-50%) translate3d(0,0,0) scale(.4); } 25%{ opacity:1; } 100%{ opacity:0; transform:translate(-50%,-50%) translate3d(var(--x),var(--y),0) scale(1); } }
 
-/* ================================================================ PANOU (admin): the money stage with Nuki (portal-summit-stage.js) */
-html.ui-nou #panel-panou.sx-host{ display:flex; flex-direction:column; gap:1.15rem; }
-html.ui-nou #panel-panou.sx-host:not(.active){ display:none; }
-html.ui-nou #panel-panou.sx-host > .db-root{ display:contents; }
-html.ui-nou #panel-panou.sx-host .db-views{ order:0; margin:0; }
+/* ================================================================ PANOU (admin): ONE block, no card (portal-summit-stage.js + portal-nou-prism.js)
+   the greeting and Nuki, then the cosmeticians' spectrum into the prism, the white ray into the one „Încasat azi”, then the rest.
+   No border, no card background, no rounded box: it floats on the portal's own grid. Everything coloured follows --accent. */
+/* the Panou is a story, each thing once: the money of today (the block), what comes next today (the appointments, who to call),
+   the ads (only with numbers), the trend and the pay, then the team. A grid with a lot of air; the small KPI row is gone (its numbers
+   are in the block or in „Ziua de azi”). */
+html.ui-nou #panel-panou.sx-host{ --sx-rg:clamp(64px,8vw,112px); width:100%; min-width:0; display:grid !important; grid-template-columns:minmax(0,1fr) minmax(280px,360px); column-gap:clamp(32px,4vw,64px) !important; row-gap:var(--sx-rg) !important; align-items:start; }
+html.ui-nou #panel-panou.sx-host:not(.active){ display:none !important; }
+html.ui-nou #panel-panou.sx-host > *, html.ui-nou #panel-panou.sx-host > .db-root > *, html.ui-nou #panel-panou.sx-host .db-blocks > *{ grid-column:1 / -1; min-width:0; }
+html.ui-nou #panel-panou.sx-host > .db-root, html.ui-nou #panel-panou.sx-host .db-blocks{ display:contents; }
+html.ui-nou #panel-panou.sx-host .db-views{ order:0; margin:0 0 calc(28px - var(--sx-rg)); justify-self:start; }
 html.ui-nou #panel-panou.sx-host > .sx-stage{ order:1; }
-html.ui-nou #panel-panou.sx-host .db-kpis{ order:4; }
-html.ui-nou #panel-panou.sx-host .db-blocks, html.ui-nou #panel-panou.sx-host [data-kpi-root]{ order:5; }
-/* for the owner the stage IS the hero: the old hero, the prism block and the clinic map step aside */
-html.ui-nou #panel-panou.sx-host .db-hero, html.ui-nou #panel-panou.sx-host > .n-money, html.ui-nou #panel-panou.sx-host > .n-live{ display:none !important; }
-html.ui-nou #panel-panou.sx-host:has([data-kpi-root]) > .sx-stage{ display:none; }
+html.ui-nou #panel-panou.sx-host .db-kpis{ display:none !important; }
+html.ui-nou #panel-panou.sx-host [data-part="b:today"]{ order:2; }
+html.ui-nou #panel-panou.sx-host > .sx-adsec{ order:3; }
+html.ui-nou #panel-panou.sx-host [data-part="b:chart"]{ order:4; grid-column:1; }
+html.ui-nou #panel-panou.sx-host [data-part="b:pay"]{ order:4; grid-column:2; }
+html.ui-nou #panel-panou.sx-host [data-part="b:bonus"]{ order:5; }
+html.ui-nou #panel-panou.sx-host [data-part="b:team"]{ order:6; }
+html.ui-nou #panel-panou.sx-host [data-kpi-root]{ order:5; }
+html.ui-nou #panel-panou.sx-host:has([data-kpi-root]){ row-gap:1.15rem !important; }
+html.ui-nou #panel-panou.sx-host:has([data-kpi-root]) .db-views{ margin:0; }
+/* for the owner the stage IS the hero: the old hero, the old prism card and the clinic map step aside */
+html.ui-nou #panel-panou.sx-host .db-hero, html.ui-nou #panel-panou.sx-host > .n-money, html.ui-nou #panel-panou.sx-host > .n-live, html.ui-nou #panel-panou.sx-host > .n-p3{ display:none !important; }
+html.ui-nou #panel-panou.sx-host:has([data-kpi-root]) > :is(.sx-stage, .sx-adsec){ display:none !important; }
+/* what comes next today, in the head of „Ziua de azi” */
+html.ui-nou .db-today-meta{ display:flex; align-items:center; gap:14px; margin-left:auto; margin-right:10px; font-size:14px; color:var(--muted); white-space:nowrap; }
+html.ui-nou .db-today-meta b{ color:var(--fg); font-weight:650; font-variant-numeric:tabular-nums; }
+html.ui-nou .db-today .k-card-head{ flex-wrap:wrap; row-gap:10px; }
+/* each section rises in once when it reaches the screen (transform and opacity) */
+html.ui-nou #panel-panou .sx-rise{ opacity:0; transform:translate3d(0,28px,0); }
+html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:opacity .8s var(--sx-e), transform 1s var(--sx-e); }
+@media (max-width:860px){
+  html.ui-nou #panel-panou.sx-host{ --sx-rg:72px; grid-template-columns:minmax(0,1fr); }
+  html.ui-nou #panel-panou.sx-host [data-part="b:chart"], html.ui-nou #panel-panou.sx-host [data-part="b:pay"]{ grid-column:1; }
+  html.ui-nou #panel-panou.sx-host [data-part="b:pay"]{ order:5; }
+  html.ui-nou .db-today-meta{ order:3; width:100%; margin:0; justify-content:space-between; }
+}
 
-.sx-stage{ position:relative; isolation:isolate; overflow:hidden; border-radius:30px; min-height:min(760px, calc(100vh - 150px)); color:#f4f8f8;
-  background:radial-gradient(90% 120% at 74% 46%, #071513 0%, #030607 55%, #010202 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(255,255,255,.07), 0 50px 100px -50px rgba(0,0,0,.95);
-  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); }
-.sx-stage::before{ content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
-  background:linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0/56px 56px, linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/56px 56px;
-  -webkit-mask-image:radial-gradient(80% 90% at 70% 50%, #000 30%, transparent 85%); mask-image:radial-gradient(80% 90% at 70% 50%, #000 30%, transparent 85%); }
-.sx-stage::after{ content:""; position:absolute; inset:0; z-index:3; pointer-events:none; border-radius:inherit;
-  background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,.05) 50%, transparent 60%); transform:translate3d(-100%,0,0); animation:sx-glint 9s var(--sx-e) 2.2s infinite; }
-@keyframes sx-glint{ 0%{ transform:translate3d(-100%,0,0); } 18%,100%{ transform:translate3d(100%,0,0); } }
+/* the ads of today, their own section */
+.sx-adsec{ --sx-ac:var(--accent,#2fd6c3); display:grid; gap:22px; color:#f4f8f8; }
+.sx-adsec[hidden]{ display:none !important; }
+.sx-sec-h{ display:flex; align-items:center; gap:10px; margin:0; font:500 11px/1 var(--sx-mono) !important; letter-spacing:.16em !important; text-transform:uppercase; color:rgba(220,240,238,.62) !important; }
+.sx-sec-h i{ width:7px; height:7px; border-radius:50%; background:var(--sx-ac); box-shadow:0 0 10px var(--sx-ac); }
+.sx-ad-nums{ display:grid; grid-template-columns:repeat(var(--n,4), minmax(0,1fr)); }
+.sx-ad-nums[data-n="1"]{ --n:1; } .sx-ad-nums[data-n="2"]{ --n:2; } .sx-ad-nums[data-n="3"]{ --n:3; }
+.sx-ad-nums > div{ min-width:0; padding:4px 18px 0 0; }
+.sx-ad-nums > div + div{ padding-left:22px; border-left:1px solid rgba(255,255,255,.07); }
+.sx-ad-nums small{ display:block; font:500 10.5px/1.2 var(--sx-mono); letter-spacing:.14em; text-transform:uppercase; color:rgba(220,240,238,.55); margin-bottom:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sx-ad-nums b{ display:block; font:600 clamp(28px,3vw,40px)/1 var(--sx-sans); letter-spacing:-.045em; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.sx-ad-nums span{ display:block; margin-top:10px; font-size:13px; color:rgba(225,235,238,.55); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (max-width:699px){
+  .sx-ad-nums{ grid-template-columns:repeat(2, minmax(0,1fr)); row-gap:26px; }
+  .sx-ad-nums > div:nth-child(odd){ padding-left:0; border-left:0; }
+  .sx-ad-nums > div:last-child:nth-child(odd){ grid-column:1 / -1; }
+  .sx-ad-nums b{ font-size:30px; }
+}
 
-/* left: the words and the numbers */
-.sx-s-copy{ position:relative; z-index:2; padding:48px 0 40px 48px; display:flex; flex-direction:column; justify-content:center; gap:18px; min-width:0; }
+.sx-stage{ --sx-ac:var(--accent,#2fd6c3); --sx-tint:color-mix(in srgb, var(--sx-ac) 42%, #fff); position:relative; isolation:isolate; color:#f4f8f8;
+  overflow-x:clip; overflow-y:visible; padding:8px 4px 6px; display:flex; flex-direction:column; gap:22px; }
+
+/* the top: the greeting, Nuki beside it */
+.sx-s-head{ position:relative; z-index:3; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; min-width:0; }
+.sx-s-hello{ min-width:0; display:flex; flex-direction:column; gap:14px; }
 .sx-s-eye{ font:500 11px/1 var(--sx-mono); letter-spacing:.16em; text-transform:uppercase; color:rgba(220,240,238,.55); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.sx-s-eye i{ width:7px; height:7px; border-radius:50%; background:var(--sx-teal); box-shadow:0 0 0 4px rgba(47,214,195,.15), 0 0 12px var(--sx-teal); animation:sx-live 2s ease-in-out infinite; }
+.sx-s-eye i{ width:7px; height:7px; border-radius:50%; background:var(--sx-ac); box-shadow:0 0 0 4px color-mix(in srgb, var(--sx-ac) 16%, transparent), 0 0 12px var(--sx-ac); animation:sx-live 2s ease-in-out infinite; }
 @keyframes sx-live{ 50%{ opacity:.45; transform:scale(.8); } }
-.sx-s-hi{ margin:0 0 6px; font:600 clamp(40px,4.6vw,72px)/.98 var(--sx-sans); letter-spacing:-.045em; color:#fff; }
-.sx-s-hi em{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; color:#bff6ee; letter-spacing:-.02em; }
-.sx-s-lbl{ flex-wrap:wrap; white-space:nowrap; font:500 11px/1 var(--sx-mono); letter-spacing:.16em; text-transform:uppercase; color:rgba(220,240,238,.6); display:flex; align-items:center; gap:10px; margin-top:6px; }
+.sx-s-hi{ margin:0; font:600 clamp(40px,4.4vw,68px)/.98 var(--sx-sans); letter-spacing:-.045em; color:#fff; }
+.sx-s-hi em{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; color:var(--sx-tint); letter-spacing:-.02em; }
+.sx-s-nk{ position:relative; flex:none; width:clamp(84px,7vw,108px); aspect-ratio:1; display:grid; place-items:center; }
+.sx-s-glow{ position:absolute; inset:-18%; border-radius:50%; pointer-events:none; background:radial-gradient(closest-side, color-mix(in srgb, var(--sx-ac) 30%, transparent), transparent 72%); animation:sx-breathe 5s ease-in-out infinite; will-change:transform,opacity; }
+@keyframes sx-breathe{ 50%{ opacity:.6; transform:scale(.92); } }
+.sx-nuki{ position:relative; z-index:1; width:100%; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sx-nuki .fl{ display:block; animation:sx-float 4.6s ease-in-out infinite; will-change:transform; }
+.sx-nuki img{ display:block; width:100%; height:auto; transition:opacity .2s, transform .5s var(--sx-e); }
+.sx-nuki img.swap{ opacity:0; transform:scale(.94); }
+.sx-nuki.jump .fl{ animation:sx-jump .7s var(--sx-e), sx-float 4.6s ease-in-out .7s infinite; }
+@keyframes sx-float{ 50%{ transform:translate3d(0,-8px,0) rotate(-1deg); } }
+@keyframes sx-jump{ 0%{ transform:none; } 30%{ transform:translate3d(0,-26px,0) scale(1.06); } 60%{ transform:translate3d(0,4px,0) scale(.98); } 100%{ transform:none; } }
+.sx-say{ position:absolute; z-index:4; right:calc(100% + 12px); top:8%; width:max-content; max-width:min(300px,42vw); padding:12px 14px 12px 16px; border-radius:18px 18px 6px 18px; font-size:13.5px; line-height:1.4; color:rgba(240,248,248,.9);
+  background:rgba(8,12,13,.94); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--sx-ac) 26%, transparent), 0 20px 40px -20px rgba(0,0,0,.9);
+  opacity:0; transform:translate3d(0,8px,0) scale(.97); transition:opacity .45s var(--sx-e), transform .6s var(--sx-e); pointer-events:none; }
+.sx-say.in{ opacity:1; transform:none; }
+.sx-say small{ display:block; font:500 10px/1 var(--sx-mono); letter-spacing:.16em; color:var(--sx-tint); margin-bottom:6px; }
+.sx-say b{ color:#fff; }
+
+/* the scene, the same from 360 to 1440: the row of cosmeticians on top (a loop when they don't fit), the prism and the number fixed in the middle */
+.sx-flow{ position:relative; display:flex; flex-direction:column; align-items:center; min-width:0; }
+.sx-p-cv{ position:absolute; left:0; top:0; z-index:0; pointer-events:none; }
+.sx-p-row{ position:relative; z-index:1; align-self:stretch; overflow:hidden; contain:inline-size; min-width:0; padding:6px 0 14px; touch-action:pan-y; cursor:default; user-select:none; -webkit-user-select:none; }
+.sx-p-row.is-loop{ cursor:grab; -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent); mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent); }
+.sx-p-row.is-drag{ cursor:grabbing; }
+.sx-p-people{ position:relative; list-style:none; margin:0; padding:0; display:flex; gap:12px; width:max-content; will-change:transform; }
+.sx-p-people li{ position:relative; flex:none; display:grid; grid-template-columns:auto auto; align-items:center; gap:10px; padding:8px 16px 8px 8px; border-radius:16px; max-width:220px;
+  background:rgba(8,10,11,.78); box-shadow:inset 0 0 0 1px rgba(255,255,255,.09); transform-origin:50% 100%; }
+.sx-p-people li > i, .sx-p-people li > img{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font:700 12px/1 var(--sx-sans); font-style:normal; object-fit:cover; color:#0a0b0c; background:var(--c); pointer-events:none; }
+.sx-p-people span{ display:grid; min-width:0; gap:2px; }
+.sx-p-people b{ font-size:14px; font-weight:600; line-height:1.2; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sx-p-people em{ font-style:normal; font-size:14px; line-height:1.2; font-weight:650; font-variant-numeric:tabular-nums; color:#fff; white-space:nowrap; }
+.sx-p-people u{ position:absolute; left:50%; bottom:-4px; width:7px; height:7px; margin-left:-3.5px; border-radius:50%; background:var(--c); box-shadow:0 0 10px var(--c); text-decoration:none; }
+.sx-p-people li.is-zero > i, .sx-p-people li.is-zero > img, .sx-p-people li.is-zero u{ opacity:.55; }
+.sx-p-people li.is-zero em{ color:rgba(238,240,247,.62); font-weight:550; }
+/* a payment from her: her card lights up (a ring layer that fades: opacity only) */
+.sx-p-people li::after{ content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; box-shadow:inset 0 0 0 1.5px var(--c), 0 0 26px -2px var(--c); }
+.sx-p-people li.sx-p-hit::after{ animation:sx-hit 1.3s var(--sx-e); }
+@keyframes sx-hit{ 25%{ opacity:1; } 100%{ opacity:0; } }
+.sx-p-logo{ position:relative; z-index:1; width:clamp(72px,7vw,104px); aspect-ratio:1; margin-top:clamp(64px,7vw,96px); color:#fff; }
+.sx-p-logo svg{ width:100%; height:100%; overflow:visible; animation:n-logo-spin 18s linear infinite; }
+.sx-p-logo .v, .sx-p-logo .h{ transform-box:fill-box; transform-origin:50% 50%; }
+.sx-p-logo .v{ animation:n-mkY 6s var(--sx-e) infinite; }
+.sx-p-logo .h{ animation:n-mkX 6s var(--sx-e) 3s infinite; }
+
+/* the money: the one „Încasat azi”, centred under the prism */
+.sx-s-money{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:16px; min-width:0; width:100%; max-width:720px; margin-top:clamp(26px,3vw,40px); text-align:center; }
+.sx-s-lbl{ flex-wrap:wrap; justify-content:center; white-space:nowrap; font:500 11px/1 var(--sx-mono); letter-spacing:.16em; text-transform:uppercase; color:rgba(220,240,238,.62); display:flex; align-items:center; gap:10px; }
 .sx-s-delta{ font:600 11px/1 var(--sx-mono); letter-spacing:.02em; padding:5px 8px; border-radius:999px; text-transform:none; }
 .sx-s-delta.up{ color:#7ff5c4; background:rgba(52,211,153,.12); box-shadow:inset 0 0 0 1px rgba(52,211,153,.3); }
 .sx-s-delta.down{ color:#ffb0b2; background:rgba(255,107,112,.1); box-shadow:inset 0 0 0 1px rgba(255,107,112,.28); }
-.sx-s-num{ position:relative; display:flex; align-items:baseline; gap:.18em; margin:-4px 0 0; font:650 clamp(64px,8.4vw,128px)/.9 var(--sx-sans); letter-spacing:-.065em;
-  font-variant-numeric:tabular-nums; color:#fff; text-shadow:0 0 40px rgba(47,214,195,.25); white-space:nowrap; }
-.sx-s-num small{ font:400 .34em/1 'Fraunces',Georgia,serif; font-style:italic; letter-spacing:-.01em; color:#9ff2e8; }
+.sx-s-num{ position:relative; display:flex; justify-content:center; align-items:baseline; gap:.18em; margin:-6px 0 0; font:650 clamp(64px,8vw,132px)/.9 var(--sx-sans); letter-spacing:-.065em;
+  font-variant-numeric:tabular-nums; color:#fff; text-shadow:0 0 40px color-mix(in srgb, var(--sx-ac) 32%, transparent); white-space:nowrap; transform-origin:50% 60%; }
+.sx-s-num small{ font:400 .34em/1 'Fraunces',Georgia,serif; font-style:italic; letter-spacing:-.01em; color:var(--sx-tint); }
 .sx-s-num.pop{ animation:sx-pop .9s var(--sx-e); }
 @keyframes sx-pop{ 0%{ transform:scale(1); } 18%{ transform:scale(1.06); } 100%{ transform:scale(1); } }
-.sx-s-sub{ color:rgba(225,235,238,.62); font-size:14px; margin-top:-6px; }
+.sx-s-sub{ color:rgba(225,235,238,.62); font-size:15px; margin-top:-6px; }
 .sx-s-sub b{ color:#fff; font-weight:600; }
-.sx-hud{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:0; margin-top:8px; border-top:1px solid rgba(255,255,255,.08); }
-.sx-hud > div{ padding:16px 14px 4px 0; min-width:0; }
-.sx-hud > div + div{ padding-left:16px; border-left:1px solid rgba(255,255,255,.06); }
-.sx-hud small{ display:block; font:500 10px/1.2 var(--sx-mono); letter-spacing:.14em; text-transform:uppercase; color:rgba(220,240,238,.5); margin-bottom:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sx-hud b{ display:block; font:600 21px/1 var(--sx-sans); letter-spacing:-.04em; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sx-hud span{ display:block; margin-top:7px; font-size:12px; color:rgba(225,235,238,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sx-hud{ display:flex; justify-content:center; margin-top:14px; }
+.sx-hud:empty{ display:none; }
+.sx-hud > div{ min-width:0; padding:18px 0 0; border-top:1px solid rgba(255,255,255,.08); min-width:200px; }
+.sx-hud small{ display:block; font:500 10.5px/1.2 var(--sx-mono); letter-spacing:.14em; text-transform:uppercase; color:rgba(220,240,238,.55); margin-bottom:10px; }
+.sx-hud b{ display:block; font:600 26px/1 var(--sx-sans); letter-spacing:-.04em; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.sx-hud span{ display:block; margin-top:8px; font-size:13px; color:rgba(225,235,238,.55); }
 .sx-ads{ display:grid; gap:8px; }
-.sx-ad{ display:flex; align-items:center; gap:10px; min-width:0; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px rgba(255,255,255,.07); font-size:13px; color:rgba(230,238,240,.75); }
+.sx-ads:empty{ display:none; }
+.sx-ad{ display:flex; align-items:center; gap:10px; min-width:0; padding:12px 0; border-top:1px solid rgba(255,255,255,.07); font-size:14px; color:rgba(230,238,240,.75); }
 .sx-ad i{ flex:none; width:8px; height:8px; border-radius:50%; }
 .sx-ad.best i{ background:#7ff5c4; box-shadow:0 0 10px #34d399; }
 .sx-ad.idle i{ background:#ffb27a; box-shadow:0 0 10px #ff8a3d; }
-.sx-ad em{ font-style:normal; font:500 10px/1 var(--sx-mono); letter-spacing:.12em; text-transform:uppercase; color:rgba(220,240,238,.5); flex:none; }
+.sx-ad em{ font-style:normal; font:500 10px/1 var(--sx-mono); letter-spacing:.12em; text-transform:uppercase; color:rgba(220,240,238,.55); flex:none; }
 .sx-ad b{ color:#fff; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sx-ad span{ margin-left:auto; flex:none; font-variant-numeric:tabular-nums; color:#fff; }
-.sx-acts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; }
-.sx-acts button{ height:40px; padding:0 16px; border-radius:999px; border:0; font:600 14px var(--sx-sans); letter-spacing:-.01em; cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+.sx-acts{ display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
+.sx-acts button{ height:44px; padding:0 20px; border-radius:999px; border:0; font:600 14px var(--sx-sans); letter-spacing:-.01em; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;
   color:#fff; background:rgba(255,255,255,.05); box-shadow:inset 0 0 0 1px rgba(255,255,255,.13); transition:transform .4s var(--sx-e), box-shadow .3s, background-color .3s; }
 .sx-acts button:first-child{ background:#fff; color:#04090a; box-shadow:0 10px 30px -10px rgba(255,255,255,.45), 0 0 0 1px #fff; }
 .sx-acts button:hover{ transform:translate3d(0,-2px,0); }
 .sx-acts button:active{ transform:scale(.97); }
-.sx-acts svg{ width:16px; height:16px; }
+.sx-acts svg{ width:16px; height:16px; flex:none; }
 
-/* the live band: each payment of today, as a comet line */
-.sx-feed{ position:relative; overflow:hidden; height:30px; margin-top:2px; -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent); mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent); }
-.sx-feed > div{ position:absolute; left:0; top:0; display:flex; gap:28px; white-space:nowrap; animation:sx-feed var(--dur,40s) linear infinite; will-change:transform; }
-.sx-feed span{ font-size:13px; color:rgba(225,235,238,.55); display:inline-flex; align-items:center; gap:8px; line-height:30px; }
-.sx-feed span b{ color:#bff6ee; font-weight:600; font-variant-numeric:tabular-nums; }
-.sx-feed span i{ width:5px; height:5px; border-radius:50%; background:var(--sx-teal); box-shadow:0 0 8px var(--sx-teal); }
-@keyframes sx-feed{ to{ transform:translate3d(-50%,0,0); } }
-
-/* right: Nuki in the light, inside a Stark-style HUD of turning rings */
-.sx-s-scene{ position:relative; min-height:100%; display:grid; place-items:center; }
-.sx-hudrings{ position:absolute; left:50%; top:50%; width:min(92%,520px); aspect-ratio:1; transform:translate(-50%,-50%); pointer-events:none; }
-.sx-hudrings svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; will-change:transform; }
-.sx-hudrings .r1{ transform-origin:50% 50%; animation:sx-spin 40s linear infinite; }
-.sx-hudrings .r2{ transform-origin:50% 50%; animation:sx-spin 26s linear infinite reverse; }
-.sx-hudrings .r3{ transform-origin:50% 50%; animation:sx-spin 70s linear infinite; }
-.sx-hudrings .r4{ transform-origin:50% 50%; animation:sx-spin 14s linear infinite reverse; }
-@keyframes sx-spin{ to{ transform:rotate(360deg); } }
-.sx-core{ will-change:transform,opacity; position:absolute; left:50%; top:52%; width:min(70%,420px); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%);
-  background:radial-gradient(closest-side, rgba(47,214,195,.34), rgba(47,214,195,.10) 45%, transparent 72%); animation:sx-breathe 5s ease-in-out infinite; pointer-events:none; }
-@keyframes sx-breathe{ 50%{ opacity:.65; transform:translate(-50%,-50%) scale(.94); } }
-.sx-beam{ position:absolute; left:50%; top:-10%; width:2px; height:64%; transform:translateX(-50%); pointer-events:none;
-  background:linear-gradient(180deg, transparent, rgba(191,248,240,.0) 10%, rgba(191,248,240,.55) 70%, rgba(191,248,240,0)); opacity:.6; }
-.sx-floor{ position:absolute; left:50%; bottom:11%; width:min(62%,340px); height:46px; transform:translateX(-50%); border-radius:50%; pointer-events:none;
-  background:radial-gradient(closest-side, rgba(47,214,195,.55), rgba(47,214,195,.12) 55%, transparent); }
-.sx-floor::after{ content:""; position:absolute; inset:28% 18%; border-radius:50%; border:1px solid rgba(191,248,240,.5); animation:sx-ripple 3.2s var(--sx-e) infinite; }
-@keyframes sx-ripple{ 0%{ transform:scale(.4); opacity:1; } 100%{ transform:scale(1.9); opacity:0; } }
-.sx-nuki{ position:relative; z-index:2; width:min(52%,300px); margin-top:-2%; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.sx-nuki .fl{ display:block; animation:sx-float 4.6s ease-in-out infinite; }
-.sx-nuki img{ display:block; width:100%; height:auto; transition:opacity .2s, transform .5s var(--sx-e); }
-.sx-nuki .fl{ will-change:transform; }
-.sx-nuki img.swap{ opacity:0; transform:scale(.94); }
-.sx-nuki.jump .fl{ animation:sx-jump .7s var(--sx-e), sx-float 4.6s ease-in-out .7s infinite; }
-@keyframes sx-float{ 50%{ transform:translate3d(0,-12px,0) rotate(-1deg); } }
-@keyframes sx-jump{ 0%{ transform:none; } 30%{ transform:translate3d(0,-26px,0) scale(1.04); } 60%{ transform:translate3d(0,4px,0) scale(.98); } 100%{ transform:none; } }
-.sx-motes{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
-.sx-motes i{ will-change:transform,opacity; position:absolute; bottom:-6px; left:var(--x); width:var(--s); height:var(--s); border-radius:50%; background:#d6fff9; opacity:0; box-shadow:0 0 8px rgba(47,214,195,.9);
-  animation:sx-mote var(--t) linear var(--d) infinite; }
-@keyframes sx-mote{ 0%{ opacity:0; transform:translate3d(0,0,0); } 12%{ opacity:var(--o); } 80%{ opacity:var(--o); } 100%{ opacity:0; transform:translate3d(var(--dx),-560px,0); } }
-.sx-say{ position:absolute; z-index:4; right:7%; top:9%; max-width:min(300px,80%); padding:12px 14px 12px 16px; border-radius:18px 18px 18px 6px; font-size:13.5px; line-height:1.4; color:rgba(240,248,248,.9);
-  background:rgba(8,16,16,.92); box-shadow:inset 0 0 0 1px rgba(191,248,240,.18), 0 20px 40px -20px rgba(0,0,0,.9);
-  opacity:0; transform:translate3d(0,8px,0) scale(.97); transition:opacity .45s var(--sx-e), transform .6s var(--sx-e); pointer-events:none; }
-.sx-say.in{ opacity:1; transform:none; }
-.sx-say small{ display:block; font:500 10px/1 var(--sx-mono); letter-spacing:.16em; color:#7ff0e2; margin-bottom:6px; }
-.sx-say b{ color:#fff; }
 /* money explosion: coins and sparks (spans animated with transform / opacity only) */
 .sx-burst{ position:absolute; z-index:5; left:0; top:0; width:0; height:0; pointer-events:none; }
 .sx-burst i{ position:absolute; left:-4px; top:-4px; width:8px; height:8px; border-radius:50%; background:var(--c,#ffd27a); box-shadow:0 0 10px var(--c,#ffd27a); }
 .sx-burst i.coin{ width:14px; height:14px; left:-7px; top:-7px; background:radial-gradient(circle at 35% 35%, #fff6d6, #ffcf5c 45%, #b8862a); box-shadow:0 0 14px rgba(255,210,122,.8); }
 .sx-comet{ position:absolute; z-index:5; left:0; top:0; width:120px; height:2px; margin:-1px 0 0 -120px; border-radius:2px; pointer-events:none; transform-origin:100% 50%;
-  background:linear-gradient(90deg, transparent, rgba(191,248,240,.9)); box-shadow:0 0 12px rgba(47,214,195,.9); }
-.sx-comet::after{ content:""; position:absolute; right:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 14px #2fd6c3, 0 0 30px #2fd6c3; }
+  background:linear-gradient(90deg, transparent, var(--sx-tint)); box-shadow:0 0 12px var(--sx-ac); }
+.sx-comet::after{ content:""; position:absolute; right:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 14px var(--sx-ac), 0 0 30px var(--sx-ac); }
 
-/* ================================================================ phones */
-@media (max-width:860px){
-  .sx-stage{ grid-template-columns:1fr; min-height:0; border-radius:26px; }
-  .sx-s-scene{ order:-1; height:250px; min-height:0; }
-  .sx-hudrings{ width:330px; top:56%; }
-  .sx-core{ width:300px; }
-  .sx-nuki{ width:150px; margin-top:12px; }
-  .sx-floor{ bottom:4px; width:210px; height:34px; }
-  .sx-say{ right:14px; left:auto; top:14px; max-width:180px; font-size:12.5px; padding:10px 12px; }
-  .sx-s-copy{ padding:0 20px 22px; gap:14px; margin-top:-8px; }
-  .sx-s-hi{ font-size:clamp(34px,10vw,44px); }
-  .sx-s-num{ font-size:clamp(56px,17vw,76px); }
-  .sx-hud{ grid-template-columns:1fr 1fr; }
-  .sx-hud > div{ padding:14px 10px 10px 0; }
-  .sx-hud > div:nth-child(odd){ padding-left:0; border-left:0; }
-  .sx-hud > div:nth-child(n+3){ border-top:1px solid rgba(255,255,255,.06); }
-  .sx-acts button{ flex:1 1 auto; justify-content:center; padding:0 12px; }
-  .sx-motes i:nth-child(n+9){ display:none; }
-  .sx-stage::after{ display:none; }
+/* ================================================================ phones: thought from 390 up
+   the greeting with a small Nuki, the row of cosmeticians, the prism small, the big number, the buttons on one row, then the rest */
+@media (max-width:699px){
+  .sx-stage{ padding:2px 0 4px; gap:14px; }
+  .sx-s-head{ align-items:center; gap:10px; }
+  .sx-s-hello{ gap:10px; }
+  .sx-s-eye{ font-size:10px; letter-spacing:.14em; flex-wrap:nowrap; white-space:nowrap; }
+  .sx-s-eye .sx-rt{ display:none; }
+  .sx-s-hi{ font-size:clamp(30px,8.6vw,38px); line-height:1; }
+  .sx-s-nk{ width:68px; }
+  .sx-s-glow{ inset:-10%; }
+  .sx-say{ right:0; top:calc(100% + 6px); max-width:min(260px, calc(100vw - 48px)); border-radius:18px 6px 18px 18px; font-size:13px; padding:10px 12px; }
+  .sx-p-row{ padding:6px 0 12px; }
+  .sx-p-people{ gap:8px; }
+  .sx-p-people li{ gap:8px; padding:7px 12px 7px 7px; border-radius:14px; max-width:170px; }
+  .sx-p-people li > i, .sx-p-people li > img{ width:30px; height:30px; font-size:11px; }
+  .sx-p-logo{ width:58px; margin-top:44px; }
+  .sx-p-logo .v, .sx-p-logo .h{ animation:none; } /* the ellipses' flip repaints the SVG each frame: on a phone only the whole logo turns (compositor) */
+  .sx-s-money{ gap:12px; margin-top:22px; }
+  .sx-s-num{ font-size:clamp(56px,17vw,74px); margin-top:-4px; }
+  .sx-s-sub{ font-size:14px; }
+  .sx-acts{ flex-wrap:nowrap; gap:6px; margin-top:2px; width:100%; }
+  .sx-acts button{ flex:1 1 auto; min-width:0; padding:0 10px; gap:6px; }
+  .sx-acts svg{ width:15px; height:15px; }
+  .sx-hud{ margin-top:6px; align-self:stretch; }
+  .sx-hud > div{ flex:1; }
 }
-
-/* ================================================================ Panou → Azi: the cosmeticians' prism scene, right under the greeting */
-html.ui-nou #panel-panou.sx-host > .n-p3{ order:2; }
-html.ui-nou #panel-panou.sx-host:has([data-kpi-root]) > .n-p3{ display:none; }
-html.ui-nou .n-p3{ background:radial-gradient(90% 120% at 55% 50%, #050c0c, #010202 72%) !important; min-height:460px !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(255,255,255,.07), 0 50px 100px -50px #000 !important; }
-html.ui-nou .n-p3::before{ background:linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0/56px 56px, linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/56px 56px !important; }
-html.ui-nou .n-p3-people li{ background:rgba(255,255,255,.035) !important; box-shadow:inset 0 0 0 1px rgba(255,255,255,.09) !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
-html.ui-nou .n-p3-logo{ filter:none !important; } /* the glow is drawn by the canvas: a filter here repainted the turning logo every frame */
-html.ui-nou .n-p3 .n-p3-total small{ font-family:var(--sx-mono); font-weight:500; letter-spacing:.16em; }
-html.ui-nou .n-p3 .n-p3-total b{ font-family:var(--sx-sans); font-weight:650; text-shadow:0 0 30px rgba(47,214,195,.45), 0 0 60px rgba(255,255,255,.15) !important; }
-@media (max-width:640px){
-  /* phones, like Summit's: the cosmeticians as a row of lit chips on top, the spectrum falls into the prism, the total below */
-  html.ui-nou .n-p3{ min-height:0 !important; gap:30px !important; padding:18px 12px 24px !important; }
-  html.ui-nou .n-p3-people{ grid-template-columns:repeat(auto-fit, minmax(48px, 1fr)) !important; gap:8px 6px !important; }
-  html.ui-nou .n-p3-people li{ grid-template-columns:1fr !important; justify-items:center; text-align:center; gap:4px !important; padding:8px 4px 10px !important; border-radius:14px; }
-  html.ui-nou .n-p3-people li > span{ display:none !important; }
-  html.ui-nou .n-p3-people li > i, html.ui-nou .n-p3-people li > img{ width:30px !important; height:30px !important; font-size:11px !important; }
-  html.ui-nou .n-p3-people li em{ grid-column:1 !important; font-size:11px !important; white-space:nowrap; }
-  html.ui-nou .n-p3-logo{ width:88px !important; margin-top:40px; }
-}
+@media (max-width:370px){ .sx-acts button{ padding:0 8px; font-size:13.5px; gap:5px; } .sx-acts svg{ width:14px; height:14px; } }
 
 /* ================================================================ SITE: the dotted globe, 2D (portal-summit-globe.js) */
 html.ui-nou .st2-globe.sx-g{ background:radial-gradient(80% 100% at 35% 50%, #071413, #020304 70%) !important; box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(255,255,255,.07) !important; }
@@ -284,9 +313,10 @@ html.ui-nou .st2-globe.sx-g .st2-globe-n b{ font-family:var(--sx-sans); letter-s
   font:500 10.5px/1 var(--sx-mono); letter-spacing:.08em; color:#dffcf7; background:rgba(4,14,13,.75); box-shadow:inset 0 0 0 1px rgba(47,214,195,.35); }
 
 /* ================================================================ calm */
-html.ui-nou.c360-reduce :is(.sx-stage::after, .sx-hudrings *, .sx-motes i, .sx-feed > div){ animation:none !important; }
+html.ui-nou.c360-reduce :is(.sx-s-glow, .sx-nuki .fl, .sx-p-logo svg, .sx-p-logo .v, .sx-p-logo .h){ animation:none !important; }
+html.ui-nou.c360-reduce #panel-panou .sx-rise{ opacity:1; transform:none; }
 @media (prefers-reduced-motion:reduce){
-  .sx-stage::after, .sx-hudrings svg *, .sx-motes, .sx-core, .sx-nuki .fl{ animation:none !important; }
+  .sx-s-glow, .sx-nuki .fl, .sx-p-logo svg, .sx-p-logo .v, .sx-p-logo .h{ animation:none !important; }
   html.ui-nou main > .panel.sx-in, html.ui-nou main > .panel.sx-in > *{ animation:none !important; }
 }
 
@@ -304,6 +334,9 @@ html.ui-nou .k-preview-bar{ background:linear-gradient(90deg, #082522, #050708) 
 
 /* ================================================================ Panou → KPI: the cinematic deck (portal-summit-kpi.js) */
 html.ui-nou #panel-panou.sx-host > .sx-deck{ order:1; }
+/* the deck already shows the money and the show-up rate of the chosen period: the row under it keeps the rest */
+html.ui-nou #panel-panou:has(> .sx-deck) .kp-pulse-i:is([data-k="rev"], [data-k="came"]){ display:none !important; }
+html.ui-nou #panel-panou:has(> .sx-deck) .kp-pulse{ grid-template-columns:repeat(3, minmax(0,1fr)) !important; }
 .sx-deck{ position:relative; isolation:isolate; overflow:hidden; border-radius:30px; padding:22px; color:#f2f7f7; perspective:1200px;
   background:radial-gradient(80% 100% at 30% 0%, #061413, #020304 65%); box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(255,255,255,.07), 0 50px 100px -50px #000; }
 .sx-deck::before{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
@@ -480,3 +513,22 @@ html.ui-nou .st2-hours span.is-now{ background:var(--accent) !important; }
 @media (max-width:640px){ html.ui-nou .st2-zone{ border-left:0; border-top:1px solid rgba(255,255,255,.06); } html.ui-nou .st2-zone:first-child{ border-top:0; } }
 html.ui-nou .n-navlive{ background:color-mix(in srgb, var(--accent) 12%, transparent) !important; color:var(--accent) !important; font-family:var(--sx-mono) !important; font-weight:500 !important; }
 html.ui-nou .n-navlive i{ background:var(--accent) !important; animation:none !important; }
+
+/* ================================================================ no boxes: every screen sits straight on the grid (George, 7.11: „totul curat, doar pe fundal”)
+   The containers lose their card (background, border, shadow, rounded box); sections are told apart by space and, where needed,
+   one fine line on top. Tables keep their fine lines between rows, without a box around. Things you tap or drag (a lead in the
+   pipeline, an appointment, a door, an offer, a tile) stay objects. Dialogs and menus keep their surface. */
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat, .ct-list, .ac-feed, .au-nums, .st2-live, .lv-c, .db-tl-card, .of-kpi, .kp-pulse, .sx-t, .kp-pace-c):not(:where(.c360-dialog, .c360-palette, [role="dialog"]) *),
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat, .ct-list, .ac-feed, .au-nums, .st2-live, .lv-c, .db-tl-card, .of-kpi, .kp-pulse, .sx-t, .kp-pace-c):not(:where(.c360-dialog, .c360-palette, [role="dialog"]) *):hover{
+  background:none !important; box-shadow:none !important; border:0 !important; border-top:1px solid rgba(255,255,255,.07) !important; border-radius:0 !important;
+  -webkit-backdrop-filter:none !important; backdrop-filter:none !important; padding-left:0 !important; padding-right:0 !important; transform:none; }
+html.ui-nou:not([data-theme="light"]) main :is(.k-card, .card, .k-stat, .st2-live, .of-kpi)::before,
+html.ui-nou:not([data-theme="light"]) main :is(.k-card, .card, .k-stat, .st2-live, .of-kpi)::after{ border-radius:0; }
+html.ui-nou:not([data-theme="light"]) main :is(.k-stat, .pl-stat):hover :is(.k-stat-value, b){ color:var(--accent); }
+/* the pipeline's columns: no box, a fine line between them */
+html.ui-nou:not([data-theme="light"]) main .pl-col{ background:none !important; box-shadow:none !important; border:0 !important; border-left:1px solid rgba(255,255,255,.06) !important; border-radius:0 !important; }
+html.ui-nou:not([data-theme="light"]) main .pl-col:first-child{ border-left:0 !important; }
+/* the KPI deck: no box either; its tiles are told apart by space and a fine line */
+html.ui-nou:not([data-theme="light"]) main .sx-deck{ background:none !important; box-shadow:none !important; border-radius:0 !important; padding:0 !important; overflow:visible; }
+html.ui-nou:not([data-theme="light"]) main .sx-deck::before, html.ui-nou:not([data-theme="light"]) main .sx-t .cn, html.ui-nou:not([data-theme="light"]) main .kp-pulse .db-aurora{ display:none !important; }
+html.ui-nou:not([data-theme="light"]) main .sx-d-grid{ column-gap:clamp(24px,3vw,48px); row-gap:28px; }

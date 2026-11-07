@@ -33,30 +33,16 @@
     out.push({ cls: 'hero', html:
       '<small>Încasări · ' + esc(pl) + '</small>' +
       '<div class="row"><b class="big" data-count="' + (m.revenue || 0) + '">0</b><em class="unit">lei</em></div>' +
-      '<p>' + num(m.payments) + ' ' + (m.payments === 1 ? 'plată' : 'plăți') + (m.ticket ? ' · bon mediu <b>' + num(m.ticket) + ' lei</b>' : '') + (m.upsell ? ' · upsell <b>' + num(m.upsell) + ' lei</b>' : '') + '</p>' +
+      // the ticket and the upsell are in „Banii” below: here only the count
+      '<p>' + num(m.payments) + ' ' + (m.payments === 1 ? 'plată' : 'plăți') + '</p>' +
       (trend.length > 1 ? spark(trend) : hourly(r.range) ) });
     var made = b.made || 0, sch = v.scheduled || 0;
     if (made || sch) out.push({ cls: '', html: '<small>Programări</small><b data-count="' + (made || sch) + '">0</b><p>' + (made ? (b.confirmed ? num(b.confirmed) + ' confirmate' : 'făcute în perioadă') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate' : '') : 'în calendar') + '</p>' });
     var rate = v.rate != null ? v.rate : b.rates && b.rates.came;
     if (rate != null) out.push({ cls: 'gauge', html: '<small>Rata de prezentare</small>' + gauge(rate) + '<b class="mid" data-count="' + Math.round(rate) + '" data-suf="%">0</b><p>' + num(v.came || b.came) + ' au venit din ' + num(v.due || b.due) + '</p>' });
-    if (m.clients || f.leads) out.push({ cls: '', html: '<small>' + (m.clients ? 'Cliente care au plătit' : 'Leaduri') + '</small><b data-count="' + (m.clients || f.leads) + '">0</b><p>' + (m.clients && f.leads ? num(f.leads) + ' leaduri noi' + (f.ads ? ', ' + num(f.ads) + ' din reclame' : '') : f.organic ? num(f.organic) + ' organic' : '') + '</p>' });
-    if (a && a.spend) {
-      var rows = [['Cheltuit', num(a.spend) + ' lei']];
-      if (a.cpl) rows.push(['Cost pe lead', num(a.cpl, 2) + ' lei']);
-      if (a.perBooked) rows.push(['Cost pe programare', num(a.perBooked, 2) + ' lei']);
-      if (a.cpa) rows.push(['Cost pe clientă', num(a.cpa, 2) + ' lei']);
-      if (a.roas) rows.push(['Leul se întoarce', num(a.roas, 2) + '×']);
-      out.push({ cls: 'ads', html: '<small>Reclame Meta</small><b data-count="' + Math.round(a.spend) + '" data-suf=" lei">0</b>' +
-        '<ul>' + rows.slice(1).map(function (x, i) { return '<li style="--i:' + i + '"><span>' + esc(x[0]) + '</span><em>' + esc(x[1]) + '</em></li>'; }).join('') + '</ul>' +
-        (a.metaLeads || a.clicks ? '<p>' + (a.metaLeads ? num(a.metaLeads) + ' leaduri' : '') + (a.metaLeads && a.clicks ? ' · ' : '') + (a.clicks ? num(a.clicks) + ' clicuri' : '') + '</p>' : '') });
-    }
-    var race = top(r.range);
-    if (race.length) {
-      var max = race[0].sum || 1;
-      out.push({ cls: 'race', html: '<small>Cursa cosmeticienelor</small><ol>' + race.map(function (x, i) {
-        return '<li style="--i:' + i + ';--c:' + HUES[i % HUES.length] + '"><span>' + esc(x.name) + '</span><em>' + num(x.sum) + ' lei</em><i><u style="--w:' + (x.sum / max).toFixed(3) + '"></u></i></li>';
-      }).join('') + '</ol>' });
-    }
+    // the leads are in the row below (Leaduri): the tile only counts the clients who paid
+    if (m.clients) out.push({ cls: '', html: '<small>Cliente care au plătit</small><b data-count="' + m.clients + '">0</b>' });
+    // the ads and the cosmeticians' race have their own full sections below (Reclamele, Echipa): not twice
     return out;
   }
   function top(range) {
