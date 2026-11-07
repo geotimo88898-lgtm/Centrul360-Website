@@ -482,7 +482,7 @@
     // one id for this booking's Schedule: the portal gets it (Conversions API) and the pixel too, so Meta counts it once
     const eid = 'bk.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, event_id: eid
+      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, event_id: window.C360_CONSENT === true ? eid : ''
     }) }).then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } })).then(({ r, d }) => {
       S.busy = false;
       if (r.ok && d.ok) {
