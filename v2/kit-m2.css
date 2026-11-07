@@ -1,0 +1,37 @@
+/* The phone, lighter (the owner, 7.11: „nu ți se pare prea încărcat pe telefon?”): one idea per screen, Nuki where it helps,
+   the rest swiped sideways. Loaded after kit-m.css by the new pages; the computer keeps its look. */
+.hero .lead .ld-s{ display:none; }
+@media (max-width:920px){
+  /* the header: solid white, nothing of the page shows through the glass (the green button turned it turquoise) */
+  .top .bar{ background:#fff; -webkit-backdrop-filter:none; backdrop-filter:none; box-shadow:0 0 0 1px var(--line), 0 8px 24px -16px rgba(11,40,38,.25); }
+}
+@media (max-width:640px){
+  /* the first screen: the gift, the promise in one line, the two buttons and the Google score; Nuki waits in the film below */
+  .hero{ padding-bottom:28px; }
+  .hero .lead .ld-l{ display:none; }
+  .hero .lead .ld-s{ display:inline; }
+  .hero .stage{ display:none; }
+  .hero .meta .slot{ display:none; }
+  .film-s{ padding-top:20px; }
+  .hero .btn.book.halo{ animation:none; box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 12px 26px -14px rgba(16,145,132,.7); }
+  /* how it goes: the four steps, closer together; Nuki with the file stays on the computer */
+  .stick{ display:none; }
+  .tl li{ padding-bottom:26px; }
+  /* „you don't need to know the treatment”: the sentence, smaller, without the second Nuki */
+  .scrub{ font-size:1.5rem; line-height:1.22; }
+  .say{ display:none; }
+  /* the gift: the form is the picture, no Nuki above it */
+  #cadou .home-gn{ display:none; }
+  /* the reviews: the score small, the three reviews swiped one at a time like the offers */
+  .score{ margin-bottom:26px; gap:10px; }
+  .score .n{ font-size:4.4rem; }
+  .score .st svg{ width:22px; height:22px; }
+  .revs{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    margin:0 -16px; padding:6px 16px 18px; gap:12px; scroll-padding:0 16px; }
+  .revs::-webkit-scrollbar{ display:none; }
+  .revs > .rev{ flex:0 0 84%; scroll-snap-align:center; padding:24px 22px; gap:10px; }
+  /* the clinics: a short photo strip, the details under it */
+  #locatii .home-lp{ aspect-ratio:16 / 7; }
+  #locatii .home-lb{ padding:20px 20px 22px; gap:8px; }
+  #locatii .home-lb h3{ font-size:1.35rem; }
+}
