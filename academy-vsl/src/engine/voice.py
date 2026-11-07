@@ -13,9 +13,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FILMS = os.path.join(HERE, '..', 'films')
-VOICE = 'Pulcherrima'
+VOICE = 'Aoede'  # the owner's pick (7.11), sample 3: brighter and cuter than Pulcherrima
 MODEL = 'gemini-2.5-flash-preview-tts'
-STYLE = 'Warm Romanian female trainer in her early 30s, calm and clear, smiling, explains simply like to a child, never salesy.'
+STYLE = 'Cute, cheerful young Romanian woman in her early 20s, bright and light voice, smiling, lively and quick pace, playful like a friendly cartoon guide, never deep or slow.'
 ASR = 'gemini-3.5-flash'  # quick; a line it does not hear exactly gets a second listen from ASR2
 ASR2 = 'gemini-3-flash-preview'
 KEY = os.environ.get('VERTEX_API_KEY', '')

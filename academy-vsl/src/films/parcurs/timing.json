@@ -1,567 +1,567 @@
 {
 "0.0": {
 "text": "Bună! Eu sunt Nuki.",
-"dur": 1.991,
-"file": "voice/b6a8ddadf9bafd6d.wav"
+"dur": 2.322,
+"file": "voice/fbc935c96564f985.wav"
 },
 "0.1": {
 "text": "Astăzi îți arăt drumul clientei la noi, de la prima vizită până la final.",
-"dur": 5.732,
-"file": "voice/864abf968948f3fe.wav"
+"dur": 5.373,
+"file": "voice/f4baef8fcc9751cb.wav"
 },
 "0.2": {
 "text": "E simplu, ca o poveste. Hai să începem!",
-"dur": 3.748,
-"file": "voice/f313bf0ac1d179a0.wav"
+"dur": 3.571,
+"file": "voice/71d61847478a5142.wav"
 },
 "1.0": {
 "text": "Drumul are unsprezece pași. Mereu în aceeași ordine.",
-"dur": 5.213,
-"file": "voice/a6a8c70b629a004c.wav"
+"dur": 4.563,
+"file": "voice/45a04918dc1be15a.wav"
 },
 "1.1": {
 "text": "Când îi știi pe toți, clienta simte că e pe mâini bune.",
-"dur": 4.114,
-"file": "voice/16cee983ec458191.wav"
+"dur": 3.707,
+"file": "voice/63bb460a101df939.wav"
 },
 "2.0": {
 "text": "Drumul are trei părți.",
-"dur": 2.608,
-"file": "voice/fcdad86799b95013.wav"
+"dur": 2.04,
+"file": "voice/e6c6eea01ba89ed8.wav"
 },
 "2.1": {
 "text": "Ce faci înainte să vină clienta.",
-"dur": 3.144,
-"file": "voice/cd3d4fd4d016aa99.wav"
+"dur": 2.901,
+"file": "voice/e065dcf297509562.wav"
 },
 "2.2": {
 "text": "Ce faci cu ea, în salon.",
-"dur": 2.032,
-"file": "voice/9e1f8b246f53a14b.wav"
+"dur": 2.315,
+"file": "voice/4bf33c121e0349a3.wav"
 },
 "2.3": {
 "text": "Și ce faci după ce pleacă.",
-"dur": 2.982,
-"file": "voice/bad055f9d5b6a261.wav"
+"dur": 2.427,
+"file": "voice/30862cff506f7069.wav"
 },
 "3.0": {
 "text": "Pasul unu: deschizi salonul.",
-"dur": 3.055,
-"file": "voice/df60adb69cae9583.wav"
+"dur": 2.795,
+"file": "voice/8f4bdbb424ff1e1d.wav"
 },
 "3.1": {
 "text": "Îl faci dimineața, dacă ajungi prima.",
-"dur": 2.767,
-"file": "voice/b42b6ba1f2656038.wav"
+"dur": 3.008,
+"file": "voice/78e8fbf300f0d027.wav"
 },
 "4.0": {
 "text": "Deschizi ușa.",
-"dur": 1.634,
-"file": "voice/3af34b88ff3954e3.wav"
+"dur": 1.407,
+"file": "voice/b4c49dbb3ba88d56.wav"
 },
 "4.1": {
 "text": "Aprinzi luminile.",
-"dur": 1.686,
-"file": "voice/0492496c7ee2e13b.wav"
+"dur": 1.443,
+"file": "voice/e73c214666e18ead.wav"
 },
 "4.2": {
 "text": "Pornești aparatele.",
-"dur": 1.835,
-"file": "voice/539e89ee6bb854d6.wav"
+"dur": 1.543,
+"file": "voice/4f130dfa07b2ab1d.wav"
 },
 "4.3": {
 "text": "Pregătești apa, cafeaua și ceaiul.",
-"dur": 3.63,
-"file": "voice/470062eacb2160e5.wav"
+"dur": 3.204,
+"file": "voice/def5860c7cb9fcbc.wav"
 },
 "4.4": {
 "text": "Și te uiți în Calendar, să vezi cine vine azi.",
-"dur": 4.101,
-"file": "voice/d71b8f3c49fb895e.wav"
+"dur": 3.671,
+"file": "voice/0ddd694af106a996.wav"
 },
 "5.0": {
 "text": "De ce? Pentru că așa, clienta intră într-un salon gata pregătit.",
-"dur": 6.077,
-"file": "voice/f21cca8a04849d66.wav"
+"dur": 5.247,
+"file": "voice/787bd40113e21a2b.wav"
 },
 "6.0": {
 "text": "Pasul doi: pregătești cabinetul. Înainte de fiecare clientă.",
-"dur": 5.542,
-"file": "voice/716acfed3c9c235c.wav"
+"dur": 5.056,
+"file": "voice/bcdde3e22cb2ab23.wav"
 },
 "7.0": {
 "text": "Pui un cearceaf curat pe pat.",
-"dur": 2.588,
-"file": "voice/6d69e6723aaf5ae4.wav"
+"dur": 1.971,
+"file": "voice/3121afa9f49e5f74.wav"
 },
 "7.1": {
 "text": "Pui un prosop curat.",
-"dur": 1.53,
-"file": "voice/521e12b81af58bd9.wav"
+"dur": 1.884,
+"file": "voice/846defa92d5f9dd9.wav"
 },
 "7.2": {
 "text": "Și pui pe masă doar ce îți trebuie. Așa nu cauți nimic cât clienta așteaptă.",
-"dur": 6.971,
-"file": "voice/8d0165cafa2166ef.wav"
+"dur": 5.92,
+"file": "voice/343d0becbff6b779.wav"
 },
 "8.0": {
 "text": "Și ține minte: un cearceaf și un prosop sunt doar pentru o singură clientă.",
-"dur": 6.439,
-"file": "voice/320068e24a35208e.wav"
+"dur": 5.62,
+"file": "voice/cc27f223f82da1dc.wav"
 },
 "9.0": {
 "text": "Pasul trei: primești clienta. Când intră pe ușă.",
-"dur": 4.773,
-"file": "voice/5460f37a271922e3.wav"
+"dur": 3.813,
+"file": "voice/415cd6dbb0c22288.wav"
 },
 "10.0": {
 "text": "Zâmbești.",
-"dur": 1.006,
-"file": "voice/b21d5f961effc03a.wav"
+"dur": 0.812,
+"file": "voice/88967cbe05fd33fd.wav"
 },
 "10.1": {
 "text": "Îi spui „Bună ziua” și numele ei.",
-"dur": 3.018,
-"file": "voice/90de00f6c0b4a735.wav"
+"dur": 3.236,
+"file": "voice/b91f0dce9c5b6cd3.wav"
 },
 "10.2": {
 "text": "O inviți să stea jos.",
-"dur": 1.828,
-"file": "voice/201fe1eee34e126a.wav"
+"dur": 1.75,
+"file": "voice/7df3c878fbdce99c.wav"
 },
 "10.3": {
 "text": "Și o întrebi: „Doriți apă, cafea sau ceai?”",
-"dur": 4.53,
-"file": "voice/1f352a055013fc8e.wav"
+"dur": 4.173,
+"file": "voice/6df82c20d5cea348.wav"
 },
 "11.0": {
 "text": "Sună simplu. Dar contează foarte mult.",
-"dur": 3.863,
-"file": "voice/fa03a43f895a8bf2.wav"
+"dur": 3.436,
+"file": "voice/fd85804592787dbf.wav"
 },
 "11.1": {
 "text": "Așa se simte binevenită, din prima clipă.",
-"dur": 3.707,
-"file": "voice/9eb01bb8e6b70750.wav"
+"dur": 3.931,
+"file": "voice/5594919290f8edb2.wav"
 },
 "12.0": {
 "text": "Pasul patru: fișa clientei.",
-"dur": 2.886,
-"file": "voice/4dcb69accb4cb33c.wav"
+"dur": 2.649,
+"file": "voice/0fcc53e65b89af02.wav"
 },
 "12.1": {
 "text": "O faci prima dată când vine, înainte de tratament.",
-"dur": 4.164,
-"file": "voice/0876d4df55f33d91.wav"
+"dur": 3.982,
+"file": "voice/8d9736655719f119.wav"
 },
 "13.0": {
 "text": "Avem trei fișe.",
-"dur": 1.98,
-"file": "voice/6b179413a3a49f70.wav"
+"dur": 1.521,
+"file": "voice/116c43ed23321a61.wav"
 },
 "13.1": {
 "text": "Pentru corp, pentru față și pentru epilare laser. Alegi fișa potrivită pentru ce vrea ea.",
-"dur": 7.304,
-"file": "voice/782b6f451be6d767.wav"
+"dur": 6.749,
+"file": "voice/8c975f53306cbb72.wav"
 },
 "14.0": {
 "text": "Acum, cel mai important lucru.",
-"dur": 2.525,
-"file": "voice/2088c2c7dfd0676a.wav"
+"dur": 2.177,
+"file": "voice/022a4d19dd0be523.wav"
 },
 "14.1": {
 "text": "Nu îi dai fișa să o completeze singură. Stai lângă ea și o completezi tu, împreună cu ea.",
-"dur": 7.559,
-"file": "voice/30a71cdc081831d5.wav"
+"dur": 6.306,
+"file": "voice/9f90eb85b4b35fc6.wav"
 },
 "14.2": {
 "text": "O întrebi rubrică cu rubrică, și tu scrii.",
-"dur": 3.944,
-"file": "voice/0696aa0a35e31cc9.wav"
+"dur": 3.505,
+"file": "voice/69e9b7acff4592e2.wav"
 },
 "15.0": {
 "text": "Citiți împreună întrebările de sănătate. La fiecare bifezi „Da” sau „Nu”.",
-"dur": 6.782,
-"file": "voice/8dc0bf42facac892.wav"
+"dur": 5.567,
+"file": "voice/4517f9083bd20845.wav"
 },
 "15.1": {
 "text": "Dacă toate sunt „Nu”, mergi mai departe.",
-"dur": 3.859,
-"file": "voice/827a06f11ca96b01.wav"
+"dur": 3.006,
+"file": "voice/91b75eaeda580e6d.wav"
 },
 "15.2": {
 "text": "Dacă e măcar un „Da”, nu începi tratamentul până nu întrebi dacă se poate.",
-"dur": 6.646,
-"file": "voice/bea8dafa0e36f65b.wav"
+"dur": 5.627,
+"file": "voice/92fd36ae4fc68963.wav"
 },
 "16.0": {
 "text": "Pe pagina doi faci evaluarea: măsori și te uiți la piele.",
-"dur": 5.545,
-"file": "voice/2738b968f9fede12.wav"
+"dur": 4.448,
+"file": "voice/37268e6e49f6448a.wav"
 },
 "16.1": {
 "text": "Ea citește acordul și semnează.",
-"dur": 3.094,
-"file": "voice/5105487bd30db1dd.wav"
+"dur": 2.862,
+"file": "voice/e677ab8c8aef0a96.wav"
 },
 "16.2": {
 "text": "Și semnezi și tu.",
-"dur": 2.298,
-"file": "voice/a97e002f252fdd34.wav"
+"dur": 1.309,
+"file": "voice/37c154450a8fdde2.wav"
 },
 "17.0": {
 "text": "Apoi scanezi fișa în portal.",
-"dur": 2.567,
-"file": "voice/71aa58d62b8c78f7.wav"
+"dur": 2.471,
+"file": "voice/a412538771e68f93.wav"
 },
 "17.1": {
 "text": "Intri la Contacte și cauți clienta.",
-"dur": 3.236,
-"file": "voice/cb9ce6f065d5da5f.wav"
+"dur": 2.536,
+"file": "voice/4cd10ea988370daf.wav"
 },
 "17.2": {
 "text": "Apeși pe „Fișe și mențiuni”.",
-"dur": 3.099,
-"file": "voice/9eb80abea883c7d2.wav"
+"dur": 1.896,
+"file": "voice/43b2a23ea5166b2b.wav"
 },
 "17.3": {
 "text": "Apoi pe „Scanează fișa”.",
-"dur": 2.426,
-"file": "voice/c1ce0ef0f6135065.wav"
+"dur": 2.163,
+"file": "voice/9c6293096123daa1.wav"
 },
 "17.4": {
 "text": "Și fotografiezi fiecare pagină cu telefonul. Atât!",
-"dur": 4.714,
-"file": "voice/e9507d43136c5674.wav"
+"dur": 3.721,
+"file": "voice/91f83d3eaa7bd935.wav"
 },
 "18.0": {
 "text": "Foaia de hârtie o pui la dosarul ei.",
-"dur": 3.556,
-"file": "voice/09ef07b87c52e8a8.wav"
+"dur": 2.911,
+"file": "voice/d53b5fe646b1274d.wav"
 },
 "19.0": {
 "text": "De ce facem asta? Fișa ne arată dacă tratamentul e sigur pentru ea.",
-"dur": 5.106,
-"file": "voice/eaf3fafb198a1bce.wav"
+"dur": 4.877,
+"file": "voice/85602f8e29af8e49.wav"
 },
 "19.1": {
 "text": "Când o completați împreună, nu sare nimic. Și ea simte că ai grijă de ea.",
-"dur": 6.121,
-"file": "voice/9484a56ed5f4271c.wav"
+"dur": 5.054,
+"file": "voice/6ab9a07caa896d46.wav"
 },
 "20.0": {
 "text": "Și niciodată nu uita: fără fișă semnată, nu începi tratamentul.",
-"dur": 5.716,
-"file": "voice/75e8afb83400db42.wav"
+"dur": 4.809,
+"file": "voice/47ac28b9b571f6d1.wav"
 },
 "21.0": {
 "text": "Pasul cinci: poza „înainte”. Înainte de tratament.",
-"dur": 4.722,
-"file": "voice/d051edd3f3eb89d0.wav"
+"dur": 4.516,
+"file": "voice/3d89caeff61381a3.wav"
 },
 "22.0": {
 "text": "Pui clienta în același loc, cu lumină bună, pe un fundal simplu.",
-"dur": 5.435,
-"file": "voice/42795e34453cb546.wav"
+"dur": 5.359,
+"file": "voice/caaba4ccf4be2585.wav"
 },
 "22.1": {
 "text": "Faci o poză din față și una din profil, la zona tratată.",
-"dur": 4.841,
-"file": "voice/54a18d863e66f6d0.wav"
+"dur": 4.137,
+"file": "voice/64035de12e8674c9.wav"
 },
 "22.2": {
 "text": "Și pui pozele în portal, la ședința de azi.",
-"dur": 3.58,
-"file": "voice/ea22b8f6667cd7c0.wav"
+"dur": 3.695,
+"file": "voice/58806fc7bc56d0fa.wav"
 },
 "23.0": {
 "text": "Unde le pui? Intri la Contacte și cauți clienta.",
-"dur": 4.397,
-"file": "voice/06dc258ab0dda292.wav"
+"dur": 3.935,
+"file": "voice/118bd873fe5491d8.wav"
 },
 "23.1": {
 "text": "Apeși pe „Poze înainte și după”.",
-"dur": 3.397,
-"file": "voice/71919086d0cc4548.wav"
+"dur": 3.043,
+"file": "voice/72dd2e941a474a62.wav"
 },
 "23.2": {
 "text": "Alegi ședința de azi. La prima vizită, e ședința unu.",
-"dur": 5.62,
-"file": "voice/8be990c4ae0999a5.wav"
+"dur": 4.549,
+"file": "voice/38f17138256b2bc5.wav"
 },
 "23.3": {
 "text": "Și apeși pe căsuța „înainte”.",
-"dur": 2.928,
-"file": "voice/4385335a8a114ea4.wav"
+"dur": 2.737,
+"file": "voice/e70aed0ea2af05ea.wav"
 },
 "24.0": {
 "text": "La fiecare ședință, faci pozele din același loc și din același unghi.",
-"dur": 6.122,
-"file": "voice/e13c357ff52e6f4f.wav"
+"dur": 5.821,
+"file": "voice/0912849c4512fe2b.wav"
 },
 "24.1": {
 "text": "Așa se vede clar diferența.",
-"dur": 2.635,
-"file": "voice/a74d559e8eb677dd.wav"
+"dur": 2.515,
+"file": "voice/59dc7872565c86c2.wav"
 },
 "25.0": {
 "text": "Întreab-o dacă e de acord ca pozele să fie folosite pe site și în reclame. Fără față.",
-"dur": 6.979,
-"file": "voice/4e692acfd0ec77af.wav"
+"dur": 6.168,
+"file": "voice/970b476bfb99dcdb.wav"
 },
 "25.1": {
 "text": "Bifezi răspunsul ei tot acolo, la „Publicare”.",
-"dur": 4.079,
-"file": "voice/a5893e065cdfdaff.wav"
+"dur": 3.95,
+"file": "voice/84dc08db62034eea.wav"
 },
 "26.0": {
 "text": "Fără acordul ei, pozele nu se publică nicăieri.",
-"dur": 4.98,
-"file": "voice/b0325565bdc71514.wav"
+"dur": 3.756,
+"file": "voice/89161de1c7185770.wav"
 },
 "26.1": {
 "text": "Ele stau doar în portal, în fișa ei.",
-"dur": 3.945,
-"file": "voice/c4277bcb0abec650.wav"
+"dur": 3.092,
+"file": "voice/eff5967a37ea764a.wav"
 },
 "27.0": {
 "text": "Pasul șase: programul și oferta. La prima vizită, după fișă și poze.",
-"dur": 6.447,
-"file": "voice/a05eeeb7f27154ad.wav"
+"dur": 5.741,
+"file": "voice/317ffd64ef113d6c.wav"
 },
 "28.0": {
 "text": "Îi spui ce ai văzut: ce o deranjează și ce se poate face.",
-"dur": 5.075,
-"file": "voice/2e6ef88c8f67a1bf.wav"
+"dur": 4.313,
+"file": "voice/77702da05be294f5.wav"
 },
 "28.1": {
 "text": "Faci programul în Calculatorul de ofertă. Alegi tratamentele și ședințele.",
-"dur": 5.361,
-"file": "voice/4b6ac788f93a8b52.wav"
+"dur": 5.415,
+"file": "voice/09b8868f1c95395f.wav"
 },
 "28.2": {
 "text": "Și îl treci pe pagina unu a fișei „Program recomandat și ofertă”.",
-"dur": 5.601,
-"file": "voice/ab7b4a9b4befda6f.wav"
+"dur": 4.635,
+"file": "voice/9008100ef7b443fc.wav"
 },
 "29.0": {
 "text": "Îi arăți întâi oferta unu.",
-"dur": 2.605,
-"file": "voice/77b520e79f120b87.wav"
+"dur": 2.284,
+"file": "voice/7a50615fa4a783e0.wav"
 },
 "29.1": {
 "text": "Dacă spune „nu”, treci la oferta doi. Apoi trei, apoi patru.",
-"dur": 5.585,
-"file": "voice/a72a73c6dbeb723b.wav"
+"dur": 5.414,
+"file": "voice/70611a786c138c87.wav"
 },
 "29.2": {
 "text": "Ca într-o conversație. Cel mai bine e să vă opriți la prima.",
-"dur": 3.988,
-"file": "voice/962a0ef66502690b.wav"
+"dur": 4.325,
+"file": "voice/b6728f928b51ff85.wav"
 },
 "30.0": {
 "text": "Pe masă e mereu o singură ofertă.",
-"dur": 3.631,
-"file": "voice/f7f6fe4cb6a833ad.wav"
+"dur": 3.119,
+"file": "voice/03e78fdda04801db.wav"
 },
 "30.1": {
 "text": "Pagina de dinainte o iei înapoi.",
-"dur": 3.078,
-"file": "voice/babd7fd03a9f72d7.wav"
+"dur": 2.594,
+"file": "voice/bbcdf0d243574794.wav"
 },
 "31.0": {
 "text": "Când alege, semnează pagina aleasă.",
-"dur": 3.67,
-"file": "voice/6bd53540d5a2c0ae.wav"
+"dur": 2.947,
+"file": "voice/05331242f5e98338.wav"
 },
 "31.1": {
 "text": "La final o duci la recepție. Recepția face plata și programările.",
-"dur": 6.041,
-"file": "voice/5da818a5aa791d82.wav"
+"dur": 5.129,
+"file": "voice/2e13eddfe1c20e59.wav"
 },
 "32.0": {
 "text": "Așa, clienta pleacă cu un plan clar: ce face, de câte ori și cât costă.",
-"dur": 7.456,
-"file": "voice/20d2f683a0eeee55.wav"
+"dur": 7.08,
+"file": "voice/3eb8729326be2dfa.wav"
 },
 "32.1": {
 "text": "Totul despre oferte e în filmul despre program, pagină cu pagină.",
-"dur": 4.963,
-"file": "voice/3603d018b6dc92d1.wav"
+"dur": 4.714,
+"file": "voice/75a0051254df3ad0.wav"
 },
 "33.0": {
 "text": "Pasul șapte: faci tratamentul, în cabinet.",
-"dur": 3.82,
-"file": "voice/eb91ed7769a9a88f.wav"
+"dur": 3.493,
+"file": "voice/d8c7db66b923bd5d.wav"
 },
 "34.0": {
 "text": "Îi spui pe scurt ce urmează.",
-"dur": 2.321,
-"file": "voice/8c13d7f7865cd747.wav"
+"dur": 2.183,
+"file": "voice/fd31921a44774888.wav"
 },
 "34.1": {
 "text": "O întrebi din când în când dacă e bine.",
-"dur": 3.282,
-"file": "voice/28f6b9815e4ec372.wav"
+"dur": 2.785,
+"file": "voice/1da47515378783a6.wav"
 },
 "34.2": {
 "text": "Și faci tratamentul exact cum scrie la Tratamente.",
-"dur": 3.88,
-"file": "voice/1de26a905d291b9e.wav"
+"dur": 3.759,
+"file": "voice/67c70415ca2857eb.wav"
 },
 "34.3": {
 "text": "Când știe ce urmează, e liniștită.",
-"dur": 3.448,
-"file": "voice/7f728bdb8d109c04.wav"
+"dur": 2.846,
+"file": "voice/242cef857145dc31.wav"
 },
 "35.0": {
 "text": "Pasul opt: poza „după”. Imediat după tratament.",
-"dur": 5.04,
-"file": "voice/f98dafb9b29e01c5.wav"
+"dur": 4.013,
+"file": "voice/fa3f87f149da6239.wav"
 },
 "36.0": {
 "text": "Același loc, aceeași lumină și același unghi ca la „înainte”.",
-"dur": 7.031,
-"file": "voice/999176b8c32bc840.wav"
+"dur": 4.658,
+"file": "voice/691207029e815191.wav"
 },
 "36.1": {
 "text": "Și pui pozele la aceeași ședință.",
-"dur": 3.453,
-"file": "voice/7a19f2ab0bc73120.wav"
+"dur": 2.601,
+"file": "voice/459501d0ae7c02f6.wav"
 },
 "37.0": {
 "text": "Același drum: Contacte, clienta, „Poze înainte și după”.",
-"dur": 6.731,
-"file": "voice/08b34cda8cf90eec.wav"
+"dur": 5.048,
+"file": "voice/2ec9236745307619.wav"
 },
 "37.1": {
 "text": "Aceeași ședință. Dar acum apeși pe căsuța „după”.",
-"dur": 4.822,
-"file": "voice/d850f813195a790a.wav"
+"dur": 4.147,
+"file": "voice/5461b49db9c2bcdf.wav"
 },
 "37.2": {
 "text": "Portalul pune singur pozele una lângă alta.",
-"dur": 3.937,
-"file": "voice/53b81df843246dfe.wav"
+"dur": 3.309,
+"file": "voice/370a8e075c94b3af.wav"
 },
 "37.3": {
 "text": "Poți să i le arăți pe loc. Așa se vede diferența.",
-"dur": 3.86,
-"file": "voice/3d85dc3f3b23823a.wav"
+"dur": 3.628,
+"file": "voice/45c93ce3d01ae381.wav"
 },
 "38.0": {
 "text": "Pasul nouă: conduci clienta. La final.",
-"dur": 3.725,
-"file": "voice/21d0eafc3528968e.wav"
+"dur": 3.632,
+"file": "voice/4c807a0347ab284f.wav"
 },
 "39.0": {
 "text": "Îi spui ce să facă acasă.",
-"dur": 2.506,
-"file": "voice/cf933a0a088f351c.wav"
+"dur": 1.952,
+"file": "voice/8389fc2fe7cb69c4.wav"
 },
 "39.1": {
 "text": "O duci la recepție.",
-"dur": 2.073,
-"file": "voice/100fbb5109eb966b.wav"
+"dur": 1.408,
+"file": "voice/d109ee06022f8dd8.wav"
 },
 "39.2": {
 "text": "Îi spui recepției cât durează următoarele ședințe și la ce interval vin.",
-"dur": 5.902,
-"file": "voice/2cafd39751994a64.wav"
+"dur": 4.917,
+"file": "voice/51c30258f5395fd5.wav"
 },
 "39.3": {
 "text": "Apoi îi mulțumești și îi spui „La revedere”, pe nume.",
-"dur": 4.242,
-"file": "voice/988e98dba83008a0.wav"
+"dur": 3.85,
+"file": "voice/a79f7a7dc1dfa273.wav"
 },
 "40.0": {
 "text": "De exemplu: „șaizeci de minute, o dată pe săptămână”.",
-"dur": 4.949,
-"file": "voice/f724208ece61bf11.wav"
+"dur": 4.645,
+"file": "voice/5b11d79e0a74da79.wav"
 },
 "40.1": {
 "text": "Recepția face plata și toate programările.",
-"dur": 3.895,
-"file": "voice/c11411cc7179cf41.wav"
+"dur": 3.61,
+"file": "voice/5e83288c253f07a4.wav"
 },
 "41.0": {
 "text": "Programările nu le faci tu. Le predai recepției.",
-"dur": 5.455,
-"file": "voice/a86a9bf3c33ddcd0.wav"
+"dur": 4.059,
+"file": "voice/79346ffe1f5461e2.wav"
 },
 "41.1": {
 "text": "Recepția le face foarte bine, iar tu te pregătești pentru următoarea clientă.",
-"dur": 7.396,
-"file": "voice/5d10a1cabe3e2571.wav"
+"dur": 5.701,
+"file": "voice/67c2534d15972327.wav"
 },
 "41.2": {
 "text": "Durata și intervalul le iei din programul ales, sau din schema tratamentului.",
-"dur": 6.015,
-"file": "voice/b19d812b2a72b2d1.wav"
+"dur": 5.513,
+"file": "voice/36611fd55a639a0a.wav"
 },
 "42.0": {
 "text": "Pasul zece: faci curat. După fiecare clientă.",
-"dur": 5.335,
-"file": "voice/a4dbcc1f056990d6.wav"
+"dur": 4.054,
+"file": "voice/bb6a9ec9588faf1f.wav"
 },
 "43.0": {
 "text": "Dezinfectezi patul, aparatul și masa.",
-"dur": 4.337,
-"file": "voice/b0f611b5eabc03a1.wav"
+"dur": 3.385,
+"file": "voice/1439c1639f40d641.wav"
 },
 "43.1": {
 "text": "Scoți cearceaful și prosopul folosite.",
-"dur": 3.53,
-"file": "voice/bc85181b70f8cbe5.wav"
+"dur": 2.774,
+"file": "voice/60927984eb108ff2.wav"
 },
 "43.2": {
 "text": "Și arunci ce e de unică folosință.",
-"dur": 2.775,
-"file": "voice/00bc5cb9d314dc6d.wav"
+"dur": 2.878,
+"file": "voice/5d4be0fa1c9d1891.wav"
 },
 "43.3": {
 "text": "Așa, următoarea clientă găsește totul curat.",
-"dur": 3.935,
-"file": "voice/d2435dd3abc78059.wav"
+"dur": 3.417,
+"file": "voice/ef5620335b131aaf.wav"
 },
 "44.0": {
 "text": "Și ultimul pas, unsprezece: închizi salonul. Seara, dacă pleci ultima.",
-"dur": 7.171,
-"file": "voice/c00de79f0621b070.wav"
+"dur": 6.446,
+"file": "voice/3951f9257ca2e6e6.wav"
 },
 "45.0": {
 "text": "Oprește aparatele.",
-"dur": 1.622,
-"file": "voice/c002e62e335415a0.wav"
+"dur": 1.364,
+"file": "voice/d233535c754ca866.wav"
 },
 "45.1": {
 "text": "Fă curat și scoate gunoiul.",
-"dur": 2.347,
-"file": "voice/5db8159d978636ae.wav"
+"dur": 1.904,
+"file": "voice/b49dc2f73a4d16ac.wav"
 },
 "45.2": {
 "text": "Stinge luminile.",
-"dur": 1.478,
-"file": "voice/9cd1c525ecd3d576.wav"
+"dur": 1.299,
+"file": "voice/652c71b9755dcc15.wav"
 },
 "45.3": {
 "text": "Și încuie ușa. Mâine dimineață, totul e gata de lucru.",
-"dur": 4.962,
-"file": "voice/9e8b22fbd0fec916.wav"
+"dur": 4.276,
+"file": "voice/8f87c132de219701.wav"
 },
 "46.0": {
 "text": "Bravo! Acum știi tot drumul clientei.",
-"dur": 4.065,
-"file": "voice/057f1c34364c3a5c.wav"
+"dur": 3.299,
+"file": "voice/327b30c63e85979d.wav"
 },
 "46.1": {
 "text": "Fișa o completezi împreună cu ea. Faci pozele înainte și după. Pe masă e o singură ofertă. Și programările le face recepția.",
-"dur": 10.867,
-"file": "voice/67785048e4d11880.wav"
+"dur": 10.315,
+"file": "voice/55a824ae40db2729.wav"
 },
 "46.2": {
 "text": "Dacă uiți un pas, deschide harta din portal. Ne vedem în filmul următor!",
-"dur": 5.705,
-"file": "voice/5cd8951a716b9d80.wav"
+"dur": 5.878,
+"file": "voice/18a2bae44245d402.wav"
 }
 }

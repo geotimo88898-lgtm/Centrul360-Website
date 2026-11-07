@@ -95,14 +95,14 @@ P['fisa-corporale'] = {'id': 'fisa-corporale', 'title': 'Fișa *corp*', 'short':
         B('O completați la începutul consultației, înainte să vorbiți de tratamente.', 'fisa')]),
     sheet_scene('corporale', 0, C[0], [
         ('Sus, în colț', 'Numărul fișei, data de azi și numele tău.', [
-            B('Sus, în colț, scrii numărul fișei, data de azi și numele tău, la „Specialist”.', 'fisa')], None),
+            B('Sus, în colț, treci numărul fișei, data de azi și numele tău, la „Specialist”.', 'fisa')], None),
         ('Cine este ea', 'Nume, data nașterii, telefon, e-mail.', [
             B('Apoi datele ei: numele, data nașterii, telefonul și e-mailul.', 'prezinta'),
             B('„Data primei vizite” e azi. Și o întrebi: „De unde ați aflat de noi?”', 'gandeste'),
             B('Dacă are sub optsprezece ani, bifezi „da”. Atunci un părinte completează pagina trei.', 'arata-jos', cap='Dacă are sub 18 ani, bifezi „da”. Atunci un părinte completează pagina 3.')], None),
         ('De ce a venit', 'Ce o deranjează și ce a încercat. Cu cuvintele ei.', [
             B('La „Motivul vizitei” o întrebi: „Ce vă deranjează?” și „Ce ați încercat până acum?”', 'gandeste'),
-            B('Notezi cu cuvintele ei. De exemplu: „Grăsime pe abdomen după sarcină. A încercat diete, fără rezultat.”', 'fisa')], None),
+            B('Le treci cu cuvintele ei. De exemplu: „Grăsime pe abdomen după sarcină. A încercat diete, fără rezultat.”', 'fisa')], None),
         ('Când poate veni', 'Zilele, orele și când nu poate.', [
             B('Bifezi zilele și orele care îi convin.', 'calendar'),
             B('Și scrii când nu poate, de exemplu un concediu. Așa, programările se fac repede.', 'aprobare')], None),
@@ -152,7 +152,7 @@ P['fisa-corporale'] = {'id': 'fisa-corporale', 'title': 'Fișa *corp*', 'short':
     sheet_scene('corporale', 2, C[2], [
         ('Acordul ei', 'Bifează ea ce vrea. Ce nu bifează, nu facem.', [
             B('Îi dai foaia să citească.', 'fisa'),
-            B('Ea bifează ce vrea: poze pentru evidență, poze pentru reclamă fără față, mesaje pentru programări și oferte.', 'prezinta'),
+            B('Ea alege ce vrea și bifează: poze pentru evidență, poze pentru reclamă fără față, mesaje pentru programări și oferte.', 'prezinta'),
             B('Ce nu bifează, nu facem.', 'arata-jos')], None),
         ('Înainte și după', 'Sfaturile, spuse pe scurt, cu voce tare.', [
             B('Apoi îi spui pe scurt, cu voce tare, ce face înainte și după tratament.', 'apa'),
@@ -206,7 +206,7 @@ P['fisa-faciale'] = {'id': 'fisa-faciale', 'title': 'Fișa *față*', 'short': '
         B('O completați la începutul consultației, înainte să vorbiți de tratamente.', 'fisa')]),
     sheet_scene('faciale', 0, F[0], [
         ('Sus, în colț', 'Numărul fișei, data de azi și numele tău.', [
-            B('Sus, în colț, scrii numărul fișei, data de azi și numele tău, la „Specialist”.', 'fisa')], None),
+            B('Sus, în colț, treci numărul fișei, data de azi și numele tău, la „Specialist”.', 'fisa')], None),
         ('Cine este ea', 'Nume, data nașterii, telefon, e-mail.', [
             B('Apoi datele ei: numele, data nașterii, telefonul și e-mailul.', 'prezinta'),
             B('„Data primei vizite” e azi. Și o întrebi: „De unde ați aflat de noi?”', 'gandeste'),
@@ -214,7 +214,7 @@ P['fisa-faciale'] = {'id': 'fisa-faciale', 'title': 'Fișa *față*', 'short': '
         ('De ce a venit', 'Ce o deranjează la ten și ce a mai făcut.', [
             B('O întrebi: „Ce vă deranjează la ten?”', 'oglinda'),
             B('Și: „Ce tratamente ați mai făcut și când?” De exemplu peeling, filler, botox sau laser.', 'gandeste'),
-            B('Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum doi ani.”', 'fisa', cap='Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum 2 ani.”')], None),
+            B('Le treci cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum doi ani.”', 'fisa', cap='Le treci cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum 2 ani.”')], None),
         ('Când poate veni', 'Zilele, orele și când nu poate.', [
             B('Bifezi zilele și orele care îi convin, și scrii când nu poate. Așa, programările se fac repede.', 'calendar')], None),
         ('Sănătatea ei', 'Citești fiecare întrebare. Bifezi „Da” sau „Nu”.', [
@@ -296,12 +296,12 @@ P['fisa-epilare'] = {'id': 'fisa-epilare', 'title': 'Fișa *epilare laser*', 'sh
         B('Pagina unu: cine e clienta și ce vrea să epileze.', 'prezinta')]),
     sheet_scene('epilare', 0, E[0], [
         ('Sus, în colț', 'Numărul fișei, data de azi și numele tău.', [
-            B('Sus scrii numărul fișei, data de azi și numele tău.', 'fisa')], None),
+            B('Sus treci numărul fișei, data de azi și numele tău.', 'fisa')], None),
         ('Cine este ea', 'Nume, data nașterii, telefon, e-mail.', [
             B('Apoi datele ei: numele, data nașterii, telefonul și e-mailul. Și o întrebi de unde a aflat de noi.', 'prezinta'),
             B('Dacă are sub optsprezece ani, un părinte completează pagina trei.', 'arata-jos', cap='Dacă are sub 18 ani, un părinte completează pagina 3.')], None),
         ('Ce vrea să epileze', 'Zonele, cum s-a epilat, când ultima dată.', [
-            B('Scrii zonele pe care le vrea. De exemplu: axilă și picioare complet.', 'laser'),
+            B('Treci zonele pe care le vrea. De exemplu: axilă și picioare complet.', 'laser'),
             B('O întrebi cum s-a epilat până acum și când ultima dată.', 'gandeste'),
             B('Dacă a folosit ceară sau pensetă de curând, laserul mai așteaptă. Firul trebuie să fie în piele.', 'arata-jos')], None),
         ('Când poate veni', 'Zilele, orele și când nu poate.', [

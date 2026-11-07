@@ -1,332 +1,332 @@
 {
 "0.0": {
 "text": "Bună! Eu sunt Nuki.",
-"dur": 2.712,
-"file": "voice/b6a8ddadf9bafd6d.wav"
+"dur": 2.133,
+"file": "voice/fbc935c96564f985.wav"
 },
 "0.1": {
 "text": "Azi învățăm fișa „Program recomandat și ofertă”. O completezi după fișa clientei și după poze.",
-"dur": 8.566,
-"file": "voice/d895805bdf3c4079.wav"
+"dur": 6.93,
+"file": "voice/e08692a31c4c36ad.wav"
 },
 "0.2": {
 "text": "Are cinci pagini. Pagina unu e programul. Paginile doi, trei, patru și cinci sunt ofertele.",
-"dur": 8.909,
-"file": "voice/aa1af231c1445b2d.wav"
+"dur": 8.08,
+"file": "voice/be3f641637f9dec1.wav"
 },
 "1.0": {
 "text": "Întâi faci programul, pe pagina unu.",
-"dur": 3.632,
-"file": "voice/1dc9e2c020f727d8.wav"
+"dur": 2.78,
+"file": "voice/d117b48fed345cb0.wav"
 },
 "1.1": {
 "text": "Apoi ofertele, una câte una, de la cea mai avantajoasă ca reducere la cea mai ușoară ca sumă.",
-"dur": 8.462,
-"file": "voice/f3d6d7b54d003542.wav"
+"dur": 7.184,
+"file": "voice/98990718a9d49d32.wav"
 },
 "2.0": {
 "text": "Pagina unu: programul recomandat.",
-"dur": 3.364,
-"file": "voice/9d99b1c8683b9165.wav"
+"dur": 3.242,
+"file": "voice/8cd48d2a9b0424eb.wav"
 },
 "2.1": {
 "text": "Rămâne la clientă. La sfârșit o capsezi de fișa ei.",
-"dur": 4.971,
-"file": "voice/dac0c479977334cd.wav"
+"dur": 4.55,
+"file": "voice/dd01af1b8fd24477.wav"
 },
 "3.0": {
 "text": "Sus treci numele ei, data consultației și numele tău, la „Specialist”.",
-"dur": 8.001,
-"file": "voice/3acda1fd3fa00fd0.wav"
+"dur": 5.523,
+"file": "voice/ed5a097650255b59.wav"
 },
 "3.1": {
 "text": "Întâi afli ce o deranjează. Apoi scrii obiectivul ei, cu cuvintele ei.",
-"dur": 5.942,
-"file": "voice/1cc545cb900ab15b.wav"
+"dur": 5.551,
+"file": "voice/440ea7799d5184f7.wav"
 },
 "3.2": {
 "text": "De exemplu: „Să scape de grăsimea de pe abdomen, să se simtă bine în costum de baie.”",
-"dur": 5.948,
-"file": "voice/582eb65fd9b9f8a4.wav"
+"dur": 5.378,
+"file": "voice/bd4d3aa6604a2c38.wav"
 },
 "3.3": {
 "text": "Apoi tratamentele. O linie pentru fiecare procedură: zona, câte ședințe și intervalul dintre ele.",
-"dur": 8.067,
-"file": "voice/af7113f6946b93c9.wav"
+"dur": 7.268,
+"file": "voice/b3f61ef8ba7e8944.wav"
 },
 "3.4": {
 "text": "De exemplu: cavitație, EMS, împachetare și Liposonix, toate pe abdomen.",
-"dur": 9.247,
-"file": "voice/c763a416ce7e856c.wav"
+"dur": 6.036,
+"file": "voice/2530c45a9e2ac089.wav"
 },
 "3.5": {
 "text": "Intervalul îl iei din schema fiecărui tratament.",
-"dur": 3.911,
-"file": "voice/8788ea49d03bdcb2.wav"
+"dur": 3.501,
+"file": "voice/3946874f79de794b.wav"
 },
 "3.6": {
 "text": "Totalul e suma liniilor. Îl face calculatorul de ofertă, și tot el îți spune dacă programul trece de minim.",
-"dur": 8.285,
-"file": "voice/725e7c82aee984cd.wav"
+"dur": 8.464,
+"file": "voice/b4b018eb4f505aa6.wav"
 },
 "3.7": {
 "text": "Jos scrii cât ține programul, de exemplu „aproximativ trei luni”.",
-"dur": 5.783,
-"file": "voice/0d06f68567c416e7.wav"
+"dur": 5.216,
+"file": "voice/7a1d7806d409b7a4.wav"
 },
 "3.8": {
 "text": "Și rezultatul estimat, spus simplu. Rezultatele sunt estimate, nu garantate.",
-"dur": 7.362,
-"file": "voice/95ef8ef2b10fea99.wav"
+"dur": 6.281,
+"file": "voice/2af5f60d780ecbd9.wav"
 },
 "4.0": {
 "text": "Îi spui așa: „De obicei, după programul ăsta clientele văd un abdomen mai plat și mai ferm.”",
-"dur": 7.184,
-"file": "voice/4ba0f2669377f5e8.wav"
+"dur": 7.216,
+"file": "voice/5ed99cdbd64b7955.wav"
 },
 "4.1": {
 "text": "„La fiecare e puțin diferit, așa că urmărim împreună cum răspunde corpul dumneavoastră.”",
-"dur": 6.716,
-"file": "voice/0beee063a4632d11.wav"
+"dur": 5.994,
+"file": "voice/865c9964b7960802.wav"
 },
 "4.2": {
 "text": "Nu promiți nimic concret. Spui ce văd de obicei clientele.",
-"dur": 5.346,
-"file": "voice/5764bb89c46e4afd.wav"
+"dur": 4.018,
+"file": "voice/d96cc0c0635714f5.wav"
 },
 "5.0": {
 "text": "Acum, ofertele. Aici e cel mai important lucru.",
-"dur": 4.86,
-"file": "voice/665234c0131705d3.wav"
+"dur": 4.678,
+"file": "voice/b2534fa775179c31.wav"
 },
 "5.1": {
 "text": "Ofertele nu sună niciodată a „reducere, ia sau lasă”. Sunt o conversație: o asculți, o înțelegi și îi propui.",
-"dur": 10.604,
-"file": "voice/ca2f56656335198f.wav"
+"dur": 10.195,
+"file": "voice/7435938c89dab564.wav"
 },
 "5.2": {
 "text": "Iar cel mai bine e să vă opriți la prima ofertă.",
-"dur": 3.791,
-"file": "voice/9c68d1b03bbbb297.wav"
+"dur": 3.951,
+"file": "voice/477dea14a17084d2.wav"
 },
 "6.0": {
 "text": "Pe masă e mereu o singură ofertă.",
-"dur": 3.469,
-"file": "voice/f7f6fe4cb6a833ad.wav"
+"dur": 2.59,
+"file": "voice/03e78fdda04801db.wav"
 },
 "6.1": {
 "text": "Nu arăți și nu pomenești paginile următoare. Clienta se gândește doar la oferta din fața ei.",
-"dur": 7.699,
-"file": "voice/86ba335887068f06.wav"
+"dur": 6.332,
+"file": "voice/8f7007ffda1251ef.wav"
 },
 "7.0": {
 "text": "Oferta unu: tot programul, plătit azi, cu cincizeci la sută reducere.",
-"dur": 6.303,
-"file": "voice/d7454fa41561c191.wav"
+"dur": 5.247,
+"file": "voice/f691ed773a1c366a.wav"
 },
 "8.0": {
 "text": "Spui simplu: „Pentru că începeți azi tot programul, aveți cincizeci la sută reducere, cu plata integrală.”",
-"dur": 8.332,
-"file": "voice/73b47d0b13c03a6f.wav"
+"dur": 7.332,
+"file": "voice/8fa5bc7967887740.wav"
 },
 "8.1": {
 "text": "Și te oprești. O lași să se gândească.",
-"dur": 3.255,
-"file": "voice/0ed6490fcfc6c2f9.wav"
+"dur": 2.742,
+"file": "voice/7220bec077a5484f.wav"
 },
 "9.0": {
 "text": "Pe pagină scrii reducerea, cincizeci la sută. Calculatorul îți dă totalul de plată.",
-"dur": 7.156,
-"file": "voice/1e6dc876b66de2f0.wav"
+"dur": 6.055,
+"file": "voice/15f8bb48b2c2bfe7.wav"
 },
 "9.1": {
 "text": "Bifezi felul în care plătește și notezi data plății.",
-"dur": 4.54,
-"file": "voice/d72ed8d4dea152d6.wav"
+"dur": 3.945,
+"file": "voice/efff34418eaf8a36.wav"
 },
 "9.2": {
 "text": "Ședințele se programează toate pe loc, cu data și ora. Recepția le face.",
-"dur": 5.744,
-"file": "voice/5ac4226f52da1b09.wav"
+"dur": 6.035,
+"file": "voice/9596ee53326e37ee.wav"
 },
 "9.3": {
 "text": "Apoi condițiile. Oferta e valabilă doar azi, în ziua consultației.",
-"dur": 5.715,
-"file": "voice/dc68a7c1f712a389.wav"
+"dur": 6.178,
+"file": "voice/520ec86052c485f2.wav"
 },
 "9.4": {
 "text": "Și îi spui clar: dacă anulează sau mută cu mai puțin de douăzeci și patru de ore înainte, ședința se consideră făcută.",
-"dur": 8.378,
-"file": "voice/a65223e59e78b151.wav"
+"dur": 8.162,
+"file": "voice/b4e07fca63ef28a5.wav"
 },
 "9.5": {
 "text": "La final semnează ea și semnezi tu. Pagina unu și pagina aleasă le capsezi de fișa ei.",
-"dur": 7.222,
-"file": "voice/1465ea4fd5f61607.wav"
+"dur": 7.225,
+"file": "voice/87b5eeec00f0b172.wav"
 },
 "10.0": {
 "text": "Dar dacă spune că e prea mult? Nu insiști. Iei pagina înapoi.",
-"dur": 6.933,
-"file": "voice/8d548e449532f2a4.wav"
+"dur": 4.879,
+"file": "voice/d7b114a5eb23b86f.wav"
 },
 "10.1": {
 "text": "Și continui firesc: „Înțeleg. Atunci ce putem face pentru dumneavoastră este o reducere puțin mai mică, de treizeci la sută, și puteți achita în patru tranșe.”",
-"dur": 14.076,
-"file": "voice/905c56993f45c896.wav"
+"dur": 11.696,
+"file": "voice/2019364a9e600b6b.wav"
 },
 "11.0": {
 "text": "Oferta doi: tot programul, cu treizeci la sută reducere, în patru tranșe.",
-"dur": 7.122,
-"file": "voice/962e3429c0567412.wav"
+"dur": 5.376,
+"file": "voice/905e2a5d38eb146d.wav"
 },
 "11.1": {
 "text": "Plătește câte o tranșă la fiecare ședință: tranșa unu la ședința unu, tranșa doi la ședința doi, și tot așa.",
-"dur": 11.482,
-"file": "voice/3ac85e300fd7a82b.wav"
+"dur": 8.25,
+"file": "voice/9303a4e1b30403e8.wav"
 },
 "12.0": {
 "text": "Notezi reducerea: treizeci la sută. Calculatorul îți dă totalul și cât face o tranșă.",
-"dur": 7.372,
-"file": "voice/2351edc8f581a81b.wav"
+"dur": 7.049,
+"file": "voice/e2092596e0ed0c60.wav"
 },
 "12.1": {
 "text": "La calendarul tranșelor scrii la ce ședință plătește fiecare. La fiecare plată se bifează „Achitat”.",
-"dur": 8.602,
-"file": "voice/9fadb66447eea7b7.wav"
+"dur": 7.623,
+"file": "voice/cbb28f6ecfb4647f.wav"
 },
 "12.2": {
 "text": "Ședințele, toate programate pe loc.",
-"dur": 2.882,
-"file": "voice/450b6c2a6408a053.wav"
+"dur": 2.328,
+"file": "voice/7530bb70a116c181.wav"
 },
 "12.3": {
 "text": "Condițiile sunt ca la oferta unu, plus una: fiecare tranșă se plătește la ședința ei.",
-"dur": 6.927,
-"file": "voice/a24c3b5b1dead219.wav"
+"dur": 5.74,
+"file": "voice/d9ec14702cb75ed9.wav"
 },
 "12.4": {
 "text": "Și semnați amândouă.",
-"dur": 1.9,
-"file": "voice/957cf119c3bae3f3.wav"
+"dur": 2.127,
+"file": "voice/a83b6dd59819f0d8.wav"
 },
 "13.0": {
 "text": "Tot e greu pentru ea? Iei pagina înapoi și îi propui un început.",
-"dur": 5.2,
-"file": "voice/fb0fdb9fe721067b.wav"
+"dur": 4.755,
+"file": "voice/83f76562d072ce3b.wav"
 },
 "13.1": {
 "text": "„Înțeleg perfect. Corect din partea noastră ar fi să puneți un picior pe ușă: începeți cu jumătate din program, tot cu cincizeci la sută reducere.”",
-"dur": 10.166,
-"file": "voice/2c276ec3bebfc656.wav"
+"dur": 9.527,
+"file": "voice/ab541b2645b696e8.wav"
 },
 "13.2": {
 "text": "„Vă obișnuiți cu noi și vedem cum răspunde corpul dumneavoastră la aparate.”",
-"dur": 4.992,
-"file": "voice/6b94feba31c66ccf.wav"
+"dur": 4.531,
+"file": "voice/5f709140e4eb6310.wav"
 },
 "14.0": {
 "text": "Oferta trei nu e un pachet mai mic. E un început: jumătate din ședințele programului, cu aceeași reducere de cincizeci la sută.",
-"dur": 10.032,
-"file": "voice/7eba579dd2948f7e.wav"
+"dur": 9.157,
+"file": "voice/e193eff0d5b2afd5.wav"
 },
 "15.0": {
 "text": "Pe pagina patru scrii jumătate din ședințele fiecărei proceduri. Opt ședințe devin patru, șase devin trei.",
-"dur": 5.968,
-"file": "voice/a1a424c8d0f449d3.wav"
+"dur": 7.948,
+"file": "voice/8c2e72cc4fa6b2ad.wav"
 },
 "15.1": {
 "text": "Fără rotunjire: dacă sunt trei ședințe, scrii unu virgulă cinci.",
-"dur": 4.881,
-"file": "voice/483c8a2142f5f8dd.wav"
+"dur": 4.88,
+"file": "voice/622f0bfefc2f6c08.wav"
 },
 "15.2": {
 "text": "Reducerea e tot cincizeci la sută.",
-"dur": 2.939,
-"file": "voice/db85e5fd8a8aa3b8.wav"
+"dur": 2.489,
+"file": "voice/222c5ec3c8d4918f.wav"
 },
 "15.3": {
 "text": "Plata, data și ședințele programate pe loc.",
-"dur": 3.81,
-"file": "voice/ac41fc4dcaa325a3.wav"
+"dur": 3.812,
+"file": "voice/09a3091fa8a1dcd2.wav"
 },
 "15.4": {
 "text": "Condițiile ca la oferta unu, și semnați amândouă.",
-"dur": 4.055,
-"file": "voice/395fc55ec60e5607.wav"
+"dur": 3.997,
+"file": "voice/a87b523d55dda518.wav"
 },
 "16.0": {
 "text": "Și dacă tot e greu, ultima variantă.",
-"dur": 3.641,
-"file": "voice/e1fceaeda1f4d2fa.wav"
+"dur": 3.247,
+"file": "voice/e15918a75ad27f67.wav"
 },
 "16.1": {
 "text": "„Ca să fie cât mai ușor: aceeași jumătate de program, cu treizeci la sută reducere, în patru tranșe.”",
-"dur": 7.938,
-"file": "voice/df6dfd1ef74176a4.wav"
+"dur": 7.514,
+"file": "voice/62b87d5590ddf109.wav"
 },
 "17.0": {
 "text": "Pe pagina cinci: aceleași ședințe ca la oferta trei.",
-"dur": 4.765,
-"file": "voice/dbae2ff41cfb9ac8.wav"
+"dur": 4.233,
+"file": "voice/4da64ea7f8e8a680.wav"
 },
 "17.1": {
 "text": "Reducerea e treizeci la sută, iar totalul se împarte în patru tranșe.",
-"dur": 6.099,
-"file": "voice/722c3ccbdb44ada5.wav"
+"dur": 5.527,
+"file": "voice/29a9b3282f61f1a4.wav"
 },
 "17.2": {
 "text": "Fiecare tranșă se plătește la ședința ei.",
-"dur": 3.325,
-"file": "voice/332e0e8d03995e6b.wav"
+"dur": 3.137,
+"file": "voice/e223197ad6653329.wav"
 },
 "17.3": {
 "text": "Ședințele, programate pe loc. Condițiile, spuse clar. Și semnați amândouă.",
-"dur": 6.588,
-"file": "voice/69649555a98d4112.wav"
+"dur": 5.901,
+"file": "voice/888a7b2c7c39a385.wav"
 },
 "18.0": {
 "text": "Așa da: o asculți, o înțelegi și îi propui, ca între prietene.",
-"dur": 6.333,
-"file": "voice/fbd02d8442739035.wav"
+"dur": 5.702,
+"file": "voice/c09e16cec6e07196.wav"
 },
 "18.1": {
 "text": "Așa nu: „Ultima reducere, acum sau niciodată!” Sau toate ofertele pe masă deodată.",
-"dur": 7.698,
-"file": "voice/8356ba5afe500625.wav"
+"dur": 7.435,
+"file": "voice/00643166c6d15033.wav"
 },
 "19.0": {
 "text": "Înainte de semnare, verifici.",
-"dur": 2.86,
-"file": "voice/73944b0fd522d5c0.wav"
+"dur": 2.302,
+"file": "voice/f77f6a65e5ee0e68.wav"
 },
 "19.1": {
 "text": "Programul trece de minimul din calculator. Pagina aleasă are reducerea și totalul scrise.",
-"dur": 7.636,
-"file": "voice/5cb6e2acb19dca8f.wav"
+"dur": 6.188,
+"file": "voice/626c4cbf3360a7cd.wav"
 },
 "19.2": {
 "text": "Ședințele sunt programate. La tranșe, fiecare tranșă e la ședința ei.",
-"dur": 6.053,
-"file": "voice/1b72c872c7c28188.wav"
+"dur": 5.349,
+"file": "voice/9fe98d1bc7a62d1f.wav"
 },
 "19.3": {
 "text": "Ea a citit condițiile și a semnat, și tu la fel. Iar pagina unu și pagina aleasă le capsezi de fișa ei. Ea primește o copie.",
-"dur": 10.231,
-"file": "voice/e6a72feeb156b420.wav"
+"dur": 8.602,
+"file": "voice/d2a64af0a1786c5e.wav"
 },
 "20.0": {
 "text": "Bravo! Acum știi programul și ofertele.",
-"dur": 4.299,
-"file": "voice/ef98160a68cef24a.wav"
+"dur": 3.855,
+"file": "voice/b979c9d34a5efd4e.wav"
 },
 "20.1": {
 "text": "Pe masă e mereu o singură ofertă, spusă ca într-o conversație. Și cel mai bine e să vă opriți la prima.",
-"dur": 9.229,
-"file": "voice/207fa0c2d46f4877.wav"
+"dur": 7.883,
+"file": "voice/7517c502f9d8ded8.wav"
 },
 "20.2": {
 "text": "Ne vedem în filmul următor!",
-"dur": 2.418,
-"file": "voice/d5043026e6cd7476.wav"
+"dur": 2.223,
+"file": "voice/984b0815bb44a6ce.wav"
 }
 }
