@@ -32,8 +32,8 @@ module.exports = async (req, res) => {
   // public, no login: only non-secret facts (the web pixel's id is in every page anyway), so the site can be given it
   if (req.method === 'GET' && req.query && req.query.public) {
     res.setHeader('Cache-Control', 'no-store');
-    const [px, cfg] = await Promise.all([require('./_lib/pixel-once').status(), C.loadConfig()]);
-    res.status(200).json({ ok: true, pixel: px, capi: { pixelId: cfg.pixelId, mode: C.modeOf(cfg) } });
+    const [px, cfg, diag] = await Promise.all([require('./_lib/pixel-once').status(), C.loadConfig(), require('./_lib/pixel-diag').status()]);
+    res.status(200).json({ ok: true, pixel: px, capi: { pixelId: cfg.pixelId, mode: C.modeOf(cfg) }, diag });
     return;
   }
   const session = await requireAdmin(req, res);
