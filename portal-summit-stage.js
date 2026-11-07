@@ -74,13 +74,17 @@
         '<div class="sx-s-money">' +
           '<div class="sx-s-lbl"><span>Încasat azi</span> <span class="sx-s-delta" data-delta hidden></span></div>' +
           '<div class="sx-s-num" data-num><span data-v>0</span><small>lei</small></div>' +
-          '<div class="sx-s-sub" data-sub></div>' +
+          // the glass card with the details, as Summitlane's „Încasări azi” card: the count and the ticket, this month, the last payment
+          '<div class="sx-mcard">' +
+            '<div class="sx-s-sub" data-sub></div>' +
+            '<div class="sx-hud" data-hud></div>' +
+            '<div class="sx-last" data-last hidden></div>' +
+          '</div>' +
           '<div class="sx-acts">' +
             '<button type="button" data-proxy="incasari">' + ICON.wallet + 'Încasare</button>' +
             '<button type="button" data-proxy="programari">' + ICON.cal + 'Programare</button>' +
             '<button type="button" data-proxy="pipeline">' + ICON.lead + 'Lead</button>' +
           '</div>' +
-          '<div class="sx-hud" data-hud></div>' +
         '</div>' +
       '</div>';
     panel.insertBefore(st, panel.firstChild);
@@ -123,6 +127,15 @@
     var hud = st.querySelector('[data-hud]');
     hud.dataset.n = 1;
     hud.innerHTML = '<div><small>Luna asta</small><b>' + esc(lei(m.month)) + '</b>' + (m.monthDays ? '<span>' + m.monthDays + (m.monthDays === 1 ? ' zi cu încasări' : ' zile cu încasări') + '</span>' : '') + '</div>';
+    // the last payment of today: what, where, when (never the client's name)
+    var last = m.day.slice().sort(function (x, y) { return String(y.createdAt || y.time || '') < String(x.createdAt || x.time || '') ? -1 : 1; })[0];
+    var le = st.querySelector('[data-last]');
+    if (last) {
+      var at = last.createdAt ? new Date(last.createdAt) : null, ago = at && !isNaN(at) ? Math.max(0, Math.round((Date.now() - at) / 60000)) : null;
+      var when = ago == null ? tm(last) : ago < 1 ? 'acum' : ago < 60 ? 'acum ' + ago + ' min' : 'la ' + tm(last);
+      le.innerHTML = '<span>Ultima: <b>' + esc(last.treatment || 'încasare') + '</b>' + (last.location ? ' · ' + esc(last.location) : '') + (when ? ' · ' + esc(when) : '') + '</span><em>+' + esc(lei(last.amount)) + '</em>';
+      le.hidden = false;
+    } else le.hidden = true;
     paintAds();
   }
   // the ads of today: spent, the costs, how many times the leu comes back; the ad that works and the one that spends without a result
@@ -274,8 +287,10 @@
     if (fresh.length) {
       var sales = m.day.filter(function (s) { return fresh.indexOf(s.id) >= 0; });
       // while a pulse travels from her to the number, the number waits for it (each arrival counts on)
-      var land = function () { inflight = Math.max(0, inflight - 1); pay(); };
-      if (window.C360Prism && window.C360Prism.send(sales, land)) inflight += sales.length; else pay();
+      // each arrival: the number counts on, and the burst „+N lei” in the accent (as Summitlane's), with who did it
+      var q = sales.slice(), boom = function (sl) { if (window.C360Fx && sl) window.C360Fx.cash(lei(sl.amount), sl.treatment || ''); };
+      var land = function () { inflight = Math.max(0, inflight - 1); boom(q.shift()); pay(); };
+      if (window.C360Prism && window.C360Prism.send(sales, land)) inflight += sales.length; else { pay(); sales.forEach(function (sl, i) { setTimeout(function () { boom(sl); }, i * 900); }); }
     } else paint(false);
     KPI.at = Math.min(KPI.at, Date.now() - 3 * 60e3 + 30e3);
     kpi(function () { paint(false); });

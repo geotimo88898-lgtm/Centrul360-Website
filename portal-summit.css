@@ -24,20 +24,12 @@ html.ui-nou body{ font-family:var(--sx-sans); letter-spacing:-.012em; }
 html.ui-nou h1, html.ui-nou h2, html.ui-nou h3{ font-family:var(--sx-sans); }
 html.ui-nou h2{ font-weight:650; letter-spacing:-.045em; }
 html.ui-nou:not([data-theme="light"]) body{ background:var(--sx-bg); }
-/* the stage behind every screen, as on Summitlane's admin: the fine grid (the one the money block used to sit in), a glow in the
-   accent from above, a vignette. A fixed layer of its own, painted once: scrolling moves nothing in it. Discreet, for the tables. */
-html.ui-nou:not([data-theme="light"]) body::before{
-  background:
-    radial-gradient(70vw 50vh at 62% -12%, color-mix(in srgb, var(--accent,#2fd6c3) 10%, transparent), transparent 70%),
-    radial-gradient(50vw 50vh at 8% 110%, rgba(120,140,255,.05), transparent 70%),
-    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 56px 56px,
-    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 56px 56px,
-    var(--sx-bg);
-  -webkit-mask-image:none; mask-image:none; will-change:transform; transform:translateZ(0);
-}
-html.ui-nou:not([data-theme="light"]) body::after{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
-  background:radial-gradient(120% 90% at 50% 30%, transparent 55%, rgba(0,0,0,.55) 100%); }
-
+/* the night behind everything; the grid, the lights and the dust are the room (portal-summit-fx.js, .sx-amb, below). The body's own
+   background stays transparent (html carries the colour): painted over the room, it made the page look all black. */
+html.ui-nou:not([data-theme="light"]){ background:var(--sx-bg) !important; }
+html.ui-nou:not([data-theme="light"]) body{ background:transparent !important; }
+html.ui-nou:not([data-theme="light"]) body::before{ background:none !important; -webkit-mask-image:none !important; mask-image:none !important; }
+html.ui-nou:not([data-theme="light"]) body::after{ display:none; }
 /* eyebrows in mono, like Summit's „SÂMBĂTĂ, 7 NOIEMBRIE · 9 APLICAȚII” */
 html.ui-nou .sec-eyebrow, html.ui-nou .k-eyebrow{ font-family:var(--sx-mono) !important; font-weight:500 !important; letter-spacing:.14em !important; font-size:11px !important; }
 
@@ -274,6 +266,22 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
 .sx-comet{ position:absolute; z-index:5; left:0; top:0; width:120px; height:2px; margin:-1px 0 0 -120px; border-radius:2px; pointer-events:none; transform-origin:100% 50%;
   background:linear-gradient(90deg, transparent, var(--sx-tint)); box-shadow:0 0 12px var(--sx-ac); }
 .sx-comet::after{ content:""; position:absolute; right:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 14px var(--sx-ac), 0 0 30px var(--sx-ac); }
+
+/* ================================================================ a computer: the scene lies down (George: „pe calculator poate să fie orizontal”)
+   the cards in a column on the left (a vertical loop when they don't fit), the prism in the middle, the number on the right */
+@media (min-width:1024px){
+  .sx-flow{ display:grid; grid-template-columns:minmax(220px,264px) clamp(96px,8vw,124px) minmax(0,1fr); grid-template-areas:"ppl prism money"; align-items:center; column-gap:clamp(56px,6.5vw,110px); }
+  .sx-p-row.is-col{ grid-area:ppl; padding:0; align-self:center; }
+  .sx-p-row.is-col.is-loop{ cursor:grab; -webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent); mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent); }
+  .sx-p-row.is-col .sx-p-people{ flex-direction:column; width:100%; gap:10px; }
+  .sx-p-row.is-col .sx-p-people li{ width:100%; max-width:none; grid-template-columns:auto minmax(0,1fr); padding:9px 30px 9px 10px; transform-origin:0 50%; }
+  .sx-p-row.is-col .sx-p-people span{ grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:10px; }
+  .sx-p-row.is-col .sx-p-people u{ left:auto; right:11px; bottom:auto; top:50%; margin:-3.5px 0 0; }
+  .sx-p-logo{ grid-area:prism; width:100%; margin-top:0; }
+  .sx-s-money{ grid-area:money; align-items:flex-start; text-align:left; margin-top:0; max-width:none; }
+  .sx-s-lbl, .sx-acts, .sx-hud{ justify-content:flex-start; }
+  .sx-s-num{ justify-content:flex-start; transform-origin:0 60%; }
+}
 
 /* ================================================================ phones: thought from 390 up
    the greeting with a small Nuki, the row of cosmeticians, the prism small, the big number, the buttons on one row, then the rest */
@@ -514,21 +522,224 @@ html.ui-nou .st2-hours span.is-now{ background:var(--accent) !important; }
 html.ui-nou .n-navlive{ background:color-mix(in srgb, var(--accent) 12%, transparent) !important; color:var(--accent) !important; font-family:var(--sx-mono) !important; font-weight:500 !important; }
 html.ui-nou .n-navlive i{ background:var(--accent) !important; animation:none !important; }
 
-/* ================================================================ no boxes: every screen sits straight on the grid (George, 7.11: „totul curat, doar pe fundal”)
-   The containers lose their card (background, border, shadow, rounded box); sections are told apart by space and, where needed,
-   one fine line on top. Tables keep their fine lines between rows, without a box around. Things you tap or drag (a lead in the
-   pipeline, an appointment, a door, an offer, a tile) stay objects. Dialogs and menus keep their surface. */
-html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat, .ct-list, .ac-feed, .au-nums, .st2-live, .lv-c, .db-tl-card, .of-kpi, .kp-pulse, .sx-t, .kp-pace-c):not(:where(.c360-dialog, .c360-palette, [role="dialog"]) *),
-html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat, .ct-list, .ac-feed, .au-nums, .st2-live, .lv-c, .db-tl-card, .of-kpi, .kp-pulse, .sx-t, .kp-pace-c):not(:where(.c360-dialog, .c360-palette, [role="dialog"]) *):hover{
-  background:none !important; box-shadow:none !important; border:0 !important; border-top:1px solid rgba(255,255,255,.07) !important; border-radius:0 !important;
-  -webkit-backdrop-filter:none !important; backdrop-filter:none !important; padding-left:0 !important; padding-right:0 !important; transform:none; }
-html.ui-nou:not([data-theme="light"]) main :is(.k-card, .card, .k-stat, .st2-live, .of-kpi)::before,
-html.ui-nou:not([data-theme="light"]) main :is(.k-card, .card, .k-stat, .st2-live, .of-kpi)::after{ border-radius:0; }
-html.ui-nou:not([data-theme="light"]) main :is(.k-stat, .pl-stat):hover :is(.k-stat-value, b){ color:var(--accent); }
-/* the pipeline's columns: no box, a fine line between them */
-html.ui-nou:not([data-theme="light"]) main .pl-col{ background:none !important; box-shadow:none !important; border:0 !important; border-left:1px solid rgba(255,255,255,.06) !important; border-radius:0 !important; }
-html.ui-nou:not([data-theme="light"]) main .pl-col:first-child{ border-left:0 !important; }
-/* the KPI deck: no box either; its tiles are told apart by space and a fine line */
-html.ui-nou:not([data-theme="light"]) main .sx-deck{ background:none !important; box-shadow:none !important; border-radius:0 !important; padding:0 !important; overflow:visible; }
-html.ui-nou:not([data-theme="light"]) main .sx-deck::before, html.ui-nou:not([data-theme="light"]) main .sx-t .cn, html.ui-nou:not([data-theme="light"]) main .kp-pulse .db-aurora{ display:none !important; }
-html.ui-nou:not([data-theme="light"]) main .sx-d-grid{ column-gap:clamp(24px,3vw,48px); row-gap:28px; }
+/* ================================================================ the profile photo on the round avatar: the new look's `background` shorthand reset
+   its size and position, so a photo showed only its top-left corner, blown up (a dark blob in the accent) */
+html.ui-nou .c360-avatar.has-photo{ background-color:var(--surface-3, #111) !important; background-size:cover !important; background-position:center !important; background-repeat:no-repeat !important; color:transparent !important; }
+
+/* ================================================================ KPI: the title and the funnel, redrawn calm (no boxes, a clear hierarchy, room)
+   the title: big, „în timp real” a small live tag beside it, the period line under it */
+html.ui-nou .kp-top{ align-items:flex-end; gap:18px 28px; margin-top:12px; }
+html.ui-nou .kp-title h2{ font:650 clamp(30px,3vw,40px)/1 var(--sx-sans) !important; letter-spacing:-.045em !important; gap:14px !important; color:#fff; }
+html.ui-nou .kp-title h2 .k-live{ display:inline-flex; align-items:center; gap:8px; padding:6px 11px; border-radius:999px; font:500 10.5px/1 var(--sx-mono) !important; letter-spacing:.14em !important; text-transform:uppercase;
+  color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent); white-space:nowrap; }
+html.ui-nou .kp-title small{ margin-top:10px !important; font-size:13.5px !important; color:rgba(225,235,238,.55) !important; }
+/* the funnel: one line per step, left-aligned; the name and the number on top, a thin bar under them in the accent (its width is the share
+   of the leads); the step-to-step rate small between them. The speed of the first contact sits beside it as three plain numbers. */
+html.ui-nou .kp-fn-g{ grid-template-columns:minmax(0,1fr) minmax(220px,280px) !important; gap:clamp(32px,5vw,72px) !important; align-items:start !important; }
+html.ui-nou .kp-fn{ align-items:stretch !important; gap:0; }
+html.ui-nou .kp-fn-s{ width:auto !important; min-width:0 !important; height:auto !important; display:grid !important; grid-template-columns:22px minmax(0,1fr) auto; align-items:center; gap:4px 12px !important;
+  padding:12px 0 0 !important; border-radius:0 !important; background:none !important; box-shadow:none !important; color:#fff !important; overflow:visible !important; animation:sx-rise-in .7s var(--sx-e) both !important; animation-delay:calc(var(--i) * 70ms) !important; }
+html.ui-nou .kp-fn-s::after{ content:""; grid-column:2 / -1; height:6px; border-radius:6px; margin-top:6px;
+  background:linear-gradient(90deg, var(--accent) var(--w), rgba(255,255,255,.07) var(--w)); opacity:calc(1 - var(--i) * .1); }
+html.ui-nou .kp-fn-ic{ width:22px !important; height:22px !important; border-radius:7px !important; background:color-mix(in srgb, var(--accent) 14%, transparent) !important; color:var(--accent); }
+html.ui-nou .kp-fn-ic .k-ic{ width:13px !important; height:13px !important; }
+html.ui-nou .kp-fn-l{ font-size:14px !important; font-weight:550 !important; color:rgba(235,240,242,.85); }
+html.ui-nou .kp-fn-s b{ font:650 20px/1 var(--sx-sans) !important; letter-spacing:-.03em; }
+html.ui-nou .kp-fn-x{ height:auto !important; padding:6px 0 0 34px; }
+html.ui-nou .kp-fn-x span{ background:none !important; padding:0 !important; font:500 11px/1 var(--sx-mono) !important; letter-spacing:.06em; color:rgba(220,235,238,.5) !important; }
+html.ui-nou .kp-fn-x em{ font:500 11px/1 var(--sx-mono) !important; }
+@keyframes sx-rise-in{ from{ opacity:0; transform:translate3d(0,10px,0); } }
+html.ui-nou .kp-speed{ align-items:flex-start !important; gap:18px !important; padding-top:12px; }
+html.ui-nou .kp-speed .k-ring{ width:96px !important; height:96px !important; }
+html.ui-nou .kp-speed .k-ring svg{ width:96px; height:96px; }
+html.ui-nou .kp-speed .k-ring-inner b{ font-size:18px !important; }
+html.ui-nou .kp-speed .k-ring-inner small{ font-size:9.5px !important; }
+html.ui-nou .kp-speed-t{ grid-template-columns:1fr !important; gap:0 !important; }
+html.ui-nou .kp-speed-t div{ flex-direction:row !important; justify-content:space-between; align-items:baseline !important; text-align:left !important; padding:12px 0; border-top:1px solid rgba(255,255,255,.07); }
+html.ui-nou .kp-speed-t span{ font-size:13px !important; color:rgba(225,235,238,.6) !important; }
+html.ui-nou .kp-speed-t b{ font:650 18px/1 var(--sx-sans) !important; }
+@media (max-width:860px){ html.ui-nou .kp-fn-g{ grid-template-columns:minmax(0,1fr) !important; } }
+@media (prefers-reduced-motion:reduce){ html.ui-nou .kp-fn-s{ animation:none !important; } }
+
+/* ================================================================ the Summitlane admin's language (admin.summitlane.app, assets/fx.css), in the accent the
+   owner picked: the room, the thread of light, the scroll progress, the prism at each screen's title, glass cards with HUD
+   corners and a light under the cursor, the screen sweep, the money burst. portal-summit-fx.js places the pieces.
+   Phones and touch tablets (.sx-lite): no blur, no dust, no drifting lights; only transform and opacity. */
+html.ui-nou{ --sx-ac:var(--accent,#2fd6c3); --sx-spec:linear-gradient(90deg, var(--accent,#2fd6c3), var(--accent-2,#5fe6d6) 55%, #fff); }
+/* the room: one fixed layer behind every screen, the grid painted once (never on scroll) */
+.sx-amb{ position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden; contain:strict; }
+.sx-amb .g{ position:absolute; inset:-1px; will-change:transform; transform:translateZ(0);
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--sx-ac) 7%, transparent), transparent 3px), linear-gradient(90deg, color-mix(in srgb, var(--sx-ac) 7%, transparent), transparent 3px);
+  background-size:120px 120px; background-position:-1px -1px; }
+.sx-amb .o{ position:absolute; width:62vmax; height:62vmax; border-radius:50%; opacity:.55; will-change:transform; }
+.sx-amb .o1{ right:-22vmax; top:-30vmax; background:radial-gradient(closest-side, color-mix(in srgb, var(--sx-ac) 20%, transparent), transparent); animation:sx-drift 26s ease-in-out infinite alternate; }
+.sx-amb .o2{ left:-20vmax; bottom:-34vmax; background:radial-gradient(closest-side, color-mix(in srgb, var(--accent-2,#5fe6d6) 11%, transparent), transparent); animation:sx-drift 32s ease-in-out -9s infinite alternate-reverse; }
+@keyframes sx-drift{ to{ transform:translate3d(-8vmax,10vmax,0) scale(1.15); } }
+.sx-amb .d{ position:absolute; width:2px; height:2px; border-radius:50%; background:#fff; opacity:0; will-change:transform,opacity; animation:sx-dust var(--t,14s) linear var(--dl,0s) infinite; }
+@keyframes sx-dust{ 0%{ opacity:0; transform:translate3d(0,0,0); } 15%{ opacity:var(--a,.5); } 85%{ opacity:var(--a,.5); } 100%{ opacity:0; transform:translate3d(var(--x,30px),-140px,0); } }
+/* the thread of light along the menu's edge, a pulse running down it */
+.sx-thread{ position:fixed; top:0; bottom:0; left:var(--sx-side,0px); width:1px; z-index:2; pointer-events:none; overflow:hidden;
+  background:linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.08) 20%, rgba(255,255,255,.08) 80%, rgba(255,255,255,0)); }
+.sx-thread::after{ content:""; position:absolute; left:-1px; top:0; width:3px; height:180px; opacity:.85; will-change:transform;
+  background:linear-gradient(transparent, #fff 45%, var(--sx-ac) 62%, transparent); box-shadow:0 0 12px rgba(255,255,255,.5); animation:sx-run 5.5s cubic-bezier(.6,0,.3,1) infinite; }
+@keyframes sx-run{ 0%{ transform:translateY(-200px); } 70%,100%{ transform:translateY(110vh); } }
+/* scroll progress: the accent fills along the top bar */
+.sx-prog{ position:fixed; left:var(--sx-side,0px); right:0; top:calc(var(--sx-top,60px) - 1px); height:2px; z-index:45; pointer-events:none; background:var(--sx-spec);
+  transform-origin:0 50%; transform:scaleX(0); opacity:.9; box-shadow:0 0 10px color-mix(in srgb, var(--sx-ac) 60%, transparent); }
+/* the side menu: the night shows through */
+html.ui-nou.sx-fine nav.tabs{ background:rgba(0,0,0,.45) !important; }
+
+/* the prism at each screen's title: the Centrul360 mark in glass, a beam coming in, the accent's fan going out */
+.sx-pr{ position:relative; display:inline-block; vertical-align:middle; width:150px; height:64px; margin:-20px 0 -20px 4px; pointer-events:none; perspective:600px; }
+.sx-pr .bm{ position:absolute; left:-70px; top:31px; width:110px; height:1.5px; transform-origin:100% 50%; transform:rotate(-14deg) scaleX(0);
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.2) 40%, #fff); box-shadow:0 0 8px rgba(255,255,255,.5); transition:transform .9s cubic-bezier(.7,0,.2,1); opacity:.7; }
+.sx-pr .fan{ position:absolute; left:46px; top:32px; width:0; height:0; }
+.sx-pr .fan i{ position:absolute; left:0; top:0; width:96px; height:2px; border-radius:2px; transform-origin:0 50%; transform:rotate(calc(-9deg + var(--i) * 3deg)) scaleX(0); opacity:calc(.9 - var(--i) * .08);
+  background:linear-gradient(90deg, color-mix(in srgb, var(--sx-ac) calc(100% - var(--i) * 12%), #fff), transparent); transition:transform .8s cubic-bezier(.16,1,.3,1) calc(.5s + var(--i) * 40ms); }
+.sx-pr .body{ position:absolute; left:14px; top:12px; width:40px; height:40px; transform-style:preserve-3d; transform:rotateX(var(--ry,0deg)) rotateY(var(--rx,0deg)); transition:transform .5s cubic-bezier(.16,1,.3,1); }
+.sx-pr .spin{ position:absolute; inset:0; transform-style:preserve-3d; animation:sx-sway 7s ease-in-out infinite; opacity:0; transform:scale(.6); transition:opacity .7s, transform .9s cubic-bezier(.34,1.56,.64,1); }
+@keyframes sx-sway{ 0%,100%{ rotate:y -18deg; } 50%{ rotate:y 18deg; } }
+.sx-pr svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.sx-pr .glow{ position:absolute; left:-6px; top:-8px; width:80px; height:80px; border-radius:50%; opacity:0; transition:opacity 1.2s .4s;
+  background:radial-gradient(closest-side, rgba(255,255,255,.18), color-mix(in srgb, var(--sx-ac) 12%, transparent) 55%, transparent); animation:sx-breath2 4s ease-in-out infinite; }
+@keyframes sx-breath2{ 50%{ transform:scale(1.12); } }
+.sx-pr .sheen{ animation:sx-sheen 4.5s ease-in-out 1.4s infinite; }
+@keyframes sx-sheen{ 0%,60%,100%{ opacity:.12; } 75%{ opacity:.7; } }
+.sx-pr.on .bm{ transform:rotate(-14deg) scaleX(1); }
+.sx-pr.on .fan i{ transform:rotate(calc(-9deg + var(--i) * 3deg)) scaleX(1); }
+.sx-pr.on .spin{ opacity:1; transform:scale(1); }
+.sx-pr.on .glow{ opacity:1; }
+@media (max-width:760px){ .sx-pr{ width:96px; margin-left:0; scale:.72; transform-origin:0 50%; } }
+
+/* cards: glass with HUD corners (four short strokes at two corners), the light under the cursor stays inside the rounded glass */
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){
+  background:
+    linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
+    linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09), 0 30px 60px -44px rgba(0,0,0,.9) !important; }
+html.ui-nou.sx-fine:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){ -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat):hover{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 30px 60px -44px rgba(0,0,0,.9) !important; }
+html.ui-nou main :is(.k-stat, .pl-stat, .card, .k-card, .of-card)::after{
+  background:radial-gradient(420px circle at var(--n-mx,50%) var(--n-my,50%), color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.04)), transparent 45%) !important; }
+html.ui-nou.sx-lite main :is(.k-stat, .pl-stat, .card, .k-card, .of-card)::after{ display:none; }
+/* the Panou's money block floats with no frame; Ziua de azi, the ads, the chart, the pay and the team are glass cards */
+html.ui-nou #panel-panou .sx-adsec{ position:relative; padding:24px 26px; border-radius:22px;
+  background:linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
+    linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); box-shadow:inset 0 0 0 1px rgba(255,255,255,.09); }
+
+/* screen changes: the band of light crosses the page in the accent */
+.sx-sweep{ background:var(--sx-spec) !important; }
+
+/* money: „+N lei” in the accent, sparks and a ring */
+.sx-cash{ position:fixed; left:calc(50% + var(--sx-side,0px) / 2); top:22%; z-index:120; pointer-events:none; transform:translateX(-50%); }
+.sx-cash b{ display:block; font:700 64px/1 var(--sx-sans); letter-spacing:-.05em; color:var(--sx-ac); white-space:nowrap;
+  text-shadow:0 0 28px color-mix(in srgb, var(--sx-ac) 65%, transparent), 0 0 2px #fff; animation:sx-cash 2.2s cubic-bezier(.16,1,.3,1) forwards; }
+.sx-cash small{ display:block; text-align:center; margin-top:8px; font:500 12px/1 var(--sx-mono); letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.75); opacity:0; animation:sx-cash 2.2s cubic-bezier(.16,1,.3,1) .05s forwards; }
+@keyframes sx-cash{ 0%{ opacity:0; transform:scale(.4) translateY(30px); } 18%{ opacity:1; transform:scale(1.12); } 30%{ transform:scale(1); } 75%{ opacity:1; transform:translateY(-10px); } 100%{ opacity:0; transform:translateY(-40px); } }
+.sx-cash i{ position:absolute; left:50%; top:32px; width:6px; height:6px; border-radius:50%; opacity:0; animation:sx-spark 1.3s cubic-bezier(.16,1,.3,1) forwards;
+  background:color-mix(in srgb, var(--sx-ac) calc(100% - var(--k) * 35%), #fff); box-shadow:0 0 8px var(--sx-ac); }
+@keyframes sx-spark{ 0%{ opacity:1; transform:translate(-50%,-50%); } 100%{ opacity:0; transform:translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(.4); } }
+.sx-ring{ position:fixed; left:calc(50% + var(--sx-side,0px) / 2); top:calc(22% + 32px); z-index:119; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; border:2px solid var(--sx-ac); pointer-events:none; animation:sx-ring 1s cubic-bezier(.16,1,.3,1) forwards; }
+@keyframes sx-ring{ from{ opacity:.9; transform:scale(1); } to{ opacity:0; transform:scale(22); } }
+
+/* phones and touch tablets: nothing per frame */
+html.ui-nou.sx-lite .sx-amb .o, html.ui-nou.sx-lite .sx-amb .d{ display:none; }
+html.ui-nou.sx-lite .sx-thread::after{ animation-duration:7s; }
+html.ui-nou.sx-lite .sx-pr .glow, html.ui-nou.sx-lite .sx-pr .sheen, html.ui-nou.sx-lite .sx-pr .spin{ animation:none; }
+html.ui-nou.sx-lite :is(header.topbar, .c360-mfoot, nav.tabs){ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+html.ui-nou.sx-lite header.topbar{ background:rgba(0,0,0,.94) !important; }
+@media (prefers-reduced-motion:reduce){ .sx-amb .o, .sx-amb .d, .sx-thread::after, .sx-pr .spin, .sx-pr .glow, .sx-pr .sheen{ animation:none !important; } }
+
+/* ================================================================ the Summitlane admin skin (Produse admin/assets/app.css + fx.css), mapped onto the portal's own
+   classes: the same tokens, Geist at the same sizes, the same side menu, top bar, buttons, inputs, segmented tabs, rows, chips and
+   titles. Only how it looks changes; every screen and every action stays as it is. Dark only (the portal's light theme is untouched). */
+html.ui-nou:not([data-theme="light"]){
+  --sx-bg:#000; --ink:#000; --paper:#0d0d0f; --paper-2:#060607; --surface-3:#141417; --fg:#f3f3f4; --fg-2:#cfcfd4; --muted:#a3a3ab; --muted-2:#7d7d86;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14); --line-on-dark:rgba(255,255,255,.14); --glass:rgba(255,255,255,.045); --glass-2:rgba(255,255,255,.08);
+  --good:#3ee08f; --bad:#ff6b6b; --warn:#f5a524; --topbar-bg:rgba(0,0,0,.66); --sx-r:18px; }
+html.ui-nou:not([data-theme="light"]) body{ font:14px/1.5 var(--sx-sans); letter-spacing:-.005em; -webkit-font-smoothing:antialiased; }
+/* the side menu */
+html.ui-nou:not([data-theme="light"]) nav.tabs{ border-right:1px solid var(--line) !important; box-shadow:none !important; }
+html.ui-nou:not([data-theme="light"]) nav.tabs .nav-group-label, html.ui-nou:not([data-theme="light"]) nav.tabs .tab-group-label, html.ui-nou:not([data-theme="light"]) nav.tabs .c360-navlabel{
+  font:500 12px/1 var(--sx-sans) !important; letter-spacing:0 !important; text-transform:none !important; color:var(--muted-2) !important; padding:16px 8px 6px !important; }
+html.ui-nou:not([data-theme="light"]) nav.tabs button{ min-height:32px; border-radius:8px !important; font:400 14px/1.2 var(--sx-sans) !important; color:var(--muted) !important; transition:color .15s, background .15s; }
+html.ui-nou:not([data-theme="light"]) nav.tabs button:hover{ color:var(--fg) !important; background:rgba(255,255,255,.045) !important; }
+html.ui-nou:not([data-theme="light"]) nav.tabs button.active{ position:relative; color:var(--fg) !important; font-weight:500 !important;
+  background:linear-gradient(90deg, rgba(255,255,255,.1), rgba(255,255,255,.03)) !important; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06) !important; }
+html.ui-nou:not([data-theme="light"]) nav.tabs button.active::before{ content:""; position:absolute; left:-8px; top:7px; bottom:7px; width:2px; border-radius:2px;
+  background:linear-gradient(#fff, var(--accent)); box-shadow:0 0 10px color-mix(in srgb, var(--accent) 80%, transparent); }
+html.ui-nou:not([data-theme="light"]) nav.tabs .c360-indicator{ display:none !important; }
+html.ui-nou:not([data-theme="light"]) nav.tabs button svg{ width:18px; height:18px; opacity:.85; }
+html.ui-nou:not([data-theme="light"]) nav.tabs button.active svg{ color:var(--fg) !important; filter:none !important; }
+/* the top bar */
+html.ui-nou:not([data-theme="light"]) header.topbar{ background:var(--topbar-bg) !important; border-bottom:1px solid var(--line) !important; box-shadow:none !important; }
+/* the titles: the site's display weight, white fading down */
+html.ui-nou:not([data-theme="light"]) .k-head h2, html.ui-nou:not([data-theme="light"]) .pl-head h2{ font:700 clamp(30px,3vw,40px)/1.04 var(--sx-sans) !important; letter-spacing:-.045em !important;
+  background:linear-gradient(180deg, #fff 30%, rgba(255,255,255,.62)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+html.ui-nou:not([data-theme="light"]) :is(.k-head h2, .pl-head h2) :is(.n-sn, .sx-pr){ -webkit-text-fill-color:initial; }
+html.ui-nou:not([data-theme="light"]) .k-head .k-lede{ color:var(--muted); font-size:14px; }
+html.ui-nou:not([data-theme="light"]) .k-eyebrow{ font:500 11.5px/1 var(--sx-mono) !important; letter-spacing:.14em !important; text-transform:uppercase; color:var(--muted-2) !important; }
+html.ui-nou:not([data-theme="light"]) .k-card-head h3{ font:600 16px/1.2 var(--sx-sans) !important; letter-spacing:-.02em; }
+/* buttons: white primary, glass ghost, the accent where the portal uses it */
+html.ui-nou:not([data-theme="light"]) .k-btn{ height:36px; padding:0 16px; border-radius:10px; font:600 13.5px/1 var(--sx-sans); letter-spacing:-.005em; background:rgba(255,255,255,.035); color:var(--fg);
+  box-shadow:inset 0 0 0 1px var(--line-2); transition:opacity .15s, transform .2s cubic-bezier(.34,1.56,.64,1), background .15s; }
+html.ui-nou:not([data-theme="light"]) .k-btn:hover{ background:rgba(255,255,255,.06); }
+html.ui-nou:not([data-theme="light"]) .k-btn:active{ transform:scale(.97); }
+html.ui-nou:not([data-theme="light"]) .k-btn.is-primary{ background:#fff; color:#000; box-shadow:0 0 0 1px #fff; }
+html.ui-nou:not([data-theme="light"]) .k-btn.is-accent{ background:var(--accent); color:var(--accent-fg,#000); box-shadow:0 0 0 1px var(--accent); filter:none; }
+html.ui-nou:not([data-theme="light"]) .k-btn.is-accent:hover, html.ui-nou:not([data-theme="light"]) .k-btn.is-primary:hover{ opacity:.88; transform:none; }
+html.ui-nou:not([data-theme="light"]) .k-btn.is-outline{ background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px var(--line-2); }
+html.ui-nou:not([data-theme="light"]) .k-btn.is-sm{ height:32px; padding:0 12px; font-size:13px; border-radius:8px; }
+html.ui-nou:not([data-theme="light"]) .k-btn.is-lg{ height:44px; padding:0 20px; font-size:14px; border-radius:12px; }
+/* inputs */
+html.ui-nou:not([data-theme="light"]) main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea):not(.k-search input){
+  background-color:rgba(255,255,255,.035); border:1px solid var(--line-2); border-radius:10px; color:var(--fg); font-size:14px; transition:border-color .15s, box-shadow .15s; }
+html.ui-nou:not([data-theme="light"]) main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select):not(.k-search input){ min-height:40px; }
+html.ui-nou:not([data-theme="light"]) main :is(input, select, textarea):not(.k-search input):focus{ border-color:var(--fg); box-shadow:0 0 0 3px rgba(255,255,255,.1); outline:none; }
+html.ui-nou:not([data-theme="light"]) .k-field > span{ font:500 13px/1.2 var(--sx-sans) !important; letter-spacing:0 !important; text-transform:none !important; color:var(--muted) !important; }
+html.ui-nou:not([data-theme="light"]) .k-search{ height:36px; border-radius:10px; background:rgba(255,255,255,.035); border:1px solid var(--line) !important; box-shadow:none; }
+html.ui-nou:not([data-theme="light"]) .k-search:focus-within{ border-color:var(--line-2) !important; box-shadow:0 0 0 3px rgba(255,255,255,.08); }
+/* segmented tabs and chips */
+html.ui-nou:not([data-theme="light"]) .k-seg{ padding:4px; gap:2px; border-radius:12px; background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px var(--line); }
+html.ui-nou:not([data-theme="light"]) .k-seg button{ min-height:30px; padding:0 12px; border-radius:8px; font:500 13px/1 var(--sx-sans); color:var(--muted); }
+html.ui-nou:not([data-theme="light"]) .k-seg button:hover{ color:var(--fg); }
+html.ui-nou:not([data-theme="light"]) .k-seg button.is-on{ background:var(--fg); color:#000; box-shadow:none; }
+html.ui-nou:not([data-theme="light"]) .k-chip{ height:32px; border-radius:10px; border:1px solid var(--line); background:rgba(255,255,255,.035); font:500 13px/1 var(--sx-sans); color:var(--muted); }
+html.ui-nou:not([data-theme="light"]) .k-chip.is-on{ background:var(--fg); color:#000; border-color:var(--fg); }
+/* rows: a 1px line, a quiet hover */
+html.ui-nou:not([data-theme="light"]) .k-row{ border-radius:10px; }
+html.ui-nou:not([data-theme="light"]) .k-row + .k-row{ border-top-color:var(--line); }
+html.ui-nou:not([data-theme="light"]) .k-row:hover{ background:rgba(255,255,255,.045); }
+html.ui-nou:not([data-theme="light"]) .k-row-title{ font-weight:500; font-size:14px; }
+html.ui-nou:not([data-theme="light"]) main table th{ font:500 12px/1.2 var(--sx-sans); color:var(--muted); text-transform:none; letter-spacing:0; border-bottom:1px solid var(--line); }
+html.ui-nou:not([data-theme="light"]) main table td{ border-bottom-color:var(--line); }
+/* cards: the radius of Summitlane */
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card){ border-radius:var(--sx-r) !important; }
+html.ui-nou:not([data-theme="light"]) main :is(.k-stat, .pl-stat){ border-radius:var(--sx-r) !important; }
+html.ui-nou:not([data-theme="light"]) .k-stat-value{ font:600 clamp(24px,2.2vw,30px)/1.05 var(--sx-sans) !important; letter-spacing:-.04em !important;
+  background:linear-gradient(180deg, #fff 40%, rgba(255,255,255,.7)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+html.ui-nou:not([data-theme="light"]) .k-stat-top{ font:500 12.5px/1.2 var(--sx-sans) !important; letter-spacing:0 !important; text-transform:none !important; color:var(--muted) !important; }
+
+/* the money block's glass card (the count and the ticket, this month, the last payment), as Summitlane's „Încasări azi” card */
+.sx-mcard{ position:relative; width:min(440px,100%); display:grid; gap:14px; padding:18px 20px; border-radius:18px; text-align:left;
+  background:linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
+    linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
+    linear-gradient(180deg, color-mix(in srgb, var(--sx-ac) 7%, rgba(255,255,255,.04)), rgba(255,255,255,.015));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--sx-ac) 22%, rgba(255,255,255,.08)), 0 30px 60px -40px rgba(0,0,0,.9); }
+html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.sx-mcard .sx-s-sub{ margin:0; text-align:left; font-size:14px; }
+.sx-mcard .sx-hud{ margin:0; justify-content:flex-start; }
+.sx-mcard .sx-hud > div{ border-top:0; padding:0; min-width:0; }
+.sx-mcard .sx-hud b{ font-size:24px; }
+.sx-last{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08); font-size:13px; color:rgba(225,235,238,.6); }
+.sx-last[hidden]{ display:none; }
+.sx-last span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sx-last b{ color:#fff; font-weight:500; }
+.sx-last em{ flex:none; font-style:normal; font:600 13px/1 var(--sx-mono); color:var(--sx-ac); }
+@media (max-width:699px){
+  .sx-s-money .sx-acts{ order:3; }
+  .sx-s-money .sx-mcard{ order:4; width:100%; margin-top:4px; }
+}
