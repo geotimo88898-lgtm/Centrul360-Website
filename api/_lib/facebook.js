@@ -128,7 +128,7 @@ async function fetchLead(leadgenId, token) {
     const r = await fetch(`${GRAPH_BASE}/${encodeURIComponent(leadgenId)}?${new URLSearchParams({ fields, access_token: token })}`);
     return { ok: r.ok, data: await r.json().catch(() => ({})) };
   };
-  let r = await get('field_data,form_id,ad_id,ad_name,adset_name,campaign_name,created_time,platform');
+  let r = await get('field_data,form_id,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,created_time,platform');
   if (!r.ok) r = await get('field_data,form_id,created_time,platform');
   return r.ok ? { lead: r.data } : { error: r.data && r.data.error ? r.data.error.message || 'graph_error' : 'graph_error' };
 }

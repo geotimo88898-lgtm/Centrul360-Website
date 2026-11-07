@@ -7,6 +7,7 @@
 //              to "won" ("Venit la programare", "Luat pachet"); the side stages placed after them in the list ("In
 //              asteptare", "Contraindicatii") never count
 //   showed     she came to the clinic: an appointment finished or paid, a payment, or the stages after "booked" up to "won"
+//   contacted  the desk reached her (a stage after the first, a call or message noted) or she booked; lost: in the lost stage
 //   client   at least one payment (Încasări) from her, or the lead is "won"
 //   revenue  her payments since the lead; upsells: payments with "Upsell efectuat" (count and value)
 
@@ -95,7 +96,7 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
       .filter((s) => Date.parse(s.createdAt || s.date) >= since);
     const stIdx = idxOf(l.stage), kind = kindOf(l.stage);
     const lost = kind === 'lost';
-    const ev = { leads: 1, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
+    const ev = { leads: 1, contacted: 0, lost: lost ? 1 : 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
     ev.booked = appts.length || l.appointmentId || (!lost && inFlow(stIdx, bookedIdx)) ? 1 : 0;
     ev.showed = appts.some((a) => (a.status === 'finalizata' && !a.noShow) || a.paidSaleId) || pays.length || (!lost && inFlow(stIdx, bookedIdx + 1)) ? 1 : 0;
     ev.clients = pays.length || kind === 'won' ? 1 : 0;
@@ -104,6 +105,8 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
     ev.upsellValue = pays.reduce((n, s) => n + (Number(s.upsell) || 0), 0);
     if (ev.showed) ev.booked = 1;
     if (ev.clients) { ev.booked = 1; ev.showed = 1; }
+    // contacted: the desk reached her (a stage after the first one, a call / message noted) or she booked
+    ev.contacted = ev.booked || (stIdx > 0 && !lost) || (l.activities || []).some((a) => a.type === 'contact') || l.contactCount > 0 ? 1 : 0;
 
     const campId = (f.campaignId && String(f.campaignId)) || campByName.get(norm(f.campaign));
     const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad && !campId && nameCount.get(norm(f.ad)) === 1 ? adByNames.get('|' + norm(f.ad)) : null);
@@ -113,7 +116,7 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
   });
   return out;
 }
-function zero() { return { leads: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }; }
+function zero() { return { leads: 0, contacted: 0, lost: 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 }; }
 function plus(x, ev) { Object.keys(ev).forEach((k) => { x[k] = (x[k] || 0) + ev[k]; }); }
 
 module.exports = { funnel, periodRange, bucharestDay, zero };

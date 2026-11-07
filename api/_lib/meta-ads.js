@@ -175,6 +175,9 @@ function cleanSettings(x) {
   s.description = str(x.description, 255);
   s.cta = CTAS.includes(x.cta) ? x.cta : 'LEARN_MORE';
   s.startNow = x.startNow !== false;
+  // the creative machine's loop (Creative → Bucla): everything is made PAUSED and nothing is switched on, the owner starts it
+  s.paused = x.paused === true;
+  if (s.paused) s.startNow = false;
   s.employment = x.employment === true; // a job ad (api/_lib/hire-once.js)
   if (!s.adName) return { error: 'missing_names' };
   if (!s.formId) return { error: 'missing_form' };
@@ -272,17 +275,17 @@ async function publish(conn, image, s) {
     made.push(creative.j.id);
 
     // in a new campaign the ad goes on with it; in an existing ad set it follows the choice
-    const ad = await call('POST', '/' + act + '/ads', tok, { name: s.adName, adset_id: adsetId, creative: { creative_id: creative.j.id }, status: s.adsetId && !s.startNow ? 'PAUSED' : 'ACTIVE' });
+    const ad = await call('POST', '/' + act + '/ads', tok, { name: s.adName, adset_id: adsetId, creative: { creative_id: creative.j.id }, status: s.paused || (s.adsetId && !s.startNow) ? 'PAUSED' : 'ACTIVE' });
     if (!ad.ok) { await undo(); return { error: metaError(ad.j, 'Reclama') }; }
 
     // a new campaign: the ad set goes on now, the campaign too unless she starts it herself later,
     // so switching the campaign on (Reclame or Ads Manager) is all it takes then
-    if (!s.adsetId) {
+    if (!s.adsetId && !s.paused) {
       const a = await call('POST', '/' + adsetId, tok, { status: 'ACTIVE' });
       const c = s.startNow ? await call('POST', '/' + campaignId, tok, { status: 'ACTIVE' }) : { ok: true };
       if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: [metaError(!a.ok ? a.j : c.j, 'Pornirea'), textNote].filter(Boolean).join(' ') };
     }
-    return Object.assign({ ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow, texts: textNote ? 1 : Math.max(bodies.length, titles.length) }, textNote ? { warning: textNote } : {});
+    return Object.assign({ ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow, paused: !!s.paused, texts: textNote ? 1 : Math.max(bodies.length, titles.length) }, textNote ? { warning: textNote } : {});
   } catch (err) {
     await undo();
     return { error: 'Rețea: ' + err.message };

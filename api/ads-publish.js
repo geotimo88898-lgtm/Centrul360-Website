@@ -2,7 +2,7 @@
 // CREATIVE_SSO_SECRET, like /api/offers-feed; the owner's own portal session works too).
 //   GET  ?action=options     can publishing work (the user token with ads_management, the ad account)
 //                            + the Page, its Instagram, the active lead forms, the offers, the cities
-//   POST { action: 'publish', image: { base64, name }, settings, ref }
+//   POST { action: 'publish', image: { base64, name }, settings, ref, origin }   origin 'loop' (Creative → Bucla): made PAUSED
 //   POST { action: 'form_create', form }   a new lead form on the Page, offered in the window at once
 //   GET  ?action=form_setup                what the "Creează formular" window starts from (the template, the forms)
 //   POST { action: 'form_info', id }       an existing form's screening questions (to copy them)
@@ -100,7 +100,7 @@ async function results(sinceQ) {
   (view.campaigns || []).forEach((c) => (c.adsets || []).forEach((s) => (s.ads || []).forEach((a) => out.push({
     adId: a.id, name: a.name, campaign: c.name, status: a.effective || a.status, created: a.created, text: String(a.text || '').slice(0, 300),
     spend: a.spend, leads: a.leads, clicks: a.linkClicks, impressions: a.impressions,
-    spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
+    spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, contacted: a.contacted || 0, lost: a.lost || 0, booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
   }))));
   return { ok: true, since, until: today, ads: out };
 }
@@ -154,7 +154,9 @@ module.exports = async (req, res) => {
     if (!conn.adAccountId) { res.status(400).json({ error: 'no_ad_account', message: REASONS.no_ad_account }); return; }
     const image = body.image || {};
     if (!image.base64 || typeof image.base64 !== 'string' || image.base64.length > 6e6) { res.status(400).json({ error: 'invalid_image', message: 'Imaginea lipsește sau e prea mare.' }); return; }
-    const v = ads.cleanSettings(body.settings || {});
+    // the loop (Creative → Bucla, after the owner's tap): always a new campaign, everything PAUSED, whatever the request says
+    const loop = fromCreative(req) && body.origin === 'loop';
+    const v = ads.cleanSettings(Object.assign({}, body.settings || {}, loop ? { paused: true, startNow: false, adsetId: '' } : {}));
     if (v.error) { res.status(400).json({ error: v.error, message: SETTINGS[v.error] || v.error }); return; }
 
     const r = await ads.publish(conn, { base64: image.base64, name: String(image.name || 'creative.jpg').slice(0, 80) }, v.s);
@@ -163,7 +165,7 @@ module.exports = async (req, res) => {
     // what was published, for the record (Creative keeps its own link too)
     const log = await readJSON(LOG_KEY, []);
     log.unshift({ at: new Date().toISOString(), ref: String(body.ref || '').slice(0, 80), campaignId: r.campaignId, adsetId: r.adsetId, adId: r.adId,
-      started: r.started, city: v.s.city, budget: v.s.budget, formId: v.s.formId, name: v.s.campaignName });
+      started: r.started, origin: loop ? 'loop' : '', city: v.s.city, budget: v.s.budget, formId: v.s.formId, name: v.s.campaignName });
     await writeJSON(LOG_KEY, log.slice(0, 300));
     res.status(200).json(Object.assign({ ok: true, url }, r));
   } catch (err) {
