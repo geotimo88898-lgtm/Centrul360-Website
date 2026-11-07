@@ -131,14 +131,25 @@ async function route(request, env, ctx) {
 // a video without byte ranges (206). So the .mp4 files (wrangler.jsonc run_worker_first) are sliced here, streamed.
 async function ranged(request, env, url) {
   const r = await env.ASSETS.fetch(new Request(url, { method: "GET" }));
-  const size = Number(r.headers.get("content-length"));
   const base = { "content-type": "video/mp4", "accept-ranges": "bytes", "cache-control": "public, max-age=86400" };
-  if (!r.ok || !size) return r;
+  if (!r.ok) return r;
   const head = request.method === "HEAD";
   const m = /^bytes=(\d*)-(\d*)$/.exec((request.headers.get("range") || "").trim());
   if (!m || (m[1] === "" && m[2] === "")) {
-    if (head) { r.body && r.body.cancel(); return new Response(null, { status: 200, headers: { ...base, "content-length": String(size) } }); }
-    return new Response(r.body, { status: 200, headers: { ...base, "content-length": String(size) } });
+    const h = new Headers(r.headers); h.set("accept-ranges", "bytes"); h.set("cache-control", base["cache-control"]);
+    if (head) { r.body && r.body.cancel(); return new Response(null, { status: 200, headers: h }); }
+    return new Response(r.body, { status: 200, headers: h });
+  }
+  // the asset store does not always say how long the file is: then read it whole and slice it
+  let size = Number(r.headers.get("content-length"));
+  if (!size) {
+    const all = new Uint8Array(await r.arrayBuffer());
+    size = all.length;
+    const from = m[1] === "" ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+    const to = m[1] === "" || m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
+    if (from >= size || from > to) return new Response(null, { status: 416, headers: { ...base, "content-range": "bytes */" + size } });
+    const hdr = { ...base, "content-range": "bytes " + from + "-" + to + "/" + size, "content-length": String(to - from + 1) };
+    return new Response(head ? null : all.slice(from, to + 1), { status: 206, headers: hdr });
   }
   const from = m[1] === "" ? Math.max(0, size - Number(m[2])) : Number(m[1]);
   const to = m[1] === "" || m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
