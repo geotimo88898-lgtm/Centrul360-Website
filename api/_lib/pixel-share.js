@@ -7,7 +7,7 @@
 const { readJSON, writeJSON } = require('./store');
 const { loadConnection } = require('./facebook');
 
-const KEY = 'data/pixel-share.json';
+const KEY = 'data/pixel-share-2.json'; // a fresh run after the owner gave Mellon Vision access to the ad account (7.11)
 const PIXEL = '2276074362800484';
 const PIXEL_BUSINESS = '1107600260509887'; // Mellon Vision, owns the pixel
 const ACCOUNT = '4502494523405059';         // centru pls
