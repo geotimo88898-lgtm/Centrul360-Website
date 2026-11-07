@@ -1,6 +1,6 @@
 {
  "id": "site-acasa",
- "fmt": "45",
+ "fmt": "169",
  "title": "Centrul360",
  "short": "Centrul360",
  "chap": "Centrul360",
@@ -123,7 +123,7 @@
    "kicker": "Poze reale din clinică",
    "head": "Nu promitem. *Îți arătăm.*",
    "nuki": "off",
-   "ih": 560,
+   "ih": 430,
    "items": [
     {
      "img": "brand_asset/catalog/cazul-04-liposonix-abdomen.webp",
@@ -169,8 +169,7 @@
    "jerry": {
     "pose": "surprins",
     "say": "Cinci?!",
-    "at": 0.4,
-    "x": 470
+    "at": 0.4
    }
   },
   {
@@ -224,8 +223,7 @@
    "jerry": {
     "pose": "bucurie",
     "say": "Te așteptăm!",
-    "at": 1,
-    "x": 470
+    "at": 1
    }
   }
  ]
