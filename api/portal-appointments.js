@@ -34,6 +34,7 @@ const workflows = require('./_lib/workflows');
 const { bonusPush } = require('./_lib/bonus');
 const { cityOf, inCity } = require('./_lib/city');
 const N = require('./_lib/notify');
+const capi = require('./_lib/meta-capi'); // Conversions API: a Facebook lead's CRM steps back to Meta
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records), kept as a literal list
@@ -342,6 +343,8 @@ module.exports = async (req, res) => {
       const revived = before.status === 'anulata' && !['anulata', 'finalizata', 'concediu'].includes(appointment.status);
       if (moved || otherClient || revived || before.location !== appointment.location) await workflows.emit('appointment_rescheduled', { appointment, revived });
       res.status(200).json({ ok: true, appointment });
+      // she came (done): "Venit" for her Facebook lead (Conversions API), after the answer
+      if (before.status !== appointment.status && appointment.status === 'finalizata') await capi.soon(() => capi.crmSync({ appointment }));
       return;
     }
 

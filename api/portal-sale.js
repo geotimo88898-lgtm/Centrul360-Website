@@ -23,6 +23,7 @@ const { CATEGORIES, normalizeCategories, categoriesOf, commissionOf, profitOf } 
 const workflows = require('./_lib/workflows');
 const { cityOf, inCity } = require('./_lib/city');
 const N = require('./_lib/notify');
+const capi = require('./_lib/meta-capi'); // Conversions API: a Facebook lead's CRM steps back to Meta
 
 // The three treatment categories (see _lib/cats.js); kept under this name for older importers.
 const VALID_CATEGORIES = CATEGORIES;
@@ -306,6 +307,8 @@ async function handleIncasare(req, res, session) {
     Object.assign(appt, { status: 'finalizata', paidSaleId: entry.id, paidAt: entry.createdAt, updatedAt: entry.createdAt });
     await writeJSON('data/appointments.json', appointments);
     if (before !== 'finalizata') { try { await workflows.emit('appointment_status', { appointment: appt, status: 'finalizata' }); } catch (e) { /* never blocks a payment */ } }
+    // paid: "Venit" and "Client" (with what she paid) for her Facebook lead (Conversions API); never blocks a payment
+    await capi.soon(() => capi.crmSync({ appointment: appt }));
     // every payment the desk records rings for the owner; the card part may have rung already from the POS
     // (api/mypos-webhook.js): this line, with the client and the upsell, takes that one's place (_lib/notify.js claim)
     if (!N.isOwner(session)) {

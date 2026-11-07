@@ -196,7 +196,9 @@
       sursa: 'Website - Consultatie gratuita (' + PAGE + ')' + (offerNote ? ' - ' + offerNote : ''),
       consimtamant_whatsapp: true, pagina: location.href
     };
-    const done = () => { location.href = '/multumesc-cadou' + (/arad/i.test(state.oras || '') ? '?oras=arad' : ''); };
+    // one id for this Lead: the portal gets it (Conversions API) and the thank-you page gives it to the pixel, so Meta counts it once
+    const eid = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
+    const done = () => { location.href = '/multumesc-cadou?' + (/arad/i.test(state.oras || '') ? 'oras=arad&' : '') + 'eid=' + eid; };
     // nothing went through (no internet, a refusal): she is told, the button comes back, nothing is lost
     const failed = () => {
       btn.disabled = false; btn.textContent = 'Trimite';
@@ -204,8 +206,8 @@
       foot.innerHTML = '<span style="color:#e79a94">Nu am putut trimite. Verifică internetul și apasă din nou, sau scrie-ne pe </span><a href="' + waHref() + '" target="_blank" rel="noopener">WhatsApp</a>';
     };
     // to HighLevel (as before) and to the portal (Pipeline, the team's notification, the WhatsApp from the city's number)
-    const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((r) => r.ok, () => false);
-    Promise.all([send(WEBHOOK), send('/api/site-lead')]).then((r) => (r[0] || r[1] ? done() : failed()), failed);
+    const send = (url, extra) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(extra ? Object.assign({}, payload, extra) : payload) }).then((r) => r.ok, () => false);
+    Promise.all([send(WEBHOOK), send('/api/site-lead', { event_id: eid })]).then((r) => (r[0] || r[1] ? done() : failed()), failed);
   }
 
   // Which buttons sell the consultation: booking verbs, unless they explicitly say WhatsApp / a phone.

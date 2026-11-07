@@ -1683,7 +1683,9 @@ src="https://www.facebook.com/tr?id=2184328655458510&ev=PageView&noscript=1"
         pagina: location.href
       };
 
-      function done(){ window.location.href = '/multumesc-cadou' + (/arad/i.test(payload.oras || '') ? '?oras=arad' : ''); }
+      // one id for this Lead: the portal gets it (Conversions API) and the thank-you page gives it to the pixel, so Meta counts it once
+      const eid = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
+      function done(){ window.location.href = '/multumesc-cadou?' + (/arad/i.test(payload.oras || '') ? 'oras=arad&' : '') + 'eid=' + eid; }
       function failed(){
         submitBtn.disabled = false; submitBtn.innerHTML = 'Trimite și rezervă <span class="arrow">→</span>';
         let m = form.querySelector('.qfail');
@@ -1696,8 +1698,8 @@ src="https://www.facebook.com/tr?id=2184328655458510&ev=PageView&noscript=1"
       // ⇧⇧⇧ Webhook HighLevel ⇧⇧⇧
 
       // la HighLevel (ca până acum) și în portal (Pipeline, notificarea echipei, WhatsApp de pe numărul orașului)
-      const send = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((r) => r.ok, () => false);
-      Promise.all([QUIZ_WEBHOOK.indexOf('http') === 0 ? send(QUIZ_WEBHOOK) : false, send('/api/site-lead')]).then((r) => (r[0] || r[1] ? done() : failed()), failed);
+      const send = (url, extra) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(extra ? Object.assign({}, payload, extra) : payload) }).then((r) => r.ok, () => false);
+      Promise.all([QUIZ_WEBHOOK.indexOf('http') === 0 ? send(QUIZ_WEBHOOK) : false, send('/api/site-lead', { event_id: eid })]).then((r) => (r[0] || r[1] ? done() : failed()), failed);
     });
   })();
 

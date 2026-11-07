@@ -5,6 +5,7 @@
 // Public, so: our own pages only (Origin), a hidden trap field, the consent box, a few tries per address.
 
 const { createLead } = require('./portal-leads');
+const capi = require('./_lib/meta-capi');
 
 const CITIES = { timisoara: 'Timișoara', arad: 'Arad' };
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -37,6 +38,8 @@ module.exports = async (req, res) => {
     const r = await createLead({ name, phone, email: clip(b.email, 120), source: 'site', location: city, createdBy: 'site-form', interest, note, authorLabel: 'Site' });
     if (r.error) { res.status(400).json({ error: r.error }); return; }
     res.status(200).json({ ok: true });
+    // the thank-you page's Lead, from the server too (Conversions API), with the event_id the page gave its pixel: counted once
+    await capi.soon(() => capi.siteEvent(req, { name: 'Lead', eventId: b.event_id, phone, email: clip(b.email, 120), leadId: r.lead && r.lead.id, url: b.pagina }));
   } catch (err) {
     console.error('site-lead error:', err.message);
     res.status(500).json({ error: 'failed' });

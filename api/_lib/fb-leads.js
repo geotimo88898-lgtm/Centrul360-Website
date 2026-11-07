@@ -97,7 +97,8 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     result = await createLead({
     name: name || 'Lead Facebook', phone, email, source: 'facebook', location,
     interest: offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
-    form: { id: formId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', adId: lead.ad_id || '', adsetId: lead.adset_id || '', campaignId: lead.campaign_id || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
+    // leadgenId: Facebook's id of this lead, for the CRM steps sent back to Meta (_lib/meta-capi.js)
+    form: { id: formId, leadgenId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', adId: lead.ad_id || '', adsetId: lead.adset_id || '', campaignId: lead.campaign_id || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
     });
   } catch (err) {
     // the store failed: the lead is un-seen, so the next poll or the webhook's retry brings her in

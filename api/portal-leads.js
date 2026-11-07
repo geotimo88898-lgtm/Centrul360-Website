@@ -38,6 +38,8 @@ const { requireRole, requireAdmin } = require('./_lib/auth');
 const workflows = require('./_lib/workflows');
 const { notifyMany } = require('./_lib/notify');
 const { upsertClient } = require('./_lib/clients');
+// the CRM steps of Facebook leads back to Meta (Conversions API, Integrări): after the change is saved, never blocking it
+const capi = require('./_lib/meta-capi');
 
 const LEADS_KEY = 'data/leads.json';
 const STAGES_KEY = 'data/pipeline-stages.json';
@@ -166,7 +168,10 @@ async function bookLead(appt, opts) {
         .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))[0] || null;
     }
     if (!lead) return null;
-    if (applyBooking(lead, stages, appt, o.author || 'Calendar')) await writeJSON(LEADS_KEY, leads);
+    if (applyBooking(lead, stages, appt, o.author || 'Calendar')) {
+      await writeJSON(LEADS_KEY, leads);
+      await capi.soon(() => capi.crmSync({ leadIds: [lead.id] })); // booked: "Programat" for a Facebook lead
+    }
     return lead;
   } catch (err) {
     console.error('bookLead error:', err.message);
@@ -313,7 +318,10 @@ function cleanForm(f) {
   const answers = (Array.isArray(f.answers) ? f.answers : []).slice(0, 20)
     .map((x) => ({ q: clip(x && x.q, 200), a: clip(x && x.a, 500) })).filter((x) => x.q && x.a);
   const num = (v) => (/^\d{5,25}$/.test(String(v || '')) ? String(v) : '');
-  return { id: clip(f.id, 40), name: clip(f.name, 120), ad: clip(f.ad, 160), campaign: clip(f.campaign, 160), adId: num(f.adId), adsetId: num(f.adsetId), campaignId: num(f.campaignId), at: nowISO(), sentAt: clip(f.sentAt, 40), answers };
+  const out = { id: clip(f.id, 40), name: clip(f.name, 120), ad: clip(f.ad, 160), campaign: clip(f.campaign, 160), adId: num(f.adId), adsetId: num(f.adsetId), campaignId: num(f.campaignId), at: nowISO(), sentAt: clip(f.sentAt, 40), answers };
+  // Facebook's id of the lead: her CRM steps go back to Meta with it (_lib/meta-capi.js)
+  if (num(f.leadgenId)) out.leadgenId = num(f.leadgenId);
+  return out;
 }
 
 // A lead that came by itself (a Facebook form, a form of the site) rings at once for the owner and reception: in
@@ -368,6 +376,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     // someone already in the Pipeline filled the form again: worth an alert, not a second welcome
     await workflows.emit('lead_created', { lead: existing, returning: true });
     if (SELF.includes(createdBy)) await alertTeam(existing, true, createdBy === 'site-form');
+    if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [existing.id] })); // a new Facebook lead id: its "Lead_nou"
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
   }
 
@@ -392,6 +401,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
   if (SELF.includes(createdBy)) await workflows.welcome(lead); // the welcome WhatsApp of its offer, to a lead that came by herself (one typed at the desk is on the phone already)
   await alertTeam(lead, false, createdBy === 'site-form');
+  if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] })); // "Lead_nou" for Meta
   return { lead: withComputedFields(lead, stages) };
 }
 
@@ -524,6 +534,8 @@ module.exports = async (req, res) => {
       await workflows.emit('stage_changed', { lead, stage: target.id }); // may itself move the lead again
       const fresh = (await readJSON(LEADS_KEY, [])).map(normalizeLead).find((l) => l.id === lead.id) || lead;
       res.status(200).json({ ok: true, lead: withComputedFields(fresh, stages) });
+      // the stage she was moved to, even if an automation moved her on at once
+      await capi.soon(() => capi.crmSync({ leadIds: [lead.id], hint: { leadId: lead.id, stage: target.id, at: lead.stageChangedAt } }));
       return;
     }
 
@@ -545,7 +557,10 @@ module.exports = async (req, res) => {
       if (body.nextAction !== undefined) lead.nextAction = clip(body.nextAction, 160);
       // only a note on the lead: the stage is moved by the receptionist, never by the outcome
       addActivity(lead, { type: 'contact', channel, outcome: body.outcome, text: clip(body.text, 1000), author });
-      return save();
+      await save();
+      // she answered: "Contactat" for a Facebook lead
+      if (['raspuns', 'interesat', 'revine', 'programat', 'refuz'].includes(body.outcome)) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] }));
+      return;
     }
 
     if (action === 'set_followup') {
@@ -566,7 +581,9 @@ module.exports = async (req, res) => {
     if (action === 'link_appointment') {
       // the booking itself already moved it (api/portal-appointments.js): then this changes nothing
       applyBooking(lead, stages, { id: body.appointmentId, date: body.date, time: body.time, treatment: body.treatment }, author);
-      return save();
+      await save();
+      await capi.soon(() => capi.crmSync({ leadIds: [lead.id] }));
+      return;
     }
 
     if (action === 'delete') {
