@@ -257,9 +257,11 @@
     err.textContent = ''; var b = f.querySelector('button'); b.disabled = true; b.textContent = 'Se trimite…';
     var payload = { nume: nume, telefon: tel, email: '', interes_principal: f.interes.value, zona: '', oras: f.oras.value,
       sursa: f.getAttribute('data-sursa') || 'Website v2 - Masaj Cadou', consimtamant_whatsapp: true, pagina: location.href };
-    var send = function (u) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(function (r) { return r.ok; }, function () { return false; }); };
-    Promise.all([send('https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68'), send('/api/site-lead')]).then(function (r) {
-      if (r[0] || r[1]) location.href = '/multumesc-cadou' + (/arad/i.test(payload.oras) ? '?oras=arad' : '');
+    // one id for this Lead: the portal gets it (Conversions API) and the thank-you page gives it to the pixel, so Meta counts it once
+    var eid = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
+    var send = function (u, extra) { var body = extra ? Object.assign({}, payload, extra) : payload; return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.ok; }, function () { return false; }); };
+    Promise.all([send('https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68'), send('/api/site-lead', { event_id: eid })]).then(function (r) {
+      if (r[0] || r[1]) location.href = '/multumesc-cadou?' + (/arad/i.test(payload.oras) ? 'oras=arad&' : '') + 'eid=' + eid;
       else { b.disabled = false; b.textContent = 'Vreau consultația și cadoul'; err.textContent = 'Nu am putut trimite. Încearcă din nou.'; }
     });
   });

@@ -33,6 +33,8 @@ const STEPS = [
   ['siteconfirm', () => require('./_lib/site-confirm').tick()],
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
+  // the CRM steps of the Facebook leads that no change sent yet (Conversions API, api/_lib/meta-capi.js)
+  ['capi', () => require('./_lib/meta-capi').sweep()],
 ];
 
 module.exports = async (req, res) => {

@@ -479,15 +479,17 @@
     flag(fl('ok'), !S.ok);
     if (!ok) { const bad = f.querySelector('.err input'); if (bad) bad.focus(); return; }
     S.busy = true; S.err = ''; paint();
+    // one id for this booking's Schedule: the portal gets it (Conversions API) and the pixel too, so Meta counts it once
+    const eid = 'bk.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE
+      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, event_id: eid
     }) }).then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } })).then(({ r, d }) => {
       S.busy = false;
       if (r.ok && d.ok) {
         store.set('c360-book-me', { name: S.name, phone: S.phone });
         Object.keys(early).forEach((k) => delete early[k]);
         S.done = d.appointment || { date: S.date, time: S.time, location: S.city, treatment: (S.service || {}).title };
-        track();
+        track(eid);
         go('done');
         return;
       }
@@ -501,9 +503,9 @@
     });
   }
   // the ads learn from it (Meta pixel, Google)
-  function track() {
+  function track(eid) {
     const s = S.service || {};
-    try { if (window.fbq) window.fbq('track', 'Schedule', { content_name: s.title, value: s.price || 0, currency: 'RON' }); } catch (e) { /* no pixel */ }
+    try { if (window.fbq) window.fbq('track', 'Schedule', { content_name: s.title, value: s.price || 0, currency: 'RON' }, eid ? { eventID: eid } : undefined); } catch (e) { /* no pixel */ }
     try { if (window.gtag) window.gtag('event', 'booking', { item_name: s.title, value: s.price || 0, currency: 'RON', location: S.city }); } catch (e) { /* no gtag */ }
   }
   function ics() {

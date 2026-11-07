@@ -964,12 +964,14 @@
       const fb = open.querySelector('[data-fb]'); if (fb && !fb.contains(document.activeElement)) loadFb(fb);
       const mp = open.querySelector('[data-mypos]'); if (mp && !mp.contains(document.activeElement)) loadMypos(mp);
       const gh = open.querySelector('[data-ghl]'); if (gh && !ghlRun && !gh.contains(document.activeElement)) loadGhl(gh);
+      const cp = open.querySelector('[data-capi]'); if (cp && !cp.contains(document.activeElement)) loadCapi(cp);
     }
   });
   // The page: one tile per connection, with its state and one useful line. A tap opens everything about it
   // (keys, mapping, tests, logs) in a drawer; the page itself stays a glance.
   const TILES = [
     { key: 'fb', title: 'Facebook Lead Ads', ic: 'facebook', style: 'background:rgba(24,119,242,.12);color:#1877f2' },
+    { key: 'capi', title: 'Meta Conversions API', ic: 'target', style: 'background:rgba(24,119,242,.12);color:#1877f2' },
     { key: 'wa', title: 'WhatsApp', ic: 'chat', cls: 'is-good' },
     { key: 'live', title: 'Sincronizare instantă', ic: 'refresh', cls: 'is-good' },
     { key: 'mypos', title: 'myPOS', ic: 'card', cls: 'is-warn' },
@@ -1034,6 +1036,7 @@
       setTile('mypos', 'ok', d.lastPayment ? 'Ultima plată ' + K.lei(d.lastPayment.amount) + ', ' + mpWhen(d.lastPayment.at) : K.plural((d.devices || []).length, 'aparat', 'aparate'));
     }).catch(() => setTile('mypos', 'warn', 'Nu am putut verifica'));
     K.api('/api/portal-ghl').then(ghlTile).catch(() => setTile('ghl', 'warn', 'Nu am putut verifica'));
+    K.api('/api/portal-capi').then(capiTile).catch(() => setTile('capi', 'warn', 'Nu am putut verifica'));
     setTile('creative', 'ok', 'Citește ofertele din Oferte');
     setTile('site', 'ok', 'Oferte și prețuri, în câteva secunde', 'Sincronizat');
   }
@@ -1050,7 +1053,7 @@
         const box = el.querySelector('[data-' + key + ']');
         // a link to another page closes the drawer first
         el.addEventListener('click', (e) => { if (e.target.closest('[data-goto]')) d.close(); }, true);
-        ({ fb: loadFb, wa: (x) => window.C360Wa && paintWa(x), live: loadLive, mypos: loadMypos, ghl: loadGhl })[key](box);
+        ({ fb: loadFb, capi: loadCapi, wa: (x) => window.C360Wa && paintWa(x), live: loadLive, mypos: loadMypos, ghl: loadGhl })[key](box);
       },
     });
   }
@@ -1112,6 +1115,112 @@
     const b = document.querySelector('[data-live]'); if (b && !b.contains(document.activeElement)) loadLive(b);
     if (!K.drawerOpen) refreshTiles();
   });
+
+  // Meta Conversions API: what the server tells Meta next to the pixel. The site's Lead and Schedule (counted once with
+  // the pixel's), and for the leads of the Facebook forms the steps they reach in the Pipeline (contacted, booked, came,
+  // client with what she paid), so the ads learn which leads are good (api/_lib/meta-capi.js). Nothing leaves until a
+  // Test Events code is set (then only to Test Events) or "Trimite live" is on. The token is the ads' one (Facebook).
+  const CAPI_ERR = {
+    invalid_pixel: 'ID-ul pixelului are doar cifre. Îl găsești în Events Manager, la setările pixelului.',
+    invalid_test_code: 'Codul de test arată ca TEST12345. Îl găsești în Events Manager → Testează evenimentele.',
+  };
+  const capiFail = (err) => K.ui().toast(CAPI_ERR[err.code] || K.errText(err), 'error');
+  const CAPI_MODE = {
+    live: ['is-ok', 'checkCircle', 'Live', 'Evenimentele merg la Meta, iar reclamele învață din ele.'],
+    test: ['is-wait', 'clock', 'Doar test', 'Evenimentele merg doar în Test Events (Events Manager), cu codul {cod}. Reclamele nu le folosesc.'],
+    idle: ['is-wait', 'pin', 'În așteptare', 'Nu pleacă nimic. Pune codul de test ca să verifici. „Trimite live” se pornește după ce aprobi textul din Politica de confidențialitate.'],
+    nopixel: ['is-wait', 'pin', 'Lipsește pixelul', 'Nu pleacă nimic până pui ID-ul pixelului web (Events Manager, în Business-ul tău).'],
+    off: ['is-wait', 'ban', 'Oprit', 'Serverul nu trimite nimic la Meta. Pixelul din pagini merge ca înainte.'],
+  };
+  const CAPI_KIND = { site: 'site', crm: 'CRM', test: 'verificare' };
+  function capiTile(d) {
+    const st = d.status || {};
+    const errNew = st.lastError && (!st.lastOk || st.lastError.at > st.lastOk);
+    if (d.mode === 'off') return setTile('capi', 'off', 'Serverul nu trimite nimic', 'Oprit');
+    if (d.mode === 'nopixel') return setTile('capi', 'off', 'Pune ID-ul pixelului web', 'Fără pixel');
+    if (!d.token) return setTile('capi', 'warn', 'Lipsește tokenul pentru reclame');
+    if (errNew) return setTile('capi', 'warn', 'Ultima trimitere n-a mers');
+    if (d.mode === 'test') return setTile('capi', 'warn', 'Doar în Test Events' + (st.lastOk ? ' · ultimul ' + K.ago(st.lastOk) : ''), 'Test');
+    if (d.mode === 'idle') return setTile('capi', 'off', 'Pune codul de test din Events Manager', 'În așteptare');
+    setTile('capi', 'ok', 'Lead, programări și etapele CRM' + (st.lastOk ? ' · ultimul ' + K.ago(st.lastOk) : ''), 'Live');
+  }
+  async function loadCapi(box, given) {
+    if (!box) return;
+    let d = given;
+    if (!d) { try { d = await K.api('/api/portal-capi'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut citi setările Conversions API.</span>'; return; } }
+    const c = d.config || {}, st = d.status || {}, m = CAPI_MODE[d.mode] || CAPI_MODE.idle;
+    const errNew = st.lastError && (!st.lastOk || st.lastError.at > st.lastOk);
+    const evOpts = [['', 'Nu se trimite']].concat((d.events || []).map((e) => [e.key, e.key + ' · ' + e.label]));
+    const evName = (k) => { const e = (d.events || []).find((x) => x.key === k); return e ? e.key : 'nu se trimite'; };
+    const count = (n) => K.plural(n || 0, 'eveniment', 'evenimente');
+    box.innerHTML =
+      '<div class="st-fb-status ' + m[0] + '">' + icon(m[1]) + '<div><b>' + esc(m[2]) + '</b><span>' + esc(m[3].replace('{cod}', c.testCode || '')) + '</span></div></div>' +
+      (d.token ? '' : '<div class="st-fb-status is-wait">' + icon('alert') + '<div><b>Lipsește tokenul pentru reclame</b><span>Conversions API trimite cu tokenul salvat la Facebook Lead Ads → Reclame.</span></div></div>') +
+      (errNew ? '<div class="st-fb-status is-wait">' + icon('alert') + '<div><b>Ultima trimitere n-a mers</b><span>' + esc(K.ago(st.lastError.at) + ' · ' + st.lastError.text) + '</span></div></div>' : '') +
+      '<div class="st-int-row">' + K.toggle('live', !!c.live, 'Trimite live') + '<span class="k-muted">' + esc(c.live ? (c.testCode ? 'Pornit, dar cu codul de test pus evenimentele merg doar în Test Events.' : 'Pornit' + (c.liveAt ? ' ' + K.ago(c.liveAt) : '') + '.') : 'Oprit până aprobi textul din Politica de confidențialitate.') + '</span></div>' +
+      '<form class="st-manual" data-capi-form autocomplete="off">' +
+        K.field('ID-ul pixelului web', '<input name="pixelId" inputmode="numeric" spellcheck="false" value="' + esc(c.pixelId || '') + '" placeholder="ex. 1234567890123456">', 'full',
+          'Din Events Manager → Surse de date → pixelul web al site-ului (în Business-ul tău). Gol: nu pleacă nimic.') +
+        K.field('Cod Test Events', '<input name="testCode" spellcheck="false" autocomplete="off" value="' + esc(c.testCode || '') + '" placeholder="TEST12345">', 'full',
+          'Din Events Manager → pixelul → Testează evenimentele. Cât timp e pus, evenimentele merg doar acolo; șterge-l ca să meargă live.') +
+        '<div class="of-flags">' + K.toggle('on', c.on !== false, 'Conversions API pornit') + '</div>' +
+        '<b>Etapele din Pipeline → Meta</b>' +
+        '<div class="st-mp-devs">' + (d.stages || []).map((s) => '<label class="st-mp-dev"><span class="st-mp-dev-ic">' + icon(s.kind === 'won' ? 'trophy' : s.kind === 'booked' ? 'calendar' : s.kind === 'lost' ? 'ban' : 'users') + '</span>' +
+          '<span class="st-mp-dev-txt"><b>' + esc(s.name) + '</b><small>' + esc(s.kind === 'lost' ? 'nu se trimite' : 'implicit: ' + evName(s.auto)) + '</small></span>' +
+          (s.kind === 'lost' ? '' : '<select data-capi-stage="' + esc(s.id) + '">' + K.options(evOpts, s.event) + '</select>') + '</label>').join('') + '</div>' +
+        '<small class="k-muted">Doar pentru leadurile din formularele Facebook. Fiecare etapă pleacă o singură dată pe lead, chiar dacă e pusă din nou. ' +
+          'Contactat, Programat, Venit și Client pleacă și din fapte: un apel la care a răspuns, o programare, o programare finalizată, o încasare (Client merge cu suma plătită, în lei).</small>' +
+        '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează</button>' +
+          (c.pixelId ? '<button type="button" class="k-btn is-ghost is-sm" data-capi-check>' + icon('shield') + 'Verifică pixelul</button>' : '') +
+          (c.testCode && c.pixelId ? '<button type="button" class="k-btn is-ghost is-sm" data-capi-test>' + icon('zap') + 'Eveniment de test</button>' : '') + '</div>' +
+        '<div class="k-muted" data-capi-out></div>' +
+      '</form>' +
+      '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele trimise</b><span class="k-muted">' + esc('test ' + K.num((st.counts || {}).test || 0) + ' · live ' + K.num((st.counts || {}).live || 0)) + '</span></div>' +
+        ((st.last || []).length ? st.last.map((x) => '<div class="st-fb-logrow' + (x.ok ? '' : ' is-bad') + '"><span>' + esc(K.ago(x.at)) + '</span><em>' +
+          esc((x.names || []).join(', ') + ' · ' + (CAPI_KIND[x.kind] || x.kind) + ' · ' + (x.mode === 'live' ? 'live' : 'test') + ' · ' + (x.ok ? count(x.n) : x.error || 'eroare')) + '</em></div>').join('')
+          : '<p class="k-muted">Nimic trimis încă.</p>') + '</div>';
+
+    const f = box.querySelector('[data-capi-form]');
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(f);
+      const map = {};
+      f.querySelectorAll('[data-capi-stage]').forEach((x) => { map[x.dataset.capiStage] = x.value; });
+      K.busy(f.querySelector('[type="submit"]'), async () => {
+        try {
+          const r = await K.api('/api/portal-capi', { action: 'save', pixelId: v.pixelId, testCode: v.testCode, on: !!v.on, map });
+          K.ui().toast('Salvat.', 'success');
+          loadCapi(box, r);
+        } catch (err) { capiFail(err); }
+      });
+    });
+    const out = box.querySelector('[data-capi-out]');
+    const chk = box.querySelector('[data-capi-check]');
+    if (chk) chk.addEventListener('click', () => K.busy(chk, async () => {
+      try {
+        const r = await K.api('/api/portal-capi', { action: 'check' });
+        const x = r.check || {};
+        out.textContent = x.ok ? 'Tokenul ajunge la pixel' + (x.name ? ' „' + x.name + '”' : '') + (x.lastFired ? ', ultimul eveniment primit ' + K.ago(x.lastFired) : '') + '.' : 'Meta: ' + (x.error || 'nu răspunde');
+      } catch (err) { capiFail(err); }
+    }));
+    const tst = box.querySelector('[data-capi-test]');
+    if (tst) tst.addEventListener('click', () => K.busy(tst, async () => {
+      try {
+        const r = await K.api('/api/portal-capi', { action: 'test' });
+        const x = r.test || {};
+        if (x.ok) K.ui().toast('Trimis. Îl vezi în Events Manager → Testează evenimentele, în câteva secunde.', 'success');
+        else out.textContent = 'Meta: ' + (x.error || 'a refuzat evenimentul');
+        loadCapi(box, r);
+      } catch (err) { capiFail(err); }
+    }));
+    const live = box.querySelector('.st-int-row input[name="live"]');
+    live.addEventListener('change', async () => {
+      const on = live.checked;
+      if (on && !(await K.ui().confirm({ title: 'Trimiți live la Meta?', message: 'Telefonul și emailul (codificate ireversibil, ca hash) și etapele din Pipeline încep să ajungă la Meta pentru reclame. Pornește doar după ce textul din Politica de confidențialitate e aprobat și pus pe site.', confirmText: 'Trimite live' }))) { live.checked = false; return; }
+      try { const r = await K.api('/api/portal-capi', { action: 'live', live: on }); K.ui().toast(on ? 'Live pornit.' : 'Live oprit.', 'success'); loadCapi(box, r); }
+      catch (err) { live.checked = !on; capiFail(err); }
+    });
+  }
 
   // HighLevel: the clinic's two sub-accounts, Timișoara and Arad, each with its Private Integration token + Location
   // ID, which calendar is which city and category, which GHL user is which person here; then one import of both,

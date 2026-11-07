@@ -577,6 +577,9 @@ async function moveLead(lead, stage, wfName) {
   l.stage = stage; l.stageChangedAt = nowISO(); l.updatedAt = nowISO();
   (l.activities = l.activities || []).push({ id: uid(), type: 'stage', text: nameOf(from) + ' → ' + nameOf(stage) + ' (automatizare: ' + wfName + ')', author: 'Automatizare', at: nowISO() });
   await writeJSON(LEADS_KEY, leads);
+  // a Facebook lead's CRM step back to Meta (Conversions API); never blocks the flow
+  const capi = require('./meta-capi');
+  await capi.soon(() => capi.crmSync({ leadIds: [l.id], hint: { leadId: l.id, stage, at: l.stageChangedAt } }));
   return true;
 }
 

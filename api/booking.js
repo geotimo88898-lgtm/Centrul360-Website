@@ -2,7 +2,7 @@
 // field, the consent box, a few tries per address and per phone.
 //   GET  ?city=Timișoara&service=<offer key | consult | custom>&label=<custom name>
 //        → { on, city, services, service, days: [{ date, slots: ['09:00', …] }] }
-//   POST { city, service, label, date, time, name, phone, consent, hp, page }
+//   POST { city, service, label, date, time, name, phone, consent, hp, page, event_id }   (event_id: the pixel's Schedule, see _lib/meta-capi.js)
 //        → { ok, appointment: { date, time, endTime, location, treatment } } | { error: 'taken' | 'has_booking' | … }
 // A booking is an ordinary appointment of the Calendar (createdBy 'site', status programată): its lead goes to
 // "Programare stabilită" (a new one is made, source Site, without the site's welcome message: she has her booking),
@@ -14,6 +14,7 @@ const B = require('./_lib/booking');
 const { normalizePhone, upsertClient } = require('./_lib/clients');
 const workflows = require('./_lib/workflows');
 const N = require('./_lib/notify');
+const capi = require('./_lib/meta-capi');
 
 const tries = new Map(); // ip → [times] (per warm instance)
 const clip = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
@@ -152,6 +153,8 @@ module.exports = async (req, res) => {
     } catch (e) { console.error('booking site-confirm:', e.message); }
 
     res.status(200).json({ ok: true, appointment: { date, time, endTime: entry.endTime, nice: nice(date), location: city, treatment: svc.title } });
+    // the booking's Schedule, from the server too (Conversions API), with the event_id the page gave its pixel: counted once
+    await capi.soon(() => capi.siteEvent(req, { name: 'Schedule', eventId: b.event_id, phone: entry.clientPhone, leadId: lead && lead.id, custom: { value: svc.price || 0 } }));
   } catch (err) {
     console.error('booking error:', err.message);
     res.status(500).json({ error: 'failed' });

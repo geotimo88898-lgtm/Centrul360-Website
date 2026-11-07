@@ -55,7 +55,8 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '2276074362800484');
 fbq('track', 'PageView');
-fbq('track', 'Lead');
+// the form's event id (?eid=): the server sends the same Lead with it (Conversions API), so Meta counts it once
+(function(){ var m = /[?&]eid=([A-Za-z0-9._:-]{8,80})(&|$)/.exec(location.search); if (m) fbq('track', 'Lead', {}, { eventID: m[1] }); else fbq('track', 'Lead'); })();
 </script>
 <!-- End Meta Pixel Code -->
 </head>
