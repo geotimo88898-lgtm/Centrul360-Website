@@ -626,7 +626,6 @@
       });
       else {
         const q = E.inout(clamp((t - tGone) / 1.6));
-        box.querySelectorAll('.band')[1].setAttribute('transform', 'translate(0,' + (-14 * q).toFixed(2) + ')');
         pts.forEach((d, i) => { d.style.boxShadow = '0 0 0 ' + (8 + 6 * Math.sin(t * 5 + i)).toFixed(1) + 'px rgba(20,165,150,.22)'; d.style.marginTop = (-14 * q).toFixed(1) + 'px'; });
       }
     });
