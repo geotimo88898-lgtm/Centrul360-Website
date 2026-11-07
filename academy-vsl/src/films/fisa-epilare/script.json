@@ -319,7 +319,8 @@
      "pose": "arata-jos"
     }
    ],
-   "backAt": 8.6
+   "backAt": 8.6,
+   "nuki": "rs"
   },
   {
    "type": "title",
@@ -601,7 +602,13 @@
      "say": "Firul blond, alb sau roșcat iese greu. Îi spui sincer, de la început.",
      "pose": "mana-inima"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Sincer!",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "title",
@@ -865,7 +872,8 @@
      "pose": "fisa"
     }
    ],
-   "backAt": 5.6
+   "backAt": 5.6,
+   "nuki": "rs"
   },
   {
    "type": "sessions",
@@ -899,7 +907,13 @@
      "pose": "bucurie",
      "cap": "Îi spui așa: dacă vine la timp, după 5 ședințe aproape toate firele au dispărut, în majoritatea cazurilor."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "La timp!",
+    "at": 1,
+    "x": 520
+   }
   },
   {
    "type": "title",
@@ -930,7 +944,9 @@
      "t": "Sus",
      "d": "Numele ei, ședințele din pachet, prima dată.",
      "at": 0,
-     "n": 1
+     "n": 1,
+     "x": 2,
+     "w": 96
     },
     {
      "box": [
@@ -940,7 +956,9 @@
      "t": "La fiecare ședință",
      "d": "Data, zona, setările de pe ecran, cum a reacționat pielea.",
      "at": 1,
-     "n": 2
+     "n": 2,
+     "x": 2,
+     "w": 96
     }
    ],
    "fills": [
@@ -1077,7 +1095,13 @@
      "pose": "fisa",
      "cap": "Și la fiecare ședință scrii setările aparatului pe pagina 5."
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "arata",
+    "say": "Verifică!",
+    "at": 0,
+    "x": 520
+   }
   },
   {
    "type": "outro",
@@ -1116,7 +1140,13 @@
      "say": "Ne vedem în filmul următor!",
      "pose": "salut-pa"
     }
-   ]
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Bravo!",
+    "at": 0,
+    "x": 520
+   }
   }
  ]
 }

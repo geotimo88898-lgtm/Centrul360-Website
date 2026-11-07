@@ -1,0 +1,182 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.117,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm Împachetare la cald.",
+"dur": 3.167,
+"file": "voice/b827e7af14c359dc.wav"
+},
+"0.2": {
+"text": "Pe scurt: tratament relaxant și detoxifiant: circulație, drenaj și absorbția ingredientelor active.",
+"dur": 8.877,
+"file": "voice/dae0ead61035d090.wav"
+},
+"1.0": {
+"text": "Pentru cine e?",
+"dur": 1.202,
+"file": "voice/63b8214a892c363f.wav"
+},
+"1.1": {
+"text": "Celulită, retenție de apă, picioare grele.",
+"dur": 4.024,
+"file": "voice/4cd8f44a14baad39.wav"
+},
+"1.2": {
+"text": "Susține tratamentele de remodelare.",
+"dur": 2.738,
+"file": "voice/98fa8ea106772796.wav"
+},
+"2.0": {
+"text": "Și ce câștigă ea?",
+"dur": 1.668,
+"file": "voice/0a37b28371e4553f.wav"
+},
+"2.1": {
+"text": "Picioare mai ușoare, mai puțină apă reținută.",
+"dur": 4.513,
+"file": "voice/c5fa4a3e9983fad9.wav"
+},
+"2.2": {
+"text": "Piele mai netedă.",
+"dur": 1.918,
+"file": "voice/46bdf02d5dfd87e3.wav"
+},
+"2.3": {
+"text": "Foarte relaxant.",
+"dur": 1.624,
+"file": "voice/d9a17cdefcf2ebcd.wav"
+},
+"3.0": {
+"text": "Acum, pas cu pas.",
+"dur": 1.97,
+"file": "voice/72437c5f27b4e877.wav"
+},
+"3.1": {
+"text": "Pregătirea pielii.",
+"dur": 1.442,
+"file": "voice/e1561a12bbac6c9e.wav"
+},
+"3.2": {
+"text": "Aplicarea produsului pe zone.",
+"dur": 2.266,
+"file": "voice/e773283071158340.wav"
+},
+"3.3": {
+"text": "Împachetarea și căldura, după protocol.",
+"dur": 2.911,
+"file": "voice/60e5bc950f4a114c.wav"
+},
+"3.4": {
+"text": "Îndepărtarea produsului și hidratare.",
+"dur": 2.818,
+"file": "voice/7385b9167a765315.wav"
+},
+"4.0": {
+"text": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+"dur": 6.398,
+"file": "voice/942f93b8cbafaa2a.wav"
+},
+"4.1": {
+"text": "Și le scrii pe fișa ei, la fiecare ședință.",
+"dur": 4.035,
+"file": "voice/f5139c71fac4b792.wav"
+},
+"5.0": {
+"text": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+"dur": 5.7,
+"file": "voice/3677296805c39548.wav"
+},
+"5.1": {
+"text": "„Căldura pornește circulația și ajută corpul să elimine lichidele. E și foarte relaxant.”",
+"dur": 7.286,
+"file": "voice/4b9b5ed242c7959a.wav"
+},
+"6.0": {
+"text": "Foarte important: când nu începi tratamentul.",
+"dur": 3.998,
+"file": "voice/348c21bb03b29033.wav"
+},
+"6.1": {
+"text": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+"dur": 5.544,
+"file": "voice/418d593b16554185.wav"
+},
+"6.2": {
+"text": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+"dur": 6.131,
+"file": "voice/214b4dcc5678c1b8.wav"
+},
+"7.0": {
+"text": "La final îi spui ce să facă acasă.",
+"dur": 3.171,
+"file": "voice/48011aa6e8def954.wav"
+},
+"7.1": {
+"text": "Bea multă apă în zilele următoare (cam doi litri pe zi).",
+"dur": 5.149,
+"file": "voice/5a54dd26070e06b3.wav"
+},
+"7.2": {
+"text": "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+"dur": 5.339,
+"file": "voice/a38c525810b459f6.wav"
+},
+"7.3": {
+"text": "Mișcarea ușoară și plimbările ajută rezultatul.",
+"dur": 4.087,
+"file": "voice/272d756dfa239e3b.wav"
+},
+"7.4": {
+"text": "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie.",
+"dur": 6.484,
+"file": "voice/c9d26cb4ba832327.wav"
+},
+"8.0": {
+"text": "Câte ședințe îi trebuie?",
+"dur": 1.724,
+"file": "voice/5113ad779be91a6a.wav"
+},
+"8.1": {
+"text": "Ședințe: șase până la opt.",
+"dur": 2.965,
+"file": "voice/0563ee6f9644e625.wav"
+},
+"8.2": {
+"text": "O ședință durează cincizeci de minute.",
+"dur": 3.006,
+"file": "voice/5a5b6ce1f5023214.wav"
+},
+"8.3": {
+"text": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+"dur": 6.437,
+"file": "voice/fbdd5e290c57a7f3.wav"
+},
+"9.0": {
+"text": "Merge bine împreună cu EMS (tonifiere) și cu Cavitație.",
+"dur": 6.209,
+"file": "voice/aae4da0948a9602b.wav"
+},
+"9.1": {
+"text": "Când le combini, le găsești pe toate în programul ei.",
+"dur": 4.773,
+"file": "voice/b6f0923e19a8b6b3.wav"
+},
+"10.0": {
+"text": "Bravo! Acum știi Împachetare la cald.",
+"dur": 4.551,
+"file": "voice/f99fa3a0bff54536.wav"
+},
+"10.1": {
+"text": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+"dur": 7.899,
+"file": "voice/4835fad86f825f24.wav"
+},
+"10.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.248,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}

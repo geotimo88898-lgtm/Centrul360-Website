@@ -33,11 +33,11 @@ em, .acc{ font-family:'Fraunces Variable', Georgia, serif; font-style:italic; fo
 #prog i{ position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(90deg,#3cc7b8,var(--teal)); border-radius:0 6px 6px 0; }
 
 /* captions */
-#cap{ position:absolute; left:50%; bottom:40px; transform:translateX(-50%); max-width:1500px; z-index:35; text-align:center; }
-#cap span{ display:inline-block; padding:14px 30px 16px; border-radius:22px; background:rgba(15,26,25,.82); color:#fff; font-size:34px; line-height:1.3; font-weight:560; letter-spacing:-.005em; box-shadow:0 18px 40px -24px rgba(0,0,0,.5); }
+#cap{ position:absolute; left:50%; bottom:40px; transform:translateX(-50%); width:1640px; z-index:35; text-align:center; }
+#cap span{ display:inline-block; padding:13px 30px 15px; border-radius:22px; background:rgba(15,26,25,.82); color:#fff; font-size:32px; line-height:1.3; font-weight:560; letter-spacing:-.005em; box-shadow:0 18px 40px -24px rgba(0,0,0,.5); }
 
 /* scenes */
-.scene{ position:absolute; inset:0; display:none; }
+.scene{ position:absolute; inset:0; display:none; transform-origin:50% 45%; }
 .box{ position:absolute; }
 .content{ position:absolute; top:150px; bottom:180px; }
 .content.with-nuki-l{ left:640px; right:90px; }
@@ -179,3 +179,9 @@ em, .acc{ font-family:'Fraunces Variable', Georgia, serif; font-style:italic; fo
 .cards.row .cardi .ic{ width:84px; height:84px; }
 .cards.row .cardi > div{ display:flex; flex-direction:column; gap:6px; }
 .cardi > div{ display:flex; flex-direction:column; gap:12px; }
+
+/* jerry */
+#jerry{ position:absolute; left:0; top:0; width:220px; height:250px; z-index:21; transform-origin:50% 100%; pointer-events:none; }
+#jerry img{ position:absolute; left:0; right:0; bottom:0; margin:auto; max-width:100%; max-height:100%; object-fit:contain; }
+#jerry .jb{ position:absolute; left:50%; bottom:262px; white-space:nowrap; padding:10px 20px; border-radius:20px; background:#fff; color:var(--ink); font-weight:750; font-size:27px; box-shadow:0 14px 30px -16px rgba(15,60,55,.45); border:2px solid var(--teal-l); transform-origin:80% 100%; }
+#jerry .jb:after{ content:''; position:absolute; left:80%; bottom:-11px; margin-left:-10px; border:10px solid transparent; border-bottom:0; border-top-color:#fff; }

@@ -1,0 +1,172 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.001,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm Epilare laser Elysion Pro.",
+"dur": 3.716,
+"file": "voice/63c4265cbb3809b8.wav"
+},
+"0.2": {
+"text": "Pe scurt: laser cu diodă care oprește firul să mai crească, din rădăcină.",
+"dur": 6.134,
+"file": "voice/4e22390afdddadef.wav"
+},
+"1.0": {
+"text": "Pentru cine e?",
+"dur": 1.296,
+"file": "voice/63b8214a892c363f.wav"
+},
+"1.1": {
+"text": "Păr nedorit pe orice zonă, la fototip și păr compatibile.",
+"dur": 5.153,
+"file": "voice/d326321dea359ccb.wav"
+},
+"2.0": {
+"text": "Și ce câștigă ea?",
+"dur": 1.885,
+"file": "voice/0a37b28371e4553f.wav"
+},
+"2.1": {
+"text": "Scapă de păr pe termen lung, din rădăcină.",
+"dur": 3.982,
+"file": "voice/ed31ed9a865f0715.wav"
+},
+"2.2": {
+"text": "Laser cu diodă, certificat medical.",
+"dur": 3.398,
+"file": "voice/316d8f613f831b73.wav"
+},
+"2.3": {
+"text": "Garanția banilor înapoi.",
+"dur": 2.112,
+"file": "voice/b2fd56c318abbbb3.wav"
+},
+"3.0": {
+"text": "Acum, pas cu pas.",
+"dur": 1.997,
+"file": "voice/72437c5f27b4e877.wav"
+},
+"3.1": {
+"text": "Verifici tenul și firul (fototip, culoare, grosime).",
+"dur": 5.1,
+"file": "voice/f6a8a4b2ec013711.wav"
+},
+"3.2": {
+"text": "Setezi parametrii după tipul de piele și zonă.",
+"dur": 3.678,
+"file": "voice/10fb01823709651e.wav"
+},
+"3.3": {
+"text": "La prima ședință, test pe o porțiune mică.",
+"dur": 3.566,
+"file": "voice/38dc4d98df794b42.wav"
+},
+"3.4": {
+"text": "Treceri după protocol.",
+"dur": 1.832,
+"file": "voice/1202e12cf504b618.wav"
+},
+"3.5": {
+"text": "Gel calmant după.",
+"dur": 1.813,
+"file": "voice/27ad82a3d10107ad.wav"
+},
+"4.0": {
+"text": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+"dur": 6.763,
+"file": "voice/942f93b8cbafaa2a.wav"
+},
+"4.1": {
+"text": "Și le scrii pe fișa ei, la fiecare ședință.",
+"dur": 4.196,
+"file": "voice/f5139c71fac4b792.wav"
+},
+"5.0": {
+"text": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+"dur": 5.38,
+"file": "voice/3677296805c39548.wav"
+},
+"5.1": {
+"text": "„Lumina laserului ajunge la rădăcina firului și o oprește să mai crească. Firele cresc în etape, de aceea sunt mai multe ședințe.”",
+"dur": 9.8,
+"file": "voice/08816c6b2f2b0953.wav"
+},
+"5.2": {
+"text": "„Simți o căldură scurtă, ca o înțepătură ușoară.”",
+"dur": 3.7,
+"file": "voice/d1fc7ce7ed436436.wav"
+},
+"6.0": {
+"text": "Foarte important: când nu începi tratamentul.",
+"dur": 4.152,
+"file": "voice/348c21bb03b29033.wav"
+},
+"6.1": {
+"text": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+"dur": 6.291,
+"file": "voice/418d593b16554185.wav"
+},
+"6.2": {
+"text": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+"dur": 5.52,
+"file": "voice/214b4dcc5678c1b8.wav"
+},
+"7.0": {
+"text": "La final îi spui ce să facă acasă.",
+"dur": 3.137,
+"file": "voice/48011aa6e8def954.wav"
+},
+"7.1": {
+"text": "Fără soare direct și solar două săptămâni, protecție solară zilnic.",
+"dur": 5.479,
+"file": "voice/814f0a42565817e2.wav"
+},
+"7.2": {
+"text": "Fără ceară sau pensetă între ședințe, doar aparat de ras.",
+"dur": 4.695,
+"file": "voice/1f0083906bfe1c93.wav"
+},
+"7.3": {
+"text": "Gel calmant dacă pielea e caldă.",
+"dur": 2.58,
+"file": "voice/d3206a6d4f857bf2.wav"
+},
+"8.0": {
+"text": "Câte ședințe îi trebuie?",
+"dur": 1.729,
+"file": "voice/5113ad779be91a6a.wav"
+},
+"8.1": {
+"text": "Ședințe: șase până la opt.",
+"dur": 2.954,
+"file": "voice/0563ee6f9644e625.wav"
+},
+"8.2": {
+"text": "Interval: la patru până la șase săptămâni.",
+"dur": 3.716,
+"file": "voice/13dd6fbd3bd9e5e3.wav"
+},
+"8.3": {
+"text": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+"dur": 6.597,
+"file": "voice/fbdd5e290c57a7f3.wav"
+},
+"9.0": {
+"text": "Bravo! Acum știi Epilare laser Elysion Pro.",
+"dur": 5.298,
+"file": "voice/86c32cb09c55a9da.wav"
+},
+"9.1": {
+"text": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+"dur": 7.759,
+"file": "voice/4835fad86f825f24.wav"
+},
+"9.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.601,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}

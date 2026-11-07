@@ -19,8 +19,7 @@
     },
     {
      "say": "Azi învățăm RF Sculpt față.",
-     "pose": "prezinta",
-     "tts": "Azi învățăm er ef Sculpt față."
+     "pose": "prezinta"
     },
     {
      "say": "Pe scurt: radiofrecvență cu masaj modelator: gușă, contur mandibular și tonusul întregii fețe.",
@@ -399,8 +398,7 @@
    "beats": [
     {
      "say": "Bravo! Acum știi RF Sculpt față.",
-     "pose": "bucurie",
-     "tts": "Bravo! Acum știi er ef Sculpt față."
+     "pose": "bucurie"
     },
     {
      "say": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",

@@ -1,0 +1,187 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.238,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm Hidratare profundă.",
+"dur": 2.734,
+"file": "voice/09233ce9ce4ae250.wav"
+},
+"0.2": {
+"text": "Pe scurt: reface nivelul de apă al pielii și întărește bariera ei.",
+"dur": 5.167,
+"file": "voice/6d109bdfde28cbd0.wav"
+},
+"1.0": {
+"text": "Pentru cine e?",
+"dur": 1.322,
+"file": "voice/63b8214a892c363f.wav"
+},
+"1.1": {
+"text": "Ten uscat, deshidratat sau tras.",
+"dur": 4.421,
+"file": "voice/48a733e1140cf4cd.wav"
+},
+"1.2": {
+"text": "Înainte de un eveniment, pentru un ten luminos.",
+"dur": 3.621,
+"file": "voice/68bfab2a7045406e.wav"
+},
+"2.0": {
+"text": "Și ce câștigă ea?",
+"dur": 1.301,
+"file": "voice/0a37b28371e4553f.wav"
+},
+"2.1": {
+"text": "Pielea își recapătă apa și elasticitatea.",
+"dur": 3.217,
+"file": "voice/24877a1d45421ef0.wav"
+},
+"2.2": {
+"text": "Ten catifelat de la prima ședință.",
+"dur": 2.41,
+"file": "voice/3826431e12475196.wav"
+},
+"2.3": {
+"text": "Potrivit înainte de un eveniment.",
+"dur": 2.248,
+"file": "voice/3f8b3fd635b94d7f.wav"
+},
+"3.0": {
+"text": "Acum, pas cu pas.",
+"dur": 1.801,
+"file": "voice/72437c5f27b4e877.wav"
+},
+"3.1": {
+"text": "Demachiere și curățare.",
+"dur": 1.934,
+"file": "voice/ddbeaadfc0af0fa8.wav"
+},
+"3.2": {
+"text": "Exfoliere blândă.",
+"dur": 1.923,
+"file": "voice/29e85c78490aa23b.wav"
+},
+"3.3": {
+"text": "Ser și mască hidratantă.",
+"dur": 2.489,
+"file": "voice/d151e4034721880c.wav"
+},
+"3.4": {
+"text": "Masaj.",
+"dur": 0.999,
+"file": "voice/f16ee3055c4b86b7.wav"
+},
+"3.5": {
+"text": "Cremă și protecție solară.",
+"dur": 2.473,
+"file": "voice/9e320ce78207f3cb.wav"
+},
+"4.0": {
+"text": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+"dur": 6.065,
+"file": "voice/942f93b8cbafaa2a.wav"
+},
+"4.1": {
+"text": "Și le scrii pe fișa ei, la fiecare ședință.",
+"dur": 3.647,
+"file": "voice/f5139c71fac4b792.wav"
+},
+"5.0": {
+"text": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+"dur": 5.644,
+"file": "voice/3677296805c39548.wav"
+},
+"5.1": {
+"text": "„Pielea ta primește înapoi apa pe care a pierdut-o. Se simte mai catifelată chiar de azi.”",
+"dur": 7.775,
+"file": "voice/4e94031a71da331a.wav"
+},
+"6.0": {
+"text": "Foarte important: când nu începi tratamentul.",
+"dur": 3.898,
+"file": "voice/348c21bb03b29033.wav"
+},
+"6.1": {
+"text": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+"dur": 6.316,
+"file": "voice/418d593b16554185.wav"
+},
+"6.2": {
+"text": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+"dur": 6.117,
+"file": "voice/214b4dcc5678c1b8.wav"
+},
+"7.0": {
+"text": "La final îi spui ce să facă acasă.",
+"dur": 3.728,
+"file": "voice/48011aa6e8def954.wav"
+},
+"7.1": {
+"text": "protecție solară în fiecare zi.",
+"dur": 2.905,
+"file": "voice/ef43300e5ef5374b.wav"
+},
+"7.2": {
+"text": "Fără soare direct și saună patruzeci și opt de ore.",
+"dur": 4.768,
+"file": "voice/469b38e4d8b92d9c.wav"
+},
+"7.3": {
+"text": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+"dur": 5.848,
+"file": "voice/850b539fe578d3fa.wav"
+},
+"7.4": {
+"text": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+"dur": 4.718,
+"file": "voice/4bd244e9404d09fe.wav"
+},
+"8.0": {
+"text": "Câte ședințe îi trebuie?",
+"dur": 1.959,
+"file": "voice/5113ad779be91a6a.wav"
+},
+"8.1": {
+"text": "Ședințe: două până la patru.",
+"dur": 2.905,
+"file": "voice/2674c54d9fb11283.wav"
+},
+"8.2": {
+"text": "O ședință durează șaizeci de minute.",
+"dur": 3.348,
+"file": "voice/2601b2fe2a3c21c9.wav"
+},
+"8.3": {
+"text": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+"dur": 6.542,
+"file": "voice/fbdd5e290c57a7f3.wav"
+},
+"9.0": {
+"text": "Merge bine împreună cu Tratament facial Restart și cu Microneedling Exozomi pe de er en.",
+"dur": 8.604,
+"file": "voice/e383f02824833971.wav"
+},
+"9.1": {
+"text": "Când le combini, le găsești pe toate în programul ei.",
+"dur": 4.154,
+"file": "voice/b6f0923e19a8b6b3.wav"
+},
+"10.0": {
+"text": "Bravo! Acum știi Hidratare profundă.",
+"dur": 4.462,
+"file": "voice/77bc557a6f922f17.wav"
+},
+"10.1": {
+"text": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+"dur": 7.651,
+"file": "voice/4835fad86f825f24.wav"
+},
+"10.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.174,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}

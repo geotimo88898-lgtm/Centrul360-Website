@@ -43,15 +43,20 @@ def B(say, pose=None, tts=None, cap=None, hold=None):
     return b
 
 
+SMALL_NUKI = {('corporale', 0), ('faciale', 0), ('faciale', 3), ('epilare', 0), ('epilare', 3)}
+
+
 def sheet_scene(film, pi, page, parts, head, kicker, pose='fisa'):
     """parts: [(title, short text, [beats], box override or None)] in the order of the page's notes"""
     focus, beats = [], []
     for k, (t, d, bb, box) in enumerate(parts):
         n = page['notes'][k]
-        focus.append({'box': box or n['box'], 't': t, 'd': d, 'at': len(beats), 'n': k + 1})
+        focus.append(dict({'box': box or n['box'], 't': t, 'd': d, 'at': len(beats), 'n': k + 1}, **({'x': 2, 'w': 96} if page.get('land') else {})))
         beats += bb
     sc = {'type': 'sheet', 'kicker': kicker, 'head': head, 'img': 'academy-fisa/%s-p%d.webp' % (film, pi + 1), 'pose': pose,
           'land': bool(page.get('land')), 'focus': focus, 'fills': fills(page, focus), 'beats': beats, 'backAt': len(beats) - 0.4}
+    if (film, pi) in SMALL_NUKI:
+        sc['nuki'] = 'rs'
     return sc
 
 
@@ -380,8 +385,34 @@ P['fisa-epilare'] = {'id': 'fisa-epilare', 'title': 'Fișa *epilare laser*', 'sh
         B('Ne vedem în filmul următor!', 'salut-pa')]),
 ]}
 
+JERRY = {
+    'fisa-corporale': [(lambda s: s['type'] == 'note', {'pose': 'surprins', 'say': 'Împreună!', 'at': 1}),
+                       (lambda s: s['type'] == 'big', {'pose': 'bucurie', 'say': 'Ușor!', 'at': 2}),
+                       (lambda s: s['type'] == 'rail', {'pose': 'arata', 'say': 'De 4 ori!', 'at': 1}),
+                       (lambda s: s['type'] == 'list', {'pose': 'arata', 'say': 'Verifică!', 'at': 0}),
+                       (lambda s: s['type'] == 'outro', {'pose': 'bucurie', 'say': 'Bravo!', 'at': 0})],
+    'fisa-faciale': [(lambda s: s['type'] == 'note', {'pose': 'surprins', 'say': 'Împreună!', 'at': 1}),
+                     (lambda s: s['type'] == 'cards', {'pose': 'zambeste', 'say': 'De la I la VI', 'at': 1}),
+                     (lambda s: s['type'] == 'list', {'pose': 'arata', 'say': 'Verifică!', 'at': 0}),
+                     (lambda s: s['type'] == 'outro', {'pose': 'bucurie', 'say': 'Bravo!', 'at': 0})],
+    'fisa-epilare': [(lambda s: s['type'] == 'yn', {'pose': 'surprins', 'say': 'Sincer!', 'at': 1}),
+                     (lambda s: s['type'] == 'sessions', {'pose': 'bucurie', 'say': 'La timp!', 'at': 1}),
+                     (lambda s: s['type'] == 'list', {'pose': 'arata', 'say': 'Verifică!', 'at': 0}),
+                     (lambda s: s['type'] == 'outro', {'pose': 'bucurie', 'say': 'Bravo!', 'at': 0})],
+}
+
+
+def jerry(fid, S):
+    for pred, j in JERRY.get(fid, []):
+        for sc in S['scenes']:
+            if pred(sc) and 'jerry' not in sc:
+                sc['jerry'] = dict(j, x=520)
+                break
+
+
 def main():
   for fid, S in P.items():
+      jerry(fid, S)
       d = os.path.join(HERE, '..', fid)
       os.makedirs(d, exist_ok=True)
       txt = json.dumps(S, ensure_ascii=False, indent=1)
