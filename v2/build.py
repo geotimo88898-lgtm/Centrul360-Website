@@ -30,10 +30,6 @@ MARK = ('<svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none
 
 # the open questions for the owner (preview only): each page lists its letters in its meta block (q: a, b)
 QUESTIONS = {
-    'c': 'Epilare: rămâne „aproximativ 90% din fire dispar după a 5-a ședință”? Filmulețul e făcut la clinică?',
-    'e': 'Laser Full Body: în Admin e 490 lei, pe pagina veche 599. E corect prețul din Admin?',
-    'f': 'Ai poze reale înainte/după pentru acnee, celulită și epilare?',
-    'g': 'PDF-ul cu catalogul de rezultate e cel actual?',
     'h': 'Cookies: politica spune că acordul se dă prin banner, dar site-ul nu are banner. Îl adaug?',
 }
 def asks(meta):
