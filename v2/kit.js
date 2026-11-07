@@ -35,6 +35,11 @@
       boxes.forEach(function (box) {
         var cat = box.getAttribute('data-offers');
         var mine = cat === 'all' ? list : list.filter(function (o) { return cat.split(',').indexOf(o.category) >= 0; });
+        // data-match="cavita|lipo": only the offers whose key or title fits this treatment (falls back to the whole category)
+        var match = box.getAttribute('data-match');
+        if (match) { var re = new RegExp(match, 'i'), only = mine.filter(function (o) { return re.test(o.key + ' ' + o.title); }); if (only.length) mine = only; }
+        var city = box.getAttribute('data-city');
+        if (city) mine = mine.filter(function (o) { return !(o.locations || []).length || o.locations.indexOf(city) >= 0; });
         box.innerHTML = mine.length ? mine.map(slip).join('') : '<p class="fine">Acum nu e nicio ofertă activă aici. La consultația gratuită îți spunem prețul exact.</p>';
       });
       wire(); tick();
@@ -210,6 +215,23 @@
     addEventListener('pointermove', function (e) { if (down) c.scrollLeft = sl - (e.clientX - sx); });
     addEventListener('pointerup', function () { if (!down) return; down = false; c.classList.remove('drag'); });
   });
+
+  // the menu
+  var menu = document.getElementById('menu');
+  if (menu) {
+    $$('.mg a, .mg .eye, .wrap > .btn', menu).forEach(function (el, i) { el.style.setProperty('--i', i); });
+    var clean = function (p) { return p.replace(/\.html$/, '').replace(/\/+$/, ''); };
+    var here = clean(location.pathname);
+    $$('a', menu).concat($$('.top nav a')).forEach(function (a) { if (clean(a.getAttribute('href') || '') === here) { a.setAttribute('aria-current', 'page'); a.classList.add('on'); } });
+    var setMenu = function (open) {
+      menu.classList.toggle('open', open); menu.setAttribute('aria-hidden', String(!open));
+      document.documentElement.classList.toggle('locked', open);
+      $$('[data-menu]').forEach(function (b) { b.setAttribute('aria-expanded', String(open)); });
+    };
+    $$('[data-menu]').forEach(function (b) { b.addEventListener('click', function () { setMenu(!menu.classList.contains('open')); }); });
+    $$('[data-menu-close], a', menu).forEach(function (b) { b.addEventListener('click', function () { setMenu(false); }); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+  }
 
   // the questions
   $$('.q > button').forEach(function (b) {
