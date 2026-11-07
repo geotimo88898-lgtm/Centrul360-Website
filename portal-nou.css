@@ -913,3 +913,37 @@ html.ui-nou .n-navlive{ margin-left:auto; display:inline-flex; align-items:cente
 html.ui-nou .n-navlive i{ width:6px; height:6px; border-radius:50%; background:var(--bad); animation:n-livedot 1.6s var(--e) infinite; }
 html.ui-nou .n-navlive.n-bump{ animation:n-num .7s var(--spring); }
 html.ui-nou.c360-rail .n-navlive{ position:absolute; top:4px; right:6px; padding:0 5px; font-size:10px; }
+
+/* ================================================================ KPI: the prism scene (portal-nou-prism.js) */
+html.ui-nou .n-p3{ position:relative; height:clamp(360px, 42vw, 460px); margin-bottom:1rem; border-radius:28px; overflow:hidden; isolation:isolate; background:var(--paper); box-shadow:var(--n-card); animation:n-rise .8s var(--e) both; }
+html.ui-nou .n-p3::before{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(70% 90% at 30% 50%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), radial-gradient(50% 70% at 85% 30%, color-mix(in srgb, var(--n-teal3) 12%, transparent), transparent 70%); }
+html.ui-nou:not([data-theme="light"]) .n-p3{ background:radial-gradient(120% 120% at 50% 40%, color-mix(in srgb, var(--accent) 18%, #07080d), #05060a 70%); }
+html.ui-nou .n-p3-stage{ position:absolute; inset:0; }
+html.ui-nou .n-p3-stage canvas{ display:block; width:100% !important; height:100% !important; }
+html.ui-nou .n-p3-total{ position:absolute; z-index:2; right:28px; top:26px; display:grid; justify-items:end; gap:4px; text-align:right; pointer-events:none; }
+html.ui-nou .n-p3-total small{ font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+html.ui-nou .n-p3-total b{ font-size:clamp(2.6rem,6vw,4.4rem); font-weight:800; letter-spacing:-.055em; line-height:1; font-variant-numeric:tabular-nums; color:var(--fg);
+  text-shadow:0 0 40px color-mix(in srgb, var(--accent) 45%, transparent); }
+html.ui-nou .n-p3-total span{ font-size:13px; color:var(--muted); }
+html.ui-nou .n-p3-names{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+html.ui-nou .n-p3-names span{ position:absolute; left:0; top:0; display:grid; font-size:12.5px; font-weight:650; color:var(--fg); white-space:nowrap; will-change:transform; text-shadow:0 1px 8px var(--paper); }
+html.ui-nou .n-p3-names em{ font-style:normal; font-weight:500; font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+html.ui-nou .n-p3.is-flat .n-p3-names{ display:none; }
+html.ui-nou .n-p3-flat{ position:absolute; left:28px; right:42%; top:50%; transform:translateY(-50%); display:grid; gap:10px; }
+html.ui-nou .n-p3-flat span{ position:relative; display:flex; justify-content:space-between; gap:8px; padding:8px 12px; border-radius:12px; font-size:13.5px; overflow:hidden; isolation:isolate; }
+html.ui-nou .n-p3-flat i{ position:absolute; inset:0 auto 0 0; width:var(--w); z-index:-1; border-radius:12px; background:color-mix(in srgb, var(--accent) 16%, transparent); }
+html.ui-nou .n-p3-flat em{ font-style:normal; color:var(--muted); font-variant-numeric:tabular-nums; }
+@media (max-width:640px){
+  html.ui-nou .n-p3{ height:440px; border-radius:24px; }
+  html.ui-nou .n-p3-total{ left:18px; right:auto; top:auto; bottom:18px; justify-items:start; text-align:left; }
+  html.ui-nou .n-p3-flat{ left:16px; right:16px; top:24px; transform:none; }
+}
+/* KPI's top band in the new look: the theme's own surface (it was a dark violet band, in Light too) */
+html.ui-nou .kp-pulse{ background:var(--paper); color:var(--fg); box-shadow:var(--n-card); }
+html.ui-nou .kp-pulse::after{ display:none; }
+html.ui-nou .kp-pulse .db-aurora{ opacity:.6; }
+html.ui-nou .kp-pulse-i + .kp-pulse-i::before{ background:color-mix(in srgb, var(--fg) 8%, transparent); }
+html.ui-nou .kp-pulse-i > span, html.ui-nou .kp-pulse-i > small{ color:var(--muted); opacity:1; }
+html.ui-nou .kp-pulse-i > b{ color:var(--fg) !important; -webkit-text-fill-color:currentColor; background:none !important; }
+html.ui-nou .n-navlive[hidden]{ display:none; }
