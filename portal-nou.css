@@ -714,9 +714,10 @@ html.ui-nou #panel-panou.active.n-live-host{ display:flex; flex-direction:column
 html.ui-nou #panel-panou.n-live-host > .db-root{ display:contents; }
 html.ui-nou #panel-panou.n-live-host .db-views{ order:0; margin:0; }
 html.ui-nou #panel-panou.n-live-host .db-hero{ order:1; }
-html.ui-nou #panel-panou.n-live-host > .n-live{ order:2; }
-html.ui-nou #panel-panou.n-live-host .db-kpis{ order:3; }
-html.ui-nou #panel-panou.n-live-host .db-blocks, html.ui-nou #panel-panou.n-live-host [data-kpi-root]{ order:4; }
+html.ui-nou #panel-panou.n-live-host > .n-money{ order:2; }
+html.ui-nou #panel-panou.n-live-host > .n-live{ order:3; }
+html.ui-nou #panel-panou.n-live-host .db-kpis{ order:4; }
+html.ui-nou #panel-panou.n-live-host .db-blocks, html.ui-nou #panel-panou.n-live-host [data-kpi-root]{ order:5; }
 html.ui-nou .n-live{ display:grid; gap:12px; padding:18px 18px 16px; border-radius:28px; background:var(--paper); box-shadow:var(--n-card); position:relative; overflow:hidden; isolation:isolate; animation:n-rise .8s var(--e) .1s both; }
 html.ui-nou .n-live::before{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
   background-image:radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--fg) 9%, transparent) 1px, transparent 0); background-size:22px 22px;
@@ -871,3 +872,44 @@ html.ui-nou .st2-spark .k-spark{ position:static; width:220px; height:34px; }
 }
 html.ui-nou .st2-card{ align-content:start; }
 html.ui-nou .st2-row{ align-items:start; }
+
+/* ================================================================ PANOU: Banii de azi (portal-nou-money.js), the prism */
+html.ui-nou .n-money{ position:relative; display:grid; grid-template-columns:minmax(150px,1fr) minmax(120px,170px) minmax(240px,1.3fr); align-items:center; gap:24px; padding:26px 30px;
+  border-radius:28px; background:var(--paper); box-shadow:var(--n-card); overflow:hidden; isolation:isolate; animation:n-rise .8s var(--e) .05s both; min-height:230px; }
+html.ui-nou .n-money::after{ content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background:radial-gradient(60% 90% at 50% 60%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%); }
+html.ui-nou .n-money canvas{ position:absolute; inset:0; z-index:-1; pointer-events:none; }
+html.ui-nou .n-m-src{ display:grid; gap:14px; }
+html.ui-nou .n-m-city{ display:grid; grid-template-columns:auto 1fr; grid-template-areas:"i b" "i s"; column-gap:12px; align-items:center; padding:12px 14px; border-radius:18px;
+  background:color-mix(in srgb, var(--paper) 80%, transparent); box-shadow:0 0 0 1px color-mix(in srgb, var(--fg) 6%, transparent), 0 10px 24px -18px rgb(var(--n-sh) / .35);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); animation:n-rise .7s var(--e) calc(.15s + var(--i) * .1s) both; }
+html.ui-nou .n-m-city i{ grid-area:i; width:34px; height:34px; border-radius:50%; background:var(--grad); box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent), 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent); animation:n-dot 2.6s var(--e2) infinite; }
+html.ui-nou .n-m-city b{ grid-area:b; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+html.ui-nou .n-m-city span{ grid-area:s; font-size:1.15rem; font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+html.ui-nou .n-m-prism{ width:100%; max-width:170px; justify-self:center; overflow:visible; filter:drop-shadow(0 20px 30px color-mix(in srgb, var(--accent) 35%, transparent)); }
+html.ui-nou .n-m-p{ transform-origin:60px 70px; animation:n-prism 9s var(--e2) infinite alternate; }
+@keyframes n-prism{ from{ transform:rotate(-4deg) scale(.98); } to{ transform:rotate(4deg) scale(1.03); } }
+html.ui-nou .n-m-out{ display:grid; gap:6px; justify-items:start; min-width:0; }
+html.ui-nou .n-m-out small{ font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+html.ui-nou .n-m-out b[data-total]{ font-size:clamp(2.6rem,5vw,3.8rem); font-weight:800; letter-spacing:-.055em; line-height:1; font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg, var(--fg) 30%, var(--n-teal2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+html.ui-nou .n-m-meta{ display:flex; gap:12px; flex-wrap:wrap; font-size:13.5px; color:var(--muted); }
+html.ui-nou .n-m-meta .is-up{ color:var(--good); font-weight:650; } html.ui-nou .n-m-meta .is-down{ color:var(--bad); font-weight:650; }
+html.ui-nou .n-m-break{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; width:100%; margin-top:6px; }
+html.ui-nou .n-m-break span{ display:grid; gap:2px; min-width:0; }
+html.ui-nou .n-m-break i{ height:5px; border-radius:5px; background:color-mix(in srgb, var(--fg) 7%, transparent); position:relative; overflow:hidden; }
+html.ui-nou .n-m-break i::after{ content:""; position:absolute; inset:0 auto 0 0; width:var(--w); border-radius:inherit; background:var(--grad); transform-origin:0 50%; animation:n-barin 1.2s var(--e) .4s both; }
+html.ui-nou .n-m-break em{ font-style:normal; font-size:11.5px; color:var(--muted); margin-top:4px; }
+html.ui-nou .n-m-break b{ font-size:14px; font-variant-numeric:tabular-nums; }
+html.ui-nou .n-m-last{ font-size:13px; color:var(--muted); margin-top:4px; }
+html.ui-nou .n-m-last b{ color:var(--good); }
+@media (max-width:860px){
+  html.ui-nou .n-money{ grid-template-columns:1fr 110px; grid-template-areas:"src prism" "out out"; gap:16px; padding:20px 18px; }
+  html.ui-nou .n-m-src{ grid-area:src; } html.ui-nou .n-m-prism{ grid-area:prism; } html.ui-nou .n-m-out{ grid-area:out; }
+}
+/* the live count next to „Site” in the menu */
+html.ui-nou .n-navlive{ margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding:1px 8px; border-radius:999px; font-size:11.5px; font-weight:700; font-variant-numeric:tabular-nums;
+  background:color-mix(in srgb, var(--bad) 10%, transparent); color:var(--bad); }
+html.ui-nou .n-navlive i{ width:6px; height:6px; border-radius:50%; background:var(--bad); animation:n-livedot 1.6s var(--e) infinite; }
+html.ui-nou .n-navlive.n-bump{ animation:n-num .7s var(--spring); }
+html.ui-nou.c360-rail .n-navlive{ position:absolute; top:4px; right:6px; padding:0 5px; font-size:10px; }
