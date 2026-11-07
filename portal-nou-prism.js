@@ -38,7 +38,11 @@
   // ------------------------------------------------------------------ the scene, inside the stage's [data-flow]
   var box = null, row = null, ol = null, cv = null, ctx = null, beams = [], logo = null, out = null, raf = 0, visible = true, flash = 0, comets = [], dpr = 1, acc = '', accRGB = '47,214,195';
   // the row: x is the track's translation; chips[] = {el, id, l (left in the track), w}; setW = one copy's width with its gap
-  var car = { loop: false, x: 0, setW: 0, n: 0, W: 0, gap: 10, chips: [], h: 0, top: 0, left: 0, v: 0, drag: null, anim: 0, snapT: 0 };
+  var car = { loop: false, x: 0, setW: 0, n: 0, W: 0, gap: 10, chips: [], h: 0, top: 0, left: 0, v: 0, drag: null, anim: 0, snapT: 0, vert: false, cw: 0 };
+  // on a computer the scene is horizontal: the cards in a column on the left (a vertical loop when they don't fit), the prism in the
+  // middle, the number on the right; on a phone or a tablet it stands up: the cards in a row on top, the prism, the number below
+  var WIDE = window.matchMedia ? matchMedia('(min-width:1024px)') : { matches: false };
+  var COLH = 420; // the column's height when it loops (about seven cards)
   function mount(flow) {
     var m = model(); if (!m) return;
     box = flow;
@@ -52,6 +56,7 @@
     people(m, true);
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible) go(); }, { threshold: 0.02 }).observe(box);
     var lw = 0;
+    if (WIDE.addEventListener) WIDE.addEventListener('change', function () { var mm = model(); if (mm) people(mm, true); });
     if ('ResizeObserver' in window) new ResizeObserver(function () { var w = box.clientWidth; if (w !== lw) { lw = w; var mm = model(); if (mm) people(mm, true); } else layout(); go(); }).observe(box);
     else addEventListener('resize', function () { var mm = model(); if (mm) people(mm, true); }, { passive: true });
     new MutationObserver(function () { if (accent() !== acc) { spr = null; layout(); } }).observe(html, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] });
@@ -67,20 +72,23 @@
   }
   // (re)build the row; keeps the cosmetician who is centred now in the centre
   function people(m, force) {
-    var key = m.list.map(function (x) { return x.id + ':' + x.sum; }).join(',') + '|' + box.clientWidth;
+    var key = m.list.map(function (x) { return x.id + ':' + x.sum; }).join(',') + '|' + box.clientWidth + (WIDE.matches ? 'v' : 'h');
     if (!force && ol.dataset.key === key) return;
     var keepId = centredId();
     ol.dataset.key = key;
     if (!m.list.length) { ol.innerHTML = '<li class="is-zero"><span><b>Nicio cosmeticiană activă</b></span></li>'; car.chips = []; car.loop = false; place0(); layout(); return; }
     // one copy first, to measure; three copies when they don't fit (a loop: the middle one is the real one)
     ol.innerHTML = m.list.map(function (x, i) { return chipHtml(x, i, false); }).join('');
-    car.W = row.clientWidth; car.gap = parseFloat(getComputedStyle(ol).columnGap) || 10;
-    var one = Array.prototype.map.call(ol.children, function (li) { return { l: li.offsetLeft, w: li.offsetWidth }; });
+    car.vert = WIDE.matches; row.classList.toggle('is-col', car.vert); row.style.height = '';
+    car.W = car.vert ? COLH : row.clientWidth; car.cw = row.clientWidth;
+    var cs = getComputedStyle(ol); car.gap = parseFloat(car.vert ? cs.rowGap : cs.columnGap) || 10;
+    var one = Array.prototype.map.call(ol.children, function (li) { return car.vert ? { l: li.offsetTop, w: li.offsetHeight } : { l: li.offsetLeft, w: li.offsetWidth }; });
     var last = one[one.length - 1], setW = last.l + last.w + car.gap;
     car.n = m.list.length; car.setW = setW; car.loop = setW - car.gap > car.W + 1;
+    if (car.vert) { if (!car.loop) car.W = setW - car.gap; row.style.height = car.W + 'px'; }
     if (car.loop) ol.innerHTML = [0, 1, 2].map(function (k) { return m.list.map(function (x, i) { return chipHtml(x, i, k !== 1); }).join(''); }).join('');
     car.chips = Array.prototype.map.call(ol.children, function (li, j) { var o = one[j % car.n]; return { el: li, id: li.dataset.id, l: o.l + Math.floor(j / car.n) * setW, w: o.w, k: j }; });
-    car.h = ol.children[0].offsetHeight;
+    car.h = car.vert ? ol.children[0].offsetWidth : ol.children[0].offsetHeight;
     var cx = car.W / 2;
     if (!car.loop) car.x = (car.W - (setW - car.gap)) / 2;
     else {
@@ -101,7 +109,7 @@
   // the track moves (transform only); a loop wraps by one copy; each chip's depth from the centre (opacity and scale)
   function apply() {
     if (car.loop) { var base = car.W / 2 - car.setW * 1.5; while (car.x > base + car.setW / 2) car.x -= car.setW; while (car.x < base - car.setW / 2) car.x += car.setW; }
-    ol.style.transform = 'translate3d(' + car.x.toFixed(2) + 'px,0,0)';
+    ol.style.transform = car.vert ? 'translate3d(0,' + car.x.toFixed(2) + 'px,0)' : 'translate3d(' + car.x.toFixed(2) + 'px,0,0)';
     var cx = car.W / 2, span = Math.max(220, car.W * 0.55);
     car.chips.forEach(function (c) {
       var d = Math.min(1, Math.abs(car.x + c.l + c.w / 2 - cx) / span);
@@ -115,14 +123,15 @@
     var samples = [];
     row.addEventListener('pointerdown', function (e) {
       if (!car.loop || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      stop(); car.drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, cx: car.x, on: false }; samples = [[e.clientX, performance.now()]];
+      stop(); car.drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, cx: car.x, on: false }; samples = [[car.vert ? e.clientY : e.clientX, performance.now()]];
     });
     row.addEventListener('pointermove', function (e) {
       var g = car.drag; if (!g || g.id !== e.pointerId) return;
       var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+      if (car.vert) { var t = dx; dx = dy; dy = t; } // along the row's own axis
       if (!g.on) { if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; if (Math.abs(dy) > Math.abs(dx)) { car.drag = null; return; } g.on = true; try { row.setPointerCapture(e.pointerId); } catch (x) {} row.classList.add('is-drag'); }
       car.x = g.cx + dx; apply(); go();
-      samples.push([e.clientX, performance.now()]); if (samples.length > 6) samples.shift();
+      samples.push([car.vert ? e.clientY : e.clientX, performance.now()]); if (samples.length > 6) samples.shift();
     });
     var up = function (e) {
       var g = car.drag; if (!g || g.id !== e.pointerId) return; car.drag = null; row.classList.remove('is-drag');
@@ -133,8 +142,9 @@
     };
     row.addEventListener('pointerup', up); row.addEventListener('pointercancel', up);
     row.addEventListener('wheel', function (e) {
-      if (!car.loop || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-      e.preventDefault(); stop(); car.x -= e.deltaX; apply(); go();
+      var d = car.vert ? e.deltaY : e.deltaX;
+      if (!car.loop || (!car.vert && Math.abs(e.deltaX) <= Math.abs(e.deltaY))) return;
+      e.preventDefault(); stop(); car.x -= d; apply(); go();
       clearTimeout(car.snapT); car.snapT = setTimeout(function () { snapTo(null); }, 140);
     }, { passive: false });
   }
@@ -197,13 +207,13 @@
     var r = box.getBoundingClientRect(); if (!r.width) return;
     dpr = Math.min(small() ? 1 : 2, window.devicePixelRatio || 1);
     var L = box.querySelector('.sx-p-logo').getBoundingClientRect();
-    var T = box.querySelector('.sx-s-lbl'); if (!T) return; T = T.getBoundingClientRect();
+    var T = box.querySelector(car.vert ? '[data-num]' : '.sx-s-lbl'); if (!T) return; T = T.getBoundingClientRect();
     var R = row.getBoundingClientRect();
-    car.top = R.top - r.top; car.left = R.left - r.left; car.W = row.clientWidth || car.W;
+    car.top = R.top - r.top; car.left = R.left - r.left; car.cw = row.clientWidth; if (!car.vert) car.W = row.clientWidth || car.W;
     logo = { x: L.left - r.left + L.width / 2, y: L.top - r.top + L.height / 2, r: L.width / 2 };
-    out = { x: logo.x, y: T.top - r.top - 8 };
-    // the light lives between the cards and the number: the canvas stops there (fewer pixels to composite each frame)
-    var ch = Math.min(r.height, out.y + 34);
+    out = car.vert ? { x: T.left - r.left - 18, y: T.top - r.top + T.height * 0.55 } : { x: logo.x, y: T.top - r.top - 8 };
+    // the light lives between the cards and the number: standing up, the canvas stops at the number (fewer pixels to composite each frame)
+    var ch = car.vert ? r.height : Math.min(r.height, out.y + 34);
     var w = Math.round(r.width * dpr), h = Math.round(ch * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv.style.width = r.width + 'px'; cv.style.height = ch + 'px'; }
     var ang = Math.atan2(out.y - logo.y, out.x - logo.x), len = Math.hypot(out.x - logo.x, out.y - logo.y);
@@ -224,7 +234,7 @@
       var x = sums[c.id] || { sum: 0 };
       var sc = c.o != null && c.o < 1 ? 1 - (1 - c.o) / 0.55 * 0.06 : 1;
       var o = old[c.k] || {};
-      var b = { key: c.k, id: c.id, x0: car.left + cxr, y0: car.top + car.h / 2 + (car.h / 2) * sc + 4, w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
+      var b = { key: c.k, id: c.id, x0: car.vert ? car.left + car.cw - 12 * sc : car.left + cxr, y0: car.vert ? car.top + cxr : car.top + car.h / 2 + (car.h / 2) * sc + 4, w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
         k: (x.sum ? 0.5 + 0.5 * (x.sum / max) : 0.2) * edge * (c.o != null ? 0.4 + 0.6 * c.o : 1), parts: o.parts || [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.01, li: c.el };
       b.core = new Path2D(); b.bands = SPEC.map(function () { return new Path2D(); });
       var N = 24, spread = 2.4 * (b.w + 0.8);
@@ -241,7 +251,8 @@
   }
   // a point on her curve, t in 0..1 (from her card down into the logo)
   function pt(b, t) {
-    var cx = b.x0, cy = (b.y0 + logo.y) / 2, c2x = logo.x, c2y = (b.y0 + logo.y) / 2, u = 1 - t;
+    var mx = (b.x0 + logo.x) / 2, my = (b.y0 + logo.y) / 2;
+    var cx = car.vert ? mx : b.x0, cy = car.vert ? b.y0 : my, c2x = car.vert ? mx : logo.x, c2y = car.vert ? logo.y : my, u = 1 - t;
     return { x: u * u * u * b.x0 + 3 * u * u * t * cx + 3 * u * t * t * c2x + t * t * t * logo.x, y: u * u * u * b.y0 + 3 * u * u * t * cy + 3 * u * t * t * c2y + t * t * t * logo.y };
   }
   var lastF = 0;
@@ -282,7 +293,7 @@
     // a payment's pulse: from her card (wherever it is now), through the prism, to the number; there the stage takes over
     for (var c = comets.length - 1; c >= 0; c--) {
       var cm = comets[c]; cm.t += 0.022 * sp; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
-      var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || { x0: logo.x, y0: car.top + car.h };
+      var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || (car.vert ? { x0: car.left + car.cw, y0: logo.y } : { x0: logo.x, y0: car.top + car.h });
       var q2 = cm.t < 1 ? pt(b2, cm.t) : { x: logo.x + (out.x - logo.x) * (cm.t - 1), y: logo.y + (out.y - logo.y) * (cm.t - 1) };
       if (cm.t >= 1 && !cm.hit) { cm.hit = 1; flash = 1; }
       ctx.globalAlpha = 1; ctx.drawImage(spr, q2.x - 30, q2.y - 30, 60, 60);
