@@ -66,7 +66,7 @@ html.ui-nou h1, html.ui-nou h2, html.ui-nou h3{ font-family:'Inter',system-ui,sa
 html.ui-nou h2{ font-size:clamp(1.6rem,2.4vw,2.05rem); font-weight:800; letter-spacing:-.04em; line-height:1.08; }
 html.ui-nou h3{ font-weight:700; letter-spacing:-.022em; }
 html.ui-nou h2 em, html.ui-nou .n-serif{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; letter-spacing:-.02em; color:var(--n-teal2); }
-html.ui-nou :focus-visible{ outline:2px solid rgba(20,165,150,.55); outline-offset:2px; }
+html.ui-nou :focus-visible:not(input):not(textarea):not(select){ outline:2px solid rgba(20,165,150,.55); outline-offset:2px; }
 html.ui-nou *{ scrollbar-color:rgba(11,11,13,.14) transparent; }
 html.ui-nou *::-webkit-scrollbar-thumb{ background:rgba(11,11,13,.14); background-clip:content-box; }
 
@@ -208,10 +208,11 @@ html.ui-nou .k-chip.is-on, html.ui-nou .k-chip[aria-pressed="true"]{ background:
 html.ui-nou .k-tag{ border-radius:999px; font-weight:600; letter-spacing:0; }
 
 /* forms */
-:where(html.ui-nou) :where(input:not([type=checkbox]):not([type=radio]), select, textarea){ background:#fff; border:0; border-radius:14px; box-shadow:0 0 0 1px rgba(11,11,13,.1); color:var(--fg); font-size:15px;
-  transition:box-shadow .4s var(--e), background-color .3s; }
-:where(html.ui-nou) :where(input:not([type=checkbox]):not([type=radio]), select, textarea):hover{ box-shadow:0 0 0 1px rgba(11,11,13,.18); }
-:where(html.ui-nou) :where(input:not([type=checkbox]):not([type=radio]), select, textarea):focus{ background:#fff; border-color:transparent; box-shadow:0 0 0 1.5px var(--n-teal), 0 0 0 5px rgba(20,165,150,.12); }
+:where(html.ui-nou) :where(input:not([type=checkbox]):not([type=radio]), select, textarea){ background:#fff; border:1px solid rgba(11,11,13,.12); border-radius:14px; box-shadow:none; color:var(--fg); font-size:15px;
+  transition:box-shadow .4s var(--e), border-color .3s, background-color .3s; }
+:where(html.ui-nou) :where(input:not([type=checkbox]):not([type=radio]), select, textarea):hover{ border-color:rgba(11,11,13,.2); }
+:where(html.ui-nou) :where(input:not([type=checkbox]):not([type=radio]), select, textarea):focus{ background:#fff; border-color:var(--n-teal); box-shadow:0 0 0 4px rgba(20,165,150,.12); }
+html.ui-nou .mo-custom input, html.ui-nou .k-field input, html.ui-nou .k-field select, html.ui-nou .k-field textarea{ border-color:rgba(11,11,13,.12); background:#fff; border-radius:14px; }
 html.ui-nou input::placeholder, html.ui-nou textarea::placeholder{ color:#9aa1aa; }
 html.ui-nou label.field-label, html.ui-nou .k-field > span, html.ui-nou .k-field label{ color:var(--muted); font-weight:560; }
 html.ui-nou .c360-select-btn{ background:#fff; border:0; border-radius:14px; box-shadow:0 0 0 1px rgba(11,11,13,.1); }
@@ -261,7 +262,8 @@ html.ui-nou .k-menu-item{ border-radius:12px; }
 html.ui-nou .k-menu-item:hover{ background:rgba(11,11,13,.045); }
 html.ui-nou .k-menu-item.is-strong svg{ color:var(--n-teal2); }
 html.ui-nou .n-ui-sw{ color:var(--n-teal2) !important; }
-html.ui-nou .c360-dialog-backdrop, html.ui-nou .k-drawer-backdrop{ background:rgba(20,28,28,.28) !important; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+/* a tint, no blur: a full-screen blur behind a sliding drawer drops frames on phones */
+html.ui-nou .c360-dialog-backdrop, html.ui-nou .k-drawer-backdrop{ background:rgba(20,32,32,.26) !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 html.ui-nou .c360-dialog{ border:0; border-radius:26px; background:#fff; box-shadow:0 0 0 1px rgba(11,11,13,.05), var(--shadow-lg); }
 html.ui-nou .c360-dialog-root.is-open .c360-dialog{ transition:opacity .4s var(--e), transform .6s var(--e); }
 html.ui-nou .k-drawer{ background:#fff; border:0; box-shadow:0 0 0 1px rgba(11,11,13,.05), var(--shadow-lg); }
@@ -330,7 +332,7 @@ html.ui-nou .k-preview-bar{ background:var(--fg); top:62px; }
 html.ui-nou.c360-reduce *, html.ui-nou.c360-reduce *::before, html.ui-nou.c360-reduce *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; }
 
 /* the accent picker and the dark theme belong to the current look: the new one is white and teal, always */
-html.ui-nou .k-menu .acc{ display:none !important; }
+html.ui-nou .k-menu .acc, html.ui-nou .me-pref:has(.acc){ display:none !important; }
 
 /* ================================================================ Nuki's hello (first open of the day) */
 .n-hello{ display:none; }
@@ -442,7 +444,7 @@ html.ui-nou .pl-add:hover{ background:#fff; box-shadow:var(--n-card); }
 html.ui-nou .pl-col-empty{ border:0; background:rgba(255,255,255,.6); border-radius:14px; box-shadow:inset 0 0 0 1px rgba(11,11,13,.05); }
 html.ui-nou .pl-ghost{ box-shadow:0 30px 60px -20px rgba(11,40,38,.45), 0 0 0 1px rgba(11,11,13,.06); transform-origin:50% 50%; }
 html.ui-nou .pl-drawer{ border-left:0; box-shadow:0 0 0 1px rgba(11,11,13,.05), var(--shadow-lg); }
-html.ui-nou .pl-drawer-backdrop{ background:rgba(20,28,28,.24); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+html.ui-nou .pl-drawer-backdrop{ background:rgba(20,32,32,.26); backdrop-filter:none; -webkit-backdrop-filter:none; }
 html.ui-nou .pl-drawer-root.is-open .pl-drawer{ transition:transform .65s var(--e); }
 html.ui-nou .pl-dhead{ border-bottom-color:rgba(11,11,13,.06); }
 html.ui-nou .pl-avatar{ border-radius:50%; }
@@ -545,3 +547,45 @@ html.ui-nou .au-recipe{ border:0; background:#fff; box-shadow:var(--n-card); bor
   html.ui-nou .ad-row .ad-title{ min-width:0; flex:1; text-align:left; }
   html.ui-nou .ad-row .ad-title b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 }
+html.ui-nou label > input[type=search], html.ui-nou .mx-search input{ box-shadow:none !important; background:transparent !important; }
+
+/* ================================================================ MESAJE */
+html.ui-nou .mx-wrap{ gap:1.2rem; }
+html.ui-nou .mx-list-col, html.ui-nou .mx-thread-col{ border-radius:24px; }
+html.ui-nou .mx-search{ height:42px; border-radius:999px; background:rgba(11,11,13,.045); }
+html.ui-nou .mx-search:focus-within{ background:#fff; box-shadow:0 0 0 1.5px var(--n-teal), 0 0 0 5px rgba(20,165,150,.12); }
+html.ui-nou .mx-row{ border-radius:16px; transition:background-color .3s, transform .5s var(--e); }
+html.ui-nou .mx-row:active{ transform:scale(.985); transition-duration:.12s; }
+html.ui-nou .mx-row:hover{ background:rgba(11,11,13,.03); }
+html.ui-nou .mx-row.is-on{ background:var(--n-tint); }
+html.ui-nou .mx-row-top b{ letter-spacing:-.015em; }
+html.ui-nou .mx-row.is-unread .mx-row-top small{ color:var(--n-teal2); }
+html.ui-nou .mx-unread{ background:var(--n-teal); }
+html.ui-nou .mx-city{ border-radius:999px; padding:.1rem .45rem; }
+html.ui-nou .mx-thead{ border-bottom-color:rgba(11,11,13,.06); background:rgba(255,255,255,.9); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+html.ui-nou .mx-tbody{ background:linear-gradient(180deg,#f7fafa,#f2f6f6); }
+html.ui-nou .mx-day span{ border:0; box-shadow:0 0 0 1px rgba(11,11,13,.06); }
+html.ui-nou .mx-bub{ border:0; border-radius:20px 20px 20px 6px; box-shadow:0 0 0 1px rgba(11,11,13,.05), 0 2px 6px -3px rgba(11,40,38,.12); animation:n-bub .5s var(--e) both; }
+html.ui-nou .mx-msg.is-out .mx-bub{ border-radius:20px 20px 6px 20px; background:linear-gradient(180deg,#1bb9a9,#0f9083); box-shadow:0 6px 14px -8px rgba(16,145,132,.6); }
+@keyframes n-bub{ from{ opacity:0; transform:translateY(6px) scale(.98); } to{ opacity:1; transform:none; } }
+html.ui-nou .mx-compose{ border-top-color:rgba(11,11,13,.06); }
+html.ui-nou .mx-compose textarea{ border-radius:22px; }
+
+/* ================================================================ CONTACTE: one grouped list, hairlines between rows (like Settings) */
+html.ui-nou .ct-list{ gap:0; background:#fff; border-radius:24px; box-shadow:var(--n-card); overflow:hidden; }
+html.ui-nou .ct-row{ border:0; border-radius:0; background:transparent; padding:.85rem 1.1rem; position:relative; transition:background-color .3s; }
+html.ui-nou .ct-row + .ct-row::before{ content:""; position:absolute; top:0; left:4.4rem; right:0; height:1px; background:rgba(11,11,13,.06); }
+html.ui-nou .ct-row:hover{ transform:none; background:rgba(20,165,150,.035); }
+html.ui-nou .ct-row:active{ background:rgba(20,165,150,.07); }
+html.ui-nou .ct-row-chev{ transition:transform .5s var(--e); }
+html.ui-nou .ct-row:hover .ct-row-chev{ transform:translateX(3px); color:var(--fg); }
+html.ui-nou .ct-row-main b{ letter-spacing:-.015em; font-weight:650; }
+html.ui-nou .ct-big{ border-radius:20px; }
+html.ui-nou .ct-big.is-accent{ border-color:var(--n-teal); background:var(--n-tint); }
+html.ui-nou .k-avatar{ box-shadow:none; }
+/* avatars: round monograms in a soft tint of the person's colour, not dark tiles */
+html.ui-nou .k-avatar:not(.has-photo){ border-radius:50%; color:color-mix(in srgb, var(--c) 72%, #0b0b0d); background:color-mix(in srgb, var(--c) 15%, #fff); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent); letter-spacing:0; }
+html.ui-nou .k-avatar.has-photo{ border-radius:50%; }
+html.ui-nou .pl-avatar{ background:color-mix(in srgb, var(--c) 15%, #fff) !important; color:color-mix(in srgb, var(--c) 72%, #0b0b0d) !important; }
+/* the shine needs overflow:hidden, which lets a flex row squeeze the button to nothing: it keeps its own width */
+html.ui-nou .k-btn.is-primary, html.ui-nou .k-btn.is-accent, html.ui-nou .pl-btn.is-hot, html.ui-nou .c360-btn.is-primary{ min-width:max-content; }
