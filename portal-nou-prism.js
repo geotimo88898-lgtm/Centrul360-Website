@@ -1,9 +1,11 @@
 // Centrul360 portal, aspectul nou: prisma cosmeticienelor, ÎN blocul de bani din Panou → Azi (portal-summit-stage.js, doar admin).
-// Un singur bloc, un singur „Încasat azi”: cosmeticienele (toate cele active, cu suma de azi) stau în stânga (pe telefon, un rând
-// care se derulează sus); din fiecare pleacă o dungă de spectru (mai groasă și mai vie cu cât a adus mai mult) care intră în logoul
-// Centrul360 (prisma), din care iese raza albă spre numărul mare al blocului. La o încasare nouă: un puls pleacă de la cosmeticiana
-// care a făcut tratamentul, trece prin prismă și ajunge la număr; acolo blocul preia (cometa spre Nuki, monedele, numărul).
-// Canvas 2D (fără biblioteci, fără filtre pe ce se mișcă), merge doar cât e pe ecran; liniște pentru „mai puțină mișcare”.
+// Un singur bloc, un singur „Încasat azi”: sus un rând cu cosmeticienele (toate cele active, cu suma de azi); dedesubt, fixe în
+// mijloc, logoul Centrul360 (prisma) și numărul mare. Din fiecare card vizibil pleacă o dungă de spectru (mai groasă și mai vie cu cât
+// a adus mai mult) care intră în prismă; din prismă iese raza albă spre număr. Când nu încap toate, rândul e o buclă fără capăt: se
+// trage cu degetul (sau cu rotița laterală), cu inerție și oprire pe card, pornește cu cosmeticiana din mijlocul listei centrată deasupra
+// prismei, iar razele urmăresc derularea. Când încap, stau centrate, fără buclă. La o încasare nouă rândul se centrează pe cosmeticiana
+// care a încasat, apoi pulsul pleacă de la ea prin prismă la număr; acolo blocul preia (cometa spre Nuki, monedele, numărul).
+// Canvas 2D (fără biblioteci, fără filtre pe ce se mișcă), cardurile doar cu transform și opacity; nimic nu rulează când nu se vede.
 (function () {
   'use strict';
   var html = document.documentElement;
@@ -21,6 +23,7 @@
     '<ellipse class="v" cx="405" cy="405" rx="104" ry="207" stroke-width="3" vector-effect="non-scaling-stroke"/><ellipse class="h" cx="405" cy="405" rx="207" ry="113" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>';
 
   // ------------------------------------------------------------------ every active cosmetician, with what she brought today
+  // a steady order (city, then name): a payment changes a sum, never her place in the row
   function model() {
     var d = D(); if (!d) return null;
     var t = today();
@@ -28,49 +31,149 @@
     var inc = (d.incasari || []).filter(function (s) { return s.date === t; });
     var sumOf = function (id) { return inc.filter(function (s) { return (s.performedBy || s.employeeId) === id; }).reduce(function (a, s) { return a + (Number(s.amount) || 0); }, 0); };
     var list = emps.map(function (e) { return { id: e.id, name: e.name || '', city: e.location || '', photo: e.photo || '', sum: sumOf(e.id) }; })
-      .sort(function (a, b) { return b.sum - a.sum || a.name.localeCompare(b.name); });
-    var total = inc.reduce(function (a, s) { return a + (Number(s.amount) || 0); }, 0);
-    return { list: list, total: total, n: inc.length, inc: inc, ids: inc.map(function (s) { return s.id; }) };
+      .sort(function (a, b) { return a.city.localeCompare(b.city) || a.name.localeCompare(b.name); });
+    return { list: list, inc: inc };
   }
 
   // ------------------------------------------------------------------ the scene, inside the stage's [data-flow]
-  var box = null, cv = null, ctx = null, beams = [], logo = null, out = null, raf = 0, visible = true, flash = 0, comets = [], dpr = 1, acc = '', accRGB = '47,214,195';
+  var box = null, row = null, ol = null, cv = null, ctx = null, beams = [], logo = null, out = null, raf = 0, visible = true, flash = 0, comets = [], dpr = 1, acc = '', accRGB = '47,214,195';
+  // the row: x is the track's translation; chips[] = {el, id, l (left in the track), w}; setW = one copy's width with its gap
+  var car = { loop: false, x: 0, setW: 0, n: 0, W: 0, gap: 10, chips: [], h: 0, top: 0, left: 0, v: 0, drag: null, anim: 0, snapT: 0 };
   function mount(flow) {
     var m = model(); if (!m) return;
     box = flow;
     var c = document.createElement('canvas'); c.setAttribute('aria-hidden', 'true'); c.className = 'sx-p-cv';
-    var ol = document.createElement('ol'); ol.className = 'sx-p-people'; ol.setAttribute('data-people', ''); ol.setAttribute('aria-label', 'Cosmeticienele, azi');
+    row = document.createElement('div'); row.className = 'sx-p-row';
+    ol = document.createElement('ol'); ol.className = 'sx-p-people'; ol.setAttribute('data-people', ''); ol.setAttribute('aria-label', 'Cosmeticienele, azi');
+    row.appendChild(ol);
     var lg = document.createElement('div'); lg.className = 'sx-p-logo'; lg.setAttribute('aria-hidden', 'true'); lg.innerHTML = MARK;
-    flow.insertBefore(lg, flow.firstChild); flow.insertBefore(ol, flow.firstChild); flow.insertBefore(c, flow.firstChild);
+    flow.insertBefore(lg, flow.firstChild); flow.insertBefore(row, flow.firstChild); flow.insertBefore(c, flow.firstChild);
     cv = c; ctx = cv.getContext('2d');
-    people(m);
+    people(m, true);
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible) go(); }, { threshold: 0.02 }).observe(box);
-    if ('ResizeObserver' in window) new ResizeObserver(function () { layout(); go(); }).observe(box); else addEventListener('resize', layout, { passive: true });
-    // the phone's row scrolls sideways: the bands follow it (one layout per frame at most)
-    var q = 0; ol.addEventListener('scroll', function () { if (!q) q = requestAnimationFrame(function () { q = 0; layout(); }); }, { passive: true });
+    var lw = 0;
+    if ('ResizeObserver' in window) new ResizeObserver(function () { var w = box.clientWidth; if (w !== lw) { lw = w; var mm = model(); if (mm) people(mm, true); } else layout(); go(); }).observe(box);
+    else addEventListener('resize', function () { var mm = model(); if (mm) people(mm, true); }, { passive: true });
     new MutationObserver(function () { if (accent() !== acc) { spr = null; layout(); } }).observe(html, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] });
+    drag();
+    // the cards are measured in px: once the fonts arrive their widths change, so measure again (the centred one stays centred)
+    if (document.fonts) { var again = function () { var mm = model(); if (mm && box && box.isConnected) people(mm, true); }; document.fonts.ready.then(again); document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', again); }
     requestAnimationFrame(function () { layout(); go(); });
   }
-  function people(m) {
-    var ol = box.querySelector('[data-people]');
-    var key = m.list.map(function (x) { return x.id + ':' + x.sum; }).join(',');
-    if (ol.dataset.key === key) return;
-    ol.dataset.key = key;
-    ol.innerHTML = m.list.length ? m.list.map(function (x, i) {
-      return '<li data-id="' + esc(x.id) + '" style="--c:' + hue(x.name) + ';--i:' + i + '"' + (x.sum ? '' : ' class="is-zero"') + '>' +
-        (x.photo ? '<img alt="" src="' + esc(x.photo) + '">' : '<i>' + esc(ini(x.name)) + '</i>') +
-        '<span><b>' + esc(x.name) + '</b><small>' + esc(x.city) + '</small></span><em>' + esc(lei(x.sum)) + '</em><u></u></li>';
-    }).join('') : '<li class="is-zero"><span><b>Nicio cosmeticiană activă</b></span></li>';
-    layout();
+  function chipHtml(x, i, ghost) {
+    return '<li data-id="' + esc(x.id) + '" style="--c:' + hue(x.name) + '"' + (x.sum ? '' : ' class="is-zero"') + (ghost ? ' aria-hidden="true"' : '') + '>' +
+      (x.photo ? '<img alt="" src="' + esc(x.photo) + '">' : '<i>' + esc(ini(x.name)) + '</i>') +
+      '<span><b>' + esc(x.name) + '</b><em>' + esc(lei(x.sum)) + '</em></span><u></u></li>';
   }
+  // (re)build the row; keeps the cosmetician who is centred now in the centre
+  function people(m, force) {
+    var key = m.list.map(function (x) { return x.id + ':' + x.sum; }).join(',') + '|' + box.clientWidth;
+    if (!force && ol.dataset.key === key) return;
+    var keepId = centredId();
+    ol.dataset.key = key;
+    if (!m.list.length) { ol.innerHTML = '<li class="is-zero"><span><b>Nicio cosmeticiană activă</b></span></li>'; car.chips = []; car.loop = false; place0(); layout(); return; }
+    // one copy first, to measure; three copies when they don't fit (a loop: the middle one is the real one)
+    ol.innerHTML = m.list.map(function (x, i) { return chipHtml(x, i, false); }).join('');
+    car.W = row.clientWidth; car.gap = parseFloat(getComputedStyle(ol).columnGap) || 10;
+    var one = Array.prototype.map.call(ol.children, function (li) { return { l: li.offsetLeft, w: li.offsetWidth }; });
+    var last = one[one.length - 1], setW = last.l + last.w + car.gap;
+    car.n = m.list.length; car.setW = setW; car.loop = setW - car.gap > car.W + 1;
+    if (car.loop) ol.innerHTML = [0, 1, 2].map(function (k) { return m.list.map(function (x, i) { return chipHtml(x, i, k !== 1); }).join(''); }).join('');
+    car.chips = Array.prototype.map.call(ol.children, function (li, j) { var o = one[j % car.n]; return { el: li, id: li.dataset.id, l: o.l + Math.floor(j / car.n) * setW, w: o.w, k: j }; });
+    car.h = ol.children[0].offsetHeight;
+    var cx = car.W / 2;
+    if (!car.loop) car.x = (car.W - (setW - car.gap)) / 2;
+    else {
+      var ci = Math.max(0, m.list.findIndex(function (x) { return x.id === keepId; }));
+      if (!keepId || ci < 0) ci = Math.floor((car.n - 1) / 2);
+      var ch = car.chips[car.n + ci]; car.x = cx - (ch.l + ch.w / 2);
+    }
+    row.classList.toggle('is-loop', car.loop);
+    apply(); layout();
+  }
+  function place0() { car.x = 0; ol.style.transform = ''; }
+  function centredId() {
+    if (!car.chips.length) return '';
+    var cx = car.W / 2, best = null, bd = 1e9;
+    car.chips.forEach(function (c) { var d = Math.abs(car.x + c.l + c.w / 2 - cx); if (d < bd) { bd = d; best = c; } });
+    return best ? best.id : '';
+  }
+  // the track moves (transform only); a loop wraps by one copy; each chip's depth from the centre (opacity and scale)
+  function apply() {
+    if (car.loop) { var base = car.W / 2 - car.setW * 1.5; while (car.x > base + car.setW / 2) car.x -= car.setW; while (car.x < base - car.setW / 2) car.x += car.setW; }
+    ol.style.transform = 'translate3d(' + car.x.toFixed(2) + 'px,0,0)';
+    var cx = car.W / 2, span = Math.max(220, car.W * 0.55);
+    car.chips.forEach(function (c) {
+      var d = Math.min(1, Math.abs(car.x + c.l + c.w / 2 - cx) / span);
+      var o = car.loop ? 1 - d * 0.55 : 1, sc = car.loop ? 1 - d * 0.06 : 1;
+      if (c.o !== o) { c.el.style.opacity = o.toFixed(3); c.el.style.transform = sc < 1 ? 'scale(' + sc.toFixed(3) + ')' : ''; c.o = o; }
+    });
+    geo();
+  }
+  // the gestures: a finger or a mouse drags (horizontal only, the page still scrolls up and down), the wheel sideways, then inertia and the snap
+  function drag() {
+    var samples = [];
+    row.addEventListener('pointerdown', function (e) {
+      if (!car.loop || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      stop(); car.drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, cx: car.x, on: false }; samples = [[e.clientX, performance.now()]];
+    });
+    row.addEventListener('pointermove', function (e) {
+      var g = car.drag; if (!g || g.id !== e.pointerId) return;
+      var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+      if (!g.on) { if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; if (Math.abs(dy) > Math.abs(dx)) { car.drag = null; return; } g.on = true; try { row.setPointerCapture(e.pointerId); } catch (x) {} row.classList.add('is-drag'); }
+      car.x = g.cx + dx; apply(); go();
+      samples.push([e.clientX, performance.now()]); if (samples.length > 6) samples.shift();
+    });
+    var up = function (e) {
+      var g = car.drag; if (!g || g.id !== e.pointerId) return; car.drag = null; row.classList.remove('is-drag');
+      if (!g.on) return;
+      var a = samples[0], b = samples[samples.length - 1], dt = b[1] - a[1];
+      car.v = dt > 0 && performance.now() - b[1] < 80 ? (b[0] - a[0]) / dt : 0;
+      glide();
+    };
+    row.addEventListener('pointerup', up); row.addEventListener('pointercancel', up);
+    row.addEventListener('wheel', function (e) {
+      if (!car.loop || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault(); stop(); car.x -= e.deltaX; apply(); go();
+      clearTimeout(car.snapT); car.snapT = setTimeout(function () { snapTo(null); }, 140);
+    }, { passive: false });
+  }
+  function stop() { if (car.anim) cancelAnimationFrame(car.anim); car.anim = 0; }
+  // inertia: the speed fades (about 6% a frame), then the nearest card glides into the centre
+  function glide() {
+    stop();
+    if (calm() || Math.abs(car.v) < 0.05) { snapTo(null); return; }
+    var t0 = performance.now();
+    (function step(t) {
+      var dt = Math.min(40, t - t0); t0 = t;
+      car.x += car.v * dt; car.v *= Math.pow(0.996, dt);
+      apply(); go();
+      if (Math.abs(car.v) < 0.08) { car.anim = 0; snapTo(null); return; }
+      car.anim = requestAnimationFrame(step);
+    })(t0);
+  }
+  // glide so that a card is centred: the given one (an id, the copy nearest the centre) or the nearest one
+  function snapTo(id, done) {
+    stop();
+    if (!car.loop || !car.chips.length) { if (done) done(); return; }
+    var cx = car.W / 2, best = null, bd = 1e9;
+    car.chips.forEach(function (c) { if (id && c.id !== id) return; var d = cx - (car.x + c.l + c.w / 2); if (Math.abs(d) < Math.abs(bd)) { bd = d; best = c; } });
+    if (!best) { if (done) done(); return; }
+    if (calm() || Math.abs(bd) < 0.5) { car.x += bd; apply(); go(); if (done) done(); return; }
+    var x0 = car.x, t0 = performance.now(), ms = id ? 520 : 360;
+    (function step(t) {
+      var p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+      car.x = x0 + bd * e; apply(); go();
+      if (p < 1) car.anim = requestAnimationFrame(step); else { car.anim = 0; if (done) done(); }
+    })(t0);
+  }
+
   // the accent, as rgb (whatever form --accent takes: read back from a 1px canvas)
   function accent() { return (getComputedStyle(html).getPropertyValue('--accent') || '').trim(); }
   function readAccent() {
     acc = accent();
     try { var c = document.createElement('canvas'); c.width = c.height = 1; var g = c.getContext('2d'); g.fillStyle = acc || '#2fd6c3'; g.fillRect(0, 0, 1, 1); var d = g.getImageData(0, 0, 1, 1).data; accRGB = d[0] + ',' + d[1] + ',' + d[2]; } catch (e) {}
   }
-  // where the light starts (the dot of each chip), meets (the logo, a prism) and ends (the big number). The geometry of every
-  // band is built once here as Path2D, so a frame only strokes it (smooth on phones).
   var SPEC = ['#ff4f6d', '#ff9f43', '#ffe45c', '#5cf2a0', '#48d6ff', '#5b8cff'];
   var spr = null, sprC = null, fan = [];
   function sprite(r, stops) { var c = document.createElement('canvas'); c.width = c.height = r * 2; var g = c.getContext('2d'); var rg = g.createRadialGradient(r, r, 0, r, r, r); stops.forEach(function (s) { rg.addColorStop(s[0], s[1]); }); g.fillStyle = rg; g.fillRect(0, 0, r * 2, r * 2); return c; }
@@ -86,74 +189,81 @@
     g.lineWidth = 10; g.globalAlpha = 0.55; g.filter = 'blur(6px)'; g.beginPath(); g.arc(128, 128, 96, 0, 6.283); g.stroke();
     g.filter = 'none'; g.globalAlpha = 0.9; g.lineWidth = 2; g.beginPath(); g.arc(128, 128, 96, 0, 6.283); g.stroke();
   }
-  var phone = function () { return box && box.clientWidth < 700; };
+  var small = function () { return window.innerWidth < 700; };
+  // the fixed points (the logo, the number) and the canvas size: read from the page once per layout; the bands are built by geo()
   function layout() {
     if (!box || !cv || !box.isConnected) return;
     sprites();
     var r = box.getBoundingClientRect(); if (!r.width) return;
-    dpr = Math.min(window.innerWidth < 700 ? 1 : 2, window.devicePixelRatio || 1); // a phone draws at 1x: soft light, a quarter of the pixels
-    var m = model() || { list: [] }, max = Math.max.apply(null, m.list.map(function (x) { return x.sum; }).concat([1]));
+    dpr = Math.min(small() ? 1 : 2, window.devicePixelRatio || 1);
     var L = box.querySelector('.sx-p-logo').getBoundingClientRect();
-    var ph = phone();
-    var T = box.querySelector(ph ? '.sx-s-lbl' : '[data-num]'); if (!T) return; T = T.getBoundingClientRect();
+    var T = box.querySelector('.sx-s-lbl'); if (!T) return; T = T.getBoundingClientRect();
+    var R = row.getBoundingClientRect();
+    car.top = R.top - r.top; car.left = R.left - r.left; car.W = row.clientWidth || car.W;
     logo = { x: L.left - r.left + L.width / 2, y: L.top - r.top + L.height / 2, r: L.width / 2 };
-    out = ph ? { x: r.width / 2, y: T.top - r.top - 8 } : { x: T.left - r.left - 18, y: T.top - r.top + T.height * 0.55 };
-    // on a phone the light only lives between the chips and the number: the canvas stops there (fewer pixels to composite each frame)
-    var ch = ph ? Math.min(r.height, out.y + 34) : r.height;
+    out = { x: logo.x, y: T.top - r.top - 8 };
+    // the light lives between the cards and the number: the canvas stops there (fewer pixels to composite each frame)
+    var ch = Math.min(r.height, out.y + 34);
     var w = Math.round(r.width * dpr), h = Math.round(ch * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv.style.width = r.width + 'px'; cv.style.height = ch + 'px'; }
-    beams = Array.prototype.map.call(box.querySelectorAll('[data-people] li[data-id]'), function (li) {
-      var u = li.querySelector('u').getBoundingClientRect();
-      var x = m.list.find(function (p) { return p.id === li.dataset.id; }) || { sum: 0, name: '' };
-      var old = beams.find(function (b) { return b.id === li.dataset.id; });
-      // a chip scrolled out of the phone's row: its band comes in from the edge
-      var x0 = Math.max(6, Math.min(r.width - 6, u.left - r.left + u.width / 2));
-      var b = { id: li.dataset.id, x0: x0, y0: u.top - r.top + u.height / 2, col: hue(x.name), w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5, k: x.sum ? 0.5 + 0.5 * (x.sum / max) : 0.2,
-        parts: old ? old.parts : [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.01, li: li };
-      // the ribbon: SPEC bands side by side, narrow at her end, open on the way, joined into one white line inside the prism
+    var ang = Math.atan2(out.y - logo.y, out.x - logo.x), len = Math.hypot(out.x - logo.x, out.y - logo.y);
+    fan = SPEC.map(function (c, k) { var a = ang + (k - (SPEC.length - 1) / 2) * 0.05, p = new Path2D(); p.moveTo(logo.x, logo.y); p.lineTo(logo.x + Math.cos(a) * len * 0.82, logo.y + Math.sin(a) * len * 0.82); return { p: p, c: c }; });
+    geo();
+  }
+  // one band per card on screen, from the dot under it to the prism (pure arithmetic: no reading the page while it moves)
+  function geo() {
+    if (!logo || !box) return;
+    var m = model() || { list: [] }, max = Math.max.apply(null, m.list.map(function (x) { return x.sum; }).concat([1]));
+    var sums = {}; m.list.forEach(function (x) { sums[x.id] = x; });
+    var old = {}; beams.forEach(function (b) { old[b.key] = b; });
+    var W = car.W, nb = [];
+    car.chips.forEach(function (c) {
+      var cxr = car.x + c.l + c.w / 2; if (cxr < -40 || cxr > W + 40) return;
+      var edge = Math.max(0, Math.min(1, Math.min(cxr + 10, W + 10 - cxr) / 70)); // a band fades in from the edge
+      if (edge <= 0) return;
+      var x = sums[c.id] || { sum: 0 };
+      var sc = c.o != null && c.o < 1 ? 1 - (1 - c.o) / 0.55 * 0.06 : 1;
+      var o = old[c.k] || {};
+      var b = { key: c.k, id: c.id, x0: car.left + cxr, y0: car.top + car.h / 2 + (car.h / 2) * sc + 4, w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
+        k: (x.sum ? 0.5 + 0.5 * (x.sum / max) : 0.2) * edge * (c.o != null ? 0.4 + 0.6 * c.o : 1), parts: o.parts || [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.01, li: c.el };
       b.core = new Path2D(); b.bands = SPEC.map(function () { return new Path2D(); });
-      var N = 30, spread = (ph ? 2.2 : 3.4) * (b.w + 0.8);
+      var N = 24, spread = 2.4 * (b.w + 0.8);
       for (var i = 0; i <= N; i++) {
         var t = i / N, p = pt(b, t), q = pt(b, Math.min(1, t + 0.01)), dx = q.x - p.x, dy = q.y - p.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
         var s = spread * Math.sin(Math.PI * Math.min(1, t * 1.05)) * (1.25 - t * 0.5);
         if (i) b.core.lineTo(p.x, p.y); else b.core.moveTo(p.x, p.y);
-        b.bands.forEach(function (path, k) { var o = (k - (SPEC.length - 1) / 2) * s; if (i) path.lineTo(p.x + nx * o, p.y + ny * o); else path.moveTo(p.x + nx * o, p.y + ny * o); });
+        b.bands.forEach(function (path, k) { var oo = (k - (SPEC.length - 1) / 2) * s; if (i) path.lineTo(p.x + nx * oo, p.y + ny * oo); else path.moveTo(p.x + nx * oo, p.y + ny * oo); });
       }
-      return b;
+      nb.push(b);
     });
-    // out of the prism: one white ray to the number, and the spectrum fanning around it
-    var ang = Math.atan2(out.y - logo.y, out.x - logo.x), len = Math.hypot(out.x - logo.x, out.y - logo.y);
-    fan = SPEC.map(function (c, k) { var a = ang + (k - (SPEC.length - 1) / 2) * 0.05, p = new Path2D(); p.moveTo(logo.x, logo.y); p.lineTo(logo.x + Math.cos(a) * len * 0.82, logo.y + Math.sin(a) * len * 0.82); return { p: p, c: c }; });
+    beams = nb;
     if (calm()) drawCalm();
   }
-  // a point on her curve, t in 0..1 (from her to the logo)
+  // a point on her curve, t in 0..1 (from her card down into the logo)
   function pt(b, t) {
-    var ph = phone();
-    var cx = ph ? b.x0 : (b.x0 + logo.x) / 2, cy = ph ? (b.y0 + logo.y) / 2 : b.y0;
-    var c2x = ph ? logo.x : (b.x0 + logo.x) / 2, c2y = ph ? (b.y0 + logo.y) / 2 : logo.y;
-    var u = 1 - t;
+    var cx = b.x0, cy = (b.y0 + logo.y) / 2, c2x = logo.x, c2y = (b.y0 + logo.y) / 2, u = 1 - t;
     return { x: u * u * u * b.x0 + 3 * u * u * t * cx + 3 * u * t * t * c2x + t * t * t * logo.x, y: u * u * u * b.y0 + 3 * u * u * t * cy + 3 * u * t * t * c2y + t * t * t * logo.y };
   }
   var lastF = 0;
   function frame(now) {
     raf = 0;
     if (!box || !box.isConnected || !visible || document.hidden || !logo) return;
-    var W = cv.width / dpr, H = cv.height / dpr, t = now / 1000, small = W < 700;
+    var W = cv.width / dpr, H = cv.height / dpr, t = now / 1000, sm = small();
     // a phone draws the light at 30 fps (every other frame, everything moves twice as far): the scroll keeps the other half
-    if (small && now - lastF < 28) { raf = requestAnimationFrame(frame); return; }
-    var sp = small ? 2 : 1; lastF = now;
+    if (sm && now - lastF < 28) { raf = requestAnimationFrame(frame); return; }
+    var sp = sm ? 2 : 1; lastF = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     beams.forEach(function (b, i) {
       var br = (0.82 + 0.18 * Math.sin(t * 1.5 + i)) * b.k;
-      if (!small) { ctx.globalAlpha = 0.07 * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = 'rgb(' + accRGB + ')'; ctx.stroke(b.core); }
+      if (!sm) { ctx.globalAlpha = 0.07 * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = 'rgb(' + accRGB + ')'; ctx.stroke(b.core); }
       ctx.lineWidth = Math.max(1, b.w * 0.9);
-      for (var k = small ? 1 : 0; k < SPEC.length; k += small ? 2 : 1) { ctx.globalAlpha = 0.75 * br; ctx.strokeStyle = SPEC[k]; ctx.stroke(b.bands[k]); }
+      for (var k = sm ? 1 : 0; k < SPEC.length; k += sm ? 2 : 1) { ctx.globalAlpha = 0.75 * br; ctx.strokeStyle = SPEC[k]; ctx.stroke(b.bands[k]); }
       ctx.globalAlpha = 0.55 * br; ctx.lineWidth = Math.max(0.8, b.w * 0.6); ctx.strokeStyle = '#ffffff'; ctx.stroke(b.core);
       // light running along it
-      if (b.parts.length < (small ? 2 : 6) && Math.random() < b.rate * 5 * sp) b.parts.push({ t: 0, v: 0.006 + Math.random() * 0.006 + b.rate * 0.02, s: 6 + Math.random() * 8 });
+      if (b.parts.length < (sm ? 2 : 5) && Math.random() < b.rate * 5 * sp) b.parts.push({ t: 0, v: 0.006 + Math.random() * 0.006 + b.rate * 0.02, s: 6 + Math.random() * 8 });
       for (var j = b.parts.length - 1; j >= 0; j--) {
         var p = b.parts[j]; p.t += p.v * sp; if (p.t >= 1) { b.parts.splice(j, 1); continue; }
         var q = pt(b, p.t); ctx.globalAlpha = Math.sin(p.t * Math.PI) * (0.5 + b.k * 0.5); ctx.drawImage(spr, q.x - p.s, q.y - p.s, p.s * 2, p.s * 2);
@@ -169,14 +279,15 @@
     var R = logo.r * 1.55;
     ctx.save(); ctx.translate(logo.x, logo.y); ctx.rotate(t * 0.6); ctx.globalAlpha = 0.65 + flash * 0.35; ctx.drawImage(sprC, -R, -R, R * 2, R * 2); ctx.restore();
     var G = logo.r * (2.6 + flash * 2); ctx.globalAlpha = 0.55 + flash * 0.45; ctx.drawImage(spr, logo.x - G, logo.y - G, G * 2, G * 2);
-    // a payment's pulse: from her, through the prism, to the number; there the stage takes over
+    // a payment's pulse: from her card (wherever it is now), through the prism, to the number; there the stage takes over
     for (var c = comets.length - 1; c >= 0; c--) {
       var cm = comets[c]; cm.t += 0.022 * sp; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
-      var q2 = cm.t < 1 ? pt(cm.b, cm.t) : { x: logo.x + (out.x - logo.x) * (cm.t - 1), y: logo.y + (out.y - logo.y) * (cm.t - 1) };
+      var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || { x0: logo.x, y0: car.top + car.h };
+      var q2 = cm.t < 1 ? pt(b2, cm.t) : { x: logo.x + (out.x - logo.x) * (cm.t - 1), y: logo.y + (out.y - logo.y) * (cm.t - 1) };
       if (cm.t >= 1 && !cm.hit) { cm.hit = 1; flash = 1; }
       ctx.globalAlpha = 1; ctx.drawImage(spr, q2.x - 30, q2.y - 30, 60, 60);
     }
-    flash *= small ? 0.88 : 0.94;
+    flash *= sm ? 0.88 : 0.94;
     ctx.globalCompositeOperation = 'source-over';
     raf = requestAnimationFrame(frame);
   }
@@ -190,19 +301,24 @@
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  // ------------------------------------------------------------------ new payments (called by the stage): one pulse each, then done()
+  // ------------------------------------------------------------------ new payments (called by the stage): the row centres on her, one pulse each, then done()
   // returns false when the scene can't show it now (not on screen, calm, no cosmeticians): the stage then does its part at once
   function send(sales, done) {
-    if (!box || !box.isConnected || !visible || document.hidden || calm() || !beams.length) return false;
+    if (!box || !box.isConnected || !visible || document.hidden || calm() || !car.chips.length) return false;
     var m = model(); if (m) people(m);
-    sales.forEach(function (s, i) {
-      setTimeout(function () {
-        var id = s.performedBy || s.employeeId;
-        var b = beams.find(function (x) { return x.id === id; }) || beams[0];
-        if (b.li) { b.li.classList.remove('sx-p-hit'); void b.li.offsetWidth; b.li.classList.add('sx-p-hit'); }
-        comets.push({ b: b, t: 0, done: done }); go();
-      }, i * 700);
-    });
+    var i = 0;
+    (function next() {
+      var s = sales[i++]; if (!s) return;
+      var id = s.performedBy || s.employeeId;
+      if (!car.chips.some(function (c) { return c.id === id; })) id = car.chips[0].id;
+      snapTo(id, function () {
+        var cx = car.W / 2, c = null, bd = 1e9;
+        car.chips.forEach(function (x) { if (x.id !== id) return; var d = Math.abs(car.x + x.l + x.w / 2 - cx); if (d < bd) { bd = d; c = x; } });
+        if (c) { c.el.classList.remove('sx-p-hit'); void c.el.offsetWidth; c.el.classList.add('sx-p-hit'); }
+        comets.push({ key: c ? c.k : -1, id: id, t: 0, done: done }); go();
+        setTimeout(next, 900);
+      });
+    })();
     return true;
   }
 

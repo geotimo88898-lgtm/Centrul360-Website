@@ -61,12 +61,12 @@
   function pulseHtml(d) {
     const f = d.funnel, v = d.visits, m = d.money, a = d.ads ? d.ads.totals : null;
     const spark = (k) => (d.trend.length > 1 ? K.spark(d.trend.map((x) => x[k]), { color: '#fff', w: 110, h: 30 }) : '');
-    const item = (label, value, sub, extra) => '<div class="kp-pulse-i"><span>' + label + '</span>' + value + '<small>' + sub + '</small>' + (extra || '') + '</div>';
+    const item = (label, value, sub, extra, k) => '<div class="kp-pulse-i"' + (k ? ' data-k="' + k + '"' : '') + '><span>' + label + '</span>' + value + '<small>' + sub + '</small>' + (extra || '') + '</div>';
     return '<section class="kp-pulse"><div class="db-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
-      item('Încasat', count(m.revenue, 'lei', 'rev'), m.upsell ? 'din care upsell ' + K.lei(m.upsell) : K.plural(m.payments, 'plată', 'plăți'), spark('revenue')) +
+      item('Încasat', count(m.revenue, 'lei', 'rev'), m.upsell ? 'din care upsell ' + K.lei(m.upsell) : K.plural(m.payments, 'plată', 'plăți'), spark('revenue'), 'rev') +
       item('Leaduri', count(f.leads, '', 'leads'), f.ads + ' din reclame · ' + f.organic + ' organic', spark('leads')) +
       item('Se programează', '<b>' + P(f.rates.booked) + '</b>', f.booked + ' din ' + f.leads + ' leaduri') +
-      item('Vin la programare', '<b>' + P(v.rate) + '</b>', v.due ? v.came + ' din ' + v.due + ' cliente' : 'încă nicio zi trecută') +
+      item('Vin la programare', '<b>' + P(v.rate) + '</b>', v.due ? v.came + ' din ' + v.due + ' cliente' : 'încă nicio zi trecută', '', 'came') +
       (a && a.spend ? item('La 1 leu în reclame', '<b>' + (a.roas != null ? dec(a.roas, 2) + ' lei' : '-') + '</b>', K.lei(a.spend) + ' cheltuiți') : item('Încasat / lead', '<b>' + L(f.perLead) + '</b>', 'din leadurile perioadei')) +
       '</section>';
   }

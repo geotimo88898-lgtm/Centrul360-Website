@@ -52,7 +52,7 @@
   function firstName() { var d = D(); return String((d && d.me && d.me.name) || '').trim().split(/\s+/)[0]; }
 
   // ------------------------------------------------------------------ the block
-  var st = null, shown = 0, seen = null, lineI = 0;
+  var st = null, ad = null, shown = 0, seen = null, lineI = 0, inflight = 0;
   var small = function () { return window.innerWidth < 700; };
   function mount(panel) {
     st = document.createElement('section');
@@ -81,12 +81,15 @@
             '<button type="button" data-proxy="pipeline">' + ICON.lead + 'Lead</button>' +
           '</div>' +
           '<div class="sx-hud" data-hud></div>' +
-          '<div class="sx-ads" data-ads></div>' +
-          '<div class="sx-feed" data-feed hidden><div></div></div>' +
         '</div>' +
       '</div>';
     panel.insertBefore(st, panel.firstChild);
     panel.classList.add('sx-host');
+    // the ads of today: their own section further down the story (after what comes next today), only when there are numbers
+    ad = document.createElement('section');
+    ad.className = 'sx-adsec'; ad.hidden = true; ad.setAttribute('aria-label', 'Reclamele de azi');
+    panel.appendChild(ad);
+    reveal(panel);
     // the old hero's buttons (still there, hidden): the same actions, the same code path
     st.querySelector('.sx-acts').addEventListener('click', function (e) {
       var b = e.target.closest('[data-proxy]'); if (!b) return;
@@ -97,7 +100,7 @@
     paint(true);
     // on a phone the bubble waits for a tap (it would cover the cosmeticians); on a computer it greets once
     if (!small()) setTimeout(say, 1400);
-    kpi(function () { paint(false); });
+    kpi(function () { paintAds(); });
     if (window.C360Prism) window.C360Prism.place();
   }
 
@@ -107,6 +110,7 @@
     var d = D();
     st.querySelector('[data-date]').innerHTML = esc(K().dateLong ? K().dateLong(today()) : today()) + '<span class="sx-rt"> · în timp real</span>';
     st.querySelector('[data-hi]').innerHTML = esc(greeting()) + (firstName() ? ', <em>' + esc(firstName()) + '</em>.' : '.');
+    if (inflight && !first) return; // a pulse is on its way: the number, the % and the count change when it lands
     countTo(m.total, first);
     var dl = st.querySelector('[data-delta]');
     if (m.yday != null && (m.yday || m.total)) {
@@ -115,36 +119,68 @@
       dl.textContent = (diff >= 0 ? '↑ ' : '↓ ') + (pc != null ? Math.abs(pc) + '% ' : lei(Math.abs(diff)) + ' ') + 'față de ieri'; dl.title = 'Față de ieri, la aceeași oră';
     } else dl.hidden = true;
     st.querySelector('[data-sub]').innerHTML = '<b>' + m.n + '</b> ' + (m.n === 1 ? 'încasare' : 'încasări') + ' azi' + (m.n ? ' · bon mediu <b>' + esc(lei(m.total / m.n)) + '</b>' : '');
-    // the HUD: only what exists
-    var cells = [['Luna asta', lei(m.month), m.monthDays ? m.monthDays + (m.monthDays === 1 ? ' zi cu încasări' : ' zile cu încasări') : '']];
-    var a = KPI.d && KPI.d.ads, tot = a && a.totals;
-    if (tot && tot.spend) {
-      cells.push(['Reclame azi', lei(tot.spend), tot.metaLeads ? tot.metaLeads + ' leaduri de la Meta' : '']);
-      if (tot.cpl) cells.push(['Cost pe lead', lei(tot.cpl), tot.clicks ? num(tot.clicks) + ' clicuri' : '']);
-      if (tot.cpa) cells.push(['Cost pe clientă', lei(tot.cpa), tot.clients ? tot.clients + ' cliente din reclame' : '']);
-      else if (tot.perBooked) cells.push(['Cost pe programare', lei(tot.perBooked), tot.booked ? tot.booked + ' programări' : '']);
-      if (tot.roas) cells.push(['Leul se întoarce', String(tot.roas).replace('.', ',') + '×', tot.revenue ? lei(tot.revenue) + ' din reclame' : '']);
-    }
-    st.querySelector('[data-hud]').dataset.n = Math.min(4, cells.length);
-    st.querySelector('[data-hud]').innerHTML = cells.slice(0, 4).map(function (c) { return '<div><small>' + esc(c[0]) + '</small><b>' + esc(c[1]) + '</b>' + (c[2] ? '<span>' + esc(c[2]) + '</span>' : '') + '</div>'; }).join('');
-    // the ads: the best and the one that spends without a result
-    var ads = '';
-    if (a && a.rows) {
-      var rows = a.rows.filter(function (r) { return r.spend > 0; });
-      var best = rows.filter(function (r) { return r.roas || r.clients; }).sort(function (x, y) { return (y.roas || 0) - (x.roas || 0) || (y.clients || 0) - (x.clients || 0); })[0]
-        || rows.filter(function (r) { return r.metaLeads; }).sort(function (x, y) { return (x.cpl || 1e9) - (y.cpl || 1e9); })[0];
-      var idle = rows.filter(function (r) { return !r.clients && !r.metaLeads && r !== best; }).sort(function (x, y) { return y.spend - x.spend; })[0];
-      if (best) ads += '<div class="sx-ad best"><i></i><em>Merge</em><b>' + esc(best.name || best.campaign || '') + '</b><span>' + (best.roas ? String(best.roas).replace('.', ',') + '×' : best.cpl ? esc(lei(best.cpl)) + ' / lead' : esc(lei(best.spend))) + '</span></div>';
-      if (idle) ads += '<div class="sx-ad idle"><i></i><em>Fără rezultat</em><b>' + esc(idle.name || idle.campaign || '') + '</b><span>' + esc(lei(idle.spend)) + '</span></div>';
-    }
-    st.querySelector('[data-ads]').innerHTML = ads;
-    // the live band: today's payments (amount and treatment; never the client's name)
-    var feed = st.querySelector('[data-feed]');
-    var items = m.day.slice().sort(function (x, y) { return String(y.createdAt || y.time || '') < String(x.createdAt || x.time || '') ? -1 : 1; }).slice(0, 12)
-      .map(function (s) { return '<span><i></i><b>+' + esc(lei(s.amount)) + '</b>' + esc(s.treatment || '') + (s.location ? ' · ' + esc(s.location) : '') + '</span>'; }).join('');
-    if (items) { var key = m.ids.join(','); if (feed.dataset.key !== key) { feed.dataset.key = key; feed.firstChild.innerHTML = items + items; feed.firstChild.style.setProperty('--dur', Math.max(24, m.day.length * 6) + 's'); } feed.hidden = false; }
-    else feed.hidden = true;
+    // under the number: this month (the ads have their own section)
+    var hud = st.querySelector('[data-hud]');
+    hud.dataset.n = 1;
+    hud.innerHTML = '<div><small>Luna asta</small><b>' + esc(lei(m.month)) + '</b>' + (m.monthDays ? '<span>' + m.monthDays + (m.monthDays === 1 ? ' zi cu încasări' : ' zile cu încasări') + '</span>' : '') + '</div>';
+    paintAds();
   }
+  // the ads of today: spent, the costs, how many times the leu comes back; the ad that works and the one that spends without a result
+  function paintAds() {
+    if (!ad || !ad.isConnected) return;
+    var a = KPI.d && KPI.d.ads, tot = a && a.totals;
+    if (!tot || !tot.spend) { ad.hidden = true; ad.innerHTML = ''; return; }
+    var cells = [['Cheltuit azi', lei(tot.spend), tot.metaLeads ? tot.metaLeads + ' leaduri de la Meta' : '', tot.spend]];
+    if (tot.cpl) cells.push(['Cost pe lead', lei(tot.cpl), tot.clicks ? num(tot.clicks) + ' clicuri' : '', tot.cpl]);
+    if (tot.cpa) cells.push(['Cost pe clientă', lei(tot.cpa), tot.clients ? tot.clients + ' cliente din reclame' : '', tot.cpa]);
+    else if (tot.perBooked) cells.push(['Cost pe programare', lei(tot.perBooked), tot.booked ? tot.booked + ' programări' : '', tot.perBooked]);
+    if (tot.roas) cells.push(['Leul se întoarce', String(tot.roas).replace('.', ',') + '×', tot.revenue ? lei(tot.revenue) + ' din reclame' : '', 0]);
+    var rows = '';
+    if (a.rows) {
+      var rr = a.rows.filter(function (r) { return r.spend > 0; });
+      var best = rr.filter(function (r) { return r.roas || r.clients; }).sort(function (x, y) { return (y.roas || 0) - (x.roas || 0) || (y.clients || 0) - (x.clients || 0); })[0]
+        || rr.filter(function (r) { return r.metaLeads; }).sort(function (x, y) { return (x.cpl || 1e9) - (y.cpl || 1e9); })[0];
+      var idle = rr.filter(function (r) { return !r.clients && !r.metaLeads && r !== best; }).sort(function (x, y) { return y.spend - x.spend; })[0];
+      if (best) rows += '<div class="sx-ad best"><i></i><em>Merge</em><b>' + esc(best.name || best.campaign || '') + '</b><span>' + (best.roas ? String(best.roas).replace('.', ',') + '×' : best.cpl ? esc(lei(best.cpl)) + ' / lead' : esc(lei(best.spend))) + '</span></div>';
+      if (idle) rows += '<div class="sx-ad idle"><i></i><em>Fără rezultat</em><b>' + esc(idle.name || idle.campaign || '') + '</b><span>' + esc(lei(idle.spend)) + '</span></div>';
+    }
+    var key = JSON.stringify(cells) + rows;
+    if (ad.dataset.key === key) return;
+    ad.dataset.key = key;
+    ad.innerHTML = '<h3 class="sx-sec-h"><i></i>Reclame azi</h3>' +
+      '<div class="sx-ad-nums" data-n="' + cells.length + '">' + cells.map(function (c) { return '<div><small>' + esc(c[0]) + '</small><b' + (c[3] ? ' data-sx-n="' + Math.round(c[3]) + '"' : '') + '>' + esc(c[1]) + '</b>' + (c[2] ? '<span>' + esc(c[2]) + '</span>' : '') + '</div>'; }).join('') + '</div>' +
+      (rows ? '<div class="sx-ads">' + rows + '</div>' : '');
+    ad.hidden = false;
+  }
+
+  // ------------------------------------------------------------------ the story below the block: each section rises in once, its numbers count up
+  var seenSec = typeof WeakSet === 'function' ? new WeakSet() : null, io = null;
+  function countUp(el) {
+    var to = Number(el.dataset.sxN); if (!to || calm()) return;
+    var txt = el.textContent, t0 = performance.now();
+    (function step(t) {
+      var p = Math.min(1, (t - t0) / 1100), e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      el.textContent = p === 1 ? txt : num(to * e) + ' lei';
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function reveal(panel) {
+    if (calm() || !('IntersectionObserver' in window) || !seenSec) return;
+    io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (!e.isIntersecting) return; var el = e.target; io.unobserve(el); seenSec.add(el); el.classList.add('sx-up'); Array.prototype.forEach.call(el.querySelectorAll('[data-sx-n]'), countUp); });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    var watch = function () {
+      Array.prototype.forEach.call(panel.querySelectorAll('.db-b, .sx-adsec'), function (el) {
+        if (seenSec.has(el) || el.classList.contains('sx-rise')) return;
+        var r = el.getBoundingClientRect();
+        if (r.top < innerHeight * 0.9) { seenSec.add(el); return; } // already on screen: no entrance, no flash
+        el.classList.add('sx-rise'); io.observe(el);
+      });
+    };
+    watch();
+    new MutationObserver(watch).observe(panel, { childList: true, subtree: true });
+  }
+
   // the total counts from where it was (1 - 2^(-10p)); a bigger total pops
   function countTo(to, first) {
     var el = st.querySelector('[data-v]'), from = first ? 0 : shown;
@@ -162,12 +198,10 @@
   // ------------------------------------------------------------------ Nuki speaks only of money and ads
   function lines() {
     var m = model(); if (!m) return [];
-    var out = [], tot = KPI.d && KPI.d.ads && KPI.d.ads.totals;
     var diff = m.yday == null ? null : m.total - m.yday;
-    out.push({ p: diff != null && diff < 0 ? 'gandeste' : 'bucurie', t: 'Azi: <b>' + esc(lei(m.total)) + '</b>' + (diff == null ? '.' : diff >= 0 ? ', cu <b>' + esc(lei(diff)) + '</b> peste ieri la ora asta.' : ', cu ' + esc(lei(-diff)) + ' sub ieri la ora asta.') });
-    out.push({ p: 'cadou', t: 'Luna asta: <b>' + esc(lei(m.month)) + '</b> încasați.' });
-    if (tot && tot.spend) out.push({ p: 'aparat-foto', t: 'Reclamele azi: <b>' + esc(lei(tot.spend)) + '</b>' + (tot.cpl ? ', <b>' + esc(lei(tot.cpl)) + '</b> pe lead' : '') + (tot.roas ? ', leul se întoarce de <b>' + String(tot.roas).replace('.', ',') + '</b> ori' : '') + '.' });
-    return out;
+    if (diff == null || (!m.yday && !m.total)) return [];
+    // the number and the % are already on screen: Nuki says the lei behind the %
+    return [{ p: diff < 0 ? 'gandeste' : 'bucurie', t: diff >= 0 ? '<b>' + esc(lei(diff)) + '</b> peste ieri la ora asta.' : '<b>' + esc(lei(-diff)) + '</b> sub ieri la ora asta.' }];
   }
   function say() {
     if (!st) return;
@@ -239,7 +273,9 @@
     m.ids.forEach(function (x) { seen.add(x); });
     if (fresh.length) {
       var sales = m.day.filter(function (s) { return fresh.indexOf(s.id) >= 0; });
-      if (!(window.C360Prism && window.C360Prism.send(sales, pay))) pay();
+      // while a pulse travels from her to the number, the number waits for it (each arrival counts on)
+      var land = function () { inflight = Math.max(0, inflight - 1); pay(); };
+      if (window.C360Prism && window.C360Prism.send(sales, land)) inflight += sales.length; else pay();
     } else paint(false);
     KPI.at = Math.min(KPI.at, Date.now() - 3 * 60e3 + 30e3);
     kpi(function () { paint(false); });

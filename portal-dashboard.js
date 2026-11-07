@@ -265,7 +265,10 @@
         '<div class="k-legend"><span><i style="background:var(--accent)"></i>Ultimele 30 zile · ' + K.lei(series30.reduce((a, x) => a + x.v, 0)) + '</span><span><i style="background:var(--muted-2)"></i>Cele 30 dinainte</span></div></div>' +
         '<div data-chart data-sig="' + series30.map((x) => Math.round(x.v)).join(',') + '|' + prev30.map((v) => Math.round(v)).join(',') + '"></div></section>',
       pay: () => payCard,
-      today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3><a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
+      // the owner's Panou (new look) has no KPI row: what comes next today sits here, once (the appointments, who to call)
+      today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3>' +
+        (D.isAdmin && document.documentElement.classList.contains('ui-nou') ? '<div class="db-today-meta"><span><b>' + live.length + '</b> ' + (live.length === 1 ? 'programare' : 'programări') + (confirmed ? ' · ' + confirmed + ' confirmate' : '') + '</span>' +
+          (leadsData ? '<button type="button" class="k-btn is-sm ' + (callNow.length ? 'is-accent' : 'is-outline') + '" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'De sunat · ' + callNow.length + '</button>' : '') + '</div>' : '') + '<a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
         '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>',
       bonus: () => bonusCard,
       team: () => '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa</h3><a class="k-btn is-sm is-outline" href="#activitate" data-go="activitate">Activitate' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>',
