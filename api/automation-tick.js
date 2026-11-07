@@ -26,6 +26,8 @@ const STEPS = [
   // read only, once: who owns the shared ad account and the site's pixel (api/_lib/pixel-diag.js); the pixel of the
   // owner's own Business (api/_lib/pixel-once.js) waits for what this finds
   ['pixeldiag', () => require('./_lib/pixel-diag').run()],
+  // once: the site's pixel shared with the ad account (the owner, 7.11; api/_lib/pixel-share.js)
+  ['pixelshare', () => require('./_lib/pixel-share').run()],
   // the creative orders asked for in chat (api/_lib/creative-once.js)
   ['creative', () => require('./_lib/creative-once').run()],
   // the job ads asked for in chat (api/_lib/hire-once.js)
