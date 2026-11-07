@@ -65,3 +65,13 @@ Read REDESIGN.md ("Stilul") and the model page source before starting.
   calendar, cavitatie, centimetru, ems, facial, fisa, gandeste, hifu-fata, laser, liniste, liposonix,
   mana-inima, oglinda, prezinta, receptie, salut-pa, spf, stea-google, surprins, telefon. Pick the one that
   fits the section; do not reuse the same pose twice on a page.
+
+## The swap (only on the owner's „da”)
+- `python3 v2/swap.py --out <dir>` builds the live site into a folder to test it (nothing in the repo changes);
+  `python3 v2/swap.py --apply` writes it over the old pages in the site root and rewrites `sitemap.xml`.
+- Same addresses as today (/, /celulita, /oferte, /termeni...), so Google keeps every page; the old pages stay in git
+  history (undo = revert the swap commit). Live: no preview badge or questions, robots index (thank-you pages noindex),
+  the Meta pixel and the Google tag on every page, the structured data (MedicalProcedure, MedicalBusiness).
+- The script refuses to finish if a live page still links to /v2/, has the preview badge, lacks the pixel or the tag.
+- Left as they are: avans-programare / avans-multumesc (the deposit flow), nou-inchis / nou-luminos, the portal.
+- The owner's open questions show in the preview only (`q:` in a page's meta block, texts in `QUESTIONS` in build.py).
