@@ -318,6 +318,7 @@
     mount(el) {
       if (S.el !== el) {
         S.el = el;
+        S.painted = null; // a new box (the Panou redrew it at start): the numbers already loaded go into it, not only into the old one
         el.classList.add('kp');
         el.addEventListener('click', onClick);
         el.addEventListener('submit', onSubmit);

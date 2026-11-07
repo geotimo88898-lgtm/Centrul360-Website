@@ -516,9 +516,7 @@ html.ui-nou .au-node{ border:0; background:color-mix(in srgb, var(--fg) 4%, tran
 html.ui-nou .au-recipe{ border:0; background:var(--paper); box-shadow:var(--n-card); border-radius:18px; }
 @media (max-width:720px){
   /* a phone: the flow's name on its own line (it was squeezed to one letter) */
-  html.ui-nou .ad-row > .ad-name{ flex:1 1 calc(100% - 60px); min-width:0; }
-  html.ui-nou .ad-row .ad-title{ min-width:0; flex:1; text-align:left; }
-  html.ui-nou .ad-row .ad-title b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  html.ui-nou .au .ad-row > .ad-name{ flex:1 1 calc(100% - 60px); min-width:0; }
 }
 html.ui-nou label > input[type=search], html.ui-nou .mx-search input{ box-shadow:none !important; background:transparent !important; }
 
@@ -706,3 +704,7 @@ html.ui-nou .gd-l.is-cur{ box-shadow:0 0 0 1.5px var(--accent), var(--n-card); }
 html.ui-nou .gd-step .tr-step-stage{ color:var(--n-teal2); }
 html.ui-nou .gd-step .tr-step-t span{ background:var(--grad); }
 @media (min-width:1101px){ html.ui-nou .n-door-nuki{ width:min(58%,170px); } }
+
+/* Pipeline: Nuki sits above the end of the title, on the eyebrow's line, so the buttons keep their row */
+html.ui-nou .pl-head h2 .n-sn{ position:absolute; left:100%; bottom:62%; width:40px; height:40px; margin:0 0 0 -6px; }
+html.ui-nou .pl-head h2 .n-sn .n-say{ top:100%; }

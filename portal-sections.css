@@ -2458,3 +2458,14 @@ html.mx-pv-open{ overflow:hidden; }
   .onl-gen{ grid-template-columns:1fr; }
   .onl-add{ margin-left:0; }
 }
+
+/* Phones (7.11): Calendar's "Online" sits on its own line above the day instead of on top of the date;
+   Automatizări: a flow's name keeps its line (it was squeezed to one letter by the numbers next to it). */
+@media (max-width:720px){
+  .cal .k-head{ display:flex; justify-content:flex-end; margin:0 0 .4rem; }
+  .cal .k-head-actions:has([data-act="online"]){ position:static; }
+  .cal-nav [data-act="today"]{ flex:none; padding-left:.9rem; padding-right:.9rem; }
+  .au .ad-row > .ad-name{ flex:1 1 calc(100% - 60px); min-width:0; }
+  .au .ad-row .ad-title{ min-width:0; flex:1; text-align:left; }
+  .au .ad-row .ad-title b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+}
