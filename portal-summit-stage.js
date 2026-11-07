@@ -55,13 +55,12 @@
   function rings() {
     var t = '';
     for (var i = 0; i < 72; i++) { var a = i * 5 * Math.PI / 180, r1 = 238, r2 = i % 6 ? 244 : 252; t += '<line x1="' + (250 + Math.cos(a) * r1).toFixed(1) + '" y1="' + (250 + Math.sin(a) * r1).toFixed(1) + '" x2="' + (250 + Math.cos(a) * r2).toFixed(1) + '" y2="' + (250 + Math.sin(a) * r2).toFixed(1) + '"/>'; }
-    return '<svg viewBox="0 0 500 500" aria-hidden="true" fill="none">' +
-      '<g class="r1" stroke="rgba(191,248,240,.32)" stroke-width="1">' + t + '</g>' +
-      '<g class="r2"><circle cx="250" cy="250" r="214" stroke="rgba(47,214,195,.55)" stroke-width="1.4" stroke-dasharray="120 40 8 40 260 60" stroke-linecap="round"/></g>' +
-      '<g class="r3"><circle cx="250" cy="250" r="190" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="2 6"/></g>' +
-      '<g class="r4"><circle cx="250" cy="250" r="168" stroke="rgba(191,248,240,.5)" stroke-width="2.2" stroke-dasharray="60 470" stroke-linecap="round"/>' +
-        '<circle cx="250" cy="250" r="168" stroke="rgba(47,214,195,.35)" stroke-width="1" stroke-dasharray="14 18"/></g>' +
-      '</svg>';
+    // each ring its own layer (an HTML element that turns): the compositor turns it, nothing is repainted
+    var sv = function (cls, inner) { return '<svg class="' + cls + '" viewBox="0 0 500 500" aria-hidden="true" fill="none">' + inner + '</svg>'; };
+    return sv('r1', '<g stroke="rgba(191,248,240,.32)" stroke-width="1">' + t + '</g>') +
+      sv('r2', '<circle cx="250" cy="250" r="214" stroke="rgba(47,214,195,.55)" stroke-width="1.4" stroke-dasharray="120 40 8 40 260 60" stroke-linecap="round"/>') +
+      sv('r3', '<circle cx="250" cy="250" r="190" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="2 6"/>') +
+      sv('r4', '<circle cx="250" cy="250" r="168" stroke="rgba(191,248,240,.5)" stroke-width="2.2" stroke-dasharray="60 470" stroke-linecap="round"/><circle cx="250" cy="250" r="168" stroke="rgba(47,214,195,.35)" stroke-width="1" stroke-dasharray="14 18"/>');
   }
   function motes() {
     var s = '';

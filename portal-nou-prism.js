@@ -97,7 +97,7 @@
     if (!box || !cv) return;
     sprites();
     var r = box.getBoundingClientRect(); if (!r.width) return;
-    dpr = Math.min(window.innerWidth < 640 ? 1.5 : 2, window.devicePixelRatio || 1);
+    dpr = Math.min(window.innerWidth < 640 ? 1.25 : 2, window.devicePixelRatio || 1);
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
     cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
     var m = model() || { list: [] }, max = Math.max.apply(null, m.list.map(function (x) { return x.sum; }).concat([1]));
@@ -145,9 +145,9 @@
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     beams.forEach(function (b, i) {
       var br = (0.82 + 0.18 * Math.sin(t * 1.5 + i)) * b.k;
-      ctx.globalAlpha = 0.07 * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = '#bff8f0'; ctx.stroke(b.core);
+      if (W >= 640) { ctx.globalAlpha = 0.07 * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = '#bff8f0'; ctx.stroke(b.core); }
       ctx.lineWidth = Math.max(1, b.w * 0.9);
-      for (var k = 0; k < SPEC.length; k++) { ctx.globalAlpha = 0.75 * br; ctx.strokeStyle = SPEC[k]; ctx.stroke(b.bands[k]); }
+      for (var k = W < 640 ? 1 : 0; k < SPEC.length; k += W < 640 ? 2 : 1) { ctx.globalAlpha = 0.75 * br; ctx.strokeStyle = SPEC[k]; ctx.stroke(b.bands[k]); }
       ctx.globalAlpha = 0.55 * br; ctx.lineWidth = Math.max(0.8, b.w * 0.6); ctx.strokeStyle = '#ffffff'; ctx.stroke(b.core);
       // light running along it
       if (b.parts.length < 6 && Math.random() < b.rate * 5) b.parts.push({ t: 0, v: 0.006 + Math.random() * 0.006 + b.rate * 0.02, s: 6 + Math.random() * 8 });

@@ -224,7 +224,12 @@
   // ---- the live band (Summitlane's Live, ported): the WebGL globe from portal-scene/, the list, the numbers
   var LV = { m: null, p: null, seen: null, events: [] };
   var cityKey = function (g) { return '@' + Number(g[2]).toFixed(2) + ',' + Number(g[3]).toFixed(2); };
-  var cityName = function (g) { return g ? (g[1] || g[0] || '') : ''; };
+  // Cloudflare gives the city in English, without diacritics: the Romanian ones in Romanian
+  var RO = { bucharest: 'București', bucuresti: 'București', timisoara: 'Timișoara', 'cluj-napoca': 'Cluj-Napoca', iasi: 'Iași', brasov: 'Brașov', constanta: 'Constanța', arad: 'Arad', oradea: 'Oradea',
+    sibiu: 'Sibiu', craiova: 'Craiova', galati: 'Galați', ploiesti: 'Ploiești', pitesti: 'Pitești', 'targu mures': 'Târgu Mureș', 'targu-mures': 'Târgu Mureș', 'baia mare': 'Baia Mare', buzau: 'Buzău',
+    'satu mare': 'Satu Mare', botosani: 'Botoșani', 'ramnicu valcea': 'Râmnicu Vâlcea', suceava: 'Suceava', 'piatra neamt': 'Piatra Neamț', drobeta: 'Drobeta-Turnu Severin', 'drobeta-turnu severin': 'Drobeta-Turnu Severin',
+    focsani: 'Focșani', bistrita: 'Bistrița', resita: 'Reșița', 'resita ': 'Reșița', lugoj: 'Lugoj', deva: 'Deva', hunedoara: 'Hunedoara', alba: 'Alba Iulia', 'alba iulia': 'Alba Iulia', otopeni: 'Otopeni', voluntari: 'Voluntari', sannicolau: 'Sânnicolau Mare', 'sannicolau mare': 'Sânnicolau Mare', jimbolia: 'Jimbolia', giroc: 'Giroc', dumbravita: 'Dumbrăvița', ghiroda: 'Ghiroda', mosnita: 'Moșnița Nouă', 'mosnita noua': 'Moșnița Nouă', ineu: 'Ineu', lipova: 'Lipova', chisineu: 'Chișineu-Criș', 'chisineu-cris': 'Chișineu-Criș' };
+  var cityName = function (g) { if (!g) return ''; var c = String(g[1] || ''); var k = c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); return (g[0] === 'RO' && RO[k]) || c || g[0] || ''; };
   var ago = function (at) { var s2 = Math.max(0, Math.round((Date.now() - at) / 1000)); return s2 < 60 ? 'acum' : 'acum ' + Math.round(s2 / 60) + ' min'; };
   var ICON = '/brand_asset/portal/icon-192.png?v=3';
   function stacked() { return innerWidth < 1100; }
