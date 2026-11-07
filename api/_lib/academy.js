@@ -26,6 +26,17 @@ function defaultAcademy() {
 const V1 = {"v-mentalitate":"6016e6054374","v-consultatie":"976255bdf890","v-intrebari":"74e3d905dad8","v-pret":"87a561eff6e8","v-obiectii":"a010cb436458","v-inchidere":"ed6e16ccbaea","v-pachete":"f7a0cc2d6c53","v-recomandari":"4c4c13cb31bf","v-reguli":"e58232e1d3b9","p-5min":"c0cee0714ac1","p-telefon":"797bd908fdbb","p-programare":"cbd2be4189f6","p-confirmari":"4e1c525f842c","p-anulari":"c08c1b9de349","p-revenire":"471e54f44cec","p-mesaje":"3e60e83de8d9","c-inainte":"4ff88d5e0b88","c-explici":"210594b788b6","c-protocol":"c96e5c364161","c-vanzare":"e65aa2dca4b5","c-dupa":"915140928fbd","c-igiena":"096eb6a7d4df"};
 const fingerprint = (c) => crypto.createHash('sha1').update(JSON.stringify([c.title, c.summary || '', c.body || []])).digest('hex').slice(0, 12);
 
+// Chapters whose default text changed after it was saved: a saved chapter (or its test) that is still exactly an
+// older default takes the new one; one the owner edited keeps hers. (7.11: the half program is rounded up, 3 → 2)
+const REFRESH = { 'k-oferte': { body: ['60e11f32c4ce'] }, 'k-reguli': { body: ['e6dbd9a3eb45'], quiz: ['19fe64d6fd3d'] } };
+const quizPrint = (q) => crypto.createHash('sha1').update(JSON.stringify(q || [])).digest('hex').slice(0, 12);
+function refresh(c, dc) {
+  const r = REFRESH[c.id];
+  if (!r || !dc) return;
+  if ((r.body || []).includes(fingerprint(c))) Object.assign(c, { title: dc.title, summary: dc.summary || '', body: dc.body || [] });
+  if (Array.isArray(c.quiz) && (r.quiz || []).includes(quizPrint(c.quiz))) c.quiz = JSON.parse(JSON.stringify(dc.quiz || []));
+}
+
 function upgrade(out, def) {
   const saved = new Map();
   out.manuals.forEach((m) => (m.chapters || []).forEach((c) => saved.set(c.id, { c, m: m.id })));
@@ -55,7 +66,9 @@ function mergeAcademy(saved) {
     if (!m) { out.manuals.push(dm); return; }
     ['area', 'roles', 'icon'].forEach((k) => { if (m[k] == null) m[k] = dm[k]; });
     (m.chapters || []).forEach((c) => {
-      if (!Array.isArray(c.quiz)) { const dc = dm.chapters.find((x) => x.id === c.id); c.quiz = dc ? dc.quiz : []; }
+      const dc = dm.chapters.find((x) => x.id === c.id);
+      if (!Array.isArray(c.quiz)) c.quiz = dc ? dc.quiz : [];
+      refresh(c, dc);
       if (!Array.isArray(c.media)) c.media = [];
     });
   });

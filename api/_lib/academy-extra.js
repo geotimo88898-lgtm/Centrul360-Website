@@ -72,7 +72,7 @@ Ofertele vin în ordine. Treci la următoarea doar dacă cea de acum nu îi conv
 Iei pagina înapoi și îi dai următoarea. Nu le pui una lângă alta.
 > Te înțeleg. Avem și varianta în 4 tranșe: [suma pe tranșă], plătești la ședințe.
 ## Pachetul redus
-Jumătate din ședințele fiecărei proceduri, fără rotunjire: 3 ședințe devin 1,5.
+Jumătate din ședințele fiecărei proceduri, rotunjit în sus: 3 ședințe devin 2. Jumătăți de ședință nu există.
 `),
     },
     {
@@ -82,7 +82,7 @@ Jumătate din ședințele fiecărei proceduri, fără rotunjire: 3 ședințe dev
 - Procentul de reducere îl scrii tu în „Reducere acordată (%)”, apoi calculezi valoarea în lei.
 - Programezi toate ședințele pe loc, în tabelul „Programarea ședințelor”.
 - La plata în tranșe scrii în „Se achită la” ședința la care se plătește fiecare tranșă (tranșa 2 la ședința 2 și așa mai departe). „Data ședinței” o completezi după programare.
-- Pachetul redus: jumătate din ședințele fiecărei proceduri, fără rotunjire. Scrii numărul exact în „Ședințe oferite” (3 devin 1,5).
+- Pachetul redus: jumătate din ședințele fiecărei proceduri, rotunjit în sus (3 devin 2). Jumătăți de ședință nu există.
 ! Anulare sau reprogramare cu mai puțin de 24 de ore înainte: ședința se consideră efectuată. Spune-i clar asta înainte să semneze.
 ! Rezultatele sunt estimate, nu garantate. Nu promiți rezultate concrete.
 > Încă un lucru important: dacă anulezi sau muți o ședință cu mai puțin de 24 de ore înainte, ședința se consideră făcută. Așa ținem locul doar pentru tine.
@@ -296,7 +296,7 @@ const QUIZ = {
   ],
   'k-reguli': [
     Q('Cât timp e valabilă oferta?', ['O săptămână', 'Doar în ziua consultației', 'O lună'], 1, 'Spune-i asta clar.'),
-    Q('În pachetul complet sunt 3 ședințe de cavitație. Câte scrii în pachetul redus?', ['1', '1,5', '2'], 1, 'Jumătate, fără rotunjire.'),
+    Q('În pachetul complet sunt 3 ședințe de cavitație. Câte scrii în pachetul redus?', ['1', '1,5', '2'], 2, 'Jumătate, rotunjit în sus: 1,5 ședințe nu există.'),
     Q('Clienta anulează cu 10 ore înainte. Ce se întâmplă cu ședința?', ['Se mută gratuit', 'Se consideră efectuată', 'Se dublează'], 1, 'Sub 24 de ore, ședința se consideră efectuată.'),
   ],
   'k-exemplu': [

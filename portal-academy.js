@@ -906,9 +906,10 @@
 
   // ------------------------------------------------------------------ the offer maths (Ghidul consultației)
   // lines: [{ price (id), sessions, zone, interval }] → totals, the 4 offers, the minimum check
+  // half a program: half of each procedure's sessions, rounded up (the owner, 7.11: „1,5 ședințe nu există, se rotunjește”)
   function offer(lines, low) {
     const R = rules();
-    const rows = lines.map((l) => { const p = priceOf(l.price); const s = Number(l.sessions) || 0; return { l, p, s, unit: p ? p.price : 0, sub: p ? s * p.price : 0, half: s / 2, halfSub: p ? (s / 2) * p.price : 0 }; }).filter((r) => r.p);
+    const rows = lines.map((l) => { const p = priceOf(l.price); const s = Number(l.sessions) || 0; return { l, p, s, unit: p ? p.price : 0, sub: p ? s * p.price : 0, half: Math.ceil(s / 2), halfSub: p ? Math.ceil(s / 2) * p.price : 0 }; }).filter((r) => r.p);
     const total = rows.reduce((a, r) => a + r.sub, 0), half = rows.reduce((a, r) => a + r.halfSub, 0);
     const groups = new Set(rows.map((r) => r.p.group));
     const kind = groups.has('corp') ? 'corp' : groups.has('fata') ? 'fata' : groups.has('epilare') ? 'epilare' : '';
