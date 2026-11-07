@@ -146,14 +146,14 @@ S = {'id': 'fisa-program', 'title': 'Programul *și oferta*', 'short': 'Programu
     {'type': 'note', 'variant': 'tip', 'label': 'Nu e un pachet mai mic', 'text': 'E *un început*. Jumătate din ședințe, aceeași reducere de 50%.', 'pose': 'aprobare', 'beats': [
         B('Oferta trei nu e un pachet mai mic. E un început: jumătate din ședințele programului, cu aceeași reducere de cincizeci la sută.', 'aprobare', cap='Oferta 3 nu e un pachet mai mic. E un început: jumătate din ședințele programului, cu aceeași reducere de 50%.')]},
     sheet(4, 'Oferta 3 · *jumătate, 50%*', 'Pagina 4', [
-        F([4.1, 12.2], 'Pachetul redus', 'Jumătate din fiecare procedură. 3 devin 1,5.', 0),
+        F([4.1, 12.2], 'Pachetul redus', 'Jumătate din fiecare procedură, rotunjit. 3 devin 2.', 0),
         F([17.5, 10.9], 'Calculul', 'Reducerea: 50%.', 2),
         F([31.6, 5.3], 'Plata', 'Cum plătește, data, suma.', 3),
         F([40.9, 15.5], 'Ședințele', 'Toate, programate pe loc.', 3.5),
         F([58.8, 20.1], 'Condițiile și semnăturile', 'Doar azi, regula de 24 de ore, semnături.', 4)],
         half(8.3, 0.3) + [[62, 20.9, '50', '', 2.3], [18.1, 31.6, '✓', 'is-tick', 3.3]] + sched(SCHED[:2], [43.9, 46.6], 3.8) + sign(73.4, 77.1, 4.3),
         [B('Pe pagina patru scrii jumătate din ședințele fiecărei proceduri. Opt ședințe devin patru, șase devin trei.', 'fisa', cap='Pe pagina 4 scrii jumătate din ședințele fiecărei proceduri. 8 ședințe devin 4, 6 devin 3.'),
-         B('Fără rotunjire: dacă sunt trei ședințe, scrii unu virgulă cinci.', 'gandeste', cap='Fără rotunjire: dacă sunt 3 ședințe, scrii 1,5.'),
+         B('Dacă iese o jumătate de ședință, rotunjești în sus: trei ședințe devin două.', 'gandeste', cap='Dacă iese o jumătate de ședință, rotunjești în sus: 3 ședințe devin 2.'),
          B('Reducerea e tot cincizeci la sută.', 'cadou', cap='Reducerea e tot 50%.'),
          B('Plata, data și ședințele programate pe loc.', 'receptie'),
          B('Condițiile ca la oferta unu, și semnați amândouă.', 'aprobare', cap='Condițiile ca la oferta 1, și semnați amândouă.')]),

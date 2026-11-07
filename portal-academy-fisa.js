@@ -94,7 +94,7 @@
         ...sign(73.4, 77.1),
       ],
       notes: [
-        { box: [4.1, 12.2], t: 'Pachetul redus', d: 'Jumătate din ședințele fiecărei proceduri, fără rotunjire: scrii numărul exact (3 ședințe devin 1,5). Subtotal = ședințe oferite × preț de listă.' },
+        { box: [4.1, 12.2], t: 'Pachetul redus', d: 'Jumătate din ședințele fiecărei proceduri, rotunjit în sus (3 ședințe devin 2). Subtotal = ședințe oferite × preț de listă.' },
         { box: [17.5, 10.9], t: 'Calculul ofertei', d: 'Total listă pachet redus = suma subtotalurilor de mai sus. Reducere 50%. Total de plată = total listă pachet redus × 0,50.' },
         { box: [31.6, 5.3], t: 'Plata', d: 'Cum plătește, data și suma achitată.' },
         { box: [40.9, 15.5], t: 'Programarea ședințelor', d: 'Toate ședințele pachetului redus, programate pe loc.' },
@@ -114,7 +114,7 @@
         ...sign(78.3, 81.9),
       ],
       notes: [
-        { box: [4.1, 12.2], t: 'Pachetul redus', d: 'Aceleași ședințe ca pe pagina 4: jumătate din fiecare procedură, fără rotunjire.' },
+        { box: [4.1, 12.2], t: 'Pachetul redus', d: 'Aceleași ședințe ca pe pagina 4: jumătate din fiecare procedură, rotunjit în sus.' },
         { box: [17.5, 13.6], t: 'Calculul ofertei', d: 'Reducere 30%. Total de plată = total listă pachet redus × 0,70. Valoarea unei tranșe = totalul de plată împărțit la 4.' },
         { box: [35, 13], t: 'Calendarul tranșelor', d: 'Tranșa 1 la ședința 1, tranșa 2 la ședința 2 și tot așa. Data ședinței după programare, „Achitat” la fiecare plată.' },
         { box: [51.9, 7.7], t: 'Programarea ședințelor', d: 'Toate ședințele, programate pe loc.' },

@@ -976,7 +976,7 @@
       12.2
      ],
      "t": "Pachetul redus",
-     "d": "Jumătate din fiecare procedură. 3 devin 1,5.",
+     "d": "Jumătate din fiecare procedură, rotunjit. 3 devin 2.",
      "at": 0
     },
     {
@@ -1186,9 +1186,9 @@
      "cap": "Pe pagina 4 scrii jumătate din ședințele fiecărei proceduri. 8 ședințe devin 4, 6 devin 3."
     },
     {
-     "say": "Fără rotunjire: dacă sunt trei ședințe, scrii unu virgulă cinci.",
+     "say": "Dacă iese o jumătate de ședință, rotunjești în sus: trei ședințe devin două.",
      "pose": "gandeste",
-     "cap": "Fără rotunjire: dacă sunt 3 ședințe, scrii 1,5."
+     "cap": "Dacă iese o jumătate de ședință, rotunjești în sus: 3 ședințe devin 2."
     },
     {
      "say": "Reducerea e tot cincizeci la sută.",
