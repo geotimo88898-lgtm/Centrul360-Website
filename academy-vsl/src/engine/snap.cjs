@@ -6,7 +6,7 @@ const { start } = require('./serve.cjs');
   require('fs').mkdirSync(out, { recursive: true });
   const srv = await start();
   const b = await chromium.launch();
-  const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+  const p = await b.newPage({ viewport: (() => { try { return JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'films', film, 'script.json'), 'utf8')).fmt === '45' ? { width: 1080, height: 1350 } : { width: 1920, height: 1080 }; } catch (e) { return { width: 1920, height: 1080 }; } })() });
   p.on('console', (m) => { if (m.type() === 'error') console.log('console:', m.text()); });
   p.on('pageerror', (e) => console.log('pageerror:', e.message));
   await p.goto('http://127.0.0.1:' + srv.address().port + '/academy-vsl/src/engine/stage.html?film=' + film);

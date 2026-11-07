@@ -4,7 +4,7 @@
 // can carry a sound effect; window.film.cues lists them for mix.py.
 (function () {
   'use strict';
-  const W = 1920, H = 1080;
+  let W = 1920, H = 1080, F45 = false; // a film with "fmt": "45" is 1080×1350 (the website films)
   const GAP = 0.26, LEAD = 0.55, TAIL = 0.5, XF = 0.55; // pause after a line, before the first line, after the last, crossfade
   const qs = new URLSearchParams(location.search);
   const FILM = qs.get('film');
@@ -119,7 +119,7 @@
   // effects that write the element directly
   const DIRECT = {
     draw: (a, p) => { a.el.style.strokeDashoffset = String(1 - E.inout(p)); a.el.style.opacity = p > 0 ? 1 : 0; },
-    count: (a, p) => { const v = a.from + (a.to - a.from) * E.out(p); a.el.textContent = a.fmt ? a.fmt(v) : String(Math.round(v)); },
+    count: (a, p) => { const v = a.from + (a.to - a.from) * E.out(p); a.el.textContent = a.dec ? v.toFixed(a.dec).replace('.', ',') : a.fmt ? a.fmt(v) : String(Math.round(v)); },
     cls: (a, p) => { a.el.classList.toggle(a.name, p > 0); },
   };
 
@@ -173,7 +173,7 @@
     const s = ctx.s;
     const c = contentBox(el, 'r');
     const box = h('div', 'box', '<div class="kicker">' + esc(sc.kicker || 'Academia Centrul360') + '</div>' + words(sc.title, 'h1') + (sc.sub ? '<p class="lede" style="margin-top:34px;max-width:1000px">' + rich(sc.sub) + '</p>' : ''));
-    box.style.left = '40px'; box.style.top = '260px'; box.style.right = '0';
+    box.style.left = F45 ? '10px' : '40px'; box.style.top = F45 ? '190px' : '260px'; box.style.right = '0';
     c.appendChild(box);
     const k = box.querySelector('.kicker'), t1 = box.querySelector('.h1'), p = box.querySelector('.lede');
     t1.style.marginTop = '26px';
@@ -181,8 +181,9 @@
     ctx.act(k, 'rise', null, { t: tl, sfx: 'soft' });
     t1.querySelectorAll('.w').forEach((w, i) => ctx.act(w, 'rise', null, { t: tl + 0.15 + i * 0.08, sfx: i ? null : 'swish' }));
     if (p) ctx.act(p, 'rise', null, { t: tl + 0.6 });
-    ctx.logo([{ t: s.t0, x: 960, y: 520, s: 120, ry: -3.2, o: 0 }, { t: s.t0 + 0.35, x: 960, y: 520, s: 300, ry: -1.6, o: 1 }, { t: s.t0 + 1.9, x: 960, y: 520, s: 380, ry: 0, o: 1 },
-      { t: tl + 0.5, x: 230, y: 250, s: 170, ry: 0.35, o: 1 }, { t: s.t1 - 0.3, x: 230, y: 250, s: 170, ry: 0.15, o: 1 }, { t: s.t1 + 0.2, x: 100, y: 200, s: 60, ry: 1.6, o: 0 }]);
+    const cx = W / 2, cy = F45 ? 560 : 520, lx = F45 ? 150 : 230, ly = F45 ? 240 : 250, ls = F45 ? 130 : 170;
+    ctx.logo([{ t: s.t0, x: cx, y: cy, s: 120, ry: -3.2, o: 0 }, { t: s.t0 + 0.35, x: cx, y: cy, s: 300, ry: -1.6, o: 1 }, { t: s.t0 + 1.9, x: cx, y: cy, s: 380, ry: 0, o: 1 },
+      { t: tl + 0.5, x: lx, y: ly, s: ls, ry: 0.35, o: 1 }, { t: s.t1 - 0.3, x: lx, y: ly, s: ls, ry: 0.15, o: 1 }, { t: s.t1 + 0.2, x: 100, y: 200, s: 60, ry: 1.6, o: 0 }]);
     ctx.cue(s.t0 + 0.2, 'rise', 1); ctx.cue(s.t0 + 1.7, 'shimmer', 0.9);
   };
 
@@ -191,7 +192,7 @@
     const c = contentBox(el, 'l');
     const box = h('div', 'box', '<div class="kicker">' + esc(sc.kicker || 'Gata') + '</div>' + words(sc.title || 'Bravo!', 'h1') +
       '<div class="rail" style="margin-top:44px">' + (sc.items || []).map((x, i) => '<div class="rs card"><span class="ic">' + icon('check') + '</span>' + esc(x.t || x) + '</div>').join('') + '</div>');
-    box.style.left = '60px'; box.style.top = '170px'; box.style.right = '0';
+    box.style.left = F45 ? '10px' : '60px'; box.style.top = F45 ? '60px' : '170px'; box.style.right = '0';
     c.appendChild(box);
     ctx.act(box.querySelector('.kicker'), 'rise', 0, { dt: 0 });
     riseWords(box.querySelector('.h1'), ctx, 0, 0.08, 0.1);
@@ -199,11 +200,12 @@
     ctx.brk(at(s, 1)); ctx.brk(at(s, 2));
     const tEnd = s.beats.length ? s.beats[s.beats.length - 1].t1 + 0.3 : s.t1 - 2;
     ctx.act(box, 'out', null, { t: tEnd, sfx: 'swish' });
-    const nm = h('div', 'box', '<div class="h2" style="font-size:60px">Centrul360 <span style="font-weight:500;color:var(--mute)">Academia</span></div>');
-    nm.style.left = '0'; nm.style.right = '0'; nm.style.top = '560px'; nm.style.textAlign = 'center';
+    const nm = h('div', 'box', '<div class="h2" style="font-size:60px">Centrul360 <span style="font-weight:500;color:var(--mute)">' + esc(sc.brandSub || 'Academia') + '</span></div>' + (sc.endLine ? '<p class="lede" style="margin-top:18px">' + rich(sc.endLine) + '</p>' : ''));
+    nm.style.left = '0'; nm.style.right = '0'; nm.style.top = F45 ? '400px' : '560px'; nm.style.textAlign = 'center';
     c.appendChild(nm);
     ctx.act(nm, 'rise', null, { t: tEnd + 0.7, sfx: null });
-    ctx.logo([{ t: tEnd + 0.1, x: 1260, y: 420, s: 60, ry: -3, o: 0 }, { t: tEnd + 0.8, x: 1260, y: 420, s: 280, ry: -0.4, o: 1 }, { t: tEnd + 3.5, x: 1260, y: 420, s: 300, ry: 0.2, o: 1 }]);
+    const ox = F45 ? W / 2 : 1260, oy = F45 ? 370 : 420;
+    ctx.logo([{ t: tEnd + 0.1, x: ox, y: oy, s: 60, ry: -3, o: 0 }, { t: tEnd + 0.8, x: ox, y: oy, s: 280, ry: -0.4, o: 1 }, { t: tEnd + 3.5, x: ox, y: oy, s: 300, ry: 0.2, o: 1 }]);
     ctx.cue(tEnd + 0.4, 'shimmer', 1);
   };
 
@@ -531,7 +533,7 @@
     c.appendChild(box);
     const n = sc.at != null ? sc.at : -1;
     ctx.act(box.querySelector('.big'), 'pop', n, { dt: 0.1, sfx: 'pop2' });
-    if (sc.from != null) ctx.act(box.querySelector('.num'), 'count', n, { dt: 0.2, from: sc.from, to: sc.value, sfx: 'count' });
+    if (sc.from != null) ctx.act(box.querySelector('.num'), 'count', n, { dt: 0.2, from: sc.from, to: sc.value, dec: sc.dec || 0, sfx: 'count' });
     if (box.querySelector('.h3')) ctx.act(box.querySelector('.h3'), 'rise', n, { dt: 0.5 });
     if (box.querySelector('.lede')) ctx.act(box.querySelector('.lede'), 'rise', sc.subAt != null ? sc.subAt : 1);
   };
@@ -558,6 +560,78 @@
     }
   };
 
+  // the mechanism, drawn: skin, fat and muscle; the applicator's waves pass the skin and hit their target.
+  // sc.mode 'lipo': the fat cells in the focus break up and fade; 'hifu': points of energy deep down, the tissue lifts,
+  // new collagen draws in. sc.steps: [{t, at}] numbered captions under the drawing.
+  T.layers = (el, ctx, sc) => {
+    const s = ctx.s;
+    const c = contentBox(el, sc.nuki || 'l');
+    const top = head(c, ctx, sc);
+    const bw = F45 ? 960 : 1150, bh = 380;
+    const box = h('div', 'box'); box.style.left = '0'; box.style.top = (top + 95) + 'px'; box.style.width = bw + 'px'; box.style.height = bh + 'px';
+    c.appendChild(box);
+    const lipo = (sc.mode || 'lipo') === 'lipo';
+    const L = lipo ? [['PIELE', 70, '#f7e9e1'], ['GRĂSIME', 170, '#fbf1d3'], ['MUȘCHI', 140, '#f3d6d2']] : [['PIELE', 80, '#f7e9e1'], ['STRAT PROFUND', 120, '#f1e2d8'], ['MUȘCHI', 180, '#f3d6d2']];
+    let y = 0, svg = '<svg width="' + bw + '" height="' + bh + '" style="position:absolute;inset:0;overflow:visible">';
+    svg += '<defs><clipPath id="lc' + s.si + '"><rect x="0" y="0" width="' + bw + '" height="' + bh + '" rx="26"/></clipPath></defs><g clip-path="url(#lc' + s.si + ')">';
+    const bands = [];
+    L.forEach(([name, hh, col]) => { svg += '<rect class="band" x="0" y="' + y + '" width="' + bw + '" height="' + hh + '" fill="' + col + '"/>'; bands.push([name, y, hh]); y += hh; });
+    // muscle fibres
+    for (let i = 0; i < 9; i++) { const yy = bands[2][1] + 18 + i * 15; svg += '<path d="M0 ' + yy + ' C ' + bw * 0.3 + ' ' + (yy - 8) + ', ' + bw * 0.6 + ' ' + (yy + 8) + ', ' + bw + ' ' + yy + '" stroke="#e7bdb7" stroke-width="3" fill="none"/>'; }
+    svg += '</g></svg>';
+    box.innerHTML = svg;
+    box.style.borderRadius = '26px'; box.style.boxShadow = 'var(--sh)';
+    bands.forEach(([name, yy, hh]) => { const lab = h('div', '', esc(name)); lab.style.cssText = 'position:absolute;right:18px;top:' + (yy + hh / 2 - 15) + 'px;font-size:22px;font-weight:800;letter-spacing:.12em;color:rgba(15,26,25,.45)'; box.appendChild(lab); });
+    const cx = bw * 0.42, focusY = lipo ? bands[1][1] + bands[1][2] / 2 : bands[1][1] + bands[1][2] * 0.6;
+    // the cells (lipo) or the points of energy (hifu)
+    const cells = [];
+    if (lipo) {
+      for (let i = 0; i < 26; i++) {
+        const r = 16 + (i * 37 % 11), x = 40 + (i * 131 % (bw - 260)), yy = bands[1][1] + 26 + (i * 53 % (bands[1][2] - 52));
+        const d = h('div'); d.style.cssText = 'position:absolute;left:' + (x - r) + 'px;top:' + (yy - r) + 'px;width:' + 2 * r + 'px;height:' + 2 * r + 'px;border-radius:50%;background:#f6e3a6;border:3px solid #ead08a';
+        box.appendChild(d); cells.push({ d, x, y: yy, near: Math.abs(x - cx) < 170 });
+      }
+    }
+    const pts = [];
+    if (!lipo) for (let i = 0; i < 7; i++) { const d = h('div'); const x = cx - 180 + i * 60; d.style.cssText = 'position:absolute;left:' + (x - 11) + 'px;top:' + (focusY - 11) + 'px;width:22px;height:22px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 8px rgba(20,165,150,.25)'; box.appendChild(d); pts.push(d); }
+    // the applicator and its waves
+    const ap = h('div'); ap.style.cssText = 'position:absolute;left:' + (cx - 90) + 'px;top:-64px;width:180px;height:70px;border-radius:22px 22px 12px 12px;background:linear-gradient(180deg,#ffffff,#e7f4f2);border:3px solid var(--teal);box-shadow:0 18px 30px -16px rgba(13,127,115,.6)';
+    box.appendChild(ap);
+    const waves = [];
+    for (let i = 0; i < 4; i++) { const w = h('div'); w.style.cssText = 'position:absolute;left:' + (cx - 70) + 'px;width:140px;height:44px;border-radius:50%;border:4px solid var(--teal);border-top-color:transparent;border-left-color:transparent;border-right-color:transparent'; box.appendChild(w); waves.push(w); }
+    const steps = (sc.steps || []);
+    const st = h('div', 'box'); st.style.left = '0'; st.style.right = '0'; st.style.top = (top + 95 + bh + 26) + 'px'; st.style.display = 'flex'; st.style.flexDirection = 'column'; st.style.gap = '12px';
+    steps.forEach((x, i) => { const d = h('div', 'rs card', '<span class="ic soft">' + (i + 1) + '</span><span>' + rich(x.t) + '</span>'); d.style.fontSize = F45 ? '30px' : '32px'; d.style.padding = '12px 22px 12px 12px'; st.appendChild(d); ctx.act(d, 'rise', x.at, { sfx: 'pop', gain: 0.7 }); ctx.act(d.querySelector('.ic'), 'cls', x.at, { dt: 0.2, name: 'lit', sfx: null, dur: 0.01 }); });
+    c.appendChild(st);
+    ctx.act(box, 'rise', -1, { dt: 0.05, sfx: 'swish' });
+    ctx.act(ap, 'down', -1, { dt: 0.4, sfx: 'pop2' });
+    const tOn = at(s, sc.waveAt != null ? sc.waveAt : 0, 0.2), tHit = at(s, sc.hitAt != null ? sc.hitAt : 1), tGone = at(s, sc.goneAt != null ? sc.goneAt : 2);
+    ctx.cue(tOn, 'rise', 0.6); ctx.cue(tHit, 'ding', 0.8); ctx.cue(tGone, 'shimmer', 0.6);
+    if (!lipo) pts.forEach((d, i) => ctx.act(d, 'pop', null, { t: tHit + i * 0.12, sfx: i % 2 ? null : 'pop', gain: 0.5, dur: 0.4 }));
+    ctx.tick((t) => {
+      const on = t >= tOn;
+      waves.forEach((w, i) => {
+        const ph = ((t - tOn) * 0.9 + i / waves.length) % 1;
+        const yy = 10 + ph * (focusY - 20);
+        const k = 1 - ph * 0.65;
+        w.style.top = (yy - 22) + 'px'; w.style.transform = 'scale(' + k.toFixed(3) + ')'; w.style.opacity = on ? (Math.sin(ph * Math.PI) * 0.9).toFixed(3) : 0;
+      });
+      if (lipo) cells.forEach((c2) => {
+        if (!c2.near) return;
+        const q = clamp((t - tHit - Math.abs(c2.x - cx) / 400) / 0.6), g = clamp((t - tGone) / 1.2);
+        const sh = 1 + 0.12 * Math.sin(q * Math.PI * 3) * (1 - g);
+        c2.d.style.transform = 'scale(' + ((1 - 0.75 * g) * sh).toFixed(3) + ')';
+        c2.d.style.opacity = (1 - g).toFixed(3);
+        c2.d.style.background = q > 0 ? '#f1d27e' : '#f6e3a6';
+      });
+      else {
+        const q = E.inout(clamp((t - tGone) / 1.6));
+        box.querySelectorAll('.band')[1].setAttribute('transform', 'translate(0,' + (-14 * q).toFixed(2) + ')');
+        pts.forEach((d, i) => { d.style.boxShadow = '0 0 0 ' + (8 + 6 * Math.sin(t * 5 + i)).toFixed(1) + 'px rgba(20,165,150,.22)'; d.style.marginTop = (-14 * q).toFixed(1) + 'px'; });
+      }
+    });
+  };
+
   T.yn = (el, ctx, sc) => {
     const c = contentBox(el, sc.nuki || 'l');
     const top = head(c, ctx, sc);
@@ -577,7 +651,7 @@
     const box = h('div', 'box'); box.style.left = '0'; box.style.right = '0'; box.style.top = (top + 30) + 'px'; box.style.display = 'flex'; box.style.gap = '30px';
     c.appendChild(box);
     sc.items.forEach((it, i) => {
-      const d = h('div', 'card', '<div style="height:' + (sc.ih || 460) + 'px;border-radius:26px 26px 0 0;overflow:hidden;background:#eef5f4 url(' + ROOT + '/' + it.img + ') center/cover"></div><div style="padding:22px 28px;font-size:32px;font-weight:750">' + rich(it.t) + '</div>');
+      const d = h('div', 'card', '<div style="height:' + (sc.ih || 460) + 'px;border-radius:26px 26px 0 0;overflow:hidden;background:#f4f8f7 url(' + ROOT + '/' + it.img + ') center/' + (sc.fit || 'cover') + ' no-repeat"></div><div style="padding:22px 28px;font-size:32px;font-weight:750">' + rich(it.t) + '</div>');
       d.style.flex = '1'; d.style.overflow = 'hidden';
       box.appendChild(d);
       ctx.act(d, i ? 'slideR' : 'slideL', it.at != null ? it.at : i, { dt: it.dt || 0, sfx: 'shutter' });
@@ -622,9 +696,9 @@
     }
     if (side === 'off') { nukiEl.style.opacity = 0; return 0; }
     const fl = Math.sin(t * 1.6) * 12, rot = Math.sin(t * 0.95) * 1.4;
-    const x = SIDE_X[side] - 310, y = 1080 - 700 - 170;
+    const x = (F45 ? { l: 250, r: 830, c: 540, rs: 900 }[side] : SIDE_X[side]) - 310, y = F45 ? 1225 - 700 : 1080 - 700 - 170;
     nukiEl.style.opacity = o.toFixed(3);
-    nukiEl.style.transform = 'translate(' + x + 'px,' + (y + dy + fl).toFixed(2) + 'px) rotate(' + rot.toFixed(3) + 'deg) scale(' + (SIDE_K[side] || 1) + ')';
+    nukiEl.style.transform = 'translate(' + x + 'px,' + (y + dy + fl).toFixed(2) + 'px) rotate(' + rot.toFixed(3) + 'deg) scale(' + (F45 ? 0.6 : (SIDE_K[side] || 1)) + ')';
     const sh = nukiEl.querySelector('.shadow'); sh.style.transform = 'translateY(' + (-fl).toFixed(1) + 'px) scale(' + (1 - fl / 120).toFixed(3) + ')'; sh.style.opacity = (0.9 - fl / 60).toFixed(2);
     const cur = poseImgs[g.pose] || poseImgs.prezinta;
     const pp = p && p.side === g.side && p.pose !== g.pose ? poseImgs[p.pose] : null;
@@ -666,7 +740,7 @@
     const k = (0.2 + 0.8 * E.back(pin)) * (1 - 0.8 * E.out(pout));
     const hop = Math.abs(Math.sin(t * 3.1)) * 7;
     jerryEl.style.opacity = (Math.min(1, pin * 3) * (1 - pout)).toFixed(3);
-    jerryEl.style.transform = 'translate(' + (g.x - 110) + 'px,' + (910 - 250 - hop).toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+    jerryEl.style.transform = 'translate(' + (g.x - 110) + 'px,' + ((F45 ? 1225 : 910) - 250 - hop).toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
     const im = jerryImgs[g.pose]; im.style.opacity = 1; im.style.transform = g.flip ? 'scaleX(-1)' : '';
     const b = jerryEl.querySelector('.jb');
     if (g.say) { if (b.textContent !== g.say) b.textContent = g.say; const q = clamp((t - g.t0 - 0.45) / 0.35); b.style.opacity = (E.out(q) * (1 - pout)).toFixed(3); b.style.transform = 'translate(-80%,0) scale(' + (0.6 + 0.4 * E.back(q)).toFixed(3) + ')'; }
@@ -730,6 +804,7 @@
   let capEl, capSpan, progI, chapEl, chapTxt;
   async function boot() {
     S = await (await fetch('../films/' + FILM + '/script.json', { cache: 'no-store' })).json();
+    if (S.fmt === '45') { F45 = true; W = 1080; H = 1350; document.documentElement.classList.add('f45'); const bs = document.querySelector('#brand small'); if (bs) bs.textContent = ''; const g = document.getElementById('gl'); g.width = W; g.height = H; }
     try { const r = await fetch('../films/' + FILM + '/timing.json', { cache: 'no-store' }); if (r.ok) TIM = await r.json(); } catch (e) { /* no voice yet: estimated */ }
     await loadIcons(collectIcons());
     document.fonts && await document.fonts.ready;
@@ -745,7 +820,7 @@
         s.punch = mid; breaks.push(mid); cues.push({ t: mid, sfx: 'zoom', gain: 0.5 });
       }
       el.style.display = 'block';
-      el.querySelectorAll('[data-vc]').forEach((b) => { const a = +b.dataset.vc, hh = b.offsetHeight, room = 750 - a; b.style.top = (a + Math.max(0, (room - hh) * 0.46)) + 'px'; });
+      el.querySelectorAll('[data-vc]').forEach((b) => { const a = +b.dataset.vc, hh = b.offsetHeight, room = (F45 ? 640 : 750) - a; b.style.top = (a + Math.max(0, (room - hh) * 0.46)) + 'px'; });
       el.style.display = 'none';
       if (s.si > 0) cues.push({ t: s.t0, sfx: 'whoosh', gain: 0.45 });
     });
@@ -759,7 +834,7 @@
     await Promise.all([...document.images].map((im) => (im.decode ? im.decode().catch(() => {}) : null)));
     cues.sort((a, b) => a.t - b.t);
     window.film = {
-      id: S.id, total, fps: 30,
+      id: S.id, total, fps: 30, W, H,
       cues: cues.filter((c) => c.sfx && c.t >= 0 && c.t < total),
       beats: scenes.flatMap((s) => s.beats.map((b) => ({ key: b.key, t0: b.t0, dur: b.dur, text: b.b.tts || b.b.say }))),
       scenes: scenes.map((s) => ({ t0: s.t0, t1: s.t1, type: s.sc.type, side: s.sc.nuki || DEFAULT_SIDE[s.sc.type] || 'l' })),

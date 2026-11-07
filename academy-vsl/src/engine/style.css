@@ -185,3 +185,20 @@ em, .acc{ font-family:'Fraunces Variable', Georgia, serif; font-style:italic; fo
 #jerry img{ position:absolute; left:0; right:0; bottom:0; margin:auto; max-width:100%; max-height:100%; object-fit:contain; }
 #jerry .jb{ position:absolute; left:50%; bottom:262px; white-space:nowrap; padding:10px 20px; border-radius:20px; background:#fff; color:var(--ink); font-weight:750; font-size:27px; box-shadow:0 14px 30px -16px rgba(15,60,55,.45); border:2px solid var(--teal-l); transform-origin:80% 100%; }
 #jerry .jb:after{ content:''; position:absolute; left:80%; bottom:-11px; margin-left:-10px; border:10px solid transparent; border-bottom:0; border-top-color:#fff; }
+
+/* the website films: 4:5, 1080×1350 */
+.f45, .f45 body{ width:1080px; height:1350px; }
+.f45 #top{ left:44px; right:44px; top:30px; }
+.f45 #chap{ font-size:21px; padding:10px 18px; }
+.f45 .content, .f45 .content.with-nuki-l, .f45 .content.with-nuki-r, .f45 .content.full{ left:60px; right:60px; top:140px; bottom:auto; height:640px; }
+.f45 #cap{ width:980px; bottom:34px; }
+.f45 #cap span{ font-size:34px; }
+.f45 .h1{ font-size:92px; }
+.f45 .h2{ font-size:64px; }
+.f45 .h3{ font-size:50px; }
+.f45 .note{ padding:44px 44px; gap:30px; }
+.f45 .note .ic{ width:120px; height:120px; }
+.f45 .note p{ font-size:46px; }
+.f45 .big{ font-size:230px; }
+.f45 .li b{ font-size:40px; }
+.f45 #gl{ width:1080px; height:1350px; }

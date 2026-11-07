@@ -1,0 +1,232 @@
+{
+ "id": "site-acasa",
+ "fmt": "45",
+ "title": "Centrul360",
+ "short": "Centrul360",
+ "chap": "Centrul360",
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Timișoara și Arad",
+   "title": "Rezultate pe care le *vezi*",
+   "sub": "Medicină estetică non-invazivă, pentru corp și față.",
+   "nuki": "r",
+   "pose": "salut-pa",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki, de la Centrul360.",
+     "pose": "salut-pa",
+     "tts": "Bună! Eu sunt Nuki, de la Centrul trei sute șaizeci."
+    },
+    {
+     "say": "Ai încercat tratamente care promit mult, dar nu se văd?",
+     "pose": "gandeste"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "why",
+   "label": "Nu e vina ta",
+   "text": "Nu trebuie să știi dinainte *ce tratament îți trebuie*.",
+   "nuki": "l",
+   "pose": "mana-inima",
+   "beats": [
+    {
+     "say": "Nu e vina ta. Nu trebuie să știi dinainte ce tratament îți trebuie.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "La consultația gratuită ne uităm la ce vrei tu și îți propunem ce ți se potrivește.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Ce facem",
+   "head": "Corp, față *și epilare laser*",
+   "nuki": "off",
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "person-standing",
+     "t": "Corp: grăsime localizată, celulită, tonifiere",
+     "at": 0.2,
+     "noTick": true
+    },
+    {
+     "ic": "smile",
+     "t": "Față: riduri, gușă, pete, ten",
+     "at": 0.5,
+     "noTick": true
+    },
+    {
+     "ic": "zap",
+     "t": "Epilare laser, în Timișoara",
+     "at": 0.8,
+     "noTick": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Lucrăm pentru corp, pentru față și facem epilare laser, cu aparatură medicală certificată.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Fără grijă",
+   "head": "Totul *fără*",
+   "nuki": "off",
+   "pose": "aprobare",
+   "items": [
+    {
+     "ic": "syringe",
+     "t": "Fără ace",
+     "at": 0.3,
+     "noTick": true
+    },
+    {
+     "ic": "scissors",
+     "t": "Fără operație",
+     "at": 0.55,
+     "noTick": true
+    },
+    {
+     "ic": "bed-double",
+     "t": "Fără anestezie",
+     "at": 0.8,
+     "noTick": true
+    },
+    {
+     "ic": "calendar-check",
+     "t": "Fără recuperare",
+     "at": 1,
+     "noTick": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Fără ace, fără operație, fără anestezie.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Și fără recuperare. Pleci și îți vezi de zi.",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "compare",
+   "kicker": "Poze reale din clinică",
+   "head": "Nu promitem. *Îți arătăm.*",
+   "nuki": "off",
+   "ih": 560,
+   "items": [
+    {
+     "img": "brand_asset/catalog/cazul-04-liposonix-abdomen.webp",
+     "t": "Abdomen · Liposonix",
+     "at": 0.3
+    },
+    {
+     "img": "brand_asset/catalog/cazul-02-hifu-gusa.webp",
+     "t": "Gușă · HIFU",
+     "at": 0.8
+    }
+   ],
+   "beats": [
+    {
+     "say": "Nu promitem. Îți arătăm. Acestea sunt cliente de-ale noastre, fotografiate la noi.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Rezultatele diferă de la o persoană la alta.",
+     "pose": "liniste"
+    }
+   ],
+   "fit": "contain"
+  },
+  {
+   "type": "big",
+   "kicker": "Google",
+   "value": 5,
+   "from": 0,
+   "dec": 1,
+   "label": "din *300+ recenzii*",
+   "sub": "Timișoara și Arad",
+   "subAt": 0.5,
+   "nuki": "l",
+   "pose": "stea-google",
+   "beats": [
+    {
+     "say": "Avem nota cinci pe Google, din peste trei sute de recenzii.",
+     "pose": "stea-google",
+     "cap": "Avem nota 5,0 pe Google, din peste 300 de recenzii."
+    }
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Cinci?!",
+    "at": 0.4,
+    "x": 470
+   }
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Cadoul tău",
+   "text": "Consultația e gratuită. *Masajul facial e cadou.*",
+   "ic": "gift",
+   "nuki": "r",
+   "pose": "cadou",
+   "beats": [
+    {
+     "say": "Consultația e gratuită, fără nicio obligație. Iar masajul facial e cadou.",
+     "pose": "cadou"
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Primul pas",
+   "title": "Consultația *gratuită*",
+   "chap": "Programează-te",
+   "nuki": "l",
+   "pose": "cadou",
+   "brandSub": "Timișoara · Arad",
+   "endLine": "Programează-te chiar pe pagina asta.",
+   "items": [
+    {
+     "t": "Consultație gratuită",
+     "at": 0.4
+    },
+    {
+     "t": "Masaj facial cadou",
+     "at": 0.75
+    },
+    {
+     "t": "Confirmare pe WhatsApp",
+     "at": 1.1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Te programezi chiar aici, pe pagina asta, în câteva secunde.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Alegi clinica, ziua și ora, iar confirmarea îți vine pe WhatsApp. Te așteptăm!",
+     "pose": "salut-pa"
+    }
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Te așteptăm!",
+    "at": 1,
+    "x": 470
+   }
+  }
+ ]
+}

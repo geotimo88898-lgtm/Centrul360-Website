@@ -1,0 +1,67 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki, de la Centrul trei sute șaizeci.",
+"dur": 4.239,
+"file": "voice/9eff681a921c0c03.wav"
+},
+"0.1": {
+"text": "Ai încercat tratamente care promit mult, dar nu se văd?",
+"dur": 3.606,
+"file": "voice/632d40d2a466432b.wav"
+},
+"1.0": {
+"text": "Nu e vina ta. Nu trebuie să știi dinainte ce tratament îți trebuie.",
+"dur": 4.516,
+"file": "voice/eb827ab503940d8b.wav"
+},
+"1.1": {
+"text": "La consultația gratuită ne uităm la ce vrei tu și îți propunem ce ți se potrivește.",
+"dur": 5.297,
+"file": "voice/a284ab7b4b9e8795.wav"
+},
+"2.0": {
+"text": "Lucrăm pentru corp, pentru față și facem epilare laser, cu aparatură medicală certificată.",
+"dur": 6.836,
+"file": "voice/e4a77672ba2f611e.wav"
+},
+"3.0": {
+"text": "Fără ace, fără operație, fără anestezie.",
+"dur": 4.014,
+"file": "voice/81ae7035878e14b7.wav"
+},
+"3.1": {
+"text": "Și fără recuperare. Pleci și îți vezi de zi.",
+"dur": 3.619,
+"file": "voice/674803aa35d5ecbc.wav"
+},
+"4.0": {
+"text": "Nu promitem. Îți arătăm. Acestea sunt cliente de-ale noastre, fotografiate la noi.",
+"dur": 6.381,
+"file": "voice/233e0190920b4954.wav"
+},
+"4.1": {
+"text": "Rezultatele diferă de la o persoană la alta.",
+"dur": 3.05,
+"file": "voice/a05ba676f1611dc1.wav"
+},
+"5.0": {
+"text": "Avem nota cinci pe Google, din peste trei sute de recenzii.",
+"dur": 4.624,
+"file": "voice/fcfc649d04e846a9.wav"
+},
+"6.0": {
+"text": "Consultația e gratuită, fără nicio obligație. Iar masajul facial e cadou.",
+"dur": 5.972,
+"file": "voice/55f8f4401f75001e.wav"
+},
+"7.0": {
+"text": "Te programezi chiar aici, pe pagina asta, în câteva secunde.",
+"dur": 3.965,
+"file": "voice/93881e734c7de061.wav"
+},
+"7.1": {
+"text": "Alegi clinica, ziua și ora, iar confirmarea îți vine pe WhatsApp. Te așteptăm!",
+"dur": 6.126,
+"file": "voice/90b4d20f2380c1d6.wav"
+}
+}
