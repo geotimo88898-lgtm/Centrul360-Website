@@ -270,8 +270,8 @@
     // one id for this Lead: the portal gets it (Conversions API) and the thank-you page gives it to the pixel, so Meta counts it once
     var eid = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     var send = function (u, extra) { var body = extra ? Object.assign({}, payload, extra) : payload; return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.ok; }, function () { return false; }); };
-    Promise.all([send('https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68'), send('/api/site-lead', { event_id: eid })]).then(function (r) {
-      if (r[0] || r[1]) location.href = '/multumesc-cadou?' + (/arad/i.test(payload.oras) ? 'oras=arad&' : '') + 'eid=' + eid;
+    Promise.all([send('https://services.leadconnectorhq.com/hooks/vusqnbSprML4DKUMJ9QB/webhook-trigger/a5d2d666-96b0-47b9-87ab-f685ecf28e68'), send('/api/site-lead', window.C360_CONSENT === true ? { event_id: eid } : {})]).then(function (r) {
+      if (r[0] || r[1]) location.href = '/multumesc-cadou?' + (/arad/i.test(payload.oras) ? 'oras=arad&' : '') + (window.C360_CONSENT === true ? 'eid=' + eid : '');
       else { b.disabled = false; b.textContent = 'Vreau consultația și cadoul'; err.textContent = 'Nu am putut trimite. Încearcă din nou.'; }
     });
   });

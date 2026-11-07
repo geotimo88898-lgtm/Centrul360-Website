@@ -28,6 +28,8 @@ const STEPS = [
   ['pixeldiag', () => require('./_lib/pixel-diag').run()],
   // once: the site's pixel shared with the ad account (the owner, 7.11; api/_lib/pixel-share.js)
   ['pixelshare', () => require('./_lib/pixel-share').run()],
+  // once: the Conversions API „Trimite live” on (the owner, 7.11; api/_lib/capi-live-once.js)
+  ['capilive', () => require('./_lib/capi-live-once').run()],
   // the creative orders asked for in chat (api/_lib/creative-once.js)
   ['creative', () => require('./_lib/creative-once').run()],
   // the job ads asked for in chat (api/_lib/hire-once.js)

@@ -5,7 +5,8 @@ set -euo pipefail
 film=$1
 here=$(cd "$(dirname "$0")" && pwd)
 b="$here/../films/$film/build"
-out="$here/../../$film.mp4"
+outdir="${OUT_DIR:-$here/../..}"
+out="$outdir/$film.mp4"
 dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$b/video.mp4")
 # the bitrate that keeps the file under 19 MB (sound 96 kb/s), at most 2.4 Mb/s
 vb=$(python3 -c "d=float('$dur'); print(int(min(2400, (19.0e6*8/d - 100e3)/1000)))")
@@ -15,7 +16,7 @@ ffmpeg -v error -y -i video.mp4 -i audio.wav -c:v libx264 -preset slow -tune ani
   -c:a aac -b:a 96k -ac 2 -movflags +faststart -shortest "$out"
 rm -f x264*.log x264*.mbtree
 ps=${2:-6}
-ffmpeg -v error -y -ss "$ps" -i video.mp4 -frames:v 1 -vf scale=1280:720 -c:v libwebp -quality 82 "$here/../../$film.webp"
+ffmpeg -v error -y -ss "$ps" -i video.mp4 -frames:v 1 -vf scale=iw*2/3:-2 -c:v libwebp -quality 82 "$outdir/$film.webp"
 python3 "$here/flash.py" "$out"
-ls -la "$out" "$here/../../$film.webp" | awk '{print $5, $9}'
+ls -la "$out" "$outdir/$film.webp" | awk '{print $5, $9}'
 echo "$film: ${dur%.*} s, video ${vb} kb/s"

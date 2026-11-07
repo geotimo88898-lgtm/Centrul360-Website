@@ -1,0 +1,222 @@
+{
+ "id": "site-grasime-localizata",
+ "fmt": "45",
+ "title": "Grăsime localizată",
+ "short": "Grăsime localizată",
+ "chap": "Grăsime localizată",
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Liposonix · Timișoara și Arad",
+   "title": "Grăsimea care *nu cedează*",
+   "sub": "Fără bisturiu, fără ace, fără recuperare.",
+   "nuki": "r",
+   "pose": "salut-pa",
+   "beats": [
+    {
+     "say": "Mănânci atent, faci mișcare, dar burtica de jos tot nu pleacă?",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Bună, eu sunt Nuki. Îți arăt de ce.",
+     "pose": "salut-pa"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "why",
+   "label": "Nu e vina ta",
+   "text": "Acolo grăsimea e *rezistentă* la dietă și sport.",
+   "nuki": "l",
+   "pose": "mana-inima",
+   "beats": [
+    {
+     "say": "Abdomenul de jos, colăceii, interiorul coapselor. Acolo grăsimea e rezistentă la dietă și sport.",
+     "pose": "centimetru"
+    },
+    {
+     "say": "Poți slăbi peste tot, iar zonele astea rămân. Nu e vina ta.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "layers",
+   "mode": "lipo",
+   "kicker": "Cum funcționează",
+   "head": "Ultrasunete care țintesc *doar grăsimea*",
+   "nuki": "off",
+   "waveAt": 0,
+   "hitAt": 1,
+   "goneAt": 2,
+   "steps": [
+    {
+     "t": "Ultrasunetele trec prin piele fără s-o afecteze",
+     "at": 0
+    },
+    {
+     "t": "Celulele de grăsime din zonă sunt distruse",
+     "at": 1
+    },
+    {
+     "t": "Corpul le elimină natural, în săptămânile următoare",
+     "at": 2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Liposonix folosește ultrasunete care trec prin piele fără să o afecteze.",
+     "pose": "liposonix"
+    },
+    {
+     "say": "Celulele de grăsime din zona țintită sunt distruse.",
+     "pose": "liposonix"
+    },
+    {
+     "say": "Iar corpul le elimină singur, natural, în săptămânile următoare.",
+     "pose": "liposonix"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Cum se simte",
+   "head": "Tu stai întinsă. *Aparatul lucrează.*",
+   "nuki": "l",
+   "pose": "liniste",
+   "items": [
+    {
+     "ic": "scissors",
+     "t": "Fără bisturiu",
+     "at": 0.2,
+     "noTick": true
+    },
+    {
+     "ic": "syringe",
+     "t": "Fără ace",
+     "at": 0.45,
+     "noTick": true
+    },
+    {
+     "ic": "calendar-check",
+     "t": "Fără recuperare",
+     "at": 0.7,
+     "noTick": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Fără bisturiu, fără ace, fără recuperare.",
+     "pose": "liniste"
+    },
+    {
+     "say": "Simți căldură și o presiune ușoară, apoi te întorci imediat la ce aveai de făcut.",
+     "pose": "aprobare"
+    }
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Atât de simplu?",
+    "at": 1,
+    "x": 470
+   }
+  },
+  {
+   "type": "compare",
+   "kicker": "Poze reale din clinică",
+   "head": "Nu promitem. *Îți arătăm.*",
+   "nuki": "off",
+   "ih": 560,
+   "items": [
+    {
+     "img": "brand_asset/catalog/cazul-04-liposonix-abdomen.webp",
+     "t": "Abdomen · Liposonix",
+     "at": 0.3
+    },
+    {
+     "img": "brand_asset/catalog/cazul-14-liposonix-abdomen-total-arad.webp",
+     "t": "Abdomen · Liposonix · Arad",
+     "at": 0.8
+    }
+   ],
+   "beats": [
+    {
+     "say": "Nu promitem. Îți arătăm. Clientele noastre, fotografiate la noi.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Diferența se vede în general la șase-opt săptămâni. Rezultatele diferă de la o persoană la alta.",
+     "pose": "liniste",
+     "cap": "Diferența se vede în general la 6-8 săptămâni. Rezultatele diferă de la o persoană la alta."
+    }
+   ],
+   "fit": "contain"
+  },
+  {
+   "type": "big",
+   "kicker": "Google",
+   "value": 5,
+   "from": 0,
+   "dec": 1,
+   "label": "din *300+ recenzii*",
+   "sub": "Timișoara și Arad",
+   "subAt": 0.5,
+   "nuki": "l",
+   "pose": "stea-google",
+   "beats": [
+    {
+     "say": "Nota cinci pe Google, din peste trei sute de recenzii.",
+     "pose": "stea-google",
+     "cap": "Nota 5,0 pe Google, din peste 300 de recenzii."
+    }
+   ],
+   "jerry": {
+    "pose": "surprins",
+    "say": "Wow!",
+    "at": 0.4,
+    "x": 470
+   }
+  },
+  {
+   "type": "outro",
+   "kicker": "Primul pas",
+   "title": "Consultația *gratuită*",
+   "chap": "Programează-te",
+   "nuki": "l",
+   "pose": "cadou",
+   "brandSub": "Timișoara · Arad",
+   "endLine": "Programează-te chiar pe pagina asta.",
+   "items": [
+    {
+     "t": "Consultație gratuită",
+     "at": 0.4
+    },
+    {
+     "t": "Măsurăm zona",
+     "at": 0.75
+    },
+    {
+     "t": "Masaj facial cadou",
+     "at": 1.1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Primul pas e consultația gratuită. Măsurăm zona și îți spunem sincer ce ți se potrivește.",
+     "pose": "centimetru"
+    },
+    {
+     "say": "Programează-te chiar pe pagina asta. Confirmarea vine pe WhatsApp, iar masajul facial e cadou.",
+     "pose": "cadou"
+    }
+   ],
+   "jerry": {
+    "pose": "bucurie",
+    "say": "Te așteptăm!",
+    "at": 1,
+    "x": 470
+   }
+  }
+ ]
+}
