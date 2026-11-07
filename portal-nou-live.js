@@ -13,7 +13,14 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var K = function () { return window.K; };
   var D = function () { return window.K && window.K.data; };
-  var CITIES = ['Timișoara', 'Arad'];
+  // the cities are the ones the team works in (from the data, not written here)
+  var CITIES = [];
+  function syncCities(d) {
+    var seen = {}, l = [];
+    (((d.admin && d.admin.employees) || d.activeEmployees || [])).forEach(function (e) { var c = String(e.location || '').trim(); if (e.active === false || !c || c === '-' || seen[c]) return; seen[c] = 1; l.push(c); });
+    (d.incasari || []).forEach(function (s) { var c = String(s.location || '').trim(); if (c && !seen[c]) { seen[c] = 1; l.push(c); } });
+    if (l.length) CITIES = l;
+  }
   var HUES = ['#4f8fd6', '#2bb3a3', '#c9a227', '#e0835a', '#e05a7a', '#8b6fd0', '#2f9d62', '#d97757', '#6fa8d6'];
   var hue = function (s) { var h = 0; String(s).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return HUES[h % HUES.length]; };
   var ini = function (n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase(); };
@@ -28,6 +35,7 @@
   // ------------------------------------------------------------------ what the day looks like, per city
   function model() {
     var d = D(); if (!d) return null;
+    syncCities(d);
     var t = today(), now = nowMin();
     var appts = ((d.appointmentsToday && d.appointmentsToday.list) || []).filter(function (a) { return a.date === t || !a.date; });
     var inc = (d.incasari || []).filter(function (s) { return s.date === t; });

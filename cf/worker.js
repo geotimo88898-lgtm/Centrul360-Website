@@ -120,11 +120,24 @@ async function route(request, env, ctx) {
       const to = r.headers.get("x-middleware-rewrite");
       if (!to) return r;
       const t = new URL(to);
-      return env.ASSETS.fetch(new Request(new URL(t.pathname + url.search, url), request));
+      return stamp(await env.ASSETS.fetch(new Request(new URL(t.pathname + url.search, url), request)), t.pathname);
     }
   }
   if (p.endsWith(".mp4") && (request.method === "GET" || request.method === "HEAD")) return ranged(request, env, url);
-  return env.ASSETS.fetch(request);
+  return stamp(await env.ASSETS.fetch(request), p);
+}
+
+// The portal's page names its own scripts and styles with this build's version (?b=…). The service worker keeps those files
+// on the device (portal-sw.js) and served the old copy first: after a publish, an open device showed the previous look until
+// a second reload (George saw the old KPI scene, 7.11). A new build now means new addresses, so nothing old is ever served.
+function stamp(res, path) {
+  if (!/^\/(portal(\.html)?)?$/.test(path) || !/text\/html/.test(res.headers.get("content-type") || "") || typeof HTMLRewriter === "undefined") return res;
+  const v = encodeURIComponent(BUILD_ID || "");
+  if (!v) return res;
+  const add = (attr) => ({ element(el) { const u = el.getAttribute(attr) || ""; if (/^\/portal-[\w-]+\.(?:js|css)$/.test(u)) el.setAttribute(attr, u + "?b=" + v); } });
+  const out = new HTMLRewriter().on("script[src]", add("src")).on("link[href]", add("href")).transform(res);
+  const h = new Headers(out.headers); h.set("cache-control", "no-cache"); h.delete("etag");
+  return new Response(out.body, { status: out.status, headers: h });
 }
 
 // Videos: the static asset store answers a Range request with the whole file (200), and iPhone Safari will not play
