@@ -126,14 +126,14 @@
     var d = D(); if (!d) return [{ pose: 'salut-pa', t: 'Salut! Sunt aici dacă ai nevoie.' }];
     if (d.isAdmin) return ownerLines(d);
     var out = [];
-    var h = new Date().getHours();
+    var h = window.K && window.K.roHour ? window.K.roHour() : new Date().getHours(); // the hour in Romania
     var call = badgeOf('pipeline'), appr = badgeOf('aprobari'), msg = d.waUnread || 0;
     var appts = ((d.appointmentsToday && d.appointmentsToday.list) || []).filter(function (a) { return a.status !== 'anulata'; });
     var mine = d.me && d.me.role === 'cosmetician' ? appts.filter(function (a) { return a.cosmeticianId === d.me.id; }) : appts;
     var inc = (d.incasari || []).filter(function (s) { return s.date === today(); });
     var sum = inc.reduce(function (a, s) { return a + (Number(s.amount) || 0); }, 0);
     var next = mine.filter(function (a) { return a.status !== 'finalizata' && a.time && a.time >= (('0' + h).slice(-2) + ':' + ('0' + new Date().getMinutes()).slice(-2)); }).sort(function (a, b) { return a.time < b.time ? -1 : 1; })[0];
-    if (h < 10) out.push({ pose: 'salut-pa', t: '<b>Bună dimineața!</b> Cafeaua e gata? Azi avem ' + mine.length + (mine.length === 1 ? ' programare.' : ' programări.') });
+    if (h >= 5 && h < 10) out.push({ pose: 'salut-pa', t: '<b>Bună dimineața!</b> Cafeaua e gata? Azi avem ' + mine.length + (mine.length === 1 ? ' programare.' : ' programări.') });
     if (call) out.push({ pose: 'telefon', t: '<b>' + call + (call === 1 ? ' lead de sunat' : ' leaduri de sunat') + '</b> acum. Hai să le prindem cât sunt calde!' });
     if (appr) out.push({ pose: 'aprobare', t: '<b>' + appr + ' aprobări</b> te așteaptă. Un clic și sunt gata.' });
     if (msg) out.push({ pose: 'telefon', t: '<b>' + msg + (msg === 1 ? ' conversație necitită' : ' conversații necitite') + '</b> în Mesaje.' });

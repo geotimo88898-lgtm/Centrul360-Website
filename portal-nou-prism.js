@@ -217,7 +217,7 @@
     var w = Math.round(r.width * dpr), h = Math.round(ch * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv.style.width = r.width + 'px'; cv.style.height = ch + 'px'; }
     var ang = Math.atan2(out.y - logo.y, out.x - logo.x), len = Math.hypot(out.x - logo.x, out.y - logo.y);
-    fan = SPEC.map(function (c, k) { var a = ang + (k - (SPEC.length - 1) / 2) * 0.05, p = new Path2D(); p.moveTo(logo.x, logo.y); p.lineTo(logo.x + Math.cos(a) * len * 0.82, logo.y + Math.sin(a) * len * 0.82); return { p: p, c: c }; });
+    fan = SPEC.map(function (c, k) { var a = ang + (k - (SPEC.length - 1) / 2) * (car.vert ? 0.05 : 0.085), p = new Path2D(); p.moveTo(logo.x, logo.y); p.lineTo(logo.x + Math.cos(a) * len * 0.82, logo.y + Math.sin(a) * len * 0.82); return { p: p, c: c }; });
     geo();
   }
   // one band per card on screen, from the dot under it to the prism (pure arithmetic: no reading the page while it moves)
@@ -237,7 +237,7 @@
       var b = { key: c.k, id: c.id, x0: car.vert ? car.left + car.cw - 12 * sc : car.left + cxr, y0: car.vert ? car.top + cxr : car.top + car.h / 2 + (car.h / 2) * sc + 4, w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
         k: (x.sum ? 0.5 + 0.5 * (x.sum / max) : 0.2) * edge * (c.o != null ? 0.4 + 0.6 * c.o : 1), parts: o.parts || [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.01, li: c.el };
       b.core = new Path2D(); b.bands = SPEC.map(function () { return new Path2D(); });
-      var N = 24, spread = 2.4 * (b.w + 0.8);
+      var N = 24, spread = (car.vert ? 2.4 : 3.4) * (b.w + 0.8); // standing up (a phone) the fan opens wider over the longer drop
       for (var i = 0; i <= N; i++) {
         var t = i / N, p = pt(b, t), q = pt(b, Math.min(1, t + 0.01)), dx = q.x - p.x, dy = q.y - p.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
         var s = spread * Math.sin(Math.PI * Math.min(1, t * 1.05)) * (1.25 - t * 0.5);

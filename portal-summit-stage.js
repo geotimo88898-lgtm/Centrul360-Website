@@ -48,7 +48,7 @@
       ids: day.map(function (s) { return s.id; })
     };
   }
-  function greeting() { var h = new Date().getHours(); return h < 11 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara'; }
+  function greeting() { return K() && K().salut ? K().salut() : 'Bună ziua'; } // the hour in Romania (K.salut, portal-kit.js)
   function firstName() { var d = D(); return String((d && d.me && d.me.name) || '').trim().split(/\s+/)[0]; }
 
   // ------------------------------------------------------------------ the block
