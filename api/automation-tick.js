@@ -23,6 +23,8 @@ const STEPS = [
   ['ads', () => require('./_lib/ads-guard').guard()],
   // the changes the owners asked for once (api/_lib/ads-once.js)
   ['once', () => require('./_lib/ads-once').run()],
+  // once: Arad's WhatsApp number in the lead forms' settings, so the RF gușă forms can be made (the owner, 7.11)
+  ['formwa', () => require('./_lib/form-wa-once').run()],
   // read only, once: who owns the shared ad account and the site's pixel (api/_lib/pixel-diag.js); the pixel of the
   // owner's own Business (api/_lib/pixel-once.js) waits for what this finds
   ['pixeldiag', () => require('./_lib/pixel-diag').run()],

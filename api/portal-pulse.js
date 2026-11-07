@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
   // The ads' guard and the owners' one-off changes (the ads', and the automations' in _lib/wf-once.js) ride along too (api/automation-tick.js runs them hourly; a clock
   // that skips an hour costs nothing while a portal is open): looked at by this instance at most every 10 minutes, and
   // each keeps its own claim (the guard's 30 minutes, the changes' done list), so nothing runs twice.
-  const adsToo = Date.now() - lastAds > ADS_EVERY ? (lastAds = Date.now(), () => require('./_lib/ads-guard').guard().catch(() => 0).then(() => require('./_lib/ads-once').run()).catch(() => 0).then(() => require('./_lib/wf-once').run()).catch(() => 0).then(() => require('./_lib/pixel-diag').run()).catch(() => 0).then(() => require('./_lib/pixel-share').run()).catch(() => 0).then(() => require('./_lib/capi-live-once').run()).catch(() => 0)) : () => Promise.resolve();
+  const adsToo = Date.now() - lastAds > ADS_EVERY ? (lastAds = Date.now(), () => require('./_lib/ads-guard').guard().catch(() => 0).then(() => require('./_lib/ads-once').run()).catch(() => 0).then(() => require('./_lib/wf-once').run()).catch(() => 0).then(() => require('./_lib/pixel-diag').run()).catch(() => 0).then(() => require('./_lib/pixel-share').run()).catch(() => 0).then(() => require('./_lib/capi-live-once').run()).catch(() => 0).then(() => require('./_lib/form-wa-once').run()).catch(() => 0)) : () => Promise.resolve();
   const chores = () => tick().catch(() => 0).then(() => pollLeads()).catch(() => 0).then(adsToo);
   const wu = waitUntil();
   if (wu) wu(chores());
