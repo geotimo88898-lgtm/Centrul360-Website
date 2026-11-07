@@ -16,7 +16,9 @@ globalThis.fetch = function fetch(input, init) {
     const route = globalThis.__C360_ROUTE;
     if (route) {
       const u = new URL(input instanceof Request ? input.url : String(input));
-      if (SELF.test(u.hostname) || u.host === globalThis.__C360_SELF_HOST) return route(new Request(input, init));
+      // verificarea serverului (api/_lib/perf.js, antetul x-c360-probe) merge pe internet, ca un vizitator
+      const probe = new Headers((init && init.headers) || (input instanceof Request ? input.headers : undefined)).has("x-c360-probe");
+      if (!probe && (SELF.test(u.hostname) || u.host === globalThis.__C360_SELF_HOST)) return route(new Request(input, init));
     }
     if (env.C360_OFFLINE_TEST === "1") {
       const u = new URL(input instanceof Request ? input.url : String(input));

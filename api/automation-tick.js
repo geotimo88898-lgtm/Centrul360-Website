@@ -38,6 +38,8 @@ const STEPS = [
   ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
   // the CRM steps of the Facebook leads that no change sent yet (Conversions API, api/_lib/meta-capi.js)
   ['capi', () => require('./_lib/meta-capi').sweep()],
+  // Performanța site-ului: adresele importante ale site-ului și portalului, verificate în fiecare oră (api/_lib/perf.js)
+  ['perf', () => require('./_lib/perf').probe('cron').then((r) => ({ at: r.at, down: r.r.filter((x) => !(x.code >= 200 && x.code < 400)).length }))],
 ];
 
 module.exports = async (req, res) => {
