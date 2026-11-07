@@ -103,13 +103,15 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 
       <p><strong>5. Măsurarea reclamelor prin Meta Conversions API.</strong> Pe lângă Meta Pixel, serverul nostru trimite către Meta Platforms Ireland Ltd. câteva informații despre acțiunile făcute în urma reclamelor noastre: când trimiți un formular pe site sau îți faci o programare online și, dacă ne-ai lăsat datele printr-un formular de pe Facebook sau Instagram, etapele prin care treci la noi (te-am contactat, te-ai programat, ai venit la programare, ai devenit client, împreună cu suma plătită, în lei). Numărul de telefon și adresa de e-mail sunt transformate înainte de trimitere într-un cod ireversibil (hash SHA-256), din care nu pot fi citite; le trimitem împreună cu identificatorul formularului Facebook, un cod intern al solicitării tale, adresa IP, tipul browserului și cookie-urile Meta (_fbp, _fbc), dacă există. Nu trimitem numele tău, procedura pentru care ne-ai contactat, date despre sănătatea ta sau conținutul discuțiilor. Folosim aceste informații ca să măsurăm câte persoane ne aduc reclamele și ca să le arătăm celor interesate cu adevărat de serviciile noastre. Temeiul este consimțământul tău pentru marketing și măsurarea campaniilor (art. 6 alin. (1) lit. a) GDPR), iar pentru etapele unui formular trimis pe Facebook sau Instagram, interesul nostru legitim de a măsura și îmbunătăți reclamele (art. 6 alin. (1) lit. f) GDPR). Meta folosește aceste date conform propriei politici de confidențialitate (facebook.com/privacy/policy). Te poți opune oricând sau îți poți retrage consimțământul scriindu-ne pe WhatsApp, la numerele de la punctul 1, sau spunându-ne la clinică: de atunci nu mai trimitem către Meta nimic despre tine. Poți gestiona aceste date și din contul tău Meta, la „Activitatea ta în afara tehnologiilor Meta”.</p>
 
-      <p><strong>6. Cât timp păstrăm datele.</strong> Păstrăm datele de contact și istoricul programărilor pe durata relației cu tine ca și client, plus perioada impusă de legislația financiar-contabilă aplicabilă, după care sunt șterse sau anonimizate.</p>
+      <p><strong>6. Măsurarea vizitelor.</strong> Măsurăm anonim vizitele pe site, fără cookie-uri: pagina vizitată, site-ul de pe care ai ajuns (doar numele lui), dacă ești pe telefon sau pe calculator și cât a durat încărcarea paginii. Nu salvăm nimic pe dispozitivul tău și nu păstrăm adresa IP; vizitele se numără cu un cod care se schimbă zilnic și din care nu poți fi identificat.</p>
 
-      <p><strong>7. Drepturile tale.</strong> Conform GDPR, ai dreptul de acces, rectificare, ștergere, restricționare, portabilitate și opoziție la prelucrarea datelor tale, precum și dreptul de a-ți retrage oricând consimțământul pentru marketing. Poți exercita aceste drepturi scriindu-ne pe WhatsApp sau la clinică. Ai, de asemenea, dreptul de a depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (ANSPDCP, dataprotection.ro).</p>
+      <p><strong>7. Cât timp păstrăm datele.</strong> Păstrăm datele de contact și istoricul programărilor pe durata relației cu tine ca și client, plus perioada impusă de legislația financiar-contabilă aplicabilă, după care sunt șterse sau anonimizate.</p>
 
-      <p><strong>8. Securitate.</strong> Luăm măsuri tehnice și organizatorice rezonabile pentru a proteja datele tale împotriva accesului neautorizat, pierderii sau utilizării abuzive.</p>
+      <p><strong>8. Drepturile tale.</strong> Conform GDPR, ai dreptul de acces, rectificare, ștergere, restricționare, portabilitate și opoziție la prelucrarea datelor tale, precum și dreptul de a-ți retrage oricând consimțământul pentru marketing. Poți exercita aceste drepturi scriindu-ne pe WhatsApp sau la clinică. Ai, de asemenea, dreptul de a depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (ANSPDCP, dataprotection.ro).</p>
 
-      <p><strong>9. Modificări.</strong> Putem actualiza periodic această politică; data ultimei actualizări este afișată mai sus. Îți recomandăm să o consulți din când în când.</p>
+      <p><strong>9. Securitate.</strong> Luăm măsuri tehnice și organizatorice rezonabile pentru a proteja datele tale împotriva accesului neautorizat, pierderii sau utilizării abuzive.</p>
+
+      <p><strong>10. Modificări.</strong> Putem actualiza periodic această politică; data ultimei actualizări este afișată mai sus. Îți recomandăm să o consulți din când în când.</p>
 
       <p>Vezi și <a href="/termeni">Termenii și condițiile</a> și <a href="/cookies">Politica de cookies</a>.</p>
 </div></div></section>
@@ -137,6 +139,7 @@ var v=get();if(v==='y')yes();else if(!v)show();
 b.addEventListener('click',function(e){var t=e.target.closest('[data-ck]');if(!t)return;var y=t.getAttribute('data-ck')==='y';try{localStorage.setItem(K,JSON.stringify({v:y?'y':'n',at:Date.now()}))}catch(x){}b.classList.remove('in');setTimeout(function(){b.hidden=true},600);if(y)yes();else{window.C360_CONSENT=false;c('denied')}});
 document.addEventListener('click',function(e){if(e.target.closest('[data-cookies]')){e.preventDefault();show()}})})();</script>
 <script src="/v2/kit.js" defer></script>
+<script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>
 </body>
 </html>
