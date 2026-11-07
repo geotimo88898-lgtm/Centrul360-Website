@@ -12,11 +12,19 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var lei = function (n) { return K() && K().lei ? K().lei(n) : Math.round(n) + ' lei'; };
   var today = function () { return K() && K().today ? K().today() : new Date().toISOString().slice(0, 10); };
-  var CITIES = ['Timișoara', 'Arad'];
+  // the cities are the ones the team works in (from the data, not written here)
+  var CITIES = [];
+  function syncCities(d) {
+    var seen = {}, l = [];
+    (((d.admin && d.admin.employees) || d.activeEmployees || [])).forEach(function (e) { var c = String(e.location || '').trim(); if (e.active === false || !c || c === '-' || seen[c]) return; seen[c] = 1; l.push(c); });
+    (d.incasari || []).forEach(function (s) { var c = String(s.location || '').trim(); if (c && !seen[c]) { seen[c] = 1; l.push(c); } });
+    if (l.length) CITIES = l;
+  }
 
   // ------------------------------------------------------------------ the day's money
   function model() {
     var d = D(); if (!d) return null;
+    syncCities(d);
     var t = today();
     var y = K().addDays ? K().addDays(t, -1) : '';
     var inc = d.incasari || [];
@@ -40,6 +48,7 @@
   var root = null, cv = null, ctx = null, raf = 0, visible = false, shown = 0, parts = [], lastT = 0, srcs = [], prism = null, out = null;
   function mount(panel) {
     if (root && root.isConnected) return;
+    if (D()) syncCities(D());
     root = document.createElement('section');
     root.className = 'n-money';
     root.setAttribute('aria-label', 'Încasat azi');
