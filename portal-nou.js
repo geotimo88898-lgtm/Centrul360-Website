@@ -152,6 +152,18 @@
     root.querySelectorAll('.c360-toast:not([data-nuki])').forEach(dressToast);
     if (root.matches && root.matches('.k-menu.has-acc')) addSwitch(root);
     root.querySelectorAll('.db-hero h2:not([data-n])').forEach(accentName);
+    root.querySelectorAll('.tr-door:not([data-n])').forEach(dressDoor);
+  }
+  // Traininguri: Nuki stands at each door, in the pose of what is learned behind it
+  var DOOR = { parcurs: 'receptie', consult: 'fisa', tratamente: 'facial' };
+  function dressDoor(d) {
+    d.setAttribute('data-n', '1');
+    var img = new Image();
+    img.className = 'n-door-nuki';
+    img.alt = '';
+    img.decoding = 'async';
+    img.src = POSE + (DOOR[d.dataset.zone] || 'prezinta') + '.webp';
+    d.appendChild(img);
   }
   // "Bună ziua, Ana": the name in the site's italic serif, the one accent of the title
   function accentName(h) {
