@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 7.11 night, the owner in his main session (the Restart ad with the best return, at 60, then „da”): Arad's Restart
+  // ad „Căutăm 10 doamne din Arad.” back on at 60 lei a day, only this campaign
+  { id: 'ar-restart-on-2026-11-07', why: 'Restart Arad pornit din nou la 60 lei/zi, cerut de voi pe 7.11', actions: [
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', daily: 60, why: 'Arad Restart: cel mai bun randament, pornit din nou la 60 lei/zi' },
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', status: 'ACTIVE', why: 'Arad Restart: cel mai bun randament, pornit din nou la 60 lei/zi' },
+  ] },
   // 5.11 afternoon, the owner ("stinge toate reclamele active temporar"): every running campaign off (the hiring one was
   // already off); they come back on when the owner says so, in Reclame or by a new job here
   { id: 'stop-all-2026-11-05', why: 'oprite toate temporar pe 5.11, cerut de voi', actions: [
