@@ -14,7 +14,7 @@ import { env as ENV } from "cloudflare:workers";
 import { runNode, matchRoute } from "./node-adapter.js";
 import API from "./api.gen.js";
 import { creative, sharp } from "./creative.gen.js";
-import migrate, { batch as migrateBatch } from "./migrate.js";
+import migrate from "./migrate.js";
 import middleware from "../middleware.js";
 import vercel from "../vercel.json";
 import { makeBlob } from "./blob-r2.js";
@@ -141,8 +141,6 @@ export default {
   },
   // aceleași ore ca în vercel.json (UTC): 05:00 producția automată de creative, 06:00 automatizările, 19:00 raportul
   async scheduled(event, env, ctx) {
-    // TEMPORAR (6 nov): copierea din Vercel Blob în R2, din 2 în 2 minute, până termină; cursorul stă în R2
-    if (event.cron === "*/2 * * * *") return copyFromBlob(env);
     if (env.CRON_ON !== "1") return console.log("cron oprit (CRON_ON):", event.cron);
     await loadSecrets(env, SHARED);
     const hour = new Date(event.scheduledTime).getUTCHours();
@@ -154,27 +152,5 @@ export default {
     console.log("cron", path, r.status);
   }
 };
-
-async function copyFromBlob(env) {
-  // întâi data/ (conturi, programări, leaduri, mesaje), apoi tot store-ul portalului, apoi creativele
-  const KEY = "cf-migrate/state.json";
-  const st = (await env.BLOB.get(KEY).then((o) => (o ? o.json() : null)).catch(() => null)) || {};
-  const t0 = Date.now();
-  const steps = [["data", "site", "data/"], ["creative", "creative", ""], ["site", "site", ""]];
-  for (const [name, store, prefix] of steps) {
-    const s = st[name] || (st[name] = { cursor: "", done: false, copied: 0, skipped: 0, failed: 0, bytes: 0 });
-    if (s.done) continue;
-    while (Date.now() - t0 < 100e3) {
-      const r = await migrateBatch(store, s.cursor, { prefix, limit: 100, parallel: 10 });
-      if (r.error) { s.error = r.error; break; }
-      s.copied += r.copied; s.skipped += r.skipped; s.failed += r.failed; s.bytes += r.bytes; s.cursor = r.cursor || ""; s.done = r.done; delete s.error;
-      if (r.done) break;
-    }
-    if (!s.done && !s.error) break;
-  }
-  st.at = new Date().toISOString();
-  await env.BLOB.put(KEY, JSON.stringify(st));
-  console.log("copy-from-blob", JSON.stringify(st));
-}
 
 export const CreativeJobs = makeJobs(() => creative);
