@@ -1,0 +1,1070 @@
+{
+ "id": "fisa-faciale",
+ "title": "Fișa *față*",
+ "short": "Fișa clientei: față",
+ "chap": "Fișa față",
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Fișa clientei · Training",
+   "title": "Fișa *față*",
+   "sub": "Ten, pete, riduri. Pagină cu pagină.",
+   "pose": "salut-pa",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Azi învățăm fișa pentru față. O folosești pentru ten, pete și riduri.",
+     "pose": "facial"
+    },
+    {
+     "say": "Are patru pagini. Le luăm pe rând, cu un exemplu completat.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Regula de aur",
+   "text": "O completezi *tu, împreună cu ea*.",
+   "pose": "fisa",
+   "extra": {
+    "ic": "message-circle",
+    "t": "O întrebi rubrică cu rubrică și scrii tu.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Ca la toate fișele, o regulă de aur.",
+     "pose": "surprins"
+    },
+    {
+     "say": "Nu îi dai fișa să o completeze singură. Stai lângă ea, o întrebi și scrii tu.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 1 din 4",
+   "title": "Cine e clienta *și ce vrea*",
+   "ic": "user-round",
+   "pose": "fisa",
+   "beats": [
+    {
+     "say": "Pagina unu: cine e clienta și ce vrea.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "O completați la începutul consultației, înainte să vorbiți de tratamente.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 1",
+   "head": "Cine e clienta *și ce vrea*",
+   "img": "academy-fisa/faciale-p1.webp",
+   "pose": "fisa",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      4.6,
+      7.2
+     ],
+     "t": "Sus, în colț",
+     "d": "Numărul fișei, data de azi și numele tău.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      12.0,
+      14.7
+     ],
+     "t": "Cine este ea",
+     "d": "Nume, data nașterii, telefon, e-mail.",
+     "at": 1,
+     "n": 2
+    },
+    {
+     "box": [
+      26.8,
+      11.2
+     ],
+     "t": "De ce a venit",
+     "d": "Ce o deranjează la ten și ce a mai făcut.",
+     "at": 4,
+     "n": 3
+    },
+    {
+     "box": [
+      38.2,
+      11.2
+     ],
+     "t": "Când poate veni",
+     "d": "Zilele, orele și când nu poate.",
+     "at": 7,
+     "n": 4
+    },
+    {
+     "box": [
+      49.6,
+      39.9
+     ],
+     "t": "Sănătatea ei",
+     "d": "Citești fiecare întrebare. Bifezi „Da” sau „Nu”.",
+     "at": 8,
+     "n": 5
+    }
+   ],
+   "fills": [
+    [
+     75.5,
+     4.8,
+     "0142",
+     "",
+     0.35
+    ],
+    [
+     75.5,
+     6.9,
+     "15.10.2026",
+     "",
+     0.35
+    ],
+    [
+     75.5,
+     8.9,
+     "Ioana",
+     "",
+     0.35
+    ],
+    [
+     24.5,
+     20.1,
+     "15.10.2026",
+     "",
+     1.35
+    ],
+    [
+     66.5,
+     20.1,
+     "Instagram",
+     "",
+     1.35
+    ],
+    [
+     61.93,
+     24.47,
+     "✓",
+     "is-box",
+     1.35
+    ],
+    [
+     31.26,
+     42.52,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     46.3,
+     42.52,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     43.7,
+     44.66,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     24.5,
+     47.2,
+     "20-27.12, concediu",
+     "",
+     7.35
+    ],
+    [
+     9.2,
+     34.6,
+     "Pete pe pomeți și riduri fine. Peeling acum 2 ani.",
+     "",
+     4.35
+    ],
+    [
+     87.94,
+     56.15,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     58.46,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     60.78,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     63.09,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     65.41,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     67.84,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     70.16,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     72.48,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     74.79,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     77.11,
+     "✓",
+     "is-box",
+     8.35
+    ],
+    [
+     87.94,
+     79.42,
+     "✓",
+     "is-box",
+     8.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Sus, în colț, scrii numărul fișei, data de azi și numele tău, la „Specialist”.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Apoi datele ei: numele, data nașterii, telefonul și e-mailul.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "„Data primei vizite” e azi. Și o întrebi: „De unde ați aflat de noi?”",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Dacă are sub optsprezece ani, bifezi „da”. Atunci un părinte completează pagina trei.",
+     "pose": "arata-jos",
+     "cap": "Dacă are sub 18 ani, bifezi „da”. Atunci un părinte completează pagina 3."
+    },
+    {
+     "say": "O întrebi: „Ce vă deranjează la ten?”",
+     "pose": "oglinda"
+    },
+    {
+     "say": "Și: „Ce tratamente ați mai făcut și când?” De exemplu peeling, filler, botox sau laser.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum doi ani.”",
+     "pose": "fisa",
+     "cap": "Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum 2 ani.”"
+    },
+    {
+     "say": "Bifezi zilele și orele care îi convin, și scrii când nu poate. Așa, programările se fac repede.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Jos sunt întrebările de sănătate. I le citești pe rând și bifezi „Da” sau „Nu”.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Dacă e un singur „Da”, scrii detaliile jos. Și nu începi tratamentul până nu întrebi dacă se poate face.",
+     "pose": "arata-jos"
+    }
+   ],
+   "backAt": 9.6
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 2 din 4",
+   "title": "Tenul *ei*",
+   "ic": "scan-face",
+   "pose": "oglinda",
+   "beats": [
+    {
+     "say": "Pagina doi: tenul ei.",
+     "pose": "oglinda"
+    },
+    {
+     "say": "Aici te uiți atent la pielea ei, afli ce face acasă și scrii ce îi recomanzi.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 2",
+   "head": "Tenul *ei*",
+   "img": "academy-fisa/faciale-p2.webp",
+   "pose": "oglinda",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      4.0,
+      13.3
+     ],
+     "t": "Cum e pielea ei",
+     "d": "Tipul de ten, problemele, fototipul, SPF.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      17.5,
+      14.6
+     ],
+     "t": "Ce face acasă",
+     "d": "Cu ce se spală, se hidratează, apa, somnul, soarele.",
+     "at": 3,
+     "n": 2
+    },
+    {
+     "box": [
+      32.3,
+      15.8
+     ],
+     "t": "Ce îi recomanzi",
+     "d": "Procedura, zona, ședințele, intervalul.",
+     "at": 5,
+     "n": 3
+    },
+    {
+     "box": [
+      48.3,
+      27.3
+     ],
+     "t": "Întrebări pentru față",
+     "d": "„Da” sau „Nu”, la fiecare.",
+     "at": 7,
+     "n": 4
+    },
+    {
+     "box": [
+      75.8,
+      13.7
+     ],
+     "t": "Ce vezi tu",
+     "d": "Ce observi și ce sfat îi dai pentru acasă.",
+     "at": 8,
+     "n": 5
+    }
+   ],
+   "fills": [
+    [
+     37.73,
+     8.25,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     32.44,
+     10.39,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     43.61,
+     10.39,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     32.18,
+     12.53,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     34.62,
+     15.2,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     24.5,
+     20.8,
+     "gel de curățare",
+     "",
+     3.35
+    ],
+    [
+     66.5,
+     20.8,
+     "cremă hidratantă",
+     "",
+     3.35
+    ],
+    [
+     24.5,
+     22.9,
+     "nimic",
+     "",
+     3.35
+    ],
+    [
+     66.5,
+     22.9,
+     "nu folosește",
+     "",
+     3.35
+    ],
+    [
+     24.5,
+     29.6,
+     "nu",
+     "",
+     3.35
+    ],
+    [
+     66.5,
+     29.6,
+     "vara, mult",
+     "",
+     3.35
+    ],
+    [
+     24.5,
+     26.9,
+     "1",
+     "",
+     3.35
+    ],
+    [
+     66.5,
+     26.9,
+     "6",
+     "",
+     3.35
+    ],
+    [
+     8.7,
+     37.6,
+     "Microneedling",
+     "",
+     5.35
+    ],
+    [
+     37.5,
+     37.6,
+     "față",
+     "",
+     5.35
+    ],
+    [
+     64.6,
+     37.6,
+     "3",
+     "",
+     5.35
+    ],
+    [
+     78.9,
+     37.6,
+     "4 săpt.",
+     "",
+     5.35
+    ],
+    [
+     87.94,
+     54.84,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     57.16,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     59.47,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     61.79,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     64.1,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     66.42,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     68.74,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     71.05,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     73.37,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     9.2,
+     80.1,
+     "Pete pe pomeți, nu pune SPF zilnic. Îi recomand SPF 50 în fiecare dimineață.",
+     "",
+     8.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Te uiți la ten și bifezi ce tip e și ce probleme are.",
+     "pose": "oglinda"
+    },
+    {
+     "say": "Bifezi și fototipul: cât de deschisă e pielea.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Și o întrebi dacă pune cremă cu SPF în fiecare zi.",
+     "pose": "spf",
+     "tts": "Și o întrebi dacă pune cremă cu protecție solară în fiecare zi."
+    },
+    {
+     "say": "O întrebi cu ce se spală pe față, cu ce se hidratează și dacă folosește retinol sau acizi.",
+     "pose": "facial"
+    },
+    {
+     "say": "Apoi câtă apă bea, cât doarme, dacă fumează și cât stă la soare.",
+     "pose": "apa"
+    },
+    {
+     "say": "Aici scrii ce îi recomanzi: procedura, zona, câte ședințe și la ce interval.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Numărul de ședințe și intervalul le iei din schema tratamentului.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Apoi întrebările pentru față. Citești și bifezi „Da” sau „Nu”. Un singur „Da” înseamnă: întâi întrebi dacă se poate.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Jos scrii ce observi și ce sfat îi dai pentru acasă.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "De exemplu: „Pete pe pomeți, nu pune SPF zilnic. Îi recomand SPF 50 în fiecare dimineață.”",
+     "pose": "spf",
+     "tts": "De exemplu: „Pete pe pomeți, nu pune protecție solară zilnic. Îi recomand protecție cincizeci în fiecare dimineață.”"
+    }
+   ],
+   "backAt": 9.6
+  },
+  {
+   "type": "cards",
+   "kicker": "Fototipul",
+   "head": "Cât de *deschisă* e pielea",
+   "pose": "gandeste",
+   "items": [
+    {
+     "ic": "sun",
+     "t": "Fototip I",
+     "s": "Foarte albă, se arde mereu",
+     "at": 0.4
+    },
+    {
+     "ic": "sun-medium",
+     "t": "Fototip III",
+     "s": "La mijloc",
+     "at": 1
+    },
+    {
+     "ic": "sun-dim",
+     "t": "Fototip VI",
+     "s": "Foarte închisă",
+     "at": 1.4
+    }
+   ],
+   "beats": [
+    {
+     "say": "Fototipul e ușor. Unu înseamnă piele foarte albă, care se arde mereu la soare.",
+     "pose": "spf",
+     "cap": "Fototipul e ușor. I înseamnă piele foarte albă, care se arde mereu la soare."
+    },
+    {
+     "say": "Șase înseamnă piele foarte închisă. Restul sunt la mijloc.",
+     "pose": "gandeste",
+     "cap": "VI înseamnă piele foarte închisă. Restul sunt la mijloc."
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 3 din 4",
+   "title": "Acordul *și semnăturile*",
+   "ic": "pen-line",
+   "pose": "fisa",
+   "beats": [
+    {
+     "say": "Pagina trei: acordul și semnăturile. O citește ea, tu îi explici.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 3",
+   "head": "Acordul *și semnăturile*",
+   "img": "academy-fisa/faciale-p3.webp",
+   "pose": "fisa",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      4.0,
+      21.0
+     ],
+     "t": "Acordul ei",
+     "d": "Bifează ea ce vrea. Ce nu bifează, nu facem.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      25.2,
+      19.6
+     ],
+     "t": "Înainte și după",
+     "d": "Sfaturile, spuse pe scurt, cu voce tare.",
+     "at": 2,
+     "n": 2
+    },
+    {
+     "box": [
+      45.0,
+      10.4
+     ],
+     "t": "Pozele",
+     "d": "Data, zona, din ce parte, fișierul.",
+     "at": 3,
+     "n": 3
+    },
+    {
+     "box": [
+      62.3,
+      14.6
+     ],
+     "t": "Doar sub 18 ani",
+     "d": "Un părinte completează. Adultă: lași gol.",
+     "at": 4,
+     "n": 4
+    },
+    {
+     "box": [
+      77.1,
+      12.4
+     ],
+     "t": "Semnăturile",
+     "d": "Semnează ea, semnezi tu.",
+     "at": 5,
+     "n": 5
+    }
+   ],
+   "fills": [
+    [
+     8.15,
+     18.29,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     8.15,
+     21.67,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     8.7,
+     50.3,
+     "15.10.2026",
+     "",
+     3.35
+    ],
+    [
+     25.7,
+     50.3,
+     "față",
+     "",
+     3.35
+    ],
+    [
+     51.0,
+     50.3,
+     "față, profil",
+     "",
+     3.35
+    ],
+    [
+     72.2,
+     50.3,
+     "IMG_0143",
+     "",
+     3.35
+    ],
+    [
+     66.5,
+     82.4,
+     "semnat",
+     "is-sig",
+     5.35
+    ],
+    [
+     24.5,
+     85.4,
+     "15.10.2026",
+     "",
+     5.35
+    ],
+    [
+     66.5,
+     85.4,
+     "Ioana",
+     "",
+     5.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Îi dai foaia să citească. Ea bifează ce vrea: poze pentru evidență, poze pentru reclamă fără față, mesaje și oferte.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Ce nu bifează, nu facem.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Apoi îi spui pe scurt, cu voce tare, ce face înainte și după. Așa pielea rămâne liniștită.",
+     "pose": "spf"
+    },
+    {
+     "say": "Când faci poze, scrii data, zona, din ce parte și numele fișierului. Doar dacă a bifat acordul.",
+     "pose": "aparat-foto"
+    },
+    {
+     "say": "Partea pentru părinte o completezi doar dacă are sub optsprezece ani.",
+     "pose": "prezinta",
+     "cap": "Partea pentru părinte o completezi doar dacă are sub 18 ani."
+    },
+    {
+     "say": "Jos semnează ea și semnezi tu. Fără semnături, fișa nu e gata.",
+     "pose": "aprobare"
+    }
+   ],
+   "backAt": 5.6
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 4 din 4",
+   "title": "Ședințele, *una câte una*",
+   "ic": "calendar-days",
+   "pose": "calendar",
+   "beats": [
+    {
+     "say": "Pagina patru: ședințele, una câte una.",
+     "pose": "calendar"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 4",
+   "head": "Ședințele, *una câte una*",
+   "img": "academy-fisa/faciale-p4.webp",
+   "pose": "fisa",
+   "land": true,
+   "focus": [
+    {
+     "box": [
+      4.5,
+      9.1
+     ],
+     "t": "Sus",
+     "d": "Numele ei, ședințele din pachet, prima dată.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      13.8,
+      9.5
+     ],
+     "t": "La fiecare ședință",
+     "d": "Data, procedura, produsele, durata, cum a reacționat pielea, sfatul.",
+     "at": 1,
+     "n": 2
+    }
+   ],
+   "fills": [
+    [
+     34.3,
+     11.0,
+     "3",
+     "",
+     0.35
+    ],
+    [
+     52,
+     11.0,
+     "15.10.2026",
+     "",
+     0.35
+    ],
+    [
+     5.6,
+     18.0,
+     "15.10.2026",
+     "",
+     1.35
+    ],
+    [
+     14.4,
+     18.0,
+     "1",
+     "",
+     1.35
+    ],
+    [
+     17.9,
+     18.0,
+     "Microneedling",
+     "",
+     1.35
+    ],
+    [
+     46.1,
+     18.0,
+     "60 min",
+     "",
+     1.35
+    ],
+    [
+     51.7,
+     18.0,
+     "roșeață ușoară",
+     "",
+     1.35
+    ],
+    [
+     66.1,
+     18.0,
+     "SPF 50",
+     "",
+     1.35
+    ],
+    [
+     79.7,
+     18.0,
+     "Ioana",
+     "",
+     1.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Sus treci numele ei, câte ședințe are în pachet și data primei ședințe.",
+     "pose": "fisa"
+    },
+    {
+     "say": "La fiecare ședință, un rând nou: data, a câta ședință e și procedura.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Produsele folosite, cât a durat și cum a reacționat pielea.",
+     "pose": "facial"
+    },
+    {
+     "say": "Și ce îi spui să facă acasă. De exemplu: SPF 50. La final semnați amândouă.",
+     "pose": "spf",
+     "tts": "Și ce îi spui să facă acasă. De exemplu: protecție solară cincizeci. La final semnați amândouă."
+    }
+   ],
+   "backAt": 3.6
+  },
+  {
+   "type": "list",
+   "kicker": "La final",
+   "head": "Verifică *fișa*",
+   "pose": "aprobare",
+   "items": [
+    {
+     "ic": "check",
+     "t": "Paginile 1 și 2, completate rubrică cu rubrică.",
+     "at": 0.0
+    },
+    {
+     "ic": "check",
+     "t": "Fiecare întrebare are „Da” sau „Nu”.",
+     "at": 0.6666666666666666
+    },
+    {
+     "ic": "check",
+     "t": "Ai scris planul: procedura, ședințele, intervalul.",
+     "at": 1.3333333333333333
+    },
+    {
+     "ic": "check",
+     "t": "Ea a bifat acordurile și a semnat. Și tu.",
+     "at": 2.0
+    },
+    {
+     "ic": "check",
+     "t": "Pozele, doar cu acordul ei.",
+     "at": 2.6666666666666665
+    },
+    {
+     "ic": "check",
+     "t": "La fiecare ședință, un rând pe pagina 4.",
+     "at": 3.3333333333333335
+    }
+   ],
+   "beats": [
+    {
+     "say": "La final, verifici fișa.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Paginile unu și doi sunt completate, și fiecare întrebare are „Da” sau „Nu”.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Ai scris planul: procedura, ședințele și intervalul.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Ea a semnat, tu la fel. Pozele doar cu acordul ei. Și la fiecare ședință, un rând pe pagina patru.",
+     "pose": "aparat-foto"
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "chap": "Recapitulare",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Împreună cu ea",
+     "at": 1.0
+    },
+    {
+     "t": "Fototipul și SPF",
+     "at": 1.35
+    },
+    {
+     "t": "Planul scris",
+     "at": 1.7
+    },
+    {
+     "t": "Semnături",
+     "at": 2.05
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi fișa pentru față.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Te uiți atent la ten, întrebi de soare și de SPF, și scrii planul clar.",
+     "pose": "spf",
+     "tts": "Te uiți atent la ten, întrebi de soare și de protecția solară, și scrii planul clar."
+    },
+    {
+     "say": "Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ]
+  }
+ ]
+}

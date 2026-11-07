@@ -1,0 +1,1021 @@
+[
+ {
+  "city": "both",
+  "minutes": 60,
+  "prices": [
+   "restart"
+  ],
+  "what": "Tratament facial în 8 etape, cu ultrasunete și radiofrecvență. Tenul arată odihnit și luminos de la prima ședință.",
+  "forWho": [
+   "Ten obosit, tern sau deshidratat.",
+   "Prima vizită: e tratamentul de intrare cel mai ușor de ales.",
+   "Întreținere lunară între curele intensive."
+  ],
+  "benefits": [
+   "Ten hidratat și luminos chiar din prima ședință.",
+   "Opt etape într-o oră, cu aparat: ultrasunete și radiofrecvență.",
+   "Fără ace, fără durere, fără recuperare: își vede de zi imediat."
+  ],
+  "phone": [
+   "E o oră, cu opt etape: demachiere, tonifiere, curățare cu ultrasunete, gomaj, radiofrecvență pentru fermitate, masaj facial, o mască aleasă special pentru pielea dumneavoastră și crema de final. Fără ace, fără durere, fără recuperare: ieșiți și vă vedeți de zi.",
+   "„Se vede că am făcut ceva?” Se vede că aveți pielea odihnită. Nu se vede că ați fost la salon.",
+   "„Trebuie să fac ceva înainte?” Nu. Veniți cum sunteți. Dacă sunteți machiată, vă demachiem noi, e chiar primul pas."
+  ],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Demachiere.",
+   "Tonifiere.",
+   "Curățare cu ultrasunete.",
+   "Gomaj.",
+   "Secvență de radiofrecvență.",
+   "Masaj.",
+   "Mască personalizată, aleasă după evaluare.",
+   "Cremă de final."
+  ],
+  "settings": [],
+  "say": [
+   "Curățăm în profunzime, exfoliem blând și hidratăm. Tenul arată odihnit și luminos chiar de la prima ședință.",
+   "Acum vine o spatulă care vibrează și scoate impuritățile din pori. Nu se stoarce nimic, majoritatea spun că gâdilă un pic.",
+   "Radiofrecvența încălzește plăcut straturile mai adânci. Se simte ca o căldură care se plimbă pe față."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "1, apoi întreținere",
+  "interval": "o dată pe lună",
+  "combos": [
+   "hidratare",
+   "antirid"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "restart",
+  "name": "Tratament facial Restart",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 60,
+  "prices": [
+   "hidratare"
+  ],
+  "what": "Reface nivelul de apă al pielii și întărește bariera ei.",
+  "forWho": [
+   "Ten uscat, deshidratat sau tras.",
+   "Înainte de un eveniment, pentru un ten luminos."
+  ],
+  "benefits": [
+   "Pielea își recapătă apa și elasticitatea.",
+   "Ten catifelat de la prima ședință.",
+   "Potrivit înainte de un eveniment."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Demachiere și curățare.",
+   "Exfoliere blândă.",
+   "Ser și mască hidratantă.",
+   "Masaj.",
+   "Cremă și SPF."
+  ],
+  "settings": [],
+  "say": [
+   "Pielea ta primește înapoi apa pe care a pierdut-o. Se simte mai catifelată chiar de azi."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "2-4",
+  "interval": "",
+  "combos": [
+   "restart",
+   "mn-pdrn"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "hidratare",
+  "name": "Hidratare profundă",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 60,
+  "prices": [
+   "antirid"
+  ],
+  "what": "Diminuează ridurile și liniile fine și ajută pielea să se regenereze.",
+  "forWho": [
+   "Riduri fine și piele care și-a pierdut din fermitate."
+  ],
+  "benefits": [
+   "Liniile fine se văd mai puțin.",
+   "Pielea se reface și arată mai fermă.",
+   "Rezultatul crește de la o ședință la alta."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Demachiere și curățare.",
+   "Exfoliere.",
+   "Seruri active anti-age.",
+   "Mască.",
+   "Cremă și SPF."
+  ],
+  "settings": [],
+  "say": [
+   "Lucrăm pe liniile fine și pe fermitate. Rezultatul se adună de la o ședință la alta."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "4",
+  "interval": "",
+  "combos": [
+   "hifu-fata",
+   "rf-sculpt"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "antirid",
+  "name": "Tratament intensiv antirid",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 50,
+  "prices": [
+   "redness"
+  ],
+  "what": "Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cu cuperoză.",
+  "forWho": [
+   "Ten sensibil, reactiv, cu roșeață sau cuperoză."
+  ],
+  "benefits": [
+   "Calmează roșeața și pielea reactivă.",
+   "Potrivit pentru tenul sensibil și cu cuperoză.",
+   "Lucrează blând, fără iritații."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Curățare blândă.",
+   "Produse calmante.",
+   "Mască.",
+   "Cremă și SPF."
+  ],
+  "settings": [],
+  "say": [
+   "Lucrăm blând, fără să irităm. Pielea se liniștește de la o ședință la alta."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "4",
+  "interval": "",
+  "combos": [],
+  "media": [],
+  "verified": false,
+  "id": "redness",
+  "name": "Redness Relief Protocol",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 110,
+  "prices": [
+   "sebum"
+  ],
+  "what": "Reglează sebumul, curăță porii și reduce imperfecțiunile.",
+  "forWho": [
+   "Ten gras sau mixt, pori dilatați, imperfecțiuni."
+  ],
+  "benefits": [
+   "Pori mai curați și mai puțin vizibili.",
+   "Mai puțin sebum, mai puține imperfecțiuni.",
+   "Ten curat, fără să-l mai acopere cu fond de ten."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Demachiere și curățare.",
+   "Curățare profundă a porilor.",
+   "Produse care reglează sebumul.",
+   "Mască.",
+   "Cremă și SPF."
+  ],
+  "settings": [],
+  "say": [
+   "Curățăm porii în profunzime și liniștim pielea, ca să producă mai puțin sebum."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "4-6",
+  "interval": "",
+  "combos": [
+   "mn-pdrn"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "sebum",
+  "name": "Sebum Off Protocol",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 60,
+  "prices": [
+   "mn-pdrn"
+  ],
+  "what": "Microperforații care pornesc regenerarea pielii: urme de acnee, textură și fermitate.",
+  "forWho": [
+   "Urme și cicatrici după acnee.",
+   "Textură neuniformă, pori, lipsă de luminozitate."
+  ],
+  "benefits": [
+   "Urmele de acnee se estompează.",
+   "Textura pielii devine mai fină.",
+   "Piele mai fermă și mai luminoasă."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise.",
+   "Tendință la cicatrici cheloide."
+  ],
+  "steps": [
+   "Dezinfectare.",
+   "Anestezic local, cu timpul de acțiune al produsului.",
+   "Treceri cu dispozitivul, la adâncimea potrivită zonei.",
+   "Ser activ.",
+   "Mască calmantă."
+  ],
+  "settings": [],
+  "say": [
+   "Facem microperforații foarte fine, iar pielea se reface singură, mai netedă și mai fermă."
+  ],
+  "after": [
+   "Roșeață 1-2 zile, e normal.",
+   "Fără soare și machiaj 24-48 de ore.",
+   "SPF zilnic."
+  ],
+  "sessions": "3-6",
+  "interval": "la 4-6 săptămâni",
+  "combos": [
+   "sebum",
+   "hidratare"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "mn-pdrn",
+  "name": "Microneedling Exozomi PDRN",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 30,
+  "prices": [
+   "mn-ochi"
+  ],
+  "what": "Microneedling țintit pe zona ochilor: cearcăne, hidratare și linii fine.",
+  "forWho": [
+   "Cearcăne, linii fine în jurul ochilor."
+  ],
+  "benefits": [
+   "Cearcănele se văd mai puțin.",
+   "Liniile fine din jurul ochilor se netezesc.",
+   "Privire mai odihnită."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise.",
+   "Tendință la cicatrici cheloide."
+  ],
+  "steps": [
+   "Dezinfectare.",
+   "Anestezic local.",
+   "Treceri fine în jurul ochilor.",
+   "Ser activ.",
+   "Mască calmantă."
+  ],
+  "settings": [],
+  "say": [
+   "Lucrăm doar pe zona ochilor, foarte fin, ca privirea să arate mai odihnită."
+  ],
+  "after": [
+   "Roșeață ușoară 1-2 zile.",
+   "Fără machiaj 24-48 de ore.",
+   "SPF zilnic."
+  ],
+  "sessions": "3",
+  "interval": "la 4-6 săptămâni",
+  "combos": [],
+  "media": [],
+  "verified": false,
+  "id": "mn-ochi",
+  "name": "Microneedling corector periocular",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 90,
+  "prices": [
+   "hifu-mic",
+   "hifu-ff"
+  ],
+  "what": "Ultrasunete focalizate care strâng straturile adânci ale pielii. Colagenul nou face pielea mai fermă în lunile următoare.",
+  "forWho": [
+   "Piele lăsată ușor sau mediu, contur șters.",
+   "Gușă, gât, contur mandibular (o zonă mică)."
+  ],
+  "benefits": [
+   "Lifting fără bisturiu: pielea se strânge singură.",
+   "Contur mai clar la gușă și mandibulă.",
+   "Rezultat progresiv în 2-3 luni, poate ține până la doi ani."
+  ],
+  "phone": [
+   "HIFU înseamnă ultrasunete focalizate. Aparatul trimite energie fix în straturile de sub piele, acolo unde ar lucra un chirurg la un lifting, și le încălzește punctual. Pielea produce colagen nou și se strânge singură în săptămânile următoare.",
+   "La suprafață nu se atinge nimic: fără ace, fără tăieturi, fără nimic de vindecat după. Se simte ca niște înțepături calde și scurte.",
+   "Rezultatul se vede progresiv, în două-trei luni, și poate ține până la doi ani."
+  ],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Curățarea tenului.",
+   "Marcarea zonelor.",
+   "Gel conductor.",
+   "Treceri după protocolul aparatului, pe fiecare zonă (frunte, obraji, maxilar, gât).",
+   "Calmare cu mască sau cremă."
+  ],
+  "settings": [],
+  "say": [
+   "Energia ajunge în straturile adânci ale pielii și o face să se strângă. Pielea arată tot mai fermă în următoarele luni.",
+   "Se simte ca niște înțepături calde și scurte."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "1",
+  "interval": "întreținere la 12-18 luni",
+  "combos": [
+   "rf-sculpt",
+   "antirid"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "hifu-fata",
+  "name": "HIFU față",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 30,
+  "prices": [
+   "rf-mic",
+   "rf-ff"
+  ],
+  "what": "Căldură controlată care stimulează colagenul: fermitate și riduri mai puțin vizibile.",
+  "forWho": [
+   "Piele care și-a pierdut elasticitatea.",
+   "Riduri fine."
+  ],
+  "benefits": [
+   "Piele mai fermă.",
+   "Ridurile fine se văd mai puțin.",
+   "Senzație plăcută, de căldură."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Curățare.",
+   "Gel conductor.",
+   "Treceri circulare pe zonă, la temperatura recomandată de aparat.",
+   "Menținerea temperaturii câteva minute pe fiecare zonă.",
+   "Calmare."
+  ],
+  "settings": [],
+  "say": [
+   "Încălzește pielea în profunzime, ca să se strângă și să producă colagen. Se simte ca o căldură plăcută."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "6-8",
+  "interval": "1-2 pe săptămână",
+  "combos": [],
+  "media": [],
+  "verified": false,
+  "id": "rf-fata",
+  "name": "Radiofrecvență față",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 90,
+  "prices": [
+   "rfs-gusa",
+   "rfs-ff"
+  ],
+  "what": "Radiofrecvență cu masaj modelator: gușă, contur mandibular și tonusul întregii fețe.",
+  "forWho": [
+   "Gușă și contur mandibular șters.",
+   "Față care și-a pierdut tonusul."
+  ],
+  "benefits": [
+   "Gușă mai puțin vizibilă, contur mandibular mai clar.",
+   "Tonus pe toată fața.",
+   "Împreună cu HIFU, rezultat mai complet."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+   "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+   "Expunere solară intensă sau bronz recent.",
+   "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+   "Fillere sau botox în ultimele 2-4 săptămâni.",
+   "Piele iritată, arsuri solare sau răni deschise."
+  ],
+  "steps": [
+   "Curățare.",
+   "Gel conductor.",
+   "Radiofrecvență pe zonă, la temperatura recomandată de aparat.",
+   "Masaj modelator.",
+   "Calmare."
+  ],
+  "settings": [],
+  "say": [
+   "Căldură plăcută și masaj, ca pielea să se strângă și conturul să se vadă mai bine."
+  ],
+  "after": [
+   "SPF în fiecare zi.",
+   "Fără soare direct și saună 48 de ore.",
+   "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+   "O ușoară roșeață e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "6-9",
+  "interval": "1-2 pe săptămână",
+  "combos": [
+   "hifu-fata"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "rf-sculpt",
+  "name": "RF Sculpt față",
+  "group": "fata"
+ },
+ {
+  "city": "both",
+  "minutes": 45,
+  "prices": [
+   "lipo"
+  ],
+  "what": "Ultrasunete focalizate care distrug celulele de grăsime din zona tratată. Corpul le elimină singur în săptămânile următoare.",
+  "forWho": [
+   "Grăsime localizată care nu pleacă cu dietă și sport: abdomen, flancuri, coapse, brațe."
+  ],
+  "benefits": [
+   "Scade grăsimea localizată care nu pleacă nici cu dietă, nici cu sport.",
+   "Fără incizii, fără anestezie, fără recuperare.",
+   "Rezultatul se vede în câteva săptămâni."
+  ],
+  "phone": [
+   "Liposonix folosește ultrasunete care merg adânc, în stratul de grăsime. Încălzesc punctual celulele de grăsime din zona lucrată, iar corpul le elimină singur, natural, în săptămânile de după.",
+   "Nu e o dietă și nu înlocuiește mișcarea: lucrează exact pe grăsimea localizată care nu pleacă nici atunci când slăbiți în rest.",
+   "Fără incizii, fără anestezie, fără recuperare. Rezultatul se vede în câteva săptămâni."
+  ],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Varice, tromboză sau tulburări de circulație.",
+   "Liposucție sau abdominoplastie în ultimele 6 luni.",
+   "Hernii sau cicatrici recente în zona tratată.",
+   "Infecții sau leziuni ale pielii în zona tratată.",
+   "Menstruația în desfășurare (pentru unele proceduri)."
+  ],
+  "steps": [
+   "Evaluarea zonei și a stratului de grăsime.",
+   "Marcarea grilei de tratament.",
+   "Aplicarea după protocolul aparatului.",
+   "Hidratarea zonei."
+  ],
+  "settings": [],
+  "say": [
+   "Ultrasunetele ajung în stratul de grăsime fără să afecteze pielea. Celulele de grăsime se distrug, iar corpul le elimină singur în săptămânile următoare.",
+   "Nu e o dietă și nu înlocuiește mișcarea. Lucrează pe grăsimea care nu pleacă nici când slăbești în rest."
+  ],
+  "after": [
+   "Bea multă apă în zilele următoare (cam 2 litri pe zi).",
+   "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+   "Mișcarea ușoară și plimbările ajută rezultatul.",
+   "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "",
+  "interval": "minim 8-12 săptămâni pe aceeași zonă",
+  "combos": [
+   "ems",
+   "cavitatie"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "liposonix",
+  "name": "Liposonix",
+  "group": "corp"
+ },
+ {
+  "city": "both",
+  "minutes": 0,
+  "prices": [
+   "cav"
+  ],
+  "what": "Ultrasunete de joasă frecvență pentru grăsimea localizată și conturul siluetei, fără durere și fără recuperare.",
+  "forWho": [
+   "Grăsime localizată: abdomen, flancuri, coapse.",
+   "Celulită, împreună cu alte tratamente."
+  ],
+  "benefits": [
+   "Lucrează pe grăsimea localizată.",
+   "Fără durere și fără recuperare.",
+   "Merge foarte bine împreună cu EMS."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Varice, tromboză sau tulburări de circulație.",
+   "Liposucție sau abdominoplastie în ultimele 6 luni.",
+   "Hernii sau cicatrici recente în zona tratată.",
+   "Infecții sau leziuni ale pielii în zona tratată.",
+   "Menstruația în desfășurare (pentru unele proceduri)."
+  ],
+  "steps": [
+   "Evaluarea zonei.",
+   "Gel conductor.",
+   "Lucrul pe zonă după protocolul aparatului.",
+   "Curățarea și hidratarea zonei."
+  ],
+  "settings": [],
+  "say": [
+   "Ultrasunete care lucrează pe depozitele de grăsime din zonă. Se simte o vibrație și uneori un sunet ușor în ureche."
+  ],
+  "after": [
+   "Bea multă apă în zilele următoare (cam 2 litri pe zi).",
+   "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+   "Mișcarea ușoară și plimbările ajută rezultatul.",
+   "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "8",
+  "interval": "",
+  "combos": [
+   "ems",
+   "liposonix",
+   "impachetare"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "cavitatie",
+  "name": "Cavitație",
+  "group": "corp"
+ },
+ {
+  "city": "tm",
+  "minutes": 30,
+  "prices": [
+   "ems-1",
+   "ems-2"
+  ],
+  "what": "Contracții musculare puternice și controlate: tonifiere, fermitate și zone mai definite.",
+  "forWho": [
+   "Abdomen, fese, brațe sau coapse fără tonus.",
+   "Mușchi abdominali slăbiți după sarcină."
+  ],
+  "benefits": [
+   "Mușchi tonifiați, fără efort din partea ei.",
+   "Abdomen mai ferm, inclusiv după sarcină.",
+   "Doar 30 de minute pe zonă."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Varice, tromboză sau tulburări de circulație.",
+   "Liposucție sau abdominoplastie în ultimele 6 luni.",
+   "Hernii sau cicatrici recente în zona tratată.",
+   "Infecții sau leziuni ale pielii în zona tratată.",
+   "Menstruația în desfășurare (pentru unele proceduri)."
+  ],
+  "steps": [
+   "Poziționarea pe grupele musculare țintă.",
+   "Program și intensitate care cresc treptat.",
+   "Ședința propriu-zisă, 30 de minute pe zonă.",
+   "Hidratare."
+  ],
+  "settings": [],
+  "say": [
+   "Face mușchiul să se contracte de foarte multe ori, mult mai mult decât la sală. Tu stai întinsă, mușchiul lucrează.",
+   "Nu doare. Simți contracții ritmice, iar intensitatea o reglăm împreună."
+  ],
+  "after": [
+   "Bea multă apă în zilele următoare (cam 2 litri pe zi).",
+   "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+   "Mișcarea ușoară și plimbările ajută rezultatul.",
+   "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "6-8",
+  "interval": "2 pe săptămână",
+  "combos": [
+   "cavitatie",
+   "liposonix",
+   "impachetare"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "ems",
+  "name": "EMS (tonifiere)",
+  "group": "corp"
+ },
+ {
+  "city": "tm",
+  "minutes": 50,
+  "prices": [
+   "impachetare"
+  ],
+  "what": "Tratament relaxant și detoxifiant: circulație, drenaj și absorbția ingredientelor active.",
+  "forWho": [
+   "Celulită, retenție de apă, picioare grele.",
+   "Susține tratamentele de remodelare."
+  ],
+  "benefits": [
+   "Picioare mai ușoare, mai puțină apă reținută.",
+   "Piele mai netedă.",
+   "Foarte relaxant."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Varice, tromboză sau tulburări de circulație.",
+   "Liposucție sau abdominoplastie în ultimele 6 luni.",
+   "Hernii sau cicatrici recente în zona tratată.",
+   "Infecții sau leziuni ale pielii în zona tratată.",
+   "Menstruația în desfășurare (pentru unele proceduri)."
+  ],
+  "steps": [
+   "Pregătirea pielii.",
+   "Aplicarea produsului pe zone.",
+   "Împachetarea și căldura, după protocol.",
+   "Îndepărtarea produsului și hidratare."
+  ],
+  "settings": [],
+  "say": [
+   "Căldura pornește circulația și ajută corpul să elimine lichidele. E și foarte relaxant."
+  ],
+  "after": [
+   "Bea multă apă în zilele următoare (cam 2 litri pe zi).",
+   "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+   "Mișcarea ușoară și plimbările ajută rezultatul.",
+   "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "6-8",
+  "interval": "",
+  "combos": [
+   "ems",
+   "cavitatie"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "impachetare",
+  "name": "Împachetare la cald",
+  "group": "corp"
+ },
+ {
+  "city": "both",
+  "minutes": 30,
+  "prices": [
+   "rf-corp"
+  ],
+  "what": "Căldură controlată care stimulează colagenul: fermitate, celulită și depozite mici de grăsime.",
+  "forWho": [
+   "Piele lăsată pe abdomen, brațe, coapse.",
+   "Celulită."
+  ],
+  "benefits": [
+   "Piele mai fermă pe corp.",
+   "Celulită mai puțin vizibilă.",
+   "Senzație plăcută, de căldură."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Varice, tromboză sau tulburări de circulație.",
+   "Liposucție sau abdominoplastie în ultimele 6 luni.",
+   "Hernii sau cicatrici recente în zona tratată.",
+   "Infecții sau leziuni ale pielii în zona tratată.",
+   "Menstruația în desfășurare (pentru unele proceduri)."
+  ],
+  "steps": [
+   "Curățare.",
+   "Gel conductor.",
+   "Treceri circulare pe zonă, la temperatura recomandată de aparat.",
+   "Menținerea temperaturii câteva minute.",
+   "Calmare."
+  ],
+  "settings": [],
+  "say": [
+   "Încălzește pielea în profunzime, ca să se strângă. Se simte ca o căldură plăcută."
+  ],
+  "after": [
+   "Bea multă apă în zilele următoare (cam 2 litri pe zi).",
+   "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+   "Mișcarea ușoară și plimbările ajută rezultatul.",
+   "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "6-8",
+  "interval": "1-2 pe săptămână",
+  "combos": [
+   "cavitatie",
+   "liposonix"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "rf-corp",
+  "name": "Radiofrecvență corp",
+  "group": "corp"
+ },
+ {
+  "city": "both",
+  "minutes": 50,
+  "prices": [
+   "hifu-corp"
+  ],
+  "what": "Ultrasunete focalizate pentru fermitate pe corp: abdomen, brațe, coapse, genunchi.",
+  "forWho": [
+   "Piele lăsată pe corp, după slăbit sau după sarcină."
+  ],
+  "benefits": [
+   "Piele mai strânsă pe abdomen, brațe sau coapse.",
+   "Potrivit după slăbit sau după sarcină.",
+   "Fără recuperare."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Varice, tromboză sau tulburări de circulație.",
+   "Liposucție sau abdominoplastie în ultimele 6 luni.",
+   "Hernii sau cicatrici recente în zona tratată.",
+   "Infecții sau leziuni ale pielii în zona tratată.",
+   "Menstruația în desfășurare (pentru unele proceduri)."
+  ],
+  "steps": [
+   "Curățarea zonei.",
+   "Marcare.",
+   "Gel conductor.",
+   "Treceri după protocolul aparatului.",
+   "Hidratare."
+  ],
+  "settings": [],
+  "say": [
+   "Energia strânge straturile adânci, iar pielea devine mai fermă în lunile următoare."
+  ],
+  "after": [
+   "Bea multă apă în zilele următoare (cam 2 litri pe zi).",
+   "Fără saună, baie fierbinte sau soare intens în ziua procedurii.",
+   "Mișcarea ușoară și plimbările ajută rezultatul.",
+   "O ușoară înroșire sau sensibilitate e normală. Dacă nu trece, ne scrie."
+  ],
+  "sessions": "1-2",
+  "interval": "",
+  "combos": [
+   "ems",
+   "rf-corp"
+  ],
+  "media": [],
+  "verified": false,
+  "id": "hifu-corp",
+  "name": "HIFU corp",
+  "group": "corp"
+ },
+ {
+  "city": "tm",
+  "minutes": 0,
+  "prices": [
+   "epi-fb",
+   "epi-axile",
+   "epi-inghinal",
+   "epi-picior-lung"
+  ],
+  "what": "Laser cu diodă care oprește firul să mai crească, din rădăcină.",
+  "forWho": [
+   "Păr nedorit pe orice zonă, la fototip și păr compatibile."
+  ],
+  "benefits": [
+   "Scapă de păr pe termen lung, din rădăcină.",
+   "Laser cu diodă, certificat medical.",
+   "Garanția banilor înapoi."
+  ],
+  "phone": [],
+  "contra": [
+   "Sarcină sau alăptare.",
+   "Stimulator cardiac, implanturi metalice sau electronice.",
+   "Cancer sau tratament oncologic, acum sau în trecut.",
+   "Boli autoimune sau imunitate scăzută.",
+   "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+   "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+   "Soare, solar sau autobronzant în ultimele 4 săptămâni.",
+   "Tatuaj sau aluniță suspectă în zona de tratat.",
+   "Herpes activ sau infecție în zonă.",
+   "Medicamente care sensibilizează la lumină (unele antibiotice, retinoizi, sunătoare).",
+   "Isotretinoin în ultimele 6 luni.",
+   "Ceară sau pensetă în ultimele 4 săptămâni (laserul are nevoie de rădăcina firului).",
+   "Epilepsie sau sensibilitate la lumină intensă."
+  ],
+  "steps": [
+   "Verifici tenul și firul (fototip, culoare, grosime).",
+   "Setezi parametrii după tipul de piele și zonă.",
+   "La prima ședință, test pe o porțiune mică.",
+   "Treceri după protocol.",
+   "Gel calmant după."
+  ],
+  "settings": [],
+  "say": [
+   "Lumina laserului ajunge la rădăcina firului și o oprește să mai crească. Firele cresc în etape, de aceea sunt mai multe ședințe.",
+   "Simți o căldură scurtă, ca o înțepătură ușoară."
+  ],
+  "after": [
+   "Fără soare direct și solar 2 săptămâni, SPF zilnic.",
+   "Fără ceară sau pensetă între ședințe, doar aparat de ras.",
+   "Gel calmant dacă pielea e caldă."
+  ],
+  "sessions": "6-8",
+  "interval": "la 4-6 săptămâni",
+  "combos": [],
+  "media": [],
+  "verified": false,
+  "id": "epilare",
+  "name": "Epilare laser Elysion Pro",
+  "group": "epilare"
+ }
+]

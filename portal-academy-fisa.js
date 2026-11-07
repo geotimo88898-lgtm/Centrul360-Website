@@ -156,6 +156,15 @@
     '</div>';
 
   const icon = (n) => (window.K && window.K.icon ? window.K.icon(n) : '');
+
+  // the training films (academy-vsl/<id>.mp4, made with academy-vsl/src): the ones that exist, with their length.
+  // C360Vsl.html(id, title, soon) → the player, or `soon` (the "Vine în curând" card) when the film is not made yet
+  const VSL = { parcurs: '9 min' };
+  window.C360Vsl = {
+    has: (id) => !!VSL[id],
+    html: (id, title, soon) => (VSL[id] ? '<figure class="tr-vsl is-on"><video src="/academy-vsl/' + id + '.mp4" poster="/academy-vsl/' + id + '.webp" controls playsinline preload="none"></video>' +
+      '<figcaption><b>' + esc(title) + '</b><span>' + VSL[id] + ' · explicat de Nuki, cu exemple</span></figcaption></figure>' : soon),
+  };
   // "Vreau să învăț": the four sheets of a consultation, in the order they are filled in
   const picker = (st, big) => '<div class="tr-fpick' + (big ? ' is-big' : '') + '"><div class="tr-fpick-l">Vreau să învăț:</div><div class="tr-fpick-row" role="tablist">' +
     SHEETS.map((S, k) => '<button type="button" role="tab" aria-selected="' + (!big && S === cur(st)) + '" class="tr-fpick-c is-' + S.hue + (!big && S === cur(st) ? ' is-on' : '') + '" data-fs-sheet="' + S.id + '" style="--k:' + k + '">' +
@@ -170,7 +179,7 @@
     return '<div class="tr-fisa">' +
       '<div class="tr-fs-top"><button type="button" class="k-btn is-ghost is-sm" data-fs-back>' + icon('left') + 'Toate fișele</button>' +
         '<span class="tr-fs-who is-' + S.hue + '"><i>' + icon(S.icon) + '</i><b>' + esc(S.kind + ' · ' + S.title) + '</b></span></div>' +
-      '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(S.title) + '</b><span>Totul explicat pe înțeles, cu exemple. Vine în curând.</span></div></div>' +
+      window.C360Vsl.html('fisa-' + S.id, 'Filmulețul: ' + (S.id === 'program' ? S.title : S.kind + ' · ' + S.title), '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(S.title) + '</b><span>Totul explicat pe înțeles, cu exemple. Vine în curând.</span></div></div>') +
       '<div class="tr-fs-flow" role="tablist">' + PG.map((p, k) => (k ? '<span class="tr-fs-arrow" aria-hidden="true">›</span>' : '') +
         '<button type="button" role="tab" class="tr-fs-tab ' + p.tone + (k === i ? ' is-on' : '') + '" data-fs-page="' + k + '" aria-selected="' + (k === i) + '"><b>' + (k + 1) + '</b><span>' + esc(p.tab) + (p.badge ? '<em>' + esc(p.badge) + '</em>' : '') + '</span></button>').join('') + '</div>' +
       '<div class="tr-fs-body">' +

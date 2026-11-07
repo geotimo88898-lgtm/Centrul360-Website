@@ -1,0 +1,467 @@
+{
+ "id": "t-restart",
+ "title": "Tratament facial *Restart*",
+ "short": "Tratament facial Restart",
+ "chap": "Tratament facial Restart",
+ "verified": false,
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Tratament · Training",
+   "title": "Tratament facial *Restart*",
+   "sub": "Tratament facial în 8 etape, cu ultrasunete și radiofrecvență. Tenul arată odihnit și luminos de la prima ședință.",
+   "pose": "salut-pa",
+   "chap": "Tratament facial Restart",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Azi învățăm Tratament facial Restart.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Pe scurt: tratament facial în 8 etape, cu ultrasunete și radiofrecvență. Tenul arată odihnit și luminos de la prima ședință.",
+     "pose": "facial",
+     "tts": "Pe scurt: tratament facial în opt etape, cu ultrasunete și radiofrecvență. Tenul arată odihnit și luminos de la prima ședință."
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Pentru cine e",
+   "head": "Cui *îi recomanzi*",
+   "pose": "gandeste",
+   "items": [
+    {
+     "ic": "user-round",
+     "t": "Ten obosit, tern sau deshidratat.",
+     "at": 1
+    },
+    {
+     "ic": "user-round",
+     "t": "Prima vizită: e tratamentul de intrare cel mai ușor de ales.",
+     "at": 2
+    },
+    {
+     "ic": "user-round",
+     "t": "Întreținere lunară între curele intensive.",
+     "at": 3
+    }
+   ],
+   "beats": [
+    {
+     "say": "Pentru cine e?",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Ten obosit, tern sau deshidratat.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Prima vizită: e tratamentul de intrare cel mai ușor de ales.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Întreținere lunară între curele intensive.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Ce câștigă ea",
+   "head": "Ce *îi aduce*",
+   "pose": "bucurie",
+   "items": [
+    {
+     "ic": "sparkles",
+     "t": "Ten hidratat și luminos chiar din prima ședință.",
+     "at": 1,
+     "noTick": true
+    },
+    {
+     "ic": "heart",
+     "t": "Opt etape într-o oră, cu aparat: ultrasunete și radiofrecvență.",
+     "at": 2,
+     "noTick": true
+    },
+    {
+     "ic": "star",
+     "t": "Fără ace, fără durere, fără recuperare: își vede de zi imediat.",
+     "at": 3,
+     "noTick": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Și ce câștigă ea?",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Ten hidratat și luminos chiar din prima ședință.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Opt etape într-o oră, cu aparat: ultrasunete și radiofrecvență.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Fără ace, fără durere, fără recuperare: își vede de zi imediat.",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "rail",
+   "kicker": "Pas cu pas",
+   "head": "Cum *îl faci*",
+   "pose": "facial",
+   "items": [
+    {
+     "t": "Demachiere.",
+     "at": 1.0
+    },
+    {
+     "t": "Tonifiere.",
+     "at": 1.45
+    },
+    {
+     "t": "Curățare cu ultrasunete.",
+     "at": 2.0
+    },
+    {
+     "t": "Gomaj.",
+     "at": 2.45
+    },
+    {
+     "t": "Secvență de radiofrecvență.",
+     "at": 3.0
+    },
+    {
+     "t": "Masaj.",
+     "at": 3.45
+    },
+    {
+     "t": "Mască personalizată, aleasă după evaluare.",
+     "at": 4.0
+    },
+    {
+     "t": "Cremă de final.",
+     "at": 4.45
+    }
+   ],
+   "beats": [
+    {
+     "say": "Acum, pas cu pas. Sunt opt pași.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Demachiere. Tonifiere.",
+     "pose": "facial"
+    },
+    {
+     "say": "Curățare cu ultrasunete. Gomaj.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Secvență de radiofrecvență. Masaj.",
+     "pose": "facial"
+    },
+    {
+     "say": "Mască personalizată, aleasă după evaluare. Cremă de final.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Setările aparatului",
+   "text": "Le iei din *protocolul aparatului*. Nu le ghicești.",
+   "pose": "fisa",
+   "ic": "settings",
+   "extra": {
+    "ic": "pen-line",
+    "t": "Le scrii pe fișa ei, la fiecare ședință.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Și le scrii pe fișa ei, la fiecare ședință.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Ce îi spui",
+   "head": "Pe înțeles, *în timpul tratamentului*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Curățăm în profunzime, exfoliem blând și hidratăm. Tenul arată odihnit și luminos chiar de la prima ședință.",
+     "at": 1,
+     "small": false
+    },
+    {
+     "who": "me",
+     "t": "Acum vine o spatulă care vibrează și scoate impuritățile din pori. Nu se stoarce nimic, majoritatea spun că gâdilă un pic.",
+     "at": 2,
+     "small": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "„Curățăm în profunzime, exfoliem blând și hidratăm. Tenul arată odihnit și luminos chiar de la prima ședință.”",
+     "pose": "prezinta"
+    },
+    {
+     "say": "„Acum vine o spatulă care vibrează și scoate impuritățile din pori. Nu se stoarce nimic, majoritatea spun că gâdilă un pic.”",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Ce îi spui",
+   "head": "Pe înțeles, *în timpul tratamentului*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Radiofrecvența încălzește plăcut straturile mai adânci. Se simte ca o căldură care se plimbă pe față.",
+     "at": 0,
+     "small": false
+    }
+   ],
+   "beats": [
+    {
+     "say": "„Radiofrecvența încălzește plăcut straturile mai adânci. Se simte ca o căldură care se plimbă pe față.”",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "contra",
+   "kicker": "Atenție",
+   "head": "Când *nu începi*",
+   "pose": "arata-jos",
+   "items": [
+    "Sarcină sau alăptare.",
+    "Stimulator cardiac, implanturi metalice sau electronice.",
+    "Cancer sau tratament oncologic, acum sau în trecut.",
+    "Boli autoimune sau imunitate scăzută.",
+    "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+    "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+    "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+    "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+    "Expunere solară intensă sau bronz recent.",
+    "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+    "Fillere sau botox în ultimele 2-4 săptămâni.",
+    "Piele iritată, arsuri solare sau răni deschise."
+   ],
+   "at": 0.5,
+   "step": 0.1,
+   "rule": {
+    "t": "Are una dintre ele? Nu începi. *Întâi întrebi dacă se poate.*",
+    "at": 2
+   },
+   "beats": [
+    {
+     "say": "Foarte important: când nu începi tratamentul.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "După tratament",
+   "head": "Ce îi spui *să facă acasă*",
+   "pose": "apa",
+   "items": [
+    {
+     "ic": "house",
+     "t": "SPF în fiecare zi.",
+     "at": 1
+    },
+    {
+     "ic": "house",
+     "t": "Fără soare direct și saună 48 de ore.",
+     "at": 2
+    },
+    {
+     "ic": "house",
+     "t": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+     "at": 3
+    },
+    {
+     "ic": "house",
+     "t": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+     "at": 4
+    }
+   ],
+   "beats": [
+    {
+     "say": "La final îi spui ce să facă acasă.",
+     "pose": "spf"
+    },
+    {
+     "say": "SPF în fiecare zi.",
+     "pose": "apa",
+     "tts": "protecție solară în fiecare zi."
+    },
+    {
+     "say": "Fără soare direct și saună 48 de ore.",
+     "pose": "spf",
+     "tts": "Fără soare direct și saună patruzeci și opt de ore."
+    },
+    {
+     "say": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+     "pose": "liniste"
+    },
+    {
+     "say": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "sessions",
+   "kicker": "Ședințele",
+   "head": "Cât *și cât de des*",
+   "pose": "calendar",
+   "dots": 0,
+   "facts": [
+    {
+     "ic": "repeat",
+     "k": "Ședințe",
+     "v": "1, apoi întreținere",
+     "at": 1
+    },
+    {
+     "ic": "calendar-days",
+     "k": "Interval",
+     "v": "o dată pe lună",
+     "at": 2
+    },
+    {
+     "ic": "timer",
+     "k": "Durata",
+     "v": "60 de minute",
+     "at": 3
+    }
+   ],
+   "beats": [
+    {
+     "say": "Câte ședințe îi trebuie?",
+     "pose": "calendar"
+    },
+    {
+     "say": "Ședințe: 1, apoi întreținere.",
+     "pose": "calendar",
+     "tts": "Ședințe: una, apoi întreținere."
+    },
+    {
+     "say": "Interval: o dată pe lună.",
+     "pose": "prezinta",
+     "tts": "Interval: o dată pe lună."
+    },
+    {
+     "say": "O ședință durează 60 de minute.",
+     "pose": "liniste",
+     "tts": "O ședință durează șaizeci de minute."
+    },
+    {
+     "say": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+     "pose": "receptie"
+    }
+   ]
+  },
+  {
+   "type": "cards",
+   "kicker": "Merge bine cu",
+   "head": "Se *combină* cu",
+   "pose": "aprobare",
+   "items": [
+    {
+     "ic": "plus",
+     "t": "Hidratare profundă",
+     "at": 0.4
+    },
+    {
+     "ic": "plus",
+     "t": "Tratament intensiv antirid",
+     "at": 0.7
+    }
+   ],
+   "beats": [
+    {
+     "say": "Merge bine împreună cu Hidratare profundă și cu Tratament intensiv antirid.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Când le combini, le găsești pe toate în programul ei.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "chap": "Recapitulare",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Pentru cine e",
+     "at": 1.0
+    },
+    {
+     "t": "Pas cu pas",
+     "at": 1.3
+    },
+    {
+     "t": "Când nu începi",
+     "at": 1.6
+    },
+    {
+     "t": "Ce face acasă",
+     "at": 1.9
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi Tratament facial Restart.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ]
+  }
+ ]
+}

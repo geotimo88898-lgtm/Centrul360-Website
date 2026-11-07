@@ -1,0 +1,372 @@
+{
+ "id": "t-epilare",
+ "title": "Epilare laser *Elysion Pro*",
+ "short": "Epilare laser Elysion Pro",
+ "chap": "Epilare laser Elysion Pro",
+ "verified": false,
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Tratament · Training",
+   "title": "Epilare laser *Elysion Pro*",
+   "sub": "Laser cu diodă care oprește firul să mai crească, din rădăcină.",
+   "pose": "salut-pa",
+   "chap": "Epilare laser Elysion Pro",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Azi învățăm Epilare laser Elysion Pro.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Pe scurt: laser cu diodă care oprește firul să mai crească, din rădăcină.",
+     "pose": "laser"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Pentru cine e",
+   "head": "Cui *îi recomanzi*",
+   "pose": "gandeste",
+   "items": [
+    {
+     "ic": "user-round",
+     "t": "Păr nedorit pe orice zonă, la fototip și păr compatibile.",
+     "at": 1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Pentru cine e?",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Păr nedorit pe orice zonă, la fototip și păr compatibile.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Ce câștigă ea",
+   "head": "Ce *îi aduce*",
+   "pose": "bucurie",
+   "items": [
+    {
+     "ic": "sparkles",
+     "t": "Scapă de păr pe termen lung, din rădăcină.",
+     "at": 1,
+     "noTick": true
+    },
+    {
+     "ic": "heart",
+     "t": "Laser cu diodă, certificat medical.",
+     "at": 2,
+     "noTick": true
+    },
+    {
+     "ic": "star",
+     "t": "Garanția banilor înapoi.",
+     "at": 3,
+     "noTick": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Și ce câștigă ea?",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Scapă de păr pe termen lung, din rădăcină.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Laser cu diodă, certificat medical.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Garanția banilor înapoi.",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "rail",
+   "kicker": "Pas cu pas",
+   "head": "Cum *îl faci*",
+   "pose": "laser",
+   "items": [
+    {
+     "t": "Verifici tenul și firul (fototip, culoare, grosime).",
+     "at": 1
+    },
+    {
+     "t": "Setezi parametrii după tipul de piele și zonă.",
+     "at": 2
+    },
+    {
+     "t": "La prima ședință, test pe o porțiune mică.",
+     "at": 3
+    },
+    {
+     "t": "Treceri după protocol.",
+     "at": 4
+    },
+    {
+     "t": "Gel calmant după.",
+     "at": 5
+    }
+   ],
+   "beats": [
+    {
+     "say": "Acum, pas cu pas.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Verifici tenul și firul (fototip, culoare, grosime).",
+     "pose": "laser"
+    },
+    {
+     "say": "Setezi parametrii după tipul de piele și zonă.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "La prima ședință, test pe o porțiune mică.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Treceri după protocol.",
+     "pose": "laser"
+    },
+    {
+     "say": "Gel calmant după.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Setările aparatului",
+   "text": "Le iei din *protocolul aparatului*. Nu le ghicești.",
+   "pose": "fisa",
+   "ic": "settings",
+   "extra": {
+    "ic": "pen-line",
+    "t": "Le scrii pe fișa ei, la fiecare ședință.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Și le scrii pe fișa ei, la fiecare ședință.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Ce îi spui",
+   "head": "Pe înțeles, *în timpul tratamentului*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Lumina laserului ajunge la rădăcina firului și o oprește să mai crească. Firele cresc în etape, de aceea sunt mai multe ședințe.",
+     "at": 1,
+     "small": true
+    },
+    {
+     "who": "me",
+     "t": "Simți o căldură scurtă, ca o înțepătură ușoară.",
+     "at": 2,
+     "small": false
+    }
+   ],
+   "beats": [
+    {
+     "say": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "„Lumina laserului ajunge la rădăcina firului și o oprește să mai crească. Firele cresc în etape, de aceea sunt mai multe ședințe.”",
+     "pose": "prezinta"
+    },
+    {
+     "say": "„Simți o căldură scurtă, ca o înțepătură ușoară.”",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "contra",
+   "kicker": "Atenție",
+   "head": "Când *nu începi*",
+   "pose": "arata-jos",
+   "items": [
+    "Sarcină sau alăptare.",
+    "Stimulator cardiac, implanturi metalice sau electronice.",
+    "Cancer sau tratament oncologic, acum sau în trecut.",
+    "Boli autoimune sau imunitate scăzută.",
+    "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+    "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+    "Soare, solar sau autobronzant în ultimele 4 săptămâni.",
+    "Tatuaj sau aluniță suspectă în zona de tratat.",
+    "Herpes activ sau infecție în zonă.",
+    "Medicamente care sensibilizează la lumină (unele antibiotice, retinoizi, sunătoare).",
+    "Isotretinoin în ultimele 6 luni.",
+    "Ceară sau pensetă în ultimele 4 săptămâni (laserul are nevoie de rădăcina firului).",
+    "Epilepsie sau sensibilitate la lumină intensă."
+   ],
+   "at": 0.5,
+   "step": 0.1,
+   "rule": {
+    "t": "Are una dintre ele? Nu începi. *Întâi întrebi dacă se poate.*",
+    "at": 2
+   },
+   "beats": [
+    {
+     "say": "Foarte important: când nu începi tratamentul.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "După tratament",
+   "head": "Ce îi spui *să facă acasă*",
+   "pose": "apa",
+   "items": [
+    {
+     "ic": "house",
+     "t": "Fără soare direct și solar 2 săptămâni, SPF zilnic.",
+     "at": 1
+    },
+    {
+     "ic": "house",
+     "t": "Fără ceară sau pensetă între ședințe, doar aparat de ras.",
+     "at": 2
+    },
+    {
+     "ic": "house",
+     "t": "Gel calmant dacă pielea e caldă.",
+     "at": 3
+    }
+   ],
+   "beats": [
+    {
+     "say": "La final îi spui ce să facă acasă.",
+     "pose": "spf"
+    },
+    {
+     "say": "Fără soare direct și solar 2 săptămâni, SPF zilnic.",
+     "pose": "apa",
+     "tts": "Fără soare direct și solar două săptămâni, protecție solară zilnic."
+    },
+    {
+     "say": "Fără ceară sau pensetă între ședințe, doar aparat de ras.",
+     "pose": "spf"
+    },
+    {
+     "say": "Gel calmant dacă pielea e caldă.",
+     "pose": "liniste"
+    }
+   ]
+  },
+  {
+   "type": "sessions",
+   "kicker": "Ședințele",
+   "head": "Cât *și cât de des*",
+   "pose": "calendar",
+   "dots": 0,
+   "facts": [
+    {
+     "ic": "repeat",
+     "k": "Ședințe",
+     "v": "6-8",
+     "at": 1
+    },
+    {
+     "ic": "calendar-days",
+     "k": "Interval",
+     "v": "la 4-6 săptămâni",
+     "at": 2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Câte ședințe îi trebuie?",
+     "pose": "calendar"
+    },
+    {
+     "say": "Ședințe: 6-8.",
+     "pose": "calendar",
+     "tts": "Ședințe: șase până la opt."
+    },
+    {
+     "say": "Interval: la 4-6 săptămâni.",
+     "pose": "prezinta",
+     "tts": "Interval: la patru până la șase săptămâni."
+    },
+    {
+     "say": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+     "pose": "receptie"
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "chap": "Recapitulare",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Pentru cine e",
+     "at": 1.0
+    },
+    {
+     "t": "Pas cu pas",
+     "at": 1.3
+    },
+    {
+     "t": "Când nu începi",
+     "at": 1.6
+    },
+    {
+     "t": "Ce face acasă",
+     "at": 1.9
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi Epilare laser Elysion Pro.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ]
+  }
+ ]
+}

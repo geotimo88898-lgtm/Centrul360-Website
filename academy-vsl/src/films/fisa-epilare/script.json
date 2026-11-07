@@ -1,0 +1,1122 @@
+{
+ "id": "fisa-epilare",
+ "title": "Fișa *epilare laser*",
+ "short": "Fișa clientei: epilare laser",
+ "chap": "Fișa epilare laser",
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Fișa clientei · Training",
+   "title": "Fișa *epilare laser*",
+   "sub": "Piele, fir, zone. Pagină cu pagină.",
+   "pose": "salut-pa",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Azi învățăm fișa pentru epilarea cu laser.",
+     "pose": "laser"
+    },
+    {
+     "say": "Are cinci pagini. Le luăm pe rând, cu un exemplu completat.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Regula de aur",
+   "text": "O completezi *tu, împreună cu ea*.",
+   "pose": "fisa",
+   "beats": [
+    {
+     "say": "Și aici, regula de aur: fișa o completezi tu, împreună cu ea. O întrebi și scrii.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 1 din 5",
+   "title": "Cine e clienta *și ce vrea*",
+   "ic": "user-round",
+   "pose": "fisa",
+   "beats": [
+    {
+     "say": "Pagina unu: cine e clienta și ce vrea să epileze.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 1",
+   "head": "Cine e clienta *și ce vrea*",
+   "img": "academy-fisa/epilare-p1.webp",
+   "pose": "fisa",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      4.6,
+      7.0
+     ],
+     "t": "Sus, în colț",
+     "d": "Numărul fișei, data de azi și numele tău.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      11.8,
+      14.6
+     ],
+     "t": "Cine este ea",
+     "d": "Nume, data nașterii, telefon, e-mail.",
+     "at": 1,
+     "n": 2
+    },
+    {
+     "box": [
+      26.6,
+      12.6
+     ],
+     "t": "Ce vrea să epileze",
+     "d": "Zonele, cum s-a epilat, când ultima dată.",
+     "at": 3,
+     "n": 3
+    },
+    {
+     "box": [
+      39.4,
+      11.3
+     ],
+     "t": "Când poate veni",
+     "d": "Zilele, orele și când nu poate.",
+     "at": 6,
+     "n": 4
+    },
+    {
+     "box": [
+      50.9,
+      38.6
+     ],
+     "t": "Sănătatea ei",
+     "d": "Citești fiecare întrebare. Bifezi „Da” sau „Nu”.",
+     "at": 7,
+     "n": 5
+    }
+   ],
+   "fills": [
+    [
+     75.5,
+     4.8,
+     "0142",
+     "",
+     0.35
+    ],
+    [
+     75.5,
+     6.9,
+     "15.10.2026",
+     "",
+     0.35
+    ],
+    [
+     75.5,
+     8.9,
+     "Ioana",
+     "",
+     0.35
+    ],
+    [
+     24.5,
+     20.1,
+     "15.10.2026",
+     "",
+     1.35
+    ],
+    [
+     66.5,
+     20.1,
+     "Recomandare",
+     "",
+     1.35
+    ],
+    [
+     61.93,
+     24.47,
+     "✓",
+     "is-box",
+     1.35
+    ],
+    [
+     31.26,
+     43.94,
+     "✓",
+     "is-box",
+     6.35
+    ],
+    [
+     46.3,
+     43.94,
+     "✓",
+     "is-box",
+     6.35
+    ],
+    [
+     43.7,
+     46.08,
+     "✓",
+     "is-box",
+     6.35
+    ],
+    [
+     24.5,
+     48.5,
+     "20-27.12, concediu",
+     "",
+     6.35
+    ],
+    [
+     9.2,
+     33.0,
+     "axilă, picioare complet",
+     "",
+     3.35
+    ],
+    [
+     24.5,
+     35.7,
+     "ceară",
+     "",
+     3.35
+    ],
+    [
+     66.5,
+     35.7,
+     "01.10.2026",
+     "",
+     3.35
+    ],
+    [
+     87.94,
+     57.57,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     59.89,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     62.2,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     64.52,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     66.83,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     69.15,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     71.47,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     73.78,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     76.22,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     78.53,
+     "✓",
+     "is-box",
+     7.35
+    ],
+    [
+     87.94,
+     80.85,
+     "✓",
+     "is-box",
+     7.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Sus scrii numărul fișei, data de azi și numele tău.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Apoi datele ei: numele, data nașterii, telefonul și e-mailul. Și o întrebi de unde a aflat de noi.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Dacă are sub optsprezece ani, un părinte completează pagina trei.",
+     "pose": "arata-jos",
+     "cap": "Dacă are sub 18 ani, un părinte completează pagina 3."
+    },
+    {
+     "say": "Scrii zonele pe care le vrea. De exemplu: axilă și picioare complet.",
+     "pose": "laser"
+    },
+    {
+     "say": "O întrebi cum s-a epilat până acum și când ultima dată.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Dacă a folosit ceară sau pensetă de curând, laserul mai așteaptă. Firul trebuie să fie în piele.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Bifezi zilele și orele care îi convin, și scrii când nu poate.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Jos, întrebările de sănătate. Le citești pe rând și bifezi „Da” sau „Nu”.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Un singur „Da” înseamnă: scrii detaliile și nu începi până nu întrebi dacă se poate.",
+     "pose": "arata-jos"
+    }
+   ],
+   "backAt": 8.6
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 2 din 5",
+   "title": "Pielea *și firul de păr*",
+   "ic": "scan-search",
+   "pose": "laser",
+   "beats": [
+    {
+     "say": "Pagina doi: pielea și firul de păr.",
+     "pose": "laser"
+    },
+    {
+     "say": "Laserul vede culoarea firului. De aceea te uiți atent la piele și la păr, înainte de orice.",
+     "pose": "gandeste"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 2",
+   "head": "Pielea *și firul de păr*",
+   "img": "academy-fisa/epilare-p2.webp",
+   "pose": "laser",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      3.8,
+      14.5
+     ],
+     "t": "Pielea și firul",
+     "d": "Fototipul, culoarea, grosimea, desimea firului.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      18.5,
+      27.4
+     ],
+     "t": "Zonele",
+     "d": "Pe fiecare rând o zonă: ședințele, sensibilitatea.",
+     "at": 2,
+     "n": 2
+    },
+    {
+     "box": [
+      46.1,
+      27.4
+     ],
+     "t": "Întrebări pentru laser",
+     "d": "Mai ales soarele din ultimele 4 săptămâni.",
+     "at": 3,
+     "n": 3
+    },
+    {
+     "box": [
+      73.7,
+      15.8
+     ],
+     "t": "Ce vezi tu",
+     "d": "Ce observi la piele și la fir.",
+     "at": 5,
+     "n": 4
+    }
+   ],
+   "fills": [
+    [
+     32.18,
+     8.25,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     25.46,
+     10.39,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     37.39,
+     12.53,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     30.08,
+     14.55,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     32.86,
+     16.69,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     11.3,
+     23.7,
+     "axilă",
+     "",
+     2.35
+    ],
+    [
+     37.5,
+     23.7,
+     "6-8",
+     "",
+     2.35
+    ],
+    [
+     52.7,
+     23.7,
+     "normală",
+     "",
+     2.35
+    ],
+    [
+     11.3,
+     25.7,
+     "picioare complet",
+     "",
+     2.35
+    ],
+    [
+     37.5,
+     25.7,
+     "6-8",
+     "",
+     2.35
+    ],
+    [
+     52.7,
+     25.7,
+     "mare",
+     "",
+     2.35
+    ],
+    [
+     87.94,
+     52.76,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     55.08,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     57.39,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     59.71,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     62.02,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     64.34,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     66.66,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     68.97,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     87.94,
+     71.29,
+     "✓",
+     "is-box",
+     3.35
+    ],
+    [
+     9.2,
+     78.0,
+     "Fir negru și gros, piele deschisă: rezultate foarte bune. Test la prima ședință.",
+     "",
+     5.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Bifezi cât de deschisă e pielea. Fototipul unu e foarte albă, șase e foarte închisă.",
+     "pose": "gandeste",
+     "cap": "Bifezi cât de deschisă e pielea. Fototipul I e foarte albă, VI e foarte închisă."
+    },
+    {
+     "say": "Apoi culoarea firului, cât e de gros, cât de des crește și ce tip de piele are.",
+     "pose": "laser"
+    },
+    {
+     "say": "Pe fiecare rând scrii o zonă: câte ședințe crezi că îi trebuie, de obicei șase până la opt, și cât de sensibilă e acolo.",
+     "pose": "fisa",
+     "cap": "Pe fiecare rând scrii o zonă: câte ședințe crezi că îi trebuie (de obicei 6-8) și cât de sensibilă e acolo."
+    },
+    {
+     "say": "Apoi întrebările pentru laser. Foarte important: soarele și solarul din ultimele patru săptămâni.",
+     "pose": "spf",
+     "cap": "Apoi întrebările pentru laser. Foarte important: soarele și solarul din ultimele 4 săptămâni."
+    },
+    {
+     "say": "Un singur „Da” înseamnă: nu începi până nu întrebi dacă se poate.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Jos scrii ce observi. De exemplu: „Fir negru și gros, piele deschisă: rezultate foarte bune. Test la prima ședință.”",
+     "pose": "fisa"
+    }
+   ],
+   "backAt": 5.6
+  },
+  {
+   "type": "yn",
+   "kicker": "Firul de păr",
+   "head": "Ce vede *laserul*",
+   "pose": "laser",
+   "cols": [
+    {
+     "ic": "check",
+     "t": "Fir negru, piele deschisă",
+     "items": [
+      "Iese cel mai bine."
+     ],
+     "at": 0.3
+    },
+    {
+     "ic": "info",
+     "t": "Fir blond, alb sau roșcat",
+     "items": [
+      "Iese greu.",
+      "Îi spui sincer, de la început."
+     ],
+     "dark": true,
+     "at": 1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Firul negru pe piele deschisă iese cel mai bine.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Firul blond, alb sau roșcat iese greu. Îi spui sincer, de la început.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 3 din 5",
+   "title": "Acordul *și testul*",
+   "ic": "pen-line",
+   "pose": "fisa",
+   "beats": [
+    {
+     "say": "Pagina trei: acordul, testul de probă și semnăturile.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 3",
+   "head": "Acordul *și testul*",
+   "img": "academy-fisa/epilare-p3.webp",
+   "pose": "fisa",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      3.8,
+      21.2
+     ],
+     "t": "Acordul ei",
+     "d": "Bifează ea ce vrea. Ce nu bifează, nu facem.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      25.2,
+      19.5
+     ],
+     "t": "Înainte și după",
+     "d": "Sfaturile, spuse pe scurt.",
+     "at": 1,
+     "n": 2
+    },
+    {
+     "box": [
+      44.9,
+      10.5
+     ],
+     "t": "Testul de probă",
+     "d": "Prima dată, pe o bucățică mică de piele.",
+     "at": 2,
+     "n": 3
+    },
+    {
+     "box": [
+      62.1,
+      14.6
+     ],
+     "t": "Doar sub 18 ani",
+     "d": "Un părinte completează. Adultă: lași gol.",
+     "at": 4,
+     "n": 4
+    },
+    {
+     "box": [
+      76.9,
+      12.6
+     ],
+     "t": "Semnăturile",
+     "d": "Semnează ea, semnezi tu.",
+     "at": 5,
+     "n": 5
+    }
+   ],
+   "fills": [
+    [
+     8.15,
+     18.29,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     8.15,
+     21.67,
+     "✓",
+     "is-box",
+     0.35
+    ],
+    [
+     8.7,
+     50.3,
+     "15.10.2026",
+     "",
+     2.35
+    ],
+    [
+     23.1,
+     50.3,
+     "axilă",
+     "",
+     2.35
+    ],
+    [
+     61.2,
+     50.3,
+     "ok, ușor roșu",
+     "",
+     2.35
+    ],
+    [
+     81.5,
+     50.3,
+     "Ioana",
+     "",
+     2.35
+    ],
+    [
+     66.5,
+     82.4,
+     "semnat",
+     "is-sig",
+     5.35
+    ],
+    [
+     24.5,
+     85.4,
+     "15.10.2026",
+     "",
+     5.35
+    ],
+    [
+     66.5,
+     85.4,
+     "Ioana",
+     "",
+     5.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Îi dai foaia să citească și bifează ea ce vrea. Ce nu bifează, nu facem.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Îi spui pe scurt ce face înainte și după, ca pielea să rămână liniștită.",
+     "pose": "spf"
+    },
+    {
+     "say": "La prima ședință faci un test: încerci laserul pe o bucățică mică de piele.",
+     "pose": "laser"
+    },
+    {
+     "say": "Scrii data, zona și setările. A doua zi o întrebi cum arată pielea și scrii la „Reacție după 24 de ore”.",
+     "pose": "telefon",
+     "tts": "Scrii data, zona și setările. A doua zi o întrebi cum arată pielea și scrii la „Reacție după douăzeci și patru de ore”.",
+     "cap": "Scrii data, zona și setările. A doua zi o întrebi cum arată pielea și scrii la „Reacție după 24 h”."
+    },
+    {
+     "say": "Partea pentru părinte doar dacă are sub optsprezece ani.",
+     "pose": "prezinta",
+     "cap": "Partea pentru părinte doar dacă are sub 18 ani."
+    },
+    {
+     "say": "Și jos semnați amândouă. Fără semnături, fișa nu e gata.",
+     "pose": "aprobare"
+    }
+   ],
+   "backAt": 5.6
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 4 din 5",
+   "title": "Despre *aparat*",
+   "ic": "zap",
+   "pose": "laser",
+   "beats": [
+    {
+     "say": "Pagina patru e pentru clientă: despre aparat.",
+     "pose": "laser"
+    },
+    {
+     "say": "I-o arăți și îi explici pe scurt, cu cuvintele tale.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 4",
+   "head": "Despre *aparat*",
+   "img": "academy-fisa/epilare-p4.webp",
+   "pose": "laser",
+   "land": false,
+   "focus": [
+    {
+     "box": [
+      4.1,
+      29.8
+     ],
+     "t": "Cum merge laserul",
+     "d": "Lumina intră în fir, se face căldură, rădăcina se oprește.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      34.1,
+      10.5
+     ],
+     "t": "De ce e bun aparatul",
+     "d": "Răcește pielea. Orice culoare de piele. Certificat medical.",
+     "at": 2,
+     "n": 2
+    },
+    {
+     "box": [
+      44.8,
+      20.0
+     ],
+     "t": "Când vine din nou",
+     "d": "6, 6, 8, 8 și 8-10 săptămâni.",
+     "at": 3,
+     "n": 3
+    },
+    {
+     "box": [
+      65.0,
+      24.5
+     ],
+     "t": "Ce întreabă clientele",
+     "d": "Doare? Câte ședințe? Păr blond? Vara?",
+     "at": 4,
+     "n": 4
+    }
+   ],
+   "fills": [],
+   "beats": [
+    {
+     "say": "Lumina laserului intră în fir și se face căldură. Căldura oprește rădăcina firului.",
+     "pose": "laser"
+    },
+    {
+     "say": "Firele cresc pe rând, nu toate deodată. De aceea e nevoie de mai multe ședințe.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Aparatul răcește pielea, deci doare puțin. Merge pe orice culoare de piele și e aparat medical certificat.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Prima ședință e azi. Apoi vine din nou după șase, șase, opt, opt și opt până la zece săptămâni.",
+     "pose": "calendar",
+     "cap": "Prima ședință e azi. Apoi vine din nou după 6, 6, 8, 8 și 8-10 săptămâni."
+    },
+    {
+     "say": "Jos sunt răspunsurile la ce întreabă clientele: doare, câte ședințe, merge pe păr blond, se poate vara.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Citește-le de două ori, ca să le știi pe de rost.",
+     "pose": "fisa"
+    }
+   ],
+   "backAt": 5.6
+  },
+  {
+   "type": "sessions",
+   "kicker": "Când vine din nou",
+   "head": "Ședințele, *la timp*",
+   "pose": "calendar",
+   "dots": 6,
+   "gaps": [
+    "6 săpt.",
+    "6 săpt.",
+    "8 săpt.",
+    "8 săpt.",
+    "8-10 săpt."
+   ],
+   "dotsAt": 0.2,
+   "facts": [
+    {
+     "ic": "sparkles",
+     "k": "Dacă vine la timp",
+     "v": "După 5 ședințe, aproape toate firele au dispărut",
+     "at": 1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Uite intervalele, pe rând.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Îi spui așa: dacă vine la timp, după cinci ședințe aproape toate firele au dispărut, în majoritatea cazurilor.",
+     "pose": "bucurie",
+     "cap": "Îi spui așa: dacă vine la timp, după 5 ședințe aproape toate firele au dispărut, în majoritatea cazurilor."
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 5 din 5",
+   "title": "Ședințele *și setările*",
+   "ic": "calendar-days",
+   "pose": "calendar",
+   "beats": [
+    {
+     "say": "Pagina cinci: ședințele, una câte una. Aici scrii și setările aparatului.",
+     "pose": "calendar"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 5",
+   "head": "Ședințele *și setările*",
+   "img": "academy-fisa/epilare-p5.webp",
+   "pose": "laser",
+   "land": true,
+   "focus": [
+    {
+     "box": [
+      4.5,
+      9.1
+     ],
+     "t": "Sus",
+     "d": "Numele ei, ședințele din pachet, prima dată.",
+     "at": 0,
+     "n": 1
+    },
+    {
+     "box": [
+      13.8,
+      9.5
+     ],
+     "t": "La fiecare ședință",
+     "d": "Data, zona, setările de pe ecran, cum a reacționat pielea.",
+     "at": 1,
+     "n": 2
+    }
+   ],
+   "fills": [
+    [
+     34.3,
+     11.0,
+     "8",
+     "",
+     0.35
+    ],
+    [
+     52,
+     11.0,
+     "15.10.2026",
+     "",
+     0.35
+    ],
+    [
+     5.6,
+     17.8,
+     "15.10.2026",
+     "",
+     1.35
+    ],
+    [
+     14.4,
+     17.8,
+     "1",
+     "",
+     1.35
+    ],
+    [
+     17.3,
+     17.8,
+     "axilă",
+     "",
+     1.35
+    ],
+    [
+     28.8,
+     17.8,
+     "Elysion Pro",
+     "",
+     1.35
+    ],
+    [
+     64.3,
+     17.8,
+     "ok",
+     "",
+     1.35
+    ],
+    [
+     77.9,
+     17.8,
+     "Ioana",
+     "",
+     1.35
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Sus: numele ei, câte ședințe are în pachet și data primei ședințe.",
+     "pose": "fisa"
+    },
+    {
+     "say": "La fiecare ședință, un rând nou: data, a câta ședință e și zona.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Apoi setările de pe ecranul aparatului: lungimea de undă, fluența, pulsul, spotul și răcirea.",
+     "pose": "laser"
+    },
+    {
+     "say": "Și cum a reacționat pielea. La final semnați amândouă.",
+     "pose": "aprobare"
+    }
+   ],
+   "backAt": 3.6
+  },
+  {
+   "type": "list",
+   "kicker": "La final",
+   "head": "Verifică *fișa*",
+   "pose": "aprobare",
+   "items": [
+    {
+     "ic": "check",
+     "t": "Paginile 1 și 2, completate.",
+     "at": 0.0
+    },
+    {
+     "ic": "check",
+     "t": "Fiecare întrebare are „Da” sau „Nu”. Mai ales soarele și ceara.",
+     "at": 0.6666666666666666
+    },
+    {
+     "ic": "check",
+     "t": "Fototipul și firul, bifate. Spus sincer.",
+     "at": 1.3333333333333333
+    },
+    {
+     "ic": "check",
+     "t": "Ea a bifat acordurile și a semnat. Și tu.",
+     "at": 2.0
+    },
+    {
+     "ic": "check",
+     "t": "Testul de probă, la prima ședință.",
+     "at": 2.6666666666666665
+    },
+    {
+     "ic": "check",
+     "t": "Setările, pe pagina 5, la fiecare ședință.",
+     "at": 3.3333333333333335
+    }
+   ],
+   "beats": [
+    {
+     "say": "La final, verifici fișa.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Fiecare întrebare are „Da” sau „Nu”. Mai ales soarele și ceara din ultimele patru săptămâni.",
+     "pose": "spf",
+     "cap": "Fiecare întrebare are „Da” sau „Nu”. Mai ales soarele și ceara din ultimele 4 săptămâni."
+    },
+    {
+     "say": "Ai bifat fototipul și firul. Ai făcut testul de probă.",
+     "pose": "laser"
+    },
+    {
+     "say": "Și la fiecare ședință scrii setările aparatului pe pagina cinci.",
+     "pose": "fisa",
+     "cap": "Și la fiecare ședință scrii setările aparatului pe pagina 5."
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "chap": "Recapitulare",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Împreună cu ea",
+     "at": 1.0
+    },
+    {
+     "t": "Soarele și ceara",
+     "at": 1.35
+    },
+    {
+     "t": "Testul de probă",
+     "at": 1.7
+    },
+    {
+     "t": "Setările scrise",
+     "at": 2.05
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi fișa pentru epilarea laser.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Întrebi de soare și de ceară, faci testul de probă și scrii setările de fiecare dată.",
+     "pose": "laser"
+    },
+    {
+     "say": "Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ]
+  }
+ ]
+}

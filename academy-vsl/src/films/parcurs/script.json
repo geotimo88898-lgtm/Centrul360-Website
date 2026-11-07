@@ -1,0 +1,2132 @@
+{
+ "id": "parcurs",
+ "title": "Parcursul *clientei*",
+ "short": "Parcursul clientei",
+ "chap": "Parcursul clientei",
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Training pentru cosmeticiene",
+   "title": "Parcursul *clientei*",
+   "sub": "Tot drumul ei la noi, pas cu pas.",
+   "pose": "salut-pa",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Astăzi îți arăt drumul clientei la noi, de la prima vizită până la final.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "E simplu, ca o poveste. Hai să începem!",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "big",
+   "kicker": "Pe scurt",
+   "value": 11,
+   "from": 0,
+   "label": "pași, mereu în *aceeași ordine*",
+   "sub": "Când îi știi pe toți, clienta simte că e pe mâini bune.",
+   "pose": "prezinta",
+   "beats": [
+    {
+     "say": "Drumul are unsprezece pași. Mereu în aceeași ordine.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Când îi știi pe toți, clienta simte că e pe mâini bune.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "cards",
+   "kicker": "Trei părți",
+   "head": "Drumul, în *trei părți*",
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "sunrise",
+     "t": "Înainte să vină",
+     "s": "Pașii 1 și 2",
+     "at": 1
+    },
+    {
+     "ic": "users",
+     "t": "Cu clienta",
+     "s": "Pașii 3 până la 9",
+     "at": 2
+    },
+    {
+     "ic": "moon",
+     "t": "După",
+     "s": "Pașii 10 și 11",
+     "at": 3
+    }
+   ],
+   "beats": [
+    {
+     "say": "Drumul are trei părți.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Ce faci înainte să vină clienta.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Ce faci cu ea, în salon.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Și ce faci după ce pleacă.",
+     "pose": "salut-pa"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 1 · Deschizi salonul",
+   "cur": 0,
+   "from": 0,
+   "pose": "prezinta",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul unu: deschizi salonul.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Îl faci dimineața, dacă ajungi prima.",
+     "pose": "liniste"
+    }
+   ],
+   "when": "Dimineața, dacă ajungi prima"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 1 · Ce faci",
+   "head": "Deschizi *salonul*",
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "door-open",
+     "t": "Deschide ușa."
+    },
+    {
+     "ic": "lightbulb",
+     "t": "Aprinde luminile."
+    },
+    {
+     "ic": "power",
+     "t": "Pornește aparatele."
+    },
+    {
+     "ic": "coffee",
+     "t": "Pregătește apa, cafeaua și ceaiul."
+    },
+    {
+     "ic": "calendar-days",
+     "t": "Uită-te în Calendar cine vine azi."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Deschizi ușa.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Aprinzi luminile.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Pornești aparatele.",
+     "pose": "liposonix"
+    },
+    {
+     "say": "Pregătești apa, cafeaua și ceaiul.",
+     "pose": "apa"
+    },
+    {
+     "say": "Și te uiți în Calendar, să vezi cine vine azi.",
+     "pose": "calendar"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "why",
+   "text": "Clienta intră într-un salon *gata pregătit*.",
+   "pose": "mana-inima",
+   "beats": [
+    {
+     "say": "De ce? Pentru că așa, clienta intră într-un salon gata pregătit.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 2 · Pregătești cabinetul",
+   "cur": 1,
+   "pose": "prezinta",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul doi: pregătești cabinetul. Înainte de fiecare clientă.",
+     "pose": "prezinta"
+    }
+   ],
+   "when": "Înainte de fiecare clientă"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 2 · Ce faci",
+   "head": "Pregătești *cabinetul*",
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "bed-double",
+     "t": "Pune un cearceaf curat pe pat."
+    },
+    {
+     "ic": "layers-2",
+     "t": "Pune un prosop curat."
+    },
+    {
+     "ic": "hand",
+     "t": "Pune pe masă doar ce îți trebuie."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Pui un cearceaf curat pe pat.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Pui un prosop curat.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Și pui pe masă doar ce îți trebuie. Așa nu cauți nimic cât clienta așteaptă.",
+     "pose": "gandeste"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "never",
+   "label": "Ține minte",
+   "text": "Un cearceaf și un prosop sunt doar pentru *o singură* clientă.",
+   "pose": "arata-jos",
+   "beats": [
+    {
+     "say": "Și ține minte: un cearceaf și un prosop sunt doar pentru o singură clientă.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 3 · Primești clienta",
+   "cur": 2,
+   "pose": "prezinta",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul trei: primești clienta. Când intră pe ușă.",
+     "pose": "salut-pa"
+    }
+   ],
+   "when": "Când intră pe ușă"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 3 · Ce faci",
+   "head": "Primești *clienta*",
+   "pose": "bucurie",
+   "items": [
+    {
+     "ic": "smile",
+     "t": "Zâmbește."
+    },
+    {
+     "ic": "message-circle",
+     "t": "Spune-i „Bună ziua” și numele ei."
+    },
+    {
+     "ic": "armchair",
+     "t": "Invit-o să stea jos."
+    },
+    {
+     "ic": "coffee",
+     "t": "Întreab-o: „Doriți apă, cafea sau ceai?”"
+    }
+   ],
+   "beats": [
+    {
+     "say": "Zâmbești.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Îi spui „Bună ziua” și numele ei.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "O inviți să stea jos.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Și o întrebi: „Doriți apă, cafea sau ceai?”",
+     "pose": "apa"
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Exemplu",
+   "head": "Așa sună",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Bună ziua! Vă rog, luați loc.",
+     "at": 0
+    },
+    {
+     "who": "me",
+     "t": "Doriți apă, cafea sau ceai?",
+     "at": 0.5
+    },
+    {
+     "who": "her",
+     "t": "Un ceai, vă rog. Mulțumesc!",
+     "at": 1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Sună simplu. Dar contează foarte mult.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Așa se simte binevenită, din prima clipă.",
+     "pose": "mana-inima"
+    }
+   ],
+   "nuki": "off"
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 4 · Fișa clientei",
+   "cur": 3,
+   "pose": "fisa",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul patru: fișa clientei.",
+     "pose": "fisa"
+    },
+    {
+     "say": "O faci prima dată când vine, înainte de tratament.",
+     "pose": "prezinta"
+    }
+   ],
+   "when": "Prima dată când vine, înainte de tratament"
+  },
+  {
+   "type": "cards",
+   "kicker": "Pasul 4",
+   "head": "Întâi alegi *fișa potrivită*",
+   "pose": "gandeste",
+   "items": [
+    {
+     "ic": "person-standing",
+     "t": "Corp",
+     "s": "Remodelare, slăbire, celulită",
+     "at": 1
+    },
+    {
+     "ic": "smile",
+     "t": "Față",
+     "s": "Ten, pete, riduri",
+     "at": 1.35
+    },
+    {
+     "ic": "zap",
+     "t": "Epilare laser",
+     "s": "Piele, fir, zone",
+     "at": 1.7
+    }
+   ],
+   "beats": [
+    {
+     "say": "Avem trei fișe.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Pentru corp, pentru față și pentru epilare laser. Alegi fișa potrivită pentru ce vrea ea.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Cel mai important",
+   "text": "Stai lângă ea. O completezi *tu, împreună cu ea*.",
+   "pose": "fisa",
+   "extra": {
+    "ic": "message-circle",
+    "t": "O întrebi rubrică cu rubrică și scrii.",
+    "at": 2
+   },
+   "beats": [
+    {
+     "say": "Acum, cel mai important lucru.",
+     "pose": "surprins"
+    },
+    {
+     "say": "Nu îi dai fișa să o completeze singură. Stai lângă ea și o completezi tu, împreună cu ea.",
+     "pose": "fisa"
+    },
+    {
+     "say": "O întrebi rubrică cu rubrică, și tu scrii.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "yn",
+   "kicker": "Întrebările de sănătate",
+   "head": "Le citiți *împreună*",
+   "pose": "gandeste",
+   "cols": [
+    {
+     "ic": "check",
+     "t": "Toate sunt „Nu”",
+     "items": [
+      "Mergi mai departe, liniștită."
+     ],
+     "at": 1
+    },
+    {
+     "ic": "hand",
+     "t": "Măcar un „Da”",
+     "items": [
+      "Nu începi tratamentul.",
+      "Întâi întrebi dacă se poate."
+     ],
+     "dark": true,
+     "at": 2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Citiți împreună întrebările de sănătate. La fiecare bifezi „Da” sau „Nu”.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Dacă toate sunt „Nu”, mergi mai departe.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Dacă e măcar un „Da”, nu începi tratamentul până nu întrebi dacă se poate.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 4 · Apoi",
+   "head": "Evaluarea și *semnăturile*",
+   "pose": "centimetru",
+   "items": [
+    {
+     "ic": "ruler",
+     "t": "Faci evaluarea de pe pagina 2: măsori, te uiți la piele."
+    },
+    {
+     "ic": "book-open",
+     "t": "Ea citește acordul și semnează."
+    },
+    {
+     "ic": "pen-line",
+     "t": "Semnezi și tu."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Pe pagina doi faci evaluarea: măsori și te uiți la piele.",
+     "tts": "Pe pagina doi faci evaluarea: măsori și te uiți la piele.",
+     "pose": "centimetru"
+    },
+    {
+     "say": "Ea citește acordul și semnează.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Și semnezi și tu.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "shot",
+   "kicker": "În portal",
+   "head": "Scanezi *fișa*",
+   "img": "academy-shots/scan-fisa.webp",
+   "pose": "telefon",
+   "hide": [
+    [
+     0.03,
+     0.015,
+     0.8,
+     0.125,
+     "Clienta"
+    ]
+   ],
+   "crumbs": [
+    {
+     "ic": "users",
+     "t": "Contacte",
+     "at": 1
+    },
+    {
+     "ic": "user-round",
+     "t": "Clienta",
+     "at": 1.5
+    },
+    {
+     "ic": "file-text",
+     "t": "Fișe & mențiuni",
+     "at": 2
+    },
+    {
+     "ic": "scan-line",
+     "t": "„Scanează fișa”",
+     "at": 3,
+     "last": true
+    }
+   ],
+   "rings": [
+    {
+     "box": [
+      0.06,
+      0.262,
+      0.3,
+      0.11
+     ],
+     "at": 2,
+     "off": 3
+    },
+    {
+     "box": [
+      0.052,
+      0.447,
+      0.896,
+      0.19
+     ],
+     "at": 3,
+     "dt": 0.6
+    }
+   ],
+   "zoom": [
+    {
+     "at": 3,
+     "box": [
+      0.05,
+      0.37,
+      0.9,
+      0.28
+     ],
+     "k": 1.22
+    },
+    {
+     "at": 4.6
+    }
+   ],
+   "beats": [
+    {
+     "say": "Apoi scanezi fișa în portal.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Intri la Contacte și cauți clienta.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Apeși pe „Fișe și mențiuni”.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Apoi pe „Scanează fișa”.",
+     "pose": "aparat-foto"
+    },
+    {
+     "say": "Și fotografiezi fiecare pagină cu telefonul. Atât!",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 4 · La final",
+   "head": "Hârtia, *la dosar*",
+   "pose": "fisa",
+   "items": [
+    {
+     "ic": "folder-open",
+     "t": "Foaia de hârtie o pui la dosarul ei."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Foaia de hârtie o pui la dosarul ei.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "why",
+   "text": "Fișa ne arată dacă tratamentul e *sigur* pentru ea.",
+   "pose": "mana-inima",
+   "extra": {
+    "ic": "heart",
+    "t": "Completată împreună: nu sare nimic, și ea simte că ai grijă de ea.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "De ce facem asta? Fișa ne arată dacă tratamentul e sigur pentru ea.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Când o completați împreună, nu sare nimic. Și ea simte că ai grijă de ea.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "never",
+   "text": "Fără fișă semnată, *nu începi* tratamentul.",
+   "pose": "arata-jos",
+   "beats": [
+    {
+     "say": "Și niciodată nu uita: fără fișă semnată, nu începi tratamentul.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 5 · Poza „înainte”",
+   "cur": 4,
+   "pose": "aparat-foto",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul cinci: poza „înainte”. Înainte de tratament.",
+     "pose": "aparat-foto"
+    }
+   ],
+   "when": "Înainte de tratament"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 5 · Ce faci",
+   "head": "Poza *„înainte”*",
+   "pose": "aparat-foto",
+   "items": [
+    {
+     "ic": "sun",
+     "t": "Același loc, lumină bună, fundal simplu."
+    },
+    {
+     "ic": "camera",
+     "t": "O poză din față și una din profil, la zona tratată."
+    },
+    {
+     "ic": "image-up",
+     "t": "Pui pozele în portal, la ședința de azi."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Pui clienta în același loc, cu lumină bună, pe un fundal simplu.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Faci o poză din față și una din profil, la zona tratată.",
+     "pose": "aparat-foto"
+    },
+    {
+     "say": "Și pui pozele în portal, la ședința de azi.",
+     "pose": "telefon"
+    }
+   ]
+  },
+  {
+   "type": "shot",
+   "kicker": "În portal",
+   "head": "Unde pui *pozele*",
+   "img": "academy-shots/poza-inainte.webp",
+   "pose": "telefon",
+   "hide": [
+    [
+     0.03,
+     0.015,
+     0.8,
+     0.125,
+     "Clienta"
+    ]
+   ],
+   "crumbs": [
+    {
+     "ic": "users",
+     "t": "Contacte → clienta",
+     "at": 0.3
+    },
+    {
+     "ic": "image",
+     "t": "„Poze înainte / după”",
+     "at": 1
+    },
+    {
+     "ic": "calendar-days",
+     "t": "Ședința de azi",
+     "at": 2
+    },
+    {
+     "ic": "camera",
+     "t": "ÎNAINTE",
+     "at": 3,
+     "last": true
+    }
+   ],
+   "rings": [
+    {
+     "box": [
+      0.085,
+      0.342,
+      0.212,
+      0.048
+     ],
+     "at": 2,
+     "off": 3
+    },
+    {
+     "box": [
+      0.077,
+      0.493,
+      0.427,
+      0.326
+     ],
+     "at": 3,
+     "dt": 0.5
+    }
+   ],
+   "zoom": [
+    {
+     "at": 2,
+     "box": [
+      0.05,
+      0.32,
+      0.6,
+      0.12
+     ],
+     "k": 1.5
+    },
+    {
+     "at": 3,
+     "box": [
+      0.05,
+      0.47,
+      0.5,
+      0.36
+     ],
+     "k": 1.35
+    },
+    {
+     "at": 4
+    }
+   ],
+   "beats": [
+    {
+     "say": "Unde le pui? Intri la Contacte și cauți clienta.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Apeși pe „Poze înainte și după”.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Alegi ședința de azi. La prima vizită, e ședința unu.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Și apeși pe căsuța ÎNAINTE.",
+     "tts": "Și apeși pe căsuța „înainte”.",
+     "pose": "aparat-foto"
+    }
+   ]
+  },
+  {
+   "type": "cards",
+   "kicker": "Secretul",
+   "head": "Același loc, *același unghi*",
+   "pose": "oglinda",
+   "items": [
+    {
+     "ic": "map-pin",
+     "t": "Același loc",
+     "at": 0.2
+    },
+    {
+     "ic": "sun",
+     "t": "Aceeași lumină",
+     "at": 0.45
+    },
+    {
+     "ic": "camera",
+     "t": "Același unghi",
+     "at": 0.7
+    }
+   ],
+   "beats": [
+    {
+     "say": "La fiecare ședință, faci pozele din același loc și din același unghi.",
+     "pose": "oglinda"
+    },
+    {
+     "say": "Așa se vede clar diferența.",
+     "pose": "surprins"
+    }
+   ]
+  },
+  {
+   "type": "shot",
+   "kicker": "Publicare",
+   "head": "Întreab-o de *acord*",
+   "img": "academy-shots/poza-inainte.webp",
+   "pose": "gandeste",
+   "hide": [
+    [
+     0.03,
+     0.015,
+     0.8,
+     0.125,
+     "Clienta"
+    ]
+   ],
+   "crumbs": [
+    {
+     "ic": "circle-help",
+     "t": "Pe site și în reclame, fără față?",
+     "at": 0.3
+    },
+    {
+     "ic": "check",
+     "t": "Bifezi răspunsul ei la „Publicare”",
+     "at": 1,
+     "last": true
+    }
+   ],
+   "rings": [
+    {
+     "box": [
+      0.095,
+      0.197,
+      0.795,
+      0.072
+     ],
+     "at": 1
+    }
+   ],
+   "zoom": [
+    {
+     "at": 1,
+     "box": [
+      0.06,
+      0.17,
+      0.88,
+      0.12
+     ],
+     "k": 1.2
+    },
+    {
+     "at": 2.2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Întreab-o dacă e de acord ca pozele să fie folosite pe site și în reclame. Fără față.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Bifezi răspunsul ei tot acolo, la „Publicare”.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "never",
+   "text": "Fără acordul ei, pozele *nu se publică* nicăieri.",
+   "pose": "arata-jos",
+   "extra": {
+    "ic": "lock-keyhole",
+    "t": "Pozele stau doar în portal, în fișa ei.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Fără acordul ei, pozele nu se publică nicăieri.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Ele stau doar în portal, în fișa ei.",
+     "pose": "liniste"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 6 · Programul și oferta",
+   "cur": 5,
+   "pose": "fisa",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul șase: programul și oferta. La prima vizită, după fișă și poze.",
+     "pose": "fisa"
+    }
+   ],
+   "when": "La prima vizită, după fișă și poze"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 6 · Ce faci",
+   "head": "Programul *ei*",
+   "pose": "gandeste",
+   "items": [
+    {
+     "ic": "eye",
+     "t": "Spune-i ce ai văzut: ce o deranjează și ce se poate face."
+    },
+    {
+     "ic": "calculator",
+     "t": "Faci programul în Calculatorul de ofertă."
+    },
+    {
+     "ic": "file-text",
+     "t": "Îl scrii pe fișa „Program recomandat și ofertă”."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Îi spui ce ai văzut: ce o deranjează și ce se poate face.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Faci programul în Calculatorul de ofertă. Alegi tratamentele și ședințele.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Și îl treci pe pagina unu a fișei „Program recomandat și ofertă”.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "cards",
+   "kicker": "Ofertele",
+   "head": "Patru oferte, *pe rând*",
+   "cols": 2,
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "badge-percent",
+     "t": "Oferta 1",
+     "s": "Tot programul, plătit azi",
+     "at": 0.4,
+     "pick": 2
+    },
+    {
+     "ic": "calendar-days",
+     "t": "Oferta 2",
+     "s": "Tot programul, în 4 tranșe",
+     "at": 1
+    },
+    {
+     "ic": "footprints",
+     "t": "Oferta 3",
+     "s": "Jumătate de program, plătit azi",
+     "at": 1.3
+    },
+    {
+     "ic": "repeat",
+     "t": "Oferta 4",
+     "s": "Jumătate de program, în 4 tranșe",
+     "at": 1.6
+    }
+   ],
+   "beats": [
+    {
+     "say": "Îi arăți întâi oferta unu.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Dacă spune „nu”, treci la oferta doi. Apoi trei, apoi patru.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Ca într-o conversație. Cel mai bine e să vă opriți la prima.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "never",
+   "text": "Pe masă e mereu *o singură* ofertă.",
+   "pose": "arata-jos",
+   "extra": {
+    "ic": "undo-2",
+    "t": "Pagina de dinainte o iei înapoi.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Pe masă e mereu o singură ofertă.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Pagina de dinainte o iei înapoi.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 6 · La final",
+   "head": "Ea alege, *recepția* face restul",
+   "pose": "receptie",
+   "items": [
+    {
+     "ic": "pen-line",
+     "t": "Când alege, semnează pagina aleasă."
+    },
+    {
+     "ic": "concierge-bell",
+     "t": "O duci la recepție: plata și programările."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Când alege, semnează pagina aleasă.",
+     "pose": "fisa"
+    },
+    {
+     "say": "La final o duci la recepție. Recepția face plata și programările.",
+     "pose": "receptie"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "why",
+   "text": "Pleacă cu un plan clar: *ce face, de câte ori* și cât costă.",
+   "pose": "aprobare",
+   "beats": [
+    {
+     "say": "Așa, clienta pleacă cu un plan clar: ce face, de câte ori și cât costă.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Totul despre oferte e în filmul despre program, pagină cu pagină.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 7 · Faci tratamentul",
+   "cur": 6,
+   "pose": "facial",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul șapte: faci tratamentul, în cabinet.",
+     "pose": "facial"
+    }
+   ],
+   "when": "În cabinet"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 7 · Ce faci",
+   "head": "Faci *tratamentul*",
+   "pose": "facial",
+   "items": [
+    {
+     "ic": "message-circle",
+     "t": "Spune-i pe scurt ce urmează."
+    },
+    {
+     "ic": "heart-handshake",
+     "t": "Întreab-o din când în când dacă e bine."
+    },
+    {
+     "ic": "book-open-check",
+     "t": "Fă tratamentul cum scrie la Tratamente."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Îi spui pe scurt ce urmează.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "O întrebi din când în când dacă e bine.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Și faci tratamentul exact cum scrie la Tratamente.",
+     "pose": "facial"
+    },
+    {
+     "say": "Când știe ce urmează, e liniștită.",
+     "pose": "liniste"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 8 · Poza „după”",
+   "cur": 7,
+   "pose": "aparat-foto",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul opt: poza „după”. Imediat după tratament.",
+     "pose": "aparat-foto"
+    }
+   ],
+   "when": "Imediat după tratament"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 8 · Ce faci",
+   "head": "Poza *„după”*",
+   "pose": "aparat-foto",
+   "items": [
+    {
+     "ic": "copy",
+     "t": "Același loc, aceeași lumină, același unghi ca la „înainte”."
+    },
+    {
+     "ic": "image-up",
+     "t": "Pui pozele la aceeași ședință, la DUPĂ."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Același loc, aceeași lumină și același unghi ca la „înainte”.",
+     "pose": "aparat-foto"
+    },
+    {
+     "say": "Și pui pozele la aceeași ședință.",
+     "pose": "telefon"
+    }
+   ]
+  },
+  {
+   "type": "shot",
+   "kicker": "În portal",
+   "head": "Acum, la *DUPĂ*",
+   "img": "academy-shots/poza-dupa.webp",
+   "pose": "telefon",
+   "hide": [
+    [
+     0.03,
+     0.015,
+     0.8,
+     0.125,
+     "Clienta"
+    ]
+   ],
+   "crumbs": [
+    {
+     "ic": "users",
+     "t": "Contacte → clienta",
+     "at": 0.2
+    },
+    {
+     "ic": "image",
+     "t": "„Poze înainte / după”",
+     "at": 0.5
+    },
+    {
+     "ic": "calendar-days",
+     "t": "Aceeași ședință",
+     "at": 1
+    },
+    {
+     "ic": "camera",
+     "t": "DUPĂ",
+     "at": 1.5,
+     "last": true
+    }
+   ],
+   "rings": [
+    {
+     "box": [
+      0.505,
+      0.493,
+      0.427,
+      0.326
+     ],
+     "at": 1.5
+    }
+   ],
+   "zoom": [
+    {
+     "at": 1.5,
+     "box": [
+      0.45,
+      0.42,
+      0.52,
+      0.42
+     ],
+     "k": 1.35
+    },
+    {
+     "at": 3
+    }
+   ],
+   "beats": [
+    {
+     "say": "Același drum: Contacte, clienta, „Poze înainte și după”.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Aceeași ședință. Dar acum apeși pe căsuța DUPĂ.",
+     "tts": "Aceeași ședință. Dar acum apeși pe căsuța „după”.",
+     "pose": "aparat-foto"
+    },
+    {
+     "say": "Portalul pune singur pozele una lângă alta.",
+     "pose": "surprins"
+    },
+    {
+     "say": "Poți să i le arăți pe loc. Așa se vede diferența.",
+     "pose": "oglinda"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 9 · Conduci clienta",
+   "cur": 8,
+   "pose": "salut-pa",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul nouă: conduci clienta. La final.",
+     "pose": "salut-pa"
+    }
+   ],
+   "when": "La final"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 9 · Ce faci",
+   "head": "Conduci *clienta*",
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "house",
+     "t": "Spune-i ce să facă acasă."
+    },
+    {
+     "ic": "concierge-bell",
+     "t": "Du-o la recepție."
+    },
+    {
+     "ic": "message-circle",
+     "t": "Spune-i recepției durata și intervalul ședințelor."
+    },
+    {
+     "ic": "hand-heart",
+     "t": "Mulțumește-i și spune-i „La revedere” pe nume."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Îi spui ce să facă acasă.",
+     "pose": "spf"
+    },
+    {
+     "say": "O duci la recepție.",
+     "pose": "receptie"
+    },
+    {
+     "say": "Îi spui recepției cât durează următoarele ședințe și la ce interval vin.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Apoi îi mulțumești și îi spui „La revedere”, pe nume.",
+     "pose": "salut-pa"
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Exemplu",
+   "head": "Tu și *recepția*",
+   "herName": "Recepția",
+   "pose": "receptie",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Următoarele ședințe: 60 de minute, o dată pe săptămână.",
+     "at": 0.2
+    },
+    {
+     "who": "her",
+     "t": "Perfect! Fac eu plata și programările acum.",
+     "at": 1
+    }
+   ],
+   "beats": [
+    {
+     "say": "De exemplu: „șaizeci de minute, o dată pe săptămână”.",
+     "cap": "De exemplu: „60 de minute, o dată pe săptămână”.",
+     "pose": "receptie"
+    },
+    {
+     "say": "Recepția face plata și toate programările.",
+     "pose": "calendar"
+    }
+   ],
+   "nuki": "off"
+  },
+  {
+   "type": "note",
+   "variant": "never",
+   "text": "Nu faci tu programările. *Le predai recepției.*",
+   "pose": "arata-jos",
+   "extra": {
+    "ic": "info",
+    "t": "Durata și intervalul: din programul ales sau din schema tratamentului.",
+    "at": 2
+   },
+   "beats": [
+    {
+     "say": "Programările nu le faci tu. Le predai recepției.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Recepția le face foarte bine, iar tu te pregătești pentru următoarea clientă.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Durata și intervalul le iei din programul ales, sau din schema tratamentului.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 10 · Faci curat",
+   "cur": 9,
+   "pose": "prezinta",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Pasul zece: faci curat. După fiecare clientă.",
+     "pose": "prezinta"
+    }
+   ],
+   "when": "După fiecare clientă"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 10 · Ce faci",
+   "head": "Faci *curat*",
+   "pose": "prezinta",
+   "items": [
+    {
+     "ic": "spray-can",
+     "t": "Dezinfectează patul, aparatul și masa."
+    },
+    {
+     "ic": "bed-double",
+     "t": "Scoate cearceaful și prosopul folosite."
+    },
+    {
+     "ic": "trash-2",
+     "t": "Aruncă ce e de unică folosință."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Dezinfectezi patul, aparatul și masa.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Scoți cearceaful și prosopul folosite.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Și arunci ce e de unică folosință.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Așa, următoarea clientă găsește totul curat.",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "map",
+   "chap": "Pasul 11 · Închizi salonul",
+   "cur": 10,
+   "pose": "liniste",
+   "pts": [
+    [
+     6,
+     30
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     34,
+     30
+    ],
+    [
+     49,
+     14
+    ],
+    [
+     64,
+     26
+    ],
+    [
+     79,
+     14
+    ],
+    [
+     94,
+     50
+    ],
+    [
+     76,
+     82
+    ],
+    [
+     57,
+     88
+    ],
+    [
+     38,
+     76
+    ],
+    [
+     18,
+     86
+    ]
+   ],
+   "steps": [
+    "Deschizi salonul",
+    "Pregătești cabinetul",
+    "Primești clienta",
+    "Fișa clientei",
+    "Poza „înainte”",
+    "Programul și oferta",
+    "Faci tratamentul",
+    "Poza „după”",
+    "Conduci clienta",
+    "Faci curat",
+    "Închizi salonul"
+   ],
+   "beats": [
+    {
+     "say": "Și ultimul pas, unsprezece: închizi salonul. Seara, dacă pleci ultima.",
+     "pose": "liniste"
+    }
+   ],
+   "when": "Seara, dacă pleci ultima"
+  },
+  {
+   "type": "list",
+   "kicker": "Pasul 11 · Ce faci",
+   "head": "Închizi *salonul*",
+   "pose": "liniste",
+   "items": [
+    {
+     "ic": "power-off",
+     "t": "Oprește aparatele."
+    },
+    {
+     "ic": "trash-2",
+     "t": "Fă curat și scoate gunoiul."
+    },
+    {
+     "ic": "lightbulb-off",
+     "t": "Stinge luminile."
+    },
+    {
+     "ic": "lock-keyhole",
+     "t": "Încuie ușa."
+    }
+   ],
+   "beats": [
+    {
+     "say": "Oprește aparatele.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Fă curat și scoate gunoiul.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Stinge luminile.",
+     "pose": "liniste"
+    },
+    {
+     "say": "Și încuie ușa. Mâine dimineață, totul e gata de lucru.",
+     "pose": "salut-pa"
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Fișa, împreună cu ea",
+     "at": 1
+    },
+    {
+     "t": "Poza înainte și după",
+     "at": 1.4
+    },
+    {
+     "t": "O singură ofertă pe masă",
+     "at": 1.8
+    },
+    {
+     "t": "Programările: recepția",
+     "at": 2.2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi tot drumul clientei.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Fișa o completezi împreună cu ea. Faci pozele înainte și după. Pe masă e o singură ofertă. Și programările le face recepția.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Dacă uiți un pas, deschide harta din portal. Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ],
+   "chap": "Recapitulare"
+  }
+ ]
+}

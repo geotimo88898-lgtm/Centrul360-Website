@@ -9,3 +9,10 @@ cf/api.gen.js
 cf/creative.gen.js
 cf/build-id.gen.js
 .dev.vars
+# training films (academy-vsl/src): voice takes, renders, generated music and sounds stay local
+academy-vsl/src/films/*/voice/
+academy-vsl/src/films/*/build/
+academy-vsl/src/engine/music/
+academy-vsl/src/engine/sfx/
+academy-vsl/src/engine/vstat.py.bak
+__pycache__/

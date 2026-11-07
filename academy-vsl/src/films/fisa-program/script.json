@@ -1,0 +1,1652 @@
+{
+ "id": "fisa-program",
+ "title": "Programul *și oferta*",
+ "short": "Programul recomandat și oferta",
+ "chap": "Programul și oferta",
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "După fișă · Training",
+   "title": "Programul *și oferta*",
+   "sub": "Ce îi recomanzi și cum îi prezinți oferta.",
+   "pose": "salut-pa",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Azi învățăm fișa „Program recomandat și ofertă”. O completezi după fișa clientei și după poze.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Are cinci pagini. Pagina unu e programul. Paginile doi, trei, patru și cinci sunt ofertele.",
+     "pose": "prezinta",
+     "cap": "Are 5 pagini. Pagina 1 e programul. Paginile 2, 3, 4 și 5 sunt ofertele."
+    }
+   ]
+  },
+  {
+   "type": "cards",
+   "kicker": "Pe scurt",
+   "head": "Cinci pagini, *în ordine*",
+   "pose": "prezinta",
+   "cols": 2,
+   "items": [
+    {
+     "ic": "clipboard-list",
+     "t": "Pagina 1",
+     "s": "Programul recomandat",
+     "at": 0.2
+    },
+    {
+     "ic": "badge-percent",
+     "t": "Pagina 2 · Oferta 1",
+     "s": "Tot programul, plătit azi, 50%",
+     "at": 1
+    },
+    {
+     "ic": "calendar-days",
+     "t": "Pagina 3 · Oferta 2",
+     "s": "Tot programul, 4 tranșe, 30%",
+     "at": 1.25
+    },
+    {
+     "ic": "footprints",
+     "t": "Pagina 4 · Oferta 3",
+     "s": "Jumătate de program, plătit azi, 50%",
+     "at": 1.5
+    },
+    {
+     "ic": "repeat",
+     "t": "Pagina 5 · Oferta 4",
+     "s": "Jumătate de program, 4 tranșe, 30%",
+     "at": 1.75
+    }
+   ],
+   "beats": [
+    {
+     "say": "Întâi faci programul, pe pagina unu.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Apoi ofertele, una câte una, de la cea mai avantajoasă ca reducere la cea mai ușoară ca sumă.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Pagina 1 din 5",
+   "title": "Programul *recomandat*",
+   "ic": "clipboard-list",
+   "pose": "fisa",
+   "beats": [
+    {
+     "say": "Pagina unu: programul recomandat.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Rămâne la clientă. La sfârșit o capsezi de fișa ei.",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 1",
+   "head": "Programul *recomandat*",
+   "img": "academy-fisa/p1.webp",
+   "pose": "fisa",
+   "focus": [
+    {
+     "box": [
+      12.2,
+      5.3
+     ],
+     "t": "Clienta, data, tu",
+     "d": "Numele ei, data de azi, numele tău.",
+     "at": 0
+    },
+    {
+     "box": [
+      22.6,
+      6.9
+     ],
+     "t": "Obiectivul ei",
+     "d": "Ce vrea ea, cu cuvintele ei.",
+     "at": 1
+    },
+    {
+     "box": [
+      34.7,
+      29.2
+     ],
+     "t": "Tratamentele",
+     "d": "O linie pe procedură: zona, ședințele, intervalul.",
+     "at": 3
+    },
+    {
+     "box": [
+      65,
+      2.9
+     ],
+     "t": "Totalul",
+     "d": "Suma liniilor. O face calculatorul.",
+     "at": 6
+    },
+    {
+     "box": [
+      73.1,
+      10.9
+     ],
+     "t": "Durata și rezultatul",
+     "d": "Cât ține. Ce poate vedea, estimat.",
+     "at": 7
+    }
+   ],
+   "fills": [
+    [
+     9.2,
+     26.1,
+     "Să scape de grăsimea de pe abdomen, să se simtă bine în costum de baie.",
+     "",
+     1.4
+    ],
+    [
+     13.2,
+     39.0,
+     "Cavitație",
+     "",
+     4.0
+    ],
+    [
+     36,
+     39.0,
+     "abdomen",
+     "",
+     4.0
+    ],
+    [
+     48.5,
+     39.0,
+     "8",
+     "",
+     4.0
+    ],
+    [
+     13.2,
+     41.8,
+     "EMS",
+     "",
+     4.25
+    ],
+    [
+     36,
+     41.8,
+     "abdomen",
+     "",
+     4.25
+    ],
+    [
+     48.5,
+     41.8,
+     "8",
+     "",
+     4.25
+    ],
+    [
+     13.2,
+     44.7,
+     "Împachetare la cald",
+     "",
+     4.5
+    ],
+    [
+     36,
+     44.7,
+     "abdomen",
+     "",
+     4.5
+    ],
+    [
+     48.5,
+     44.7,
+     "8",
+     "",
+     4.5
+    ],
+    [
+     13.2,
+     47.5,
+     "Liposonix",
+     "",
+     4.75
+    ],
+    [
+     36,
+     47.5,
+     "abdomen",
+     "",
+     4.75
+    ],
+    [
+     48.5,
+     47.5,
+     "6",
+     "",
+     4.75
+    ],
+    [
+     53,
+     73.6,
+     "aproximativ 3 luni",
+     "",
+     7.4
+    ],
+    [
+     9.2,
+     80.3,
+     "Abdomen mai plat și mai ferm. Rezultatul diferă de la o persoană la alta.",
+     "",
+     8.2
+    ],
+    [
+     66.5,
+     12.9,
+     "15.10.2026",
+     "",
+     0.4
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Sus treci numele ei, data consultației și numele tău, la „Specialist”.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Întâi afli ce o deranjează. Apoi scrii obiectivul ei, cu cuvintele ei.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "De exemplu: „Să scape de grăsimea de pe abdomen, să se simtă bine în costum de baie.”",
+     "pose": "fisa"
+    },
+    {
+     "say": "Apoi tratamentele. O linie pentru fiecare procedură: zona, câte ședințe și intervalul dintre ele.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "De exemplu: cavitație, EMS, împachetare și Liposonix, toate pe abdomen.",
+     "pose": "cavitatie"
+    },
+    {
+     "say": "Intervalul îl iei din schema fiecărui tratament.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Totalul e suma liniilor. Îl face calculatorul de ofertă, și tot el îți spune dacă programul trece de minim.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Jos scrii cât ține programul, de exemplu „aproximativ trei luni”.",
+     "pose": "calendar",
+     "cap": "Jos scrii cât ține programul, de exemplu „aproximativ 3 luni”."
+    },
+    {
+     "say": "Și rezultatul estimat, spus simplu. Rezultatele sunt estimate, nu garantate.",
+     "pose": "mana-inima"
+    }
+   ],
+   "backAt": 8.6
+  },
+  {
+   "type": "chat",
+   "kicker": "Cum o spui",
+   "head": "Programul, *pe înțeles*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "me",
+     "t": "De obicei, după programul ăsta clientele văd un abdomen mai plat și mai ferm.",
+     "at": 0.2
+    },
+    {
+     "who": "me",
+     "t": "La fiecare e puțin diferit, așa că urmărim împreună cum răspunde corpul dvs.",
+     "at": 1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Îi spui așa: „De obicei, după programul ăsta clientele văd un abdomen mai plat și mai ferm.”",
+     "pose": "prezinta"
+    },
+    {
+     "say": "„La fiecare e puțin diferit, așa că urmărim împreună cum răspunde corpul dumneavoastră.”",
+     "pose": "mana-inima",
+     "cap": "„La fiecare e puțin diferit, așa că urmărim împreună cum răspunde corpul dvs.”"
+    },
+    {
+     "say": "Nu promiți nimic concret. Spui ce văd de obicei clientele.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "title",
+   "kicker": "Paginile 2-5",
+   "title": "Ofertele, *ca o conversație*",
+   "ic": "message-circle",
+   "pose": "mana-inima",
+   "sub": "Niciodată „reducere de ultim moment”. O asculți, o înțelegi, îi propui.",
+   "subAt": 1,
+   "beats": [
+    {
+     "say": "Acum, ofertele. Aici e cel mai important lucru.",
+     "pose": "surprins"
+    },
+    {
+     "say": "Ofertele nu sună niciodată a „reducere, ia sau lasă”. Sunt o conversație: o asculți, o înțelegi și îi propui.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Iar cel mai bine e să vă opriți la prima ofertă.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "never",
+   "label": "Regula mesei",
+   "text": "Pe masă e mereu *o singură* ofertă.",
+   "pose": "arata-jos",
+   "extra": {
+    "ic": "undo-2",
+    "t": "Nu arăți și nu pomenești paginile următoare.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Pe masă e mereu o singură ofertă.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Nu arăți și nu pomenești paginile următoare. Clienta se gândește doar la oferta din fața ei.",
+     "pose": "gandeste"
+    }
+   ]
+  },
+  {
+   "type": "big",
+   "kicker": "Oferta 1 · Pagina 2",
+   "value": 50,
+   "from": 0,
+   "suffix": "%",
+   "label": "Tot programul, *plătit azi*",
+   "pose": "cadou",
+   "beats": [
+    {
+     "say": "Oferta unu: tot programul, plătit azi, cu cincizeci la sută reducere.",
+     "pose": "cadou",
+     "cap": "Oferta 1: tot programul, plătit azi, cu 50% reducere."
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Oferta 1",
+   "head": "Cum *o spui*",
+   "pose": "prezinta",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Pentru că începeți azi tot programul, aveți 50% reducere, cu plata integrală.",
+     "at": 0.3
+    }
+   ],
+   "beats": [
+    {
+     "say": "Spui simplu: „Pentru că începeți azi tot programul, aveți 50% reducere, cu plata integrală.”",
+     "pose": "prezinta",
+     "tts": "Spui simplu: „Pentru că începeți azi tot programul, aveți cincizeci la sută reducere, cu plata integrală.”"
+    },
+    {
+     "say": "Și te oprești. O lași să se gândească.",
+     "pose": "liniste"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 2",
+   "head": "Oferta 1 · *50%*",
+   "img": "academy-fisa/p2.webp",
+   "pose": "fisa",
+   "focus": [
+    {
+     "box": [
+      7.8,
+      10.9
+     ],
+     "t": "Calculul",
+     "d": "Reducerea: 50%. Plătește jumătate din total.",
+     "at": 0
+    },
+    {
+     "box": [
+      22.3,
+      4.9
+     ],
+     "t": "Plata",
+     "d": "Cum plătește, data, suma.",
+     "at": 1
+    },
+    {
+     "box": [
+      31.2,
+      26
+     ],
+     "t": "Ședințele",
+     "d": "Toate, pe loc, cu data și ora.",
+     "at": 2
+    },
+    {
+     "box": [
+      58.4,
+      11.7
+     ],
+     "t": "Condițiile",
+     "d": "Doar azi. Regula de 24 de ore.",
+     "at": 3
+    },
+    {
+     "box": [
+      74.5,
+      6.9
+     ],
+     "t": "Semnăturile",
+     "d": "Ea și tu. Capsezi de fișă.",
+     "at": 5
+    }
+   ],
+   "fills": [
+    [
+     62,
+     11.2,
+     "50",
+     "",
+     0.3
+    ],
+    [
+     18.1,
+     22.0,
+     "✓",
+     "is-tick",
+     1.3
+    ],
+    [
+     24.5,
+     25.4,
+     "15.10.2026",
+     "",
+     1.3
+    ],
+    [
+     17.6,
+     34.3,
+     "Liposonix, cavitație, EMS, împachetare",
+     "",
+     2.3
+    ],
+    [
+     53,
+     34.3,
+     "16.10.2026",
+     "",
+     2.3
+    ],
+    [
+     76.6,
+     34.3,
+     "10:00",
+     "",
+     2.3
+    ],
+    [
+     17.6,
+     36.9,
+     "Cavitație, EMS, împachetare",
+     "",
+     2.3
+    ],
+    [
+     53,
+     36.9,
+     "23.10.2026",
+     "",
+     2.3
+    ],
+    [
+     76.6,
+     36.9,
+     "10:00",
+     "",
+     2.3
+    ],
+    [
+     24.5,
+     75.9,
+     "semnat",
+     "is-sig",
+     5.3
+    ],
+    [
+     66.5,
+     75.9,
+     "semnat",
+     "is-sig",
+     5.3
+    ],
+    [
+     24.5,
+     79.5,
+     "15.10.2026",
+     "",
+     5.3
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Pe pagină scrii reducerea, cincizeci la sută. Calculatorul îți dă totalul de plată.",
+     "pose": "fisa",
+     "cap": "Pe pagină scrii reducerea, 50%. Calculatorul îți dă totalul de plată."
+    },
+    {
+     "say": "Bifezi felul în care plătește și notezi data plății.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Ședințele se programează toate pe loc, cu data și ora. Recepția le face.",
+     "pose": "receptie"
+    },
+    {
+     "say": "Apoi condițiile. Oferta e valabilă doar azi, în ziua consultației.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Și îi spui clar: dacă anulează sau mută cu mai puțin de douăzeci și patru de ore înainte, ședința se consideră făcută.",
+     "pose": "arata-jos",
+     "cap": "Și îi spui clar: dacă anulează sau mută cu mai puțin de 24 de ore înainte, ședința se consideră făcută."
+    },
+    {
+     "say": "La final semnează ea și semnezi tu. Pagina unu și pagina aleasă le capsezi de fișa ei.",
+     "pose": "fisa"
+    }
+   ],
+   "backAt": 5.6
+  },
+  {
+   "type": "chat",
+   "kicker": "Oferta 2",
+   "head": "Dacă e *prea mult*",
+   "pose": "gandeste",
+   "lines": [
+    {
+     "who": "her",
+     "t": "E cam mult pentru mine acum.",
+     "at": 0.2
+    },
+    {
+     "who": "me",
+     "t": "Înțeleg. Atunci ce putem face pentru dvs. este o reducere puțin mai mică, de 30%, și puteți achita în 4 tranșe.",
+     "at": 1.1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Dar dacă spune că e prea mult? Nu insiști. Iei pagina înapoi.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Și continui firesc: „Înțeleg. Atunci ce putem face pentru dvs. este o reducere puțin mai mică, de 30%, și puteți achita în 4 tranșe.”",
+     "pose": "prezinta",
+     "tts": "Și continui firesc: „Înțeleg. Atunci ce putem face pentru dumneavoastră este o reducere puțin mai mică, de treizeci la sută, și puteți achita în patru tranșe.”"
+    }
+   ]
+  },
+  {
+   "type": "big",
+   "kicker": "Oferta 2 · Pagina 3",
+   "value": 30,
+   "from": 0,
+   "suffix": "%",
+   "label": "Tot programul, *în 4 tranșe*",
+   "sub": "O tranșă la fiecare dintre primele 4 ședințe.",
+   "subAt": 1,
+   "pose": "calendar",
+   "beats": [
+    {
+     "say": "Oferta doi: tot programul, cu treizeci la sută reducere, în patru tranșe.",
+     "pose": "calendar",
+     "cap": "Oferta 2: tot programul, cu 30% reducere, în 4 tranșe."
+    },
+    {
+     "say": "Plătește câte o tranșă la fiecare ședință: tranșa unu la ședința unu, tranșa doi la ședința doi, și tot așa.",
+     "pose": "prezinta",
+     "cap": "Plătește câte o tranșă la fiecare ședință: tranșa 1 la ședința 1, tranșa 2 la ședința 2, și tot așa."
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 3",
+   "head": "Oferta 2 · *30%, 4 tranșe*",
+   "img": "academy-fisa/p3.webp",
+   "pose": "fisa",
+   "focus": [
+    {
+     "box": [
+      7.8,
+      13.6
+     ],
+     "t": "Calculul",
+     "d": "Reducerea: 30%. Totalul împărțit la 4.",
+     "at": 0
+    },
+    {
+     "box": [
+      25.2,
+      13.1
+     ],
+     "t": "Calendarul tranșelor",
+     "d": "Fiecare tranșă, la ședința ei.",
+     "at": 1
+    },
+    {
+     "box": [
+      42.3,
+      12.8
+     ],
+     "t": "Ședințele",
+     "d": "Toate, programate pe loc.",
+     "at": 2
+    },
+    {
+     "box": [
+      58.2,
+      11.8
+     ],
+     "t": "Condițiile",
+     "d": "Ca la oferta 1, plus tranșa la ședința ei.",
+     "at": 3
+    },
+    {
+     "box": [
+      74.1,
+      6.9
+     ],
+     "t": "Semnăturile",
+     "d": "Ea și tu.",
+     "at": 4
+    }
+   ],
+   "fills": [
+    [
+     62,
+     11.2,
+     "30",
+     "",
+     0.3
+    ],
+    [
+     21,
+     28.5,
+     "ședința 1",
+     "",
+     1.3
+    ],
+    [
+     53,
+     28.5,
+     "16.10.2026",
+     "",
+     1.3
+    ],
+    [
+     73.4,
+     28.5,
+     "16.10 ✓",
+     "",
+     1.3
+    ],
+    [
+     21,
+     31.1,
+     "ședința 2",
+     "",
+     1.3
+    ],
+    [
+     53,
+     31.1,
+     "23.10.2026",
+     "",
+     1.3
+    ],
+    [
+     21,
+     33.7,
+     "ședința 3",
+     "",
+     1.3
+    ],
+    [
+     53,
+     33.7,
+     "30.10.2026",
+     "",
+     1.3
+    ],
+    [
+     21,
+     36.4,
+     "ședința 4",
+     "",
+     1.3
+    ],
+    [
+     53,
+     36.4,
+     "06.11.2026",
+     "",
+     1.3
+    ],
+    [
+     17.6,
+     45.3,
+     "Liposonix, cavitație, EMS, împachetare",
+     "",
+     2.3
+    ],
+    [
+     53,
+     45.3,
+     "16.10.2026",
+     "",
+     2.3
+    ],
+    [
+     76.6,
+     45.3,
+     "10:00",
+     "",
+     2.3
+    ],
+    [
+     17.6,
+     47.9,
+     "Cavitație, EMS, împachetare",
+     "",
+     2.3
+    ],
+    [
+     53,
+     47.9,
+     "23.10.2026",
+     "",
+     2.3
+    ],
+    [
+     76.6,
+     47.9,
+     "10:00",
+     "",
+     2.3
+    ],
+    [
+     17.6,
+     50.5,
+     "Liposonix, cavitație, EMS, împachetare",
+     "",
+     2.3
+    ],
+    [
+     53,
+     50.5,
+     "30.10.2026",
+     "",
+     2.3
+    ],
+    [
+     76.6,
+     50.5,
+     "10:00",
+     "",
+     2.3
+    ],
+    [
+     17.6,
+     53.1,
+     "Cavitație, EMS, împachetare",
+     "",
+     2.3
+    ],
+    [
+     53,
+     53.1,
+     "06.11.2026",
+     "",
+     2.3
+    ],
+    [
+     76.6,
+     53.1,
+     "10:00",
+     "",
+     2.3
+    ],
+    [
+     24.5,
+     75.5,
+     "semnat",
+     "is-sig",
+     4.3
+    ],
+    [
+     66.5,
+     75.5,
+     "semnat",
+     "is-sig",
+     4.3
+    ],
+    [
+     24.5,
+     79.1,
+     "15.10.2026",
+     "",
+     4.3
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Notezi reducerea: treizeci la sută. Calculatorul îți dă totalul și cât face o tranșă.",
+     "pose": "fisa",
+     "cap": "Notezi reducerea: 30%. Calculatorul îți dă totalul și cât face o tranșă."
+    },
+    {
+     "say": "La calendarul tranșelor scrii la ce ședință plătește fiecare. La fiecare plată se bifează „Achitat”.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Ședințele, toate programate pe loc.",
+     "pose": "receptie"
+    },
+    {
+     "say": "Condițiile sunt ca la oferta unu, plus una: fiecare tranșă se plătește la ședința ei.",
+     "pose": "arata-jos",
+     "cap": "Condițiile sunt ca la oferta 1, plus una: fiecare tranșă se plătește la ședința ei."
+    },
+    {
+     "say": "Și semnați amândouă.",
+     "pose": "aprobare"
+    }
+   ],
+   "backAt": 4.6
+  },
+  {
+   "type": "chat",
+   "kicker": "Oferta 3",
+   "head": "Un *picior pe ușă*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "her",
+     "t": "Tot e greu pentru mine.",
+     "at": 0.2
+    },
+    {
+     "who": "me",
+     "t": "Înțeleg perfect. Corect din partea noastră ar fi să puneți un picior pe ușă: începeți cu jumătate din program, tot cu 50% reducere.",
+     "at": 1.1
+    },
+    {
+     "who": "me",
+     "t": "Vă obișnuiți cu noi și vedem cum răspunde corpul dvs. la aparate.",
+     "at": 2.1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Tot e greu pentru ea? Iei pagina înapoi și îi propui un început.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "„Înțeleg perfect. Corect din partea noastră ar fi să puneți un picior pe ușă: începeți cu jumătate din program, tot cu 50% reducere.”",
+     "pose": "mana-inima",
+     "tts": "„Înțeleg perfect. Corect din partea noastră ar fi să puneți un picior pe ușă: începeți cu jumătate din program, tot cu cincizeci la sută reducere.”"
+    },
+    {
+     "say": "„Vă obișnuiți cu noi și vedem cum răspunde corpul dvs. la aparate.”",
+     "pose": "prezinta",
+     "tts": "„Vă obișnuiți cu noi și vedem cum răspunde corpul dumneavoastră la aparate.”"
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Nu e un pachet mai mic",
+   "text": "E *un început*. Jumătate din ședințe, aceeași reducere de 50%.",
+   "pose": "aprobare",
+   "beats": [
+    {
+     "say": "Oferta trei nu e un pachet mai mic. E un început: jumătate din ședințele programului, cu aceeași reducere de cincizeci la sută.",
+     "pose": "aprobare",
+     "cap": "Oferta 3 nu e un pachet mai mic. E un început: jumătate din ședințele programului, cu aceeași reducere de 50%."
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 4",
+   "head": "Oferta 3 · *jumătate, 50%*",
+   "img": "academy-fisa/p4.webp",
+   "pose": "fisa",
+   "focus": [
+    {
+     "box": [
+      4.1,
+      12.2
+     ],
+     "t": "Pachetul redus",
+     "d": "Jumătate din fiecare procedură. 3 devin 1,5.",
+     "at": 0
+    },
+    {
+     "box": [
+      17.5,
+      10.9
+     ],
+     "t": "Calculul",
+     "d": "Reducerea: 50%.",
+     "at": 2
+    },
+    {
+     "box": [
+      31.6,
+      5.3
+     ],
+     "t": "Plata",
+     "d": "Cum plătește, data, suma.",
+     "at": 3
+    },
+    {
+     "box": [
+      40.9,
+      15.5
+     ],
+     "t": "Ședințele",
+     "d": "Toate, programate pe loc.",
+     "at": 3.5
+    },
+    {
+     "box": [
+      58.8,
+      20.1
+     ],
+     "t": "Condițiile și semnăturile",
+     "d": "Doar azi, regula de 24 de ore, semnături.",
+     "at": 4
+    }
+   ],
+   "fills": [
+    [
+     9,
+     8.3,
+     "Cavitație · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     8.3,
+     "8",
+     "",
+     0.3
+    ],
+    [
+     54,
+     8.3,
+     "4",
+     "",
+     0.3
+    ],
+    [
+     9,
+     10.4,
+     "EMS · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     10.4,
+     "8",
+     "",
+     0.3
+    ],
+    [
+     54,
+     10.4,
+     "4",
+     "",
+     0.3
+    ],
+    [
+     9,
+     12.5,
+     "Împachetare · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     12.5,
+     "8",
+     "",
+     0.3
+    ],
+    [
+     54,
+     12.5,
+     "4",
+     "",
+     0.3
+    ],
+    [
+     9,
+     14.600000000000001,
+     "Liposonix · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     14.600000000000001,
+     "6",
+     "",
+     0.3
+    ],
+    [
+     54,
+     14.600000000000001,
+     "3",
+     "",
+     0.3
+    ],
+    [
+     62,
+     20.9,
+     "50",
+     "",
+     2.3
+    ],
+    [
+     18.1,
+     31.6,
+     "✓",
+     "is-tick",
+     3.3
+    ],
+    [
+     17.6,
+     43.9,
+     "Liposonix, cavitație, EMS, împachetare",
+     "",
+     3.8
+    ],
+    [
+     53,
+     43.9,
+     "16.10.2026",
+     "",
+     3.8
+    ],
+    [
+     76.6,
+     43.9,
+     "10:00",
+     "",
+     3.8
+    ],
+    [
+     17.6,
+     46.6,
+     "Cavitație, EMS, împachetare",
+     "",
+     3.8
+    ],
+    [
+     53,
+     46.6,
+     "23.10.2026",
+     "",
+     3.8
+    ],
+    [
+     76.6,
+     46.6,
+     "10:00",
+     "",
+     3.8
+    ],
+    [
+     24.5,
+     73.4,
+     "semnat",
+     "is-sig",
+     4.3
+    ],
+    [
+     66.5,
+     73.4,
+     "semnat",
+     "is-sig",
+     4.3
+    ],
+    [
+     24.5,
+     77.1,
+     "15.10.2026",
+     "",
+     4.3
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Pe pagina patru scrii jumătate din ședințele fiecărei proceduri. Opt ședințe devin patru, șase devin trei.",
+     "pose": "fisa",
+     "cap": "Pe pagina 4 scrii jumătate din ședințele fiecărei proceduri. 8 ședințe devin 4, 6 devin 3."
+    },
+    {
+     "say": "Fără rotunjire: dacă sunt trei ședințe, scrii unu virgulă cinci.",
+     "pose": "gandeste",
+     "cap": "Fără rotunjire: dacă sunt 3 ședințe, scrii 1,5."
+    },
+    {
+     "say": "Reducerea e tot cincizeci la sută.",
+     "pose": "cadou",
+     "cap": "Reducerea e tot 50%."
+    },
+    {
+     "say": "Plata, data și ședințele programate pe loc.",
+     "pose": "receptie"
+    },
+    {
+     "say": "Condițiile ca la oferta unu, și semnați amândouă.",
+     "pose": "aprobare",
+     "cap": "Condițiile ca la oferta 1, și semnați amândouă."
+    }
+   ],
+   "backAt": 4.6
+  },
+  {
+   "type": "chat",
+   "kicker": "Oferta 4",
+   "head": "Cea mai *ușoară*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "her",
+     "t": "Și așa e mult deodată.",
+     "at": 0.2
+    },
+    {
+     "who": "me",
+     "t": "Ca să fie cât mai ușor: aceeași jumătate de program, cu 30% reducere, în 4 tranșe.",
+     "at": 1.1
+    }
+   ],
+   "beats": [
+    {
+     "say": "Și dacă tot e greu, ultima variantă.",
+     "pose": "gandeste"
+    },
+    {
+     "say": "„Ca să fie cât mai ușor: aceeași jumătate de program, cu 30% reducere, în 4 tranșe.”",
+     "pose": "mana-inima",
+     "tts": "„Ca să fie cât mai ușor: aceeași jumătate de program, cu treizeci la sută reducere, în patru tranșe.”"
+    }
+   ]
+  },
+  {
+   "type": "sheet",
+   "kicker": "Pagina 5",
+   "head": "Oferta 4 · *jumătate, 4 tranșe*",
+   "img": "academy-fisa/p5.webp",
+   "pose": "fisa",
+   "focus": [
+    {
+     "box": [
+      4.1,
+      12.2
+     ],
+     "t": "Pachetul redus",
+     "d": "Aceleași ședințe ca la oferta 3.",
+     "at": 0
+    },
+    {
+     "box": [
+      17.5,
+      13.6
+     ],
+     "t": "Calculul",
+     "d": "Reducerea: 30%. Totalul împărțit la 4.",
+     "at": 1
+    },
+    {
+     "box": [
+      35,
+      13
+     ],
+     "t": "Calendarul tranșelor",
+     "d": "Fiecare tranșă, la ședința ei.",
+     "at": 2
+    },
+    {
+     "box": [
+      51.9,
+      7.7
+     ],
+     "t": "Ședințele",
+     "d": "Toate, programate pe loc.",
+     "at": 3
+    },
+    {
+     "box": [
+      61.2,
+      22.7
+     ],
+     "t": "Condițiile și semnăturile",
+     "d": "Doar azi, tranșa la ședința ei, semnături.",
+     "at": 3.5
+    }
+   ],
+   "fills": [
+    [
+     9,
+     8.3,
+     "Cavitație · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     8.3,
+     "8",
+     "",
+     0.3
+    ],
+    [
+     54,
+     8.3,
+     "4",
+     "",
+     0.3
+    ],
+    [
+     9,
+     10.4,
+     "EMS · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     10.4,
+     "8",
+     "",
+     0.3
+    ],
+    [
+     54,
+     10.4,
+     "4",
+     "",
+     0.3
+    ],
+    [
+     9,
+     12.5,
+     "Împachetare · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     12.5,
+     "8",
+     "",
+     0.3
+    ],
+    [
+     54,
+     12.5,
+     "4",
+     "",
+     0.3
+    ],
+    [
+     9,
+     14.600000000000001,
+     "Liposonix · abdomen",
+     "",
+     0.3
+    ],
+    [
+     41,
+     14.600000000000001,
+     "6",
+     "",
+     0.3
+    ],
+    [
+     54,
+     14.600000000000001,
+     "3",
+     "",
+     0.3
+    ],
+    [
+     62,
+     20.9,
+     "30",
+     "",
+     1.3
+    ],
+    [
+     21,
+     38.2,
+     "ședința 1",
+     "",
+     2.3
+    ],
+    [
+     53,
+     38.2,
+     "16.10.2026",
+     "",
+     2.3
+    ],
+    [
+     73.4,
+     38.2,
+     "16.10 ✓",
+     "",
+     2.3
+    ],
+    [
+     21,
+     40.8,
+     "ședința 2",
+     "",
+     2.3
+    ],
+    [
+     53,
+     40.8,
+     "23.10.2026",
+     "",
+     2.3
+    ],
+    [
+     21,
+     43.4,
+     "ședința 3",
+     "",
+     2.3
+    ],
+    [
+     53,
+     43.4,
+     "30.10.2026",
+     "",
+     2.3
+    ],
+    [
+     21,
+     46.0,
+     "ședința 4",
+     "",
+     2.3
+    ],
+    [
+     53,
+     46.0,
+     "06.11.2026",
+     "",
+     2.3
+    ],
+    [
+     17.6,
+     55.1,
+     "Liposonix, cavitație, EMS, împachetare",
+     "",
+     3.3
+    ],
+    [
+     53,
+     55.1,
+     "16.10.2026",
+     "",
+     3.3
+    ],
+    [
+     76.6,
+     55.1,
+     "10:00",
+     "",
+     3.3
+    ],
+    [
+     17.6,
+     57.7,
+     "Cavitație, EMS, împachetare",
+     "",
+     3.3
+    ],
+    [
+     53,
+     57.7,
+     "23.10.2026",
+     "",
+     3.3
+    ],
+    [
+     76.6,
+     57.7,
+     "10:00",
+     "",
+     3.3
+    ],
+    [
+     24.5,
+     78.3,
+     "semnat",
+     "is-sig",
+     3.8
+    ],
+    [
+     66.5,
+     78.3,
+     "semnat",
+     "is-sig",
+     3.8
+    ],
+    [
+     24.5,
+     81.9,
+     "15.10.2026",
+     "",
+     3.8
+    ]
+   ],
+   "beats": [
+    {
+     "say": "Pe pagina cinci: aceleași ședințe ca la oferta trei.",
+     "pose": "fisa",
+     "cap": "Pe pagina 5: aceleași ședințe ca la oferta 3."
+    },
+    {
+     "say": "Reducerea e treizeci la sută, iar totalul se împarte în patru tranșe.",
+     "pose": "calendar",
+     "cap": "Reducerea e 30%, iar totalul se împarte în 4 tranșe."
+    },
+    {
+     "say": "Fiecare tranșă se plătește la ședința ei.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Ședințele, programate pe loc. Condițiile, spuse clar. Și semnați amândouă.",
+     "pose": "aprobare"
+    }
+   ],
+   "backAt": 3.6
+  },
+  {
+   "type": "yn",
+   "kicker": "Tonul",
+   "head": "Așa da, *așa nu*",
+   "pose": "gandeste",
+   "cols": [
+    {
+     "ic": "check",
+     "t": "Așa da",
+     "items": [
+      "O asculți. O înțelegi. Îi propui.",
+      "„Înțeleg. Atunci ce putem face pentru dvs. este…”"
+     ],
+     "at": 0.3
+    },
+    {
+     "ic": "x",
+     "t": "Așa nu",
+     "items": [
+      "„Ultima reducere! Acum sau niciodată!”",
+      "Toate ofertele pe masă deodată."
+     ],
+     "dark": true,
+     "at": 1.2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Așa da: o asculți, o înțelegi și îi propui, ca între prietene.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Așa nu: „Ultima reducere, acum sau niciodată!” Sau toate ofertele pe masă deodată.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Înainte de semnare",
+   "head": "Verifică",
+   "pose": "aprobare",
+   "items": [
+    {
+     "ic": "calculator",
+     "t": "Programul trece de minimul din calculator.",
+     "at": 0.3
+    },
+    {
+     "ic": "file-check",
+     "t": "Pagina aleasă are reducerea și totalul scrise.",
+     "at": 0.9
+    },
+    {
+     "ic": "calendar-days",
+     "t": "Ședințele sunt programate.",
+     "at": 1.4
+    },
+    {
+     "ic": "repeat",
+     "t": "La tranșe: fiecare tranșă, la ședința ei.",
+     "at": 1.8
+    },
+    {
+     "ic": "pen-line",
+     "t": "Ea a citit condițiile și a semnat. Și tu.",
+     "at": 2.3
+    },
+    {
+     "ic": "paperclip",
+     "t": "Pagina 1 și pagina aleasă, capsate de fișă.",
+     "at": 2.8
+    }
+   ],
+   "beats": [
+    {
+     "say": "Înainte de semnare, verifici.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Programul trece de minimul din calculator. Pagina aleasă are reducerea și totalul scrise.",
+     "pose": "telefon"
+    },
+    {
+     "say": "Ședințele sunt programate. La tranșe, fiecare tranșă e la ședința ei.",
+     "pose": "calendar"
+    },
+    {
+     "say": "Ea a citit condițiile și a semnat, și tu la fel. Iar pagina unu și pagina aleasă le capsezi de fișa ei. Ea primește o copie.",
+     "pose": "fisa",
+     "cap": "Ea a citit condițiile și a semnat, și tu la fel. Iar pagina 1 și pagina aleasă le capsezi de fișa ei. Ea primește o copie."
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "chap": "Recapitulare",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Programul, pe pagina 1",
+     "at": 1
+    },
+    {
+     "t": "O singură ofertă pe masă",
+     "at": 1.35
+    },
+    {
+     "t": "Ca o conversație",
+     "at": 1.7
+    },
+    {
+     "t": "Ideal: oferta 1",
+     "at": 2.05
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi programul și ofertele.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Pe masă e mereu o singură ofertă, spusă ca într-o conversație. Și cel mai bine e să vă opriți la prima.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,252 @@
+{
+"0.0": {
+"text": "Bună! Eu sunt Nuki.",
+"dur": 2.281,
+"file": "voice/b6a8ddadf9bafd6d.wav"
+},
+"0.1": {
+"text": "Azi învățăm fișa pentru față. O folosești pentru ten, pete și riduri.",
+"dur": 6.448,
+"file": "voice/5cd5df4b4ea56b07.wav"
+},
+"0.2": {
+"text": "Are patru pagini. Le luăm pe rând, cu un exemplu completat.",
+"dur": 4.368,
+"file": "voice/df1ff94c80e99452.wav"
+},
+"1.0": {
+"text": "Ca la toate fișele, o regulă de aur.",
+"dur": 3.308,
+"file": "voice/3f470d64d0aa37fb.wav"
+},
+"1.1": {
+"text": "Nu îi dai fișa să o completeze singură. Stai lângă ea, o întrebi și scrii tu.",
+"dur": 6.745,
+"file": "voice/a55f2fcb57afb4ab.wav"
+},
+"2.0": {
+"text": "Pagina unu: cine e clienta și ce vrea.",
+"dur": 4.015,
+"file": "voice/2065eb01c4e59b87.wav"
+},
+"2.1": {
+"text": "O completați la începutul consultației, înainte să vorbiți de tratamente.",
+"dur": 5.292,
+"file": "voice/2472db592772b00a.wav"
+},
+"3.0": {
+"text": "Sus, în colț, scrii numărul fișei, data de azi și numele tău, la „Specialist”.",
+"dur": 8.021,
+"file": "voice/152f4c7c41b73bc0.wav"
+},
+"3.1": {
+"text": "Apoi datele ei: numele, data nașterii, telefonul și e-mailul.",
+"dur": 6.327,
+"file": "voice/342655734edd90e3.wav"
+},
+"3.2": {
+"text": "„Data primei vizite” e azi. Și o întrebi: „De unde ați aflat de noi?”",
+"dur": 5.281,
+"file": "voice/cebf1f5bd67b96c3.wav"
+},
+"3.3": {
+"text": "Dacă are sub optsprezece ani, bifezi „da”. Atunci un părinte completează pagina trei.",
+"dur": 7.029,
+"file": "voice/b9cb5535a5d82db5.wav"
+},
+"3.4": {
+"text": "O întrebi: „Ce vă deranjează la ten?”",
+"dur": 2.777,
+"file": "voice/e08e44999257defc.wav"
+},
+"3.5": {
+"text": "Și: „Ce tratamente ați mai făcut și când?” De exemplu peeling, filler, botox sau laser.",
+"dur": 7.073,
+"file": "voice/65512ed34ef88059.wav"
+},
+"3.6": {
+"text": "Scrii cu cuvintele ei. De exemplu: „Pete pe pomeți și riduri fine. Peeling acum doi ani.”",
+"dur": 7.247,
+"file": "voice/3e2c4073cfd65596.wav"
+},
+"3.7": {
+"text": "Bifezi zilele și orele care îi convin, și scrii când nu poate. Așa, programările se fac repede.",
+"dur": 8.198,
+"file": "voice/4a75716336851109.wav"
+},
+"3.8": {
+"text": "Jos sunt întrebările de sănătate. I le citești pe rând și bifezi „Da” sau „Nu”.",
+"dur": 6.181,
+"file": "voice/81751648e570a219.wav"
+},
+"3.9": {
+"text": "Dacă e un singur „Da”, scrii detaliile jos. Și nu începi tratamentul până nu întrebi dacă se poate face.",
+"dur": 7.667,
+"file": "voice/8f5b3232a27f99b0.wav"
+},
+"4.0": {
+"text": "Pagina doi: tenul ei.",
+"dur": 1.109,
+"file": "voice/3e01d7d3a9345696.wav"
+},
+"4.1": {
+"text": "Aici te uiți atent la pielea ei, afli ce face acasă și scrii ce îi recomanzi.",
+"dur": 9.388,
+"file": "voice/2e968e8307770212.wav"
+},
+"5.0": {
+"text": "Te uiți la ten și bifezi ce tip e și ce probleme are.",
+"dur": 4.796,
+"file": "voice/2ddcfffed5b92769.wav"
+},
+"5.1": {
+"text": "Bifezi și fototipul: cât de deschisă e pielea.",
+"dur": 3.568,
+"file": "voice/b0243dd8340fcedd.wav"
+},
+"5.2": {
+"text": "Și o întrebi dacă pune cremă cu protecție solară în fiecare zi.",
+"dur": 4.257,
+"file": "voice/94ef88a714b95f51.wav"
+},
+"5.3": {
+"text": "O întrebi cu ce se spală pe față, cu ce se hidratează și dacă folosește retinol sau acizi.",
+"dur": 6.438,
+"file": "voice/2d19b1aa27756ce4.wav"
+},
+"5.4": {
+"text": "Apoi câtă apă bea, cât doarme, dacă fumează și cât stă la soare.",
+"dur": 5.184,
+"file": "voice/e4c827cc4d562887.wav"
+},
+"5.5": {
+"text": "Aici scrii ce îi recomanzi: procedura, zona, câte ședințe și la ce interval.",
+"dur": 5.852,
+"file": "voice/40cab5a3f7dda742.wav"
+},
+"5.6": {
+"text": "Numărul de ședințe și intervalul le iei din schema tratamentului.",
+"dur": 5.387,
+"file": "voice/b7100f0e9469d3f5.wav"
+},
+"5.7": {
+"text": "Apoi întrebările pentru față. Citești și bifezi „Da” sau „Nu”. Un singur „Da” înseamnă: întâi întrebi dacă se poate.",
+"dur": 10.676,
+"file": "voice/3d182d69233e9204.wav"
+},
+"5.8": {
+"text": "Jos scrii ce observi și ce sfat îi dai pentru acasă.",
+"dur": 4.161,
+"file": "voice/c89fb196eb459c2e.wav"
+},
+"5.9": {
+"text": "De exemplu: „Pete pe pomeți, nu pune protecție solară zilnic. Îi recomand protecție cincizeci în fiecare dimineață.”",
+"dur": 8.757,
+"file": "voice/c940479917b0f449.wav"
+},
+"6.0": {
+"text": "Fototipul e ușor. Unu înseamnă piele foarte albă, care se arde mereu la soare.",
+"dur": 9.14,
+"file": "voice/b2f9c3cdd85937b5.wav"
+},
+"6.1": {
+"text": "Șase înseamnă piele foarte închisă. Restul sunt la mijloc.",
+"dur": 6.076,
+"file": "voice/282728edfae69c80.wav"
+},
+"7.0": {
+"text": "Pagina trei: acordul și semnăturile. O citește ea, tu îi explici.",
+"dur": 6.902,
+"file": "voice/a6728c1c7c6c930f.wav"
+},
+"8.0": {
+"text": "Îi dai foaia să citească. Ea bifează ce vrea: poze pentru evidență, poze pentru reclamă fără față, mesaje și oferte.",
+"dur": 10.765,
+"file": "voice/8498e7c65d1c9209.wav"
+},
+"8.1": {
+"text": "Ce nu bifează, nu facem.",
+"dur": 2.236,
+"file": "voice/322b0be0340d897f.wav"
+},
+"8.2": {
+"text": "Apoi îi spui pe scurt, cu voce tare, ce face înainte și după. Așa pielea rămâne liniștită.",
+"dur": 7.461,
+"file": "voice/a49964a07b4e7f75.wav"
+},
+"8.3": {
+"text": "Când faci poze, scrii data, zona, din ce parte și numele fișierului. Doar dacă a bifat acordul.",
+"dur": 8.364,
+"file": "voice/6b9586d53bbc37e9.wav"
+},
+"8.4": {
+"text": "Partea pentru părinte o completezi doar dacă are sub optsprezece ani.",
+"dur": 4.613,
+"file": "voice/8df2cf56c5f3530c.wav"
+},
+"8.5": {
+"text": "Jos semnează ea și semnezi tu. Fără semnături, fișa nu e gata.",
+"dur": 5.179,
+"file": "voice/83806375526ddb9f.wav"
+},
+"9.0": {
+"text": "Pagina patru: ședințele, una câte una.",
+"dur": 4.292,
+"file": "voice/122bdd3f63043c4e.wav"
+},
+"10.0": {
+"text": "Sus scrii numele ei, câte ședințe are în pachet și data primei ședințe.",
+"dur": 7.463,
+"file": "voice/e5bdf6f5bf4846a5.wav"
+},
+"10.1": {
+"text": "La fiecare ședință, un rând nou: data, a câta ședință e și procedura.",
+"dur": 7.4,
+"file": "voice/25a4a033aaf2c4d6.wav"
+},
+"10.2": {
+"text": "Produsele folosite, cât a durat și cum a reacționat pielea.",
+"dur": 5.492,
+"file": "voice/0e0338390a923c2e.wav"
+},
+"10.3": {
+"text": "Și ce îi spui să facă acasă. De exemplu: protecție solară cincizeci. La final semnați amândouă.",
+"dur": 8.51,
+"file": "voice/65ce0422a625e59c.wav"
+},
+"11.0": {
+"text": "La final, verifici fișa.",
+"dur": 2.947,
+"file": "voice/d7d7df34fe836746.wav"
+},
+"11.1": {
+"text": "Paginile unu și doi sunt completate, și fiecare întrebare are „Da” sau „Nu”.",
+"dur": 7.97,
+"file": "voice/ea473873a5dd785e.wav"
+},
+"11.2": {
+"text": "Ai scris planul: procedura, ședințele și intervalul.",
+"dur": 4.977,
+"file": "voice/cd2547bf3c0aca93.wav"
+},
+"11.3": {
+"text": "Ea a semnat, tu la fel. Pozele doar cu acordul ei. Și la fiecare ședință, un rând pe pagina patru.",
+"dur": 9.186,
+"file": "voice/1134899bfb2f53a4.wav"
+},
+"12.0": {
+"text": "Bravo! Acum știi fișa pentru față.",
+"dur": 3.883,
+"file": "voice/077a622762db287f.wav"
+},
+"12.1": {
+"text": "Te uiți atent la ten, întrebi de soare și de protecția solară, și scrii planul clar.",
+"dur": 6.595,
+"file": "voice/6d4a22f611392abd.wav"
+},
+"12.2": {
+"text": "Ne vedem în filmul următor!",
+"dur": 2.311,
+"file": "voice/d5043026e6cd7476.wav"
+}
+}

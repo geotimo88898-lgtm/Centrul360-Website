@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Centrul360 Academia · film</title>
+<link rel="stylesheet" href="node_modules/@fontsource-variable/inter/index.css">
+<link rel="stylesheet" href="node_modules/@fontsource-variable/fraunces/wght-italic.css">
+<link rel="stylesheet" href="node_modules/@fontsource-variable/caveat/index.css">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="stage">
+  <div id="grid"></div>
+  <div id="top">
+    <div id="brand"><svg viewBox="0 0 810 810"><circle cx="405" cy="405" r="290" fill="none" stroke="#0f1a19" stroke-width="56"/><defs><clipPath id="lc"><ellipse cx="405" cy="405" rx="365" ry="160"/></clipPath></defs><ellipse cx="405" cy="405" rx="160" ry="365" fill="#14a596" clip-path="url(#lc)"/></svg><span>Centrul360 <small>Academia</small></span></div>
+    <div id="chap"><i></i><b></b><span id="ftitle" style="display:none"></span></div>
+  </div>
+  <div id="scenes"></div>
+  <div id="nuki"><div class="shadow"></div></div>
+  <canvas id="gl" width="1920" height="1080"></canvas>
+  <div id="cap"><span></span></div>
+  <div id="prog"><i></i></div>
+</div>
+<script src="engine.js"></script>
+</body>
+</html>

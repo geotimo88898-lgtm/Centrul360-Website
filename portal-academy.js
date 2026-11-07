@@ -357,6 +357,8 @@
   // Each step, said simply (as to a 5-year-old): what you do, why it matters, what never to forget. A draft to fill:
   // the owner will give the exact words and the photos.
   // more: the details of a step (where things are in the portal); go: buttons to the guide that explains it
+  // a training film when it is made (window.C360Vsl, in portal-academy-fisa.js), else the "Vine în curând" card
+  const vsl = (id, title, soon) => (window.C360Vsl ? window.C360Vsl.html(id, title, soon) : soon);
   const PARCURS = [
     { t: 'Deschizi salonul', when: 'Dimineața, dacă ajungi prima', ic: 'clock',
       do: ['Deschide ușa.', 'Aprinde luminile.', 'Pornește aparatele.', 'Pregătește apa, cafeaua și ceaiul.', 'Uită-te în Calendar cine vine azi.'],
@@ -445,7 +447,7 @@
     return '<div class="tr-jhead"><div><b>' + done.size + ' din ' + PARCURS.length + '</b><span>pași învățați</span></div><div class="tr-jbar"><i style="--w:' + Math.round(done.size / PARCURS.length * 100) + '%"></i></div>' +
         '<span class="tr-draft-s">' + icon('pen') + 'Schiță</span></div>' +
       // one film for the whole journey (the owner, 6.11), not one per step
-      '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul cu tot parcursul</b><span>Un singur film care arată tot drumul clientei, de la deschiderea salonului până la închidere. Vine în curând.</span></div></div>' +
+      vsl('parcurs', 'Filmulețul cu tot parcursul', '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul cu tot parcursul</b><span>Un singur film care arată tot drumul clientei, de la deschiderea salonului până la închidere. Vine în curând.</span></div></div>') +
       mapHtml(MAPW, 'is-wide', done, i) + vmapHtml(done, i) + (A.mapEnter = false, '') +
       '<div class="tr-step" data-sheet>' +
         '<div class="tr-step-top"><span class="tr-step-stage">' + esc(stage) + ' · ' + esc(x.when) + '</span><span class="tr-step-n">Pasul ' + (i + 1) + ' din ' + PARCURS.length + '</span></div>' +
@@ -716,7 +718,7 @@
           '<span class="tr-pd-stamp' + (s.verified ? '' : ' is-draft') + '">' + (s.verified ? 'Verificat' : 'Ciornă') + '</span></header>' +
         '<div class="tr-pd-facts">' + [['Durata', s.minutes ? s.minutes + ' minute' : ''], ['Ședințe', s.sessions || ''], ['Interval', s.interval || ''], ['Preț / ședință', prices.length ? prices.map((x) => lei(x.price)).join(' · ') : ''], ['Unde', CITY[s.city] || '']]
           .filter((x) => x[1]).map(([k, v]) => '<div><small>' + esc(k) + '</small><b>' + esc(v) + '</b></div>').join('') + '</div>' +
-        '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(s.name) + '</b><span>Tratamentul arătat pas cu pas. Vine în curând.</span></div></div>' +
+        vsl('t-' + s.id, 'Filmulețul: ' + s.name, '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(s.name) + '</b><span>Tratamentul arătat pas cu pas. Vine în curând.</span></div></div>') +
         part('Pentru cine e', list(s.forWho)) +
         part('Nu faci tratamentul dacă', list(s.contra), 'is-bad') +
         part('Pașii', (s.steps || []).length ? '<ol class="tr-pd-steps">' + s.steps.map((x, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i><span>' + esc(x) + '</span></li>').join('') + '</ol>' : missing('Pașii nu sunt scriși.')) +
@@ -1938,6 +1940,9 @@
 .tr-vsl-play{ flex:none; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#5b8cff,#a855f7); box-shadow:0 12px 26px -12px #7c6cff; }
 .tr-vsl-play .k-ic{ width:24px; height:24px; }
 .tr-vsl div{ display:flex; flex-direction:column; gap:.15rem; } .tr-vsl b{ font-size:1.05rem; } .tr-vsl span{ color:var(--muted); font-size:.88rem; }
+.tr-vsl.is-on{ display:block; padding:0; border:0; background:none; margin:0 0 1.1rem; }
+.tr-vsl.is-on video{ display:block; width:100%; aspect-ratio:16/9; border-radius:22px; background:#0f1a19; box-shadow:0 22px 50px -28px rgba(10,60,55,.55); border:1px solid color-mix(in srgb, var(--fg) 10%, transparent); }
+.tr-vsl.is-on figcaption{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .7rem; padding:.65rem .25rem 0; }
 .tr-more{ margin:.2rem 0 .6rem; padding:1rem 1.1rem; border-radius:18px; background:var(--glass); }
 .tr-more b{ display:flex; align-items:center; gap:.45rem; font-size:.95rem; margin-bottom:.4rem; } .tr-more b .k-ic{ width:17px; height:17px; color:var(--accent); }
 .tr-more ul{ margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.35rem; } .tr-more li{ line-height:1.45; }
@@ -2001,6 +2006,7 @@
 .tr-pd-facts{ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:1px; margin:1.2rem 0; border-radius:14px; overflow:hidden; background:#e5dfd3; border:1px solid #e5dfd3; }
 .tr-pd-facts div{ display:flex; flex-direction:column; gap:.15rem; padding:.75rem .9rem; background:#fffdf8; } .tr-pd-facts small{ font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#8a8172; } .tr-pd-facts b{ font-size:1rem; color:#16140f; }
 .tr-pd .tr-vsl{ background:#f1ece2; border-color:#d9d1c2; } .tr-pd .tr-vsl span{ color:#6b6457; } .tr-pd .tr-vsl b{ color:#16140f; }
+.tr-pd .tr-vsl.is-on{ background:none; } .tr-pd .tr-vsl.is-on video{ border-color:#d9d1c2; }
 .tr-pd-s{ padding:1.1rem 0; border-top:1px solid #ece6da; animation:trSheet .45s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.1s + var(--k) * 60ms); }
 .tr-pd-s h4{ display:flex; align-items:center; gap:.6rem; margin:0 0 .7rem; font-family:'Iowan Old Style', 'Palatino Linotype', Georgia, serif; font-size:1.25rem; color:#16140f; }
 .tr-pd-s h4 i{ font-style:normal; font-family:Inter, system-ui, sans-serif; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:.8rem; font-weight:800; color:#fff; background:var(--band); flex:none; }

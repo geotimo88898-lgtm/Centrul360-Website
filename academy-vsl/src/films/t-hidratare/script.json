@@ -1,0 +1,410 @@
+{
+ "id": "t-hidratare",
+ "title": "Hidratare *profundă*",
+ "short": "Hidratare profundă",
+ "chap": "Hidratare profundă",
+ "verified": false,
+ "scenes": [
+  {
+   "type": "intro",
+   "kicker": "Tratament · Training",
+   "title": "Hidratare *profundă*",
+   "sub": "Reface nivelul de apă al pielii și întărește bariera ei.",
+   "pose": "salut-pa",
+   "chap": "Hidratare profundă",
+   "beats": [
+    {
+     "say": "Bună! Eu sunt Nuki.",
+     "pose": "salut-pa"
+    },
+    {
+     "say": "Azi învățăm Hidratare profundă.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Pe scurt: reface nivelul de apă al pielii și întărește bariera ei.",
+     "pose": "facial"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Pentru cine e",
+   "head": "Cui *îi recomanzi*",
+   "pose": "gandeste",
+   "items": [
+    {
+     "ic": "user-round",
+     "t": "Ten uscat, deshidratat sau tras.",
+     "at": 1
+    },
+    {
+     "ic": "user-round",
+     "t": "Înainte de un eveniment, pentru un ten luminos.",
+     "at": 2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Pentru cine e?",
+     "pose": "gandeste"
+    },
+    {
+     "say": "Ten uscat, deshidratat sau tras.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Înainte de un eveniment, pentru un ten luminos.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "Ce câștigă ea",
+   "head": "Ce *îi aduce*",
+   "pose": "bucurie",
+   "items": [
+    {
+     "ic": "sparkles",
+     "t": "Pielea își recapătă apa și elasticitatea.",
+     "at": 1,
+     "noTick": true
+    },
+    {
+     "ic": "heart",
+     "t": "Ten catifelat de la prima ședință.",
+     "at": 2,
+     "noTick": true
+    },
+    {
+     "ic": "star",
+     "t": "Potrivit înainte de un eveniment.",
+     "at": 3,
+     "noTick": true
+    }
+   ],
+   "beats": [
+    {
+     "say": "Și ce câștigă ea?",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Pielea își recapătă apa și elasticitatea.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "Ten catifelat de la prima ședință.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Potrivit înainte de un eveniment.",
+     "pose": "bucurie"
+    }
+   ]
+  },
+  {
+   "type": "rail",
+   "kicker": "Pas cu pas",
+   "head": "Cum *îl faci*",
+   "pose": "facial",
+   "items": [
+    {
+     "t": "Demachiere și curățare.",
+     "at": 1
+    },
+    {
+     "t": "Exfoliere blândă.",
+     "at": 2
+    },
+    {
+     "t": "Ser și mască hidratantă.",
+     "at": 3
+    },
+    {
+     "t": "Masaj.",
+     "at": 4
+    },
+    {
+     "t": "Cremă și SPF.",
+     "at": 5
+    }
+   ],
+   "beats": [
+    {
+     "say": "Acum, pas cu pas.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Demachiere și curățare.",
+     "pose": "facial"
+    },
+    {
+     "say": "Exfoliere blândă.",
+     "pose": "prezinta"
+    },
+    {
+     "say": "Ser și mască hidratantă.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Masaj.",
+     "pose": "facial"
+    },
+    {
+     "say": "Cremă și SPF.",
+     "pose": "prezinta",
+     "tts": "Cremă și protecție solară."
+    }
+   ]
+  },
+  {
+   "type": "note",
+   "variant": "tip",
+   "label": "Setările aparatului",
+   "text": "Le iei din *protocolul aparatului*. Nu le ghicești.",
+   "pose": "fisa",
+   "ic": "settings",
+   "extra": {
+    "ic": "pen-line",
+    "t": "Le scrii pe fișa ei, la fiecare ședință.",
+    "at": 1
+   },
+   "beats": [
+    {
+     "say": "Setările aparatului le iei din protocolul aparatului. Nu le ghicești.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Și le scrii pe fișa ei, la fiecare ședință.",
+     "pose": "aprobare"
+    }
+   ]
+  },
+  {
+   "type": "chat",
+   "kicker": "Ce îi spui",
+   "head": "Pe înțeles, *în timpul tratamentului*",
+   "pose": "mana-inima",
+   "lines": [
+    {
+     "who": "me",
+     "t": "Pielea ta primește înapoi apa pe care a pierdut-o. Se simte mai catifelată chiar de azi.",
+     "at": 1,
+     "small": false
+    }
+   ],
+   "beats": [
+    {
+     "say": "Ce îi spui în timpul tratamentului? Ceva simplu, care o liniștește.",
+     "pose": "mana-inima"
+    },
+    {
+     "say": "„Pielea ta primește înapoi apa pe care a pierdut-o. Se simte mai catifelată chiar de azi.”",
+     "pose": "prezinta"
+    }
+   ]
+  },
+  {
+   "type": "contra",
+   "kicker": "Atenție",
+   "head": "Când *nu începi*",
+   "pose": "arata-jos",
+   "items": [
+    "Sarcină sau alăptare.",
+    "Stimulator cardiac, implanturi metalice sau electronice.",
+    "Cancer sau tratament oncologic, acum sau în trecut.",
+    "Boli autoimune sau imunitate scăzută.",
+    "Tulburări de coagulare, anticoagulante sau tendință la vânătăi.",
+    "Boli cronice (diabet, afecțiuni cardiace, renale, hepatice, tiroidiene).",
+    "Isotretinoin (Roaccutane) în ultimele 6 luni.",
+    "Acnee inflamatorie activă, herpes sau infecție în zonă.",
+    "Expunere solară intensă sau bronz recent.",
+    "Retinoizi sau acizi exfolianți în ultimele 7 zile.",
+    "Fillere sau botox în ultimele 2-4 săptămâni.",
+    "Piele iritată, arsuri solare sau răni deschise."
+   ],
+   "at": 0.5,
+   "step": 0.1,
+   "rule": {
+    "t": "Are una dintre ele? Nu începi. *Întâi întrebi dacă se poate.*",
+    "at": 2
+   },
+   "beats": [
+    {
+     "say": "Foarte important: când nu începi tratamentul.",
+     "pose": "arata-jos"
+    },
+    {
+     "say": "Le vezi aici, pe ecran. Le găsești și pe fișa ei, la întrebările de sănătate.",
+     "pose": "fisa"
+    },
+    {
+     "say": "Dacă are una dintre ele, nu începi. Întâi întrebi dacă se poate.",
+     "pose": "arata-jos"
+    }
+   ]
+  },
+  {
+   "type": "list",
+   "kicker": "După tratament",
+   "head": "Ce îi spui *să facă acasă*",
+   "pose": "apa",
+   "items": [
+    {
+     "ic": "house",
+     "t": "SPF în fiecare zi.",
+     "at": 1
+    },
+    {
+     "ic": "house",
+     "t": "Fără soare direct și saună 48 de ore.",
+     "at": 2
+    },
+    {
+     "ic": "house",
+     "t": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+     "at": 3
+    },
+    {
+     "ic": "house",
+     "t": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+     "at": 4
+    }
+   ],
+   "beats": [
+    {
+     "say": "La final îi spui ce să facă acasă.",
+     "pose": "spf"
+    },
+    {
+     "say": "SPF în fiecare zi.",
+     "pose": "apa",
+     "tts": "protecție solară în fiecare zi."
+    },
+    {
+     "say": "Fără soare direct și saună 48 de ore.",
+     "pose": "spf",
+     "tts": "Fără soare direct și saună patruzeci și opt de ore."
+    },
+    {
+     "say": "Fără produse cu acizi sau retinol câteva zile, dacă nu i-ai spus altfel.",
+     "pose": "liniste"
+    },
+    {
+     "say": "O ușoară roșeață e normală. Dacă nu trece, ne scrie.",
+     "pose": "mana-inima"
+    }
+   ]
+  },
+  {
+   "type": "sessions",
+   "kicker": "Ședințele",
+   "head": "Cât *și cât de des*",
+   "pose": "calendar",
+   "dots": 0,
+   "facts": [
+    {
+     "ic": "repeat",
+     "k": "Ședințe",
+     "v": "2-4",
+     "at": 1
+    },
+    {
+     "ic": "timer",
+     "k": "Durata",
+     "v": "60 de minute",
+     "at": 2
+    }
+   ],
+   "beats": [
+    {
+     "say": "Câte ședințe îi trebuie?",
+     "pose": "calendar"
+    },
+    {
+     "say": "Ședințe: 2-4.",
+     "pose": "calendar",
+     "tts": "Ședințe: două până la patru."
+    },
+    {
+     "say": "O ședință durează 60 de minute.",
+     "pose": "liniste",
+     "tts": "O ședință durează șaizeci de minute."
+    },
+    {
+     "say": "Durata și intervalul le spui recepției, când o conduci. Recepția face programările.",
+     "pose": "receptie"
+    }
+   ]
+  },
+  {
+   "type": "cards",
+   "kicker": "Merge bine cu",
+   "head": "Se *combină* cu",
+   "pose": "aprobare",
+   "items": [
+    {
+     "ic": "plus",
+     "t": "Tratament facial Restart",
+     "at": 0.4
+    },
+    {
+     "ic": "plus",
+     "t": "Microneedling Exozomi PDRN",
+     "at": 0.7
+    }
+   ],
+   "beats": [
+    {
+     "say": "Merge bine împreună cu Tratament facial Restart și cu Microneedling Exozomi PDRN.",
+     "pose": "aprobare",
+     "tts": "Merge bine împreună cu Tratament facial Restart și cu Microneedling Exozomi pe de er en."
+    },
+    {
+     "say": "Când le combini, le găsești pe toate în programul ei.",
+     "pose": "fisa"
+    }
+   ]
+  },
+  {
+   "type": "outro",
+   "kicker": "Gata",
+   "title": "*Bravo!*",
+   "chap": "Recapitulare",
+   "pose": "bucurie",
+   "items": [
+    {
+     "t": "Pentru cine e",
+     "at": 1.0
+    },
+    {
+     "t": "Pas cu pas",
+     "at": 1.3
+    },
+    {
+     "t": "Când nu începi",
+     "at": 1.6
+    },
+    {
+     "t": "Ce face acasă",
+     "at": 1.9
+    }
+   ],
+   "beats": [
+    {
+     "say": "Bravo! Acum știi Hidratare profundă.",
+     "pose": "bucurie"
+    },
+    {
+     "say": "Ține minte: întâi fișa și întrebările de sănătate. Apoi tratamentul, pas cu pas.",
+     "pose": "aprobare"
+    },
+    {
+     "say": "Ne vedem în filmul următor!",
+     "pose": "salut-pa"
+    }
+   ]
+  }
+ ]
+}
