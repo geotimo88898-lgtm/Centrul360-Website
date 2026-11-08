@@ -1097,3 +1097,11 @@ html.ui-nou[data-theme="light"] .sx-intro .imark .ol{ stroke:var(--fg); }
 html.ui-nou[data-theme="light"] .sx-intro .sweep{ background:linear-gradient(90deg, transparent, rgba(20,24,28,.5), transparent); }
 html.ui-nou[data-theme="light"] .sx-intro .skip{ background:rgba(20,24,28,.04); border-color:rgba(20,24,28,.12); color:var(--muted); }
 html.ui-nou[data-theme="light"].sx-boot::after{ background:#f7f5f0; }
+
+/* ================================================================ Panou on a computer: the scene spread over the whole width. The cosmeticians on the left,
+   the prism half way to the money, the money on the right edge; the two free columns take what is left, so the rays grow with the screen */
+@media (min-width:1024px){
+  .sx-flow{ grid-template-columns:minmax(200px,264px) minmax(80px,1fr) clamp(96px,8vw,136px) minmax(80px,1fr) minmax(300px,max-content); grid-template-areas:"ppl . prism . money"; column-gap:0; }
+  .sx-s-money{ justify-self:end; }
+  .sx-mcard{ width:min(440px, 100%); }
+}
