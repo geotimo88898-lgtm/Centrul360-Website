@@ -1067,3 +1067,26 @@ html.ui-nou .mx-compose{ flex-wrap:wrap; row-gap:6px; align-items:flex-end; }
 html.ui-nou .mx-compose > .k-icon-btn, html.ui-nou .mx-compose > .mx-attach{ order:1; width:36px; height:36px; }
 html.ui-nou .mx-compose textarea{ order:2; flex:1 1 calc(100% - 56px); }
 html.ui-nou .mx-compose .mx-send-btn{ order:3; flex:none; }
+
+/* Nuki chat: photos and files (the owner, 8.11) - tools above, the box full width with Send beside it */
+html.ui-nou .nk-ask{ flex-wrap:wrap; row-gap:6px; }
+html.ui-nou .nk-tools{ order:1; flex:1 1 100%; display:flex; gap:2px; }
+html.ui-nou .nk-tools .k-icon-btn{ width:36px; height:36px; cursor:pointer; }
+html.ui-nou .nk-files{ order:2; flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px; }
+html.ui-nou .nk-files:empty{ display:none; }
+html.ui-nou .nk-ask textarea{ order:3; flex:1 1 calc(100% - 56px); min-width:0; }
+html.ui-nou .nk-ask .nk-send{ order:4; }
+html.ui-nou .nk-file{ position:relative; display:inline-flex; align-items:center; gap:6px; }
+html.ui-nou .nk-file.is-img img{ width:58px; height:58px; object-fit:cover; border-radius:12px; display:block; border:1px solid var(--line); }
+html.ui-nou .nk-file.is-doc{ height:40px; max-width:200px; padding:0 12px; border-radius:12px; border:1px solid var(--line); background:var(--paper); font-size:13px; }
+html.ui-nou .nk-file.is-doc .k-ic{ width:16px; height:16px; flex:none; color:var(--muted); }
+html.ui-nou .nk-file.is-doc em{ font-style:normal; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.ui-nou .nk-unfile{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; padding:0; border:0; border-radius:50%; background:var(--fg); color:var(--bg, #fff); display:grid; place-items:center; cursor:pointer; }
+html.ui-nou .nk-unfile .k-ic, html.ui-nou .nk-unfile svg{ width:12px; height:12px; }
+html.ui-nou .nk-mfiles{ display:flex; flex-wrap:wrap; gap:6px; margin:-2px -4px 6px; }
+html.ui-nou .nk-mfiles .nk-file.is-img img{ width:120px; height:auto; max-height:160px; border:0; }
+html.ui-nou .nk-m.is-me .nk-file.is-doc{ background:rgb(255 255 255 / .16); border-color:rgb(255 255 255 / .3); color:#fff; }
+html.ui-nou .nk-m.is-me .nk-file.is-doc .k-ic{ color:#fff; }
+html.ui-nou .k-drawer.nk-drop .k-dbody{ outline:2px dashed var(--accent); outline-offset:-10px; border-radius:16px; }
+html.ui-nou .nk-m a{ color:inherit; text-decoration:underline; text-underline-offset:2px; word-break:break-word; }
+html.ui-nou .nk-m.is-nuki a{ color:var(--accent); }

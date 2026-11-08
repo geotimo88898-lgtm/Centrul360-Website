@@ -1,14 +1,19 @@
 // Centrul360 portal: Nuki, the team's helper, anywhere in the portal (the owner, 8.11: „ca un chat support pentru mine”).
 // A small Nuki in the corner opens a chat: ask how to answer a client, what to offer, a price, an hour. In Mesaje, with a
 // conversation open, Nuki sees it too (portal-whatsapp.js C360Nuki.thread). Answers from api/portal-nuki.js (Claude);
-// the chat lives in this tab only. Admin and reception.
+// the chat lives in this tab only. Admin and reception. Photos, screenshots (pasted too), PDFs and text files go with a
+// question (the owner, 8.11: „să-i pot trimite și poze, fișiere”): photos smaller first, everything as data to Claude.
 (function () {
   'use strict';
   var K = function () { return window.K; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var POSE = '/brand_asset/mascota/ipostaze/';
   var SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
-  var S = { msgs: [], busy: false, d: null, btn: null };
+  var S = { msgs: [], busy: false, d: null, btn: null, files: [] };
+  var MAX_FILES = 6;
+  var IMG = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  var TEXT = /\.(txt|csv|tsv|md|json|html?)$/i;
+  function toast(m) { K().ui().toast(m, 'error'); }
 
   function allowed() { var d = K() && K().data; return !!(d && (d.isAdmin || (d.me && d.me.role === 'receptie'))); }
   function tabName() {
@@ -16,13 +21,26 @@
     var b = document.querySelector('#tabsNav [data-tab="' + h + '"]');
     return b ? (b.getAttribute('data-label') || b.textContent || h).trim() : h;
   }
-  // her answer as text with line breaks; **bold** kept, nothing else rendered
-  function fmt(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
+  // the answer as text with line breaks: **bold**, a heading line as bold, links (sources of a search) clickable
+  function fmt(t) {
+    return esc(t)
+      .replace(/^#{1,6}\s*(.+)$/gm, '<b>$1</b>')
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/(^|[\s(])(https?:\/\/[^\s<)]*[^\s<).,;:!?])/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+      .replace(/\n/g, '<br>');
+  }
 
+  function fileHtml(f, i, mine) {
+    var x = mine ? '' : '<button type="button" class="nk-unfile" data-unfile="' + i + '" aria-label="Scoate">' + K().icon('x') + '</button>';
+    return f.kind === 'image'
+      ? '<span class="nk-file is-img"><img src="' + f.url + '" alt="">' + x + '</span>'
+      : '<span class="nk-file is-doc">' + K().icon('file') + '<em>' + esc(f.name) + '</em>' + x + '</span>';
+  }
   function bodyHtml() {
     var list = S.msgs.map(function (m, i) {
       return m.role === 'user'
-        ? '<div class="nk-m is-me">' + fmt(m.content) + '</div>'
+        ? '<div class="nk-m is-me' + (m.files && m.files.length ? ' has-files' : '') + '">' + (m.files && m.files.length ? '<div class="nk-mfiles">' + m.files.map(function (f, j) { return fileHtml(f, j, true); }).join('') + '</div>' : '') + fmt(m.content) + '</div>'
         : '<div class="nk-m is-nuki">' + fmt(m.content) + '<button type="button" class="nk-copy" data-copy="' + i + '" aria-label="Copiază">' + (K().icon ? K().icon('copy') : 'Copiază') + '</button></div>';
     }).join('');
     var th = window.C360Nuki && window.C360Nuki.thread && window.C360Nuki.thread();
@@ -31,8 +49,68 @@
       (S.busy ? '<div class="nk-m is-nuki nk-dots"><i></i><i></i><i></i></div>' : '') + '</div></div>';
   }
   function footHtml() {
-    return '<form class="nk-ask" data-ask><textarea rows="1" maxlength="2000" placeholder="Întreabă-l pe Nuki…" data-nkq></textarea>' +
+    return '<form class="nk-ask" data-ask><div class="nk-tools">' +
+      '<label class="k-icon-btn" title="Poză sau captură">' + K().icon('image') + '<input type="file" data-nkfile hidden multiple accept="image/*"></label>' +
+      '<label class="k-icon-btn" title="PDF sau fișier text">' + K().icon('file') + '<input type="file" data-nkfile hidden multiple accept="application/pdf,.pdf,.txt,.csv,.tsv,.md,.json,text/*"></label></div>' +
+      '<div class="nk-files" data-nkfiles></div>' +
+      '<textarea rows="1" maxlength="2000" placeholder="Întreabă-mă orice…" data-nkq></textarea>' +
       '<button type="submit" class="nk-send" aria-label="Trimite"' + (S.busy ? ' disabled' : '') + '>' + SEND + '</button></form>';
+  }
+  function paintFiles() {
+    var box = S.d && S.d.el.querySelector('[data-nkfiles]');
+    if (box) box.innerHTML = S.files.map(function (f, i) { return fileHtml(f, i, false); }).join('');
+  }
+  // photos and files: a photo goes smaller first (Claude reads about 1600 px), as JPEG; a small one stays as it is
+  function readAs(file, how) { return new Promise(function (res, rej) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.onerror = function () { rej(new Error('read')); }; fr[how](file); }); }
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 1600 / Math.max(w, h));
+        URL.revokeObjectURL(img.src);
+        if (k === 1 && file.size <= 1.5e6 && IMG.indexOf(file.type) >= 0) { readAs(file, 'readAsDataURL').then(resolve, reject); return; }
+        var cv = document.createElement('canvas');
+        cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+        var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+        resolve(cv.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = function () { URL.revokeObjectURL(img.src); reject(new Error('img')); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  async function addFiles(list) {
+    for (var i = 0; i < list.length; i++) {
+      var file = list[i], name = file.name || 'captură';
+      if (S.files.length >= MAX_FILES) { toast('Cel mult ' + MAX_FILES + ' odată.'); break; }
+      try {
+        if (/^image\//.test(file.type)) {
+          var url = await shrink(file);
+          S.files.push({ kind: 'image', name: name, type: url.slice(5, url.indexOf(';')), data: url.slice(url.indexOf(',') + 1), url: url });
+        } else if (file.type === 'application/pdf' || /\.pdf$/i.test(name)) {
+          if (file.size > 20e6) { toast('PDF-ul e prea mare (cel mult 20 MB).'); continue; }
+          var pdf = await readAs(file, 'readAsDataURL');
+          S.files.push({ kind: 'pdf', name: name, type: 'application/pdf', data: pdf.slice(pdf.indexOf(',') + 1) });
+        } else if (/^text\//.test(file.type) || file.type === 'application/json' || TEXT.test(name)) {
+          if (file.size > 2e6) { toast(name + ' e prea mare (cel mult 2 MB).'); continue; }
+          S.files.push({ kind: 'text', name: name, type: 'text/plain', text: String(await readAs(file, 'readAsText')).slice(0, 200000) });
+        } else toast('Nuki citește poze, PDF și fișiere text. Salvează documentul ca PDF.');
+      } catch (e) { toast('Nu pot citi ' + name + '.'); }
+    }
+    paintFiles();
+  }
+  // what goes to Nuki: the last turns, and the files from the newest back, as long as they fit (older ones by name)
+  function payload() {
+    var list = S.msgs.slice(-16), left = 18e6, n = 0;
+    var out = list.map(function (m) { return { role: m.role, content: m.content }; });
+    for (var i = list.length - 1; i >= 0; i--) {
+      if (!list[i].files || !list[i].files.length) continue;
+      out[i].files = list[i].files.map(function (f) {
+        var size = (f.data || f.text || '').length;
+        if (n < 12 && size <= left) { left -= size; n++; return { kind: f.kind, name: f.name, type: f.type, data: f.data, text: f.text }; }
+        return { kind: f.kind, name: f.name, gone: true };
+      });
+    }
+    return out;
   }
   function paint() {
     if (!S.d) return;
@@ -44,12 +122,13 @@
     if (send) send.disabled = S.busy;
   }
   async function ask(q) {
-    if (!q || S.busy) return;
-    S.msgs.push({ role: 'user', content: q });
+    if ((!q && !S.files.length) || S.busy) return;
+    S.msgs.push({ role: 'user', content: q, files: S.files });
+    S.files = []; paintFiles();
     S.busy = true; paint();
     try {
       var th = window.C360Nuki && window.C360Nuki.thread && window.C360Nuki.thread();
-      var r = await K().api('/api/portal-nuki', { action: 'chat', messages: S.msgs.slice(-16), thread: th || undefined, tab: tabName() });
+      var r = await K().api('/api/portal-nuki', { action: 'chat', messages: payload(), thread: th || undefined, tab: tabName() });
       S.msgs.push({ role: 'assistant', content: r.text || 'Nu am un răspuns acum.' });
     } catch (err) {
       S.msgs.push({ role: 'assistant', content: (err.data && err.data.message) || 'Nu am putut răspunde acum. Încearcă din nou.' });
@@ -67,8 +146,17 @@
         var grow = function () { ta.style.height = 'auto'; ta.style.height = Math.min(140, ta.scrollHeight) + 'px'; };
         ta.addEventListener('input', grow);
         ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !(window.matchMedia && matchMedia('(pointer: coarse)').matches)) { e.preventDefault(); el.querySelector('[data-ask]').requestSubmit(); } });
-        el.querySelector('[data-ask]').addEventListener('submit', function (e) { e.preventDefault(); var q = ta.value.trim(); if (!q) return; ta.value = ''; grow(); ask(q); });
+        el.querySelector('[data-ask]').addEventListener('submit', function (e) { e.preventDefault(); var q = ta.value.trim(); if (!q && !S.files.length) return; ta.value = ''; grow(); ask(q); });
+        // a screenshot pasted into the box, a file dropped on the chat, or picked with the two buttons
+        ta.addEventListener('paste', function (e) { var f = e.clipboardData && e.clipboardData.files; if (f && f.length) { e.preventDefault(); addFiles(f); } });
+        el.addEventListener('change', function (e) { if (e.target.matches('[data-nkfile]')) { addFiles(e.target.files); e.target.value = ''; } });
+        el.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); el.classList.add('nk-drop'); } });
+        el.addEventListener('dragleave', function (e) { if (!el.contains(e.relatedTarget)) el.classList.remove('nk-drop'); });
+        el.addEventListener('drop', function (e) { el.classList.remove('nk-drop'); if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); addFiles(e.dataTransfer.files); } });
+        paintFiles();
         el.addEventListener('click', function (e) {
+          var u = e.target.closest('[data-unfile]');
+          if (u) { S.files.splice(Number(u.dataset.unfile), 1); paintFiles(); return; }
           var c = e.target.closest('[data-copy]');
           if (!c) return;
           var m = S.msgs[Number(c.dataset.copy)];
