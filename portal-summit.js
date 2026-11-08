@@ -22,7 +22,7 @@
       '<svg class="imark" viewBox="130 130 550 550"><defs><linearGradient id="sxig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" style="stop-color:var(--accent,#2fd6c3)"/></linearGradient></defs>' +
       mark('fl', ' vector-effect="non-scaling-stroke"') + mark('ol', ' vector-effect="non-scaling-stroke"') +
       '<path class="cut" pathLength="1" d="M190 640 L640 190" vector-effect="non-scaling-stroke"/></svg>' +
-      '<div class="iword">' + word + '</div><div class="isub">Toată clinica, într-o singură privire</div></div>' +
+      '<div class="iword">' + word + '</div></div>' +
       '<button type="button" class="skip">Sari peste</button>';
     D.body.appendChild(ov);
     html.classList.remove('sx-boot');
@@ -46,8 +46,8 @@
       var L = [];
       if (quick) L.push(fade(ov, 480));
       else {
-        // the name and its line leave first, the mark flies into the prism and fades as it lands, the black lifts under it
-        Array.prototype.forEach.call(ov.querySelectorAll('.iword, .isub'), function (e) { L.push(fade(e, 520, 0, 'translateY(-8px)')); });
+        // the name leaves first, the mark flies into the prism and fades as it lands, the black lifts under it
+        Array.prototype.forEach.call(ov.querySelectorAll('.iword'), function (e) { L.push(fade(e, 520, 0, 'translateY(-8px)')); });
         L.push(fade(q('.skip'), 300));
         var tg = null; try { tg = target(); } catch (e) {}
         var m = q('.imark');
@@ -66,7 +66,7 @@
     q('.skip').addEventListener('click', function (e) { e.stopPropagation(); end(true); });
     ov.addEventListener('click', function () { end(true); });
     addEventListener('keydown', esc);
-    setTimeout(auto, 3400); // 2.9 s of drawing, then the finished mark holds half a second
+    setTimeout(auto, 3200); // the name is written by 2.7 s, then the mark and the name hold half a second
   }
 
   // ------------------------------------------------------------------ the cut between screens

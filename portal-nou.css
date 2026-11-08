@@ -1018,3 +1018,4 @@ html.ui-nou .n-p3.n-p3-ding .n-p3-total b{ animation:n-num .8s var(--spring); }
   html.ui-nou .n-p3-logo{ width:96px; }
   html.ui-nou .n-p3 .n-p3-total{ position:relative; left:auto; bottom:auto; justify-items:center; text-align:center; }
 }
+html.ui-nou .n-tick.is-still .n-tick-in{ animation:none; padding-left:6px; }
