@@ -741,9 +741,10 @@
         '<div class="tr-pd-facts">' + [['Durata', s.minutes ? s.minutes + ' minute' : ''], ['Ședințe', s.sessions || ''], ['Interval', s.interval || ''], ['Preț / ședință', prices.length ? prices.map((x) => lei(x.price)).join(' · ') : ''], ['Pachet', s.pack || ''], ['Unde', CITY[s.city] || '']]
           .filter((x) => x[1]).map(([k, v]) => '<div><small>' + esc(k) + '</small><b>' + esc(v) + '</b></div>').join('') + '</div>' +
         vsl('t-' + s.id, 'Filmulețul: ' + s.name, '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(s.name) + '</b><span>Tratamentul arătat pas cu pas. Vine în curând.</span></div></div>') +
+        // the steps first, then for whom and for whom not (the owner, 8.11)
+        part('Pașii', (s.steps || []).length ? '<ol class="tr-pd-steps">' + s.steps.map((x, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i><span>' + esc(x) + '</span></li>').join('') + '</ol>' : missing('Pașii nu sunt scriși.')) +
         part('Pentru cine e', list(s.forWho)) +
         part('Nu faci tratamentul dacă', list(s.contra), 'is-bad') +
-        part('Pașii', (s.steps || []).length ? '<ol class="tr-pd-steps">' + s.steps.map((x, k) => '<li style="--k:' + k + '"><i>' + (k + 1) + '</i><span>' + esc(x) + '</span></li>').join('') + '</ol>' : missing('Pașii nu sunt scriși.')) +
         part('Setările aparatului', list(s.settings) || missing('De completat de specialistă.')) +
         part('Ce îi spui clientei', (s.say || []).map((x) => '<blockquote>' + esc(x) + '</blockquote>').join('')) +
         part('După tratament', list(s.after)) +
@@ -766,9 +767,9 @@
     const d = K.drawer({
       title: s.name, icon: 'sparkles', width: 720, subtitle: esc(GROUP[s.group]) + (s.city !== 'both' ? ' · ' + esc(CITY[s.city]) : '') + (s.minutes ? ' · ' + s.minutes + ' min' : '') + (isAdmin() && !s.verified ? ' · ciornă' : ''),
       body: '<div class="ac-read tr-scheme">' + (s.what ? '<p class="ac-sum">' + esc(s.what) + '</p>' : '') +
+        sec('Pașii', ol(s.steps) || missing('Pașii nu sunt scriși.')) +
         sec('Pentru cine', ul(s.forWho)) +
         sec('Contraindicații · nu faci tratamentul', ul(s.contra), 'is-bad') +
-        sec('Pașii', ol(s.steps) || missing('Pașii nu sunt scriși.')) +
         sec('Setările aparatului', ul(s.settings) || missing('De completat de specialistă.')) +
         sec('Ce îi spui clientei', says(s.say)) +
         sec('După tratament', ul(s.after)) +
