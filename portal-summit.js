@@ -47,16 +47,16 @@
       if (quick) L.push(fade(ov, 480));
       else {
         // the name leaves first, the mark flies into the prism and fades as it lands, the black lifts under it
-        Array.prototype.forEach.call(ov.querySelectorAll('.iword'), function (e) { L.push(fade(e, 520, 0, 'translateY(-8px)')); });
+        Array.prototype.forEach.call(ov.querySelectorAll('.iword'), function (e) { L.push(fade(e, 440, 0, 'translateY(-8px)')); });
         L.push(fade(q('.skip'), 300));
         var tg = null; try { tg = target(); } catch (e) {}
         var m = q('.imark');
         if (tg) {
           var r = m.getBoundingClientRect(), k = tg.size / r.height;
           L.push(m.animate([{ transform: 'none', opacity: 1 }, { opacity: 1, offset: 0.7 }, { transform: 'translate(' + (tg.x - (r.left + r.width / 2)) + 'px,' + (tg.y - (r.top + r.height / 2)) + 'px) scale(' + k + ')', opacity: 0 }],
-            { duration: 1050, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' }));
+            { duration: 880, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' }));
         } else L.push(fade(m, 700, 120, 'scale(1.06)'));
-        L.push(fade(q('.ibg'), 900, 260));
+        L.push(fade(q('.ibg'), 760, 210));
       }
       var gone = false, drop = function () { if (gone) return; gone = true; ov.remove(); };
       Promise.all(L.map(function (x) { return x.finished; })).then(drop, drop);
@@ -66,7 +66,7 @@
     q('.skip').addEventListener('click', function (e) { e.stopPropagation(); end(true); });
     ov.addEventListener('click', function () { end(true); });
     addEventListener('keydown', esc);
-    setTimeout(auto, 3200); // the name is written by 2.7 s, then the mark and the name hold half a second
+    setTimeout(auto, 2500); // the name is written by 2.1 s, then the mark and the name hold a moment (a fifth shorter, the owner, 8.11)
   }
 
   // ------------------------------------------------------------------ the cut between screens

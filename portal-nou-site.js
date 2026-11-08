@@ -111,7 +111,7 @@
     if (!list || !list.length) return '<p class="st2-none">Încă nimic.</p>';
     var max = Math.max.apply(null, list.map(function (x) { return x.n; }));
     return '<ol class="st2-bars">' + list.map(function (x, i) {
-      return '<li style="--w:' + Math.max(4, Math.round(x.n / max * 100)) + '%;--i:' + i + '"><span>' + esc(x.label || x.k) + '</span><b>' + num(x.n) + '</b><i></i></li>';
+      return '<li style="--w:' + Math.max(4, Math.round(x.n / max * 100)) + '%;--f:' + Math.max(0.03, x.n / max).toFixed(3) + ';--i:' + i + '"><span>' + esc(x.label || x.k) + '</span><b>' + num(x.n) + '</b><i></i></li>';
     }).join('') + '</ol>';
   }
   function draw() {
@@ -145,7 +145,7 @@
         // ---- 30 days
         '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('trend') + 'Ultimele 30 de zile</h3></div><div data-chart></div></section>' +
         '<div class="st2-row">' +
-          '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('file') + 'Paginile cele mai văzute</h3><small>7 zile</small></div>' + bars(w.pages.map(function (x) { return { k: x.k, label: pageName(x.k), n: x.n }; })) + '</section>' +
+          '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('file') + 'Paginile cele mai văzute</h3><small>7 zile</small></div>' + bars(w.pages.filter(function (x) { return !/^\/v2(\/|$)/.test(x.k || ''); }).map(function (x) { return { k: x.k, label: pageName(x.k), n: x.n }; })) /* the /v2 preview is the owner's own looking, not visitors (the new site is live since 7.11) */ + '</section>' +
           '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('send') + 'De unde vin</h3><small>7 zile</small></div>' + bars(w.from) +
             '<div class="st2-dev">' + devSplit(w.dev) + '</div></section>' +
         '</div>' +

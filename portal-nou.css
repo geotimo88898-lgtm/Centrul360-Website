@@ -840,8 +840,9 @@ html.ui-nou .st2-card .k-card-head small{ color:var(--muted); font-size:12.5px; 
 html.ui-nou .st2-row{ display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
 html.ui-nou .st2-row .st2-card{ margin-bottom:1.1rem; }
 html.ui-nou .st2-bars{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
-html.ui-nou .st2-bars li{ position:relative; display:flex; justify-content:space-between; gap:10px; padding:8px 12px; border-radius:12px; font-size:14px; overflow:hidden; isolation:isolate; }
-html.ui-nou .st2-bars li i{ position:absolute; inset:0 auto 0 0; width:var(--w); z-index:-1; border-radius:12px; background:color-mix(in srgb, var(--accent) 11%, transparent); transform-origin:0 50%; animation:n-barin 1s var(--e) calc(var(--i) * 60ms) both; }
+html.ui-nou .st2-bars li{ position:relative; display:flex; justify-content:space-between; gap:10px; padding:7px 2px 13px; font-size:14px; }
+html.ui-nou .st2-bars li::before{ content:''; position:absolute; left:2px; right:2px; bottom:3px; height:4px; border-radius:4px; background:color-mix(in srgb, var(--fg) 7%, transparent); }
+html.ui-nou .st2-bars li i{ position:absolute; left:2px; bottom:3px; height:4px; width:calc((100% - 4px) * var(--f, 1)); border-radius:4px; background:var(--grad, var(--accent)); transform-origin:0 50%; animation:n-barin 1s var(--e) calc(var(--i) * 60ms) both; }
 @keyframes n-barin{ from{ transform:scaleX(0); } to{ transform:none; } }
 html.ui-nou .st2-bars li span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 html.ui-nou .st2-bars li b{ font-variant-numeric:tabular-nums; }

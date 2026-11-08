@@ -87,18 +87,18 @@ html.ui-nou.sx-boot::after{ content:""; position:fixed; inset:0; z-index:9998; b
 .sx-intro{ --ac:var(--accent,#2fd6c3); position:fixed; inset:0; z-index:9999; color:#f3f3f4; overflow:hidden; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .sx-intro .ibg{ position:absolute; inset:0; background:#000; }
 .sx-intro .iA{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
-.sx-intro .sweep{ position:absolute; left:0; right:0; top:50%; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); transform:scaleX(0); opacity:0; animation:sx-isweep 1.4s .05s var(--sx-e) forwards; }
+.sx-intro .sweep{ position:absolute; left:0; right:0; top:50%; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); transform:scaleX(0); opacity:0; animation:sx-isweep 1.1s .04s var(--sx-e) forwards; }
 @keyframes sx-isweep{ 0%{ transform:scaleX(0); opacity:0; } 30%{ opacity:.9; } 100%{ transform:scaleX(1); opacity:0; } }
 .sx-intro .imark{ position:relative; width:132px; height:132px; overflow:visible; }
-.sx-intro .imark .ol{ fill:none; stroke:#fff; stroke-width:.9; stroke-dasharray:1; stroke-dashoffset:1; animation:sx-idraw 1.1s .15s cubic-bezier(.2,.8,.2,1) forwards; }
-.sx-intro .imark .ol.e1{ animation-delay:.3s; } .sx-intro .imark .ol.e2{ animation-delay:.45s; }
-.sx-intro .imark .fl{ fill:none; stroke:url(#sxig); stroke-width:3.2; opacity:0; animation:sx-ifade .7s .95s ease forwards; }
-.sx-intro .imark .cut{ fill:none; stroke:var(--ac); stroke-width:1.4; stroke-linecap:round; stroke-dasharray:.2 1; stroke-dashoffset:.2; opacity:0; filter:drop-shadow(0 0 3px var(--ac)); animation:sx-islash .55s 1.32s cubic-bezier(.6,0,.2,1) forwards; }
+.sx-intro .imark .ol{ fill:none; stroke:#fff; stroke-width:.9; stroke-dasharray:1; stroke-dashoffset:1; animation:sx-idraw .85s .1s cubic-bezier(.2,.8,.2,1) forwards; }
+.sx-intro .imark .ol.e1{ animation-delay:.22s; } .sx-intro .imark .ol.e2{ animation-delay:.34s; }
+.sx-intro .imark .fl{ fill:none; stroke:url(#sxig); stroke-width:3.2; opacity:0; animation:sx-ifade .55s .72s ease forwards; }
+.sx-intro .imark .cut{ fill:none; stroke:var(--ac); stroke-width:1.4; stroke-linecap:round; stroke-dasharray:.2 1; stroke-dashoffset:.2; opacity:0; filter:drop-shadow(0 0 3px var(--ac)); animation:sx-islash .45s 1s cubic-bezier(.6,0,.2,1) forwards; }
 @keyframes sx-idraw{ to{ stroke-dashoffset:0; } }
 @keyframes sx-ifade{ to{ opacity:1; } }
 @keyframes sx-islash{ 0%{ opacity:1; stroke-dashoffset:.2; } 90%{ opacity:1; } 100%{ opacity:0; stroke-dashoffset:-1; } }
 .sx-intro .iword{ display:flex; font:600 30px/1 var(--sx-sans); letter-spacing:-.03em; }
-.sx-intro .iword span{ opacity:0; transform:translateY(12px); filter:blur(6px); animation:sx-iletter .7s var(--sx-e) forwards; animation-delay:calc(1.6s + var(--i) * 40ms); }
+.sx-intro .iword span{ opacity:0; transform:translateY(12px); filter:blur(6px); animation:sx-iletter .55s var(--sx-e) forwards; animation-delay:calc(1.2s + var(--i) * 32ms); }
 @keyframes sx-iletter{ to{ opacity:1; transform:none; filter:none; } }
 .sx-intro .skip{ position:absolute; right:24px; bottom:calc(24px + env(safe-area-inset-bottom)); height:36px; padding:0 16px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.04); color:#a3a3ab; font:500 13px var(--sx-sans); z-index:2; cursor:pointer; transition:background .2s, color .2s; }
