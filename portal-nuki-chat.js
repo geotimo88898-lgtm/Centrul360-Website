@@ -3,6 +3,8 @@
 // conversation open, Nuki sees it too (portal-whatsapp.js C360Nuki.thread). Answers from api/portal-nuki.js (Claude);
 // the chat lives in this tab only. Admin and reception. Photos, screenshots (pasted too), PDFs and text files go with a
 // question (the owner, 8.11: „să-i pot trimite și poze, fișiere”): photos smaller first, everything as data to Claude.
+// For the owner, Nuki also edits what he tells it in Traininguri (8.11: „să editeze ce îi zic”): it shows the change as
+// a card (as it is now, as it would be) and it is saved only when he taps „Aplică” (api/_lib/nuki-edit.js).
 (function () {
   'use strict';
   var K = function () { return window.K; };
@@ -16,10 +18,12 @@
   function toast(m) { K().ui().toast(m, 'error'); }
 
   function allowed() { var d = K() && K().data; return !!(d && (d.isAdmin || (d.me && d.me.role === 'receptie'))); }
+  // the section on screen (the panel shown, not the address: it told „Acte și autorizații” on Traininguri, 8.11)
   function tabName() {
-    var h = location.hash.slice(1) || '';
-    var b = document.querySelector('#tabsNav [data-tab="' + h + '"]');
-    return b ? (b.getAttribute('data-label') || b.textContent || h).trim() : h;
+    var p = document.querySelector('main > .panel.active');
+    var t = p && p.id ? p.id.replace(/^panel-/, '') : (location.hash.slice(1) || '').split('/')[0];
+    var b = document.querySelector('#tabsNav button[data-tab="' + t + '"].active') || document.querySelector('#tabsNav button[data-tab="' + t + '"]:not(.hidden)') || document.querySelector('#tabsNav button[data-tab="' + t + '"]');
+    return b ? (b.getAttribute('data-label') || b.textContent || t).trim() : t;
   }
   // the answer as text with line breaks: **bold**, a heading line as bold, links (sources of a search) clickable
   function fmt(t) {
@@ -37,11 +41,44 @@
       ? '<span class="nk-file is-img"><img src="' + f.url + '" alt="">' + x + '</span>'
       : '<span class="nk-file is-doc">' + K().icon('file') + '<em>' + esc(f.name) + '</em>' + x + '</span>';
   }
+  // a change Nuki proposes, each field as it would be: a list whole and in its new order (the new lines marked, long
+  // unchanged stretches folded), then what goes out, struck; a text as it is now, struck, and as it would be
+  function fieldHtml(f) {
+    if (f.type === 'lines') {
+      var before = (f.before || []).slice(), after = f.after || [], left = before.slice(), rows = [], run = [];
+      var flush = function () {
+        if (run.length >= 4) rows.push('<li class="is-fold">' + run.length + ' rânduri la fel</li>');
+        else run.forEach(function (x) { rows.push('<li>' + esc(x) + '</li>'); });
+        run = [];
+      };
+      after.forEach(function (x, k) {
+        var at = left.indexOf(x);
+        if (at >= 0) left.splice(at, 1);
+        var near = after.slice(Math.max(0, k - 1), k + 2).some(function (y) { return before.indexOf(y) < 0; });
+        if (at >= 0 && !near && after.length > 12) { run.push(x); return; }
+        flush();
+        rows.push('<li' + (at < 0 ? ' class="is-in"' : '') + '>' + esc(x) + '</li>');
+      });
+      flush();
+      var out = left.length ? '<p class="nk-out-h">Se scoate</p><ul class="nk-diff">' + left.map(function (x) { return '<li class="is-out">' + esc(x) + '</li>'; }).join('') + '</ul>' : '';
+      return '<section><h5>' + esc(f.label) + '</h5><ul class="nk-diff' + (f.key === 'steps' && after.length <= 40 ? ' is-num' : '') + '">' + rows.join('') + '</ul>' + out + '</section>';
+    }
+    return '<section><h5>' + esc(f.label) + '</h5><ul class="nk-diff">' + (f.before !== '' && f.before != null ? '<li class="is-out">' + esc(f.before) + '</li>' : '') + '<li class="is-in">' + esc(f.after) + '</li></ul></section>';
+  }
+  function editHtml(e, i, j) {
+    var foot = e.state === 'done' ? '<p class="nk-edit-st is-done">' + K().icon('check') + 'Aplicat</p>'
+      : e.state === 'no' ? '<p class="nk-edit-st">Nu s-a schimbat nimic</p>'
+      : '<footer><button type="button" class="k-btn is-ghost is-sm" data-edit-no="' + i + ':' + j + '"' + (e.busy ? ' disabled' : '') + '>Renunță</button>' +
+        '<button type="button" class="k-btn is-primary is-sm" data-edit-ok="' + i + ':' + j + '"' + (e.busy ? ' disabled' : '') + '>' + K().icon('check') + 'Aplică</button></footer>';
+    return '<div class="nk-edit' + (e.state ? ' is-' + e.state : '') + '"><header>' + K().icon('pen') + '<div><small>' + esc(e.what) + '</small><b>' + esc(e.name) + '</b></div></header>' +
+      e.fields.map(fieldHtml).join('') + foot + '</div>';
+  }
   function bodyHtml() {
     var list = S.msgs.map(function (m, i) {
       return m.role === 'user'
         ? '<div class="nk-m is-me' + (m.files && m.files.length ? ' has-files' : '') + '">' + (m.files && m.files.length ? '<div class="nk-mfiles">' + m.files.map(function (f, j) { return fileHtml(f, j, true); }).join('') + '</div>' : '') + fmt(m.content) + '</div>'
-        : '<div class="nk-m is-nuki">' + fmt(m.content) + '<button type="button" class="nk-copy" data-copy="' + i + '" aria-label="Copiază">' + (K().icon ? K().icon('copy') : 'Copiază') + '</button></div>';
+        : '<div class="nk-m is-nuki">' + fmt(m.content) + '<button type="button" class="nk-copy" data-copy="' + i + '" aria-label="Copiază">' + (K().icon ? K().icon('copy') : 'Copiază') + '</button></div>' +
+          (m.edits || []).map(function (e, j) { return editHtml(e, i, j); }).join('');
     }).join('');
     var th = window.C360Nuki && window.C360Nuki.thread && window.C360Nuki.thread();
     var who = th ? '<p class="nk-ctx">' + (K().icon ? K().icon('chat') : '') + '<span>' + esc(th.name || 'Conversația deschisă') + '</span></p>' : '';
@@ -101,7 +138,13 @@
   // what goes to Nuki: the last turns, and the files from the newest back, as long as they fit (older ones by name)
   function payload() {
     var list = S.msgs.slice(-16), left = 18e6, n = 0;
-    var out = list.map(function (m) { return { role: m.role, content: m.content }; });
+    var out = list.map(function (m) {
+      var said = m.content;
+      if (m.edits && m.edits.length) said += '\n\n(Propunerile mele: ' + m.edits.map(function (e) {
+        return e.what + ' „' + e.name + '” (' + e.fields.map(function (f) { return f.label; }).join(', ') + '): ' + (e.state === 'done' ? 'aplicată de el' : e.state === 'no' ? 'refuzată de el' : 'încă neaplicată');
+      }).join('; ') + '.)';
+      return { role: m.role, content: said };
+    });
     for (var i = list.length - 1; i >= 0; i--) {
       if (!list[i].files || !list[i].files.length) continue;
       out[i].files = list[i].files.map(function (f) {
@@ -129,11 +172,27 @@
     try {
       var th = window.C360Nuki && window.C360Nuki.thread && window.C360Nuki.thread();
       var r = await K().api('/api/portal-nuki', { action: 'chat', messages: payload(), thread: th || undefined, tab: tabName() });
-      S.msgs.push({ role: 'assistant', content: r.text || 'Nu am un răspuns acum.' });
+      S.msgs.push({ role: 'assistant', content: r.text || (r.edits && r.edits.length ? 'Uite ce aș schimba.' : 'Nu am un răspuns acum.'), edits: r.edits || [] });
     } catch (err) {
       S.msgs.push({ role: 'assistant', content: (err.data && err.data.message) || 'Nu am putut răspunde acum. Încearcă din nou.' });
     }
     S.busy = false; paint();
+  }
+  // „Aplică”: saved now (only if nobody changed those fields since); „Renunță”: nothing is saved
+  async function decide(i, j, yes) {
+    var m = S.msgs[i], e = m && m.edits && m.edits[j];
+    if (!e || e.state || e.busy) return;
+    if (!yes) { e.state = 'no'; paint(); return; }
+    e.busy = true; paint();
+    try {
+      await K().api('/api/portal-nuki', { action: 'apply', ref: e.ref, changes: e.changes, base: e.base, name: e.name });
+      e.state = 'done';
+      K().ui().toast('Salvat în Traininguri.', 'success');
+      if (K().reload) K().reload();
+    } catch (err) {
+      K().ui().toast((err.data && err.data.message) || (K().errText ? K().errText(err) : 'Nu am putut salva.'), 'error');
+    }
+    e.busy = false; paint();
   }
   function open() {
     if (!allowed()) return;
@@ -157,6 +216,8 @@
         el.addEventListener('click', function (e) {
           var u = e.target.closest('[data-unfile]');
           if (u) { S.files.splice(Number(u.dataset.unfile), 1); paintFiles(); return; }
+          var ok = e.target.closest('[data-edit-ok]'), no = e.target.closest('[data-edit-no]');
+          if (ok || no) { var at = (ok || no).getAttribute(ok ? 'data-edit-ok' : 'data-edit-no').split(':'); decide(Number(at[0]), Number(at[1]), !!ok); return; }
           var c = e.target.closest('[data-copy]');
           if (!c) return;
           var m = S.msgs[Number(c.dataset.copy)];

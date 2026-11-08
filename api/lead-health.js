@@ -44,7 +44,8 @@ module.exports = async (req, res) => {
     return;
   }
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
-  if (req.query && req.query.nuki) { res.status(200).json(await require('./portal-nuki').ping()); return; }
+  // ?nuki=edit: the owner's edits, end to end without saving: Nuki reads a sheet and proposes a change (nothing is applied)
+  if (req.query && req.query.nuki) { res.status(200).json(req.query.nuki === 'edit' ? await require('./portal-nuki').pingEdit() : await require('./portal-nuki').ping()); return; }
   // ?trace=1: per lead from an ad form in these days, why Reclame counts her booked / came (no name, no phone)
   if (req.query && req.query.trace) {
     const F = require('./_lib/ads-funnel');

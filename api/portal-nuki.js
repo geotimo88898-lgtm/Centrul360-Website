@@ -10,7 +10,8 @@
 
 const Anthropic = require('@anthropic-ai/sdk');
 const { readJSON, writeJSON } = require('./_lib/store');
-const { getSession } = require('./_lib/auth');
+const { getSession, requireAdmin } = require('./_lib/auth');
+const E = require('./_lib/nuki-edit');
 const { loadOffers } = require('./_lib/offers');
 const B = require('./_lib/booking');
 
@@ -69,6 +70,19 @@ Doar când ți se cere un mesaj către o clientă a clinicii, îl scrii așa:
 ${CLIENT_RULES}
 
 ${FACTS}`;
+
+// the owner's edits through Nuki (the owner, 8.11: „să poată Nuki să editeze ce îi zic”): only proposals, saved by his tap
+const EDIT_RULES = `Poți modifica pentru proprietar conținutul din Traininguri (fișele de tratament, capitolele manualelor, cazurile), doar prin propuneri:
+- când îți cere să schimbi, să adaugi sau să scoți ceva de acolo, citești întâi ce e acum (citeste), apoi chemi propune_modificare cu valorile noi; conținutul nou nu-l scrii în chat: el îl vede în propunere, cum e acum și cum ar fi;
+- nimic nu se salvează până nu apasă el „Aplică”; după propunere îi spui într-o propoziție scurtă ce ai schimbat, fără să repeți conținutul;
+- schimbi exact ce cere, cu cuvintele lui, curățate (diacritice, majusculă la început, punct la final dacă așa sunt celelalte rânduri); restul rămâne cum e;
+- dacă schimbarea face greșit alt câmp din aceeași fișă (de exemplu „în 8 etape” când acum sunt 7 pași), îl corectezi în aceeași propunere și îi spui;
+- nu inventezi date medicale, setări de aparat, prețuri sau rezultate; dacă îți lipsesc, întrebi;
+- dacă nu e clar ce fișă sau ce câmp vrea, întrebi scurt înainte;
+- altceva decât Traininguri (oferte, prețuri de pe site, reclame, programări, setări) nu poți modifica: îi spui în ce secțiune o face el.
+
+Ce poți modifica:`;
+const NO_EDIT = 'Nu poți modifica nimic în admin. Dacă ți se cere, spui că modificările le face proprietarul.';
 
 function money(n) { return Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei'; }
 async function offersText() {
@@ -188,11 +202,16 @@ function fileBlocks(files) {
 const blocks = (c) => (typeof c === 'string' ? (c ? [{ type: 'text', text: c }] : []) : c);
 
 let webErr = ''; // why the last internet search was refused (the health check shows it)
-async function ask(system, messages, effort, tools) {
+// onTool(name, input) answers the tools the clinic runs itself (the owner's edits, api/_lib/nuki-edit.js): its
+// { result, error } goes back to Claude and the turn goes on
+async function ask(system, messages, effort, tools, onTool) {
   const parts = [];
+  const said = [];
+  let paused = false;
+  let convo = messages;
   let r;
   // a search can pause a long turn (pause_turn): what came so far goes back as the answer's start and the server goes on
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 10; i++) {
     const params = {
       model: MODEL,
       max_tokens: 8000,
@@ -200,24 +219,45 @@ async function ask(system, messages, effort, tools) {
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default', // a refused request is answered by the fallback model in the same call
       system,
-      messages: parts.length ? messages.concat({ role: 'assistant', content: parts.slice() }) : messages,
+      messages: parts.length ? convo.concat({ role: 'assistant', content: parts.slice() }) : convo,
     };
     try {
-      r = await claude().beta.messages.create(tools ? Object.assign({ tools }, params) : params);
+      r = await claude().beta.messages.create(tools && tools.length ? Object.assign({ tools }, params) : params);
     } catch (e) {
-      // the internet search not allowed on the account: the same question without it
       // the newest search refused: the basic one; that refused too (search off on the account): the question without it
-      if (tools && e && e.status === 400 && /web_search|tool/i.test(String(e.message))) {
+      const web = tools && tools.find((t) => t.name === 'web_search');
+      if (web && e && e.status === 400 && /web_search|tool/i.test(String(e.message))) {
         webErr = (webErr ? webErr + ' | ' : '') + String(e.message).slice(0, 300); console.error('portal-nuki web:', webErr);
-        tools = tools[0].type === WEB[0].type ? [Object.assign({}, WEB[0], { type: 'web_search_20250305' })] : null; i--; continue;
+        const rest = tools.filter((t) => t !== web);
+        tools = web.type === WEB[0].type ? [Object.assign({}, WEB[0], { type: 'web_search_20250305' })].concat(rest) : rest;
+        i--; continue;
       }
       throw e;
     }
-    parts.push(...(r.content || []));
-    if (r.stop_reason !== 'pause_turn') break;
+    const got = r.content || [];
+    parts.push(...got);
+    // what it says before reading or proposing („Mă uit la fișă.”) is not part of the answer
+    const words = r.stop_reason === 'tool_use' && onTool ? '' : got.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    // a paused turn goes on in the same sentence; a turn after a tool's answer is a new paragraph
+    if (words.trim()) { if (paused && said.length) said[said.length - 1] += words; else said.push(words); }
+    paused = r.stop_reason === 'pause_turn';
+    if (r.stop_reason === 'pause_turn') continue;
+    const uses = got.filter((b) => b.type === 'tool_use');
+    if (r.stop_reason === 'tool_use' && onTool && uses.length) {
+      const results = [];
+      for (const u of uses) {
+        let o;
+        try { o = (await onTool(u.name, u.input || {})) || {}; } catch (e) { o = { result: 'Eroare: ' + String((e && e.message) || e).slice(0, 200), error: true }; }
+        results.push({ type: 'tool_result', tool_use_id: u.id, content: String(o.result || 'ok'), is_error: !!o.error });
+      }
+      convo = convo.concat({ role: 'assistant', content: parts.slice() }, { role: 'user', content: results });
+      parts.length = 0;
+      continue;
+    }
+    break;
   }
   if (r.stop_reason === 'refusal') return { text: '', refused: true };
-  const text = parts.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+  const text = said.map((x) => x.trim()).filter(Boolean).join('\n\n');
   const searches = parts.filter((b) => b.type === 'server_tool_use').length;
   return { text: text.replace(/\s+[—–]\s+/g, ', ').replace(/[—–]/g, '-'), searches };
 }
@@ -231,8 +271,22 @@ module.exports = async (req, res) => {
   if (!session) { res.status(401).json({ error: 'unauthorized' }); return; }
   if (!['admin', 'receptie'].includes(session.role)) { res.status(403).json({ error: 'forbidden' }); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  if (!process.env.ANTHROPIC_API_KEY) { res.status(503).json({ error: 'no_key', message: 'Nuki nu are încă cheia Claude.' }); return; }
   const b = req.body || {};
+  // the owner's „Aplică” on a change Nuki proposed (admin only; Activitate notes it)
+  if (b.action === 'apply') {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    try {
+      const out = await E.apply(b);
+      if (!out.ok) { res.status(out.status || 400).json({ error: out.error, message: out.message }); return; }
+      res.status(200).json({ ok: true, name: out.name, kind: out.kind });
+    } catch (e) {
+      console.error('portal-nuki apply:', String((e && e.message) || e).slice(0, 200));
+      res.status(500).json({ error: 'apply_failed', message: 'Nu am putut salva. Încearcă din nou.' });
+    }
+    return;
+  }
+  if (!process.env.ANTHROPIC_API_KEY) { res.status(503).json({ error: 'no_key', message: 'Nuki nu are încă cheia Claude.' }); return; }
   try {
     if (!(await underCap())) { res.status(429).json({ error: 'cap', message: 'Nuki a răspuns destul azi. Mâine e din nou aici.' }); return; }
     const [offers, hours] = await Promise.all([offersText(), hoursText()]);
@@ -284,9 +338,26 @@ module.exports = async (req, res) => {
       const turns = [];
       list.forEach((m) => { const last = turns[turns.length - 1]; if (last && last.role === m.role) last.content = blocks(last.content).concat(blocks(m.content)); else turns.push(Object.assign({}, m)); });
       // the corner chat: a helper for anything (its own rules), able to search the internet
-      const chatSystem = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }];
-      const r = await ask(chatSystem, turns, 'medium', WEB);
-      res.status(200).json({ text: r.refused || !r.text ? 'Nu pot răspunde la asta. Întreabă-mă altfel sau întreabă pe cineva din echipă.' : r.text });
+      const owner = session.role === 'admin';
+      const chatSystem = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts },
+        { type: 'text', text: owner ? EDIT_RULES + '\n' + (await E.index()) : NO_EDIT }];
+      // the owner's edits: Nuki reads and proposes; what it proposes goes to the chat with „Aplică”, nothing is saved here
+      const edits = [];
+      const onTool = async (name, input) => {
+        if (!owner) return { result: NO_EDIT, error: true };
+        if (name === 'citeste') { const v = await E.view(input.ref); return v.error ? { result: v.error, error: true } : { result: JSON.stringify(v) }; }
+        if (name === 'propune_modificare') {
+          if (edits.length >= 6) return { result: 'Destule propuneri într-un singur răspuns.', error: true };
+          const p = await E.propose(input);
+          if (p.error) return { result: p.error, error: true };
+          edits.push(p.edit);
+          return { result: 'Propunerea e în fața proprietarului, cu „Aplică”. Nu e salvată încă.' };
+        }
+        return { result: 'Nu am unealta asta.', error: true };
+      };
+      const r = await ask(chatSystem, turns, 'medium', owner ? WEB.concat(E.TOOLS) : WEB, onTool);
+      const text = r.refused || (!r.text && !edits.length) ? 'Nu pot răspunde la asta. Întreabă-mă altfel sau întreabă pe cineva din echipă.' : r.text;
+      res.status(200).json(edits.length ? { text, edits } : { text });
       return;
     }
     res.status(400).json({ error: 'invalid_action' });
@@ -307,5 +378,24 @@ module.exports.ping = async () => {
     webErr = '';
     const chat = await ask([{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'Cât e cursul euro BNR azi? Și cât fac 2.500 lei în euro?' }], 'medium', WEB);
     return { key: true, ok: !!(reply.text && chat.text), reply: reply.text.slice(0, 500), chat: chat.text.slice(0, 700), searches: chat.searches, webErr };
+  } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
+};
+
+// /api/lead-health?nuki=edit: what the owner's chat does with „schimbă pașii…”, without saving anything
+module.exports.pingEdit = async () => {
+  if (!process.env.ANTHROPIC_API_KEY) return { key: false };
+  try {
+    const edits = [];
+    const tools = [];
+    const onTool = async (name, input) => {
+      tools.push(name + (input && input.ref ? ' ' + input.ref : ''));
+      if (name === 'citeste') { const v = await E.view(input.ref); return v.error ? { result: v.error, error: true } : { result: JSON.stringify(v) }; }
+      if (name === 'propune_modificare') { const p = await E.propose(input); if (p.error) return { result: p.error, error: true }; edits.push(p.edit); return { result: 'Propunerea e în fața proprietarului, cu „Aplică”. Nu e salvată încă.' }; }
+      return { result: 'Nu am unealta asta.', error: true };
+    };
+    const system = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.' },
+      { type: 'text', text: EDIT_RULES + '\n' + (await E.index()) }];
+    const r = await ask(system, [{ role: 'user', content: 'La tratamentul facial Restart, pasul cu masajul să fie „Masaj față, gât și decolteu”.' }], 'medium', WEB.concat(E.TOOLS), onTool);
+    return { key: true, ok: edits.length > 0, text: r.text.slice(0, 500), tools, edits: edits.map((e) => ({ ref: e.ref, name: e.name, fields: e.fields.map((f) => ({ key: f.key, after: f.after })) })) };
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };

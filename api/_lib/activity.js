@@ -35,6 +35,7 @@ const ROUTES = {
   'portal-capi': { area: 'Integrări', go: 'integrari' },
   'portal-config': { area: 'Setări', go: 'integrari' },
   'portal-academy': { area: 'Traininguri', go: 'traininguri' },
+  'portal-nuki': { area: 'Traininguri', go: 'traininguri' }, // only „Aplică” on a change Nuki proposed is a change
   'portal-account': { area: 'Contul meu', go: '' },
   'ads-manager': { area: 'Reclame', go: 'reclame' },
   'ads-publish': { area: 'Reclame', go: 'reclame' },
@@ -61,6 +62,7 @@ const VERBS = {
   'portal-live:connect': 'a pornit sincronizarea instantă', 'portal-live:disconnect': 'a oprit sincronizarea instantă',
   'portal-capi:save': 'a schimbat setările Conversions API', 'portal-capi:live': 'a schimbat trimiterea live din Conversions API',
   'portal-mypos:connect': 'a conectat myPOS', 'portal-mypos:device': 'a ales orașul unui aparat POS', 'portal-mypos:disconnect': 'a deconectat myPOS',
+  'portal-nuki:apply': 'a aplicat modificarea propusă de Nuki la',
   'portal-sale:': 'a înregistrat o încasare la', 'portal-approve:': 'a decis vânzarea',
   'portal-employees:create': 'a adăugat în echipă pe', 'portal-employees:update_details': 'a modificat datele pentru', 'portal-employees:reset_password': 'a resetat parola pentru',
   'portal-employees:set_active': 'a schimbat accesul pentru', 'portal-employees:set_goals': 'a setat obiectivele pentru',
