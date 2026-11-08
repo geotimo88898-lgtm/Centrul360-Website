@@ -196,11 +196,31 @@ globalThis.__C360_ROUTE = (request) => {
   return route(request, ENV, ctx);
 };
 
+// security headers (audit 8.11): HTTPS always; the portal (admin/staff) can be framed only by itself (Creative opens
+// inside it), never by another site; no MIME sniffing on its files
+function secure(request, r) {
+  if (!r || r.status === 101 || r.webSocket) return r;
+  const host = new URL(request.url).hostname;
+  const portal = host === "admin.centrul360.com" || host === "staff.centrul360.com";
+  try {
+    const out = new Response(r.body, r);
+    out.headers.set("Strict-Transport-Security", "max-age=31536000");
+    if (portal) {
+      if (!out.headers.has("x-frame-options")) out.headers.set("X-Frame-Options", "SAMEORIGIN");
+      if (!out.headers.has("content-security-policy")) out.headers.set("Content-Security-Policy", "frame-ancestors 'self'");
+      out.headers.set("X-Content-Type-Options", "nosniff");
+      if (!out.headers.has("referrer-policy")) out.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    }
+    return out;
+  } catch (e) { return r; }
+}
+
 export default {
   async fetch(request, env, ctx) {
     globalThis.__C360_SELF_HOST = new URL(request.url).host;
     await loadSecrets(env, SHARED);
-    return als.run({ ctx }, () => route(request, env, ctx));
+    const r = await als.run({ ctx }, () => route(request, env, ctx));
+    return secure(request, r);
   },
   // din oră în oră la :17 UTC (wrangler.jsonc): automatizările de fiecare dată (mesajele la rând, leadurile noi, paza
   // reclamelor, schimbările cerute o dată), la 05 întâi producția automată de creative, la 06 automatizările întregi
@@ -215,7 +235,10 @@ export default {
     if (hour === 19) paths.push("/api/daily-report");
     for (const path of paths) {
       if (path.startsWith("/creative") && !creative) { console.log("cron: mașina de creative nu e în build"); continue; }
-      const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (env.CRON_SECRET || ""), "user-agent": "vercel-cron/1.0" } });
+      // a random key for this run only, known to nothing on the internet (api/_lib/cron-auth.js), so the clock works
+      // even without CRON_SECRET and no one can start it from outside by sending a "vercel-cron" user-agent
+      if (!globalThis.__C360_CRON_TOKEN) globalThis.__C360_CRON_TOKEN = crypto.randomUUID() + crypto.randomUUID();
+      const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (path.startsWith("/creative") ? (env.CRON_SECRET || "") : globalThis.__C360_CRON_TOKEN), "user-agent": "vercel-cron/1.0" } });
       const r = await als.run({ ctx }, () => route(req, env, ctx)).catch((e) => ({ status: "eroare " + e.message }));
       console.log("cron", path, r.status);
     }

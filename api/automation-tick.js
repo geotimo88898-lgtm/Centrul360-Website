@@ -53,15 +53,15 @@ const STEPS = [
 ];
 
 module.exports = async (req, res) => {
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== 'Bearer ' + secret) {
+  // Claude's read with the report key only reads: the clock's steps stay with the clock (28.10)
+  const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
+  // the steps run only for the clock itself (CRON_SECRET or the Worker's own Cron key, api/_lib/cron-auth.js)
+  if (!readOnly && !require('./_lib/cron-auth').isCron(req)) {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }
   const t0 = Date.now();
   const out = { ok: true, waited: [] };
-  // Claude's read with the report key only reads: the clock's steps stay with the clock (28.10)
-  const readOnly = !!(req.query && req.query.report) && require('crypto').createHash('sha256').update(String(req.query.report)).digest('hex') === 'e5677ffcb33269c8376ad2711d5b236c464b43dcd91656b11e2d22b495f9dd86';
   // with the key, &vad=<job>: the video ad the owner approved in chat (api/_lib/ads-video.js): the file and its cover
   // sent with POST (&put=video / &put=thumb), then &step=look, make or status; &vids=<since>: the account's ads with
   // what they brought, &camps=<since>: every campaign with its bookings and budget, &vfile=<video id>: one video's file.
