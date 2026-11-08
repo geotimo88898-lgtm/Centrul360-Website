@@ -141,10 +141,10 @@
     epilare: ['Pagina 1 și pagina 2 sunt completate, rubrică cu rubrică.', 'Fiecare întrebare are „Da” sau „Nu”. Mai ales soarele și ceara din ultimele 4 săptămâni.', 'Ai bifat fototipul și firul. Dacă firul e blond, alb sau roșcat, i-ai spus sincer.', 'Ea a bifat acordurile pe care le vrea și a semnat. Ai semnat și tu.', 'La prima ședință ai făcut testul de probă.', 'La fiecare ședință scrii setările aparatului pe pagina 5.'],
   };
   const SHEETS = [
-    { id: 'corporale', kind: 'Fișa clientei', title: 'Corp', sub: 'Remodelare, slăbire, celulită', icon: 'flame', hue: 'a', pages: CLIENT.corporale, check: CCHECK.corporale, pdf: '/fise/fisa-client-proceduri-corporale.pdf' },
-    { id: 'faciale', kind: 'Fișa clientei', title: 'Față', sub: 'Ten, pete, riduri', icon: 'sparkles', hue: 'b', pages: CLIENT.faciale, check: CCHECK.faciale, pdf: '/fise/fisa-client-proceduri-faciale.pdf' },
-    { id: 'epilare', kind: 'Fișa clientei', title: 'Epilare laser', sub: 'Piele, fir, zone', icon: 'sun', hue: 'c', pages: CLIENT.epilare, check: CCHECK.epilare, pdf: '/fise/fisa-client-epilare-laser.pdf' },
-    { id: 'program', kind: 'După fișă', title: 'Programul și oferta', sub: 'Ce îi recomanzi și cât costă', icon: 'wallet', hue: 'd', pages: PAGES, check: CHECK, pdf: '/fise/program-recomandat-si-oferta.pdf', guide: '/fise/ghid-program-recomandat.pdf', checkHead: 'Înainte de semnare, verifică' },
+    { id: 'corporale', kind: 'Fișa clientei', title: 'Corp', sub: 'Remodelare, slăbire, celulită', icon: 'flame', pose: 'centimetru', hue: 'a', pages: CLIENT.corporale, check: CCHECK.corporale, pdf: '/fise/fisa-client-proceduri-corporale.pdf' },
+    { id: 'faciale', kind: 'Fișa clientei', title: 'Față', sub: 'Ten, pete, riduri', icon: 'sparkles', pose: 'facial', hue: 'b', pages: CLIENT.faciale, check: CCHECK.faciale, pdf: '/fise/fisa-client-proceduri-faciale.pdf' },
+    { id: 'epilare', kind: 'Fișa clientei', title: 'Epilare laser', sub: 'Piele, fir, zone', icon: 'sun', pose: 'laser', hue: 'c', pages: CLIENT.epilare, check: CCHECK.epilare, pdf: '/fise/fisa-client-epilare-laser.pdf' },
+    { id: 'program', kind: 'După fișă', title: 'Programul și oferta', sub: 'Ce îi recomanzi și cât costă', icon: 'wallet', pose: 'fisa', hue: 'd', pages: PAGES, check: CHECK, pdf: '/fise/program-recomandat-si-oferta.pdf', guide: '/fise/ghid-program-recomandat.pdf', checkHead: 'Înainte de semnare, verifică' },
   ];
   const cur = (st) => SHEETS.find((x) => x.id === st.sheet) || SHEETS[0];
   const img = (S, i) => '/academy-fisa/' + (S.id === 'program' ? '' : S.id + '-') + 'p' + (i + 1) + '.webp';
@@ -156,6 +156,8 @@
     '</div>';
 
   const icon = (n) => (window.K && window.K.icon ? window.K.icon(n) : '');
+  // Nuki in the pose of the sheet, in place of a coloured icon (the owner, 8.11: like the website, not app icons)
+  const nuki = (S) => '<img src="/brand_asset/mascota/ipostaze/' + S.pose + '.webp" alt="" loading="lazy" decoding="async">';
 
   // the training films (academy-vsl/<id>.mp4, made with academy-vsl/src): the ones that exist, with their length.
   // C360Vsl.html(id, title, soon) → the player, or `soon` (the "Vine în curând" card) when the film is not made yet
@@ -168,7 +170,7 @@
   // "Vreau să învăț": the four sheets of a consultation, in the order they are filled in
   const picker = (st, big) => '<div class="tr-fpick' + (big ? ' is-big' : '') + '"><div class="tr-fpick-l">Vreau să învăț:</div><div class="tr-fpick-row" role="tablist">' +
     SHEETS.map((S, k) => '<button type="button" role="tab" aria-selected="' + (!big && S === cur(st)) + '" class="tr-fpick-c is-' + S.hue + (!big && S === cur(st) ? ' is-on' : '') + '" data-fs-sheet="' + S.id + '" style="--k:' + k + '">' +
-      '<span class="tr-fpick-ic">' + icon(S.icon) + '</span><small>' + esc(S.kind) + '</small><b>' + esc(S.title) + '</b><span class="tr-fpick-s">' + esc(S.sub) + '</span>' +
+      '<span class="tr-fpick-ic">' + nuki(S) + '</span><small>' + esc(S.kind) + '</small><b>' + esc(S.title) + '</b><span class="tr-fpick-s">' + esc(S.sub) + '</span>' +
       '<span class="tr-fpick-n">' + S.pages.length + ' pagini</span></button>').join('') + '</div></div>';
 
   function html(st) {
@@ -178,7 +180,7 @@
     const i = st.page, pg = PG[i];
     return '<div class="tr-fisa">' +
       '<div class="tr-fs-top"><button type="button" class="k-btn is-ghost is-sm" data-fs-back>' + icon('left') + 'Toate fișele</button>' +
-        '<span class="tr-fs-who is-' + S.hue + '"><i>' + icon(S.icon) + '</i><b>' + esc(S.kind + ' · ' + S.title) + '</b></span></div>' +
+        '<span class="tr-fs-who is-' + S.hue + '"><i>' + nuki(S) + '</i><b>' + esc(S.kind + ' · ' + S.title) + '</b></span></div>' +
       window.C360Vsl.html('fisa-' + S.id, 'Filmulețul: ' + (S.id === 'program' ? S.title : S.kind + ' · ' + S.title), '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(S.title) + '</b><span>Totul explicat pe înțeles, cu exemple. Vine în curând.</span></div></div>') +
       '<div class="tr-fs-flow" role="tablist">' + PG.map((p, k) => (k ? '<span class="tr-fs-arrow" aria-hidden="true">›</span>' : '') +
         '<button type="button" role="tab" class="tr-fs-tab ' + p.tone + (k === i ? ' is-on' : '') + '" data-fs-page="' + k + '" aria-selected="' + (k === i) + '"><b>' + (k + 1) + '</b><span>' + esc(p.tab) + (p.badge ? '<em>' + esc(p.badge) + '</em>' : '') + '</span></button>').join('') + '</div>' +

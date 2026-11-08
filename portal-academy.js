@@ -333,18 +333,18 @@
   // in the order she learns them (the owner, 5.11): first how a client goes through the salon, then the consultation,
   // then the treatments
   const ZONES = [
-    { id: 'parcurs', n: 1, title: 'Parcursul clientei', sub: 'Ce fac de când vine clienta până pleacă.', icon: 'users', hue: 'a' },
-    { id: 'consult', n: 2, title: 'Consultația', sub: 'Ce îi spun clientei și ce îi recomand.', icon: 'file', hue: 'b' },
-    { id: 'tratamente', n: 3, title: 'Tratamentele', sub: 'Cum fac fiecare tratament.', icon: 'sparkles', hue: 'c' },
+    { id: 'parcurs', n: 1, title: 'Parcursul clientei', sub: 'Ce fac de când vine clienta până pleacă.', icon: 'users', pose: 'receptie', hue: 'a' },
+    { id: 'consult', n: 2, title: 'Consultația', sub: 'Ce îi spun clientei și ce îi recomand.', icon: 'file', pose: 'prezinta', hue: 'b' },
+    { id: 'tratamente', n: 3, title: 'Tratamentele', sub: 'Cum fac fiecare tratament.', icon: 'sparkles', pose: 'liposonix', hue: 'c' },
     // (the owner, 7.11) how to use the portal itself, next to the three
-    { id: 'portal', n: 4, title: 'Portalul', sub: 'Cum folosesc portalul, pas cu pas.', icon: 'sliders', hue: 'd' },
+    { id: 'portal', n: 4, title: 'Portalul', sub: 'Cum folosesc portalul, pas cu pas.', icon: 'sliders', pose: 'telefon', hue: 'd' },
   ];
   function zonesHtml() {
     const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
     if (!A.zone) {
       return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door is-' + z.hue + '" data-zone="' + z.id + '" data-tilt style="--i:' + i + '">' +
         '<span class="tr-door-glow"></span><span class="tr-door-n">' + z.n + '</span>' +
-        '<span class="tr-door-ic">' + icon(z.icon) + '</span><small class="tr-door-k">Vreau să învăț</small><b>' + esc(z.title) + '</b><span class="tr-door-sub">' + esc(z.sub) + '</span>' +
+        '<span class="tr-door-ic"><img src="/brand_asset/mascota/ipostaze/' + z.pose + '.webp" alt="" decoding="async"></span><small class="tr-door-k">Vreau să învăț</small><b>' + esc(z.title) + '</b><span class="tr-door-sub">' + esc(z.sub) + '</span>' +
         (z.id === 'parcurs' ? '<span class="tr-door-prog"><i style="--w:' + Math.round(pdone().size / PARCURS.length * 100) + '%"></i></span>' : '') +
         (z.id === 'portal' ? '<span class="tr-door-prog"><i style="--w:' + guidePct() + '%"></i></span>' : '') +
         '<i class="tr-door-go">' + icon('right') + '</i></button>').join('') + '</div>';

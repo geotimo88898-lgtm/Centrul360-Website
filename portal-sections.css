@@ -2479,3 +2479,24 @@ html.mx-pv-open{ overflow:hidden; }
 #panel-calculator .tr-c2-step h3 small, .k-field > small:not(.is-warn):not(.is-bad){ display:none !important; }
 #panel-traininguri :is(.ct-hint, .k-empty > p, .mo-note, p.k-muted){ display:revert !important; }
 .cb-tip ol{ display:none; }
+
+/* Traininguri (the owner, 8.11): Nuki in place of the coloured app icons, the cards in the site's colours (the accent) */
+html .tr-fpick-c, html .tr-fpick-c:is(.is-a, .is-b, .is-c, .is-d){ --g1:var(--accent); --g2:color-mix(in srgb, var(--accent) 55%, #fff); }
+html .tr-door, html .tr-door:is(.is-a, .is-b, .is-c, .is-d){ --c1:var(--accent); --c2:color-mix(in srgb, var(--accent) 55%, #fff); }
+html .tr-fpick-ic{ width:54px; height:54px; border-radius:50%; background:color-mix(in srgb, var(--accent) 14%, var(--paper)); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); overflow:hidden; display:block; position:relative; }
+html .tr-fpick-ic img{ position:absolute; left:50%; top:4px; width:118%; height:auto; transform:translateX(-50%); filter:drop-shadow(0 4px 6px rgba(16,24,40,.12)); }
+html .tr-fpick-c.is-on .tr-fpick-ic, html .tr-fpick-c:hover .tr-fpick-ic{ transform:translateY(-2px) scale(1.06); }
+/* the big picker: Nuki stands in the card, on the right */
+html .tr-fpick.is-big .tr-fpick-c{ padding-right:44%; }
+html .tr-fpick.is-big .tr-fpick-ic{ position:absolute; right:4%; bottom:-6px; width:auto; height:92%; aspect-ratio:auto; border-radius:0; background:none; box-shadow:none; overflow:visible; margin:0; }
+html .tr-fpick.is-big .tr-fpick-ic img{ position:static; transform:none; width:auto; height:100%; filter:drop-shadow(0 14px 18px rgba(16,24,40,.14)); }
+html .tr-fpick.is-big .tr-fpick-c.is-on .tr-fpick-ic, html .tr-fpick.is-big .tr-fpick-c:hover .tr-fpick-ic{ transform:translateY(-4px) rotate(-2deg); }
+@container fisa (max-width:560px){ html .tr-fpick.is-big .tr-fpick-c{ padding-right:38%; } html .tr-fpick.is-big .tr-fpick-ic{ height:86%; } }
+html .tr-fs-who i{ background:color-mix(in srgb, var(--accent) 14%, var(--paper)) !important; overflow:hidden; position:relative; border-radius:50%; }
+html .tr-fs-who i img{ position:absolute; left:50%; top:2px; width:120%; transform:translateX(-50%); }
+/* the four doors: Nuki in place of the square */
+html .tr-door-ic{ width:96px; height:104px; border-radius:0; background:none; box-shadow:none; top:1rem; left:1.1rem; }
+html .tr-door-ic img{ width:100%; height:100%; object-fit:contain; object-position:left bottom; filter:drop-shadow(0 12px 16px rgba(16,24,40,.14)); }
+html .tr-door-k{ color:var(--accent); }
+@media (max-width:1100px){ html .tr-door-ic{ width:84px; height:92px; margin-top:-46px; left:1.2rem; } }
+@media (max-width:640px){ html .tr-door-ic{ width:70px; height:78px; margin-top:-39px; left:.9rem; } }

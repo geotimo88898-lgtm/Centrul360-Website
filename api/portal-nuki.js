@@ -171,7 +171,8 @@ async function ask(system, messages, effort, tools) {
   return { text: text.replace(/\s+[—–]\s+/g, ', ').replace(/[—–]/g, '-'), searches };
 }
 // the corner chat can look things up on the internet (news, prices, rules, anything recent)
-const WEB = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5, user_location: { type: 'approximate', country: 'RO', city: 'Timisoara', timezone: 'Europe/Bucharest' } }];
+// (no user_location: the search refuses the country code RO; the question itself says where)
+const WEB = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }];
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
