@@ -752,3 +752,11 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .pay-grid[hidden], .pay-part [hidden]{ display:none !important; }
 @media (max-width:560px){ .pay-grid{ grid-template-columns:1fr; } }
 .pay-part .k-field, .pay-part .k-money, .pay-part input{ min-width:0; max-width:100%; box-sizing:border-box; }
+
+/* Încasări → Alte date (the owner, 8.11, iPad): the two dates side by side without overlapping (Safari's date field has
+   its own width; here it takes the width it is given), and only when „Alte date” is picked */
+.mo-custom[hidden]{ display:none !important; }
+.mo-custom label{ flex:1 1 150px; min-width:0; max-width:220px; }
+.mo-custom input{ -webkit-appearance:none; appearance:none; display:block; width:100%; min-width:0; max-width:100%; box-sizing:border-box; text-align:left; }
+.mo-custom input::-webkit-date-and-time-value{ text-align:left; margin:0; }
+.mo-custom input::-webkit-datetime-edit{ padding:0; }
