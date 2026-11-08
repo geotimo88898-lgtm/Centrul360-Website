@@ -622,6 +622,18 @@ const roStamp = (ms) => new Date(ms).toLocaleString('ro-RO', { timeZone: 'Europe
 // Steps form a tree (an "if" holds its own yes / no lists). They run through a map of
 // id → what comes next, so a waiting run keeps only the id of the step it continues with
 // ('^' = from the start, '$' = nothing left) and editing the workflow doesn't derail runs in flight.
+// a step that comes after a "before the appointment" wait (a reminder), not the confirmation sent at booking
+function afterBefore(steps, id) {
+  let seen = false, hit = false;
+  const walk = (list) => (list || []).forEach((x) => {
+    if (hit) return;
+    if (x.id === id) { hit = seen; return; }
+    if (x.type === 'wait' && x.mode === 'before') seen = true;
+    if (x.type === 'if') { walk(x.yes); (x.more || []).forEach((b) => walk(b.steps)); walk(x.no); }
+  });
+  walk(steps);
+  return hit;
+}
 function compile(steps) {
   const ops = new Map();
   const walk = (list, next) => {
@@ -881,6 +893,15 @@ async function runOne(run, wf, settings, counters) {
       const r = await notifyTeam(s, v, ctx, settings._wa, run.id);
       log(r.people ? 'Echipa anunțată: ' + r.people + (r.people === 1 ? ' persoană' : ' persoane') + (r.pushed ? ', ' + r.pushed + ' pe telefon' : '') + (r.wa ? ', ' + r.wa + ' pe WhatsApp' : '') : 'Nimeni de anunțat (rol fără oameni activi)');
       continue;
+    }
+    // two bookings of hers the same day (e.g. 18:00 and 19:00, two treatments): one reminder, for the first; the
+    // later one's reminder doesn't go (the owner, 8.11: „de ce s-au trimis 2 mesaje deodată”)
+    if (s.type === 'whatsapp' && ctx.appointment && afterBefore(wf.steps, s.id)) {
+      const a = ctx.appointment, key = digits(a.clientPhone).slice(-9);
+      const first = (ctx.appointments || []).find((x) => x && x.id !== a.id && x.status !== 'anulata' && x.date === a.date &&
+        ((a.clientId && x.clientId === a.clientId) || (key.length >= 6 && digits(x.clientPhone).slice(-9) === key)) &&
+        (String(x.time || '') < String(a.time || '') || (String(x.time || '') === String(a.time || '') && String(x.id) < String(a.id))));
+      if (first) { log('Sărit: are și programarea de la ' + first.time + ' în aceeași zi, reamintirea pleacă o singură dată'); continue; }
     }
     if (s.type === 'whatsapp') {
       const once = ctx.appointment ? 'appt|' + ctx.appointment.id + '|' + apptKey(ctx.appointment) + '|' + s.templateId : 'run|' + run.id + '|' + s.id;

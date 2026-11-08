@@ -301,14 +301,19 @@ async function reply(b) {
     }
     if (!(WF.apptStart(a) > now) || from === 'finalizata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '” după ora programării. Programarea nu s-a schimbat.'); return true; }
     if (yes && from === 'anulata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '”, dar programarea e anulată. Sun-o.'); return true; }
-    a.status = to;
-    a.updatedAt = nowISO();
-    a.statusBy = ME;
+    // her other bookings that day (two treatments, 18:00 and 19:00) got one reminder, so her answer is for all of them (8.11)
+    const k9 = digits(a.clientPhone).slice(-9);
+    const sibs = appts.filter((x) => x && x !== a && !x.block && x.date === a.date && x.status !== to && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now &&
+      ((a.clientId && x.clientId === a.clientId) || (k9.length >= 9 && digits(x.clientPhone).slice(-9) === k9)));
+    [a].concat(sibs).forEach((x) => { x.status = to; x.updatedAt = nowISO(); x.statusBy = ME; });
     if (!(await store.writeJSONIf(KEYA, appts, etag))) continue; // the calendar changed meanwhile: read it again
-    if (no) await require('../portal-leads').unbookLead(a, 'Anulată de clientă pe WhatsApp („' + NO + '”)', 'WhatsApp automat');
-    // the reminders still waiting stop on a cancel; a flow on "Confirmată" / "Anulată" runs
-    await WF.emit('appointment_status', { appointment: a, status: to });
-    await ring(a, yes ? 'CONFIRMATĂ DE CLIENTĂ ✅' : 'ANULATĂ DE CLIENTĂ ❌', name + ' · ' + when + ' · a răspuns „' + b.text + '” pe WhatsApp' + (no ? '. Programarea s-a anulat singură.' : ''), yes ? 'good' : 'bad');
+    for (const x of [a].concat(sibs)) {
+      if (no) await require('../portal-leads').unbookLead(x, 'Anulată de clientă pe WhatsApp („' + NO + '”)', 'WhatsApp automat');
+      // the reminders still waiting stop on a cancel; a flow on "Confirmată" / "Anulată" runs
+      await WF.emit('appointment_status', { appointment: x, status: to });
+    }
+    const all = sibs.length ? when + ' și ' + sibs.map((x) => x.time).join(', ') : when;
+    await ring(a, yes ? 'CONFIRMATĂ DE CLIENTĂ ✅' : 'ANULATĂ DE CLIENTĂ ❌', name + ' · ' + all + ' · a răspuns „' + b.text + '” pe WhatsApp' + (no ? (sibs.length ? '. Programările s-au anulat singure.' : '. Programarea s-a anulat singură.') : ''), yes ? 'good' : 'bad');
     return true;
   }
   return false; // the calendar kept changing: her answer stays a plain message for the desk
