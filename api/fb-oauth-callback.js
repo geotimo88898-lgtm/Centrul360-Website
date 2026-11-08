@@ -12,7 +12,7 @@ const { GRAPH_BASE, siteOrigin, listAssets, afterLogin, appCreds } = require('./
 const WA = require('./_lib/whatsapp');
 
 function verifyState(state, secret) {
-  if (!state) return false;
+  if (!state || !secret) return false;
   const dotIdx = state.lastIndexOf('.');
   if (dotIdx === -1) return false;
   const payload = state.slice(0, dotIdx);

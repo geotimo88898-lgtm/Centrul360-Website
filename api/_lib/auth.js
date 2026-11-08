@@ -40,6 +40,8 @@ function verifyPassword(password, salt, hash) {
 
 function sign(base64Payload) {
   const secret = process.env.PORTAL_SECRET || '';
+  // fail closed: without the secret no session is ever made or accepted (getSession catches and answers null)
+  if (!secret) throw new Error('PORTAL_SECRET missing');
   return crypto.createHmac('sha256', secret).update(base64Payload).digest('hex');
 }
 
