@@ -101,7 +101,7 @@ async function notifyMany(store, employeeIds, n) {
 async function ownerSet(store) {
   try { return new Set(['admin'].concat(await ownerIds(store))); } catch (e) { return new Set(['admin']); }
 }
-// the second (third …) of a kind within 3 minutes: one line „LEADURI NOI 🔔 - 3” with the names, that replaces itself
+// the second (third …) of a kind within 3 minutes: one line „3 LEADURI NOI 🔔” with the names, that replaces itself
 const GROUP_MS = 3 * 60e3;
 const GROUP_TITLE = { lead: 'LEADURI NOI 🔔', booking: 'PROGRAMĂRI 📅', money: 'ÎNCASĂRI 💵', alert: 'ALERTE ⚠️', approval: 'DE APROBAT 🧾' };
 function grouped(list, ownerId, n, msg) {
@@ -113,7 +113,7 @@ function grouped(list, ownerId, n, msg) {
   // newest first: who (the first part of its text) and what (its title after the dash): „Maria, RF Gușă 119 · Ana, Lipo 640”
   const line = (x) => { const what = String(x.title || '').replace(/^[^-]*-\s*/, ''); const who = String(x.text || '').split(' · ')[0]; return who && what ? who + ', ' + what : what || who; };
   const body = same.slice().reverse().map(line).filter(Boolean).join(' · ');
-  return Object.assign({}, msg, { title: GROUP_TITLE[kind] + ' - ' + same.length, body: cut(body, 200), tag: 'grp-' + kind });
+  return Object.assign({}, msg, { title: same.length + ' ' + GROUP_TITLE[kind], body: cut(body, 200), tag: 'grp-' + kind }); // „3 LEADURI NOI 🔔” (the owner, 8.11)
 }
 
 const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);
