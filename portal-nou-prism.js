@@ -234,7 +234,7 @@
       var x = sums[c.id] || { sum: 0 };
       var sc = c.o != null && c.o < 1 ? 1 - (1 - c.o) / 0.55 * 0.06 : 1;
       var o = old[c.k] || {};
-      var b = { key: c.k, id: c.id, x0: car.vert ? car.left + car.cw - 12 * sc : car.left + cxr, y0: car.vert ? car.top + cxr : car.top + car.h / 2 + (car.h / 2) * sc + 4, w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
+      var b = { key: c.k, id: c.id, x0: car.vert ? car.left + car.cw - 12 * sc : car.left + cxr, y0: car.vert ? car.top + cxr : car.top + car.h / 2 + (car.h / 2) * sc + 4, col: hue(x.name || ''), w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
         k: (x.sum ? 0.5 + 0.5 * (x.sum / max) : 0.2) * edge * (c.o != null ? 0.4 + 0.6 * c.o : 1), parts: o.parts || [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.01, li: c.el };
       b.core = new Path2D(); b.bands = SPEC.map(function () { return new Path2D(); });
       var N = 24, spread = (car.vert ? 2.4 : 3.4) * (b.w + 0.8); // standing up (a phone) the fan opens wider over the longer drop
@@ -267,6 +267,7 @@
     ctx.clearRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (sm && !car.vert) { phone(t); ctx.globalCompositeOperation = 'source-over'; raf = requestAnimationFrame(frame); return; }
     beams.forEach(function (b, i) {
       var br = (0.82 + 0.18 * Math.sin(t * 1.5 + i)) * b.k;
       if (!sm) { ctx.globalAlpha = 0.07 * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = 'rgb(' + accRGB + ')'; ctx.stroke(b.core); }
@@ -301,6 +302,43 @@
     flash *= sm ? 0.88 : 0.94;
     ctx.globalCompositeOperation = 'source-over';
     raf = requestAnimationFrame(frame);
+  }
+  // ------------------------------------------------------------------ the phone: one smooth ray per card in her colour, one light running down each
+  // in turn, into the logo at one point; out of it a short beam that widens softly into the number (strokes and fills only, 30 fps)
+  var dots = {};
+  function dot(c) { return dots[c] || (dots[c] = sprite(16, [[0, 'rgba(255,255,255,1)'], [0.3, c], [1, 'rgba(0,0,0,0)']])); }
+  var ease = function (u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; };
+  function phone(t) {
+    var P = 2.8; // every ray gets its light once in P seconds, the rays in turn
+    beams.forEach(function (b, i) {
+      var br = (0.86 + 0.14 * Math.sin(t * 1.3 + i)) * b.k, th = 2.8 + 1.1 * (b.w - 0.5);
+      ctx.strokeStyle = b.col;
+      [[th * 6, 0.05], [th * 3, 0.12], [th * 1.4, 0.5]].forEach(function (z) { ctx.globalAlpha = z[1] * br; ctx.lineWidth = z[0]; ctx.stroke(b.core); });
+      ctx.globalAlpha = 0.55 * br; ctx.lineWidth = Math.max(0.8, th * 0.4); ctx.strokeStyle = '#ffffff'; ctx.stroke(b.core);
+      // the impulse: a head with a short fading tail, the rays staggered so they never pulse together
+      var ph = ((t + b.key * 0.61) % P) / P; if (ph > 0.6 || b.k < 0.15) return;
+      var head = ease(ph / 0.6), sp2 = dot(b.col), sz = 5 + th * 1.6;
+      for (var j = 0; j < 7; j++) { var u = head - j * 0.022; if (u <= 0) break; var q = pt(b, u); ctx.globalAlpha = (1 - j / 7) * Math.sin(Math.min(1, head) * Math.PI * 0.98 + 0.05) * (0.55 + 0.45 * b.k); var r2 = sz * (1 - j * 0.09); ctx.drawImage(sp2, q.x - r2, q.y - r2, r2 * 2, r2 * 2); }
+    });
+    // out of the logo: a soft beam, narrow at the logo, wide and faded at the number
+    var br = 0.85 + 0.15 * Math.sin(t * 1.7) + flash, y0 = logo.y + logo.r * 0.95, y1 = out.y + 6, x = logo.x;
+    if (y1 > y0 + 4) {
+      var g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(' + accRGB + ',' + (0.55 * br) + ')'); g.addColorStop(0.55, 'rgba(' + accRGB + ',' + (0.14 * br) + ')'); g.addColorStop(1, 'rgba(' + accRGB + ',0)');
+      var w0 = 2.5, w1 = 54 + flash * 30; ctx.globalAlpha = 1; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(x - w0, y0); ctx.bezierCurveTo(x - w0, y0 + (y1 - y0) * 0.5, x - w1 * 0.7, y1 - (y1 - y0) * 0.25, x - w1, y1); ctx.lineTo(x + w1, y1); ctx.bezierCurveTo(x + w1 * 0.7, y1 - (y1 - y0) * 0.25, x + w0, y0 + (y1 - y0) * 0.5, x + w0, y0); ctx.closePath(); ctx.fill();
+      var gc = ctx.createLinearGradient(0, y0, 0, y1); gc.addColorStop(0, 'rgba(255,255,255,' + (0.7 * Math.min(1, br)) + ')'); gc.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = gc; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + (y1 - y0) * 0.7); ctx.stroke();
+    }
+    // the halo: discreet, in the accent (brighter for a moment on a payment)
+    var G = logo.r * (2.3 + flash * 1.5); ctx.globalAlpha = 0.42 + flash * 0.5; ctx.drawImage(spr, logo.x - G, logo.y - G, G * 2, G * 2);
+    for (var c = comets.length - 1; c >= 0; c--) {
+      var cm = comets[c]; cm.t += 0.044; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
+      var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || { x0: logo.x, y0: car.top + car.h, col: '#fff' };
+      var q2 = cm.t < 1 ? pt(b2, ease(cm.t)) : { x: logo.x, y: y0 + (y1 - y0) * (cm.t - 1) };
+      if (cm.t >= 1 && !cm.hit) { cm.hit = 1; flash = 1; }
+      ctx.globalAlpha = cm.t < 1 ? 1 : 2 - cm.t; ctx.drawImage(dot(b2.col || '#ffffff'), q2.x - 22, q2.y - 22, 44, 44);
+    }
+    flash *= 0.88;
   }
   function go() { if (calm()) { drawCalm(); return; } if (!raf && box) raf = requestAnimationFrame(frame); }
   function drawCalm() {

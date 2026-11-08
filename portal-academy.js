@@ -1992,7 +1992,7 @@
 .tr-c2-how{ display:block; margin-left:2.9rem; color:var(--muted); font-size:.74rem; }
 .tr-c2-more{ border-radius:20px; border:1px solid var(--line); padding:.2rem 1rem; } .tr-c2-more summary{ cursor:pointer; padding:.7rem 0; font-weight:600; }
 @media (max-width:760px){
-  .tr-c2-step{ padding:1rem; border-radius:22px; } .tr-c2-tiles{ grid-template-columns:1fr 1fr; } .tr-c2-tile{ min-height:96px; }
+  .tr-c2-step{ padding:1rem; border-radius:22px; } .tr-c2-tiles{ grid-template-columns:repeat(2, minmax(0,1fr)); } .tr-c2-tile{ min-height:96px; min-width:0; overflow-wrap:anywhere; }
   .tr-c2-line{ grid-template-columns:1fr; gap:.7rem; padding-right:1rem; } .tr-c2-ln{ padding-right:1.8rem; } .tr-c2-ln input{ max-width:none; }
   .tr-c2-sum{ flex-direction:row; align-items:baseline; justify-content:space-between; gap:.5rem; min-width:0; padding-top:.6rem; border-top:1px solid var(--line); } .tr-c2-sum small{ white-space:nowrap; }
   .tr-c2-total b{ font-size:2.1rem; } .tr-c2-op{ margin-left:0; } .tr-c2-how{ margin-left:0; }
