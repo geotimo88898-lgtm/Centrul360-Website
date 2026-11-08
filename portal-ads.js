@@ -254,7 +254,8 @@
     const tok = d.token;
     const days = tok && tok.expiresAt ? Math.round((tok.expiresAt - Date.now()) / 86400e3) : null;
     const C = cols();
-    const minw = 300 + C.length * 116 + 84;
+    // the columns as narrow as their numbers allow, the gaps counted, so a wide screen shows them all without scrolling
+    const minw = 264 + C.length * 84 + 72 + (C.length + 1) * 10;
     const old = body.querySelector('.ad-scroll'), sx = old ? old.scrollLeft : 0;
     body.classList.toggle('is-readonly', !!d.readOnly);
     body.innerHTML =
@@ -269,7 +270,7 @@
         '<a class="k-icon-btn" href="' + esc(d.adsManager) + '" target="_blank" rel="noopener" title="Deschide Ads Manager">' + icon('link') + '</a></div></div>' +
       '<div data-stats></div>' +
       '<div data-notes></div>' +
-      '<div class="ad-scroll"><div class="ad-table" style="--ad-cols:minmax(300px,1.6fr) repeat(' + C.length + ',minmax(116px,1fr)) 84px;--ad-minw:' + minw + 'px">' +
+      '<div class="ad-scroll"><div class="ad-table" style="--ad-cols:minmax(264px,2fr) repeat(' + C.length + ',minmax(84px,1fr)) 72px;--ad-minw:' + minw + 'px">' +
         '<div class="ad-head-row"><span class="ad-head-name"><label class="ad-pick" title="Selectează toate campaniile afișate"><input type="checkbox" data-pick-all></label>Campanie</span>' +
           C.map((id) => '<span title="' + esc(M[id].hint || '') + '">' + esc(M[id].label) + '</span>').join('') + '<span></span></div>' +
         '<div class="ad-list" data-list></div></div></div>';
@@ -295,7 +296,7 @@
     box.innerHTML =
       (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
       '<div class="ad-hero">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
-      '<div class="ad-stats">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id)).join('') + '</div>' +
+      '<div class="ad-stats" style="--ad-n:' + cards().length + ';--ad-half:' + Math.ceil(cards().length / 2) + '">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id)).join('') + '</div>' +
       (reachesBack() ? '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' : '') +
       (un ? '<p class="k-muted ad-partial">' + K.plural(un, 'lead din reclame care nu mai sunt în listă nu intră', 'leaduri din reclame care nu mai sunt în listă nu intră') + ' în cifre.</p>' : '');
     syncPickAll();
