@@ -780,3 +780,17 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
   html.ui-nou:not([data-theme="light"]) nav.tabs{ border-right:0 !important; }
   html.ui-nou nav.tabs .c360-mhead{ margin-left:calc(-1 * var(--c360-navpad, .8rem)); margin-right:calc(-1 * var(--c360-navpad, .8rem)); }
 }
+/* ===================================================================== */
+/* Desktop: the content uses the whole width, 32-48px from the edges,     */
+/* up to 2000px on very wide screens (centred in what is left)            */
+/* ===================================================================== */
+@media (min-width:1100px){
+  html.ui-nou main:not(.wide){ max-width:2000px; padding-left:clamp(32px, 2.5vw, 48px); padding-right:clamp(32px, 2.5vw, 48px); margin-left:auto; margin-right:auto; box-sizing:border-box; min-width:0; }
+  /* Panou: the greeting, the people, the prism and the money stay one composition; what follows uses the whole width */
+  html.ui-nou #panel-panou > .sx-stage{ max-width:1600px; }
+  /* Reclame: the KPI cards share the whole row, in two even rows, or in one when the panel is wide enough for every number */
+  html.ui-nou .ad-stats{ grid-template-columns:repeat(var(--ad-half, 4), minmax(0,1fr)); }
+}
+@container panel (min-width:1700px){
+  html.ui-nou .ad-stats{ grid-template-columns:repeat(var(--ad-n, 8), minmax(0,1fr)); }
+}

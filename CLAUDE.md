@@ -10,4 +10,8 @@
 - Proprietarul scrie în română: răspunsuri în română, scurt, fără liniuțe lungi (em sau en dash), nicăieri.
 - Repo public: fără nume de cliente, telefoane, cifre de business sau chei în cod, commituri sau loguri.
 - Doar date reale (recenzii, rezultate înainte/după, prețuri din Admin → Oferte). Nimic inventat.
-- Site-ul nou e în `v2/` (vezi `v2/README.md` și `REDESIGN.md`), în previzualizare, până spune proprietarul că trece în locul celui vechi.
+- Site-ul nou e live din 7.11. Sursele sunt în `v2/src/` (vezi `v2/README.md`): `python3 v2/build.py` face previzualizarea la /v2, iar `python3 v2/swap.py --apply` scrie paginile live, doar după „da”-ul proprietarului pe previzualizare.
+
+## Reclamele Meta (regula proprietarului, 8.11)
+- Ai acces și control deplin la reclamele Meta ale Centrul360, prin admin, doar pe pagina Centrul360 și pe campaniile ei: în contul „centru pls” (act_4502494523405059), campaniile care nu încep cu ARANCA sau BRAZI (ale celorlalte afaceri din același cont; Summitlane are contul lui).
+- Când proprietarul spune că vrea o reclamă, alegeți împreună creativele, apoi o publici singur, fără alte aprobări.
