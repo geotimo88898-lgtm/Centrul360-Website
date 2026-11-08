@@ -55,7 +55,9 @@
   // ---- the bottom bar
   // the four big tabs, by what the account does: a cosmetician's day is the calendar, not the leads
   var ROLE = document.documentElement.getAttribute('data-role') || '';
-  var MAIN = ROLE === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri'];
+  // the owner (admin): Reclame in place of Calendar (his request, 8.11: the ads one tap away; the calendar is the front desk's)
+  function mainTabs(r) { return r === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : r === 'admin' ? ['panou', 'pipeline', 'mesaje', 'reclame', 'programari', 'incasari', 'contacte'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri']; }
+  var MAIN = mainTabs(ROLE);
   var SHORT = { programari: 'Calendar', incasari: 'Încasări', comision: 'Salariu', condica: 'Condică', traininguri: 'Training' };
   var tabbar = document.createElement('nav');
   tabbar.className = 'c360-tabbar';
@@ -137,7 +139,7 @@
   // the active entry also changes from elsewhere (links, hash, search): keep the label in step
   new MutationObserver(refresh).observe(nav, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
   // the role is set a moment after the shell loads: the tabs follow it
-  new MutationObserver(function () { var r = document.documentElement.getAttribute('data-role') || ''; if (r !== ROLE) { ROLE = r; MAIN = ROLE === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri']; shown = ''; refresh(); } }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-role'] });
+  new MutationObserver(function () { var r = document.documentElement.getAttribute('data-role') || ''; if (r !== ROLE) { ROLE = r; MAIN = mainTabs(ROLE); shown = ''; refresh(); } }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-role'] });
   window.addEventListener('hashchange', function () { setTimeout(refresh, 0); });
   MOBILE.addEventListener ? MOBILE.addEventListener('change', function () { close('pick'); }) : null;
   // the phone keyboard: while a field is being typed in, the bottom bar hides (iOS leaves a fixed bar floating in
