@@ -1093,3 +1093,5 @@ html.ui-nou[data-theme="light"].sx-boot::after{ background:#f7f5f0; }
   .sx-s-money{ justify-self:end; }
   .sx-mcard{ width:min(440px, 100%); }
 }
+/* the scene breathes: a small, equal margin before the cosmeticians and after the money (one grid step's third) */
+@media (min-width:1100px){ .sx-flow{ padding-left:40px; padding-right:40px; } }
