@@ -32,7 +32,7 @@ const digits9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 // leads → per ad / ad set / campaign: { leads, booked, showed, clients, revenue, upsells, upsellValue }
-function funnel({ leads, appointments, sales, stages, ads, period, range }) {
+function funnel({ leads, appointments, sales, stages, ads, period, range, trace }) {
   const r = periodRange(period, range);
   const stageList = Array.isArray(stages) ? stages : [];
   const bookedIdx = stageList.findIndex((s) => s.kind === 'booked');
@@ -110,6 +110,12 @@ function funnel({ leads, appointments, sales, stages, ads, period, range }) {
 
     const campId = (f.campaignId && String(f.campaignId)) || campByName.get(norm(f.campaign));
     const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad && !campId && nameCount.get(norm(f.ad)) === 1 ? adByNames.get('|' + norm(f.ad)) : null);
+    // why each lead counts as she does (the lead-health check: no name, no phone)
+    if (trace) trace.push({ ad: f.ad || '', campaign: f.campaign || '', adId: String(f.adId || ''), formAt: new Date(pick.t).toISOString(), stage: (stageList[stIdx] || {}).name || l.stage || '',
+      ownAppt: !!l.appointmentId, ownApptState: own ? own.status || '' : (l.appointmentId ? 'lipsă' : ''),
+      appts: appts.map((a) => ({ how: [a.leadId === l.id ? 'lead' : '', l.clientId && a.clientId === l.clientId ? 'client' : '', own && own.id === a.id ? 'card' : '', digits9(a.clientPhone) === phone ? 'telefon' : ''].filter(Boolean).join('+'),
+        created: a.createdAt || '', date: a.date || '', status: a.status || '', treatment: a.treatment || '' })),
+      booked: ev.booked, showed: ev.showed, clients: ev.clients });
     if (ad) { add(out.ads, ad.id, ev); add(out.adsets, ad.adsetId, ev); add(out.campaigns, ad.campaignId, ev); return; }
     if (campId) add(out.campaigns, campId, ev);
     else plus(out.unmatched, ev);

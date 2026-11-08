@@ -32,6 +32,22 @@ module.exports = async (req, res) => {
   const session = getSession(req);
   if (!fromCreative(req) && !(session && session.role === 'admin')) { res.status(401).json({ error: 'unauthorized' }); return; }
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
+  // ?trace=1: per lead from an ad form in these days, why Reclame counts her booked / came (no name, no phone)
+  if (req.query && req.query.trace) {
+    const F = require('./_lib/ads-funnel');
+    const [allLeads, allAppts, allSales, stages] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/pipeline-stages.json', null)]);
+    // exactly what Reclame counts (api/ads-manager.js withFunnel)
+    const START = require('./_lib/kpi').cfg.start, at = (x) => Date.parse(x) || 0;
+    const leads = allLeads.filter((l) => at(l.createdAt) >= START || (l.activities || []).some((a) => a.type === 'returned' && at(a.at) >= START));
+    const appts = allAppts.filter((a) => at(a.createdAt) >= START && a.createdBy !== 'highlevel' && !a.importedAt && !a.ghlId);
+    const fresh = new Set(appts.map((a) => a.id));
+    const sales = allSales.filter((x) => (x.appointmentId ? fresh.has(x.appointmentId) : at(x.createdAt || x.date) >= START));
+    const until = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10), since = new Date(Date.now() - (days - 1) * 864e5 + 3 * 3600e3).toISOString().slice(0, 10);
+    const trace = [];
+    F.funnel({ leads, appointments: appts, sales, stages: Array.isArray(stages) && stages.length ? stages : await require('./portal-leads').loadStages(), ads: [], period: 'custom', range: { since, until }, trace });
+    res.status(200).json({ since, until, leads: trace.filter((t) => !req.query.ad || t.campaign.includes(String(req.query.ad)) || t.ad.includes(String(req.query.ad))) });
+    return;
+  }
   const since = Date.now() - days * 864e5;
   const recent = (t) => Date.parse(t || '') > since;
   try {

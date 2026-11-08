@@ -265,6 +265,7 @@
           (isIg(t) ? '' : '<label class="k-icon-btn mx-attach" title="Poză sau fișier">' + icon('image') + '<input type="file" data-attach hidden accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,video/mp4,audio/*"></label>' +
           '<button type="button" class="k-icon-btn" data-act="tpl" title="Trimite un șablon">' + icon('file') + '</button>' +
           '<button type="button" class="k-icon-btn" data-act="catalog" title="Catalogul de rezultate">' + icon('book') + '</button>') +
+          (nukiOk() ? '<button type="button" class="k-icon-btn mx-nuki" data-act="nuki" title="Nuki îți scrie răspunsul" aria-label="Nuki îți scrie răspunsul"><img src="/brand_asset/mascota/ipostaze/gandeste.webp" alt=""></button>' : '') +
           '<textarea name="text" maxlength="' + (isIg(t) ? (chanOf(t) === 'ig' ? 1000 : 2000) : 4000) + '" placeholder="' + (isIg(t) ? 'Scrie un mesaj pe ' + CHAN[chanOf(t)] + '…' : 'Scrie un mesaj…') + '" rows="1">' + esc(draft) + '</textarea>' +
           '<button type="submit" class="mx-send-btn" aria-label="Trimite">' + SEND + '</button></form>' +
           '<p class="mx-window">' + windowLine + '</p>'
@@ -448,6 +449,7 @@
       // book her from the conversation: the Calendar's form over the chat, her name, phone and city filled in
       if (a === 'appt' && C.thread && C.thread.appointment && K.openAppointment) return K.openAppointment(C.thread.appointment.id, C.thread.appointment.date);
       if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : '', clientPhone: isIg(C.thread) ? '' : localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
+      if (a === 'nuki') return nukiReply(act);
       if (a === 'snip') return toggleSnips(act);
       if (a === 'catalog' && C.selectedPhone) return catalog(C.selectedPhone);
       if (a === 'contact') return isIg({ phone: C.selectedPhone }) ? undefined : K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
@@ -457,6 +459,38 @@
     if (sh) { C.show = sh.dataset.show; return paintList(); }
     const pick = e.target.closest('[data-pick]');
     if (pick) openThread(pick.dataset.pick);
+  }
+  // ------------------------------------------------------------------ Nuki (the owner, 8.11: „să mă ajute să-i răspund când nu știu ce să-i scriu”)
+  // Nuki reads the conversation on the screen, the offers, the rules and the free hours (api/portal-nuki.js, Claude) and writes the
+  // next message into the box: empty box, a new answer; a started one, made better. Nothing goes until the person sends it.
+  const nukiOk = () => { const d = K.data || {}; return !!(d.isAdmin || (d.me && d.me.role === 'receptie')); };
+  function nukiThread() {
+    const t = C.thread;
+    if (!t) return null;
+    const ap = t.appointment;
+    return {
+      name: named(t) ? t.clientName : '', city: t.location || '', channel: isIg(t) ? CHAN[chanOf(t)] : 'WhatsApp',
+      interest: t.lead ? t.lead.interest || '' : '',
+      appointment: ap ? [ap.date, ap.time, ap.treatment].filter(Boolean).join(' ') : '',
+      messages: (t.messages || []).slice(-30).map((m) => ({ dir: m.direction === 'out' ? 'out' : 'in', text: m.text || (m.media ? '[' + (m.media.kind === 'image' ? 'poză' : 'fișier') + ']' : ''), at: m.timestamp || '' })),
+    };
+  }
+  // the chat with Nuki (portal-nuki.js) sees the conversation that is open here
+  window.C360Nuki = Object.assign(window.C360Nuki || {}, { thread: () => (location.hash.slice(1) === 'mesaje' && C.selectedPhone && C.thread && C.thread.phone === C.selectedPhone ? nukiThread() : null) });
+  async function nukiReply(btn) {
+    const form = panel.querySelector('.mx-compose');
+    const ta = form && form.querySelector('textarea');
+    const th = nukiThread();
+    if (!ta || !th) return;
+    btn.classList.add('is-thinking');
+    btn.disabled = true;
+    try {
+      const r = await K.api('/api/portal-nuki', { action: 'reply', thread: th, draft: ta.value.trim() });
+      if (r.text) { ta.value = r.text; autoGrow(ta); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+      else K.ui().toast(r.message || 'Nuki nu a putut scrie un răspuns aici.', 'info');
+    } catch (err) {
+      K.ui().toast((err.data && err.data.message) || 'Nuki nu a răspuns. Încearcă din nou.', 'error');
+    } finally { btn.classList.remove('is-thinking'); btn.disabled = false; }
   }
   // ------------------------------------------------------------------ snippets
   // "+" in the chat: the team's quick answers above the box; a tap puts one in, her name filled in
