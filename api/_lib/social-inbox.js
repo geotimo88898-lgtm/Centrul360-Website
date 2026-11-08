@@ -149,10 +149,11 @@ async function backfill(opts) {
   const out = { fb: 0, ig: 0, messages: 0, errors: [] };
   const convs = [];
   for (const [channel, platform, ownId] of [['fb', 'messenger', pageId], ['ig', 'instagram', igId]]) {
-    if (!ownId) continue;
-    let after = '', pages = 0;
+    if (!ownId || (o.channel && o.channel !== channel)) continue;
+    // a page of 20 conversations at a time, from where the last call stopped (o.after), so one call stays short
+    let after = o.after || '', pages = 0;
     do {
-      const params = { platform, fields: 'participants,updated_time,messages.limit(25){id,message,from,created_time,attachments}', limit: 50 };
+      const params = { platform, fields: 'participants,updated_time,messages.limit(20){id,message,from,created_time}', limit: 20 };
       if (after) params.after = after;
       const r = await g('GET', '/' + pageId + '/conversations', tok, params);
       if (!r.ok) { out.errors.push(channel + ': ' + err(r.j)); break; }
@@ -161,16 +162,16 @@ async function backfill(opts) {
         if (!her) return;
         const msgs = (((cv.messages || {}).data) || []).map((m) => {
           const from = String((m.from || {}).id || ''), mine = from === ownId || from === pageId;
-          const att = (((m.attachments || {}).data) || [])[0];
           const t = Date.parse(m.created_time);
-          return { id: String(m.id || ''), direction: mine ? 'out' : 'in', type: m.message ? 'text' : 'other', text: m.message || (att ? 'Atașament (vezi-l în aplicație)' : ''),
+          return { id: String(m.id || ''), direction: mine ? 'out' : 'in', type: m.message ? 'text' : 'other', text: m.message || 'Atașament (vezi-l în aplicație)',
             timestamp: Number.isFinite(t) ? new Date(t).toISOString() : '', status: mine ? 'read' : 'received', fromApp: mine || undefined, imported: true };
         }).filter((m) => m.id && m.text && m.timestamp);
         if (msgs.length) convs.push({ channel, id: String(her.id), name: her.name || '', username: her.username || '', msgs });
       });
       after = r.j.paging && r.j.paging.next && r.j.paging.cursors ? r.j.paging.cursors.after : '';
       pages++;
-    } while (after && pages < (o.maxPages || 8));
+    } while (after && pages < (o.maxPages || 2));
+    out.next = out.next || {}; out.next[channel] = after || '';
   }
   await update((all) => {
     let changed = false;
