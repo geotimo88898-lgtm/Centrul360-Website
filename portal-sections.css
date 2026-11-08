@@ -2598,3 +2598,21 @@ html .tr-door-k{ color:var(--accent); }
 .mx-done .k-ic{ width:13px; height:13px; }
 .mx-done:hover{ filter:brightness(.97); }
 .k-chip.is-wait{ border-color:color-mix(in srgb, var(--warn) 45%, var(--line)); color:var(--warn); }
+
+/* Mesaje: Nuki's „Programăm?” card above the answer box (the owner, 8.11) */
+.mx-nkslot{ display:flex; align-items:flex-start; gap:.75rem; margin:.5rem .75rem 0; padding:.75rem .85rem; border-radius:18px; background:color-mix(in srgb, var(--accent) 8%, var(--paper)); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--line)); animation:mxNkIn .45s cubic-bezier(.16,1,.3,1) both; }
+.mx-nkslot.is-busy{ background:color-mix(in srgb, var(--warn) 7%, var(--paper)); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--warn) 26%, var(--line)); }
+.mx-nkslot > img{ flex:none; width:40px; height:auto; margin-top:-2px; }
+.mx-nk-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.15rem; font-size:.86rem; }
+.mx-nk-t > b{ font-weight:700; }
+.mx-nk-t > small{ color:var(--muted); font-size:.8rem; }
+.mx-nk-t ul{ list-style:none; margin:.35rem 0 0; padding:0; display:grid; gap:.3rem; }
+.mx-nk-t li{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; font-size:.82rem; }
+.mx-nk-t li > span{ min-width:0; }
+.mx-nk-rec{ margin:.35rem 0 0; font-size:.8rem; color:var(--fg); }
+.mx-nk-alts{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; margin-top:.45rem; }
+.mx-nk-alts > span{ font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-right:.15rem; }
+.mx-nk-alts .k-chip{ height:28px; font-size:.78rem; }
+.mx-nk-a{ flex:none; display:flex; align-items:center; gap:.25rem; }
+@keyframes mxNkIn{ from{ opacity:0; transform:translateY(6px); } }
+@media (max-width:640px){ .mx-nkslot{ flex-wrap:wrap; } .mx-nk-a{ width:100%; justify-content:flex-end; } }

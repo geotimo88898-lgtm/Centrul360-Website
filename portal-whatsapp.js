@@ -274,6 +274,7 @@
       box.querySelector('.mx-thead').outerHTML = headHtml(t);
       box.querySelector('.mx-tbody').innerHTML = msgs;
       box.querySelector('.mx-window').innerHTML = windowLine;
+      nukiSlot();
       return;
     }
     const draft = (box.querySelector('textarea') || {}).value || '';
@@ -293,6 +294,7 @@
         : '<div class="mx-closed">' + icon(bounced(t) ? 'alert' : 'info') + '<span>' + (bounced(t) ? 'Șablonul nu a ajuns la ea: verifică numărul sau sun-o.' : waiting(t) ? 'Șablonul a plecat. Când îți răspunde, îi poți scrie liber.' : (t.messages || []).some((m) => m.direction === 'in') ? 'Au trecut 24 de ore de la ultimul ei mesaj. Îi poți scrie doar cu un șablon aprobat.' : 'Primul mesaj către ea pleacă doar cu un șablon aprobat.') + '</span>' +
           '<button type="button" class="k-btn ' + (waiting(t) ? '' : 'is-primary ') + 'is-sm" data-act="tpl">' + icon('file') + (waiting(t) ? 'Alt șablon' : 'Trimite un șablon') + '</button></div>');
     autoGrow(box.querySelector('textarea'));
+    nukiSlot();
     // a message prepared elsewhere (a task's text): in the answer box, to check and send
     if (C.draftFor && C.draftFor.phone === t.phone) {
       const ta = box.querySelector('textarea');
@@ -475,6 +477,12 @@
       if (a === 'contact') return isIg({ phone: C.selectedPhone }) ? undefined : K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
       if (a === 'snips') return manageSnips();
     }
+    if (e.target.closest('[data-slot-book]')) return slotBook();
+    const sa = e.target.closest('[data-slot-alt]');
+    if (sa) { const a = C.slot && C.slot.d && C.slot.d.alt[Number(sa.dataset.slotAlt)]; if (a) slotBook(a); return; }
+    const sm = e.target.closest('[data-slot-move]');
+    if (sm) return slotMove(Number(sm.dataset.slotMove));
+    if (e.target.closest('[data-slot-x]')) { if (C.slot) { (C.slotOff = C.slotOff || {})[C.slot.key] = 1; } const el = e.target.closest('.mx-nkslot'); if (el) el.remove(); return; }
     const done = e.target.closest('[data-done]');
     if (done) { e.preventDefault(); e.stopPropagation(); return resolveWait(done.dataset.done); }
     const sh = e.target.closest('[data-show]');
@@ -482,6 +490,83 @@
     const pick = e.target.closest('[data-pick]');
     if (pick) openThread(pick.dataset.pick);
   }
+  // ------------------------------------------------------------------ Nuki: „Programăm?” (the owner, 8.11)
+  // She names a day and an hour: Nuki reads what she wants, the Calendar says if it is free (api/portal-nuki.js 'slot').
+  // Free: „Programăm?” opens the booking filled in, the desk saves it. Taken: who is there, what each brings, the nearest
+  // free hours, and a message ready for the client already booked, if they decide to ask her to move. Nothing happens
+  // without a tap (the owner, 8.11: de început, orice face Nuki e cu aprobarea sau acțiunea noastră).
+  const SLOT_DAY = /\b(azi|ast[aă]zi|m[aâ]ine|poim[aâ]ine|luni|mar[tț]i|miercuri|joi|vineri|s[aâ]mb[aă]t[aă]|duminic[aă]|s[aă]pt[aă]m[aâ]na viitoare)\b|\b\d{1,2}[./]\d{1,2}\b|\b\d{1,2}\s*(ian|feb|mar|apr|mai|iun|iul|aug|sep|oct|noi|nov|dec)/i;
+  const SLOT_HOUR = /\b(la|ora|pe la|după|dupa|în jur de|in jur de)\s*\d{1,2}([:.]\d{2})?\b|\b\d{1,2}:\d{2}\b|\b\d{1,2}\s*(fix|jumătate|jumatate)\b/i;
+  const RO_WD = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+  const slotDay = (d) => RO_WD[new Date(d + 'T12:00:00Z').getUTCDay()] + ' ' + d.slice(8, 10) + '.' + d.slice(5, 7);
+  function slotAsk(t) {
+    const ms = t.messages || [];
+    let i = ms.length - 1; const ins = [];
+    while (i >= 0 && ms[i].direction === 'in' && ins.length < 4) { ins.unshift(ms[i]); i--; }
+    if (!ins.length || Date.now() - Date.parse(ins[ins.length - 1].timestamp) > 3 * 864e5) return null;
+    const txt = ins.map((m) => m.text || '').join(' ');
+    return SLOT_DAY.test(txt) && SLOT_HOUR.test(txt) ? t.phone + '|' + ins[ins.length - 1].timestamp : null;
+  }
+  async function nukiSlot() {
+    const box = panel && panel.querySelector('[data-mx-thread]'); const t = C.thread;
+    if (!box || !t || !nukiOk()) return;
+    const key = slotAsk(t);
+    const old = box.querySelector('.mx-nkslot');
+    if (!key || (C.slotOff || {})[key]) { if (old) old.remove(); return; }
+    if (C.slot && C.slot.key === key) { if (C.slot.d) placeSlot(box, C.slot.d); return; }
+    if (C.slotBusy === key) return;
+    C.slotBusy = key;
+    try {
+      const d = await K.api('/api/portal-nuki', { action: 'slot', thread: nukiThread() });
+      C.slot = { key, d: d && d.found ? d : null };
+      if (C.thread && C.thread.phone === t.phone && C.slot.d) placeSlot(panel.querySelector('[data-mx-thread]'), C.slot.d);
+    } catch (e) { C.slot = { key, d: null }; } finally { C.slotBusy = null; }
+  }
+  function placeSlot(box, d) {
+    if (!box) return;
+    const lei = (n) => (K.lei ? K.lei(n) : Math.round(n) + ' lei');
+    const when = slotDay(d.date) + ', ' + d.time;
+    const what = [d.treatment, d.price ? lei(d.price) : '', d.city].filter(Boolean).join(' · ');
+    const alts = (d.alt || []).map((a, i) => '<button type="button" class="k-chip" data-slot-alt="' + i + '">' + esc(slotDay(a.date) + ' ' + a.time) + '</button>').join('');
+    let body;
+    if (d.free) body = '<b>' + esc(when) + ' e liber</b><small>' + esc(what) + '</small>';
+    else if (!d.open || !d.inHours) body = '<b>' + esc(when) + ': clinica e închisă</b><small>' + esc(what) + '</small>' + (alts ? '<div class="mx-nk-alts"><span>Ore libere</span>' + alts + '</div>' : '');
+    else {
+      const who = d.who.map((w, i) => '<li><span><b>' + esc(w.name) + '</b> · ' + esc([w.treatment, w.session > 1 ? 'ședința ' + w.session : '', w.paid ? 'achitat' : w.amount ? 'de încasat ' + lei(w.amount) : ''].filter(Boolean).join(' · ')) + '</span>' +
+        (w.phone ? '<button type="button" class="k-btn is-ghost is-sm" data-slot-move="' + i + '">Scrie-i</button>' : '') + '</li>').join('');
+      const paidOne = d.who.find((w) => w.paid);
+      const rec = d.price && paidOne ? 'Ea ar aduce ' + lei(d.price) + '; ' + paidOne.name.split(' ')[0] + ' are ședința deja plătită. Dacă doar atunci poate, îi poți propune lui ' + paidOne.name.split(' ')[0] + ' altă oră.'
+        : 'Propune-i una dintre orele libere de mai jos.';
+      body = '<b>' + esc(when) + ' e ocupat</b><small>Ea vrea: ' + esc(what) + '</small><ul>' + who + '</ul><p class="mx-nk-rec">' + esc(rec) + '</p>' + (alts ? '<div class="mx-nk-alts"><span>Ore libere</span>' + alts + '</div>' : '');
+    }
+    const html = '<div class="mx-nkslot ' + (d.free ? 'is-free' : 'is-busy') + '"><img src="/brand_asset/mascota/ipostaze/calendar.webp" alt=""><div class="mx-nk-t">' + body + '</div>' +
+      '<div class="mx-nk-a">' + (d.free ? '<button type="button" class="k-btn is-accent is-sm" data-slot-book>Programăm?</button>' : d.open && d.inHours ? '<button type="button" class="k-btn is-outline is-sm" data-slot-book>Programează oricum</button>' : '') +
+      '<button type="button" class="k-icon-btn" data-slot-x aria-label="Ascunde">' + icon('x') + '</button></div></div>';
+    let el = box.querySelector('.mx-nkslot');
+    const anchorEl = box.querySelector('.mx-compose') || box.querySelector('.mx-closed');
+    if (!el) { el = document.createElement('div'); if (anchorEl) anchorEl.parentNode.insertBefore(el, anchorEl); else box.appendChild(el); }
+    el.outerHTML = html;
+  }
+  function slotBook(at) {
+    const t = C.thread, d = C.slot && C.slot.d; if (!t || !d) return;
+    const when = at || { date: d.date, time: d.time };
+    const end = (() => { const m = /^(\d{2}):(\d{2})$/.exec(when.time); if (!m) return ''; const x = Number(m[1]) * 60 + Number(m[2]) + (d.minutes || 60); return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0'); })();
+    K.emit('calendar:new', { clientName: named(t) ? t.clientName : '', clientPhone: isIg(t) ? '' : localPhone(t.phone), location: d.city || t.location || '', treatment: d.treatment || (t.lead ? t.lead.interest || '' : ''), date: when.date, time: when.time, endTime: end });
+  }
+  // a message for the client already booked there, asking her kindly to move, with two free hours: in her conversation, to send by hand
+  function slotMove(i) {
+    const d = C.slot && C.slot.d, w = d && d.who[i]; if (!w) return;
+    const first = String(w.name || '').split(' ')[0];
+    const two = (d.alt || []).slice(0, 2).map((a) => slotDay(a.date).toLowerCase() + ' la ' + a.time);
+    const text = 'Bună, ' + first + '! 😊 Te rugăm frumos, ne-ar ajuta mult dacă am putea muta ședința ta de ' + slotDay(d.date).toLowerCase() + ', ora ' + w.time + '. ' +
+      (two.length ? 'Ți-ar conveni ' + two.join(' sau ') + '?' : 'Ce altă oră ți-ar conveni?') + ' Mulțumim mult pentru înțelegere!';
+    const d9 = String(w.phone).replace(/\D/g, '').slice(-9);
+    const c = C.conversations.find((x) => !isIg(x) && String(x.phone).replace(/\D/g, '').slice(-9) === d9);
+    if (c) { C.draftFor = { phone: c.phone, text }; openThread(c.phone); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    K.ui().toast(first + ' nu are o conversație aici. Mesajul e copiat: îl poți trimite din WhatsApp.', 'info');
+  }
+
   // ------------------------------------------------------------------ Nuki (the owner, 8.11: „să mă ajute să-i răspund când nu știu ce să-i scriu”)
   // Nuki reads the conversation on the screen, the offers, the rules and the free hours (api/portal-nuki.js, Claude) and writes the
   // next message into the box: empty box, a new answer; a started one, made better. Nothing goes until the person sends it.

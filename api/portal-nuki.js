@@ -104,6 +104,56 @@ function threadText(t) {
   return head + (msgs ? '\nConversația (cele mai noi la final):\n' + msgs : '');
 }
 
+
+// ---------------------------------------------------------------- „Programăm?” (the owner, 8.11)
+// In Mesaje, when she names a day and an hour, Nuki reads what she wants and the Calendar says whether that hour is
+// free. Free: the desk books it with one tap (the booking opens filled in, they save it). Taken: who is there (her
+// treatment, which session, whether it is paid) next to what the new client would bring, and the nearest free hours.
+// Nuki never books or moves anyone by itself (the owner, 8.11: „de început, orice face Nuki să fie cu aprobarea sau
+// acțiunea noastră”).
+const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const hhmm = (n) => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+const fold = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function overlaps(appts, city, date, s, e) {
+  return appts.filter((a) => a && a.location === city && a.date === date && a.status !== 'anulata' && toMin(a.time) != null &&
+    toMin(a.time) < e && ((toMin(a.endTime) > toMin(a.time) ? toMin(a.endTime) : toMin(a.time) + 60)) > s);
+}
+function placesAt(cfg, city, date, appts) {
+  const c = cfg.cities && cfg.cities[city]; if (!c) return { open: false };
+  const d = (c.days || {})[new Date(date + 'T12:00:00Z').getUTCDay()];
+  if (!d || !d.on || (c.closed || []).includes(date)) return { open: false };
+  const off = new Set(appts.filter((a) => a.location === city && a.date === date && (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId));
+  const closed = appts.some((a) => a.location === city && a.date === date && (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId);
+  return { open: !closed, from: toMin(d.from), to: toMin(d.to), cap: Math.max(0, (Number(d.at) || 1) - off.size) };
+}
+async function slotCheck(want, city) {
+  const [cfg, appts, sales, offers] = await Promise.all([B.settings(), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), B.services(city)]);
+  const pick = want.treatment ? offers.find((o) => o.id !== 'consult' && fold(want.treatment).split(/\s+/).filter((w) => w.length > 3).some((w) => fold(o.title).includes(w))) : null;
+  const svc = pick || (want.treatment ? null : B.CONSULT);
+  const minutes = (svc && svc.minutes) || 60;
+  const s = toMin(want.time), e = s + minutes;
+  const P = placesAt(cfg, city, want.date, appts);
+  const taken = overlaps(appts, city, want.date, s, e).filter((a) => a.status !== 'concediu' && !a.block);
+  const inHours = P.open && s >= P.from && e <= P.to;
+  const free = inHours && taken.length < P.cap;
+  const paid = (a) => !!a.paidSaleId || sales.some((x) => x.appointmentId === a.id);
+  const who = taken.map((a) => {
+    const before = appts.filter((x) => x.clientId && x.clientId === a.clientId && x.id !== a.id && x.status !== 'anulata' && x.date < a.date && fold(x.treatment).slice(0, 6) === fold(a.treatment).slice(0, 6)).length;
+    return { id: a.id, name: a.clientName || 'Clientă', phone: a.clientPhone || '', treatment: a.treatment || '', time: a.time, endTime: a.endTime || '', session: before + 1, amount: Number(a.amount) || 0, paid: paid(a), cosmetician: a.cosmeticianName || '' };
+  });
+  // the nearest free hours: that day around her hour, then the next days at her hour
+  const alt = [];
+  for (let k = 0; k < 7 && alt.length < 4; k++) {
+    const day = B.addDay(want.date, k), Q = placesAt(cfg, city, day, appts);
+    if (!Q.open) continue;
+    const cands = [];
+    for (let t = Q.from; t + minutes <= Q.to; t += 30) if (overlaps(appts, city, day, t, t + minutes).filter((a) => a.status !== 'concediu' && !a.block).length < Q.cap) cands.push(t);
+    cands.sort((a, b) => Math.abs(a - s) - Math.abs(b - s)).slice(0, k === 0 ? 2 : 1).forEach((t) => { if (!(k === 0 && t === s) && alt.length < 4) alt.push({ date: day, time: hhmm(t) }); });
+  }
+  return { date: want.date, time: want.time, endTime: hhmm(e), minutes, city, treatment: svc ? svc.title : want.treatment || '', price: svc ? svc.price : 0,
+    free, open: P.open, inHours, who, alt: alt.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)) };
+}
+
 async function underCap() {
   const day = new Date().toISOString().slice(0, 10);
   const u = (await readJSON(CAP_KEY, null)) || {};
@@ -189,6 +239,22 @@ module.exports = async (req, res) => {
     const facts = 'Acum: ' + now + '.\n\nDatele clinicii.\nOfertele active (Admin → Oferte):\n' + (offers || '-') + '\n\nClinicile:\n' + hours;
     // the rules first and cached; the day's facts (offers, free hours) after them
     const system = [{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }];
+    if (b.action === 'slot') {
+      const th = threadText(b.thread);
+      if (!th) { res.status(400).json({ error: 'no_thread' }); return; }
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+      const wd = RO_DAYS[new Date(today + 'T12:00:00Z').getUTCDay()];
+      const q = th + '\n\nAzi e ' + wd + ', ' + today + '. Din mesajele ei cele mai noi: cere clienta o programare la o zi și o oră anume? ' +
+        'Răspunde doar cu JSON: {"found":true|false,"date":"YYYY-MM-DD","time":"HH:MM","treatment":"ce tratament vrea, scurt, sau gol","city":"Timișoara|Arad|gol"}. ' +
+        '„mâine la 3” înseamnă 15:00 dacă e în program; fără zi sau fără oră clară: found false.';
+      const r = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }], [{ role: 'user', content: q }]);
+      let want = null;
+      try { const t = r.text || ''; want = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); } catch (e) { want = null; }
+      if (!want || !want.found || !/^\d{4}-\d{2}-\d{2}$/.test(want.date || '') || toMin(want.time) == null || want.date < today) { res.status(200).json({ found: false }); return; }
+      const city = B.CITIES.includes(want.city) ? want.city : B.CITIES.includes((b.thread || {}).city) ? b.thread.city : B.CITIES[0];
+      res.status(200).json(Object.assign({ found: true }, await slotCheck(want, city)));
+      return;
+    }
     if (b.action === 'reply') {
       const th = threadText(b.thread);
       if (!th) { res.status(400).json({ error: 'no_thread' }); return; }
