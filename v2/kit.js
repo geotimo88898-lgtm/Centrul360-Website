@@ -213,7 +213,9 @@
     its.forEach(function (it) { it.classList.add('in'); tr.appendChild(it); });
     its.forEach(function (it) { var k = it.cloneNode(true); k.setAttribute('aria-hidden', 'true'); tr.appendChild(k); });
     c.appendChild(tr); c.classList.add('loop');
-    requestAnimationFrame(function () { c.style.setProperty('--dur', Math.max(30, Math.round(tr.scrollWidth / 2 / 38)) + 's'); });
+    // the speed in px a second: 38 by default, a row can ask for another with data-speed (the home page's cases, the owner, 8.11)
+    var sp = Number(c.getAttribute('data-speed')) || 38;
+    requestAnimationFrame(function () { c.style.setProperty('--dur', Math.max(sp > 38 ? 16 : 30, Math.round(tr.scrollWidth / 2 / sp)) + 's'); });
   });
   // the other rows: drag with the mouse, dots follow
   $$('.cases:not(.loop)').forEach(function (c) {

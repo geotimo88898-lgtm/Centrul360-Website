@@ -556,3 +556,6 @@ footer .lk b{ margin-bottom:4px; }
 .case.ar{ --h:min(347px, 60vw); flex:0 0 calc(var(--h) * var(--ar)) !important; width:calc(var(--h) * var(--ar)); }
 .case.ar .ph{ aspect-ratio:var(--ar); }
 .case.ar figcaption{ flex-wrap:wrap; row-gap:2px; }
+/* smaller, so more cases are seen at once (the home page, the owner, 8.11) */
+.cases.is-small .case.ar{ --h:min(250px, 46vw); }
+.cases.is-small .case figcaption{ font-size:13.5px; padding-top:12px; }
