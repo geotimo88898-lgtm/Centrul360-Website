@@ -3,7 +3,7 @@
 // that brought it (by the ad's id, or by the campaign + ad names for leads saved before the ids were
 // kept), and so for its ad set and campaign.
 //
-//   booked     an appointment made for her (not cancelled), or the lead is in the booked stage or the ones after it up
+//   booked     an appointment made for her after the form (not cancelled), or the lead reached the booked stage or the ones after it up
 //              to "won" ("Venit la programare", "Luat pachet"); the side stages placed after them in the list ("In
 //              asteptare", "Contraindicatii") never count
 //   showed     she came to the clinic: an appointment finished or paid, a payment, or the stages after "booked" up to "won"
@@ -97,9 +97,12 @@ function funnel({ leads, appointments, sales, stages, ads, period, range, trace 
     const stIdx = idxOf(l.stage), kind = kindOf(l.stage);
     const lost = kind === 'lost';
     const ev = { leads: 1, contacted: 0, lost: lost ? 1 : 0, booked: 0, showed: 0, clients: 0, revenue: 0, upsells: 0, upsellValue: 0 };
-    ev.booked = appts.length || l.appointmentId || (!lost && inFlow(stIdx, bookedIdx)) ? 1 : 0;
-    ev.showed = appts.some((a) => (a.status === 'finalizata' && !a.noShow) || a.paidSaleId) || pays.length || (!lost && inFlow(stIdx, bookedIdx + 1)) ? 1 : 0;
-    ev.clients = pays.length || kind === 'won' ? 1 : 0;
+    // her stage counts only when she reached it for this form: a lead who wrote again keeps the stage of an earlier
+    // booking (often done long ago), and that visit isn't one this ad brought (the owner, 8.11: „o programare în plus”)
+    const stageFresh = (Date.parse(l.stageChangedAt || l.updatedAt || l.createdAt) || 0) >= since;
+    ev.booked = appts.length || (!lost && stageFresh && inFlow(stIdx, bookedIdx)) ? 1 : 0;
+    ev.showed = appts.some((a) => (a.status === 'finalizata' && !a.noShow) || a.paidSaleId) || pays.length || (!lost && stageFresh && inFlow(stIdx, bookedIdx + 1)) ? 1 : 0;
+    ev.clients = pays.length || (kind === 'won' && stageFresh) ? 1 : 0;
     ev.revenue = pays.reduce((n, s) => n + (Number(s.amount) || 0), 0);
     ev.upsells = pays.filter((s) => Number(s.upsell) > 0).length;
     ev.upsellValue = pays.reduce((n, s) => n + (Number(s.upsell) || 0), 0);
@@ -112,7 +115,8 @@ function funnel({ leads, appointments, sales, stages, ads, period, range, trace 
     const ad = (f.adId && adById.get(String(f.adId))) || adByNames.get(norm(f.campaign) + '|' + norm(f.ad)) || (f.ad && !campId && nameCount.get(norm(f.ad)) === 1 ? adByNames.get('|' + norm(f.ad)) : null);
     // why each lead counts as she does (the lead-health check: no name, no phone)
     if (trace) trace.push({ ad: f.ad || '', campaign: f.campaign || '', adId: String(f.adId || ''), formAt: new Date(pick.t).toISOString(), stage: (stageList[stIdx] || {}).name || l.stage || '',
-      ownAppt: !!l.appointmentId, ownApptState: own ? own.status || '' : (l.appointmentId ? 'lipsă' : ''),
+      leadAt: l.createdAt || '', stageAt: l.stageChangedAt || '', stageFresh, returned: (l.activities || []).filter((a) => a.type === 'returned').map((a) => a.at),
+      ownAppt: !!l.appointmentId, ownApptState: own ? own.status || '' : (l.appointmentId ? 'lipsă' : ''), ownApptDate: own ? own.date || '' : '', ownApptCreated: own ? own.createdAt || '' : '',
       appts: appts.map((a) => ({ how: [a.leadId === l.id ? 'lead' : '', l.clientId && a.clientId === l.clientId ? 'client' : '', own && own.id === a.id ? 'card' : '', digits9(a.clientPhone) === phone ? 'telefon' : ''].filter(Boolean).join('+'),
         created: a.createdAt || '', date: a.date || '', status: a.status || '', treatment: a.treatment || '' })),
       booked: ev.booked, showed: ev.showed, clients: ev.clients });

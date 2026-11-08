@@ -156,3 +156,14 @@ module.exports = async (req, res) => {
     res.status(502).json({ error: 'nuki_failed', message: status === 429 ? 'Nuki e ocupat acum, încearcă din nou peste un minut.' : 'Nuki nu a răspuns. Încearcă din nou.' });
   }
 };
+
+// the health check (/api/lead-health?nuki=1): is the key there, does Claude answer with the real offers and hours
+module.exports.ping = async () => {
+  if (!process.env.ANTHROPIC_API_KEY) return { key: false };
+  try {
+    const [offers, hours] = await Promise.all([offersText(), hoursText()]);
+    const system = [{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: 'Ofertele active:\n' + offers + '\n\nClinicile:\n' + hours }];
+    const r = await ask(system, [{ role: 'user', content: 'O clientă din Arad întreabă: „Cât costă la gușă și când aș putea veni?” Scrie mesajul.' }]);
+    return { key: true, ok: !!r.text, sample: r.text.slice(0, 600), offers: offers.split('\n').length, hours: hours.slice(0, 400) };
+  } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 200) }; }
+};

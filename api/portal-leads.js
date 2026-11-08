@@ -367,7 +367,16 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     const booked = stages.find((x) => x.kind === 'booked');
     const idx = (id) => stages.findIndex((x) => x.id === id);
     const nou = leadNouStage(stages);
-    const back = reopened || (SELF.includes(createdBy) && stageKind(stages, existing.stage) === 'open' && existing.stage !== nou.id && (!booked || idx(existing.stage) < idx(booked.id)));
+    let back = reopened || (SELF.includes(createdBy) && stageKind(stages, existing.stage) === 'open' && existing.stage !== nou.id && (!booked || idx(existing.stage) < idx(booked.id)));
+    // still in "Programare stabilită" but that booking is behind her (done, cancelled, its day gone): a new form is a
+    // new start, so back in Lead nou too (the owner, 8.11: the leads that come in go to Lead nou)
+    if (!back && SELF.includes(createdBy) && booked && existing.stage === booked.id) {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+      const appts = await readJSON('data/appointments.json', []);
+      const ahead = appts.some((a) => (a.id === existing.appointmentId || a.leadId === existing.id || (key.length >= 6 && normPhone(a.clientPhone) === key)) &&
+        !['anulata', 'finalizata', 'concediu'].includes(a.status) && String(a.date || '') >= today);
+      back = !ahead;
+    }
     let moved = '';
     if (back) {
       moved = (stages.find((x) => x.id === existing.stage) || { name: existing.stage }).name;
