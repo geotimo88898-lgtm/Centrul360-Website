@@ -552,3 +552,7 @@ footer .lk b{ margin-bottom:4px; }
 .btn.ghost.bfb{ color:#fff; background:linear-gradient(160deg,#1d1e22,#0b0b0d); box-shadow:0 0 0 1px rgba(233,184,168,.55) inset, 0 14px 30px -12px rgba(214,140,120,.6); }
 .btn.ghost.bfb:hover{ background:#000; box-shadow:0 0 0 1px rgba(246,214,203,.9) inset, 0 18px 38px -12px rgba(214,140,120,.75); }
 @media (prefers-reduced-motion:reduce){ .slip::after{ animation:none; } }
+/* the catalog's before/after pictures on the home page (the owner, 8.11): whole (their ÎNAINTE / DUPĂ labels stay), one height, each its own width */
+.case.ar{ --h:min(347px, 60vw); flex:0 0 calc(var(--h) * var(--ar)) !important; width:calc(var(--h) * var(--ar)); }
+.case.ar .ph{ aspect-ratio:var(--ar); }
+.case.ar figcaption{ flex-wrap:wrap; row-gap:2px; }
