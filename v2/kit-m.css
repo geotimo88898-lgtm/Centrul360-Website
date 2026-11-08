@@ -28,6 +28,9 @@
   .offers::-webkit-scrollbar{ display:none; }
   .offers > .slip{ flex:0 0 84%; max-width:none; scroll-snap-align:center; }
   .offers > .fine{ flex:0 0 calc(100% - 32px); }
+  /* a single offer (the owner, 8.11): the full width, centred, nothing to swipe */
+  .offers:not(:has(> .slip ~ .slip)) > .slip{ flex:0 0 100%; }
+  .offers:not(:has(> .slip ~ .slip)){ overflow-x:visible; scroll-snap-type:none; }
   .slip{ padding:24px 22px; gap:8px; }
   .slip h3{ font-size:1.2rem; }
   .slip .pr b{ font-size:2.3rem; }

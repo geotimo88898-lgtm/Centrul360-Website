@@ -100,6 +100,67 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 .ep-sm{ animation-name:epSm; opacity:0; transform-origin:50% 50%; } @keyframes epSm{ 0%,68%{ opacity:0; transform:scaleX(.2); } 80%,92%{ opacity:1; transform:scaleX(1); } 99%,100%{ opacity:0; transform:scaleX(1); } }
 .ep-ok{ animation-name:epOk; opacity:0; transform-origin:50% 50%; } @keyframes epOk{ 0%,70%{ opacity:0; transform:scale(.4); } 78%,92%{ opacity:1; transform:none; } 99%,100%{ opacity:0; transform:scale(.9); } }
 
+/* the device (the owner, 8.11): Elysion Pro turns slowly by itself, a drag turns it by hand, each point turns it to its side */
+.ep-dv{ display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1fr); gap:clamp(30px,6vw,90px); align-items:center; }
+.ep-dv-stage{ position:relative; margin:0; justify-self:center; width:min(420px,100%); aspect-ratio:1; touch-action:pan-y; cursor:grab; -webkit-user-select:none; user-select:none; }
+.ep-dv-stage:active{ cursor:grabbing; }
+.ep-dv-stage::before{ content:""; position:absolute; left:8%; right:8%; bottom:3%; height:20%; border-radius:50%; background:radial-gradient(closest-side, rgba(20,165,150,.14), rgba(20,165,150,.04) 70%, transparent); box-shadow:inset 0 0 0 1px rgba(20,165,150,.12); }
+.ep-dv-stage::after{ content:""; position:absolute; left:24%; right:24%; bottom:9%; height:6%; border-radius:50%; background:radial-gradient(closest-side, rgba(11,40,38,.22), transparent); filter:blur(2px); }
+.ep-dv-img{ position:relative; z-index:1; display:block; width:100%; height:auto; pointer-events:none; -webkit-user-drag:none; }
+.ep-dv-hint{ position:absolute; z-index:2; left:50%; bottom:-14px; transform:translateX(-50%); display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 14px; border-radius:999px; background:#fff; color:var(--ink2); font-size:13px; font-weight:600; white-space:nowrap; box-shadow:0 0 0 1px var(--line2), 0 12px 26px -16px rgba(11,40,38,.4); transition:opacity .5s var(--e), transform .5s var(--e); pointer-events:none; }
+.ep-dv-hint svg{ width:16px; height:16px; color:var(--teal); }
+.ep-dv.is-used .ep-dv-hint{ opacity:0; transform:translate(-50%,6px); }
+.ep-dv .ep-dv-pts li{ padding-top:0; border-top:0; }
+.ep-dv-pts button{ display:block; width:100%; padding:18px 0 0; border:0; border-top:1px solid var(--line2); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; position:relative; }
+.ep-dv-pts button::before{ content:""; position:absolute; left:0; top:-1px; width:0; height:2px; background:var(--teal); transition:width .6s var(--e); }
+.ep-dv-pts button.is-on::before{ width:48px; }
+.ep-dv-pts button.is-on b{ color:var(--teal2); }
+.ep-dv-pts button:hover b{ color:var(--teal2); }
+@media (max-width:920px){
+  .ep-dv{ grid-template-columns:1fr; gap:0; }
+  .ep-dv > div{ display:contents; }
+  .ep-dv .head{ order:1; margin-bottom:8px !important; }
+  .ep-dv-stage{ order:2; width:min(330px,86%); }
+  /* on a phone the four points sit right under the device, so it turns in sight */
+  .ep-dv .ep-dv-pts{ order:3; grid-template-columns:1fr 1fr; gap:10px; margin-top:30px; }
+  .ep-dv .ep-dv-pts button{ padding:12px 14px; border:1px solid var(--line2); border-radius:18px; min-height:52px; }
+  .ep-dv .ep-dv-pts button::before{ display:none; }
+  .ep-dv .ep-dv-pts button.is-on{ border-color:rgba(20,165,150,.5); background:var(--tint); }
+  .ep-dv .ep-dv-pts b{ margin-bottom:0; font-size:1rem; }
+  .ep-dv .ep-dv-pts span{ display:none; }
+  .ep-dv .ep-dv-pts button.is-on span{ display:block; margin-top:6px; font-size:13.5px; }
+}
+
+/* the lit part: a dot with light rings, its name beside it; the laser pulses in teal, the cooling in ice blue, the
+   certificate pops in as a check */
+.ep-dv-stage{ transform:translateY(24px) scale(.94); opacity:.0; transition:transform 1.2s var(--e), opacity .8s var(--e); }
+.ep-dv.is-in .ep-dv-stage{ transform:none; opacity:1; }
+.ep-dv-stage .ep-dv-img, .ep-dv-cv{ filter:drop-shadow(0 30px 40px rgba(11,40,38,.16)); }
+.ep-dv-cv{ position:absolute; z-index:1; inset:0; width:100%; height:100%; opacity:0; pointer-events:none; }
+.ep-dv-cv.is-on{ opacity:1; }
+.ep-dv-img.is-under{ visibility:hidden; }
+.ep-dv-hs{ --c:20,165,150; position:absolute; z-index:3; width:0; height:0; opacity:0; pointer-events:none; transition:opacity .35s var(--e); }
+.ep-dv-hs.is-on{ opacity:1; }
+.ep-dv-hs[data-fx="cool"]{ --c:72,170,255; }
+.ep-dv-hs i{ position:absolute; left:-7px; top:-7px; width:14px; height:14px; border-radius:50%; background:rgb(var(--c)); box-shadow:0 0 0 3px #fff, 0 0 22px 6px rgba(var(--c),.55); }
+.ep-dv-hs i::before, .ep-dv-hs i::after{ content:""; position:absolute; inset:-3px; border-radius:50%; border:2px solid rgba(var(--c),.7); opacity:0; }
+.ep-dv-hs.is-on i::before{ animation:epRing 1.6s var(--e) infinite; } .ep-dv-hs.is-on i::after{ animation:epRing 1.6s var(--e) .55s infinite; }
+@keyframes epRing{ 0%{ transform:scale(1); opacity:.9; } 100%{ transform:scale(4.2); opacity:0; } }
+/* the laser: a short burst of light every pulse */
+.ep-dv-hs[data-fx="laser"].is-on i{ animation:epFire 1.6s ease-in-out infinite; }
+@keyframes epFire{ 0%,100%{ box-shadow:0 0 0 3px #fff, 0 0 18px 4px rgba(var(--c),.45); } 12%{ box-shadow:0 0 0 3px #fff, 0 0 46px 18px rgba(var(--c),.85); } 30%{ box-shadow:0 0 0 3px #fff, 0 0 22px 6px rgba(var(--c),.55); } }
+.ep-dv-hs[data-fx="cool"].is-on i{ animation:epCool 2.4s ease-in-out infinite; }
+@keyframes epCool{ 0%,100%{ box-shadow:0 0 0 3px #fff, 0 0 18px 6px rgba(var(--c),.45); } 50%{ box-shadow:0 0 0 3px #fff, 0 0 40px 16px rgba(var(--c),.7); } }
+.ep-dv-hs em{ display:none; position:absolute; left:-15px; top:-15px; width:30px; height:30px; border-radius:50%; background:var(--teal); color:#fff; place-items:center; box-shadow:0 0 0 3px #fff, 0 10px 24px -8px rgba(11,40,38,.45); }
+.ep-dv-hs em svg{ width:16px; height:16px; }
+.ep-dv-hs[data-fx="cert"] i{ display:none; } .ep-dv-hs[data-fx="cert"] em{ display:grid; }
+.ep-dv-hs[data-fx="cert"].is-on em{ animation:epPop .6s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes epPop{ from{ transform:scale(.2); opacity:0; } }
+.ep-dv-hs b{ position:absolute; top:-15px; left:22px; height:30px; padding:0 12px; border-radius:999px; display:inline-flex; align-items:center; white-space:nowrap; background:#fff; color:var(--ink); font-size:13px; font-weight:650; box-shadow:0 0 0 1px var(--line2), 0 12px 26px -14px rgba(11,40,38,.45); transform:translateX(-6px); opacity:0; transition:transform .5s var(--e) .15s, opacity .4s var(--e) .15s; }
+.ep-dv-hs.is-left b{ left:auto; right:22px; transform:translateX(6px); }
+.ep-dv-hs.is-on b{ transform:none; opacity:1; }
+@media (prefers-reduced-motion: reduce){ .ep-dv-stage{ transform:none; opacity:1; transition:none; } .ep-dv-hs i::before, .ep-dv-hs i::after, .ep-dv-hs.is-on i{ animation:none !important; } }
+
 /* a real session: the video next to what the device does */
 .ep-vid{ display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1fr); gap:clamp(40px,7vw,110px); align-items:center; }
 .ep-film{ margin:0; justify-self:center; width:min(360px,100%); }
@@ -206,16 +267,27 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
   </figure>
 </div></section>
 
+<section class="s" id="aparat" style="padding-top:0"><div class="wrap ep-dv">
+  <figure class="ep-dv-stage rv" data-dv>
+    <img class="ep-dv-img" src="/brand_asset/elysion/01.webp" alt="Laserul Elysion Pro de la Centrul360" width="600" height="600" draggable="false">
+    <span class="ep-dv-hs" aria-hidden="true"><i></i><em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></em><b></b></span>
+    <span class="ep-dv-hint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4-4 4M7 8l-4 4 4 4M3 12h18"/></svg>Rotește aparatul</span>
+  </figure>
+  <div>
+    <div class="head left rv" style="margin-bottom:0"><span class="eye">Aparatul</span><h2>Elysion Pro. <em>De aproape.</em></h2><p class="lead">Laserul diodă cu care facem fiecare ședință de epilare, cu sistemul lui de răcire.</p></div>
+    <ul class="ep-tech ep-dv-pts rv">
+      <li><button type="button" data-dv-to="1" class="is-on"><b>Laser diodă</b><span>Lumina e absorbită de pigment și transformată în căldură.</span></button></li>
+      <li><button type="button" data-dv-to="30"><b>Răcire activă</b><span>Senzația e mult mai blândă decât la epilarea clasică.</span></button></li>
+      <li><button type="button" data-dv-to="12"><b>Mod progresiv</b><span>Dezactivează foliculii treptat, folicul cu folicul.</span></button></li>
+      <li><button type="button" data-dv-to="61"><b>Certificat medical</b><span>Echipament medical certificat, pentru orice fototip de piele.</span></button></li>
+    </ul>
+  </div>
+</div></section>
+
 <section class="s" id="sedinta" style="padding-top:0"><div class="wrap ep-vid">
   <figure class="ep-film rv"><div class="ph"><video muted loop playsinline preload="none" poster="/brand_asset/epilare-pas-cu-pas.webp" aria-label="O ședință de epilare laser la Centrul360, de la fișă la laser"><source src="/brand_asset/epilare-pas-cu-pas.mp4" type="video/mp4"></video><button type="button" class="ep-snd" aria-label="Pornește sunetul" aria-pressed="false"><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/></svg><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button></div><figcaption><b>De la fișă la laser</b><span>Elysion Pro</span></figcaption></figure>
   <div>
     <div class="head left rv" style="margin-bottom:0"><span class="eye">Așa arată o ședință</span><h2>Fără ceară. <em>Fără aparat de ras.</em></h2><p class="lead">Laserul acționează direct asupra foliculului. La final ai o piele netedă, fără iritații, fără fire crescute sub piele și fără bătaia de cap a întreținerii săptămânale.</p></div>
-    <ul class="ep-tech rv">
-      <li><b>Laser diodă</b><span>Lumina e absorbită de pigment și transformată în căldură.</span></li>
-      <li><b>Răcire activă</b><span>Senzația e mult mai blândă decât la epilarea clasică.</span></li>
-      <li><b>Mod progresiv</b><span>Dezactivează foliculii treptat, folicul cu folicul.</span></li>
-      <li><b>Certificat medical</b><span>Echipament medical certificat, pentru orice fototip de piele.</span></li>
-    </ul>
   </div>
 </div></section>
 
@@ -299,6 +371,94 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
   <div class="slot rv" data-slot="Timișoara"></div>
 </div></section>
 
+<script>
+/* the device (the owner, 8.11: „mai dinamic, mai interactiv”): it comes in with a full turn, then shows itself by its
+   own, part by part: it turns to the handpiece and the light pulses, to the screen, to the cooling, to the back with its
+   certificate, each one lit on the device and in the list. A drag turns it by hand, a point takes it to its part; the tour
+   goes on by itself a few seconds later. Frames load only when the section comes near (every second one on a phone). */
+(function () {
+  var st = document.querySelector('[data-dv]'); if (!st) return;
+  var box = st.closest('.ep-dv'), img = st.querySelector('.ep-dv-img'), hs = st.querySelector('.ep-dv-hs'), btns = [].slice.call(box.querySelectorAll('[data-dv-to]'));
+  var N = 61, frames = {}, drawn = -1, pos = 61;
+  // a canvas over the picture: two neighbouring views blended by how far between them the device is (smooth at any speed)
+  var cv = document.createElement('canvas'), ctx = cv.getContext('2d'); cv.className = 'ep-dv-cv'; cv.setAttribute('aria-hidden', 'true'); img.after(cv);
+  var size = function () { var w = Math.round(st.clientWidth * Math.min(2, devicePixelRatio || 1)); if (w && cv.width !== w) { cv.width = cv.height = w; drawn = -1; draw(pos); } };
+  if ('ResizeObserver' in window) new ResizeObserver(size).observe(st);
+  // the four stops: the frame, its point in the list, its effect, where the part is on the picture (%)
+  var STOPS = [{ f: 1, k: 0, fx: 'laser', x: 74, y: 27 }, { f: 12, k: 2, fx: 'screen', x: 53, y: 16 }, { f: 30, k: 1, fx: 'cool', x: 65, y: 28 }, { f: 61, k: 3, fx: 'cert', x: 61, y: 25 }];
+  var calm = matchMedia('(prefers-reduced-motion: reduce)').matches, seen = false, started = false, raf = 0;
+  var anim = null, stop = -1, holdUntil = 0, pauseUntil = 0;
+  var url = function (i) { return '/brand_asset/elysion/' + (i < 10 ? '0' : '') + i + '.webp'; };
+  // all 61 views, every fourth first (so it can turn at once), then the ones between; each decoded before it is drawn
+  function load() {
+    var order = []; for (var i = 1; i <= N; i += 4) order.push(i); for (var j = 1; j <= N; j++) if (order.indexOf(j) < 0) order.push(j);
+    order.forEach(function (k) { var im = new Image(); im.src = url(k); (im.decode ? im.decode() : Promise.resolve()).then(function () { frames[k] = im; if (!cv.classList.contains('is-on') && k === 1 || k === 61) { size(); drawn = -1; draw(pos); } }, function () {}); });
+  }
+  var ready = function (k) { var im = frames[k]; return im && im.naturalWidth ? im : null; };
+  var near = function (k, dir) { for (var d = 0; d < N; d++) { var a = ready(k + d * dir); if (a) return { im: a, k: k + d * dir }; var b = ready(k - d * dir); if (b) return { im: b, k: k - d * dir }; } return null; };
+  function draw(p) {
+    p = Math.max(1, Math.min(N, p));
+    if (Math.abs(p - drawn) < .02 || !cv.width) return;
+    var a = Math.floor(p), t = p - a, A = near(a, -1), B = t > .02 ? near(Math.min(N, a + 1), 1) : null;
+    if (!A) return;
+    var w = cv.width; ctx.clearRect(0, 0, w, w); ctx.globalAlpha = 1; ctx.drawImage(A.im, 0, 0, w, w);
+    if (B && B.k !== A.k) { ctx.globalAlpha = t; ctx.drawImage(B.im, 0, 0, w, w); ctx.globalAlpha = 1; }
+    drawn = p;
+    if (!cv.classList.contains('is-on')) { cv.classList.add('is-on'); img.classList.add('is-under'); }
+  }
+  var show = draw;
+  var ease = function (u) { return u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; };
+  function lit(i) {
+    var S = STOPS[i];
+    if (!S) { hs.classList.remove('is-on'); return; }
+    hs.setAttribute('data-fx', S.fx); hs.style.left = S.x + '%'; hs.style.top = S.y + '%';
+    hs.querySelector('b').textContent = btns[S.k] ? btns[S.k].querySelector('b').textContent : '';
+    hs.classList.toggle('is-left', S.x > 56);
+    hs.classList.remove('is-on'); void hs.offsetWidth; hs.classList.add('is-on');
+    btns.forEach(function (b, n) { b.classList.toggle('is-on', n === S.k); });
+  }
+  function goTo(i, ms) { stop = i; hs.classList.remove('is-on'); anim = { a: pos, b: STOPS[i].f, t: performance.now(), ms: ms || 1000, then: i }; go(); }
+  function tick(now) {
+    raf = 0; if (!seen || document.hidden) return;
+    if (anim) {
+      var u = Math.min(1, (now - anim.t) / anim.ms); pos = anim.a + (anim.b - anim.a) * ease(u); show(pos);
+      if (u >= 1) { var t = anim.then; anim = null; if (t != null) { lit(t); holdUntil = now + 2800; } }
+    } else if (!calm && now > pauseUntil && now > holdUntil && stop >= 0) {
+      var nx = (stop + 1) % STOPS.length; goTo(nx, nx === 0 ? 1700 : 1000);
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  function go() { if (!raf) raf = requestAnimationFrame(tick); }
+  new IntersectionObserver(function (es) { es.forEach(function (e) {
+    if (e.isIntersecting && !frames[1]) load();
+    seen = e.isIntersecting && e.intersectionRatio > 0;
+    // the first time it is in sight: a full turn in, then the tour
+    if (seen && !started && e.intersectionRatio > .35) { started = true; box.classList.add('is-in'); if (calm) { pos = 1; show(1); lit(0); stop = 0; } else { pos = 61; anim = { a: 61, b: 1, t: performance.now(), ms: 1600, then: 0 }; stop = 0; } }
+    if (seen) go();
+  }); }, { rootMargin: '300px 0px', threshold: [0, .35] }).observe(st);
+  document.addEventListener('visibilitychange', go);
+  // by hand: the lit part goes, the tour waits
+  var drag = null;
+  st.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, p: pos, id: e.pointerId, moved: false }; });
+  st.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var dx = e.clientX - drag.x; if (!drag.moved && Math.abs(dx) < 4) return;
+    if (!drag.moved) { drag.moved = true; anim = null; try { st.setPointerCapture(e.pointerId); } catch (x) {} box.classList.add('is-used'); hs.classList.remove('is-on'); }
+    pos = Math.max(1, Math.min(N, drag.p - dx / (st.clientWidth / 70))); pauseUntil = performance.now() + 4500; show(pos);
+  });
+  var up = function () {
+    if (drag && drag.moved) { var best = 0; STOPS.forEach(function (S, i) { if (Math.abs(S.f - pos) < Math.abs(STOPS[best].f - pos)) best = i; }); stop = best - 1 < 0 ? STOPS.length - 1 : best - 1; pauseUntil = performance.now() + 4500; }
+    drag = null;
+  };
+  st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+  // a point (or the lit part) takes it there, and it stays a while
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-dv-to]'); if (!b) return;
+    var k = btns.indexOf(b), i = STOPS.findIndex(function (S) { return S.k === k; }); if (i < 0) return;
+    goTo(i, 900); pauseUntil = performance.now() + 9000;
+  });
+})();
+</script>
 <script>
 /* the session video plays only while it is on screen (and never for reduced motion: then it gets controls) */
 (function () {
