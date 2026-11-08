@@ -153,7 +153,9 @@ async function backfill(opts) {
     // a page of 20 conversations at a time, from where the last call stopped (o.after), so one call stays short
     let after = o.after || '', pages = 0;
     do {
-      const params = { platform, fields: 'participants,updated_time,messages.limit(20){id,message,from,created_time}', limit: 20 };
+      // Instagram answers only smaller pieces („reduce the amount of data”): 10 conversations, their last 10 messages
+      const ig = channel === 'ig';
+      const params = { platform, fields: 'participants,updated_time,messages.limit(' + (ig ? 10 : 20) + '){id,message,from,created_time}', limit: ig ? 10 : 20 };
       if (after) params.after = after;
       const r = await g('GET', '/' + pageId + '/conversations', tok, params);
       if (!r.ok) { out.errors.push(channel + ': ' + err(r.j)); break; }
