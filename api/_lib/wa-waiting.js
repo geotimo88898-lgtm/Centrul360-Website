@@ -6,7 +6,7 @@
 // hear how many still wait.
 // State: data/wa-waiting.json { resolved: { <phone|ig:id>: { at, by } }, triage: { <key>: { lastInAt, needs, why } }, pushed: {} }
 
-const { readJSON, writeJSON } = require('./store');
+const { readJSON, writeJSON, readJSONTagged, writeJSONIf } = require('./store');
 
 const KEY = 'data/wa-waiting.json';
 const DAYS = 14;
@@ -15,28 +15,46 @@ const roDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Buchare
 const roHour = () => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hour12: false }).format(new Date()));
 const fresh = (t) => !!t && Date.now() - Date.parse(t) < DAYS * 864e5;
 const load = async () => Object.assign({ resolved: {}, triage: {}, pushed: {} }, (await readJSON(KEY, null)) || {});
+// a change that never overwrites one made meanwhile (a „Rezolvat” tapped while Nuki was reading: it came back, 8.11)
+async function update(fn) {
+  for (let i = 0; i < 6; i++) {
+    const { data, etag } = await readJSONTagged(KEY, null);
+    const st = Object.assign({ resolved: {}, triage: {}, pushed: {} }, data || {});
+    fn(st);
+    if (await writeJSONIf(KEY, st, etag)) return st;
+  }
+  throw new Error('wa waiting: busy');
+}
+// a last message that asks for nothing: a button tap on the reminder, a thank you, an ok, an emoji
+const NOTHING = /^\s*(da,? ajung|nu ajung|da|ok+|okay|oki|bine|super|perfect|sigur|confirm(at|ăm)?|mul[tț]umesc( frumos| mult)?|mersi|merci|v[aă] mul[tț]umesc( frumos| mult)?|o zi bun[aă]|la fel|ne vedem)\s*[.!,)]*\s*[\p{Extended_Pictographic}\u200d\ufe0f\s]*$|^[\p{Extended_Pictographic}\u200d\ufe0f\s]+$/iu;
 
-function waits(c, st) {
+// the candidates from the job ads (data/candidates.json): not clients, nothing to answer here (the owner, 8.11)
+const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+async function candidates() { return new Set((await readJSON('data/candidates.json', [])).map((c) => d9(c.phone)).filter((x) => x.length === 9)); }
+function waits(c, st, cand) {
+  if (cand && cand.has(d9(c.phone))) return null;
   // she wrote after the last answer a person gave her (an automatic reminder is not an answer)
   if (!c || !fresh(c.lastInAt) || (c.lastReplyAt && c.lastReplyAt >= c.lastInAt)) return null;
   const r = st.resolved[c.phone];
   if (r && r.at >= c.lastInAt) return null;
   const t = st.triage[c.phone];
+  // Nuki read it and her last message asks for nothing („Da, ajung”, „Mulțumesc”): she doesn't wait
+  if (t && t.lastInAt === c.lastInAt && t.needs === false) return null;
   return { since: c.lastInAt, needs: t && t.lastInAt === c.lastInAt ? t.needs : null, why: t && t.lastInAt === c.lastInAt ? t.why || '' : '' };
 }
 // the list Mesaje shows: each conversation that waits gets { waiting: { since, needs, why } }
 async function mark(list) {
-  const st = await load();
-  (list || []).forEach((c) => { const w = waits(c, st); if (w) c.waiting = w; else delete c.waiting; });
+  const [st, cand] = await Promise.all([load(), candidates()]);
+  (list || []).forEach((c) => { const w = waits(c, st, cand); if (w) c.waiting = w; else delete c.waiting; });
   return list;
 }
 async function resolve(key, on, by) {
-  const st = await load();
-  if (on) st.resolved[key] = { at: new Date().toISOString(), by: String(by || '').slice(0, 60) };
-  else delete st.resolved[key];
-  // the marks of conversations long quiet go (the file stays small)
-  Object.keys(st.resolved).forEach((k) => { if (!fresh(st.resolved[k].at)) delete st.resolved[k]; });
-  await writeJSON(KEY, st, { quiet: true });
+  await update((st) => {
+    if (on) st.resolved[key] = { at: new Date().toISOString(), by: String(by || '').slice(0, 60) };
+    else delete st.resolved[key];
+    // the marks of conversations long quiet go (the file stays small)
+    Object.keys(st.resolved).forEach((k) => { if (!fresh(st.resolved[k].at)) delete st.resolved[k]; });
+  });
 }
 
 // Nuki: what each waiting client wants, or that her last message needs no answer
@@ -57,28 +75,34 @@ async function triage(items) {
 
 // the clock (api/automation-tick.js, hourly): Nuki reads the new ones, then at 10:00 and 17:00 the count goes out
 async function run() {
-  const st = await load();
+  const [st, cand] = await Promise.all([load(), candidates()]);
   const SI = require('./social-inbox');
   const [wa, so] = await Promise.all([readJSON('data/whatsapp-conversations.json', []), readJSON(SI.KEY, [])]);
   const items = [];
   const lastIn = (ms) => (ms || []).reduce((a, m) => (m.direction === 'in' && m.timestamp > a ? m.timestamp : a), '');
   const lastReply = (ms) => (ms || []).reduce((a, m) => (m.direction === 'out' && !m.auto && m.timestamp > a ? m.timestamp : a), '');
-  const add = (key, name, ms) => { const c = { phone: key, lastInAt: lastIn(ms), lastReplyAt: lastReply(ms) }; const w = waits(c, st); if (w) items.push({ key, name, msgs: ms.slice(-8), lastInAt: c.lastInAt, w }); };
+  const add = (key, name, ms) => { const c = { phone: key, lastInAt: lastIn(ms), lastReplyAt: lastReply(ms) }; const w = waits(c, st, cand); if (w) items.push({ key, name, msgs: ms.slice(-8), lastInAt: c.lastInAt, w }); };
   (Array.isArray(wa) ? wa : []).forEach((c) => add(c.phone, c.clientName || '', c.messages || []));
   (Array.isArray(so) ? so : []).forEach((c) => add(c.channel + ':' + c.id, c.name || (c.username ? '@' + c.username : ''), c.messages || []));
-  // Nuki: the ones not read yet (at most 25 a run; the rest at the next one)
-  const todo = items.filter((x) => x.w.needs === null).slice(0, 25);
-  let read = 0;
+  // the ones whose last message asks for nothing, at once; the rest Nuki reads (at most 40 a run; the others at the next)
+  const found = {};
+  items.filter((x) => x.w.needs === null).forEach((x) => {
+    const lastIn = x.msgs.filter((m) => m.direction === 'in').slice(-1)[0];
+    if (lastIn && lastIn.text && NOTHING.test(lastIn.text)) { found[x.key] = { lastInAt: x.lastInAt, needs: false, why: '', at: new Date().toISOString() }; x.w.needs = false; }
+  });
+  const todo = items.filter((x) => x.w.needs === null).slice(0, 40);
+  let read = Object.keys(found).length;
   if (todo.length) {
     const ans = await triage(todo).catch((e) => { console.error('wa waiting triage:', e.message); return []; });
-    ans.forEach((a) => { const x = todo[Number(a.i) - 1]; if (!x) return; st.triage[x.key] = { lastInAt: x.lastInAt, needs: a.needs !== false, why: String(a.why || '').replace(/[—–]/g, ',').slice(0, 80), at: new Date().toISOString() }; x.w.needs = a.needs !== false; x.w.why = st.triage[x.key].why; read++; });
-    Object.keys(st.triage).forEach((k) => { if (!fresh(st.triage[k].lastInAt)) delete st.triage[k]; });
+    ans.forEach((a) => { const x = todo[Number(a.i) - 1]; if (!x) return; found[x.key] = { lastInAt: x.lastInAt, needs: a.needs !== false, why: String(a.why || '').replace(/[—–]/g, ',').slice(0, 80), at: new Date().toISOString() }; x.w.needs = a.needs !== false; x.w.why = found[x.key].why; read++; });
   }
   // 10:00 and 17:00: the ones still owed an answer, waiting for more than half an hour
   const h = roHour(), slot = SLOTS.find((x) => h === x), day = roDay();
-  let pushed = 0;
+  let pushed = 0, sent = false;
   if (slot !== undefined && !st.pushed[day + '|' + slot]) {
-    const owed = items.filter((x) => x.w.needs !== false && Date.now() - Date.parse(x.lastInAt) > 30 * 60e3).sort((a, b) => a.lastInAt.localeCompare(b.lastInAt));
+    // the „Rezolvat” marks as they are now (tapped while Nuki was reading)
+    const now = await load();
+    const owed = items.filter((x) => x.w.needs !== false && !(now.resolved[x.key] && now.resolved[x.key].at >= x.lastInAt) && Date.now() - Date.parse(x.lastInAt) > 30 * 60e3).sort((a, b) => a.lastInAt.localeCompare(b.lastInAt));
     if (owed.length) {
       const N = require('./notify');
       const emps = await readJSON('data/employees.json', []);
@@ -90,10 +114,14 @@ async function run() {
       });
       pushed = owed.length;
     }
-    st.pushed[day + '|' + slot] = new Date().toISOString();
-    Object.keys(st.pushed).forEach((k) => { if (k.slice(0, 10) < day) delete st.pushed[k]; });
+    sent = true;
   }
-  if (read || slot !== undefined) await writeJSON(KEY, st, { quiet: true });
+  // saved over what is there now: only what Nuki read and the hour told, never a „Rezolvat” made meanwhile
+  if (read || sent) await update((cur) => {
+    Object.assign(cur.triage, found);
+    Object.keys(cur.triage).forEach((k) => { if (!fresh(cur.triage[k].lastInAt)) delete cur.triage[k]; });
+    if (sent) { cur.pushed[day + '|' + slot] = new Date().toISOString(); Object.keys(cur.pushed).forEach((k) => { if (k.slice(0, 10) < day) delete cur.pushed[k]; }); }
+  });
   return { waiting: items.length, read, pushed };
 }
 

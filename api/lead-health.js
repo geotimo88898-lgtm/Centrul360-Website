@@ -34,6 +34,8 @@ module.exports = async (req, res) => {
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
   // ?ig=1: where Instagram's and Facebook's messages stand (permissions, the Page's app, the webhooks; no token);
   // ?igsetup=1: the webhooks and the Page's app set for the messages (api/_lib/social-inbox.js setup), then the same
+  // ?igimport=1: the Instagram and Messenger conversations from before the connection, brought into Mesaje once
+  if (req.query && req.query.igimport) { res.status(200).json(await require('./_lib/social-inbox').backfill().catch((e) => ({ error: e.message }))); return; }
   if (req.query && (req.query.ig || req.query.igsetup)) {
     const SI = require('./_lib/social-inbox');
     const done = req.query.igsetup ? await SI.setup('https://admin.centrul360.com').catch((e) => ({ error: e.message })) : undefined;

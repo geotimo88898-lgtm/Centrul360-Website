@@ -136,6 +136,59 @@ async function ingest(payload) {
   return fresh;
 }
 
+// The conversations from before the connection (the owner, 8.11: „să apară și ce am avut până acum, și la IG și la FB”):
+// read once from the Page's Messenger inbox and the Instagram account's, the last 25 messages of each, merged without
+// doubles (a message already there by the webhook stays as it is). Nothing is marked unread.
+async function backfill(opts) {
+  const o = opts || {};
+  const conn = await loadConnection(readJSON);
+  if (!conn.pageId || !conn.pageAccessToken) return { error: 'not_connected' };
+  const tok = conn.pageAccessToken, pageId = String(conn.pageId);
+  const ig = await g('GET', '/' + pageId, tok, { fields: 'instagram_business_account{id}' });
+  const igId = ig.ok && ig.j.instagram_business_account ? String(ig.j.instagram_business_account.id) : '';
+  const out = { fb: 0, ig: 0, messages: 0, errors: [] };
+  const convs = [];
+  for (const [channel, platform, ownId] of [['fb', 'messenger', pageId], ['ig', 'instagram', igId]]) {
+    if (!ownId) continue;
+    let after = '', pages = 0;
+    do {
+      const params = { platform, fields: 'participants,updated_time,messages.limit(25){id,message,from,created_time,attachments}', limit: 50 };
+      if (after) params.after = after;
+      const r = await g('GET', '/' + pageId + '/conversations', tok, params);
+      if (!r.ok) { out.errors.push(channel + ': ' + err(r.j)); break; }
+      (r.j.data || []).forEach((cv) => {
+        const her = (((cv.participants || {}).data) || []).find((p) => String(p.id) !== ownId && String(p.id) !== pageId);
+        if (!her) return;
+        const msgs = (((cv.messages || {}).data) || []).map((m) => {
+          const from = String((m.from || {}).id || ''), mine = from === ownId || from === pageId;
+          const att = (((m.attachments || {}).data) || [])[0];
+          const t = Date.parse(m.created_time);
+          return { id: String(m.id || ''), direction: mine ? 'out' : 'in', type: m.message ? 'text' : 'other', text: m.message || (att ? 'Atașament (vezi-l în aplicație)' : ''),
+            timestamp: Number.isFinite(t) ? new Date(t).toISOString() : '', status: mine ? 'read' : 'received', fromApp: mine || undefined, imported: true };
+        }).filter((m) => m.id && m.text && m.timestamp);
+        if (msgs.length) convs.push({ channel, id: String(her.id), name: her.name || '', username: her.username || '', msgs });
+      });
+      after = r.j.paging && r.j.paging.next && r.j.paging.cursors ? r.j.paging.cursors.after : '';
+      pages++;
+    } while (after && pages < (o.maxPages || 8));
+  }
+  await update((all) => {
+    let changed = false;
+    convs.forEach((cv) => {
+      let c = find(all, cv.channel, cv.id);
+      if (!c) { c = { channel: cv.channel, id: cv.id, name: cv.name, username: cv.username, lastMessageAt: '', unreadCount: 0, messages: [] }; all.push(c); out[cv.channel]++; changed = true; }
+      if (!c.name && cv.name) { c.name = cv.name; changed = true; }
+      if (!c.username && cv.username) { c.username = cv.username; changed = true; }
+      cv.msgs.forEach((m) => { if (!c.messages.some((x) => x.id === m.id)) { c.messages.push(m); out.messages++; changed = true; } });
+      c.messages.sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0));
+      const last = c.messages[c.messages.length - 1];
+      if (last && last.timestamp > (c.lastMessageAt || '')) c.lastMessageAt = last.timestamp;
+    });
+    return changed;
+  });
+  return out;
+}
+
 // her message rings on the phones like a WhatsApp one: the owner, the admins, reception (the Page is both clinics')
 async function ring(fresh) {
   if (!fresh.length) return;
@@ -261,4 +314,4 @@ async function brief() {
   return { ready: !s.missing.length && ig && fb, missing: s.missing, account: s.account ? s.account.username || '' : '', instagram: ig, facebook: fb, configId: s.app.configId, conversations: s.conversations };
 }
 
-module.exports = { KEY, CHANNELS, NEEDS, ingest, ring, list, unread, view, send, setup, status, brief, parse, isKey };
+module.exports = { KEY, CHANNELS, NEEDS, ingest, ring, list, unread, view, send, setup, status, brief, parse, isKey, backfill };
