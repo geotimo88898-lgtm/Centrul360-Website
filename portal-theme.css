@@ -633,3 +633,7 @@ body::before{
   .c360-mfoot button svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .c360-avatar{ cursor:pointer; }
 }
+
+/* the page behind a menu or a drawer: no touch reaches it, the panels keep their own scroll (portal-kit.js locks the body) */
+html.c360-locked .c360-mnav-backdrop, html.c360-locked .k-drawer-backdrop, html.c360-locked .pl-drawer-backdrop{ touch-action:none; }
+html.c360-locked nav.tabs, html.c360-locked .k-drawer, html.c360-locked .k-dbody, html.c360-locked .pl-drawer, html.c360-locked .c360-dialog, html.c360-locked .c360-palette{ overscroll-behavior:contain; }

@@ -293,7 +293,7 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
   .sx-p-people{ gap:8px; }
   .sx-p-people li{ gap:8px; padding:7px 12px 7px 7px; border-radius:14px; max-width:170px; }
   .sx-p-people li > i, .sx-p-people li > img{ width:30px; height:30px; font-size:11px; }
-  .sx-p-logo{ width:58px; margin-top:44px; }
+  .sx-p-logo{ width:74px; margin-top:44px; }
   .sx-p-logo .v, .sx-p-logo .h{ animation:none; } /* the ellipses' flip repaints the SVG each frame: on a phone only the whole logo turns (compositor) */
   .sx-s-money{ gap:16px; margin-top:24px; }
   .sx-s-num{ font-size:clamp(56px,17vw,74px); margin-top:-4px; }
@@ -753,6 +753,33 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
   .sx-s-money{ margin-top:clamp(36px,10vw,48px) !important; }
 }
 
+/* ================================================================ phones: the bars are solid, nothing reads through them; the grid stays under the
+   content (cards and lists get their own opaque ground); long filter rows scroll sideways on one line (George, 8.11, iPhone) */
+@media (max-width:860px){
+  html.ui-nou:not([data-theme="light"]) header.topbar{ background:#000 !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  html.ui-nou:not([data-theme="light"]) .c360-tabbar{ background:#0b0b0d !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08), 0 18px 40px -16px rgba(0,0,0,.9) !important; }
+  html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){
+    background:
+      linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
+      linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
+      linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)), #0a0a0c !important;
+    -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  html.ui-nou:not([data-theme="light"]) main :is(.pl-col, .ct-list, .mx-list){ background-color:#0a0a0c; }
+  html.ui-nou .mx-tools{ top:var(--sx-top, 60px) !important; background:#0d0d0f !important; z-index:3; }
+  html.ui-nou .mx-filters .k-chips{ flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; -webkit-overflow-scrolling:touch; margin:0 -2px; padding:0 2px; }
+  html.ui-nou .mx-filters .k-chips::-webkit-scrollbar{ display:none; }
+  html.ui-nou .mx-filters .k-chip{ flex:none; }
+  /* iOS zooms into a field written under 16px: every field on a phone is 16px */
+  html.ui-nou :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), select, textarea){ font-size:16px !important; }
+  /* every button a finger has to hit: at least 44px tall */
+  html.ui-nou main :is(.k-btn, .k-chip, .k-seg button, .pl-chip, .pl-toggle, .pl-add){ min-height:44px !important; }
+  html.ui-nou .n-sn{ width:44px; height:44px; }
+  /* the phone menu: it only scrolls up and down */
+  html.ui-nou nav.tabs{ overflow-x:hidden !important; touch-action:pan-y; overscroll-behavior:contain; }
+  html.ui-nou:not([data-theme="light"]) nav.tabs{ border-right:0 !important; }
+  html.ui-nou nav.tabs .c360-mhead{ margin-left:calc(-1 * var(--c360-navpad, .8rem)); margin-right:calc(-1 * var(--c360-navpad, .8rem)); }
+}
 /* ===================================================================== */
 /* Desktop: the content uses the whole width, 32-48px from the edges,     */
 /* up to 2000px on very wide screens (centred in what is left)            */

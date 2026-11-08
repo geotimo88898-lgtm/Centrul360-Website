@@ -720,8 +720,38 @@
     return dr;
   }
 
+  // ---- the page behind a menu or a drawer stays put (iOS Safari ignores overflow:hidden on body/html; as the Summitlane admin's
+  // lockScroll / unlockScroll, Produse 2cd4d0d4): while html has c360-mnav-open or c360-noscroll, body is fixed at the current
+  // scroll and put back exactly there when the last one goes. A counter of who holds it, so two overlays never unlock early.
+  const scrollLock = (() => {
+    const H = document.documentElement; let n = 0, y = 0;
+    const lock = () => {
+      if (n++ > 0) return;
+      y = window.scrollY || H.scrollTop || 0;
+      const b = document.body.style;
+      b.position = 'fixed'; b.top = -y + 'px'; b.left = '0'; b.right = '0'; b.width = '100%'; b.overflow = 'hidden';
+      H.classList.add('c360-locked');
+    };
+    const unlock = () => {
+      if (n === 0 || --n > 0) return;
+      const b = document.body.style;
+      b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.width = ''; b.overflow = '';
+      H.classList.remove('c360-locked');
+      const sb = H.style.scrollBehavior; H.style.scrollBehavior = 'auto'; window.scrollTo(0, y); H.style.scrollBehavior = sb;
+    };
+    // the classes the portal already sets are the switch: no screen has to change
+    let held = { m: false, d: false };
+    const sync = () => {
+      const m = H.classList.contains('c360-mnav-open'), d = H.classList.contains('c360-noscroll');
+      if (m !== held.m) { held.m = m; m ? lock() : unlock(); }
+      if (d !== held.d) { held.d = d; d ? lock() : unlock(); }
+    };
+    new MutationObserver(sync).observe(H, { attributes: true, attributeFilter: ['class'] });
+    return { lock, unlock };
+  })();
+
   window.K = {
-    roHour, salut,
+    roHour, salut, lockScroll: scrollLock.lock, unlockScroll: scrollLock.unlock,
     on, emit, api, errText, ui, esc, dedash, norm, phoneHit, reduceMotion,
     lei, num, pad, iso, today, parse, addDays, monthOf, thisMonth, addMonths, daysIn, mondayOf, DOW, DOW_S, MON, MON_S,
     dateShort, dateLong, monthLabel, relDay, ago, plural, initials, colorFor, avatar, wa, tel, intlPhone,
