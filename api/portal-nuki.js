@@ -382,7 +382,7 @@ module.exports.ping = async () => {
 };
 
 // /api/lead-health?nuki=edit: what the owner's chat does with „schimbă pașii…”, without saving anything
-module.exports.pingEdit = async () => {
+module.exports.pingEdit = async (q) => {
   if (!process.env.ANTHROPIC_API_KEY) return { key: false };
   try {
     const edits = [];
@@ -395,7 +395,7 @@ module.exports.pingEdit = async () => {
     };
     const system = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.' },
       { type: 'text', text: EDIT_RULES + '\n' + (await E.index()) }];
-    const r = await ask(system, [{ role: 'user', content: 'La tratamentul facial Restart, pasul cu masajul să fie „Masaj față, gât și decolteu”.' }], 'medium', WEB.concat(E.TOOLS), onTool);
+    const r = await ask(system, [{ role: 'user', content: clip(q, 600) || 'La tratamentul facial Restart, pasul cu masajul să fie „Masaj față, gât și decolteu”.' }], 'medium', WEB.concat(E.TOOLS), onTool);
     return { key: true, ok: edits.length > 0, text: r.text.slice(0, 500), tools, edits: edits.map((e) => ({ ref: e.ref, name: e.name, fields: e.fields.map((f) => ({ key: f.key, after: f.after })) })) };
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };

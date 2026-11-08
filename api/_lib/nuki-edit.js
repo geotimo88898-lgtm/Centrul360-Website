@@ -14,7 +14,7 @@ const CONFIG = 'data/config.json';
 // the fields Nuki may change, with the editor's labels: [label, kind, max length]
 const FIELDS = {
   scheme: {
-    name: ['Tratamentul', 'text', 80], minutes: ['Durata (minute)', 'num'], sessions: ['Ședințe', 'text', 40], interval: ['Interval', 'text', 60],
+    name: ['Tratamentul', 'text', 80], minutes: ['Durata (minute)', 'num'], sessions: ['Ședințe', 'text', 40], interval: ['Interval', 'text', 60], pack: ['Pachet', 'text', 200],
     what: ['Ce e', 'text', 600], forWho: ['Pentru cine', 'lines'], benefits: ['Ce câștigă (pentru recepție)', 'lines'], phone: ['Cum o spune recepția la telefon', 'lines'],
     contra: ['Contraindicații', 'lines'], steps: ['Pașii', 'lines'], settings: ['Setările aparatului', 'lines'], say: ['Ce îi spui clientei', 'lines'], after: ['După tratament', 'lines'],
   },
@@ -93,6 +93,9 @@ async function propose(input) {
   const asked = (input && input.campuri) || {};
   const bad = Object.keys(asked).filter((k) => !FIELDS[f.kind][k]);
   if (bad.length) return { error: 'La ' + KIND[f.kind].toLowerCase() + ' se pot schimba doar: ' + Object.keys(FIELDS[f.kind]).join(', ') + '. Nu: ' + bad.join(', ') + '.' };
+  // a text longer than its field: told to Nuki (it was cut without a word: „Pachet de 4 ședințe: 760 lei (preț redus”, 8.11)
+  const long = Object.keys(asked).filter((k) => FIELDS[f.kind][k][1] === 'text' && noDash(asked[k]).trim().length > FIELDS[f.kind][k][2]);
+  if (long.length) return { error: long.map((k) => k + ' are cel mult ' + FIELDS[f.kind][k][2] + ' caractere').join('; ') + '. Scrie mai scurt sau pune restul în câmpul potrivit.' };
   const changes = cleanChanges(f.kind, asked);
   Object.keys(changes).forEach((k) => { if (same(changes[k], f.item[k])) delete changes[k]; });
   const keys = Object.keys(changes);
@@ -139,7 +142,9 @@ const TOOLS = [
     name: 'propune_modificare',
     description: 'Propune proprietarului o modificare în Traininguri. Nu salvează nimic: el vede cum e acum și cum ar fi, și o aplică el cu un buton. ' +
       'Trimite doar câmpurile care se schimbă, fiecare cu valoarea nouă întreagă (la liste: toate rândurile, în ordine, nu doar cele noi). ' +
-      'Câmpuri: fișa de tratament: name, minutes, sessions, interval, what, forWho, benefits, phone, contra, steps, settings, say, after; ' +
+      'Câmpuri: fișa de tratament: name, minutes, sessions, interval, pack, what, forWho, benefits, phone, contra, steps, settings, say, after ' +
+      '(sessions: doar numărul sau intervalul de ședințe, ex. „4” sau „6-8”, pe pagină apare „4 ședințe”; interval: cât de des, ex. „o dată pe lună”; ' +
+      'pack: pachetul și prețul lui, ex. „4 ședințe: 760 lei în loc de 1.200 lei, cu plata integrală”; prețul pe o ședință vine din lista de prețuri și nu se schimbă de aici); ' +
       'capitolul: title, summary, body (rânduri; „## ” subtitlu, „- ” listă, „1. ” pas, „> ” ce spui, „! ” regulă importantă); ' +
       'cazul: title, profile, wants, ask, duration, result, present, watch. Listele sunt array de rânduri, restul text (minutes: număr).',
     input_schema: {

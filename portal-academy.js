@@ -738,7 +738,7 @@
         '<header class="tr-pd-h"><span class="tr-pd-org">Centrul360 · Protocol de tratament</span><span class="tr-pd-no">PT-' + String(all.indexOf(s) + 1).padStart(2, '0') + '</span>' +
           '<h2>' + esc(s.name) + '</h2>' + (s.what ? '<p class="tr-pd-what">' + esc(s.what) + '</p>' : '') +
           '<span class="tr-pd-stamp' + (s.verified ? '' : ' is-draft') + '">' + (s.verified ? 'Verificat' : 'Ciornă') + '</span></header>' +
-        '<div class="tr-pd-facts">' + [['Durata', s.minutes ? s.minutes + ' minute' : ''], ['Ședințe', s.sessions || ''], ['Interval', s.interval || ''], ['Preț / ședință', prices.length ? prices.map((x) => lei(x.price)).join(' · ') : ''], ['Unde', CITY[s.city] || '']]
+        '<div class="tr-pd-facts">' + [['Durata', s.minutes ? s.minutes + ' minute' : ''], ['Ședințe', s.sessions || ''], ['Interval', s.interval || ''], ['Preț / ședință', prices.length ? prices.map((x) => lei(x.price)).join(' · ') : ''], ['Pachet', s.pack || ''], ['Unde', CITY[s.city] || '']]
           .filter((x) => x[1]).map(([k, v]) => '<div><small>' + esc(k) + '</small><b>' + esc(v) + '</b></div>').join('') + '</div>' +
         vsl('t-' + s.id, 'Filmulețul: ' + s.name, '<div class="tr-vsl"><span class="tr-vsl-play">' + icon('video') + '</span><div><b>Filmulețul: ' + esc(s.name) + '</b><span>Tratamentul arătat pas cu pas. Vine în curând.</span></div></div>') +
         part('Pentru cine e', list(s.forWho)) +
@@ -773,6 +773,7 @@
         sec('Ce îi spui clientei', says(s.say)) +
         sec('După tratament', ul(s.after)) +
         sec('Ședințe și interval', (s.sessions || s.interval) ? '<p>' + [s.sessions ? esc(s.sessions) + ' ședințe' : '', s.interval ? esc(s.interval) : ''].filter(Boolean).join(' · ') + '</p>' : missing('De completat.')) +
+        (s.pack ? sec('Pachet', '<p>' + esc(s.pack) + '</p>') : '') +
         sec('Se combină cu', combos.length ? '<div class="tr-chips">' + combos.map((x) => '<button type="button" class="k-chip" data-goto-scheme="' + esc(x.id) + '">' + esc(x.name) + '</button>').join('') + '</div>' : '') +
         sec('Prețuri de listă', prices.length ? '<ul>' + prices.map((x) => '<li>' + esc(x.name) + ': <b>' + lei(x.price) + '</b> / ședință</li>').join('') + '</ul>' : '') +
         mediaHtml(s.media) + '</div>',
@@ -819,7 +820,7 @@
       body: '<div class="ac-read tr-scheme">' + (x.what ? '<p class="ac-sum">' + esc(x.what) + '</p>' : '') +
         sec('Pentru cine', ul(x.forWho)) + sec('Ce câștigă', ul(x.benefits)) + sec('Cum o spui la telefon', says(phone)) +
         sec('Se combină cu', combos.length ? '<div class="tr-chips">' + combos.map((c) => '<button type="button" class="k-chip" data-goto-sum="' + esc(c.id) + '">' + esc(c.name) + '</button>').join('') + '</div>' : '') +
-        sec('Bine de știut', '<ul>' + [x.minutes ? 'Durează ' + x.minutes + ' de minute.' : '', x.sessions ? 'De obicei ' + x.sessions + ' ședințe' + (x.interval ? ', ' + x.interval : '') + '.' : '', x.city !== 'both' ? CITY[x.city] + '.' : 'În ambele clinici.']
+        sec('Bine de știut', '<ul>' + [x.minutes ? 'Durează ' + x.minutes + ' de minute.' : '', x.sessions ? 'De obicei ' + x.sessions + ' ședințe' + (x.interval ? ', ' + x.interval : '') + '.' : '', x.pack ? 'Pachet: ' + x.pack + '.' : '', x.city !== 'both' ? CITY[x.city] + '.' : 'În ambele clinici.']
           .filter(Boolean).map((t) => '<li>' + esc(t) + '</li>').join('') + prices.map((pr) => '<li>' + esc(pr.name) + ': ' + lei(pr.price) + ' preț de listă (prețul de campanie îl iei din Oferte active)</li>').join('') + '</ul>') +
         mediaHtml(x.media) + '</div>',
       footer: (isAdmin() ? '<button type="button" class="k-btn is-ghost" data-s-edit>' + icon('pen') + 'Editează</button>' : '') + '<span class="k-grow"></span>' +
@@ -856,7 +857,7 @@
     return '<div class="tr-checks">' + all.map(([v, l]) => '<label class="k-chip tr-check"><input type="checkbox" data-' + name + '="' + esc(v) + '"' + (set.has(v) ? ' checked' : '') + '><span>' + esc(l) + '</span></label>').join('') + '</div>';
   }
   function editScheme(s0) {
-    const s = Object.assign({ id: '', name: '', group: 'corp', city: 'both', minutes: 0, prices: [], what: '', forWho: [], benefits: [], phone: [], contra: [], steps: [], settings: [], say: [], after: [], sessions: '', interval: '', combos: [], media: [], verified: false }, s0 ? JSON.parse(JSON.stringify(s0)) : {});
+    const s = Object.assign({ id: '', name: '', group: 'corp', city: 'both', minutes: 0, prices: [], what: '', forWho: [], benefits: [], phone: [], contra: [], steps: [], settings: [], say: [], after: [], sessions: '', pack: '', interval: '', combos: [], media: [], verified: false }, s0 ? JSON.parse(JSON.stringify(s0)) : {});
     let media;
     const others = (D().schemes || []).filter((x) => x.id !== s.id);
     const d = K.drawer({
@@ -867,6 +868,7 @@
         K.field('Durata (minute)', '<input data-x="minutes" type="number" min="0" max="600" value="' + esc(s.minutes || '') + '">') +
         K.field('Ședințe', '<input data-x="sessions" maxlength="40" value="' + esc(s.sessions) + '" placeholder="ex. 6-8">') +
         K.field('Interval', '<input data-x="interval" maxlength="60" value="' + esc(s.interval) + '" placeholder="ex. 2 pe săptămână">', 'full') +
+        K.field('Pachet', '<input data-x="pack" maxlength="200" value="' + esc(s.pack || '') + '" placeholder="ex. 4 ședințe: 760 lei în loc de 1.200 lei, cu plata integrală">', 'full') +
         K.field('Ce e', '<textarea data-x="what" rows="2" maxlength="600">' + esc(s.what) + '</textarea>', 'full') +
         linesField('Pentru cine', 'forWho', s.forWho, 3) + linesField('Ce câștigă (pentru recepție)', 'benefits', s.benefits, 3) + linesField('Cum o spune recepția la telefon', 'phone', s.phone, 3) + linesField('Contraindicații', 'contra', s.contra, 6) + linesField('Pașii', 'steps', s.steps, 6) +
         linesField('Setările aparatului', 'settings', s.settings, 4, 'Parametrii pe care îi folosiți voi, pe zone.') + linesField('Ce îi spui clientei', 'say', s.say, 3) + linesField('După tratament', 'after', s.after, 4) + '</div>' +
@@ -878,7 +880,7 @@
       onMount(el) {
         media = mediaEditor(el.querySelector('[data-media]'), s.media);
         el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          const item = Object.assign({}, s, { name: getX(el, 'name'), group: getX(el, 'group'), city: getX(el, 'city'), minutes: Number(getX(el, 'minutes')) || 0, sessions: getX(el, 'sessions'), interval: getX(el, 'interval'), what: getX(el, 'what'),
+          const item = Object.assign({}, s, { name: getX(el, 'name'), group: getX(el, 'group'), city: getX(el, 'city'), minutes: Number(getX(el, 'minutes')) || 0, sessions: getX(el, 'sessions'), pack: getX(el, 'pack'), interval: getX(el, 'interval'), what: getX(el, 'what'),
             forWho: getLines(el, 'forWho'), benefits: getLines(el, 'benefits'), phone: getLines(el, 'phone'), contra: getLines(el, 'contra'), steps: getLines(el, 'steps'), settings: getLines(el, 'settings'), say: getLines(el, 'say'), after: getLines(el, 'after'),
             prices: [...el.querySelectorAll('[data-price]:checked')].map((x) => x.dataset.price), combos: [...el.querySelectorAll('[data-combo]:checked')].map((x) => x.dataset.combo),
             media: media.get(), verified: el.querySelector('input[name=verified]').checked });

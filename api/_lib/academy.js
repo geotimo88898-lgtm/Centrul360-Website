@@ -111,7 +111,7 @@ const CLEAN = {
     id: ID.test(x.id) ? x.id : newId('s', i), name: str(x.name, 80) || 'Tratament', group: pick(x.group, GROUPS, 'corp'), city: pick(x.city, CITIES, 'both'),
     minutes: Math.round(num(x.minutes, 0, 600)), prices: (Array.isArray(x.prices) ? x.prices : []).filter((p) => ID.test(p)).slice(0, 30), what: str(x.what, 600),
     forWho: lines(x.forWho), benefits: lines(x.benefits), phone: lines(x.phone), contra: lines(x.contra, 40), steps: lines(x.steps, 40), settings: lines(x.settings, 40), say: lines(x.say), after: lines(x.after),
-    sessions: str(x.sessions, 40), interval: str(x.interval, 60), combos: (Array.isArray(x.combos) ? x.combos : []).filter((p) => ID.test(p)).slice(0, 12), media: cleanMedia(x.media), verified: !!x.verified,
+    sessions: str(x.sessions, 40), pack: str(x.pack, 200), interval: str(x.interval, 60), combos: (Array.isArray(x.combos) ? x.combos : []).filter((p) => ID.test(p)).slice(0, 12), media: cleanMedia(x.media), verified: !!x.verified,
   }),
   combo: (x, i) => ({ id: ID.test(x.id) ? x.id : newId('cb', i), a: ID.test(x.a) ? x.a : '', b: ID.test(x.b) ? x.b : '', why: str(x.why, 300), packs: str(x.packs, 200), sameDay: str(x.sameDay, 60), order: str(x.order, 140), gap: str(x.gap, 60), verified: !!x.verified }),
   case: (x, i) => {
