@@ -26,13 +26,15 @@ async function update(fn) {
   throw new Error('wa waiting: busy');
 }
 // a last message that asks for nothing: a button tap on the reminder, a thank you, an ok, an emoji
-const NOTHING = /^\s*(da,? ajung|nu ajung|da|ok+|okay|oki|bine|super|perfect|sigur|confirm(at|ăm)?|mul[tț]umesc( frumos| mult)?|mersi|merci|v[aă] mul[tț]umesc( frumos| mult)?|o zi bun[aă]|la fel|ne vedem)\s*[.!,)]*\s*[\p{Extended_Pictographic}\u200d\ufe0f\s]*$|^[\p{Extended_Pictographic}\u200d\ufe0f\s]+$/iu;
+const NOTHING = /^\s*(da,? ajung|nu ajung|da|ok+|okay|oki|bine|super|perfect|sigur|confirm(at|ăm)?|(ok,? )?mul[tț]umesc( frumos| mult)?|mersi( mult)?|merci|v[aă] mul[tț]umesc( frumos| mult)?|o zi bun[aă]|la fel|ne vedem|am în[tț]eles|am inteles|ok,? ne vedem)\s*[.!,)]*\s*[\p{Extended_Pictographic}\u200d\ufe0f\s]*$|^[\p{Extended_Pictographic}\u200d\ufe0f\s]+$/iu;
 
 // the candidates from the job ads (data/candidates.json): not clients, nothing to answer here (the owner, 8.11)
 const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 async function candidates() { return new Set((await readJSON('data/candidates.json', [])).map((c) => d9(c.phone)).filter((x) => x.length === 9)); }
 function waits(c, st, cand) {
   if (cand && cand.has(d9(c.phone))) return null;
+  // her last message asks for nothing („Mulțumesc”, „Da, ajung”, „Nu ajung” on the reminder's buttons): she doesn't wait
+  if (c.lastText && c.lastDirection === 'in' && NOTHING.test(c.lastText)) return null;
   // she wrote after the last answer a person gave her (an automatic reminder is not an answer)
   if (!c || !fresh(c.lastInAt) || (c.lastReplyAt && c.lastReplyAt >= c.lastInAt)) return null;
   const r = st.resolved[c.phone];
@@ -81,7 +83,7 @@ async function run() {
   const items = [];
   const lastIn = (ms) => (ms || []).reduce((a, m) => (m.direction === 'in' && m.timestamp > a ? m.timestamp : a), '');
   const lastReply = (ms) => (ms || []).reduce((a, m) => (m.direction === 'out' && !m.auto && m.timestamp > a ? m.timestamp : a), '');
-  const add = (key, name, ms) => { const c = { phone: key, lastInAt: lastIn(ms), lastReplyAt: lastReply(ms) }; const w = waits(c, st, cand); if (w) items.push({ key, name, msgs: ms.slice(-8), lastInAt: c.lastInAt, w }); };
+  const add = (key, name, ms) => { const lm = ms[ms.length - 1] || {}; const c = { phone: key, lastInAt: lastIn(ms), lastReplyAt: lastReply(ms), lastText: lm.text || '', lastDirection: lm.direction || '' }; const w = waits(c, st, cand); if (w) items.push({ key, name, msgs: ms.slice(-8), lastInAt: c.lastInAt, w }); };
   (Array.isArray(wa) ? wa : []).forEach((c) => add(c.phone, c.clientName || '', c.messages || []));
   (Array.isArray(so) ? so : []).forEach((c) => add(c.channel + ':' + c.id, c.name || (c.username ? '@' + c.username : ''), c.messages || []));
   // the ones whose last message asks for nothing, at once; the rest Nuki reads (at most 40 a run; the others at the next)

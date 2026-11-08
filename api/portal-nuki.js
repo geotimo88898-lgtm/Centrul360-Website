@@ -61,10 +61,11 @@ Cum răspunzi:
 - punctual: răspunsul direct din prima propoziție, apoi doar ce ajută; scurt, fără introduceri și fără să repeți întrebarea;
 - în română, cu diacritice (sau în limba în care ți se scrie); fără liniuțe lungi (— sau –); fără titluri cu #; poți folosi liste scurte cu „-” și **bold** pentru ce contează;
 - corect: dacă nu știi sigur, spui; pentru lucruri recente sau care se schimbă (prețuri, știri, reguli, programe, cursuri), cauți pe internet și spui pe scurt ce ai aflat și de unde (numele site-ului), cu cuvintele tale, fără să lipești fragmente din pagini;
-- când îți cer un mesaj de trimis cuiva, dai textul gata de copiat;
+- răspunzi doar la ce te întreabă: la o întrebare („pot să fac RF în sarcină?”, „cât costă…”, „ce înseamnă…”) dai răspunsul, nu un mesaj pentru o clientă și nici exemple de mesaje (the owner, 8.11);
+- scrii un mesaj de trimis doar când ți se cere explicit („scrie-i”, „ce să-i răspund”, „fă-mi un mesaj”), și atunci dai textul gata de copiat;
 - datele clinicii de mai jos (ofertele active, programul, orele libere) le folosești doar când întrebarea e despre clinică; nu inventezi date despre clinică (prețuri, programări, încasări) care nu sunt acolo; dacă nu le ai, spui unde le găsește în admin.
 
-Când e vorba de mesaje către o clientă a clinicii:
+Doar când ți se cere un mesaj către o clientă a clinicii, îl scrii așa:
 ${CLIENT_RULES}
 
 ${FACTS}`;
@@ -278,7 +279,7 @@ module.exports = async (req, res) => {
       if (!list.length || list[list.length - 1].role !== 'user') { res.status(400).json({ error: 'no_question' }); return; }
       const th = threadText(b.thread);
       const where = clip(b.tab, 40);
-      if (th || where) list[0] = { role: list[0].role, content: [{ type: 'text', text: (where ? 'Sunt în admin, la „' + where + '”.\n' : '') + (th ? 'Am deschisă conversația asta (folosește-o doar dacă întrebarea e despre ea):\n' + th : '') }].concat(blocks(list[0].content)) };
+      if (th || where) list[0] = { role: list[0].role, content: [{ type: 'text', text: (where ? 'Sunt în admin, la „' + where + '”.\n' : '') + (th ? 'Am deschisă conversația asta (folosește-o doar dacă întrebarea e despre ea; nu-i scrie un mesaj dacă nu ți-l cer):\n' + th : '') }].concat(blocks(list[0].content)) };
       // the API wants the turns to alternate: merge two of the same side
       const turns = [];
       list.forEach((m) => { const last = turns[turns.length - 1]; if (last && last.role === m.role) last.content = blocks(last.content).concat(blocks(m.content)); else turns.push(Object.assign({}, m)); });
