@@ -189,7 +189,9 @@
     if (!t) { t = document.createElement('div'); t.className = 'n-tick'; t.setAttribute('aria-hidden', 'true'); hero.appendChild(t); hero.classList.add('has-tick'); }
     t.dataset.key = key;
     var row = '<span>' + items.map(function (x) { return '<em>' + x + '</em>'; }).join('') + '</span>';
-    t.innerHTML = '<div class="n-tick-in" style="--n-dur:' + Math.max(18, items.length * 5) + 's">' + row + row + '</div>';
+    // one or two items: they stand still, once (a marquee of a single line showed it twice, cut at the edge)
+    var still = items.length < 3; t.classList.toggle('is-still', still);
+    t.innerHTML = '<div class="n-tick-in" style="--n-dur:' + Math.max(18, items.length * 5) + 's">' + row + (still ? '' : row) + '</div>';
   }
 
   // ================================================================ celebrations: a new payment, live
