@@ -50,8 +50,11 @@ module.exports = async (req, res) => {
   const av = /^academy\/[\w-]{6,80}\.(mp4|mov|webm|m4v)$/.exec(p);
   if (av) return academyVideo(req, res, p, av[1]);
   const m = /^academy\/[\w-]{6,80}\.(jpg|png|webp)$/.exec(p) || /^contacts\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf)$/.exec(p) || /^wa-media\/[\w-]+\.(jpg|png|webp|pdf|mp4|3gp|ogg|mp3|m4a|aac|amr|doc|docx|xls|xlsx|txt)$/.exec(p)
-    || /^wa-out\/[\w-]+\.(jpe?g|png|webp|pdf|docx?|xlsx?|mp4|mov)$/.exec(p); // the big files sent from Mesaje
+    || /^wa-out\/[\w-]+\.(jpe?g|png|webp|pdf|docx?|xlsx?|mp4|mov)$/.exec(p) // the big files sent from Mesaje
+    || /^legal\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf|docx?|xlsx?)$/.exec(p); // Acte și autorizații: the salons' and the team's papers
   if (!m) { res.status(400).json({ error: 'invalid_path' }); return; }
+  // the legal papers (authorizations, contracts, IDs, medical fitness): the admins only
+  if (p.startsWith('legal/') && session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
   const buf = await readBinary(p);
   if (!buf) { res.status(404).json({ error: 'not_found' }); return; }
   res.setHeader('Content-Type', TYPES[m[1]]);

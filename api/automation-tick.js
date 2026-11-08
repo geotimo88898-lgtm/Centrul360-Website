@@ -50,6 +50,10 @@ const STEPS = [
   ['siteconfirm', () => require('./_lib/site-confirm').tick()],
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
+  // Mesaje: the clients who still wait for an answer, read by Nuki, told at 10:00 and 17:00 (api/_lib/wa-waiting.js)
+  ['waiting', () => require('./_lib/wa-waiting').run()],
+  // Acte și autorizații: the papers that expire, told to the owner at 30 days, 7 days and on the day (api/_lib/legal-alerts.js)
+  ['acte', () => require('./_lib/legal-alerts').run()],
   // the CRM steps of the Facebook leads that no change sent yet (Conversions API, api/_lib/meta-capi.js)
   ['capi', () => require('./_lib/meta-capi').sweep()],
 ];

@@ -2500,3 +2500,101 @@ html .tr-door-ic img{ width:100%; height:100%; object-fit:contain; object-positi
 html .tr-door-k{ color:var(--accent); }
 @media (max-width:1100px){ html .tr-door-ic{ width:84px; height:92px; margin-top:-46px; left:1.2rem; } }
 @media (max-width:640px){ html .tr-door-ic{ width:70px; height:78px; margin-top:-39px; left:.9rem; } }
+
+/* Admin → Acte și autorizații (portal-legal.js, the owner, 8.11) */
+.lg .k-head-actions .k-seg{ flex-wrap:nowrap; }
+.lg-sum{ display:flex; align-items:center; gap:1.4rem; padding:1.4rem 1.5rem; margin:0 0 1.4rem; border-radius:24px; background:var(--paper); box-shadow:inset 0 0 0 1px var(--line), 0 18px 40px -32px rgba(16,24,40,.35); }
+.lg-ring{ --p:0; flex:none; width:92px; height:92px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--accent) calc(var(--p) * 1%), color-mix(in srgb, var(--fg) 8%, transparent) 0); position:relative; }
+.lg-ring::before{ content:""; position:absolute; inset:8px; border-radius:50%; background:var(--paper); }
+.lg-ring b{ position:relative; font-size:1.6rem; font-weight:750; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+.lg-ring small{ font-size:.8rem; font-weight:650; color:var(--muted); margin-left:1px; }
+.lg-sum-t{ min-width:0; }
+.lg-sum-t h3{ margin:0; font-size:1.25rem; letter-spacing:-.02em; }
+.lg-sum-t > p{ margin:.15rem 0 0; color:var(--muted); font-size:.92rem; }
+.lg-sum-t .lg-sum-n{ color:var(--fg); margin-top:.35rem; }
+.lg-tags{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.6rem; }
+.lg-group{ margin:0 0 1.3rem; }
+.lg-group h4{ margin:0 0 .5rem .2rem; font-size:.74rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.lg-list{ border-radius:20px; background:var(--paper); box-shadow:inset 0 0 0 1px var(--line); overflow:hidden; }
+.lg-row{ display:flex; align-items:center; gap:.8rem; width:100%; padding:.85rem 1rem; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; border-top:1px solid var(--line); transition:background .15s; }
+.lg-row:first-child{ border-top:0; }
+.lg-row:hover{ background:color-mix(in srgb, var(--fg) 3%, transparent); }
+.lg-row > .k-ic{ width:16px; height:16px; color:var(--muted-2, var(--muted)); flex:none; }
+.lg-dot{ flex:none; width:10px; height:10px; border-radius:50%; background:color-mix(in srgb, var(--fg) 18%, transparent); }
+.lg-row.is-ok .lg-dot{ background:var(--good); } .lg-row:is(.is-lipsa, .is-expirat) .lg-dot{ background:var(--bad); }
+.lg-row:is(.is-lucru, .is-curand) .lg-dot{ background:var(--warn); } .lg-row.is-depus .lg-dot{ background:var(--info); }
+.lg-row.is-na{ opacity:.55; }
+.lg-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.1rem; }
+.lg-main b{ font-weight:600; font-size:.95rem; line-height:1.3; }
+.lg-main small{ font-size:.78rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lg-add{ margin-top:.2rem; }
+.lg-back{ margin:0 0 .8rem; }
+.lg-people{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:.75rem; }
+.lg-people.is-old{ margin-top:.75rem; opacity:.8; }
+.lg-oldbtn{ margin-top:1.2rem; }
+.lg-person{ display:flex; align-items:center; gap:.85rem; padding:1rem; border:0; border-radius:20px; background:var(--paper); box-shadow:inset 0 0 0 1px var(--line); color:inherit; font:inherit; text-align:left; cursor:pointer; transition:transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s; }
+.lg-person:hover{ transform:translateY(-2px); box-shadow:inset 0 0 0 1px var(--line), 0 16px 34px -26px rgba(16,24,40,.45); }
+.lg-av{ flex:none; width:46px; height:46px; border-radius:50%; display:grid; place-items:center; object-fit:cover; font-weight:700; font-size:.9rem; background:color-mix(in srgb, var(--accent) 14%, var(--paper)); color:var(--accent); }
+.lg-pt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.15rem; }
+.lg-pt b{ font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lg-pt small{ font-size:.8rem; color:var(--muted); }
+.lg-bar{ display:block; height:5px; border-radius:5px; margin-top:.35rem; background:color-mix(in srgb, var(--fg) 8%, transparent); overflow:hidden; }
+.lg-bar i{ display:block; height:100%; border-radius:inherit; background:var(--accent); transition:width .6s cubic-bezier(.16,1,.3,1); }
+.lg-pn{ flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:.2rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.lg-pn em{ font-style:normal; font-size:.72rem; font-weight:650; }
+.lg-pn em.is-bad{ color:var(--bad); } .lg-pn em.is-warn{ color:var(--warn); }
+/* the drawer of one item */
+.lg-pick{ display:flex; flex-wrap:wrap; gap:.4rem; margin:0 0 1rem; }
+.lg-st{ display:inline-flex; align-items:center; gap:.45rem; height:36px; padding:0 .85rem; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; font-size:.86rem; font-weight:560; cursor:pointer; transition:background .15s, border-color .15s; }
+.lg-st i{ width:9px; height:9px; border-radius:50%; background:color-mix(in srgb, var(--fg) 25%, transparent); }
+.lg-st.is-ok i{ background:var(--good); } .lg-st.is-lipsa i{ background:var(--bad); } .lg-st.is-lucru i{ background:var(--warn); } .lg-st.is-depus i{ background:var(--info); }
+.lg-st.is-on{ border-color:transparent; background:color-mix(in srgb, var(--accent) 12%, var(--paper)); box-shadow:inset 0 0 0 1.5px var(--accent); }
+.lg-warn{ display:flex; align-items:center; gap:.5rem; margin:0 0 1rem; padding:.7rem .9rem; border-radius:14px; background:var(--warn-soft); color:var(--warn); font-weight:600; font-size:.9rem; }
+.lg-warn.is-bad{ background:var(--bad-soft); color:var(--bad); }
+.lg-warn .k-ic{ width:16px; height:16px; }
+.lg-fields{ display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:.6rem; margin:0 0 1.1rem; }
+.lg-files{ margin:0 0 1.1rem; padding:1rem; border-radius:18px; background:color-mix(in srgb, var(--fg) 3%, var(--paper)); box-shadow:inset 0 0 0 1px var(--line); transition:opacity .2s; }
+.lg-files.is-busy{ opacity:.55; pointer-events:none; }
+.lg-files-h{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+.lg-files-h h5{ margin:0; font-size:.95rem; }
+.lg-files-h > div{ display:flex; gap:.4rem; }
+.lg-files-h label{ cursor:pointer; }
+.lg-flist{ list-style:none; margin:.8rem 0 0; padding:0; display:grid; gap:.45rem; }
+.lg-flist li{ display:flex; align-items:center; gap:.5rem; }
+.lg-flist a{ flex:1; min-width:0; display:flex; align-items:center; gap:.7rem; padding:.45rem; border-radius:12px; color:inherit; text-decoration:none; background:var(--paper); box-shadow:inset 0 0 0 1px var(--line); }
+.lg-flist a:hover{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.lg-flist img, .lg-fi{ flex:none; width:44px; height:44px; border-radius:9px; object-fit:cover; background:color-mix(in srgb, var(--accent) 10%, var(--paper)); }
+.lg-fi{ display:grid; place-items:center; color:var(--accent); position:relative; }
+.lg-fi em{ position:absolute; bottom:3px; font-style:normal; font-size:.55rem; font-weight:800; letter-spacing:.04em; }
+.lg-fi .k-ic{ width:18px; height:18px; margin-top:-8px; }
+.lg-flist span{ min-width:0; display:flex; flex-direction:column; }
+.lg-flist b{ font-weight:600; font-size:.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lg-flist small{ font-size:.75rem; color:var(--muted); }
+.lg-notes{ margin:0 0 1.1rem; }
+.lg-need{ display:grid; gap:.85rem; padding:1.1rem; border-radius:18px; background:color-mix(in srgb, var(--accent) 6%, var(--paper)); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, var(--line)); }
+.lg-need small{ display:block; font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--accent); margin-bottom:.2rem; }
+.lg-need p{ margin:0; font-size:.9rem; line-height:1.5; }
+.lg-need ul{ margin:0; padding-left:1.1rem; font-size:.9rem; line-height:1.55; }
+.lg-src{ display:flex; flex-wrap:wrap; gap:.4rem; }
+.lg-src a{ display:inline-flex; align-items:center; gap:.3rem; height:28px; padding:0 .6rem; border-radius:999px; background:var(--paper); box-shadow:inset 0 0 0 1px var(--line); color:var(--fg); font-size:.78rem; text-decoration:none; }
+.lg-src a .k-ic{ width:12px; height:12px; }
+.lg-rm{ margin-top:1rem; color:var(--bad); }
+@media (max-width:640px){
+  .lg-sum{ padding:1.1rem; gap:1rem; } .lg-ring{ width:76px; height:76px; } .lg-ring b{ font-size:1.3rem; }
+  .lg-fields{ grid-template-columns:1fr 1fr; } .lg-fields label:first-child{ grid-column:1 / -1; }
+  .lg-row{ padding:.8rem .85rem; } .lg-row .k-tag{ max-width:96px; overflow:hidden; text-overflow:ellipsis; }
+  .lg .k-head{ flex-wrap:wrap; } .lg .k-head-actions{ width:100%; } .lg .k-head-actions .k-seg{ width:100%; } .lg .k-head-actions .k-seg button{ flex:1; justify-content:center; }
+}
+
+/* Mesaje: the clients still waiting for an answer, on top (the owner, 8.11) */
+.mx-wait-h{ display:flex; align-items:center; gap:.45rem; padding:.7rem .9rem .35rem; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--warn); }
+.mx-wait-h span{ min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-grid; place-items:center; background:var(--warn-soft); color:var(--warn); font-size:.72rem; letter-spacing:0; }
+.mx-wait-h.is-rest{ color:var(--muted); padding-top:1rem; }
+.mx-row.is-waiting{ box-shadow:inset 3px 0 0 var(--warn); }
+.mx-wait{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-top:.15rem; font-size:.76rem; color:var(--warn); min-width:0; }
+.mx-wait > span:first-child{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:560; }
+.mx-wait.is-calm{ color:var(--muted); }
+.mx-done{ flex:none; display:inline-flex; align-items:center; gap:.25rem; height:26px; padding:0 .6rem; border-radius:999px; background:var(--good-soft); color:var(--good); font-weight:650; font-size:.74rem; cursor:pointer; }
+.mx-done .k-ic{ width:13px; height:13px; }
+.mx-done:hover{ filter:brightness(.97); }
+.k-chip.is-wait{ border-color:color-mix(in srgb, var(--warn) 45%, var(--line)); color:var(--warn); }

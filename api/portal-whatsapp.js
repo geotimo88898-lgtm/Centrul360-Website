@@ -89,6 +89,9 @@ function listItem(convo) {
     lastDirection: last ? last.direction : '',
     lastStatus: last ? last.status : '',
     within24h: within24h(convo),
+    lastInAt: (convo.messages || []).reduce((a, m) => (m.direction === 'in' && m.timestamp > a ? m.timestamp : a), ''),
+    // the last answer a person gave (the automatic messages, reminders and welcomes, don't count as an answer)
+    lastReplyAt: (convo.messages || []).reduce((a, m) => (m.direction === 'out' && !m.auto && m.timestamp > a ? m.timestamp : a), ''),
   };
 }
 
@@ -165,10 +168,19 @@ module.exports = async (req, res) => {
         .concat(await IG.list().catch((e) => { console.error('instagram list:', e.message); return []; }))
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));
       const s = await setup();
+      // who still waits for an answer (she wrote last, nobody answered, not marked done): on top of Mesaje (api/_lib/wa-waiting.js)
+      await require('./_lib/wa-waiting').mark(list).catch((e) => console.error('wa waiting:', e.message));
       res.status(200).json({ ok: true, conversations: list, numbers: s.numbers, templates: s.templates, snippets: await readJSON(SNIP_KEY, []) });
       return;
     }
 
+    // „Rezolvat”: she got her answer another way (a call, in the clinic); a new message from her brings her back
+    if (action === 'resolve' || action === 'unresolve') {
+      if (!body.phone) return fail(400, 'invalid_phone');
+      await require('./_lib/wa-waiting').resolve(String(body.phone), action === 'resolve', session.name || session.username || '');
+      res.status(200).json({ ok: true });
+      return;
+    }
     if (action === 'thread' && ig) {
       const employees = await readJSON('data/employees.json', []);
       const t = await IG.view(String(body.phone), (id) => (id === 'admin' ? 'Admin' : ((employees.find((e) => e.id === id) || {}).name || '')));

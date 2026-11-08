@@ -158,7 +158,8 @@ function listItems(list) {
   return (list || []).map((c) => {
     const last = (c.messages || [])[c.messages.length - 1];
     return { phone: key(c), channel: c.channel, clientName: nameOf(c), username: c.username || '', location: '', lastMessageAt: c.lastMessageAt || '', unreadCount: c.unreadCount || 0,
-      lastText: last ? last.text : '', lastDirection: last ? last.direction : '', lastStatus: last ? last.status : '', within24h: within24h(c) };
+      lastText: last ? last.text : '', lastDirection: last ? last.direction : '', lastStatus: last ? last.status : '', within24h: within24h(c), lastInAt: lastInboundAt(c),
+      lastReplyAt: (c.messages || []).reduce((a, m) => (m.direction === 'out' && !m.auto && m.timestamp > a ? m.timestamp : a), '') };
   });
 }
 async function list() { return listItems(await readJSON(KEY, [])); }

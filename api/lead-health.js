@@ -32,6 +32,14 @@ module.exports = async (req, res) => {
   const session = getSession(req);
   if (!fromCreative(req) && !(session && session.role === 'admin')) { res.status(401).json({ error: 'unauthorized' }); return; }
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
+  // ?ig=1: where Instagram's and Facebook's messages stand (permissions, the Page's app, the webhooks; no token);
+  // ?igsetup=1: the webhooks and the Page's app set for the messages (api/_lib/social-inbox.js setup), then the same
+  if (req.query && (req.query.ig || req.query.igsetup)) {
+    const SI = require('./_lib/social-inbox');
+    const done = req.query.igsetup ? await SI.setup('https://admin.centrul360.com').catch((e) => ({ error: e.message })) : undefined;
+    res.status(200).json({ setup: done, status: await SI.status().catch((e) => ({ error: e.message })) });
+    return;
+  }
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
   if (req.query && req.query.nuki) { res.status(200).json(await require('./portal-nuki').ping()); return; }
   // ?trace=1: per lead from an ad form in these days, why Reclame counts her booked / came (no name, no phone)

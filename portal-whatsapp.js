@@ -146,7 +146,7 @@
 
   function visible() {
     const q = K.norm(C.q || ''), qd = C.q.replace(/\D/g, '');
-    return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' || C.loc === 'fb' ? c.channel === C.loc : c.location === C.loc)) && (C.show === 'all' || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h)) &&
+    return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' || C.loc === 'fb' ? c.channel === C.loc : c.location === C.loc)) && (C.show === 'all' || (C.show === 'wait' && c.waiting) || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h)) &&
       (!q || K.norm(nameOf(c)).includes(q) || (!isIg(c) && K.phoneHit(c.phone, C.q))));
   }
   function paintList() {
@@ -154,12 +154,18 @@
     if (!box) return;
     const unread = C.conversations.filter((c) => c.unreadCount).length;
     const open = C.conversations.filter((c) => c.within24h).length;
-    panel.querySelector('[data-chips]').innerHTML = [['all', 'Toate', C.conversations.length], ['unread', 'Necitite', unread], ['open', 'Deschise 24h', open]]
-      .map(([k, l, n]) => '<button type="button" class="k-chip' + (C.show === k ? ' is-on' : '') + '" data-show="' + k + '">' + l + (n ? '<span>' + n + '</span>' : '') + '</button>').join('');
+    const owed = C.conversations.filter((c) => c.waiting && c.waiting.needs !== false).length;
+    panel.querySelector('[data-chips]').innerHTML = [['all', 'Toate', C.conversations.length], ['wait', 'Fără răspuns', C.conversations.filter((c) => c.waiting).length], ['unread', 'Necitite', unread], ['open', 'Deschise 24h', open]]
+      .map(([k, l, n]) => '<button type="button" class="k-chip' + (C.show === k ? ' is-on' : '') + (k === 'wait' && owed ? ' is-wait' : '') + '" data-show="' + k + '">' + l + (n ? '<span>' + n + '</span>' : '') + '</button>').join('');
     const list = visible();
     // the list stays where she scrolled it (picking a conversation repaints it: it jumped back to the top)
     const top = box.scrollTop;
-    box.innerHTML = list.length ? list.map(row).join('')
+    // the ones still waiting for an answer come first (the owner, 8.11): the ones owed an answer, the longest wait first
+    const waitOrder = (a, b) => ((a.waiting.needs === false) - (b.waiting.needs === false)) || String(a.waiting.since).localeCompare(String(b.waiting.since));
+    const wait = C.show === 'all' && !C.q ? list.filter((c) => c.waiting).sort(waitOrder) : [];
+    const rest = wait.length ? list.filter((c) => !c.waiting) : C.show === 'wait' ? list.slice().sort(waitOrder) : list;
+    box.innerHTML = wait.length ? '<div class="mx-wait-h"><b>Fără răspuns</b><span>' + wait.length + '</span></div>' + wait.map(row).join('') + (rest.length ? '<div class="mx-wait-h is-rest"><b>Celelalte</b></div>' + rest.map(row).join('') : '')
+      : list.length ? rest.map(row).join('')
       : C.conversations.length ? K.empty('search', 'Nimic aici', 'Schimbă filtrul sau căutarea.')
         : K.empty('chat', 'Nicio conversație încă', connected().length ? 'Când îți scrie o clientă pe WhatsApp, apare aici imediat. Poți și să scrii tu primul, cu „Mesaj nou”.' : 'După ce se conectează numerele, mesajele clientelor apar aici singure.');
     box.scrollTop = top;
@@ -178,14 +184,28 @@
     else if (y < box.scrollTop) box.scrollTop = y;
     else if (y + r.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = y + r.offsetHeight - box.clientHeight;
   }
+  // how long she has been waiting: „12 min”, „3 h”, „2 zile”
+  const waited = (t) => { const m = Math.max(1, Math.round((Date.now() - Date.parse(t)) / 60e3)); return m < 60 ? m + ' min' : m < 1440 ? Math.round(m / 60) + ' h' : Math.round(m / 1440) + (Math.round(m / 1440) === 1 ? ' zi' : ' zile'); };
+  function waitLine(c) {
+    const w = c.waiting; if (!w) return '';
+    return '<span class="mx-wait' + (w.needs === false ? ' is-calm' : '') + '"><span>' + (w.needs === false ? 'Nu pare să ceară răspuns' : 'Așteaptă de ' + waited(w.since)) + (w.why ? ' · ' + esc(w.why) : '') + '</span>' +
+      '<span role="button" tabindex="0" class="mx-done" data-done="' + esc(c.phone) + '" title="Rezolvat (am vorbit cu ea altfel)">' + icon('check') + 'Rezolvat</span></span>';
+  }
   function row(c) {
     const preview = (c.lastDirection === 'out' ? (TICK[c.lastStatus] ? tickHtml(c.lastStatus) : 'Tu: ') : '') + esc(c.lastText || '');
-    return '<button type="button" class="mx-row' + (c.phone === C.selectedPhone ? ' is-on' : '') + (c.unreadCount ? ' is-unread' : '') + '" data-pick="' + esc(c.phone) + '">' +
+    return '<button type="button" class="mx-row' + (c.phone === C.selectedPhone ? ' is-on' : '') + (c.unreadCount ? ' is-unread' : '') + (c.waiting ? ' is-waiting' : '') + '" data-pick="' + esc(c.phone) + '">' +
       face(c, 44) +
       '<span class="mx-row-main"><span class="mx-row-top"><b>' + esc(nameOf(c)) + '</b><small>' + esc(fmtTime(c.lastMessageAt)) + '</small></span>' +
         '<span class="mx-row-bottom"><span class="mx-row-prev">' + preview + '</span>' +
         (isIg(c) ? '<em class="mx-city mx-' + chanOf(c) + '">' + (chanOf(c) === 'ig' ? 'Insta' : 'FB') + '</em>' : c.location ? '<em class="mx-city">' + esc(CITY_SHORT[c.location] || c.location) + '</em>' : '') +
-        (c.unreadCount ? '<i class="mx-unread">' + (c.unreadCount > 99 ? '99+' : c.unreadCount) + '</i>' : '') + '</span></span></button>';
+        (c.unreadCount ? '<i class="mx-unread">' + (c.unreadCount > 99 ? '99+' : c.unreadCount) + '</i>' : '') + '</span>' + waitLine(c) + '</span></button>';
+  }
+  // „Rezolvat”: out of the waiting ones until she writes again
+  async function resolveWait(key) {
+    const c = C.conversations.find((x) => x.phone === key); if (!c || !c.waiting) return;
+    const was = c.waiting; delete c.waiting; paintList();
+    try { await K.api('/api/portal-whatsapp', { action: 'resolve', phone: key }); K.ui().toast('Rezolvat.', 'success'); }
+    catch (err) { c.waiting = was; paintList(); K.ui().toast(K.errText(err), 'error'); }
   }
 
   // the state of a message we sent, with its times: "Trimis 14:02 · Livrat 14:02 · Văzut 14:05"
@@ -455,6 +475,8 @@
       if (a === 'contact') return isIg({ phone: C.selectedPhone }) ? undefined : K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
       if (a === 'snips') return manageSnips();
     }
+    const done = e.target.closest('[data-done]');
+    if (done) { e.preventDefault(); e.stopPropagation(); return resolveWait(done.dataset.done); }
     const sh = e.target.closest('[data-show]');
     if (sh) { C.show = sh.dataset.show; return paintList(); }
     const pick = e.target.closest('[data-pick]');
