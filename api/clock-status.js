@@ -8,5 +8,6 @@ module.exports = async (req, res) => {
   const age = last && last.at ? Math.round((Date.now() - Date.parse(last.at)) / 60000) : null;
   // the new texts of the Arad ads (8.11): per ad, in or not (names and counts only)
   const texts = await require('./_lib/ads-text-once').summary().catch(() => null);
-  res.status(200).json({ ok: true, last, minutesAgo: age, healthy: age != null && age <= 75, texts });
+  const tm = await require('./_lib/tm-on-once').summary().catch(() => null); // the Timișoara ads switched back on (8.11)
+  res.status(200).json({ ok: true, last, minutesAgo: age, healthy: age != null && age <= 75, texts, tm });
 };

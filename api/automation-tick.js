@@ -25,6 +25,8 @@ const STEPS = [
   ['once', () => require('./_lib/ads-once').run()],
   // once: the approved new texts in the four Arad ads (the owner, 8.11; api/_lib/ads-text-once.js)
   ['adtexts', () => require('./_lib/ads-text-once').run()],
+  // once: the seven Timișoara ads with a return back on, at the owner's budgets (8.11; api/_lib/tm-on-once.js)
+  ['tmon', () => require('./_lib/tm-on-once').run()],
   // once: Arad's WhatsApp number in the lead forms' settings, so the RF gușă forms can be made (the owner, 7.11)
   ['formwa', () => require('./_lib/form-wa-once').run()],
   // once: the RF gușă offer for Arad in Oferte (off the site) and its new-lead WhatsApp message sent to Meta (the owner, 7.11)
