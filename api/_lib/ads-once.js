@@ -183,7 +183,7 @@ async function run() {
       if (doc.told[n.tag] === day(Date.now())) return;
       doc.told[n.tag] = day(Date.now());
       await save();
-      return notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', go: 'reclame' }, n)).catch((e) => console.error('ads-once tell:', e.message));
+      return notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', go: 'reclame', ownerPush: n.tone === 'bad' }, n)).catch((e) => console.error('ads-once tell:', e.message));
     };
     const logged = (j, a) => doc.log.some((e) => e.job === j.id && e.campaignId === a.campaignId && (e.status || 'budget') === (a.status || 'budget')); // a budget and a switch on the same campaign are two
     // a list of decided changes: a campaign switched on / off, or its budget (a number, or times a factor; 10 to 150 lei).

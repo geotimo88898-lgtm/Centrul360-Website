@@ -116,7 +116,7 @@ async function tell(key, title, text) {
   m.told.push(key);
   await writeJSON(KEY, m, { quiet: true });
   const ids = await adminIds({ readJSON });
-  await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: /respins|oprit/i.test(title) ? 'bad' : 'good', go: 'fluxuri', title, text }).catch((e) => console.error('reminders tell:', e.message));
+  await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: /respins|oprit/i.test(title) ? 'bad' : 'good', go: 'fluxuri', title, text, ownerPush: /respins|oprit/i.test(title) }).catch((e) => console.error('reminders tell:', e.message));
 }
 
 // Makes and sends to Meta what is missing, reads Meta's answers, and switches the flow of every city whose three
@@ -265,7 +265,8 @@ async function reply(b) {
   const emps = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   const who = (loc) => [...new Set((['admin']).concat(emps.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!loc || !e.location || e.location === loc))).map((e) => e.id)))];
   const ddmm = (date, time) => String(date || '').slice(8, 10) + '.' + String(date || '').slice(5, 7) + (time ? ' ' + time : '');
-  const ring = (x, title, text, tone) => notifyMany({ readJSON, writeJSON }, who(x && x.location), { kind: 'booking', tone, title: title + cityTag(x && x.location), text, go: 'programari',
+  // the owner's phone rings for a cancel only; a confirmation and a late reply stay in his bell (the owner, 8.11)
+  const ring = (x, title, text, tone) => notifyMany({ readJSON, writeJSON }, who(x && x.location), { kind: 'booking', tone, title: title + cityTag(x && x.location), text, go: 'programari', ownerPush: !/^(CONFIRMATĂ|RĂSPUNS)/.test(title),
     tag: 'reply-' + (x ? x.id : key) + '-' + (b.msgId || now) });
   const ask = (x, text) => ring(x, 'RĂSPUNS LA REAMINTIRE', text, 'info');
   let name = b.name || b.phone;

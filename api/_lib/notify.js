@@ -64,6 +64,7 @@ async function claim(store, ref, remove) {
 // blocks the decision or the lead that caused it.
 async function notifyMany(store, employeeIds, n) {
   let ids = [...new Set(employeeIds)].filter((id) => wants(id, n));
+  let recent = null;
   if (!ids.length) return 0;
   const title = cut(dedash(String(n.title || '')), 80), text = cut(dedash(String(n.text || '')), 160);
   try {
@@ -75,17 +76,44 @@ async function notifyMany(store, employeeIds, n) {
       ids = ids.filter((id) => !list.some((x) => x.employeeId === id && x.tag === n.tag && Date.parse(x.at) > since));
       if (!ids.length) return 0;
     }
-    ids.forEach((employeeId) => list.push({
+    ids.forEach((employeeId) => list.push(Object.assign({
       id: crypto.randomUUID(), employeeId, at, kind: n.kind || 'info', tone: n.tone || 'info', title, text, go: n.go || '', tag: n.tag || '', ref: n.ref || '',
-    }));
+    }, n.ownerPush === false ? { bellOnly: true } : {})));
     const drop = new Set();
     ids.forEach((employeeId) => {
       const mine = list.filter((x) => x.employeeId === employeeId);
       mine.slice(0, Math.max(0, mine.length - KEEP)).forEach((x) => drop.add(x.id));
     });
     await store.writeJSON(KEY, list.filter((x) => !drop.has(x.id)));
+    recent = list;
   } catch (err) { console.error('notify error:', err.message); }
-  return sendPush(store, ids, { title, body: text, url: '/' + (n.go ? '#' + n.go : ''), tag: n.tag || '', quiet: !!n.quiet });
+  const msg = { title, body: text, url: '/' + (n.go ? '#' + n.go : ''), tag: n.tag || '', quiet: !!n.quiet };
+  // the owner's phone (the owner, 8.11: „doar cu sens, nimic inutil”): a notice marked ownerPush: false stays in his
+  // bell only; several of the same kind within minutes come as one line that updates itself. Everyone else: as before.
+  const owners = await ownerSet(store);
+  const own = ids.filter((id) => owners.has(id)), rest = ids.filter((id) => !owners.has(id));
+  let sent = rest.length ? await sendPush(store, rest, msg) : 0;
+  if (own.length && n.ownerPush !== false) sent += await sendPush(store, own, grouped(recent, own[0], n, msg));
+  return sent;
+}
+
+// the owner: the shared admin login and the admin account named George
+async function ownerSet(store) {
+  try { return new Set(['admin'].concat(await ownerIds(store))); } catch (e) { return new Set(['admin']); }
+}
+// the second (third …) of a kind within 3 minutes: one line „3 LEADURI NOI 🔔” with the names, that replaces itself
+const GROUP_MS = 3 * 60e3;
+const GROUP_TITLE = { lead: 'LEADURI NOI 🔔', booking: 'PROGRAMĂRI 📅', money: 'ÎNCASĂRI 💵', alert: 'ALERTE ⚠️', approval: 'DE APROBAT 🧾' };
+function grouped(list, ownerId, n, msg) {
+  const kind = n.kind || 'info';
+  if (!GROUP_TITLE[kind] || !Array.isArray(list)) return msg;
+  const since = Date.now() - GROUP_MS;
+  const same = list.filter((x) => x.employeeId === ownerId && x.kind === kind && !x.bellOnly && Date.parse(x.at) > since);
+  if (same.length < 2) return msg;
+  // newest first: who (the first part of its text) and what (its title after the dash): „Maria, RF Gușă 119 · Ana, Lipo 640”
+  const line = (x) => { const what = String(x.title || '').replace(/^[^-]*-\s*/, ''); const who = String(x.text || '').split(' · ')[0]; return who && what ? who + ', ' + what : what || who; };
+  const body = same.slice().reverse().map(line).filter(Boolean).join(' · ');
+  return Object.assign({}, msg, { title: same.length + ' ' + GROUP_TITLE[kind], body: cut(body, 200), tag: 'grp-' + kind }); // „3 LEADURI NOI 🔔” (the owner, 8.11)
 }
 
 const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);

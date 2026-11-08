@@ -124,7 +124,7 @@ module.exports = async (req, res) => {
   const n = await numbers(today());
   const w = words(n);
   const ids = await adminIds(store);
-  const pushed = await notifyMany(store, ids, { kind: 'report', tone: 'info', title: w.title, text: w.text, go: 'incasari', tag: 'report-' + n.day });
+  const pushed = await notifyMany(store, ids, { kind: 'report', tone: 'info', title: w.title, text: w.text, go: 'incasari', tag: 'report-' + n.day, ownerPush: false });
   const un = n.pos.unrecorded || [];
   if (un.length) {
     const line = (p) => lei2(p.amount) + ' la ' + hhmm(p.at) + (p.city ? ', ' + p.city : '');

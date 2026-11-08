@@ -48,19 +48,18 @@ html.ui-nou:not([data-theme="light"]) nav.tabs button.active::before{ content:""
 html.ui-nou:not([data-theme="light"]) nav.tabs button.active svg{ color:var(--accent); filter:drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); }
 
 /* ================================================================ surfaces: glass with a lit top edge */
-html.ui-nou:not([data-theme="light"]) :is(.card, :where(html.ui-nou:not([data-theme="light"])) .k-card, :where(html.ui-nou:not([data-theme="light"])) .k-stat){
+html.ui-nou:not([data-theme="light"]) :is(.card, .k-card, .k-stat){
   background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012) 60%), rgba(8,10,12,.72);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px var(--sx-hair), 0 30px 60px -40px rgba(0,0,0,.9); }
-html.ui-nou:not([data-theme="light"]) :is(.card, :where(html.ui-nou:not([data-theme="light"])) .k-card, :where(html.ui-nou:not([data-theme="light"])) .k-stat):hover{ box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px var(--sx-hair2), 0 30px 70px -38px rgba(0,0,0,.95), 0 0 40px -22px color-mix(in srgb, var(--accent) 45%, transparent); }
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px var(--sx-hair), 0 30px 60px -40px rgba(0,0,0,.9);
+}
+html.ui-nou:not([data-theme="light"]) :is(.card, .k-card, .k-stat):hover{ box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px var(--sx-hair2), 0 30px 70px -38px rgba(0,0,0,.95), 0 0 40px -22px color-mix(in srgb, var(--accent) 45%, transparent); }
 html.ui-nou .k-stat-value{ font-family:var(--sx-sans); font-weight:650; letter-spacing:-.045em; }
 html.ui-nou .k-stat-top{ font-family:var(--sx-mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; font-weight:500; }
 
 /* the main action: white, like Summit's „See our work” */
-html.ui-nou:not([data-theme="light"]) .k-btn:is(.is-accent, .is-primary){ border:0 !important;  }
-
-html.ui-nou:not([data-theme="light"]) .k-btn:is(.is-accent, :where(html.ui-nou:not([data-theme="light"])) .is-primary){ background:#fff !important; color:#05080a !important;
+html.ui-nou:not([data-theme="light"]) .k-btn:is(.is-accent, .is-primary){ background:#fff !important; color:#05080a !important; border:0 !important;
   box-shadow:0 0 0 1px rgba(255,255,255,.5), 0 10px 30px -10px rgba(255,255,255,.35), 0 0 0 0 rgba(47,214,195,0) !important; }
-html.ui-nou:not([data-theme="light"]) .k-btn:is(.is-accent, :where(html.ui-nou:not([data-theme="light"])) .is-primary):hover{ box-shadow:0 0 0 1px #fff, 0 14px 38px -10px rgba(255,255,255,.45), 0 0 34px -6px rgba(47,214,195,.55) !important; }
+html.ui-nou:not([data-theme="light"]) .k-btn:is(.is-accent, .is-primary):hover{ box-shadow:0 0 0 1px #fff, 0 14px 38px -10px rgba(255,255,255,.45), 0 0 34px -6px rgba(47,214,195,.55) !important; }
 html.ui-nou:not([data-theme="light"]) .k-btn:not(.is-accent):not(.is-primary):not(.is-danger){ background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px var(--sx-hair2); }
 html.ui-nou:not([data-theme="light"]) .k-seg{ background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px var(--sx-hair); }
 
@@ -656,11 +655,8 @@ html.ui-nou .n-navlive i{ background:var(--accent) !important; animation:none !i
 
 /* ================================================================ the profile photo on the round avatar: the new look's `background` shorthand reset
    its size and position, so a photo showed only its top-left corner, blown up (a dark blob in the accent) */
-html.ui-nou .c360-avatar.has-photo{ background-color:var(--surface-3, #111) !important; background-size:cover !important; background-position:center !important; background-repeat:no-repeat !important; color:transparent !important;   }
+html.ui-nou .c360-avatar.has-photo{ background-color:var(--surface-3, #111) !important; background-size:cover !important; background-position:center !important; background-repeat:no-repeat !important; color:transparent !important;  }
 
-html.ui-nou:where(:not([data-theme="light"])) .c360-avatar.has-photo{; }
-
-html.ui-nou:where(:not([data-theme="light"])) .c360-avatar.has-photo{; }
 
 /* ================================================================ KPI: the title and the funnel, redrawn calm (no boxes, a clear hierarchy, room)
    the title: big, „în timp real” a small live tag beside it, the period line under it */
@@ -723,9 +719,7 @@ html.ui-nou{ --sx-ac:var(--accent,#2fd6c3); --sx-spec:linear-gradient(90deg, var
 .sx-amb .g{ position:absolute; inset:-1px; will-change:transform; transform:translateZ(0);
   background-image:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
     linear-gradient(color-mix(in srgb, var(--sx-ac) 4%, transparent), transparent 3px), linear-gradient(90deg, color-mix(in srgb, var(--sx-ac) 4%, transparent), transparent 3px);
-  background-size:120px 120px; background-position:-1px -1px;  }
-
-:where(html.ui-nou:not([data-theme="light"])) .sx-amb .g{; }
+  background-size:120px 120px; background-position:-1px -1px; }
 .sx-amb .o{ position:absolute; width:62vmax; height:62vmax; border-radius:50%; opacity:.55; will-change:transform; }
 .sx-amb .o1{ right:-22vmax; top:-30vmax; background:radial-gradient(closest-side, color-mix(in srgb, var(--sx-ac) 20%, transparent), transparent); animation:sx-drift 26s ease-in-out infinite alternate; }
 .sx-amb .o2{ left:-20vmax; bottom:-34vmax; background:radial-gradient(closest-side, color-mix(in srgb, var(--accent-2,#5fe6d6) 11%, transparent), transparent); animation:sx-drift 32s ease-in-out -9s infinite alternate-reverse; }
@@ -779,15 +773,15 @@ html.ui-nou.sx-fine:where(:not([data-theme="light"])) nav.tabs{ background:rgba(
 @media (max-width:760px){ .sx-pr{ width:96px; margin-left:0; scale:.72; transform-origin:0 50%; } }
 
 /* cards: glass with HUD corners (four short strokes at two corners), the light under the cursor stays inside the rounded glass */
-html.ui-nou:not([data-theme="light"]) main :is(.card, :where(html.ui-nou:not([data-theme="light"])) .k-card, :where(html.ui-nou:not([data-theme="light"])) .k-stat, :where(html.ui-nou:not([data-theme="light"])) .pl-stat){
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){
   background:
     linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
     linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
     linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)) !important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.09), 0 30px 60px -44px rgba(0,0,0,.9) !important; }
 html.ui-nou.sx-fine:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){ -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
-html.ui-nou:not([data-theme="light"]) main :is(.card, :where(html.ui-nou:not([data-theme="light"])) .k-card, :where(html.ui-nou:not([data-theme="light"])) .k-stat, :where(html.ui-nou:not([data-theme="light"])) .pl-stat):hover{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 30px 60px -44px rgba(0,0,0,.9) !important; }
-html.ui-nou:where(:not([data-theme="light"])) main :is(.k-stat, :where(html.ui-nou:not([data-theme="light"])) .pl-stat, :where(html.ui-nou:not([data-theme="light"])) .card, :where(html.ui-nou:not([data-theme="light"])) .k-card, :where(html.ui-nou:not([data-theme="light"])) .of-card)::after{
+html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat):hover{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 30px 60px -44px rgba(0,0,0,.9) !important; }
+html.ui-nou:where(:not([data-theme="light"])) main :is(.k-stat, .pl-stat, .card, .k-card, .of-card)::after{
   background:radial-gradient(420px circle at var(--n-mx,50%) var(--n-my,50%), color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.04)), transparent 45%) !important; }
 html.ui-nou.sx-lite main :is(.k-stat, .pl-stat, .card, .k-card, .of-card)::after{ display:none; }
 /* the Panou's money block floats with no frame; Ziua de azi, the ads, the chart, the pay and the team are glass cards */
@@ -940,16 +934,12 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
   html.ui-nou:not([data-theme="light"]) .c360-tabbar{ background:#0b0b0d !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
     box-shadow:0 0 0 1px rgba(255,255,255,.08), 0 18px 40px -16px rgba(0,0,0,.9) !important; }
   html.ui-nou:not([data-theme="light"]) main :is(.card, .k-card, .k-stat, .pl-stat){
-    -webkit-backdrop-filter:none !important; backdrop-filter:none !important;  }
-
-  html.ui-nou:not([data-theme="light"]) main :is(.card, :where(html.ui-nou:not([data-theme="light"])) .k-card, :where(html.ui-nou:not([data-theme="light"])) .k-stat, :where(html.ui-nou:not([data-theme="light"])) .pl-stat){
     background:
       linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 0 0 / 1px 12px no-repeat,
       linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 12px 1px no-repeat, linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.2)) 100% 100% / 1px 12px no-repeat,
-      linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)), #0a0a0c !important; }
-  html.ui-nou:not([data-theme="light"]) main :is(.pl-col, .ct-list, .mx-list){ background-color:#0a0a0c;  }
-
-  html.ui-nou:not([data-theme="light"]) main :is(.pl-col, :where(html.ui-nou:not([data-theme="light"])) .ct-list, :where(html.ui-nou:not([data-theme="light"])) .mx-list){; }
+      linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)), #0a0a0c !important;
+    -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  html.ui-nou:not([data-theme="light"]) main :is(.pl-col, .ct-list, .mx-list){ background-color:#0a0a0c; }
   html.ui-nou .mx-tools{ top:var(--sx-top, 60px) !important; z-index:3;  }
 
   html.ui-nou:where(:not([data-theme="light"])) .mx-tools{ background:#0d0d0f !important; }
