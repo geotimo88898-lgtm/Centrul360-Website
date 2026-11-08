@@ -89,6 +89,9 @@ async function loadStages() {
   return Array.isArray(stored) && stored.length ? stored : DEFAULT_STAGES.slice();
 }
 const firstOpenStage = (stages) => stages.find((s) => s.kind === 'open' || s.kind === 'booked') || stages[0];
+// where every lead that comes in lands (the owner, 8.11: „leadurile ce intră să intre la Lead nou”): the „Lead nou” column,
+// whatever order the columns are in; without one, the first open column
+const leadNouStage = (stages) => stages.find((s) => s.id === 'lead_nou') || stages.find((s) => /^lead nou$/i.test(String(s.name || '').trim())) || firstOpenStage(stages);
 const stageKind = (stages, id) => (stages.find((s) => s.id === id) || {}).kind || 'open';
 
 async function authorName(session) {
@@ -245,7 +248,9 @@ async function markUndelivered(phone, why) {
     const booked = stages.find((x) => x.kind === 'booked');
     const order = (id) => stages.findIndex((x) => x.id === id);
     const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
-    const hits = leads.filter((l) => normPhone(l.phone) === key && l.stage !== st.id && stageKind(stages, l.stage) === 'open' && (!booked || order(l.stage) < order(booked.id)));
+    // a lead in Lead nou stays there (the owner, 8.11): the note on her and the team's alert say the message didn't reach her
+    const nou = leadNouStage(stages);
+    const hits = leads.filter((l) => normPhone(l.phone) === key && l.stage !== st.id && l.stage !== nou.id && stageKind(stages, l.stage) === 'open' && (!booked || order(l.stage) < order(booked.id)));
     if (!hits.length) return [];
     hits.forEach((l) => {
       addActivity(l, { type: 'stage', author: 'WhatsApp automat', text: (stages.find((x) => x.id === l.stage) || { name: l.stage }).name + ' → ' + st.name + (why ? ' · ' + clip(why, 120) : '') });
@@ -358,8 +363,15 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     // the same form, the same moment: the webhook and the poll met on one submission
     if (filled && filled.id && filled.sentAt && (existing.forms || []).some((f) => f.id === filled.id && f.sentAt === filled.sentAt)) return { lead: withComputedFields(existing, stages), duplicate: true, same: true };
     const reopened = stageKind(stages, existing.stage) === 'lost';
-    if (reopened) {
-      existing.stage = firstOpenStage(stages).id;
+    // she wrote again by herself (a form): back in Lead nou, unless she already has a booking (booked or further on)
+    const booked = stages.find((x) => x.kind === 'booked');
+    const idx = (id) => stages.findIndex((x) => x.id === id);
+    const nou = leadNouStage(stages);
+    const back = reopened || (SELF.includes(createdBy) && stageKind(stages, existing.stage) === 'open' && existing.stage !== nou.id && (!booked || idx(existing.stage) < idx(booked.id)));
+    let moved = '';
+    if (back) {
+      moved = (stages.find((x) => x.id === existing.stage) || { name: existing.stage }).name;
+      existing.stage = nou.id;
       existing.stageChangedAt = nowISO();
       existing.lostReason = '';
     }
@@ -369,7 +381,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     existing.position = top;
     addActivity(existing, {
       type: 'returned', author,
-      text: (reopened ? 'Leadul pierdut s-a întors' : 'A trimis din nou datele') + ' (' + (SOURCE_LABELS[source] || source) + ')' +
+      text: (reopened ? 'Leadul pierdut s-a întors' : 'A trimis din nou datele') + ' (' + (SOURCE_LABELS[source] || source) + ')' + (moved && !reopened ? ' · ' + moved + ' → ' + nou.name : '') +
         (result.fields.interest ? ' · ' + result.fields.interest : '') + (note ? ' - ' + clip(note, 500) : ''),
     });
     await writeJSON(LEADS_KEY, leads);
@@ -381,7 +393,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   }
 
   const now = nowISO();
-  const stage = stageId && stages.some((s) => s.id === stageId && s.kind !== 'won' && s.kind !== 'lost') ? stageId : firstOpenStage(stages).id;
+  const stage = stageId && stages.some((s) => s.id === stageId && s.kind !== 'won' && s.kind !== 'lost') ? stageId : leadNouStage(stages).id;
   const lead = normalizeLead({
     id: crypto.randomUUID(),
     email: '', interest: '', value: 0,
