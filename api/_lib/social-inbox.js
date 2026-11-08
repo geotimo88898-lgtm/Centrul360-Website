@@ -153,12 +153,20 @@ async function backfill(opts) {
     // a page of 20 conversations at a time, from where the last call stopped (o.after), so one call stays short
     let after = o.after || '', pages = 0;
     do {
-      // Instagram answers only smaller pieces („reduce the amount of data”): 10 conversations, their last 10 messages
+      // Instagram gives a conversation's messages one by one (asking for them in the list: „reduce the amount of data”):
+      // 5 conversations a page, then each one's last 6 messages, each read on its own
       const ig = channel === 'ig';
-      const params = { platform, fields: 'participants,updated_time,messages.limit(' + (ig ? 10 : 20) + '){id,message,from,created_time}', limit: ig ? 10 : 20 };
+      const params = { platform, fields: ig ? 'participants,updated_time' : 'participants,updated_time,messages.limit(20){id,message,from,created_time}', limit: ig ? 5 : 20 };
       if (after) params.after = after;
       const r = await g('GET', '/' + pageId + '/conversations', tok, params);
       if (!r.ok) { out.errors.push(channel + ': ' + err(r.j)); break; }
+      if (ig) for (const cv of (r.j.data || [])) {
+        const ids = await g('GET', '/' + cv.id, tok, { fields: 'messages.limit(6){id}' });
+        const list = ids.ok ? (((ids.j.messages || {}).data) || []) : [];
+        const full = [];
+        for (const m of list) { const one = await g('GET', '/' + m.id, tok, { fields: 'id,created_time,from,message' }); if (one.ok) full.push(one.j); }
+        cv.messages = { data: full };
+      }
       (r.j.data || []).forEach((cv) => {
         const her = (((cv.participants || {}).data) || []).find((p) => String(p.id) !== ownId && String(p.id) !== pageId);
         if (!her) return;
