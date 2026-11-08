@@ -2085,6 +2085,30 @@
 .tr-shot{ margin:.3rem 0 .7rem; display:flex; flex-direction:column; align-items:center; gap:.6rem; padding:1rem; border-radius:20px; background:var(--glass); }
 .tr-shot img{ display:block; width:100%; max-width:320px; border-radius:22px; border:6px solid #0b0c10; box-shadow:0 20px 40px -24px rgba(0,0,0,.8); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }
 .tr-shot figcaption{ display:flex; gap:.4rem; align-items:flex-start; font-size:.85rem; font-weight:600; color:var(--muted); text-align:center; } .tr-shot .k-ic{ width:15px; height:15px; flex:none; margin-top:.1rem; color:var(--accent); }
+/* the dark theme: the protocols on a dark sheet, not white paper (the owner, 8.11: „nu-mi place așa pe alb când îs pe tema
+   neagră”); the band, the stamp and the numbers stay, the paper becomes the admin's dark */
+html.ui-nou:not([data-theme="light"]) .tr-doc, html.ui-nou:not([data-theme="light"]) .tr-pd{ background:linear-gradient(180deg, #1a1b20, #141519); border-color:rgba(255,255,255,.08); color:#ecebe7; box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 30px 60px -36px rgba(0,0,0,.9); }
+html.ui-nou:not([data-theme="light"]) .tr-doc:hover{ box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 28px 50px -26px rgba(0,0,0,.9); }
+html.ui-nou:not([data-theme="light"]) :is(.tr-doc-k, .tr-pd-org, .tr-pd-no, .tr-pd-facts small){ color:#8f8b84; }
+html.ui-nou:not([data-theme="light"]) :is(.tr-doc > b, .tr-pd-h h2, .tr-pd-facts b, .tr-pd-s h4, .tr-pd .tr-vsl b, .tr-pd .k-chip){ color:#f4f2ee; }
+html.ui-nou:not([data-theme="light"]) .tr-doc-w, html.ui-nou:not([data-theme="light"]) .tr-pd .tr-vsl span{ color:#a9a59d; }
+html.ui-nou:not([data-theme="light"]) .tr-pd-what{ color:#cfcbc4; }
+html.ui-nou:not([data-theme="light"]) .tr-doc-m em{ background:rgba(255,255,255,.07); color:#c9c5bd; }
+html.ui-nou:not([data-theme="light"]) .tr-doc-m em.is-ok{ background:rgba(52,211,153,.14); color:#4ade9a; } html.ui-nou:not([data-theme="light"]) .tr-doc-m em.is-warn{ background:rgba(245,165,36,.14); color:#f5b84a; }
+html.ui-nou:not([data-theme="light"]) .tr-pd-h{ border-bottom-color:rgba(255,255,255,.08); }
+html.ui-nou:not([data-theme="light"]) .tr-pd-stamp{ border-color:#34d399; color:#34d399; } html.ui-nou:not([data-theme="light"]) .tr-pd-stamp.is-draft{ border-color:#e0a43a; color:#e0a43a; }
+html.ui-nou:not([data-theme="light"]) .tr-pd-facts{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.08); }
+html.ui-nou:not([data-theme="light"]) .tr-pd-facts div{ background:#18191e; }
+html.ui-nou:not([data-theme="light"]) .tr-pd .tr-vsl{ background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); } html.ui-nou:not([data-theme="light"]) .tr-pd .tr-vsl.is-on video{ border-color:rgba(255,255,255,.12); }
+html.ui-nou:not([data-theme="light"]) .tr-pd-s, html.ui-nou:not([data-theme="light"]) .tr-pd-f{ border-top-color:rgba(255,255,255,.07); }
+html.ui-nou:not([data-theme="light"]) .tr-pd-s li{ color:#d9d6d0; }
+html.ui-nou:not([data-theme="light"]) .tr-pd-s.is-bad{ border-color:rgba(255,107,112,.35); background:rgba(255,107,112,.07); } html.ui-nou:not([data-theme="light"]) .tr-pd-s.is-bad h4{ color:#ff8a8e; } html.ui-nou:not([data-theme="light"]) .tr-pd-s.is-bad li{ color:#f2c4c5; }
+html.ui-nou:not([data-theme="light"]) .tr-pd-steps li{ background:rgba(255,255,255,.045); }
+html.ui-nou:not([data-theme="light"]) .tr-pd-steps li i{ background:rgba(255,255,255,.08); color:#f4f2ee; border-color:rgba(255,255,255,.14); }
+html.ui-nou:not([data-theme="light"]) .tr-pd-s blockquote{ background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1); color:#e4e1db; }
+html.ui-nou:not([data-theme="light"]) .tr-pd .tr-missing{ color:#f5b84a; }
+/* the title keeps its serif and its colour on paper in the light theme too (the theme's h2 rule won over it) */
+html.ui-nou[data-theme="light"] .tr-pd-h h2{ color:#16140f; }
 /* the light theme: soft shadows instead of the dark ones */
 :root[data-theme="light"] .tr-door, :root[data-theme="light"] .tr-step{ box-shadow:0 20px 40px -30px rgba(13,15,20,.35); }
 :root[data-theme="light"] .tr-stop-dot, :root[data-theme="light"] .tr-vdot{ box-shadow:0 6px 16px -10px rgba(13,15,20,.3); }
