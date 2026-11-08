@@ -58,7 +58,7 @@ async function callTask(a, why) {
       relatedAppointmentId: a.id, location: a.location || '', confirmAppt: true });
     await writeJSON('data/automation-tasks.json', tasks);
   }
-  await notifyMany({ readJSON, writeJSON }, await people(a.location), { kind: 'booking', tone: 'info', go: 'programari', tag: 'site-call-' + a.id,
+  await notifyMany({ readJSON, writeJSON }, await people(a.location), { kind: 'booking', tone: 'info', go: 'programari', tag: 'site-call-' + a.id, ownerPush: false,
     title: 'SUNĂ ȘI CONFIRMĂ 📞' + cityTag(a.location), text: (a.clientName || '') + ' · ' + ddmm(a) + ' · ' + (WHY[why] || why) }).catch((e) => console.error('site-confirm call:', e.message));
 }
 

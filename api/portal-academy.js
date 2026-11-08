@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
       if (b.done) {
         const employees = await readJSON('data/employees.json', []);
         const who = (employees.find((e) => e.id === me) || {}).name || 'Cineva';
-        await notifyMany({ readJSON, writeJSON }, admins(employees), { kind: 'alert', tone: 'info', title: 'DE CONFIRMAT ✅ - ' + who, text: item.text, go: 'traininguri', tag: 'task-' + me + '-' + item.id });
+        await notifyMany({ readJSON, writeJSON }, admins(employees), { kind: 'alert', tone: 'info', ownerPush: false, title: 'DE CONFIRMAT ✅ - ' + who, text: item.text, go: 'traininguri', tag: 'task-' + me + '-' + item.id });
       }
       return res.status(200).json({ ok: true, progress });
     }

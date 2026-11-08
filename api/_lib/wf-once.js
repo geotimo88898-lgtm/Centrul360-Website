@@ -149,7 +149,7 @@ async function tellOnce(key, msg) {
   state.told.push(key);
   await writeJSON(KEY, state, { quiet: true });
   const ids = await adminIds({ readJSON });
-  await notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', tone: 'good', go: 'fluxuri' }, msg)).catch((e) => console.error('wf-once tell:', e.message));
+  await notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', tone: 'good', go: 'fluxuri', ownerPush: false }, msg)).catch((e) => console.error('wf-once tell:', e.message));
 }
 
 async function run() {
@@ -170,7 +170,7 @@ async function run() {
       const msg = job.tell(r);
       if (msg) {
         const ids = await adminIds({ readJSON });
-        await notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', tone: 'good', go: 'fluxuri' }, msg)).catch((e) => console.error('wf-once tell:', e.message));
+        await notifyMany({ readJSON, writeJSON }, ids, Object.assign({ kind: 'alert', tone: 'good', go: 'fluxuri', ownerPush: false }, msg)).catch((e) => console.error('wf-once tell:', e.message));
       }
     } catch (e) { out[job.id] = { error: e.message }; }
   }

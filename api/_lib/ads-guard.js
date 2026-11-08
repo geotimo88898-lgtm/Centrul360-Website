@@ -432,7 +432,7 @@ async function check(o, now, doc) {
     const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
     if (r.error) { console.error('ads-guard up:', c.id, r.error); continue; }
     await record({ type: 'up', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why: whyUp(c) });
-    await tell({ tone: 'good', tag: 'guard-up-' + c.id, title: 'BUGET MĂRIT 📈 - ' + String(c.name).slice(0, 60), text: b.daily + ' → ' + to + ' lei/zi. ' + whyUp(c) + '.' });
+    await tell({ tone: 'good', tag: 'guard-up-' + c.id, ownerPush: false, title: 'BUGET MĂRIT 📈 - ' + String(c.name).slice(0, 60), text: b.daily + ' → ' + to + ' lei/zi. ' + whyUp(c) + '.' });
   }
   for (const { c, last } of downs) {
     const b = await ads.budgetOf(conn, c.id);
@@ -441,7 +441,7 @@ async function check(o, now, doc) {
     const r = await ads.act(conn, { action: 'budget', id: b.id, daily: last.from });
     if (r.error) { console.error('ads-guard down:', c.id, r.error); continue; }
     await record({ type: 'down', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to: last.from, why: whyDown(c) });
-    await tell({ tone: 'bad', tag: 'guard-down-' + c.id, title: 'BUGET ÎNAPOI 📉 - ' + String(c.name).slice(0, 60), text: b.daily + ' → ' + last.from + ' lei/zi. ' + whyDown(c) + '.' });
+    await tell({ tone: 'bad', tag: 'guard-down-' + c.id, ownerPush: false, title: 'BUGET ÎNAPOI 📉 - ' + String(c.name).slice(0, 60), text: b.daily + ' → ' + last.from + ' lei/zi. ' + whyDown(c) + '.' });
   }
   for (const { c } of lows) {
     const b = await ads.budgetOf(conn, c.id);
@@ -452,7 +452,7 @@ async function check(o, now, doc) {
     if (r.error) { console.error('ads-guard soso:', c.id, r.error); continue; }
     const why = 'Merge so-so: programarea la ' + lei(c.cpb) + ' (' + bookTxt(c.book.booked) + ' din ' + leadsTxt(c.book.leads) + '), mai puțin buget pentru reclame noi';
     await record({ type: 'down', trim: 'soso', at: new Date(now).toISOString(), campaignId: c.id, campaignName: c.name, budgetId: b.id, from: b.daily, to, why });
-    await tell({ tone: 'bad', tag: 'guard-soso-' + c.id, title: 'BUGET SCĂZUT ✂️ - ' + String(c.name).slice(0, 60), text: b.daily + ' → ' + to + ' lei/zi. ' + why + '.' });
+    await tell({ tone: 'bad', tag: 'guard-soso-' + c.id, ownerPush: false, title: 'BUGET SCĂZUT ✂️ - ' + String(c.name).slice(0, 60), text: b.daily + ' → ' + to + ' lei/zi. ' + why + '.' });
   }
   // the verdicts: kept for Reclame. A campaign is told once when it becomes TOP or ATENȚIE: when the flag differs from
   // the last one told, has held for two checks in a row, and isn't the same story again (ATENȚIE ↔ De urmărit around
@@ -467,7 +467,7 @@ async function check(o, now, doc) {
     if (touched.has(id)) { told[id] = { flag: v.flag, at: new Date(now).toISOString() }; continue; }
     if (last && (last.flag === v.flag || (last.flag === 'bad' && v.flag === 'watch') || (last.flag === 'watch' && v.flag === 'bad'))) continue;
     told[id] = { flag: v.flag, at: new Date(now).toISOString() };
-    await tell({ tone: v.flag === 'top' ? 'good' : 'bad', tag: 'guard-verdict-' + id + '-' + v.flag + '-' + today,
+    await tell({ tone: v.flag === 'top' ? 'good' : 'bad', tag: 'guard-verdict-' + id + '-' + v.flag + '-' + today, ownerPush: v.flag !== 'top',
       title: (v.flag === 'top' ? 'TOP 🚀 - ' : 'ATENȚIE ⚠️ - ') + String(v.name || 'campanie').slice(0, 60), text: v.why.join(' · ') + '.' });
   }
   if (!noDays) { cur.verdicts = verdicts; cur.verdictsAt = new Date(now).toISOString(); }

@@ -292,7 +292,7 @@ async function alertUndelivered(list) {
     const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!convo.location || !e.location || e.location === convo.location))).map((e) => e.id));
     const who = convo.clientName || ('+' + convo.phone);
     const said = String(msg.text || '').replace(/\s+/g, ' ').slice(0, 60);
-    await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'bad', title: 'MESAJ NELIVRAT ❌ - ' + who, text: msg.error + (said ? ' · „' + said + '”' : ''), go: 'mesaje', tag: 'undelivered-' + msg.id });
+    await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'bad', ownerPush: false, title: 'MESAJ NELIVRAT ❌ - ' + who, text: msg.error + (said ? ' · „' + said + '”' : ''), go: 'mesaje', tag: 'undelivered-' + msg.id });
   }
 }
 
