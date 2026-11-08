@@ -29,6 +29,15 @@ function accent() {
   else if ((m = /rgba?\(([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/.exec(v))) { r = m[1] / 255; g = m[2] / 255; b = m[3] / 255; }
   return [r, g, b];
 }
+// Centrul360 (the owner, 8.11): on Light the globe is drawn light (the page's paper, land in ink, the lights in the accent)
+const isLight = () => document.documentElement.getAttribute("data-theme") === "light";
+function cssRGB(name, fb) {
+  try {
+    const c = document.createElement("canvas"); c.width = c.height = 1; const g = c.getContext("2d");
+    g.fillStyle = fb; g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb; g.fillRect(0, 0, 1, 1);
+    const d = g.getImageData(0, 0, 1, 1).data; return [d[0] / 255, d[1] / 255, d[2] / 255];
+  } catch (e) { return [1, 1, 1]; }
+}
 export function createGlobe() {
   const G = { host: null, labels: null, layout: null, visitors: [], mode: null, spots: [] };
   let S = null, flat = null;
@@ -156,10 +165,11 @@ export function createGlobe() {
       const g = F.c.getContext("2d"); g.scale(dpr, dpr);
       const cur = target(performance.now()), ry = cur ? faceSpin(cur.lon) : -1.13, rx = cur ? faceTilt(cur.lat) : 0.42, cy = Math.cos(ry), sy = Math.sin(ry), cx = Math.cos(rx), sx = Math.sin(rx);
       const P = (x, y, z) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; const y2 = y * cx - z1 * sx, z2 = y * sx + z1 * cx; return [L.cx + x1 * L.R, L.cy - y2 * L.R, z2]; };
-      const grd = g.createRadialGradient(L.cx, L.cy, L.R * 0.9, L.cx, L.cy, L.R * 1.25); grd.addColorStop(0, "rgba(160,180,255,.12)"); grd.addColorStop(1, "rgba(0,0,0,0)");
+      const light = isLight(), acc = accent().map((x) => Math.round(x * 255)).join(","), ink = cssRGB("--fg", "#14161a").map((x) => Math.round(x * 255)).join(",");
+      const grd = g.createRadialGradient(L.cx, L.cy, L.R * 0.9, L.cx, L.cy, L.R * 1.25); grd.addColorStop(0, light ? "rgba(" + acc + ",.16)" : "rgba(160,180,255,.12)"); grd.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = grd; g.beginPath(); g.arc(L.cx, L.cy, L.R * 1.25, 0, 7); g.fill();
-      g.fillStyle = "#030304"; g.beginPath(); g.arc(L.cx, L.cy, L.R, 0, 7); g.fill();
-      for (let i = 0; i < pts.length; i += 3) { const p = P(pts[i], pts[i + 1], pts[i + 2]); if (p[2] <= 0) continue; g.fillStyle = "rgba(235,238,245," + (0.15 + p[2] * 0.6).toFixed(2) + ")"; g.fillRect(p[0] - 1, p[1] - 1, 2, 2); }
+      g.fillStyle = light ? "rgba(" + ink + ",.04)" : "#030304"; g.beginPath(); g.arc(L.cx, L.cy, L.R, 0, 7); g.fill();
+      for (let i = 0; i < pts.length; i += 3) { const p = P(pts[i], pts[i + 1], pts[i + 2]); if (p[2] <= 0) continue; g.fillStyle = (light ? "rgba(" + ink + "," : "rgba(235,238,245,") + (0.15 + p[2] * 0.6).toFixed(2) + ")"; g.fillRect(p[0] - 1, p[1] - 1, 2, 2); }
       people().forEach((v) => { const q = ll(v.lat, v.lon), p = P(q[0], q[1], q[2]); if (p[2] <= 0) return; g.fillStyle = "rgb(" + accent().map((x) => Math.round(x * 255)).join(",") + ")"; g.beginPath(); g.arc(p[0], p[1], 2.4, 0, 7); g.fill();  });
       const h = ll(HOME.lat, HOME.lon), hp = P(h[0], h[1], h[2]); g.fillStyle = "#2fd6c3"; g.beginPath(); g.arc(hp[0], hp[1], 3.5, 0, 7); g.fill();
       placeSpots((lat, lon) => { const q = ll(lat, lon, 1.004); return P(q[0], q[1], q[2]); }, L.W, L.H, cur);
@@ -179,7 +189,8 @@ export function createGlobe() {
     const tiltG = new THREE.Group(); root.add(tiltG);
     const spin = new THREE.Group(); tiltG.add(spin);
     const seg = phone ? [40, 28] : [56, 40];
-    spin.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.992, seg[0], seg[1]), new THREE.MeshBasicMaterial({ color: 0x030304 })), { renderOrder: 0 }));
+    const ball = Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.992, seg[0], seg[1]), new THREE.MeshBasicMaterial({ color: 0x030304 })), { renderOrder: 0 });
+    spin.add(ball);
 
     // land dots (half of them on phones)
     let lp = landXYZ();
@@ -187,21 +198,21 @@ export function createGlobe() {
     const lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.BufferAttribute(lp, 3));
     const rand = new Float32Array(lp.length / 3); for (let i = 0; i < rand.length; i++) rand[i] = Math.random(); lg.setAttribute("rnd", new THREE.BufferAttribute(rand, 1));
     const dotMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uSize: { value: 2 }, uReveal: { value: 1.25 } },
+      uniforms: { uSize: { value: 2 }, uReveal: { value: 1.25 }, uLight: { value: 0 }, uInk: { value: new THREE.Vector3(0.1, 0.11, 0.14) } },
       vertexShader: `attribute float rnd; uniform float uSize, uReveal; varying float vA; varying float vW;
         void main(){ vec4 wp=modelMatrix*vec4(position,1.0); vec3 n=normalize(mat3(modelMatrix)*position);
           float f=dot(n,normalize(cameraPosition-wp.xyz)); float lit=0.55+0.45*max(dot(n,normalize(vec3(-0.5,0.6,0.7))),0.0);
           float rev=smoothstep(uReveal-0.25,uReveal,1.0-(position.y*0.5+0.5)+rnd*0.15);
           vA=smoothstep(-0.02,0.5,f)*lit*(1.0-rev); vW=rnd;
           gl_Position=projectionMatrix*viewMatrix*wp; gl_PointSize=uSize*(0.85+0.3*rnd); }`,
-      fragmentShader: "varying float vA; varying float vW; void main(){ float d=length(gl_PointCoord-0.5); if(d>0.5) discard; float a=smoothstep(0.5,0.2,d)*vA; gl_FragColor=vec4(mix(vec3(0.82,0.85,0.92),vec3(1.0),vW)*a,a); }" });
+      fragmentShader: "uniform float uLight; uniform vec3 uInk; varying float vA; varying float vW; void main(){ float d=length(gl_PointCoord-0.5); if(d>0.5) discard; float a=smoothstep(0.5,0.2,d)*vA; if(uLight>0.5){ gl_FragColor=vec4(uInk,a*(0.55+0.25*vW)); } else { gl_FragColor=vec4(mix(vec3(0.82,0.85,0.92),vec3(1.0),vW)*a,a); } }" });
     const dots = new THREE.Points(lg, dotMat); dots.renderOrder = 1; spin.add(dots);
 
     // atmosphere: one camera-facing sprite
     const atm = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 2.7), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending,
       vertexShader: "varying vec2 vU; void main(){ vU=uv*2.0-1.0; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
-      uniforms: { uAcc: { value: null } },
-      fragmentShader: "uniform vec3 uAcc; varying vec2 vU; void main(){ float r=length(vU)*1.35; float a=r<1.0? pow(r,6.0)*0.35 : exp(-(r-1.0)*9.0)*0.42; a*=smoothstep(1.35,1.0,r); gl_FragColor=vec4(mix(vec3(0.62,0.72,1.0),uAcc,0.55)*a,a); }" }));
+      uniforms: { uAcc: { value: null }, uLight: { value: 0 } },
+      fragmentShader: "uniform vec3 uAcc; uniform float uLight; varying vec2 vU; void main(){ float r=length(vU)*1.35; float a=r<1.0? pow(r,6.0)*0.35 : exp(-(r-1.0)*9.0)*0.42; a*=smoothstep(1.35,1.0,r); if(uLight>0.5){ gl_FragColor=vec4(uAcc,min(1.0,a*0.75)); } else { gl_FragColor=vec4(mix(vec3(0.62,0.72,1.0),uAcc,0.55)*a,a); } }" }));
     atm.renderOrder = 2; root.add(atm);
     atm.material.uniforms.uAcc.value = new THREE.Vector3(...accent());
 
@@ -218,19 +229,35 @@ export function createGlobe() {
     const pulseVS = `attribute float ph; attribute float kind; attribute float born; uniform float uT, uSize; varying float vPh; varying float vKind; varying float vAge; varying float vF;
       void main(){ vec4 wp=modelMatrix*vec4(position,1.0); vec3 n=normalize(mat3(modelMatrix)*position); vF=smoothstep(0.0,0.35,dot(n,normalize(cameraPosition-wp.xyz)));
         vPh=ph; vKind=kind; vAge=uT-born; gl_Position=projectionMatrix*viewMatrix*wp; gl_PointSize=uSize*(kind>0.5 && kind<1.5 ? 2.4 : (kind>2.5 ? 2.0 : 1.0)); }`;
-    const pulseFS = `uniform float uT; uniform vec3 uAcc; varying float vPh; varying float vKind; varying float vAge; varying float vF;
+    const pulseFS = `uniform float uT; uniform vec3 uAcc; uniform float uLight; varying float vPh; varying float vKind; varying float vAge; varying float vF;
       void main(){ float d=length(gl_PointCoord-0.5)*2.0; vec3 col; float a;
         if(vKind<0.5){ float core=smoothstep(0.22,0.1,d); float glow=smoothstep(0.55,0.0,d)*0.22; col=uAcc; a=(core+glow)*smoothstep(0.0,0.8,vAge); }
         else if(vKind<1.5){ float t=clamp(vAge/1.4,0.0,1.0); float ring=smoothstep(0.07,0.0,abs(d-t))*(1.0-t); float core=smoothstep(0.3,0.0,d)*(1.0-t)*1.5; col=vec3(1.0,0.8,0.42); a=ring*1.4+core; }
         else if(vKind<2.5){ float core=smoothstep(0.16,0.06,d); float glow=smoothstep(0.5,0.0,d)*0.3; col=mix(uAcc,vec3(1.0),0.35); a=core*1.2+glow; }
         else { float t=clamp(vAge/1.1,0.0,1.0); float ring=smoothstep(0.06,0.0,abs(d-t))*(1.0-t); col= vKind<3.5 ? uAcc : vec3(0.74,0.83,1.0); a=ring*1.3+smoothstep(0.2,0.0,d)*(1.0-t); }
-        a*=vF; if(a<0.01) discard; gl_FragColor=vec4(col*a,a); }`;
+        a*=vF; if(a<0.01) discard; if(uLight>0.5){ if(vKind>0.5 && vKind<1.5) col=vec3(0.86,0.6,0.12); gl_FragColor=vec4(min(col,vec3(1.0))*0.92,min(a,1.0)); } else { gl_FragColor=vec4(col*a,a); } }`;
     const MAXP = MAXV + 40;
     const pg = new THREE.BufferGeometry(), pPos = new Float32Array(MAXP * 3), pPh = new Float32Array(MAXP), pKind = new Float32Array(MAXP), pBorn = new Float32Array(MAXP);
     pg.setAttribute("position", new THREE.BufferAttribute(pPos, 3)); pg.setAttribute("ph", new THREE.BufferAttribute(pPh, 1)); pg.setAttribute("kind", new THREE.BufferAttribute(pKind, 1)); pg.setAttribute("born", new THREE.BufferAttribute(pBorn, 1));
-    const pulseMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uT: { value: 0 }, uSize: { value: 20 }, uAcc: { value: new THREE.Vector3(...accent()) } }, vertexShader: pulseVS, fragmentShader: pulseFS });
+    const pulseMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uT: { value: 0 }, uSize: { value: 20 }, uAcc: { value: new THREE.Vector3(...accent()) }, uLight: { value: 0 } }, vertexShader: pulseVS, fragmentShader: pulseFS });
     // a new accent (avatar menu): the light follows it
-    new MutationObserver(() => { const a = accent(); pulseMat.uniforms.uAcc.value.set(...a); atm.material.uniforms.uAcc.value.set(...a); if (active() === S) S.renderOnce(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "data-theme"] });
+    // Light or dark: the clear colour, the ball, the land, the glow and the lights follow the theme (and the accent)
+    const blend = (m, light) => { const b = light ? THREE.NormalBlending : THREE.AdditiveBlending; if (m.blending !== b) { m.blending = b; m.needsUpdate = true; } };
+    function theme() {
+      const light = isLight(), a = accent();
+      pulseMat.uniforms.uAcc.value.set(...a); atm.material.uniforms.uAcc.value.set(...a);
+      [dotMat.uniforms, atm.material.uniforms, pulseMat.uniforms].forEach((u) => { u.uLight.value = light ? 1 : 0; });
+      [dotMat, atm.material, pulseMat].concat(arcs.map((x) => x.mat)).forEach((m) => blend(m, light));
+      stars.visible = !light;
+      if (light) {
+        const paper = cssRGB("--paper", "#ffffff"), ink = cssRGB("--fg", "#14161a");
+        dotMat.uniforms.uInk.value.set(...ink);
+        ball.material.color.setRGB(paper[0] * 0.955 + ink[0] * 0.045, paper[1] * 0.955 + ink[1] * 0.045, paper[2] * 0.955 + ink[2] * 0.045);
+        renderer.setClearColor(new THREE.Color(paper[0], paper[1], paper[2]), 1);
+      } else { ball.material.color.setHex(0x030304); renderer.setClearColor(0x000000, 1); }
+    }
+    S.theme = theme;
+    new MutationObserver(() => { theme(); if (active() === S) S.renderOnce(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "data-theme"] });
     const pulses = new THREE.Points(pg, pulseMat); pulses.frustumCulled = false; pulses.renderOrder = 4; spin.add(pulses);
     const HOMEP = ll(HOME.lat, HOME.lon, 1.004);
     let bursts = [], clock = 0, crowd = [];
@@ -253,13 +280,13 @@ export function createGlobe() {
 
     // a payment: a gold arc from the buyer's country to the base
     const arcVS = "varying float vU; void main(){ vU=uv.x; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }";
-    const arcFS = "uniform float uH; uniform vec3 uAcc; varying float vU; void main(){ float tail=uH-0.38; float a=smoothstep(tail,uH,vU)*step(vU,uH); float head=smoothstep(uH-0.04,uH,vU)*step(vU,uH); vec3 c=mix(uAcc,vec3(1.0),head*0.8); a=a*0.9+head*1.6; gl_FragColor=vec4(c*a,a); }";
+    const arcFS = "uniform float uH; uniform vec3 uAcc; uniform float uLight; varying float vU; void main(){ float tail=uH-0.38; float a=smoothstep(tail,uH,vU)*step(vU,uH); float head=smoothstep(uH-0.04,uH,vU)*step(vU,uH); if(uLight>0.5){ gl_FragColor=vec4(mix(uAcc,uAcc*0.6,head),min(1.0,a*0.9+head)); return; } vec3 c=mix(uAcc,vec3(1.0),head*0.8); a=a*0.9+head*1.6; gl_FragColor=vec4(c*a,a); }";
     const arcs = [];
     function addArc(e) {
       const w = where(e.cc), Sv = new THREE.Vector3(...ll(w[0], w[1], 1.003)), E = new THREE.Vector3(...HOMEP);
       const ang = Sv.angleTo(E), mid = Sv.clone().add(E).normalize().multiplyScalar(1 + ang * 0.42);
       const geo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(Sv, mid, E), phone ? 48 : 80, 0.0065, 5, false);
-      const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uH: { value: 0 }, uAcc: pulseMat.uniforms.uAcc }, vertexShader: arcVS, fragmentShader: arcFS });
+      const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: isLight() ? THREE.NormalBlending : THREE.AdditiveBlending, uniforms: { uH: { value: 0 }, uAcc: pulseMat.uniforms.uAcc, uLight: pulseMat.uniforms.uLight }, vertexShader: arcVS, fragmentShader: arcFS });
       const m = new THREE.Mesh(geo, mat); m.renderOrder = 5; spin.add(m);
       bursts.push({ p: Sv.toArray(), born: clock, kind: 1 }); writePulses();
       arcs.push({ m, geo, mat, t: 0, dur: 1.5 + ang * 0.25, e, landed: false });
@@ -355,7 +382,7 @@ export function createGlobe() {
       }, Lw.W, Lw.H, cur);
     };
     S.renderOnce = function () { if (!Lw || active() !== S) return; S.step(0); renderer.render(scene, camera); };
-    S.enter = function () { enterT = reduced ? 9 : 0; S.syncVisitors(); kick(); };
+    S.enter = function () { theme(); enterT = reduced ? 9 : 0; S.syncVisitors(); kick(); };
     S.event = function (e) {
       if (!where(e.cc)) return;
       if (active() !== S || !wantRun()) return;

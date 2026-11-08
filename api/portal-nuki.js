@@ -136,6 +136,7 @@ function fileBlocks(files) {
 }
 const blocks = (c) => (typeof c === 'string' ? (c ? [{ type: 'text', text: c }] : []) : c);
 
+let webErr = ''; // why the last internet search was refused (the health check shows it)
 async function ask(system, messages, effort, tools) {
   const parts = [];
   let r;
@@ -154,7 +155,11 @@ async function ask(system, messages, effort, tools) {
       r = await claude().beta.messages.create(tools ? Object.assign({ tools }, params) : params);
     } catch (e) {
       // the internet search not allowed on the account: the same question without it
-      if (tools && e && e.status === 400 && /web_search|tool/i.test(String(e.message))) { tools = null; i--; continue; }
+      // the newest search refused: the basic one; that refused too (search off on the account): the question without it
+      if (tools && e && e.status === 400 && /web_search|tool/i.test(String(e.message))) {
+        webErr = (webErr ? webErr + ' | ' : '') + String(e.message).slice(0, 300); console.error('portal-nuki web:', webErr);
+        tools = tools[0].type === WEB[0].type ? [Object.assign({}, WEB[0], { type: 'web_search_20250305' })] : null; i--; continue;
+      }
       throw e;
     }
     parts.push(...(r.content || []));
@@ -231,7 +236,8 @@ module.exports.ping = async () => {
     const [offers, hours] = await Promise.all([offersText(), hoursText()]);
     const facts = 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.\n\nDatele clinicii.\nOfertele active:\n' + offers + '\n\nClinicile:\n' + hours;
     const reply = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'O clientă din Arad întreabă: „Cât costă la gușă și când aș putea veni?” Scrie mesajul.' }]);
+    webErr = '';
     const chat = await ask([{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'Cât e cursul euro BNR azi? Și cât fac 2.500 lei în euro?' }], 'medium', WEB);
-    return { key: true, ok: !!(reply.text && chat.text), reply: reply.text.slice(0, 500), chat: chat.text.slice(0, 700), searches: chat.searches };
+    return { key: true, ok: !!(reply.text && chat.text), reply: reply.text.slice(0, 500), chat: chat.text.slice(0, 700), searches: chat.searches, webErr };
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };

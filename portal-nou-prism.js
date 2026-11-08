@@ -59,7 +59,8 @@
     if (WIDE.addEventListener) WIDE.addEventListener('change', function () { var mm = model(); if (mm) people(mm, true); });
     if ('ResizeObserver' in window) new ResizeObserver(function () { var w = box.clientWidth; if (w !== lw) { lw = w; var mm = model(); if (mm) people(mm, true); } else layout(); go(); }).observe(box);
     else addEventListener('resize', function () { var mm = model(); if (mm) people(mm, true); }, { passive: true });
-    new MutationObserver(function () { if (accent() !== acc) { spr = null; layout(); } }).observe(html, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] });
+    var th = light();
+    new MutationObserver(function () { if (accent() !== acc || light() !== th) { th = light(); spr = null; dots = {}; layout(); go(); } }).observe(html, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] });
     drag();
     // the cards are measured in px: once the fonts arrive their widths change, so measure again (the centred one stays centred)
     if (document.fonts) { var again = function () { var mm = model(); if (mm && box && box.isConnected) people(mm, true); }; document.fonts.ready.then(again); document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', again); }
@@ -185,12 +186,20 @@
     try { var c = document.createElement('canvas'); c.width = c.height = 1; var g = c.getContext('2d'); g.fillStyle = acc || '#2fd6c3'; g.fillRect(0, 0, 1, 1); var d = g.getImageData(0, 0, 1, 1).data; accRGB = d[0] + ',' + d[1] + ',' + d[2]; } catch (e) {}
   }
   var SPEC = ['#ff4f6d', '#ff9f43', '#ffe45c', '#5cf2a0', '#48d6ff', '#5b8cff'];
-  var spr = null, sprC = null, fan = [];
+  // on Light (the owner, 8.11) the light is drawn as ink: deeper colours, no white, no adding up (white on paper is invisible)
+  var SPEC_L = ['#e5345a', '#f07a1a', '#d9a400', '#16b46e', '#0f9fd6', '#3f63e6'];
+  var light = function () { return html.getAttribute('data-theme') === 'light'; };
+  var spec = function () { return light() ? SPEC_L : SPEC; };
+  var white = function () { return light() ? 'rgb(' + accRGB + ')' : '#ffffff'; };
+  var mode = function () { return light() ? 'source-over' : 'lighter'; };
+  var spr = null, sprC = null, sprL = null, fan = [];
+  var glow = function () { return light() ? sprL : spr; };
   function sprite(r, stops) { var c = document.createElement('canvas'); c.width = c.height = r * 2; var g = c.getContext('2d'); var rg = g.createRadialGradient(r, r, 0, r, r, r); stops.forEach(function (s) { rg.addColorStop(s[0], s[1]); }); g.fillStyle = rg; g.fillRect(0, 0, r * 2, r * 2); return c; }
   function sprites() {
     if (spr) return;
     readAccent();
     spr = sprite(32, [[0, 'rgba(255,255,255,1)'], [0.25, 'rgba(' + accRGB + ',.5)'], [1, 'rgba(' + accRGB + ',0)']]);
+    sprL = sprite(32, [[0, 'rgba(' + accRGB + ',1)'], [0.3, 'rgba(' + accRGB + ',.45)'], [1, 'rgba(' + accRGB + ',0)']]);
     // the prism's glass: a ring of spectrum, turned each frame (the blur is baked once into the sprite, never per frame)
     sprC = document.createElement('canvas'); sprC.width = sprC.height = 256;
     var g = sprC.getContext('2d');
@@ -217,7 +226,7 @@
     var w = Math.round(r.width * dpr), h = Math.round(ch * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv.style.width = r.width + 'px'; cv.style.height = ch + 'px'; }
     var ang = Math.atan2(out.y - logo.y, out.x - logo.x), len = Math.hypot(out.x - logo.x, out.y - logo.y);
-    fan = SPEC.map(function (c, k) { var a = ang + (k - (SPEC.length - 1) / 2) * (car.vert ? Math.max(0.05, Math.min(0.09, 7 / Math.max(1, len))) : 0.085), p = new Path2D(); p.moveTo(logo.x, logo.y); p.lineTo(logo.x + Math.cos(a) * len * 0.82, logo.y + Math.sin(a) * len * 0.82); return { p: p, c: c }; });
+    fan = SPEC.map(function (c, k) { c = k; var a = ang + (k - (SPEC.length - 1) / 2) * (car.vert ? Math.max(0.05, Math.min(0.09, 7 / Math.max(1, len))) : 0.085), p = new Path2D(); p.moveTo(logo.x, logo.y); p.lineTo(logo.x + Math.cos(a) * len * 0.82, logo.y + Math.sin(a) * len * 0.82); return { p: p, c: k }; });
     geo();
   }
   // one band per card on screen, from the dot under it to the prism (pure arithmetic: no reading the page while it moves)
@@ -234,8 +243,9 @@
       var x = sums[c.id] || { sum: 0 };
       var sc = c.o != null && c.o < 1 ? 1 - (1 - c.o) / 0.55 * 0.06 : 1;
       var o = old[c.k] || {};
-      var b = { key: c.k, id: c.id, x0: car.vert ? car.left + car.cw - 12 * sc : car.left + cxr, y0: car.vert ? car.top + cxr : car.top + car.h / 2 + (car.h / 2) * sc + 4, col: hue(x.name || ''), w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.5,
-        k: (x.sum ? 0.5 + 0.5 * (x.sum / max) : 0.2) * edge * (c.o != null ? 0.4 + 0.6 * c.o : 1), parts: o.parts || [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.01, li: c.el };
+      var b = { key: c.k, id: c.id, x0: car.vert ? car.left + car.cw - 12 * sc : car.left + cxr, y0: car.vert ? car.top + cxr : car.top + car.h / 2 + (car.h / 2) * sc + 4, col: hue(x.name || ''), w: x.sum ? 1 + 2.6 * (x.sum / max) : 0.8,
+        // a cosmetician with nothing yet (the morning: everyone) still gets a clear ray, only thinner (the owner, 8.11: always visible)
+        k: (x.sum ? 0.55 + 0.45 * (x.sum / max) : 0.42) * edge * (c.o != null ? 0.4 + 0.6 * c.o : 1), parts: o.parts || [], rate: x.sum ? 0.04 + 0.2 * (x.sum / max) : 0.025, li: c.el };
       b.core = new Path2D(); b.bands = SPEC.map(function () { return new Path2D(); });
       var N = 24, run = Math.abs(logo.x - b.x0), spread = (car.vert ? Math.max(2.4, Math.min(5, run / 90)) : 3.4) * (b.w + 0.8); // a longer run opens a wider fan // standing up (a phone) the fan opens wider over the longer drop
       for (var i = 0; i <= N; i++) {
@@ -265,39 +275,41 @@
     var sp = sm ? 2 : 1; lastF = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = mode();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    var L = light(), SP = spec(), WH = white(), GL = glow();
     if (sm && !car.vert) { phone(t); ctx.globalCompositeOperation = 'source-over'; raf = requestAnimationFrame(frame); return; }
     beams.forEach(function (b, i) {
       var br = (0.82 + 0.18 * Math.sin(t * 1.5 + i)) * b.k;
-      if (!sm) { ctx.globalAlpha = 0.07 * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = 'rgb(' + accRGB + ')'; ctx.stroke(b.core); }
+      if (L) br = Math.max(br, 0.45); // on paper a band with nothing yet still shows
+      if (!sm) { ctx.globalAlpha = (L ? 0.05 : 0.07) * br; ctx.lineWidth = b.w * 14; ctx.strokeStyle = 'rgb(' + accRGB + ')'; ctx.stroke(b.core); }
       ctx.lineWidth = Math.max(1, b.w * 0.9);
-      for (var k = sm ? 1 : 0; k < SPEC.length; k += sm ? 2 : 1) { ctx.globalAlpha = 0.75 * br; ctx.strokeStyle = SPEC[k]; ctx.stroke(b.bands[k]); }
-      ctx.globalAlpha = 0.55 * br; ctx.lineWidth = Math.max(0.8, b.w * 0.6); ctx.strokeStyle = '#ffffff'; ctx.stroke(b.core);
+      for (var k = sm ? 1 : 0; k < SP.length; k += sm ? 2 : 1) { ctx.globalAlpha = (L ? 0.6 : 0.75) * br; ctx.strokeStyle = SP[k]; ctx.stroke(b.bands[k]); }
+      ctx.globalAlpha = (L ? 0.35 : 0.55) * br; ctx.lineWidth = Math.max(0.8, b.w * 0.6); ctx.strokeStyle = WH; ctx.stroke(b.core);
       // light running along it
       if (b.parts.length < (sm ? 2 : 5) && Math.random() < b.rate * 5 * sp) b.parts.push({ t: 0, v: 0.006 + Math.random() * 0.006 + b.rate * 0.02, s: 6 + Math.random() * 8 });
       for (var j = b.parts.length - 1; j >= 0; j--) {
         var p = b.parts[j]; p.t += p.v * sp; if (p.t >= 1) { b.parts.splice(j, 1); continue; }
-        var q = pt(b, p.t); ctx.globalAlpha = Math.sin(p.t * Math.PI) * (0.5 + b.k * 0.5); ctx.drawImage(spr, q.x - p.s, q.y - p.s, p.s * 2, p.s * 2);
+        var q = pt(b, p.t); ctx.globalAlpha = Math.sin(p.t * Math.PI) * (0.5 + b.k * 0.5) * (L ? 0.8 : 1); ctx.drawImage(GL, q.x - p.s, q.y - p.s, p.s * 2, p.s * 2);
       }
     });
     // out of the prism: the spectrum fan, then the white ray
     var br = 0.8 + 0.2 * Math.sin(t * 2.1) + flash;
     ctx.lineWidth = 1.6;
-    fan.forEach(function (f, k) { ctx.globalAlpha = (0.22 + 0.12 * Math.sin(t * 2 + k)) * br; ctx.strokeStyle = f.c; ctx.stroke(f.p); });
-    [[18, 0.06, 'rgb(' + accRGB + ')'], [7, 0.18, '#eafffb'], [2.4, 0.95, '#ffffff']].forEach(function (z) { ctx.globalAlpha = Math.min(1, z[1] * br); ctx.lineWidth = z[0] * (1 + flash); ctx.strokeStyle = z[2]; ctx.beginPath(); ctx.moveTo(logo.x, logo.y); ctx.lineTo(out.x, out.y); ctx.stroke(); });
-    var gs = 18 + flash * 30; ctx.globalAlpha = 0.9; ctx.drawImage(spr, out.x - gs, out.y - gs, gs * 2, gs * 2);
+    fan.forEach(function (f, k) { ctx.globalAlpha = (L ? 0.3 : 0.22 + 0.12 * Math.sin(t * 2 + k)) * br; ctx.strokeStyle = SP[f.c]; ctx.stroke(f.p); });
+    (L ? [[14, 0.07, 'rgb(' + accRGB + ')'], [6, 0.16, 'rgb(' + accRGB + ')'], [2.2, 0.85, 'rgb(' + accRGB + ')']] : [[18, 0.06, 'rgb(' + accRGB + ')'], [7, 0.18, '#eafffb'], [2.4, 0.95, '#ffffff']]).forEach(function (z) { ctx.globalAlpha = Math.min(1, z[1] * br); ctx.lineWidth = z[0] * (1 + flash); ctx.strokeStyle = z[2]; ctx.beginPath(); ctx.moveTo(logo.x, logo.y); ctx.lineTo(out.x, out.y); ctx.stroke(); });
+    var gs = (L ? 12 : 18) + flash * 30; ctx.globalAlpha = L ? 0.7 : 0.9; ctx.drawImage(GL, out.x - gs, out.y - gs, gs * 2, gs * 2);
     // the prism: its glass ring of spectrum turns, the core glows (brighter for a moment on a payment)
     var R = logo.r * 1.55;
     ctx.save(); ctx.translate(logo.x, logo.y); ctx.rotate(t * 0.6); ctx.globalAlpha = 0.65 + flash * 0.35; ctx.drawImage(sprC, -R, -R, R * 2, R * 2); ctx.restore();
-    var G = logo.r * (2.6 + flash * 2); ctx.globalAlpha = 0.55 + flash * 0.45; ctx.drawImage(spr, logo.x - G, logo.y - G, G * 2, G * 2);
+    var G = logo.r * (2.6 + flash * 2); ctx.globalAlpha = (L ? 0.16 : 0.55) + flash * 0.45; ctx.drawImage(GL, logo.x - G, logo.y - G, G * 2, G * 2);
     // a payment's pulse: from her card (wherever it is now), through the prism, to the number; there the stage takes over
     for (var c = comets.length - 1; c >= 0; c--) {
       var cm = comets[c]; cm.t += 0.022 * sp; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
       var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || (car.vert ? { x0: car.left + car.cw, y0: logo.y } : { x0: logo.x, y0: car.top + car.h });
       var q2 = cm.t < 1 ? pt(b2, cm.t) : { x: logo.x + (out.x - logo.x) * (cm.t - 1), y: logo.y + (out.y - logo.y) * (cm.t - 1) };
       if (cm.t >= 1 && !cm.hit) { cm.hit = 1; flash = 1; }
-      ctx.globalAlpha = 1; ctx.drawImage(spr, q2.x - 30, q2.y - 30, 60, 60);
+      ctx.globalAlpha = 1; ctx.drawImage(GL, q2.x - 30, q2.y - 30, 60, 60);
     }
     flash *= sm ? 0.88 : 0.94;
     ctx.globalCompositeOperation = 'source-over';
@@ -306,15 +318,17 @@
   // ------------------------------------------------------------------ the phone: one smooth ray per card in her colour, one light running down each
   // in turn, into the logo at one point; out of it a short beam that widens softly into the number (strokes and fills only, 30 fps)
   var dots = {};
-  function dot(c) { return dots[c] || (dots[c] = sprite(16, [[0, 'rgba(255,255,255,1)'], [0.3, c], [1, 'rgba(0,0,0,0)']])); }
+  function dot(c) { var k = (light() ? 'l' : 'd') + c; return dots[k] || (dots[k] = light() ? sprite(16, [[0, c], [0.35, c], [1, 'rgba(255,255,255,0)']]) : sprite(16, [[0, 'rgba(255,255,255,1)'], [0.3, c], [1, 'rgba(0,0,0,0)']])); }
   var ease = function (u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; };
   function phone(t) {
     var P = 2.8; // every ray gets its light once in P seconds, the rays in turn
+    var L = light();
     beams.forEach(function (b, i) {
       var br = (0.86 + 0.14 * Math.sin(t * 1.3 + i)) * b.k, th = 2.8 + 1.1 * (b.w - 0.5);
+      if (L) br = Math.max(br, 0.5);
       ctx.strokeStyle = b.col;
       [[th * 6, 0.05], [th * 3, 0.12], [th * 1.4, 0.5]].forEach(function (z) { ctx.globalAlpha = z[1] * br; ctx.lineWidth = z[0]; ctx.stroke(b.core); });
-      ctx.globalAlpha = 0.55 * br; ctx.lineWidth = Math.max(0.8, th * 0.4); ctx.strokeStyle = '#ffffff'; ctx.stroke(b.core);
+      ctx.globalAlpha = (L ? 0.3 : 0.55) * br; ctx.lineWidth = Math.max(0.8, th * 0.4); ctx.strokeStyle = L ? b.col : '#ffffff'; ctx.stroke(b.core);
       // the impulse: a head with a short fading tail, the rays staggered so they never pulse together
       var ph = ((t + b.key * 0.61) % P) / P; if (ph > 0.6 || b.k < 0.15) return;
       var head = ease(ph / 0.6), sp2 = dot(b.col), sz = 5 + th * 1.6;
@@ -326,17 +340,17 @@
       var g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(' + accRGB + ',' + (0.55 * br) + ')'); g.addColorStop(0.55, 'rgba(' + accRGB + ',' + (0.14 * br) + ')'); g.addColorStop(1, 'rgba(' + accRGB + ',0)');
       var w0 = 2.5, w1 = 54 + flash * 30; ctx.globalAlpha = 1; ctx.fillStyle = g;
       ctx.beginPath(); ctx.moveTo(x - w0, y0); ctx.bezierCurveTo(x - w0, y0 + (y1 - y0) * 0.5, x - w1 * 0.7, y1 - (y1 - y0) * 0.25, x - w1, y1); ctx.lineTo(x + w1, y1); ctx.bezierCurveTo(x + w1 * 0.7, y1 - (y1 - y0) * 0.25, x + w0, y0 + (y1 - y0) * 0.5, x + w0, y0); ctx.closePath(); ctx.fill();
-      var gc = ctx.createLinearGradient(0, y0, 0, y1); gc.addColorStop(0, 'rgba(255,255,255,' + (0.7 * Math.min(1, br)) + ')'); gc.addColorStop(1, 'rgba(255,255,255,0)');
+      var wc = L ? accRGB : '255,255,255', gc = ctx.createLinearGradient(0, y0, 0, y1); gc.addColorStop(0, 'rgba(' + wc + ',' + ((L ? 0.9 : 0.7) * Math.min(1, br)) + ')'); gc.addColorStop(1, 'rgba(' + wc + ',0)');
       ctx.strokeStyle = gc; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + (y1 - y0) * 0.7); ctx.stroke();
     }
     // the halo: discreet, in the accent (brighter for a moment on a payment)
-    var G = logo.r * (2.3 + flash * 1.5); ctx.globalAlpha = 0.42 + flash * 0.5; ctx.drawImage(spr, logo.x - G, logo.y - G, G * 2, G * 2);
+    var G = logo.r * (2.3 + flash * 1.5); ctx.globalAlpha = (L ? 0.14 : 0.42) + flash * 0.5; ctx.drawImage(L ? sprL : spr, logo.x - G, logo.y - G, G * 2, G * 2);
     for (var c = comets.length - 1; c >= 0; c--) {
       var cm = comets[c]; cm.t += 0.044; if (cm.t >= 2) { comets.splice(c, 1); if (cm.done) cm.done(); continue; }
-      var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || { x0: logo.x, y0: car.top + car.h, col: '#fff' };
+      var b2 = beams.find(function (x) { return x.key === cm.key; }) || beams.find(function (x) { return x.id === cm.id; }) || { x0: logo.x, y0: car.top + car.h, col: L ? 'rgb(' + accRGB + ')' : '#fff' };
       var q2 = cm.t < 1 ? pt(b2, ease(cm.t)) : { x: logo.x, y: y0 + (y1 - y0) * (cm.t - 1) };
       if (cm.t >= 1 && !cm.hit) { cm.hit = 1; flash = 1; }
-      ctx.globalAlpha = cm.t < 1 ? 1 : 2 - cm.t; ctx.drawImage(dot(b2.col || '#ffffff'), q2.x - 22, q2.y - 22, 44, 44);
+      ctx.globalAlpha = cm.t < 1 ? 1 : 2 - cm.t; ctx.drawImage(dot(b2.col || (L ? 'rgb(' + accRGB + ')' : '#ffffff')), q2.x - 22, q2.y - 22, 44, 44);
     }
     flash *= 0.88;
   }
@@ -344,9 +358,9 @@
   function drawCalm() {
     if (!ctx || !logo) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
-    ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-    beams.forEach(function (b) { ctx.lineWidth = Math.max(1, b.w * 0.9); SPEC.forEach(function (c, k) { ctx.globalAlpha = 0.6 * b.k + 0.15; ctx.strokeStyle = c; ctx.stroke(b.bands[k]); }); });
-    ctx.globalAlpha = 0.9; ctx.lineWidth = 2.4; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.moveTo(logo.x, logo.y); ctx.lineTo(out.x, out.y); ctx.stroke();
+    ctx.globalCompositeOperation = mode(); ctx.lineCap = 'round';
+    beams.forEach(function (b) { ctx.lineWidth = Math.max(1, b.w * 0.9); spec().forEach(function (c, k) { ctx.globalAlpha = 0.6 * b.k + 0.15; ctx.strokeStyle = c; ctx.stroke(b.bands[k]); }); });
+    ctx.globalAlpha = 0.9; ctx.lineWidth = 2.4; ctx.strokeStyle = white(); ctx.beginPath(); ctx.moveTo(logo.x, logo.y); ctx.lineTo(out.x, out.y); ctx.stroke();
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -384,7 +398,10 @@
     if (panel) new MutationObserver(function () { place(); }).observe(panel, { childList: true });
     if (k.on) k.on('data', function () { setTimeout(function () { place(); var m = model(); if (m && box) people(m); }, 120); });
     var t = setInterval(function () { if (D()) { clearInterval(t); place(); } }, 300);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) go(); });
+    // back in the app on a phone (from another app, the lock screen, the home screen icon): measure again and light it up
+    var wake = function () { if (document.hidden || !box || !box.isConnected) return; visible = true; layout(); go(); };
+    document.addEventListener('visibilitychange', wake);
+    addEventListener('pageshow', wake); addEventListener('focus', wake);
     window.C360Prism = { send: send, place: place };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

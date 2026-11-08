@@ -26,7 +26,8 @@
   // ================================================================ confetti (one canvas, only while it falls)
   var COLORS = function () {
     var cs = getComputedStyle(html);
-    return [cs.getPropertyValue('--accent').trim() || '#14a596', cs.getPropertyValue('--accent-2').trim() || '#5fd4c6', '#ffc94d', '#ff8fb1', '#ffffff'];
+    var lt = html.getAttribute('data-theme') === 'light'; // on paper: no white confetti, deeper gold
+    return [cs.getPropertyValue('--accent').trim() || '#14a596', cs.getPropertyValue('--accent-2').trim() || '#5fd4c6', lt ? '#e0a21b' : '#ffc94d', lt ? '#f0588a' : '#ff8fb1', lt ? '#16181d' : '#ffffff'];
   };
   var cv = null, parts = [], raf = 0;
   function confetti(x, y, n, spread) {

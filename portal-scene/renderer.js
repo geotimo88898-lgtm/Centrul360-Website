@@ -26,6 +26,8 @@ export function loadGL() {
     GL.T = T; GL.canvas = GL.r.domElement; GL.r.setClearColor(0x000000, 1); GL.r.toneMapping = T.NoToneMapping;
     GL.canvas.setAttribute("aria-hidden", "true");
     GL.canvas.addEventListener("webglcontextlost", (e) => e.preventDefault());
+    // a phone took the GPU back (another app, a locked screen): when it returns, draw again (three restores its own state)
+    GL.canvas.addEventListener("webglcontextrestored", () => { const s = LOOP.s; if (s) { try { if (s.theme) s.theme(); s.layout(); s.renderOnce(); } catch (e) {} kick(); } });
     return GL;
   }).catch(() => null);
   return GL.p;
@@ -68,7 +70,7 @@ export function attach(s) {
   s.layout(); s.renderOnce(); kick(); topOver();
 }
 export function detach(s) { if (LOOP.s === s) { LOOP.s = null; cancelAnimationFrame(LOOP.raf); LOOP.raf = 0; } topOver(); }
-document.addEventListener("visibilitychange", kick);
+document.addEventListener("visibilitychange", kick); addEventListener("pageshow", kick);
 // the sticky top bar drops its blur while a live canvas is under it (re-blurring every frame is the most expensive thing on the page)
 function topOver() {
   const t = document.querySelector("header.topbar"), s = LOOP.s; if (!t) return;

@@ -235,7 +235,8 @@
     b.className = 'sx-burst';
     b.style.transform = 'translate3d(' + (x - r.left) + 'px,' + (y - r.top) + 'px,0)';
     var ac = (getComputedStyle(html).getPropertyValue('--accent') || '#2fd6c3').trim(), ac3 = (getComputedStyle(html).getPropertyValue('--accent-3') || '#bff8f0').trim();
-    var cols = [ac3, ac, '#ffd27a', '#ffffff', ac];
+    var lt = html.getAttribute('data-theme') === 'light'; // on paper: deeper gold, no white (the owner, 8.11)
+    var cols = lt ? [ac, '#e0a21b', ac3, '#16181d', ac] : [ac3, ac, '#ffd27a', '#ffffff', ac];
     for (var i = 0; i < n; i++) {
       var s = document.createElement('i');
       var coin = coins && i % 3 === 0;
