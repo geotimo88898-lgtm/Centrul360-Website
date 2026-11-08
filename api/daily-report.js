@@ -115,8 +115,7 @@ module.exports = async (req, res) => {
     res.status(200).json(Object.assign({ words: words(n) }, n));
     return;
   }
-  const secret = process.env.CRON_SECRET;
-  const cron = secret ? req.headers.authorization === 'Bearer ' + secret : /vercel-cron/i.test(String(req.headers['user-agent'] || ''));
+  const cron = require('./_lib/cron-auth').isCron(req);
   if (!cron && !owner) { res.status(401).json({ error: 'unauthorized' }); return; }
   const store = { readJSON, writeJSON };
   // any POS payment the live notice missed comes in first (a failed read only leaves the check to what is known)
