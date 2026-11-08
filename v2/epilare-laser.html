@@ -99,6 +99,8 @@
 .ep-film figcaption{ display:flex; justify-content:space-between; gap:12px; padding:18px 6px 0; font-size:15px; }
 .ep-film figcaption b{ font-weight:600; }
 .ep-film figcaption span{ color:var(--mute); }
+.ep-snd{ position:absolute; right:14px; bottom:14px; width:42px; height:42px; border:0; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.86); color:#0b2826; cursor:pointer; box-shadow:0 8px 20px -10px rgba(0,0,0,.45); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.ep-snd svg{ width:20px; height:20px; } .ep-snd .on{ display:none; } .ep-snd[aria-pressed="true"] .on{ display:block; } .ep-snd[aria-pressed="true"] .off{ display:none; }
 .ep-tech{ list-style:none; margin:40px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:30px 36px; }
 .ep-tech li{ padding-top:18px; border-top:1px solid var(--line2); }
 .ep-tech b{ display:block; font-size:1.08rem; font-weight:700; letter-spacing:-.02em; margin-bottom:6px; }
@@ -196,7 +198,7 @@
 </div></section>
 
 <section class="s" id="sedinta" style="padding-top:0"><div class="wrap ep-vid">
-  <figure class="ep-film rv"><div class="ph"><video muted loop playsinline preload="none" poster="/brand_asset/epilare-poster.webp" aria-label="O ședință de epilare laser cu Elysion Pro, pe picior"><source src="/brand_asset/epilare.mp4" type="video/mp4"></video></div><figcaption><b>O ședință, pe bune</b><span>Elysion Pro</span></figcaption></figure>
+  <figure class="ep-film rv"><div class="ph"><video muted loop playsinline preload="none" poster="/brand_asset/epilare-pas-cu-pas.webp" aria-label="O ședință de epilare laser la Centrul360, de la fișă la laser"><source src="/brand_asset/epilare-pas-cu-pas.mp4" type="video/mp4"></video><button type="button" class="ep-snd" aria-label="Pornește sunetul" aria-pressed="false"><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/></svg><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button></div><figcaption><b>De la fișă la laser</b><span>Elysion Pro</span></figcaption></figure>
   <div>
     <div class="head left rv" style="margin-bottom:0"><span class="eye">Așa arată o ședință</span><h2>Fără ceară. <em>Fără aparat de ras.</em></h2><p class="lead">Laserul acționează direct asupra foliculului. La final ai o piele netedă, fără iritații, fără fire crescute sub piele și fără bătaia de cap a întreținerii săptămânale.</p></div>
     <ul class="ep-tech rv">
@@ -293,6 +295,9 @@
 (function () {
   var v = document.querySelector('.ep-film video'); if (!v) return;
   v.muted = true;
+  // the sound: off until she taps it (the film has music)
+  var snd = document.querySelector('.ep-snd');
+  if (snd) snd.addEventListener('click', function () { v.muted = !v.muted; snd.setAttribute('aria-pressed', String(!v.muted)); snd.setAttribute('aria-label', v.muted ? 'Pornește sunetul' : 'Oprește sunetul'); if (!v.muted && v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } });
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) { v.controls = true; return; }
   new IntersectionObserver(function (es) { es.forEach(function (e) {
     if (e.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () { v.controls = true; }); } else v.pause();
