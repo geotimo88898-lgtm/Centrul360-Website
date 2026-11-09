@@ -436,8 +436,8 @@
   function offerChips(loc) {
     const key = loc === 'Arad' ? 'arad' : 'timisoara';
     const offers = ((K.data && K.data.offers) || []).filter((o) => !o.locations || !o.locations.length || o.locations.includes(key));
-    if (!offers.length) return '';
-    return '<div class="cal-offers" data-cal-offers>' + offers.map((o) => '<button type="button" data-offer="' + esc(o.id) + '"><b>' + esc(o.title) + '</b><span>' + K.lei(o.priceNew) + '</span></button>').join('') + '</div>';
+    // the free consultation first, as on the site (the owner, 9.11: „să am și varianta să pun consultația gratuită”)
+    return '<div class="cal-offers" data-cal-offers><button type="button" data-offer="consult"><b>Consultație gratuită</b><span>0 lei</span></button>' + offers.map((o) => '<button type="button" data-offer="' + esc(o.id) + '"><b>' + esc(o.title) + '</b><span>' + K.lei(o.priceNew) + '</span></button>').join('') + '</div>';
   }
   // Offers carry the site category (epilare / faciale / remodelare) → the three portal categories.
   function offerCats(o) {
@@ -505,12 +505,13 @@
     f.addEventListener('click', (e) => {
       const b = e.target.closest('[data-offer]');
       if (!b) return;
-      const o = (K.data.offers || []).find((x) => x.id === b.dataset.offer);
+      const o = b.dataset.offer === 'consult' ? { title: 'Consultație gratuită', priceNew: 0, consult: true } : (K.data.offers || []).find((x) => x.id === b.dataset.offer);
       if (!o) return;
       f.querySelectorAll('[data-offer]').forEach((x) => x.classList.toggle('is-on', x === b));
       f.treatment.value = o.title;
       f.amount.value = o.priceNew;
       const pick = f.querySelector('[data-catpick]');
+      if (o.consult) return; // the category stays the one picked: a consultation can be for the face or the body
       const cats = offerCats(o);
       pick.querySelectorAll('[data-cat]').forEach((x) => { const on = cats.includes(x.dataset.cat); x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on); });
       pick.querySelector('input[name=categories]').value = cats.join(',');
