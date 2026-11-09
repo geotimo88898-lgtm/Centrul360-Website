@@ -1524,6 +1524,13 @@
       startTimer();
     },
     openLead, openNew, openQueue,
+    // a lead's sheet opened over another section (Mesaje: the contact's picture), the Pipeline not shown (the owner, 9.11)
+    async show(id, opts) {
+      if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX);
+      mount();
+      if (!S.loaded || !leadById(id)) await load(S.loaded);
+      return openLead(id, opts);
+    },
   };
   // Lead names should be searchable from Ctrl+K before the tab is ever opened.
   if (window.K) {

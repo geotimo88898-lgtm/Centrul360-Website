@@ -354,15 +354,17 @@
     C.pushed = false;
     if (C.selectedPhone) closeThread();
   });
-  // her lead in the Pipeline (it opens as soon as the Pipeline has its leads)
-  function openLead(id) {
-    C.pushed = false; // the Pipeline takes this step in history; back returns to Mesaje
+  // her lead's sheet, opened over Mesaje: the conversation stays where it is (the owner, 9.11: „să nu mă scoată din mesaje”)
+  async function openLead(id) {
+    const P = window.C360Pipeline;
+    try { if (P && P.show && (await P.show(id))) return; } catch (e) { /* the old way below */ }
+    C.pushed = false;
     closeThread();
     K.go('pipeline');
     const until = Date.now() + 5000;
     (function tryOpen() {
-      const P = window.C360Pipeline;
-      if ((P && P.openLead(id)) || Date.now() > until) return;
+      const Q = window.C360Pipeline;
+      if ((Q && Q.openLead(id)) || Date.now() > until) return;
       setTimeout(tryOpen, 200);
     })();
   }
