@@ -95,7 +95,7 @@ async function offersText() {
 }
 // the clinics' hours and the next free online hours (a 30 minute consultation), from Calendar → Online
 async function hoursText() {
-  const [cfg, appts] = await Promise.all([B.settings(), readJSON('data/appointments.json', [])]);
+  const [cfg, appts] = await Promise.all([B.settings({ team: true }), readJSON('data/appointments.json', [])]);
   const out = [];
   for (const city of B.CITIES) {
     const c = cfg.cities && cfg.cities[city];
@@ -139,10 +139,12 @@ function placesAt(cfg, city, date, appts) {
   if (!d || !d.on || (c.closed || []).includes(date)) return { open: false };
   const off = new Set(appts.filter((a) => a.location === city && a.date === date && (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId));
   const closed = appts.some((a) => a.location === city && a.date === date && (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId);
-  return { open: !closed, from: toMin(d.from), to: toMin(d.to), cap: Math.max(0, (Number(d.at) || 1) - off.size) };
+  // the places at a minute: the day's „at” minus who is on leave, or who works then (Programul echipei, _lib/team-schedule.js)
+  const cap = B.capacity(cfg, city, date, appts);
+  return { open: !closed, from: toMin(d.from), to: toMin(d.to), cap: (m) => Math.max(0, cap && cap.team ? cap.at(m) : (Number(d.at) || 1) - off.size) };
 }
 async function slotCheck(want, city) {
-  const [cfg, appts, sales, offers] = await Promise.all([B.settings(), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), B.services(city)]);
+  const [cfg, appts, sales, offers] = await Promise.all([B.settings({ team: true }), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), B.services(city)]);
   const pick = want.treatment ? offers.find((o) => o.id !== 'consult' && fold(want.treatment).split(/\s+/).filter((w) => w.length > 3).some((w) => fold(o.title).includes(w))) : null;
   const svc = pick || (want.treatment ? null : B.CONSULT);
   const minutes = (svc && svc.minutes) || 60;
@@ -150,7 +152,7 @@ async function slotCheck(want, city) {
   const P = placesAt(cfg, city, want.date, appts);
   const taken = overlaps(appts, city, want.date, s, e).filter((a) => a.status !== 'concediu' && !a.block);
   const inHours = P.open && s >= P.from && e <= P.to;
-  const free = inHours && taken.length < P.cap;
+  const free = inHours && taken.length < P.cap(s);
   const paid = (a) => !!a.paidSaleId || sales.some((x) => x.appointmentId === a.id);
   const who = taken.map((a) => {
     const before = appts.filter((x) => x.clientId && x.clientId === a.clientId && x.id !== a.id && x.status !== 'anulata' && x.date < a.date && fold(x.treatment).slice(0, 6) === fold(a.treatment).slice(0, 6)).length;
@@ -162,7 +164,7 @@ async function slotCheck(want, city) {
     const day = B.addDay(want.date, k), Q = placesAt(cfg, city, day, appts);
     if (!Q.open) continue;
     const cands = [];
-    for (let t = Q.from; t + minutes <= Q.to; t += 30) if (overlaps(appts, city, day, t, t + minutes).filter((a) => a.status !== 'concediu' && !a.block).length < Q.cap) cands.push(t);
+    for (let t = Q.from; t + minutes <= Q.to; t += 30) if (overlaps(appts, city, day, t, t + minutes).filter((a) => a.status !== 'concediu' && !a.block).length < Q.cap(t)) cands.push(t);
     cands.sort((a, b) => Math.abs(a - s) - Math.abs(b - s)).slice(0, k === 0 ? 2 : 1).forEach((t) => { if (!(k === 0 && t === s) && alt.length < 4) alt.push({ date: day, time: hhmm(t) }); });
   }
   return { date: want.date, time: want.time, endTime: hhmm(e), minutes, city, treatment: svc ? svc.title : want.treatment || '', price: svc ? svc.price : 0,

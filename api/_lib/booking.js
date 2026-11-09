@@ -9,6 +9,7 @@
 
 const { readJSON } = require('./store');
 const { loadOffers } = require('./offers');
+const T = require('./team-schedule');
 
 const KEY = 'data/booking.json';
 const CITIES = ['Timișoara', 'Arad'];
@@ -73,7 +74,15 @@ function clean(input) {
   return out;
 }
 
-async function settings() { return clean(await readJSON(KEY, null)); }
+// With { team: true }: Programul echipei rides along (not saved, not sent back): once a city has a weekly schedule, the
+// clients it takes at an hour are the cosmeticians working then (api/_lib/team-schedule.js), not the day's „at”.
+async function settings(opts) {
+  if (!(opts && opts.team)) return clean(await readJSON(KEY, null));
+  const [raw, doc, people] = await Promise.all([readJSON(KEY, null), T.load(), T.people()]);
+  const out = clean(raw);
+  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)) }, enumerable: false });
+  return out;
+}
 
 // how long a treatment takes in the Calendar (the clinic's own medians, 4.11): HIFU on the chin 30 min, a full body
 // laser 90, the rest an hour
@@ -123,10 +132,23 @@ function busy(appts, city, date, skipId) {
   });
   return { iv, cut: off.size, closed };
 }
-// the most places taken at once between two minutes
-function peak(iv, s, e) {
-  const pts = [s].concat(iv.filter((x) => x[0] > s && x[0] < e).map((x) => x[0]));
-  return Math.max(0, ...pts.map((p) => iv.reduce((n, x) => n + (x[0] <= p && x[1] > p ? x[2] : 0), 0)));
+// How many clients fit at each minute of a day: the day's „at” minus the cosmeticians on leave, or, once the city has a
+// weekly schedule, the cosmeticians working at that minute (their leave already counted). edges: the minutes it changes.
+function capOf(cfg, city, date, d, b, appts) {
+  const t = cfg.team;
+  if (!t || !T.hasSchedule(t.doc, city, t.ids)) { const n = d.at - b.cut; return { team: false, at: () => n, edges: [], max: n }; }
+  const shifts = T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).map((w) => [toMin(w.from), toMin(w.to)]);
+  return { team: true, at: (p) => shifts.filter((x) => x[0] <= p && x[1] > p).length, edges: [].concat(...shifts), max: shifts.length };
+}
+// the same for a day of a city as Nuki reads it (api/portal-nuki.js): null when the city is closed that weekday
+function capacity(cfg, city, date, appts) {
+  const c = cfg.cities[city], d = c && c.days[weekday(date)];
+  return d ? capOf(cfg, city, date, d, busy(appts, city, date), appts) : null;
+}
+// a client fits between two minutes: at every moment the places taken stay under the places there are
+function fits(iv, s, e, cap) {
+  const pts = [s].concat(iv.filter((x) => x[0] > s && x[0] < e).map((x) => x[0]), cap.edges.filter((p) => p > s && p < e));
+  return pts.every((p) => iv.reduce((n, x) => n + (x[0] <= p && x[1] > p ? x[2] : 0), 0) < cap.at(p));
 }
 
 // The start times free on a day for a treatment of so many minutes
@@ -138,13 +160,13 @@ function freeOn(cfg, city, date, minutes, appts, now) {
   const d = c.days[weekday(date)];
   if (!d || !d.on) return [];
   const b = busy(appts, city, date);
-  const cap = d.at - b.cut;
-  if (b.closed || cap < 1) return [];
+  const cap = capOf(cfg, city, date, d, b, appts);
+  if (b.closed || cap.max < 1) return [];
   const open = toMin(d.from), close = toMin(d.to), earliest = date === n.date ? n.min + cfg.notice : -1;
   const out = [];
   for (let t = open; t + minutes <= close; t += cfg.step) {
     if (t < earliest) continue;
-    if (peak(b.iv, t, t + minutes) < cap) out.push(hhmm(t));
+    if (fits(b.iv, t, t + minutes, cap)) out.push(hhmm(t));
   }
   return out;
 }
@@ -163,7 +185,7 @@ function overbooked(cfg, appts, entry) {
   const others = appts.filter((a) => a.id !== entry.id);
   const b = busy(others, entry.location, entry.date);
   const s = toMin(entry.time), e = toMin(entry.endTime) || s + 60;
-  if (b.closed || peak(b.iv, s, e) + 1 > d.at - b.cut) {
+  if (b.closed || !fits(b.iv, s, e, capOf(cfg, entry.location, entry.date, d, b, others))) {
     // the one that came first stays: only a later site booking that overlaps gives way
     const rivals = others.filter((a) => a.createdBy === 'site' && a.location === entry.location && a.date === entry.date && a.status !== 'anulata'
       && toMin(a.time) < e && (toMin(a.endTime) || toMin(a.time) + 60) > s);
@@ -172,4 +194,4 @@ function overbooked(cfg, appts, entry) {
   return false;
 }
 
-module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, services, custom, freeOn, days, overbooked, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };
+module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };

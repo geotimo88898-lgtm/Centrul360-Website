@@ -15,6 +15,7 @@ const { readJSON, writeJSON } = require('./store');
 // where a change happened: the portal section (and its link), the document holding the thing changed
 const ROUTES = {
   'portal-appointments': { area: 'Programări', go: 'programari', doc: 'data/appointments.json', ids: ['id'] },
+  'portal-schedule': { area: 'Programări', go: 'programari' },
   'portal-leads': { area: 'Pipeline', go: 'pipeline', doc: 'data/leads.json', ids: ['leadId', 'id'] },
   'portal-contacts': { area: 'Contacte', go: 'contacte', doc: 'data/clients.json', ids: ['id'] },
   'portal-incasari': { area: 'Încasări', go: 'incasari', doc: 'data/sales.json', ids: ['id'] },
@@ -48,6 +49,7 @@ const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-crea
 // the words for each change (route:action; route: for the routes without actions)
 const VERBS = {
   'portal-appointments:create': 'a programat', 'portal-appointments:update': 'a modificat programarea', 'portal-appointments:delete': 'a șters programarea',
+  'portal-schedule:save_week': 'a modificat programul pentru', 'portal-schedule:save_date': 'a modificat programul dintr-o zi pentru',
   'portal-leads:create': 'a adăugat leadul', 'portal-leads:update_details': 'a modificat leadul', 'portal-leads:move_stage': 'a mutat leadul',
   'portal-leads:add_note': 'a notat la', 'portal-leads:log_contact': 'a contactat', 'portal-leads:set_followup': 'a setat follow-up la',
   'portal-leads:link_appointment': 'a programat leadul', 'portal-leads:delete': 'a șters leadul', 'portal-leads:stages_save': 'a modificat etapele din Pipeline',

@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
       const q = req.query || {};
       const city = cityOf(q.city) || 'Timișoara';
       // read together; the edge keeps the answer a few seconds (a booking checks the hour again, fresh)
-      const [cfg, picked, appts] = await Promise.all([B.settings(), pick(city, clip(q.service, 60) || 'consult', q.label), readJSON('data/appointments.json', [])]);
+      const [cfg, picked, appts] = await Promise.all([B.settings({ team: true }), pick(city, clip(q.service, 60) || 'consult', q.label), readJSON('data/appointments.json', [])]);
       const { list, svc } = picked;
       const s = svc || list[0];
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=50');
@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
       res.status(200).json({ on: true, city, services: list, service: s, step: cfg.step, days: B.days(cfg, city, s.minutes, appts) });
       return;
     }
-    const cfg = await B.settings();
+    const cfg = await B.settings({ team: true });
 
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     if (!cfg.on) { res.status(409).json({ error: 'off' }); return; }

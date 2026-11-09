@@ -1790,7 +1790,7 @@ main.ad-full{ max-width:none; }
   /* the admin's Online (the site's booking hours) stays reachable on a phone */
   .cal .k-head-actions:has([data-act="online"]){ display:flex; position:absolute; top:0; right:0; width:auto; }
   .cal .k-head-actions .k-btn{ display:none; }
-  .cal .k-head-actions .k-btn[data-act="online"]{ display:inline-flex; flex:none; }
+  .cal .k-head-actions .k-btn:is([data-act="online"], [data-act="team"]){ display:inline-flex; flex:none; }
   .cal .k-head{ position:relative; }
   /* one scroll on a phone, the page: the day's grid is as tall as it needs, its heads stay under the header */
   .cal-wrap{ overflow:clip; max-height:none; min-height:0; }
@@ -2458,6 +2458,27 @@ html.mx-pv-open{ overflow:hidden; }
   .onl-gen{ grid-template-columns:1fr; }
   .onl-add{ margin-left:0; }
 }
+
+/* Calendar → Program echipă (portal-calendar.js openTeam) and who works, on top of the day */
+.cal-team{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .7rem; margin:-.45rem 0 .8rem; font-size:.78rem; color:var(--muted); }
+.cal-team[hidden]{ display:none; }
+.cal-team-k{ display:inline-flex; align-items:center; gap:.3rem; font-weight:600; }
+.cal-team-k .k-ic{ width:13px; height:13px; opacity:.7; }
+.cal-team-c{ display:inline-flex; flex-wrap:wrap; align-items:center; gap:.3rem; }
+.cal-team-c > b{ font-weight:600; color:var(--fg); font-size:.76rem; margin-right:.1rem; }
+.cal-team .k-tag{ font-variant-numeric:tabular-nums; }
+.tm-city{ display:flex; align-items:center; gap:.4rem; margin:.2rem 0 -.4rem; font-size:.78rem; font-weight:650; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.tm-city .k-ic{ width:14px; height:14px; opacity:.7; }
+.tm-emp .onl-city-h{ align-items:center; }
+.tm-emp .onl-city-h b{ margin-right:auto; white-space:nowrap; }
+.tm-emp .onl-city-h .c360-select, .tm-add .c360-select{ width:auto; flex:none; }
+.tm-emp .onl-city-h select{ height:32px; padding:0 .45rem; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; }
+.tm-save{ display:flex; justify-content:flex-end; padding:.55rem 1rem; border-bottom:1px solid var(--line); }
+.tm-add{ flex-wrap:wrap; align-items:center; }
+.tm-add select{ height:32px; padding:0 .45rem; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; }
+.tm-hours{ display:inline-flex; align-items:center; gap:.3rem; }
+.tm-hours[hidden]{ display:none; }
+.tm-hours i{ font-style:normal; color:var(--muted-2); }
 
 /* Phones (7.11): Calendar's "Online" sits on its own line above the day instead of on top of the date;
    Automatizări: a flow's name keeps its line (it was squeezed to one letter by the numbers next to it). */

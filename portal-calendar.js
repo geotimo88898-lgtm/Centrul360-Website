@@ -61,7 +61,7 @@
     if (window.innerWidth < 720) { let v = 'day'; try { v = localStorage.getItem(PHONE_VIEW) === 'week' ? 'week' : 'day'; } catch (e) { /* private mode */ } S.view = v; }
     panel.innerHTML =
       // no page title (the owner, 5.11: more room for the calendar); the buttons stay, on the right
-      (canEdit() ? '<div class="k-head cal-head"><div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div></div>' : '') +
+      (canEdit() ? '<div class="k-head cal-head"><div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button><button type="button" class="k-btn is-outline" data-act="team">' + icon('users') + 'Program echipă</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div></div>' : '') +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
@@ -73,6 +73,7 @@
       '</div>' +
       '<div class="cal-mbox" data-mbox hidden></div>' +
       '<div class="cal-summary" data-summary></div>' +
+      '<div class="cal-team" data-team hidden></div>' +
       '<div class="cal-wrap k-card"><div class="cal-grid" data-grid></div></div>' +
       (canEdit() ? '<button type="button" class="cal-fab" data-act="new" aria-label="Programare nouă">' + icon('plus') + '</button>' : '');
     gridEl = panel.querySelector('[data-grid]');
@@ -124,6 +125,7 @@
       if (a === 'new') return openNew({});
       if (a === 'block') return openBlock({});
       if (a === 'online') return openOnline();
+      if (a === 'team') return openTeam();
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
       if (a === 'next') return shift(1);
@@ -162,6 +164,8 @@
       if (S.range !== from + '|' + to) return; // a newer navigation won
       S.appts = j.appointments || [];
       render(keepScroll);
+      // who works these days (Programul echipei): the strip on top of the day, after the grid is drawn
+      teamRange(from, to).then(renderTeam).catch(() => {});
     } catch (e) {
       gridEl.innerHTML = K.empty('alert', 'Nu am putut încărca calendarul', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="today">Reîncearcă</button>');
     }
@@ -190,6 +194,7 @@
     const prevScroll = gridEl.parentElement.scrollTop;
     const cols = columns();
     renderSummary(phone() && S.view === 'day' ? visible.filter((a) => a.date === S.date) : visible); // a phone has the month loaded: the day's numbers
+    renderTeam();
     const H = (END - START) * 60 * PPM;
     const hours = Array.from({ length: END - START + 1 }, (_, i) => START + i);
     const today = K.today();
@@ -425,9 +430,12 @@
   const save = (a) => K.api('/api/portal-appointments', payload(a));
 
   // ------------------------------------------------------------------ drawers
-  function empOptions(sel, loc) {
-    const list = cosmeticians(loc);
-    const pairs = list.map((e) => [e.id, e.name]);
+  // with a date and an hour, once the city has a schedule (Program echipă): who works then first, the others still
+  // there, marked „(nu lucrează)”; without a schedule, as before
+  function empOptions(sel, loc, when) {
+    let list = cosmeticians(loc);
+    const on = when && teamAt(when.date, loc, when.time);
+    const pairs = on ? list.filter((e) => on.has(e.id)).map((e) => [e.id, e.name]).concat(list.filter((e) => !on.has(e.id)).map((e) => [e.id, e.name + ' (nu lucrează)'])) : list.map((e) => [e.id, e.name]);
     // an appointment already assigned to someone not in the list (moved city, other role) keeps her
     if (sel && !list.some((e) => e.id === sel)) pairs.push([sel, empName(sel) || 'Cosmeticiana aleasă']);
     return '<option value="">- alege cosmeticiana</option>' + K.options(pairs, sel);
@@ -485,7 +493,19 @@
   function wireForm(el, f) {
     // Moving the start keeps the length (10:00-11:30 → 11:00-12:30).
     let lastStart = f.time.value;
+    // the cosmeticians in the order of who works at that date and hour (Program echipă); fetched once per day
+    const cosAgain = () => {
+      const v = { date: f.date.value, time: f.time.value }, loc = (f.querySelector('input[name=location]') || {}).value || LOCS[0];
+      teamDate(v.date).then(() => {
+        const sel = f.querySelector('[data-cos]');
+        if (!sel || f.date.value !== v.date || f.time.value !== v.time) return; // changed again meanwhile
+        const keep = sel.value;
+        sel.innerHTML = empOptions(keep, loc, v); sel.value = keep;
+      }).catch(() => {});
+    };
+    cosAgain();
     f.addEventListener('change', (e) => {
+      if (['date', 'time', 'location'].includes(e.target.name)) setTimeout(cosAgain, 0);
       if (e.target.name === 'time') {
         const dur = Math.max(15, (toMin(f.endTime.value) || 0) - (toMin(lastStart) || 0));
         const end = toHM(Math.min(toMin(f.time.value) + dur, 23 * 60 + 45));
@@ -746,6 +766,125 @@
           K.ui().toast(out.on ? 'Salvat. Site-ul arată noile ore libere.' : 'Salvat. Programările de pe site sunt oprite.', 'success');
           K.closeDrawer();
         }).catch((err) => K.ui().toast(err.shown ? err.message : K.errText(err), 'error')));
+      },
+    });
+  }
+
+  // ------------------------------------------------------------------ Program echipă (the owner, 9.11: „unde trec programul fetelor”)
+  // Who works when (api/portal-schedule.js): kept per day for a minute, read by the strip on top of the day and by the
+  // booking form; the admin sets it in the drawer (a week per cosmetician, plus the days that differ).
+  const TEAM = { days: {}, cities: {}, at: {} };
+  const TEAM_TTL = 60e3;
+  async function teamRange(from, to, force) {
+    const fresh = (d) => TEAM.at[d] && Date.now() - TEAM.at[d] < TEAM_TTL;
+    let all = true;
+    for (let d = from; d <= to; d = K.addDays(d, 1)) if (!fresh(d)) { all = false; break; }
+    if (all && !force) return;
+    const j = await K.api('/api/portal-schedule', { action: 'get', from, to });
+    TEAM.cities = j.cities || {};
+    const now = Date.now();
+    for (let d = from; d <= to; d = K.addDays(d, 1)) { TEAM.days[d] = (j.works || {})[d] || {}; TEAM.at[d] = now; }
+  }
+  const teamDate = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? teamRange(d, d) : Promise.resolve());
+  // the ids working in a city at a date and hour (a Set), or null when that city has no schedule (then: as before)
+  function teamAt(date, loc, time) {
+    if (!TEAM.cities[loc] || !TEAM.days[date]) return null;
+    const t = toMin(time);
+    return new Set((TEAM.days[date][loc] || []).filter((w) => t == null || (toMin(w.from) <= t && t < toMin(w.to))).map((w) => w.employeeId));
+  }
+  // „9-17”, „12:30-20”
+  const hShort = (t) => String(t || '').replace(/^0(\d)/, '$1').replace(/:00$/, '');
+  function renderTeam() {
+    const el = panel && panel.querySelector('[data-team]');
+    if (!el) return;
+    const locs = S.loc === 'all' ? LOCS : [S.loc];
+    const day = TEAM.days[S.date];
+    const shown = S.view === 'day' && day ? locs.filter((l) => TEAM.cities[l] || (day[l] || []).length) : [];
+    el.hidden = !shown.length;
+    if (!shown.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<span class="cal-team-k">' + icon('users') + 'La lucru</span>' + shown.map((l) => {
+      const list = day[l] || [];
+      return '<span class="cal-team-c">' + (shown.length > 1 || S.loc === 'all' ? '<b>' + esc(l) + '</b>' : '') +
+        (list.length ? list.map((w) => '<span class="k-tag">' + esc(String(w.name || empName(w.employeeId) || '').split(' ')[0]) + ' ' + esc(hShort(w.from) + '-' + hShort(w.to)) + '</span>').join('')
+          : '<span class="k-tag is-mute">nimeni</span>') + '</span>';
+    }).join('');
+  }
+
+  const WD_TEAM = [['1', 'Luni'], ['2', 'Marți'], ['3', 'Miercuri'], ['4', 'Joi'], ['5', 'Vineri'], ['6', 'Sâmbătă'], ['7', 'Duminică']];
+  async function openTeam() {
+    const from = K.today(), to = K.addDays(from, 180);
+    let d;
+    try { d = await K.api('/api/portal-schedule', { action: 'get', from, to }); } catch (err) { K.ui().toast(K.errText(err), 'error'); return; }
+    const times = (v) => { const out = []; for (let m = 7 * 60; m <= 22 * 60; m += 30) out.push(K.pad(Math.floor(m / 60)) + ':' + K.pad(m % 60)); if (v && !out.includes(v)) out.push(v); return out.sort().map((t) => [t, t]); };
+    const cityOf = (p) => (d.weekly[p.id] && d.weekly[p.id].location) || p.location || LOCS[0];
+    const excText = (x) => (x.on ? hShort(x.from) + '-' + hShort(x.to) + (x.location ? ' · ' + x.location : '') : 'liberă');
+    const excChips = (id) => Object.keys(d.dates).sort().filter((dt) => d.dates[dt][id]).map((dt) =>
+      '<span class="onl-chip" data-exc-date="' + dt + '">' + esc(K.dateShort(dt) + ': ' + excText(d.dates[dt][id])) + '<button type="button" aria-label="Scoate" data-exc-rm>' + icon('x') + '</button></span>').join('');
+    const card = (p) => {
+      const w = d.weekly[p.id], days = (w && w.days) || {};
+      return '<section class="onl-city tm-emp" data-emp="' + esc(p.id) + '"><div class="onl-city-h"><b>' + icon('user') + esc(p.name) + '</b>' +
+        (w ? '' : '<span>fără program</span>') + '<select name="loc" class="tm-loc" aria-label="Orașul">' + K.options(LOCS.map((l) => [l, l]), cityOf(p)) + '</select></div>' +
+        '<div class="onl-days">' + WD_TEAM.map(([k, name]) => { const y = days[k] || { on: false, from: '09:00', to: '17:00' };
+          return '<div class="onl-day' + (y.on ? '' : ' is-off') + '">' + K.toggle('on|' + k, y.on, name) +
+            '<span class="onl-set"><select name="from|' + k + '" aria-label="De la">' + K.options(times(y.from), y.from) + '</select><i>-</i><select name="to|' + k + '" aria-label="Până la">' + K.options(times(y.to), y.to) + '</select></span></div>'; }).join('') + '</div>' +
+        '<div class="tm-save"><button type="button" class="k-btn is-primary is-sm" data-tm-save>' + icon('check') + 'Salvează</button></div>' +
+        '<div class="onl-closed"><span>Excepții</span><div class="onl-chips" data-exc>' + excChips(p.id) + '</div>' +
+        '<span class="onl-add tm-add"><input type="date" name="exd" min="' + K.today() + '" aria-label="Ziua">' +
+        '<select name="exk" aria-label="Ce se schimbă">' + K.options([['off', 'Liberă'], ['on', 'Alt program']], 'off') + '</select>' +
+        '<span class="tm-hours" hidden><select name="exf" aria-label="De la">' + K.options(times('09:00'), '09:00') + '</select><i>-</i><select name="ext" aria-label="Până la">' + K.options(times('17:00'), '17:00') + '</select>' +
+        '<select name="exl" aria-label="Orașul">' + K.options(LOCS.map((l) => [l, l]), cityOf(p)) + '</select></span>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-exc-add>' + icon('plus') + 'Adaugă</button></span></div></section>';
+    };
+    const body = () => {
+      if (!d.people.length) return K.empty('users', 'Nicio cosmeticiană activă', '');
+      return '<div class="onl tm">' + LOCS.map((l) => { const list = d.people.filter((p) => cityOf(p) === l);
+        return list.length ? '<h4 class="tm-city">' + icon('pin') + esc(l) + '</h4>' + list.map(card).join('') : ''; }).join('') + '</div>';
+    };
+    const changed = () => { Object.keys(TEAM.at).forEach((k) => delete TEAM.at[k]); if (panel && K.isActive('programari')) load(true); };
+    const post = async (payload) => { const r = await K.api('/api/portal-schedule', Object.assign({ from, to }, payload)); d = r; changed(); return r; };
+    K.drawer({
+      title: 'Program echipă', icon: 'users', width: 560,
+      body: body(),
+      onMount(el) {
+        el.addEventListener('change', (e) => {
+          const row = e.target.closest('.onl-day');
+          if (row && e.target.name && e.target.name.startsWith('on|')) row.classList.toggle('is-off', !e.target.checked);
+          if (e.target.name === 'exk') e.target.closest('.tm-add').querySelector('.tm-hours').hidden = e.target.value !== 'on';
+        });
+        el.addEventListener('click', (e) => {
+          const box = e.target.closest('[data-emp]');
+          if (!box) return;
+          const id = box.dataset.emp, p = d.people.find((x) => x.id === id) || { name: '' };
+          const val = (n) => (box.querySelector('[name="' + n + '"]') || {}).value;
+          const repaint = () => { const c = box.querySelector('[data-exc]'); if (c) c.innerHTML = excChips(id); };
+          const err = (x) => K.ui().toast(x.shown ? x.message : K.errText(x), 'error');
+          if (e.target.closest('[data-tm-save]')) {
+            const days = {};
+            WD_TEAM.forEach(([k]) => { days[k] = { on: !!(box.querySelector('[name="on|' + k + '"]') || {}).checked, from: val('from|' + k), to: val('to|' + k) }; });
+            const bad = WD_TEAM.find(([k]) => days[k].on && days[k].to <= days[k].from);
+            if (bad) { K.ui().toast(bad[1] + ': ora de final e înainte de început.', 'error'); return; }
+            K.busy(e.target.closest('[data-tm-save]'), async () => {
+              await post({ action: 'save_week', employeeId: id, name: p.name, location: val('loc'), days });
+              const h = box.querySelector('.onl-city-h > span'); if (h) h.remove();
+              K.ui().toast('Salvat: programul pentru ' + p.name + '.', 'success');
+            }).catch(err);
+            return;
+          }
+          const add = e.target.closest('[data-exc-add]');
+          if (add) {
+            const date = val('exd'), on = val('exk') === 'on';
+            if (!date) { box.querySelector('[name=exd]').focus(); return; }
+            const entry = on ? { on: true, from: val('exf'), to: val('ext'), location: val('exl') } : { on: false };
+            if (on && entry.to <= entry.from) { K.ui().toast('Ora de final e înainte de început.', 'error'); return; }
+            K.busy(add, async () => { await post({ action: 'save_date', employeeId: id, name: p.name, date, entry }); repaint(); box.querySelector('[name=exd]').value = ''; }).catch(err);
+            return;
+          }
+          const rm = e.target.closest('[data-exc-rm]');
+          if (rm) {
+            const date = rm.closest('[data-exc-date]').dataset.excDate;
+            K.busy(rm, async () => { await post({ action: 'save_date', employeeId: id, name: p.name, date, entry: null }); repaint(); }).catch(err);
+          }
+        });
       },
     });
   }
