@@ -194,6 +194,32 @@ async function otherBooking(appt) {
 
 // An appointment deleted or cancelled: the lead it was linked to no longer shows it (its card would point at nothing),
 // its history says what happened; the stage stays as the desk left it. Never throws.
+// „Anulat”: the clients whose booking was cancelled or deleted (the owner, 9.11: „într-o coloană nouă Anulat”), made the first
+// time right after „Programare stabilită”; then the ones a cancel had sent back to the column before it move there too
+const ANULAT = { id: 'anulat', name: 'Anulat', color: '#e5484d', kind: 'open' };
+async function ensureAnulat() {
+  const stages = await loadStages();
+  let st = stages.find((x) => x.id === ANULAT.id) || stages.find((x) => /^anulat/i.test(x.name || ''));
+  if (st) return { stages, st };
+  const bookedIdx = stages.findIndex((x) => x.kind === 'booked');
+  const before = bookedIdx > 0 ? stages.slice(0, bookedIdx).reverse().find((x) => x.kind === 'open') : null;
+  st = Object.assign({}, ANULAT);
+  stages.splice(bookedIdx < 0 ? stages.length : bookedIdx + 1, 0, st);
+  await writeJSON(STAGES_KEY, stages);
+  if (before) {
+    const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
+    let moved = 0;
+    leads.forEach((l) => {
+      if (l.stage !== before.id || l.appointmentId) return;
+      const last = (l.activities || []).filter((a) => a.type === 'stage').slice(-1)[0];
+      if (!last || !/ · programare (anulată|ștearsă)|· anulată/i.test(String(last.text || ''))) return;
+      addActivity(l, { type: 'stage', author: 'Pipeline', text: before.name + ' → ' + st.name + ' · programarea fusese anulată' });
+      l.stage = st.id; l.stageChangedAt = nowISO(); moved++;
+    });
+    if (moved) await writeJSON(LEADS_KEY, leads);
+  }
+  return { stages, st };
+}
 async function unbookLead(appt, why, author) {
   try {
     if (!appt || !appt.id) return null;
@@ -201,10 +227,9 @@ async function unbookLead(appt, why, author) {
     const hits = leads.filter((l) => l.appointmentId === appt.id);
     if (!hits.length) return null;
     const at = String(appt.date || '').slice(0, 10) + (appt.time ? ' ' + String(appt.time).slice(0, 5) : '');
-    const stages = await loadStages();
-    const bookedIdx = stages.findIndex((x) => x.kind === 'booked');
-    // out of "Programare stabilită" too: back to the working stage before it (she is to be called again)
-    const back = bookedIdx > 0 ? stages.slice(0, bookedIdx).reverse().find((x) => x.kind === 'open') : null;
+    // out of "Programare stabilită" too: into „Anulat”, where the desk finds her to book her again (the owner, 9.11;
+    // before, back to the working stage before it, „Day 2”)
+    const { stages, st: back } = await ensureAnulat();
     // (the owner, 6.11: booked clients sometimes fell back to "Day 2") she may have another booking still on (a
     // reschedule makes the new one, then cancels the old): then she stays booked, her card shows that one
     const live = await otherBooking(appt);
@@ -496,6 +521,8 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // the „Anulat” column, made once (and the cancelled ones moved into it) before the board is read
+    if (action === 'list') await ensureAnulat().catch((e) => console.error('anulat stage:', e.message));
     const stages = await loadStages();
     const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
 
