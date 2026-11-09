@@ -570,7 +570,7 @@
   // ------------------------------------------------------------------ Nuki (the owner, 8.11: „să mă ajute să-i răspund când nu știu ce să-i scriu”)
   // Nuki reads the conversation on the screen, the offers, the rules and the free hours (api/portal-nuki.js, Claude) and writes the
   // next message into the box: empty box, a new answer; a started one, made better. Nothing goes until the person sends it.
-  const nukiOk = () => { const d = K.data || {}; return !!(d.isAdmin || (d.me && d.me.role === 'receptie')); };
+  const nukiOk = () => { const d = K.data || {}; return !!(d.isAdmin || (d.me && (d.me.role === 'receptie' || d.me.role === 'cosmetician'))); };
   function nukiThread() {
     const t = C.thread;
     if (!t) return null;
