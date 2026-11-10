@@ -52,13 +52,15 @@ module.exports = async (req, res) => {
     const AM = require('./ads-manager'), MA = require('./_lib/meta-ads');
     const { conn, problem } = await AM.connection();
     if (problem) { res.status(200).json({ problem }); return; }
-    const period = MA.PERIODS[req.query.period] ? req.query.period : 'max';
+    const D = /^\d{4}-\d{2}-\d{2}$/;
+    const range = D.test(String(req.query.since || '')) && D.test(String(req.query.until || '')) ? { since: req.query.since, until: req.query.until } : null;
+    const period = range ? 'custom' : MA.PERIODS[req.query.period] ? req.query.period : 'max';
     const recent = await MA.recentCampaigns(conn);
-    const view = await MA.overview(conn, period, null, recent.ids || []);
+    const view = await MA.overview(conn, period, range, recent.ids || []);
     if (view.error) { res.status(200).json({ error: view.error }); return; }
-    await AM.withFunnel(view, period, null, conn);
+    await AM.withFunnel(view, period, range, conn);
     const rows = [];
-    view.campaigns.forEach((c) => c.adsets.forEach((st) => st.ads.forEach((a) => rows.push({ campaign: c.name, campaignId: c.id, cStatus: (c.status || '') + '/' + (c.effective || ''), cDaily: c.daily || null, adsetId: st.id, sStatus: (st.status || '') + '/' + (st.effective || ''), sDaily: st.daily || null, ad: a.name, adId: a.id, status: (a.status || '') + '/' + (a.effective || ''), spend: a.spendNew, leads: a.pLeads, booked: a.booked, showed: a.showed, clients: a.clients, revenue: a.revenue, roas: a.spendNew ? Math.round((a.revenue / a.spendNew) * 100) / 100 : null }))));
+    view.campaigns.forEach((c) => c.adsets.forEach((st) => st.ads.forEach((a) => rows.push({ spendP: a.spend != null ? a.spend : null, leadsP: a.leads != null ? a.leads : null, campaign: c.name, campaignId: c.id, cStatus: (c.status || '') + '/' + (c.effective || ''), cDaily: c.daily || null, adsetId: st.id, sStatus: (st.status || '') + '/' + (st.effective || ''), sDaily: st.daily || null, ad: a.name, adId: a.id, status: (a.status || '') + '/' + (a.effective || ''), spend: a.spendNew, leads: a.pLeads, booked: a.booked, showed: a.showed, clients: a.clients, revenue: a.revenue, roas: a.spendNew ? Math.round((a.revenue / a.spendNew) * 100) / 100 : null }))));
     const g = await readJSON('data/ads-guard.json', {}).catch(() => ({}));
     const guard = ((g && g.log) || []).slice(-15).map((e) => ({ at: e.at, type: e.type || '', campaign: e.campaignName || '', ad: e.adName || '', why: String(e.why || '').slice(0, 140) }));
     res.status(200).json({ since: view.since, period, spendNote: view.spendNote || '', guard, rows });
