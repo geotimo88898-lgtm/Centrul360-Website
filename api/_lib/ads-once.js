@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 10.11, the owner in his main session (Timișoara's best return since 16.10: „aprinde 2. și 3. și 7.”, then „aprinde și 5.”):
+  // four Timișoara campaigns back on, each at the budget it has
+  { id: 'tm-best-roas-on-2026-11-10', why: 'pornite din nou pe 10.11, cele mai bune ROAS din Timișoara, cerut de voi', actions: [
+    { campaignId: '120251505897650103', name: 'TM LIPO · fără efort', status: 'ACTIVE', why: 'ROAS 11,2x' },
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon (Până la sărbători)', status: 'ACTIVE', why: 'ROAS 10,1x, 12 cliente' },
+    { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', status: 'ACTIVE', why: 'ROAS 6,7x' },
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', status: 'ACTIVE', why: 'ROAS 4,9x, 4.090 lei încasați' },
+  ] },
   // 7.11 night, the owner in his main session („doar active”: in Arad only the Restart, the two LipoSonix 30 and 33 and the
   // two RF gușă): the third LipoSonix (36) off, and the old static LipoSonix ad that still shows „with issues”
   { id: 'ar-only-five-2026-11-07', why: 'Arad: rămân active doar Restart, 2 LipoSonix și 2 RF gușă, cerut de voi pe 7.11', actions: [
