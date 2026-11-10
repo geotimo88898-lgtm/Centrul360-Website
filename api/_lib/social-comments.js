@@ -133,14 +133,20 @@ Cum scrii:
 - la laude, emoji sau mulțumiri: o mulțumire scurtă și caldă;
 - ÎNTOTDEAUNA închei cu o singură întrebare pozitivă, care o face să se simtă bine și să ne placă (despre ce își dorește, ce i-a plăcut, ce ar vrea să încerce), urmată de exact un emoji, unul dintre ❤️ 🥰 💞 (variază-le); niciun alt emoji.
 
+Ce faci cu comentariul (action), pe lângă răspuns (the owner, 10.11: „hate-ul îl ștergem, cele cu «n-am avut rezultat» nu au sens să rănească conversia, la cele pozitive cu rezultat dai pin”):
+- "delete": hate, insulte, jigniri, trolling, înjurături, spam, linkuri, reclame ale altora (skip: true, notify: false);
+- "hide": „n-am avut rezultat”, „nu funcționează”, „țeapă”, „bani aruncați”, o experiență negativă sau o plângere (skip: true, notify: true, ca echipa să o sune în privat);
+- "none": tot restul.
+La o laudă cu un rezultat real trăit de ea („am avut rezultate super”, „mi-a scăzut talia”, „recomand, sunt foarte mulțumită”): răspunzi cald și dai "impact" de la 1 la 10 (10 = rezultat concret, entuziast, credibil, care convinge alte doamne); altfel impact 0.
+
 Nu răspunzi public (skip: true) la:
-- plângeri, o experiență negativă, supărare sau critică (notify: true);
+- plângeri, o experiență negativă, supărare sau critică (notify: true, action "hide");
 - întrebări medicale despre cazul ei: contraindicații, efecte secundare, boli, sarcină, medicamente (notify: true);
 - orice ține de lege, avocați, ANPC, date personale (notify: true);
 - spam, linkuri, conturi false, reclame ale altora (notify: true doar dacă pare important, altfel false);
 - doar un nume sau o etichetare a unei prietene, fără altceva (notify: false).
 
-Răspunzi DOAR cu un obiect JSON, fără alt text: {"reply": "<textul public, gol dacă skip>", "skip": true|false, "notify": true|false, "why": "<de ce nu răspunzi, scurt, în română; gol dacă răspunzi>"}`;
+Răspunzi DOAR cu un obiect JSON, fără alt text: {"reply": "<textul public, gol dacă skip>", "skip": true|false, "notify": true|false, "action": "delete"|"hide"|"none", "impact": 0-10, "why": "<de ce nu răspunzi, scurt, în română; gol dacă răspunzi>"}`;
 
 const ALLOWED = new RegExp('(' + EMOJIS.join('|') + ')', 'gu');
 const PICTO = /[\p{Extended_Pictographic}‍️\u{1F3FB}-\u{1F3FF}]/gu;
@@ -195,10 +201,11 @@ async function write(c, post, n) {
     if (r.refused) return { skip: true, notify: true, why: 'Claude n-a vrut să răspundă' };
     const j = readJSONish(r.text);
     if (!j) continue;
-    if (j.skip) return { skip: true, notify: j.notify !== false, why: clip(j.why, 200) || 'De văzut de echipă' };
+    const action = ['delete', 'hide'].includes(j.action) ? j.action : 'none';
+    if (j.skip) return { skip: true, action, notify: action === 'delete' ? false : j.notify !== false, why: clip(j.why, 200) || 'De văzut de echipă' };
     const reply = polish(j.reply, n);
     if (!reply || saysWhat(reply) || !reply.includes('?')) continue;
-    return { reply };
+    return { reply, impact: Math.max(0, Math.min(10, Math.round(Number(j.impact) || 0))) };
   }
   return { error: 'Răspunsul nu a ieșit cum trebuie' };
 }
@@ -206,6 +213,25 @@ async function write(c, post, n) {
 async function send(c, text, token) {
   const r = c.channel === 'fb' ? await g('POST', '/' + c.id + '/comments', token, { message: text }) : await g('POST', '/' + c.id + '/replies', token, { message: text });
   return r.ok && r.j && r.j.id ? { id: String(r.j.id) } : { error: metaErr(r.j) };
+}
+
+// hate and spam go away; a „no result” or a complaint is hidden (she and her friends still see it, the others don't)
+async function moderate(c, action, token) {
+  const r = action === 'delete' ? await g('DELETE', '/' + c.id, token, {})
+    : c.channel === 'fb' ? await g('POST', '/' + c.id, token, { is_hidden: 'true' }) : await g('POST', '/' + c.id, token, { hide: 'true' });
+  return r.ok ? {} : { error: metaErr(r.j) };
+}
+// the strongest real result on a post: liked by the Page (Facebook) and the owners told to pin it (Meta lets no app pin)
+async function star(c, token, all) {
+  if (c.channel === 'fb') await g('POST', '/' + c.id + '/likes', token, {}).catch(() => null);
+  const better = all.some((x) => x.id !== c.id && x.postId === c.postId && x.starred && (x.impact || 0) >= (c.impact || 0));
+  if (better) return false;
+  const N = require('./notify');
+  const store = { readJSON, writeJSON };
+  const ids = [...new Set((await N.ownerIds(store)).concat(await N.adminIds(store)))];
+  await N.notifyMany(store, ids, { kind: 'alert', tone: 'good', go: 'integrari', title: 'DE FIXAT SUS 📌',
+    text: CHANNELS[c.channel] + ' · ' + (c.from.name || 'cineva') + ': „' + clip(c.text, 100) + '”' + (c.link ? ' · ' + c.link : ''), tag: 'pin-' + c.postId }).catch(() => 0);
+  return true;
 }
 
 async function tell(c, why) {
@@ -249,13 +275,20 @@ async function one(id, opts) {
     const w = await write(c, post, all.filter((x) => x.state === 'replied').length);
     if (w.error) { await done({ state: 'error', why: w.error, tries: (c.tries || 0) + 1, link: post.link || c.link || '' }); return 'error'; }
     if (w.skip) {
-      await done({ state: 'skipped', why: w.why, link: post.link || c.link || '' });
-      if (w.notify) await tell(Object.assign({}, c), w.why);
+      let why = w.why;
+      if (w.action === 'delete' || w.action === 'hide') {
+        const m = await moderate(c, w.action, conn.pageAccessToken);
+        why = (m.error ? (w.action === 'delete' ? 'N-am putut șterge: ' : 'N-am putut ascunde: ') + clip(m.error, 120) : (w.action === 'delete' ? 'Șters' : 'Ascuns')) + ' · ' + w.why;
+      }
+      await done({ state: 'skipped', action: w.action || 'none', why, link: post.link || c.link || '' });
+      if (w.notify) await tell(Object.assign({}, c), why);
       return 'skipped';
     }
     const s = await send(c, w.reply, conn.pageAccessToken);
     if (s.error) { await done({ state: 'error', reply: w.reply, why: CHANNELS[c.channel] + ': ' + clip(s.error, 200), tries: (c.tries || 0) + 1, link: post.link || c.link || '' }); return 'error'; }
-    await done({ state: 'replied', reply: w.reply, why: '', replyId: s.id, repliedAt: new Date().toISOString(), link: post.link || c.link || '' });
+    const link = post.link || c.link || '';
+    const starred = w.impact >= 8 ? await star(Object.assign({}, c, { impact: w.impact, link }), conn.pageAccessToken, all).catch(() => false) : false;
+    await done({ state: 'replied', reply: w.reply, why: '', replyId: s.id, repliedAt: new Date().toISOString(), link, impact: w.impact || 0, starred });
     return 'replied';
   } catch (e) {
     await done({ state: 'error', why: clip(e && e.message, 200) || 'eroare', tries: (c.tries || 0) + 1 }).catch(() => {});

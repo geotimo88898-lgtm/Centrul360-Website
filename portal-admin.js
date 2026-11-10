@@ -1610,7 +1610,7 @@
   const CM_STATE = { new: ['', 'în lucru'], replied: ['is-good', 'răspuns'], skipped: ['is-warn', 'fără răspuns'], error: ['is-bad', 'eroare'] };
   function commentsBox(x) {
     const miss = x && x.missing && x.missing.length;
-    return '<details class="st-fb-manual st-cm" data-cm><summary>Comentarii' + (miss ? ' · lipsesc permisiuni' : '') + '</summary><div data-cm-body><div class="k-skel" style="height:58px"></div></div></details>';
+    return '<details class="st-fb-manual st-cm" data-cm' + (miss ? ' open' : '') + '><summary>Comentarii' + (miss ? ' · lipsesc permisiuni' : '') + '</summary><div data-cm-body><div class="k-skel" style="height:58px"></div></div></details>';
   }
   function cmPaint(el, d) {
     const st = d.status || {};
@@ -1633,7 +1633,10 @@
     if (!det) return;
     const body = det.querySelector('[data-cm-body]');
     const load = async (p) => { try { cmPaint(body, await p); } catch (err) { body.innerHTML = '<p class="k-muted">' + esc(K.errText(err)) + '</p>'; } };
-    det.addEventListener('toggle', () => { if (det.open) load(K.api('/api/portal-comments')); });
+    let loaded = false;
+    const show = () => { if (det.open && !loaded) { loaded = true; load(K.api('/api/portal-comments')); } };
+    det.addEventListener('toggle', show);
+    show();
     body.addEventListener('change', (e) => {
       const sw = e.target.closest('[data-cm-on]');
       if (sw) load(K.api('/api/portal-comments', { action: 'toggle', on: sw.checked }));
