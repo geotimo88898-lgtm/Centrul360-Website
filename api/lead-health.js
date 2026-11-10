@@ -46,6 +46,22 @@ module.exports = async (req, res) => {
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
   // ?nuki=edit: the owner's edits, end to end without saving: Nuki reads a sheet and proposes a change (nothing is applied)
   if (req.query && req.query.nuki) { res.status(200).json(req.query.nuki === 'edit' ? await require('./portal-nuki').pingEdit(req.query.q) : await require('./portal-nuki').ping()); return; }
+  // ?roas=1&period=max|30d|7d: per ad, the spend since the forms are counted and what came after (bookings, clients,
+  // payments), the same numbers as Reclame (api/ads-manager.js withFunnel): ROAS = payments / spend
+  if (req.query && req.query.roas) {
+    const AM = require('./ads-manager'), MA = require('./_lib/meta-ads');
+    const { conn, problem } = await AM.connection();
+    if (problem) { res.status(200).json({ problem }); return; }
+    const period = MA.PERIODS[req.query.period] ? req.query.period : 'max';
+    const recent = await MA.recentCampaigns(conn);
+    const view = await MA.overview(conn, period, null, recent.ids || []);
+    if (view.error) { res.status(200).json({ error: view.error }); return; }
+    await AM.withFunnel(view, period, null, conn);
+    const rows = [];
+    view.campaigns.forEach((c) => c.adsets.forEach((st) => st.ads.forEach((a) => rows.push({ campaign: c.name, adset: st.name, ad: a.name, status: a.status || a.effectiveStatus || '', spend: a.spendNew, leads: a.pLeads, booked: a.booked, showed: a.showed, clients: a.clients, revenue: a.revenue, roas: a.spendNew ? Math.round((a.revenue / a.spendNew) * 100) / 100 : null }))));
+    res.status(200).json({ since: view.since, period, spendNote: view.spendNote || '', rows });
+    return;
+  }
   // ?trace=1: per lead from an ad form in these days, why Reclame counts her booked / came (no name, no phone)
   if (req.query && req.query.trace) {
     const F = require('./_lib/ads-funnel');
