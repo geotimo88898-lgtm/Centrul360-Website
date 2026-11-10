@@ -59,7 +59,9 @@ module.exports = async (req, res) => {
     await AM.withFunnel(view, period, null, conn);
     const rows = [];
     view.campaigns.forEach((c) => c.adsets.forEach((st) => st.ads.forEach((a) => rows.push({ campaign: c.name, campaignId: c.id, cStatus: (c.status || '') + '/' + (c.effective || ''), cDaily: c.daily || null, adsetId: st.id, sStatus: (st.status || '') + '/' + (st.effective || ''), sDaily: st.daily || null, ad: a.name, adId: a.id, status: (a.status || '') + '/' + (a.effective || ''), spend: a.spendNew, leads: a.pLeads, booked: a.booked, showed: a.showed, clients: a.clients, revenue: a.revenue, roas: a.spendNew ? Math.round((a.revenue / a.spendNew) * 100) / 100 : null }))));
-    res.status(200).json({ since: view.since, period, spendNote: view.spendNote || '', rows });
+    const g = await readJSON('data/ads-guard.json', {}).catch(() => ({}));
+    const guard = ((g && g.log) || []).slice(-15).map((e) => ({ at: e.at, type: e.type || '', campaign: e.campaignName || '', ad: e.adName || '', why: String(e.why || '').slice(0, 140) }));
+    res.status(200).json({ since: view.since, period, spendNote: view.spendNote || '', guard, rows });
     return;
   }
   // ?trace=1: per lead from an ad form in these days, why Reclame counts her booked / came (no name, no phone)
