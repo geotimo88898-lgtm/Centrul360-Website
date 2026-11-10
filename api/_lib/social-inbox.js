@@ -327,6 +327,17 @@ async function status() {
     pageApp: pageApp ? pageApp.subscribed_fields || [] : null,
     webhooks: { instagram: hook('instagram'), page: hook('page') },
     conversations: (await readJSON(KEY, [])).reduce((o, c) => { o[c.channel] = (o[c.channel] || 0) + 1; return o; }, {}),
+    // the newest conversation per channel, here and at Meta (are the new ones coming in?)
+    newest: await (async () => {
+      const here = {};
+      (await readJSON(KEY, [])).forEach((c) => { const t = (c.messages || []).reduce((a, m) => (m.timestamp > a ? m.timestamp : a), c.updatedAt || ''); if (!here[c.channel] || t > here[c.channel]) here[c.channel] = t; });
+      const meta = {};
+      for (const pl of ['messenger', 'instagram']) {
+        const r = await get('/' + conn.pageId + '/conversations', conn.pageAccessToken, { platform: pl, fields: 'updated_time', limit: '3' });
+        meta[pl] = r.error ? 'eroare: ' + String(r.error).slice(0, 160) : (r.data || []).map((x) => x.updated_time);
+      }
+      return { here, meta };
+    })().catch((e) => ({ error: e.message })),
     comments: commentsPart(scopes, hook('page'), hook('instagram'), pageApp),
   };
 }
