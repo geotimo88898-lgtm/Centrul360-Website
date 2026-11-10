@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
     if (view.error) { res.status(200).json({ error: view.error }); return; }
     await AM.withFunnel(view, period, null, conn);
     const rows = [];
-    view.campaigns.forEach((c) => c.adsets.forEach((st) => st.ads.forEach((a) => rows.push({ campaign: c.name, adset: st.name, ad: a.name, status: a.status || a.effectiveStatus || '', spend: a.spendNew, leads: a.pLeads, booked: a.booked, showed: a.showed, clients: a.clients, revenue: a.revenue, roas: a.spendNew ? Math.round((a.revenue / a.spendNew) * 100) / 100 : null }))));
+    view.campaigns.forEach((c) => c.adsets.forEach((st) => st.ads.forEach((a) => rows.push({ campaign: c.name, campaignId: c.id, cStatus: (c.status || '') + '/' + (c.effective || ''), cDaily: c.daily || null, adsetId: st.id, sStatus: (st.status || '') + '/' + (st.effective || ''), sDaily: st.daily || null, ad: a.name, adId: a.id, status: (a.status || '') + '/' + (a.effective || ''), spend: a.spendNew, leads: a.pLeads, booked: a.booked, showed: a.showed, clients: a.clients, revenue: a.revenue, roas: a.spendNew ? Math.round((a.revenue / a.spendNew) * 100) / 100 : null }))));
     res.status(200).json({ since: view.since, period, spendNote: view.spendNote || '', rows });
     return;
   }
