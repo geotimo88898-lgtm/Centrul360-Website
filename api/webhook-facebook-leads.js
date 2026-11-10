@@ -81,6 +81,13 @@ module.exports = async (req, res) => {
   // storm or a half-processed batch.
   try {
     const payload = JSON.parse(rawBody.toString('utf8'));
+    // the comments on the Page's and the Instagram account's posts and ads (api/_lib/social-comments.js): kept now,
+    // answered right after this answer (Claude, then Meta), so Meta is not kept waiting
+    const SC = require('./_lib/social-comments');
+    if (SC.hasComments(payload)) {
+      try { const ids = await SC.ingest(payload); if (ids.length) await SC.later(() => SC.answer(ids)); } catch (err) { console.error('webhook comments:', err.message); }
+      if (payload.object === 'instagram' && !(payload.entry || []).some((e) => (e.messaging || []).length || (e.changes || []).some((c) => c.field === 'messages'))) { res.status(200).json({ ok: true }); return; }
+    }
     // the clinic's Instagram and Facebook (Messenger) messages (api/_lib/social-inbox.js): into Mesaje, and the phones
     // ring; a Page delivery may carry leads too (below)
     if (payload.object === 'instagram' || (payload.entry || []).some((e) => (e.messaging || []).length)) {

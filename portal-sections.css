@@ -2637,3 +2637,17 @@ html .tr-door-k{ color:var(--accent); }
 .mx-nk-a{ flex:none; display:flex; align-items:center; gap:.25rem; }
 @keyframes mxNkIn{ from{ opacity:0; transform:translateY(6px); } }
 @media (max-width:640px){ .mx-nkslot{ flex-wrap:wrap; } .mx-nk-a{ width:100%; justify-content:flex-end; } }
+/* Integrări → Facebook → Comentarii (the answers to the comments on posts and ads) */
+.st-cm > [data-cm-body]{ margin-top:.6rem; display:flex; flex-direction:column; gap:.5rem; }
+.st-cm-sw{ margin-bottom:.2rem; }
+.st-cm-miss{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; margin:0; font-size:.8rem; color:var(--warn); }
+.st-cm-miss > svg{ width:15px; height:15px; flex:none; }
+.st-cm-row{ padding:.55rem .7rem; border-radius:11px; border:1px solid var(--line); background:var(--glass); min-width:0; }
+.st-cm-top{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; font-size:.8rem; }
+.st-cm-top b{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%; }
+.st-cm-link{ margin-left:auto; display:inline-flex; align-items:center; gap:.2rem; font-size:.78rem; color:var(--muted); }
+.st-cm-link svg{ width:13px; height:13px; }
+.st-cm-text, .st-cm-reply, .st-cm-why{ margin:.35rem 0 0; font-size:.82rem; overflow-wrap:anywhere; }
+.st-cm-reply{ padding-left:.6rem; border-left:2px solid var(--accent); }
+.st-cm-why{ color:var(--muted); }
+.st-cm-act{ display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.35rem; }

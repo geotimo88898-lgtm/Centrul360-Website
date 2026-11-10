@@ -1606,6 +1606,44 @@
       '2. Apasă Conectează și bifează tot ce cere Facebook.</span></div>' +
       '<a class="k-btn is-primary is-sm" href="/api/fb-oauth-start?scopes=1">' + icon('facebook') + 'Conectează</a></div>';
   }
+  // the answers to the comments on posts and ads (api/portal-comments.js): the switch, what is missing, the last 50
+  const CM_STATE = { new: ['', 'în lucru'], replied: ['is-good', 'răspuns'], skipped: ['is-warn', 'fără răspuns'], error: ['is-bad', 'eroare'] };
+  function commentsBox(x) {
+    const miss = x && x.missing && x.missing.length;
+    return '<details class="st-fb-manual st-cm" data-cm><summary>Comentarii' + (miss ? ' · lipsesc permisiuni' : '') + '</summary><div data-cm-body><div class="k-skel" style="height:58px"></div></div></details>';
+  }
+  function cmPaint(el, d) {
+    const st = d.status || {};
+    const miss = (st.missing || []).length ? '<p class="st-cm-miss">' + icon('alert') + 'Lipsesc permisiunile: ' + st.missing.map(esc).join(', ') + ' <a class="k-btn is-ghost is-sm" href="/api/fb-oauth-start?scopes=1">' + icon('facebook') + 'Reconectează</a></p>'
+      : st.error ? '' : !st.feed || !st.igComments ? '<p class="st-cm-miss">' + icon('alert') + 'Nu vin încă: ' + [!st.feed ? 'Facebook' : '', !st.igComments ? 'Instagram' : ''].filter(Boolean).join(', ') + ' <a class="k-btn is-ghost is-sm" href="/api/fb-oauth-start?scopes=1">' + icon('facebook') + 'Reconectează</a></p>' : '';
+    const rows = (d.comments || []).map((c) => {
+      const s = CM_STATE[c.state] || CM_STATE.new;
+      const act = c.state !== 'replied' ? '<span class="st-cm-act"><button type="button" class="k-btn is-ghost is-sm" data-cm-retry="' + esc(c.id) + '">' + icon('refresh') + 'Răspunde</button>' +
+        (c.state !== 'skipped' ? '<button type="button" class="k-btn is-ghost is-sm" data-cm-skip="' + esc(c.id) + '">Nu răspunde</button>' : '') + '</span>' : '';
+      return '<div class="st-cm-row"><div class="st-cm-top"><span class="k-tag">' + (c.channel === 'ig' ? 'IG' : 'FB') + '</span><b>' + esc(c.name || 'Anonim') + '</b><span class="k-tag ' + s[0] + '">' + s[1] + '</span>' +
+        '<span class="k-muted">' + esc(K.ago(c.at)) + '</span>' + (c.link ? '<a class="st-cm-link" href="' + esc(c.link) + '" target="_blank" rel="noopener">Postarea' + icon('arrow') + '</a>' : '') + '</div>' +
+        '<p class="st-cm-text">' + esc(c.text || 'fără text') + '</p>' +
+        (c.reply && c.state === 'replied' ? '<p class="st-cm-reply">' + esc(c.reply) + '</p>' : c.why ? '<p class="st-cm-why">' + esc(c.why) + '</p>' : '') + act + '</div>';
+    }).join('');
+    el.innerHTML = '<label class="k-switch st-cm-sw"><input type="checkbox" data-cm-on' + (d.on ? ' checked' : '') + '><i></i><span>Răspunde automat la comentarii</span></label>' + miss +
+      (rows || '<p class="k-muted">Niciun comentariu încă.</p>');
+  }
+  function bindComments(box) {
+    const det = box.querySelector('[data-cm]');
+    if (!det) return;
+    const body = det.querySelector('[data-cm-body]');
+    const load = async (p) => { try { cmPaint(body, await p); } catch (err) { body.innerHTML = '<p class="k-muted">' + esc(K.errText(err)) + '</p>'; } };
+    det.addEventListener('toggle', () => { if (det.open) load(K.api('/api/portal-comments')); });
+    body.addEventListener('change', (e) => {
+      const sw = e.target.closest('[data-cm-on]');
+      if (sw) load(K.api('/api/portal-comments', { action: 'toggle', on: sw.checked }));
+    });
+    body.addEventListener('click', (e) => {
+      const r = e.target.closest('[data-cm-retry]'), k = e.target.closest('[data-cm-skip]');
+      if (r) K.busy(r, () => load(K.api('/api/portal-comments', { action: 'retry', id: r.dataset.cmRetry }).then((x) => { if (x.result === 'replied') K.ui().toast('Gata, i-am răspuns.', 'success'); else K.ui().toast(x.result === 'skipped' ? 'Nu i-am răspuns public: vezi motivul.' : x.result === 'limit' ? 'Limita de 30 de răspunsuri pe oră: revine singur.' : 'N-a mers: vezi motivul.', 'error'); return x; })));
+      if (k) K.busy(k, () => load(K.api('/api/portal-comments', { action: 'skip', id: k.dataset.cmSkip })));
+    });
+  }
   function adsToken(x) {
     const { a, needs } = adsState(x);
     return '<details class="st-fb-manual"' + (needs ? ' open' : '') + '><summary>' + (a.set ? 'Schimbă tokenul pentru reclame' : 'Lipește tokenul pentru reclame') + '</summary>' +
@@ -1764,7 +1802,7 @@
         '<div class="st-fb-status ' + (live ? 'is-ok' : 'is-wait') + '">' + icon(live ? 'checkCircle' : 'clock') +
           '<div><b>Conectat la ' + esc(d.pageName || 'Pagină') + '</b><span>' + (live ? 'Leadurile intră automat · verificat ' + esc(K.ago(poll.at))
             : poll.at ? 'Ultima verificare n-a mers, se reîncearcă singur.' : 'Prima verificare se face în cel mult un minut.') + '</span></div></div>' +
-        adsStatus(d.ads) + socialStatus(d.social) +
+        adsStatus(d.ads) + socialStatus(d.social) + commentsBox(d.social && d.social.comments) +
         '<div class="st-fb-log"><div class="st-fb-log-head"><b>Ultimele leaduri</b><button type="button" class="k-btn is-ghost is-sm" data-fb-pollnow>' + icon('refresh') + 'Verifică acum</button></div>' +
           '<div data-fb-leads><div class="k-skel" style="height:58px"></div></div></div>' +
         adsToken(d.ads) +
@@ -1785,6 +1823,7 @@
         '</details>';
       box.querySelectorAll('[data-goto]').forEach((x) => x.addEventListener('click', () => K.go(x.dataset.goto)));
       fillFbLeads(box);
+      bindComments(box);
       bindAdSelect(box);
       addApp();
       box.querySelector('[data-fb-adedit]').addEventListener('click', () => { const f = box.querySelector('[data-fb-adform]'); f.hidden = !f.hidden; });

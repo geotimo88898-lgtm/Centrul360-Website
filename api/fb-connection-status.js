@@ -143,6 +143,8 @@ module.exports = async (req, res) => {
       const stored = await readJSON('data/fb-connection.json', {});
       stored.subscribedAt = new Date().toISOString();
       await writeJSON('data/fb-connection.json', stored);
+      // Meta takes a Page's field list as a replacement: put back messages and comments next to the leads (10.11)
+      await require('./_lib/social-inbox').setup('https://admin.centrul360.com').catch((e) => console.error('resubscribe setup:', e.message));
       res.status(200).json(await status(req));
       return;
     }

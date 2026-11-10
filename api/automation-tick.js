@@ -56,6 +56,8 @@ const STEPS = [
   ['acte', () => require('./_lib/legal-alerts').run()],
   // the CRM steps of the Facebook leads that no change sent yet (Conversions API, api/_lib/meta-capi.js)
   ['capi', () => require('./_lib/meta-capi').sweep()],
+  // the comments on posts and ads still without an answer or that failed, younger than a day (api/_lib/social-comments.js)
+  ['comments', () => require('./_lib/social-comments').run()],
 ];
 
 module.exports = async (req, res) => {

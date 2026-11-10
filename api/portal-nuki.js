@@ -401,3 +401,6 @@ module.exports.pingEdit = async (q) => {
     return { key: true, ok: edits.length > 0, text: r.text.slice(0, 500), tools, edits: edits.map((e) => ({ ref: e.ref, name: e.name, fields: e.fields.map((f) => ({ key: f.key, after: f.after })) })) };
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };
+
+// the answers to the comments on the clinic's posts and ads (api/_lib/social-comments.js) use the same Claude call and facts
+module.exports.lib = { ask, offersText, hoursText, FACTS };

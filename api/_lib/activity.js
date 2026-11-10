@@ -34,6 +34,7 @@ const ROUTES = {
   'portal-ghl': { area: 'Integrări', go: 'integrari' },
   'portal-live': { area: 'Integrări', go: 'integrari' },
   'portal-capi': { area: 'Integrări', go: 'integrari' },
+  'portal-comments': { area: 'Integrări', go: 'integrari' },
   'portal-config': { area: 'Setări', go: 'integrari' },
   'portal-academy': { area: 'Traininguri', go: 'traininguri' },
   'portal-nuki': { area: 'Traininguri', go: 'traininguri' }, // only „Aplică” on a change Nuki proposed is a change
@@ -62,6 +63,7 @@ const VERBS = {
   'portal-incasari:update': 'a modificat încasarea', 'portal-incasari:delete': 'a șters încasarea',
   'portal-ghl:connect': 'a conectat HighLevel', 'portal-ghl:mapping': 'a potrivit calendarele HighLevel', 'portal-ghl:start': 'a pornit importul din HighLevel', 'portal-ghl:disconnect': 'a deconectat HighLevel',
   'portal-live:connect': 'a pornit sincronizarea instantă', 'portal-live:disconnect': 'a oprit sincronizarea instantă',
+  'portal-comments:toggle': 'a schimbat răspunsul automat la comentarii', 'portal-comments:retry': 'a trimis din nou răspunsul la un comentariu', 'portal-comments:skip': 'a oprit răspunsul la un comentariu',
   'portal-capi:save': 'a schimbat setările Conversions API', 'portal-capi:live': 'a schimbat trimiterea live din Conversions API',
   'portal-mypos:connect': 'a conectat myPOS', 'portal-mypos:device': 'a ales orașul unui aparat POS', 'portal-mypos:disconnect': 'a deconectat myPOS',
   'portal-nuki:apply': 'a aplicat modificarea propusă de Nuki la',

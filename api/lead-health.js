@@ -43,6 +43,15 @@ module.exports = async (req, res) => {
     res.status(200).json({ setup: done, status: await SI.status().catch((e) => ({ error: e.message })) });
     return;
   }
+  // ?comments=1: the answers to the comments on posts and ads (api/_lib/social-comments.js): permissions, webhooks, the
+  // switch and the last 10 (initials only)
+  if (req.query && req.query.comments) {
+    const SC = require('./_lib/social-comments');
+    const [st, set, last] = await Promise.all([require('./_lib/social-inbox').status().catch((e) => ({ error: e.message })), SC.settings(), SC.list(10)]);
+    res.status(200).json({ on: set.on, status: st.error ? { error: st.error } : st.comments, last: last.map((c) => ({ id: c.id, channel: c.channel, from: SC.initials(c.from && c.from.name),
+      text: String(c.text || '').replace(PHONE, '…'), state: c.state, reply: c.reply || '', why: c.why || '', at: c.at, repliedAt: c.repliedAt || '', tries: c.tries || 0 })) });
+    return;
+  }
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
   // ?nuki=edit: the owner's edits, end to end without saving: Nuki reads a sheet and proposes a change (nothing is applied)
   if (req.query && req.query.nuki) { res.status(200).json(req.query.nuki === 'edit' ? await require('./portal-nuki').pingEdit(req.query.q) : await require('./portal-nuki').ping()); return; }

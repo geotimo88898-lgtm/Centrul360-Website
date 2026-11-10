@@ -20,6 +20,11 @@ const KEY = 'data/social-conversations.json';
 const CHANNELS = { ig: 'Instagram', fb: 'Facebook' };
 const NEEDS = ['instagram_basic', 'instagram_manage_messages', 'pages_manage_metadata', 'pages_messaging'];
 const PAGE_FIELDS = ['leadgen', 'messages', 'message_echoes', 'message_reads'];
+// the answers to the comments on posts and ads (api/_lib/social-comments.js): their own permissions and fields, so the
+// messages' status stays as it was
+const COMMENT_NEEDS = ['pages_manage_engagement', 'pages_read_user_content', 'instagram_manage_comments'];
+const COMMENT_PAGE_FIELDS = ['feed'];
+const COMMENT_IG_FIELDS = ['comments'];
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const WORDS = { image: 'Poză', video: 'Video', audio: 'Mesaj vocal', file: 'Fișier', share: 'Postare trimisă', story_mention: 'Te-a menționat într-un story', ig_reel: 'Reel trimis', reel: 'Reel trimis', fallback: 'Link trimis', location: 'Locație trimisă' };
 const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'jpg', 'video/mp4': 'mp4', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'audio/aac': 'aac', 'audio/ogg': 'ogg' };
@@ -273,7 +278,7 @@ async function setup(origin) {
   const page = subs.find((s) => s.object === 'page');
   // the address the leads come to now (where Meta was told), else this one
   const callback = (page && page.callback_url) || String(origin || 'https://admin.centrul360.com').replace(/\/$/, '') + '/api/webhook-facebook-leads';
-  const want = { instagram: ['messages', 'messaging_seen'], page: PAGE_FIELDS };
+  const want = { instagram: ['messages', 'messaging_seen'].concat(COMMENT_IG_FIELDS), page: PAGE_FIELDS.concat(COMMENT_PAGE_FIELDS) };
   for (const object of Object.keys(want)) {
     const s = subs.find((x) => x.object === object);
     const fields = [...new Set(((s && s.fields) || []).map((f) => f.name).concat(want[object]))];
@@ -282,9 +287,17 @@ async function setup(origin) {
     const r = await g('POST', '/' + creds.appId + '/subscriptions', appToken, { object, callback_url: callback, fields: fields.join(','), verify_token: creds.verifyToken, include_values: 'true' });
     out[object] = r.ok ? 'set' : err(r.j);
   }
-  // the Page: the leads and the messages (Meta sends Instagram's only to an app the Page has)
-  const s = await g('POST', '/' + conn.pageId + '/subscribed_apps', conn.pageAccessToken, { subscribed_fields: PAGE_FIELDS.join(',') });
-  if (s.ok) out.pageApp = PAGE_FIELDS.join(',');
+  // the Page: the leads, the messages (Meta sends Instagram's only to an app the Page has) and the comments (feed),
+  // with whatever it has already (a field is never dropped); without the comments' permissions, as before
+  const now = await g('GET', '/' + conn.pageId + '/subscribed_apps', conn.pageAccessToken);
+  const mine = ((now.ok && now.j.data) || []).find((a) => String(a.id) === String(creds.appId));
+  const had = (mine && mine.subscribed_fields) || [];
+  const all = [...new Set(had.concat(PAGE_FIELDS, COMMENT_PAGE_FIELDS))];
+  const f = await g('POST', '/' + conn.pageId + '/subscribed_apps', conn.pageAccessToken, { subscribed_fields: all.join(',') });
+  const base = [...new Set(had.concat(PAGE_FIELDS))];
+  const s = f.ok ? f : await g('POST', '/' + conn.pageId + '/subscribed_apps', conn.pageAccessToken, { subscribed_fields: base.join(',') });
+  if (f.ok) out.pageApp = all.join(',');
+  else if (s.ok) out.pageApp = base.join(',') + ' (comentarii: ' + err(f.j) + ')';
   else {
     const l = await g('POST', '/' + conn.pageId + '/subscribed_apps', conn.pageAccessToken, { subscribed_fields: 'leadgen' });
     out.pageApp = l.ok ? 'leadgen (mesaje: ' + err(s.j) + ')' : err(l.j);
@@ -314,7 +327,15 @@ async function status() {
     pageApp: pageApp ? pageApp.subscribed_fields || [] : null,
     webhooks: { instagram: hook('instagram'), page: hook('page') },
     conversations: (await readJSON(KEY, [])).reduce((o, c) => { o[c.channel] = (o[c.channel] || 0) + 1; return o; }, {}),
+    comments: commentsPart(scopes, hook('page'), hook('instagram'), pageApp),
   };
+}
+// the comments on posts and ads: the permissions, the Page's feed for this app, Instagram's comments on the webhook
+function commentsPart(scopes, pageHook, igHook, pageApp) {
+  const missing = COMMENT_NEEDS.filter((x) => !scopes.includes(x));
+  const feed = !!(pageHook && pageHook.active && pageHook.fields.includes('feed') && pageApp && (pageApp.subscribed_fields || []).includes('feed'));
+  const igComments = !!(igHook && igHook.active && igHook.fields.includes('comments'));
+  return { ready: !missing.length && feed && igComments, missing, feed, igComments };
 }
 // Integrări → Facebook: whether Instagram's and Facebook's messages come into Mesaje, and what is missing if not
 async function brief() {
@@ -322,7 +343,7 @@ async function brief() {
   if (s.error) return { ready: false, error: s.error };
   const ig = !!(s.webhooks.instagram && s.webhooks.instagram.active && s.webhooks.instagram.fields.includes('messages'));
   const fb = !!(s.webhooks.page && s.webhooks.page.active && s.webhooks.page.fields.includes('messages') && (s.pageApp || []).includes('messages'));
-  return { ready: !s.missing.length && ig && fb, missing: s.missing, account: s.account ? s.account.username || '' : '', instagram: ig, facebook: fb, configId: s.app.configId, conversations: s.conversations };
+  return { ready: !s.missing.length && ig && fb, missing: s.missing, account: s.account ? s.account.username || '' : '', instagram: ig, facebook: fb, configId: s.app.configId, conversations: s.conversations, comments: s.comments };
 }
 
-module.exports = { KEY, CHANNELS, NEEDS, ingest, ring, list, unread, view, send, setup, status, brief, parse, isKey, backfill };
+module.exports = { KEY, CHANNELS, NEEDS, COMMENT_NEEDS, ingest, ring, list, unread, view, send, setup, status, brief, parse, isKey, backfill };
