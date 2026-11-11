@@ -75,6 +75,18 @@ module.exports = async (req, res) => {
     res.status(200).json({ since: view.since, period, spendNote: view.spendNote || '', guard, rows });
     return;
   }
+  // ?sales=1&month=YYYY-MM&q=<words>: the money received (Încasări, source 'incasare') that month, matching the words in
+  // the treatment, per treatment and city (no names), read only
+  if (req.query && req.query.sales) {
+    const month = /^\d{4}-\d{2}$/.test(String(req.query.month || '')) ? req.query.month : new Date().toISOString().slice(0, 7);
+    const fold = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const words = fold(req.query.q).split(/[\s,]+/).filter(Boolean);
+    const all = (await readJSON('data/sales.json', [])).filter((x) => x && x.source === 'incasare' && x.status !== 'rejected' && String(x.date || '').startsWith(month));
+    const hit = all.filter((x) => words.every((w) => fold(x.treatment).includes(w)));
+    const by = {}; hit.forEach((x) => { const k = (x.treatment || '-') + ' | ' + (x.location || '-'); by[k] = by[k] || { n: 0, lei: 0 }; by[k].n++; by[k].lei += Number(x.amount) || 0; });
+    res.status(200).json({ month, words, total: hit.reduce((n, x) => n + (Number(x.amount) || 0), 0), count: hit.length, monthTotal: all.reduce((n, x) => n + (Number(x.amount) || 0), 0), by });
+    return;
+  }
   // ?trace=1: per lead from an ad form in these days, why Reclame counts her booked / came (no name, no phone)
   if (req.query && req.query.trace) {
     const F = require('./_lib/ads-funnel');
