@@ -9,10 +9,18 @@
 //   approved|redo, redoNote, reviewedAt, redoAt, replacedAt, files: [{ name, path, mime, size, w, h, dur, v }], cover,
 //   state: draft|ready, createdAt, readyAt, plan: [{ net: tt|yt|ig|fb, kind: reel|carousel|slideshow, slot: 0|1|'p',
 //   at, state: planned|posting|posted|error|waiting_access|skipped|missed, postId, url, error, tries, container,
-//   startedAt, hold }], stats: { <net>: { at, views, reach, likes, comments, shares, saves, watch } } }]
-// data/content/settings.json: { on, nets, startWeek, warmWeeks, quotas: { warm, full }, times, photoTime }
+//   startedAt, hold }], stats: { <net>: { at, views, reach, likes, comments, shares, saves, watch } },
+//   hook (the first words said), hookType (intrebare, cifra, mit, pov, socant, poveste …), topicTag (the topic family,
+//   hifu-gusa), ideaId (the owner's idea it makes, data/content/ideas.json), variantOf (the evergreen winner it makes
+//   again with a new hook), firstComment (the account's first comment under the post, content-post.js), boosts
+//   (content-boost.js) }]
+// data/content/settings.json: { on, nets, startWeek, warmWeeks, quotas: { warm, full }, times, photoTime, competitors }
 // data/content/state.json: the clock's marks (the day's stats, the week's top, the permission notice, the notices
-//   about the weekly batch)
+//   about the weekly batch, the safety net: Saturday evening a week still incomplete, Monday 11:00 nothing going out)
+// data/content/ideas.json: the owner's ideas for the next weeks [{ id, text, rubric, state: new|used, at, usedAt,
+//   itemId }]; the producer makes them first (reels/PRODUCER.md)
+// The texts are checked before they go (qa): each network's limits, the words Meta and the owner refuse, the long
+//   dashes, the diacritics. A problem stops 'ready' (and the posting, content-post.js); a warning shows on the board.
 // The files: content/<id>/<name> (private in the store), served publicly by api/content-file.js, because Instagram
 // and Facebook fetch them by URL; the ids are random UUIDs, `v` makes a replaced file a new URL.
 
@@ -24,7 +32,12 @@ const { dedash } = require('./dedash');
 const KEY = 'data/content/items.json';
 const SET_KEY = 'data/content/settings.json';
 const STATE_KEY = 'data/content/state.json';
+const IDEAS_KEY = 'data/content/ideas.json';
 const KINDS = P.KINDS;
+const RUBRICS = ['Cazuri', 'Mit sau adevăr?', 'Ce se întâmplă de fapt', 'Întrebarea zilei', 'Nuki', 'Top 3'];
+const HOOK_TYPES = ['intrebare', 'cifra', 'mit', 'pov', 'socant', 'poveste'];
+// what the producer may send per text (each network's own limit is checked by qa, so a text too long is refused, not cut)
+const IN_MAX = 6000;
 const MIMES = { 'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'image/png': 'png' };
 const MAX_BYTES = 60 * 1024 * 1024;
 const CAP_MAX = { tt: 2200, yt: 100, ig: 2200, fb: 5000 };
@@ -34,22 +47,26 @@ const fileUrl = (id, name, v) => ORIGIN() + '/api/content-file?i=' + encodeURICo
 const isId = (x) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(x || ''));
 const isName = (x) => /^[\w-]{1,60}\.(mp4|jpe?g|png)$/i.test(String(x || ''));
 const pathOf = (id, name) => 'content/' + id + '/' + name;
-const clean = (s, n) => dedash(String(s == null ? '' : s)).replace(/\r/g, '').trim().slice(0, n);
+// no long dashes, ș and ț with the comma (never the cedilla)
+const clean = (s, n) => dedash(String(s == null ? '' : s)).replace(/\r/g, '').replace(/ş/g, 'ș').replace(/Ş/g, 'Ș').replace(/ţ/g, 'ț').replace(/Ţ/g, 'Ț').trim().slice(0, n);
+const fold = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const slug = (s, n) => fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, n || 40);
 function fail(code, status, extra) { const e = new Error(code); e.status = status || 400; if (extra) e.extra = extra; return e; }
 const findItem = (list, id) => list.find((x) => x.id === id);
 
 // a change to the items that never overwrites one made meanwhile (the clock posting while the producer uploads)
-async function update(fn) {
+async function updateKey(key, fn) {
   for (let i = 0; i < 8; i++) {
-    const { data, etag } = await readJSONTagged(KEY, []);
+    const { data, etag } = await readJSONTagged(key, []);
     const list = Array.isArray(data) ? data : [];
     const out = await fn(list);
     if (out === false) return { list, out };
-    if (await writeJSONIf(KEY, list, etag)) return { list, out };
+    if (await writeJSONIf(key, list, etag)) return { list, out };
     await new Promise((r) => setTimeout(r, 40 + Math.random() * 120));
   }
-  throw new Error('content: items busy');
+  throw new Error('content: ' + key + ' busy');
 }
+const update = (fn) => updateKey(KEY, fn);
 
 // The weekly model came on 12.11: an item from before it (no week) belongs to the week after the one it was made in,
 // waits for the owner's look, and its entries not started yet are planned again in the new model.
@@ -68,7 +85,9 @@ function migrate(list, st, now) {
   return weeks.size;
 }
 
-const settings = async () => P.settingsOf(await readJSON(SET_KEY, null));
+// the competitors' names (Setări), kept for qa() called without them (the poster)
+let COMPETITORS = [];
+const settings = async () => { const st = P.settingsOf(await readJSON(SET_KEY, null)); COMPETITORS = st.competitors; return st; };
 async function items() {
   const l = await readJSON(KEY, []);
   const list = Array.isArray(l) ? l : [];
@@ -89,6 +108,7 @@ async function saveSettings(patch) {
   ['warm', 'full'].forEach((w) => P.NETS.forEach((n) => { next.quotas[w][n] = Object.assign({}, cur.quotas[w][n], (p.quotas && p.quotas[w] && p.quotas[w][n]) || {}); }));
   const st = P.settingsOf(next);
   await writeJSON(SET_KEY, st);
+  COMPETITORS = st.competitors;
   return st;
 }
 
@@ -101,23 +121,42 @@ function weekFor(x, now) {
   if (w < cur) throw fail('past_week');
   return w;
 }
+// the producer's texts per network (kept whole: qa() refuses one over its network's limit instead of cutting it)
 function captionsOf(x) {
   const out = {};
-  if (x && typeof x === 'object') P.NETS.forEach((n) => { const c = clean(x[n], CAP_MAX[n]); if (c) out[n] = c; });
+  if (x && typeof x === 'object') P.NETS.forEach((n) => { const c = clean(x[n], IN_MAX); if (c) out[n] = c; });
   return out;
 }
 // the text an item goes out with on a network
 const captionFor = (it, net) => String((it.captions && it.captions[net]) || it.caption || '');
+// the hook's style: a short word (intrebare, cifra, mit, pov, socant, poveste …)
+const hookTypeOf = (x) => slug(x, 20);
+// the first comment under the post (content-post.js writes it from the account): one line
+const oneLine = (x, n) => clean(String(x == null ? '' : x).replace(/\s+/g, ' '), n);
 
-// a new item (no files yet, not planned)
+// a new item (no files yet, not planned); an idea of the owner's it makes is marked used
 async function create(input) {
   const x = input || {};
   if (!KINDS.includes(x.kind)) throw fail('invalid_kind');
   const now = Date.now();
   const it = { id: crypto.randomUUID(), kind: x.kind, rubric: clean(x.rubric, 60), topic: clean(x.topic, 160), keyword: clean(x.keyword, 40).toUpperCase(),
-    caption: clean(x.caption, 2200), captions: captionsOf(x.captions), week: weekFor(x.week, now), review: 'pending', redoNote: '',
+    caption: clean(x.caption, IN_MAX), captions: captionsOf(x.captions), week: weekFor(x.week, now), review: 'pending', redoNote: '',
     files: [], cover: '', state: 'draft', createdAt: new Date(now).toISOString(), plan: [], stats: {} };
+  if (x.hook) it.hook = clean(x.hook, 200);
+  if (x.hookType) it.hookType = hookTypeOf(x.hookType);
+  if (x.topicTag) it.topicTag = slug(x.topicTag);
+  if (x.firstComment) it.firstComment = oneLine(x.firstComment, 280);
+  if (x.variantOf) {
+    if (!isId(x.variantOf) || !findItem(await items(), x.variantOf)) throw fail('invalid_variant');
+    it.variantOf = x.variantOf;
+  }
+  if (x.ideaId) {
+    const idea = (await ideas()).find((d) => d.id === String(x.ideaId));
+    if (!idea) throw fail('invalid_idea');
+    it.ideaId = idea.id;
+  }
   await update((list) => { list.push(it); });
+  if (it.ideaId) await useIdea(it.ideaId, it.id).catch((e) => console.error('content idea:', e.message));
   return it;
 }
 
@@ -188,17 +227,102 @@ function media(it) {
   return { video, images: photos ? images : video ? [] : images.slice(0, 1), cover };
 }
 
+// ---------------------------------------------------------------- the texts' check before they go (qa)
+// On the folded text (no diacritics, lower case). A problem: Meta refuses it, it promises, it sells, or the owner's
+// rules forbid it (reels/README.md): the item is not 'ready' and the poster holds it. A warning: shown on the board.
+const RISKS = [
+  [/\bgarant/, '„garantat”: rezultatele nu se garantează'],
+  [/\b(slab\w*|pierz\w*|pierd\w*|scap\w*( de)?|da\w* jos|topes\w*|minus)\s+(de\s+|pana la\s+|cel putin\s+)?\d+([.,]\d+)?\s*(kg|kilo\w*|cm|centimetr\w*|marimi|numere)\b|(^|\s)-\s?\d+([.,]\d+)?\s?(kg|cm)\b|\b\d+([.,]\d+)?\s?(kg|kilograme|cm|centimetri)\s+(mai putin|in minus|jos|pierdut\w*|topit\w*)/, 'kilograme sau centimetri promiși („slăbești X kg”)'],
+  [/\bvindec/, '„vindecă”: nu e tratament pentru boli'],
+  [/\b(fara|zero|0)\s+(nici\s?un\s+)?risc/, '„fără riscuri”: riscurile nu se neagă'],
+  [/\b100\s?%|\bsuta la suta\b/, '„100%”: fără promisiuni absolute'],
+  [/\b(recomandat|aprobat|validat|avizat|testat|verificat)\w*\s+de\s+(medic|doct|dermatolog|specialist)|\b(testat|dovedit|demonstrat)\w*\s+clinic|\bclinic\s+(testat|dovedit|demonstrat)|\b(medicul|doctorul|dermatologul|medicii|doctorii)\s+(nostru|nostri|noastre)\b|\bdr\.\s?[a-z]/, 'pretinde medici sau dovezi clinice'],
+  [/\bai\s+(o\s+|un\s+)?(burt\w*|gus[ai]\w*|barbie dubla|celulit\w*|riduri|pete|vergetur\w*|grasime\w*|kilograme|colac\w*)\b|\b(esti|sunteti)\s+(gras[ae]?|plinut\w*|urat\w*|batran\w*)\b|\bte deranjeaza\s+(burt\w*|gus\w*|celulit\w*|riduril\w*|petele|kilogramele|colac\w*)|\burasti ce vezi\b/, 'vorbește despre defectul celui care citește („Ai gușă?”)'],
+  [/\d[\d.,]*\s*(lei|ron|euro|eur)\b|€/, 'are un preț'],
+  [/\b(pret|pretul|preturi\w*|ofert\w*|promoti\w*|discount\w*|reduceri\w*)\b|\breducere\s+(de\s+)?\d|\d+\s?%\s+reducere|\b(consultati\w*|evaluar\w*|sedint\w*)\s+gratuit\w*/, 'vorbește despre preț, ofertă sau reducere'],
+  [/\bprogrameaza(-|\s)?te\b|\bprogramar\w*|\bfa(-|\s)?ti\s+(o\s+)?programare|\bsuna(-|\s)?ne\b|\bwhatsapp\b/, 'cheamă la programare („programează-te”)'],
+  [/https?:\/\/|\bwww\.|\b[a-z0-9-]+\.(ro|com|net|eu)\b|\blink\w*\b/, 'are un link'],
+];
+// [the words, the warning, the problem that says it already]
+const SOFT = [
+  [/\bslab\w*/, '„slăbit”: mai sigur „conturare”, „grăsime localizată”', 1],
+  [/\b(definitiv\w*|permanent\w*|pentru totdeauna)\b/, '„definitiv”: rezultatele diferă de la o persoană la alta'],
+  [/\b(miracol\w*|minun(e|i|ea|ile)|magic\w*|instant\w*)\b/, 'promisiune prea mare („miracol”, „instant”)'],
+  [/\b(medic\w*|doctor\w*|dermatolog\w*)\b/, '„medic”: fără pretenții medicale', 5],
+];
+const RO_WORDS = new Set(['si', 'sa', 'in', 'este', 'pentru', 'care', 'nu', 'cu', 'pe', 'mai', 'sau', 'dupa', 'fara', 'ce', 'cum', 'iti', 'te', 'ne', 'din', 'la', 'de']);
+const hashtags = (t) => (String(t).match(/#[\p{L}\p{N}_]+/gu) || []).length;
+// a long Romanian text with no ă, â, î, ș, ț at all (the hashtags and links left out)
+function noDiacritics(t) {
+  const s = String(t).replace(/#[\p{L}\p{N}_]+/gu, ' ').replace(/@[\w.]+/g, ' ').replace(/https?:\/\/\S+/g, ' ');
+  if ((s.match(/\p{L}/gu) || []).length < 80 || /[ăâîșțşţ]/i.test(s)) return false;
+  return fold(s).split(/[^a-z]+/).filter((w) => RO_WORDS.has(w)).length >= 3;
+}
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// one network's text: { problems, warnings } (Romanian, without the network's name)
+function qaText(text, net, it, competitors) {
+  const t = String(text || ''), f = fold(t), problems = [], warnings = [];
+  if (!t.trim()) return { problems, warnings };
+  if (net === 'yt') {
+    // YouTube (content-yt.js): the first line is the title, with #shorts; the rest the description
+    const lines = t.split('\n'), k = lines.findIndex((l) => l.trim());
+    const first = (k >= 0 ? lines[k] : '').replace(/#shorts\b/ig, '').replace(/\s+/g, ' ').trim();
+    const title = first + ' #shorts', desc = k >= 0 ? lines.slice(k + 1).join('\n').trim() : '';
+    if (title.length > 100) problems.push('titlul are ' + title.length + ' de caractere cu #shorts (maxim 100)');
+    if (desc.length > 5000) problems.push('descrierea are ' + desc.length + ' de caractere (maxim 5000)');
+    if (/[<>]/.test(t)) warnings.push('YouTube scoate semnele < și >');
+  } else {
+    const max = { tt: 2200, ig: 2200, fb: 5000 }[net] || 2200;
+    if (t.length > max) problems.push('are ' + t.length + ' de caractere (maxim ' + max + ')');
+  }
+  const h = hashtags(t);
+  if (net === 'ig' && h > 30) problems.push('are ' + h + ' de hashtag-uri (maxim 30)');
+  if (net === 'tt' && h > 6) warnings.push(h + ' hashtag-uri (pe TikTok 3-5)');
+  if (net === 'fb' && h > 3) warnings.push(h + ' hashtag-uri (pe Facebook 1-2)');
+  if (net === 'tt' && t.length > 400) warnings.push('text lung pentru TikTok (o frază, două)');
+  if (/[—–]/.test(t)) problems.push('are liniuțe lungi');
+  if (noDiacritics(t)) problems.push('e scris fără diacritice (ă, â, î, ș, ț)');
+  const hit = RISKS.map(([re, msg]) => { const y = re.test(f); if (y) problems.push(msg); return y; });
+  (competitors || []).forEach((c) => { const n = fold(c).trim(); if (n.length >= 3 && new RegExp('(^|[^a-z0-9])' + escRe(n) + '($|[^a-z0-9])').test(f)) problems.push('numește un concurent („' + c + '”)'); });
+  SOFT.forEach(([re, msg, said]) => { if (re.test(f) && !(said != null && hit[said])) warnings.push(msg); });
+  if (it && net === 'tt' && it.rubric === 'Cazuri' && !/rezultatele difera/.test(f)) warnings.push('caz înainte/după fără „Rezultatele diferă de la o persoană la alta”');
+  return { problems, warnings };
+}
+// The check of an item's texts, on one network or (none given) on every network it goes to:
+// { ok, problems: ['Instagram: are „100%”' …], warnings: […] }. content-post.js calls it before posting.
+function qa(it, net, opts) {
+  const o = opts || {};
+  const competitors = o.competitors || COMPETITORS;
+  const nets = net ? [net] : P.netsFor((it && it.kind) || 'reel');
+  const problems = [], warnings = [];
+  nets.forEach((n) => {
+    const r = qaText(captionFor(it || {}, n), n, it, competitors);
+    r.problems.forEach((x) => problems.push(NET_NAME[n] + ': ' + x));
+    r.warnings.forEach((x) => warnings.push(NET_NAME[n] + ': ' + x));
+  });
+  if (!net && it) {
+    // the same text on three networks or more: each network gets its own (reels/PRODUCER.md)
+    const texts = nets.map((n) => captionFor(it, n).trim()).filter(Boolean);
+    const same = texts.length - new Set(texts).size;
+    if (texts.length >= 3 && same >= 2) warnings.push('același text pe ' + (same + 1) + ' rețele');
+  }
+  return { ok: !problems.length, problems, warnings };
+}
+
 // the item is complete: checked and planned in its week (a redone item: back to the owner, in the same slots)
 async function ready(id) {
   if (!isId(id)) throw fail('invalid_id');
   await items();
   const [st, now] = [await settings(), Date.now()];
+  let warnings = [];
   const { out } = await update((list) => {
     const it = findItem(list, id);
     if (!it) throw fail('not_found', 404);
     if (it.state !== 'draft') return { already: true, plan: it.plan, week: it.week };
-    const bad = problems(it);
-    if (bad.length) throw fail('invalid_item', 422, { problems: bad });
+    const q = qa(it, null, { competitors: st.competitors });
+    const bad = problems(it).concat(q.problems);
+    if (bad.length) throw fail('invalid_item', 422, { problems: bad, warnings: q.warnings });
+    warnings = q.warnings;
     const m = media(it);
     it.cover = m.cover ? m.cover.name : m.images[0] ? m.images[0].name : '';
     it.state = 'ready'; it.readyAt = new Date(now).toISOString();
@@ -206,7 +330,7 @@ async function ready(id) {
     P.replanWeek(list, it.week, st, now);
     return { plan: it.plan, week: it.week };
   });
-  return Object.assign(out, { info: P.weekInfo(await items(), st, out.week) });
+  return Object.assign(out, { info: P.weekInfo(await items(), st, out.week) }, warnings.length ? { warnings } : {});
 }
 
 // Refă: the producer makes an item again (its files are uploaded again with the same names, or `clear` drops them
@@ -223,6 +347,10 @@ async function replace(id, input) {
     if (x.caption != null) it.caption = clean(x.caption, 2200);
     if (x.captions) it.captions = Object.assign({}, it.captions || {}, captionsOf(x.captions));
     if (x.topic) it.topic = clean(x.topic, 160);
+    if (x.hook) it.hook = clean(x.hook, 200);
+    if (x.hookType) it.hookType = hookTypeOf(x.hookType);
+    if (x.topicTag) it.topicTag = slug(x.topicTag);
+    if (x.firstComment) it.firstComment = oneLine(x.firstComment, 280);
     let dropped = [];
     if (x.clear) { dropped = (it.files || []).map((f) => f.path); it.files = []; it.cover = ''; }
     return { files: (it.files || []).map((f) => f.name), dropped };
@@ -281,9 +409,35 @@ async function status() {
   // what the producer already made (so a session with no memory never repeats a topic), the newest first
   const made = list.filter((x) => !x.removed).slice(-120).reverse().map((x) => ({ topic: x.topic || '', rubric: x.rubric || '', kind: x.kind, week: x.week || '', at: x.createdAt || '' }));
   const redo = list.filter((x) => !x.removed && !x.dropped && x.review === 'redo').map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', rubric: x.rubric || '', week: x.week, redoNote: x.redoNote || '', replacing: x.state === 'draft' }));
+  // what works (learn), the owner's ideas not made yet, the moments of next week, the evergreen winners to make again
+  const L = require('./content-learn'), lr = L.learn(list, now);
+  const fresh = (await ideas()).filter((d) => d.state !== 'used').map((d) => ({ id: d.id, text: d.text, rubric: d.rubric || '', at: d.at }));
   return { on: st.on, nets: st.nets, times: st.times, photoTime: st.photoTime, startWeek: st.startWeek, today: P.roDay(now),
     next: P.weekInfo(list, st, next), current: P.weekInfo(list, st, cur), redo, counts: P.counts(list),
-    drafts: list.filter((x) => x.state === 'draft' && !x.removed).map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', week: x.week, files: (x.files || []).map((f) => f.name) })), made };
+    drafts: list.filter((x) => x.state === 'draft' && !x.removed).map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', week: x.week, files: (x.files || []).map((f) => f.name) })), made,
+    ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
+}
+
+// ---------------------------------------------------------------- the owner's ideas (Admin → Conținut)
+async function ideas() { const l = await readJSON(IDEAS_KEY, []); return Array.isArray(l) ? l : []; }
+async function addIdea(text, rubric) {
+  const t = clean(text, 400);
+  if (t.length < 3) throw fail('idea_too_short');
+  const d = { id: crypto.randomUUID(), text: t, rubric: RUBRICS.includes(rubric) ? rubric : '', state: 'new', at: new Date().toISOString() };
+  await updateKey(IDEAS_KEY, (l) => { l.unshift(d); l.splice(300); });
+  return d;
+}
+async function delIdea(id) {
+  const { out } = await updateKey(IDEAS_KEY, (l) => { const i = l.findIndex((d) => d.id === id); if (i < 0) return false; l.splice(i, 1); return true; });
+  if (!out) throw fail('not_found', 404);
+  return true;
+}
+// made by an item (the producer's create with ideaId), or back to new (that draft was dropped)
+async function useIdea(id, itemId) {
+  await updateKey(IDEAS_KEY, (l) => { const d = l.find((x) => x.id === id); if (!d) return false; Object.assign(d, { state: 'used', usedAt: new Date().toISOString(), itemId }); });
+}
+async function unuseIdea(itemId) {
+  await updateKey(IDEAS_KEY, (l) => { const d = l.find((x) => x.itemId === itemId && x.state === 'used'); if (!d) return false; d.state = 'new'; delete d.usedAt; delete d.itemId; });
 }
 
 // Scoate: the entries not posted yet are skipped (a net: just that one)
@@ -297,10 +451,13 @@ async function skip(id, net) {
     if (!net) { it.dropped = true; if (it.state === 'draft') { it.state = 'ready'; it.plan = []; it.removed = true; } n++; }
     return n;
   });
+  // the owner's idea it was making waits for another item
+  const it = !net && findItem(await items(), id);
+  if (it && it.ideaId && !(it.plan || []).some((e) => e.state === 'posted')) await unuseIdea(id).catch(() => {});
   return out;
 }
 
-const readState = async () => Object.assign({ statsDay: '', topWeek: '', holdNote: '', readyWeek: '', remindWeek: '' }, (await readJSON(STATE_KEY, null)) || {});
+const readState = async () => Object.assign({ statsDay: '', topWeek: '', holdNote: '', readyWeek: '', remindWeek: '', missWeek: '', monWeek: '' }, (await readJSON(STATE_KEY, null)) || {});
 const writeState = (s) => writeJSON(STATE_KEY, s, { quiet: true });
 
 // The owner hears about the weekly batch (the bell and his phone, Admin → Conținut):
@@ -317,10 +474,10 @@ async function notices(nowMs) {
   const [list, st, s] = await Promise.all([items(), settings(), readState()]);
   const next = P.addDays(P.weekOf(now), 7), info = P.weekInfo(list, st, next);
   const out = [];
-  const tell = async (tag, title, text) => {
+  const tell = async (tag, title, text, tone) => {
     try {
       const N = require('./notify'), store = { readJSON, writeJSON };
-      await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: 'info', go: 'continut', tag, title, text });
+      await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: tone || 'info', go: 'continut', tag, title, text });
     } catch (e) { console.error('content notify:', e.message); }
     out.push(tag);
   };
@@ -342,9 +499,46 @@ async function notices(nowMs) {
     await update((l) => { l.forEach((it) => { if (ids.has(it.id)) it.replacedTold = true; }); });
     await tell('ct-redone-' + last, 'CONȚINUT REFĂCUT 🎬', 'Am refăcut ' + plural(redone.length, 'material', 'materiale') + '.');
   }
+  // the safety net: Saturday from 20:00 (or Sunday, if the clock missed it) next week still incomplete, once a week
+  const d = P.dow(P.roDay(now)), miss = info.missing.reel + info.missing.carousel;
+  if (st.on && ((d === 6 && roHour(now) >= 20) || d === 0) && s.missWeek !== next && miss > 0) {
+    s.missWeek = next; save = true;
+    const what = [info.missing.reel ? plural(info.missing.reel, 'reel', 'reels') : '', info.missing.carousel ? plural(info.missing.carousel, 'carusel', 'carusele') : ''].filter(Boolean).join(' și ');
+    await tell('ct-miss-' + next, 'SĂPTĂMÂNA NU E GATA ⚠️', (miss === 1 ? 'Lipsește 1 material' : 'Lipsesc ' + plural(miss, 'material', 'materiale')) + ' pentru săptămâna care vine (' + what + ').', 'bad');
+  }
+  // Monday from 11:00: an approved week with nothing going out today (a hold, the switch, a permission), once a week
+  const cur = P.weekOf(now);
+  if (d === 1 && roHour(now) >= 11 && s.monWeek !== cur) {
+    s.monWeek = cur; save = true;
+    const why = await mondayHold(list, st, now).catch((e) => { console.error('content monday:', e.message); return ''; });
+    if (why) await tell('ct-monday-' + cur, 'AZI NU SE POSTEAZĂ NIMIC ⚠️', why, 'bad');
+  }
   if (save) await writeState(s);
   return out;
 }
+// why nothing of today's (Monday's) entries will go out ('' when something does or nothing was planned)
+async function mondayHold(list, st, now) {
+  const today = P.roDay(now), week = P.weekOf(now);
+  const live = list.filter((it) => !it.removed && !it.dropped && it.state === 'ready');
+  if (!live.some((it) => it.week === week && P.review(it) === 'approved')) return '';
+  const todays = [];
+  live.forEach((it) => (it.plan || []).forEach((e) => { if (P.holds(e) && st.nets[e.net] && P.roDay(Date.parse(e.at)) === today) todays.push({ it, e }); }));
+  if (!todays.length) return '';
+  if (todays.some(({ e }) => e.state === 'posted' || e.state === 'posting')) return '';
+  if (!st.on) return 'Postarea automată e oprită: azi nu pleacă nimic din săptămâna aprobată.';
+  const why = new Set();
+  let can = 0, POST = null;
+  try { POST = require('./content-post'); } catch (e) { POST = null; }
+  const a = POST && typeof POST.access === 'function' ? await POST.access(true).catch(() => null) : null;
+  todays.forEach(({ it, e }) => {
+    if (P.review(it) !== 'approved') { why.add('nimic aprobat pentru azi'); return; }
+    const block = (a && POST && typeof POST.blocked === 'function' ? POST.blocked(a, e.net) : '') || (e.state === 'planned' ? e.hold || '' : '');
+    const bad = qa(it, e.net, { competitors: st.competitors }).problems[0];
+    if (block) why.add(block); else if (bad) why.add(bad); else if (e.state === 'planned') can++;
+  });
+  return can ? '' : [...why].join(' · ') || 'Nimic de postat azi.';
+}
 
-module.exports = { KEY, SET_KEY, STATE_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, ORIGIN, fileUrl, isId, isName, pathOf, items, settings, saveSettings, update, migrate, create, addFile, problems, media,
-  ready, replace, setReview, approveWeek, setCaptions, captionFor, status, skip, readState, writeState, notices, findItem, fail, weekFor, plural, range };
+module.exports = { KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ORIGIN, fileUrl, isId, isName, pathOf, items, settings,
+  saveSettings, update, updateKey, migrate, create, addFile, problems, media, qa, qaText, ready, replace, setReview, approveWeek, setCaptions, captionFor, status, skip, readState,
+  writeState, notices, mondayHold, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };

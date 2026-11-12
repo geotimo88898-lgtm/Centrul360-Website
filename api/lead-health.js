@@ -44,12 +44,13 @@ module.exports = async (req, res) => {
     return;
   }
   // ?comments=1: the answers to the comments on posts and ads (api/_lib/social-comments.js): permissions, webhooks, the
-  // switch and the last 10 (initials only)
+  // switch and the last 10 (initials only); dm: the keyword guides sent in private, the last 7 days (api/_lib/content-dm.js)
   if (req.query && req.query.comments) {
     const SC = require('./_lib/social-comments');
-    const [st, set, last] = await Promise.all([require('./_lib/social-inbox').status().catch((e) => ({ error: e.message })), SC.settings(), SC.list(10)]);
+    const [st, set, last, dm] = await Promise.all([require('./_lib/social-inbox').status().catch((e) => ({ error: e.message })), SC.settings(), SC.list(10),
+      (async () => require('./_lib/content-dm').summary())().catch((e) => ({ error: e.message }))]);
     res.status(200).json({ on: set.on, status: st.error ? { error: st.error } : st.comments, last: last.map((c) => ({ id: c.id, channel: c.channel, from: SC.initials(c.from && c.from.name),
-      text: String(c.text || '').replace(PHONE, '…'), state: c.state, reply: c.reply || '', why: c.why || '', at: c.at, repliedAt: c.repliedAt || '', tries: c.tries || 0 })) });
+      text: String(c.text || '').replace(PHONE, '…'), state: c.state, reply: c.reply || '', why: c.why || '', at: c.at, repliedAt: c.repliedAt || '', tries: c.tries || 0 })), dm });
     return;
   }
   // ?content=1: Conținut (api/_lib/content.js): the settings, this week's and next week's batch (need, have, missing,
@@ -64,9 +65,16 @@ module.exports = async (req, res) => {
     const last = rows.filter((r) => r.state === 'posted').sort((a, b) => (b.postedAt || b.at).localeCompare(a.postedAt || a.at)).slice(0, 5).map((r) => ({ net: r.net, at: r.postedAt || r.at, rubric: r.rubric, kind: r.kind, url: r.url, stats: r.stats }));
     const errors = rows.filter((r) => r.state === 'error').slice(-5).map((r) => ({ net: r.net, at: r.at, rubric: r.rubric, error: r.error }));
     const wk = (w) => ({ week: w.week, n: w.n, need: w.need, have: w.have, missing: w.missing, approved: w.approved, pending: w.pending, redo: w.redo, drafts: w.drafts, short: w.short });
+    // what the machine learned, the ideas waiting, next week's moments, the winners to make again, the last followers
+    const L = require('./_lib/content-learn');
+    const [growth, lst] = await Promise.all([L.growth(), L.readState ? L.readState() : null]);
     res.status(200).json({ settings: { on: status.on, nets: status.nets, times: status.times, photoTime: status.photoTime, startWeek: status.startWeek }, counts: status.counts,
       current: wk(status.current), nextWeek: wk(status.next), redo: status.redo.map((r) => ({ id: r.id, kind: r.kind, week: r.week, rubric: r.rubric, replacing: r.replacing })), drafts: status.drafts.length,
-      access: access.error ? { error: access.error } : { connected: access.connected, instagram: !!access.igId, missing: access.missing }, next, last, errors });
+      access: access.error ? { error: access.error } : { connected: access.connected, instagram: !!access.igId, missing: access.missing,
+        yt: access.yt ? { connected: !!access.yt.connected, configured: !!access.yt.configured, missing: access.yt.missing || [], lost: access.yt.lost || '' } : null,
+        tt: access.tt ? { connected: !!access.tt.connected, configured: !!access.tt.configured, missing: access.tt.missing || [], lost: access.tt.lost || '' } : null }, next, last, errors,
+      learn: { n: status.learn.n, rubrics: status.learn.rubrics, hooks: status.learn.hooks, hours: status.learn.hours }, ideas: status.ideas.length,
+      season: status.season.map((x) => x.id), recycle: status.recycle.length, growth: growth.slice(-3), learnState: lst });
     return;
   }
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours

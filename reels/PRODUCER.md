@@ -9,7 +9,8 @@ Cheia: antetul `Authorization: Bearer $CREATIVE_SSO_SECRET` (aceeași cheie ca l
 niciodată în fișiere, commituri sau loguri.
 
 ## Când rulezi
-- **Sâmbătă, pe la 18:00**: lotul pentru săptămâna care vine (luni 00:00 până duminică 23:59, ora României).
+- **Sâmbătă, pe la 18:00**: lotul pentru săptămâna care vine (luni 00:00 până duminică 23:59, ora României). La 20:00,
+  dacă încă lipsește ceva, proprietarul primește „SĂPTĂMÂNA NU E GATA ⚠️” cu câte lipsesc.
   Proprietarul primește „SĂPTĂMÂNA E GATA DE VERIFICAT 🎬” când tot ce trebuie e urcat, iar duminică la 12:00 i se
   amintește ce n-a aprobat încă.
 - **În orice zi**: materialele trimise înapoi la refăcut (`redo` din stare). Le refaci cât mai repede: până le refaci,
@@ -32,7 +33,19 @@ Răspunsul (prescurtat):
   "current": { "...": "la fel, pentru săptămâna în curs" },
   "redo":    [ { "id": "…", "kind": "reel", "topic": "…", "rubric": "…", "week": "2026-11-16", "redoNote": "Vocea prea rapidă", "replacing": false } ],
   "drafts":  [ { "id": "…", "week": "…", "files": ["reel.mp4"] } ],
-  "made":    [ { "topic": "…", "rubric": "…", "kind": "reel", "week": "…", "at": "…" } ] }
+  "made":    [ { "topic": "…", "rubric": "…", "kind": "reel", "week": "…", "at": "…" } ],
+  "ideas":   [ { "id": "…", "text": "Nuki pregătește bradul și încurcă luminițele", "rubric": "Nuki", "at": "…" } ],
+  "season":  [ { "id": "craciun-2026", "name": "Crăciun și petrecerile de sfârșit de an", "from": "2026-12-01", "to": "2026-12-24",
+                 "angle": "…", "ideas": ["…"], "rubrics": ["Cazuri", "Nuki"], "note": "" } ],
+  "recycle": [ { "id": "…", "topic": "HIFU pe gușă, 3 luni după", "topicTag": "hifu-gusa", "rubric": "Cazuri", "hook": "…", "hookType": "socant",
+                 "keyword": "GUȘĂ", "score": 2.4, "postedAt": "…", "url": "…" } ],
+  "learn":   { "n": 43,
+               "rubrics":   [ { "rubric": "Cazuri", "score": 1.4, "n": 11 } ],
+               "topics":    [ { "topic": "HIFU gușă", "score": 1.6, "n": 6 } ],
+               "worst":     [ { "topic": "RF față", "score": 0.7, "n": 4 } ],
+               "hooks":     [ { "hookType": "socant", "score": 1.4, "n": 11 } ],
+               "hours":     { "ig": [ { "at": "12:30", "score": 1.3, "n": 9 } ] },
+               "more_like": [ { "id": "…", "topic": "…", "topicTag": "…", "rubric": "…", "hook": "…", "hookType": "…", "score": 2.7 } ] } }
 ```
 - `next.missing`: **exact câte faci** pentru săptămâna care vine (`reel` reels și `carousel` carusele). Zero și zero:
   lotul e complet, nu mai faci nimic pentru ea.
@@ -42,7 +55,25 @@ Răspunsul (prescurtat):
   în locul lor: `have` le numără deja.
 - `drafts`: elemente create dar nedate gata (o rulare întreruptă): le termini sau le lași, nu le dublezi.
 - `made`: ce s-a făcut deja; nu repeți un subiect din ultimele 30 de zile.
-- Rubricile prin rotație (README.md), Cazuri de cel puțin 2 ori pe săptămână.
+- `ideas`, `season`, `recycle`, `learn`: ce faci și în ce ordine (mai jos).
+
+## Ce faci, în ordinea asta
+Adminul învață singur din cifre: fiecare postare primește un scor (vizualizări + 5 × salvări + 5 × distribuiri + 3 ×
+comentarii), împărțit la mediana rețelei ei, ca TikTok, YouTube, Instagram și Facebook să se compare. `score` 1 e o
+postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3 zile intră în socoteală.
+1. **`redo`**: tot ce a trimis proprietarul înapoi, primul.
+2. **`ideas`**: ideile proprietarului (Admin → Conținut → „Idei pentru săptămânile următoare”), toate, înaintea
+   oricărui subiect ales de tine. Trimiți `ideaId` la `create`: ideea iese din listă (dacă scoți ciorna, revine).
+3. **`season`**: momentele care prind săptămâna care vine (`reels/calendar.json`). Cel puțin un material pe moment,
+   cu unghiul lui (`angle`), tot fără preț, ofertă sau programare. `note` are restricțiile (epilarea doar Timișoara).
+4. **`recycle`** (cel mult 2 pe săptămână): câștigătoare postate acum 60+ zile. Faci o variantă **nouă** (alt cârlig,
+   alt început, aceeași temă), cu `variantOf` = id-ul originalului. Niciodată același fișier din nou.
+5. Restul săptămânii: **cam 40% „mai mult din ce merge”** (`learn.more_like`, `learn.topics`, `learn.rubrics`,
+   `learn.hooks`: același subiect sau aceeași rubrică, alt material, alt cârlig; tipul de cârlig care câștigă) și
+   **cam 60% subiecte noi** (`topics.json`, nefolosite în 30 de zile; încerci și rubrici sau cârlige mai slabe, dar
+   nu ce e în `learn.worst` de două ori la rând).
+6. Cât timp `learn.n` e sub 10, nu e destul ca să tragi concluzii: rotația normală a rubricilor, Cazuri de cel puțin
+   2 ori pe săptămână. Rubricile prin rotație (README.md), Cazuri de cel puțin 2 ori pe săptămână, oricum.
 
 ## Pașii pentru un material nou
 ```bash
@@ -50,8 +81,10 @@ Răspunsul (prescurtat):
 ID=$(curl -s -H "$H" -H 'Content-Type: application/json' -X POST "$U" -d '{
   "action":"create",
   "item":{"kind":"reel","week":"2026-11-16","rubric":"Cazuri","topic":"HIFU pe gușă, 3 luni după","keyword":"GUȘĂ",
+          "topicTag":"hifu-gusa","hook":"Gușa asta a plecat fără ac","hookType":"socant",
+          "firstComment":"Voi ce ați vrea să aflați despre HIFU pe gușă? 🥰",
           "captions":{
-            "tt":"3 luni după HIFU pe gușă 👀 #hifu #gusa #timisoara #centrul360",
+            "tt":"3 luni după HIFU pe gușă 👀 Rezultatele diferă de la o persoană la alta. #hifu #gusa #timisoara #centrul360",
             "yt":"HIFU pe gușă: cum arată după 3 luni #shorts",
             "ig":"Cum arată gușa la 3 luni după o ședință de HIFU …\n\n#centrul360 #timisoara #hifu #gusa",
             "fb":"Ne-ați întrebat des ce se întâmplă după HIFU pe gușă. Uite un caz real, 3 luni după …"}}
@@ -66,7 +99,12 @@ curl -s -H "$H" -H 'Content-Type: application/json' -X POST "$U" -d "{\"action\"
 # → { ok, plan:[{net,kind,at,state}], week, info:{need,have,missing,…} }   sau 422 { error:"invalid_item", problems:[...] }
 ```
 Dacă `ready` dă 422, citești `problems`, repari, urci din nou fișierul cu același nume (se înlocuiește) și dai `ready`
-din nou. `week` lipsă înseamnă săptămâna care vine; o dată din mijlocul săptămânii se mută pe lunea ei; o săptămână
+din nou. `problems` are și verificarea textelor, pe fiecare rețea („Instagram: „100%”: fără promisiuni absolute”):
+limitele (TikTok și Instagram 2200 de caractere, Instagram 30 de hashtag-uri, Facebook 5000, YouTube titlul cu
+#shorts 100), „garantat”, kilograme sau centimetri promiși, „vindecă”, „fără riscuri”, „100%”, medici sau dovezi
+clinice, „Ai gușă?”, preț, ofertă, programare, link, concurenți, liniuțe lungi, text fără diacritice. Textul nu se
+taie: unul prea lung e refuzat și îl scrii din nou. `warnings` din răspunsul lui `ready` nu opresc nimic, dar le
+repari când poți („slăbit”, „instant”, prea multe hashtag-uri, cazul de pe TikTok fără „Rezultatele diferă…”). `week` lipsă înseamnă săptămâna care vine; o dată din mijlocul săptămânii se mută pe lunea ei; o săptămână
 trecută e refuzată (`past_week`).
 
 ## Refacerea (`redo`)
@@ -89,6 +127,12 @@ Dacă nota cere doar alt text, sari peste pasul 2. Când ai terminat toate refac
 | `keyword` | cuvântul din invitația la comentariu (GUȘĂ), când există |
 | `captions` | textul pentru fiecare rețea: `tt`, `yt`, `ig`, `fb` (regulile mai jos) |
 | `caption` | rezerva: merge pe rețelele fără text propriu. Trimite `captions` pentru toate rețelele, nu te baza pe ea |
+| `hook` | primele cuvinte spuse și scrise în reel (cârligul), exact cum sunt |
+| `hookType` | felul cârligului: `intrebare`, `cifra`, `mit`, `pov`, `socant`, `poveste` (un cuvânt; adminul învață care merge) |
+| `topicTag` | familia subiectului, scurt și la fel de fiecare dată: `hifu-gusa`, `liposonix-abdomen`, `epilare-laser`, `rf-fata` |
+| `ideaId` | ideea proprietarului pe care o face materialul (din `ideas`) |
+| `variantOf` | id-ul câștigătoarei refăcute (din `recycle`) |
+| `firstComment` | primul comentariu, scris de cont sub postare (Instagram, Facebook, YouTube): o întrebare caldă despre subiect, care se termină cu ❤️, 🥰 sau 💞; fără să pomenească AI; cel mult 280 de caractere |
 
 Fișierele (nume: litere, cifre, `-`, `_`, extensia `.mp4` sau `.jpg`; tipul trimis cu `Content-Type` sau `&mime=`):
 - **reel**: exact un MP4 9:16 (1080×1920), 3-90 s, plus exact o copertă JPG. Merge pe TikTok, YouTube Shorts,
@@ -123,5 +167,11 @@ Mărimea și durata se citesc din fișier; nu trebuie trimise.
 - Nimic nu se postează până nu aprobă proprietarul. TikTok și YouTube primesc locurile lor („așteaptă acces”) până
   se leagă postarea acolo.
 - Ceasul (la :17 în fiecare oră) postează ce e aprobat și la rând, citește cifrele zilnic și lunea trimite
-  proprietarului topul săptămânii („de pus ca reclamă”).
+  proprietarului topul săptămânii („de pus ca reclamă”). Înainte de fiecare postare verifică din nou textul (proprietarul
+  îl poate schimba): o problemă ține postarea pe loc, cu motivul în Admin → Conținut.
+- Zilnic: urmăritorii pe fiecare rețea; pe 1 ale lunii, la 9:00, „RAPORTUL LUNII: conținut” (postări, vizualizări,
+  urmăritori câștigați, cel mai bun material). Lunea la 11:00, dacă din săptămâna aprobată nu pleacă nimic în ziua
+  aceea (o permisiune, comutatorul oprit), proprietarul e anunțat.
+- Admin → Conținut → Rezultate: aceleași cifre pe care le citești tu în `learn`, plus orele cele mai bune pe rețele.
+  Din orice postare de pe Instagram sau Facebook proprietarul poate face reclamă („Fă reclamă din asta”).
 - Starea completă, pentru verificare: `GET https://admin.centrul360.com/api/lead-health?content=1` (aceeași cheie).

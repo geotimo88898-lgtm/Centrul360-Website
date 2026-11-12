@@ -2,14 +2,18 @@
 // server to server with "Authorization: Bearer <CREATIVE_SSO_SECRET>" (as api/lead-health.js), or an admin's
 // session. The guide with the exact calls: reels/PRODUCER.md. The owner approves the week in Admin → Conținut.
 //   GET ?action=status          next week's batch (need, have, missing, the owner's review), this week's, the items to
-//                               redo with the owner's note, the topics already made
+//                               redo with the owner's note, the topics already made, what works (learn), the owner's
+//                               ideas not made yet (ideas), next week's moments (season), the winners to make again
+//                               as a new variant (recycle)
 //   POST {action:'create', item:{kind: reel|carousel|slideshow, rubric, topic, keyword, caption,
-//         captions:{tt,yt,ig,fb}, week:'YYYY-MM-DD' (its Monday; none: next week)}}  → { id, week }
+//         captions:{tt,yt,ig,fb}, week:'YYYY-MM-DD' (its Monday; none: next week), hook, hookType, topicTag,
+//         ideaId (marks the owner's idea made), variantOf (the winner it makes again)}}  → { id, week }
 //   PUT|POST ?action=file&id=<id>&name=<file>&mime=<type>  (the raw bytes, ≤ 60 MB) → { file }
 //   POST {action:'ready', id}   checks the files (reel: one MP4 9:16 ≤ 90 s + a JPG cover; carousel / slideshow: 2-10
-//                               JPG 4:5 or 1:1) and the texts, plans it in its week → { plan, week, info }  (422 + problems)
-//   POST {action:'replace', id, captions?, caption?, clear?}   an item the owner sent back: open again for its new
-//                               files (same names replace them; clear: drop them all first), then 'ready'
+//                               JPG 4:5 or 1:1) and the texts (content.js qa: the limits, the words refused, the
+//                               diacritics), plans it in its week → { plan, week, info, warnings? }  (422 + problems)
+//   POST {action:'replace', id, captions?, caption?, hook?, hookType?, clear?}   an item the owner sent back: open
+//                               again for its new files (same names replace them; clear: drop them all first), then 'ready'
 //   POST {action:'settings', on}   the global switch
 
 const crypto = require('crypto');

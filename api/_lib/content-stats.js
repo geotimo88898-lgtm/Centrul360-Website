@@ -74,6 +74,8 @@ async function fbPostStats(id, token) {
   return s;
 }
 async function one(a, it, e) {
+  // YouTube and TikTok: their own libraries, through the poster (content-post.js statsOf)
+  if (e.net === 'yt' || e.net === 'tt') return typeof POST.statsOf === 'function' ? (await POST.statsOf(a, it, e)) || {} : {};
   if (e.net === 'ig') return igStats(await insights('/' + e.postId + '/insights', a.token, it.kind === 'story' ? IG_STORY : it.kind === 'reel' ? IG_METRICS : IG_METRICS.filter((m) => m !== 'ig_reels_avg_watch_time')));
   if (e.net === 'fb') return it.kind === 'reel' ? fbReelStats(await insights('/' + e.postId + '/video_insights', a.token, FB_REEL)) : fbPostStats(e.postId, a.token);
   return {};
@@ -103,11 +105,13 @@ async function run(opts) {
   const out = {};
   if ((s.statsDay !== today && roHour(now) >= 6) || opts.force) {
     const a = await POST.access(true);
-    if (!a.connected) out.stats = { error: 'not_connected' };
+    // Facebook's connection reads Instagram and Facebook; YouTube and TikTok have their own
+    const can = (net) => (net === 'yt' || net === 'tt' ? !!(a[net] && a[net].connected) : !!a.connected);
+    if (!a.connected && !can('yt') && !can('tt')) out.stats = { error: 'not_connected' };
     else {
       const list = await C.items();
       const todo = [];
-      list.forEach((it) => (it.plan || []).forEach((e) => { if (e.state === 'posted' && e.postId && now - Date.parse(e.postedAt || e.at) < DAYS * 864e5 && !(it.kind === 'story' && now - Date.parse(e.postedAt || e.at) > 864e5)) todo.push({ it, e }); }));
+      list.forEach((it) => (it.plan || []).forEach((e) => { if (e.state === 'posted' && e.postId && can(e.net) && now - Date.parse(e.postedAt || e.at) < DAYS * 864e5 && !(it.kind === 'story' && now - Date.parse(e.postedAt || e.at) > 864e5)) todo.push({ it, e }); }));
       const got = [];
       let left = 0;
       for (const { it, e } of todo) {

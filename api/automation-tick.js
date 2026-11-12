@@ -25,6 +25,8 @@ const STEPS = [
   // then once a day their numbers and on Monday the week's top for the owner (api/_lib/content-stats.js)
   ['content', () => require('./_lib/content-post').run({ budgetMs: 25e3 })],
   ['contentstats', () => require('./_lib/content-stats').run({ budgetMs: 12e3 })],
+  // once a day the followers per network, the 1st of the month the month's report (api/_lib/content-learn.js)
+  ['contentlearn', () => require('./_lib/content-learn').run()],
   // the changes the owners asked for once (api/_lib/ads-once.js)
   ['once', () => require('./_lib/ads-once').run()],
   // once: the approved new texts in the four Arad ads (the owner, 8.11; api/_lib/ads-text-once.js)

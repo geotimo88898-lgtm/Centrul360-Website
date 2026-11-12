@@ -1,0 +1,137 @@
+{
+  "about": "Momentele anului pentru reels (Admin → Conținut). Adminul dă producătorului, în `season` din starea intake, intrările al căror interval prinde săptămâna care vine. Fără preț, ofertă sau programare în reel, nici la Black Friday: unghiul e educativ sau amuzant. Se completează în fiecare noiembrie pentru anul următor.",
+  "entries": [
+    {
+      "id": "black-friday-2026", "name": "Black Friday", "from": "2026-11-09", "to": "2026-11-30",
+      "angle": "Fără reduceri în reel: cum alegi un tratament după ce face, nu după cât costă. Întrebările de pus înainte, ce înseamnă un aparat original, de ce contează cine îl folosește.",
+      "ideas": ["3 întrebări înainte să alegi orice tratament", "Mit sau adevăr: mai multe ședințe înseamnă rezultate mai bune", "Nuki la cumpărături: coșul plin de lucruri care nu țin"],
+      "rubrics": ["Top 3", "Mit sau adevăr?", "Nuki"]
+    },
+    {
+      "id": "iarna-laser-2026", "name": "Iarna, sezonul epilării laser", "from": "2026-11-01", "to": "2027-02-28",
+      "angle": "Pielea nebronzată: de ce toamna și iarna sunt momentul pentru epilarea laser, câte ședințe și de ce la distanță. Doar Timișoara.",
+      "ideas": ["De ce laserul se începe iarna, nu în mai", "Ce se întâmplă cu firul de păr la fiecare ședință", "Mit sau adevăr: laserul doare"],
+      "rubrics": ["Ce se întâmplă de fapt", "Mit sau adevăr?", "Întrebarea zilei"], "note": "epilarea doar Timișoara"
+    },
+    {
+      "id": "mos-nicolae-2026", "name": "Moș Nicolae", "from": "2026-11-30", "to": "2026-12-06",
+      "angle": "Amuzant: ce și-ar pune în ghetuțe pielea, tenul sau Nuki. O dorință, un adevăr scurt la final.",
+      "ideas": ["Nuki își curăță ghetuțele: ce pune în ele pentru ten", "Ce n-ar trebui să primească pielea ta de la Moș Nicolae"],
+      "rubrics": ["Nuki", "Top 3"]
+    },
+    {
+      "id": "craciun-2026", "name": "Crăciun și petrecerile de sfârșit de an", "from": "2026-12-01", "to": "2026-12-24",
+      "angle": "Pregătirile pentru sărbători: tenul la petreceri, profilul în pozele de familie, ce se poate face cu 3-4 săptămâni înainte și ce nu se mai poate face în ultima săptămână.",
+      "ideas": ["Ce poți face pentru ten cu 3 săptămâni înainte de Crăciun", "Profilul în pozele de familie: ce face HIFU pe gușă", "Nuki împodobește bradul (fun), cu un adevăr la final"],
+      "rubrics": ["Cazuri", "Ce se întâmplă de fapt", "Nuki"]
+    },
+    {
+      "id": "revelion-2026", "name": "Revelion", "from": "2026-12-26", "to": "2026-12-31",
+      "angle": "Rochia și pozele de Revelion: ce se vede în poze, ce merge în ultimele zile (hidratare, somn) și ce nu, scurt și amuzant.",
+      "ideas": ["3 greșeli de ten în noaptea de Revelion", "Nuki își alege rochia de Revelion"],
+      "rubrics": ["Top 3", "Nuki"]
+    },
+    {
+      "id": "dupa-sarbatori-2027", "name": "După sărbători, anul nou", "from": "2027-01-02", "to": "2027-01-25",
+      "angle": "Obiective realiste: balonarea după mese nu e grăsime localizată, mituri despre detox, ce nu pleacă doar cu sala și de ce.",
+      "ideas": ["Mit sau adevăr: detoxul de după sărbători topește grăsimea", "Balonare sau grăsime localizată? Cum le deosebești", "Rezoluțiile care țin vs cele care nu țin"],
+      "rubrics": ["Mit sau adevăr?", "Întrebarea zilei", "Top 3"]
+    },
+    {
+      "id": "valentines-2027", "name": "Valentine's Day", "from": "2027-02-07", "to": "2027-02-14",
+      "angle": "Încredere și o seară în oraș: tenul, gesturile mici de grijă. Fun cu Nuki îndrăgostit.",
+      "ideas": ["Nuki se pregătește de întâlnire", "Ce observă de fapt cineva la prima întâlnire (ten, zâmbet, încredere)"],
+      "rubrics": ["Nuki", "Întrebarea zilei"]
+    },
+    {
+      "id": "dragobete-2027", "name": "Dragobete", "from": "2027-02-17", "to": "2027-02-24",
+      "angle": "Sărbătoarea românească a iubirii: povestea pe scurt, iubirea de sine, primăvara care începe cu grija de tine.",
+      "ideas": ["Dragobete în 20 de secunde, cu Nuki", "Iubirea de sine nu e un clișeu: 3 gesturi pentru piele"],
+      "rubrics": ["Nuki", "Top 3"]
+    },
+    {
+      "id": "martisor-2027", "name": "Mărțișor, pielea după iarnă", "from": "2027-02-25", "to": "2027-03-14",
+      "angle": "Pielea după iarnă: ten tern, deshidratat, pete. Ce se schimbă primăvara în rutină și în tratamente.",
+      "ideas": ["Pielea după iarnă: ce o face tern", "Ce schimbi primăvara în rutina de ten"],
+      "rubrics": ["Ce se întâmplă de fapt", "Top 3"]
+    },
+    {
+      "id": "8-martie-2027", "name": "8 Martie", "from": "2027-03-01", "to": "2027-03-08",
+      "angle": "Ziua Femeii: ce își doresc femeile de fapt (întrebările reale primite la clinică), un gând pentru mama, fără ofertă și fără „cadou la preț”.",
+      "ideas": ["Ce ne întreabă cel mai des femeile, într-un minut", "Pentru mama: 3 lucruri despre pielea după 50 de ani"],
+      "rubrics": ["Întrebarea zilei", "Top 3", "Cazuri"]
+    },
+    {
+      "id": "paste-catolic-2027", "name": "Paște catolic", "from": "2027-03-21", "to": "2027-03-28",
+      "angle": "Pentru comunitățile din Timișoara și Arad: hainele de primăvară, mesele de sărbătoare, un ton cald și scurt.",
+      "ideas": ["Mesele de sărbătoare: balonare sau grăsime localizată"],
+      "rubrics": ["Mit sau adevăr?"]
+    },
+    {
+      "id": "vara-plaja-2027", "name": "Pregătirea pentru vară și plajă", "from": "2027-04-01", "to": "2027-06-15",
+      "angle": "Costumul de baie: de ce se începe acum (rezultatele apar în săptămâni, nu în zile). Conturare, talie, brațe, coapse, fără promisiuni în kilograme.",
+      "ideas": ["De ce aprilie e luna în care începi pentru iulie", "Ce face Liposonix sub piele, desenat", "Cazuri: talia, câte ședințe, poza reală"],
+      "rubrics": ["Cazuri", "Ce se întâmplă de fapt", "Întrebarea zilei"]
+    },
+    {
+      "id": "paste-2027", "name": "Paște și 1 Mai", "from": "2027-04-19", "to": "2027-05-02",
+      "angle": "Mesele de Paște și mini-vacanța de 1 Mai: balonare vs grăsime localizată, mituri despre post și slăbit, ton cald.",
+      "ideas": ["Mit sau adevăr: postul topește grăsimea de pe abdomen", "Nuki la grătar de 1 Mai (fun)"],
+      "rubrics": ["Mit sau adevăr?", "Nuki"]
+    },
+    {
+      "id": "ziua-mamei-2027", "name": "Ziua Mamei", "from": "2027-04-26", "to": "2027-05-02",
+      "angle": "Mămicile: corpul după sarcină fără vinovăție și fără rușinare, ce funcționează pe zonele care nu se schimbă cu sala.",
+      "ideas": ["Mămici: ce se întâmplă cu abdomenul după sarcină", "Cazuri: o mămică, zona, câte ședințe, poza reală"],
+      "rubrics": ["Cazuri", "Ce se întâmplă de fapt"]
+    },
+    {
+      "id": "nunti-2027", "name": "Sezonul nunților", "from": "2027-05-01", "to": "2027-09-30",
+      "angle": "Mireasa, nașa, invitata: calendarul dinainte de nuntă (ten, profil, brațe), ce faci cu 2-3 luni înainte și ce nu mai faci în ultima săptămână.",
+      "ideas": ["Calendarul miresei: ce faci cu 3 luni înainte", "Invitata la nuntă: profilul din poze", "Top 3 greșeli în săptămâna nunții"],
+      "rubrics": ["Top 3", "Cazuri", "Întrebarea zilei"]
+    },
+    {
+      "id": "banchet-2027", "name": "Banchetul și absolvirea", "from": "2027-05-25", "to": "2027-06-25",
+      "angle": "Pozele de la banchet: tenul, emoțiile, ce merge și ce nu în ultimele zile, ton tânăr.",
+      "ideas": ["3 lucruri pentru ten înainte de banchet", "Nuki la banchet (fun)"],
+      "rubrics": ["Top 3", "Nuki"]
+    },
+    {
+      "id": "vara-soare-2027", "name": "Vara: soarele și tratamentele", "from": "2027-06-15", "to": "2027-08-31",
+      "angle": "Soare și tratamente: ce faci vara, ce amâni (laserul pe pielea bronzată nu), protecția solară, pete.",
+      "ideas": ["Ce tratamente merg vara și ce amâni", "Mit sau adevăr: SPF-ul din fond de ten e suficient", "Nuki la plajă (fun)"],
+      "rubrics": ["Mit sau adevăr?", "Întrebarea zilei", "Nuki"]
+    },
+    {
+      "id": "intoarcere-vacanta-2027", "name": "Întoarcerea din vacanță", "from": "2027-08-16", "to": "2027-09-20",
+      "angle": "După vară: pete, ten deshidratat, kilogramele din vacanță vs grăsimea localizată, repornirea rutinei pentru toamnă.",
+      "ideas": ["Pielea după vacanță: ce i-a făcut soarele", "Kilogramele din vacanță vs grăsimea care nu pleacă", "Toamna, rutina din nou: primii 3 pași"],
+      "rubrics": ["Ce se întâmplă de fapt", "Top 3", "Mit sau adevăr?"]
+    },
+    {
+      "id": "toamna-ten-2027", "name": "Toamna, sezonul tenului", "from": "2027-09-15", "to": "2027-11-15",
+      "angle": "Toamna e momentul pentru ten (pete, riduri fine, textură) și pentru laser: de ce nu vara, ce se poate face acum.",
+      "ideas": ["De ce toamna e sezonul tenului", "Petele de după vară: ce se întâmplă în piele", "Iarna se începe laserul (doar Timișoara)"],
+      "rubrics": ["Ce se întâmplă de fapt", "Cazuri", "Întrebarea zilei"]
+    },
+    {
+      "id": "halloween-2027", "name": "Halloween", "from": "2027-10-24", "to": "2027-10-31",
+      "angle": "Fun: Nuki costumat, „mituri înfricoșătoare” despre tratamente, ce sperie de fapt pielea.",
+      "ideas": ["Mituri înfricoșătoare despre HIFU, demontate", "Nuki în costum: ce sperie pielea de fapt"],
+      "rubrics": ["Nuki", "Mit sau adevăr?"]
+    },
+    {
+      "id": "iarna-laser-2027", "name": "Iarna, sezonul epilării laser", "from": "2027-11-01", "to": "2028-02-29",
+      "angle": "Pielea nebronzată: de ce toamna și iarna sunt momentul pentru epilarea laser. Doar Timișoara.",
+      "ideas": ["De ce laserul se începe în noiembrie", "Câte ședințe și de ce la distanță"],
+      "rubrics": ["Ce se întâmplă de fapt", "Întrebarea zilei"], "note": "epilarea doar Timișoara"
+    },
+    {
+      "id": "black-friday-2027", "name": "Black Friday", "from": "2027-11-08", "to": "2027-11-30",
+      "angle": "Fără reduceri în reel: cum alegi un tratament după ce face, nu după cât costă.",
+      "ideas": ["3 întrebări înainte să alegi orice tratament", "Mit sau adevăr: cel mai ieftin aparat face la fel"],
+      "rubrics": ["Top 3", "Mit sau adevăr?"]
+    }
+  ]
+}

@@ -90,8 +90,11 @@ function settingsOf(s) {
   });
   PHOTO_NETS.forEach((n) => { photoTime[n] = s.photoTime && okSlot(s.photoTime[n]) ? s.photoTime[n] : DEFAULTS.photoTime[n]; });
   const ww = Number(s.warmWeeks);
+  // the competitors' names the texts never mention (content.js qa)
+  const comp = Array.isArray(s.competitors) ? s.competitors : typeof s.competitors === 'string' ? s.competitors.split(/[,;\n]/) : [];
+  const competitors = [...new Set(comp.map((x) => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 60)).filter((x) => x.length >= 3))].slice(0, 40);
   return { on: s.on !== false, nets, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
-    warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime };
+    warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime, competitors };
 }
 // week 1, 2, 3 … from startWeek (a week before it counts as 1), and its quotas
 const weekNo = (week, st) => Math.max(1, Math.floor(dayDiff(st.startWeek, week) / 7) + 1);
