@@ -1,54 +1,128 @@
 # Reels: mașina de video scurte organice
 
 Reels (și un carusel de rezultate) pentru TikTok, Instagram Reels, Facebook Reels și YouTube Shorts, predate o
-săptămână odată (cotele pe rețea sunt în Admin → Conținut → Setări). Educative și amuzante, valoare gratuită,
-fără să arate a reclamă: fără preț, fără ofertă, fără „programează-te”. Totul animat (fără filmare): text cinetic, Nuki,
-grafică în mișcare și, la cazuri, pozele reale din catalog. Vocea în română. La final, doar invitația la comentariu:
-„Scrie «GUȘĂ» în comentarii și îți trimitem tot ce trebuie să știi” (un cuvânt per subiect).
+săptămână odată (cotele pe rețea sunt în Admin → Conținut → Setări). Educative, cu umor fin, valoare gratuită, fără
+să arate a reclamă: fără preț, fără ofertă, fără „programează-te”. Totul animat (fără filmare). Vocea în română.
+Din 12.11 se fac doar reels **v2** (mai jos); v1 (`stage.html`, `engine.js`) rămâne doar ca să se poată randa
+reels-urile vechi (`mit-gusa-kilograme`, `fapt-hifu-gusa`, `nuki-abdomene-burtica`, `caz-18-hifu-gusa`).
 
-## Cum se face un reel
-1. `scripts/<id>/script.json`: scenele. Fiecare scenă are un `type` și replici (`beats`): `say` e ce se aude,
-   `tts` (opțional) cum se citește (numere în litere), `cap` (opțional) subtitlul, `pose` ipostaza lui Nuki
-   (`brand_asset/mascota/ipostaze/`). Sus: `rubric`, `keyword`, `post` (textul de sub video, cu hashtag-uri).
-2. `cd engine && ./make.sh <id>` → `out/<id>.mp4` (1080×1920, 30 fps, H.264 + AAC) și `out/<id>.jpg` (coperta).
-   Pașii: `voice.py` (vocea filmelor Academiei, Gemini TTS pe Vertex, fiecare replică ascultată înapoi și refăcută dacă
-   nu e exactă, apoi grăbită ușor x1.14) → `check.cjs` → `render.cjs` → `mix.py` → `encode.sh` (cu verificarea de flash).
-3. Te uiți la cadre: `node snap.cjs <id> <folder> [secunde...] [--debug]` (`--debug` arată zonele interzise cu roșu).
+## Direcția proprietarului (12.11)
+- Animații foarte curate, ca video-urile virale făcute cu AI: **tot ce se spune e ilustrat** de o animație.
+- Cârligul e vizual și sonor deodată: în primele 3 secunde se întâmplă ceva care îl face pe privitor să-și pună o
+  întrebare (buclă deschisă); răspunsul vine la final.
+- Tranziții cu sunete „wow”, efecte fine (swoosh, click de aparat foto, taste), muzică dedesubt.
+- Reels-urile nu seamănă între ele: altă temă (culori, fonturi, fundal), alte animații, alt final.
+- Finalul diferă după video: buclă (fără CTA), cuvânt în comentarii (doar când o conversație chiar adaugă ceva),
+  site (un browser curat tastează centrul360.com și arată pagina reală) sau o întrebare către public.
 
-Prima dată pe o mașină: `npm i`, `python3 sfx.py`, `python3 music.py 3` (în `engine/`, cu `VERTEX_API_KEY`).
-Vocea, randările, muzica și sunetele rămân locale (`.gitignore`); `timing.json` se păstrează.
+## Vocea (cum vorbim; regula proprietarului, 12.11)
+Vocea e a unei femei din România, de vreo 30 de ani, deșteaptă și caldă, care îi povestește ceva interesant unei
+prietene, față în față. Carisma vine din claritate, ritm, un dram de umor și surpriză, nu din cuvinte mari.
+- **O conversație, nu o reclamă.** Fiecare replică sună ca vorbită: întrebări înapoi („Știi zona aia…?”), mici
+  reacții („Știu, și eu credeam asta”), pauze firești. Niciodată slogan, niciodată listă citită cu voce tare.
+- **Umorul** vine din observații reale (telefonul, „sună logic, nu?”): cel mult o glumă ușoară pe reel, restul e
+  conținut solid. Fără glume forțate, fără meme răsuflate.
+- **Fără** expresii populare de umplutură (le-am încercat și sună a parodie: „cai verzi pe pereți”, „bați apa-n
+  piuă”, „cioara vopsită”, „la Paștele cailor”, „ca la carte”, „să vezi minune”, „pe bune”, „ca între noi”), fără
+  argou, fără entuziasm forțat („wow”, „super tare”, „bombă”), fără „hei, dragele mele”, fără „fetelor”.
+- **Fără limbaj de reclamă:** „descoperă”, „transformă”, „rezultate spectaculoase”, „revoluționar”, „incredibil”,
+  „nu rata”, „ofertă”, „reducere”, „programează-te”, „garantat”, „100%”, „minune”. `check2.cjs` le caută
+  (listele `AD` și `CRINGE`) și oprește reel-ul.
+- Nu vorbim despre defectul privitorului („Ai gușă?”), vorbim despre subiect; nu luăm în râs corpul nimănui.
+- Tehnic: Gemini TTS, vocea **Callirrhoe** pe `gemini-2.5-pro-preview-tts` (alegerea proprietarului din 5 mostre,
+  12.11), stilul în `engine/voice.json` (cârligul puțin mai viu, răspunsul cu o pauză firească înainte). Mostrele:
+  `out/voices/`. Nuki rămâne mascota din imagine (ipostaze, reacții), nu are voce.
 
-Tipuri de scene: `hook` (titlul, opțional cu jumătatea „înainte” a unei poze din catalog), `stamp` (MIT / ADEVĂR /
-PE JUMĂTATE), `cards` (1-3 fapte, cu ✓ sau ✗ tăiat), `big` (o cifră sau o frază mare), `layers` (pielea în secțiune:
-aplicatorul, punctele de energie, SMAS, colagenul), `photo` (caz real din catalog, cu dezvăluire „înainte → după”),
-`stage` (Nuki vedeta: `crunch` cu numărătoare, `jump` cu confetti), `body` (energia din tot corpul), `end` (cuvântul
-scris în bara de comentariu).
+## Cum se face un reel v2
+`scripts/<id>/script.json` cu `"v": 2`:
+```json
+{ "v": 2, "id": "v2-exemplu", "rubric": "Mit sau adevăr?", "theme": "swiss", "keyword": "BURTICĂ",
+  "topic": "…", "topicTag": "liposonix-abdomen", "hookType": "mit", "sources": "de unde vin faptele", "post": "…",
+  "hook":   { "say": "Asta topește *burtica*?", "q": "…?", "visual": { "type": "counter", "…": "…" } },
+  "beats":  [ { "say": "…", "visual": { "type": "skin", "…": "…" } },
+              { "say": "…", "step": "ce se schimbă în aceeași scenă" } ],
+  "payoff": [ { "say": "…", "visual": { "type": "shatter", "…": "…" } } ],
+  "end":    { "type": "loop | comment | site | ask", "say": "…", "…": "…" } }
+```
+- **Fiecare replică** (`say`; `tts` dacă se citește altfel, `cap` dacă subtitrarea e altfel; `*cuvânt*` = accent,
+  animat în subtitrare și în textul cinetic) are fie `visual` (o scenă nouă), fie `step` (o schimbare a scenei
+  curente: un pas din `seq`, o piesă, un cip). `pause`/`pre`: secunde în plus după/înainte.
+- **hook**: 0-3 s, cu `q` (întrebarea care deschide bucla). Primul cadru e deja în mișcare (scena cârligului începe
+  cu 0,3 s înainte), lovitură sonoră pe cadrul 0.
+- **beats**: o mini-dezvăluire la 3-5 s, o schimbare vizuală cel mult la 2,5 s.
+- **payoff**: răspunsul. Înainte, o pauză firească (0,5 s) și un riser; pe dezvăluire (`revealAt` al pozei,
+  `snapAt` al puzzle-ului, `breakAt` al geamului) impact + sub drop + strălucire.
+- **end**: `loop` (ultimul cadru curge în primul; fără voce), `comment` (`keyword` tastat în bara de comentariu,
+  trimis, apare comentariul), `site` (`pages`: secțiuni reale, capturate cu `node site.cjs <id>`), `ask` (`q`,
+  `options`). Când se alege fiecare: `PRODUCER.md`.
+- **theme**: una din `engine/themes.json` (9: aurora, paper, swiss, clay, neon, mint, sunset, blueprint, noir):
+  paleta, fundalul (mesh, grain, grilă, hârtie, sticlă întunecată, lut pastel, inele neon, blueprint), fonturile
+  (`@fontsource`, cu ș/ț), subtitrările (pill, box, outline, serif, glow, mono, sticker, under), tranzițiile,
+  camera, aroma sunetelor și starea muzicii.
 
-## Rubricile
-1. **Cazuri** (rubrica principală, cererea proprietarului din 12.11): povestea unui caz real din catalog, spusă de
-   Nuki: situația (zona, orașul, câte ședințe), ce s-a făcut, rezultatul cu poza reală înainte/după. Fără nume.
-2. **Mit sau adevăr?**: un mit, ștampila, adevărul în 3-4 fapte.
-3. **Ce se întâmplă de fapt**: ce face HIFU / Liposonix / laserul sub piele, desenat.
-4. **Întrebarea zilei**: o întrebare reală a clientelor, un răspuns scurt.
-5. **Nuki**: un sketch amuzant care se termină cu adevărul.
-6. **Top 3 / greșeli**: trei lucruri, numărate.
+Comenzile (`cd engine`): `./make.sh <id>` face tot: capturile site-ului (dacă finalul e `site`), imaginile AI
+(`imagen.py`, cel mult 8, în cache), vocea (`voice.py`), verificarea (`check.cjs`), cadrele (`render.cjs`), sunetul
+(`mix.py`) și fișierul final (`encode.sh`: H.264 + AAC, ≤ 8 Mbit/s, copertă, verificarea de flash, LUFS și vârf).
+→ `out/<id>.mp4` (1080×1920, 30 fps) și `out/<id>.jpg`. Cadre de control: `node snap.cjs <id> <folder> [secunde…]`
+(`--debug` arată zonele interzise). Prima dată pe o mașină: `npm i`, `python3 sfx.py`, `python3 music.py all`.
 
-Exemple: `mit-gusa-kilograme`, `fapt-hifu-gusa`, `nuki-abdomene-burtica`, `caz-18-hifu-gusa`.
+### Biblioteca de scene (`engine/v2/visuals.js`, `visuals2.js`)
+Text cinetic: `type-pop`, `type-mask`, `type-cascade` (litere care cad), `type-highlight` (marker), `type-flip` (3D);
+opțiuni `kicker`, `sub`, `strike` (cuvântul accentuat tăiat), `then` (alt text pe pasul următor). `big` (cifră sau
+frază). `qmark` („?” din particule, întrebarea dedesubt). `skin` (pielea în secțiune: `seq` cu `focus`, `energy`,
+`shrink`, `sag`, `collagen`, `cream`, `pulse`, `calm`; `mode` hifu/liposonix). `counter`, `gauge`, `timeline`,
+`split` (comparație cu VS și câștigător), `puzzle` (felii care se îmbină; `payoff: true`), `morph` (o formă devine
+alta: fat, muscle, drop, heart…), `icons` (grilă în ritm, `pick`, `cross`), `checklist`, `cards`, `scale` (balanță),
+`dna`, `tilt` (postura cu telefonul), `bars`, `zoom` (lupă, apoi plonjare în detaliu), `pin` (hartă desenată),
+`energy` (celulele dau energie unei baterii), `shatter` (un card de sticlă crapă și se sparge; adevărul e în spate),
+`stamp` (MIT / ADEVĂR), `photo` (poza reală din catalog: `tease`, `reveal` cu mască `diagonal`/`circle`/`wipe`,
+`chips`), `nuki` (ipostaze pe replici, squash/stretch, balon), `panel` (ilustrație AI cu ken burns / mască / parallax).
+Orice scenă poate avea `bg` (un decor AI în spate, `{name, prompt}`), `tr` (tranziția de intrare), `cam`
+(`push`, `pull`, `drift`, `rise`, `dolly`, `parallax`, `none`), iar o replică poate avea `nuki` (Nuki mic într-un colț).
+Tranziții (`look.js`): `whip`, `zoom-through`, `mask-wipe`, `shape-morph`, `glitch-lite`, `slide-stack`, `iris`,
+`page-flip`, `blur-push`, `match-cut` (pe culoare, din elementul principal în următorul), `spin-zoom`, `cut`.
+
+### Sunetul
+`sfx.py` sintetizează biblioteca (numpy/scipy, fără mostre): whoosh scurt/lung/invers, swoosh sus/jos, aparat foto,
+click, taste, pop, bulă, tic, riser, impact, boom, sub drop, shimmer, sparkle, glitch, hârtie, snap magnetic, chime,
+sticlă spartă, câte 3-8 variante. Motorul pune singur sunetele din animații (fiecare intrare, tranziție, tic de
+contor, tastă), plus lovitura cârligului și riser + impact pe răspuns. `mix.py` alege varianta (niciodată aceeași de
+două ori la rând), tonul (±5 %) și nivelul (±1,5 dB) după aroma temei, rărește ce se suprapune (1-3 pe secundă,
+tastele separat), pune muzica stării temei (`music.py`: pop, chill, tension, future, cinematic, funky; Lyria),
+coborâtă sub voce (sidechain), apoi -14 LUFS și un limitator de vârf real (-2,2 dBTP; fișierul final ≤ -1 dBTP).
+
+### Imaginile AI (`imagen.py`)
+Pentru scenele `panel` și decorurile `bg`: stilul temei (`imagery` + paleta), cache după hash-ul promptului
+(`engine/img/`), cel mult 8 pe reel. Imagen 4 nu e activ pe cheia noastră (404, 12.11), așa că se folosește
+`gemini-2.5-flash-image` (~0,04 $ imaginea). **Niciodată oameni, fețe sau corpuri** (nici ca „rezultat”, nici
+înainte/după): straturi abstracte, aparate, obiecte, decoruri. Fără imagine: scena se desenează din cod.
 
 ## Regulile
-- Cârligul e și vizual, și sonor: textul e pe ecran din primul cadru, cuvintele intră cu lovitură, imaginea „crește”
-  în cadru în 0,5 s, iar pe primele cuvinte se aude `hit` + `whoosh`. Primele cuvinte se spun înainte de 0,4 s.
-- 20-35 s. O tăietură sau o schimbare vizuală cel puțin la 4 s (motorul adaugă un puls unde ar sta pe loc).
+- `check.cjs` (v2: `check2.cjs`) oprește reel-ul dacă: întrebarea cârligului nu e pe ecran până la 3 s, primul
+  cadru stă pe loc, lipsește lovitura sonoră din cadrele 0-3, răspunsul nu e în ultimul sfert al poveștii (finalul,
+  un CTA, nu intră în poveste), o porțiune trece de 2,5 s fără schimbare vizuală, o replică nu are vizual sau nu se
+  mișcă nimic când începe, un text iese din zona sigură sau stă peste alt text, apar cuvinte de reclamă sau
+  expresii interzise, durata iese din 25-40 s, sunt peste 8 imagini AI, lipsesc capturile pentru finalul `site`.
 - Zonele sigure: nimic scris în primii 220 px de sus, în ultimii 380 px de jos și în ultimii 160 px din dreapta.
-  `check.cjs` verifică, plus suprapuneri, subtitrări peste Nuki, lungimea, vocea, cârligul.
-- Subtitrări mari, cuvânt cu cuvânt (cuvântul spus e evidențiat), cel mult 3 cuvinte pe ecran.
-- Fără preț, ofertă, „programează-te”, link sau „consultație gratuită”. `check.cjs` caută cuvintele astea.
-- Fapte corecte, fără promisiuni: fără „garantat”, fără „slăbești X kg”, fără diagnostice. Formulări sigure din
+- Subtitrări cuvânt cu cuvânt (cel mult 3 cuvinte pe ecran), în stilul temei; cuvintele accentuate se animă.
+- Fără preț, ofertă, „programează-te” sau „consultație gratuită”. Domeniul centrul360.com apare doar în finalul
+  `site`, într-un browser fictiv, cu capturi reale ale paginilor live, doar secțiuni fără prețuri sau oferte.
+- Fapte corecte, fără promisiuni; sursa faptelor se scrie în `sources`. Formulări sigure din
   `centrul360-creative-machine/knowledge/meta-ads-rules.md` („grăsime localizată”, „conturare”, „fără operație”).
-  Fără „Ai gușă?”: nu vorbim despre defectul privitorului, vorbim despre subiect.
-- Înainte/după doar din `brand_asset/catalog` (cazuri publicate cu acordul clientei), puse exact cum sunt, cu
+- Înainte/după doar din `brand_asset/catalog` (cazuri publicate cu acordul clientei), puse exact cum sunt (scena
+  `photo` nu taie și nu retușează poza; jumătatea „după” poate sta sub un capac până la dezvăluire), cu
   „Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta.” Niciodată generate sau inventate.
 - Fără nume de cliente, fără liniuțe lungi, cu diacritice (ș, ț cu virgulă). Epilarea și EMS doar Timișoara.
+
+## Rubricile
+1. **Cazuri** (rubrica principală): povestea unui caz real din catalog, cu tensiune, dezvăluirea pozei reale.
+2. **Mit sau adevăr?**: un mit, o întorsătură vizuală mare, adevărul.
+3. **Ce se întâmplă de fapt**: ce face HIFU / Liposonix / laserul sub piele, desenat.
+4. **Întrebarea zilei**: o întrebare reală a clientelor, un răspuns scurt.
+5. **Nuki**: un sketch cu mascota care se termină cu adevărul.
+6. **Top 3 / greșeli**: trei lucruri, fiecare cu scena lui.
+
+Exemple v2: `v2-gusa-slabe` (buclă, aurora), `v2-caz-real` (site, paper), `v2-mit-abdomene` (comentariu, swiss).
 
 ## Faza 2: generatorul zilnic (de construit)
 - **Predarea și postarea sunt gata** (12.11): lotul pe săptămână, împărțirea pe rețele, aprobarea de duminică,

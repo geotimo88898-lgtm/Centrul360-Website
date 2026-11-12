@@ -84,6 +84,33 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
 7. Cât timp `learn.n` e sub 10, nu e destul ca să tragi concluzii: rotația normală a rubricilor, Cazuri de cel puțin
    2 ori pe săptămână. Rubricile prin rotație (README.md), Cazuri de cel puțin 2 ori pe săptămână, oricum.
 
+## Cum scrii un reel (v2, din 12.11)
+Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonul: `README.md` („Vocea”): o femeie care
+îi povestește ceva unei prietene, nu o reclamă. Pe scurt:
+1. **Întrebarea întâi.** Alegi întrebarea pe care și-o pune privitorul și la care răspunzi abia la final
+   („De ce unele femei slabe au totuși gușă?”). Ea e `hook.q`, se spune și se vede în primele 3 secunde, peste o
+   scenă care se mișcă din primul cadru (particule, un contor care pornește, poza reală pe jumătate acoperită).
+2. **Replici scurte, fiecare cu scena ei.** O replică = o idee = un vizual (`visual`) sau un pas al scenei curente
+   (`step`). Alegi scena care arată ce spui, nu una decorativă: un depozit de grăsime → `skin` cu `focus`; „din tot
+   corpul” → `energy`; o comparație → `split`; un mit → `shatter` sau `stamp`. Nu repeta aceeași scenă de două ori
+   la rând; schimbă tranziția și camera (motorul le rotește din temă dacă nu le scrii).
+3. **Mini-dezvăluiri la 3-5 secunde**, tensiune spre răspuns: „Stai, că e mai interesant”, „Bun, acum să vedem”.
+4. **Răspunsul (payoff) în ultimul sfert al poveștii**, cu o dezvăluire (poza, puzzle-ul care se îmbină, geamul
+   care se sparge). Motorul pune pauza, riserul și impactul.
+5. **Finalul**, după reel:
+   - `loop` pentru curiozitate și mituri: ultimul cadru curge în primul, fără CTA (bucla crește timpul vizionat);
+   - `comment` doar când o conversație chiar adaugă ceva (un ghid trimis în privat), **cel mult 1 din 3 materiale**
+     din săptămână; cuvântul se spune devreme în replică, ca tastarea să curgă pe voce;
+   - `site` când o pagină reală răspunde cel mai bine (cazuri, „cum funcționează”): `pages` cu secțiuni fără
+     prețuri sau oferte (`#rezultate`, `#cum`), capturate cu `node site.cjs <id>`;
+   - `ask` altfel: o întrebare simplă către public, fără cuvânt cheie.
+6. **Tema**: niciodată aceeași temă de două ori la rând (citești `made`, ultimul material), și în săptămână cel puțin
+   4 teme diferite. O temă întunecată nu urmează altei teme întunecate. Ținta: reels-urile să nu semene între ele.
+7. `node check.cjs <id>` trebuie să dea „clean” înainte de randare; apoi te uiți la cadre (primele 3 secunde des,
+   răspunsul, finalul) și asculți cifrele din `mix.py` / `encode.sh` (-14 LUFS, vârf ≤ -1 dBTP, 1-3 sunete pe secundă).
+Cheltuiala: vocea și imaginile se plătesc (puțin) și sunt în cache; muzica nouă (`music.py`) doar când lipsește o
+stare. Trimiți `theme` (și `endType`) la `create`, ca rotația să se poată citi din `made`.
+
 ## Pașii pentru un material nou
 ```bash
 # 1. elementul (fără fișiere încă), cu săptămâna lui și textul pe fiecare rețea
@@ -141,6 +168,8 @@ Dacă nota cere doar alt text, sari peste pasul 2. Când ai terminat toate refac
 | `topicTag` | familia subiectului, scurt și la fel de fiecare dată: `hifu-gusa`, `liposonix-abdomen`, `epilare-laser`, `rf-fata` |
 | `ideaId` | ideea proprietarului pe care o face materialul (din `ideas`) |
 | `variantOf` | id-ul câștigătoarei refăcute (din `recycle`) |
+| `theme` | tema reel-ului (`themes.json`), ca să nu repeți tema la rând. Atenție: adminul încă nu o păstrează (vezi raportul din 12.11); până atunci o ții tu în notițe |
+| `endType` | finalul: `loop`, `comment`, `site`, `ask` |
 | `firstComment` | primul comentariu, scris de cont sub postare (Instagram, Facebook, YouTube): o întrebare caldă despre subiect, care se termină cu ❤️, 🥰 sau 💞; fără să pomenească AI; cel mult 280 de caractere |
 
 Fișierele (nume: litere, cifre, `-`, `_`, extensia `.mp4` sau `.jpg`; tipul trimis cu `Content-Type` sau `&mime=`):

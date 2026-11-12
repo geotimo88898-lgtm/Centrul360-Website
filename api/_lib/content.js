@@ -149,6 +149,9 @@ async function create(input) {
   if (x.hookType) it.hookType = hookTypeOf(x.hookType);
   if (x.topicTag) it.topicTag = slug(x.topicTag);
   if (x.firstComment) it.firstComment = oneLine(x.firstComment, 280);
+  // the look and the ending (reels v2), so the producer never makes two alike in a row
+  if (x.theme) it.theme = slug(x.theme, 30);
+  if (x.endType) it.endType = slug(x.endType, 12);
   if (x.variantOf) {
     if (!isId(x.variantOf) || !findItem(await items(), x.variantOf)) throw fail('invalid_variant');
     it.variantOf = x.variantOf;
@@ -354,6 +357,8 @@ async function replace(id, input) {
     if (x.hookType) it.hookType = hookTypeOf(x.hookType);
     if (x.topicTag) it.topicTag = slug(x.topicTag);
     if (x.firstComment) it.firstComment = oneLine(x.firstComment, 280);
+    if (x.theme) it.theme = slug(x.theme, 30);
+    if (x.endType) it.endType = slug(x.endType, 12);
     let dropped = [];
     if (x.clear) { dropped = (it.files || []).map((f) => f.path); it.files = []; it.cover = ''; }
     return { files: (it.files || []).map((f) => f.name), dropped };
@@ -410,7 +415,7 @@ async function status() {
   const [list, st] = await Promise.all([items(), settings()]);
   const now = Date.now(), cur = P.weekOf(now), next = P.addDays(cur, 7);
   // what the producer already made (so a session with no memory never repeats a topic), the newest first
-  const made = list.filter((x) => !x.removed).slice(-120).reverse().map((x) => ({ topic: x.topic || '', rubric: x.rubric || '', kind: x.kind, week: x.week || '', at: x.createdAt || '' }));
+  const made = list.filter((x) => !x.removed).slice(-120).reverse().map((x) => ({ topic: x.topic || '', rubric: x.rubric || '', kind: x.kind, theme: x.theme || '', endType: x.endType || '', week: x.week || '', at: x.createdAt || '' }));
   const redo = list.filter((x) => !x.removed && !x.dropped && x.review === 'redo').map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', rubric: x.rubric || '', week: x.week, redoNote: x.redoNote || '', replacing: x.state === 'draft' }));
   // what works (learn), the owner's ideas not made yet, the moments of next week, the evergreen winners to make again
   const L = require('./content-learn'), lr = L.learn(list, now);
