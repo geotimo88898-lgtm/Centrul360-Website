@@ -155,7 +155,9 @@ async function ready(id) {
 async function status() {
   const [list, st] = await Promise.all([items(), settings()]);
   const s = P.summary(list, st, Date.now());
-  return Object.assign({ on: st.on, slots: st.slots, nets: st.nets, gapDays: st.gapDays, drafts: list.filter((x) => x.state === 'draft').length }, s);
+  // what the producer already made (so a session with no memory never repeats a topic), the newest first
+  const made = list.filter((x) => !x.removed).slice(-120).reverse().map((x) => ({ topic: x.topic || '', rubric: x.rubric || '', kind: x.kind, at: x.createdAt || '' }));
+  return Object.assign({ on: st.on, slots: st.slots, nets: st.nets, gapDays: st.gapDays, drafts: list.filter((x) => x.state === 'draft').length, made }, s);
 }
 
 // Scoate: the entries not posted yet are skipped (a net: just that one)
