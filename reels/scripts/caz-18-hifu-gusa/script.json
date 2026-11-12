@@ -1,0 +1,122 @@
+{
+  "id": "caz-18-hifu-gusa",
+  "rubric": "caz",
+  "topic": "hifu-gusa",
+  "case": "cazul-18",
+  "keyword": "CAZURI",
+  "title": "Cazul 18: gușă, o ședință HIFU",
+  "post": "Cazul 18, Timișoara: gușă și contur, o singură ședință HIFU, fotografia de după la o lună. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. Scrie «CAZURI» în comentarii și îți trimitem și alte cazuri reale. #cazreal #hifu #gusa #inaintesidupa #timisoara",
+  "scenes": [
+    {
+      "type": "hook",
+      "kicker": "Cazul 18 · Timișoara",
+      "title": "Gușă. *O ședință.*",
+      "img": "brand_asset/catalog/cazul-18-hifu-gusa-tm-5.webp",
+      "half": "l",
+      "pose": "aparat-foto",
+      "beats": [
+        {
+          "say": "O singură ședință pe gușă. Uite ce s-a schimbat într-o lună."
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "head": "Situația",
+      "pose": "fisa",
+      "items": [
+        {
+          "ic": "target",
+          "t": "Gușă și contur",
+          "s": "zona lucrată",
+          "at": 0
+        },
+        {
+          "ic": "calendar-days",
+          "t": "1 ședință",
+          "s": "atât, nimic în plus",
+          "at": 0.6
+        }
+      ],
+      "beats": [
+        {
+          "say": "Cazul 18, din Timișoara. Zona: gușa și conturul bărbiei, o singură ședință.",
+          "tts": "Cazul optsprezece, din Timișoara. Zona: gușa și conturul bărbiei, o singură ședință."
+        }
+      ]
+    },
+    {
+      "type": "layers",
+      "mode": "hifu",
+      "pose": "hifu-fata",
+      "apAt": -1,
+      "waveAt": 0,
+      "hitAt": 0.4,
+      "smasAt": 0.75,
+      "liftAt": 1,
+      "chips": [
+        {
+          "t": "HIFU",
+          "at": 0
+        },
+        {
+          "t": "Fără bisturiu",
+          "at": 0.5
+        },
+        {
+          "t": "Colagen nou",
+          "at": 1
+        }
+      ],
+      "beats": [
+        {
+          "say": "S-a lucrat cu HIFU: ultrasunete focalizate, în profunzime, fără bisturiu."
+        },
+        {
+          "say": "Apoi, corpul își face treaba, în săptămânile următoare.",
+          "pose": "calendar"
+        }
+      ]
+    },
+    {
+      "type": "big",
+      "value": "1",
+      "suffix": "lună",
+      "label": "de la ședință la fotografia de după",
+      "pose": "aparat-foto",
+      "beats": [
+        {
+          "say": "Fotografia de după e făcută la o lună distanță."
+        }
+      ]
+    },
+    {
+      "type": "photo",
+      "img": "brand_asset/catalog/cazul-18-hifu-gusa-tm-5.webp",
+      "reveal": 0.6,
+      "label": "Cazul 18 · HIFU gușă · Timișoara",
+      "note": "Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta.",
+      "nuki": "off",
+      "beats": [
+        {
+          "say": "Și uite diferența."
+        },
+        {
+          "say": "Fiecare corp e diferit, dar asta e o singură ședință."
+        }
+      ]
+    },
+    {
+      "type": "end",
+      "keyword": "CAZURI",
+      "line": "și îți trimitem și alte cazuri reale",
+      "pose": "telefon",
+      "beats": [
+        {
+          "say": "Scrie cazuri în comentarii și îți trimitem și alte cazuri reale.",
+          "cap": "Scrie «CAZURI» în comentarii și îți trimitem și alte cazuri reale."
+        }
+      ]
+    }
+  ]
+}

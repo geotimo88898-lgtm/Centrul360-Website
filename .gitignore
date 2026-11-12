@@ -16,3 +16,9 @@ academy-vsl/src/engine/music/
 academy-vsl/src/engine/sfx/
 academy-vsl/src/engine/vstat.py.bak
 __pycache__/
+# reels (reels/): voice takes, renders, generated music and sounds stay local
+reels/scripts/*/voice/
+reels/scripts/*/build/
+reels/engine/music/
+reels/engine/sfx/
+reels/out/

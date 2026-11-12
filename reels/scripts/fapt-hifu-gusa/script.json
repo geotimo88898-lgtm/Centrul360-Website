@@ -1,0 +1,124 @@
+{
+  "id": "fapt-hifu-gusa",
+  "rubric": "fapt",
+  "topic": "hifu-gusa",
+  "keyword": "HIFU",
+  "title": "HIFU pe gușă, în 30 de secunde",
+  "post": "Ce face, de fapt, HIFU sub piele? În 30 de secunde, desenat. Scrie «HIFU» în comentarii și îți trimitem tot ce trebuie să știi. #hifu #gusa #colagen #ingrijire #timisoara #arad",
+  "scenes": [
+    {
+      "type": "hook",
+      "kicker": "în 30 de secunde",
+      "title": "Ce face HIFU *sub piele*?",
+      "pose": "hifu-fata",
+      "beats": [
+        {
+          "say": "Ce face, de fapt, HIFU pe gușă? Hai sub piele."
+        }
+      ]
+    },
+    {
+      "type": "layers",
+      "mode": "hifu",
+      "pose": "prezinta",
+      "apAt": 0,
+      "waveAt": 1,
+      "hitAt": 1.45,
+      "smasAt": 2,
+      "liftAt": 3,
+      "chips": [
+        {
+          "t": "Ultrasunete focalizate",
+          "at": 0
+        },
+        {
+          "t": "Puncte de energie",
+          "at": 1.45
+        },
+        {
+          "t": "Stratul SMAS",
+          "at": 2
+        },
+        {
+          "t": "Colagen nou",
+          "at": 3
+        }
+      ],
+      "beats": [
+        {
+          "say": "HIFU înseamnă ultrasunete focalizate."
+        },
+        {
+          "say": "Trec de piele și se adună în puncte mici, în profunzime.",
+          "pose": "arata-jos"
+        },
+        {
+          "say": "Căldura ajunge în stratul profund, numit SMAS.",
+          "pose": "gandeste"
+        },
+        {
+          "say": "Corpul face colagen nou, iar țesutul se strânge treptat.",
+          "pose": "bucurie"
+        }
+      ]
+    },
+    {
+      "type": "big",
+      "value": "8-12",
+      "suffix": "săptămâni",
+      "label": "până la efectul maxim",
+      "pose": "calendar",
+      "beats": [
+        {
+          "say": "De aceea, efectul maxim vine în 8 până la 12 săptămâni.",
+          "tts": "De aceea, efectul maxim vine în opt până la douăsprezece săptămâni."
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "pose": "prezinta",
+      "items": [
+        {
+          "ic": "clock",
+          "t": "10-15 minute",
+          "s": "cât durează o ședință",
+          "at": 0
+        },
+        {
+          "ic": "flame",
+          "t": "Căldură, ușoare furnicături",
+          "s": "ce simți",
+          "at": 0.6
+        },
+        {
+          "ic": "sun",
+          "t": "Revii imediat la ale tale",
+          "s": "fără pauză de recuperare",
+          "at": 1
+        }
+      ],
+      "beats": [
+        {
+          "say": "O ședință: 10-15 minute. Simți căldură, ușoare furnicături,",
+          "tts": "O ședință: zece, cincisprezece minute. Simți căldură, ușoare furnicături,"
+        },
+        {
+          "say": "și revii imediat la ale tale."
+        }
+      ]
+    },
+    {
+      "type": "end",
+      "keyword": "HIFU",
+      "line": "și îți trimitem tot ce trebuie să știi",
+      "pose": "telefon",
+      "beats": [
+        {
+          "say": "Scrie HIFU în comentarii și îți trimitem tot ce trebuie să știi.",
+          "cap": "Scrie «HIFU» în comentarii și îți trimitem tot ce trebuie să știi."
+        }
+      ]
+    }
+  ]
+}

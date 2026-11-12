@@ -1,0 +1,111 @@
+{
+  "id": "nuki-abdomene-burtica",
+  "rubric": "nuki",
+  "topic": "liposonix",
+  "keyword": "BURTICĂ",
+  "title": "Nuki vs. burtica",
+  "post": "Nuki a încercat să slăbească doar de pe burtă, cu abdomene. Spoiler: corpul nu funcționează așa. Scrie «BURTICĂ» în comentarii și îți trimitem ce funcționează de fapt pe grăsimea localizată. #nuki #mit #abdomene #grasimelocalizata #timisoara #arad",
+  "scenes": [
+    {
+      "type": "stage",
+      "anim": "crunch",
+      "pose": "liniste",
+      "title": "Nuki vs. *burtica*",
+      "counter": {
+        "from": 91,
+        "to": 100,
+        "at": 1,
+        "dur": 2.6
+      },
+      "beats": [
+        {
+          "say": "Nuki are un plan: să scape de burtică. Doar de burtică."
+        },
+        {
+          "say": "O sută de abdomene pe zi. Burtica pleacă prima, nu?",
+          "cap": "100 de abdomene pe zi. Burtica pleacă prima, nu?"
+        }
+      ]
+    },
+    {
+      "type": "stamp",
+      "word": "MIT",
+      "tone": "bad",
+      "pose": "surprins",
+      "beats": [
+        {
+          "say": "Ei bine... nu chiar."
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "pose": "prezinta",
+      "label": "Energie din tot corpul",
+      "beats": [
+        {
+          "say": "La efort, corpul ia energie din rezervele întregului corp,"
+        },
+        {
+          "say": "nu doar din zona care lucrează."
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "pose": "gandeste",
+      "items": [
+        {
+          "ic": "dumbbell",
+          "t": "Mușchi mai puternici",
+          "ok": true,
+          "at": 0
+        },
+        {
+          "ic": "activity",
+          "t": "Postură mai bună",
+          "ok": true,
+          "at": 0.5
+        },
+        {
+          "ic": "target",
+          "t": "Aleg zona",
+          "s": "de unde pleacă grăsimea",
+          "x": true,
+          "at": 1
+        }
+      ],
+      "beats": [
+        {
+          "say": "Abdomenele întăresc mușchii, și asta e grozav."
+        },
+        {
+          "say": "Dar nu aleg ele de unde pleacă grăsimea."
+        }
+      ]
+    },
+    {
+      "type": "stage",
+      "anim": "jump",
+      "pose": "bucurie",
+      "bubble": "Abdomene: DA. Mituri: NU.",
+      "beats": [
+        {
+          "say": "Așa că Nuki nu renunță la abdomene. Renunță doar la mit."
+        }
+      ]
+    },
+    {
+      "type": "end",
+      "keyword": "BURTICĂ",
+      "line": "și îți trimitem ce funcționează de fapt",
+      "pose": "salut-pa",
+      "beats": [
+        {
+          "say": "Scrie burtică în comentarii și îți trimitem ce funcționează de fapt.",
+          "cap": "Scrie «BURTICĂ» în comentarii și îți trimitem ce funcționează de fapt."
+        }
+      ]
+    }
+  ]
+}

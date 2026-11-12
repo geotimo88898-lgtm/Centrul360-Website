@@ -1,0 +1,148 @@
+{
+  "id": "mit-gusa-kilograme",
+  "rubric": "mit",
+  "topic": "hifu-gusa",
+  "keyword": "GUȘĂ",
+  "title": "Gușa e doar de la kilograme?",
+  "post": "Gușa e doar de la kilograme? Mit. Află ce o cauzează de fapt. Scrie «GUȘĂ» în comentarii și îți trimitem tot ce trebuie să știi. #gusa #barbiedubla #mitsauadevar #ingrijire #timisoara #arad",
+  "scenes": [
+    {
+      "type": "hook",
+      "title": "Gușa e doar de la *kilograme*?",
+      "pose": "gandeste",
+      "beats": [
+        {
+          "say": "Gușa e doar de la kilograme?"
+        }
+      ]
+    },
+    {
+      "type": "stamp",
+      "word": "MIT",
+      "tone": "bad",
+      "sub": "și unul foarte răspândit",
+      "pose": "surprins",
+      "beats": [
+        {
+          "say": "Mit. Și e unul foarte răspândit."
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "head": "De obicei e un *mix*",
+      "pose": "prezinta",
+      "items": [
+        {
+          "ic": "droplet",
+          "t": "Grăsime localizată",
+          "s": "un depozit mic, sub bărbie",
+          "at": 0
+        },
+        {
+          "ic": "waves",
+          "t": "Piele relaxată",
+          "s": "care și-a pierdut din fermitate",
+          "at": 1
+        }
+      ],
+      "beats": [
+        {
+          "say": "De obicei e un mix: puțină grăsime localizată, sub bărbie,"
+        },
+        {
+          "say": "și piele care și-a pierdut din fermitate."
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "head": "Ce contează *de fapt*",
+      "pose": "gandeste",
+      "items": [
+        {
+          "ic": "dna",
+          "t": "Genetica",
+          "at": 0
+        },
+        {
+          "ic": "hourglass",
+          "t": "Vârsta",
+          "at": 0,
+          "dt": 0.9
+        },
+        {
+          "ic": "scale",
+          "t": "Doar cântarul",
+          "x": true,
+          "at": 1
+        }
+      ],
+      "beats": [
+        {
+          "say": "Iar asta ține mult de genetică și de vârstă,"
+        },
+        {
+          "say": "nu doar de cântar."
+        }
+      ]
+    },
+    {
+      "type": "big",
+      "text": "Apare și la persoanele *slabe*",
+      "pose": "surprins",
+      "beats": [
+        {
+          "say": "De aceea apare și la persoane slabe."
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "pose": "prezinta",
+      "items": [
+        {
+          "ic": "dumbbell",
+          "t": "Sportul ajută tot corpul",
+          "ok": true,
+          "at": 0
+        },
+        {
+          "ic": "target",
+          "t": "Dar nu alege zona",
+          "x": true,
+          "at": 0.55
+        }
+      ],
+      "beats": [
+        {
+          "say": "Și de aceea, sportul singur rareori ajunge exact acolo."
+        }
+      ]
+    },
+    {
+      "type": "photo",
+      "img": "brand_asset/catalog/cazul-02-hifu-gusa.webp",
+      "label": "Caz real · HIFU gușă · Timișoara",
+      "note": "Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta.",
+      "nuki": "off",
+      "beats": [
+        {
+          "say": "Vestea bună: zona se poate lucra local. Uite un caz real de la noi."
+        }
+      ]
+    },
+    {
+      "type": "end",
+      "keyword": "GUȘĂ",
+      "line": "și îți trimitem tot ce trebuie să știi",
+      "pose": "telefon",
+      "beats": [
+        {
+          "say": "Scrie gușă în comentarii și îți trimitem tot ce trebuie să știi.",
+          "cap": "Scrie «GUȘĂ» în comentarii și îți trimitem tot ce trebuie să știi."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,374 @@
+{
+ "note": "Banca de subiecte pentru reels (faza 2): generatorul alege din rotația rubricilor un subiect nefolosit recent; faptele de aici sunt singura sursă (plus paginile site-ului). Cazurile: doar din brand_asset/catalog (publicate cu acordul clientei), fără nume. Epilarea și EMS: doar Timișoara.",
+ "rotation": [
+  "caz",
+  "mit",
+  "fapt",
+  "nuki",
+  "intrebare",
+  "caz",
+  "top3"
+ ],
+ "topics": [
+  {
+   "id": "t01",
+   "topic": "hifu-gusa",
+   "rubric": "mit",
+   "title": "Gușa e doar de la kilograme?",
+   "keyword": "GUȘĂ",
+   "facts": "Gușa e un mix de grăsime localizată și piele relaxată; ține de genetică și vârstă, apare și la persoane slabe.",
+   "used": []
+  },
+  {
+   "id": "t02",
+   "topic": "hifu-gusa",
+   "rubric": "fapt",
+   "title": "Ce face HIFU sub piele, pe gușă",
+   "keyword": "HIFU",
+   "facts": "Ultrasunete focalizate în stratul profund (SMAS), colagen nou, efect maxim la 8-12 săptămâni.",
+   "used": []
+  },
+  {
+   "id": "t03",
+   "topic": "hifu-gusa",
+   "rubric": "caz",
+   "title": "Cazul 18: gușă, o ședință, o lună",
+   "keyword": "CAZURI",
+   "facts": "cazul-18 din catalog: Timișoara, 1 ședință, fotografia de după la o lună.",
+   "used": []
+  },
+  {
+   "id": "t04",
+   "topic": "hifu-gusa",
+   "rubric": "caz",
+   "title": "Cazul 02: gușă, o singură ședință",
+   "keyword": "CAZURI",
+   "facts": "cazul-02 din catalog: Timișoara, 1 ședință HIFU, gușă și contur.",
+   "used": []
+  },
+  {
+   "id": "t05",
+   "topic": "hifu-gusa",
+   "rubric": "intrebare",
+   "title": "De ce rezultatul HIFU nu e a doua zi?",
+   "keyword": "HIFU",
+   "facts": "Colagenul se formează treptat; reducerea se vede în general la 6-8 săptămâni, efect maxim la 8-12.",
+   "used": []
+  },
+  {
+   "id": "t06",
+   "topic": "hifu-gusa",
+   "rubric": "top3",
+   "title": "3 lucruri care fac gușa mai vizibilă",
+   "keyword": "GUȘĂ",
+   "facts": "Genetica, pierderea fermității cu vârsta, postura capului în față (telefonul). Fără promisiuni.",
+   "used": []
+  },
+  {
+   "id": "t07",
+   "topic": "hifu-gat",
+   "rubric": "nuki",
+   "title": "Nuki și gâtul de telefon",
+   "keyword": "GÂT",
+   "facts": "Sketch: Nuki stă aplecat în telefon; postura nu face gușă, dar o accentuează în poze.",
+   "used": []
+  },
+  {
+   "id": "t08",
+   "topic": "hifu-fata",
+   "rubric": "fapt",
+   "title": "Ce e SMAS și de ce contează",
+   "keyword": "LIFTING",
+   "facts": "SMAS e stratul profund lucrat și la liftingul chirurgical; HIFU ajunge acolo fără bisturiu.",
+   "used": []
+  },
+  {
+   "id": "t09",
+   "topic": "hifu-fata",
+   "rubric": "mit",
+   "title": "Cremele pot face lifting?",
+   "keyword": "LIFTING",
+   "facts": "Cremele lucrează la suprafață; nu ajung în stratul profund. Utile pentru hidratare și protecție.",
+   "used": []
+  },
+  {
+   "id": "t10",
+   "topic": "hifu-fata",
+   "rubric": "caz",
+   "title": "Cazul 06: toată fața, Timișoara",
+   "keyword": "CAZURI",
+   "facts": "cazul-06 din catalog, HIFU full face.",
+   "used": []
+  },
+  {
+   "id": "t11",
+   "topic": "hifu-periocular",
+   "rubric": "intrebare",
+   "title": "Se poate lucra și în jurul ochilor?",
+   "keyword": "OCHI",
+   "facts": "HIFU periocular există; cazurile 22, 23, 28 din catalog. Zona se evaluează la consultație.",
+   "used": []
+  },
+  {
+   "id": "t12",
+   "topic": "hifu-fata",
+   "rubric": "top3",
+   "title": "3 semne că pielea pierde fermitate",
+   "keyword": "FERMITATE",
+   "facts": "Contur mandibular mai puțin definit, cute nazo-labiale, pleoape mai grele. Ton neutru, fără rușinare.",
+   "used": []
+  },
+  {
+   "id": "t13",
+   "topic": "hifu-fata",
+   "rubric": "nuki",
+   "title": "Nuki încearcă lifting cu bandă adezivă",
+   "keyword": "LIFTING",
+   "facts": "Sketch: trucuri de pe internet vs ce lucrează în profunzime.",
+   "used": []
+  },
+  {
+   "id": "t14",
+   "topic": "liposonix",
+   "rubric": "mit",
+   "title": "Abdomenele topesc grăsimea de pe burtă?",
+   "keyword": "BURTICĂ",
+   "facts": "Corpul ia energie din rezervele întregului corp; nu alegi zona prin exerciții.",
+   "used": []
+  },
+  {
+   "id": "t15",
+   "topic": "liposonix",
+   "rubric": "fapt",
+   "title": "Ce face Liposonix în stratul de grăsime",
+   "keyword": "LIPOSONIX",
+   "facts": "Ultrasunete focalizate de intensitate mare pe celulele adipoase din zonă; corpul le elimină natural în săptămânile următoare.",
+   "used": []
+  },
+  {
+   "id": "t16",
+   "topic": "liposonix",
+   "rubric": "caz",
+   "title": "Cazul 04: abdomen, o ședință",
+   "keyword": "CAZURI",
+   "facts": "cazul-04 din catalog: Liposonix abdomen, Timișoara, 1 ședință.",
+   "used": []
+  },
+  {
+   "id": "t17",
+   "topic": "liposonix",
+   "rubric": "caz",
+   "title": "Cazul 14: abdomen total, Arad",
+   "keyword": "CAZURI",
+   "facts": "cazul-14 din catalog: Liposonix abdomen total, Arad, 1 ședință.",
+   "used": []
+  },
+  {
+   "id": "t18",
+   "topic": "liposonix",
+   "rubric": "intrebare",
+   "title": "Unde pleacă grăsimea după Liposonix?",
+   "keyword": "LIPOSONIX",
+   "facts": "Celulele tratate sunt eliminate natural de corp, în săptămânile următoare.",
+   "used": []
+  },
+  {
+   "id": "t19",
+   "topic": "liposonix",
+   "rubric": "top3",
+   "title": "3 greșeli cu grăsimea localizată",
+   "keyword": "ZONĂ",
+   "facts": "Spot reduction cu exerciții, diete foarte stricte, așteptarea rezultatului de a doua zi.",
+   "used": []
+  },
+  {
+   "id": "t20",
+   "topic": "liposonix",
+   "rubric": "mit",
+   "title": "Grăsimea se transformă în mușchi?",
+   "keyword": "MUȘCHI",
+   "facts": "Nu: sunt țesuturi diferite. Sportul crește mușchiul, grăsimea se folosește ca energie.",
+   "used": []
+  },
+  {
+   "id": "t21",
+   "topic": "liposonix",
+   "rubric": "nuki",
+   "title": "Nuki și cântarul care nu se mișcă",
+   "keyword": "CENTIMETRU",
+   "facts": "Sketch: cântarul nu arată tot; centimetrul și hainele spun mai mult. Fără cifre promise.",
+   "used": []
+  },
+  {
+   "id": "t22",
+   "topic": "rf",
+   "rubric": "fapt",
+   "title": "Ce face radiofrecvența în piele",
+   "keyword": "FERMITATE",
+   "facts": "Căldură controlată în derm, stimulează colagenul; senzație de căldură plăcută.",
+   "used": []
+  },
+  {
+   "id": "t23",
+   "topic": "rf",
+   "rubric": "intrebare",
+   "title": "De ce RF se face în cură?",
+   "keyword": "RF",
+   "facts": "Efectul se construiește ședință cu ședință; frecvent 4-6 ședințe pentru contur.",
+   "used": []
+  },
+  {
+   "id": "t24",
+   "topic": "rf-sculpt",
+   "rubric": "caz",
+   "title": "Cazul 34: RF Sculpt, Arad",
+   "keyword": "CAZURI",
+   "facts": "cazul-34 din catalog.",
+   "used": []
+  },
+  {
+   "id": "t25",
+   "topic": "rf-sculpt",
+   "rubric": "mit",
+   "title": "Radiofrecvența doare?",
+   "keyword": "RF",
+   "facts": "Se simte căldură; se reglează pe confortul persoanei. Fără ace.",
+   "used": []
+  },
+  {
+   "id": "t26",
+   "topic": "rf",
+   "rubric": "top3",
+   "title": "3 lucruri despre colagen",
+   "keyword": "COLAGEN",
+   "facts": "Scade odată cu vârsta, se formează lent, are nevoie de protecție solară ca să nu fie distrus de UV.",
+   "used": []
+  },
+  {
+   "id": "t27",
+   "topic": "epilare",
+   "rubric": "fapt",
+   "title": "Ce face laserul diodă în folicul",
+   "keyword": "EPILARE",
+   "facts": "Lumina e absorbită de pigmentul firului, devine căldură care dezactivează progresiv foliculul. Elysion Pro, cu răcire.",
+   "used": []
+  },
+  {
+   "id": "t28",
+   "topic": "epilare",
+   "rubric": "mit",
+   "title": "Epilarea laser merge din prima ședință?",
+   "keyword": "EPILARE",
+   "facts": "Firele cresc în cicluri; laserul lucrează pe cele active, de aceea sunt mai multe ședințe.",
+   "used": []
+  },
+  {
+   "id": "t29",
+   "topic": "epilare",
+   "rubric": "intrebare",
+   "title": "Pot să mă bronzez între ședințe?",
+   "keyword": "SOARE",
+   "facts": "Pielea bronzată absoarbe și ea lumina; se discută la consultație pauza de soare. Fără sfaturi medicale.",
+   "used": []
+  },
+  {
+   "id": "t30",
+   "topic": "epilare",
+   "rubric": "top3",
+   "title": "3 greșeli înainte de epilarea laser",
+   "keyword": "EPILARE",
+   "facts": "Smuls cu pensa sau ceară între ședințe, soare direct, ședințe sărite.",
+   "used": []
+  },
+  {
+   "id": "t31",
+   "topic": "epilare",
+   "rubric": "nuki",
+   "title": "Nuki și aparatul de ras de la 7 dimineața",
+   "keyword": "EPILARE",
+   "facts": "Sketch despre rutina de ras zilnică vs epilarea progresivă.",
+   "used": []
+  },
+  {
+   "id": "t32",
+   "topic": "epilare",
+   "rubric": "mit",
+   "title": "Laserul îngroașă firele?",
+   "keyword": "EPILARE",
+   "facts": "Mit: laserul dezactivează progresiv foliculii; firele rămase devin de obicei mai subțiri.",
+   "used": []
+  },
+  {
+   "id": "t33",
+   "topic": "ten",
+   "rubric": "top3",
+   "title": "3 greșeli de rutină care îmbătrânesc pielea",
+   "keyword": "TEN",
+   "facts": "Fără SPF zilnic, curățare agresivă, somn puțin. Ton prietenos.",
+   "used": []
+  },
+  {
+   "id": "t34",
+   "topic": "ten",
+   "rubric": "mit",
+   "title": "SPF doar vara?",
+   "keyword": "SPF",
+   "facts": "UVA trece și prin nori și geam; protecția zilnică ajută colagenul.",
+   "used": []
+  },
+  {
+   "id": "t35",
+   "topic": "ten",
+   "rubric": "fapt",
+   "title": "Ce face SPF-ul de fapt",
+   "keyword": "SPF",
+   "facts": "Filtrele reduc radiația UV care ajunge în piele; UV degradează colagenul în timp.",
+   "used": []
+  },
+  {
+   "id": "t36",
+   "topic": "ten",
+   "rubric": "intrebare",
+   "title": "Cât de des se face exfolierea?",
+   "keyword": "TEN",
+   "facts": "Depinde de tipul de ten; prea des irită bariera pielii. Fără promisiuni.",
+   "used": []
+  },
+  {
+   "id": "t37",
+   "topic": "facial-restart",
+   "rubric": "caz",
+   "title": "Cazul 11: Facial Restart, Arad",
+   "keyword": "CAZURI",
+   "facts": "cazul-11 din catalog.",
+   "used": []
+  },
+  {
+   "id": "t38",
+   "topic": "ten",
+   "rubric": "nuki",
+   "title": "Nuki și cele 12 produse pe față",
+   "keyword": "TEN",
+   "facts": "Sketch: mai multe produse nu înseamnă rezultat mai bun; o rutină simplă și constantă.",
+   "used": []
+  },
+  {
+   "id": "t39",
+   "topic": "ten",
+   "rubric": "mit",
+   "title": "Apa băută hidratează direct pielea?",
+   "keyword": "APĂ",
+   "facts": "Apa contează pentru corp, dar hidratarea pielii ține și de bariera ei și de produsele potrivite.",
+   "used": []
+  },
+  {
+   "id": "t40",
+   "topic": "ten",
+   "rubric": "top3",
+   "title": "3 obiceiuri bune pentru ten, gratis",
+   "keyword": "TEN",
+   "facts": "SPF, somn, mâini departe de față. Valoare gratuită, fără vânzare.",
+   "used": []
+  }
+ ]
+}
