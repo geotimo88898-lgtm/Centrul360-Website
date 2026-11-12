@@ -22,3 +22,5 @@ reels/scripts/*/build/
 reels/engine/music/
 reels/engine/sfx/
 reels/out/
+reels/engine/img/
+reels/engine/site/

@@ -1,0 +1,62 @@
+{
+"L0": {
+"text": "De ce unele femei slabe au totuși gușă?",
+"dur": 2.332,
+"file": "voice/1e9ea115142c8eb4.wav",
+"role": "hook"
+},
+"L1": {
+"text": "Știu, și eu credeam că e doar de la kilograme.",
+"dur": 2.818,
+"file": "voice/6975f2144a58ae35.wav",
+"role": "beat"
+},
+"L2": {
+"text": "Hai să ne uităm puțin sub bărbie.",
+"dur": 2.164,
+"file": "voice/78b68ead34d51de4.wav",
+"role": "beat"
+},
+"L3": {
+"text": "Acolo stă, de multe ori, un mic depozit de grăsime.",
+"dur": 4.676,
+"file": "voice/c77e35923ef7f1bb.wav",
+"role": "beat"
+},
+"L4": {
+"text": "Iar peste el, pielea, care cu anii se mai relaxează.",
+"dur": 2.829,
+"file": "voice/b19510fdc4fa8fb0.wav",
+"role": "beat"
+},
+"L5": {
+"text": "Și sportul singur rareori ajunge exact acolo.",
+"dur": 3.452,
+"file": "voice/2fd4c3f969bc83e7.wav",
+"role": "beat"
+},
+"L6": {
+"text": "Apoi e genetica, pe care n-o alegem.",
+"dur": 2.494,
+"file": "voice/a95b718ed6071ccd.wav",
+"role": "beat"
+},
+"L7": {
+"text": "Plus telefonul: capul aplecat nu face gușă, dar o scoate mai mult în evidență.",
+"dur": 4.616,
+"file": "voice/cb8852489f1ad6e1.wav",
+"role": "beat"
+},
+"L8": {
+"text": "Deci gușa nu vine neapărat din kilograme.",
+"dur": 2.963,
+"file": "voice/3387d95ec09ae822.wav",
+"role": "payoff"
+},
+"L9": {
+"text": "E un mix: puțină grăsime, piele mai relaxată și genetică.",
+"dur": 4.416,
+"file": "voice/3db8c9bea1c6e6fa.wav",
+"role": "payoff"
+}
+}

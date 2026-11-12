@@ -1,0 +1,180 @@
+{
+ "v": 2,
+ "id": "v2-mit-abdomene",
+ "rubric": "Mit sau adevăr?",
+ "theme": "swiss",
+ "tag": "MIT SAU ADEVĂR?",
+ "topic": "Abdomenele topesc burtica?",
+ "topicTag": "liposonix-abdomen",
+ "hookType": "mit",
+ "keyword": "BURTICĂ",
+ "title": "Abdomenele topesc burtica?",
+ "sources": "reels/topics.json t14 (corpul ia energie din rezervele întregului corp; nu alegi zona prin exerciții); grasime-localizata.html (grăsimea din abdomenul de jos e rezistentă la dietă și sport)",
+ "post": "O sută de abdomene pe zi topesc burtica? Nu chiar. Scrie «BURTICĂ» în comentarii și îți trimit ce funcționează de fapt pe grăsimea localizată. #mitsauadevar #abdomene #grasimelocalizata #timisoara #arad",
+ "hook": {
+  "say": "O sută de abdomene pe zi. Asta topește *burtica*?",
+  "tts": "O sută de abdomene pe zi. Asta topește burtica?",
+  "cap": "100 de abdomene pe zi. Asta topește *burtica*?",
+  "q": "100 de abdomene pe zi topesc burtica?",
+  "visual": {
+   "type": "counter",
+   "from": 0,
+   "to": 100,
+   "at": [
+    0,
+    0,
+    -0.05
+   ],
+   "dur": 1.6,
+   "label": "abdomene pe zi",
+   "size": 230
+  }
+ },
+ "beats": [
+  {
+   "say": "Știu, sună logic. Și eu am crezut asta ani la rând.",
+   "visual": {
+    "type": "nuki",
+    "poses": [
+     "gandeste",
+     "aprobare"
+    ],
+    "bubbles": [
+     "Sună logic, nu?"
+    ],
+    "k": 0.72,
+    "poseAt": [
+     null,
+     [
+      0,
+      0.55
+     ]
+    ]
+   }
+  },
+  {
+   "say": "Hai să vedem ce se întâmplă, de fapt, când faci efort.",
+   "visual": {
+    "type": "zoom",
+    "label": "în timpul efortului",
+    "innerLabel": "rezervele de energie",
+    "diveAt": [
+     0,
+     0.55
+    ]
+   }
+  },
+  {
+   "say": "Corpul ia energie din rezervele întregului corp, nu doar din zona care *lucrează*.",
+   "visual": {
+    "type": "energy",
+    "from": "din tot corpul",
+    "to": "energie",
+    "at": [
+     0,
+     0.15
+    ],
+    "dur": 2.6
+   }
+  },
+  {
+   "say": "Abdomenele îți întăresc mușchii de acolo, și asta e *foarte bine*.",
+   "visual": {
+    "type": "bars",
+    "items": [
+     {
+      "t": "Mușchi",
+      "from": 0.35,
+      "to": 0.85,
+      "at": [
+       0,
+       0.35
+      ],
+      "c": "good"
+     },
+     {
+      "t": "Grăsime doar pe burtă",
+      "from": 0.7,
+      "to": 0.7,
+      "at": [
+       1,
+       0.3
+      ],
+      "c": "acc"
+     }
+    ],
+    "chips": [
+     {
+      "at": [
+       0,
+       0.72
+      ],
+      "t": "Mușchi mai puternici",
+      "icon": "check"
+     },
+     {
+      "at": [
+       1,
+       0.55
+      ],
+      "t": "Burtica nu e aleasă",
+      "icon": "x"
+     }
+    ]
+   }
+  },
+  {
+   "say": "Doar că nu aleg ele de unde pleacă *grăsimea*.",
+   "step": "a doua bară nu se mișcă"
+  }
+ ],
+ "payoff": [
+  {
+   "say": "Deci, abdomenele topesc burtica?",
+   "visual": {
+    "type": "shatter",
+    "text": "Fac abdomene, deci pleacă *burtica*.",
+    "tag": "CE CREDEAM",
+    "crackAt": [
+     0,
+     0.5
+    ],
+    "breakAt": [
+     1,
+     0,
+     0.05
+    ],
+    "behind": "*MIT*",
+    "behindSize": 260,
+    "after": [
+     {
+      "at": [
+       1,
+       0.3
+      ],
+      "t": "Mușchi mai puternici",
+      "icon": "check"
+     },
+     {
+      "at": [
+       1,
+       0.62
+      ],
+      "t": "Grăsimea pleacă din tot corpul",
+      "icon": "zap"
+     }
+    ]
+   }
+  },
+  {
+   "say": "Nu. Te fac mai puternică, dar grăsimea pleacă din tot corpul, nu de unde vrei tu.",
+   "step": "cardul se sparge, MIT în spate"
+  }
+ ],
+ "end": {
+  "type": "comment",
+  "keyword": "BURTICĂ",
+  "say": "Scrie burtică în comentarii și-ți trimit ce merge, de fapt, pe grăsimea localizată.",
+  "line": "și-ți trimit ce merge, de fapt"
+ }
+}

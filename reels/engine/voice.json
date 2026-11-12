@@ -1,0 +1,11 @@
+{
+  "note": "Vocea reels-urilor v2 (alegerea proprietarului, 12.11: Callirrhoe pe gemini-2.5-pro-preview-tts, din 5 mostre feminine). voice.py o citește pentru scripturile v2; scripturile v1 rămân pe vocea lor (Aoede), ca să se poată randa din cache. Mostrele: reels/out/voices/.",
+  "provider": "gemini",
+  "model": "gemini-2.5-pro-preview-tts",
+  "fallback_model": "gemini-2.5-flash-preview-tts",
+  "voice": "Callirrhoe",
+  "style": "Femeie din România, 30 de ani, vorbește natural, ca și cum i-ar povesti ceva interesant unei prietene: caldă, carismatică, zâmbet în voce, sigură pe ea, ritm viu dar nu grăbit, fără ton de reclamă, fără entuziasm forțat, accent românesc natural.",
+  "style_hook": "Aceeași femeie, la începutul poveștii: puțin mai multă energie și curiozitate în voce, ca atunci când îi spui unei prietene ceva ce tocmai ai aflat și nu-ți vine să crezi; tot natural, fără ton de reclamă.",
+  "style_payoff": "Aceeași femeie, când spune răspunsul: calm, sigur, cu un zâmbet, o mică pauză înainte de ideea principală.",
+  "tempo": 1.0
+}

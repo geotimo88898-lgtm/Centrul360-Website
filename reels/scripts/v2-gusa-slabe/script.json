@@ -1,0 +1,229 @@
+{
+ "v": 2,
+ "id": "v2-gusa-slabe",
+ "rubric": "Ce se întâmplă de fapt",
+ "theme": "aurora",
+ "topic": "hifu-gusa",
+ "topicTag": "hifu-gusa",
+ "hookType": "intrebare",
+ "title": "De ce unele femei slabe au totuși gușă?",
+ "sources": "v2/src/gusa-barbie-dubla.html (mix de grăsime localizată și piele relaxată, genetică, vârstă, uneori indiferent de greutate, sportul singur rareori rezolvă zona); reels/topics.json t06/t07 (postura cu capul în față nu face gușă, dar o accentuează)",
+ "post": "De ce unele femei slabe au totuși gușă? Nu e vorba doar de kilograme. #gusa #barbiedubla #ingrijire #timisoara #arad",
+ "hook": {
+  "say": "De ce unele femei *slabe* au totuși gușă?",
+  "q": "De ce unele femei slabe au totuși gușă?",
+  "visual": {
+   "type": "qmark",
+   "formAt": [
+    0,
+    0.02
+   ],
+   "formDur": 1.3,
+   "size": 100
+  },
+  "pause": 0.35
+ },
+ "beats": [
+  {
+   "say": "Știu, și eu credeam că e doar de la *kilograme*.",
+   "visual": {
+    "type": "gauge",
+    "zones": [
+     {
+      "t": "puțin",
+      "c": "acc2"
+     },
+     {
+      "t": "normal",
+      "c": "good"
+     },
+     {
+      "t": "mult",
+      "c": "acc"
+     }
+    ],
+    "keys": [
+     [
+      0,
+      0.25,
+      0.92
+     ],
+     [
+      0,
+      0.75,
+      0.5
+     ]
+    ],
+    "label": "Cântarul zice: *normal*"
+   }
+  },
+  {
+   "say": "Hai să ne uităm puțin sub bărbie.",
+   "visual": {
+    "type": "zoom",
+    "label": "sub bărbie",
+    "innerLabel": "aici e partea interesantă",
+    "diveAt": [
+     0,
+     0.6
+    ]
+   }
+  },
+  {
+   "say": "Acolo stă, de multe ori, un mic depozit de *grăsime*.",
+   "visual": {
+    "type": "skin",
+    "seq": [
+     {
+      "at": [
+       0,
+       0.36
+      ],
+      "do": "focus",
+      "layer": "grasime",
+      "label": "Grăsime localizată"
+     },
+     {
+      "at": [
+       0,
+       0.8
+      ],
+      "do": "pulse"
+     },
+     {
+      "at": [
+       1,
+       0.05
+      ],
+      "do": "focus",
+      "layer": "piele",
+      "label": "Piele mai relaxată"
+     },
+     {
+      "at": [
+       1,
+       0.4
+      ],
+      "do": "sag"
+     }
+    ]
+   }
+  },
+  {
+   "say": "Iar peste el, pielea, care cu anii se mai *relaxează*.",
+   "step": "piele: focus + se lasă"
+  },
+  {
+   "say": "Și sportul singur rareori ajunge *exact acolo*.",
+   "visual": {
+    "type": "icons",
+    "items": [
+     "dumbbell",
+     "bike",
+     "footprints",
+     "target"
+    ],
+    "cols": 2,
+    "cross": 3,
+    "crossAt": [
+     0,
+     0.72
+    ]
+   }
+  },
+  {
+   "say": "Apoi e *genetica*, pe care n-o alegem.",
+   "visual": {
+    "type": "panel",
+    "name": "dna",
+    "prompt": "a single elegant glass DNA double helix sculpture floating, translucent pink and cyan glass, glowing softly, centered",
+    "kb": "in",
+    "mask": "circle",
+    "label": "Genetica",
+    "labelIcon": "dna",
+    "icon": "dna"
+   }
+  },
+  {
+   "say": "Plus telefonul: capul aplecat nu face gușă, dar o scoate mai mult în *evidență*.",
+   "visual": {
+    "type": "tilt",
+    "at": [
+     0,
+     0.3
+    ],
+    "chinAt": [
+     0,
+     0.78
+    ],
+    "label": "Capul aplecat în telefon",
+    "bg": {
+     "name": "night-bg",
+     "prompt": "abstract dark navy space with soft out-of-focus pink and cyan light streaks, like city lights at night, very dark, empty center",
+     "ar": "3:4",
+     "cy": 650,
+     "w": 1150
+    }
+   }
+  }
+ ],
+ "payoff": [
+  {
+   "say": "Deci gușa nu vine neapărat din *kilograme*.",
+   "visual": {
+    "type": "type-pop",
+    "size": 132,
+    "strike": true,
+    "strikeDt": 0.35
+   }
+  },
+  {
+   "say": "E un mix: puțină grăsime, piele mai relaxată și *genetică*.",
+   "visual": {
+    "type": "puzzle",
+    "payoff": true,
+    "pieces": [
+     {
+      "t": "Grăsime",
+      "ic": "droplet",
+      "at": [
+       0,
+       0.22
+      ]
+     },
+     {
+      "t": "Piele",
+      "ic": "waves",
+      "at": [
+       0,
+       0.56
+      ]
+     },
+     {
+      "t": "Genetică",
+      "ic": "dna",
+      "at": [
+       0,
+       0.78
+      ]
+     }
+    ],
+    "snapAt": [
+     0,
+     0.93
+    ],
+    "center": "gușa",
+    "bg": {
+     "name": "glow-bg",
+     "prompt": "abstract soft radial burst of pink and cyan light on dark navy, gentle glow, bokeh, empty center",
+     "ar": "3:4"
+    }
+   }
+  }
+ ],
+ "end": {
+  "type": "loop",
+  "dur": 1.3,
+  "tr": "zoom-through"
+ }
+}

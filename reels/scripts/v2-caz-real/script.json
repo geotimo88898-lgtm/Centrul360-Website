@@ -1,0 +1,201 @@
+{
+ "v": 2,
+ "id": "v2-caz-real",
+ "rubric": "Cazuri",
+ "theme": "paper",
+ "topic": "Liposonix abdomen, o ședință, Timișoara",
+ "topicTag": "liposonix-abdomen",
+ "hookType": "poveste",
+ "case": "cazul-20",
+ "title": "O singură ședință. Ce s-a schimbat?",
+ "sources": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp + catalog-rezultate.html (Cazul 20: Liposonix abdomen, Timișoara, 1 ședință, publicat cu acordul clientei; celulele adipoase din zona tratată distruse, eliminate natural în săptămânile următoare, fără bisturiu, fără timp de recuperare); grasime-localizata.html („zona nu cedează, deși mănânci atent și faci mișcare”, „Ultrasunete care țintesc doar grăsimea”)",
+ "post": "O singură ședință de Liposonix pe abdomen, Timișoara. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
+ "hook": {
+  "say": "O singură ședință. Ce crezi că s-a *schimbat*?",
+  "q": "Ce crezi că s-a schimbat?",
+  "visual": {
+   "type": "photo",
+   "img": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
+   "split": "v",
+   "seam": 0.5,
+   "mode": "tease",
+   "coverText": "după o singură ședință",
+   "label": "Caz real · Timișoara",
+   "enter": "slam"
+  }
+ },
+ "beats": [
+  {
+   "say": "Clienta e din Timișoara, iar zona lucrată a fost *abdomenul*.",
+   "visual": {
+    "type": "pin",
+    "city": "Timișoara",
+    "sub": "zona: abdomenul"
+   }
+  },
+  {
+   "say": "Știi zona aia care nu cedează, deși mănânci atent și faci *mișcare*?",
+   "visual": {
+    "type": "checklist",
+    "items": [
+     {
+      "t": "Mănânci atent",
+      "at": [
+       0,
+       0.35
+      ]
+     },
+     {
+      "t": "Faci mișcare",
+      "at": [
+       0,
+       0.55
+      ]
+     },
+     {
+      "t": "Zona tot acolo",
+      "x": true,
+      "at": [
+       0,
+       0.82
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "say": "La ea s-a lucrat cu Liposonix. O singură *ședință*.",
+   "visual": {
+    "type": "big",
+    "value": "1",
+    "suffix": "ședință",
+    "label": "Liposonix · abdomen"
+   }
+  },
+  {
+   "say": "Ultrasunete care se adună doar în stratul de *grăsime*.",
+   "visual": {
+    "type": "skin",
+    "mode": "liposonix",
+    "seq": [
+     {
+      "at": [
+       0,
+       0.2
+      ],
+      "do": "energy",
+      "label": "Doar în stratul de grăsime"
+     },
+     {
+      "at": [
+       0,
+       0.62
+      ],
+      "do": "focus",
+      "layer": "grasime"
+     },
+     {
+      "at": [
+       1,
+       0.15
+      ],
+      "do": "shrink",
+      "label": "Celulele tratate, eliminate treptat"
+     },
+     {
+      "at": [
+       1,
+       0.45
+      ],
+      "do": "pulse"
+     },
+     {
+      "at": [
+       1,
+       0.75
+      ],
+      "do": "calm"
+     }
+    ]
+   }
+  },
+  {
+   "say": "Celulele sunt distruse, iar corpul le elimină în săptămânile următoare.",
+   "step": "celulele se micșorează"
+  },
+  {
+   "say": "Fără bisturiu, fără recuperare. Acum, să *vedem*.",
+   "visual": {
+    "type": "type-flip",
+    "size": 120
+   }
+  }
+ ],
+ "payoff": [
+  {
+   "say": "Uite *diferența*.",
+   "visual": {
+    "type": "photo",
+    "img": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
+    "split": "v",
+    "seam": 0.5,
+    "mode": "reveal",
+    "mask": "diagonal",
+    "revealAt": [
+     0,
+     0.15
+    ],
+    "label": "Cazul 20 · Liposonix · Timișoara",
+    "enter": "fade",
+    "chips": [
+     {
+      "at": [
+       1,
+       0.0
+      ],
+      "t": "Aceeași clientă"
+     },
+     {
+      "at": [
+       1,
+       0.3
+      ],
+      "t": "O singură ședință"
+     },
+     {
+      "at": [
+       1,
+       0.62
+      ],
+      "t": "Poză reală, cu acordul ei"
+     }
+    ]
+   }
+  },
+  {
+   "say": "Aceeași clientă, după o singură ședință. Fiecare corp e altfel, dar poza e *reală*.",
+   "step": "poza rămâne, cu nota de acord"
+  }
+ ],
+ "end": {
+  "type": "site",
+  "say": "Cum lucrează, pas cu pas, găsești pe centrul360.com.",
+  "tts": "Cum lucrează, pas cu pas, găsești pe centrul trei sute șaizeci punct com.",
+  "dur": 5.0,
+  "pages": [
+   {
+    "key": "home-rezultate",
+    "url": "/",
+    "section": "#rezultate",
+    "scroll": 520
+   },
+   {
+    "key": "grasime-cum",
+    "url": "/grasime-localizata",
+    "section": "#cum",
+    "tap": "figure svg"
+   }
+  ],
+  "home": 0.9
+ }
+}

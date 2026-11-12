@@ -1,0 +1,123 @@
+/* Centrul360 reels v2: 1080×1920. Safe zones (the apps put their UI over the rest): top 220, bottom 380, right 160.
+   Text lives in x 60..920, y 220..1540. The stage (visuals) is 60..920 × 250..1150, the captions band 1190..1500.
+   Every colour, font and texture comes from the theme (themes.json → CSS variables on :root). */
+:root {
+  --bg: #f4f1ec; --bg2: #e8e2ff; --bg3: #ffe3d6; --ink: #161616; --mute: #6b6b6b; --acc: #ff6a3d; --acc2: #6c5cff;
+  --good: #14a596; --bad: #ff4d5e; --card: #ffffff; --line: rgba(0, 0, 0, .1); --glass: rgba(255, 255, 255, .6);
+  --f-display: 'Inter Variable', system-ui, sans-serif; --f-body: 'Inter Variable', system-ui, sans-serif;
+  --f-serif: 'Fraunces Variable', Georgia, serif; --f-mono: 'JetBrains Mono Variable', monospace;
+  --dw: 850; --track: -.04em; --radius: 38px;
+  --sh: 0 40px 80px -36px rgba(0, 0, 0, .35), 0 2px 0 rgba(0, 0, 0, .03);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+body { font-family: var(--f-body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+#bg, #world, #fx, #capL, #chrome { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+#bg { overflow: hidden; }
+#bg > * { position: absolute; }
+#world { perspective: 2200px; }
+.shot { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 700px; }
+.shot .lay { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+.stg { position: absolute; left: 60px; top: 250px; width: 860px; height: 900px; }
+.abs { position: absolute; }
+#fx { pointer-events: none; }
+#fx > * { position: absolute; }
+#flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+#safe { display: none; position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 220px 0 rgba(255, 0, 0, .18), inset 0 -380px 0 rgba(255, 0, 0, .18), inset -160px 0 0 rgba(255, 0, 0, .18); }
+.debug #safe { display: block; }
+
+/* brand chip (top-left, inside the safe zone) */
+#brand { position: absolute; left: 60px; top: 236px; height: 52px; display: flex; align-items: center; gap: 12px;
+  font: 800 27px/1 var(--f-body); letter-spacing: -.01em; color: var(--ink); }
+#brand svg { width: 38px; height: 38px; color: var(--acc); }
+#brand .tg { margin-left: 8px; padding: 9px 16px; border-radius: 30px; background: var(--ink); color: var(--bg); font-size: 21px; letter-spacing: .08em; font-weight: 800; }
+
+/* type */
+.tx { position: absolute; }
+.disp { font-family: var(--f-display); font-weight: var(--dw); letter-spacing: var(--track); line-height: 1.0; color: var(--ink); }
+.disp em, .em { font-family: var(--f-serif); font-style: italic; font-weight: 500; letter-spacing: -.02em; color: var(--acc); }
+.kt { text-align: center; }
+.kt .w { display: inline-block; position: relative; z-index: 0; margin: 0 .12em; transform-origin: 50% 80%; white-space: nowrap; }
+.kt.highlight .w.e { color: var(--ink); }
+.kt .w.e { color: var(--acc); }
+.kt .w .hl { position: absolute; left: -.1em; right: -.1em; bottom: .02em; height: .46em; border-radius: .14em; background: var(--acc); opacity: .55; transform-origin: 0 50%; z-index: -1; }
+.kt .w .ch { display: inline-block; transform-origin: 50% 100%; }
+.lab { font: 750 30px/1.15 var(--f-body); letter-spacing: .01em; color: var(--ink); }
+.small { font: 650 26px/1.25 var(--f-body); color: var(--mute); }
+.chip { display: inline-flex; align-items: center; gap: 12px; padding: 14px 26px; border-radius: 40px; background: var(--ink); color: var(--bg);
+  font: 800 30px/1 var(--f-body); white-space: nowrap; letter-spacing: -.005em; }
+.chip.acc { background: var(--acc); color: #fff; }
+.chip.soft { background: var(--card); color: var(--ink); box-shadow: var(--sh); }
+.chip svg { width: 30px; height: 30px; }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--sh); }
+.glass { background: var(--glass); border: 2px solid rgba(255, 255, 255, .5); border-radius: var(--radius); box-shadow: var(--sh); backdrop-filter: blur(18px); }
+.num { font-family: var(--f-display); font-weight: var(--dw); letter-spacing: -.06em; line-height: .9; color: var(--acc); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ico { display: grid; place-items: center; }
+.ico svg { width: 56%; height: 56%; stroke-width: 2.1; }
+.note { font: 600 25px/1.3 var(--f-body); color: var(--mute); text-align: center; }
+
+/* captions (word by word; the style comes from the theme: body[data-cap]) */
+#cap { position: absolute; left: 60px; top: 1200px; width: 860px; display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
+  gap: 0 .24em; text-align: center; font-family: var(--f-display); font-weight: 900; letter-spacing: -.025em; line-height: 1.14; color: var(--ink); }
+#cap .cw { display: inline-block; position: relative; padding: 0 .08em; transform-origin: 50% 75%; white-space: nowrap; }
+#cap .cw.e { color: var(--acc); }
+/* pill: the spoken word in an accent pill */
+body[data-cap="pill"] #cap .cw.on { background: var(--acc); color: #fff; border-radius: .18em; }
+/* box: a dark box behind the chunk, the spoken word in the accent colour */
+body[data-cap="box"] #cap { gap: 0; }
+body[data-cap="box"] #cap .cw { background: var(--ink); color: var(--bg); padding: .04em .16em .1em; }
+body[data-cap="box"] #cap .cw.on { color: var(--acc); }
+/* outline: white words, thick dark stroke, the spoken word yellow */
+body[data-cap="outline"] #cap .cw { color: #fff; -webkit-text-stroke: .16em var(--ink); paint-order: stroke fill; }
+body[data-cap="outline"] #cap .cw.on { color: var(--acc); }
+/* serif: italic serif, the spoken word underlined by a highlighter swipe */
+body[data-cap="serif"] #cap { font-family: var(--f-serif); font-style: italic; font-weight: 600; letter-spacing: -.02em; }
+body[data-cap="serif"] #cap .cw::after { content: ''; position: absolute; left: 0; right: 0; bottom: .1em; height: .34em; background: var(--acc); opacity: .35; border-radius: .1em;
+  transform: scaleX(var(--hl, 0)); transform-origin: 0 50%; z-index: -1; }
+/* glow: white on dark, the spoken word glows in the accent */
+body[data-cap="glow"] #cap .cw { color: #fff; }
+body[data-cap="glow"] #cap .cw.on { color: var(--acc); text-shadow: 0 0 .35em var(--acc), 0 0 .9em var(--acc); }
+/* mono: typewriter, letters appear one by one, a caret */
+body[data-cap="mono"] #cap { font-family: var(--f-mono); font-weight: 750; letter-spacing: -.04em; }
+body[data-cap="mono"] #cap .cw.on { background: var(--acc); color: var(--bg); }
+/* sticker: each word a tilted sticker */
+body[data-cap="sticker"] #cap { gap: .14em .14em; }
+body[data-cap="sticker"] #cap .cw { background: var(--card); color: var(--ink); border-radius: .2em; padding: .02em .2em .08em; box-shadow: 0 .12em 0 rgba(0, 0, 0, .12); }
+body[data-cap="sticker"] #cap .cw.on { background: var(--acc); color: #fff; }
+/* under: the spoken word gets an accent underline that grows */
+body[data-cap="under"] #cap .cw::after { content: ''; position: absolute; left: .08em; right: .08em; bottom: -.02em; height: .1em; border-radius: .05em; background: var(--acc);
+  transform: scaleX(var(--hl, 0)); transform-origin: 0 50%; }
+
+/* the fictional browser (end: site) */
+.brw { position: absolute; border-radius: 44px; overflow: hidden; background: #fff; box-shadow: 0 60px 120px -40px rgba(0, 0, 0, .5), 0 0 0 2px rgba(0, 0, 0, .06); }
+.brw .bar { position: absolute; left: 0; right: 0; top: 0; height: 118px; background: #f3f4f6; display: flex; align-items: center; gap: 16px; padding: 0 22px; }
+.brw .dots { display: flex; gap: 10px; } .brw .dots i { width: 16px; height: 16px; border-radius: 50%; background: #d4d7dd; }
+.brw .url { flex: 1; height: 70px; border-radius: 35px; background: #fff; display: flex; align-items: center; gap: 12px; padding: 0 24px;
+  font: 600 32px/1 'Inter Variable', system-ui, sans-serif; color: #1f2328; white-space: nowrap; overflow: hidden; box-shadow: inset 0 0 0 2px #e3e5e9; }
+.brw .url .ph { color: #9aa0a8; }
+.brw .url svg { width: 26px; height: 26px; color: #6b7280; flex: none; }
+.brw .url .caret { display: inline-block; width: 3px; height: 38px; background: #1f6feb; margin-left: 2px; }
+.brw .prog { position: absolute; left: 0; top: 116px; height: 5px; background: var(--acc); width: 0; }
+.brw .view { position: absolute; left: 0; right: 0; top: 118px; bottom: 0; overflow: hidden; background: #fff; }
+.brw .view img { position: absolute; left: 0; top: 0; }
+.tap { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; background: rgba(20, 20, 20, .28); border: 4px solid rgba(255, 255, 255, .9); box-shadow: 0 8px 20px rgba(0, 0, 0, .25); }
+.ring { position: absolute; border: 6px solid var(--acc); border-radius: 28px; box-shadow: 0 0 0 9999px rgba(10, 12, 20, .0); }
+
+/* the comment bar (end: comment) */
+.cbar { position: absolute; display: flex; align-items: center; gap: 22px; height: 120px; padding: 0 22px; border-radius: 60px; background: var(--card); box-shadow: var(--sh);
+  font: 800 46px/1 var(--f-body); color: var(--ink); }
+.cbar .av { width: 78px; height: 78px; border-radius: 50%; background: var(--acc); flex: none; display: grid; place-items: center; color: #fff; }
+.cbar .av svg { width: 42px; height: 42px; }
+.cbar .txt { flex: 1; color: var(--acc); white-space: nowrap; overflow: hidden; }
+.cbar .txt .ph { color: var(--mute); font-weight: 600; font-size: 38px; }
+.cbar .txt i { display: inline-block; width: 4px; height: 50px; background: var(--ink); vertical-align: middle; margin-left: 4px; }
+.cbar .send { width: 82px; height: 82px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; flex: none; }
+.cbar .send svg { width: 40px; height: 40px; }
+.cmt { position: absolute; display: flex; gap: 20px; align-items: flex-start; }
+.cmt .av { width: 70px; height: 70px; border-radius: 50%; flex: none; }
+.cmt .b { background: var(--card); border-radius: 30px; padding: 18px 26px; box-shadow: var(--sh); font: 800 38px/1.1 var(--f-body); color: var(--ink); }
+.cmt .b small { display: block; font: 650 22px/1.2 var(--f-body); color: var(--mute); margin-bottom: 6px; }
+
+.kt .w .pu { color: var(--ink); }

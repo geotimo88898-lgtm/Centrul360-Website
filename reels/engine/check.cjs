@@ -10,6 +10,7 @@ const { start, open } = require('./serve.cjs');
   const id = process.argv[2];
   const dir = path.join(__dirname, '..', 'scripts', id);
   const S = JSON.parse(fs.readFileSync(path.join(dir, 'script.json'), 'utf8'));
+  if (S.v === 2) return require('./check2.cjs')(id, dir, S);
   const problems = [];
   if (/[–—]/.test(JSON.stringify(S))) problems.push('long dash in the script');
   if (!S.keyword || !S.scenes.some((x) => x.type === 'end')) problems.push('no end card with a comment keyword');
