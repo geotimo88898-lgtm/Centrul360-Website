@@ -5,12 +5,15 @@
 // field „comments”); Claude writes a short answer as the clinic and it goes out at once, as the Page / the account.
 // Only comments written straight on a post (not replies inside a thread) and never our own. Complaints, medical
 // questions about her own case, anything legal and spam get no public answer: the owner and the admins are told.
+// A comment with the word one of our reels asks for („Scrie «GUȘĂ» în comentarii”, api/_lib/content-dm.js) gets a
+// private message with what the reel promised and a short public line („Ți-am scris în privat…”); state 'dm'.
 //   ingest(payload)   a webhook delivery → the comments that are new (stored as 'new')
 //   later(fn)         the work after the webhook's answer (the platform keeps the request alive for it)
 //   answer(ids)       write and send the answers (at most 30 an hour); run() is the clock's retry
 //   settings / setOn / list / retry / skip           for Integrări → Facebook → Comentarii (api/portal-comments.js)
 // data/social-comments.json: [{ id, channel: 'fb'|'ig', postId, parentId, from: { id, name }, text, at,
-//   state: 'new'|'replied'|'skipped'|'error', reply, why, repliedAt, replyId?, link?, tries?, lockAt? }] (the newest 500)
+//   state: 'new'|'replied'|'dm'|'skipped'|'error', reply, why, repliedAt, replyId?, link?, tries?, lockAt?,
+//   dm?: { keyword, item, state: sent|already|refused, error? } }] (the newest 500)
 
 const { readJSON, writeJSON, readJSONTagged, writeJSONIf } = require('./store');
 const { loadConnection } = require('./facebook');
@@ -26,6 +29,7 @@ const MAX_TRIES = 3;
 const EMOJIS = ['❤️', '🥰', '💞'];
 const CHANNELS = { fb: 'Facebook', ig: 'Instagram' };
 const g = (method, path, token, params) => ads.call(method, path, token, params);
+const DM = () => require('./content-dm');
 const metaErr = (j) => ((j && j.error) || {}).error_user_msg || ((j && j.error) || {}).message || 'Meta n-a răspuns';
 const iso = (t) => { const n = Number(t); const d = n ? new Date(n < 1e11 ? n * 1000 : n) : t ? new Date(t) : new Date(); return Number.isFinite(d.getTime()) ? d.toISOString() : new Date().toISOString(); };
 const clip = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
@@ -242,6 +246,53 @@ async function tell(c, why) {
     text: CHANNELS[c.channel] + ' · ' + (c.from.name || 'cineva') + ': „' + clip(c.text, 90) + '” · ' + why, tag: 'cm-' + c.id }).catch(() => 0);
 }
 
+// ---------------------------------------------------------------- the reel's word („Scrie «GUȘĂ» în comentarii”)
+// The public line after the private message (api/_lib/content-dm.js): we wrote to her, she had it already, or Meta
+// wouldn't let us and she writes to us. Varied, warm, a positive question and one of our emoji at the end; on Instagram
+// where to find it (a message from an account she doesn't follow waits in „Solicitări”).
+const LINES = {
+  sent: ['Ți-am scris în privat{, N}! Ce ți-a plăcut cel mai mult din clip? 💞', 'Gata, ți-am trimis totul în privat! Ce ți-ai dori să afli mai departe? 🥰',
+    'Ți-am lăsat mesajul în privat{, N}! Ce rezultat ți-ai dori cel mai mult? ❤️', 'Ți-am trimis în privat ce am promis în clip! Ce te-a făcut curioasă? 💞',
+    'Verifică mesajele, ți-am scris acolo{, N}! Ce ți-ar plăcea să încerci prima dată? 🥰', 'Ți-am scris în privat cu drag! Ce ți-a atras atenția în clip? ❤️'],
+  already: ['Ți-am scris deja în privat, te așteptăm acolo! Ce ți-ar plăcea să mai afli? 💞', 'Mesajul nostru te așteaptă în privat{, N}! Ce ți-ai dori să încerci prima dată? 🥰',
+    'Îți găsești mesajul nostru în privat! Ce altceva te-ar ajuta să afli? ❤️'],
+  ask: ['Scrie-ne în privat și îți trimitem tot ce am promis în clip! Ce ți-a plăcut cel mai mult? 💞', 'Trimite-ne un mesaj în privat și îți scriem cu drag tot ce am promis! Ce ți-ai dori să afli prima dată? 🥰',
+    'Scrie-ne în privat{, N,} și îți trimitem detaliile! Ce rezultat ți-ai dori cel mai mult? ❤️'],
+};
+const IG_WHERE = 'Dacă nu-l vezi, e la Solicitări.';
+function publicLine(kind, c, itemKind) {
+  const list = LINES[kind] || LINES.sent;
+  const h = [...String(c.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+  const w = String((c.from && c.from.name) || '').trim().split(/\s+/)[0] || '';
+  const first = c.channel === 'fb' && /^\p{Lu}\p{Ll}{1,19}$/u.test(w) ? w : '';
+  let t = list[h % list.length].replace('{, N,}', first ? ', ' + first + ',' : '').replace('{, N}', first ? ', ' + first : '');
+  // Instagram: where her message is, right after the first sentence
+  if (c.channel === 'ig' && kind !== 'ask') t = t.replace(/^([^!?.]*[!.])\s/, '$1 ' + IG_WHERE + ' ');
+  // a carousel is a post, not a clip
+  return itemKind === 'carousel' || itemKind === 'slideshow' ? t.replace(/\bclip\b/g, 'postare') : t;
+}
+const dayOf = (t) => { const d = new Date(t); return Number.isFinite(d.getTime()) ? d.toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit' }) : ''; };
+
+// the private message, then the public line; the comment is 'dm' (a failed private message or public line: 'error', the
+// clock tries again, and a message that went is never sent twice)
+async function keyword(c, hit, post, token, all, done) {
+  const link = post.link || c.link || '';
+  const d = await DM().deliver(c, hit, token);
+  const tries = (c.tries || 0) + 1;
+  if (d.error && !d.refused) { await done({ state: 'error', why: 'Mesajul privat (' + hit.keyword + '): ' + clip(d.error, 180), tries, link }); return 'error'; }
+  const kind = d.sent ? 'sent' : d.already ? 'already' : 'ask';
+  const dm = Object.assign({ keyword: hit.keyword, item: (hit.item && hit.item.id) || '', state: d.sent ? 'sent' : d.already ? 'already' : 'refused' }, d.refused ? { error: clip(d.error, 200) } : {});
+  const why = d.sent ? 'Mesaj privat trimis (' + hit.keyword + ')'
+    : d.already ? 'Avea deja mesajul privat (' + hit.keyword + (dayOf(d.at) ? ', ' + dayOf(d.at) : '') + ')'
+    : 'Mesajul privat n-a plecat (' + clip(d.error, 120) + '): i-am cerut public să ne scrie';
+  const n = all.filter((x) => x.state === 'replied' || x.state === 'dm').length;
+  const reply = polish(publicLine(kind, c, hit.item && hit.item.kind), n);
+  const s = await send(c, reply, token);
+  if (s.error) { await done({ state: 'error', reply, dm, why: why + ' · răspunsul public: ' + clip(s.error, 160), tries, link }); return 'error'; }
+  await done({ state: 'dm', reply, dm, why, replyId: s.id, repliedAt: new Date().toISOString(), link });
+  return 'dm';
+}
+
 // the work on one comment, held so a second run (the clock, a repeated delivery) doesn't answer it twice
 async function claim(id, manual) {
   let got = null;
@@ -257,7 +308,7 @@ async function claim(id, manual) {
   });
   return got;
 }
-const lastHour = (all) => all.filter((x) => x.state === 'replied' && x.repliedAt && Date.now() - Date.parse(x.repliedAt) < 3600e3).length;
+const lastHour = (all) => all.filter((x) => (x.state === 'replied' || x.state === 'dm') && x.repliedAt && Date.now() - Date.parse(x.repliedAt) < 3600e3).length;
 
 async function one(id, opts) {
   const o = opts || {};
@@ -272,7 +323,10 @@ async function one(id, opts) {
     // only a tag of a friend (Instagram „@nume”): nothing to answer, nobody to tell
     if (/^(\s*@[\w.]+)+\s*$/.test(c.text)) { await done({ state: 'skipped', why: 'Doar o etichetare' }); return 'skipped'; }
     const post = await postInfo(c, conn.pageAccessToken);
-    const w = await write(c, post, all.filter((x) => x.state === 'replied').length);
+    // the word a reel asks for: a private message and a short public line, in place of the usual answer
+    const hit = await DM().match(c, post).catch((e) => { console.error('content dm match:', e && e.message); return null; });
+    if (hit) return keyword(c, hit, post, conn.pageAccessToken, all, done);
+    const w = await write(c, post, all.filter((x) => x.state === 'replied' || x.state === 'dm').length);
     if (w.error) { await done({ state: 'error', why: w.error, tries: (c.tries || 0) + 1, link: post.link || c.link || '' }); return 'error'; }
     if (w.skip) {
       let why = w.why;
@@ -315,16 +369,16 @@ async function list(n) { return (await readJSON(KEY, [])).slice(-(n || 50)).reve
 async function retry(id) {
   const c = (await readJSON(KEY, [])).find((x) => x.id === id);
   if (!c) return { error: 'not_found' };
-  if (c.state === 'replied') return { error: 'already_replied' };
+  if (c.state === 'replied' || c.state === 'dm') return { error: 'already_replied' };
   await patch(id, { state: 'new', why: '', lockAt: '', tries: 0 });
   return { result: await one(id, { manual: true }) };
 }
 async function skip(id, by) {
   let ok = false;
-  await update((all) => { const c = all.find((x) => x.id === id); if (!c || c.state === 'replied') return false; c.state = 'skipped'; c.why = 'Oprit de ' + (clip(by, 40) || 'echipă'); c.lockAt = ''; ok = true; return true; });
+  await update((all) => { const c = all.find((x) => x.id === id); if (!c || c.state === 'replied' || c.state === 'dm') return false; c.state = 'skipped'; c.why = 'Oprit de ' + (clip(by, 40) || 'echipă'); c.lockAt = ''; ok = true; return true; });
   return ok ? { ok: true } : { error: 'not_found' };
 }
 // for the health check: no names, only initials
 const initials = (s) => String(s || '').replace(/^@/, '').split(/[\s._]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase() + '.').join('');
 
-module.exports = { KEY, SET_KEY, EMOJIS, PER_HOUR, settings, setOn, parse, ingest, later, answer, run, list, retry, skip, polish, initials, hasComments };
+module.exports = { KEY, SET_KEY, EMOJIS, PER_HOUR, settings, setOn, parse, ingest, later, answer, run, list, retry, skip, polish, initials, hasComments, publicLine };

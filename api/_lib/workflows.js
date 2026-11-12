@@ -692,7 +692,8 @@ async function logSent(tpl, phone, city, id, v, appt, akey) {
 async function sendTemplate(wa, templateId, from, phone, v, opts) {
   const tpl = (wa.tpls || []).find((t) => t.id === templateId);
   if (!tpl) return { why: 'șablonul WhatsApp nu mai există' };
-  if (!phone) return { why: 'fără telefon' };
+  // a lead from an Instagram / Messenger private message has her inbox key, not a phone: no WhatsApp
+  if (!phone || /^(ig|fb):/.test(String(phone))) return { why: 'fără telefon' };
   const ready = wa.cfg ? WA.readyNumbers(wa.cfg) : [];
   if (!ready.length) return { why: 'WhatsApp nu e conectat' };
   const city = ready.includes(from) ? from : ready[0];

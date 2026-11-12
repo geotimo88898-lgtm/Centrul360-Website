@@ -847,6 +847,8 @@
   function localPhone(p) { const d = String(p || '').replace(/\D/g, ''); return d.length >= 9 ? '0' + d.slice(-9) : String(p || ''); }
   async function chatWith(ph, o) {
     o = o || {};
+    // a lead from an Instagram / Messenger private message: her conversation in Mesaje, not WhatsApp
+    if (/^(ig|fb):\d+$/.test(String(ph))) { const b = C.loads || 0; K.go('mesaje'); const u = Date.now() + 8000; while ((C.loads || 0) <= b && Date.now() < u) await new Promise((r) => setTimeout(r, 120)); return C.loaded ? openThread(ph) : undefined; }
     if (tail(ph).length < 9) return K.ui().toast('Numărul de telefon nu e complet.', 'error');
     const before = C.loads || 0;
     K.go('mesaje');

@@ -92,7 +92,13 @@ module.exports = async (req, res) => {
     // ring; a Page delivery may carry leads too (below)
     if (payload.object === 'instagram' || (payload.entry || []).some((e) => (e.messaging || []).length)) {
       const SO = require('./_lib/social-inbox');
-      try { await SO.ring(await SO.ingest(payload)); } catch (err) { console.error('webhook messages:', err.message); }
+      try {
+        const fresh = await SO.ingest(payload);
+        await SO.ring(fresh);
+        // her answer to the private message sent from a reel's comment: the lead, once (api/_lib/content-dm.js)
+        const DMR = require('./_lib/content-dm');
+        for (const f of fresh || []) await DMR.onReply(f.channel, f.id).catch((e) => console.error('content dm reply:', e.message));
+      } catch (err) { console.error('webhook messages:', err.message); }
       if (payload.object === 'instagram') { res.status(200).json({ ok: true }); return; }
     }
     const conn = await loadConnection(readJSON);
