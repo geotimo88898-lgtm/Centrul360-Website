@@ -305,7 +305,7 @@ async function setup(origin) {
   return out;
 }
 
-async function status() {
+async function status(opts) {
   const [conn, creds] = await Promise.all([loadConnection(readJSON), appCreds(readJSON)]);
   if (!conn.pageId) return { error: 'not_connected' };
   const appToken = creds.appId && creds.appSecret ? creds.appId + '|' + creds.appSecret : '';
@@ -328,7 +328,7 @@ async function status() {
     webhooks: { instagram: hook('instagram'), page: hook('page') },
     conversations: (await readJSON(KEY, [])).reduce((o, c) => { o[c.channel] = (o[c.channel] || 0) + 1; return o; }, {}),
     // the newest conversation per channel, here and at Meta (are the new ones coming in?)
-    newest: await (async () => {
+    newest: !(opts && opts.newest) ? undefined : await (async () => {
       const here = {};
       (await readJSON(KEY, [])).forEach((c) => { const t = (c.messages || []).reduce((a, m) => (m.timestamp > a ? m.timestamp : a), c.updatedAt || ''); if (!here[c.channel] || t > here[c.channel]) here[c.channel] = t; });
       const meta = {};

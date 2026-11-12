@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
   if (req.query && (req.query.ig || req.query.igsetup)) {
     const SI = require('./_lib/social-inbox');
     const done = req.query.igsetup ? await SI.setup('https://admin.centrul360.com').catch((e) => ({ error: e.message })) : undefined;
-    res.status(200).json({ setup: done, status: await SI.status().catch((e) => ({ error: e.message })) });
+    res.status(200).json({ setup: done, status: await SI.status({ newest: true }).catch((e) => ({ error: e.message })) });
     return;
   }
   // ?comments=1: the answers to the comments on posts and ads (api/_lib/social-comments.js): permissions, webhooks, the
