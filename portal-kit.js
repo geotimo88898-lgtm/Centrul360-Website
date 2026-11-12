@@ -622,7 +622,13 @@
     el.classList.toggle('is-hot', tone === 'hot');
     if (el.textContent !== String(n)) { el.textContent = n > 99 ? '99+' : n; el.classList.remove('is-pop'); void el.offsetWidth; el.classList.add('is-pop'); }
   }
-  const go = (tab) => { const b = document.querySelector('#tabsNav button[data-tab="' + tab + '"]'); if (b) b.click(); };
+  // a section, or a section's own page („continut/program”: the section hears `continut:sub` with „program”)
+  const go = (tab) => {
+    const [t, sub] = String(tab || '').split('/');
+    const b = document.querySelector('#tabsNav button[data-tab="' + t + '"]');
+    if (b) b.click();
+    if (b && sub) setTimeout(() => emit(t + ':sub', sub), 0);
+  };
   const isActive = (id) => { const p = document.getElementById('panel-' + id); return !!(p && p.classList.contains('active')); };
 
   // CSV download (Excel-friendly: BOM + semicolons)

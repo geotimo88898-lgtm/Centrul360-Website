@@ -373,7 +373,10 @@ async function alertTeam(lead, returning, fromSite) {
   });
 }
 
-async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form }) {
+const organicOf = (o) => ({ itemId: clip(o.itemId, 60), keyword: clip(o.keyword, 40), net: clip(o.net, 4), at: nowISO() });
+// organic: { itemId, keyword, net } for a lead made from a reel's word (api/_lib/content-dm.js), kept on the lead as
+// lead.organic so Conținut → Rezultate can follow it to the money (api/_lib/content-insights.js)
+async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form, organic }) {
   const filled = cleanForm(form);
   const result = validateFields({ name, phone, source, location, email: email || '', interest: interest || '', value: value || 0 }, { partial: false });
   if (result.error) return { error: result.error };
@@ -412,6 +415,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     if (result.fields.interest && !existing.interest) existing.interest = result.fields.interest;
     if (result.fields.email && !existing.email) existing.email = result.fields.email;
     if (filled) existing.forms = (existing.forms || []).concat(filled).slice(-5);
+    if (organic && organic.itemId && !existing.organic) existing.organic = organicOf(organic);
     existing.position = top;
     addActivity(existing, {
       type: 'returned', author,
@@ -441,6 +445,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     createdBy,
     forms: filled ? [filled] : [],
   });
+  if (organic && organic.itemId) lead.organic = organicOf(organic);
   if (note) lead.activities.push({ id: crypto.randomUUID(), type: 'note', text: clip(note, 1000), author, at: now });
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);

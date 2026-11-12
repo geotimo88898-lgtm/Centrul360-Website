@@ -1,19 +1,22 @@
-// Centrul360 portal, Marketing → „Conținut” (the owner, 12.11): the weekly batch of organic reels and carousels the
-// producer hands in (api/content-intake.js). Here the owner looks at next week before it goes out: a board of days ×
-// networks, each item with its video, its text per network (editable), Aprobă / Refă, and „Aprobă toată
-// săptămâna”; this week below it; then the week's top, what needs a look and the last posted with their numbers.
-// The clock posts only what is approved (api/_lib/content-post.js). Under the weeks, the owner's ideas for the next
-// weeks (the producer makes them first). Each item shows its texts' check (qa: what stops it, what to look at) and,
-// once posted on Instagram or Facebook, „Fă reclamă din asta” (api/_lib/content-boost.js).
-// The second tab, „Rezultate”: the followers per network, the last 30 days, the last month, what to make more of, the
-// top 10, the rubrics, topics and hooks ranked, the best slot times per network (api/_lib/content-learn.js). Admin only.
+// Centrul360 portal, Marketing → „Conținut” (the owner, 12.11: „vreau să fie totul în one screen: main screen-ul să fie
+// cu insights, și după, la Program, să fie ăla de aprobat”). Two tabs:
+//  - „Rezultate” (first, the dashboard): the key numbers, the week's analysis, the monthly goals, the networks, the
+//    organic funnel, „Merge tare 🔥” (with „Fă reclamă din asta”), what to make more of, the top 10, what works, the
+//    audience, the recommended hours (one tap saves them), what people say, last month (api/_lib/content-learn.js,
+//    api/_lib/content-insights.js). A banner says when next week waits for approval.
+//  - „Program” (#continut/program): next week's batch as a review feed (every item large, its video inline, a phone
+//    preview per network with that network's text, editable, its planned time, Aprobă / Refă, „Aprobă toată
+//    săptămâna” always at hand), the compact calendar of days × networks, this week, the owner's ideas, what to look at,
+//    the last posted. The clock posts only what is approved (api/_lib/content-post.js).
+// An item's drawer: the owner's look, the texts' check, the statistics (per network the numbers and rates, the
+// retention curve, the growth in the first hours, × the usual post, the funnel), the video, the texts, the plan and,
+// once posted on Instagram or Facebook, „Fă reclamă din asta” (api/_lib/content-boost.js). Admin only.
 (function () {
   'use strict';
   const K = window.K;
   if (!K) return;
   const { esc, icon } = K;
-  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
-  const S = { d: null, busy: false, tab: store.get('cn-tab') === 'res' ? 'res' : 'week', r: null, rErr: '', rAt: 0, warn: {} };
+  const S = { d: null, busy: false, tab: 'res', r: null, rErr: '', rAt: 0, warn: {}, an: '', fm: 'month', sel: {}, open: {} };
   let panel = null, dr = null, openId = '';
 
   const NETS = ['tt', 'yt', 'ig', 'fb'];
@@ -70,14 +73,46 @@
       if (all) return approveAll(all);
       const del = e.target.closest('[data-ctidel]');
       if (del) { if (await save({ action: 'idea_del', id: del.dataset.ctidel }, del)) K.ui().toast('Idee ștearsă.', 'success'); return; }
+      // the review feed: a network's preview, approve, redo, open an approved one, the sound
+      const ph = e.target.closest('[data-ctph]');
+      if (ph) { const c = ph.closest('[data-ctrcid]'); if (c) { S.sel[c.dataset.ctrcid] = ph.dataset.ctph; refreshCard(c.dataset.ctrcid); } return; }
+      const rok = e.target.closest('[data-ctrc-ok]');
+      if (rok) { const id = rok.closest('[data-ctrcid]').dataset.ctrcid; if (await save({ action: 'approve', id }, rok)) K.ui().toast('Aprobat.', 'success'); return; }
+      const rredo = e.target.closest('[data-ctrc-redo]');
+      if (rredo) return redoItem(rredo.closest('[data-ctrcid]').dataset.ctrcid, rredo);
+      const ro = e.target.closest('[data-ctrc-open]');
+      if (ro) { const id = ro.dataset.ctrcOpen; S.open[id] = !S.open[id]; refreshCard(id); return; }
+      const v = e.target.closest('[data-ctvid]');
+      if (v) return sound(v);
+      const tg = e.target.closest('[data-cttab-go]');
+      if (tg) { setTab(tg.dataset.cttabGo); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      const ap = e.target.closest('[data-ctapply]');
+      if (ap) return applyHours(ap);
+      const hb = e.target.closest('[data-cthboost]');
+      if (hb) return boost(hb, hb.dataset.cthboost, hb.dataset.net);
+      if (e.target.closest('[data-ctgoals]')) return openSettings(true);
       const it = e.target.closest('[data-ctitem]'); if (it) return openItem(it.dataset.ctitem);
       if (e.target.closest('[data-ctset]')) return openSettings();
       if (e.target.closest('[data-ctgo]')) return K.go('integrari');
     });
     panel.addEventListener('change', (e) => {
       if (e.target.name === 'cton') save({ action: 'settings', on: e.target.checked });
-      if (e.target.name === 'cttab') { S.tab = e.target.value === 'res' ? 'res' : 'week'; store.set('cn-tab', S.tab); paint(true); if (S.tab === 'res') loadResults(); }
+      if (e.target.name === 'cttab') setTab(e.target.value);
+      if (e.target.name === 'ctfm') { S.fm = e.target.value === 'prev' ? 'prev' : 'month'; paint(true); }
+      if (e.target.matches('[data-ctan]')) { S.an = e.target.value; paint(true); }
+      const cap = e.target.closest('[data-ctrc-cap]');
+      if (cap) saveCaption(cap.closest('[data-ctrcid]').dataset.ctrcid, cap.dataset.ctrcCap, cap.value);
     });
+    panel.addEventListener('input', (e) => {
+      const cap = e.target.closest('[data-ctrc-cap]'); if (!cap) return;
+      const n = cap.closest('.cn-rc-e').querySelector('[data-ctrc-n]'); if (n) n.textContent = cap.value.length + '/' + CAP_MAX[cap.dataset.ctrcCap];
+    });
+    // a carousel in the feed: which photo is showing
+    panel.addEventListener('scroll', (e) => {
+      const c = e.target.closest && e.target.closest('[data-ctcar]'); if (!c) return;
+      const n = c.parentElement.querySelector('[data-ctcarn]'); if (!n) return;
+      n.textContent = (Math.round(c.scrollLeft / Math.max(1, c.clientWidth)) + 1) + '/' + c.children.length;
+    }, true);
     // an idea for the next weeks
     panel.addEventListener('submit', async (e) => {
       const f = e.target.closest('[data-ctidea]'); if (!f) return;
@@ -93,6 +128,14 @@
       }
     });
   }
+  // Rezultate or Program (a notification opens Program: #continut/program)
+  function setTab(t) {
+    S.tab = t === 'week' || t === 'program' ? 'week' : 'res';
+    if (!panel || !S.d) return;
+    paint(true);
+    if (S.tab === 'res') loadResults();
+  }
+  K.on('continut:sub', (sub) => setTab(sub));
   async function load() {
     try { S.d = await K.api('/api/portal-content', { action: 'get' }); paint(); }
     catch (err) { const b = panel && panel.querySelector('[data-ctbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca conținutul', esc(K.errText(err))); }
@@ -103,7 +146,9 @@
     if (!force && S.r && Date.now() - S.rAt < 60e3) return;
     try { S.r = await K.api('/api/portal-content', { action: 'results' }); S.rErr = ''; S.rAt = Date.now(); }
     catch (err) { S.rErr = K.errText(err); }
-    if (S.tab === 'res') paint(true);
+    if (S.tab === 'res' && S.d) paint(true);
+    // an open drawer shows the item's funnel once Rezultate is there
+    if (dr && openId) { const it = S.d && S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; } }
   }
   const ERR = { not_approved: 'Întâi aprobă materialul.', paused: 'Postarea automată e oprită.', not_ready: 'Materialul se reface acum.', already_posted: 'E postat peste tot.', idea_too_short: 'Scrie ideea pe scurt.' };
   async function save(payload, btn, quiet) {
@@ -126,11 +171,21 @@
     const body = panel.querySelector('[data-ctbody]');
     // a text being typed in the ideas box survives a repaint
     const typing = body.querySelector('[data-ctidea] input[name=text]'), draft = typing && !S.ideaSent ? typing.value : '', focused = typing && document.activeElement === typing;
-    const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['week', 'Săptămâna', 'calendar'], ['res', 'Rezultate', 'trend']], S.tab) + '</div>';
-    body.innerHTML = tabs + (S.tab === 'res' ? resTab() : access() + board(s.next, 'Săptămâna viitoare', true) + board(s.current, 'Săptămâna asta', false) + ideasBox() + topWeek() + errors() + last());
+    const pend = (s.next && s.next.pending) || 0;
+    const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['res', 'Rezultate', 'trend'], ['week', pend ? 'Program · ' + pend : 'Program', 'calendar']], S.tab) + '</div>';
+    stopMedia();
+    body.innerHTML = tabs + (S.tab === 'res' ? banner(s.next) + resTab()
+      : access() + gallery(s.next) + board(s.next, 'Săptămâna viitoare', true) + board(s.current, 'Săptămâna asta', false) + ideasBox() + errors() + last());
     const t2 = body.querySelector('[data-ctidea] input[name=text]');
     if (t2 && draft) { t2.value = draft; if (focused) t2.focus(); }
+    wireMedia(body);
     if (dr && openId && !quiet) { const it = S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; dr.el.querySelector('.k-dfoot') && (dr.el.querySelector('.k-dfoot').innerHTML = itemFoot(it)); } }
+  }
+  // next week waits for the owner's look: the way to it, on top of Rezultate
+  function banner(w) {
+    const n = (w && w.pending) || 0;
+    if (!n) return '';
+    return '<button type="button" class="cn-ban" data-cttab-go="week"><span class="cn-ban-ic">' + icon('calendar') + '</span><span class="cn-main"><b>' + pl(n, 'material', 'materiale') + ' de aprobat pentru săptămâna viitoare</b><small>' + esc(range(w.week)) + '</small></span><span class="cn-ban-go">Program' + icon('right') + '</span></button>';
   }
   function access() {
     const a = S.d.access;
@@ -207,6 +262,193 @@
     if (r) K.ui().toast(r.approved === 1 ? 'Aprobat.' : pl(r.approved || 0, 'material aprobat', 'materiale aprobate') + '.', 'success');
   }
 
+  // ------------------------------------------------------------------ Program: next week as a review feed
+  // (the owner, 12.11: „toate videourile înșirate de aprobat, frumos, cu preview pentru fiecare canal”): every item large,
+  // its video inline (muted, a tap for sound) or its photos to swipe, a phone preview per network with that network's
+  // text, the text editable below (saved when it loses focus), its time, Aprobă / Refă; approved ones fold to a line.
+  const firstAt = (it) => (it.plan || []).filter((e) => e.at && e.state !== 'skipped').map((e) => e.at).sort()[0] || it.createdAt || '';
+  const entryOf = (it, net) => (it.plan || []).find((e) => e.net === net && e.state !== 'skipped') || null;
+  const short = (iso) => { const d = roDay(iso); return dow(d) + ' ' + Number(d.slice(8, 10)) + '.' + d.slice(5, 7) + ', ' + fTime.format(new Date(iso)); };
+  // the networks an item shows: the ones it is planned on (in time order), else every network of its kind
+  function netsOf(it) {
+    const on = (it.plan || []).filter((e) => e.state !== 'skipped' && e.at).sort((a, b) => a.at.localeCompare(b.at)).map((e) => e.net);
+    const list = [...new Set(on)];
+    return list.length ? list : (AS[it.kind] || []).slice();
+  }
+  function gallery(w) {
+    if (!w) return '';
+    const its = S.d.items.filter((it) => it.week === w.week && !it.removed && !it.dropped).sort((a, b) => firstAt(a).localeCompare(firstAt(b)));
+    if (!its.length) return '';
+    const pend = its.filter((it) => it.state === 'ready' && review(it) === 'pending').length;
+    const ok = its.filter((it) => it.state === 'ready' && review(it) === 'approved').length;
+    const head = '<div class="cn-rvh"><div><h3>De aprobat</h3><p><b>' + range(w.week) + '</b><span>' + pl(its.length, 'material', 'materiale') + '</span></p></div>' +
+      '<div class="cn-tags">' + (pend ? '<span class="k-tag is-warn">' + pend + ' de aprobat</span>' : '') + (ok ? '<span class="k-tag is-good">' + icon('check') + pl(ok, 'aprobat', 'aprobate') + '</span>' : '') + '</div></div>';
+    const bar = pend ? '<div class="cn-sticky"><div class="cn-sticky-in"><span><b>' + pend + '</b> ' + (pend === 1 ? 'material așteaptă' : 'materiale așteaptă') + '</span>' +
+      '<button type="button" class="k-btn is-primary" data-ctall="' + esc(w.week) + '" data-n="' + pend + '">' + icon('checkCircle') + 'Aprobă toată săptămâna (' + pend + ')</button></div></div>' : '';
+    // the ones to look at as cards (an approved one opened again stays with them), the rest as lines below
+    const big = (it) => it.state === 'ready' && (review(it) === 'pending' || (review(it) === 'approved' && S.open[it.id]));
+    const cards = its.filter(big), lines = its.filter((it) => !big(it));
+    return '<section class="cn-sec cn-rvs">' + head + (cards.length ? '<div class="cn-rcs">' + cards.map(card).join('') + '</div>' : '') +
+      (lines.length ? '<div class="cn-rcl">' + lines.map(card).join('') + '</div>' : '') + bar + '</section>';
+  }
+  function card(it) {
+    const r = review(it), id = esc(it.id);
+    // being made again, sent back, or approved (folded): one line
+    if (it.state !== 'ready' || r === 'redo' || (r === 'approved' && !S.open[it.id])) {
+      const tag = it.state !== 'ready' ? '<span class="k-tag">' + icon('refresh') + 'Se reface</span>' : r === 'redo' ? '<span class="k-tag is-bad">' + icon('undo') + 'De refăcut</span>' : '<span class="k-tag is-good">' + icon('check') + 'Aprobat</span>';
+      const times = netsOf(it).map((n) => { const e = entryOf(it, n); return e ? '<span class="cn-rc-tm">' + badge(n) + fTime.format(new Date(e.at)) + '</span>' : ''; }).join('');
+      const note = r === 'redo' && it.redoNote ? '<em>' + esc(it.redoNote) + '</em>' : '';
+      const act = r === 'approved' && it.state === 'ready' ? 'data-ctrc-open="' + id + '"' : 'data-ctitem="' + id + '"';
+      return '<div class="cn-rc is-slim is-' + r + '" data-ctrcid="' + id + '"><button type="button" class="cn-rc-sl" ' + act + '>' + thumb(it) + '<span class="cn-main"><b>' + esc(title(it)) + '</b><small>' + times + '</small>' + note + '</span>' + tag + icon(r === 'approved' ? 'down' : 'right') + '</button></div>';
+    }
+    const nets = netsOf(it), sel = nets.includes(S.sel[it.id]) ? S.sel[it.id] : nets[0];
+    const meta = [KIND[it.kind], it.rubric, it.keyword ? '„' + it.keyword + '”' : ''].filter(Boolean).join(' · ');
+    const q = qaOf(it);
+    const head = '<header class="cn-rc-h"><div class="cn-main"><small>' + esc(meta) + '</small><b>' + esc(title(it)) + '</b>' + (it.hook ? '<em>„' + esc(it.hook) + '”</em>' : '') + '</div>' +
+      (r === 'approved' ? '<button type="button" class="k-icon-btn" data-ctrc-open="' + id + '" aria-label="Restrânge">' + icon('up') + '</button>' : '<span class="k-tag is-warn">De aprobat</span>') + '</header>';
+    const flags = (it.replacedAt && r === 'pending' ? '<p class="cn-rc-f">' + icon('refresh') + '<span>Refăcut' + (it.redoNote ? ': ' + esc(it.redoNote) : '') + '</span></p>' : '') +
+      (q.problems.length ? '<p class="cn-rc-f is-bad">' + icon('alert') + '<span>' + esc(q.problems[0]) + (q.problems.length > 1 ? ' (+' + (q.problems.length - 1) + ')' : '') + '</span></p>' : '');
+    const acts = '<div class="cn-rc-a">' + (r === 'approved' ? '<button type="button" class="k-btn is-ghost" data-ctitem="' + id + '">' + icon('more') + 'Detalii</button>' : '') +
+      '<button type="button" class="k-btn is-outline is-lg" data-ctrc-redo>' + icon('undo') + 'Refă</button>' +
+      (r !== 'approved' ? '<button type="button" class="k-btn is-primary is-lg" data-ctrc-ok>' + icon('check') + 'Aprobă</button>' : '') + '</div>';
+    return '<article class="cn-rc is-' + r + '" data-ctrcid="' + id + '">' + head + flags + '<div class="cn-rc-v">' + media(it) + '<div class="cn-phs">' + nets.map((n) => mock(it, n, n === sel)).join('') + '</div></div>' +
+      editor(it, sel) + acts + '</article>';
+  }
+  // the video (loaded when it comes near, playing while it is in view, muted until a tap) or the photos to swipe
+  function media(it) {
+    const files = (it.files || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }));
+    const vid = files.find((f) => f.mime === 'video/mp4');
+    const open = '<button type="button" class="cn-rc-x" data-ctitem="' + esc(it.id) + '" aria-label="Deschide">' + icon('more') + '</button>';
+    if (vid) {
+      return '<div class="cn-rc-m"><video data-ctvid data-src="' + esc(fileUrl(it, vid.name)) + '"' + (it.cover ? ' poster="' + esc(cover(it)) + '"' : '') + ' muted playsinline loop preload="none"></video>' +
+        '<span class="cn-snd" aria-hidden="true">' + SPK.off + '</span>' + (vid.dur ? '<span class="cn-dur">' + Math.round(vid.dur) + ' s</span>' : '') + open + '</div>';
+    }
+    const imgs = files.filter((f) => /^image\//.test(f.mime));
+    return '<div class="cn-rc-m is-car"><div class="cn-car" data-ctcar>' + imgs.map((f) => '<img src="' + esc(fileUrl(it, f.name)) + '" alt="" loading="lazy" decoding="async">').join('') + '</div>' +
+      (imgs.length > 1 ? '<span class="cn-dur" data-ctcarn>1/' + imgs.length + '</span>' : '') + open + '</div>';
+  }
+  // the little marks of the phones (drawn here: the kit has no heart or bookmark)
+  const MI = {
+    heart: '<path d="M12 20.5s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1z"/>',
+    bubble: '<path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.1A8 8 0 1 1 20 11.5z"/>',
+    send: '<path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/>',
+    mark: '<path d="M6 3.5h12v17l-6-4-6 4z"/>',
+    share: '<path d="M14 5l7 6.5-7 6.5v-4c-5 0-8.5 1.5-11 5 1-5 4-10 11-10.5z"/>',
+    thumb: '<path d="M7 10v10H4V10zM7 10l4-7c1.6 0 2.6 1.3 2.2 2.8L12.6 9H19a2 2 0 0 1 2 2.3l-1.2 6.6A2.4 2.4 0 0 1 17.4 20H7"/>',
+    down: '<path d="M17 14V4h3v10zM17 14l-4 7c-1.6 0-2.6-1.3-2.2-2.8l.6-3.2H5a2 2 0 0 1-2-2.3l1.2-6.6A2.4 2.4 0 0 1 6.6 4H17"/>',
+    note: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+    more: '<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>',
+    cam: '<path d="M3 8h3.5L8 5.5h8L17.5 8H21v11H3z"/><circle cx="12" cy="13" r="3.5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+  };
+  const mi = (n) => '<svg viewBox="0 0 24 24" aria-hidden="true">' + MI[n] + '</svg>';
+  const SPK = {
+    off: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>',
+    on: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  };
+  const capOf = (it, net) => String((it.captions && it.captions[net]) || it.caption || '');
+  const handle = (net) => { const a = S.d.access || {}; return net === 'ig' ? (a.igUser || 'centrul360') : net === 'tt' ? ((a.tt && a.tt.name) || 'centrul360') : net === 'yt' ? ((a.yt && a.yt.channel) || 'Centrul360') : 'Centrul360'; };
+  // a phone with the post as that network shows it: the picture, the network's marks, the account, the text
+  function mock(it, net, sel) {
+    const e = entryOf(it, net), photoK = photo(it);
+    const img = photoK ? (((it.files || []).filter((f) => /^image\//.test(f.mime)).sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))[0] || {}).name || '') : it.cover;
+    const src = img ? fileUrl(it, img) : '';
+    const cap = capOf(it, net).replace(/\s+/g, ' ').trim();
+    const ytTitle = (capOf(it, 'yt').split('\n').find((l) => l.trim()) || title(it)).replace(/#shorts\b/ig, '').trim();
+    const side = (list) => '<span class="cn-ph-side">' + list.map(([n, c]) => '<i>' + mi(n) + (c != null ? '<small>' + c + '</small>' : '') + '</i>').join('') + '</span>';
+    let top = '', ov = '', bot = '';
+    if (net === 'tt') {
+      top = '<span class="cn-ph-top">Urmăriți · <b>Pentru tine</b></span>';
+      ov = side([['heart', '0'], ['bubble', '0'], ['mark', '0'], ['share', '0']]);
+      bot = '<b>@' + esc(handle('tt')) + '</b><p>' + esc(cap) + '</p><small>' + mi('note') + 'sunet original</small>';
+    } else if (net === 'ig') {
+      top = photoK ? '' : '<span class="cn-ph-top"><b>Reels</b>' + mi('cam') + '</span>';
+      ov = photoK ? '' : side([['heart', '0'], ['bubble', '0'], ['send', null], ['more', null]]);
+      bot = '<span class="cn-ph-who"><i class="cn-ph-av"></i><b>' + esc(handle('ig')) + '</b></span><p>' + esc(cap) + '</p>' + (photoK ? '' : '<small>' + mi('note') + 'Audio original</small>');
+    } else if (net === 'fb') {
+      top = photoK ? '' : '<span class="cn-ph-top"><b>Reels</b>' + mi('plus') + '</span>';
+      ov = photoK ? '' : side([['thumb', '0'], ['bubble', '0'], ['share', '0'], ['more', null]]);
+      bot = '<span class="cn-ph-who"><i class="cn-ph-av"></i><b>' + esc(handle('fb')) + '</b></span><p>' + esc(cap) + '</p>';
+    } else {
+      top = '<span class="cn-ph-top"><b>Shorts</b></span>';
+      ov = side([['thumb', '0'], ['down', null], ['bubble', '0'], ['share', null]]);
+      bot = '<p class="cn-ph-yt">' + esc(ytTitle) + ' <span>#shorts</span></p><span class="cn-ph-who"><i class="cn-ph-av"></i><b>@' + esc(handle('yt').replace(/\s+/g, '').toLowerCase()) + '</b></span>';
+    }
+    const q = qaFor(it, net), mark = e && e.state === 'posted' ? '' : q.problems.length ? '<i class="cn-qa is-bad">!</i>' : q.warnings.length ? '<i class="cn-qa is-warn">!</i>' : '';
+    const when = e ? (e.state === 'posted' ? 'Postat' : dow(roDay(e.at)) + ' ' + fTime.format(new Date(e.at))) : 'Neprogramat';
+    const feed = photoK && (net === 'ig' || net === 'fb');
+    return '<button type="button" class="cn-ph is-' + net + (sel ? ' is-sel' : '') + (feed ? ' is-feed' : '') + '" data-ctph="' + net + '" aria-label="' + NET[net] + '" aria-pressed="' + (sel ? 'true' : 'false') + '">' +
+      '<span class="cn-ph-s">' + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async">' : '') + top + ov + '<span class="cn-ph-bot">' + bot + '</span>' + mark + '</span>' +
+      '<span class="cn-ph-l">' + badge(net) + '<time>' + esc(when) + '</time></span></button>';
+  }
+  // the chosen network's text, editable (saved when it loses focus), its time, its checks
+  function editor(it, net) {
+    const e = entryOf(it, net), v = capOf(it, net), q = qaFor(it, net), posted = e && e.state === 'posted';
+    const list = q.problems.map((x) => '<li class="is-bad">' + icon('alert') + '<span>' + esc(x.replace(NET[net] + ': ', '')) + '</span></li>').join('') +
+      q.warnings.map((x) => '<li class="is-warn">' + icon('info') + '<span>' + esc(x.replace(NET[net] + ': ', '')) + '</span></li>').join('');
+    return '<div class="cn-rc-e"><div class="cn-rc-eh">' + badge(net) + '<b>Text ' + NET[net] + '</b>' + (e ? '<span class="cn-when">' + icon('clock') + esc(when(e.at)) + '</span>' : '<span class="cn-when is-off">Neprogramat</span>') +
+      '<small data-ctrc-n>' + v.length + '/' + CAP_MAX[net] + '</small></div>' +
+      '<textarea data-ctrc-cap="' + net + '" maxlength="' + CAP_MAX[net] + '" rows="3" aria-label="Textul pentru ' + NET[net] + '"' + (posted ? ' readonly' : '') + '>' + esc(v) + '</textarea>' +
+      (list && !posted ? '<ul class="cn-qal">' + list + '</ul>' : '') + '</div>';
+  }
+  // one card again (a network chosen, a text saved, opened or folded), the rest of the page as it is
+  function refreshCard(id) {
+    const el = panel && panel.querySelector('[data-ctrcid="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+    const it = S.d.items.find((x) => x.id === id);
+    if (!el || !it) return;
+    const v = el.querySelector('video'); if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+    const tmp = document.createElement('div'); tmp.innerHTML = card(it);
+    const fresh = tmp.firstElementChild;
+    el.replaceWith(fresh);
+    wireMedia(fresh);
+  }
+  async function saveCaption(id, net, text) {
+    try {
+      const r = await K.api('/api/portal-content', { action: 'captions', id, captions: { [net]: text } });
+      S.d = r;
+      K.ui().toast('Text salvat pentru ' + NET[net] + '.', 'success');
+      // the card's previews and checks follow; a text being typed elsewhere keeps its focus
+      const el = panel.querySelector('[data-ctrcid="' + id + '"]');
+      if (el && !el.contains(document.activeElement)) refreshCard(id);
+      else if (el) { const it = S.d.items.find((x) => x.id === id); const ph = el.querySelector('[data-ctph="' + net + '"]'); if (it && ph) { const t = document.createElement('div'); t.innerHTML = mock(it, net, true); ph.replaceWith(t.firstElementChild); } }
+    } catch (err) { K.ui().toast(K.errText(err, 'Nu am putut salva textul.'), 'error'); }
+  }
+  async function redoItem(id, btn) {
+    const note = await K.ui().prompt({ title: 'Ce refacem?', multiline: true, value: '', confirmText: 'Trimite la refăcut' });
+    if (note == null) return;
+    if (note.trim().length < 2) { K.ui().toast('Scrie pe scurt ce refacem.', 'error'); return; }
+    if (await save({ action: 'redo', id, note: note.trim() }, btn)) K.ui().toast('Trimis la refăcut.', 'success');
+  }
+  // the videos: loaded when near, playing while in view (not with reduced motion), muted until a tap
+  let ioLoad = null, ioPlay = null;
+  const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function wireMedia(root) {
+    const vids = root.querySelectorAll('video[data-ctvid]');
+    if (!vids.length) return;
+    if (!('IntersectionObserver' in window)) { vids.forEach((v) => { if (v.dataset.src) { v.src = v.dataset.src; v.removeAttribute('data-src'); } }); return; }
+    if (!ioLoad) ioLoad = new IntersectionObserver((list) => list.forEach((x) => { const v = x.target; if (x.isIntersecting && v.dataset.src) { v.preload = 'metadata'; v.src = v.dataset.src; v.removeAttribute('data-src'); ioLoad.unobserve(v); } }), { rootMargin: '300px 0px' });
+    if (!ioPlay) ioPlay = new IntersectionObserver((list) => list.forEach((x) => {
+      const v = x.target;
+      if (x.isIntersecting && x.intersectionRatio >= 0.6) { if (!still && !v.dataset.src) v.play().catch(() => {}); }
+      else if (!v.paused) v.pause();
+    }), { threshold: [0, 0.6] });
+    vids.forEach((v) => { ioLoad.observe(v); ioPlay.observe(v); });
+  }
+  function stopMedia() {
+    if (ioLoad) ioLoad.disconnect();
+    if (ioPlay) ioPlay.disconnect();
+    if (panel) panel.querySelectorAll('video[data-ctvid]').forEach((v) => { try { v.pause(); } catch (e) { /* gone */ } });
+  }
+  // a tap: sound on (the others muted) or off; a paused one plays
+  function sound(v) {
+    if (v.dataset.src) { v.src = v.dataset.src; v.removeAttribute('data-src'); }
+    const on = v.muted;
+    panel.querySelectorAll('video[data-ctvid]').forEach((o) => { if (o !== v && !o.muted) { o.muted = true; const ic = o.parentElement.querySelector('.cn-snd'); if (ic) ic.innerHTML = SPK.off; } });
+    v.muted = !on;
+    const ic = v.parentElement.querySelector('.cn-snd'); if (ic) { ic.innerHTML = on ? SPK.on : SPK.off; ic.classList.toggle('is-on', on); }
+    if (v.paused) v.play().catch(() => {});
+  }
+
   // ------------------------------------------------------------------ the owner's ideas for the next weeks
   function ideasBox() {
     const list = S.d.ideas || [], fresh = list.filter((d) => d.state !== 'used').length;
@@ -230,19 +472,8 @@
     const x = (ic, n, label) => (n != null ? '<span title="' + label + '">' + icon(ic) + k(n) + '</span>' : '');
     return '<span class="cn-stats">' + x('eye', s.views, 'Vizualizări') + x('star', s.likes, 'Aprecieri') + x('chat', s.comments, 'Comentarii') + x('book', s.saves, 'Salvări') + x('share', s.shares, 'Distribuiri') + '</span>';
   }
-  function topWeek() {
-    const top = S.d.top || [];
-    if (!top.length) return '';
-    const by = Object.fromEntries(S.d.items.map((x) => [x.id, x]));
-    return '<section class="cn-sec"><h3>Top săptămâna</h3><div class="cn-top">' + top.map((t, i) => {
-      const it = by[t.id] || { id: t.id, kind: t.kind, topic: t.topic, rubric: t.rubric };
-      return '<div class="cn-topc"><button type="button" class="cn-topb" data-ctitem="' + esc(t.id) + '"><span class="cn-rank">' + (i + 1) + '</span>' + thumb(it, 'is-lg') +
-        '<span class="cn-main"><b>' + esc(title(it)) + '</b><small>' + k(t.views) + ' vizualizări · ' + k(t.saves + t.shares) + ' salvări și distribuiri</small></span></button>' +
-        (t.url ? '<a class="k-btn is-ghost is-sm" href="' + esc(t.url) + '" target="_blank" rel="noopener">' + icon('link') + NET_S[t.net] + '</a>' : '') + '</div>';
-    }).join('') + '</div></section>';
-  }
   function row(it, e, extra) {
-    return '<button type="button" class="cn-row" data-ctitem="' + esc(it.id) + '">' + thumb(it) + '<span class="cn-main"><b>' + esc(title(it)) + '</b><small>' + badge(e.net) + esc(when(e.postedAt || e.at)) + '</small>' + (extra || '') + '</span>' +
+    return '<button type="button" class="cn-row" data-ctitem="' + esc(it.id) + '">' + thumb(it) + '<span class="cn-main"><b>' + (it.hot ? '<i class="cn-fl">🔥</i>' : '') + esc(title(it)) + '</b><small>' + badge(e.net) + esc(when(e.postedAt || e.at)) + '</small>' + (extra || '') + '</span>' +
       (e.state === 'posted' ? statLine((it.stats || {})[e.net]) : '<span class="k-tag ' + TONE[e.state] + '">' + STATE[e.state] + '</span>') + icon('right') + '</button>';
   }
   function errors() {
@@ -263,21 +494,160 @@
   const cov = (x) => '<span class="cn-th' + (x.kind === 'carousel' || x.kind === 'slideshow' ? ' is-photo' : '') + '">' + (coverUrl(x) ? '<img src="' + esc(coverUrl(x)) + '" alt="" loading="lazy">' : icon('video')) + '</span>';
   const known = (id) => !!(S.d && S.d.items.some((y) => y.id === id));
   const chipX = (v) => '<span class="cn-x ' + tone(v) + '">' + x1(v) + '</span>';
+  const pct = (v) => (v == null ? '-' : (Math.round(v * 10) / 10).toLocaleString('ro-RO') + '%');
+  const n1 = (v) => (v == null ? '-' : (Math.round(v * 10) / 10).toLocaleString('ro-RO'));
+  const lei = (v) => full(Math.round(v || 0)) + ' lei';
+  // the dashboard: the key numbers first, then the blocks in the owner's order; side by side on a wide screen
   function resTab() {
     const R = S.r;
     if (!R) return S.rErr ? K.empty('alert', 'Nu am putut încărca rezultatele', esc(S.rErr)) : '<div class="k-skel" style="height:420px"></div>';
     const L = R.learn || {};
-    const any = Object.keys(R.followers || {}).length || (R.last30 && R.last30.total.posts) || (R.month && R.month.total.posts);
-    if (!any) return K.empty('trend', 'Rezultatele apar după primele postări', '');
-    return kpis(R) + netCards(R) + monthCard(R) + moreLike(L) + topTen(R) + ranks(L) + hours(L);
+    const any = Object.keys(R.followers || {}).length || (R.last30 && R.last30.total.posts) || (R.month && R.month.total.posts) || R.audience || (R.analysis || []).length || (R.goals && R.goals.set);
+    if (!any) return K.empty('trend', 'Rezultatele apar după primele postări', '', '<button type="button" class="k-btn is-outline" data-ctgoals>' + icon('target') + 'Setează ținte lunare</button>');
+    const w = (cls, html) => (html ? '<div class="cn-dw ' + cls + '">' + html + '</div>' : '');
+    const an = analysisBlock(R), gl = goalsBlock(R);
+    const au = audienceBlock(R), hr = hoursBlock(R, L);
+    const vo = voiceBlock(R), mo = monthCard(R);
+    return kpis(R) + '<div class="cn-dash">' +
+      w(an && gl ? 'is-w7' : 'is-w12', an) + w(an && gl ? 'is-w5' : 'is-w12', gl) +
+      w('is-w12', netCards(R)) + w('is-w12', funnelBlock(R)) + w('is-w12', hotBlock(R)) + w('is-w12', moreLike(L)) + w('is-w12', topTen(R)) + w('is-w12', ranks(L)) +
+      w('is-w12', au) + w('is-w12', hr) + w(vo && mo ? 'is-w7' : 'is-w12', vo) + w(vo && mo ? 'is-w5' : 'is-w12', mo) + '</div>';
   }
   function kpis(R) {
-    const t = R.last30.total, f = R.last30.followers || {};
-    const won = Object.keys(f).reduce((s, n) => s + (f[n] || 0), 0);
+    const x = R.kpi || {}, t = R.last30.total;
     const tile = (ic, label, v, sub, cls) => '<div class="k-stat ' + (cls || '') + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + label + '</div><div class="k-stat-value">' + v + '</div>' + (sub ? '<div class="k-stat-sub">' + sub + '</div>' : '') + '</div>';
-    return '<section class="cn-sec"><h3>Ultimele 30 de zile</h3><div class="cn-kpis">' + tile('eye', 'Vizualizări', k(t.views), pl(t.posts, 'postare', 'postări'), 'is-accent') +
-      tile('book', 'Salvări', k(t.saves)) + tile('share', 'Distribuiri', k(t.shares)) + tile('chat', 'Comentarii', k(t.comments)) +
-      (Object.keys(f).length ? tile('users', 'Urmăritori noi', signed(won), '', won > 0 ? 'is-good' : '') : '') + '</div></section>';
+    const fol = x.followers30;
+    return '<section class="cn-sec"><div class="cn-kpis">' +
+      tile('eye', 'Vizualizări', k(x.views30 != null ? x.views30 : t.views), '30 de zile · ' + pl(x.posts30 != null ? x.posts30 : t.posts, 'postare', 'postări'), 'is-accent') +
+      tile('users', 'Urmăritori noi', fol == null ? '-' : signed(fol), '30 de zile', fol > 0 ? 'is-good' : '') +
+      tile('userPlus', 'Leaduri organice', full(x.leadsMonth || 0), 'luna asta' + (x.clientsMonth ? ' · ' + pl(x.clientsMonth, 'clientă', 'cliente') : '')) +
+      tile('wallet', 'Încasări organice', lei(x.revenueMonth), 'luna asta', x.revenueMonth > 0 ? 'is-good' : '') +
+      tile('zap', 'Engagement', pct(x.er30), '30 de zile') +
+      tile('clock', 'Vizionare medie', pct(x.watch30), x.hook30 != null ? pct(x.hook30) + ' rămân după 3 s' : '30 de zile') + '</div></section>';
+  }
+  // Analiza săptămânii: the latest, the older ones in the list
+  function analysisBlock(R) {
+    const list = R.analysis || [];
+    if (!list.length) return '';
+    const a = list.find((x) => x.week === S.an) || list[0];
+    const opts = list.length > 1 ? '<select class="cn-an-sel" data-ctan aria-label="Săptămâna">' + list.map((x) => '<option value="' + esc(x.week) + '"' + (x === a ? ' selected' : '') + '>' + esc(x.label || range(x.week)) + '</option>').join('') + '</select>' : '<span class="k-tag">' + esc(a.label || range(a.week)) + '</span>';
+    const ul = (arr, cls) => (arr && arr.length ? '<ul class="cn-an-l ' + cls + '">' + arr.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
+    return '<section class="cn-sec"><div class="cn-sh"><h3>Analiza săptămânii</h3>' + opts + '</div><div class="cn-an"><div class="cn-an-h"><span class="cn-an-ic">' + icon('sparkles') + '</span><p>' + esc(a.summary || '') + '</p></div>' +
+      '<div class="cn-an-g"><div class="cn-an-c is-good"><h4>' + icon('check') + 'Ce a mers și de ce</h4>' + ul(a.worked, '') + '</div><div class="cn-an-c is-bad"><h4>' + icon('alert') + 'Ce n-a mers</h4>' + ul(a.notWorked, '') + '</div></div>' +
+      '<div class="cn-an-c is-next"><h4>' + icon('arrow') + 'Ce schimbăm săptămâna viitoare</h4>' + ul(a.changes, 'is-num') + '</div></div></section>';
+  }
+  // Ținte: this month, the progress and the pace
+  function goalsBlock(R) {
+    const g = R.goals;
+    if (!g) return '';
+    if (!g.set) return '<section class="cn-sec"><h3>Ținte</h3><div class="cn-gl is-empty"><button type="button" class="k-btn is-outline" data-ctgoals>' + icon('target') + 'Setează ținte lunare</button></div></section>';
+    const row = (x) => {
+      const p = Math.min(100, x.pct), exp = Math.min(100, (x.expected / x.target) * 100);
+      const tag = x.pace === 'done' ? '<span class="k-tag is-good">' + icon('check') + 'Atinsă</span>' : x.pace === 'ok' ? '<span class="k-tag is-good">În grafic</span>' : '<span class="k-tag is-bad">În urmă</span>';
+      return '<li><div class="cn-gl-t">' + (x.net ? badge(x.net) : '<span class="cn-gl-ic">' + icon(x.key === 'views' ? 'eye' : 'userPlus') + '</span>') + '<b>' + esc(x.label) + '</b>' + tag + '</div>' +
+        '<div class="cn-gl-b"><i class="is-' + x.pace + '" style="width:' + p.toFixed(1) + '%"></i><em style="left:' + exp.toFixed(1) + '%"></em></div>' +
+        '<div class="cn-gl-n"><span><b>' + full(x.value) + '</b> din ' + full(x.target) + '</span>' + (x.projected != null && x.pace !== 'done' ? '<small>estimat ' + full(x.projected) + '</small>' : '') + '</div></li>';
+    };
+    return '<section class="cn-sec"><div class="cn-sh"><h3>Ținte, ' + esc(g.label) + '</h3><button type="button" class="k-icon-btn" data-ctgoals aria-label="Ținte lunare">' + icon('pen') + '</button></div><div class="cn-gl"><ul>' + g.rows.map(row).join('') + '</ul><p class="cn-gl-d">Ziua ' + g.day + ' din ' + g.days + '</p></div></section>';
+  }
+  // Pâlnia organică: from the comment with the word to the money; „Profil → mesaj” in the organic total
+  const STEPS = [['kw', 'Comentarii cu cuvântul', 'chat'], ['dms', 'Mesaje trimise', 'inbox'], ['replies', 'Răspunsuri', 'undo'], ['leads', 'Leaduri', 'userPlus'], ['booked', 'Programări', 'calendar'], ['showed', 'Au venit', 'checkCircle'], ['clients', 'Cliente', 'star'], ['revenue', 'Încasări, lei', 'wallet']];
+  function strip(m, compact) {
+    let prev = null;
+    return '<ol class="cn-fn' + (compact ? ' is-sm' : '') + '">' + STEPS.map(([key, label, ic]) => {
+      const v = m[key] || 0, rate = prev != null && key !== 'revenue' && prev > 0 ? Math.round((v / prev) * 100) : null;
+      prev = key === 'revenue' ? prev : v;
+      return '<li class="' + (v ? '' : 'is-zero') + '"><span class="cn-fn-ic">' + icon(ic) + '</span><b>' + full(Math.round(v)) + '</b><small>' + label + '</small>' + (rate != null ? '<em>' + rate + '%</em>' : '') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function funnelBlock(R) {
+    const F = R.funnel;
+    if (!F || !F.month) return '';
+    const m = S.fm === 'prev' && F.prev ? F.prev : F.month;
+    const t = m.total || {}, p = m.profil || {};
+    const tot = '<div class="cn-fn-t"><span class="cn-fn-tl"><b>Organic total</b><small>cu cele venite din profil în mesaje</small></span>' +
+      [['leads', 'leaduri'], ['booked', 'programări'], ['showed', 'au venit'], ['clients', 'cliente']].map(([k2, l]) => '<span><b>' + full(t[k2] || 0) + '</b>' + l + (p[k2] ? '<small>' + full(p[k2]) + ' din profil</small>' : '') + '</span>').join('') +
+      '<span class="is-money"><b>' + lei(t.revenue) + '</b>încasări</span></div>';
+    return '<section class="cn-sec"><div class="cn-sh"><h3>Pâlnia organică</h3>' + K.seg('ctfm', [['month', 'Luna asta'], ['prev', 'Luna trecută']], S.fm, 'cn-seg-sm') + '</div><div class="cn-fnw">' + strip(m) + tot + '</div></section>';
+  }
+  // Merge tare 🔥: the posts far above the usual in their first day, an ad one tap away
+  function hotBlock(R) {
+    const list = R.hot || [];
+    if (!list.length) return '';
+    return '<section class="cn-sec"><h3>Merge tare 🔥</h3><div class="cn-hot">' + list.map((x) => {
+      const net = x.nets.includes(x.net) ? x.net : x.nets[0];
+      const done = net && x.boosted.includes(net);
+      const btn = !net ? '' : done ? '<button type="button" class="k-btn is-ghost is-sm" data-ctitem="' + esc(x.id) + '">' + icon('zap') + 'Reclamă făcută</button>'
+        : known(x.id) ? '<button type="button" class="k-btn is-primary is-sm" data-cthboost="' + esc(x.id) + '" data-net="' + net + '">' + icon('zap') + 'Fă reclamă din asta</button>' : '';
+      const inner = cov(x) + '<span class="cn-main"><b>' + esc(x.topic || x.rubric) + '</b><small>' + badge(x.net) + k(x.views) + ' vizualizări în ' + (x.h < 1.5 ? 'prima oră' : pl(Math.round(x.h), 'oră', 'ore')) + '</small></span><span class="cn-x is-good">' + x1(x.x) + '</span>';
+      return '<div class="cn-hotc">' + (known(x.id) ? '<button type="button" class="cn-hotb" data-ctitem="' + esc(x.id) + '">' + inner + '</button>' : '<div class="cn-hotb">' + inner + '</div>') + btn + '</div>';
+    }).join('') + '</div></section>';
+  }
+  // Publicul: age and gender, the cities, when the followers are online
+  const DAYS7 = [[1, 'Lu'], [2, 'Ma'], [3, 'Mi'], [4, 'Jo'], [5, 'Vi'], [6, 'Sâ'], [0, 'Du']];
+  function audienceBlock(R) {
+    const A = R.audience;
+    if (!A) return '';
+    const cards = [];
+    if (A.ages && A.ages.length) {
+      const max = Math.max(...A.ages.map((a) => a.p));
+      const g = A.gender ? '<div class="cn-au-g"><span class="cn-au-gb"><i class="is-f" style="width:' + A.gender.F + '%"></i><i class="is-m" style="width:' + A.gender.M + '%"></i></span><span class="cn-au-gl"><b class="is-f">' + pct(A.gender.F) + '</b> femei<b class="is-m">' + pct(A.gender.M) + '</b> bărbați</span></div>' : '';
+      cards.push('<div class="cn-au"><h4>Vârstă și gen</h4>' + g + '<ul class="cn-au-a">' + A.ages.map((a) => '<li><span>' + esc(a.k) + '</span><span class="cn-au-b" style="--w:' + ((a.p / max) * 100).toFixed(1) + '%"><i class="is-f" style="flex:' + a.F + '"></i><i class="is-m" style="flex:' + (a.M + a.U) + '"></i></span><b>' + pct(a.p) + '</b></li>').join('') + '</ul></div>');
+    }
+    if (A.cities && A.cities.length) {
+      const max = A.cities[0].p || 1;
+      cards.push('<div class="cn-au"><h4>Orașe</h4><ul class="cn-au-c">' + A.cities.map((c) => '<li><span>' + esc(c.name) + '</span><span class="cn-au-b" style="--w:' + ((c.p / max) * 100).toFixed(1) + '%"><i class="is-a"></i></span><b>' + pct(c.p) + '</b></li>').join('') + '</ul></div>');
+    }
+    if (A.online) {
+      const cell = (v) => (v == null ? '<i class="is-none"></i>' : '<i style="--v:' + v + '"' + (v >= 0.75 ? ' class="is-hot"' : '') + '></i>');
+      cards.push('<div class="cn-au is-on"><h4>Când sunt online</h4>' + (A.online.best && A.online.best.length ? '<p class="cn-au-best">' + icon('clock') + A.online.best.map((x) => '<b>' + esc(x) + '</b>').join('') + '</p>' : '') +
+        '<div class="cn-au-hm">' + DAYS7.map(([d, l]) => '<span class="cn-au-d">' + l + '</span><span class="cn-au-r">' + A.online.grid[d].map(cell).join('') + '</span>').join('') +
+        '<span></span><span class="cn-au-x"><small>0</small><small>6</small><small>12</small><small>18</small><small>23</small></span></div></div>');
+    }
+    const d = A.d30 || {};
+    const mini = [['ig', 'reach', 'Conturi atinse'], ['ig', 'profileViews', 'Vizite pe profil'], ['ig', 'websiteClicks', 'Atingeri pe link'], ['ig', 'engaged', 'Conturi implicate'], ['fb', 'reach', 'Atinși pe pagină'], ['fb', 'follows', 'Urmăritori noi pe pagină']]
+      .filter(([n, key]) => d[n] && d[n][key] != null).map(([n, key, l]) => '<span>' + badge(n) + '<b>' + k(d[n][key]) + '</b><small>' + l + '</small></span>').join('');
+    if (!cards.length && !mini) return '';
+    return '<section class="cn-sec"><h3>Publicul</h3>' + (mini ? '<div class="cn-au-m">' + mini + '<em>30 de zile</em></div>' : '') + '<div class="cn-aus">' + cards.join('') + '</div></section>';
+  }
+  // Ore recomandate: per network now → recommended, one tap saves them; under it, how our slots did
+  const WHY = { ambele: 'postările noastre + online', online: 'urmăritorii online', postari: 'postările noastre' };
+  function hoursBlock(R, L) {
+    const rec = R.hoursRec || {};
+    const nets = ORDER.filter((n) => rec[n]);
+    const change = nets.some((n) => !rec[n].same);
+    const cards = nets.map((n) => {
+      const x = rec[n];
+      return '<div class="cn-hr' + (x.same ? ' is-same' : '') + '"><div class="cn-hr-h">' + badge(n) + '<b>' + NET[n] + '</b><small>' + esc(WHY[x.why] || '') + '</small></div>' +
+        '<div class="cn-hr-t"><span class="cn-hr-now">' + x.now.map((t) => '<i>' + esc(t) + '</i>').join('') + '</span>' + (x.same ? '<span class="k-tag is-good">' + icon('check') + 'Deja</span>' : icon('arrow') + '<span class="cn-hr-rec">' + x.rec.map((t) => '<b>' + esc(t) + '</b>').join('') + '</span>') + '</div></div>';
+    }).join('');
+    const heat = hours(L);
+    if (!cards && !heat) return '';
+    return '<section class="cn-sec"><div class="cn-sh"><h3>Ore recomandate</h3>' + (change ? '<button type="button" class="k-btn is-primary is-sm" data-ctapply>' + icon('clock') + 'Folosește orele recomandate</button>' : '') + '</div>' +
+      (cards ? '<div class="cn-hrs">' + cards + '</div>' : '') + heat + '</section>';
+  }
+  async function applyHours(btn) {
+    if (!(await K.ui().confirm({ title: 'Folosești orele recomandate?', message: 'Postările încă neaprobate trec pe orele noi.', confirmText: 'Folosește' }))) return;
+    const r = await save({ action: 'apply_hours' }, btn, true);
+    if (!r) return;
+    const n = Object.keys(r.applied || {}).length;
+    K.ui().toast(n ? 'Ore noi pe ' + pl(n, 'rețea', 'rețele') + '.' : 'Orele erau deja acestea.', 'success');
+    loadResults(true);
+  }
+  // Ce spun oamenii: the summary, the sentiment, the themes, the questions (made ideas), the objections
+  function voiceBlock(R) {
+    const v = R.voice;
+    if (!v || v.few || !(v.themes || v.questions)) return '';
+    const sn = v.sentiment;
+    const bar = sn ? '<div class="cn-vo-s"><span class="cn-vo-sb"><i class="is-pos" style="width:' + sn.pos + '%"></i><i class="is-neu" style="width:' + sn.neu + '%"></i><i class="is-neg" style="width:' + sn.neg + '%"></i></span>' +
+      '<span class="cn-vo-sl"><b class="is-pos">' + sn.pos + '%</b> pozitive<b class="is-neu">' + sn.neu + '%</b> neutre<b class="is-neg">' + sn.neg + '%</b> negative</span></div>' : '';
+    const col = (h, arr, f) => (arr && arr.length ? '<div class="cn-vo-c"><h4>' + h + '</h4><ul>' + arr.map(f).join('') + '</ul></div>' : '');
+    const cnt = (n) => '<i class="cn-vo-n">' + n + '</i>';
+    return '<section class="cn-sec"><h3>Ce spun oamenii</h3><div class="cn-vo">' + (v.summary ? '<p class="cn-vo-sum">„' + esc(v.summary) + '”</p>' : '') + bar + '<div class="cn-vo-g">' +
+      col('Teme', v.themes, (x) => '<li>' + cnt(x.n) + '<span>' + esc(x.t) + '</span></li>') +
+      col('Întrebări', v.questions, (x) => '<li>' + cnt(x.n) + '<span>' + esc(x.q) + (x.added ? '<em class="k-tag is-accent">' + icon('sparkles') + 'Idee nouă</em>' : '') + '</span></li>') +
+      col('Obiecții', v.objections, (x) => '<li>' + cnt(x.n) + '<span>' + esc(x.o) + '</span></li>') + '</div>' +
+      '<p class="cn-vo-f">' + pl(v.n || 0, 'comentariu', 'comentarii') + ', ultimele 30 de zile · ' + esc(dm(roDay(v.at))) + '</p></div></section>';
   }
   function netCards(R) {
     const fol = R.followers || {}, per = (R.last30 && R.last30.per) || {}, on = (S.d && S.d.settings.nets) || {};
@@ -293,8 +663,14 @@
       return '<div class="cn-nc"><div class="cn-nc-h">' + badge(n) + '<b>' + NET[n] + '</b><span class="k-tag">' + pl(p.posts, 'postare', 'postări') + '</span></div>' +
         '<div class="cn-nc-f"><div class="cn-nc-v"><span class="cn-nc-n">' + (f ? full(f.now) : '-') + '</span><small>urmăritori</small></div>' + (sp ? '<div class="cn-nc-sp" style="--sp:' + COLOR[n] + '">' + sp + '</div>' : '') + '</div>' +
         (f && (f.d7 != null || f.d30 != null) ? '<div class="cn-dls">' + delta(f.d7, '7 zile') + delta(f.d30, '30 de zile') + '</div>' : '') +
-        '<div class="cn-nc-s">' + mini('eye', p.views, 'Vizualizări') + mini('book', p.saves, 'Salvări') + mini('share', p.shares, 'Distribuiri') + mini('chat', p.comments, 'Comentarii') + '</div></div>';
+        '<div class="cn-nc-s">' + mini('eye', p.views, 'Vizualizări') + mini('book', p.saves, 'Salvări') + mini('share', p.shares, 'Distribuiri') + mini('chat', p.comments, 'Comentarii') + '</div>' + rateLine((R.netRates || {})[n]) + '</div>';
     }).join('') + '</div></section>';
+  }
+  // the rates of a network over 30 days: % watched, the hook, engagement, followers per 1000 views
+  function rateLine(x) {
+    if (!x) return '';
+    const r = [['vizionat', x.avgPct, pct], ['după 3 s', x.hook, pct], ['engagement', x.er, pct], ['urmăritori la 1000', x.followK, n1]].filter((y) => y[1] != null);
+    return r.length ? '<div class="cn-nc-r">' + r.map(([l, v, f]) => '<span><b>' + f(v) + '</b><small>' + l + '</small></span>').join('') + '</div>' : '';
   }
   function monthCard(R) {
     const m = R.month;
@@ -341,7 +717,7 @@
     const nets = ORDER.filter((n) => heat[n] && heat[n].slots.length);
     if (!nets.length) return '';
     const DAYS = [[1, 'Lu'], [2, 'Ma'], [3, 'Mi'], [4, 'Jo'], [5, 'Vi'], [6, 'Sâ'], [0, 'Du']];
-    return '<section class="cn-sec"><h3>Cele mai bune ore</h3><div class="cn-hms">' + nets.map((n) => {
+    return '<h4 class="cn-sub">Cum au mers orele noastre</h4><div class="cn-hms">' + nets.map((n) => {
       const h = heat[n], max = Math.max(1, ...Object.keys(h.cells).map((x) => h.cells[x].score)), top = (best[n] || [])[0];
       const cell = (d, sl) => {
         const c = h.cells[d + '|' + sl];
@@ -352,7 +728,7 @@
       return '<div class="cn-hm"><div class="cn-hm-h">' + badge(n) + '<b>' + NET[n] + '</b>' + (top ? '<span class="k-tag is-good">' + icon('clock') + esc(top.at) + '</span>' : '') + '</div>' +
         '<div class="cn-hm-g"><span></span>' + DAYS.map((d) => '<span class="cn-hm-d">' + d[1] + '</span>').join('') +
         h.slots.map((sl) => '<span class="cn-hm-t">' + esc(sl) + '</span>' + DAYS.map(([d]) => cell(d, sl)).join('')).join('') + '</div></div>';
-    }).join('') + '</div></section>';
+    }).join('') + '</div>';
   }
 
   // ------------------------------------------------------------------ one item
@@ -394,7 +770,54 @@
         (can ? '<button type="button" class="k-btn is-outline is-sm" data-ctnow="' + e.net + '">' + icon('arrow') + 'Postează acum</button>' : '') + boostLine(it, e) + '</li>';
     }).join('');
     const fc = it.firstComment && !(it.plan || []).some((e) => e.comment) ? '<p class="cn-cmt is-plan">' + icon('chat') + '<span><small>Primul comentariu</small>' + esc(it.firstComment) + '</span></p>' : '';
-    return status + qa + preview(it) + '<section class="cn-caps">' + caps + '</section>' + fc + (plan ? '<ul class="cn-plan">' + plan + '</ul>' : '');
+    return status + qa + statsSection(it) + preview(it) + '<section class="cn-caps">' + caps + '</section>' + fc + (plan ? '<ul class="cn-plan">' + plan + '</ul>' : '');
+  }
+  // ------------------------------------------------------------------ Statistici (the drawer)
+  // per network the numbers and the rates, × the network's usual post, the retention curve, the growth in the first
+  // hours, the funnel from the comments to the money
+  const ROWS = [['views', 'Vizualizări', k], ['reach', 'Conturi atinse', k], ['likes', 'Aprecieri', k], ['comments', 'Comentarii', k], ['shares', 'Distribuiri', k], ['saves', 'Salvări', k],
+    ['follows', 'Urmăritori noi', k], ['profileVisits', 'Vizite pe profil', k], ['profileActivity', 'Atingeri pe profil', k], ['watch', 'Timp mediu', (v) => n1(v) + ' s'],
+    ['avgPct', 'Vizionat', pct, 1], ['hook', 'Rămân după 3 s', pct, 1], ['hold', 'Rămân la jumătate', pct, 1], ['er', 'Engagement', pct, 1], ['saveK', 'Salvări la 1000', n1, 1], ['shareK', 'Distribuiri la 1000', n1, 1], ['followK', 'Urmăritori la 1000', n1, 1]];
+  function statsSection(it) {
+    const posted = (it.plan || []).filter((e) => e.state === 'posted').map((e) => e.net);
+    const nets = ORDER.filter((n) => posted.includes(n) && it.stats && it.stats[n]);
+    if (!nets.length) return '';
+    const st = it.stats, ins = it.ins || { x: {}, rates: {} }, rates = ins.rates || {};
+    const val = (n, row) => (row[3] ? (rates[n] || {})[row[0]] : st[n][row[0]]);
+    const rows = ROWS.filter((row) => nets.some((n) => val(n, row) != null));
+    const xRow = nets.some((n) => ins.x && ins.x[n] != null) ? '<tr class="is-x"><th>Față de obișnuit</th>' + nets.map((n) => '<td>' + (ins.x[n] != null ? chipX(ins.x[n]) : '-') + '</td>').join('') + '</tr>' : '';
+    const table = '<div class="cn-st-w"><table class="cn-st"><thead><tr><th></th>' + nets.map((n) => '<th>' + badge(n) + '</th>').join('') + '</tr></thead><tbody>' + xRow +
+      rows.map((row) => '<tr' + (row[3] ? ' class="is-rate"' : '') + '><th>' + row[1] + '</th>' + nets.map((n) => { const v = val(n, row); return '<td>' + (v == null ? '<span class="cn-st-na">-</span>' : row[2](v)) + '</td>'; }).join('') + '</tr>').join('') + '</tbody></table></div>';
+    const dur = ((it.files || []).find((f) => f.mime === 'video/mp4') || {}).dur || 0;
+    const ret = nets.filter((n) => Array.isArray(st[n].ret)).map((n) => ({ net: n, ret: st[n].ret }));
+    const snaps = nets.filter((n) => it.snaps && (it.snaps[n] || []).length).map((n) => ({ net: n, pts: it.snaps[n] }));
+    const hot = it.hot ? '<div class="cn-st-hot"><span>🔥</span><p><b>Merge tare</b>' + esc(NET[it.hot.net] + ': ' + k(it.hot.views) + ' vizualizări în ' + (it.hot.h < 1.5 ? 'prima oră' : pl(Math.round(it.hot.h), 'oră', 'ore')) + ', ' + x1(it.hot.x) + ' față de obișnuit la aceeași vârstă') + '</p></div>' : '';
+    const F = S.r && S.r.funnel && S.r.funnel.items ? S.r.funnel.items[it.id] : null;
+    const fn = F ? '<h5>De la comentariu la încasări</h5>' + strip(F, true) : it.keyword && !S.r ? '<p class="cn-st-wait">' + icon('refresh') + 'Se încarcă pâlnia…</p>' : '';
+    return '<section class="cn-sts"><h4>Statistici</h4>' + hot + table + (ret.length ? '<h5>Cât rămân să se uite</h5>' + retSvg(ret, dur) : '') + (snaps.length ? '<h5>Cum au crescut vizualizările</h5>' + growthSvg(snaps) : '') + fn + '</section>';
+  }
+  const legend = (nets) => (nets.length > 1 ? '<div class="cn-lg">' + nets.map((n) => '<span><i style="background:' + COLOR[n] + '"></i>' + NET[n] + '</span>').join('') + '</div>' : '');
+  // the share still watching along the video (0 → 100%), the 3-second mark, half the video
+  function retSvg(list, dur) {
+    const W = 320, H = 132, l = 34, r = 10, t = 10, b = 22, ymax = Math.max(1, ...list.map((x) => Math.max(...x.ret)));
+    const X = (f) => l + f * (W - l - r), Y = (v) => t + (1 - v / ymax) * (H - t - b);
+    const grid = [0, 0.5, 1].map((v) => '<line x1="' + l + '" x2="' + (W - r) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" class="cn-gr"/><text x="' + (l - 6) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>').join('');
+    const m3 = dur > 3 ? '<line x1="' + X(3 / dur).toFixed(1) + '" x2="' + X(3 / dur).toFixed(1) + '" y1="' + t + '" y2="' + (H - b) + '" class="cn-mk"/><text x="' + X(3 / dur).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">3 s</text>' : '';
+    const lines = list.map((x) => '<polyline fill="none" stroke="' + COLOR[x.net] + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="' + x.ret.map((v, i) => X(i / (x.ret.length - 1)).toFixed(1) + ',' + Y(v).toFixed(1)).join(' ') + '"/>').join('');
+    const xs = '<text x="' + l + '" y="' + (H - 6) + '" text-anchor="start">0</text><text x="' + X(0.5).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">jumătate</text><text x="' + (W - r) + '" y="' + (H - 6) + '" text-anchor="end">' + (dur ? Math.round(dur) + ' s' : 'final') + '</text>';
+    return '<div class="cn-ch"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Retenția">' + grid + m3 + lines + xs + '</svg>' + legend(list.map((x) => x.net)) + '</div>';
+  }
+  // the views at 1 hour, 6 hours, a day, 3, 7, 30 days (a log scale: the first hours matter most)
+  function growthSvg(list) {
+    const W = 320, H = 132, l = 40, r = 10, t = 10, b = 22;
+    const hmax = Math.max(2, ...list.map((x) => Math.max(...x.pts.map((p) => p.h)))), vmax = Math.max(1, ...list.map((x) => Math.max(...x.pts.map((p) => p.v))));
+    const X = (h) => l + (Math.log1p(h) / Math.log1p(hmax)) * (W - l - r), Y = (v) => t + (1 - v / vmax) * (H - t - b);
+    const ticks = [[1, '1 h'], [6, '6 h'], [24, '1 zi'], [72, '3 zile'], [168, '7 zile'], [720, '30 zile']].filter(([h]) => h <= hmax * 1.05);
+    const grid = [0, 0.5, 1].map((f) => '<line x1="' + l + '" x2="' + (W - r) + '" y1="' + Y(f * vmax).toFixed(1) + '" y2="' + Y(f * vmax).toFixed(1) + '" class="cn-gr"/><text x="' + (l - 6) + '" y="' + (Y(f * vmax) + 3.5).toFixed(1) + '" text-anchor="end">' + k(Math.round(f * vmax)) + '</text>').join('');
+    const xs = ticks.map(([h, lab]) => '<text x="' + X(h).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + lab + '</text>').join('');
+    const lines = list.map((x) => { const pts = [{ h: 0, v: 0 }].concat(x.pts.slice().sort((a, c) => a.h - c.h)); return '<polyline fill="none" stroke="' + COLOR[x.net] + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="' + pts.map((p) => X(p.h).toFixed(1) + ',' + Y(p.v).toFixed(1)).join(' ') + '"/>' +
+      x.pts.map((p) => '<circle cx="' + X(p.h).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="2.6" fill="' + COLOR[x.net] + '"><title>' + n1(p.h) + ' h: ' + full(p.v) + '</title></circle>').join(''); }).join('');
+    return '<div class="cn-ch"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Creșterea">' + grid + xs + lines + '</svg>' + legend(list.map((x) => x.net)) + '</div>';
   }
   // a post that went out on Instagram or Facebook: „Fă reclamă din asta”, then the ad, its link and „Pornește reclama”
   function boostLine(it, e) {
@@ -467,6 +890,7 @@
   function openItem(id) {
     const it = S.d.items.find((x) => x.id === id); if (!it) return;
     openId = id;
+    if (!S.r && (it.plan || []).some((e) => e.state === 'posted')) setTimeout(() => loadResults(), 0);
     dr = K.drawer({
       title: title(it), subtitle: esc([KIND[it.kind], it.rubric, it.keyword ? '„' + it.keyword + '”' : '', it.week ? range(it.week) : ''].filter(Boolean).join(' · ')), icon: photo(it) ? 'layers' : 'video', width: 540,
       body: itemBody(it), focus: false, footer: itemFoot(it) || ' ',
@@ -514,8 +938,8 @@
   }
 
   // ------------------------------------------------------------------ settings
-  function openSettings() {
-    const st = S.d.settings;
+  function openSettings(goalsFirst) {
+    const st = S.d.settings, G = S.d.goals || { followers: {} };
     const t = (n, i) => '<label class="k-field"><span>' + (i === 'p' ? (n === 'tt' ? 'Ora slideshow' : 'Ora carusel') : 'Ora ' + (i + 1)) + '</span><input type="text" inputmode="numeric" maxlength="5" placeholder="hh:mm" data-cttime="' + n + '|' + i + '" value="' + esc(i === 'p' ? st.photoTime[n] || '' : st.times[n][i] || '') + '"></label>';
     const q = (n, w, kind, label) => '<label class="k-field"><span>' + label + '</span><input type="number" inputmode="numeric" min="0" max="' + (kind === 'reel' ? 28 : 7) + '" data-ctq="' + w + '|' + n + '|' + kind + '" value="' + esc(String(st.quotas[w][n][kind] != null ? st.quotas[w][n][kind] : 0)) + '"></label>';
     const pk = { tt: 'slideshow', ig: 'carousel', fb: 'carousel' };
@@ -525,8 +949,12 @@
     const body = '<section class="cn-set"><h5>Rețele, ore și cote pe săptămână</h5>' + NETS.map(card).join('') + '</section>' +
       '<section class="cn-set"><h5>Prima săptămână</h5><label class="k-field"><span>Luni</span><input type="date" data-ctstart value="' + esc(st.startWeek) + '"></label></section>' +
       '<section class="cn-set"><h5>Concurenți</h5><label class="k-field"><span>Nu apar în texte</span><input type="text" data-ctcomp maxlength="600" placeholder="Nume, despărțite prin virgulă" value="' + esc((st.competitors || []).join(', ')) + '"></label></section>';
+    // Ținte lunare: the followers gained per network, the views, the organic leads (empty: no goal)
+    const gi = (key, label, v) => '<label class="k-field"><span>' + label + '</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="-" data-ctgoal="' + key + '" value="' + (v ? esc(String(v)) : '') + '"></label>';
+    const goals = '<section class="cn-set" data-ctgoalsec><h5>Ținte lunare</h5><div class="cn-gf">' + NETS.map((n) => gi('f_' + n, 'Urmăritori noi ' + NET[n], (G.followers || {})[n])).join('') +
+      gi('views', 'Vizualizări', G.views) + gi('leads', 'Leaduri organice', G.leads) + '</div></section>';
     const d = K.drawer({
-      title: 'Setări conținut', icon: 'sliders', width: 480, body, focus: false,
+      title: 'Setări conținut', icon: 'sliders', width: 480, body: goalsFirst ? goals + body : body + goals, focus: false,
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-primary" data-ctsave>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         el.addEventListener('click', async (e) => {
@@ -551,7 +979,9 @@
           if (bad) { K.ui().toast(bad, 'error'); return; }
           const start = el.querySelector('[data-ctstart]').value;
           const competitors = el.querySelector('[data-ctcomp]').value;
-          if (await save({ action: 'settings', nets, times, photoTime, quotas, startWeek: start || st.startWeek, competitors }, b)) { K.ui().toast('Salvat.', 'success'); d.close(); }
+          const goals = { followers: {} };
+          el.querySelectorAll('[data-ctgoal]').forEach((x) => { const v = Math.round(Number(x.value)); const key = x.dataset.ctgoal; if (!(v > 0)) return; if (key.startsWith('f_')) goals.followers[key.slice(2)] = v; else goals[key] = v; });
+          if (await save({ action: 'settings', nets, times, photoTime, quotas, startWeek: start || st.startWeek, competitors, goals }, b)) { K.ui().toast('Salvat.', 'success'); d.close(); loadResults(true); }
         });
       },
     });

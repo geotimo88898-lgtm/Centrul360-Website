@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
   }
   // ?content=1: Conținut (api/_lib/content.js): the settings, this week's and next week's batch (need, have, missing,
   // the owner's review), the items to redo, the entries per state, the next 5 planned, the last 5 posted with their
-  // numbers, the permissions the posting needs (no names)
+  // numbers, the permissions the posting needs, the insights in counts (no names)
   if (req.query && req.query.content) {
     const C = require('./_lib/content');
     const [list, status, access] = await Promise.all([C.items(), C.status(), require('./_lib/content-post').access(true).catch((e) => ({ error: e.message }))]);
@@ -74,7 +74,9 @@ module.exports = async (req, res) => {
         yt: access.yt ? { connected: !!access.yt.connected, configured: !!access.yt.configured, missing: access.yt.missing || [], lost: access.yt.lost || '' } : null,
         tt: access.tt ? { connected: !!access.tt.connected, configured: !!access.tt.configured, missing: access.tt.missing || [], lost: access.tt.lost || '' } : null }, next, last, errors,
       learn: { n: status.learn.n, rubrics: status.learn.rubrics, hooks: status.learn.hooks, hours: status.learn.hours }, ideas: status.ideas.length,
-      season: status.season.map((x) => x.id), recycle: status.recycle.length, growth: growth.slice(-3), learnState: lst });
+      season: status.season.map((x) => x.id), recycle: status.recycle.length, growth: growth.slice(-3), learnState: lst,
+      // the insights in counts: snapshots, deep numbers, „Merge tare” this week, the last analysis, the voice, the audience, the month's funnel
+      insights: await require('./_lib/content-insights').summary().catch((e) => ({ error: e.message })) });
     return;
   }
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours

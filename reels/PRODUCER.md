@@ -34,7 +34,10 @@ Răspunsul (prescurtat):
   "redo":    [ { "id": "…", "kind": "reel", "topic": "…", "rubric": "…", "week": "2026-11-16", "redoNote": "Vocea prea rapidă", "replacing": false } ],
   "drafts":  [ { "id": "…", "week": "…", "files": ["reel.mp4"] } ],
   "made":    [ { "topic": "…", "rubric": "…", "kind": "reel", "week": "…", "at": "…" } ],
-  "ideas":   [ { "id": "…", "text": "Nuki pregătește bradul și încurcă luminițele", "rubric": "Nuki", "at": "…" } ],
+  "analysis": { "week": "2026-11-09", "label": "9-15.11", "at": "…", "summary": "Cazurile cu cârlig șocant au dus săptămâna",
+                "changes": [ "Fă 2 cazuri cu cârlig șocant în primele 2 secunde.", "Ține reels-urile sub 25 de secunde.", "…" ] },
+  "ideas":   [ { "id": "…", "text": "Nuki pregătește bradul și încurcă luminițele", "rubric": "Nuki", "at": "…" },
+               { "id": "…", "text": "Doare HIFU pe gușă?", "rubric": "Întrebarea zilei", "at": "…", "source": "comentarii" } ],
   "season":  [ { "id": "craciun-2026", "name": "Crăciun și petrecerile de sfârșit de an", "from": "2026-12-01", "to": "2026-12-24",
                  "angle": "…", "ideas": ["…"], "rubrics": ["Cazuri", "Nuki"], "note": "" } ],
   "recycle": [ { "id": "…", "topic": "HIFU pe gușă, 3 luni după", "topicTag": "hifu-gusa", "rubric": "Cazuri", "hook": "…", "hookType": "socant",
@@ -55,6 +58,7 @@ Răspunsul (prescurtat):
   în locul lor: `have` le numără deja.
 - `drafts`: elemente create dar nedate gata (o rulare întreruptă): le termini sau le lași, nu le dublezi.
 - `made`: ce s-a făcut deja; nu repeți un subiect din ultimele 30 de zile.
+- `analysis`: analiza săptămânii trecute (lunea, după cifre): `changes` sunt 3-5 schimbări concrete pentru lotul tău.
 - `ideas`, `season`, `recycle`, `learn`: ce faci și în ce ordine (mai jos).
 
 ## Ce faci, în ordinea asta
@@ -62,17 +66,22 @@ Adminul învață singur din cifre: fiecare postare primește un scor (vizualiz�
 comentarii), împărțit la mediana rețelei ei, ca TikTok, YouTube, Instagram și Facebook să se compare. `score` 1 e o
 postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3 zile intră în socoteală.
 1. **`redo`**: tot ce a trimis proprietarul înapoi, primul.
-2. **`ideas`**: ideile proprietarului (Admin → Conținut → „Idei pentru săptămânile următoare”), toate, înaintea
+2. **`analysis`**: primul lucru pe care îl citești după `redo`. Aplici fiecare punct din `analysis.changes` pe tot
+   lotul (cârlige, lungimi, rubrici, ore, subiecte); când contrazice `learn`, câștigă analiza (e mai nouă și a citit
+   tot: cifrele pe postare, pâlnia, publicul, comentariile). Lipsește (`null`): treci mai departe.
+3. **`ideas`**: ideile proprietarului (Admin → Conținut → „Idei pentru săptămânile următoare”), toate, înaintea
    oricărui subiect ales de tine. Trimiți `ideaId` la `create`: ideea iese din listă (dacă scoți ciorna, revine).
-3. **`season`**: momentele care prind săptămâna care vine (`reels/calendar.json`). Cel puțin un material pe moment,
+   Cele cu `source: "comentarii"` sunt întrebări care se repetă în comentarii (adminul le adaugă singur): le faci
+   după ideile proprietarului, cel mult 2 pe săptămână, de obicei ca „Întrebarea zilei”, tot cu `ideaId`.
+4. **`season`**: momentele care prind săptămâna care vine (`reels/calendar.json`). Cel puțin un material pe moment,
    cu unghiul lui (`angle`), tot fără preț, ofertă sau programare. `note` are restricțiile (epilarea doar Timișoara).
-4. **`recycle`** (cel mult 2 pe săptămână): câștigătoare postate acum 60+ zile. Faci o variantă **nouă** (alt cârlig,
+5. **`recycle`** (cel mult 2 pe săptămână): câștigătoare postate acum 60+ zile. Faci o variantă **nouă** (alt cârlig,
    alt început, aceeași temă), cu `variantOf` = id-ul originalului. Niciodată același fișier din nou.
-5. Restul săptămânii: **cam 40% „mai mult din ce merge”** (`learn.more_like`, `learn.topics`, `learn.rubrics`,
+6. Restul săptămânii: **cam 40% „mai mult din ce merge”** (`learn.more_like`, `learn.topics`, `learn.rubrics`,
    `learn.hooks`: același subiect sau aceeași rubrică, alt material, alt cârlig; tipul de cârlig care câștigă) și
    **cam 60% subiecte noi** (`topics.json`, nefolosite în 30 de zile; încerci și rubrici sau cârlige mai slabe, dar
    nu ce e în `learn.worst` de două ori la rând).
-6. Cât timp `learn.n` e sub 10, nu e destul ca să tragi concluzii: rotația normală a rubricilor, Cazuri de cel puțin
+7. Cât timp `learn.n` e sub 10, nu e destul ca să tragi concluzii: rotația normală a rubricilor, Cazuri de cel puțin
    2 ori pe săptămână. Rubricile prin rotație (README.md), Cazuri de cel puțin 2 ori pe săptămână, oricum.
 
 ## Pașii pentru un material nou
@@ -172,6 +181,10 @@ Mărimea și durata se citesc din fișier; nu trebuie trimise.
 - Zilnic: urmăritorii pe fiecare rețea; pe 1 ale lunii, la 9:00, „RAPORTUL LUNII: conținut” (postări, vizualizări,
   urmăritori câștigați, cel mai bun material). Lunea la 11:00, dacă din săptămâna aprobată nu pleacă nimic în ziua
   aceea (o permisiune, comutatorul oprit), proprietarul e anunțat.
-- Admin → Conținut → Rezultate: aceleași cifre pe care le citești tu în `learn`, plus orele cele mai bune pe rețele.
+- Admin → Conținut → Rezultate (ecranul principal; „Program” e tabla de aprobat): aceleași cifre pe care le citești
+  tu în `learn`, plus cifrele pe fiecare postare (cât se uită, cât rămân după 3 secunde și la jumătate, salvări,
+  distribuiri, urmăritori aduși), creșterea în primele ore, pâlnia organică (comentarii cu cuvântul, mesaje, leaduri,
+  programări, cliente), publicul, orele recomandate, ce spun oamenii și analiza săptămânii. Un material care în
+  primele 24 de ore are de 3 ori mai multe vizualizări decât de obicei e „MERGE TARE 🔥” și proprietarul e anunțat.
   Din orice postare de pe Instagram sau Facebook proprietarul poate face reclamă („Fă reclamă din asta”).
 - Starea completă, pentru verificare: `GET https://admin.centrul360.com/api/lead-health?content=1` (aceeași cheie).

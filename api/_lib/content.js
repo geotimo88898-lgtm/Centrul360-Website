@@ -18,7 +18,10 @@
 // data/content/state.json: the clock's marks (the day's stats, the week's top, the permission notice, the notices
 //   about the weekly batch, the safety net: Saturday evening a week still incomplete, Monday 11:00 nothing going out)
 // data/content/ideas.json: the owner's ideas for the next weeks [{ id, text, rubric, state: new|used, at, usedAt,
-//   itemId }]; the producer makes them first (reels/PRODUCER.md)
+//   itemId, source? ('comentarii': a question people ask again and again, content-insights.js) }]; the producer makes
+//   the owner's first, then the ones from the comments (reels/PRODUCER.md)
+// The insights (content-insights.js): the status gives the producer the latest week's analysis (`analysis`), the
+//   first thing read after the items to redo.
 // The texts are checked before they go (qa): each network's limits, the words Meta and the owner refuse, the long
 //   dashes, the diacritics. A problem stops 'ready' (and the posting, content-post.js); a warning shows on the board.
 // The files: content/<id>/<name> (private in the store), served publicly by api/content-file.js, because Instagram
@@ -411,19 +414,22 @@ async function status() {
   const redo = list.filter((x) => !x.removed && !x.dropped && x.review === 'redo').map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', rubric: x.rubric || '', week: x.week, redoNote: x.redoNote || '', replacing: x.state === 'draft' }));
   // what works (learn), the owner's ideas not made yet, the moments of next week, the evergreen winners to make again
   const L = require('./content-learn'), lr = L.learn(list, now);
-  const fresh = (await ideas()).filter((d) => d.state !== 'used').map((d) => ({ id: d.id, text: d.text, rubric: d.rubric || '', at: d.at }));
+  const fresh = (await ideas()).filter((d) => d.state !== 'used').map((d) => Object.assign({ id: d.id, text: d.text, rubric: d.rubric || '', at: d.at }, d.source ? { source: d.source } : {}));
+  // the week's analysis: its changes are what the producer follows first (after the items to redo)
+  const analysis = await require('./content-insights').forProducer().catch(() => null);
   return { on: st.on, nets: st.nets, times: st.times, photoTime: st.photoTime, startWeek: st.startWeek, today: P.roDay(now),
     next: P.weekInfo(list, st, next), current: P.weekInfo(list, st, cur), redo, counts: P.counts(list),
     drafts: list.filter((x) => x.state === 'draft' && !x.removed).map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', week: x.week, files: (x.files || []).map((f) => f.name) })), made,
-    ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
+    analysis, ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
 }
 
 // ---------------------------------------------------------------- the owner's ideas (Admin → Conținut)
 async function ideas() { const l = await readJSON(IDEAS_KEY, []); return Array.isArray(l) ? l : []; }
-async function addIdea(text, rubric) {
+async function addIdea(text, rubric, source) {
   const t = clean(text, 400);
   if (t.length < 3) throw fail('idea_too_short');
   const d = { id: crypto.randomUUID(), text: t, rubric: RUBRICS.includes(rubric) ? rubric : '', state: 'new', at: new Date().toISOString() };
+  if (source === 'comentarii') d.source = source;
   await updateKey(IDEAS_KEY, (l) => { l.unshift(d); l.splice(300); });
   return d;
 }
@@ -477,7 +483,8 @@ async function notices(nowMs) {
   const tell = async (tag, title, text, tone) => {
     try {
       const N = require('./notify'), store = { readJSON, writeJSON };
-      await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: tone || 'info', go: 'continut', tag, title, text });
+      // the batch's notices open Conținut → Program (the board to approve)
+      await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: tone || 'info', go: 'continut/program', tag, title, text });
     } catch (e) { console.error('content notify:', e.message); }
     out.push(tag);
   };

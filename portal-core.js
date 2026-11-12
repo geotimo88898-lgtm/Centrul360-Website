@@ -416,6 +416,8 @@
     const alias = ALIASES[name];
     activate(alias ? alias[0] : name);
     if (alias && alias[1]) setTimeout(() => K.emit(alias[1], arg || null), initial ? 400 : 200);
+    // a section's own page (#continut/program): the section hears `<name>:sub`
+    else if (arg) setTimeout(() => K.emit(name + ':sub', arg), initial ? 400 : 200);
   }
   document.getElementById('tabsNav').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-tab]');

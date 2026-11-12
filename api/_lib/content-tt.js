@@ -11,7 +11,7 @@
 //  - A carousel or slideshow: content/init with media_type PHOTO and the photos' URLs (PULL_FROM_URL only).
 //  - Privacy: the most public level creator_info allows. Until TikTok audits the app, only SELF_ONLY goes: the entry
 //    gets the note PRIVATE_NOTE and the next posts go private straight away for 3 days, then public is tried again.
-//  - Numbers: video/query (views, likes, comments, shares); followers: user/info follower_count.
+//  - Numbers: video/query (views, likes, comments, shares, the video's length); followers: user/info follower_count.
 // data/tt-app.json { clientKey, clientSecret, savedAt, savedBy } and data/tt-connection.json { openId, accessToken,
 // expiresAt, refreshToken, refreshExpiresAt, scopes, displayName, avatar, connectedAt, connectedBy, lost, unauditedAt,
 // note }: private in the store; Integrări never gets a token or the secret.
@@ -232,11 +232,11 @@ async function post(it, e, opts) {
 async function stats(videoId) {
   if (!/^\d{6,25}$/.test(String(videoId || ''))) return {};
   const tok = await token();
-  const r = await api('/video/query/', tok, { filters: { video_ids: [String(videoId)] } }, { fields: 'id,view_count,like_count,comment_count,share_count' });
+  const r = await api('/video/query/', tok, { filters: { video_ids: [String(videoId)] } }, { fields: 'id,view_count,like_count,comment_count,share_count,duration' });
   const v = r.ok && Array.isArray(r.data.videos) ? r.data.videos[0] : null;
   if (!v) return {};
   const out = {};
-  [['views', 'view_count'], ['likes', 'like_count'], ['comments', 'comment_count'], ['shares', 'share_count']].forEach(([k, t]) => { if (Number.isFinite(Number(v[t])) && v[t] != null) out[k] = Number(v[t]); });
+  [['views', 'view_count'], ['likes', 'like_count'], ['comments', 'comment_count'], ['shares', 'share_count'], ['dur', 'duration']].forEach(([k, t]) => { if (Number.isFinite(Number(v[t])) && v[t] != null) out[k] = Number(v[t]); });
   return out;
 }
 async function followers() {

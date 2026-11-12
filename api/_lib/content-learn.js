@@ -371,5 +371,5 @@ async function results(list, nowMs) {
       winners: L.winners.map(withCover), losers: L.losers.slice(0, 5).map(withCover), more_like: L.more_like.map(withCover) } };
 }
 
-module.exports = { learn, compact, season, recycle, calendar, familyOf, raw, snapshot, followers, growth, month, span, gained, reportText, run, results, readState,
+module.exports = { learn, compact, season, recycle, calendar, familyOf, raw, rowsOf, snapshot, followers, growth, month, span, gained, reportText, run, results, readState,
   GROWTH_KEY, STATE_KEY, MATURE_MS };

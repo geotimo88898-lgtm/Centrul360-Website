@@ -279,7 +279,7 @@ async function postOne(a, id, net, waitMs) {
 async function tell(tag, title, text) {
   try {
     const N = require('./notify'), store = { readJSON, writeJSON };
-    await N.notifyMany(store, await N.adminIds(store), { kind: 'alert', tone: 'bad', go: 'continut', tag, title, text });
+    await N.notifyMany(store, await N.adminIds(store), { kind: 'alert', tone: 'bad', go: 'continut/program', tag, title, text });
   } catch (e) { console.error('content notify:', e.message); }
 }
 // YouTube and TikTok keep the posts private until they approve the owner's app: the entry has the note, Integrări

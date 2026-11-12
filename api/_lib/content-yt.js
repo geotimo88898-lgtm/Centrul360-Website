@@ -1,8 +1,8 @@
 // Conținut on YouTube Shorts (the owner, 12.11): the clinic's channel, through the owner's own Google Cloud OAuth client
 // (Integrări → YouTube: the client ID and secret, then „Conectează cu Google”). The posting run (content-post.js)
 // takes a reel's YouTube entry like Instagram's: claimed, posted, resumed on the next run, tried again, held.
-//  - The login (api/yt-oauth.js): Google's consent screen with youtube.upload, youtube.readonly and youtube.force-ssl
-//    (the first comment), offline, so a refresh token comes back; the access token (an hour) is made again from it.
+//  - The login (api/yt-oauth.js): Google's consent screen with youtube.upload, youtube.readonly, youtube.force-ssl
+//    (the first comment) and yt-analytics.readonly (the numbers), offline, so a refresh token comes back; the access token (an hour) is made again from it.
 //    A refresh Google refuses (revoked, the client changed, a 7-day test token): the connection is marked lost, the
 //    entries wait, Integrări says to connect again.
 //  - The upload: a resumable session (snippet: the title from the YouTube text's first line with #shorts, the rest as
@@ -11,7 +11,10 @@
 //    in the entry (a week at Google), so a run that runs out of time, or fails, goes on from the last byte Google has.
 //  - Until Google verifies the app, YouTube keeps every upload private: the answer's status.privacyStatus says so and
 //    the entry gets the note PRIVATE_NOTE (the owner hears it once, content-post.js).
-//  - Numbers: videos?part=statistics; followers: the channel's subscriberCount.
+//  - Numbers: videos?part=statistics; with yt-analytics.readonly (asked at the login since 12.11; a connection made
+//    before keeps working without it, and gets it at the next „Conectează”) also YouTube Analytics for the video: the
+//    average view duration and %, the subscribers it brought, the minutes watched and the retention curve
+//    (audienceWatchRatio by elapsedVideoTimeRatio, as 21 points); followers: the channel's subscriberCount.
 // data/yt-app.json { clientId, clientSecret, savedAt, savedBy } and data/yt-connection.json { refreshToken,
 // accessToken, expiresAt, scopes, channelId, channelTitle, connectedAt, connectedBy, lost }: private in the store, only
 // read by the server; Integrări never gets a token or the secret.
@@ -28,9 +31,11 @@ const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 const API = 'https://www.googleapis.com/youtube/v3';
 const UPLOAD_URL = 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status';
 const S = (x) => 'https://www.googleapis.com/auth/' + x;
-const SCOPES = [S('youtube.upload'), S('youtube.readonly'), S('youtube.force-ssl')];
+const SCOPES = [S('youtube.upload'), S('youtube.readonly'), S('youtube.force-ssl'), S('yt-analytics.readonly')];
 const NEEDS = [S('youtube.upload')];
 const COMMENT_SCOPE = S('youtube.force-ssl');
+const ANALYTICS_SCOPE = S('yt-analytics.readonly');
+const ANALYTICS_API = 'https://youtubeanalytics.googleapis.com/v2/reports';
 const CHUNK = 16 * 1024 * 1024; // a multiple of 256 KB, as Google wants every piece but the last
 const PRIVATE_NOTE = 'YouTube le pune private până la verificarea aplicației';
 const redirectUri = () => C.ORIGIN() + '/api/yt-oauth?cb=1';
@@ -148,7 +153,8 @@ async function access() {
   const [a, c] = await Promise.all([app(), connection()]);
   const scopes = Array.isArray(c.scopes) ? c.scopes : [];
   return { configured: !!(a.clientId && a.clientSecret), connected: !!(c.refreshToken && !c.lost && a.clientId), lost: c.lost || '', channel: c.channelTitle || '',
-    channelId: c.channelId || '', scopes: scopes.map(short), missing: NEEDS.filter((s) => !scopes.includes(s)).map(short), comments: scopes.includes(COMMENT_SCOPE) };
+    channelId: c.channelId || '', scopes: scopes.map(short), missing: NEEDS.filter((s) => !scopes.includes(s)).map(short), comments: scopes.includes(COMMENT_SCOPE),
+    analytics: scopes.includes(ANALYTICS_SCOPE) };
 }
 // Integrări → YouTube
 async function status() {
@@ -267,7 +273,8 @@ async function comment(videoId, text) {
 }
 
 // a Short's numbers ({} when Google doesn't answer: nothing is overwritten with zero), and its privacy as YouTube
-// keeps it now (`privacy`, not a number: content-post.js takes it out)
+// keeps it now (`privacy`, not a number: content-post.js takes it out); with yt-analytics.readonly, YouTube
+// Analytics' numbers too (analytics() below)
 async function stats(videoId) {
   if (!videoId) return {};
   const tok = await token();
@@ -277,6 +284,39 @@ async function stats(videoId) {
   const v = item.statistics || {}, out = {};
   [['views', 'viewCount'], ['likes', 'likeCount'], ['comments', 'commentCount']].forEach(([k, g]) => { if (v[g] != null && Number.isFinite(Number(v[g]))) out[k] = Number(v[g]); });
   if (item.status && item.status.privacyStatus) out.privacy = item.status.privacyStatus;
+  const c = await connection();
+  if (Array.isArray(c.scopes) && c.scopes.includes(ANALYTICS_SCOPE)) Object.assign(out, await analytics(videoId, tok).catch(() => ({})));
+  return out;
+}
+const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
+async function report(tok, params) {
+  const r = await fetch(ANALYTICS_API + '?' + new URLSearchParams(Object.assign({ ids: 'channel==MINE', startDate: dayOf(Date.now() - 400 * 864e5), endDate: dayOf(Date.now()) }, params)), { headers: { Authorization: 'Bearer ' + tok } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.error) return null;
+  const heads = (j.columnHeaders || []).map((h) => h.name);
+  return { heads, rows: Array.isArray(j.rows) ? j.rows : [] };
+}
+// YouTube Analytics for one video: watch (s), avgPct, follows (subscribers gained), viewTime (s), shares, ret (the
+// retention curve as 21 points); what it doesn't answer is left out
+async function analytics(videoId, tok) {
+  const out = {};
+  const id = String(videoId);
+  const t = await report(tok, { metrics: 'averageViewDuration,averageViewPercentage,subscribersGained,estimatedMinutesWatched,shares', filters: 'video==' + id });
+  const row = t && t.rows[0];
+  if (row) {
+    const val = (name) => { const i = t.heads.indexOf(name); const n = i >= 0 ? Number(row[i]) : NaN; return Number.isFinite(n) ? n : null; };
+    if (val('averageViewDuration') != null) out.watch = val('averageViewDuration');
+    if (val('averageViewPercentage') != null) out.avgPct = Math.round(val('averageViewPercentage') * 10) / 10;
+    if (val('subscribersGained') != null) out.follows = val('subscribersGained');
+    if (val('estimatedMinutesWatched') != null) out.viewTime = Math.round(val('estimatedMinutesWatched') * 60);
+    if (val('shares') != null) out.shares = val('shares');
+  }
+  const c = await report(tok, { metrics: 'audienceWatchRatio', dimensions: 'elapsedVideoTimeRatio', filters: 'video==' + id });
+  if (c && c.rows.length >= 3) {
+    const xi = c.heads.indexOf('elapsedVideoTimeRatio'), yi = c.heads.indexOf('audienceWatchRatio');
+    const ret = require('./content-stats').curve(c.rows.map((r) => [Number(r[xi]), Number(r[yi])]));
+    if (ret) out.ret = ret;
+  }
   return out;
 }
 // the channel's subscribers (null: not connected, hidden, or Google didn't answer)
@@ -287,5 +327,5 @@ async function followers() {
   return ch ? ch.followers : null;
 }
 
-module.exports = { APP_KEY, CONN_KEY, SCOPES, NEEDS, PRIVATE_NOTE, CHUNK, redirectUri, signState, checkState, app, saveApp, authUrl, connect, token, disconnect, access, status,
-  textsOf, metaOf, nextFrom, post, setNote, comment, stats, followers };
+module.exports = { APP_KEY, CONN_KEY, SCOPES, NEEDS, ANALYTICS_SCOPE, PRIVATE_NOTE, CHUNK, redirectUri, signState, checkState, app, saveApp, authUrl, connect, token, disconnect, access, status,
+  textsOf, metaOf, nextFrom, post, setNote, comment, stats, analytics, followers };

@@ -22,11 +22,14 @@ const STEPS = [
   // the ads that don't bring leads go off (api/_lib/ads-guard.js)
   ['ads', () => require('./_lib/ads-guard').guard()],
   // Conținut: the organic reels, carousels and stories that are due go out on Instagram and Facebook (api/_lib/content-post.js),
-  // then once a day their numbers and on Monday the week's top for the owner (api/_lib/content-stats.js)
+  // then their numbers (the first day's posts every hour, with „MERGE TARE 🔥”; everything once a day) and on Monday the
+  // week's top for the owner (api/_lib/content-stats.js)
   ['content', () => require('./_lib/content-post').run({ budgetMs: 25e3 })],
   ['contentstats', () => require('./_lib/content-stats').run({ budgetMs: 12e3 })],
   // once a day the followers per network, the 1st of the month the month's report (api/_lib/content-learn.js)
   ['contentlearn', () => require('./_lib/content-learn').run()],
+  // the insights: the audience once a day, what people say and the week's analysis on Monday (api/_lib/content-insights.js)
+  ['contentinsights', () => require('./_lib/content-insights').run()],
   // the changes the owners asked for once (api/_lib/ads-once.js)
   ['once', () => require('./_lib/ads-once').run()],
   // once: the approved new texts in the four Arad ads (the owner, 8.11; api/_lib/ads-text-once.js)

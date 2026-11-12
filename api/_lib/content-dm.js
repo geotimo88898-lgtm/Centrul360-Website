@@ -12,7 +12,8 @@
 // publicly to write to us (social-comments.js), the owner hears once a day.
 //   match(c, post)              the item and the word a comment asks for, or null (then the usual answer)
 //   deliver(c, hit, token)      the private message: { sent } | { already } | { refused } | { error } (try again later)
-//   onReply(channel, senderId)  her message in Mesaje → the lead, once per message we sent her
+//   onReply(channel, senderId)  her message in Mesaje → the lead, once per message we sent her (with the item it came
+//                               from, lead.organic, for Conținut → Rezultate's funnel)
 //   summary()                   for the health check: the last 7 days, without names
 // data/content/dm.json: { sent: [{ id, channel, from: <her id on the comment>, to: <her id in Messenger / Instagram
 //   Direct>, name, keyword, kw, itemId, kind, topic, commentId, postId, state: sending|sent|refused, at, messageId, text,
@@ -355,7 +356,8 @@ async function onReply(channel, senderId) {
   try {
     // the conversation's key in Mesaje stands for the phone: the Pipeline's chat button opens her conversation
     r = await require('../portal-leads').createLead({ name, phone: ch + ':' + id, source: ch === 'ig' ? 'instagram' : 'facebook', location: city || 'Timișoara',
-      createdBy: 'content-dm', authorLabel: 'Comentariu ' + CHANNELS[ch], interest: clip(todo.topic || todo.keyword, 120), note });
+      createdBy: 'content-dm', authorLabel: 'Comentariu ' + CHANNELS[ch], interest: clip(todo.topic || todo.keyword, 120), note,
+      organic: todo.itemId ? { itemId: todo.itemId, keyword: todo.keyword, net: ch } : undefined });
   } catch (e) { r = { error: (e && e.message) || 'eroare' }; }
   const lead = r && r.lead;
   await update((x) => {
