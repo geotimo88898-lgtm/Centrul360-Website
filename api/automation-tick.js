@@ -21,6 +21,10 @@ const STEPS = [
   ['ran', () => tick(true)],
   // the ads that don't bring leads go off (api/_lib/ads-guard.js)
   ['ads', () => require('./_lib/ads-guard').guard()],
+  // Conținut: the organic reels, carousels and stories that are due go out on Instagram and Facebook (api/_lib/content-post.js),
+  // then once a day their numbers and on Monday the week's top for the owner (api/_lib/content-stats.js)
+  ['content', () => require('./_lib/content-post').run({ budgetMs: 25e3 })],
+  ['contentstats', () => require('./_lib/content-stats').run({ budgetMs: 12e3 })],
   // the changes the owners asked for once (api/_lib/ads-once.js)
   ['once', () => require('./_lib/ads-once').run()],
   // once: the approved new texts in the four Arad ads (the owner, 8.11; api/_lib/ads-text-once.js)

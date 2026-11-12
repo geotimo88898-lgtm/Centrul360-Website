@@ -50,6 +50,8 @@ Exemple: `mit-gusa-kilograme`, `fapt-hifu-gusa`, `nuki-abdomene-burtica`, `caz-1
 - Fără nume de cliente, fără liniuțe lungi, cu diacritice (ș, ț cu virgulă). Epilarea și EMS doar Timișoara.
 
 ## Faza 2: generatorul zilnic (de construit)
+- **Predarea și postarea sunt gata** (12.11): coada, rotația pe rețele, postarea automată, cifrele și Admin → Conținut.
+  Producătorul urmează `PRODUCER.md`.
 - **Ceasul**: un job zilnic (Cron-ul Workerului sau GitHub Actions cu `workflow_dispatch` + `schedule`) pornește la
   ora fixă. Cum randarea cere Chromium și ffmpeg, rulează în GitHub Actions (ubuntu, `npx playwright install chromium`).
 - **Subiectele**: `topics.json` (40 de subiecte de pornire: HIFU gușă/față, Liposonix, RF, epilare laser, ten). Fiecare
