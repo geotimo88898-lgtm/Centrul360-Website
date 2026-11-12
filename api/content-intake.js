@@ -49,6 +49,8 @@ module.exports = async (req, res) => {
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     if (action === 'create') { const it = await C.create(body.item); res.status(200).json({ ok: true, id: it.id }); return; }
+    // the switch (the owner, 12.11: nothing goes out before he approves the week): { action:'settings', on }
+    if (action === 'settings' && req.method === 'POST') { res.status(200).json(Object.assign({ ok: true }, await C.saveSettings({ on: body.on !== false }))); return; }
     if (action === 'ready') { const r = await C.ready(String(body.id || '')); res.status(200).json(Object.assign({ ok: true }, r)); return; }
     res.status(400).json({ error: 'invalid_action' });
   } catch (err) {
