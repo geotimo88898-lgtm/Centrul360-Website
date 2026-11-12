@@ -7,6 +7,14 @@
 //    picks it up), then media_publish and the permalink.
 //  - Facebook: a reel through the Page's video_reels (start, the file's URL to rupload, finish PUBLISHED); a carousel
 //    as unpublished photos attached to one post; a story through video_stories / photo_stories.
+//  - YouTube Shorts (content-yt.js: a resumable upload, kept in the entry and resumed) and TikTok (content-tt.js:
+//    Direct Post from the file's URL, its publish_id kept and asked again), through the owner's own apps
+//    (Integrări → YouTube / TikTok). Until Google / TikTok approve the apps, the posts go private: the entry gets a
+//    note and the owner hears it once.
+//  - Right after a post on Instagram, Facebook or YouTube: one first comment from the account, an engaging question
+//    about the topic (the item's `firstComment`, else built from the topic), ending with ❤️ 🥰 or 💞. A comment that
+//    fails never fails the post.
+//  - content.js qa(item, net), when there is one, looks at the entry first: a problem holds it with its message.
 //  - A Meta error: its message is kept, tried again on the next runs, after 3 tries 'error' and the admins hear once.
 //  - A missing permission (pages_manage_posts, instagram_content_publish) or a lost connection: the entry stays
 //    'planned' (no try is spent), Admin → Conținut says what is missing, the owner hears once.
@@ -16,6 +24,9 @@ const { loadConnection, appCreds } = require('./facebook');
 const ads = require('./meta-ads');
 const C = require('./content');
 const P = require('./content-plan');
+const YT = require('./content-yt');
+const TT = require('./content-tt');
+const { dedash } = require('./dedash');
 
 const GRAPH_VER = 'v25.0'; // the same as api/_lib/meta-ads.js
 const RUPLOAD = 'https://rupload.facebook.com/video-upload/' + GRAPH_VER + '/';
@@ -32,15 +43,22 @@ const metaMsg = (j) => { const e = (j && j.error) || {}; return String(e.error_u
 const isAccess = (j) => { const e = (j && j.error) || {}; const c = Number(e.code); return c === 10 || c === 190 || (c >= 200 && c < 300) || /permission|not authorized|access token/i.test(String(e.message || '')); };
 // a file's public URL, with its version (a file made again is a new URL: no cache serves the old one)
 const url = (it, f) => C.fileUrl(it.id, f.name, f.v);
-class Stop extends Error { constructor(msg, access) { super(msg); this.access = !!access; } }
+class Stop extends Error { constructor(msg, access, drop) { super(msg); this.access = !!access; this.drop = !!drop; } }
 const must = (r, what) => { if (!r.ok || (r.j && r.j.error)) throw new Stop(what + ': ' + metaMsg(r.j), isAccess(r.j)); return r.j || {}; };
 
-// the connection, the Instagram account and what the token may do (memoised a few minutes per instance)
+// the connection, the Instagram account and what the token may do, plus YouTube's and TikTok's (memoised a few
+// minutes per instance). `connected` is Facebook's; a.yt / a.tt: { connected, missing, lost, … }.
 let memo = { at: 0, v: null };
+const offNet = (e) => ({ configured: false, connected: false, missing: [], lost: '', error: String((e && e.message) || e) });
 async function access(fresh) {
   if (!fresh && memo.v && Date.now() - memo.at < 5 * 60e3) return memo.v;
+  const [v, yt, tt] = await Promise.all([fbAccess(), YT.access().catch(offNet), TT.access().catch(offNet)]);
+  memo = { at: Date.now(), v: Object.assign(v, { yt, tt }) };
+  return memo.v;
+}
+async function fbAccess() {
   const [conn, creds] = await Promise.all([loadConnection(readJSON), appCreds(readJSON)]);
-  if (!conn.pageId) { memo = { at: Date.now(), v: { connected: false, missing: NEEDS.fb.concat(NEEDS.ig, STATS_NEEDS) } }; return memo.v; }
+  if (!conn.pageId) return { connected: false, missing: NEEDS.fb.concat(NEEDS.ig, STATS_NEEDS) };
   const tok = conn.pageAccessToken;
   const ig = await g('GET', '/' + conn.pageId, tok, { fields: 'instagram_business_account{id,username}' }).catch(() => ({ ok: false, j: {} }));
   const acct = ig.ok && ig.j && ig.j.instagram_business_account ? ig.j.instagram_business_account : null;
@@ -50,14 +68,16 @@ async function access(fresh) {
     if (d.ok && d.j && d.j.data && Array.isArray(d.j.data.scopes)) scopes = d.j.data.scopes;
   }
   const all = NEEDS.fb.concat(NEEDS.ig, STATS_NEEDS);
-  const v = { connected: true, pageId: conn.pageId, token: tok, igId: acct ? String(acct.id) : '', igUser: acct ? acct.username || '' : '', scopes,
+  return { connected: true, pageId: conn.pageId, token: tok, igId: acct ? String(acct.id) : '', igUser: acct ? acct.username || '' : '', scopes,
     missing: scopes ? all.filter((s) => !scopes.includes(s)) : [] };
-  memo = { at: Date.now(), v };
-  return v;
 }
 // why a network can't post now ('' when it can)
 function blocked(a, net) {
-  if (net === 'tt' || net === 'yt') return 'Postarea pe ' + NAMES[net] + ' nu e legată încă';
+  if (net === 'tt' || net === 'yt') {
+    const x = a[net] || {};
+    if (!x.connected) return x.lost ? NAMES[net] + ' s-a deconectat (Integrări → ' + NAMES[net] + ' → Conectează)' : NAMES[net] + ' nu e conectat (Integrări)';
+    return (x.missing || []).length ? 'Lipsește permisiunea ' + x.missing.join(', ') + ' (' + NAMES[net] + ')' : '';
+  }
   if (!a.connected) return 'Facebook nu e conectat (Integrări)';
   if (net === 'ig' && !a.igId) return 'Pagina nu are un cont de Instagram legat';
   const miss = a.scopes ? NEEDS[net].filter((s) => !a.scopes.includes(s)) : [];
@@ -158,29 +178,97 @@ async function finish(id, net, fn) {
   return out;
 }
 
+// ---------------------------------------------------------------- the first comment
+const ENDS = ['❤️', '🥰', '💞'];
+const hash = (s) => [...String(s || '')].reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7);
+const oneLine = (s) => dedash(String(s || '')).replace(/\s+/g, ' ').trim();
+// a topic as it sits inside a question: no end punctuation or quotes, the first letter small unless it's an acronym
+function topicIn(it) {
+  const pick = [it.topic, it.keyword, it.rubric].map((x) => oneLine(x).replace(/^[„"'«]+|[”"'»]+$/g, '').replace(/[\s.!?…:;,]+$/, '')).find((x) => x && x.length <= 70);
+  if (!pick) return '';
+  return /^\p{Lu}\p{Ll}/u.test(pick) ? pick.charAt(0).toLowerCase() + pick.slice(1) : pick === pick.toUpperCase() && pick.length > 4 ? pick.toLowerCase() : pick;
+}
+// the item's own first comment (none, or one that speaks of AI: built from the topic), ending with a heart
+function firstComment(it) {
+  const h = hash(it.id);
+  let t = oneLine(it.firstComment);
+  // „AI” only in capitals (Romanian „ai” is „you have”)
+  if (!t || /\bA\.?I\b/.test(t) || /inteligen[țţt][aă] artificial|chatgpt|\bclaude\b/i.test(t)) {
+    const topic = topicIn(it);
+    t = topic ? ['Ce întrebare ai despre ' + topic + '? Îți răspundem aici', 'Tu ce ai vrea să afli despre ' + topic + '? Scrie-ne aici', 'Ți-a fost de folos? Ce te întrebi despre ' + topic + '?'][h % 3]
+      : 'Ți s-a întâmplat și ție? Spune-ne aici';
+  }
+  t = t.slice(0, 280);
+  return ENDS.some((x) => t.endsWith(x)) ? t : t.replace(/[\s.!]+$/, '') + ' ' + ENDS[h % ENDS.length];
+}
+// one comment under the post, from the account: { id } (YouTube only with youtube.force-ssl; TikTok's API has none)
+async function comment(a, net, postId, text) {
+  if (net === 'ig' || net === 'fb') {
+    const j = must(await g('POST', '/' + postId + '/comments', a.token, { message: text }), 'Comentariul');
+    if (!j.id) throw new Stop('Comentariul: Meta n-a dat un id');
+    return { id: String(j.id) };
+  }
+  if (net === 'yt') return { id: await YT.comment(postId, text) };
+  return null;
+}
+const commentable = (a, it, net) => (net === 'ig' || net === 'fb' ? it.kind === 'reel' || it.kind === 'carousel' : net === 'yt' ? !!(a.yt && a.yt.comments) : false);
+
+// content.js qa(item, net), when another part of the admin has it: its problems as one line ('' when none)
+async function qaOf(it, net) {
+  if (typeof C.qa !== 'function') return '';
+  let q;
+  try { q = await C.qa(it, net); } catch (e) { console.error('content qa:', e.message); return ''; }
+  const list = Array.isArray(q) ? q : q && typeof q === 'object' ? (Array.isArray(q.problems) ? q.problems : q.message ? [q.message] : []) : q ? [q] : [];
+  return list.map((x) => String((x && x.message) || x || '').trim()).filter(Boolean).join(' · ').slice(0, 300);
+}
+// a part of an entry saved at once, while the run still holds it (an upload session, a publish_id)
+const keep = (id, net) => (patch) => C.update((list) => { const { e } = entryOf(list, id, net); if (!e) return false; Object.assign(e, patch); });
+const STUCK = { ig: 'Instagram n-a terminat procesarea în 3 ore', yt: 'YouTube n-a terminat urcarea în 3 ore', tt: 'TikTok n-a terminat postarea în 3 ore' };
+
 async function postOne(a, id, net, waitMs) {
   const list = await C.items();
   const { it, e } = entryOf(list, id, net);
   if (!e) return { id, net, skipped: 'gone' };
   try {
-    if (e.state === 'posting' && e.startedAt && Date.now() - Date.parse(e.startedAt) > STUCK_MS) throw new Stop('Instagram n-a terminat procesarea în 3 ore');
+    if (e.state === 'posting' && e.startedAt && Date.now() - Date.parse(e.startedAt) > STUCK_MS) throw new Stop(STUCK[net] || STUCK.ig);
+    // a post not started yet: the checks first (one already at the network goes on)
+    if (!e.container && !e.upload && !e.publishId) { const q = await qaOf(it, net); if (q) throw new Stop(q, true); }
     let done = null;
     if (net === 'ig') {
       const r = await igPost(a, it, e, waitMs);
       if (r.wait) { await finish(id, net, (x) => { x.state = 'posting'; x.container = r.wait; }); return { id, net, waiting: r.wait }; }
       done = r.done;
+    } else if (net === 'yt' || net === 'tt') {
+      const r = await (net === 'yt' ? YT : TT).post(it, e, { deadline: Date.now() + Math.max(0, waitMs), keep: keep(id, net) });
+      if (r.wait) { await finish(id, net, (x) => { x.state = 'posting'; Object.assign(x, r.wait); }); return { id, net, waiting: true }; }
+      done = r.done;
     } else done = await fbPost(a, it);
-    await finish(id, net, (x) => { Object.assign(x, { state: 'posted', postedAt: new Date().toISOString(), postId: done.postId, url: done.url, error: '' }); delete x.container; delete x.hold; delete x.retryAt; });
-    return { id, net, posted: done.postId };
+    await finish(id, net, (x) => {
+      Object.assign(x, { state: 'posted', postedAt: new Date().toISOString(), postId: done.postId, url: done.url, error: '' });
+      if (done.privacy) x.privacy = done.privacy;
+      if (done.note) x.note = done.note; else delete x.note;
+      delete x.container; delete x.hold; delete x.retryAt; delete x.upload;
+    });
+    if (net === 'yt' || net === 'tt') await privateNote(net, done.note || '');
+    // the first comment, once the post is saved as posted (a comment that fails is only written down)
+    if (commentable(a, it, net)) {
+      const text = firstComment(it);
+      let c = null;
+      try { c = await comment(a, net, done.postId, text); } catch (err) { c = { error: String((err && err.message) || err).slice(0, 200) }; }
+      if (c) await finish(id, net, (x) => { x.comment = Object.assign({ text, at: new Date().toISOString() }, c); });
+    }
+    return Object.assign({ id, net, posted: done.postId }, done.note ? { note: done.note } : {});
   } catch (err) {
     const msg = String((err && err.message) || err).slice(0, 300);
-    if (err instanceof Stop && err.access) {
+    if (err && err.access) {
       await finish(id, net, (x) => { x.state = 'planned'; x.hold = msg; delete x.container; });
       return { id, net, hold: msg };
     }
     let failed = false;
     await finish(id, net, (x) => {
       x.tries = (x.tries || 0) + 1; x.error = msg; delete x.container;
+      // an upload that can't go on starts over next time; otherwise the next try picks it up where it is
+      if (err && err.drop) { delete x.upload; delete x.publishId; delete x.privacy; }
       if (x.tries >= MAX_TRIES) { x.state = 'error'; failed = !x.notified; x.notified = true; }
       else { x.state = 'planned'; x.retryAt = new Date(Date.now() + 45 * 60e3).toISOString(); }
     });
@@ -193,6 +281,19 @@ async function tell(tag, title, text) {
     const N = require('./notify'), store = { readJSON, writeJSON };
     await N.notifyMany(store, await N.adminIds(store), { kind: 'alert', tone: 'bad', go: 'continut', tag, title, text });
   } catch (e) { console.error('content notify:', e.message); }
+}
+// YouTube and TikTok keep the posts private until they approve the owner's app: the entry has the note, Integrări
+// shows it, the owner hears it once (and again only after a public post in between)
+async function privateNote(net, note) {
+  try {
+    await (net === 'yt' ? YT : TT).setNote(note);
+    const s = await C.readState();
+    const told = Object.assign({}, s.privateTold || {});
+    if ((told[net] || '') === note) return;
+    told[net] = note; s.privateTold = told;
+    await C.writeState(s);
+    if (note) await tell('ct-private-' + net, 'CONȚINUT PRIVAT ⚠️', note + '.');
+  } catch (e) { console.error('content private note:', e.message); }
 }
 // a held network: the entry keeps its place, the owner hears once per reason
 async function hold(id, net, why) {
@@ -263,4 +364,23 @@ async function now(id, net) {
   return postOne(a, id, net, 40e3);
 }
 
-module.exports = { run, now, access, blocked, NEEDS, STATS_NEEDS, NAMES, GRAPH_VER };
+// the numbers of a YouTube or TikTok post (content-stats.js), null for the other networks; a Short YouTube made
+// private after the upload is noted like one private from the start
+async function statsOf(a, it, e) {
+  if (e.net === 'yt') {
+    if (!(a.yt && a.yt.connected)) return {};
+    const s = await YT.stats(e.postId);
+    if (s.privacy && s.privacy !== 'public' && !e.note) await privateNote('yt', YT.PRIVATE_NOTE);
+    delete s.privacy;
+    return s;
+  }
+  if (e.net === 'tt') return a.tt && a.tt.connected && a.tt.stats ? TT.stats(e.postId) : {};
+  return null;
+}
+// the followers per network that has them here ({ yt, tt }: a number, or null)
+async function followers() {
+  const [yt, tt] = await Promise.all([YT.followers().catch(() => null), TT.followers().catch(() => null)]);
+  return { yt, tt };
+}
+
+module.exports = { run, now, access, blocked, statsOf, followers, firstComment, NEEDS, STATS_NEEDS, NAMES, GRAPH_VER };

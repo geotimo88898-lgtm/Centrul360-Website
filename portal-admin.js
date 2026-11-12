@@ -3,7 +3,7 @@
 // Echipa: one card per person (role, salary, month numbers); a drawer to edit profile,
 // reset password, (de)activate, the net salary (what she sees in "Salariu"). Oferte: the ONE offer list (website + portal + Creative) as
 // site-like cards with live preview, toggles, drag-to-reorder and the marketing brief Creative
-// writes ads from. Integrări: Facebook Lead Ads, WhatsApp, Creative, the site.
+// writes ads from. Integrări: Facebook Lead Ads, YouTube and TikTok (Conținut), WhatsApp, Creative, the site.
 (function () {
   'use strict';
   const K = window.K;
@@ -965,6 +965,7 @@
       const mp = open.querySelector('[data-mypos]'); if (mp && !mp.contains(document.activeElement)) loadMypos(mp);
       const gh = open.querySelector('[data-ghl]'); if (gh && !ghlRun && !gh.contains(document.activeElement)) loadGhl(gh);
       const cp = open.querySelector('[data-capi]'); if (cp && !cp.contains(document.activeElement)) loadCapi(cp);
+      ['yt', 'tt'].forEach((k) => { const x = open.querySelector('[data-' + k + ']'); if (x && !x.contains(document.activeElement)) loadNet(x, k); });
     }
   });
   // The page: one tile per connection, with its state and one useful line. A tap opens everything about it
@@ -972,6 +973,8 @@
   const TILES = [
     { key: 'fb', title: 'Facebook Lead Ads', ic: 'facebook', style: 'background:rgba(24,119,242,.12);color:#1877f2' },
     { key: 'capi', title: 'Meta Conversions API', ic: 'target', style: 'background:rgba(24,119,242,.12);color:#1877f2' },
+    { key: 'yt', title: 'YouTube', ic: 'video', style: 'background:rgba(255,0,51,.12);color:#ff0033' },
+    { key: 'tt', title: 'TikTok', ic: 'zap', style: 'background:rgba(254,44,85,.12);color:#fe2c55' },
     { key: 'wa', title: 'WhatsApp', ic: 'chat', cls: 'is-good' },
     { key: 'live', title: 'Sincronizare instantă', ic: 'refresh', cls: 'is-good' },
     { key: 'mypos', title: 'myPOS', ic: 'card', cls: 'is-warn' },
@@ -1037,6 +1040,7 @@
     }).catch(() => setTile('mypos', 'warn', 'Nu am putut verifica'));
     K.api('/api/portal-ghl').then(ghlTile).catch(() => setTile('ghl', 'warn', 'Nu am putut verifica'));
     K.api('/api/portal-capi').then(capiTile).catch(() => setTile('capi', 'warn', 'Nu am putut verifica'));
+    ['yt', 'tt'].forEach((k) => K.api(NETS[k].api).then((d) => netTile(k, d)).catch(() => setTile(k, 'warn', 'Nu am putut verifica')));
     setTile('creative', 'ok', 'Citește ofertele din Oferte');
     setTile('site', 'ok', 'Oferte și prețuri, în câteva secunde', 'Sincronizat');
   }
@@ -1053,7 +1057,7 @@
         const box = el.querySelector('[data-' + key + ']');
         // a link to another page closes the drawer first
         el.addEventListener('click', (e) => { if (e.target.closest('[data-goto]')) d.close(); }, true);
-        ({ fb: loadFb, capi: loadCapi, wa: (x) => window.C360Wa && paintWa(x), live: loadLive, mypos: loadMypos, ghl: loadGhl })[key](box);
+        ({ fb: loadFb, capi: loadCapi, yt: (x) => loadNet(x, 'yt'), tt: (x) => loadNet(x, 'tt'), wa: (x) => window.C360Wa && paintWa(x), live: loadLive, mypos: loadMypos, ghl: loadGhl })[key](box);
       },
     });
   }
@@ -1607,7 +1611,7 @@
       '<a class="k-btn is-primary is-sm" href="/api/fb-oauth-start?scopes=1">' + icon('facebook') + 'Conectează</a></div>';
   }
   // the answers to the comments on posts and ads (api/portal-comments.js): the switch, what is missing, the last 50
-  const CM_STATE = { new: ['', 'în lucru'], replied: ['is-good', 'răspuns'], skipped: ['is-warn', 'fără răspuns'], error: ['is-bad', 'eroare'] };
+  const CM_STATE = { new: ['', 'în lucru'], replied: ['is-good', 'răspuns'], skipped: ['is-warn', 'fără răspuns'], error: ['is-bad', 'eroare'], dm: ['is-good', 'mesaj privat'] };
   function commentsBox(x) {
     const miss = x && x.missing && x.missing.length;
     return '<details class="st-fb-manual st-cm" data-cm' + (miss ? ' open' : '') + '><summary>Comentarii' + (miss ? ' · lipsesc permisiuni' : '') + '</summary><div data-cm-body><div class="k-skel" style="height:58px"></div></div></details>';
@@ -1618,12 +1622,12 @@
       : st.error ? '' : !st.feed || !st.igComments ? '<p class="st-cm-miss">' + icon('alert') + 'Nu vin încă: ' + [!st.feed ? 'Facebook' : '', !st.igComments ? 'Instagram' : ''].filter(Boolean).join(', ') + ' <a class="k-btn is-ghost is-sm" href="/api/fb-oauth-start?scopes=1">' + icon('facebook') + 'Reconectează</a></p>' : '';
     const rows = (d.comments || []).map((c) => {
       const s = CM_STATE[c.state] || CM_STATE.new;
-      const act = c.state !== 'replied' ? '<span class="st-cm-act"><button type="button" class="k-btn is-ghost is-sm" data-cm-retry="' + esc(c.id) + '">' + icon('refresh') + 'Răspunde</button>' +
+      const act = c.state !== 'replied' && c.state !== 'dm' ? '<span class="st-cm-act"><button type="button" class="k-btn is-ghost is-sm" data-cm-retry="' + esc(c.id) + '">' + icon('refresh') + 'Răspunde</button>' +
         (c.state !== 'skipped' ? '<button type="button" class="k-btn is-ghost is-sm" data-cm-skip="' + esc(c.id) + '">Nu răspunde</button>' : '') + '</span>' : '';
       return '<div class="st-cm-row"><div class="st-cm-top"><span class="k-tag">' + (c.channel === 'ig' ? 'IG' : 'FB') + '</span><b>' + esc(c.name || 'Anonim') + '</b><span class="k-tag ' + s[0] + '">' + s[1] + '</span>' +
         '<span class="k-muted">' + esc(K.ago(c.at)) + '</span>' + (c.link ? '<a class="st-cm-link" href="' + esc(c.link) + '" target="_blank" rel="noopener">Postarea' + icon('arrow') + '</a>' : '') + '</div>' +
         '<p class="st-cm-text">' + esc(c.text || 'fără text') + '</p>' +
-        (c.reply && c.state === 'replied' ? '<p class="st-cm-reply">' + esc(c.reply) + '</p>' : c.why ? '<p class="st-cm-why">' + esc(c.why) + '</p>' : '') + act + '</div>';
+        (c.reply && (c.state === 'replied' || c.state === 'dm') ? '<p class="st-cm-reply">' + esc(c.reply) + '</p>' + (c.state === 'dm' && c.why ? '<p class="st-cm-why">' + esc(c.why) + '</p>' : '') : c.why ? '<p class="st-cm-why">' + esc(c.why) + '</p>' : '') + act + '</div>';
     }).join('');
     el.innerHTML = '<label class="k-switch st-cm-sw"><input type="checkbox" data-cm-on' + (d.on ? ' checked' : '') + '><i></i><span>Răspunde automat la comentarii</span></label>' + miss +
       (rows || '<p class="k-muted">Niciun comentariu încă.</p>');
@@ -1643,7 +1647,7 @@
     });
     body.addEventListener('click', (e) => {
       const r = e.target.closest('[data-cm-retry]'), k = e.target.closest('[data-cm-skip]');
-      if (r) K.busy(r, () => load(K.api('/api/portal-comments', { action: 'retry', id: r.dataset.cmRetry }).then((x) => { if (x.result === 'replied') K.ui().toast('Gata, i-am răspuns.', 'success'); else K.ui().toast(x.result === 'skipped' ? 'Nu i-am răspuns public: vezi motivul.' : x.result === 'limit' ? 'Limita de 30 de răspunsuri pe oră: revine singur.' : 'N-a mers: vezi motivul.', 'error'); return x; })));
+      if (r) K.busy(r, () => load(K.api('/api/portal-comments', { action: 'retry', id: r.dataset.cmRetry }).then((x) => { if (x.result === 'replied' || x.result === 'dm') K.ui().toast(x.result === 'dm' ? 'Gata, i-am scris în privat.' : 'Gata, i-am răspuns.', 'success'); else K.ui().toast(x.result === 'skipped' ? 'Nu i-am răspuns public: vezi motivul.' : x.result === 'limit' ? 'Limita de 30 de răspunsuri pe oră: revine singur.' : 'N-a mers: vezi motivul.', 'error'); return x; })));
       if (k) K.busy(k, () => load(K.api('/api/portal-comments', { action: 'skip', id: k.dataset.cmSkip })));
     });
   }
@@ -1903,6 +1907,67 @@
     });
     addApp();
   }
+  // YouTube and TikTok (Conținut posts there): the owner's own app (Google Cloud OAuth client / TikTok developer app),
+  // the address to register there, the login, the channel or account, what's missing (api/yt-oauth.js, api/tt-oauth.js)
+  const NETS = {
+    yt: { api: '/api/yt-oauth', name: 'YouTube', ic: 'video', who: 'channel', idKey: 'clientId', idLabel: 'Client ID', idPh: 'ex. 1234-abc.apps.googleusercontent.com',
+      secretPh: 'din Google Cloud → Credentials → clientul OAuth', app: 'Clientul Google', redir: 'Authorized redirect URI', btn: 'Conectează cu Google',
+      steps: 'Google Cloud: YouTube Data API v3 pornit și un OAuth client „Web application” cu adresa de mai jos.' },
+    tt: { api: '/api/tt-oauth', name: 'TikTok', ic: 'zap', who: 'name', idKey: 'clientKey', idLabel: 'Client key', idPh: 'din TikTok for Developers → aplicația ta',
+      secretPh: 'din TikTok for Developers → Client secret', app: 'Aplicația TikTok', redir: 'Redirect URI', btn: 'Conectează cu TikTok',
+      steps: 'TikTok for Developers: Login Kit și Content Posting API, adresa de mai jos și domeniul verificat.' },
+  };
+  const NET_ERR = { invalid_client_id: 'Client ID se termină cu .apps.googleusercontent.com. Copiază-l din nou.', invalid_client_key: 'Client key nu arată bine. Copiază-l din nou.',
+    invalid_client_secret: 'Secretul nu arată bine. Copiază-l din nou.', missing_client_secret: 'Lipsește secretul.' };
+  function netTile(k, d) {
+    const N = NETS[k];
+    if (!d.configured) return setTile(k, 'off', N.app + ' nesetat' + (k === 'tt' ? 'ă' : ''));
+    if (!d.connected) return setTile(k, d.lost ? 'warn' : 'off', d.lost ? 'S-a deconectat' : k === 'yt' ? 'Canalul neconectat' : 'Contul neconectat');
+    if ((d.missing || []).length) return setTile(k, 'warn', 'Lipsește ' + d.missing.join(', '));
+    if (d.note) return setTile(k, 'warn', d.note, 'Privat');
+    setTile(k, 'ok', d[N.who] || N.name);
+  }
+  async function loadNet(box, k) {
+    const N = NETS[k];
+    let d;
+    try { d = await K.api(N.api); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica.</span>'; return; }
+    const fail = (err) => K.ui().toast(NET_ERR[err.code] || K.errText(err), 'error');
+    const copy = (label, val) => '<div class="st-fb-copy"><span>' + esc(label) + '</span><code>' + esc(val || '-') + '</code>' + (val ? '<button type="button" class="k-btn is-ghost is-sm" data-copy="' + esc(val) + '">' + icon('copy') + 'Copiază</button>' : '') + '</div>';
+    const app = (open) => '<details class="st-fb-app"' + (open ? ' open' : '') + '><summary>' + icon('key') + '<b>' + esc(N.app) + '</b><span class="k-muted">' + (d[N.idKey] ? esc(String(d[N.idKey]).slice(0, 18)) + '…' : 'nesetat' + (k === 'tt' ? 'ă' : '')) + '</span></summary>' +
+      '<form class="st-fb-appform" data-net-app autocomplete="off">' +
+        '<label class="k-field full"><span>' + esc(N.idLabel) + '</span><input name="id" spellcheck="false" value="' + esc(d[N.idKey] || '') + '" placeholder="' + esc(N.idPh) + '"></label>' +
+        '<label class="k-field full"><span>Client secret</span><input name="secret" type="password" autocomplete="new-password" placeholder="' + esc(d.hasSecret ? 'salvat, lasă gol ca să rămână' : N.secretPh) + '"></label>' +
+        '<button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează</button></form>' +
+      '<div class="st-fb-copies">' + copy(N.redir, d.redirectUri) + (k === 'tt' ? copy('Domeniu verificat (URL properties)', d.domain) : '') + '</div></details>';
+    const name = d[N.who] || N.name;
+    if (!d.configured) box.innerHTML = '<p class="k-muted st-fb-intro">' + esc(N.steps) + '</p>' + app(true);
+    else if (d.connected) {
+      const miss = (d.missing || []).length;
+      box.innerHTML = '<div class="st-fb-status ' + (miss || d.note ? 'is-wait' : 'is-ok') + '">' + icon(miss || d.note ? 'alert' : 'checkCircle') +
+          '<div><b>Conectat la ' + esc(name) + '</b><span>' + esc(miss ? 'Lipsește permisiunea ' + d.missing.join(', ') + '. Reconectează și bifează tot.' : d.note || 'Postările pleacă din Conținut.') + '</span></div></div>' +
+        '<div class="st-int-row"><a class="k-btn is-outline is-sm" href="' + N.api + '?start=1">' + icon('refresh') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-net-off>Deconectează</button></div>' + app(false);
+    } else {
+      box.innerHTML = '<div class="st-fb-login"><a class="k-btn is-primary" href="' + N.api + '?start=1">' + icon(N.ic) + esc(N.btn) + '</a>' +
+        '<span class="k-muted">' + esc(d.lost ? 'S-a deconectat: ' + d.lost : N.steps) + '</span></div>' + app(!d.lost);
+    }
+    const f = box.querySelector('[data-net-app]');
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(f), body = { action: 'app', clientSecret: v.secret };
+      body[N.idKey] = v.id;
+      K.busy(f.querySelector('button'), async () => {
+        try { await K.api(N.api, body); K.ui().toast('Salvat. Acum apasă „' + N.btn + '”.', 'success'); loadNet(box, k); } catch (err) { fail(err); }
+      });
+    });
+    box.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); K.ui().toast('Copiat.', 'success'); } catch (x) { K.ui().toast('Selectează textul și copiază-l de mână.', 'error'); }
+    }));
+    const off = box.querySelector('[data-net-off]');
+    if (off) off.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Deconectezi ' + N.name + '?', message: 'Postările pe ' + N.name + ' nu mai pleacă până reconectezi.', confirmText: 'Deconectează', danger: true }))) return;
+      try { await K.api(N.api, { action: 'disconnect' }); K.ui().toast(N.name + ' deconectat.', 'success'); loadNet(box, k); } catch (err) { fail(err); }
+    });
+  }
   K.section('integrari', { mount: mountIntegrations, show() { setTab(I.tab); } });
 
   // Facebook redirects back to /portal?fb=connected|error after OAuth.
@@ -1914,6 +1979,20 @@
     const qs = params.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#integrari');
     const msg = { connected: ['Facebook conectat. Leadurile noi intră singure.', 'success'], choose: ['Alege acum Pagina clinicii, în Integrări → Facebook.', 'success'], nopages: ['Contul de Facebook nu administrează nicio Pagină.', 'error'], nosub: ['Facebook n-a lăsat portalul să primească leadurile Paginii: lipsește permisiunea pages_manage_metadata. Folosește „Conectare cu token”.', 'error'], expired: ['Fereastra de Facebook a expirat. Apasă din nou „Conectează cu Facebook”.', 'error'], notconfigured: ['Aplicația Meta nu e setată încă (App ID și App secret, în Integrări → Facebook).', 'error'] }[flag] || ['Conectarea la Facebook a eșuat.', 'error'];
+    setTimeout(() => K.ui().toast(msg[0], msg[1]), 1200);
+  })();
+  // YouTube / TikTok send the browser back to /?yt=… or /?tt=… after their login
+  (function netReturn() {
+    const params = new URLSearchParams(location.search);
+    const k = ['yt', 'tt'].find((x) => params.get(x));
+    if (!k) return;
+    const flag = params.get(k), N = NETS[k];
+    params.delete(k);
+    const qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#integrari');
+    const msg = { connected: [N.name + ' conectat. Îl pornești din Conținut → Setări.', 'success'], denied: ['Ai oprit logarea la ' + N.name + '.', 'error'],
+      expired: ['Fereastra a expirat. Apasă din nou „' + N.btn + '”.', 'error'], norefresh: ['Google n-a dat accesul permanent. Apasă din nou „' + N.btn + '”.', 'error'],
+      nochannel: ['Contul Google ales n-are un canal YouTube.', 'error'], notconfigured: ['Pune întâi ' + N.idLabel + ' și secretul (Integrări → ' + N.name + ').', 'error'] }[flag] || ['Conectarea la ' + N.name + ' n-a mers.', 'error'];
     setTimeout(() => K.ui().toast(msg[0], msg[1]), 1200);
   })();
 })();

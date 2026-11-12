@@ -37,7 +37,9 @@ const ROUTES = {
   'portal-comments': { area: 'Integrări', go: 'integrari' },
   'portal-config': { area: 'Setări', go: 'integrari' },
   'portal-academy': { area: 'Traininguri', go: 'traininguri' },
-  'portal-nuki': { area: 'Traininguri', go: 'traininguri' }, // only „Aplică” on a change Nuki proposed is a change
+  'portal-nuki': { area: 'Traininguri', go: 'traininguri' },
+  'yt-oauth': { area: 'Integrări', go: 'integrari' },
+  'tt-oauth': { area: 'Integrări', go: 'integrari' }, // only „Aplică” on a change Nuki proposed is a change
   'portal-account': { area: 'Contul meu', go: '' },
   'ads-manager': { area: 'Reclame', go: 'reclame' },
   'ads-publish': { area: 'Reclame', go: 'reclame' },
