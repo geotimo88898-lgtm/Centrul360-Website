@@ -1,6 +1,7 @@
 # Reels: mașina de video scurte organice
 
-3 reels pe zi pentru TikTok, Instagram Reels, Facebook Reels și YouTube Shorts. Educative și amuzante, valoare gratuită,
+Reels (și un carusel de rezultate) pentru TikTok, Instagram Reels, Facebook Reels și YouTube Shorts, predate o
+săptămână odată (cotele pe rețea sunt în Admin → Conținut → Setări). Educative și amuzante, valoare gratuită,
 fără să arate a reclamă: fără preț, fără ofertă, fără „programează-te”. Totul animat (fără filmare): text cinetic, Nuki,
 grafică în mișcare și, la cazuri, pozele reale din catalog. Vocea în română. La final, doar invitația la comentariu:
 „Scrie «GUȘĂ» în comentarii și îți trimitem tot ce trebuie să știi” (un cuvânt per subiect).
@@ -50,8 +51,8 @@ Exemple: `mit-gusa-kilograme`, `fapt-hifu-gusa`, `nuki-abdomene-burtica`, `caz-1
 - Fără nume de cliente, fără liniuțe lungi, cu diacritice (ș, ț cu virgulă). Epilarea și EMS doar Timișoara.
 
 ## Faza 2: generatorul zilnic (de construit)
-- **Predarea și postarea sunt gata** (12.11): coada, rotația pe rețele, postarea automată, cifrele și Admin → Conținut.
-  Producătorul urmează `PRODUCER.md`.
+- **Predarea și postarea sunt gata** (12.11): lotul pe săptămână, împărțirea pe rețele, aprobarea de duminică,
+  postarea automată a ce e aprobat, cifrele și Admin → Conținut. Producătorul urmează `PRODUCER.md`.
 - **Ceasul**: un job zilnic (Cron-ul Workerului sau GitHub Actions cu `workflow_dispatch` + `schedule`) pornește la
   ora fixă. Cum randarea cere Chromium și ffmpeg, rulează în GitHub Actions (ubuntu, `npx playwright install chromium`).
 - **Subiectele**: `topics.json` (40 de subiecte de pornire: HIFU gușă/față, Liposonix, RF, epilare laser, ten). Fiecare
@@ -62,10 +63,11 @@ Exemple: `mit-gusa-kilograme`, `fapt-hifu-gusa`, `nuki-abdomene-burtica`, `caz-1
   pozei de după) și poza. Apoi `check.cjs` + un al doilea pas Claude care verifică faptele și tonul; ce nu trece se
   rescrie (max 2 runde) sau se sare.
 - **Randarea**: `make.sh` pe fiecare (vocea în cache după text), cadrele de control urcate ca artefacte.
-- **Programarea**: o rotație pe rețele, ca același reel să nu fie în aceeași zi pe două rețele: reel-ul A merge azi pe
-  TikTok, mâine pe Instagram, poimâine pe Facebook, apoi pe YouTube Shorts (A, B, C se decalează cu o zi), deci în
-  fiecare zi fiecare rețea primește 3 reels diferite. Urcarea prin API-urile oficiale (TikTok Content Posting,
+- **Programarea** (făcută de admin, `api/_lib/content-plan.js`): fiecare reel o dată pe fiecare rețea care are loc,
+  niciodată pe două rețele în aceeași zi, rotit cu câte două zile între rețele, deci în fiecare zi rețelele arată
+  reels diferite; cota fiecărei rețele împărțită egal pe zile. Urcarea prin API-urile oficiale (TikTok Content Posting,
   Instagram Graph / Facebook Pages pentru Reels, YouTube Data API), cu `post` ca descriere.
 - **Comentariile**: cuvântul cheie din `keyword` declanșează un mesaj automat în privat cu ghidul subiectului
   (ManyChat sau Graph API pe Instagram/Facebook); mesajul trimite la conținut gratuit, nu la ofertă.
-- **Aprobarea**: până spune proprietarul altfel, cele 3 reels ale zilei ajung întâi la el (cadre + link), apoi se publică.
+- **Aprobarea**: lotul săptămânii ajunge la proprietar în Admin → Conținut (sâmbătă seara); el aprobă duminica sau
+  trimite înapoi la refăcut cu o notă. Nimic nu se publică neaprobat.

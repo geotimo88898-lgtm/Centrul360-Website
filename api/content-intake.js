@@ -1,11 +1,16 @@
-// /api/content-intake: where the nightly producer (a Claude session that renders with reels/engine) hands in what it
-// made; server to server with "Authorization: Bearer <CREATIVE_SSO_SECRET>" (as api/lead-health.js), or an admin's
-// session. The guide with the exact calls: reels/PRODUCER.md.
-//   POST {action:'create', item:{kind, rubric, topic, keyword, caption}}            → { id }
+// /api/content-intake: where the producer (a Claude session that renders with reels/engine) hands in a week's batch;
+// server to server with "Authorization: Bearer <CREATIVE_SSO_SECRET>" (as api/lead-health.js), or an admin's
+// session. The guide with the exact calls: reels/PRODUCER.md. The owner approves the week in Admin → Conținut.
+//   GET ?action=status          next week's batch (need, have, missing, the owner's review), this week's, the items to
+//                               redo with the owner's note, the topics already made
+//   POST {action:'create', item:{kind: reel|carousel|slideshow, rubric, topic, keyword, caption,
+//         captions:{tt,yt,ig,fb}, week:'YYYY-MM-DD' (its Monday; none: next week)}}  → { id, week }
 //   PUT|POST ?action=file&id=<id>&name=<file>&mime=<type>  (the raw bytes, ≤ 60 MB) → { file }
-//   POST {action:'ready', id}   checks the files (reel: one MP4 9:16 ≤ 90 s + a JPG cover; carousel: 2-10 JPG/PNG 4:5
-//                               or 1:1; story: one MP4 ≤ 60 s or one JPG 9:16) and plans it  → { plan }  (422 + problems)
-//   GET ?action=status          the queue: counts per state, days ahead, next free slots, how many to make tonight
+//   POST {action:'ready', id}   checks the files (reel: one MP4 9:16 ≤ 90 s + a JPG cover; carousel / slideshow: 2-10
+//                               JPG 4:5 or 1:1) and the texts, plans it in its week → { plan, week, info }  (422 + problems)
+//   POST {action:'replace', id, captions?, caption?, clear?}   an item the owner sent back: open again for its new
+//                               files (same names replace them; clear: drop them all first), then 'ready'
+//   POST {action:'settings', on}   the global switch
 
 const crypto = require('crypto');
 const { getSession } = require('./_lib/auth');
@@ -48,10 +53,17 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-    if (action === 'create') { const it = await C.create(body.item); res.status(200).json({ ok: true, id: it.id }); return; }
-    // the switch (the owner, 12.11: nothing goes out before he approves the week): { action:'settings', on }
+    if (action === 'create') { const it = await C.create(body.item); res.status(200).json({ ok: true, id: it.id, week: it.week }); return; }
+    if (action === 'replace') { res.status(200).json(Object.assign({ ok: true }, await C.replace(String(body.id || ''), body))); return; }
+    // the global switch: { action:'settings', on }
     if (action === 'settings' && req.method === 'POST') { res.status(200).json(Object.assign({ ok: true }, await C.saveSettings({ on: body.on !== false }))); return; }
-    if (action === 'ready') { const r = await C.ready(String(body.id || '')); res.status(200).json(Object.assign({ ok: true }, r)); return; }
+    if (action === 'ready') {
+      const r = await C.ready(String(body.id || ''));
+      // the owner hears at once when next week's batch is complete
+      await C.notices().catch((e) => console.error('content notices:', e.message));
+      res.status(200).json(Object.assign({ ok: true }, r));
+      return;
+    }
     res.status(400).json({ error: 'invalid_action' });
   } catch (err) {
     if (err && err.status) { res.status(err.status).json(Object.assign({ error: err.message }, err.extra || {})); return; }

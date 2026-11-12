@@ -1,5 +1,7 @@
 // Conținut: the clock posts what is due (api/automation-tick.js, every hour at :17), through the Page's connection
 // (Integrări → Facebook: the Page's token, its Instagram account). Also „Postează acum” from Admin → Conținut.
+// Only what the owner approved, and only while the switch is on (the owner, 12.11: the week is approved on Sunday);
+// each network gets its own text (captions, the caption when one is missing).
 //  - Instagram: a container (REELS / CAROUSEL / STORIES) made from the file's public URL (api/content-file.js), then
 //    its status until FINISHED (a reel takes a minute or more: the container is kept in the entry and the next run
 //    picks it up), then media_publish and the permalink.
@@ -28,6 +30,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const metaMsg = (j) => { const e = (j && j.error) || {}; return String(e.error_user_msg || e.message || 'Meta n-a răspuns').slice(0, 300); };
 // a permission or the login itself: nothing to try again until the owner reconnects
 const isAccess = (j) => { const e = (j && j.error) || {}; const c = Number(e.code); return c === 10 || c === 190 || (c >= 200 && c < 300) || /permission|not authorized|access token/i.test(String(e.message || '')); };
+// a file's public URL, with its version (a file made again is a new URL: no cache serves the old one)
+const url = (it, f) => C.fileUrl(it.id, f.name, f.v);
 class Stop extends Error { constructor(msg, access) { super(msg); this.access = !!access; } }
 const must = (r, what) => { if (!r.ok || (r.j && r.j.error)) throw new Stop(what + ': ' + metaMsg(r.j), isAccess(r.j)); return r.j || {}; };
 
@@ -64,17 +68,17 @@ function blocked(a, net) {
 async function igContainer(a, it, m) {
   const ig = '/' + a.igId + '/media', tok = a.token;
   if (it.kind === 'reel') {
-    const p = { media_type: 'REELS', video_url: C.fileUrl(it.id, m.video.name), caption: it.caption || '', share_to_feed: 'true' };
-    if (m.cover) p.cover_url = C.fileUrl(it.id, m.cover.name);
+    const p = { media_type: 'REELS', video_url: url(it, m.video), caption: C.captionFor(it, 'ig'), share_to_feed: 'true' };
+    if (m.cover) p.cover_url = url(it, m.cover);
     return must(await g('POST', ig, tok, p), 'Containerul reel').id;
   }
   if (it.kind === 'carousel') {
     const kids = [];
-    for (const f of m.images) kids.push(must(await g('POST', ig, tok, { image_url: C.fileUrl(it.id, f.name), is_carousel_item: 'true' }), 'Poza ' + f.name).id);
-    return must(await g('POST', ig, tok, { media_type: 'CAROUSEL', children: kids.join(','), caption: it.caption || '' }), 'Containerul carusel').id;
+    for (const f of m.images) kids.push(must(await g('POST', ig, tok, { image_url: url(it, f), is_carousel_item: 'true' }), 'Poza ' + f.name).id);
+    return must(await g('POST', ig, tok, { media_type: 'CAROUSEL', children: kids.join(','), caption: C.captionFor(it, 'ig') }), 'Containerul carusel').id;
   }
   const p = { media_type: 'STORIES' };
-  if (m.video) p.video_url = C.fileUrl(it.id, m.video.name); else p.image_url = C.fileUrl(it.id, m.images[0].name);
+  if (m.video) p.video_url = url(it, m.video); else p.image_url = url(it, m.images[0]);
   return must(await g('POST', ig, tok, p), 'Containerul story').id;
 }
 // the container until FINISHED (within `waitMs`), then published: { done } / { wait: container }
@@ -106,14 +110,14 @@ async function fbPost(a, it) {
     const s = must(await g('POST', page + '/video_reels', tok, { upload_phase: 'start' }), 'Pornirea reel-ului');
     const vid = String(s.video_id || '');
     if (!vid) throw new Stop('Pornirea reel-ului: Meta n-a dat un video_id');
-    await rupload(a, vid, C.fileUrl(it.id, m.video.name));
-    must(await g('POST', page + '/video_reels', tok, { upload_phase: 'finish', video_id: vid, video_state: 'PUBLISHED', description: it.caption || '' }), 'Publicarea reel-ului');
+    await rupload(a, vid, url(it, m.video));
+    must(await g('POST', page + '/video_reels', tok, { upload_phase: 'finish', video_id: vid, video_state: 'PUBLISHED', description: C.captionFor(it, 'fb') }), 'Publicarea reel-ului');
     return { postId: vid, url: 'https://www.facebook.com/reel/' + vid };
   }
   if (it.kind === 'carousel') {
     const ids = [];
-    for (const f of m.images) ids.push(must(await g('POST', page + '/photos', tok, { url: C.fileUrl(it.id, f.name), published: 'false' }), 'Poza ' + f.name).id);
-    const post = must(await g('POST', page + '/feed', tok, { message: it.caption || '', attached_media: ids.map((id) => ({ media_fbid: id })) }), 'Postarea');
+    for (const f of m.images) ids.push(must(await g('POST', page + '/photos', tok, { url: url(it, f), published: 'false' }), 'Poza ' + f.name).id);
+    const post = must(await g('POST', page + '/feed', tok, { message: C.captionFor(it, 'fb'), attached_media: ids.map((id) => ({ media_fbid: id })) }), 'Postarea');
     const link = await g('GET', '/' + post.id, tok, { fields: 'permalink_url' }).catch(() => ({ ok: false }));
     return { postId: String(post.id), url: (link.ok && link.j && link.j.permalink_url) || '' };
   }
@@ -121,11 +125,11 @@ async function fbPost(a, it) {
     const s = must(await g('POST', page + '/video_stories', tok, { upload_phase: 'start' }), 'Pornirea story-ului');
     const vid = String(s.video_id || '');
     if (!vid) throw new Stop('Pornirea story-ului: Meta n-a dat un video_id');
-    await rupload(a, vid, C.fileUrl(it.id, m.video.name));
+    await rupload(a, vid, url(it, m.video));
     const f = must(await g('POST', page + '/video_stories', tok, { upload_phase: 'finish', video_id: vid }), 'Publicarea story-ului');
     return { postId: String(f.post_id || vid), url: '' };
   }
-  const ph = must(await g('POST', page + '/photos', tok, { url: C.fileUrl(it.id, m.images[0].name), published: 'false' }), 'Poza story-ului');
+  const ph = must(await g('POST', page + '/photos', tok, { url: url(it, m.images[0]), published: 'false' }), 'Poza story-ului');
   const f = must(await g('POST', page + '/photo_stories', tok, { photo_id: ph.id }), 'Publicarea story-ului');
   return { postId: String(f.post_id || ph.id), url: '' };
 }
@@ -140,6 +144,9 @@ async function claim(id, net, force) {
     const now = Date.now();
     if (e.lock && now - Date.parse(e.lock) < LOCK_MS) return false;
     if (e.state !== 'planned' && e.state !== 'posting' && !(force && e.state === 'error')) return false;
+    // nothing starts without the owner's approval (one already started finishes)
+    const it = C.findItem(list, id);
+    if (e.state !== 'posting' && (!it || it.review !== 'approved' || it.state !== 'ready')) return false;
     e.lock = new Date(now).toISOString();
     if (e.state !== 'posting') { e.state = 'posting'; e.startedAt = e.lock; }
     return true;
@@ -197,9 +204,12 @@ async function run(opts) {
   opts = opts || {};
   const t0 = Date.now(), budget = opts.budgetMs || 30e3;
   const st = await C.settings();
-  // the plans follow the switch, the networks and the time (stale entries to the next free slot)
+  await C.items(); // the items from before the weekly model get their week (once)
+  // the plans follow the switch, the networks and the time (stale approved entries to the next free slot of their week)
   await C.update((list) => (P.reflow(list, st, Date.now()) ? undefined : false));
-  if (!st.on) return { off: true };
+  // the owner hears when next week's batch is ready, on Sunday what still waits for him, and when redone items are back
+  const told = await C.notices().catch((e) => { console.error('content notices:', e.message); return []; });
+  if (!st.on) return Object.assign({ off: true }, told.length ? { told } : {});
   const todo = P.due(await C.items(), st, Date.now());
   if (!todo.length) return { due: 0 };
   const a = await access(true);
@@ -228,16 +238,18 @@ async function run(opts) {
 // „Postează acum” (Admin → Conținut): this item on this network, now, whatever its slot (an error starts over)
 async function now(id, net) {
   const st = await C.settings();
+  if (!st.on) throw C.fail('paused', 409);
   if (!st.nets[net]) throw C.fail('net_off');
   const a = await access(true);
   const why = blocked(a, net);
   if (why) return { id, net, hold: why };
   const { out } = await C.update((list) => {
     const { it, e } = entryOf(list, id, net);
-    if (!it || it.state !== 'ready') throw C.fail('not_found', 404);
+    if (!it || it.state !== 'ready' || it.removed) throw C.fail('not_found', 404);
+    if (it.review !== 'approved') throw C.fail('not_approved', 409);
     if (!e) {
       if (!P.netsFor(it.kind).includes(net)) throw C.fail('net_not_for_kind');
-      it.plan.push({ net, at: new Date().toISOString(), state: 'planned' });
+      it.plan.push({ net, kind: P.kindOn(it, net), at: new Date().toISOString(), state: 'planned' });
       return true;
     }
     if (e.state === 'posted') throw C.fail('already_posted', 409);
