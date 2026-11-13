@@ -15,6 +15,7 @@
 // "ig:<her id>" / "fb:<her id>" where a WhatsApp one has the phone; thread and send work for them, a free answer only
 // (no templates, files, catalog).
 //   snip_delete   -> { id }
+//   transcribe    -> { phone, id } her voice note written out now (Gemini), saved on the message: { transcript, transcriptAt }
 //
 // Data: data/whatsapp-conversations.json (see api/webhook-whatsapp.js for the inbound side).
 
@@ -151,7 +152,17 @@ module.exports = async (req, res) => {
   try {
     const IG = require('./_lib/social-inbox');
     const ig = IG.isKey(body.phone);
-    if (ig && action !== 'thread' && action !== 'send') return fail(400, 'social_text_only', 'Pe Instagram și Facebook se pot trimite din portal doar mesaje scrise.');
+    if (ig && action !== 'thread' && action !== 'send' && action !== 'transcribe') return fail(400, 'social_text_only', 'Pe Instagram și Facebook se pot trimite din portal doar mesaje scrise.');
+    // „Transcrie” under a voice note that has no transcript yet: Gemini writes it out now and it is saved on the message
+    // (api/_lib/media-read.js; WhatsApp, Instagram and Messenger alike). Only the transcript comes back, nothing is logged.
+    if (action === 'transcribe') {
+      const id = String(body.id || '').slice(0, 200);
+      if (!body.phone || !id) return fail(400, 'invalid_message');
+      const r = await require('./_lib/media-read').now(String(body.phone), id);
+      if (r.error) return fail(r.code || 502, r.error, r.message);
+      res.status(200).json(Object.assign({ ok: true }, r));
+      return;
+    }
     if (action === 'list') {
       const conversations = await readJSON(KEY, []);
       // the chats from before every writer became a contact: theirs now (once; nothing is written when all are known)

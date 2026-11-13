@@ -13,6 +13,9 @@
 //   history         the app's past chats, once after connecting -> filled in, no unread, no push
 //   state_sync      the app's contacts -> the names chats are shown with (data/whatsapp-contacts.json)
 //
+// A voice note (and a short video) she sends is written out by Gemini after the answer to Meta, saved on its message
+// (transcript / seen, api/_lib/media-read.js): staff read it in Mesaje, Nuki reads it as the message's text.
+//
 // Always responds 200 once the payload is accepted - Meta retries aggressively on anything
 // else, and one bad message/status entry must never take the whole delivery down with it.
 
@@ -92,7 +95,7 @@ async function keepMedia(message, phoneNumberId) {
   const WAL = require('./_lib/whatsapp');
   const got = await WAL.fetchMedia(phoneNumberId, m.id).catch(() => null);
   const mime = (got && got.mime) || m.mime_type || '';
-  const out = { kind: type === 'sticker' ? 'image' : type, mime, filename: m.filename || '' };
+  const out = Object.assign({ kind: type === 'sticker' ? 'image' : type, mime, filename: m.filename || '' }, type === 'sticker' ? { sticker: true } : {});
   const ext = WAL.mediaExt(mime);
   if (!got || got.tooBig || !got.buf || !ext) return Object.assign(out, { missing: true });
   const path = 'wa-media/' + String(message.id || crypto.randomUUID()).replace(/[^\w-]/g, '').slice(-60) + '.' + ext;
@@ -129,7 +132,7 @@ async function knownName(phone) {
   return c ? String(contacts[c]).trim() : '';
 }
 
-async function handleInboundMessage(conversations, message, phoneNumberId, contacts) {
+async function handleInboundMessage(conversations, message, phoneNumberId, contacts, heard) {
   const from = message && message.from;
   if (!from) return;
   const phone = normalizePhone(from) || from;
@@ -170,7 +173,7 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
   const type = message.type === 'text' ? 'text' : 'other';
   const city = await locationForPhoneNumberId(phoneNumberId).catch(() => '');
   const media = await keepMedia(message, phoneNumberId).catch((err) => { console.error('webhook-whatsapp: media', err.message); return null; });
-  convo.messages.push({
+  const msg = {
     id: message.id || crypto.randomUUID(),
     direction: 'in',
     type,
@@ -180,7 +183,10 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
     status: 'received',
     timestamp: ts,
     sentBy: null,
-  });
+  };
+  convo.messages.push(msg);
+  // a voice note or a video: written out by Gemini after the answer to Meta (api/_lib/media-read.js)
+  if (heard && media && media.path && (media.kind === 'audio' || media.kind === 'video')) heard.push({ key: convo.phone, msg });
   convo.lastMessageAt = ts;
   convo.unreadCount = (convo.unreadCount || 0) + 1;
   const out = { phone: convo.phone, name: convo.clientName || convo.phone, location: convo.location || '', text: textFor(message), count: convo.unreadCount };
@@ -360,6 +366,7 @@ module.exports = async (req, res) => {
     const fresh = new Map(); // the newest message per client, for the phones
     const failed = []; // messages Meta couldn't deliver, for the UNDELIVERED alert
     const taps = []; // buttons tapped on a reminder
+    const heard = []; // her new voice notes and videos, for the transcripts
 
     const entries = payload.entry || [];
     for (const entry of entries) {
@@ -370,7 +377,7 @@ module.exports = async (req, res) => {
 
         for (const message of value.messages || []) {
           try {
-            const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts);
+            const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts, heard);
             if (m) fresh.set(m.phone, m);
             if (m && m.tap) taps.push(m);
             changed = true;
@@ -417,6 +424,9 @@ module.exports = async (req, res) => {
     }
 
     if (changed) await saveConversations(conversations);
+    // her voice notes written out (and her videos in one line), saved on the messages: after the answer to Meta, kept alive
+    // by the platform (waitUntil), never delaying it; a failure leaves the label „Mesaj vocal” as it is
+    if (changed && heard.length) { try { require('./_lib/media-read').later(heard).catch(() => {}); } catch (err) { console.error('webhook-whatsapp: transcripts', err.message); } }
     // „Da, ajung” confirms the appointment, „Nu ajung” cancels it; the desk hears that instead of the plain message
     for (const m of taps) {
       try { if (await require('./_lib/reminders').reply(m.tap) && fresh.get(m.phone) === m) fresh.delete(m.phone); } catch (err) { console.error('webhook-whatsapp: reminder answer', err.message); }

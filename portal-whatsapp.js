@@ -228,6 +228,19 @@
     const img = /^image\//i.test(md.mime || '') || /\.(jpe?g|png|webp|heic)$/i.test(md.filename || '');
     return '<a class="mx-doc" href="' + u + '"' + pv(pdf ? 'pdf' : img ? 'img' : 'other') + '>' + icon('file') + '<span>' + esc(md.filename || 'Document') + '</span>' + icon('download') + '</a>';
   }
+  // her voice note written out (Gemini, api/_lib/media-read.js), a quiet line under it; „Transcrie” when it has none yet and
+  // the file is there; a video's line (what is shown and said) the same way
+  function heardHtml(m) {
+    const md = m.media;
+    if (!md || m.direction !== 'in') return '';
+    if (md.kind === 'audio') {
+      if (m.transcript != null) return '<span class="mx-heard"><b>Transcriere:</b> ' + esc(m.transcript) + '</span>';
+      if ((md.path || md.href) && !md.missing && m.transcriptErr !== 'no_file' && m.transcriptErr !== 'too_big') return '<button type="button" class="mx-heard-btn" data-act="transcribe" data-id="' + esc(m.id) + '">' + icon('mic') + '<span>Transcrie</span></button>';
+      return '';
+    }
+    if (md.kind === 'video' && m.seen) return '<span class="mx-heard"><b>Video:</b> ' + esc(m.seen) + '</span>';
+    return '';
+  }
   // the clinic's pin, as the client got it on WhatsApp (a tap opens the map)
   const pinHtml = (p) => '<a class="mx-pin" href="https://www.google.com/maps?q=' + encodeURIComponent(p.lat + ',' + p.lng) + '" target="_blank" rel="noopener">' +
     '<span class="mx-pin-ic">' + icon('pin') + '</span><span><b>' + esc(p.name) + '</b><small>' + esc(p.address) + '</small></span></a>';
@@ -237,7 +250,7 @@
     return '<div class="mx-msg is-' + (out ? 'out' : 'in') + (m.status === 'failed' ? ' is-failed' : '') + '"><div class="mx-bub">' +
       (m.type === 'template' ? '<span class="mx-tpl-tag">' + icon('file') + 'Șablon</span>' : '') +
       (m.pin ? pinHtml(m.pin) : '') +
-      mediaHtml(m) +
+      mediaHtml(m) + heardHtml(m) +
       (m.media && MEDIA_WORDS.includes(text) || (m.media && text === m.media.filename) ? '' : '<span class="mx-text">' + esc(text) + '</span>') +
       (m.buttons && m.buttons.length ? '<span class="mx-btns">' + m.buttons.map((b) => '<span class="mx-btn">' + icon('undo') + esc(b) + '</span>').join('') + '</span>' : '') +
       (m.reaction ? '<span class="mx-react">' + esc(m.reaction) + '</span>' : '') +
@@ -474,6 +487,7 @@
       if (a === 'appt' && C.thread && C.thread.appointment && K.openAppointment) return K.openAppointment(C.thread.appointment.id, C.thread.appointment.date);
       if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : '', clientPhone: isIg(C.thread) ? '' : localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
       if (a === 'nuki') return nukiReply(act);
+      if (a === 'transcribe') return transcribe(act);
       if (a === 'snip') return toggleSnips(act);
       if (a === 'catalog' && C.selectedPhone) return catalog(C.selectedPhone);
       if (a === 'contact') return isIg({ phone: C.selectedPhone }) ? undefined : K.emit('contacts:open-phone', C.thread ? C.thread.phone : C.selectedPhone);
@@ -506,7 +520,7 @@
     let i = ms.length - 1; const ins = [];
     while (i >= 0 && ms[i].direction === 'in' && ins.length < 4) { ins.unshift(ms[i]); i--; }
     if (!ins.length || Date.now() - Date.parse(ins[ins.length - 1].timestamp) > 3 * 864e5) return null;
-    const txt = ins.map((m) => m.text || '').join(' ');
+    const txt = ins.map((m) => m.transcript || m.text || '').join(' '); // (a voice note: what she said)
     return SLOT_DAY.test(txt) && SLOT_HOUR.test(txt) ? t.phone + '|' + ins[ins.length - 1].timestamp : null;
   }
   async function nukiSlot() {
@@ -577,11 +591,15 @@
     const t = C.thread;
     if (!t) return null;
     const ap = t.appointment;
+    // phone: the server reads the conversation itself (her voice notes heard, her photos and files, api/portal-nuki.js);
+    // the messages below are what it uses only if it can't
     return {
-      name: named(t) ? t.clientName : '', city: t.location || '', channel: isIg(t) ? CHAN[chanOf(t)] : 'WhatsApp',
+      phone: t.phone, name: named(t) ? t.clientName : '', city: t.location || '', channel: isIg(t) ? CHAN[chanOf(t)] : 'WhatsApp',
       interest: t.lead ? t.lead.interest || '' : '',
       appointment: ap ? [ap.date, ap.time, ap.treatment].filter(Boolean).join(' ') : '',
-      messages: (t.messages || []).slice(-30).map((m) => ({ dir: m.direction === 'out' ? 'out' : 'in', text: m.text || (m.media ? '[' + (m.media.kind === 'image' ? 'poză' : 'fișier') + ']' : ''), at: m.timestamp || '' })),
+      messages: (t.messages || []).slice(-30).map((m) => ({ dir: m.direction === 'out' ? 'out' : 'in', at: m.timestamp || '',
+        text: m.media && m.media.kind === 'audio' && m.transcript ? 'Mesaj vocal: „' + m.transcript + '”' : m.media && m.media.kind === 'video' && m.seen ? 'Video: ' + m.seen
+          : m.text || (m.media ? '[' + (m.media.kind === 'image' ? 'poză' : 'fișier') + ']' : '') })),
     };
   }
   // the chat with Nuki (portal-nuki.js) sees the conversation that is open here
@@ -600,6 +618,26 @@
     } catch (err) {
       K.ui().toast((err.data && err.data.message) || (err.code === 'timeout' ? 'Nuki nu a răspuns la timp. Încearcă din nou.' : 'Nuki nu a răspuns. Încearcă din nou.'), 'error');
     } finally { btn.classList.remove('is-thinking'); btn.disabled = false; }
+  }
+  // „Transcrie”: her voice note written out now (api/portal-whatsapp.js transcribe), the line in place of the button
+  async function transcribe(btn) {
+    const t = C.thread, id = btn.dataset.id;
+    if (!t || !id || btn.disabled) return;
+    const label = btn.querySelector('span');
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    if (label) label.textContent = 'Ascult…';
+    try {
+      const r = await K.api('/api/portal-whatsapp', { action: 'transcribe', phone: t.phone, id }, { timeout: 60e3 });
+      const m = (t.messages || []).find((x) => x.id === id);
+      if (m && r.transcript != null) { m.transcript = r.transcript; m.transcriptAt = r.transcriptAt || ''; }
+      if (m && btn.isConnected) btn.outerHTML = heardHtml(m);
+    } catch (err) {
+      K.ui().toast((err.data && err.data.message) || (err.code === 'timeout' ? 'Transcrierea durează prea mult. Încearcă din nou.' : 'Transcrierea nu a mers acum. Încearcă din nou.'), 'error');
+      btn.disabled = false;
+      btn.classList.remove('is-busy');
+      if (label) label.textContent = 'Transcrie';
+    }
   }
   // ------------------------------------------------------------------ snippets
   // "+" in the chat: the team's quick answers above the box; a tap puts one in, her name filled in

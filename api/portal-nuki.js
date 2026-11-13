@@ -4,7 +4,13 @@
 //   { action: 'chat', messages: [{ role, content, files? }], thread?, tab? } → { text }: an answer for the person asking
 //     files: [{ kind: 'image' | 'pdf' | 'text', name, type, data (base64) | text, gone? }]: photos, screenshots, PDFs and
 //     text files sent with a question (gone: sent earlier, no longer resent, named only)
-// thread = what the screen shows of the conversation: { name, city, channel, interest, appointment, messages: [{ dir, text, at }] }
+// thread = what the screen shows of the conversation: { phone, name, city, channel, interest, appointment, messages: [{ dir, text, at }] }
+//   phone (the WhatsApp number, or "ig:<id>" / "fb:<id>"): the server reads the conversation itself from the store, so her
+//   media is the stored one, never taken from the browser (api/_lib/media-read.js, the owner, 13.11: „să poată Nuki să
+//   asculte și vocale și să citească și poze”): her voice notes written out by Gemini become the messages' text („Mesaj
+//   vocal: …”), a video one line, and her newest photos, PDFs and text files go to Claude as images and documents. A
+//   voice note still unheard is heard on the spot inside the answer's time (MEDIA_MS), else it stays a label.
+//   Not found, or anything failing there: the screen's messages, with the labels, as before.
 // Nuki knows the active offers and prices (Admin → Oferte), the two clinics and their hours, the online free hours and the
 // clinic's rules. It never sends anything itself: the person reads it, changes it, sends it. At most 400 answers a day.
 
@@ -14,6 +20,7 @@ const { getSession, requireAdmin } = require('./_lib/auth');
 const E = require('./_lib/nuki-edit');
 const { loadOffers } = require('./_lib/offers');
 const B = require('./_lib/booking');
+const MR = require('./_lib/media-read');
 
 const MODEL = 'claude-opus-5-5';
 // when the first model is overloaded, rate limited, failing or too slow, the rest of the answer goes once to a faster one
@@ -23,6 +30,10 @@ const FAST = 'claude-sonnet-5-5';
 // slow or overloaded call could hold the chat for minutes (2 minutes a try, 3 tries, up to 10 calls a turn)
 const BUDGET = { chat: 100e3, reply: 45e3, slot: 30e3, other: 150e3 };
 const RESERVE = { chat: 30e3, reply: 15e3, slot: 10e3, other: 40e3 };
+// the part of the answer's time a voice note still unheard may take on the spot (inside BUDGET, before Claude), and how
+// many of her files go to Claude
+const MEDIA_MS = { chat: 15e3, reply: 12e3, slot: 6e3 };
+const MEDIA_MAX = { chat: 4, reply: 5, slot: 3 };
 const CAP_KEY = 'data/nuki-usage.json';
 const DAILY_CAP = 400;
 const clip = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
@@ -119,11 +130,40 @@ function threadText(t) {
   const msgs = (Array.isArray(t.messages) ? t.messages : []).slice(-30).map((m) => {
     const who = m.dir === 'out' ? 'Clinica' : 'Clienta';
     const at = clip(m.at, 16).replace('T', ' ');
-    return (at ? '[' + at + '] ' : '') + who + ': ' + clip(m.text, 1200);
+    return (at ? '[' + at + '] ' : '') + who + ': ' + clip(m.text, 3000); // (a voice note's transcript can be long)
   }).join('\n');
   const head = [t.name ? 'Clienta: ' + clip(t.name, 80) : '', t.city ? 'Orașul: ' + clip(t.city, 30) : '', t.channel ? 'Canal: ' + clip(t.channel, 20) : '',
     t.interest ? 'Interesată de: ' + clip(t.interest, 120) : '', t.appointment ? 'Programare: ' + clip(t.appointment, 120) : ''].filter(Boolean).join('\n');
   return head + (msgs ? '\nConversația (cele mai noi la final):\n' + msgs : '');
+}
+// The conversation for Nuki from the store (by its phone or "ig:" / "fb:" key): her voice notes heard, her files as Claude
+// blocks. → { thread (the screen's, its messages the stored ones), blocks }; anything wrong: the screen's thread, no blocks.
+const MEDIA_NOTE = 'Ce a trimis ea în afară de text: mesajele vocale apar cu transcrierea lor („Mesaj vocal: …”), un video cu ce se vede în el; ' +
+  'pozele și documentele ei, când le ai, sunt atașate mai jos, numerotate ca în conversație. Ce apare doar ca etichetă („Mesaj vocal”, „Poză”, „Video”) ' +
+  'nu știi ce conține: nu ghici. Din pozele ei nu pui diagnostice și nu promiți rezultate.';
+async function withMedia(thread, kind) {
+  const key = thread && typeof thread === 'object' ? clip(thread.phone, 60) : '';
+  if (!key) return { thread, blocks: [] };
+  try {
+    const got = await MR.forNuki(key, { ms: MEDIA_MS[kind] || 10e3, max: MEDIA_MAX[kind] || 4 });
+    if (!got) return { thread, blocks: [] };
+    if (got.files || got.heard) console.log('portal-nuki media ' + JSON.stringify({ kind, files: got.files, heard: got.heard, ms: got.ms }));
+    const has = got.files || got.lines.some((l) => /^(Mesaj vocal|Video|Poză)/.test(l.text));
+    return { thread: Object.assign({}, thread, { messages: got.lines }), blocks: got.blocks, note: has ? MEDIA_NOTE : '' };
+  } catch (e) {
+    console.error('portal-nuki media:', String((e && (e.code || e.name)) || 'error').slice(0, 60));
+    return { thread, blocks: [] };
+  }
+}
+// the question with her files: the conversation, her files, then what is asked; without files, the plain text as before
+const contentWith = (head, blocks, tail) => (blocks.length ? [{ type: 'text', text: head }].concat(blocks, { type: 'text', text: tail }) : head + '\n\n' + tail);
+// Claude refused the request with her files (400 / 413: a photo or a PDF it can't read): once more without them, labels only
+async function orWithout(blocks, run) {
+  try { return await run(blocks); } catch (e) {
+    if (!blocks.length || !e || (e.status !== 400 && e.status !== 413)) throw e;
+    console.warn('portal-nuki: her files refused (' + e.status + '), without them');
+    return run([]);
+  }
 }
 
 
@@ -247,7 +287,8 @@ let webErr = ''; // why the last internet search was refused (the health check s
 // messages and the insights (api/_lib/social-*.js, content-*.js) run without anyone waiting: 'other'
 async function ask(system, messages, effort, tools, onTool, opts) {
   const kind = (opts && BUDGET[opts.kind]) ? opts.kind : 'other';
-  const st = { deadline: Date.now() + BUDGET[kind], reserve: RESERVE[kind], fast: false, calls: 0 };
+  // opts.deadline: the answer's end set by the handler (the time spent reading her media before counts too)
+  const st = { deadline: (opts && opts.deadline) || Date.now() + BUDGET[kind], reserve: RESERVE[kind], fast: false, calls: 0 };
   const t0 = Date.now();
   const parts = [];
   const said = [];
@@ -315,6 +356,7 @@ const WEB = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }];
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  const t0 = Date.now(); // the answer's time (BUDGET) counts from here
   const session = getSession(req);
   if (!session) { res.status(401).json({ error: 'unauthorized' }); return; }
   if (!['admin', 'receptie', 'cosmetician'].includes(session.role)) { res.status(403).json({ error: 'forbidden' }); return; }
@@ -346,14 +388,15 @@ module.exports = async (req, res) => {
     // the rules first and cached; the day's facts (offers, free hours) after them
     const system = [{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }];
     if (b.action === 'slot') {
-      const th = threadText(b.thread);
-      if (!th) { res.status(400).json({ error: 'no_thread' }); return; }
+      if (!threadText(b.thread)) { res.status(400).json({ error: 'no_thread' }); return; }
+      const md = await withMedia(b.thread, 'slot');
+      const th = threadText(md.thread) + (md.note ? '\n\n' + md.note : '');
       const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
       const wd = RO_DAYS[new Date(today + 'T12:00:00Z').getUTCDay()];
-      const q = th + '\n\nAzi e ' + wd + ', ' + today + '. Din mesajele ei cele mai noi: cere clienta o programare la o zi și o oră anume? ' +
+      const q = 'Azi e ' + wd + ', ' + today + '. Din mesajele ei cele mai noi (și mesajele ei vocale): cere clienta o programare la o zi și o oră anume? ' +
         'Răspunde doar cu JSON: {"found":true|false,"date":"YYYY-MM-DD","time":"HH:MM","treatment":"ce tratament vrea, scurt, sau gol","city":"Timișoara|Arad|gol"}. ' +
         '„mâine la 3” înseamnă 15:00 dacă e în program; fără zi sau fără oră clară: found false.';
-      const r = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }], [{ role: 'user', content: q }], 'low', null, null, { kind: 'slot' });
+      const r = await orWithout(md.blocks, (files) => ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }], [{ role: 'user', content: contentWith(th, files, q) }], 'low', null, null, { kind: 'slot', deadline: t0 + BUDGET.slot }));
       let want = null;
       try { const t = r.text || ''; want = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); } catch (e) { want = null; }
       if (!want || !want.found || !/^\d{4}-\d{2}-\d{2}$/.test(want.date || '') || toMin(want.time) == null || want.date < today) { res.status(200).json({ found: false }); return; }
@@ -362,13 +405,14 @@ module.exports = async (req, res) => {
       return;
     }
     if (b.action === 'reply') {
-      const th = threadText(b.thread);
-      if (!th) { res.status(400).json({ error: 'no_thread' }); return; }
+      if (!threadText(b.thread)) { res.status(400).json({ error: 'no_thread' }); return; }
+      const md = await withMedia(b.thread, 'reply');
+      const th = threadText(md.thread) + (md.note ? '\n\n' + md.note : '');
       const draft = clip(b.draft, 2000);
-      const ask1 = th + '\n\n' + (draft
+      const ask1 = draft
         ? 'Echipa a început acest răspuns: „' + draft + '”. Fă-l mai bun (aceeași idee, mai clar, mai cald, cu pasul următor). Trimite doar mesajul.'
-        : 'Scrie mesajul pe care clinica i-l trimite acum clientei. Trimite doar mesajul.');
-      const r = await ask(system, [{ role: 'user', content: ask1 }], 'low', null, null, { kind: 'reply' });
+        : 'Scrie mesajul pe care clinica i-l trimite acum clientei. Trimite doar mesajul.';
+      const r = await orWithout(md.blocks, (files) => ask(system, [{ role: 'user', content: contentWith(th, files, ask1) }], 'low', null, null, { kind: 'reply', deadline: t0 + BUDGET.reply }));
       if (r.refused || !r.text) { res.status(200).json({ text: '', message: 'Nuki nu a putut scrie un răspuns aici.' }); return; }
       res.status(200).json({ text: r.text.replace(/^[„"“]|[”"]$/g, '').trim() });
       return;
@@ -382,12 +426,19 @@ module.exports = async (req, res) => {
       }).filter((m) => m.content && m.content.length);
       while (list.length && list[0].role !== 'user') list.shift();
       if (!list.length || list[list.length - 1].role !== 'user') { res.status(400).json({ error: 'no_question' }); return; }
-      const th = threadText(b.thread);
+      // the conversation open in Mesaje, from the store, with her voice notes heard and her newest files (MEDIA_MAX.chat)
+      const md = threadText(b.thread) ? await withMedia(b.thread, 'chat') : { thread: b.thread, blocks: [] };
+      const th = threadText(md.thread) + (md.note && threadText(md.thread) ? '\n\n' + md.note : '');
       const where = clip(b.tab, 40);
-      if (th || where) list[0] = { role: list[0].role, content: [{ type: 'text', text: (where ? 'Sunt în admin, la „' + where + '”.\n' : '') + (th ? 'Am deschisă conversația asta (folosește-o doar dacă întrebarea e despre ea; nu-i scrie un mesaj dacă nu ți-l cer):\n' + th : '') }].concat(blocks(list[0].content)) };
+      const first = list[0];
       // the API wants the turns to alternate: merge two of the same side
-      const turns = [];
-      list.forEach((m) => { const last = turns[turns.length - 1]; if (last && last.role === m.role) last.content = blocks(last.content).concat(blocks(m.content)); else turns.push(Object.assign({}, m)); });
+      const turnsWith = (files) => {
+        const all = list.slice();
+        if (th || where) all[0] = { role: first.role, content: [{ type: 'text', text: (where ? 'Sunt în admin, la „' + where + '”.\n' : '') + (th ? 'Am deschisă conversația asta (folosește-o doar dacă întrebarea e despre ea; nu-i scrie un mesaj dacă nu ți-l cer):\n' + th : '') }].concat(files, blocks(first.content)) };
+        const turns = [];
+        all.forEach((m) => { const last = turns[turns.length - 1]; if (last && last.role === m.role) last.content = blocks(last.content).concat(blocks(m.content)); else turns.push(Object.assign({}, m)); });
+        return turns;
+      };
       // the corner chat: a helper for anything (its own rules), able to search the internet
       const owner = session.role === 'admin';
       const chatSystem = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts },
@@ -406,7 +457,7 @@ module.exports = async (req, res) => {
         }
         return { result: 'Nu am unealta asta.', error: true };
       };
-      const r = await ask(chatSystem, turns, 'medium', owner ? WEB.concat(E.TOOLS) : WEB, onTool, { kind: 'chat' });
+      const r = await orWithout(md.blocks, (files) => { edits.length = 0; return ask(chatSystem, turnsWith(files), 'medium', owner ? WEB.concat(E.TOOLS) : WEB, onTool, { kind: 'chat', deadline: t0 + BUDGET.chat }); });
       const text = r.refused || (!r.text && !edits.length) ? 'Nu pot răspunde la asta. Întreabă-mă altfel sau întreabă pe cineva din echipă.' : r.text;
       res.status(200).json(edits.length ? { text, edits } : { text });
       return;

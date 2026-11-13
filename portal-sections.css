@@ -1915,6 +1915,13 @@ main.ad-full{ max-width:none; }
 .mx-doc span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mx-doc .k-ic{ flex:none; width:18px; height:18px; }
 .mx-doc.is-missing{ color:var(--muted); }
+/* a voice note written out, a video in one line: a quiet line under the file; „Transcrie” when it has none yet */
+.mx-heard{ display:block; max-width:min(320px, 64vw); margin:-.05rem 0 .3rem; font-size:.8rem; line-height:1.42; color:var(--muted); white-space:pre-wrap; word-break:break-word; }
+.mx-heard b{ font-weight:650; }
+.mx-heard-btn{ display:inline-flex; align-items:center; gap:.3rem; margin:-.05rem 0 .3rem; padding:.22rem .6rem; border:1px solid var(--line); border-radius:999px; background:none; color:var(--muted); font:inherit; font-size:.74rem; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.mx-heard-btn .k-ic{ width:13px; height:13px; flex:none; }
+.mx-heard-btn.is-busy{ opacity:.65; cursor:default; }
+@media (hover:hover) and (pointer:fine){ .mx-heard-btn:not(:disabled):hover{ color:var(--fg); border-color:var(--muted); } }
 .mx-attach{ cursor:pointer; }
 .mx-thead-who{ flex:1; min-width:0; display:flex; align-items:center; gap:.65rem; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .mx-thead-who .mx-thead-main{ min-width:0; }

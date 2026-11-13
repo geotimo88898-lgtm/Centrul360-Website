@@ -49,4 +49,20 @@ async function saveConversations(mine) {
   return out;
 }
 
-module.exports = { KEY, saveConversations, mergeConvo };
+// A few fields on one message (a voice note's transcript, api/_lib/media-read.js), nothing else touched: written only
+// onto the version just read (someone wrote first: read again and redo it). False when the message isn't there (never
+// creates a conversation or a message) or the file stayed busy.
+async function setOnMessage(phone, id, fields) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { data, etag } = await readJSONTagged(KEY, []);
+    const convo = (Array.isArray(data) ? data : []).find((c) => c && c.phone === phone);
+    const msg = convo && (convo.messages || []).find((m) => m && m.id === id);
+    if (!msg) return false;
+    Object.assign(msg, fields);
+    if (await writeJSONIf(KEY, data, etag)) return true;
+    await new Promise((r) => setTimeout(r, 25 + Math.random() * 80 * (attempt + 1)));
+  }
+  return false;
+}
+
+module.exports = { KEY, saveConversations, mergeConvo, setOnMessage };

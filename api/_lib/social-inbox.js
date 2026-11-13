@@ -10,7 +10,8 @@
 //   setup(origin)          the app listens to both (its webhooks), the Page has the app with its messages
 //   status() / brief()     where it stands (the login's permissions, the Page's account, the webhooks)
 // data/social-conversations.json: [{ channel: ig|fb, id: <her id>, name, username, lastMessageAt, unreadCount,
-//   messages: [{ id, direction: in|out, type: text|other, text, media?, timestamp, status, sentBy?, fromApp? }] }]
+//   messages: [{ id, direction: in|out, type: text|other, text, media?, timestamp, status, sentBy?, fromApp?,
+//     transcript?, transcriptAt? (her voice note written out), seen?, seenAt? (her video in one line, api/_lib/media-read.js) }] }]
 
 const { readJSON, writeJSON, readJSONTagged, writeJSONIf, writeBinary } = require('./store');
 const { loadConnection, appCreds } = require('./facebook');
@@ -98,8 +99,10 @@ async function ingest(payload) {
       status: echo ? 'sent' : 'received' }, media ? { media } : {}, echo ? { fromApp: true } : {}) });
   }
   const fresh = [];
+  const heard = []; // her new voice notes and videos, written out by Gemini after the answer (api/_lib/media-read.js)
   const list = await update((all) => {
     fresh.length = 0;
+    heard.length = 0;
     let changed = false;
     for (const it of items) {
       let c = find(all, channel, it.other);
@@ -122,10 +125,13 @@ async function ingest(payload) {
       c.messages.sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0));
       if (it.msg.timestamp > (c.lastMessageAt || '')) c.lastMessageAt = it.msg.timestamp;
       if (!it.echo) { c.unreadCount = (c.unreadCount || 0) + 1; fresh.push({ channel, id: c.id, text: it.msg.text }); }
+      if (!it.echo && it.msg.media && ['audio', 'video'].includes(it.msg.media.kind)) heard.push({ key: channel + ':' + c.id, msg: it.msg });
       changed = true;
     }
     return changed;
   });
+  // (her file's link at Meta is fresh now: a voice note the portal couldn't keep is still heard)
+  if (heard.length) require('./media-read').later(heard).catch(() => {});
   // her name (and @ on Instagram), asked once per person
   const nameless = list.filter((c) => c.channel === channel && !c.username && !c.name && items.some((it) => it.other === c.id));
   if (nameless.length && conn.pageAccessToken) {
@@ -203,6 +209,22 @@ async function backfill(opts) {
     return changed;
   });
   return out;
+}
+
+// a few fields on one of her messages (a voice note's transcript, api/_lib/media-read.js); false when it isn't there
+async function setOnMessage(k, mid, fields) {
+  const p = parse(k);
+  if (!p) return false;
+  let done = false;
+  await update((all) => {
+    const c = find(all, p.channel, p.id);
+    const m = c && (c.messages || []).find((x) => x.id === mid);
+    if (!m) return false;
+    Object.assign(m, fields);
+    done = true;
+    return true;
+  });
+  return done;
 }
 
 // her message rings on the phones like a WhatsApp one: the owner, the admins, reception (the Page is both clinics')
@@ -357,4 +379,4 @@ async function brief() {
   return { ready: !s.missing.length && ig && fb, missing: s.missing, account: s.account ? s.account.username || '' : '', instagram: ig, facebook: fb, configId: s.app.configId, conversations: s.conversations, comments: s.comments };
 }
 
-module.exports = { KEY, CHANNELS, NEEDS, COMMENT_NEEDS, ingest, ring, list, unread, view, send, setup, status, brief, parse, isKey, backfill };
+module.exports = { KEY, CHANNELS, NEEDS, COMMENT_NEEDS, ingest, ring, list, unread, view, send, setup, status, brief, parse, isKey, backfill, setOnMessage };
