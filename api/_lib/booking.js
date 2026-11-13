@@ -80,8 +80,23 @@ async function settings(opts) {
   if (!(opts && opts.team)) return clean(await readJSON(KEY, null));
   const [raw, doc, people] = await Promise.all([readJSON(KEY, null), T.load(), T.people()]);
   const out = clean(raw);
-  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)) }, enumerable: false });
+  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)), people }, enumerable: false });
   return out;
+}
+
+// The cosmetician a site booking goes straight to (the owner, 13.11: in Arad „direct pe Andrea, e singura cosmeticiană
+// de acolo”, the client chooses no one): the only one working in that city at that hour (Programul echipei), or, while
+// the city has no schedule, the only active cosmetician of that city not on leave that day. More of them, or none:
+// null, and the booking stays unassigned as before (reception assigns it). cfg from settings({ team: true }).
+function soleCosmetician(cfg, city, date, time, appts) {
+  const t = cfg && cfg.team;
+  if (!t || !t.people) return null;
+  const m = toMin(time);
+  const byId = new Map(t.people.map((p) => [p.id, p]));
+  const pick = T.hasSchedule(t.doc, city, t.ids)
+    ? T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).filter((w) => m != null && toMin(w.from) <= m && toMin(w.to) > m).map((w) => byId.get(w.employeeId)).filter(Boolean)
+    : t.people.filter((p) => p.location === city && !T.onLeave(appts, p.id, date));
+  return pick.length === 1 ? pick[0] : null;
 }
 
 // how long a treatment takes in the Calendar (the clinic's own medians, 4.11): HIFU on the chin 30 min, a full body
@@ -194,4 +209,4 @@ function overbooked(cfg, appts, entry) {
   return false;
 }
 
-module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };
+module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, soleCosmetician, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };

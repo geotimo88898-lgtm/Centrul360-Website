@@ -89,11 +89,13 @@ module.exports = async (req, res) => {
     const client = known || await upsertClient({ name, phone }, { readJSON, writeJSON });
 
     const at = new Date().toISOString();
+    // a city with one cosmetician (Arad): the booking goes straight on her (B.soleCosmetician)
+    const who = B.soleCosmetician(cfg, city, date, time, appts);
     const entry = {
       id: crypto.randomUUID(), date, time, endTime: B.hhmm(B.toMin(time) + svc.minutes),
       clientId: client.id, clientName: client.name || name, clientPhone: client.phone || phone,
       treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
-      amount: svc.price || 0, location: city, cosmeticianId: '', cosmeticianName: '', status: 'programata', package: false,
+      amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
       note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
       online: true, createdBy: 'site', createdAt: at, updatedAt: at,
     };
@@ -130,7 +132,8 @@ module.exports = async (req, res) => {
     // the owner and reception: in the bell and on their phones
     try {
       const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-      const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!e.location || e.location === city))).map((e) => e.id));
+      const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!e.location || e.location === city))).map((e) => e.id))
+        .concat(who ? [who.id] : []); // and the cosmetician it went to
       const offers = require('./_lib/offers');
       const what = svc.id === 'consult' ? 'Consultație gratuită' : svc.id === 'custom' ? svc.title : offers.shortName(await offers.loadOffers(readJSON), svc.title);
       await N.notifyMany({ readJSON, writeJSON }, [...new Set(ids)], {

@@ -82,6 +82,38 @@ module.exports = async (req, res) => {
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
   // ?nuki=edit: the owner's edits, end to end without saving: Nuki reads a sheet and proposes a change (nothing is applied)
   if (req.query && req.query.nuki) { res.status(200).json(req.query.nuki === 'edit' ? await require('./portal-nuki').pingEdit(req.query.q) : await require('./portal-nuki').ping()); return; }
+  // ?staff=1: who a site booking goes to in each city (api/_lib/booking.js soleCosmetician), first names only, and the
+  // site bookings ahead still on no one; &fill=1 puts those on the city's only cosmetician (the owner, 13.11: Arad → Andrea)
+  if (req.query && req.query.staff) {
+    const B = require('./_lib/booking');
+    const { writeJSON } = require('./_lib/store');
+    const cfg = await B.settings({ team: true });
+    const first = (p) => (p ? String(p.name || '').split(/\s+/)[0] : '');
+    let appts = await readJSON('data/appointments.json', []);
+    const today = B.roNow().date;
+    const open = (a) => a && a.createdBy === 'site' && !a.cosmeticianId && a.date >= today && !['anulata', 'concediu', 'finalizata'].includes(a.status) && !a.block;
+    let filled = 0;
+    if (req.query.fill) {
+      const plan = appts.filter(open).map((a) => ({ id: a.id, who: B.soleCosmetician(cfg, a.location, a.date, a.time, appts) })).filter((x) => x.who);
+      if (plan.length) {
+        const list = await readJSON('data/appointments.json', []);
+        plan.forEach((x) => { const row = list.find((a) => a.id === x.id); if (row && open(row)) { row.cosmeticianId = x.who.id; row.cosmeticianName = x.who.name; row.updatedAt = new Date().toISOString(); filled++; } });
+        if (filled) await writeJSON('data/appointments.json', list);
+        appts = list;
+      }
+    }
+    const team = cfg.team.people;
+    const out = CITIES.map((city) => {
+      const days = B.days(cfg, city, 30, appts).filter((d) => d.slots.length).slice(0, 5);
+      return {
+        city, cosmeticians: team.filter((p) => p.location === city).map(first), schedule: require('./_lib/team-schedule').hasSchedule(cfg.team.doc, city, cfg.team.ids),
+        goesTo: days.map((d) => ({ date: d.date, at: d.slots[0], who: first(B.soleCosmetician(cfg, city, d.date, d.slots[0], appts)) || null })),
+        unassignedAhead: appts.filter((a) => open(a) && a.location === city).length,
+      };
+    });
+    res.status(200).json({ noLocation: team.filter((p) => !p.location).length, filled, cities: out });
+    return;
+  }
   // ?roas=1&period=max|30d|7d: per ad, the spend since the forms are counted and what came after (bookings, clients,
   // payments), the same numbers as Reclame (api/ads-manager.js withFunnel): ROAS = payments / spend
   if (req.query && req.query.roas) {
