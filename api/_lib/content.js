@@ -10,7 +10,7 @@
 //   state: draft|ready, createdAt, readyAt, plan: [{ net: tt|yt|ig|fb, kind: reel|carousel|slideshow, slot: 0|1|'p',
 //   at, state: planned|posting|posted|error|waiting_access|skipped|missed, postId, url, error, tries, container,
 //   startedAt, hold }], stats: { <net>: { at, views, reach, likes, comments, shares, saves, watch } },
-//   hook (the first words said), hookType (intrebare, cifra, mit, pov, socant, poveste …), topicTag (the topic family,
+//   hook (the first words said), hookType (intrebare, cifra, contra, pov, socant, poveste …), topicTag (the topic family,
 //   hifu-gusa), ideaId (the owner's idea it makes, data/content/ideas.json), variantOf (the evergreen winner it makes
 //   again with a new hook), firstComment (the account's first comment under the post, content-post.js), boosts
 //   (content-boost.js) }]
@@ -37,8 +37,9 @@ const SET_KEY = 'data/content/settings.json';
 const STATE_KEY = 'data/content/state.json';
 const IDEAS_KEY = 'data/content/ideas.json';
 const KINDS = P.KINDS;
-const RUBRICS = ['Cazuri', 'Mit sau adevăr?', 'Ce se întâmplă de fapt', 'Întrebarea zilei', 'Nuki', 'Top 3'];
-const HOOK_TYPES = ['intrebare', 'cifra', 'mit', 'pov', 'socant', 'poveste'];
+// never the word „mit” nor a „Mit sau adevăr?” format (the owner, 13.11)
+const RUBRICS = ['Cazuri', 'Ce nu-ți spune nimeni', 'Unde se duce, de fapt', 'Experimentul', 'Ce se întâmplă de fapt', 'Întrebarea zilei', 'Nuki', 'Top 3'];
+const HOOK_TYPES = ['intrebare', 'cifra', 'contra', 'pov', 'socant', 'poveste'];
 // what the producer may send per text (each network's own limit is checked by qa, so a text too long is refused, not cut)
 const IN_MAX = 6000;
 const MIMES = { 'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'image/png': 'png' };
@@ -132,7 +133,7 @@ function captionsOf(x) {
 }
 // the text an item goes out with on a network
 const captionFor = (it, net) => String((it.captions && it.captions[net]) || it.caption || '');
-// the hook's style: a short word (intrebare, cifra, mit, pov, socant, poveste …)
+// the hook's style: a short word (intrebare, cifra, contra, pov, socant, poveste …)
 const hookTypeOf = (x) => slug(x, 20);
 // the first comment under the post (content-post.js writes it from the account): one line
 const oneLine = (x, n) => clean(String(x == null ? '' : x).replace(/\s+/g, ' '), n);

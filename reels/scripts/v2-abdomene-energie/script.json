@@ -1,0 +1,190 @@
+{
+ "v": 2,
+ "id": "v2-abdomene-energie",
+ "rubric": "Unde se duce, de fapt",
+ "theme": "inklime",
+ "music": "garage",
+ "keyword": "360",
+ "topic": "Unde se duce grăsimea când faci abdomene",
+ "topicTag": "liposonix-abdomen",
+ "hookType": "intrebare",
+ "title": "Faci 100 de abdomene. Unde se duce grăsimea?",
+ "sources": "reels/topics.json t14 (la efort, corpul ia energie din rezervele întregului corp; nu alegi zona prin exerciții); grasime-localizata.html (zona care nu cedează la dietă și sport; Liposonix țintește doar grăsimea, fără operație)",
+ "post": "Faci 100 de abdomene. Unde se duce, de fapt, grăsimea? Scrie 360 în comentarii și îți trimit ce merge pe grăsimea localizată. #abdomene #grasimelocalizata #timisoara #arad",
+ "hook": {
+  "say": "O sută de abdomene. Unde se duce *grăsimea*?",
+  "cap": "100 de abdomene. Unde se duce *grăsimea*?",
+  "q": "Unde se duce grăsimea când faci abdomene?",
+  "visual": {
+   "type": "counter",
+   "from": 0,
+   "to": 100,
+   "at": [
+    0,
+    0,
+    -0.05
+   ],
+   "dur": 1.6,
+   "label": "abdomene",
+   "size": 230
+  }
+ },
+ "beats": [
+  {
+   "say": "Sună logic să plece de pe burtă, nu? Acolo lucrezi.",
+   "visual": {
+    "type": "type-cascade",
+    "size": 128
+   },
+   "nuki": {
+    "pose": "gandeste",
+    "at": "bl",
+    "react": "nod"
+   }
+  },
+  {
+   "say": "Hai să urmărim energia, pas cu pas.",
+   "visual": {
+    "type": "zoom",
+    "label": "în timpul efortului",
+    "innerLabel": "rezervele de energie",
+    "diveAt": [
+     0,
+     0.5
+    ]
+   }
+  },
+  {
+   "say": "Când mușchii lucrează, corpul ia energie din rezervele *întregului* corp.",
+   "visual": {
+    "type": "energy",
+    "from": "din tot corpul",
+    "to": "energie",
+    "at": [
+     0,
+     0.2
+    ],
+    "dur": 2.4
+   }
+  }
+ ],
+ "payoff": [
+  {
+   "say": "Deci abdomenele topesc burtica?",
+   "visual": {
+    "type": "dissolve",
+    "text": "Lucrezi burta, deci pleacă de pe *burtă*.",
+    "dissolveAt": [
+     1,
+     0.32
+    ],
+    "label": "din tot corpul"
+   }
+  },
+  {
+   "say": "Nu chiar. Grăsimea pleacă din tot corpul, nu de unde lucrezi tu.",
+   "step": "cardul se destramă în particule care se întind pe toată silueta"
+  }
+ ],
+ "resolve": [
+  {
+   "say": "Și atunci, ce faci?",
+   "visual": {
+    "type": "type-pop",
+    "size": 150
+   }
+  },
+  {
+   "say": "Fă abdomene pentru un mijloc mai *puternic*, nu ca să topești burtica.",
+   "visual": {
+    "type": "bars",
+    "items": [
+     {
+      "t": "Mușchi",
+      "from": 0.35,
+      "to": 0.85,
+      "at": [
+       0,
+       0.3
+      ],
+      "c": "good"
+     }
+    ],
+    "chips": [
+     {
+      "at": [
+       0,
+       0.7
+      ],
+      "t": "Un mijloc mai puternic",
+      "icon": "check"
+     }
+    ]
+   },
+   "nuki": {
+    "pose": "aprobare",
+    "at": "peek-b",
+    "x": 700,
+    "react": "bounce"
+   }
+  },
+  {
+   "say": "Iar pentru zona care nu cedează, Liposonix lucrează direct pe grăsimea localizată, fără *operație*.",
+   "visual": {
+    "type": "skin",
+    "mode": "liposonix",
+    "seq": [
+     {
+      "at": [
+       0,
+       0.2
+      ],
+      "do": "energy",
+      "label": "Direct pe grăsime"
+     },
+     {
+      "at": [
+       0,
+       0.55
+      ],
+      "do": "shrink"
+     },
+     {
+      "at": [
+       0,
+       0.85
+      ],
+      "do": "calm",
+      "label": "Fără operație"
+     }
+    ]
+   }
+  }
+ ],
+ "outro": {
+  "say": "Deci nu te lăsa de abdomene. Doar schimbă-le *scopul*.",
+  "cta": "soft",
+  "visual": {
+   "type": "qmark",
+   "formAt": [
+    0,
+    0,
+    -0.35
+   ],
+   "formDur": 0.8,
+   "to": "check",
+   "toAt": [
+    0,
+    0.5
+   ],
+   "q": false
+  }
+ },
+ "end": {
+  "type": "comment",
+  "say": "Scrie 360 în comentarii și-ți trimit ce merge, de fapt, pe grăsimea localizată.",
+  "tts": "Scrie trei sute șaizeci în comentarii și-ți trimit ce merge, de fapt, pe grăsimea localizată.",
+  "cta": "talk",
+  "line": "și-ți trimit ce merge, de fapt"
+ }
+}

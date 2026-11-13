@@ -73,7 +73,7 @@
   R.sayText = (b) => plain(b.tts || b.say).trim(); // what the voice reads (the key of timing.json)
   function estimate(text) { return Math.max(0.9, text.length / 16.5); } // seconds, until the voice exists
   function buildLines() {
-    const parts = [['hook', S.hook], ['beat', S.beats], ['payoff', S.payoff]];
+    const parts = [['hook', S.hook], ['beat', S.beats], ['payoff', S.payoff], ['resolve', S.resolve], ['outro', S.outro]];
     parts.forEach(([role, arr]) => asList(arr).forEach((b, i) => lines.push({ b, role, ri: i })));
     const endType = (S.end && S.end.type) || 'ask';
     if (S.end && S.end.say) lines.push({ b: S.end, role: 'end', ri: 0, endLine: true });
@@ -94,6 +94,8 @@
     let firstPayoff = true;
     lines.forEach((L) => {
       if (L.role === 'payoff' && firstPayoff) { t += PAYOFF_PAUSE; firstPayoff = false; }
+      if (L.role === 'resolve' && L.ri === 0) t += 0.25;
+      if (L.role === 'outro') t += 0.2;
       if (L.role === 'end') t += (R.END[R.endType].lead || 0.3);
       t += L.b.pre || 0;
       const tm = TIM[L.key];
@@ -136,9 +138,10 @@
     shake: (s, p) => { s.x += Math.sin(p * 46) * 16 * (1 - p); },
     dim: (s, p, a) => { s.o *= 1 - (1 - (a.to != null ? a.to : 0.3)) * E.out(p); },
     hl: (s, p) => { s.hl = E.expo(p); },
+    undim: (s, p, a) => { const f = a.from != null ? a.from : 0.35; s.o *= f + (1 - f) * E.out(p); }, // dim until its moment, then lit
     move: (s, p, a) => { const e = (a.ease ? E[a.ease] : E.inout)(p); s.x += (a.dx || 0) * e; s.y += (a.dy || 0) * e; s.s *= 1 + ((a.ds || 0) * e); s.r += (a.dr || 0) * e; },
   };
-  const DUR = { fade: 0.35, in: 0.55, pop: 0.45, slam: 0.36, drop: 0.7, slideL: 0.55, slideR: 0.55, slideU: 0.5, slideD: 0.5, mask: 0.6, wipe: 0.55, growX: 0.55, growY: 0.55, draw: 0.8, flip: 0.55, spin: 0.6, blurIn: 0.6, out: 0.3, outUp: 0.35, bump: 0.32, shake: 0.4, dim: 0.35, hl: 0.45, move: 0.8 };
+  const DUR = { undim: 0.3, fade: 0.35, in: 0.55, pop: 0.45, slam: 0.36, drop: 0.7, slideL: 0.55, slideR: 0.55, slideU: 0.5, slideD: 0.5, mask: 0.6, wipe: 0.55, growX: 0.55, growY: 0.55, draw: 0.8, flip: 0.55, spin: 0.6, blurIn: 0.6, out: 0.3, outUp: 0.35, bump: 0.32, shake: 0.4, dim: 0.35, hl: 0.45, move: 0.8 };
   // the sound each kind of movement makes (a category; mix.py picks the variant, the pitch and the level)
   const SFX = { in: ['swoosh_up', 0.35], pop: ['pop', 0.6], slam: ['impact', 0.45], drop: ['snap', 0.6], slideL: ['swoosh', 0.45], slideR: ['swoosh', 0.45], slideU: ['swoosh_up', 0.45], slideD: ['swoosh_down', 0.45],
     mask: ['swoosh_up', 0.4], wipe: ['paper', 0.5], growX: ['swoosh', 0.3], growY: ['swoosh_up', 0.3], flip: ['paper', 0.45], spin: ['whoosh_s', 0.45], blurIn: ['shimmer', 0.3], hl: ['paper', 0.3], shake: [null], draw: [null] };
@@ -205,6 +208,11 @@
       if (!s.tr) { let tr = pool[k++ % pool.length]; if (tr === last && pool.length > 1) tr = pool[k++ % pool.length]; s.tr = tr; }
       last = s.tr; s.trDur = (R.TR[s.tr] && R.TR[s.tr].dur) || TR_DUR;
     });
+    // a chosen track with a beat grid (script "beat": {bpm}): the reel starts on a downbeat, every cut snaps to the
+    // nearest beat when it is within 0.16 s (the voice keeps its own timing; only the picture moves)
+    if (S.beat && S.beat.bpm) { const per = 60 / S.beat.bpm; R.beatPer = per;
+      shots.forEach((s, i) => { if (!i) return; const tb = Math.round(s.t0 / per) * per, th = Math.round(s.t0 / (per / 2)) * (per / 2); s.t0 = Math.abs(tb - s.t0) <= 0.16 ? tb : th; }); // a beat, else the half beat
+      shots.forEach((s, i) => { s.t1 = i < shots.length - 1 ? shots[i + 1].t0 : total; }); }
     const cams = TH.cams || ['push'];
     shots.forEach((s, i) => { if (!s.cam) s.cam = cams[i % cams.length]; });
   }
@@ -271,7 +279,7 @@
       s.ctx = makeCtx(s);
       if (s.end) R.END[R.endType].build(s.ctx, S.end || {}, shots);
       else { if (s.vis.bg) R.bgPanel(s.ctx, s.vis.bg); (R.V[s.vis.type] || R.V['type-pop'])(s.ctx, s.vis); }
-      s.lines.forEach((L) => { if (L.b.nuki) R.nukiCorner(s.ctx, L.b.nuki, L.t0 + 0.05); });
+      s.lines.forEach((L) => { if (L.b.nuki) { R.nukiCorner(s.ctx, L.b.nuki, L.t0 + (L.b.nuki.dt != null ? L.b.nuki.dt : 0.15)); R.nukiCount = (R.nukiCount || 0) + 1; } });
       s.el.style.display = 'none';
       // every line after the first one in a shot is a step: the template drew something for it; mark the line
       s.lines.forEach((L) => R.event(L.t0, 'line', L.i));
@@ -290,18 +298,22 @@
     }
     await Promise.all([...document.images].map((im) => (im.decode ? im.decode().catch(() => {}) : null)));
     shots.forEach((s) => s.after && s.after());
+    shots.forEach((s) => { s.el.style.display = 'block'; const f = s.focus; if (f) { const r = f.getBoundingClientRect(); if (r.width > 2) s.focusRect = { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; } s.el.style.display = 'none'; });
+    const outro = lines.find((L) => L.role === 'outro');
+    if (outro) { R.outroAt = outro.shot && outro.shot.resolveAt != null ? outro.shot.resolveAt : outro.t0 + outro.dur * 0.5; R.cue(R.outroAt, 'resolve', 0.8, { prio: 4 }); R.cue(R.outroAt, 'impact', 0.35, { prio: 3 }); R.event(R.outroAt, 'resolve'); }
     cues.sort((a, b) => a.t - b.t);
     events.sort((a, b) => a.t - b.t);
     window.film = {
       v: 2, id: S.id, total, fps: FPS, W, H, theme: S.theme, end: R.endType, keyword: S.keyword || null,
-      music: TH.music, sfx: TH.sfx, loop: R.endType === 'loop',
+      music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || null, musicStart: S.musicStart || 0, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
       cues: cues.filter((c) => c.t >= 0 && c.t < total),
       events: events.filter((e) => e.t >= -0.01 && e.t <= total),
       beats: lines.map((L) => ({ key: L.key, t0: L.t0, dur: L.dur, text: L.text, role: L.role, voiced: L.voiced, shot: L.shot ? L.shot.i : -1, step: L.step, visual: L.b.visual ? L.b.visual.type : L.b.step ? 'step' : null })),
       shots: shots.map((s) => ({ i: s.i, t0: s.t0, t1: s.t1, type: s.vis.type, tr: s.tr || null, cam: s.cam, role: s.role, lines: s.lines.map((L) => L.i) })),
       hook: { q: (asList(S.hook)[0] || {}).q || null, t1: lines[0] ? lines[0].t1 : 0 },
       payoff: R.payoffAt != null ? R.payoffAt : null,
-      images: Object.keys(IMGS).length,
+      images: Object.keys(IMGS).length, nuki: R.nukiCount || 0, outro: R.outroAt != null ? R.outroAt : null,
+      resolve: lines.filter((L) => L.role === 'resolve').length, sections: Object.fromEntries(['hook', 'beat', 'payoff', 'resolve', 'outro', 'end'].map((r) => { const ls = lines.filter((L) => L.role === r); return [r, ls.length ? [ls[0].t0, ls[ls.length - 1].t1] : null]; })),
     };
     seek(0);
     window.ready = true;
@@ -310,7 +322,6 @@
   function trState() { return { x: 0, y: 0, s: 1, rx: 0, ry: 0, o: 1, blur: 0, clip: null, filter: '', bright: 1, origin: null }; }
   function seek(t) {
     R.t = t;
-    R.BG.draw(t);
     const fx = document.getElementById('fx');
     fx.querySelectorAll('.trfx').forEach((e) => { e.style.display = 'none'; });
     const visible = new Set();
@@ -339,6 +350,7 @@
       s.layers.forEach((l) => { const dp = +l.dataset.depth || 0; if (!dp && !C.depthS) return; l.style.transform = 'translate(' + ((C.cx || 0) * dp).toFixed(2) + 'px,' + ((C.cy || 0) * dp).toFixed(2) + 'px) scale(' + (1 + (C.depthS || 0) * (dp < 0 ? -1 : dp > 0 ? 0.4 : 0)).toFixed(4) + ')'; });
       s.ticks.forEach((fn) => fn(t, lt));
     }
+    R.BG.draw(t); // after the shots: a pan transition moves the background too (parallax)
     // element animations (only the visible shots)
     for (const s of states.values()) resetState(s);
     for (const a of anims) { if (!visible.has(a.shot)) continue; const p = clamp((t - a.t0) / a.dur); if (t < a.t0 && !a.pre) { if (FX[a.fx] && ['out', 'outUp', 'dim', 'bump', 'shake', 'move', 'hl'].includes(a.fx)) continue; } FX[a.fx](st(a.el), p, a); }
@@ -346,7 +358,7 @@
       const base = el.dataset.base || '';
       const tr = (s.x || s.y ? 'translate(' + s.x.toFixed(2) + 'px,' + s.y.toFixed(2) + 'px) ' : '') + (s.r ? 'rotate(' + s.r.toFixed(2) + 'deg) ' : '') + (s.rx ? 'perspective(1400px) rotateX(' + s.rx.toFixed(2) + 'deg) ' : '') + (s.s !== 1 ? 'scale(' + s.s.toFixed(4) + ') ' : '') + (s.sx !== 1 || s.sy !== 1 ? 'scale(' + s.sx.toFixed(4) + ',' + s.sy.toFixed(4) + ')' : '');
       el.style.transform = (base + ' ' + tr).trim();
-      if (s.dash != null && s.dash > 0.995) s.o = 0;
+      if (s.dash != null && s.dash > 0.97) s.o = 0;
       el.style.opacity = s.o.toFixed(3);
       el.style.filter = s.blur > 0.05 ? 'blur(' + s.blur.toFixed(2) + 'px)' : (el.dataset.filter || '');
       if (s.clip != null) { el.style.clipPath = s.clip; el._fxClip = 1; } else if (el._fxClip) { el.style.clipPath = ''; el._fxClip = 0; }
@@ -359,6 +371,12 @@
     if (!fl._init) { fl._init = 1; fl.style.background = TH.dark ? 'radial-gradient(circle at 50% 38%,var(--acc) 0%,transparent 60%)' : '#fff'; }
     fl.style.opacity = t < 0.034 ? '0' : ((TH.dark ? 0.3 : 0.18) * (1 - clamp((t - 0.034) / 0.25))).toFixed(3);
     if (R.payoffAt != null && t >= R.payoffAt && t < R.payoffAt + 0.3) fl.style.opacity = Math.max(+fl.style.opacity, (TH.dark ? 0.35 : 0.2) * (1 - (t - R.payoffAt) / 0.3)).toFixed(3);
+    if (TH.sweep !== false) {
+      let sw = null; for (const s of shots) if (s.i > 0 && t >= s.t0 - 0.05 && t < s.t0 + 0.9) sw = s;
+      const el = document.getElementById('sweep');
+      if (sw) { const q = clamp((t - sw.t0 + 0.05) / 0.9); el.style.display = 'block'; el.style.transform = 'translateX(' + (-1400 + E.inout(q) * 2800).toFixed(1) + 'px) rotate(18deg)'; el.style.opacity = (Math.sin(Math.PI * q) * (TH.dark ? 0.5 : 0.35)).toFixed(3); }
+      else el.style.display = 'none';
+    }
     R.captionAt(t);
     return t;
   }

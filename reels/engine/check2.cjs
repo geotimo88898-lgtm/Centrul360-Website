@@ -10,14 +10,20 @@ const fs = require('fs'), path = require('path');
 const { start, open } = require('./serve.cjs');
 // words that sound like an ad, or that the rules forbid (README.md, „Vocea” and „Regulile”)
 const AD = /\b(descoper[ăa]|transform[ăa]|transformarea|rezultate spectaculoase|spectaculos|revolu[țt]ionar|incredibil|uimitor|nu rata|ofert[ăae]|reducere|promo[țt]ie|lei|pre[țt]ul?|programeaz[ăa]|programare|rezerv[ăa]|sun[ăa] acum|link[- ]?(ul)? (din|în) bio|consulta[țt]ie gratuit[ăa]|garantat|100 ?%|vindec|f[ăa]r[ăa] riscuri|minune|slăbe[șs]ti \d|kg garantat)/i;
+const BANNED = /\b(mit|mitul|mituri|miturile|mit sau adev[ăa]r)\b/i; // the owner, 13.11: never the word, the stamp or the format
 const CRINGE = /(hei,? dragel?e mele|dragile mele|fetelor,|cai verzi pe pere[țt]i|ba[țt]i apa-?n piu[ăa]|cioara vopsit[ăa]|la pa[șs]tele cailor|ca la carte|s[ăa] vezi minune|pe bune|ca [îi]ntre noi|bomb[ăa]|wow,|super tare|ai gu[șs][ăa]\?)/i;
 module.exports = async (id, dir, S) => {
   const problems = [], notes = [];
-  const say = [].concat(S.hook || [], S.beats || [], S.payoff || [], S.end && S.end.say ? [S.end] : []);
+  const say = [].concat(S.hook || [], S.beats || [], S.payoff || [], S.resolve || [], S.outro || [], S.end && S.end.say ? [S.end] : []);
   const words = say.map((b) => [b.say, b.cap, b.tts].filter(Boolean).join(' ')).join(' | ');
   if (/[–—]/.test(JSON.stringify(S))) problems.push('long dash in the script');
   const ad = words.match(AD); if (ad) problems.push('sounds like an ad / forbidden word: „' + ad[0] + '”');
   const cr = words.match(CRINGE); if (cr) problems.push('cringe phrase or folk idiom: „' + cr[0] + '” (README „Vocea”)');
+  const bn = JSON.stringify(S).replace(/\\u[0-9a-f]{4}/g, '').match(BANNED); if (bn) problems.push('the word „' + bn[0] + '” (never „mit” or the „Mit sau adevăr” format)');
+  if (!S.resolve || [].concat(S.resolve).length < 2) problems.push('no resolution beat: "resolve" needs 2-3 lines („Și atunci, ce faci?” + practical, real things)');
+  if (!S.outro || !S.outro.visual) problems.push('no outro: a warm closing line with a resolving visual ("outro")');
+  if (S.end && S.end.type === 'comment' && String(S.end.keyword || S.keyword || '360') !== '360') problems.push('a comment end always uses the keyword 360');
+  if (S.brand) notes.push('the logo is on screen (brand: true): only where it is natural');
   if (/\b(sa|si|fara|daca|tine|asa)\b/i.test(words.replace(/\*/g, '').replace(/[ăâîșțĂÂÎȘȚ]/g, 'X'))) notes.push('check the diacritics (sa / si / fara …)');
   say.forEach((b, i) => { if (!b.visual && !b.step && b !== S.end) problems.push('line ' + i + ' has no visual and no step: „' + (b.say || '').slice(0, 40) + '”'); });
   const ends = ['loop', 'comment', 'site', 'ask'];
@@ -30,7 +36,7 @@ module.exports = async (id, dir, S) => {
   p.on('pageerror', (e) => problems.push('pageerror ' + e.message));
   const F = await p.evaluate(() => window.film);
   const T = F.total;
-  if (T < 25 || T > 40.5) problems.push('length ' + T.toFixed(1) + ' s (want 25-40)');
+  if (T < 30 || T > 45.5) problems.push('length ' + T.toFixed(1) + ' s (want 30-45)');
   const unvoiced = F.beats.filter((x) => !x.voiced).length;
   if (unvoiced) notes.push(unvoiced + ' lines without their voice yet (estimated timing): run voice.py');
   if (F.images > 8) problems.push(F.images + ' AI images (max 8)');
@@ -52,12 +58,23 @@ module.exports = async (id, dir, S) => {
   const endShot = F.shots[F.shots.length - 1];
   const storyEnd = endShot.role === 'end' ? endShot.t0 : T;
   if (F.payoff == null) problems.push('no payoff');
-  else { const r = F.payoff / storyEnd; notes.push('payoff at ' + F.payoff.toFixed(1) + ' s: ' + Math.round(r * 100) + ' % of the story, ' + Math.round(F.payoff / T * 100) + ' % of the reel'); if (r < 0.75) problems.push('the payoff comes at ' + Math.round(r * 100) + ' % of the story (want the last 25 %)'); }
+  else { const r = F.payoff / T; notes.push('payoff at ' + F.payoff.toFixed(1) + ' s (' + Math.round(r * 100) + ' % of the reel), resolution from ' + (F.sections.resolve ? F.sections.resolve[0].toFixed(1) : '-') + ' s'); if (r < 0.4) problems.push('the answer comes too early (' + Math.round(r * 100) + ' %, want after 40 %)'); if (F.sections.resolve && F.sections.resolve[0] < F.payoff - 0.5) problems.push('the resolution starts before the answer'); }
   const ev = [...new Set(F.events.filter((e) => e.kind !== 'line').map((e) => Math.round(e.t * 100) / 100))].filter((x) => x >= 0).sort((a, b2) => a - b2).concat([T]);
   let gap = 0, at = 0; for (let i = 1; i < ev.length; i++) if (ev[i] - ev[i - 1] > gap) { gap = ev[i] - ev[i - 1]; at = ev[i - 1]; }
   if (ev[0] > 2.5) { gap = Math.max(gap, ev[0]); }
   if (gap > 2.5) problems.push('no visual change for ' + gap.toFixed(1) + ' s from ' + at.toFixed(1) + ' s (want ≤ 2.5)');
   F.beats.forEach((L, i) => { if (L.role === 'end') return; const hit = F.events.some((e) => e.kind !== 'line' && e.t >= L.t0 - 0.4 && e.t <= L.t0 + Math.min(1.2, L.dur)); if (!hit) problems.push('line ' + i + ' („' + L.text.slice(0, 32) + '…”) has nothing moving when it starts'); });
+  // every new idea moves to a new screen with a real transition; within one idea at most one small step
+  F.shots.forEach((sh, i) => { if (i && (!sh.tr || sh.tr === 'cut')) problems.push('shot ' + i + ' (' + sh.type + ') starts without a real transition'); if (sh.role !== 'end' && sh.lines.length > 2) problems.push('shot ' + i + ' (' + sh.type + ') holds ' + sh.lines.length + ' lines: a new idea needs a new screen'); });
+  const trs = F.shots.slice(1).map((x) => x.tr); notes.push('transitions: ' + trs.join(', '));
+  for (let i = 1; i < trs.length; i++) if (trs[i] === trs[i - 1]) problems.push('the same transition twice in a row (' + trs[i] + ')');
+  // Nuki: 2-4 small appearances
+  if (F.nuki < 2 || F.nuki > 4) problems.push('Nuki appears ' + F.nuki + ' times (want 2-4, small, in some frames)');
+  // the ending: a CTA line (soft or explicit) and a resolving visual in the last 5 s
+  const ctaLines = [].concat(S.outro || [], S.end && S.end.say ? [S.end] : []).filter((b) => b.cta);
+  const ctaIn = F.beats.some((L) => (L.role === 'outro' || L.role === 'end') && [].concat(S.outro || [], S.end || []).some((b) => b.cta && (b.tts || b.say || '').replace(/\*/g, '').trim() === L.text) && L.t0 + L.dur > T - 5.5);
+  if (!ctaLines.length || !ctaIn) problems.push('no CTA line (soft, talk or loop: "cta") in the last 5 s');
+  if (!F.events.some((e) => /^resolve/.test(e.kind) && e.t >= T - 5.5)) problems.push('no resolving visual in the last 5 s (the "?" resolving, the final landing)');
   if (S.end && S.end.type === 'site') { const man = fs.existsSync(path.join(__dirname, 'site', 'manifest.json')) ? JSON.parse(fs.readFileSync(path.join(__dirname, 'site', 'manifest.json'), 'utf8')) : { shots: {} }; (S.end.pages || []).forEach((pg) => { if (!man.shots[pg.key]) problems.push('no screenshot for ' + pg.key + ': run node site.cjs ' + id); }); }
   // the frame: safe zone, overlaps, captions
   const seen = new Set();
@@ -80,6 +97,9 @@ module.exports = async (id, dir, S) => {
         const ox = Math.min(a.r.right, c.r.right) - Math.max(a.r.left, c.r.left), oy = Math.min(a.r.bottom, c.r.bottom) - Math.max(a.r.top, c.r.top);
         if (ox > 10 && oy > 10) out.push('text over text: ' + a.n + ' / ' + c.n);
       }
+      document.querySelectorAll('.shot .nuki-c').forEach((n) => { if (!vis(n) || n.closest('.shot').style.clipPath) return; const r0 = n.getBoundingClientRect(); const r = { left: r0.left + r0.width * 0.2, right: r0.right - r0.width * 0.2, top: r0.top + r0.height * 0.08, bottom: Math.min(r0.bottom - r0.height * 0.05, n.dataset.vb ? +n.dataset.vb : 1e9) };
+        const capWs = [...document.getElementById('cap').querySelectorAll('.cw')].map((w) => w.getBoundingClientRect());
+        boxes.concat(+document.getElementById('cap').style.opacity > 0.5 ? capWs.map((cr) => ({ r: cr, n: 'a caption' })) : []).forEach((x) => { const ox = Math.min(x.r.right, r.right) - Math.max(x.r.left, r.left), oy = Math.min(x.r.bottom, r.bottom) - Math.max(x.r.top, r.top); if (ox > 14 && oy > 14) out.push('Nuki covers ' + x.n); }); });
       const cap = document.getElementById('cap');
       if (+cap.style.opacity > 0.5) [...cap.querySelectorAll('.cw')].forEach((w) => { const cr = w.getBoundingClientRect(); if (cr.left < 56 || cr.right > 924 || cr.top < 216 || cr.bottom > 1544) out.push('caption outside the safe zone'); boxes.forEach((x) => { const ox = Math.min(x.r.right, cr.right) - Math.max(x.r.left, cr.left), oy = Math.min(x.r.bottom, cr.bottom) - Math.max(x.r.top, cr.top); if (ox > 8 && oy > 8) out.push('caption covers ' + x.n); }); });
       return out;

@@ -168,7 +168,7 @@ FLAVOR = {  # per theme: pitch spread, a low-pass (Hz, 0 = none), category level
 }
 BASE = {'whoosh_s': 0.55, 'whoosh_l': 0.5, 'whoosh_r': 0.5, 'swoosh': 0.42, 'swoosh_up': 0.42, 'swoosh_down': 0.42, 'shutter': 0.6, 'click': 0.45,
         'key': 0.32, 'pop': 0.5, 'bubble': 0.45, 'tick': 0.42, 'riser': 0.55, 'riser_s': 0.45, 'impact': 0.85, 'boom': 0.7, 'subdrop': 0.75,
-        'shimmer': 0.38, 'sparkle': 0.4, 'glitch': 0.38, 'paper': 0.45, 'snap': 0.55, 'chime': 0.42, 'shatter': 0.7}
+        'shimmer': 0.38, 'sparkle': 0.4, 'glitch': 0.38, 'paper': 0.45, 'snap': 0.55, 'chime': 0.42, 'shatter': 0.7, 'resolve': 0.6}
 
 
 def lowpass(y, fc):
@@ -199,6 +199,37 @@ def thin(cues):
         if not over: break
         keep.remove(min(over, key=lambda k: (k['prio'], -k['t'])))
     return keep
+
+
+def carve(music, voice):
+    """a song with its own vocals: while our voice speaks, its 0.9-4 kHz band (where speech lives) steps back"""
+    from scipy import signal
+    b, a = signal.butter(2, [900 / (SR / 2), 4000 / (SR / 2)], 'band')
+    mid = signal.lfilter(b, a, music, axis=0).astype(np.float32)
+    hop = 480; act = np.abs(voice[:, 0]); m = len(act) // hop
+    rms = np.sqrt((act[: m * hop].reshape(m, hop) ** 2).mean(1)); on = np.clip((20 * np.log10(rms + 1e-6) + 46) / 12, 0, 1)
+    env = np.convolve(on, np.ones(15) / 15, 'same'); env = np.repeat(env, hop); env = np.concatenate([env, np.zeros(len(music) - len(env))])
+    music -= mid * (0.6 * env)[:, None]
+
+
+def shape_music(music, F, total):
+    """the music follows the story: a filter build into the payoff, then the drop (+2 dB for a few seconds);
+    at the outro it settles under the resolving chord (a loop: it ends there; else it stays low under the end)"""
+    from scipy import signal
+    n = len(music)
+    t = np.arange(n) / SR
+    pay, out = F.get('payoff'), F.get('outro')
+    if pay:
+        b, a = signal.butter(2, 700 / (SR / 2), 'low')
+        low = signal.lfilter(b, a, music, axis=0).astype(np.float32)
+        w = np.clip((t - (pay - 1.6)) / 1.4, 0, 1) * (t < pay)  # 0 → 1 while it builds, back to 0 on the payoff
+        music[:] = music * (1 - w[:, None] * 0.85) + low * (w[:, None] * 0.85) * 1.15
+        lift = 1 + 0.26 * np.clip((t - pay) / 0.05, 0, 1) * np.clip(1 - (t - pay - 3.0) / 1.5, 0, 1) * (t >= pay)
+        music *= lift[:, None]
+    if out:
+        floor = 0.0 if F.get('loop') else 0.38
+        g = 1 - (1 - floor) * np.clip((t - (out - 0.35)) / 0.9, 0, 1)
+        music *= g[:, None].astype(np.float32)
 
 
 def main_v2(rid, base, F, TIM):
@@ -233,9 +264,26 @@ def main_v2(rid, base, F, TIM):
         add(fx, y, c['t'], g, pan)
     mood = F.get('music') or 'pop'
     beds = sorted(glob.glob(os.path.join(HERE, 'music', mood + '[0-9][0-9].wav'))) or sorted(glob.glob(os.path.join(HERE, 'music', 'pop*.wav')))
-    bed = None
+    song = os.path.join(HERE, 'music', (F.get('musicFile') or '') + '.wav') if F.get('musicFile') else None
+    if song and os.path.exists(song):  # a track the owner chose (kept only in the ignored music/ folder): its catchiest part, from a downbeat
+        y = read(song); a = int(float(F.get('musicStart') or 0) * SR)
+        seg = y[a: a + len(music)]; music[: len(seg)] = seg
+        bed = os.path.basename(song) + ' from %.2f s' % float(F.get('musicStart') or 0)
+        shape_music(music, F, total)
+        carve(music, voice)
+        duck(music, voice, n, depth=0.72, level=0.3)
+        end = int(total * SR)
+        if F.get('loop'): a2 = int(0.02 * SR); music[:a2] *= np.linspace(0, 1, a2)[:, None]
+        else: music[:int(0.03 * SR)] *= np.linspace(0, 1, int(0.03 * SR))[:, None]
+        fo = int(1.6 * SR); music[end - fo:end] *= np.linspace(1, 0, fo)[:, None] ** 1.5; music[end:] = 0
+        beds = []
+    if F.get('musicClip'):  # the script picks its own track (each reel a different one); it is played first, the rest of the mood after
+        pick = os.path.join(HERE, 'music', F['musicClip'] + '.wav')
+        if os.path.exists(pick): beds = [pick] + [b for b in beds if b != pick]; rid_for_order = None
+    bed = bed if song and os.path.exists(song) else None
     if beds:
-        bed = bed_track(music, beds, rid, total, n)
+        bed = bed_track(music, beds, rid if not F.get('musicClip') else '', total, n)
+        shape_music(music, F, total)
         duck(music, voice, n, depth=0.62, level=0.34)
         end = int(total * SR)
         if F.get('loop'):  # a loop: no fade (a few ms at both ends, against clicks)
@@ -244,10 +292,12 @@ def main_v2(rid, base, F, TIM):
             fo = int(1.4 * SR); music[:int(0.03 * SR)] *= np.linspace(0, 1, int(0.03 * SR))[:, None]; music[end - fo:end] *= np.linspace(1, 0, fo)[:, None]
         music[end:] = 0
     out = (voice + fx * 0.7 + music)[: int((total + 0.02) * SR)]
+    sp = np.abs(voice[:, 0]) > 0.02
+    vom = 20 * np.log10((np.sqrt(np.mean(voice[sp, 0] ** 2)) + 1e-9) / (np.sqrt(np.mean(music[sp, 0] ** 2)) + 1e-9)) if sp.any() else 0
     nk = [c for c in cues if c['cat'] != 'key']
     per = np.bincount(np.array([int(c['t']) for c in nk], dtype=int), minlength=int(total) + 1) if nk else np.zeros(1)
-    info = '%d lines, %d sound effects (%d keys), %.1f a second on average, max %d in a second, music %s' % (
-        len(F['beats']), len(cues), len(cues) - len(nk), len(nk) / max(1, total), int(per.max()), bed or 'off')
+    info = '%d lines, %d sound effects (%d keys), %.1f a second on average, max %d in a second, music %s, voice over music %.1f dB while she speaks' % (
+        len(F['beats']), len(cues), len(cues) - len(nk), len(nk) / max(1, total), int(per.max()), bed or 'off', vom)
     json.dump({'cues': cues, 'per_second': per.tolist(), 'bed': bed}, open(os.path.join(base, 'build', 'sfx-used.json'), 'w'))
     write_master(base, out, rid, info)
 

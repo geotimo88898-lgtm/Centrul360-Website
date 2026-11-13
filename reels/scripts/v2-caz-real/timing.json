@@ -1,0 +1,56 @@
+{
+"L0": {
+"text": "Cum a ajuns aici după o singură ședință?",
+"dur": 2.154,
+"file": "voice/3d17231b29f82a0b.wav",
+"role": "hook"
+},
+"L1": {
+"text": "Știi zona aia care nu cedează, deși mănânci atent și faci mișcare?",
+"dur": 3.845,
+"file": "voice/10f59c737f285202.wav",
+"role": "beat"
+},
+"L2": {
+"text": "La ea s-a lucrat cu Liposonix, care țintește doar stratul de grăsime.",
+"dur": 4.357,
+"file": "voice/2cf134b86686e048.wav",
+"role": "beat"
+},
+"L3": {
+"text": "Corpul elimină celulele tratate în săptămânile următoare.",
+"dur": 3.1,
+"file": "voice/3142a9d5dae22d8d.wav",
+"role": "beat"
+},
+"L4": {
+"text": "Fără bisturiu, fără recuperare. Acum, uite diferența.",
+"dur": 4.573,
+"file": "voice/4f8d7a84305a8960.wav",
+"role": "payoff"
+},
+"L5": {
+"text": "Și dacă te regăsești? Fii blândă cu tine: grăsimea de acolo e rezistentă la dietă și sport, nu e lipsă de voință.",
+"dur": 7.196,
+"file": "voice/205c772c7f6bddaf.wav",
+"role": "resolve"
+},
+"L6": {
+"text": "Și ai răbdare: în general, diferența se vede la șase, opt săptămâni.",
+"dur": 4.805,
+"file": "voice/1f413a65aca8c6ba.wav",
+"role": "resolve"
+},
+"L7": {
+"text": "Fiecare corp e altfel, și tocmai de-asta merită un plan făcut pentru el.",
+"dur": 4.176,
+"file": "voice/66d508846f1f8071.wav",
+"role": "outro"
+},
+"L8": {
+"text": "Dacă vrei, uite cum lucrează, pas cu pas, pe centrul trei sute șaizeci punct com.",
+"dur": 4.114,
+"file": "voice/f82b47e88df81d93.wav",
+"role": "end"
+}
+}

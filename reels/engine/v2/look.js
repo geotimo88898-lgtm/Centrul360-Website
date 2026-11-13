@@ -42,6 +42,7 @@
     if (B.vignette) { const v = h('i', 'vig', null, bg); v.style.cssText = 'inset:0;background:radial-gradient(ellipse at 50% 42%,transparent 55%,rgba(0,0,0,' + B.vignette + ') 100%)'; }
   };
   BG.draw = (t) => {
+    const pan = R.bgPan || 0; document.getElementById('bg').style.transform = pan ? 'translateX(' + (pan * 0.35).toFixed(1) + 'px)' : ''; R.bgPan = 0;
     const P = R.endType === 'loop' && R.total ? R.total : 0; // a loop: every movement comes back to where it started
     const ph = (w) => (P ? (2 * Math.PI * t / P) * Math.max(1, Math.round(w * P / (2 * Math.PI))) : t * w);
     const pos = [[-380, -320], [520, 1060], [380, -380], [-420, 1180], [140, 520]];
@@ -58,7 +59,9 @@
   R.brand = (S, TH) => {
     const b = document.getElementById('brand');
     b.innerHTML = '<svg viewBox="132.5 132.5 545 545"><g fill="none" stroke="currentColor" stroke-width="40"><circle cx="405" cy="405" r="262"/><ellipse cx="405" cy="405" rx="104" ry="207"/><ellipse cx="405" cy="405" rx="207" ry="113"/></g></svg><span>Centrul360</span>' + (S.tag ? '<span class="tg">' + esc(S.tag) + '</span>' : '');
-    if (TH.brand === 'off') b.style.display = 'none';
+    // no logo on screen (the owner, 13.11): Nuki and the sound/transition signature are the brand; the logo appears
+    // only where it is natural (the site browser of the "site" end). A script may still ask for it: "brand": true
+    if (!S.brand) b.style.display = 'none';
   };
 
   // ------------------------------------------------------------------ captions
@@ -68,7 +71,7 @@
     capEl = document.getElementById('cap');
     lines.forEach((L) => {
       const vis = L.shot && L.shot.vis;
-      const kinetic = vis && /^type-|^qmark$/.test(vis.type) && !vis.text && L.step === 0;
+      const kinetic = vis && (/^type-/.test(vis.type) || (vis.type === 'qmark' && vis.q !== false)) && !vis.text && L.step === 0;
       if (L.b.captions === false || (kinetic && L.b.captions !== true) || (L.role === 'end' && L.b.captions === undefined && R.END[R.endType].noCaptions)) return;
       let cur = [];
       const flush = () => { if (cur.length) chunks.push({ L, words: cur.slice(), t0: cur[0].t }); cur = []; };
@@ -127,10 +130,16 @@
   // in(T, p, B, A, fx) shapes the incoming shot, out(T, p, A, B, fx) the outgoing one; p 0..1 over the transition.
   // sfx(t, d) places the sound. Overlays live in #fx (class trfx, hidden unless drawn this frame).
   const ov = (name, css) => { let e = document.getElementById('tr-' + name); if (!e) { e = h('div', 'trfx', null, document.getElementById('fx')); e.id = 'tr-' + name; if (css) e.style.cssText = css; } e.style.display = 'block'; return e; };
-  const focusRect = (shot) => { const f = shot && shot.focus; if (!f) return { x: 540, y: 700, w: 300, h: 300 }; const r = f.getBoundingClientRect(); return r.width > 2 ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height } : { x: 540, y: 700, w: 300, h: 300 }; };
+  // the key element of a shot, measured once at boot (before any animation moved it)
+  const focusRect = (shot) => (shot && shot.focusRect) || { x: 490, y: 700, w: 420, h: 420 };
+  // premium easings: expo in-out, and a cubic out with a slight overshoot (lands, settles)
+  const EIO = (p) => (p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? Math.pow(2, 20 * p - 10) / 2 : (2 - Math.pow(2, -20 * p + 10)) / 2);
+  const OS = (p) => { const c1 = 1.15, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+  const blurX = (v) => (v > 0.12 ? 'url(#mbx)' : '');
+  R.bgPan = 0;
   const TR = R.TR = {
     whip: { dur: 0.36, sfx: (t) => R.cue(t - 0.12, 'whoosh_s', 0.9),
-      in: (T, p) => { const e = E.out5(clamp((p - 0.45) / 0.55)); T.x = (1 - e) * 1100; T.o = p > 0.45 ? 1 : 0; T.filter = p < 0.85 ? 'url(#mbx)' : ''; },
+      in: (T, p) => { const e = OS(clamp((p - 0.45) / 0.55)); T.x = (1 - e) * 1100; T.o = p > 0.45 ? 1 : 0; T.filter = p < 0.85 ? 'url(#mbx)' : ''; },
       out: (T, p) => { const e = E.in(clamp(p / 0.5)); T.x = -e * 1100; T.o = p < 0.5 ? 1 : 0; T.filter = p > 0.15 ? 'url(#mbx)' : ''; } },
     'zoom-through': { dur: 0.5, sfx: (t) => { R.cue(t - 0.2, 'whoosh_l', 0.8); },
       in: (T, p) => { const e = E.out5(clamp((p - 0.35) / 0.65)); T.s = 0.72 + 0.28 * e; T.o = clamp((p - 0.35) / 0.3); T.blur = (1 - e) * 14; },
@@ -167,6 +176,34 @@
     'spin-zoom': { dur: 0.5, sfx: (t) => R.cue(t - 0.2, 'whoosh_l', 0.75),
       in: (T, p) => { const e = E.out5(clamp((p - 0.4) / 0.6)); T.o = clamp((p - 0.4) / 0.25); T.s = 0.6 + 0.4 * e; T.filter = ''; T.blur = (1 - e) * 10; },
       out: (T, p) => { const e = E.in(clamp(p / 0.6)); T.s = 1 + 0.8 * e; T.o = 1 - clamp((p - 0.3) / 0.3); T.blur = e * 12; T.origin = '540px 700px'; T.ry = 0; T.filter = 'hue-rotate(' + (e * 30).toFixed(1) + 'deg)'; } },
+    // push: both screens slide together, motion blur at speed, the new one lands with a slight overshoot
+    push: { dur: 0.5, sfx: (t) => R.cue(t - 0.2, 'whoosh_s', 0.85),
+      in: (T, p) => { const e = OS(clamp((p - 0.08) / 0.92)); T.x = (1 - e) * 1100; const v = Math.abs(Math.sin(Math.PI * clamp(p * 1.1))); T.filter = blurX(v * (p < 0.8 ? 1 : 0)); },
+      out: (T, p) => { const e = EIO(clamp(p / 0.92)); T.x = -e * 1100; T.filter = blurX(p > 0.1 && p < 0.85 ? 1 : 0); T.bright = 1 - 0.25 * e; } },
+    'push-up': { dur: 0.5, sfx: (t) => R.cue(t - 0.2, 'swoosh_up', 0.9),
+      in: (T, p) => { const e = OS(clamp((p - 0.08) / 0.92)); T.y = (1 - e) * 1920; T.blur = p < 0.75 ? 6 * Math.sin(Math.PI * p) : 0; },
+      out: (T, p) => { const e = EIO(clamp(p / 0.92)); T.y = -e * 1920; T.blur = 6 * Math.sin(Math.PI * p); T.bright = 1 - 0.3 * e; } },
+    // fly-through: the camera flies into the key element of the old screen, the new one comes out of the depth
+    'fly-through': { dur: 0.58, sfx: (t) => { R.cue(t - 0.3, 'whoosh_l', 0.85); },
+      in: (T, p) => { const q = clamp((p - 0.38) / 0.62); const e = OS(q); T.s = 0.45 + 0.55 * e; T.o = clamp(q * 3); T.blur = (1 - E.out(q)) * 16; },
+      out: (T, p, A) => { const c = focusRect(A); const q = clamp(p / 0.62); const e = Math.pow(q, 3); T.origin = c.x.toFixed(0) + 'px ' + c.y.toFixed(0) + 'px'; T.s = 1 + 5 * e; T.o = 1 - clamp((q - 0.55) / 0.45); T.blur = e * 22; } },
+    // zoom-element: the old key element grows to fill the screen, the new screen opens from inside it
+    'zoom-element': { dur: 0.6, sfx: (t) => { R.cue(t - 0.28, 'swoosh_up', 0.8); R.cue(t + 0.02, 'whoosh_s', 0.5); },
+      in: (T, p, B, A) => { const c = focusRect(A); const q = clamp((p - 0.42) / 0.58); const e = EIO(q); T.o = p > 0.42 ? 1 : 0; T.clip = 'circle(' + (Math.min(c.w, c.h) * 0.45 + e * 1700).toFixed(1) + 'px at ' + c.x.toFixed(0) + 'px ' + c.y.toFixed(0) + 'px)'; T.s = 1.12 - 0.12 * E.out(q); },
+      out: (T, p, A) => { const c = focusRect(A); const k = Math.min(1.8, Math.max(1080 / Math.max(80, c.w), 1920 / Math.max(80, c.h)) * 0.9); const e = EIO(clamp(p / 0.55)); T.origin = c.x.toFixed(0) + 'px ' + c.y.toFixed(0) + 'px'; T.s = 1 + (k - 1) * e; T.blur = e * 12; T.o = 1 - clamp((p - 0.15) / 0.3); } },
+    // pan: one long canvas; the camera pans to the next screen, the background moves slower (parallax)
+    pan: { dur: 0.6, sfx: (t) => R.cue(t - 0.26, 'whoosh_s', 0.85),
+      in: (T, p) => { const e = OS(EIO(p) * 0.985 + 0.015 * p); T.x = (1 - e) * 1080; T.filter = blurX(p > 0.12 && p < 0.8 ? 1 : 0); R.bgPan = -(1 - e) * 0 - EIO(p) * 300; },
+      out: (T, p) => { const e = EIO(p); T.x = -e * 1080; T.filter = blurX(p > 0.12 && p < 0.8 ? 1 : 0); } },
+    // morph-key: the old key element becomes a shape that travels and lands as the new key element
+    'morph-key': { dur: 0.56, sfx: (t) => { R.cue(t - 0.24, 'swoosh', 0.8); R.cue(t + 0.24, 'snap', 0.5); },
+      in: (T, p) => { T.o = clamp((p - 0.62) / 0.3); T.s = 0.96 + 0.04 * E.out(clamp((p - 0.62) / 0.38)); },
+      out: (T, p, A, B) => { T.o = 1 - clamp((p - 0.05) / 0.3); T.s = 1 - 0.05 * E.out(p);
+        const a = focusRect(A), b = focusRect(B), e = OS(EIO(p) * 0.97 + 0.03 * p);
+        const pl = ov('morph', 'background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 0 90px color-mix(in srgb,var(--acc) 55%,transparent),inset 0 2px 0 rgba(255,255,255,.35);backdrop-filter:blur(6px)');
+        const w = a.w + (b.w - a.w) * e, hh = a.h + (b.h - a.h) * e, x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e;
+        pl.style.left = (x - w / 2).toFixed(1) + 'px'; pl.style.top = (y - hh / 2).toFixed(1) + 'px'; pl.style.width = w.toFixed(1) + 'px'; pl.style.height = hh.toFixed(1) + 'px';
+        pl.style.borderRadius = (Math.min(w, hh) * (0.5 - 0.38 * Math.sin(Math.PI * p))).toFixed(1) + 'px'; pl.style.opacity = (Math.sin(Math.PI * clamp(p * 1.05)) * 0.78).toFixed(3); } },
     cut: { dur: 0.04, sfx: (t) => R.cue(t, 'click', 0.4), in: (T, p) => { T.o = p >= 0.5 ? 1 : 0; }, out: (T, p) => { T.o = p < 0.5 ? 1 : 0; } },
   };
   function bars(p) { // thin scan bars of the glitch (never a full-frame flash)

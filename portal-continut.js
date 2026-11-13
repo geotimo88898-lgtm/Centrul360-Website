@@ -59,7 +59,7 @@
   // the score on the networks' common scale: ×1 is a usual post, ×2 twice as good
   const x1 = (v) => '×' + (Math.round((v || 0) * 10) / 10).toLocaleString('ro-RO');
   const tone = (v) => (v >= 1.15 ? 'is-good' : v <= 0.85 ? 'is-bad' : '');
-  const HOOK = { intrebare: 'Întrebare', cifra: 'Cifră', mit: 'Mit', pov: 'POV', socant: 'Șocant', poveste: 'Poveste' };
+  const HOOK = { intrebare: 'Întrebare', cifra: 'Cifră', contra: 'Contraintuitiv', pov: 'POV', socant: 'Șocant', poveste: 'Poveste' };
   const hookName = (h) => HOOK[h] || (h ? h.charAt(0).toUpperCase() + h.slice(1).replace(/-/g, ' ') : '');
   const signed = (n) => (n > 0 ? '+' : n < 0 ? '-' : '') + k(Math.abs(n));
 

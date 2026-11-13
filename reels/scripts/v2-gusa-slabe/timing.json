@@ -12,51 +12,57 @@
 "role": "beat"
 },
 "L2": {
-"text": "Hai să ne uităm puțin sub bărbie.",
-"dur": 2.164,
-"file": "voice/78b68ead34d51de4.wav",
+"text": "Dar sub bărbie stă, de multe ori, un mic depozit de grăsime.",
+"dur": 4.005,
+"file": "voice/1f32863c5919b980.wav",
 "role": "beat"
 },
 "L3": {
-"text": "Acolo stă, de multe ori, un mic depozit de grăsime.",
-"dur": 4.676,
-"file": "voice/c77e35923ef7f1bb.wav",
+"text": "Iar pielea de deasupra, cu anii, se mai relaxează.",
+"dur": 3.555,
+"file": "voice/499045e40428d66f.wav",
 "role": "beat"
 },
 "L4": {
-"text": "Iar peste el, pielea, care cu anii se mai relaxează.",
-"dur": 2.829,
-"file": "voice/b19510fdc4fa8fb0.wav",
-"role": "beat"
-},
-"L5": {
-"text": "Și sportul singur rareori ajunge exact acolo.",
-"dur": 3.452,
-"file": "voice/2fd4c3f969bc83e7.wav",
-"role": "beat"
-},
-"L6": {
 "text": "Apoi e genetica, pe care n-o alegem.",
 "dur": 2.494,
 "file": "voice/a95b718ed6071ccd.wav",
 "role": "beat"
 },
-"L7": {
-"text": "Plus telefonul: capul aplecat nu face gușă, dar o scoate mai mult în evidență.",
-"dur": 4.616,
-"file": "voice/cb8852489f1ad6e1.wav",
-"role": "beat"
-},
-"L8": {
+"L5": {
 "text": "Deci gușa nu vine neapărat din kilograme.",
 "dur": 2.963,
 "file": "voice/3387d95ec09ae822.wav",
 "role": "payoff"
 },
-"L9": {
+"L6": {
 "text": "E un mix: puțină grăsime, piele mai relaxată și genetică.",
 "dur": 4.416,
 "file": "voice/3db8c9bea1c6e6fa.wav",
 "role": "payoff"
+},
+"L7": {
+"text": "Și atunci, ce faci?",
+"dur": 1.032,
+"file": "voice/e88b94b437485a3f.wav",
+"role": "resolve"
+},
+"L8": {
+"text": "Ține telefonul la nivelul ochilor: capul aplecat nu face gușă, dar o scoate în evidență.",
+"dur": 5.07,
+"file": "voice/f13f7b741019266f.wav",
+"role": "resolve"
+},
+"L9": {
+"text": "Iar pentru piele relaxată și un mic depozit, HIFU și radiofrecvența lucrează exact pe straturile astea, fără operație.",
+"dur": 7.231,
+"file": "voice/8d6b1b30706d4ae4.wav",
+"role": "resolve"
+},
+"L10": {
+"text": "Deci nu e vina ta. Și acum, când revine întrebarea, știi răspunsul.",
+"dur": 4.034,
+"file": "voice/5cdf08ce6578b514.wav",
+"role": "outro"
 }
 }

@@ -219,6 +219,14 @@ def main():
             y[kk:kk + len(seg)] += seg[: len(y) - kk]
         y += np.sin(2 * np.pi * np.cumsum(60 * np.exp(-x * 8) + 50) / SR) * np.exp(-x * 12) * 0.5
         put('shatter', i, pan_sweep(y, -0.5, 0.5), 0.9)
+    for i, root in enumerate((261.63, 293.66, 329.63)):  # resolve: a warm major chord (root, third, fifth, octave), a soft attack, a long tail
+        d = 2.6; x = tt(d); y = np.zeros(len(x))
+        for k, (m, g) in enumerate(((1, 1.0), (1.26, 0.7), (1.5, 0.75), (2, 0.45), (0.5, 0.5))):
+            fr = root * m
+            y += g * (np.sin(2 * np.pi * fr * x) + 0.25 * np.sin(2 * np.pi * fr * 2.01 * x) * np.exp(-x * 2.5)) * np.exp(-x * (0.9 + 0.2 * k))
+        y *= np.clip(x / 0.05, 0, 1)
+        y += lp(rng.standard_normal(len(x)), 3000) * np.exp(-x * 3) * 0.04
+        put('resolve', i, pan_sweep(y, -0.15, 0.15), 0.6)
     print('v1: hit, riser · v2: ' + ', '.join('%s×%d' % kv for kv in S.items()) + ' → ' + OUT2)
 
 

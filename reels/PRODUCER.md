@@ -92,20 +92,30 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    scenă care se mișcă din primul cadru (particule, un contor care pornește, poza reală pe jumătate acoperită).
 2. **Replici scurte, fiecare cu scena ei.** O replică = o idee = un vizual (`visual`) sau un pas al scenei curente
    (`step`). Alegi scena care arată ce spui, nu una decorativă: un depozit de grăsime → `skin` cu `focus`; „din tot
-   corpul” → `energy`; o comparație → `split`; un mit → `shatter` sau `stamp`. Nu repeta aceeași scenă de două ori
+   corpul” → `energy`; o comparație → `split`; o credință greșită → `dissolve` (niciodată cuvântul „mit” sau o
+   ștampilă). Nu repeta aceeași scenă de două ori
    la rând; schimbă tranziția și camera (motorul le rotește din temă dacă nu le scrii).
 3. **Mini-dezvăluiri la 3-5 secunde**, tensiune spre răspuns: „Stai, că e mai interesant”, „Bun, acum să vedem”.
-4. **Răspunsul (payoff) în ultimul sfert al poveștii**, cu o dezvăluire (poza, puzzle-ul care se îmbină, geamul
-   care se sparge). Motorul pune pauza, riserul și impactul.
+4. **Răspunsul (payoff)** după 40 % din reel, cu o dezvăluire (poza, puzzle-ul care se îmbină, credința care se
+   destramă). Motorul pune pauza, riserul și impactul. Apoi **rezolvarea** („Și atunci, ce faci?” + 2-3 lucruri
+   practice, reale) și **încheierea** caldă, cu un CTA potrivit (`cta`: `soft`, `talk`, `loop`) și „?”-ul care se
+   rezolvă (bifă sau inimă). Niciodată un final care se oprește brusc. 30-45 s.
+4b. **Tranziții**: fiecare idee nouă pe un ecran nou (`visual`), cel mult un pas (`step`) în aceeași idee; motorul
+   rotește tranzițiile temei (push, fly-through, zoom-element, pan, morph-key, whip…), niciodată aceeași de două ori.
+4c. **Nuki** în 2-4 replici (`nuki`), mic, într-un colț liber; brandul e el, nu logo-ul (care nu mai apare pe ecran).
+4d. **Muzica**: fiecare reel altă piesă originală (`music` + `musicClip`); stările noi: house90, garage, nudisco,
+   afrohouse, lofihouse (`music.py <stare> <n>`, ~0,06 $ clipul).
 5. **Finalul**, după reel:
-   - `loop` pentru curiozitate și mituri: ultimul cadru curge în primul, fără CTA (bucla crește timpul vizionat);
+   - `loop` pentru curiozitate: ultimul cadru curge în primul; ultima replică invită firesc la revedere (bucla crește
+     timpul vizionat);
    - `comment` doar când o conversație chiar adaugă ceva (un ghid trimis în privat), **cel mult 1 din 3 materiale**
-     din săptămână; cuvântul se spune devreme în replică, ca tastarea să curgă pe voce;
+     din săptămână; cuvântul e **mereu 360**, spus devreme în replică, ca tastarea să curgă pe voce;
    - `site` când o pagină reală răspunde cel mai bine (cazuri, „cum funcționează”): `pages` cu secțiuni fără
      prețuri sau oferte (`#rezultate`, `#cum`), capturate cu `node site.cjs <id>`;
    - `ask` altfel: o întrebare simplă către public, fără cuvânt cheie.
 6. **Tema**: niciodată aceeași temă de două ori la rând (citești `made`, ultimul material), și în săptămână cel puțin
-   4 teme diferite. O temă întunecată nu urmează altei teme întunecate. Ținta: reels-urile să nu semene între ele.
+   4 teme diferite. Preferi temele dramatice (aurora, burgundy, obsidian, tealcoral, inklime) și, pentru contrast,
+   una luminoasă îndrăzneață (citrus, swiss). Ținta: reels-urile să nu semene între ele.
 7. `node check.cjs <id>` trebuie să dea „clean” înainte de randare; apoi te uiți la cadre (primele 3 secunde des,
    răspunsul, finalul) și asculți cifrele din `mix.py` / `encode.sh` (-14 LUFS, vârf ≤ -1 dBTP, 1-3 sunete pe secundă).
 Cheltuiala: vocea și imaginile se plătesc (puțin) și sunt în cache; muzica nouă (`music.py`) doar când lipsește o
@@ -158,17 +168,17 @@ Dacă nota cere doar alt text, sari peste pasul 2. Când ai terminat toate refac
 |---|---|
 | `kind` | `reel` sau `carousel` (`slideshow`: doar pentru TikTok; un carusel ajunge oricum și pe TikTok ca slideshow) |
 | `week` | lunea săptămânii (`2026-11-16`) |
-| `rubric` | rubrica (Cazuri, Mit sau adevăr?, Ce se întâmplă de fapt, Întrebarea zilei, Nuki, Top 3) |
+| `rubric` | rubrica (Cazuri, Ce nu-ți spune nimeni, Unde se duce, de fapt, Experimentul, Ce se întâmplă de fapt, Întrebarea zilei, Nuki, Top 3); niciodată „mit” |
 | `topic` | subiectul, scurt (apare în admin și în topul săptămânii) |
-| `keyword` | cuvântul din invitația la comentariu (GUȘĂ), când există |
+| `keyword` | cuvântul din invitația la comentariu: mereu `360` (regula din 13.11), când există |
 | `captions` | textul pentru fiecare rețea: `tt`, `yt`, `ig`, `fb` (regulile mai jos) |
 | `caption` | rezerva: merge pe rețelele fără text propriu. Trimite `captions` pentru toate rețelele, nu te baza pe ea |
 | `hook` | primele cuvinte spuse și scrise în reel (cârligul), exact cum sunt |
-| `hookType` | felul cârligului: `intrebare`, `cifra`, `mit`, `pov`, `socant`, `poveste` (un cuvânt; adminul învață care merge) |
+| `hookType` | felul cârligului: `intrebare`, `cifra`, `pov`, `socant`, `poveste`, `experiment` (un cuvânt; adminul învață care merge; nu `mit`) |
 | `topicTag` | familia subiectului, scurt și la fel de fiecare dată: `hifu-gusa`, `liposonix-abdomen`, `epilare-laser`, `rf-fata` |
 | `ideaId` | ideea proprietarului pe care o face materialul (din `ideas`) |
 | `variantOf` | id-ul câștigătoarei refăcute (din `recycle`) |
-| `theme` | tema reel-ului (`themes.json`), ca să nu repeți tema la rând. Atenție: adminul încă nu o păstrează (vezi raportul din 12.11); până atunci o ții tu în notițe |
+| `theme` | tema reel-ului (`themes.json`), ca să nu repeți tema la rând (adminul o păstrează și o arată în `made`) |
 | `endType` | finalul: `loop`, `comment`, `site`, `ask` |
 | `firstComment` | primul comentariu, scris de cont sub postare (Instagram, Facebook, YouTube): o întrebare caldă despre subiect, care se termină cu ❤️, 🥰 sau 💞; fără să pomenească AI; cel mult 280 de caractere |
 

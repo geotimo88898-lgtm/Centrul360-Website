@@ -1,8 +1,8 @@
 {
- "note": "Banca de subiecte pentru reels (faza 2): generatorul alege din rotația rubricilor un subiect nefolosit recent; faptele de aici sunt singura sursă (plus paginile site-ului). Cazurile: doar din brand_asset/catalog (publicate cu acordul clientei), fără nume. Epilarea și EMS: doar Timișoara.",
+ "note": "Banca de subiecte pentru reels (faza 2): generatorul alege din rotația rubricilor un subiect nefolosit recent; faptele de aici sunt singura sursă (plus paginile site-ului). Cazurile: doar din brand_asset/catalog (publicate cu acordul clientei), fără nume. Epilarea și EMS: doar Timișoara. Din 13.11 (proprietarul): niciodată cuvântul „mit” și nici formatul „Mit sau adevăr?”; aceeași idee se împachetează captivant: „nimeni” = „Ce nu-ți spune nimeni” / „Unde se duce, de fapt” / „Experimentul” (o simulare spusă clar, fără rezultate inventate) / un cârlig contraintuitiv sau un POV. Cuvântul din comentarii e mereu 360 (câmpul keyword de aici rămâne doar ca temă a mesajului trimis în privat).",
  "rotation": [
   "caz",
-  "mit",
+  "nimeni",
   "fapt",
   "nuki",
   "intrebare",
@@ -13,7 +13,7 @@
   {
    "id": "t01",
    "topic": "hifu-gusa",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Gușa e doar de la kilograme?",
    "keyword": "GUȘĂ",
    "facts": "Gușa e un mix de grăsime localizată și piele relaxată; ține de genetică și vârstă, apare și la persoane slabe.",
@@ -85,7 +85,7 @@
   {
    "id": "t09",
    "topic": "hifu-fata",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Cremele pot face lifting?",
    "keyword": "LIFTING",
    "facts": "Cremele lucrează la suprafață; nu ajung în stratul profund. Utile pentru hidratare și protecție.",
@@ -130,7 +130,7 @@
   {
    "id": "t14",
    "topic": "liposonix",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Abdomenele topesc grăsimea de pe burtă?",
    "keyword": "BURTICĂ",
    "facts": "Corpul ia energie din rezervele întregului corp; nu alegi zona prin exerciții.",
@@ -184,7 +184,7 @@
   {
    "id": "t20",
    "topic": "liposonix",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Grăsimea se transformă în mușchi?",
    "keyword": "MUȘCHI",
    "facts": "Nu: sunt țesuturi diferite. Sportul crește mușchiul, grăsimea se folosește ca energie.",
@@ -229,7 +229,7 @@
   {
    "id": "t25",
    "topic": "rf-sculpt",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Radiofrecvența doare?",
    "keyword": "RF",
    "facts": "Se simte căldură; se reglează pe confortul persoanei. Fără ace.",
@@ -256,7 +256,7 @@
   {
    "id": "t28",
    "topic": "epilare",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Epilarea laser merge din prima ședință?",
    "keyword": "EPILARE",
    "facts": "Firele cresc în cicluri; laserul lucrează pe cele active, de aceea sunt mai multe ședințe.",
@@ -292,10 +292,10 @@
   {
    "id": "t32",
    "topic": "epilare",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Laserul îngroașă firele?",
    "keyword": "EPILARE",
-   "facts": "Mit: laserul dezactivează progresiv foliculii; firele rămase devin de obicei mai subțiri.",
+   "facts": "Nu: laserul dezactivează progresiv foliculii; firele rămase devin de obicei mai subțiri.",
    "used": []
   },
   {
@@ -310,7 +310,7 @@
   {
    "id": "t34",
    "topic": "ten",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "SPF doar vara?",
    "keyword": "SPF",
    "facts": "UVA trece și prin nori și geam; protecția zilnică ajută colagenul.",
@@ -355,7 +355,7 @@
   {
    "id": "t39",
    "topic": "ten",
-   "rubric": "mit",
+   "rubric": "nimeni",
    "title": "Apa băută hidratează direct pielea?",
    "keyword": "APĂ",
    "facts": "Apa contează pentru corp, dar hidratarea pielii ține și de bariera ei și de produsele potrivite.",

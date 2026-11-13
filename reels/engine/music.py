@@ -25,7 +25,26 @@ MOODS = {
     'funky': ('Playful funky upbeat instrumental for a fun myth-busting video: slap bass, muted funk guitar, claps, '
               'soft brass stabs, groovy and cheeky, 110 BPM.' + TAIL),
 }
+MOODS.update({
+    # original, catchy, trending-feeling grooves (the owner, 13.11); never a specific song's melody, lyrics or title
+    # the reference the owner likes (a 90s house classic) measured on 13.11, as a style reference only (nothing of its audio
+    # is used): ~123 BPM, F major, a short intro then a steady high-energy groove. The prompt asks for that feel, never its melody.
+    'house90': ('Uplifting 90s-inspired house groove in a major key: bright gospel-style piano chord stabs, warm organ, punchy '
+                'four-on-the-floor kick, bouncy round bass on the off-beats, crisp open hi-hats with a light shuffle, catchy wordless '
+                'vocal chops, feel-good summer energy, 123 BPM. Steady groove from the first second, no long intro, no lyrics, '
+                'clean modern mix.'),
+    'garage': ('UK garage 2-step shuffle: swung hi-hats, skippy kick and snare, deep warm sub bass, glossy chord stabs, catchy '
+               'pitched wordless vocal chops, feel-good late-night energy, 132 BPM. Steady from the first second, no long intro, '
+               'no lyrics, clean modern mix.'),
+    'nudisco': ('Nu-disco groove with a funky clean guitar riff, slap-style bass, four-on-the-floor kick, claps, shimmering strings, '
+                'warm and catchy, 118 BPM. Steady from the first second, no lyrics, clean modern mix.'),
+    'afrohouse': ('Afro house groove: rolling percussive toms and shakers, deep warm bass, airy marimba hook, hypnotic and catchy, '
+                  '122 BPM. Steady from the first second, no lyrics, clean modern mix.'),
+    'lofihouse': ('Lo-fi house with a filtered catchy chord hook, dusty drums, warm tape saturation, mellow and groovy, 120 BPM. '
+                  'Steady from the first second, no lyrics, clean modern mix.'),
+})
 NEG = 'vocals, singing, voice, choir, heavy drums, distortion, aggressive, sad, horror, slow intro, sudden changes, silence'
+NEG_CHOPS = 'lyrics, words, spoken voice, rap, singing words, distortion, aggressive, sad, horror, slow intro, sudden changes, silence'
 
 
 def make(mood, n):
@@ -36,7 +55,8 @@ def make(mood, n):
     for i in range(n):
         out = os.path.join(HERE, 'music', '%s%02d.wav' % (mood, i))
         if os.path.exists(out): continue
-        body = {'instances': [{'prompt': MOODS[mood], 'negative_prompt': NEG, 'seed': 360 + i + 17 * len(mood)}], 'parameters': {}}
+        neg = NEG_CHOPS if 'vocal chops' in MOODS[mood] else NEG
+        body = {'instances': [{'prompt': MOODS[mood], 'negative_prompt': neg, 'seed': 360 + i + 17 * len(mood)}], 'parameters': {}}
         for k in range(4):
             try:
                 r = json.load(urllib.request.urlopen(urllib.request.Request(url, data=json.dumps(body).encode(), headers={'Content-Type': 'application/json'}), timeout=240))

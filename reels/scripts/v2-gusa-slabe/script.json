@@ -3,11 +3,12 @@
  "id": "v2-gusa-slabe",
  "rubric": "Ce se întâmplă de fapt",
  "theme": "aurora",
- "topic": "hifu-gusa",
+ "music": "Free (Ultra Naté), piesa aleasă de proprietar",
+ "topic": "De ce unele femei slabe au totuși gușă",
  "topicTag": "hifu-gusa",
  "hookType": "intrebare",
  "title": "De ce unele femei slabe au totuși gușă?",
- "sources": "v2/src/gusa-barbie-dubla.html (mix de grăsime localizată și piele relaxată, genetică, vârstă, uneori indiferent de greutate, sportul singur rareori rezolvă zona); reels/topics.json t06/t07 (postura cu capul în față nu face gușă, dar o accentuează)",
+ "sources": "v2/src/gusa-barbie-dubla.html (mix de grăsime localizată și piele relaxată, genetică, vârstă, uneori indiferent de greutate; sportul singur rareori rezolvă zona; nu e vina ta; HIFU, RF Sculpt și radiofrecvență lucrează pe grăsimea localizată și pe laxitatea pielii, fără operație); reels/topics.json t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează în poze)",
  "post": "De ce unele femei slabe au totuși gușă? Nu e vorba doar de kilograme. #gusa #barbiedubla #ingrijire #timisoara #arad",
  "hook": {
   "say": "De ce unele femei *slabe* au totuși gușă?",
@@ -20,8 +21,7 @@
    ],
    "formDur": 1.3,
    "size": 100
-  },
-  "pause": 0.35
+  }
  },
  "beats": [
   {
@@ -55,45 +55,35 @@
      ]
     ],
     "label": "Cântarul zice: *normal*"
+   },
+   "nuki": {
+    "pose": "surprins",
+    "at": "peek-l",
+    "y": 1010,
+    "react": "wow"
    }
   },
   {
-   "say": "Hai să ne uităm puțin sub bărbie.",
+   "say": "Dar sub bărbie stă, de multe ori, un mic depozit de *grăsime*.",
    "visual": {
     "type": "zoom",
     "label": "sub bărbie",
-    "innerLabel": "aici e partea interesantă",
+    "innerLabel": "grăsime localizată",
     "diveAt": [
      0,
-     0.6
+     0.4
     ]
    }
   },
   {
-   "say": "Acolo stă, de multe ori, un mic depozit de *grăsime*.",
+   "say": "Iar pielea de deasupra, cu anii, se mai *relaxează*.",
    "visual": {
     "type": "skin",
     "seq": [
      {
       "at": [
        0,
-       0.36
-      ],
-      "do": "focus",
-      "layer": "grasime",
-      "label": "Grăsime localizată"
-     },
-     {
-      "at": [
-       0,
-       0.8
-      ],
-      "do": "pulse"
-     },
-     {
-      "at": [
-       1,
-       0.05
+       0.15
       ],
       "do": "focus",
       "layer": "piele",
@@ -101,33 +91,18 @@
      },
      {
       "at": [
-       1,
+       0,
        0.4
       ],
       "do": "sag"
+     },
+     {
+      "at": [
+       0,
+       0.8
+      ],
+      "do": "pulse"
      }
-    ]
-   }
-  },
-  {
-   "say": "Iar peste el, pielea, care cu anii se mai *relaxează*.",
-   "step": "piele: focus + se lasă"
-  },
-  {
-   "say": "Și sportul singur rareori ajunge *exact acolo*.",
-   "visual": {
-    "type": "icons",
-    "items": [
-     "dumbbell",
-     "bike",
-     "footprints",
-     "target"
-    ],
-    "cols": 2,
-    "cross": 3,
-    "crossAt": [
-     0,
-     0.72
     ]
    }
   },
@@ -141,29 +116,14 @@
     "mask": "circle",
     "label": "Genetica",
     "labelIcon": "dna",
-    "icon": "dna"
-   }
-  },
-  {
-   "say": "Plus telefonul: capul aplecat nu face gușă, dar o scoate mai mult în *evidență*.",
-   "visual": {
-    "type": "tilt",
-    "at": [
-     0,
-     0.3
-    ],
-    "chinAt": [
-     0,
-     0.78
-    ],
-    "label": "Capul aplecat în telefon",
-    "bg": {
-     "name": "night-bg",
-     "prompt": "abstract dark navy space with soft out-of-focus pink and cyan light streaks, like city lights at night, very dark, empty center",
-     "ar": "3:4",
-     "cy": 650,
-     "w": 1150
-    }
+    "icon": "dna",
+    "h": 700
+   },
+   "nuki": {
+    "pose": "gandeste",
+    "at": "peek-b",
+    "x": 690,
+    "react": "nod"
    }
   }
  ],
@@ -196,7 +156,7 @@
       "ic": "waves",
       "at": [
        0,
-       0.56
+       0.5
       ]
      },
      {
@@ -215,15 +175,131 @@
     "center": "gușa",
     "bg": {
      "name": "glow-bg",
-     "prompt": "abstract soft radial burst of pink and cyan light on dark navy, gentle glow, bokeh, empty center",
-     "ar": "3:4"
+     "ar": "3:4",
+     "prompt": "abstract soft radial burst of pink and cyan light on dark navy, gentle glow, bokeh, empty center"
     }
    }
   }
  ],
+ "resolve": [
+  {
+   "say": "Și atunci, ce faci?",
+   "visual": {
+    "type": "type-cascade",
+    "size": 150
+   },
+   "nuki": {
+    "pose": "aprobare",
+    "at": "bl",
+    "react": "nod"
+   }
+  },
+  {
+   "say": "Ține telefonul la nivelul ochilor: capul aplecat nu face gușă, dar o scoate în *evidență*.",
+   "visual": {
+    "type": "tilt",
+    "from": 32,
+    "to": 0,
+    "phoneUp": true,
+    "at": [
+     0,
+     0.25
+    ],
+    "label": "Telefonul la nivelul ochilor",
+    "bg": {
+     "name": "night-bg",
+     "ar": "3:4",
+     "cy": 650,
+     "w": 1150,
+     "prompt": "abstract dark navy space with soft out-of-focus pink and cyan light streaks, like city lights at night, very dark, empty center"
+    }
+   }
+  },
+  {
+   "say": "Iar pentru piele relaxată și un mic depozit, HIFU și radiofrecvența lucrează exact pe straturile astea, fără *operație*.",
+   "visual": {
+    "type": "skin",
+    "mode": "hifu",
+    "seq": [
+     {
+      "at": [
+       0,
+       0.1
+      ],
+      "do": "energy",
+      "label": "HIFU · radiofrecvență"
+     },
+     {
+      "at": [
+       0,
+       0.33
+      ],
+      "do": "focus",
+      "layer": "smas"
+     },
+     {
+      "at": [
+       0,
+       0.5
+      ],
+      "do": "collagen",
+      "label": "Exact pe straturile astea"
+     },
+     {
+      "at": [
+       0,
+       0.68
+      ],
+      "do": "pulse"
+     },
+     {
+      "at": [
+       0,
+       0.84
+      ],
+      "do": "calm",
+      "label": "Fără operație"
+     }
+    ]
+   },
+   "nuki": {
+    "pose": "prezinta",
+    "at": "peek-b",
+    "x": 700,
+    "react": "point",
+    "flip": true
+   }
+  }
+ ],
+ "outro": {
+  "say": "Deci nu e vina ta. Și acum, când revine întrebarea, știi *răspunsul*.",
+  "cta": "loop",
+  "visual": {
+   "type": "qmark",
+   "formAt": [
+    0,
+    0,
+    -0.35
+   ],
+   "formDur": 0.8,
+   "to": "heart",
+   "toAt": [
+    0,
+    0.5
+   ],
+   "q": false
+  }
+ },
  "end": {
   "type": "loop",
-  "dur": 1.3,
-  "tr": "zoom-through"
- }
+  "dur": 1.25,
+  "hold": 0.7,
+  "tr": "zoom-element"
+ },
+ "musicFile": "owner-free",
+ "musicStart": 77.19,
+ "beat": {
+  "bpm": 125.01
+ },
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s)."
 }

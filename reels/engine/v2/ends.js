@@ -45,7 +45,7 @@
     total: (lines, last) => { const L = endLine(lines); return Math.max(last + 1.2, (L ? L.t0 + L.dur * 0.6 : last) + 0.12 * 8 + 2.0); },
     build(ctx, spec) {
       const st = ctx.stage();
-      const kwd = spec.keyword || R.script.keyword || 'INFO';
+      const kwd = '360'; // every comment CTA uses the same word (the owner, 13.11): „Scrie 360 în comentarii…”
       const t0 = ctx.t0 + 0.08;
       const l1 = h('div', 'tx abs disp', esc(spec.title || 'Scrie în comentarii'), st); l1.style.cssText += ';left:0;width:860px;text-align:center;font-size:66px';
       const kw = h('div', 'tx abs num', '«' + esc(kwd) + '»', st); kw.style.cssText += ';left:0;width:860px;text-align:center'; fit(kw, 820, 220, 190, 90);
@@ -55,7 +55,7 @@
       let y = (900 - sum) / 2 - 60; els.forEach((e, i) => { e.style.top = y + 'px'; y += hs[i] + 40; });
       ctx.anim(l1, 'in', t0); ctx.anim(kw, 'slam', t0 + 0.2, { sfx: 'impact', gain: 0.5 }); ctx.anim(bar, 'slideU', t0 + 0.4, { amt: 200 }); 
       const L0 = ctx.lines[0], strip = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const kw0 = L0 ? L0.words.find((w) => strip(w.w).replace(/[^a-z]/g, '') === strip(kwd).replace(/[^a-z]/g, '')) : null;
+      const kw0 = L0 ? L0.words.find((w) => strip(w.w).replace(/[^a-z0-9]/g, '') === strip(kwd).replace(/[^a-z0-9]/g, '')) : null;
       const txt = bar.querySelector('.txt'), word = kwd, tt = Math.max(t0 + 0.9, kw0 ? kw0.t : 0), step = 0.12;
       for (let i = 0; i < word.length; i++) { R.cue(tt + i * step, 'key', 0.5); }
       R.event(tt, 'type'); R.event(tt + word.length * step * 0.5, 'type');
@@ -66,7 +66,7 @@
       cm.style.left = '20px'; cm.style.top = (parseFloat(bar.style.top) + 150) + 'px';
       if (l2) { l2.style.top = (parseFloat(bar.style.top) + 300) + 'px'; ctx.anim(l2, 'in', tSend + 1.1, { sfx: null, event: true }); }
       const heart = h('div', 'abs ico', R.icon('heart'), cm); heart.style.cssText += ';left:' + (110 + word.length * 26 + 60) + 'px;top:40px;width:64px;height:64px;color:var(--bad)';
-      ctx.anim(cm, 'slideU', tSend + 0.25, { amt: 80, sfx: 'bubble', gain: 0.6 }); ctx.anim(heart, 'pop', tSend + 0.8, { sfx: 'pop', gain: 0.5 });
+      ctx.anim(cm, 'slideU', tSend + 0.25, { amt: 80, sfx: 'bubble', gain: 0.6 }); ctx.anim(heart, 'pop', tSend + 0.8, { sfx: 'pop', gain: 0.5 }); R.event(tSend + 0.8, 'resolve-end'); R.cue(tSend + 0.85, 'resolve', 0.45);
       ctx.anim(kw, 'bump', Math.max(tSend + 1.6, ctx.L(0, 0.88)), { amt: 0.1, event: true }); ctx.sfx(Math.max(tSend + 1.6, ctx.L(0, 0.88)), 'sparkle', 0.45);
       ctx.focus(kw);
       ctx.tick((t) => { const n = clamp(Math.floor((t - tt) / step) + 1, 0, word.length); const v = t < tt ? '' : word.slice(0, n); const blink = t % 0.8 < 0.4; const key = v + blink + (t < tSend);
@@ -95,7 +95,11 @@
   END.site = {
     lead: 0.3,
     start: (lines) => { const L = endLine(lines); return L ? L.t0 - 0.12 : lastStory(lines).t1 + 0.3; },
-    total: (lines, last, spec) => { const L = endLine(lines); const t0 = L ? L.t0 - 0.12 : last + 0.3; return Math.max(last + 0.7, t0 + (spec.dur || 5.2)); },
+    total: (lines, last, spec) => { const L = endLine(lines); const t0 = L ? L.t0 - 0.12 : last + 0.3;
+      // the browser's own timeline: typing, page 1, the path, page 2, the tap, a breath after it
+      const pg = spec.pages || [], p2 = pg[1] ? (pg[1].url || pg[1].path || '').replace(/^\/$/, '') : '';
+      const tTap = t0 + 0.6 + (spec.domain || 'centrul360.com').length * 0.065 + 0.15 + 0.35 + (p2 ? (spec.home || 1.1) + p2.length * 0.032 + 0.4 : 0) + (spec.tapAfter || 1.2);
+      return Math.max(last + 0.7, t0 + (spec.dur || 0), tTap + 1.0); },
     build(ctx, spec) {
       const el = ctx.el;
       const bx = 84, by = 300, bw = 812, bh = 880; // inside the safe zone (x ≤ 920) and above the captions
@@ -130,7 +134,7 @@
       const tTap = (p2 ? tL2 : tL1) + (spec.tapAfter || 1.2);
       const tap = h('div', 'tap', null, el); const ring = h('div', 'ring', null, el);
       const tapBox = (d) => (d && typeof d.pg.tap === 'string' ? ((d._m || {}).taps || {})[d.pg.tap] : d && d.pg.tap) || null;
-      if (last && tapBox(last)) { R.cue(tTap, 'click', 0.6); R.cue(tTap + 0.1, 'pop', 0.4); R.event(tTap, 'tap'); }
+      if (last && tapBox(last)) { R.cue(tTap, 'click', 0.6); R.cue(tTap + 0.1, 'pop', 0.4); R.event(tTap, 'tap'); R.event(tTap + 0.3, 'resolve-end'); R.cue(tTap + 0.25, 'resolve', 0.45); }
       ctx.focus(brw);
       ctx.tick((t) => {
         const typed = t < tType ? '' : domain.slice(0, clamp(Math.floor((t - tType) / step) + 1, 0, domain.length));

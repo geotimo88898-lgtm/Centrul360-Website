@@ -2,37 +2,32 @@
  "v": 2,
  "id": "v2-caz-real",
  "rubric": "Cazuri",
- "theme": "paper",
+ "theme": "burgundy",
+ "music": "Free (Ultra Naté), piesa aleasă de proprietar",
  "topic": "Liposonix abdomen, o ședință, Timișoara",
  "topicTag": "liposonix-abdomen",
  "hookType": "poveste",
  "case": "cazul-20",
- "title": "O singură ședință. Ce s-a schimbat?",
- "sources": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp + catalog-rezultate.html (Cazul 20: Liposonix abdomen, Timișoara, 1 ședință, publicat cu acordul clientei; celulele adipoase din zona tratată distruse, eliminate natural în săptămânile următoare, fără bisturiu, fără timp de recuperare); grasime-localizata.html („zona nu cedează, deși mănânci atent și faci mișcare”, „Ultrasunete care țintesc doar grăsimea”)",
+ "title": "Cum a ajuns aici după o singură ședință?",
+ "sources": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp + catalog-rezultate.html (Cazul 20: Liposonix abdomen, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate care distrug celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; fără bisturiu, fără timp de recuperare; reducerea vizibilă în general la 6-8 săptămâni); grasime-localizata.html („zona nu cedează, deși mănânci atent și faci mișcare”, „Ultrasunete care țintesc doar grăsimea”, grăsimea rezistentă la dietă și sport din motive genetice și hormonale, „Nu e vina ta”, „un plan făcut pentru corpul tău”, Săptămânile 2-8 / La 6-8 săptămâni)",
  "post": "O singură ședință de Liposonix pe abdomen, Timișoara. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
  "hook": {
-  "say": "O singură ședință. Ce crezi că s-a *schimbat*?",
-  "q": "Ce crezi că s-a schimbat?",
+  "say": "Cum a ajuns aici după o singură *ședință*?",
+  "q": "Cum a ajuns aici după o singură ședință?",
   "visual": {
    "type": "photo",
    "img": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
    "split": "v",
    "seam": 0.5,
-   "mode": "tease",
-   "coverText": "după o singură ședință",
-   "label": "Caz real · Timișoara",
-   "enter": "slam"
+   "mode": "glimpse",
+   "flashAt": [
+    0,
+    0.45
+   ],
+   "label": "Caz real · Timișoara"
   }
  },
  "beats": [
-  {
-   "say": "Clienta e din Timișoara, iar zona lucrată a fost *abdomenul*.",
-   "visual": {
-    "type": "pin",
-    "city": "Timișoara",
-    "sub": "zona: abdomenul"
-   }
-  },
   {
    "say": "Știi zona aia care nu cedează, deși mănânci atent și faci *mișcare*?",
    "visual": {
@@ -61,19 +56,16 @@
       ]
      }
     ]
+   },
+   "nuki": {
+    "pose": "gandeste",
+    "at": "peek-l",
+    "y": 1060,
+    "react": "nod"
    }
   },
   {
-   "say": "La ea s-a lucrat cu Liposonix. O singură *ședință*.",
-   "visual": {
-    "type": "big",
-    "value": "1",
-    "suffix": "ședință",
-    "label": "Liposonix · abdomen"
-   }
-  },
-  {
-   "say": "Ultrasunete care se adună doar în stratul de *grăsime*.",
+   "say": "La ea s-a lucrat cu Liposonix, care țintește doar stratul de *grăsime*.",
    "visual": {
     "type": "skin",
     "mode": "liposonix",
@@ -81,59 +73,60 @@
      {
       "at": [
        0,
-       0.2
+       0.3
       ],
       "do": "energy",
-      "label": "Doar în stratul de grăsime"
+      "label": "Doar stratul de grăsime"
      },
      {
       "at": [
        0,
-       0.62
+       0.75
       ],
       "do": "focus",
       "layer": "grasime"
-     },
-     {
-      "at": [
-       1,
-       0.15
-      ],
-      "do": "shrink",
-      "label": "Celulele tratate, eliminate treptat"
-     },
-     {
-      "at": [
-       1,
-       0.45
-      ],
-      "do": "pulse"
-     },
-     {
-      "at": [
-       1,
-       0.75
-      ],
-      "do": "calm"
      }
     ]
    }
   },
   {
-   "say": "Celulele sunt distruse, iar corpul le elimină în săptămânile următoare.",
-   "step": "celulele se micșorează"
-  },
-  {
-   "say": "Fără bisturiu, fără recuperare. Acum, să *vedem*.",
+   "say": "Corpul elimină celulele tratate în săptămânile *următoare*.",
    "visual": {
-    "type": "type-flip",
-    "size": 120
+    "type": "timeline",
+    "items": [
+     {
+      "t": "Ședința",
+      "ic": "zap",
+      "at": [
+       0,
+       0.05
+      ]
+     },
+     {
+      "t": "Corpul lucrează",
+      "s": "săptămânile 2-8",
+      "ic": "activity",
+      "at": [
+       0,
+       0.45
+      ]
+     },
+     {
+      "t": "Diferența",
+      "s": "la 6-8 săptămâni",
+      "ic": "sparkles",
+      "at": [
+       0,
+       0.85
+      ]
+     }
+    ]
    }
   }
  ],
  "payoff": [
   {
-   "say": "Uite *diferența*.",
+   "say": "Fără bisturiu, fără recuperare. Acum, uite *diferența*.",
    "visual": {
     "type": "photo",
     "img": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
@@ -143,45 +136,117 @@
     "mask": "diagonal",
     "revealAt": [
      0,
-     0.15
+     0.8
     ],
     "label": "Cazul 20 · Liposonix · Timișoara",
-    "enter": "fade",
+    "enter": "blurIn",
     "chips": [
      {
       "at": [
-       1,
-       0.0
+       0,
+       1.02
       ],
-      "t": "Aceeași clientă"
+      "t": "Aceeași clientă, o singură ședință"
      },
      {
       "at": [
-       1,
-       0.3
-      ],
-      "t": "O singură ședință"
-     },
-     {
-      "at": [
-       1,
-       0.62
+       0,
+       1.3
       ],
       "t": "Poză reală, cu acordul ei"
      }
+    ],
+    "qAt": [
+     0,
+     0.42
     ]
+   },
+   "pause": 1.4
+  }
+ ],
+ "resolve": [
+  {
+   "say": "Și dacă te regăsești? Fii blândă cu tine: grăsimea de acolo e rezistentă la dietă și sport, nu e lipsă de *voință*.",
+   "visual": {
+    "type": "scale",
+    "left": {
+     "t": "dietă + sport",
+     "ic": "salad",
+     "tone": "acc2"
+    },
+    "right": {
+     "t": "genetică",
+     "ic": "dna",
+     "tone": "acc"
+    },
+    "keys": [
+     [
+      0,
+      0.45,
+      14
+     ],
+     [
+      0,
+      0.66,
+      8
+     ],
+     [
+      0,
+      0.86,
+      12
+     ]
+    ]
+   },
+   "nuki": {
+    "pose": "mana-inima",
+    "at": "bl",
+    "react": "bounce"
    }
   },
   {
-   "say": "Aceeași clientă, după o singură ședință. Fiecare corp e altfel, dar poza e *reală*.",
-   "step": "poza rămâne, cu nota de acord"
+   "say": "Și ai răbdare: în general, diferența se vede la șase, opt *săptămâni*.",
+   "cap": "Și ai răbdare: în general, diferența se vede la 6-8 *săptămâni*.",
+   "visual": {
+    "type": "counter",
+    "from": 0,
+    "to": 8,
+    "suffix": "săptămâni",
+    "label": "în general, *6-8*",
+    "at": [
+     0,
+     0.2
+    ],
+    "dur": 1.6,
+    "size": 220
+   }
   }
  ],
+ "outro": {
+  "say": "Fiecare corp e altfel, și tocmai de-asta merită un plan făcut pentru el.",
+  "cta": "soft",
+  "visual": {
+   "type": "qmark",
+   "formAt": [
+    0,
+    0,
+    -0.35
+   ],
+   "formDur": 0.8,
+   "to": "check",
+   "toAt": [
+    0,
+    0.45
+   ],
+   "q": false
+  }
+ },
  "end": {
   "type": "site",
-  "say": "Cum lucrează, pas cu pas, găsești pe centrul360.com.",
-  "tts": "Cum lucrează, pas cu pas, găsești pe centrul trei sute șaizeci punct com.",
+  "say": "Dacă vrei, uite cum lucrează, pas cu pas, pe centrul360.com.",
+  "tts": "Dacă vrei, uite cum lucrează, pas cu pas, pe centrul trei sute șaizeci punct com.",
+  "cta": "soft",
   "dur": 5.0,
+  "home": 0.9,
   "pages": [
    {
     "key": "home-rezultate",
@@ -195,7 +260,12 @@
     "section": "#cum",
     "tap": "figure svg"
    }
-  ],
-  "home": 0.9
- }
+  ]
+ },
+ "musicFile": "owner-free",
+ "musicStart": 169.344,
+ "beat": {
+  "bpm": 125.01
+ },
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s)."
 }

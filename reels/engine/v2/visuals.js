@@ -11,6 +11,7 @@
   const S = () => R.STAGE;
   const T = (ctx, at, dflt) => (Array.isArray(at) ? ctx.L(at[0], at[1] || 0, at[2] || 0) : at != null ? ctx.L(at, 0) : dflt);
   R.at = T;
+  const EIO2 = (p) => (p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? Math.pow(2, 20 * p - 10) / 2 : (2 - Math.pow(2, -20 * p + 10)) / 2);
   const COL = (c) => (c && c[0] !== '#' && !c.startsWith('rgb') && !c.startsWith('var') ? 'var(--' + c + ')' : c);
 
   // ------------------------------------------------------------------ kinetic typography
@@ -106,7 +107,7 @@
     const lay = ctx.layer(0.5);
     const cv = h('canvas', null, null, lay); cv.width = 1080; cv.height = 1920; cv.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
     const g = cv.getContext('2d');
-    const N = p.n || 620, cx = 540, cy = p.cy || 560;
+    const N = p.n || 620, cx = p.cx || 490, cy = p.cy || 560;
     // the target: points inside a big "?" in the display font
     const off = document.createElement('canvas'); off.width = 1080; off.height = 1000; const og = off.getContext('2d');
     og.fillStyle = '#000'; og.textAlign = 'center'; og.textBaseline = 'middle'; og.font = (R.theme.font && R.theme.font.qweight || 800) + ' 640px ' + getComputedStyle(document.documentElement).getPropertyValue('--f-display');
@@ -118,7 +119,16 @@
       const tg = pts[Math.floor(R.rnd(i, 9) * pts.length)] || [cx, cy];
       return { a: R.rnd(i) * Math.PI * 2, w: (0.35 + R.rnd(i, 2) * 0.9) * (R.rnd(i, 7) > 0.5 ? 1 : -1), r: 140 + R.rnd(i, 3) * 520, sz: 3 + R.rnd(i, 4) * 6, c: cols[i % cols.length], tg, d: R.rnd(i, 5) * 0.5, wob: R.rnd(i, 6) * 6.28 };
     });
+    // a second shape to resolve into (the outro): 'check' | 'heart'
+    let pts2 = null;
+    if (p.to) { og.clearRect(0, 0, 1080, 1000); og.lineCap = 'round'; og.lineJoin = 'round';
+      if (p.to === 'check') { og.lineWidth = 120; og.strokeStyle = '#000'; og.beginPath(); og.moveTo(300, 520); og.lineTo(480, 700); og.lineTo(800, 330); og.stroke(); }
+      else { og.fillStyle = '#000'; og.beginPath(); og.moveTo(540, 820); og.bezierCurveTo(140, 560, 220, 200, 540, 380); og.bezierCurveTo(860, 200, 940, 560, 540, 820); og.fill(); }
+      const d2 = og.getImageData(0, 0, 1080, 1000).data; pts2 = [];
+      for (let y = 0; y < 1000; y += 9) for (let x = 0; x < 1080; x += 9) if (d2[(y * 1080 + x) * 4 + 3] > 128) pts2.push([x, y - 500 + cy]); }
     const tF = T(ctx, p.formAt, ctx.L(0, 0, 0.15)), dF = p.formDur || 1.25;
+    const tTo = p.to ? T(ctx, p.toAt, ctx.L(0, 0.55)) : null;
+    if (tTo != null) { ctx.shot.resolveAt = tTo + 0.5; ctx.sfx(tTo, 'swoosh_up', 0.6); R.event(tTo, 'resolve'); R.event(tTo + 0.6, 'resolve'); }
     const tB = p.burstAt != null ? T(ctx, p.burstAt) : null;
     if (tF > ctx.t0 - 1) { ctx.sfx(tF + 0.2, 'shimmer', 0.55); ctx.sfx(tF + dF + 0.1, 'snap', 0.5); R.event(tF, 'form'); R.event(tF + dF, 'form'); }
     if (tB != null) { ctx.sfx(tB, 'whoosh_l', 0.7); R.event(tB, 'burst'); }
@@ -134,6 +144,7 @@
         const f = E.inout(clamp((t - tF - q.d * 0.6) / dF));
         let tx = q.tg[0] + Math.sin(t * 3 + q.wob) * 2.5, ty = q.tg[1] + Math.cos(t * 2.6 + q.wob) * 2.5;
         if (tB != null && t > tB) { const b = E.out(clamp((t - tB) / 0.9)); const dx = q.tg[0] - cx, dy = q.tg[1] - cy, l = Math.hypot(dx, dy) + 1; tx += dx / l * b * (900 + q.r); ty += dy / l * b * (900 + q.r); }
+        if (tTo != null && t > tTo - 0.2) { const g2 = pts2[Math.floor(R.rnd(i, 11) * pts2.length)]; const m = E.inout(clamp((t - tTo - q.d * 0.4) / 0.8)); tx = lerp(tx, g2[0] + Math.sin(t * 3 + q.wob) * 2, m); ty = lerp(ty, g2[1] + Math.cos(t * 2.6 + q.wob) * 2, m); }
         x = lerp(x, tx, f); y = lerp(y, ty, f);
         const al = tB != null && t > tB ? 1 - clamp((t - tB) / 0.9) : 0.35 + 0.65 * Math.max(f, 0.5 + 0.5 * Math.sin(t * 2 + q.wob));
         g.globalAlpha = clamp(al);
@@ -166,7 +177,7 @@
   V.skin = (ctx, p) => {
     const st = ctx.stage();
     const bw = 860, bh = p.h || 700, top = p.top != null ? p.top : 40;
-    const box = h('div', 'abs card', null, st); place(box, 0, top, bw, bh); box.style.overflow = 'hidden';
+    const box = h('div', 'abs card skinbox', null, st); place(box, 0, top, bw, bh); box.style.overflow = 'hidden';
     const air = p.mode ? 110 : 64;
     const Ls = [['piele', 'PIELE', 130, '#f4cdbb'], ['grasime', 'GRĂSIME', 220, '#fbe6ad'], ['smas', 'SMAS', 56, '#e7ab95'], ['muschi', 'MUȘCHI', bh - air - 406, '#e29b97']];
     let y = air; const band = {};
@@ -354,7 +365,7 @@
     if (cover) cover.style.cssText += ';background:repeating-linear-gradient(135deg,var(--card) 0 26px,var(--bg2) 26px 52px)';
     const revealT = p.mode === 'reveal' ? T(ctx, p.revealAt, ctx.L(0, 0.4)) : null;
     if (revealT != null) ctx.shot.revealAt = revealT;
-    if (cover && p.mode === 'tease') { const qm = cover.querySelector('.disp'); ctx.anim(qm, 'bump', T(ctx, p.qAt, ctx.L(0, 0.6)), { amt: 0.25, event: true }); ctx.sfx(T(ctx, p.qAt, ctx.L(0, 0.6)), 'pop', 0.4); }
+    if (cover && (p.mode === 'tease' || (p.mode === 'reveal' && revealT - ctx.t0 > 2.2))) { const qm = cover.querySelector('.disp'); ctx.anim(qm, 'bump', T(ctx, p.qAt, ctx.L(0, 0.6)), { amt: 0.25, event: true }); ctx.sfx(T(ctx, p.qAt, ctx.L(0, 0.6)), 'pop', 0.4); }
     ctx.shot.after = () => {
       const iw = im.naturalWidth || 1286, ih = im.naturalHeight || 1400;
       // the photo, then its label and the consent note under it (the stage reaches down to the captions here)
@@ -366,9 +377,11 @@
       if (p.chips) { if (lab) ctx.anim(lab, 'outUp', T(ctx, p.chips[0].at) - 0.15, { dur: 0.15 }); R.chipSeq(ctx, st, p.chips, y0 + hh + 34); }
       if (note) { place(note, 40, y0 + hh + 34 + (lab ? 80 : 0)); note.style.width = '780px'; }
       if (cover) { const seam = p.seam || 0.5; if (p.split === 'h') place(cover, w * seam, 0, w * (1 - seam), hh); else place(cover, 0, hh * seam, w, hh * (1 - seam)); }
-      fr._hh = hh; fr._w = w;
+      fr._hh = hh + 16; fr._w = w;
     };
-    ctx.anim(fr, p.enter || 'in', ctx.t0 + 0.02, { sfx: 'shutter', gain: 0.7 });
+    const glimpse = p.mode === 'glimpse', tFl = glimpse ? T(ctx, p.flashAt, ctx.L(0, 0.42)) : null;
+    if (glimpse) { ctx.sfx(ctx.t0 + 0.3, 'shutter', 0.8); R.event(ctx.t0 + 0.3, 'glimpse'); ctx.sfx(tFl, 'impact', 0.8); ctx.sfx(tFl + 0.02, 'whoosh_s', 0.6); R.event(tFl, 'flash'); ctx.shot.flashAt = tFl; }
+    else ctx.anim(fr, p.enter || 'in', ctx.t0 + 0.02, { sfx: 'shutter', gain: 0.7 });
     if (lab) ctx.anim(lab, 'pop', ctx.t0 + 0.3, { gain: 0.35 });
     if (note) ctx.anim(note, 'fade', ctx.t0 + 0.4, { sfx: null });
     if (cover) ctx.anim(cover, 'fade', ctx.t0, { sfx: null, dur: 0.01, quiet: true });
@@ -376,6 +389,13 @@
     if (revealT != null) R.event(revealT, 'reveal');
     const mask = p.mask || 'diagonal';
     ctx.tick((t, lt) => {
+      if (glimpse && fr._hh) { // the real "after" first (blurred → sharp, close), then the whole photo opens up: before above, after below
+        const seam = p.seam || 0.5, sh = E.out(clamp((t - ctx.t0 - 0.25) / 0.7)), op = EIO2(clamp((t - tFl) / 0.55));
+        fr.style.clipPath = 'inset(' + ((1 - op) * seam * 100).toFixed(2) + '% 0 0 0 round 30px)';
+        const k = 1.32 - 0.32 * op; fr.style.transformOrigin = '50% ' + (75 - 25 * op).toFixed(1) + '%';
+        fr.style.transform = 'translateY(' + (-(1 - op) * fr._hh * 0.28).toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+        fr.style.filter = sh < 1 ? 'blur(' + ((1 - sh) * 26).toFixed(2) + 'px)' : ''; fr.style.opacity = clamp((t - ctx.t0) / 0.25).toFixed(3);
+      }
       im.style.transform = 'scale(' + (1 + 0.025 * clamp(lt / 6)).toFixed(4) + ')';
       if (!cover) return;
       if (revealT == null || t < revealT) { cover.style.clipPath = ''; cover.style.opacity = '1'; return; }
@@ -409,13 +429,47 @@
     });
     return bubbles;
   };
-  // a small Nuki reacting in a corner of any shot: line.b.nuki = {pose, at:'br'|'bl', k}
+  // Nuki, small, in some frames (2-4 a reel): line.b.nuki = { pose, at, x, y, k, react, flip, dt }
+  //   at: 'peek-l' (from the left edge), 'peek-b' (rises over the captions' ledge), 'bl' | 'br' | 'tl' | 'tr' (corners)
+  //   react: 'nod' | 'bounce' | 'point' | 'wow' (a squash-and-pop of surprise). Lit by the theme (rim light on dark themes).
   R.nukiCorner = (ctx, spec, t) => {
-    const k = spec.k || 0.34, nw = 690 * k, nh = 747 * k;
-    const x = spec.at === 'bl' ? 60 : 900 - nw, y = 1170 - nh;
-    const d = h('div', 'abs', '<img src="' + R.nukiImg(spec.pose) + '" style="width:100%;height:100%;object-fit:contain">', ctx.el); place(d, x, y, nw, nh); d.style.transformOrigin = '50% 100%';
-    ctx.anim(d, 'pop', t, { sfx: 'bubble', gain: 0.4 });
-    ctx.tick((tt) => { d.dataset.base = 'rotate(' + (Math.sin(tt * 2) * 3).toFixed(2) + 'deg)'; });
+    const k = spec.k || 0.31, nw = 690 * k, nh = 747 * k, at = spec.at || 'br';
+    let x, y, rot = 0, clipB = null;
+    if (at === 'peek-l') { x = -nw * 0.22; y = (spec.y || 960) - nh / 2; rot = 14; }
+    else if (at === 'peek-b') { x = spec.x != null ? spec.x : 700; y = 1190 - nh * 0.62; clipB = 1190; }
+    else if (at === 'tl') { x = 60; y = 300; }
+    else if (at === 'tr') { x = 900 - nw; y = 300; }
+    else if (at === 'bl') { x = 50; y = 1170 - nh; }
+    else { x = 910 - nw; y = 1170 - nh; }
+    if (spec.x != null && at !== 'peek-b') x = spec.x; if (spec.y != null && at !== 'peek-l') y = spec.y;
+    const wrap = h('div', 'nuki-c', null, ctx.el); place(wrap, x, y, nw, nh);
+    if (clipB) { wrap.style.clipPath = 'inset(-40% -40% ' + (y + nh - clipB) + 'px -40%)'; wrap.dataset.vb = clipB; }
+    const rig = h('div', 'abs', '<img src="' + R.nukiImg(spec.pose) + '">', wrap); rig.style.cssText += ';inset:0;transform-origin:50% 96%';
+    const img = rig.firstChild;
+    img.style.filter = R.theme.dark ? 'brightness(.9) saturate(1.05) drop-shadow(0 0 18px color-mix(in srgb,var(--acc) 45%,transparent)) drop-shadow(0 18px 24px rgba(0,0,0,.5))' : 'drop-shadow(0 16px 20px rgba(0,0,0,.22))';
+    if (spec.flip) img.style.transform = 'scaleX(-1)';
+    const tIn = t, tR = t + 0.55;
+    ctx.sfx(tIn, 'bubble', 0.4); R.event(tIn, 'nuki');
+    if (spec.react === 'wow') ctx.sfx(tR, 'pop', 0.4);
+    wrap.dataset.nuki = '1';
+    ctx.tick((tt) => {
+      const q = clamp((tt - tIn) / 0.6);
+      if (q <= 0) { wrap.style.opacity = '0'; return; }
+      wrap.style.opacity = '1';
+      // the entrance: from off-screen (left / below), landing with a bounce and a squash
+      const e = E.back(q);
+      const dx = at === 'peek-l' ? -(1 - e) * nw * 0.8 : 0, dy = at === 'peek-l' ? 0 : (1 - e) * nh * 0.7;
+      const land = clamp((tt - tIn - 0.42) / 0.25); const sq = land > 0 && land < 1 ? 1 - 0.1 * Math.sin(Math.PI * land) : 1;
+      let r = rot + Math.sin(tt * 1.8) * 1.5, by = Math.sin(tt * 2.3) * 4, s2 = 1;
+      const rq = tt - tR;
+      if (rq > 0) {
+        if (spec.react === 'nod') r += Math.sin(clamp(rq / 0.9) * Math.PI * 4) * 6 * (1 - clamp(rq / 0.9));
+        if (spec.react === 'bounce') by -= Math.abs(Math.sin(clamp(rq / 1.0) * Math.PI * 3)) * 22 * (1 - clamp(rq / 1.0));
+        if (spec.react === 'point') r += -8 * E.out(clamp(rq / 0.35));
+        if (spec.react === 'wow') s2 = 1 + 0.14 * Math.sin(Math.PI * clamp(rq / 0.3));
+      }
+      rig.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + (dy + by).toFixed(1) + 'px) rotate(' + r.toFixed(2) + 'deg) scale(' + ((2 - sq) * s2).toFixed(4) + ',' + (sq * s2).toFixed(4) + ')';
+    });
   };
 
   // ------------------------------------------------------------------ panel: an AI illustration (imagen.py), with a ken-burns / parallax / mask

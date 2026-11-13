@@ -48,7 +48,7 @@
     zones.forEach((z, i) => { const a = Math.PI + ((i + 0.5) / zones.length) * Math.PI; const l = h('div', 'tx abs lab', esc(z.t), st); l.style.cssText += ';width:240px;text-align:center;font-size:32px'; place(l, cx + (r + 0) * Math.cos(a) * 0.62 - 120, 20 + cy + r * Math.sin(a) * 0.62 - 18); ctx.anim(l, 'fade', ctx.L(0, 0.2) + i * 0.1, { sfx: null }); });
     const lab = p.label ? centerX(h('div', 'tx abs disp', R.rich(p.label), st)) : null; if (lab) { lab.style.top = (cy + 90) + 'px'; fit(lab, 820, 200, 70, 40); }
     const zs = [...g.querySelectorAll('.zn')];
-    zs.forEach((z, i) => ctx.anim(z, 'draw', ctx.t0 + 0.05 + i * 0.12, { dur: 0.5, sfx: i ? null : 'swoosh', event: true }));
+    zs.forEach((z, i) => ctx.anim(z, 'draw', ctx.t0 - 0.12 + i * 0.1, { dur: 0.45, sfx: i ? null : 'swoosh', event: true }));
     const nd = g.querySelector('.nd'); nd.style.transformOrigin = cx + 'px ' + cy + 'px';
     const keys = (p.keys || [[0, 0.3, p.value != null ? p.value : 0.5]]).map((k) => ({ t: ctx.L(k[0], k[1]), v: k[2] }));
     keys.forEach((k) => { ctx.sfx(k.t, 'swoosh', 0.4); ctx.sfx(k.t + 0.55, 'tick', 0.45); R.event(k.t, 'needle'); });
@@ -181,9 +181,12 @@
       const tx = h('div', 'tx disp', R.rich(it.t), row); tx.style.cssText = 'position:relative;font-size:50px' + (it.x ? ';color:var(--mute)' : '');
       fit(tx, 640, rh - 40, 54, 30);
       const t = T(ctx, it.at, ctx.L(0, i / n));
-      ctx.anim(row, i % 2 ? 'slideL' : 'slideR', t, { amt: -200, gain: 0.35 });
+      // the rows are there when the screen arrives (dim); each one lights up and gets its mark on the voice
+      ctx.anim(row, i % 2 ? 'slideL' : 'slideR', ctx.t0 + 0.06 + i * 0.08, { amt: -200, gain: 0.3, sfx: i ? null : undefined });
+      ctx.anim(tx, 'undim', t, { event: true }); ctx.anim(tx, 'bump', t, { amt: 0.06 });
       ctx.anim(bx.querySelector('path'), 'draw', t + 0.25, { dur: 0.4, sfx: ok ? 'tick' : 'pop', gain: 0.5 });
       ctx.anim(bx, 'pop', t + 0.2, { sfx: null });
+      if (i === n - 1) ctx.focus(row);
     });
   };
 
@@ -256,11 +259,13 @@
     ctx.sfx(tT, 'swoosh_down', 0.45); R.event(tT, 'tilt');
     if (tC != null) { ctx.sfx(tC, 'pop', 0.4); R.event(tC, 'chin'); }
     const lab = p.label ? centerX(h('div', 'tx abs disp', R.rich(p.label), st)) : null; if (lab) { lab.style.top = '800px'; fit(lab, 820, 100, 60, 34); ctx.anim(lab, 'in', T(ctx, p.labelAt, ctx.L(0, 0.5))); }
+    if (p.phoneUp) { const ok = h('div', 'abs ico', R.icon('check'), st); place(ok, 560, 130, 96, 96); ok.style.cssText += ';border-radius:50%;background:var(--good);color:#06121a;box-shadow:0 0 40px color-mix(in srgb,var(--good) 60%,transparent)'; const tk = T(ctx, p.okAt, ctx.L(0, 0.72)); ctx.anim(ok, 'pop', tk, { sfx: 'chime', gain: 0.5 }); }
     ctx.focus(g);
     ctx.tick((t) => {
-      const a = (p.angle || 32) * E.inout(clamp((t - tT) / 1.0));
+      const a0 = p.from != null ? p.from : 0, a1 = p.to != null ? p.to : (p.angle || 32); const a = a0 + (a1 - a0) * E.inout(clamp((t - tT) / 1.0));
+      if (p.phoneUp) ph.style.transform = 'translateY(' + (-190 * E.inout(clamp((t - tT) / 1.0))).toFixed(1) + 'px)';
       head.style.transform = 'rotate(' + a.toFixed(2) + 'deg)';
-      const r = 300, a0 = -90, a1 = -90 + a; const p0 = [440 + r * Math.cos(a0 * Math.PI / 180), 430 + r * Math.sin(a0 * Math.PI / 180)], p1 = [440 + r * Math.cos(a1 * Math.PI / 180), 430 + r * Math.sin(a1 * Math.PI / 180)];
+      const r = 300, b0 = -90, b1 = -90 + a; const p0 = [440 + r * Math.cos(b0 * Math.PI / 180), 430 + r * Math.sin(b0 * Math.PI / 180)], p1 = [440 + r * Math.cos(b1 * Math.PI / 180), 430 + r * Math.sin(b1 * Math.PI / 180)];
       arc.setAttribute('d', a > 1 ? 'M' + p0[0] + ' ' + p0[1] + ' A ' + r + ' ' + r + ' 0 0 1 ' + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1) : '');
       chin.setAttribute('r', tC != null ? (E.back(clamp((t - tC) / 0.4)) * (34 + 4 * Math.sin(t * 5))).toFixed(1) : 0);
     });
@@ -302,7 +307,7 @@
     ctx.sfx(tD - 0.2, 'whoosh_l', 0.6); R.event(tD, 'dive');
     const lab1 = p.label ? h('div', 'tx abs', '<span class="chip soft">' + R.rich(p.label) + '</span>', st) : null; if (lab1) { centerX(lab1); lab1.style.top = '860px'; ctx.anim(lab1, 'pop', ctx.t0 + 0.4, { sfx: null }); ctx.anim(lab1, 'out', tD); }
     const lab2 = p.innerLabel ? h('div', 'tx abs', '<span class="chip acc">' + R.rich(p.innerLabel) + '</span>', st) : null; if (lab2) { centerX(lab2); lab2.style.top = '860px'; ctx.anim(lab2, 'pop', tD + 0.5, { sfx: 'pop' }); }
-    ctx.focus(lens);
+    ctx.focus(card);
     ctx.tick((t) => {
       const mv = E.inout(clamp((t - tL) / Math.max(0.4, tD - tL)));
       const lx = 120 + 330 * mv, ly = 180 + 160 * Math.sin(mv * Math.PI * 0.8);
@@ -363,6 +368,54 @@
         const x = lerp(x0, x1, ph), y = lerp(y0, y1, ph) - Math.sin(ph * Math.PI) * 90;
         g.globalAlpha = Math.sin(ph * Math.PI) * 0.9; g.fillStyle = i % 2 ? acc : '#f6c94f';
         g.beginPath(); g.arc(x, y, 7, 0, 6.283); g.fill();
+      }
+      g.globalAlpha = 1;
+    });
+  };
+})();
+// ------------------------------------------------------------------ dissolve: a belief on a glass card turns into
+// particles that spread over a whole-body pictogram (an abstract figure, never a real body): „it leaves from everywhere”
+(function () {
+  'use strict';
+  const R = window.R2, V = R.V, { clamp, E, h, place, fit, lerp } = R;
+  V.dissolve = (ctx, p) => {
+    const st = ctx.stage();
+    const card = h('div', 'tx abs glass disp', R.rich(p.text), st); place(card, 60, 30, 740); card.style.cssText += ';padding:44px 40px;text-align:center;font-size:70px';
+    fit(card, 660, 300, p.size || 72, 40);
+    const tD = R.at(ctx, p.dissolveAt, ctx.L(0, 0.6));
+    ctx.anim(card, 'in', ctx.t0 + 0.02);
+    ctx.anim(card, 'bump', ctx.L(0, 0.6), { amt: 0.05, event: true }); ctx.sfx(ctx.L(0, 0.6), 'pop', 0.35);
+    if (ctx.lines[1]) { ctx.anim(card, 'shake', ctx.L(1, 0, 0.02), { event: true }); ctx.sfx(ctx.L(1, 0, 0.02), 'glitch', 0.4); }
+    ctx.shot.revealAt = tD + 0.6;
+    ctx.sfx(tD, 'whoosh_l', 0.75); ctx.sfx(tD + 0.65, 'shimmer', 0.6); R.event(tD, 'dissolve'); R.event(tD + 0.7, 'spread');
+    const tG = tD + 2.0; ctx.sfx(tG, 'sparkle', 0.5); R.event(tG, 'glow');
+    // the figure: head, torso, arms, legs (rounded shapes), sampled for the landing points
+    const fig = document.createElement('canvas'); fig.width = 860; fig.height = 900; const fg = fig.getContext('2d');
+    const cx = 430, top = 400;
+    fg.fillStyle = '#000';
+    const cap = (x1, y1, x2, y2, r) => { fg.lineWidth = r * 2; fg.lineCap = 'round'; fg.strokeStyle = '#000'; fg.beginPath(); fg.moveTo(x1, y1); fg.lineTo(x2, y2); fg.stroke(); };
+    fg.beginPath(); fg.arc(cx, top + 40, 40, 0, 6.283); fg.fill();
+    cap(cx, top + 110, cx, top + 270, 62); cap(cx - 70, top + 110, cx - 120, top + 270, 22); cap(cx + 70, top + 110, cx + 120, top + 270, 22);
+    cap(cx - 32, top + 320, cx - 46, top + 480, 28); cap(cx + 32, top + 320, cx + 46, top + 480, 28);
+    const d = fg.getImageData(0, 0, 860, 900).data, pts = [];
+    for (let y = 0; y < 900; y += 8) for (let x = 0; x < 860; x += 8) if (d[(y * 860 + x) * 4 + 3] > 128) pts.push([x, y]);
+    const sil = h('div', 'abs', null, st); place(sil, 0, 0, 860, 900);
+    const outline = fig.toDataURL(); sil.style.cssText += ';background:url(' + outline + ');opacity:0;filter:opacity(.12)';
+    const cv = h('canvas', null, null, st); cv.width = 860; cv.height = 900; cv.style.cssText = 'position:absolute;left:0;top:0';
+    const g = cv.getContext('2d');
+    const N = 420, acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim(), acc2 = getComputedStyle(document.documentElement).getPropertyValue('--acc2').trim();
+    const P = Array.from({ length: N }, (_, i) => ({ sx: 120 + R.rnd(i) * 620, sy: 80 + R.rnd(i, 2) * 220, tg: pts[Math.floor(R.rnd(i, 3) * pts.length)], d: R.rnd(i, 4) * 0.35, c: i % 3 ? acc : acc2, w: R.rnd(i, 5) * 6.28 }));
+    const lab = p.label ? h('div', 'tx abs', '<span class="chip acc">' + R.rich(p.label) + '</span>', st) : null; if (lab) { place(lab, 0, 860); lab.style.width = '860px'; lab.style.textAlign = 'center'; ctx.anim(lab, 'pop', tD + 0.9, { gain: 0.4 }); }
+    ctx.focus(card);
+    ctx.tick((t) => {
+      const q = clamp((t - tD) / 0.35); card.style.opacity = (1 - q).toFixed(3); card.style.filter = q > 0 ? 'blur(' + (q * 10).toFixed(1) + 'px)' : '';
+      sil.style.opacity = (clamp((t - tD - 0.3) / 0.6) * 1).toFixed(3); sil.style.filter = 'opacity(.16)';
+      g.clearRect(0, 0, 860, 900);
+      if (t < tD) return;
+      for (const a of P) {
+        const f = E.inout(clamp((t - tD - a.d) / 1.1));
+        const x = lerp(a.sx, a.tg[0], f) + Math.sin(t * 3 + a.w) * 2 * f, y = lerp(a.sy, a.tg[1], f) - Math.sin(f * Math.PI) * 120 + Math.cos(t * 2.4 + a.w) * 2 * f;
+        const gl = t > tG ? 1 + 0.6 * Math.sin(Math.PI * clamp((t - tG) / 0.6)) : 1; g.globalAlpha = 0.9; g.fillStyle = a.c; g.beginPath(); g.arc(x, y, 4.2 * gl, 0, 6.283); g.fill();
       }
       g.globalAlpha = 1;
     });

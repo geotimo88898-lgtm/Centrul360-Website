@@ -40,7 +40,7 @@ def as_list(x): return [] if x is None else x if isinstance(x, list) else [x]
 def v2_lines(S):
     """the spoken lines of a v2 script, in order, with their role (the engine numbers them the same way)"""
     out = []
-    for role, part in (('hook', S.get('hook')), ('beat', S.get('beats')), ('payoff', S.get('payoff'))):
+    for role, part in (('hook', S.get('hook')), ('beat', S.get('beats')), ('payoff', S.get('payoff')), ('resolve', S.get('resolve')), ('outro', S.get('outro'))):
         for b in as_list(part): out.append((role, b))
     if S.get('end') and S['end'].get('say'): out.append(('end', S['end']))
     return [('L%d' % i, role, (b.get('tts') or b['say']).replace('*', '').strip()) for i, (role, b) in enumerate(out)]
@@ -53,9 +53,9 @@ def main_v2(rid, S):
     base = os.path.join(V.FILMS, rid); cache = os.path.join(base, 'voice'); os.makedirs(cache, exist_ok=True)
     L = v2_lines(S)
     for _, _, t in L: assert '—' not in t and '–' not in t, 'long dash in: ' + t
-    styles = {'hook': cfg.get('style_hook') or cfg['style'], 'payoff': cfg.get('style_payoff') or cfg['style']}
+    styles = {'hook': cfg.get('style_hook') or cfg['style'], 'payoff': cfg.get('style_payoff') or cfg['style'], 'outro': cfg.get('style_outro') or cfg['style']}
     style_of = lambda role: (cfg['style'] + ' ' + styles[role]) if role in styles else cfg['style']
-    for role in ('hook', 'beat', 'payoff', 'end'):  # one style at a time (the style is part of the take and of its cache key)
+    for role in ('hook', 'beat', 'payoff', 'resolve', 'outro', 'end'):  # one style at a time (the style is part of the take and of its cache key)
         texts = [t for _, r, t in L if r == role]
         if not texts: continue
         V.STYLE = style_of(role)

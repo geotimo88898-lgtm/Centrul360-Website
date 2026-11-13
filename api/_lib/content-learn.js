@@ -52,7 +52,7 @@ const ZONE = [[/\bgus[ai]\w*|\bbarbi\w*/, 'gușă'], [/\bfat[ai]\b|\bfetei\b|\bo
   [/\babdomen\w*|\bburt\w*|\btali[ae]\b|\bcolac\w*/, 'abdomen'], [/\bcoaps\w*/, 'coapse'], [/\bbrat(e|ele|ul|ului)?\b/, 'brațe'], [/\bfes(e|ele|ier\w*)\b/, 'fese'], [/\bcelulit\w*/, 'celulită'],
   [/\bspate\b/, 'spate'], [/\baxil\w*/, 'axile'], [/\bpicio\w*/, 'picioare'], [/\binghinal\w*/, 'inghinal'], [/\bpleoap\w*/, 'pleoape'], [/\bgat\b|\bgatul\w*/, 'gât'],
   [/\bdecolteu\w*/, 'decolteu'], [/\bvergetur\w*/, 'vergeturi'], [/\bmustat\w*/, 'mustață']];
-const STOP = new Set('pe de la in si sau cu din ce cum cat cate care un o a al ale ai e este sunt nu mai dupa fara pentru despre vs sa se te ne mi ma il le lui ei lor tot toate doar chiar asa acum azi mit mitul adevar adevarul top caz cazul nuki intrebarea zilei greseli greseala fapt de ce se intampla 1 2 3 4 5'.split(' '));
+const STOP = new Set('pe de la in si sau cu din ce cum cat cate care un o a al ale ai e este sunt nu mai dupa fara pentru despre vs sa se te ne mi ma il le lui ei lor tot toate doar chiar asa acum azi nimeni spune unde duce experimentul adevar adevarul top caz cazul nuki intrebarea zilei greseli greseala fapt de ce se intampla 1 2 3 4 5'.split(' '));
 const slug = (s) => fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 function familyOf(it) {
   if (it.topicTag) { const k = slug(it.topicTag); if (k) return { key: 't:' + k, label: String(it.topicTag).replace(/[-_]+/g, ' ').trim() }; }
