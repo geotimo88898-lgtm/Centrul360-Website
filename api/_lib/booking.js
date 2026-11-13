@@ -86,11 +86,12 @@ async function settings(opts) {
 
 // The cosmetician a site booking goes straight to (the owner, 13.11: in Arad „direct pe Andrea, e singura cosmeticiană
 // de acolo”, the client chooses no one): the only one working in that city at that hour (Programul echipei), or, while
-// the city has no schedule, the only active cosmetician of that city not on leave that day. More of them, or none:
-// null, and the booking stays unassigned as before (reception assigns it). cfg from settings({ team: true }).
+// the city has no schedule, the only active cosmetician of that city not on leave that day. Only in a city with one
+// cosmetician of its own (Timișoara, with three, stays as it was: reception assigns). More of them, or none: null.
+// cfg from settings({ team: true }).
 function soleCosmetician(cfg, city, date, time, appts) {
   const t = cfg && cfg.team;
-  if (!t || !t.people) return null;
+  if (!t || !t.people || t.people.filter((p) => p.location === city).length > 1) return null;
   const m = toMin(time);
   const byId = new Map(t.people.map((p) => [p.id, p]));
   const pick = T.hasSchedule(t.doc, city, t.ids)
