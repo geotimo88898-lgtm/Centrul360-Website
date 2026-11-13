@@ -11,8 +11,9 @@ self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => { event.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => /^c360-static-/.test(k) && k !== STATIC).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 
 // The portal's own files (scripts, styles, pictures, fonts) come from this device at once and are refreshed in the
-// background (the owner, 5.11: "flash speed"); a new version of the portal empties this cache (portal-core.js
-// seeBuild), so the next reload has the new files. Pages and /api always go to the network.
+// background (the owner, 5.11: "flash speed"). The page names its scripts and styles by their content (?b=…, cf/worker.js
+// stamp): such a file never changes, so the device's copy is used as it is, without asking again (13.11); a new version
+// is a new name, and portal-core.js (pruneFiles) drops the old ones. Pages and /api always go to the network.
 const STATIC = 'c360-static-v2';
 const MINE = /^\/(portal-[\w-]+\.(?:js|css)|vendor\/|brand_asset\/|game\/)/;
 self.addEventListener('fetch', (event) => {
@@ -21,6 +22,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || !MINE.test(url.pathname) || url.pathname === '/portal-sw.js' || req.headers.get('range')) return;
   event.respondWith(caches.open(STATIC).then((cache) => cache.match(req).then((hit) => {
+    if (hit && url.searchParams.has('b') && /^\/portal-/.test(url.pathname)) return hit;
     const net = fetch(req).then((res) => { if (res && res.status === 200 && res.type === 'basic') cache.put(req, res.clone()).catch(() => {}); return res; });
     if (hit) { event.waitUntil(net.catch(() => {})); return hit; }
     return net;

@@ -20,7 +20,9 @@ import vercel from "../vercel.json";
 import { makeBlob } from "./blob-r2.js";
 import { makeJobs } from "./creative-jobs.js";
 import { loadSecrets } from "./secrets.js";
-import BUILD_ID from "./build-id.gen.js";
+import * as BUILD from "./build-id.gen.js";
+const BUILD_ID = BUILD.default;
+const FILES = BUILD.FILES || {}; // each portal script / style's own version (cf/build.mjs)
 // the version, for the portal (api/portal-pulse.js): a new one makes the open portals drop their cached files
 process.env.C360_BUILD = BUILD_ID;
 const SHARED = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY", "FB_APP_ID", "FB_APP_SECRET", "VERTEX_API_KEY"];
@@ -127,15 +129,19 @@ async function route(request, env, ctx) {
   return stamp(await env.ASSETS.fetch(request), p);
 }
 
-// The portal's page names its own scripts and styles with this build's version (?b=…). The service worker keeps those files
+// The portal's page names its own scripts and styles with a version (?b=…). The service worker keeps those files
 // on the device (portal-sw.js) and served the old copy first: after a publish, an open device showed the previous look until
 // a second reload (George saw the old KPI scene, 7.11). A new build now means new addresses, so nothing old is ever served.
+// The version is each file's own content (cf/build.mjs FILES), the build's only for a file it doesn't know: a publish
+// that leaves a file as it was keeps its address and the device keeps its copy (13.11: every publish, ten a day, made each
+// device download the whole portal again). The page also says its own build (meta c360-build, portal-core.js seeBuild).
 function stamp(res, path) {
   if (!/^\/(portal(\.html)?)?$/.test(path) || !/text\/html/.test(res.headers.get("content-type") || "") || typeof HTMLRewriter === "undefined") return res;
   const v = encodeURIComponent(BUILD_ID || "");
   if (!v) return res;
-  const add = (attr) => ({ element(el) { const u = el.getAttribute(attr) || ""; if (/^\/portal-[\w-]+\.(?:js|css)$/.test(u)) el.setAttribute(attr, u + "?b=" + v); } });
-  const out = new HTMLRewriter().on("script[src]", add("src")).on("link[href]", add("href")).transform(res);
+  const add = (attr) => ({ element(el) { const u = el.getAttribute(attr) || ""; if (/^\/portal-[\w-]+\.(?:js|css)$/.test(u)) el.setAttribute(attr, u + "?b=" + (FILES[u] ? encodeURIComponent(FILES[u]) : v)); } });
+  const out = new HTMLRewriter().on("script[src]", add("src")).on("link[href]", add("href"))
+    .on("head", { element(el) { el.prepend('<meta name="c360-build" content="' + v + '">', { html: true }); } }).transform(res);
   const h = new Headers(out.headers); h.set("cache-control", "no-cache"); h.delete("etag");
   return new Response(out.body, { status: out.status, headers: h });
 }

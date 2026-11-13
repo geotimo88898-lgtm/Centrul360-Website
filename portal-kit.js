@@ -46,7 +46,7 @@
 
   // ------------------------------------------------------------------ api
   const ERR = {
-    network: 'Nu am putut contacta serverul. Verifică conexiunea.', missing_fields: 'Completează câmpurile obligatorii.',
+    network: 'Nu am putut contacta serverul. Verifică conexiunea.', timeout: 'Serverul nu a răspuns la timp. Încearcă din nou.', missing_fields: 'Completează câmpurile obligatorii.',
     invalid_category: 'Alege categoria.', invalid_amount: 'Suma nu e validă.', invalid_date: 'Data nu e validă.', invalid_method: 'Alege metoda de plată.',
     invalid_client: 'Completează numele și telefonul clientului.', invalid_location: 'Alege locația.', invalid_status: 'Statusul nu e valid.',
     missing_treatment: 'Completează tratamentul.', invalid_cosmetician: 'Cosmeticiana aleasă nu mai există.', username_taken: 'Acest username există deja.',
@@ -62,16 +62,23 @@
     overlapping_request: 'Există deja o cerere pentru zilele astea.', no_work_days: 'Perioada nu are zile lucrătoare (luni-vineri).', workflow_not_found: 'Automatizarea nu mai există (ștearsă din alt loc). Fă una nouă cu „Automatizare nouă”.',
   };
   const errText = (e, fallback) => ERR[e && e.code] || fallback || 'Nu am putut salva. Încearcă din nou.';
+  // opts.timeout (ms): a request that waits on something slow (Nuki, Claude) gives up after it with code 'timeout', so
+  // the screen can say so and offer another try instead of waiting for ever
   async function api(url, body, opts) {
     let r;
+    const ctl = opts && opts.timeout && typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), opts.timeout) : 0;
+    const late = () => Object.assign(new Error('timeout'), { code: 'timeout' });
     try {
-      r = await fetch(url, body === undefined ? { credentials: 'same-origin' } : {
+      r = await fetch(url, body === undefined ? { credentials: 'same-origin', signal: ctl ? ctl.signal : undefined } : {
         method: (opts && opts.method) || 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined,
       });
-    } catch (e) { throw Object.assign(new Error('network'), { code: 'network' }); }
-    if (r.status === 401) { const j = await r.json().catch(() => ({})); location.href = '/login?' + (j.error === 'account_inactive' ? 'motiv=inactiv' : 'expirat=1') + location.hash; throw Object.assign(new Error('auth'), { code: 'auth' }); }
-    const j = await r.json().catch(() => ({}));
+    } catch (e) { clearTimeout(timer); if (ctl && ctl.signal.aborted) throw late(); throw Object.assign(new Error('network'), { code: 'network' }); }
+    if (r.status === 401) { clearTimeout(timer); const j = await r.json().catch(() => ({})); location.href = '/login?' + (j.error === 'account_inactive' ? 'motiv=inactiv' : 'expirat=1') + location.hash; throw Object.assign(new Error('auth'), { code: 'auth' }); }
+    let j = await r.json().catch(() => null);
+    clearTimeout(timer);
+    if (j === null) { if (ctl && ctl.signal.aborted) throw late(); j = {}; }
     if (!r.ok) throw Object.assign(new Error(j.error || 'failed'), { code: j.error || 'failed', status: r.status, data: j });
     return j;
   }

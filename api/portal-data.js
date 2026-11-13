@@ -216,8 +216,17 @@ module.exports = async (req, res) => {
       current: computeGoalCurrent(g, me.id, sales, appointments, today, month, { leads, name: me.name }),
     }));
 
+    // ---- everything else this answer reads, in one go: they were read one after another (up to eight waits on the store
+    // in a row, on every load and every refresh of the portal, 13.11: „aplicația se încarcă foarte greu”)
+    const front = isAdmin || me.role === 'receptie';
+    const [attendanceAll, tbAll, waConvos, igUnread, myNotes, liveCfg, devices] = await Promise.all([
+      readJSON('data/attendance.json', []), TB.loadAll(readJSON), readJSON('data/whatsapp-conversations.json', []),
+      // the clinic's Instagram (both clinics'), for whoever answers Mesaje
+      front ? require('./_lib/social-inbox').unread().catch(() => 0) : 0,
+      myNotifications({ readJSON }, me.id), live.publicConfig(), isAdmin ? deviceCounts({ readJSON }) : null,
+    ]);
+
     // ---- Salariu: what each person takes home (salary + overtime + commission or booking bonus)
-    const [attendanceAll, tbAll] = await Promise.all([readJSON('data/attendance.json', []), TB.loadAll(readJSON)]);
     const monthsBack = (n) => { const out = []; let y = Number(month.slice(0, 4)), m = Number(month.slice(5, 7)); for (let i = 0; i < n; i++) { out.push(y + '-' + String(m).padStart(2, '0')); m -= 1; if (!m) { m = 12; y -= 1; } } return out; };
     const payOf = (emp, m) => PAY.monthPay({ emp, month: m, isCurrent: m === month, sales, payouts: tbAll.payouts, bank: m === month ? TB.ledger(emp.id, tbAll) : null, attendance: attendanceAll, appointments });
     const salary = isAdmin ? null : { months: monthsBack(6).map((m) => payOf(me, m)), rule: { rate: UPSELL_RATE, cost: COST_SHARE, tiers: PAY.BOOKING_TIERS } };
@@ -226,16 +235,13 @@ module.exports = async (req, res) => {
     // it's close (within 3 a day), the tone following the days left in the month. One short line.
     const bonusNotes = salary ? bookingNotes(salary.months[0].booking, month, today) : [];
 
-    // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city)
-    const waConvos = await readJSON('data/whatsapp-conversations.json', []);
+    // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city), and Instagram's
     const myCity = !isAdmin && me.role === 'receptie' ? me.location : '';
-    const waUnread = waConvos.filter((c) => c.unreadCount && (!myCity || !c.location || c.location === myCity)).length
-      // and the clinic's Instagram (both clinics'), for whoever answers Mesaje
-      + (isAdmin || me.role === 'receptie' ? await require('./_lib/social-inbox').unread().catch(() => 0) : 0);
+    const waUnread = waConvos.filter((c) => c.unreadCount && (!myCity || !c.location || c.location === myCity)).length + igUnread;
     const payload = {
       // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
       waUnread,
-      notifications: isAdmin ? await myNotifications({ readJSON }, me.id) : bonusNotes.concat(await myNotifications({ readJSON }, me.id)),
+      notifications: isAdmin ? myNotes : bonusNotes.concat(myNotes),
       salary,
       me: { id: me.id, name: me.name, location: me.location, role: me.role, username: me.username || '', photo: photoOf(me), prefs: me.prefs || {} },
       city, // set = this account is limited to one city (cosmeticians)
@@ -275,20 +281,20 @@ module.exports = async (req, res) => {
       })),
       isAdmin,
       // instant sync: where this portal listens for "the data changed" (Supabase Realtime), when it is set up
-      live: await live.publicConfig(),
+      live: liveCfg,
       // Set while the owner previews this employee's account (read-only, banner + "Înapoi la Admin").
       impersonating: !!session.viewer,
     };
 
     if (isAdmin) {
-      const devices = await deviceCounts({ readJSON });
       payload.admin = {
         // Echipa > Salarii: this month's pay of every active person
         payroll: employeesRaw.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => Object.assign({ id: e.id, name: e.name, role: e.role, location: e.location, photo: photoOf(e), netSalary: Number(e.netSalary) || 0, active: e.active !== false }, payOf(e, month)))
           .filter((r) => r.active || Number(r.total) > 0), // someone who left this month is still paid for it
         // waiting in Aprobări besides the commissions: days over / under 8 hours, leave requests
-        pendingTime: (await readJSON('data/time-adjust.json', [])).filter((a) => a.status === 'pending').length,
-        pendingLeave: (await readJSON('data/leave-requests.json', [])).filter((r) => r.status === 'pending').length,
+        // (the same two documents the time bank read above)
+        pendingTime: (tbAll.adjustments || []).filter((a) => a.status === 'pending').length,
+        pendingLeave: (tbAll.leaveRequests || []).filter((r) => r.status === 'pending').length,
         pendingSales: comisionSales
           .filter((s) => s.status === 'pending')
           .map((s) => {

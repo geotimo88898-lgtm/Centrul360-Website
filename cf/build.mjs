@@ -8,6 +8,7 @@
 //     cu OpenNext într-o copie de lucru (.creative-build/), cu cf/creative/ peste ea; repo-ul lui rămâne neatins.
 //     Fără ele: Workerul iese fără /creative (răspunde 503), restul merge.
 import { execSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,13 +27,20 @@ fs.writeFileSync(r("cf/api.gen.js"), "// Generat de cf/build.mjs din api/*.js. N
   apis.map((f, i) => `import a${i} from "../api/${f}";`).join("\n") + "\nexport default {\n" +
   apis.map((f, i) => `  ${JSON.stringify(f.replace(/\.js$/, ""))}: a${i},`).join("\n") + "\n};\n");
 log("api:", apis.length, "funcții");
-// the version of this build: the portal sees it in /api/portal-pulse and, when it changes, drops its cached files
+// the version of this build: the portal sees it in /api/portal-pulse and, when it is newer than the open page, reloads
 // (on Vercel this was VERCEL_GIT_COMMIT_SHA; Cloudflare's build gives WORKERS_CI_COMMIT_SHA)
 let buildId = process.env.WORKERS_CI_COMMIT_SHA || "";
 if (!buildId) { try { buildId = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim(); } catch (e) { buildId = ""; } }
 buildId = (buildId || "b").slice(0, 12) + "-" + Date.now().toString(36);
-fs.writeFileSync(r("cf/build-id.gen.js"), "// Generat de cf/build.mjs.\nexport default " + JSON.stringify(buildId.slice(0, 60)) + ";\n");
-log("build:", buildId);
+// each portal script and style named by its own content (cf/worker.js stamp): a publish that does not change a file keeps
+// its address, so the phone keeps it (before, every publish, even one of a site page, made every device download all
+// ~50 files again, about 700 KB, the owner, 13.11: „aplicația se încarcă foarte greu”)
+const FILES = {};
+for (const f of fs.readdirSync(ROOT).filter((x) => /^portal-[\w-]+\.(js|css)$/.test(x)).sort()) {
+  FILES["/" + f] = crypto.createHash("sha1").update(fs.readFileSync(r(f))).digest("hex").slice(0, 12);
+}
+fs.writeFileSync(r("cf/build-id.gen.js"), "// Generat de cf/build.mjs.\nexport default " + JSON.stringify(buildId.slice(0, 60)) + ";\nexport const FILES = " + JSON.stringify(FILES) + ";\n");
+log("build:", buildId, "·", Object.keys(FILES).length, "fișiere ale portalului cu versiunea lor");
 
 // 2. dist/
 const SKIP = new Set(["api", "cf", "node_modules", "dist", ".git", ".github", ".creative", ".creative-build", ".cf-mods", ".wrangler",

@@ -16,6 +16,13 @@ const { loadOffers } = require('./_lib/offers');
 const B = require('./_lib/booking');
 
 const MODEL = 'claude-opus-5-5';
+// when the first model is overloaded, rate limited, failing or too slow, the rest of the answer goes once to a faster one
+// (the owner, 13.11: „Nuki nu vrea să mai răspundă uneori”): an answer instead of a long wait and an error
+const FAST = 'claude-sonnet-5-5';
+// how long one answer may take in all (someone waits for it), and the part of it kept for the faster model; before, one
+// slow or overloaded call could hold the chat for minutes (2 minutes a try, 3 tries, up to 10 calls a turn)
+const BUDGET = { chat: 100e3, reply: 45e3, slot: 30e3, other: 150e3 };
+const RESERVE = { chat: 30e3, reply: 15e3, slot: 10e3, other: 40e3 };
 const CAP_KEY = 'data/nuki-usage.json';
 const DAILY_CAP = 400;
 const clip = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
@@ -185,6 +192,36 @@ function claude() {
   if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 120e3 });
   return client;
 }
+// out of time for this answer (the handler says so plainly, with „Încearcă din nou” in the chat)
+const late = (cause) => Object.assign(new Error('nuki_timeout'), { code: 'nuki_timeout', cause });
+// worth another try on the faster model: overloaded (529), rate limited, a server error, a dropped or timed out connection
+const retryable = (e) => !!e && (e.status === 429 || e.status >= 500 || e instanceof Anthropic.APIConnectionError || e instanceof Anthropic.APIUserAbortError);
+// one request inside the answer's time (st: deadline, reserve, fast): the first model gets the time minus the reserve and
+// one quick retry; when it fails or runs out, this call and the rest of the answer go to the faster model
+async function call(params, st) {
+  for (;;) {
+    const left = st.deadline - Date.now();
+    if (left < 3e3) throw late();
+    const fast = st.fast;
+    const ms = fast || left < st.reserve + 15e3 ? left : left - st.reserve;
+    const p = fast ? Object.assign({}, params, { model: FAST, output_config: { effort: 'low' } }) : params;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), ms);
+    const t = Date.now();
+    st.calls++;
+    try {
+      return await claude().beta.messages.create(p, { timeout: ms, maxRetries: fast ? 0 : 1, signal: ctl.signal });
+    } catch (e) {
+      if (!fast && retryable(e) && st.deadline - Date.now() > 8e3) {
+        st.fast = true;
+        console.warn('portal-nuki: ' + MODEL + ' ' + (e.status || (e instanceof Anthropic.APIUserAbortError ? 'slow' : 'connection')) + ' after ' + (Date.now() - t) + ' ms, on ' + FAST);
+        continue;
+      }
+      if (e instanceof Anthropic.APIUserAbortError || e instanceof Anthropic.APIConnectionTimeoutError) throw late(e);
+      throw e;
+    } finally { clearTimeout(timer); }
+  }
+}
 // photos, PDFs and text files as content blocks for Claude
 const IMG = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const B64 = /^[A-Za-z0-9+/=\s]+$/;
@@ -206,7 +243,12 @@ const blocks = (c) => (typeof c === 'string' ? (c ? [{ type: 'text', text: c }] 
 let webErr = ''; // why the last internet search was refused (the health check shows it)
 // onTool(name, input) answers the tools the clinic runs itself (the owner's edits, api/_lib/nuki-edit.js): its
 // { result, error } goes back to Claude and the turn goes on
-async function ask(system, messages, effort, tools, onTool) {
+// opts: { kind: 'chat' | 'reply' | 'slot' } picks the time the whole answer may take (BUDGET); the comments, the private
+// messages and the insights (api/_lib/social-*.js, content-*.js) run without anyone waiting: 'other'
+async function ask(system, messages, effort, tools, onTool, opts) {
+  const kind = (opts && BUDGET[opts.kind]) ? opts.kind : 'other';
+  const st = { deadline: Date.now() + BUDGET[kind], reserve: RESERVE[kind], fast: false, calls: 0 };
+  const t0 = Date.now();
   const parts = [];
   const said = [];
   let paused = false;
@@ -216,7 +258,8 @@ async function ask(system, messages, effort, tools, onTool) {
   for (let i = 0; i < 10; i++) {
     const params = {
       model: MODEL,
-      max_tokens: 8000,
+      // room for the thinking, the searches' filtering and the answer (at 8000 a long search could end with no text)
+      max_tokens: 16000,
       output_config: { effort: effort || 'low' }, // short, everyday answers: quick (more care in the corner chat)
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default', // a refused request is answered by the fallback model in the same call
@@ -224,7 +267,7 @@ async function ask(system, messages, effort, tools, onTool) {
       messages: parts.length ? convo.concat({ role: 'assistant', content: parts.slice() }) : convo,
     };
     try {
-      r = await claude().beta.messages.create(tools && tools.length ? Object.assign({ tools }, params) : params);
+      r = await call(tools && tools.length ? Object.assign({ tools }, params) : params, st);
     } catch (e) {
       // the newest search refused: the basic one; that refused too (search off on the account): the question without it
       const web = tools && tools.find((t) => t.name === 'web_search');
@@ -258,9 +301,12 @@ async function ask(system, messages, effort, tools, onTool) {
     }
     break;
   }
+  const searches = parts.filter((b) => b.type === 'server_tool_use').length;
+  // one line per answer, no content (Cloudflare's logs): how long, which model, how it ended, so a slow or empty answer
+  // can be told apart from a failed one
+  console.log('portal-nuki ' + JSON.stringify({ kind, ms: Date.now() - t0, calls: st.calls, model: r.model, fast: st.fast, stop: r.stop_reason, out: r.usage && r.usage.output_tokens, searches }));
   if (r.stop_reason === 'refusal') return { text: '', refused: true };
   const text = said.map((x) => x.trim()).filter(Boolean).join('\n\n');
-  const searches = parts.filter((b) => b.type === 'server_tool_use').length;
   return { text: text.replace(/\s+[—–]\s+/g, ', ').replace(/[—–]/g, '-'), searches };
 }
 // the corner chat can look things up on the internet (news, prices, rules, anything recent)
@@ -289,9 +335,12 @@ module.exports = async (req, res) => {
     return;
   }
   if (!process.env.ANTHROPIC_API_KEY) { res.status(503).json({ error: 'no_key', message: 'Nuki nu are încă cheia Claude.' }); return; }
+  // photos or files in this question (a 400 from Claude is then most likely one of them)
+  const withFiles = b.action === 'chat' && (Array.isArray(b.messages) ? b.messages : []).some((m) => m && Array.isArray(m.files) && m.files.some((f) => f && !f.gone));
   try {
-    if (!(await underCap())) { res.status(429).json({ error: 'cap', message: 'Nuki a răspuns destul azi. Mâine e din nou aici.' }); return; }
-    const [offers, hours] = await Promise.all([offersText(), hoursText()]);
+    // the day's count and the clinic's facts read together (one wait, not two)
+    const [ok, offers, hours] = await Promise.all([underCap(), offersText(), hoursText()]);
+    if (!ok) { res.status(429).json({ error: 'cap', message: 'Nuki a răspuns destul azi. Mâine e din nou aici.' }); return; }
     const now = new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     const facts = 'Acum: ' + now + '.\n\nDatele clinicii.\nOfertele active (Admin → Oferte):\n' + (offers || '-') + '\n\nClinicile:\n' + hours;
     // the rules first and cached; the day's facts (offers, free hours) after them
@@ -304,7 +353,7 @@ module.exports = async (req, res) => {
       const q = th + '\n\nAzi e ' + wd + ', ' + today + '. Din mesajele ei cele mai noi: cere clienta o programare la o zi și o oră anume? ' +
         'Răspunde doar cu JSON: {"found":true|false,"date":"YYYY-MM-DD","time":"HH:MM","treatment":"ce tratament vrea, scurt, sau gol","city":"Timișoara|Arad|gol"}. ' +
         '„mâine la 3” înseamnă 15:00 dacă e în program; fără zi sau fără oră clară: found false.';
-      const r = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }], [{ role: 'user', content: q }]);
+      const r = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }], [{ role: 'user', content: q }], 'low', null, null, { kind: 'slot' });
       let want = null;
       try { const t = r.text || ''; want = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); } catch (e) { want = null; }
       if (!want || !want.found || !/^\d{4}-\d{2}-\d{2}$/.test(want.date || '') || toMin(want.time) == null || want.date < today) { res.status(200).json({ found: false }); return; }
@@ -319,7 +368,7 @@ module.exports = async (req, res) => {
       const ask1 = th + '\n\n' + (draft
         ? 'Echipa a început acest răspuns: „' + draft + '”. Fă-l mai bun (aceeași idee, mai clar, mai cald, cu pasul următor). Trimite doar mesajul.'
         : 'Scrie mesajul pe care clinica i-l trimite acum clientei. Trimite doar mesajul.');
-      const r = await ask(system, [{ role: 'user', content: ask1 }]);
+      const r = await ask(system, [{ role: 'user', content: ask1 }], 'low', null, null, { kind: 'reply' });
       if (r.refused || !r.text) { res.status(200).json({ text: '', message: 'Nuki nu a putut scrie un răspuns aici.' }); return; }
       res.status(200).json({ text: r.text.replace(/^[„"“]|[”"]$/g, '').trim() });
       return;
@@ -357,7 +406,7 @@ module.exports = async (req, res) => {
         }
         return { result: 'Nu am unealta asta.', error: true };
       };
-      const r = await ask(chatSystem, turns, 'medium', owner ? WEB.concat(E.TOOLS) : WEB, onTool);
+      const r = await ask(chatSystem, turns, 'medium', owner ? WEB.concat(E.TOOLS) : WEB, onTool, { kind: 'chat' });
       const text = r.refused || (!r.text && !edits.length) ? 'Nu pot răspunde la asta. Întreabă-mă altfel sau întreabă pe cineva din echipă.' : r.text;
       res.status(200).json(edits.length ? { text, edits } : { text });
       return;
@@ -365,7 +414,15 @@ module.exports = async (req, res) => {
     res.status(400).json({ error: 'invalid_action' });
   } catch (e) {
     const status = e && e.status;
-    console.error('portal-nuki:', status || '', String((e && e.message) || e).slice(0, 200));
+    const timedOut = !!(e && e.code === 'nuki_timeout');
+    console.error('portal-nuki:', b.action || '', timedOut ? 'timeout' : status || '', String((e && e.message) || e).slice(0, 200));
+    if (timedOut) { res.status(504).json({ error: 'nuki_timeout', message: 'Nuki nu a răspuns la timp. Încearcă din nou.' }); return; }
+    // Claude refused the request itself (400 / 413): the same request would fail every time, so the chat stops sending
+    // the new photos and files again (portal-nuki-chat.js), instead of failing every question after them
+    if (status === 400 || status === 413) {
+      res.status(422).json({ error: 'nuki_bad_input', message: withFiles ? 'Nuki nu a putut citi o poză sau un fișier trimis. Încearcă din nou fără el.' : 'Nuki nu a putut răspunde la asta. Scrie altfel.' });
+      return;
+    }
     res.status(502).json({ error: 'nuki_failed', message: status === 429 ? 'Nuki e ocupat acum, încearcă din nou peste un minut.' : 'Nuki nu a răspuns. Încearcă din nou.' });
   }
 };
@@ -376,10 +433,14 @@ module.exports.ping = async () => {
   try {
     const [offers, hours] = await Promise.all([offersText(), hoursText()]);
     const facts = 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.\n\nDatele clinicii.\nOfertele active:\n' + offers + '\n\nClinicile:\n' + hours;
-    const reply = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'O clientă din Arad întreabă: „Cât costă la gușă și când aș putea veni?” Scrie mesajul.' }]);
+    // (each step's time too: how long Mesaje's draft and the corner chat take now)
+    let t = Date.now();
+    const reply = await ask([{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'O clientă din Arad întreabă: „Cât costă la gușă și când aș putea veni?” Scrie mesajul.' }], 'low', null, null, { kind: 'reply' });
+    const replyMs = Date.now() - t;
     webErr = '';
-    const chat = await ask([{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'Cât e cursul euro BNR azi? Și cât fac 2.500 lei în euro?' }], 'medium', WEB);
-    return { key: true, ok: !!(reply.text && chat.text), reply: reply.text.slice(0, 500), chat: chat.text.slice(0, 700), searches: chat.searches, webErr };
+    t = Date.now();
+    const chat = await ask([{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }], [{ role: 'user', content: 'Cât e cursul euro BNR azi? Și cât fac 2.500 lei în euro?' }], 'medium', WEB, null, { kind: 'chat' });
+    return { key: true, ok: !!(reply.text && chat.text), reply: reply.text.slice(0, 500), chat: chat.text.slice(0, 700), searches: chat.searches, webErr, replyMs, chatMs: Date.now() - t };
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };
 
@@ -397,7 +458,7 @@ module.exports.pingEdit = async (q) => {
     };
     const system = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.' },
       { type: 'text', text: EDIT_RULES + '\n' + (await E.index()) }];
-    const r = await ask(system, [{ role: 'user', content: clip(q, 600) || 'La tratamentul facial Restart, pasul cu masajul să fie „Masaj față, gât și decolteu”.' }], 'medium', WEB.concat(E.TOOLS), onTool);
+    const r = await ask(system, [{ role: 'user', content: clip(q, 600) || 'La tratamentul facial Restart, pasul cu masajul să fie „Masaj față, gât și decolteu”.' }], 'medium', WEB.concat(E.TOOLS), onTool, { kind: 'chat' });
     return { key: true, ok: edits.length > 0, text: r.text.slice(0, 500), tools, edits: edits.map((e) => ({ ref: e.ref, name: e.name, fields: e.fields.map((f) => ({ key: f.key, after: f.after })) })) };
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };

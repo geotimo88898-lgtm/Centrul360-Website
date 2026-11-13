@@ -283,15 +283,43 @@
   // pull to refresh, or after 10 minutes without a touch; never over an open drawer or text being typed.
   let build = null, updateReady = false;
   const openedAt = Date.now();
+  // The build this page itself came from (cf/worker.js writes it in the page). Its scripts and styles are named by their
+  // own content (?b=…), so a page that already is the newest build needs nothing dropped and no reload. Before (13.11), the
+  // first opening after each publish (ten a day) emptied the device's saved files and then reloaded the portal the next
+  // time it came back on screen: the whole portal downloaded twice, and the intro twice.
+  const pageBuild = ((document.querySelector('meta[name="c360-build"]') || {}).content || '').slice(0, 40);
+  const STATIC = 'c360-static-v2';
+  // the device keeps the versions of the portal's files this page uses: older ones go; after a publish, the copies
+  // asked without a version (Game Mode's files) go too; pictures stay (portal-sw.js refreshes them in the background)
+  function pruneFiles(changed) {
+    try {
+      if (!window.caches) return;
+      const mine = new Set(Array.from(document.querySelectorAll('script[src], link[rel="stylesheet"][href]')).map((el) => el.src || el.href));
+      caches.open(STATIC).then((c) => c.keys().then((keys) => keys.forEach((req) => {
+        const u = new URL(req.url);
+        if (!/^\/portal-[\w-]+\.(?:js|css)$/.test(u.pathname)) return;
+        if (u.searchParams.has('b') ? !mine.has(req.url) : changed) c.delete(req);
+      }))).catch(() => {});
+    } catch (e) { /* none */ }
+  }
   function seeBuild(b) {
     if (!b) return;
-    // a version other than the one this device's saved files came from: they go, a reload brings the new ones
+    b = String(b).slice(0, 40);
+    let changed = false;
     try {
       const was = localStorage.getItem('c360_build');
-      if (was !== b) { localStorage.setItem('c360_build', b); if (was && window.caches) caches.delete('c360-static-v2').then(() => { updateReady = true; }, () => {}); }
+      if (was !== b) { localStorage.setItem('c360_build', b); changed = !!was; }
     } catch (e) { /* storage off */ }
-    if (build === null) build = b;
-    else if (b !== build) { updateReady = true; try { if (window.caches) caches.delete('c360-static-v2'); } catch (e) { /* none */ } }
+    if (!pageBuild) {
+      // a page without its build (not through the Worker): as before, a new version empties the saved files and reloads
+      if (changed && window.caches) caches.delete(STATIC).then(() => { updateReady = true; }, () => {});
+      if (build === null) build = b;
+      else if (b !== build) { updateReady = true; try { if (window.caches) caches.delete(STATIC); } catch (e) { /* none */ } }
+      return;
+    }
+    if (build === null) { build = pageBuild; pruneFiles(changed); }
+    // a newer build than this page: it loads at the next quiet moment (its changed files have new names)
+    if (b !== build) updateReady = true;
   }
   function newCode(now) {
     if (!updateReady || busyEditing()) return false;

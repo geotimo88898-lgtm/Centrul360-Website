@@ -13,6 +13,9 @@
   var SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
   var S = { msgs: [], busy: false, d: null, btn: null, files: [] };
   var MAX_FILES = 6;
+  // the server gives up on an answer after 100 s with a clear message (api/portal-nuki.js BUDGET.chat); this is the net
+  // under it (a dropped connection, a phone that slept), so the chat never waits for ever
+  var TIMEOUT = 115e3;
   var IMG = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   var TEXT = /\.(txt|csv|tsv|md|json|html?)$/i;
   function toast(m) { K().ui().toast(m, 'error'); }
@@ -75,6 +78,9 @@
   }
   function bodyHtml() {
     var list = S.msgs.map(function (m, i) {
+      // an answer that failed: what happened, and „Încearcă din nou” while it is the last line
+      if (m.error) return '<div class="nk-m is-nuki">' + fmt(m.content) + (m.retry && i === S.msgs.length - 1 && !S.busy
+        ? '<div><button type="button" class="k-btn is-ghost is-sm" data-retry>' + (K().icon ? K().icon('refresh') : '') + 'Încearcă din nou</button></div>' : '') + '</div>';
       return m.role === 'user'
         ? '<div class="nk-m is-me' + (m.files && m.files.length ? ' has-files' : '') + '">' + (m.files && m.files.length ? '<div class="nk-mfiles">' + m.files.map(function (f, j) { return fileHtml(f, j, true); }).join('') + '</div>' : '') + fmt(m.content) + '</div>'
         : '<div class="nk-m is-nuki">' + fmt(m.content) + '<button type="button" class="nk-copy" data-copy="' + i + '" aria-label="Copiază">' + (K().icon ? K().icon('copy') : 'Copiază') + '</button></div>' +
@@ -135,9 +141,10 @@
     }
     paintFiles();
   }
-  // what goes to Nuki: the last turns, and the files from the newest back, as long as they fit (older ones by name)
+  // what goes to Nuki: the last turns, and the files from the newest back, as long as they fit (older ones by name);
+  // never the lines of a failed answer, never again a file Claude could not read (it would fail every question after it)
   function payload() {
-    var list = S.msgs.slice(-16), left = 18e6, n = 0;
+    var list = S.msgs.filter(function (m) { return !m.error; }).slice(-16), left = 18e6, n = 0;
     var out = list.map(function (m) {
       var said = m.content;
       if (m.edits && m.edits.length) said += '\n\n(Propunerile mele: ' + m.edits.map(function (e) {
@@ -149,7 +156,7 @@
       if (!list[i].files || !list[i].files.length) continue;
       out[i].files = list[i].files.map(function (f) {
         var size = (f.data || f.text || '').length;
-        if (n < 12 && size <= left) { left -= size; n++; return { kind: f.kind, name: f.name, type: f.type, data: f.data, text: f.text }; }
+        if (!f.bad && n < 12 && size <= left) { left -= size; n++; return { kind: f.kind, name: f.name, type: f.type, data: f.data, text: f.text }; }
         return { kind: f.kind, name: f.name, gone: true };
       });
     }
@@ -168,15 +175,35 @@
     if ((!q && !S.files.length) || S.busy) return;
     S.msgs.push({ role: 'user', content: q, files: S.files });
     S.files = []; paintFiles();
+    send();
+  }
+  // the conversation as it is goes to Nuki (a new question, or „Încearcă din nou” after a failed answer); a failure is
+  // said plainly, with a new try, and the chat stays usable (the owner, 13.11: „Nuki nu vrea să mai răspundă uneori”)
+  async function send() {
     S.busy = true; paint();
     try {
       var th = window.C360Nuki && window.C360Nuki.thread && window.C360Nuki.thread();
-      var r = await K().api('/api/portal-nuki', { action: 'chat', messages: payload(), thread: th || undefined, tab: tabName() });
+      var msgs = payload(), size = 0;
+      msgs.forEach(function (m) { (m.files || []).forEach(function (f) { size += (f.data || f.text || '').length; }); });
+      // (photos and files also need the time to go up from the phone: a second for every 50 KB)
+      var r = await K().api('/api/portal-nuki', { action: 'chat', messages: msgs, thread: th || undefined, tab: tabName() }, { timeout: TIMEOUT + Math.round(size / 50e3) * 1e3 });
       S.msgs.push({ role: 'assistant', content: r.text || (r.edits && r.edits.length ? 'Uite ce aș schimba.' : 'Nu am un răspuns acum.'), edits: r.edits || [] });
     } catch (err) {
-      S.msgs.push({ role: 'assistant', content: (err.data && err.data.message) || 'Nu am putut răspunde acum. Încearcă din nou.' });
+      var d = err.data || {};
+      // a photo or a file Claude refused: the ones sent since the last answer are not sent again (named only)
+      if (d.error === 'nuki_bad_input') {
+        for (var i = S.msgs.length - 1; i >= 0 && S.msgs[i].role === 'user'; i--) (S.msgs[i].files || []).forEach(function (f) { f.bad = true; });
+      }
+      S.msgs.push({ role: 'assistant', error: true, retry: d.error !== 'cap' && err.code !== 'auth',
+        content: d.message || (err.code === 'timeout' ? 'Nuki nu a răspuns la timp. Încearcă din nou.' : err.code === 'network' ? 'Conexiunea s-a întrerupt. Încearcă din nou.' : 'Nu am putut răspunde acum. Încearcă din nou.') });
     }
     S.busy = false; paint();
+  }
+  // „Încearcă din nou”: the failed answer goes, the question stays and goes again
+  function retry() {
+    if (S.busy) return;
+    while (S.msgs.length && S.msgs[S.msgs.length - 1].error) S.msgs.pop();
+    if (S.msgs.length && S.msgs[S.msgs.length - 1].role === 'user') send(); else paint();
   }
   // „Aplică”: saved now (only if nobody changed those fields since); „Renunță”: nothing is saved
   async function decide(i, j, yes) {
@@ -205,7 +232,8 @@
         var grow = function () { ta.style.height = 'auto'; ta.style.height = Math.min(140, ta.scrollHeight) + 'px'; };
         ta.addEventListener('input', grow);
         ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !(window.matchMedia && matchMedia('(pointer: coarse)').matches)) { e.preventDefault(); el.querySelector('[data-ask]').requestSubmit(); } });
-        el.querySelector('[data-ask]').addEventListener('submit', function (e) { e.preventDefault(); var q = ta.value.trim(); if (!q && !S.files.length) return; ta.value = ''; grow(); ask(q); });
+        // (while an answer is on its way the text stays in the box: Enter used to empty it and drop the question)
+        el.querySelector('[data-ask]').addEventListener('submit', function (e) { e.preventDefault(); var q = ta.value.trim(); if ((!q && !S.files.length) || S.busy) return; ta.value = ''; grow(); ask(q); });
         // a screenshot pasted into the box, a file dropped on the chat, or picked with the two buttons
         ta.addEventListener('paste', function (e) { var f = e.clipboardData && e.clipboardData.files; if (f && f.length) { e.preventDefault(); addFiles(f); } });
         el.addEventListener('change', function (e) { if (e.target.matches('[data-nkfile]')) { addFiles(e.target.files); e.target.value = ''; } });
@@ -216,6 +244,7 @@
         el.addEventListener('click', function (e) {
           var u = e.target.closest('[data-unfile]');
           if (u) { S.files.splice(Number(u.dataset.unfile), 1); paintFiles(); return; }
+          if (e.target.closest('[data-retry]')) { retry(); return; }
           var ok = e.target.closest('[data-edit-ok]'), no = e.target.closest('[data-edit-no]');
           if (ok || no) { var at = (ok || no).getAttribute(ok ? 'data-edit-ok' : 'data-edit-no').split(':'); decide(Number(at[0]), Number(at[1]), !!ok); return; }
           var c = e.target.closest('[data-copy]');

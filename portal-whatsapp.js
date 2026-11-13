@@ -519,7 +519,7 @@
     if (C.slotBusy === key) return;
     C.slotBusy = key;
     try {
-      const d = await K.api('/api/portal-nuki', { action: 'slot', thread: nukiThread() });
+      const d = await K.api('/api/portal-nuki', { action: 'slot', thread: nukiThread() }, { timeout: 45e3 }); // the server stops at 30 s
       C.slot = { key, d: d && d.found ? d : null };
       if (C.thread && C.thread.phone === t.phone && C.slot.d) placeSlot(panel.querySelector('[data-mx-thread]'), C.slot.d);
     } catch (e) { C.slot = { key, d: null }; } finally { C.slotBusy = null; }
@@ -594,11 +594,11 @@
     btn.classList.add('is-thinking');
     btn.disabled = true;
     try {
-      const r = await K.api('/api/portal-nuki', { action: 'reply', thread: th, draft: ta.value.trim() });
+      const r = await K.api('/api/portal-nuki', { action: 'reply', thread: th, draft: ta.value.trim() }, { timeout: 60e3 }); // the server stops at 45 s
       if (r.text) { ta.value = r.text; autoGrow(ta); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
       else K.ui().toast(r.message || 'Nuki nu a putut scrie un răspuns aici.', 'info');
     } catch (err) {
-      K.ui().toast((err.data && err.data.message) || 'Nuki nu a răspuns. Încearcă din nou.', 'error');
+      K.ui().toast((err.data && err.data.message) || (err.code === 'timeout' ? 'Nuki nu a răspuns la timp. Încearcă din nou.' : 'Nuki nu a răspuns. Încearcă din nou.'), 'error');
     } finally { btn.classList.remove('is-thinking'); btn.disabled = false; }
   }
   // ------------------------------------------------------------------ snippets
