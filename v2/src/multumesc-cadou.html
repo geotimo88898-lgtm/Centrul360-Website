@@ -14,11 +14,9 @@ pixel: Lead
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px); background-size:56px 56px;
   -webkit-mask-image:radial-gradient(55% 45% at 50% 30%,#000 0%,transparent 75%); mask-image:radial-gradient(55% 45% at 50% 30%,#000 0%,transparent 75%); opacity:.6; }
 .ty-in{ display:grid; justify-items:center; text-align:center; gap:24px; }
-.ty-in .stage{ min-height:330px; width:min(420px,100%); margin-bottom:-12px; }
+.ty-in .stage{ min-height:300px; width:min(420px,100%); margin-bottom:-12px; }
 .ty-in .nuki img{ width:min(232px,58vw); }
 .ty-in h1{ font-size:clamp(2.6rem,5.2vw,4rem); }
-.ty-in .bubble{ top:0; left:auto; right:0; border-radius:22px 22px 6px 22px; transform-origin:88% 100%; }
-.ty-in .stage .nuki{ margin-top:52px; }
 .ty-ok{ display:inline-flex; align-items:center; gap:10px; padding:6px 16px 6px 6px; border-radius:999px; font-size:14px; font-weight:600; color:var(--ink2); background:rgba(255,255,255,.85); box-shadow:0 0 0 1px var(--line2) inset, 0 8px 20px -14px rgba(11,40,38,.3); }
 .ty-ok i{ width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--tint); color:var(--teal2); }
 .ty-ok svg{ width:15px; height:15px; }
@@ -38,10 +36,8 @@ pixel: Lead
 @media (max-width:640px){
   .ty{ min-height:0; padding-top:96px; }
   .ty-in{ gap:20px; }
-  .ty-in .stage{ min-height:300px; }
-  .ty-in .stage .nuki{ margin-top:60px; }
+  .ty-in .stage{ min-height:260px; }
   .ty-in .nuki img{ width:min(220px,58vw); }
-  .ty-in .bubble{ right:-2px; }
   .ty-acts{ width:100%; flex-direction:column; }
   .ty-acts .btn{ width:100%; }
 }
@@ -49,9 +45,8 @@ pixel: Lead
 
 <section class="ty"><div class="wrap ty-in">
   <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
-    <div class="bubble" aria-live="polite"></div>
-    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Ura! Cererea ta a ajuns la noi.", "Te sunăm curând pentru programare și masajul facial cadou.", "Mai apasă o dată. Îmi place."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/bucurie.webp" alt="Nuki se bucură" width="340" height="340"></span></button>
+    <span class="orb"></span>
+    <span class="nuki"><span class="fl"><img src="/brand_asset/mascota/ipostaze/bucurie.webp" alt="Nuki se bucură" width="340" height="340"></span></span>
     <span class="shadow"></span>
   </div>
   <span class="ty-ok rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Cerere trimisă</span>
@@ -72,23 +67,5 @@ pixel: Lead
     a.href = a.href.replace('wa.me/40750452002', 'wa.me/40750277394').replace('tel:+40750452002', 'tel:+40750277394');
     if (a.href.indexOf('tel:') === 0) a.querySelector('span').textContent = 'Sună acum · +40 750 277 394';
   });
-})();
-/* The happy moment: a small, soft burst of light around Nuki once the page is in, and again on every tap. */
-(function () {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var n = document.querySelector('.ty .nuki'); if (!n) return;
-  var burst = function () {
-    var r = n.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.42;
-    for (var i = 0; i < 16; i++) {
-      var s = document.createElement('i'); s.className = 'spark'; s.style.left = cx + 'px'; s.style.top = cy + 'px';
-      if (i % 3 === 0) s.style.background = '#fff', s.style.boxShadow = '0 0 0 1px rgba(20,165,150,.25)';
-      document.body.appendChild(s);
-      var a = (Math.PI * 2 * i) / 16 + Math.random() * 0.3, d = r.width * (0.42 + Math.random() * 0.22);
-      s.animate([{ transform: 'translate(0,0) scale(.4)', opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: 'translate(' + Math.cos(a) * d + 'px,' + Math.sin(a) * d + 'px) scale(.2)', opacity: 0 }],
-        { duration: 1300, easing: 'cubic-bezier(.16,1,.3,1)' }).onfinish = (function (x) { return function () { x.remove(); }; })(s);
-    }
-  };
-  setTimeout(burst, 1100);
-  n.addEventListener('click', burst);
 })();
 </script>

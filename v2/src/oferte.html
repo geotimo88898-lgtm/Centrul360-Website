@@ -17,7 +17,8 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
 .ofr-gh{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding-bottom:20px; margin-bottom:26px; border-bottom:1px solid var(--line); }
 .ofr-gh h3{ font-size:clamp(1.55rem,2.8vw,2.1rem); letter-spacing:-.04em; margin-top:12px; }
 .ofr-n{ font-size:14px; color:var(--mute); white-space:nowrap; padding-bottom:4px; }
-.ofr-grp .offers{ grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); }
+/* each group's cards start under its title, like the title (a single offer no longer floats in the middle) */
+@media (min-width:641px){ .ofr-grp .offers{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); } .ofr-grp .offers > .slip{ max-width:none; } }
 .ofr-grp .offers > .fine{ grid-column:1 / -1; text-align:left; margin-top:0; }
 .ofr-notes{ display:grid; gap:12px; margin-top:28px; }
 .ofr-notes p{ display:flex; gap:12px; align-items:flex-start; font-size:15px; color:var(--mute); line-height:1.55; }
@@ -43,21 +44,20 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
     <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
     <h1 data-words>Ofertele de Black Friday, <em>până la <span data-ofr-max>-50%</span>.</em></h1>
     <p class="lead rv">Liposonix, cavitație, epilare laser și tratamente faciale. Alege-ți oferta, în Timișoara sau Arad.</p>
-    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#oferte">Vezi ofertele</a></div>
+    <div class="ctas rv"><button type="button" class="btn book" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#oferte">Vezi ofertele</a></div>
     <div class="meta rv">
       <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără plată în avans</span></div>
       <div class="slot" data-slot></div>
     </div>
   </div>
   <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
-    <div class="bubble" aria-live="polite"></div>
-    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Salut! Eu sunt Nuki. Aici sunt toate ofertele de acum.", "Alegi oferta, apoi ziua și ora. Confirmarea vine pe WhatsApp.", "Prima consultație e gratuită. Și masajul facial e cadou.", "Mai apasă o dată. Îmi place."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="Nuki cu un cadou" width="340" height="340"></span></button>
+    <span class="orb"></span>
+    <span class="nuki"><span class="fl"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="Nuki cu un cadou" width="340" height="340"></span></span>
     <span class="shadow"></span>
   </div>
 </div></section>
 
-<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără plată în avans</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confirmare pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă la epilare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără plată în avans</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confirmare pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă la epilare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span></div></div>
+<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără plată în avans</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confirmare pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă la epilare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span></div></div>
 
 <section class="s" id="oferte"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Blochează oferta <em>cu o consultație gratuită.</em></h2><p class="lead">Prețul promoțional se fixează la consultație. Fără plată în avans și fără obligații.</p></div>
@@ -95,7 +95,7 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
       <li class="rv"><small>La clinică · gratuit</small><b>Consultația</b><p>Prețul promoțional se fixează la consultație. Fără plată în avans și fără obligații.</p></li>
     </ol>
   </div>
-  <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/calendar.webp" alt="Nuki cu calendarul" loading="lazy"></span><q>Orele libere pe care le vezi sunt cele reale, din calendarul clinicii.</q><small>Nuki</small></div>
+  <div class="stick rv"><q>Orele libere pe care le vezi sunt cele reale, din calendarul clinicii.</q><small>Nuki</small></div>
 </div></section>
 
 <section class="s" style="padding-top:0"><div class="wrap">
@@ -109,15 +109,9 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
 </div></section>
 
 <section class="s end" style="padding-top:0"><div class="wrap end">
-  <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span>
-    <div class="bubble"></div>
-    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Nu știi ce să alegi? Pentru asta e consultația.","Te aștept la consultație. Masajul facial e cadou."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/gandeste.webp" alt="Nuki se gândește" loading="lazy"></span></button>
-    <span class="shadow"></span>
-  </div>
   <h2 class="rv">Nu știi ce ți se <em>potrivește?</em></h2>
   <p class="lead rv">Îți facem o evaluare gratuită și îți recomandăm oferta sau pachetul potrivit, fără obligații. Plus masajul facial cadou.</p>
-  <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
+  <div class="rv"><button type="button" class="btn book" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot></div>
 </div></section>
 

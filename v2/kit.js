@@ -3,7 +3,7 @@
    hour of a clinic (/api/booking, the portal's Calendar); #lead = the gift form (HighLevel + /api/site-lead).
    Motion (all clean, transform + opacity, one easing): .rv reveals, [data-words] headline, [data-count] numbers,
    [data-scrub] the sentence that fills in, [data-tl] the protocol line, .proc the explainer, .cases the results,
-   .nuki taps, .q questions, the CTA sparkle, the header and the phone dock.
+   .q questions, the header and the phone dock.
    Booking buttons are plain [data-book] buttons: /c360-book.js opens the booking on top of the page. */
 (function () {
   'use strict';
@@ -182,51 +182,38 @@
   }
   wire();
 
-  // the booking button: a small, soft burst of teal light on press
-  document.addEventListener('pointerdown', function (e) {
-    var b = e.target.closest && e.target.closest('.btn.book');
-    if (!b || reduce) return;
-    for (var i = 0; i < 10; i++) {
-      var s = document.createElement('i'); s.className = 'spark'; s.style.left = e.clientX + 'px'; s.style.top = e.clientY + 'px';
-      if (i % 2) s.style.background = '#fff';
-      document.body.appendChild(s);
-      var a = (Math.PI * 2 * i) / 10 + Math.random() * 0.4, d = 26 + Math.random() * 26;
-      s.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + Math.cos(a) * d + 'px,' + Math.sin(a) * d + 'px) scale(.2)', opacity: 0 }],
-        { duration: 650, easing: 'cubic-bezier(.16,1,.3,1)' }).onfinish = (function (x) { return function () { x.remove(); }; })(s);
-    }
-  }, { passive: true });
+  // the booking button: no burst of light on press any more (the owner, 13.11: calm); the button's own press (scale) stays
 
-  // Nuki: talks, and answers a tap
-  $$('.nuki').forEach(function (n) {
-    var bub = n.parentNode.querySelector('.bubble'), lines = [], i = 0;
-    try { lines = JSON.parse(n.getAttribute('data-lines') || '[]'); } catch (e) {}
-    var show = function () { if (!bub || !lines.length) return; bub.classList.remove('in'); setTimeout(function () { bub.innerHTML = '<b>Nuki</b>' + esc(lines[i % lines.length]); bub.classList.add('in'); i++; }, bub.classList.contains('in') ? 220 : 0); };
-    setTimeout(show, 1400);
-    n.addEventListener('click', function () { n.classList.remove('boing'); void n.offsetWidth; n.classList.add('boing'); show(); });
-  });
+  // Nuki is a still picture now (the owner, 13.11: calm, no floating, no rotating speech bubbles)
 
-  // the results: an endless slow row with soft edges (3 cases or more, and not the clinics' photo galleries)
+  // the results: a still row you swipe (or drag, or step with the arrows on a computer); the dots follow.
+  // It no longer moves by itself (the owner, 13.11: calm, Apple-like).
   $$('.cases').forEach(function (c) {
-    var its = $$('.case', c);
-    if (c.hasAttribute('data-static') || its.length < 3) return;
-    var tr = document.createElement('div'); tr.className = 'track';
-    its.forEach(function (it) { it.classList.add('in'); tr.appendChild(it); });
-    its.forEach(function (it) { var k = it.cloneNode(true); k.setAttribute('aria-hidden', 'true'); tr.appendChild(k); });
-    c.appendChild(tr); c.classList.add('loop');
-    // the speed in px a second: 38 by default, a row can ask for another with data-speed (the home page's cases, the owner, 8.11)
-    var sp = Number(c.getAttribute('data-speed')) || 38;
-    requestAnimationFrame(function () { c.style.setProperty('--dur', Math.max(sp > 38 ? 16 : 30, Math.round(tr.scrollWidth / 2 / sp)) + 's'); });
-  });
-  // the other rows: drag with the mouse, dots follow
-  $$('.cases:not(.loop)').forEach(function (c) {
     var dots = c.parentNode.querySelector('.dots'), items = $$('.case', c);
     if (dots) dots.innerHTML = items.map(function () { return '<i></i>'; }).join('');
+    // two quiet arrows around the dots, for a mouse (CSS shows them only where there is one)
+    if (dots && items.length > 1 && !dots.parentNode.querySelector('.cnav')) {
+      var nav = document.createElement('div'); nav.className = 'cnav';
+      nav.innerHTML = '<button type="button" class="cprev" aria-label="Înapoi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+        '<button type="button" class="cnext" aria-label="Înainte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>';
+      dots.parentNode.insertBefore(nav, dots); nav.insertBefore(dots, nav.lastChild);
+      var step = function (dir) { var w = items[0] ? items[0].getBoundingClientRect().width + 20 : c.clientWidth * .8; c.scrollBy({ left: dir * Math.max(w, c.clientWidth * .6), behavior: reduce ? 'auto' : 'smooth' }); };
+      nav.querySelector('.cprev').addEventListener('click', function () { step(-1); });
+      nav.querySelector('.cnext').addEventListener('click', function () { step(1); });
+    }
     var mark = function () {
-      if (!dots) return; var mid = c.scrollLeft + c.clientWidth / 2, best = 0, bd = 1e9;
-      items.forEach(function (it, k) { var d = Math.abs(it.offsetLeft + it.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = k; } });
+      var max = c.scrollWidth - c.clientWidth;
+      var nv = dots && dots.parentNode.classList.contains('cnav') ? dots.parentNode : null;
+      if (nv) { nv.classList.toggle('none', max < 4); nv.querySelector('.cprev').disabled = c.scrollLeft < 4; nv.querySelector('.cnext').disabled = c.scrollLeft > max - 4; }
+      if (!dots) return; var cr = c.getBoundingClientRect(), mid = cr.left + cr.width / 2, best = 0, bd = 1e9;
+      if (c.scrollLeft > max - 4 && max > 0) best = items.length - 1;
+      else if (c.scrollLeft < 4) best = 0;
+      else items.forEach(function (it, k) { var r = it.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - mid); if (d < bd) { bd = d; best = k; } });
       $$('i', dots).forEach(function (d, k) { d.classList.toggle('on', k === best); });
     };
     c.addEventListener('scroll', function () { requestAnimationFrame(mark); }, { passive: true }); mark();
+    addEventListener('resize', function () { requestAnimationFrame(mark); });
+    addEventListener('load', mark);
     var down = false, sx = 0, sl = 0;
     c.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse') return; down = true; sx = e.clientX; sl = c.scrollLeft; c.classList.add('drag'); });
     addEventListener('pointermove', function (e) { if (down) c.scrollLeft = sl - (e.clientX - sx); });

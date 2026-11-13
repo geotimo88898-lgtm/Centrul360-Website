@@ -81,13 +81,7 @@ city: Timișoara
 .ep-dv-hs[data-fx="cool"]{ --c:72,170,255; }
 .ep-dv-hs i{ position:absolute; left:-7px; top:-7px; width:14px; height:14px; border-radius:50%; background:rgb(var(--c)); box-shadow:0 0 0 3px #fff, 0 0 22px 6px rgba(var(--c),.55); }
 .ep-dv-hs i::before, .ep-dv-hs i::after{ content:""; position:absolute; inset:-3px; border-radius:50%; border:2px solid rgba(var(--c),.7); opacity:0; }
-.ep-dv-hs.is-on i::before{ animation:epRing 1.6s var(--e) infinite; } .ep-dv-hs.is-on i::after{ animation:epRing 1.6s var(--e) .55s infinite; }
-@keyframes epRing{ 0%{ transform:scale(1); opacity:.9; } 100%{ transform:scale(4.2); opacity:0; } }
-/* the laser: a short burst of light every pulse */
-.ep-dv-hs[data-fx="laser"].is-on i{ animation:epFire 1.6s ease-in-out infinite; }
-@keyframes epFire{ 0%,100%{ box-shadow:0 0 0 3px #fff, 0 0 18px 4px rgba(var(--c),.45); } 12%{ box-shadow:0 0 0 3px #fff, 0 0 46px 18px rgba(var(--c),.85); } 30%{ box-shadow:0 0 0 3px #fff, 0 0 22px 6px rgba(var(--c),.55); } }
-.ep-dv-hs[data-fx="cool"].is-on i{ animation:epCool 2.4s ease-in-out infinite; }
-@keyframes epCool{ 0%,100%{ box-shadow:0 0 0 3px #fff, 0 0 18px 6px rgba(var(--c),.45); } 50%{ box-shadow:0 0 0 3px #fff, 0 0 40px 16px rgba(var(--c),.7); } }
+/* calm (the owner, 13.11): the lit point keeps its soft light, without rings or pulses */
 .ep-dv-hs em{ display:none; position:absolute; left:-15px; top:-15px; width:30px; height:30px; border-radius:50%; background:var(--teal); color:#fff; place-items:center; box-shadow:0 0 0 3px #fff, 0 10px 24px -8px rgba(11,40,38,.45); }
 .ep-dv-hs em svg{ width:16px; height:16px; }
 .ep-dv-hs[data-fx="cert"] i{ display:none; } .ep-dv-hs[data-fx="cert"] em{ display:grid; }
@@ -117,8 +111,8 @@ city: Timișoara
 @media (min-width:921px){ .ep-zones{ display:grid; grid-template-columns:1fr 1fr; column-gap:64px; } .ep-zones > div:nth-last-child(2){ border-bottom:0; } }
 
 /* the written guarantee */
-.ep-gar{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:28px 40px; align-items:start; margin-top:24px; padding:clamp(28px,4vw,48px); }
-.ep-gar .fl{ display:block; animation:float 6s var(--e2) infinite alternate; }
+.ep-gar{ display:grid; grid-template-columns:minmax(0,1fr); gap:28px 40px; align-items:start; margin-top:24px; padding:clamp(28px,4vw,48px); }
+.ep-gar .fl{ display:block; }
 .ep-gar img{ width:132px; }
 .ep-gar h3{ font-size:clamp(1.4rem,2.6vw,1.9rem); letter-spacing:-.035em; line-height:1.15; margin:14px 0 14px; max-width:24em; }
 .ep-gar p{ color:var(--mute); font-size:15.5px; max-width:44rem; }
@@ -144,21 +138,20 @@ city: Timișoara
     <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
     <h1 data-words>Epilare laser care <em>chiar ține.</em></h1>
     <p class="lead rv">Scapi de firele nedorite cu laserul diodă Elysion Pro și sistemul lui de răcire: confortabil, sigur pe orice tip de piele și eficient ședință după ședință. Doar în Timișoara.</p>
-    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#cum">Cum funcționează</a></div>
+    <div class="ctas rv"><button type="button" class="btn book" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button><a class="btn ghost" href="#cum">Cum funcționează</a></div>
     <div class="meta rv">
       <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă</span></div>
       <div class="slot" data-slot="Timișoara"></div>
     </div>
   </div>
   <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
-    <div class="bubble" aria-live="polite"></div>
-    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Salut! Eu sunt Nuki. El e laserul nostru, Elysion Pro.", "Lumina găsește firul. Căldura ajunge la folicul.", "Prima consultație e gratuită. Și masajul facial e cadou.", "Mai apasă o dată. Îmi place.", "Epilarea laser o facem doar la Timișoara."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/laser.webp" alt="Nuki lângă laserul Elysion Pro" width="340" height="340"></span></button>
+    <span class="orb"></span>
+    <span class="nuki"><span class="fl"><img src="/brand_asset/mascota/ipostaze/laser.webp" alt="Nuki lângă laserul Elysion Pro" width="340" height="340"></span></span>
     <span class="shadow"></span>
   </div>
 </div></section>
 
-<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ceară</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără aparat de ras</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără fire crescute sub piele</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Răcire activă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Echipament medical certificat</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ceară</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără aparat de ras</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără fire crescute sub piele</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Răcire activă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Echipament medical certificat</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span></div></div>
+<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără ceară</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără aparat de ras</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără fire crescute sub piele</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără recuperare</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Răcire activă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Echipament medical certificat</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Garanție scrisă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span></div></div>
 
 <section class="s" id="cum"><div class="wrap">
   <div class="head rv"><span class="eye">Cum funcționează</span><h2>Lumina ajunge <em>până la folicul.</em></h2><p class="lead">Lumina laserului e absorbită de pigmentul firului și transformată în căldură, care dezactivează progresiv folicul cu folicul.</p></div>
@@ -231,7 +224,7 @@ city: Timișoara
 <section class="s"><div class="wrap">
   <span class="eye rv" style="margin-bottom:28px">De ce mai multe ședințe</span>
   <p class="scrub" data-scrub>Părul crește în cicluri. De aceea ceara și aparatul de ras sunt o întreținere fără sfârșit, iar laserul construiește rezultatul în mai multe ședințe. <em>Dar este de durată.</em></p>
-  <div class="say rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/gandeste.webp" alt="" loading="lazy"></span><q>Părul are programul lui. Noi ne potrivim cu el.<small>Nuki</small></q></div>
+  <div class="say rv"><q>Părul are programul lui. Noi ne potrivim cu el.<small>Nuki</small></q></div>
 </div></section>
 
 <section class="s" id="protocol" style="padding-top:0"><div class="wrap split">
@@ -245,7 +238,7 @@ city: Timișoara
       <li class="rv"><small>Ședința 6 · după 8-10 săptămâni</small><b>Piele netedă</b><p>Pielea e vizibil mai netedă. De aici, tratamentul continuă în funcție de fiecare.</p></li>
     </ol>
   </div>
-  <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/calendar.webp" alt="Nuki cu calendarul ședințelor" loading="lazy"></span><q>Eu țin calendarul. Tu vii doar la ședințe.</q><small>Nuki</small></div>
+  <div class="stick rv"><q>Eu țin calendarul. Tu vii doar la ședințe.</q><small>Nuki</small></div>
 </div></section>
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
@@ -260,14 +253,14 @@ city: Timișoara
     <div><span><span class="t">Picior lung</span></span><b>de la 390 lei <small>/ ședință</small></b></div>
   </div>
   <p class="fine rv">Prețuri orientative per ședință, pentru femei. <a href="{{base}}preturi">Vezi toate prețurile pe zone</a></p>
-  <div class="card ep-gar rv" id="garantie"><span class="fl"><img src="/brand_asset/mascota/ipostaze/aprobare.webp" alt="Nuki cu degetul mare ridicat" loading="lazy"></span><div>
+  <div class="card ep-gar rv" id="garantie"><div>
     <span class="eye">Garanție scrisă</span>
     <h3>Dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie.</h3>
     <p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine și tot ai nevoie să te epilezi regulat, mai faci ședințe pe cheltuiala noastră. Fără plafon și fără să fie nevoie să negociezi.</p>
     <p>De aceea la consultație îți spunem sincer dacă ești sau nu un caz potrivit. <b>Nu luăm cazuri pe care nu le putem rezolva.</b></p>
     <ul><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>Stabilim la consultație dacă ești un caz potrivit</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>Ședințele respectate la intervalele recomandate</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>Fără epilat cu ceara sau penseta între ședințe</span></li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>Valabil pe zona tratată în cadrul cursului</span></li></ul>
   </div></div>
-  <div class="card gift rv"><span class="fl" style="animation:float 6s var(--e2) infinite alternate"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="" loading="lazy"></span><div><b>Consultația e gratuită. Masajul facial e cadou.</b><p>Afli câte ședințe îți trebuie și cât costă, fără nicio obligație.</p></div></div>
+  <div class="card gift rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="" loading="lazy"></span><div><b>Consultația e gratuită. Masajul facial e cadou.</b><p>Afli câte ședințe îți trebuie și cât costă, fără nicio obligație.</p></div></div>
 </div></section>
 
 <section class="s" style="padding-top:0"><div class="wrap">
@@ -296,15 +289,9 @@ city: Timișoara
 </div></section>
 
 <section class="s end" style="padding-top:0"><div class="wrap end">
-  <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span>
-    <div class="bubble"></div>
-    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Te aștept la Timișoara!","Adu-ți întrebările. Eu aduc calendarul."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/salut-pa.webp" alt="Nuki face cu mâna" loading="lazy"></span></button>
-    <span class="shadow"></span>
-  </div>
   <h2 class="rv">Primul pas e o <em>consultație gratuită.</em></h2>
   <p class="lead rv">Ne uităm la tipul de păr și la fototipul pielii, apoi îți spunem exact câte ședințe îți trebuie și cât costă. Fără nicio obligație. Plus masajul facial cadou.</p>
-  <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button></div>
+  <div class="rv"><button type="button" class="btn book" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot="Timișoara"></div>
 </div></section>
 

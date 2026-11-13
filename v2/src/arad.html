@@ -59,8 +59,8 @@ city: Arad
 .cty-mk{ display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
 .cty-mk b{ padding:8px 14px; border-radius:999px; font-size:13px; font-weight:600; letter-spacing:-.01em; color:var(--ink); white-space:nowrap; background:#fff; box-shadow:0 0 0 1px var(--line2), 0 12px 26px -12px rgba(11,40,38,.45); }
 .cty-mk i{ position:relative; width:16px; height:16px; border-radius:50%; background:var(--ink); box-shadow:0 0 0 4px #fff, 0 6px 14px rgba(11,11,13,.35); }
-.cty-mk i::after{ content:''; position:absolute; inset:-4px; border-radius:50%; border:1.5px solid rgba(11,11,13,.35); animation:ctyPing 2.6s var(--e) infinite; }
-@keyframes ctyPing{ 0%{ transform:scale(1); opacity:.9; } 80%,100%{ transform:scale(2.6); opacity:0; } }
+/* the pin: a still, soft ring around it (calm, the owner 13.11: no pulsing) */
+.cty-mk i{ box-shadow:0 0 0 4px #fff, 0 0 0 9px rgba(11,11,13,.08), 0 6px 14px rgba(11,11,13,.35); }
 .cty-map .maplibregl-ctrl-group{ border-radius:14px; box-shadow:0 0 0 1px var(--line2), 0 10px 24px -14px rgba(11,40,38,.4); }
 .cty-map .maplibregl-ctrl-attrib{ font-size:10px; }
 .cty-info{ padding:clamp(28px,3.4vw,40px); display:flex; flex-direction:column; gap:6px; }

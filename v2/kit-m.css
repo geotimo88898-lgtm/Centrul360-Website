@@ -61,4 +61,22 @@
   .dock .t b{ display:block; color:var(--ink); font-size:14.5px; font-weight:600; }
   .dock .btn{ height:46px; padding:0 20px; font-size:15px; }
   body.ck-open .dock{ transform:translate(-50%,170%) !important; }
+  /* the three reviews side by side, swiped like on the phone (one full-width card under another read heavy on a tablet) */
+  .revs{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; scrollbar-width:none; margin:0 -20px; padding:6px 20px 18px; gap:16px; scroll-padding:0 20px; }
+  .revs::-webkit-scrollbar{ display:none; }
+  .revs > .rev{ flex:0 0 min(400px,64%); scroll-snap-align:start; }
 }
+
+/* ---- calm (the owner, 13.11): below the computer the hero is the promise and the buttons only; Nuki's stage
+   (a whole screen under the text on a tablet) stays on the computer */
+@media (max-width:920px){
+  .hero .stage{ display:none; }
+  .hero{ padding-bottom:clamp(28px,5vw,56px); }
+}
+@media (max-width:640px){
+  /* the results row starts on the same line as the text */
+  .cases{ --gut:16px; gap:12px; }
+  footer{ padding-top:56px; }
+}
+/* the still band right under the hero (pages without a film) keeps a little air from the Google line */
+@media (max-width:920px){ .hero + .band{ margin-top:20px; } }
