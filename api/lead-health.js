@@ -82,6 +82,38 @@ module.exports = async (req, res) => {
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
   // ?nuki=edit: the owner's edits, end to end without saving: Nuki reads a sheet and proposes a change (nothing is applied)
   if (req.query && req.query.nuki) { res.status(200).json(req.query.nuki === 'edit' ? await require('./portal-nuki').pingEdit(req.query.q) : await require('./portal-nuki').ping()); return; }
+  // ?sitebook=1: where the site's own bookings come from (the owner, 13.11: „de unde vin toate?”). The site keeps no
+  // source with a booking, so for each one: the page it was made on, what we had of her before it (a lead from an ad
+  // form or the site's quiz, an earlier appointment, a WhatsApp talk, a message of ours with the site's link). No phones,
+  // no names in the answer.
+  if (req.query && req.query.sitebook) {
+    const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+    const [appts, leads, convos, tdoc] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/leads.json', []), readJSON('data/whatsapp-conversations.json', []), WT.load()]);
+    const label = (id) => ((tdoc.templates || []).find((t) => t.id === id) || {}).label || '';
+    const site = appts.filter((a) => a && a.createdBy === 'site').sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const ro = (iso) => new Date(iso).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const linkTpls = (tdoc.templates || []).filter((t) => /centrul360\.com/i.test([t.header, t.body, t.footer, JSON.stringify(t.buttons || [])].join(' '))).map((t) => t.label);
+    const rows = site.map((a) => {
+      const k = d9(a.clientPhone), at = String(a.createdAt || '');
+      const hers = leads.filter((l) => d9(l.phone) === k);
+      const before = hers.filter((l) => String(l.createdAt || '') < at).sort((x, y) => String(x.createdAt).localeCompare(String(y.createdAt)));
+      const forms = [].concat(...hers.map((l) => (l.forms || (l.form ? [l.form] : [])))).filter((f) => f && (f.sentAt || '') < at);
+      const prior = appts.filter((b) => b.id !== a.id && d9(b.clientPhone) === k && String(b.createdAt || b.date) < at && !b.block);
+      const c = convos.find((x) => d9(x.phone) === k);
+      const msgs = ((c && c.messages) || []).filter((m) => String(m.timestamp || '') < at);
+      const links = msgs.filter((m) => m.direction === 'out' && /centrul360\.com/i.test(String(m.text || '')));
+      return {
+        made: ro(at), city: a.location, treatment: a.treatment, status: a.status, page: (String(a.note || '').split(' · ').slice(-1)[0] || '').replace('Programare online pe site', ''),
+        lead: before.length ? { source: before[0].source, since: ro(before[0].createdAt), by: before[0].createdBy || '' } : null,
+        forms: forms.map((f) => ({ campaign: f.campaign || '', ad: f.ad || '', form: f.name || '', at: f.sentAt ? ro(f.sentAt) : '' })).slice(-3),
+        earlierAppts: prior.length, earlierBy: [...new Set(prior.map((b) => b.createdBy === 'site' ? 'site' : b.ghlId ? 'ghl' : 'portal'))],
+        waIn: msgs.filter((m) => m.direction === 'in').length, waOut: msgs.filter((m) => m.direction === 'out').length,
+        linkSent: links.length ? { at: ro(links[links.length - 1].timestamp), tpl: label(links[links.length - 1].templateId) || (links[links.length - 1].auto ? 'automat' : 'scris de mână') } : null,
+      };
+    });
+    res.status(200).json({ n: rows.length, linkTemplates: linkTpls, rows });
+    return;
+  }
   // ?staff=1: who a site booking goes to in each city (api/_lib/booking.js soleCosmetician), first names only, and the
   // site bookings ahead still on no one; &fill=1 puts those on the city's only cosmetician (the owner, 13.11: Arad → Andrea)
   if (req.query && req.query.staff) {
