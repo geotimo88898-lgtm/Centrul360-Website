@@ -58,6 +58,33 @@
 
 <main>
 <style>
+/* the clinic inside, as a mosaic (the owner, 13.11: „prezentate mai nice, e prea boring”): one large photo and smaller ones,
+   a glass label on each, a slow zoom on hover; a tap opens it large; „Vezi toate” opens the whole set */
+.cty-bento{ display:grid; grid-template-columns:repeat(6,1fr); grid-auto-rows:clamp(60px,7.2vw,104px); gap:14px; }
+.cty-bento .tile{ position:relative; margin:0; overflow:hidden; border-radius:26px; background:#eef2f2; isolation:isolate; box-shadow:0 0 0 1px rgba(11,40,38,.06) inset, 0 30px 60px -44px rgba(11,40,38,.45); }
+.cty-bento .ph{ position:absolute; inset:0; cursor:zoom-in; outline:none; }
+.cty-bento .ph:focus-visible{ box-shadow:0 0 0 3px var(--teal, #14a596) inset; }
+.cty-bento img{ width:100%; height:100%; object-fit:cover; display:block; transform:scale(1.001); transition:transform 1.6s var(--e); }
+.cty-bento .tile:hover img{ transform:scale(1.04); }
+.cty-bento .tile::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:46%; background:linear-gradient(180deg,rgba(8,20,19,0),rgba(8,20,19,.34)); pointer-events:none; }
+.cty-bento figcaption{ position:absolute; left:16px; bottom:16px; z-index:1; padding:7px 13px; border-radius:999px; font-size:13px; font-weight:600; letter-spacing:-.01em; color:#fff; pointer-events:none;
+  background:rgba(255,255,255,.16); -webkit-backdrop-filter:blur(14px) saturate(160%); backdrop-filter:blur(14px) saturate(160%); box-shadow:0 0 0 1px rgba(255,255,255,.24) inset; }
+.cty-bento .t-xl{ grid-column:span 4; grid-row:span 4; }
+.cty-bento .t-s{ grid-column:span 2; grid-row:span 2; }
+.cty-bento .t-m{ grid-column:span 2; grid-row:span 3; }
+.cty-all{ display:flex; justify-content:center; margin-top:28px; }
+.cty-all .more{ background:none; border:0; padding:0; cursor:pointer; }
+@media (max-width:640px){
+  .cty-bento{ grid-template-columns:1fr 1fr; grid-auto-rows:auto; gap:10px; }
+  .cty-bento .tile{ grid-column:auto; grid-row:auto; aspect-ratio:1; border-radius:20px; }
+  .cty-bento .t-xl,.cty-bento .p-wide{ grid-column:span 2; aspect-ratio:4/3; }
+  .cty-bento figcaption{ left:10px; bottom:10px; padding:6px 10px; font-size:12px; }
+}
+/* the clinic's own photo in the hero (the owner, 13.11: no rings, bubbles or floating on the clinic pages) */
+.cty-hero{ margin:0; overflow:hidden; border-radius:var(--r); aspect-ratio:4/5; background:#f3f6f6; box-shadow:0 0 0 1px var(--line) inset, 0 40px 80px -50px rgba(11,40,38,.45); }
+.cty-hero img{ width:100%; height:100%; object-fit:cover; display:block; }
+.say .fl,.gift .fl{ animation:none !important; }
+@media (max-width:920px){ .cty-hero{ aspect-ratio:4/3; max-width:640px; } }
 /* the clinic page: the map + details, the photos (tap to enlarge), what can be done here */
 .cty-loc{ display:grid; grid-template-columns:1.35fr 1fr; gap:20px; align-items:stretch; }
 .cty-map{ position:relative; overflow:hidden; min-height:480px; border-radius:var(--r); background:#f3f6f6; box-shadow:0 0 0 1px var(--line) inset, 0 40px 80px -54px rgba(11,40,38,.45); isolation:isolate; }
@@ -127,23 +154,17 @@
 <section class="hero"><div class="wrap">
   <div class="txt">
     <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
-    <h1 data-words>Clinica de medicină estetică din <em>Timișoara.</em></h1>
+    <h1 data-words>Clinica de medicină estetică non-invazivă din <em>Timișoara.</em></h1>
     <p class="lead rv">Pe Str. Bucegi 7 găsești întreaga gamă de tratamente Centrul360, faciale și corporale, non-invazive. Consultația inițială e gratuită și durează 30 de minute.</p>
-    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><a class="btn ghost" href="#unde">Unde ne găsești</a></div>
+    <div class="ctas rv"><button type="button" class="btn book" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><a class="btn ghost" href="#unde">Unde ne găsești</a></div>
     <div class="meta rv">
       <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
       <div class="slot" data-slot="Timișoara"></div>
     </div>
   </div>
-  <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span><span class="ring b"><i></i></span>
-    <div class="bubble" aria-live="polite"></div>
-    <button type="button" class="nuki" aria-label="Nuki, mascota Centrul360" data-lines='["Bun venit pe Str. Bucegi 7! Eu sunt Nuki.", "Te așteptăm de luni până vineri, între 09:00 și 20:00.", "Prima consultație e gratuită. Și masajul facial e cadou.", "Mai apasă o dată. Îmi place."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/receptie.webp" alt="Nuki la recepția clinicii" width="340" height="340"></span></button>
-    <span class="shadow"></span>
-  </div>
+  <figure class="cty-hero rv"><img src="/brand_asset/loc-timisoara-receptie.webp" alt="Recepția clinicii Centrul360 Timișoara" width="1200" height="900" fetchpriority="high"></figure>
 </div></section>
 
-<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Tratamente non-invazive</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Aparate certificate</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confirmare pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Masaj facial cadou</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Tratamente non-invazive</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Aparate certificate</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>5,0 pe Google</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confirmare pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Masaj facial cadou</span></div></div>
 
 <section class="s" id="unde"><div class="wrap">
   <div class="head rv"><span class="eye">Unde ne găsești</span><h2>Str. Bucegi 7, <em>Timișoara.</em></h2></div>
@@ -167,12 +188,14 @@
 
 <section class="s" style="padding-top:0">
   <div class="wrap"><div class="head rv"><span class="eye">Clinica pe dinăuntru</span><h2>Un spațiu gândit pentru <em>confortul tău.</em></h2><p class="lead">Lumină caldă, design curat și aparatură de ultimă generație: atmosfera în care te așteptăm în Timișoara. Apasă pe o imagine ca s-o mărești.</p></div></div>
-  <div class="cases" data-static>
-    <figure class="case"><div class="ph"><img src="/brand_asset/g-tm-1.webp" alt="Recepția clinicii Centrul360 Timișoara" draggable="false"></div><figcaption><b>Recepția</b><span>Timișoara</span></figcaption></figure>
-    <figure class="case"><div class="ph"><img src="/brand_asset/g-tm-2.webp" alt="Recepția Centrul360 Timișoara" draggable="false"></div><figcaption><b>Recepția</b><span>Timișoara</span></figcaption></figure>
-    <figure class="case"><div class="ph"><img src="/brand_asset/g-tm-3.webp" alt="Sală de tratament Centrul360 Timișoara" draggable="false"></div><figcaption><b>Sala de tratament</b><span>Timișoara</span></figcaption></figure>
+  <div class="wrap">
+  <div class="cty-bento">
+    <figure class="tile t-xl rv"><div class="ph"><img src="/brand_asset/g-tm-3.webp" alt="Sală de tratament Centrul360 Timișoara" loading="lazy" draggable="false"></div><figcaption>Sala de tratament</figcaption></figure>
+    <figure class="tile t-s rv"><div class="ph"><img src="/brand_asset/g-tm-1.webp" alt="Recepția clinicii Centrul360 Timișoara" loading="lazy" draggable="false"></div><figcaption>Recepția</figcaption></figure>
+    <figure class="tile t-s rv"><div class="ph"><img src="/brand_asset/g-tm-2.webp" alt="Recepția Centrul360 Timișoara" loading="lazy" draggable="false"></div><figcaption>Recepția</figcaption></figure>
   </div>
-  <div class="wrap" style="display:grid;justify-items:center"><div class="dots"></div></div>
+  <div class="cty-all rv"><button type="button" class="more" data-all>Deschide galeria<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  </div>
   <div class="wrap"><div class="say rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/aprobare.webp" alt="" loading="lazy"></span><div><q>Pe viu arată și mai bine. Te aștept!</q><small>Nuki</small></div></div></div>
 </section>
 
@@ -204,7 +227,7 @@
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>la Timișoara.</em></h2><p class="lead">Alegi oferta, apoi ziua și ora. Confirmarea vine pe WhatsApp.</p></div>
   <div class="offers" data-offers="all" data-city="timisoara"></div>
-  <div class="card gift rv"><span class="fl" style="animation:float 6s var(--e2) infinite alternate"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="" loading="lazy"></span><div><b>Consultația e gratuită. Masajul facial e cadou.</b><p>Afli ce ți se potrivește și cât costă, fără nicio obligație.</p></div></div>
+  <div class="card gift rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="" loading="lazy"></span><div><b>Consultația e gratuită. Masajul facial e cadou.</b><p>Afli ce ți se potrivește și cât costă, fără nicio obligație.</p></div></div>
 </div></section>
 
 <section class="s" style="padding-top:0"><div class="wrap">
@@ -217,16 +240,10 @@
 </div></section>
 
 <section class="s end" style="padding-top:0"><div class="wrap end">
-  <div class="stage rv zoom">
-    <span class="orb"></span><span class="ring"><i></i></span>
-    <div class="bubble"></div>
-    <button type="button" class="nuki" aria-label="Nuki" data-lines='["Te aștept pe Str. Bucegi 7!","Adu-ți întrebările. Noi avem răbdare."]'><span class="fl"><img src="/brand_asset/mascota/ipostaze/salut-pa.webp" alt="Nuki face cu mâna" loading="lazy"></span></button>
-    <span class="shadow"></span>
-  </div>
   <span class="eye rv">Te așteptăm în Timișoara</span>
   <h2 class="rv">Programează o consultație <em>gratuită.</em></h2>
   <p class="lead rv">Str. Bucegi 7, de luni până vineri, între 09:00 și 20:00. Afli ce ți se potrivește și cât costă, fără nicio obligație.</p>
-  <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  <div class="rv"><button type="button" class="btn book" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
   <div class="slot rv" data-slot="Timișoara"></div>
 </div></section>
 
@@ -283,9 +300,9 @@
     else go();
   }
 
-  var lb = document.querySelector('.cty-lb'), cases = document.querySelector('.cases');
+  var lb = document.querySelector('.cty-lb'), cases = document.querySelector('.cty-bento');
   if (!lb || !cases) return;
-  var imgs = Array.prototype.slice.call(cases.querySelectorAll('.case img')), big = lb.querySelector('img'), cap = lb.querySelector('figcaption'), at = 0, from = null, sx = 0, sy = 0;
+  var imgs = Array.prototype.slice.call(cases.querySelectorAll('.tile img')), big = lb.querySelector('img'), cap = lb.querySelector('figcaption'), at = 0, from = null, sx = 0, sy = 0;
   var show = function (k) {
     at = (k + imgs.length) % imgs.length;
     var src = imgs[at];
@@ -303,6 +320,7 @@
   });
   imgs.forEach(function (im) { var ph = im.parentNode; ph.setAttribute('tabindex', '0'); ph.setAttribute('role', 'button'); ph.setAttribute('aria-label', 'Mărește: ' + im.alt);
     ph.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(imgs.indexOf(im)); } }); });
+  var all = document.querySelector('[data-all]'); if (all) all.addEventListener('click', function () { open(0); });
   lb.querySelector('.x').addEventListener('click', close);
   lb.querySelector('.pv').addEventListener('click', function () { show(at - 1); });
   lb.querySelector('.nx').addEventListener('click', function () { show(at + 1); });

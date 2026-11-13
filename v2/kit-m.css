@@ -5,6 +5,9 @@
 .film-v{ padding:8px; background:linear-gradient(160deg,#dcf2ef,#ffffff 62%); box-shadow:0 0 0 1px rgba(20,165,150,.2) inset, 0 40px 80px -40px rgba(11,40,38,.55); }
 .film-v video{ border-radius:25px; }
 @media (max-width:920px){
+  /* one header everywhere below the computer (the owner, 13.11): the logo and the menu, as on the phone; on a tablet
+     the booking button sat in the middle of the bar. Booking stays in the dock at the bottom, as on the phone. */
+  .top .top-cta{ display:none; }
   .top .bf-pill{ display:none; }
   .menu .bf-menu{ display:inline-flex; align-self:flex-start; margin:4px 0 26px; height:50px; padding:0 22px 0 14px; font-size:15px; }
 }
@@ -47,4 +50,15 @@
   /* the menu: a solid sheet, nothing of the page shows through */
   .menu{ background:#fff; -webkit-backdrop-filter:none; backdrop-filter:none; }
   .menu .mg a{ padding:6px 0; }
+}
+
+/* the tablet gets the phone's dock (the header has no booking button below 920px): the same bar, centred, not wider than a phone's */
+@media (min-width:641px) and (max-width:920px){
+  .dock{ display:flex; position:fixed; z-index:55; left:50%; right:auto; width:min(560px, calc(100% - 40px)); bottom:calc(16px + env(safe-area-inset-bottom)); align-items:center; gap:12px; padding:7px 7px 7px 20px; border-radius:999px;
+    background:#fff; box-shadow:0 0 0 1px var(--line2) inset, 0 18px 40px -18px rgba(11,40,38,.4); transform:translate(-50%,170%); transition:transform .8s var(--e); }
+  .dock.in{ transform:translate(-50%,0); }
+  .dock .t{ flex:1; min-width:0; font-size:13px; line-height:1.3; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dock .t b{ display:block; color:var(--ink); font-size:14.5px; font-weight:600; }
+  .dock .btn{ height:46px; padding:0 20px; font-size:15px; }
+  body.ck-open .dock{ transform:translate(-50%,170%) !important; }
 }
