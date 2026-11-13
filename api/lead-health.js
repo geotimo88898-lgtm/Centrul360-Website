@@ -118,6 +118,28 @@ module.exports = async (req, res) => {
     res.status(200).json({ n: rows.length, linkTemplates: linkTpls, rows });
     return;
   }
+  // ?outdocs=1: the newest documents the clinic sent from Mesaje, as stored (size, pages, whether the PDF ends properly),
+  // to tell a file cut short on the way from one sent whole (13.11: „i s-a trimis doar o pagină din catalog”). No phones.
+  if (req.query && req.query.outdocs) {
+    const { readBinary } = require('./_lib/store');
+    const convos = await readJSON('data/whatsapp-conversations.json', []);
+    const docs = [];
+    convos.forEach((c) => (c.messages || []).forEach((m) => { if (m && m.direction === 'out' && m.media && m.media.kind === 'document') docs.push(m); }));
+    docs.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+    const out = [];
+    for (const m of docs.slice(0, 6)) {
+      const md = m.media;
+      let buf = null;
+      try { buf = md.path ? await readBinary(md.path) : null; } catch (e) { buf = null; }
+      const txt = buf ? buf.toString('latin1') : '';
+      out.push({ at: m.timestamp, filename: md.filename || '', how: md.path ? 'stored' : md.href ? 'href' : '-', status: m.status || '', error: m.error || undefined,
+        kb: buf ? Math.round(buf.length / 1024) : null, pages: buf ? (txt.match(/\/Type\s*\/Page[^s]/g) || []).length : null,
+        count: buf ? ((txt.match(/\/Count\s+(\d+)/g) || []).map((x) => +x.replace(/\D/g, '')).sort((a, b) => b - a)[0] || null) : null,
+        ends: buf ? /%%EOF\s*$/.test(txt.slice(-64)) : null });
+    }
+    res.status(200).json({ docs: out });
+    return;
+  }
   // ?staff=1: who a site booking goes to in each city (api/_lib/booking.js soleCosmetician), first names only, and the
   // site bookings ahead still on no one; &fill=1 puts those on the city's only cosmetician (the owner, 13.11: Arad → Andrea)
   if (req.query && req.query.staff) {
