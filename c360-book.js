@@ -19,6 +19,23 @@
   const WDL = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
   const MO = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
   const PAGE = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+  // Where she came from this visit (the owner, 13.11: „să știm de unde vin”): the outside page that sent her (its host
+  // only), the ad's and campaign's tags of the address she landed on, the page she landed on. Kept for this visit only
+  // (sessionStorage, gone when the tab closes) and sent with a booking; a new arrival from outside in the same tab
+  // replaces it. Saved with the booking, never shown to her.
+  const SRC = (function () {
+    let ref = '';
+    try { const h = new URL(document.referrer).hostname; if (!/(^|\.)centrul360\.com$/.test(h)) ref = h; } catch (e) { /* no referrer */ }
+    const q = new URLSearchParams(location.search);
+    const tag = {};
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach((k) => { const v = q.get(k); if (v) tag[k.slice(4)] = v.slice(0, 80); });
+    ['fbclid', 'gclid', 'gbraid', 'wbraid', 'ttclid', 'msclkid'].forEach((k) => { if (q.get(k)) tag[k] = 1; });
+    const now = { ref, tag, land: location.pathname.slice(0, 80), at: new Date().toISOString() };
+    let kept = null;
+    try { kept = JSON.parse(sessionStorage.getItem('c360-src') || 'null'); } catch (e) { /* private mode */ }
+    if (!kept || ref || Object.keys(tag).length) { kept = now; try { sessionStorage.setItem('c360-src', JSON.stringify(now)); } catch (e) { /* private mode */ } }
+    return kept;
+  })();
   const PAGE_CITY = { timisoara: 'Timișoara', arad: 'Arad', 'epilare-laser': 'Timișoara', 'tonifiere-musculara': 'Timișoara', 'detox-drenaj': 'Timișoara' }[PAGE] || '';
 
   const CSS = `
@@ -482,7 +499,7 @@
     // one id for this booking's Schedule: the portal gets it (Conversions API) and the pixel too, so Meta counts it once
     const eid = 'bk.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, event_id: window.C360_CONSENT === true ? eid : ''
+      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, src: SRC, event_id: window.C360_CONSENT === true ? eid : ''
     }) }).then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } })).then(({ r, d }) => {
       S.busy = false;
       if (r.ok && d.ok) {

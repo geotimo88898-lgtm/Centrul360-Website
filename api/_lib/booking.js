@@ -210,4 +210,39 @@ function overbooked(cfg, appts, entry) {
   return false;
 }
 
-module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, soleCosmetician, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };
+// Where a site booking came from (the owner, 13.11: „să salvăm asta să știm de unde vin”, not shown in the Calendar):
+// what the site sent (c360-book.js SRC: the outside page's host, the address's tags, the page she landed on) and
+// whether the browser has Meta's click cookie (_fbc: she came from a Facebook or Instagram link in the last 90 days,
+// set by the pixel only after the cookies' Accept). from: one plain word for the owner.
+function sourceOf(raw, cookie) {
+  const x = raw && typeof raw === 'object' ? raw : {};
+  const host = String(x.ref || '').toLowerCase().replace(/[^a-z0-9.-]/g, '').slice(0, 80);
+  const t = x.tag && typeof x.tag === 'object' ? x.tag : {};
+  const tag = {};
+  ['source', 'medium', 'campaign', 'content'].forEach((k) => { if (t[k]) tag[k] = clip(String(t[k]).replace(/[<>]/g, ''), 80); });
+  ['fbclid', 'gclid', 'gbraid', 'wbraid', 'ttclid', 'msclkid'].forEach((k) => { if (t[k]) tag[k] = 1; });
+  const fbc = /(^|;\s*)_fbc=fb\./.test(String(cookie || ''));
+  const us = fold(tag.source), um = fold(tag.medium);
+  const on = (re) => re.test(host);
+  const from = tag.gclid || tag.gbraid || tag.wbraid ? 'Reclamă Google'
+    : /facebook|^fb$|instagram|^ig$|meta/.test(us) && /paid|cpc|ad|ppc/.test(um) ? 'Reclamă Facebook/Instagram'
+    : tag.ttclid ? 'Reclamă TikTok'
+    : on(/(^|\.)instagram\.com$/) ? 'Instagram'
+    : on(/(^|\.)facebook\.com$|(^|\.)fb\.com$|(^|\.)fb\.me$/) ? 'Facebook'
+    : tag.fbclid ? 'Facebook/Instagram'
+    : on(/(^|\.)google\.[a-z.]+$/) || /google/.test(us) ? 'Google'
+    : on(/(^|\.)tiktok\.com$/) || /tiktok/.test(us) ? 'TikTok'
+    : on(/(^|\.)youtube\.com$|(^|\.)youtu\.be$/) ? 'YouTube'
+    : on(/chatgpt\.com$|openai\.com$|perplexity\.ai$|gemini\.google\.com$|copilot\.microsoft\.com$/) ? 'ChatGPT / AI'
+    : on(/bing\.com$|yahoo\.|duckduckgo\.com$/) ? 'Alt motor de căutare'
+    : on(/whatsapp\.com$|wa\.me$/) || /whatsapp/.test(us) ? 'WhatsApp'
+    : tag.source ? clip(tag.source, 40)
+    : host ? host
+    : fbc ? 'Facebook/Instagram (mai devreme)'
+    : 'Direct';
+  const land = clip(String(x.land || '').replace(/[^\w\/.-]/g, ''), 80);
+  const at = !isNaN(Date.parse(x.at)) ? new Date(Date.parse(x.at)).toISOString() : '';
+  return Object.assign({ from }, host ? { ref: host } : {}, Object.keys(tag).length ? { tag } : {}, land ? { land } : {}, at ? { at } : {}, fbc ? { fbc: true } : {});
+}
+
+module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, soleCosmetician, sourceOf, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };

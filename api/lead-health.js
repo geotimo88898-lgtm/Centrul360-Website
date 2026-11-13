@@ -103,7 +103,7 @@ module.exports = async (req, res) => {
       const msgs = ((c && c.messages) || []).filter((m) => String(m.timestamp || '') < at);
       const links = msgs.filter((m) => m.direction === 'out' && /centrul360\.com/i.test(String(m.text || '')));
       return {
-        made: ro(at), city: a.location, treatment: a.treatment, status: a.status, page: (String(a.note || '').split(' · ').slice(-1)[0] || '').replace('Programare online pe site', ''),
+        made: ro(at), from: a.src ? a.src.from : '', src: a.src || null, city: a.location, treatment: a.treatment, status: a.status, page: (String(a.note || '').split(' · ').slice(-1)[0] || '').replace('Programare online pe site', ''),
         lead: before.length ? { source: before[0].source, since: ro(before[0].createdAt), by: before[0].createdBy || '' } : null,
         forms: forms.map((f) => ({ campaign: f.campaign || '', ad: f.ad || '', form: f.name || '', at: f.sentAt ? ro(f.sentAt) : '' })).slice(-3),
         earlierAppts: prior.length, earlierBy: [...new Set(prior.map((b) => b.createdBy === 'site' ? 'site' : b.ghlId ? 'ghl' : 'portal'))],

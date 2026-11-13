@@ -98,6 +98,7 @@ module.exports = async (req, res) => {
       amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
       note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
       online: true, createdBy: 'site', createdAt: at, updatedAt: at,
+      src: B.sourceOf(b.src, req.headers && req.headers.cookie), // where she came from: saved, not shown in the Calendar
     };
     appts.push(entry);
     await writeJSON('data/appointments.json', appts);
