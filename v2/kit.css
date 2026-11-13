@@ -559,3 +559,16 @@ footer .lk b{ margin-bottom:4px; }
 /* smaller, so more cases are seen at once (the home page, the owner, 8.11) */
 .cases.is-small .case.ar{ --h:min(250px, 46vw); }
 .cases.is-small .case figcaption{ font-size:13.5px; padding-top:12px; }
+
+/* ---- layout fixes (the owner, 13.11: „polish” means bugs only; nothing else changes) */
+.nw{ white-space:nowrap; } /* a street number or a phone number stays on one line */
+/* offers side by side: every card's button sits at the bottom, so the buttons of one row line up even when a title
+   or its label takes two lines (the same spacing as before: 10px gap + 16px above the button) */
+.slip{ display:flex; flex-direction:column; }
+.slip > .where{ margin-bottom:16px; }
+.slip > .btn.book{ margin-top:auto; }
+/* the next free hour: the day and the hour stay together („luni 16 / nov.” broke on the phone and the tablet) */
+.slot b{ white-space:nowrap; }
+/* the footer's legal links wrap as whole links („Setări / cookies” broke in two on the phone) */
+footer .legal > span{ flex-wrap:wrap; row-gap:6px; }
+footer .legal > span a{ white-space:nowrap; }

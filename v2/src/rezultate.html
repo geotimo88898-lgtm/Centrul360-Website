@@ -26,6 +26,8 @@ description: Rezultate reale înainte și după la Centrul360, cu tratamente fac
 .rez-say{ margin-inline:auto; width:max-content; max-width:100%; }
 .rez-more{ display:grid; justify-items:center; gap:22px; margin-top:clamp(44px,5vw,64px); }
 .rez-more .btn i{ font-style:normal; font-weight:500; color:var(--mute); }
+.rez-more .btn[hidden]{ display:none; } /* every case shown: the button goes (the kit's .btn display kept it, empty) */
+.rez-more .more .nw{ display:contents; } /* the computer: the link exactly as before; the phone keeps „caz” and the arrow together */
 .rez-gl{ display:flex; flex-wrap:wrap; justify-content:center; gap:14px 30px; margin-top:36px; }
 /* the lightbox: white glass, the photo exactly as it is, one case at a time */
 .rez-lb{ position:fixed; inset:0; z-index:150; display:flex; align-items:center; justify-content:center; padding:24px; visibility:hidden; opacity:0; transition:opacity .5s var(--e), visibility 0s .5s; }
@@ -72,6 +74,12 @@ html.rez-lock{ overflow:hidden; }
   .rez-lb-nv{ width:40px; height:40px; margin-top:-20px; }
   .rez-lb-nv.p{ left:10px; } .rez-lb-nv.n{ right:10px; }
   .rez-more .btn{ width:100%; }
+  /* „Arată mai multe cazuri · încă 34 de cazuri” was wider than the phone: it was cut off and pushed the catalogue link
+     past the edge; now the count goes under it when it does not fit */
+  .rez-more .btn{ flex-wrap:wrap; height:auto; min-height:58px; padding:12px 22px; white-space:normal; row-gap:2px; text-align:center; }
+  .rez-more .more{ display:block; text-align:center; text-wrap:balance; } /* the link on two lines: centred, the arrow stays with its word */
+  .rez-more .more .nw{ display:inline; }
+  .rez-more .more svg{ display:inline-block; margin-left:8px; vertical-align:-3px; }
 }
 </style>
 
@@ -150,7 +158,7 @@ html.rez-lock{ overflow:hidden; }
   </div>
   <div class="rez-more">
     <button type="button" class="btn ghost" data-rez-more>Arată mai multe cazuri <i></i></button>
-    <a class="more" href="{{base}}catalog-rezultate">Vezi catalogul complet, cu detalii pe fiecare caz{{arrow}}</a>
+    <a class="more" href="{{base}}catalog-rezultate">Vezi catalogul complet, cu detalii pe fiecare <span class="nw">caz{{arrow}}</span></a>
   </div>
   <p class="fine">Rezultatele reale variază de la o persoană la alta, în funcție de zonă, tip de piele și numărul de ședințe. Fiecare fotografie e publicată cu acordul scris al clientei.</p>
 </div></section>

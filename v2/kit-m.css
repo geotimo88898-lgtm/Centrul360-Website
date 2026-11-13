@@ -62,3 +62,14 @@
   .dock .btn{ height:46px; padding:0 20px; font-size:15px; }
   body.ck-open .dock{ transform:translate(-50%,170%) !important; }
 }
+
+/* ---- layout fixes (13.11) */
+@media (max-width:640px){
+  .slip > .where{ margin-bottom:12px; } /* the phone keeps its 8px gap + 12px above the offer's button */
+}
+/* the smallest phones (360 wide): the longest button („Programează consultația gratuită”) and the gift pill were wider
+   than the page, so the whole first screen and the last one sat 12px off centre */
+@media (max-width:379px){
+  .btn{ padding:0 22px; }
+  .pill{ font-size:13px; padding-right:12px; }
+}

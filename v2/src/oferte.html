@@ -17,7 +17,11 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
 .ofr-gh{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding-bottom:20px; margin-bottom:26px; border-bottom:1px solid var(--line); }
 .ofr-gh h3{ font-size:clamp(1.55rem,2.8vw,2.1rem); letter-spacing:-.04em; margin-top:12px; }
 .ofr-n{ font-size:14px; color:var(--mute); white-space:nowrap; padding-bottom:4px; }
-.ofr-grp .offers{ grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); }
+/* tablet and computer: the cards start under the group's title, the same columns in every group (the kit's .offers is
+   a centred flex row, so a lone offer floated in the middle); the phone keeps its sideways swipe */
+@media (min-width:641px){ .ofr-grp .offers{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); } }
+/* the city filter hides a card with [hidden]; the kit's display:grid on .slip kept it on screen */
+.ofr-grp .slip[hidden]{ display:none; }
 .ofr-grp .offers > .fine{ grid-column:1 / -1; text-align:left; margin-top:0; }
 .ofr-notes{ display:grid; gap:12px; margin-top:28px; }
 .ofr-notes p{ display:flex; gap:12px; align-items:flex-start; font-size:15px; color:var(--mute); line-height:1.55; }
