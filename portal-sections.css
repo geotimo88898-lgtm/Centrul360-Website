@@ -3333,3 +3333,9 @@ b.is-f, b.is-m{ background:none !important; }
 }
 .cn-ph-bot > .cn-ph-who:last-child{ margin-right:-17px; }
 html .cn-sts .cn-st th{ letter-spacing:normal !important; text-transform:none !important; font-family:inherit !important; font-size:.8rem !important; border-bottom:0; padding:.32rem .35rem; }
+
+/* Mesaje · sending a PDF named „catalog” that is shorter than the clinic's: the whole one offered instead */
+.mx-send-file .mx-doc small{ margin-left:auto; white-space:nowrap; }
+.mx-catnote{ display:grid; gap:10px; padding:14px 16px; border-radius:14px; background:color-mix(in srgb, var(--warn, #f5a524) 14%, transparent); }
+.mx-catnote p{ margin:0; font-size:14px; line-height:1.45; }
+.mx-catnote .k-btn{ justify-self:start; }

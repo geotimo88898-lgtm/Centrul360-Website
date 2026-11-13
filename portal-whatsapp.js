@@ -752,10 +752,11 @@
   const asDataUrl = (file) => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = () => reject(new Error('Nu pot citi fișierul.')); fr.readAsDataURL(file); });
   // the results catalog (before / after, PDF in brand_asset/): seen here, or sent to her in one tap
   const CATALOG = '/brand_asset/catalog-rezultate-centrul360.pdf';
+  const CATALOG_PAGES = 47; // the whole catalog (brand_asset/catalog-rezultate-centrul360.pdf)
   function catalog(ph) {
     const dr = K.drawer({
       title: 'Catalogul de rezultate', icon: 'book', width: 420,
-      body: '<p class="k-muted">Rezultate reale înainte și după, cu acordul clientelor. PDF, 9 MB.</p>' +
+      body: '<p class="k-muted">Rezultate reale înainte și după, cu acordul clientelor. PDF, ' + CATALOG_PAGES + ' de pagini, 9 MB.</p>' +
         '<button type="button" class="k-btn is-outline" data-cat-see>' + icon('eye') + 'Vezi catalogul</button>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-cat-send>' + SEND + 'Trimite catalogul</button>',
       onMount(el) {
@@ -803,11 +804,35 @@
     const ta = panel.querySelector('.mx-compose textarea');
     const dr = K.drawer({
       title: isPhoto ? 'Trimite poza' : 'Trimite fișierul', icon: isPhoto ? 'image' : 'file', width: 460,
-      body: '<div class="mx-send-file">' + (isPhoto ? '<img src="' + dataUrl + '" alt="">' : '<div class="mx-doc">' + icon('file') + '<span>' + esc(name) + '</span></div>') +
+      body: '<div class="mx-send-file">' + (isPhoto ? '<img src="' + dataUrl + '" alt="">' : '<div class="mx-doc">' + icon('file') + '<span>' + esc(name) + '</span><small class="k-muted" data-pages></small></div>') +
+        // a catalog with fewer pages than ours (13.11: a 3-page copy from a phone went instead of the whole catalog)
+        '<div class="mx-catnote" data-catnote hidden></div>' +
         K.field('Text (opțional)', '<textarea data-cap rows="2" maxlength="1024">' + esc(ta && isPhoto ? ta.value.trim() : '') + '</textarea>', 'full') + '</div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-go>' + SEND + 'Trimite</button>',
       onMount(el) {
         el.querySelector('[data-cancel]').addEventListener('click', () => dr.close());
+        // a PDF: how many pages it has, said before it goes; one named „catalog” but shorter than the clinic's catalog
+        // gets the whole one offered instead (the catalog button sends the full PDF from the server)
+        if (!isPhoto && (/pdf/i.test(file.type) || /\.pdf$/i.test(name))) {
+          loadPdfJs().then((lib) => file.arrayBuffer().then((ab) => lib.getDocument({ data: ab }).promise)).then((doc) => {
+            const n = doc.numPages, pg = el.querySelector('[data-pages]'), note = el.querySelector('[data-catnote]');
+            if (pg) pg.textContent = n === 1 ? '1 pagină' : n + ' pagini';
+            if (note && /catalog/i.test(name) && n < CATALOG_PAGES) {
+              note.innerHTML = '<p>Fișierul ăsta are doar ' + (n === 1 ? 'o pagină' : n + ' pagini') + '. Catalogul complet are ' + CATALOG_PAGES + ' de pagini.</p>' +
+                '<button type="button" class="k-btn is-primary" data-cat-full>' + SEND + 'Trimite catalogul complet</button>';
+              note.hidden = false;
+              note.querySelector('[data-cat-full]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
+                try {
+                  await K.api('/api/portal-whatsapp', { action: 'send_catalog', phone: ph });
+                  dr.close();
+                  await loadThread(ph, false);
+                  scrollToBottom();
+                  load();
+                } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
+              }));
+            }
+          }).catch(() => { /* no page count: it goes as it is */ });
+        }
         el.querySelector('[data-go]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const caption = el.querySelector('[data-cap]').value.trim();
           try {
