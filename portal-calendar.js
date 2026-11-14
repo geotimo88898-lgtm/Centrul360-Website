@@ -564,11 +564,11 @@
           if (!v.clientName || !v.clientPhone) { K.ui().toast('Completează clientul și telefonul.', 'error'); return; }
           if (!v.treatment) { K.ui().toast('Completează tratamentul.', 'error'); f.treatment.focus(); return; }
           if (!formCats(v).length) { K.ui().toast('Alege cel puțin o categorie.', 'error'); return; }
-          // a session from a package is already paid: 0 is fine there
-          if (!v.package && !(Number(v.amount) > 0)) { K.ui().toast('Scrie suma programării (sau bifează „Ședință din pachet”).', 'error'); f.amount.focus(); return; }
+          // 0 lei is a real booking too (the owner, 14.11): the free consultation, or one whose price is set and paid at the
+          // clinic; an empty sum counts as 0
           if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
           if (!(await placeOk(v, 'Programezi', 'Programează oricum'))) return;
-          const body = Object.assign({ action: 'create', clientId: picker.id(), leadId: pre.leadId || '' }, v, { categories: formCats(v), amount: Number(v.amount) });
+          const body = Object.assign({ action: 'create', clientId: picker.id(), leadId: pre.leadId || '' }, v, { categories: formCats(v), amount: Number(v.amount) || 0 });
           try {
             let made;
             try { made = await K.api('/api/portal-appointments', body); }
