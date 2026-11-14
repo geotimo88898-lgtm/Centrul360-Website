@@ -1,0 +1,153 @@
+{
+ "v": 2,
+ "id": "v2-brand-logo-01",
+ "kind": "brand",
+ "rubric": "Brand",
+ "theme": "brand-teal",
+ "sound": "v3",
+ "captions": false,
+ "title": "Logo-ancoră",
+ "topic": "Identitatea Centrul360, fără niciun cuvânt în plus",
+ "post": "Centrul360 · Timișoara și Arad.",
+ "concept": {
+  "who": "Femeile din Timișoara și Arad care au văzut deja un reel de-al nostru și trebuie să recunoască brandul dintr-o privire; mai târziu, intro sau outro pentru reels.",
+  "oneThing": "Centrul360 e un loc real și coerent: aceeași identitate în clinică, pe site și în tot ce facem.",
+  "tone": "Calm și premium, dar cu pielea de găină: tăieturi pe bătaie, apoi liniște pe logo.",
+  "formats": [
+   "(xii) Logo-ancoră"
+  ],
+  "borrowed": [
+   {
+    "element": "Logo fix, același loc și aceeași mărime, cu lumea din spate schimbată pe bătaie",
+    "ref": "13 (drench.bottles)",
+    "why": "identitatea pare să trăiască peste tot, fără niciun cuvânt de reclamă; singurul format în care logo-ul e chiar subiectul"
+   },
+   {
+    "element": "Tăieturi care accelerează de la o bătaie la o jumătate de bătaie, apoi un final ținut",
+    "ref": "13 și 10 (ritmul pe grilă, finalul ținut)",
+    "why": "tensiunea crește odată cu muzica și se rezolvă pe logo; finalul de 2 s îl face ușor de citit"
+   },
+   {
+    "element": "Câte un tic sau un tap pe fiecare tăietură și un riser moale spre final",
+    "ref": "10 (stratul de sunet v3)",
+    "why": "fiecare schimbare se simte, fără să acopere piesa"
+   }
+  ],
+  "notUsed": [
+   "Merchandise inventat (cască, geacă, sacoșă cu logo): nu le avem, ar fi fals",
+   "Punctul de lumină-ghid: ar trage privirea de pe logo",
+   "Text cinetic sau pastile: logo-ul trebuie să stea singur",
+   "Cazuri înainte/după: aici nu e locul pentru dovezi",
+   "Nuki: piesa e despre semn, nu despre mascotă",
+   "Paleta crem și bleumarin a referinței: rămânem pe alb, turcoaz și rose gold"
+  ],
+  "track": {
+   "file": "owner-weongo",
+   "why": "deschiderea cu „honorable” (0-12 s ale piesei) dă exact senzația de pielea de găină pe care o cere un reveal; partea explicită vine abia după 24 s, deci nu intră; 131 BPM, tăieturile pe bătăi"
+  },
+  "different": "Primul reel fără voce și fără subtitrare, primul cu logo-ul ca subiect, primul pe „WE ON GO II”, singurul cu 16 tăieturi în 5,5 s."
+ },
+ "critique": {
+  "storyboard": {
+   "scroll": "da: logo-ul pe hârtie în lumină de fereastră și tăieturile pe bătaie opresc derularea din prima secundă",
+   "serves": "da: fiecare fundal arată unde trăiește brandul (clinica, site-ul, serviciile, orașele)",
+   "effects": "nu: doar tăieturi pe bătaie și o apropiere lentă, fără efecte",
+   "natural": "da: liniștit, fără text, se termină pe alb",
+   "owner": "da: e exact ideea lui, în culorile noastre"
+  },
+  "render": {
+   "scroll": "da: prima secundă e hârtia în lumina ferestrei cu logo-ul, apoi tăieturile pe bătaie",
+   "serves": "da: toate cele 16 fundaluri sunt locuri sau lucruri reale ale brandului (clinica din Timișoara și Arad, site-ul, serviciile)",
+   "effects": "nu: doar tăieturi pe bătaie, dizolvări de două cadre și o apropiere lentă; niciun efect în plus",
+   "natural": "da: fără text și fără voce; se liniștește pe alb; verificarea de flash dă 0 salturi mari",
+   "owner": "da, cu o întrebare: tăieturile de 0,23 s pe pozele clinicii trec foarte repede (ca în referință); dacă vrea să se vadă mai bine clinica, rărim faza a doua"
+  }
+ },
+ "musicFile": "owner-weongo",
+ "musicStart": 0.114,
+ "beat": {
+  "bpm": 131.01
+ },
+ "musicNote": "Partea cu „honorable” e la 0,1-11,8 s din piesă (după ea vine „Here we go”, la ~12 s); primul downbeat la 0,114 s, 131,01 BPM. Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "hook": {
+  "say": "Centrul360.",
+  "visual": {
+   "type": "logoanchor",
+   "beatsA": 8,
+   "beatsB": 8,
+   "scenes": [
+    {
+     "kind": "paper"
+    },
+    {
+     "kind": "word",
+     "word": "CORP"
+    },
+    {
+     "kind": "swiss"
+    },
+    {
+     "kind": "phone"
+    },
+    {
+     "kind": "glass",
+     "light": true
+    },
+    {
+     "kind": "photo",
+     "img": "loc-timisoara-receptie.webp",
+     "bright": 0.8,
+     "xf": 0.2
+    },
+    {
+     "kind": "glass"
+    },
+    {
+     "kind": "word",
+     "word": "FAȚĂ",
+     "dark": true
+    },
+    {
+     "kind": "photo",
+     "img": "g-tm-aparate.webp"
+    },
+    {
+     "kind": "photo",
+     "img": "g-tm-sala.webp"
+    },
+    {
+     "kind": "spec"
+    },
+    {
+     "kind": "photo",
+     "img": "g-tm-fiole.webp"
+    },
+    {
+     "kind": "word",
+     "word": "PIELE",
+     "dark": true,
+     "deep": true
+    },
+    {
+     "kind": "photo",
+     "img": "loc-arad-sala.webp"
+    },
+    {
+     "kind": "photo",
+     "img": "g-tm-monstera.webp"
+    },
+    {
+     "kind": "photo",
+     "img": "g-tm-raft.webp"
+    }
+   ],
+   "hold": {
+    "kind": "clean"
+   }
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 6.48
+ }
+}

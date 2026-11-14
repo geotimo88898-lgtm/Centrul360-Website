@@ -288,8 +288,25 @@ foarte moi, în blur, care plutesc în colțuri; mult spațiu alb; o singură id
 verde, rose gold pe cel mult un element; pastile doar cu fraze adevărate și de pe site; iconițele de oameni sunt
 generice, niciodată o persoană reală. Rafinările intră și în stilul nostru educațional implicit (mai jos, „Montajul”).
 
+**(xii) Logo-ancoră** (instagram.com/reel/DfuNd8fNcAs, trimis 14.11: „și așa ceva putem face cu logoul nostru pt
+branding”). Cum arată: logo-ul stă fix, exact în același loc (centru, treimea de sus) tot clipul, iar lumea din spatele
+lui se schimbă pe fiecare bătaie, cam 4 tăieturi pe secundă (pe o carte de sticlă ținută în mână, pe o lumină difuză, pe
+o carte de hârtie în lumina ferestrei, între cuvinte uriașe, pe o firmă, pe o fișă tehnică, pe o geacă, pe o piatră
+plutitoare, ca iconiță de aplicație, pe hârtie, pe un ecran, pe o cască, pe o grilă elvețiană), totul într-o singură
+paletă, fiecare tăietură pe bătaie; identitatea pare să trăiască peste tot, fără niciun cuvânt. La noi (`"kind":
+"brand"`, fără voce; singurul loc unde logo-ul e chiar subiectul; merge și ca intro sau outro): logo-ul real (semnul și
+CENTRUL360.COM, din `brand_asset`), fix ca loc și mărime; în spate, mai ales lucruri reale: pozele clinicii (recepția,
+sălile, aparatele, fiolele, raftul, monstera), aduse la paletă (monocrom turcoaz) cu o apropiere lentă, și site-ul pe un
+telefon (`site.cjs`); plus suprafețe desenate din cod: o carte de sticlă, hârtie în lumina ferestrei cu umbre, un cuvânt
+uriaș în spate („CORP”, „FAȚĂ”, „PIELE”), o fișă tehnică și o grilă elvețiană doar cu date reale (Timișoara · Arad,
+centrul360.com, anul, serviciile de pe site). Fără merchandise inventat (cască, geacă, sacoșă pe care nu le avem).
+Ritmul: tăieturi de la o bătaie (~0,46 s), apoi la jumătate de bătaie (~0,23 s), apoi finalul ținut ~2 s pe logo, pe
+alb curat, cu un singur accent rose gold. Sunetul v3: un tap sau un tic moale pe fiecare tăietură și un riser moale spre
+final. Fără strobe: tăieturi cu dizolvare de două cadre și dizolvări mai lungi unde lumina se schimbă mult (sub 10 % pe
+cadru; verificarea de flash). Motorul: scena `logoanchor` (`engine/v2/brand.js`); exemplul: `scripts/v2-brand-logo-01`.
+
 **Combinații** (principiul proprietarului din 14.11: „poți să le și combini una cu alta, creativitatea e limita, iar în
-cazul nostru nu cred că avem limite”). Cele unsprezece formate sunt piese de construcție, nu șabloane. Un reel le poate
+cazul nostru nu cred că avem limite”). Cele douăsprezece formate sunt piese de construcție, nu șabloane. Un reel le poate
 amesteca: un reel data-viz cu „chrome” al cărui răspuns e un moment de erou al aparatului; un manifest tipografic care
 se termină cu picătura suspansului minimalist; un reel educațional care începe cu picătura și apoi explică; un film de
 brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă ca o semnătură nouă. Regulile fixe rămân:
@@ -314,7 +331,7 @@ numai în previzualizări: proprietarul postează din aplicații fișierul `-cle
 | fișier | starea | pentru ce formate | de unde pornește |
 |---|---|---|---|
 | `owner-free.wav` („Free”, Ultra Naté) | house anii '90, cald, cu energie constantă | reels-urile educative (data-viz, explicația în blocuri), cazurile | de la început: primul downbeat, 0,395 s; 125,01 BPM |
-| `owner-weongo.wav` („WE ON GO II”, feat. Denzel Curry, 3:16) | „unexpected edits”, pielea de găină | (vi) suspansul minimalist, scheciul 3D, o dezvăluire dramatică, un înainte/după puternic | prima parte, cea cu „honorable” (alegerea proprietarului); piesa e tare de la 0 s (~-10 dB RMS), 131,01 BPM, frazele de 8 măsuri la ~1,0 / 15,7 / 30,3 s; începutul și sfârșitul exact al părții cu „honorable” se măsoară la primul reel care o folosește (`listen.py` sau ascultătorul, plus `beats.py`) și se scriu aici |
+| `owner-weongo.wav` („WE ON GO II”, feat. Denzel Curry, 3:16) | „unexpected edits”, pielea de găină | (vi) suspansul minimalist, (xii) logo-ancora, scheciul 3D, o dezvăluire dramatică, un înainte/după puternic | partea cu „honorable” (alegerea proprietarului): 0,1-11,8 s (măsurată la `v2-brand-logo-01`; „Honorable, honorable” la 0-1,5 s, apoi ad-lib-uri, „Here we go” de la ~12 s); primul downbeat 0,114 s, 131,01 BPM; după ~24 s versurile devin explicite: nu se folosesc |
 | `owner-trainingseason.wav` („Training Season”, live, Royal Albert Hall, 3:41) | „loved by our audience”, spontan, ușor | reels-urile spontane, edit-uri ușoare: Nuki, din culise, un sfat rapid | la lovitura muzicii, 10,17 s (primele ~10 s sunt intro live care se stinge, -19 → -35 dB); 123,01 BPM; din intro doar dacă reel-ul vrea atmosfera de concert |
 
 Alegerea: piesa după starea reel-ului, și niciodată aceeași piesă la două reels la rând (`check2.cjs` avertizează când

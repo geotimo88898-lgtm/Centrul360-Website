@@ -14,18 +14,19 @@ const BANNED = /\b(mit|mitul|mituri|miturile|mit sau adev[ăa]r)\b/i; // the own
 const CRINGE = /(hei,? dragel?e mele|dragile mele|fetelor,|cai verzi pe pere[țt]i|ba[țt]i apa-?n piu[ăa]|cioara vopsit[ăa]|la pa[șs]tele cailor|ca la carte|s[ăa] vezi minune|pe bune|ca [îi]ntre noi|bomb[ăa]|wow,|super tare|ai gu[șs][ăa]\?)/i;
 module.exports = async (id, dir, S) => {
   const problems = [], notes = [];
+  const BRAND = S.kind === 'brand'; // a brand piece (formats ii, iii, v, vi, vii, xii): no voice, music and sound design, the logo is the point
   const say = [].concat(S.hook || [], S.beats || [], S.payoff || [], S.resolve || [], S.outro || [], S.end && S.end.say ? [S.end] : []);
   const words = say.map((b) => [b.say, b.cap, b.tts].filter(Boolean).join(' ')).join(' | ');
   if (/[–—]/.test(JSON.stringify(S))) problems.push('long dash in the script');
   const ad = words.match(AD); if (ad) problems.push('sounds like an ad / forbidden word: „' + ad[0] + '”');
   const cr = words.match(CRINGE); if (cr) problems.push('cringe phrase or folk idiom: „' + cr[0] + '” (README „Vocea”)');
   const bn = JSON.stringify(S).replace(/\\u[0-9a-f]{4}/g, '').match(BANNED); if (bn) problems.push('the word „' + bn[0] + '” (never „mit” or the „Mit sau adevăr” format)');
-  if (!S.resolve || [].concat(S.resolve).length < 2) problems.push('no resolution beat: "resolve" needs 2-3 lines (practical, real things, said in sentences)');
+  if (!BRAND && (!S.resolve || [].concat(S.resolve).length < 2)) problems.push('no resolution beat: "resolve" needs 2-3 lines (practical, real things, said in sentences)');
   // the writing (the owner, 14.11: „nu mai pune întrebări doar așa la care și răspunzi după, și nu spune doar «fără
   // recuperare, fără ace», vorbește în propoziții … fă un video educațional chiar calitativ”)
   const VERBS = new Set('e este sunt era erau fi fie fost are au ai am a ați avem aveți poate pot poți putem se să vine vin vii face faci fac facem ține țin stă stau rămâne rămân apare apar ajunge ajută uite vezi vedem vede știi știu știe merge merită contează trec trece pleacă elimină distruge găsești găsește spune spun arată înseamnă simți simte ia iei dă dau lasă lași strânge formează pune pun folosește folosim lucrează alege alegem păstrează ține-l'.split(' '));
   const VEND = ['ează', 'ește', 'ești', 'esc', 'ăm', 'ați', 'eze', 'ezi', 'ească', 'ind', 'ând', 'ăște', 'ăști', 'uiește'];
-  say.forEach((b, i) => {
+  (BRAND ? [] : say).forEach((b, i) => {
     const txt = [b.say, b.tts].filter(Boolean).join(' ').replace(/\*/g, '');
     const nm = '„' + (b.say || '').replace(/\*/g, '').slice(0, 44) + '”';
     if (/\?/.test(txt)) problems.push('a question in a spoken line (no rhetorical questions, no question hooks): ' + nm);
@@ -48,7 +49,7 @@ module.exports = async (id, dir, S) => {
     const mf = (X) => X.musicFile || 'owner-free'; if (prev && mf(prev.X) === mf(S)) notes.push('WARNING (music): the same track as the previous reel ' + prev.d + ' („' + mf(S) + '”): rotate the owner\'s tracks by mood'); } catch (e) { /* */ }
   try { const vr = require('./variety.cjs')(id); vr.warn.forEach((w) => notes.push('WARNING (variety): ' + w)); } catch (e) { notes.push('variety.cjs skipped: ' + e.message); }
   if (S.hook && [].concat(S.hook)[0] && /\?/.test([].concat(S.hook)[0].q || '')) problems.push('the hook is a question: from 14.11 it is a precise statement (no "q" with "?")');
-  if (!S.outro || !S.outro.visual) problems.push('no outro: a warm closing line with a resolving visual ("outro")');
+  if (!BRAND && (!S.outro || !S.outro.visual)) problems.push('no outro: a warm closing line with a resolving visual ("outro")');
   if (S.end && S.end.type === 'comment' && String(S.end.keyword || S.keyword || '360') !== '360') problems.push('a comment end always uses the keyword 360');
   if (S.brand) notes.push('the logo is on screen (brand: true): only where it is natural');
   if (/\b(sa|si|fara|daca|tine|asa)\b/i.test(words.replace(/\*/g, '').replace(/[ăâîșțĂÂÎȘȚ]/g, 'X'))) notes.push('check the diacritics (sa / si / fara …)');
@@ -105,8 +106,8 @@ module.exports = async (id, dir, S) => {
   // 30-45 s; a reel built on the full skeleton (roles, two open loops) may run to 55 s (14.11, the 8-block structure)
   // the skeleton (roles): with one open loop it is a 30-50 s reel, with two up to 55 s (the structure note, 14.11)
   const nLoops = say.filter((b) => b.role === 'loop').length, roled = say.some((b) => b.role);
-  const maxT = !roled ? 45.5 : nLoops >= 2 ? 55.5 : 50.5;
-  if (T < 30 || T > maxT) problems.push('length ' + T.toFixed(1) + ' s (want 30-' + Math.floor(maxT) + ')');
+  const maxT = BRAND ? 30.5 : !roled ? 45.5 : nLoops >= 2 ? 55.5 : 50.5, minT = BRAND ? 6 : 30;
+  if (T < minT || T > maxT) problems.push('length ' + T.toFixed(1) + ' s (want ' + minT + '-' + Math.floor(maxT) + ')');
   else if (T > 45.5) notes.push('WARNING: ' + T.toFixed(1) + ' s, over the usual 45 s (allowed for a reel on the skeleton; shorter is better)');
   const unvoiced = F.beats.filter((x) => !x.voiced).length;
   if (unvoiced) notes.push(unvoiced + ' lines without their voice yet (estimated timing): run voice.py');
@@ -122,7 +123,7 @@ module.exports = async (id, dir, S) => {
       const cap = document.getElementById('cap'); return +cap.style.opacity > 0.5 && cap.textContent.trim().length > 0; }, t);
     if (ok) qAt = t;
   }
-  if (qAt == null) problems.push('the hook line is not on screen by 3 s');
+  if (qAt == null && !BRAND) problems.push('the hook line is not on screen by 3 s');
   const sig = async (t) => p.evaluate((t) => { window.seek(t); const out = []; document.querySelectorAll('.shot *, #bg *').forEach((e) => { if (e.offsetParent === null && e.tagName !== 'CANVAS') return; out.push(e.style.transform + '|' + e.style.opacity + '|' + (e.tagName === 'CANVAS' ? e.toDataURL().length : '')); }); return out.join(';'); }, t);
   if ((await sig(0)) === (await sig(1 / 30))) problems.push('frame 0 is still (the first frame must already move)');
   if (!F.cues.some((c) => c.t <= 0.1 && /impact|boom|shutter|glitch/.test(c.cat))) problems.push('no sound hit on frames 0-3');
@@ -166,7 +167,7 @@ module.exports = async (id, dir, S) => {
   // the payoff and the rhythm
   const endShot = F.shots[F.shots.length - 1];
   const storyEnd = endShot.role === 'end' ? endShot.t0 : T;
-  if (F.payoff == null) problems.push('no payoff');
+  if (BRAND) { /* no story: no payoff, no resolution */ } else if (F.payoff == null) problems.push('no payoff');
   else { const r = F.payoff / T; notes.push('payoff at ' + F.payoff.toFixed(1) + ' s (' + Math.round(r * 100) + ' % of the reel), resolution from ' + (F.sections.resolve ? F.sections.resolve[0].toFixed(1) : '-') + ' s'); if (r < 0.4) problems.push('the answer comes too early (' + Math.round(r * 100) + ' %, want after 40 %)'); if (F.sections.resolve && F.sections.resolve[0] < F.payoff - 0.5) problems.push('the resolution starts before the answer'); }
   const ev = [...new Set(F.events.filter((e) => e.kind !== 'line').map((e) => Math.round(e.t * 100) / 100))].filter((x) => x >= 0).sort((a, b2) => a - b2).concat([T]);
   let gap = 0, at = 0; for (let i = 1; i < ev.length; i++) if (ev[i] - ev[i - 1] > gap) { gap = ev[i] - ev[i - 1]; at = ev[i - 1]; }
@@ -178,13 +179,20 @@ module.exports = async (id, dir, S) => {
   const trs = F.shots.slice(1).map((x) => x.tr); notes.push('transitions: ' + trs.join(', '));
   for (let i = 1; i < trs.length; i++) if (trs[i] === trs[i - 1]) problems.push('the same transition twice in a row (' + trs[i] + ')');
   // Nuki: 2-4 small appearances
-  if (F.nuki < 2 || F.nuki > 4) problems.push('Nuki appears ' + F.nuki + ' times (want 2-4, small, in some frames)');
+  if (!BRAND && (F.nuki < 2 || F.nuki > 4)) problems.push('Nuki appears ' + F.nuki + ' times (want 2-4, small, in some frames)');
   // the ending: a CTA line (soft or explicit) and a resolving visual in the last 5 s
   const ctaLines = [].concat(S.outro || [], S.end && S.end.say ? [S.end] : []).filter((b) => b.cta);
   const ctaIn = F.beats.some((L) => (L.role === 'outro' || L.role === 'end') && [].concat(S.outro || [], S.end || []).some((b) => b.cta && (b.tts || b.say || '').replace(/\*/g, '').trim() === L.text) && L.t0 + L.dur > T - 5.5);
-  if (!ctaLines.length || !ctaIn) problems.push('no CTA line (soft, talk or loop: "cta") in the last 5 s');
-  if (!F.events.some((e) => /^resolve/.test(e.kind) && e.t >= T - 5.5)) problems.push('no resolving visual in the last 5 s (the "?" resolving, the final landing)');
+  if (!BRAND && (!ctaLines.length || !ctaIn)) problems.push('no CTA line (soft, talk or loop: "cta") in the last 5 s');
+  if (!BRAND && !F.events.some((e) => /^resolve/.test(e.kind) && e.t >= T - 5.5)) problems.push('no resolving visual in the last 5 s (the "?" resolving, the final landing)');
   if (S.end && S.end.type === 'site') { const man = fs.existsSync(path.join(__dirname, 'site', 'manifest.json')) ? JSON.parse(fs.readFileSync(path.join(__dirname, 'site', 'manifest.json'), 'utf8')) : { shots: {} }; (S.end.pages || []).forEach((pg) => { if (!man.shots[pg.key]) problems.push('no screenshot for ' + pg.key + ': run node site.cjs ' + id); }); }
+  if (BRAND) {
+    if (F.beats.some((L) => L.voiced)) problems.push('a brand piece has no voice (music and sound design only)');
+    const logoEnd = await p.evaluate((t) => { window.seek(t); return [...document.querySelectorAll('.shot *')].some((e) => e.offsetParent !== null && /wordmark|brand\/mark\.svg|logo-mark/.test(e.getAttribute('style') || '') && +getComputedStyle(e.parentElement).opacity > 0.5); }, T - 0.3);
+    if (!logoEnd) problems.push('a brand piece ends on the logo (the real one, brand_asset)');
+    try { const base = path.join(__dirname, '..', 'scripts'); const prev = fs.readdirSync(base).filter((d) => d !== id && fs.existsSync(path.join(base, d, 'script.json'))).map((d) => ({ d, m: fs.statSync(path.join(base, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(base, d, 'script.json'), 'utf8')) })).filter((o) => o.X.v === 2 && o.X.kind !== 'demo').sort((a, b) => b.m - a.m)[0];
+      if (prev && prev.X.kind === 'brand') notes.push('WARNING (brand): the previous reel ' + prev.d + ' is a brand piece too (at most one a week, never two in a row)'); } catch (e) { /* */ }
+  }
   // the frame: safe zone, overlaps, captions
   const seen = new Set();
   for (let t = 0; t < T; t += 0.25) {

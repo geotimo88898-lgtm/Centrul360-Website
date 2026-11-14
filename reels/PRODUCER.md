@@ -94,7 +94,7 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    - `"who"`: pentru cine e;
    - `"oneThing"`: singurul lucru pe care ea îl înțelege sau îl simte la final;
    - `"tone"`: emoția sau tonul (calm și premium, cald, pielea de găină, spontan);
-   - `"formats"`: un format, cel mult două combinate, din cele unsprezece;
+   - `"formats"`: un format, cel mult două combinate, din cele douăsprezece;
    - `"borrowed"`: 2-3 elemente precise din bibliotecă, fiecare cu de ce servește mesajul acesta
      (`{"element", "ref", "why"}`; ex. punctul de lumină-ghid din referința 10, pastilele care se adună din 12,
      clepsidra din 11, glisorul înainte/după, bara de progres din 8);
@@ -198,7 +198,7 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    | fișier | starea | pentru ce formate | de unde pornește |
    |---|---|---|---|
    | `owner-free` („Free”) | house, cald, constant | educative, cazuri | 0,395 s (primul downbeat), 125,01 BPM |
-   | `owner-weongo` („WE ON GO II”) | pielea de găină, „unexpected edits” | (vi) suspansul, scheciul 3D, dezvăluiri dramatice, înainte/după puternic | partea cu „honorable” (de măsurat la prima folosire), 131,01 BPM |
+   | `owner-weongo` („WE ON GO II”) | pielea de găină, „unexpected edits” | (vi) suspansul, (xii) logo-ancora, scheciul 3D, dezvăluiri dramatice, înainte/după puternic | partea cu „honorable”: 0,1-11,8 s (primul downbeat 0,114 s), 131,01 BPM; după ~24 s versuri explicite, nu |
    | `owner-trainingseason` („Training Season”, live) | spontan, ușor, „loved by our audience” | Nuki, din culise, un sfat rapid | 10,17 s, la lovitura muzicii; 123,01 BPM |
 
    Alegi piesa după starea reel-ului și le rotești: niciodată aceeași piesă la două reels la rând (`musicFile`,
@@ -241,9 +241,12 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    afirmații reale, niciun chip care seamănă cu o persoană reală, obiectele nu sunt niciodată dovadă de înainte/după),
    (xi) faceless curat (fundal alb, turcoaz, text cinetic pe voce: cuvântul-cheie intră uriaș și în blur, apoi se
    retrage; accentul în italic serif; obiecte uriașe tăiate de cadru; colțuri de vizor; inel de numărătoare; noduri cu
-   iconițe; pastile care se adună pentru o listă spusă în propoziții).
+   iconițe; pastile care se adună pentru o listă spusă în propoziții), (xii) logo-ancora (logo-ul real fix, în același
+   loc și mărime, lumea din spate schimbată pe bătaie: pozele clinicii aduse la paletă, site-ul pe telefon, sticlă,
+   hârtie în lumina ferestrei, un cuvânt uriaș, o fișă sau o grilă doar cu date reale; fără merchandise inventat;
+   tăieturi de la o bătaie la jumătate de bătaie, final ținut ~2 s pe alb; fără strobe; scena `logoanchor`).
    Reels-urile deja aprobate nu se refac în aceste stiluri;
-   formatele sunt pentru materiale noi. **Combinații**: cele unsprezece formate sunt piese de construcție, nu șabloane
+   formatele sunt pentru materiale noi. **Combinații**: cele douăsprezece formate sunt piese de construcție, nu șabloane
    („poți să le și combini una cu alta, creativitatea e limita”): un data-viz al cărui răspuns e un moment de erou al
    aparatului, un manifest care se termină cu picătura, un reel educațional care începe cu picătura și apoi explică, un
    film de brand cu obiectele 3D tactile. O combinație nouă contează ca semnătură nouă la garda de varietate; regulile
