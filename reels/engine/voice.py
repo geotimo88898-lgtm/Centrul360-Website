@@ -249,6 +249,7 @@ def continuous(rid, S, cfg):
     # the pace: one tempo for the whole take, only when it is slow
     wpm = active_wpm(take, full); f = 1.0
     if wpm < 190: f = min(float(cfg.get('continuous_tempo_max', 1.08)), 190 / wpm)
+    if S.get('tempo'): f = float(S['tempo'])  # the reel's own uniform tempo for the whole take (e.g. a take read too fast: x0.94)
     if f > 1.005:
         with tempfile.TemporaryDirectory() as d:
             _write(os.path.join(d, 'a.wav'), y, sr)
