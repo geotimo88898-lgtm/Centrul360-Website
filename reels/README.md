@@ -180,6 +180,16 @@ un card cu logo-ul. Fără afirmații medicale, umor cu bun gust. **În aștepta
 imagini Gemini animate 2.5D (ieftin, personaj constant) și video Veo (mai multă mișcare, cost mai mare); nu se începe
 până nu alege.
 
+**(v) Manifestul tipografic** (instagram.com/reel/De9F95tu1vT, trimis 14.11). Cum arată: 8-12 s, doar cuvinte, câte unul
+pe ecran, mari, centrate, pe ritmul muzicii (un cuvânt pe bătaie sau pe jumătate de bătaie); fundalul alternează la
+fiecare tăietură între deschis și închis; un singur cuvânt cheie are culoarea de accent și e mai mare („just code”);
+un cuvânt se construiește literă cu literă ca la tastat („la” → „laun.” → „launch.”); la final logo-ul. Fără voce, fără
+alte elemente. La noi: alternanța alb / turcoaz (#14a596), accentul rose gold pe un singur cuvânt, de ex. „Noi” ·
+„nu promitem.” · „Îți arătăm.” (sloganul site-ului) · „Corp.” · „Față.” · „Epilare laser.” · „fără ace” · „fără
+operație” · „grijă” · „precizie” · „Timișoara” · „Arad”, apoi „centrul360.com” tastat și logo-ul. Cuvintele doar din
+ce spune site-ul. Același tip `"kind": "brand"` ca (ii), cu un set de scene `word` (cuvânt pe bătaie, fundal alternant,
+tastare) sincronizat pe bătăile piesei proprietarului (125 BPM: o bătaie la 0,48 s).
+
 ## Vocea (cum vorbim; regula proprietarului, 12.11)
 Vocea e a unei femei din România, de vreo 30 de ani, deșteaptă și caldă, care îi povestește ceva interesant unei
 prietene, față în față. Carisma vine din claritate, ritm, un dram de umor și surpriză, nu din cuvinte mari.

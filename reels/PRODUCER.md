@@ -142,7 +142,8 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    viitoare”): (i) data-viz cu „chrome” (eticheta secțiunii sus, cronologia întregului reel jos, cifre fantomă, obiecte
    3D tactile), (ii) filmul de brand (tunel, sticlă, contoare cu cifre reale, cuvinte care se construiesc, logo la
    final), (iii) eroul aparatului (pozele reale ale aparatelor, cinematic), (iv) scheciul cu personaj 3D (încă de ales
-   de proprietar între imagini Gemini animate 2.5D și video Veo). Reels-urile deja aprobate nu se refac în aceste
+   de proprietar între imagini Gemini animate 2.5D și video Veo), (v) manifestul tipografic (un cuvânt pe bătaie, fundal
+   alternant alb / turcoaz, un cuvânt rose gold, logo la final). Reels-urile deja aprobate nu se refac în aceste
    stiluri; formatele sunt pentru materiale noi. Filmele de brand sunt ocazionale (cel mult unul pe săptămână, niciodată
    două la rând).
 6b. **Când nu ești sigur, întrebi** (regula proprietarului): o afirmație despre un tratament, o cifră, o poză, o alegere
