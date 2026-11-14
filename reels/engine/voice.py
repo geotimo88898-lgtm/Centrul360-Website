@@ -16,6 +16,14 @@ V.FILMS = os.path.join(HERE, '..', 'scripts')
 V1_STYLE = ('Cheerful, bright young Romanian woman in her 20s, like a popular short-video creator telling a friend something '
             'surprising: lively and quick pace, smiling, natural and warm, playful, never salesy, never deep or slow.')
 TEMPO = float(os.environ.get('TEMPO', '1.14'))
+# how the voice is told to say a word (the "tts" text) → how the listener writes it (the screen spelling). A take that
+# says the word right is accepted, instead of being made again on every run (14.11: „es-em-a-es” was heard as SMAS)
+PHONETIC = {'es-em-a-es': 'SMAS'}
+_wer = V.wer
+def _screen(t):
+    for a, b in PHONETIC.items(): t = t.replace(a, b)
+    return t
+V.wer = lambda a, b: _wer(_screen(a), b)
 
 
 def active_wpm(path, text):
@@ -27,7 +35,7 @@ def active_wpm(path, text):
     return n / max(0.3, V.dur(path) - sil) * 60
 
 
-def faster(rid, tempo, pace=None, lo=1.0, hi=1.25):
+def faster(rid, tempo, pace=None, lo=1.0, hi=1.25, over=None):
     """every take sped up after the cache (atempo keeps the pitch); with `pace` (words per minute while she speaks), each
     take gets its own factor so all lines reach the same pace (a slow take more, a quick one less), within lo..hi"""
     base = os.path.join(V.FILMS, rid)
@@ -37,6 +45,7 @@ def faster(rid, tempo, pace=None, lo=1.0, hi=1.25):
         src = os.path.join(base, v['file'])
         if '.t' in os.path.basename(src): continue
         f = tempo if not pace else min(hi, max(lo, pace / active_wpm(src, v['text'])))
+        if over and k in over: f = min(f, float(over[k]))  # a line's own cap (a domain, a name: every sound must stay)
         if abs(f - 1) < 0.005: continue
         dst = src[:-4] + '.t%d.wav' % round(f * 100)
         if not os.path.exists(dst):
@@ -98,7 +107,12 @@ def main_v2(rid, S):
     # is voice.json "tempo", a script can set its own "tempo"; the cached takes stay as they are
     tempo = float(S.get('tempo', cfg.get('tempo', 1.0)))
     pace = S.get('pace_wpm', cfg.get('pace_wpm'))
-    if pace: faster(rid, tempo, float(pace), float(cfg.get('tempo_min', 1.1)), float(cfg.get('tempo_max', 1.25)))
+    over = {}
+    parts = [('hook', S.get('hook')), ('beat', S.get('beats')), ('payoff', S.get('payoff')), ('resolve', S.get('resolve')), ('outro', S.get('outro'))]
+    bs = [b for _, part in parts for b in as_list(part)] + ([S['end']] if S.get('end') and S['end'].get('say') else [])
+    for i, b in enumerate(bs):
+        if b.get('tempo'): over['L%d' % i] = b['tempo']
+    if pace: faster(rid, tempo, float(pace), float(cfg.get('tempo_min', 1.1)), float(cfg.get('tempo_max', 1.25)), over)
     elif tempo != 1.0: faster(rid, tempo)
 
 

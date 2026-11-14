@@ -128,7 +128,7 @@
       const t0 = ctx.t0 + 0.05;
       ctx.anim(brw, 'slideU', t0, { amt: 900, dur: 0.6, sfx: 'swoosh_up', gain: 0.6 });
       const tType = t0 + 0.55, step = 0.065;
-      for (let i = 0; i < domain.length; i++) R.cue(tType + i * step, 'key', 0.45);
+      for (let i = 0; i < domain.length; i++) R.cue(tType + i * step, 'key', 0.22); // soft: the clicks fall on the spoken domain (14.11, they hid the „l” of „centrul”)
       R.event(tType, 'type'); R.event(tType + domain.length * step * 0.5, 'type');
       const tEnter = tType + domain.length * step + 0.15;
       R.cue(tEnter, 'click', 0.7);

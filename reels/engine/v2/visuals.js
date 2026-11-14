@@ -362,6 +362,7 @@
   // ------------------------------------------------------------------ photo: a real catalog photo (before | after, published with consent)
   // shown exactly as it is; p.mode: 'tease' (the after half under a cover) | 'reveal' (the cover leaves at p.revealAt) | 'full'
   V.photo = (ctx, p) => {
+    if (p.mode === 'slider') return photoSlider(ctx, p);
     const st = ctx.stage();
     const fr = h('div', 'abs', null, st); fr.style.cssText += ';border-radius:34px;overflow:hidden;background:#fff;box-shadow:0 50px 90px -40px rgba(0,0,0,.6);border:8px solid #fff';
     const im = h('img', null, null, fr); im.src = R.ROOT + '/' + p.img; im.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%';
@@ -420,6 +421,46 @@
       else { const x = q * 220 - 60; cover.style.clipPath = 'polygon(' + x + '% 0,120% 0,120% 100%,' + (x - 60) + '% 100%)'; }
     });
   };
+
+  // the slider (14.11): a side-by-side catalog photo shown as its two real halves in one frame: "before" first, then a
+  // thin vertical line sweeps across and the "after" appears over it, on the voice (p.from, p.to: [line, frac] or a
+  // word). Each half is the photo exactly as it is (its own label, ÎNAINTE / DUPĂ); the case pill and the consent line
+  // stay under the frame. No question mark, no cover.
+  function photoSlider(ctx, p) {
+    const st = ctx.stage();
+    const when = (a, d) => (typeof a === 'string' ? ctx.wordAt(0, a, -0.05) : a != null ? T(ctx, a) : d);
+    const fr = h('div', 'abs', null, st); fr.style.cssText += ';border-radius:34px;overflow:hidden;background:#fff;box-shadow:0 50px 90px -40px rgba(0,0,0,.45);border:8px solid #fff';
+    const half = (side) => { const d = h('div', 'abs', null, fr); d.style.cssText += ';left:0;top:0;width:100%;height:100%;background-image:url(' + R.ROOT + '/' + p.img + ');background-size:200% 100%;background-position:' + (side ? '100%' : '0%') + ' 0'; return d; };
+    const B = half(0), A = half(1);
+    const pre = h('img', null, null, fr); pre.src = R.ROOT + '/' + p.img; pre.style.display = 'none'; // so the page waits for it
+    const line = h('div', 'abs', '<i style="position:absolute;left:-1.5px;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.25)"></i><i style="position:absolute;left:-17px;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff 0%,#fbe3d9 35%,#eab5a5 72%,#cf8f7d 100%);box-shadow:0 6px 14px -4px rgba(8,40,36,.45),0 0 0 3px #fff"></i>', fr);
+    line.style.cssText += ';top:0;height:100%;width:0';
+    const note = p.note !== false ? h('div', 'tx abs note', esc(p.note || 'Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta.'), st) : null;
+    const lab = p.label ? h('div', 'tx abs', '<span class="chip acc">' + R.icon('camera') + esc(p.label) + '</span>', st) : null;
+    const t0 = when(p.from, ctx.L(0, 0.45)), t1 = Math.max(t0 + 0.6, when(p.to, ctx.L(0, 0.85)) + 0.25);
+    ctx.shot.revealAt = t1;
+    ctx.sfx(t0, 'swoosh', 0.4); ctx.sfx(t1, 'shimmer', 0.35); R.event(t0, 'slide'); R.event((t0 + t1) / 2, 'slide'); R.event(t1, 'reveal');
+    ctx.anim(fr, p.enter || 'in', ctx.t0 + 0.02, { sfx: 'shutter', gain: 0.6 });
+    if (lab) ctx.anim(lab, 'pop', ctx.t0 + 0.3, { gain: 0.35 });
+    if (note) ctx.anim(note, 'fade', ctx.t0 + 0.4, { sfx: null });
+    ctx.shot.after = () => {
+      const iw = (p.iw || 1400) / 2, ih = p.ih || 944; // one half of the composite
+      const maxW = p.w || 540, maxH = 930 - (note ? 76 : 0) - (lab ? 80 : 0) - 16;
+      const k = Math.min(maxW / iw, maxH / ih), w = iw * k, hh = ih * k, y0 = Math.max(0, (maxH - hh) / 2) + 6;
+      place(fr, (860 - w - 16) / 2, y0, w + 16, hh + 16);
+      if (lab) { place(lab, 50, y0 + hh + 34); lab.style.width = '760px'; lab.style.textAlign = 'center'; }
+      if (p.chips) { if (lab) ctx.anim(lab, 'outUp', T(ctx, p.chips[0].at) - 0.15, { dur: 0.15 }); R.chipSeq(ctx, st, p.chips, y0 + hh + 34); }
+      if (note) { place(note, 50, y0 + hh + 34 + (lab ? 80 : 0)); note.style.width = '760px'; }
+      fr._w = w;
+    };
+    ctx.focus(fr);
+    ctx.tick((t) => {
+      const q = E.inout(clamp((t - t0) / (t1 - t0)));
+      A.style.clipPath = 'inset(0 ' + ((1 - q) * 100).toFixed(2) + '% 0 0)';
+      line.style.left = (q * 100).toFixed(2) + '%';
+      line.style.opacity = (t < t0 - 0.2 ? 0 : clamp((t - t0 + 0.2) / 0.2) * (1 - clamp((t - t1 - 0.3) / 0.4))).toFixed(3);
+    });
+  }
 
   // ------------------------------------------------------------------ Nuki (the mascot): poses per line, squash and stretch, a bubble
   R.nukiImg = (pose) => R.ROOT + '/brand_asset/mascota/ipostaze/' + (pose || 'prezinta') + '.webp';

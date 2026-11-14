@@ -182,38 +182,13 @@
    "visual": {
     "type": "photo",
     "img": "brand_asset/catalog/cazul-05-liposonix-solduri.webp",
-    "split": "h",
-    "seam": 0.5,
-    "mode": "reveal",
-    "mask": "diagonal",
-    "revealAt": [
-     0,
-     0.8
-    ],
+    "mode": "slider",
     "label": "Cazul 5 · Liposonix · Timișoara",
     "enter": "blurIn",
-    "chips": [
-     {
-      "at": [
-       0,
-       1.02
-      ],
-      "t": "Șolduri · o singură ședință"
-     },
-     {
-      "at": [
-       0,
-       1.3
-      ],
-      "t": "Poză reală, cu acordul ei"
-     }
-    ],
-    "qAt": [
-     0,
-     0.42
-    ]
+    "from": "înainte",
+    "to": "după"
    },
-   "pause": 0.5
+   "pause": 1.0
   }
  ],
  "resolve": [
@@ -318,7 +293,8 @@
     "tap": "figure svg"
    }
   ],
-  "role": "cta"
+  "role": "cta",
+  "tempo": 1.05
  },
  "musicFile": "owner-free",
  "musicStart": 0.395,

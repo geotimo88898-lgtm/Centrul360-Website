@@ -295,6 +295,10 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
 - **Ritmul** (14.11, „vocea e cam încetă … cele din reelurile astea cam toate is mai rapide”): fiecare replică e
   grăbită după cache cu `atempo` (aceeași înălțime), implicit x1,18 (`"tempo"` în `engine/voice.json`, sau în script);
   pauzele dintre replici sunt scurte (`"gaps"` în script: `line` 0,05 s, `payoff` 0,3, `resolve` 0,1, `outro` 0,1).
+  O replică își poate pune propria limită (`"tempo": 1.05` pe replică): numele site-ului rămâne la x1,05, pentru că
+  peste x1,1 „centrul” își pierde „l”-ul și se aude „centru”. Când vocii i se scrie un cuvânt fonetic („es-em-a-es”
+  pentru SMAS), harta `PHONETIC` din `voice.py` spune cum se scrie el pe ecran, ca înregistrarea să fie acceptată, nu
+  refăcută la fiecare rulare.
   Ritmul nostru măsurat: 176 de cuvinte pe minut cât vorbește, înainte; ~208 după. Referința în română a
   proprietarului: ~200 pe tot clipul; reel-ul cu date (engleză): ~265. Mai repede de x1,2 nu, ca femeile de 40+ să
   înțeleagă fiecare cuvânt (se verifică cu `python3 listen.py <id>`).
@@ -371,7 +375,9 @@ prin straturi și se oprește adânc; `tease`, cuvântul următor ținut în blu
 depărtează puțin), `bookmark` (`loops.js`: CTA-ul „salvează”, semnul de carte care se umple pe cuvânt, cu finalul
 `save`), `race` cu `"qual": true` (doar componentele, fără valori, axe sau ranguri), `dissolve` (o credință pe un card de sticlă se destramă în particule care
 se întind pe o siluetă abstractă), `photo` (poza reală din catalog: `glimpse` (întâi „după”, din blur în clar, apoi
-întreaga poză), `tease`, `reveal` cu mască `diagonal`/`circle`/`wipe`,
+întreaga poză), `tease`, `reveal` cu mască `diagonal`/`circle`/`wipe`, `slider` (din 14.11, pentru răspuns: cele două jumătăți reale ale
+pozei în același cadru, „înainte” întâi, apoi o linie fină trece peste cadru și descoperă „după”, pe cuvinte, `from`/`to`;
+fără „?” și fără acoperământ),
 `chips`), `nuki` (ipostaze pe replici, squash/stretch, balon), `panel` (ilustrație AI cu ken burns / mască / parallax).
 Orice scenă poate avea `bg` (un decor AI în spate, `{name, prompt}`), `tr` (tranziția de intrare), `cam`
 (`push`, `pull`, `drift`, `rise`, `dolly`, `parallax`, `none`), iar o replică poate avea `nuki` (Nuki mic într-un colț).
