@@ -124,8 +124,8 @@ const drop = (id) => update((d) => { const n = d.sent.length; d.sent = d.sent.fi
 const RULES = `Scrii mesajul privat pe care clinica Centrul360 îl trimite cuiva care a scris în comentarii cuvântul cerut de o postare a clinicii (un clip sau un carusel, pe Instagram sau Facebook). Postarea i-a promis: „Scrie cuvântul în comentarii și îți trimitem…”. Acum îi trimiți ce i s-a promis. Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad (corp, față, epilare laser).
 
 Cum scrii:
-- în română, cu diacritice, cald și firesc, ca echipa clinicii, la plural („noi”, „îți trimitem”); o tutuiești politicos;
-- primul rând: un salut scurt („Bună!” sau „Bună, <prenumele ei>!” dacă îl ai), cu o mulțumire scurtă;
+- în română, cu diacritice, cald și firesc, ca echipa clinicii, la plural („noi”, „vă trimitem”); îi vorbești cu „dumneavoastră” (vă, v-ar plăcea), frumos și respectuos, nu rigid (proprietarul, 14.11);
+- primul rând: un salut scurt („Bună ziua!” sau „Bună ziua, <prenumele ei>!” dacă îl ai), cu o mulțumire scurtă;
 - apoi valoarea, gratis și pe loc: 3-5 rânduri scurte, fiecare pe rândul lui, cu exact ce a promis postarea pentru cuvântul ăsta, concret și util, din tema și textul ei și din datele clinicii primite; ușor de citit pe telefon, fără introduceri;
 - ultimul rând: o singură întrebare blândă care deschide conversația, despre ce își dorește ea, de exemplu „Vrei să-ți spunem ce s-ar potrivi pentru tine?”;
 - fără presiune: fără „grăbește-te”, „ultimele locuri”, „doar azi”; nu ceri telefonul și nu propui programarea în mesajul ăsta;

@@ -24,8 +24,9 @@
   // Statuses the front desk picks by hand. "Finalizată" comes by itself when the appointment is paid
   // (Încasări); "Concediu" is a leave block created by an approved leave request.
   const PICK = ['programata', 'confirmata', 'reprogramata', 'anulata'];
-  // a session from a package (no money to take) is closed by hand with „Finalizată”; a paid one closes itself
-  const pickFor = (a) => (a && a.package ? PICK.concat(['finalizata']) : PICK);
+  // closed by hand with „Finalizată” when there is no money to take: a session from a package, or a booking of 0 lei
+  // (a free consultation where she bought nothing, the owner 14.11); one with a sum closes itself when it is paid
+  const pickFor = (a) => (a && (a.package || (!a.paidSaleId && !(Number(a.amount) > 0))) ? PICK.concat(['finalizata']) : PICK);
   // "Blochează timp": a leave-like row (status concediu) with block: true, hours and a reason
   const BLOCKED = { label: 'Blocat', plural: 'blocate', tone: 'mute', ic: 'ban' };
   const stOf = (a) => (a.block ? BLOCKED : STATUS[a.status] || STATUS.programata);
@@ -950,7 +951,7 @@
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + (a.online ? '<span class="k-tag is-info" title="Clienta s-a programat singură pe site">' + icon('globe') + 'Online</span> ' : '') + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
       body:
         (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită, apare în Încasări.</div>' : '') +
-        '<div class="cal-status" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
+        '<div class="cal-status' + (pickFor(a).length > 4 ? ' is-5' : '') + '" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +
           '<a class="k-btn is-outline" href="' + K.tel(a.clientPhone) + '">' + icon('phone') + 'Sună</a>' +
@@ -973,7 +974,15 @@
           if (before === b.dataset.status) return;
           a.status = b.dataset.status;
           el.querySelectorAll('[data-status]').forEach((x) => x.classList.toggle('is-on', x === b));
-          try { await save(a); K.ui().toast(a.clientName + ': ' + STATUS[a.status].label.toLowerCase(), 'success'); render(true); K.reload(); }
+          try {
+            await save(a); render(true); K.reload();
+            // „Reprogramată” is a move (the owner, 14.11): straight to the day and hour, which „Salvează” then keeps
+            if (a.status === 'reprogramata') {
+              const dt = f.querySelector('[name="date"]');
+              if (dt) { dt.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => { try { dt.focus(); if (dt.showPicker) dt.showPicker(); } catch (e) { /* the picker opens on a tap */ } }, 350); }
+              K.ui().toast('Alege noua zi și ora, apoi apasă Salvează.', 'info');
+            } else K.ui().toast(a.clientName + ': ' + STATUS[a.status].label.toLowerCase(), 'success');
+          }
           catch (err) { a.status = before; K.ui().toast(K.errText(err), 'error'); openAppt(id); }
         }));
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {

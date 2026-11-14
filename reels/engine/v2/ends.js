@@ -47,10 +47,10 @@
       const st = ctx.stage();
       const kwd = '360'; // every comment CTA uses the same word (the owner, 13.11): „Scrie 360 în comentarii…”
       const t0 = ctx.t0 + 0.08;
-      const l1 = h('div', 'tx abs disp', esc(spec.title || 'Scrie în comentarii'), st); l1.style.cssText += ';left:0;width:860px;text-align:center;font-size:66px';
-      const kw = h('div', 'tx abs num', '«' + esc(kwd) + '»', st); kw.style.cssText += ';left:0;width:860px;text-align:center'; fit(kw, 820, 220, 190, 90);
-      const bar = h('div', 'cbar', '<span class="av">' + R.icon('user-round') + '</span><span class="txt"><span class="ph">Adaugă un comentariu…</span></span><span class="send">' + R.icon('send') + '</span>', st); bar.style.left = '20px'; bar.style.width = '820px';
-      const l2 = spec.line ? h('div', 'tx abs lab', R.rich(spec.line), st) : null; if (l2) { l2.style.cssText += ';left:20px;width:820px;text-align:center;font-size:40px;color:var(--mute)'; }
+      const l1 = h('div', 'tx abs disp', esc(spec.title || 'Scrie în comentarii'), st); l1.style.cssText += ';left:50px;width:760px;text-align:center;font-size:66px';
+      const kw = h('div', 'tx abs num', '«' + esc(kwd) + '»', st); kw.style.cssText += ';left:50px;width:760px;text-align:center'; fit(kw, 740, 220, 190, 90);
+      const bar = h('div', 'cbar', '<span class="av">' + R.icon('user-round') + '</span><span class="txt"><span class="ph">Adaugă un comentariu…</span></span><span class="send">' + R.icon('send') + '</span>', st); bar.style.left = '50px'; bar.style.width = '760px';
+      const l2 = spec.line ? h('div', 'tx abs lab', R.rich(spec.line), st) : null; if (l2) { l2.style.cssText += ';left:50px;width:760px;text-align:center;font-size:40px;color:var(--mute)'; }
       const els = [l1, kw, bar, l2].filter(Boolean), hs = els.map((e) => e.offsetHeight), sum = hs.reduce((a, b) => a + b, 0) + 40 * (els.length - 1);
       let y = (900 - sum) / 2 - 60; els.forEach((e, i) => { e.style.top = y + 'px'; y += hs[i] + 40; });
       ctx.anim(l1, 'in', t0); ctx.anim(kw, 'slam', t0 + 0.2, { sfx: 'impact', gain: 0.5 }); ctx.anim(bar, 'slideU', t0 + 0.4, { amt: 200 }); 
@@ -63,7 +63,7 @@
       ctx.anim(bar.querySelector('.send'), 'pop', tSend, { sfx: 'click', gain: 0.7 });
       // the comment lands above the bar, with a heart
       const cm = h('div', 'cmt', '<span class="av" style="background:var(--acc2)"></span><div class="b"><small>tu · acum</small>' + esc(word) + '</div>', st);
-      cm.style.left = '20px'; cm.style.top = (parseFloat(bar.style.top) + 150) + 'px';
+      cm.style.left = '50px'; cm.style.top = (parseFloat(bar.style.top) + 150) + 'px';
       if (l2) { l2.style.top = (parseFloat(bar.style.top) + 300) + 'px'; ctx.anim(l2, 'in', tSend + 1.1, { sfx: null, event: true }); }
       const heart = h('div', 'abs ico', R.icon('heart'), cm); heart.style.cssText += ';left:' + (110 + word.length * 26 + 60) + 'px;top:40px;width:64px;height:64px;color:var(--bad)';
       ctx.anim(cm, 'slideU', tSend + 0.25, { amt: 80, sfx: 'bubble', gain: 0.6 }); ctx.anim(heart, 'pop', tSend + 0.8, { sfx: 'pop', gain: 0.5 }); R.event(tSend + 0.8, 'resolve-end'); R.cue(tSend + 0.85, 'resolve', 0.45);
@@ -82,9 +82,9 @@
     build(ctx, spec) {
       const st = ctx.stage();
       const L = ctx.lines[0];
-      const q = R.kt(spec.q || (L ? L.capRich : ''), st); q.style.left = '0'; q.style.width = '860px'; fit(q, 820, 420, 120, 54); q.style.top = '80px';
+      const q = R.kt(spec.q || (L ? L.capRich : ''), st); q.style.left = '50px'; q.style.width = '760px'; fit(q, 740, 420, 120, 54); q.style.top = '80px';
       [...q.querySelectorAll('.w')].forEach((w, i) => ctx.anim(w, 'pop', L && L.words[i] ? L.words[i].t - 0.04 : ctx.t0 + i * 0.1, { gain: 0.3, sfx: i % 2 ? null : undefined, event: true }));
-      const opts = (spec.options || []).map((o, i) => { const d = h('div', 'tx abs', '<span class="chip ' + (i % 2 ? 'soft' : 'acc') + '" style="font-size:40px;padding:22px 34px">' + R.rich(o) + '</span>', st); d.style.left = '0'; d.style.width = '860px'; d.style.textAlign = 'center'; d.style.top = (q.offsetTop + q.offsetHeight + 80 + i * 120) + 'px'; ctx.anim(d, 'pop', (L ? L.t1 : ctx.t0 + 1) - 0.4 + i * 0.25, { gain: 0.45 }); return d; });
+      const opts = (spec.options || []).map((o, i) => { const d = h('div', 'tx abs', '<span class="chip ' + (i % 2 ? 'soft' : 'acc') + '" style="font-size:40px;padding:22px 34px">' + R.rich(o) + '</span>', st); d.style.left = '50px'; d.style.width = '760px'; d.style.textAlign = 'center'; d.style.top = (q.offsetTop + q.offsetHeight + 80 + i * 120) + 'px'; ctx.anim(d, 'pop', (L ? L.t1 : ctx.t0 + 1) - 0.4 + i * 0.25, { gain: 0.45 }); return d; });
       ctx.focus(q);
       return opts;
     },
@@ -102,7 +102,7 @@
       return Math.max(last + 0.7, t0 + (spec.dur || 0), tTap + 1.0); },
     build(ctx, spec) {
       const el = ctx.el;
-      const bx = 84, by = 300, bw = 812, bh = 880; // inside the safe zone (x ≤ 920) and above the captions
+      const bx = 134, by = 300, bw = 812, bh = 880; // centred on the frame axis (540) // inside the safe zone (x ≤ 920) and above the captions
       const brw = h('div', 'brw', '<div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">' + R.icon('lock') + '<span class="u"></span></div></div><div class="prog"></div><div class="view"></div>', el);
       place(brw, bx, by, bw, bh);
       const u = brw.querySelector('.u'), prog = brw.querySelector('.prog'), view = brw.querySelector('.view');

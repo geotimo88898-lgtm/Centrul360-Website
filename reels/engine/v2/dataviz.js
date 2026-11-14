@@ -60,9 +60,9 @@
 
   // the scrubber: a track, a fill, a rose gold ball, the ticks, a note left and a counter right
   function scrub(parent, y, ticks, o = {}) {
-    const s = h('div', 'dv-scrub', null, parent); place(s, 0, y);
+    const s = h('div', 'dv-scrub', null, parent); place(s, 50, y);
     h('i', 'tr', null, s); const fill = h('i', 'fill', null, s);
-    const n = ticks.length, x0 = 40, x1 = 820, X = (i) => x0 + (x1 - x0) * (n > 1 ? i / (n - 1) : 0);
+    const n = ticks.length, x0 = 30, x1 = 730, X = (i) => x0 + (x1 - x0) * (n > 1 ? i / (n - 1) : 0);
     const rng = o.range ? h('i', 'rng', null, s) : null;
     if (rng) { place(rng, X(o.range[0]) - 34, -30, X(o.range[1]) - X(o.range[0]) + 68, 66); rng.style.top = '-30px'; }
     const tks = ticks.map((t, i) => { const d = h('div', 'tk tx', esc(t), s); d.style.left = X(i) + 'px'; return d; });
@@ -92,16 +92,16 @@
     const rows = p.rows, n = rows.length, K = p.steps.length;
     const top = p.top != null ? p.top : 24;
     const rowH = n >= 5 ? 116 : n === 4 ? 140 : 172, y0 = top + 104;
-    const cardH = rowH - 16, cardW = Math.round(cardH * 0.74), barX = cardW + 44, barH = Math.round(rowH * 0.56), maxW = 860 - barX - 80;
+    const cardH = rowH - 16, cardW = Math.round(cardH * 0.74), barX = cardW + 44, barH = Math.round(rowH * 0.56), maxW = 760 - barX - 80;
     // the ghost numeral, behind everything
-    const ghost = h('div', 'dv-ghost', '', st); place(ghost, -24, y0 + n * rowH - 360);
+    const ghost = h('div', 'dv-ghost', '', st); place(ghost, 0, y0 + n * rowH - 360); ghost.style.width = '860px'; ghost.style.textAlign = 'center';
     // the header and its hairline
-    const hd = h('div', 'dv-h tx', '<span>' + esc(p.header || '') + '</span><b></b>', st); place(hd, 0, top);
-    const rule = h('i', 'dv-rule', null, st); place(rule, 0, top + 58);
+    const hd = h('div', 'dv-h tx', '<span>' + esc(p.header || '') + '</span><b></b>', st); place(hd, 50, top);
+    const rule = h('i', 'dv-rule', null, st); place(rule, 50, top + 58);
     const hdR = hd.querySelector('b');
     ctx.anim(hd, 'in', ctx.t0 + 0.04, { amt: 24, sfx: null }); ctx.anim(rule, 'growX', ctx.t0 + 0.08, { sfx: 'swoosh', gain: 0.25 });
     const els = rows.map((r, i) => {
-      const g = h('div', 'abs', null, st); place(g, 0, y0 + i * rowH, 860, rowH);
+      const g = h('div', 'abs', null, st); place(g, 50, y0 + i * rowH, 760, rowH);
       const badge = h('div', 'dv-badge', String(i + 1), g); place(badge, 2, -6);
       const card = h('div', 'dv-card', '<div class="ico">' + R.icon(r.ic || 'sparkles') + '</div>', g); place(card, 14, 8, cardW, cardH);
       const tags = (r.tags || [r.tag || '']).map((tg) => { if (!tg) return null; const d = h('div', 'dv-tag', '<i></i>' + esc(tg.t || tg), card); if (tg.rose) d.classList.add('rose'); if (tg.done) d.classList.add('done'); return d; });
@@ -156,11 +156,11 @@
   V.scrubber = (ctx, p) => {
     const st = ctx.stage();
     const ticks = p.ticks, n = ticks.length;
-    const ghost = h('div', 'dv-ghost', '', st); place(ghost, -24, 120);
-    const hd = p.header ? h('div', 'dv-h tx', '<span>' + esc(p.header) + '</span><b></b>', st) : null; if (hd) place(hd, 0, 24);
-    const rule = hd ? h('i', 'dv-rule', null, st) : null; if (rule) place(rule, 0, 82);
+    const ghost = h('div', 'dv-ghost', '', st); place(ghost, 0, 120); ghost.style.width = '860px'; ghost.style.textAlign = 'center';
+    const hd = p.header ? h('div', 'dv-h tx', '<span>' + esc(p.header) + '</span><b></b>', st) : null; if (hd) place(hd, 50, 24);
+    const rule = hd ? h('i', 'dv-rule', null, st) : null; if (rule) place(rule, 50, 82);
     const ttl = p.title ? h('div', 'tx abs disp', R.rich(p.title), st) : null;
-    if (ttl) { place(ttl, 0, 140, 860); ttl.style.fontSize = (p.size || 88) + 'px'; R.fit(ttl, 860, 230, p.size || 88, 40); }
+    if (ttl) { place(ttl, 50, 140, 760); ttl.style.textAlign = 'center'; ttl.style.fontSize = (p.size || 88) + 'px'; R.fit(ttl, 760, 230, p.size || 88, 40); }
     const sc = scrub(st, p.y || 640, ticks, { range: p.range, note: p.note, count: p.count });
     const tA = T(ctx, p.from, ctx.L(0, 0.1)), tB = T(ctx, p.at, ctx.L(0, 0.7)), tR = p.range ? T(ctx, p.rangeAt, ctx.L(0, 0.75)) : null;
     if (hd) { ctx.anim(hd, 'in', ctx.t0 + 0.04, { amt: 24, sfx: null }); ctx.anim(rule, 'growX', ctx.t0 + 0.08, { sfx: 'swoosh', gain: 0.25 }); }
@@ -184,16 +184,16 @@
   // ------------------------------------------------------------------ cardrow
   V.cardrow = (ctx, p) => {
     const st = ctx.stage();
-    const cards = p.cards, n = cards.length, gap = 24, cw = Math.floor((860 - gap * (n - 1)) / n), ch = Math.round(cw * 1.42);
-    const hd = p.header ? h('div', 'dv-h tx', '<span>' + esc(p.header) + '</span><b>' + esc(p.right || '') + '</b>', st) : null; if (hd) place(hd, 0, 24);
-    const rule = hd ? h('i', 'dv-rule', null, st) : null; if (rule) place(rule, 0, 82);
+    const cards = p.cards, n = cards.length, gap = 24, cw = Math.floor((760 - gap * (n - 1)) / n), ch = Math.round(cw * 1.42);
+    const hd = p.header ? h('div', 'dv-h tx', '<span>' + esc(p.header) + '</span><b>' + esc(p.right || '') + '</b>', st) : null; if (hd) place(hd, 50, 24);
+    const rule = hd ? h('i', 'dv-rule', null, st) : null; if (rule) place(rule, 50, 82);
     const y = p.y != null ? p.y : 150;
     if (hd) { ctx.anim(hd, 'in', ctx.t0 + 0.04, { amt: 24, sfx: null }); ctx.anim(rule, 'growX', ctx.t0 + 0.08, { sfx: 'swoosh', gain: 0.25 }); }
     cards.forEach((c, i) => {
-      const x = i * (cw + gap);
+      const x = 50 + i * (cw + gap);
       const card = h('div', 'dv-card', '<div class="ico">' + R.icon(c.ic || 'sparkles') + '</div>', st); place(card, x, y, cw, ch);
       const badge = h('div', 'dv-badge' + (c.lead ? ' lead' : ''), String(c.rank || i + 1), st); place(badge, x - 10, y - 14);
-      const ttl = h('div', 'tx abs', '<div style="font:800 36px/1.08 var(--f-display);letter-spacing:-.03em;color:var(--ink)">' + R.rich(c.t) + '</div>' + (c.s ? '<div style="margin-top:6px;font:600 22px/1.2 var(--f-body);color:var(--mute)">' + R.rich(c.s) + '</div>' : ''), st);
+      const ttl = h('div', 'tx abs', '<div style="font:800 34px/1.08 var(--f-display);letter-spacing:-.03em;color:var(--ink);text-align:center">' + R.rich(c.t) + '</div>' + (c.s ? '<div style="margin-top:6px;font:600 22px/1.2 var(--f-body);color:var(--mute);text-align:center">' + R.rich(c.s) + '</div>' : ''), st);
       place(ttl, x + 4, y + ch + 22, cw - 8);
       const t0 = ctx.t0 + 0.1 + i * 0.1;
       [card, badge, ttl].forEach((e, j) => ctx.anim(e, 'in', t0 + j * 0.04, { amt: 40, sfx: j || i ? null : 'swoosh_up', gain: 0.3 }));

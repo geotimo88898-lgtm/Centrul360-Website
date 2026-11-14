@@ -225,7 +225,11 @@ def constant_bed(music, voice, total):
     sp = np.abs(voice[:, 0]) > 0.02
     bb, aa = signal.butter(2, [1000 / (SR / 2), 4000 / (SR / 2)], 'band')
     v = np.sqrt(np.mean(signal.lfilter(bb, aa, voice[:, 0])[sp] ** 2)) if sp.any() else 0.05
-    m = np.sqrt(np.mean(signal.lfilter(bb, aa, music[:, 0])[sp] ** 2)) + 1e-9
+    # the song's own dynamics stay (a quiet intro, a fuller chorus): the gain is set on its louder moments (the 85th
+    # percentile of half-second levels while she speaks), so the voice is clear everywhere, even where the song swells
+    mb = signal.lfilter(bb, aa, music[:, 0]); win = int(0.5 * SR)
+    lv = [np.sqrt(np.mean(mb[i:i + win][sp[i:i + win]] ** 2)) for i in range(0, end - win, win) if sp[i:i + win].mean() > 0.3]
+    m = (np.percentile(lv, 85) if lv else np.sqrt(np.mean(mb[sp] ** 2))) + 1e-9
     music *= (v / m) / (10 ** (MUSIC_UNDER_VOICE / 20))  # one gain for the whole reel
     a = int(0.3 * SR); music[end - a:end] *= np.linspace(1, 0, a)[:, None]; music[end:] = 0
 
@@ -289,13 +293,13 @@ def main_v2(rid, base, F, TIM):
             x = np.arange(0, len(y) - 1, pitch)
             y = np.stack([np.interp(x, np.arange(len(y)), y[:, ch]) for ch in (0, 1)], 1).astype(np.float32)
         g = BASE.get(c['cat'], 0.45) * fl['mul'].get(c['cat'], 1) * c.get('gain', 1) * 10 ** ((rng.random() * 2 - 1) * 1.5 / 20)
-        if c['t'] < 0.15 and c['cat'] in ('impact', 'boom', 'whoosh_s'): g *= 0.6  # the hook hit stays, but never masks the first words
+        if c['t'] < 0.15 and c['cat'] in ('impact', 'boom', 'whoosh_s'): g *= 0.4  # the hook hit stays, but never masks the first words
         pan = c.get('pan') if c.get('pan') is not None else (rng.random() * 2 - 1) * 0.18
         add(fx, y, c['t'], g, pan)
     # the music (the owner, 14.11): the previews use exactly his track (music/owner-free.wav, git-ignored), never a
     # generated one; he posts from the apps and adds the licensed sound there, so a clean file (voice + effects) is made too
     song = os.path.join(HERE, 'music', (F.get('musicFile') or 'owner-free') + '.wav')
-    start = float(F.get('musicStart') if F.get('musicStart') is not None else 77.19)
+    start = float(F.get('musicStart') if F.get('musicStart') is not None else 0.395)
     bed = None
     if os.path.exists(song):
         y = read(song); a = int(start * SR)

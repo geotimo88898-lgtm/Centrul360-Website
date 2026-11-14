@@ -48,9 +48,9 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
 - **Excepție, decizia proprietarului (13.11):** pentru `v2-gusa-slabe` și `v2-caz-real` patul muzical e chiar piesa
   aleasă de el („Free”, Ultra Naté), riscul de drepturi asumat de el pentru conturile lui. Fișierul stă doar local, în
   `engine/music/owner-free.wav` (folder ignorat de git; nu se comite niciodată). În script: `"music"` (eticheta
-  pentru admin), `"musicFile"`, `"musicStart"` (secunda din piesă: un downbeat la începutul refrenului) și `"beat":
+  pentru admin), `"musicFile"`, `"musicStart"` (secunda din piesă; implicit 0,395 s, primul downbeat, începutul piesei) și `"beat":
   {"bpm"}`. `python3 beats.py music/<fișier>.wav` măsoară tempoul (125 BPM), grila și frazele de 8 măsuri și propune
-  partea cea mai „catchy” (refrenul: 77,2 s și 169,3 s). Reel-ul începe pe un downbeat (lovitura cârligului cade pe
+  și refrenele (77,2 s și 169,3 s), dar din 14.11 reels-urile pornesc de la începutul piesei. Reel-ul începe pe un downbeat (lovitura cârligului cade pe
   el), fiecare tăietură se mută pe bătaia cea mai apropiată (sau pe jumătatea ei), vocea rămâne pe timpii ei.
   Mixul: din 14.11 muzica stă constantă (mai sus, „Muzica și postarea”); `mix.py` raportează „voice over music” (dB). Pe rețele, o piesă comercială poate fi redusă la tăcere sau blocată, iar conturile de
   business nu au voie la muzică comercială în postări; asta e riscul asumat.
@@ -72,7 +72,7 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
   cifre reale (topics.json, site-ul); altfel scena spune „Ilustrativ” și nu arată cifre.
 - **Niciun reel la fel** („nu vreau să fie la fel niciunul”): între reels variază tema, cârligul (particule, privire la
   poza reală, contor…), scenele-semnătură (race, scrubber, cardrow, căutarea pe site, straturile pielii), aranjarea
-  (`"layout": {"align": "left" | "center", "anchor": "top" | "center" | "bottom", "typeScale": 0.9-1.1}`), ritmul,
+  (`"layout": {"anchor": "top" | "center" | "bottom", "typeScale": 0.9-1.1}`; totul rămâne centrat), ritmul,
   setul de tranziții (`"transitions": [...]` în script), unde și cum apare Nuki, finalul și partea din muzică.
   `check2.cjs` refuză un reel cu aceeași temă + cârlig + scene-semnătură + final ca altul și avertizează când peste
   jumătate din scene sunt de același fel ca la reel-ul precedent.
@@ -80,10 +80,27 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
   arăta, o alegere de stil care poate merge în două feluri: se notează întrebarea cu variantele și se întreabă
   proprietarul, în loc să se ghicească.
 
+## Încă trei reguli din 14.11 (după a doua previzualizare)
+- **Totul centrat** pe axa verticală a cadrului (x 540): scena vizuală e 110..970, textul stă într-o coloană de 760 px
+  (160..920, dreapta de 160 px rămâne liberă pentru butoanele aplicațiilor). Nu mai există aliniere la stânga.
+- **Grila cu chenare din fundal e semnătura** fiecărui reel, în ambele teme, discretă și nemișcată (ca formele să poată
+  sta exact pe pătratele ei).
+- **Turcoazul mai aprins al site-ului**: fundalul `brand-teal` e #14a596, #5fd4c6 pentru evidențieri, #0b7f74 doar
+  pentru adâncime; în `brand-light` accentul e #14a596. Textul mic alb de pe turcoaz are o umbră foarte fină.
+- **„?”-ul de deschidere și rezolvarea lui** (`engine/v2/hooks.js`), „mult mai clean, ceva chiar profi”: am încercat
+  două variante (`out/hook-test-grid.mp4`, `out/hook-test-stroke.mp4`): `gridq`, „?”-ul construit din pătratele grilei,
+  care se aprind și se extrudează în cascadă, și `strokeq`, un „?” vectorial desenat de o linie fină și umplut ca sticla,
+  cu punctul ca o sferă rose gold, iar pătratele grilei peste care trece linia se aprind scurt în urma ei. Standardul e
+  `strokeq` (forma e mai curată și mai „premium”; grila rămâne prezentă prin urma de pătrate); rezolvarea de la final
+  (bifă sau inimă) folosește aceeași scenă (`to`). `gridq` rămâne în bibliotecă, pentru variație.
+
 ## Muzica și postarea (regulile proprietarului din 14.11)
 - **Muzica stă constantă tot timpul**: un singur nivel pe tot reel-ul, „semi tare” în fundal, iar vocea vorbește peste
   ea. Fără ducking, fără sidechain, fără automatizări de volum, fără filtre care se deschid, fără fade la acord; doar o
   coadă fără clic de 0,3 s pe ultimele cadre și o mică scobitură statică de -3 dB la 2,5 kHz, unde stă vorbirea.
+- **Partea din piesă**: începutul ei („pune partea de început”), de la primul downbeat (0,395 s), la toate reels-urile;
+  tăieturile rămân pe bătăi. Piesa își păstrează dinamica (intro mai încet, refren mai plin): câștigul fix se calculează
+  pe momentele ei mai tari, ca vocea să rămână clară peste tot.
 - **Nivelul** (`MUSIC_UNDER_VOICE` în `mix.py`, implicit 6): întâi nivelul la care vocea se înțelege clar (8 dB de voce
   peste muzică în banda vorbirii, 1-4 kHz, cât vorbește, și ascultătorul automat aude fiecare cuvânt: `python3
   listen.py <id>` transcrie mixul final și numără cuvintele greșite), apoi „puțin mai tare”: +2 dB de muzică. Deci 6 dB

@@ -14,7 +14,9 @@
   const W = 1080, H = 1920, FPS = 30;
   R.W = W; R.H = H; R.FPS = FPS;
   R.SAFE = { l: 60, r: 920, t: 220, b: 1540 };
-  R.STAGE = { x: 60, y: 250, w: 860, h: 900 };   // where visuals put their text
+  // centred on the frame's vertical axis (x 540, the owner, 14.11): the stage is 110..970, text stays in a 760 px column
+  // (160..920, the right 160 px are the apps' buttons)
+  R.STAGE = { x: 110, y: 250, w: 860, h: 900 }; R.TX = 50; R.TW = 760;
   R.CAPY = { band: 1210, mid: 1000 };              // the captions' top, by placement
   const HOOK_LEAD = 0.12, GAP = 0.14, PAYOFF_PAUSE = 0.5, TR_DUR = 0.42;
   const qs = new URLSearchParams(location.search);
@@ -253,7 +255,7 @@
     document.body.dataset.theme = S.theme;
     document.body.dataset.dark = TH.dark ? '1' : '';
     document.body.dataset.sweep = TH.sweep || '';
-    const LY = S.layout || {}; R.layout = { align: LY.align || 'center', anchor: LY.anchor || 'center', typeScale: LY.typeScale || 1 };
+    const LY = S.layout || {}; R.layout = { align: 'center', anchor: LY.anchor || 'center', typeScale: LY.typeScale || 1 }; // always centred (14.11)
     document.body.dataset.align = R.layout.align;
     if (TH.fontDisplay) root.setProperty('--f-display', TH.fontDisplay);
   }
@@ -311,7 +313,7 @@
     events.sort((a, b) => a.t - b.t);
     window.film = {
       v: 2, id: S.id, total, fps: FPS, W, H, theme: S.theme, end: R.endType, keyword: S.keyword || null,
-      music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || 'owner-free', musicStart: S.musicStart != null ? S.musicStart : 77.19, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
+      music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || 'owner-free', musicStart: S.musicStart != null ? S.musicStart : 0.395, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
       cues: cues.filter((c) => c.t >= 0 && c.t < total),
       events: events.filter((e) => e.t >= -0.01 && e.t <= total),
       beats: lines.map((L) => ({ key: L.key, t0: L.t0, dur: L.dur, text: L.text, role: L.role, voiced: L.voiced, shot: L.shot ? L.shot.i : -1, step: L.step, visual: L.b.visual ? L.b.visual.type : L.b.step ? 'step' : null })),

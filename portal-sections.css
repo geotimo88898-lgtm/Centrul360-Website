@@ -280,6 +280,8 @@
 .cal-status button{ display:flex; flex-direction:column; align-items:center; gap:.3rem; padding:.65rem .3rem; border-radius:12px; border:1px solid var(--line); background:transparent;
   color:var(--muted); font:inherit; font-size:.72rem; font-weight:600; cursor:pointer; transition:all .2s var(--ease); }
 .cal-status button .k-ic{ width:18px; height:18px; }
+/* five statuses on a phone: three over two, every label whole (Reprogramată did not fit in a fifth) */
+@media (max-width:480px){ .cal-status.is-5{ grid-template-columns:repeat(6,1fr); } .cal-status.is-5 button{ grid-column:span 2; } .cal-status.is-5 button:nth-child(n+4){ grid-column:span 3; } }
 .cal-status button:hover{ border-color:var(--line-on-dark); color:var(--fg); }
 .cal-status button.is-on{ color:var(--on-color); border-color:transparent; transform:translateY(-1px); }
 .cal-status button.is-on.is-accent{ background:var(--accent); color:var(--accent-fg); box-shadow:var(--glow); }

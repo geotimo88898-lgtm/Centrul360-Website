@@ -165,13 +165,13 @@
   "say": "Deci nu te lăsa de abdomene. Doar schimbă-le *scopul*.",
   "cta": "soft",
   "visual": {
-   "type": "qmark",
+   "type": "strokeq",
    "formAt": [
     0,
     0,
     -0.35
    ],
-   "formDur": 0.8,
+   "formDur": 0.7,
    "to": "check",
    "toAt": [
     0,
@@ -188,7 +188,6 @@
   "line": "și-ți trimit ce merge, de fapt"
  },
  "layout": {
-  "align": "left",
   "anchor": "bottom",
   "typeScale": 1.0
  },

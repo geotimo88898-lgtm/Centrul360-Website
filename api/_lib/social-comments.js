@@ -126,7 +126,7 @@ function later(fn) {
 const RULES = `Răspunzi public, în numele clinicii Centrul360, la un comentariu lăsat de cineva la o postare sau o reclamă a clinicii (Facebook sau Instagram). Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad (corp, față, epilare laser).
 
 Cum scrii:
-- în limba comentariului (de obicei română, cu diacritice); vorbești ca echipa clinicii, la plural („noi”, „te așteptăm”), cald, firesc, ca un om, nu ca o reclamă; tutuiești politicos;
+- în limba comentariului (de obicei română, cu diacritice); vorbești ca echipa clinicii, la plural („noi”, „vă așteptăm”), cald, firesc, ca un om, nu ca o reclamă; persoanei îi vorbești cu „dumneavoastră” (vă, v-ar plăcea), frumos și respectuos, nu rigid (proprietarul, 14.11);
 - foarte scurt: 1-3 propoziții scurte;
 - nu spui niciodată un nume pentru tine și nu spui și nu lași să se înțeleagă că ești AI, bot, asistent, program sau răspuns automat;
 - răspunzi doar la ce a întrebat, doar din datele primite (ofertele active cu prețul și orașul lor, programul clinicilor); nu inventezi prețuri, reduceri, rezultate, termene sau promisiuni medicale;
@@ -251,15 +251,16 @@ async function tell(c, why) {
 // wouldn't let us and she writes to us. Varied, warm, a positive question and one of our emoji at the end; on Instagram
 // where to find it (a message from an account she doesn't follow waits in „Solicitări”).
 const LINES = {
-  sent: ['Ți-am scris în privat{, N}! Ce ți-a plăcut cel mai mult din clip? 💞', 'Gata, ți-am trimis totul în privat! Ce ți-ai dori să afli mai departe? 🥰',
-    'Ți-am lăsat mesajul în privat{, N}! Ce rezultat ți-ai dori cel mai mult? ❤️', 'Ți-am trimis în privat ce am promis în clip! Ce te-a făcut curioasă? 💞',
-    'Verifică mesajele, ți-am scris acolo{, N}! Ce ți-ar plăcea să încerci prima dată? 🥰', 'Ți-am scris în privat cu drag! Ce ți-a atras atenția în clip? ❤️'],
-  already: ['Ți-am scris deja în privat, te așteptăm acolo! Ce ți-ar plăcea să mai afli? 💞', 'Mesajul nostru te așteaptă în privat{, N}! Ce ți-ai dori să încerci prima dată? 🥰',
-    'Îți găsești mesajul nostru în privat! Ce altceva te-ar ajuta să afli? ❤️'],
-  ask: ['Scrie-ne în privat și îți trimitem tot ce am promis în clip! Ce ți-a plăcut cel mai mult? 💞', 'Trimite-ne un mesaj în privat și îți scriem cu drag tot ce am promis! Ce ți-ai dori să afli prima dată? 🥰',
-    'Scrie-ne în privat{, N,} și îți trimitem detaliile! Ce rezultat ți-ai dori cel mai mult? ❤️'],
+  // with „dumneavoastră” (the owner, 14.11: Nuki speaks to clients nicely, „cu dumneavoastră”)
+  sent: ['V-am trimis în privat tot ce am promis{, N}! Ce v-ar plăcea să aflați mai întâi? 🥰', 'V-am scris în privat cu drag{, N}! Ce v-a atras cel mai mult în clip? 💞',
+    'V-am lăsat mesajul în privat{, N}! Ce rezultat v-ați dori cel mai mult? ❤️', 'V-am trimis în privat ce am promis în clip! Ce v-a făcut curioasă? 💞',
+    'Vă rugăm să verificați mesajele, v-am scris acolo{, N}! Ce v-ar plăcea să încercați prima dată? 🥰', 'V-am scris în privat cu drag! Ce v-a atras atenția în clip? ❤️'],
+  already: ['V-am scris deja în privat, vă așteptăm acolo! Ce v-ar plăcea să mai aflați? 💞', 'Mesajul nostru vă așteaptă în privat{, N}! Ce v-ați dori să încercați prima dată? 🥰',
+    'Găsiți mesajul nostru în privat! Ce altceva v-ar ajuta să aflați? ❤️'],
+  ask: ['Scrieți-ne în privat și vă trimitem tot ce am promis în clip! Ce v-a plăcut cel mai mult? 💞', 'Trimiteți-ne un mesaj în privat și vă scriem cu drag tot ce am promis! Ce v-ați dori să aflați prima dată? 🥰',
+    'Scrieți-ne în privat{, N,} și vă trimitem detaliile! Ce rezultat v-ați dori cel mai mult? ❤️'],
 };
-const IG_WHERE = 'Dacă nu-l vezi, e la Solicitări.';
+const IG_WHERE = 'Dacă nu-l vedeți, e la Solicitări.';
 function publicLine(kind, c, itemKind) {
   const list = LINES[kind] || LINES.sent;
   const h = [...String(c.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);

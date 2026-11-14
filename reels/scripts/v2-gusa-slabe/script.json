@@ -14,12 +14,13 @@
   "say": "De ce unele femei *slabe* au totuși gușă?",
   "q": "De ce unele femei slabe au totuși gușă?",
   "visual": {
-   "type": "qmark",
+   "type": "strokeq",
    "formAt": [
     0,
-    0.02
+    0,
+    0.05
    ],
-   "formDur": 1.3,
+   "formDur": 1.0,
    "size": 100
   }
  },
@@ -281,13 +282,13 @@
   "say": "Deci nu e vina ta. Și acum, când revine întrebarea, știi *răspunsul*.",
   "cta": "loop",
   "visual": {
-   "type": "qmark",
+   "type": "strokeq",
    "formAt": [
     0,
     0,
     -0.35
    ],
-   "formDur": 0.8,
+   "formDur": 0.7,
    "to": "heart",
    "toAt": [
     0,
@@ -303,18 +304,17 @@
   "tr": "zoom-element"
  },
  "musicFile": "owner-free",
- "musicStart": 77.19,
+ "musicStart": 0.395,
  "beat": {
   "bpm": 125.01
  },
- "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s).",
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Începutul piesei, de la primul downbeat (0,395 s), alegerea proprietarului (14.11).",
  "transitions": [
   "fly-through",
   "zoom-element",
   "morph-key"
  ],
  "layout": {
-  "align": "center",
   "anchor": "center",
   "typeScale": 1.06
  }

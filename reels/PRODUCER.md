@@ -118,16 +118,17 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
    fel niciunul”, de la un reel la altul schimbi: cârligul (particule, privirea la poza reală, contorul, o întrebare
    tipărită…), scenele-semnătură (race, scrubber, cardrow, căutarea pe site, straturile pielii; cel puțin una de date
-   când povestea are cifre în timp, doar cu cifre reale sau marcată „Ilustrativ”), aranjarea (`layout`: stânga sau
-   centru, sus sau mijloc, mărimea textului), ritmul, setul de tranziții (`transitions`), unde apare Nuki, finalul și
-   partea din muzică. `check2.cjs` refuză aceeași combinație temă + cârlig + scene + final și avertizează la peste
+   când povestea are cifre în timp, doar cu cifre reale sau marcată „Ilustrativ”), aranjarea (`layout`: sus, mijloc sau
+   jos, mărimea textului; totul rămâne centrat pe axa cadrului), ritmul, setul de tranziții (`transitions`), unde apare
+   Nuki și finalul. Muzica previzualizării: începutul piesei proprietarului, la toate. `check2.cjs` refuză aceeași combinație temă + cârlig + scene + final și avertizează la peste
    jumătate scene de același fel ca reel-ul precedent. Super clean: puține elemente, fără efecte pe text; dacă ceva e
    încărcat, se scoate.
 6c. **Muzica și postarea** (14.11): muzica stă constantă, „semi tare”, vocea peste ea (fără ducking sau alte
    automatizări; nivelul din `mix.py`, verificat cu `python3 listen.py <id>`). Fiecare reel are două fișiere:
    `out/<id>.mp4` (previzualizarea, cu piesa proprietarului) și `out/<id>-clean.mp4` (doar voce și efecte). La
-   predare urci fișierul **clean** ca `reel.mp4`: proprietarul postează din aplicații și pune acolo sunetul licențiat;
-   previzualizarea e doar ca să vadă cum sună. Piesa (`engine/music/owner-free.wav`) nu se comite niciodată.
+   predare urci AMÂNDOUĂ: previzualizarea ca `reel.mp4` (fără `role`; doar pentru aprobare, nu se postează niciodată)
+   și fișierul fără muzică ca `clean.mp4` cu `&role=clean` (ăsta pleacă: proprietarul îl postează din aplicații, cu
+   „Distribuie” din Conținut → De postat, și pune acolo sunetul licențiat). Piesa (`engine/music/owner-free.wav`) nu se comite niciodată.
 6b. **Când nu ești sigur, întrebi** (regula proprietarului): o afirmație despre un tratament, o cifră, o poză, o alegere
    de stil care poate merge în două feluri: scrii întrebarea cu variantele în raport, nu ghicești; termini tot ce e clar.
 7. `node check.cjs <id>` trebuie să dea „clean” înainte de randare; apoi te uiți la cadre (primele 3 secunde des,
@@ -152,6 +153,7 @@ ID=$(curl -s -H "$H" -H 'Content-Type: application/json' -X POST "$U" -d '{
 
 # 2. fișierele, ca octeți bruți (maxim 60 MB fiecare)
 curl -s -H "$H" -X PUT -H 'Content-Type: video/mp4' --data-binary @out/<id>.mp4 "$U?action=file&id=$ID&name=reel.mp4"
+curl -s -H "$H" -X PUT -H 'Content-Type: video/mp4' --data-binary @out/<id>-clean.mp4 "$U?action=file&id=$ID&name=clean.mp4&role=clean"
 curl -s -H "$H" -X PUT -H 'Content-Type: image/jpeg' --data-binary @out/<id>.jpg "$U?action=file&id=$ID&name=cover.jpg"
 
 # 3. gata: se verifică și intră în săptămâna lui

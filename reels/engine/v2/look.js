@@ -47,8 +47,9 @@
     const ph = (w) => (P ? (2 * Math.PI * t / P) * Math.max(1, Math.round(w * P / (2 * Math.PI))) : t * w);
     const pos = [[-380, -320], [520, 1060], [380, -380], [-420, 1180], [140, 520]];
     BG.parts.blobs.forEach((d) => { const i = d._i, [x, y] = pos[i % pos.length]; d.style.transform = 'translate(' + (x + Math.sin(ph(0.31 + i * 0.07) + i) * 90).toFixed(1) + 'px,' + (y + Math.cos(ph(0.27 + i * 0.05) + i * 2) * 80).toFixed(1) + 'px)'; });
-    if (BG.parts.grid) BG.parts.grid.style.transform = 'translate(' + ((Math.sin(ph(0.15)) * 30)).toFixed(1) + 'px,' + (((P ? 0 : t * 14) % (BG.B.grid.size)) + Math.cos(ph(0.15)) * 30).toFixed(1) + 'px)';
-    if (BG.parts.grid2) BG.parts.grid2.style.transform = BG.parts.grid.style.transform;
+    if (BG.parts.grid && BG.B.static) { /* the grid is the signature (14.11): still, so shapes can sit exactly on its squares */ }
+    else if (BG.parts.grid) BG.parts.grid.style.transform = 'translate(' + ((Math.sin(ph(0.15)) * 30)).toFixed(1) + 'px,' + (((P ? 0 : t * 14) % (BG.B.grid.size)) + Math.cos(ph(0.15)) * 30).toFixed(1) + 'px)';
+    if (BG.parts.grid2 && !BG.B.static) BG.parts.grid2.style.transform = BG.parts.grid.style.transform;
     if (BG.parts.dots) BG.parts.dots.style.transform = 'translate(' + (Math.sin(ph(0.2)) * 23).toFixed(1) + 'px,' + (Math.cos(ph(0.2)) * 23).toFixed(1) + 'px)';
     BG.parts.shapes.forEach((d, i) => { d.style.transform = 'translate(' + (d._x + Math.sin(ph(0.4 + i * 0.1) + i) * 26).toFixed(1) + 'px,' + (d._y - d._sz / 2 + Math.cos(ph(0.5 + i * 0.08) + i) * 34).toFixed(1) + 'px) rotate(' + (Math.sin(ph(0.3) + i) * 8).toFixed(2) + 'deg)'; });
     BG.parts.rings.forEach((d, i) => { d.style.transform = 'scale(' + (1 + 0.05 * Math.sin(ph(0.6) + i)).toFixed(4) + ')'; d.style.opacity = (0.5 + 0.5 * Math.sin(ph(0.9) + i * 1.3)).toFixed(3); });
@@ -71,7 +72,7 @@
     capEl = document.getElementById('cap');
     lines.forEach((L) => {
       const vis = L.shot && L.shot.vis;
-      const kinetic = vis && (/^type-/.test(vis.type) || (vis.type === 'qmark' && vis.q !== false)) && !vis.text && L.step === 0;
+      const kinetic = vis && (/^type-/.test(vis.type) || (['qmark', 'gridq', 'strokeq'].includes(vis.type) && vis.q !== false)) && !vis.text && L.step === 0;
       if (L.b.captions === false || (kinetic && L.b.captions !== true) || (L.role === 'end' && L.b.captions === undefined && R.END[R.endType].noCaptions)) return;
       let cur = [];
       const flush = () => { if (cur.length) chunks.push({ L, words: cur.slice(), t0: cur[0].t }); cur = []; };
@@ -92,7 +93,7 @@
       c.top = typeof place === 'number' ? place : R.CAPY[place] || R.CAPY.band;
       capEl.innerHTML = c.html; capEl.style.top = c.top + 'px';
       let f = Math.round((TH.capSize || 92) * (R.layout ? Math.min(1.12, R.layout.typeScale) : 1)); capEl.style.fontSize = f + 'px';
-      while (f > 52 && (capEl.offsetHeight > 250 || [...capEl.querySelectorAll('.cw')].some((w) => w.offsetLeft + w.offsetWidth * 1.08 > 860 || w.offsetLeft - w.offsetWidth * 0.04 < 0))) { f -= 2; capEl.style.fontSize = f + 'px'; }
+      while (f > 52 && (capEl.offsetHeight > 250 || [...capEl.querySelectorAll('.cw')].some((w) => w.offsetLeft + w.offsetWidth * 1.08 > 760 || w.offsetLeft - w.offsetWidth * 0.04 < 0))) { f -= 2; capEl.style.fontSize = f + 'px'; }
       c.fs = f;
     });
     capEl.innerHTML = '';

@@ -1,5 +1,5 @@
 {
- "note": "Temele reels-urilor v2. Din 14.11 (decizia proprietarului): doar culorile brandului, două teme, nimic altceva (check2.cjs refuză orice altă temă). brand-light: alb cu turcoaz; brand-teal: turcoaz cu alb. Accentul rose gold (gradientul de pe site: #fbe3d9 → #eab5a5 → #cf8f7d, pastila Black Friday și butoanele „Rezervă oferta” din v2/kit.css) doar ca accent: evidențieri, cifre cheie, o lumină de contur, un marcaj; niciodată suprafețe mari. Super clean (14.11): mult spațiu alb, puține elemente pe ecran, tipografie curată fără efecte, linii fine, umbre moi, mișcări calme și precise.",
+ "note": "Temele reels-urilor v2. Din 14.11 (decizia proprietarului): doar culorile brandului, două teme, nimic altceva (check2.cjs refuză orice altă temă). brand-light: alb cu turcoaz; brand-teal: turcoaz cu alb. Accentul rose gold (gradientul de pe site: #fbe3d9 → #eab5a5 → #cf8f7d, pastila Black Friday și butoanele „Rezervă oferta” din v2/kit.css) doar ca accent: evidențieri, cifre cheie, o lumină de contur, un marcaj; niciodată suprafețe mari. Super clean (14.11): mult spațiu alb, puține elemente pe ecran, tipografie curată fără efecte, linii fine, umbre moi, mișcări calme și precise. 14.11 (2): turcoazul mai aprins al site-ului (#14a596; #5fd4c6 pentru evidențieri; #0b7f74 doar pentru adâncime), grila cu chenare din fundal e semnătura fiecărui reel (statică, discretă), totul centrat pe axa cadrului.",
  "themes": {
   "brand-light": {
    "name": "Brand · alb cu turcoaz",
@@ -11,7 +11,7 @@
     "ink": "#12201f",
     "mute": "#5e6d6b",
     "acc": "#14a596",
-    "acc2": "#0f8a7e",
+    "acc2": "#5fd4c6",
     "on-acc": "#ffffff",
     "good": "#14a596",
     "bad": "#cf8f7d",
@@ -28,14 +28,11 @@
     "base": "linear-gradient(180deg,#ffffff 0%,#ffffff 55%,#eef7f6 100%)",
     "grid": {
      "size": 54,
-     "color": "rgba(15,138,126,.045)",
+     "color": "rgba(20,165,150,.06)",
      "w": 1,
-     "bold": "rgba(15,138,126,.07)"
+     "bold": "rgba(20,165,150,.09)"
     },
-    "blobs": [
-     "rgba(220,242,239,.9)"
-    ],
-    "soft": 40
+    "static": true
    },
    "font": {
     "display": "'Inter Variable', system-ui, sans-serif",
@@ -67,40 +64,37 @@
    "imagery": "clean premium 3D render, pure white and soft turquoise glass, subtle rose gold metallic accents, soft daylight studio, minimal, lots of white space, high-end clinic"
   },
   "brand-teal": {
-   "name": "Brand · turcoaz cu alb",
+   "name": "Brand · turcoaz cu alb (turcoazul site-ului, #14a596)",
    "dark": false,
    "palette": {
-    "bg": "#0f8a7e",
-    "bg2": "#14a596",
+    "bg": "#14a596",
+    "bg2": "#1ab3a3",
     "bg3": "#0b7f74",
     "ink": "#ffffff",
     "mute": "rgba(255,255,255,.74)",
     "acc": "#ffffff",
-    "acc2": "#dcf2ef",
-    "on-acc": "#0f8a7e",
+    "acc2": "#5fd4c6",
+    "on-acc": "#14a596",
     "good": "#0b7f74",
     "bad": "#eab5a5",
-    "card": "rgba(255,255,255,.1)",
-    "line": "rgba(255,255,255,.2)",
+    "card": "rgba(255,255,255,.12)",
+    "line": "rgba(255,255,255,.24)",
     "glass": "rgba(255,255,255,.12)",
     "rose1": "#fbe3d9",
     "rose2": "#eab5a5",
     "rose3": "#cf8f7d",
     "rose-ink": "#3b1c14",
-    "ghost": "rgba(255,255,255,.07)"
+    "ghost": "rgba(255,255,255,.08)"
    },
    "bg": {
-    "base": "linear-gradient(180deg,#14a596 0%,#0f8a7e 62%,#0b7f74 100%)",
+    "base": "radial-gradient(ellipse at 50% 0%,#1ab3a3 0%,#14a596 52%,#11998b 100%)",
     "grid": {
      "size": 54,
-     "color": "rgba(255,255,255,.05)",
+     "color": "rgba(255,255,255,.06)",
      "w": 1,
-     "bold": "rgba(255,255,255,.08)"
+     "bold": "rgba(255,255,255,.1)"
     },
-    "blobs": [
-     "rgba(255,255,255,.1)"
-    ],
-    "soft": 50
+    "static": true
    },
    "font": {
     "display": "'Inter Variable', system-ui, sans-serif",

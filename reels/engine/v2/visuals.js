@@ -34,27 +34,31 @@
     return (ctx, p) => {
       const st = ctx.stage();
       let top = 0;
-      if (p.kicker) { const k = h('div', 'tx abs', '<span class="chip acc">' + (p.kickerIcon ? R.icon(p.kickerIcon) : '') + esc(p.kicker) + '</span>', st); place(k, 0, 0); k.style.width = '860px'; k.style.textAlign = 'center'; ctx.anim(k, 'pop', ctx.t0 + 0.02); top = 100; }
+      if (p.kicker) { const k = h('div', 'tx abs', '<span class="chip acc">' + (p.kickerIcon ? R.icon(p.kickerIcon) : '') + esc(p.kicker) + '</span>', st); place(k, 50, 0); k.style.width = '760px'; k.style.textAlign = 'center'; ctx.anim(k, 'pop', ctx.t0 + 0.02); top = 100; }
       const txt = p.text || (ctx.lines[0] ? ctx.lines[0].capRich : '');
       const d = R.kt(txt, st, style);
-      d.style.left = '0'; d.style.width = '860px';
+      d.style.left = '50px'; d.style.width = '760px';
       const LY = R.layout || {}; if ((p.align || LY.align) === 'left') { d.style.textAlign = 'left'; d.classList.add('left'); }
       const maxH = (p.h || (p.sub ? 560 : 680)) - top;
-      fit(d, 840, maxH, Math.round((p.size || 150) * (LY.typeScale || 1)), 54);
+      fit(d, 740, maxH, Math.round((p.size || 150) * (LY.typeScale || 1)), 54);
       const anchor = p.anchor || LY.anchor;
       const y = p.y != null ? p.y - 250 : anchor === 'top' ? top + 40 : anchor === 'bottom' ? 900 - d.offsetHeight - (p.sub ? 120 : 0) - 40 : top + Math.max(0, (900 - top - d.offsetHeight - (p.sub ? 120 : 0)) / 2) - (p.lift || 40);
       d.style.top = y + 'px';
+      // the whole line is there from the start as a faint ghost (so the block reads centred), each word lights on its word
+      const gh = d.cloneNode(true); gh.classList.remove('tx'); gh.classList.add('abs'); gh.removeAttribute('data-q'); gh.style.pointerEvents = 'none'; st.insertBefore(gh, d);
+      const tGone = (p.then && p.then.length) ? ctx.L(1, 0, -0.12) : 1e9;
+      ctx.tick((t) => { gh.style.opacity = (0.16 * E.out(clamp((t - ctx.t0) / 0.3)) * (1 - clamp((t - tGone) / 0.3))).toFixed(3); });
       const ws = [...d.querySelectorAll('.w')];
       const times = wordTimes(ctx, p, ws.length);
       ws.forEach((w, i) => {
         const t = times[Math.min(i, times.length - 1)] - 0.04;
         const emph = w.classList.contains('e');
-        if (style === 'pop') ctx.anim(w, emph ? 'slam' : 'pop', t, { gain: emph ? 0.5 : 0.25, sfx: i % 2 && !emph ? null : undefined, event: true });
+        if (style === 'pop') ctx.anim(w, 'in', t, { amt: 34, dur: 0.42, sfx: emph ? 'pop' : i % 2 ? null : 'swoosh_up', gain: emph ? 0.4 : 0.22, event: true }); // calm (14.11): no overshoot
         else if (style === 'mask') ctx.anim(w, 'mask', t, { dur: 0.5, sfx: i % 3 ? null : 'swoosh_up', gain: 0.3, event: true });
         else if (style === 'flip') ctx.anim(w, 'flip', t, { sfx: i % 3 ? null : 'paper', gain: 0.35, event: true });
         else if (style === 'cascade') {
           const txtw = w.textContent; w.innerHTML = [...txtw].map((c) => '<span class="ch">' + esc(c) + '</span>').join('');
-          [...w.querySelectorAll('.ch')].forEach((c, j) => ctx.anim(c, 'drop', t + j * 0.022, { dur: 0.55, amt: 90, sfx: j === 0 && i % 2 === 0 ? 'tick' : null, gain: 0.25 }));
+          [...w.querySelectorAll('.ch')].forEach((c, j) => ctx.anim(c, 'in', t + j * 0.022, { dur: 0.45, amt: 28, sfx: j === 0 && i % 2 === 0 ? 'tick' : null, gain: 0.25 }));
           R.event(t, 'word');
         } else { // highlight
           ctx.anim(w, 'in', t, { amt: 30, sfx: null, event: true });
@@ -63,13 +67,13 @@
         if (emph && style !== 'highlight') ctx.anim(w, 'bump', t + 0.42, { amt: 0.06 });
         if (emph && p.strike) { const sk = h('i', 'abs', null, w); sk.style.cssText += ';left:-4%;right:-4%;top:52%;height:.11em;border-radius:.06em;background:var(--bad);transform-origin:0 50%'; ctx.anim(sk, 'growX', t + (p.strikeDt || 0.45), { sfx: 'paper', gain: 0.6 }); ctx.anim(w, 'dim', t + (p.strikeDt || 0.45) + 0.1, { to: 0.55 }); }
       });
-      if (p.sub) { const sb = h('div', 'tx abs lab', R.rich(p.sub), st); sb.style.cssText += ';left:0;width:860px;text-align:center;font-size:40px;color:var(--mute)'; sb.style.top = (y + d.offsetHeight + 40) + 'px'; ctx.anim(sb, 'in', T(ctx, p.subAt, ctx.L(0, 0.8))); }
+      if (p.sub) { const sb = h('div', 'tx abs lab', R.rich(p.sub), st); sb.style.cssText += ';left:50px;width:760px;text-align:center;font-size:40px;color:var(--mute)'; sb.style.top = (y + d.offsetHeight + 40) + 'px'; ctx.anim(sb, 'in', T(ctx, p.subAt, ctx.L(0, 0.8))); }
       ctx.focus(d);
       // later lines of the same shot: the text steps back, a new line of text comes (p.then: [text per step])
       (p.then || []).forEach((tx2, k) => {
         const t2 = ctx.L(k + 1, 0, -0.05);
         ctx.anim(d, 'outUp', t2 - 0.12, { dur: 0.3 });
-        const d2 = R.kt(tx2, st, style); d2.style.left = '0'; d2.style.width = '860px'; fit(d2, 840, maxH, p.size || 150, 54);
+        const d2 = R.kt(tx2, st, style); d2.style.left = '50px'; d2.style.width = '760px'; fit(d2, 740, maxH, p.size || 150, 54);
         d2.style.top = (top + Math.max(0, (900 - top - d2.offsetHeight) / 2) - (p.lift || 40)) + 'px';
         const L2 = ctx.lines[k + 1];
         [...d2.querySelectorAll('.w')].forEach((w, i) => { const t = L2 && L2.words[i] ? L2.words[i].t : t2 + i * 0.1; ctx.anim(w, w.classList.contains('e') ? 'slam' : 'pop', t - 0.04, { gain: 0.3, sfx: i % 2 ? null : undefined, event: true }); });
@@ -82,7 +86,7 @@
   // a row of chips that follow the voice, one at a time: list = [{at:[line,frac], t, icon, cls}]
   R.chipSeq = (ctx, parent, list, y, cls) => {
     const L = (list || []).map((c) => Object.assign({}, c, { tt: T(ctx, c.at, ctx.t0 + 0.3) })).sort((a, b) => a.tt - b.tt);
-    L.forEach((c, i) => { const d = h('div', 'tx abs', '<span class="chip ' + (c.cls || cls || 'acc') + '">' + (c.icon ? R.icon(c.icon) : '') + R.rich(c.t) + '</span>', parent); place(d, 0, y); d.style.width = '860px'; d.style.textAlign = 'center';
+    L.forEach((c, i) => { const d = h('div', 'tx abs', '<span class="chip ' + (c.cls || cls || 'acc') + '">' + (c.icon ? R.icon(c.icon) : '') + R.rich(c.t) + '</span>', parent); place(d, 50, y); d.style.width = '760px'; d.style.textAlign = 'center';
       ctx.anim(d, 'pop', c.tt, { sfx: 'pop', gain: 0.4 }); if (L[i + 1]) ctx.anim(d, 'outUp', L[i + 1].tt - 0.15, { dur: 0.15 }); });
     return L;
   };
@@ -91,10 +95,10 @@
   V.big = (ctx, p) => {
     const st = ctx.stage();
     const d = p.value != null ? h('div', 'tx abs num', esc(p.value) + (p.suffix ? '<small style="font-size:.36em;margin-left:.18em;color:var(--ink);letter-spacing:-.03em">' + esc(p.suffix) + '</small>' : ''), st) : R.kt(p.text, st);
-    d.style.left = '0'; d.style.width = '860px'; d.style.textAlign = 'center';
-    fit(d, 820, p.label ? 420 : 600, p.value != null ? 300 : 140, 60);
+    d.style.left = '50px'; d.style.width = '760px'; d.style.textAlign = 'center';
+    fit(d, 740, p.label ? 420 : 600, p.value != null ? 300 : 140, 60);
     const lab = p.label ? h('div', 'tx abs lab', R.rich(p.label), st) : null;
-    if (lab) { lab.style.cssText += ';left:0;width:860px;text-align:center;font-size:44px'; }
+    if (lab) { lab.style.cssText += ';left:50px;width:760px;text-align:center;font-size:44px'; }
     const tot = d.offsetHeight + (lab ? lab.offsetHeight + 40 : 0);
     d.style.top = ((900 - tot) / 2 - 30) + 'px'; if (lab) lab.style.top = ((900 - tot) / 2 - 30 + d.offsetHeight + 40) + 'px';
     const t = T(ctx, p.at, ctx.L(0, 0, 0.02));
@@ -109,7 +113,7 @@
     const lay = ctx.layer(0.5);
     const cv = h('canvas', null, null, lay); cv.width = 1080; cv.height = 1920; cv.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
     const g = cv.getContext('2d');
-    const N = p.n || 620, cx = p.cx || 490, cy = p.cy || 560;
+    const N = p.n || 620, cx = p.cx || 540, cy = p.cy || 560;
     // the target: points inside a big "?" in the display font
     const off = document.createElement('canvas'); off.width = 1080; off.height = 1000; const og = off.getContext('2d');
     og.fillStyle = '#000'; og.textAlign = 'center'; og.textBaseline = 'middle'; og.font = (R.theme.font && R.theme.font.qweight || 800) + ' 640px ' + getComputedStyle(document.documentElement).getPropertyValue('--f-display');
@@ -159,8 +163,8 @@
     if (p.q !== false) {
       const st = ctx.stage();
       const txt = p.text || (ctx.lines[0] ? ctx.lines[0].capRich : '');
-      const d = R.kt(txt, st, 'q'); d.style.left = '0'; d.style.width = '860px';
-      fit(d, 840, p.qh || 280, p.size || 116, 50);
+      const d = R.kt(txt, st, 'q'); d.style.left = '50px'; d.style.width = '760px';
+      fit(d, 740, p.qh || 280, p.size || 116, 50);
       d.style.top = (p.qy != null ? p.qy - 250 : 640) + 'px';
       d.dataset.q = '1';
       const ws = [...d.querySelectorAll('.w')];
@@ -178,8 +182,8 @@
   // p.seq: [{at:[line,frac], do:'focus'|'energy'|'shrink'|'sag'|'collagen'|'cream'|'calm', layer, label}] ; p.mode hifu|liposonix
   V.skin = (ctx, p) => {
     const st = ctx.stage();
-    const bw = 860, bh = p.h || 700, top = p.top != null ? p.top : 40;
-    const box = h('div', 'abs card skinbox', null, st); place(box, 0, top, bw, bh); box.style.overflow = 'hidden';
+    const bw = 780, bh = p.h || 700, top = p.top != null ? p.top : 40;
+    const box = h('div', 'abs card skinbox', null, st); place(box, (860 - bw) / 2, top, bw, bh); box.style.overflow = 'hidden';
     const air = p.mode ? 110 : 64;
     const Ls = [['piele', 'PIELE', 130, '#f4cdbb'], ['grasime', 'GRĂSIME', 220, '#fbe6ad'], ['smas', 'SMAS', 56, '#e7ab95'], ['muschi', 'MUȘCHI', bh - air - 406, '#e29b97']];
     let y = air; const band = {};
@@ -212,7 +216,7 @@
     // labels (one chip each, above the drawing)
     const seq = (p.seq || []).map((s) => Object.assign({}, s, { t: T(ctx, s.at, ctx.t0) })).sort((a, b) => a.t - b.t);
     const chipSeq = [p.label ? { t: ctx.t0 + 0.2, label: p.label } : null].concat(seq).filter((s) => s && s.label);
-    chipSeq.forEach((s, i) => { const c = h('div', 'tx abs', '<span class="chip acc">' + esc(s.label) + '</span>', st); place(c, 0, top + bh + 26); c.style.width = '860px'; c.style.textAlign = 'center';
+    chipSeq.forEach((s, i) => { const c = h('div', 'tx abs', '<span class="chip acc">' + esc(s.label) + '</span>', st); place(c, 50, top + bh + 26); c.style.width = '760px'; c.style.textAlign = 'center';
       ctx.anim(c, 'pop', s.t, { sfx: 'pop', gain: 0.4 }); if (chipSeq[i + 1]) ctx.anim(c, 'outUp', chipSeq[i + 1].t - 0.16, { dur: 0.16 }); });
     const get = (kind) => seq.filter((s) => s.do === kind);
     const tEnergy = get('energy')[0], tShrink = get('shrink')[0], tSag = get('sag')[0], tCol = get('collagen')[0], tCream = get('cream')[0], tCalm = get('calm')[0];
@@ -285,7 +289,7 @@
     const stages = p.stages.map((s) => ({ pts: R.shapePath(s.shape, cx, cy, r * (s.scale || 1)), col: s.color, lab: s.label, stripes: s.stripes }));
     const keys = (p.keys || [[0, 0, 0]]).map((k) => ({ t: ctx.L(k[0], k[1]), v: k[2] })).sort((a, b) => a.t - b.t);
     keys.forEach((k, i) => { if (i && k.v !== keys[i - 1].v) { ctx.sfx(keys[i - 1].t + 0.05, Math.abs(k.v - keys[i - 1].v) > 0.5 ? 'swoosh_up' : 'swoosh', 0.45); R.event(keys[i - 1].t, 'morph'); } });
-    const labs = stages.map((s, i) => { if (!s.lab) return null; const l = h('div', 'tx abs', '<span class="chip ' + (i ? 'acc' : '') + '">' + esc(s.lab) + '</span>', st); place(l, 0, cy + r + 70); l.style.width = '860px'; l.style.textAlign = 'center'; return l; });
+    const labs = stages.map((s, i) => { if (!s.lab) return null; const l = h('div', 'tx abs', '<span class="chip ' + (i ? 'acc' : '') + '">' + esc(s.lab) + '</span>', st); place(l, 50, cy + r + 70); l.style.width = '760px'; l.style.textAlign = 'center'; return l; });
     const rgb = (c) => { const m = String(c).match(/^#([0-9a-f]{6})$/i); if (!m) return [255, 200, 120]; const n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
     const v0 = (t) => { if (t <= keys[0].t) return keys[0].v; for (let i = 1; i < keys.length; i++) if (t < keys[i].t) { const a = keys[i - 1], b = keys[i]; return lerp(a.v, b.v, E.inout(clamp((t - a.t) / Math.min(b.t - a.t, p.morphDur || 1.4)))); } return keys[keys.length - 1].v; };
     ctx.anim(svg, 'pop', ctx.t0 + 0.02, { sfx: 'bubble', gain: 0.5 });
@@ -312,7 +316,7 @@
   V.shatter = (ctx, p) => {
     const st = ctx.stage();
     const behind = p.behind ? R.kt(p.behind, st) : null;
-    if (behind) { behind.style.left = '0'; behind.style.width = '860px'; fit(behind, 820, 420, p.behindSize || 130, 60); behind.style.top = (450 - behind.offsetHeight / 2) + 'px'; }
+    if (behind) { behind.style.left = '50px'; behind.style.width = '760px'; fit(behind, 740, 420, p.behindSize || 130, 60); behind.style.top = (450 - behind.offsetHeight / 2) + 'px'; }
     const cw = 780, chh = p.cardH || 560, x0 = 40, y0 = 450 - chh / 2;
     const tCrack = T(ctx, p.crackAt, ctx.L(0, 0.3)), tBreak = T(ctx, p.breakAt, ctx.L(0, 0.7));
     const shards = [];
@@ -371,13 +375,13 @@
     ctx.shot.after = () => {
       const iw = im.naturalWidth || 1286, ih = im.naturalHeight || 1400;
       // the photo, then its label and the consent note under it (the stage reaches down to the captions here)
-      const maxW = p.w || 800, maxH = 930 - (note ? 76 : 0) - (lab ? 80 : 0) - 16;
+      const maxW = p.w || 760, maxH = 930 - (note ? 76 : 0) - (lab ? 80 : 0) - 16;
       const k = Math.min(maxW / iw, maxH / ih), w = iw * k, hh = ih * k;
       const y0 = Math.max(0, (maxH - hh) / 2) + 6;
       place(fr, (860 - w - 16) / 2, y0, w + 16, hh + 16);
-      if (lab) { place(lab, 0, y0 + hh + 34); lab.style.width = '860px'; lab.style.textAlign = 'center'; }
+      if (lab) { place(lab, 50, y0 + hh + 34); lab.style.width = '760px'; lab.style.textAlign = 'center'; }
       if (p.chips) { if (lab) ctx.anim(lab, 'outUp', T(ctx, p.chips[0].at) - 0.15, { dur: 0.15 }); R.chipSeq(ctx, st, p.chips, y0 + hh + 34); }
-      if (note) { place(note, 40, y0 + hh + 34 + (lab ? 80 : 0)); note.style.width = '780px'; }
+      if (note) { place(note, 50, y0 + hh + 34 + (lab ? 80 : 0)); note.style.width = '760px'; }
       if (cover) { const seam = p.seam || 0.5; if (p.split === 'h') place(cover, w * seam, 0, w * (1 - seam), hh); else place(cover, 0, hh * seam, w, hh * (1 - seam)); }
       fr._hh = hh + 16; fr._w = w;
     };
@@ -494,7 +498,7 @@
     const mask = p.mask || 'up';
     ctx.anim(card, mask === 'circle' ? 'blurIn' : mask === 'wipe' ? 'wipe' : 'mask', ctx.t0 + 0.02, { sfx: mask === 'wipe' ? 'paper' : 'swoosh_up', gain: 0.5 });
     if (mask === 'circle') { ctx.tick((t) => { const q = E.expo(clamp((t - ctx.t0) / 0.7)); card.style.clipPath = 'circle(' + (q * 75).toFixed(1) + '% at 50% 50%)'; }); }
-    if (p.label) { const l = h('div', 'tx abs', '<span class="chip ' + (p.chip || (R.theme.dark ? 'acc' : 'soft')) + '">' + (p.labelIcon ? R.icon(p.labelIcon) : '') + esc(p.label) + '</span>', ctx.stage()); place(l, 0, full ? 40 : (p.top || 60) + (p.h || 760) - 40); l.style.width = '860px'; l.style.textAlign = 'center'; ctx.anim(l, 'pop', T(ctx, p.labelAt, ctx.L(0, 0.3)), { gain: 0.4 }); }
+    if (p.label) { const l = h('div', 'tx abs', '<span class="chip ' + (p.chip || (R.theme.dark ? 'acc' : 'soft')) + '">' + (p.labelIcon ? R.icon(p.labelIcon) : '') + esc(p.label) + '</span>', ctx.stage()); place(l, 50, full ? 40 : (p.top || 60) + (p.h || 760) - 40); l.style.width = '760px'; l.style.textAlign = 'center'; ctx.anim(l, 'pop', T(ctx, p.labelAt, ctx.L(0, 0.3)), { gain: 0.4 }); }
     ctx.focus(card);
     ctx.tick((t, lt) => {
       const d = Math.max(1, ctx.t1 - ctx.t0), q = E.sine(clamp(lt / d));
@@ -522,11 +526,11 @@
     const st = ctx.stage();
     const col = p.tone === 'good' ? 'var(--good)' : p.tone === 'half' ? '#f2a100' : 'var(--bad)';
     const box = h('div', 'tx abs', '<span style="display:inline-block;padding:14px 60px 24px;border:18px solid currentColor;border-radius:52px;font:950 250px/1 var(--f-display);letter-spacing:-.05em;color:' + col + '">' + esc(p.word) + '</span>', st);
-    box.style.left = '0'; box.style.width = '860px'; box.style.textAlign = 'center';
-    fit(box.firstChild, 840, 400, 250, 120); box.firstChild.style.fontSize = box.firstChild.style.fontSize;
+    box.style.left = '50px'; box.style.width = '760px'; box.style.textAlign = 'center';
+    fit(box.firstChild, 740, 400, 250, 120); box.firstChild.style.fontSize = box.firstChild.style.fontSize;
     const sp = box.firstChild; sp.dataset.base = 'rotate(' + (p.rot != null ? p.rot : -7) + 'deg)';
     const sub = p.sub ? h('div', 'tx abs disp', R.rich(p.sub), st) : null;
-    if (sub) { sub.style.cssText += ';left:0;width:860px;text-align:center;font-size:62px'; }
+    if (sub) { sub.style.cssText += ';left:50px;width:760px;text-align:center;font-size:62px'; }
     const tot = box.offsetHeight + (sub ? sub.offsetHeight + 50 : 0);
     box.style.top = ((900 - tot) / 2 - 20) + 'px'; if (sub) sub.style.top = ((900 - tot) / 2 - 20 + box.offsetHeight + 50) + 'px';
     const t = T(ctx, p.at, ctx.L(0, 0, 0.02));

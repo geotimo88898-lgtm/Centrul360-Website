@@ -7,7 +7,7 @@
   const { clamp, E, h, esc, place, fit, lerp } = R;
   const T = R.at;
   const NS = 'http://www.w3.org/2000/svg';
-  const centerX = (el, w = 860) => { el.style.left = '0'; el.style.width = w + 'px'; el.style.textAlign = 'center'; return el; };
+  const centerX = (el, w = 760) => { el.style.left = ((860 - w) / 2) + 'px'; el.style.width = w + 'px'; el.style.textAlign = 'center'; return el; }; // centred on the frame axis
   const chipEl = (parent, text, cls, ic) => h('div', 'tx abs', '<span class="chip ' + (cls || '') + '">' + (ic ? R.icon(ic) : '') + R.rich(text) + '</span>', parent);
 
   // ------------------------------------------------------------------ counter: a number that counts, a ring that fills
@@ -65,7 +65,7 @@
   V.timeline = (ctx, p) => {
     const st = ctx.stage();
     const items = p.items || [];
-    const n = items.length, x0 = 110, x1 = 750, y = p.y || 420;
+    const n = items.length, x0 = 190, x1 = 670, y = p.y || 420;
     const line = h('div', 'abs', null, st); place(line, x0, y - 4, x1 - x0, 8); line.style.cssText += ';border-radius:4px;background:var(--line);transform-origin:0 50%';
     const prog = h('div', 'abs', null, st); place(prog, x0, y - 4, x1 - x0, 8); prog.style.cssText += ';border-radius:4px;background:var(--acc);transform-origin:0 50%';
     ctx.anim(line, 'growX', ctx.t0 + 0.02, { sfx: 'swoosh', gain: 0.35 });
@@ -95,7 +95,7 @@
     const side = (s, i) => {
       const c = h('div', 'abs card', '<div class="ico" style="width:150px;height:150px;border-radius:44px;margin:0 auto 28px;background:var(--bg2);color:var(--' + (s.tone || (i ? 'acc' : 'acc2')) + ')">' + R.icon(s.ic || 'sparkles') + '</div>' +
         '<div class="tx disp" style="position:relative;text-align:center;font-size:62px">' + R.rich(s.t) + '</div>' + (s.s ? '<div class="tx small" style="position:relative;text-align:center;margin-top:16px;font-size:30px">' + R.rich(s.s) + '</div>' : ''), st);
-      place(c, i ? 450 : 0, p.top || 120, 410, p.h || 600); c.style.padding = '56px 26px'; return c;
+      place(c, i ? 440 : 50, p.top || 120, 370, p.h || 600); c.style.padding = '56px 26px'; return c;
     };
     const A = side(p.left, 0), B = side(p.right, 1);
     [A, B].forEach((c) => c.querySelectorAll('.tx.disp').forEach((x) => fit(x, 360, 220, 62, 34)));
@@ -174,12 +174,12 @@
     const items = p.items, n = items.length, rh = Math.min(170, 760 / n);
     const y0 = (900 - n * rh) / 2 - 20;
     items.forEach((it, i) => {
-      const row = h('div', 'abs card', null, st); place(row, 20, y0 + i * rh, 820, rh - 22); row.style.cssText += ';display:flex;align-items:center;gap:28px;padding:0 30px';
+      const row = h('div', 'abs card', null, st); place(row, 50, y0 + i * rh, 760, rh - 22); row.style.cssText += ';display:flex;align-items:center;gap:28px;padding:0 30px';
       const ok = !it.x;
       const bx = h('div', 'abs', '<svg width="90" height="90" viewBox="0 0 90 90"><rect x="4" y="4" width="82" height="82" rx="24" fill="' + (ok ? 'var(--good)' : 'var(--bad)') + '"/>' + (ok ? '<path pathLength="1" d="M24 47 L39 61 L67 30" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:1 1"/>' : '<path pathLength="1" d="M28 28 L62 62 M62 28 L28 62" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" style="stroke-dasharray:1 1"/>') + '</svg>', row);
       bx.style.cssText = 'position:relative;flex:none;width:90px;height:90px';
       const tx = h('div', 'tx disp', R.rich(it.t), row); tx.style.cssText = 'position:relative;font-size:50px' + (it.x ? ';color:var(--mute)' : '');
-      fit(tx, 640, rh - 40, 54, 30);
+      fit(tx, 580, rh - 40, 54, 30);
       const t = T(ctx, it.at, ctx.L(0, i / n));
       // the rows are there when the screen arrives (dim); each one lights up and gets its mark on the voice
       ctx.anim(row, i % 2 ? 'slideL' : 'slideR', ctx.t0 + 0.06 + i * 0.08, { amt: -200, gain: 0.3, sfx: i ? null : undefined });
@@ -194,7 +194,7 @@
   V.cards = (ctx, p) => {
     const st = ctx.stage();
     const items = p.items, n = items.length;
-    const els = items.map((it) => { const d = h('div', 'abs card', '<div class="ico" style="flex:none;width:110px;height:110px;border-radius:32px;background:var(--bg2);color:var(--acc)">' + R.icon(it.ic || 'sparkles') + '</div><div><div class="tx disp" style="position:relative;font-size:50px">' + R.rich(it.t) + '</div>' + (it.s ? '<div class="tx small" style="position:relative;margin-top:8px">' + R.rich(it.s) + '</div>' : '') + '</div>', st); place(d, 20, 0, 820); d.style.cssText += ';display:flex;align-items:center;gap:28px;padding:28px 34px'; return d; });
+    const els = items.map((it) => { const d = h('div', 'abs card', '<div class="ico" style="flex:none;width:110px;height:110px;border-radius:32px;background:var(--bg2);color:var(--acc)">' + R.icon(it.ic || 'sparkles') + '</div><div><div class="tx disp" style="position:relative;font-size:50px">' + R.rich(it.t) + '</div>' + (it.s ? '<div class="tx small" style="position:relative;margin-top:8px">' + R.rich(it.s) + '</div>' : '') + '</div>', st); place(d, 50, 0, 760); d.style.cssText += ';display:flex;align-items:center;gap:28px;padding:28px 34px'; return d; });
     const hs = els.map((e) => e.offsetHeight), sum = hs.reduce((a, b) => a + b, 0) + 28 * (n - 1);
     let y = (900 - sum) / 2 - 20; els.forEach((e, i) => { e.style.top = y + 'px'; y += hs[i] + 28; });
     els.forEach((e, i) => ctx.anim(e, i % 2 ? 'slideL' : 'slideR', T(ctx, items[i].at, ctx.L(0, i / n)), { amt: -260 }));
