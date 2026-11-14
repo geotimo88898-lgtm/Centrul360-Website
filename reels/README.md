@@ -359,7 +359,10 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
   scrie vocii) și se aplică textului trimis la voce; stilul înregistrării cere același lucru; după fiecare înregistrare,
   ascultătorul e întrebat cum a sunat fiecare termen (`"pronounce_check"`) și se reface (cel mult 3 încercări, cu
   scrierile din `"pronounce_variants"`, ex. „hifu”, „hí-fu”, „hi fu”) până sună românește. Pe ecran și în verificarea
-  cuvânt cu cuvânt rămâne scrierea obișnuită (HIFU, SMAS).
+  cuvânt cu cuvânt rămâne scrierea obișnuită (HIFU, SMAS). Răspunsul ascultătorului la „hi-fu sau hai-fu?” se schimbă
+  cu muzica și cu felul întrebării, așa că vocala se și măsoară: `python3 vowel.py <fișierul replicii> [start] [durată]`
+  urmărește formanții: „i” românesc stă închis (F1 ~250-350 Hz, F2 peste ~2500), „ai” englezesc pornește deschis
+  (F1 ~700-1000 Hz) și urcă.
 - **Citești tot scriptul cu voce tare, ca o singură explicație**: fiecare propoziție trebuie să decurgă din cea de
   dinainte; dacă o replică pare un salt, o rescrii sau schimbi ordinea.
 - **Firesc, ca vorbit**: mici legături („Cu anii”, „De aceea”, „Un lucru bun de știut”), pauze firești. Niciodată
