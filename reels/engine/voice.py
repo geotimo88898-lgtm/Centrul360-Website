@@ -87,6 +87,11 @@ def main_v2(rid, S):
         timing[key] = {'text': text, 'dur': round(V.dur(path), 3), 'file': os.path.relpath(path, base), 'role': role}
         if not m.get('ok'): bad.append((key, text, m.get('heard'), m.get('cps')))
     json.dump(timing, open(os.path.join(base, 'timing.json'), 'w'), ensure_ascii=False, indent=0)
+    # a take much longer than its text can hold another line too (a scene split in the wrong place, 14.11: line 4 began
+    # with line 3): listen to it (python3 listen.py) and trim or redo it before rendering
+    for key, v in timing.items():
+        exp = len(v['text']) / 15.5
+        if v['dur'] > 1.45 * exp + 0.4: print(f'  SUSPICIOUS {key}: {v["dur"]:.1f} s for {len(v["text"])} characters (expected ~{exp:.1f} s): another line inside the take?')
     print(f'{rid}: {len(L)} lines, {sum(v["dur"] for v in timing.values()):.1f} s of voice ({V.VOICE}, {V.MODEL}), {len(bad)} not exact')
     for b in bad: print('  NOT EXACT', b[0], '|', b[1], '| heard:', b[2], '| cps', b[3])
     # the pace (14.11, „vocea e cam încetă”): every take is sped up after the cache (atempo keeps the pitch); the default

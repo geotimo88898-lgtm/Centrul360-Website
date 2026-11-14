@@ -149,7 +149,8 @@
       "at": "piele"
      }
     ],
-    "lead": 0
+    "lead": 0,
+    "top": 190
    }
   }
  ],
@@ -165,8 +166,7 @@
     "at": [
      0,
      0.25
-    ],
-    "label": "Telefonul la nivelul ochilor"
+    ]
    },
    "nuki": {
     "pose": "aprobare",
