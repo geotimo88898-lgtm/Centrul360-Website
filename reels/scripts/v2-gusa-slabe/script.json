@@ -4,80 +4,66 @@
  "rubric": "Ce se întâmplă de fapt",
  "theme": "brand-teal",
  "music": "Free (Ultra Naté), piesa aleasă de proprietar",
- "topic": "De ce unele femei slabe au totuși gușă",
+ "topic": "Ce se află de fapt sub bărbie, la o femeie slabă cu gușă",
  "topicTag": "hifu-gusa",
- "hookType": "intrebare",
- "title": "De ce unele femei slabe au totuși gușă?",
- "sources": "v2/src/gusa-barbie-dubla.html (mix de grăsime localizată și piele relaxată, genetică, vârstă, uneori indiferent de greutate; sportul singur rareori rezolvă zona; nu e vina ta; HIFU, RF Sculpt și radiofrecvență lucrează pe grăsimea localizată și pe laxitatea pielii, fără operație); reels/topics.json t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează în poze)",
- "post": "De ce unele femei slabe au totuși gușă? Nu e vorba doar de kilograme. #gusa #barbiedubla #ingrijire #timisoara #arad",
+ "hookType": "afirmatie",
+ "title": "La multe femei slabe, gușa nu ține de kilograme",
+ "sources": "v2/src/gusa-barbie-dubla.html (gușa: un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității, uneori indiferent de greutate; apare și fără kilograme în plus; sportul singur rareori rezolvă zona; nu e vina ta; HIFU: puncte de energie în stratul profund (SMAS), țesutul se contractă și se ridică, colagen nou, efect maxim la 8-12 săptămâni); reels/topics.json t01 (apare și la persoane slabe), t02 (SMAS, colagen nou, 8-12 săptămâni), t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează)",
+ "post": "La multe femei slabe, gușa nu ține de kilograme. Ce se află de fapt sub bărbie, pe scurt. #gusa #barbiedubla #hifu #timisoara #arad",
  "hook": {
-  "say": "De ce unele femei *slabe* au totuși gușă?",
-  "q": "De ce unele femei slabe au totuși gușă?",
+  "say": "La multe femei slabe, gușa nu ține de *kilograme*.",
   "visual": {
-   "type": "strokeq",
-   "formAt": [
-    0,
-    0,
-    0.05
+   "type": "gauge",
+   "zones": [
+    {
+     "t": "puțin",
+     "c": "acc2"
+    },
+    {
+     "t": "normal",
+     "c": "acc"
+    },
+    {
+     "t": "mult",
+     "c": "rose2"
+    }
    ],
-   "formDur": 1.0,
-   "size": 100
+   "keys": [
+    [
+     0,
+     0.25,
+     0.92
+    ],
+    [
+     0,
+     0.75,
+     0.5
+    ]
+   ],
+   "label": "Cântarul zice: *normal*"
   }
  },
  "beats": [
   {
-   "say": "Știu, și eu credeam că e doar de la *kilograme*.",
-   "visual": {
-    "type": "gauge",
-    "zones": [
-     {
-      "t": "puțin",
-      "c": "acc2"
-     },
-     {
-      "t": "normal",
-      "c": "acc"
-     },
-     {
-      "t": "mult",
-      "c": "rose2"
-     }
-    ],
-    "keys": [
-     [
-      0,
-      0.25,
-      0.92
-     ],
-     [
-      0,
-      0.75,
-      0.5
-     ]
-    ],
-    "label": "Cântarul zice: *normal*"
-   },
-   "nuki": {
-    "pose": "surprins",
-    "at": "peek-l",
-    "y": 1010,
-    "react": "wow"
-   }
-  },
-  {
-   "say": "Dar sub bărbie stă, de multe ori, un mic depozit de *grăsime*.",
+   "say": "Sub bărbie stă un mic depozit de grăsime, pe care sportul singur îl rezolvă *rareori*.",
    "visual": {
     "type": "zoom",
     "label": "sub bărbie",
     "innerLabel": "grăsime localizată",
     "diveAt": [
      0,
-     0.4
+     0.45
     ]
+   },
+   "nuki": {
+    "pose": "gandeste",
+    "at": "peek-l",
+    "y": 1010,
+    "react": "nod"
    }
   },
   {
-   "say": "Iar pielea de deasupra, cu anii, se mai *relaxează*.",
+   "say": "Cu anii, pielea de deasupra își pierde fermitatea și îl lasă să se *vadă*.",
    "visual": {
     "type": "skin",
     "seq": [
@@ -108,7 +94,7 @@
    }
   },
   {
-   "say": "Apoi e *genetica*, pe care n-o alegem.",
+   "say": "Genetica are și ea un rol *mare*.",
    "visual": {
     "type": "panel",
     "name": "dna",
@@ -124,16 +110,7 @@
  ],
  "payoff": [
   {
-   "say": "Deci gușa nu vine neapărat din *kilograme*.",
-   "visual": {
-    "type": "type-pop",
-    "size": 132,
-    "strike": true,
-    "strikeDt": 0.35
-   }
-  },
-  {
-   "say": "E un mix: puțină grăsime, piele mai relaxată și *genetică*.",
+   "say": "Gușa e deci un amestec de grăsime și piele relaxată, nu un semn de kilograme în *plus*.",
    "visual": {
     "type": "race",
     "payoff": true,
@@ -197,19 +174,7 @@
  ],
  "resolve": [
   {
-   "say": "Și atunci, ce faci?",
-   "visual": {
-    "type": "type-cascade",
-    "size": 150
-   },
-   "nuki": {
-    "pose": "aprobare",
-    "at": "bl",
-    "react": "nod"
-   }
-  },
-  {
-   "say": "Ține telefonul la nivelul ochilor: capul aplecat nu face gușă, dar o scoate în *evidență*.",
+   "say": "Capul aplecat spre telefon nu face gușă, dar o scoate în *evidență*.",
    "visual": {
     "type": "tilt",
     "from": 32,
@@ -220,10 +185,15 @@
      0.25
     ],
     "label": "Telefonul la nivelul ochilor"
+   },
+   "nuki": {
+    "pose": "aprobare",
+    "at": "bl",
+    "react": "nod"
    }
   },
   {
-   "say": "Iar pentru piele relaxată și un mic depozit, HIFU și radiofrecvența lucrează exact pe straturile astea, fără *operație*.",
+   "say": "HIFU lucrează aici cu puncte mici de energie în stratul profund de sub piele, numit *SMAS*.",
    "visual": {
     "type": "beam",
     "layers": [
@@ -235,26 +205,50 @@
      [
       "grasime",
       "GRĂSIME",
-      120
+      96
+     ],
+     [
+      "smas",
+      "SMAS",
+      34
      ],
      [
       "muschi",
       "MUȘCHI",
-      84
+      70
      ]
     ],
-    "target": 1,
-    "rf": 0,
+    "target": 2,
+    "rf": false,
+    "at": {
+     "skin": [
+      0,
+      0
+     ],
+     "energy": [
+      0,
+      0.1
+     ],
+     "tilt": "profund",
+     "fat": "SMAS",
+     "close": [
+      1,
+      0
+     ]
+    },
     "chips": [
      {
-      "t": "HIFU · radiofrecvență",
+      "t": "HIFU",
       "ic": "zap",
-      "at": "HIFU"
+      "at": [
+       0,
+       0.1
+      ]
      },
      {
-      "t": "Fără operație",
-      "ic": "check",
-      "at": "opera"
+      "t": "Stratul profund · SMAS",
+      "ic": "target",
+      "at": "SMAS"
      }
     ]
    },
@@ -265,10 +259,45 @@
     "react": "point",
     "flip": true
    }
+  },
+  {
+   "say": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la 8-12 *săptămâni*.",
+   "tts": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la opt până la douăsprezece săptămâni.",
+   "visual": {
+    "type": "timeline",
+    "y": 430,
+    "items": [
+     {
+      "t": "Țesutul se strânge",
+      "ic": "minimize-2",
+      "at": [
+       0,
+       0.05
+      ]
+     },
+     {
+      "t": "Colagen nou",
+      "ic": "sparkles",
+      "at": [
+       0,
+       0.36
+      ]
+     },
+     {
+      "t": "*8-12* săptămâni",
+      "s": "efectul maxim",
+      "ic": "calendar-check",
+      "at": [
+       0,
+       0.7
+      ]
+     }
+    ]
+   }
   }
  ],
  "outro": {
-  "say": "Deci nu e vina ta. Și acum, când revine întrebarea, știi *răspunsul*.",
+  "say": "Deci gușa nu e vina nimănui, iar acum știi ce se află sub *bărbie*.",
   "cta": "loop",
   "visual": {
    "type": "strokeq",
@@ -279,7 +308,8 @@
     0.05
    ],
    "formDur": 1.2,
-   "q": false
+   "q": false,
+   "tr": "morph-key"
   }
  },
  "end": {

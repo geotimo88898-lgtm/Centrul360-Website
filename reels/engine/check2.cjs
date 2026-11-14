@@ -1,5 +1,5 @@
 // The v2 checks (check.cjs calls this for "v": 2 scripts). Exit 2 when something must be fixed.
-//  - the story: a hook question on screen and said by 3 s, the first frame already moving, a sound hit on frames 0-3,
+//  - the story: a hook statement on screen and said by 3 s (no questions in spoken lines, 14.11), the first frame already moving, a sound hit on frames 0-3,
 //    the payoff in the last 25 % of the story (the end segment, a CTA, is not story), a visual change at least every
 //    2.5 s, every spoken line bound to a visual (a new shot or a declared step) with something that moves on it
 //  - the words: no ad-speak, no price / offer / booking, no cringe phrases or folk idioms, no long dashes, diacritics
@@ -20,7 +20,24 @@ module.exports = async (id, dir, S) => {
   const ad = words.match(AD); if (ad) problems.push('sounds like an ad / forbidden word: „' + ad[0] + '”');
   const cr = words.match(CRINGE); if (cr) problems.push('cringe phrase or folk idiom: „' + cr[0] + '” (README „Vocea”)');
   const bn = JSON.stringify(S).replace(/\\u[0-9a-f]{4}/g, '').match(BANNED); if (bn) problems.push('the word „' + bn[0] + '” (never „mit” or the „Mit sau adevăr” format)');
-  if (!S.resolve || [].concat(S.resolve).length < 2) problems.push('no resolution beat: "resolve" needs 2-3 lines („Și atunci, ce faci?” + practical, real things)');
+  if (!S.resolve || [].concat(S.resolve).length < 2) problems.push('no resolution beat: "resolve" needs 2-3 lines (practical, real things, said in sentences)');
+  // the writing (the owner, 14.11: „nu mai pune întrebări doar așa la care și răspunzi după, și nu spune doar «fără
+  // recuperare, fără ace», vorbește în propoziții … fă un video educațional chiar calitativ”)
+  const VERBS = new Set('e este sunt era erau fi fie fost are au ai am a ați avem aveți poate pot poți putem se să vine vin vii face faci fac facem ține țin stă stau rămâne rămân apare apar ajunge ajută uite vezi vedem vede știi știu știe merge merită contează trec trece pleacă elimină distruge găsești găsește spune spun arată înseamnă simți simte ia iei dă dau lasă lași strânge formează pune pun folosește folosim lucrează alege alegem păstrează ține-l'.split(' '));
+  const VEND = ['ează', 'ește', 'ești', 'esc', 'ăm', 'ați', 'eze', 'ezi', 'ească', 'ind', 'ând', 'ăște', 'ăști', 'uiește'];
+  say.forEach((b, i) => {
+    const txt = [b.say, b.tts].filter(Boolean).join(' ').replace(/\*/g, '');
+    const nm = '„' + (b.say || '').replace(/\*/g, '').slice(0, 44) + '”';
+    if (/\?/.test(txt)) problems.push('a question in a spoken line (no rhetorical questions, no question hooks): ' + nm);
+    if (/!/.test(txt)) problems.push('an exclamation mark in a spoken line (calm and confident): ' + nm);
+    const fara = (txt.match(/(^|[^a-zăâîșț])f[ăa]r[ăa]\s+[a-zăâîșț]+/gi) || []).length;
+    if (fara >= 2) problems.push(fara + ' × „fără …” in one line (an ad-style list: say it in a sentence that explains): ' + nm);
+    txt.split(/[.!?;:]+(?=\s|$)/).map((x) => x.trim()).filter(Boolean).forEach((sent) => {
+      const toks = sent.toLowerCase().split(/[^a-zăâîșțşţ-]+/).filter(Boolean).flatMap((w) => w.split('-'));
+      if (toks.length && toks.length <= 6 && !toks.some((w) => VERBS.has(w) || VEND.some((e) => w.length > e.length + 1 && w.endsWith(e)))) problems.push('a fragment without a verb („' + sent.slice(0, 40) + '”): speak in full sentences');
+    });
+  });
+  if (S.hook && [].concat(S.hook)[0] && /\?/.test([].concat(S.hook)[0].q || '')) problems.push('the hook is a question: from 14.11 it is a precise statement (no "q" with "?")');
   if (!S.outro || !S.outro.visual) problems.push('no outro: a warm closing line with a resolving visual ("outro")');
   if (S.end && S.end.type === 'comment' && String(S.end.keyword || S.keyword || '360') !== '360') problems.push('a comment end always uses the keyword 360');
   if (S.brand) notes.push('the logo is on screen (brand: true): only where it is natural');
@@ -69,8 +86,7 @@ module.exports = async (id, dir, S) => {
   const ends = ['loop', 'comment', 'site', 'ask'];
   if (!S.end || !ends.includes(S.end.type)) problems.push('end.type must be one of ' + ends.join(', '));
   if (S.end && S.end.type === 'comment' && !(S.end.keyword || S.keyword)) problems.push('a comment end needs a keyword');
-  const h0 = [].concat(S.hook || [])[0] || {};
-  if (!h0.q || !/\?/.test(h0.q)) problems.push('the hook needs "q": the question it opens (with a "?")');
+  const h0 = [].concat(S.hook || [])[0] || {}; void h0;
   const srv = await start();
   const { b, p } = await open(chromium, srv, id);
   p.on('pageerror', (e) => problems.push('pageerror ' + e.message));
@@ -87,10 +103,10 @@ module.exports = async (id, dir, S) => {
   for (let t = 0; t <= 3.0 && qAt == null; t += 0.1) {
     const ok = await p.evaluate((t) => { window.seek(t); const vis = (e) => { let x = e; while (x && x !== document.body) { const c = getComputedStyle(x); if (c.display === 'none' || c.visibility === 'hidden' || +c.opacity < 0.5) return false; x = x.parentElement; } return true; };
       if ([...document.querySelectorAll('[data-q]')].some((d) => { const q = [...d.querySelectorAll('.w')]; return q.length && q.every(vis); })) return true;
-      const cap = document.getElementById('cap'); return +cap.style.opacity > 0.5 && /\?/.test(cap.textContent); }, t);
+      const cap = document.getElementById('cap'); return +cap.style.opacity > 0.5 && cap.textContent.trim().length > 0; }, t);
     if (ok) qAt = t;
   }
-  if (qAt == null) problems.push('the hook question is not on screen by 3 s');
+  if (qAt == null) problems.push('the hook line is not on screen by 3 s');
   const sig = async (t) => p.evaluate((t) => { window.seek(t); const out = []; document.querySelectorAll('.shot *, #bg *').forEach((e) => { if (e.offsetParent === null && e.tagName !== 'CANVAS') return; out.push(e.style.transform + '|' + e.style.opacity + '|' + (e.tagName === 'CANVAS' ? e.toDataURL().length : '')); }); return out.join(';'); }, t);
   if ((await sig(0)) === (await sig(1 / 30))) problems.push('frame 0 is still (the first frame must already move)');
   if (!F.cues.some((c) => c.t <= 0.1 && /impact|boom|shutter|glitch/.test(c.cat))) problems.push('no sound hit on frames 0-3');
@@ -147,7 +163,7 @@ module.exports = async (id, dir, S) => {
     out.forEach((o) => { if (!seen.has(o)) { seen.add(o); problems.push(t.toFixed(2) + 's ' + o); } });
   }
   const per = {}; F.cues.filter((c) => c.cat !== 'key').forEach((c) => { const k = Math.floor(c.t); per[k] = (per[k] || 0) + 1; });
-  const dens = Object.values(per); notes.push('sound events (before thinning): ' + (dens.reduce((a, x) => a + x, 0) / T).toFixed(1) + ' a second, max ' + Math.max(...dens) + '; longest still stretch ' + gap.toFixed(1) + ' s; hook question on screen at ' + (qAt == null ? '-' : qAt.toFixed(1)) + ' s');
+  const dens = Object.values(per); notes.push('sound events (before thinning): ' + (dens.reduce((a, x) => a + x, 0) / T).toFixed(1) + ' a second, max ' + Math.max(...dens) + '; longest still stretch ' + gap.toFixed(1) + ' s; hook line on screen at ' + (qAt == null ? '-' : qAt.toFixed(1)) + ' s');
   console.log(id + ' (v2, ' + S.theme + ', end ' + (S.end && S.end.type) + '): ' + T.toFixed(1) + ' s, ' + F.shots.length + ' shots, ' + F.beats.length + ' lines');
   notes.forEach((x) => console.log('  · ' + x));
   problems.forEach((x) => console.log('  ! ' + x));

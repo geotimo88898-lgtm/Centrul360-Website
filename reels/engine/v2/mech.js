@@ -85,6 +85,9 @@
       : [{ top: ['rgba(255,255,255,.95)', 'rgba(238,247,246,.9)'], front: ['rgba(230,245,243,.95)', 'rgba(214,239,236,.9)'], side: ['rgba(205,233,229,.95)', 'rgba(188,226,221,.9)'], edge: 'rgba(15,138,126,.5)', ink: '#0b7f74' },
         { top: ['#fff3ee', '#fbe3d9'], front: ['#f6cfc1', '#eab5a5'], side: ['#e2a593', '#cf8f7d'], edge: 'rgba(255,255,255,.95)', ink: 'rgba(59,28,20,.62)' },
         { top: ['#eef7f6', '#e3f3f1'], front: ['#d9efec', '#cbe8e4'], side: ['#c3e3df', '#b2dbd6'], edge: 'rgba(15,138,126,.35)', ink: 'rgba(11,127,116,.7)' }];
+    // the deep layer (SMAS): a thin band in the darker rose gold, between the fat and the muscle
+    const SMAS = { top: ['#f3cdbf', '#eab5a5'], front: ['#e2a593', '#cf8f7d'], side: ['#c98a79', '#b97b6b'], edge: 'rgba(255,255,255,.9)', ink: 'rgba(255,255,255,.95)' };
+    const palOf = (i) => { const k = LY[i][0]; return k === 'smas' ? SMAS : k === 'grasime' ? PAL[1] : k === 'muschi' ? PAL[2] : k === 'piele' ? PAL[0] : PAL[Math.min(i, 2)]; };
     const total = LY.reduce((a, l) => a + l[2], 0);
     // the chips under the stack, one at a time (centred)
     const chips = (p.chips || [{ t: 'HIFU · radiofrecvență', ic: 'zap', at: null, tt: tEn }, { t: 'Fără operație', ic: 'check', tt: tClose }]).map((c) => Object.assign({}, c, { tt: when(ctx, c.at, c.tt) }));
@@ -115,7 +118,7 @@
         if (q <= 0) continue;
         const dy = (1 - q) * 120;
         const lit = i === 0 ? calm((t - tSkin) / 0.4) * (1 - calm((t - tFat) / 0.4)) : i === target ? calm((t - tFat) / 0.4) * (1 - calm((t - tEn - 0.4) / 0.6) * 0.6) : 0;
-        const st0 = Object.assign({}, PAL[Math.min(i, 2)], { alpha: q, label: LY[i][1], labelX: i === 0 ? 0.26 : 0.5, glow: lit * 0.9 + (i === target ? 0.5 * calm((t - tTilt) / 0.5) * (1 - cl) : 0), glowColor: i === target ? '#ffffff' : (dk ? '#ffffff' : '#14a596') });
+        const st0 = Object.assign({}, palOf(i), { alpha: q, label: LY[i][1], labelX: i === 0 ? 0.26 : 0.5, glow: lit * 0.9 + (i === target ? 0.5 * calm((t - tTilt) / 0.5) * (1 - cl) : 0), glowColor: i === target ? '#ffffff' : (dk ? '#ffffff' : '#14a596') });
         box(g, P, { x0: -W, x1: W, y0: B[i].y0 + dy, y1: B[i].y1 + dy, z0: -D, z1: D }, st0);
         // radiofrecvență: a warm glow spreading inside the skin layer
         if (i === rf && p.rf !== false) { const w = calm((t - tEn - 0.5) / 0.9) * (1 - cl * 0.7); if (w > 0) { g.save(); g.globalAlpha = 0.55 * w; const c = P(0, (B[i].y0 + B[i].y1) / 2, 0); const gr = g.createRadialGradient(c[0], c[1], 0, c[0], c[1], 320); gr.addColorStop(0, 'rgba(251,227,217,.95)'); gr.addColorStop(1, 'rgba(251,227,217,0)'); g.fillStyle = gr; poly(g, [P(-W, B[i].y1, -D), P(W, B[i].y1, -D), P(W, B[i].y1, D), P(W, B[i].y0, D), P(-W, B[i].y0, D), P(-W, B[i].y1, D)]); g.fill(); g.restore(); } }
@@ -156,7 +159,7 @@
     const cv = h('canvas', null, null, st); cv.width = 860; cv.height = 900; cv.style.cssText = 'position:absolute;left:0;top:0;width:860px;height:900px';
     const g = cv.getContext('2d');
     const at = (k, re, f) => (p.at && p.at[k] != null ? when(ctx, p.at[k]) : re ? ctx.wordAt(0, re, -0.05) : ctx.L(0, f));
-    const tIn = ctx.t0 + 0.02, tApp = at('app', 'Liposonix'), tCone = tApp + 0.35, tDepth = at('depth', 'doar'), tDis = tDepth + 0.25;
+    const tIn = ctx.t0 + 0.02, tApp = at('app', 'Liposonix'), tCone = tApp + 0.35, tDepth = at('depth', 'doar'), tDis = p.at && p.at.dissolve != null ? when(ctx, p.at.dissolve) : tDepth + 0.25;
     const W = 270, D = 170, r = 23, sp = 50;
     const cells = [];
     [[-12, 0], [28, 0.5]].forEach(([yy, off], L) => { for (let z = -D + r + 4; z <= D - r - 4; z += sp * 0.866) for (let x = -W + r + 4 + ((Math.round((z + D) / (sp * 0.866)) % 2) * sp / 2) + off * 12; x <= W - r - 4; x += sp) {

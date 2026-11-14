@@ -27,8 +27,8 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
   browserul finalului `site`).
 - **Nuki, discret, în 2-4 cadre**: se uită dintr-un colț, reacționează (surprins, aprobă din cap, arată spre elementul
   principal), mic, luminat ca tema, intră cu un mic bounce; niciodată peste elementul principal sau peste subtitrări.
-- **Finalul nu se oprește brusc**: după răspuns vine rezolvarea („Și atunci, ce faci?” + 2-3 lucruri practice, reale,
-  utile; dacă se potrivește, variantele non-invazive spuse firesc, fără preț și fără promisiuni), apoi o replică
+- **Finalul nu se oprește brusc**: după răspuns vine rezolvarea (2-3 lucruri practice, reale, utile, spuse în
+  propoziții, fără întrebarea retorică „Și atunci, ce faci?”, scoasă pe 14.11; dacă se potrivește, variantele non-invazive spuse firesc, fără preț și fără promisiuni), apoi o replică
   caldă de încheiere cu un vizual care rezolvă „?”-ul de la început (devine bifă sau inimă) și un acord muzical final,
   apoi tipul de final. Mereu o formă de CTA, potrivită video-ului: blând (rezolvarea însăși, „uite cum arată pe
   centrul360.com”, „salvează-l”), de conversație („Scrie 360 și-ți spun ce s-ar potrivi la tine”) sau, la buclă, o
@@ -38,7 +38,7 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
   asta). Aceeași idee se împachetează captivant: „Ce nu-ți spune nimeni despre…”, „Unde se duce, de fapt, …”,
   „Experimentul” (o simulare spusă clar, fără rezultate inventate), un cârlig contraintuitiv, un POV, o cursă.
 - **Cazurile** urmează același stil: rezultatul real se vede devreme (o privire la „după”, apoi înainte → după, cu o
-  lovitură sonoră), întrebarea din capul privitorului devine „cum a reușit?”, povestea curge spre soluție (ce o
+  lovitură sonoră), cu o propoziție clară despre ce s-a întâmplat (din 14.11, nu o întrebare), povestea curge spre soluție (ce o
   frământa, spus general; ce s-a făcut și de ce merge, desenat), apoi dezvăluirea completă, rezolvarea și finalul.
 - **Muzica** (13.11, înlocuită pe 14.11 de „Muzica și postarea”): originală (Lyria), cu energia muzicii care merge acum (house anilor '90, UK garage, nu-disco, afro
   house, lo-fi house), niciodată o melodie, un text sau un titlu copiat; fiecare reel altă piesă (`musicClip`);
@@ -190,11 +190,73 @@ operație” · „grijă” · „precizie” · „Timișoara” · „Arad”
 ce spune site-ul. Același tip `"kind": "brand"` ca (ii), cu un set de scene `word` (cuvânt pe bătaie, fundal alternant,
 tastare) sincronizat pe bătăile piesei proprietarului (125 BPM: o bătaie la 0,48 s).
 
+**(vi) Suspansul minimalist** (instagram.com/reel/DftJwhfJ4_3, trimis 14.11). Cum arată: aproape 30 s cu un singur
+obiect hipnotic, o picătură de cerneală neagră lucioasă care se formează încet la vârful unei pipete, pe un fundal
+alb-cald, cu o vignetă fină. Sus, în stânga, un cronometru mic numără secundele reale privite. În centru, un contor
+mare, cu litere subțiri, urcă încet, cu tensiune. Sub el, câte o replică pe rând, calmă și conștientă de sine („Ai
+privit o picătură care nu cade.”, apoi picătura devine un contur punctat: „Nici n-a fost reală.”, „Și încă aștepți.”),
+apoi „Acum imaginează-ți că era produsul tău.”: aceeași picătură într-o machetă de telefon, ca o postare, cu replica
+brandului; la final picătura cade într-o stropire, tăietură pe negru, cardul cu logo-ul („Ai privit toate cele 24 de
+secunde.”) și domeniul. Aproape nimic nu se mișcă în afară de picătură, cifre și text. La noi: o picătură de ser care
+se formează la vârful unei pipete de sticlă sau la gâtul uneia din fiolele reale ale clinicii (`brand_asset/g-tm-fiole.webp`),
+pe fundal alb, transparentă sau turcoaz, cu o sclipire rose gold. Cronometrul numără secundele reale (cinstit);
+orice alt contor e real sau clar simbolic, niciodată o măsurătoare inventată („tensiune superficială” cu procente
+false nu merge pentru o clinică). Replicile, în română, calme și istețe, niciodată de vânzare, despre atenție și
+răbdare (de ex. rezultatele care vin treptat, în 6-8 săptămâni). Un final blând spre site sau „360”, logo-ul doar la
+sfârșit. Aceleași reguli ca filmele de brand (`"kind": "brand"`): ocazional, fără voce (sau o singură replică foarte
+încet), piesa proprietarului.
+
+**(vii) Lansarea** (instagram.com/reel/DeO1Rh7x5Qm, trimis 14.11; referința e în 16:9, la noi 9:16). Cum arată: un film
+de lansare calm și premium, de la problemă la soluție, fără voce, cam 20 s: câmpuri de gradient difuze, ca o auroră,
+care trec din deschis în închis și apoi în viu; cărți 3D stivuite (notițe de hârtie și o carte de sticlă cu grilă) care se
+rotesc încet, lângă un text subțire, italic, pe două rânduri, al doilea în culoarea de accent („Too many notes. / Too
+many ideas.”); un laptop pe birou, realist, cu o întrebare pe ecran și cuvinte uriașe, fantomă, în spate; cuvinte care
+ies pe rând din blur („Finding what you need / shouldn't feel like a chore.”); un moment întunecat („meet” → numele);
+interfața produsului, un panou de sticlă care trece din blur în clar; un ultim cuvânt care se rotește („Capture your
+ideas / thoughts / creativity”); „Everything connected”, cu al doilea cuvânt mai sus; „All With” care se transformă în
+logo. La noi: același arc în 9:16 și în paleta noastră, din alb în turcoaz, turcoazul adânc #0b7f74 pentru momentul
+întunecat, rose gold doar pe un singur accent. Cărțile stivuite sunt lucruri reale: o poză din clinică, o carte
+înainte/după din catalog cu linia despre acordul clientei, o carte în stilul ofertelor de pe site. Problema, calmă și
+adevărată („Prea multe diete. / Prea multe promisiuni.”); echivalentul lui „chore” („Să afli ce ți se potrivește / n-ar
+trebui să fie complicat.”); momentul întunecat „Cunoaște” → „Centrul360.” (sau numele unui tratament); dezvăluirea din
+blur în clar pe o pagină reală a site-ului (`site.cjs`); cuvântul care se rotește („Grijă pentru corp / față / piele”);
+finalul „Totul” → „într-un singur loc.”, care se transformă în logo. Fără întrebări în text (regula din 14.11), doar
+afirmații adevărate de pe site. Aceeași familie ocazională `"kind": "brand"`; se combină bine cu (ii) și (v).
+
+**Combinații** (principiul proprietarului din 14.11: „poți să le și combini una cu alta, creativitatea e limita, iar în
+cazul nostru nu cred că avem limite”). Cele șapte formate sunt piese de construcție, nu șabloane. Un reel le poate
+amesteca: un reel data-viz cu „chrome” al cărui răspuns e un moment de erou al aparatului; un manifest tipografic care
+se termină cu picătura suspansului minimalist; un reel educațional care începe cu picătura și apoi explică; un film de
+brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă ca o semnătură nouă. Regulile fixe rămân:
+culorile brandului, totul centrat, super clean, doar fapte reale, niciun logo permanent în afara filmelor de brand,
+muzica la nivel constant, cele două fișiere.
+
 ## Vocea (cum vorbim; regula proprietarului, 12.11)
 Vocea e a unei femei din România, de vreo 30 de ani, deșteaptă și caldă, care îi povestește ceva interesant unei
 prietene, față în față. Carisma vine din claritate, ritm, un dram de umor și surpriză, nu din cuvinte mari.
-- **O conversație, nu o reclamă.** Fiecare replică sună ca vorbită: întrebări înapoi („Știi zona aia…?”), mici
-  reacții („Știu, și eu credeam asta”), pauze firești. Niciodată slogan, niciodată listă citită cu voce tare.
+- **Un video educațional calitativ, nu o reclamă ieftină** (regula proprietarului din 14.11, după a treia
+  previzualizare: „nu mai pune întrebări doar așa la care și răspunzi după, și nu spune doar «fără recuperare, fără
+  ace», vorbește în propoziții”). De acum:
+  1. **Fără întrebări retorice** la care vocea răspunde singură („Și atunci, ce faci?”, „Și dacă te regăsești?”) și
+     fără cârlige-întrebare. Cârligul e o afirmație precisă și surprinzătoare, care te face să vrei să înțelegi („La
+     multe femei slabe, gușa nu ține de kilograme.”); la un caz, o propoziție clară despre ce s-a întâmplat în cazul
+     acela. `check2.cjs` refuză orice „?” într-o replică spusă.
+  2. **Fără liste de fragmente ca în reclame** („fără bisturiu, fără recuperare”, „fără ace, fără operație”). Vorbim
+     în propoziții întregi, firești, care explică: „Ultrasunetele lucrează doar în stratul de grăsime, așa că pielea de
+     deasupra rămâne neatinsă și te întorci imediat la ce aveai de făcut.” `check2.cjs` refuză două sau mai multe
+     „fără …” într-o replică și propozițiile scurte fără verb.
+  3. **Învățăm un singur lucru, bine**: ce se întâmplă de fapt sub bărbie (depozitul de grăsime, pielea care își
+     pierde fermitatea, genetica, postura) sau cum distrug ultrasunetele focalizate celulele de grăsime și cum le
+     elimină corpul în săptămânile următoare. Cuvintele precise, dar simple, pe care un medic bun le-ar folosi cu o
+     prietenă; un detaliu concret pe care lumea nu-l știe; calm și sigur pe ce spune. Fără cuvinte de hype, fără
+     „incredibil”, fără semne de exclamare (refuzate în `check2.cjs`).
+  4. **Clinica apare doar ca ultim pas firesc** (site-ul sau „360” în comentarii), o singură dată, încet.
+  5. **Doar fapte din surse**: `topics.json`, paginile site-ului (`v2/src/`) și catalogul. Când o replică are nevoie de
+     un fapt pe care nu-l avem (de ex. cât durează eliminarea celulelor), folosim doar ce spune site-ul (6-8
+     săptămâni); dacă nici site-ul nu-l are, îl scriem ca întrebare pentru proprietar, nu-l inventăm.
+  6. **Textul spus se aprobă înainte de voce și randare**: se trimite replică cu replică, apoi se înregistrează.
+- **Firesc, ca vorbit**: mici legături („Cu anii”, „De aceea”, „Un lucru bun de știut”), pauze firești. Niciodată
+  slogan, niciodată listă citită cu voce tare.
 - **Umorul** vine din observații reale (telefonul, „sună logic, nu?”): cel mult o glumă ușoară pe reel, restul e
   conținut solid. Fără glume forțate, fără meme răsuflate.
 - **Fără** expresii populare de umplutură (le-am încercat și sună a parodie: „cai verzi pe pereți”, „bați apa-n
@@ -213,24 +275,25 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
 ```json
 { "v": 2, "id": "v2-exemplu", "rubric": "Unde se duce, de fapt", "theme": "inklime", "music": "house90", "musicClip": "house9001",
   "topic": "…", "topicTag": "liposonix-abdomen", "hookType": "intrebare", "sources": "de unde vin faptele", "post": "…",
-  "hook":   { "say": "Asta topește *burtica*?", "q": "…?", "visual": { "type": "counter", "…": "…" } },
+  "hook":   { "say": "O afirmație precisă, care te face să vrei să înțelegi.", "visual": { "type": "counter", "…": "…" } },
   "beats":  [ { "say": "…", "visual": { "type": "skin", "…": "…" } },
               { "say": "…", "step": "ce se schimbă în aceeași scenă" } ],
   "payoff": [ { "say": "…", "visual": { "type": "dissolve", "…": "…" } } ],
-  "resolve": [ { "say": "Și atunci, ce faci?", "visual": { "…": "…" } }, { "say": "un lucru practic, real", "visual": { "…": "…" } } ],
+  "resolve": [ { "say": "un lucru practic, real, spus în propoziție", "visual": { "…": "…" } }, { "say": "încă unul", "visual": { "…": "…" } } ],
   "outro":  { "say": "o încheiere caldă", "cta": "soft | talk | loop", "visual": { "type": "qmark", "to": "heart", "q": false } },
   "end":    { "type": "loop | comment | site | ask", "say": "…", "cta": "…", "…": "…" } }
 ```
 - **Fiecare replică** (`say`; `tts` dacă se citește altfel, `cap` dacă subtitrarea e altfel; `*cuvânt*` = accent,
   animat în subtitrare și în textul cinetic) are fie `visual` (o scenă nouă), fie `step` (o schimbare a scenei
   curente: un pas din `seq`, o piesă, un cip). `pause`/`pre`: secunde în plus după/înainte.
-- **hook**: 0-3 s, cu `q` (întrebarea care deschide bucla). Primul cadru e deja în mișcare (scena cârligului începe
+- **hook**: 0-3 s, o afirmație (din 14.11 fără „?”; `q` nu mai e cerut). Primul cadru e deja în mișcare (scena cârligului începe
   cu 0,3 s înainte), lovitură sonoră pe cadrul 0.
 - **beats**: o mini-dezvăluire la 3-5 s, o schimbare vizuală cel mult la 2,5 s.
 - **payoff**: răspunsul. Înainte, o pauză firească (0,5 s) și un riser; pe dezvăluire (`revealAt` al pozei,
   `snapAt` al puzzle-ului, `breakAt` al geamului) impact + sub drop + strălucire.
-- **resolve**: 2-3 replici după răspuns („Și atunci, ce faci?” + lucruri practice), fiecare cu ecranul ei.
-- **outro**: încheierea caldă, cu `cta` și un vizual care rezolvă „?”-ul (`qmark` cu `to`: `check` sau `heart`).
+- **resolve**: 2-3 replici după răspuns, lucruri practice spuse în propoziții (fără întrebarea retorică), fiecare cu
+  ecranul ei.
+- **outro**: încheierea caldă, cu `cta` și un vizual care încheie (`strokeq` cu `"glyph": "heart"` sau `"check"`).
 - O replică poate avea `nuki`: `{pose, at: peek-l | peek-b | bl | br | tl | tr, react: nod | bounce | point | wow, flip}`.
 - **end**: `loop` (ultimul cadru curge în primul; fără voce), `comment` (cuvântul 360 tastat în bara de comentariu,
   trimis, apare comentariul), `site` (`pages`: secțiuni reale, capturate cu `node site.cjs <id>`), `ask` (`q`,

@@ -87,19 +87,24 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
 ## Cum scrii un reel (v2, din 12.11)
 Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonul: `README.md` („Vocea”): o femeie care
 îi povestește ceva unei prietene, nu o reclamă. Pe scurt:
-1. **Întrebarea întâi.** Alegi întrebarea pe care și-o pune privitorul și la care răspunzi abia la final
-   („De ce unele femei slabe au totuși gușă?”). Ea e `hook.q`, se spune și se vede în primele 3 secunde, peste o
-   scenă care se mișcă din primul cadru (particule, un contor care pornește, poza reală pe jumătate acoperită).
-2. **Replici scurte, fiecare cu scena ei.** O replică = o idee = un vizual (`visual`) sau un pas al scenei curente
-   (`step`). Alegi scena care arată ce spui, nu una decorativă: un depozit de grăsime → `skin` cu `focus`; „din tot
-   corpul” → `energy`; o comparație → `split`; o credință greșită → `dissolve` (niciodată cuvântul „mit” sau o
-   ștampilă). Nu repeta aceeași scenă de două ori
-   la rând; schimbă tranziția și camera (motorul le rotește din temă dacă nu le scrii).
-3. **Mini-dezvăluiri la 3-5 secunde**, tensiune spre răspuns: „Stai, că e mai interesant”, „Bun, acum să vedem”.
+1. **O afirmație precisă întâi** (din 14.11, nu o întrebare). Cârligul spune un fapt surprinzător, care te face să
+   vrei să înțelegi („La multe femei slabe, gușa nu ține de kilograme.”); la un caz, o propoziție clară despre ce s-a
+   întâmplat. Se spune în primele 3 secunde, peste o scenă care se mișcă din primul cadru. Nicio replică nu are „?”.
+2. **Propoziții întregi, fiecare cu scena ei.** O replică = o idee = un vizual (`visual`) sau un pas al scenei curente
+   (`step`). Explici, nu enumeri: niciodată „fără bisturiu, fără recuperare”, ci de ce și ce înseamnă pentru ea.
+   Alegi scena care arată ce spui, nu una decorativă: un depozit de grăsime → `zoom`; pielea care își pierde
+   fermitatea → `skin`; energia în stratul profund → `beam`; celulele de grăsime → `cells`; o credință greșită →
+   `dissolve` (niciodată cuvântul „mit” sau o ștampilă). Nu repeta aceeași scenă de două ori la rând; schimbă
+   tranziția și camera (motorul le rotește din temă dacă nu le scrii). Un singur lucru învățat bine, cu un detaliu
+   concret pe care lumea nu-l știe, doar din surse (`topics.json`, site, catalog); ce lipsește din surse e o întrebare
+   pentru proprietar. Textul spus se trimite spre aprobare înainte de voce și randare.
+3. **Mini-dezvăluiri la 3-5 secunde**: fiecare replică aduce un lucru nou, legat firesc de cel dinainte („Cu anii”,
+   „De aceea”, „Un lucru bun de știut”), fără formule de suspans goale.
 4. **Răspunsul (payoff)** după 40 % din reel, cu o dezvăluire (poza, puzzle-ul care se îmbină, credința care se
-   destramă). Motorul pune pauza, riserul și impactul. Apoi **rezolvarea** („Și atunci, ce faci?” + 2-3 lucruri
-   practice, reale) și **încheierea** caldă, cu un CTA potrivit (`cta`: `soft`, `talk`, `loop`) și „?”-ul care se
-   rezolvă (bifă sau inimă). Niciodată un final care se oprește brusc. 30-45 s.
+   destramă). Motorul pune pauza, riserul și impactul. Apoi **rezolvarea** (2-3 lucruri
+   practice, reale) și **încheierea** caldă, cu un CTA potrivit (`cta`: `soft`, `talk`, `loop`) și un vizual care încheie
+   (inima sau bifa desenată). Clinica apare doar aici, ca ultim pas firesc, o singură dată, încet. Niciodată un final
+   care se oprește brusc. 30-45 s.
 4b. **Tranziții**: fiecare idee nouă pe un ecran nou (`visual`), cel mult un pas (`step`) în aceeași idee; motorul
    rotește tranzițiile temei (push, fly-through, zoom-element, pan, morph-key, whip…), niciodată aceeași de două ori.
 4c. **Nuki** în 2-4 replici (`nuki`), mic, într-un colț liber; brandul e el, nu logo-ul (care nu mai apare pe ecran).
@@ -143,8 +148,18 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    3D tactile), (ii) filmul de brand (tunel, sticlă, contoare cu cifre reale, cuvinte care se construiesc, logo la
    final), (iii) eroul aparatului (pozele reale ale aparatelor, cinematic), (iv) scheciul cu personaj 3D (încă de ales
    de proprietar între imagini Gemini animate 2.5D și video Veo), (v) manifestul tipografic (un cuvânt pe bătaie, fundal
-   alternant alb / turcoaz, un cuvânt rose gold, logo la final). Reels-urile deja aprobate nu se refac în aceste
-   stiluri; formatele sunt pentru materiale noi. Filmele de brand sunt ocazionale (cel mult unul pe săptămână, niciodată
+   alternant alb / turcoaz, un cuvânt rose gold, logo la final), (vi) suspansul minimalist (o picătură de ser care se formează la
+   vârful unei pipete sau la gâtul unei fiole reale, cronometrul secundelor reale privite, replici calme despre atenție
+   și răbdare, niciun contor cu măsurători inventate), (vii) lansarea (de la problemă la soluție, fără voce: aurora din alb
+   în turcoaz, cărți 3D stivuite din lucruri reale, un moment întunecat #0b7f74 „Cunoaște” → „Centrul360.”, o pagină
+   reală a site-ului din blur în clar, un cuvânt care se rotește, „Totul” → „într-un singur loc.” care devine logo).
+   Reels-urile deja aprobate nu se refac în aceste stiluri;
+   formatele sunt pentru materiale noi. **Combinații**: cele șapte formate sunt piese de construcție, nu șabloane
+   („poți să le și combini una cu alta, creativitatea e limita”): un data-viz al cărui răspuns e un moment de erou al
+   aparatului, un manifest care se termină cu picătura, un reel educațional care începe cu picătura și apoi explică, un
+   film de brand cu obiectele 3D tactile. O combinație nouă contează ca semnătură nouă la garda de varietate; regulile
+   fixe rămân (culorile brandului, centrat, super clean, doar fapte reale, logo doar în filmele de brand, muzica
+   constantă, cele două fișiere). Filmele de brand sunt ocazionale (cel mult unul pe săptămână, niciodată
    două la rând).
 6b. **Când nu ești sigur, întrebi** (regula proprietarului): o afirmație despre un tratament, o cifră, o poză, o alegere
    de stil care poate merge în două feluri: scrii întrebarea cu variantele în raport, nu ghicești; termini tot ce e clar.
