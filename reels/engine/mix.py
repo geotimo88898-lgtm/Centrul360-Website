@@ -171,6 +171,29 @@ BASE = {'whoosh_s': 0.55, 'whoosh_l': 0.5, 'whoosh_r': 0.5, 'swoosh': 0.42, 'swo
         'shimmer': 0.38, 'sparkle': 0.4, 'glitch': 0.38, 'paper': 0.45, 'snap': 0.55, 'chime': 0.42, 'shatter': 0.7, 'resolve': 0.6}
 
 
+REMAP3 = {'pop': 'tap', 'bubble': 'tap', 'snap': 'tap', 'paper': 'tick_soft', 'tick': 'tick_soft', 'click': 'tick_soft', 'swoosh_up': 'tick_soft',
+          'swoosh_down': 'tick_soft', 'swoosh': 'tap', 'glitch': 'tick_soft', 'whoosh_s': 'whoosh_cut'}
+BASE.update({'tick_soft': 0.3, 'tap': 0.38, 'whoosh_cut': 0.42, 'riser_soft': 0.32, 'dot': 0.3})
+MAJOR = {'pop', 'slam', 'drop', 'mask', 'flip', 'spin', 'blurIn', 'slideL', 'slideR', 'slideU', 'slideD', 'reveal', 'payoff', 'stack', 'field',
+         'layers', 'panels', 'open', 'stop', 'tease', 'slide', 'motif', 'panel', 'write'}
+
+
+def sync_report(F, placed):
+    """the editing check (14.11): every cut has a whoosh whose peak lands on it (±1 frame) and every major entrance has
+    its sound within ±1 frame (after thinning, so a missing one is reported)"""
+    fr = 1.0 / (F.get('fps') or 30)
+    cuts = [s['t0'] for s in F['shots'][1:] if s['t0'] < F['total'] - 0.05]
+    peaks = [p['t'] for p in placed if p['peak']]
+    ok_cuts = sum(1 for c in cuts if any(abs(p - c) <= fr + 1e-6 for p in peaks))
+    ev = sorted({round(e['t'], 3) for e in F['events'] if e['kind'] in MAJOR and 0 <= e['t'] < F['total']})
+    major = [t for i, t in enumerate(ev) if i == 0 or t - ev[i - 1] > 0.15]
+    times = [p['t'] for p in placed]
+    ok_major = sum(1 for t in major if any(abs(x - t) <= fr + 1e-6 for x in times))
+    miss = [round(t, 2) for t in major if not any(abs(x - t) <= fr + 1e-6 for x in times)]
+    return {'cuts': len(cuts), 'cuts_on_peak': ok_cuts, 'major': len(major), 'major_with_sound': ok_major, 'missing': miss[:20],
+            'line': 'sync: %d/%d cuts with a whoosh peaking on the cut, %d/%d major entrances with their sound (±1 frame)' % (ok_cuts, len(cuts), ok_major, len(major))}
+
+
 def lowpass(y, fc):
     from scipy import signal
     b, a = signal.butter(2, fc / (SR / 2), 'low')
@@ -182,7 +205,7 @@ def thin(cues):
     cues = sorted(cues, key=lambda c: c['t'])
     keep = []
     for c in cues:
-        if c['cat'] == 'key': keep.append(c); continue
+        if c['cat'] in ('key', 'tick_soft', 'tap'): keep.append(c); continue  # a word-by-word reveal, a panel sequence: every soft tick and tap stays
         clash = [k for k in keep if k['cat'] != 'key' and abs(k['t'] - c['t']) < 0.07]
         if clash:
             worst = min(clash, key=lambda k: k['prio'])
@@ -191,7 +214,7 @@ def thin(cues):
         keep.append(c)
     keep.sort(key=lambda c: c['t'])
     while True:
-        nk = [c for c in keep if c['cat'] != 'key']
+        nk = [c for c in keep if c['cat'] not in ('key', 'tick_soft', 'tap')]
         over = None
         for i, c in enumerate(nk):
             win = [k for k in nk[i:] if k['t'] < c['t'] + 1.0]
@@ -224,6 +247,9 @@ def constant_bed(music, voice, total):
     from scipy import signal
     music[:] = peaking(music, 2500, -3.0)
     sp = np.abs(voice[:, 0]) > 0.02
+    if not sp.any():  # no voice (a brand film, a demo): the music is the bed under the sound design, -8 dB, constant
+        music *= 10 ** (-8 / 20); a = int(0.3 * SR); music[end - a:end] *= np.linspace(1, 0, a)[:, None]; music[end:] = 0
+        return
     bb, aa = signal.butter(2, [1000 / (SR / 2), 4000 / (SR / 2)], 'band')
     v = np.sqrt(np.mean(signal.lfilter(bb, aa, voice[:, 0])[sp] ** 2)) if sp.any() else 0.05
     # the song's own dynamics stay (a quiet intro, a fuller chorus): the gain is set on its louder moments (the 85th
@@ -279,7 +305,13 @@ def main_v2(rid, base, F, TIM):
     for p in sorted(glob.glob(os.path.join(HERE, 'sfx', 'v2', '*.wav'))):
         cat = os.path.basename(p).rsplit('_', 1)[0]; lib.setdefault(cat, []).append(p)
     cache, last = {}, {}
+    v3 = (F.get('sound') or 'v2') == 'v3'
+    if v3:  # the quiet premium layer (14.11): the louder cartoon-ish sounds become soft ones; impacts stay rarer and lower
+        for c in F['cues']:
+            if c['cat'] in REMAP3: c['cat'] = REMAP3[c['cat']]
+            if c['cat'] in ('impact', 'boom', 'subdrop'): c['gain'] = c.get('gain', 1) * 0.55
     cues = thin([c for c in F['cues'] if c['cat'] in lib])
+    placed = []
     for c in cues:
         vs = lib[c['cat']]
         choices = [v for v in vs if v != last.get(c['cat'])] or vs
@@ -296,7 +328,12 @@ def main_v2(rid, base, F, TIM):
         g = BASE.get(c['cat'], 0.45) * fl['mul'].get(c['cat'], 1) * c.get('gain', 1) * 10 ** ((rng.random() * 2 - 1) * 1.5 / 20)
         if c['t'] < 0.15 and c['cat'] in ('impact', 'boom', 'whoosh_s'): g *= 0.4  # the hook hit stays, but never masks the first words
         pan = c.get('pan') if c.get('pan') is not None else (rng.random() * 2 - 1) * 0.18
-        add(fx, y, c['t'], g, pan)
+        t = c['t']
+        if c.get('peak'):  # a whoosh on a cut: placed so its loudest moment lands on the cut, to the frame
+            env = np.convolve(np.abs(y[:, 0]) + np.abs(y[:, 1]), np.ones(240) / 240, 'same')
+            t = c['t'] - int(np.argmax(env)) / SR
+        add(fx, y, max(0.0, t), g, pan)
+        placed.append({'cat': c['cat'], 't': c['t'], 'start': max(0.0, t), 'peak': bool(c.get('peak'))})
     # the music (the owner, 14.11): the previews use exactly his track (music/owner-free.wav, git-ignored), never a
     # generated one; he posts from the apps and adds the licensed sound there, so a clean file (voice + effects) is made too
     song = os.path.join(HERE, 'music', (F.get('musicFile') or 'owner-free') + '.wav')
@@ -324,7 +361,9 @@ def main_v2(rid, base, F, TIM):
     per = np.bincount(np.array([int(c['t']) for c in nk], dtype=int), minlength=int(total) + 1) if nk else np.zeros(1)
     info = '%d lines, %d sound effects (%d keys), %.1f a second on average, max %d in a second, music %s (constant), voice over music %.1f dB (%.1f dB at 1-4 kHz)' % (
         len(F['beats']), len(cues), len(cues) - len(nk), len(nk) / max(1, total), int(per.max()), bed or 'off', vom, vb)
-    json.dump({'cues': cues, 'per_second': per.tolist(), 'bed': bed}, open(os.path.join(base, 'build', 'sfx-used.json'), 'w'))
+    sync = sync_report(F, placed) if v3 else None
+    if sync: info += '; ' + sync['line']
+    json.dump({'cues': cues, 'per_second': per.tolist(), 'bed': bed, 'sync': sync}, open(os.path.join(base, 'build', 'sfx-used.json'), 'w'))
     write_master(base, out, rid, 'preview: ' + info)
     write_master(base, clean, rid, 'clean (voice + effects, for posting)', name='audio-clean.wav')
 
@@ -333,7 +372,7 @@ def main():
     rid = sys.argv[1]
     base = os.path.join(HERE, '..', 'scripts', rid)
     F = json.load(open(os.path.join(base, 'build', 'film.json')))
-    TIM = json.load(open(os.path.join(base, 'timing.json')))
+    TIM = json.load(open(os.path.join(base, 'timing.json'))) if os.path.exists(os.path.join(base, 'timing.json')) else {}  # a reel without voice
     (main_v2 if F.get('v') == 2 else main_v1)(rid, base, F, TIM)
 
 

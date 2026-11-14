@@ -297,5 +297,6 @@
   "anchor": "center",
   "typeScale": 1.06
  },
- "structure": "Hook → Lead → Body → Open loop → Body → Body (răspunsul) → Open loop → Body → Body → CTA (14.11)"
+ "structure": "Hook → Lead → Body → Open loop → Body → Body (răspunsul) → Open loop → Body → Body → CTA (14.11)",
+ "sound": "v2"
 }

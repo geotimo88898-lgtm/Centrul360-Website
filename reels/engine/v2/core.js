@@ -150,11 +150,15 @@
   };
   const DUR = { undim: 0.3, fade: 0.35, in: 0.55, pop: 0.45, slam: 0.36, drop: 0.7, slideL: 0.55, slideR: 0.55, slideU: 0.5, slideD: 0.5, mask: 0.6, wipe: 0.55, growX: 0.55, growY: 0.55, draw: 0.8, flip: 0.55, spin: 0.6, blurIn: 0.6, out: 0.3, outUp: 0.35, bump: 0.32, shake: 0.4, dim: 0.35, hl: 0.45, move: 0.8 };
   // the sound each kind of movement makes (a category; mix.py picks the variant, the pitch and the level)
+  // the quiet premium layer (sound "v3", the default from 14.11; "v2" keeps the earlier design): a soft tick on a text
+  // reveal, a tap when a panel or card lands, a whoosh only on the cuts (its peak on the cut, mix.py)
+  const SFX3 = { in: ['tick_soft', 0.3], pop: ['tap', 0.4], slam: ['tap', 0.55], drop: ['tap', 0.45], slideL: ['tap', 0.35], slideR: ['tap', 0.35], slideU: ['tick_soft', 0.3], slideD: ['tick_soft', 0.3],
+    mask: ['tick_soft', 0.3], wipe: ['tick_soft', 0.3], growX: ['tick_soft', 0.25], growY: ['tick_soft', 0.25], flip: ['tap', 0.35], spin: ['tap', 0.35], blurIn: ['tick_soft', 0.25], hl: ['tick_soft', 0.25], shake: [null], draw: [null] };
   const SFX = { in: ['swoosh_up', 0.35], pop: ['pop', 0.6], slam: ['impact', 0.45], drop: ['snap', 0.6], slideL: ['swoosh', 0.45], slideR: ['swoosh', 0.45], slideU: ['swoosh_up', 0.45], slideD: ['swoosh_down', 0.45],
     mask: ['swoosh_up', 0.4], wipe: ['paper', 0.5], growX: ['swoosh', 0.3], growY: ['swoosh_up', 0.3], flip: ['paper', 0.45], spin: ['whoosh_s', 0.45], blurIn: ['shimmer', 0.3], hl: ['paper', 0.3], shake: [null], draw: [null] };
-  const PRIO = { impact: 3, boom: 3, subdrop: 3, riser: 3, riser_s: 3, whoosh_r: 2.6, whoosh_s: 2.4, whoosh_l: 2.4, glitch: 2.4, shutter: 2.4, swoosh: 1.6, swoosh_up: 1.6, swoosh_down: 1.6, snap: 1.8, pop: 1.5,
+  const PRIO = { tap: 1.5, tick_soft: 1.2, dot: 2.5, riser_soft: 2, whoosh_cut: 3, impact: 3, boom: 3, subdrop: 3, riser: 3, riser_s: 3, whoosh_r: 2.6, whoosh_s: 2.4, whoosh_l: 2.4, glitch: 2.4, shutter: 2.4, swoosh: 1.6, swoosh_up: 1.6, swoosh_down: 1.6, snap: 1.8, pop: 1.5,
     bubble: 1.5, paper: 1.4, shimmer: 1.6, sparkle: 1.5, chime: 2, click: 1.3, key: 1, tick: 1 };
-  R.cue = (t, cat, gain = 1, o = {}) => { if (cat) cues.push({ t, cat, gain, prio: o.prio != null ? o.prio : (PRIO[cat] || 1), pan: o.pan }); };
+  R.cue = (t, cat, gain = 1, o = {}) => { if (cat) cues.push({ t, cat, gain, prio: o.prio != null ? o.prio : (PRIO[cat] || 1), pan: o.pan, peak: o.peak || undefined }); };
   R.event = (t, kind, line) => events.push({ t, kind, line });
 
   // ------------------------------------------------------------------ shots
@@ -173,7 +177,7 @@
         if (!el || !FX[fx]) return null;
         const a = Object.assign({ el, fx, dur: DUR[fx] || 0.5, shot: shot.owner || shot }, o, { t0: t });
         anims.push(a); st(el);
-        const def = SFX[fx] || [];
+        const def = ((R.script && R.script.sound) || 'v3') === 'v3' ? (SFX3[fx] || SFX[fx] || []) : (SFX[fx] || []);
         const cat = o.sfx === undefined ? def[0] : o.sfx;
         if (cat) R.cue(t + (o.sfxDt || 0), cat, o.gain != null ? o.gain : def[1] || 0.5);
         if (!o.quiet && !['out', 'outUp', 'dim', 'bump', 'shake', 'draw', 'fade'].includes(fx) || o.event) R.event(t, fx, o.line);
@@ -296,10 +300,11 @@
       s.el.style.display = 'none';
       // every line after the first one in a shot is a step: the template drew something for it; mark the line
       s.lines.forEach((L) => R.event(L.t0, 'line', L.i));
-      if (s.i > 0) { const T = R.TR[s.tr]; if (T && T.sfx) T.sfx(s.t0, s.trDur); R.event(s.t0, 'cut'); }
+      if (s.i > 0) { const T = R.TR[s.tr]; if ((S.sound || 'v3') === 'v3') { if (s.t0 < total) R.cue(s.t0, 'whoosh_cut', 0.5, { prio: 3, peak: true }); } else if (T && T.sfx) T.sfx(s.t0, s.trDur); R.event(s.t0, 'cut'); }
     }
     R.buildCaptions(lines, TH, S);
     if (R.chrome && R.chrome.build) R.chrome.build(S, shots, total);
+    if (S.captions === false) { document.getElementById('cap').style.display = 'none'; R.captionAt = () => {}; } // a reel with its own text only
     // the hook: a hit on frame 0 (plus whatever the hook visual added), a riser into the payoff, an impact on it
     if (!cues.some((c) => c.t <= 0.1 && (c.cat === 'impact' || c.cat === 'boom'))) R.cue(0, 'impact', 1, { prio: 4 });
     const pay = lines.find((L) => L.role === 'payoff');
@@ -313,13 +318,14 @@
     await Promise.all([...document.images].map((im) => (im.decode ? im.decode().catch(() => {}) : null)));
     shots.forEach((s) => s.after && s.after());
     shots.forEach((s) => { s.el.style.display = 'block'; const f = s.focus; if (f) { const r = f.getBoundingClientRect(); if (r.width > 2) s.focusRect = { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; } s.el.style.display = 'none'; });
+    if (R.motif && R.motif.build) R.motif.build(S, shots);
     const outro = lines.find((L) => L.role === 'outro');
     if (outro) { R.outroAt = outro.shot && outro.shot.resolveAt != null ? outro.shot.resolveAt : outro.t0 + outro.dur * 0.5; R.cue(R.outroAt, 'resolve', 0.8, { prio: 4 }); R.cue(R.outroAt, 'impact', 0.35, { prio: 3 }); R.event(R.outroAt, 'resolve'); }
     cues.sort((a, b) => a.t - b.t);
     events.sort((a, b) => a.t - b.t);
     window.film = {
       v: 2, id: S.id, total, fps: FPS, W, H, theme: S.theme, end: R.endType, keyword: S.keyword || null,
-      music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || 'owner-free', musicStart: S.musicStart != null ? S.musicStart : 0.395, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
+      sound: S.sound || 'v3', motif: S.motif || null, music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || 'owner-free', musicStart: S.musicStart != null ? S.musicStart : 0.395, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
       cues: cues.filter((c) => c.t >= 0 && c.t < total),
       events: events.filter((e) => e.t >= -0.01 && e.t <= total),
       beats: lines.map((L) => ({ key: L.key, t0: L.t0, dur: L.dur, speech: L.speech, text: L.text, role: L.role, voiced: L.voiced, shot: L.shot ? L.shot.i : -1, step: L.step, visual: L.b.visual ? L.b.visual.type : L.b.step ? 'step' : null })),
@@ -365,6 +371,7 @@
       s.ticks.forEach((fn) => fn(t, lt));
     }
     if (R.chrome && R.chrome.draw) R.chrome.draw(t);
+    if (R.motif && R.motif.draw) R.motif.draw(t);
     R.BG.draw(t); // after the shots: a pan transition moves the background too (parallax)
     // element animations (only the visible shots)
     for (const s of states.values()) resetState(s);
@@ -395,6 +402,9 @@
     R.captionAt(t);
     return t;
   }
+  // staggered entrances on the music's grid (14.11, the editing reference): R.grid(t) snaps a time to the nearest
+  // quarter beat (or 1/div), when the reel has a beat; templates use it for the order of panels, cards, chips
+  R.grid = (t, div = 4) => { const per = R.beatPer; if (!per) return t; const q = per / div; return Math.round(t / q) * q; };
   R.seek = window.seek = seek;
   window.addEventListener('load', () => { boot().catch((e) => { window.bootError = String(e && e.stack || e); console.error(e); }); });
 })();

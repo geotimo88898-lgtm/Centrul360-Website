@@ -43,6 +43,9 @@ module.exports = async (id, dir, S) => {
   const fm = words.replace(/\*/g, '').match(/(^|\| )\s*(îți|iti) (arăt|arat|explic)/i); if (fm) notes.push('WARNING (template): a line opens with „' + fm[0].replace(/[|]/g, '').trim() + '”: vary the lead from reel to reel');
   const loopOpen = say.filter((b) => b.role === 'loop').map((b) => (b.say || '').replace(/\*/g, '').trim().split(/\s+/)[0].toLowerCase()).filter((w) => w === 'dar' || w === 'iar');
   if (loopOpen.length >= 2) problems.push('two loops open with „Dar” / „Iar”: each loop must sound like a natural next sentence, not a retention hook');
+  // the owner's tracks rotate: never the same track on two reels in a row (14.11)
+  try { const base = path.join(__dirname, '..', 'scripts'); const prev = fs.readdirSync(base).filter((d) => d !== id && fs.existsSync(path.join(base, d, 'script.json'))).map((d) => ({ d, m: fs.statSync(path.join(base, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(base, d, 'script.json'), 'utf8')) })).filter((o) => o.X.v === 2 && o.X.kind !== 'demo').sort((a, b) => b.m - a.m)[0];
+    const mf = (X) => X.musicFile || 'owner-free'; if (prev && mf(prev.X) === mf(S)) notes.push('WARNING (music): the same track as the previous reel ' + prev.d + ' („' + mf(S) + '”): rotate the owner\'s tracks by mood'); } catch (e) { /* */ }
   try { const vr = require('./variety.cjs')(id); vr.warn.forEach((w) => notes.push('WARNING (variety): ' + w)); } catch (e) { notes.push('variety.cjs skipped: ' + e.message); }
   if (S.hook && [].concat(S.hook)[0] && /\?/.test([].concat(S.hook)[0].q || '')) problems.push('the hook is a question: from 14.11 it is a precise statement (no "q" with "?")');
   if (!S.outro || !S.outro.visual) problems.push('no outro: a warm closing line with a resolving visual ("outro")');
@@ -87,7 +90,7 @@ module.exports = async (id, dir, S) => {
     notes.push('core mechanism visual: ' + (mine.join(', ') || 'none'));
     const base = path.join(__dirname, '..', 'scripts');
     fs.readdirSync(base).filter((d) => d !== id && fs.existsSync(path.join(base, d, 'script.json'))).map((d) => ({ d, m: fs.statSync(path.join(base, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(base, d, 'script.json'), 'utf8')) }))
-      .filter((o) => o.X.v === 2 && o.X.kind !== 'brand').sort((a, b) => b.m - a.m).slice(0, 3)
+      .filter((o) => o.X.v === 2 && o.X.kind !== 'brand' && o.X.kind !== 'demo').sort((a, b) => b.m - a.m).slice(0, 3)
       .forEach((o) => { const shared = core(o.X).filter((k) => mine.includes(k)); if (shared.length) notes.push('WARNING: the same core mechanism visual as ' + o.d + ': ' + shared.join(', ') + ' (give each reel its own)'); });
   } catch (e) { notes.push('scene-kind check skipped: ' + e.message); }
   const ends = ['loop', 'comment', 'site', 'ask', 'save'];
@@ -132,6 +135,13 @@ module.exports = async (id, dir, S) => {
     const li = roles.lastIndexOf('lead'); if (li >= 0 && F.beats[li] && F.beats[li].t0 + F.beats[li].dur > 10) notes.push('WARNING (structure): the lead ends at ' + (F.beats[li].t0 + F.beats[li].dur).toFixed(1) + ' s (want by 10 s)');
     if (roles[roles.length - 1] !== 'cta') notes.push('WARNING (structure): the last line is not a "cta"');
     notes.push('structure: ' + roles.map((r) => r || '-').join(' → '));
+  }
+  // the editing craft (14.11, sound "v3", the default for new reels): the ending holds still long enough to read (2-3 s
+  // after the last real event; micro-motion only)
+  if ((S.sound || 'v3') === 'v3') {
+    const real = F.events.filter((e) => !['line', 'word', 'breath', 'beat', 'hold', 'glow', 'scan'].includes(e.kind) && e.t < T - 0.05).map((e) => e.t);
+    const last = real.length ? Math.max(...real) : 0;
+    if (T - last < 2) notes.push('WARNING (editing): the ending holds only ' + (T - last).toFixed(1) + ' s after its last event (want 2-3 s, still, easy to read)');
   }
   // the payoff and the rhythm
   const endShot = F.shots[F.shots.length - 1];

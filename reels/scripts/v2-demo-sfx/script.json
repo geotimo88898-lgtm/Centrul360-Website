@@ -1,0 +1,62 @@
+{
+ "v": 2,
+ "id": "v2-demo-sfx",
+ "kind": "demo",
+ "note": "Un clip demonstrativ de 6-8 s pentru sincronizarea sunetului cu imaginea (stratul de sunet v3, punctul-ghid, grila pe bătăi, finalul ținut). Nu se postează.",
+ "theme": "brand-teal",
+ "sound": "v3",
+ "motif": "dot",
+ "captions": false,
+ "musicFile": "owner-free",
+ "musicStart": 0.395,
+ "beat": {
+  "bpm": 125.01
+ },
+ "transitions": [
+  "push",
+  "morph-key"
+ ],
+ "hook": {
+  "say": "Fiecare rezultat începe cu un pas.",
+  "visual": {
+   "type": "writeon",
+   "grid": true
+  }
+ },
+ "beats": [
+  {
+   "say": "Corp. Față. Piele. Grijă.",
+   "visual": {
+    "type": "panels",
+    "words": [
+     "Corp",
+     "Față",
+     "Piele",
+     "Grijă"
+    ]
+   },
+   "pause": 0.4
+  }
+ ],
+ "payoff": [
+  {
+   "say": "Pas cu pas.",
+   "visual": {
+    "type": "titlecard",
+    "title": "Pas cu pas",
+    "accent": "cu grijă",
+    "stack": [
+     "Timișoara",
+     "Arad",
+     "centrul360.com"
+    ],
+    "img": "brand_asset/catalog/cazul-05-liposonix-solduri.webp"
+   }
+  }
+ ],
+ "resolve": [],
+ "end": {
+  "type": "save",
+  "hold": 2.6
+ }
+}

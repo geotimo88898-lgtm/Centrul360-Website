@@ -145,6 +145,12 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    - `site` când o pagină reală răspunde cel mai bine (cazuri, „cum funcționează”): `pages` cu secțiuni fără
      prețuri sau oferte (`#rezultate`, `#cum`), capturate cu `node site.cjs <id>`;
    - `ask` altfel: o întrebare simplă către public, fără cuvânt cheie.
+5b. **Montajul** (14.11, referința proprietarului pentru meșteșug): fiecare eveniment vizual are sunetul lui, la cadru
+   (tic moale pe text, tap pe un panou sau o carte, whoosh cu vârful pe tăietură, un singur sunet-semnătură pentru
+   obiectul-erou), sub voce, fără ducking; un motiv-ghid (`"motif": "dot"`) care duce privirea de la o scenă la alta;
+   o culoare-erou, text mic, mult spațiu, o idee pe bătaie; intrările eșalonate pe grila muzicii (`R.grid`); un final
+   ținut 2-3 s; adâncime prin straturi (un obiect peste text). Implicit pentru reels-urile noi (`"sound": "v3"`); te uiți
+   la raportul de sincronizare din `mix.py` (tăieturi pe vârf, intrări cu sunet, ±1 cadru). Detaliile: README, „Montajul”.
 6. **Tema și varietatea** (14.11): doar `brand-light` (alb cu turcoaz) sau `brand-teal` (turcoaz cu alb), alternate
    (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
    fel niciunul”, de la un reel la altul schimbi: cârligul (particule, privirea la poza reală, contorul, o întrebare
@@ -154,6 +160,16 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    Nuki și finalul. Muzica previzualizării: începutul piesei proprietarului, la toate. `check2.cjs` refuză aceeași combinație temă + cârlig + scene + final și avertizează la peste
    jumătate scene de același fel ca reel-ul precedent. Super clean: puține elemente, fără efecte pe text; dacă ceva e
    încărcat, se scoate.
+6f. **Muzica proprietarului** (doar previzualizări; fișierele în `engine/music/`, ignorate de git, nu se comit):
+
+   | fișier | starea | pentru ce formate | de unde pornește |
+   |---|---|---|---|
+   | `owner-free` („Free”) | house, cald, constant | educative, cazuri | 0,395 s (primul downbeat), 125,01 BPM |
+   | `owner-weongo` („WE ON GO II”) | pielea de găină, „unexpected edits” | (vi) suspansul, scheciul 3D, dezvăluiri dramatice, înainte/după puternic | partea cu „honorable” (de măsurat la prima folosire), 131,01 BPM |
+   | `owner-trainingseason` („Training Season”, live) | spontan, ușor, „loved by our audience” | Nuki, din culise, un sfat rapid | 10,17 s, la lovitura muzicii; 123,01 BPM |
+
+   Alegi piesa după starea reel-ului și le rotești: niciodată aceeași piesă la două reels la rând (`musicFile`,
+   `musicStart`, `beat` în script; `check2.cjs` avertizează la repetare).
 6c. **Muzica și postarea** (14.11): muzica stă constantă, „semi tare”, vocea peste ea (fără ducking sau alte
    automatizări; nivelul din `mix.py`, 4,5 dB de voce peste muzică în banda vorbirii din 14.11, după „dă puțintel mai
    tare la muzică”, verificat cu `python3 listen.py <id>`). Fiecare reel are două fișiere:

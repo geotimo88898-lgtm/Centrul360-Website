@@ -6,7 +6,7 @@ Categoriile v2 (motorul le pune singur, din animații; mix.py alege varianta, to
   whoosh_s, whoosh_l, whoosh_r (invers, urcă spre o lovitură), swoosh, swoosh_up, swoosh_down, shutter (aparat foto),
   click (UI), key (tastă), pop, bubble, tick, riser, riser_s, impact, boom, subdrop, shimmer, sparkle, glitch, paper,
   snap (magnetic), chime, shatter (sticlă)."""
-import os, subprocess, wave
+import sys, os, subprocess, wave
 import numpy as np
 from scipy import signal
 
@@ -230,5 +230,36 @@ def main():
     print('v1: hit, riser · v2: ' + ', '.join('%s×%d' % kv for kv in S.items()) + ' → ' + OUT2)
 
 
+def main_v3():
+    """the quiet premium layer (14.11, the editing reference: every visual event has its own sound, aligned to the frame):
+    tick_soft (a text reveal), tap (a panel or card lands), whoosh_cut (a transition; its peak is placed on the cut),
+    riser_soft (a build under a sequence), dot (the guiding motif's signature: a small glassy ping). Short, soft, no
+    cartoon; they sit under the voice."""
+    os.makedirs(OUT2, exist_ok=True)
+    rng = np.random.default_rng(3603)
+    def put(cat, i, y, peak=0.9): save(os.path.join(OUT2, '%s_%d.wav' % (cat, i)), y, peak)
+    for i in range(6):  # tick_soft: a tiny filtered click with a short glassy body
+        n = int(SR * 0.06); x = tt(0.06)
+        y = bp(rng.standard_normal(n), 2500 + 300 * i, 9000) * np.exp(-x * 520) * 0.6 + np.sin(2 * np.pi * (3200 + 260 * i) * x) * np.exp(-x * 140) * 0.35
+        put('tick_soft', i, pan_sweep(y, -0.1 + 0.04 * i, -0.1 + 0.04 * i), 0.55)
+    for i in range(6):  # tap: a felt-wood knock, low-mid body, short air
+        n = int(SR * 0.16); x = tt(0.16)
+        body = np.sin(2 * np.pi * np.cumsum(190 + 60 * i + 120 * np.exp(-x * 60)) / SR) * np.exp(-x * 38)
+        air = bp(rng.standard_normal(n), 900, 4200) * np.exp(-x * 160) * 0.45
+        put('tap', i, pan_sweep(body * 0.8 + air, 0, 0), 0.7)
+    for i in range(5):  # whoosh_cut: an airy swell that peaks at ~70 % and releases fast (the peak lands on the cut)
+        put('whoosh_cut', i, whoosh(rng, 0.5 + 0.06 * i, 260 + 40 * i, 2600 + 250 * i, 900, 0.7, 1.8), 0.75)
+    for i in range(3):  # riser_soft: broadband, gentle, ends open
+        d = 1.0 + 0.2 * i; n = int(SR * d); x = np.linspace(0, 1, n)
+        y = svf_bp(rng.standard_normal(n), 500 + 5200 * x ** 1.6, 1.4) * x ** 2.2 * 0.8 + lp(rng.standard_normal(n), 1200) * x ** 3 * 0.3
+        put('riser_soft', i, pan_sweep(y, -0.4, 0.4), 0.6)
+    for i in range(4):  # dot: the motif's ping, glassy, two partials, soft attack
+        d = 0.7; x = tt(d)
+        f = 1760 + 110 * i
+        y = (np.sin(2 * np.pi * f * x) + 0.4 * np.sin(2 * np.pi * f * 2.01 * x) + 0.15 * np.sin(2 * np.pi * f * 3.02 * x)) * (1 - np.exp(-x * 400)) * np.exp(-x * 7)
+        put('dot', i, pan_sweep(y, 0, 0), 0.5)
+    print('v3: tick_soft, tap, whoosh_cut, riser_soft, dot → ' + OUT2)
+
+
 if __name__ == '__main__':
-    main()
+    main_v3() if '--v3' in sys.argv else main()

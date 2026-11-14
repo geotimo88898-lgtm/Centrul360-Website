@@ -34,7 +34,7 @@ function run(id, historyFile) {
   const me = shape(id, S);
   let others = fs.readdirSync(BASE).filter((d) => d !== id && fs.existsSync(path.join(BASE, d, 'script.json')))
     .map((d) => ({ d, m: fs.statSync(path.join(BASE, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(BASE, d, 'script.json'), 'utf8')) }))
-    .filter((o) => o.X.v === 2 && o.X.kind !== 'brand').sort((a, b) => b.m - a.m).map((o) => shape(o.d, o.X));
+    .filter((o) => o.X.v === 2 && o.X.kind !== 'brand' && o.X.kind !== 'demo').sort((a, b) => b.m - a.m).map((o) => shape(o.d, o.X));
   if (historyFile) { try { others = others.concat(JSON.parse(fs.readFileSync(historyFile, 'utf8'))); } catch (e) { console.log('  · history not read: ' + e.message); } }
   const last10 = others.slice(0, 10), last4 = others.slice(0, 4);
   const warn = [];

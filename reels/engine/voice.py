@@ -268,9 +268,11 @@ def continuous(rid, S, cfg):
         path = os.path.join(cache, 'cont-' + h + '-%s.wav' % key)
         _write(path, seg, sr)
         heard = V.transcribe(path); e, n = V.wer(text, heard)
-        if n:
-            h2 = V.transcribe(path, V.ASR2); e2, n2 = V.wer(text, h2)
-            if n2 < n: heard, n = h2, n2
+        if n:  # a second listener, briefly (it times out often): only to settle a doubtful line
+            try:
+                h2 = _quick_transcribe(path, V.ASR2); e2, n2 = V.wer(text, h2)
+                if n2 < n: heard, n = h2, n2
+            except Exception as ex: print('  (second listener unavailable: ' + str(ex)[:60] + ')')
         hw, tw = V.norm(heard), V.norm(_screen(text))
         cut_ok = bool(hw) and (hw[0] == tw[0] or hw[-1] == tw[-1])  # the cut: the line starts or ends on its own words
         if n: bad.append((key, text, heard, n, cut_ok))
@@ -283,6 +285,15 @@ def continuous(rid, S, cfg):
     for b in bad: print('  heard alone', b[0], '|', b[1], '| heard:', b[2], '' if b[4] else '| THE CUT IS WRONG')
     wrong = [b for b in bad if not b[4]]
     if wrong: sys.exit(f'{rid}: the cut does not match the text on {len(wrong)} lines. Stopping: listen, then fix the pauses or make the take again.')
+
+
+def _quick_transcribe(path, model):
+    import base64
+    data = base64.b64encode(open(path, 'rb').read()).decode()
+    body = {'contents': [{'role': 'user', 'parts': [{'inlineData': {'mimeType': 'audio/wav', 'data': data}},
+            {'text': 'Transcribe this Romanian audio word for word, with Romanian diacritics. Write numbers as words. Output only the transcription.'}]}], 'generationConfig': {'temperature': 0}}
+    r = V.call(model, body, tries=2)
+    return ''.join(p.get('text', '') for p in r['candidates'][0]['content']['parts']).strip()
 
 
 def pron_check(path, terms, cfg):

@@ -258,6 +258,20 @@ brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă 
 culorile brandului, totul centrat, super clean, doar fapte reale, niciun logo permanent în afara filmelor de brand,
 muzica la nivel constant, cele două fișiere.
 
+## Muzica proprietarului (doar pentru previzualizări)
+Piesele alese de proprietar stau doar local, în `engine/music/` (ignorat de git; nu se comit niciodată). Se folosesc
+numai în previzualizări: proprietarul postează din aplicații fișierul `-clean`, cu sunetul licențiat pus acolo. În script:
+`"musicFile"` (numele fără `.wav`), `"musicStart"` (secunda din piesă) și `"beat": {"bpm"}` (tăieturile pe bătăi).
+
+| fișier | starea | pentru ce formate | de unde pornește |
+|---|---|---|---|
+| `owner-free.wav` („Free”, Ultra Naté) | house anii '90, cald, cu energie constantă | reels-urile educative (data-viz, explicația în blocuri), cazurile | de la început: primul downbeat, 0,395 s; 125,01 BPM |
+| `owner-weongo.wav` („WE ON GO II”, feat. Denzel Curry, 3:16) | „unexpected edits”, pielea de găină | (vi) suspansul minimalist, scheciul 3D, o dezvăluire dramatică, un înainte/după puternic | prima parte, cea cu „honorable” (alegerea proprietarului); piesa e tare de la 0 s (~-10 dB RMS), 131,01 BPM, frazele de 8 măsuri la ~1,0 / 15,7 / 30,3 s; începutul și sfârșitul exact al părții cu „honorable” se măsoară la primul reel care o folosește (`listen.py` sau ascultătorul, plus `beats.py`) și se scriu aici |
+| `owner-trainingseason.wav` („Training Season”, live, Royal Albert Hall, 3:41) | „loved by our audience”, spontan, ușor | reels-urile spontane, edit-uri ușoare: Nuki, din culise, un sfat rapid | la lovitura muzicii, 10,17 s (primele ~10 s sunt intro live care se stinge, -19 → -35 dB); 123,01 BPM; din intro doar dacă reel-ul vrea atmosfera de concert |
+
+Alegerea: piesa după starea reel-ului, și niciodată aceeași piesă la două reels la rând (`check2.cjs` avertizează când
+reel-ul precedent folosește aceeași piesă). Nivelul rămâne cel constant de mai jos, în „Muzica și postarea”.
+
 ## Vocea (cum vorbim; regula proprietarului, 12.11)
 Vocea e a unei femei din România, de vreo 30 de ani, deșteaptă și caldă, care îi povestește ceva interesant unei
 prietene, față în față. Carisma vine din claritate, ritm, un dram de umor și surpriză, nu din cuvinte mari.
@@ -430,6 +444,30 @@ Orice scenă poate avea `bg` (un decor AI în spate, `{name, prompt}`), `tr` (tr
 Tranziții (`look.js`): `push`, `push-up`, `fly-through`, `zoom-element`, `pan`, `morph-key`, `whip`, `zoom-through`,
 `mask-wipe`, `shape-morph`, `glitch-lite`, `slide-stack`, `iris`, `page-flip`, `blur-push`, `match-cut` (pe culoare),
 `spin-zoom` (`cut` doar în cazuri speciale: între idei, check-ul cere o tranziție reală).
+
+### Montajul (meșteșugul, din 14.11; referința proprietarului: instagram.com/reel/DaIq2aZTlln, „foarte clean, cu gust, cu sincronizare imagine-sunet”)
+Pentru toate reels-urile noi (`"sound": "v3"`, implicit; `v2-gusa-slabe` și `v2-caz-real` rămân pe `"sound": "v2"`, cum
+le-a aprobat proprietarul):
+- **Fiecare eveniment vizual are sunetul lui, aliniat la cadru**: un text care apare primește tic-uri moi (`tick_soft`,
+  câte unul pe cuvânt), un panou sau o carte care aterizează primește un „tap” (`tap`), o tăietură primește un whoosh
+  al cărui vârf cade exact pe tăietură (`whoosh_cut`, așezat de `mix.py` după vârful lui), un obiect-erou are un singur
+  sunet-semnătură (punctul-ghid: `dot`). Biblioteca mică și liniștită e în `engine/sfx/v2` (`python3 sfx.py --v3`); fără
+  efecte de desen animat. Stă sub voce: vocea rămâne perfect clară, muzica la nivelul hotărât de proprietar, fără
+  ducking. `mix.py` raportează sincronizarea: câte tăieturi au un whoosh cu vârful pe ele (±1 cadru) și câte intrări
+  importante au sunetul lor (±1 cadru).
+- **Un motiv-ghid** (`"motif": "dot"`): un punct mic de lumină rose gold duce privirea dintr-o scenă în alta; la fiecare
+  tăietură trece de la elementul principal vechi la cel nou și se topește în el (o tăietură prin punctul comun).
+- **Reținere**: o singură culoare-erou plus alb sau turcoaz, text mic, mult spațiu gol, o idee pe bătaie.
+- **Ritm**: intrările eșalonate stau pe grila muzicii (`R.grid(t)`, un sfert de bătaie din `beats.py`), nu la întâmplare.
+- **Fluiditate**: 30 de cadre pe secundă (Instagram primește și 60, dar la aceeași mărime de fișier fiecare cadru pierde
+  din calitate și randarea durează dublu; rămânem la 30), blur de mișcare pe mișcările rapide, așezări cu ease-out.
+- **Un final ținut**: compoziția finală stă nemișcată 2-3 s, doar cu micro-mișcare, ca să se poată citi (`check2.cjs`
+  avertizează sub 2 s).
+- **Adâncime prin straturi**: un obiect peste text (de ex. o carte înainte/după care acoperă puțin un titlu mare).
+- Scenele noi pentru asta (`engine/v2/edit.js`): `writeon` (un rând mic scris de punctul de lumină, cu tic pe cuvânt),
+  `panels` (panouri verticale care intră una după alta pe grilă, cu tap), `titlecard` (titlul mare, accentul, cele trei
+  rânduri și cartea reală care îl acoperă, cu linia despre acord; ținut). Demonstrația: `scripts/v2-demo-sfx`
+  (`"kind": "demo"`, nu se postează), `out/v2-demo-sfx.mp4`.
 
 ### Sunetul
 `sfx.py` sintetizează biblioteca (numpy/scipy, fără mostre): whoosh scurt/lung/invers, swoosh sus/jos, aparat foto,
