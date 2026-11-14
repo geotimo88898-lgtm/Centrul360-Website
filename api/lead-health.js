@@ -5,6 +5,7 @@
 //   welcome: per ads offer and city, whether its new-lead template is approved by Meta for that city's number
 //   reminders: the booking flows (on / off, their templates' approval per city) and what their runs did
 //   delivery: per template, Meta's statuses of the messages sent (sent, delivered, read, failed and why)
+//   ?wa=1: also the template messages one by one, newest first (time, template, status, why), no name or phone
 //   ?voice=1: the voice notes' transcription (Gemini) works, in length and time only
 
 const crypto = require('crypto');
@@ -273,17 +274,21 @@ module.exports = async (req, res) => {
 
     // 4. what Meta said about every template message sent
     const delivery = {};
+    const timeline = [];
     (Array.isArray(convos) ? convos : []).forEach((c) => (c.messages || []).forEach((m) => {
       if (m.direction !== 'out' || m.type !== 'template' || !recent(m.timestamp)) return;
       const t = tplById.get(m.templateId);
       const k = t ? t.label : 'alt șablon';
       const d = delivery[k] = delivery[k] || { sent: 0, delivered: 0, read: 0, failed: 0, why: {} };
       d.sent++;
+      // ?wa=1: the template messages one by one, newest first (time, template, status, Meta's reason), no name or phone
+      if (req.query && req.query.wa) timeline.push({ at: m.timestamp, template: k, status: m.status || '-', why: m.status === 'failed' ? String(m.error || m.errorCode || '').slice(0, 120) : undefined });
       if (m.status === 'failed') { d.failed++; inc(d.why, String(m.error || m.errorCode || 'nelivrat').slice(0, 120)); }
       else if (m.status === 'read') { d.read++; d.delivered++; }
       else if (m.status === 'delivered') d.delivered++;
     }));
     out.delivery = delivery;
+    if (req.query && req.query.wa) out.timeline = timeline.sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 60);
     res.status(200).json(out);
   } catch (e) {
     res.status(500).json({ error: String(e.message || e).slice(0, 200) });
