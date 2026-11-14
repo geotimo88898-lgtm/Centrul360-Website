@@ -23,7 +23,24 @@ _wer = V.wer
 def _screen(t):
     for a, b in PHONETIC.items(): t = t.replace(a, b)
     return t
-V.wer = lambda a, b: _wer(_screen(a), b)
+# Romanian pronunciation (14.11): the screen spelling → how the voice is told to say it (voice.json "pronounce"); the
+# checks compare both sides in the screen spelling, whichever way the listener writes the word
+_CFG = json.load(open(os.path.join(HERE, 'voice.json')))
+PRON = _CFG.get('pronounce', {})
+def _sub(m, t, flags=0):
+    for a, b in m.items(): t = re.sub(r'(?<![\w-])' + re.escape(a) + r'(?![\w-])', b, t, flags=flags)
+    return t
+def pronounce(t, m=None): return _sub(m or PRON, t)
+def canon(t):
+    t = _screen(t)
+    back = {}
+    for scr, vo in list(PRON.items()) + [(k, v) for k, vs in _CFG.get('pronounce_variants', {}).items() for v in vs]:
+        back[vo] = scr
+    for vo, scr in sorted(back.items(), key=lambda x: -len(x[0])):
+        pat = r'(?<![\w-])' + r'[\s-]?'.join(re.escape(p) for p in re.split(r'[\s-]+', vo)) + r'(?![\w-])'
+        t = re.sub(pat, scr, t, flags=re.I)
+    return t
+V.wer = lambda a, b: _wer(canon(a), canon(b))
 
 
 def active_wpm(path, text):
@@ -194,30 +211,38 @@ def continuous(rid, S, cfg):
     L = v2_lines(S); texts = [t for _, _, t in L]
     for t in texts: assert '—' not in t and '–' not in t, 'long dash in: ' + t
     V.STYLE = cfg['style'] + ' ' + cfg.get('style_continuous', '')
-    full = ' '.join(texts)
-    prompt = (V.STYLE + '\nCitește cu voce tare textul de mai jos, în română, exact cum e scris, fără să adaugi sau să schimbi '
-              'nimic: o singură explicație legată, cu intonație firească de la o propoziție la alta și pauze scurte, '
-              'firești, între propoziții. Ritm viu, cam ' + str(int(cfg.get('pace_wpm', 190))) + ' de cuvinte pe minut.'
-              + (' ' + S['voiceNote'] if S.get('voiceNote') else '') + '\n\n' + full)
+    full = ' '.join(texts)  # the screen spelling (what the checks compare)
+    VAR = cfg.get('pronounce_variants', {})
+    def prompt_for(k):  # the k-th try: the pronunciation map, with the k-th spelling of the words that have variants
+        m = dict(PRON); m.update({w: vs[min(k, len(vs) - 1)] for w, vs in VAR.items()})
+        said = ' '.join(pronounce(t, m) for t in texts)
+        return (V.STYLE + '\nCitește cu voce tare textul de mai jos, în română, exact cum e scris, fără să adaugi sau să schimbi '
+                'nimic: o singură explicație legată, cu intonație firească de la o propoziție la alta și pauze scurte, '
+                'firești, între propoziții. Ritm viu, cam ' + str(int(cfg.get('pace_wpm', 190))) + ' de cuvinte pe minut.'
+                + (' ' + S['voiceNote'] if S.get('voiceNote') else '') + '\n\n' + said)
+    prompt = prompt_for(0)
     h = hashlib.sha1((V.VOICE + V.MODEL + prompt).encode()).hexdigest()[:16]
     take = os.path.join(cache, 'cont-' + h + '.wav')
     if '--retake' in sys.argv and os.path.exists(take):
         for f in os.listdir(cache):
             if f.startswith('cont-' + h): os.remove(os.path.join(cache, f))
+    terms = [w for w in cfg.get('pronounce_check', {}) if re.search(r'(?<![\w-])' + re.escape(w) + r'(?![\w-])', full)]
     if not os.path.exists(take):
         best = None
         for k in range(int(cfg.get('continuous_tries', 3))):
             tmp = take + '.try%d.wav' % k
-            V.pcm_to_wav(V.tts_raw(prompt), tmp)
+            V.pcm_to_wav(V.tts_raw(prompt_for(k)), tmp)
             heard = V.hear(tmp, full); e, n = V.wer(full, heard)  # a second listener when the first is not sure
-            print(f'  take {k + 1}: {V.dur(tmp):.1f} s, {n} words off')
-            if best is None or n < best[0]: best = (n, tmp, heard)
-            if n == 0: break
-            os.remove(tmp) if best[1] != tmp else None
+            pr = pron_check(tmp, terms, cfg) if terms else {}
+            eng = [w for w, ok in pr.items() if w != '_answer' and not ok]
+            print(f'  take {k + 1}: {V.dur(tmp):.1f} s, {n} words off' + (', pronounced the English way: ' + ', '.join(eng) if eng else (', pronunciation Romanian: ' + ', '.join(terms) if terms else '')))
+            score = (n + 2 * len(eng), k)
+            if best is None or score < best[0]: best = (score, tmp, heard, n, pr, k)
+            if n == 0 and not eng: break
         os.replace(best[1], take)
         for f in os.listdir(cache):
             if f.startswith(os.path.basename(take) + '.try'): os.remove(os.path.join(cache, f))
-        json.dump({'heard': best[2], 'errs': best[0], 'prompt': prompt}, open(take + '.json', 'w'), ensure_ascii=False)
+        json.dump({'heard': best[2], 'errs': best[3], 'pronunciation': best[4], 'try': best[5], 'prompt': prompt_for(best[5])}, open(take + '.json', 'w'), ensure_ascii=False)
     meta = json.load(open(take + '.json'))
     if meta['errs'] > 0: sys.exit(f'{rid}: the continuous take does not say the text exactly ({meta["errs"]} words off; heard: {meta["heard"]}). Stopping: make it again with --retake.')
     y, sr = _read(take)
@@ -258,6 +283,25 @@ def continuous(rid, S, cfg):
     for b in bad: print('  heard alone', b[0], '|', b[1], '| heard:', b[2], '' if b[4] else '| THE CUT IS WRONG')
     wrong = [b for b in bad if not b[4]]
     if wrong: sys.exit(f'{rid}: the cut does not match the text on {len(wrong)} lines. Stopping: listen, then fix the pauses or make the take again.')
+
+
+def pron_check(path, terms, cfg):
+    """the listener: is each abbreviation / name said the Romanian way? {term: True when Romanian}"""
+    import base64
+    Q = cfg.get('pronounce_check', {})
+    data = base64.b64encode(open(path, 'rb').read()).decode()
+    ask = ('Ascultă înregistrarea în română și spune cum e pronunțat fiecare termen. ' + ' '.join(f'{w}: {Q[w]}?' for w in terms) +
+           ' Răspunde pe câte un rând, exact așa: TERMEN: românește sau TERMEN: englezește (la SMAS: „cuvânt” sau „litere”).')
+    body = {'contents': [{'role': 'user', 'parts': [{'inlineData': {'mimeType': 'audio/wav', 'data': data}}, {'text': ask}]}], 'generationConfig': {'temperature': 0}}
+    r = V.call(V.ASR, body)
+    ans = ''.join(p.get('text', '') for p in r['candidates'][0]['content']['parts']).strip()
+    out = {}
+    for w in terms:
+        m = re.search(re.escape(w) + r'\s*:\s*([^\n;]+)', ans, re.I)
+        v = (m.group(1) if m else '').lower()
+        out[w] = bool(v) and ('englez' not in v) and ('liter' not in v or w != 'SMAS')
+    out['_answer'] = ans
+    return out
 
 
 def judge(path):

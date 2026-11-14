@@ -165,7 +165,6 @@
   {
    "role": "body",
    "say": "HIFU trimite mici puncte de energie într-un strat profund de sub piele, numit *SMAS*.",
-   "tts": "HIFU trimite mici puncte de energie într-un strat profund de sub piele, numit es-em-a-es.",
    "visual": {
     "type": "beam",
     "layers": [

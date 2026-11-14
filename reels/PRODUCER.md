@@ -110,6 +110,9 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    replică pare un salt, o rescrii sau schimbi ordinea. **Vocea e o singură înregistrare** a întregului script, citită
    legat (`voice.json` `"mode": "continuous"`), tăiată apoi în replici; nu se mai fac replici separate cu stiluri și
    tempo diferite. Verifici cu `python3 listen.py <id> --judge` (cuvânt cu cuvânt și părerea ascultătorului).
+   **Abrevierile se citesc românește**: ca un cuvânt când se poate (HIFU = „hifu”, cu „i” ca în „film”; SMAS = „smas”),
+   altfel literă cu literă cu numele românești (RF = „er-ef”, EMS = „e-em-es”); numele de tratamente tot românește
+   (Liposonix). O abreviere nouă o adaugi în `voice.json` (`"pronounce"` și, dacă e riscantă, `"pronounce_check"`).
    **O afirmație precisă întâi** (din 14.11, nu o întrebare). Cârligul spune un fapt surprinzător, care te face să
    vrei să înțelegi („La multe femei slabe, gușa nu ține de kilograme.”); la un caz, o propoziție clară despre ce s-a
    întâmplat. Se spune în primele 3 secunde, peste o scenă care se mișcă din primul cadru. Nicio replică nu are „?”.
@@ -177,9 +180,14 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    în turcoaz, cărți 3D stivuite din lucruri reale, un moment întunecat #0b7f74 „Cunoaște” → „Centrul360.”, o pagină
    reală a site-ului din blur în clar, un cuvânt care se rotește, „Totul” → „într-un singur loc.” care devine logo), (viii) explicația în blocuri (blocuri 3D de sticlă
    numerotate care se stivuiesc, bara de progres pe capitole sus, un titlu mare și un obiect pe capitol, recapitularea
-   la final, salvarea cu semnul nostru; ex. straturile pielii, cei 4 pași, cum decurge o consultație).
+   la final, salvarea cu semnul nostru; ex. straturile pielii, cei 4 pași, cum decurge o consultație), (ix) conversația
+   (un chat ca pe WhatsApp, în stilul nostru deschis, construit mesaj cu mesaj, cu tensiunea punctelor de tastare, apoi un
+   montaj rapid de cazuri reale, clinică și site, final pe logo sau pe bara de căutare; **doar mesaje reale ale
+   clientelor, cu acordul lor scris, fără nume și fără telefon, poza estompată sau inițiale; niciodată un mesaj inventat**;
+   motorul primește lista `{who, text, time}` de la proprietar; varianta fără cliente: chatul cu Nuki, textul doar de pe
+   site).
    Reels-urile deja aprobate nu se refac în aceste stiluri;
-   formatele sunt pentru materiale noi. **Combinații**: cele opt formate sunt piese de construcție, nu șabloane
+   formatele sunt pentru materiale noi. **Combinații**: cele nouă formate sunt piese de construcție, nu șabloane
    („poți să le și combini una cu alta, creativitatea e limita”): un data-viz al cărui răspuns e un moment de erou al
    aparatului, un manifest care se termină cu picătura, un reel educațional care începe cu picătura și apoi explică, un
    film de brand cu obiectele 3D tactile. O combinație nouă contează ca semnătură nouă la garda de varietate; regulile

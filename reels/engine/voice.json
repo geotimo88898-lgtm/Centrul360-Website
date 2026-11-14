@@ -14,8 +14,35 @@
   "tempo_min": 1.1,
   "tempo_max": 1.25,
   "mode": "continuous",
-  "style_continuous": "Explici ceva unei prietene, legat, cu intonație firească de la o propoziție la alta, ritm viu.",
+  "style_continuous": "Explici ceva unei prietene, legat, cu intonație firească de la o propoziție la alta, ritm viu. Abrevierile se citesc românește, ca un cuvânt românesc: HIFU se spune «hifu», cu «i» ca în «film», SMAS se spune «smas»; niciodată pronunție englezească.",
   "continuous_tempo_max": 1.08,
   "note_continuous": "Din 14.11 (regula proprietarului: „intonația și tot trebuie să aibă sens împreună cu propozițiile”), vocea e o singură înregistrare a întregului script, citit ca o explicație legată, într-un singur stil; apoi tăiată în replici la pauzele dintre propoziții și verificată replică cu replică. Un singur tempo pentru toată înregistrarea, doar dacă e sub ~190 de cuvinte pe minut, cel mult x1,08; pauzele firești rămân, doar cele de peste 0,45 s scad la ~0,3 s. \"mode\": \"lines\" (sau \"voiceMode\" în script) întoarce vechiul mod, replică cu replică.",
-  "continuous_tries": 3
+  "continuous_tries": 3,
+  "pronounce": {
+    "HIFU": "hifu",
+    "SMAS": "smas",
+    "RF": "er-ef",
+    "EMS": "e-em-es",
+    "LED": "led",
+    "PDRN": "pe-de-er-en",
+    "SPF": "es-pe-ef",
+    "Liposonix": "liposonix",
+    "Elysion": "elision",
+    "nm": "nanometri"
+  },
+  "pronounce_variants": {
+    "HIFU": [
+      "hifu",
+      "hí-fu",
+      "hi fu"
+    ]
+  },
+  "pronounce_check": {
+    "HIFU": "«hi-fu» (românește, cu «i» ca în «film») sau «hai-fu» (englezește)",
+    "SMAS": "«smas», ca un cuvânt, sau literă cu literă în engleză («es-em-ei-es»)",
+    "Liposonix": "«li-po-so-nix» (românește) sau «lai-po-so-nix» (englezește)",
+    "RF": "«er-ef» (literele românești) sau «ar-ef» (englezește)",
+    "EMS": "«e-em-es» (literele românești) sau «i-em-es» (englezește)"
+  },
+  "note_pronounce": "Pronunția (regula proprietarului, 14.11): abrevierile nu se citesc niciodată englezește. Cele care se pot citi ca un cuvânt se citesc ca un cuvânt românesc (HIFU = «hifu», cu «i» ca în «film»; SMAS = «smas»); celelalte, literă cu literă, cu numele românești ale literelor (RF = «er-ef», EMS = «e-em-es»); numele de tratamente și branduri tot românește (Liposonix = «liposonix»). \"pronounce\" e harta scriere pe ecran → scriere pentru voce, aplicată textului trimis la voce; \"pronounce_check\" sunt întrebările puse ascultătorului după fiecare înregistrare; \"pronounce_variants\" sunt scrierile încercate pe rând dacă vocea tot citește englezește."
 }

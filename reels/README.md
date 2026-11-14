@@ -235,8 +235,23 @@ paleta noastră (alb sau turcoaz, accent rose gold), niciodată neonul lor întu
 straturile pielii (epidermă, derm, grăsime, SMAS), „cum decurge o consultație”; fără „?” pe ecran (bucla e o
 afirmație), finalul cu semnul nostru de salvare (`bookmark`), nu butonul lor cu cursor. Se combină cu (iv) și (vi).
 
+**(ix) Conversația** (instagram.com/reel/Dd7LoTKSsbT, trimis 14.11; referința e în 16:9, la noi 9:16). Cum arată: o
+poveste pe chat e cârligul. Un chat întunecat, ca pe WhatsApp, se construiește mesaj cu mesaj („Hello!”, „your video
+is ready..”, un link, „What do you think?”); camera se retrage și stă pe punctele de tastare, cu tensiune; clientul
+răspunde „its good butt...” (o falsă plângere), apoi „BRO WHY YOU COOK SO HARD 🔥🔥”. Urmează un montaj rapid al
+muncii (un slide tipografic, o interfață de chat AI, cărți, un grafic care crește, un inel la 89 %, cod, o siluetă) și
+finalul pe brand. Fără voce: muzică, sunetele mesajelor și tastarea. La noi: chatul real de WhatsApp al clinicii, în
+stilul nostru deschis (alb sau turcoaz, nu întunecat), **doar cu mesaje reale ale clientelor, folosite cu acordul lor
+scris; fără nume, fără telefon, poza de profil estompată sau înlocuită cu inițiale; niciodată un mesaj inventat (regulă
+fermă)**. Falsa plângere („Sunt bune, dar…” → un răspuns entuziast real) merge doar dacă mesajul real chiar spune asta.
+Montajul: cazuri reale înainte/după din catalog, fiecare cu linia despre acord, plus imagini scurte din clinică și de pe
+site. Finalul: logo-ul sau bara de căutare cu site-ul. Varianta fără mesaje de la cliente: chatul dintre privitor și
+Nuki, în care Nuki explică un lucru în 2-3 bule scurte (vorbește brandul, nu e o recenzie; textul doar de pe site).
+Sursa: proprietarul trimite mesajele reale ca capturi, cu acord; motorul primește o listă `{who, text, time}` și nu
+generează niciodată mesaje. Se combină cu (iv) și (vi).
+
 **Combinații** (principiul proprietarului din 14.11: „poți să le și combini una cu alta, creativitatea e limita, iar în
-cazul nostru nu cred că avem limite”). Cele opt formate sunt piese de construcție, nu șabloane. Un reel le poate
+cazul nostru nu cred că avem limite”). Cele nouă formate sunt piese de construcție, nu șabloane. Un reel le poate
 amesteca: un reel data-viz cu „chrome” al cărui răspuns e un moment de erou al aparatului; un manifest tipografic care
 se termină cu picătura suspansului minimalist; un reel educațional care începe cu picătura și apoi explică; un film de
 brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă ca o semnătură nouă. Regulile fixe rămân:
@@ -322,6 +337,15 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
   indicație de pronunție (ex. numele site-ului rar și clar). `python3 voice.py <id> --retake` face o înregistrare nouă;
   `python3 listen.py <id> --judge` cere și părerea ascultătorului: sună ca o narațiune continuă și firească, are
   îmbinări tăiate, intonație ciudată sau o propoziție fără sens?
+- **Abrevierile și numele se citesc românește, niciodată englezește** (regula proprietarului din 14.11, după „hai-fu”
+  și „es em ei es”). Cele care se pot citi ca un cuvânt se citesc ca un cuvânt românesc: HIFU = „hifu”, cu „i” ca în
+  „film”; SMAS = „smas”; LED = „led”. Celelalte, literă cu literă, cu numele românești ale literelor („a”, nu „ei”;
+  „i”, nu „ai”): RF = „er-ef”, EMS = „e-em-es”, PDRN = „pe-de-er-en”, SPF = „es-pe-ef”. Numele de tratamente și branduri
+  tot românește: Liposonix = „liposonix”. Harta e în `engine/voice.json` (`"pronounce"`: scrierea de pe ecran → cum i se
+  scrie vocii) și se aplică textului trimis la voce; stilul înregistrării cere același lucru; după fiecare înregistrare,
+  ascultătorul e întrebat cum a sunat fiecare termen (`"pronounce_check"`) și se reface (cel mult 3 încercări, cu
+  scrierile din `"pronounce_variants"`, ex. „hifu”, „hí-fu”, „hi fu”) până sună românește. Pe ecran și în verificarea
+  cuvânt cu cuvânt rămâne scrierea obișnuită (HIFU, SMAS).
 - **Citești tot scriptul cu voce tare, ca o singură explicație**: fiecare propoziție trebuie să decurgă din cea de
   dinainte; dacă o replică pare un salt, o rescrii sau schimbi ordinea.
 - **Firesc, ca vorbit**: mici legături („Cu anii”, „De aceea”, „Un lucru bun de știut”), pauze firești. Niciodată
