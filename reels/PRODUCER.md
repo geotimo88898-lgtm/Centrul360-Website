@@ -87,7 +87,34 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
 ## Cum scrii un reel (v2, din 12.11)
 Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonul: `README.md` („Vocea”): o femeie care
 îi povestește ceva unei prietene, nu o reclamă. Pe scurt:
-0. **Structura** (14.11, standardul pentru toate reels-urile): Hook → Lead → Body 1 → Open loop → Body 2 → Open loop →
+0. **Gândește înainte** (14.11, regula proprietarului: „Vreau să te gândești foarte bine înainte să compui un reel, să
+   iasă foarte foarte bine… poate fi insane să fie ceva natural”). Referințele sunt o bibliotecă din care înveți, nu o
+   listă de bifat: pentru fiecare reel alegi doar ideile și elementele care i se potrivesc. Înainte de orice text, voce
+   sau vizual scrii în `script.json` blocul `"concept"`:
+   - `"who"`: pentru cine e;
+   - `"oneThing"`: singurul lucru pe care ea îl înțelege sau îl simte la final;
+   - `"tone"`: emoția sau tonul (calm și premium, cald, pielea de găină, spontan);
+   - `"formats"`: un format, cel mult două combinate, din cele unsprezece;
+   - `"borrowed"`: 2-3 elemente precise din bibliotecă, fiecare cu de ce servește mesajul acesta
+     (`{"element", "ref", "why"}`; ex. punctul de lumină-ghid din referința 10, pastilele care se adună din 12,
+     clepsidra din 11, glisorul înainte/după, bara de progres din 8);
+   - `"notUsed"`: cel puțin 3 elemente tentante lăsate deliberat deoparte (reținerea e o decizie, nu un accident);
+   - `"track"`: piesa și de ce (`{"file", "why"}`);
+   - `"different"`: ce îl face diferit de ultimele 10 reels.
+   **Fiecare element își câștigă locul**: servește mesajul sau nu intră; nimic „pentru că putem”. Mai puțin, făcut
+   perfect, bate mai mult. Întâi firescul: reel-ul trebuie să pară fără efort, ca un om care explică frumos un singur
+   lucru, nu o vitrină de efecte.
+   **Autocritica**, după storyboard și din nou după randare, scrisă cinstit în `"critique"`
+   (`{"storyboard": {...}, "render": {...}}`, aceleași cinci întrebări, răspunsuri care încep cu „da” sau „nu”, apoi
+   motivul):
+   - `"scroll"`: m-ar opri din derulat în primele 2 secunde?
+   - `"serves"`: fiecare element servește singurul mesaj?
+   - `"effects"`: pare ceva un efect de dragul efectului? (aici răspunsul bun e „nu”)
+   - `"natural"`: sună și arată firesc?
+   - `"owner"`: l-ar pune proprietarul azi pe contul lui?
+   Refaci până când toate răspunsurile sunt bune. `check2.cjs` avertizează când lipsește `concept` sau `critique`, când
+   sunt numite peste două formate, când `notUsed` are sub 3 elemente sau când un răspuns din `critique` nu e cel bun.
+0b. **Structura** (14.11, standardul pentru toate reels-urile): Hook → Lead → Body 1 → Open loop → Body 2 → Open loop →
    Body 3 → CTA; la 30-50 s se poate strânge la Hook → Lead → Body → Open loop → Body → CTA. Lead-ul promite ce vor
    afla și se termină înainte de secunda 10; fiecare body aduce o singură valoare reală; open loop-ul e o afirmație
    (niciodată o întrebare) pe care o închide doar blocul următor, cu un vizual de tensiune fără „?”; CTA-ul (salvare,

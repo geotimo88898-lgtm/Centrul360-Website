@@ -296,6 +296,16 @@ brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă 
 culorile brandului, totul centrat, super clean, doar fapte reale, niciun logo permanent în afara filmelor de brand,
 muzica la nivel constant, cele două fișiere.
 
+## Gândește înainte (regula proprietarului din 14.11)
+Referințele sunt o bibliotecă din care învățăm, nu o listă de bifat: la fiecare reel alegem doar ce i se potrivește.
+„Vreau să te gândești foarte bine înainte să compui un reel, să iasă foarte foarte bine… poate fi insane să fie ceva
+natural.” Înainte de text, voce sau vizual, scriptul primește un bloc `"concept"` (pentru cine, singurul lucru înțeles
+la final, tonul, unul sau cel mult două formate, 2-3 elemente împrumutate cu motivul lor, cel puțin 3 elemente lăsate
+deliberat deoparte, piesa și de ce, ce îl face diferit de ultimele 10). Fiecare element își câștigă locul; mai puțin,
+făcut perfect, bate mai mult; întâi firescul. După storyboard și după randare, o autocritică cinstită în `"critique"`
+(oprește derularea în 2 s? servește totul mesajul? e ceva efect de dragul efectului? e firesc? l-ar pune proprietarul
+azi?), refăcută până la răspunsurile bune. Pașii exacți: `PRODUCER.md`, pasul 0; `check2.cjs` avertizează la lipsuri.
+
 ## Muzica proprietarului (doar pentru previzualizări)
 Piesele alese de proprietar stau doar local, în `engine/music/` (ignorat de git; nu se comit niciodată). Se folosesc
 numai în previzualizări: proprietarul postează din aplicații fișierul `-clean`, cu sunetul licențiat pus acolo. În script:

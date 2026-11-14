@@ -126,6 +126,26 @@ module.exports = async (id, dir, S) => {
   const sig = async (t) => p.evaluate((t) => { window.seek(t); const out = []; document.querySelectorAll('.shot *, #bg *').forEach((e) => { if (e.offsetParent === null && e.tagName !== 'CANVAS') return; out.push(e.style.transform + '|' + e.style.opacity + '|' + (e.tagName === 'CANVAS' ? e.toDataURL().length : '')); }); return out.join(';'); }, t);
   if ((await sig(0)) === (await sig(1 / 30))) problems.push('frame 0 is still (the first frame must already move)');
   if (!F.cues.some((c) => c.t <= 0.1 && /impact|boom|shutter|glitch/.test(c.cat))) problems.push('no sound hit on frames 0-3');
+  // think first (14.11, the owner: „să te gândești foarte bine înainte să compui un reel… poate fi insane să fie ceva
+  // natural”): a "concept" block written before anything else, and an honest "critique" after the storyboard and the render
+  if (S.kind !== 'demo') {
+    const C = S.concept;
+    if (!C) notes.push('WARNING (think first): no "concept" (who, oneThing, tone, formats, borrowed, notUsed, track, different): PRODUCER step 0');
+    else {
+      ['who', 'oneThing', 'tone', 'formats', 'borrowed', 'notUsed', 'track', 'different'].forEach((k) => { if (C[k] == null || (Array.isArray(C[k]) && !C[k].length) || C[k] === '') notes.push('WARNING (think first): concept.' + k + ' is missing'); });
+      if ([].concat(C.formats || []).length > 2) notes.push('WARNING (think first): ' + [].concat(C.formats).length + ' formats named (one, at most two combined)');
+      if ([].concat(C.notUsed || []).length < 3) notes.push('WARNING (think first): fewer than 3 tempting elements left out on purpose (concept.notUsed)');
+      const bw = [].concat(C.borrowed || []); if (bw.length && (bw.length < 2 || bw.length > 3)) notes.push('WARNING (think first): ' + bw.length + ' borrowed elements (2-3, each with its "why")');
+      if (bw.some((b) => !b || !b.why)) notes.push('WARNING (think first): a borrowed element without its "why"');
+    }
+    const K = S.critique;
+    if (!K) notes.push('WARNING (think first): no "critique" (the five questions, after the storyboard and after the render)');
+    else {
+      const good = { effects: 'nu' }; // "is anything an effect for its own sake?": the good answer is no
+      ['storyboard', 'render'].forEach((stage) => { const A = K[stage]; if (!A) { notes.push('WARNING (think first): critique.' + stage + ' is missing'); return; }
+        Object.entries(A).forEach(([q, ans]) => { const want = good[q] || 'da'; if (!String(ans).trim().toLowerCase().startsWith(want)) notes.push('WARNING (think first): critique.' + stage + '.' + q + ' is not „' + want + '” yet: rework'); }); });
+    }
+  }
   // the script structure (14.11, the owner's short-form reference): Hook → Lead → Body → Open loop → Body → … → CTA.
   // Optional "role" per line (hook, lead, body, loop, cta); only warnings, and only when a script uses roles
   const roles = say.map((b) => b.role || null);
