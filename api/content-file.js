@@ -1,7 +1,8 @@
-// GET /api/content-file?i=<item id>&n=<file name>: a file of Conținut (a reel, a cover, a carousel photo), served to
-// anyone with the link, because Instagram and Facebook fetch them by URL to post them (api/_lib/content-post.js).
-// The ids are random UUIDs and the files are posts meant for the public anyway. Range requests for the video
-// (a player seeks, Meta may fetch in pieces); HEAD gives the size.
+// GET /api/content-file?i=<item id>&n=<file name>: a file of Conținut (a reel, its clean video without music, a cover, a
+// carousel photo), served to anyone with the link, because Instagram and Facebook fetch them by URL to post them
+// (api/_lib/content-post.js). The ids are random UUIDs and the files are posts meant for the public anyway. Range
+// requests for the video (a player seeks, Meta may fetch in pieces); HEAD gives the size. &dl=1 (De postat, when the
+// phone can't share a file): saved as a download, named &as=<name> when it is a plain file name.
 
 const C = require('./_lib/content');
 
@@ -35,6 +36,12 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  if (q.dl) {
+    const ext = name.split('.').pop().toLowerCase();
+    const as = String(q.as || '');
+    const file = /^[\w-]{1,80}\.(mp4|jpe?g|png)$/i.test(as) && as.split('.').pop().toLowerCase() === ext ? as : name;
+    res.setHeader('Content-Disposition', 'attachment; filename="' + file + '"');
+  }
   if (meta.etag) res.setHeader('ETag', meta.etag);
   const r = range(req.headers && (req.headers.range || req.headers.Range), size);
   if (r === false) { res.setHeader('Content-Range', 'bytes */' + size); res.status(416).end(); return; }

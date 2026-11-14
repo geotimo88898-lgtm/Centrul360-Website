@@ -16,10 +16,16 @@
 //  - What stays where it is on a re-plan: everything the owner has seen (approved, sent back to redo, or replaced
 //    after a redo: "the same slots"), whatever was posted, is being posted or tried, and anything in the past. Only
 //    the items still waiting for their first look are re-shuffled.
-//  - A network not enabled yet (TikTok, YouTube until their posting is built) gets its entries as 'waiting_access'.
+//  - Each network has a mode (settings.modes, the owner, 14.11: „postez eu din aplicație, ca să pun un sunet trending”):
+//    'app' (Din aplicație, the default for all four) or 'auto' (Automat, through the network's API). The same slots,
+//    quotas and rotation for both. A network in 'app' needs no API: its entries are 'planned' and, once due, 'todo'
+//    (De postat: content-app.js), the owner posts them from the phone and marks them posted. A network in 'auto' not
+//    enabled yet (settings.nets: TikTok, YouTube until their posting is built) gets its entries as 'waiting_access'.
 //  - reflow(): an approved entry still 'planned' whose time passed more than 75 minutes ago (the switch was off, a
 //    permission was missing) moves to the next free slot of its network within its week, or is 'missed'; one never
-//    approved is 'missed' when its week ends.
+//    approved is 'missed' when its week ends, and so is a 'todo' one the owner never posted.
+//  - due() is the automatic poster's ('auto' networks only), appDue() the owner's ('app' networks: the slots due within
+//    the next 30 minutes, so the hourly clock at :17 brings each one between 30 minutes early and 30 minutes late).
 
 const TZ = 'Europe/Bucharest';
 const NETS = ['tt', 'yt', 'ig', 'fb'];
@@ -31,9 +37,13 @@ const AS = { reel: { tt: 'reel', yt: 'reel', ig: 'reel', fb: 'reel' }, carousel:
 const QKINDS = { tt: ['reel', 'slideshow'], yt: ['reel'], ig: ['reel', 'carousel'], fb: ['reel', 'carousel'] };
 const LEAD_MS = 30 * 60e3;
 const STALE_MS = 75 * 60e3;
+// a slot of an 'app' network comes due this long before its time (content-app.js)
+const APP_LEAD_MS = 30 * 60e3;
+const MODES = ['app', 'auto'];
 const DEFAULTS = {
   on: true,
   nets: { tt: false, yt: false, ig: true, fb: true },
+  modes: { tt: 'app', yt: 'app', ig: 'app', fb: 'app' },
   startWeek: '2026-11-16',
   warmWeeks: 2,
   quotas: {
@@ -75,8 +85,9 @@ const okSlot = (s) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function settingsOf(s) {
   s = s || {};
-  const nets = {}, quotas = { warm: {}, full: {} }, times = {}, photoTime = {};
+  const nets = {}, modes = {}, quotas = { warm: {}, full: {} }, times = {}, photoTime = {};
   NETS.forEach((n) => { nets[n] = s.nets && typeof s.nets[n] === 'boolean' ? s.nets[n] : DEFAULTS.nets[n]; });
+  NETS.forEach((n) => { modes[n] = s.modes && MODES.includes(s.modes[n]) ? s.modes[n] : DEFAULTS.modes[n]; });
   ['warm', 'full'].forEach((w) => NETS.forEach((n) => {
     quotas[w][n] = {};
     QKINDS[n].forEach((k) => {
@@ -93,9 +104,13 @@ function settingsOf(s) {
   // the competitors' names the texts never mention (content.js qa)
   const comp = Array.isArray(s.competitors) ? s.competitors : typeof s.competitors === 'string' ? s.competitors.split(/[,;\n]/) : [];
   const competitors = [...new Set(comp.map((x) => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 60)).filter((x) => x.length >= 3))].slice(0, 40);
-  return { on: s.on !== false, nets, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
+  return { on: s.on !== false, nets, modes, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
     warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime, competitors };
 }
+// the owner posts this network himself (Din aplicație); its entries go out without the API
+const isApp = (st, net) => !!(st && st.modes && st.modes[net] === 'app');
+// a network whose entries can go out: the owner's ('app'), or the API's once it is enabled ('auto')
+const live = (st, net) => isApp(st, net) || !!(st && st.nets && st.nets[net]);
 // week 1, 2, 3 … from startWeek (a week before it counts as 1), and its quotas
 const weekNo = (week, st) => Math.max(1, Math.floor(dayDiff(st.startWeek, week) / 7) + 1);
 const quotasFor = (week, st) => (weekNo(week, st) <= st.warmWeeks ? st.quotas.warm : st.quotas.full);
@@ -219,7 +234,7 @@ function replanWeek(items, week, settings, now) {
       const times = b.free(st, n, cls, days[i], now);
       list.sort((x, y) => rank.get(x) - rank.get(y)).forEach((it, k) => {
         const s = times[k]; if (!s) return;
-        const e = { net: n, kind, slot: s.slot, at: iso(s.t), state: st.nets[n] ? 'planned' : 'waiting_access' };
+        const e = { net: n, kind, slot: s.slot, at: iso(s.t), state: live(st, n) ? 'planned' : 'waiting_access' };
         it.plan = (it.plan || []).concat(e);
         b.take(it, e);
       });
@@ -261,8 +276,10 @@ function reflow(items, settings, now) {
   const st = settingsOf(settings);
   let n = 0;
   (items || []).forEach((it) => (it.plan || []).forEach((e) => {
-    if (e.state === 'waiting_access' && st.nets[e.net]) { e.state = 'planned'; n++; }
-    else if (e.state === 'planned' && !st.nets[e.net]) { e.state = 'waiting_access'; n++; }
+    if (e.state === 'waiting_access' && live(st, e.net)) { e.state = 'planned'; n++; }
+    else if (e.state === 'planned' && !live(st, e.net)) { e.state = 'waiting_access'; n++; }
+    // De postat that the owner never posted: gone with its week (the switch on or off)
+    else if (e.state === 'todo' && now >= weekEnd(it.week || weekOf(Date.parse(e.at)))) { e.state = 'missed'; e.missedAt = iso(now); n++; }
   }));
   if (!st.on) return n;
   const stale = [];
@@ -276,22 +293,30 @@ function reflow(items, settings, now) {
       if (now >= weekEnd(week)) { e.state = 'missed'; n++; }
       continue;
     }
-    const b = boardOf(items, e), cls = classOf(e.kind || kindOn(it, e.net));
-    let to = null;
-    for (const d of weekDays(week)) {
-      if (d < roDay(now) || b.has(it.id, d)) continue;
-      const f = b.free(st, e.net, cls, d, now);
-      if (f.length) { to = f[0]; break; }
-    }
+    const to = nextSlot(items, it, e, st, now, roDay(now));
     if (to) { e.at = iso(to.t); e.slot = to.slot; e.moved = (e.moved || 0) + 1; }
     else e.state = 'missed';
     n++;
   }
   return n;
 }
+// The next free slot of an entry's network within its item's week, from the day `from` (a Bucharest day), never on a
+// day the item is already on another network: { slot, t } or null. Changes nothing.
+function nextSlot(items, it, e, settings, now, from) {
+  const st = settingsOf(settings);
+  const week = it.week || weekOf(Date.parse(e.at));
+  const b = boardOf(items, e), cls = classOf(e.kind || kindOn(it, e.net));
+  for (const d of weekDays(week)) {
+    if (d < from || d < roDay(now) || b.has(it.id, d)) continue;
+    const f = b.free(st, e.net, cls, d, now);
+    if (f.length) return f[0];
+  }
+  return null;
+}
 
-// Which entries the poster takes now: on an enabled network, of an approved item, planned and due (at most 75
-// minutes late, or a retry), and the ones already started (an Instagram container still processing). Oldest first.
+// Which entries the poster takes now: on an enabled network in 'auto' mode, of an approved item, planned and due (at
+// most 75 minutes late, or a retry), and the ones already started (an Instagram container still processing, also
+// after a switch to 'app'). Oldest first.
 function due(items, settings, now) {
   const st = settingsOf(settings);
   const out = [];
@@ -302,7 +327,22 @@ function due(items, settings, now) {
       if (!st.nets[e.net]) return;
       const t = Date.parse(e.at);
       if (e.state === 'posting') out.push({ it, e });
-      else if (ok && e.state === 'planned' && t <= now && (t >= now - STALE_MS || e.tries > 0) && !(e.retryAt && Date.parse(e.retryAt) > now)) out.push({ it, e });
+      else if (ok && !isApp(st, e.net) && e.state === 'planned' && t <= now && (t >= now - STALE_MS || e.tries > 0) && !(e.retryAt && Date.parse(e.retryAt) > now)) out.push({ it, e });
+    });
+  });
+  return out.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));
+}
+// Which entries become De postat now (content-app.js): on an 'app' network, of an approved item, planned, due within
+// APP_LEAD_MS and at most 75 minutes late (an older one is moved by reflow() first). Oldest first.
+function appDue(items, settings, now) {
+  const st = settingsOf(settings);
+  const out = [];
+  (items || []).forEach((it) => {
+    if (it.removed || it.dropped || it.state !== 'ready' || review(it) !== 'approved') return;
+    (it.plan || []).forEach((e) => {
+      if (!isApp(st, e.net) || e.state !== 'planned') return;
+      const t = Date.parse(e.at);
+      if (t <= now + APP_LEAD_MS && t >= now - STALE_MS) out.push({ it, e });
     });
   });
   return out.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));
@@ -335,10 +375,11 @@ function weekInfo(items, settings, week) {
 
 // the entries per state (the health page)
 function counts(items) {
-  const c = { planned: 0, posting: 0, posted: 0, error: 0, waiting_access: 0, skipped: 0, missed: 0 };
+  const c = { planned: 0, todo: 0, posting: 0, posted: 0, error: 0, waiting_access: 0, skipped: 0, missed: 0 };
   (items || []).forEach((it) => (it.plan || []).forEach((e) => { c[e.state] = (c[e.state] || 0) + 1; }));
   return c;
 }
 
-module.exports = { NETS, PHOTO_NETS, KINDS, AS, QKINDS, DEFAULTS, LEAD_MS, STALE_MS, settingsOf, netsFor, kindOn, classOf, holds, movable, review,
-  weekNo, quotasFor, needOf, weekOf, mondayOf, weekEnd, weekDays, replanWeek, replanFrom, retime, reflow, due, weekInfo, counts, roDay, atRo, addDays, dayDiff, isDay, dow, spread };
+module.exports = { NETS, PHOTO_NETS, KINDS, AS, QKINDS, DEFAULTS, MODES, LEAD_MS, STALE_MS, APP_LEAD_MS, settingsOf, netsFor, kindOn, classOf, holds, movable, review,
+  isApp, live, weekNo, quotasFor, needOf, weekOf, mondayOf, weekEnd, weekDays, replanWeek, replanFrom, retime, reflow, nextSlot, due, appDue, weekInfo, counts, roDay, atRo,
+  addDays, dayDiff, isDay, dow, spread };

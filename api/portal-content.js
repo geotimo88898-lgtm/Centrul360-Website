@@ -8,8 +8,9 @@
 //                                           the key numbers, the rates per network, the organic funnel, „Merge tare”,
 //                                           the audience, the recommended hours, what people say, the week's analysis,
 //                                           the monthly goals (content-insights.js)
-//   { action: 'settings', on?, nets?, times?, photoTime?, quotas?, startWeek?, competitors?, goals? }   (the plans
-//                                           follow; goals: { followers: { ig, fb, tt, yt }, views, leads } a month)
+//   { action: 'settings', on?, nets?, modes?, times?, photoTime?, quotas?, startWeek?, competitors?, goals? }   (the
+//                                           plans follow; modes: { tt, yt, ig, fb: 'app' (Din aplicație) | 'auto' };
+//                                           goals: { followers: { ig, fb, tt, yt }, views, leads } a month)
 //   { action: 'apply_hours' }               „Folosește orele recomandate”: the recommended times saved (the plans follow)
 //   { action: 'approve', id } / { action: 'redo', id, note }   the owner's look at one item
 //   { action: 'approve_week', week }        every item of that week still waiting for a look
@@ -20,6 +21,11 @@
 //   { action: 'boost', id, net, city?, offer?, daily?, dry? }   „Fă reclamă din asta”: a posted Instagram / Facebook
 //                                           entry becomes a lead ad, paused (content-boost.js) → { result }
 //   { action: 'boost_start', id, net }      its campaign on → { result }
+//   De postat (content-app.js, the networks in 'app' mode):
+//   { action: 'app_posted', id, net, link? }  „Am postat”: recorded as posted (the link's id when there is one)
+//   { action: 'app_link', id, net, link }     „Adaugă linkul” on a post made from the app (its numbers follow it)
+//   { action: 'app_snooze', id, net }         „Nu pot acum”: back later today → { result: { until } }
+//   { action: 'app_skip', id, net, reason }   „Sari peste” → { result: { moved: at } | { skipped: true } }
 // Admin only.
 
 const { requireAdmin } = require('./_lib/auth');
@@ -27,16 +33,24 @@ const C = require('./_lib/content');
 const P = require('./_lib/content-plan');
 
 const BACK_MS = 21 * 864e5;
+// a post made from the app, as the page shows it: which post it is (or that it isn't known, and why)
+const matchOf = (m) => (m ? { state: m.state || '', how: m.how || '', note: m.note || '', at: m.at || '' } : null);
 function view(it, url, ins) {
   const q = C.qa(it);
   const x = (ins && ins[it.id]) || null;
+  const A = require('./_lib/content-app');
   return { id: it.id, kind: it.kind, rubric: it.rubric, topic: it.topic, keyword: it.keyword, caption: it.caption, captions: it.captions || {}, week: it.week || '',
     review: it.review || 'pending', redoNote: it.redoNote || '', replacedAt: it.replacedAt || '', state: it.state, removed: !!it.removed, dropped: !!it.dropped,
-    files: (it.files || []).map((f) => ({ name: f.name, mime: f.mime, w: f.w, h: f.h, dur: f.dur, size: f.size, v: f.v || '' })), cover: it.cover, createdAt: it.createdAt,
-    plan: (it.plan || []).map((e) => ({ net: e.net, kind: e.kind || P.kindOn(it, e.net), at: e.at, state: e.state, url: e.url || '', error: e.error || '', hold: e.hold || '', tries: e.tries || 0, postedAt: e.postedAt || '',
-      note: e.note || '', privacy: e.privacy || '', comment: e.comment ? { text: e.comment.text || '', error: e.comment.error || '', at: e.comment.at || '' } : null })),
+    files: (it.files || []).map((f) => ({ name: f.name, mime: f.mime, w: f.w, h: f.h, dur: f.dur, size: f.size, v: f.v || '', role: f.role || '' })), cover: it.cover, createdAt: it.createdAt,
+    plan: (it.plan || []).map((e) => Object.assign({ net: e.net, kind: e.kind || P.kindOn(it, e.net), at: e.at, state: e.state, url: e.url || '', error: e.error || '', hold: e.hold || '', tries: e.tries || 0, postedAt: e.postedAt || '',
+      note: e.note || '', privacy: e.privacy || '', comment: e.comment ? { text: e.comment.text || '', error: e.comment.error || '', at: e.comment.at || '' } : null },
+      // Din aplicație: the card's texts while it waits, the post's match once posted, the skipped slots
+      e.state === 'todo' ? { todoAt: e.todoAt || '', snoozeUntil: e.snoozeUntil || '', copy: A.copyOf(it, e.net) } : {},
+      e.manual ? { manual: true, markedAt: e.markedAt || '', match: matchOf(e.match) } : {},
+      e.skips && e.skips.length ? { skips: e.skips.map((k) => ({ at: k.at || '', reason: k.reason || '', skippedAt: k.skippedAt || '' })) } : {},
+      e.skipNote ? { skipNote: e.skipNote } : {})),
     stats: it.stats || {}, hook: it.hook || '', hookType: it.hookType || '', ideaId: it.ideaId || '', variantOf: it.variantOf || '', firstComment: it.firstComment || '',
-    qa: { problems: q.problems, warnings: q.warnings },
+    qa: { problems: q.problems, warnings: C.fileWarnings(it).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).concat(q.warnings) },
     boosts: (it.boosts || []).filter((b) => b && b.campaignId).map((b) => ({ net: b.net, at: b.at || '', campaignId: b.campaignId, name: b.name || '', mode: b.mode || '', daily: b.daily || 0,
       offer: b.offer ? { id: b.offer.id, title: b.offer.title } : null, cities: (b.cities || []).map((c) => (c && c.city) || c).filter((c) => typeof c === 'string'),
       gone: !!b.gone, startedAt: b.startedAt || '', url: url(b.campaignId) })),
@@ -82,6 +96,7 @@ module.exports = async (req, res) => {
       const patch = {};
       if (typeof b.on === 'boolean') patch.on = b.on;
       if (b.nets && typeof b.nets === 'object') { patch.nets = {}; P.NETS.forEach((n) => { if (typeof b.nets[n] === 'boolean') patch.nets[n] = b.nets[n]; }); }
+      if (b.modes && typeof b.modes === 'object') { patch.modes = {}; P.NETS.forEach((n) => { if (P.MODES.includes(b.modes[n])) patch.modes[n] = b.modes[n]; }); }
       if (b.times && typeof b.times === 'object') { patch.times = {}; P.NETS.forEach((n) => { if (Array.isArray(b.times[n])) patch.times[n] = b.times[n].map(String).slice(0, 3); }); }
       if (b.photoTime && typeof b.photoTime === 'object') { patch.photoTime = {}; P.PHOTO_NETS.forEach((n) => { if (typeof b.photoTime[n] === 'string') patch.photoTime[n] = b.photoTime[n]; }); }
       if (b.quotas && typeof b.quotas === 'object') {
@@ -142,6 +157,14 @@ module.exports = async (req, res) => {
     } else if (b.action === 'post_now') {
       if (!isNet(b.net)) { res.status(400).json({ error: 'invalid_net' }); return; }
       const r = await require('./_lib/content-post').now(String(b.id || ''), b.net);
+      res.status(200).json(Object.assign(await payload(), { result: r }));
+      return;
+    } else if (b.action === 'app_posted' || b.action === 'app_link' || b.action === 'app_snooze' || b.action === 'app_skip') {
+      // De postat: the owner's taps on a card (content-app.js)
+      if (!isNet(b.net)) { res.status(400).json({ error: 'invalid_net' }); return; }
+      const A = require('./_lib/content-app'), id = String(b.id || ''), by = session.username || session.employeeId || '';
+      const r = b.action === 'app_posted' ? await A.posted(id, b.net, b.link, by) : b.action === 'app_link' ? await A.setLink(id, b.net, b.link)
+        : b.action === 'app_snooze' ? await A.snooze(id, b.net) : await A.skipSlot(id, b.net, b.reason, by);
       res.status(200).json(Object.assign(await payload(), { result: r }));
       return;
     } else if (b.action === 'skip') {

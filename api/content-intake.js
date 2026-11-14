@@ -8,10 +8,17 @@
 //   POST {action:'create', item:{kind: reel|carousel|slideshow, rubric, topic, keyword, caption,
 //         captions:{tt,yt,ig,fb}, week:'YYYY-MM-DD' (its Monday; none: next week), hook, hookType, topicTag,
 //         ideaId (marks the owner's idea made), variantOf (the winner it makes again)}}  → { id, week }
-//   PUT|POST ?action=file&id=<id>&name=<file>&mime=<type>  (the raw bytes, ≤ 60 MB) → { file }
-//   POST {action:'ready', id}   checks the files (reel: one MP4 9:16 ≤ 90 s + a JPG cover; carousel / slideshow: 2-10
-//                               JPG 4:5 or 1:1) and the texts (content.js qa: the limits, the words refused, the
-//                               diacritics), plans it in its week → { plan, week, info, warnings? }  (422 + problems)
+//   PUT|POST ?action=file&id=<id>&name=<file>&mime=<type>[&role=clean]  (the raw bytes, ≤ 60 MB) → { file }
+//                               role=clean: a reel's second MP4, the same video with voice and sound effects only (no
+//                               music): the one that goes out (the owner posts it from the phone and puts a licensed
+//                               sound on, content-app.js; the API posts it for a network in 'auto' mode); 9:16, the
+//                               same length as the one with the music (±1 s); one per reel (another clean one under a
+//                               new name takes its place). Without role: the preview with the owner's music, only for
+//                               his look when he approves (never posted while the clean one is there).
+//   POST {action:'ready', id}   checks the files (reel: one MP4 9:16 ≤ 90 s with the music + at most one clean MP4 + a
+//                               JPG cover; carousel / slideshow: 2-10 JPG 4:5 or 1:1) and the texts (content.js qa:
+//                               the limits, the words refused, the diacritics), plans it in its week → { plan, week,
+//                               info, warnings? }  (422 + problems); a reel without its clean MP4 gets a warning
 //   POST {action:'replace', id, captions?, caption?, hook?, hookType?, clear?}   an item the owner sent back: open
 //                               again for its new files (same names replace them; clear: drop them all first), then 'ready'
 //   POST {action:'settings', on}   the global switch
@@ -52,7 +59,7 @@ module.exports = async (req, res) => {
       const len = Number((req.headers && req.headers['content-length']) || 0);
       if (len > C.MAX_BYTES) { res.status(413).json({ error: 'too_large' }); return; }
       const mime = String(q.mime || (req.headers && req.headers['content-type']) || '');
-      const f = await C.addFile(String(q.id || ''), String(q.name || ''), mime, await bytes(req), { w: q.w, h: q.h, dur: q.dur });
+      const f = await C.addFile(String(q.id || ''), String(q.name || ''), mime, await bytes(req), { w: q.w, h: q.h, dur: q.dur, role: q.role });
       res.status(200).json({ ok: true, file: f });
       return;
     }

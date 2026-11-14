@@ -239,6 +239,23 @@ async function stats(videoId) {
   [['views', 'view_count'], ['likes', 'like_count'], ['comments', 'comment_count'], ['shares', 'share_count'], ['dur', 'duration']].forEach(([k, t]) => { if (Number.isFinite(Number(v[t])) && v[t] != null) out[k] = Number(v[t]); });
   return out;
 }
+// the account's latest videos (content-app.js finds a post the owner made from the phone): [{ id, at, text, url }]
+// newest first, null when TikTok isn't connected, lacks video.list or didn't answer. The ids are read from the text
+// (bigger than a JS number).
+async function recent(n) {
+  const c = await connection();
+  if (!c.accessToken || c.lost || !(Array.isArray(c.scopes) && c.scopes.includes('video.list'))) return null;
+  const tok = await token();
+  const r = await api('/video/list/', tok, { max_count: Math.max(1, Math.min(20, n || 20)) }, { fields: 'id,title,video_description,create_time,share_url' });
+  if (!r.ok || !Array.isArray(r.data.videos)) return null;
+  const ids = [];
+  String(r.text).replace(/"id"\s*:\s*"?(\d{6,25})"?/g, (m, id) => { ids.push(id); return m; });
+  return r.data.videos.map((v, i) => {
+    const id = typeof v.id === 'string' && /^\d+$/.test(v.id) ? v.id : ids[i] || '';
+    const t = Number(v.create_time);
+    return { id, at: Number.isFinite(t) && t > 0 ? new Date(t * 1000).toISOString() : '', text: String(v.video_description || v.title || ''), url: String(v.share_url || '') };
+  }).filter((v) => v.id);
+}
 async function followers() {
   const c = await connection();
   if (!c.accessToken || c.lost) return null;
@@ -247,4 +264,4 @@ async function followers() {
 }
 
 module.exports = { APP_KEY, CONN_KEY, SCOPES, NEEDS, PRIVATE_NOTE, redirectUri, app, saveApp, authUrl, connect, token, disconnect, access, status, setNote,
-  photoTexts, bestPrivacy, idsIn, post, stats, followers };
+  photoTexts, bestPrivacy, idsIn, post, stats, recent, followers };

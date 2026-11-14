@@ -2,6 +2,9 @@
 // (Integrări → Facebook: the Page's token, its Instagram account). Also „Postează acum” from Admin → Conținut.
 // Only what the owner approved, and only while the switch is on (the owner, 12.11: the week is approved on Sunday);
 // each network gets its own text (captions, the caption when one is missing).
+// Only the networks in 'auto' mode (Conținut → Setări, the owner, 14.11): a network in 'app' mode (Din aplicație, the
+// default) is posted by the owner from the phone; its due slots become De postat here, nothing goes out
+// (content-app.js).
 //  - Instagram: a container (REELS / CAROUSEL / STORIES) made from the file's public URL (api/content-file.js), then
 //    its status until FINISHED (a reel takes a minute or more: the container is kept in the entry and the next run
 //    picks it up), then media_publish and the permalink.
@@ -311,10 +314,12 @@ async function run(opts) {
   // the owner hears when next week's batch is ready, on Sunday what still waits for him, and when redone items are back
   const told = await C.notices().catch((e) => { console.error('content notices:', e.message); return []; });
   if (!st.on) return Object.assign({ off: true }, told.length ? { told } : {});
+  // the 'app' networks: what came due goes in De postat, one push each (nothing is posted)
+  const app = await require('./content-app').run(st, Date.now()).catch((e) => { console.error('content app:', e.message); return { error: e.message }; });
   const todo = P.due(await C.items(), st, Date.now());
-  if (!todo.length) return { due: 0 };
+  if (!todo.length) return Object.assign({ due: 0 }, app.todo || app.back || app.error ? { app } : {});
   const a = await access(true);
-  const out = { due: todo.length, done: [] };
+  const out = Object.assign({ due: todo.length, done: [] }, app.todo || app.back || app.error ? { app } : {});
   const holds = new Set();
   for (const { it, e } of todo) {
     if (Date.now() - t0 > budget) { out.left = (out.left || 0) + 1; continue; }
@@ -340,6 +345,8 @@ async function run(opts) {
 async function now(id, net) {
   const st = await C.settings();
   if (!st.on) throw C.fail('paused', 409);
+  // a network the owner posts from the phone: never through the API
+  if (P.isApp(st, net)) throw C.fail('net_app', 409);
   if (!st.nets[net]) throw C.fail('net_off');
   const a = await access(true);
   const why = blocked(a, net);

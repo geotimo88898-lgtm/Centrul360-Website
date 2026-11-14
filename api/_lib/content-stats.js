@@ -16,6 +16,9 @@
 //  - „MERGE TARE 🔥”: a post whose views in its first 24 hours are at least 3 times what that network's posts had at
 //    the same age (the median of their snapshots, at least 3 to compare with) is marked (it.hot) and the owners hear it
 //    once, with „Fă reclamă din asta” in Admin → Conținut.
+//  - the posts the owner made from the app (content-app.js, „Postare din aplicație”): each run first finds the post
+//    of the ones that don't know it yet (the link's id, else the network's latest posts by time and first line of
+//    text, never a guess), then reads them with the rest; one never found stays without numbers, marked as such.
 
 const { readJSON, writeJSON } = require('./store');
 const ads = require('./meta-ads');
@@ -278,6 +281,9 @@ async function run(opts) {
   REFUSED = s.refused && s.refused.m && now - (Date.parse(s.refused.at) || 0) < 7 * 864e5 ? Object.assign({}, s.refused.m) : {};
   const out = {};
   let save = false;
+  // the posts made from the app: which post each one is (a link, or the time and the text), before the numbers
+  const found = await require('./content-app').match({ now, budgetMs: Math.min(6e3, budget / 2) }).catch((e) => ({ error: e.message }));
+  if (found && (found.pending || found.error)) out.match = found;
   const daily = (s.statsDay !== today && roHour(now) >= 6) || !!opts.force;
   const posted = [];
   (await C.items()).forEach((it) => (it.plan || []).forEach((e) => { if (e.state === 'posted' && e.postId && !it.removed) posted.push({ it, e }); }));

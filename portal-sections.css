@@ -2704,6 +2704,7 @@ html .tr-door-k{ color:var(--accent); }
 .cn-chip.is-missed{ opacity:.35; }
 .cn-chip.is-redo .cn-th{ box-shadow:0 0 0 2px var(--bad); }
 .cn-chip.is-error .cn-th{ box-shadow:0 0 0 2px var(--bad); }
+.cn-chip.is-todo .cn-th{ box-shadow:0 0 0 2px var(--warn); } /* De postat: waiting for the owner, from the app */
 .cn-chip > em{ position:absolute; left:-5px; top:-5px; width:17px; height:17px; border-radius:50%; display:grid; place-items:center; font-style:normal; color:#fff; box-shadow:0 0 0 2px var(--paper); }
 .cn-chip > em .k-ic{ width:10px; height:10px; stroke-width:3; }
 .cn-chip > em.is-posted{ background:var(--good); }
@@ -3133,8 +3134,8 @@ button.cn-trb:hover .cn-main b{ color:var(--accent); }
 .cn-tp-tt h4{ margin:0; font-size:1.08rem; font-weight:720; line-height:1.3; letter-spacing:-.01em; overflow-wrap:anywhere; }
 .cn-tp-tt p{ margin:.2rem 0 0; font-size:.86rem; color:var(--muted); overflow-wrap:anywhere; }
 .cn-tp-b{ display:grid; grid-template-columns:minmax(0, 1fr); gap:.9rem; min-width:0; }
-.cn-tp-b .cn-rc-m{ width:min(100%, calc(44vh * 9 / 16)); }
-.cn-tp-b .cn-rc-m.is-car{ width:min(100%, 360px); }
+.cn-tp-b .cn-rc-m{ width:min(100%, calc(34vh * 9 / 16)); }
+.cn-tp-b .cn-rc-m.is-car{ width:min(100%, calc(34vh * 4 / 5)); }
 .cn-tp-x{ display:grid; gap:.6rem; align-content:start; min-width:0; }
 .cn-tp-x .k-btn .k-ic{ flex:none; }
 .cn-tp-share{ width:100%; justify-content:center; flex-wrap:wrap; gap:.15rem .5rem; padding-top:.9rem; padding-bottom:.9rem; font-size:1rem; }
@@ -3155,8 +3156,8 @@ html .cn-tp-c .cn-tp-done > .k-btn.is-good:not(.is-accent):not(.is-primary):not(
 .cn-tp-more{ display:flex; flex-wrap:wrap; justify-content:center; gap:.4rem; }
 .cn-tp-more .k-btn .k-ic{ width:14px; height:14px; }
 @media (min-width:900px){
-  .cn-tp-b{ grid-template-columns:auto minmax(0, 560px); align-items:start; }
-  .cn-tp-b .cn-rc-m{ width:230px; }
+  .cn-tp-b{ grid-template-columns:auto minmax(0, 560px); justify-content:start; align-items:start; gap:1.1rem; }
+  .cn-tp-b .cn-rc-m{ width:230px; justify-self:start; }
   .cn-tp-b .cn-rc-m.is-car{ width:260px; }
   .cn-tp-more{ justify-content:flex-start; }
 }

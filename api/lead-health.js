@@ -62,7 +62,7 @@ module.exports = async (req, res) => {
     const [list, status, access] = await Promise.all([C.items(), C.status(), require('./_lib/content-post').access(true).catch((e) => ({ error: e.message }))]);
     const rows = [];
     list.forEach((it) => (it.plan || []).forEach((e) => rows.push({ id: it.id, kind: it.kind, rubric: it.rubric, topic: it.topic, review: it.review || 'pending', net: e.net, at: e.at, state: e.state, url: e.url || '', error: e.error || '', hold: e.hold || '', stats: (it.stats || {})[e.net] || null, postedAt: e.postedAt || '' })));
-    const next = rows.filter((r) => r.state === 'planned' || r.state === 'posting').sort((a, b) => a.at.localeCompare(b.at)).slice(0, 5).map((r) => ({ net: r.net, at: r.at, rubric: r.rubric, kind: r.kind, state: r.state, review: r.review, hold: r.hold || undefined }));
+    const next = rows.filter((r) => r.state === 'planned' || r.state === 'todo' || r.state === 'posting').sort((a, b) => a.at.localeCompare(b.at)).slice(0, 5).map((r) => ({ net: r.net, at: r.at, rubric: r.rubric, kind: r.kind, state: r.state, review: r.review, hold: r.hold || undefined }));
     const last = rows.filter((r) => r.state === 'posted').sort((a, b) => (b.postedAt || b.at).localeCompare(a.postedAt || a.at)).slice(0, 5).map((r) => ({ net: r.net, at: r.postedAt || r.at, rubric: r.rubric, kind: r.kind, url: r.url, stats: r.stats }));
     const errors = rows.filter((r) => r.state === 'error').slice(-5).map((r) => ({ net: r.net, at: r.at, rubric: r.rubric, error: r.error }));
     const wk = (w) => ({ week: w.week, n: w.n, need: w.need, have: w.have, missing: w.missing, approved: w.approved, pending: w.pending, redo: w.redo, drafts: w.drafts, short: w.short });

@@ -319,6 +319,23 @@ async function analytics(videoId, tok) {
   }
   return out;
 }
+// the channel's latest uploads (content-app.js finds a Short the owner posted from the phone): [{ id, at, text, url }]
+// newest first, null when YouTube isn't connected or didn't answer (youtube.readonly; 2 units of the day's quota)
+async function recent(n) {
+  const c = await connection();
+  if (!c.refreshToken || c.lost) return null;
+  const tok = await token();
+  const ch = await get('/channels', tok, { part: 'contentDetails', mine: 'true' });
+  const x = ch.ok && Array.isArray(ch.j.items) ? ch.j.items[0] : null;
+  const up = x && x.contentDetails && x.contentDetails.relatedPlaylists && x.contentDetails.relatedPlaylists.uploads;
+  if (!up) return null;
+  const r = await get('/playlistItems', tok, { part: 'snippet,contentDetails', playlistId: up, maxResults: String(Math.max(1, Math.min(50, n || 25))) });
+  if (!r.ok || !Array.isArray(r.j.items)) return null;
+  return r.j.items.map((v) => {
+    const id = String((v.contentDetails && v.contentDetails.videoId) || (v.snippet && v.snippet.resourceId && v.snippet.resourceId.videoId) || '');
+    return { id, at: (v.contentDetails && v.contentDetails.videoPublishedAt) || (v.snippet && v.snippet.publishedAt) || '', text: (v.snippet && v.snippet.title) || '', url: id ? 'https://www.youtube.com/shorts/' + id : '' };
+  }).filter((v) => v.id);
+}
 // the channel's subscribers (null: not connected, hidden, or Google didn't answer)
 async function followers() {
   const c = await connection();
@@ -328,4 +345,4 @@ async function followers() {
 }
 
 module.exports = { APP_KEY, CONN_KEY, SCOPES, NEEDS, ANALYTICS_SCOPE, PRIVATE_NOTE, CHUNK, redirectUri, signState, checkState, app, saveApp, authUrl, connect, token, disconnect, access, status,
-  textsOf, metaOf, nextFrom, post, setNote, comment, stats, analytics, followers };
+  textsOf, metaOf, nextFrom, post, setNote, comment, stats, analytics, recent, followers };

@@ -6,15 +6,21 @@
 //
 // data/content/items.json: [{ id, kind: reel|carousel|slideshow, rubric, topic, keyword, caption, captions: { tt, yt,
 //   ig, fb } (a text per network, `caption` when one is missing), week: 'YYYY-MM-DD' (its Monday), review: pending|
-//   approved|redo, redoNote, reviewedAt, redoAt, replacedAt, files: [{ name, path, mime, size, w, h, dur, v }], cover,
-//   state: draft|ready, createdAt, readyAt, plan: [{ net: tt|yt|ig|fb, kind: reel|carousel|slideshow, slot: 0|1|'p',
-//   at, state: planned|posting|posted|error|waiting_access|skipped|missed, postId, url, error, tries, container,
-//   startedAt, hold }], stats: { <net>: { at, views, reach, likes, comments, shares, saves, watch } },
+//   approved|redo, redoNote, reviewedAt, redoAt, replacedAt, files: [{ name, path, mime, size, w, h, dur, v, role }],
+//   cover, state: draft|ready, createdAt, readyAt, plan: [{ net: tt|yt|ig|fb, kind: reel|carousel|slideshow, slot:
+//   0|1|'p', at, state: planned|todo|posting|posted|error|waiting_access|skipped|missed, postId, url, error, tries,
+//   container, startedAt, hold, and for a network posted from the app (content-app.js): todoAt, toldAt, snoozeUntil,
+//   manual, markedAt, match, skips }], stats: { <net>: { at, views, reach, likes, comments, shares, saves, watch } },
 //   hook (the first words said), hookType (intrebare, cifra, contra, pov, socant, poveste …), topicTag (the topic family,
 //   hifu-gusa), ideaId (the owner's idea it makes, data/content/ideas.json), variantOf (the evergreen winner it makes
 //   again with a new hook), firstComment (the account's first comment under the post, content-post.js), boosts
 //   (content-boost.js) }]
-// data/content/settings.json: { on, nets, startWeek, warmWeeks, quotas: { warm, full }, times, photoTime, competitors }
+// A reel has two videos (the owner, 14.11): the preview with his music, only to approve it (it never goes out: the
+//   track isn't licensed for the networks), and the clean one, voice and sound effects only (role 'clean'), the one
+//   that goes out: shared from the phone, where he puts a licensed sound on inside TikTok / Instagram (content-app.js),
+//   or posted by the API for a network in 'auto' mode. media() keeps them apart.
+// data/content/settings.json: { on, nets, modes: { tt, yt, ig, fb: app|auto }, startWeek, warmWeeks, quotas: { warm,
+//   full }, times, photoTime, competitors }
 // data/content/state.json: the clock's marks (the day's stats, the week's top, the permission notice, the notices
 //   about the weekly batch, the safety net: Saturday evening a week still incomplete, Monday 11:00 nothing going out)
 // data/content/ideas.json: the owner's ideas for the next weeks [{ id, text, rubric, state: new|used, at, usedAt,
@@ -106,6 +112,8 @@ async function saveSettings(patch) {
   const p = patch || {};
   const next = Object.assign({}, cur, p);
   next.nets = Object.assign({}, cur.nets, p.nets || {});
+  next.modes = Object.assign({}, cur.modes);
+  P.NETS.forEach((n) => { if (p.modes && P.MODES.includes(p.modes[n])) next.modes[n] = p.modes[n]; });
   next.times = Object.assign({}, cur.times, p.times || {});
   next.photoTime = Object.assign({}, cur.photoTime, p.photoTime || {});
   next.quotas = { warm: {}, full: {} };
@@ -167,7 +175,12 @@ async function create(input) {
   return it;
 }
 
-// one file of a draft: stored at content/<id>/<name>, its size and length read from it
+// a file's role: '' (the preview, or a photo) or 'clean' (a reel's video without music, for the owner to post from the
+// phone with a licensed sound)
+const ROLES = ['', 'clean'];
+const isClean = (f) => !!f && f.role === 'clean';
+// one file of a draft: stored at content/<id>/<name>, its size and length read from it; hint.role 'clean' marks a
+// reel's video without music (a second clean one, under another name, takes the first one's place)
 async function addFile(id, name, mime, buf, hint) {
   if (!isId(id)) throw fail('invalid_id');
   if (!isName(name)) throw fail('invalid_name');
@@ -176,21 +189,30 @@ async function addFile(id, name, mime, buf, hint) {
   if (!MIMES[mime]) throw fail('invalid_mime');
   const ext = name.split('.').pop().toLowerCase().replace('jpeg', 'jpg');
   if (ext !== MIMES[mime]) throw fail('name_mime_mismatch');
+  const h = hint || {};
+  const role = String(h.role == null ? '' : h.role).trim().toLowerCase();
+  if (!ROLES.includes(role)) throw fail('invalid_role');
+  if (role === 'clean' && mime !== 'video/mp4') throw fail('clean_not_mp4');
   if (!Buffer.isBuffer(buf) || !buf.length) throw fail('empty_body');
   if (buf.length > MAX_BYTES) throw fail('too_large', 413);
   const cur = findItem(await items(), id);
   if (!cur) throw fail('not_found', 404);
   if (cur.state !== 'draft') throw fail('already_ready', 409);
+  if (role === 'clean' && cur.kind !== 'reel') throw fail('clean_only_reel');
   const got = require('./content-media').probe(buf, mime) || {};
-  const h = hint || {};
   const f = { name, path: pathOf(id, name), mime, size: buf.length, w: got.w || Number(h.w) || 0, h: got.h || Number(h.h) || 0, dur: got.dur || Number(h.dur) || 0, read: !!(got.w || got.dur),
     v: Date.now().toString(36) + crypto.randomBytes(2).toString('hex') };
-  await require('./store').writeBinary(f.path, buf, mime);
-  await update((list) => {
+  if (role) f.role = role;
+  const store = require('./store');
+  await store.writeBinary(f.path, buf, mime);
+  const { out: gone } = await update((list) => {
     const it = findItem(list, id);
     if (!it) return false;
-    it.files = (it.files || []).filter((x) => x.name !== name).concat(f);
+    const old = (it.files || []).filter((x) => x.name !== name && role === 'clean' && isClean(x));
+    it.files = (it.files || []).filter((x) => x.name !== name && !old.includes(x)).concat(f);
+    return old.map((x) => x.path);
   });
+  if (Array.isArray(gone) && gone.length && store.removeBinary) await Promise.all(gone.map((p) => store.removeBinary(p).catch(() => null)));
   return f;
 }
 
@@ -199,22 +221,31 @@ const ratio = (f) => (f.w && f.h ? f.w / f.h : 0);
 const near = (r, want) => r && Math.abs(r - want) / want <= 0.02;
 function problems(it) {
   const files = it.files || [], out = [];
-  const vids = files.filter((f) => f.mime === 'video/mp4'), jpgs = files.filter((f) => f.mime === 'image/jpeg'), imgs = files.filter((f) => /^image\//.test(f.mime));
+  const all = files.filter((f) => f.mime === 'video/mp4'), jpgs = files.filter((f) => f.mime === 'image/jpeg'), imgs = files.filter((f) => /^image\//.test(f.mime));
+  const vids = all.filter((f) => !isClean(f)), clean = all.filter(isClean);
   const lacking = P.netsFor(it.kind).filter((n) => !captionFor(it, n).trim());
   if (lacking.length) out.push('lipsește textul de sub postare pentru ' + lacking.map((n) => NET_NAME[n]).join(', ') + ' (caption sau captions)');
   if (it.kind === 'reel') {
-    if (vids.length !== 1) out.push('un reel are exact un MP4 (are ' + vids.length + ')');
+    if (vids.length !== 1) out.push('un reel are exact un MP4 cu muzică (are ' + vids.length + ')' + (vids.length > 1 && !clean.length ? '; varianta fără muzică se urcă cu role=clean' : ''));
     else {
       const v = vids[0];
       if (!near(ratio(v), 9 / 16)) out.push('MP4-ul nu e 9:16 (' + v.w + 'x' + v.h + ')');
       if (!v.dur || v.dur > 90) out.push('MP4-ul are ' + (v.dur || '?') + ' s (maxim 90)');
       if (v.dur && v.dur < 3) out.push('MP4-ul are sub 3 s');
     }
+    // the clean one: the same video, without the music
+    if (clean.length > 1) out.push('un reel are cel mult un MP4 fără muzică (are ' + clean.length + ')');
+    else if (clean.length) {
+      const c = clean[0], v = vids.length === 1 ? vids[0] : null;
+      if (!near(ratio(c), 9 / 16)) out.push('MP4-ul fără muzică nu e 9:16 (' + c.w + 'x' + c.h + ')');
+      if (v && v.dur && c.dur && Math.abs(c.dur - v.dur) > 1) out.push('MP4-ul fără muzică are ' + c.dur + ' s, cel cu muzică ' + v.dur + ' s (aceeași durată)');
+      if (!c.dur) out.push('MP4-ul fără muzică nu se poate citi');
+    }
     if (jpgs.length !== 1) out.push('un reel are exact o copertă JPG (are ' + jpgs.length + ')');
-    if (files.length !== vids.length + jpgs.length) out.push('un reel are doar MP4 și JPG');
+    if (files.length !== all.length + jpgs.length) out.push('un reel are doar MP4 și JPG');
   } else if (it.kind === 'carousel' || it.kind === 'slideshow') {
     const what = it.kind === 'carousel' ? 'caruselului' : 'slideshow-ului';
-    if (vids.length) out.push('un ' + (it.kind === 'carousel' ? 'carusel' : 'slideshow') + ' are doar poze');
+    if (all.length) out.push('un ' + (it.kind === 'carousel' ? 'carusel' : 'slideshow') + ' are doar poze');
     if (imgs.length < 2 || imgs.length > 10) out.push('un ' + (it.kind === 'carousel' ? 'carusel' : 'slideshow') + ' are 2-10 poze (are ' + imgs.length + ')');
     if (imgs.some((f) => f.mime !== 'image/jpeg')) out.push('pozele ' + what + ' sunt JPG (Instagram nu primește PNG)');
     const rs = imgs.map(ratio);
@@ -223,15 +254,26 @@ function problems(it) {
   }
   return out;
 }
-// the files in the order they go out (carousel: by name, 01.jpg, 02.jpg …)
+// what doesn't stop an item but the owner should know: a reel without its clean video (until it comes, the one with
+// the music is what goes out, from the phone and through the API)
+function fileWarnings(it) {
+  const out = [];
+  if (it && it.kind === 'reel' && (it.files || []).some((f) => f.mime === 'video/mp4') && !(it.files || []).some(isClean)) out.push('lipsește MP4-ul fără muzică (role=clean), pentru postarea din aplicație');
+  return out;
+}
+// the files in the order they go out (carousel: by name, 01.jpg, 02.jpg …). A reel: `video` is the one that goes out on
+// the networks (the clean one, without the music; the preview while a reel has no clean one), `preview` the one with
+// the owner's music (his look, never posted), `clean` the one without (null when it hasn't come)
 const natural = (a, b) => a.name.localeCompare(b.name, 'en', { numeric: true });
 function media(it) {
   const files = (it.files || []).slice().sort(natural);
-  const video = files.find((f) => f.mime === 'video/mp4') || null;
+  const preview = files.find((f) => f.mime === 'video/mp4' && !isClean(f)) || null;
+  const clean = files.find((f) => f.mime === 'video/mp4' && isClean(f)) || null;
+  const video = clean || preview;
   const images = files.filter((f) => /^image\//.test(f.mime));
   const photos = it.kind === 'carousel' || it.kind === 'slideshow';
   const cover = !photos && video ? (images.find((f) => f.mime === 'image/jpeg') || null) : null;
-  return { video, images: photos ? images : video ? [] : images.slice(0, 1), cover };
+  return { video, preview, clean, images: photos ? images : video ? [] : images.slice(0, 1), cover };
 }
 
 // ---------------------------------------------------------------- the texts' check before they go (qa)
@@ -328,8 +370,8 @@ async function ready(id) {
     if (it.state !== 'draft') return { already: true, plan: it.plan, week: it.week };
     const q = qa(it, null, { competitors: st.competitors });
     const bad = problems(it).concat(q.problems);
-    if (bad.length) throw fail('invalid_item', 422, { problems: bad, warnings: q.warnings });
-    warnings = q.warnings;
+    if (bad.length) throw fail('invalid_item', 422, { problems: bad, warnings: fileWarnings(it).concat(q.warnings) });
+    warnings = fileWarnings(it).concat(q.warnings);
     const m = media(it);
     it.cover = m.cover ? m.cover.name : m.images[0] ? m.images[0].name : '';
     it.state = 'ready'; it.readyAt = new Date(now).toISOString();
@@ -423,7 +465,7 @@ async function status() {
   const fresh = (await ideas()).filter((d) => d.state !== 'used').map((d) => Object.assign({ id: d.id, text: d.text, rubric: d.rubric || '', at: d.at }, d.source ? { source: d.source } : {}));
   // the week's analysis: its changes are what the producer follows first (after the items to redo)
   const analysis = await require('./content-insights').forProducer().catch(() => null);
-  return { on: st.on, nets: st.nets, times: st.times, photoTime: st.photoTime, startWeek: st.startWeek, today: P.roDay(now),
+  return { on: st.on, nets: st.nets, modes: st.modes, times: st.times, photoTime: st.photoTime, startWeek: st.startWeek, today: P.roDay(now),
     next: P.weekInfo(list, st, next), current: P.weekInfo(list, st, cur), redo, counts: P.counts(list),
     drafts: list.filter((x) => x.state === 'draft' && !x.removed).map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', week: x.week, files: (x.files || []).map((f) => f.name) })), made,
     analysis, ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
@@ -535,16 +577,18 @@ async function mondayHold(list, st, now) {
   const live = list.filter((it) => !it.removed && !it.dropped && it.state === 'ready');
   if (!live.some((it) => it.week === week && P.review(it) === 'approved')) return '';
   const todays = [];
-  live.forEach((it) => (it.plan || []).forEach((e) => { if (P.holds(e) && st.nets[e.net] && P.roDay(Date.parse(e.at)) === today) todays.push({ it, e }); }));
+  live.forEach((it) => (it.plan || []).forEach((e) => { if (P.holds(e) && P.live(st, e.net) && P.roDay(Date.parse(e.at)) === today) todays.push({ it, e }); }));
   if (!todays.length) return '';
-  if (todays.some(({ e }) => e.state === 'posted' || e.state === 'posting')) return '';
-  if (!st.on) return 'Postarea automată e oprită: azi nu pleacă nimic din săptămâna aprobată.';
+  if (todays.some(({ e }) => e.state === 'posted' || e.state === 'posting' || e.state === 'todo')) return '';
+  if (!st.on) return 'Programul e oprit (Conținut): azi nu pleacă nimic din săptămâna aprobată.';
   const why = new Set();
   let can = 0, POST = null;
   try { POST = require('./content-post'); } catch (e) { POST = null; }
   const a = POST && typeof POST.access === 'function' ? await POST.access(true).catch(() => null) : null;
   todays.forEach(({ it, e }) => {
     if (P.review(it) !== 'approved') { why.add('nimic aprobat pentru azi'); return; }
+    // the owner posts it himself (De postat): no connection, permission or check of the API stops it
+    if (P.isApp(st, e.net)) { if (e.state === 'planned') can++; return; }
     const block = (a && POST && typeof POST.blocked === 'function' ? POST.blocked(a, e.net) : '') || (e.state === 'planned' ? e.hold || '' : '');
     const bad = qa(it, e.net, { competitors: st.competitors }).problems[0];
     if (block) why.add(block); else if (bad) why.add(bad); else if (e.state === 'planned') can++;
@@ -552,6 +596,6 @@ async function mondayHold(list, st, now) {
   return can ? '' : [...why].join(' · ') || 'Nimic de postat azi.';
 }
 
-module.exports = { KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ORIGIN, fileUrl, isId, isName, pathOf, items, settings,
-  saveSettings, update, updateKey, migrate, create, addFile, problems, media, qa, qaText, ready, replace, setReview, approveWeek, setCaptions, captionFor, status, skip, readState,
+module.exports = { KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
+  settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, approveWeek, setCaptions, captionFor, status, skip, readState,
   writeState, notices, mondayHold, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };

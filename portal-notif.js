@@ -12,8 +12,8 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const IC = { leave: 'calendar', time: 'clock', commission: 'percent', paid: 'wallet', bonus: 'trophy', lead: 'userPlus', alert: 'bell', booking: 'calendar', money: 'wallet', report: 'trend' };
-  const ALERT_KINDS = ['lead', 'alert', 'booking', 'money', 'report'];
+  const IC = { leave: 'calendar', time: 'clock', commission: 'percent', paid: 'wallet', bonus: 'trophy', lead: 'userPlus', alert: 'bell', booking: 'calendar', money: 'wallet', report: 'trend', post: 'video' };
+  const ALERT_KINDS = ['lead', 'alert', 'booking', 'money', 'report', 'post'];
   let btn = null;
 
   const me = () => (K.data && K.data.me && K.data.me.id) || '';

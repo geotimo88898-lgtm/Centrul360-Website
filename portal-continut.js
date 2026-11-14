@@ -11,6 +11,11 @@
 // An item's drawer: the owner's look, the texts' check, the statistics (per network the numbers and rates, the
 // retention curve, the growth in the first hours, × the usual post, the funnel), the video, the texts, the plan and,
 // once posted on Instagram or Facebook, „Fă reclamă din asta” (api/_lib/content-boost.js). Admin only.
+// „De postat” (the owner, 14.11: he posts from each app, with a licensed trending sound), on top of both tabs: the
+// slots of the networks in „Din aplicație” mode that came due (api/_lib/content-app.js), one card each, phone first:
+// the preview, „Distribuie” (the clean MP4 through the phone's share sheet, else a download), the texts to copy, the
+// hint for the sound, „Am postat” (the link optional), „Nu pot acum”, „Sari peste”. A push opens its card
+// (#continut/de-postat~<id>~<net>).
 (function () {
   'use strict';
   const K = window.K;
@@ -25,8 +30,8 @@
   const AS = { reel: ['tt', 'yt', 'ig', 'fb'], carousel: ['ig', 'fb', 'tt'], slideshow: ['tt'], story: ['ig', 'fb'] };
   const CAP_MAX = { tt: 2200, yt: 100, ig: 2200, fb: 5000 };
   const KIND = { reel: 'Reel', carousel: 'Carusel', slideshow: 'Slideshow', story: 'Story' };
-  const STATE = { planned: 'Programat', posting: 'Se publică', posted: 'Postat', error: 'Eroare', waiting_access: 'Așteaptă acces', skipped: 'Scos', missed: 'Ratat' };
-  const TONE = { planned: 'is-info', posting: 'is-warn', posted: 'is-good', error: 'is-bad', waiting_access: '', skipped: '', missed: '' };
+  const STATE = { planned: 'Programat', todo: 'De postat', posting: 'Se publică', posted: 'Postat', error: 'Eroare', waiting_access: 'Așteaptă acces', skipped: 'Scos', missed: 'Ratat' };
+  const TONE = { planned: 'is-info', todo: 'is-warn', posting: 'is-warn', posted: 'is-good', error: 'is-bad', waiting_access: '', skipped: '', missed: '' };
   const REVIEW = { pending: ['De aprobat', 'is-warn'], approved: ['Aprobat', 'is-good'], redo: ['De refăcut', 'is-bad'] };
   const TZ = 'Europe/Bucharest';
   const fDay = new Intl.DateTimeFormat('en-CA', { timeZone: TZ });
@@ -39,6 +44,11 @@
   const range = (w) => { const e = addDay(w, 6); return Number(w.slice(8, 10)) + (w.slice(5, 7) === e.slice(5, 7) ? '' : '.' + w.slice(5, 7)) + '-' + Number(e.slice(8, 10)) + '.' + e.slice(5, 7); };
   const when = (iso) => { const d = roDay(iso), t = S.d.today; return (d === t ? 'azi' : d === addDay(t, 1) ? 'mâine' : d === addDay(t, -1) ? 'ieri' : dow(d) + ' ' + dm(d)) + ', ' + fTime.format(new Date(iso)); };
   const fileOf = (it, n) => (it.files || []).find((f) => f.name === n);
+  // a reel's two videos: the preview with the music (approved, posted by the API) and the clean one (role 'clean')
+  const byName = (a, b) => a.name.localeCompare(b.name, 'en', { numeric: true });
+  const mainVid = (it) => (it.files || []).slice().sort(byName).find((f) => f.mime === 'video/mp4' && f.role !== 'clean') || null;
+  const cleanVid = (it) => (it.files || []).find((f) => f.mime === 'video/mp4' && f.role === 'clean') || null;
+  const modeOf = (net) => ((S.d && S.d.settings.modes) || {})[net] === 'auto' ? 'auto' : 'app';
   const fileUrl = (it, n) => { const f = fileOf(it, n); return '/api/content-file?i=' + encodeURIComponent(it.id) + '&n=' + encodeURIComponent(n) + (f && f.v ? '&v=' + encodeURIComponent(f.v) : ''); };
   const cover = (it) => (it.cover ? fileUrl(it, it.cover) : '');
   const title = (it) => it.topic || it.rubric || KIND[it.kind];
@@ -69,6 +79,15 @@
     panel.classList.add('k-panel', 'cn');
     panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Conținut</h2></div><div class="k-head-actions" data-cthead></div></div><div data-ctbody><div class="k-skel" style="height:420px"></div></div>';
     panel.addEventListener('click', async (e) => {
+      // De postat: a card's buttons
+      const tp = e.target.closest('[data-cttp]');
+      if (tp) {
+        const [id, net] = tp.dataset.cttp.split('~'), it = S.d && S.d.items.find((x) => x.id === id);
+        const sh = e.target.closest('[data-cttp-share]'); if (sh && it) return shareIt(sh, it, net);
+        const cp = e.target.closest('[data-cttp-copy]'); if (cp && it) return copyFor(it, net, cp.dataset.cttpCopy);
+        const sn = e.target.closest('[data-cttp-snooze]'); if (sn && it) return snoozeIt(sn, it, net);
+        const sk = e.target.closest('[data-cttp-skip]'); if (sk && it) return skipIt(sk, it, net);
+      }
       const all = e.target.closest('[data-ctall]');
       if (all) return approveAll(all);
       const del = e.target.closest('[data-ctidel]');
@@ -113,8 +132,10 @@
       const n = c.parentElement.querySelector('[data-ctcarn]'); if (!n) return;
       n.textContent = (Math.round(c.scrollLeft / Math.max(1, c.clientWidth)) + 1) + '/' + c.children.length;
     }, true);
-    // an idea for the next weeks
+    // an idea for the next weeks; „Am postat” on a De postat card
     panel.addEventListener('submit', async (e) => {
+      const done = e.target.closest('[data-cttp-done]');
+      if (done) { e.preventDefault(); const [id, net] = done.closest('[data-cttp]').dataset.cttp.split('~'); return postedIt(done, id, net); }
       const f = e.target.closest('[data-ctidea]'); if (!f) return;
       e.preventDefault();
       const text = f.elements.text.value.trim();
@@ -135,9 +156,14 @@
     paint(true);
     if (S.tab === 'res') loadResults();
   }
-  K.on('continut:sub', (sub) => setTab(sub));
+  // a push for a reel to post opens its card: #continut/de-postat~<id>~<net> (the tab stays as it is)
+  K.on('continut:sub', (sub) => {
+    const m = /^de-postat(?:~([0-9a-f-]{36})~(tt|yt|ig|fb))?$/.exec(String(sub || ''));
+    if (m) { S.focus = m[1] ? m[1] + '~' + m[2] : 'all'; focusCard(false); return; }
+    setTab(sub);
+  });
   async function load() {
-    try { S.d = await K.api('/api/portal-content', { action: 'get' }); paint(); }
+    try { S.d = await K.api('/api/portal-content', { action: 'get' }); paint(); focusCard(true); }
     catch (err) { const b = panel && panel.querySelector('[data-ctbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca conținutul', esc(K.errText(err))); }
     if (S.tab === 'res') loadResults();
   }
@@ -150,7 +176,9 @@
     // an open drawer shows the item's funnel once Rezultate is there
     if (dr && openId) { const it = S.d && S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; } }
   }
-  const ERR = { not_approved: 'Întâi aprobă materialul.', paused: 'Postarea automată e oprită.', not_ready: 'Materialul se reface acum.', already_posted: 'E postat peste tot.', idea_too_short: 'Scrie ideea pe scurt.' };
+  const ERR = { not_approved: 'Întâi aprobă materialul.', paused: 'Programul e oprit.', not_ready: 'Materialul se reface acum.', already_posted: 'E postat peste tot.', idea_too_short: 'Scrie ideea pe scurt.',
+    invalid_link: 'Linkul nu e al unei postări de pe rețeaua asta.', not_todo: 'Cardul s-a schimbat între timp.', reason_required: 'Alege un motiv.', not_manual: 'Linkul se pune doar la postările făcute din aplicație.',
+    net_app: 'Rețeaua e pe „Din aplicație”: o postezi tu, din De postat.' };
   async function save(payload, btn, quiet) {
     if (btn) btn.disabled = true;
     try { S.busy = true; const r = await K.api('/api/portal-content', payload); S.d = r; paint(quiet); return r; }
@@ -166,19 +194,26 @@
   function paint(quiet) {
     if (!panel || !S.d) return;
     const st = S.d.settings, s = S.d.status;
-    panel.querySelector('[data-cthead]').innerHTML = K.toggle('cton', st.on, st.on ? 'Postare automată' : 'Oprită') +
+    // the switch runs the whole program: the API's posts and the De postat cards alike
+    panel.querySelector('[data-cthead]').innerHTML = K.toggle('cton', st.on, st.on ? 'Program pornit' : 'Program oprit') +
       '<button type="button" class="k-icon-btn" data-ctset aria-label="Setări">' + icon('sliders') + '</button>';
     const body = panel.querySelector('[data-ctbody]');
     // a text being typed in the ideas box survives a repaint
     const typing = body.querySelector('[data-ctidea] input[name=text]'), draft = typing && !S.ideaSent ? typing.value : '', focused = typing && document.activeElement === typing;
     const pend = (s.next && s.next.pending) || 0;
     const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['res', 'Rezultate', 'trend'], ['week', pend ? 'Program · ' + pend : 'Program', 'calendar']], S.tab) + '</div>';
+    // a link being typed on a De postat card survives a repaint too
+    const links = {};
+    body.querySelectorAll('[data-cttp] input[name=link]').forEach((x) => { if (x.value) links[x.closest('[data-cttp]').dataset.cttp] = x.value; });
+    const linkFocus = document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-cttp] [data-cttp-done]') ? document.activeElement.closest('[data-cttp]').dataset.cttp : '';
     stopMedia();
-    body.innerHTML = tabs + (S.tab === 'res' ? banner(s.next) + resTab()
+    body.innerHTML = toPost() + tabs + (S.tab === 'res' ? banner(s.next) + resTab()
       : access() + gallery(s.next) + board(s.next, 'Săptămâna viitoare', true) + board(s.current, 'Săptămâna asta', false) + ideasBox() + errors() + last());
     const t2 = body.querySelector('[data-ctidea] input[name=text]');
     if (t2 && draft) { t2.value = draft; if (focused) t2.focus(); }
+    Object.keys(links).forEach((key) => { const x = body.querySelector('[data-cttp="' + key + '"] input[name=link]'); if (x) { x.value = links[key]; if (key === linkFocus) x.focus(); } });
     wireMedia(body);
+    wireShare(body);
     if (dr && openId && !quiet) { const it = S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; dr.el.querySelector('.k-dfoot') && (dr.el.querySelector('.k-dfoot').innerHTML = itemFoot(it)); } }
   }
   // next week waits for the owner's look: the way to it, on top of Rezultate
@@ -200,6 +235,163 @@
       return '<button type="button" class="cn-conn' + (x.lost ? ' is-bad' : '') + '" data-ctgo title="' + esc(x.lost || (x.missing || []).join(', ')) + '">' + badge(n) + '<span>' + NET[n] + ': ' + why + '</span>' + icon('right') + '</button>';
     }).join('');
     return fb + (own ? '<div class="cn-conns">' + own + '</div>' : '');
+  }
+
+  // ------------------------------------------------------------------ De postat (the networks in „Din aplicație” mode)
+  const isTodo = (it, e) => e.state === 'todo' && it.state === 'ready' && review(it) === 'approved' && !it.removed && !it.dropped;
+  const later = (e) => !!(e.snoozeUntil && Date.parse(e.snoozeUntil) > Date.now());
+  const todos = () => entries().filter(({ it, e }) => isTodo(it, e)).sort((a, b) => (later(a.e) - later(b.e)) || a.e.at.localeCompare(b.e.at));
+  const mb = (n) => (n >= 1e6 ? (Math.round(n / 1e5) / 10).toLocaleString('ro-RO') + ' MB' : Math.max(1, Math.round(n / 1e3)) + ' KB');
+  const slugOf = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'material';
+  function toPost() {
+    const list = todos();
+    if (!list.length) return '';
+    const wait = list.filter((x) => later(x.e)).length;
+    return '<section class="cn-sec cn-tp" data-cttps><div class="cn-tp-h"><h3>De postat</h3><span class="k-tag is-warn">' + (list.length - wait) + '</span>' +
+      (wait ? '<span class="k-tag">' + icon('clock') + wait + ' mai târziu</span>' : '') + '</div><div class="cn-tps">' + list.map(({ it, e }) => tpCard(it, e)).join('') + '</div></section>';
+  }
+  // what „Distribuie” sends: a reel's clean MP4 (the one with the music while the clean one is missing), or the photos
+  function shareFiles(it) {
+    const files = (it.files || []).slice().sort(byName);
+    if (photo(it)) return files.filter((f) => /^image\//.test(f.mime));
+    const v = cleanVid(it) || mainVid(it);
+    return v ? [v] : [];
+  }
+  const shareName = (it, net, f, i, n) => 'centrul360-' + slugOf(title(it)) + '-' + NET[net].toLowerCase() + (n > 1 ? '-' + String(i + 1).padStart(2, '0') : '') + '.' + (f.name.split('.').pop().toLowerCase().replace('jpeg', 'jpg'));
+  function tpCard(it, e) {
+    const key = it.id + '~' + e.net, c = e.copy || {}, wait = later(e), kind = e.kind || it.kind;
+    const files = shareFiles(it), size = files.reduce((n, f) => n + (f.size || 0), 0);
+    const noClean = it.kind === 'reel' && !cleanVid(it);
+    const what = it.kind === 'reel' ? (noClean ? 'cu muzică' : 'fără muzică') : pl(files.length, 'poză', 'poze');
+    const when2 = wait ? '<span class="cn-when is-off">' + icon('clock') + 'Revine ' + esc(when(e.snoozeUntil)) + '</span>' : '<span class="cn-when">' + icon('clock') + esc(when(e.at)) + '</span>';
+    const head = '<header class="cn-tp-ch">' + badge(e.net) + '<b>' + NET[e.net] + '</b><small>' + esc(KIND[kind] || '') + '</small>' + when2 + '</header>' +
+      '<div class="cn-tp-tt"><h4>' + esc(title(it)) + '</h4>' + (it.hook ? '<p>„' + esc(it.hook) + '”</p>' : '') + '</div>';
+    const acts = '<div class="cn-tp-x">' +
+      '<button type="button" class="k-btn is-primary is-lg cn-tp-share" data-cttp-share' + (files.length ? '' : ' disabled') + '>' + icon('share') + '<span>Distribuie</span><small>' + esc(what + (size ? ' · ' + mb(size) : '')) + '</small></button>' +
+      (noClean ? '<p class="cn-tp-w">' + icon('alert') + '<span>Fișierul fără muzică lipsește: se trimite varianta cu muzică.</span></p>' : '') +
+      '<div class="cn-tp-cp"><button type="button" class="k-btn is-outline" data-cttp-copy="text"' + (c.text ? '' : ' disabled') + '>' + icon('copy') + '<span>Copiază textul</span></button>' +
+      (c.comment ? '<button type="button" class="k-btn is-outline" data-cttp-copy="comment">' + icon('chat') + '<span>Copiază primul comentariu</span></button>' : '') + '</div>' +
+      (c.hint ? '<p class="cn-tp-hint">' + mi('note') + '<span>' + esc(c.hint) + '</span></p>' : '') +
+      '<form class="cn-tp-done" data-cttp-done autocomplete="off"><input type="url" name="link" inputmode="url" enterkeyhint="done" placeholder="Linkul postării (opțional)" aria-label="Linkul postării pe ' + NET[e.net] + '">' +
+      '<button type="submit" class="k-btn is-good">' + icon('check') + '<span>Am postat</span></button></form>' +
+      '<div class="cn-tp-more"><button type="button" class="k-btn is-ghost is-sm" data-cttp-snooze>' + icon('clock') + 'Nu pot acum</button><button type="button" class="k-btn is-ghost is-sm" data-cttp-skip>' + icon('ban') + 'Sari peste</button></div></div>';
+    return '<article class="cn-tp-c is-' + e.net + (wait ? ' is-later' : '') + '" data-cttp="' + esc(key) + '">' + head + '<div class="cn-tp-b">' + media(it) + acts + '</div></article>';
+  }
+  // the files of a card, fetched once (so the tap that shares them still counts as the tap on iOS)
+  const shareReady = new Map(), shareDone = new Set();
+  const canShareFiles = () => !!(navigator.share && navigator.canShare);
+  function prep(it, net) {
+    const key = it.id + '~' + net;
+    if (!shareReady.has(key)) {
+      const list = shareFiles(it);
+      const p = Promise.all(list.map((f, i) => fetch(fileUrl(it, f.name), { credentials: 'same-origin' }).then((r) => { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); })
+        .then((b) => new File([b], shareName(it, net, f, i, list.length), { type: f.mime }))));
+      p.then(() => shareDone.add(key), () => shareReady.delete(key));
+      shareReady.set(key, p);
+    }
+    return shareReady.get(key);
+  }
+  // a card in view: its files start coming (only where the phone can share files)
+  let ioShare = null;
+  function wireShare(root) {
+    const cards = root.querySelectorAll('[data-cttp]');
+    if (!cards.length || !canShareFiles() || !('IntersectionObserver' in window)) return;
+    if (!ioShare) ioShare = new IntersectionObserver((list) => list.forEach((x) => {
+      if (!x.isIntersecting) return;
+      ioShare.unobserve(x.target);
+      const [id, net] = x.target.dataset.cttp.split('~'), it = S.d && S.d.items.find((y) => y.id === id);
+      if (it) prep(it, net).catch(() => {});
+    }), { rootMargin: '200px 0px' });
+    cards.forEach((c) => ioShare.observe(c));
+  }
+  // the network's text in the clipboard with the same tap, so it is there to paste in the app (best effort: never
+  // awaited, the share sheet must open within the tap)
+  function copySilently(it, net) {
+    const e = entryOf(it, net), t = e && e.copy && e.copy.text;
+    if (!t || !navigator.clipboard || !navigator.clipboard.writeText) return false;
+    navigator.clipboard.writeText(t).catch(() => {});
+    return true;
+  }
+  // „Distribuie”: the phone's share sheet with the files (TikTok, Instagram, Save); without it, a normal download
+  async function shareIt(btn, it, net) {
+    const list = shareFiles(it);
+    if (!list.length) return;
+    const copied = copySilently(it, net);
+    if (!canShareFiles()) { download(it, net, list, copied); return; }
+    const key = it.id + '~' + net, had = shareDone.has(key);
+    let files;
+    if (!had) { btn.disabled = true; btn.classList.add('is-busy'); }
+    try { files = await prep(it, net); }
+    catch (err) { K.ui().toast('Nu am putut pregăti fișierul. Încearcă din nou.', 'error'); return; }
+    finally { if (btn.isConnected) { btn.disabled = false; btn.classList.remove('is-busy'); } }
+    if (!navigator.canShare({ files })) { download(it, net, list, copied); return; }
+    try { await navigator.share({ files }); }
+    catch (err) {
+      if (err && err.name === 'AbortError') return;
+      // the tap ran out while the file came: it is here now, one more tap shares it
+      if (err && err.name === 'NotAllowedError' && !had) { K.ui().toast('Fișierul e gata. Apasă din nou Distribuie.', 'success'); return; }
+      download(it, net, list, copied);
+    }
+  }
+  function download(it, net, list, copied) {
+    list.forEach((f, i) => setTimeout(() => {
+      const name = shareName(it, net, f, i, list.length), a = document.createElement('a');
+      a.href = fileUrl(it, f.name) + '&dl=1&as=' + encodeURIComponent(name); a.download = name; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove();
+    }, i * 350));
+    K.ui().toast((list.length > 1 ? 'Se descarcă pozele.' : 'Se descarcă fișierul.') + (copied ? ' Textul e copiat.' : ''), 'success');
+  }
+  async function copyFor(it, net, what) {
+    const e = entryOf(it, net), c = (e && e.copy) || {}, text = what === 'comment' ? c.comment : c.text;
+    if (!text) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (err) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (x) { ok = false; }
+      ta.remove();
+    }
+    K.ui().toast(ok ? (what === 'comment' ? 'Comentariul e copiat.' : 'Textul pentru ' + NET[net] + ' e copiat.') : 'Nu am putut copia.', ok ? 'success' : 'error');
+  }
+  // a link of the network (the server reads it again): a wrong one is said at once, never sent
+  const HOSTS = { tt: /(^|\.)tiktok\.com$/, yt: /(^|\.)(youtube\.com|youtu\.be)$/, ig: /(^|\.)(instagram\.com|instagr\.am)$/, fb: /(^|\.)(facebook\.com|fb\.com|fb\.watch)$/ };
+  const linkOk = (net, v) => { try { const u = new URL(v); return /^https?:$/.test(u.protocol) && HOSTS[net].test(u.hostname.toLowerCase()); } catch (e) { return false; } };
+  const badLink = (net, input) => { K.ui().toast('Linkul nu e al unei postări de pe ' + NET[net] + '.', 'error'); input.focus(); };
+  async function postedIt(form, id, net) {
+    const link = form.elements.link.value.trim();
+    if (link && !linkOk(net, link)) return badLink(net, form.elements.link);
+    const r = await save({ action: 'app_posted', id, net, link }, form.querySelector('button[type=submit]'), true);
+    if (r) K.ui().toast(link ? 'Notat ca postat. Cifrele vin din link.' : 'Notat ca postat. Caut postarea pe ' + NET[net] + ' ca să-i citesc cifrele.', 'success');
+  }
+  async function snoozeIt(btn, it, net) {
+    const r = await save({ action: 'app_snooze', id: it.id, net }, btn, true);
+    if (r && r.result && r.result.until) K.ui().toast('Revine ' + when(r.result.until) + '.', 'success');
+  }
+  const REASONS = [['moment', 'Nu e momentul potrivit'], ['sunet', 'N-am găsit un sunet potrivit'], ['retea', 'Nu se potrivește pe rețeaua asta'], ['altul', 'Alt motiv']];
+  async function skipIt(btn, it, net) {
+    let v = await K.ui().prompt({ title: 'Sari peste ' + NET[net] + '?', message: 'Trece pe următorul loc liber din săptămână.', options: REASONS, value: 'moment', confirmText: 'Sari peste' });
+    if (v == null) return;
+    let reason = (REASONS.find((x) => x[0] === v) || [])[1] || '';
+    if (v === 'altul') {
+      reason = await K.ui().prompt({ title: 'De ce sari peste?', value: '', confirmText: 'Sari peste' });
+      if (reason == null) return;
+      reason = reason.trim();
+      if (reason.length < 2) { K.ui().toast('Scrie pe scurt motivul.', 'error'); return; }
+    }
+    const r = await save({ action: 'app_skip', id: it.id, net, reason }, btn, true);
+    if (!r || !r.result) return;
+    K.ui().toast(r.result.moved ? 'Mutat pe ' + short(r.result.moved) + '.' : 'Sărit: nu mai e loc liber pe ' + NET[net] + ' săptămâna asta.', 'success');
+  }
+  // a push opened Conținut on a card: there, and it flashes (final: after the page has its data)
+  function focusCard(final) {
+    if (!S.focus || !panel || !S.d) return;
+    const exact = S.focus !== 'all' && panel.querySelector('[data-cttp="' + S.focus + '"]');
+    const el = exact || (final ? panel.querySelector('[data-cttps]') : null);
+    if (!el) { if (final) S.focus = ''; return; }
+    S.focus = '';
+    el.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+    el.classList.remove('is-flash'); void el.offsetWidth; el.classList.add('is-flash');
   }
 
   // ------------------------------------------------------------------ a week: days × networks
@@ -316,8 +508,8 @@
   }
   // the video (loaded when it comes near, playing while it is in view, muted until a tap) or the photos to swipe
   function media(it) {
-    const files = (it.files || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }));
-    const vid = files.find((f) => f.mime === 'video/mp4');
+    const files = (it.files || []).slice().sort(byName);
+    const vid = mainVid(it);
     const open = '<button type="button" class="cn-rc-x" data-ctitem="' + esc(it.id) + '" aria-label="Deschide">' + icon('more') + '</button>';
     if (vid) {
       return '<div class="cn-rc-m"><video data-ctvid data-src="' + esc(fileUrl(it, vid.name)) + '"' + (it.cover ? ' poster="' + esc(cover(it)) + '"' : '') + ' muted playsinline loop preload="none"></video>' +
@@ -474,12 +666,16 @@
   }
   function row(it, e, extra) {
     return '<button type="button" class="cn-row" data-ctitem="' + esc(it.id) + '">' + thumb(it) + '<span class="cn-main"><b>' + (it.hot ? '<i class="cn-fl">🔥</i>' : '') + esc(title(it)) + '</b><small>' + badge(e.net) + esc(when(e.postedAt || e.at)) + '</small>' + (extra || '') + '</span>' +
-      (e.state === 'posted' ? statLine((it.stats || {})[e.net]) : '<span class="k-tag ' + TONE[e.state] + '">' + STATE[e.state] + '</span>') + icon('right') + '</button>';
+      (e.state === 'posted' ? (blind(e) ? '<span class="k-tag is-warn">Fără cifre</span>' : e.manual && e.match && e.match.state === 'pending' && !(it.stats || {})[e.net] ? '<span class="k-tag">Caut postarea</span>' : statLine((it.stats || {})[e.net]))
+        : '<span class="k-tag ' + TONE[e.state] + '">' + STATE[e.state] + '</span>') + icon('right') + '</button>';
   }
+  // a post made from the app whose post was never found: no numbers until a link comes (nothing guessed)
+  const blind = (e) => e.state === 'posted' && e.manual && e.match && (e.match.state === 'none' || e.match.state === 'ambiguous');
+  const blindText = (e) => (e.match.state === 'ambiguous' ? 'Mai multe postări se potrivesc' : 'Nu am găsit postarea') + ': fără cifre. Adaugă linkul.';
   function errors() {
-    const bad = entries().filter(({ it, e }) => e.state === 'error' || (e.hold && e.state === 'planned' && review(it) === 'approved')).sort((a, b) => b.e.at.localeCompare(a.e.at)).slice(0, 6);
+    const bad = entries().filter(({ it, e }) => e.state === 'error' || (e.hold && e.state === 'planned' && review(it) === 'approved') || blind(e)).sort((a, b) => (b.e.postedAt || b.e.at).localeCompare(a.e.postedAt || a.e.at)).slice(0, 6);
     if (!bad.length) return '';
-    return '<section class="cn-sec"><h3>De văzut</h3><div class="cn-list">' + bad.map(({ it, e }) => row(it, e, '<em class="cn-err' + (e.state === 'error' ? '' : ' is-warn') + '">' + esc(e.error || e.hold) + '</em>')).join('') + '</div></section>';
+    return '<section class="cn-sec"><h3>De văzut</h3><div class="cn-list">' + bad.map(({ it, e }) => row(it, e, '<em class="cn-err' + (e.state === 'error' ? '' : ' is-warn') + '">' + esc(blind(e) ? blindText(e) : e.error || e.hold) + '</em>')).join('') + '</div></section>';
   }
   function last() {
     const done = entries().filter(({ e }) => e.state === 'posted').sort((a, b) => (b.e.postedAt || b.e.at).localeCompare(a.e.postedAt || a.e.at)).slice(0, 10);
@@ -733,8 +929,8 @@
 
   // ------------------------------------------------------------------ one item
   function preview(it) {
-    const files = (it.files || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }));
-    const vid = files.find((f) => f.mime === 'video/mp4');
+    const files = (it.files || []).slice().sort(byName);
+    const vid = mainVid(it);
     if (vid) return '<div class="cn-pv"><video src="' + esc(fileUrl(it, vid.name)) + '"' + (it.cover ? ' poster="' + esc(cover(it)) + '"' : '') + ' controls playsinline preload="none"></video></div>';
     const imgs = files.filter((f) => /^image\//.test(f.mime));
     return '<div class="cn-pv' + (photo(it) ? ' is-photo' : '') + (imgs.length > 1 ? ' is-many' : '') + '">' + imgs.map((f) => '<img src="' + esc(fileUrl(it, f.name)) + '" alt="" loading="lazy">').join('') + '</div>';
@@ -760,9 +956,12 @@
         '<textarea data-ctcap="' + n + '" maxlength="' + CAP_MAX[n] + '" rows="3"' + (posted(n) ? ' readonly' : '') + '>' + esc(v) + '</textarea></label>';
     }).join('');
     const plan = (it.plan || []).slice().sort((a, b) => String(a.at).localeCompare(String(b.at))).map((e) => {
-      const can = on[e.net] && S.d.settings.on && r === 'approved' && (e.state === 'planned' || e.state === 'error' || e.state === 'missed') && e.net !== 'tt' && e.net !== 'yt';
-      return '<li class="cn-pl is-' + e.state + '"><div class="cn-pl-h">' + badge(e.net) + '<b>' + NET[e.net] + (e.kind && e.kind !== it.kind ? ' · ' + KIND[e.kind] : '') + '</b><span class="k-tag ' + TONE[e.state] + '">' + STATE[e.state] + '</span></div>' +
-        '<p>' + esc(when(e.postedAt || e.at)) + (e.url ? ' · <a href="' + esc(e.url) + '" target="_blank" rel="noopener">Deschide</a>' : '') + '</p>' +
+      const can = on[e.net] && modeOf(e.net) === 'auto' && S.d.settings.on && r === 'approved' && (e.state === 'planned' || e.state === 'error' || e.state === 'missed') && e.net !== 'tt' && e.net !== 'yt';
+      const app = e.manual || e.state === 'todo' || (modeOf(e.net) === 'app' && e.state !== 'posted');
+      return '<li class="cn-pl is-' + e.state + '"><div class="cn-pl-h">' + badge(e.net) + '<b>' + NET[e.net] + (e.kind && e.kind !== it.kind ? ' · ' + KIND[e.kind] : '') + '</b>' +
+        (app ? '<span class="k-tag">' + icon('share') + 'Din aplicație</span>' : '') + '<span class="k-tag ' + TONE[e.state] + '">' + STATE[e.state] + '</span></div>' +
+        '<p>' + esc(when(e.postedAt || e.at)) + (e.url ? ' · <a href="' + esc(e.url) + '" target="_blank" rel="noopener">Deschide</a>' : '') + '</p>' + manualLine(e) +
+        (e.skips && e.skips.length ? '<p class="cn-pl-sk">' + icon('ban') + '<span>Sărit ' + e.skips.map((k) => esc(dow(roDay(k.at)) + ' ' + fTime.format(new Date(k.at)) + ': ' + k.reason)).join(' · ') + '</span></p>' : '') +
         (e.error && e.state !== 'posted' ? '<p class="cn-err">' + esc(e.error) + (e.tries ? ' (' + e.tries + '/3)' : '') + '</p>' : '') + (e.hold && e.state === 'planned' ? '<p class="cn-err is-warn">' + esc(e.hold) + '</p>' : '') +
         (e.note ? '<p class="cn-err is-warn">' + icon('eyeOff') + esc(e.note) + '</p>' : '') +
         (e.comment && (e.comment.text || e.comment.error) ? '<p class="cn-cmt' + (e.comment.error ? ' is-bad' : '') + '">' + icon('chat') + '<span>' + esc(e.comment.text || '') + (e.comment.error ? '<em>' + esc(e.comment.error) + '</em>' : '') + '</span></p>' : '') +
@@ -771,6 +970,16 @@
     }).join('');
     const fc = it.firstComment && !(it.plan || []).some((e) => e.comment) ? '<p class="cn-cmt is-plan">' + icon('chat') + '<span><small>Primul comentariu</small>' + esc(it.firstComment) + '</span></p>' : '';
     return status + qa + statsSection(it) + preview(it) + '<section class="cn-caps">' + caps + '</section>' + fc + (plan ? '<ul class="cn-plan">' + plan + '</ul>' : '');
+  }
+  // a post made from the app: which post the numbers come from, or why there are none (and the link to give them)
+  function manualLine(e) {
+    if (!(e.state === 'posted' && e.manual)) return '';
+    const m = e.match || {};
+    const say = m.state === 'matched' ? '<p class="cn-pl-m is-good">' + icon('check') + '<span>' + (m.how === 'link' ? 'Cifrele vin din link.' : 'Am găsit postarea după oră și text.') + '</span></p>'
+      : m.state === 'pending' ? '<p class="cn-pl-m">' + icon('refresh') + '<span>Caut postarea ca să-i citesc cifrele' + (m.note ? ' (' + esc(m.note) + ')' : '') + '.</span></p>'
+        : '<p class="cn-pl-m is-warn">' + icon('alert') + '<span>' + esc(blindText(e)) + (m.note && m.state === 'none' ? ' ' + esc(m.note) + '.' : '') + '</span></p>';
+    const form = m.state === 'matched' && m.how === 'link' ? '' : '<form class="cn-pl-lk" data-ctlink="' + e.net + '" autocomplete="off"><input type="url" name="link" inputmode="url" placeholder="Linkul postării" aria-label="Linkul postării pe ' + NET[e.net] + '"><button type="submit" class="k-btn is-outline is-sm">' + icon('link') + 'Adaugă linkul</button></form>';
+    return say + form;
   }
   // ------------------------------------------------------------------ Statistici (the drawer)
   // per network the numbers and the rates, × the network's usual post, the retention curve, the growth in the first
@@ -788,7 +997,7 @@
     const xRow = nets.some((n) => ins.x && ins.x[n] != null) ? '<tr class="is-x"><th>Față de obișnuit</th>' + nets.map((n) => '<td>' + (ins.x[n] != null ? chipX(ins.x[n]) : '-') + '</td>').join('') + '</tr>' : '';
     const table = '<div class="cn-st-w"><table class="cn-st"><thead><tr><th></th>' + nets.map((n) => '<th>' + badge(n) + '</th>').join('') + '</tr></thead><tbody>' + xRow +
       rows.map((row) => '<tr' + (row[3] ? ' class="is-rate"' : '') + '><th>' + row[1] + '</th>' + nets.map((n) => { const v = val(n, row); return '<td>' + (v == null ? '<span class="cn-st-na">-</span>' : row[2](v)) + '</td>'; }).join('') + '</tr>').join('') + '</tbody></table></div>';
-    const dur = ((it.files || []).find((f) => f.mime === 'video/mp4') || {}).dur || 0;
+    const dur = (mainVid(it) || {}).dur || 0;
     const ret = nets.filter((n) => Array.isArray(st[n].ret)).map((n) => ({ net: n, ret: st[n].ret }));
     const snaps = nets.filter((n) => it.snaps && (it.snaps[n] || []).length).map((n) => ({ net: n, pts: it.snaps[n] }));
     const hot = it.hot ? '<div class="cn-st-hot"><span>🔥</span><p><b>Merge tare</b>' + esc(NET[it.hot.net] + ': ' + k(it.hot.views) + ' vizualizări în ' + (it.hot.h < 1.5 ? 'prima oră' : pl(Math.round(it.hot.h), 'oră', 'ore')) + ', ' + x1(it.hot.x) + ' față de obișnuit la aceeași vârstă') + '</p></div>' : '';
@@ -900,6 +1109,14 @@
           const t = e.target.closest('[data-ctcap]'); if (!t) return;
           const c = el.querySelector('[data-ctcount="' + t.dataset.ctcap + '"]'); if (c) c.textContent = t.value.length + '/' + CAP_MAX[t.dataset.ctcap];
         });
+        el.addEventListener('submit', async (e) => {
+          const f = e.target.closest('[data-ctlink]'); if (!f) return;
+          e.preventDefault();
+          const link = f.elements.link.value.trim();
+          if (!link) { K.ui().toast('Lipește linkul postării.', 'error'); f.elements.link.focus(); return; }
+          if (!linkOk(f.dataset.ctlink, link)) return badLink(f.dataset.ctlink, f.elements.link);
+          if (await save({ action: 'app_link', id, net: f.dataset.ctlink, link }, f.querySelector('button'))) K.ui().toast('Link salvat. Cifrele vin de acolo.', 'success');
+        });
         el.addEventListener('change', async (e) => {
           const t = e.target.closest('[data-ctcap]'); if (!t) return;
           if (await save({ action: 'captions', id, captions: { [t.dataset.ctcap]: t.value } }, null, true)) K.ui().toast('Text salvat pentru ' + NET[t.dataset.ctcap] + '.', 'success');
@@ -943,10 +1160,11 @@
     const t = (n, i) => '<label class="k-field"><span>' + (i === 'p' ? (n === 'tt' ? 'Ora slideshow' : 'Ora carusel') : 'Ora ' + (i + 1)) + '</span><input type="text" inputmode="numeric" maxlength="5" placeholder="hh:mm" data-cttime="' + n + '|' + i + '" value="' + esc(i === 'p' ? st.photoTime[n] || '' : st.times[n][i] || '') + '"></label>';
     const q = (n, w, kind, label) => '<label class="k-field"><span>' + label + '</span><input type="number" inputmode="numeric" min="0" max="' + (kind === 'reel' ? 28 : 7) + '" data-ctq="' + w + '|' + n + '|' + kind + '" value="' + esc(String(st.quotas[w][n][kind] != null ? st.quotas[w][n][kind] : 0)) + '"></label>';
     const pk = { tt: 'slideshow', ig: 'carousel', fb: 'carousel' };
-    const card = (n) => '<div class="cn-netc"><div class="cn-setr">' + badge(n) + '<b>' + NET[n] + '</b>' + K.toggle('net_' + n, st.nets[n]) + '</div>' +
+    const card = (n) => '<div class="cn-netc"><div class="cn-setr">' + badge(n) + '<b>' + NET[n] + '</b>' + K.seg('ctmode_' + n, [['app', 'Din aplicație'], ['auto', 'Automat']], modeOf(n), 'cn-seg-sm cn-mode') + '</div>' +
+      '<div class="cn-setr cn-api' + (modeOf(n) === 'app' ? ' is-hidden' : '') + '" data-ctapi="' + n + '"><span>Postare prin API</span>' + K.toggle('net_' + n, st.nets[n]) + '</div>' +
       '<div class="cn-nf">' + t(n, 0) + t(n, 1) + (pk[n] ? t(n, 'p') : '<span></span>') + '</div>' +
       '<div class="cn-nf">' + q(n, 'warm', 'reel', 'Reels săpt. 1-' + st.warmWeeks) + q(n, 'full', 'reel', 'Reels apoi') + (pk[n] ? q(n, 'full', pk[n], n === 'tt' ? 'Slideshow' : 'Carusele') : '<span></span>') + '</div></div>';
-    const body = '<section class="cn-set"><h5>Rețele, ore și cote pe săptămână</h5>' + NETS.map(card).join('') + '</section>' +
+    const body = '<section class="cn-set"><h5>Rețele, ore și cote pe săptămână</h5><p class="cn-set-p">Din aplicație: la ora din program primești o notificare și postezi tu, cu sunetul din aplicație. Automat: se postează singur, prin API.</p>' + NETS.map(card).join('') + '</section>' +
       '<section class="cn-set"><h5>Prima săptămână</h5><label class="k-field"><span>Luni</span><input type="date" data-ctstart value="' + esc(st.startWeek) + '"></label></section>' +
       '<section class="cn-set"><h5>Concurenți</h5><label class="k-field"><span>Nu apar în texte</span><input type="text" data-ctcomp maxlength="600" placeholder="Nume, despărțite prin virgulă" value="' + esc((st.competitors || []).join(', ')) + '"></label></section>';
     // Ținte lunare: the followers gained per network, the views, the organic leads (empty: no goal)
@@ -957,12 +1175,18 @@
       title: 'Setări conținut', icon: 'sliders', width: 480, body: goalsFirst ? goals + body : body + goals, focus: false,
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-primary" data-ctsave>' + icon('check') + 'Salvează</button>',
       onMount(el) {
+        // Automat shows its API switch; Din aplicație needs none
+        el.addEventListener('change', (e) => {
+          const m = /^ctmode_(tt|yt|ig|fb)$/.exec(e.target.name || ''); if (!m) return;
+          const r = el.querySelector('[data-ctapi="' + m[1] + '"]'); if (r) r.classList.toggle('is-hidden', e.target.value !== 'auto');
+        });
         el.addEventListener('click', async (e) => {
           const b = e.target.closest('[data-ctsave]'); if (!b) return;
-          const nets = {}, times = {}, photoTime = {}, quotas = { warm: {}, full: {} };
+          const nets = {}, modes = {}, times = {}, photoTime = {}, quotas = { warm: {}, full: {} };
           let bad = '';
           NETS.forEach((n) => {
             nets[n] = el.querySelector('input[name="net_' + n + '"]').checked;
+            modes[n] = el.querySelector('input[name="ctmode_' + n + '"]').value === 'auto' ? 'auto' : 'app';
             const ts = [0, 1].map((i) => el.querySelector('[data-cttime="' + n + '|' + i + '"]').value.trim().replace(/^(\d):/, '0$1:')).filter(Boolean);
             if (!ts.length) bad = 'Fiecare rețea are cel puțin o oră.';
             times[n] = ts;
@@ -981,7 +1205,7 @@
           const competitors = el.querySelector('[data-ctcomp]').value;
           const goals = { followers: {} };
           el.querySelectorAll('[data-ctgoal]').forEach((x) => { const v = Math.round(Number(x.value)); const key = x.dataset.ctgoal; if (!(v > 0)) return; if (key.startsWith('f_')) goals.followers[key.slice(2)] = v; else goals[key] = v; });
-          if (await save({ action: 'settings', nets, times, photoTime, quotas, startWeek: start || st.startWeek, competitors, goals }, b)) { K.ui().toast('Salvat.', 'success'); d.close(); loadResults(true); }
+          if (await save({ action: 'settings', nets, modes, times, photoTime, quotas, startWeek: start || st.startWeek, competitors, goals }, b)) { K.ui().toast('Salvat.', 'success'); d.close(); loadResults(true); }
         });
       },
     });
