@@ -304,6 +304,11 @@ def main_v2(rid, base, F, TIM):
     lib = {}
     for p in sorted(glob.glob(os.path.join(HERE, 'sfx', 'v2', '*.wav'))):
         cat = os.path.basename(p).rsplit('_', 1)[0]; lib.setdefault(cat, []).append(p)
+    if (F.get('sound') or 'v2') == 'v3':  # real recorded CC0/PDM sounds (openverse.py, sfx/ov/<cat>_<id>.wav) win over the synthesized ones
+        ov = {}
+        for p in sorted(glob.glob(os.path.join(HERE, 'sfx', 'ov', '*.wav'))):
+            ov.setdefault(os.path.basename(p).rsplit('_', 1)[0], []).append(p)
+        for cat, ps in ov.items(): lib[cat] = ps
     cache, last = {}, {}
     v3 = (F.get('sound') or 'v2') == 'v3'
     if v3:  # the quiet premium layer (14.11): the louder cartoon-ish sounds become soft ones; impacts stay rarer and lower

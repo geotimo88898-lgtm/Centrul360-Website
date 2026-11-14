@@ -468,6 +468,12 @@ le-a aprobat proprietarul):
   `panels` (panouri verticale care intră una după alta pe grilă, cu tap), `titlecard` (titlul mare, accentul, cele trei
   rânduri și cartea reală care îl acoperă, cu linia despre acord; ținut). Demonstrația: `scripts/v2-demo-sfx`
   (`"kind": "demo"`, nu se postează), `out/v2-demo-sfx.mp4`.
+- **Sunete reale** (`engine/openverse.py`): caută în Openverse doar sunete CC0 sau Public Domain Mark (fără obligații,
+  merg comercial) și le pune în `engine/sfx/ov/<categorie>_<id>.wav`; proveniența (sursa, autorul, licența) stă în
+  `openverse-library.json`, comis; fișierele audio nu se comit (`sfx/` e ignorat; `python3 openverse.py fetch` le reface).
+  `mix.py` (sunet `v3`) folosește un sunet din `sfx/ov` când există pentru categoria lui, altfel pe cel sintetizat de
+  `sfx.py`. Deocamdată descărcările de la Freesound (aproape toate efectele din Openverse) sunt refuzate de CDN-ul lor
+  pe mașina asta, așa că rămân sunetele sintetizate.
 
 ### Sunetul
 `sfx.py` sintetizează biblioteca (numpy/scipy, fără mostre): whoosh scurt/lung/invers, swoosh sus/jos, aparat foto,
