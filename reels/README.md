@@ -250,8 +250,46 @@ Nuki, în care Nuki explică un lucru în 2-3 bule scurte (vorbește brandul, nu
 Sursa: proprietarul trimite mesajele reale ca capturi, cu acord; motorul primește o listă `{who, text, time}` și nu
 generează niciodată mesaje. Se combină cu (iv) și (vi).
 
+**(x) Colajul editorial** (instagram.com/reel/DfCs7OyCasp, trimis 14.11; referința arată trei mini-reels alăturate
+doar ca portofoliu, la noi e un singur cadru 9:16). Cum arată: un colaj editorial pe hârtie crem (textură fină, pe
+alocuri o grilă de puncte halftone), o singură culoare de accent și mult spațiu gol. Câte o fotografie decupată,
+simbolică, pe fiecare idee: o clepsidră cu nisip colorat (timpul), un creier roz (mintea), un bust grecesc cu o bandă
+peste ochi, un fluture legat cu o sfoară de o piatră (greutatea față de ușurință), două piese de puzzle, siluete mici
+de oameni văzute de sus, două figuri sub o coloană înaltă. Tipografie mixtă: majuscule serif mari, spațiate („WAITS”,
+„SIDE BY SIDE” pe o bandă de accent), un italic serif mic („what if?”), un rând ca de mașină de scris cu un cuvânt într-o
+pastilă de accent („Some [SPEND] it”), un bloc mic de text justificat jos, ca textură, și un cuvânt care se schimbă pe
+loc („WAITS” → „RETURNS”). Mișcare: apropieri lente și derive pe obiecte, sfoara care se desenează, nisipul care
+curge, cuvinte care se schimbă sau se tastează; scenele se schimbă eșalonat, nu toate pe aceeași bătaie; whoosh-uri și
+pulsuri moi pe schimbări. La noi, în paleta noastră (hârtie albă cu textură discretă, turcoazul ca culoare principală,
+rose gold ca singurul accent; niciodată portocaliul sau maroul lor): câte o metaforă pe propoziție, fiecare cu un obiect
+decupat: o clepsidră cu nisip turcoaz pentru „rezultatul se vede după 6-8 săptămâni”; o pană legată cu o sfoară rose
+gold de o piatră pentru „grăsimea care nu pleacă nici cu dietă și sport”; două piese de puzzle, albă și turcoaz, pentru
+„gușa = grăsime + piele lăsată”; un bust clasic cu o bandă rose gold pe linia maxilarului pentru „conturul bărbiei”;
+siluete mici pentru „multe femei”. Tipografia: un serif de afișaj cu diacritice românești, plus fontul site-ului pentru
+textul mic; rândul de mașină de scris cu pastila de accent, ex. „Unele [ÎNCEARCĂ] totul”. Obiectele se generează o dată
+cu `imagen.py`, în același stil (fotografie decupată, umbră moale, fundalul neutru scos), și stau într-o bibliotecă mică
+(câțiva cenți pe obiect; prima serie doar după OK-ul proprietarului). Reguli: doar afirmații reale în text; niciun bust
+sau chip care seamănă cu o persoană reală; obiectele nu sunt niciodată „dovadă” de înainte/după (rezultatele reale
+rămân poze reale). Se combină cu (iv), cu structura în 8 blocuri și cu (viii) (bara de progres); vocea poate rămâne sau
+poate lipsi (doar muzică și text).
+
+**(xi) Faceless curat** (instagram.com/reel/Da0DayIpsie, trimis 14.11, „super clean”; 26 s, cu voce). Foarte aproape de
+stilul nostru educațional: fundal alb, o singură culoare de accent, text cinetic pe voce. Ce face bine: (1) fiecare
+cuvânt-cheie intră exact când e spus, centrat: un cuvânt mare vine uriaș și în blur, apoi se retrage la mărimea lui
+(„Attention” → „Attention is expensive”, cuvântul de accent colorat, cu o lumină moale de accent în spate); cuvintele
+accentuate trec în **italic serif** în culoarea de accent, restul rămâne sans; (2) obiecte uriașe, tăiate de cadru,
+pentru scară (un cadran de ceas din care se vede doar un arc și acele, care se rotește pe „every second”); (3) colțuri
+de vizor care încadrează un subiect (un rând de iconițe de oameni, una evidențiată, pe „your audience”); (4) un inel de
+numărătoare cu o cifră care urcă 5 → 10 → 15; (5) noduri cu iconițe și linii de legătură care apar pe rând, fiecare cu
+o etichetă mică (ca o mică hartă a ideilor); (6) pastile care se adună pentru o listă: fiecare beneficiu spus adaugă o
+pastilă (plină și conturată, alternativ), într-un șir care curge; vocea spune propoziții întregi, ecranul strânge
+cuvintele-cheie (exact cum arătăm o listă fără ca vocea să recite „fără X, fără Y”); (7) fundal alb cu inele de accent
+foarte moi, în blur, care plutesc în colțuri; mult spațiu alb; o singură idee pe ecran. La noi: turcoaz în loc de
+verde, rose gold pe cel mult un element; pastile doar cu fraze adevărate și de pe site; iconițele de oameni sunt
+generice, niciodată o persoană reală. Rafinările intră și în stilul nostru educațional implicit (mai jos, „Montajul”).
+
 **Combinații** (principiul proprietarului din 14.11: „poți să le și combini una cu alta, creativitatea e limita, iar în
-cazul nostru nu cred că avem limite”). Cele nouă formate sunt piese de construcție, nu șabloane. Un reel le poate
+cazul nostru nu cred că avem limite”). Cele unsprezece formate sunt piese de construcție, nu șabloane. Un reel le poate
 amesteca: un reel data-viz cu „chrome” al cărui răspuns e un moment de erou al aparatului; un manifest tipografic care
 se termină cu picătura suspansului minimalist; un reel educațional care începe cu picătura și apoi explică; un film de
 brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă ca o semnătură nouă. Regulile fixe rămân:
@@ -467,6 +505,13 @@ le-a aprobat proprietarul):
 - **Un final ținut**: compoziția finală stă nemișcată 2-3 s, doar cu micro-mișcare, ca să se poată citi (`check2.cjs`
   avertizează sub 2 s).
 - **Adâncime prin straturi**: un obiect peste text (de ex. o carte înainte/după care acoperă puțin un titlu mare).
+- **Rafinările din „Faceless curat”** (formatul xi), pentru stilul educațional implicit: cuvântul-cheie intră exact când
+  e spus, centrat, uriaș și în blur, apoi se retrage la mărimea lui; cuvintele accentuate în italic serif turcoaz (cel
+  mult unul în rose gold), restul sans, cu o lumină moale de accent în spate; obiecte uriașe tăiate de cadru, pentru
+  scară (un cadran de ceas care se rotește pe „săptămâni”); colțuri de vizor care încadrează subiectul; un inel de
+  numărătoare pentru cifre reale; noduri cu iconițe și linii care apar pe rând; o listă spusă în propoziții, iar pe ecran
+  pastilele cuvintelor-cheie care se adună (plin, conturat, alternativ); fundal alb cu inele de accent foarte moi, în
+  blur, în colțuri; o singură idee pe ecran.
 - Scenele noi pentru asta (`engine/v2/edit.js`): `writeon` (un rând mic scris de punctul de lumină, cu tic pe cuvânt),
   `panels` (panouri verticale care intră una după alta pe grilă, cu tap), `titlecard` (titlul mare, accentul, cele trei
   rânduri și cartea reală care îl acoperă, cu linia despre acord; ținut). Demonstrația: `scripts/v2-demo-sfx`

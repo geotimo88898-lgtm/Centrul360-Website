@@ -150,7 +150,13 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    obiectul-erou), sub voce, fără ducking; un motiv-ghid (`"motif": "dot"`) care duce privirea de la o scenă la alta;
    o culoare-erou, text mic, mult spațiu, o idee pe bătaie; intrările eșalonate pe grila muzicii (`R.grid`); un final
    ținut 2-3 s; adâncime prin straturi (un obiect peste text). Implicit pentru reels-urile noi (`"sound": "v3"`); te uiți
-   la raportul de sincronizare din `mix.py` (tăieturi pe vârf, intrări cu sunet, ±1 cadru). Detaliile: README, „Montajul”.
+   la raportul de sincronizare din `mix.py` (tăieturi pe vârf, intrări cu sunet, ±1 cadru). Rafinările din „Faceless
+   curat” (formatul xi) intră în stilul educațional implicit: cuvântul-cheie intră exact când e spus, centrat, uriaș și
+   în blur, apoi se retrage; accentul în italic serif turcoaz (rose gold pe cel mult un element); obiecte uriașe tăiate
+   de cadru pentru scară; colțuri de vizor pe subiect; inel de numărătoare doar pentru cifre reale; noduri cu iconițe și
+   linii care apar pe rând; o listă spusă în propoziții, cu pastilele cuvintelor-cheie adunate pe ecran (doar fraze
+   adevărate, de pe site); fundal alb cu inele moi de accent în colțuri; o idee pe ecran; iconițe de oameni generice.
+   Detaliile: README, „Montajul”.
 6. **Tema și varietatea** (14.11): doar `brand-light` (alb cu turcoaz) sau `brand-teal` (turcoaz cu alb), alternate
    (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
    fel niciunul”, de la un reel la altul schimbi: cârligul (particule, privirea la poza reală, contorul, o întrebare
@@ -201,9 +207,16 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    montaj rapid de cazuri reale, clinică și site, final pe logo sau pe bara de căutare; **doar mesaje reale ale
    clientelor, cu acordul lor scris, fără nume și fără telefon, poza estompată sau inițiale; niciodată un mesaj inventat**;
    motorul primește lista `{who, text, time}` de la proprietar; varianta fără cliente: chatul cu Nuki, textul doar de pe
-   site).
+   site), (x) colajul editorial (hârtie albă cu textură, turcoaz și un singur accent rose gold, câte un obiect decupat
+   și simbolic pe propoziție, ex. clepsidra cu nisip turcoaz pentru „6-8 săptămâni”, pana legată de o piatră, piesele de
+   puzzle, bustul clasic cu banda rose gold pe maxilar; serif mare spațiat, italic mic, rândul de mașină de scris cu o
+   pastilă, un cuvânt care se schimbă pe loc; obiectele generate o dată cu `imagen.py`, după OK-ul proprietarului; doar
+   afirmații reale, niciun chip care seamănă cu o persoană reală, obiectele nu sunt niciodată dovadă de înainte/după),
+   (xi) faceless curat (fundal alb, turcoaz, text cinetic pe voce: cuvântul-cheie intră uriaș și în blur, apoi se
+   retrage; accentul în italic serif; obiecte uriașe tăiate de cadru; colțuri de vizor; inel de numărătoare; noduri cu
+   iconițe; pastile care se adună pentru o listă spusă în propoziții).
    Reels-urile deja aprobate nu se refac în aceste stiluri;
-   formatele sunt pentru materiale noi. **Combinații**: cele nouă formate sunt piese de construcție, nu șabloane
+   formatele sunt pentru materiale noi. **Combinații**: cele unsprezece formate sunt piese de construcție, nu șabloane
    („poți să le și combini una cu alta, creativitatea e limita”): un data-viz al cărui răspuns e un moment de erou al
    aparatului, un manifest care se termină cu picătura, un reel educațional care începe cu picătura și apoi explică, un
    film de brand cu obiectele 3D tactile. O combinație nouă contează ca semnătură nouă la garda de varietate; regulile
