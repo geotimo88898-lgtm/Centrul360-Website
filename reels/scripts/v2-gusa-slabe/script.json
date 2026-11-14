@@ -9,8 +9,9 @@
  "hookType": "afirmatie",
  "title": "La multe femei, gușa apare și fără kilograme în plus",
  "sources": "v2/src/gusa-barbie-dubla.html (gușa: un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității, uneori indiferent de greutate; apare și fără kilograme în plus; sportul singur rareori rezolvă zona; nu e vina ta; HIFU: puncte de energie în stratul profund (SMAS), țesutul se contractă și se ridică, colagen nou, efect maxim la 8-12 săptămâni); v2/src/gusa-barbie-dubla.html FAQ („Gușa apare des din genetică și pierderea fermității, nu doar din greutate”, „bărbia dublă apare chiar dacă nu ai kilograme în plus”); reels/topics.json t01 (apare și la persoane slabe), t02 (SMAS, colagen nou, 8-12 săptămâni), t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează)",
- "post": "La multe femei, gușa apare și fără kilograme în plus. Ce se află de fapt sub bărbie, pe scurt. #gusa #barbiedubla #hifu #timisoara #arad",
+ "post": "La multe femei, gușa apare și fără kilograme în plus: ce se află de fapt sub bărbie și ce se poate lucra. Salvează-l pentru mai târziu. #gusa #barbiedubla #hifu #timisoara #arad",
  "hook": {
+  "role": "hook",
   "say": "La multe femei, gușa apare și fără kilograme în *plus*.",
   "visual": {
    "type": "gauge",
@@ -45,7 +46,16 @@
  },
  "beats": [
   {
-   "say": "Sub bărbie stă un mic depozit de grăsime, pe care sportul singur îl rezolvă *rareori*.",
+   "role": "lead",
+   "say": "Îți arăt ce se află de fapt sub bărbie și de ce nu ține doar de *greutate*.",
+   "visual": {
+    "type": "type-mask",
+    "size": 120
+   }
+  },
+  {
+   "role": "body",
+   "say": "Sub bărbie stă un mic depozit de grăsime localizată, pe care sportul singur îl rezolvă *rareori*.",
    "visual": {
     "type": "zoom",
     "label": "sub bărbie",
@@ -63,14 +73,22 @@
    }
   },
   {
-   "say": "Cu anii, pielea de deasupra își pierde fermitatea și îl lasă să se *vadă*.",
+   "role": "loop",
+   "say": "Dar grăsimea e doar jumătate din *explicație*.",
+   "visual": {
+    "type": "halfline"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Cu anii, pielea de deasupra își pierde fermitatea, iar genetica are și ea un rol *mare*.",
    "visual": {
     "type": "skin",
     "seq": [
      {
       "at": [
        0,
-       0.15
+       0.08
       ],
       "do": "focus",
       "layer": "piele",
@@ -79,37 +97,25 @@
      {
       "at": [
        0,
-       0.4
+       0.3
       ],
       "do": "sag"
      },
      {
       "at": [
        0,
-       0.8
+       0.66
       ],
-      "do": "pulse"
+      "do": "pulse",
+      "label": "Și genetica"
      }
     ]
-   }
-  },
-  {
-   "say": "Genetica are și ea un rol *mare*.",
-   "visual": {
-    "type": "panel",
-    "name": "dna",
-    "prompt": "a single elegant DNA double helix sculpture floating, made of white frosted glass with fine rose gold metallic details, centered, soft studio light",
-    "kb": "in",
-    "mask": "circle",
-    "label": "Genetica",
-    "labelIcon": "dna",
-    "icon": "dna",
-    "h": 700
    }
   }
  ],
  "payoff": [
   {
+   "role": "body",
    "say": "Gușa e deci un amestec de grăsime localizată și piele relaxată, nu doar o chestiune de *greutate*.",
    "visual": {
     "type": "race",
@@ -135,7 +141,8 @@
  ],
  "resolve": [
   {
-   "say": "Capul aplecat spre telefon nu face gușă, dar o scoate în *evidență*.",
+   "role": "body",
+   "say": "Capul aplecat spre telefon nu o face, dar o scoate în *evidență*.",
    "visual": {
     "type": "tilt",
     "from": 32,
@@ -154,7 +161,16 @@
    }
   },
   {
-   "say": "HIFU lucrează aici cu puncte mici de energie în stratul profund de sub piele, numit *SMAS*.",
+   "role": "loop",
+   "say": "Partea care se poate lucra stă însă mai adânc decât *pielea*.",
+   "visual": {
+    "type": "depth"
+   }
+  },
+  {
+   "role": "body",
+   "say": "HIFU trimite puncte mici de energie în stratul profund de sub piele, numit *SMAS*.",
+   "tts": "HIFU trimite puncte mici de energie în stratul profund de sub piele, numit es-em-a-es.",
    "visual": {
     "type": "beam",
     "layers": [
@@ -188,7 +204,7 @@
      ],
      "energy": [
       0,
-      0.1
+      0.06
      ],
      "tilt": "profund",
      "fat": "SMAS",
@@ -203,7 +219,7 @@
       "ic": "zap",
       "at": [
        0,
-       0.1
+       0.05
       ]
      },
      {
@@ -219,10 +235,10 @@
     "x": 700,
     "react": "point",
     "flip": true
-   },
-   "tts": "HIFU lucrează aici cu puncte mici de energie în stratul profund de sub piele, numit es-em-a-es."
+   }
   },
   {
+   "role": "body",
    "say": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la 8-12 *săptămâni*.",
    "tts": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la opt până la douăsprezece săptămâni.",
    "visual": {
@@ -259,26 +275,18 @@
   }
  ],
  "outro": {
-  "say": "Gușa nu e vina ta, iar acum știi ce se află sub *bărbie*.",
-  "cta": "loop",
+  "role": "cta",
+  "say": "Gușa nu e vina ta, iar dacă ți-a fost util, salvează clipul pentru mai *târziu*.",
+  "cta": "save",
   "visual": {
-   "type": "strokeq",
-   "glyph": "heart",
-   "formAt": [
-    0,
-    0,
-    0.05
-   ],
-   "formDur": 1.2,
-   "q": false,
-   "tr": "morph-key"
+   "type": "bookmark",
+   "fillAt": "salvează",
+   "label": "Salvat"
   }
  },
  "end": {
-  "type": "loop",
-  "dur": 1.25,
-  "hold": 0.7,
-  "tr": "zoom-element"
+  "type": "save",
+  "hold": 1.3
  },
  "musicFile": "owner-free",
  "musicStart": 0.395,
@@ -294,5 +302,6 @@
  "layout": {
   "anchor": "center",
   "typeScale": 1.06
- }
+ },
+ "structure": "Hook → Lead → Body → Open loop → Body → Body (răspunsul) → Body → Open loop → Body → Body → CTA (14.11)"
 }

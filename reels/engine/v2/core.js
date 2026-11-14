@@ -18,7 +18,7 @@
   // (160..920, the right 160 px are the apps' buttons)
   R.STAGE = { x: 110, y: 250, w: 860, h: 900 }; R.TX = 50; R.TW = 760;
   R.CAPY = { band: 1210, mid: 1000 };              // the captions' top, by placement
-  const HOOK_LEAD = 0.12, GAP = 0.14, PAYOFF_PAUSE = 0.5, TR_DUR = 0.42;
+  const HOOK_LEAD = 0.12, TR_DUR = 0.42;
   const qs = new URLSearchParams(location.search);
   const ID = qs.get('reel');
   R.ROOT = '../../..'; // website root (reels/engine/v2 → /)
@@ -92,12 +92,15 @@
     return ws.map((w, k) => { const t = acc; acc += (wt[k] / sum) * (L.dur - 0.05); return { w, t, e: /\*/.test(rich[k] || '') }; });
   }
   function timeline() {
+    // the gaps between lines (14.11, „vocea … ar putea fi mai accelerată”: the references barely pause): the script's
+    // "gaps" or the defaults; a line's own "pause"/"pre" still adds to them
+    const G = Object.assign({ line: 0.05, payoff: 0.3, resolve: 0.1, outro: 0.1 }, S.gaps || {});
     let t = HOOK_LEAD;
     let firstPayoff = true;
     lines.forEach((L) => {
-      if (L.role === 'payoff' && firstPayoff) { t += PAYOFF_PAUSE; firstPayoff = false; }
-      if (L.role === 'resolve' && L.ri === 0) t += 0.25;
-      if (L.role === 'outro') t += 0.2;
+      if (L.role === 'payoff' && firstPayoff) { t += G.payoff; firstPayoff = false; }
+      if (L.role === 'resolve' && L.ri === 0) t += G.resolve;
+      if (L.role === 'outro') t += G.outro;
       if (L.role === 'end') t += (R.END[R.endType].lead || 0.3);
       t += L.b.pre || 0;
       const tm = TIM[L.key];
@@ -105,7 +108,7 @@
       L.dur = L.voiced ? tm.dur : estimate(L.text);
       L.t0 = t; L.t1 = t + L.dur;
       L.words = wordTimes(L);
-      t = L.t1 + GAP + (L.b.pause || 0);
+      t = L.t1 + G.line + (L.b.pause || 0);
     });
     const lastSpoken = lines.length ? lines[lines.length - 1].t1 : 0;
     const endSpec = R.END[R.endType];

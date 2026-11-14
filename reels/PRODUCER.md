@@ -87,6 +87,12 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
 ## Cum scrii un reel (v2, din 12.11)
 Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonul: `README.md` („Vocea”): o femeie care
 îi povestește ceva unei prietene, nu o reclamă. Pe scurt:
+0. **Structura** (14.11, standardul pentru toate reels-urile): Hook → Lead → Body 1 → Open loop → Body 2 → Open loop →
+   Body 3 → CTA; la 30-50 s se poate strânge la Hook → Lead → Body → Open loop → Body → CTA. Lead-ul promite ce vor
+   afla și se termină înainte de secunda 10; fiecare body aduce o singură valoare reală; open loop-ul e o afirmație
+   (niciodată o întrebare) pe care o închide doar blocul următor, cu un vizual de tensiune fără „?”; CTA-ul (salvare,
+   „360” sau site) o dată, calm. Pui `"role"` pe fiecare replică (`hook`, `lead`, `body`, `loop`, `cta`); `check2.cjs`
+   avertizează la lipsuri. Vocea e grăbită x1,18 după cache și pauzele sunt scurte (README, „Ritmul”).
 1. **O afirmație precisă întâi** (din 14.11, nu o întrebare). Cârligul spune un fapt surprinzător, care te face să
    vrei să înțelegi („La multe femei slabe, gușa nu ține de kilograme.”); la un caz, o propoziție clară despre ce s-a
    întâmplat. Se spune în primele 3 secunde, peste o scenă care se mișcă din primul cadru. Nicio replică nu are „?”.
@@ -152,9 +158,11 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    vârful unei pipete sau la gâtul unei fiole reale, cronometrul secundelor reale privite, replici calme despre atenție
    și răbdare, niciun contor cu măsurători inventate), (vii) lansarea (de la problemă la soluție, fără voce: aurora din alb
    în turcoaz, cărți 3D stivuite din lucruri reale, un moment întunecat #0b7f74 „Cunoaște” → „Centrul360.”, o pagină
-   reală a site-ului din blur în clar, un cuvânt care se rotește, „Totul” → „într-un singur loc.” care devine logo).
+   reală a site-ului din blur în clar, un cuvânt care se rotește, „Totul” → „într-un singur loc.” care devine logo), (viii) explicația în blocuri (blocuri 3D de sticlă
+   numerotate care se stivuiesc, bara de progres pe capitole sus, un titlu mare și un obiect pe capitol, recapitularea
+   la final, salvarea cu semnul nostru; ex. straturile pielii, cei 4 pași, cum decurge o consultație).
    Reels-urile deja aprobate nu se refac în aceste stiluri;
-   formatele sunt pentru materiale noi. **Combinații**: cele șapte formate sunt piese de construcție, nu șabloane
+   formatele sunt pentru materiale noi. **Combinații**: cele opt formate sunt piese de construcție, nu șabloane
    („poți să le și combini una cu alta, creativitatea e limita”): un data-viz al cărui răspuns e un moment de erou al
    aparatului, un manifest care se termină cu picătura, un reel educațional care începe cu picătura și apoi explică, un
    film de brand cu obiectele 3D tactile. O combinație nouă contează ca semnătură nouă la garda de varietate; regulile

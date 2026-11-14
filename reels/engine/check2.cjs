@@ -83,7 +83,7 @@ module.exports = async (id, dir, S) => {
       .filter((o) => o.X.v === 2 && o.X.kind !== 'brand').sort((a, b) => b.m - a.m).slice(0, 3)
       .forEach((o) => { const shared = core(o.X).filter((k) => mine.includes(k)); if (shared.length) notes.push('WARNING: the same core mechanism visual as ' + o.d + ': ' + shared.join(', ') + ' (give each reel its own)'); });
   } catch (e) { notes.push('scene-kind check skipped: ' + e.message); }
-  const ends = ['loop', 'comment', 'site', 'ask'];
+  const ends = ['loop', 'comment', 'site', 'ask', 'save'];
   if (!S.end || !ends.includes(S.end.type)) problems.push('end.type must be one of ' + ends.join(', '));
   if (S.end && S.end.type === 'comment' && !(S.end.keyword || S.keyword)) problems.push('a comment end needs a keyword');
   const h0 = [].concat(S.hook || [])[0] || {}; void h0;

@@ -1,56 +1,56 @@
 {
 "L0": {
-"text": "Cum a ajuns aici după o singură ședință?",
-"dur": 2.154,
-"file": "voice/3d17231b29f82a0b.wav",
+"text": "E rezultatul unei singure ședințe de Liposonix.",
+"dur": 2.721,
+"file": "voice/4cc2ee6c3b2c7259.wav",
 "role": "hook"
 },
 "L1": {
-"text": "Știi zona aia care nu cedează, deși mănânci atent și faci mișcare?",
-"dur": 3.845,
-"file": "voice/10f59c737f285202.wav",
+"text": "Pe șolduri, grăsimea poate rămâne pe loc chiar dacă mănânci atent și faci mișcare.",
+"dur": 4.97,
+"file": "voice/5dbbb4b3f9103f5a.wav",
 "role": "beat"
 },
 "L2": {
-"text": "La ea s-a lucrat cu Liposonix, care țintește doar stratul de grăsime.",
-"dur": 4.357,
-"file": "voice/2cf134b86686e048.wav",
+"text": "Liposonix focalizează ultrasunetele în grăsime și distruge celulele de acolo, iar pielea rămâne neatinsă.",
+"dur": 7.882,
+"file": "voice/94fed080c522cc77.wav",
 "role": "beat"
 },
 "L3": {
-"text": "Corpul elimină celulele tratate în săptămânile următoare.",
-"dur": 3.1,
-"file": "voice/3142a9d5dae22d8d.wav",
+"text": "Corpul le elimină singur, treptat, așa că diferența se vede în general la șase, opt săptămâni.",
+"dur": 6.219,
+"file": "voice/1e662a721203a3e1.wav",
 "role": "beat"
 },
 "L4": {
-"text": "Fără bisturiu, fără recuperare. Acum, uite diferența.",
-"dur": 4.573,
-"file": "voice/4f8d7a84305a8960.wav",
+"text": "Aici e aceeași clientă, înainte și după.",
+"dur": 2.845,
+"file": "voice/5363f89aae06d01c.wav",
 "role": "payoff"
 },
 "L5": {
-"text": "Și dacă te regăsești? Fii blândă cu tine: grăsimea de acolo e rezistentă la dietă și sport, nu e lipsă de voință.",
-"dur": 7.196,
-"file": "voice/205c772c7f6bddaf.wav",
+"text": "Celulele distruse nu revin, dar cele rămase se pot mări dacă iei în greutate.",
+"dur": 4.94,
+"file": "voice/8fddbc138c9221b9.wav",
 "role": "resolve"
 },
 "L6": {
-"text": "Și ai răbdare: în general, diferența se vede la șase, opt săptămâni.",
-"dur": 4.805,
-"file": "voice/1f413a65aca8c6ba.wav",
+"text": "Rezultatul se păstrează cu un stil de viață echilibrat.",
+"dur": 3.154,
+"file": "voice/1a70eb86551af862.wav",
 "role": "resolve"
 },
 "L7": {
-"text": "Fiecare corp e altfel, și tocmai de-asta merită un plan făcut pentru el.",
-"dur": 4.176,
-"file": "voice/66d508846f1f8071.wav",
+"text": "Fiecare corp e altfel, iar planul se face după zona ta.",
+"dur": 3.915,
+"file": "voice/1a3427ba47719d8c.wav",
 "role": "outro"
 },
 "L8": {
-"text": "Dacă vrei, uite cum lucrează, pas cu pas, pe centrul trei sute șaizeci punct com.",
-"dur": 4.114,
-"file": "voice/f82b47e88df81d93.wav",
+"text": "Etapele, pas cu pas, sunt pe centrul trei sute șaizeci punct com.",
+"dur": 4.365,
+"file": "voice/b7333e6fd82b5667.wav",
 "role": "end"
 }
 }

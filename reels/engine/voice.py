@@ -75,7 +75,9 @@ def main_v2(rid, S):
     json.dump(timing, open(os.path.join(base, 'timing.json'), 'w'), ensure_ascii=False, indent=0)
     print(f'{rid}: {len(L)} lines, {sum(v["dur"] for v in timing.values()):.1f} s of voice ({V.VOICE}, {V.MODEL}), {len(bad)} not exact')
     for b in bad: print('  NOT EXACT', b[0], '|', b[1], '| heard:', b[2], '| cps', b[3])
-    tempo = float(cfg.get('tempo', 1.0))
+    # the pace (14.11, „vocea e cam încetă”): every take is sped up after the cache (atempo keeps the pitch); the default
+    # is voice.json "tempo", a script can set its own "tempo"; the cached takes stay as they are
+    tempo = float(S.get('tempo', cfg.get('tempo', 1.0)))
     if tempo != 1.0: faster(rid, tempo)
 
 

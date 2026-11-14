@@ -7,6 +7,7 @@
   "style": "Femeie din România, 30 de ani, vorbește natural, ca și cum i-ar povesti ceva interesant unei prietene: caldă, carismatică, zâmbet în voce, sigură pe ea, ritm viu dar nu grăbit, fără ton de reclamă, fără entuziasm forțat, accent românesc natural.",
   "style_hook": "Aceeași femeie, la începutul poveștii: puțin mai multă energie și curiozitate în voce, ca atunci când îi spui unei prietene ceva ce tocmai ai aflat și nu-ți vine să crezi; tot natural, fără ton de reclamă.",
   "style_payoff": "Aceeași femeie, când spune răspunsul: calm, sigur, cu un zâmbet, o mică pauză înainte de ideea principală.",
-  "tempo": 1.0,
-  "style_outro": "Aceeași femeie, la final: caldă, liniștită, cu un zâmbet, ca atunci când închei o poveste bună; fără ton de reclamă."
+  "tempo": 1.18,
+  "style_outro": "Aceeași femeie, la final: caldă, liniștită, cu un zâmbet, ca atunci când închei o poveste bună; fără ton de reclamă.",
+  "note_tempo": "Ritmul (14.11, „vocea e cam încetă”): fiecare replică e grăbită x1.18 după cache, cu atempo (aceeași înălțime a vocii): de la 176 la ~208 de cuvinte pe minut cât vorbește, aproape de referința în română a proprietarului (~200+). Un script poate avea propriul \"tempo\"."
 }

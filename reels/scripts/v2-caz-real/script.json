@@ -12,6 +12,7 @@
  "sources": "brand_asset/catalog/cazul-05-liposonix-solduri.webp + catalog-rezultate.html (Cazul 05: Liposonix șolduri, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate de înaltă intensitate care distrug definitiv celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; reducerea vizibilă în general la 6-8 săptămâni de la ședință); v2/src/grasime-localizata.html (ultrasunete care țintesc doar grăsimea, pielea rămâne neatinsă; „zona nu cedează, deși mănânci atent și faci mișcare”; depozite pe abdomen, șolduri, coapse sau brațe; celulele distruse nu revin, dar cele rămase se pot mări dacă iei în greutate; cu un stil de viață echilibrat rezultatul se menține; planul depinde de zonă și de volum)",
  "post": "O singură ședință de Liposonix pe șolduri, Timișoara: ce se întâmplă cu celulele de grăsime și de ce diferența vine treptat. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
  "hook": {
+  "role": "hook",
   "say": "E rezultatul unei singure ședințe de *Liposonix*.",
   "visual": {
    "type": "photo",
@@ -34,6 +35,15 @@
  },
  "beats": [
   {
+   "role": "lead",
+   "say": "Îți explic ce s-a întâmplat de fapt în *corpul ei*.",
+   "visual": {
+    "type": "type-highlight",
+    "size": 124
+   }
+  },
+  {
+   "role": "body",
    "say": "Pe șolduri, grăsimea poate rămâne pe loc chiar dacă mănânci atent și faci *mișcare*.",
    "visual": {
     "type": "cardrow",
@@ -86,6 +96,7 @@
    }
   },
   {
+   "role": "body",
    "say": "Liposonix focalizează ultrasunetele în grăsime și distruge celulele de acolo, iar pielea rămâne *neatinsă*.",
    "visual": {
     "type": "cells",
@@ -114,8 +125,17 @@
    }
   },
   {
-   "say": "Corpul le elimină singur, treptat, așa că diferența se vede în general la 6-8 *săptămâni*.",
-   "tts": "Corpul le elimină singur, treptat, așa că diferența se vede în general la șase, opt săptămâni.",
+   "role": "loop",
+   "say": "Rezultatul nu apare însă în ziua *ședinței*.",
+   "visual": {
+    "type": "tease",
+    "text": "6-8"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Corpul elimină singur celulele, treptat, așa că diferența se vede în general la 6-8 *săptămâni*.",
+   "tts": "Corpul elimină singur celulele, treptat, așa că diferența se vede în general la șase, opt săptămâni.",
    "visual": {
     "type": "scrubber",
     "header": "Săptămânile de după ședință",
@@ -157,6 +177,7 @@
  ],
  "payoff": [
   {
+   "role": "body",
    "say": "Aici e aceeași clientă, înainte și *după*.",
    "visual": {
     "type": "photo",
@@ -192,11 +213,19 @@
      0.42
     ]
    },
-   "pause": 1.0
+   "pause": 0.5
   }
  ],
  "resolve": [
   {
+   "role": "loop",
+   "say": "Iar partea cea mai importantă vine după *ședință*.",
+   "visual": {
+    "type": "curtain"
+   }
+  },
+  {
+   "role": "body",
    "say": "Celulele distruse nu revin, dar cele rămase se pot mări dacă iei în *greutate*.",
    "visual": {
     "type": "split",
@@ -220,7 +249,7 @@
    }
   },
   {
-   "say": "Rezultatul se păstrează cu un stil de viață *echilibrat*.",
+   "say": "De aceea, rezultatul se păstrează cu un stil de viață *echilibrat*.",
    "visual": {
     "type": "scale",
     "left": {
@@ -255,10 +284,12 @@
     "pose": "mana-inima",
     "at": "br",
     "react": "bounce"
-   }
+   },
+   "role": "body"
   }
  ],
  "outro": {
+  "role": "cta",
   "say": "Fiecare corp e altfel, iar planul se face după zona *ta*.",
   "cta": "soft",
   "visual": {
@@ -279,8 +310,8 @@
  },
  "end": {
   "type": "site",
-  "say": "Etapele, pas cu pas, sunt pe centrul360.com.",
-  "tts": "Etapele, pas cu pas, sunt pe centrul trei sute șaizeci punct com.",
+  "say": "Detaliile sunt pe centrul360.com.",
+  "tts": "Detaliile sunt pe centrul trei sute șaizeci punct com.",
   "cta": "soft",
   "dur": 5.0,
   "home": 0.9,
@@ -297,7 +328,8 @@
     "section": "#cum",
     "tap": "figure svg"
    }
-  ]
+  ],
+  "role": "cta"
  },
  "musicFile": "owner-free",
  "musicStart": 0.395,
@@ -313,5 +345,6 @@
  "layout": {
   "anchor": "center",
   "typeScale": 0.96
- }
+ },
+ "structure": "Hook → Lead → Body → Body → Open loop → Body → Body (răspunsul) → Open loop → Body → Body → CTA (14.11)"
 }

@@ -38,6 +38,16 @@
     },
   };
 
+  // ------------------------------------------------------------------ save
+  // the CTA is the outro line itself ("salvează clipul"), its visual the bookmark that fills; the reel holds on it.
+  // The end shot never shows (it starts after the end): no extra screen, no spoken line of its own.
+  END.save = {
+    lead: 0.1, noCaptions: true,
+    start: (lines, total) => total + 1,
+    total: (lines, last, spec) => (lastStory(lines) ? lastStory(lines).t1 : last) + (spec.hold != null ? spec.hold : 1.3),
+    build(ctx, spec) { ctx.shot.tr = spec.tr || 'push'; },
+  };
+
   // ------------------------------------------------------------------ comment
   END.comment = {
     lead: 0.3, noCaptions: true,

@@ -131,7 +131,7 @@
     if (p.payoff) ctx.shot.revealAt = tB + 0.05;
     ctx.focus(els[0].g);
     ctx.tick((t) => {
-      const u = t < tA ? 0 : stepper(t, tA, tB, K), k = Math.min(K - 2, Math.floor(u)), f = K < 2 ? 0 : u - k;
+      const u = t < tA ? 0 : stepper(t, tA, tB, K), k = Math.max(0, Math.min(K - 2, Math.floor(u))), f = K < 2 ? 0 : u - k;
       const grow0 = calm(clamp((t - ctx.t0 - 0.2) / 0.8)); // the bars come out of the track at the start
       const lead = (f < 0.5 ? leadAt(k) : leadAt(Math.min(K - 1, k + 1)));
       els.forEach((e, i) => {

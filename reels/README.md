@@ -224,8 +224,19 @@ blur în clar pe o pagină reală a site-ului (`site.cjs`); cuvântul care se ro
 finalul „Totul” → „într-un singur loc.”, care se transformă în logo. Fără întrebări în text (regula din 14.11), doar
 afirmații adevărate de pe site. Aceeași familie ocazională `"kind": "brand"`; se combină bine cu (ii) și (v).
 
+**(viii) Explicația în blocuri** (instagram.com/reel/De1_SdZt527, trimis 14.11). Cum arată: blocuri 3D de sticlă care se
+așază unul câte unul într-o structură, fiecare cu culoarea lui și un număr mic (01-08); la final toată stiva revine ca
+recapitulare. Sus, o bară de progres pe segmente, câte unul pe capitol, în culoarea capitolului, care se umple pe
+măsură ce reel-ul avansează (un instrument puternic de retenție, care poate deveni opțional un element standard al
+oricărui reel educațional). Pe fiecare capitol: un titlu mare și un singur obiect simplu (graficul de retenție care
+urcă la „10.0 s”, cubul „VALUE” pe inele, un „?” într-un inel de încărcare cu bucla deschisă tastată într-o carte).
+Subtitrarea jos, cuvânt cu cuvânt, cu cuvântul curent subliniat. La final, „Saved”, cu cursorul care apasă. La noi: în
+paleta noastră (alb sau turcoaz, accent rose gold), niciodată neonul lor întunecat; de ex. cei 4 pași ai programului,
+straturile pielii (epidermă, derm, grăsime, SMAS), „cum decurge o consultație”; fără „?” pe ecran (bucla e o
+afirmație), finalul cu semnul nostru de salvare (`bookmark`), nu butonul lor cu cursor. Se combină cu (iv) și (vi).
+
 **Combinații** (principiul proprietarului din 14.11: „poți să le și combini una cu alta, creativitatea e limita, iar în
-cazul nostru nu cred că avem limite”). Cele șapte formate sunt piese de construcție, nu șabloane. Un reel le poate
+cazul nostru nu cred că avem limite”). Cele opt formate sunt piese de construcție, nu șabloane. Un reel le poate
 amesteca: un reel data-viz cu „chrome” al cărui răspuns e un moment de erou al aparatului; un manifest tipografic care
 se termină cu picătura suspansului minimalist; un reel educațional care începe cu picătura și apoi explică; un film de
 brand cu obiectele 3D tactile. Garda de varietate tratează o combinație nouă ca o semnătură nouă. Regulile fixe rămân:
@@ -256,6 +267,25 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
      un fapt pe care nu-l avem (de ex. cât durează eliminarea celulelor), folosim doar ce spune site-ul (6-8
      săptămâni); dacă nici site-ul nu-l are, îl scriem ca întrebare pentru proprietar, nu-l inventăm.
   6. **Textul spus se aprobă înainte de voce și randare**: se trimite replică cu replică, apoi se înregistrează.
+- **Structura** (14.11, referința proprietarului pentru short-form, instagram.com/reel/De1_SdZt527; standardul pentru
+  toate reels-urile de acum): Hook → Lead → Body 1 → Open loop → Body 2 → Open loop → Body 3 → CTA.
+  - **Hook**: rupe tiparul derulării în primele 3 s (o afirmație precisă, nu o întrebare).
+  - **Lead**: îi ține până la secunda 10, cu promisiunea a ce vor afla („Îți arăt ce se află de fapt sub bărbie…”).
+  - **Body**: câte o singură valoare reală pe bloc.
+  - **Open loop**: o singură replică ce creează curiozitate și pe care o închide doar blocul următor. La noi e o
+    **afirmație, niciodată o întrebare** („Dar grăsimea e doar jumătate din explicație.”, „Partea cea mai importantă
+    vine însă după ședință.”); niciodată „Știai că…?” sau „Dar stai, că nu e tot!”, nimic care sună a reclamă ieftină.
+    Pe ecran are un vizual care ține tensiunea o secundă, fără „?” (`halfline`, `depth`, `tease`, `curtain`).
+  - **CTA**: îi duce pe cei mai interesați la pasul următor (salvare, comentariu „360” sau site), o dată, calm.
+  - La 30-50 s structura se poate strânge: Hook → Lead → Body → Open loop → Body → CTA.
+  - În script, fiecare replică poate avea `"role"`: `hook`, `lead`, `body`, `loop`, `cta`; `check2.cjs` avertizează
+    (fără să oprească) când lipsește un `loop`, când `lead` se termină după 10 s sau când ultima replică nu e `cta`.
+- **Ritmul** (14.11, „vocea e cam încetă … cele din reelurile astea cam toate is mai rapide”): fiecare replică e
+  grăbită după cache cu `atempo` (aceeași înălțime), implicit x1,18 (`"tempo"` în `engine/voice.json`, sau în script);
+  pauzele dintre replici sunt scurte (`"gaps"` în script: `line` 0,05 s, `payoff` 0,3, `resolve` 0,1, `outro` 0,1).
+  Ritmul nostru măsurat: 176 de cuvinte pe minut cât vorbește, înainte; ~208 după. Referința în română a
+  proprietarului: ~200 pe tot clipul; reel-ul cu date (engleză): ~265. Mai repede de x1,2 nu, ca femeile de 40+ să
+  înțeleagă fiecare cuvânt (se verifică cu `python3 listen.py <id>`).
 - **Firesc, ca vorbit**: mici legături („Cu anii”, „De aceea”, „Un lucru bun de știut”), pauze firești. Niciodată
   slogan, niciodată listă citită cu voce tare.
 - **Umorul** vine din observații reale (telefonul, „sună logic, nu?”): cel mult o glumă ușoară pe reel, restul e
@@ -296,7 +326,8 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
   ecranul ei.
 - **outro**: încheierea caldă, cu `cta` și un vizual care încheie (`strokeq` cu `"glyph": "heart"` sau `"check"`).
 - O replică poate avea `nuki`: `{pose, at: peek-l | peek-b | bl | br | tl | tr, react: nod | bounce | point | wow, flip}`.
-- **end**: `loop` (ultimul cadru curge în primul; fără voce), `comment` (cuvântul 360 tastat în bara de comentariu,
+- **end**: `save` (CTA-ul e chiar ultima replică, „salvează clipul”, cu `bookmark`; reel-ul se oprește pe semnul umplut),
+  `loop` (ultimul cadru curge în primul; fără voce), `comment` (cuvântul 360 tastat în bara de comentariu,
   trimis, apare comentariul), `site` (`pages`: secțiuni reale, capturate cu `node site.cjs <id>`), `ask` (`q`,
   `options`). Când se alege fiecare: `PRODUCER.md`.
 - **theme**: `brand-light` sau `brand-teal` (din 14.11, doar acestea două); fiecare din `engine/themes.json` are:
@@ -323,7 +354,10 @@ alta: fat, muscle, drop, heart…), `icons` (grilă în ritm, `pick`, `cross`), 
 mușchi, care se înclină; energia focalizată coboară într-un punct, cu marcajul de adâncime; `chips`), `cells` (`mech.js`:
 câmpul 3D de celule de grăsime, conul de ultrasunete care se îngustează într-un punct, marcajul stratului; celulele din
 focar se topesc încet), `strokeq` / `gridq` (`hooks.js`: „?”-ul; `"glyph": "heart" | "check"` desenează direct
-răspunsul), `dissolve` (o credință pe un card de sticlă se destramă în particule care
+răspunsul), buclele deschise (`loops.js`: `halfline`, o linie care se oprește la jumătate; `depth`, o linie care coboară
+prin straturi și se oprește adânc; `tease`, cuvântul următor ținut în blur; `curtain`, două panouri de sticlă care se
+depărtează puțin), `bookmark` (`loops.js`: CTA-ul „salvează”, semnul de carte care se umple pe cuvânt, cu finalul
+`save`), `race` cu `"qual": true` (doar componentele, fără valori, axe sau ranguri), `dissolve` (o credință pe un card de sticlă se destramă în particule care
 se întind pe o siluetă abstractă), `photo` (poza reală din catalog: `glimpse` (întâi „după”, din blur în clar, apoi
 întreaga poză), `tease`, `reveal` cu mască `diagonal`/`circle`/`wipe`,
 `chips`), `nuki` (ipostaze pe replici, squash/stretch, balon), `panel` (ilustrație AI cu ken burns / mască / parallax).
