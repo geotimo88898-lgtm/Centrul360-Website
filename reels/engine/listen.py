@@ -9,16 +9,22 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location('academy_voice', os.path.join(HERE, '..', '..', 'academy-vsl', 'src', 'engine', 'voice.py'))
 V = importlib.util.module_from_spec(spec); spec.loader.exec_module(V)
 sys.path.insert(0, HERE)
-from voice import v2_lines  # noqa: E402
+from voice import v2_lines, _screen  # noqa: E402
 
 rid = sys.argv[1]
 S = json.load(open(os.path.join(HERE, '..', 'scripts', rid, 'script.json')))
-want = ' '.join(t for _, _, t in v2_lines(S))
+want = _screen(' '.join(t for _, _, t in v2_lines(S)))  # the screen spelling of words the voice is told phonetically (SMAS)
 src = os.path.join(HERE, '..', 'scripts', rid, 'build', 'audio.wav') if '--mix' in sys.argv else os.path.join(HERE, '..', 'out', rid + ('-clean.mp4' if '--clean' in sys.argv else '.mp4'))  # --clean: the voice without music (what the listener itself gets wrong)
 with tempfile.TemporaryDirectory() as d:
     wav = os.path.join(d, 'mix.wav')
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-vn', '-ac', '1', '-ar', '16000', wav], check=True)
-    heard = V.transcribe(wav)
+    heard = V.hear(wav, want)  # two listeners: the second one when the first is not sure (as when the voice is made)
 e, n = V.wer(want, heard)
 print(f'{rid}: {len(V.norm(want))} words said, {n} word errors in what the listener heard over the music (WER {e * 100:.1f} %)')
 if n: print('  heard:', heard[:600])
+if '--judge' in sys.argv:  # the listener's short opinion: one continuous, natural narration? choppy joins, odd intonation, a sentence without sense?
+    from voice import judge  # noqa: E402
+    with tempfile.TemporaryDirectory() as d:
+        wav = os.path.join(d, 'mix.wav')
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-vn', '-ac', '1', '-ar', '16000', wav], check=True)
+        print('  judgment:', judge(wav))

@@ -7,7 +7,7 @@ v2 ("v": 2): vocea, modelul și stilul din voice.json (alegerea proprietarului, 
 gemini-2.5-pro-preview-tts, femeie caldă, naturală, fără ton de reclamă); cârligul cu un stil ceva mai viu
 (style_hook), răspunsul cu o pauză firească (style_payoff). Cheile din timing.json: L0, L1, ... (ordinea replicilor:
 hook, beats, payoff, end), textul = tts sau say, fără asteriscuri."""
-import importlib.util, json, os, subprocess, sys
+import importlib.util, json, os, re, subprocess, sys, wave
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location('academy_voice', os.path.join(HERE, '..', '..', 'academy-vsl', 'src', 'engine', 'voice.py'))
 V = importlib.util.module_from_spec(spec)
@@ -116,10 +116,171 @@ def main_v2(rid, S):
     elif tempo != 1.0: faster(rid, tempo)
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# The continuous take (14.11, the default for all v2 reels: „the intonation and everything should make sense together
+# with the sentences”): the whole script read once, as one connected explanation, in one style; then cut into its lines
+# at the sentence pauses (aligned to the text and checked line by line by the listener); one uniform tempo, only when
+# the take is slower than ~190 words a minute, at most x1.08; the natural pauses kept, only the long ones (> 0.45 s)
+# brought down to ~0.3 s. When the cut does not match the text it stops, loudly: no silent fall-back to separate takes.
+CONT_SR = 48000
+
+
+def _read(path):
+    import numpy as np
+    with wave.open(path) as w:
+        y = np.frombuffer(w.readframes(w.getnframes()), '<i2').astype(np.float32) / 32768
+        return y, w.getframerate()
+
+
+def _write(path, y, sr):
+    import numpy as np
+    with wave.open(path, 'wb') as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+        w.writeframes((np.clip(y, -1, 1) * 32767).astype('<i2').tobytes())
+
+
+def _pauses(y, sr, th=-40.0, min_len=0.1):
+    """the quiet runs (start, end) in seconds, 10 ms frames"""
+    import numpy as np
+    hop = sr // 100; m = len(y) // hop
+    db = 20 * np.log10(np.sqrt((y[: m * hop].reshape(m, hop) ** 2).mean(1) + 1e-12))
+    q = db < th; out, k = [], 0
+    while k < m:
+        if q[k]:
+            a = k
+            while k < m and q[k]: k += 1
+            if (k - a) / 100 >= min_len and a > 0 and k < m: out.append((a / 100, k / 100))
+        else: k += 1
+    return out
+
+
+def _shorten(y, sr, longer=0.45, to=0.3):
+    """only the long pauses lose their middle, down to `to` seconds"""
+    import numpy as np
+    keep, last = [], 0
+    for a, b in _pauses(y, sr, -42.0, longer):
+        cut0, cut1 = int((a + to / 2) * sr), int((b - to / 2) * sr)
+        keep.append(y[last:cut0]); last = cut1
+    keep.append(y[last:])
+    return np.concatenate(keep)
+
+
+def _align(y, sr, texts):
+    """n-1 cut points among the pauses, close to where the text says the line ends (by its share of the letters),
+    preferring the longer pauses; dynamic programming, in order"""
+    P = _pauses(y, sr, -40.0, 0.1)
+    n = len(texts)
+    if len(P) < n - 1: return None
+    t0 = 0.0; t1 = len(y) / sr
+    tot = sum(len(t) for t in texts); acc, exp = 0, []
+    for t in texts[:-1]: acc += len(t); exp.append(t0 + (t1 - t0) * acc / tot)
+    INF = 1e9; m = len(P)
+    cost = [[INF] * m for _ in range(n - 1)]; back = [[-1] * m for _ in range(n - 1)]
+    c = lambda k, j: abs((P[j][0] + P[j][1]) / 2 - exp[k]) - 1.6 * min(P[j][1] - P[j][0], 0.6)
+    for j in range(m): cost[0][j] = c(0, j)
+    for k in range(1, n - 1):
+        best, bi = INF, -1
+        for j in range(m):
+            if j > 0 and cost[k - 1][j - 1] < best: best, bi = cost[k - 1][j - 1], j - 1
+            if bi >= 0: cost[k][j] = best + c(k, j); back[k][j] = bi
+    j = min(range(m), key=lambda j: cost[n - 2][j]); pick = [j]
+    for k in range(n - 2, 0, -1): j = back[k][j]; pick.append(j)
+    return [P[j] for j in reversed(pick)]
+
+
+def continuous(rid, S, cfg):
+    import numpy as np, hashlib, tempfile
+    base = os.path.join(V.FILMS, rid); cache = os.path.join(base, 'voice'); os.makedirs(cache, exist_ok=True)
+    L = v2_lines(S); texts = [t for _, _, t in L]
+    for t in texts: assert '—' not in t and '–' not in t, 'long dash in: ' + t
+    V.STYLE = cfg['style'] + ' ' + cfg.get('style_continuous', '')
+    full = ' '.join(texts)
+    prompt = (V.STYLE + '\nCitește cu voce tare textul de mai jos, în română, exact cum e scris, fără să adaugi sau să schimbi '
+              'nimic: o singură explicație legată, cu intonație firească de la o propoziție la alta și pauze scurte, '
+              'firești, între propoziții. Ritm viu, cam ' + str(int(cfg.get('pace_wpm', 190))) + ' de cuvinte pe minut.'
+              + (' ' + S['voiceNote'] if S.get('voiceNote') else '') + '\n\n' + full)
+    h = hashlib.sha1((V.VOICE + V.MODEL + prompt).encode()).hexdigest()[:16]
+    take = os.path.join(cache, 'cont-' + h + '.wav')
+    if '--retake' in sys.argv and os.path.exists(take):
+        for f in os.listdir(cache):
+            if f.startswith('cont-' + h): os.remove(os.path.join(cache, f))
+    if not os.path.exists(take):
+        best = None
+        for k in range(int(cfg.get('continuous_tries', 3))):
+            tmp = take + '.try%d.wav' % k
+            V.pcm_to_wav(V.tts_raw(prompt), tmp)
+            heard = V.hear(tmp, full); e, n = V.wer(full, heard)  # a second listener when the first is not sure
+            print(f'  take {k + 1}: {V.dur(tmp):.1f} s, {n} words off')
+            if best is None or n < best[0]: best = (n, tmp, heard)
+            if n == 0: break
+            os.remove(tmp) if best[1] != tmp else None
+        os.replace(best[1], take)
+        for f in os.listdir(cache):
+            if f.startswith(os.path.basename(take) + '.try'): os.remove(os.path.join(cache, f))
+        json.dump({'heard': best[2], 'errs': best[0], 'prompt': prompt}, open(take + '.json', 'w'), ensure_ascii=False)
+    meta = json.load(open(take + '.json'))
+    if meta['errs'] > 0: sys.exit(f'{rid}: the continuous take does not say the text exactly ({meta["errs"]} words off; heard: {meta["heard"]}). Stopping: make it again with --retake.')
+    y, sr = _read(take)
+    # the pace: one tempo for the whole take, only when it is slow
+    wpm = active_wpm(take, full); f = 1.0
+    if wpm < 190: f = min(float(cfg.get('continuous_tempo_max', 1.08)), 190 / wpm)
+    if f > 1.005:
+        with tempfile.TemporaryDirectory() as d:
+            _write(os.path.join(d, 'a.wav'), y, sr)
+            subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', os.path.join(d, 'a.wav'), '-af', 'atempo=%.3f' % f, os.path.join(d, 'b.wav')], check=True)
+            y, sr = _read(os.path.join(d, 'b.wav'))
+    y = _shorten(y, sr)
+    cuts = _align(y, sr, texts)
+    if cuts is None: sys.exit(f'{rid}: the continuous take has fewer pauses than lines; it cannot be cut. Stopping (no fall-back to separate takes).')
+    # each line: from just before its first word to just before the next line's first word (its trailing pause stays with it)
+    edges = [0.0] + [max(a, b - 0.06) for a, b in cuts] + [len(y) / sr]
+    speech_end = [a for a, b in cuts] + [len(y) / sr]
+    timing, bad = {'_mode': 'continuous', '_tempo': round(f, 3), '_wpm_take': round(wpm)}, []
+    for i, (key, role, text) in enumerate(L):
+        a, b = edges[i], edges[i + 1]
+        seg = y[int(a * sr): int(b * sr)]
+        fade = int(0.01 * sr); seg = seg.copy(); seg[:fade] *= np.linspace(0, 1, fade); seg[-fade:] *= np.linspace(1, 0, fade)
+        path = os.path.join(cache, 'cont-' + h + '-%s.wav' % key)
+        _write(path, seg, sr)
+        heard = V.transcribe(path); e, n = V.wer(text, heard)
+        if n:
+            h2 = V.transcribe(path, V.ASR2); e2, n2 = V.wer(text, h2)
+            if n2 < n: heard, n = h2, n2
+        hw, tw = V.norm(heard), V.norm(_screen(text))
+        cut_ok = bool(hw) and (hw[0] == tw[0] or hw[-1] == tw[-1])  # the cut: the line starts or ends on its own words
+        if n: bad.append((key, text, heard, n, cut_ok))
+        timing[key] = {'text': text, 'dur': round(len(seg) / sr, 3), 'speech': round(speech_end[i] - a, 3), 'file': os.path.relpath(path, base), 'role': role}
+    json.dump(timing, open(os.path.join(base, 'timing.json'), 'w'), ensure_ascii=False, indent=0)
+    words = len(re.findall(r"[\w-]+", full)); tot = sum(v['dur'] for k, v in timing.items() if not k.startswith('_'))
+    print(f'{rid}: one continuous take, {len(L)} lines, {tot:.1f} s, tempo x{f:.2f} (take at {wpm:.0f} wpm), {len(bad)} lines not heard exactly')
+    # the whole take says the text exactly (checked above); a short clip heard alone can be misheard by the listener,
+    # so a line only fails when its cut is wrong (neither its first nor its last word where they should be)
+    for b in bad: print('  heard alone', b[0], '|', b[1], '| heard:', b[2], '' if b[4] else '| THE CUT IS WRONG')
+    wrong = [b for b in bad if not b[4]]
+    if wrong: sys.exit(f'{rid}: the cut does not match the text on {len(wrong)} lines. Stopping: listen, then fix the pauses or make the take again.')
+
+
+def judge(path):
+    """the listener's short opinion on the whole narration (continuity, joins, intonation, sense)"""
+    import base64
+    data = base64.b64encode(open(path, 'rb').read()).decode()
+    body = {'contents': [{'role': 'user', 'parts': [{'inlineData': {'mimeType': 'audio/wav', 'data': data}}, {'text':
+        'Ascultă această narațiune în română. Sună ca o singură narațiune continuă și firească? Sunt îmbinări tăiate, '
+        'intonație ciudată sau vreo propoziție care nu are sens în context? Răspunde scurt, în română, în 2-4 propoziții.'}]}],
+        'generationConfig': {'temperature': 0}}
+    r = V.call(V.ASR, body)
+    return ''.join(p.get('text', '') for p in r['candidates'][0]['content']['parts']).strip()
+
+
 if __name__ == '__main__':
     rid = sys.argv[1]
     S = json.load(open(os.path.join(V.FILMS, rid, 'script.json')))
-    if S.get('v') == 2:
+    cfg0 = json.load(open(os.path.join(HERE, 'voice.json')))
+    if S.get('v') == 2 and S.get('voiceMode', cfg0.get('mode', 'lines')) == 'continuous':
+        if not V.KEY: sys.exit('VERTEX_API_KEY is missing')
+        V.VOICE, V.MODEL = cfg0['voice'], cfg0['model']
+        continuous(rid, S, cfg0)
+    elif S.get('v') == 2:
         main_v2(rid, S)
     else:
         V.STYLE = V1_STYLE

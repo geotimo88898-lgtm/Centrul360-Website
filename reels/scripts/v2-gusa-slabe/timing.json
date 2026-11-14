@@ -1,79 +1,75 @@
 {
+"_mode": "continuous",
+"_tempo": 1.0,
+"_wpm_take": 215,
 "L0": {
-"text": "La multe femei, gușa apare și fără kilograme în plus.",
-"dur": 2.937,
-"file": "voice/b6122135b2ac0be9.t111.wav",
-"role": "hook",
-"tempo": 1.105
+"text": "Multe femei au gușă chiar dacă nu au kilograme în plus.",
+"dur": 2.93,
+"speech": 2.75,
+"file": "voice/cont-e1481930a973223e-L0.wav",
+"role": "hook"
 },
 "L1": {
-"text": "Îți arăt ce se află de fapt sub bărbie și de ce nu ține doar de greutate.",
-"dur": 4.825,
-"file": "voice/1740ea567de8a461.t110.wav",
-"role": "beat",
-"tempo": 1.1
+"text": "Hai să vedem ce e de fapt sub bărbie și de ce nu e doar o problemă de greutate.",
+"dur": 4.68,
+"speech": 4.39,
+"file": "voice/cont-e1481930a973223e-L1.wav",
+"role": "beat"
 },
 "L2": {
-"text": "Sub bărbie stă un mic depozit de grăsime localizată, pe care sportul singur îl rezolvă rareori.",
-"dur": 5.837,
-"file": "voice/e562efccdb96e23d.t125.wav",
-"role": "beat",
-"tempo": 1.25
+"text": "Acolo se strânge un mic depozit de grăsime, care de cele mai multe ori nu pleacă doar cu sport.",
+"dur": 5.29,
+"speech": 5.11,
+"file": "voice/cont-e1481930a973223e-L2.wav",
+"role": "beat"
 },
 "L3": {
-"text": "Dar grăsimea e doar jumătate din explicație.",
-"dur": 2.055,
-"file": "voice/054d835ad9c37334.t120.wav",
-"role": "beat",
-"tempo": 1.205
+"text": "Dar grăsimea e doar jumătate din poveste.",
+"dur": 2.48,
+"speech": 2.22,
+"file": "voice/cont-e1481930a973223e-L3.wav",
+"role": "beat"
 },
 "L4": {
-"text": "Cu anii, pielea de deasupra își pierde fermitatea, iar genetica are și ea un rol mare.",
-"dur": 5.102,
-"file": "voice/cd29f1e4449cbe54.t125.wav",
-"role": "beat",
-"tempo": 1.25
+"text": "Cu anii, pielea își pierde din fermitate, iar genetica contează și ea mult.",
+"dur": 4.31,
+"speech": 4.13,
+"file": "voice/cont-e1481930a973223e-L4.wav",
+"role": "beat"
 },
 "L5": {
-"text": "Gușa e deci un amestec de grăsime localizată și piele relaxată, nu doar o chestiune de greutate.",
-"dur": 5.198,
-"file": "voice/5d930dff159459ed.t119.wav",
-"role": "payoff",
-"tempo": 1.187
+"text": "Așa că gușa e de fapt un amestec de grăsime și piele lăsată.",
+"dur": 3.51,
+"speech": 3.32,
+"file": "voice/cont-e1481930a973223e-L5.wav",
+"role": "payoff"
 },
 "L6": {
-"text": "Capul aplecat spre telefon nu o face, dar o scoate în evidență.",
-"dur": 3.631,
-"file": "voice/5ef067dccd4e2bdc.t110.wav",
-"role": "resolve",
-"tempo": 1.1
+"text": "Pielea lăsată se poate însă strânge din interior.",
+"dur": 3.07,
+"speech": 2.76,
+"file": "voice/cont-e1481930a973223e-L6.wav",
+"role": "resolve"
 },
 "L7": {
-"text": "Partea care se poate lucra stă însă mai adânc decât pielea.",
-"dur": 3.038,
-"file": "voice/262ef8bb3c911e78.t110.wav",
-"role": "resolve",
-"tempo": 1.1
+"text": "HIFU trimite mici puncte de energie într-un strat profund de sub piele, numit es-em-a-es.",
+"dur": 4.93,
+"speech": 4.8,
+"file": "voice/cont-e1481930a973223e-L7.wav",
+"role": "resolve"
 },
 "L8": {
-"text": "HIFU trimite puncte mici de energie în stratul profund de sub piele, numit es-em-a-es.",
-"dur": 4.91,
-"file": "voice/e812c3235205266f.t125.wav",
-"role": "resolve",
-"tempo": 1.25
+"text": "Acolo țesutul se strânge și se formează colagen nou, iar efectul se vede cel mai bine după opt până la douăsprezece săptămâni.",
+"dur": 7.23,
+"speech": 6.98,
+"file": "voice/cont-e1481930a973223e-L8.wav",
+"role": "resolve"
 },
 "L9": {
-"text": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la opt până la douăsprezece săptămâni.",
-"dur": 5.745,
-"file": "voice/b297afb25eaba81d.t125.wav",
-"role": "resolve",
-"tempo": 1.25
-},
-"L10": {
-"text": "Gușa nu e vina ta, iar dacă ți-a fost util, salvează clipul pentru mai târziu.",
-"dur": 4.05,
-"file": "voice/1fd32d5f082885af.t110.wav",
-"role": "outro",
-"tempo": 1.1
+"text": "Gușa nu e vina ta. Dacă ți-a fost de folos, salvează clipul.",
+"dur": 3.033,
+"speech": 3.033,
+"file": "voice/cont-e1481930a973223e-L9.wav",
+"role": "outro"
 }
 }

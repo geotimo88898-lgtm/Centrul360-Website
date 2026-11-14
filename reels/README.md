@@ -277,7 +277,8 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
     vine însă după ședință.”); niciodată „Știai că…?” sau „Dar stai, că nu e tot!”, nimic care sună a reclamă ieftină.
     Pe ecran are un vizual care ține tensiunea o secundă, fără „?” (`halfline`, `depth`, `tease`, `curtain`).
   - **CTA**: îi duce pe cei mai interesați la pasul următor (salvare, comentariu „360” sau site), o dată, calm.
-  - La 30-50 s structura se poate strânge: Hook → Lead → Body → Open loop → Body → CTA.
+  - La 30-50 s structura se poate strânge: Hook → Lead → Body → Open loop → Body → CTA. `check2.cjs` lasă un reel pe
+    schelet până la 50 s cu o buclă și până la 55 s cu două (fără roluri, tot 30-45 s); mai scurt e mai bine.
   - **Un schelet pe care nu-l vede nimeni** (condiția proprietarului: „dacă mă uit la 10 reels de-ale noastre, să nu-mi
     dau seama că sunt repetitive; urmează structura, dar natural și frumos”). De la un reel la altul variază: lead-ul
     (o promisiune, un fapt surprinzător sau niciun lead separat, cârligul continuă singur), buclele (0, 1 sau 2, în
@@ -292,8 +293,9 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
     sau același vizual de deschidere.
   - În script, fiecare replică poate avea `"role"`: `hook`, `lead`, `body`, `loop`, `cta`; `check2.cjs` avertizează
     (fără să oprească) când lipsește un `loop`, când `lead` se termină după 10 s sau când ultima replică nu e `cta`.
-- **Ritmul** (14.11, „vocea e cam încetă … cele din reelurile astea cam toate is mai rapide”): fiecare replică e
-  grăbită după cache cu `atempo` (aceeași înălțime), implicit x1,18 (`"tempo"` în `engine/voice.json`, sau în script);
+- **Ritmul** (din 14.11, în modul vechi, replică cu replică; cu înregistrarea continuă, mai sus, ritmul se cere în text și
+  se grăbește uniform doar sub ~190 de cuvinte pe minut, cel mult x1,08). În modul vechi (14.11, „vocea e cam încetă … cele din reelurile astea cam toate is mai rapide”),
+  fiecare replică e grăbită după cache cu `atempo` (aceeași înălțime), implicit x1,18 (`"tempo"` în `engine/voice.json`, sau în script);
   pauzele dintre replici sunt scurte (`"gaps"` în script: `line` 0,05 s, `payoff` 0,3, `resolve` 0,1, `outro` 0,1).
   O replică își poate pune propria limită (`"tempo": 1.05` pe replică): numele site-ului rămâne la x1,05, pentru că
   peste x1,1 „centrul” își pierde „l”-ul și se aude „centru”. Când vocii i se scrie un cuvânt fonetic („es-em-a-es”
@@ -302,6 +304,26 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
   Ritmul nostru măsurat: 176 de cuvinte pe minut cât vorbește, înainte; ~208 după. Referința în română a
   proprietarului: ~200 pe tot clipul; reel-ul cu date (engleză): ~265. Mai repede de x1,2 nu, ca femeile de 40+ să
   înțeleagă fiecare cuvânt (se verifică cu `python3 listen.py <id>`).
+- **Scrie cum vorbește o femeie din România cu o prietenă, nu cum traduci** (regula proprietarului din 14.11, după
+  „La multe femei…”, care nu sună românește). Citești fiecare replică cu voce tare. Fără calcuri („La multe femei, X
+  apare”) și fără cuvinte de carte („rareori”, „focalizează”, „deci” în mijlocul propoziției, „stă”). Verbe simple:
+  e, are, pleacă, se vede. Legături din vorbire: așa că, doar că, iar, de obicei. La pasul de scris, o ultimă trecere:
+  „ar spune-o exact așa o femeie din Timișoara?”; fiecare replică ce nu trece se rescrie. La fel etichetele de pe ecran.
+- **O singură înregistrare, citită ca o explicație legată** (regula proprietarului din 14.11: „intonația și tot trebuie
+  să aibă sens împreună cu propozițiile”). Înainte, fiecare replică era o înregistrare separată, cu stilul ei și cu alt
+  tempo, lipită de celelalte la 0,05 s: fiecare propoziție se termina ca una singură, viteza sărea, respirația dintre idei
+  dispărea. Acum (`"mode": "continuous"` în `engine/voice.json`, implicit): tot scriptul e citit o dată, într-un singur
+  stil (cel de bază plus „explici ceva unei prietene, legat, cu intonație firească de la o propoziție la alta, ritm
+  viu”), cu ritmul cerut în text (~190 de cuvinte pe minut); înregistrarea trebuie să spună textul exact (cu doi
+  ascultători), apoi e tăiată în replici la pauzele dintre propoziții, aliniată la text și verificată replică cu replică;
+  dacă tăietura nu se potrivește, se oprește cu un mesaj (fără întoarcere tăcută la replici separate). Un singur tempo
+  pentru toată înregistrarea, doar dacă e sub ~190 de cuvinte pe minut, cel mult x1,08. Pauzele firești rămân (în
+  replici; motorul nu mai adaugă pauze); doar cele de peste 0,45 s scad la ~0,3 s. `"voiceNote"` în script adaugă o
+  indicație de pronunție (ex. numele site-ului rar și clar). `python3 voice.py <id> --retake` face o înregistrare nouă;
+  `python3 listen.py <id> --judge` cere și părerea ascultătorului: sună ca o narațiune continuă și firească, are
+  îmbinări tăiate, intonație ciudată sau o propoziție fără sens?
+- **Citești tot scriptul cu voce tare, ca o singură explicație**: fiecare propoziție trebuie să decurgă din cea de
+  dinainte; dacă o replică pare un salt, o rescrii sau schimbi ordinea.
 - **Firesc, ca vorbit**: mici legături („Cu anii”, „De aceea”, „Un lucru bun de știut”), pauze firești. Niciodată
   slogan, niciodată listă citită cu voce tare.
 - **Umorul** vine din observații reale (telefonul, „sună logic, nu?”): cel mult o glumă ușoară pe reel, restul e

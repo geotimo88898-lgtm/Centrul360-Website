@@ -8,12 +8,12 @@
  "topicTag": "liposonix-solduri",
  "hookType": "caz",
  "case": "cazul-05",
- "title": "E rezultatul unei singure ședințe de Liposonix",
+ "title": "Acesta e rezultatul după o singură ședință de Liposonix",
  "sources": "brand_asset/catalog/cazul-05-liposonix-solduri.webp + catalog-rezultate.html (Cazul 05: Liposonix șolduri, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate de înaltă intensitate care distrug definitiv celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; reducerea vizibilă în general la 6-8 săptămâni de la ședință); v2/src/grasime-localizata.html (ultrasunete care țintesc doar grăsimea, pielea rămâne neatinsă; „zona nu cedează, deși mănânci atent și faci mișcare”; depozite pe abdomen, șolduri, coapse sau brațe; celulele distruse nu revin, dar cele rămase se pot mări dacă iei în greutate; cu un stil de viață echilibrat rezultatul se menține; planul depinde de zonă și de volum)",
  "post": "O singură ședință de Liposonix pe șolduri, Timișoara: ce se întâmplă cu celulele de grăsime și de ce diferența vine treptat. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
  "hook": {
   "role": "hook",
-  "say": "E rezultatul unei singure ședințe de *Liposonix*.",
+  "say": "Acesta e rezultatul după o singură ședință de *Liposonix*.",
   "visual": {
    "type": "photo",
    "img": "brand_asset/catalog/cazul-05-liposonix-solduri.webp",
@@ -36,7 +36,7 @@
  "beats": [
   {
    "role": "lead",
-   "say": "Diferența vine dintr-un proces pe care corpul îl face *singur*.",
+   "say": "Ca să înțelegi cum s-a ajuns aici, trebuie să știi un lucru despre grăsimea de pe *șolduri*.",
    "visual": {
     "type": "type-highlight",
     "size": 124
@@ -44,7 +44,7 @@
   },
   {
    "role": "body",
-   "say": "Pe șolduri, grăsimea poate rămâne pe loc chiar dacă mănânci atent și faci *mișcare*.",
+   "say": "De multe ori, ea nu pleacă nici dacă mănânci atent și faci *mișcare*.",
    "visual": {
     "type": "cardrow",
     "y": 120,
@@ -97,12 +97,12 @@
   },
   {
    "role": "body",
-   "say": "Liposonix focalizează ultrasunetele în grăsime și distruge celulele de acolo, iar pielea rămâne *neatinsă*.",
+   "say": "Liposonix concentrează ultrasunetele direct în grăsime și distruge celulele de acolo, fără să atingă *pielea*.",
    "visual": {
     "type": "cells",
     "at": {
      "app": "Liposonix",
-     "depth": "stratul",
+     "depth": "grăsime",
      "dissolve": "distruge"
     },
     "chips": [
@@ -114,19 +114,19 @@
      {
       "t": "Doar stratul de grăsime",
       "ic": "target",
-      "at": "stratul"
+      "at": "grăsime"
      },
      {
       "t": "Pielea rămâne neatinsă",
       "ic": "check",
-      "at": "pielea"
+      "at": "atingă"
      }
     ]
    }
   },
   {
    "role": "loop",
-   "say": "Rezultatul nu apare în ziua *ședinței*.",
+   "say": "Rezultatul nu se vede însă de pe o zi pe *alta*.",
    "visual": {
     "type": "tease",
     "text": "6-8"
@@ -134,8 +134,8 @@
   },
   {
    "role": "body",
-   "say": "Corpul elimină singur celulele, treptat, așa că diferența se vede în general la 6-8 *săptămâni*.",
-   "tts": "Corpul elimină singur celulele, treptat, așa că diferența se vede în general la șase, opt săptămâni.",
+   "say": "Corpul elimină singur celulele distruse, treptat, iar diferența se vede de obicei după 6-8 *săptămâni*.",
+   "tts": "Corpul elimină singur celulele distruse, treptat, iar diferența se vede de obicei după șase, opt săptămâni.",
    "visual": {
     "type": "scrubber",
     "header": "Săptămânile de după ședință",
@@ -188,25 +188,25 @@
     "from": "înainte",
     "to": "după"
    },
-   "pause": 1.0
+   "pause": 0.8
   }
  ],
  "resolve": [
   {
    "role": "body",
-   "say": "Celulele distruse nu revin, dar cele rămase se pot mări dacă iei în *greutate*.",
+   "say": "Celulele distruse nu se mai refac, dar cele rămase pot crește dacă iei în *greutate*.",
    "visual": {
     "type": "split",
     "vs": "dar",
     "left": {
      "t": "Celulele distruse",
-     "s": "nu revin",
+     "s": "nu se mai refac",
      "ic": "circle-x",
      "tone": "acc"
     },
     "right": {
      "t": "Cele rămase",
-     "s": "se pot mări",
+     "s": "pot crește",
      "ic": "circle-plus",
      "tone": "rose3"
     },
@@ -217,7 +217,7 @@
    }
   },
   {
-   "say": "De aceea, rezultatul se păstrează cu un stil de viață *echilibrat*.",
+   "say": "De aceea, ca să păstrezi rezultatul, contează un stil de viață *echilibrat*.",
    "visual": {
     "type": "scale",
     "left": {
@@ -258,7 +258,7 @@
  ],
  "outro": {
   "role": "cta",
-  "say": "Fiecare corp e altfel, iar planul se face după zona *ta*.",
+  "say": "Fiecare corp e diferit, așa că planul se face în funcție de zona *ta*.",
   "cta": "soft",
   "visual": {
    "type": "strokeq",
@@ -274,8 +274,8 @@
  },
  "end": {
   "type": "site",
-  "say": "Detaliile sunt pe centrul360.com.",
-  "tts": "Detaliile sunt pe centrul trei sute șaizeci punct com.",
+  "say": "Toate detaliile le găsești pe centrul360.com.",
+  "tts": "Toate detaliile le găsești pe centrul trei sute șaizeci punct com.",
   "cta": "soft",
   "dur": 5.0,
   "home": 0.9,
@@ -293,8 +293,7 @@
     "tap": "figure svg"
    }
   ],
-  "role": "cta",
-  "tempo": 1.05
+  "role": "cta"
  },
  "musicFile": "owner-free",
  "musicStart": 0.395,
@@ -311,5 +310,6 @@
   "anchor": "center",
   "typeScale": 0.96
  },
- "structure": "Hook → Lead (un fapt) → Body → Body → Open loop → Body → Body (răspunsul) → Body → Body → CTA (14.11; o singură buclă)"
+ "structure": "Hook → Lead (un fapt) → Body → Body → Open loop → Body → Body (răspunsul) → Body → Body → CTA (14.11; o singură buclă)",
+ "voiceNote": "Numele site-ului de la final îl spui clar și puțin mai rar: „centrul trei sute șaizeci punct com”, cu „l”-ul din „centrul” bine auzit."
 }

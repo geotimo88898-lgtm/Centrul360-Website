@@ -101,7 +101,16 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    propoziție firească dintr-o explicație și au vizualuri diferite. **Pasul de scris**: după ce scrii textul, rulezi
    `node variety.cjs <id>` (îl compară cu ultimele 10 scripturi; cu `--history <fișier.json>` și cu istoria din `made`)
    și rescrii până iese „clean”, apoi `node check.cjs <id>`.
-1. **O afirmație precisă întâi** (din 14.11, nu o întrebare). Cârligul spune un fapt surprinzător, care te face să
+1. **Scrie cum vorbește o femeie din România cu o prietenă, nu cum traduci** (14.11): citești fiecare replică cu voce
+   tare; fără calcuri („La multe femei, X apare”) și fără cuvinte de carte („rareori”, „focalizează”, „deci” în
+   mijlocul propoziției, „stă”); verbe simple (e, are, pleacă, se vede); legături din vorbire (așa că, doar că, iar, de
+   obicei). Ultima trecere la pasul de scris: „ar spune-o exact așa o femeie din Timișoara?”; rescrii fiecare replică
+   (și fiecare etichetă de pe ecran) care nu trece.
+   **Citești tot scriptul cu voce tare, ca o singură explicație**: fiecare propoziție decurge din cea de dinainte; dacă o
+   replică pare un salt, o rescrii sau schimbi ordinea. **Vocea e o singură înregistrare** a întregului script, citită
+   legat (`voice.json` `"mode": "continuous"`), tăiată apoi în replici; nu se mai fac replici separate cu stiluri și
+   tempo diferite. Verifici cu `python3 listen.py <id> --judge` (cuvânt cu cuvânt și părerea ascultătorului).
+   **O afirmație precisă întâi** (din 14.11, nu o întrebare). Cârligul spune un fapt surprinzător, care te face să
    vrei să înțelegi („La multe femei slabe, gușa nu ține de kilograme.”); la un caz, o propoziție clară despre ce s-a
    întâmplat. Se spune în primele 3 secunde, peste o scenă care se mișcă din primul cadru. Nicio replică nu are „?”.
 2. **Propoziții întregi, fiecare cu scena ei.** O replică = o idee = un vizual (`visual`) sau un pas al scenei curente

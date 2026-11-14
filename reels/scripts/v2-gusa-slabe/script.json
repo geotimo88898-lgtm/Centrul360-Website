@@ -7,12 +7,12 @@
  "topic": "Ce se află de fapt sub bărbie, la o femeie slabă cu gușă",
  "topicTag": "hifu-gusa",
  "hookType": "afirmatie",
- "title": "La multe femei, gușa apare și fără kilograme în plus",
- "sources": "v2/src/gusa-barbie-dubla.html (gușa: un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității, uneori indiferent de greutate; apare și fără kilograme în plus; sportul singur rareori rezolvă zona; nu e vina ta; HIFU: puncte de energie în stratul profund (SMAS), țesutul se contractă și se ridică, colagen nou, efect maxim la 8-12 săptămâni); v2/src/gusa-barbie-dubla.html FAQ („Gușa apare des din genetică și pierderea fermității, nu doar din greutate”, „bărbia dublă apare chiar dacă nu ai kilograme în plus”); reels/topics.json t01 (apare și la persoane slabe), t02 (SMAS, colagen nou, 8-12 săptămâni), t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează)",
- "post": "La multe femei, gușa apare și fără kilograme în plus: ce se află de fapt sub bărbie și ce se poate lucra. Salvează-l pentru mai târziu. #gusa #barbiedubla #hifu #timisoara #arad",
+ "title": "Multe femei au gușă chiar dacă nu au kilograme în plus",
+ "sources": "v2/src/gusa-barbie-dubla.html (gușa: un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității, uneori indiferent de greutate; apare și fără kilograme în plus; sportul singur rareori rezolvă zona; nu e vina ta; HIFU: puncte de energie în stratul profund (SMAS), țesutul se contractă și se ridică, colagen nou, efect maxim la 8-12 săptămâni); v2/src/gusa-barbie-dubla.html FAQ („Gușa apare des din genetică și pierderea fermității, nu doar din greutate”, „bărbia dublă apare chiar dacă nu ai kilograme în plus”); reels/topics.json t01 (apare și la persoane slabe), t02 (SMAS, colagen nou, 8-12 săptămâni)",
+ "post": "Multe femei au gușă chiar dacă nu au kilograme în plus: ce e de fapt sub bărbie și ce se poate lucra. Salvează-l pentru mai târziu. #gusa #barbiedubla #hifu #timisoara #arad",
  "hook": {
   "role": "hook",
-  "say": "La multe femei, gușa apare și fără kilograme în *plus*.",
+  "say": "Multe femei au gușă chiar dacă nu au kilograme în *plus*.",
   "visual": {
    "type": "gauge",
    "zones": [
@@ -47,7 +47,7 @@
  "beats": [
   {
    "role": "lead",
-   "say": "Îți arăt ce se află de fapt sub bărbie și de ce nu ține doar de *greutate*.",
+   "say": "Hai să vedem ce e de fapt sub bărbie și de ce nu e doar o problemă de *greutate*.",
    "visual": {
     "type": "type-mask",
     "size": 120
@@ -55,7 +55,7 @@
   },
   {
    "role": "body",
-   "say": "Sub bărbie stă un mic depozit de grăsime localizată, pe care sportul singur îl rezolvă *rareori*.",
+   "say": "Acolo se strânge un mic depozit de grăsime, care de cele mai multe ori nu pleacă doar cu *sport*.",
    "visual": {
     "type": "zoom",
     "label": "sub bărbie",
@@ -74,14 +74,14 @@
   },
   {
    "role": "loop",
-   "say": "Dar grăsimea e doar jumătate din *explicație*.",
+   "say": "Dar grăsimea e doar jumătate din *poveste*.",
    "visual": {
     "type": "halfline"
    }
   },
   {
    "role": "body",
-   "say": "Cu anii, pielea de deasupra își pierde fermitatea, iar genetica are și ea un rol *mare*.",
+   "say": "Cu anii, pielea își pierde din fermitate, iar genetica contează și ea *mult*.",
    "visual": {
     "type": "skin",
     "seq": [
@@ -92,7 +92,7 @@
       ],
       "do": "focus",
       "layer": "piele",
-      "label": "Piele mai relaxată"
+      "label": "Pielea se lasă"
      },
      {
       "at": [
@@ -130,7 +130,7 @@
  "payoff": [
   {
    "role": "body",
-   "say": "Gușa e deci un amestec de grăsime localizată și piele relaxată, nu doar o chestiune de *greutate*.",
+   "say": "Așa că gușa e de fapt un amestec de grăsime și piele *lăsată*.",
    "visual": {
     "type": "race",
     "payoff": true,
@@ -144,7 +144,7 @@
       "at": "grăsime"
      },
      {
-      "t": "Piele relaxată",
+      "t": "Piele lăsată",
       "ic": "waves",
       "at": "piele"
      }
@@ -156,35 +156,16 @@
  ],
  "resolve": [
   {
-   "role": "body",
-   "say": "Capul aplecat spre telefon nu o face, dar o scoate în *evidență*.",
-   "visual": {
-    "type": "tilt",
-    "from": 32,
-    "to": 0,
-    "phoneUp": true,
-    "at": [
-     0,
-     0.25
-    ]
-   },
-   "nuki": {
-    "pose": "aprobare",
-    "at": "bl",
-    "react": "nod"
-   }
-  },
-  {
    "role": "loop",
-   "say": "Partea care se poate lucra stă însă mai adânc decât *pielea*.",
+   "say": "Pielea lăsată se poate însă strânge din *interior*.",
    "visual": {
     "type": "depth"
    }
   },
   {
    "role": "body",
-   "say": "HIFU trimite puncte mici de energie în stratul profund de sub piele, numit *SMAS*.",
-   "tts": "HIFU trimite puncte mici de energie în stratul profund de sub piele, numit es-em-a-es.",
+   "say": "HIFU trimite mici puncte de energie într-un strat profund de sub piele, numit *SMAS*.",
+   "tts": "HIFU trimite mici puncte de energie într-un strat profund de sub piele, numit es-em-a-es.",
    "visual": {
     "type": "beam",
     "layers": [
@@ -253,8 +234,8 @@
   },
   {
    "role": "body",
-   "say": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la 8-12 *săptămâni*.",
-   "tts": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la opt până la douăsprezece săptămâni.",
+   "say": "Acolo țesutul se strânge și se formează colagen nou, iar efectul se vede cel mai bine după 8-12 *săptămâni*.",
+   "tts": "Acolo țesutul se strânge și se formează colagen nou, iar efectul se vede cel mai bine după opt până la douăsprezece săptămâni.",
    "visual": {
     "type": "timeline",
     "y": 430,
@@ -277,7 +258,7 @@
      },
      {
       "t": "*8-12* săptămâni",
-      "s": "efectul maxim",
+      "s": "cel mai bine se vede",
       "ic": "calendar-check",
       "at": [
        0,
@@ -290,7 +271,7 @@
  ],
  "outro": {
   "role": "cta",
-  "say": "Gușa nu e vina ta, iar dacă ți-a fost util, salvează clipul pentru mai *târziu*.",
+  "say": "Gușa nu e vina ta. Dacă ți-a fost de folos, *salvează* clipul.",
   "cta": "save",
   "visual": {
    "type": "bookmark",
@@ -317,5 +298,5 @@
   "anchor": "center",
   "typeScale": 1.06
  },
- "structure": "Hook → Lead → Body → Open loop → Body → Body (răspunsul) → Body → Open loop → Body → Body → CTA (14.11)"
+ "structure": "Hook → Lead → Body → Open loop → Body → Body (răspunsul) → Open loop → Body → Body → CTA (14.11)"
 }

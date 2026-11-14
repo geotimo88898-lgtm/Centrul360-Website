@@ -89,12 +89,13 @@
     const wt = ws.map((w) => w.replace(/[«»"„”]/g, '').length + 1.6 + (/[,.:?!]$/.test(w) ? 3 : 0));
     const sum = wt.reduce((a, b) => a + b, 0);
     let acc = L.t0 + 0.02;
-    return ws.map((w, k) => { const t = acc; acc += (wt[k] / sum) * (L.dur - 0.05); return { w, t, e: /\*/.test(rich[k] || '') }; });
+    return ws.map((w, k) => { const t = acc; acc += (wt[k] / sum) * ((L.speech || L.dur) - 0.05); return { w, t, e: /\*/.test(rich[k] || '') }; });
   }
   function timeline() {
     // the gaps between lines (14.11, „vocea … ar putea fi mai accelerată”: the references barely pause): the script's
     // "gaps" or the defaults; a line's own "pause"/"pre" still adds to them
-    const G = Object.assign({ line: 0.05, payoff: 0.3, resolve: 0.1, outro: 0.1 }, S.gaps || {});
+    // one continuous take (timing.json "_mode": "continuous"): the natural pauses are already inside the lines, so no gaps
+    const G = Object.assign({ line: 0.05, payoff: 0.3, resolve: 0.1, outro: 0.1 }, TIM._mode === 'continuous' ? { line: 0, payoff: 0, resolve: 0, outro: 0 } : {}, S.gaps || {});
     let t = HOOK_LEAD;
     let firstPayoff = true;
     lines.forEach((L) => {
@@ -106,6 +107,7 @@
       const tm = TIM[L.key];
       L.voiced = !!(tm && tm.text === L.text);
       L.dur = L.voiced ? tm.dur : estimate(L.text);
+      L.speech = L.voiced && tm.speech ? Math.min(tm.speech, L.dur) : L.dur; // the voice itself, without its trailing pause
       L.t0 = t; L.t1 = t + L.dur;
       L.words = wordTimes(L);
       t = L.t1 + G.line + (L.b.pause || 0);
@@ -320,7 +322,7 @@
       music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || 'owner-free', musicStart: S.musicStart != null ? S.musicStart : 0.395, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
       cues: cues.filter((c) => c.t >= 0 && c.t < total),
       events: events.filter((e) => e.t >= -0.01 && e.t <= total),
-      beats: lines.map((L) => ({ key: L.key, t0: L.t0, dur: L.dur, text: L.text, role: L.role, voiced: L.voiced, shot: L.shot ? L.shot.i : -1, step: L.step, visual: L.b.visual ? L.b.visual.type : L.b.step ? 'step' : null })),
+      beats: lines.map((L) => ({ key: L.key, t0: L.t0, dur: L.dur, speech: L.speech, text: L.text, role: L.role, voiced: L.voiced, shot: L.shot ? L.shot.i : -1, step: L.step, visual: L.b.visual ? L.b.visual.type : L.b.step ? 'step' : null })),
       shots: shots.map((s) => ({ i: s.i, t0: s.t0, t1: s.t1, type: s.vis.type, tr: s.tr || null, cam: s.cam, role: s.role, lines: s.lines.map((L) => L.i) })),
       hook: { q: (asList(S.hook)[0] || {}).q || null, t1: lines[0] ? lines[0].t1 : 0 },
       payoff: R.payoffAt != null ? R.payoffAt : null,

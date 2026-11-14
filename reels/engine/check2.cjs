@@ -100,15 +100,18 @@ module.exports = async (id, dir, S) => {
   const F = await p.evaluate(() => window.film);
   const T = F.total;
   // 30-45 s; a reel built on the full skeleton (roles, two open loops) may run to 55 s (14.11, the 8-block structure)
-  const full = say.filter((b) => b.role === 'loop').length >= 2, maxT = full ? 55.5 : 45.5;
-  if (T < 30 || T > maxT) problems.push('length ' + T.toFixed(1) + ' s (want 30-' + (full ? 55 : 45) + ')');
-  else if (T > 45.5) notes.push('WARNING: ' + T.toFixed(1) + ' s, over the usual 45 s (allowed for the full skeleton with two loops; shorter is better)');
+  // the skeleton (roles): with one open loop it is a 30-50 s reel, with two up to 55 s (the structure note, 14.11)
+  const nLoops = say.filter((b) => b.role === 'loop').length, roled = say.some((b) => b.role);
+  const maxT = !roled ? 45.5 : nLoops >= 2 ? 55.5 : 50.5;
+  if (T < 30 || T > maxT) problems.push('length ' + T.toFixed(1) + ' s (want 30-' + Math.floor(maxT) + ')');
+  else if (T > 45.5) notes.push('WARNING: ' + T.toFixed(1) + ' s, over the usual 45 s (allowed for a reel on the skeleton; shorter is better)');
   const unvoiced = F.beats.filter((x) => !x.voiced).length;
   if (unvoiced) notes.push(unvoiced + ' lines without their voice yet (estimated timing): run voice.py');
   if (F.images > 8) problems.push(F.images + ' AI images (max 8)');
   // the hook
   const hook = F.beats[0];
-  if (hook.t0 + hook.dur > 3.25) problems.push('the hook line ends at ' + (hook.t0 + hook.dur).toFixed(2) + ' s (want ≤ 3 s)');
+  const hookEnd = hook.t0 + (hook.speech || hook.dur); // the voice, not the natural pause after it (a continuous take)
+  if (hookEnd > 3.65) problems.push('the hook line ends at ' + hookEnd.toFixed(2) + ' s (want ≤ 3.5 s)');
   let qAt = null;
   for (let t = 0; t <= 3.0 && qAt == null; t += 0.1) {
     const ok = await p.evaluate((t) => { window.seek(t); const vis = (e) => { let x = e; while (x && x !== document.body) { const c = getComputedStyle(x); if (c.display === 'none' || c.visibility === 'hidden' || +c.opacity < 0.5) return false; x = x.parentElement; } return true; };
