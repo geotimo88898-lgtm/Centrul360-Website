@@ -38,9 +38,11 @@
       const txt = p.text || (ctx.lines[0] ? ctx.lines[0].capRich : '');
       const d = R.kt(txt, st, style);
       d.style.left = '0'; d.style.width = '860px';
+      const LY = R.layout || {}; if ((p.align || LY.align) === 'left') { d.style.textAlign = 'left'; d.classList.add('left'); }
       const maxH = (p.h || (p.sub ? 560 : 680)) - top;
-      fit(d, 840, maxH, p.size || 150, 54);
-      const y = p.y != null ? p.y - 250 : top + Math.max(0, (900 - top - d.offsetHeight - (p.sub ? 120 : 0)) / 2) - (p.lift || 40);
+      fit(d, 840, maxH, Math.round((p.size || 150) * (LY.typeScale || 1)), 54);
+      const anchor = p.anchor || LY.anchor;
+      const y = p.y != null ? p.y - 250 : anchor === 'top' ? top + 40 : anchor === 'bottom' ? 900 - d.offsetHeight - (p.sub ? 120 : 0) - 40 : top + Math.max(0, (900 - top - d.offsetHeight - (p.sub ? 120 : 0)) / 2) - (p.lift || 40);
       d.style.top = y + 'px';
       const ws = [...d.querySelectorAll('.w')];
       const times = wordTimes(ctx, p, ws.length);
@@ -114,7 +116,7 @@
     og.fillText(p.glyph || '?', 540, 500);
     const data = og.getImageData(0, 0, 1080, 1000).data; const pts = [];
     for (let y = 0; y < 1000; y += 9) for (let x = 0; x < 1080; x += 9) if (data[(y * 1080 + x) * 4 + 3] > 128) pts.push([x, y - 500 + cy]);
-    const cols = (p.colors || ['acc', 'acc2', 'ink']).map((c) => getComputedStyle(document.documentElement).getPropertyValue('--' + c).trim() || c);
+    const cols = (p.colors || (/^brand/.test(R.script.theme) ? ['acc', 'acc2', 'acc', 'rose2'] : ['acc', 'acc2', 'ink'])).map((c) => getComputedStyle(document.documentElement).getPropertyValue('--' + c).trim() || c);
     const P = Array.from({ length: N }, (_, i) => {
       const tg = pts[Math.floor(R.rnd(i, 9) * pts.length)] || [cx, cy];
       return { a: R.rnd(i) * Math.PI * 2, w: (0.35 + R.rnd(i, 2) * 0.9) * (R.rnd(i, 7) > 0.5 ? 1 : -1), r: 140 + R.rnd(i, 3) * 520, sz: 3 + R.rnd(i, 4) * 6, c: cols[i % cols.length], tg, d: R.rnd(i, 5) * 0.5, wob: R.rnd(i, 6) * 6.28 };

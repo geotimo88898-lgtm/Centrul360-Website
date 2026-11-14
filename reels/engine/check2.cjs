@@ -26,6 +26,23 @@ module.exports = async (id, dir, S) => {
   if (S.brand) notes.push('the logo is on screen (brand: true): only where it is natural');
   if (/\b(sa|si|fara|daca|tine|asa)\b/i.test(words.replace(/\*/g, '').replace(/[ăâîșțĂÂÎȘȚ]/g, 'X'))) notes.push('check the diacritics (sa / si / fara …)');
   say.forEach((b, i) => { if (!b.visual && !b.step && b !== S.end) problems.push('line ' + i + ' has no visual and no step: „' + (b.say || '').slice(0, 40) + '”'); });
+  // the brand only (the owner, 14.11): two themes, nothing else
+  if (!['brand-light', 'brand-teal'].includes(S.theme)) problems.push('theme „' + S.theme + '”: only brand-light or brand-teal (the brand colours, 14.11)');
+  // variety (the owner, 14.11: „nu vreau să fie la fel niciunul”): compare with the other v2 reels
+  try {
+    const sig = (X) => { const all = [].concat(X.hook || [], X.beats || [], X.payoff || [], X.resolve || [], X.outro || []); const types = all.filter((b) => b.visual).map((b) => b.visual.type);
+      const h0 = [].concat(X.hook || [])[0] || {}; const hv = h0.visual || {};
+      const SIG = ['race', 'scrubber', 'cardrow', 'skin', 'photo', 'panel', 'puzzle', 'dissolve', 'tilt', 'zoom', 'energy', 'scale', 'gauge'];
+      const sigs = [...new Set(types.filter((t) => SIG.includes(t)))].concat(X.end && X.end.type === 'site' ? ['site-search'] : []).sort();
+      return { theme: X.theme, hook: hv.type + (hv.mode ? ':' + hv.mode : ''), end: X.end && X.end.type, sigs, types }; };
+    const me = sig(S);
+    const base = path.join(__dirname, '..', 'scripts');
+    const others = fs.readdirSync(base).filter((d) => d !== id && fs.existsSync(path.join(base, d, 'script.json'))).map((d) => ({ d, m: fs.statSync(path.join(base, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(base, d, 'script.json'), 'utf8')) })).filter((o) => o.X.v === 2).sort((a, b) => b.m - a.m);
+    others.forEach((o) => { const x = sig(o.X); if (x.theme === me.theme && x.hook === me.hook && x.end === me.end && x.sigs.join() === me.sigs.join()) problems.push('the same theme, hook, signature scenes and ending as ' + o.d + ': make it different'); });
+    if (others[0]) { const prev = sig(others[0].X); const left = prev.types.slice(); let same = 0; me.types.forEach((t) => { const i = left.indexOf(t); if (i >= 0) { same++; left.splice(i, 1); } });
+      const r = same / Math.max(1, me.types.length); notes.push('variety vs ' + others[0].d + ': ' + Math.round(r * 100) + ' % of the scenes alike; hook ' + me.hook + ' vs ' + prev.hook + ', end ' + me.end + ' vs ' + prev.end + ', theme ' + me.theme + ' vs ' + prev.theme);
+      if (r > 0.5) notes.push('WARNING: more than half of the scenes are the same kinds as ' + others[0].d + ' (vary them)'); }
+  } catch (e) { notes.push('variety check skipped: ' + e.message); }
   const ends = ['loop', 'comment', 'site', 'ask'];
   if (!S.end || !ends.includes(S.end.type)) problems.push('end.type must be one of ' + ends.join(', '));
   if (S.end && S.end.type === 'comment' && !(S.end.keyword || S.keyword)) problems.push('a comment end needs a keyword');

@@ -201,7 +201,7 @@
     shots.push(endShot);
     shots.forEach((s, i) => { s.t1 = i < shots.length - 1 ? shots[i + 1].t0 : total; });
     // transitions: the script's, else the theme's set in rotation (never the same twice in a row)
-    const pool = TH.transitions || ['blur-push'];
+    const pool = S.transitions || TH.transitions || ['blur-push'];
     let k = 0, last = null;
     shots.forEach((s, i) => {
       if (i === 0) return;
@@ -210,7 +210,9 @@
     });
     // a chosen track with a beat grid (script "beat": {bpm}): the reel starts on a downbeat, every cut snaps to the
     // nearest beat when it is within 0.16 s (the voice keeps its own timing; only the picture moves)
-    if (S.beat && S.beat.bpm) { const per = 60 / S.beat.bpm; R.beatPer = per;
+    // the previews use the owner's track (125 BPM) unless the script names another file with its own grid
+    const BEAT = S.beat || ((S.musicFile || 'owner-free') === 'owner-free' ? { bpm: 125.01 } : null);
+    if (BEAT && BEAT.bpm) { const per = 60 / BEAT.bpm; R.beatPer = per;
       shots.forEach((s, i) => { if (!i) return; const tb = Math.round(s.t0 / per) * per, th = Math.round(s.t0 / (per / 2)) * (per / 2); s.t0 = Math.abs(tb - s.t0) <= 0.16 ? tb : th; }); // a beat, else the half beat
       shots.forEach((s, i) => { s.t1 = i < shots.length - 1 ? shots[i + 1].t0 : total; }); }
     const cams = TH.cams || ['push'];
@@ -250,6 +252,10 @@
     document.body.dataset.cap = TH.caption || 'pill';
     document.body.dataset.theme = S.theme;
     document.body.dataset.dark = TH.dark ? '1' : '';
+    document.body.dataset.sweep = TH.sweep || '';
+    const LY = S.layout || {}; R.layout = { align: LY.align || 'center', anchor: LY.anchor || 'center', typeScale: LY.typeScale || 1 };
+    document.body.dataset.align = R.layout.align;
+    if (TH.fontDisplay) root.setProperty('--f-display', TH.fontDisplay);
   }
   async function boot() {
     S = await (await fetch('../../scripts/' + ID + '/script.json', { cache: 'no-store' })).json();
@@ -305,7 +311,7 @@
     events.sort((a, b) => a.t - b.t);
     window.film = {
       v: 2, id: S.id, total, fps: FPS, W, H, theme: S.theme, end: R.endType, keyword: S.keyword || null,
-      music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || null, musicStart: S.musicStart || 0, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
+      music: S.music || TH.music, musicClip: S.musicClip || null, musicFile: S.musicFile || 'owner-free', musicStart: S.musicStart != null ? S.musicStart : 77.19, beat: S.beat || null, sfx: TH.sfx, loop: R.endType === 'loop',
       cues: cues.filter((c) => c.t >= 0 && c.t < total),
       events: events.filter((e) => e.t >= -0.01 && e.t <= total),
       beats: lines.map((L) => ({ key: L.key, t0: L.t0, dur: L.dur, text: L.text, role: L.role, voiced: L.voiced, shot: L.shot ? L.shot.i : -1, step: L.step, visual: L.b.visual ? L.b.visual.type : L.b.step ? 'step' : null })),
@@ -374,7 +380,7 @@
     if (TH.sweep !== false) {
       let sw = null; for (const s of shots) if (s.i > 0 && t >= s.t0 - 0.05 && t < s.t0 + 0.9) sw = s;
       const el = document.getElementById('sweep');
-      if (sw) { const q = clamp((t - sw.t0 + 0.05) / 0.9); el.style.display = 'block'; el.style.transform = 'translateX(' + (-1400 + E.inout(q) * 2800).toFixed(1) + 'px) rotate(18deg)'; el.style.opacity = (Math.sin(Math.PI * q) * (TH.dark ? 0.5 : 0.35)).toFixed(3); }
+      if (sw) { const q = clamp((t - sw.t0 + 0.05) / 0.9); el.style.display = 'block'; el.style.transform = 'translateX(' + (-1400 + E.inout(q) * 2800).toFixed(1) + 'px) rotate(18deg)'; el.style.opacity = (Math.sin(Math.PI * q) * (TH.dark ? 0.5 : TH.sweep === 'rose' ? 0.28 : 0.22)).toFixed(3); }
       else el.style.display = 'none';
     }
     R.captionAt(t);

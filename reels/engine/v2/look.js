@@ -91,7 +91,7 @@
       const place = c.L.b.capAt || (c.L.shot && c.L.shot.vis.capAt) || TH.capAt || 'band';
       c.top = typeof place === 'number' ? place : R.CAPY[place] || R.CAPY.band;
       capEl.innerHTML = c.html; capEl.style.top = c.top + 'px';
-      let f = TH.capSize || 92; capEl.style.fontSize = f + 'px';
+      let f = Math.round((TH.capSize || 92) * (R.layout ? Math.min(1.12, R.layout.typeScale) : 1)); capEl.style.fontSize = f + 'px';
       while (f > 52 && (capEl.offsetHeight > 250 || [...capEl.querySelectorAll('.cw')].some((w) => w.offsetLeft + w.offsetWidth * 1.08 > 860 || w.offsetLeft - w.offsetWidth * 0.04 < 0))) { f -= 2; capEl.style.fontSize = f + 'px'; }
       c.fs = f;
     });

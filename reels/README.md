@@ -40,9 +40,9 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
 - **Cazurile** urmează același stil: rezultatul real se vede devreme (o privire la „după”, apoi înainte → după, cu o
   lovitură sonoră), întrebarea din capul privitorului devine „cum a reușit?”, povestea curge spre soluție (ce o
   frământa, spus general; ce s-a făcut și de ce merge, desenat), apoi dezvăluirea completă, rezolvarea și finalul.
-- **Muzica**: originală (Lyria), cu energia muzicii care merge acum (house anilor '90, UK garage, nu-disco, afro
+- **Muzica** (13.11, înlocuită pe 14.11 de „Muzica și postarea”): originală (Lyria), cu energia muzicii care merge acum (house anilor '90, UK garage, nu-disco, afro
   house, lo-fi house), niciodată o melodie, un text sau un titlu copiat; fiecare reel altă piesă (`musicClip`);
-  lovitură pe cârlig, creștere pe răspuns (un filtru care se deschide, apoi „drop”-ul), rezolvare la final. Referința
+  lovitură pe cârlig; din 14.11 fără automatizări de volum (vezi „Muzica și postarea”). Referința
   proprietarului (un clasic house din anii '90) a fost doar măsurată, pentru stil: ~123 BPM, fa major, un intro scurt
   și apoi un groove constant, plin de energie.
 - **Excepție, decizia proprietarului (13.11):** pentru `v2-gusa-slabe` și `v2-caz-real` patul muzical e chiar piesa
@@ -52,9 +52,48 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
   {"bpm"}`. `python3 beats.py music/<fișier>.wav` măsoară tempoul (125 BPM), grila și frazele de 8 măsuri și propune
   partea cea mai „catchy” (refrenul: 77,2 s și 169,3 s). Reel-ul începe pe un downbeat (lovitura cârligului cade pe
   el), fiecare tăietură se mută pe bătaia cea mai apropiată (sau pe jumătatea ei), vocea rămâne pe timpii ei.
-  Mixul: banda 0,9-4 kHz a piesei se retrage cât vorbește vocea, plus sidechain; `mix.py` raportează „voice over
-  music” (dB) cât vorbește. Pe rețele, o piesă comercială poate fi redusă la tăcere sau blocată, iar conturile de
+  Mixul: din 14.11 muzica stă constantă (mai sus, „Muzica și postarea”); `mix.py` raportează „voice over music” (dB). Pe rețele, o piesă comercială poate fi redusă la tăcere sau blocată, iar conturile de
   business nu au voie la muzică comercială în postări; asta e riscul asumat.
+
+## Regulile proprietarului din 14.11: brandul, super clean, fiecare reel altfel
+- **Doar culorile brandului**, două teme (`engine/themes.json`), nimic altceva (`check2.cjs` refuză orice altă temă):
+  `brand-light` (alb cu turcoaz) și `brand-teal` (turcoaz cu alb). Turcoazul site-ului (#14a596, #0f8a7e, nuanțele
+  #eef7f6 și #dcf2ef), cerneala #12201f și **rose gold doar ca accent** (gradientul #fbe3d9 → #eab5a5 → #cf8f7d de pe
+  pastila Black Friday și butoanele „Rezervă oferta” din `v2/kit.css`): evidențieri, cifre cheie, bila cronologiei,
+  steagul liderului, o lumină de contur; niciodată suprafețe mari. Temele vechi (aurora, burgundy, obsidian…) nu mai există.
+- **Super clean, cu bun simț și bun gust**: mult spațiu alb, puține elemente pe ecran, tipografie fără efecte (fără
+  strălucire, fără umbre pe text), linii fine, umbre moi, mișcări calme și precise (scenele de date fără „bounce”),
+  totul aliniat pe grilă. Dacă ceva pare încărcat pe foaia de contact, se scoate. Logo-ul nu stă pe ecran; apare doar
+  unde e firesc (browserul finalului `site`, cu capturi reale). Nuki apare de câteva ori, cu sens, niciodată de umplutură.
+- **Scene de date** (`engine/v2/dataviz.js`, după o referință UI pe care proprietarul a ales-o): `race` (bare lucioase
+  extrudate, cu teșitură, față laterală, reflex și umbră moale, care cresc și își schimbă locul pe o cronologie;
+  liderul în rose gold, cu un steag), `scrubber` (o cronologie cu bilă, diviziuni etichetate, o cifră uriașă „fantomă”
+  în spate, un interval marcat în rose gold), `cardrow` (cărți portret cu insignă de rang și etichetă de stare). Doar
+  cifre reale (topics.json, site-ul); altfel scena spune „Ilustrativ” și nu arată cifre.
+- **Niciun reel la fel** („nu vreau să fie la fel niciunul”): între reels variază tema, cârligul (particule, privire la
+  poza reală, contor…), scenele-semnătură (race, scrubber, cardrow, căutarea pe site, straturile pielii), aranjarea
+  (`"layout": {"align": "left" | "center", "anchor": "top" | "center" | "bottom", "typeScale": 0.9-1.1}`), ritmul,
+  setul de tranziții (`"transitions": [...]` în script), unde și cum apare Nuki, finalul și partea din muzică.
+  `check2.cjs` refuză un reel cu aceeași temă + cârlig + scene-semnătură + final ca altul și avertizează când peste
+  jumătate din scene sunt de același fel ca la reel-ul precedent.
+- **Când nu e sigur, întreabă** (regula proprietarului): o afirmație despre un tratament, o cifră, ce poză se poate
+  arăta, o alegere de stil care poate merge în două feluri: se notează întrebarea cu variantele și se întreabă
+  proprietarul, în loc să se ghicească.
+
+## Muzica și postarea (regulile proprietarului din 14.11)
+- **Muzica stă constantă tot timpul**: un singur nivel pe tot reel-ul, „semi tare” în fundal, iar vocea vorbește peste
+  ea. Fără ducking, fără sidechain, fără automatizări de volum, fără filtre care se deschid, fără fade la acord; doar o
+  coadă fără clic de 0,3 s pe ultimele cadre și o mică scobitură statică de -3 dB la 2,5 kHz, unde stă vorbirea.
+- **Nivelul** (`MUSIC_UNDER_VOICE` în `mix.py`, implicit 6): întâi nivelul la care vocea se înțelege clar (8 dB de voce
+  peste muzică în banda vorbirii, 1-4 kHz, cât vorbește, și ascultătorul automat aude fiecare cuvânt: `python3
+  listen.py <id>` transcrie mixul final și numără cuvintele greșite), apoi „puțin mai tare”: +2 dB de muzică. Deci 6 dB
+  în banda vorbirii (pe tot spectrul ~6,5-8 dB, după piesă). Se verifică pe fiecare reel cu `listen.py` (WER sub ~2 %).
+- **Postare din aplicație**: proprietarul postează singur, din aplicații, și pune acolo sunetul licențiat. De aceea
+  fiecare reel iese în două fișiere (`./make.sh <id>` le face pe amândouă): `out/<id>.mp4`, previzualizarea, cu piesa
+  aleasă de el („Free”, `engine/music/owner-free.wav`, ignorată de git, nu se comite niciodată; fără ea, previzualizarea
+  iese fără muzică, niciodată cu o piesă generată), și `out/<id>-clean.mp4`, același video doar cu vocea și efectele,
+  pentru postare. Amândouă la -14 LUFS, vârf real sub -1 dBTP. Lovitura de pe primul cadru e puțin mai încet sub
+  primele cuvinte, ca să nu le acopere.
 
 ## Vocea (cum vorbim; regula proprietarului, 12.11)
 Vocea e a unei femei din România, de vreo 30 de ani, deșteaptă și caldă, care îi povestește ceva interesant unei
@@ -101,7 +140,7 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
 - **end**: `loop` (ultimul cadru curge în primul; fără voce), `comment` (cuvântul 360 tastat în bara de comentariu,
   trimis, apare comentariul), `site` (`pages`: secțiuni reale, capturate cu `node site.cjs <id>`), `ask` (`q`,
   `options`). Când se alege fiecare: `PRODUCER.md`.
-- **theme**: una din `engine/themes.json` (9: aurora, paper, swiss, clay, neon, mint, sunset, blueprint, noir):
+- **theme**: `brand-light` sau `brand-teal` (din 14.11, doar acestea două); fiecare din `engine/themes.json` are:
   paleta, fundalul (mesh, grain, grilă, hârtie, sticlă întunecată, lut pastel, inele neon, blueprint), fonturile
   (`@fontsource`, cu ș/ț), subtitrările (pill, box, outline, serif, glow, mono, sticker, under), tranzițiile,
   camera, aroma sunetelor și starea muzicii.

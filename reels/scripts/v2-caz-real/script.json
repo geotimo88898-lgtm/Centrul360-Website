@@ -2,7 +2,7 @@
  "v": 2,
  "id": "v2-caz-real",
  "rubric": "Cazuri",
- "theme": "burgundy",
+ "theme": "brand-light",
  "music": "Free (Ultra Naté), piesa aleasă de proprietar",
  "topic": "Liposonix abdomen, o ședință, Timișoara",
  "topicTag": "liposonix-abdomen",
@@ -31,36 +31,53 @@
   {
    "say": "Știi zona aia care nu cedează, deși mănânci atent și faci *mișcare*?",
    "visual": {
-    "type": "checklist",
-    "items": [
+    "type": "cardrow",
+    "y": 120,
+    "cards": [
      {
       "t": "Mănânci atent",
-      "at": [
-       0,
-       0.35
-      ]
+      "ic": "salad",
+      "tag": {
+       "t": "Bifat",
+       "done": true,
+       "at": [
+        0,
+        0.38
+       ]
+      }
      },
      {
       "t": "Faci mișcare",
-      "at": [
-       0,
-       0.55
-      ]
+      "ic": "footprints",
+      "tag": {
+       "t": "Bifat",
+       "done": true,
+       "at": [
+        0,
+        0.6
+       ]
+      }
      },
      {
-      "t": "Zona tot acolo",
-      "x": true,
-      "at": [
-       0,
-       0.82
-      ]
+      "t": "Zona",
+      "s": "tot acolo",
+      "ic": "target",
+      "lead": true,
+      "tag": {
+       "t": "Tot acolo",
+       "rose": true,
+       "at": [
+        0,
+        0.86
+       ]
+      }
      }
     ]
    },
    "nuki": {
     "pose": "gandeste",
     "at": "peek-l",
-    "y": 1060,
+    "y": 1090,
     "react": "nod"
    }
   },
@@ -92,36 +109,43 @@
   {
    "say": "Corpul elimină celulele tratate în săptămânile *următoare*.",
    "visual": {
-    "type": "timeline",
-    "items": [
-     {
-      "t": "Ședința",
-      "ic": "zap",
-      "at": [
-       0,
-       0.05
-      ]
-     },
-     {
-      "t": "Corpul lucrează",
-      "s": "săptămânile 2-8",
-      "ic": "activity",
-      "at": [
-       0,
-       0.45
-      ]
-     },
-     {
-      "t": "Diferența",
-      "s": "la 6-8 săptămâni",
-      "ic": "sparkles",
-      "at": [
-       0,
-       0.85
-      ]
-     }
-    ]
-   }
+    "type": "scrubber",
+    "header": "Săptămânile de după ședință",
+    "right": "S{n}",
+    "title": "Corpul elimină *treptat* celulele tratate",
+    "ticks": [
+     "S1",
+     "S2",
+     "S3",
+     "S4",
+     "S5",
+     "S6",
+     "S7",
+     "S8"
+    ],
+    "from": [
+     0,
+     0.15
+    ],
+    "at": [
+     0,
+     1.18
+    ],
+    "to": 7,
+    "range": [
+     5,
+     7
+    ],
+    "rangeAt": [
+     0,
+     1.22
+    ],
+    "ghostEnd": "6-8",
+    "note": "Etapele de pe centrul360.com",
+    "count": "Săptămâna {n} din {N}",
+    "y": 660
+   },
+   "pause": 1.0
   }
  ],
  "payoff": [
@@ -199,7 +223,7 @@
    },
    "nuki": {
     "pose": "mana-inima",
-    "at": "bl",
+    "at": "br",
     "react": "bounce"
    }
   },
@@ -207,17 +231,10 @@
    "say": "Și ai răbdare: în general, diferența se vede la șase, opt *săptămâni*.",
    "cap": "Și ai răbdare: în general, diferența se vede la 6-8 *săptămâni*.",
    "visual": {
-    "type": "counter",
-    "from": 0,
-    "to": 8,
-    "suffix": "săptămâni",
-    "label": "în general, *6-8*",
-    "at": [
-     0,
-     0.2
-    ],
-    "dur": 1.6,
-    "size": 220
+    "type": "big",
+    "value": "6-8",
+    "suffix": "săpt.",
+    "label": "în general, până se vede diferența"
    }
   }
  ],
@@ -267,5 +284,15 @@
  "beat": {
   "bpm": 125.01
  },
- "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s)."
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s).",
+ "transitions": [
+  "push",
+  "pan",
+  "push-up"
+ ],
+ "layout": {
+  "align": "left",
+  "anchor": "top",
+  "typeScale": 0.94
+ }
 }

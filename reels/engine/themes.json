@@ -1,764 +1,135 @@
 {
- "note": "Temele reels-urilor v2. Scriptul alege una (\"theme\"); producătorul nu folosește aceeași temă de două ori la rând (PRODUCER.md). Fiecare temă: paleta (variabile CSS), fundalul (bg), fonturile (din node_modules/@fontsource*), stilul subtitrărilor (caption: pill, box, outline, serif, glow, mono, sticker, under), tranzițiile (în rotație), mișcările de cameră, aroma sunetelor (sfx: soft, crisp, airy, warm, digital, punchy), starea muzicii (music: pop, chill, tension, future, cinematic, funky) și stilul imaginilor AI (imagery, folosit de imagen.py). Din 13.11 (proprietarul): palete dramatice (întunecat bogat + accente vii, plus 1-2 luminoase îndrăznețe), vignetă, bloom pe accente, o rază de lumină după fiecare tăietură, grain fin; fără logo pe ecran.",
+ "note": "Temele reels-urilor v2. Din 14.11 (decizia proprietarului): doar culorile brandului, două teme, nimic altceva (check2.cjs refuză orice altă temă). brand-light: alb cu turcoaz; brand-teal: turcoaz cu alb. Accentul rose gold (gradientul de pe site: #fbe3d9 → #eab5a5 → #cf8f7d, pastila Black Friday și butoanele „Rezervă oferta” din v2/kit.css) doar ca accent: evidențieri, cifre cheie, o lumină de contur, un marcaj; niciodată suprafețe mari. Super clean (14.11): mult spațiu alb, puține elemente pe ecran, tipografie curată fără efecte, linii fine, umbre moi, mișcări calme și precise.",
  "themes": {
-  "aurora": {
-   "name": "Midnight · magenta + cyan (dark)",
-   "dark": true,
+  "brand-light": {
+   "name": "Brand · alb cu turcoaz",
+   "dark": false,
    "palette": {
-    "bg": "#05051a",
-    "bg2": "#141443",
-    "bg3": "#2a0b3d",
-    "ink": "#f6f3ff",
-    "mute": "#a4a3cc",
-    "acc": "#ff3df2",
-    "acc2": "#22e1ff",
-    "good": "#57f5c6",
-    "bad": "#ff5a7a",
-    "card": "rgba(255,255,255,.07)",
-    "line": "rgba(255,255,255,.16)",
-    "glass": "rgba(255,255,255,.07)"
+    "bg": "#ffffff",
+    "bg2": "#eef7f6",
+    "bg3": "#dcf2ef",
+    "ink": "#12201f",
+    "mute": "#5e6d6b",
+    "acc": "#14a596",
+    "acc2": "#0f8a7e",
+    "on-acc": "#ffffff",
+    "good": "#14a596",
+    "bad": "#cf8f7d",
+    "card": "#ffffff",
+    "line": "rgba(18,32,31,.1)",
+    "glass": "rgba(255,255,255,.86)",
+    "rose1": "#fbe3d9",
+    "rose2": "#eab5a5",
+    "rose3": "#cf8f7d",
+    "rose-ink": "#3b1c14",
+    "ghost": "rgba(15,138,126,.06)"
    },
    "bg": {
-    "base": "radial-gradient(ellipse at 50% 28%,#12124a 0%,#05051a 68%)",
+    "base": "linear-gradient(180deg,#ffffff 0%,#ffffff 55%,#eef7f6 100%)",
+    "grid": {
+     "size": 54,
+     "color": "rgba(15,138,126,.045)",
+     "w": 1,
+     "bold": "rgba(15,138,126,.07)"
+    },
     "blobs": [
-     "rgba(255,61,242,.5)",
-     "rgba(34,225,255,.42)",
-     "rgba(120,70,255,.5)"
+     "rgba(220,242,239,.9)"
     ],
-    "soft": 44,
-    "grain": 0.07,
-    "vignette": 0.62
+    "soft": 40
    },
    "font": {
-    "display": "'Space Grotesk Variable', sans-serif",
-    "body": "'Space Grotesk Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
+    "display": "'Inter Variable', system-ui, sans-serif",
+    "body": "'Inter Variable', system-ui, sans-serif",
+    "serif": "'Fraunces Variable', Georgia, serif",
     "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 700,
+    "dw": 800,
     "track": "-0.045em"
    },
-   "shadow": "0 40px 90px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.12)",
-   "caption": "glow",
-   "capSize": 90,
-   "transitions": [
-    "fly-through",
-    "morph-key",
-    "zoom-element",
-    "push",
-    "pan"
-   ],
-   "cams": [
-    "push",
-    "parallax",
-    "dolly",
-    "drift"
-   ],
-   "sfx": "airy",
-   "music": "garage",
-   "imagery": "dreamy premium 3D render, dark navy background, glowing pink and cyan rim light, glassy translucent materials, soft volumetric light, minimal, elegant, high-end"
-  },
-  "paper": {
-   "name": "Editorial paper",
-   "dark": false,
-   "palette": {
-    "bg": "#f3ece0",
-    "bg2": "#e6dccb",
-    "bg3": "#f0d9c4",
-    "ink": "#1d1a16",
-    "mute": "#6f6656",
-    "acc": "#c2452d",
-    "acc2": "#2f5d50",
-    "good": "#2f7d5b",
-    "bad": "#c2452d",
-    "card": "#fbf7ef",
-    "line": "rgba(29,26,22,.14)",
-    "glass": "rgba(251,247,239,.8)"
-   },
-   "bg": {
-    "base": "#f3ece0",
-    "blobs": [
-     "rgba(230,200,170,.55)",
-     "rgba(200,215,200,.5)"
-    ],
-    "soft": 30,
-    "paper": true,
-    "grain": 0.12,
-    "vignette": 0.18
-   },
-   "font": {
-    "display": "'DM Serif Display', serif",
-    "body": "'Plus Jakarta Sans Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 400,
-    "track": "-0.02em"
-   },
-   "radius": 22,
-   "shadow": "0 30px 60px -34px rgba(60,40,20,.45), 0 1px 0 rgba(60,40,20,.06)",
-   "caption": "serif",
-   "capSize": 92,
-   "transitions": [
-    "page-flip",
-    "mask-wipe",
-    "slide-stack",
-    "match-cut"
-   ],
-   "cams": [
-    "drift",
-    "push",
-    "rise",
-    "pull"
-   ],
-   "sfx": "warm",
-   "music": "cinematic",
-   "imagery": "editorial still life photograph, warm paper tones, soft daylight from a window, matte ceramic and linen textures, muted terracotta and sage accents, magazine style, minimal, lots of negative space"
-  },
-  "swiss": {
-   "name": "Swiss grid",
-   "dark": false,
-   "palette": {
-    "bg": "#f4f2ec",
-    "bg2": "#e9e7e0",
-    "bg3": "#ffd9cf",
-    "ink": "#0e0e0e",
-    "mute": "#5c5c5c",
-    "acc": "#ff3b1f",
-    "acc2": "#1f4bff",
-    "good": "#00a86b",
-    "bad": "#ff3b1f",
-    "card": "#ffffff",
-    "line": "rgba(0,0,0,.12)",
-    "glass": "rgba(255,255,255,.85)"
-   },
-   "bg": {
-    "base": "#f6f5f1",
-    "grid": {
-     "size": 60,
-     "color": "rgba(0,0,0,.05)",
-     "bold": "rgba(0,0,0,.07)"
-    },
-    "blobs": [],
-    "grain": 0.05
-   },
-   "font": {
-    "display": "'Archivo Black', sans-serif",
-    "body": "'Inter Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 400,
-    "track": "-0.035em"
-   },
-   "radius": 14,
-   "shadow": "10px 10px 0 rgba(0,0,0,.9)",
-   "caption": "box",
+   "radius": 28,
+   "shadow": "0 24px 48px -28px rgba(18,32,31,.28), 0 1px 0 rgba(18,32,31,.04)",
+   "caption": "brandl",
    "capSize": 86,
    "transitions": [
-    "whip",
     "push",
-    "match-cut",
+    "fly-through",
     "morph-key",
-    "glitch-lite"
-   ],
-   "cams": [
-    "none",
-    "push",
-    "drift"
-   ],
-   "sfx": "crisp",
-   "music": "pop",
-   "imagery": "bold minimal flat graphic illustration, swiss design, off-white background, black shapes with one red accent, geometric, clean vector look, no gradients"
-  },
-  "clay": {
-   "name": "Pastel clay",
-   "dark": false,
-   "palette": {
-    "bg": "#fbeee6",
-    "bg2": "#efe2fb",
-    "bg3": "#dff3ec",
-    "ink": "#2b1e2f",
-    "mute": "#7a6a80",
-    "acc": "#ff7a59",
-    "acc2": "#8b6cff",
-    "good": "#18a999",
-    "bad": "#ff5470",
-    "card": "#ffffff",
-    "line": "rgba(43,30,47,.12)",
-    "glass": "rgba(255,255,255,.7)"
-   },
-   "bg": {
-    "base": "linear-gradient(160deg,#fbeee6,#f3e7fb)",
-    "blobs": [
-     "rgba(255,190,160,.6)",
-     "rgba(200,180,255,.55)"
-    ],
-    "shapes": 4,
-    "shapeColors": [
-     "#ffb59c",
-     "#c9b6ff",
-     "#a7e8d8",
-     "#ffd88a"
-    ],
-    "shapeAlpha": 0.6,
-    "grain": 0.04
-   },
-   "font": {
-    "display": "'Bricolage Grotesque Variable', sans-serif",
-    "body": "'Bricolage Grotesque Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.04em"
-   },
-   "radius": 44,
-   "caption": "sticker",
-   "capSize": 88,
-   "transitions": [
-    "slide-stack",
-    "shape-morph",
-    "iris",
-    "blur-push"
+    "pan",
+    "zoom-element"
    ],
    "cams": [
     "push",
     "drift",
-    "parallax"
-   ],
-   "sfx": "soft",
-   "music": "pop",
-   "imagery": "soft 3D clay render, matte pastel materials (peach, lilac, mint, cream), rounded playful shapes, studio softbox lighting, gentle shadows, minimal composition, lots of empty space"
-  },
-  "neon": {
-   "name": "Neon night",
-   "dark": true,
-   "palette": {
-    "bg": "#050505",
-    "bg2": "#111a10",
-    "bg3": "#26062a",
-    "ink": "#f3fff0",
-    "mute": "#9aa59a",
-    "acc": "#c6ff3d",
-    "acc2": "#ff3dd5",
-    "good": "#c6ff3d",
-    "bad": "#ff3d6e",
-    "card": "rgba(255,255,255,.06)",
-    "line": "rgba(198,255,61,.25)",
-    "glass": "rgba(255,255,255,.06)"
-   },
-   "bg": {
-    "base": "#050505",
-    "rings": 3,
-    "ringColor": "rgba(198,255,61,.18)",
-    "ringGlow": "rgba(198,255,61,.25)",
-    "blobs": [
-     "rgba(255,61,213,.25)"
-    ],
-    "soft": 50,
-    "grain": 0.06,
-    "vignette": 0.6
-   },
-   "font": {
-    "display": "'Unbounded Variable', sans-serif",
-    "body": "'Outfit Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.03em"
-   },
-   "shadow": "0 0 40px rgba(198,255,61,.18), 0 30px 60px -30px rgba(0,0,0,.8)",
-   "caption": "outline",
-   "capSize": 80,
-   "transitions": [
-    "glitch-lite",
-    "whip",
-    "zoom-through",
-    "spin-zoom"
-   ],
-   "cams": [
-    "push",
-    "dolly",
-    "drift"
-   ],
-   "sfx": "digital",
-   "music": "future",
-   "imagery": "dark cinematic 3D render, black background, neon lime and magenta glow, glossy materials, futuristic lab objects, strong contrast, minimal"
-  },
-  "mint": {
-   "name": "Clinic mint",
-   "dark": false,
-   "palette": {
-    "bg": "#f2fbf9",
-    "bg2": "#d8f3ee",
-    "bg3": "#e6f0ff",
-    "ink": "#0f1a19",
-    "mute": "#4c5d5a",
-    "acc": "#14a596",
-    "acc2": "#2f7cf6",
-    "good": "#14a596",
-    "bad": "#ff5a3c",
-    "card": "#ffffff",
-    "line": "rgba(15,26,25,.1)",
-    "glass": "rgba(255,255,255,.75)"
-   },
-   "bg": {
-    "base": "#f2fbf9",
-    "blobs": [
-     "rgba(160,230,215,.7)",
-     "rgba(190,215,255,.6)"
-    ],
-    "dots": "rgba(15,26,25,.07)"
-   },
-   "font": {
-    "display": "'Plus Jakarta Sans Variable', sans-serif",
-    "body": "'Plus Jakarta Sans Variable', sans-serif",
-    "serif": "'Fraunces Variable', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.04em"
-   },
-   "caption": "pill",
-   "capSize": 90,
-   "transitions": [
-    "blur-push",
-    "iris",
-    "slide-stack",
-    "mask-wipe"
-   ],
-   "cams": [
-    "push",
-    "drift",
-    "rise"
+    "none"
    ],
    "sfx": "crisp",
-   "music": "pop",
-   "imagery": "clean premium medical-aesthetic 3D render, white and mint, soft daylight, frosted glass and brushed aluminium, calm, minimal, high-end clinic"
+   "music": "house90",
+   "sweep": "rose",
+   "imagery": "clean premium 3D render, pure white and soft turquoise glass, subtle rose gold metallic accents, soft daylight studio, minimal, lots of white space, high-end clinic"
   },
-  "sunset": {
-   "name": "Sunset mesh",
+  "brand-teal": {
+   "name": "Brand · turcoaz cu alb",
    "dark": false,
    "palette": {
-    "bg": "#ffe9dc",
-    "bg2": "#ffd1c2",
-    "bg3": "#ffe3a8",
-    "ink": "#2a1410",
-    "mute": "#7b5248",
-    "acc": "#ff4f3a",
-    "acc2": "#8a3cff",
-    "good": "#14a596",
-    "bad": "#d72d47",
-    "card": "#fff8f3",
-    "line": "rgba(42,20,16,.12)",
-    "glass": "rgba(255,248,243,.7)"
-   },
-   "bg": {
-    "base": "linear-gradient(170deg,#ffe0cf,#ffd6e3 60%,#ffe9b8)",
-    "blobs": [
-     "rgba(255,120,90,.55)",
-     "rgba(255,180,90,.55)",
-     "rgba(190,120,255,.4)"
-    ],
-    "soft": 34,
-    "grain": 0.1
-   },
-   "font": {
-    "display": "'Syne Variable', sans-serif",
-    "body": "'Outfit Variable', sans-serif",
-    "serif": "'Playfair Display Variable', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.035em"
-   },
-   "caption": "under",
-   "capSize": 90,
-   "transitions": [
-    "shape-morph",
-    "whip",
-    "match-cut",
-    "iris"
-   ],
-   "cams": [
-    "parallax",
-    "push",
-    "drift"
-   ],
-   "sfx": "punchy",
-   "music": "funky",
-   "imagery": "warm sunset gradient 3D render, coral, peach and violet light, soft glossy shapes, dreamy golden hour, minimal, airy"
-  },
-  "blueprint": {
-   "name": "Blueprint",
-   "dark": true,
-   "palette": {
-    "bg": "#0c2a6b",
-    "bg2": "#123886",
-    "bg3": "#0a1f52",
+    "bg": "#0f8a7e",
+    "bg2": "#14a596",
+    "bg3": "#0b7f74",
     "ink": "#ffffff",
-    "mute": "#b9c9ef",
-    "acc": "#ffd84a",
-    "acc2": "#7fe3ff",
-    "good": "#7fffc1",
-    "bad": "#ff7a7a",
-    "card": "rgba(255,255,255,.08)",
-    "line": "rgba(255,255,255,.22)",
-    "glass": "rgba(255,255,255,.08)"
+    "mute": "rgba(255,255,255,.74)",
+    "acc": "#ffffff",
+    "acc2": "#dcf2ef",
+    "on-acc": "#0f8a7e",
+    "good": "#0b7f74",
+    "bad": "#eab5a5",
+    "card": "rgba(255,255,255,.1)",
+    "line": "rgba(255,255,255,.2)",
+    "glass": "rgba(255,255,255,.12)",
+    "rose1": "#fbe3d9",
+    "rose2": "#eab5a5",
+    "rose3": "#cf8f7d",
+    "rose-ink": "#3b1c14",
+    "ghost": "rgba(255,255,255,.07)"
    },
    "bg": {
-    "base": "#0c2a6b",
+    "base": "linear-gradient(180deg,#14a596 0%,#0f8a7e 62%,#0b7f74 100%)",
     "grid": {
-     "size": 40,
-     "color": "rgba(255,255,255,.06)",
-     "bold": "rgba(255,255,255,.12)"
+     "size": 54,
+     "color": "rgba(255,255,255,.05)",
+     "w": 1,
+     "bold": "rgba(255,255,255,.08)"
     },
     "blobs": [
-     "rgba(30,90,200,.6)"
+     "rgba(255,255,255,.1)"
     ],
-    "soft": 60,
-    "vignette": 0.45
+    "soft": 50
    },
    "font": {
-    "display": "'Space Grotesk Variable', sans-serif",
-    "body": "'Space Grotesk Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
+    "display": "'Inter Variable', system-ui, sans-serif",
+    "body": "'Inter Variable', system-ui, sans-serif",
+    "serif": "'Fraunces Variable', Georgia, serif",
     "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 700,
-    "track": "-0.04em"
+    "dw": 800,
+    "track": "-0.045em"
    },
-   "radius": 18,
-   "shadow": "0 0 0 2px rgba(255,255,255,.25)",
-   "caption": "mono",
-   "capSize": 78,
-   "transitions": [
-    "iris",
-    "mask-wipe",
-    "glitch-lite",
-    "blur-push"
-   ],
-   "cams": [
-    "none",
-    "drift",
-    "push"
-   ],
-   "sfx": "digital",
-   "music": "tension",
-   "imagery": "technical blueprint illustration, white line art on deep blue, precise, engineering diagram style, minimal, no text"
-  },
-  "noir": {
-   "name": "Noir gold",
-   "dark": true,
-   "palette": {
-    "bg": "#0d0c0b",
-    "bg2": "#1d1a16",
-    "bg3": "#2a2117",
-    "ink": "#f6efe3",
-    "mute": "#a89f90",
-    "acc": "#d9b26f",
-    "acc2": "#9e7b4f",
-    "good": "#cfe3b0",
-    "bad": "#e0846f",
-    "card": "rgba(255,240,210,.06)",
-    "line": "rgba(217,178,111,.25)",
-    "glass": "rgba(255,240,210,.05)"
-   },
-   "bg": {
-    "base": "radial-gradient(ellipse at 50% 20%,#211d18 0%,#0d0c0b 70%)",
-    "blobs": [
-     "rgba(217,178,111,.18)"
-    ],
-    "soft": 60,
-    "grain": 0.09,
-    "vignette": 0.65
-   },
-   "font": {
-    "display": "'Playfair Display Variable', serif",
-    "body": "'Inter Variable', sans-serif",
-    "serif": "'Playfair Display Variable', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 700,
-    "track": "-0.02em"
-   },
-   "shadow": "0 40px 90px -30px rgba(0,0,0,.8), inset 0 0 0 1px rgba(217,178,111,.25)",
-   "caption": "serif",
-   "capSize": 88,
-   "transitions": [
-    "blur-push",
-    "page-flip",
-    "zoom-through",
-    "iris"
-   ],
-   "cams": [
-    "pull",
-    "push",
-    "drift"
-   ],
-   "sfx": "warm",
-   "music": "cinematic",
-   "imagery": "luxury dark still life, black background, warm golden rim light, brushed brass and dark glass, cinematic, minimal, premium"
-  },
-  "burgundy": {
-   "name": "Burgundy · peach glow (dark)",
-   "dark": true,
-   "palette": {
-    "bg": "#170510",
-    "bg2": "#3a0c1f",
-    "bg3": "#5a1426",
-    "ink": "#fff3ec",
-    "mute": "#d0a9ad",
-    "acc": "#ffb38a",
-    "acc2": "#ff5f87",
-    "good": "#8fe6c8",
-    "bad": "#ff6b6b",
-    "card": "rgba(255,230,220,.08)",
-    "line": "rgba(255,200,180,.2)",
-    "glass": "rgba(255,230,220,.07)"
-   },
-   "bg": {
-    "base": "radial-gradient(ellipse at 50% 25%,#4a1026 0%,#170510 70%)",
-    "blobs": [
-     "rgba(255,150,110,.42)",
-     "rgba(255,80,130,.36)"
-    ],
-    "soft": 50,
-    "grain": 0.08,
-    "vignette": 0.6
-   },
-   "font": {
-    "display": "'DM Serif Display', serif",
-    "body": "'Plus Jakarta Sans Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 400,
-    "track": "-0.015em"
-   },
-   "radius": 30,
-   "shadow": "0 40px 90px -30px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,220,200,.14)",
-   "caption": "serif",
-   "capSize": 94,
-   "transitions": [
-    "pan",
-    "zoom-element",
-    "morph-key",
-    "push",
-    "fly-through"
-   ],
-   "cams": [
-    "drift",
-    "push",
-    "parallax",
-    "rise"
-   ],
-   "sfx": "warm",
-   "music": "house90",
-   "imagery": "warm cinematic dark still life, deep burgundy background, soft peach glow light, velvet and glass textures, elegant, minimal"
-  },
-  "obsidian": {
-   "name": "Obsidian · gold (dark)",
-   "dark": true,
-   "palette": {
-    "bg": "#0a0908",
-    "bg2": "#1d1913",
-    "bg3": "#2c2215",
-    "ink": "#fbf3e2",
-    "mute": "#b0a58f",
-    "acc": "#e8b85c",
-    "acc2": "#fff0c2",
-    "good": "#cfe7a8",
-    "bad": "#ef8a6a",
-    "card": "rgba(255,240,210,.06)",
-    "line": "rgba(232,184,92,.26)",
-    "glass": "rgba(255,240,210,.05)"
-   },
-   "bg": {
-    "base": "radial-gradient(ellipse at 50% 22%,#241d14 0%,#0a0908 70%)",
-    "blobs": [
-     "rgba(232,184,92,.22)"
-    ],
-    "soft": 60,
-    "grain": 0.09,
-    "vignette": 0.68
-   },
-   "font": {
-    "display": "'Playfair Display Variable', serif",
-    "body": "'Inter Variable', sans-serif",
-    "serif": "'Playfair Display Variable', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 700,
-    "track": "-0.02em"
-   },
-   "shadow": "0 40px 90px -30px rgba(0,0,0,.85), inset 0 0 0 1px rgba(232,184,92,.25)",
-   "caption": "serif",
-   "capSize": 90,
+   "radius": 28,
+   "shadow": "0 26px 50px -28px rgba(4,40,36,.45), 0 1px 0 rgba(255,255,255,.08) inset",
+   "caption": "brandt",
+   "capSize": 86,
    "transitions": [
     "fly-through",
-    "pan",
-    "morph-key",
-    "blur-push"
-   ],
-   "cams": [
-    "pull",
-    "push",
-    "drift"
-   ],
-   "sfx": "warm",
-   "music": "cinematic",
-   "imagery": "luxury dark still life, black obsidian background, warm golden rim light, brushed brass and dark glass, cinematic, minimal"
-  },
-  "tealcoral": {
-   "name": "Deep teal · coral (dark)",
-   "dark": true,
-   "palette": {
-    "bg": "#031d20",
-    "bg2": "#08353a",
-    "bg3": "#0d4a4f",
-    "ink": "#effcfa",
-    "mute": "#9ec7c3",
-    "acc": "#ff6f59",
-    "acc2": "#5ff0d6",
-    "good": "#5ff0d6",
-    "bad": "#ff6f59",
-    "card": "rgba(255,255,255,.07)",
-    "line": "rgba(95,240,214,.2)",
-    "glass": "rgba(255,255,255,.06)"
-   },
-   "bg": {
-    "base": "radial-gradient(ellipse at 50% 28%,#0b4146 0%,#031d20 70%)",
-    "blobs": [
-     "rgba(255,111,89,.32)",
-     "rgba(95,240,214,.3)"
-    ],
-    "soft": 46,
-    "grain": 0.07,
-    "vignette": 0.58
-   },
-   "font": {
-    "display": "'Bricolage Grotesque Variable', sans-serif",
-    "body": "'Plus Jakarta Sans Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.04em"
-   },
-   "caption": "under",
-   "capSize": 90,
-   "transitions": [
-    "pan",
     "push",
     "zoom-element",
-    "morph-key"
-   ],
-   "cams": [
-    "parallax",
-    "push",
-    "drift"
-   ],
-   "sfx": "airy",
-   "music": "afrohouse",
-   "imagery": "deep teal cinematic 3D render, coral glowing accents, glassy water-like materials, soft caustics, minimal, premium"
-  },
-  "inklime": {
-   "name": "Ink blue · neon lime (dark)",
-   "dark": true,
-   "palette": {
-    "bg": "#070a24",
-    "bg2": "#121845",
-    "bg3": "#1e1150",
-    "ink": "#f2f6ff",
-    "mute": "#9aa3cf",
-    "acc": "#c8ff2e",
-    "acc2": "#8a6bff",
-    "good": "#c8ff2e",
-    "bad": "#ff5d7a",
-    "card": "rgba(255,255,255,.07)",
-    "line": "rgba(200,255,46,.22)",
-    "glass": "rgba(255,255,255,.06)"
-   },
-   "bg": {
-    "base": "radial-gradient(ellipse at 50% 26%,#141c5a 0%,#070a24 70%)",
-    "rings": 2,
-    "ringColor": "rgba(200,255,46,.14)",
-    "ringGlow": "rgba(200,255,46,.2)",
-    "blobs": [
-     "rgba(138,107,255,.42)"
-    ],
-    "soft": 50,
-    "grain": 0.07,
-    "vignette": 0.6
-   },
-   "font": {
-    "display": "'Unbounded Variable', sans-serif",
-    "body": "'Outfit Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.03em"
-   },
-   "caption": "outline",
-   "capSize": 80,
-   "transitions": [
-    "whip",
-    "push",
     "morph-key",
-    "fly-through",
-    "glitch-lite"
-   ],
-   "cams": [
-    "push",
-    "dolly",
-    "drift"
-   ],
-   "sfx": "digital",
-   "music": "garage",
-   "imagery": "dark ink-blue cinematic 3D render, neon lime and violet glow, glossy futuristic objects, strong contrast, minimal"
-  },
-  "citrus": {
-   "name": "Citrus (bold light)",
-   "dark": false,
-   "palette": {
-    "bg": "#fff4e2",
-    "bg2": "#ffe2bd",
-    "bg3": "#dfe3ff",
-    "ink": "#14123a",
-    "mute": "#5d5a7a",
-    "acc": "#2f3cff",
-    "acc2": "#ff5a1f",
-    "good": "#00a37a",
-    "bad": "#ff3b30",
-    "card": "#ffffff",
-    "line": "rgba(20,18,58,.12)",
-    "glass": "rgba(255,255,255,.8)"
-   },
-   "bg": {
-    "base": "linear-gradient(165deg,#fff4e2,#ffe7c9)",
-    "blobs": [
-     "rgba(255,90,31,.35)",
-     "rgba(47,60,255,.28)"
-    ],
-    "soft": 36,
-    "grain": 0.06,
-    "vignette": 0.18
-   },
-   "font": {
-    "display": "'Syne Variable', sans-serif",
-    "body": "'Outfit Variable', sans-serif",
-    "serif": "'Instrument Serif', serif",
-    "mono": "'JetBrains Mono Variable', monospace",
-    "dw": 800,
-    "track": "-0.04em"
-   },
-   "caption": "sticker",
-   "capSize": 88,
-   "transitions": [
-    "whip",
-    "morph-key",
-    "slide-stack",
     "pan"
    ],
    "cams": [
     "push",
-    "parallax",
-    "drift"
+    "drift",
+    "none"
    ],
-   "sfx": "punchy",
-   "music": "nudisco",
-   "imagery": "bold bright 3D render, warm cream background, electric ultramarine and orange accents, glossy playful shapes, minimal"
+   "sfx": "crisp",
+   "music": "house90",
+   "sweep": "white",
+   "imagery": "clean premium 3D render on a turquoise background, white frosted glass, subtle rose gold metallic accents, soft studio light, minimal, lots of empty space"
   }
  }
 }

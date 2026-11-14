@@ -124,7 +124,7 @@
       const ox = Math.cos(am) * gap, oy = Math.sin(am) * gap;
       const d = 'M' + (cx + ox) + ' ' + (cy + oy) + ' L' + (cx + ox + r * Math.cos(a0)) + ' ' + (cy + oy + r * Math.sin(a0)) + ' A ' + r + ' ' + r + ' 0 0 1 ' + (cx + ox + r * Math.cos(a1)) + ' ' + (cy + oy + r * Math.sin(a1)) + ' Z';
       const g = h('div', 'abs', '<svg width="860" height="900" style="overflow:visible"><path d="' + d + '" fill="var(--' + cols[i % cols.length] + ')" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-linejoin="round"/></svg>', box); place(g, 0, 0);
-      const lr = r * 0.58; const lab = h('div', 'tx abs', '<div class="ico" style="width:84px;height:84px;margin:0 auto 6px;color:' + (R.theme.dark ? '#16122a' : '#fff') + '">' + R.icon(pc.ic || 'sparkles') + '</div><div style="font:850 40px/1.05 var(--f-display);letter-spacing:-.02em;color:' + (R.theme.dark ? '#16122a' : '#fff') + ';text-align:center">' + R.rich(pc.t) + '</div>', g);
+      const lr = r * 0.58; const lab = h('div', 'tx abs', '<div class="ico" style="width:84px;height:84px;margin:0 auto 6px;color:var(--on-acc,#fff)">' + R.icon(pc.ic || 'sparkles') + '</div><div style="font:850 40px/1.05 var(--f-display);letter-spacing:-.02em;color:var(--on-acc,#fff);text-align:center">' + R.rich(pc.t) + '</div>', g);
       place(lab, cx + ox + lr * Math.cos(am) - 120, cy + oy + lr * Math.sin(am) - 70, 240);
       g._dir = [Math.cos(am), Math.sin(am)]; return g;
     });
@@ -205,9 +205,9 @@
   V.scale = (ctx, p) => {
     const st = ctx.stage();
     const cx = 430, top = 170, bw = 600;
-    const base = h('div', 'abs', '<svg width="860" height="900"><path d="M' + (cx - 150) + ' 800 Q ' + cx + ' 740 ' + (cx + 150) + ' 800 Z" fill="var(--ink)"/><rect x="' + (cx - 12) + '" y="' + top + '" width="24" height="610" rx="12" fill="var(--ink)"/><circle cx="' + cx + '" cy="' + top + '" r="30" fill="var(--acc)"/></svg>', st); place(base, 0, 0);
-    const beam = h('div', 'abs', null, st); place(beam, cx - bw / 2, top - 10, bw, 20); beam.style.cssText += ';border-radius:10px;background:var(--ink);transform-origin:50% 50%';
-    const pan = (s, side) => { const d = h('div', 'abs', '<svg width="300" height="260" style="overflow:visible"><path d="M150 0 L20 150 M150 0 L280 150" stroke="var(--mute)" stroke-width="4"/><path d="M0 150 Q150 240 300 150 Z" fill="var(--card)" stroke="var(--ink)" stroke-width="5"/></svg>', st); place(d, 0, 0, 300, 260);
+    const base = h('div', 'abs', '<svg width="860" height="900"><path d="M' + (cx - 120) + ' 800 Q ' + cx + ' 768 ' + (cx + 120) + ' 800 Z" fill="var(--ink)" opacity=".85"/><rect x="' + (cx - 5) + '" y="' + top + '" width="10" height="610" rx="5" fill="var(--ink)" opacity=".85"/><circle cx="' + cx + '" cy="' + top + '" r="18" fill="var(--acc)"/></svg>', st); place(base, 0, 0);
+    const beam = h('div', 'abs', null, st); place(beam, cx - bw / 2, top - 5, bw, 10); beam.style.cssText += ';border-radius:5px;background:var(--ink);opacity:.85;transform-origin:50% 50%';
+    const pan = (s, side) => { const d = h('div', 'abs', '<svg width="300" height="260" style="overflow:visible"><path d="M150 0 L20 150 M150 0 L280 150" stroke="var(--mute)" stroke-width="2"/><path d="M0 150 Q150 230 300 150 Z" fill="var(--card)" stroke="var(--ink)" stroke-width="2.5" stroke-opacity=".85"/></svg>', st); place(d, 0, 0, 300, 260);
       const it = h('div', 'tx abs ico', '<div style="text-align:center"><div class="ico" style="width:110px;height:110px;margin:0 auto;color:var(--' + (s.tone || 'acc') + ')">' + R.icon(s.ic || 'weight') + '</div><div style="font:850 38px/1 var(--f-display);margin-top:6px">' + R.rich(s.t) + '</div></div>', d); place(it, 0, -10, 300, 160); d._it = it; return d; };
     const L = pan(p.left, 0), Rr = pan(p.right, 1);
     const keys = (p.keys || [[0, 0.4, -12]]).map((k) => ({ t: ctx.L(k[0], k[1]), v: k[2] }));

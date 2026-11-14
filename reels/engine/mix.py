@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sunetul unui reel: vocea la timpii ei, efectele pe animații, muzica dedesubt (mai încet cât vorbește), -14 LUFS.
+"""Sunetul unui reel: vocea la timpii ei, efectele pe animații, muzica dedesubt, constantă (regula din 14.11), -14 LUFS.
 Citește scripts/<id>/build/film.json (de la render.cjs) și timing.json.
   python3 mix.py <id>  →  scripts/<id>/build/audio.wav (48 kHz stereo, -14 LUFS integrat, vârf real ≤ -1.5 dBTP)
 v1: ca înainte (efectele Academiei + hit/riser, muzica pop).
@@ -139,7 +139,7 @@ def lufs(y):
     I, TP = measure(tmp); os.remove(tmp); return I, TP
 
 
-def write_master(base, out, rid, info, target=-14.0):
+def write_master(base, out, rid, info, target=-14.0, name='audio.wav'):
     """gain to -14 LUFS (measured, EBU R128), then a true-peak limiter at -2.2 dBTP (AAC adds a little), twice"""
     build = os.path.join(base, 'build')
     y = out.astype(np.float32)
@@ -149,7 +149,7 @@ def write_master(base, out, rid, info, target=-14.0):
         if i and abs(I - target) < 0.15: break
         y = tp_limit(y * 10 ** ((target - I) / 20))
     a = int(0.025 * SR); y[:a] *= np.linspace(0, 1, a)[:, None] ** 2  # AAC overshoots on a full-level first sample (+5 dB): a 25 ms fade-in
-    final = os.path.join(build, 'audio.wav')
+    final = os.path.join(build, name)
     with wave.open(final, 'wb') as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR)
         w.writeframes((np.clip(y, -1, 1) * 32767).astype('<i2').tobytes())
@@ -199,6 +199,35 @@ def thin(cues):
         if not over: break
         keep.remove(min(over, key=lambda k: (k['prio'], -k['t'])))
     return keep
+
+
+# the music's constant level (the owner, 14.11): first the level where the voice is still clearly understood (8 dB of voice
+# over music in the speech band, 1-4 kHz, while she speaks, and the machine listener hears every word: listen.py), then
+# „puțin mai tare”: +2 dB of music. So the default is 6 dB in the speech band; the broadband offset is printed.
+MUSIC_UNDER_VOICE = float(os.environ.get('MUSIC_UNDER_VOICE', '6'))
+
+
+def peaking(y, f0, gain_db, q=0.8):
+    """a static peaking EQ (RBJ cookbook)"""
+    from scipy import signal
+    A = 10 ** (gain_db / 40); w0 = 2 * np.pi * f0 / SR; al = np.sin(w0) / (2 * q)
+    b = [1 + al * A, -2 * np.cos(w0), 1 - al * A]; a = [1 + al / A, -2 * np.cos(w0), 1 - al / A]
+    return signal.lfilter(np.array(b) / a[0], np.array(a) / a[0], y, axis=0).astype(np.float32)
+
+
+def constant_bed(music, voice, total):
+    """the owner's rule (14.11): the music stays constant the whole time, „semi tare” in the background, the voice on top.
+    One fixed gain (chosen so the voice is MUSIC_UNDER_VOICE dB over it while she speaks), a gentle static dip where
+    speech lives (-3 dB at 2.5 kHz), no ducking, no automation; only a click-free tail of 0.3 s on the last frames."""
+    end = int(total * SR)
+    from scipy import signal
+    music[:] = peaking(music, 2500, -3.0)
+    sp = np.abs(voice[:, 0]) > 0.02
+    bb, aa = signal.butter(2, [1000 / (SR / 2), 4000 / (SR / 2)], 'band')
+    v = np.sqrt(np.mean(signal.lfilter(bb, aa, voice[:, 0])[sp] ** 2)) if sp.any() else 0.05
+    m = np.sqrt(np.mean(signal.lfilter(bb, aa, music[:, 0])[sp] ** 2)) + 1e-9
+    music *= (v / m) / (10 ** (MUSIC_UNDER_VOICE / 20))  # one gain for the whole reel
+    a = int(0.3 * SR); music[end - a:end] *= np.linspace(1, 0, a)[:, None]; music[end:] = 0
 
 
 def carve(music, voice):
@@ -260,46 +289,39 @@ def main_v2(rid, base, F, TIM):
             x = np.arange(0, len(y) - 1, pitch)
             y = np.stack([np.interp(x, np.arange(len(y)), y[:, ch]) for ch in (0, 1)], 1).astype(np.float32)
         g = BASE.get(c['cat'], 0.45) * fl['mul'].get(c['cat'], 1) * c.get('gain', 1) * 10 ** ((rng.random() * 2 - 1) * 1.5 / 20)
+        if c['t'] < 0.15 and c['cat'] in ('impact', 'boom', 'whoosh_s'): g *= 0.6  # the hook hit stays, but never masks the first words
         pan = c.get('pan') if c.get('pan') is not None else (rng.random() * 2 - 1) * 0.18
         add(fx, y, c['t'], g, pan)
-    mood = F.get('music') or 'pop'
-    beds = sorted(glob.glob(os.path.join(HERE, 'music', mood + '[0-9][0-9].wav'))) or sorted(glob.glob(os.path.join(HERE, 'music', 'pop*.wav')))
-    song = os.path.join(HERE, 'music', (F.get('musicFile') or '') + '.wav') if F.get('musicFile') else None
-    if song and os.path.exists(song):  # a track the owner chose (kept only in the ignored music/ folder): its catchiest part, from a downbeat
-        y = read(song); a = int(float(F.get('musicStart') or 0) * SR)
+    # the music (the owner, 14.11): the previews use exactly his track (music/owner-free.wav, git-ignored), never a
+    # generated one; he posts from the apps and adds the licensed sound there, so a clean file (voice + effects) is made too
+    song = os.path.join(HERE, 'music', (F.get('musicFile') or 'owner-free') + '.wav')
+    start = float(F.get('musicStart') if F.get('musicStart') is not None else 77.19)
+    bed = None
+    if os.path.exists(song):
+        y = read(song); a = int(start * SR)
         seg = y[a: a + len(music)]; music[: len(seg)] = seg
-        bed = os.path.basename(song) + ' from %.2f s' % float(F.get('musicStart') or 0)
-        shape_music(music, F, total)
-        carve(music, voice)
-        duck(music, voice, n, depth=0.72, level=0.3)
-        end = int(total * SR)
-        if F.get('loop'): a2 = int(0.02 * SR); music[:a2] *= np.linspace(0, 1, a2)[:, None]
-        else: music[:int(0.03 * SR)] *= np.linspace(0, 1, int(0.03 * SR))[:, None]
-        fo = int(1.6 * SR); music[end - fo:end] *= np.linspace(1, 0, fo)[:, None] ** 1.5; music[end:] = 0
-        beds = []
-    if F.get('musicClip'):  # the script picks its own track (each reel a different one); it is played first, the rest of the mood after
-        pick = os.path.join(HERE, 'music', F['musicClip'] + '.wav')
-        if os.path.exists(pick): beds = [pick] + [b for b in beds if b != pick]; rid_for_order = None
-    bed = bed if song and os.path.exists(song) else None
-    if beds:
-        bed = bed_track(music, beds, rid if not F.get('musicClip') else '', total, n)
-        shape_music(music, F, total)
-        duck(music, voice, n, depth=0.62, level=0.34)
-        end = int(total * SR)
-        if F.get('loop'):  # a loop: no fade (a few ms at both ends, against clicks)
-            a = int(0.02 * SR); music[:a] *= np.linspace(0, 1, a)[:, None]; music[end - a:end] *= np.linspace(1, 0, a)[:, None]
-        else:
-            fo = int(1.4 * SR); music[:int(0.03 * SR)] *= np.linspace(0, 1, int(0.03 * SR))[:, None]; music[end - fo:end] *= np.linspace(1, 0, fo)[:, None]
-        music[end:] = 0
-    out = (voice + fx * 0.7 + music)[: int((total + 0.02) * SR)]
+        bed = os.path.basename(song) + ' from %.2f s' % start
+        constant_bed(music, voice, total)
+    else:
+        print('  ! the owner\'s track is missing (' + song + '): the preview has no music')
+    n2 = int((total + 0.02) * SR)
+    out = (voice + fx * 0.7 + music)[:n2]
+    clean = (voice + fx * 0.7)[:n2]
     sp = np.abs(voice[:, 0]) > 0.02
-    vom = 20 * np.log10((np.sqrt(np.mean(voice[sp, 0] ** 2)) + 1e-9) / (np.sqrt(np.mean(music[sp, 0] ** 2)) + 1e-9)) if sp.any() else 0
+    vom = 20 * np.log10((np.sqrt(np.mean(voice[sp, 0] ** 2)) + 1e-9) / (np.sqrt(np.mean(music[sp, 0] ** 2)) + 1e-9)) if sp.any() and bed else 0
+    vb = 0
+    if sp.any() and bed:  # the same ratio in the band where speech is understood (1-4 kHz): the human clarity check
+        from scipy import signal
+        bb, aa = signal.butter(2, [1000 / (SR / 2), 4000 / (SR / 2)], 'band')
+        V1 = signal.lfilter(bb, aa, voice[:, 0]); M1 = signal.lfilter(bb, aa, music[:, 0])
+        vb = 20 * np.log10((np.sqrt(np.mean(V1[sp] ** 2)) + 1e-9) / (np.sqrt(np.mean(M1[sp] ** 2)) + 1e-9))
     nk = [c for c in cues if c['cat'] != 'key']
     per = np.bincount(np.array([int(c['t']) for c in nk], dtype=int), minlength=int(total) + 1) if nk else np.zeros(1)
-    info = '%d lines, %d sound effects (%d keys), %.1f a second on average, max %d in a second, music %s, voice over music %.1f dB while she speaks' % (
-        len(F['beats']), len(cues), len(cues) - len(nk), len(nk) / max(1, total), int(per.max()), bed or 'off', vom)
+    info = '%d lines, %d sound effects (%d keys), %.1f a second on average, max %d in a second, music %s (constant), voice over music %.1f dB (%.1f dB at 1-4 kHz)' % (
+        len(F['beats']), len(cues), len(cues) - len(nk), len(nk) / max(1, total), int(per.max()), bed or 'off', vom, vb)
     json.dump({'cues': cues, 'per_second': per.tolist(), 'bed': bed}, open(os.path.join(base, 'build', 'sfx-used.json'), 'w'))
-    write_master(base, out, rid, info)
+    write_master(base, out, rid, 'preview: ' + info)
+    write_master(base, clean, rid, 'clean (voice + effects, for posting)', name='audio-clean.wav')
 
 
 def main():

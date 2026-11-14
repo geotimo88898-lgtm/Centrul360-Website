@@ -2,7 +2,7 @@
  "v": 2,
  "id": "v2-abdomene-energie",
  "rubric": "Unde se duce, de fapt",
- "theme": "inklime",
+ "theme": "brand-teal",
  "music": "garage",
  "keyword": "360",
  "topic": "Unde se duce grăsimea când faci abdomene",
@@ -186,5 +186,15 @@
   "tts": "Scrie trei sute șaizeci în comentarii și-ți trimit ce merge, de fapt, pe grăsimea localizată.",
   "cta": "talk",
   "line": "și-ți trimit ce merge, de fapt"
- }
+ },
+ "layout": {
+  "align": "left",
+  "anchor": "bottom",
+  "typeScale": 1.0
+ },
+ "transitions": [
+  "pan",
+  "morph-key",
+  "push-up"
+ ]
 }

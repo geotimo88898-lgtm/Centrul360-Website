@@ -2,7 +2,7 @@
  "v": 2,
  "id": "v2-gusa-slabe",
  "rubric": "Ce se întâmplă de fapt",
- "theme": "aurora",
+ "theme": "brand-teal",
  "music": "Free (Ultra Naté), piesa aleasă de proprietar",
  "topic": "De ce unele femei slabe au totuși gușă",
  "topicTag": "hifu-gusa",
@@ -35,11 +35,11 @@
      },
      {
       "t": "normal",
-      "c": "good"
+      "c": "acc"
      },
      {
       "t": "mult",
-      "c": "acc"
+      "c": "rose2"
      }
     ],
     "keys": [
@@ -111,19 +111,13 @@
    "visual": {
     "type": "panel",
     "name": "dna",
-    "prompt": "a single elegant glass DNA double helix sculpture floating, translucent pink and cyan glass, glowing softly, centered",
+    "prompt": "a single elegant DNA double helix sculpture floating, made of white frosted glass with fine rose gold metallic details, centered, soft studio light",
     "kb": "in",
     "mask": "circle",
     "label": "Genetica",
     "labelIcon": "dna",
     "icon": "dna",
     "h": 700
-   },
-   "nuki": {
-    "pose": "gandeste",
-    "at": "peek-b",
-    "x": 690,
-    "react": "nod"
    }
   }
  ],
@@ -140,44 +134,63 @@
   {
    "say": "E un mix: puțină grăsime, piele mai relaxată și *genetică*.",
    "visual": {
-    "type": "puzzle",
+    "type": "race",
     "payoff": true,
-    "pieces": [
+    "header": "Ce face gușa mai vizibilă",
+    "right": "{n} de ani",
+    "steps": [
+     "20",
+     "30",
+     "40",
+     "50+"
+    ],
+    "ghost": [
+     "20",
+     "30",
+     "40",
+     "50"
+    ],
+    "note": "Ilustrativ · la fiecare, mixul e altul",
+    "rows": [
      {
-      "t": "Grăsime",
+      "t": "Grăsime localizată",
       "ic": "droplet",
-      "at": [
-       0,
-       0.22
+      "values": [
+       0.62,
+       0.64,
+       0.66,
+       0.62
       ]
      },
      {
-      "t": "Piele",
+      "t": "Piele relaxată",
       "ic": "waves",
-      "at": [
-       0,
-       0.5
+      "values": [
+       0.18,
+       0.36,
+       0.6,
+       0.86
       ]
      },
      {
       "t": "Genetică",
       "ic": "dna",
-      "at": [
-       0,
-       0.78
+      "values": [
+       0.5,
+       0.5,
+       0.5,
+       0.5
       ]
      }
     ],
-    "snapAt": [
+    "from": [
      0,
-     0.93
+     0.12
     ],
-    "center": "gușa",
-    "bg": {
-     "name": "glow-bg",
-     "ar": "3:4",
-     "prompt": "abstract soft radial burst of pink and cyan light on dark navy, gentle glow, bokeh, empty center"
-    }
+    "to": [
+     0,
+     0.96
+    ]
    }
   }
  ],
@@ -205,14 +218,7 @@
      0,
      0.25
     ],
-    "label": "Telefonul la nivelul ochilor",
-    "bg": {
-     "name": "night-bg",
-     "ar": "3:4",
-     "cy": 650,
-     "w": 1150,
-     "prompt": "abstract dark navy space with soft out-of-focus pink and cyan light streaks, like city lights at night, very dark, empty center"
-    }
+    "label": "Telefonul la nivelul ochilor"
    }
   },
   {
@@ -301,5 +307,15 @@
  "beat": {
   "bpm": 125.01
  },
- "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s)."
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Analiza: python3 beats.py music/owner-free.wav (125 BPM, refrenul de la 77,2 s și 169,3 s).",
+ "transitions": [
+  "fly-through",
+  "zoom-element",
+  "morph-key"
+ ],
+ "layout": {
+  "align": "center",
+  "anchor": "center",
+  "typeScale": 1.06
+ }
 }

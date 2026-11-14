@@ -103,8 +103,9 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
 4b. **Tranziții**: fiecare idee nouă pe un ecran nou (`visual`), cel mult un pas (`step`) în aceeași idee; motorul
    rotește tranzițiile temei (push, fly-through, zoom-element, pan, morph-key, whip…), niciodată aceeași de două ori.
 4c. **Nuki** în 2-4 replici (`nuki`), mic, într-un colț liber; brandul e el, nu logo-ul (care nu mai apare pe ecran).
-4d. **Muzica**: fiecare reel altă piesă originală (`music` + `musicClip`); stările noi: house90, garage, nudisco,
-   afrohouse, lofihouse (`music.py <stare> <n>`, ~0,06 $ clipul).
+4d. **Muzica** (14.11): previzualizările folosesc doar piesa proprietarului (`musicFile` implicit `owner-free`), din altă
+   parte a ei la fiecare reel (`musicStart`: un început de frază, vezi `python3 beats.py music/owner-free.wav`); niciodată
+   o piesă generată. Clipurile Lyria vechi nu se mai folosesc.
 5. **Finalul**, după reel:
    - `loop` pentru curiozitate: ultimul cadru curge în primul; ultima replică invită firesc la revedere (bucla crește
      timpul vizionat);
@@ -113,9 +114,22 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    - `site` când o pagină reală răspunde cel mai bine (cazuri, „cum funcționează”): `pages` cu secțiuni fără
      prețuri sau oferte (`#rezultate`, `#cum`), capturate cu `node site.cjs <id>`;
    - `ask` altfel: o întrebare simplă către public, fără cuvânt cheie.
-6. **Tema**: niciodată aceeași temă de două ori la rând (citești `made`, ultimul material), și în săptămână cel puțin
-   4 teme diferite. Preferi temele dramatice (aurora, burgundy, obsidian, tealcoral, inklime) și, pentru contrast,
-   una luminoasă îndrăzneață (citrus, swiss). Ținta: reels-urile să nu semene între ele.
+6. **Tema și varietatea** (14.11): doar `brand-light` (alb cu turcoaz) sau `brand-teal` (turcoaz cu alb), alternate
+   (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
+   fel niciunul”, de la un reel la altul schimbi: cârligul (particule, privirea la poza reală, contorul, o întrebare
+   tipărită…), scenele-semnătură (race, scrubber, cardrow, căutarea pe site, straturile pielii; cel puțin una de date
+   când povestea are cifre în timp, doar cu cifre reale sau marcată „Ilustrativ”), aranjarea (`layout`: stânga sau
+   centru, sus sau mijloc, mărimea textului), ritmul, setul de tranziții (`transitions`), unde apare Nuki, finalul și
+   partea din muzică. `check2.cjs` refuză aceeași combinație temă + cârlig + scene + final și avertizează la peste
+   jumătate scene de același fel ca reel-ul precedent. Super clean: puține elemente, fără efecte pe text; dacă ceva e
+   încărcat, se scoate.
+6c. **Muzica și postarea** (14.11): muzica stă constantă, „semi tare”, vocea peste ea (fără ducking sau alte
+   automatizări; nivelul din `mix.py`, verificat cu `python3 listen.py <id>`). Fiecare reel are două fișiere:
+   `out/<id>.mp4` (previzualizarea, cu piesa proprietarului) și `out/<id>-clean.mp4` (doar voce și efecte). La
+   predare urci fișierul **clean** ca `reel.mp4`: proprietarul postează din aplicații și pune acolo sunetul licențiat;
+   previzualizarea e doar ca să vadă cum sună. Piesa (`engine/music/owner-free.wav`) nu se comite niciodată.
+6b. **Când nu ești sigur, întrebi** (regula proprietarului): o afirmație despre un tratament, o cifră, o poză, o alegere
+   de stil care poate merge în două feluri: scrii întrebarea cu variantele în raport, nu ghicești; termini tot ce e clar.
 7. `node check.cjs <id>` trebuie să dea „clean” înainte de randare; apoi te uiți la cadre (primele 3 secunde des,
    răspunsul, finalul) și asculți cifrele din `mix.py` / `encode.sh` (-14 LUFS, vârf ≤ -1 dBTP, 1-3 sunete pe secundă).
 Cheltuiala: vocea și imaginile se plătesc (puțin) și sunt în cache; muzica nouă (`music.py`) doar când lipsește o
