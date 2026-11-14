@@ -36,7 +36,7 @@
  "beats": [
   {
    "role": "lead",
-   "say": "Îți explic ce s-a întâmplat de fapt în *corpul ei*.",
+   "say": "Diferența vine dintr-un proces pe care corpul îl face *singur*.",
    "visual": {
     "type": "type-highlight",
     "size": 124
@@ -126,7 +126,7 @@
   },
   {
    "role": "loop",
-   "say": "Rezultatul nu apare însă în ziua *ședinței*.",
+   "say": "Rezultatul nu apare în ziua *ședinței*.",
    "visual": {
     "type": "tease",
     "text": "6-8"
@@ -217,13 +217,6 @@
   }
  ],
  "resolve": [
-  {
-   "role": "loop",
-   "say": "Iar partea cea mai importantă vine după *ședință*.",
-   "visual": {
-    "type": "curtain"
-   }
-  },
   {
    "role": "body",
    "say": "Celulele distruse nu revin, dar cele rămase se pot mări dacă iei în *greutate*.",
@@ -346,5 +339,5 @@
   "anchor": "center",
   "typeScale": 0.96
  },
- "structure": "Hook → Lead → Body → Body → Open loop → Body → Body (răspunsul) → Open loop → Body → Body → CTA (14.11)"
+ "structure": "Hook → Lead (un fapt) → Body → Body → Open loop → Body → Body (răspunsul) → Body → Body → CTA (14.11; o singură buclă)"
 }

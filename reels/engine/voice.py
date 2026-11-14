@@ -18,20 +18,34 @@ V1_STYLE = ('Cheerful, bright young Romanian woman in her 20s, like a popular sh
 TEMPO = float(os.environ.get('TEMPO', '1.14'))
 
 
-def faster(rid, tempo):
+def active_wpm(path, text):
+    """words per minute while she speaks (the take's pauses left out: silencedetect at -35 dB, 0.12 s)"""
+    import re
+    out = subprocess.run(['ffmpeg', '-hide_banner', '-i', path, '-af', 'silencedetect=n=-35dB:d=0.12', '-f', 'null', '-'], capture_output=True, text=True).stderr
+    sil = sum(float(x) for x in re.findall(r'silence_duration: ([\d.]+)', out))
+    n = len(re.findall(r"[\w-]+", text))
+    return n / max(0.3, V.dur(path) - sil) * 60
+
+
+def faster(rid, tempo, pace=None, lo=1.0, hi=1.25):
+    """every take sped up after the cache (atempo keeps the pitch); with `pace` (words per minute while she speaks), each
+    take gets its own factor so all lines reach the same pace (a slow take more, a quick one less), within lo..hi"""
     base = os.path.join(V.FILMS, rid)
     p = os.path.join(base, 'timing.json')
     T = json.load(open(p))
     for k, v in T.items():
         src = os.path.join(base, v['file'])
-        if tempo == 1 or '.t' in os.path.basename(src): continue
-        dst = src[:-4] + '.t%d.wav' % round(tempo * 100)
+        if '.t' in os.path.basename(src): continue
+        f = tempo if not pace else min(hi, max(lo, pace / active_wpm(src, v['text'])))
+        if abs(f - 1) < 0.005: continue
+        dst = src[:-4] + '.t%d.wav' % round(f * 100)
         if not os.path.exists(dst):
-            subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', 'atempo=%.3f' % tempo, dst], check=True)
+            subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', 'atempo=%.3f' % f, dst], check=True)
         v['file'] = os.path.relpath(dst, base)
         v['dur'] = round(V.dur(dst), 3)
+        v['tempo'] = round(f, 3)
     json.dump(T, open(p, 'w'), ensure_ascii=False, indent=0)
-    print(f'{rid}: tempo x{tempo}, {sum(v["dur"] for v in T.values()):.1f} s of voice')
+    print(f'{rid}: tempo ' + ('x%.2f' % tempo if not pace else 'to %d wpm (x%.2f-%.2f per line)' % (pace, lo, hi)) + f', {sum(v["dur"] for v in T.values()):.1f} s of voice')
 
 
 def as_list(x): return [] if x is None else x if isinstance(x, list) else [x]
@@ -78,7 +92,9 @@ def main_v2(rid, S):
     # the pace (14.11, „vocea e cam încetă”): every take is sped up after the cache (atempo keeps the pitch); the default
     # is voice.json "tempo", a script can set its own "tempo"; the cached takes stay as they are
     tempo = float(S.get('tempo', cfg.get('tempo', 1.0)))
-    if tempo != 1.0: faster(rid, tempo)
+    pace = S.get('pace_wpm', cfg.get('pace_wpm'))
+    if pace: faster(rid, tempo, float(pace), float(cfg.get('tempo_min', 1.1)), float(cfg.get('tempo_max', 1.25)))
+    elif tempo != 1.0: faster(rid, tempo)
 
 
 if __name__ == '__main__':

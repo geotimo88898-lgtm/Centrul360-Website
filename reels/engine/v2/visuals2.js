@@ -304,7 +304,7 @@
     const handle = h('div', 'abs', null, lens); handle.style.cssText += ';left:215px;top:215px;width:40px;height:150px;border-radius:20px;background:var(--ink);transform:rotate(-45deg);transform-origin:20px 0';
     const tL = ctx.t0 + 0.35, tD = T(ctx, p.diveAt, ctx.L(0, 0.55));
     ctx.anim(card, 'in', ctx.t0 + 0.02); ctx.anim(lens, 'pop', tL, { sfx: 'pop', gain: 0.45 });
-    ctx.sfx(tD - 0.2, 'whoosh_l', 0.6); R.event(tD, 'dive');
+    ctx.sfx(tD - 0.2, 'whoosh_l', 0.6); R.event(tD, 'dive'); R.event((tL + tD) / 2, 'scan'); // the lens glides the whole time
     const lab1 = p.label ? h('div', 'tx abs', '<span class="chip soft">' + R.rich(p.label) + '</span>', st) : null; if (lab1) { centerX(lab1); lab1.style.top = '860px'; ctx.anim(lab1, 'pop', ctx.t0 + 0.4, { sfx: null }); ctx.anim(lab1, 'out', tD); }
     const lab2 = p.innerLabel ? h('div', 'tx abs', '<span class="chip acc">' + R.rich(p.innerLabel) + '</span>', st) : null; if (lab2) { centerX(lab2); lab2.style.top = '860px'; ctx.anim(lab2, 'pop', tD + 0.5, { sfx: 'pop' }); }
     ctx.focus(card);

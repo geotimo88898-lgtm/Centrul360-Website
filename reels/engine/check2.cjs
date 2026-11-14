@@ -37,6 +37,13 @@ module.exports = async (id, dir, S) => {
       if (toks.length && toks.length <= 6 && !toks.some((w) => VERBS.has(w) || VEND.some((e) => w.length > e.length + 1 && w.endsWith(e)))) problems.push('a fragment without a verb („' + sent.slice(0, 40) + '”): speak in full sentences');
     });
   });
+  // no stock phrases (14.11: the skeleton must not show): refused; „îți arăt / îți explic” as a formula: a warning
+  const STOCK = /(partea cea mai important[ăa]|dar asta nu e tot|(^|[^a-zăâîșț])uite ce([^a-zăâîșț]|$)|[șs]i acum vine partea interesant[ăa]|r[ăa]m[âa]i p[âa]n[ăa] la final)/i;
+  const stk = words.replace(/\*/g, '').match(STOCK); if (stk) problems.push('a stock phrase: „' + stk[0].trim() + '” (the structure must not show; say it as a natural next sentence)');
+  const fm = words.replace(/\*/g, '').match(/(^|\| )\s*(îți|iti) (arăt|arat|explic)/i); if (fm) notes.push('WARNING (template): a line opens with „' + fm[0].replace(/[|]/g, '').trim() + '”: vary the lead from reel to reel');
+  const loopOpen = say.filter((b) => b.role === 'loop').map((b) => (b.say || '').replace(/\*/g, '').trim().split(/\s+/)[0].toLowerCase()).filter((w) => w === 'dar' || w === 'iar');
+  if (loopOpen.length >= 2) problems.push('two loops open with „Dar” / „Iar”: each loop must sound like a natural next sentence, not a retention hook');
+  try { const vr = require('./variety.cjs')(id); vr.warn.forEach((w) => notes.push('WARNING (variety): ' + w)); } catch (e) { notes.push('variety.cjs skipped: ' + e.message); }
   if (S.hook && [].concat(S.hook)[0] && /\?/.test([].concat(S.hook)[0].q || '')) problems.push('the hook is a question: from 14.11 it is a precise statement (no "q" with "?")');
   if (!S.outro || !S.outro.visual) problems.push('no outro: a warm closing line with a resolving visual ("outro")');
   if (S.end && S.end.type === 'comment' && String(S.end.keyword || S.keyword || '360') !== '360') problems.push('a comment end always uses the keyword 360');
@@ -92,7 +99,10 @@ module.exports = async (id, dir, S) => {
   p.on('pageerror', (e) => problems.push('pageerror ' + e.message));
   const F = await p.evaluate(() => window.film);
   const T = F.total;
-  if (T < 30 || T > 45.5) problems.push('length ' + T.toFixed(1) + ' s (want 30-45)');
+  // 30-45 s; a reel built on the full skeleton (roles, two open loops) may run to 55 s (14.11, the 8-block structure)
+  const full = say.filter((b) => b.role === 'loop').length >= 2, maxT = full ? 55.5 : 45.5;
+  if (T < 30 || T > maxT) problems.push('length ' + T.toFixed(1) + ' s (want 30-' + (full ? 55 : 45) + ')');
+  else if (T > 45.5) notes.push('WARNING: ' + T.toFixed(1) + ' s, over the usual 45 s (allowed for the full skeleton with two loops; shorter is better)');
   const unvoiced = F.beats.filter((x) => !x.voiced).length;
   if (unvoiced) notes.push(unvoiced + ' lines without their voice yet (estimated timing): run voice.py');
   if (F.images > 8) problems.push(F.images + ' AI images (max 8)');

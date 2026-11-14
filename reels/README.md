@@ -278,6 +278,18 @@ prietene, față în față. Carisma vine din claritate, ritm, un dram de umor �
     Pe ecran are un vizual care ține tensiunea o secundă, fără „?” (`halfline`, `depth`, `tease`, `curtain`).
   - **CTA**: îi duce pe cei mai interesați la pasul următor (salvare, comentariu „360” sau site), o dată, calm.
   - La 30-50 s structura se poate strânge: Hook → Lead → Body → Open loop → Body → CTA.
+  - **Un schelet pe care nu-l vede nimeni** (condiția proprietarului: „dacă mă uit la 10 reels de-ale noastre, să nu-mi
+    dau seama că sunt repetitive; urmează structura, dar natural și frumos”). De la un reel la altul variază: lead-ul
+    (o promisiune, un fapt surprinzător sau niciun lead separat, cârligul continuă singur), buclele (0, 1 sau 2, în
+    locuri diferite), unde cade răspunsul, tipul de CTA (salvare, trimite unei prietene, comentariu, site sau niciunul,
+    cu final în buclă) și forma propozițiilor. Fără fraze de șablon: „partea cea mai importantă”, „dar asta nu e tot”,
+    „uite ce”, „îți arăt / îți explic” ca formulă, „și acum vine partea interesantă”, „rămâi până la final”; nicio replică
+    ce deschide cu „Dar” / „Iar” în două bucle din același reel. O buclă sună ca următoarea propoziție firească dintr-o
+    explicație, nu ca un cârlig de retenție. Și vizualurile buclelor diferă: nu există un „vizual de buclă” care revine.
+    `check2.cjs` refuză frazele de șablon și cele două bucle cu „Dar” / „Iar”; `node variety.cjs <id>` compară scriptul
+    cu ultimele 10 și avertizează când se repetă primele 3 cuvinte ale lead-ului, ale unei bucle sau ale CTA-ului, același
+    tip de CTA în 3 din ultimele 5, același număr de bucle în 4 din 5, răspunsul în aceeași zecime din reel în 4 din 5
+    sau același vizual de deschidere.
   - În script, fiecare replică poate avea `"role"`: `hook`, `lead`, `body`, `loop`, `cta`; `check2.cjs` avertizează
     (fără să oprească) când lipsește un `loop`, când `lead` se termină după 10 s sau când ultima replică nu e `cta`.
 - **Ritmul** (14.11, „vocea e cam încetă … cele din reelurile astea cam toate is mai rapide”): fiecare replică e

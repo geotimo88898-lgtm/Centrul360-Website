@@ -93,6 +93,14 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    (niciodată o întrebare) pe care o închide doar blocul următor, cu un vizual de tensiune fără „?”; CTA-ul (salvare,
    „360” sau site) o dată, calm. Pui `"role"` pe fiecare replică (`hook`, `lead`, `body`, `loop`, `cta`); `check2.cjs`
    avertizează la lipsuri. Vocea e grăbită x1,18 după cache și pauzele sunt scurte (README, „Ritmul”).
+   **Scheletul nu se vede niciodată** („dacă mă uit la 10 reels, să nu-mi dau seama că sunt repetitive”): variezi
+   lead-ul (promisiune, fapt surprinzător sau deloc), numărul și locul buclelor (0, 1 sau 2), unde cade răspunsul, tipul
+   de CTA (salvare, trimite unei prietene, comentariu, site, niciunul) și forma propozițiilor; fără fraze de șablon
+   („partea cea mai importantă”, „dar asta nu e tot”, „uite ce”, „îți arăt / îți explic” ca formulă, „și acum vine
+   partea interesantă”, „rămâi până la final”), fără două bucle care încep cu „Dar” / „Iar”; buclele sună ca o
+   propoziție firească dintr-o explicație și au vizualuri diferite. **Pasul de scris**: după ce scrii textul, rulezi
+   `node variety.cjs <id>` (îl compară cu ultimele 10 scripturi; cu `--history <fișier.json>` și cu istoria din `made`)
+   și rescrii până iese „clean”, apoi `node check.cjs <id>`.
 1. **O afirmație precisă întâi** (din 14.11, nu o întrebare). Cârligul spune un fapt surprinzător, care te face să
    vrei să înțelegi („La multe femei slabe, gușa nu ține de kilograme.”); la un caz, o propoziție clară despre ce s-a
    întâmplat. Se spune în primele 3 secunde, peste o scenă care se mișcă din primul cadru. Nicio replică nu are „?”.
