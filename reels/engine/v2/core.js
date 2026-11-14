@@ -294,6 +294,7 @@
       if (s.i > 0) { const T = R.TR[s.tr]; if (T && T.sfx) T.sfx(s.t0, s.trDur); R.event(s.t0, 'cut'); }
     }
     R.buildCaptions(lines, TH, S);
+    if (R.chrome && R.chrome.build) R.chrome.build(S, shots, total);
     // the hook: a hit on frame 0 (plus whatever the hook visual added), a riser into the payoff, an impact on it
     if (!cues.some((c) => c.t <= 0.1 && (c.cat === 'impact' || c.cat === 'boom'))) R.cue(0, 'impact', 1, { prio: 4 });
     const pay = lines.find((L) => L.role === 'payoff');
@@ -358,6 +359,7 @@
       s.layers.forEach((l) => { const dp = +l.dataset.depth || 0; if (!dp && !C.depthS) return; l.style.transform = 'translate(' + ((C.cx || 0) * dp).toFixed(2) + 'px,' + ((C.cy || 0) * dp).toFixed(2) + 'px) scale(' + (1 + (C.depthS || 0) * (dp < 0 ? -1 : dp > 0 ? 0.4 : 0)).toFixed(4) + ')'; });
       s.ticks.forEach((fn) => fn(t, lt));
     }
+    if (R.chrome && R.chrome.draw) R.chrome.draw(t);
     R.BG.draw(t); // after the shots: a pan transition moves the background too (parallax)
     // element animations (only the visible shots)
     for (const s of states.values()) resetState(s);

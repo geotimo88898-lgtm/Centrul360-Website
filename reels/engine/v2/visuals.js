@@ -388,14 +388,23 @@
     const glimpse = p.mode === 'glimpse', tFl = glimpse ? T(ctx, p.flashAt, ctx.L(0, 0.42)) : null;
     if (glimpse) { ctx.sfx(ctx.t0 + 0.3, 'shutter', 0.8); R.event(ctx.t0 + 0.3, 'glimpse'); ctx.sfx(tFl, 'impact', 0.8); ctx.sfx(tFl + 0.02, 'whoosh_s', 0.6); R.event(tFl, 'flash'); ctx.shot.flashAt = tFl; }
     else ctx.anim(fr, p.enter || 'in', ctx.t0 + 0.02, { sfx: 'shutter', gain: 0.7 });
-    if (lab) ctx.anim(lab, 'pop', ctx.t0 + 0.3, { gain: 0.35 });
-    if (note) ctx.anim(note, 'fade', ctx.t0 + 0.4, { sfx: null });
+    if (lab) ctx.anim(lab, 'pop', glimpse && p.split === 'h' ? tFl + 0.35 : ctx.t0 + 0.3, { gain: 0.35 });
+    if (note) ctx.anim(note, 'fade', glimpse && p.split === 'h' ? tFl + 0.45 : ctx.t0 + 0.4, { sfx: null });
     if (cover) ctx.anim(cover, 'fade', ctx.t0, { sfx: null, dur: 0.01, quiet: true });
     ctx.focus(fr);
     if (revealT != null) R.event(revealT, 'reveal');
     const mask = p.mask || 'diagonal';
     ctx.tick((t, lt) => {
-      if (glimpse && fr._hh) { // the real "after" first (blurred → sharp, close), then the whole photo opens up: before above, after below
+      if (glimpse && fr._hh && p.split === 'h') { // side by side: the "after" half first, close on p.focus, blurred → sharp; then the whole photo
+        const seam = p.seam || 0.5, sh = E.out(clamp((t - ctx.t0 - 0.25) / 0.7)), op = EIO2(clamp((t - tFl) / 0.55));
+        const [fx, fy] = p.focus || [0.75, 0.6], Z = p.zoom || 1.6, top = (p.crop || 0) * (1 - op);
+        fr.style.clipPath = 'inset(' + (top * 100).toFixed(2) + '% 0 0 ' + ((1 - op) * seam * 100).toFixed(2) + '% round 30px)';
+        const k = 1 + (Z - 1) * (1 - op), W = fr._w + 16, H = fr._hh;
+        const dx = (W / 2 - fx * W) * (1 - op), dy = (H / 2 - fy * H) * (1 - op);
+        fr.style.transformOrigin = (fx * 100).toFixed(1) + '% ' + (fy * 100).toFixed(1) + '%';
+        fr.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+        fr.style.filter = sh < 1 ? 'blur(' + ((1 - sh) * 26).toFixed(2) + 'px)' : ''; fr.style.opacity = clamp((t - ctx.t0) / 0.25).toFixed(3);
+      } else if (glimpse && fr._hh) { // the real "after" first (blurred → sharp, close), then the whole photo opens up: before above, after below
         const seam = p.seam || 0.5, sh = E.out(clamp((t - ctx.t0 - 0.25) / 0.7)), op = EIO2(clamp((t - tFl) / 0.55));
         fr.style.clipPath = 'inset(' + ((1 - op) * seam * 100).toFixed(2) + '% 0 0 0 round 30px)';
         const k = 1.32 - 0.32 * op; fr.style.transformOrigin = '50% ' + (75 - 25 * op).toFixed(1) + '%';

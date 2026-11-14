@@ -203,8 +203,9 @@ def thin(cues):
 
 # the music's constant level (the owner, 14.11): first the level where the voice is still clearly understood (8 dB of voice
 # over music in the speech band, 1-4 kHz, while she speaks, and the machine listener hears every word: listen.py), then
-# „puțin mai tare”: +2 dB of music. So the default is 6 dB in the speech band; the broadband offset is printed.
-MUSIC_UNDER_VOICE = float(os.environ.get('MUSIC_UNDER_VOICE', '6'))
+# „puțin mai tare”: +2 dB of music (6 dB in the speech band); then, after the next viewing, „dă puțintel mai tare la
+# muzică”: +1.5 dB more. So the default is 4.5 dB in the speech band (checked with listen.py); the broadband offset is printed.
+MUSIC_UNDER_VOICE = float(os.environ.get('MUSIC_UNDER_VOICE', '4.5'))
 
 
 def peaking(y, f0, gain_db, q=0.8):

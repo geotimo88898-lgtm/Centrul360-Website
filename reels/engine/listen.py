@@ -14,7 +14,7 @@ from voice import v2_lines  # noqa: E402
 rid = sys.argv[1]
 S = json.load(open(os.path.join(HERE, '..', 'scripts', rid, 'script.json')))
 want = ' '.join(t for _, _, t in v2_lines(S))
-src = os.path.join(HERE, '..', 'scripts', rid, 'build', 'audio.wav') if '--mix' in sys.argv else os.path.join(HERE, '..', 'out', rid + '.mp4')
+src = os.path.join(HERE, '..', 'scripts', rid, 'build', 'audio.wav') if '--mix' in sys.argv else os.path.join(HERE, '..', 'out', rid + ('-clean.mp4' if '--clean' in sys.argv else '.mp4'))  # --clean: the voice without music (what the listener itself gets wrong)
 with tempfile.TemporaryDirectory() as d:
     wav = os.path.join(d, 'mix.wav')
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-vn', '-ac', '1', '-ar', '16000', wav], check=True)

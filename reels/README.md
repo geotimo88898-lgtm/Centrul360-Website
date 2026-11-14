@@ -101,16 +101,84 @@ reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila
 - **Partea din piesă**: începutul ei („pune partea de început”), de la primul downbeat (0,395 s), la toate reels-urile;
   tăieturile rămân pe bătăi. Piesa își păstrează dinamica (intro mai încet, refren mai plin): câștigul fix se calculează
   pe momentele ei mai tari, ca vocea să rămână clară peste tot.
-- **Nivelul** (`MUSIC_UNDER_VOICE` în `mix.py`, implicit 6): întâi nivelul la care vocea se înțelege clar (8 dB de voce
-  peste muzică în banda vorbirii, 1-4 kHz, cât vorbește, și ascultătorul automat aude fiecare cuvânt: `python3
-  listen.py <id>` transcrie mixul final și numără cuvintele greșite), apoi „puțin mai tare”: +2 dB de muzică. Deci 6 dB
-  în banda vorbirii (pe tot spectrul ~6,5-8 dB, după piesă). Se verifică pe fiecare reel cu `listen.py` (WER sub ~2 %).
+- **Nivelul** (`MUSIC_UNDER_VOICE` în `mix.py`, implicit 4,5): întâi nivelul la care vocea se înțelege clar (8 dB de
+  voce peste muzică în banda vorbirii, 1-4 kHz, cât vorbește, și ascultătorul automat aude fiecare cuvânt: `python3
+  listen.py <id>` transcrie mixul final și numără cuvintele greșite), apoi „puțin mai tare”: +2 dB de muzică (6 dB), apoi,
+  după a treia previzualizare, „dă puțintel mai tare la muzică”: încă +1,5 dB. Deci 4,5 dB în banda vorbirii, măsurat pe
+  momentele mai tari ale piesei. Se verifică pe fiecare reel cu `listen.py` (WER sub ~2 %).
 - **Postare din aplicație**: proprietarul postează singur, din aplicații, și pune acolo sunetul licențiat. De aceea
   fiecare reel iese în două fișiere (`./make.sh <id>` le face pe amândouă): `out/<id>.mp4`, previzualizarea, cu piesa
   aleasă de el („Free”, `engine/music/owner-free.wav`, ignorată de git, nu se comite niciodată; fără ea, previzualizarea
   iese fără muzică, niciodată cu o piesă generată), și `out/<id>-clean.mp4`, același video doar cu vocea și efectele,
   pentru postare. Amândouă la -14 LUFS, vârf real sub -1 dBTP. Lovitura de pe primul cadru e puțin mai încet sub
   primele cuvinte, ca să nu le acopere.
+
+## Animații diferite (a treia previzualizare, 14.11: „ai grijă la animațiile prea asemănătoare”)
+- **Într-un reel**: niciun fel de scenă și nicio metaforă vizuală de mai mult de două ori și niciodată același fel de
+  două ori la rând. Felurile: textul cinetic (`type-*`) e unul singur; „?”-ul, inima și bifa (`qmark`, `gridq`,
+  `strokeq`) sunt „glyph”; aceeași poză reală e aceeași metaforă. Nici o scenă lungă nu se umple cu încă trei etichete
+  pe același desen (secțiunea pielii apărea de patru ori într-un reel): ideea următoare primește alt dispozitiv.
+- **Între reels**: fiecare are vizualul lui pentru mecanism. Gușa: secțiunea pielii o dată (`skin`), apoi HIFU și
+  radiofrecvența pe o stivă de straturi de sticlă (`beam`); cazul Liposonix: un câmp 3D de celule de grăsime cu conul de
+  ultrasunete (`cells`). `check2.cjs` refuză repetările din reel și avertizează când mecanismul unui reel e același cu al
+  unuia din ultimele trei (`"core"` în script îl numește; altfel se ia din scene).
+- **Finalul**: „?”-ul de la început nu se mai repetă la încheiere; încheierea desenează direct răspunsul (`strokeq` cu
+  `"glyph": "heart"` sau `"check"`), cu același tratament (linie fină, umplere de sticlă).
+- **Cazul real**: cel mai bun înainte/după cu Liposonix dintr-o singură ședință e cazul 05 (șolduri, Timișoara, o
+  ședință, publicat cu acordul clientei, ales de proprietar și pentru caruselul de pe prima pagină). Pachetele
+  (Liposonix + EMS) nu sunt „o singură ședință”, iar grilele de 4 poze nu-i plac. În cârlig se vede întâi „după”, din
+  blur în clar, aproape pe șolduri (`"split": "h"`, `"focus": [0.75, 0.6]`, `"zoom"`, `"crop"`), apoi poza întreagă.
+
+## Formate viitoare (referințele proprietarului din 14.11; pentru materiale noi, nu pentru reels-urile aprobate)
+Proprietarul a trimis patru referințe ca idei pentru loturile următoare. Reels-urile existente nu se refac în stilurile
+lor. Toate rămân în culorile brandului, centrate, super clean, cu grila ca semnătură, doar cu date și poze reale.
+
+**(i) Data-viz cu „chrome”** (instagram.com/reel/DfkCsRMknwQ). Cum arată: un singur obiect proiectat de la un capăt la
+altul. Un „chrome” al cadrului stă tot reel-ul: sus o bandă subțire cu eticheta secțiunii (majuscule, spațiate) în
+stânga și pasul în dreapta, peste o linie fină; jos o cronologie a întregului reel (diviziuni 01…N, o bilă care
+înaintează, „Ilustrativ” când valorile nu sunt măsurate, „Pasul 3 din 10”); în spate cifre uriașe, foarte palide. Fiecare
+idee e un obiect 3D tactil, ca de plastic sau lut, cu teșituri și umbre moi: bare lucioase extrudate, taste groase ca de
+tastatură, comutatoare, o monedă mare, etichete ștampilate, cărți care se așază una peste alta, curbe care se
+întrec, la final o tastă 3D uriașă ca CTA. Obiectele cad, se apasă, se stivuiesc, alunecă; o idee nouă la 1-2 secunde.
+Subtitrarea, groasă, sub obiect, cuvânt cu cuvânt, cuvântul cheie într-o pastilă colorată. La noi: eticheta de ex.
+„CE SE ÎNTÂMPLĂ SUB BĂRBIE” | „PASUL 2”, cronologia pe pașii reel-ului sau pe săptămâni (Liposonix), obiectele în
+turcoaz, alb și rose gold, tasta finală „360” pentru un final `comment`. Ce există deja: `engine/v2/chrome.js`
+(banda de sus, cronologia, cifra fantomă; pornește doar cu `"chrome": {"title": "…", "unit": "Pasul"}` și `"hdr"` pe
+fiecare scenă), scenele `race`, `scrubber`, `cardrow`, `beam`, `cells`. De construit: tastele, comutatorul, moneda,
+eticheta ștampilată, cărțile stivuite, tasta finală.
+
+**(ii) Filmul de brand** (instagram.com/reel/DfkzkKbRinb). Cum arată: 12-30 s fără voce, condus de muzică, cu un design
+de sunet precis; lumini difuze ca o auroră; text care iese din blur; un panou de sticlă cu iconițe; un tunel 3D de
+ecrane prin care zboară camera, cu o replică scurtă centrată în mijloc; ecrane care trec pe lângă cameră; un contor
+într-o pastilă de sticlă, cu curbe luminoase; cuvinte care se adaugă pe rând („Pro” → „Pro Workflow” → „Pro Workflow
+Unleashed”); logo-ul la final, apoi tăietură pe alb. O idee nouă la 0,5-1 s. La noi: lumina în turcoaz și rose gold;
+panouri de sticlă cu paginile site-ului (capturi `site.cjs`, fără prețuri) și pozele clinicii (`brand_asset/g-tm-*`,
+`g-ar-*`, `loc-*`); tunelul; contoare doar cu cifre reale de pe site (de ex. nota și numărul recenziilor Google, cum
+sunt pe site în ziua randării); cuvinte care se construiesc („Corp.” → „Corp. Față.” → „Corp. Față. Epilare laser.”,
+„Timișoara și Arad”, „Consultația e gratuită” doar dacă site-ul o spune); cazuri înainte/după doar din catalog, cu
+„Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta.”; Nuki o singură dată; logo-ul la final
+(singurul format în care logo-ul își are locul), apoi centrul360.com ca bară de căutare sau un card final curat.
+Ocazional: cel mult unul pe săptămână, niciodată două la rând. De construit: un fel nou `"kind": "brand"` (scene cu
+durate, fără replici de voce), un tunel 3D în CSS, mixul doar cu muzică și efecte (-14 LUFS), iar în `check2.cjs`
+regulile lui (fără voce, 20-30 s, logo doar în ultimele secunde, nicio afirmație medicală în afara site-ului, nu două la
+rând).
+
+**(iii) Eroul aparatului** (instagram.com/reel/Dd35XZ0RyzY). Cum arată: un produs filmat macro, cinematic, pe întuneric,
+cu lumină caldă de contur; rotiri lente; o vedere explodată (carcasa se desface în straturi); explozii de particule
+aurii în jurul produsului; subtitrări mici, centrate; un card final cu sloganul și logo-ul (referința are și scurte
+glume; la noi, umor doar după ce proprietarul spune da). La noi: doar pozele reale ale aparatelor clinicii, niciodată
+aparate generate (`brand_asset/g-tm-laser.webp`, Elysion-pro; `g-tm-810.webp`, piesa de mână 810 nm;
+`g-tm-aparate.webp`, laserul și aparatul HIFU; `g-tm-fiole.webp`, fiolele profesionale); tratament 2.5D: poza tăiată în
+planuri de adâncime cu paralaxă, apropiere lentă, focus care trece de pe un plan pe altul, lumini care alunecă pe
+suprafețe; explozii de particule cu bun gust, lumină turcoaz cu scântei rose gold; replici scurte doar cu fapte de pe site
+(„Laser cu diodă 810 nm”, „Elysion-pro”, „Epilare laser · Timișoara”); tema turcoaz poate folosi #0b7f74 pentru
+adâncime; cardul final cu logo-ul. Aceleași reguli ca filmul de brand.
+
+**(iv) Scheciul cu personaj 3D**. Cum arată: o mini poveste amuzantă, în care publicul se regăsește, cu un personaj 3D
+(Nuki sau o clientă stilizată, niciodată o persoană reală inventată ca „clientă”), câteva momente scurte, poanta, apoi
+un card cu logo-ul. Fără afirmații medicale, umor cu bun gust. **În așteptare**: proprietarul n-a ales încă între
+imagini Gemini animate 2.5D (ieftin, personaj constant) și video Veo (mai multă mișcare, cost mai mare); nu se începe
+până nu alege.
 
 ## Vocea (cum vorbim; regula proprietarului, 12.11)
 Vocea e a unei femei din România, de vreo 30 de ani, deșteaptă și caldă, care îi povestește ceva interesant unei
@@ -177,7 +245,11 @@ frază). `qmark` („?” din particule, întrebarea dedesubt). `skin` (pielea �
 alta: fat, muscle, drop, heart…), `icons` (grilă în ritm, `pick`, `cross`), `checklist`, `cards`, `scale` (balanță),
 `dna`, `tilt` (postura cu telefonul), `bars`, `zoom` (lupă, apoi plonjare în detaliu), `pin` (hartă desenată),
 `energy` (celulele dau energie unei baterii), `shatter` (un card de sticlă crapă și se sparge; adevărul e în spate),
-`stamp` (un cuvânt ștampilat; niciodată „mit”), `dissolve` (o credință pe un card de sticlă se destramă în particule care
+`stamp` (un cuvânt ștampilat; niciodată „mit”), `beam` (`mech.js`: stiva 3D de straturi de sticlă, piele, grăsime,
+mușchi, care se înclină; energia focalizată coboară într-un punct, cu marcajul de adâncime; `chips`), `cells` (`mech.js`:
+câmpul 3D de celule de grăsime, conul de ultrasunete care se îngustează într-un punct, marcajul stratului; celulele din
+focar se topesc încet), `strokeq` / `gridq` (`hooks.js`: „?”-ul; `"glyph": "heart" | "check"` desenează direct
+răspunsul), `dissolve` (o credință pe un card de sticlă se destramă în particule care
 se întind pe o siluetă abstractă), `photo` (poza reală din catalog: `glimpse` (întâi „după”, din blur în clar, apoi
 întreaga poză), `tease`, `reveal` cu mască `diagonal`/`circle`/`wipe`,
 `chips`), `nuki` (ipostaze pe replici, squash/stretch, balon), `panel` (ilustrație AI cu ken burns / mască / parallax).

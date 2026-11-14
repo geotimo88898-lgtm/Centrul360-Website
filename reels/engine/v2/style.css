@@ -199,3 +199,25 @@ body[data-align="left"] #cap .cw { transform-origin: 0 75%; }
 /* white on the site's turquoise (#14a596): large type is crisp as it is; small UI text gets a very soft shadow */
 body[data-theme="brand-teal"] .dv-h, body[data-theme="brand-teal"] .dv-scrub .tk, body[data-theme="brand-teal"] .dv-scrub .ft, body[data-theme="brand-teal"] .lab,
 body[data-theme="brand-teal"] .small, body[data-theme="brand-teal"] .note, body[data-theme="brand-teal"] .b3 .lab small { text-shadow: 0 1px 2px rgba(6, 70, 64, .28); }
+
+/* ---- the frame chrome (14.11): header strip, the whole-reel scrubber, the ghost numeral; centred on x 160..920 */
+.chr { position: absolute; inset: 0; pointer-events: none; --c-ink: #0f8a7e; --c-mute: rgba(18,32,31,.5); --c-line: rgba(20,165,150,.28); --c-fill: #14a596; }
+body[data-theme="brand-teal"] .chr { --c-ink: rgba(255,255,255,.95); --c-mute: rgba(255,255,255,.66); --c-line: rgba(255,255,255,.32); --c-fill: #ffffff; }
+.chr-h { position: absolute; left: 160px; top: 232px; width: 760px; height: 34px; }
+.chr-h .l { position: absolute; left: 0; bottom: 0; font: 750 21px/1 var(--f-body); letter-spacing: .2em; text-transform: uppercase; color: var(--c-ink); white-space: nowrap; }
+.chr-h .r { position: absolute; right: 0; bottom: 0; font: 800 21px/1 var(--f-body); letter-spacing: .16em; color: var(--c-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chr-rule { position: absolute; left: 160px; top: 278px; width: 760px; height: 1.5px; background: var(--c-line); }
+.chr-s { position: absolute; left: 172px; top: 1452px; width: 736px; height: 40px; }
+.chr-s .trk { position: absolute; left: 0; right: 0; top: 11px; height: 2px; border-radius: 1px; background: var(--c-line); }
+.chr-s .fil { position: absolute; left: 0; right: 0; top: 11px; height: 2px; border-radius: 1px; background: var(--c-fill); transform-origin: 0 50%; }
+.chr-s .tk { position: absolute; top: 6px; width: 2px; height: 12px; margin-left: -1px; border-radius: 1px; background: var(--c-line); }
+.chr-s .tk.on { background: var(--c-fill); }
+.chr-s em { position: absolute; top: 24px; width: 40px; margin-left: -20px; text-align: center; font: 600 15px/1 var(--f-mono); font-style: normal; color: var(--c-mute); letter-spacing: .02em; }
+.chr-s em.on { color: var(--c-ink); font-weight: 800; }
+.chr-s .ball { position: absolute; top: 1px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fbe3d9 35%, #eab5a5 72%, #cf8f7d 100%); box-shadow: 0 4px 10px -3px rgba(8,40,36,.4), 0 0 0 1px rgba(255,255,255,.5) inset; }
+.chr-f { position: absolute; left: 160px; top: 1506px; width: 760px; display: flex; justify-content: space-between; font: 650 17px/1 var(--f-body); letter-spacing: .04em; color: var(--c-mute); }
+.chr-ghost { position: absolute; left: 0; top: 760px; width: 1080px; height: 520px; overflow: hidden; pointer-events: none; }
+.chr-ghost span { position: absolute; left: 0; width: 1080px; top: 0; text-align: center; font: 900 520px/0.95 var(--f-display); letter-spacing: -.07em; color: var(--ghost); font-variant-numeric: tabular-nums; }
+body[data-theme="brand-teal"] .chr-ghost span { color: rgba(255,255,255,.07); }
+body[data-chrome] .dv-h, body[data-chrome] .dv-rule { display: none; }

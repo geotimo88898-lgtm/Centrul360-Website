@@ -124,11 +124,27 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    jumătate scene de același fel ca reel-ul precedent. Super clean: puține elemente, fără efecte pe text; dacă ceva e
    încărcat, se scoate.
 6c. **Muzica și postarea** (14.11): muzica stă constantă, „semi tare”, vocea peste ea (fără ducking sau alte
-   automatizări; nivelul din `mix.py`, verificat cu `python3 listen.py <id>`). Fiecare reel are două fișiere:
+   automatizări; nivelul din `mix.py`, 4,5 dB de voce peste muzică în banda vorbirii din 14.11, după „dă puțintel mai
+   tare la muzică”, verificat cu `python3 listen.py <id>`). Fiecare reel are două fișiere:
    `out/<id>.mp4` (previzualizarea, cu piesa proprietarului) și `out/<id>-clean.mp4` (doar voce și efecte). La
    predare urci AMÂNDOUĂ: previzualizarea ca `reel.mp4` (fără `role`; doar pentru aprobare, nu se postează niciodată)
    și fișierul fără muzică ca `clean.mp4` cu `&role=clean` (ăsta pleacă: proprietarul îl postează din aplicații, cu
    „Distribuie” din Conținut → De postat, și pune acolo sunetul licențiat). Piesa (`engine/music/owner-free.wav`) nu se comite niciodată.
+6d. **Animații diferite** (14.11, „ai grijă la animațiile prea asemănătoare”): într-un reel niciun fel de scenă și nicio
+   metaforă vizuală de mai mult de două ori, și niciodată același fel de două ori la rând (textul cinetic `type-*`
+   contează ca un singur fel; „?”-ul, inima și bifa sunt toate „glyph”; aceeași poză reală e aceeași metaforă). O scenă
+   lungă nu se umple cu încă trei etichete pe același desen: după 2-3 secunde, ideea următoare primește alt dispozitiv.
+   Între reels, **fiecare are vizualul lui pentru mecanism** (`skin` secțiunea pielii, `beam` stiva de straturi de sticlă
+   cu energia focalizată, `cells` câmpul de celule cu conul de ultrasunete, `energy`, `dissolve`, `puzzle`): nu-l
+   repeți pe cel din reels-urile recente. `check2.cjs` refuză repetările din reel și avertizează la mecanismul repetat
+   (poți scrie `"core": "<scena>"` în script ca să-l numești).
+6e. **Formate pentru loturile viitoare** (referințele proprietarului din 14.11; descrise în `README.md`, „Formate
+   viitoare”): (i) data-viz cu „chrome” (eticheta secțiunii sus, cronologia întregului reel jos, cifre fantomă, obiecte
+   3D tactile), (ii) filmul de brand (tunel, sticlă, contoare cu cifre reale, cuvinte care se construiesc, logo la
+   final), (iii) eroul aparatului (pozele reale ale aparatelor, cinematic), (iv) scheciul cu personaj 3D (încă de ales
+   de proprietar între imagini Gemini animate 2.5D și video Veo). Reels-urile deja aprobate nu se refac în aceste
+   stiluri; formatele sunt pentru materiale noi. Filmele de brand sunt ocazionale (cel mult unul pe săptămână, niciodată
+   două la rând).
 6b. **Când nu ești sigur, întrebi** (regula proprietarului): o afirmație despre un tratament, o cifră, o poză, o alegere
    de stil care poate merge în două feluri: scrii întrebarea cu variantele în raport, nu ghicești; termini tot ce e clar.
 7. `node check.cjs <id>` trebuie să dea „clean” înainte de randare; apoi te uiți la cadre (primele 3 secunde des,

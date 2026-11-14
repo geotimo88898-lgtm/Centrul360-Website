@@ -225,47 +225,36 @@
   {
    "say": "Iar pentru piele relaxată și un mic depozit, HIFU și radiofrecvența lucrează exact pe straturile astea, fără *operație*.",
    "visual": {
-    "type": "skin",
-    "mode": "hifu",
-    "seq": [
+    "type": "beam",
+    "layers": [
+     [
+      "piele",
+      "PIELE",
+      46
+     ],
+     [
+      "grasime",
+      "GRĂSIME",
+      120
+     ],
+     [
+      "muschi",
+      "MUȘCHI",
+      84
+     ]
+    ],
+    "target": 1,
+    "rf": 0,
+    "chips": [
      {
-      "at": [
-       0,
-       0.1
-      ],
-      "do": "energy",
-      "label": "HIFU · radiofrecvență"
+      "t": "HIFU · radiofrecvență",
+      "ic": "zap",
+      "at": "HIFU"
      },
      {
-      "at": [
-       0,
-       0.33
-      ],
-      "do": "focus",
-      "layer": "smas"
-     },
-     {
-      "at": [
-       0,
-       0.5
-      ],
-      "do": "collagen",
-      "label": "Exact pe straturile astea"
-     },
-     {
-      "at": [
-       0,
-       0.68
-      ],
-      "do": "pulse"
-     },
-     {
-      "at": [
-       0,
-       0.84
-      ],
-      "do": "calm",
-      "label": "Fără operație"
+      "t": "Fără operație",
+      "ic": "check",
+      "at": "opera"
      }
     ]
    },
@@ -283,17 +272,13 @@
   "cta": "loop",
   "visual": {
    "type": "strokeq",
+   "glyph": "heart",
    "formAt": [
     0,
     0,
-    -0.35
+    0.05
    ],
-   "formDur": 0.7,
-   "to": "heart",
-   "toAt": [
-    0,
-    0.5
-   ],
+   "formDur": 1.2,
    "q": false
   }
  },

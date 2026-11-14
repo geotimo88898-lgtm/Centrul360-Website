@@ -43,6 +43,29 @@ module.exports = async (id, dir, S) => {
       const r = same / Math.max(1, me.types.length); notes.push('variety vs ' + others[0].d + ': ' + Math.round(r * 100) + ' % of the scenes alike; hook ' + me.hook + ' vs ' + prev.hook + ', end ' + me.end + ' vs ' + prev.end + ', theme ' + me.theme + ' vs ' + prev.theme);
       if (r > 0.5) notes.push('WARNING: more than half of the scenes are the same kinds as ' + others[0].d + ' (vary them)'); }
   } catch (e) { notes.push('variety check skipped: ' + e.message); }
+  // too-alike animations (the owner, 14.11: „ai grijă la animațiile prea asemănătoare”): inside a reel no scene kind and
+  // no visual metaphor more than twice, never the same kind back to back; across the recent reels each has its own
+  // core visual for the mechanism (a warning when it repeats)
+  try {
+    const story = [].concat(S.hook || [], S.beats || [], S.payoff || [], S.resolve || [], S.outro || []).filter((b) => b.visual);
+    const kind = (v) => (/^type-/.test(v.type) ? 'type' : ['qmark', 'gridq', 'strokeq'].includes(v.type) ? 'glyph' : v.type);
+    const META = { skin: 'cross-section', beam: 'layer-stack', cells: 'cell-field', energy: 'energy-flow', dissolve: 'particles', zoom: 'zoom-in', puzzle: 'puzzle', race: 'bars', bars: 'bars', scrubber: 'timeline', timeline: 'timeline', big: 'big-number', counter: 'big-number' };
+    const meta = (v) => (kind(v) === 'type' ? 'kinetic-type' : kind(v) === 'glyph' ? 'glyph:' + (v.glyph || (v.type === 'qmark' || v.type === 'gridq' || v.type === 'strokeq' ? 'q' : '')) : v.type === 'photo' ? 'photo:' + v.img : META[v.type] || v.type);
+    const kinds = story.map((b) => kind(b.visual)), metas = story.map((b) => meta(b.visual));
+    const count = (arr) => arr.reduce((m, x) => ((m[x] = (m[x] || 0) + 1), m), {});
+    Object.entries(count(kinds)).forEach(([k, n]) => { if (n > 2) problems.push('the scene kind „' + k + '” appears ' + n + ' times (max 2 a reel)'); });
+    Object.entries(count(metas)).forEach(([k, n]) => { if (n > 2) problems.push('the visual „' + k + '” appears ' + n + ' times (max 2 a reel)'); });
+    for (let i = 1; i < kinds.length; i++) if (kinds[i] === kinds[i - 1]) problems.push('the same scene kind back to back: „' + kinds[i] + '” (lines ' + (i - 1) + ', ' + i + ')');
+    notes.push('scene kinds: ' + kinds.join(', '));
+    const MECH = ['skin', 'beam', 'cells', 'energy', 'dissolve', 'puzzle'];
+    const core = (X) => (X.core ? [].concat(X.core) : [...new Set([].concat(X.hook || [], X.beats || [], X.payoff || [], X.resolve || [], X.outro || []).filter((b) => b.visual && MECH.includes(b.visual.type)).map((b) => b.visual.type))]);
+    const mine = core(S);
+    notes.push('core mechanism visual: ' + (mine.join(', ') || 'none'));
+    const base = path.join(__dirname, '..', 'scripts');
+    fs.readdirSync(base).filter((d) => d !== id && fs.existsSync(path.join(base, d, 'script.json'))).map((d) => ({ d, m: fs.statSync(path.join(base, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(base, d, 'script.json'), 'utf8')) }))
+      .filter((o) => o.X.v === 2 && o.X.kind !== 'brand').sort((a, b) => b.m - a.m).slice(0, 3)
+      .forEach((o) => { const shared = core(o.X).filter((k) => mine.includes(k)); if (shared.length) notes.push('WARNING: the same core mechanism visual as ' + o.d + ': ' + shared.join(', ') + ' (give each reel its own)'); });
+  } catch (e) { notes.push('scene-kind check skipped: ' + e.message); }
   const ends = ['loop', 'comment', 'site', 'ask'];
   if (!S.end || !ends.includes(S.end.type)) problems.push('end.type must be one of ' + ends.join(', '));
   if (S.end && S.end.type === 'comment' && !(S.end.keyword || S.keyword)) problems.push('a comment end needs a keyword');

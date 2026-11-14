@@ -98,7 +98,7 @@
     // the header and its hairline
     const hd = h('div', 'dv-h tx', '<span>' + esc(p.header || '') + '</span><b></b>', st); place(hd, 50, top);
     const rule = h('i', 'dv-rule', null, st); place(rule, 50, top + 58);
-    const hdR = hd.querySelector('b');
+    const hdR = hd.querySelector('b'); ctx.shot.hdrRight = () => hdR.textContent.toUpperCase(); if (!p.hdr) p.hdr = p.header;
     ctx.anim(hd, 'in', ctx.t0 + 0.04, { amt: 24, sfx: null }); ctx.anim(rule, 'growX', ctx.t0 + 0.08, { sfx: 'swoosh', gain: 0.25 });
     const els = rows.map((r, i) => {
       const g = h('div', 'abs', null, st); place(g, 50, y0 + i * rowH, 760, rowH);
@@ -159,6 +159,7 @@
     const ghost = h('div', 'dv-ghost', '', st); place(ghost, 0, 120); ghost.style.width = '860px'; ghost.style.textAlign = 'center';
     const hd = p.header ? h('div', 'dv-h tx', '<span>' + esc(p.header) + '</span><b></b>', st) : null; if (hd) place(hd, 50, 24);
     const rule = hd ? h('i', 'dv-rule', null, st) : null; if (rule) place(rule, 50, 82);
+    if (hd) { ctx.shot.hdrRight = () => hd.querySelector('b').textContent.toUpperCase(); if (!p.hdr) p.hdr = p.header; }
     const ttl = p.title ? h('div', 'tx abs disp', R.rich(p.title), st) : null;
     if (ttl) { place(ttl, 50, 140, 760); ttl.style.textAlign = 'center'; ttl.style.fontSize = (p.size || 88) + 'px'; R.fit(ttl, 760, 230, p.size || 88, 40); }
     const sc = scrub(st, p.y || 640, ticks, { range: p.range, note: p.note, count: p.count });

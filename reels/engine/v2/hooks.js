@@ -127,19 +127,20 @@
     const cx = 540, cy = p.cy || 640, dk = dark();
     const glass = dk ? 'rgba(255,255,255,.92)' : '#14a596', hair = dk ? '#ffffff' : '#0f8a7e';
     const id = 'sq' + ctx.shot.i;
+    const gl = p.glyph || 'q', GP = PATH[gl] || PATH.q, isQ = gl === 'q'; // glyph: 'q' (the question) or the answer itself ('heart', 'check')
     const svg = h('div', 'abs', '<svg width="1080" height="1920" style="position:absolute;left:0;top:0;overflow:visible"><defs>' +
       '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (dk ? '#ffffff' : '#2bbcac') + '"/><stop offset="1" stop-color="' + (dk ? '#dff3f0' : '#0f8a7e') + '"/></linearGradient>' +
       '<radialGradient id="' + id + 'r" cx=".35" cy=".3"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#fbe3d9"/><stop offset=".75" stop-color="#eab5a5"/><stop offset="1" stop-color="#cf8f7d"/></radialGradient>' +
       '<filter id="' + id + 's" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#082824" flood-opacity=".22"/></filter></defs>' +
-      '<g transform="translate(' + cx + ' ' + cy + ')">' +
-      '<path class="fill" d="' + PATH.q + '" fill="none" stroke="url(#' + id + 'g)" stroke-width="66" stroke-linecap="round" stroke-linejoin="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1" filter="url(#' + id + 's)"/>' +
-      '<path class="spec" d="' + PATH.q + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="10" stroke-linecap="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1" transform="translate(-10 -10)"/>' +
-      '<path class="hair" d="' + PATH.q + '" fill="none" stroke="' + hair + '" stroke-width="3" stroke-linecap="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1"/>' +
-      '<circle class="dot" cx="0" cy="150" r="40" fill="url(#' + id + 'r)" filter="url(#' + id + 's)"/>' +
+      '<g class="gq" transform="translate(' + cx + ' ' + cy + ')">' +
+      '<path class="fill" d="' + GP + '" fill="none" stroke="url(#' + id + 'g)" stroke-width="66" stroke-linecap="round" stroke-linejoin="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1" filter="url(#' + id + 's)"/>' +
+      '<path class="spec" d="' + GP + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="10" stroke-linecap="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1" transform="translate(-10 -10)"/>' +
+      '<path class="hair" d="' + GP + '" fill="none" stroke="' + hair + '" stroke-width="3" stroke-linecap="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1"/>' +
+      (isQ ? '<circle class="dot" cx="0" cy="150" r="40" fill="url(#' + id + 'r)" filter="url(#' + id + 's)"/>' : '') +
       (p.to ? '<path class="to" d="' + PATH[p.to] + '" fill="none" stroke="url(#' + id + 'g)" stroke-width="66" stroke-linecap="round" stroke-linejoin="round" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:1" filter="url(#' + id + 's)"/>' : '') +
       '</g></svg>', lay);
     const q = (s) => svg.querySelector(s);
-    const fill = q('.fill'), spec = q('.spec'), hairE = q('.hair'), dot = q('.dot'), to = q('.to');
+    const fill = q('.fill'), spec = q('.spec'), hairE = q('.hair'), dot = q('.dot'), to = q('.to'), gq = q('.gq');
     // the grid underneath: a few squares breathe from frame 0, and the squares the stroke passes over light up briefly
     const cv = h('canvas', null, null, lay); cv.width = 1080; cv.height = 1920; cv.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
     lay.insertBefore(cv, svg);
@@ -155,8 +156,10 @@
     const shimmer = Array.from({ length: 22 }, (_, i) => ({ c: Math.floor(R.rnd(i, 3) * 20), r: Math.floor(R.rnd(i, 5) * 34), ph: R.rnd(i, 7) * 6.28, sp: 0.5 + R.rnd(i, 9) * 0.6 }));
     const tF = T(ctx, p.formAt, ctx.L(0, 0, 0.1)), dF = p.formDur || 1.0, tDot = tF + dF + 0.05;
     const tTo = p.to ? T(ctx, p.toAt, ctx.L(0, 0.5)) : null;
-    ctx.sfx(tF, 'swoosh', 0.35); ctx.sfx(tDot + 0.3, 'snap', 0.4); ctx.sfx(tDot + 0.4, 'shimmer', 0.3);
-    R.event(tF, 'draw'); R.event(tF + dF * 0.5, 'draw'); R.event(tDot, 'dot');
+    ctx.sfx(tF, 'swoosh', 0.35);
+    if (isQ) { ctx.sfx(tDot + 0.3, 'snap', 0.4); ctx.sfx(tDot + 0.4, 'shimmer', 0.3); R.event(tDot, 'dot'); }
+    else { ctx.shot.resolveAt = tF + dF; ctx.sfx(tF + dF, 'shimmer', 0.35); R.event(tF + dF * 0.6, 'resolve'); R.event(tF + dF, 'resolve'); R.event(tF + dF + 0.6, 'beat'); R.event(tF + dF + 2.0, 'beat'); ctx.sfx(tF + dF + 2.0, 'shimmer', 0.2); }
+    R.event(tF, 'draw'); R.event(tF + dF * 0.5, 'draw');
     if (tTo != null) { ctx.shot.resolveAt = tTo + 0.7; ctx.sfx(tTo, 'swoosh_up', 0.45); R.event(tTo, 'resolve'); R.event(tTo + 0.6, 'resolve'); }
     words(ctx, p, p.qy || cy + 300);
     const trA = trail(q('.hair'), tF, dF), trB = to ? trail(to, (tTo || 0) + 0.2, 0.7) : [];
@@ -171,7 +174,8 @@
       hairE.style.strokeDashoffset = String(1 - hp); hairE.style.opacity = String((1 - fp * 0.85) * (1 - out));
       fill.style.strokeDashoffset = String(1 - fp); fill.style.opacity = String(1 - out);
       spec.style.strokeDashoffset = String(1 - calm((t - tF - 0.35) / dF)); spec.style.opacity = String(0.9 * (1 - out));
-      const dq = calm((t - tDot) / 0.5); dot.setAttribute('cy', (150 - (1 - dq) * 80).toFixed(1)); dot.style.opacity = String(dq * (1 - out));
+      if (dot) { const dq = calm((t - tDot) / 0.5); dot.setAttribute('cy', (150 - (1 - dq) * 80).toFixed(1)); dot.style.opacity = String(dq * (1 - out)); }
+      if (!isQ) { const b0 = t - tF - dF - 0.6, b1 = t - tF - dF - 2.0, b = b1 > 0 ? b1 : b0; const k = b > 0 && b < 0.7 ? 1 + 0.045 * Math.sin(Math.PI * b / 0.7) : 1; gq.setAttribute('transform', 'translate(' + cx + ' ' + cy + ') scale(' + k.toFixed(4) + ')'); }
       if (to) to.style.strokeDashoffset = String(1 - calm((t - tTo - 0.2) / 0.7));
     });
   };

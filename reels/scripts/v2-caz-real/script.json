@@ -4,27 +4,33 @@
  "rubric": "Cazuri",
  "theme": "brand-light",
  "music": "Free (Ultra Naté), piesa aleasă de proprietar",
- "topic": "Liposonix abdomen, o ședință, Timișoara",
- "topicTag": "liposonix-abdomen",
+ "topic": "Liposonix șolduri, o ședință, Timișoara",
+ "topicTag": "liposonix-solduri",
  "hookType": "poveste",
- "case": "cazul-20",
+ "case": "cazul-05",
  "title": "Cum a ajuns aici după o singură ședință?",
- "sources": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp + catalog-rezultate.html (Cazul 20: Liposonix abdomen, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate care distrug celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; fără bisturiu, fără timp de recuperare; reducerea vizibilă în general la 6-8 săptămâni); grasime-localizata.html („zona nu cedează, deși mănânci atent și faci mișcare”, „Ultrasunete care țintesc doar grăsimea”, grăsimea rezistentă la dietă și sport din motive genetice și hormonale, „Nu e vina ta”, „un plan făcut pentru corpul tău”, Săptămânile 2-8 / La 6-8 săptămâni)",
- "post": "O singură ședință de Liposonix pe abdomen, Timișoara. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
+ "sources": "brand_asset/catalog/cazul-05-liposonix-solduri.webp + catalog-rezultate.html (Cazul 05: Liposonix șolduri, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate care distrug celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; fără bisturiu, fără timp de recuperare; reducerea vizibilă în general la 6-8 săptămâni); grasime-localizata.html („zona nu cedează, deși mănânci atent și faci mișcare”, „Ultrasunete care țintesc doar grăsimea”, grăsimea rezistentă la dietă și sport din motive genetice și hormonale, „Nu e vina ta”, „un plan făcut pentru corpul tău”, Săptămânile 2-8 / La 6-8 săptămâni)",
+ "post": "O singură ședință de Liposonix pe șolduri, Timișoara. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
  "hook": {
   "say": "Cum a ajuns aici după o singură *ședință*?",
   "q": "Cum a ajuns aici după o singură ședință?",
   "visual": {
    "type": "photo",
-   "img": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
-   "split": "v",
+   "img": "brand_asset/catalog/cazul-05-liposonix-solduri.webp",
+   "split": "h",
    "seam": 0.5,
    "mode": "glimpse",
    "flashAt": [
     0,
     0.45
    ],
-   "label": "Caz real · Timișoara"
+   "label": "Caz real · Timișoara",
+   "focus": [
+    0.75,
+    0.6
+   ],
+   "zoom": 1.8,
+   "crop": 0.2
   }
  },
  "beats": [
@@ -84,24 +90,17 @@
   {
    "say": "La ea s-a lucrat cu Liposonix, care țintește doar stratul de *grăsime*.",
    "visual": {
-    "type": "skin",
-    "mode": "liposonix",
-    "seq": [
+    "type": "cells",
+    "chips": [
      {
-      "at": [
-       0,
-       0.3
-      ],
-      "do": "energy",
-      "label": "Doar stratul de grăsime"
+      "t": "Liposonix",
+      "ic": "zap",
+      "at": "Liposonix"
      },
      {
-      "at": [
-       0,
-       0.75
-      ],
-      "do": "focus",
-      "layer": "grasime"
+      "t": "Doar stratul de grăsime",
+      "ic": "target",
+      "at": "doar"
      }
     ]
    }
@@ -153,8 +152,8 @@
    "say": "Fără bisturiu, fără recuperare. Acum, uite *diferența*.",
    "visual": {
     "type": "photo",
-    "img": "brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
-    "split": "v",
+    "img": "brand_asset/catalog/cazul-05-liposonix-solduri.webp",
+    "split": "h",
     "seam": 0.5,
     "mode": "reveal",
     "mask": "diagonal",
@@ -162,7 +161,7 @@
      0,
      0.8
     ],
-    "label": "Cazul 20 · Liposonix · Timișoara",
+    "label": "Cazul 5 · Liposonix · Timișoara",
     "enter": "blurIn",
     "chips": [
      {
