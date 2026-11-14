@@ -103,6 +103,7 @@ button.k-stat:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
 .k-tag.is-bad{ background:var(--bad-soft); color:var(--bad); }
 .k-tag.is-accent{ background:var(--accent-soft); color:var(--accent); }
 .k-tag.is-info{ background:var(--info-soft); color:var(--info); }
+.k-tag.is-done{ background:var(--done-soft); color:var(--done); }
 
 /* ---------------- search / toolbar ---------------- */
 .k-toolbar{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }

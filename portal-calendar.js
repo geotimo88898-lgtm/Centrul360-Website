@@ -14,7 +14,7 @@
   const STATUS = {
     programata: { label: 'Programată', plural: 'programate', tone: 'accent', ic: 'calendar' },
     confirmata: { label: 'Confirmată', plural: 'confirmate', tone: 'good', ic: 'checkCircle' },
-    finalizata: { label: 'Finalizată', plural: 'finalizate', tone: 'mute', ic: 'check' },
+    finalizata: { label: 'Finalizată', plural: 'finalizate', tone: 'done', ic: 'check' },
     reprogramata: { label: 'Reprogramată', plural: 'reprogramate', tone: 'warn', ic: 'refresh' },
     anulata: { label: 'Anulată', plural: 'anulate', tone: 'bad', ic: 'ban' },
     // Created automatically when an admin approves a leave request (Aprobări), not a real
