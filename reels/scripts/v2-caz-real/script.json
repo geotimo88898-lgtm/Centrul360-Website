@@ -9,7 +9,7 @@
  "hookType": "caz",
  "case": "cazul-05",
  "title": "E rezultatul unei singure ședințe de Liposonix",
- "sources": "brand_asset/catalog/cazul-05-liposonix-solduri.webp + catalog-rezultate.html (Cazul 05: Liposonix șolduri, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate de înaltă intensitate care distrug definitiv celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; reducerea vizibilă în general la 6-8 săptămâni de la ședință); v2/src/grasime-localizata.html (ultrasunete care țintesc doar grăsimea, pielea rămâne neatinsă; grăsimea rezistentă la dietă și sport din motive genetice și hormonale; depozite pe abdomen, șolduri, coapse sau brațe; celulele distruse nu revin, dar cele rămase se pot mări dacă iei în greutate; cu un stil de viață echilibrat rezultatul se menține; planul depinde de zonă și de volum)",
+ "sources": "brand_asset/catalog/cazul-05-liposonix-solduri.webp + catalog-rezultate.html (Cazul 05: Liposonix șolduri, Timișoara, 1 ședință, publicat cu acordul clientei; ultrasunete focalizate de înaltă intensitate care distrug definitiv celulele adipoase din zona tratată, eliminate natural în săptămânile următoare; reducerea vizibilă în general la 6-8 săptămâni de la ședință); v2/src/grasime-localizata.html (ultrasunete care țintesc doar grăsimea, pielea rămâne neatinsă; „zona nu cedează, deși mănânci atent și faci mișcare”; depozite pe abdomen, șolduri, coapse sau brațe; celulele distruse nu revin, dar cele rămase se pot mări dacă iei în greutate; cu un stil de viață echilibrat rezultatul se menține; planul depinde de zonă și de volum)",
  "post": "O singură ședință de Liposonix pe șolduri, Timișoara: ce se întâmplă cu celulele de grăsime și de ce diferența vine treptat. Publicat cu acordul clientei. Rezultatele diferă de la o persoană la alta. #cazreal #liposonix #grasimelocalizata #timisoara",
  "hook": {
   "say": "E rezultatul unei singure ședințe de *Liposonix*.",
@@ -34,46 +34,45 @@
  },
  "beats": [
   {
-   "say": "Pe șolduri, grăsimea rezistă des la dietă și sport, din motive genetice și *hormonale*.",
+   "say": "Pe șolduri, grăsimea poate rămâne pe loc chiar dacă mănânci atent și faci *mișcare*.",
    "visual": {
     "type": "cardrow",
     "y": 120,
     "cards": [
      {
-      "t": "Dietă",
+      "t": "Mănânci atent",
       "ic": "salad",
       "tag": {
        "t": "Bifat",
        "done": true,
        "at": [
         0,
-        0.3
+        0.5
        ]
       }
      },
      {
-      "t": "Sport",
+      "t": "Faci mișcare",
       "ic": "footprints",
       "tag": {
        "t": "Bifat",
        "done": true,
        "at": [
         0,
-        0.42
+        0.72
        ]
       }
      },
      {
       "t": "Șolduri",
-      "s": "tot acolo",
       "ic": "target",
       "lead": true,
       "tag": {
-       "t": "Genetică, hormoni",
+       "t": "Tot acolo",
        "rose": true,
        "at": [
         0,
-        0.74
+        0.88
        ]
       }
      }

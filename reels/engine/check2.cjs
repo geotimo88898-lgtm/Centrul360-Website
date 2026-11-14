@@ -110,6 +110,16 @@ module.exports = async (id, dir, S) => {
   const sig = async (t) => p.evaluate((t) => { window.seek(t); const out = []; document.querySelectorAll('.shot *, #bg *').forEach((e) => { if (e.offsetParent === null && e.tagName !== 'CANVAS') return; out.push(e.style.transform + '|' + e.style.opacity + '|' + (e.tagName === 'CANVAS' ? e.toDataURL().length : '')); }); return out.join(';'); }, t);
   if ((await sig(0)) === (await sig(1 / 30))) problems.push('frame 0 is still (the first frame must already move)');
   if (!F.cues.some((c) => c.t <= 0.1 && /impact|boom|shutter|glitch/.test(c.cat))) problems.push('no sound hit on frames 0-3');
+  // the script structure (14.11, the owner's short-form reference): Hook → Lead → Body → Open loop → Body → … → CTA.
+  // Optional "role" per line (hook, lead, body, loop, cta); only warnings, and only when a script uses roles
+  const roles = say.map((b) => b.role || null);
+  if (roles.some(Boolean)) {
+    const bad = [...new Set(roles.filter((r) => r && !['hook', 'lead', 'body', 'loop', 'cta'].includes(r)))]; if (bad.length) notes.push('WARNING (structure): unknown role ' + bad.join(', ') + ' (hook, lead, body, loop, cta)');
+    if (!roles.includes('loop')) notes.push('WARNING (structure): no open loop (a line with "role": "loop", a statement that the next block closes)');
+    const li = roles.lastIndexOf('lead'); if (li >= 0 && F.beats[li] && F.beats[li].t0 + F.beats[li].dur > 10) notes.push('WARNING (structure): the lead ends at ' + (F.beats[li].t0 + F.beats[li].dur).toFixed(1) + ' s (want by 10 s)');
+    if (roles[roles.length - 1] !== 'cta') notes.push('WARNING (structure): the last line is not a "cta"');
+    notes.push('structure: ' + roles.map((r) => r || '-').join(' → '));
+  }
   // the payoff and the rhythm
   const endShot = F.shots[F.shots.length - 1];
   const storyEnd = endShot.role === 'end' ? endShot.t0 : T;

@@ -185,8 +185,9 @@ pe ecran, mari, centrate, pe ritmul muzicii (un cuvânt pe bătaie sau pe jumăt
 fiecare tăietură între deschis și închis; un singur cuvânt cheie are culoarea de accent și e mai mare („just code”);
 un cuvânt se construiește literă cu literă ca la tastat („la” → „laun.” → „launch.”); la final logo-ul. Fără voce, fără
 alte elemente. La noi: alternanța alb / turcoaz (#14a596), accentul rose gold pe un singur cuvânt, de ex. „Noi” ·
-„nu promitem.” · „Îți arătăm.” (sloganul site-ului) · „Corp.” · „Față.” · „Epilare laser.” · „fără ace” · „fără
-operație” · „grijă” · „precizie” · „Timișoara” · „Arad”, apoi „centrul360.com” tastat și logo-ul. Cuvintele doar din
+„nu promitem.” · „Îți arătăm.” (sloganul site-ului) · „Corp.” · „Față.” · „Epilare laser.” · „Te întorci
+imediat la ziua ta.” (o propoziție întreagă, construită cuvânt cu cuvânt; niciodată o listă „fără ace, fără
+operație”, exact formularea care nu-i place proprietarului) · „grijă” · „precizie” · „Timișoara” · „Arad”, apoi „centrul360.com” tastat și logo-ul. Cuvintele doar din
 ce spune site-ul. Același tip `"kind": "brand"` ca (ii), cu un set de scene `word` (cuvânt pe bătaie, fundal alternant,
 tastare) sincronizat pe bătăile piesei proprietarului (125 BPM: o bătaie la 0,48 s).
 

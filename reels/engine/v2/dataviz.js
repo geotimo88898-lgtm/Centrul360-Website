@@ -89,7 +89,10 @@
   // ------------------------------------------------------------------ race
   V.race = (ctx, p) => {
     const st = ctx.stage();
-    const rows = p.rows, n = rows.length, K = p.steps.length;
+    // qualitative (p.qual, 14.11: only real data): the components only, no values, no axis, no ranks, no numbers; each bar
+    // comes out of its track when its word is said (rows[].at: [line, frac] or a word)
+    const Q = !!p.qual;
+    const rows = Q ? p.rows.map((r) => Object.assign({ values: [1] }, r)) : p.rows, n = rows.length, K = Q ? 1 : p.steps.length;
     const top = p.top != null ? p.top : 24;
     const rowH = n >= 5 ? 116 : n === 4 ? 140 : 172, y0 = top + 104;
     const cardH = rowH - 16, cardW = Math.round(cardH * 0.74), barX = cardW + 44, barH = Math.round(rowH * 0.56), maxW = 760 - barX - 80;
@@ -114,9 +117,11 @@
       '<rect x="4" y="6" width="4" height="84" rx="2" fill="' + (baseKind() === 'white' ? '#ffffff' : '#12201f') + '" opacity=".75"/><path d="M8 8 H52 L44 22 L52 36 H8 Z" fill="url(#rg' + ctx.shot.i + ')"/><text x="28" y="28" text-anchor="middle" font-family="Inter Variable" font-weight="800" font-size="16" fill="#3b1c14">1</text></svg>', st);
     // the scrubber
     const sy = y0 + n * rowH + 64;
-    const sc = p.scrubber === false ? null : scrub(st, sy, p.steps, { note: p.note, count: p.count });
+    const sc = p.scrubber === false || Q ? null : scrub(st, sy, p.steps, { note: p.note, count: p.count });
+    const tg = rows.map((r, i) => (typeof r.at === 'string' ? ctx.wordAt(0, r.at, -0.05) : r.at ? T(ctx, r.at) : ctx.t0 + 0.2 + i * 0.3));
+    if (Q) { ghost.style.display = 'none'; flag.style.display = 'none'; els.forEach((e) => { e.badge.style.display = 'none'; }); tg.forEach((x, i) => { ctx.sfx(x, 'swoosh_up', 0.35); R.event(x, 'grow'); R.event(x + 0.8, 'settle'); }); }
     if (sc) ctx.anim(sc.el, 'in', ctx.t0 + 0.2, { amt: 20, sfx: null });
-    const tA = T(ctx, p.from, ctx.L(0, 0.08)), tB = T(ctx, p.to, ctx.L(0, 0.92));
+    const tA = T(ctx, p.from, ctx.L(0, 0.08)), tB = Q ? Math.max(...tg) + 0.8 : T(ctx, p.to, ctx.L(0, 0.92));
     for (let k = 1; k < K; k++) { const tk = tA + (tB - tA) * (k / (K - 1)); ctx.sfx(tk - 0.04, 'tick', 0.32); R.event(tk, 'step'); }
     const rankAt = (k) => { const ix = rows.map((_, i) => i).sort((a, b) => (rows[b].values[k] - rows[a].values[k]) || (a - b)); const pos = []; ix.forEach((r, j) => { pos[r] = j; }); return pos; };
     const ranks = Array.from({ length: K }, (_, k) => rankAt(k));
@@ -127,26 +132,26 @@
     ctx.focus(els[0].g);
     ctx.tick((t) => {
       const u = t < tA ? 0 : stepper(t, tA, tB, K), k = Math.min(K - 2, Math.floor(u)), f = K < 2 ? 0 : u - k;
-      const grow = calm(clamp((t - ctx.t0 - 0.2) / 0.8)); // the bars come out of the track at the start
+      const grow0 = calm(clamp((t - ctx.t0 - 0.2) / 0.8)); // the bars come out of the track at the start
       const lead = (f < 0.5 ? leadAt(k) : leadAt(Math.min(K - 1, k + 1)));
       els.forEach((e, i) => {
         const v = K < 2 ? e.r.values[0] : lerp(e.r.values[k], e.r.values[k + 1], f);
         const y = y0 + lerp(ranks[k][i], ranks[Math.min(K - 1, k + 1)][i], calm(f)) * rowH;
         e.g.style.top = y.toFixed(2) + 'px';
-        const w = v * maxW * grow;
+        const w = v * maxW * (Q ? calm(clamp((t - tg[i]) / 0.8)) : grow0);
         const roseNow = (leadAt(k) === i ? 1 - calm(f) : 0) + (leadAt(Math.min(K - 1, k + 1)) === i ? calm(f) : 0);
         const rose = p.lead != null ? (i === p.lead ? 1 : 0) : roseNow;
         e.bar.set(w, { [baseKind()]: 1 - rose, rose }, t);
         e.badge.textContent = String(Math.round(lerp(ranks[k][i], ranks[Math.min(K - 1, k + 1)][i], f)) + 1);
         e.badge.classList.toggle('lead', i === lead);
         const ts = e.tags; if (ts.length > 1) { const ki = Math.round(u); ts.forEach((d, j) => { if (d) d.style.opacity = j === Math.min(ts.length - 1, ki) ? '1' : '0'; }); }
-        if (i === lead) { const fx = parseFloat(e.g.style.left) + barX + w + DEPTH - 6, fy = y + (rowH - barH) / 2 - 44; flag.style.left = fx.toFixed(1) + 'px'; flag.style.top = fy.toFixed(1) + 'px'; flag.style.opacity = clamp((t - ctx.t0 - 0.6) / 0.3).toFixed(3); }
+        if (i === lead && !Q) { const fx = parseFloat(e.g.style.left) + barX + w + DEPTH - 6, fy = y + (rowH - barH) / 2 - 44; flag.style.left = fx.toFixed(1) + 'px'; flag.style.top = fy.toFixed(1) + 'px'; flag.style.opacity = clamp((t - ctx.t0 - 0.6) / 0.3).toFixed(3); }
       });
       const gi = K < 2 ? 0 : Math.round(u);
       const gl = p.ghost ? p.ghost[Math.min(p.ghost.length - 1, gi)] : pad(gi + 1);
       if (ghost.textContent !== gl) ghost.textContent = gl;
       ghost.style.opacity = calm(clamp((t - ctx.t0) / 0.6)).toFixed(3);
-      const rt = (p.right || '').replace('{n}', gl).replace('{N}', String(K));
+      const rt = Q ? (p.right || '') : (p.right || '').replace('{n}', gl).replace('{N}', String(K));
       if (hdR.textContent !== rt) hdR.textContent = rt;
       if (sc) sc.set(u);
     });

@@ -7,11 +7,11 @@
  "topic": "Ce se află de fapt sub bărbie, la o femeie slabă cu gușă",
  "topicTag": "hifu-gusa",
  "hookType": "afirmatie",
- "title": "La multe femei slabe, gușa nu ține de kilograme",
- "sources": "v2/src/gusa-barbie-dubla.html (gușa: un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității, uneori indiferent de greutate; apare și fără kilograme în plus; sportul singur rareori rezolvă zona; nu e vina ta; HIFU: puncte de energie în stratul profund (SMAS), țesutul se contractă și se ridică, colagen nou, efect maxim la 8-12 săptămâni); reels/topics.json t01 (apare și la persoane slabe), t02 (SMAS, colagen nou, 8-12 săptămâni), t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează)",
- "post": "La multe femei slabe, gușa nu ține de kilograme. Ce se află de fapt sub bărbie, pe scurt. #gusa #barbiedubla #hifu #timisoara #arad",
+ "title": "La multe femei, gușa apare și fără kilograme în plus",
+ "sources": "v2/src/gusa-barbie-dubla.html (gușa: un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității, uneori indiferent de greutate; apare și fără kilograme în plus; sportul singur rareori rezolvă zona; nu e vina ta; HIFU: puncte de energie în stratul profund (SMAS), țesutul se contractă și se ridică, colagen nou, efect maxim la 8-12 săptămâni); v2/src/gusa-barbie-dubla.html FAQ („Gușa apare des din genetică și pierderea fermității, nu doar din greutate”, „bărbia dublă apare chiar dacă nu ai kilograme în plus”); reels/topics.json t01 (apare și la persoane slabe), t02 (SMAS, colagen nou, 8-12 săptămâni), t06/t07 (capul aplecat în telefon nu face gușă, dar o accentuează)",
+ "post": "La multe femei, gușa apare și fără kilograme în plus. Ce se află de fapt sub bărbie, pe scurt. #gusa #barbiedubla #hifu #timisoara #arad",
  "hook": {
-  "say": "La multe femei slabe, gușa nu ține de *kilograme*.",
+  "say": "La multe femei, gușa apare și fără kilograme în *plus*.",
   "visual": {
    "type": "gauge",
    "zones": [
@@ -110,65 +110,26 @@
  ],
  "payoff": [
   {
-   "say": "Gușa e deci un amestec de grăsime și piele relaxată, nu un semn de kilograme în *plus*.",
+   "say": "Gușa e deci un amestec de grăsime localizată și piele relaxată, nu doar o chestiune de *greutate*.",
    "visual": {
     "type": "race",
     "payoff": true,
-    "header": "Ce face gușa mai vizibilă",
-    "right": "{n} de ani",
-    "steps": [
-     "20",
-     "30",
-     "40",
-     "50+"
-    ],
-    "ghost": [
-     "20",
-     "30",
-     "40",
-     "50"
-    ],
-    "note": "Ilustrativ · la fiecare, mixul e altul",
+    "qual": true,
+    "header": "Din ce e făcută gușa",
+    "right": "",
     "rows": [
      {
       "t": "Grăsime localizată",
       "ic": "droplet",
-      "values": [
-       0.62,
-       0.64,
-       0.66,
-       0.62
-      ]
+      "at": "grăsime"
      },
      {
       "t": "Piele relaxată",
       "ic": "waves",
-      "values": [
-       0.18,
-       0.36,
-       0.6,
-       0.86
-      ]
-     },
-     {
-      "t": "Genetică",
-      "ic": "dna",
-      "values": [
-       0.5,
-       0.5,
-       0.5,
-       0.5
-      ]
+      "at": "piele"
      }
     ],
-    "from": [
-     0,
-     0.12
-    ],
-    "to": [
-     0,
-     0.96
-    ]
+    "lead": 0
    }
   }
  ],
@@ -258,7 +219,8 @@
     "x": 700,
     "react": "point",
     "flip": true
-   }
+   },
+   "tts": "HIFU lucrează aici cu puncte mici de energie în stratul profund de sub piele, numit es-em-a-es."
   },
   {
    "say": "Țesutul se strânge, se formează colagen nou, iar efectul maxim apare la 8-12 *săptămâni*.",
@@ -297,7 +259,7 @@
   }
  ],
  "outro": {
-  "say": "Deci gușa nu e vina nimănui, iar acum știi ce se află sub *bărbie*.",
+  "say": "Gușa nu e vina ta, iar acum știi ce se află sub *bărbie*.",
   "cta": "loop",
   "visual": {
    "type": "strokeq",
