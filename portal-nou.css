@@ -441,7 +441,12 @@ html.ui-nou .cal-colhead.is-today{ color:var(--n-teal2); }
 html.ui-nou .cal-colhead.is-today b{ background:var(--fg); color:var(--paper); box-shadow:none; }
 html.ui-nou .cal-col{ border-left-color:color-mix(in srgb, var(--fg) 5%, transparent); }
 html.ui-nou .cal-col.is-today{ background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 3.5%, transparent), transparent 60%); }
-html.ui-nou .cal-hour{ border-top-color:color-mix(in srgb, var(--fg) 5%, transparent); }
+/* 16.11: the hour lines stood out too little against the page's decorative grid: the calendar gets its own solid
+   ground and clearly visible hour lines, the half hour stays a faint dash */
+html.ui-nou .cal-grid{ background:var(--paper); }
+html.ui-nou .cal-hour{ border-top-color:color-mix(in srgb, var(--fg) 15%, transparent); }
+html.ui-nou .cal-hour::after{ border-top-color:color-mix(in srgb, var(--fg) 6%, transparent); }
+html.ui-nou .cal-col:hover .cal-hour{ border-top-color:color-mix(in srgb, var(--fg) 22%, transparent); }
 html.ui-nou .cal-block{ border-radius:12px; box-shadow:inset 3px 0 0 var(--bc, var(--n-teal)); background:color-mix(in srgb, var(--bc, var(--n-teal)) 9%, var(--paper));
   transition:transform .5s var(--e), box-shadow .5s var(--e), opacity .3s; animation:n-rise .6s var(--e) both; }
 html.ui-nou .cal-block:hover{ transform:translateY(-1px) scale(1.01); box-shadow:0 14px 28px -16px rgb(var(--n-sh) / .35), inset 3px 0 0 var(--bc, var(--n-teal)); }

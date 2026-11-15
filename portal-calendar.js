@@ -201,20 +201,24 @@
     const today = K.today();
     gridEl.style.setProperty('--cols', cols.length);
     gridEl.classList.toggle('is-week', S.view === 'week');
+    // the week with both cities (the owner, 16.11: too crowded): each day split in two, Timișoara left, Arad right
+    const split = S.view === 'week' && S.loc === 'all' && !phone();
+    gridEl.classList.toggle('is-split', split);
     gridEl.innerHTML =
       '<div class="cal-corner"></div>' +
       cols.map((c) => '<div class="cal-colhead' + (c.date === today ? ' is-today' : '') + '"' + (S.view === 'week' ? ' data-goday="' + c.date + '"' : '') + '>' +
         (S.view === 'week' ? '<span>' + c.label + '</span><b>' + c.sub + '</b>' : '<span>' + icon('pin') + esc(c.label) + '</span>') +
-        '<em>' + visible.filter((a) => inCol(a, c) && a.status !== 'anulata' && a.status !== 'concediu').length + '</em></div>').join('') +
+        '<em>' + visible.filter((a) => inCol(a, c) && a.status !== 'anulata' && a.status !== 'concediu').length + '</em>' +
+        (split ? '<small class="cal-split-h"><span>TM</span><span>AR</span></small>' : '') + '</div>').join('') +
       '<div class="cal-gutter" style="height:' + H + 'px">' + hours.map((h) => '<span style="top:' + ((h - START) * 60 * PPM) + 'px">' + K.pad(h) + ':00</span>').join('') + '</div>' +
       cols.map((c) => {
         const list = visible.filter((a) => inCol(a, c));
         const timed = list.filter((a) => toMin(a.time) != null);
         const untimed = list.filter((a) => toMin(a.time) == null);
-        return '<div class="cal-col' + (c.date === today ? ' is-today' : '') + (c.date < today ? ' is-past' : '') + '" data-date="' + c.date + '" data-loc="' + esc(c.loc) + '" style="height:' + H + 'px">' +
+        return '<div class="cal-col' + (split ? ' is-split' : '') + (c.date === today ? ' is-today' : '') + (c.date < today ? ' is-past' : '') + '" data-date="' + c.date + '" data-loc="' + esc(c.loc) + '" style="height:' + H + 'px">' +
           hours.slice(0, -1).map((h) => '<i class="cal-hour" style="top:' + ((h - START) * 60 * PPM) + 'px"></i>').join('') +
           (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(nameOf(a)) + '</button>').join('') + '</div>' : '') +
-          layout(timed).map(blockHtml).join('') + '</div>';
+          (split ? cityLayout(timed) : layout(timed)).map(blockHtml).join('') + '</div>';
       }).join('');
     placeNow();
     if (keepScroll) gridEl.parentElement.scrollTop = prevScroll;
@@ -262,6 +266,11 @@
     });
     return items;
   }
+  // the week with both cities: Timișoara packs in the left half of the day, Arad in the right half
+  function cityLayout(list) {
+    const left = list.filter((a) => a.location !== LOCS[1]), right = list.filter((a) => a.location === LOCS[1]);
+    return [].concat(layout(left).map((it) => Object.assign(it, { base: 0, span: 50 })), layout(right).map((it) => Object.assign(it, { base: 50, span: 50 })));
+  }
   // what an appointment is called: the title it had in HighLevel (as reception wrote it there), else the client;
   // the line under it: the client when the title doesn't name her, else the treatment
   const plainTxt = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -279,7 +288,8 @@
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
-    const w = 100 / it.lanes;
+    const base = it.base || 0, w = (it.span || 100) / it.lanes;
+    const narrow = it.span && it.lanes > 1; // a half day shared by several bookings: one clean line, the rest in the tooltip
     // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
     // an hour) has the hour in front of the name, in smaller letters, on up to two lines
     const short = it.e - it.s < 30; // under half an hour: one line
@@ -287,9 +297,9 @@
     const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the name
     const tr = trLine(a);
     const lines = tiny ? Math.max(1, Math.floor((h - 4) / 23)) : short ? 1 : Math.max(1, Math.min(2, Math.floor((h - 44) / 34)));
-    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (it.lane * w) + '% + 3px);width:calc(' + w + '% - 6px);--lines:' + lines + '"' +
-      ' title="' + esc(span(a) + ' · ' + nameOf(a) + ' · ' + tr + ' · ' + st.label) + '">' +
-      (tiny ? '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') : short
+    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : narrow ? ' is-narrow' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (base + it.lane * w) + '% + ' + (narrow ? 2 : 3) + 'px);width:calc(' + w + '% - ' + (narrow ? 4 : 6) + 'px);--lines:' + lines + '"' +
+      ' title="' + esc(span(a) + ' · ' + nameOf(a) + ' · ' + tr + ' · ' + st.label + (a.location ? ' · ' + a.location : '')) + '">' +
+      (narrow ? '<span class="cal-b-t">' + esc(a.time || '') + '</span><b>' + esc(nameOf(a).split(/\s+/)[0]) + '</b>' : tiny ? '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') : short
         ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + (tr ? ' · ' + esc(tr) : '') + '</b>'
         : half ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '')
         : '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
