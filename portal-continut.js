@@ -31,7 +31,8 @@
   if (!K) return;
   const { esc, icon } = K;
   const S = { d: null, busy: false, tab: 'ins', r: null, rErr: '', rAt: 0, warn: {}, an: '', fm: 'month', drafts: {}, wide: null, tpOpen: {},
-    tr: { seen: 0, last: null, focus: '', cap: null, moved: false, skip: [] }, cal: { view: 'week', day: '', nets: [] } };
+    // sound: on once he turned it on (the owner, 15.11: "nu pot să aud sound-ul la transit"), for the next videos too
+    tr: { seen: 0, last: null, focus: '', cap: null, moved: false, skip: [] }, sound: false, cal: { view: 'week', day: '', nets: [] } };
   let panel = null, dr = null, openId = '';
 
   const NETS = ['tt', 'yt', 'ig', 'fb'];
@@ -116,7 +117,9 @@
         const cn = e.target.closest('[data-cttr-cap]');
         if (it && cn) { const n = cn.dataset.cttrCap; S.tr.cap = S.tr.cap && S.tr.cap.id === it.id && S.tr.cap.net === n && !S.wide ? { id: it.id, net: '' } : { id: it.id, net: n }; return repaintCaps(it); }
       } else if (e.target.closest('[data-cttr-undo]')) return undoLast();
-      const v = e.target.closest('[data-ctvid]');
+      // a tap anywhere on a video's box (the video, the blurred sides, the speaker): sound on or off
+      const vb = e.target.closest('[data-ctsnd], .cn-rc-m');
+      const v = vb && (vb.matches('.cn-rc-m') ? vb : vb.closest('.cn-rc-m')).querySelector('video[data-ctvid]');
       if (v) { if (S.tr.moved) { S.tr.moved = false; return; } return sound(v); }
       const tg = e.target.closest('[data-cttab-go]');
       if (tg) { setTab(tg.dataset.cttabGo); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
@@ -465,7 +468,7 @@
     if (vid) {
       return '<div class="cn-rc-m ' + (cls || '') + '">' + (it.cover ? '<img class="cn-rc-bg" src="' + esc(cover(it)) + '" alt="" aria-hidden="true">' : '') +
         '<video data-ctvid data-src="' + esc(fileUrl(it, vid.name)) + '"' + (it.cover ? ' poster="' + esc(cover(it)) + '"' : '') + ' muted playsinline loop preload="none"></video>' +
-        '<span class="cn-snd" aria-hidden="true">' + SPK.off + '</span>' + (vid.dur ? '<span class="cn-dur">' + Math.round(vid.dur) + ' s</span>' : '') + '</div>';
+        '<button type="button" class="cn-snd is-btn' + (S.sound ? ' is-on' : '') + '" data-ctsnd aria-label="Sunet">' + (S.sound ? SPK.on : SPK.off) + '</button>' + (vid.dur ? '<span class="cn-dur">' + Math.round(vid.dur) + ' s</span>' : '') + '</div>';
     }
     const imgs = files.filter((f) => /^image\//.test(f.mime));
     return '<div class="cn-rc-m is-car ' + (cls || '') + '"><div class="cn-car" data-ctcar>' + imgs.map((f) => '<img src="' + esc(fileUrl(it, f.name)) + '" alt="" loading="lazy" decoding="async" draggable="false">').join('') + '</div>' +
@@ -863,7 +866,13 @@
     if (!ioLoad) ioLoad = new IntersectionObserver((list) => list.forEach((x) => { const v = x.target; if (x.isIntersecting && v.dataset.src) { v.preload = 'metadata'; v.src = v.dataset.src; v.removeAttribute('data-src'); ioLoad.unobserve(v); } }), { rootMargin: '300px 0px' });
     if (!ioPlay) ioPlay = new IntersectionObserver((list) => list.forEach((x) => {
       const v = x.target;
-      if (x.isIntersecting && x.intersectionRatio >= 0.6) { if (!still && !v.dataset.src) v.play().catch(() => {}); }
+      if (x.isIntersecting && x.intersectionRatio >= 0.6) {
+        if (still || v.dataset.src) return;
+        // sound was turned on: this one plays with it (the only one with sound); the browser may refuse, then muted
+        const ic = v.parentElement.querySelector('.cn-snd');
+        if (S.sound && v.closest('[data-cttrid]')) { v.muted = false; if (ic) { ic.innerHTML = SPK.on; ic.classList.add('is-on'); } }
+        v.play().catch(() => { v.muted = true; if (ic) { ic.innerHTML = SPK.off; ic.classList.remove('is-on'); } v.play().catch(() => {}); });
+      }
       else if (!v.paused) v.pause();
     }), { threshold: [0, 0.6] });
     vids.forEach((v) => { ioLoad.observe(v); ioPlay.observe(v); });
@@ -879,6 +888,7 @@
     const on = v.muted;
     panel.querySelectorAll('video[data-ctvid]').forEach((o) => { if (o !== v && !o.muted) { o.muted = true; const ic = o.parentElement.querySelector('.cn-snd'); if (ic) ic.innerHTML = SPK.off; } });
     v.muted = !on;
+    S.sound = on;
     const ic = v.parentElement.querySelector('.cn-snd'); if (ic) { ic.innerHTML = on ? SPK.on : SPK.off; ic.classList.toggle('is-on', on); }
     if (v.paused) v.play().catch(() => {});
   }
