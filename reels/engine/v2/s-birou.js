@@ -92,16 +92,16 @@
     const C = cards.map((c) => c.el);
 
     // ================================================================ card 0: the bubble, then „Acneea nu ține de igienă. Ține de echilibru.”
-    const soap0 = obj(C[0], 'soap', 330, 1236, 420, 528, 327);
-    const BUB0 = [540, 1250], BUB1 = [548, 610];
-    const comp = svg(C[0], 1080, 1920, '<circle class="cc" cx="0" cy="0" r="104" fill="none" stroke="' + INK + '" stroke-opacity=".32" stroke-width="1.6" stroke-dasharray="4 7"/><path class="ch" d="M-150 0H150M0 -150V150" stroke="' + INK + '" stroke-opacity=".25" stroke-width="1.4"/><path class="arc" d="M0 -104A104 104 0 0 1 104 0" fill="none" stroke="' + DEEP + '" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:0;top:0');
+    const soap0 = obj(C[0], 'soap', 330, 1150, 420, 528, 327);
+    const BUB0 = [540, 1170], BUB1 = [548, 610];
+    const comp = svg(C[0], 1080, 1920, '<circle class="cc" cx="0" cy="0" r="160" fill="none" stroke="' + INK + '" stroke-opacity=".32" stroke-width="1.6" stroke-dasharray="4 7"/><path class="ch" d="M-220 0H220M0 -220V220" stroke="' + INK + '" stroke-opacity=".25" stroke-width="1.4"/><path class="arc" d="M0 -104A104 104 0 0 1 104 0" fill="none" stroke="' + DEEP + '" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:0;top:0');
     const compG = comp.querySelector('svg');
-    const bub = mk(C[0], 'position:absolute;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;' +
+    const bub = mk(C[0], 'position:absolute;left:0;top:0;width:240px;height:240px;margin:-120px 0 0 -120px;border-radius:50%;' +
       'background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.55) 9%,rgba(255,255,255,0) 22%),radial-gradient(circle at 70% 78%,rgba(255,255,255,.5) 0,rgba(255,255,255,0) 14%),radial-gradient(circle,rgba(255,255,255,0) 58%,rgba(95,212,198,.28) 72%,rgba(234,181,165,.32) 82%,rgba(255,255,255,.75) 96%,rgba(255,255,255,0) 100%);' +
       'box-shadow:inset -6px -10px 18px rgba(20,165,150,.16),inset 8px 6px 16px rgba(251,227,217,.35),-14px 26px 30px -14px rgba(24,40,38,.16)');
     const bubRim = mk(bub, 'position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,212,198,.35),rgba(234,181,165,.32),rgba(255,255,255,.2),rgba(95,212,198,.35));-webkit-mask:radial-gradient(circle,transparent 64%,#000 70%,#000 97%,transparent 100%);mask:radial-gradient(circle,transparent 64%,#000 70%,#000 97%,transparent 100%)');
     const drops = []; for (let k = 0; k < 14; k++) { const a = (k / 14) * Math.PI * 2 + R.rnd(k, 2) * 0.4, d = mk(C[0], 'position:absolute;left:0;top:0;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,rgba(95,212,198,.6));opacity:0'); drops.push({ d, a, r: 120 + R.rnd(k, 4) * 160 }); }
-    const ring0 = mk(C[0], 'position:absolute;left:' + (BUB1[0] - 80) + 'px;top:' + (BUB1[1] - 80) + 'px;width:160px;height:160px;border-radius:50%;border:3px solid rgba(255,255,255,.95);box-shadow:0 0 0 2px rgba(95,212,198,.35);opacity:0');
+    const ring0 = mk(C[0], 'position:absolute;left:' + (BUB1[0] - 80) + 'px;top:' + (BUB1[1] - 80) + 'px;width:160px;height:160px;border-radius:50%;border:4px solid rgba(255,255,255,.95);box-shadow:0 0 0 2px rgba(95,212,198,.35);opacity:0');
     const tA = txt(C[0], 470, 'ACNEEA', 'font-size:280px', T.pop, 'slam', { cls: 'cond', silent: true });
     const tB = txt(C[0], 760, 'nu ține de', 'font:520 66px/1.1 ' + SANS, T.pop + B * 0.5, 'rise');
     const tC = txt(C[0], 828, 'igienă.', 'font-size:200px;line-height:1.05', T.pop + B, 'slam', { cls: 'ser' });
@@ -115,11 +115,11 @@
     C[0]._tick = (t) => {
       // the bubble rises off the soap, wobbling, with a compass circle and a crosshair following it like a drawing
       const r = sm(seg(t, -0.3, T.pop)), bx = lerp(BUB0[0], BUB1[0], r) + Math.sin(t * 2.1) * 16 * (1 - r * 0.6), by = lerp(BUB0[1], BUB1[1], E.out(r));
-      const grow = 0.45 + 0.55 * sm(seg(t, -0.3, 0.9)), wob = 1 + 0.035 * Math.sin(t * 5.3), alive = t < T.pop;
+      const grow = 0.5 + 0.5 * sm(seg(t, -0.3, 1.2)), wob = 1 + 0.035 * Math.sin(t * 5.3), alive = t < T.pop;
       bub.style.display = alive ? 'block' : 'none'; bub.style.transform = 'translate(' + bx.toFixed(1) + 'px,' + by.toFixed(1) + 'px) scale(' + (grow * wob).toFixed(4) + ',' + (grow / wob).toFixed(4) + ')';
       bubRim.style.transform = 'rotate(' + (t * 60).toFixed(1) + 'deg)';
       compG.setAttribute('transform', 'translate(' + bx.toFixed(1) + ' ' + by.toFixed(1) + ')'); comp.style.opacity = alive ? (sm(seg(t, 0.4, 0.9)) * 0.95).toFixed(3) : (1 - seg(t, T.pop, T.pop + 0.2)).toFixed(3);
-      comp.querySelector('.cc').setAttribute('r', (104 * grow).toFixed(1)); comp.querySelector('.arc').style.strokeDashoffset = (1 - io(seg(t, 1.7, T.pop))).toFixed(3); comp.querySelector('.arc').setAttribute('d', 'M0 ' + (-104 * grow).toFixed(1) + 'A' + (104 * grow).toFixed(1) + ' ' + (104 * grow).toFixed(1) + ' 0 0 1 ' + (104 * grow).toFixed(1) + ' 0');
+      const RC = 160 * grow; comp.querySelector('.cc').setAttribute('r', RC.toFixed(1)); comp.querySelector('.arc').style.strokeDashoffset = (1 - io(seg(t, 1.7, T.pop))).toFixed(3); comp.querySelector('.arc').setAttribute('d', 'M0 ' + (-RC).toFixed(1) + 'A' + RC.toFixed(1) + ' ' + RC.toFixed(1) + ' 0 0 1 ' + RC.toFixed(1) + ' 0');
       // the burst: droplets, a ring, a short light
       const q = seg(t, T.pop, T.pop + 0.55);
       drops.forEach((o) => { o.d.style.opacity = t >= T.pop ? (Math.sin(Math.PI * q) * 0.9).toFixed(3) : '0'; o.d.style.transform = 'translate(' + (BUB1[0] + Math.cos(o.a) * o.r * o3(q)).toFixed(1) + 'px,' + (BUB1[1] + Math.sin(o.a) * o.r * o3(q) + 80 * q * q).toFixed(1) + 'px) scale(' + (1 - 0.6 * q).toFixed(3) + ')'; });
@@ -135,11 +135,11 @@
 
     // ================================================================ card 1: „sebum” — the definition, the glasses enlarge it, a marker circles „prea mult”
     T.c1 = CUT[1];
-    const head1 = txt(C[1], 330, 'sebum', 'font-size:170px;line-height:1', T.c1 + B * 0.5, 'slam', { cls: 'ser' });
-    const def1 = txt(C[1], 560, '', 'font:500 52px/1.42 ' + SANS + ';white-space:normal;left:170px;width:740px;text-align:center;color:#2b3a38', T.c1 + B, 'rise');
-    def1.el.innerHTML = 'Glandele produc <span class="pm">prea mult</span> <span class="sb">sebum</span>, porii se înfundă, iar inflamația și bacteriile fac restul.';
-    const glasses = obj(C[1], 'glasses', 0, 0, 720, 600, 208);   // left lens: centre (159.5, 103.5), rx 100, ry 88 in the cut-out's pixels
-    const GK = 720 / 600, LC = [159.5 * GK, 103.5 * GK], LRX = 98 * GK, LRY = 86 * GK;
+    const head1 = txt(C[1], 420, 'sebum', 'font-size:170px;line-height:1', T.c1 + B * 0.5, 'slam', { cls: 'ser' });
+    const def1 = txt(C[1], 640, '', 'font:500 52px/1.78 ' + SANS + ';color:#2b3a38', T.c1 + B, 'rise');
+    def1.el.innerHTML = 'Glandele produc<br><span style="font-size:1.3em;font-weight:620;color:' + INK + '"><span class="pm">prea mult</span> <span class="sb">sebum,</span></span><br>porii se înfundă, iar inflamația<br>și bacteriile fac restul.';
+    const glasses = obj(C[1], 'glasses', 0, 0, 660, 600, 208);   // left lens: centre (159.5, 103.5), rx 100, ry 88 in the cut-out's pixels
+    const GK = 660 / 600, LC = [159.5 * GK, 103.5 * GK], LRX = 98 * GK, LRY = 86 * GK;
     const lens = mk(C[1], 'position:absolute;left:0;top:0;width:' + (2 * LRX) + 'px;height:' + (2 * LRY) + 'px;border-radius:50%;overflow:hidden;background:#f2f4f3');
     const lensIn = mk(lens, 'position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0');
     const mark1 = svg(C[1], 360, 130, '<path d="M30 70C20 30 120 14 200 16C290 18 344 40 336 74C328 108 230 122 160 118C80 112 24 96 40 56C50 34 90 22 130 18" fill="none" stroke="' + DEEP + '" stroke-width="8" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:0;top:0');
@@ -148,9 +148,9 @@
     cue(T.g0 + 0.35, 'tap', 0.55); ev(T.g0 + 0.35, 'drop'); cue(T.g1 + 0.1, 'shimmer_soft', 0.3); ev(T.g1 + 0.1, 'reveal'); for (let k = 0; k < 6; k++) cue(T.m1 + k * 0.08, 'grain', 0.3); ev(T.m1, 'step');
     C[1]._tick = (t) => {
       if (!sbR) {   // measure the words once the card is laid out
-        const cr = C[1].getBoundingClientRect(), k = cr.width / 1080 || 1, rel = (e) => { const r = e.getBoundingClientRect(); return { x: (r.left - cr.left) / k, y: (r.top - cr.top) / k, w: r.width / k, h: r.height / k }; };
+        const rel = (e) => ({ x: def1.el.offsetLeft + e.offsetLeft, y: def1.el.offsetTop + e.offsetTop, w: e.offsetWidth, h: e.offsetHeight });   // the layout, without the entrance's transform
         sbR = rel(def1.el.querySelector('.sb')); pmR = rel(def1.el.querySelector('.pm'));
-        const clone = def1.el.cloneNode(true); clone.classList.remove('tx'); clone.style.position = 'absolute'; clone.style.opacity = '1'; clone.style.transform = 'none'; lensIn.appendChild(clone); lens._clone = clone;
+        const clone = def1.el.cloneNode(true); clone.classList.remove('tx'); clone.style.position = 'absolute'; clone.style.width = '1080px'; clone.style.textAlign = 'center'; clone.style.whiteSpace = 'nowrap'; clone.style.filter = 'none'; clone.style.visibility = 'visible'; clone.style.opacity = '1'; clone.style.transform = 'none'; lensIn.appendChild(clone); lens._clone = clone;
       }
       // the glasses glide in from the right, the left lens settles over „sebum” and enlarges it
       const gin = ex(seg(t, T.g0, T.g0 + 0.5)), cx = sbR.x + sbR.w / 2, cy = sbR.y + sbR.h / 2 + 4;
@@ -159,7 +159,7 @@
       const M = 1 + 0.75 * sm(seg(t, T.g1 - 0.1, T.g1 + 0.35));
       lens.style.transform = 'translate(' + (gx + LC[0] - LRX).toFixed(2) + 'px,' + (gy + LC[1] - LRY).toFixed(2) + 'px) rotate(' + rot.toFixed(3) + 'deg)'; lens.style.opacity = clamp(gin * 3).toFixed(3); lens.style.zIndex = '2';
       lensIn.style.transform = 'translate(' + LRX + 'px,' + LRY + 'px) rotate(' + (-rot).toFixed(3) + 'deg) scale(' + M.toFixed(4) + ') translate(' + (-(gx + LC[0])).toFixed(2) + 'px,' + (-(gy + LC[1])).toFixed(2) + 'px)';
-      lens._clone.style.top = def1.el.style.top; lens._clone.style.left = '170px';
+      lens._clone.style.top = def1.el.style.top; lens._clone.style.left = '0px';
       mark1.style.transform = 'translate(' + (pmR.x + pmR.w / 2 - 180).toFixed(1) + 'px,' + (pmR.y + pmR.h / 2 - 66).toFixed(1) + 'px) scale(' + (pmR.w / 270).toFixed(3) + ',1)';
       mark1.querySelector('path').style.strokeDashoffset = (1 - io(seg(t, T.m1, T.m1 + 0.5))).toFixed(4);
       void head1;
@@ -232,11 +232,11 @@
     const note = obj(C[5], 'note', 236, 360, 608, 591, 848);
     const tapes = [[250, 372, -38], [770, 372, 36]].map(([x, y, r]) => { const d = mk(C[5], 'position:absolute;left:' + (x - 80) + 'px;top:' + (y - 26) + 'px;width:160px;height:52px;background:linear-gradient(180deg,rgba(250,247,238,.82),rgba(240,236,224,.78));box-shadow:0 2px 3px rgba(24,40,38,.12);clip-path:polygon(0 8%,4% 0,9% 10%,14% 0,20% 8%,80% 6%,86% 0,91% 9%,96% 0,100% 7%,100% 92%,95% 100%,90% 91%,84% 100%,78% 93%,20% 95%,14% 100%,9% 90%,4% 100%,0 92%)'); return { d, r }; });
     const nt = mk(C[5], 'position:absolute;left:0;top:0;width:1080px;height:1920px');
-    txt(nt, 520, 'Acasă:', 'font-size:120px;line-height:1;color:' + DEEP, TB(45.5), 'rise', { cls: 'ser' });
+    txt(nt, 520, 'Acasă:', 'left:310px;width:540px;text-align:left;font-size:120px;line-height:1;color:' + DEEP, TB(45.5), 'rise', { cls: 'ser' });
     const items = ['curățare blândă', 'hidratare', 'SPF'].map((s, k) => {
       const at = TB(46 + k * 0.5), y = 700 + k * 120;
-      const B0 = txt(nt, y, '<span style="display:inline-block;width:64px"></span>' + esc(s), 'font:600 60px/1.1 ' + SANS + ';color:' + INK, at, 'rise');
-      const ck = svg(nt, 60, 60, '<circle cx="30" cy="30" r="27" fill="' + TEAL + '"/><path d="M17 31l9 9 17-19" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:0;top:' + (y + 6) + 'px');
+      const B0 = txt(nt, y, esc(s), 'left:384px;width:460px;text-align:left;font:600 58px/1.1 ' + SANS + ';color:' + INK, at, 'rise');
+      const ck = svg(nt, 60, 60, '<circle cx="30" cy="30" r="27" fill="' + TEAL + '"/><path d="M17 31l9 9 17-19" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:308px;top:' + (y + 4) + 'px');
       return { B0, ck, at, s };
     });
     T.n0 = T.c5 + B * 0.5;
@@ -246,14 +246,13 @@
       setObj(note, (1 - a) * 80, (1 - a) * 420, -2 + (1 - a) * 8, 1, clamp(a * 3), 22 + (1 - a) * 90); note.im.style.transformOrigin = '304px 436px';
       nt.style.transform = 'translate(' + ((1 - a) * 80).toFixed(1) + 'px,' + ((1 - a) * 420).toFixed(1) + 'px) rotate(' + (-2 + (1 - a) * 8).toFixed(3) + 'deg)'; nt.style.transformOrigin = '540px 796px';
       tapes.forEach((q) => { const b = seg(t, q.at, q.at + 0.25); q.d.style.opacity = clamp(b * 4).toFixed(3); q.d.style.transform = 'rotate(' + q.r + 'deg) scale(' + (1.25 - 0.25 * ex(b)).toFixed(3) + ')'; });
-      items.forEach((q) => { if (!q.x) { const cr = nt.getBoundingClientRect(), k = cr.width / 1080 || 1, sp = q.B0.el.querySelector('span'); const r = sp.getBoundingClientRect(); q.x = (r.left - cr.left) / k; if (q.x > 0) q.ck.style.left = q.x + 'px'; }
-        const b = seg(t, q.at + 0.1, q.at + 0.45); q.ck.querySelector('path').style.strokeDashoffset = (1 - io(b)).toFixed(4); q.ck.style.opacity = clamp(b * 4).toFixed(3); q.ck.style.transform = 'scale(' + back(b, 2).toFixed(3) + ')'; });
+      items.forEach((q) => { const b = seg(t, q.at + 0.1, q.at + 0.45); q.ck.querySelector('path').style.strokeDashoffset = (1 - io(b)).toFixed(4); q.ck.style.opacity = clamp(b * 4).toFixed(3); q.ck.style.transform = 'scale(' + back(b, 2).toFixed(3) + ')'; });
     };
 
     // ================================================================ the camera: a fast vertical push to each card on its beat, then it holds
     const MD = 0.5;
     CUT.slice(1).forEach((c) => { cue(c, 'whoosh_cut', 0.6, { peak: true, prio: 4 }); R.event(c, 'cut'); cue(c + 0.36, 'pulse', 0.35); });
-    function camY(t) { let y = CY(0) + 230 * (1 - sm(seg(t, -0.3, T.pop))) * (t < T.pop ? 1 : 0); for (let k = 1; k < CUT.length; k++) y += GAP * R.cam.ease(t, CUT[k], MD); return y; }
+    function camY(t) { let y = CY(0) - 100 + 230 * (1 - sm(seg(t, -0.3, T.pop))) * (t < T.pop ? 1 : 0); for (let k = 1; k < CUT.length; k++) y += GAP * R.cam.ease(t, CUT[k], MD); return y; }
     let lastT = null;
     W.draw = (t) => {
       if (t === lastT) return; lastT = t;

@@ -61,6 +61,13 @@
    "effects": "nu: fiecare efect marchează o lovitură a piesei (punch-in, whip, split, rampă, flash o singură dată), nimic în afara bătăilor",
    "natural": "da: jumătățile reale una sub alta, la aceeași scară, cu o singură linie de text pe caz",
    "owner": "da: e cererea lui (montaj pe bas, agresiv, cazuri reale, nota de pe Google, logo-ul pe alb cu orașele)"
+  },
+  "render": {
+   "scroll": "da: 1,6 s de alb lăptos cu titlul catalogului („40 de cazuri.” pe 25,5, „Toate reale.” pe 26,5, punctul rose gold pe 27), apoi pe bătaia 29 sticla se curăță cu un punch-in și tremur pe cazul 02 (gușa, cea mai vizibilă schimbare)",
+   "serves": "da: zece cazuri reale, fiecare tăietură pe o lovitură măsurată (sync 9/9 tăieturi cu whoosh pe cadru, 15/15 intrări cu sunet), fiecare cu linia catalogului; finalul ține 2 s pe nota de pe Google, logo și orașe",
+   "effects": "nu: fiecare efect (whip, split, rampă de viteză, zoom-out, whip vertical, flash, ecranul în trei) e pe o lovitură; verificarea de flash dă un singur salt mare (tăieturile nu mai trec prin alb gol)",
+   "natural": "da, cu o limită: la 0,7-1,4 s pe caz, schimbarea se vede imediat la gușă și abdomen, dar mai greu la cazul periocular și în benzile mici din ecranul în trei; e un montaj de energie, nu de studiat cazurile",
+   "owner": "da: e ce a cerut (montaj agresiv pe bas, cazuri reale, nota reală, logo-ul negru pe alb cu „Timișoara · Arad”)"
   }
  },
  "musicFile": "owner-weongo",
