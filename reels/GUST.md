@@ -43,7 +43,7 @@ pe placul meu”).
 | 15.11 | `v2-demo-sfx` | refăcut: „mult mai clean, zoom insane, lumină, mișcare constantă, chenare 3D” | mișcare continuă de cameră, lumină, adâncime |
 | 15.11 | `v2-manifest-aratam` (fără voce, coridor 3D de cazuri reale, logo la final) | **„asta e perfect”** | o propoziție puternică + dovezi reale în mișcare 3D + final curat cu logo și orașele |
 | 15.11 | `v2-ems-intinsa` (colaj editorial cu statui, voce) | foarte bun; muzica puțin mai încet | colajul editorial cu obiecte clasice și o linie turcoaz merge |
-| 15.11 | `v2-crema-straturi` (voce, plonjare prin straturile pielii) | bun; muzica foarte puțin mai încet | — |
+| 15.11 | `v2-crema-straturi` (voce, plonjare prin straturile pielii) | bun; muzica foarte puțin mai încet | nimic nou de montaj |
 | 15.11 | `v2-suspans-hifu` (clepsidra, dezvăluire pe WE ON GO II) | „super nice”, dar: început neașteptat calm și catchy, apoi BUM în „honorable”; montaj mai agresiv la drop | principiile 1 și 3 |
 | 15.11 | `v2-chat-epilare` (conversație cu Nuki) | „foarte bună ideea”, dar: muzica pe versul „I need someone to keep me close”, montaj pe ritm, animații mai crazy, mai puțin text | principiile 2 și 5 |
 
