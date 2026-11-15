@@ -1,0 +1,67 @@
+{
+ "v": 2,
+ "id": "v2-birou-sebum",
+ "kind": "silent",
+ "rubric": "Ce nu-ți spune nimeni",
+ "theme": "brand-light",
+ "sound": "v3",
+ "hookHit": false,
+ "captions": false,
+ "nuki": false,
+ "title": "Acneea nu ține de igienă",
+ "music": "Training Season (live), piesa aleasă de proprietar",
+ "topic": "Tenul acneic: spălatul agresiv adesea înrăutățește lucrurile; acneea ține de echilibru",
+ "topicTag": "ten-acneic",
+ "hookType": "socant",
+ "sources": "v2/src/ten-problematic.html: „Acneea nu ține de igienă. Ține de echilibru.”; „Glandele produc prea mult sebum, porii se înfundă, iar inflamația și bacteriile fac restul. De aceea spălatul agresiv adesea înrăutățește lucrurile: pielea se apără producând și mai mult sebum.”; „Mai mult săpun nu e răspunsul. Echilibrul este.”; „Acasă: curățare blândă, hidratare și SPF. Restul îl facem noi.” (doar prima propoziție).",
+ "post": "Acneea nu ține de igienă. Ține de echilibru. Spălatul agresiv adesea înrăutățește lucrurile: pielea se apără producând și mai mult sebum. Acasă: curățare blândă, hidratare și SPF. #tenacneic #acnee #ingrijireaten #timisoara #arad",
+ "core": "desk-objects",
+ "concept": {
+  "who": "Femeile (și adolescentele lor) care își spală fața tot mai des și mai tare, pentru că acneea tot revine.",
+  "oneThing": "Spălatul agresiv adesea înrăutățește lucrurile: pielea se apără producând și mai mult sebum. Acneea ține de echilibru, nu de igienă.",
+  "tone": "Calm, luminos, deștept: un birou de designer în lumina dimineții, pe care obiectele obișnuite explică singure ideea.",
+  "formats": [
+   "(x-b) Colaj pe birou"
+  ],
+  "borrowed": [
+   {
+    "element": "Obiectele lucrează pe text: lentila ochelarilor mărește cuvântul, creionul taie și desenează bucla, un cerc de marker turcoaz închis",
+    "ref": "14 (colaj pe birou)",
+    "why": "privirea ajunge exact pe „igienă” tăiat, pe „sebum” mărit și pe bucla din jurul lui SEBUM: trei cuvinte, toată ideea"
+   },
+   {
+    "element": "Blocul-definiție de dicționar și împingerile verticale rapide cu blur, cu un puls pe fiecare carte nouă",
+    "ref": "14 (colaj pe birou)",
+    "why": "definiția e propoziția site-ului despre sebum (educativ, premium), iar fiecare idee nouă vine pe o bătaie, ca un deget care dă pagina"
+   },
+   {
+    "element": "Un început calm, neașteptat, care nu pare reclamă, și o tăietură pe lovitura piesei (principiul 1 din GUST.md)",
+    "ref": "verdictul la clepsidră (15.11) și referința 10 (montajul curat)",
+    "why": "un balon de săpun urcă încet de pe săpun, urmărit de un cerc de compas; se sparge exact pe lovitura de după intro-ul live, iar titlul iese din el; același balon revine la final în nivela cu bulă, pe „Echilibrul”"
+   }
+  ],
+  "notUsed": [
+   "Vocea: șase propoziții scurte se citesc mai repede decât se aud; filmul e condus de piesă și de obiecte",
+   "Lupa, statuia, gantera, cronometrul, avionul de hârtie și hârtia albă cu lumina din stânga ale colajului EMS: aici hârtie gri-deschis de desen tehnic, lumina din dreapta, obiecte în culori reale, majuscule condensate",
+   "Poze înainte/după: nu avem un caz de ten acneic în catalog și obiectele nu sunt niciodată dovadă",
+   "Prețul, numele protocoalelor și „Restul îl facem noi”: rămâne doar sfatul pentru acasă, fără ofertă",
+   "Markerul roșu al referinței: cercul și liniile sunt turcoaz închis",
+   "Nuki: biroul e al cuiva care explică, nu al mascotei"
+  ],
+  "track": {
+   "file": "owner-trainingseason",
+   "why": "intro-ul live care se stinge (7,65-10,1 s), apoi lovitura de la 10,1 s, pe care se sparge balonul; strofa întâi (fără bas plin) ține restul. Altă parte decât EMS (97,65 s), conversația (106,9 s) și cazul cu camera (177 s)."
+  },
+  "different": "Primul reel fără voce construit ca o demonstrație pe birou: un balon de săpun, nu o reclamă, în prima secundă; hârtie gri cu linii de construcție; obiectele în culorile lor (săpun alb, ochelari, creion rose gold, nivelă cu lichid turcoaz, foaie de carnețel lipită cu bandă); trecerile sunt împingeri verticale pe bătăi, nu drumul unei camere pe aceeași coală."
+ },
+ "hook": {
+  "say": "Acneea nu ține de igienă.",
+  "visual": { "type": "br-desk", "cam": "none" }
+ },
+ "end": { "type": "save", "hold": 24.4 },
+ "musicFile": "owner-trainingseason",
+ "musicStart": 7.6485,
+ "beat": { "bpm": 122.62 },
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Măsurat pe fișier: lovitura de după intro-ul live e la 10,095 s; bătăile locale la 6,085 + k × 0,4893 s (122,62 BPM). musicStart 7,6485 pune lovitura exact pe bătaia 5 a reel-ului (2,4465 s), pe spargerea balonului; tăieturile sunt pe bătăile 15, 23, 29, 36 și 44.",
+ "timeline": "0-2,45 s balonul urcă de pe săpun, cu cercul de compas; 2,45 lovitura: balonul se sparge, ACNEEA / nu ține de / igienă.; 3,9-4,9 creionul taie „igienă” (basul revine la ~4,95); 5,4 „ține de echilibru.”; 7,34 împingere: definiția sebumului, ochelarii măresc „sebum”, cercul pe „prea mult”; 11,25 SPĂLATUL AGRESIV, săpunul freacă, spuma; 14,19 pielea se apără producând și mai mult SEBUM, creionul desenează bucla; 17,61 MAI MULT SĂPUN nu e răspunsul, nivela se îndreaptă, bula se așază la mijloc, Echilibrul este.; 21,53 foaia de carnețel cu banda: Acasă: curățare blândă, hidratare, SPF; finalul ținut ~3 s."
+}

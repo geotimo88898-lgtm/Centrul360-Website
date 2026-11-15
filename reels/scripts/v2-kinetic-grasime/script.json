@@ -101,7 +101,8 @@
     "type": "kn-aim",
     "cam": "none",
     "tr": "kn-d"
-   }
+   },
+   "pause": 0.45
   }
  ],
  "payoff": [
@@ -142,7 +143,8 @@
     "type": "kn-weeks",
     "cam": "none",
     "tr": "kn-h"
-   }
+   },
+   "pause": 0.4
   }
  ],
  "outro": {

@@ -212,8 +212,8 @@
     const sub5 = block(s5.el, 1200, 'trec prin piele, fără s-o afecteze', { li: 5, size: 52, weight: 560, color: MUTE });
     const FOC = [540, 794];
     const cone = svg(s5.el, 1080, 1920, '<defs><linearGradient id="kn-cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + TEAL + '" stop-opacity=".0"/><stop offset=".35" stop-color="' + TEAL + '" stop-opacity=".55"/><stop offset="1" stop-color="' + TEAL + '" stop-opacity=".9"/></linearGradient></defs>' +
-      [-3, -2, -1, 0, 1, 2, 3].map((k) => '<path class="ray" d="M' + (540 + k * 74) + ' 420L' + FOC[0] + ' ' + FOC[1] + '" stroke="url(#kn-cg)" stroke-width="' + (k ? 3 : 4) + '" fill="none" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>').join('') +
-      [0, 1, 2].map(() => '<path class="wf" d="" fill="none" stroke="' + TEAL + '" stroke-width="4" stroke-linecap="round"/>').join(''), 'left:0;top:0');
+      [-3, -2, -1, 0, 1, 2, 3].map((k) => '<path class="ray" d="M' + (540 + k * 74) + ' 420L' + FOC[0] + ' ' + FOC[1] + '" stroke="url(#kn-cg)" stroke-width="' + (k ? 4.5 : 6) + '" fill="none" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>').join('') +
+      [0, 1, 2].map(() => '<path class="wf" d="" fill="none" stroke="' + TEAL + '" stroke-width="6" stroke-linecap="round"/>').join(''), 'left:0;top:0');
     const rays = [...cone.querySelectorAll('.ray')], wfs = [...cone.querySelectorAll('.wf')];
     const focus5 = mk(s5.el, 'position:absolute;left:' + (FOC[0] - 26) + 'px;top:' + (FOC[1] - 26) + 'px;width:52px;height:52px;border-radius:50%;background:' + ROSE + ';box-shadow:0 0 0 10px rgba(251,227,217,.55),0 0 46px 14px rgba(234,181,165,.55)');
     const shim5 = mk(s5.el, 'position:absolute;left:0;top:500px;width:240px;height:150px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.95),rgba(255,255,255,0));opacity:0');
@@ -228,7 +228,7 @@
       const r = io(seg(t, T.ultra, T.land)); rays.forEach((p, k) => { p.style.strokeDashoffset = (1 - io(seg(t, T.ultra + Math.abs(k - 3) * 0.05, T.land))).toFixed(4); });
       // three wavefronts travel down the cone, through the skin (which stays as it is) into the fat
       wfs.forEach((p, k) => { const ph = ((t - T.ultra) * 0.9 + k / 3) % 1, on = t > T.ultra && t < S[6], y = lerp(430, FOC[1], ph), wdt = lerp(250, 14, (y - 420) / (FOC[1] - 420));
-        p.setAttribute('d', on ? 'M' + (540 - wdt) + ' ' + (y - 16) + 'Q540 ' + (y + 16) + ' ' + (540 + wdt) + ' ' + (y - 16) : ''); p.style.opacity = on ? (Math.sin(Math.PI * ph) * 0.8 * r).toFixed(3) : '0'; });
+        p.setAttribute('d', on ? 'M' + (540 - wdt) + ' ' + (y - 16) + 'Q540 ' + (y + 16) + ' ' + (540 + wdt) + ' ' + (y - 16) : ''); p.style.opacity = on ? (Math.sin(Math.PI * ph) * (0.35 + 0.65 * r)).toFixed(3) : '0'; });
       const sh = seg(t, T.prin - 0.05, T.prin + 0.6); shim5.style.opacity = (Math.sin(Math.PI * sh) * 0.85).toFixed(3); shim5.style.transform = 'translateX(' + lerp(120, 760, io(sh)).toFixed(1) + 'px)';
       const f = seg(t, T.land - 0.12, T.land + 0.25); focus5.style.opacity = clamp(f * 3).toFixed(3); focus5.style.transform = 'scale(' + (back(f, 2.2) * (1 + 0.08 * Math.sin(t * 7))).toFixed(4) + ')';
       // the letters around the focus warm up (turquoise), nothing else changes
@@ -242,16 +242,19 @@
     block(s6.el, 380, 'celulele din zona tratată', { li: 6, size: 60, weight: 520 });
     const gr6 = label(s6.el, 520, [...'grăsime'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:900 198px/1 ' + SANS + ';letter-spacing:-.045em;color:' + INK);
     const lts6 = [...gr6.querySelectorAll('.lt')];
+    // the focus point carried through the light: it sits in the middle of the word until „distruse”, then the thinning spreads from it
+    lts6[3].style.position = 'relative'; const dot6 = mk(lts6[3], 'position:absolute;left:50%;top:56%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:' + ROSE + ';box-shadow:0 0 0 8px rgba(251,227,217,.5),0 0 40px 12px rgba(234,181,165,.5)');
     block(s6.el, 800, 'sunt *distruse*', { li: 6, size: 70, weight: 520, kem: 2.3 });
     block(s6.el, 1140, 'corpul le elimină', { li: 6, size: 64, weight: 560 });
     block(s6.el, 1232, 'în săptămânile următoare', { li: 6, size: 52, weight: 520, color: MUTE });
     T.dis = wt(6, /^distruse/, 1.6); T.elim = wt(6, /^elimină/, 2.4);
-    const parts6 = []; for (let k = 0; k < 26; k++) { const p = mk(s6.el, 'position:absolute;width:12px;height:12px;border-radius:50%;background:' + (k % 3 ? TEAL : '#5fd4c6') + ';opacity:0'); parts6.push({ p, x: 230 + R.rnd(k, 3) * 620, y: 560 + R.rnd(k, 5) * 200, d: 0.6 + R.rnd(k, 7) * 0.9, s: 0.5 + R.rnd(k, 9) }); }
+    const parts6 = []; for (let k = 0; k < 40; k++) { const p = mk(s6.el, 'position:absolute;width:18px;height:18px;border-radius:50%;background:' + (k % 3 ? TEAL : '#5fd4c6') + ';opacity:0'); parts6.push({ p, x: 230 + R.rnd(k, 3) * 620, y: 560 + R.rnd(k, 5) * 200, d: 0.6 + R.rnd(k, 7) * 0.9, s: 0.5 + R.rnd(k, 9) }); }
     cue(T.dis, 'shimmer_soft', 0.45); ev(T.dis + 0.3, 'step'); for (let k = 0; k < 7; k++) cue(T.dis + 0.06 + Math.abs(k - 3) * 0.07, 'tick_soft', 0.22);
     cue(T.elim, 'sand_flow', 0.3); ev(T.elim, 'step'); ev(T.elim + 0.9, 'step');
     s6.ticks.push((t) => {
       weightOf(lts6, (k) => lerp(900, 100, io(seg(t, T.dis + Math.abs(k - 3) * 0.07, T.dis + Math.abs(k - 3) * 0.07 + 0.5))));
       gr6.style.opacity = ex(seg(t, S[6] - 0.02, S[6] + 0.3)).toFixed(3);
+      const dg = seg(t, T.dis, T.dis + 0.35); dot6.style.opacity = (1 - dg).toFixed(3); dot6.style.transform = 'scale(' + ((1 + 0.1 * Math.sin(t * 7)) * (1 + 1.2 * dg)).toFixed(4) + ')';
       parts6.forEach((q) => { const a = seg(t, T.elim + q.d * 0.4, T.elim + q.d * 0.4 + 1.4); q.p.style.opacity = (Math.sin(Math.PI * a) * 0.8).toFixed(3); q.p.style.transform = 'translate(' + (q.x + Math.sin(a * 3 + q.x) * 14).toFixed(1) + 'px,' + (q.y - 230 * o3(a)).toFixed(1) + 'px) scale(' + (q.s * (1 - 0.6 * a)).toFixed(3) + ')'; });
     });
 
@@ -277,6 +280,7 @@
     block(s8.el, 380, 'diferența se vede', { li: 8, size: 66, weight: 560 });
     block(s8.el, 470, 'în general', { li: 8, size: 50, weight: 520, color: MUTE });
     T.sase = wt(8, /^șase/, 1.3); T.opt = wt(8, /^opt/, 1.8); T.sapt = wt(8, /^săptămâni/, 2.1);
+    const ghost8 = label(s8.el, 580, '6-8', 'font:900 300px/1 ' + SANS + ';letter-spacing:-.05em;color:transparent;-webkit-text-stroke:3px rgba(20,165,150,.35)'); ghost8.classList.remove('tx'); ghost8.style.position = 'absolute'; ghost8.style.left = '0'; ghost8.style.width = '1080px'; ghost8.style.textAlign = 'center';
     const num8 = label(s8.el, 580, '6-8', 'font:900 300px/1 ' + SANS + ';letter-spacing:-.05em;color:' + INK + ';opacity:0');
     block(s8.el, 950, '*săptămâni*', { li: 8, size: 140 });
     const TL = { x0: 190, x1: 890, y: 1240 }, tl = mk(s8.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px');
@@ -291,6 +295,7 @@
       ticks8.forEach((q) => { const a = seg(t, q.at, q.at + 0.3); q.tk.style.opacity = q.lb.style.opacity = ex(a).toFixed(3); q.tk.style.transform = 'scaleY(' + ex(a).toFixed(3) + ')'; const hi = q.k >= 6 && t > T.opt ? 1 : 0; q.lb.style.color = hi ? DEEP : MUTE; q.lb.style.fontWeight = hi ? '800' : '600'; });
       seg8.style.transform = 'scaleX(' + io(seg(t, T.sase - 0.05, T.opt + 0.2)).toFixed(4) + ')'; seg8.style.opacity = t > T.sase - 0.06 ? '1' : '0';
       const n = seg(t, T.sase - 0.08, T.sase + 0.45); num8.style.opacity = ex(n).toFixed(3); num8.style.transform = 'scale(' + (2.0 - 1.0 * ex(n)).toFixed(4) + ')'; num8.style.filter = n < 1 ? 'blur(' + ((1 - ex(n)) * 22).toFixed(2) + 'px)' : '';
+      const gh = seg(t, S[8] + 0.3, S[8] + 0.9); ghost8.style.opacity = (sm(gh) * (1 - ex(n))).toFixed(3); ghost8.style.transform = 'scale(' + (1.04 - 0.04 * sm(gh) + 0.01 * Math.sin(t * 2)).toFixed(4) + ')';
     });
 
     // ================================================================ 9: „Trimite-l prietenei care crede că e doar lipsă de voință.”

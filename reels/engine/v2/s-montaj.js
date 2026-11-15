@@ -217,16 +217,20 @@
     // ---- sound and events, to the frame (the premium set, by category). The song carries the bass; the effects mark the cuts.
     const ev = (t, kind) => R.event(t, kind);
     ctx.sfx(0.02, 'impact', 0.14, { prio: 4 }); ctx.sfx(0.0, 'tick_soft', 0.55); ev(0, 'write'); ctx.sfx(T('26.5'), 'tick_soft', 0.5); ev(T('26.5'), 'write'); ctx.sfx(T('27'), 'dot', 0.6); ev(T('27'), 'motif');
-    ctx.sfx(tBoom - 0.34, 'riser_soft', 0.45); ctx.sfx(tBoom - 0.02, 'suck_in', 0.6, { prio: 4, peak: true });
-    ctx.sfx(tBoom, 'hit_deep', 1, { prio: 5 }); ctx.sfx(tBoom, 'whoosh_cut', 0.5, { prio: 3, peak: true }); ev(tBoom, 'cut'); ev(tBoom, 'slam'); ctx.sfx(tBoom + 0.04, 'tick_soft', 0.35);
-    const cutS = { whip: ['whoosh_cut', 0.75], split: ['tap', 0.7], zoomout: ['whoosh_through', 0.6], whipv: ['whoosh_cut', 0.7], flash: ['hit_deep', 1], punch: ['whoosh_cut', 0.7] };
-    SHOTS.slice(1).forEach(([t0, , how]) => { const [cat, g] = cutS[how]; ctx.sfx(t0, cat, g, { prio: 4, peak: /whoosh/.test(cat) }); if (!/whoosh/.test(cat)) ctx.sfx(t0, 'whoosh_cut', 0.4, { prio: 3, peak: true }); ev(t0, 'cut'); ev(t0, 'slam'); ctx.sfx(t0 + 0.05, 'tick_soft', 0.3); });
-    ctx.sfx(seq[2] + 0.05, 'tap', 0.55); // the split: the second band lands
-    ctx.sfx(seq[3] - 0.32, 'riser_soft', 0.5); ctx.sfx(seq[5] - 0.42, 'riser_soft', 0.6); ctx.sfx(seq[5] - 0.02, 'suck_in', 0.55, { prio: 4, peak: true });
-    ctx.sfx(seq[5] + 0.04, 'shimmer_soft', 0.8, { prio: 4 }); ev(seq[5], 'reveal');
-    TRIO.forEach((t0, j) => { ctx.sfx(t0, j ? 'tap' : 'whoosh_cut', j ? 0.85 : 0.7, { prio: 4, peak: !j }); if (!j) ctx.sfx(t0, 'tap', 0.8); ev(t0, j ? 'panel' : 'cut'); ev(t0, 'slam'); ctx.sfx(t0 + 0.07, 'tick_soft', 0.3); });
-    ctx.sfx(tEnd, 'swoosh_end', 0.7, { prio: 4, peak: true }); ev(tEnd, 'cut'); ctx.sfx(tEnd + 0.01, 'tap', 0.6); ev(tEnd, 'slam'); ctx.sfx(tEnd + 0.12, 'tick_soft', 0.4);
-    ctx.sfx(tLogo, 'tap', 0.55); ev(tLogo, 'slam'); ctx.sfx(tLogo + 0.06, 'shimmer_soft', 0.45); ctx.sfx(tLogo + 0.07, 'dot', 0.5); ev(tLogo + 0.2, 'glow');
+    // each cut: a whoosh whose peak is on the cut (prio 5) and, on the big ones, the deep hit two frames into the move
+    // (mix.py keeps one cue per 70 ms); the ticks of the labels never thin out
+    const cut = (t0, cat, g, hit) => { ctx.sfx(t0, cat, g, { prio: 5, peak: true }); if (hit) ctx.sfx(t0 + 0.072, 'hit_deep', hit, { prio: 5 }); ev(t0, 'cut'); ev(t0, 'slam'); ctx.sfx(t0 + 0.15, 'tick_soft', 0.3); };
+    ctx.sfx(tBoom - 0.36, 'riser_soft', 0.45);
+    cut(tBoom, 'suck_in', 0.6, 1);
+    cut(seq[1], 'whoosh_cut', 0.75, 0);
+    cut(seq[2], 'whoosh_cut', 0.5, 0); ctx.sfx(seq[2] + 0.02, 'tap', 0.65); ctx.sfx(seq[2] + 0.07, 'tap', 0.55); // the split: each band lands
+    ctx.sfx(seq[3] - 0.34, 'riser_soft', 0.5); cut(seq[3], 'whoosh_through', 0.6, 0);
+    cut(seq[4], 'whoosh_cut', 0.7, 0);
+    ctx.sfx(seq[5] - 0.44, 'riser_soft', 0.6); cut(seq[5], 'suck_in', 0.6, 1); ctx.sfx(seq[5] + 0.16, 'shimmer_soft', 0.8, { prio: 4 }); ev(seq[5], 'reveal');
+    cut(TRIO[0], 'whoosh_cut', 0.7, 0); ctx.sfx(TRIO[0] + 0.02, 'tap', 0.8); ctx.sfx(TRIO[1], 'tap', 0.85); ev(TRIO[1], 'panel'); ctx.sfx(TRIO[2], 'tap', 0.85); ev(TRIO[2], 'panel');
+    cut(seq[9], 'whoosh_cut', 0.7, 0.55);
+    ctx.sfx(tEnd, 'swoosh_end', 0.7, { prio: 5, peak: true }); ev(tEnd, 'cut'); ctx.sfx(tEnd + 0.03, 'tap', 0.6); ev(tEnd, 'slam'); ctx.sfx(tEnd + 0.12, 'tick_soft', 0.4);
+    ctx.sfx(tLogo, 'tap', 0.55); ev(tLogo, 'slam'); ctx.sfx(tLogo + 0.08, 'dot', 0.5); ctx.sfx(tLogo + 0.2, 'shimmer_soft', 0.45); ev(tLogo + 0.2, 'glow');
     ctx.sfx(T('51'), 'tick_soft', 0.3); ev(T('51'), 'glow');
     ctx.focus(logo);
     R.montaj = { T, SHOTS, TRIO, tEnd, tLogo };
