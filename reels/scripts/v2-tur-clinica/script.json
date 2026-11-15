@@ -1,0 +1,244 @@
+{
+ "v": 2,
+ "id": "v2-tur-clinica",
+ "kind": "brand",
+ "rubric": "Ce se întâmplă de fapt",
+ "theme": "brand-light",
+ "sound": "v3",
+ "hookHit": false,
+ "captions": false,
+ "nuki": false,
+ "title": "POV: prima ta consultație.",
+ "topic": "POV: prima ta consultație la Centrul360, un tur prin clinică în fotografii reale, cu pașii consultației spuși exact ca pe site",
+ "post": "POV: prima ta consultație. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat. Timișoara · Arad.",
+ "ctaType": "none",
+ "sources": "v2/src/index.html, întrebarea „Consultația este gratuită?”: „Da, prima consultație este gratuită și fără obligații. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat.” (cei trei pași de pe ecran, în ordinea și cu cuvintele site-ului); v2/src/timisoara.html și arad.html: „Consultația inițială e gratuită și durează 30 de minute.” („30 de minute.”); Nuki cu fișa: index.html, „Planul tău e scris doar pentru tine. Eu țin fișa.” (doar poza, fără replică). Pozele: brand_asset/g-ar-2 (orhideea și logo-ul, Arad), g-tm-1 (recepția, Timișoara), g-ar-9 (cele două scaune, Arad), g-tm-sala (sala, Timișoara), g-ar-5 (patul în lumina ferestrei, Arad), g-tm-aparate, g-tm-laser, g-tm-810, g-tm-monstera, g-tm-fiole (Timișoara); reale, nemodificate ca imagine: doar alb-negru, încadrare și adâncime (hărțile de adâncime în depth/, făcute cu engine/depth.py, Depth Anything V2 small). Fără preț, fără „gratuită” pe ecran (regula din README: fără „consultație gratuită” în reels).",
+ "concept": {
+  "who": "Femeia din Timișoara sau Arad care se gândește de ceva vreme la un tratament, dar amână prima vizită pentru că nu știe ce o așteaptă acolo.",
+  "oneThing": "Prima consultație e simplă și liniștită: intri, vorbim despre ce vrei tu, ne uităm la zonă și pleci cu un plan făcut pentru tine.",
+  "tone": "Calm și neașteptat în prima secundă (o petală, un logo în ceață), apoi pielea de găină pe drop: camera intră în clinică și merge prin ea pe ritm; o respirație în pauza piesei; final curat pe alb.",
+  "formats": [
+   "Camera (referința 15, farul): fiecare poză reală tăiată în adâncime, cu mișcări care pornesc pe bătaie, fac repede drumul și stau",
+   "(viii) Explicația în blocuri: cei trei pași numerotați ai consultației, câte unul pe ecran"
+  ],
+  "principles": "GUST 1 (început calm, hipnotic, care nu pare reclamă: macro pe o petală, logo-ul în ceață în spate, apoi BUM pe drop), 2 (fiecare tăietură și fiecare mișcare pe o lovitură măsurată a piesei; momentul calm din mijloc cade pe pauza de o măsură a piesei), 3 (agresiv la cele două drop-uri: zbor prin logo, punch-in, tremur; restul curat), 4 (camera are intenție: pornește pe bătaie, face repede drumul, alunecă și stă; straturile se mișcă după adâncime), 5 (trei pași, câte două rânduri), 6 (alb, turcoaz, alb-negru cu lumină turcoaz, logo-ul negru pe alb), 7 (doar fotografiile reale ale clinicii). Influențat de „asta e perfect” la manifest (final curat cu logo și orașele) și de verdictul pe suspans (început calm, apoi BUM).",
+  "borrowed": [
+   {
+    "element": "Fiecare poză reală tăiată în adâncime (hartă de adâncime reală), cu paralaxă, dolly zoom și focus care trece de pe un plan pe altul",
+    "ref": "15 (farul) și (iii) eroul aparatului: tratamentul 2.5D",
+    "why": "o poză plată mărită nu e mișcare; cu adâncimea, privitoarea simte că pășește prin clinică, exact ce promite un POV"
+   },
+   {
+    "element": "Pașii numerotați, câte unul pe ecran, sub poză",
+    "ref": "(viii) explicația în blocuri",
+    "why": "consultația devine trei pași simpli și cunoscuți dinainte; frica de necunoscut e motivul pentru care se amână prima vizită"
+   },
+   {
+    "element": "Bucla logo: începe pe logo-ul real din clinică, în ceață, și se termină pe logo, clar, negru pe alb",
+    "ref": "(xii) logo-ancora și v2-manifest-aratam",
+    "why": "logo-ul din perete e ușa prin care intri; la final e semnătura, cu cele două orașe"
+   }
+  ],
+  "notUsed": [
+   "Vocea: tururile POV se citesc din imagine, iar piesa duce ritmul",
+   "Cuvântul „gratuită” și orice preț: regula reels-urilor (fără „consultație gratuită”), chiar dacă site-ul o spune",
+   "Etichete cu orașul pe fiecare poză: ar fi încă un rând de citit; orașele apar o dată, la final",
+   "Nuki ca ghid al turului: apare o singură dată, mic, cu fișa, la pasul cu planul",
+   "Persoane în cadre (cliente, echipa): nu avem poze cu acordul lor pentru asta; clinica vorbește singură",
+   "Culorile reale ale pozelor: orhideea și florile sunt roz aprins, iar reels-urile noastre nu au roz dulceag; alb-negru cu lumină turcoaz"
+  ],
+  "track": {
+   "file": "owner-toomuch",
+   "why": "„Too Much For Me” are o a doua pauză fără bas (103,3-112,9 s), un drop la 112,98 s și apoi, după 11 bătăi, o pauză de o măsură în care tace toba (118,6-120,5 s): exact forma turului (liniște, intrare, pași, o respirație, al doilea val, final). Partea asta nu e folosită de niciun reel (v2-caz-camera folosește prima pauză și drop-ul de la 45 s)."
+  },
+  "different": "Primul reel care se plimbă prin clinică: fotografii reale cu adâncime adevărată (hărți de adâncime calculate, nu straturi decupate de mână), un singur cadru editorial (poza sus, care se topește în alb, pasul jos) și o pauză de respirație în mijlocul piesei."
+ },
+ "critique": {
+  "storyboard": {
+   "scroll": "da: o petală în alb-negru, aproape, cu un logo în ceață în spate și „POV: prima ta consultație.”; focusul trece pe logo, apoi camera zboară prin el pe drop",
+   "serves": "da: fiecare poză e un loc prin care treci la prima vizită, iar fiecare pas e scris exact ca pe site",
+   "effects": "nu: adâncimea e chiar ideea (pășești prin clinică); un singur zbor prin lumină, la intrare",
+   "natural": "da: puțin text, câte o idee pe ecran, o pauză când tace piesa",
+   "owner": "da: e clinica lui, în alb-negru cu turcoaz, pe piesa lui, cu logo-ul negru pe alb la final"
+  },
+  "render": {
+   "scroll": "de completat după randare",
+   "serves": "de completat după randare",
+   "effects": "de completat după randare",
+   "natural": "de completat după randare",
+   "owner": "de completat după randare"
+  }
+ },
+ "musicFile": "owner-toomuch",
+ "musicStart": 110.1457,
+ "beat": {
+  "bpm": 127.7
+ },
+ "musicNote": "„Too Much For Me”, a doua pauză fără bas și drop-ul ei: 110,15-127,6 s din piesă. Măsurat pe fișier (banda 30-110 Hz, la 2 ms, începutul fiecărei lovituri de bas): drop-ul la 112,979 s, apoi o lovitură la fiecare 0,46984 s (127,7 BPM; 112,976, 113,440, 113,908, … 118,188), toba tace patru bătăi (118,65-120,0 s) și revine la 120,484 s. musicStart 110,1457 pune drop-ul pe cadrul 85 (2,833 s); bătaia k e la 2,8333 + k × 0,46984 s (k = -6 … 31). Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "hook": {
+  "say": "POV: prima ta consultație.",
+  "visual": {
+   "type": "tur",
+   "cam": "none",
+   "b0": 2.8333,
+   "per": 0.46984,
+   "shots": {
+    "hook": {
+     "img": "g-ar-2",
+     "size": [
+      1200,
+      900
+     ],
+     "lv": [
+      0.16,
+      0.81,
+      0.9
+     ]
+    },
+    "rec": {
+     "img": "g-tm-1",
+     "size": [
+      1200,
+      900
+     ],
+     "lv": [
+      0.07,
+      0.53,
+      0.86
+     ]
+    },
+    "chairs": {
+     "img": "g-ar-9",
+     "size": [
+      1200,
+      900
+     ],
+     "lv": [
+      0.05,
+      0.71,
+      0.9
+     ]
+    },
+    "room": {
+     "img": "g-tm-sala",
+     "size": [
+      1200,
+      1600
+     ],
+     "lv": [
+      0.03,
+      0.6,
+      0.88
+     ]
+    },
+    "light": {
+     "img": "g-ar-5",
+     "size": [
+      1200,
+      900
+     ],
+     "lv": [
+      0.07,
+      0.61,
+      1.0
+     ]
+    },
+    "m1": {
+     "img": "g-tm-aparate",
+     "size": [
+      1200,
+      1600
+     ],
+     "lv": [
+      0.02,
+      0.72,
+      0.95
+     ]
+    },
+    "m2": {
+     "img": "g-tm-laser",
+     "size": [
+      1200,
+      1600
+     ],
+     "lv": [
+      0.03,
+      0.66,
+      0.9
+     ]
+    },
+    "m3": {
+     "img": "g-tm-810",
+     "size": [
+      1200,
+      1600
+     ],
+     "lv": [
+      0.18,
+      0.58,
+      0.93
+     ]
+    },
+    "m4": {
+     "img": "g-tm-monstera",
+     "size": [
+      1600,
+      1200
+     ],
+     "lv": [
+      0.14,
+      0.5,
+      0.94
+     ]
+    },
+    "vials": {
+     "img": "g-tm-fiole",
+     "size": [
+      1600,
+      1200
+     ],
+     "lv": [
+      0.03,
+      0.49,
+      0.96
+     ]
+    }
+   },
+   "hook": [
+    "POV:",
+    "prima ta",
+    "consultație."
+   ],
+   "steps": [
+    {
+     "n": "01",
+     "a": "Discutăm",
+     "b": "obiectivele tale."
+    },
+    {
+     "n": "02",
+     "a": "Evaluăm",
+     "b": "zona."
+    },
+    {
+     "n": "03",
+     "a": "Îți recomandăm",
+     "b": "un plan personalizat."
+    }
+   ],
+   "pause": [
+    "30",
+    "de minute."
+   ],
+   "nukiImg": "mascota/ipostaze/fisa.webp",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 15.704
+ }
+}
