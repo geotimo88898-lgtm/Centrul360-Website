@@ -10,6 +10,45 @@
  "topic": "Manifestul: nu promitem, arătăm rezultate reale",
  "post": "Nu promitem. Îți arătăm. Cliente reale, fotografiate la noi, înainte și după tratament. Rezultatele pot varia de la o persoană la alta.",
  "sources": "v2/src/index.html (titlul „Nu promitem. Îți arătăm.”, „Clientele noastre, fotografiate la noi, înainte și după tratament.”, „5,0 · 300+ recenzii Google”, „5,0 pe Google”); v2/src/catalog-rezultate.html (fiecare caz: tratamentul, orașul și ședințele exact cum sunt în catalog; „Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta.”, „Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.”); pozele: brand_asset/catalog (reale, necrpate, neretușate, în culorile lor).",
+ "concept": {
+  "who": "Femeile din Timișoara și Arad care au auzit destule promisiuni în estetică și nu mai cred pe cuvânt; vor să vadă.",
+  "oneThing": "La Centrul360 nu ți se promite nimic: ți se arată rezultatele reale ale clientelor.",
+  "tone": "Sigur pe sine și curat; pielea de găină la intrarea în coridor, apoi liniște și o respirație ținută pe un singur caz.",
+  "formats": [
+   "(v) Manifestul tipografic",
+   "(ii) Filmul de brand: tunelul 3D"
+  ],
+  "borrowed": [
+   {
+    "element": "Punctul de lumină rose gold care scrie un rând mic, apoi tipografia mare pe lovitura muzicii",
+    "ref": "10 (montajul curat, punctul-ghid) și (v) manifestul",
+    "why": "mic față de mare spune chiar fraza: toată lumea promite (mic, pe alb), noi nu (mare, pe drop); punctul devine apoi punctul de la finalul fiecărei afirmații și bulina dintre orașe"
+   },
+   {
+    "element": "Tunelul 3D prin care zboară camera, cu blur de mișcare și adâncime de câmp",
+    "ref": "(ii) filmul de brand (tunelul de ecrane)",
+    "why": "pereții sunt dovada: 32 de cazuri reale pe lângă care treci; viteza arată câte sunt, frâna pe unul singur arată că fiecare e un om și un rezultat care se poate citi"
+   },
+   {
+    "element": "Finalul ținut pe logo, negru pe alb, cu orașele",
+    "ref": "13 (logo-ancora) și (v)",
+    "why": "după dovadă vine semnătura, o singură dată, liniștit"
+   }
+  ],
+  "notUsed": [
+   "Vocea: titlul site-ului se citește singur, iar ritmul îl duce piesa",
+   "Nuki: aici vorbesc pozele reale, nu mascota",
+   "Fundalul care alternează alb / turcoaz pe fiecare cuvânt (din manifestul de referință): ar fi rupt mișcarea continuă a camerei",
+   "Tăieturile: tot filmul e o singură mișcare de cameră, de la primul cadru până la logo",
+   "Pozele nuanțate în turcoaz: înainte/după rămân în culorile lor, neretușate, ca rezultatul să fie cinstit",
+   "Contoare și cifre animate: singura cifră e nota de pe Google, scrisă o dată, mic"
+  ],
+  "track": {
+   "file": "owner-free",
+   "why": "energia ei constantă duce zborul; în loc de începutul piesei (folosit de două reels) am luat intrarea în partea cea mai plină: patru bătăi din pauza fără bas, pentru rândul mic, apoi drop-ul exact pe „Noi”"
+  },
+  "different": "Primul reel într-o lume 3D adevărată (WebGL: perspectivă, reflexii în podea, blur de mișcare și adâncime de câmp reale), primul fără nicio tăietură și singurul a cărui semnătură e plonjarea camerei printr-o literă."
+ },
  "musicFile": "owner-free",
  "musicStart": 152.063,
  "beat": {
@@ -236,30 +275,6 @@
      "img": "cazul-40-rf-sculpt-tm-3.webp",
      "title": "RF Sculpt",
      "meta": "Timișoara · 6 ședințe"
-    },
-    {
-     "n": 13,
-     "img": "cazul-13-liposonix-ems.webp",
-     "title": "Liposonix + EMS",
-     "meta": "Timișoara · 1 ș. Liposonix + 1 ș. EMS"
-    },
-    {
-     "n": 32,
-     "img": "cazul-32-facial-restart-arad-4.webp",
-     "title": "Facial Restart",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 8,
-     "img": "cazul-08-pachet-mini-belly.webp",
-     "title": "Pachet Mini Belly",
-     "meta": "Timișoara · 1 ș. Liposonix + 4 ș. EMS"
-    },
-    {
-     "n": 3,
-     "img": "cazul-03-hifu-gusa-tm.webp",
-     "title": "HIFU gușă",
-     "meta": "Timișoara · 1 ședință"
     }
    ]
   }

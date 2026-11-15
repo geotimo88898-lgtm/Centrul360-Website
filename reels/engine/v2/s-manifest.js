@@ -53,7 +53,8 @@ void main() {
 precision highp float;
 uniform sampler2D uTex;
 uniform vec2 uSize;
-uniform float uRad, uSoftPx, uAlpha, uShade, uMirror, uFade, uNear, uF, uVz;
+uniform float uRad, uSoftPx, uAlpha, uShade, uMirror, uFade, uNear, uF;
+uniform vec4 uCamS;
 uniform vec4 uTint;
 uniform vec3 uFogC, uFogP, uDof, uGlowC;
 uniform vec4 uSheen, uFrost, uFrostR;
@@ -62,7 +63,9 @@ out vec4 o;
 void main() {
   float d = max(vD, 1.);
   // the gap between two sub-frames here, in px: the lens (depth of field), the camera's own travel, the object's own move
-  float sp = length(vec3(uDof.x * abs(1. / d - uDof.y), uDof.z, length(gl_FragCoord.xy - vec2(540., 960.)) * uVz / d));
+  vec2 rpx = gl_FragCoord.xy - vec2(540., 960.);
+  vec2 mv = rpx * (uCamS.z / d) - uF * uCamS.xy / d + vec2(rpx.y, -rpx.x) * uCamS.w; // forward travel, sideways travel, roll
+  float sp = length(vec3(uDof.x * abs(1. / d - uDof.y), uDof.z, length(mv)));
   float bias = log2(max(1., sp));
   vec2 p = (vUv - .5) * uSize;
   vec2 q = abs(p) - (uSize * .5 - uRad);
@@ -169,7 +172,7 @@ void main() {
       const c = S.cam, Vm = view(c), n = 8, f = 90000;
       const proj = [FOC / (W / 2), FOC / (H / 2), -(f + n) / (f - n), -2 * f * n / (f - n)];
       const fogP = [S.fog.start, S.fog.density, 1];
-      const common = (pr) => { gl.useProgram(pr.p); gl.uniform1f(pr.u.uVz, S.vz || 0); gl.uniformMatrix4fv(pr.u.uV, false, Vm); gl.uniform4fv(pr.u.uProj, proj); gl.uniform3f(pr.u.uLens, lens[0], lens[1], 1 / c.focus); gl.uniform2f(pr.u.uJit, jit[0], jit[1]); gl.uniform3fv(pr.u.uFogC, S.fog.color); };
+      const common = (pr) => { gl.useProgram(pr.p); gl.uniform1f(pr.u.uVz, S.vz || 0); gl.uniform4fv(pr.u.uCamS, S.camS || [0, 0, 0, 0]); gl.uniformMatrix4fv(pr.u.uV, false, Vm); gl.uniform4fv(pr.u.uProj, proj); gl.uniform3f(pr.u.uLens, lens[0], lens[1], 1 / c.focus); gl.uniform2f(pr.u.uJit, jit[0], jit[1]); gl.uniform3fv(pr.u.uFogC, S.fog.color); };
       gl.bindFramebuffer(gl.FRAMEBUFFER, SC.f); gl.viewport(0, 0, W, H); gl.clearColor(S.fog.color[0], S.fog.color[1], S.fog.color[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
       if (S.floor) { const F = S.floor, pr = P.floor; common(pr); gl.disable(gl.BLEND);
         gl.uniformMatrix4fv(pr.u.uM, false, M4.chain(M4.T(0, F.y, c.z - 30000), M4.RX(-Math.PI / 2), M4.S(16000, 64000)));
@@ -303,6 +306,8 @@ void main() {
     let G = null, T = {}, cards = [], words = [], show = [];
     const frostAt = (t) => { const u = E.inout(clamp((t - B(20)) / 0.42)); return { split: 0.5 + 0.56 * u, amt: t < B(20) + 0.5 ? 1 : 0, glow: Math.sin(Math.PI * clamp((t - B(20) + 0.02) / 0.5)) }; };
     const slamZ = (t, t0) => { const u = (t - t0) / 0.3; if (u <= 0) return 1080; const e = E.out5(clamp(u)); return (1 - e) * 1080 - 46 * Math.sin(Math.PI * clamp(u)) * (1 - clamp(u)); };
+    const PULSE = [B(17), B(18), B(19)];                 // the held breath: a heartbeat on each beat while „before” holds
+    const breathe = (t) => PULSE.reduce((a, tp) => a + (t >= tp ? Math.exp(-(t - tp) * 9) * Math.sin(Math.min(1, (t - tp) / 0.07) * Math.PI / 2) : 0), 0);
     const hatch = (t) => E.inout(clamp((t - T2a + 0.06) / (0.86 * per))) * 1.72; // radians: it swings up past the horizontal
     const LAND = [B(4), B(5), B(6)], WORD_T = LAND.map((t) => t - 0.24); // the words land on the beat (the slam starts 0.24 s before)
 
@@ -347,7 +352,7 @@ void main() {
     const HAZE = [0.953, 0.972, 0.968];                 // the corridor's air: a breath of turquoise, so white paper reads as paper
     function scene(t, K) {
       const c = cam(t), q = [];
-      const fr = 1 / 30, vz = Math.abs(camAt(t + fr / 2).z - camAt(t - fr / 2).z);
+      const fr = 1 / 30, ca = cam(t - fr / 2), cb = cam(t + fr / 2), vz = Math.abs(cb.z - ca.z), kk = SHUT / Math.max(1, K);
       const own = (dz, d, lat) => (Math.abs(dz) * SHUT / Math.max(1, K)) * FOC * lat / Math.max(3600, d * d); // an object's own move between two sub-frames, in px
       // the fog: thick while the type holds (nothing behind it), then it clears as the camera dives in
       const rev = smooth((t - B(7.3)) / (0.8 * per));
@@ -355,7 +360,7 @@ void main() {
       const fog = { color: [1 + (HAZE[0] - 1) * tint, 1 + (HAZE[1] - 1) * tint, 1 + (HAZE[2] - 1) * tint], start: 2400 * rev, density: (1 / 2600) * (1 + 60 * Math.pow(1 - rev, 2)) };
       const inCorr = t >= B(7.3) && t < T3a + T3d;
       const calmK = 1 - 0.55 * smooth((t - B(15)) / per);
-      const S = { cam: c, fog, vz: vz * SHUT / Math.max(1, K), floor: t >= B(7.3) ? { y: FLOOR, cell: 170, gridA: 0.42 * rev * calmK, gridC: [0.078, 0.647, 0.588] } : null, quads: q };
+      const S = { cam: c, fog, vz: vz * kk, camS: [(cb.x - ca.x) * kk, (cb.y - ca.y) * kk, (ca.z - cb.z) * kk, (cb.roll - ca.roll) * kk], floor: t >= B(7.3) ? { y: FLOOR, cell: 170, gridA: 0.42 * rev * calmK, gridC: [0.078, 0.647, 0.588] } : null, quads: q };
       // ---- the opening type (z = 0)
       if (t < B(8) + 0.3) {
         words.forEach((w) => { if (t < w.t0 - 0.001) return; const z = slamZ(t, w.t0), a = clamp((t - w.t0) / 0.07), dz = slamZ(t + fr / 2, w.t0) - slamZ(t - fr / 2, w.t0);
@@ -380,7 +385,7 @@ void main() {
       }
       // ---- the hero case: it stands at the end, facing the camera; the "after" half under frosted glass until its beat
       if (inCorr && t < T2a + T2d + 0.1) {
-        const a = hatch(t), da = hatch(t + fr / 2) - hatch(t - fr / 2), F = frostAt(t), hm = M4.chain(M4.T(0, HERO.y + HERO.h / 2, ZHERO), M4.RX(-a), M4.T(0, -HERO.h / 2, 0));
+        const a = hatch(t), da = hatch(t + fr / 2) - hatch(t - fr / 2), F = frostAt(t), br = 1 + 0.007 * breathe(t), hm = M4.chain(M4.T(0, HERO.y + HERO.h / 2, ZHERO), M4.RX(-a), M4.T(0, -HERO.h / 2, 0), M4.S(br, br));
         const lift = own(da * HERO.h, Math.max(300, c.z - ZHERO), 700);
         const far = clamp((c.z - ZHERO - 1500) / 2500), still = a < 0.02 ? 1 : 0;
         if (still) q.push({ M: M4.chain(M4.T(0, FLOOR + 2, ZHERO), M4.RX(-Math.PI / 2), M4.S(HERO.w + 300, 380)), tex: T.blob, w: 1, h: 1, tint: [0.02, 0.2, 0.18, 1], alpha: 0.09, fade: 1, layer: -3 });
@@ -470,7 +475,7 @@ void main() {
       if (!kw.length) { el.style.display = 'block'; const o = kspans.map((s) => s.style.cssText); kick.style.transform = ''; ctx.shot.afterDom(); void o; }
       dom(t);
       if (Math.abs(t - last) < 1e-6) return; last = t;
-      const fr = 1 / 30, sp = Math.abs(camAt(t + fr / 2).z - camAt(t - fr / 2).z);
+      const fr = 1 / 30, c0 = cam(t - fr / 2), c1 = cam(t + fr / 2), sp = Math.abs(c1.z - c0.z) + (Math.hypot(c1.x - c0.x, c1.y - c0.y) * 1.8 + Math.abs(c1.roll - c0.roll) * 1500);
       const busy = WORD_T.some((w) => t > w - 0.04 && t < w + 0.34) || (t > T2a - 0.1 && t < T2a + T2d + 0.1);
       const K = Math.round(clamp(6 + sp / 4.4 + (busy ? 16 : 0), 6, 30));
       const hold = (t >= B(16.4) && t < T2a) ? 1 : 0;
@@ -478,30 +483,35 @@ void main() {
     }
     ctx.tick((t) => draw(t));
 
-    // ---------------------------------------------------------------- sound and events, to the frame
+    // ---------------------------------------------------------------- sound and events, to the frame (the premium set, by category)
     const ev = (t, kind) => R.event(t, kind);
     WT.forEach((t, i) => { ctx.sfx(t, 'tick_soft', 0.5); ev(t, i ? 'word' : 'write'); });
-    ctx.sfx(0.1, 'riser_soft', 0.4);
-    LAND.forEach((t, i) => { ctx.sfx(t, i === 0 ? 'impact' : 'tap', i === 0 ? 0.95 : 0.7, { prio: 4 }); if (i === 0) ctx.sfx(t + 0.08, 'subdrop', 0.6, { prio: 4 }); ev(t, 'slam'); });
+    ctx.sfx(0.02, 'impact', 0.16, { prio: 4 }); ctx.sfx(0.12, 'riser_soft', 0.4); // a breath of air on frame 0 (the opening is quiet on purpose; the hit is the drop)
+    // the drop: a reverse swell that ends on the hit, the hit itself on „Noi”, a tap on each of the next two words
+    ctx.sfx(LAND[0] - 0.09, 'suck_in', 0.55, { prio: 4, peak: true }); ctx.sfx(LAND[0], 'hit_deep', 0.8, { prio: 5 }); ev(LAND[0], 'slam');
+    [1, 2].forEach((i) => { ctx.sfx(LAND[i], 'tap', 0.75); ev(LAND[i], 'slam'); });
     ctx.sfx(LAND[2] + 0.4, 'dot', 0.6); ev(LAND[2] + 0.4, 'motif');
     ctx.sfx(B(6.9), 'riser_soft', 0.55);
-    ctx.sfx(B(8), 'whoosh_cut', 0.75, { prio: 3, peak: true }); ev(B(8), 'cut');
+    ctx.sfx(B(8), 'whoosh_through', 0.8, { prio: 4, peak: true }); ev(B(8), 'cut');
     // the cards passing the camera: a soft tick each, on its side
     const passT = (z) => { let lo = B(8), hi = B(16); for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (flightZ(m) > z) lo = m; else hi = m; } return lo; };
-    for (let k = 0; k < SLOTS; k++) [-1, 1].forEach((wall) => { const z = Z0 - k * STEP - (wall > 0 ? STEP * 0.5 : 0) - STEP * 0.1 + 240; const t = passT(z); ctx.sfx(t, 'tick_soft', 0.34, { pan: wall * 0.55 }); ev(t, 'pass'); });
-    ctx.sfx(B(13.2), 'riser', 0.5, { prio: 3 });
-    ctx.sfx(B(16), 'impact', 0.7, { prio: 4 }); ctx.sfx(B(16) + 0.08, 'subdrop', 0.75, { prio: 4 }); ev(B(16), 'stop');
+    for (let k = 0; k < SLOTS; k++) [-1, 1].forEach((wall) => { const z = Z0 - k * STEP - (wall > 0 ? STEP * 0.5 : 0) - STEP * 0.1 + 240; const t = passT(z); ctx.sfx(t, 'tick_soft', 0.36, { pan: wall * 0.55 }); ev(t, 'pass'); });
+    // the brake: the air is pulled in and stops on the case; then only a heartbeat while „before” holds
+    ctx.sfx(B(16) - 0.09, 'suck_in', 0.6, { prio: 4, peak: true }); ctx.sfx(B(16), 'hit_deep', 0.5, { prio: 5 }); ev(B(16), 'stop');
     ctx.sfx(B(16.35), 'tick_soft', 0.4); ev(B(16.35), 'in');
-    ctx.sfx(B(20), 'dot', 0.75, { prio: 3 }); ctx.sfx(B(20) + 0.08, 'shimmer', 0.5); ev(B(20), 'reveal');
-    ctx.sfx(B(22.75), 'riser_soft', 0.5);
-    const tOpen = T2a + 0.62 * T2d; ctx.sfx(tOpen, 'whoosh_cut', 0.6, { prio: 3, peak: true }); ev(tOpen, 'cut'); ev(T2a, 'open'); ctx.sfx(T2a, 'tap', 0.5);
-    ctx.sfx(B(24), 'impact', 0.6, { prio: 4 }); ev(B(24), 'stop'); ctx.sfx(B(24) + 0.2, 'dot', 0.55);
+    PULSE.forEach((t) => { ctx.sfx(t, 'pulse', 0.6, { prio: 3 }); ev(t, 'breath'); });
+    ctx.sfx(B(20), 'dot', 0.8, { prio: 4 }); ctx.sfx(B(20) + 0.09, 'shimmer_soft', 0.7, { prio: 3 }); ev(B(20), 'reveal');
+    // the case opens like a hatch; the camera flies under it to „Îți arătăm.”
+    ctx.sfx(T2a, 'card_flip', 0.7); ev(T2a, 'open');
+    const tOpen = T2a + 0.62 * T2d; ctx.sfx(tOpen, 'whoosh_through', 0.6, { prio: 4, peak: true }); ev(tOpen, 'cut');
+    ctx.sfx(B(24), 'hit_deep', 0.55, { prio: 5 }); ev(B(24), 'stop'); ctx.sfx(B(24) + 0.2, 'dot', 0.55);
     [B(24.7), B(25.7)].forEach((t) => { ctx.sfx(t, 'tick_soft', 0.45); ev(t, 'in'); });
-    ctx.sfx(T3a + 0.05, 'riser_soft', 0.45);
-    ctx.sfx(B(29), 'whoosh_cut', 0.7, { prio: 3, peak: true }); ev(B(29), 'cut');
-    const tLogo = T3a + T3d; ctx.sfx(tLogo - 0.04, 'tap', 0.55); ev(tLogo - 0.04, 'slam'); ctx.sfx(tLogo + 0.05, 'shimmer', 0.4);
+    // through the type, into the held ending
+    ctx.sfx(T3a + 0.02, 'riser_soft', 0.45);
+    ctx.sfx(B(29), 'swoosh_end', 0.75, { prio: 4, peak: true }); ev(B(29), 'cut');
+    const tLogo = T3a + T3d; ctx.sfx(tLogo - 0.04, 'tap', 0.5); ev(tLogo - 0.04, 'slam'); ctx.sfx(tLogo + 0.06, 'shimmer_soft', 0.5);
     ctx.sfx(B(29.85), 'dot', 0.5); ev(B(29.85), 'motif');
-    ev(B(31.5), 'hold'); ev(B(18), 'breath'); ev(B(26.9), 'breath'); ev(B(11), 'beat'); ev(B(12), 'beat'); ev(B(13), 'beat');
+    ev(B(31.5), 'hold'); ev(B(26.9), 'breath'); ev(B(11), 'beat'); ev(B(12), 'beat'); ev(B(13), 'beat');
     ctx.focus(logo);
     R.manifest = { cam, project, B, END, stations: () => ({ Z16, ZHERO, Z2, ZSHOW, Z3, ZLOGO, T2a, T2d, T3a, T3d, OX, OY }) };
   };

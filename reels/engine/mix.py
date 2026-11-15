@@ -186,6 +186,8 @@ def sync_report(F, placed):
     its sound within ±1 frame (after thinning, so a missing one is reported)"""
     fr = 1.0 / (F.get('fps') or 30)
     cuts = [s['t0'] for s in F['shots'][1:] if s['t0'] < F['total'] - 0.05]
+    # a one-shot reel (a single continuous scene) marks its own cuts as 'cut' events: they count too (the shots' own are the same times)
+    cuts = sorted({round(c, 4) for c in cuts} | {round(e['t'], 4) for e in F['events'] if e['kind'] == 'cut' and 0 < e['t'] < F['total'] - 0.05})
     peaks = [p['t'] for p in placed if p['peak']]
     ok_cuts = sum(1 for c in cuts if any(abs(p - c) <= fr + 1e-6 for p in peaks))
     ev = sorted({round(e['t'], 3) for e in F['events'] if e['kind'] in MAJOR and 0 <= e['t'] < F['total']})

@@ -1,0 +1,111 @@
+{
+ "v": 2,
+ "id": "v2-suspans-hifu",
+ "kind": "silent",
+ "rubric": "Suspans",
+ "theme": "brand-light",
+ "sound": "v3",
+ "hookHit": false,
+ "captions": false,
+ "title": "Apoi, liniște",
+ "topic": "După o ședință de HIFU aproape nimic nu se vede; săptămâni la rând colagenul lucrează în liniște, apoi rezultatul apare",
+ "post": "O ședință de HIFU. Apoi, liniște. Sub piele se formează colagen nou, iar rezultatul apare treptat, în săptămânile de după. Cazul 36 din catalog: HIFU gușă și contur, Arad, 1 ședință. Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta. #hifu #colagen #gusa #arad #timisoara",
+ "case": "cazul-36",
+ "sources": "Cuvintele: v2/src/riduri-linii-fine.html („rezultatul real apare treptat, pe măsură ce se formează colagen nou, maxim la 8-12 săptămâni de la ședință”; „Colagenul are nevoie de timp. Merită așteptarea.”; „Săptămânile 2-8: Colagenul nou se formează”), v2/src/gusa-barbie-dubla.html („O ședință HIFU”; „rezultat care se construiește pe măsură ce se formează colagen nou”). Cazul: v2/src/catalog-rezultate.html, Cazul 36: HIFU gușă și contur, Arad, 1 ședință („Rezultatul de alături este după o singură ședință.”; „Reducerea devine vizibilă în general la 6-8 săptămâni de la ședință.”; „Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.”). Poza: brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp, tăiată în cele două jumătăți ale ei, neretușată.",
+ "concept": {
+  "who": "Femeia din Timișoara sau Arad care se gândește la HIFU și se teme de un singur lucru: că plătește o ședință și a doua zi nu vede nimic. Și cea care a făcut deja o ședință și așteaptă.",
+  "oneThing": "După HIFU liniștea e normală: colagenul se formează săptămâni la rând, iar rezultatul vine la sfârșitul lor.",
+  "tone": "Minimalist și răbdător: alb, un singur obiect, text mic. Suspans fără să sperie; liniștea e subiectul, nu un gol.",
+  "formats": [
+   "(vi) Suspansul minimalist",
+   "(x) Colajul editorial, doar pentru dezvăluire: poza reală ca obiect pe alb, cu cuvintele catalogului"
+  ],
+  "borrowed": [
+   {
+    "element": "Cadru alb, text mic pe centru, un singur obiect care face toată treaba",
+    "ref": "6 (suspansul minimalist)",
+    "why": "cu cât e mai puțin pe ecran, cu atât fiecare bob care cade contează; exact ce simte cineva care așteaptă un rezultat"
+   },
+   {
+    "element": "Fiecare eveniment vizual are sunetul lui, pe cadru; liniștea e lăsată liniște",
+    "ref": "10 (meșteșugul montajului)",
+    "why": "un bob care cade fără sunet e decor; cu tick-ul lui, pe bătaie, devine ceasul reelului"
+   },
+   {
+    "element": "Dezvăluirea cade pe lovitura piesei, iar tot ce e înainte se numără înapoi de la ea",
+    "ref": "13 (logo-ancora, tăieturi pe bătaie)",
+    "why": "tensiunea se strânge o singură dată și se plătește o singură dată"
+   }
+  ],
+  "notUsed": [
+   "Vocea: ar umple exact liniștea despre care e reelul",
+   "Secțiunea prin piele: e deja mecanismul din v2-gusa-slabe și din v2-abdomene-energie",
+   "Sliderul de înainte/după: e mișcarea din v2-caz-real; aici timpul însuși trece peste poză",
+   "Logo-ul la final: propoziția de pe site închide mai bine, iar contul e deja al nostru",
+   "Nuki: orice personaj ar rupe liniștea",
+   "Numărătoare până la săptămâna 12: catalogul spune la acest caz 6-8 săptămâni, așa că ne oprim la 8",
+   "Un riser sau un suck-in înainte de lovitură: ar anunța-o; liniștea adevărată lovește mai tare"
+  ],
+  "mechanism": "Clepsidra uriașă, tăiată de cadru, din sticlă alb-negru cu nisip turcoaz. Nisipul e colagenul: sus se scurge timpul, jos se adună ce se construiește. Un singur bob e rose gold: ultimul. Când aterizează el, vine rezultatul, iar la final tot el devine punctul propoziției.",
+  "track": {
+   "file": "owner-weongo",
+   "why": "deschiderea cu „honorable” e rară și plină de goluri: basul cade la bătăile 3, 5, 8 și apoi tot mai des, exact cum cad boabele. Golul cel mai lung al piesei (bătăile 5-8) e sub „Apoi, liniște.”, iar golul dinaintea bătăii 24 e liniștea dinaintea rezultatului. Lovitura de la 11,09 s (bătaia 24, după cel mai lung gol dinaintea versurilor explicite) e dezvăluirea; reelul se termină la 18,3 s din piesă, mult înainte de 24 s."
+  },
+  "different": "Singurul reel fără voce care duce o idee de la cap la coadă doar cu un obiect, 12 cuvinte mici și o poză reală; singurul cu clepsidra și cu dezvăluirea prin cortina de nisip."
+ },
+ "critique": {
+  "storyboard": {
+   "scroll": "da: un cadru alb cu un rând mic și un singur punct turcoaz care pulsează pe prima bătaie de bas; e atât de puțin, încât te oprești să vezi ce urmează",
+   "serves": "da: clepsidra e chiar ideea (timpul construiește), contorul e cronologia de pe site, iar poza e un caz din catalog cu ce scrie acolo",
+   "effects": "nu: un singur obiect și o singură mișcare specială (cortina de nisip), folosită o singură dată",
+   "natural": "da: alb, sticlă alb-negru, nisip turcoaz; text mic, centrat; nimic din șablonul celorlalte reeluri",
+   "owner": "da: e ideea cerută (suspans minimalist pe WE ON GO II, clepsidră cu nisip turcoaz, săptămânile care accelerează, dezvăluirea pe lovitură, ultima propoziție de pe site)"
+  },
+  "render": {
+   "scroll": "da, cu o rezervă: primul cadru se mișcă deja (rândul intră cu un tick moale), dar până la pulsul de la 1,33 s e doar un rând mic pe alb; dacă se pierde lume acolo, rândul poate intra cuvânt cu cuvânt",
+   "serves": "da: 32 de boabe au fiecare tick-ul lor pe cadrul în care aterizează, contorul urcă pe loviturile de bas, iar poza și cuvintele de sub ea sunt exact cele din catalog",
+   "effects": "nu: verificarea de flash dă un singur salt de lumină (tăietura de la dezvăluire); cortina de nisip apare o singură dată, 0,46 s",
+   "natural": "da: sticla are grosime și lumină, nisipul are boabe, grămada crește din ce cade; textul rămâne mic și centrat peste tot",
+   "owner": "da, cu o rezervă: liniștea dinaintea loviturii e liniște adevărată doar în fișierul curat; în preview piesa are acolo propriul gol, cu ad-lib-uri la nivel mic"
+  }
+ },
+ "musicFile": "owner-weongo",
+ "musicStart": 0.127,
+ "beat": {
+  "bpm": 131.01
+ },
+ "musicNote": "Măsurat pe fișier (beats.py + începutul fiecărei lovituri de bas, la milisecundă): 131,01 BPM; bas la bătăile 3, 5, 8, 9,5, 10,5, 13, 14,5, 16, 19, 21 și apoi 24 (11,094 s din piesă), după un gol de 0,64 s. musicStart 0,127 pune lovitura de la 11,094 s exact pe cadrul 329 (10,967 s). Reelul folosește 0,13-18,33 s din piesă; versurile explicite încep după ~24 s. Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "hook": {
+  "say": "Colagenul are nevoie de timp.",
+  "visual": {
+   "type": "suspans",
+   "hit": 10.9667,
+   "total": 18.2,
+   "img": "brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp",
+   "before": [
+    6,
+    6,
+    682,
+    933
+   ],
+   "after": [
+    711,
+    6,
+    682,
+    933
+   ],
+   "caseNo": "Cazul 36",
+   "caseTitle": "HIFU gușă și contur",
+   "caseSub": "Arad · 1 ședință",
+   "caseFine": [
+    "Fotografie publicată cu acordul clientei.",
+    "Rezultatele pot varia de la o persoană la alta."
+   ]
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 16.3
+ },
+ "timeline": "Numărat înapoi de la lovitura de bas de la 11,094 s din piesă (cadrul 329, 10,967 s): 0,00 primul rând; 1,33 pulsul (bătaia 3); 2,27 „Apoi, liniște.” (bătaia 5); 2,75 clepsidra; 3,63 primul bob aterizează, Săptămâna 1 (bătaia 8); săptămânile 2-8 la bătăile 10,5, 13, 14,5, 16, 17,5, 19, 20; 6,60 rândul despre colagen; 8,67 șuvoiul; 9,60 sus se termină nisipul (bătaia 21); 10,25-10,97 liniște, cade doar bobul rose gold; 10,967 lovitura: poza „înainte”; 11,67-12,10 cortina de nisip, apoi „după” (bătăile 25,5 și 26,5); 13,27 cele două poze alături, cu datele din catalog (bătaia 29); 15,53 ultima propoziție; 16,00 punctul ei aterizează (bătaia 35); ținut până la 18,2."
+}

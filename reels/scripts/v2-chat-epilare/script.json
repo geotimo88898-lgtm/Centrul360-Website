@@ -1,0 +1,223 @@
+{
+ "v": 2,
+ "id": "v2-chat-epilare",
+ "kind": "brand",
+ "rubric": "Nuki",
+ "theme": "brand-light",
+ "sound": "v3",
+ "captions": false,
+ "title": "Chat cu Nuki: epilarea laser",
+ "topic": "Cele trei întrebări despre epilarea laser, într-un chat cu Nuki",
+ "topicTag": "epilare-laser",
+ "keyword": "360",
+ "post": "Câte ședințe, dacă doare și unde ne găsiți: Nuki răspunde pe scurt. Epilarea laser se face doar în clinica din Timișoara.",
+ "sources": "v2/src/epilare-laser.html, „Bine de știut înainte să începi”: „În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere.”; „Părul crește în cicluri.”; „Datorită sistemului de răcire al Elysion Pro, senzația este mult mai blândă decât la epilarea clasică.”; „Epilarea laser se face doar în clinica din Timișoara.”; „Consultația e gratuită.”; adresa „Timișoara (Str. Bucegi 7)” (v2/src/index.html, timisoara.html). Pozele: brand_asset/g-tm-laser.webp, g-tm-810.webp (reale, din clinică); pagina de pe telefon: captură reală a secțiunii #cum de pe centrul360.com/epilare-laser (site.cjs).",
+ "concept": {
+  "who": "Femeile din Timișoara care se gândesc la epilarea laser și au exact aceste trei întrebări: câte ședințe, dacă doare și unde ne găsesc.",
+  "oneThing": "Întrebările despre epilarea laser au răspunsuri simple, iar clinica e la un mesaj distanță.",
+  "tone": "Ușor, spontan, cald; un mic suspans jucăuș pe „dar…”, apoi locul real.",
+  "formats": [
+   "(ix) Conversația, varianta cu Nuki"
+  ],
+  "borrowed": [
+   {
+    "element": "Chatul construit mesaj cu mesaj, cu punctele de tastare ținute și falsa ezitare („Sună bine, dar…”)",
+    "ref": "9 (povestea pe chat)",
+    "why": "sunt chiar întrebările ei, în ordinea în care le pune; punctele ținute cad în pauza piesei și țin privirea până la întrebarea care contează: unde"
+   },
+   {
+    "element": "Cărți 3D cu grosime care se întorc, stau în teanc și trec pe lângă cameră",
+    "ref": "(vii) lansarea (cărțile 3D) și nota proprietarului din 15.11",
+    "why": "ultima bulă chiar devine locul: se ridică de pe foaie, se întoarce în aer și e poza sălii din Timișoara; vorba se face lucru real"
+   },
+   {
+    "element": "Câte un sunet pe fiecare bulă, tic pe punctele de tastare, bătaia de inimă cât ezită",
+    "ref": "10 (sunetul legat de imagine)",
+    "why": "chatul se simte viu fără nicio voce"
+   }
+  ],
+  "notUsed": [
+   "Mesaje de la cliente: nu avem mesaje reale cu acord scris, așa că vorbește doar brandul (Nuki), cu textul de pe site",
+   "Un înainte/după la epilare: catalogul nu are niciun caz de epilare, iar brand_asset/ba-epilare.webp e o fotografie de atmosferă (picioare lângă o piscină), nu un rezultat al clinicii; nu arătăm ca rezultat ce nu e rezultat",
+   "Interfața WhatsApp, Messenger sau Instagram: e interfața noastră, albă cu turcoaz",
+   "Prețurile și oferta de pe pagină: doar răspunsurile și invitația",
+   "Vocea: se citește, ca un chat"
+  ],
+  "track": {
+   "file": "owner-trainingseason",
+   "why": "e ușoară și spontană, „loved by our audience”; fiind cântată liber, mesajele stau pe atacurile ei reale, iar pauza ei de la 10,2-12,0 s e chiar ezitarea din chat"
+  },
+  "different": "Singurul reel care se citește ca o conversație și singurul în care un element de interfață (o bulă) se transformă într-un obiect 3D; fără tunel, fără tipografie mare, fără cazuri."
+ },
+ "musicFile": "owner-trainingseason",
+ "musicStart": 10.17,
+ "beat": {
+  "bpm": 123.01
+ },
+ "musicNote": "„Training Season” (live): de la lovitura muzicii, 10,17 s. Piesa e cântată liber (fără tobă pe grilă), așa că mesajele stau pe atacurile ei reale, măsurate (0,20 · 2,73 · 4,86 · 7,42 · 8,00 · 10,08 · 12,07 · 12,95 · 14,16 · 15,23 · 16,25 · 18,76 s), iar punctele de tastare ținute cad exact în pauza piesei (10,2-12,0 s).",
+ "subframes": {
+  "n": 10,
+  "shutter": 0.55,
+  "ranges": [
+   [
+    0.0,
+    0.45
+   ],
+   [
+    0.9,
+    1.75
+   ],
+   [
+    2.7,
+    3.15
+   ],
+   [
+    4.27,
+    4.6
+   ],
+   [
+    4.83,
+    5.28
+   ],
+   [
+    6.59,
+    6.92
+   ],
+   [
+    7.39,
+    8.42
+   ],
+   [
+    9.36,
+    9.69
+   ],
+   [
+    10.05,
+    10.75
+   ],
+   [
+    12.04,
+    12.72
+   ],
+   [
+    12.92,
+    13.37
+   ],
+   [
+    13.8,
+    14.75
+   ],
+   [
+    15.18,
+    15.95
+   ],
+   [
+    16.2,
+    17.0
+   ],
+   [
+    18.25,
+    19.6
+   ]
+  ]
+ },
+ "hook": {
+  "say": "Bună ziua! Câte ședințe de epilare laser îmi trebuie?",
+  "visual": {
+   "type": "chat",
+   "cam": "none",
+   "title": "Centrul360",
+   "name": "Nuki",
+   "typing": "Nuki scrie…",
+   "messages": [
+    {
+     "who": "v",
+     "t": -0.08,
+     "text": "Bună ziua! Câte ședințe de epilare laser îmi trebuie?"
+    },
+    {
+     "who": "n",
+     "type": 1.25,
+     "t": 2.73,
+     "text": "Bună ziua! În general 6-8 ședințe, la câteva săptămâni distanță."
+    },
+    {
+     "who": "n",
+     "type": 4.3,
+     "t": 4.86,
+     "text": "Părul crește în cicluri, iar laserul îl tratează în fiecare fază de creștere."
+    },
+    {
+     "who": "v",
+     "type": 6.62,
+     "t": 7.42,
+     "text": "Și doare?"
+    },
+    {
+     "who": "n",
+     "type": 7.69,
+     "t": 8.0,
+     "text": "Aparatul are sistem de răcire, așa că senzația e mult mai blândă decât la epilarea clasică."
+    },
+    {
+     "who": "v",
+     "type": 9.39,
+     "t": 10.08,
+     "text": "Sună bine, dar…"
+    },
+    {
+     "who": "v",
+     "type": 10.45,
+     "t": 12.07,
+     "text": "…unde vă găsesc?"
+    },
+    {
+     "who": "n",
+     "type": 12.42,
+     "t": 12.95,
+     "text": "În Timișoara, pe strada Bucegi 7. Consultația e gratuită."
+    }
+   ],
+   "hold": [
+    10.45,
+    12.07
+   ],
+   "lift": 13.87,
+   "cards": [
+    {
+     "img": "g-tm-laser.webp",
+     "label": "Timișoara · Str. Bucegi 7",
+     "t": 14.16,
+     "s0": 0.07,
+     "s1": 0.15,
+     "boost": 1.3
+    },
+    {
+     "img": "g-tm-810.webp",
+     "label": "Elysion Pro · răcire activă",
+     "t": 15.23
+    }
+   ],
+   "phone": {
+    "key": "epilare-cum",
+    "t": 16.25
+   },
+   "end": {
+    "t0": 18.3,
+    "t": 18.76,
+    "pulse": 19.39,
+    "text": "Scrieți «360» în comentarii și vă răspundem.",
+    "pose": "telefon"
+   },
+   "beats": [
+    10.72,
+    11.22,
+    11.71
+   ]
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 17.73
+ }
+}

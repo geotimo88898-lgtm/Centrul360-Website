@@ -14,7 +14,8 @@ const BANNED = /\b(mit|mitul|mituri|miturile|mit sau adev[ăa]r)\b/i; // the own
 const CRINGE = /(hei,? dragel?e mele|dragile mele|fetelor,|cai verzi pe pere[țt]i|ba[țt]i apa-?n piu[ăa]|cioara vopsit[ăa]|la pa[șs]tele cailor|ca la carte|s[ăa] vezi minune|pe bune|ca [îi]ntre noi|bomb[ăa]|wow,|super tare|ai gu[șs][ăa]\?)/i;
 module.exports = async (id, dir, S) => {
   const problems = [], notes = [];
-  const BRAND = S.kind === 'brand'; // a brand piece (formats ii, iii, v, vi, vii, xii): no voice, music and sound design, the logo is the point
+  const SILENT = S.kind === 'silent'; // a reel that tells its idea without voice: text on screen, one object, a real case (formats vi, x); no logo needed
+  const BRAND = S.kind === 'brand' || SILENT; // a brand piece (formats ii, iii, v, vi, vii, xii): no voice, music and sound design, the logo is the point
   const say = [].concat(S.hook || [], S.beats || [], S.payoff || [], S.resolve || [], S.outro || [], S.end && S.end.say ? [S.end] : []);
   const words = say.map((b) => [b.say, b.cap, b.tts].filter(Boolean).join(' ')).join(' | ');
   if (/[–—]/.test(JSON.stringify(S))) problems.push('long dash in the script');
@@ -126,7 +127,7 @@ module.exports = async (id, dir, S) => {
   if (qAt == null && !BRAND) problems.push('the hook line is not on screen by 3 s');
   const sig = async (t) => p.evaluate((t) => { window.seek(t); const out = []; document.querySelectorAll('.shot *, #bg *').forEach((e) => { if (e.offsetParent === null && e.tagName !== 'CANVAS') return; out.push(e.style.transform + '|' + e.style.opacity + '|' + (e.tagName === 'CANVAS' ? e.toDataURL().length : '')); }); return out.join(';'); }, t);
   if ((await sig(0)) === (await sig(1 / 30))) problems.push('frame 0 is still (the first frame must already move)');
-  if (!F.cues.some((c) => c.t <= 0.1 && /impact|boom|shutter|glitch/.test(c.cat))) problems.push('no sound hit on frames 0-3');
+  if (!F.cues.some((c) => c.t <= 0.1 && (SILENT ? /impact|boom|shutter|glitch|tick_soft|pulse|grain/ : /impact|boom|shutter|glitch/).test(c.cat))) problems.push('no sound hit on frames 0-3'); // (a suspense piece opens with a soft sound, never a hit)
   // think first (14.11, the owner: „să te gândești foarte bine înainte să compui un reel… poate fi insane să fie ceva
   // natural”): a "concept" block written before anything else, and an honest "critique" after the storyboard and the render
   if (S.kind !== 'demo') {
@@ -179,7 +180,8 @@ module.exports = async (id, dir, S) => {
   const trs = F.shots.slice(1).map((x) => x.tr); notes.push('transitions: ' + trs.join(', '));
   for (let i = 1; i < trs.length; i++) if (trs[i] === trs[i - 1]) problems.push('the same transition twice in a row (' + trs[i] + ')');
   // Nuki: 2-4 small appearances
-  if (!BRAND && (F.nuki < 2 || F.nuki > 4)) problems.push('Nuki appears ' + F.nuki + ' times (want 2-4, small, in some frames)');
+  // a script may leave Nuki out on purpose ("nuki": false, with the reason in concept.notUsed; the director, 15.11: „sparingly and with taste, or not at all”)
+  if (!BRAND && S.nuki !== false && (F.nuki < 2 || F.nuki > 4)) problems.push('Nuki appears ' + F.nuki + ' times (want 2-4, small, in some frames)');
   // the ending: a CTA line (soft or explicit) and a resolving visual in the last 5 s
   const ctaLines = [].concat(S.outro || [], S.end && S.end.say ? [S.end] : []).filter((b) => b.cta);
   const ctaIn = F.beats.some((L) => (L.role === 'outro' || L.role === 'end') && [].concat(S.outro || [], S.end || []).some((b) => b.cta && (b.tts || b.say || '').replace(/\*/g, '').trim() === L.text) && L.t0 + L.dur > T - 5.5);
@@ -189,9 +191,9 @@ module.exports = async (id, dir, S) => {
   if (BRAND) {
     if (F.beats.some((L) => L.voiced)) problems.push('a brand piece has no voice (music and sound design only)');
     const logoEnd = await p.evaluate((t) => { window.seek(t); return [...document.querySelectorAll('.shot *')].some((e) => e.offsetParent !== null && /wordmark|brand\/mark\.svg|logo-mark/.test(e.getAttribute('style') || '') && +getComputedStyle(e.parentElement).opacity > 0.5); }, T - 0.3);
-    if (!logoEnd) problems.push('a brand piece ends on the logo (the real one, brand_asset)');
+    if (!logoEnd && !SILENT) problems.push('a brand piece ends on the logo (the real one, brand_asset)');
     try { const base = path.join(__dirname, '..', 'scripts'); const prev = fs.readdirSync(base).filter((d) => d !== id && fs.existsSync(path.join(base, d, 'script.json'))).map((d) => ({ d, m: fs.statSync(path.join(base, d, 'script.json')).mtimeMs, X: JSON.parse(fs.readFileSync(path.join(base, d, 'script.json'), 'utf8')) })).filter((o) => o.X.v === 2 && o.X.kind !== 'demo').sort((a, b) => b.m - a.m)[0];
-      if (prev && prev.X.kind === 'brand') notes.push('WARNING (brand): the previous reel ' + prev.d + ' is a brand piece too (at most one a week, never two in a row)'); } catch (e) { /* */ }
+      if (!SILENT && prev && prev.X.kind === 'brand') notes.push('WARNING (brand): the previous reel ' + prev.d + ' is a brand piece too (at most one a week, never two in a row)'); } catch (e) { /* */ }
   }
   // the frame: safe zone, overlaps, captions
   const seen = new Set();
