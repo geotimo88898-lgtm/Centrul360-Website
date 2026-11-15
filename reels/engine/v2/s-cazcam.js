@@ -33,7 +33,7 @@
     const im = h('img', null, null, pre); im.src = R.ROOT + '/brand_asset/catalog/' + p.img; im.decoding = 'sync';
     const SB = p.before, SA = p.after;               // the two halves (source px), the catalog's own labels left out
     const HT = {}; Object.entries(p.hits).forEach(([k, t]) => { HT[k] = Array.isArray(t) ? t.map(fr) : fr(t); });
-    const tPull = HT.pull, tTag = HT.tag, tDolly = HT.dolly, tCrane = HT.crane, tBreath = HT.breath, tDrop = HT.drop, tRise = HT.rise, tSide = HT.side, tColour = HT.colour, tStop = HT.stop, tBack = HT.back;
+    const tPull = HT.pull, tTag = HT.tag, tDolly = HT.dolly, tCrane = HT.crane, tBreath = HT.breath, tDrop = HT.drop, tRise = HT.rise, tSide = HT.side, tColour = HT.colour, tStop = HT.stop, tBack = HT.back, tCorn = HT.corners;
     // ---- the world (px, the subject's plane at Z 0; +y down): the before print, the after print hidden behind it, the wall
     const CW = 760, CH = CW * SB[3] / SB[2], K = CW / SB[2];   // the print, 760 px wide at rest; K: world px per source px
     const ZA = 900, ZW = 2600, F0 = 1500;                    // the after print and the wall, behind
@@ -121,9 +121,9 @@
         const blur = t < tPull ? 7 * (1 - smooth(t / 2.6)) + 1.2 : 0;
         print(SB, b.x, b.y, bw, { gray: 1, blur, sweep: t > tTag && t < tTag + 1.0 ? (t - tTag) / 1.0 : null });
         // the crane lands: the corners close on the detail; a breath of shade around it
-        const cq = smooth((t - tCrane - 0.62) / 0.4), dp = proj(C, CHIN[0], CHIN[1], 0);
+        const cq = smooth((t - tCorn + 0.2) / 0.3), dp = proj(C, CHIN[0], CHIN[1], 0);
         if (cq > 0) { const sh = 0.16 * cq; const gr = c.createRadialGradient(dp.x, dp.y, 260, dp.x, dp.y, 900); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,' + sh.toFixed(3) + ')'); c.fillStyle = gr; c.fillRect(0, 0, W, H);
-          const sz = lerp(1.5, 1, out5((t - tCrane - 0.62) / 0.45)); corners(dp.x, dp.y, 560 * sz, 520 * sz, cq * (1 - smooth((t - tDrop + 0.12) / 0.1))); }
+          const sz = lerp(1.5, 1, out5((t - tCorn + 0.2) / 0.32)); corners(dp.x, dp.y, 560 * sz, 520 * sz, cq * (1 - smooth((t - tDrop + 0.12) / 0.1))); }
         if (t > tDrop - 0.2) white = Math.pow(clamp((t - tDrop + 0.2) / 0.2), 1.3);                                         // into the light
       } else {
         const C = REST; wall({ x: (afterRect(t).cx - W / 2) * -0.08, y: 0, D: F0, F: F0 }, t);
@@ -185,7 +185,7 @@
     ctx.sfx(tTag, 'tap', 0.6); ev(tTag, 'pop');
     ctx.sfx(tDolly - 0.05, 'riser_soft', 0.5); ctx.sfx(tDolly, 'whoosh_through', 0.55, { prio: 4, peak: true }); ctx.sfx(tDolly, 'pulse', 0.5); ev(tDolly, 'cut'); ev(tDolly + 0.5, 'reveal');
     ctx.sfx(tCrane, 'whoosh_cut', 0.6, { prio: 4, peak: true }); ctx.sfx(tCrane, 'hit_deep', 0.5, { prio: 5 }); ev(tCrane, 'cut');
-    ctx.sfx(tCrane + 0.66, 'tick_soft', 0.45); ctx.sfx(tCrane + 0.74, 'tick_soft', 0.4); ev(tCrane + 0.66, 'in');
+    ctx.sfx(tCorn, 'tick_soft', 0.45); ctx.sfx(tCorn + 0.06, 'tick_soft', 0.4); ev(tCorn, 'in');
     ctx.sfx(tBreath - 0.05, 'riser_soft', 0.4); ctx.sfx(tDrop - 0.02, 'suck_in', 0.6, { prio: 4, peak: true });
     ctx.sfx(tDrop, 'hit_deep', 1, { prio: 5 }); ctx.sfx(tDrop + 0.02, 'shimmer_soft', 0.85, { prio: 4 }); ev(tDrop, 'cut'); ev(tDrop, 'reveal');
     ctx.sfx(tDrop + 0.1, 'dot', 0.6); ev(tDrop + 0.1, 'slam');
