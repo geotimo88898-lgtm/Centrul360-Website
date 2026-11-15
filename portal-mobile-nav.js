@@ -56,7 +56,7 @@
   // the four big tabs, by what the account does: a cosmetician's day is the calendar, not the leads
   var ROLE = document.documentElement.getAttribute('data-role') || '';
   // the owner (admin): Reclame in place of Calendar (his request, 8.11: the ads one tap away; the calendar is the front desk's)
-  function mainTabs(r) { return r === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : r === 'admin' ? ['panou', 'pipeline', 'mesaje', 'reclame', 'programari', 'incasari', 'contacte'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte', 'traininguri']; }
+  function mainTabs(r) { return r === 'cosmetician' ? ['panou', 'programari', 'mesaje', 'contacte', 'comision', 'condica', 'traininguri'] : r === 'admin' ? ['panou', 'pipeline', 'mesaje', 'reclame', 'programari', 'incasari', 'contacte'] : ['panou', 'pipeline', 'mesaje', 'programari', 'incasari', 'comision', 'condica', 'contacte']; }
   var MAIN = mainTabs(ROLE);
   var SHORT = { programari: 'Calendar', incasari: 'Încasări', comision: 'Salariu', condica: 'Condică', traininguri: 'Training' };
   var tabbar = document.createElement('nav');

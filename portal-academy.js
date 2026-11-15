@@ -283,7 +283,8 @@
 
   // ------------------------------------------------------------------ Vânzări / Tratamente
   // whose view: the person's own role; the owner picks Recepție or Cosmeticiană
-  const viewRole = () => (isAdmin() ? A.role : (K.data && K.data.me && K.data.me.role === 'receptie' ? 'receptie' : 'cosmetician'));
+  // (the owner, 15.11) only the cosmeticians' trainings: the reception's are gone, for everyone
+  const viewRole = () => 'cosmetician';
   function areaCards(area, role) {
     const p = mine();
     const HIDE = role === 'cosmetician' ? ['vanzari', 'cabina'] : [];
@@ -321,8 +322,7 @@
     const pick = subOf();
     if (pick.indexOf('m:') === 0) A.manual = pick.slice(2);
     const sub = pick === 'm:consultatie' && window.C360Fisa ? consultHtml(current()) : pick.indexOf('m:') === 0 ? manualHtml(current()) : pick === 'calc' ? calcHtml() : pick === 'cases' ? casesHtml() : pick === 'schemes' ? schemesHtml() : pick === 'summary' ? summariesHtml() : pick === 'combos' ? combosHtml() : '';
-    return (isAdmin() && !inZone ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], role) + '</div>' : '') +
-      (cards.length ? '<div class="ac-manuals">' + cards.map((c) => '<button type="button" class="ac-mcard' + (c.id === pick ? ' is-on' : '') + '" data-sub="' + esc(c.id) + '"><span class="k-icon-chip is-accent">' + icon(c.icon) + '</span>' +
+    return (cards.length ? '<div class="ac-manuals">' + cards.map((c) => '<button type="button" class="ac-mcard' + (c.id === pick ? ' is-on' : '') + '" data-sub="' + esc(c.id) + '"><span class="k-icon-chip is-accent">' + icon(c.icon) + '</span>' +
         '<div><b>' + esc(c.title) + '</b><span>' + esc(c.sub) + '</span></div></button>').join('') + '</div>' : '') +
       (sub || K.empty('book', 'Nimic aici încă', ''));
   }
@@ -340,7 +340,7 @@
     { id: 'portal', n: 4, title: 'Portalul', sub: 'Cum folosesc portalul, pas cu pas.', icon: 'sliders', pose: 'telefon', hue: 'd' },
   ];
   function zonesHtml() {
-    const roleBar = isAdmin() ? '<div class="tr-rolebar">' + K.seg('trole', [['receptie', 'Recepție', 'phone'], ['cosmetician', 'Cosmeticiană', 'sparkles']], viewRole()) + '</div>' : '';
+    const roleBar = '';
     if (!A.zone) {
       return roleBar + '<div class="tr-doors">' + ZONES.map((z, i) => '<button type="button" class="tr-door is-' + z.hue + '" data-zone="' + z.id + '" data-tilt style="--i:' + i + '">' +
         '<span class="tr-door-glow"></span><span class="tr-door-n">' + z.n + '</span>' +
@@ -1328,7 +1328,7 @@
 
   // ------------------------------------------------------------------ Progres echipă (owner)
   function teamPeople() {
-    return ((K.data && K.data.activeEmployees) || []).filter((e) => e.role !== 'admin' && e.id !== 'admin');
+    return ((K.data && K.data.activeEmployees) || []).filter((e) => e.role === 'cosmetician' && e.id !== 'admin');
   }
   function statsOf(id) {
     const p = progOf(id);
@@ -1366,10 +1366,10 @@
     if (!e) return;
     const s = statsOf(id);
     const p = s.p;
-    const role = (p.path && p.path.role) || (e.role === 'cosmetician' ? 'cosmetician' : 'receptie');
+    const role = 'cosmetician';
     const d = K.drawer({
       title: e.name, lead: K.avatar(e.name, 40), width: 720, subtitle: esc(ROLE[e.role] || e.role),
-      body: '<section class="tr-sec"><h5>Drumul de început</h5><div class="k-form tr-pathform">' + K.field('Drumul', '<select data-pr>' + K.options([['receptie', 'Recepție'], ['cosmetician', 'Cosmeticiană']], role) + '</select>') +
+      body: '<section class="tr-sec"><h5>Drumul de început</h5><div class="k-form tr-pathform">' + K.field('Drumul', '<select data-pr>' + K.options([['cosmetician', 'Cosmeticiană']], role) + '</select>') +
         K.field('Din ziua', '<input type="date" data-ps value="' + esc((p.path && p.path.start) || K.today()) + '">') + '</div>' +
         '<div class="tr-path-btns">' + (p.path ? '<button type="button" class="k-btn is-ghost is-sm" data-path-off>' + icon('x') + 'Oprește drumul</button>' : '') +
         '<button type="button" class="k-btn is-outline is-sm" data-path-on>' + icon('target') + (p.path ? 'Schimbă' : 'Pornește drumul') + '</button></div>' +
@@ -1399,7 +1399,7 @@
     (D().cases || []).forEach((c) => refs.case.push([c.id, c.title]));
     const d = K.drawer({
       title: 'Drumurile de început', icon: 'target', width: 820,
-      body: K.seg('prole', [['cosmetician', 'Cosmeticiană'], ['receptie', 'Recepție']], role) + '<div data-days></div><button type="button" class="k-btn is-outline is-sm" data-day-add>' + icon('plus') + 'Adaugă o zi</button>',
+      body: K.seg('prole', [['cosmetician', 'Cosmeticiană']], role) + '<div data-days></div><button type="button" class="k-btn is-outline is-sm" data-day-add>' + icon('plus') + 'Adaugă o zi</button>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         const box = el.querySelector('[data-days]');
