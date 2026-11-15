@@ -38,6 +38,15 @@ module.exports = async (req, res) => {
   // what to do): the health of the number, of the account, of the firm and of the app, whether a payment method is
   // attached, the currency. No ids, no token, no phone in the answer (?wahealth=links adds the account's and the firm's
   // ids, for the owner's direct link to the account's payment page in Meta Business).
+  // ?hours=1: the Instagram followers online per Bucharest hour (0..1, the whole week) and per weekday, read only, for
+  // choosing the posting times (the owner, 15.11: „programul spot on, cu potențial de viralitate maxim”)
+  if (req.query && req.query.hours) {
+    const CI = require('./_lib/content-insights');
+    const aud = await CI.audience().catch(() => null);
+    const g = aud && aud.ig && aud.ig.online ? CI.onlineGrid(aud.ig.online) : null;
+    res.status(200).json({ at: aud && aud.at, days: aud && aud.ig && aud.ig.online && aud.ig.online.days ? aud.ig.online.days.length : 0, grid: g });
+    return;
+  }
   if (req.query && req.query.wahealth) {
     const cfg = await WA.loadConfig().catch(() => ({}));
     const get = async (path, token, fields) => {

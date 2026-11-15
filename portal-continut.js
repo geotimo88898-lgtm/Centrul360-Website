@@ -627,7 +627,6 @@
     const peek = nx ? '<div class="cn-tx-peek" aria-hidden="true">' + (nx.cover ? '<img src="' + esc(cover(nx)) + '" alt="">' : '') + '</div>' : '';
     return '<section class="cn-tx" data-cttr>' + bar + '<div class="cn-tx-stage">' + peek + trCard(it) + '</div>' +
       '<div class="cn-tx-acts"><button type="button" class="cn-tx-b is-no" data-cttr-no aria-label="De refăcut (săgeata stânga)">' + icon('x') + '</button>' +
-      '<button type="button" class="cn-tx-b is-note" data-cttr-note aria-label="Aprobă cu o notă">' + icon('pen') + '</button>' +
       '<button type="button" class="cn-tx-b is-ok" data-cttr-ok aria-label="Aprobă (săgeata dreapta)">' + icon('check') + '</button></div>' +
       '<p class="cn-tx-keys"><kbd>←</kbd> De refăcut <kbd>→</kbd> Aprobă <kbd>↓</kbd> Următorul <kbd>Z</kbd> Anulează</p></section>' + later;
   }
