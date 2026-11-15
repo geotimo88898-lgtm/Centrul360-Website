@@ -18,7 +18,7 @@
  "concept": {
   "who": "Femeile de 35-55 de ani din Timișoara și Arad care folosesc creme antirid și simt că pielea își pierde totuși fermitatea.",
   "oneThing": "Crema lucrează la suprafață, iar fermitatea se hotărăște în straturile profunde; acolo ajunge energia (HIFU, radiofrecvență), iar efectul maxim vine la 8-12 săptămâni.",
-  "tone": "Calm, premium, hipnotic: o singură coborâre lină, ca o scufundare, apoi liniște și lumină.",
+  "tone": "Calm, premium, hipnotic: o cădere prin foi de sticlă, apoi un spațiu care se întunecă odată cu pielea, se aprinde în puncte calde și rămâne luminos.",
   "formats": [
    "(xi) Faceless curat",
    "o singură mișcare de cameră continuă, pe o pânză lungă (regula din 13.11: pan cu parallax)"
@@ -52,7 +52,7 @@
    "file": "owner-free",
    "why": "standardul reels-urilor educative: house cald, constant, de la primul downbeat (0,395 s); 125 BPM, mișcările camerei cad pe bătăi"
   },
-  "different": "Primul reel făcut dintr-o singură mișcare de cameră, fără nicio tăietură: o coborâre prin piele, cu parallax și adâncime. Primul fără subtitrare completă și fără Nuki. Mecanismul nu e o secțiune cu etichete, ci o rețea de fibre care se strânge și se înmulțește."
+  "different": "Primul reel făcut dintr-o singură mișcare de cameră, fără nicio tăietură: o cădere prin piele, cu parallax, blur de mișcare și adâncime de câmp. Primul fără subtitrare completă și fără Nuki. Mecanismul nu e o secțiune cu etichete, ci un volum de fibre în care camera intră: rare, lăsate și destrămate la început, întinse, dese și luminoase după ce ajunge energia."
  },
  "hook": {
   "role": "hook",
@@ -600,17 +600,18 @@
  "critique": {
   "storyboard": {
    "scroll": "da: din primul cadru un borcan cade pe o suprafață care se lasă sub el, iar lumina cremei aleargă într-un strat subțire; propoziția „lucrează doar la suprafață” e pe ecran în 2 secunde",
-   "serves": "da: borcanul și stratul luminat arată „suprafața”, coborârea arată „mai jos”, plasa slabă și apoi întinsă arată colagenul, inelul arată timpul; nimic altceva nu e pe ecran",
+   "serves": "da: borcanul și stratul luminat arată „suprafața”, coborârea arată „mai jos”, fibrele slabe și apoi întinse arată colagenul, inelul arată timpul; nimic altceva nu e pe ecran",
    "effects": "nu: singura mișcare mare e coborârea, care e chiar mesajul; blurul de mișcare și adâncimea de câmp vin din ea, nu sunt puse deasupra",
    "natural": "da: o singură cameră, un singur punct de lumină, cuvintele-cheie apar când sunt spuse; fără tăieturi, fără etichete inventate",
    "owner": "da: alb, turcoazul site-ului, un singur accent rose gold, totul centrat, text mare; mai multă mișcare și lumină decât reel-ul cu gușa"
   },
   "render": {
-   "scroll": "da: borcanul cade și se așază în prima jumătate de secundă, lumina cremei aleargă prin stratul de sus, iar la 1,3 s „la suprafață” e deja mare pe ecran; niciun cadru nu stă",
-   "serves": "da: fiecare imagine e chiar propoziția spusă (suprafața, coborârea, plasa slabă, energia, plasa întinsă, inelul săptămânilor); foile ondulate care tăiau textul în adânc au fost scoase",
-   "effects": "nu: blurul de mișcare apare doar cât camera chiar coboară sau urcă, iar lumina de la sosirea energiei e scurtă și moale; nu există tranziții puse deasupra",
-   "natural": "da: ascultătorul aude textul fără nicio greșeală peste muzică și spune că e o singură explicație legată; cuvintele-cheie vin pe timpii măsurați ai vocii",
-   "owner": "da, cu o rezervă spusă cinstit: între secundele 6 și 20 decorul rămâne același turcoaz cu plasa albă; mișcarea vine din cameră, din plasă și din lumină, nu din schimbarea decorului"
+   "scroll": "da: borcanul cade și se așază în primul sfert de secundă, lumina cremei aleargă prin stratul de sus, iar la 1,7 s toată propoziția, cu „la suprafață” mare, e pe ecran; niciun cadru nu stă",
+   "serves": "da: fiecare imagine e chiar propoziția spusă: suprafața; căderea de două secunde prin foi de sticlă („straturile”); fibrele care se răresc, se rup și se lasă în timp ce spațiul se întunecă („tot mai puțin… fermitatea scade”); firul de lumină și fibra pe care camera zboară spre punct („o cale… chiar acolo”); punctele de energie cu sclipiri calde; fibrele care se întind și cele noi care se desenează singure; unda care strânge tot volumul pe „se simte imediat”; inelul săptămânilor",
+   "effects": "nu: blurul de mișcare apare doar cât camera chiar cade sau urcă, adâncimea de câmp vine din locul camerei în volum, iar lumina caldă există numai la punctele de energie. O rezervă spusă cinstit: în prima jumătate de secundă de după „pornesc” (16,7-17,3 s) cadrul e foarte luminos și plin; e momentul-cheie al reel-ului, dar e și cel mai încărcat",
+   "natural": "da: ascultătorul aude textul fără nicio greșeală peste muzică și spune că e o singură explicație legată; blocurile de text intră centrate, rând cu rând, pe timpii măsurați ai vocii; whoosh-ul care coboară în ton ține toată căderea. O rezervă spusă cinstit: pe fișierul fără muzică ascultătorul pierde uneori „ta” din prima propoziție (o dată din șase ascultări); de aceea borcanul aterizează la 0,24 s, în „Crema”, nu între „ta” și „de”",
+   "owner": "da, cu rezerve spuse cinstit: (1) fibrele sunt panglici desenate în perspectivă, cu focalizare și lumină, nu material 3D redat cu umbre; (2) foile de sticlă din cădere sunt simple (o față, o muchie luminoasă), ca să rămână lizibile la viteză; (3) sub blocul de text fibrele sunt șterse într-un buzunar moale, ca literele albe să rămână curate: în starea luminoasă buzunarul se vede ca o zonă mai liniștită în partea de sus"
   }
- }
+ },
+ "soundNote": "Căderea are sunetul ei: un whoosh care coboară în ton de la început până la aterizare, cu vârful pe cel mai rapid cadru (tăietura din mijlocul căderii). E o categorie proprie, „whoosh_fall”, făcută de scripts/v2-crema-straturi/whoosh_fall.py în engine/sfx/v3 (folder ignorat de git: scriptul se rulează o dată după sfx.py --v3). Dacă fișierele lipsesc, mixul păstrează singur whoosh_through pe același cadru."
 }

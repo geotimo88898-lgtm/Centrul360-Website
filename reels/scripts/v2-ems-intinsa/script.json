@@ -679,7 +679,7 @@
    "serves": "da: un afiș pe propoziție, un obiect pe afiș; lupa mărește exact „EMS”, cercul de marker e pe singura cifră, banda desenează „mai intens” și „mai des” când sunt spuse",
    "effects": "nu: singura mișcare mare e trecerea prin lentilă, care duce la definiție; în rest camera doar călătorește pe aceeași coală, cu blur numai cât se mișcă",
    "natural": "da: ascultătorul aude textul fără nicio greșeală, cu și fără muzică; contorul ajunge la 20.000 pe „mii”, exact când basul piesei revine",
-   "owner": "da, cu o rezervă spusă cinstit: afișul cu cele opt ședințe e cel mai aproape de o interfață; e un card de hârtie cu grosime, dar rămâne cel mai puțin „colaj” dintre toate"
+   "owner": "da, cu o rezervă spusă cinstit: afișul cu cele opt ședințe e cel mai aproape de o interfață; e un card de hârtie cu grosime, dar rămâne cel mai puțin „colaj” dintre toate. După a doua trecere fiecare afiș umple cadrul între y 230 și 1470, iar niciun text care contează nu e sub 58 px (cele mai mici: eticheta benzii și corpul cardului de dicționar, 40 px)"
   }
  }
 }

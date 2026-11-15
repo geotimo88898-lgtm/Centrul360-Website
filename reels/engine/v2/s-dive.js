@@ -52,7 +52,7 @@
     // the words' times, measured on the voice (script "words", wordtimes.py: the spoken text, numbers as words); else the engine's estimate
     L.forEach((ln, i) => { const m = R.script.words && R.script.words['L' + i]; ln.wv = m && ln.voiced ? m.map(([w, t]) => ({ w, t: ln.t0 + t })) : ln.words.map((x) => ({ w: x.w, t: x.t })); });
     // ---------------------------------------------------------------- the clock: every moment from the voice
-    const T = { land: 0.42 };
+    const T = { land: 0.24 };            // the jar lands inside „Crema”: a sound between „ta” and „de” made the listener lose „ta”
     T.s1 = S[1]; T.sink = wt(L[1], /^mai$/i, L[1].t0 + 1.75) - 0.1; T.s2 = S[2]; T.arrive = T.s2 + 1.0;
     T.weak = wt(L[2], /^tot$/i, L[2].t0 + 1.2); T.scade = wt(L[2], /^fermitatea$/i, L[2].t0 + 3.0);
     T.s3 = S[3]; T.path = wt(L[3], /^cale$/i, L[3].t0 + 0.9) - 0.35; T.acolo = wt(L[3], /^chiar$/i, L[3].t0 + 1.7);
@@ -136,9 +136,10 @@
       const r = (k) => rnd(i * 7 + gen * 1000, 100 + k), el = !!o.el, fam = o.fam != null ? o.fam : Math.floor(r(1) * 3) % 3;
       const ang1 = FAMS[fam] + (r(2) - 0.5) * 0.3, len = 2400 + r(3) * 900, dz = (r(4) - 0.5) * 800, s0 = o.s0 != null ? o.s0 : 0.5;
       const C1 = o.c || [(r(5) - 0.5) * 1750, -340 + r(6) * 1260, -640 + Math.pow(r(7), 0.9) * 2250], d1 = [Math.cos(ang1) * len, Math.sin(ang1) * len, dz];
-      const ang0 = ang1 + (r(8) - 0.5) * 1.0, C0 = [C1[0] + (r(9) - 0.5) * 240, C1[1] + 70 + r(10) * 200, C1[2] + (r(11) - 0.5) * 260], d0 = [Math.cos(ang0) * len, Math.sin(ang0) * len, dz + (r(12) - 0.5) * 320];
+      let ang0 = ang1 + (r(8) - 0.5) * 1.0; if (Math.abs(ang0) < 0.17) ang0 = ang0 < 0 ? -0.17 - r(30) * 0.1 : 0.17 + r(30) * 0.1;
+      const C0 = [C1[0] + (r(9) - 0.5) * 240, C1[1] + 70 + r(10) * 200, C1[2] + (r(11) - 0.5) * 260], d0 = [Math.cos(ang0) * len, Math.sin(ang0) * len, dz + (r(12) - 0.5) * 320];
       const F = { i, gen, el, P0t: v3.sub(C1, v3.mul(d1, s0)), P1t: v3.add(C1, v3.mul(d1, 1 - s0)), P0s: v3.sub(C0, v3.mul(d0, s0)), P1s: v3.add(C0, v3.mul(d0, 1 - s0)),
-        sag: el ? 50 + r(13) * 80 : 110 + r(13) * 190, a1: el ? 15 + r(14) * 12 : 30 + r(14) * 50, f1: el ? 9 + r(15) * 6 : 2.1 + r(15) * 2.5, p1: r(16) * 6.28, a2: 24 + r(17) * 46, f2: 1.5 + r(18) * 2.2, p2: r(19) * 6.28,
+        sag: el ? 50 + r(13) * 80 : 110 + r(13) * 190, a1: el ? 12 + r(14) * 10 : 30 + r(14) * 50, f1: el ? 7 + r(15) * 5 : 2.1 + r(15) * 2.5, p1: r(16) * 6.28, a2: 24 + r(17) * 46, f2: 1.5 + r(18) * 2.2, p2: r(19) * 6.28,
         rad: el ? 2.6 : 9 + r(20) * 10, w: (el ? 1.7 + r(21) * 0.9 : (3.6 + r(21) * 2.6) * (r(29) > 0.74 ? 1.7 : 1)) * (gen === 2 ? 0.82 : 1), ph: r(22) * 6.28, tw: 0.3 + r(23) * 0.22, weak: !!o.weak, wd: r(24), gap: o.gap ? 0.32 + r(25) * 0.36 : null, s0, t0: o.t0, dur: o.dur || 1.1,
         res: el ? 0.45 : 0.16 + r(26) * 0.14, bow: (r(28) - 0.5) * (el ? 60 : 190), nx: -Math.sin(ang1), ny: Math.cos(ang1) };
       fibres.push(F); return F; }
@@ -163,7 +164,7 @@
     function fpos(F, s, t) {
       const tx = lerp(F.P0t[0], F.P1t[0], s), ty = lerp(F.P0t[1], F.P1t[1], s), tz = lerp(F.P0t[2], F.P1t[2], s);
       const tau = F.gen === 0 ? tens(tx, ty, tz, t) : 0.72 + 0.28 * sm(seg(t, F.t0 + 0.3, F.t0 + 1.7));
-      const w1 = Math.sin(s * F.f1 * 6.2832 + F.p1 + t * 0.55) * F.a1, w2 = Math.sin(s * F.f2 * 6.2832 + F.p2 + t * 0.4) * F.a2;
+      const th1 = s * F.f1 * 6.2832 + F.p1 + t * 0.55, w1 = (Math.sin(th1) * (0.62 + 0.38 * Math.sin(s * 7.3 + F.p2)) + 0.4 * Math.sin(th1 * 0.43 + F.p2 * 2)) * F.a1, w2 = Math.sin(s * F.f2 * 6.2832 + F.p2 + t * 0.4) * F.a2;
       const k = sagK(t) * (F.weak ? 1 + 0.5 * weakK(F, t) : 1);
       let sx = lerp(F.P0s[0], F.P1s[0], s) + F.nx * w1, sy = lerp(F.P0s[1], F.P1s[1], s) + F.ny * w1 + F.sag * k * 4 * s * (1 - s), sz = lerp(F.P0s[2], F.P1s[2], s) + w2;
       const bw = F.bow * 4 * s * (1 - s);                                              // taut is not a ruler: a long, gentle curve and a breath of its wave stay
@@ -249,7 +250,7 @@
 
     // ---------------------------------------------------------------- sounds and events (the engine adds the whoosh on every cut)
     const cue = (t, cat, gain, o) => R.cue(t, cat, gain, o), ev = (t, kind) => R.event(t, kind || 'step');
-    cue(T.land, 'tap', 0.7); ev(T.land, 'drop'); cue(T.land + 0.5, 'shimmer_soft', 0.45); ev(T.land + 0.5, 'glow');
+    cue(T.land, 'tap', 0.55); ev(T.land, 'drop'); cue(0.92, 'shimmer_soft', 0.3); ev(0.92, 'glow');   // the light's shimmer stays soft and where the listener was tried with it (it hears every word, with and without music)
     cue(T.sink, 'dot', 0.5); ev(T.sink, 'step');
     // the dive: one whoosh that falls in pitch all the way down, its loudest moment on the fastest frame (the cut). "whoosh_fall" is this reel's own
     // sound (scripts/v2-crema-straturi/whoosh_fall.py writes it next to the premium set); where its files are missing the mix keeps the whoosh_through
@@ -367,7 +368,8 @@
       C.pr = (P) => { const x = P[0] - C.p[0], y = P[1] - C.p[1], z = P[2] - C.p[2], zc = x * C.f[0] + y * C.f[1] + z * C.f[2]; if (zc < 150) return null; const k = FOC / zc * zz; return [ox + (x * C.r[0] + y * C.r[1] + z * C.r[2]) * k, oy + (x * C.d[0] + y * C.d[1] + z * C.d[2]) * k, zc, k]; };
       return C; }
     // depth of field: how far out of focus a point is decides its layer (far and soft first, the sharp ones, then the near and soft ones on top)
-    const LV = [0.7, 1.7, 3.2, 5.2, 8, 12, 18], BL = [24, 15, 10, 6.5, 4.2, 2.4, 1.1, 0, 1.1, 2.4, 4.2, 6.5, 10, 15, 24];
+    // (a point between two layers is drawn on both, shared by how soft it should be: softness then changes smoothly along a strand, with no seam where layers meet)
+    const BV = [0, 1.6, 3.2, 5.2, 8, 12, 17, 24], NB = BV.length, BL = Array.from({ length: 2 * NB - 1 }, (_, b) => BV[Math.abs(b - (NB - 1))]);
     const COL = [[196, 236, 230], [222, 246, 241], [240, 253, 250]], WARM = [255, 210, 194];
     function drawVolume(x, C, t) {
       const zz = C.zz, rack = rackK(t), dimK = 1 - 0.55 * rack, dim = moodDim(t), lit = moodLit(t), energ = t > T.hit ? Math.exp(-0.6 * (t - T.hit)) : 0, NOW = C.now;
@@ -378,7 +380,7 @@
       for (const F of fibres) {
         let reach = 2, growing = false;
         if (F.gen > 0) { const gq = (t - F.t0) / F.dur; if (gq <= 0) continue; reach = o3(gq) * Math.max(F.s0, 1 - F.s0) * 1.04; growing = gq < 1; }
-        const wk = F.weak ? weakK(F, t) : 0, n = F.el ? 80 : 64, P = [];
+        const wk = F.weak ? weakK(F, t) : 0, n = F.n || (F.n = Math.round(clamp(128 + Math.abs(F.P1t[2] - F.P0t[2]) / 5.5, 128, 680))), P = [];   // a fibre that runs into the depth is cut finer: its focus changes along it, and each piece has one softness
         for (let i = 0; i <= n; i++) { const s = i / n, q = fpos(F, s, t), pr = C.pr(q); if (!pr) { P.push(null); continue; }
           const tau = Math.min(1, q[3]);
           let a = (F.gen > 0 ? sm((reach - Math.abs(s - F.s0)) / 0.04) : 1) * sm(s / 0.13) * sm((1 - s) / 0.13);
@@ -387,29 +389,37 @@
           a *= clamp(1.2 - (pr[2] - 400) / 2700, 0.1, 1) * sm((pr[2] - 150) / 280) * (0.84 + 0.16 * tau) * (1 - 0.2 * dim * (1 - tau)) * clamp(1.3 - 0.2 * pr[3], 0.5, 1);
           let warm = 0; if (warmOn) { for (let k = 0; k < 5; k++) if (PU[k] > 0) warm += PU[k] * Math.exp(-Math.hypot(q[0] - NOW[k][0], q[1] - NOW[k][1], q[2] - NOW[k][2]) / 250); if (warm > 1) warm = 1; }
           P.push([pr[0], pr[1], pr[2], pr[3], a, tau, q[4], warm]); }
-        for (let j = 0; j < 3; j++) { let cur = null, key = '', prev = null;
-          for (let i = 0; i <= n; i++) { const p = P[i]; if (!p) { cur = null; key = ''; prev = null; continue; }
+        for (let j = 0; j < 3; j++) { const act = new Map(); let prev = null;
+          for (let i = 0; i <= n; i++) { const p = P[i]; if (!p) { act.clear(); prev = null; continue; }
             const qn = P[Math.min(n, i + 1)] || p, qo = P[Math.max(0, i - 1)] || p; let tx = qn[0] - qo[0], ty = qn[1] - qo[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
             const tau = p[5], k = p[3], s = i / n;
             const rho = (F.rad * (1 + 0.8 * wk) * (1 - tau) * (1 + 0.6 * Math.sin(s * 9 + F.ph + j * 2.1)) + (F.el ? 1.2 : 1.05 * F.w) * tau) * k;
-            const c = Math.cos(F.ph + i * F.tw + j * 2.0944 + t * 0.4 * (1 - tau)), pt = [p[0] - ty * rho * c, p[1] + tx * rho * c];
-            const bl = C.ap * Math.abs(p[2] - C.zf) / p[2] * zz; let lv = 0; while (lv < 7 && bl > LV[lv]) lv++; const b = p[2] > C.zf ? 7 - lv : 7 + lv;
-            const aq = Math.round(Math.min(1, p[4] * (1 + 0.45 * p[6])) * 20) / 20, wq = Math.round(p[7] * 6), tq = tau < 0.33 ? 0 : tau < 0.75 ? 1 : 2, kk = b + '|' + aq + '|' + wq + '|' + tq;
-            if (kk !== key) { cur = { F, k, a: aq, wq, tq, bump: p[6], pts: prev ? [prev, pt] : [pt] }; runs[b].push(cur); key = kk; } else { cur.pts.push(pt); cur.k = cur.k * 0.85 + k * 0.15; if (p[6] > cur.bump) cur.bump = p[6]; }
+            const c = Math.cos(F.ph + s * 64 * F.tw + j * 2.0944 + t * 0.4 * (1 - tau)), pt = [p[0] - ty * rho * c, p[1] + tx * rho * c, clamp(F.w * k * (0.74 - 0.18 * tau) * (1 + 0.45 * p[6]) / 2, 0.5, 6.5)];   // x, y, half its width here
+            const sg = C.ap * Math.abs(p[2] - C.zf) / p[2] * zz; let lv = 0; while (lv < NB - 2 && sg >= BV[lv + 1]) lv++; const fr = clamp((sg - BV[lv]) / (BV[lv + 1] - BV[lv])), far = p[2] > C.zf;
+            const aB = Math.min(1, p[4] * (1 + 0.45 * p[6])), wq = Math.round(p[7] * 6), tq = tau < 0.33 ? 0 : tau < 0.75 ? 1 : 2; let s0 = -1, s1 = -1;
+            for (let cc = 0; cc < 2; cc++) { const aq = Math.round(aB * (cc ? fr : 1 - fr) * 25) / 25; if (aq <= 0) continue; const b = far ? NB - 1 - lv - cc : NB - 1 + lv + cc, kk = aq + '|' + wq + '|' + tq; if (cc) s1 = b; else s0 = b;
+              let st = act.get(b);
+              if (!st) { st = { key: kk, cur: { F, a: aq, wq, tq, pts: [pt] } }; runs[b].push(st.cur); act.set(b, st); }
+              else if (st.key !== kk) { const mid = [(prev[0] + pt[0]) / 2, (prev[1] + pt[1]) / 2, (prev[2] + pt[2]) / 2]; st.cur.pts.push(mid);   // two pieces meet in the middle of a straight stretch, with the same width
+                st.cur = { F, a: aq, wq, tq, pts: [mid, pt] }; runs[b].push(st.cur); st.key = kk; }
+              else st.cur.pts.push(pt); }
+            if (act.size > 2 || s0 < 0 || s1 < 0) for (const b of [...act.keys()]) if (b !== s0 && b !== s1) act.delete(b);
             prev = pt; } }
         if (growing) [F.s0 - reach, F.s0 + reach].forEach((s) => { if (s <= 0.01 || s >= 0.99) return; const pr = C.pr(fpos(F, s, t)); if (pr && pr[2] > 200) tips.push(pr); });
       }
       const nx = netc.getContext('2d'); nx.clearRect(0, 0, CW, CH + 2 * PAD);
-      const sc = W.scratch || (W.scratch = mk(CW, CH + 2 * PAD)), sx = sc.getContext('2d'); sx.lineCap = 'butt'; sx.lineJoin = 'round';
+      const sc = W.scratch || (W.scratch = mk(CW, CH + 2 * PAD)), sx = sc.getContext('2d'); sx.globalCompositeOperation = 'lighter';   // pieces of one strand that meet edge to edge add up to exactly one strand (no hairline where they join)
       BL.forEach((blur, bi) => { if (!runs[bi].length) return; sx.clearRect(0, 0, CW, CH + 2 * PAD); let any = false;
         for (const r of runs[bi]) { const Q = r.pts; if (Q.length < 2 || r.a <= 0.02) continue; let lo = 1e9, hi = -1e9, xl = 1e9, xh = -1e9; for (const q of Q) { if (q[1] < lo) lo = q[1]; if (q[1] > hi) hi = q[1]; if (q[0] < xl) xl = q[0]; if (q[0] > xh) xh = q[0]; }
           if (hi < -60 || lo > CH + 2 * PAD + 60 || xh < -60 || xl > CW + 60) continue;
-          sx.lineWidth = Math.min(13, Math.max(1, r.F.w * r.k * (0.74 - 0.09 * r.tq) * (1 + 0.45 * r.bump)));
-          sx.strokeStyle = rgb(mixc(COL[r.tq], WARM, 0.8 * r.wq / 6), Math.min(1, r.a * dimK * (0.78 + 0.07 * r.tq) * (1 + 0.5 * r.wq / 6) * (r.F === HERO ? 1.2 : 1)));
-          sx.beginPath(); sx.moveTo(Q[0][0], Q[0][1]); for (let i = 1; i < Q.length - 1; i++) sx.quadraticCurveTo(Q[i][0], Q[i][1], (Q[i][0] + Q[i + 1][0]) / 2, (Q[i][1] + Q[i + 1][1]) / 2); sx.lineTo(Q[Q.length - 1][0], Q[Q.length - 1][1]); sx.stroke(); any = true; }
-        if (!any) return; const bl = (blur + rack * 10) * zz; nx.save(); if (bl > 0.3) nx.filter = 'blur(' + bl.toFixed(1) + 'px)'; nx.drawImage(sc, 0, 0); nx.restore(); });
+          // a strand is a ribbon whose width follows the perspective smoothly (its two edges, curved through the points' middles)
+          sx.fillStyle = rgb(mixc(COL[r.tq], WARM, 0.8 * r.wq / 6), Math.min(1, r.a * dimK * (0.7 + 0.06 * r.tq) * (1 + 0.5 * r.wq / 6) * (r.F === HERO ? 1.2 : 1)));
+          const n = Q.length, Lf = [], Rt = []; for (let i = 0; i < n; i++) { const a = Q[Math.max(0, i - 1)], b2 = Q[Math.min(n - 1, i + 1)]; let tx = b2[0] - a[0], ty = b2[1] - a[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl; const hw = Q[i][2]; Lf.push([Q[i][0] - ty * hw, Q[i][1] + tx * hw]); Rt.push([Q[i][0] + ty * hw, Q[i][1] - tx * hw]); }
+          sx.beginPath(); sx.moveTo(Lf[0][0], Lf[0][1]); for (let i = 1; i < n - 1; i++) sx.quadraticCurveTo(Lf[i][0], Lf[i][1], (Lf[i][0] + Lf[i + 1][0]) / 2, (Lf[i][1] + Lf[i + 1][1]) / 2); sx.lineTo(Lf[n - 1][0], Lf[n - 1][1]);
+          sx.lineTo(Rt[n - 1][0], Rt[n - 1][1]); for (let i = n - 2; i > 0; i--) sx.quadraticCurveTo(Rt[i][0], Rt[i][1], (Rt[i][0] + Rt[i - 1][0]) / 2, (Rt[i][1] + Rt[i - 1][1]) / 2); sx.lineTo(Rt[0][0], Rt[0][1]); sx.closePath(); sx.fill(); any = true; }
+        if (!any) return; const bl = (blur + rack * 10) * zz; nx.save(); nx.globalCompositeOperation = 'lighter'; if (bl > 0.3) nx.filter = 'blur(' + bl.toFixed(1) + 'px)'; nx.drawImage(sc, 0, 0); nx.restore(); });   // the layers add up too: a strand that crosses from one to the next stays whole
       // a light travels at the tip of every fibre that is drawing itself in
-      if (tips.length) { nx.save(); nx.globalCompositeOperation = 'lighter'; for (const p of tips) { const rr = Math.max(9, 30 * p[3]) * (1 + rack), al = clamp(1.25 - (p[2] - 400) / 2600, 0.15, 1) * dimK, rg = nx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rr); rg.addColorStop(0, 'rgba(255,255,255,' + al + ')'); rg.addColorStop(0.3, 'rgba(214,255,248,' + 0.5 * al + ')'); rg.addColorStop(1, 'rgba(160,245,232,0)'); nx.fillStyle = rg; nx.beginPath(); nx.arc(p[0], p[1], rr, 0, 6.2832); nx.fill(); } nx.restore(); }
+      if (tips.length) { nx.save(); nx.globalCompositeOperation = 'lighter'; for (const p of tips) { const rr = Math.max(8, 22 * p[3]) * (1 + rack), al = 0.85 * clamp(1.25 - (p[2] - 400) / 2600, 0.15, 1) * dimK, rg = nx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rr); rg.addColorStop(0, 'rgba(255,255,255,' + al + ')'); rg.addColorStop(0.3, 'rgba(214,255,248,' + 0.5 * al + ')'); rg.addColorStop(1, 'rgba(160,245,232,0)'); nx.fillStyle = rg; nx.beginPath(); nx.arc(p[0], p[1], rr, 0, 6.2832); nx.fill(); } nx.restore(); }
       // a calm pocket behind the type (the fibres there stay far and soft)
       nx.save(); nx.globalCompositeOperation = 'destination-out'; nx.translate(540, PAD + 420); nx.scale(1, 0.8); { const mg = nx.createRadialGradient(0, 0, 40, 0, 0, 700); mg.addColorStop(0, 'rgba(0,0,0,.97)'); mg.addColorStop(0.5, 'rgba(0,0,0,.93)'); mg.addColorStop(0.64, 'rgba(0,0,0,.64)'); mg.addColorStop(0.78, 'rgba(0,0,0,.3)'); mg.addColorStop(0.9, 'rgba(0,0,0,.1)'); mg.addColorStop(1, 'rgba(0,0,0,0)'); nx.fillStyle = mg; nx.fillRect(-700, -700, 1400, 1400); } nx.restore();
       x.drawImage(netc, 0, 0);
