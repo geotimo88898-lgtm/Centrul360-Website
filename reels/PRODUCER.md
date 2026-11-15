@@ -183,6 +183,10 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    de cadru pentru scară; colțuri de vizor pe subiect; inel de numărătoare doar pentru cifre reale; noduri cu iconițe și
    linii care apar pe rând; o listă spusă în propoziții, cu pastilele cuvintelor-cheie adunate pe ecran (doar fraze
    adevărate, de pe site); fundal alb cu inele moi de accent în colțuri; o idee pe ecran; iconițe de oameni generice.
+   Din „Colaj pe birou” (x-b): obiectul lucrează pe text (lupa sau ochelarii măresc cuvântul-cheie, un cerc de marker
+   rose gold sau turcoaz închis, niciodată roșu, o linie care taie un cuvânt); un bloc-definiție de dicționar doar cu
+   formularea de pe site; CTA cu cuvânt în comentarii (cuvântul rămâne 360), dar mesajul în privat abia când mesajele
+   Instagram sunt legate și avem o resursă reală de trimis; până atunci doar CTA-uri pe care le putem onora.
    Detaliile: README, „Montajul”.
 6. **Tema și varietatea** (14.11): doar `brand-light` (alb cu turcoaz) sau `brand-teal` (turcoaz cu alb), alternate
    (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
@@ -239,6 +243,10 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    puzzle, bustul clasic cu banda rose gold pe maxilar; serif mare spațiat, italic mic, rândul de mașină de scris cu o
    pastilă, un cuvânt care se schimbă pe loc; obiectele generate o dată cu `imagen.py`, după OK-ul proprietarului; doar
    afirmații reale, niciun chip care seamănă cu o persoană reală, obiectele nu sunt niciodată dovadă de înainte/după),
+   (x-b) colaj pe birou (varianta luminoasă a lui x: hârtie albă sau gri-deschis cu linii fine de schiță, obiecte generice
+   fotografiate de sus cu umbre reale, majuscule condensate turcoaz, markerul rose gold sau turcoaz închis, niciodată
+   roșu; obiectul lucrează pe text, blocul-definiție, CTA-ul cu cuvânt în comentarii; tranziții cu blur rapid și un puls
+   pe fiecare obiect nou),
    (xi) faceless curat (fundal alb, turcoaz, text cinetic pe voce: cuvântul-cheie intră uriaș și în blur, apoi se
    retrage; accentul în italic serif; obiecte uriașe tăiate de cadru; colțuri de vizor; inel de numărătoare; noduri cu
    iconițe; pastile care se adună pentru o listă spusă în propoziții), (xii) logo-ancora (logo-ul real fix, în același

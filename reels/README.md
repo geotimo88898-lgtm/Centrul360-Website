@@ -273,6 +273,18 @@ sau chip care seamănă cu o persoană reală; obiectele nu sunt niciodată „d
 rămân poze reale). Se combină cu (iv), cu structura în 8 blocuri și cu (viii) (bara de progres); vocea poate rămâne sau
 poate lipsi (doar muzică și text).
 
+**(x-b) Colaj pe birou** (instagram.com/reel/DekGW1-tCoi, trimis 14.11), o variantă luminoasă a lui (x). Cum arată: un
+birou de hârtie gri-deschis, cu linii fine de schiță tehnică și semne de coordonate; obiecte fotografiate de sus, cu
+umbre reale (ochelari rotunzi peste cuvinte, o coloană grecească, o foaie de carnețel ruptă, prinsă cu un ac, cu un pix
+alături, un zid de cărămidă cu o lupă, o cheie veche, o broșură într-un cerc punctat). Tipografie: majuscule condensate,
+groase, colorate, amestecate cu un sans subțire și un italic serif; un bloc ca o definiție de dicționar, ca textură.
+Tranziții: împingeri cu blur rapid între obiecte, cu un puls sonor pe fiecare obiect nou. La noi: hârtie albă sau
+gri-deschis, turcoazul ca culoare principală; markerul roșu devine rose gold sau turcoaz închis, niciodată roșu (roșul
+sună a alarmă într-o clinică). Obiectele vin din `imagen.py`, din aceeași bibliotecă cu (x), doar obiecte generice (o
+lupă, un carnețel, o clepsidră, o cheie, o riglă sau un metru de croitorie, o oglindă), fără chipuri. Cele trei
+dispozitive refolosibile (obiectul care lucrează pe text, blocul-definiție, CTA-ul cu cuvânt în comentarii) sunt și în
+„Montajul”, mai jos.
+
 **(xi) Faceless curat** (instagram.com/reel/Da0DayIpsie, trimis 14.11, „super clean”; 26 s, cu voce). Foarte aproape de
 stilul nostru educațional: fundal alb, o singură culoare de accent, text cinetic pe voce. Ce face bine: (1) fiecare
 cuvânt-cheie intră exact când e spus, centrat: un cuvânt mare vine uriaș și în blur, apoi se retrage la mărimea lui
@@ -539,6 +551,15 @@ le-a aprobat proprietarul):
   numărătoare pentru cifre reale; noduri cu iconițe și linii care apar pe rând; o listă spusă în propoziții, iar pe ecran
   pastilele cuvintelor-cheie care se adună (plin, conturat, alternativ); fundal alb cu inele de accent foarte moi, în
   blur, în colțuri; o singură idee pe ecran.
+- **Trei dispozitive din „Colaj pe birou”** (formatul x-b), refolosibile: (1) obiectul lucrează pe text: lentila unei
+  lupe alunecă peste un rând și mărește cuvântul-cheie, lentila ochelarilor mărește textul de sub ea, un cerc de marker
+  (rose gold sau turcoaz închis, niciodată roșu) se desenează în jurul cuvântului, o linie taie un cuvânt; (2) un bloc
+  ca o definiție de dicționar pentru termenul explicat (ex. „SMAS · stratul profund de sub piele…”), doar cu formularea
+  de pe site; arată educațional și premium; (3) un CTA cu cuvânt în comentarii: rândul cu cererea, apoi o pastilă de
+  comentariu care tastează cuvântul. **Dependență**: partea cu mesajul în privat merge doar când mesajele Instagram sunt
+  legate și avem o resursă reală de trimis (de ex. catalogul de rezultate sau un ghid real); până atunci folosim doar
+  CTA-uri pe care le putem onora. Cuvântul din comentarii rămâne **360** (regula proprietarului din 13.11), dacă el nu
+  hotărăște altfel.
 - Scenele noi pentru asta (`engine/v2/edit.js`): `writeon` (un rând mic scris de punctul de lumină, cu tic pe cuvânt),
   `panels` (panouri verticale care intră una după alta pe grilă, cu tap), `titlecard` (titlul mare, accentul, cele trei
   rânduri și cartea reală care îl acoperă, cu linia despre acord; ținut). Demonstrația: `scripts/v2-demo-sfx`
