@@ -516,6 +516,15 @@ async function campaignDays(conn, range) {
   if (r.error) return { error: r.error };
   return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.campaignId) };
 }
+// every ad's days (spend, Meta's leads, link clicks), paused and deleted ones too: when each last ran and what a lead
+// cost on its days (read only; Claude's /api/ads-publish?action=daily)
+async function adDays(conn, range) {
+  const every = LIVE.concat(['ARCHIVED', 'DELETED']);
+  const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'ad', fields: 'ad_id,ad_name,campaign_id,campaign_name,spend,actions,inline_link_clicks', time_increment: '1', limit: '500',
+    time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: every }]) }, 30);
+  if (r.error) return { error: r.error };
+  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: Number(x.spend) || 0, metaLeads: leadsOf(x), clicks: Number(x.inline_link_clicks) || 0 })).filter((x) => x.adId && (x.spend || x.metaLeads)) };
+}
 // how often the same women saw some campaigns over some days (frequency doesn't add up day by day: read whole)
 async function campaignReach(conn, range, ids) {
   if (!ids.length) return { freq: new Map() };
@@ -563,4 +572,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = (conn && conn.scope) || SCOPE.DEFAULT; return !!(s.include || (s.exclude || []).length); };
-module.exports = { ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms };
+module.exports = { ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms, adDays };

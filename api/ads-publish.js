@@ -105,6 +105,21 @@ async function results(sinceQ) {
   return { ok: true, since, until: today, ads: out };
 }
 
+// every ad's days from `since` (default: 60 days back): spend, Meta's leads, link clicks, day by day, with the campaign
+// (read only, for the owner's questions: when an ad last ran, what a lead cost on its last days)
+async function daily(sinceQ) {
+  const AM = require('./ads-manager');
+  const { conn, problem } = await AM.connection();
+  if (problem) return { ok: false, reason: problem, rows: [] };
+  const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+  const back = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
+  const since = /^\d{4}-\d{2}-\d{2}$/.test(String(sinceQ || '')) && sinceQ <= today ? String(sinceQ) : back;
+  const AC = require('./_lib/ads-cache');
+  const r = await AC.cached('daily-' + since + '_' + today, 30 * 60e3, () => ads.adDays(conn, { since, until: today }));
+  if (r.error) return { ok: false, reason: 'meta_error', message: r.error, rows: [] };
+  return { ok: true, since, until: today, rows: r.rows };
+}
+
 module.exports = async (req, res) => {
   const session = getSession(req);
   const allowed = fromCreative(req) || (session && session.role === 'admin');
@@ -119,6 +134,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'results') { res.status(200).json(await results(req.query.since)); return; }
+    if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
