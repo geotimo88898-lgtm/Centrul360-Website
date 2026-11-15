@@ -1,0 +1,47 @@
+{
+ "v": 2,
+ "id": "v2-montaj-rezultate",
+ "kind": "brand",
+ "rubric": "Cazuri",
+ "theme": "brand-light",
+ "sound": "v3",
+ "hookHit": false,
+ "captions": false,
+ "nuki": false,
+ "title": "40 de cazuri. Toate reale.",
+ "topic": "Montaj de rezultate reale din catalog, tăiat pe bas: zece cazuri, câte unul pe lovitură, apoi nota de pe Google și logo-ul",
+ "post": "40 de cazuri. Toate reale. Zece dintre ele, din catalogul nostru: clientele noastre, fotografiate la noi, înainte și după. Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta. #centrul360 #timisoara #arad #inaintesidupa",
+ "ctaType": "none",
+ "sources": "v2/src/catalog-rezultate.html (h1 „40 de cazuri. Toate reale.”; fiecare caz: tratamentul, orașul și ședințele exact cum sunt în catalog; „Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta.”); v2/src/index.html și paginile de oraș („5,0 pe Google”, „300+ recenzii Google”); pozele: brand_asset/catalog, tăiate doar în cele două jumătăți ale lor (aceeași scară și aceeași încadrare pentru înainte și după), neretușate, în culorile lor.",
+ "musicFile": "owner-weongo",
+ "musicStart": 11.763,
+ "beat": { "bpm": 131.01 },
+ "musicNote": "„WE ON GO II”, partea „Here we go”, după „honorable”: 11,76-24,12 s din piesă (versurile explicite vin după ~24 s). Loviturile de bas măsurate la milisecundă (banda 30-110 Hz, pragul -6 dB sub vârf): 11,806 (bătaia 25,5), 12,267 (26,5), 12,489 (27), 13,408 (29), 14,096 (30,5), 14,785 (32), 16,162 (35), 17,080 (37), 18,457 (40), 19,151 (41,5), 19,611 (42,5), 19,835 (43), 20,753 (45), 21,441 (46,5), 22,133 (48), 23,506 (51). musicStart 11,763 pune bătaia 29 (BOOM) pe cadrul 49 (1,633 s). Fiecare tăietură e pe una dintre ele (în „hits”, în secunde de reel). Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "subframes": { "n": 5, "shutter": 0.55, "ranges": [[1.25, 1.95], [2.22, 2.6], [2.95, 3.3], [4.05, 4.75], [5.2, 5.6], [6.3, 7.05], [7.3, 7.62], [7.78, 7.98], [8.0, 8.22], [8.85, 9.25], [9.55, 9.8], [10.3, 10.55]] },
+ "hook": {
+  "say": "40 de cazuri. Toate reale.",
+  "visual": {
+   "type": "montaj",
+   "cam": "none",
+   "hits": { "25.5": 0.0313, "26.5": 0.4923, "27": 0.7143, "29": 1.6333, "30.5": 2.3213, "32": 3.0103, "35": 4.3873, "37": 5.3053, "40": 6.6823, "41.5": 7.3763, "42.5": 7.8363, "43": 8.0603, "45": 8.9783, "46.5": 9.6663, "48": 10.3583, "51": 11.7313 },
+   "h1": ["40 de cazuri.", "Toate reale."],
+   "cases": [
+    { "n": 39, "img": "cazul-39-hifu-abdomen-tm.webp", "title": "HIFU abdomen", "meta": "Timișoara · 1 ședință", "focus": [0.5, 0.58] },
+    { "n": 2, "img": "cazul-02-hifu-gusa.webp", "title": "HIFU gușă", "meta": "Timișoara · 1 ședință", "focus": [0.5, 0.55] },
+    { "n": 22, "img": "cazul-22-hifu-periocular-arad.webp", "title": "HIFU periocular", "meta": "Arad · 1 ședință", "focus": [0.5, 0.5] },
+    { "n": 33, "img": "cazul-33-hifu-gusa-tm-7.webp", "title": "HIFU gușă", "meta": "Timișoara · 2 ședințe", "focus": [0.5, 0.5] },
+    { "n": 20, "img": "cazul-20-liposonix-abdomen-tm-2.webp", "title": "Liposonix abdomen", "meta": "Timișoara · 1 ședință", "focus": [0.5, 0.5] },
+    { "n": 38, "img": "cazul-38-hifu-abdomen-arad-3.webp", "title": "HIFU abdomen", "meta": "Arad · 1 ședință", "focus": [0.5, 0.52] },
+    { "n": 29, "img": "cazul-29-hifu-gusa-contur-tm.webp", "title": "HIFU gușă și contur", "meta": "Timișoara · 1 ședință", "focus": [0.5, 0.5] },
+    { "n": 26, "img": "cazul-26-hifu-abdomen-inferior-tm.webp", "title": "HIFU abdomen inferior", "meta": "Timișoara · 1 ședință", "focus": [0.5, 0.55] },
+    { "n": 34, "img": "cazul-34-rf-sculpt-arad.webp", "title": "RF Sculpt", "meta": "Arad · 1 ședință", "focus": [0.5, 0.55] },
+    { "n": 5, "img": "cazul-05-liposonix-solduri.webp", "title": "Liposonix șolduri", "meta": "Timișoara · 1 ședință", "focus": [0.5, 0.5] }
+   ],
+   "trio": [6, 7, 8],
+   "google": { "score": "5,0", "reviews": "300+ recenzii Google" },
+   "cities": ["Timișoara", "Arad"],
+   "consent": "Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta."
+  }
+ },
+ "end": { "type": "save", "hold": 10.664 }
+}

@@ -1,75 +1,75 @@
 {
 "_mode": "continuous",
-"_tempo": 1.05,
-"_wpm_take": 177,
+"_tempo": 1.08,
+"_wpm_take": 210,
 "L0": {
 "text": "Poți slăbi peste tot, iar zonele astea rămân.",
-"dur": 2.92,
-"speech": 2.67,
-"file": "voice/cont-c84971fab7a1b989-L0.wav",
+"dur": 2.43,
+"speech": 2.24,
+"file": "voice/cont-f31754ca582ea1c7-L0.wav",
 "role": "hook"
 },
 "L1": {
 "text": "Vorbesc de abdomenul de jos, de colăcei, de interiorul coapselor.",
-"dur": 4.19,
-"speech": 3.95,
-"file": "voice/cont-c84971fab7a1b989-L1.wav",
+"dur": 3.5,
+"speech": 3.3,
+"file": "voice/cont-f31754ca582ea1c7-L1.wav",
 "role": "beat"
 },
 "L2": {
 "text": "Acolo grăsimea e rezistentă la dietă și sport, din motive genetice și hormonale.",
-"dur": 5.2,
-"speech": 4.96,
-"file": "voice/cont-c84971fab7a1b989-L2.wav",
+"dur": 3.87,
+"speech": 3.75,
+"file": "voice/cont-f31754ca582ea1c7-L2.wav",
 "role": "beat"
 },
 "L3": {
-"text": "Așa că, dacă zona nu cedează deși mănânci atent și faci mișcare, nu e vina ta.",
-"dur": 4.21,
-"speech": 3.88,
-"file": "voice/cont-c84971fab7a1b989-L3.wav",
+"text": "Așa că nu e vina ta că zona nu cedează.",
+"dur": 2.11,
+"speech": 1.87,
+"file": "voice/cont-f31754ca582ea1c7-L3.wav",
 "role": "beat"
 },
 "L4": {
 "text": "Doar că grăsimea asta are un punct slab.",
-"dur": 2.55,
-"speech": 2.48,
-"file": "voice/cont-c84971fab7a1b989-L4.wav",
+"dur": 1.9,
+"speech": 1.55,
+"file": "voice/cont-f31754ca582ea1c7-L4.wav",
 "role": "beat"
 },
 "L5": {
 "text": "Cu Liposonix, ultrasunetele trec prin piele fără s-o afecteze și țintesc doar grăsimea.",
-"dur": 5.23,
-"speech": 5.0,
-"file": "voice/cont-c84971fab7a1b989-L5.wav",
+"dur": 4.71,
+"speech": 4.47,
+"file": "voice/cont-f31754ca582ea1c7-L5.wav",
 "role": "payoff"
 },
 "L6": {
-"text": "Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină singur, în săptămânile următoare.",
-"dur": 7.94,
-"speech": 7.6,
-"file": "voice/cont-c84971fab7a1b989-L6.wav",
+"text": "Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină în săptămânile următoare.",
+"dur": 4.84,
+"speech": 4.46,
+"file": "voice/cont-f31754ca582ea1c7-L6.wav",
 "role": "resolve"
 },
 "L7": {
 "text": "Cele distruse nu mai revin. Doar cele rămase se pot mări, dacă iei în greutate.",
-"dur": 4.67,
-"speech": 4.36,
-"file": "voice/cont-c84971fab7a1b989-L7.wav",
+"dur": 4.33,
+"speech": 3.95,
+"file": "voice/cont-f31754ca582ea1c7-L7.wav",
 "role": "resolve"
 },
 "L8": {
 "text": "Iar diferența se vede, în general, la șase până la opt săptămâni.",
-"dur": 4.05,
-"speech": 3.68,
-"file": "voice/cont-c84971fab7a1b989-L8.wav",
+"dur": 2.94,
+"speech": 2.7,
+"file": "voice/cont-f31754ca582ea1c7-L8.wav",
 "role": "resolve"
 },
 "L9": {
 "text": "Trimite-l prietenei care crede că e doar lipsă de voință.",
-"dur": 2.809,
-"speech": 2.809,
-"file": "voice/cont-c84971fab7a1b989-L9.wav",
+"dur": 2.404,
+"speech": 2.404,
+"file": "voice/cont-f31754ca582ea1c7-L9.wav",
 "role": "outro"
 }
 }
