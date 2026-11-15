@@ -161,6 +161,6 @@
   "bpm": 123.01
  },
  "voiceNote": "Ritm rapid și legat, ca într-un clip scurt de treizeci de secunde, cam două sute de cuvinte pe minut; pauzele dintre propoziții sunt foarte scurte. Liposonix se citește românește.",
- "tempo": 1.08,
- "structure": "Hook (fapt surprinzător) → Lead (zonele, spuse în propoziție) → Body → Body (nu e vina ta) → Open loop (un punct slab) → Body (răspunsul: Liposonix) → Body → Body → Body → CTA (trimite unei prietene)"
+ "structure": "Hook (fapt surprinzător) → Lead (zonele, spuse în propoziție) → Body → Body (nu e vina ta) → Open loop (un punct slab) → Body (răspunsul: Liposonix) → Body → Body → Body → CTA (trimite unei prietene)",
+ "tempoNote": "Înregistrarea are 210 cuvinte pe minut pe tot clipul, deci rămâne la viteza ei (fără atempo), cam ritmul reel-ului aprobat (v2-gusa-slabe: 203)."
 }

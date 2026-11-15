@@ -199,9 +199,9 @@
         const s1 = clamp(te / 0.06); score.style.opacity = s1.toFixed(3); score.style.transform = 'scale(' + (1 + 0.22 * (1 - out5(te / 0.28))).toFixed(4) + ')'; score.style.filter = te < 0.12 ? 'blur(' + ((1 - te / 0.12) * 10).toFixed(1) + 'px)' : '';
         const r1 = smooth((te - 0.115) / 0.25); vis(revs, r1); revs.style.transform = 'translateY(' + ((1 - out3(r1)) * 18).toFixed(1) + 'px)';
         const lg = smooth(tl / 0.24); logo.style.opacity = lg.toFixed(3); logo.style.visibility = lg < 0.004 ? 'hidden' : ''; logo.style.filter = tl < 0.24 ? 'blur(' + ((1 - lg) * 9).toFixed(1) + 'px)' : ''; logo.style.transform = 'translateY(' + ((1 - out5(tl / 0.4)) * 30).toFixed(1) + 'px)';
-        const cq = smooth((tl - 0.23) / 0.3); vis(city, cq); city.style.transform = 'translateY(' + ((1 - out3(cq)) * 14).toFixed(1) + 'px)';
+        const cq = smooth((tl - 0.06) / 0.3); vis(city, cq); city.style.transform = 'translateY(' + ((1 - out3(cq)) * 14).toFixed(1) + 'px)';
         const lq = E.inout(clamp((t - T('51')) / 0.5)); line.style.transform = 'scaleX(' + lq.toFixed(4) + ')'; line.style.opacity = lq > 0.002 ? '1' : '0';
-        vis(consent, smooth((tl - 0.46) / 0.4));
+        vis(consent, smooth((tl - 0.2) / 0.45));
       }
     }
     ctx.tick((t) => draw(t));
@@ -209,7 +209,7 @@
 
     // ---- sound and events, to the frame (the premium set, by category). The song carries the bass; the effects mark the cuts.
     const ev = (t, kind) => R.event(t, kind);
-    ctx.sfx(0.0, 'tick_soft', 0.55); ev(0, 'write'); ctx.sfx(T('26.5'), 'tick_soft', 0.5); ev(T('26.5'), 'write'); ctx.sfx(T('27'), 'dot', 0.6); ev(T('27'), 'motif');
+    ctx.sfx(0.02, 'impact', 0.14, { prio: 4 }); ctx.sfx(0.0, 'tick_soft', 0.55); ev(0, 'write'); ctx.sfx(T('26.5'), 'tick_soft', 0.5); ev(T('26.5'), 'write'); ctx.sfx(T('27'), 'dot', 0.6); ev(T('27'), 'motif');
     ctx.sfx(tBoom - 0.34, 'riser_soft', 0.45); ctx.sfx(tBoom - 0.02, 'suck_in', 0.6, { prio: 4, peak: true });
     ctx.sfx(tBoom, 'hit_deep', 1, { prio: 5 }); ctx.sfx(tBoom, 'whoosh_cut', 0.5, { prio: 3, peak: true }); ev(tBoom, 'cut'); ev(tBoom, 'slam'); ctx.sfx(tBoom + 0.04, 'tick_soft', 0.35);
     const cutS = { whip: ['whoosh_cut', 0.75], split: ['tap', 0.7], zoomout: ['whoosh_through', 0.6], whipv: ['whoosh_cut', 0.7], flash: ['hit_deep', 1], punch: ['whoosh_cut', 0.7] };
@@ -219,7 +219,7 @@
     ctx.sfx(seq[5] + 0.04, 'shimmer_soft', 0.8, { prio: 4 }); ev(seq[5], 'reveal');
     TRIO.forEach((t0, j) => { ctx.sfx(t0, j ? 'tap' : 'whoosh_cut', j ? 0.85 : 0.7, { prio: 4, peak: !j }); if (!j) ctx.sfx(t0, 'tap', 0.8); ev(t0, j ? 'panel' : 'cut'); ev(t0, 'slam'); ctx.sfx(t0 + 0.07, 'tick_soft', 0.3); });
     ctx.sfx(tEnd, 'swoosh_end', 0.7, { prio: 4, peak: true }); ev(tEnd, 'cut'); ctx.sfx(tEnd + 0.01, 'tap', 0.6); ev(tEnd, 'slam'); ctx.sfx(tEnd + 0.12, 'tick_soft', 0.4);
-    ctx.sfx(tLogo, 'tap', 0.55); ev(tLogo, 'slam'); ctx.sfx(tLogo + 0.08, 'shimmer_soft', 0.45); ctx.sfx(tLogo + 0.23, 'dot', 0.5); ev(tLogo + 0.23, 'in'); ctx.sfx(tLogo + 0.46, 'tick_soft', 0.3); ev(tLogo + 0.46, 'in');
+    ctx.sfx(tLogo, 'tap', 0.55); ev(tLogo, 'slam'); ctx.sfx(tLogo + 0.06, 'shimmer_soft', 0.45); ctx.sfx(tLogo + 0.07, 'dot', 0.5); ev(tLogo + 0.2, 'glow');
     ctx.sfx(T('51'), 'tick_soft', 0.3); ev(T('51'), 'glow');
     ctx.focus(logo);
     R.montaj = { T, SHOTS, TRIO, tEnd, tLogo };
