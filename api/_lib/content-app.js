@@ -74,7 +74,7 @@ async function tell(x) {
   try {
     const N = require('./notify'), store = { readJSON, writeJSON };
     const title = (KIND_WORD[x.kind] || 'Material') + ' de postat pe ' + NAMES[x.net] + ': ' + x.title;
-    const how = sounded(x.kind, x.net) ? 'Distribuie-l din Conținut și pune sunetul din aplicație.' : 'Distribuie pozele din Conținut.';
+    const how = sounded(x.kind, x.net) ? 'Distribuie-l din Content și pune sunetul din aplicație.' : 'Distribuie pozele din Content.';
     const text = (x.again ? 'Revine, cum ai cerut. ' : 'Ora ' + hm(Date.parse(x.at)) + '. ') + how;
     const tag = 'ct-app-' + x.id + '-' + x.net + '-' + Date.parse(x.at) + (x.again ? '-r' + Date.parse(x.until) : '');
     return await N.notifyMany(store, await N.ownerIds(store), { kind: 'post', tone: 'info', go: 'continut/de-postat~' + x.id + '~' + x.net, tag, title, text });

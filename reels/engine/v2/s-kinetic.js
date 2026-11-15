@@ -209,7 +209,7 @@
     const gras = label(s5.el, 706, [...'GRĂSIME'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:900 164px/1 ' + SANS + ';letter-spacing:-.03em;color:' + INK);
     const ln5b = layerLine(928);
     const muschi = label(s5.el, 966, 'MUȘCHI', 'font:500 104px/1 ' + SANS + ';letter-spacing:.12em;color:#8a9795;padding-left:.12em');
-    const sub5 = block(s5.el, 1200, 'trec prin piele, fără s-o afecteze', { li: 5, size: 52, weight: 560, color: MUTE });
+    const sub5 = block(s5.el, 1200, 'trec prin piele, fără să o afecteze', { li: 5, size: 52, weight: 560, color: MUTE });
     const FOC = [540, 794];
     const cone = svg(s5.el, 1080, 1920, '<defs><linearGradient id="kn-cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + TEAL + '" stop-opacity=".0"/><stop offset=".35" stop-color="' + TEAL + '" stop-opacity=".55"/><stop offset="1" stop-color="' + TEAL + '" stop-opacity=".9"/></linearGradient></defs>' +
       [-3, -2, -1, 0, 1, 2, 3].map((k) => '<path class="ray" d="M' + (540 + k * 74) + ' 420L' + FOC[0] + ' ' + FOC[1] + '" stroke="url(#kn-cg)" stroke-width="' + (k ? 4.5 : 6) + '" fill="none" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>').join('') +
@@ -350,7 +350,7 @@
       return op > 0.002;
     }
     // the flash through the light into the focus (the reel's one zoom through light; its sound is the loudest of the reel)
-    cue(S[6] - 0.32, 'whoosh_through', 0.85, { peak: true, prio: 4 }); cue(S[6], 'hit_deep', 0.7, { prio: 4 }); cue(S[6] + 0.02, 'shimmer_soft', 0.45); ev(S[6], 'reveal');
+    cue(S[6], 'whoosh_through', 0.85, { peak: true, prio: 4 }); cue(S[6], 'hit_deep', 0.7, { prio: 4 }); cue(S[6] + 0.02, 'shimmer_soft', 0.45); ev(S[6], 'reveal');
     for (let i = 1; i < N; i++) if (MOVE[i] !== 'flash' && MOVE[i] !== 'carry') { cue(S[i] + 0.42, 'tap', 0.25); }
 
     // ================================================================ one frame

@@ -1,5 +1,5 @@
-// POST /api/portal-content, Admin → Conținut (the owner, 12.11): the weekly batch to approve, the plan per network,
-// the numbers.
+// POST /api/portal-content, Admin → Content (the owner, 12.11, renamed 15.11: Insights, Transit, Calendar): the batch to
+// approve one by one (Transit), the plan per network (Calendar), the numbers (Insights).
 //   { action: 'get' }                       the items of the weeks around now (the one before, this one, the ones
 //                                           ahead, and whatever posted in the last 3 weeks), the settings, both
 //                                           weeks' status, the access (permissions), the week's top, the ideas
@@ -12,7 +12,13 @@
 //                                           plans follow; modes: { tt, yt, ig, fb: 'app' (Din aplicație) | 'auto' };
 //                                           goals: { followers: { ig, fb, tt, yt }, views, leads } a month)
 //   { action: 'apply_hours' }               „Folosește orele recomandate”: the recommended times saved (the plans follow)
-//   { action: 'approve', id } / { action: 'redo', id, note }   the owner's look at one item
+//   { action: 'approve', id, note?, areas? }   approved (a note: „aprobat, dar data viitoare…”, kept for the producer)
+//   { action: 'redo', id, note, areas?, links?, files?: [{ path, name }] }   „De refăcut”: what to change, the areas
+//                                           (video, muzica, text, caption, descriere, hashtag, altceva), links and files of
+//                                           reference (uploaded first with ?upload=1 to content/<id>/notes/<file>)
+//   { action: 'unreview', id }              „Anulează”: the last look undone (nothing out yet, the redo not started)
+//   POST ?upload=1                          a file of reference, from the phone straight to the store, in parts
+//                                           (cf/blob-client-r2.js; at most 200 MB)
 //   { action: 'approve_week', week }        every item of that week still waiting for a look
 //   { action: 'captions', id, captions: { tt?, yt?, ig?, fb? } }   a network's text, edited
 //   { action: 'post_now', id, net }         that item on that network now (approved items only)
@@ -40,7 +46,8 @@ function view(it, url, ins) {
   const x = (ins && ins[it.id]) || null;
   const A = require('./_lib/content-app');
   return { id: it.id, kind: it.kind, rubric: it.rubric, topic: it.topic, keyword: it.keyword, caption: it.caption, captions: it.captions || {}, week: it.week || '',
-    review: it.review || 'pending', redoNote: it.redoNote || '', replacedAt: it.replacedAt || '', state: it.state, removed: !!it.removed, dropped: !!it.dropped,
+    review: it.review || 'pending', redoNote: it.redoNote || '', replacedAt: it.replacedAt || '', reviewedAt: it.reviewedAt || '', state: it.state,
+    redo: it.redo ? C.notesView(it.id, it.redo) : null, notes: (it.notes || []).slice(-6).map((n) => C.notesView(it.id, n)), canUndo: !!it.undo && (it.review || 'pending') !== 'pending', removed: !!it.removed, dropped: !!it.dropped,
     files: (it.files || []).map((f) => ({ name: f.name, mime: f.mime, w: f.w, h: f.h, dur: f.dur, size: f.size, v: f.v || '', role: f.role || '' })), cover: it.cover, createdAt: it.createdAt,
     plan: (it.plan || []).map((e) => Object.assign({ net: e.net, kind: e.kind || P.kindOn(it, e.net), at: e.at, state: e.state, url: e.url || '', error: e.error || '', hold: e.hold || '', tries: e.tries || 0, postedAt: e.postedAt || '',
       note: e.note || '', privacy: e.privacy || '', comment: e.comment ? { text: e.comment.text || '', error: e.comment.error || '', at: e.comment.at || '' } : null },
@@ -79,14 +86,47 @@ async function payload() {
   // YouTube and TikTok have their own connections (Integrări): connected, lost, what they miss
   const net = (x, name) => (x ? { connected: !!x.connected, configured: !!x.configured, [name]: x[name] || '', missing: x.missing || [], lost: x.lost || '' } : { connected: false, configured: false, [name]: '', missing: [], lost: '' });
   return { settings: st, status, access: { connected: !!access.connected, igUser: access.igUser || '', missing: access.missing || [], yt: net(access.yt, 'channel'), tt: net(access.tt, 'name') },
-    items: keep.slice(-400).map((it) => view(it, url, ins)), goals: await I.goals().catch(() => ({ followers: {} })), top: require('./_lib/content-stats').top(list, now - 7 * 864e5, 3), today: P.roDay(now),
+    items: keep.slice(-400).map((it) => view(it, url, ins)), season: require('./_lib/content-learn').season(P.addDays(P.weekOf(now), 7)), goals: await I.goals().catch(() => ({ followers: {} })), top: require('./_lib/content-stats').top(list, now - 7 * 864e5, 3), today: P.roDay(now),
     ideas: fresh.concat(used).map((d) => ({ id: d.id, text: d.text, rubric: d.rubric || '', state: d.state, at: d.at, itemId: d.itemId || '' })), rubrics: C.RUBRICS };
 }
 const isNet = (n) => P.NETS.includes(n);
 // content-boost.js, when it is there
 function booster() { try { const B = require('./_lib/content-boost'); return B && typeof B.boost === 'function' ? B : null; } catch (e) { return null; } }
 
+// a file of reference for a change request, uploaded in parts (the phone's videos are big): content/<id>/notes/<file>
+const UP_TYPES = [...new Set(Object.values(C.ATT_TYPES))].concat(['audio/x-m4a', 'audio/x-wav', 'audio/webm', 'audio/mp3', 'video/3gpp', 'image/jpg']);
+async function upload(req, res) {
+  const session = await requireAdmin(req, res);
+  if (!session) return;
+  try {
+    const { handleUpload } = require('@vercel/blob/client');
+    const out = await handleUpload({
+      body: req.body,
+      request: req,
+      onBeforeGenerateToken: async (pathname) => {
+        const m = /^content\/([0-9a-f-]{36})\/notes\/([^/]+)$/.exec(String(pathname || ''));
+        if (!m || !C.isId(m[1]) || !C.isAtt(m[2])) throw new Error('invalid_path');
+        return { allowedContentTypes: UP_TYPES, maximumSizeInBytes: C.ATT_MAX, addRandomSuffix: false, allowOverwrite: false };
+      },
+    });
+    res.status(200).json(out);
+  } catch (err) {
+    console.error('content upload:', err.message);
+    res.status(400).json({ error: err.message === 'too_large' ? 'too_large' : 'upload_failed' });
+  }
+}
+// the sizes of the reference files a request names (only the ones really in the store count)
+async function sizesOf(id, files) {
+  const blob = require('@vercel/blob'), out = {};
+  await Promise.all((Array.isArray(files) ? files : []).slice(0, 12).map(async (f) => {
+    const n = C.attOf(f && f.path, id); if (!n) return;
+    try { const h = await blob.head(C.attPath(id, n)); if (h && h.size) out[n] = h.size; } catch (e) { /* not there */ }
+  }));
+  return out;
+}
+
 module.exports = async (req, res) => {
+  if (req.query && req.query.upload) return upload(req, res);
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
   const session = await requireAdmin(req, res);
   if (!session) return;
@@ -147,7 +187,12 @@ module.exports = async (req, res) => {
       res.status(200).json(b.dry && !(r && r.already) ? { result: r } : Object.assign(await payload(), { result: r }));
       return;
     } else if (b.action === 'approve' || b.action === 'redo') {
-      await C.setReview(String(b.id || ''), b.action === 'approve' ? 'approved' : 'redo', b.note);
+      const id = String(b.id || '');
+      const extra = { areas: b.areas, links: b.links, files: b.action === 'redo' ? b.files : [] };
+      if (b.action === 'redo' && Array.isArray(b.files) && b.files.length) extra.sizes = await sizesOf(id, b.files);
+      await C.setReview(id, b.action === 'approve' ? 'approved' : 'redo', b.note, extra);
+    } else if (b.action === 'unreview') {
+      await C.unreview(String(b.id || ''));
     } else if (b.action === 'approve_week') {
       const n = await C.approveWeek(String(b.week || ''));
       res.status(200).json(Object.assign(await payload(), { approved: n }));

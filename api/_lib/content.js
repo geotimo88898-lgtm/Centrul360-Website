@@ -375,7 +375,8 @@ async function ready(id) {
     const m = media(it);
     it.cover = m.cover ? m.cover.name : m.images[0] ? m.images[0].name : '';
     it.state = 'ready'; it.readyAt = new Date(now).toISOString();
-    if (it.review === 'redo') { it.review = 'pending'; it.replacedAt = it.readyAt; delete it.replacedTold; }
+    if (it.review === 'redo') { it.review = 'pending'; it.replacedAt = it.readyAt; delete it.replacedTold; if (it.redo) it.redo.doneAt = it.readyAt; }
+    delete it.undo;
     P.replanWeek(list, it.week, st, now);
     return { plan: it.plan, week: it.week };
   });
@@ -393,6 +394,7 @@ async function replace(id, input) {
     if (!it || it.removed) throw fail('not_found', 404);
     if (it.review !== 'redo') throw fail('not_redo', 409);
     it.state = 'draft';
+    delete it.undo;
     if (x.caption != null) it.caption = clean(x.caption, 2200);
     if (x.captions) it.captions = Object.assign({}, it.captions || {}, captionsOf(x.captions));
     if (x.topic) it.topic = clean(x.topic, 160);
@@ -413,21 +415,97 @@ async function replace(id, input) {
   return { id, files: out.files };
 }
 
-// the owner's look (Admin → Conținut): approve, send back to be redone (with a short note)
-async function setReview(id, decision, note) {
+// ---------------------------------------------------------------- the owner's look (Admin → Content → Transit)
+// A change request (the owner, 15.11: „să pot zice complet ce aș vrea editat”): the note, the areas it touches (more
+// than one), links and files of reference (photos, videos, music) uploaded from his phone to
+// content/<id>/notes/<file> (private: served by api/content-file.js only to an admin and to the producer's key).
+// it.redo is the open request the producer reads (status().redo); it.notes keeps every note, also the ones he left on
+// an approved item („aprobat, dar data viitoare…”), which the producer reads as lessons (status().notes).
+const AREAS = ['video', 'muzica', 'text', 'caption', 'descriere', 'hashtag', 'altceva'];
+const AREA_NAME = { video: 'Video', muzica: 'Muzică', text: 'Text pe ecran', caption: 'Caption', descriere: 'Descriere', hashtag: 'Hashtag-uri', altceva: 'Altceva' };
+const NOTE_MAX = 2000;
+const NOTE_FILES = 10, NOTE_LINKS = 10;
+// what a reference file may be (the type is read from its name; the phone's picker gives these)
+const ATT_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', heif: 'image/heif',
+  mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', m4v: 'video/x-m4v', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', opus: 'audio/ogg' };
+const ATT_MAX = 200 * 1024 * 1024;
+const isAtt = (x) => /^[a-z0-9]{8,32}\.(jpe?g|png|webp|gif|heic|heif|mp4|mov|webm|m4v|mp3|m4a|aac|wav|ogg|opus)$/.test(String(x || ''));
+const attPath = (id, n) => 'content/' + id + '/notes/' + n;
+const attOf = (path, id) => { const m = /^content\/([0-9a-f-]{36})\/notes\/([^/]+)$/.exec(String(path || '')); return m && m[1] === id && isAtt(m[2]) ? m[2] : ''; };
+const attUrl = (id, n) => ORIGIN() + '/api/content-file?i=' + encodeURIComponent(id) + '&att=' + encodeURIComponent(n);
+const attKind = (n) => { const t = ATT_TYPES[String(n).split('.').pop().toLowerCase()] || ''; return t.split('/')[0] || 'file'; };
+// a link of reference: http(s) only, short
+function linkOf(x) {
+  const v = String(x == null ? '' : x).trim().slice(0, 600);
+  try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes('.') ? u.toString() : ''; } catch (e) { return ''; }
+}
+// the request as the page sent it, cleaned: { note, areas, links, files: [{ n, name, mime, size, kind }] } (the files
+// checked against the store by the caller: api/portal-content.js gives their sizes)
+function noteOf(id, x, sizes) {
+  const o = x || {};
+  const areas = [...new Set((Array.isArray(o.areas) ? o.areas : []).map(String).filter((a) => AREAS.includes(a)))];
+  const links = [...new Set((Array.isArray(o.links) ? o.links : []).map(linkOf).filter(Boolean))].slice(0, NOTE_LINKS);
+  const files = [];
+  (Array.isArray(o.files) ? o.files : []).forEach((f) => {
+    const n = attOf(f && f.path, id);
+    if (!n || files.some((y) => y.n === n) || files.length >= NOTE_FILES) return;
+    if (sizes && !(sizes[n] > 0)) return;
+    files.push({ n, name: clean(f.name, 80).replace(/[\\/]/g, '-') || n, mime: ATT_TYPES[n.split('.').pop()] || '', size: (sizes && sizes[n]) || Number(f.size) || 0, kind: attKind(n) });
+  });
+  return { note: clean(o.note, NOTE_MAX), areas, links, files };
+}
+// the files of a request as the producer and the page read them (fetchable with the producer's key or an admin's session)
+const notesView = (id, r) => (r ? { at: r.at || '', kind: r.kind || 'redo', note: r.note || '', areas: r.areas || [], areaNames: (r.areas || []).map((a) => AREA_NAME[a] || a), links: r.links || [],
+  files: (r.files || []).map((f) => ({ name: f.name, file: f.n, mime: f.mime, size: f.size, kind: f.kind, url: attUrl(id, f.n) })) } : null);
+
+// the owner's look (Admin → Content): approve (with an optional note, kept as a lesson), send back to be redone (the
+// note, the areas, the references). `undo` keeps what the item was before, so „Anulează” brings it back.
+async function setReview(id, decision, note, extra) {
   if (!['approved', 'redo'].includes(decision)) throw fail('invalid_review');
   const now = new Date().toISOString();
+  const req = noteOf(id, Object.assign({}, extra || {}, { note }), extra && extra.sizes);
   const { out } = await update((list) => {
     const it = findItem(list, id);
     if (!it || it.removed || it.dropped) throw fail('not_found', 404);
     if (it.state !== 'ready') throw fail('not_ready', 409);
+    const before = { review: P.review(it), redoNote: it.redoNote || '', redoAt: it.redoAt || '', reviewedAt: it.reviewedAt || '', approvedAt: it.approvedAt || '', redo: it.redo || null, notes: (it.notes || []).length };
     if (decision === 'redo') {
       if ((it.plan || []).length && (it.plan || []).every((e) => e.state === 'posted' || !P.holds(e))) throw fail('already_posted', 409);
-      Object.assign(it, { review: 'redo', redoNote: clean(note, 300), redoAt: now, reviewedAt: now });
-    } else Object.assign(it, { review: 'approved', reviewedAt: now, approvedAt: now });
+      const r = Object.assign({ at: now, kind: 'redo' }, req);
+      Object.assign(it, { review: 'redo', redoNote: req.note.slice(0, 1000), redoAt: now, reviewedAt: now, redo: r });
+      it.notes = (it.notes || []).concat(r).slice(-20);
+    } else {
+      Object.assign(it, { review: 'approved', reviewedAt: now, approvedAt: now });
+      if (req.note || req.areas.length) it.notes = (it.notes || []).concat({ at: now, kind: 'approve', note: req.note, areas: req.areas, links: req.links, files: [] }).slice(-20);
+    }
+    it.undo = before;
     return true;
   });
   return out;
+}
+// „Anulează” the last look: back to what it was (only while nothing went out and the producer hasn't started the
+// redo); the files of an undone request are deleted
+async function unreview(id) {
+  const { out } = await update((list) => {
+    const it = findItem(list, id);
+    if (!it || it.removed || it.dropped) throw fail('not_found', 404);
+    const u = it.undo;
+    if (!u || P.review(it) === 'pending') throw fail('nothing_to_undo', 409);
+    if (it.state !== 'ready') throw fail('already_redoing', 409);
+    if ((it.plan || []).some((e) => e.state === 'posted' || e.state === 'posting')) throw fail('already_posted', 409);
+    const gone = P.review(it) === 'redo' && it.redo ? (it.redo.files || []).map((f) => attPath(id, f.n)) : [];
+    it.review = u.review || 'pending';
+    // reviewedAt stays: he has seen its slots, so a re-plan leaves them where the card showed them
+    ['redoNote', 'redoAt', 'approvedAt'].forEach((k) => { if (u[k]) it[k] = u[k]; else delete it[k]; });
+    if (u.redo) it.redo = u.redo; else delete it.redo;
+    it.notes = (it.notes || []).slice(0, u.notes || 0);
+    // a De postat card made meanwhile waits again for the approval
+    (it.plan || []).forEach((e) => { if (e.state === 'todo' && it.review !== 'approved') { e.state = 'planned'; delete e.todoAt; } });
+    delete it.undo;
+    return gone;
+  });
+  if (Array.isArray(out) && out.length) { const store = require('./store'); await Promise.all(out.map((p) => store.removeBinary(p).catch(() => null))); }
+  return true;
 }
 // Aprobă toată săptămâna: every item of the week still waiting for a look
 async function approveWeek(week) {
@@ -453,13 +531,36 @@ async function setCaptions(id, captions) {
   return out;
 }
 
+// the producer's key (a Claude session, server to server): "Authorization: Bearer <CREATIVE_SSO_SECRET>"
+function fromProducer(req) {
+  const secret = process.env.CREATIVE_SSO_SECRET || '';
+  const header = String((req && req.headers && req.headers.authorization) || '');
+  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  if (!secret || !token) return false;
+  const a = crypto.createHash('sha256').update(token).digest();
+  const b = crypto.createHash('sha256').update(secret).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 // what the producer reads (api/content-intake.js GET) and the health page
 async function status() {
   const [list, st] = await Promise.all([items(), settings()]);
   const now = Date.now(), cur = P.weekOf(now), next = P.addDays(cur, 7);
   // what the producer already made (so a session with no memory never repeats a topic), the newest first
   const made = list.filter((x) => !x.removed).slice(-120).reverse().map((x) => ({ topic: x.topic || '', rubric: x.rubric || '', kind: x.kind, theme: x.theme || '', endType: x.endType || '', week: x.week || '', at: x.createdAt || '' }));
-  const redo = list.filter((x) => !x.removed && !x.dropped && x.review === 'redo').map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', rubric: x.rubric || '', week: x.week, redoNote: x.redoNote || '', replacing: x.state === 'draft' }));
+  // the items to redo: the owner's note, the areas he named, his links and files of reference (each file's `url` is
+  // fetched with the same key), the texts as they are now, the earlier notes on the same item
+  const redo = list.filter((x) => !x.removed && !x.dropped && x.review === 'redo').map((x) => {
+    const r = x.redo || { note: x.redoNote || '', areas: [], links: [], files: [] };
+    return { id: x.id, kind: x.kind, topic: x.topic || '', rubric: x.rubric || '', week: x.week, redoNote: x.redoNote || '', replacing: x.state === 'draft',
+      at: x.redoAt || '', areas: r.areas || [], areaNames: (r.areas || []).map((a) => AREA_NAME[a] || a), links: r.links || [], files: notesView(x.id, r).files,
+      captions: Object.assign({}, x.caption ? { all: x.caption } : {}, x.captions || {}), hook: x.hook || '',
+      earlier: (x.notes || []).filter((n) => n !== x.redo && n.at !== (x.redo && x.redo.at)).slice(-5).map((n) => ({ at: n.at, kind: n.kind, note: n.note, areaNames: (n.areas || []).map((a) => AREA_NAME[a] || a) })) };
+  });
+  // the owner's notes on what he approved, the last 45 days: lessons for every next item
+  const notes = [];
+  list.forEach((x) => (x.notes || []).forEach((n) => { if (n.kind === 'approve' && now - (Date.parse(n.at) || 0) < 45 * 864e5) notes.push({ id: x.id, topic: x.topic || '', rubric: x.rubric || '', at: n.at, note: n.note, areaNames: (n.areas || []).map((a) => AREA_NAME[a] || a) }); }));
+  notes.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   // what works (learn), the owner's ideas not made yet, the moments of next week, the evergreen winners to make again
   const L = require('./content-learn'), lr = L.learn(list, now);
   const fresh = (await ideas()).filter((d) => d.state !== 'used').map((d) => Object.assign({ id: d.id, text: d.text, rubric: d.rubric || '', at: d.at }, d.source ? { source: d.source } : {}));
@@ -468,7 +569,7 @@ async function status() {
   return { on: st.on, nets: st.nets, modes: st.modes, times: st.times, photoTime: st.photoTime, startWeek: st.startWeek, today: P.roDay(now),
     next: P.weekInfo(list, st, next), current: P.weekInfo(list, st, cur), redo, counts: P.counts(list),
     drafts: list.filter((x) => x.state === 'draft' && !x.removed).map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', week: x.week, files: (x.files || []).map((f) => f.name) })), made,
-    analysis, ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
+    analysis, notes: notes.slice(0, 30), ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
 }
 
 // ---------------------------------------------------------------- the owner's ideas (Admin → Conținut)
@@ -531,8 +632,8 @@ async function notices(nowMs) {
   const tell = async (tag, title, text, tone) => {
     try {
       const N = require('./notify'), store = { readJSON, writeJSON };
-      // the batch's notices open Conținut → Program (the board to approve)
-      await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: tone || 'info', go: 'continut/program', tag, title, text });
+      // the batch's notices open Content → Transit (the queue to approve; „continut/program” still opens it)
+      await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: tone || 'info', go: 'continut/transit', tag, title, text });
     } catch (e) { console.error('content notify:', e.message); }
     out.push(tag);
   };
@@ -544,7 +645,7 @@ async function notices(nowMs) {
   }
   if (P.dow(P.roDay(now)) === 0 && roHour(now) >= 12 && s.remindWeek !== next && info.pending > 0) {
     s.remindWeek = next; save = true;
-    await tell('ct-remind-' + next, 'CONȚINUT DE APROBAT 🎬', 'Ai ' + plural(info.pending, 'material', 'materiale') + ' de aprobat pentru săptămâna care vine.');
+    await tell('ct-remind-' + next, 'CONTENT DE APROBAT 🎬', 'Ai ' + plural(info.pending, 'material', 'materiale') + ' de aprobat pentru săptămâna care vine.');
   }
   const redone = list.filter((it) => it.replacedAt && !it.replacedTold && it.state === 'ready' && !it.removed && !it.dropped);
   const busy = list.some((it) => it.review === 'redo' && it.state === 'draft' && !it.removed);
@@ -552,7 +653,7 @@ async function notices(nowMs) {
   if (redone.length && !busy && now - last >= 10 * 60e3) {
     const ids = new Set(redone.map((it) => it.id));
     await update((l) => { l.forEach((it) => { if (ids.has(it.id)) it.replacedTold = true; }); });
-    await tell('ct-redone-' + last, 'CONȚINUT REFĂCUT 🎬', 'Am refăcut ' + plural(redone.length, 'material', 'materiale') + '.');
+    await tell('ct-redone-' + last, 'CONTENT REFĂCUT 🎬', 'Am refăcut ' + plural(redone.length, 'material', 'materiale') + '.');
   }
   // the safety net: Saturday from 20:00 (or Sunday, if the clock missed it) next week still incomplete, once a week
   const d = P.dow(P.roDay(now)), miss = info.missing.reel + info.missing.carousel;
@@ -580,7 +681,7 @@ async function mondayHold(list, st, now) {
   live.forEach((it) => (it.plan || []).forEach((e) => { if (P.holds(e) && P.live(st, e.net) && P.roDay(Date.parse(e.at)) === today) todays.push({ it, e }); }));
   if (!todays.length) return '';
   if (todays.some(({ e }) => e.state === 'posted' || e.state === 'posting' || e.state === 'todo')) return '';
-  if (!st.on) return 'Programul e oprit (Conținut): azi nu pleacă nimic din săptămâna aprobată.';
+  if (!st.on) return 'Programul e oprit (Content): azi nu pleacă nimic din săptămâna aprobată.';
   const why = new Set();
   let can = 0, POST = null;
   try { POST = require('./content-post'); } catch (e) { POST = null; }
@@ -597,5 +698,6 @@ async function mondayHold(list, st, now) {
 }
 
 module.exports = { KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
-  settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, approveWeek, setCaptions, captionFor, status, skip, readState,
+  settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, unreview, approveWeek, setCaptions, captionFor, status, skip, readState,
+  AREAS, AREA_NAME, ATT_TYPES, ATT_MAX, isAtt, attPath, attOf, attUrl, noteOf, notesView, fromProducer,
   writeState, notices, mondayHold, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };

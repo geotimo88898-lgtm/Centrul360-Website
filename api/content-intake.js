@@ -1,8 +1,10 @@
 // /api/content-intake: where the producer (a Claude session that renders with reels/engine) hands in a week's batch;
 // server to server with "Authorization: Bearer <CREATIVE_SSO_SECRET>" (as api/lead-health.js), or an admin's
-// session. The guide with the exact calls: reels/PRODUCER.md. The owner approves the week in Admin → Conținut.
+// session. The guide with the exact calls: reels/PRODUCER.md. The owner approves each item in Admin → Content → Transit.
 //   GET ?action=status          next week's batch (need, have, missing, the owner's review), this week's, the items to
-//                               redo with the owner's note, the topics already made, what works (learn), the owner's
+//                               redo with the owner's change request (note, areas, links, files of reference with their
+//                               url, fetched with the same key: api/content-file.js &att=), his notes on approved items
+//                               (notes: lessons for the next ones), the topics already made, what works (learn), the owner's
 //                               ideas not made yet (ideas), next week's moments (season), the winners to make again
 //                               as a new variant (recycle)
 //   POST {action:'create', item:{kind: reel|carousel|slideshow, rubric, topic, keyword, caption,
@@ -23,19 +25,11 @@
 //                               again for its new files (same names replace them; clear: drop them all first), then 'ready'
 //   POST {action:'settings', on}   the global switch
 
-const crypto = require('crypto');
 const { getSession } = require('./_lib/auth');
 const C = require('./_lib/content');
 
-function fromCreative(req) {
-  const secret = process.env.CREATIVE_SSO_SECRET || '';
-  const header = String((req.headers && req.headers.authorization) || '');
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!secret || !token) return false;
-  const a = crypto.createHash('sha256').update(token).digest();
-  const b = crypto.createHash('sha256').update(secret).digest();
-  return crypto.timingSafeEqual(a, b);
-}
+// the producer's key (content.js fromProducer)
+const fromCreative = (req) => C.fromProducer(req);
 // the raw bytes of an upload: as the Worker's adapter gives them (a Buffer), or read from the request
 async function bytes(req) {
   if (Buffer.isBuffer(req.body)) return req.body;

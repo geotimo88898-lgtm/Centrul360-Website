@@ -605,7 +605,9 @@
   // ------------------------------------------------------------------ sections + nav
   const sections = {};
   let data = null;
-  function section(id, def) { sections[id] = Object.assign({ mounted: false }, def); if (data && def.data) def.data(data); }
+  // a section whose script came after the page was already opened on it (the data won the race against the deferred
+  // scripts, e.g. #continut on a fast connection): shown now, not left empty
+  function section(id, def) { sections[id] = Object.assign({ mounted: false }, def); if (data && def.data) def.data(data); if (data && isActive(id)) show(id); }
   function show(id) {
     const s = sections[id];
     if (!s) return;

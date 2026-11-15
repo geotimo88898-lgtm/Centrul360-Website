@@ -310,12 +310,14 @@
       }
       // 1. BOOM: the line is there whole on the hit, close (x1.24), and the frame pulls back in 0.5 s with a shake; the full
       //    stop pops on beat 2; on beat 3 the camera punches in on it (front loaded, then holds) as it pulses; on beat 5 a whip
-      const a1 = t >= T0 && t < t2 ? 1 : 0, xo = -1100 * Math.pow(clamp((t - (t2 - 0.1)) / 0.1), 2.2) / (1 + 1.3 * ease(t, tPulse, 0.6)); // (screen px: the frame is zoomed in at that moment)
-      show(l1, a1); if (a1) { l1.style.transform = 'translateX(' + xo.toFixed(1) + 'px)'; w1.forEach((e) => wordIn(e, 1)); if (!pdAt) { const pd = l1.querySelector('.pd'); pdAt = { x: l1.offsetLeft + pd.offsetLeft + pd.offsetWidth / 2, y: l1.offsetTop + pd.offsetTop + pd.offsetHeight / 2 }; } }
+      // (the speed of a whip or of the dive, in px a frame, becomes a little blur on the words, so the sub-frames melt into one streak)
+      const camS = (u) => (1 + 0.22 * (1 - ease(u, T0, 0.5))) * (1 + 1.3 * ease(u, tPulse, 0.6)), xoAt = (u) => -1100 * Math.pow(clamp((u - (t2 - 0.1)) / 0.1), 2.2) / camS(u), xiAt = (u) => 600 * (1 - E.out5(clamp((u - t2) / 0.36)));
+      const a1 = t >= T0 && t < t2 ? 1 : 0, xo = xoAt(t); // (screen px: the frame is zoomed in at that moment)
+      show(l1, a1); if (a1) { const v = Math.abs(xo - xoAt(t - 1 / 30)) * 0.05 + (t > T0 + 0.02 ? Math.abs(camS(t) / camS(t - 1 / 30) - 1) * 12 : 0); /* local px: the frame's zoom multiplies it */ l1.style.transform = 'translateX(' + xo.toFixed(1) + 'px)'; l1.style.filter = v > 0.4 ? 'blur(' + Math.min(9, v).toFixed(2) + 'px)' : ''; w1.forEach((e) => wordIn(e, 1)); if (!pdAt) { const pd = l1.querySelector('.pd'); pdAt = { x: l1.offsetLeft + pd.offsetLeft + pd.offsetWidth / 2, y: l1.offsetTop + pd.offsetTop + pd.offsetHeight / 2 }; } }
       { const q = clamp((t - tPulse) / 0.95), d = 18 + 560 * out(q); ring.style.width = ring.style.height = d.toFixed(1) + 'px'; ring.style.margin = (-d / 2).toFixed(1) + 'px 0 0 ' + (-d / 2).toFixed(1) + 'px'; ring.style.borderWidth = (3.4 - 2.4 * q).toFixed(2) + 'px'; ring.style.opacity = t < tPulse || q >= 1 ? '0' : (0.85 * Math.pow(1 - q, 1.6)).toFixed(3);
         l1.querySelector('.pd').style.transform = 'scale(' + (out((t - tDotIn) / 0.12) * (1 + 0.9 * Math.max(0, 1 - Math.abs(t - tDotIn - 0.08) / 0.1) + 0.9 * Math.max(0, 1 - Math.abs(t - tPulse - 0.04) / 0.14))).toFixed(3) + ')'; }
-      { const tUp = fr(B(6)), up = ease(t, tUp, 0.5), xi = 600 * (1 - E.out5(clamp((t - t2) / 0.36))), a2 = (t >= t2 ? 1 : 0) * (1 - clamp((t - tW[0] + 0.1) / 0.1));
-        show(l2, a2); if (a2) { l2.style.transform = 'translate(' + xi.toFixed(1) + 'px,' + lerp(0, 238 - 900, up).toFixed(1) + 'px) scale(' + lerp(1.04, 58 / BIG, up).toFixed(4) + ')'; w2.forEach((e) => wordIn(e, 1)); } }
+      { const tUp = fr(B(6)), up = ease(t, tUp, 0.5), xi = xiAt(t), a2 = (t >= t2 ? 1 : 0) * (1 - clamp((t - tW[0] + 0.1) / 0.1));
+        show(l2, a2); if (a2) { const v = Math.abs(xi - xiAt(t - 1 / 30)) * 0.05; l2.style.filter = v > 0.4 ? 'blur(' + Math.min(9, v).toFixed(2) + 'px)' : ''; l2.style.transform = 'translate(' + xi.toFixed(1) + 'px,' + lerp(0, 238 - 900, up).toFixed(1) + 'px) scale(' + lerp(1.04, 58 / BIG, up).toFixed(4) + ')'; w2.forEach((e) => wordIn(e, 1)); } }
       // 2. the hourglass, the weeks (each new number lands with a small punch of the frame)
       if (t >= T0 && t < tH) hourglass(t);
       let wn = 0; for (let i = 0; i < tW.length; i++) if (t >= tW[i]) wn = i + 1;
@@ -327,7 +329,7 @@
       if (t >= tH) reveal(t);
       const qe = clamp((t - (tLast - 0.1)) / 0.12), after = t >= tWipe1 - 0.02; // (the label changes between two frames, never inside one: the sub-frames)
       if (lab._s !== after) { lab._s = after; lab.textContent = after ? 'DUPĂ' : 'ÎNAINTE'; lab.style.color = after ? TEAL : INK; }
-      show(lab, t >= tLab ? clamp((t - tLab) / 0.07) * (1 - clamp((t - tSide0) / 0.1)) : 0, 0, 1 + 0.4 * (1 - ease(t, after ? tWipe1 : tLab, 0.35)));
+      show(lab, t >= tLab ? clamp((t - tLab) / 0.07) * (1 - clamp((t - tSide0) / 0.1)) : 0, 0, 1 + 0.25 * (1 - ease(t, after ? tWipe1 : tLab, 0.35)));
       const aS = clamp((t - tLand) / 0.1) * (1 - qe); show(labL, aS); show(labR, aS);
       [cap0, cap1].forEach((e) => show(e, out((t - tCap[0]) / 0.3) * (1 - qe), (1 - out((t - tCap[0]) / 0.35)) * 14));
       show(cap2, out((t - tCap[1]) / 0.3) * (1 - qe), (1 - out((t - tCap[1]) / 0.35)) * 14); show(cap3, out((t - tCap[2]) / 0.35) * (1 - qe), (1 - out((t - tCap[2]) / 0.4)) * 12);
@@ -346,7 +348,7 @@
       // the frame's camera (all of it: the canvas and the words): the punches and the shakes of the hits
       let S = 1, PX = 540, PY = 960; const sh = [0, 0, 0], addSh = (v) => { sh[0] += v[0]; sh[1] += v[1]; sh[2] += v[2]; };
       let QX = null, QY = null;
-      if (t >= T0 && t < t2) { const w = ease(t, tPulse, 0.6); S = (1 + 0.22 * (1 - ease(t, T0, 0.5))) * (1 + 1.3 * w); PY = 900;
+      if (t >= T0 && t < t2) { const w = ease(t, tPulse, 0.6); S = camS(t); PY = 900;
         if (pdAt && w > 0) { PX = pdAt.x; PY = pdAt.y; QX = lerp(pdAt.x, Math.max(1080 - (1080 - pdAt.x) * S + 8, 540), w); QY = lerp(pdAt.y, 920, w); } // on beat 3 the camera dives at the full stop (the session), as far toward the middle as the frame's edge allows
         addSh(shake(t, T0, 18, 0.45)); addSh(shake(t, tPulse, 9, 0.3)); }
       else if (t >= tW[0] && t < tH) { for (const tw of tW) S += 0.022 * kick(t, tw, 0.3); }

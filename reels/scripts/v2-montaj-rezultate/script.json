@@ -9,12 +9,12 @@
  "captions": false,
  "nuki": false,
  "title": "40 de cazuri. Toate reale.",
- "topic": "Montaj de rezultate reale din catalog, tăiat pe bas: zece cazuri, câte unul pe lovitură, apoi nota de pe Google și logo-ul",
- "post": "40 de cazuri. Toate reale. Zece dintre ele, din catalogul nostru: clientele noastre, fotografiate la noi, înainte și după. Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta. #centrul360 #timisoara #arad #inaintesidupa",
+ "topic": "Montaj de rezultate reale din catalog, tăiat pe bas: nouă cazuri, câte unul pe lovitură, apoi nota de pe Google și logo-ul",
+ "post": "40 de cazuri. Toate reale. Nouă dintre ele, din catalogul nostru: clientele noastre, fotografiate la noi, înainte și după. Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta. #centrul360 #timisoara #arad #inaintesidupa",
  "ctaType": "none",
  "sources": "v2/src/catalog-rezultate.html (h1 „40 de cazuri. Toate reale.”; fiecare caz: tratamentul, orașul și ședințele exact cum sunt în catalog; „Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta.”); v2/src/index.html și paginile de oraș („5,0 pe Google”, „300+ recenzii Google”); pozele: brand_asset/catalog, tăiate doar în cele două jumătăți ale lor (aceeași scară și aceeași încadrare pentru înainte și după), neretușate, în culorile lor.",
  "concept": {
-  "who": "Femeile din Timișoara și Arad care derulează repede și cred doar ce văd: zece rezultate reale în douăsprezece secunde, mai convingător decât orice frază.",
+  "who": "Femeile din Timișoara și Arad care derulează repede și cred doar ce văd: nouă rezultate reale în douăsprezece secunde, mai convingător decât orice frază.",
   "oneThing": "Rezultatele de la Centrul360 sunt reale și multe: caz după caz, fotografiate la noi, cu tratamentul, orașul și ședințele lor.",
   "tone": "Pielea de găină: două bătăi de liniște pe alb, apoi energie pură pe bas, apoi o oprire curată pe nota de pe Google și logo.",
   "formats": [
@@ -26,7 +26,7 @@
    {
     "element": "Montajul rapid de cazuri reale după un început liniștit",
     "ref": "(ix) conversația: montajul rapid al muncii și 13 (logo-ancora, tăieturi la o bătaie, apoi la jumătate)",
-    "why": "cantitatea e mesajul: zece cazuri reale la rând spun „toate reale” mai tare decât orice cuvânt"
+    "why": "cantitatea e mesajul: nouă cazuri reale la rând spun „toate reale” mai tare decât orice cuvânt"
    },
    {
     "element": "Rampa de viteză în golul cel mai lung al piesei și zoom-ul prin lumină pe lovitura cea mai mare",
@@ -50,7 +50,7 @@
   ],
   "track": {
    "file": "owner-weongo",
-   "why": "partea „Here we go” de după „honorable” (11,76-24,12 s): basul cade rar și apăsat, la bătăile 29, 30,5, 32, 35, 37, apoi golul cel mai lung înainte de bătaia 40 și trei lovituri la rând (41,5, 42,5, 43): exact forma unui montaj care accelerează, explodează și se oprește."
+   "why": "partea „Here we go” de după „honorable” (11,76-24,12 s): basul cade rar și apăsat, la bătăile 29, 30,5, 32, 35, 37, apoi golul cel mai lung înainte de bătaia 40 (cazul cel mai puternic, ținut 1,15 s, din care ~0,95 s curat după lumină), apoi loviturile 42,5, 43 și 45 pentru ecranul în trei și 46,5 / 48 pentru final."
   },
   "different": "Primul reel construit doar din tăieturi tari pe bas (fără nicio mișcare continuă de cameră), primul cu ecran împărțit în trei și primul care închide pe nota de pe Google; manifestul e un singur zbor 3D, suspansul un singur obiect."
  },
@@ -64,9 +64,9 @@
   },
   "render": {
    "scroll": "da: 1,6 s de alb lăptos cu titlul catalogului („40 de cazuri.” pe 25,5, „Toate reale.” pe 26,5, punctul rose gold pe 27), apoi pe bătaia 29 sticla se curăță cu un punch-in și tremur pe cazul 02 (gușa, cea mai vizibilă schimbare)",
-   "serves": "da: zece cazuri reale, fiecare tăietură pe o lovitură măsurată (sync 9/9 tăieturi cu whoosh pe cadru, 15/15 intrări cu sunet), fiecare cu linia catalogului; finalul ține 2 s pe nota de pe Google, logo și orașe",
+   "serves": "da: nouă cazuri reale, fiecare tăietură pe o lovitură măsurată (sync 8/8 tăieturi cu whoosh pe cadru, 14/14 intrări cu sunet); fiecare caz are linia catalogului pe două rânduri (46 / 44 px), cel puțin 0,69 s; cazul 38 stă 1,15 s, ~0,95 s curat după lumină; finalul ține 2 s pe nota de pe Google, logo și orașe",
    "effects": "nu: fiecare efect (whip, split, rampă de viteză, zoom-out, whip vertical, flash, ecranul în trei) e pe o lovitură; verificarea de flash dă un singur salt mare (tăieturile nu mai trec prin alb gol)",
-   "natural": "da, cu o limită: la 0,7-1,4 s pe caz, schimbarea se vede imediat la gușă și abdomen, dar mai greu la cazul periocular și în benzile mici din ecranul în trei; e un montaj de energie, nu de studiat cazurile",
+   "natural": "da, cu o limită: în ecranul în trei benzile n-au fiecare eticheta lor (ar fi fost prea mică); sub ele stă o singură notă adevărată pentru toate trei. Sticla de la început e neutră (alb-negru sub alb și turcoaz), nu roz",
    "owner": "da: e ce a cerut (montaj agresiv pe bas, cazuri reale, nota reală, logo-ul negru pe alb cu „Timișoara · Arad”)"
   }
  },
@@ -262,7 +262,8 @@
    "trioNote": [
     "3 cazuri, câte 1 ședință",
     "HIFU și RF Sculpt · Timișoara și Arad"
-   ]
+   ],
+   "_note": "Ecranul în trei (cazurile 29, 26, 34) nu mai are câte o etichetă pe fiecare bandă (ar fi fost sub 40 px); sub benzi stă o singură notă, cu fapte adevărate pentru toate trei: câte 1 ședință, HIFU și RF Sculpt, Timișoara și Arad."
   }
  },
  "end": {

@@ -191,7 +191,7 @@
     txt(C[3], 330, 'pielea se apără', 'font:560 70px/1.1 ' + SANS, T.c3 + B * 0.5, 'stag', { stagger: 0.12 });
     txt(C[3], 432, 'producând <span class="ser" style="font-size:1.4em;color:' + DEEP + '">și mai mult</span>', 'font:560 64px/1.1 ' + SANS, T.c3 + B, 'rise', { fit: 730 });
     txt(C[3], 600, 'SEBUM', 'font-size:300px', T.c3 + B * 2, 'slam', { cls: 'cond', fit: 730 });
-    const loop3 = svg(C[3], 1080, 1920, '<path class="lp" d="M780 640C930 760 900 1000 700 1050C520 1095 270 1060 205 920C150 800 230 640 400 600C520 572 660 590 742 620" fill="none" stroke="' + DEEP + '" stroke-width="9" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="ah" d="M700 588L748 622L700 660" fill="none" stroke="' + DEEP + '" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>', 'left:0;top:0');
+    const loop3 = svg(C[3], 1080, 1920, '<path class="lp" d="M760 572C960 612 990 822 760 902C560 962 230 937 150 802C90 692 220 577 420 558C560 545 680 552 742 562" fill="none" stroke="' + DEEP + '" stroke-width="9" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="ah" d="M702 530L748 562L704 598" fill="none" stroke="' + DEEP + '" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>', 'left:0;top:0');
     const lpPath = loop3.querySelector('.lp'), ah = loop3.querySelector('.ah'), LPL = lpPath.getTotalLength ? lpPath.getTotalLength() : 1;
     const pen3 = obj(C[3], 'pencil', 0, 0, 640, 1176, 101); pen3.im.style.transformOrigin = '0px 43px';
     T.l0 = TB(32); T.l1 = TB(34);
@@ -199,22 +199,23 @@
     C[3]._tick = (t) => {
       const q = io(seg(t, T.l0, T.l1)); lpPath.style.strokeDashoffset = (1 - q).toFixed(4); ah.setAttribute('opacity', t >= T.l1 ? '1' : '0');
       const pin = ex(seg(t, T.l0 - 0.45, T.l0)), pout = io(seg(t, T.l1 + 0.15, T.l1 + 0.7));
-      let px = 780, py = 640; if (lpPath.getPointAtLength) { const p = lpPath.getPointAtLength(LPL * q); px = p.x; py = p.y; }
+      let px = 760, py = 572; if (lpPath.getPointAtLength) { const p = lpPath.getPointAtLength(LPL * q); px = p.x; py = p.y; }
       setObj(pen3, px + (1 - pin) * 400 + pout * 520, py - 43 + (1 - pin) * 240 + pout * 300, -34 + (1 - pin) * -10, 1, clamp(pin * 3) * (1 - pout), 60 + (1 - pin) * 60);
     };
 
     // ================================================================ card 4: „Mai mult săpun nu e răspunsul. Echilibrul este.” — the level's bubble settles
     T.c4 = CUT[4];
-    txt(C[4], 320, 'MAI MULT SĂPUN', 'font-size:170px', T.c4 + B * 0.5, 'slam', { cls: 'cond', fit: 730 });
-    txt(C[4], 500, 'nu e răspunsul.', 'font:560 70px/1.1 ' + SANS, T.c4 + B * 1.5, 'stag', { stagger: 0.12 });
+    const mm4 = txt(C[4], 320, 'MAI MULT SĂPUN', 'font-size:170px', T.c4 + B * 0.5, 'slam', { cls: 'cond', fit: 730 });
+    const nr4 = txt(C[4], 500, 'nu e răspunsul.', 'font:560 70px/1.1 ' + SANS, T.c4 + B * 1.5, 'stag', { stagger: 0.12 });
     const lvl = obj(C[4], 'level', 120, 760, 840, 1103, 139);
     const LV = { x0: 484, x1: 632, y0: 49, y1: 88 }, lk = 840 / 1103;
     const vial = mk(C[4], 'position:absolute;left:' + (120 + LV.x0 * lk) + 'px;top:' + (760 + LV.y0 * lk) + 'px;width:' + ((LV.x1 - LV.x0) * lk) + 'px;height:' + ((LV.y1 - LV.y0) * lk) + 'px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#bff0e9,#7fdccf 55%,#5fc9bb);box-shadow:inset 0 2px 4px rgba(255,255,255,.7),inset 0 -3px 6px rgba(11,127,116,.35)');
     const vw = (LV.x1 - LV.x0) * lk, vh = (LV.y1 - LV.y0) * lk;
     mk(vial, 'position:absolute;left:' + (vw / 2 - 24) + 'px;top:0;width:3px;height:100%;background:rgba(18,32,31,.75)'); mk(vial, 'position:absolute;left:' + (vw / 2 + 21) + 'px;top:0;width:3px;height:100%;background:rgba(18,32,31,.75)');
     const vb = mk(vial, 'position:absolute;top:' + (vh * 0.12) + 'px;width:36px;height:' + (vh * 0.62) + 'px;margin-left:-18px;border-radius:50%;background:radial-gradient(ellipse at 40% 35%,#ffffff 0,rgba(255,255,255,.9) 40%,rgba(235,250,248,.7) 80%);box-shadow:0 0 0 1.5px rgba(11,127,116,.35)');
-    const ech = txt(C[4], 1010, '<span class="ser" style="font-size:2.2em;color:' + DEEP + '">Echilibrul</span> este.', 'font:560 66px/1.1 ' + SANS, TB(41), 'rise');
-    T.lv0 = TB(38); T.lv1 = TB(39); T.lvl = TB(40); T.set = TB(40.75);
+    const ech = txt(C[4], 950, '<span class="ser" style="font-size:2.2em;color:' + DEEP + '">Echilibrul</span> este.', 'font:560 44px/1.1 ' + SANS, TB(41), 'rise');   // set for the zoomed view (x1.5)
+    T.lv0 = TB(38); T.lv1 = TB(39); T.lvl = TB(40); T.set = TB(40.75); mm4.out = nr4.out = T.lvl + 0.1;
+    cue(T.lvl, 'whoosh_cut', 0.4, { peak: true }); cue(T.lvl, 'hit_deep', 0.3);
     cue(T.lv1, 'tap', 0.6); ev(T.lv1, 'drop'); cue(T.lvl, 'tick_soft', 0.4); ev(T.lvl, 'step'); cue(T.set, 'glass_pulse', 0.55, { prio: 3 }); ev(T.set, 'reveal');
     C[4]._tick = (t) => {
       const lin = ex(seg(t, T.lv0, T.lv1)), lev = io(seg(t, T.lvl - 0.15, T.lvl + 0.35)), tilt = lerp(-5.5, 0, lev);
@@ -262,7 +263,9 @@
       const y = camY(t), v = (camY(t + 1 / 120) - camY(t - 1 / 120)) * 60 / 30;   // px a frame
       const pd = t - T.pop, punch = pd > 0 ? 0.09 * Math.exp(-5 * pd) : 0, trem = pd > 0 && pd < 0.3 ? Math.sin(pd * 90) * 6 * (1 - pd / 0.3) : 0;
       const drift = Math.sin(t * 0.33) * 0.25;
-      cam.style.transform = 'translate(' + trem.toFixed(2) + 'px,0) rotate(' + drift.toFixed(3) + 'deg) scale(' + (1 + punch + 0.008 * Math.sin(t * 0.4)).toFixed(4) + ')';
+      const zv = 0.5 * R.cam.ease(t, T.lvl, 0.7) * (1 - R.cam.ease(t, CUT[5], 0.45));   // the zoom onto the vial (its target: „Echilibrul”)
+      cam.style.transformOrigin = '540px 912px';
+      cam.style.transform = 'translate(' + trem.toFixed(2) + 'px,0) rotate(' + drift.toFixed(3) + 'deg) scale(' + ((1 + punch + 0.008 * Math.sin(t * 0.4)) * (1 + zv)).toFixed(4) + ')';
       desk.style.transform = 'translate(0,' + (960 - y).toFixed(2) + 'px)';
       if (Math.abs(v) > 3) { fblur.setAttribute('stdDeviation', '0 ' + Math.min(80, Math.abs(v) * 0.38).toFixed(1)); desk.style.filter = 'url(#br-mb) blur(0px)'; } else desk.style.filter = Math.abs(v) > 0.2 ? 'blur(0px)' : '';
       pop.style.opacity = (R.cam.flash(t, T.pop) * 0.55).toFixed(3);
@@ -273,7 +276,8 @@
         else if (b.mode === 'slam') { b.el.style.transform = 'scale(' + (1.45 - 0.45 * e).toFixed(4) + ')'; b.el.style.opacity = clamp(p * 3).toFixed(3); }
         else { b.el.style.transform = 'translateY(' + ((1 - e) * 46).toFixed(2) + 'px)'; b.el.style.opacity = clamp(p * 2.5).toFixed(3); }
         b.el.style.filter = p < 1 ? 'blur(' + (b.mode === 'slam' ? (1 - e) * 22 : (1 - e) * 8).toFixed(2) + 'px)' : '';
-        b.el.style.visibility = t < b.at - 0.01 ? 'hidden' : '';
+        if (b.out != null) { const q = seg(t, b.out, b.out + 0.3); b.el.style.opacity = (parseFloat(b.el.style.opacity || 1) * (1 - q)).toFixed(3); if (q > 0 && q < 1) b.el.style.filter = 'blur(' + (q * 6).toFixed(2) + 'px)'; }
+        b.el.style.visibility = t < b.at - 0.01 || (b.out != null && t > b.out + 0.3) ? 'hidden' : '';
       }
     };
     return W;

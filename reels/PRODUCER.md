@@ -1,8 +1,8 @@
 # Producătorul: cum predai lotul săptămânii
 
 Sesiunea producătorului face reels și carusele cu `reels/engine` și le predă adminului **o săptămână întreagă odată**
-(decizia proprietarului, 12.11). Adminul le împarte pe rețele, proprietarul le verifică duminica în Admin → Conținut
-(„Aprobă” sau „Refă” cu o notă) și ceasul postează **doar ce e aprobat**, cât timp postarea automată e pornită.
+(decizia proprietarului, 12.11). Adminul le împarte pe rețele, proprietarul le verifică duminica în Admin → Content →
+Transit, unul câte unul („Aprobă” sau „De refăcut” cu ce vrea schimbat) și ceasul postează **doar ce e aprobat**, cât timp postarea automată e pornită.
 
 Adresa: `https://admin.centrul360.com/api/content-intake`
 Cheia: antetul `Authorization: Bearer $CREATIVE_SSO_SECRET` (aceeași cheie ca la `/api/lead-health`). Nu o scrie
@@ -31,7 +31,12 @@ Răspunsul (prescurtat):
                "slots": { "tt": { "reel": { "quota": 7, "planned": 4 }, "slideshow": { "quota": 1, "planned": 0 } }, "...": {} },
                "short": { "tt": { "reel": 3, "slideshow": 1 }, "...": {} } },
   "current": { "...": "la fel, pentru săptămâna în curs" },
-  "redo":    [ { "id": "…", "kind": "reel", "topic": "…", "rubric": "…", "week": "2026-11-16", "redoNote": "Vocea prea rapidă", "replacing": false } ],
+  "redo":    [ { "id": "…", "kind": "reel", "topic": "…", "rubric": "…", "week": "2026-11-16", "redoNote": "Vocea prea rapidă", "replacing": false,
+                 "at": "…", "areas": ["muzica", "video"], "areaNames": ["Muzică", "Video"], "links": ["https://www.tiktok.com/@…/video/…"],
+                 "files": [ { "name": "exemplu.mp3", "file": "k3j…9x.mp3", "mime": "audio/mpeg", "size": 3200000, "kind": "audio",
+                              "url": "https://admin.centrul360.com/api/content-file?i=…&att=k3j…9x.mp3" } ],
+                 "captions": { "tt": "…", "yt": "…", "ig": "…", "fb": "…" }, "hook": "…", "earlier": [ { "at": "…", "kind": "redo", "note": "…", "areaNames": ["Caption"] } ] } ],
+  "notes":   [ { "id": "…", "topic": "…", "rubric": "…", "at": "…", "note": "Aprobat, dar data viitoare muzica mai jos", "areaNames": ["Muzică"] } ],
   "drafts":  [ { "id": "…", "week": "…", "files": ["reel.mp4"] } ],
   "made":    [ { "topic": "…", "rubric": "…", "kind": "reel", "week": "…", "at": "…" } ],
   "analysis": { "week": "2026-11-09", "label": "9-15.11", "at": "…", "summary": "Cazurile cu cârlig șocant au dus săptămâna",
@@ -54,8 +59,10 @@ Răspunsul (prescurtat):
   lotul e complet, nu mai faci nimic pentru ea.
 - `need`: cât cere săptămâna (rețeaua cu cea mai mare cotă: TikTok are 7 reels în săptămânile 1-2, 14 de la a 3-a).
   `have`: câte sunt deja gata. `n`: a câta săptămână e (1 și 2 sunt de încălzire, cu cote mai mici).
-- `redo`: ce a trimis proprietarul înapoi, cu nota lui (`redoNote`). Le refaci (pașii de mai jos), nu faci altele noi
-  în locul lor: `have` le numără deja.
+- `redo`: ce a trimis proprietarul înapoi, cu cererea lui întreagă (nota, zonele, linkurile și fișierele de referință;
+  detaliile la „Refacerea”). Le refaci (pașii de mai jos), nu faci altele noi în locul lor: `have` le numără deja.
+- `notes`: notele lăsate de proprietar pe materiale pe care le-a aprobat („aprobat, dar data viitoare…”), din ultimele
+  45 de zile, cele noi primele. Sunt lecții: le aplici pe tot lotul, ca `analysis.changes`.
 - `drafts`: elemente create dar nedate gata (o rulare întreruptă): le termini sau le lași, nu le dublezi.
 - `made`: ce s-a făcut deja; nu repeți un subiect din ultimele 30 de zile.
 - `analysis`: analiza săptămânii trecute (lunea, după cifre): `changes` sunt 3-5 schimbări concrete pentru lotul tău.
@@ -69,7 +76,7 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
 2. **`analysis`**: primul lucru pe care îl citești după `redo`. Aplici fiecare punct din `analysis.changes` pe tot
    lotul (cârlige, lungimi, rubrici, ore, subiecte); când contrazice `learn`, câștigă analiza (e mai nouă și a citit
    tot: cifrele pe postare, pâlnia, publicul, comentariile). Lipsește (`null`): treci mai departe.
-3. **`ideas`**: ideile proprietarului (Admin → Conținut → „Idei pentru săptămânile următoare”), toate, înaintea
+3. **`ideas`**: ideile proprietarului (Admin → Content → Insights → „Idei pentru săptămânile următoare”), toate, înaintea
    oricărui subiect ales de tine. Trimiți `ideaId` la `create`: ideea iese din listă (dacă scoți ciorna, revine).
    Cele cu `source: "comentarii"` sunt întrebări care se repetă în comentarii (adminul le adaugă singur): le faci
    după ideile proprietarului, cel mult 2 pe săptămână, de obicei ca „Întrebarea zilei”, tot cu `ideaId`.
@@ -232,7 +239,7 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    `out/<id>.mp4` (previzualizarea, cu piesa proprietarului) și `out/<id>-clean.mp4` (doar voce și efecte). La
    predare urci AMÂNDOUĂ: previzualizarea ca `reel.mp4` (fără `role`; doar pentru aprobare, nu se postează niciodată)
    și fișierul fără muzică ca `clean.mp4` cu `&role=clean` (ăsta pleacă: proprietarul îl postează din aplicații, cu
-   „Distribuie” din Conținut → De postat, și pune acolo sunetul licențiat). Piesa (`engine/music/owner-free.wav`) nu se comite niciodată.
+   „Distribuie” din Content → De postat, și pune acolo sunetul licențiat). Piesa (`engine/music/owner-free.wav`) nu se comite niciodată.
 6d. **Animații diferite** (14.11, „ai grijă la animațiile prea asemănătoare”): într-un reel niciun fel de scenă și nicio
    metaforă vizuală de mai mult de două ori, și niciodată același fel de două ori la rând (textul cinetic `type-*`
    contează ca un singur fel; „?”-ul, inima și bifa sunt toate „glyph”; aceeași poză reală e aceeași metaforă). O scenă
@@ -326,14 +333,43 @@ repari când poți („slăbit”, „instant”, prea multe hashtag-uri, cazul 
 trecută e refuzată (`past_week`).
 
 ## Refacerea (`redo`)
+Proprietarul trimite un material înapoi din Admin → Content → Transit („De refăcut”, sau trage cardul la stânga). Ce
+primești în `redo` din stare, pentru fiecare:
+| Câmp | Ce e |
+|---|---|
+| `redoNote` | ce vrea schimbat, cu vorbele lui (până la 1000 de caractere; nota întreagă rămâne în admin) |
+| `areas` / `areaNames` | ce anume, una sau mai multe: `video` (Video), `muzica` (Muzică), `text` (Text pe ecran), `caption` (Caption), `descriere` (Descriere), `hashtag` (Hashtag-uri), `altceva` (Altceva) |
+| `links` | linkuri de referință (un video, un sunet, un cont): le deschizi și te uiți la ce arată |
+| `files` | fișierele lui de referință (poze, video, muzică, până la 200 MB fiecare): `name` cum l-a numit el, `kind` (`image`, `video`, `audio`), `url` de unde îl iei |
+| `captions`, `hook` | textele și cârligul de acum, ca să știi de la ce pleci |
+| `earlier` | notele lui de dinainte pe același material (o refacere a doua, a treia) |
+| `replacing` | `true`: ai început deja refacerea (`replace` dat, `ready` încă nu) |
+
+Fișierele sunt private: le iei cu aceeași cheie ca restul (fără ea, 401):
+```bash
+curl -s -H "$H" -o ref.mp3 "<url din files>"
+```
+Cum citești cererea:
+- **Muzică** cu un fișier audio sau un link: e sunetul pe care îl vrea (sau unul în stilul lui). În varianta cu muzică
+  (cea pe care o vede el la aprobare) pui piesa lui doar dacă e a lui sau liberă de drepturi; altfel una din
+  `engine/music/` cât mai apropiată ca stil și ritm. Un sunet cu drepturi (trending pe TikTok, Instagram) îl pune el din
+  aplicație, la postare (De postat), peste varianta fără muzică: tu o tai pe ritmul lui.
+- **Video** / **Text pe ecran** cu poze sau video: e cum vrea să arate (ritmul, încadrarea, textul). Le iei ca
+  direcție, nu le pui în reel (nu sunt materialele clinicii, decât dacă scrie el asta).
+- **Caption**, **Descriere**, **Hashtag-uri**: refaci doar textele (`replace` cu `captions`, apoi `ready`, fără fișiere).
+  Hashtag-urile rămân câteva și relevante (TikTok 3-5, Instagram 3-5 la final, Facebook 1-2, YouTube doar `#shorts`),
+  cât timp nota lui nu cere altceva.
+- Ce nu înțelegi sigur, faci în varianta cea mai apropiată de cuvintele lui; nu inventezi altă cerere.
+
 ```bash
 # 1. îl deschizi din nou (textele noi pot veni aici; "clear":true șterge întâi toate fișierele vechi)
 curl -s -H "$H" -H 'Content-Type: application/json' -X POST "$U" -d "{\"action\":\"replace\",\"id\":\"$ID\",\"captions\":{\"tt\":\"…\"}}"
-# 2. urci fișierele refăcute cu ACELEAȘI nume (reel.mp4, cover.jpg / 01.jpg …): le înlocuiesc pe cele vechi
-# 3. ready → intră înapoi la proprietar („de aprobat”), în aceleași locuri din săptămână
+# 2. urci fișierele refăcute cu ACELEAȘI nume (reel.mp4, clean.mp4, cover.jpg / 01.jpg …): le înlocuiesc pe cele vechi
+# 3. ready → intră înapoi în Transit, la proprietar („Refăcut”, cu nota lui deasupra), în aceleași locuri din săptămână
 ```
 Dacă nota cere doar alt text, sari peste pasul 2. Când ai terminat toate refacerile, proprietarul primește
-„Am refăcut N materiale”.
+„Am refăcut N materiale”. Cât timp n-ai dat `replace`, el poate anula trimiterea („Anulează”), iar materialul dispare
+din `redo`.
 
 ## Câmpurile
 | Câmp | Ce e |
@@ -378,7 +414,7 @@ Mărimea și durata se citesc din fișier; nu trebuie trimise.
   liniuțe lungi (le înlocuiește oricum adminul).
 
 ## Ce face adminul după
-- Cotele pe săptămână (Admin → Conținut → Setări): săptămânile 1-2 TikTok 7 reels + 1 slideshow, YouTube 7,
+- Cotele pe săptămână (Admin → Content → Setări): săptămânile 1-2 TikTok 7 reels + 1 slideshow, YouTube 7,
   Instagram 5 + 1 carusel, Facebook 5 + 1 carusel; de la săptămâna 3: TikTok 14 + 1, YouTube 10, Instagram 7 + 1,
   Facebook 7 + 1. Orele: TikTok 19:30 (a doua pe zi 12:30), YouTube 17:00 (12:00), Instagram 12:30, Facebook 13:00;
   caruselele și slideshow-ul la ora lor.
@@ -388,11 +424,11 @@ Mărimea și durata se citesc din fișier; nu trebuie trimise.
   se leagă postarea acolo.
 - Ceasul (la :17 în fiecare oră) postează ce e aprobat și la rând, citește cifrele zilnic și lunea trimite
   proprietarului topul săptămânii („de pus ca reclamă”). Înainte de fiecare postare verifică din nou textul (proprietarul
-  îl poate schimba): o problemă ține postarea pe loc, cu motivul în Admin → Conținut.
+  îl poate schimba): o problemă ține postarea pe loc, cu motivul în Admin → Content → Calendar.
 - Zilnic: urmăritorii pe fiecare rețea; pe 1 ale lunii, la 9:00, „RAPORTUL LUNII: conținut” (postări, vizualizări,
   urmăritori câștigați, cel mai bun material). Lunea la 11:00, dacă din săptămâna aprobată nu pleacă nimic în ziua
   aceea (o permisiune, comutatorul oprit), proprietarul e anunțat.
-- Admin → Conținut → Rezultate (ecranul principal; „Program” e tabla de aprobat): aceleași cifre pe care le citești
+- Admin → Content → Insights (ecranul principal; „Transit” e coada de aprobat, „Calendar” ce se postează când): aceleași cifre pe care le citești
   tu în `learn`, plus cifrele pe fiecare postare (cât se uită, cât rămân după 3 secunde și la jumătate, salvări,
   distribuiri, urmăritori aduși), creșterea în primele ore, pâlnia organică (comentarii cu cuvântul, mesaje, leaduri,
   programări, cliente), publicul, orele recomandate, ce spun oamenii și analiza săptămânii. Un material care în

@@ -1940,7 +1940,7 @@
     else if (d.connected) {
       const miss = (d.missing || []).length;
       box.innerHTML = '<div class="st-fb-status ' + (miss || d.note ? 'is-wait' : 'is-ok') + '">' + icon(miss || d.note ? 'alert' : 'checkCircle') +
-          '<div><b>Conectat la ' + esc(name) + '</b><span>' + esc(miss ? 'Lipsește permisiunea ' + d.missing.join(', ') + '. Reconectează și bifează tot.' : d.note || 'Postările pleacă din Conținut.') + '</span></div></div>' +
+          '<div><b>Conectat la ' + esc(name) + '</b><span>' + esc(miss ? 'Lipsește permisiunea ' + d.missing.join(', ') + '. Reconectează și bifează tot.' : d.note || 'Postările pleacă din Content.') + '</span></div></div>' +
         '<div class="st-int-row"><a class="k-btn is-outline is-sm" href="' + N.api + '?start=1">' + icon('refresh') + 'Reconectează</a><button type="button" class="k-btn is-danger is-sm" data-net-off>Deconectează</button></div>' + app(false);
     } else {
       box.innerHTML = '<div class="st-fb-login"><a class="k-btn is-primary" href="' + N.api + '?start=1">' + icon(N.ic) + esc(N.btn) + '</a>' +
@@ -1986,7 +1986,7 @@
     params.delete(k);
     const qs = params.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#integrari');
-    const msg = { connected: [N.name + ' conectat. Îl pornești din Conținut → Setări.', 'success'], denied: ['Ai oprit logarea la ' + N.name + '.', 'error'],
+    const msg = { connected: [N.name + ' conectat. Îl pornești din Content → Setări.', 'success'], denied: ['Ai oprit logarea la ' + N.name + '.', 'error'],
       expired: ['Fereastra a expirat. Apasă din nou „' + N.btn + '”.', 'error'], norefresh: ['Google n-a dat accesul permanent. Apasă din nou „' + N.btn + '”.', 'error'],
       nochannel: ['Contul Google ales n-are un canal YouTube.', 'error'], notconfigured: ['Pune întâi ' + N.idLabel + ' și secretul (Integrări → ' + N.name + ').', 'error'] }[flag] || ['Conectarea la ' + N.name + ' n-a mers.', 'error'];
     setTimeout(() => K.ui().toast(msg[0], msg[1]), 1200);

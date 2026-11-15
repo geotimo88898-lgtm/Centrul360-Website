@@ -5,7 +5,8 @@
 //   2. BOOM on the first big bass hit: the glass clears with a punch-in, and from there one real case on every hit,
 //      each with its own cut (punch-in, whip, split slide, speed ramp, zoom-out, vertical whip)
 //   3. the long gap before the song's biggest hit is a speed ramp into light: the flash, and the strongest case under it
-//   4. the triple hit: three cases as three strips that slam in one after the other (split screen)
+//   4. three more hits (42.5, 43, 45): three cases as three strips that slam in one after the other (split screen),
+//      one line of true facts under them
 //   5. the last hit: a clean white end, the real Google score, then the logo, black on white, and the two cities
 // Every case is the catalog's picture, cut into its two halves (never retouched, never generated, both halves at the
 // same scale and the same framing), with the catalog's own words: treatment, city, sessions.

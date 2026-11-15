@@ -661,5 +661,21 @@
   ]
  },
  "wordsNote": "Timpii cuvintelor, măsurați pe voce (wordtimes.py: pauzele reale la punctuație, apoi silabele); scenele îi folosesc pentru textul cinetic și contoare.",
- "dropAt": 2.3998
+ "dropAt": 2.3998,
+ "critique": {
+  "storyboard": {
+   "scroll": "da: primul cadru e un „peste tot” uriaș, gros, care slăbește literă cu literă cât spune „poți slăbi”; e neobișnuit (textul își pierde greutatea) și se rezolvă în 2,4 s cu „rămân”, care intră greu, pe primul „free” al refrenului",
+   "serves": "da: un singur dispozitiv duce tot mesajul (greutatea fontului = grăsimea): rămâne gros unde dieta nu ajunge, se subțiază doar unde lovește focarul, rămâne subțire pentru că celulele distruse nu revin, se îngroașă puțin pe „se pot mări”",
+   "effects": "nu: fiecare mișcare are o țintă (punch-in pe „rămân”, colțurile de vizor pe „grăsimea”, zoom prin lumină în focar); restul e text pe alb",
+   "natural": "da: o voce continuă, 203 cuvinte pe minut, propoziții întregi, cuvintele site-ului; fără întrebări, fără liste de „fără”",
+   "owner": "da: alb, turcoaz, un singur accent rose gold (punctul slab și focarul), totul centrat, fără logo, fără Nuki"
+  },
+  "render": {
+   "scroll": "da: „peste tot” se subțiază din primul cadru; la 2,40 s „rămân” intră din blur peste refren, cu punch-in și un tremur scurt, apoi stă",
+   "serves": "da: privitorul vede exact ce aude, pe cuvinte măsurate pe voce: pastilele cu cele trei zone, nodurile „genetice” și „hormonale”, focarul care aterizează în GRĂSIME între PIELE și MUȘCHI, literele care se subțiază din focar pe „distruse”, tăietura pe „voință”",
+   "effects": "nu, cu o rezervă: tranziția verticală în straturi (16,8 s) are un blur de mișcare puternic, două-trei cadre arată ca o dungă; e o mișcare reală a camerei, nu decor",
+   "natural": "da: ascultătorul aude 118 din 118 cuvinte, cu și fără muzică (WER 0 %); pauze scurte după „punct slab” și după „6-8 săptămâni”, ca să se citească",
+   "owner": "da, cu rezervele spuse cinstit: 42 s (peste ținta de ~30-40), conul de ultrasunete e fin și se vede abia pe ecran mare, iar ascultătorul automat a auzit o dată „prietenului” în loc de „prietenei”"
+  }
+ }
 }
