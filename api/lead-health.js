@@ -67,6 +67,8 @@ module.exports = async (req, res) => {
         error: wb.error,
       };
     }
+    out.resend = await readJSON(require('./_lib/wa-resend-once').KEY, null).then((r) => r && { phase: r.phase, sent: r.sent, failed: r.failed, total: r.total, skipped: r.skipped, why: r.why, at: r.at }).catch(() => null);
+    if (req.query.wahealth === 'todo') out.todo = await require('./_lib/wa-resend-once').todo().then((t) => ({ n: t.list.length, skipped: t.skipped, items: t.list.map((x) => ({ tpl: x.tpl.label, failedAt: x.msg.timestamp, appt: x.appt.date + ' ' + x.appt.time })) })).catch((e) => ({ error: e.message }));
     res.status(200).json(out);
     return;
   }
