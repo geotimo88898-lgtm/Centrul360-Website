@@ -508,3 +508,10 @@
 }
 @media (max-width:430px){ .cn-tabseg button .k-ic{ display:none; } .cn-tabs .k-seg.cn-tabseg button{ padding-left:.35rem; padding-right:.35rem; font-size:.8rem; } }
 @media (prefers-reduced-motion: reduce){ .cn-gt{ animation:none; } .cn-fav.is-pop .k-ic{ animation:none; } }
+
+/* 15.11, the owner on his phone: the video clear (no days and times on it, they stay under it), the player bar at the
+   bottom, the length and the sound at the top, the star under the sound */
+.cn-tx-m .cn-vc{ position:absolute; left:10px; right:10px; bottom:10px; top:auto; margin:0; pointer-events:auto; }
+.cn-tx-m .cn-snd, .cn-tx-m .cn-snd.is-btn{ top:12px; bottom:auto; right:12px; }
+.cn-tx-m .cn-dur{ top:16px; bottom:auto; left:12px; }
+.cn-tx-m .cn-tx-fv{ position:absolute; z-index:3; top:64px; right:10px; margin:0; pointer-events:auto; }

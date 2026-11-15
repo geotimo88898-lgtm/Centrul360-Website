@@ -645,7 +645,7 @@
     // the player's controls sit under the networks and times, at the top: the approve buttons float at the bottom
     // the star (a favourite) sits on the video, top right under the player's controls: clear of them, of the approve
     // buttons at the bottom and of the speaker
-    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(VC, '').replace(/<\/div>$/, '<div class="cn-tx-ov">' + slotRow(it) + (mainVid(it) ? VC : '') + '<div class="cn-tx-fv">' + favBtn(it, 'is-on-video') + '</div></div></div>') +
+    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(/<\/div>$/, '<div class="cn-tx-fv">' + favBtn(it, 'is-on-video') + '</div></div>') +
       '<span class="cn-tx-stamp is-ok" aria-hidden="true">' + icon('check') + 'Aprobat</span><span class="cn-tx-stamp is-no" aria-hidden="true">' + icon('undo') + 'De refăcut</span>' +
       '<div class="cn-tx-i"><div class="cn-tx-h"><small>' + esc(meta) + (it.week ? ' · ' + esc(range(it.week)) : '') + '</small><h3>' + esc(title(it)) + '</h3>' + (it.hook ? '<p class="cn-tx-hook">„' + esc(it.hook) + '”</p>' : '') + '</div>' +
       '<div class="cn-tx-w"><small>Când și unde se postează</small>' + slotRow(it, true) + '</div>' + prev + bad + caps +
