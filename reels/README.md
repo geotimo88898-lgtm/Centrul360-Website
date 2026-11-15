@@ -7,6 +7,8 @@ Din 12.11 se fac doar reels **v2** (mai jos); v1 (`stage.html`, `engine.js`) ră
 reels-urile vechi (scripturile fără `"v": 2` din `scripts/`; cele cu ștampila veche nu se mai postează, regula din 13.11).
 
 ## Direcția proprietarului (12.11)
+**Citește întâi `GUST.md`**: jurnalul cu verdictele proprietarului și principiile de montaj învățate din ele (din 15.11).
+
 - Animații foarte curate, ca video-urile virale făcute cu AI: **tot ce se spune e ilustrat** de o animație.
 - Cârligul e vizual și sonor deodată: în primele 3 secunde se întâmplă ceva care îl face pe privitor să-și pună o
   întrebare (buclă deschisă); răspunsul vine la final.

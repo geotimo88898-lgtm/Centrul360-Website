@@ -85,6 +85,8 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
    2 ori pe săptămână. Rubricile prin rotație (README.md), Cazuri de cel puțin 2 ori pe săptămână, oricum.
 
 ## Cum scrii un reel (v2, din 12.11)
+**Înainte de orice reel: `GUST.md`** (verdictele proprietarului și principiile; se completează după fiecare verdict).
+
 Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonul: `README.md` („Vocea”): o femeie care
 îi povestește ceva unei prietene, nu o reclamă. Pe scurt:
 0. **Gândește înainte** (14.11, regula proprietarului: „Vreau să te gândești foarte bine înainte să compui un reel, să
