@@ -275,7 +275,8 @@
 
   // ------------------------------------------------------------------ wiring
   function place() {
-    var d = D(); if (!d || !d.isAdmin) return;
+    // the owner, and the manager (15.11: her clinics' money of today; /api/kpi gives her no ads)
+    var d = D(); if (!d || !(d.isAdmin || d.isManager)) return;
     var panel = document.getElementById('panel-panou'); if (!panel) return;
     if (!st || !st.isConnected) mount(panel);
   }

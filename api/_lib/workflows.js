@@ -771,7 +771,7 @@ async function notifyTeam(s, v, ctx, wa, once) {
   const ids = new Set();
   for (const to of s.to || []) {
     if (to === 'role:admin') { ids.add('admin'); employees.filter((e) => e.role === 'admin').forEach((e) => ids.add(e.id)); }
-    else if (to.startsWith('role:')) employees.filter((e) => e.role === to.slice(5) || (to === 'role:receptie' && e.role === 'manager')).forEach((e) => ids.add(e.id)); // the manager hears what reception hears
+    else if (to.startsWith('role:')) employees.filter((e) => e.role === to.slice(5) || (to === 'role:receptie' && e.role === 'manager' && require('./roles').managesCity(e, ((ctx && (ctx.lead || ctx.appointment)) || {}).location))).forEach((e) => ids.add(e.id)); // the manager hears what reception hears, for her clinics
     else if (to.startsWith('emp:')) { const id = to.slice(4); if (id === 'admin' || employees.some((e) => e.id === id)) ids.add(id); }
   }
   if (!ids.size) return { people: 0, pushed: 0, wa: 0 };

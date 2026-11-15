@@ -10,7 +10,16 @@
 // Reception has no commission and the cosmeticians no bonus.
 
 const BOOKING_TIERS = [{ min: 30, lei: 1500 }, { min: 27, lei: 700 }, { min: 24, lei: 500 }];
-const hasBookingBonus = (emp) => !!emp && (emp.role === 'receptie' || emp.role === 'manager'); // the manager keeps the reception bonus she had
+// The manager (the owner, 15.11): the reception bonus stops the day she became manager (roleSince, set in Echipa when the
+// role changes). The month of the switch keeps what she made as reception until then, frozen (the owner pays those
+// days); nothing accrues after it, and the months after have no bonus. With a month: does that month have one.
+const bonusUntil = (emp) => (emp && emp.role === 'manager' && emp.prevRole === 'receptie' && /^\d{4}-\d{2}-\d{2}$/.test(String(emp.roleSince || '')) ? emp.roleSince : '');
+const hasBookingBonus = (emp, month) => {
+  if (!emp) return false;
+  if (emp.role === 'receptie') return true;
+  const until = bonusUntil(emp);
+  return !!(until && month && month <= until.slice(0, 7));
+};
 const hasCommission = (emp) => !!emp && emp.role === 'cosmetician';
 
 const bucharestDate = (iso) => {
@@ -19,9 +28,10 @@ const bucharestDate = (iso) => {
 };
 
 // Average appointments she booked per day, over the days of the month she clocked in.
-function bookingBonus(employeeId, month, attendance, appointments) {
+// until (the manager's switch day): only the days before it count, and the result says it is frozen
+function bookingBonus(employeeId, month, attendance, appointments, until) {
   const perDay = {};
-  (attendance || []).forEach((e) => { if (e.employeeId === employeeId && e.checkIn && String(e.date).slice(0, 7) === month) perDay[e.date] = 0; });
+  (attendance || []).forEach((e) => { if (e.employeeId === employeeId && e.checkIn && String(e.date).slice(0, 7) === month && (!until || e.date < until)) perDay[e.date] = 0; });
   (appointments || []).forEach((a) => {
     if (a.createdBy !== employeeId || a.status === 'concediu') return;
     const d = bucharestDate(a.createdAt);
@@ -34,7 +44,7 @@ function bookingBonus(employeeId, month, attendance, appointments) {
   const avg = Math.round(exact * 10) / 10;
   const tier = BOOKING_TIERS.find((t) => exact >= t.min) || null;
   const next = BOOKING_TIERS.slice().reverse().find((t) => exact < t.min) || null;
-  return { days: days.length, total, avg, lei: tier ? tier.lei : 0, next, tiers: BOOKING_TIERS, perDay: days.map((d) => ({ date: d, count: perDay[d] })) };
+  return { days: days.length, total, avg, lei: tier ? tier.lei : 0, next: until ? null : next, tiers: BOOKING_TIERS, perDay: days.map((d) => ({ date: d, count: perDay[d] })), ...(until ? { frozen: until } : {}) };
 }
 
 // One month of pay for one person.
@@ -56,14 +66,14 @@ function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, app
   }
   let manual = 0;
   (sales || []).forEach((s) => { if (s.source === 'manual' && s.status === 'approved' && s.employeeId === emp.id && String(s.date).slice(0, 7) === month) manual += Number(s.commission) || 0; });
-  const booking = hasBookingBonus(emp) ? bookingBonus(emp.id, month, attendance, appointments) : null;
+  const booking = hasBookingBonus(emp, month) ? bookingBonus(emp.id, month, attendance, appointments, bonusUntil(emp)) : null;
   const bonus = booking ? booking.lei : 0;
   const r2 = (v) => Math.round(v * 100) / 100;
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
-    total: r2(base + paidLei + dueLei + commission + bonus + manual), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp),
+    total: r2(base + paidLei + dueLei + commission + bonus + manual), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
   };
 }
 
-module.exports = { BOOKING_TIERS, bookingBonus, monthPay, hasBookingBonus, hasCommission, bucharestDate };
+module.exports = { BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, hasBookingBonus, hasCommission, bucharestDate };

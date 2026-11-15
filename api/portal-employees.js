@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
         name: String(name).slice(0, 100),
         location: String(location).slice(0, 100),
         role,
+        ...(role === 'manager' ? { manages: require('./_lib/roles').CLINICS.slice(), roleSince: new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()) } : {}),
         username: uname,
         passwordHash: hash,
         passwordSalt: salt,
@@ -124,8 +125,23 @@ module.exports = async (req, res) => {
       }
       employee.name = String(name).slice(0, 100);
       employee.location = String(location).slice(0, 100);
-      if (employee.role !== role) require('./_lib/auth').forgetRoster(); // her open session takes the new role at once
+      if (employee.role !== role) {
+        require('./_lib/auth').forgetRoster(); // her open session takes the new role at once
+        // the day the role changed (Bucharest): a receptionist who becomes manager keeps the booking bonus she made until
+        // then, frozen, and nothing after it (_lib/payroll.js)
+        employee.prevRole = employee.role;
+        employee.roleSince = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+      }
       employee.role = role;
+      // the manager's clinics: an explicit list (a clinic opened later is never added by itself); a new manager gets the
+      // clinics there are today
+      const { CLINICS } = require('./_lib/roles');
+      if (role === 'manager') {
+        const m = Array.isArray(req.body.manages) ? [...new Set(req.body.manages.map(String))].filter((c) => CLINICS.includes(c)) : null;
+        if (m && !m.length) { res.status(400).json({ error: 'invalid_manages' }); return; }
+        if (m) employee.manages = m;
+        else if (!Array.isArray(employee.manages) || !employee.manages.length) employee.manages = CLINICS.slice();
+      }
       // Optional, feed the "Condică" leave-balance / hours-owed numbers (api/portal-attendance.js,
       // action 'balance'). Left unset, those default to 21 days / 8h per day. Never required.
       if (annualLeaveDays !== undefined) {

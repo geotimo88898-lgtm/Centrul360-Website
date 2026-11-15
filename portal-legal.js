@@ -70,6 +70,7 @@
   }
   function paint() {
     if (!panel || !S.d) return;
+    if (S.view !== 'team' && !S.d.cities.includes(S.view)) S.view = S.d.cities[0] || 'team'; // the manager: her clinics only
     panel.querySelector('[data-lghead]').innerHTML = K.seg('lgview', S.d.cities.map((c) => [c, c]).concat([['team', 'Echipa']]), S.view);
     const body = panel.querySelector('[data-lgbody]');
     if (S.view !== 'team') body.innerHTML = summary(scopeOf(), S.view) + groups(scopeOf());

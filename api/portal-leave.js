@@ -90,6 +90,8 @@ module.exports = async (req, res) => {
   // the manager (15.11) plans and decides the team's leave, never her own (that one is the owner's)
   const isMgr = session.role === 'manager';
   const sees = canManage(session);
+  const team = await require('./_lib/roles').teamOf(session, readJSON); // the manager: her clinics' people
+  const inTeam = (id) => !team || team.has(id);
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error) => res.status(code).json({ error });
@@ -145,7 +147,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'list') {
-      let list = sees ? requests : requests.filter((r) => r.employeeId === session.employeeId);
+      let list = sees ? requests.filter((r) => inTeam(r.employeeId) || r.employeeId === session.employeeId) : requests.filter((r) => r.employeeId === session.employeeId);
       // Pending first (oldest first, first to act on), then decided, most recent decision first.
       list = list.slice().sort((a, b) => {
         if (a.status === 'pending' && b.status !== 'pending') return -1;
@@ -162,6 +164,7 @@ module.exports = async (req, res) => {
       const request = requests.find((r) => r.id === body.id);
       if (!request) return fail(404, 'request_not_found');
       if (isMgr && request.employeeId === session.employeeId) return fail(403, 'own_request');
+      if (!inTeam(request.employeeId)) return fail(403, 'forbidden');
       if (request.status !== 'pending') return fail(400, 'already_decided');
       if (!['approved', 'rejected'].includes(body.decision)) return fail(400, 'invalid_decision');
 
@@ -207,6 +210,7 @@ module.exports = async (req, res) => {
       if (!sees) return fail(403, 'forbidden');
       const { employeeId, type, startDate, endDate } = body;
       if (isMgr && (employeeId === session.employeeId || employeeId === 'admin')) return fail(403, 'own_request');
+      if (!inTeam(employeeId)) return fail(403, 'forbidden');
       if (!employeeId || typeof employeeId !== 'string') return fail(400, 'missing_employee');
       if (!VALID_TYPES.includes(type)) return fail(400, 'invalid_type');
       if (!isValidDate(startDate) || !isValidDate(endDate)) return fail(400, 'invalid_date');

@@ -1,5 +1,6 @@
 // GET /api/kpi?period=today|yesterday|7d|30d|month|max|custom[&since=YYYY-MM-DD&until=YYYY-MM-DD][&part=messages]
-// Panou → KPI (admin only): every number of the clinic in one place, live. From 16.10.2026, 22:05 on (see _lib/kpi.js).
+// Panou → KPI (the owner; and the manager, 15.11: the same figures for the clinics she runs, without the ads, their spend
+// and the offers' costs): every number of the clinic in one place, live. From 16.10.2026, 22:05 on (see _lib/kpi.js).
 //
 //   funnel     leads → contacted (and how fast) → booked → came → paid → upsell
 //   bookings   the bookings made in the period: confirmed, cancelled, came / due (show rate), upcoming
@@ -13,13 +14,14 @@
 // part=messages: only the messages (Automatizări → Mesaje).
 
 const { readJSON } = require('./_lib/store');
-const { requireAdmin } = require('./_lib/auth');
+const { requireRole } = require('./_lib/auth');
+const { cityOf } = require('./_lib/city');
 const { loadConnection } = require('./_lib/facebook');
 const { loadOffers } = require('./_lib/offers');
 const K = require('./_lib/kpi');
 
 module.exports = async (req, res) => {
-  const session = await requireAdmin(req, res);
+  const session = await requireRole(req, res, ['admin', 'manager']);
   if (!session) return;
   try {
     const q = req.query || {};
@@ -31,13 +33,27 @@ module.exports = async (req, res) => {
       readJSON('data/employees.json', []), readJSON('data/admin-profile.json', {}), loadConnection(readJSON),
     ]);
     const templates = (tdoc && tdoc.templates) || [];
-    const M = K.model({ offers, leads, appointments, sales, clients, conversations });
+    // the manager: only her clinics' leads, bookings, payments and messages; never the ads (Meta is not asked)
+    const scope = session.role === 'manager' ? (await cityOf(session, readJSON, employees)) || [] : null;
+    const mine = (x) => !scope || scope.includes(x && x.location);
+    const myAppts = scope ? appointments.filter(mine) : appointments, apptIds = new Set(myAppts.map((a) => a.id));
+    const M = scope
+      ? K.model({ offers, leads: leads.filter(mine), appointments: myAppts, sales: sales.filter((s) => (s.location ? mine(s) : apptIds.has(s.appointmentId))), clients, conversations: conversations.filter((c) => !c.location || mine(c)) })
+      : K.model({ offers, leads, appointments, sales, clients, conversations });
     res.setHeader('Cache-Control', 'no-store');
     if (q.part === 'messages') { res.status(200).json({ period, range: r, start: new Date(K.cfg.start).toISOString(), messages: K.messagesOf(M, r, templates) }); return; }
     const names = new Map(employees.map((e) => [e.id, String(e.name || '').trim()]));
     names.set('admin', String(admin.name || '').trim() || 'Admin');
-    const ads = await K.adsFor(conn, r);
+    const ads = scope ? { none: true } : await K.adsFor(conn, r);
     const rep = K.report(M, r, { offers, ads: ads.rows ? ads : null, templates, names });
+    if (scope) {
+      // no ads, no ad spend, no offers' costs; only her clinics
+      rep.offers = { rows: [], spend: { ready: false, total: 0, unassigned: 0 } }; rep.ads = null;
+      rep.cities = (rep.cities || []).filter((c) => scope.includes(c.city));
+      rep.trend = (rep.trend || []).map((t) => Object.assign({}, t, { spend: 0 }));
+      rep.alerts = (rep.alerts || []).filter((a) => a.kind !== 'ad');
+      rep.scope = scope;
+    }
     rep.period = period;
     rep.adsState = ads.none ? 'none' : ads.error ? 'error' : 'ok';
     rep.adsError = ads.error || '';

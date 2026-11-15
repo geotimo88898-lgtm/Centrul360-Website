@@ -15,7 +15,9 @@
   const K = window.K;
   if (!K) return;
   const { esc, icon } = K;
-  const CITIES = ['Timișoara', 'Arad'];
+  // the clinics on this page: the manager's own list (portal-data `manages`), all of them for the owner
+  const ALL = ['Timișoara', 'Arad'];
+  const CL = () => (K.data && Array.isArray(K.data.manages) && K.data.manages.length ? K.data.manages : ALL);
   const LEVELS = [['mult_putine', 'Mult prea puține', 'is-bad'], ['putin_putine', 'Puțin prea puține', 'is-warn'], ['potrivit', 'Potrivit', 'is-good'], ['putin_multe', 'Puțin prea multe', 'is-warn'], ['mult_multe', 'Mult prea multe', 'is-bad']];
   const LEVEL = Object.fromEntries(LEVELS.map((x) => [x[0], x]));
   const FATE = { ridicare: 'Păstrat pentru ridicare', depus: 'Depus în contul firmei' };
@@ -31,12 +33,12 @@
 
   const admin = () => !!(K.data && K.data.isAdmin);
   const me = () => (K.data && K.data.me) || {};
-  const myCity = () => (CITIES.includes(me().location) ? me().location : CITIES[0]);
+  const myCity = () => (CL().includes(me().location) ? me().location : CL()[0]);
   const fmt = (m) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return (m < 0 ? '-' : '') + (h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min'); };
   const fmtS = (m) => (m > 0 ? '+' : '') + fmt(m);
   const pct = (n) => (n == null ? '-' : n + '%');
   const short = (c) => (c === 'Arad' ? 'AR' : 'TM');
-  const cities = () => (S.city === 'all' ? CITIES : [S.city]);
+  const cities = () => (S.city === 'all' ? CL() : [S.city]);
   const dShort = (d) => (d ? K.dateShort(d) : '');
   const hm = (iso) => { try { return new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)); } catch (e) { return ''; } };
   const dayOfIso = (iso) => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(iso)); } catch (e) { return ''; } };
@@ -50,14 +52,14 @@
     paint();
   }
   function head() {
-    return '<div class="k-head"><div><div class="k-eyebrow">' + (admin() ? 'Admin · ' : '') + 'Timișoara și Arad</div><h2>Manager</h2></div>' +
+    return '<div class="k-head"><div><div class="k-eyebrow">' + (admin() ? 'Admin · ' : '') + esc(CL().join(' și ')) + '</div><h2>Manager</h2></div>' +
       '<div class="k-head-actions mg-actions">' +
         (admin() ? '' : '<button type="button" class="k-btn is-accent" data-act="george">' + icon('bell') + 'Anunță-l pe George</button>') +
         '<button type="button" class="k-btn is-outline" data-act="close">' + icon('cash') + 'Închide ziua</button>' +
         (admin() ? '' : '<button type="button" class="k-btn is-outline" data-act="report">' + icon('listCheck') + 'Raport săptămânal</button>') +
       '</div></div>' +
       '<div class="mg-bar">' + K.seg('mgtab', [['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
-      K.seg('mgcity', [['all', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.city, 'mg-city') + '</div>';
+      (CL().length > 1 ? K.seg('mgcity', [['all', CL().length === 2 ? 'Ambele' : 'Toate']].concat(CL().map((c) => [c, c])), S.city, 'mg-city') : '') + '</div>';
   }
   function paint() {
     if (!panel) return;
@@ -292,7 +294,7 @@
     return '<section class="k-card"><div class="k-card-head"><h3>' + icon('cash') + 'Închiderile zilei</h3><button type="button" class="k-btn is-primary is-sm" data-act="close">' + icon('plus') + 'Închide ziua</button></div>' +
         (list.length ? '<div class="k-list">' + list.map(closeRow).join('') + '</div>' : '<p class="k-muted">Nicio închidere încă. La sfârșitul zilei apasă „Închide ziua”.</p>') + '</section>' +
       '<section class="k-card"><div class="k-card-head"><h3>' + icon('card') + 'Plăți cu cardul pe POS · ' + esc(p.city || S.posCity) + '</h3>' +
-        (S.city === 'all' ? K.seg('poscity', CITIES.map((c) => [c, c]), S.posCity, 'mg-mini') : '') + '</div>' +
+        (S.city === 'all' ? K.seg('poscity', CL().map((c) => [c, c]), S.posCity, 'mg-mini') : '') + '</div>' +
         (p.connected && p.terminals ? '<div class="k-grid c3 mg-stats" style="margin-bottom:.8rem">' + stat('is-accent', 'card', 'Încasat pe POS', K.lei(total, 2), esc(dShort(p.from)) + ' - ' + esc(dShort(p.to))) +
           stat('', 'receipt', 'Plăți', String(ok.filter((x) => x.amount > 0).length), ok.filter((x) => x.amount > 0).length ? 'bon mediu ' + K.lei(total / Math.max(1, ok.filter((x) => x.amount > 0).length)) : '-') +
           stat('', 'refresh', 'Citit', p.syncedAt ? esc(K.ago(p.syncedAt)) : '-', 'din myPOS') + '</div>' : '') +
@@ -316,7 +318,7 @@
         '<div class="k-row-sub">' + esc(K.dateShort(dayOfIso(x.at))) + ' ' + esc(hm(x.at)) + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + ' · ' + K.plural(c.leads7 || 0, 'lead', 'leaduri') + ' în 7 zile · ' + K.num(c.freeHoursNext7 || 0) + ' h libere</div></div>' +
         '<div class="k-row-end"><span class="k-tag ' + l[2] + '">' + esc(l[1]) + '</span></div></div>'; };
     const repRow = (x) => '<div class="k-row is-click" data-rep="' + esc(x.id) + '"><span class="k-icon-chip">' + icon('file') + '</span><div class="k-row-main"><div class="k-row-title">Săptămâna ' + esc(dShort(x.week)) + ' - ' + esc(dShort(x.to)) + '</div>' +
-      '<div class="k-row-sub">' + CITIES.map((c) => short(c) + ' ' + K.lei((x.numbers[c] || {}).collected || 0)).join(' · ') + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + '</div></div>' +
+      '<div class="k-row-sub">' + Object.keys(x.numbers || {}).map((c) => short(c) + ' ' + K.lei((x.numbers[c] || {}).collected || 0)).join(' · ') + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + '</div></div>' +
       '<div class="k-row-end">' + (x.problems ? '<span class="k-tag is-warn">probleme</span>' : '') + icon('right') + '</div></div>';
     return '<section class="k-card"><div class="k-card-head"><h3>' + icon('file') + 'Rapoarte săptămânale</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-primary is-sm" data-act="report">' + icon('plus') + 'Raport nou</button>') + '</div>' +
         (rep.length ? '<div class="k-list">' + rep.map(repRow).join('') + '</div>' : '<p class="k-muted">Niciun raport trimis încă.</p>') + '</section>' +
@@ -337,6 +339,7 @@
       body: (x.details ? '<p class="mg-text">' + esc(x.details) + '</p>' : '<p class="k-muted">Fără detalii.</p>') + '<h4 class="mg-h">Cifrele de atunci</h4>' + contextHtml(x.context) });
   }
   function weekTable(n) {
+    const CITIES = Object.keys(n || {});
     const row = (label, f) => '<tr><th>' + label + '</th>' + CITIES.map((c) => '<td>' + f(n[c] || {}) + '</td>').join('') + '</tr>';
     return '<div class="mg-table-wrap"><table class="mg-table"><thead><tr><th></th>' + CITIES.map((c) => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>' +
       row('Încasat', (x) => K.lei(x.collected || 0)) + row('Medie pe cosmeticiană, pe zi lucrată', (x) => K.lei(x.perDayAvg || 0)) +
@@ -357,7 +360,7 @@
     let ctx = null;
     const d = K.drawer({
       title: 'Anunță-l pe George', icon: 'bell', width: 560, subtitle: 'Cum sunt leadurile față de ținta: calendar plin + 50%',
-      body: '<form class="k-form" data-form>' + K.field('Oraș', K.seg('city', CITIES.map((c) => [c, c]), city0, 'is-big'), 'full') +
+      body: '<form class="k-form" data-form>' + K.field('Oraș', K.seg('city', CL().map((c) => [c, c]), city0, 'is-big'), 'full') +
         '<div class="k-field full"><span>Cum sunt leadurile</span><div class="mg-levels" role="radiogroup">' + LEVELS.map(([v, l, tone]) =>
           '<button type="button" role="radio" aria-checked="false" class="mg-level ' + tone + '" data-level="' + v + '"><i></i>' + esc(l) + '</button>').join('') + '<input type="hidden" name="level" value=""></div></div>' +
         K.field('Detalii', '<textarea name="details" rows="4" maxlength="1500" placeholder="De ce, ce fel de leaduri vin, zilele goale sau prea pline"></textarea>', 'full') + '</form>' +
@@ -395,7 +398,7 @@
     let sys = null;
     const d = K.drawer({
       title: 'Închide ziua', icon: 'cash', width: 560,
-      body: '<form class="k-form" data-form>' + K.field('Oraș', K.seg('city', CITIES.map((c) => [c, c]), city0, 'is-big'), 'full') +
+      body: '<form class="k-form" data-form>' + K.field('Oraș', K.seg('city', CL().map((c) => [c, c]), city0, 'is-big'), 'full') +
         K.field('Ziua', '<input name="date" type="date" max="' + K.today() + '" value="' + K.today() + '">', 'full') +
         '<div class="full" data-sys>' + skel(80) + '</div>' +
         K.field('Cash numărat', '<div class="k-money"><input name="cashCounted" type="number" min="0" step="0.5" inputmode="decimal" placeholder="0"></div><small class="is-warn mg-diff" data-cashdiff></small>') +
@@ -518,6 +521,43 @@
     else if (e.target.name === 'mgcity') { S.city = e.target.value; if (S.tab === 'cifre') { const el = panel.querySelector('[data-body]'); el.innerHTML = cifreHtml(); } else body(); }
     else if (e.target.name === 'poscity') { S.posCity = e.target.value; body(); }
   }
+
+  // ------------------------------------------------------------------ on her Panou (the owner, 15.11): under the day's money,
+  // the month's targets per clinic and the three buttons; the rest is on the Manager page
+  let strip = null, stripAt = 0;
+  function stripHtml() {
+    const s = S.stats, t = s && s.targets;
+    const chip = (ok, txt) => '<span class="k-tag ' + (ok == null ? '' : ok ? 'is-good' : 'is-warn') + '">' + txt + '</span>';
+    const rows = s ? CL().map((c) => { const x = s.cities[c]; if (!x) return '';
+      return '<div class="mg-strip-row"><b>' + esc(c) + '</b>' +
+        chip(x.bonus.counted ? x.bonus.ok : null, x.bonus.counted ? (x.bonus.ok ? '1500/zi: toate' : '1500/zi: ' + x.bonus.below + ' sub') : '1500/zi: -') +
+        chip(x.fillAhead.pct == null ? null : x.fillAhead.pct >= t.fill, 'calendar 7 zile ' + pct(x.fillAhead.pct)) +
+        chip(x.consults.pct == null ? null : x.consults.pct >= t.consults, 'pachet ' + pct(x.consults.pct)) +
+        chip(x.leads.inHoursPct == null ? null : x.leads.inHoursPct >= t.leads5, '5 min ' + pct(x.leads.inHoursPct)) +
+        chip(!x.waiting, x.waiting ? x.waiting + ' fără răspuns' : 'mesaje la zi') + '</div>'; }).join('') : skel(60);
+    return '<div class="mg-strip-h"><h3>' + icon('trend') + 'Țintele lunii</h3><button type="button" class="k-btn is-ghost is-sm" data-strip="open">Manager' + icon('right') + '</button></div>' + rows +
+      '<div class="mg-strip-acts"><button type="button" class="k-btn is-accent is-sm" data-strip="george">' + icon('bell') + 'Anunță-l pe George</button>' +
+      '<button type="button" class="k-btn is-outline is-sm" data-strip="close">' + icon('cash') + 'Închide ziua</button>' +
+      '<button type="button" class="k-btn is-outline is-sm" data-strip="report">' + icon('listCheck') + 'Raport</button></div>';
+  }
+  function placeStrip() {
+    const d = K.data, p = document.getElementById('panel-panou');
+    if (!d || !d.isManager || !p) { if (strip) strip.remove(); return; }
+    if (!strip) {
+      strip = document.createElement('section');
+      strip.className = 'k-card mg-strip';
+      strip.addEventListener('click', (e) => { const b = e.target.closest('[data-strip]'); if (!b) return; const w = b.dataset.strip;
+        if (w === 'george') george(); else if (w === 'close') closeDay(); else if (w === 'report') report(); else K.go('manager'); });
+    }
+    if (!strip.isConnected) p.appendChild(strip);
+    strip.innerHTML = stripHtml();
+    if (Date.now() - stripAt > 60e3) {
+      stripAt = Date.now();
+      K.api('/api/portal-manager', { action: 'stats' }).then((j) => { S.stats = j; if (strip && strip.isConnected) strip.innerHTML = stripHtml(); }, () => {});
+    }
+  }
+  K.on('section', (id) => { if (id === 'panou') setTimeout(placeStrip, 60); });
+  K.on('data', () => { if (K.isActive('panou')) setTimeout(placeStrip, 120); });
 
   K.section('manager', { mount, show() { paint(); } });
   // a save somewhere: the numbers read again, at most once a minute (they read a lot)

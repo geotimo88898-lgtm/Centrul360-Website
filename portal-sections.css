@@ -3488,3 +3488,17 @@ html .cn-sts .cn-st th{ letter-spacing:normal !important; text-transform:none !i
   .mg-dec{ flex-wrap:wrap; }
   .mg-dec .ad-actions{ width:100%; display:grid; grid-template-columns:1fr 1fr; }
 }
+
+/* Echipa → the manager's clinics */
+.ad-manages-list{ display:flex; flex-wrap:wrap; gap:.4rem 1.2rem; padding-top:.2rem; }
+
+/* the manager's targets on her Panou (portal-manager.js), right under the day's money */
+html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }
+#panel-panou:has([data-kpi-root]) > .mg-strip{ display:none !important; }
+.mg-strip{ display:flex; flex-direction:column; gap:.65rem; }
+.mg-strip-h{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.mg-strip-h h3{ margin:0; font-size:.95rem; font-weight:650; display:flex; align-items:center; gap:.5rem; }
+.mg-strip-row{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; }
+.mg-strip-row > b{ min-width:84px; font-size:.86rem; }
+.mg-strip-acts{ display:flex; flex-wrap:wrap; gap:.4rem; padding-top:.2rem; }
+@media (max-width:720px){ .mg-strip-row > b{ width:100%; } .mg-strip-acts .k-btn{ flex:1 1 auto; } }

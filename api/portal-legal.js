@@ -54,14 +54,25 @@ module.exports = async (req, res) => {
   const b = req.body || {};
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
   try {
-    const employees = (await readJSON('data/employees.json', [])).filter((e) => e && e.id && e.id !== 'admin');
+    let employees = (await readJSON('data/employees.json', [])).filter((e) => e && e.id && e.id !== 'admin');
+    // the manager: the clinics she runs and their people (and her own papers); never the owners'
+    let cities = CITIES;
+    if (session.role === 'manager') {
+      const R = require('./_lib/roles');
+      const team = await R.teamOf(session, null, employees);
+      cities = CITIES.filter((c) => R.managesOf(employees.find((e) => e.id === session.employeeId)).includes(c));
+      employees = employees.filter((e) => e.id === session.employeeId || team.has(e.id));
+    }
     const people = employees.map((e) => ({ id: e.id, name: e.name || '', role: e.role || '', location: e.location || '', active: e.active !== false, photo: e.photo || '' }));
     const data = await load();
-    const answer = () => res.status(200).json({ ok: true, data, reqs: { salon: R.SALON, employee: R.EMPLOYEE, groups: R.GROUPS }, employees: people, cities: CITIES });
+    // the manager: only the scopes she may see, in the answer (the saved document always keeps everyone's)
+    const keep = session.role === 'manager' ? new Set(cities.map((c) => 'salon:' + c).concat(employees.map((e) => 'emp:' + e.id))) : null;
+    const view = () => (keep ? Object.assign({}, data, { scopes: Object.fromEntries(Object.entries(data.scopes || {}).filter(([k]) => keep.has(k))) }) : data);
+    const answer = () => res.status(200).json({ ok: true, data: view(), reqs: { salon: R.SALON, employee: R.EMPLOYEE, groups: R.GROUPS }, employees: people, cities });
     if (b.action === 'get') return answer();
 
     const scope = String(b.scope || '');
-    if (!scopeOk(scope, employees)) return fail(400, 'invalid_scope');
+    if (!scopeOk(scope, employees) || (scope.startsWith('salon:') && !cities.includes(scope.slice(6)))) return fail(400, 'invalid_scope');
     const box = data.scopes[scope] = data.scopes[scope] || { items: {}, custom: [] };
     box.items = box.items || {}; box.custom = box.custom || [];
     const author = session.name || session.username || 'Admin';

@@ -105,7 +105,7 @@
   function render() {
     if (!panel || !K.data) return;
     const D = K.data;
-    if (D.isAdmin && view === 'kpi' && window.C360Kpi) {
+    if ((D.isAdmin || D.isManager) && view === 'kpi' && window.C360Kpi) { // the manager: the same KPI, her clinics, no ads
       const root = panel.querySelector('.db-root');
       let box = root.querySelector('[data-kpi-root]');
       if (!box) { root.innerHTML = viewsHtml() + '<div data-kpi-root></div>'; box = root.querySelector('[data-kpi-root]'); }
@@ -190,7 +190,7 @@
         (myPay.hasBonus ? '<div><span>Bonus programări</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '<div><span>Comision</span><b>' + lei2(myPay.commission) + '</b></div>') + (myPay.manual ? '<div><span>Comision adăugat</span><b>' + lei2(myPay.manual) + '</b></div>' : '') + '</div>' +
         '<button type="button" class="k-btn is-sm is-outline" data-go="comision">' + icon('wallet') + 'Detalii</button></section>' : '';
     // Reception: the booking bonus at a glance (average per clocked-in day, the steps)
-    const bk = myPay && myPay.booking;
+    const bk = myPay && myPay.booking && !myPay.booking.frozen ? myPay.booking : null; // the manager's frozen one: in Salariu only
     const bonusCard = bk ? '<section class="k-card db-book"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3><a class="k-btn is-sm is-outline" href="#comision" data-go="comision">Detalii' + icon('arrow') + '</a></div>' +
       '<div class="db-book-row"><div><b>' + avg1(bk.avg) + '</b><span>programări / zi în medie</span></div><div class="' + (bk.lei ? 'is-on' : '') + '"><b>' + K.lei(bk.lei) + '</b><span>bonus acum</span></div></div>' +
       '<div class="db-book-steps">' + bk.tiers.slice().sort((a, b) => a.min - b.min).map((t) => '<span class="' + (bk.avg >= t.min ? 'is-on' : '') + '">' + t.min + '+ · ' + K.lei(t.lei) + '</span>').join('') + '</div>' +
@@ -276,7 +276,7 @@
 
     const root = panel.querySelector('.db-root');
     const parts = [];
-    if (D.isAdmin && window.C360Kpi) parts.push({ key: 'views', html: viewsHtml().replace('<div class="db-views">', '<div class="db-views" data-part="views">') });
+    if ((D.isAdmin || D.isManager) && window.C360Kpi) parts.push({ key: 'views', html: viewsHtml().replace('<div class="db-views">', '<div class="db-views" data-part="views">') });
     parts.push({ key: 'hero', html:
       // ---------------- hero (its moving background stays put between refreshes: the piece is replaced only when its text changes)
       '<section class="db-hero" data-part="hero">' +

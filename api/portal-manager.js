@@ -46,7 +46,6 @@ const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const roDay = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? B.roNow(t).date : ''; };
 const roMin = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? B.roNow(t).min : null; };
 const monthEnd = (m) => { const [y, mo] = m.split('-').map(Number); return m + '-' + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0'); };
-const cityOk = (c) => CITIES.includes(c);
 const tag = (c) => N.cityTag(c).trim();
 
 // a list kept in the store that two people can add to at once (never one over the other)
@@ -184,14 +183,14 @@ async function load() {
   return { emps, sales, appts, attendance, leads, convos, cfg };
 }
 
-async function stats(month) {
+async function stats(month, mine) {
   const now = roNow();
   const m = /^\d{4}-\d{2}$/.test(String(month || '')) && month <= now.date.slice(0, 7) ? month : now.date.slice(0, 7);
   const from = m + '-01', to = m === now.date.slice(0, 7) ? now.date : monthEnd(m);
   const D = await load();
   const waiting = await waitingNow(D.convos);
   const cities = {};
-  CITIES.forEach((city) => {
+  mine.forEach((city) => {
     const team = cosmeticians(D.emps, D.sales, D.attendance, city, from, to);
     const counted = team.filter((x) => x.days > 0);
     cities[city] = {
@@ -205,7 +204,7 @@ async function stats(month) {
       waiting: waiting[city] || 0,
     };
   });
-  return { ok: true, month: m, from, to, targets: { perDay: TARGET_PER_DAY, fill: TARGET_FILL * 100, consults: 50, leads5: 100 }, waitingSocial: waiting.social || 0, cities };
+  return { ok: true, month: m, from, to, clinics: mine, targets: { perDay: TARGET_PER_DAY, fill: TARGET_FILL * 100, consults: 50, leads5: 100 }, waitingSocial: waiting.social || 0, cities };
 }
 
 async function context(city) {
@@ -261,10 +260,10 @@ async function posOf(city, from, to) {
 }
 
 // ------------------------------------------------------------------ the week's report
-function weekNumbers(D, monday) {
+function weekNumbers(D, monday, mine) {
   const sunday = addDay(monday, 6);
   const out = {};
-  CITIES.forEach((city) => {
+  mine.forEach((city) => {
     const inc = D.sales.filter((s) => s.source === 'incasare' && (s.location || '') === city && s.date >= monday && s.date <= sunday);
     const team = cosmeticians(D.emps, D.sales, D.attendance, city, monday, sunday);
     const visits = D.appts.filter((a) => visit(a) && a.location === city && a.date >= monday && a.date <= sunday);
@@ -293,13 +292,18 @@ module.exports = async (req, res) => {
   const b = req.body || {};
   const fail = (code, error) => res.status(code).json({ error });
   const store = { readJSON, writeJSON };
+  // the clinics on this page: the manager's own list (Echipa → her clinics; a clinic opened later is not added by itself),
+  // all of them for the owner
+  const mine = session.role === 'manager' ? (await require('./_lib/city').cityOf(session, readJSON)) || [] : CITIES;
+  const cityOk = (c) => mine.includes(c);
+  const seen = (row) => session.role !== 'manager' || (row.city ? mine.includes(row.city) : true);
   const who = async () => {
     if (session.employeeId === 'admin') return 'Admin';
     const e = (await readJSON('data/employees.json', [])).find((x) => x.id === session.employeeId);
     return (e && e.name) || '';
   };
   try {
-    if (b.action === 'stats') { res.status(200).json(await stats(b.month)); return; }
+    if (b.action === 'stats') { res.status(200).json(await stats(b.month, mine)); return; }
 
     if (b.action === 'context') {
       if (!cityOk(b.city)) return fail(400, 'invalid_city');
@@ -324,7 +328,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (b.action === 'feedback_list') {
-      const list = (await readJSON(KEYS.feedback, [])).slice().reverse().slice(0, 100);
+      const list = (await readJSON(KEYS.feedback, [])).filter(seen).reverse().slice(0, 100);
       res.status(200).json({ ok: true, feedback: list, levels: LEVELS });
       return;
     }
@@ -332,7 +336,7 @@ module.exports = async (req, res) => {
     if (b.action === 'close_prefill') {
       if (!cityOk(b.city)) return fail(400, 'invalid_city');
       const date = isDay(b.date) ? b.date : roNow().date;
-      const closes = await readJSON(KEYS.closes, []);
+      const closes = (await readJSON(KEYS.closes, [])).filter(seen);
       res.status(200).json({ ok: true, system: await prefill(b.city, date), last: closes.filter((x) => x.city === b.city && x.date === date).slice(-1)[0] || null });
       return;
     }
@@ -372,7 +376,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (b.action === 'closes_list') {
-      const list = (await readJSON(KEYS.closes, [])).slice().reverse().slice(0, 120);
+      const list = (await readJSON(KEYS.closes, [])).filter(seen).reverse().slice(0, 120);
       res.status(200).json({ ok: true, closes: list, fates: FATES });
       return;
     }
@@ -393,13 +397,13 @@ module.exports = async (req, res) => {
       const today = roNow().date;
       const monday = isDay(b.week) ? mondayOf(b.week) : mondayOf(today);
       if (monday > today) return fail(400, 'invalid_week');
-      const numbers = weekNumbers(await load(), monday);
+      const numbers = weekNumbers(await load(), monday, mine);
       if (b.action === 'report_draft') { res.status(200).json({ ok: true, week: monday, to: addDay(monday, 6), numbers }); return; }
       const notes = clip(b.notes, 3000), problems = clip(b.problems, 3000);
       if (!notes && !problems) return fail(400, 'missing_notes');
       const row = { id: crypto.randomUUID(), at: new Date().toISOString(), by: session.employeeId, byName: await who(), week: monday, to: addDay(monday, 6), numbers, notes, problems };
       await append(KEYS.reports, row);
-      const sum = CITIES.map((c) => tag(c) + ' ' + N.leiTxt(numbers[c].collected)).join(' · ');
+      const sum = mine.map((c) => tag(c) + ' ' + N.leiTxt(numbers[c].collected)).join(' · ');
       await N.notifyMany(store, await N.adminIds(store), {
         kind: 'report', tone: problems ? 'warn' : 'info', go: 'manager', tag: 'mgr-rep-' + row.id,
         title: 'RAPORT SĂPTĂMÂNAL 📋 - ' + monday.slice(8, 10) + '.' + monday.slice(5, 7) + '-' + row.to.slice(8, 10) + '.' + row.to.slice(5, 7),
@@ -409,7 +413,8 @@ module.exports = async (req, res) => {
       return;
     }
     if (b.action === 'reports_list') {
-      const list = (await readJSON(KEYS.reports, [])).slice().reverse().slice(0, 60);
+      // the manager: the reports of her clinics (each one holds the numbers of the clinics it was written for)
+      const list = (await readJSON(KEYS.reports, [])).filter((r) => session.role !== 'manager' || Object.keys(r.numbers || {}).some((c) => mine.includes(c))).reverse().slice(0, 60);
       res.status(200).json({ ok: true, reports: list });
       return;
     }

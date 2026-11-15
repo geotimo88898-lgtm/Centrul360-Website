@@ -215,6 +215,12 @@ module.exports = async (req, res) => {
       res.status(403).json({ error: 'forbidden' });
       return;
     }
+    // the manager changes only the calendar of the clinics she runs
+    if (session.role === 'manager') {
+      const b = req.body || {};
+      const tgt = b.id ? appointments.find((a) => a.id === b.id) : null;
+      if ((b.location && !inCity(city, b.location)) || (tgt && !inCity(city, tgt.location))) { res.status(403).json({ error: 'forbidden' }); return; }
+    }
 
     if (action === 'create') {
       const employees = await readJSON('data/employees.json', []);

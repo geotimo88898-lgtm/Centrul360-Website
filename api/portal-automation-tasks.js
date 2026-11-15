@@ -67,7 +67,10 @@ module.exports = async (req, res) => {
 
       const isAdmin = session.role === 'admin';
       // Reception works for both clinics; only other roles are limited to their own city.
-      if (!isAdmin && session.role !== 'receptie' && session.role !== 'manager') {
+      if (session.role === 'manager') { // the manager: the clinics she runs
+        const mine = require('./_lib/roles').managesOf(employeesRaw.find((e) => e.id === session.employeeId));
+        visible = visible.filter((t) => !t.location || mine.includes(t.location));
+      } else if (!isAdmin && session.role !== 'receptie') {
         const me = employeesRaw.find((e) => e.id === session.employeeId);
         const myLocation = me ? me.location : '';
         visible = visible.filter((t) => t.assigneeRole === 'any' || !t.location || t.location === myLocation);

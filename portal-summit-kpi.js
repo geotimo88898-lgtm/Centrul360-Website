@@ -120,7 +120,7 @@
 
   // ------------------------------------------------------------------ wiring: the deck sits above the KPI page when it is open
   function place() {
-    var d = D(); if (!d || !d.isAdmin) return;
+    var d = D(); if (!d || !(d.isAdmin || d.isManager)) return; // the manager: her clinics, no ads (/api/kpi)
     var panel = document.getElementById('panel-panou'); if (!panel) return;
     var kr = panel.querySelector('[data-kpi-root]');
     if (!kr) { if (deck && deck.isConnected) { deck.remove(); period = ''; key = ''; } return; }

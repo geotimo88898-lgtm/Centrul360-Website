@@ -88,7 +88,9 @@ module.exports = async (req, res) => {
   if (!session) return;
   const isAdmin = session.role === 'admin';
   const isMgr = session.role === 'manager';
-  const sees = canManage(session); // reads anyone's pontaj
+  const sees = canManage(session); // reads anyone's pontaj (the manager: her clinics' people)
+  const team = await require('./_lib/roles').teamOf(session, readJSON);
+  const inTeam = (id) => !team || team.has(id);
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error) => res.status(code).json({ error });
@@ -125,6 +127,7 @@ module.exports = async (req, res) => {
     // ---------------------------------------------------------------- her hours
     if (action === 'timebank') {
       const targetId = sees && body.employeeId ? String(body.employeeId) : session.employeeId;
+      if (targetId !== session.employeeId && !inTeam(targetId)) return fail(403, 'forbidden');
       const all = await TB.loadAll(readJSON);
       const bal = TB.ledger(targetId, all);
       const adjs = all.adjustments.filter((a) => a.employeeId === targetId).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 60)
@@ -147,7 +150,7 @@ module.exports = async (req, res) => {
       if (!sees) return fail(403, 'forbidden');
       const all = await TB.loadAll(readJSON);
       const employees = await readJSON('data/employees.json', []);
-      const pending = all.adjustments.filter((a) => a.status === 'pending').sort((a, b) => (a.date < b.date ? -1 : 1));
+      const pending = all.adjustments.filter((a) => a.status === 'pending' && (inTeam(a.employeeId) || a.employeeId === session.employeeId)).sort((a, b) => (a.date < b.date ? -1 : 1));
       const balances = {};
       pending.forEach((a) => { if (!balances[a.employeeId]) { const b = TB.ledger(a.employeeId, all); delete b.effects; balances[a.employeeId] = b; } });
       const nameOf = (id) => { const e = employees.find((x) => x.id === id); return e ? e.name : id; };
@@ -165,6 +168,7 @@ module.exports = async (req, res) => {
       const a = adjs.find((x) => x.id === body.id);
       if (!a) return fail(404, 'not_found');
       if (isMgr && a.employeeId === session.employeeId) return fail(403, 'own_request'); // her own days: the owner
+      if (!inTeam(a.employeeId)) return fail(403, 'forbidden');
       if (a.status !== 'pending') return fail(409, 'already_decided');
       if (!['approve', 'reject'].includes(body.decision)) return fail(400, 'invalid_decision');
       a.decidedAt = new Date().toISOString();
@@ -235,8 +239,9 @@ module.exports = async (req, res) => {
       if (!sees) {
         list = list.filter((e) => e.employeeId === session.employeeId);
       } else if (body.employeeId) {
+        if (body.employeeId !== session.employeeId && !inTeam(body.employeeId)) return fail(403, 'forbidden');
         list = list.filter((e) => e.employeeId === body.employeeId);
-      }
+      } else if (team) list = list.filter((e) => inTeam(e.employeeId) || e.employeeId === session.employeeId);
       if (body.year && body.month) {
         const ym = String(body.year) + '-' + pad(Number(body.month));
         list = list.filter((e) => e.date.slice(0, 7) === ym);
@@ -248,7 +253,7 @@ module.exports = async (req, res) => {
 
     if (action === 'balance') {
       const targetId = sees && body.employeeId ? String(body.employeeId) : session.employeeId;
-      if (!sees && targetId !== session.employeeId) return fail(403, 'forbidden');
+      if ((!sees || !inTeam(targetId)) && targetId !== session.employeeId) return fail(403, 'forbidden');
       const balance = await computeBalance(targetId, entries);
       res.status(200).json({ ok: true, employeeId: targetId, ...balance });
       return;
@@ -262,7 +267,7 @@ module.exports = async (req, res) => {
       const today = serverToday();
       const tbAll = await TB.loadAll(readJSON);
       const list = [];
-      for (const emp of employees.filter((e) => e.id !== 'admin' && e.role !== 'admin' && e.active !== false)) {
+      for (const emp of employees.filter((e) => e.id !== 'admin' && e.role !== 'admin' && e.active !== false && (inTeam(e.id) || e.id === session.employeeId))) {
         const balance = await computeBalance(emp.id, entries);
         const todayEntry = entries.find((e) => e.employeeId === emp.id && e.date === today) || null;
         const tb = TB.ledger(emp.id, tbAll);
@@ -278,6 +283,7 @@ module.exports = async (req, res) => {
       const entry = entries.find((e) => e.id === body.id);
       if (!entry) return fail(404, 'entry_not_found');
       if (isMgr && entry.employeeId === session.employeeId) return fail(403, 'own_request'); // her own day: the owner corrects it
+      if (!inTeam(entry.employeeId)) return fail(403, 'forbidden');
       if (body.checkIn !== undefined) {
         if (!isValidTime(body.checkIn)) return fail(400, 'invalid_time');
         entry.checkIn = body.checkIn || null;

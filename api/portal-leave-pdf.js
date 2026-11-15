@@ -21,7 +21,8 @@ module.exports = async (req, res) => {
     const requests = await readJSON('data/leave-requests.json', []);
     const request = requests.find((r) => r.id === id);
     if (!request || !request.pdfBlobPath) { res.status(404).json({ error: 'request_not_found' }); return; }
-    if (!require('./_lib/roles').canManage(session) && request.employeeId !== session.employeeId) {
+    const team = await require('./_lib/roles').teamOf(session, readJSON); // the manager: her clinics' people
+    if ((!require('./_lib/roles').canManage(session) || (team && !team.has(request.employeeId))) && request.employeeId !== session.employeeId) {
       res.status(403).json({ error: 'forbidden' });
       return;
     }

@@ -89,7 +89,7 @@ async function openAll(store, city) {
   const [list, sales] = await Promise.all([store.readJSON(KEY, []), store.readJSON('data/sales.json', [])]);
   const locOf = (d) => d.location || ((sales.find((x) => x.id === d.saleId) || {}).location) || '';
   return list.filter((d) => rest(d) > 0).map((d) => Object.assign(view(d), { client: d.client || '', clientId: d.clientId || '', location: locOf(d), last: ((d.payments || []).slice(-1)[0] || {}).at || d.createdAt }))
-    .filter((d) => !city || !d.location || d.location === city)
+    .filter((d) => !city || !d.location || (Array.isArray(city) ? city.includes(d.location) : d.location === city))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 

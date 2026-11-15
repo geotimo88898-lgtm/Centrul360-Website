@@ -121,7 +121,7 @@
     if (av) { av.classList.toggle('has-photo', !!DATA.me.photo); av.style.backgroundImage = DATA.me.photo ? 'url("' + DATA.me.photo + '")' : ''; }
     // Owner: just "Admin". Staff: their role + location under the name.
     const whoLoc = document.getElementById('whoLocation');
-    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.role === 'manager' ? ' · Timișoara și Arad' : DATA.me.location && DATA.me.location !== '-' ? ' · ' + DATA.me.location : '');
+    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.role === 'manager' ? ' · ' + (DATA.manages || []).join(' și ') : DATA.me.location && DATA.me.location !== '-' ? ' · ' + DATA.me.location : '');
     whoLoc.hidden = !whoLoc.textContent;
     document.querySelectorAll('.admin-only').forEach((el) => el.classList.toggle('hidden', !DATA.isAdmin));
     // Role-shaped navigation: reception works the pipeline + tasks, cosmeticians see their own

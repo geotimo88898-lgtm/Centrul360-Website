@@ -210,7 +210,7 @@ module.exports = async (req, res) => {
       if (!lead) return fail(404, 'contact_not_found');
     } else if (!client) return fail(404, 'contact_not_found');
     // a cosmetician sees her city only, the sheet as much as the list
-    if (session.role === 'cosmetician') {
+    if (session.role === 'cosmetician' || session.role === 'manager') { // the manager: the clinics she runs
       const myCity = await cityOf(session, readJSON, await readJSON('data/employees.json', []));
       if (!inCity(myCity, client ? client.location : lead.location)) return fail(403, 'forbidden');
     }

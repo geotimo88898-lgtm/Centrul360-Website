@@ -131,7 +131,8 @@ module.exports = async (req, res) => {
     const isAdmin = session.role === 'admin';
     // A cosmetician works in one city: she sees only its payments and appointments (the clinic's
     // overall goal still counts both cities).
-    const city = await cityOf(session, readJSON, employeesRaw);
+    const city = await cityOf(session, readJSON, employeesRaw); // a cosmetician: her city; a manager: the list of her clinics
+    const manages = Array.isArray(city) ? city : null;
     const activeEmployees = employeesRaw.filter((e) => e.active !== false);
 
     // Commission sales only (source !== 'incasare'; legacy entries from before this
@@ -233,18 +234,19 @@ module.exports = async (req, res) => {
 
     // Bell reminders for the booking bonus (reception): the step reached, and the next one when
     // it's close (within 3 a day), the tone following the days left in the month. One short line.
-    const bonusNotes = salary ? bookingNotes(salary.months[0].booking, month, today) : [];
+    const bonusNotes = salary && !(salary.months[0].booking || {}).frozen ? bookingNotes(salary.months[0].booking, month, today) : []; // frozen: the manager's, no reminders
 
     // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city), and Instagram's
-    const myCity = !isAdmin && me.role === 'receptie' ? me.location : '';
-    const waUnread = waConvos.filter((c) => c.unreadCount && (!myCity || !c.location || c.location === myCity)).length + igUnread;
+    const myCity = !isAdmin && me.role === 'receptie' ? me.location : manages || '';
+    const waUnread = waConvos.filter((c) => c.unreadCount && inCity(myCity, c.location)).length + igUnread;
     const payload = {
       // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
       waUnread,
       notifications: isAdmin ? myNotes : bonusNotes.concat(myNotes),
       salary,
       me: { id: me.id, name: me.name, location: me.location, role: me.role, username: me.username || '', photo: photoOf(me), prefs: me.prefs || {} },
-      city, // set = this account is limited to one city (cosmeticians)
+      city: manages ? null : city, // set = this account is limited to one city (cosmeticians)
+      manages, // the manager: the clinics she runs (her views and lists stay inside them)
       companyGoal: {
         target: config.companyGoal.target,
         reward: config.companyGoal.reward,
@@ -263,7 +265,7 @@ module.exports = async (req, res) => {
       costShare: COST_SHARE,
       mySales,
       incasari,
-      activeEmployees: activeEmployees.map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, photo: photoOf(e) })),
+      activeEmployees: activeEmployees.filter((e) => !manages || e.role === 'admin' || e.id === me.id || inCity(manages, e.location)).map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, photo: photoOf(e) })),
       appointmentsToday: {
         list: todaysAppointments,
         countsToday,
@@ -321,6 +323,8 @@ module.exports = async (req, res) => {
           name: e.name,
           location: e.location,
           role: e.role,
+          manages: e.role === 'manager' ? require('./_lib/roles').managesOf(e) : undefined,
+          roleSince: e.roleSince || '',
           username: e.username,
           photo: photoOf(e),
           netSalary: Number(e.netSalary) || 0,
@@ -339,9 +343,10 @@ module.exports = async (req, res) => {
 
     // the manager: what waits for her decision (the team's days over / under 8 hours, the leave requests; never her own)
     if (me.role === 'manager') {
+      const team = new Set(employeesRaw.filter((e) => e.id !== me.id && e.role !== 'admin' && inCity(manages, e.location)).map((e) => e.id));
       payload.manager = {
-        pendingTime: (tbAll.adjustments || []).filter((a) => a.status === 'pending' && a.employeeId !== me.id).length,
-        pendingLeave: (tbAll.leaveRequests || []).filter((r) => r.status === 'pending' && r.employeeId !== me.id).length,
+        pendingTime: (tbAll.adjustments || []).filter((a) => a.status === 'pending' && team.has(a.employeeId)).length,
+        pendingLeave: (tbAll.leaveRequests || []).filter((r) => r.status === 'pending' && team.has(r.employeeId)).length,
       };
     }
 

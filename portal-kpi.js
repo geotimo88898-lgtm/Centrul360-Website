@@ -155,7 +155,7 @@
     const t = d.trend, labels = t.map((x) => K.dateShort(x.day));
     const money = S.trend === 'money';
     const series = money
-      ? [{ name: 'Reclame', values: t.map((x) => x.spend), color: 'var(--bad)', kind: 'line', dashed: true }, { name: 'Încasat', values: t.map((x) => x.revenue), color: 'var(--accent)' }]
+      ? (d.scope ? [] : [{ name: 'Reclame', values: t.map((x) => x.spend), color: 'var(--bad)', kind: 'line', dashed: true }]).concat([{ name: 'Încasat', values: t.map((x) => x.revenue), color: 'var(--accent)' }]) // the manager (d.scope): no ads
       : [{ name: 'Leaduri', values: t.map((x) => x.leads), color: 'var(--accent)', kind: 'bar' }, { name: 'Programări făcute', values: t.map((x) => x.made), color: 'var(--info)', kind: 'line' }, { name: 'Au venit', values: t.map((x) => x.came), color: 'var(--good)', kind: 'line' }];
     el._kro = null;
     K.chart(el, { labels, height: 220, series, format: money ? K.lei : K.num, axis: (v) => (money && v >= 1000 ? dec(v / 1000, 1) + 'k' : Math.round(v)),
@@ -268,7 +268,8 @@
     const blocks = [wrap('pace', 'kp-b is-wide', paceHtml(d)), wrap('alerts', 'kp-b', alertsHtml(d)), wrap('funnel', 'kp-b is-full', funnelHtml(d)),
       wrap('bookings', 'kp-b', bookingsHtml(d)), wrap('money', 'kp-b', moneyHtml(d)), wrap('sources', 'kp-b', sourcesHtml(d))]
       .concat(d.trend.length > 1 ? [wrap('trend', 'kp-b is-full', trendHtml(d))] : [])
-      .concat([wrap('ads', 'kp-b is-full', adsHtml(d)), wrap('offers', 'kp-b is-wide', offersHtml(d)), wrap('cities', 'kp-b', citiesHtml(d)), wrap('messages', 'kp-b is-full', messagesHtml(d)), wrap('team', 'kp-b is-full', teamHtml(d))]);
+      .concat(d.scope ? [] : [wrap('ads', 'kp-b is-full', adsHtml(d)), wrap('offers', 'kp-b is-wide', offersHtml(d))]) // the manager (d.scope): no ads, no offers' costs
+      .concat([wrap('cities', 'kp-b', citiesHtml(d)), wrap('messages', 'kp-b is-full', messagesHtml(d)), wrap('team', 'kp-b is-full', teamHtml(d))]);
     K.patch(S.el, [
       { key: 'head', html: headHtml(d).replace('<div class="kp-top">', '<div class="kp-top" data-part="head">') },
       { key: 'pulse', html: pulseHtml(d).replace('<section class="kp-pulse">', '<section class="kp-pulse" data-part="pulse">') },

@@ -387,7 +387,7 @@
 
   // ------------------------------------------------------------------ wiring: when the stage is on the Panou
   function place() {
-    var d = D(); if (!d || !d.isAdmin) return;
+    var d = D(); if (!d || !(d.isAdmin || d.isManager)) return; // the owner and the manager (her clinics' cosmeticians)
     var flow = document.querySelector('#panel-panou .sx-stage [data-flow]');
     if (!flow || (box === flow && box.isConnected)) return;
     mount(flow);

@@ -46,7 +46,7 @@ const ddmm = (a) => String(a.date || '').slice(8, 10) + '.' + String(a.date || '
 
 async function people(loc) {
   const emps = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  return [...new Set(['admin'].concat(emps.filter((e) => e.role === 'admin' || e.role === 'manager' || (e.role === 'receptie' && (!loc || !e.location || e.location === loc))).map((e) => e.id)))];
+  return [...new Set(['admin'].concat(emps.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./roles').managesCity(e, loc)) || (e.role === 'receptie' && (!loc || !e.location || e.location === loc))).map((e) => e.id)))];
 }
 
 // Giovanna calls her: one task in Sarcini (closes itself once the booking is confirmed, cancelled or past) and the bell

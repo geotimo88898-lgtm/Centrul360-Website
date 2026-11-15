@@ -147,7 +147,15 @@ module.exports = async (req, res) => {
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
-  // every role reads and answers (the owner, 6.11: the cosmeticians too, full access)
+  // every role reads and answers (the owner, 6.11: the cosmeticians too, full access); the manager: the clinics she runs
+  let scope = null;
+  if (session.role === 'manager') {
+    scope = await require('./_lib/city').cityOf(session, readJSON);
+    if (body.phone && action !== 'list') {
+      const c = (await readJSON(KEY, [])).find((x) => x.phone === String(body.phone));
+      if (c && c.location && !scope.includes(c.location)) return fail(403, 'forbidden');
+    }
+  }
 
   try {
     const IG = require('./_lib/social-inbox');
@@ -175,6 +183,7 @@ module.exports = async (req, res) => {
       const list = conversations
         .map((c) => Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || (c.clientName && c.clientName !== c.phone ? c.clientName : c.phone) }))
         .map(listItem)
+        .filter((c) => !scope || !c.location || scope.includes(c.location))
         // Instagram's and Facebook's (a failure there never empties the WhatsApp list)
         .concat(await IG.list().catch((e) => { console.error('instagram list:', e.message); return []; }))
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));

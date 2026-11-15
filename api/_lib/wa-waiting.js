@@ -83,8 +83,8 @@ async function run() {
   const items = [];
   const lastIn = (ms) => (ms || []).reduce((a, m) => (m.direction === 'in' && m.timestamp > a ? m.timestamp : a), '');
   const lastReply = (ms) => (ms || []).reduce((a, m) => (m.direction === 'out' && !m.auto && m.timestamp > a ? m.timestamp : a), '');
-  const add = (key, name, ms) => { const lm = ms[ms.length - 1] || {}; const c = { phone: key, lastInAt: lastIn(ms), lastReplyAt: lastReply(ms), lastText: lm.text || '', lastDirection: lm.direction || '' }; const w = waits(c, st, cand); if (w) items.push({ key, name, msgs: ms.slice(-8), lastInAt: c.lastInAt, w }); };
-  (Array.isArray(wa) ? wa : []).forEach((c) => add(c.phone, c.clientName || '', c.messages || []));
+  const add = (key, name, ms, loc) => { const lm = ms[ms.length - 1] || {}; const c = { phone: key, lastInAt: lastIn(ms), lastReplyAt: lastReply(ms), lastText: lm.text || '', lastDirection: lm.direction || '' }; const w = waits(c, st, cand); if (w) items.push({ key, name, loc: loc || '', msgs: ms.slice(-8), lastInAt: c.lastInAt, w }); };
+  (Array.isArray(wa) ? wa : []).forEach((c) => add(c.phone, c.clientName || '', c.messages || [], c.location || ''));
   (Array.isArray(so) ? so : []).forEach((c) => add(c.channel + ':' + c.id, c.name || (c.username ? '@' + c.username : ''), c.messages || []));
   // the ones whose last message asks for nothing, at once; the rest Nuki reads (at most 40 a run; the others at the next)
   const found = {};
@@ -108,7 +108,7 @@ async function run() {
     if (owed.length) {
       const N = require('./notify');
       const emps = await readJSON('data/employees.json', []);
-      const ids = (await N.adminIds({ readJSON })).concat(emps.filter((e) => e.active !== false && (e.role === 'receptie' || e.role === 'manager')).map((e) => e.id));
+      const ids = (await N.adminIds({ readJSON })).concat(emps.filter((e) => e.active !== false && (e.role === 'receptie' || (e.role === 'manager' && owed.some((x) => require('./roles').managesCity(e, x.loc))))).map((e) => e.id));
       await N.notifyMany({ readJSON, writeJSON }, ids, {
         kind: 'alert', tone: 'warn', go: 'mesaje', tag: 'waiting-' + day + '-' + slot,
         title: owed.length === 1 ? 'O CLIENTĂ FĂRĂ RĂSPUNS 💬' : owed.length + ' CLIENTE FĂRĂ RĂSPUNS 💬',

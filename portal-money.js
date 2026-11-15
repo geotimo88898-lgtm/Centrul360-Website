@@ -886,7 +886,9 @@
     const max = tiers[tiers.length - 1].min + 4;
     const pct = (v) => Math.min(100, (v / max) * 100);
     const days = K.daysIn(C.month), daysLeft = isNow ? days - Number(K.today().slice(8, 10)) + 1 : 0;
-    return '<section class="k-card sl-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3></div>' +
+    return '<section class="k-card sl-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3>' + (bk.frozen ? '<span class="k-tag">oprit la ' + esc(K.dateShort(bk.frozen)) + '</span>' : '') + '</div>' +
+      // the manager: what she made as reception until she became manager, frozen (paid for those days; nothing after)
+      (bk.frozen ? '<div class="mo-note">' + icon('info') + 'Bonusul de recepție se oprește din ziua în care ai devenit manager. Rămâne ce ai făcut până atunci, pentru zilele de recepție.</div>' : '') +
       '<div class="sl-bk-top"><div><span>Media ta</span><b>' + K.num(bk.avg) + '</b><small>programări / zi · ' + K.plural(bk.days, 'zi pontată', 'zile pontate') + ', ' + bk.total + ' programări</small></div>' +
         '<div class="sl-bk-now' + (bk.lei ? ' is-on' : '') + '"><span>Bonus</span><b>' + K.lei(bk.lei) + '</b>' +
         (bk.next ? '<small>' + (bk.days ? 'Încă ' + avg1(Math.max(0.1, Math.ceil((bk.next.min - bk.avg) * 10) / 10)) + ' pe zi pentru ' + K.lei(bk.next.lei) : 'de la ' + bk.next.min + ' pe zi') + (isNow && daysLeft ? ' · ' + K.plural(daysLeft, 'zi rămasă', 'zile rămase') : '') + '</small>' : '<small>Treapta cea mai mare. Bravo!</small>') + '</div></div>' +

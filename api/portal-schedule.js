@@ -21,7 +21,9 @@ async function answer(res, from, to, session) {
   const [doc, cosm, all] = await Promise.all([T.load(), T.people(), T.staff()]);
   const ids = new Set(cosm.map((p) => p.id));
   // who is shown with their hours: the cosmeticians; the owner and the manager also see (and set) the desk's
-  const people = canManage(session) ? all : cosm.map((p) => Object.assign({ role: 'cosmetician' }, p));
+  let people = canManage(session) ? all : cosm.map((p) => Object.assign({ role: 'cosmetician' }, p));
+  // the manager: the people of the clinics she runs
+  if (session && session.role === 'manager') { const mine = await require('./_lib/city').cityOf(session, readJSON); people = people.filter((p) => p.id !== session.employeeId && mine.includes(p.location)); }
   const shown = new Set(people.map((p) => p.id));
   const dates = {};
   Object.keys(doc.dates).filter((d) => d >= from && d <= to).sort().forEach((d) => {
@@ -69,6 +71,11 @@ module.exports = async (req, res) => {
     const people = await T.staff();
     const emp = people.find((p) => p.id === String(b.employeeId || ''));
     if (!emp) return fail(400, 'invalid_cosmetician');
+    if (session.role === 'manager') { // her clinics' people, in her clinics; never her own hours
+      const mine = await require('./_lib/city').cityOf(session, readJSON);
+      const to = String(b.location || (b.entry && b.entry.location) || '');
+      if (emp.id === session.employeeId || !mine.includes(emp.location) || (to && !mine.includes(to))) return fail(403, 'forbidden');
+    }
 
     if (b.action === 'save_week') {
       const location = String(b.location || '');

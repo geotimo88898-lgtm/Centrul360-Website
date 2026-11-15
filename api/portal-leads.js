@@ -361,7 +361,7 @@ const SELF = ['facebook-webhook', 'site-form'];
 async function alertTeam(lead, returning, fromSite) {
   if (!SELF.includes(lead.createdBy) && !(returning && (lead.source === 'facebook' || lead.source === 'site'))) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie' || e.role === 'manager').map((e) => e.id));
+  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, lead.location))).map((e) => e.id));
   const raw = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
   const what = require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), raw); // "Lipo 640"
   const city = ({ 'Timișoara': ' TM', Arad: ' AR' })[lead.location] || '';

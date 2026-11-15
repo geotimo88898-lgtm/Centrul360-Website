@@ -55,6 +55,15 @@ module.exports = async (req, res) => {
   if (!m) { res.status(400).json({ error: 'invalid_path' }); return; }
   // the legal papers (authorizations, contracts, IDs, medical fitness): the admins only
   if (p.startsWith('legal/') && !require('./_lib/roles').canManage(session)) { res.status(403).json({ error: 'forbidden' }); return; }
+  // the manager: the papers of the clinics she runs and of their people (and her own)
+  if (p.startsWith('legal/') && session.role === 'manager') {
+    const R = require('./_lib/roles'), dir = p.split('/')[1];
+    const emps = await require('./_lib/store').readJSON('data/employees.json', []);
+    const mine = R.managesOf(emps.find((e) => e.id === session.employeeId));
+    const team = await R.teamOf(session, null, emps);
+    const ok = dir === 'tm' ? mine.includes('Timișoara') : dir === 'ar' ? mine.includes('Arad') : dir.startsWith('e-') && (dir.slice(2) === session.employeeId || team.has(dir.slice(2)));
+    if (!ok) { res.status(403).json({ error: 'forbidden' }); return; }
+  }
   const buf = await readBinary(p);
   if (!buf) { res.status(404).json({ error: 'not_found' }); return; }
   res.setHeader('Content-Type', TYPES[m[1]]);

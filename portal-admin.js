@@ -294,7 +294,7 @@
         ? [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Bonus', K.lei(pay.bonus || 0)], ['Media/zi', pay.booking ? K.num(pay.booking.avg) : '-']]
         : [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Comision', K.lei(st.comm)], ['Tratamente', K.lei(st.performed)]];
       return '<button type="button" class="ad-emp' + (e.active ? '' : ' is-off') + '" data-emp="' + esc(e.id) + '"><div class="ad-emp-top">' + K.avatar(e.name, 46) +
-        '<div><b>' + esc(e.name) + '</b><span>' + K.roleTag(e.role) + esc(e.role === 'manager' ? 'Timișoara și Arad' : e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
+        '<div><b>' + esc(e.name) + '</b><span>' + K.roleTag(e.role) + esc(e.role === 'manager' ? (e.manages && e.manages.length ? e.manages : ['Timișoara', 'Arad']).join(' și ') : e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
         '<dl class="ad-emp-kv" title="Luna curentă">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
         (e.netSalary ? '' : '<div class="ad-emp-empty">' + icon('wallet') + 'Salariul nu e setat, apasă ca să-l pui</div>') +
         (e.active ? '<div class="ad-emp-push' + (e.pushDevices ? ' is-on' : '') + '">' + icon('bell') + (e.pushDevices ? 'Notificări pe ' + K.plural(e.pushDevices, 'telefon', 'telefoane') : 'Fără notificări pe telefon') + '</div>' : '') + '</button>';
@@ -332,8 +332,11 @@
         '<div data-pane="profile"' + (tab === 'profile' ? '' : ' hidden') + '><form class="k-form" data-profile>' +
           K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'receptie' || e.role === 'manager' ? 'bonusul de programări.' : 'comisionul.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
-          K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Managerul conduce ambele clinici: tot ce face recepția, pe Timișoara și Arad, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
+          K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Managerul conduce clinicile alese mai jos: tot ce face recepția acolo, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
           K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +
+          // the manager: the clinics she runs (a clinic opened later is added here by hand, never by itself)
+          '<div class="k-field full ad-manages" data-manages' + (e.role === 'manager' ? '' : ' style="display:none"') + '><span>Clinicile pe care le conduce</span><div class="ad-manages-list">' +
+            LOCS.map(([c]) => K.toggle('mg|' + c, e.role === 'manager' ? (e.manages && e.manages.length ? e.manages : LOCS.map((x) => x[0])).includes(c) : true, c)).join('') + '</div></div>' +
           K.field('Zile de concediu pe an', '<input name="annualLeaveDays" type="number" min="0" max="60" value="' + esc(e.annualLeaveDays != null ? e.annualLeaveDays : 21) + '">', '', 'Minimul legal e 20; implicit 21.') +
           K.field('Ore contractate / zi', '<input name="contractedHoursPerDay" type="number" min="1" max="16" step="0.5" value="' + esc(e.contractedHoursPerDay != null ? e.contractedHoursPerDay : 8) + '">') + '</form>' +
           '<div class="ad-access"><button type="button" class="k-btn is-outline" data-pass>' + icon('key') + 'Resetează parola</button>' +
@@ -400,6 +403,9 @@
           try { await K.api('/api/portal-employees', { action: 'set_active', employeeId: e.id, active: !e.active }); d.close(); K.ui().toast(e.active ? 'Cont dezactivat.' : 'Cont reactivat.', 'success'); K.reload(); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         });
+        // the clinics of a manager show while the role picked is Manager
+        const prof = el.querySelector('[data-profile]');
+        if (prof) prof.addEventListener('change', (ev) => { if (ev.target.name === 'role') { const m = el.querySelector('[data-manages]'); if (m) m.style.display = ev.target.value === 'manager' ? '' : 'none'; } });
         el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           readGoals();
           const tab = el.querySelector('input[name=emptab]').value;
@@ -407,7 +413,9 @@
             if (tab === 'profile') {
               const v = K.formValues(el.querySelector('[data-profile]'));
               if (!v.name) { K.ui().toast('Numele e obligatoriu.', 'error'); return; }
-              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: v.netSalary });
+              const manages = LOCS.map(([c]) => c).filter((c) => v['mg|' + c]);
+              if (v.role === 'manager' && !manages.length) { K.ui().toast('Alege cel puțin o clinică pentru manager.', 'error'); return; }
+              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: v.netSalary, manages: v.role === 'manager' ? manages : undefined });
             } else if (tab === 'goals') {
               const clean = goals.filter((g) => String(g.title).trim()).map((g) => ({ title: String(g.title).trim(), metric: g.metric, target: Number(g.target) || 0, reward: Number(g.reward) || 0, currentValue: Number(g.currentValue) || 0 }));
               if (clean.some((g) => !g.target)) { K.ui().toast('Fiecare obiectiv are nevoie de o țintă.', 'error'); return; }
