@@ -52,6 +52,10 @@ de ele, sigur poți mai bine… o să ajungem și la nivelul de insane pe care-l
 la Conținut, ca ciorne (nu sunt programate, la cererea lui: „nu le programa încă, dar păstrează-le”). Nivelul de acum e
 baza; ținta e „insane”.
 
+**15.11, conversația cu Nuki refăcută** (pe „I need someone to hold me close”, montaj pe bătaie, puțin text): „e foarte
+bun, green light”. Singura schimbare: fără răspunsul „360” al privitorului la final („e nice ideea… doar nu se potrivește
+aici”). Regula: invitația la comentariu rămâne o invitație, nu o mimăm în reel. Păstrat în Content ca ciornă.
+
 ## Cum folosești jurnalul
 - Înainte de concept: citește principiile și ultimele verdicte; în blocul `concept` din script scrie care principii
   servește reelul și ce verdict anterior îl influențează.
