@@ -98,7 +98,7 @@
    "visual": {
     "type": "dv-energy",
     "cam": "none",
-    "tr": "descend"
+    "tr": "fly-along"
    }
   }
  ],
@@ -109,7 +109,7 @@
    "visual": {
     "type": "dv-lift",
     "cam": "none",
-    "tr": "rise"
+    "tr": "ripple"
    }
   },
   {

@@ -59,10 +59,10 @@
    "owner": "da: e ușor și se termină cu invitația „360”"
   },
   "render": {
-   "scroll": "da: întrebarea e pe ecran din cadrul 0 (bula e deja în mișcare), iar la 0,95 s camera se retrage și se vede că e un chat cu Nuki",
+   "scroll": "da: întrebarea e pe ecran din cadrul 0, pe trei rânduri, cât toată coloana de text (bula e deja în mișcare); la 0,95 s camera se retrage și se vede că e un chat cu Nuki",
    "serves": "da, cu o schimbare față de cerere: la epilare nu există un înainte/după real (catalogul nu are niciun caz, iar ba-epilare.webp e o poză de atmosferă), așa că în locul lui e piesa de mână reală a laserului (810 nm), nu un rezultat",
    "effects": "nu: cărțile se întorc și trec pe lângă cameră doar la cele trei schimbări ale montajului; în chat se mișcă numai bulele și camera, puțin",
-   "natural": "da, cu o limită: răspunsul lung al lui Nuki (16 cuvinte) are 2,1 s până la mesajul următor; rămâne pe ecran și după, dar cine citește încet îl prinde la a doua vizionare",
+   "natural": "da, cu o limită: răspunsul lung al lui Nuki (16 cuvinte, la 48 px) are 2,1 s până la mesajul următor; rămâne pe ecran și după. Foaia e cât 88 % din lățimea cadrului și stă mereu pe axa lui; camera doar se înclină și împinge",
    "owner": "da, cu două lucruri de confirmat de el: „Consultația e gratuită” (site-ul o spune, dar reels-urile educative o evită) și logo-ul mic de sub Nuki (cerut de verificarea filmelor de brand)"
   }
  },
