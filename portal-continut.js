@@ -31,7 +31,7 @@
   if (!K) return;
   const { esc, icon } = K;
   const S = { d: null, busy: false, tab: 'ins', r: null, rErr: '', rAt: 0, warn: {}, an: '', fm: 'month', drafts: {}, wide: null, tpOpen: {},
-    tr: { seen: 0, last: null, focus: '', cap: null, moved: false }, cal: { view: 'week', day: '', nets: [] } };
+    tr: { seen: 0, last: null, focus: '', cap: null, moved: false, skip: [] }, cal: { view: 'week', day: '', nets: [] } };
   let panel = null, dr = null, openId = '';
 
   const NETS = ['tt', 'yt', 'ig', 'fb'];
@@ -112,6 +112,7 @@
         if (it && e.target.closest('[data-cttr-ok]')) return decide(it.id, 'ok');
         if (it && e.target.closest('[data-cttr-no]')) return openRedo(it.id);
         if (it && e.target.closest('[data-cttr-note]')) return openRedo(it.id, 'note');
+        if (it && e.target.closest('[data-cttr-skip]')) return skipItem(it.id);
         const cn = e.target.closest('[data-cttr-cap]');
         if (it && cn) { const n = cn.dataset.cttrCap; S.tr.cap = S.tr.cap && S.tr.cap.id === it.id && S.tr.cap.net === n && !S.wide ? { id: it.id, net: '' } : { id: it.id, net: n }; return repaintCaps(it); }
       } else if (e.target.closest('[data-cttr-undo]')) return undoLast();
@@ -501,6 +502,12 @@
   function current() {
     const q = queue();
     if (S.tr.focus) { const f = q.find((x) => x.id === S.tr.focus); if (f) return f; }
+    // „Următorul” (the owner, 15.11): one he skipped waits at the end of the queue, still to approve; when only skipped
+    // ones are left, the round starts again from the first
+    const skip = S.tr.skip || [];
+    const f = q.find((x) => !skip.includes(x.id));
+    if (f) return f;
+    if (q.length) S.tr.skip = [];
     return q[0] || null;
   }
   function transit() {
@@ -520,10 +527,12 @@
         '<div class="cn-tx-done"><span class="cn-tx-done-ic">' + icon('checkCircle') + '</span><b>Nimic de aprobat</b><p>' + esc(sub) + '</p>' +
         (ok ? '<button type="button" class="k-btn is-outline" data-cttab-go="cal">' + icon('calendar') + pl(ok, 'aprobat', 'aprobate') + ' în calendar' + icon('right') + '</button>' : '') + '</div></section>' + later;
     }
-    const total = S.tr.seen + q.length, pos = S.tr.seen + 1;
-    const dots = total <= 14 ? '<span class="cn-tx-dots" aria-hidden="true">' + Array.from({ length: total }, (_, i) => '<i class="' + (i < S.tr.seen ? 'is-done' : i === S.tr.seen ? 'is-on' : '') + '"></i>').join('') + '</span>' : '<span class="cn-tx-prog" aria-hidden="true"><i style="width:' + ((S.tr.seen / total) * 100).toFixed(1) + '%"></i></span>';
+    const skipped = (S.tr.skip || []).filter((x) => q.some((y) => y.id === x)).length;
+    const total = S.tr.seen + q.length, pos = S.tr.seen + 1 + Math.min(skipped, q.length - 1);
+    const dots = total <= 14 ? '<span class="cn-tx-dots" aria-hidden="true">' + Array.from({ length: total }, (_, i) => '<i class="' + (i < S.tr.seen ? 'is-done' : i === pos - 1 ? 'is-on' : '') + '"></i>').join('') + '</span>' : '<span class="cn-tx-prog" aria-hidden="true"><i style="width:' + ((S.tr.seen / total) * 100).toFixed(1) + '%"></i></span>';
     const wk = q.filter((x) => x.week === it.week).length;
-    const bar = '<div class="cn-tx-bar"><span class="cn-tx-n"><b>' + pos + '</b> din ' + total + '</span>' + dots + '<span class="k-grow"></span>' + undo +
+    const skipB = q.length > 1 ? '<button type="button" class="k-btn is-ghost is-sm cn-tx-skip" data-cttr-skip aria-label="Următorul, fără decizie (săgeata jos)">Următorul' + icon('right') + '</button>' : '';
+    const bar = '<div class="cn-tx-bar"><span class="cn-tx-n"><b>' + pos + '</b> din ' + total + '</span>' + dots + '<span class="k-grow"></span>' + undo + skipB +
       (wk > 1 ? '<button type="button" class="k-btn is-ghost is-sm cn-tx-all" data-ctall="' + esc(it.week) + '" data-n="' + wk + '">' + icon('checkCircle') + 'Aprobă tot (' + wk + ')</button>' : '') + '</div>';
     const nx = q.filter((x) => x !== it)[0];
     const peek = nx ? '<div class="cn-tx-peek" aria-hidden="true">' + (nx.cover ? '<img src="' + esc(cover(nx)) + '" alt="">' : '') + '</div>' : '';
@@ -531,7 +540,7 @@
       '<div class="cn-tx-acts"><button type="button" class="cn-tx-b is-no" data-cttr-no aria-label="De refăcut (săgeata stânga)">' + icon('x') + '</button>' +
       '<button type="button" class="cn-tx-b is-note" data-cttr-note aria-label="Aprobă cu o notă">' + icon('pen') + '</button>' +
       '<button type="button" class="cn-tx-b is-ok" data-cttr-ok aria-label="Aprobă (săgeata dreapta)">' + icon('check') + '</button></div>' +
-      '<p class="cn-tx-keys"><kbd>←</kbd> De refăcut <kbd>→</kbd> Aprobă <kbd>Z</kbd> Anulează</p></section>' + later;
+      '<p class="cn-tx-keys"><kbd>←</kbd> De refăcut <kbd>→</kbd> Aprobă <kbd>↓</kbd> Următorul <kbd>Z</kbd> Anulează</p></section>' + later;
   }
   function trCard(it) {
     const id = esc(it.id), q = qaOf(it);
@@ -615,6 +624,14 @@
       paintTransit();
     } finally { S.busy = false; }
   }
+  // skip: the next one, without a decision on this one (it stays to approve, it comes back after the others)
+  function skipItem(id) {
+    if (S.busy) return;
+    const q = queue();
+    if (q.length < 2) { K.ui().toast('E singurul de aprobat.', 'info'); return; }
+    S.tr.skip = (S.tr.skip || []).filter((x) => x !== id).concat(id); S.tr.focus = ''; S.tr.cap = null;
+    paint(true);
+  }
   async function undoLast() {
     const l = S.tr.last; if (!l || S.busy) return;
     S.busy = true;
@@ -635,6 +652,7 @@
     const it = current();
     if (e.key === 'ArrowRight' && it) { e.preventDefault(); decide(it.id, 'ok'); }
     else if (e.key === 'ArrowLeft' && it) { e.preventDefault(); openRedo(it.id); }
+    else if (e.key === 'ArrowDown' && it) { e.preventDefault(); skipItem(it.id); }
     else if ((e.key === 'z' || e.key === 'Z') && !e.shiftKey) { if (S.tr.last) { e.preventDefault(); undoLast(); } }
     else if (e.key === ' ' && it) { const v = panel.querySelector('[data-cttrid] video'); if (v) { e.preventDefault(); sound(v); } }
   });
