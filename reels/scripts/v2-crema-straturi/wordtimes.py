@@ -36,7 +36,11 @@ def syllables(w):
     return max(1, n)
 
 
+PRON = json.load(open(os.path.join(HERE, '..', '..', 'engine', 'voice.json'))).get('pronounce', {})
+
+
 def weight(w):
+    w = PRON.get(re.sub(r'[.,;:]', '', w), w)          # an abbreviation weighs what is really said („e-em-es”)
     core = re.sub(r"[^a-zăâîșțA-ZĂÂÎȘȚ]", '', w)
     return syllables(w) * 1.0 + 0.3 * len(re.findall('[^' + VOW + ']', core)) + 0.25
 
@@ -53,15 +57,23 @@ def line_words(path, text):
             if k - a >= 7: runs.append((a, k))
         else: k += 1
     words = text.split(); marks = [i for i, w in enumerate(words[:-1]) if re.search(r'[,.;:]$', w)]   # a pause is expected after these words
-    # match pauses to punctuation: expected position by weight share, prefer long pauses
+    # match pauses to punctuation: of all the ways to give each comma or full stop one of the pauses (in order; a mark may
+    # have none), take the one in which every phrase is spoken at the most even pace (sounds per second)
+    import itertools
     W = np.array([weight(w) for w in words]); cum = np.cumsum(W) / W.sum()
-    use = {}
-    cand = sorted(runs, key=lambda r: -(r[1] - r[0]))
-    for a, b in cand:
-        if not marks: break
-        pos = ((a + b) / 2 - t0) / (t1 - t0)
-        mi = min((m for m in marks if m not in use), key=lambda m: abs(cum[m] - pos), default=None)
-        if mi is not None and abs(cum[mi] - pos) < 0.16: use[mi] = (a, b)
+    quiet = lambda a, b: sum(min(b, r[1]) - max(a, r[0]) for r in runs if r[1] > a and r[0] < b)
+    best = None
+    for k in range(min(len(marks), len(runs)), -1, -1):
+        for ms in itertools.combinations(marks, k):
+            for rs in itertools.combinations(range(len(runs)), k):
+                cuts = [(m, runs[r]) for m, r in zip(ms, rs)]; st, prev, cost = t0, -1, 0.0; rates = []
+                for m, run in cuts + [(len(words) - 1, (t1, t1))]:
+                    dur = (run[0] - st) - quiet(st, run[0]); w = W[prev + 1:m + 1].sum(); rates.append((dur / w, w)); st, prev = run[1], m
+                mean = sum(r * w for r, w in rates) / sum(w for _, w in rates)
+                cost = sum(w * (r - mean) ** 2 for r, w in rates) / sum(w for _, w in rates) / mean ** 2
+                cost += sum(0.09 if words[m].endswith('.') else 0.03 for m in marks if m not in ms) - sum(0.12 * min(runs[r][1] - runs[r][0], 0.3) for r in rs)   # a mark without a pause costs a little; a long pause wants a mark
+                if best is None or cost < best[0]: best = (cost, cuts)
+    use = {m: run for m, run in (best[1] if best else [])}
     # phrases between the matched pauses
     edges = [(-1, t0)] + [(m, None) for m in sorted(use)] + [(len(words) - 1, t1)]
     out = [None] * len(words); start = t0; prev = -1

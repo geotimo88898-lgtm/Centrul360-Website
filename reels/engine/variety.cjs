@@ -21,7 +21,8 @@ function shape(id, S) {
   const loops = lines.filter((b) => b.role === 'loop').map(say);
   const ctaL = lines.filter((b) => b.role === 'cta').map(say);
   const end = (S.end && S.end.type) || 'ask', oc = S.outro && S.outro.cta;
-  const ctaType = end === 'site' ? 'site' : end === 'comment' ? 'comment' : end === 'save' ? (oc === 'comment' || oc === 'send' ? oc : 'save') : end === 'loop' ? (oc === 'send' ? 'send' : 'none') : oc || end;
+  // a script may name its real CTA itself ("ctaType": "comment" | "none" | …): a one-shot or brand piece ends with "save" only as its held ending
+  const ctaType = S.ctaType ? S.ctaType : end === 'site' ? 'site' : end === 'comment' ? 'comment' : end === 'save' ? (oc === 'comment' || oc === 'send' ? oc : 'save') : end === 'loop' ? (oc === 'send' ? 'send' : 'none') : oc || end;
   // where the answer lands: the first payoff line's start, as a share of the spoken text (or of the real timing)
   let answer = null;
   try { const F = JSON.parse(fs.readFileSync(path.join(BASE, id, 'build', 'film.json'), 'utf8')); if (F.payoff != null) answer = F.payoff / F.total; } catch (e) { /* not rendered yet */ }

@@ -9,6 +9,7 @@
  "title": "Nu promitem. Îți arătăm.",
  "topic": "Manifestul: nu promitem, arătăm rezultate reale",
  "post": "Nu promitem. Îți arătăm. Cliente reale, fotografiate la noi, înainte și după tratament. Rezultatele pot varia de la o persoană la alta.",
+ "ctaType": "none",
  "sources": "v2/src/index.html (titlul „Nu promitem. Îți arătăm.”, „Clientele noastre, fotografiate la noi, înainte și după tratament.”, „5,0 · 300+ recenzii Google”, „5,0 pe Google”); v2/src/catalog-rezultate.html (fiecare caz: tratamentul, orașul și ședințele exact cum sunt în catalog; „Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta.”, „Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.”); pozele: brand_asset/catalog (reale, necrpate, neretușate, în culorile lor).",
  "concept": {
   "who": "Femeile din Timișoara și Arad care au auzit destule promisiuni în estetică și nu mai cred pe cuvânt; vor să vadă.",

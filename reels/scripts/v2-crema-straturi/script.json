@@ -244,23 +244,23 @@
    ],
    [
     "pielea",
-    0.44
+    0.63
    ],
    [
     "produce",
-    0.71
+    0.83
    ],
    [
     "tot",
-    1.04
-   ],
-   [
-    "mai",
     1.18
    ],
    [
-    "puțin",
+    "mai",
     1.27
+   ],
+   [
+    "puțin",
+    1.45
    ],
    [
     "colagen",
@@ -268,11 +268,11 @@
    ],
    [
     "și",
-    1.82
+    1.96
    ],
    [
     "elastină,",
-    1.96
+    2.01
    ],
    [
     "așa",
@@ -604,6 +604,13 @@
    "effects": "nu: singura mișcare mare e coborârea, care e chiar mesajul; blurul de mișcare și adâncimea de câmp vin din ea, nu sunt puse deasupra",
    "natural": "da: o singură cameră, un singur punct de lumină, cuvintele-cheie apar când sunt spuse; fără tăieturi, fără etichete inventate",
    "owner": "da: alb, turcoazul site-ului, un singur accent rose gold, totul centrat, text mare; mai multă mișcare și lumină decât reel-ul cu gușa"
+  },
+  "render": {
+   "scroll": "da: borcanul cade și se așază în prima jumătate de secundă, lumina cremei aleargă prin stratul de sus, iar la 1,3 s „la suprafață” e deja mare pe ecran; niciun cadru nu stă",
+   "serves": "da: fiecare imagine e chiar propoziția spusă (suprafața, coborârea, plasa slabă, energia, plasa întinsă, inelul săptămânilor); foile ondulate care tăiau textul în adânc au fost scoase",
+   "effects": "nu: blurul de mișcare apare doar cât camera chiar coboară sau urcă, iar lumina de la sosirea energiei e scurtă și moale; nu există tranziții puse deasupra",
+   "natural": "da: ascultătorul aude textul fără nicio greșeală peste muzică și spune că e o singură explicație legată; cuvintele-cheie vin pe timpii măsurați ai vocii",
+   "owner": "da, cu o rezervă spusă cinstit: între secundele 6 și 20 decorul rămâne același turcoaz cu plasa albă; mișcarea vine din cameră, din plasă și din lumină, nu din schimbarea decorului"
   }
  }
 }

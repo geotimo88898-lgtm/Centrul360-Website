@@ -92,6 +92,7 @@
             const s = h('span', 'w' + (key ? ' k' : ''), '<span class="wi">' + esc(txt.replace(/_/g, ' ')) + '</span>', row); row.appendChild(document.createTextNode(' '));
             const tw = (o.at != null ? o.at + K.ws.length * (o.stagger || 0.09) : (k >= 0 ? LW[k].t : L[Li].t0)) - 0.08, cap = (Li < 8 ? S[Li + 1] - TA : 1e9) - (key ? 1.0 : 0.85);
             K.ws.push({ s, wi: s.firstChild, key, t: Math.min(tw, cap + K.ws.length * 0.05) }); }); }); });
+      if (o.kem) el.querySelectorAll('.k').forEach((e) => { e.style.fontSize = o.kem + 'em'; });   // the key words' size, set before the lines are fitted to the column
       [...el.querySelectorAll('.ln')].forEach((x) => { let fs = parseFloat(x.style.fontSize) || parseFloat(el.style.fontSize) || 60; while (fs > 30 && x.offsetWidth > (o.max || 722)) { fs -= 2; x.style.fontSize = fs + 'px'; } });
       K.t0 = K.ws[0].t; kin.push(K); return K;
     }
@@ -159,7 +160,7 @@
     const rim = mk(mg, 'position:absolute;left:' + (-LR - 13) + 'px;top:' + (-LR - 13) + 'px;width:' + (2 * LR + 26) + 'px;height:' + (2 * LR + 26) + 'px;border-radius:50%;' +
       'background:conic-gradient(from 210deg,#2a2d2d,#5d6362 12%,#8e9695 18%,#3a3e3e 30%,#1c1f1f 52%,#4a4f4e 70%,#262929 86%,#2a2d2d);-webkit-mask:radial-gradient(circle,transparent ' + (LR - 0.5) + 'px,#000 ' + (LR + 0.5) + 'px);mask:radial-gradient(circle,transparent ' + (LR - 0.5) + 'px,#000 ' + (LR + 0.5) + 'px)');
     T.ems = wt(2, /^ems/, 0.8); T.push = wt(2, /^adică/, 1.15) - 0.12; T.pushEnd = T.push + 0.74; T.el = Math.max(wt(2, /^electro/, 1.6) + 0.1, T.pushEnd + 0.03); T.mag = wt(2, /^magnetică/, 2.7);
-    cue(T.ems - 0.12, 'tap', 0.55); ev(T.ems - 0.12, 'drop'); cue(T.push + 0.33, 'whoosh_l', 0.8, { peak: true, prio: 3 }); ev(T.push + 0.33, 'reveal'); cue(T.push + 0.05, 'riser_soft', 0.4);
+    cue(S[2] + 0.36, 'card_flip', 0.5); cue(T.ems - 0.12, 'tap', 0.55); ev(T.ems - 0.12, 'drop'); cue(T.push + 0.33, 'whoosh_through', 0.9, { peak: true, prio: 4 }); ev(T.push + 0.33, 'reveal'); cue(T.push + 0.05, 'riser_soft', 0.4);
     cue(T.el, 'tick_soft', 0.5); ev(T.el, 'step'); cue(T.mag, 'tick_soft', 0.5); ev(T.mag, 'step'); ev(S[2] + 0.5, 'step');
     const pushK = (t) => io(seg(t, T.push, T.pushEnd));
     p2.ticks.push((t) => { const lt = t - S[2], arr = ex(seg(t, T.ems - 0.62, T.ems - 0.1)), pk = pushK(t), gone = pk >= 1, hov = 1 - arr;
@@ -189,14 +190,14 @@
     const emsClip = mk(tape, 'position:absolute;left:0;top:0;height:' + ST.h + 'px;overflow:hidden;width:0');
     svg(emsClip, ST.w, ST.h, '<g transform="translate(0,' + ST.base + ')"><path d="' + pathOf(spikes) + '" fill="none" stroke="' + TEAL + '" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/></g>', 'left:0;top:0');
     const pen = mk(tape, 'position:absolute;left:0;top:0;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#7fe3d7,' + TEAL + ' 60%,' + DEEP + ');box-shadow:0 0 0 7px rgba(20,165,150,.16),4px 8px 12px -4px rgba(11,127,116,.5)');
-    const refLab = txt(tape, 'un antrenament obișnuit', 'left:' + (ST.w - 1010) + 'px;width:560px;top:' + (ST.base + 122) + 'px;font:560 32px/1 ' + SANS + ';color:#7b8886;letter-spacing:0;text-align:left');
+    const refLab = txt(tape, '<i style="display:inline-block;width:46px;height:5px;border-radius:3px;background:#a9b4b2;vertical-align:middle;margin-right:14px"></i>un antrenament obișnuit', 'left:' + (ST.w - 1040) + 'px;width:620px;top:' + (ST.base + 126) + 'px;font:600 36px/1 ' + SANS + ';color:' + MUTE + ';letter-spacing:0;text-align:left');
     const yEms = (x) => { for (const s of spikes) { if (x < s.x - 14) break; if (x <= s.x) return -s.a * (x - (s.x - 14)) / 14; if (x <= s.x + 12) return -s.a + (s.a * 1.3) * (x - s.x) / 12; if (x <= s.x + 26) return s.a * 0.3 * (1 - (x - s.x - 12) / 14); } return 0; };
     T.imp = wt(3, /^impulsuri/, 0.85); T.sing = wt(3, /^să$/, 2.0) - 0.05; T.int = wt(3, /^mult$/, 3.1); T.des = wt(3, /^și$/, 4.05); T.obi = wt(3, /^decât/, 4.6); T.e3 = L[3].t0 + (L[3].speech || L[3].dur);
     const front = (t) => (t < T.int ? ZA * seg(t, T.imp - 0.1, T.int) : t < T.des ? lerp(ZA, ZB, seg(t, T.int, T.des)) : lerp(ZB, ST.w - 250, seg(t, T.des, T.e3 + 0.3)));
     const dx3 = (t) => clamp(0.82 * (front(t) - 420), -40, 1900);
-    const ph3 = [words(hold3, 3, ['se contractă', '*singur*'], 'top:1206px;font-size:62px;line-height:1.02', {}), words(hold3, 3, ['mult mai', '*intens*'], 'top:1206px;font-size:62px;line-height:1.02', {}), words(hold3, 3, ['și mai', '*des*'], 'top:1206px;font-size:62px;line-height:1.02', {})];
-    ph3.forEach((K) => { K.el.querySelectorAll('.k').forEach((e) => { e.style.fontSize = '2.6em'; }); });
-    ph3[0].out = T.int - 0.12; ph3[1].out = T.des - 0.1; ph3[2].out = null;
+    // below the tape: what the pulses do (one line, a little before it is said, so „singur” can be read), then the two things that set them apart
+    const ph3 = [words(hold3, 3, ['68:se contractă *singur*'], 'top:1230px', { at: wt(3, /^să$/, 2.2) - 0.1, stagger: 0.13, kem: 2.05 }), words(hold3, 3, ['68:mult mai *intens*', '68:și mai *des*'], 'top:1184px', { kem: 2.05 })];
+    ph3[0].out = T.int - 0.34; ph3[1].out = null;
     spikes.forEach((s, i) => { let a = T.imp - 0.1, b = T.e3 + 0.3; for (let k = 0; k < 26; k++) { const m = (a + b) / 2; if (front(m) < s.x) a = m; else b = m; } s.t = a; if (s.x < ZB) { cue(a, 'tick_soft', s.x < ZA ? 0.4 : 0.62); ev(a, 'step'); } else if (i % 2 === 0) cue(a, 'key', 0.3); });
     cue(T.int, 'tap', 0.5); ev(T.int, 'reveal'); cue(T.des, 'tap', 0.45); ev(T.des, 'reveal'); ev(T.obi, 'step'); cue(T.obi + 0.2, 'tick_soft', 0.4); ev(T.sing, 'step'); ev(T.e3 - 0.6, 'step');
     p3.ticks.push((t) => { const f = front(t), d = dx3(t), inn = ex(seg(t, S[3] - 0.2, S[3] + 0.7));
@@ -239,8 +240,9 @@
     const TY1 = 'imposibil de obținut ', TY2 = 'VOLUNTAR';
     T.c0 = L[5].t0 + 0.12; T.land = S0.countAt != null ? S0.countAt : wt(5, /^mii/, 0.95) + 0.12; T.circ = Math.max(T.land + 0.12, wt(5, /^contracții/, 1.2) + 0.05); T.vol = wt(5, /^voluntar/, 3.2); T.pe = wt(5, /^pe$/, 1.9); T.ori = wt(5, /^oricât/, 3.6);
     shots[5].revealAt = T.land;
+    cue(S[5], 'whoosh_cut', 0.5, { peak: true, prio: 4.5 }); cue(S[5] + 0.12, 'riser_soft', 0.7, { prio: 2.5 });
     for (let tt = T.c0, k = 0; tt < T.land - 0.05; tt += 0.07, k++) cue(tt, 'key', 0.22 + 0.2 * (k % 2)); ev(T.c0 + 0.3, 'step'); ev(T.land - 0.4, 'step');
-    cue(T.land, 'tap', 0.7); ev(T.land, 'reveal'); cue(T.circ + 0.1, 'riser_soft', 0.35); ev(T.circ + 0.3, 'step'); cue(T.circ + 0.6, 'tick_soft', 0.5);
+    cue(T.land, 'tap', 0.7); ev(T.land, 'reveal'); cue(T.circ + 0.1, 'riser_soft', 0.35); ev(T.circ + 0.3, 'step'); cue(T.circ + 0.62, 'tick_soft', 0.5); cue(T.land + 0.1, 'shimmer_soft', 0.4);
     cue(T.pe + 0.35, 'tap', 0.5); ev(T.pe + 0.35, 'drop'); for (let i = 0; i < 14; i++) cue(T.vol - 0.75 + i * 0.07, 'key', 0.3); ev(T.vol - 0.7, 'type'); ev(T.vol, 'step'); cue(T.vol + 0.25, 'tap', 0.45); ev(T.ori + 0.2, 'step');
     p5.ticks.push((t) => { const q = seg(t, T.c0, T.land), n = t >= T.land ? 20000 : Math.floor(20000 * (1 - Math.pow(1 - q, 2.3)) / 7) * 7, str = String(n);
       const pad = [str.length > 4 ? str[str.length - 5] : '', str.length > 3 ? str[str.length - 4] : '', str.length > 3 ? '.' : '', str.length > 2 ? str[str.length - 3] : '', str.length > 1 ? str[str.length - 2] : '', str[str.length - 1]];
@@ -266,7 +268,7 @@
     const statue6 = obj(p6, 'statue', 62, 664, 956, { z: 140, so: 0.34 });
     words(p6.el, 6, ['58:iar tu stai', '160:*relaxată*'], 'top:1264px');
     T.inte = wt(6, /^intense/, 1.0); T.dar = wt(6, /^dar$/, 1.45); T.rel = wt(6, /^relaxată/, 2.7);
-    cue(T.inte, 'tick_soft', 0.5); ev(T.inte, 'reveal'); cue(T.dar + 0.16, 'tap', 0.6); ev(T.dar + 0.16, 'flip'); cue(T.rel, 'tick_soft', 0.5); ev(T.rel, 'step'); cue(S[6] + 0.45, 'tap', 0.45); ev(S[6] + 0.45, 'drop'); ev(T.rel + 0.9, 'step');
+    cue(T.inte, 'tick_soft', 0.5); ev(T.inte, 'reveal'); cue(T.dar + 0.16, 'card_flip', 0.7); ev(T.dar + 0.16, 'flip'); cue(T.rel, 'tick_soft', 0.5); ev(T.rel, 'step'); cue(S[6] + 0.45, 'tap', 0.45); ev(S[6] + 0.45, 'drop'); ev(T.rel + 0.9, 'step');
     p6.ticks.push((t) => { const lt = t - S[6], a = ex(seg(lt, -0.2, 0.75)), f = io(seg(t, T.dar - 0.02, T.dar + 0.42)), ain = ex(seg(t, T.inte - 0.1, T.inte + 0.4));
       fA.style.transform = 'translateX(-50%) translateY(' + ((1 - ain) * 60).toFixed(2) + 'px) rotateX(' + (f * 180).toFixed(2) + 'deg)'; fA.style.opacity = f < 0.5 ? ain.toFixed(3) : '0'; fB.style.transform = 'translateX(-50%) rotateX(' + ((f - 1) * 180).toFixed(2) + 'deg)'; fB.style.opacity = f >= 0.5 ? '1' : '0';
       blk6.style.filter = (ain < 1 && t > T.inte - 0.1) || (f > 0 && f < 1) ? 'blur(0px)' : '';
@@ -279,28 +281,27 @@
     words(p7.el, 7, ['de obicei, o cură de'], 'top:306px', { cls: 'kick' });
     words(p7.el, 7, ['*6-8|șase* ședințe'], 'top:352px;font-size:132px;line-height:1.1', { cls: 'ser' });
     const hold7 = mk(p7.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px;perspective:1700px;perspective-origin:540px 875px');
-    const card7 = mk(hold7, 'position:absolute;left:150px;top:640px;width:780px;height:470px;border-radius:14px;background:linear-gradient(165deg,#ffffff,#f5f8f7);transform-origin:390px 235px;' +
+    const card7 = mk(hold7, 'position:absolute;left:120px;top:630px;width:840px;height:500px;border-radius:14px;background:linear-gradient(165deg,#ffffff,#f5f8f7);transform-origin:420px 250px;' +
       'box-shadow:0 0 0 1px rgba(18,32,31,.06),0 5px 0 #edf0ef,0 10px 0 #e2e7e6,0 15px 0 #d9dfde,30px 60px 80px -30px rgba(18,32,31,.36),10px 22px 26px -14px rgba(18,32,31,.2)');
-    const marks = []; for (let i = 0; i < 8; i++) { const cxm = 120 + (i % 4) * 180, cym = 140 + Math.floor(i / 4) * 190;
-      const m = svg(card7, 140, 140, '<circle cx="70" cy="70" r="60" fill="none" stroke="' + INK + '" stroke-opacity=".2" stroke-width="3"' + (i >= 6 ? ' stroke-dasharray="7 9"' : '') + '/><circle class="f" cx="70" cy="70" r="60" fill="' + TEAL + '"/><path class="c" d="M44 72l18 18 34-40" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>' +
-        '<text x="70" y="88" text-anchor="middle" font-family="Fraunces Variable,serif" font-weight="560" font-size="50" fill="' + INK + '" fill-opacity=".34" class="n">' + (i + 1) + '</text>', 'left:' + (cxm - 70) + 'px;top:' + (cym - 70) + 'px;transform-origin:70px 70px');
+    const marks = []; for (let i = 0; i < 8; i++) { const cxm = 135 + (i % 4) * 190, cym = 150 + Math.floor(i / 4) * 200;
+      const m = svg(card7, 140, 140, '<circle cx="70" cy="70" r="64" fill="none" stroke="' + INK + '" stroke-opacity=".3" stroke-width="3.5"' + (i >= 6 ? ' stroke-dasharray="7 9"' : '') + '/><circle class="f" cx="70" cy="70" r="60" fill="' + TEAL + '"/><path class="c" d="M44 72l18 18 34-40" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>' +
+        '<text x="70" y="88" text-anchor="middle" font-family="Fraunces Variable,serif" font-weight="560" font-size="50" fill="' + INK + '" fill-opacity=".5" class="n">' + (i + 1) + '</text>', 'left:' + (cxm - 70) + 'px;top:' + (cym - 70) + 'px;transform-origin:70px 70px');
       marks.push({ el: m, f: m.querySelector('.f'), c: m.querySelector('.c'), n: m.querySelector('.n') }); }
-    const w7b = words(p7.el, 7, ['66:un *tonus* mai *bun*', '50:se simte după primele'], 'top:1192px');
-    p7.el.querySelectorAll('.tx .k').forEach((e) => { if (/tonus|bun/.test(e.textContent)) e.style.fontSize = '1.75em'; });
+    const w7b = words(p7.el, 7, ['66:un *tonus* mai *bun*', '50:se simte după primele'], 'top:1192px', { kem: 1.75 });
     void w7b;
     T.sase = wt(7, /^șase/, 0.95); T.opt = wt(7, /^opt/, 1.45); T.ton = wt(7, /^tonus/, 2.3); T.prim = wt(7, /^primele/, 3.85);
     const markAt = (i) => (i < 6 ? T.sase - 0.12 + i * ((T.opt - T.sase + 0.1) / 6) : T.opt + 0.1 + (i - 6) * 0.14);
     marks.forEach((m, i) => { cue(markAt(i), 'tick_soft', i < 6 ? 0.5 : 0.4); ev(markAt(i), 'step'); });
-    cue(S[7] + 0.42, 'tap', 0.55); ev(S[7] + 0.42, 'drop'); cue(T.prim, 'tap', 0.55); ev(T.prim, 'reveal'); cue(T.prim + 0.15, 'tap', 0.4); cue(T.prim + 0.3, 'tap', 0.35); ev(T.ton, 'step');
+    cue(S[7] + 0.42, 'card_flip', 0.6); ev(S[7] + 0.42, 'drop'); cue(T.prim, 'tap', 0.55); ev(T.prim, 'reveal'); cue(T.prim + 0.15, 'tap', 0.4); cue(T.prim + 0.3, 'tap', 0.35); ev(T.ton, 'step');
     p7.ticks.push((t) => { const lt = t - S[7], inn = ex(seg(lt, -0.2, 0.7)), bn = lt > 0.42 ? Math.exp(-6 * (lt - 0.42)) * Math.cos(15 * (lt - 0.42)) : 0;
       card7.style.transform = 'translate3d(0,' + ((1 - inn) * 150).toFixed(2) + 'px,' + (70 + (1 - inn) * 200).toFixed(1) + 'px) rotateX(' + (16 * (1 - inn) + 7 + bn * 2 + Math.sin(t * 0.7) * 1.2).toFixed(2) + 'deg) rotateY(' + (Math.sin(t * 0.5) * 2.2).toFixed(2) + 'deg) rotate(' + (-2.2 + (1 - inn) * -5).toFixed(2) + 'deg)'; card7.style.opacity = clamp((lt + 0.2) * 4).toFixed(3);
-      marks.forEach((m, i) => { const q = back(seg(t, markAt(i), markAt(i) + 0.3), 2), first = i < 3 ? sm(seg(t, T.prim + i * 0.15, T.prim + i * 0.15 + 0.3)) : 0, op = i < 6 ? 0.2 + 0.8 * first : 0.1;
-        m.f.setAttribute('fill-opacity', (clamp(q) * op).toFixed(3)); m.f.setAttribute('r', (60 * (0.6 + 0.4 * q) * (1 + 0.1 * Math.sin(Math.PI * first))).toFixed(2)); m.c.style.strokeDashoffset = (1 - io(first)).toFixed(3); m.n.setAttribute('fill-opacity', (0.34 * (1 - first) + (i < 6 ? 0.3 * clamp(q) * (1 - first) : 0)).toFixed(3)); }); });
+      marks.forEach((m, i) => { const q = back(seg(t, markAt(i), markAt(i) + 0.3), 2), first = i < 3 ? sm(seg(t, T.prim + i * 0.15, T.prim + i * 0.15 + 0.3)) : 0, op = i < 6 ? 0.3 + 0.7 * first : 0.14;
+        m.f.setAttribute('fill-opacity', (clamp(q) * op).toFixed(3)); m.f.setAttribute('r', (64 * (0.6 + 0.4 * q) * (1 + 0.1 * Math.sin(Math.PI * first))).toFixed(2)); m.c.style.strokeDashoffset = (1 - io(first)).toFixed(3); m.n.setAttribute('fill-opacity', (0.5 * (1 - first) + (i < 6 ? 0.3 * clamp(q) * (1 - first) : 0)).toFixed(3)); }); });
 
     // ---- P8: „EMS se face doar în clinica din Timișoara. Trimite-i clipul prietenei cu care tot amâni sala.” The pin, the paper plane
     const p8 = P(8, 3260, 4100); crop(p8.el);
     words(p8.el, 8, ['EMS · doar în clinica din'], 'top:436px', { cls: 'kick' });
-    const tm = words(p8.el, 8, ['Timișoara'], 'top:486px;font-size:150px;line-height:1.1', { cls: 'ser' });
+    const tm = words(p8.el, 8, ['Timișoara'], 'top:486px;font-size:150px;line-height:1.1', { cls: 'ser', at: S[8] + 0.5 });
     const pin = svg(p8.el, 90, 120, '<path d="M45 4C22 4 6 21 6 43c0 28 39 71 39 71s39-43 39-71C84 21 68 4 45 4z" fill="' + TEAL + '"/><path d="M45 4C22 4 6 21 6 43c0 10 5 22 12 34C16 50 24 14 58 7 54 5 50 4 45 4z" fill="#fff" fill-opacity=".2"/><circle cx="45" cy="43" r="15" fill="#fff"/>', 'left:495px;top:292px;transform-origin:45px 116px');
     const pinSh = mk(p8.el, 'position:absolute;left:500px;top:400px;width:80px;height:20px;border-radius:50%;background:radial-gradient(ellipse,rgba(18,32,31,.3),rgba(18,32,31,0) 70%)');
     const PL = { a: [-460, 1500], c1: [60, 1560], c2: [330, 1150], b: [560, 912] };
@@ -311,11 +312,11 @@
     const sub8 = words(p8.el, 8, ['58:trimite-i clipul', '168:*prietenei*', '42:cu care tot amâni sala'], 'top:1150px');
     { const r3 = sub8.el.querySelectorAll('.ln')[2]; r3.style.color = MUTE; r3.style.fontWeight = '540'; r3.style.marginTop = '14px'; }
     void tm;
-    T.tim = wt(8, /^timișoara/, 1.8); T.trim = wt(8, /^trimite/, 2.6); T.pri = wt(8, /^prietenei/, 3.3); T.fly0 = T.trim - 0.25; T.fly1 = T.pri + 0.42;
+    T.tim = S[8] + 0.62; T.tim2 = wt(8, /^timișoara/, 1.8) + 0.05; T.trim = wt(8, /^trimite/, 2.6); T.pri = wt(8, /^prietenei/, 3.3); T.fly0 = T.trim + 0.32; T.fly1 = T.pri + 0.5;
     shots[8].resolveAt = T.fly1;
-    cue(T.tim + 0.2, 'tap', 0.6); ev(T.tim + 0.2, 'drop'); cue((T.fly0 + T.fly1) / 2 - 0.05, 'whoosh_l', 0.7, { peak: true, prio: 3 }); ev((T.fly0 + T.fly1) / 2 - 0.05, 'reveal'); ev(T.pri, 'step'); ev(total - 2.3, 'hold'); ev(S[8] + 0.5, 'step');
-    p8.ticks.push((t) => { const pq = seg(t, T.tim - 0.1, T.tim + 0.2), fall = 1 - pq * pq, bn = t > T.tim + 0.2 ? Math.exp(-7 * (t - T.tim - 0.2)) * Math.cos(19 * (t - T.tim - 0.2)) : 0;
-      pin.style.transform = 'translate(0,' + (-fall * 150 + Math.sin(t * 1.1) * 2).toFixed(2) + 'px) scale(' + (1 + 0.08 * bn).toFixed(4) + ',' + (1 - 0.1 * bn).toFixed(4) + ')'; pin.style.opacity = clamp((t - T.tim + 0.1) * 8).toFixed(3); pinSh.style.opacity = (clamp((t - T.tim + 0.1) * 8) * (1 - fall * 0.7)).toFixed(3); pinSh.style.transform = 'scale(' + (1 + fall * 0.8).toFixed(3) + ')';
+    cue(T.tim + 0.2, 'tap', 0.6); ev(T.tim + 0.2, 'drop'); cue(T.tim2, 'tick_soft', 0.55); ev(T.tim2, 'step'); ev(wt(8, /^clinica/, 1.2), 'step'); cue(T.fly0 + (T.fly1 - T.fly0) * 0.62, 'swoosh_end', 0.5, { peak: true, prio: 3.5 }); ev(T.fly0 + (T.fly1 - T.fly0) * 0.62, 'reveal'); ev(T.pri, 'step'); ev(total - 2.3, 'hold'); ev(S[8] + 0.5, 'step');
+    p8.ticks.push((t) => { const pq = seg(t, T.tim - 0.1, T.tim + 0.2), fall = 1 - pq * pq, bn = (t > T.tim + 0.2 ? Math.exp(-7 * (t - T.tim - 0.2)) * Math.cos(19 * (t - T.tim - 0.2)) : 0) + (t > T.tim2 ? 0.9 * Math.exp(-6 * (t - T.tim2)) * Math.sin(17 * (t - T.tim2)) : 0), hop = t > T.tim2 ? 26 * Math.exp(-5 * (t - T.tim2)) * Math.abs(Math.sin(9 * (t - T.tim2))) : 0;
+      pin.style.transform = 'translate(0,' + (-fall * 150 - hop + Math.sin(t * 1.1) * 2).toFixed(2) + 'px) scale(' + (1 + 0.08 * bn).toFixed(4) + ',' + (1 - 0.1 * bn).toFixed(4) + ')'; pin.style.opacity = clamp((t - T.tim + 0.1) * 8).toFixed(3); pinSh.style.opacity = (clamp((t - T.tim + 0.1) * 8) * (1 - fall * 0.7)).toFixed(3); pinSh.style.transform = 'scale(' + (1 + fall * 0.8).toFixed(3) + ')';
       const u = o3(seg(t, T.fly0, T.fly1)), pos = bez(u), nx = bez(Math.min(1, u + 0.01)), pv = bez(Math.max(0, u - 0.01)), ang = Math.atan2(nx[1] - pv[1], nx[0] - pv[0]) * 180 / Math.PI + 27, hov = u >= 1 ? 1 : 0;
       plane.set(pos[0] - 560 + hov * Math.sin(t * 0.9) * 6, pos[1] - 912 + hov * Math.cos(t * 1.1) * 7, ang + hov * Math.sin(t * 0.7) * 1.2, 0.6 + 0.4 * u, clamp((t - T.fly0) * 6), 200 + (1 - u) * 260 + hov * Math.sin(t * 0.8) * 16);
       trailClip.style.clipPath = 'inset(0 ' + (1080 - Math.max(0, pos[0] - 60)).toFixed(1) + 'px 0 0)'; trail.style.opacity = (0.9 * clamp((t - T.fly0) * 4)).toFixed(3); });

@@ -186,14 +186,15 @@
     const P0 = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, s: 1, o: 1, blur: 0, dim: 0 };
     const hero = (t, ph) => Object.assign({}, P0, { ry: -6 + 2.4 * Math.sin(t * 1.1 + ph), rx: 2 + 1.2 * Math.sin(t * 0.9 + ph * 2), rz: -1 + 0.5 * Math.sin(t * 0.7 + ph), y: 6 * Math.sin(t * 1.3 + ph), s: 1 + 0.012 * Math.sin(t * 0.8) });
     const behind = (t, side) => Object.assign({}, P0, { x: side * 128, y: -74 + 4 * Math.sin(t * 1.2), z: -270, rz: side * 6.5, ry: -6, rx: 2, s: 1, blur: 4, dim: 0.14 });
-    const past = (side) => Object.assign({}, P0, { x: side * 760, y: 330, z: 1150, ry: -side * 15, rz: side * 13, rx: -8, o: 0, blur: 16 });
+    const past = (side) => Object.assign({}, P0, { x: side * 500, y: 260, z: 1120, ry: -side * 40, rz: side * 9, rx: 20, o: 0, blur: 16 }); // it keeps facing the lens as it passes (turned towards it), so its face never flips
     const exit = (a, b, u) => { const P = mix(a, b, E.in(u)); P.z = lerp(a.z || 0, b.z, 1 - Math.pow(1 - u, 2.2)); P.o = 1 - smooth((u - 0.55) / 0.45); return P; }; // towards the camera first, then aside
     const setCard = (card, cx, cy, w, hh, rad, P) => {
       const s = card.c.style; s.width = w.toFixed(1) + 'px'; s.height = hh.toFixed(1) + 'px'; s.borderRadius = rad.toFixed(1) + 'px';
       s.transform = 'translate3d(' + (cx - w / 2 + P.x).toFixed(2) + 'px,' + (cy - hh / 2 + P.y).toFixed(2) + 'px,' + P.z.toFixed(1) + 'px) rotateX(' + P.rx.toFixed(3) + 'deg) rotateY(' + P.ry.toFixed(3) + 'deg) rotateZ(' + P.rz.toFixed(3) + 'deg) scale(' + P.s.toFixed(4) + ')';
-      s.opacity = clamp(P.o).toFixed(3); s.visibility = P.o < 0.004 ? 'hidden' : '';
-      const bl = P.blur > 0.4 ? 'blur(' + P.blur.toFixed(1) + 'px)' : ''; card.faces.forEach((f) => { f.style.filter = bl + (P.dim > 0.01 ? ' brightness(' + (1 - P.dim).toFixed(3) + ')' : ''); });
-      card.slabs.forEach((x) => { x.style.visibility = P.blur > 3 ? 'hidden' : ''; });
+      // the fade is on the faces, never on the card itself: an opacity below 1 would flatten it (preserve-3d is lost) and show the wrong face
+      const op = clamp(P.o).toFixed(3); s.visibility = P.o < 0.004 ? 'hidden' : '';
+      const bl = P.blur > 0.4 ? 'blur(' + P.blur.toFixed(1) + 'px)' : ''; card.faces.forEach((f) => { f.style.opacity = op; f.style.filter = bl + (P.dim > 0.01 ? ' brightness(' + (1 - P.dim).toFixed(3) + ')' : ''); });
+      card.slabs.forEach((x) => { x.style.opacity = op; x.style.visibility = P.blur > 3 ? 'hidden' : ''; });
       // its soft shadow on the "floor" of light below it
       const d = card.drop.style, k = clamp(1 - P.z / 1400) * clamp(P.o), dw = w * 0.86 * (1 - P.z / 2600);
       d.left = (cx + P.x * 0.9 - dw / 2).toFixed(1) + 'px'; d.top = (cy + hh / 2 + 44 - P.z * 0.05).toFixed(1) + 'px'; d.width = dw.toFixed(1) + 'px'; d.height = '90px'; d.opacity = (0.6 * k * (P.drop == null ? 1 : P.drop)).toFixed(3); d.visibility = k * (P.drop == null ? 1 : P.drop) < 0.01 ? 'hidden' : '';
@@ -284,7 +285,7 @@
     ctx.sfx(0.09, 'impact', 0.3, { prio: 4 });
     items.forEach((it) => {
       if (it.tType != null) { ev(it.tType, 'type'); for (let tt = it.tType + 0.02; tt < it.tMsg - 0.1; tt += 1 / 1.9) { if (HB.some((x) => Math.abs(x - tt) < 0.16)) continue; ctx.sfx(tt, 'tick_soft', 0.3, { pan: it.who === 'n' ? -0.3 : 0.3 }); } }
-      const ts = Math.max(0.02, it.tMsg); // the first bubble is already popping on frame 0
+      const ts = Math.max(0, it.tMsg); // the first bubble is already popping on frame 0
       if (it.who === 'n') ctx.sfx(ts, 'dot', 0.66, { pan: -0.22, prio: 3 }); else ctx.sfx(ts, 'tap', 0.66, { pan: 0.22 });
       ev(ts, 'pop');
     });

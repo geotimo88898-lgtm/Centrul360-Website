@@ -55,7 +55,7 @@
     T.s4 = S[4]; T.energy = wt(L[4], /^duc$/i, L[4].t0 + 1.7); T.exact = wt(L[4], /^exact$/i, L[4].t0 + 3.1);
     T.hit = wt(L[4], /^pornesc$/i, L[4].t0 + 4.8) + 0.12; T.nou = wt(L[4], /^colagen$/i, L[4].t0 + 5.9);
     T.s5 = S[5]; T.s6 = S[6]; T.s7 = S[7];
-    T.w0 = T.s7 + 0.35; T.w8 = wt(L[7], /^opt$/i, L[7].t0 + 3.9) + 0.1; T.w12 = wt(L[7], /^douăsprezece$/i, L[7].t0 + 4.6) + 0.3; T.sed = wt(L[7], /^ședință/i, L[7].t0 + 5.6) - 0.28;
+    T.w0 = T.s7 + 0.35; T.w8 = wt(L[7], /^opt$/i, L[7].t0 + 3.9) + 0.22; T.w12 = wt(L[7], /^douăsprezece$/i, L[7].t0 + 4.6) + 0.3; T.sed = wt(L[7], /^ședință/i, L[7].t0 + 5.6) - 0.28;
     T.s8 = S[8]; T.up = T.s8 + 0.5; T.type = wt(L[8], /^trei$/i, L[8].t0 + 3.0); T.send = wt(L[8], /^comentarii/i, L[8].t0 + 4.2) + 0.18;
     W.T = T;
     shots[4].revealAt = T.hit;             // the payoff: the energy arrives (the engine's riser and impact land here)
@@ -107,14 +107,13 @@
       for (let i = 0; i < im.data.length; i += 4) { s = (s * 1103515245 + 12345) & 0x7fffffff; const v = (s >> 9) & 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; } x.putImageData(im, 0, 0);
       grain.style.cssText = 'position:absolute;inset:-256px;background:url(' + c.toDataURL() + ');opacity:.05;mix-blend-mode:overlay;pointer-events:none;z-index:6'; }
 
-    // ---------------------------------------------------------------- particles (three depths), light shafts
+    // ---------------------------------------------------------------- particles (three depths), the sheets on the way down
     const parts = [];
     for (let i = 0; i < 250; i++) { const k = i < 130 ? 0 : i < 206 ? 1 : 2; const yy = 240 + Math.pow(rnd(i, 2), 0.85) * (YD + 600);
       parts.push({ k, x: -160 + rnd(i, 1) * 1400, y: yy, r: k === 0 ? 1.6 + rnd(i, 3) * 2.6 : k === 1 ? 1.4 + rnd(i, 3) * 2.4 : 22 + rnd(i, 3) * 44, a: k === 0 ? 0.16 + rnd(i, 4) * 0.26 : k === 1 ? 0.3 + rnd(i, 4) * 0.4 : 0.05 + rnd(i, 4) * 0.08, ph: rnd(i, 5) * 6.28 }); }
     const PAR = [0.5, 1, 1.9];
     // the layers on the way down („straturile”): thin, translucent, gently waved sheets the camera passes through
-    const SHEETS = [1150, 1760, 2380, 3000, 3620, 4240, 4800].map((y, i) => ({ y, ph: rnd(i, 81) * 6.28, a: 0.5 + rnd(i, 82) * 0.3, k: 0.0036 + rnd(i, 83) * 0.002 }));
-    const shafts = [[-120, 150, 0.1], [180, 90, 0.07], [430, 190, 0.12], [730, 110, 0.08], [960, 170, 0.1]];
+    const SHEETS = [1150, 1760, 2380, 3000, 3620].map((y, i) => ({ y, ph: rnd(i, 81) * 6.28, a: 0.5 + rnd(i, 82) * 0.3, k: 0.0036 + rnd(i, 83) * 0.002 }));
 
     // ---------------------------------------------------------------- the net (perspective: u across, v into the depth)
     const NET = { yH: -386, k: 946, per: 1.9, wide: 1150 };
@@ -192,7 +191,7 @@
     phrase(4, ['energie *controlată*'], { y: TOP + 20, dk: 1, out: T.exact - 0.15, size: 84 });
     phrase(4, ['exact în *straturile*', '*profunde*'], { y: TOP - 30, dk: 1, out: T.hit - 0.3, size: 80 });
     phrase(4, ['*colagen|colagen nou|nou*'], { y: TOP + 10, dk: 1, out: T.s5 - 0.3, size: 100 });
-    phrase(5, ['se simte', '*imediat*'], { y: TOP - 40, dk: 1, out: T.s6 - 0.3, size: 90 });
+    phrase(5, ['un efect de *fermitate*', 'se simte *imediat*'], { y: TOP - 30, dk: 1, out: T.s6 - 0.3, size: 72 });
     phrase(6, ['rezultatul adevărat', 'vine mai *târziu*'], { y: TOP - 50, dk: 1, out: T.s7 - 0.3, size: 80 });
     phrase(7, ['are nevoie de *timp*'], { y: 300, dk: 1, out: wt(L[7], /^efectul$/i) - 0.2, size: 64 });
     phrase(7, ['efectul *maxim*'], { y: 300, dk: 1, out: T.s8 - 0.45, size: 64 });
@@ -216,28 +215,27 @@
 
     // ---------------------------------------------------------------- sounds and events (the engine adds the whoosh on every cut)
     const cue = (t, cat, gain, o) => R.cue(t, cat, gain, o), ev = (t, kind) => R.event(t, kind || 'step');
-    cue(T.land, 'tap', 0.7); ev(T.land, 'drop'); cue(T.land + 0.5, 'shimmer', 0.3); ev(T.land + 0.5, 'glow');
-    cue(T.sink, 'dot', 0.5); ev(T.sink, 'step'); cue(T.s2 - 1.5, 'riser_soft', 0.5); cue(T.s2 + 0.02, 'subdrop', 0.75, { prio: 4 });
-    cue(T.arrive - 0.06, 'tap', 0.5); ev(T.arrive - 0.06, 'stop'); cue(T.arrive + 0.1, 'shimmer', 0.3);
+    cue(T.land, 'tap', 0.7); ev(T.land, 'drop'); cue(T.land + 0.5, 'shimmer_soft', 0.45); ev(T.land + 0.5, 'glow');
+    cue(T.sink, 'dot', 0.5); ev(T.sink, 'step'); cue(T.s2 - 1.5, 'riser_soft', 0.5); cue(T.s2, 'whoosh_through', 0.9, { peak: true, prio: 4.5 }); cue(T.s2 + 0.12, 'subdrop', 0.7, { prio: 4 });   // the dive: a deep fly-through whoosh, its peak on the fastest frame, and a falling sub
+    cue(T.arrive - 0.06, 'tap', 0.5); ev(T.arrive - 0.06, 'stop'); cue(T.arrive + 0.1, 'shimmer_soft', 0.4);
     cue(T.weak, 'tick_soft', 0.4); ev(T.weak, 'step'); ev(T.scade, 'step'); cue(T.scade, 'tick_soft', 0.45);
     cue(T.path, 'riser_soft', 0.4); ev(T.path + 0.2, 'step'); cue(T.acolo + 0.06, 'dot', 0.55); ev(T.acolo + 0.06, 'reveal');
     NODES.forEach((n, i) => { const tt = T.exact - 0.08 + i * 0.11; cue(tt, i ? 'tick_soft' : 'tap', i ? 0.5 : 0.5); ev(tt, 'step'); });
     SHEETS.forEach((Sh, i) => { let a = T.sink, b = T.arrive; for (let k = 0; k < 30; k++) { const m = (a + b) / 2; if (camY(m) < Sh.y) a = m; else b = m; } Sh.t = a; cue(a, 'tick_soft', 0.3 + 0.05 * i); ev(a, 'step'); });
     ev(T.energy, 'step'); cue(T.energy, 'riser_soft', 0.35);
     cue(T.hit + 0.5, 'sparkle', 0.35); ev(T.nou, 'step'); ev(T.hit + 1.2, 'step');
-    cue(T.s5 + 0.12, 'chime', 0.3); ev(T.s5 + 0.3, 'step');
+    cue(T.s5 + 0.14, 'shimmer_soft', 0.5); ev(T.s5 + 0.3, 'step');
     ev(T.s6 + 0.25, 'reveal'); cue(T.s6 + 0.25, 'tap', 0.45);
     const weekAt = (k) => (k <= 8 ? T.w0 + (T.w8 - T.w0) * Math.pow(k / 8, 0.82) : T.w8 + (T.w12 - T.w8) * (k - 8) / 4);
     for (let k = 1; k <= 12; k++) { cue(weekAt(k), 'tick_soft', k === 8 || k === 12 ? 0.7 : 0.42); ev(weekAt(k), 'step'); }
-    cue(T.w12 + 0.04, 'chime', 0.4); ev(T.w12 + 0.04, 'reveal'); cue(T.w12 + 0.04, 'tap', 0.4); ev(T.sed, 'step');
-    cue(T.s8 - 0.9, 'riser_soft', 0.5); cue(T.up + 0.22, 'tap', 0.5); ev(T.up + 0.22, 'drop');
+    cue(T.w12 + 0.12, 'shimmer_soft', 0.5); ev(T.w12 + 0.04, 'reveal'); cue(T.w12 + 0.04, 'tap', 0.5); ev(T.sed, 'step');
+    cue(T.s8 - 0.9, 'riser_soft', 0.5); cue(T.s8, 'whoosh_through', 0.85, { peak: true, prio: 4.5 }); cue(T.up + 0.22, 'tap', 0.5); ev(T.up + 0.22, 'drop');
     for (let i = 0; i < 3; i++) cue(T.type + i * 0.13, 'key', 0.55); ev(T.type, 'type'); ev(T.type + 0.26, 'type');
-    cue(T.send, 'tap', 0.6); ev(T.send, 'pop'); cue(T.send + 0.12, 'shimmer', 0.3);
+    cue(T.send, 'tap', 0.6); ev(T.send, 'pop'); cue(T.send + 0.14, 'shimmer_soft', 0.4);
     for (const P of phrases) P.ws.forEach((w) => { if (w.key && P.Li !== 8) cue(w.t + 0.07, 'tick_soft', 0.34); });
     ev(total - 2.3, 'hold');
 
     // ---------------------------------------------------------------- drawing
-    const A0 = () => ({ x: 540, y: 0, z: 1 });
     function drawBg(cy, z, t) {
       const y0 = cy - 960 / z, y1 = cy + 960 / z, gr = g.createLinearGradient(0, 0, 0, CH);
       for (let i = 0; i <= 24; i++) gr.addColorStop(i / 24, rgb(colAt(y0 + (y1 - y0) * i / 24)));
@@ -298,15 +296,6 @@
       if (gl > 0) { const up = x.createLinearGradient(0, -70 * z, 0, 0); up.addColorStop(0, 'rgba(255,255,255,0)'); up.addColorStop(1, 'rgba(255,255,255,' + 0.5 * gl * breathe + ')'); x.globalCompositeOperation = 'source-atop'; x.fillStyle = up; x.fillRect(-jw / 2, -70 * z, jw, 70 * z); }
       x.restore();
     }
-    function drawShafts(x, cy, z, cx, t) {
-      const ys = sy0(BAND + 40, cy, z); if (ys < -2700 * z || ys > CH + 2 * PAD) return;
-      x.save(); x.filter = 'blur(' + (26 * z).toFixed(1) + 'px)'; x.globalCompositeOperation = 'lighter';
-      shafts.forEach(([sx, w, a], i) => { const len = (1700 + i * 140) * z, x0 = 540 + (sx - 540 - cx + Math.sin(t * 0.3 + i * 1.7) * 34) * z, lean = (210 + i * 24) * z;
-        const gr = x.createLinearGradient(0, ys, 0, ys + len); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.16, 'rgba(255,255,255,' + a * 0.9 + ')'); gr.addColorStop(0.5, 'rgba(255,255,255,' + a * 0.5 + ')'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-        x.fillStyle = gr; x.beginPath(); x.moveTo(x0, ys); x.lineTo(x0 + w * z, ys); x.lineTo(x0 + (w * 1.9) * z + lean, ys + len); x.lineTo(x0 + lean - w * 0.5 * z, ys + len); x.closePath(); x.fill(); });
-      x.restore();
-    }
-    // the layers on the way down („straturile”): thin, translucent, gently waved sheets the camera passes through
     function drawSheets(x, cy, z, cx, t) {
       for (const S of SHEETS) { const ys = sy0(S.y, cy, z); if (ys < -260 || ys > CH + 2 * PAD + 260) continue;
         const f = (wx) => ys + (34 * Math.sin(wx * S.k + S.ph + t * 0.25) + 14 * Math.sin(wx * S.k * 2.3 + S.ph * 2)) * z, X = (wx) => 540 + (wx - 540 - cx) * z;
@@ -360,8 +349,10 @@
         const q = seg(t, t0, tl), fallH = 3200 * Math.pow(1 - q, 2.4), hNode = height(n[0], n[1], t), p = proj(n[0], n[1], hNode + fallH, A);
         const out = sm(seg(t, T.hit + 0.5, T.hit + 1.8)); if (i === 0 && q >= 1) return;        // the centre one becomes the guide dot again
         drawDot(x, p[0], p[1], (i === 0 ? 1 : 0.86) * z * (0.75 + p[2] * 0.5) * (1 - out * 0.9), (1 - out) * sm((p[1] - PAD - 560) / 160), q < 1 ? Math.min(190, fallH * 0.13) * z : 0); });
-      // the hit: rings open on the net's plane from every point
-      if (t > T.hit) NODES.forEach((n, i) => { for (let k = 0; k < 1; k++) { const r = (t - T.hit) * 1.5; if (r <= 0 || r > 2.2) continue; const al = (1 - r / 2.2) * 0.6;
+      // the hit: a bloom of light at every point, then rings open on the net's plane
+      if (t > T.hit && t < T.hit + 1.3) { const q = (t - T.hit) / 1.3; x.save(); x.globalCompositeOperation = 'lighter'; NODES.forEach((n) => { const p = proj(n[0], n[1], height(n[0], n[1], t), A), r = (70 + 520 * o3(q)) * z * (0.5 + p[2] * 0.7), al = 0.3 * Math.pow(1 - q, 1.6);
+        const rg = x.createRadialGradient(p[0], p[1], 0, p[0], p[1], r); rg.addColorStop(0, 'rgba(210,255,247,' + al + ')'); rg.addColorStop(0.35, 'rgba(170,250,238,' + al * 0.5 + ')'); rg.addColorStop(1, 'rgba(140,240,225,0)'); x.fillStyle = rg; x.beginPath(); x.arc(p[0], p[1], r, 0, 6.2832); x.fill(); }); x.restore(); }
+      if (t > T.hit) NODES.forEach((n, i) => { for (let k = 0; k < 1; k++) { const r = (t - T.hit) * 1.5; if (r <= 0 || r > 2.2) continue; const al = (1 - r / 2.2) * 0.42;
         x.strokeStyle = 'rgba(255,255,255,' + al + ')'; x.lineWidth = 2.6 * z; x.beginPath();
         for (let a = 0; a <= 48; a++) { const an = a / 48 * 6.2832, u = n[0] + Math.cos(an) * r, v = n[1] + Math.sin(an) * r / 2.3; if (v < -0.3) { continue; } const p = proj(u, v, height(u, v, t), A); x[a === 0 ? 'moveTo' : 'lineTo'](p[0], p[1]); } x.stroke(); } });
     }
@@ -440,7 +431,7 @@
       else if (ring && t < T.s8 - 0.2) { dp = [ring.x, ring.y]; ds = 1.15 + 0.3 * Math.exp(-6 * Math.max(0, t - T.w12)) * (t > T.w12 ? 1 : 0); }
       else { // it leaves the ring, rises with the camera and settles into the send button
         const bx = 160 + 760 - 24 - 54, by = W.pillY + 78, q = io(seg(t, T.s8 - 0.2, T.up + 0.35)); const from = ring ? [ring.x, ring.y] : [540, 600];
-        dp = [lerp(from[0], bx, q), lerp(Math.min(from[1], 1500), by, q) - Math.sin(Math.PI * q) * 260]; ds = lerp(1.15, 1.9, q) * (1 + 0.25 * Math.sin(Math.PI * seg(t, T.send, T.send + 0.3))); da = 1 - sm(seg(q, 0.9, 1)); W.dq = q; }
+        dp = [lerp(from[0], bx, q), lerp(Math.min(from[1], 1500), by, q) - Math.sin(Math.PI * q) * 260]; ds = lerp(1.15, 1.9, q) * (1 + 0.25 * Math.sin(Math.PI * seg(t, T.send, T.send + 0.3))); da = 1 - sm(seg(q, 0.9, 1)); }
       if (dp) drawDot(g, dp[0], dp[1], ds, da, tail);
 
       // ------------------------------------------------------------ the type

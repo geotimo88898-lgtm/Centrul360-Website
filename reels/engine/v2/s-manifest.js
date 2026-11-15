@@ -39,13 +39,13 @@ uniform mat4 uM, uV;
 uniform vec4 uProj;
 uniform vec3 uLens;
 uniform vec2 uJit;
-out vec2 vUv; out float vDist; out vec3 vW; out float vD;
+out vec2 vUv; out float vDist; out vec3 vW; out vec3 vV; out float vD;
 void main() {
   vec4 w = uM * vec4(aPos, 0., 1.);
   vec4 v = uV * w;
   float d = -v.z;
   v.xy -= uLens.xy * (1. - d * uLens.z);
-  vW = w.xyz; vDist = length(v.xyz); vD = d;
+  vW = w.xyz; vV = v.xyz; vDist = length(v.xyz); vD = d;
   vUv = vec2(aPos.x + .5, .5 - aPos.y);
   gl_Position = vec4(uProj.x * v.x + uJit.x * d, uProj.y * v.y + uJit.y * d, uProj.z * v.z + uProj.w, d);
 }`;
@@ -66,7 +66,7 @@ void main() {
   vec2 rpx = gl_FragCoord.xy - vec2(540., 960.);
   vec2 mv = rpx * (uCamS.z / d) - uF * uCamS.xy / d + vec2(rpx.y, -rpx.x) * uCamS.w; // forward travel, sideways travel, roll
   float sp = length(vec3(uDof.x * abs(1. / d - uDof.y), uDof.z, length(mv)));
-  float bias = log2(max(1., sp));
+  float bias = log2(max(1., sp * 1.6));
   vec2 p = (vUv - .5) * uSize;
   vec2 q = abs(p) - (uSize * .5 - uRad);
   float sd = length(max(q, 0.)) + min(max(q.x, q.y), 0.) - uRad;
@@ -98,7 +98,7 @@ void main() {
 precision highp float;
 uniform float uCell, uGridA, uVz;
 uniform vec3 uGridC, uFogC, uFogP;
-in vec2 vUv; in float vDist; in vec3 vW; in float vD;
+in vec2 vUv; in vec3 vW; in vec3 vV; in float vD;
 out vec4 o;
 void main() {
   vec2 g = vW.xz / uCell;
@@ -115,7 +115,7 @@ void main() {
   float ln = max(line * fade * .55, bold * fade4);
   vec3 base = mix(vec3(.925, .957, .952), vec3(1.), exp(-pow(vW.x / 1050., 2.)));
   vec3 col = mix(base, uGridC, ln * uGridA);
-  float fog = (1. - exp(-max(0., vDist - uFogP.x) * uFogP.y)) * uFogP.z;
+  float fog = (1. - exp(-max(0., length(vV) - uFogP.x) * uFogP.y)) * uFogP.z; // per fragment: the floor is one huge quad
   o = vec4(mix(col, uFogC, fog), 1.);
 }`;
   const VS_POST = `#version 300 es
@@ -248,7 +248,7 @@ void main() {
     g.putImageData(im, 0, 0); return c; }
   function dotTex() { const c = mk(128, 128), g = c.getContext('2d'); // the rose gold light-dot (the gradient of the site's rose gold)
     let gr = g.createRadialGradient(64, 64, 14, 64, 64, 64); gr.addColorStop(0, 'rgba(226,162,141,.55)'); gr.addColorStop(1, 'rgba(226,162,141,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-    gr = g.createRadialGradient(57, 55, 2, 64, 64, 27); gr.addColorStop(0, '#fff6f0'); gr.addColorStop(0.28, '#f6cdbd'); gr.addColorStop(0.7, '#e2a28d'); gr.addColorStop(1, '#c58069'); g.fillStyle = gr; g.beginPath(); g.arc(64, 64, 27, 0, 7); g.fill(); return c; }
+    gr = g.createRadialGradient(57, 55, 2, 64, 64, 27); gr.addColorStop(0, '#fdeee6'); gr.addColorStop(0.3, '#efbfad'); gr.addColorStop(0.75, '#dc9a85'); gr.addColorStop(1, '#bf7a64'); g.fillStyle = gr; g.beginPath(); g.arc(64, 64, 27, 0, 7); g.fill(); return c; }
   function flatTex(col) { const c = mk(4, 4), g = c.getContext('2d'); g.fillStyle = col; g.fillRect(0, 0, 4, 4); return c; }
 
   // ------------------------------------------------------------------ the scene
@@ -271,12 +271,13 @@ void main() {
     const flightZ = (t) => { const u = clamp((t - B(8)) / (B(16) - B(8))) * NI, i = Math.min(NI - 1, Math.floor(u)); return ZT[i] + (ZT[i + 1] - ZT[i]) * (u - i); };
     const Z16 = ZT[NI], ZHERO = Z16 - FOC;             // the camera stops 1500 units in front of the case (drawn 1:1)
     const CREEP = 13;                                   // it never stops dead: a slow push while a station holds
-    const T2a = B(22.7), T2d = 1.3 * per, D2 = 1750;    // the case opens, the camera flies under it to „Îți arătăm.”
+    const T2a = B(22.8), T2d = 1.2 * per, D2 = 1750, fly2 = (u) => smooth(Math.pow(clamp(u), 0.72)), U2X = Math.pow(0.72, 1 / 0.72); // a quick start, a soft landing; U2X: where it passes under the case    // the case opens, the camera flies under it to „Îți arătăm.”
     const zHold1 = (t) => Z16 - CREEP * (t - B(16));
     const Z2 = zHold1(T2a) - D2, ZSHOW = Z2 - FOC;
     const zHold2 = (t) => Z2 - CREEP * (t - (T2a + T2d));
     // the second dive: through the type to the logo; it crosses the type's plane exactly on beat 29
-    const D3 = 2700, T3d = 1.4 * per; const u3 = (() => { let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (smooth(m) * D3 < FOC + 20) lo = m; else hi = m; } return lo; })();
+    // GAPY: the gap between „Îți” and „arătăm” (the camera goes through it)
+    const D3 = 2700, T3d = 1.4 * per, GAPY = 214; const u3 = (() => { let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (smooth(m) * D3 < FOC + 20) lo = m; else hi = m; } return lo; })();
     const T3a = B(29) - u3 * T3d, Z3 = zHold2(T3a) - D3, ZLOGO = Z3 - FOC;
     // where the first dive goes through: the counter of the "o" of „promitem” (set when the type is measured)
     let OX = -150, OY = -60;
@@ -288,9 +289,9 @@ void main() {
         const env = smooth((t - B(9.2)) / (0.9 * per)) * (1 - smooth((t - B(14.3)) / (1.3 * per))); c.x += 52 * Math.sin((t - B(9)) * 1.75) * env; c.y += 16 * Math.sin((t - B(9)) * 1.2 + 1) * env;
         const a = smooth((t - B(8)) / (0.7 * per)), bq = smooth((t - B(14.6)) / (1.4 * per)); c.focus = 300 + (2500 - 300) * a + (FOC - 2500) * bq; c.aperture = 12 + (7.5 - 12) * a + (0 - 7.5) * bq; }
       else if (t < T2a) { c.z = zHold1(t); c.aperture = 0; }
-      else if (t < T2a + T2d) { const u = (t - T2a) / T2d; c.z = zHold1(T2a) - D2 * smooth(u); c.aperture = 9 * Math.sin(Math.PI * u); c.focus = FOC + 900 * Math.sin(Math.PI * u); }
+      else if (t < T2a + T2d) { const u = (t - T2a) / T2d; c.z = zHold1(T2a) - D2 * fly2(u); c.aperture = 9 * Math.sin(Math.PI * u); c.focus = FOC + 900 * Math.sin(Math.PI * u); }
       else if (t < T3a) { c.z = zHold2(t); c.aperture = 0; }
-      else if (t < T3a + T3d) { const u = (t - T3a) / T3d; c.z = zHold2(T3a) - D3 * smooth(u); c.aperture = 11 * Math.sin(Math.PI * u); c.focus = Math.max(280, Math.abs(c.z - ZSHOW)); c.y = 0; }
+      else if (t < T3a + T3d) { const u = (t - T3a) / T3d; const pg = smooth(u), pc = (FOC + 20) / D3; c.z = zHold2(T3a) - D3 * pg; c.aperture = 11 * Math.sin(Math.PI * u); c.focus = Math.max(280, Math.abs(c.z - ZSHOW)); c.y = pg <= pc ? GAPY * pg / pc : GAPY * (1 - smooth((pg - pc) / (1 - pc))); }
       else { c.z = Z3 - CREEP * (t - (T3a + T3d)); c.aperture = 0; }
       return c;
     };
@@ -308,7 +309,7 @@ void main() {
     const slamZ = (t, t0) => { const u = (t - t0) / 0.3; if (u <= 0) return 1080; const e = E.out5(clamp(u)); return (1 - e) * 1080 - 46 * Math.sin(Math.PI * clamp(u)) * (1 - clamp(u)); };
     const PULSE = [B(17), B(18), B(19)];                 // the held breath: a heartbeat on each beat while „before” holds
     const breathe = (t) => PULSE.reduce((a, tp) => a + (t >= tp ? Math.exp(-(t - tp) * 9) * Math.sin(Math.min(1, (t - tp) / 0.07) * Math.PI / 2) : 0), 0);
-    const hatch = (t) => E.inout(clamp((t - T2a + 0.06) / (0.86 * per))) * 1.72; // radians: it swings up past the horizontal
+    const hatch = (t) => E.inout(clamp((t - T2a + 0.16) / 0.46)) * 1.72; // radians: it swings up past the horizontal
     const LAND = [B(4), B(5), B(6)], WORD_T = LAND.map((t) => t - 0.24); // the words land on the beat (the slam starts 0.24 s before)
 
     ctx.shot.after = () => {
@@ -359,7 +360,7 @@ void main() {
       const tint = rev * (1 - smooth((t - (T2a + 0.55 * T2d)) / 0.4));
       const fog = { color: [1 + (HAZE[0] - 1) * tint, 1 + (HAZE[1] - 1) * tint, 1 + (HAZE[2] - 1) * tint], start: 2400 * rev, density: (1 / 2600) * (1 + 60 * Math.pow(1 - rev, 2)) };
       const inCorr = t >= B(7.3) && t < T3a + T3d;
-      const calmK = 1 - 0.55 * smooth((t - B(15)) / per);
+      const calmK = (1 - 0.7 * smooth((t - B(15)) / per)) * (1 - 0.7 * smooth((t - T2a - 0.5 * T2d) / 0.4));
       const S = { cam: c, fog, vz: vz * kk, camS: [(cb.x - ca.x) * kk, (cb.y - ca.y) * kk, (ca.z - cb.z) * kk, (cb.roll - ca.roll) * kk], floor: t >= B(7.3) ? { y: FLOOR, cell: 170, gridA: 0.42 * rev * calmK, gridC: [0.078, 0.647, 0.588] } : null, quads: q };
       // ---- the opening type (z = 0)
       if (t < B(8) + 0.3) {
@@ -385,7 +386,7 @@ void main() {
       }
       // ---- the hero case: it stands at the end, facing the camera; the "after" half under frosted glass until its beat
       if (inCorr && t < T2a + T2d + 0.1) {
-        const a = hatch(t), da = hatch(t + fr / 2) - hatch(t - fr / 2), F = frostAt(t), br = 1 + 0.007 * breathe(t), hm = M4.chain(M4.T(0, HERO.y + HERO.h / 2, ZHERO), M4.RX(-a), M4.T(0, -HERO.h / 2, 0), M4.S(br, br));
+        const a = hatch(t), da = hatch(t + fr / 2) - hatch(t - fr / 2), F = frostAt(t), br = 1 + 0.007 * breathe(t), hm = M4.chain(M4.T(0, HERO.y + HERO.h / 2 + 150 * smooth(a / 1.3), ZHERO), M4.RX(-a), M4.T(0, -HERO.h / 2, 0), M4.S(br, br));
         const lift = own(da * HERO.h, Math.max(300, c.z - ZHERO), 700);
         const far = clamp((c.z - ZHERO - 1500) / 2500), still = a < 0.02 ? 1 : 0;
         if (still) q.push({ M: M4.chain(M4.T(0, FLOOR + 2, ZHERO), M4.RX(-Math.PI / 2), M4.S(HERO.w + 300, 380)), tex: T.blob, w: 1, h: 1, tint: [0.02, 0.2, 0.18, 1], alpha: 0.09, fade: 1, layer: -3 });
@@ -407,14 +408,14 @@ void main() {
     }
 
     // ---------------------------------------------------------------- the light-dot's path while it writes (world units, on the type's plane)
-    const KICK = { size: 40, y0: 100, y1: 322 }; // the small line: centred first, above the big type once it lands
+    const KICK = { size: 46, y0: 100, y1: 334 }; // the small line: centred first, above the big type once it lands
     let kick = null, kw = [];
     const kickY = (t) => KICK.y0 + (KICK.y1 - KICK.y0) * E.inout(clamp((t - B(4) + 0.3) / 0.5));
     const WT = [0.7, 1.12, 1.52, 1.98, 2.44].map(B); // a word on (almost) every half beat
     function dotAt(t) {
       if (!kw.length) return null;
-      const y = kickY(t) - 4, r0 = 7.5;
-      const xs = kw.map((w) => w.x1), xStart = kw[0].x0 - 22;
+      const y = kickY(t) - 5, r0 = 9;
+      const xs = kw.map((w) => w.x1), xStart = kw[0].x0 - 26;
       if (t < WT[WT.length - 1] + 0.22) { // writing: it runs just ahead of the words
         let x = xStart - 240 * (1 - E.out5(clamp((t + 0.3) / 0.6)));
         WT.forEach((tw, i) => { const from = i ? xs[i - 1] + 9 : xStart; x = t >= tw - 0.12 ? from + (xs[i] + 9 - from) * E.inout(clamp((t - tw + 0.12) / 0.34)) : x; });
@@ -441,7 +442,7 @@ void main() {
     const LM = 112, LWH = 50, LWW = Math.round(LWH * 5583 / 426), LX = Math.round((W - (LM + 26 + LWW)) / 2), LY = 742;
     const mark = h('i', null, null, logo); mark.style.cssText = 'position:absolute;left:' + LX + 'px;top:' + LY + 'px;width:' + LM + 'px;height:' + LM + 'px;background:url(' + R.ROOT + '/brand_asset/logo-mark.png) center/contain no-repeat';
     const wm = h('i', null, null, logo); wm.style.cssText = 'position:absolute;left:' + (LX + LM + 26) + 'px;top:' + (LY + (LM - LWH) / 2) + 'px;width:' + LWW + 'px;height:' + LWH + 'px;background:#000;-webkit-mask:url(' + R.ROOT + '/brand_asset/wordmark-com.png) center/contain no-repeat;mask:url(' + R.ROOT + '/brand_asset/wordmark-com.png) center/contain no-repeat';
-    const city = txt('', esc(p.cities[0]) + '<i style="display:inline-block;width:15px;height:15px;border-radius:50%;margin:0 22px 5px;vertical-align:middle;background:radial-gradient(circle at 38% 34%,#fff 0%,#fbe3d9 30%,#eab5a5 70%,#cf8f7d 100%);box-shadow:0 0 14px 4px rgba(234,181,165,.4)"></i>' + esc(p.cities[1]), 'left:160px;width:760px;top:' + (LY + LM + 54) + 'px;text-align:center;font:500 38px/1.1 var(--f-body);letter-spacing:.01em;color:' + INK);
+    const city = txt('', esc(p.cities[0]) + '<i style="display:inline-block;width:17px;height:17px;border-radius:50%;margin:0 22px 5px;vertical-align:middle;background:radial-gradient(circle at 38% 34%,#fdeee6 0%,#efbfad 30%,#dc9a85 75%,#bf7a64 100%);box-shadow:0 0 14px 4px rgba(226,162,141,.45)"></i>' + esc(p.cities[1]), 'left:160px;width:760px;top:' + (LY + LM + 54) + 'px;text-align:center;font:500 38px/1.1 var(--f-body);letter-spacing:.01em;color:' + INK);
     logo.appendChild(city);
     [load(R.ROOT + '/brand_asset/logo-mark.png'), load(R.ROOT + '/brand_asset/wordmark-com.png')];
     const fadeIO = (t, a, b, din = 0.3, dout = 0.25) => smooth((t - a) / din) * (1 - smooth((t - b) / dout));
@@ -454,7 +455,7 @@ void main() {
       hud.style.opacity = fadeIO(t, B(9.1), B(15.1), 0.4, 0.3).toFixed(3); hud.style.visibility = +hud.style.opacity < 0.004 ? 'hidden' : '';
       // the case's label: what the catalog states, and the consent line
       const hb = HERO.y - HERO.h / 2, Ph = project(0, hb, ZHERO, t); Ph.oy = H / 2 - hb;
-      const stag = (i) => fadeIO(t, B(16.35) + i * 0.12, B(22.45), 0.34, 0.2), rise = (i) => (1 - E.out5(clamp((t - B(16.35) - i * 0.12) / 0.5))) * 22;
+      const stag = (i) => fadeIO(t, B(16.35) + i * 0.12, T2a - 0.36, 0.34, 0.2), rise = (i) => (1 - E.out5(clamp((t - B(16.35) - i * 0.12) / 0.5))) * 22;
       [[hTitle, 36], [hMeta, 94], [hNote, 152]].forEach(([e, dy], i) => { pin(e, Ph, Ph.oy + dy, stag(i), 0); e.style.transform += ' translateY(' + rise(i).toFixed(1) + 'px)'; });
       // the two calm lines under „Îți arătăm.”
       const sb = SHOW.y2 - 110, Ps = project(0, sb, ZSHOW, t); Ps.oy = H / 2 - sb;
@@ -502,8 +503,8 @@ void main() {
     PULSE.forEach((t) => { ctx.sfx(t, 'pulse', 0.6, { prio: 3 }); ev(t, 'breath'); });
     ctx.sfx(B(20), 'dot', 0.8, { prio: 4 }); ctx.sfx(B(20) + 0.09, 'shimmer_soft', 0.7, { prio: 3 }); ev(B(20), 'reveal');
     // the case opens like a hatch; the camera flies under it to „Îți arătăm.”
-    ctx.sfx(T2a, 'card_flip', 0.7); ev(T2a, 'open');
-    const tOpen = T2a + 0.62 * T2d; ctx.sfx(tOpen, 'whoosh_through', 0.6, { prio: 4, peak: true }); ev(tOpen, 'cut');
+    ctx.sfx(T2a - 0.16, 'card_flip', 0.7); ev(T2a - 0.16, 'open');
+    const tOpen = T2a + U2X * T2d; ctx.sfx(tOpen, 'whoosh_through', 0.6, { prio: 4, peak: true }); ev(tOpen, 'cut');
     ctx.sfx(B(24), 'hit_deep', 0.55, { prio: 5 }); ev(B(24), 'stop'); ctx.sfx(B(24) + 0.2, 'dot', 0.55);
     [B(24.7), B(25.7)].forEach((t) => { ctx.sfx(t, 'tick_soft', 0.45); ev(t, 'in'); });
     // through the type, into the held ending
