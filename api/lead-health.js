@@ -34,6 +34,41 @@ module.exports = async (req, res) => {
   const session = getSession(req);
   if (!fromCreative(req) && !(session && session.role === 'admin')) { res.status(401).json({ error: 'unauthorized' }); return; }
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
+  // ?wahealth=1: what Meta itself says about each city's WhatsApp account right now (may it send, and if not, why and
+  // what to do): the health of the number, of the account, of the firm and of the app, whether a payment method is
+  // attached, the currency. No ids, no token, no phone in the answer.
+  if (req.query && req.query.wahealth) {
+    const cfg = await WA.loadConfig().catch(() => ({}));
+    const get = async (path, token, fields) => {
+      const r = await fetch(WA.GRAPH + '/' + encodeURIComponent(path) + '?' + new URLSearchParams({ fields, access_token: token })).catch((e) => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
+      const j = await r.json().catch(() => ({}));
+      return j && j.error ? { error: String(j.error.message || 'eroare').replace(/\d{8,}/g, '…').slice(0, 200) } : j;
+    };
+    const out = {};
+    for (const city of Object.keys((cfg && cfg.numbers) || {})) {
+      const n = cfg.numbers[city] || {};
+      if (!n.token || !n.phoneId) { out[city] = { error: 'numărul nu e conectat' }; continue; }
+      const ph = await get(n.phoneId, n.token, 'health_status,status,quality_rating,messaging_limit_tier');
+      let wb = n.wabaId ? await get(n.wabaId, n.token, 'name,currency,timezone_id,account_review_status,ownership_type,owner_business_info,on_behalf_of_business_info,primary_funding_id,purchase_order_number') : {};
+      // some accesses may not read the payment fields: the rest still helps
+      const fundingError = wb.error;
+      if (wb.error && n.wabaId) wb = await get(n.wabaId, n.token, 'name,currency,timezone_id,account_review_status,ownership_type,owner_business_info,on_behalf_of_business_info');
+      const hs = ph.health_status || {};
+      out[city] = {
+        account: wb.name || '', owner: (wb.owner_business_info || {}).name || '', onBehalfOf: (wb.on_behalf_of_business_info || {}).name || undefined,
+        ownership: wb.ownership_type, review: wb.account_review_status, currency: wb.currency || '(nesetată)', timezone: wb.timezone_id || '(nesetat)',
+        paymentAttached: fundingError ? 'nu pot citi: ' + fundingError : !!wb.primary_funding_id,
+        number: { status: ph.status, quality: ph.quality_rating, tier: ph.messaging_limit_tier, error: ph.error },
+        canSend: hs.can_send_message || '?',
+        entities: (hs.entities || []).map((e) => ({ type: e.entity_type, canSend: e.can_send_message,
+          errors: (e.errors || []).map((x) => ({ code: x.error_code, what: x.error_description, fix: x.possible_solution })),
+          info: e.additional_info })),
+        error: wb.error,
+      };
+    }
+    res.status(200).json(out);
+    return;
+  }
   // ?ig=1: where Instagram's and Facebook's messages stand (permissions, the Page's app, the webhooks; no token);
   // ?igsetup=1: the webhooks and the Page's app set for the messages (api/_lib/social-inbox.js setup), then the same
   // ?igimport=1: the Instagram and Messenger conversations from before the connection, brought into Mesaje once
