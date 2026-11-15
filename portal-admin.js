@@ -976,11 +976,7 @@
     { key: 'yt', title: 'YouTube', ic: 'video', style: 'background:rgba(255,0,51,.12);color:#ff0033' },
     { key: 'tt', title: 'TikTok', ic: 'zap', style: 'background:rgba(254,44,85,.12);color:#fe2c55' },
     { key: 'wa', title: 'WhatsApp', ic: 'chat', cls: 'is-good' },
-    { key: 'live', title: 'Sincronizare instantă', ic: 'refresh', cls: 'is-good' },
     { key: 'mypos', title: 'myPOS', ic: 'card', cls: 'is-warn' },
-    { key: 'ghl', title: 'HighLevel', ic: 'download', cls: 'is-info' },
-    { key: 'creative', title: 'Creative', ic: 'sparkles', cls: 'is-accent' },
-    { key: 'site', title: 'Site centrul360.com', ic: 'globe', cls: 'is-info' },
   ];
   const ST = { ok: 'Conectat', warn: 'De verificat', off: 'Neconectat' };
   function renderIntegrations() {
