@@ -5,63 +5,63 @@
 "L0": {
 "text": "Poți slăbi peste tot, iar zonele astea rămân.",
 "dur": 3.03,
-"speech": 2.65,
+"speech": 3.03,
 "file": "voice/cont-fcccf08962041c2f-L0.wav",
 "role": "hook"
 },
 "L1": {
 "text": "Vorbesc de abdomenul de jos, de colăcei, de interiorul coapselor.",
 "dur": 3.21,
-"speech": 3.1,
+"speech": 3.21,
 "file": "voice/cont-fcccf08962041c2f-L1.wav",
 "role": "beat"
 },
 "L2": {
 "text": "Acolo grăsimea e rezistentă la dietă și sport, din motive genetice și hormonale.",
 "dur": 4.97,
-"speech": 4.68,
+"speech": 4.97,
 "file": "voice/cont-fcccf08962041c2f-L2.wav",
 "role": "beat"
 },
 "L3": {
 "text": "Așa că nu e vina ta că zona nu cedează.",
 "dur": 2.32,
-"speech": 2.08,
+"speech": 2.32,
 "file": "voice/cont-fcccf08962041c2f-L3.wav",
 "role": "beat"
 },
 "L4": {
 "text": "Doar că grăsimea asta are un punct slab.",
 "dur": 2.57,
-"speech": 2.34,
+"speech": 2.57,
 "file": "voice/cont-fcccf08962041c2f-L4.wav",
 "role": "beat"
 },
 "L5": {
 "text": "Cu Liposonix, ultrasunetele trec prin piele fără să o afecteze și țintesc doar grăsimea.",
-"dur": 3.51,
-"speech": 3.41,
+"dur": 5.55,
+"speech": 5.55,
 "file": "voice/cont-fcccf08962041c2f-L5.wav",
 "role": "payoff"
 },
 "L6": {
 "text": "Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină în săptămânile următoare.",
-"dur": 7.32,
-"speech": 7.08,
+"dur": 5.28,
+"speech": 5.28,
 "file": "voice/cont-fcccf08962041c2f-L6.wav",
 "role": "resolve"
 },
 "L7": {
 "text": "Celulele de grăsime distruse nu mai revin. Doar cele rămase se pot mări, dacă iei în greutate.",
-"dur": 3.9,
-"speech": 3.83,
+"dur": 5.12,
+"speech": 5.12,
 "file": "voice/cont-fcccf08962041c2f-L7.wav",
 "role": "resolve"
 },
 "L8": {
 "text": "Iar diferența se vede, în general, la șase până la opt săptămâni.",
-"dur": 4.19,
-"speech": 4.14,
+"dur": 2.97,
+"speech": 2.97,
 "file": "voice/cont-fcccf08962041c2f-L8.wav",
 "role": "resolve"
 },
