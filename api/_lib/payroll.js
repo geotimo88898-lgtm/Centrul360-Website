@@ -7,6 +7,9 @@
 //   over the days she clocked in: 24+ = 500 lei, 27+ = 700 lei, 30+ = 1.500 lei.
 // + added by hand (Echipa → Ajustări, anyone): commission lines the owner wrote herself, plus or minus, dated
 //   that month (data/sales.json, source 'manual'). Overtime added by hand is already in the overtime balance.
+// + the manager's bonus (_lib/manager-pay.js): 5% of her clinics' profit in a month every trained cosmetician made more
+//   than 1.500 lei a day worked. Only the final number counts here, the one the owner confirms at month close
+//   (data/manager-bonus.json, passed in as finals); until then Salariu shows it as an estimate, outside the total.
 // Reception has no commission and the cosmeticians no bonus.
 
 const BOOKING_TIERS = [{ min: 30, lei: 1500 }, { min: 27, lei: 700 }, { min: 24, lei: 500 }];
@@ -21,6 +24,8 @@ const hasBookingBonus = (emp, month) => {
   return !!(until && month && month <= until.slice(0, 7));
 };
 const hasCommission = (emp) => !!emp && emp.role === 'cosmetician';
+// the months she is a manager in (from the month she became one; an old record without the day: every month)
+const hasManagerBonus = (emp, month) => !!emp && emp.role === 'manager' && (!/^\d{4}-\d{2}-\d{2}$/.test(String(emp.roleSince || '')) || month >= emp.roleSince.slice(0, 7));
 
 const bucharestDate = (iso) => {
   const d = new Date(iso);
@@ -48,7 +53,7 @@ function bookingBonus(employeeId, month, attendance, appointments, until) {
 }
 
 // One month of pay for one person.
-function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, appointments }) {
+function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, appointments, finals }) {
   // the salary counts from the month it was first set (Echipa), not in the months before
   const base = !emp.netSalaryFrom || month >= emp.netSalaryFrom ? Math.max(0, Number(emp.netSalary) || 0) : 0;
   const paidOut = (payouts || []).filter((p) => p.employeeId === emp.id && p.month === month);
@@ -68,12 +73,15 @@ function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, app
   (sales || []).forEach((s) => { if (s.source === 'manual' && s.status === 'approved' && s.employeeId === emp.id && String(s.date).slice(0, 7) === month) manual += Number(s.commission) || 0; });
   const booking = hasBookingBonus(emp, month) ? bookingBonus(emp.id, month, attendance, appointments, bonusUntil(emp)) : null;
   const bonus = booking ? booking.lei : 0;
+  const fin = hasManagerBonus(emp, month) && finals ? finals[emp.id + '|' + month] : null;
+  const managerBonus = fin && Number.isFinite(Number(fin.lei)) ? Number(fin.lei) : 0;
   const r2 = (v) => Math.round(v * 100) / 100;
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
-    total: r2(base + paidLei + dueLei + commission + bonus + manual), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
+    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
+    ...(hasManagerBonus(emp, month) ? { hasManagerBonus: true, managerBonus: r2(managerBonus), managerFinal: !!fin } : {}),
   };
 }
 
-module.exports = { BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, hasBookingBonus, hasCommission, bucharestDate };
+module.exports = { BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };

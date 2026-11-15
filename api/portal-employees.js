@@ -87,6 +87,8 @@ module.exports = async (req, res) => {
         location: String(location).slice(0, 100),
         role,
         ...(role === 'manager' ? { manages: require('./_lib/roles').CLINICS.slice(), roleSince: new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()) } : {}),
+        // a new cosmetician starts her training: she counts in the manager's bonus condition once the owner ticks it
+        ...(role === 'cosmetician' ? { trainedOfficial: false } : {}),
         username: uname,
         passwordHash: hash,
         passwordSalt: salt,
@@ -155,8 +157,20 @@ module.exports = async (req, res) => {
         if (!Number.isFinite(n) || n < 0 || n > 100000) { res.status(400).json({ error: 'invalid_salary' }); return; }
         // the month the salary starts counting from (no salary shown in the months before it)
         if (n > 0 && !employee.netSalaryFrom) employee.netSalaryFrom = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
+        // the day it changed: the manager's probation reminder goes once the salary was changed after the probation
+        if (n !== (Number(employee.netSalary) || 0)) employee.netSalaryChangedAt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
         employee.netSalary = n;
       }
+      // the manager: the net salary after the probation (information on her Salariu and the owner's reminder; the pay
+      // itself changes only when the owner changes netSalary)
+      if (req.body.netSalaryAfter !== undefined) {
+        const raw = req.body.netSalaryAfter;
+        const n = raw === '' || raw == null ? 0 : Math.round(Number(raw));
+        if (!Number.isFinite(n) || n < 0 || n > 100000) { res.status(400).json({ error: 'invalid_salary' }); return; }
+        if (n) employee.netSalaryAfter = n; else delete employee.netSalaryAfter;
+      }
+      // a cosmetician who finished the official training counts in the manager's bonus condition
+      if (typeof req.body.trainedOfficial === 'boolean' && employee.role === 'cosmetician') employee.trainedOfficial = req.body.trainedOfficial;
       if (contractedHoursPerDay !== undefined) {
         const n = Number(contractedHoursPerDay);
         if (!Number.isFinite(n) || n <= 0 || n > 16) { res.status(400).json({ error: 'invalid_hours' }); return; }

@@ -233,9 +233,21 @@
     if (TEAM.tab === 'condica' && K.mountCondica) K.mountCondica(epanel.querySelector('[data-cond]'));
     if (TEAM.tab === 'manual') loadManual();
     if (TEAM.tab === 'candidati') loadCandidates();
+    if (TEAM.tab === 'costuri' && K.mountCosts) K.mountCosts(epanel.querySelector('[data-costs]'));
   }
+  // ---- the managers' pay at a glance (probation, this month's bonus), for the cards and Salarii (api/portal-salariu.js)
+  const MGRS = { list: null, at: 0, busy: false };
+  function loadManagers() {
+    if (MGRS.busy || (MGRS.list && Date.now() - MGRS.at < 60e3)) return;
+    if (!((K.data && K.data.admin && K.data.admin.employees) || []).some((e) => e.role === 'manager' && e.active)) return;
+    MGRS.busy = true;
+    K.api('/api/portal-salariu?view=managers').then((r) => { MGRS.list = r.managers || []; MGRS.at = Date.now(); MGRS.busy = false; if (epanel && K.isActive('angajati')) { renderTeam(); if (TEAM.tab === 'salarii') renderPayroll(); } })
+      .catch(() => { MGRS.busy = false; });
+  }
+  const mgrOf = (id) => (MGRS.list || []).find((m) => m.id === id) || null;
+  const mgrBonusText = (m) => (!m ? '-' : m.final ? K.lei(m.final.lei) : m.estimate ? '~' + K.lei(m.estimate.bonus) : '-');
   // ---- Candidați: who applied through a job ad's form (api/portal-candidates.js)
-  const CAND_ST = [['nou', 'Aplicat'], ['cv', 'CV primit'], ['sunat', 'Sunat'], ['interviu', 'Interviu'], ['angajat', 'Angajat'], ['respins', 'Respins']];
+  const CAND_ST = [['nou', 'Aplicat'], ['cv', 'CV primit'], ['sunat', 'Sunat'], ['interviu', 'Interviu'], ['recomandat', 'Recomandat'], ['angajat', 'Angajat'], ['respins', 'Respins']];
   async function loadCandidates(list) {
     const box = epanel.querySelector('[data-cand]');
     if (!list) { box.innerHTML = K.skeleton ? K.skeleton(3) : ''; try { list = (await K.api('/api/portal-candidates')).candidates || []; } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca candidații', K.errText(e)); return; } }
@@ -243,6 +255,9 @@
       '<div class="cand-top"><div><b>' + esc(c.name) + '</b><small>' + esc([c.job, c.location, K.ago(c.at)].filter(Boolean).join(' · ')) + '</small></div>' +
         '<select data-cand-st="' + esc(c.id) + '">' + CAND_ST.map(([v, l]) => '<option value="' + v + '"' + ((c.status || 'nou') === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
       (c.answers && c.answers.length ? '<ul class="cand-ans">' + c.answers.map((x) => '<li><span>' + esc(x.q) + '</span><b>' + esc(x.a) + '</b></li>').join('') + '</ul>' : '') +
+      // who moved her last (the manager does the calls and the interviews, 15.11) and the notes written on her
+      (c.statusBy ? '<p class="cand-by">' + esc(CAND_ST.reduce((l, [v, t]) => (v === (c.status || 'nou') ? t : l), '')) + ' · ' + esc(c.statusBy) + (c.statusAt ? ', ' + esc(K.ago(c.statusAt)) : '') + '</p>' : '') +
+      ((c.notes || []).length ? '<ul class="cand-notes">' + c.notes.slice(-3).map((n) => '<li><b>' + esc(n.by || '') + '</b> ' + esc(n.text) + '</li>').join('') + '</ul>' : '') +
       '<div class="cand-acts"><a class="k-btn is-sm is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + esc(c.phone) + '</a>' +
         '<a class="k-btn is-sm is-ghost" href="https://wa.me/' + esc(K.intlPhone ? K.intlPhone(c.phone) : String(c.phone).replace(/\D/g, '')) + '" target="_blank" rel="noopener">WhatsApp</a></div>' +
       '</article>').join('') + '</div>' : K.empty('userPlus', 'Niciun candidat încă', 'Cei care aplică la reclamele de angajare apar aici.');
@@ -252,14 +267,16 @@
     epanel.classList.add('k-panel', 'ad');
     epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
-      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
-      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
+      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['costuri', 'Costuri', 'receipt'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
+      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="costuri" hidden><div data-costs></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();
       const c = e.target.closest('[data-emp]');
       if (c) openEmployee(c.dataset.emp);
       const po = e.target.closest('[data-payout]');
       if (po) payOvertime(po.dataset.payout);
+      const mp = e.target.closest('[data-mgr-pay]');
+      if (mp && K.openManagerPay) K.openManagerPay(mp.dataset.mgrPay);
       const ma = e.target.closest('[data-man-add]');
       if (ma) openManual(ma.dataset.manAdd);
       const md = e.target.closest('[data-man-del]');
@@ -287,16 +304,22 @@
     if (!epanel || !K.data || !K.data.admin) return;
     const emps = K.data.admin.employees.filter((e) => e.id !== 'admin');
     const active = emps.filter((e) => e.active), inactive = emps.filter((e) => !e.active);
+    loadManagers();
     const card = (e) => {
       const st = empStats(e);
       const pay = (K.data.admin.payroll || []).find((x) => x.id === e.id) || {};
-      const kv = e.role === 'receptie' || e.role === 'manager'
+      const mg = e.role === 'manager' ? mgrOf(e.id) : null, pb = mg && mg.probation;
+      const kv = e.role === 'manager'
+        ? [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Bonus manager', mgrBonusText(mg)], ['Probă', pb ? (pb.inProbation ? 'până ' + K.dateShort(pb.end) : 'încheiată') : '-']]
+        : e.role === 'receptie'
         ? [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Bonus', K.lei(pay.bonus || 0)], ['Media/zi', pay.booking ? K.num(pay.booking.avg) : '-']]
         : [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Comision', K.lei(st.comm)], ['Tratamente', K.lei(st.performed)]];
       return '<button type="button" class="ad-emp' + (e.active ? '' : ' is-off') + '" data-emp="' + esc(e.id) + '"><div class="ad-emp-top">' + K.avatar(e.name, 46) +
         '<div><b>' + esc(e.name) + '</b><span>' + K.roleTag(e.role) + esc(e.role === 'manager' ? (e.manages && e.manages.length ? e.manages : ['Timișoara', 'Arad']).join(' și ') : e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
         '<dl class="ad-emp-kv" title="Luna curentă">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
         (e.netSalary ? '' : '<div class="ad-emp-empty">' + icon('wallet') + 'Salariul nu e setat, apasă ca să-l pui</div>') +
+        // the manager's probation is over and her salary is still the probation's: a reminder for the owner
+        (pb && pb.remind ? '<div class="ad-emp-empty is-remind">' + icon('calendar') + 'Perioada de probă s-a încheiat pe ' + esc(K.dateShort(pb.end)) + (pb.after ? '. Salariul după probă: ' + K.lei(pb.after) : '. Verifică salariul') + '</div>' : '') +
         (e.active ? '<div class="ad-emp-push' + (e.pushDevices ? ' is-on' : '') + '">' + icon('bell') + (e.pushDevices ? 'Notificări pe ' + K.plural(e.pushDevices, 'telefon', 'telefoane') : 'Fără notificări pe telefon') + '</div>' : '') + '</button>';
     };
     epanel.querySelector('[data-body]').innerHTML =
@@ -330,13 +353,19 @@
         '<div class="ad-tabs">' + K.seg('emptab', [['profile', 'Profil & salariu', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], tab, 'is-big') + '</div>' +
         '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
         '<div data-pane="profile"' + (tab === 'profile' ? '' : ' hidden') + '><form class="k-form" data-profile>' +
-          K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'receptie' || e.role === 'manager' ? 'bonusul de programări.' : 'comisionul.')) +
+          K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'manager' ? 'bonusul de manager.' : e.role === 'receptie' ? 'bonusul de programări.' : 'comisionul.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
           K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Managerul conduce clinicile alese mai jos: tot ce face recepția acolo, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
           K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +
           // the manager: the clinics she runs (a clinic opened later is added here by hand, never by itself)
           '<div class="k-field full ad-manages" data-manages' + (e.role === 'manager' ? '' : ' style="display:none"') + '><span>Clinicile pe care le conduce</span><div class="ad-manages-list">' +
             LOCS.map(([c]) => K.toggle('mg|' + c, e.role === 'manager' ? (e.manages && e.manages.length ? e.manages : LOCS.map((x) => x[0])).includes(c) : true, c)).join('') + '</div></div>' +
+          // the manager: the salary after the probation (30 days from the day she became manager)
+          (e.role === 'manager' ? K.field('Salariu net după perioada de probă', '<div class="k-money"><input name="netSalaryAfter" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalaryAfter || '') + '" placeholder="0"></div>', 'full',
+            (/^\d{4}-\d{2}-\d{2}$/.test(e.roleSince || '') ? 'Proba ține 30 de zile, până pe ' + esc(K.dateLong(K.addDays(e.roleSince, 30))) + '. ' : '') + 'Apare la ea ca informație. Salariul se schimbă doar când schimbi salariul net de mai sus; Echipa îți amintește după probă.') +
+            '<div class="k-field full"><button type="button" class="k-btn is-outline" data-mgr-open>' + icon('trophy') + 'Bonusul de manager și profitul lunii</button></div>' : '') +
+          // a cosmetician counts in the manager's bonus condition once she finished the official training
+          (e.role === 'cosmetician' ? '<div class="k-field full ad-trained">' + K.toggle('trainedOfficial', e.trainedOfficial !== false, 'A terminat trainingul oficial') + '<small class="k-muted">Doar cosmeticienele cu trainingul terminat intră în condiția bonusului de manager (peste 1.500 lei pe zi lucrată).</small></div>' : '') +
           K.field('Zile de concediu pe an', '<input name="annualLeaveDays" type="number" min="0" max="60" value="' + esc(e.annualLeaveDays != null ? e.annualLeaveDays : 21) + '">', '', 'Minimul legal e 20; implicit 21.') +
           K.field('Ore contractate / zi', '<input name="contractedHoursPerDay" type="number" min="1" max="16" step="0.5" value="' + esc(e.contractedHoursPerDay != null ? e.contractedHoursPerDay : 8) + '">') + '</form>' +
           '<div class="ad-access"><button type="button" class="k-btn is-outline" data-pass>' + icon('key') + 'Resetează parola</button>' +
@@ -361,6 +390,8 @@
         if (au) au.addEventListener('click', () => openUpsells(e));
         if (tab === 'condica') loadBalance();
         if (pv) pv.addEventListener('click', () => K.busy(pv, () => K.previewAs(e.id)));
+        const mo = el.querySelector('[data-mgr-open]');
+        if (mo) mo.addEventListener('click', () => { d.close(); if (K.openManagerPay) K.openManagerPay(e.id); });
         const readGoals = () => { box.querySelectorAll('[data-g]').forEach((row) => { const g = goals[+row.dataset.g]; row.querySelectorAll('[data-f]').forEach((f) => { g[f.dataset.f] = f.value; }); }); };
         const paint = () => {
           box.innerHTML = goals.length ? goals.map((g, i) => goalRowHtml(g, i, e.role)).join('') : '<div class="ad-emp-empty" style="margin-bottom:.7rem">' + icon('target') + 'Niciun obiectiv. Adaugă unul, de ex. un bonus de 200 lei la 25 de programări.</div>';
@@ -415,7 +446,9 @@
               if (!v.name) { K.ui().toast('Numele e obligatoriu.', 'error'); return; }
               const manages = LOCS.map(([c]) => c).filter((c) => v['mg|' + c]);
               if (v.role === 'manager' && !manages.length) { K.ui().toast('Alege cel puțin o clinică pentru manager.', 'error'); return; }
-              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: v.netSalary, manages: v.role === 'manager' ? manages : undefined });
+              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: v.netSalary, manages: v.role === 'manager' ? manages : undefined,
+                netSalaryAfter: e.role === 'manager' && v.role === 'manager' ? v.netSalaryAfter : undefined, trainedOfficial: e.role === 'cosmetician' && v.role === 'cosmetician' ? !!v.trainedOfficial : undefined });
+              MGRS.at = 0;
             } else if (tab === 'goals') {
               const clean = goals.filter((g) => String(g.title).trim()).map((g) => ({ title: String(g.title).trim(), metric: g.metric, target: Number(g.target) || 0, reward: Number(g.reward) || 0, currentValue: Number(g.currentValue) || 0 }));
               if (clean.some((g) => !g.target)) { K.ui().toast('Fiecare obiectiv are nevoie de o țintă.', 'error'); return; }
@@ -466,16 +499,21 @@
     if (!box || !K.data || !K.data.admin) return;
     const rows = K.data.admin.payroll || [];
     const sum = (k) => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+    loadManagers();
     const hm = (m) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min'; };
     box.innerHTML =
       '<div class="k-grid c4 k-stagger" style="margin-bottom:1rem">' +
         '<div class="k-stat is-accent"><div class="k-stat-top">' + icon('wallet') + 'Total de plată</div><div class="k-stat-value">' + K.lei(sum('total')) + '</div><div class="k-stat-sub">' + esc(K.monthLabel(K.thisMonth())) + ', până azi</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('users') + 'Salarii de bază</div><div class="k-stat-value">' + K.lei(sum('base')) + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('clock') + 'Ore suplimentare</div><div class="k-stat-value">' + K.lei(sum('overtimeLei')) + '</div></div>' +
-        '<div class="k-stat"><div class="k-stat-top">' + icon('percent') + 'Comision + bonus</div><div class="k-stat-value">' + K.lei(sum('commission') + sum('bonus') + sum('manual')) + '</div></div>' +
+        '<div class="k-stat"><div class="k-stat-top">' + icon('percent') + 'Comision + bonus</div><div class="k-stat-value">' + K.lei(sum('commission') + sum('bonus') + sum('manual') + sum('managerBonus')) + '</div></div>' +
       '</div>' +
       (rows.length ? '<div class="pr-list">' + rows.map((r) => {
-        const extra = r.hasBonus
+        const mg = r.role === 'manager' ? mgrOf(r.id) : null;
+        const extra = r.role === 'manager'
+          ? (r.hasBonus && r.bonus ? '<div><dt>Bonus recepție</dt><dd>' + K.lei(r.bonus) + '</dd><small>oprit la ' + esc(K.dateShort((r.booking && r.booking.frozen) || '')) + '</small></div>' : '') +
+            '<div><dt>Bonus manager</dt><dd>' + (r.managerFinal ? K.lei(r.managerBonus) : mgrBonusText(mg)) + '</dd><small>' + (r.managerFinal ? 'final' : mg && mg.estimate ? 'estimat, în afara totalului' : 'după costurile lunii') + '</small></div>'
+          : r.hasBonus
           ? '<div><dt>Bonus programări</dt><dd>' + K.lei(r.bonus) + '</dd><small>' + (r.booking && r.booking.days ? 'media ' + K.num(r.booking.avg) + '/zi' : 'fără zile pontate') + '</small></div>'
           : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upsell-uri')) + '</small></div>';
         return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + (r.active === false ? ' · cont dezactivat' : '') + '</small></span></button>' +
@@ -483,7 +521,8 @@
           '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
           (r.manual ? '<div><dt>Comision manual</dt><dd>' + (r.manual > 0 ? '+' : '') + K.lei(r.manual, r.manual % 1 ? 2 : 0) + '</dd><small>din Ajustări</small></div>' : '') +
           '<div class="pr-total"><dt>Total</dt><dd>' + K.lei(r.total, r.total % 1 ? 2 : 0) + '</dd></div></dl>' +
-          (r.overtimeDueLei ? '<button type="button" class="k-btn is-sm is-good" data-payout="' + esc(r.id) + '">' + icon('check') + 'Ore plătite cu salariul</button>' : '') + '</article>';
+          (r.overtimeDueLei ? '<button type="button" class="k-btn is-sm is-good" data-payout="' + esc(r.id) + '">' + icon('check') + 'Ore plătite cu salariul</button>' : '') +
+          (r.role === 'manager' ? '<button type="button" class="k-btn is-sm is-outline" data-mgr-pay="' + esc(r.id) + '">' + icon('trophy') + 'Bonus și profit</button>' : '') + '</article>';
       }).join('') + '</div>' : K.empty('users', 'Niciun angajat activ', ''));
   }
   // ---------------- Ajustări: commissions and overtime added by hand, when the automatic count missed something

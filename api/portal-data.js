@@ -222,16 +222,18 @@ module.exports = async (req, res) => {
     // ---- everything else this answer reads, in one go: they were read one after another (up to eight waits on the store
     // in a row, on every load and every refresh of the portal, 13.11: „aplicația se încarcă foarte greu”)
     const front = isAdmin || me.role === 'receptie' || me.role === 'manager';
-    const [attendanceAll, tbAll, waConvos, igUnread, myNotes, liveCfg, devices] = await Promise.all([
+    const [attendanceAll, tbAll, waConvos, igUnread, myNotes, liveCfg, devices, mgrFinals] = await Promise.all([
       readJSON('data/attendance.json', []), TB.loadAll(readJSON), readJSON('data/whatsapp-conversations.json', []),
       // the clinic's Instagram (both clinics'), for whoever answers Mesaje
       front ? require('./_lib/social-inbox').unread().catch(() => 0) : 0,
       myNotifications({ readJSON }, me.id), live.publicConfig(), isAdmin ? deviceCounts({ readJSON }) : null,
+      // the managers' bonuses the owner confirmed at month close (_lib/manager-pay.js), counted in their pay
+      isAdmin || me.role === 'manager' ? readJSON('data/manager-bonus.json', {}) : {},
     ]);
 
     // ---- Salariu: what each person takes home (salary + overtime + commission or booking bonus)
     const monthsBack = (n) => { const out = []; let y = Number(month.slice(0, 4)), m = Number(month.slice(5, 7)); for (let i = 0; i < n; i++) { out.push(y + '-' + String(m).padStart(2, '0')); m -= 1; if (!m) { m = 12; y -= 1; } } return out; };
-    const payOf = (emp, m) => PAY.monthPay({ emp, month: m, isCurrent: m === month, sales, payouts: tbAll.payouts, bank: m === month ? TB.ledger(emp.id, tbAll) : null, attendance: attendanceAll, appointments });
+    const payOf = (emp, m) => PAY.monthPay({ emp, month: m, isCurrent: m === month, sales, payouts: tbAll.payouts, bank: m === month ? TB.ledger(emp.id, tbAll) : null, attendance: attendanceAll, appointments, finals: mgrFinals || {} });
     const salary = isAdmin ? null : { months: monthsBack(6).map((m) => payOf(me, m)), rule: { rate: UPSELL_RATE, cost: COST_SHARE, tiers: PAY.BOOKING_TIERS } };
 
     // Bell reminders for the booking bonus (reception): the step reached, and the next one when
@@ -327,6 +329,12 @@ module.exports = async (req, res) => {
           role: e.role,
           manages: e.role === 'manager' ? require('./_lib/roles').managesOf(e) : undefined,
           roleSince: e.roleSince || '',
+          prevRole: e.prevRole || '',
+          // the manager's probation (_lib/manager-pay.js): the salary after it, the day the salary last changed
+          netSalaryAfter: Number(e.netSalaryAfter) || 0,
+          netSalaryChangedAt: e.netSalaryChangedAt || '',
+          // a cosmetician counts in the manager's bonus condition once she finished the official training (unset: yes)
+          trainedOfficial: e.role === 'cosmetician' ? e.trainedOfficial !== false : undefined,
           username: e.username,
           photo: photoOf(e),
           netSalary: Number(e.netSalary) || 0,

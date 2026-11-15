@@ -818,6 +818,8 @@
       if (e.target.closest('[data-go-train]')) K.go('traininguri');
       if (e.target.closest('[data-sal-custom]')) customizeSal();
       if (e.target.closest('[data-comm-new]')) openCommNew();
+      const mp = e.target.closest('[data-mg-propose]');
+      if (mp) mgPropose(mp);
       const cc = e.target.closest('[data-comm-cancel]');
       if (cc) cancelComm(cc.dataset.commCancel);
     });
@@ -891,7 +893,9 @@
       (bk.frozen ? '<div class="mo-note">' + icon('info') + 'Bonusul de recepție se oprește din ziua în care ai devenit manager. Rămâne ce ai făcut până atunci, pentru zilele de recepție.</div>' : '') +
       '<div class="sl-bk-top"><div><span>Media ta</span><b>' + K.num(bk.avg) + '</b><small>programări / zi · ' + K.plural(bk.days, 'zi pontată', 'zile pontate') + ', ' + bk.total + ' programări</small></div>' +
         '<div class="sl-bk-now' + (bk.lei ? ' is-on' : '') + '"><span>Bonus</span><b>' + K.lei(bk.lei) + '</b>' +
-        (bk.next ? '<small>' + (bk.days ? 'Încă ' + avg1(Math.max(0.1, Math.ceil((bk.next.min - bk.avg) * 10) / 10)) + ' pe zi pentru ' + K.lei(bk.next.lei) : 'de la ' + bk.next.min + ' pe zi') + (isNow && daysLeft ? ' · ' + K.plural(daysLeft, 'zi rămasă', 'zile rămase') : '') + '</small>' : '<small>Treapta cea mai mare. Bravo!</small>') + '</div></div>' +
+        (bk.next ? '<small>' + (bk.days ? 'Încă ' + avg1(Math.max(0.1, Math.ceil((bk.next.min - bk.avg) * 10) / 10)) + ' pe zi pentru ' + K.lei(bk.next.lei) : 'de la ' + bk.next.min + ' pe zi') + (isNow && daysLeft ? ' · ' + K.plural(daysLeft, 'zi rămasă', 'zile rămase') : '') + '</small>'
+          : bk.lei && bk.lei >= Math.max(...tiers.map((t) => t.lei)) ? '<small>Treapta cea mai mare. Bravo!</small>'
+          : '<small>' + (bk.frozen ? 'Oprit la ' + esc(K.dateShort(bk.frozen)) + (bk.lei ? '' : ', sub prima treaptă (' + tiers[0].min + ' pe zi)') : 'de la ' + tiers[0].min + ' pe zi') + '</small>') + '</div></div>' +
       '<div class="sl-tiers"><div class="sl-track"><i style="--w:' + pct(bk.avg) + '%"></i>' +
         tiers.map((t) => '<span class="sl-tick' + (bk.avg >= t.min ? ' is-on' : '') + '" style="left:' + pct(t.min) + '%"><b>' + t.min + '+</b><em>' + K.lei(t.lei) + '</em></span>').join('') + '</div></div>' +
       '<p class="cd-rule">' + icon('info') + 'Media = programările făcute de tine împărțite la zilele în care ai pontat sosirea. De la 24 pe zi: 500 lei, de la 27: 700 lei, de la 30: 1.500 lei.</p>' +
@@ -926,6 +930,8 @@
     if (!cpanel || !K.data) return;
     const D = K.data;
     const me = D.me;
+    // the manager: her own page (the bonus of a manager, not the commission or the booking bonus)
+    if (me.role === 'manager') { renderManager(); return; }
     const isNow = C.month === K.thisMonth();
     const today = K.today();
     const dim = K.daysIn(C.month);
@@ -1020,7 +1026,7 @@
       commission: { label: 'Comision aprobat', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('percent', 'Comision', pay ? lei2(pay.commission) : '-', 'aprobat', 'is-good') },
       commWaiting: { label: 'Comision în așteptare', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('clock', 'În așteptare', pay ? lei2(pay.commissionWaiting || 0) : '-', 'se aprobă de admin', 'is-warn') },
       bkAvg: { label: 'Programări pe zi', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări / zi', bkk ? K.num(bkk.avg) : '-', bkk ? K.plural(bkk.days, 'zi pontată', 'zile pontate') : '-') },
-      bkLei: { label: 'Bonusul acum', group: 'Bonus de programări', roles: ['receptie'], html: () => st('trophy', 'Bonus', bkk ? K.lei(bkk.lei) : '-', bkk && bkk.next ? 'următorul: ' + bkk.next.min + '+ pe zi' : 'treapta cea mai mare', bkk && bkk.lei ? 'is-good' : '') },
+      bkLei: { label: 'Bonusul acum', group: 'Bonus de programări', roles: ['receptie'], html: () => st('trophy', 'Bonus', bkk ? K.lei(bkk.lei) : '-', bkk && bkk.next ? 'următorul: ' + bkk.next.min + '+ pe zi' : bkk && bkk.lei >= Math.max(...bkk.tiers.map((t) => t.lei)) ? 'treapta cea mai mare' : bkk && bkk.frozen ? 'oprit la ' + esc(K.dateShort(bkk.frozen)) : '-', bkk && bkk.lei ? 'is-good' : '') },
       bkTotal: { label: 'Programări făcute', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări făcute', bkk ? String(bkk.total) : '-', 'luna asta') },
     };
     const role = isDesk ? 'receptie' : 'cosmetician';
@@ -1057,6 +1063,337 @@
   function monthNav(isNow) {
     return '<div class="k-month"><button type="button" class="k-icon-btn" data-m="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + esc(K.monthLabel(C.month)) + '</b><button type="button" class="k-icon-btn" data-m="1" aria-label="Luna următoare"' + (isNow ? ' disabled' : '') + '>' + icon('right') + '</button></div>';
   }
+
+  // =====================================================================================
+  // SALARIU, THE MANAGER (api/portal-salariu.js, api/_lib/manager-pay.js)
+  // Her pay, simple: what she takes home (base + the bonus, estimated until the owner closes the month), the bonus
+  // condition person by person, "if the month closed today", the base and the probation, the reception bonus she made
+  // until she became manager (one frozen line), the month-close costs she sends, her months. The owner opens the same
+  // from Echipa (K.openManagerPay), with the costs, the profit and the final bonus he confirms.
+  // =====================================================================================
+  const MG = { cache: {}, at: {} };
+  const mgKey = (month, empId) => (empId || 'me') + '|' + month;
+  async function mgLoad(month, empId, force) {
+    const k = mgKey(month, empId);
+    if (!force && MG.cache[k] && Date.now() - MG.at[k] < 60e3) return MG.cache[k];
+    const v = await K.api('/api/portal-salariu?view=manager&month=' + encodeURIComponent(month) + (empId ? '&employeeId=' + encodeURIComponent(empId) : ''));
+    MG.cache[k] = v; MG.at[k] = Date.now();
+    return v;
+  }
+  const first = (n) => String(n || '').split(' ')[0];
+  // an ISO moment as the clinic's day (Bucharest), short
+  const roDay = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? K.dateShort(new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' })) : ''; };
+  // the bonus of a month: final (the owner closed it), estimated (the costs are in), or not yet known
+  const mgBonus = (m) => (m.final ? { lei: m.final.lei, kind: 'final' } : m.estimate ? { lei: m.estimate.bonus, kind: 'estimat' } : null);
+
+  function mgCondHtml(cond) {
+    const top = cond.min * 4 / 3; // the bar's end: 2.000 lei a day, the 1.500 mark at three quarters
+    const low = cond.people.filter((p) => p.days && !p.ok);
+    const rows = cond.people.map((p) => {
+      const pct = Math.min(100, (p.perDay / top) * 100);
+      const need = Math.max(1, cond.min - p.perDay);
+      return '<div class="mg-person' + (p.days ? (p.ok ? ' is-ok' : ' is-low') : ' is-none') + '">' + K.avatar(p.name, 36) +
+        '<div class="mg-p-main"><div class="mg-p-top"><b>' + esc(p.name) + '</b><em>' + (p.days ? K.lei(p.perDay) + ' / zi' : '-') + '</em></div>' +
+          '<div class="mg-bar"><i style="--w:' + pct + '%"></i><s style="left:75%"></s></div>' +
+          '<small>' + esc(p.location) + ' · ' + (p.days ? K.plural(p.days, 'zi lucrată', 'zile lucrate') + ' · ' + K.lei(p.collected) + ' încasat' + (p.ok ? '' : ' · încă ' + K.lei(need) + ' pe zi') : 'Nicio zi lucrată luna asta, nu intră în calcul.') + '</small></div>' +
+        '<span class="mg-p-ic">' + icon(p.ok ? 'check' : p.days ? 'x' : 'minus') + '</span></div>';
+    }).join('');
+    const banner = !cond.people.some((p) => p.days)
+      ? '<div class="mg-cond-sum">' + icon('info') + '<span>Încă nu a lucrat nicio cosmeticiană luna asta.</span></div>'
+      : cond.ok ? '<div class="mg-cond-sum is-ok">' + icon('checkCircle') + '<span><b>Condiția e îndeplinită.</b> Toate cosmeticienele sunt peste ' + K.lei(cond.min) + ' pe zi.</span></div>'
+        : '<div class="mg-cond-sum is-low">' + icon('target') + '<span><b>Încă nu.</b> ' + esc(low.map((p) => first(p.name)).join(', ')) + (low.length === 1 ? ' e' : ' sunt') + ' sub ' + K.lei(cond.min) + ' pe zi.</span></div>';
+    return '<div class="mg-step"><span class="mg-step-n">1</span><div><b>Condiția</b><small>Fiecare cosmeticiană încasează peste ' + K.lei(cond.min) + ' pe zi lucrată.</small></div></div>' +
+      banner + (rows ? '<div class="mg-people">' + rows + '</div>' : '') +
+      (cond.training.length ? '<p class="mg-train">' + icon('book') + esc(cond.training.map((p) => first(p.name)).join(', ')) + ' ' + (cond.training.length === 1 ? 'e' : 'sunt') + ' încă în training: nu intră în calcul.</p>' : '');
+  }
+
+  // step 2: "if the month closed today", or the final number
+  function mgCalcHtml(m, admin) {
+    const pct = Math.round(m.rate * 100);
+    const head = '<div class="mg-step"><span class="mg-step-n">2</span><div><b>' + (m.final ? 'Bonusul final' : m.current ? 'Dacă luna se închide azi' : 'Calculul lunii') + '</b><small>' + pct + '% din profitul clinicilor ' + esc(m.clinics.join(' și ')) + '.</small></div></div>';
+    if (m.final) {
+      return head + '<div class="mg-calc is-final"><div><span>Bonus final</span><b>' + K.lei(m.final.lei) + '</b><small>' + icon('checkCircle') + 'Închis de proprietar' + (m.final.at ? ' pe ' + esc(roDay(m.final.at)) : '') + '</small></div></div>';
+    }
+    if (!m.estimate) {
+      return head + '<div class="mg-wait">' + icon('clock') + '<span>' + (admin ? 'Trece costurile lunii în Echipa → Costuri și bonusul se calculează singur.' : 'Bonusul se calculează după ce proprietarul trece costurile lunii.') + '</span></div>';
+    }
+    const e = m.estimate;
+    return head + '<div class="mg-calc">' +
+        '<div><span>Profit estimat</span><b>' + K.lei(e.profit) + '</b><small>încasări minus costurile lunii</small></div>' +
+        '<i class="mg-x">× ' + pct + '%</i>' +
+        '<div class="' + (e.bonus ? 'is-on' : '') + '"><span>Bonus estimat</span><b>' + K.lei(e.bonus) + '</b><small>' + (m.condition.ok ? (e.profit > 0 ? 'dacă rămâne așa' : 'luna e pe pierdere deocamdată') : 'condiția nu e îndeplinită' + (e.potential ? ': ar fi ' + K.lei(e.potential) : '')) + '</small></div>' +
+      '</div>' +
+      '<p class="cd-rule">' + icon('info') + 'E o estimare. Calculul final îl face proprietarul la închiderea lunii.</p>';
+  }
+
+  // the base and the probation (30 days from the day she became manager)
+  function mgBaseHtml(v, base) {
+    const p = v.probation;
+    const dl = (d) => Number(d.slice(8, 10)) + ' ' + K.MON[Number(d.slice(5, 7)) - 1];
+    return '<section class="k-card mg-base"><div class="k-card-head"><h3>' + icon('user') + 'Salariul de bază</h3></div>' +
+      '<div class="mg-base-row"><div><span>Acum</span><b>' + (base ? K.lei(base) : '-') + '</b><small>' + (base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
+      (p && (p.inProbation || p.after) ? '<div class="' + (p.inProbation ? '' : 'is-on') + '"><span>' + (p.inProbation ? 'După perioada de probă' : 'După probă') + '</span><b>' + (p.after ? K.lei(p.after) : '-') + '</b><small>' + (p.inProbation ? 'de la ' + esc(dl(p.end)) : 'net, pe lună') + '</small></div>' : '') + '</div>' +
+      (p ? '<p class="cd-rule">' + icon('calendar') + (p.inProbation ? 'Perioada de probă: ' + v.rule.probationDays + ' de zile, până pe ' + esc(dl(p.end)) + '. Salariul îl setează proprietarul.' : 'Perioada de probă s-a încheiat pe ' + esc(dl(p.end)) + '.') + '</p>' : '') +
+      '</section>';
+  }
+
+  // what she sends at month close (consumables, other costs): a proposal the owner takes into Costuri lunare
+  function mgProposeHtml(m) {
+    const p = m.proposal;
+    const st = p ? { pending: ['warn', 'Trimis, așteaptă proprietarul'], accepted: ['good', 'Preluat de proprietar'], declined: ['bad', 'Nepreluat'] }[p.status] : null;
+    return '<section class="k-card mg-prop"><div class="k-card-head"><h3>' + icon('receipt') + 'Costuri variabile ale lunii</h3>' + (st ? '<span class="k-tag is-' + st[0] + '">' + st[1] + '</span>' : '') + '</div>' +
+      '<p class="k-muted mg-prop-lead">La închiderea lunii trimite consumabilele și alte costuri. Proprietarul le verifică și le trece în calcul.</p>' +
+      '<form class="k-form mg-prop-form" data-mg-prop-form>' +
+        K.field('Consumabile', '<div class="k-money"><input name="consumables" type="number" inputmode="decimal" min="0" step="1" placeholder="0" value="' + esc(p && p.consumables != null ? p.consumables : '') + '"></div>') +
+        K.field('Alte costuri', '<div class="k-money"><input name="other" type="number" inputmode="decimal" min="0" step="1" placeholder="0" value="' + esc(p && p.other != null ? p.other : '') + '"></div>') +
+        K.field('Notă (opțional)', '<input name="note" maxlength="300" placeholder="ex. gel și cartușe, o reparație" value="' + esc(p ? p.note || '' : '') + '">', 'full') +
+      '</form><div class="mg-prop-acts"><button type="button" class="k-btn is-accent" data-mg-propose>' + icon('check') + (p ? 'Trimite din nou' : 'Trimite proprietarului') + '</button></div></section>';
+  }
+
+  // Lunile tale: salary, overtime, the bonus (reception's until the switch, then the manager's), the total
+  function mgHistHtml(months, v, sel) {
+    const byM = {}; (v.history || []).forEach((h) => { byM[h.month] = h; });
+    const hist = months.filter((m, i) => i === 0 || m.total > 0 || byM[m.month]);
+    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('calendar') + 'Lunile tale</h3></div>' +
+      '<div class="cb-hist sl-hist"><div class="cb-hist-row is-head"><span>Luna</span><span>Salariu</span><span>Ore supl.</span><span>Bonus</span><span>Total</span></div>' +
+      hist.map((h) => {
+        const x = byM[h.month];
+        const est = x && !x.final && x.estimate != null ? x.estimate : 0;
+        const bon = (Number(h.bonus) || 0) + (x ? (x.final ? x.final.lei : est) : 0);
+        const tag = x ? (x.final ? '' : x.estimate != null ? ' <em class="mg-est">estimat</em>' : ' <em class="mg-est">în calcul</em>') : '';
+        return '<button type="button" class="cb-hist-row' + (h.month === sel ? ' is-on' : '') + '" data-month="' + h.month + '"><span>' + esc(K.monthLabel(h.month)) + '</span><span>' + K.lei(h.base) + '</span><span>' + lei2(h.overtimeLei) + '</span><span>' + lei2(bon) + tag + '</span><b>' + lei2(h.total + est) + '</b></button>';
+      }).join('') + '</div></section>';
+  }
+
+  // the page, for her (opts.admin: the owner's drawer, with the costs and the final bonus)
+  function mgHtml(v, pay, opts) {
+    const m = v.month, admin = !!(opts && opts.admin);
+    const b = mgBonus(m);
+    const est = b && b.kind === 'estimat' ? b.lei : 0;
+    const total = pay ? pay.total + est : null;
+    const bk = pay && pay.booking && pay.booking.frozen ? pay.booking : null;
+    const head = '<section class="cb-hero k-card mg-hero"><div class="cb-hero-main"><span>' + (admin ? esc(v.name) : 'Salariul tău') + ' · ' + esc(K.monthLabel(m.month)) + '</span>' +
+        (total != null ? '<b data-count="' + Math.round(total) + '" data-fmt="lei" data-key="mg-t-' + m.month + '">0</b><p>' + icon('wallet') + (m.current ? 'în mână luna asta' : 'în mână') + (est ? ', cu bonusul estimat' : '') + '</p>'
+          : '<b>' + (b ? K.lei(b.lei) : '-') + '</b><p>' + icon('trophy') + 'bonus de manager' + (b ? ', ' + b.kind : '') + '</p>') + '</div>' +
+        (opts && opts.nav !== false ? monthNav(m.current) : '') +
+        (pay ? '<div class="cb-split">' +
+          '<div><span>' + icon('user') + 'Salariu de bază</span><b>' + (pay.base ? K.lei(pay.base) : '-') + '</b><small>' + (pay.base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
+          '<div class="' + (b && b.lei ? 'is-good' : !b ? 'is-wait' : '') + '"><span>' + icon('trophy') + 'Bonus de manager</span><b>' + (b ? K.lei(b.lei) : '-') + '</b><small>' + (b ? (b.kind === 'final' ? 'final, închis de proprietar' : 'estimat, ' + (m.condition.ok ? 'condiția e îndeplinită' : 'condiția încă nu e îndeplinită')) : 'după costurile lunii') + '</small></div>' +
+          '<div><span>' + icon('clock') + 'Ore suplimentare</span><b>' + lei2(pay.overtimeLei) + '</b><small>' + (pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' : 'nicio oră luna asta') + '</small></div>' +
+          '</div>' : '') +
+        (bk ? '<div class="mg-frozen">' + icon('calendar') + '<span>Bonus recepție (până la ' + esc(K.dateShort(bk.frozen)) + '): <b>' + K.lei(bk.lei) + '</b></span><small>media ' + avg1(bk.avg) + ' programări pe zi · ' + (bk.lei ? 'inclus în total' : 'sub prima treaptă (' + bk.tiers.slice().sort((a, c) => a.min - c.min)[0].min + ' pe zi)') + '</small></div>' : '') +
+        (pay && pay.manual ? '<div class="mg-frozen">' + icon('sliders') + '<span>Ajustare de la admin: <b>' + (pay.manual > 0 ? '+' : '') + lei2(pay.manual) + '</b></span></div>' : '') +
+      '</section>';
+    const bonusCard = '<section class="k-card mg-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de manager</h3>' +
+        (b ? '<span class="k-tag is-' + (b.kind === 'final' ? 'good' : 'info') + '">' + b.kind + '</span>' : '') + '</div>' +
+      mgCondHtml(m.condition) + mgCalcHtml(m, admin) + (admin ? mgAdminHtml(v) : '') + '</section>';
+    return head + bonusCard + (opts && opts.extra ? opts.extra : '');
+  }
+
+  // the owner: the month's real numbers and the final bonus
+  function mgAdminHtml(v) {
+    const m = v.month;
+    if (!m.costs) return '';
+    const src = { auto: 'auto', manual: 'scris de tine', typed: '', missing: 'lipsește', empty: '' };
+    const rows = m.costs.rows.map((r) => '<div class="mg-cost' + (r.lei == null ? ' is-miss' : '') + '"><span>' + esc(r.label) + (src[r.source] ? ' <em>' + src[r.source] + '</em>' : '') + '</span><b>' + (r.lei == null ? '-' : K.lei(r.lei)) + '</b></div>').join('');
+    const fin = m.final ? m.final.lei : m.estimate ? m.estimate.bonus : '';
+    return '<div class="mg-admin"><div class="mg-step"><span class="mg-step-n">' + icon('shield') + '</span><div><b>Doar pentru tine</b><small>Costurile reale și profitul lunii.</small></div></div>' +
+      '<div class="mg-costs"><div class="mg-cost is-in"><span>Încasări ' + esc(m.clinics.join(' și ')) + '</span><b>' + K.lei(m.collections) + '</b></div>' + rows +
+        '<div class="mg-cost is-total"><span>Total costuri</span><b>' + K.lei(m.costs.total) + '</b></div>' +
+        '<div class="mg-cost is-profit"><span>Profit</span><b>' + K.lei(m.profit) + '</b></div></div>' +
+      (m.costs.missing.length || !m.filled ? '<div class="mg-wait">' + icon('alert') + '<span>' + (m.costs.missing.length ? 'Lipsesc: ' + esc(m.costs.rows.filter((r) => r.lei == null).map((r) => r.label).join(', ')) + '.' : 'Luna nu e salvată încă în Echipa → Costuri.') + ' Managerul vede bonusul doar după ce luna e completă.</span></div>' : '') +
+      '<form class="mg-final" data-mg-final><label><span>Bonus final</span><div class="k-money"><input name="lei" type="number" inputmode="numeric" min="0" step="1" value="' + esc(fin) + '" placeholder="0"></div></label>' +
+        '<button type="button" class="k-btn is-accent" data-mg-final-save>' + icon('check') + (m.final ? 'Schimbă' : 'Confirmă la închiderea lunii') + '</button>' +
+        (m.final ? '<button type="button" class="k-btn is-ghost" data-mg-final-clear>Retrage</button>' : '') + '</form>' +
+      '<p class="cd-rule">' + icon('info') + 'După confirmare, ' + esc(first(v.name)) + ' vede bonusul ca final și intră în salariul lunii.</p></div>';
+  }
+
+  function renderManager() {
+    const D = K.data;
+    const body = cpanel.querySelector('[data-body]');
+    ['[data-comm-new]', '[data-sal-custom]'].forEach((s) => { const x = cpanel.querySelector(s); if (x) x.style.display = 'none'; });
+    const months = (D.salary && D.salary.months) || [];
+    const pay = months.find((x) => x.month === C.month) || null;
+    const k = mgKey(C.month);
+    const v = MG.cache[k];
+    if (!v || Date.now() - MG.at[k] > 60e3) {
+      if (!v) body.innerHTML = '<div class="k-skel" style="height:220px;margin-bottom:1rem"></div><div class="k-skel" style="height:320px"></div>';
+      const month = C.month;
+      mgLoad(month, null, !!v).then(() => { if (C.month === month && K.isActive('comision')) renderManager(); })
+        .catch((err) => { if (!v) body.innerHTML = '<section class="k-card">' + K.empty('alert', 'Nu am putut încărca salariul', K.errText(err)) + '</section>'; });
+      if (!v) return;
+    }
+    const m = v.month;
+    const propose = m.current || C.month === K.addMonths(K.thisMonth(), -1) ? mgProposeHtml(m) : '';
+    body.innerHTML = mgHtml(v, pay, { extra: mgBaseHtml(v, pay ? pay.base : 0) + (K.data.impersonating ? '' : propose) + mgHistHtml(months, v, C.month) });
+    K.countAll(cpanel);
+  }
+
+  async function mgPropose(btn) {
+    const f = cpanel.querySelector('[data-mg-prop-form]');
+    if (!f) return;
+    const v = K.formValues(f);
+    if (v.consumables === '' && v.other === '') { K.ui().toast('Scrie consumabilele sau alte costuri.', 'error'); return; }
+    await K.busy(btn, async () => {
+      try {
+        await K.api('/api/portal-salariu', { action: 'propose', month: C.month, consumables: v.consumables, other: v.other, note: v.note || '' });
+        K.ui().toast('Trimis proprietarului.', 'success');
+        await mgLoad(C.month, null, true);
+        renderManager();
+      } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+    });
+  }
+
+  // the owner: a manager's Salariu, in a drawer (Echipa → Salarii / her card)
+  K.openManagerPay = (empId) => {
+    const S = { month: K.thisMonth() };
+    const d = K.drawer({
+      title: 'Salariul managerului', icon: 'trophy', width: 640,
+      body: '<div class="mo cb mg-drawer" data-mg-box><div class="k-skel" style="height:260px"></div></div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-mg-close>Închide</button>',
+      onMount(el) {
+        const box = el.querySelector('[data-mg-box]');
+        const paint = async (force) => {
+          try {
+            const v = await mgLoad(S.month, empId, force);
+            const pay = S.month === K.thisMonth() ? ((K.data.admin && K.data.admin.payroll) || []).find((r) => r.id === empId) || null : null;
+            const nav = '<div class="k-month mg-dnav"><button type="button" class="k-icon-btn" data-dm="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + esc(K.monthLabel(S.month)) + '</b><button type="button" class="k-icon-btn" data-dm="1" aria-label="Luna următoare"' + (S.month >= K.thisMonth() ? ' disabled' : '') + '>' + icon('right') + '</button></div>';
+            const emp = ((K.data.admin && K.data.admin.employees) || []).find((e) => e.id === empId) || {};
+            box.innerHTML = nav + mgHtml(v, pay, { admin: true, nav: false, extra: mgBaseHtml(v, Number(emp.netSalary) || 0) });
+            K.countAll(box);
+          } catch (err) { box.innerHTML = K.empty('alert', 'Nu am putut încărca', K.errText(err)); }
+        };
+        paint(true);
+        el.querySelector('[data-mg-close]').addEventListener('click', () => d.close());
+        box.addEventListener('click', async (e) => {
+          const nv = e.target.closest('[data-dm]');
+          if (nv) { S.month = K.addMonths(S.month, +nv.dataset.dm); box.innerHTML = '<div class="k-skel" style="height:260px"></div>'; paint(); return; }
+          const save = e.target.closest('[data-mg-final-save]'), clear = e.target.closest('[data-mg-final-clear]');
+          if (!save && !clear) return;
+          const f = box.querySelector('[data-mg-final]');
+          const lei = clear ? '' : f.lei.value;
+          if (save && (lei === '' || !(Number(lei) >= 0))) { K.ui().toast('Scrie bonusul final.', 'error'); f.lei.focus(); return; }
+          if (save && !(await K.ui().confirm({ title: 'Bonus final ' + K.lei(Number(lei)) + '?', message: 'Pentru ' + K.monthLabel(S.month) + '. Îl vede ca final și intră în salariul lunii.', confirmText: 'Confirmă' }))) return;
+          await K.busy(save || clear, async () => {
+            try {
+              await K.api('/api/portal-salariu', { action: 'final_set', employeeId: empId, month: S.month, lei });
+              K.ui().toast(clear ? 'Bonusul final a fost retras.' : 'Bonus final confirmat.', 'success');
+              await paint(true);
+              K.reload();
+            } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+          });
+        });
+      },
+    });
+  };
+
+  // =====================================================================================
+  // COSTURI LUNARE (the owner, Echipa → Costuri lunare): the month's lines, the profit, the manager's proposal
+  // =====================================================================================
+  const CO = { month: K.thisMonth(), data: null, box: null };
+  K.mountCosts = (box) => { CO.box = box; coLoad(); };
+  async function coLoad() {
+    const box = CO.box; if (!box) return;
+    const month = CO.month;
+    box.innerHTML = '<div class="k-skel" style="height:420px"></div>';
+    try {
+      const d = await K.api('/api/portal-salariu?view=costs&month=' + encodeURIComponent(month));
+      if (CO.month !== month) return;
+      CO.data = d; coPaint();
+    } catch (err) { box.innerHTML = K.empty('alert', 'Nu am putut încărca costurile', K.errText(err)); }
+  }
+  function coPaint(fill) {
+    const d = CO.data, box = CO.box; if (!d || !box) return;
+    const E = d.entry, isNow = d.current;
+    const val = (x) => (x == null ? '' : x);
+    const typed = Object.assign({}, E.lines, fill && fill.lines ? fill.lines : {});
+    const rate = fill && fill.eurRate != null ? fill.eurRate : E.eurRate;
+    const line = (l) => {
+      if (l.auto) {
+        const a = d.autos[l.key];
+        return '<div class="co-line is-auto"><div class="co-l"><b>' + esc(l.label) + '</b><small>' + (a != null ? 'din ' + l.auto + ': ' + K.lei(a) : l.key === 'ads' ? 'Meta nu poate fi citit acum, scrie suma' : '') + (l.key === 'ads' && !d.adsRead && a != null ? ' (salvat ' + esc(roDay(d.adsSavedAt)) + ')' : '') + '</small></div>' +
+          '<div class="k-money"><input name="over|' + l.key + '" type="number" inputmode="decimal" min="0" step="1" value="' + esc(val(E.over[l.key])) + '" placeholder="' + esc(a != null ? Math.round(a) : 'suma') + '"></div></div>';
+      }
+      return '<div class="co-line"><div class="co-l"><b>' + esc(l.label) + '</b>' + (l.eur ? '<small data-co-eur="' + l.key + '"></small>' : '') + '</div>' +
+        '<div class="k-money' + (l.eur ? ' is-eur' : '') + '"><input name="line|' + l.key + '" type="number" inputmode="decimal" min="0" step="1" value="' + esc(val(typed[l.key])) + '" placeholder="' + (l.kind === 'fixed' ? 'de completat' : '0') + '"></div></div>';
+    };
+    const P = E.proposal;
+    const prop = P && P.status === 'pending' ? '<div class="co-prop">' + icon('inbox') + '<div><b>' + esc(first(P.byName) || 'Managerul') + ' a trimis costurile lunii</b><span>' +
+        [P.consumables != null ? 'Consumabile ' + K.lei(P.consumables) : '', P.other != null ? 'Alte costuri ' + K.lei(P.other) : ''].filter(Boolean).join(' · ') + (P.note ? ' · „' + esc(P.note) + '”' : '') + '</span></div>' +
+        '<div class="co-prop-acts"><button type="button" class="k-btn is-sm is-good" data-co-prop="accept">' + icon('check') + 'Folosește</button><button type="button" class="k-btn is-sm is-ghost" data-co-prop="decline">Nu</button></div></div>' : '';
+    box.innerHTML =
+      '<div class="co-top"><div class="k-month"><button type="button" class="k-icon-btn" data-co-m="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + esc(K.monthLabel(d.month)) + '</b><button type="button" class="k-icon-btn" data-co-m="1" aria-label="Luna următoare"' + (isNow ? ' disabled' : '') + '>' + icon('right') + '</button></div>' +
+        '<span class="k-tag is-' + (E.savedAt ? 'good' : 'warn') + '">' + (E.savedAt ? 'salvat ' + esc(roDay(E.savedAt)) : 'nesalvat') + '</span>' +
+        (d.prev ? '<button type="button" class="k-btn is-outline is-sm" data-co-copy>' + icon('copy') + 'Copiază din ' + esc(K.monthLabel(d.prev.month).split(' ')[0]) + '</button>' : '') + '</div>' +
+      '<p class="k-muted co-lead">' + icon('shield') + 'Doar tu vezi sumele. Din ele iese profitul lunii și bonusul managerului (5%).</p>' +
+      '<div class="k-grid c4 co-sum" data-co-sum></div>' + prop +
+      '<form data-co-form class="co-form">' +
+        '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('receipt') + 'Costuri fixe</h3></div>' +
+          '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro al lunii</b><small>pentru chiriile în euro</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="lei pentru 1 €"></div></div>' +
+          d.lines.filter((l) => l.kind === 'fixed').map(line).join('') + '</section>' +
+        '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('sliders') + 'Costuri variabile</h3></div>' +
+          '<p class="k-muted co-note">Reclamele, comisioanele și orele vin singure; scrie o sumă doar ca să le schimbi.</p>' +
+          d.lines.filter((l) => l.kind === 'var').map(line).join('') + '</section>' +
+      '</form>' +
+      '<div class="co-save"><button type="button" class="k-btn is-accent" data-co-save>' + icon('check') + 'Salvează luna</button></div>';
+    coCalc();
+  }
+  // the sums as the owner types
+  function coRead() {
+    const f = CO.box.querySelector('[data-co-form]');
+    const num = (x) => { if (x == null || String(x).trim() === '') return null; const n = Number(String(x).replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : null; };
+    const out = { eurRate: num(f.eurRate.value), lines: {}, over: {} };
+    CO.data.lines.forEach((l) => { const i = f.elements[(l.auto ? 'over|' : 'line|') + l.key]; if (i) (l.auto ? out.over : out.lines)[l.key] = num(i.value); });
+    return out;
+  }
+  function coCalc() {
+    const d = CO.data, box = CO.box; if (!d || !box || !box.querySelector('[data-co-form]')) return;
+    const v = coRead();
+    let fixed = 0, variable = 0, missing = 0;
+    d.lines.forEach((l) => {
+      let lei;
+      if (l.auto) lei = v.over[l.key] != null ? v.over[l.key] : d.autos[l.key];
+      else if (l.eur) { const e = v.lines[l.key]; lei = e != null && v.eurRate ? e * v.eurRate : e === 0 ? 0 : null; const s = box.querySelector('[data-co-eur="' + l.key + '"]'); if (s) s.textContent = e != null ? (v.eurRate ? '€ × ' + v.eurRate + ' = ' + K.lei(lei) : 'în euro, scrie cursul') : 'în euro'; }
+      else lei = v.lines[l.key] != null ? v.lines[l.key] : l.kind === 'var' ? 0 : null;
+      if (lei == null) { missing++; return; }
+      if (l.kind === 'fixed') fixed += lei; else variable += lei;
+    });
+    const total = fixed + variable, profit = d.collections - total;
+    const st = (ic, label, value, sub, cls) => '<div class="k-stat' + (cls ? ' ' + cls : '') + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + label + '</div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
+    box.querySelector('[data-co-sum]').innerHTML =
+      st('wallet', 'Încasări', K.lei(d.collections), d.current ? 'până azi' : 'toată luna') +
+      st('receipt', 'Costuri', K.lei(total), missing ? K.plural(missing, 'linie lipsă', 'linii lipsă') : 'fixe ' + K.lei(fixed) + ' · variabile ' + K.lei(variable), missing ? 'is-warn' : '') +
+      st('trend', 'Profit', K.lei(profit), d.current ? 'dacă luna se închide azi' : 'luna întreagă', profit >= 0 ? 'is-good' : 'is-bad') +
+      st('trophy', 'Bonus manager', K.lei(Math.round(Math.max(0, profit) * 0.05)), '5% din profit, dacă e îndeplinită condiția', 'is-accent');
+  }
+  function coClick(e) {
+    if (!CO.box || !CO.box.contains(e.target)) return;
+    const mv = e.target.closest('[data-co-m]');
+    if (mv) { CO.month = K.addMonths(CO.month, +mv.dataset.coM); coLoad(); return; }
+    if (e.target.closest('[data-co-copy]')) {
+      const p = CO.data.prev, f = CO.box.querySelector('[data-co-form]');
+      if (p.eurRate != null) f.eurRate.value = p.eurRate;
+      CO.data.lines.filter((l) => l.kind === 'fixed').forEach((l) => { const i = f.elements['line|' + l.key]; if (i && p.lines[l.key] != null) i.value = p.lines[l.key]; });
+      coCalc();
+      K.ui().toast('Copiat din ' + K.monthLabel(p.month) + '. Verifică și salvează.', 'success');
+      return;
+    }
+    const pr = e.target.closest('[data-co-prop]');
+    if (pr) return K.busy(pr, async () => {
+      try { await K.api('/api/portal-salariu', { action: 'proposal_decide', month: CO.month, decision: pr.dataset.coProp }); K.ui().toast(pr.dataset.coProp === 'accept' ? 'Preluat în costurile lunii.' : 'Propunerea nu a fost preluată.', 'success'); MG.cache = {}; coLoad(); }
+      catch (err) { K.ui().toast(K.errText(err), 'error'); }
+    });
+    const sv = e.target.closest('[data-co-save]');
+    if (sv) return K.busy(sv, async () => {
+      const v = coRead();
+      const eurUsed = CO.data.lines.some((l) => l.eur && v.lines[l.key]);
+      if (eurUsed && !v.eurRate) { K.ui().toast('Scrie cursul euro al lunii.', 'error'); CO.box.querySelector('[name=eurRate]').focus(); return; }
+      try { await K.api('/api/portal-salariu', Object.assign({ action: 'costs_save', month: CO.month }, v)); K.ui().toast('Costurile lunii au fost salvate.', 'success'); MG.cache = {}; coLoad(); }
+      catch (err) { K.ui().toast(K.errText(err), 'error'); }
+    });
+  }
+  document.addEventListener('click', coClick);
+  document.addEventListener('input', (e) => { if (CO.box && CO.box.contains(e.target) && e.target.closest('[data-co-form]')) coCalc(); });
 
   K.section('comision', { mount: mountComision, show() { K.prefs.load().then(renderComision); }, data() { if (cpanel && K.isActive('comision')) renderComision(); } });
 })();
