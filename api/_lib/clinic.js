@@ -54,7 +54,8 @@ function fill(cfg, city, from, to, appts) {
 // ------------------------------------------------------------------ the numbers of a period, per clinic
 // money: collections attributed to who did the treatment (Încasări → „Cine a făcut tratamentul”); days worked: the days
 // she clocked in (Condică), or, when she never clocks in, the days she has collections (said so)
-function cosmeticians(emps, sales, attendance, city, from, to) {
+// appts (optional): also her consultations and how many ended with a package (the same 7-day rule), for the monthly 1:1
+function cosmeticians(emps, sales, attendance, city, from, to, appts) {
   return emps.filter((e) => e.role === 'cosmetician' && e.active !== false && e.location === city).map((e) => {
     const mine = sales.filter((s) => s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
     const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
@@ -66,21 +67,23 @@ function cosmeticians(emps, sales, attendance, city, from, to) {
     const days = punched.size + payOnly;
     const perDay = days ? Math.round(collected / days) : 0;
     return { id: e.id, name: e.name || '', days, punched: punched.size, payOnly, daysFrom: punched.size ? (payOnly ? 'mixt' : 'pontaj') : byPay.size ? 'incasari' : '',
-      collected, perDay, ok: days > 0 && perDay >= TARGET_PER_DAY, gap: days ? Math.max(0, TARGET_PER_DAY - perDay) : TARGET_PER_DAY };
+      collected, perDay, ok: days > 0 && perDay >= TARGET_PER_DAY, gap: days ? Math.max(0, TARGET_PER_DAY - perDay) : TARGET_PER_DAY,
+      ...(appts ? { consults: consultsWhere(appts, sales, from, to, (a) => a.cosmeticianId === e.id) } : {}) };
   });
 }
 
 // consultations that took place (not cancelled; today's only once finished, a later one today hasn't happened yet) and those followed, within 7 days, by a payment with a
 // package or an upsell for the same client (the data has no „consultation → package” link: this is the closest real one)
-function consults(appts, sales, city, from, to) {
+function consultsWhere(appts, sales, from, to, keep) {
   const today = B.roNow().date;
-  const list = appts.filter((a) => visit(a) && isConsult(a) && a.location === city && a.date >= from && a.date <= to && (a.date < today || a.status === 'finalizata'));
+  const list = appts.filter((a) => visit(a) && isConsult(a) && keep(a) && a.date >= from && a.date <= to && (a.date < today || a.status === 'finalizata'));
   const sold = sales.filter((s) => s.source === 'incasare' && (Number(s.upsell) > 0 || Number(s.packageTotal) > 0));
   const same = (a, s) => (a.clientId && s.clientId && a.clientId === s.clientId) || (!!a.clientPhone && d9(a.clientPhone).length === 9 && s.clientPhone && d9(s.clientPhone) === d9(a.clientPhone)) ||
     (!a.clientId && a.clientName && s.client && fold(a.clientName) === fold(s.client));
   const closed = list.filter((a) => sold.some((s) => same(a, s) && s.date >= a.date && s.date <= addDay(a.date, 7)));
   return { total: list.length, done: list.filter((a) => a.status === 'finalizata').length, withPackage: closed.length, pct: list.length ? Math.round((closed.length / list.length) * 100) : null };
 }
+const consults = (appts, sales, city, from, to) => consultsWhere(appts, sales, from, to, (a) => a.location === city);
 
 // new leads (from the ads and the site) and how fast a person reached them: the first call or note logged in the
 // Pipeline, a booking, or the first WhatsApp answer a person wrote (not the automatic ones)
@@ -195,4 +198,4 @@ function methods(sales) {
   return { cash: r2(cash), card: r2(card), transfer: r2(transfer), other: r2(other) };
 }
 
-module.exports = { normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };
+module.exports = { consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };

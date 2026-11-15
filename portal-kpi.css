@@ -279,3 +279,12 @@ html.ui-nou #panel-panou:has(.kq-today:not([hidden])) .db-today-meta{ display:no
   .kq-card :is(.kq-goals li, .kq-list li, .kq-ads-l li), .kq-todo .kq-al, .kq-tc{ opacity:1 !important; }
 }
 html.c360-reduce .kq *, html.c360-reduce .kq-today *, html.c360-reduce .kq-tc{ animation:none !important; }
+
+/* the Manager page's tab bar (its own name: .mg-bar is the pay bar of Salariu, portal-v2.css, 8px high, which made the tabs
+   spill over the month line at 1440) */
+.mg-hbar{ display:flex; gap:.6rem; align-items:center; justify-content:space-between; flex-wrap:wrap; margin:-.4rem 0 1rem; }
+@media (max-width:720px){
+  .mg-hbar{ flex-direction:column; align-items:stretch; }
+  .mg-hbar .k-seg{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; }
+  .mg-hbar .k-seg button{ justify-content:center; padding:.55rem .3rem; font-size:.78rem; }
+}

@@ -74,7 +74,7 @@ async function stats(month, mine) {
   const waiting = await waitingNow(D.convos);
   const cities = {};
   mine.forEach((city) => {
-    const team = cosmeticians(D.emps, D.sales, D.attendance, city, from, to);
+    const team = cosmeticians(D.emps, D.sales, D.attendance, city, from, to, D.appts);
     const counted = team.filter((x) => x.days > 0);
     cities[city] = {
       team,
@@ -280,7 +280,8 @@ module.exports = async (req, res) => {
 
     if (b.action === 'report_draft' || b.action === 'report_send') {
       const today = roNow().date;
-      const monday = isDay(b.week) ? mondayOf(b.week) : mondayOf(today);
+      // no week given: on a Monday the week that just ended (Monday to Sunday), else this week so far
+      const monday = isDay(b.week) ? mondayOf(b.week) : new Date(today + 'T12:00:00Z').getUTCDay() === 1 ? addDay(mondayOf(today), -7) : mondayOf(today);
       if (monday > today) return fail(400, 'invalid_week');
       const numbers = weekNumbers(await load(), monday, mine);
       if (b.action === 'report_draft') { res.status(200).json({ ok: true, week: monday, to: addDay(monday, 6), numbers }); return; }

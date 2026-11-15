@@ -58,7 +58,7 @@
         '<button type="button" class="k-btn is-outline" data-act="close">' + icon('cash') + 'Închide ziua</button>' +
         (admin() ? '' : '<button type="button" class="k-btn is-outline" data-act="report">' + icon('listCheck') + 'Raport săptămânal</button>') +
       '</div></div>' +
-      '<div class="mg-bar">' + K.seg('mgtab', [['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
+      '<div class="mg-hbar">' + K.seg('mgtab', [['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
       (CL().length > 1 ? K.seg('mgcity', [['all', CL().length === 2 ? 'Ambele' : 'Toate']].concat(CL().map((c) => [c, c])), S.city, 'mg-city') : '') + '</div>';
   }
   function paint() {
@@ -105,8 +105,10 @@
     const fillTone = (f) => (f.pct == null ? '' : f.pct >= t.fill ? 'is-good' : f.pct >= 100 ? 'is-warn' : 'is-bad');
     const bonus = x.bonus.counted ? (x.bonus.ok ? '<span class="k-tag is-good">' + icon('check') + 'Bonus pe drum bun</span>' : '<span class="k-tag is-warn">' + K.plural(x.bonus.below, 'cosmeticiană sub 1500', 'cosmeticiene sub 1500') + '</span>') : '<span class="k-tag">nicio zi lucrată încă</span>';
     const rows = team.length ? team.map((p) => '<div class="k-row mg-cos">' + K.avatar(p.name, 34) +
-      '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + '</div><div class="k-row-sub">' + (p.days ? K.plural(p.days, p.daysFrom === 'pontaj' ? 'zi pontată' : 'zi cu încasări', p.daysFrom === 'pontaj' ? 'zile pontate' : 'zile cu încasări') + ' · ' + K.lei(p.collected) : 'nicio zi lucrată luna asta') +
-        (p.daysFrom === 'incasari' ? ' · fără pontaj' : '') + '</div>' + bar(p.perDay, t.perDay, p.ok ? 'is-good' : 'is-warn') + '</div>' +
+      '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + '</div><div class="k-row-sub">' + (p.days ? K.plural(p.days, p.daysFrom === 'pontaj' ? 'zi pontată' : p.daysFrom === 'incasari' ? 'zi cu încasări' : 'zi lucrată', p.daysFrom === 'pontaj' ? 'zile pontate' : p.daysFrom === 'incasari' ? 'zile cu încasări' : 'zile lucrate') + (p.payOnly && p.daysFrom === 'mixt' ? ' (' + p.payOnly + ' fără pontaj)' : '') + ' · ' + K.lei(p.collected) : 'nicio zi lucrată luna asta') +
+        (p.daysFrom === 'incasari' ? ' · fără pontaj' : '') +
+        // her consultations this month and how many ended with a package within 7 days (for the monthly 1:1)
+        (p.consults && p.consults.total ? ' · ' + K.plural(p.consults.total, 'consultație', 'consultații') + ', ' + p.consults.withPackage + ' cu pachet' : '') + '</div>' + bar(p.perDay, t.perDay, p.ok ? 'is-good' : 'is-warn') + '</div>' +
       '<div class="k-row-end"><span class="mg-perday ' + (p.ok ? 'is-good' : p.days ? 'is-warn' : '') + '"><b>' + (p.days ? K.lei(p.perDay) : '-') + '</b><small>' + (p.days ? (p.ok ? 'pe zi' : 'lipsesc ' + K.lei(p.gap)) : '') + '</small></span></div></div>').join('')
       : '<p class="k-muted">Nicio cosmeticiană activă în ' + esc(city) + '.</p>';
     return '<section class="k-card mg-city-card"><div class="k-card-head"><h3>' + icon('pin') + esc(city) + '</h3>' + bonus + '</div>' +
