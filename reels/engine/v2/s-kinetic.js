@@ -83,7 +83,7 @@
       cur[li] = last;
       if (o.kem) el.querySelectorAll('.k').forEach((e) => { e.style.fontSize = o.kem + 'em'; });
       const wid = () => { const rg = document.createRange(); rg.selectNodeContents(el); return rg.getBoundingClientRect().width; };
-      let fs = parseFloat(el.style.fontSize); while (fs > 30 && wid() > (o.max || 800)) { fs -= 2; el.style.fontSize = fs + 'px'; }
+      let fs = parseFloat(el.style.fontSize); while (fs > 30 && wid() > (o.max || 756)) { fs -= 2; el.style.fontSize = fs + 'px'; }
       K.t0 = K.ws[0].t; K.out = o.out; kin.push(K);
       K.ws.forEach((w) => { if (!o.silent) cue(w.t + 0.04, w.mode === 'blur' ? 'tick_soft' : 'tick_soft', w.mode === 'blur' ? 0.5 : 0.28); ev(w.t + 0.04, w.mode === 'blur' ? 'reveal' : 'step'); });
       return K;
@@ -95,9 +95,9 @@
 
     // ================================================================ 0: „Poți slăbi peste tot, iar zonele astea rămân.”
     const s0 = ST[0];
-    const b0 = block(s0.el, 452, 'poți slăbi', { li: 0, size: 66, weight: 520 });
-    const pt = block(s0.el, 560, 'peste', { li: 0, size: 250, weight: 900, letters: true, mode: 'rise', css: 'letter-spacing:-.045em;line-height:1', at: -0.3 });
-    const pt2 = block(s0.el, 800, 'tot', { li: 0, size: 250, weight: 900, letters: true, mode: 'rise', css: 'letter-spacing:-.045em;line-height:1', at: -0.18 });
+    const b0 = block(s0.el, 405, 'poți slăbi', { li: 0, size: 66, weight: 520 });
+    const pt = block(s0.el, 520, 'peste', { li: 0, size: 250, weight: 900, letters: true, mode: 'rise', css: 'letter-spacing:-.045em;line-height:1', at: -0.3 });
+    const pt2 = block(s0.el, 885, 'tot', { li: 0, size: 250, weight: 900, letters: true, mode: 'rise', css: 'letter-spacing:-.045em;line-height:1', at: -0.18 });
     T.slab = wt(0, /^slăbi/, 0.35); T.tot = wt(0, /^tot/, 1.0); T.iar = wt(0, /^iar/, 1.3); T.ram = wt(0, /^rămân/, 1.9);
     // the drop: the bass comes back on a beat (the script puts the piece so that it lands on „rămân”)
     T.drop = S0.dropAt != null ? S0.dropAt : R.cam.beat(T.ram);
@@ -146,7 +146,7 @@
     const res2 = block(s2.el, 418, '*rezistentă*', { li: 2, size: 190 });
     block(s2.el, 660, 'la dietă și sport', { li: 2, size: 64, weight: 520 });
     T.mot = wt(2, /^motive/, 2.2); T.gen = wt(2, /^genetice/, 2.6); T.hor = wt(2, /^hormonale/, 3.2);
-    const hub = [540, 820], nodes2 = [[300, 1040, 'dna', 'genetice', T.gen], [780, 1040, 'activity', 'hormonale', T.hor]];
+    const hub = [540, 820], nodes2 = [[320, 1040, 'dna', 'genetice', T.gen], [760, 1040, 'activity', 'hormonale', T.hor]];
     const lines2 = svg(s2.el, 1080, 1920, nodes2.map(([x, y]) => '<path d="M' + hub[0] + ' ' + hub[1] + 'C' + hub[0] + ' ' + (hub[1] + 110) + ' ' + x + ' ' + (y - 170) + ' ' + x + ' ' + (y - 96) + '" fill="none" stroke="' + TEAL + '" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>').join('') +
       '<circle cx="' + hub[0] + '" cy="' + hub[1] + '" r="13" fill="' + TEAL + '"/>', 'left:0;top:0');
     const hubDot = lines2.querySelector('circle');
@@ -169,8 +169,8 @@
     // ================================================================ 3: „Așa că nu e vina ta că zona nu cedează.”
     const s3 = ST[3];
     block(s3.el, 520, 'așa că nu e', { li: 3, size: 70, weight: 520 });
-    const vina = block(s3.el, 610, '*vina* *ta*', { li: 3, size: 240 });
-    block(s3.el, 920, 'că zona nu cedează', { li: 3, size: 66, weight: 520, color: MUTE });
+    const vina = block(s3.el, 650, '*vina* *ta*', { li: 3, size: 240 });
+    block(s3.el, 970, 'că zona nu cedează', { li: 3, size: 66, weight: 520, color: MUTE });
     const glow3 = mk(s3.el, 'position:absolute;left:190px;top:560px;width:700px;height:420px;border-radius:50%;background:radial-gradient(ellipse,rgba(95,212,198,.32),rgba(95,212,198,0) 68%);opacity:0');
     s3.el.insertBefore(glow3, s3.el.firstChild);
     s3.ticks.push((t) => { const a = seg(t, vina.t0, vina.t0 + 0.9); glow3.style.opacity = (0.9 * sm(a)).toFixed(3); glow3.style.transform = 'scale(' + (0.8 + 0.2 * o3(a) + 0.02 * Math.sin(t * 1.3)).toFixed(4) + ')'; });
@@ -206,7 +206,7 @@
     const layerLine = (y) => mk(s5.el, 'position:absolute;left:170px;width:740px;top:' + y + 'px;height:3px;border-radius:2px;background:rgba(18,32,31,.12)');
     const piele = label(s5.el, 520, '<span class="lt">PIELE</span>', 'font:250 104px/1 ' + SANS + ';letter-spacing:.16em;color:#41504e;padding-left:.16em');
     const ln5a = layerLine(668);
-    const gras = label(s5.el, 706, [...'GRĂSIME'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:900 176px/1 ' + SANS + ';letter-spacing:-.03em;color:' + INK);
+    const gras = label(s5.el, 706, [...'GRĂSIME'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:900 164px/1 ' + SANS + ';letter-spacing:-.03em;color:' + INK);
     const ln5b = layerLine(928);
     const muschi = label(s5.el, 966, 'MUȘCHI', 'font:500 104px/1 ' + SANS + ';letter-spacing:.12em;color:#8a9795;padding-left:.12em');
     const sub5 = block(s5.el, 1200, 'trec prin piele, fără s-o afecteze', { li: 5, size: 52, weight: 560, color: MUTE });
@@ -240,7 +240,7 @@
     // ================================================================ 6: „Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină în săptămânile următoare.”
     const s6 = ST[6];
     block(s6.el, 380, 'celulele din zona tratată', { li: 6, size: 60, weight: 520 });
-    const gr6 = label(s6.el, 520, [...'grăsime'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:900 236px/1 ' + SANS + ';letter-spacing:-.045em;color:' + INK);
+    const gr6 = label(s6.el, 520, [...'grăsime'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:900 198px/1 ' + SANS + ';letter-spacing:-.045em;color:' + INK);
     const lts6 = [...gr6.querySelectorAll('.lt')];
     block(s6.el, 800, 'sunt *distruse*', { li: 6, size: 70, weight: 520, kem: 2.3 });
     block(s6.el, 1140, 'corpul le elimină', { li: 6, size: 64, weight: 560 });
@@ -257,9 +257,9 @@
 
     // ================================================================ 7: „Cele distruse nu mai revin. Doar cele rămase se pot mări, dacă iei în greutate.”
     const s7 = ST[7];
-    const gr7 = label(s7.el, 440, [...'grăsime'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:100 236px/1 ' + SANS + ';letter-spacing:-.045em;color:' + INK);
+    const gr7 = label(s7.el, 440, [...'grăsime'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:100 198px/1 ' + SANS + ';letter-spacing:-.045em;color:' + INK);
     const lts7 = [...gr7.querySelectorAll('.lt')];
-    const ghost7 = label(s7.el, 440, 'grăsime', 'font:900 236px/1 ' + SANS + ';letter-spacing:-.045em;color:' + TEAL + ';opacity:0');
+    const ghost7 = label(s7.el, 440, 'grăsime', 'font:900 198px/1 ' + SANS + ';letter-spacing:-.045em;color:' + TEAL + ';opacity:0');
     ghost7.classList.remove('tx'); ghost7.style.position = 'absolute'; ghost7.style.left = '0'; ghost7.style.width = '1080px'; ghost7.style.textAlign = 'center';
     block(s7.el, 730, 'nu mai *revin*', { li: 7, size: 76, weight: 560, kem: 2.2 });
     block(s7.el, 1060, 'cele rămase se pot mări', { li: 7, size: 62, weight: 560 });
@@ -278,8 +278,8 @@
     block(s8.el, 470, 'în general', { li: 8, size: 50, weight: 520, color: MUTE });
     T.sase = wt(8, /^șase/, 1.3); T.opt = wt(8, /^opt/, 1.8); T.sapt = wt(8, /^săptămâni/, 2.1);
     const num8 = label(s8.el, 580, '6-8', 'font:900 300px/1 ' + SANS + ';letter-spacing:-.05em;color:' + INK + ';opacity:0');
-    block(s8.el, 890, '*săptămâni*', { li: 8, size: 140 });
-    const TL = { x0: 190, x1: 890, y: 1180 }, tl = mk(s8.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px');
+    block(s8.el, 950, '*săptămâni*', { li: 8, size: 140 });
+    const TL = { x0: 190, x1: 890, y: 1240 }, tl = mk(s8.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px');
     const base8 = mk(tl, 'position:absolute;left:' + TL.x0 + 'px;top:' + TL.y + 'px;width:' + (TL.x1 - TL.x0) + 'px;height:4px;border-radius:2px;background:rgba(18,32,31,.16);transform-origin:0 50%');
     const seg8 = mk(tl, 'position:absolute;top:' + (TL.y - 7) + 'px;height:18px;border-radius:9px;background:' + TEAL + ';transform-origin:0 50%');
     const xs = (k) => lerp(TL.x0 + 20, TL.x1 - 20, (k - 1) / 7);
@@ -298,10 +298,10 @@
     block(s9.el, 400, 'trimite-l prietenei', { li: 9, size: 70, weight: 600 });
     block(s9.el, 490, 'care crede că e doar', { li: 9, size: 60, weight: 520, color: MUTE });
     block(s9.el, 640, 'lipsă de', { li: 9, size: 96, weight: 600 });
-    const voi = block(s9.el, 760, '*voință*', { li: 9, size: 250, weight: 900, letters: true, plainKey: true, css: 'letter-spacing:-.045em;line-height:1' });
+    const voi = block(s9.el, 800, '*voință*', { li: 9, size: 250, weight: 900, letters: true, plainKey: true, css: 'letter-spacing:-.045em;line-height:1' });
     T.voi = wt(9, /^voință/, 2.6); T.strike = Math.max(T.voi + 0.5, lineEnd(9) + 0.05);
-    const strike = svg(s9.el, 820, 120, '<path d="M14 78C220 58 520 48 806 30" fill="none" stroke="' + TEAL + '" stroke-width="16" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:130px;top:812px');
-    const ans9 = label(s9.el, 1120, 'motive <span style="font:italic 440 1.25em ' + SERIF + ';color:' + DEEP + '">genetice</span> și <span style="font:italic 440 1.25em ' + SERIF + ';color:' + DEEP + '">hormonale</span>', 'font:600 58px/1.2 ' + SANS + ';letter-spacing:-.02em;color:' + INK + ';opacity:0');
+    const strike = svg(s9.el, 820, 120, '<path d="M14 78C220 58 520 48 806 30" fill="none" stroke="' + TEAL + '" stroke-width="16" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:130px;top:852px');
+    const ans9 = label(s9.el, 1160, 'motive <span style="font:italic 440 1.25em ' + SERIF + ';color:' + DEEP + '">genetice</span> și <span style="font:italic 440 1.25em ' + SERIF + ';color:' + DEEP + '">hormonale</span>', 'font:600 50px/1.2 ' + SANS + ';letter-spacing:-.02em;color:' + INK + ';opacity:0');
     shots[9].resolveAt = T.strike + 0.15;
     cue(T.strike, 'whoosh_cut', 0.35, { peak: true }); ev(T.strike, 'reveal'); cue(T.strike + 0.55, 'tick_soft', 0.45); ev(T.strike + 0.55, 'step');
     s9.ticks.push((t) => {
@@ -339,8 +339,9 @@
           if (p >= 1) op = 0; }
       } else st.o.style.transformOrigin = '540px 960px';
       st.o.style.transform = tr; st.o.style.opacity = op.toFixed(3);
-      if (dir && Math.hypot(dir[0], dir[1]) > 1.5) { defs[i].setAttribute('stdDeviation', Math.min(70, Math.abs(dir[0])).toFixed(1) + ' ' + Math.min(70, Math.abs(dir[1])).toFixed(1)); st.o.style.filter = 'url(#kn-mb' + i + ')'; }
-      else st.o.style.filter = bl > 0.3 ? 'blur(' + bl.toFixed(2) + 'px)' : '';
+      const moving = tr.trim() !== '';
+      if (dir && Math.hypot(dir[0], dir[1]) > 1.5) { defs[i].setAttribute('stdDeviation', Math.min(70, Math.abs(dir[0])).toFixed(1) + ' ' + Math.min(70, Math.abs(dir[1])).toFixed(1)); st.o.style.filter = 'url(#kn-mb' + i + ') blur(0px)'; }
+      else st.o.style.filter = bl > 0.3 ? 'blur(' + bl.toFixed(2) + 'px)' : moving ? 'blur(0px)' : '';
       return op > 0.002;
     }
     // the flash through the light into the focus (the reel's one zoom through light; its sound is the loudest of the reel)

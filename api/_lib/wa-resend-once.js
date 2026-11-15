@@ -54,11 +54,11 @@ async function todo() {
   return { list: out, skipped, ctxBase: { leads, appointments: appts, clients }, settings: Object.assign({}, doc.settings, { _wa: { tpls, cfg } }) };
 }
 
-async function sendOne(item, base, settings) {
+async function sendOne(item, base, settings, tag) {
   const a = item.appt;
   const ctx = Object.assign({}, base, { appointment: a, lead: a.leadId ? base.leads.find((l) => l.id === a.leadId) || null : null });
   const v = WF.vars(ctx, settings);
-  return WF.sendOnce('resend-1511|' + item.msg.id, () => WF.sendTemplate(settings._wa, item.tpl.id, CITY, item.phone, v, { appt: a.id, akey: WF.apptKey(a) }));
+  return WF.sendOnce('resend-1511|' + (tag || '') + item.msg.id, () => WF.sendTemplate(settings._wa, item.tpl.id, CITY, item.phone, v, { appt: a.id, akey: WF.apptKey(a) }));
 }
 
 async function tell(title, text) {
@@ -75,6 +75,13 @@ const START = '2026-11-15T12:35:00Z';
 async function run() {
   const st = await readJSON(KEY, {});
   if (Date.now() < Date.parse(START)) return { wait: true };
+  // the payment still refused (the owner, 15.11: „am făcut plata, n-are cum să nu meargă”; Meta can take a while to
+  // lift the hold): a new probe every hour, at most 12 tries; the admins hear only the first refusal and the success
+  if (st.phase === 'stopped' && st.why === 'plata tot nu merge' && (st.tries || 1) < 12 && Date.now() - Date.parse(st.at) > 55 * 60e3) {
+    const tries = (st.tries || 1) + 1;
+    Object.keys(st).forEach((k) => delete st[k]);
+    st.tries = tries;
+  }
   if (st.phase === 'done' || st.phase === 'stopped') return { skipped: true };
   // the probe: is the payment fixed?
   if (st.phase === 'probe') {
@@ -85,7 +92,7 @@ async function run() {
     if (m && m.status === 'failed') {
       if (paid(m)) {
         await writeJSON(KEY, Object.assign(st, { phase: 'stopped', at: nowISO(), why: 'plata tot nu merge' }));
-        await tell('WhatsApp Timișoara: plata tot nu merge', 'Am retrimis un mesaj de probă și Meta l-a refuzat din nou pentru plată. Restul nu le mai trimit până nu se rezolvă plata contului WhatsApp.');
+        if (!(st.tries > 1)) await tell('WhatsApp Timișoara: plata tot nu merge', 'Am retrimis un mesaj de probă și Meta l-a refuzat din nou pentru plată. Restul nu le mai trimit până nu se rezolvă plata contului WhatsApp.');
         return { stopped: true };
       }
     } else if (!(m && (m.status === 'delivered' || m.status === 'read')) && age < 10 * 60e3) return { wait: true };
@@ -94,13 +101,13 @@ async function run() {
   const { list, skipped, ctxBase, settings } = await todo();
   if (!st.phase) {
     if (!list.length) { await writeJSON(KEY, { phase: 'done', at: nowISO(), sent: 0, skipped }); return { done: true, sent: 0 }; }
-    const r = await sendOne(list[0], ctxBase, settings);
+    const r = await sendOne(list[0], ctxBase, settings, st.tries ? 't' + st.tries + '|' : '');
     // the id Meta gave it is on the message logSent just wrote (the newest one of that template for that appointment)
     const convos = await readJSON(CONVOS, []);
     const c = (convos || []).find((x) => x.phone === list[0].phone);
     const mine = c && (c.messages || []).filter((x) => x.direction === 'out' && x.templateId === list[0].tpl.id && x.appt === list[0].appt.id && x.status !== 'failed').pop();
-    if (!r.sent || !mine) { await writeJSON(KEY, { phase: 'stopped', at: nowISO(), why: r.why || 'proba nu a plecat', skipped }); return { stopped: true, why: r.why }; }
-    await writeJSON(KEY, { phase: 'probe', probe: { id: mine.id, at: nowISO() }, sent: 1, total: list.length, skipped, at: nowISO() });
+    if (!r.sent || !mine) { await writeJSON(KEY, { phase: 'stopped', at: nowISO(), why: r.why || 'proba nu a plecat', skipped, tries: st.tries }); return { stopped: true, why: r.why }; }
+    await writeJSON(KEY, { phase: 'probe', probe: { id: mine.id, at: nowISO() }, sent: 1, total: list.length, skipped, at: nowISO(), tries: st.tries || 1 });
     return { probe: true, total: list.length };
   }
   // the rest (the probe left the list: it reached her)
