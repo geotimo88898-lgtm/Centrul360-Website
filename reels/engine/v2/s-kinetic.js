@@ -101,9 +101,9 @@
     T.slab = wt(0, /^slăbi/, 0.35); T.tot = wt(0, /^tot/, 1.0); T.iar = wt(0, /^iar/, 1.3); T.ram = wt(0, /^rămân/, 1.9);
     // the drop: the bass comes back on a beat (the script puts the piece so that it lands on „rămân”)
     T.drop = S0.dropAt != null ? S0.dropAt : R.cam.beat(T.ram);
-    const b0b = block(s0.el, 1110, 'iar zonele astea', { li: 0, size: 66, weight: 520, q: 1 });
+    const b0b = block(s0.el, 1190, 'iar zonele astea', { li: 0, size: 66, weight: 520, q: 1 });
     const ram = block(s0.el, 760, '*rămân*', { li: 0, size: 290, weight: 900, letters: true, plainKey: true, css: 'letter-spacing:-.05em;line-height:1', q: 1, at: T.drop, silent: true });
-    b0.out = T.drop - 0.14; pt.out = pt2.out = T.drop - 0.12; b0b.out = S[1] - 0.06;
+    b0.out = T.drop - 0.2; pt.out = pt2.out = T.drop - 0.22; b0b.out = S[1] - 0.06;
     const band0 = mk(s0.el, 'position:absolute;left:0;top:740px;width:220px;height:360px;background:linear-gradient(90deg,rgba(95,212,198,0),rgba(95,212,198,.42),rgba(95,212,198,0));mix-blend-mode:multiply;filter:blur(6px);opacity:0');
     T.wave0 = T.slab + 0.05; T.wave1 = T.tot + 0.42;
     cue(0, 'impact', 0.32, { prio: 4 }); cue(0.02, 'tick_soft', 0.4); ev(0.05, 'step');
@@ -121,9 +121,9 @@
       const push = t > T.res + 0.25 ? Math.exp(-6 * (t - T.res - 0.25)) * Math.sin(16 * (t - T.res - 0.25)) : 0;
       weightOf(ram.ws[0].lts, (k, m) => { const cx = lerp(120, 760, io(wv)) + 110, lx = 540 + (k - (m - 1) / 2) * 150, near = Math.exp(-Math.pow((lx - cx) / 120, 2)) * Math.sin(Math.PI * wv); return 900 - 120 * near; });
       // „iar zonele astea” rises above „rămân” on the drop; on the next line „rămân” goes up and becomes the heading of the zones
-      const up = ex(seg(t, T.drop - 0.06, T.drop + 0.3)); b0b.el.style.transform = 'translateY(' + (-500 * up).toFixed(2) + 'px)';
+      const up = ex(seg(t, T.drop - 0.06, T.drop + 0.3)); b0b.el.style.transform = 'translateY(' + (-580 * up).toFixed(2) + 'px)';
       const hd = R.cam.ease(t, S[1], 0.62); ram.el.style.transformOrigin = '540px 145px';
-      ram.el.style.transform = 'translate(' + (push * 9).toFixed(2) + 'px,' + (-585 * hd).toFixed(2) + 'px) scale(' + (1 - 0.54 * hd).toFixed(4) + ')';
+      ram.el.style.transform = 'translate(' + (push * 9).toFixed(2) + 'px,' + (-560 * hd).toFixed(2) + 'px) scale(' + (1 - 0.54 * hd).toFixed(4) + ')';
     });
 
     // ================================================================ 1: „Vorbesc de abdomenul de jos, de colăcei, de interiorul coapselor.”
@@ -354,7 +354,7 @@
       if (t === lastT) return; lastT = t;
       // the punch-in on the drop: a quick push, a short tremor, a clean stop
       const pd = t - T.drop, punch = pd > 0 ? Math.exp(-5.5 * pd) : 0, trem = pd > 0 && pd < 0.35 ? Math.sin(pd * 95) * 7 * (1 - pd / 0.35) : 0;
-      cam.style.transform = 'translate(' + trem.toFixed(2) + 'px,' + (60 + trem * -0.5).toFixed(2) + 'px) scale(' + (1 + 0.075 * punch).toFixed(4) + ')';
+      cam.style.transform = 'translate(' + trem.toFixed(2) + 'px,' + (150 + trem * -0.5).toFixed(2) + 'px) scale(' + (1 + 0.075 * punch).toFixed(4) + ')';
       flashEl.style.opacity = (R.cam.flash(t, S[6]) * 0.96).toFixed(3);
       rings.forEach((q) => { q.r.style.transform = 'translate(' + (Math.sin(t * 0.21 + q.k * 2) * 26).toFixed(1) + 'px,' + (Math.cos(t * 0.17 + q.k) * 22).toFixed(1) + 'px)'; });
       for (let i = 0; i < N; i++) {
