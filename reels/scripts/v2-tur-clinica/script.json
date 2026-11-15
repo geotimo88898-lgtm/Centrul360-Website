@@ -70,18 +70,18 @@
   }
  },
  "musicFile": "owner-toomuch",
- "musicStart": 110.1457,
+ "musicStart": 109.8904,
  "beat": {
-  "bpm": 127.7
+  "bpm": 128.0
  },
- "musicNote": "„Too Much For Me”, a doua pauză fără bas și drop-ul ei: 110,15-127,6 s din piesă. Măsurat pe fișier (banda 30-110 Hz, la 2 ms, începutul fiecărei lovituri de bas): drop-ul la 112,979 s, apoi o lovitură la fiecare 0,46984 s (127,7 BPM; 112,976, 113,440, 113,908, … 118,188), toba tace patru bătăi (118,65-120,0 s) și revine la 120,484 s. musicStart 110,1457 pune drop-ul pe cadrul 85 (2,833 s); bătaia k e la 2,8333 + k × 0,46984 s (k = -6 … 31). Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "musicNote": "„Too Much For Me”, a doua pauză fără bas și drop-ul ei: 109,89-127,3 s din piesă. Măsurat pe fișier (banda 30-110 Hz, la 2 ms, începutul fiecărei lovituri de bas, eșantioanele citite exact ca în mix.py): drop-ul la 112,724 s, apoi o lovitură la fiecare 0,46874 s (128,0 BPM, cum dă și beats.py; 112,720, 113,183, 113,650, … 117,920), toba tace patru bătăi (118,4-119,8 s) și revine la 120,211 s. musicStart 109,8904 pune drop-ul pe cadrul 85 (2,833 s); bătaia k e la 2,8333 + k × 0,46874 s (k = -6 … 31). Atenție: o primă măsurătoare a mea avea pasul ferestrei rotunjit (220 de eșantioane în loc de 220,5) și dădea totul cu 0,26 s mai târziu și 127,7 BPM; „129,2 BPM” din README pentru piesa asta pare și el o măsurătoare greșită (beats.py dă 128,0). Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
  "hook": {
   "say": "POV: prima ta consultație.",
   "visual": {
    "type": "tur",
    "cam": "none",
    "b0": 2.8333,
-   "per": 0.46984,
+   "per": 0.46874,
    "shots": {
     "hook": {
      "img": "g-ar-2",
@@ -90,10 +90,11 @@
       900
      ],
      "lv": [
-      0.16,
-      0.81,
-      0.9
-     ]
+      0.08,
+      0.55,
+      0.95
+     ],
+     "sat": 0.75
     },
     "rec": {
      "img": "g-tm-1",
@@ -105,7 +106,8 @@
       0.07,
       0.53,
       0.86
-     ]
+     ],
+     "sat": 0.35
     },
     "chairs": {
      "img": "g-ar-9",
@@ -117,7 +119,8 @@
       0.05,
       0.71,
       0.9
-     ]
+     ],
+     "sat": 0.9
     },
     "room": {
      "img": "g-tm-sala",
@@ -239,6 +242,6 @@
  },
  "end": {
   "type": "save",
-  "hold": 15.704
+  "hold": 15.668
  }
 }
