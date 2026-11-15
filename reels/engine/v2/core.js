@@ -405,6 +405,30 @@
   // staggered entrances on the music's grid (14.11, the editing reference): R.grid(t) snaps a time to the nearest
   // quarter beat (or 1/div), when the reel has a beat; templates use it for the order of panels, cards, chips
   R.grid = (t, div = 4) => { const per = R.beatPer; if (!per) return t; const q = per / div; return Math.round(t / q) * q; };
+  // the camera (15.11, the owner's reference for zooms: one still drawing shot with a pull back, a dolly zoom, a crane
+  // up and a push through light). Measured there, frame by frame: a move STARTS on a beat (with a streak of light and
+  // the loudest sound of that bar), covers most of its way in the first third (fastest in frames 3-6), glides to a
+  // full stop in 0.5-0.8 s, then the picture HOLDS for the rest of the bar (about three beats) while only small things
+  // live in it; the layers move by their depth, never as one flat picture.
+  //   R.cam.ease(t, t0, dur)  0 … 1: two frames to pick up speed, most of the way in the first third, a long glide to the stop
+  //   R.cam.beat(t)           the beat a move should start on
+  //   R.cam.layer(c, o)       { s, x, y } for a layer at depth o (0 the subject, 3-5 far behind, -0.3 in front) seen by
+  //                           the camera c = { x, y, d, f }: position on the subject's plane (px), distance and lens,
+  //                           both 1 at rest. Pull back: d up. Push in: d down. Crane: y. Dolly zoom: R.cam.dolly(d)
+  //                           (the subject keeps its size, what is behind it grows)
+  //   R.cam.mix(a, b, p)      between two cameras
+  //   R.cam.css(c, o)         the same as a CSS transform
+  //   R.cam.flash(t, tc)      0 … 1, the light a zoom passes through: two frames up to white ON the cut, gone in ~0.25 s;
+  //                           the new, closer picture is already there under it
+  R.cam = {
+    ease: (t, t0, dur = 0.6) => { const p = clamp((t - t0) / dur); return p >= 1 ? 1 : (1 - Math.pow(2, -10 * Math.pow(p, 1.5))) / (1 - Math.pow(2, -10)); },
+    beat: (t) => R.grid(t, 1),
+    layer: (c, o = 0) => { const d = c.d == null ? 1 : c.d, f = c.f == null ? 1 : c.f, q = f / Math.max(0.05, d + o); return { s: q * (1 + o), x: -(c.x || 0) * q, y: -(c.y || 0) * q }; },
+    dolly: (d) => ({ d, f: d }),
+    mix: (a, b, p) => { const g = (k, z) => { const u = a[k] == null ? z : a[k], v = b[k] == null ? z : b[k]; return u + (v - u) * p; }; return { x: g('x', 0), y: g('y', 0), d: g('d', 1), f: g('f', 1) }; },
+    css: (c, o = 0) => { const l = R.cam.layer(c, o); return 'translate(' + l.x.toFixed(2) + 'px,' + l.y.toFixed(2) + 'px) scale(' + l.s.toFixed(4) + ')'; },
+    flash: (t, tc) => (t < tc - 0.07 ? 0 : t < tc ? Math.pow((t - tc + 0.07) / 0.07, 2) : Math.exp(-(t - tc) / 0.09)),
+  };
   R.seek = window.seek = seek;
   window.addEventListener('load', () => { boot().catch((e) => { window.bootError = String(e && e.stack || e); console.error(e); }); });
 })();

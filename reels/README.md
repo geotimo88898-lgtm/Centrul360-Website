@@ -617,6 +617,39 @@ le-a aprobat proprietarul):
   `sfx.py`. Deocamdată descărcările de la Freesound (aproape toate efectele din Openverse) sunt refuzate de CDN-ul lor
   pe mașina asta, așa că rămân sunetele sintetizate.
 
+### Camera (zoom-urile, din 15.11; referința proprietarului: instagram.com/reel/Dfuh4vxo-kz, „și zoom-urile astea sunt importante”)
+Referința ia un singur desen și îl arată de două ori, unul sub altul: sus fără cameră, jos cu cameră („Great drawing.”
+/ „Great camera.” / „Now watch the camera.”). Apoi trece pe tot ecranul și face trei mișcări numite, fiecare cu rostul
+ei: **pull back** (dezvăluie ce e în jur), **dolly zoom** (subiectul rămâne la fel, lumea din spatele lui crește),
+**crane up** (urcă de-a lungul subiectului până la detaliul care contează) și la final un **zoom prin lumină** pe acel
+detaliu, din care apare cifra. Ce am măsurat cadru cu cadru și ținem ca regulă:
+- **Pornește pe bătaie.** Fiecare mișcare începe exact pe o bătaie de bas (129 BPM acolo, o mișcare la patru bătăi), cu
+  o dâră de lumină de 2-4 cadre și cu cel mai puternic sunet al măsurii. Fără bătaie, nu pornește.
+- **Repede la început, lin la sfârșit.** Două cadre de pornire, cea mai mare viteză în cadrele 3-6, apoi alunecă până
+  la oprire; toată mișcarea ține 0,5-0,8 s (urcarea lungă 1,2 s). Niciodată zoom liniar și niciodată zoom lent continuu
+  pe post de mișcare principală (`R.cam.ease`).
+- **Apoi stă.** După oprire cadrul rămâne nemișcat restul măsurii (cam trei bătăi). Viața vine din lucruri mici din
+  imagine (o lumină care se rotește, apa, un contor), nu din cameră. Textul mișcării intră în timpul ei, rând cu rând,
+  și se citește în pauză.
+- **Straturile se mișcă după adâncime.** Ce e departe se mișcă puțin, ce e aproape se mișcă mult; la dolly zoom subiectul
+  nu își schimbă mărimea, iar fundalul crește (`R.cam.layer`, `R.cam.dolly`). O poză plată mărită nu e mișcare de cameră.
+- **Fiecare zoom are o țintă.** Camera pleacă de la ansamblu și ajunge pe detaliul despre care urmează să vorbim; colțuri
+  de vizor se strâng pe el cu o clipă înainte. După ce aterizează, imaginea se întunecă ușor și vine mesajul (cifra,
+  cuvântul-cheie) exact acolo unde a rămas privirea.
+- **Zoom prin lumină la momentul cel mai important.** Două cadre până la alb pe bătaie, iar cadrul apropiat e deja sub
+  lumină, cu textul în el; lumina se stinge în ~0,25 s (`R.cam.flash`). E cel mai tare sunet din tot reelul. O singură
+  dată pe reel.
+- **Lumina se schimbă odată cu mișcarea** (subiectul trece din siluetă în lumină pe urcare), ca fiecare oprire să arate
+  altfel decât cea dinainte.
+- **Bucla.** Finalul se întoarce la cadrul de început (cele două variante, una sub alta), cu chemarea la comentariu pe
+  el, așa că reelul se leagă singur de la capăt.
+
+La noi: mișcările se fac pe materialul nostru real (o poză din clinică, un caz înainte/după, aparatul, o pagină de pe
+site), tăiat în straturi sau așezat în 3D; fără etichetele de film ale referinței („REC”, numele mișcărilor), care sunt
+tema lor, nu a noastră. Sunetul unei mișcări: `whoosh_cut` cu vârful pe pornire și `hit_deep` pe aceeași bătaie; la
+zoom-ul prin lumină, `hit_deep` plus `shimmer_soft`. Ca orice referință, e o unealtă din bibliotecă: o folosim unde
+servește mesajul (o dezvăluire, un detaliu, o cifră), nu în fiecare reel.
+
 ### Sunetul
 `sfx.py` sintetizează biblioteca (numpy/scipy, fără mostre): whoosh scurt/lung/invers, swoosh sus/jos, aparat foto,
 click, taste, pop, bulă, tic, riser, impact, boom, sub drop, shimmer, sparkle, glitch, hârtie, snap magnetic, chime,

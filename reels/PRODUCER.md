@@ -198,6 +198,12 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    loc, nici un rând ținut (alunecă încet, cu lumina care trece). Textul se citește pe telefon: rândurile care contează
    de la 58 px în sus, nimic sub ~33 px.
    Detaliile: README, „Montajul”.
+5c. **Camera** (15.11, referința proprietarului pentru zoom-uri; pe larg în `README.md`, „Camera”): o mișcare de cameră
+   pornește pe o bătaie, cu o dâră de lumină și cu sunetul ei (`whoosh_cut` + `hit_deep`), face cea mai mare parte din
+   drum în prima treime și alunecă până la oprire în 0,5-0,8 s (`R.cam.ease`), apoi cadrul stă restul măsurii. Straturile
+   se mișcă după adâncime (`R.cam.layer`; la dolly zoom subiectul rămâne la fel și fundalul crește, `R.cam.dolly`).
+   Fiecare zoom are o țintă: detaliul despre care vorbim imediat după. Cel mult un zoom prin lumină pe reel
+   (`R.cam.flash`), la momentul cel mai important. Fără zoom liniar, fără zoom lent continuu, fără poză plată mărită.
 6. **Tema și varietatea** (14.11): doar `brand-light` (alb cu turcoaz) sau `brand-teal` (turcoaz cu alb), alternate
    (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
    fel niciunul”, de la un reel la altul schimbi: cârligul (particule, privirea la poza reală, contorul, o întrebare
