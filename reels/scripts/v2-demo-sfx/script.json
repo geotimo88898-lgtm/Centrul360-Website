@@ -2,61 +2,26 @@
  "v": 2,
  "id": "v2-demo-sfx",
  "kind": "demo",
- "note": "Un clip demonstrativ de 6-8 s pentru sincronizarea sunetului cu imaginea (stratul de sunet v3, punctul-ghid, grila pe bătăi, finalul ținut). Nu se postează.",
- "theme": "brand-teal",
+ "rubric": "Demonstrație",
+ "theme": "brand-light",
  "sound": "v3",
- "motif": "dot",
+ "hookHit": false,
  "captions": false,
- "musicFile": "owner-free",
- "musicStart": 0.395,
+ "note": "Piesa de demonstrație (nu se postează): o singură scenă 3D continuă, fără voce. Rândul de început, zborul prin litera „a”, patru cărți 3D (pașii de pe site, „Cum decurge”), titlul și cartea cu poza reală.",
+ "sources": "v2/src/grasime-localizata.html, „Cum decurge”: Prima vizită: Analiza și planul; Ședința 1: Primul tratament; Săptămânile 2-8: Corpul lucrează; La 6-8 săptămâni: Diferența se vede. Pozele: brand_asset/g-tm-aparate.webp (Timișoara), loc-timisoara-receptie.webp (Timișoara).",
+ "musicFile": "owner-trainingseason",
+ "musicStart": 10.17,
  "beat": {
-  "bpm": 125.01
+  "bpm": 123.01
  },
- "transitions": [
-  "push",
-  "morph-key"
- ],
  "hook": {
-  "say": "Fiecare rezultat începe cu un pas.",
+  "say": "Pas cu pas.",
   "visual": {
-   "type": "writeon",
-   "grid": true
+   "type": "showpiece"
   }
  },
- "beats": [
-  {
-   "say": "Corp. Față. Piele. Grijă.",
-   "visual": {
-    "type": "panels",
-    "words": [
-     "Corp",
-     "Față",
-     "Piele",
-     "Grijă"
-    ]
-   },
-   "pause": 0.4
-  }
- ],
- "payoff": [
-  {
-   "say": "Pas cu pas.",
-   "visual": {
-    "type": "titlecard",
-    "title": "Pas cu pas",
-    "accent": "cu grijă",
-    "stack": [
-     "Timișoara",
-     "Arad",
-     "centrul360.com"
-    ],
-    "img": "brand_asset/catalog/cazul-05-liposonix-solduri.webp"
-   }
-  }
- ],
- "resolve": [],
  "end": {
   "type": "save",
-  "hold": 2.6
+  "hold": 8.4
  }
 }

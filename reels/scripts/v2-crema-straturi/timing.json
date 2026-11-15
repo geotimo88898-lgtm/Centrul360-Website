@@ -1,68 +1,68 @@
 {
 "_mode": "continuous",
-"_tempo": 1.006,
-"_wpm_take": 189,
+"_tempo": 1.05,
+"_wpm_take": 207,
 "L0": {
 "text": "Crema ta de față lucrează doar la suprafață.",
-"dur": 2.43,
-"speech": 2.19,
-"file": "voice/cont-948f8e09522c6e3f-L0.wav",
+"dur": 2.54,
+"speech": 2.28,
+"file": "voice/cont-eb211ec851fe9659-L0.wav",
 "role": "hook"
 },
 "L1": {
 "text": "Fermitatea pielii se hotărăște mai jos, în straturile profunde.",
-"dur": 3.6,
-"speech": 3.35,
-"file": "voice/cont-948f8e09522c6e3f-L1.wav",
+"dur": 3.36,
+"speech": 3.12,
+"file": "voice/cont-eb211ec851fe9659-L1.wav",
 "role": "beat"
 },
 "L2": {
 "text": "Cu vârsta, pielea produce tot mai puțin colagen și elastină, așa că fermitatea scade.",
-"dur": 4.95,
-"speech": 4.71,
-"file": "voice/cont-948f8e09522c6e3f-L2.wav",
+"dur": 4.21,
+"speech": 3.97,
+"file": "voice/cont-eb211ec851fe9659-L2.wav",
 "role": "beat"
 },
 "L3": {
 "text": "Există totuși o cale de a ajunge chiar acolo.",
-"dur": 2.63,
-"speech": 2.31,
-"file": "voice/cont-948f8e09522c6e3f-L3.wav",
+"dur": 2.41,
+"speech": 2.17,
+"file": "voice/cont-eb211ec851fe9659-L3.wav",
 "role": "beat"
 },
 "L4": {
 "text": "HIFU și radiofrecvența duc energie controlată exact în straturile profunde și pornesc producția de colagen nou.",
-"dur": 7.15,
-"speech": 6.91,
-"file": "voice/cont-948f8e09522c6e3f-L4.wav",
+"dur": 5.71,
+"speech": 5.47,
+"file": "voice/cont-eb211ec851fe9659-L4.wav",
 "role": "payoff"
 },
 "L5": {
 "text": "Un efect de fermitate se simte imediat.",
-"dur": 2.31,
-"speech": 1.98,
-"file": "voice/cont-948f8e09522c6e3f-L5.wav",
+"dur": 2.11,
+"speech": 1.78,
+"file": "voice/cont-eb211ec851fe9659-L5.wav",
 "role": "resolve"
 },
 "L6": {
 "text": "Rezultatul adevărat vine însă mai târziu.",
-"dur": 2.48,
-"speech": 2.15,
-"file": "voice/cont-948f8e09522c6e3f-L6.wav",
+"dur": 2.22,
+"speech": 1.88,
+"file": "voice/cont-eb211ec851fe9659-L6.wav",
 "role": "resolve"
 },
 "L7": {
 "text": "Colagenul are nevoie de timp, așa că efectul maxim apare la opt până la douăsprezece săptămâni de la ședință.",
-"dur": 6.6,
-"speech": 6.35,
-"file": "voice/cont-948f8e09522c6e3f-L7.wav",
+"dur": 5.22,
+"speech": 4.88,
+"file": "voice/cont-eb211ec851fe9659-L7.wav",
 "role": "resolve"
 },
 "L8": {
 "text": "Dacă vrei să afli ce i se potrivește pielii tale, scrie trei sute șaizeci în comentarii.",
-"dur": 4.977,
-"speech": 4.977,
-"file": "voice/cont-948f8e09522c6e3f-L8.wav",
+"dur": 3.88,
+"speech": 3.88,
+"file": "voice/cont-eb211ec851fe9659-L8.wav",
 "role": "outro"
 }
 }

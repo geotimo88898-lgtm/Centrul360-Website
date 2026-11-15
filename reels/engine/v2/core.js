@@ -306,7 +306,7 @@
     if (R.chrome && R.chrome.build) R.chrome.build(S, shots, total);
     if (S.captions === false) { document.getElementById('cap').style.display = 'none'; R.captionAt = () => {}; } // a reel with its own text only
     // the hook: a hit on frame 0 (plus whatever the hook visual added), a riser into the payoff, an impact on it
-    if (!cues.some((c) => c.t <= 0.1 && (c.cat === 'impact' || c.cat === 'boom'))) R.cue(0, 'impact', 1, { prio: 4 });
+    if (S.hookHit !== false && !cues.some((c) => c.t <= 0.1 && (c.cat === 'impact' || c.cat === 'boom'))) R.cue(0, 'impact', 1, { prio: 4 }); // ("hookHit": false: a reel that opens quietly, with its own sound)
     const pay = lines.find((L) => L.role === 'payoff');
     if (pay) {
       const rvs = lines.filter((L) => L.role === 'payoff' && L.shot && L.shot.revealAt != null).map((L) => L.shot.revealAt);
