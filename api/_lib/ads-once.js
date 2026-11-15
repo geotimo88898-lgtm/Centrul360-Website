@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 15.11 night, the owner in his main session (from the full report: „pornește doar asta”): Timișoara's HIFU gușă
+  // „hifu gușă” back on at 50 lei a day (ROAS 5,1, 14 clients, a lead at 8 lei on its last days)
+  { id: 'tm-hifu-gusa-on-2026-11-15', why: 'TM HIFU gușă pornită din nou la 50 lei/zi, cerut de voi pe 15.11', actions: [
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', daily: 50, why: 'ROAS 5,1, 14 cliente, lead 8 lei' },
+    { campaignId: '120251400890520103', name: 'TM HIFU G · hifu gușă', status: 'ACTIVE', why: 'ROAS 5,1, 14 cliente, lead 8 lei' },
+  ] },
   // 15.11, the owner in his main session (Arad RF gușă: „okay super și asta pornește-o”): the 40+ cover off (ROAS 1,2),
   // the 50+ cover back on at 50 lei a day (ROAS 3, 6 clients since 8.11)
   { id: 'ar-rf-swap-2026-11-15', why: 'Arad RF gușă: copertă 50+ pornită, 40+ oprită, cerut de voi pe 15.11', actions: [
