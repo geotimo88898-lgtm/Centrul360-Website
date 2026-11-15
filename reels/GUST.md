@@ -53,8 +53,9 @@ la Conținut, ca ciorne (nu sunt programate, la cererea lui: „nu le programa �
 baza; ținta e „insane”.
 
 **15.11, conversația cu Nuki refăcută** (pe „I need someone to hold me close”, montaj pe bătaie, puțin text): „e foarte
-bun, green light”. Singura schimbare: fără răspunsul „360” al privitorului la final („e nice ideea… doar nu se potrivește
-aici”). Regula: invitația la comentariu rămâne o invitație, nu o mimăm în reel. Păstrat în Content ca ciornă.
+bun, green light”. Singura schimbare: fără invitația „Scrieți «360» în comentarii” la final („e nice ideea… doar nu se
+potrivește aici”); acum se termină cu Nuki: „Pe curând, la Centrul360.” și logo-ul. Regula: invitația la comentariu
+nu se pune automat; doar unde se potrivește cu felul reelului (nu într-o conversație care se încheie firesc).
 
 ## Cum folosești jurnalul
 - Înainte de concept: citește principiile și ultimele verdicte; în blocul `concept` din script scrie care principii
