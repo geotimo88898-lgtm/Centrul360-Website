@@ -1,0 +1,52 @@
+{
+ "soap": {
+  "file": "e51b99bb5ebd32af.png",
+  "prompt": "A plain bar of pure white soap, a smooth rounded rectangle with softly bevelled edges, unbranded and completely blank, slightly worn and satin matte, lying flat. It fills about 70 percent of the frame width.",
+  "ar": "4:3",
+  "cutout": "objects/soap.png",
+  "offset": [
+   330,
+   274
+  ]
+ },
+ "glasses": {
+  "file": "c57f2f54867b409c.png",
+  "prompt": "A pair of round reading glasses lying flat with both temples folded, thin matte dark graphite metal wire frame, two perfectly round lenses. The lenses are perfectly clear and show only the same flat magenta background through them, with no reflections, no highlights and no distortion. The glasses span about 85 percent of the frame width.",
+  "ar": "16:9",
+  "cutout": "objects/glasses.png",
+  "offset": [
+   367,
+   258
+  ]
+ },
+ "pencil": {
+  "file": "784aca5aa76ca51f.png",
+  "prompt": "A slim mechanical drafting pencil with a smooth matte rose gold metal body, a fine knurled grip, a thin metal tip with a fine graphite lead, and a simple metal clip, lying horizontally with the tip pointing to the left. It spans about 85 percent of the frame width.",
+  "ar": "16:9",
+  "cutout": "objects/pencil.png",
+  "offset": [
+   85,
+   334
+  ]
+ },
+ "level": {
+  "file": "eec4e028a3290d96.png",
+  "prompt": "A short torpedo spirit level lying horizontally: a slim body of brushed silver aluminium with softly rounded ends, and in its exact centre one single horizontal glass vial window showing clear pale turquoise liquid with one small air bubble exactly in the middle between two thin black lines. No other vials, no markings. It spans about 85 percent of the frame width.",
+  "ar": "16:9",
+  "cutout": "objects/level.png",
+  "offset": [
+   120,
+   318
+  ]
+ },
+ "note": {
+  "file": "08cb428b369af706.png",
+  "prompt": "A single sheet torn from a small top-bound spiral notepad: plain bright white paper with faint pale grey horizontal ruled lines and no margin line, the top edge torn with a row of small ragged holes from the spiral, lying perfectly flat, completely blank with nothing written on it. It fills about 75 percent of the frame height.",
+  "ar": "3:4",
+  "cutout": "objects/note.png",
+  "offset": [
+   138,
+   157
+  ]
+ }
+}

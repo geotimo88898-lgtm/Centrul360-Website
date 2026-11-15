@@ -1,0 +1,166 @@
+{
+ "v": 2,
+ "id": "v2-kinetic-grasime",
+ "rubric": "Ce nu-ți spune nimeni",
+ "theme": "brand-light",
+ "sound": "v3",
+ "captions": false,
+ "nuki": false,
+ "hookHit": false,
+ "music": "Training Season (live), piesa aleasă de proprietar",
+ "topic": "Grăsimea localizată: de ce rămâne când slăbești și ce se poate face",
+ "topicTag": "liposonix-grasime",
+ "hookType": "socant",
+ "title": "Poți slăbi peste tot, iar zonele astea rămân",
+ "sources": "v2/src/grasime-localizata.html: „Abdomenul de jos, «colăceii», interiorul coapselor. Acolo grăsimea e rezistentă la dietă și sport, din motive genetice și hormonale. Poți slăbi peste tot, iar zonele astea rămân.”; „Nu e vina ta.”; „zona nu cedează, deși mănânci atent și faci mișcare”; „Ultrasunete care țintesc doar grăsimea.”; „1 · Ultrasunetele trec prin piele fără să o afecteze”; „2 · Celulele de grăsime din zona țintită sunt distruse”; „3 · Corpul le elimină natural, în săptămânile următoare”; „Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină singur.”; „Celulele de grăsime distruse nu revin, dar cele rămase se pot mări dacă iei în greutate.”; „Reducerea devine vizibilă în general la 6-8 săptămâni de la ședință.”; „Cu Liposonix, cavitație și HIFU”.",
+ "post": "Poți slăbi peste tot, iar abdomenul de jos, colăceii și interiorul coapselor rămân. Acolo grăsimea e rezistentă la dietă și sport, din motive genetice și hormonale. Nu e vina ta. Rezultatele diferă de la o persoană la alta. #grasimelocalizata #liposonix #timisoara #arad",
+ "core": "weight-type",
+ "concept": {
+  "who": "Femeile din Timișoara și Arad care mănâncă atent și fac mișcare, slăbesc, și totuși abdomenul de jos, colăceii sau interiorul coapselor nu se mișcă.",
+  "oneThing": "Grăsimea din zonele astea e rezistentă din motive genetice și hormonale, nu din vina ei; ultrasunetele Liposonix o țintesc doar pe ea, iar celulele distruse nu mai revin.",
+  "tone": "Calm, deștept, cu un zâmbet: un singur fir de text care se îngrașă și slăbește sub ochii ei, ca o explicație făcută frumos cu un pix gros.",
+  "formats": [
+   "(xi) Faceless curat"
+  ],
+  "borrowed": [
+   {
+    "element": "Cuvântul-cheie intră uriaș, din blur, exact când e spus, centrat, apoi se retrage la mărimea lui",
+    "ref": "12 (faceless curat)",
+    "why": "„rămân”, „rezistentă”, „nu e vina ta”, „distruse”, „revin”: privirea prinde exact cuvântul pe care îl aude"
+   },
+   {
+    "element": "Pastilele care se adună pe ce se spune și nodurile cu linii",
+    "ref": "12 (faceless curat)",
+    "why": "cele trei zone spuse în propoziție (abdomenul de jos, colăceii, interiorul coapselor) apar ca pastile; „genetice” și „hormonale” ca două noduri legate de „grăsimea”, doar ce se spune"
+   },
+   {
+    "element": "Sincronizarea imagine-sunet și mișcarea de cameră care pornește pe bătaie, face drumul repede și stă",
+    "ref": "10 (montajul curat) și 15 (camera)",
+    "why": "pe piesă, basul tace o măsură și revine: „peste tot” slăbește în liniște, iar „rămân” intră exact pe revenirea basului, cu un punch-in; restul mișcărilor pornesc pe bătăi și se opresc ca să se citească"
+   }
+  ],
+  "notUsed": [
+   "Nuki: într-un reel făcut doar din litere, mascota ar rupe ideea; greutatea literelor e personajul",
+   "Cazul real înainte/după: cazul 05 e eroul reel-ului cu glisorul; aici învățăm de ce, nu arătăm rezultatul",
+   "Celulele 3D și conul de ultrasunete (scena cells) și secțiunea pielii desenată: mecanismul e spus doar cu trei cuvinte așezate ca straturi, PIELE, GRĂSIME, MUȘCHI, cum sunt și pe site",
+   "Cadranul de ceas uriaș pe „săptămâni”: îl are reel-ul cu crema; aici „6-8 săptămâni” e o cifră care se scrie pe linia de bază",
+   "Siluetele de corp: nu arătăm corpuri, nici desenate; zonele sunt doar cuvinte",
+   "Flash-ul alb pe fiecare tăietură: un singur zoom prin lumină, la „distruse”"
+  ],
+  "track": {
+   "file": "owner-trainingseason",
+   "why": "partea de după al doilea refren (177,6 s în piesă), nefolosită: basul tace o măsură, revine, mai tace o măsură, apoi intră plin; reel-ul se termină pe coborârea de la final (208-216 s), deci și finalul e liniștit. Altă parte decât EMS (97,65 s) și decât conversația (refrenul)."
+  },
+  "different": "Primul reel în care tipografia e chiar mecanismul: greutatea fontului e grăsimea. „peste tot” slăbește literă cu literă, „rămân” nu slăbește, un focar de ultrasunete subțiază doar cuvântul GRĂSIME între PIELE și MUȘCHI, iar literele subțiate rămân subțiri. Fără obiecte, fără poze, fără colaj: alb, cerneală, turcoaz, un singur accent rose gold."
+ },
+ "hook": {
+  "role": "hook",
+  "say": "Poți slăbi peste tot, iar zonele astea *rămân*.",
+  "visual": {
+   "type": "kn-weight",
+   "cam": "none"
+  }
+ },
+ "beats": [
+  {
+   "role": "lead",
+   "say": "Vorbesc de abdomenul de jos, de colăcei, de interiorul *coapselor*.",
+   "visual": {
+    "type": "kn-zones",
+    "cam": "none",
+    "tr": "kn-a"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Acolo grăsimea e *rezistentă* la dietă și sport, din motive genetice și hormonale.",
+   "visual": {
+    "type": "kn-resist",
+    "cam": "none",
+    "tr": "kn-b"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Așa că nu e *vina ta* că zona nu cedează.",
+   "visual": {
+    "type": "kn-fault",
+    "cam": "none",
+    "tr": "kn-c"
+   }
+  },
+  {
+   "role": "loop",
+   "say": "Doar că grăsimea asta are un punct *slab*.",
+   "visual": {
+    "type": "kn-aim",
+    "cam": "none",
+    "tr": "kn-d"
+   }
+  }
+ ],
+ "payoff": [
+  {
+   "role": "body",
+   "say": "Cu Liposonix, ultrasunetele trec prin piele fără s-o afecteze și țintesc doar *grăsimea*.",
+   "visual": {
+    "type": "kn-layers",
+    "cam": "none",
+    "tr": "kn-e"
+   }
+  }
+ ],
+ "resolve": [
+  {
+   "role": "body",
+   "say": "Celulele de grăsime din zona tratată sunt *distruse*, iar corpul le elimină în săptămânile următoare.",
+   "visual": {
+    "type": "kn-thin",
+    "cam": "none",
+    "tr": "kn-f"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Cele distruse nu mai *revin*. Doar cele rămase se pot mări, dacă iei în greutate.",
+   "visual": {
+    "type": "kn-stay",
+    "cam": "none",
+    "tr": "kn-g"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Iar diferența se vede, în general, la 6-8 *săptămâni*.",
+   "tts": "Iar diferența se vede, în general, la șase până la opt săptămâni.",
+   "visual": {
+    "type": "kn-weeks",
+    "cam": "none",
+    "tr": "kn-h"
+   }
+  }
+ ],
+ "outro": {
+  "role": "cta",
+  "cta": "send",
+  "say": "Trimite-l prietenei care crede că e doar lipsă de *voință*.",
+  "visual": {
+   "type": "kn-send",
+   "cam": "none",
+   "tr": "kn-i"
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 2.6,
+  "tr": "push"
+ },
+ "musicFile": "owner-trainingseason",
+ "musicStart": 177.642,
+ "beat": {
+  "bpm": 123.01
+ },
+ "voiceNote": "Ritm rapid și legat, ca într-un clip scurt de treizeci de secunde, cam două sute de cuvinte pe minut; pauzele dintre propoziții sunt foarte scurte. Liposonix se citește românește.",
+ "tempo": 1.08,
+ "structure": "Hook (fapt surprinzător) → Lead (zonele, spuse în propoziție) → Body → Body (nu e vina ta) → Open loop (un punct slab) → Body (răspunsul: Liposonix) → Body → Body → Body → CTA (trimite unei prietene)"
+}

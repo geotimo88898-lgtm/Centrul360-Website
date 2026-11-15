@@ -69,8 +69,8 @@
    "owner": "da, cu o rezervă: liniștea dinaintea loviturii e liniște adevărată doar în fișierul curat; în preview piesa are acolo propriul gol, cu ad-lib-uri la nivel mic"
   }
  },
- "musicFile": "owner-weongo",
- "musicStart": 0.127,
+ "musicFile": "owner-weongo-boom",
+ "musicStart": 0,
  "beat": {
   "bpm": 131.01
  },
@@ -79,8 +79,8 @@
   "say": "Colagenul are nevoie de timp.",
   "visual": {
    "type": "suspans",
-   "hit": 10.9667,
-   "total": 18.2,
+   "hit": 14.0,
+   "total": 21.2,
    "img": "brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp",
    "before": [
     6,
@@ -100,12 +100,51 @@
    "caseFine": [
     "Fotografie publicată cu acordul clientei.",
     "Rezultatele pot varia de la o persoană la alta."
-   ]
+   ],
+   "intro": 3.0
   }
  },
  "end": {
   "type": "save",
-  "hold": 16.3
+  "hold": 19.33
  },
- "timeline": "Numărat înapoi de la lovitura de bas de la 11,094 s din piesă (cadrul 329, 10,967 s): 0,00 primul rând, cuvânt cu cuvânt (punctul turcoaz la 0,6); 1,33 pulsul (bătaia 3); 2,27 „Apoi, liniște.” (bătaia 5); 2,75 clepsidra; 3,63 primul bob aterizează, Săptămâna 1 (bătaia 8); săptămânile 2-8 la bătăile 10,5, 13, 14,5, 16, 17,5, 19, 20; 6,60 rândul despre colagen, pe două rânduri; 8,67 șuvoiul; 9,60 sus se termină nisipul (bătaia 21); 10,25-10,97 liniște, cade doar bobul rose gold; 10,967 lovitura: poza „înainte”; 11,67-12,10 cortina de nisip, apoi „după” (bătăile 25,5 și 26,5); 13,27 cele două poze alături, cu datele din catalog (bătaia 29); 15,53 ultima propoziție, pe două rânduri; 16,00 punctul ei aterizează (bătaia 35); ținut până la 18,2."
+ "timeline": "Numărat înapoi de la lovitura de bas de la 11,094 s din piesă (cadrul 329, 10,967 s): 0,00 primul rând, cuvânt cu cuvânt (punctul turcoaz la 0,6); 1,33 pulsul (bătaia 3); 2,27 „Apoi, liniște.” (bătaia 5); 2,75 clepsidra; 3,63 primul bob aterizează, Săptămâna 1 (bătaia 8); săptămânile 2-8 la bătăile 10,5, 13, 14,5, 16, 17,5, 19, 20; 6,60 rândul despre colagen, pe două rânduri; 8,67 șuvoiul; 9,60 sus se termină nisipul (bătaia 21); 10,25-10,97 liniște, cade doar bobul rose gold; 10,967 lovitura: poza „înainte”; 11,67-12,10 cortina de nisip, apoi „după” (bătăile 25,5 și 26,5); 13,27 cele două poze alături, cu datele din catalog (bătaia 29); 15,53 ultima propoziție, pe două rânduri; 16,00 punctul ei aterizează (bătaia 35); ținut până la 18,2.",
+ "subframes": {
+  "n": 5,
+  "shutter": 0.5,
+  "ranges": [
+   [
+    0,
+    2.97
+   ],
+   [
+    3.02,
+    3.62
+   ],
+   [
+    4.367,
+    4.767
+   ],
+   [
+    5.16,
+    5.75
+   ],
+   [
+    13.85,
+    14.62
+   ],
+   [
+    14.7,
+    15.583
+   ],
+   [
+    16.3,
+    16.8
+   ],
+   [
+    18.427,
+    19.333
+   ]
+  ]
+ }
 }

@@ -67,79 +67,63 @@
   }
  },
  "musicFile": "owner-trainingseason",
- "musicStart": 10.17,
+ "musicStart": 106.92,
  "beat": {
   "bpm": 123.01
  },
- "musicNote": "„Training Season” (live): de la lovitura muzicii, 10,17 s. Piesa e cântată liber (fără tobă pe grilă), așa că mesajele stau pe atacurile ei reale, măsurate (0,20 · 2,73 · 4,86 · 7,42 · 8,00 · 10,08 · 12,07 · 12,95 · 14,16 · 15,23 · 16,25 · 18,76 s), iar punctele de tastare ținute cad exact în pauza piesei (10,2-12,0 s).",
+ "musicNote": "„Training Season” (live): partea cerută de proprietar, „I need someone to hold me close, deeper than I've ever known”. Măsurat (beats.py + loviturile de bas la milisecundă, transcrierea Gemini pe ferestre scurte): grila ține la ±10 ms (123,01 BPM, bătaia k la 0,097 + 0,48776·k s). Reel-ul pornește pe bătaia 219 (106,92 s, „…some potential, is this too much to ask for”), așa că bătaia n a reel-ului e la n·0,4878 s. Toba tace la 114,72 s (bătaia 16 a reel-ului, 7,80 s): acolo cade „Sună bine, dar…” și apropierea camerei; „I need someone to hold me close” (115,8-117,7 s) se cântă în golul ăsta, peste punctele de tastare și „…unde vă găsesc?”; toba revine la 118,14 s (bătaia 23, 11,22 s), pe „deeper”: acolo e zoom-ul prin lumină și bula care devine poza. Apoi grupul ține („whose love feels like a rodeo…”), cărțile se schimbă la 4 bătăi, finalul cade pe „…straight talking to my soul / Conversation overload”.",
  "subframes": {
-  "n": 10,
+  "n": 8,
   "shutter": 0.55,
   "ranges": [
    [
-    0.0,
-    0.45
-   ],
-   [
-    0.9,
+    0.95,
     1.75
    ],
    [
-    2.7,
-    3.15
+    3.88,
+    4.5
    ],
    [
-    4.27,
-    4.6
+    6.33,
+    6.95
    ],
    [
-    4.83,
-    5.28
+    7.78,
+    8.2
    ],
    [
-    6.59,
-    6.92
+    9.73,
+    10.25
    ],
    [
-    7.39,
-    8.42
+    10.7,
+    11.95
    ],
    [
-    9.36,
-    9.69
+    13.15,
+    13.85
    ],
    [
-    10.05,
-    10.75
+    14.13,
+    14.8
    ],
    [
-    12.04,
-    12.72
+    15.1,
+    15.85
    ],
    [
-    12.92,
-    13.37
+    17.05,
+    17.95
    ],
    [
-    13.8,
-    14.75
-   ],
-   [
-    15.18,
-    15.95
-   ],
-   [
-    16.2,
-    17.0
-   ],
-   [
-    18.25,
-    19.6
+    18.0,
+    18.5
    ]
   ]
  },
  "hook": {
-  "say": "Bună ziua! Câte ședințe de epilare laser îmi trebuie?",
+  "say": "Câte ședințe de epilare laser?",
   "visual": {
    "type": "chat",
    "cam": "none",
@@ -149,63 +133,64 @@
    "messages": [
     {
      "who": "v",
-     "t": -0.08,
-     "text": "Bună ziua! Câte ședințe de epilare laser îmi trebuie?",
+     "b": 0,
+     "text": "Câte ședințe de epilare laser?",
      "maxw": 470
     },
     {
      "who": "n",
-     "type": 1.25,
-     "t": 2.73,
-     "text": "Bună ziua! În general 6-8 ședințe, la câteva săptămâni distanță."
+     "type": 2,
+     "b": 4,
+     "text": "În general, 6-8 ședințe."
     },
     {
      "who": "n",
-     "type": 4.3,
-     "t": 4.86,
-     "text": "Părul crește în cicluri, iar laserul îl tratează în fiecare fază de creștere."
+     "type": 5,
+     "b": 6,
+     "text": "Părul crește în cicluri."
     },
     {
      "who": "v",
-     "type": 6.62,
-     "t": 7.42,
+     "type": 8,
+     "b": 9,
      "text": "Și doare?"
     },
     {
      "who": "n",
-     "type": 7.69,
-     "t": 8.0,
-     "text": "Aparatul are sistem de răcire, așa că senzația e mult mai blândă decât la epilarea clasică."
+     "type": 10,
+     "b": 11,
+     "text": "Are răcire activă."
+    },
+    {
+     "who": "n",
+     "b": 12,
+     "text": "Senzația e mult mai blândă."
     },
     {
      "who": "v",
-     "type": 9.39,
-     "t": 10.08,
+     "type": 14,
+     "b": 16,
      "text": "Sună bine, dar…"
     },
     {
      "who": "v",
-     "type": 10.45,
-     "t": 12.07,
+     "type": 17,
+     "b": 19,
      "text": "…unde vă găsesc?"
     },
     {
      "who": "n",
-     "type": 12.42,
-     "t": 12.95,
-     "text": "În Timișoara, pe strada Bucegi 7. Consultația e gratuită."
+     "type": 20,
+     "b": 21,
+     "text": "Vă așteptăm în Timișoara."
     }
    ],
-   "hold": [
-    10.45,
-    12.07
-   ],
-   "lift": 13.87,
+   "lift": 22,
    "cards": [
     {
      "img": "g-tm-laser.webp",
      "label": "Timișoara · Str. Bucegi 7",
-     "t": 14.16,
+     "b": 23,
      "s0": 0.07,
      "s1": 0.15,
      "boost": 1.3
@@ -213,29 +198,140 @@
     {
      "img": "g-tm-810.webp",
      "label": "Elysion Pro · răcire activă",
-     "t": 15.23
+     "b": 27
     }
    ],
    "phone": {
     "key": "epilare-cum",
-    "t": 16.25
+    "b": 31
    },
    "end": {
-    "t0": 18.3,
-    "t": 18.76,
-    "pulse": 19.39,
+    "b0": 35,
+    "b": 36,
+    "nuki": 37,
+    "reply": {
+     "type": 39,
+     "b": 41,
+     "text": "360"
+    },
     "text": "Scrieți «360» în comentarii și vă răspundem.",
     "pose": "telefon"
    },
-   "beats": [
-    10.72,
-    11.22,
-    11.71
+   "break": [
+    16,
+    23
+   ],
+   "pulse": [
+    17,
+    18
+   ],
+   "slam": 23,
+   "moves": [
+    {
+     "b": 2,
+     "d": 0.75,
+     "s": 1.0,
+     "f": "sheet",
+     "rx": 4,
+     "ry": -6,
+     "rz": 0,
+     "hit": 0.7,
+     "streak": 1
+    },
+    {
+     "b": 8,
+     "d": 0.65,
+     "s": 1.07,
+     "f": [
+      540,
+      870
+     ],
+     "rx": 3,
+     "ry": 9,
+     "rz": 0.8,
+     "hit": 0.45
+    },
+    {
+     "b": 13,
+     "d": 0.65,
+     "s": 1.12,
+     "f": [
+      540,
+      890
+     ],
+     "rx": -3,
+     "ry": -10,
+     "rz": -1,
+     "hit": 0.45
+    },
+    {
+     "b": 16,
+     "d": 0.34,
+     "s": 1.6,
+     "f": 6,
+     "rx": 3,
+     "ry": 6,
+     "rz": 2.4,
+     "hit": 0.9,
+     "streak": 1
+    },
+    {
+     "b": 20,
+     "d": 0.45,
+     "s": 1.5,
+     "f": 8,
+     "rx": 2,
+     "ry": -7,
+     "rz": -1.8,
+     "hit": 0.55
+    },
+    {
+     "b": 22,
+     "d": 0.45,
+     "s": 1.12,
+     "f": "sheet",
+     "rx": 0,
+     "ry": 0,
+     "rz": 0
+    }
+   ],
+   "mmoves": [
+    {
+     "b": 25,
+     "d": 0.7,
+     "s": 1.07,
+     "rx": 1.5,
+     "ry": -4,
+     "rz": 0,
+     "fy": 0,
+     "hit": 0.4
+    },
+    {
+     "b": 29,
+     "d": 0.7,
+     "s": 1.08,
+     "rx": -2,
+     "ry": 3,
+     "rz": -1.2,
+     "fy": -70,
+     "hit": 0.4
+    },
+    {
+     "b": 33,
+     "d": 0.7,
+     "s": 1.06,
+     "rx": 1,
+     "ry": -3,
+     "rz": 0.6,
+     "fy": 0,
+     "hit": 0.35
+    }
    ]
   }
  },
  "end": {
   "type": "save",
-  "hold": 17.73
- }
+  "hold": 20.499
+ },
+ "hookHit": false
 }
