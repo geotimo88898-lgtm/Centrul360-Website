@@ -36,7 +36,8 @@ module.exports = async (req, res) => {
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
   // ?wahealth=1: what Meta itself says about each city's WhatsApp account right now (may it send, and if not, why and
   // what to do): the health of the number, of the account, of the firm and of the app, whether a payment method is
-  // attached, the currency. No ids, no token, no phone in the answer.
+  // attached, the currency. No ids, no token, no phone in the answer (?wahealth=links adds the account's and the firm's
+  // ids, for the owner's direct link to the account's payment page in Meta Business).
   if (req.query && req.query.wahealth) {
     const cfg = await WA.loadConfig().catch(() => ({}));
     const get = async (path, token, fields) => {
@@ -55,7 +56,7 @@ module.exports = async (req, res) => {
       if (wb.error && n.wabaId) wb = await get(n.wabaId, n.token, 'name,currency,timezone_id,account_review_status,ownership_type,owner_business_info,on_behalf_of_business_info');
       const hs = ph.health_status || {};
       out[city] = {
-        account: wb.name || '', owner: (wb.owner_business_info || {}).name || '', onBehalfOf: (wb.on_behalf_of_business_info || {}).name || undefined,
+        account: wb.name || '', owner: (wb.owner_business_info || {}).name || '', links: req.query.wahealth === 'links' && n.wabaId ? { waba: String(n.wabaId), owner: String((wb.owner_business_info || {}).id || '') } : undefined, onBehalfOf: (wb.on_behalf_of_business_info || {}).name || undefined,
         ownership: wb.ownership_type, review: wb.account_review_status, currency: wb.currency || '(nesetată)', timezone: wb.timezone_id || '(nesetat)',
         paymentAttached: fundingError ? 'nu pot citi: ' + fundingError : !!wb.primary_funding_id,
         number: { status: ph.status, quality: ph.quality_rating, tier: ph.messaging_limit_tier, error: ph.error },
