@@ -288,7 +288,7 @@ const RISKS = [
   [/\b(recomandat|aprobat|validat|avizat|testat|verificat)\w*\s+de\s+(medic|doct|dermatolog|specialist)|\b(testat|dovedit|demonstrat)\w*\s+clinic|\bclinic\s+(testat|dovedit|demonstrat)|\b(medicul|doctorul|dermatologul|medicii|doctorii)\s+(nostru|nostri|noastre)\b|\bdr\.\s?[a-z]/, 'pretinde medici sau dovezi clinice'],
   [/\bai\s+(o\s+|un\s+)?(burt\w*|gus[ai]\w*|barbie dubla|celulit\w*|riduri|pete|vergetur\w*|grasime\w*|kilograme|colac\w*)\b|\b(esti|sunteti)\s+(gras[ae]?|plinut\w*|urat\w*|batran\w*)\b|\bte deranjeaza\s+(burt\w*|gus\w*|celulit\w*|riduril\w*|petele|kilogramele|colac\w*)|\burasti ce vezi\b/, 'vorbește despre defectul celui care citește („Ai gușă?”)'],
   [/\d[\d.,]*\s*(lei|ron|euro|eur)\b|€/, 'are un preț'],
-  [/\b(pret|pretul|preturi\w*|ofert\w*|promoti\w*|discount\w*|reduceri\w*)\b|\breducere\s+(de\s+)?\d|\d+\s?%\s+reducere|\b(consultati\w*|evaluar\w*|sedint\w*)\s+gratuit\w*/, 'vorbește despre preț, ofertă sau reducere'],
+  [/\b(pret|pretul|preturi\w*|ofert\w*|promoti\w*|discount\w*|reduceri\w*)\b|\breducere\s+(de\s+)?\d|\d+\s?%\s+reducere|\b(evaluar\w*|sedint\w*)\s+gratuit\w*/, 'vorbește despre preț, ofertă sau reducere'], // „consultația gratuită” is allowed (the owner, 15.11)
   [/\bprogrameaza(-|\s)?te\b|\bprogramar\w*|\bfa(-|\s)?ti\s+(o\s+)?programare|\bsuna(-|\s)?ne\b|\bwhatsapp\b/, 'cheamă la programare („programează-te”)'],
   [/https?:\/\/|\bwww\.|\b[a-z0-9-]+\.(ro|com|net|eu)\b|\blink\w*\b/, 'are un link'],
 ];
