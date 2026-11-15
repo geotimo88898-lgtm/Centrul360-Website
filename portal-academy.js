@@ -60,7 +60,7 @@
   const rules = () => Object.assign({ bodyMin: 9500, faceMin: 4000, full: 50, inst: 30, parts: 4 }, D().rules || {});
   const GROUP = { fata: 'Față', corp: 'Corp', epilare: 'Epilare laser' };
   const CITY = { both: 'Ambele orașe', tm: 'Doar Timișoara', ar: 'Doar Arad' };
-  const ROLE = { receptie: 'Recepție', cosmetician: 'Cosmeticiană', admin: 'Admin' };
+  const ROLE = { receptie: 'Recepție', cosmetician: 'Cosmeticiană', manager: 'Manager', admin: 'Admin' };
   const num = (i) => String(i + 1).padStart(2, '0');
   const lei = (n) => K.lei(n, 2);
   const dec = (n) => (Math.round(Number(n || 0) * 100) / 100).toLocaleString('ro-RO', { maximumFractionDigits: 2 });

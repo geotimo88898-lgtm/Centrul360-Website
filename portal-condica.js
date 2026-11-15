@@ -182,7 +182,7 @@
         : 'Nicio intrare azi';
       const kv = [['De recuperat', hoursText(r.debt)], ['Suplimentare', r.bank ? fmt(r.bank) : '0'], ['Concediu', r.daysLeft + ' z'], ['Azi', r.todayCheckIn ? (r.todayCheckOut ? 'Plecat' : 'Prezent') : 'Absent']];
       return '<button type="button" class="ad-emp" data-pick-emp="' + esc(r.employeeId) + '"><div class="ad-emp-top">' + K.avatar(r.name, 46) +
-        '<div><b>' + esc(r.name) + '</b><span><span class="k-tag is-' + (r.role === 'receptie' ? 'info' : 'good') + '">' + esc(K.roleLabel(r.role)) + '</span>' + esc(r.location || '') + (r.pending ? '<span class="k-tag is-warn">' + r.pending + ' la aprobare</span>' : '') + '</span></div></div>' +
+        '<div><b>' + esc(r.name) + '</b><span>' + K.roleTag(r.role) + esc(r.location || '') + (r.pending ? '<span class="k-tag is-warn">' + r.pending + ' la aprobare</span>' : '') + '</span></div></div>' +
         '<dl class="ad-emp-kv cd-kv4" title="' + esc(today) + '">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
         (r.bank ? '<span class="cd-owe">' + icon('wallet') + 'De plătit cu salariul: ' + K.lei(r.bankLei) + '</span>' : '') +
         '</button>';

@@ -157,7 +157,7 @@ module.exports = async (req, res) => {
       }
     });
     const leaderboard = activeEmployees
-      .filter((e) => e.role !== 'receptie' || raceCounts[e.id])
+      .filter((e) => (e.role !== 'receptie' && e.role !== 'manager') || raceCounts[e.id])
       .map((e) => ({
         employeeId: e.id,
         name: e.name,
@@ -218,7 +218,7 @@ module.exports = async (req, res) => {
 
     // ---- everything else this answer reads, in one go: they were read one after another (up to eight waits on the store
     // in a row, on every load and every refresh of the portal, 13.11: „aplicația se încarcă foarte greu”)
-    const front = isAdmin || me.role === 'receptie';
+    const front = isAdmin || me.role === 'receptie' || me.role === 'manager';
     const [attendanceAll, tbAll, waConvos, igUnread, myNotes, liveCfg, devices] = await Promise.all([
       readJSON('data/attendance.json', []), TB.loadAll(readJSON), readJSON('data/whatsapp-conversations.json', []),
       // the clinic's Instagram (both clinics'), for whoever answers Mesaje
@@ -280,6 +280,8 @@ module.exports = async (req, res) => {
         discountPercent: discountOf(o), category: o.category, locations: o.locations, ads: !!o.ads, guarantee: o.guarantee || '', featured: !!o.featured,
       })),
       isAdmin,
+      // the manager (both clinics): reception's screens plus the team and her Manager page (api/_lib/roles.js)
+      isManager: me.role === 'manager',
       // instant sync: where this portal listens for "the data changed" (Supabase Realtime), when it is set up
       live: liveCfg,
       // Set while the owner previews this employee's account (read-only, banner + "Înapoi la Admin").
@@ -332,6 +334,14 @@ module.exports = async (req, res) => {
           goals: (e.goals || []).map((g) => Object.assign({}, g, { current: computeGoalCurrent(g, e.id, sales, appointments, today, month, { leads, name: e.name }) })),
         })),
         config,
+      };
+    }
+
+    // the manager: what waits for her decision (the team's days over / under 8 hours, the leave requests; never her own)
+    if (me.role === 'manager') {
+      payload.manager = {
+        pendingTime: (tbAll.adjustments || []).filter((a) => a.status === 'pending' && a.employeeId !== me.id).length,
+        pendingLeave: (tbAll.leaveRequests || []).filter((r) => r.status === 'pending' && r.employeeId !== me.id).length,
       };
     }
 

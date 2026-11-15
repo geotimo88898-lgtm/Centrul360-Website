@@ -134,7 +134,8 @@
     const pending = D.isAdmin && D.admin ? D.admin.pendingSales.length : 0;
 
     // ---- role shaping: reception runs the front desk, a cosmetician sees her own day + earnings
-    const role = D.isAdmin ? 'admin' : me.role;
+    // the manager runs the desk on both clinics: reception's Panou (her own Manager page has the team's numbers)
+    const role = D.isAdmin ? 'admin' : me.role === 'manager' ? 'receptie' : me.role;
     const mineToday = appts.filter((a) => a.cosmeticianId === me.id);
     const unconfirmed = appts.filter((a) => a.status === 'programata');
     const ms = D.mySales || [];

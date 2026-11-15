@@ -39,7 +39,13 @@
     input.value = Array.from(box.querySelectorAll('[data-cat].is-on')).map((x) => x.dataset.cat).join(',');
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  K.roleLabel = (r) => ({ cosmetician: 'Cosmeticiană', receptie: 'Recepție', admin: 'Admin' }[r] || r);
+  K.roleLabel = (r) => ({ cosmetician: 'Cosmeticiană', receptie: 'Recepție', manager: 'Manager', admin: 'Admin' }[r] || r);
+  // the colour of a role's tag, everywhere a role shows (the manager: purple, the owner's choice, 15.11)
+  K.roleTone = (r) => ({ receptie: 'info', cosmetician: 'good', manager: 'purple', admin: 'accent' }[r] || 'mute');
+  K.roleTag = (r) => '<span class="k-tag is-' + K.roleTone(r) + '">' + K.esc(K.roleLabel(r)) + '</span>';
+  // the manager (both clinics): reception's screens plus the team (api/_lib/roles.js)
+  K.isManager = () => !!(K.data && K.data.me && K.data.me.role === 'manager');
+  K.canManage = () => !!(K.data && (K.data.isAdmin || (K.data.me && K.data.me.role === 'manager')));
   // Commission on an upsell: value - 60% costs, then 10% of the profit (same as api/_lib/cats.js).
   const costShare = () => (K.data && K.data.costShare != null ? K.data.costShare : 60);
   const upRate = () => (K.data && K.data.upsellRate) || 10;
@@ -115,7 +121,7 @@
     if (av) { av.classList.toggle('has-photo', !!DATA.me.photo); av.style.backgroundImage = DATA.me.photo ? 'url("' + DATA.me.photo + '")' : ''; }
     // Owner: just "Admin". Staff: their role + location under the name.
     const whoLoc = document.getElementById('whoLocation');
-    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.location && DATA.me.location !== '-' ? ' · ' + DATA.me.location : '');
+    whoLoc.textContent = DATA.isAdmin ? '' : K.roleLabel(DATA.me.role) + (DATA.me.role === 'manager' ? ' · Timișoara și Arad' : DATA.me.location && DATA.me.location !== '-' ? ' · ' + DATA.me.location : '');
     whoLoc.hidden = !whoLoc.textContent;
     document.querySelectorAll('.admin-only').forEach((el) => el.classList.toggle('hidden', !DATA.isAdmin));
     // Role-shaped navigation: reception works the pipeline + tasks, cosmeticians see their own
@@ -402,7 +408,7 @@
     pulse();
   });
 
-  const frontDesk = () => !!DATA && (DATA.isAdmin || DATA.me.role === 'receptie');
+  const frontDesk = () => !!DATA && (DATA.isAdmin || DATA.me.role === 'receptie' || DATA.me.role === 'manager');
   K.frontDesk = frontDesk;
   K.on('reload', () => load(true));
   K.reload = () => load(true);
@@ -470,8 +476,9 @@
     if (!DATA) return;
     K.badge('mesaje', DATA.waUnread || 0); // conversations with unread client messages
     if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length + (DATA.admin.pendingTime || 0) + (DATA.admin.pendingLeave || 0), 'hot');
+    if (DATA.manager) K.badge('manager', (DATA.manager.pendingTime || 0) + (DATA.manager.pendingLeave || 0), 'hot'); // the team's days and leave to decide
     if (!frontDesk()) return; // cosmeticians: no pipeline badge / task queue
-    if (DATA.me.role === 'receptie') { // Sarcini is the receptionist's own list
+    if (DATA.me.role === 'receptie' || DATA.me.role === 'manager') { // Sarcini is the receptionist's own list (and the manager's)
       try {
         const t = await K.api('/api/portal-automation-tasks');
         K.badge('automatizari', (t.tasks || []).length);
@@ -498,7 +505,7 @@
   setInterval(() => {
     if (document.hidden || !DATA || !frontDesk()) return;
     K.leads(true).catch(() => {});
-    if (DATA.me.role === 'receptie') K.api('/api/portal-automation-tasks').then((t) => { K.badge('automatizari', (t.tasks || []).length); K.emit('tasks', t.tasks || []); }).catch(() => {});
+    if (DATA.me.role === 'receptie' || DATA.me.role === 'manager') K.api('/api/portal-automation-tasks').then((t) => { K.badge('automatizari', (t.tasks || []).length); K.emit('tasks', t.tasks || []); }).catch(() => {});
   }, 120000);
 
   // ------------------------------------------------------------------ creative (admin)

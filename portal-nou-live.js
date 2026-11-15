@@ -51,7 +51,7 @@
         if (s != null && s <= now && now < e && a.status !== 'finalizata' && cos[a.cosmeticianId]) cos[a.cosmeticianId].now = { client: a.clientName, p: (now - s) / Math.max(1, e - s), treatment: a.treatment, end: a.endTime };
       });
       var waiting = A.filter(function (a) { var s = mins(a.time); return s != null && s > now && s - now <= 60 && a.status !== 'finalizata'; });
-      var front = staff.filter(function (e) { return e.role === 'receptie' && e.location === c; });
+      var front = staff.filter(function (e) { return (e.role === 'receptie' && e.location === c) || e.role === 'manager'; });
       var paid = inc.filter(function (s) { return (s.location || '') === c; });
       out[c] = { cos: Object.keys(cos).map(function (k) { return cos[k]; }), waiting: waiting, front: front, sum: paid.reduce(function (a, s) { return a + (Number(s.amount) || 0); }, 0), n: paid.length, done: A.filter(function (a) { return a.status === 'finalizata'; }).length, total: A.length };
     });

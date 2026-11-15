@@ -1,6 +1,6 @@
 // POST /api/portal-legal, Admin → „Acte și autorizații” (the owner, 8.11: „un loc unde să am toate autorizațiile
 // salonului, Timișoara / Arad, și la echipă toate documentele legale ale fiecărui angajat; să ne organizăm maxim
-// și pe partea legală”). Admin only.
+// și pe partea legală”). The owner and the manager (15.11).
 //
 // What a salon or an employee needs is in api/_lib/legal-reqs.js (each item: who issues it, the law, the papers it
 // takes, how often it is renewed). Here, per salon and per employee, what we have for each item: its status, number,
@@ -49,7 +49,7 @@ function itemOk(scope, item, box) {
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-  const session = await requireAdmin(req, res);
+  const session = await require('./_lib/roles').requireManage(req, res); // the owner and the manager
   if (!session) return;
   const b = req.body || {};
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });

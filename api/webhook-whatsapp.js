@@ -109,7 +109,7 @@ async function pushMessages(fresh) {
   if (!fresh.length) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   for (const m of fresh) {
-    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
+    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'manager' || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
     const text = m.text.length > 160 ? m.text.slice(0, 159) + '…' : m.text;
     await sendPush({ readJSON, writeJSON }, ids, { title: 'Mesaj de la ' + m.name, body: text, url: '/#mesaje', tag: 'msg-' + m.phone });
   }
@@ -295,7 +295,7 @@ async function alertUndelivered(list) {
   const { notifyMany } = require('./_lib/notify');
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   for (const { convo, msg } of list) {
-    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'receptie' && (!convo.location || !e.location || e.location === convo.location))).map((e) => e.id));
+    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'manager' || (e.role === 'receptie' && (!convo.location || !e.location || e.location === convo.location))).map((e) => e.id));
     const who = convo.clientName || ('+' + convo.phone);
     const said = String(msg.text || '').replace(/\s+/g, ' ').slice(0, 60);
     await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'bad', ownerPush: false, title: 'MESAJ NELIVRAT ❌ - ' + who, text: msg.error + (said ? ' · „' + said + '”' : ''), go: 'mesaje', tag: 'undelivered-' + msg.id });

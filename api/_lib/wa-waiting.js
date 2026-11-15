@@ -108,7 +108,7 @@ async function run() {
     if (owed.length) {
       const N = require('./notify');
       const emps = await readJSON('data/employees.json', []);
-      const ids = (await N.adminIds({ readJSON })).concat(emps.filter((e) => e.active !== false && e.role === 'receptie').map((e) => e.id));
+      const ids = (await N.adminIds({ readJSON })).concat(emps.filter((e) => e.active !== false && (e.role === 'receptie' || e.role === 'manager')).map((e) => e.id));
       await N.notifyMany({ readJSON, writeJSON }, ids, {
         kind: 'alert', tone: 'warn', go: 'mesaje', tag: 'waiting-' + day + '-' + slot,
         title: owed.length === 1 ? 'O CLIENTĂ FĂRĂ RĂSPUNS 💬' : owed.length + ' CLIENTE FĂRĂ RĂSPUNS 💬',

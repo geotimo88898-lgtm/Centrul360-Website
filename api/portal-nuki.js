@@ -359,7 +359,7 @@ module.exports = async (req, res) => {
   const t0 = Date.now(); // the answer's time (BUDGET) counts from here
   const session = getSession(req);
   if (!session) { res.status(401).json({ error: 'unauthorized' }); return; }
-  if (!['admin', 'receptie', 'cosmetician'].includes(session.role)) { res.status(403).json({ error: 'forbidden' }); return; }
+  if (!['admin', 'receptie', 'manager', 'cosmetician'].includes(session.role)) { res.status(403).json({ error: 'forbidden' }); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
   const b = req.body || {};
   // the owner's „Aplică” on a change Nuki proposed (admin only; Activitate notes it)

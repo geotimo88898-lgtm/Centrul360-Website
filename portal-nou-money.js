@@ -180,7 +180,7 @@
   function place() {
     var panel = document.getElementById('panel-panou');
     var dbr = panel && panel.querySelector('.db-root');
-    var on = !!(dbr && dbr.querySelector('.db-hero')) && !!(D() && (D().isAdmin || (D().me && D().me.role === 'receptie')));
+    var on = !!(dbr && dbr.querySelector('.db-hero')) && !!(D() && (D().isAdmin || (D().me && (D().me.role === 'receptie' || D().me.role === 'manager'))));
     if (!on) { if (root) root.hidden = true; return; }
     panel.classList.add('n-live-host');
     if (!root || !root.isConnected) mount(panel);

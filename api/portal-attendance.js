@@ -19,6 +19,10 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth, requireAdmin } = require('./_lib/auth');
 const TB = require('./_lib/timebank');
 const { notify, leiTxt } = require('./_lib/notify');
+const { canManage } = require('./_lib/roles');
+// the manager (15.11) sees everyone's pontaj on both clinics, corrects a mistaken entry and decides the days over / under
+// 8 hours, never her own and never the money side (overtime in lei, the payout, the hours set by hand stay the owner's)
+const noLei = (o) => { const x = Object.assign({}, o); delete x.bankLei; delete x.rate; delete x.payouts; return x; };
 
 const KEY = 'data/attendance.json';
 // Same literal location list as api/portal-leads.js / api/portal-appointments.js.
@@ -83,6 +87,8 @@ module.exports = async (req, res) => {
   const session = await requireAuth(req, res);
   if (!session) return;
   const isAdmin = session.role === 'admin';
+  const isMgr = session.role === 'manager';
+  const sees = canManage(session); // reads anyone's pontaj
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error) => res.status(code).json({ error });
@@ -118,7 +124,7 @@ module.exports = async (req, res) => {
 
     // ---------------------------------------------------------------- her hours
     if (action === 'timebank') {
-      const targetId = isAdmin && body.employeeId ? String(body.employeeId) : session.employeeId;
+      const targetId = sees && body.employeeId ? String(body.employeeId) : session.employeeId;
       const all = await TB.loadAll(readJSON);
       const bal = TB.ledger(targetId, all);
       const adjs = all.adjustments.filter((a) => a.employeeId === targetId).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 60)
@@ -127,6 +133,10 @@ module.exports = async (req, res) => {
         .map((r) => ({ id: r.id, status: r.status, startDate: r.startDate, endDate: r.endDate, minutes: r.recovery.minutes, plan: r.recovery.plan || [] }));
       const pendingMinutes = adjs.filter((a) => a.status === 'pending').reduce((x, a) => x + a.minutes, 0);
       delete bal.effects;
+      if (isMgr && targetId !== session.employeeId) {
+        res.status(200).json(noLei({ ok: true, employeeId: targetId, ...bal, pendingMinutes, pendingCount: adjs.filter((a) => a.status === 'pending').length, adjustments: adjs, plans, tolerance: TB.TOLERANCE }));
+        return;
+      }
       res.status(200).json({ ok: true, employeeId: targetId, ...bal, pendingMinutes, pendingCount: adjs.filter((a) => a.status === 'pending').length, adjustments: adjs, plans,
         rate: TB.OVERTIME_LEI_PER_HOUR, tolerance: TB.TOLERANCE, payouts: all.payouts.filter((x) => x.employeeId === targetId).slice(-12).reverse() });
       return;
@@ -134,21 +144,27 @@ module.exports = async (req, res) => {
 
     // ---------------------------------------------------------------- Aprobări: days over / under
     if (action === 'adjust_list') {
-      if (!(await requireAdmin(req, res))) return;
+      if (!sees) return fail(403, 'forbidden');
       const all = await TB.loadAll(readJSON);
       const employees = await readJSON('data/employees.json', []);
       const pending = all.adjustments.filter((a) => a.status === 'pending').sort((a, b) => (a.date < b.date ? -1 : 1));
       const balances = {};
       pending.forEach((a) => { if (!balances[a.employeeId]) { const b = TB.ledger(a.employeeId, all); delete b.effects; balances[a.employeeId] = b; } });
       const nameOf = (id) => { const e = employees.find((x) => x.id === id); return e ? e.name : id; };
+      if (isMgr) {
+        Object.keys(balances).forEach((id) => { balances[id] = noLei(balances[id]); });
+        res.status(200).json({ ok: true, adjustments: pending.map((a) => Object.assign({ employeeName: nameOf(a.employeeId), mine: a.employeeId === session.employeeId }, a)), balances });
+        return;
+      }
       res.status(200).json({ ok: true, adjustments: pending.map((a) => Object.assign({ employeeName: nameOf(a.employeeId) }, a)), balances, rate: TB.OVERTIME_LEI_PER_HOUR });
       return;
     }
     if (action === 'adjust_decide') {
-      if (!(await requireAdmin(req, res))) return;
+      if (!sees) return fail(403, 'forbidden');
       const adjs = await readJSON(TB.ADJ, []);
       const a = adjs.find((x) => x.id === body.id);
       if (!a) return fail(404, 'not_found');
+      if (isMgr && a.employeeId === session.employeeId) return fail(403, 'own_request'); // her own days: the owner
       if (a.status !== 'pending') return fail(409, 'already_decided');
       if (!['approve', 'reject'].includes(body.decision)) return fail(400, 'invalid_decision');
       a.decidedAt = new Date().toISOString();
@@ -174,7 +190,7 @@ module.exports = async (req, res) => {
         ? '+' + fmtMin(m) + (ef.covered ? ', ' + fmtMin(ef.covered) + ' din orele de recuperat' : '') + (ef.toBank ? (ef.covered ? ', ' : ' ') + fmtMin(ef.toBank) + ' la ore suplimentare' : '') + '.'
         : fmtMin(m) + ' lipsă' + (ef.fromBank ? ', luate din orele suplimentare' : '') + (ef.toDebt ? (ef.fromBank ? ', ' : ', ') + fmtMin(ef.toDebt) + ' de recuperat' : '') + '.';
       await notify({ readJSON, writeJSON }, a.employeeId, { kind: 'time', tone: 'good', title: 'PONTAJ ✅ - ' + day + ' aprobat', text, go: 'condica' });
-      res.status(200).json({ ok: true, adjustment: a, effect: ef });
+      res.status(200).json({ ok: true, adjustment: a, effect: isMgr ? null : ef });
       return;
     }
     // overtime paid with the salary: the whole bank, at 40 lei / hour
@@ -216,7 +232,7 @@ module.exports = async (req, res) => {
 
     if (action === 'list') {
       let list = entries;
-      if (!isAdmin) {
+      if (!sees) {
         list = list.filter((e) => e.employeeId === session.employeeId);
       } else if (body.employeeId) {
         list = list.filter((e) => e.employeeId === body.employeeId);
@@ -231,8 +247,8 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'balance') {
-      const targetId = isAdmin && body.employeeId ? String(body.employeeId) : session.employeeId;
-      if (!isAdmin && targetId !== session.employeeId) return fail(403, 'forbidden');
+      const targetId = sees && body.employeeId ? String(body.employeeId) : session.employeeId;
+      if (!sees && targetId !== session.employeeId) return fail(403, 'forbidden');
       const balance = await computeBalance(targetId, entries);
       res.status(200).json({ ok: true, employeeId: targetId, ...balance });
       return;
@@ -240,8 +256,8 @@ module.exports = async (req, res) => {
 
     if (action === 'balance_all') {
       // Admin overview: every employee's balance in one call, plus today's clock status, so
-      // the Condică tab can show a team-wide table without a round trip per employee.
-      if (!(await requireAdmin(req, res))) return;
+      // the Condică tab can show a team-wide table without a round trip per employee. The manager: the same, without lei.
+      if (!sees) return fail(403, 'forbidden');
       const employees = await readJSON('data/employees.json', []);
       const today = serverToday();
       const tbAll = await TB.loadAll(readJSON);
@@ -251,16 +267,17 @@ module.exports = async (req, res) => {
         const todayEntry = entries.find((e) => e.employeeId === emp.id && e.date === today) || null;
         const tb = TB.ledger(emp.id, tbAll);
         list.push({ employeeId: emp.id, name: emp.name, location: emp.location, role: emp.role, ...balance, todayCheckIn: todayEntry ? todayEntry.checkIn : null, todayCheckOut: todayEntry ? todayEntry.checkOut : null,
-          debt: tb.debt, bank: tb.bank, bankLei: tb.bankLei, pending: tbAll.adjustments.filter((a) => a.employeeId === emp.id && a.status === 'pending').length });
+          debt: tb.debt, bank: tb.bank, ...(isMgr ? {} : { bankLei: tb.bankLei }), pending: tbAll.adjustments.filter((a) => a.employeeId === emp.id && a.status === 'pending').length });
       }
       res.status(200).json({ ok: true, employees: list });
       return;
     }
 
     if (action === 'update') {
-      if (!(await requireAdmin(req, res))) return;
+      if (!sees) return fail(403, 'forbidden');
       const entry = entries.find((e) => e.id === body.id);
       if (!entry) return fail(404, 'entry_not_found');
+      if (isMgr && entry.employeeId === session.employeeId) return fail(403, 'own_request'); // her own day: the owner corrects it
       if (body.checkIn !== undefined) {
         if (!isValidTime(body.checkIn)) return fail(400, 'invalid_time');
         entry.checkIn = body.checkIn || null;

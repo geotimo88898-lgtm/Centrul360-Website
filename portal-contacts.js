@@ -343,7 +343,7 @@
     const me = K.data.me, admin = K.data.isAdmin;
     const canRemove = (x) => admin || (x && x.authorId === me.id);
     // Publishing on the site: the owner and reception (never without the client's consent).
-    const canPublish = admin || me.role === 'receptie';
+    const canPublish = admin || me.role === 'receptie' || me.role === 'manager';
     const pubOf = (kind, sid) => (st.detail.published || []).find((x) => x.kind === kind && (kind === 'case' || x.sessionId === sid));
     const consentOk = () => !!(st.detail.consent && st.detail.consent.publish);
     function pubHtml(kind, sid) {

@@ -205,7 +205,7 @@
   const cityLeads = () => (S.location ? S.leads.filter((l) => l.location === S.location) : S.leads);
   const CITY_KEY = () => 'c360_pl_city_' + ((S.ctx.me && S.ctx.me.id) || '');
   // owner and reception choose the city; a cosmetician only ever sees her own
-  const pickCity = () => !!(S.ctx.isAdmin || (S.ctx.me && S.ctx.me.role === 'receptie'));
+  const pickCity = () => !!(S.ctx.isAdmin || (S.ctx.me && (S.ctx.me.role === 'receptie' || S.ctx.me.role === 'manager')));
   function savedCity() { try { const v = localStorage.getItem(CITY_KEY()) || ''; return ['Timișoara', 'Arad'].includes(v) ? v : ''; } catch (e) { return ''; } }
   const isWorking = (l) => l.kind === 'open' || l.kind === 'booked';
   const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || '';

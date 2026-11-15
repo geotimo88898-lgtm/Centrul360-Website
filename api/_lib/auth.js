@@ -198,7 +198,9 @@ async function requireAuth(req, res) {
   renew(res, session);
   // Previewing an employee's account is look-only: nothing gets saved in their name.
   // (Some screens read through POST { action: 'list' }, those stay allowed.)
-  const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list'].includes(req.body.action));
+  const readOnly = req.method === 'GET' || (req.method === 'POST' && req.body && ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list',
+    // the Manager page's readings (api/portal-manager.js)
+    'stats', 'context', 'feedback_list', 'close_prefill', 'closes_list', 'pos', 'report_draft', 'reports_list'].includes(req.body.action));
   if (session.viewer && !readOnly) {
     res.status(403).json({ error: 'preview_only' });
     return null;

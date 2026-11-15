@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
 
   // Încasări → "Rest de plată din pachete" (the desk and the owner): every package still being paid in their city
   if ((req.body || {}).action === 'dues') {
-    const who = await requireRole(req, res, ['admin', 'receptie']);
+    const who = await requireRole(req, res, ['admin', 'receptie', 'manager']);
     if (!who) return;
     try {
       const city = await require('./_lib/city').cityOf(who, readJSON);

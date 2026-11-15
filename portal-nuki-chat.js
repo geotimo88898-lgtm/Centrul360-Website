@@ -20,7 +20,7 @@
   var TEXT = /\.(txt|csv|tsv|md|json|html?)$/i;
   function toast(m) { K().ui().toast(m, 'error'); }
 
-  function allowed() { var d = K() && K().data; return !!(d && (d.isAdmin || (d.me && (d.me.role === 'receptie' || d.me.role === 'cosmetician')))); }
+  function allowed() { var d = K() && K().data; return !!(d && (d.isAdmin || (d.me && (d.me.role === 'receptie' || d.me.role === 'manager' || d.me.role === 'cosmetician')))); }
   // the section on screen (the panel shown, not the address: it told „Acte și autorizații” on Traininguri, 8.11)
   function tabName() {
     var p = document.querySelector('main > .panel.active');

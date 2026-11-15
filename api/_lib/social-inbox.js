@@ -232,7 +232,7 @@ async function ring(fresh) {
   if (!fresh.length) return;
   const { sendPush } = require('./push');
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie').map((e) => e.id));
+  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie' || e.role === 'manager').map((e) => e.id));
   for (const f of fresh) {
     const text = f.text.length > 160 ? f.text.slice(0, 159) + '…' : f.text;
     await sendPush({ readJSON, writeJSON }, ids, { title: CHANNELS[f.channel] + ' · ' + f.name, body: text, url: '/#mesaje', tag: 'msg-' + f.channel + '-' + f.id }).catch(() => {});

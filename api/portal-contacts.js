@@ -65,7 +65,7 @@ async function removeCase(caseId) {
   await Promise.all((c.images || []).map((im) => removeBinary(im.path)));
   await writeJSON('data/cases.json', cases.filter((x) => x.id !== caseId));
 }
-const canPublish = (session) => ['admin', 'receptie'].includes(session.role);
+const canPublish = (session) => ['admin', 'receptie', 'manager'].includes(session.role);
 
 // Mirrors the counters shown in the contact list (so the list never opens every detail file).
 function summarize(d) {

@@ -24,7 +24,7 @@ async function manualList() {
     .sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt))).slice(0, 300);
 }
 
-const VALID_ROLES = ['cosmetician', 'receptie', 'admin'];
+const VALID_ROLES = require('./_lib/roles').ROLES; // receptie, cosmetician, manager, admin
 
 // Up to 2 "obiective individuale" per employee (Setări → Angajați → edit → obiective).
 // Non-manual metrics are computed live in portal-data.js from sales.json/appointments.json

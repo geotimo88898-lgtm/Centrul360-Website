@@ -932,7 +932,7 @@
     const months = (D.salary && D.salary.months) || [];
     const pay = months.find((m) => m.month === C.month) || null;
     const RULE = K.commissionRule();
-    const isDesk = me.role === 'receptie';
+    const isDesk = me.role === 'receptie' || me.role === 'manager';
     const addBtn = cpanel.querySelector('[data-comm-new]');
     if (addBtn) addBtn.hidden = me.role !== 'cosmetician';
 

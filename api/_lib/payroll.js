@@ -10,7 +10,7 @@
 // Reception has no commission and the cosmeticians no bonus.
 
 const BOOKING_TIERS = [{ min: 30, lei: 1500 }, { min: 27, lei: 700 }, { min: 24, lei: 500 }];
-const hasBookingBonus = (emp) => !!emp && emp.role === 'receptie';
+const hasBookingBonus = (emp) => !!emp && (emp.role === 'receptie' || emp.role === 'manager'); // the manager keeps the reception bonus she had
 const hasCommission = (emp) => !!emp && emp.role === 'cosmetician';
 
 const bucharestDate = (iso) => {

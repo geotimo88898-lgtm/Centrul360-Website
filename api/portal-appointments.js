@@ -211,7 +211,7 @@ module.exports = async (req, res) => {
 
     // Everything below changes the calendar: front desk (receptie) + admin only, a
     // cosmetician sees the calendar read-only.
-    if (!['admin', 'receptie'].includes(session.role)) {
+    if (!['admin', 'receptie', 'manager'].includes(session.role)) {
       res.status(403).json({ error: 'forbidden' });
       return;
     }

@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
     || /^legal\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf|docx?|xlsx?)$/.exec(p); // Acte și autorizații: the salons' and the team's papers
   if (!m) { res.status(400).json({ error: 'invalid_path' }); return; }
   // the legal papers (authorizations, contracts, IDs, medical fitness): the admins only
-  if (p.startsWith('legal/') && session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
+  if (p.startsWith('legal/') && !require('./_lib/roles').canManage(session)) { res.status(403).json({ error: 'forbidden' }); return; }
   const buf = await readBinary(p);
   if (!buf) { res.status(404).json({ error: 'not_found' }); return; }
   res.setHeader('Content-Type', TYPES[m[1]]);

@@ -62,7 +62,7 @@
     if (window.innerWidth < 720) { let v = 'day'; try { v = localStorage.getItem(PHONE_VIEW) === 'week' ? 'week' : 'day'; } catch (e) { /* private mode */ } S.view = v; }
     panel.innerHTML =
       // no page title (the owner, 5.11: more room for the calendar); the buttons stay, on the right
-      (canEdit() ? '<div class="k-head cal-head"><div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button><button type="button" class="k-btn is-outline" data-act="team">' + icon('users') + 'Program echipă</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div></div>' : '') +
+      (canEdit() ? '<div class="k-head cal-head"><div class="k-head-actions">' + (K.data && K.data.isAdmin ? '<button type="button" class="k-btn is-outline" data-act="online" title="Programările clientelor de pe site">' + icon('globe') + 'Online</button>' : '') + (K.canManage && K.canManage() ? '<button type="button" class="k-btn is-outline" data-act="team">' + icon('users') + 'Program echipă</button>' : '') + '<button type="button" class="k-btn is-outline" data-act="block">' + icon('ban') + 'Blochează timp</button><button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Programare<kbd>N</kbd></button></div></div>' : '') +
       '<div class="cal-bar">' +
         '<div class="cal-nav"><button type="button" class="k-btn is-outline is-sm" data-act="today">Azi</button>' +
         '<button type="button" class="k-icon-btn" data-act="prev" aria-label="Înapoi">' + icon('left') + '</button>' +
@@ -823,7 +823,7 @@
       '<span class="onl-chip" data-exc-date="' + dt + '">' + esc(K.dateShort(dt) + ': ' + excText(d.dates[dt][id])) + '<button type="button" aria-label="Scoate" data-exc-rm>' + icon('x') + '</button></span>').join('');
     const card = (p) => {
       const w = d.weekly[p.id], days = (w && w.days) || {};
-      return '<section class="onl-city tm-emp" data-emp="' + esc(p.id) + '"><div class="onl-city-h"><b>' + icon('user') + esc(p.name) + '</b>' +
+      return '<section class="onl-city tm-emp" data-emp="' + esc(p.id) + '"><div class="onl-city-h"><b>' + icon('user') + esc(p.name) + '</b>' + (p.role && p.role !== 'cosmetician' ? K.roleTag(p.role) : '') +
         (w ? '' : '<span>fără program</span>') + '<select name="loc" class="tm-loc" aria-label="Orașul">' + K.options(LOCS.map((l) => [l, l]), cityOf(p)) + '</select></div>' +
         '<div class="onl-days">' + WD_TEAM.map(([k, name]) => { const y = days[k] || { on: false, from: '09:00', to: '17:00' };
           return '<div class="onl-day' + (y.on ? '' : ' is-off') + '">' + K.toggle('on|' + k, y.on, name) +
@@ -838,7 +838,9 @@
     };
     const body = () => {
       if (!d.people.length) return K.empty('users', 'Nicio cosmeticiană activă', '');
-      return '<div class="onl tm">' + LOCS.map((l) => { const list = d.people.filter((p) => cityOf(p) === l);
+      const desk = d.people.some((p) => p.role && p.role !== 'cosmetician');
+      return (desk ? '<p class="ct-hint">' + icon('info') + 'Locurile pentru cliente le fac doar orele cosmeticienelor. Orele recepției sunt pentru planificarea echipei.</p>' : '') +
+        '<div class="onl tm">' + LOCS.map((l) => { const list = d.people.filter((p) => cityOf(p) === l).sort((a, b) => (a.role && a.role !== 'cosmetician' ? 1 : 0) - (b.role && b.role !== 'cosmetician' ? 1 : 0));
         return list.length ? '<h4 class="tm-city">' + icon('pin') + esc(l) + '</h4>' + list.map(card).join('') : ''; }).join('') + '</div>';
     };
     const changed = () => { Object.keys(TEAM.at).forEach((k) => delete TEAM.at[k]); if (panel && K.isActive('programari')) load(true); };
@@ -889,6 +891,9 @@
       },
     });
   }
+
+  // the Manager page opens the same drawer (the owner and the manager set the team's hours)
+  K.openTeamSchedule = () => openTeam();
 
   function openAppt(id) {
     const a = S.appts.find((x) => x.id === id);

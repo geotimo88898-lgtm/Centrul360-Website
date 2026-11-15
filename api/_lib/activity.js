@@ -43,11 +43,13 @@ const ROUTES = {
   'portal-account': { area: 'Contul meu', go: '' },
   'ads-manager': { area: 'Reclame', go: 'reclame' },
   'ads-publish': { area: 'Reclame', go: 'reclame' },
+  'portal-manager': { area: 'Manager', go: 'manager' },
+  'portal-legal': { area: 'Acte și autorizații', go: 'acte' },
 };
 // what is only read (never a line), and routes that are not changes of the clinic's work
 const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list', 'check', 'discover', 'profile_get',
   'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause', 'test',
-  'transcribe']; // (a voice note written out in Mesaje: no change of the clinic's work)
+  'transcribe', 'stats', 'context', 'feedback_list', 'close_prefill', 'closes_list', 'pos', 'report_draft', 'reports_list']; // (a voice note written out in Mesaje: no change of the clinic's work)
 const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-creative-sso', 'portal-file', 'portal-leave-pdf', 'portal-avatar', 'portal-data', 'portal-login', 'portal-logout', 'portal-activity', 'portal-game'];
 
 // the words for each change (route:action; route: for the routes without actions)
@@ -76,6 +78,7 @@ const VERBS = {
   'portal-employees:manual_add': 'a adăugat o ajustare pentru', 'portal-employees:manual_delete': 'a șters o ajustare',
   'portal-attendance:clock_in': 'a pontat intrarea', 'portal-attendance:clock_out': 'a pontat ieșirea', 'portal-attendance:update': 'a modificat pontajul',
   'portal-attendance:adjust_decide': 'a decis o corecție de pontaj', 'portal-attendance:payout': 'a plătit ore suplimentare',
+  'portal-manager:feedback': 'i-a spus lui George cum sunt leadurile', 'portal-manager:close': 'a închis ziua', 'portal-manager:report_send': 'a trimis raportul săptămânal',
   'portal-leave:create': 'a cerut concediu', 'portal-leave:decide': 'a decis o cerere de concediu', 'portal-leave:admin_create': 'a adăugat un concediu',
   'portal-offers:create': 'a adăugat oferta', 'portal-offers:update': 'a modificat oferta', 'portal-offers:delete': 'a șters oferta', 'portal-offers:reorder': 'a reordonat ofertele',
   'portal-workflows:save': 'a salvat automatizarea', 'portal-workflows:toggle': 'a pornit / oprit automatizarea', 'portal-workflows:delete': 'a șters automatizarea',

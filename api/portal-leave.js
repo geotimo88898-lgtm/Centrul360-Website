@@ -24,6 +24,7 @@ const { buildLeaveRequestPdf } = require('./_lib/pdf-leave');
 const { createBlockingAppointment } = require('./portal-appointments');
 const TB = require('./_lib/timebank');
 const { notify, notifyMany, adminIds } = require('./_lib/notify');
+const { canManage } = require('./_lib/roles');
 
 const KEY = 'data/leave-requests.json';
 const VALID_TYPES = ['odihna', 'fara_plata', 'medical', 'alta', 'suplimentare'];
@@ -86,6 +87,9 @@ module.exports = async (req, res) => {
   const session = await requireAuth(req, res);
   if (!session) return;
   const isAdmin = session.role === 'admin';
+  // the manager (15.11) plans and decides the team's leave, never her own (that one is the owner's)
+  const isMgr = session.role === 'manager';
+  const sees = canManage(session);
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error) => res.status(code).json({ error });
@@ -141,7 +145,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'list') {
-      let list = isAdmin ? requests : requests.filter((r) => r.employeeId === session.employeeId);
+      let list = sees ? requests : requests.filter((r) => r.employeeId === session.employeeId);
       // Pending first (oldest first, first to act on), then decided, most recent decision first.
       list = list.slice().sort((a, b) => {
         if (a.status === 'pending' && b.status !== 'pending') return -1;
@@ -154,9 +158,10 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'decide') {
-      if (!(await requireAdmin(req, res))) return;
+      if (!sees) return fail(403, 'forbidden');
       const request = requests.find((r) => r.id === body.id);
       if (!request) return fail(404, 'request_not_found');
+      if (isMgr && request.employeeId === session.employeeId) return fail(403, 'own_request');
       if (request.status !== 'pending') return fail(400, 'already_decided');
       if (!['approved', 'rejected'].includes(body.decision)) return fail(400, 'invalid_decision');
 
@@ -199,8 +204,9 @@ module.exports = async (req, res) => {
       // Admin manually logs a leave that already happened/was agreed off-portal (e.g. the
       // employee didn't submit it herself), created and approved in one step: no 'pending'
       // state, same PDF-generation + Calendar-block side effects as a normal approval.
-      if (!(await requireAdmin(req, res))) return;
+      if (!sees) return fail(403, 'forbidden');
       const { employeeId, type, startDate, endDate } = body;
+      if (isMgr && (employeeId === session.employeeId || employeeId === 'admin')) return fail(403, 'own_request');
       if (!employeeId || typeof employeeId !== 'string') return fail(400, 'missing_employee');
       if (!VALID_TYPES.includes(type)) return fail(400, 'invalid_type');
       if (!isValidDate(startDate) || !isValidDate(endDate)) return fail(400, 'invalid_date');

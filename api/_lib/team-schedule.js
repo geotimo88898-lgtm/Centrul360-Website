@@ -49,6 +49,15 @@ async function people() {
     .map((e) => ({ id: e.id, name: e.name || '', location: CITIES.includes(e.location) ? e.location : '' }));
 }
 
+// everyone whose hours can be set (Calendar → Program echipă, the owner and the manager, 15.11): the cosmeticians plus
+// reception and the manager. Only the cosmeticians count as places for clients (people() above, the booking and the
+// „La lucru” strip); the desk's hours are for the team's own planning.
+async function staff() {
+  const list = await readJSON('data/employees.json', []);
+  return (Array.isArray(list) ? list : []).filter((e) => e && e.id && e.id !== 'admin' && e.active !== false && ['cosmetician', 'receptie', 'manager'].includes(e.role))
+    .map((e) => ({ id: e.id, name: e.name || '', role: e.role, location: CITIES.includes(e.location) ? e.location : '' }));
+}
+
 // her leave that day: an approved leave (concediu) or a block for her with no hour
 function onLeave(appts, employeeId, date) {
   return (appts || []).some((a) => a && a.date === date && a.cosmeticianId === employeeId && a.status !== 'anulata' &&
@@ -119,4 +128,4 @@ function cleanWeek(days) {
   return { days: out };
 }
 
-module.exports = { KEY, CITIES, DAYS, load, update, people, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin };
+module.exports = { KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin };

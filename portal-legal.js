@@ -1,7 +1,7 @@
 // Centrul360 portal, Admin → „Acte și autorizații” (the owner, 8.11): for each salon (Timișoara, Arad) every
 // authorization and paper it needs, and for each employee their legal dossier; per item its status, number, dates,
 // notes and the files (a photo with the phone camera, a PDF, a Word or Excel file). What each item takes comes from
-// api/_lib/legal-reqs.js; what we have, from api/portal-legal.js. Admin only.
+// api/_lib/legal-reqs.js; what we have, from api/portal-legal.js. The owner and the manager.
 (function () {
   'use strict';
   const K = window.K;
@@ -13,7 +13,7 @@
   const LABEL = { verif: 'De verificat', lipsa: 'Lipsește', lucru: 'În lucru', depus: 'Depus', ok: 'În regulă', na: 'Nu se aplică', expirat: 'Expirat', curand: 'Expiră curând' };
   const TONE = { verif: '', lipsa: 'is-bad', lucru: 'is-warn', depus: 'is-info', ok: 'is-good', na: '', expirat: 'is-bad', curand: 'is-warn' };
   const PICK = ['lipsa', 'lucru', 'depus', 'ok', 'na'];
-  const ROLE = { cosmetician: 'Cosmeticiană', receptie: 'Recepție', admin: 'Admin' };
+  const ROLE = { cosmetician: 'Cosmeticiană', receptie: 'Recepție', manager: 'Manager', admin: 'Admin' };
   const today = () => (K.today ? K.today() : new Date().toISOString().slice(0, 10));
   const daysTo = (d) => Math.round((Date.parse(d + 'T12:00:00Z') - Date.parse(today() + 'T12:00:00Z')) / 864e5);
   const dShort = (d) => (d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(0, 4) : '');
@@ -54,7 +54,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'lg');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Acte și autorizații</h2></div><div class="k-head-actions" data-lghead></div></div><div data-lgbody><div class="k-skel" style="height:360px"></div></div>';
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">' + (K.data && K.data.isAdmin ? 'Admin' : 'Manager') + '</div><h2>Acte și autorizații</h2></div><div class="k-head-actions" data-lghead></div></div><div data-lgbody><div class="k-skel" style="height:360px"></div></div>';
     panel.addEventListener('change', (e) => { if (e.target.name === 'lgview') { S.view = e.target.value; S.person = ''; paint(); } });
     panel.addEventListener('click', (e) => {
       const row = e.target.closest('[data-lgitem]'); if (row) return openItem(scopeOf(), row.dataset.lgitem);

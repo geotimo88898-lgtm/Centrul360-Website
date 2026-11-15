@@ -9,7 +9,7 @@
   const K = window.K;
   const { esc, icon } = K;
   const cat = (k) => (K.cats && (K.cats[k] || K.cats[K.catKey(k)])) || k || '';
-  const ROLES = [['receptie', 'Recepție'], ['cosmetician', 'Cosmeticiană'], ['admin', 'Admin']];
+  const ROLES = [['receptie', 'Recepție'], ['cosmetician', 'Cosmeticiană'], ['manager', 'Manager'], ['admin', 'Admin']];
   const LOCS = [['Timișoara', 'Timișoara'], ['Arad', 'Arad']];
   const monthOf = K.monthOf;
 
@@ -290,11 +290,11 @@
     const card = (e) => {
       const st = empStats(e);
       const pay = (K.data.admin.payroll || []).find((x) => x.id === e.id) || {};
-      const kv = e.role === 'receptie'
+      const kv = e.role === 'receptie' || e.role === 'manager'
         ? [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Bonus', K.lei(pay.bonus || 0)], ['Media/zi', pay.booking ? K.num(pay.booking.avg) : '-']]
         : [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Comision', K.lei(st.comm)], ['Tratamente', K.lei(st.performed)]];
       return '<button type="button" class="ad-emp' + (e.active ? '' : ' is-off') + '" data-emp="' + esc(e.id) + '"><div class="ad-emp-top">' + K.avatar(e.name, 46) +
-        '<div><b>' + esc(e.name) + '</b><span><span class="k-tag is-' + (e.role === 'receptie' ? 'info' : e.role === 'admin' ? 'accent' : 'good') + '">' + esc(K.roleLabel(e.role)) + '</span>' + esc(e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
+        '<div><b>' + esc(e.name) + '</b><span>' + K.roleTag(e.role) + esc(e.role === 'manager' ? 'Timișoara și Arad' : e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
         '<dl class="ad-emp-kv" title="Luna curentă">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
         (e.netSalary ? '' : '<div class="ad-emp-empty">' + icon('wallet') + 'Salariul nu e setat, apasă ca să-l pui</div>') +
         (e.active ? '<div class="ad-emp-push' + (e.pushDevices ? ' is-on' : '') + '">' + icon('bell') + (e.pushDevices ? 'Notificări pe ' + K.plural(e.pushDevices, 'telefon', 'telefoane') : 'Fără notificări pe telefon') + '</div>' : '') + '</button>';
@@ -325,14 +325,14 @@
     const sales = K.data.admin.allSales.filter((s) => s.employeeId === e.id).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25);
     const d = K.drawer({
       title: e.name, lead: K.avatar(e.name, 44), width: 600,
-      subtitle: '<span class="k-tag is-' + (e.role === 'receptie' ? 'info' : 'good') + '">' + esc(K.roleLabel(e.role)) + '</span>' + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>dezactivat</b>'),
+      subtitle: K.roleTag(e.role) + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>dezactivat</b>'),
       body:
         '<div class="ad-tabs">' + K.seg('emptab', [['profile', 'Profil & salariu', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], tab, 'is-big') + '</div>' +
         '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
         '<div data-pane="profile"' + (tab === 'profile' ? '' : ' hidden') + '><form class="k-form" data-profile>' +
-          K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'receptie' ? 'bonusul de programări.' : 'comisionul.')) +
+          K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'receptie' || e.role === 'manager' ? 'bonusul de programări.' : 'comisionul.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
-          K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full') +
+          K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Managerul conduce ambele clinici: tot ce face recepția, pe Timișoara și Arad, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
           K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +
           K.field('Zile de concediu pe an', '<input name="annualLeaveDays" type="number" min="0" max="60" value="' + esc(e.annualLeaveDays != null ? e.annualLeaveDays : 21) + '">', '', 'Minimul legal e 20; implicit 21.') +
           K.field('Ore contractate / zi', '<input name="contractedHoursPerDay" type="number" min="1" max="16" step="0.5" value="' + esc(e.contractedHoursPerDay != null ? e.contractedHoursPerDay : 8) + '">') + '</form>' +
@@ -426,7 +426,7 @@
       title: 'Angajat nou', icon: 'userPlus', 
       body: '<form class="k-form" data-form>' +
         K.field('Nume complet', '<input name="name" required maxlength="100" placeholder="ex: Giovanna Marin" autofocus>', 'full') +
-        K.field('Rol', K.seg('role', ROLES.slice(0, 2), 'receptie', 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei.') +
+        K.field('Rol', K.seg('role', ROLES.slice(0, 3), 'receptie', 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei. Managerul conduce ambele clinici.') +
         K.field('Locație', K.seg('location', LOCS, 'Timișoara', 'is-big'), 'full') +
         K.field('Username', '<input name="username" required maxlength="60" autocomplete="off">') +
         K.field('Parolă temporară', '<div class="ad-pass"><input name="password" required minlength="6" autocomplete="off" value="' + gen() + '"><button type="button" class="k-icon-btn" data-gen title="Generează alta">' + icon('refresh') + '</button></div>') +
