@@ -155,7 +155,8 @@ button.k-stat:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
   box-shadow:var(--shadow-lg); opacity:0; transform:translateY(-6px); pointer-events:none; transition:opacity .15s ease, transform .2s var(--ease); max-height:300px; overflow:auto; }
 .k-ac-list.is-open{ opacity:1; transform:none; pointer-events:auto; }
 .k-ac-item{ width:100%; display:flex; align-items:center; gap:.6rem; padding:.45rem .55rem; border:0; border-radius:9px; background:transparent; color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
-.k-ac-item span{ display:flex; flex-direction:column; min-width:0; }
+.k-ac-item > span:not(.k-avatar){ display:flex; flex-direction:column; min-width:0; }
+.k-ac-item > .k-avatar{ flex:none; } /* 16.11: the text rule above also hit the avatar (squeezed circle, initials off centre) */
 .k-ac-item b{ font-size:.86rem; font-weight:600; }
 .k-ac-item small{ font-size:.74rem; color:var(--muted); }
 .k-ac-item:hover, .k-ac-item.is-active{ background:var(--accent-soft); }
