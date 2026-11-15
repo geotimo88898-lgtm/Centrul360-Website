@@ -70,6 +70,9 @@ bun, green light”. Singura schimbare: fără invitația „Scrieți «360» î
 potrivește aici”); acum se termină cu Nuki: „Pe curând, la Centrul360.” și logo-ul. Regula: invitația la comentariu
 nu se pune automat; doar unde se potrivește cu felul reelului (nu într-o conversație care se încheie firesc).
 
+**15.11:** „consultația gratuită” se poate spune în reels („da, poți pune consultația gratuită în reel, de ce nu, sigur,
+normal”), cu cuvintele site-ului.
+
 ## Cum folosești jurnalul
 - Înainte de concept: citește principiile și ultimele verdicte; în blocul `concept` din script scrie care principii
   servește reelul și ce verdict anterior îl influențează.

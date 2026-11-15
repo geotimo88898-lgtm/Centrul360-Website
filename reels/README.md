@@ -680,7 +680,8 @@ Pentru scenele `panel` și decorurile `bg`: stilul temei (`imagery` + paleta), c
   expresii interzise, durata iese din 25-40 s, sunt peste 8 imagini AI, lipsesc capturile pentru finalul `site`.
 - Zonele sigure: nimic scris în primii 220 px de sus, în ultimii 380 px de jos și în ultimii 160 px din dreapta.
 - Subtitrări cuvânt cu cuvânt (cel mult 3 cuvinte pe ecran), în stilul temei; cuvintele accentuate se animă.
-- Fără preț, ofertă, „programează-te” sau „consultație gratuită”. Domeniul centrul360.com apare doar în finalul
+- Fără preț, ofertă sau „programează-te”. „Consultația gratuită” e voie (regula proprietarului din 15.11: „da, poți pune
+  consultația gratuită în reel, normal”), cu cuvintele site-ului: prima consultație e gratuită, fără obligații, 30 de minute. Domeniul centrul360.com apare doar în finalul
   `site`, într-un browser fictiv, cu capturi reale ale paginilor live, doar secțiuni fără prețuri sau oferte.
 - Fapte corecte, fără promisiuni; sursa faptelor se scrie în `sources`. Formulări sigure din
   `centrul360-creative-machine/knowledge/meta-ads-rules.md` („grăsime localizată”, „conturare”, „fără operație”).
