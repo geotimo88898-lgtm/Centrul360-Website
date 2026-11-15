@@ -103,6 +103,8 @@
       // the star: a favourite on or off (Transit, the grid, Galerie)
       const fv = e.target.closest('[data-ctfav]');
       if (fv) return toggleFav(fv.dataset.ctfav);
+      const sh = e.target.closest('[data-ctshare]');
+      if (sh) return shareVid(sh.dataset.ctshare);
       // Transit: one card or the grid; a cover in the grid opens that one as the card
       const vw = e.target.closest('[data-ctview]');
       if (vw) { const v = vw.dataset.ctview === 'grid' ? 'grid' : 'card'; if (v !== S.tr.view) { S.tr.view = v; saveView(v); S.tr.cap = null; paintTransit(); } return; }
@@ -646,7 +648,7 @@
     // the player's controls sit under the networks and times, at the top: the approve buttons float at the bottom
     // the star (a favourite) sits on the video, top right under the player's controls: clear of them, of the approve
     // buttons at the bottom and of the speaker
-    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(/<\/div>$/, '<div class="cn-tx-fv">' + favBtn(it, 'is-on-video') + '</div></div>') +
+    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(/<\/div>$/, '<div class="cn-tx-fv">' + favBtn(it, 'is-on-video') + shareBtn(it, 'is-on-video') + '</div></div>') +
       '<span class="cn-tx-stamp is-ok" aria-hidden="true">' + icon('check') + 'Aprobat</span><span class="cn-tx-stamp is-no" aria-hidden="true">' + icon('undo') + 'De refăcut</span>' +
       '<div class="cn-tx-i"><div class="cn-tx-h"><small>' + esc(meta) + (it.week ? ' · ' + esc(range(it.week)) : '') + '</small><h3>' + esc(title(it)) + '</h3>' + (it.hook ? '<p class="cn-tx-hook">„' + esc(it.hook) + '”</p>' : '') + '</div>' +
       '<div class="cn-tx-w"><small>Când și unde se postează</small>' + slotRow(it, true) + '</div>' + prev + bad + caps +
@@ -675,6 +677,30 @@
     return '<span class="cn-vw" role="group" aria-label="Cum arată Transit">' + b('card', 'card', 'Unul câte unul') + b('grid', 'grid', 'Toate, în grilă') + '</span>';
   }
   const itemById = (id) => (S.d && S.d.items.find((x) => x.id === id)) || (S.gal.list || []).find((x) => x.id === id) || null;
+  // save / share the video (15.11, the owner: „un buton cu share… să pot da save în galerie… pe calculator download”):
+  // on a phone the share sheet with the file (Salvează videoclipul → Poze, AirDrop, WhatsApp…); on a computer a download.
+  // The first tap fetches the file; the phone may ask for a second tap (the share sheet needs a fresh tap).
+  const SHR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 19h14"/></svg>';
+  const shareBtn = (it, cls) => (mainVid(it) ? '<button type="button" class="cn-fav cn-shr ' + (cls || '') + '" data-ctshare="' + esc(it.id) + '" aria-label="Salvează sau trimite video-ul" title="Salvează / trimite">' + SHR + (/is-chip/.test(cls || '') ? '<span>Salvează</span>' : '') + '</button>' : '');
+  const blobs = new Map();
+  async function shareVid(id) {
+    const it = itemById(id); const vid = it && mainVid(it); if (!vid) return;
+    const url = fileUrl(it, vid.name), name = slugOf(title(it)) + '.mp4';
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const down = () => { const a = document.createElement('a'); a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); };
+    if (!touch || !navigator.share || !navigator.canShare) return down();
+    let f = blobs.get(id);
+    if (f) { try { await navigator.share({ files: [f], title: title(it) }); } catch (e) { if (e && e.name !== 'AbortError') down(); } return; }
+    K.ui().toast('Se pregătește video-ul…', 'info');
+    try {
+      const r = await fetch(url, { credentials: 'same-origin' }); if (!r.ok) throw new Error('http ' + r.status);
+      f = new File([await r.blob()], name, { type: 'video/mp4' });
+      if (!navigator.canShare({ files: [f] })) return down();
+      blobs.set(id, f);
+      try { await navigator.share({ files: [f], title: title(it) }); }
+      catch (e) { if (e && e.name === 'NotAllowedError') K.ui().toast('Gata. Mai apasă o dată ca să-l salvezi sau să-l trimiți.', 'success'); else if (e && e.name !== 'AbortError') down(); }
+    } catch (e) { down(); }
+  }
   const favBtn = (it, cls) => { const on = !!it.fav; return '<button type="button" class="cn-fav ' + (cls || '') + (on ? ' is-on' : '') + '" data-ctfav="' + esc(it.id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Scoate de la favorite' : 'Pune la favorite') + '" title="' + (on ? 'Favorit' : 'Pune la favorite') + '">' + icon('star') + (/is-chip/.test(cls || '') ? '<span>' + (on ? 'Favorit' : 'Pune la favorite') + '</span>' : '') + '</button>'; };
   // a star tapped: at once on screen, then saved (back as it was if the save fails)
   async function toggleFav(id) {
@@ -1452,7 +1478,7 @@
   function itemBody(it) {
     const on = S.d.settings.nets, r = review(it);
     const rv = REVIEW[r];
-    const status = '<div class="cn-rv is-' + r + '">' + favBtn(it, 'is-chip') + '<span class="k-tag ' + rv[1] + '">' + (r === 'approved' ? icon('check') : r === 'redo' ? icon('undo') : '') + rv[0] + '</span>' +
+    const status = '<div class="cn-rv is-' + r + '">' + favBtn(it, 'is-chip') + shareBtn(it, 'is-chip') + '<span class="k-tag ' + rv[1] + '">' + (r === 'approved' ? icon('check') : r === 'redo' ? icon('undo') : '') + rv[0] + '</span>' +
       (r === 'redo' ? (it.redo ? requestView(it.redo) : it.redoNote ? '<p>' + esc(it.redoNote) + '</p>' : '') : r === 'pending' && it.replacedAt ? '<p>Refăcut' + (it.redoNote ? ': ' + esc(it.redoNote) : '') + '</p>' : '') +
       (r === 'approved' ? (it.notes || []).filter((n) => n && n.kind === 'approve' && n.note).slice(-1).map((n) => '<p class="cn-rv-nt">' + icon('pen') + esc(n.note) + '</p>').join('') : '') +
       (r === 'redo' && it.state === 'draft' ? '<p class="cn-rv-w">' + icon('refresh') + 'Se reface</p>' : '') +
@@ -1642,6 +1668,7 @@
         el.addEventListener('click', async (e) => {
           const cur = itemById(id) || it;
           const fv = e.target.closest('[data-ctfav]'); if (fv) return toggleFav(id);
+          const sh = e.target.closest('[data-ctshare]'); if (sh) return shareVid(id);
           const bst = e.target.closest('[data-ctboost]'); if (bst) return boost(bst, id, bst.dataset.ctboost);
           const sn = e.target.closest('[data-ctskipnet]');
           if (sn) {

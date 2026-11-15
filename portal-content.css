@@ -520,3 +520,8 @@
 .cn-tx-m .cn-snd, .cn-tx-m .cn-snd.is-btn{ top:12px; bottom:auto; right:12px; }
 .cn-tx-m .cn-dur{ top:16px; bottom:auto; left:12px; }
 .cn-tx-m .cn-tx-fv{ position:absolute; z-index:3; top:64px; right:10px; margin:0; pointer-events:auto; }
+
+/* save / share, under the star on the video and next to it in the drawer (15.11) */
+.cn-tx-m .cn-tx-fv{ display:flex; flex-direction:column; gap:8px; }
+.cn-shr.is-on-video{ width:42px; height:42px; }
+.cn-shr.is-on-video svg{ width:20px; height:20px; }
