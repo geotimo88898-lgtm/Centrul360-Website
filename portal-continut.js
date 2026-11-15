@@ -105,6 +105,10 @@
       if (all) return approveAll(all);
       const del = e.target.closest('[data-ctidel]');
       if (del) { if (await save({ action: 'idea_del', id: del.dataset.ctidel }, del)) K.ui().toast('Idee ștearsă.', 'success'); return; }
+      // the video's own controls (back, play, forward, full screen); the position bar is a slider
+      const vcb = e.target.closest('[data-ctv]');
+      if (vcb) { const box = vcb.closest('.cn-rc-m'); return vctl(box && box.querySelector('video[data-ctvid]'), vcb.dataset.ctv); }
+      if (e.target.closest('[data-ctvc]')) return;
       // Transit: approve, redo, a note, undo, a network's text
       const card = e.target.closest('[data-cttr]');
       if (card) {
@@ -461,6 +465,50 @@
     };
     return '<div class="cn-sls' + (big ? ' is-big' : '') + '">' + on.map(chip).join('') + off.map((n) => '<span class="cn-sl is-none" title="' + NET[n] + ': fără loc săptămâna asta">' + badge(n) + '<b>fără loc</b></span>').join('') + '</div>';
   }
+  // the owner's controls on the video to approve (15.11: „să-l fac full screen și să dau în spate sau în față”): 3 s back,
+  // play / pause, 3 s forward, the position (drag it), the time, full screen (the phone's own player, with its controls)
+  const VI = (d) => '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const VCI = {
+    back: VI('<path d="M11 7 6 12l5 5"/><path d="M18 7l-5 5 5 5"/>'), fwd: VI('<path d="m13 7 5 5-5 5"/><path d="m6 7 5 5-5 5"/>'),
+    play: VI('<path d="M8 5.5v13l10-6.5z" fill="currentColor"/>'), pause: VI('<path d="M8 5v14M16 5v14"/>'),
+    full: VI('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
+  };
+  const VC = '<div class="cn-vc" data-ctvc><button type="button" data-ctv="back" aria-label="Înapoi 3 secunde">' + VCI.back + '</button>' +
+    '<button type="button" data-ctv="play" aria-label="Pornește sau oprește">' + VCI.pause + '</button>' +
+    '<button type="button" data-ctv="fwd" aria-label="Înainte 3 secunde">' + VCI.fwd + '</button>' +
+    '<input type="range" class="cn-vc-r" data-ctv-seek min="0" max="1000" step="1" value="0" aria-label="Poziția în video">' +
+    '<span class="cn-vc-t" data-ctv-t>0:00</span><button type="button" data-ctv="full" aria-label="Pe tot ecranul">' + VCI.full + '</button></div>';
+  const mmss = (x) => { x = Math.max(0, Math.floor(x || 0)); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+  function vload(v) { if (v && v.dataset.src) { v.src = v.dataset.src; v.removeAttribute('data-src'); } }
+  function vctl(v, what) {
+    if (!v) return;
+    vload(v);
+    const d = v.duration || 0;
+    if (what === 'back') v.currentTime = Math.max(0, (v.currentTime || 0) - 3);
+    else if (what === 'fwd') v.currentTime = Math.min(d ? d - 0.05 : 1e9, (v.currentTime || 0) + 3);
+    else if (what === 'play') { if (v.paused) v.play().catch(() => {}); else v.pause(); }
+    else if (what === 'full') {
+      v.controls = true;
+      const done = () => { if (!document.fullscreenElement && !document.webkitFullscreenElement) { v.controls = false; document.removeEventListener('fullscreenchange', done); } };
+      document.addEventListener('fullscreenchange', done);
+      v.addEventListener('webkitendfullscreen', () => { v.controls = false; }, { once: true });
+      if (v.requestFullscreen) v.requestFullscreen().catch(() => { if (v.webkitEnterFullscreen) v.webkitEnterFullscreen(); });
+      else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+      if (v.paused) v.play().catch(() => {});
+    }
+  }
+  function wireVc(v) {
+    const box = v.closest('.cn-rc-m'), bar = box && box.querySelector('[data-ctvc]');
+    if (!bar || v.dataset.vc) return;
+    v.dataset.vc = '1';
+    const r = bar.querySelector('[data-ctv-seek]'), tt = bar.querySelector('[data-ctv-t]'), pb = bar.querySelector('[data-ctv="play"]');
+    let drag = false;
+    const show = () => { const d = v.duration || 0; if (!drag && d) r.value = String(Math.round((v.currentTime / d) * 1000)); tt.textContent = mmss(v.currentTime) + (d ? ' / ' + mmss(d) : ''); };
+    v.addEventListener('timeupdate', show); v.addEventListener('loadedmetadata', show);
+    v.addEventListener('play', () => { pb.innerHTML = VCI.pause; }); v.addEventListener('pause', () => { pb.innerHTML = VCI.play; });
+    r.addEventListener('input', () => { drag = true; vload(v); const d = v.duration || 0; if (d) { v.currentTime = (Number(r.value) / 1000) * d; tt.textContent = mmss(v.currentTime) + ' / ' + mmss(d); } });
+    r.addEventListener('change', () => { drag = false; });
+  }
   // the video (loaded when it comes near, playing while it is in view, muted until a tap) or the photos to swipe
   function media(it, cls) {
     const files = (it.files || []).slice().sort(byName);
@@ -468,7 +516,8 @@
     if (vid) {
       return '<div class="cn-rc-m ' + (cls || '') + '">' + (it.cover ? '<img class="cn-rc-bg" src="' + esc(cover(it)) + '" alt="" aria-hidden="true">' : '') +
         '<video data-ctvid data-src="' + esc(fileUrl(it, vid.name)) + '"' + (it.cover ? ' poster="' + esc(cover(it)) + '"' : '') + ' muted playsinline loop preload="none"></video>' +
-        '<button type="button" class="cn-snd is-btn' + (S.sound ? ' is-on' : '') + '" data-ctsnd aria-label="Sunet">' + (S.sound ? SPK.on : SPK.off) + '</button>' + (vid.dur ? '<span class="cn-dur">' + Math.round(vid.dur) + ' s</span>' : '') + '</div>';
+        '<button type="button" class="cn-snd is-btn' + (S.sound ? ' is-on' : '') + '" data-ctsnd aria-label="Sunet">' + (S.sound ? SPK.on : SPK.off) + '</button>' + (vid.dur ? '<span class="cn-dur">' + Math.round(vid.dur) + ' s</span>' : '') +
+        (/cn-tx-m/.test(cls || '') ? VC : '') + '</div>';
     }
     const imgs = files.filter((f) => /^image\//.test(f.mime));
     return '<div class="cn-rc-m is-car ' + (cls || '') + '"><div class="cn-car" data-ctcar>' + imgs.map((f) => '<img src="' + esc(fileUrl(it, f.name)) + '" alt="" loading="lazy" decoding="async" draggable="false">').join('') + '</div>' +
@@ -558,7 +607,8 @@
       nets.map((n) => '<button type="button" role="tab" class="cn-tx-cn' + (n === sel ? ' is-on' : '') + '" data-cttr-cap="' + n + '" aria-selected="' + (n === sel) + '">' + badge(n) + '<span>' + NET[n] + '</span>' + (qaFor(it, n).problems.length ? '<i class="cn-qa is-bad">!</i>' : '') + '</button>').join('') + '</div>' +
       (sel ? capView(it, sel) : '') + '</div>';
     // on a phone the networks and times sit on the video too, seen before anything else
-    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(/<\/div>$/, '<div class="cn-tx-ov">' + slotRow(it) + '</div></div>') +
+    // the player's controls sit under the networks and times, at the top: the approve buttons float at the bottom
+    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(VC, '').replace(/<\/div>$/, '<div class="cn-tx-ov">' + slotRow(it) + (mainVid(it) ? VC : '') + '</div></div>') +
       '<span class="cn-tx-stamp is-ok" aria-hidden="true">' + icon('check') + 'Aprobat</span><span class="cn-tx-stamp is-no" aria-hidden="true">' + icon('undo') + 'De refăcut</span>' +
       '<div class="cn-tx-i"><div class="cn-tx-h"><small>' + esc(meta) + (it.week ? ' · ' + esc(range(it.week)) : '') + '</small><h3>' + esc(title(it)) + '</h3>' + (it.hook ? '<p class="cn-tx-hook">„' + esc(it.hook) + '”</p>' : '') + '</div>' +
       '<div class="cn-tx-w"><small>Când și unde se postează</small>' + slotRow(it, true) + '</div>' + prev + bad + caps +
@@ -862,6 +912,7 @@
   function wireMedia(root) {
     const vids = root.querySelectorAll('video[data-ctvid]');
     if (!vids.length) return;
+    vids.forEach(wireVc);
     if (!('IntersectionObserver' in window)) { vids.forEach((v) => { if (v.dataset.src) { v.src = v.dataset.src; v.removeAttribute('data-src'); } }); return; }
     if (!ioLoad) ioLoad = new IntersectionObserver((list) => list.forEach((x) => { const v = x.target; if (x.isIntersecting && v.dataset.src) { v.preload = 'metadata'; v.src = v.dataset.src; v.removeAttribute('data-src'); ioLoad.unobserve(v); } }), { rootMargin: '300px 0px' });
     if (!ioPlay) ioPlay = new IntersectionObserver((list) => list.forEach((x) => {
@@ -875,7 +926,7 @@
       }
       else if (!v.paused) v.pause();
     }), { threshold: [0, 0.6] });
-    vids.forEach((v) => { ioLoad.observe(v); ioPlay.observe(v); });
+    vids.forEach((v) => { ioLoad.observe(v); ioPlay.observe(v); wireVc(v); });
   }
   function stopMedia() {
     if (ioLoad) ioLoad.disconnect();

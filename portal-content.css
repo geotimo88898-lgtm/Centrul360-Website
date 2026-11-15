@@ -393,3 +393,14 @@
 .cn-snd.is-btn{ pointer-events:auto; cursor:pointer; border:0; padding:0; z-index:4; border-radius:999px; width:36px; height:36px; right:10px; bottom:10px; }
 .cn-snd.is-btn.is-on{ background:var(--accent, #6a4dff); }
 .cn-tx-m .cn-snd.is-btn{ width:44px; height:44px; right:14px; bottom:14px; }
+
+/* the controls on the video to approve: back, play, forward, position, time, full screen (15.11) */
+.cn-vc{ position:absolute; left:10px; right:10px; bottom:10px; z-index:3; display:flex; align-items:center; gap:4px; padding:6px 8px; border-radius:14px; background:rgba(8,10,14,.62); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:#fff; }
+.cn-vc button{ flex:none; width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:10px; background:transparent; color:#fff; cursor:pointer; }
+.cn-vc button:hover{ background:rgba(255,255,255,.14); }
+.cn-vc button:focus-visible{ outline:2px solid #5fd3c4; outline-offset:1px; }
+.cn-vc-r{ flex:1; min-width:40px; height:28px; margin:0 4px; accent-color:#1ab6a6; cursor:pointer; }
+.cn-vc-t{ flex:none; font:600 12px/1 Inter, system-ui, sans-serif; font-variant-numeric:tabular-nums; opacity:.85; min-width:62px; text-align:right; }
+.cn-tx-ov .cn-vc{ position:relative; left:auto; right:auto; bottom:auto; margin-top:.5rem; pointer-events:auto; }
+@media (min-width:900px){ .cn-tx-ov{ display:block !important; background:none; padding:.7rem; } .cn-tx-ov .cn-sls{ display:none; } .cn-tx-ov .cn-vc{ margin-top:0; } }
+@media (max-width: 380px){ .cn-vc button{ width:32px; height:32px; } .cn-vc-t{ min-width:0; } }
