@@ -332,6 +332,15 @@ taie: unul prea lung e refuzat și îl scrii din nou. `warnings` din răspunsul 
 repari când poți („slăbit”, „instant”, prea multe hashtag-uri, cazul de pe TikTok fără „Rezultatele diferă…”). `week` lipsă înseamnă săptămâna care vine; o dată din mijlocul săptămânii se mută pe lunea ei; o săptămână
 trecută e refuzată (`past_week`).
 
+## Controlul calendarului după un val de aprobări (regula proprietarului, 15.11)
+După fiecare val mare de aprobări (și înainte, când intră multe materiale noi) verifici tot calendarul:
+`python3 engine/plan-check.py`. Regulile: fiecare postare la o oră din setările rețelei (orele alese din datele
+noastre: Instagram 20:00, Facebook 19:30, TikTok 20:30 și 13:00, YouTube 18:30 și 12:30); niciodată două postări pe
+aceeași rețea la aceeași oră; același reel niciodată pe două rețele în aceeași zi; nicio rețea peste cota săptămânii;
+două piese de brand (logo, manifest, demo, tur) nu una după alta pe aceeași rețea; săptămânile fără goluri cât avem
+materiale aprobate. Ce nu e în regulă se mută: `replace` cu `"week"` nou (sau alte texte), apoi `ready`. Îi spui
+proprietarului într-un rând ce ai mutat și de ce.
+
 ## Refacerea (`redo`)
 Proprietarul trimite un material înapoi din Admin → Content → Transit („De refăcut”, sau trage cardul la stânga). Ce
 primești în `redo` din stare, pentru fiecare:

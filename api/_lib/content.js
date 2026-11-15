@@ -407,6 +407,8 @@ async function replace(id, input) {
     if (x.theme) it.theme = slug(x.theme, 30);
     if (x.endType) it.endType = slug(x.endType, 12);
     if (x.keyword != null) it.keyword = oneLine(x.keyword, 30);
+    // another week (the check after a wave of approvals moves a post that doesn't sit well; 15.11)
+    if (x.week) it.week = weekFor(x.week, Date.now());
     let dropped = [];
     if (x.clear) { dropped = (it.files || []).map((f) => f.path); it.files = []; it.cover = ''; }
     return { files: (it.files || []).map((f) => f.name), dropped };
