@@ -55,6 +55,22 @@ const REDIRECTS = (vercel.redirects || []).map((r) => ({
   to: r.destination, code: r.permanent ? 308 : 307
 }));
 
+async function asClaude(request) {
+  const sec = process.env.CREATIVE_SSO_SECRET || "", ps = process.env.PORTAL_SECRET || "";
+  const auth = request.headers.get("authorization") || "";
+  if (!sec || !ps || auth.length !== sec.length + 7) return request;
+  const enc = new TextEncoder();
+  if (!crypto.subtle.timingSafeEqual(enc.encode(auth), enc.encode("Bearer " + sec))) return request;
+  const payload = btoa("claude.admin." + (Date.now() + 60e3)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const key = await crypto.subtle.importKey("raw", enc.encode(ps), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(payload)));
+  const sig = Array.from(mac, (x) => x.toString(16).padStart(2, "0")).join("");
+  const h = new Headers(request.headers);
+  h.delete("authorization");
+  h.set("cookie", "c360_portal_session=" + encodeURIComponent(payload + "." + sig));
+  return new Request(request, { headers: h });
+}
+
 function cookie(request, name) {
   const c = (request.headers.get("cookie") || "").split(";").map((x) => x.trim()).find((x) => x.startsWith(name + "="));
   return c ? decodeURIComponent(c.slice(name.length + 1)) : "";
@@ -106,6 +122,10 @@ async function route(request, env, ctx) {
       const a = await env.ASSETS.fetch(request);
       if (a.status !== 404) return a;
     }
+    // Claude (sesiunea din cloud, fără sesiune de portal) folosește API-ul Creative server la server cu
+    // "Authorization: Bearer <CREATIVE_SSO_SECRET>", ca la /api/ads-publish: primește o sesiune de admin de un minut
+    // (proprietarul, 15.11: „da dai acces”, ca să urce câștigătoarele în galerie)
+    if (p.startsWith("/creative/api/") && !p.startsWith("/creative/api/cron")) request = await asClaude(request);
     return creative.fetch(request, env, ctx);
   }
 
