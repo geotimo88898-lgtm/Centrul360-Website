@@ -40,6 +40,18 @@ module.exports = async (req, res) => {
   // ids, for the owner's direct link to the account's payment page in Meta Business).
   // ?hours=1: the Instagram followers online per Bucharest hour (0..1, the whole week) and per weekday, read only, for
   // choosing the posting times (the owner, 15.11: „programul spot on, cu potențial de viralitate maxim”)
+  // ?plan=1: the posting calendar, read only (the owner's rule, 15.11: after a big wave of approvals the whole calendar is
+  // checked against our posting rules and fixed where it isn't optimal): every planned or posted entry, by time, with
+  // the item's topic, review state and kind; plus the settings' times and quotas. No ids of people, nothing private.
+  if (req.query && req.query.plan) {
+    const C = require('./_lib/content');
+    const [list, st] = await Promise.all([C.items(), C.settings()]);
+    const rows = [];
+    list.filter((it) => !it.removed && !it.dropped).forEach((it) => (it.plan || []).forEach((e) => rows.push({ at: e.at, net: e.net, kind: e.kind, state: e.state, id: it.id.slice(0, 8), topic: it.topic || '', review: it.review || '', week: it.week, itemState: it.state })));
+    rows.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    res.status(200).json({ times: st.times, photoTime: st.photoTime, quotas: st.quotas, startWeek: st.startWeek, warmWeeks: st.warmWeeks, on: st.on, rows });
+    return;
+  }
   if (req.query && req.query.hours) {
     const CI = require('./_lib/content-insights');
     const aud = await CI.audience().catch(() => null);
