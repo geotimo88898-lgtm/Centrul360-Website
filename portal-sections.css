@@ -3446,6 +3446,10 @@ html .cn-sts .cn-st th{ letter-spacing:normal !important; text-transform:none !i
 .mg-dec-amt.is-up b{ color:var(--good); } .mg-dec-amt.is-down b{ color:var(--warn); }
 .mg-dec-amt small{ font-size:.7rem; color:var(--muted); }
 .mg-emp .ad-emp-kv dd{ font-size:.8rem; }
+/* the four tiles never push past the card (15.11: they spilled into the next card on desktop) */
+.mg-emp{ min-width:0; width:100%; text-align:left; }
+.mg-emp .ad-emp-kv{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+.mg-emp .ad-emp-kv div{ min-width:0; }
 .mg-emp .ad-emp-kv dd.is-good{ color:var(--good); }
 .mg-city-chip{ width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex:none; background:var(--purple-soft, var(--glass)); color:var(--purple, var(--fg)); font-size:.72rem; font-weight:750; letter-spacing:.03em; }
 .mg-time{ width:44px; flex:none; font-size:.8rem; font-weight:650; color:var(--muted); font-variant-numeric:tabular-nums; }
