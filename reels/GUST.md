@@ -33,6 +33,19 @@ pe placul meu”).
 10. **Fiecare reel e alt tip de film.** Nu aceeași structură cu alt text. Structura (cârlig, explicație, buclă, CTA)
     rămâne ascunsă.
 
+## Ținta (15.11, cuvintele lui)
+„Îmi plac reelurile extraordinare, unexpected și care doar zici wow și râzi din minunăție.” Câteva au fost
+spectaculoase; ținta e mult peste. Fiecare reel trebuie să aibă cel puțin un moment pe care nu-l vezi venind și care
+te face să zâmbești (o transformare, o trecere imposibilă, o coincidență perfectă între imagine și muzică), făcut
+impecabil. Nu „frumos și corect”: wow.
+
+## Cum învățăm din refaceri (regula lui, 15.11)
+De acum el aprobă sau cere refacerea fiecărui reel în Content → Transit, cu notă, zone și referințe. La fiecare:
+1. Citești nota, zonele și referințele (status `redo`, PRODUCER.md „Refacerea”) și notele de la aprobări (`notes`).
+2. Refaci până e impecabil, nu doar ce a cerut: verifici cadru cu cadru și cu sunetul pe tot reelul.
+3. Scrii aici, în tabel, verdictul și regula care iese din el, înainte de reelul următor. Aceeași greșeală nu se
+   repetă niciodată.
+
 ## Verdictele, reel cu reel
 | Data | Reel | Verdict | Ce învățăm |
 |---|---|---|---|
