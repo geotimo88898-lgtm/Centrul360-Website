@@ -50,7 +50,9 @@
       tCut = B(21), tPush = fr(B(21)), tOutText = B(21.45), tRose = B(21.3), tWipe0 = fr(B(25.5)), tWipe1 = fr(B(26.5)), tSide0 = fr(B(29)), tSide1 = tSide0 + 0.6, tGlint = B(32), tLast = fr(B(34)), tEnd0 = tLast, tDot = fr(B(35));
     const ease = R.cam.ease, flashAt = R.cam.flash, kick = (t, t0, d) => (t < t0 ? 0 : Math.pow(Math.max(0, 1 - (t - t0) / d), 2)); // kick: 1 on its frame, gone after d
     // the shake of a hit: a new offset every frame (30 fps), decaying; with the sub-frames it smears into real motion blur
-    const shake = (t, t0, amp, d) => { const k = kick(t, t0, d); if (!k) return [0, 0, 0]; const f = Math.floor((t - t0) * 30 + 1e-6); return [(hash(f, 41 + t0) - 0.5) * 2 * amp * k, (hash(f, 43 + t0) - 0.5) * 2 * amp * k, (hash(f, 47 + t0) - 0.5) * 2 * amp * k * 0.0011]; };
+    // (continuous in time, two fast sines per axis: the sub-frames smear it into a streak instead of a double image)
+    const shake = (t, t0, amp, d) => { const k = kick(t, t0, d); if (!k) return [0, 0, 0]; const u = t - t0, a = amp * k, w = (f1, f2, p) => 0.62 * Math.sin(6.2832 * f1 * u + p) + 0.38 * Math.sin(6.2832 * f2 * u + 2 * p);
+      return [a * w(17, 29, 0.3 + t0), a * w(13, 23, 1.9 + t0), a * 0.0011 * w(11, 19, 4.1 + t0)]; };
     // ---- text (DOM): small, centred
     const FONT = "'Inter Variable',sans-serif";
     const txt = (top, css, html) => { const e = h('div', null, html, root); e.style.cssText = 'position:absolute;left:0;width:1080px;top:' + top + 'px;text-align:center;white-space:nowrap;color:' + INK + ';opacity:0;' + css; return e; };
@@ -132,11 +134,11 @@
     const ev = (t, k) => R.event(t, k || 'panel');
     // 0. the opening: a soft glass bowl on frame 0, then only the air of the rose gold ball each time it passes the bottom
     //    of its arc (panned the way it moves); the last swish is 0.3 s before the cut, then nothing until the hit
-    if (T0) { ctx.sfx(0, 'glass_pulse', 0.95, { prio: 4 }); ev(0, 'in');
+    if (T0) { ctx.sfx(0, 'glass_pulse', 0.42, { prio: 4 }); ev(0, 'in');
       const f7 = PF0 + ROSE_K * PDF;
       for (let n = 0; ; n++) { const tau = -(0.25 + n * 0.5) / f7, t = T0 + tau; if (t < 0.15) break;
         const dir = Math.sign(Math.sin(2 * Math.PI * f7 * tau)); // x = A cos(ωτ): the velocity is -A ω sin(ωτ)
-        ctx.sfx(t, 'pend_air', 0.75, { peak: true, prio: 2, pan: -dir * 0.32 }); ev(t, 'swing'); } }
+        ctx.sfx(t, 'pend_air', 0.5, { peak: true, prio: 2, pan: -dir * 0.32 }); ev(t, 'swing'); } }
     // 1. BOOM: the song's first hit, the hard cut to white, the line slammed in with a punch and a shake
     ctx.sfx(T0, 'hit_deep', 1, { prio: 5 }); ev(T0, 'reveal'); ev(T0, 'write');
     ctx.sfx(tDotIn, 'dot', 0.5, { prio: 3 }); ev(tDotIn, 'word');
@@ -308,11 +310,11 @@
       }
       // 1. BOOM: the line is there whole on the hit, close (x1.24), and the frame pulls back in 0.5 s with a shake; the full
       //    stop pops on beat 2; on beat 3 the camera punches in on it (front loaded, then holds) as it pulses; on beat 5 a whip
-      const a1 = t >= T0 && t < t2 ? 1 : 0, xo = -1350 * Math.pow(clamp((t - (t2 - 0.1)) / 0.1), 2.2);
+      const a1 = t >= T0 && t < t2 ? 1 : 0, xo = -1100 * Math.pow(clamp((t - (t2 - 0.1)) / 0.1), 2.2) / (1 + 1.3 * ease(t, tPulse, 0.6)); // (screen px: the frame is zoomed in at that moment)
       show(l1, a1); if (a1) { l1.style.transform = 'translateX(' + xo.toFixed(1) + 'px)'; w1.forEach((e) => wordIn(e, 1)); if (!pdAt) { const pd = l1.querySelector('.pd'); pdAt = { x: l1.offsetLeft + pd.offsetLeft + pd.offsetWidth / 2, y: l1.offsetTop + pd.offsetTop + pd.offsetHeight / 2 }; } }
       { const q = clamp((t - tPulse) / 0.95), d = 18 + 560 * out(q); ring.style.width = ring.style.height = d.toFixed(1) + 'px'; ring.style.margin = (-d / 2).toFixed(1) + 'px 0 0 ' + (-d / 2).toFixed(1) + 'px'; ring.style.borderWidth = (3.4 - 2.4 * q).toFixed(2) + 'px'; ring.style.opacity = t < tPulse || q >= 1 ? '0' : (0.85 * Math.pow(1 - q, 1.6)).toFixed(3);
         l1.querySelector('.pd').style.transform = 'scale(' + (out((t - tDotIn) / 0.12) * (1 + 0.9 * Math.max(0, 1 - Math.abs(t - tDotIn - 0.08) / 0.1) + 0.9 * Math.max(0, 1 - Math.abs(t - tPulse - 0.04) / 0.14))).toFixed(3) + ')'; }
-      { const tUp = fr(B(6)), up = ease(t, tUp, 0.5), xi = 1350 * (1 - ease(t, t2, 0.4)), a2 = (t >= t2 ? 1 : 0) * (1 - clamp((t - tW[0] + 0.1) / 0.1));
+      { const tUp = fr(B(6)), up = ease(t, tUp, 0.5), xi = 600 * (1 - E.out5(clamp((t - t2) / 0.36))), a2 = (t >= t2 ? 1 : 0) * (1 - clamp((t - tW[0] + 0.1) / 0.1));
         show(l2, a2); if (a2) { l2.style.transform = 'translate(' + xi.toFixed(1) + 'px,' + lerp(0, 238 - 900, up).toFixed(1) + 'px) scale(' + lerp(1.04, 58 / BIG, up).toFixed(4) + ')'; w2.forEach((e) => wordIn(e, 1)); } }
       // 2. the hourglass, the weeks (each new number lands with a small punch of the frame)
       if (t >= T0 && t < tH) hourglass(t);
@@ -323,7 +325,7 @@
       show(ln, t < tH ? out((t - tLine) / 0.5) * aOut : 0, (1 - out((t - tLine) / 0.5)) * 12);
       // 4. the drop
       if (t >= tH) reveal(t);
-      const qe = clamp((t - (tLast - 0.1)) / 0.12), after = t >= tWipe1;
+      const qe = clamp((t - (tLast - 0.1)) / 0.12), after = t >= tWipe1 - 0.02; // (the label changes between two frames, never inside one: the sub-frames)
       if (lab._s !== after) { lab._s = after; lab.textContent = after ? 'DUPĂ' : 'ÎNAINTE'; lab.style.color = after ? TEAL : INK; }
       show(lab, t >= tLab ? clamp((t - tLab) / 0.07) * (1 - clamp((t - tSide0) / 0.1)) : 0, 0, 1 + 0.4 * (1 - ease(t, after ? tWipe1 : tLab, 0.35)));
       const aS = clamp((t - tLand) / 0.1) * (1 - qe); show(labL, aS); show(labR, aS);
@@ -344,7 +346,7 @@
       // the frame's camera (all of it: the canvas and the words): the punches and the shakes of the hits
       let S = 1, PX = 540, PY = 960; const sh = [0, 0, 0], addSh = (v) => { sh[0] += v[0]; sh[1] += v[1]; sh[2] += v[2]; };
       let QX = null, QY = null;
-      if (t >= T0 && t < t2) { const w = ease(t, tPulse, 0.6); S = (1 + 0.15 * (1 - ease(t, T0, 0.5))) * (1 + 1.3 * w); PY = 900;
+      if (t >= T0 && t < t2) { const w = ease(t, tPulse, 0.6); S = (1 + 0.22 * (1 - ease(t, T0, 0.5))) * (1 + 1.3 * w); PY = 900;
         if (pdAt && w > 0) { PX = pdAt.x; PY = pdAt.y; QX = lerp(pdAt.x, Math.max(1080 - (1080 - pdAt.x) * S + 8, 540), w); QY = lerp(pdAt.y, 920, w); } // on beat 3 the camera dives at the full stop (the session), as far toward the middle as the frame's edge allows
         addSh(shake(t, T0, 18, 0.45)); addSh(shake(t, tPulse, 9, 0.3)); }
       else if (t >= tW[0] && t < tH) { for (const tw of tW) S += 0.022 * kick(t, tw, 0.3); }

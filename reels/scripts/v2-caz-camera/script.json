@@ -1,0 +1,165 @@
+{
+ "v": 2,
+ "id": "v2-caz-camera",
+ "kind": "silent",
+ "rubric": "Cazuri",
+ "theme": "brand-light",
+ "sound": "v3",
+ "hookHit": false,
+ "captions": false,
+ "nuki": false,
+ "title": "Urmărește linia",
+ "topic": "Un singur caz real (cazul 27, HIFU gușă, Timișoara, 1 ședință) filmat doar cu camera: retragere, dolly zoom, macara pe detaliu, zoom prin lumină",
+ "post": "Urmărește linia. Cazul 27 din catalogul nostru: HIFU gușă, Timișoara, 1 ședință. Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta. #hifu #gusa #timisoara #centrul360",
+ "case": "cazul-27",
+ "ctaType": "none",
+ "sources": "v2/src/catalog-rezultate.html, Cazul 27: „HIFU gușă”, „Timișoara · 1 ședință”, „Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.”. Poza: brand_asset/catalog/cazul-27-hifu-gusa-tm-6.webp, tăiată doar în cele două jumătăți ale ei (fără pastilele ÎNAINTE / DUPĂ din colțul de jos), neretușată; în film amândouă jumătățile sunt alb-negru, la aceeași scară, iar la final amândouă revin în culorile lor, în același timp.",
+ "concept": {
+  "who": "Femeia care se uită în oglindă din profil și vede linia de sub bărbie: vrea să vadă, de aproape, ce s-a schimbat la cineva ca ea.",
+  "oneThing": "La acest caz real, după o singură ședință de HIFU, linia de sub bărbie s-a schimbat; camera ți-o arată exact acolo unde contează.",
+  "tone": "Cinematic și calm, apoi pielea de găină pe drop: o liniște în care camera lucrează singură, apoi lumina.",
+  "formats": [
+   "Camera (referința 15, farul): o singură imagine filmată cu mișcări numite",
+   "(vi) Suspansul minimalist: liniștea dinaintea loviturii rămâne liniște"
+  ],
+  "principles": "GUST 1 (începutul calm și neașteptat: un peisaj gri, moale, care abia apoi se dovedește a fi o bărbie), 4 (camera are intenție: fiecare mișcare pornește pe un atac măsurat al piesei, face repede cea mai mare parte din drum, alunecă și stă; straturile se mișcă după adâncime; fiecare zoom aterizează pe ce urmează să spunem), 3 (pe drop: zoom prin lumină, cel mai tare sunet, apoi oprire curată), 5 (trei rânduri în tot filmul), 7 (un caz real, cu cuvintele catalogului). Influențat de „asta e perfect” la manifest (dovada reală în mișcare, final curat) și de verdictul pe suspans (început calm și catchy, apoi BUM).",
+  "borrowed": [
+   {
+    "element": "Patru mișcări numite pe aceeași imagine: retragere, dolly zoom, macara, zoom prin lumină cu cifra în lumină",
+    "ref": "15 (farul)",
+    "why": "un singur caz, arătat de patru ori altfel, te face să te uiți la detaliul care contează în loc să treci peste poză"
+   },
+   {
+    "element": "A doua poză ascunsă exact în spatele primei, pe care dolly zoom-ul o scoate la iveală",
+    "ref": "15 (dolly zoom: subiectul rămâne la fel, lumea din spate crește)",
+    "why": "„după” există deja în spatele lui „înainte”; dolly zoom-ul o arată fără niciun cuvânt, ca o buclă deschisă"
+   },
+   {
+    "element": "Liniștea adevărată dinaintea dezvăluirii",
+    "ref": "(vi) suspansul minimalist, v2-suspans-hifu",
+    "why": "piesa se oprește singură: tăcerea e tensiunea, iar drop-ul e dezvăluirea"
+   }
+  ],
+  "notUsed": [
+   "Vocea: camera spune povestea",
+   "Etichetele de film ale referinței („REC”, numele mișcărilor): sunt tema lor, nu a noastră",
+   "O linie desenată peste conturul bărbiei: ar fi un desen peste corpul clientei; arătăm doar poza",
+   "Glisorul înainte/după: e mișcarea din v2-caz-real",
+   "Logo-ul la final: un caz din catalog, cu cuvintele lui, închide mai cinstit",
+   "Nuki și CTA-ul cu 360: ar rupe tăcerea filmului",
+   "Cifra fantomă uriașă pe peretele din spate: la prima randare arăta ca o pată, așa că a rămas doar grila"
+  ],
+  "track": {
+   "file": "owner-trainingseason",
+   "why": "în refrenul al doilea basul și toba se opresc la 177,2 s și revin abia la 184,47 s, cu două lovituri false la 180,32 și 180,58: liniștea e perfectă pentru începutul calm și pentru dolly zoom, loviturile false pornesc retragerea camerei, iar drop-ul e zoom-ul prin lumină. Nu e partea folosită de conversație (10,17 s) nici de EMS (97,65 s)."
+  },
+  "different": "Primul reel cu un singur caz filmat doar cu camera, în alb-negru cu lumină turcoaz, cu dolly zoom care scoate la iveală poza din spate și cu zoom prin lumină pe drop; finalul e singurul moment în culori."
+ },
+ "critique": {
+  "storyboard": {
+   "scroll": "da: un gri moale, neidentificabil, cu un singur rând mare („Urmărește linia.”), iar la 3 s camera se retrage pe lovitură și totul capătă sens",
+   "serves": "da: fiecare mișcare duce privirea mai aproape de linia de sub bărbie, iar zoom-ul prin lumină aterizează exact pe ea, după, cu ședința reală",
+   "effects": "nu: patru mișcări, fiecare cu o dezvăluire; un singur flash, pe drop",
+   "natural": "da: o poză reală, alb-negru, într-un studio alb; trei rânduri în tot filmul",
+   "owner": "da: e camera din referința lui, pe un caz real din catalogul lui, pe piesa lui"
+  }
+ },
+ "musicFile": "owner-trainingseason",
+ "musicStart": 177.27,
+ "beat": {
+  "bpm": 123.01
+ },
+ "musicNote": "„Training Season” (live), refrenul al doilea, după versul „I need someone…”: 177,27-192,97 s din piesă. Măsurat pe fișier (anvelopa 30-110 Hz și toată banda, la milisecundă): basul și toba se opresc la 177,2 s (începutul liniștit al reelului, doar vocea), două lovituri false la 180,32 și 180,58 (retragerea camerei și eticheta), liniște cu atacurile vocii la 181,54 (dolly zoom) și 182,80 (macaraua), „conversation” la 184,23 (graba spre lumină), apoi drop-ul: toba revine la 184,47 s (zoom-ul prin lumină, cadrul 216). După drop: lovitura tare de la 185,97 (urcarea), 187,93 (cele două poze alături), 188,89 (culorile), oprirea de la 190,44 (totul stă) și revenirea de la 192,33 (o lumină trece peste poze). Piesa e cântată live, fără grilă fixă: tăieturile stau pe atacurile măsurate, nu pe o grilă de BPM. Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "subframes": {
+  "n": 5,
+  "shutter": 0.55,
+  "ranges": [
+   [
+    3.0,
+    3.85
+   ],
+   [
+    4.22,
+    5.25
+   ],
+   [
+    5.48,
+    6.6
+   ],
+   [
+    6.9,
+    7.45
+   ],
+   [
+    8.65,
+    9.6
+   ],
+   [
+    10.6,
+    11.5
+   ]
+  ]
+ },
+ "hook": {
+  "say": "Urmărește linia.",
+  "visual": {
+   "type": "cazcam",
+   "cam": "none",
+   "img": "cazul-27-hifu-gusa-tm-6.webp",
+   "before": [
+    8,
+    8,
+    680,
+    872
+   ],
+   "after": [
+    714,
+    8,
+    680,
+    872
+   ],
+   "macro": [
+    285,
+    470
+   ],
+   "detail": [
+    297,
+    497
+   ],
+   "face": [
+    150,
+    200
+   ],
+   "hits": {
+    "w": [
+     0.37,
+     0.73
+    ],
+    "pull": 3.05,
+    "tag": 3.31,
+    "dolly": 4.27,
+    "crane": 5.53,
+    "breath": 6.96,
+    "drop": 7.2,
+    "rise": 8.698,
+    "side": 10.656,
+    "colour": 11.623,
+    "stop": 13.17,
+    "back": 15.061
+   },
+   "line": "Urmărește linia.",
+   "kicker": "HIFU gușă",
+   "count": [
+    "1",
+    "ședință"
+   ],
+   "title": "HIFU gușă",
+   "meta": "Timișoara · 1 ședință",
+   "consent": "Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta."
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 14.61
+ }
+}

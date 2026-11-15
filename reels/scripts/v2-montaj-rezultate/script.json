@@ -152,16 +152,6 @@
    ],
    "cases": [
     {
-     "n": 39,
-     "img": "cazul-39-hifu-abdomen-tm.webp",
-     "title": "HIFU abdomen",
-     "meta": "Timișoara · 1 ședință",
-     "focus": [
-      0.5,
-      0.58
-     ]
-    },
-    {
      "n": 2,
      "img": "cazul-02-hifu-gusa.webp",
      "title": "HIFU gușă",
@@ -169,6 +159,16 @@
      "focus": [
       0.5,
       0.55
+     ]
+    },
+    {
+     "n": 39,
+     "img": "cazul-39-hifu-abdomen-tm.webp",
+     "title": "HIFU abdomen",
+     "meta": "Timișoara · 1 ședință",
+     "focus": [
+      0.5,
+      0.58
      ]
     },
     {

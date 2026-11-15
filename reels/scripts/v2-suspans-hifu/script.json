@@ -15,16 +15,16 @@
  "concept": {
   "who": "Femeia din Timișoara sau Arad care se gândește la HIFU și se teme de un singur lucru: că plătește o ședință și a doua zi nu vede nimic. Și cea care a făcut deja o ședință și așteaptă.",
   "oneThing": "După HIFU liniștea e normală: colagenul se formează săptămâni la rând, iar rezultatul vine la sfârșitul lor.",
-  "tone": "Minimalist și răbdător: alb, un singur obiect, puține cuvinte. Suspans fără să sperie; liniștea e subiectul, nu un gol. Nimic nu stă pe loc: lumina trece peste alb, cadrul se apropie încet.",
+  "tone": "Două filme lipite: 3 secunde de calm hipnotic, fără nicio legătură cu clinica (un pendul cu valuri din bile de sticlă turcoaz într-un studio turcoaz închis), apoi BUM pe prima lovitură a piesei și povestea albă, minimalistă, cu montaj mai agresiv: punch-in pe bătăi, shake pe lovituri, whip, zoom prin lumină la dezvăluire. Liniștea rămâne subiectul poveștii, nu un gol.",
   "formats": [
    "(vi) Suspansul minimalist",
    "(x) Colajul editorial, doar pentru dezvăluire: poza reală ca obiect pe alb, cu cuvintele catalogului"
   ],
   "borrowed": [
    {
-    "element": "Cadru alb, text mic pe centru, un singur obiect care face toată treaba",
-    "ref": "6 (suspansul minimalist)",
-    "why": "cu cât e mai puțin pe ecran, cu atât fiecare bob care cade contează; exact ce simte cineva care așteaptă un rezultat"
+    "element": "Un început „unexpected edit”: un vizual satisfăcător, care pare alt video, tăiat brusc pe lovitura piesei",
+    "ref": "cererea proprietarului din 15.11 (WE ON GO II, „unexpected edits”)",
+    "why": "calmul oprește scroll-ul, iar tăietura pe lovitură e surpriza care ține privitorul în video"
    },
    {
     "element": "Fiecare eveniment vizual are sunetul lui, pe cadru; liniștea e lăsată liniște",
@@ -32,9 +32,9 @@
     "why": "un bob care cade fără sunet e decor; cu tick-ul lui, pe bătaie, devine ceasul reelului"
    },
    {
-    "element": "Dezvăluirea cade pe lovitura piesei, iar tot ce e înainte se numără înapoi de la ea",
-    "ref": "13 (logo-ancora, tăieturi pe bătaie)",
-    "why": "tensiunea se strânge o singură dată și se plătește o singură dată"
+    "element": "Mișcările de cameră pornesc pe bătaie, front-loaded, apoi stau; un singur zoom prin lumină, la dezvăluire",
+    "ref": "14 (camera, 15.11)",
+    "why": "agresivitatea vine din ritm și din impact, nu din efecte puse peste tot"
    }
   ],
   "notUsed": [
@@ -44,29 +44,32 @@
    "Logo-ul la final: propoziția de pe site închide mai bine, iar contul e deja al nostru",
    "Nuki: orice personaj ar rupe liniștea",
    "Numărătoare până la săptămâna 12: catalogul spune la acest caz 6-8 săptămâni, așa că ne oprim la 8",
-   "Un riser sau un suck-in înainte de lovitură: ar anunța-o; liniștea adevărată lovește mai tare"
+   "Un riser sau un suck-in înainte de lovitură: ar anunța-o; liniștea adevărată lovește mai tare",
+   "Muzică generată sub începutul calm: regula proprietarului (doar piesele lui); acolo e doar un clopot de sticlă și aerul bilei rose gold",
+   "Un riser sau un whoosh înainte de BUM: l-ar anunța; tăietura trebuie să fie o surpriză",
+   "Text peste pendul: începutul nu are legătură cu salonul și nu explică nimic"
   ],
-  "mechanism": "Clepsidra uriașă, tăiată de cadru, din sticlă alb-negru cu nisip turcoaz. Nisipul e colagenul: sus se scurge timpul, jos se adună ce se construiește. Un singur bob e rose gold: ultimul. Când aterizează el, vine rezultatul, iar la final tot el devine punctul propoziției.",
+  "mechanism": "Începutul: 15 bile pe fire duble, fiecare cu frecvența ei, deci șarpele valului se îndreaptă încet și toate ajung în același capăt al arcului exact pe cadrul tăieturii (cadrul 90). Apoi clepsidra uriașă, tăiată de cadru, din sticlă alb-negru cu nisip turcoaz. Nisipul e colagenul: sus se scurge timpul, jos se adună ce se construiește. Un singur bob e rose gold, ca singura bilă rose gold din pendul: ultimul. Când aterizează el, camera intră în el prin lumină și vine rezultatul; la final tot el devine punctul propoziției.",
   "track": {
-   "file": "owner-weongo",
-   "why": "deschiderea cu „honorable” e rară și plină de goluri: basul cade la bătăile 3, 5, 8 și apoi tot mai des, exact cum cad boabele. Golul cel mai lung al piesei (bătăile 5-8) e sub „Apoi, liniște.”, iar golul dinaintea bătăii 24 e liniștea dinaintea rezultatului. Lovitura de la 11,09 s (bătaia 24, după cel mai lung gol dinaintea versurilor explicite) e dezvăluirea; reelul se termină la 18,3 s din piesă, mult înainte de 24 s."
+   "file": "owner-weongo (prin owner-weongo-boom: aceeași piesă, cu 2,906 s de liniște în față, făcută de boom.py)",
+   "why": "începutul tace (doar sunetele lui), iar prima lovitură a piesei (tranzientul de la 0,1006 s, basul și „honorable”) cade pe tăietură, cadrul 90; deschiderea cu „honorable” e rară și plină de goluri: basul cade la bătăile 3, 5, 8 și apoi tot mai des, exact cum cad boabele. Lovitura de la 11,094 s (bătaia 24) e dezvăluirea, cadrul 420 (14,0 s). Reelul se termină la 18,3 s din piesă, mult înainte de versurile explicite (după ~24 s)."
   },
-  "different": "Singurul reel fără voce care duce o idee de la cap la coadă doar cu un obiect, câteva rânduri scurte și o poză reală; singurul cu clepsidra și cu dezvăluirea prin cortina de nisip."
+  "different": "Singurul reel care începe ca alt video (un pendul cu valuri, fără nicio legătură cu clinica) și se rupe pe lovitura piesei; singurul fără voce care duce o idee de la cap la coadă doar cu un obiect, câteva rânduri scurte și o poză reală; singurul cu clepsidra și cu dezvăluirea prin cortina de nisip."
  },
  "critique": {
   "storyboard": {
-   "scroll": "da: un cadru alb cu un singur rând mare, care intră cuvânt cu cuvânt, și un punct turcoaz care pulsează pe prima bătaie de bas; e atât de puțin, încât te oprești să vezi ce urmează",
-   "serves": "da: clepsidra e chiar ideea (timpul construiește), contorul e cronologia de pe site, iar poza e un caz din catalog cu ce scrie acolo",
-   "effects": "nu: un singur obiect și o singură mișcare specială (cortina de nisip), folosită o singură dată",
-   "natural": "da: alb, sticlă alb-negru, nisip turcoaz; text centrat, puține cuvinte; nimic din șablonul celorlalte reeluri",
-   "owner": "da: e ideea cerută (suspans minimalist pe WE ON GO II, clepsidră cu nisip turcoaz, săptămânile care accelerează, dezvăluirea pe lovitură, ultima propoziție de pe site)"
+   "scroll": "da: un pendul cu valuri, bile de sticlă turcoaz și una rose gold, șarpele care se îndreaptă încet; e satisfăcător și nu seamănă cu nimic din cont, deci tăietura pe BUM e o surpriză",
+   "serves": "da: începutul doar oprește scroll-ul (cererea proprietarului); de la BUM clepsidra e ideea (timpul construiește), contorul e cronologia de pe site, iar poza e un caz din catalog",
+   "effects": "nu: un singur zoom prin lumină (dezvăluirea); punch-in-urile și shake-urile sunt doar pe loviturile basului",
+   "natural": "da: turcoaz închis, sticlă și rose gold la început, apoi alb, sticlă alb-negru, nisip turcoaz; text centrat, puține cuvinte",
+   "owner": "da: e ce a cerut (început chill și catchy fără legătură cu salonul, BUM pe „honorable”, apoi povestea pe care a aprobat-o, cu edituri mai agresive, mai ales la drop)"
   },
   "render": {
-   "scroll": "da: rândul intră mare, cuvânt cu cuvânt din blur, pe o lumină de fereastră care trece peste alb, cu o apropiere lentă; punctul turcoaz apare la 0,6 s și pulsează pe prima lovitură de bas (1,33 s)",
-   "serves": "da: 32 de boabe au fiecare tick-ul lor pe cadrul în care aterizează, contorul urcă pe loviturile de bas, iar poza și cuvintele de sub ea sunt exact cele din catalog",
-   "effects": "nu: verificarea de flash dă un singur salt de lumină (tăietura de la dezvăluire); cortina de nisip apare o singură dată, 0,46 s",
-   "natural": "da: sticla are grosime și lumină, nisipul are boabe, grămada crește din ce cade; rândurile de sus se citesc pe telefon (58 px), iar primul și ultimul rând au prezență (98 px) și nu stau pe loc",
-   "owner": "da, cu o rezervă: liniștea dinaintea loviturii e liniște adevărată doar în fișierul curat; în preview piesa are acolo propriul gol, cu ad-lib-uri la nivel mic"
+   "scroll": "da: frame-ul 0 e deja în mișcare (pendulul, cu blur de mișcare real din sub-cadre), un clopot de sticlă moale; bilele se aliniază exact pe cadrul 90 și piesa intră cu lovitura ei",
+   "serves": "da: boabele au fiecare tick-ul pe cadrul în care aterizează, contorul urcă pe loviturile de bas, iar poza și cuvintele de sub ea sunt exact cele din catalog",
+   "effects": "nu: un singur zoom prin lumină (cadrul 420), tăietura BUM, whip-ul de pe bătaia 5 și zborul prin poze de pe bătaia 34; restul sunt punch-in-uri mici pe bas",
+   "natural": "da: pendulul are fire duble, umbre moi cu lumina adunată de sticlă și profunzime de câmp; rândurile de sus se citesc pe telefon (58 px)",
+   "owner": "da, cu o rezervă: în fișierul curat BUM-ul e doar sunetul nostru (hit_deep); piesa lui o pune proprietarul în aplicație, iar tăietura cade pe prima ei lovitură doar dacă o aliniază la 3,0 s"
   }
  },
  "musicFile": "owner-weongo-boom",
@@ -74,7 +77,7 @@
  "beat": {
   "bpm": 131.01
  },
- "musicNote": "Măsurat pe fișier (beats.py + începutul fiecărei lovituri de bas, la milisecundă): 131,01 BPM; bas la bătăile 3, 5, 8, 9,5, 10,5, 13, 14,5, 16, 19, 21 și apoi 24 (11,094 s din piesă), după un gol de 0,64 s. musicStart 0,127 pune lovitura de la 11,094 s exact pe cadrul 329 (10,967 s). Reelul folosește 0,13-18,33 s din piesă; versurile explicite încep după ~24 s. Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "musicNote": "Măsurat pe fișier: 131,01 BPM; primul tranzient al piesei la 0,1006 s (basul și „honorable”), apoi bas la bătăile 3, 5, 8, 9,5, 10,5, 13, 14,5, 16, 19, 21 și 24 (11,094 s din piesă). mix.py pornește piesa de la reel 0 și nu o poate întârzia, așa că boom.py face music/owner-weongo-boom.wav (ignorat de git): 2,906 s de liniște, apoi piesa de la 0. Astfel prima lovitură cade la 3,0066 s (în cadrul 90, tăietura) și lovitura de la 11,094 s exact la 14,0 s (cadrul 420, dezvăluirea). Reelul folosește 0-18,3 s din piesă; versurile explicite încep după ~24 s.",
  "hook": {
   "say": "Colagenul are nevoie de timp.",
   "visual": {
@@ -108,7 +111,7 @@
   "type": "save",
   "hold": 19.33
  },
- "timeline": "Numărat înapoi de la lovitura de bas de la 11,094 s din piesă (cadrul 329, 10,967 s): 0,00 primul rând, cuvânt cu cuvânt (punctul turcoaz la 0,6); 1,33 pulsul (bătaia 3); 2,27 „Apoi, liniște.” (bătaia 5); 2,75 clepsidra; 3,63 primul bob aterizează, Săptămâna 1 (bătaia 8); săptămânile 2-8 la bătăile 10,5, 13, 14,5, 16, 17,5, 19, 20; 6,60 rândul despre colagen, pe două rânduri; 8,67 șuvoiul; 9,60 sus se termină nisipul (bătaia 21); 10,25-10,97 liniște, cade doar bobul rose gold; 10,967 lovitura: poza „înainte”; 11,67-12,10 cortina de nisip, apoi „după” (bătăile 25,5 și 26,5); 13,27 cele două poze alături, cu datele din catalog (bătaia 29); 15,53 ultima propoziție, pe două rânduri; 16,00 punctul ei aterizează (bătaia 35); ținut până la 18,2.",
+ "timeline": "0,00-3,00 începutul calm: pendulul cu valuri (15 bile, frecvențe 0,60 + k·0,033 Hz), clopotul de sticlă pe cadrul 0, aerul bilei rose gold la fiecare trecere prin punctul de jos (0,29; 0,89; 1,50; 2,10; 2,70); toate bilele ajung în același capăt exact la 3,00. 3,00 BUM (cadrul 90): tăietură pe alb, „O ședință de HIFU” e deja acolo la x1,15 și se retrage în 0,5 s, cu shake; 3,93 punctul turcoaz (bătaia 2); 4,37 camera se aruncă în punct (x2,3, bătaia 3), inelul pulsează; 5,30 whip: „Apoi, liniște.” (bătaia 5), urcă pe bătaia 6 și clepsidra iese din alb; 6,63 primul bob, Săptămâna 1 (bătaia 8); săptămânile 2-8 pe bătăile 10,5 … 20, fiecare cu un punch mic; 12,63 camera cade pe grămadă (bătaia 21), apoi liniște, cade doar bobul rose gold; 13,87-14,00 camera fuge în bob, lumina urcă la alb; 14,00 lovitura (cadrul 420): poza „înainte” sub lumină, x1,3, se retrage în 0,6 s, shake; 14,30 ÎNAINTE; 14,69-15,15 cortina de nisip (bătăile 25,5-26,5), DUPĂ, punch-in pe linia bărbiei; 16,30 pull back: cele două poze alături (bătaia 29); 16,77-17,23 datele din catalog; 18,47-18,63 pozele zboară prin cameră, ultima propoziție (bătaia 34); 19,03 punctul ei aterizează (bătaia 35); ținut până la 21,2.",
  "subframes": {
   "n": 5,
   "shutter": 0.5,
