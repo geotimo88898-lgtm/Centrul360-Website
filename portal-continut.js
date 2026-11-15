@@ -528,10 +528,12 @@
     v.dataset.vc = '1';
     const r = bar.querySelector('[data-ctv-seek]'), tt = bar.querySelector('[data-ctv-t]'), pb = bar.querySelector('[data-ctv="play"]');
     let drag = false;
-    const show = () => { const d = v.duration || 0; if (!drag && d) r.value = String(Math.round((v.currentTime / d) * 1000)); tt.textContent = mmss(v.currentTime) + (d ? ' / ' + mmss(d) : ''); };
+    // the played part is drawn by us (--p), from the bar's very start to the thumb: iOS draws its own fill off by the thumb's width
+    const fill = () => { r.style.setProperty('--p', (Number(r.value) / 10).toFixed(2) + '%'); };
+    const show = () => { const d = v.duration || 0; if (!drag && d) r.value = String(Math.round((v.currentTime / d) * 1000)); fill(); tt.textContent = mmss(v.currentTime) + (d ? ' / ' + mmss(d) : ''); };
     v.addEventListener('timeupdate', show); v.addEventListener('loadedmetadata', show);
     v.addEventListener('play', () => { pb.innerHTML = VCI.pause; }); v.addEventListener('pause', () => { pb.innerHTML = VCI.play; });
-    r.addEventListener('input', () => { drag = true; vload(v); const d = v.duration || 0; if (d) { v.currentTime = (Number(r.value) / 1000) * d; tt.textContent = mmss(v.currentTime) + ' / ' + mmss(d); } });
+    r.addEventListener('input', () => { drag = true; fill(); vload(v); const d = v.duration || 0; if (d) { v.currentTime = (Number(r.value) / 1000) * d; tt.textContent = mmss(v.currentTime) + ' / ' + mmss(d); } });
     r.addEventListener('change', () => { drag = false; });
   }
   // the video (loaded when it comes near, playing while it is in view, muted until a tap) or the photos to swipe

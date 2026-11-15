@@ -399,7 +399,12 @@
 .cn-vc button{ flex:none; width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:10px; background:transparent; color:#fff; cursor:pointer; }
 .cn-vc button:hover{ background:rgba(255,255,255,.14); }
 .cn-vc button:focus-visible{ outline:2px solid #5fd3c4; outline-offset:1px; }
-.cn-vc-r{ flex:1; min-width:40px; height:28px; margin:0 4px; accent-color:#1ab6a6; cursor:pointer; }
+.cn-vc-r{ flex:1; min-width:40px; height:28px; margin:0 6px; padding:0; cursor:pointer; -webkit-appearance:none; appearance:none; background:transparent; --p:0%; }
+.cn-vc-r::-webkit-slider-runnable-track{ height:6px; border-radius:3px; background:linear-gradient(to right, #1ab6a6 var(--p), rgba(255,255,255,.28) var(--p)); }
+.cn-vc-r::-moz-range-track{ height:6px; border-radius:3px; background:rgba(255,255,255,.28); }
+.cn-vc-r::-moz-range-progress{ height:6px; border-radius:3px; background:#1ab6a6; }
+.cn-vc-r::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:18px; height:18px; margin-top:-6px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.35); }
+.cn-vc-r::-moz-range-thumb{ width:18px; height:18px; border:0; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.35); }
 .cn-vc-t{ flex:none; font:600 12px/1 Inter, system-ui, sans-serif; font-variant-numeric:tabular-nums; opacity:.85; min-width:62px; text-align:right; }
 .cn-tx-ov .cn-vc{ position:relative; left:auto; right:auto; bottom:auto; margin-top:.5rem; pointer-events:auto; }
 @media (min-width:900px){ .cn-tx-ov{ display:block !important; background:none; padding:.7rem; } .cn-tx-ov .cn-sls{ display:none; } .cn-tx-ov .cn-vc{ margin-top:0; } }
