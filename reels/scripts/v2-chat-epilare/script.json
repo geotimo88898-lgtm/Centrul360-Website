@@ -150,7 +150,8 @@
     {
      "who": "v",
      "t": -0.08,
-     "text": "Bună ziua! Câte ședințe de epilare laser îmi trebuie?"
+     "text": "Bună ziua! Câte ședințe de epilare laser îmi trebuie?",
+     "maxw": 470
     },
     {
      "who": "n",

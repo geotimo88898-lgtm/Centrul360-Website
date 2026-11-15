@@ -20,24 +20,24 @@
 .cx-light{position:absolute;border-radius:50%;filter:blur(90px)}
 .cx-world{position:absolute;left:0;top:0;width:1080px;height:1920px;perspective:1900px;perspective-origin:540px 860px}
 .cx-cam{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-style:preserve-3d;transform-origin:540px 860px}
-.cx-sheet{position:absolute;left:110px;top:250px;width:860px;height:1232px;border-radius:58px}
-.cx-glass{position:absolute;inset:0;border-radius:58px;
+.cx-sheet{position:absolute;left:65px;top:228px;width:950px;height:1264px;border-radius:66px}
+.cx-glass{position:absolute;inset:0;border-radius:66px;
   background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.9));box-shadow:0 0 0 1.5px rgba(255,255,255,.95) inset,0 0 0 1px rgba(11,60,55,.06),0 70px 120px -60px rgba(11,127,116,.42),0 24px 50px -34px rgba(18,32,31,.28)}
-.cx-gloss{position:absolute;inset:0;border-radius:58px;overflow:hidden;pointer-events:none}
+.cx-gloss{position:absolute;inset:0;border-radius:66px;overflow:hidden;pointer-events:none}
 .cx-gloss i{position:absolute;top:-20%;left:0;width:46%;height:140%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(236,250,248,.9) 50%,rgba(255,255,255,0));opacity:.55}
-.cx-head{position:absolute;left:0;top:0;width:860px;height:132px;border-bottom:1.5px solid rgba(11,60,55,.07)}
-.cx-av{position:absolute;left:44px;top:24px;width:86px;height:86px;border-radius:50%;background:#e4f4f1;overflow:hidden;box-shadow:0 0 0 3px #fff,0 0 0 6px rgba(20,165,150,.9)}
+.cx-head{position:absolute;left:0;top:0;width:950px;height:156px;border-bottom:1.5px solid rgba(11,60,55,.07)}
+.cx-av{position:absolute;left:52px;top:26px;width:104px;height:104px;border-radius:50%;background:#e4f4f1;overflow:hidden;box-shadow:0 0 0 3px #fff,0 0 0 6px rgba(20,165,150,.9)}
 .cx-av img{position:absolute;left:-70%;top:-26%;width:250%;height:auto}
-.cx-ring{position:absolute;left:35px;top:15px;width:104px;height:104px;border-radius:50%;border:3px solid rgba(20,165,150,.55)}
-.cx-ttl{left:160px;top:30px;font:800 40px/1.1 var(--f-body);letter-spacing:-.03em;color:#0b0b0d;white-space:nowrap}
-.cx-sub{left:161px;top:80px;font:500 27px/1.1 var(--f-body);color:#5e6d6b;white-space:nowrap}
-.cx-area{position:absolute;left:0;top:138px;width:860px;height:1064px}
+.cx-ring{position:absolute;left:41px;top:15px;width:126px;height:126px;border-radius:50%;border:3px solid rgba(20,165,150,.55)}
+.cx-ttl{left:186px;top:34px;font:800 48px/1.1 var(--f-body);letter-spacing:-.03em;color:#0b0b0d;white-space:nowrap}
+.cx-sub{left:187px;top:93px;font:500 32px/1.1 var(--f-body);color:#5e6d6b;white-space:nowrap}
+.cx-area{position:absolute;left:0;top:162px;width:950px;height:1102px}
 .cx-b{position:absolute;top:0;overflow:hidden}
-.cx-b.n{left:20px;border-radius:40px 40px 40px 12px;transform-origin:0 100%;background:linear-gradient(165deg,#19b5a5,#0f998b);box-shadow:0 18px 30px -20px rgba(11,127,116,.7),0 1px 0 rgba(255,255,255,.35) inset;color:#fff}
-.cx-b.v{right:40px;border-radius:40px 40px 12px 40px;transform-origin:100% 100%;background:linear-gradient(180deg,#f1f4f4,#e9eeed);box-shadow:0 14px 26px -20px rgba(18,32,31,.4),0 1px 0 rgba(255,255,255,.9) inset;color:#12201f}
-.cx-t{left:30px;top:22px;font:600 40px/1.27 var(--f-body);letter-spacing:-.018em;text-wrap:balance}
-.cx-d{position:absolute;left:0;top:0;width:124px;height:86px}
-.cx-d i{position:absolute;top:36px;width:15px;height:15px;border-radius:50%;background:currentColor}
+.cx-b.n{left:75px;border-radius:46px 46px 46px 14px;transform-origin:0 100%;background:linear-gradient(165deg,#19b5a5,#0f998b);box-shadow:0 18px 30px -20px rgba(11,127,116,.7),0 1px 0 rgba(255,255,255,.35) inset;color:#fff}
+.cx-b.v{right:75px;border-radius:46px 46px 14px 46px;transform-origin:100% 100%;background:linear-gradient(180deg,#f1f4f4,#e9eeed);box-shadow:0 14px 26px -20px rgba(18,32,31,.4),0 1px 0 rgba(255,255,255,.9) inset;color:#12201f}
+.cx-t{left:34px;top:25px;font:600 48px/1.25 var(--f-body);letter-spacing:-.022em;text-wrap:balance}
+.cx-d{position:absolute;left:0;top:0;width:150px;height:104px}
+.cx-d i{position:absolute;top:43px;width:18px;height:18px;border-radius:50%;background:currentColor}
 .cx-card{position:absolute;left:0;top:0;transform-style:preserve-3d}
 .cx-card>*{position:absolute;inset:0;border-radius:inherit}
 .cx-f{backface-visibility:hidden;overflow:hidden}
@@ -96,14 +96,15 @@
     h('div', 'tx cx-ttl', esc(p.title || 'Centrul360'), head);
     const sub = h('div', 'tx cx-sub', esc(p.name || 'Nuki'), head), subT = h('div', 'tx cx-sub', esc(p.typing || 'Nuki scrie…'), head);
     const area = h('div', 'cx-area', null, sheet);
-    const HEAD = 138, PADT = 16, PADB = 30, AREA_MAX = 1064, AREA_MIN = 150, SH_CY = 866, GAP = 16, GAP2 = 28, TYW = 124, TYH = 86, MAXW = 604;
+    const SX = 65, SW = 950, GUT = 75, PADX = 34;   // the sheet: 88 % of the frame's width, on its axis; the bubbles' column is centred too (text 174..906)
+    const HEAD = 162, PADT = 18, PADB = 34, AREA_MAX = 1102, AREA_MIN = 170, SH_CY = 860, GAP = 18, GAP2 = 30, TYW = 150, TYH = 104, MAXW = 620;
     const items = p.messages.map((m, i) => {
       const b = h('div', 'cx-b ' + (m.who === 'n' ? 'n' : 'v'), null, area);
-      const dots = h('div', 'cx-d', '<i style="left:33px"></i><i style="left:55px"></i><i style="left:77px"></i>', b);
-      const t = h('div', 'tx cx-t', esc(m.text), b); t.style.maxWidth = MAXW + 'px'; t.style.width = 'max-content';
+      const dots = h('div', 'cx-d', '<i style="left:40px"></i><i style="left:66px"></i><i style="left:92px"></i>', b);
+      const t = h('div', 'tx cx-t', esc(m.text), b); t.style.maxWidth = (m.maxw || MAXW) + 'px'; t.style.width = 'max-content';
       b.style.width = '2000px'; const rg = document.createRange(); rg.selectNodeContents(t); const rs = [...rg.getClientRects()]; // the widest line (the text is balanced): the bubble hugs it
       const tw = Math.ceil(Math.max(...rs.map((r) => r.right)) - Math.min(...rs.map((r) => r.left))) + 2, th = t.offsetHeight; t.style.width = tw + 'px';
-      return { m, b, dots: [...dots.children], dotsEl: dots, t, i, who: m.who, tMsg: m.t, tType: m.type != null ? m.type : null, ta: m.type != null ? m.type : m.t, mw: tw + 60, mh: th + 46 };
+      return { m, b, dots: [...dots.children], dotsEl: dots, t, i, who: m.who, tMsg: m.t, tType: m.type != null ? m.type : null, ta: m.type != null ? m.type : m.t, mw: tw + PADX * 2, mh: th + 52 };
     });
     items.forEach((it, i) => { it.gapB = i ? (items[i - 1].who !== it.who ? GAP2 : GAP) : 0; });
     const state = (it, t) => { // its size and its presence at t
@@ -137,7 +138,7 @@
     const imgs = p.cards.map((c) => load(A + c.img));
     // card A: the last bubble on its front, the first photo on its back
     const cA = mkCard(16, 6); cA.front.style.cssText += ';background:linear-gradient(165deg,#19b5a5,#0f998b);box-shadow:0 1px 0 rgba(255,255,255,.35) inset;color:#fff';
-    const cAt = h('div', 'tx cx-t', esc(last.m.text), cA.front); cAt.style.width = (last.mw - 60) + 'px';
+    const cAt = h('div', 'tx cx-t', esc(last.m.text), cA.front); cAt.style.width = (last.mw - PADX * 2) + 'px';
     const fA = photoFace(cA.back, imgs[0], p.cards[0].label, p.cards[0]);
     const cB = mkCard(16, 6); const fB = photoFace(cB.front, imgs[1], p.cards[1].label, p.cards[1]); cB.back.style.background = '#eef4f3';
     // the phone: the real page on its screen; on its back, Nuki's last bubble
@@ -154,9 +155,9 @@
     const NW = 330, nuki = h('div', 'cx-nuki', '<img src="' + A + 'mascota/ipostaze/' + (p.end.pose || 'telefon') + '.webp">', cam); nuki.style.cssText += ';left:' + (CX - NW / 2) + 'px;width:' + NW + 'px;height:' + Math.round(NW * 748 / 694) + 'px';
     const nDrop = h('div', 'cx-drop', null, cam); cam.insertBefore(nDrop, nuki);
     const ECY = 610, NY = ECY + EH / 2 + 50; nuki.style.top = NY + 'px';
-    const sig = h('div', null, null, cam), SM = 58, SWH = 27, SWW = Math.round(SWH * 5583 / 426), SX = Math.round((W - (SM + 16 + SWW)) / 2), SY = Math.round(NY + NW * 748 / 694 + 64); sig.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
-    h('i', null, null, sig).style.cssText = 'position:absolute;left:' + SX + 'px;top:' + SY + 'px;width:' + SM + 'px;height:' + SM + 'px;background:url(' + A + 'logo-mark.png) center/contain no-repeat';
-    h('i', null, null, sig).style.cssText = 'position:absolute;left:' + (SX + SM + 16) + 'px;top:' + (SY + (SM - SWH) / 2) + 'px;width:' + SWW + 'px;height:' + SWH + 'px;background:#000;-webkit-mask:url(' + A + 'wordmark-com.png) center/contain no-repeat;mask:url(' + A + 'wordmark-com.png) center/contain no-repeat';
+    const sig = h('div', null, null, cam), SM = 58, SWH = 27, SWW = Math.round(SWH * 5583 / 426), GX = Math.round((W - (SM + 16 + SWW)) / 2), SY = Math.round(NY + NW * 748 / 694 + 64); sig.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
+    h('i', null, null, sig).style.cssText = 'position:absolute;left:' + GX + 'px;top:' + SY + 'px;width:' + SM + 'px;height:' + SM + 'px;background:url(' + A + 'logo-mark.png) center/contain no-repeat';
+    h('i', null, null, sig).style.cssText = 'position:absolute;left:' + (GX + SM + 16) + 'px;top:' + (SY + (SM - SWH) / 2) + 'px;width:' + SWW + 'px;height:' + SWH + 'px;background:#000;-webkit-mask:url(' + A + 'wordmark-com.png) center/contain no-repeat;mask:url(' + A + 'wordmark-com.png) center/contain no-repeat';
     load(A + 'logo-mark.png'); load(A + 'wordmark-com.png');
 
     ctx.shot.after = () => { // the photos, in black and white with their own turquoise (after they are decoded)
@@ -165,17 +166,17 @@
 
     // ---------------------------------------------------------------- the camera: it never stands still
     const C2 = p.cards[1].t, C3 = p.phone.t, E0 = p.end.t0, E1 = p.end.t, hold0 = p.hold ? p.hold[0] : 1e9, hold1 = p.hold ? p.hold[1] : 1e9;
-    const OPEN0 = 0.95, OPEN1 = 0.75, ZOOM0 = 0.34;
+    const OPEN0 = 0.95, OPEN1 = 0.75, ZOOM0 = clamp(748 / (items[0].mw - PADX * 2) - 0.972, 0.2, 0.8); // the first question fills the text column (the hook)
     const camAt = (t) => {
       const calm = 1 - smooth((t - (TL - 0.5)) / 0.45);
-      let ry = 2.3 * Math.sin(t * 0.43 + 0.5) * calm, rx = 1.3 * Math.sin(t * 0.34 + 1.3) * calm, s = 0.984 + 0.036 * smooth(t / TL), tx = 0, ty = 5 * Math.sin(t * 0.5) * calm;
-      items.forEach((it) => { if (t < it.tMsg) return; const k = Math.exp(-(t - it.tMsg) * 3.4) * Math.sin(Math.min(1, (t - it.tMsg) / 0.09) * Math.PI / 2) * calm; ry += (it.who === 'n' ? 1.25 : -1.25) * k; s += 0.011 * k; ty -= 5 * k; });
+      let ry = 1.9 * Math.sin(t * 0.43 + 0.5) * calm, rx = 1.2 * Math.sin(t * 0.34 + 1.3) * calm, s = 0.972 + 0.028 * smooth(t / TL), tx = 0, ty = 5 * Math.sin(t * 0.5) * calm;
+      items.forEach((it) => { if (t < it.tMsg) return; const k = Math.exp(-(t - it.tMsg) * 3.4) * Math.sin(Math.min(1, (t - it.tMsg) / 0.09) * Math.PI / 2) * calm; ry += (it.who === 'n' ? 1.1 : -1.1) * k; s += 0.008 * k; ty -= 5 * k; });
       // the opening: close on the first question, then back: it is a chat, with Nuki
-      const k0 = 1 - smooth((t - OPEN0) / OPEN1), L1 = lay(t), fx = 110 + 860 - 40 - items[0].mw / 2, fy = L1.top + HEAD + PADT + items[0].mh / 2;
+      const k0 = 1 - smooth((t - OPEN0) / OPEN1), L1 = lay(t), fx = SX + SW - GUT - items[0].mw / 2, fy = L1.top + HEAD + PADT + items[0].mh / 2;
       s += ZOOM0 * k0; tx -= (fx - 540) * (1 + ZOOM0) * k0; ty -= (fy - 860) * (1 + ZOOM0) * k0;
       // the fake-out: while the dots hold, the camera leans in towards them; it lets go when the question lands
       const lean = smooth((t - hold0) / (hold1 - hold0)) * (t < hold1 ? 1 : Math.exp(-(t - hold1) * 7)) * calm;
-      s += 0.05 * lean; tx -= 70 * lean; ty -= 120 * lean; rx += 1.4 * lean;
+      s += 0.024 * lean; rx += 1.5 * lean; ty -= 14 * lean; // a push and a tilt towards the dots; the sheet stays where it is
       // after the chat: a slow drift for the cards
       const m = smooth((t - TL) / 0.6); ry += m * 1.6 * Math.sin((t - TL) * 0.9); rx += m * 0.9 * Math.sin((t - TL) * 0.7 + 1); s += m * 0.012 * Math.sin((t - TL) * 0.6);
       return { rx, ry, s, tx, ty };
@@ -212,7 +213,7 @@
       sheet.style.display = gone >= 1 ? 'none' : '';
       if (gone < 1) {
         const L = lay(t);
-        sheet.style.top = L.top.toFixed(2) + 'px'; sheet.style.height = L.Hs.toFixed(2) + 'px'; area.style.height = L.A.toFixed(2) + 'px'; sheet.style.transformOrigin = '430px ' + (L.Hs / 2).toFixed(1) + 'px';
+        sheet.style.top = L.top.toFixed(2) + 'px'; sheet.style.height = L.Hs.toFixed(2) + 'px'; area.style.height = L.A.toFixed(2) + 'px'; sheet.style.transformOrigin = (SW / 2) + 'px ' + (L.Hs / 2).toFixed(1) + 'px';
         sheet.style.transform = gone > 0 ? 'translate3d(0,' + (gone * 90).toFixed(1) + 'px,' + (-gone * 820).toFixed(1) + 'px) rotateX(' + (gone * 14).toFixed(2) + 'deg)' : '';
         const ga = smooth((t - OPEN0 + 0.1) / 0.5); glass.style.opacity = ga.toFixed(3); head.style.opacity = smooth((t - OPEN0) / 0.5).toFixed(3); head.style.visibility = t < OPEN0 ? 'hidden' : '';
         sheet.style.opacity = (1 - smooth((gone - 0.25) / 0.75)).toFixed(3); sheet.style.filter = gone > 0.02 ? 'blur(' + (gone * 16).toFixed(1) + 'px)' : '';
@@ -225,7 +226,7 @@
           b.style.transform = 'translateY(' + top.toFixed(2) + 'px) scale(' + ((0.4 + 0.6 * s.e) * (it.tType != null && t < it.tMsg ? 1 + 0.07 * beatAt(t) : 1)).toFixed(4) + ')';
           const typing = it.tType != null && t < it.tMsg + 0.12, ta = it.tType != null ? 1 - smooth((t - it.tMsg) / 0.1) : 0;
           it.dotsEl.style.opacity = ta.toFixed(3); it.dotsEl.style.visibility = ta < 0.004 ? 'hidden' : '';
-          if (typing) { if (it.who === 'n' && t < it.tMsg) nTyping = 1; it.dots.forEach((d, k) => { const ph = (t - it.tType) * 1.9 - k * 0.17, u = ph - Math.floor(ph), up = u < 0.5 ? Math.sin(u * 2 * Math.PI) : 0; d.style.transform = 'translateY(' + (-9 * Math.max(0, up)).toFixed(2) + 'px)'; d.style.opacity = (0.42 + 0.58 * Math.max(0, up)).toFixed(3); }); }
+          if (typing) { if (it.who === 'n' && t < it.tMsg) nTyping = 1; it.dots.forEach((d, k) => { const ph = (t - it.tType) * 1.9 - k * 0.17, u = ph - Math.floor(ph), up = u < 0.5 ? Math.sin(u * 2 * Math.PI) : 0; d.style.transform = 'translateY(' + (-11 * Math.max(0, up)).toFixed(2) + 'px)'; d.style.opacity = (0.42 + 0.58 * Math.max(0, up)).toFixed(3); }); }
           const to = it.tType != null ? smooth((t - it.tMsg - 0.04) / 0.2) : smooth((t - it.tMsg) / 0.14);
           it.t.style.opacity = to.toFixed(3); it.t.style.visibility = to < 0.004 ? 'hidden' : ''; it.t.style.transform = 'translateY(' + ((1 - to) * 8).toFixed(1) + 'px)';
         });
@@ -234,13 +235,13 @@
       }
       // ---- card A: the last bubble lifts, turns over in the air, lands as the first photo
       {
-        const bx = 110 + 20 + last.mw / 2, by = L0.top + HEAD + PADT + L0.tops[items.length - 1] - L0.O + last.mh / 2;
-        if (t < TL) setCard(cA, bx, by, last.mw, last.mh, 40, Object.assign({}, P0, { o: 0 }));
+        const bx = SX + GUT + last.mw / 2, by = L0.top + HEAD + PADT + L0.tops[items.length - 1] - L0.O + last.mh / 2;
+        if (t < TL) setCard(cA, bx, by, last.mw, last.mh, 46, Object.assign({}, P0, { o: 0 }));
         else if (t < C2) {
           const u = clamp((t - TL) / FLIP), e = E.inout(u), e2 = E.inout(clamp((u - 0.1) / 0.9)), tl = t - TL - FLIP;
           const H1 = hero(t, 0), wob = tl > 0 ? 9 * Math.exp(-tl * 6) * Math.sin(tl * 13) : 0, hk = smooth(tl / 0.5);
           const P = { x: 0, y: -70 * Math.sin(Math.PI * u), z: 330 * Math.sin(Math.PI * u), rx: -9 * Math.sin(Math.PI * u) + H1.rx * hk, ry: 180 * e + wob + H1.ry * hk, rz: 5 * Math.sin(Math.PI * u) + H1.rz * hk, s: lerp(1, H1.s, hk), o: 1, blur: 0, dim: 0 };
-          setCard(cA, lerp(bx, CX, e), lerp(by, CY, e) + H1.y * hk, lerp(last.mw, CW, e2), lerp(last.mh, CH, e2), lerp(40, 50, e2), P); light(fA, { ry: P.ry - 180 });
+          setCard(cA, lerp(bx, CX, e), lerp(by, CY, e) + H1.y * hk, lerp(last.mw, CW, e2), lerp(last.mh, CH, e2), lerp(46, 50, e2), P); light(fA, { ry: P.ry - 180 });
           const mb = 26 * Math.sin(Math.PI * u) * (u < 1 ? 1 : 0); cA.front.style.filter = mb > 0.5 ? 'blur(' + (mb * 0.35).toFixed(1) + 'px)' : ''; cA.back.style.filter = mb > 0.5 ? 'blur(' + (mb * 0.3).toFixed(1) + 'px)' : '';
         } else { const u = clamp((t - C2) / 0.44), H1 = hero(t, 0); H1.ry += 180; const Q = past(-1); Q.ry += 180; const P = exit(H1, Q, u); setCard(cA, CX, CY, CW, CH, 50, P); }
       }

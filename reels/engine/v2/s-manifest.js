@@ -274,13 +274,14 @@ void main() {
     const zHold2 = (t) => Z2 - CREEP * (t - (T2a + T2d));
     // the second dive: through the type to the logo; it crosses the type's plane exactly on beat 29
     // GAPY: the gap between „Îți” and „arătăm” (the camera goes through it)
-    const D3 = 2700, T3d = 1.4 * per, GAPY = 214; const u3 = (() => { let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (smooth(m) * D3 < FOC + 20) lo = m; else hi = m; } return lo; })();
+    const D3 = 2700, T3d = 1.4 * per, GAPY = 322; const u3 = (() => { let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (smooth(m) * D3 < FOC + 20) lo = m; else hi = m; } return lo; })();
     const T3a = B(29) - u3 * T3d, Z3 = zHold2(T3a) - D3, ZLOGO = Z3 - FOC;
     // where the first dive goes through: the counter of the "o" of „promitem” (set when the type is measured)
     let OX = -150, OY = -60;
     const camAt = (t) => {
       const c = { x: 0, y: 0, z: FOC, yaw: 0, pitch: 0, roll: 0, focus: FOC, aperture: 12 };
-      if (t < B(DIVE0)) c.z = FOC + 64 * (1 - t / B(DIVE0)) - 9 * Math.exp(-Math.max(0, t - B(4)) * 7) * (t >= B(4) ? 1 : 0) - 6 * Math.exp(-Math.max(0, t - B(6)) * 7) * (t >= B(6) ? 1 : 0);
+      if (t < B(DIVE0)) { c.z = FOC + 30 * (1 - t / B(DIVE0)) + 150 * (1 - E.out(clamp(t / B(4)))) - 9 * Math.exp(-Math.max(0, t - B(4)) * 7) * (t >= B(4) ? 1 : 0) - 6 * Math.exp(-Math.max(0, t - B(6)) * 7) * (t >= B(6) ? 1 : 0);
+        const dk = 1 - smooth((t - B(5.6)) / per); c.x = 12 * Math.sin(t * 0.9 + 0.4) * dk; c.y = 7 * Math.sin(t * 0.7 + 1.2) * dk; } // never a still card: a push-in and a slow drift from frame 0
       else if (t < B(8)) { const u = (t - B(DIVE0)) / DIVE_DUR; const w = Math.pow(u, 2.2); c.z = FOC * (1 - w) + 64 * Math.pow(Math.sin(Math.PI * clamp(u / 0.5)), 2); c.x = OX * w; c.y = OY * w; c.focus = Math.max(260, c.z); c.aperture = 12; }
       else if (t < B(16)) { c.z = flightZ(t); const k = 1 - E.inout(clamp((t - B(8)) / (1.7 * per))); c.x = OX * k; c.y = OY * k;
         const env = smooth((t - B(9.2)) / (0.9 * per)) * (1 - smooth((t - B(14.3)) / (1.3 * per))); c.x += 52 * Math.sin((t - B(9)) * 1.75) * env; c.y += 16 * Math.sin((t - B(9)) * 1.2 + 1) * env;
@@ -298,9 +299,10 @@ void main() {
 
     // ---------------------------------------------------------------- what is where (world units; +y up, the camera looks down -z)
     const FLOOR = -640, WALLX = 560, YAW = 58 * Math.PI / 180, STEP = 1000, Z0 = -1500, SLOTS = 8;
-    const HERO = { w: 0, h: 0, y: 170 };           // its centre; the photo 760 wide, 1:1 on screen when the camera has stopped
-    const BIG = { size: 160, y1: 112, y2: -48 };   // the baselines of „Noi nu” / „promitem.” (world y)
-    const SHOW = { size: 205, y1: 262, y2: 62 };   // „Îți” / „arătăm.”
+    const MASS = 835;                                // where the opening type sits: 43.5 % of the frame's height (screen px)
+    const HERO = { w: 0, h: 0, y: 253 };           // its centre; the photo 820 wide, 1:1 on screen when the camera has stopped
+    const BIG = { size: 190, y1: 146, y2: -34, capTop: 285, wide: 860 }; // „Noi nu” / „promitem.”: about 80 % of the frame's width; the size and the baselines (world y) are set when the type is measured
+    const SHOW = { size: 200, y1: 370, y2: 180 };  // „Îți” / „arătăm.” (the baselines, world y); the proof lines sit under it
     let G = null, T = {}, cards = [], words = [], show = [];
     const frostAt = (t) => { const u = E.inout(clamp((t - B(20)) / 0.42)); return { split: 0.5 + 0.56 * u, amt: t < B(20) + 0.5 ? 1 : 0, glow: Math.sin(Math.PI * clamp((t - B(20) + 0.02) / 0.5)) }; };
     const slamZ = (t, t0) => { const u = (t - t0) / 0.3; if (u <= 0) return 1080; const e = E.out5(clamp(u)); return (1 - e) * 1080 - 46 * Math.sin(Math.PI * clamp(u)) * (1 - clamp(u)); };
@@ -317,6 +319,8 @@ void main() {
       const FB = "800 % 'Inter Variable'", FS = "italic 400 % 'Fraunces Variable'";
       const mkWord = (str, font, size, color, track, ss, cx, baseY, z) => { const m = typeTex(str, font, size, color, track, ss); return { m, tex: tex(m.cv), str, cx, baseY, z }; };
       const [l1, l2] = p.big, w1 = l1.split(' ');
+      { const m0 = typeTex(l2.replace(/\.$/, ''), FB, 100, INK, -0.045, 1); BIG.size = Math.round(100 * BIG.wide / (m0.adv + 100 * 0.105 * 2.1)); // the second line (with its full stop) spans BIG.wide
+        const capH = BIG.size * 0.727, gap = BIG.size * 0.95, top = MASS - (capH + gap) / 2; BIG.y1 = H / 2 - (top + capH); BIG.y2 = BIG.y1 - gap; BIG.capTop = H / 2 - top; }
       // line 1 is two words that land one after the other: measured together, so the spacing is the font's own
       const mL1 = typeTex(l1, FB, BIG.size, INK, -0.045, 4), mA = typeTex(w1[0], FB, BIG.size, INK, -0.045, 5), mB = typeTex(w1.slice(1).join(' '), FB, BIG.size, INK, -0.045, 5);
       const x0 = -mL1.adv / 2, xB = x0 + mL1.widthOf(w1[0] + ' ');
@@ -332,7 +336,7 @@ void main() {
       show = [{ m: mS1, tex: tex(mS1.cv), x: -mS1.adv / 2, baseY: SHOW.y1 }, { m: mS2, tex: tex(mS2.cv), x: xs2, baseY: SHOW.y2 }];
       T.period2 = { x: xs2 + mS2.adv + dR2 * 1.5, y: SHOW.y2 + dR2 * 1.05, r: dR2 };
       // the hero case, at the photo's own resolution
-      { const iw = heroImg.naturalWidth, ih = heroImg.naturalHeight, pw = 760, ph = Math.round(pw * ih / iw), c = cardTex(heroImg, '', '', { ts: iw / pw, pad: 20, pw, ph, pr: 16, label: 0, cr: 30 }); HERO.w = c.w; HERO.h = c.h; T.hero = tex(c.cv); }
+      { const iw = heroImg.naturalWidth, ih = heroImg.naturalHeight, pw = 820, ph = Math.round(pw * ih / iw), c = cardTex(heroImg, '', '', { ts: iw / pw, pad: 20, pw, ph, pr: 16, label: 0, cr: 30 }); HERO.w = c.w; HERO.h = c.h; T.hero = tex(c.cv); }
       // the walls: two tiers on each side, staggered; every card a different real case
       let n = 0;
       for (let k = 0; k < SLOTS; k++) for (const wall of [-1, 1]) for (const tier of [1, 0]) {
@@ -357,8 +361,13 @@ void main() {
       const tint = rev * (1 - smooth((t - (T2a + 0.55 * T2d)) / 0.4));
       const fog = { color: [1 + (HAZE[0] - 1) * tint, 1 + (HAZE[1] - 1) * tint, 1 + (HAZE[2] - 1) * tint], start: 2400 * rev, density: (1 / 2600) * (1 + 60 * Math.pow(1 - rev, 2)) };
       const inCorr = t >= B(7.3) && t < T3a + T3d;
-      const calmK = (1 - 0.7 * smooth((t - B(15)) / per)) * (1 - 0.7 * smooth((t - T2a - 0.5 * T2d) / 0.4));
+      const calmK = 1 - smooth((t - B(14.9)) / (1.1 * per)); // the grid is for the flight: it is gone when the camera stops, so nothing runs behind the labels
       const S = { cam: c, fog, vz: vz * kk, camS: [(cb.x - ca.x) * kk, (cb.y - ca.y) * kk, (ca.z - cb.z) * kk, (cb.roll - ca.roll) * kk], floor: t >= B(7.3) ? { y: FLOOR, cell: 170, gridA: 0.42 * rev * calmK, gridC: [0.078, 0.647, 0.588] } : null, quads: q };
+      // ---- the soft light: two large glows drifting behind the type (the opening, „Îți arătăm.”, the logo): never a flat white card
+      const glow = (z, a, ph) => { if (a <= 0.004) return; [[-360, 330, 1900, 0.21, 0], [420, -420, 2100, 0.16, 2.1]].forEach(([x, y, sz, al, k]) => q.push({ M: M4.chain(M4.T(x + 230 * Math.sin(t * 0.5 + k + ph), y + 170 * Math.cos(t * 0.38 + k * 1.7 + ph), z), M4.S(sz, sz)), tex: T.blob, w: 1, h: 1, tint: [0.37, 0.83, 0.78, 1], alpha: al * a, fog: 0, near: 900, far: 9e9, reach: 9e9, layer: -4 })); };
+      glow(-650, 1 - smooth((t - B(7.1)) / (0.7 * per)), 0);
+      glow(ZSHOW - 650, smooth((t - T2a - 0.5 * T2d) / 0.4) * (1 - smooth((t - T3a - 0.45 * T3d) / 0.2)), 1.3);
+      glow(ZLOGO - 650, smooth((t - T3a - 0.5 * T3d) / 0.3), 2.6);
       // ---- the opening type (z = 0)
       if (t < B(8) + 0.3) {
         words.forEach((w) => { if (t < w.t0 - 0.001) return; const z = slamZ(t, w.t0), a = clamp((t - w.t0) / 0.07), dz = slamZ(t + fr / 2, w.t0) - slamZ(t - fr / 2, w.t0);
@@ -405,58 +414,65 @@ void main() {
     }
 
     // ---------------------------------------------------------------- the light-dot's path while it writes (world units, on the type's plane)
-    const KICK = { size: 46, y0: 100, y1: 334 }; // the small line: centred first, above the big type once it lands
+    const KICK = { size: 78, y0: H / 2 - MASS, y1: 400, h: 190, small: 0.58 }; // the opening line: large and centred first; smaller, above the big type, once that lands
     let kick = null, kw = [];
-    const kickY = (t) => KICK.y0 + (KICK.y1 - KICK.y0) * E.inout(clamp((t - B(4) + 0.3) / 0.5));
-    const WT = [0.7, 1.12, 1.52, 1.98, 2.44].map(B); // a word on (almost) every half beat
+    const kUp = (t) => E.inout(clamp((t - B(4) + 0.3) / 0.5));
+    const kickY = (t) => KICK.y0 + (KICK.y1 - KICK.y0) * kUp(t), kickS = (t) => 1 + (KICK.small - 1) * kUp(t);
+    const WT = [0.5, 1, 1.5, 2, 2.5].map(B); // a word on every half beat
     function dotAt(t) {
       if (!kw.length) return null;
-      const y = kickY(t) - 5, r0 = 9;
-      const xs = kw.map((w) => w.x1), xStart = kw[0].x0 - 26;
-      if (t < WT[WT.length - 1] + 0.22) { // writing: it runs just ahead of the words
-        let x = xStart - 240 * (1 - E.out5(clamp((t + 0.3) / 0.6)));
-        WT.forEach((tw, i) => { const from = i ? xs[i - 1] + 9 : xStart; x = t >= tw - 0.12 ? from + (xs[i] + 9 - from) * E.inout(clamp((t - tw + 0.12) / 0.34)) : x; });
-        return { x, y, r: r0, a: clamp((t + 0.3) / 0.2) };
+      const ks = kickS(t), ky = kickY(t), r0 = 12 * ks;
+      const at = (i) => [ks * (kw[i].x1 + 15), ky - ks * (kw[i].yc + 5)], st = [ks * (kw[0].x0 - 34), ky - ks * (kw[0].yc + 5)];
+      if (t < WT[WT.length - 1] + 0.22) { // writing: it runs just ahead of the words, line after line
+        let pos = [st[0] - 260 * (1 - E.out5(clamp((t + 0.3) / 0.6))), st[1]];
+        WT.forEach((tw, i) => { if (t < tw - 0.12) return; const from = i ? at(i - 1) : st, to = at(i), e = E.inout(clamp((t - tw + 0.12) / 0.34)); pos = [from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e]; });
+        return { x: pos[0], y: pos[1], r: r0, a: clamp((t + 0.3) / 0.2) };
       }
-      const xEnd = xs[xs.length - 1] + 9, tj = LAND[2] + 0.06, P = T.period;
-      if (t < tj) return { x: xEnd, y, r: r0 * (1 + 0.14 * Math.sin((t - 1.3) * 5.2)), a: 1 };
+      const end = at(kw.length - 1), tj = LAND[2] + 0.06, P = T.period;
+      if (t < tj) return { x: end[0], y: end[1], r: r0 * (1 + 0.14 * Math.sin((t - 1.3) * 5.2)), a: 1 };
       const u = clamp((t - tj) / 0.34), e = E.inout(u); // the leap: it lands as the full stop
-      return { x: xEnd + (P.x - xEnd) * e, y: y + (P.y - y) * e + 90 * Math.sin(Math.PI * u) * (1 - u * 0.6), r: r0 + (P.r - r0) * e + 3 * Math.sin(Math.PI * clamp((t - tj - 0.34) / 0.25)), a: 1, z: 2 };
+      return { x: end[0] + (P.x - end[0]) * e, y: end[1] + (P.y - end[1]) * e + 110 * Math.sin(Math.PI * u) * (1 - u * 0.6), r: r0 + (P.r - r0) * e + 3 * Math.sin(Math.PI * clamp((t - tj - 0.34) / 0.25)), a: 1, z: 2 };
     }
 
     // ---------------------------------------------------------------- the DOM layer (small, crisp text; pinned to the camera)
     const txt = (cls, html, css) => { const d = h('div', 'tx ' + (cls || ''), html, ov); d.style.cssText += ';' + css; return d; };
-    kick = txt('', p.line.split(/\s+/).map((w) => '<span style="display:inline-block;opacity:0">' + esc(w) + '</span>').join(' '), 'left:160px;width:760px;top:0;text-align:center;font:500 ' + KICK.size + 'px/1.2 var(--f-body);letter-spacing:-.012em;color:#262a30;white-space:nowrap;transform-origin:50% 50%');
+    kick = txt('', String(p.line).split('\n').map((ln) => ln.trim().split(/\s+/).map((w) => '<span style="display:inline-block;opacity:0">' + esc(w) + '</span>').join(' ')).join('<br>'), 'left:110px;width:860px;top:0;text-align:center;font:500 ' + KICK.size + 'px/1.2 var(--f-body);letter-spacing:-.028em;color:#1d2226;white-space:nowrap;transform-origin:50% 50%');
     const kspans = [...kick.querySelectorAll('span')];
-    const hud = txt('', esc(p.consent), 'left:170px;width:740px;top:1372px;padding:16px 26px 18px;border-radius:28px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);box-shadow:0 18px 40px -22px rgba(4,60,54,.35),0 0 0 1px rgba(11,60,55,.06);text-align:center;font:500 24px/1.34 var(--f-body);color:#3d4a48;opacity:0');
-    const hTitle = txt('', '<i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:' + TEAL + ';margin:0 16px 5px 0;vertical-align:middle"></i>' + esc(p.hero.title), 'left:160px;width:760px;top:0;text-align:center;font:700 42px/1.1 var(--f-body);letter-spacing:-.025em;color:' + INK + ';transform-origin:50% 0');
-    const hMeta = txt('', esc(p.hero.meta), 'left:160px;width:760px;top:0;text-align:center;font:500 31px/1.1 var(--f-body);color:#4c5957;transform-origin:50% 0');
-    const hNote = txt('', esc(p.consentOne), 'left:190px;width:700px;top:0;text-align:center;font:500 24px/1.34 var(--f-body);color:#4c5957;transform-origin:50% 0');
-    const calm = txt('', esc(p.calm), 'left:190px;width:700px;top:0;text-align:center;font:500 36px/1.3 var(--f-body);letter-spacing:-.015em;color:#262a30;transform-origin:50% 0');
-    const goog = txt('', esc(p.google), 'left:160px;width:760px;top:0;text-align:center;font:650 31px/1.2 var(--f-body);letter-spacing:.005em;color:' + DEEP + ';transform-origin:50% 0');
+    const hud = txt('', esc(p.consent), 'left:150px;width:780px;top:1352px;padding:18px 26px 20px;border-radius:30px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);box-shadow:0 18px 40px -22px rgba(4,60,54,.35),0 0 0 1px rgba(11,60,55,.06);text-align:center;font:500 29px/1.32 var(--f-body);letter-spacing:-.01em;color:#3d4a48;opacity:0');
+    const hTitle = txt('', '<i style="display:inline-block;width:17px;height:17px;border-radius:50%;background:' + TEAL + ';margin:0 18px 7px 0;vertical-align:middle"></i>' + esc(p.hero.title), 'left:110px;width:860px;top:0;text-align:center;font:700 54px/1.1 var(--f-body);letter-spacing:-.03em;white-space:nowrap;color:' + INK + ';transform-origin:50% 0');
+    const hMeta = txt('', esc(p.hero.meta), 'left:160px;width:760px;top:0;text-align:center;font:500 44px/1.1 var(--f-body);letter-spacing:-.015em;color:#3d4a48;transform-origin:50% 0');
+    const hNote = txt('', esc(p.consentOne), 'left:160px;width:760px;top:0;text-align:center;font:500 33px/1.28 var(--f-body);letter-spacing:-.012em;color:#4c5957;text-wrap:balance;transform-origin:50% 0');
+    const calm = txt('', esc(p.calm), 'left:160px;width:760px;top:0;text-align:center;font:500 52px/1.24 var(--f-body);letter-spacing:-.025em;color:#1d2226;text-wrap:balance;transform-origin:50% 0');
+    // the real Google score, with weight: five small turquoise stars (the site's own star), the score, the number of reviews
+    const STAR = '<svg viewBox="0 0 24 24" width="46" height="46" fill="' + TEAL + '" style="margin:0 3px"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>';
+    const gParts = String(p.google).split(/\s*·\s*/);
+    const stars = h('div', null, STAR.repeat(5), ov); stars.style.cssText = 'position:absolute;left:160px;width:760px;top:0;text-align:center;height:46px;line-height:0;transform-origin:50% 0';
+    const goog = txt('', esc(gParts[0]), 'left:160px;width:760px;top:0;text-align:center;font:800 66px/1.08 var(--f-body);letter-spacing:-.035em;color:' + INK + ';white-space:nowrap;transform-origin:50% 0');
+    const goog2 = txt('', esc(gParts.slice(1).join(' · ')), 'left:160px;width:760px;top:0;text-align:center;font:700 58px/1.08 var(--f-body);letter-spacing:-.03em;color:' + DEEP + ';white-space:nowrap;transform-origin:50% 0');
     // the real logo, black on white (brand_asset): the mark and the wordmark, as in the site's header
     const logo = h('div', null, null, ov); logo.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:540px 800px';
     const LM = 112, LWH = 50, LWW = Math.round(LWH * 5583 / 426), LX = Math.round((W - (LM + 26 + LWW)) / 2), LY = 742;
     const mark = h('i', null, null, logo); mark.style.cssText = 'position:absolute;left:' + LX + 'px;top:' + LY + 'px;width:' + LM + 'px;height:' + LM + 'px;background:url(' + R.ROOT + '/brand_asset/logo-mark.png) center/contain no-repeat';
     const wm = h('i', null, null, logo); wm.style.cssText = 'position:absolute;left:' + (LX + LM + 26) + 'px;top:' + (LY + (LM - LWH) / 2) + 'px;width:' + LWW + 'px;height:' + LWH + 'px;background:#000;-webkit-mask:url(' + R.ROOT + '/brand_asset/wordmark-com.png) center/contain no-repeat;mask:url(' + R.ROOT + '/brand_asset/wordmark-com.png) center/contain no-repeat';
-    const city = txt('', esc(p.cities[0]) + '<i style="display:inline-block;width:17px;height:17px;border-radius:50%;margin:0 22px 5px;vertical-align:middle;background:radial-gradient(circle at 38% 34%,#fdeee6 0%,#efbfad 30%,#dc9a85 75%,#bf7a64 100%);box-shadow:0 0 14px 4px rgba(226,162,141,.45)"></i>' + esc(p.cities[1]), 'left:160px;width:760px;top:' + (LY + LM + 54) + 'px;text-align:center;font:500 38px/1.1 var(--f-body);letter-spacing:.01em;color:' + INK);
+    const city = txt('', esc(p.cities[0]) + '<i style="display:inline-block;width:19px;height:19px;border-radius:50%;margin:0 24px 7px;vertical-align:middle;background:radial-gradient(circle at 38% 34%,#fdeee6 0%,#efbfad 30%,#dc9a85 75%,#bf7a64 100%);box-shadow:0 0 14px 4px rgba(226,162,141,.45)"></i>' + esc(p.cities[1]), 'left:160px;width:760px;top:' + (LY + LM + 50) + 'px;text-align:center;font:500 46px/1.1 var(--f-body);letter-spacing:-.005em;color:' + INK);
     logo.appendChild(city);
     [load(R.ROOT + '/brand_asset/logo-mark.png'), load(R.ROOT + '/brand_asset/wordmark-com.png')];
     const fadeIO = (t, a, b, din = 0.3, dout = 0.25) => smooth((t - a) / din) * (1 - smooth((t - b) / dout));
     const pin = (e, P, y, o, bl) => { e.style.top = y + 'px'; e.style.transformOrigin = '50% ' + (P.oy - y) + 'px'; e.style.transform = 'translate(' + (P.x - W / 2).toFixed(2) + 'px,' + (P.y - P.oy).toFixed(2) + 'px) scale(' + P.s.toFixed(4) + ')'; e.style.opacity = o.toFixed(3); e.style.filter = bl > 0.3 ? 'blur(' + bl.toFixed(1) + 'px)' : ''; e.style.visibility = o < 0.004 ? 'hidden' : ''; };
     function dom(t) {
       // the small line: its words appear as the dot passes; on the drop it moves up, above the big type
-      const ky = kickY(t), P = project(0, ky, 0, t); P.oy = H / 2 - KICK.y0;
+      const ky = kickY(t), P = project(0, ky, 0, t), ks = kickS(t), k0 = H / 2 - KICK.y0;
       kspans.forEach((s, i) => { const q = smooth((t - WT[i]) / 0.2); s.style.opacity = q.toFixed(3); s.style.filter = q < 0.99 ? 'blur(' + ((1 - q) * 5).toFixed(1) + 'px)' : ''; s.style.transform = 'translateY(' + ((1 - q) * 6).toFixed(1) + 'px)'; });
-      pin(kick, P, H / 2 - KICK.y0 - KICK.size * 0.6, 1 - smooth((t - B(6.85)) / 0.22), 0);
+      kick.style.top = (k0 - KICK.h / 2).toFixed(1) + 'px'; kick.style.transform = 'translate(' + (P.x - W / 2).toFixed(2) + 'px,' + (P.y - k0).toFixed(2) + 'px) scale(' + (P.s * ks).toFixed(4) + ')';
+      const ko = (1 - smooth((t - B(6.85)) / 0.22)) * (1 - 0.3 * kUp(t)); kick.style.opacity = ko.toFixed(3); kick.style.visibility = ko < 0.004 ? 'hidden' : '';
       hud.style.opacity = fadeIO(t, B(9.1), B(15.1), 0.4, 0.3).toFixed(3); hud.style.visibility = +hud.style.opacity < 0.004 ? 'hidden' : '';
       // the case's label: what the catalog states, and the consent line
       const hb = HERO.y - HERO.h / 2, Ph = project(0, hb, ZHERO, t); Ph.oy = H / 2 - hb;
       const stag = (i) => fadeIO(t, B(16.35) + i * 0.12, T2a - 0.36, 0.34, 0.2), rise = (i) => (1 - E.out5(clamp((t - B(16.35) - i * 0.12) / 0.5))) * 22;
-      [[hTitle, 36], [hMeta, 94], [hNote, 152]].forEach(([e, dy], i) => { pin(e, Ph, Ph.oy + dy, stag(i), 0); e.style.transform += ' translateY(' + rise(i).toFixed(1) + 'px)'; });
+      [[hTitle, 30], [hMeta, 100], [hNote, 162]].forEach(([e, dy], i) => { pin(e, Ph, Ph.oy + dy, stag(i), 0); e.style.transform += ' translateY(' + rise(i).toFixed(1) + 'px)'; });
       // the two calm lines under „Îți arătăm.”
-      const sb = SHOW.y2 - 110, Ps = project(0, sb, ZSHOW, t); Ps.oy = H / 2 - sb;
-      [[calm, 0, B(24.7)], [goog, 142, B(25.7)]].forEach(([e, dy, t0]) => { pin(e, Ps, Ps.oy + dy, fadeIO(t, t0, T3a - 0.05, 0.4, 0.2), (1 - smooth((t - t0) / 0.4)) * 6); e.style.transform += ' translateY(' + ((1 - E.out5(clamp((t - t0) / 0.6))) * 18).toFixed(1) + 'px)'; });
+      const sb = SHOW.y2 - 84, Ps = project(0, sb, ZSHOW, t); Ps.oy = H / 2 - sb;
+      [[calm, 0, B(24.7)], [stars, 238, B(25.7)], [goog, 298, B(25.7) + 0.06], [goog2, 376, B(25.7) + 0.12]].forEach(([e, dy, t0]) => { pin(e, Ps, Ps.oy + dy, fadeIO(t, t0, T3a - 0.05, 0.4, 0.2), (1 - smooth((t - t0) / 0.4)) * 6); e.style.transform += ' translateY(' + ((1 - E.out5(clamp((t - t0) / 0.6))) * 18).toFixed(1) + 'px)'; });
       // the logo: it waits in the light behind the type, 1:1 when the camera lands
       const Pl = project(0, 160, ZLOGO, t), a = smooth((t - B(29) - 0.02) / 0.3);
       logo.style.transform = 'translate(' + (Pl.x - W / 2).toFixed(2) + 'px,' + (Pl.y - 800).toFixed(2) + 'px) scale(' + Pl.s.toFixed(4) + ')'; logo.style.opacity = a.toFixed(3); logo.style.visibility = a < 0.004 ? 'hidden' : '';
@@ -464,18 +480,21 @@ void main() {
       const ca = smooth((t - B(29.85)) / 0.4); city.style.opacity = ca.toFixed(3); city.style.transform = 'translateY(' + ((1 - E.out5(clamp((t - B(29.85)) / 0.6))) * 14).toFixed(1) + 'px)';
     }
     ctx.shot.afterDom = () => { // the words' places on the type's plane (world x), for the dot
-      const kr = kick.getBoundingClientRect(); kw = kspans.map((s) => { const r = s.getBoundingClientRect(); return { x0: r.left - W / 2, x1: r.right - W / 2 }; }); void kr; };
+      const kr = kick.getBoundingClientRect(), cx = kr.left + kr.width / 2, cy = kr.top + kr.height / 2; KICK.h = kr.height;
+      kw = kspans.map((s) => { const r = s.getBoundingClientRect(); return { x0: r.left - cx, x1: r.right - cx, yc: (r.top + r.bottom) / 2 - cy }; });
+      KICK.y1 = BIG.capTop + 64 + KICK.small * KICK.h / 2; }; // above the big type, with air between them
 
     // ---------------------------------------------------------------- one frame
     let last = -1;
     function draw(t) {
       if (!G) return;
-      if (!kw.length) { el.style.display = 'block'; const o = kspans.map((s) => s.style.cssText); kick.style.transform = ''; ctx.shot.afterDom(); void o; }
+      if (!kw.length) { el.style.display = 'block'; kick.style.transform = ''; kspans.forEach((s) => { s.style.transform = ''; }); ctx.shot.afterDom(); }
       dom(t);
       if (Math.abs(t - last) < 1e-6) return; last = t;
       const fr = 1 / 30, c0 = cam(t - fr / 2), c1 = cam(t + fr / 2), sp = Math.abs(c1.z - c0.z) + (Math.hypot(c1.x - c0.x, c1.y - c0.y) * 1.8 + Math.abs(c1.roll - c0.roll) * 1500);
       const busy = WORD_T.some((w) => t > w - 0.04 && t < w + 0.34) || (t > T2a - 0.1 && t < T2a + T2d + 0.1);
-      const K = Math.round(clamp(6 + sp / 4.4 + (busy ? 16 : 0), 6, 30));
+      const dive = (t > B(7.1) && t < B(8.12)) || (t > T3a + 0.1 && t < T3a + T3d);
+      const K = Math.round(dive ? clamp(12 + sp / 2, 12, 64) : clamp(6 + sp / 4.4 + (busy ? 16 : 0), 6, 30));
       const hold = (t >= B(16.4) && t < T2a) ? 1 : 0;
       G.frame(scene, t, K, fr * SHUT, { diff: 0, vig: 1, seed: Math.floor(t * 30) % 64 }); void hold;
     }
