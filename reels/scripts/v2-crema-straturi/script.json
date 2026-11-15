@@ -1,0 +1,159 @@
+{
+ "v": 2,
+ "id": "v2-crema-straturi",
+ "rubric": "Ce se întâmplă de fapt",
+ "theme": "brand-teal",
+ "sound": "v3",
+ "captions": false,
+ "nuki": false,
+ "music": "Free (Ultra Naté), piesa aleasă de proprietar",
+ "topic": "De ce crema lucrează la suprafață, iar fermitatea se hotărăște în straturile profunde",
+ "topicTag": "hifu-rf-fata",
+ "hookType": "afirmatie",
+ "title": "Crema ta de față lucrează doar la suprafață",
+ "keyword": "360",
+ "sources": "v2/src/riduri-linii-fine.html: „Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Cremele lucrează la suprafață, dar fermitatea vine din straturile profunde.”; „HIFU și radiofrecvența duc energie controlată exact în straturile profunde ale pielii și pornesc producția de colagen nou.”; întrebarea „Când se văd rezultatele?”: „Un efect de fermitate se simte imediat, dar rezultatul real apare treptat, pe măsură ce se formează colagen nou, maxim la 8-12 săptămâni de la ședință.”; „Colagenul are nevoie de timp.”; cronologia: „La 8-12 săptămâni · Efect de lifting maxim”.",
+ "post": "Crema lucrează la suprafață. Fermitatea pielii se hotărăște mai jos, în straturile profunde: uite ce se întâmplă acolo și de ce efectul maxim vine la 8-12 săptămâni. Rezultatele diferă de la o persoană la alta. #hifu #radiofrecventa #colagen #timisoara #arad",
+ "core": "fibres",
+ "concept": {
+  "who": "Femeile de 35-55 de ani din Timișoara și Arad care folosesc creme antirid și simt că pielea își pierde totuși fermitatea.",
+  "oneThing": "Crema lucrează la suprafață, iar fermitatea se hotărăște în straturile profunde; acolo ajunge energia (HIFU, radiofrecvență), iar efectul maxim vine la 8-12 săptămâni.",
+  "tone": "Calm, premium, hipnotic: o singură coborâre lină, ca o scufundare, apoi liniște și lumină.",
+  "formats": [
+   "(xi) Faceless curat",
+   "o singură mișcare de cameră continuă, pe o pânză lungă (regula din 13.11: pan cu parallax)"
+  ],
+  "borrowed": [
+   {
+    "element": "Punctul de lumină rose gold care duce privirea",
+    "ref": "10 (punctul-ghid, sunetul legat de imagine)",
+    "why": "e firul întregii călătorii: pleacă de la borcan, coboară prin piele, devine energia care ajunge la fibre, apoi vârful care parcurge inelul săptămânilor și butonul de trimitere; privitoarea nu se pierde niciodată"
+   },
+   {
+    "element": "Cuvântul-cheie care intră mare și în blur, apoi se retrage; accentul în italic serif",
+    "ref": "12 (faceless curat)",
+    "why": "vocea rămâne clară fără subtitrare completă: pe ecran stă doar cuvântul care contează, exact când e spus"
+   },
+   {
+    "element": "Inelul uriaș, tăiat de cadru, care numără săptămânile",
+    "ref": "12 (cadranul tăiat, inelul de numărătoare)",
+    "why": "„8-12 săptămâni” e singura cifră a reel-ului; scara mare o face de neuitat, iar fibrele care se înmulțesc în spate arată de ce durează"
+   }
+  ],
+  "notUsed": [
+   "Bara de progres pe segmente: coborârea însăși arată unde suntem; un al doilea indicator ar încărca",
+   "Nuki: ar rupe liniștea scufundării; brandul e în culori și în punctul de lumină",
+   "Etichete cu numele straturilor sau adâncimi în milimetri: site-ul spune doar „la suprafață” și „straturile profunde”",
+   "Un aparat desenat sau generat: nu arătăm aparate inventate; energia e doar lumină",
+   "Subtitrarea cuvânt cu cuvânt: textul cinetic pe cuvintele-cheie îi ține locul, ca imaginea să respire",
+   "Pastilele care se adună: reel-ul are o singură idee, nu o listă"
+  ],
+  "track": {
+   "file": "owner-free",
+   "why": "standardul reels-urilor educative: house cald, constant, de la primul downbeat (0,395 s); 125 BPM, mișcările camerei cad pe bătăi"
+  },
+  "different": "Primul reel făcut dintr-o singură mișcare de cameră, fără nicio tăietură: o coborâre prin piele, cu parallax și adâncime. Primul fără subtitrare completă și fără Nuki. Mecanismul nu e o secțiune cu etichete, ci o rețea de fibre care se strânge și se înmulțește."
+ },
+ "hook": {
+  "role": "hook",
+  "say": "Crema ta de față lucrează doar la *suprafață*.",
+  "visual": {
+   "type": "dv-surface",
+   "cam": "none"
+  }
+ },
+ "beats": [
+  {
+   "role": "lead",
+   "say": "Fermitatea pielii se hotărăște mai jos, în straturile *profunde*.",
+   "visual": {
+    "type": "dv-plunge",
+    "cam": "none",
+    "tr": "dive"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Cu vârsta, pielea produce tot mai puțin colagen și elastină, așa că fermitatea *scade*.",
+   "visual": {
+    "type": "dv-fibres",
+    "cam": "none",
+    "tr": "settle"
+   }
+  },
+  {
+   "role": "loop",
+   "say": "Există totuși o cale de a ajunge chiar *acolo*.",
+   "visual": {
+    "type": "dv-path",
+    "cam": "none",
+    "tr": "pull-back"
+   }
+  }
+ ],
+ "payoff": [
+  {
+   "role": "body",
+   "say": "HIFU și radiofrecvența duc energie controlată exact în straturile profunde și pornesc producția de colagen *nou*.",
+   "visual": {
+    "type": "dv-energy",
+    "cam": "none",
+    "tr": "descend"
+   }
+  }
+ ],
+ "resolve": [
+  {
+   "role": "body",
+   "say": "Un efect de fermitate se simte *imediat*.",
+   "visual": {
+    "type": "dv-lift",
+    "cam": "none",
+    "tr": "rise"
+   }
+  },
+  {
+   "role": "loop",
+   "say": "Rezultatul adevărat vine însă mai *târziu*.",
+   "visual": {
+    "type": "dv-dial",
+    "cam": "none",
+    "tr": "rack-focus"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Colagenul are nevoie de timp, așa că efectul maxim apare la 8-12 săptămâni de la *ședință*.",
+   "tts": "Colagenul are nevoie de timp, așa că efectul maxim apare la opt până la douăsprezece săptămâni de la ședință.",
+   "visual": {
+    "type": "dv-weeks",
+    "cam": "none",
+    "tr": "orbit"
+   }
+  }
+ ],
+ "outro": {
+  "role": "cta",
+  "cta": "comment",
+  "say": "Dacă vrei să afli ce i se potrivește pielii tale, scrie *360* în comentarii.",
+  "tts": "Dacă vrei să afli ce i se potrivește pielii tale, scrie trei sute șaizeci în comentarii.",
+  "visual": {
+   "type": "dv-comment",
+   "cam": "none",
+   "tr": "ascend"
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 2.6,
+  "tr": "push"
+ },
+ "musicFile": "owner-free",
+ "musicStart": 0.395,
+ "beat": {
+  "bpm": 125.01
+ },
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Începutul piesei, de la primul downbeat (0,395 s).",
+ "structure": "Hook → Lead → Body → Open loop → Body (energia ajunge, colagen nou) → Body → Open loop → Body (răspunsul: 8-12 săptămâni) → CTA",
+ "voiceNote": "Ritm alert, de conversație vie: propozițiile curg una din alta, cu pauze foarte scurte între ele, fără să tărăgănezi niciun cuvânt."
+}

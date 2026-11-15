@@ -1,0 +1,68 @@
+{
+"_mode": "continuous",
+"_tempo": 1.08,
+"_wpm_take": 174,
+"L0": {
+"text": "Există un antrenament la care stai întinsă.",
+"dur": 3.11,
+"speech": 2.88,
+"file": "voice/cont-81feffd6a9b7f3d0-L0.wav",
+"role": "hook"
+},
+"L1": {
+"text": "Și în care mușchiul lucrează mai mult decât ar putea la sală.",
+"dur": 3.57,
+"speech": 3.33,
+"file": "voice/cont-81feffd6a9b7f3d0-L1.wav",
+"role": "beat"
+},
+"L2": {
+"text": "Se numește EMS, adică electrostimulare magnetică.",
+"dur": 2.6,
+"speech": 2.4,
+"file": "voice/cont-81feffd6a9b7f3d0-L2.wav",
+"role": "beat"
+},
+"L3": {
+"text": "Aparatul trimite impulsuri care fac mușchiul să se contracte singur, mult mai intens și mai des decât la un antrenament obișnuit.",
+"dur": 8.88,
+"speech": 8.64,
+"file": "voice/cont-81feffd6a9b7f3d0-L3.wav",
+"role": "beat"
+},
+"L4": {
+"text": "Cât face într-o singură ședință e greu de crezut.",
+"dur": 2.88,
+"speech": 2.48,
+"file": "voice/cont-81feffd6a9b7f3d0-L4.wav",
+"role": "beat"
+},
+"L5": {
+"text": "Până la douăzeci de mii de contracții, pe care nu le-ai putea face voluntar, oricât ai trage la sală.",
+"dur": 5.93,
+"speech": 5.4,
+"file": "voice/cont-81feffd6a9b7f3d0-L5.wav",
+"role": "payoff"
+},
+"L6": {
+"text": "Contracțiile sunt intense, dar nu dor, iar tu stai relaxată tot timpul.",
+"dur": 4.8,
+"speech": 4.69,
+"file": "voice/cont-81feffd6a9b7f3d0-L6.wav",
+"role": "resolve"
+},
+"L7": {
+"text": "De obicei e o cură de șase până la opt ședințe, iar un tonus mai bun se simte după primele.",
+"dur": 6.27,
+"speech": 5.88,
+"file": "voice/cont-81feffd6a9b7f3d0-L7.wav",
+"role": "resolve"
+},
+"L8": {
+"text": "EMS se face doar în clinica din Timișoara. Trimite-i clipul prietenei cu care tot amâni sala.",
+"dur": 5.876,
+"speech": 5.876,
+"file": "voice/cont-81feffd6a9b7f3d0-L8.wav",
+"role": "outro"
+}
+}

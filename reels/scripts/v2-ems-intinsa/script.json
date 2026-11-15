@@ -1,0 +1,157 @@
+{
+ "v": 2,
+ "id": "v2-ems-intinsa",
+ "rubric": "Ce nu-ți spune nimeni",
+ "theme": "brand-light",
+ "sound": "v3",
+ "captions": false,
+ "nuki": false,
+ "music": "Training Season (live), piesa aleasă de proprietar",
+ "topic": "EMS: antrenamentul la care stai întinsă (doar Timișoara)",
+ "topicTag": "ems-tonifiere",
+ "hookType": "afirmatie",
+ "title": "Există un antrenament la care stai întinsă",
+ "sources": "v2/src/tonifiere-musculara.html: „Electrostimularea magnetică (EMS) face mii de contracții intense într-o singură ședință, în timp ce tu stai relaxată.”; „Stai întinsă, relaxată”; „Electrostimularea magnetică trimite impulsuri care fac mușchiul să se contracte mult mai intens și mai des decât la antrenamentul clasic: până la 20.000 de contracții într-o ședință.”; „Mușchiul se contractă mult mai intens decât la sală”; „Imposibil de obținut voluntar, oricât ai trage la sală.”; „Contracții intense, dar nedureroase, în timp ce stai întinsă.”; „De obicei o cură de 6-8 ședințe”; „Un tonus mai bun se simte după primele ședințe.”; „EMS este disponibil momentan doar la clinica din Timișoara.”",
+ "post": "Există un antrenament la care stai întinsă: EMS, electrostimulare magnetică. Până la 20.000 de contracții într-o ședință, doar în clinica din Timișoara. Rezultatele diferă de la o persoană la alta. #ems #tonifiere #timisoara",
+ "core": "collage",
+ "concept": {
+  "who": "Femeile din Timișoara care tot amână sala și vor un tonus mai bun fără să-și dea peste cap programul.",
+  "oneThing": "EMS e un antrenament la care stai întinsă: până la 20.000 de contracții într-o ședință, pe care nu le-ai putea face voluntar.",
+  "tone": "Editorial, sigur pe el, cu un zâmbet: fiecare cadru un afiș, mișcări lente și hotărâte.",
+  "formats": [
+   "(x) Colajul editorial",
+   "(x-b) Colaj pe birou"
+  ],
+  "borrowed": [
+   {
+    "element": "Câte un obiect fotografic decupat, simbolic, pe fiecare idee",
+    "ref": "11 (colajul editorial)",
+    "why": "statuia întinsă, gantera, cronometrul și avionul de hârtie spun ideea înainte de voce; alb-negru cu accente turcoaz, cum îi place proprietarului"
+   },
+   {
+    "element": "Obiectul lucrează pe text: lupa care mărește cuvântul, cercul de marker în jurul cifrei",
+    "ref": "14 (colaj pe birou)",
+    "why": "privirea ajunge exact pe „EMS” și pe „20.000”, singurele două lucruri de ținut minte"
+   },
+   {
+    "element": "Blocul-definiție de dicționar",
+    "ref": "14 (colaj pe birou)",
+    "why": "EMS e o abreviere pe care lumea n-o știe; definiția, doar cu formularea site-ului, o lămurește și arată educațional"
+   }
+  ],
+  "notUsed": [
+   "Nuki: pe hârtie albă, lângă marmură alb-negru, ar arăta lipit; aici brandul e turcoazul",
+   "Punctul de lumină-ghid: îl are reel-ul cu scufundarea; fiecare reel cu motivul lui",
+   "Aparatul EMS generat: obiectele generate nu sunt dovadă și nu arătăm aparate inventate",
+   "Poze înainte/după: cazurile din catalog sunt pachete cu Liposonix, nu doar EMS",
+   "Markerul roșu și hârtia crem cu portocaliu din referințe: la noi alb, turcoaz și un singur accent rose gold",
+   "Bara de progres pe segmente: colajul respiră mai bine fără interfață"
+  ],
+  "track": {
+   "file": "owner-trainingseason",
+   "why": "ușor, spontan, cu ritm de mers: se potrivește unui colaj cu zâmbet despre sală; o altă parte a piesei decât reel-ul cu conversația (care pornește de la 10,17 s)"
+  },
+  "different": "Primul colaj editorial: hârtie albă, obiecte fotografice alb-negru cu umbre reale, serif mare amestecat cu fontul site-ului, o cameră care plutește peste o singură coală și trece prin lentila lupei. Finalul e un avion de hârtie, nu un semn de salvare."
+ },
+ "hook": {
+  "role": "hook",
+  "say": "Există un antrenament la care stai *întinsă*.",
+  "visual": {
+   "type": "cj-recline",
+   "cam": "none"
+  }
+ },
+ "beats": [
+  {
+   "role": "lead",
+   "say": "Și în care mușchiul lucrează mai mult decât ar putea la *sală*.",
+   "visual": {
+    "type": "cj-dumbbell",
+    "cam": "none",
+    "tr": "glide"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Se numește EMS, adică electrostimulare *magnetică*.",
+   "visual": {
+    "type": "cj-define",
+    "cam": "none",
+    "tr": "lens"
+   }
+  },
+  {
+   "role": "body",
+   "say": "Aparatul trimite impulsuri care fac mușchiul să se contracte singur, mult mai intens și mai des decât la un antrenament *obișnuit*.",
+   "visual": {
+    "type": "cj-pulse",
+    "cam": "none",
+    "tr": "tilt"
+   }
+  },
+  {
+   "role": "loop",
+   "say": "Cât face într-o singură ședință e greu de *crezut*.",
+   "visual": {
+    "type": "cj-stopwatch",
+    "cam": "none",
+    "tr": "crane"
+   }
+  }
+ ],
+ "payoff": [
+  {
+   "role": "body",
+   "say": "Până la douăzeci de mii de contracții, pe care nu le-ai putea face voluntar, oricât ai trage la *sală*.",
+   "visual": {
+    "type": "cj-count",
+    "cam": "none",
+    "tr": "through"
+   }
+  }
+ ],
+ "resolve": [
+  {
+   "role": "body",
+   "say": "Contracțiile sunt intense, dar nu dor, iar tu stai relaxată tot *timpul*.",
+   "visual": {
+    "type": "cj-relax",
+    "cam": "none",
+    "tr": "drift"
+   }
+  },
+  {
+   "role": "body",
+   "say": "De obicei e o cură de 6-8 ședințe, iar un tonus mai bun se simte după *primele*.",
+   "tts": "De obicei e o cură de șase până la opt ședințe, iar un tonus mai bun se simte după primele.",
+   "visual": {
+    "type": "cj-course",
+    "cam": "none",
+    "tr": "slide-sheet"
+   }
+  }
+ ],
+ "outro": {
+  "role": "cta",
+  "cta": "send",
+  "say": "EMS se face doar în clinica din Timișoara. Trimite-i clipul prietenei cu care tot amâni *sala*.",
+  "visual": {
+   "type": "cj-send",
+   "cam": "none",
+   "tr": "pull-wide"
+  }
+ },
+ "end": {
+  "type": "save",
+  "hold": 2.6,
+  "tr": "push"
+ },
+ "musicFile": "owner-trainingseason",
+ "musicStart": 95.213,
+ "beat": {
+  "bpm": 123.01
+ },
+ "musicNote": "Fișierul stă doar local, în reels/engine/music/ (ignorat de git); nu se comite. Altă parte a piesei decât reel-ul cu conversația (10,17 s): măsurată cu beats.py (123,01 BPM, faza 0,097 s).",
+ "structure": "Hook → Lead → Body → Body → Open loop → Body (răspunsul: până la 20.000) → Body → Body → CTA (trimite unei prietene)",
+ "voiceNote": "Ritm alert, de conversație vie: propozițiile curg una din alta, cu pauze foarte scurte între ele, fără să tărăgănezi niciun cuvânt."
+}

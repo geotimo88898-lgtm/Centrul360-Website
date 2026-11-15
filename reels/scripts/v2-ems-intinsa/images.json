@@ -1,0 +1,32 @@
+{
+ "dumbbell": {
+  "file": "7ebc418662cfb9aa.png",
+  "prompt": "A single classic dumbbell with two round matte black cast-iron heads and a knurled matte steel handle, slightly worn, lying horizontally, seen from a three-quarter front angle.",
+  "ar": "16:9",
+  "cutout": "objects/dumbbell.png"
+ },
+ "statue": {
+  "file": "24fad57279843962.png",
+  "prompt": "An antique Greek marble sculpture of a draped female figure reclining on her side on a low plain marble plinth, seen from behind: her back is toward the viewer, she rests on one elbow with her head turned fully away so that no face is visible at all, only the back of the head with a simple carved chignon. She is fully draped in a long carved chiton with deep flowing folds, legs stretched out along the plinth. In the style of the Parthenon pediment figures, white marble with gentle weathering. A museum piece, calm and elegant. The sculpture is large in the frame: it spans about 85 percent of the frame width.",
+  "ar": "16:9",
+  "cutout": "objects/statue.png"
+ },
+ "stopwatch": {
+  "file": "b24e8f97dd2721f8.png",
+  "prompt": "A vintage mechanical stopwatch seen straight from the front, perfectly circular: a matte brushed-steel case, a crown with a ring on top, a plain white enamel dial with fine black tick marks around the edge and no numerals, and one thin black hand pointing straight up. The stopwatch is large: it fills about 80 percent of the frame height.",
+  "ar": "1:1",
+  "cutout": "objects/stopwatch.png"
+ },
+ "magnifier": {
+  "file": "a2a8c644871a93b4.png",
+  "prompt": "A classic magnifying glass seen straight from above, lying flat: a large round lens in a thin matte black metal rim and a turned dark wooden handle pointing to the lower right corner. The glass is perfectly clear and shows only the same flat green background through it, with no reflections, no highlights and no distortion. The magnifying glass is large: it spans the frame diagonally.",
+  "ar": "1:1",
+  "cutout": "objects/magnifier.png"
+ },
+ "plane": {
+  "file": "0f1e725475f37fcd.png",
+  "prompt": "A folded paper airplane made of plain white paper with crisp sharp folds, seen from above at a three-quarter angle, its nose pointing to the upper right, soft grey shading on its folds. The paper airplane is large: it spans about 80 percent of the frame width.",
+  "ar": "4:3",
+  "cutout": "objects/plane.png"
+ }
+}
