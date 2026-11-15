@@ -281,7 +281,7 @@
       '<div class="pl-head">' +
         '<div><div class="k-eyebrow">Vânzări</div><div class="pl-title"><h2>Pipeline</h2>' +
           (pickCity() ? K.seg('plcity', [['', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.location, 'pl-city') : '') +
-          (S.ctx.isAdmin ? K.seg('plmode', [['clienti', 'Cliente'], ['angajari', 'Angajări']], 'clienti', 'pl-mode') : '') +
+          (canHire() ? K.seg('plmode', [['clienti', 'Cliente'], ['angajari', 'Angajări']], S.mode === 'angajari' ? 'angajari' : 'clienti', 'pl-mode') : '') +
         '</div></div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
@@ -332,7 +332,7 @@
     root.addEventListener('change', (e) => {
       if (e.target.name === 'plmode') return setMode(e.target.value);
       const hs = e.target.closest('[data-hire-st]');
-      if (hs) return moveCandidate(hs.dataset.hireSt, hs.value);
+      if (hs) return moveCandidate(hs.dataset.hireSt, hs.value, hs);
       if (e.target.name !== 'plcity') return;
       S.location = e.target.value;
       try { localStorage.setItem(CITY_KEY(), S.location); } catch (err) { /* private mode */ }
@@ -344,6 +344,7 @@
     }, true);
     window.addEventListener('resize', fitBoard);
     document.addEventListener('keydown', onKey);
+    if (S.mode === 'angajari' && canHire()) setMode('angajari'); // opened from a „CANDIDAT NOU” notification
     document.addEventListener('visibilitychange', () => { if (!document.hidden && isActive()) refresh(); });
   }
   const isActive = () => root && root.classList.contains('active');
@@ -371,42 +372,72 @@
 
   // ------------------------------------------------------------------ Angajări: the candidates' own pipeline
   // The people who applied through a job ad's form (api/portal-candidates.js), never mixed with the clients:
-  // Aplicat → CV primit (by herself, once she sends a file on WhatsApp) → Sunat → Interviu → Angajat / Respins.
-  const HIRE = [['nou', 'Aplicat', '#8a8580'], ['cv', 'CV primit', '#3b82f6'], ['sunat', 'Sunat', '#f59e0b'], ['interviu', 'Interviu', '#8b5cf6'], ['angajat', 'Angajat', '#10b981'], ['respins', 'Respins', '#ef4444']];
+  // Aplicat → CV primit (by herself, once she sends a file on WhatsApp) → Sunat → Interviu → Recomandat → Angajat / Respins.
+  // The owner and the manager (15.11): the manager moves them up to „Recomandat” (the owner hears it); „Angajat” is the
+  // owner's decision (the server refuses it to her too). No stage does anything by itself (no account, no salary).
+  const HIRE = [['nou', 'Aplicat', '#8a8580'], ['cv', 'CV primit', '#3b82f6'], ['sunat', 'Sunat', '#f59e0b'], ['interviu', 'Interviu', '#8b5cf6'], ['recomandat', 'Recomandat', '#0ea5a4'], ['angajat', 'Angajat', '#10b981'], ['respins', 'Respins', '#ef4444']];
+  const canHire = () => !!(S.ctx.isAdmin || (S.ctx.me && S.ctx.me.role === 'manager'));
+  const ownerHires = () => !!S.ctx.isAdmin; // only the owner sets „Angajat”
   let hireList = null;
   function setMode(m) {
     S.mode = m;
+    if (!root) return;
     root.classList.toggle('is-hire', m === 'angajari');
     root.querySelector('[data-hire]').hidden = m !== 'angajari';
+    const seg = root.querySelector('[data-k-seg="plmode"]');
+    if (seg) { seg.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === m)); seg.querySelector('input').value = m; }
     if (m === 'angajari') loadCandidates();
   }
+  // a notification „CANDIDAT NOU” (#pipeline/angajari): straight to the candidates
+  if (window.K) window.K.on('pipeline:sub', (sub) => { if (sub === 'angajari' && canHire()) { S.mode = 'angajari'; if (root) setMode('angajari'); } });
   async function loadCandidates() {
     try { hireList = (await K.api('/api/portal-candidates')).candidates || []; renderHire(); }
     catch (e) { root.querySelector('[data-hire]').innerHTML = '<div class="pl-empty-board">' + ic('alert') + '<b>Nu am putut încărca candidații.</b></div>'; }
   }
-  async function moveCandidate(id, status) {
+  async function moveCandidate(id, status, sel) {
     const c = (hireList || []).find((x) => x.id === id);
+    if (status === 'angajat' && !ownerHires()) { if (sel && c) sel.value = c.status || 'nou'; K.ui().toast('Angajarea o decide George. Mut-o la „Recomandat” și îi spunem noi.', 'info'); return; }
     if (c) { c.status = status; renderHire(); }
-    try { hireList = (await K.api('/api/portal-candidates', { id, status })).candidates || hireList; renderHire(); }
-    catch (e) { K.ui().toast(K.errText(e), 'error'); loadCandidates(); }
+    try {
+      hireList = (await K.api('/api/portal-candidates', { id, status })).candidates || hireList; renderHire();
+      if (status === 'recomandat' && !ownerHires()) K.ui().toast('Recomandată. George a primit notificarea.', 'success');
+    } catch (e) { K.ui().toast(e.code === 'owner_only' ? 'Angajarea o decide George.' : K.errText(e), 'error'); loadCandidates(); }
   }
+  // the notes on a candidate (the interview, what she said on the phone): read and add one
+  async function candidateNotes(id) {
+    const c = (hireList || []).find((x) => x.id === id);
+    if (!c) return;
+    const past = (c.notes || []).slice(-4).map((n) => (n.by ? n.by + ', ' : '') + agoShort(n.at) + ': ' + n.text).join('\n');
+    const text = await K.ui().prompt({ title: 'Notă despre ' + firstName(c.name), message: past || 'Ce a spus la telefon, cum a fost interviul, când poate începe.', label: 'Notă', multiline: true, value: '', confirmText: 'Salvează nota' });
+    if (text == null || !text.trim()) return;
+    try { hireList = (await K.api('/api/portal-candidates', { id, note: text })).candidates || hireList; renderHire(); K.ui().toast('Nota e salvată.', 'success'); }
+    catch (e) { K.ui().toast(K.errText(e), 'error'); }
+  }
+  const agoShort = (t) => { try { return new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(t)); } catch (e) { return ''; } };
   function renderHire() {
     const box = root.querySelector('[data-hire]');
     const list = (hireList || []).filter((c) => !S.location || !c.location || c.location === S.location);
     const short = (q) => (/diplom/i.test(q) ? 'Diplomă' : /experien/i.test(q) ? 'Experiență' : /începe|incepe/i.test(q) ? 'Începe' : q);
     const left = box.scrollLeft;
+    const options = (cur) => HIRE.filter(([v]) => ownerHires() || v !== 'angajat' || cur === 'angajat')
+      .map(([v, l]) => '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + l + '</option>').join('');
     box.innerHTML = HIRE.map(([id, name, color]) => {
       const all = list.filter((c) => (c.status || 'nou') === id);
       return '<section class="pl-col" data-hstage="' + id + '" style="--c:' + color + '"><header class="pl-col-head"><span class="pl-dot"></span><b>' + name + '</b><span class="pl-col-count">' + all.length + '</span></header>' +
-        '<div class="pl-list">' + (all.length ? all.map((c) => '<article class="pl-card hire-card">' +
+        '<div class="pl-list">' + (all.length ? all.map((c) => {
+          const cur = c.status || 'nou', locked = cur === 'angajat' && !ownerHires();
+          const last = (c.notes || []).slice(-1)[0];
+          return '<article class="pl-card hire-card">' +
           '<div class="pl-card-top"><b class="pl-name">' + esc(c.name) + '</b><span class="pl-age">' + ago(c.at) + '</span></div>' +
-          '<div class="pl-card-sub">' + esc(c.phone) + (c.location ? ' · ' + esc(c.location) : '') + '</div>' +
+          '<div class="pl-card-sub">' + esc(c.phone) + ' · ' + (c.location ? esc(c.location) : 'fără oraș') + '</div>' +
           ((c.answers || []).length ? '<div class="hire-ans">' + c.answers.map((x) => '<span><em>' + esc(short(x.q)) + '</em> ' + esc(x.a) + '</span>').join('') + '</div>' : '') +
+          (last ? '<div class="hire-note">' + ic('note') + '<span>' + esc(last.text) + '<small>' + esc((last.by ? last.by + ' · ' : '') + agoShort(last.at)) + ((c.notes || []).length > 1 ? ' · ' + c.notes.length + ' note' : '') + '</small></span></div>' : '') +
           '<div class="pl-tags">' + (c.cv ? '<button type="button" class="pl-tag is-accent hire-cv" data-preview="' + esc(c.cv.url) + '" data-pv-kind="' + esc(c.cv.kind) + '" data-pv-name="' + esc(c.cv.name) + '">📄 Vezi CV-ul</button>' : c.cvFile ? '<span class="pl-tag is-accent">📄 CV trimis</span>' : c.replied ? '<span class="pl-tag is-mute">A răspuns pe WhatsApp</span>' : '') + '</div>' +
-          '<div class="hire-row"><select data-hire-st="' + esc(c.id) + '" aria-label="Etapa">' + HIRE.map(([v, l]) => '<option value="' + v + '"' + (v === (c.status || 'nou') ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+          '<div class="hire-row">' + (locked ? '<span class="hire-lock">' + ic('check') + 'Angajată</span>' : '<select data-hire-st="' + esc(c.id) + '" aria-label="Etapa">' + options(cur) + '</select>') +
+            '<button type="button" class="pl-qbtn" title="Adaugă o notă" data-hire-note="' + esc(c.id) + '">' + ic('pen') + '</button>' +
             '<a href="tel:' + esc(String(c.phone || '').replace(/[^\d+]/g, '')) + '" class="pl-qbtn" title="Sună">' + ic('phone') + '</a>' +
             '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + ic('chat') + '</a></div>' +
-        '</article>').join('') : '<div class="pl-col-empty">Nimeni aici</div>') + '</div></section>';
+        '</article>'; }).join('') : '<div class="pl-col-empty">Nimeni aici</div>') + '</div></section>';
     }).join('');
     box.scrollLeft = left;
     // the stage row (phones): each stage with its count, the one on screen lit, a tap goes to it
@@ -657,6 +688,8 @@
   // ------------------------------------------------------------------ events: panel
   function onRootClick(e) {
     const t = e.target;
+    const hn = t.closest('[data-hire-note]');
+    if (hn) { candidateNotes(hn.dataset.hireNote); return; }
     if (t.closest('[data-hire]')) return; // the candidates' board has its own controls (portal-whatsapp opens the chats)
     const fc = t.closest('[data-fclear]');
     if (fc) { if (fc.dataset.fclear === '*') Object.keys(S.f).forEach((k) => { S.f[k] = ''; }); else S.f[fc.dataset.fclear] = ''; return renderAll(); }

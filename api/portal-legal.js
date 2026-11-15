@@ -24,6 +24,11 @@ const MIME_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'
   'application/msword': 'doc', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
   'application/vnd.ms-excel': 'xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx' };
 const MAX_BYTES = 20 * 1024 * 1024;
+// the papers of a colleague that say her pay (the contract, REGES, the additional acts): the owner's. The manager sees only
+// whether they are in order and when they expire, never the number, the notes or the files, and can't change them
+// (15.11: „ai mare grijă la ce informații îi dai acces”). Her own she sees whole.
+const PAY_PAPERS = ['cim', 'reges', 'acte-ad'];
+const hidesPay = (session, scope, item) => session.role === 'manager' && scope.startsWith('emp:') && scope !== 'emp:' + session.employeeId && PAY_PAPERS.includes(item);
 const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
 const nowISO = () => new Date().toISOString();
@@ -67,8 +72,10 @@ module.exports = async (req, res) => {
     const data = await load();
     // the manager: only the scopes she may see, in the answer (the saved document always keeps everyone's)
     const keep = session.role === 'manager' ? new Set(cities.map((c) => 'salon:' + c).concat(employees.map((e) => 'emp:' + e.id))) : null;
-    const view = () => (keep ? Object.assign({}, data, { scopes: Object.fromEntries(Object.entries(data.scopes || {}).filter(([k]) => keep.has(k))) }) : data);
-    const answer = () => res.status(200).json({ ok: true, data: view(), reqs: { salon: R.SALON, employee: R.EMPLOYEE, groups: R.GROUPS }, employees: people, cities });
+    const strip = (k, box) => (!keep || !k.startsWith('emp:') || k === 'emp:' + session.employeeId ? box
+      : Object.assign({}, box, { items: Object.fromEntries(Object.entries(box.items || {}).map(([id, it]) => [id, PAY_PAPERS.includes(id) ? { status: it.status, expires: it.expires || '', hidden: true } : it])) }));
+    const view = () => (keep ? Object.assign({}, data, { scopes: Object.fromEntries(Object.entries(data.scopes || {}).filter(([k]) => keep.has(k)).map(([k, box]) => [k, strip(k, box)])) }) : data);
+    const answer = () => res.status(200).json({ ok: true, data: view(), reqs: { salon: R.SALON, employee: R.EMPLOYEE, groups: R.GROUPS }, employees: people, cities, ownerOnly: session.role === 'manager' ? PAY_PAPERS : [] });
     if (b.action === 'get') return answer();
 
     const scope = String(b.scope || '');
@@ -88,6 +95,7 @@ module.exports = async (req, res) => {
     }
     const item = String(b.item || '');
     if (!itemOk(scope, item, box)) return fail(400, 'invalid_item');
+    if (hidesPay(session, scope, item)) return fail(403, 'owner_only', 'Contractul și actele cu salariul le ține George.');
     const it = box.items[item] = box.items[item] || {};
     it.files = it.files || [];
 

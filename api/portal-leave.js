@@ -142,6 +142,16 @@ module.exports = async (req, res) => {
       };
       requests.push(request);
       await writeJSON(KEY, requests);
+      // the manager of her clinic decides it (15.11): she hears it at once (her own requests stay with the owner)
+      try {
+        const emps = await readJSON('data/employees.json', []);
+        const who = emps.find((e) => e.id === session.employeeId);
+        const R = require('./_lib/roles');
+        const mgrs = who && who.role !== 'admin' ? emps.filter((e) => e && e.active !== false && e.role === 'manager' && e.id !== who.id && R.managesOf(e).includes(who.location)).map((e) => e.id) : [];
+        const d = (x) => x.slice(8, 10) + '.' + x.slice(5, 7);
+        if (mgrs.length) await notifyMany({ readJSON, writeJSON }, mgrs, { kind: 'leave', tone: 'info', go: 'manager/echipa', tag: 'leave-' + request.id,
+          title: 'CERERE DE CONCEDIU 🗓 - ' + (who.name || ''), text: (LEAVE_LABELS[type] || 'Concediu') + ' · ' + (startDate === endDate ? d(startDate) : d(startDate) + '-' + d(endDate)) });
+      } catch (err) { console.error('leave notify:', err.message); }
       res.status(200).json({ ok: true, request });
       return;
     }

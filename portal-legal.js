@@ -121,6 +121,9 @@
   }
   function itemBody(scope, r) {
     const s = state(scope, r), it = s.it;
+    // the manager, a colleague's contract / REGES / additional acts (they say her pay): only whether it is in order
+    if (it.hidden || ((S.d.ownerOnly || []).includes(r.id) && scope.startsWith('emp:') && scope !== 'emp:' + ((K.data && K.data.me && K.data.me.id) || ''))) return '<p class="lg-warn">' + icon('eyeOff') + 'Actele cu salariul le ține George. Aici vezi doar dacă sunt în regulă și când expiră.</p>' +
+      '<div class="lg-fields"><div class="k-field"><span>Stare</span><b>' + esc(LABEL[s.k] || '') + '</b></div>' + (it.expires ? '<div class="k-field"><span>Expiră la</span><b>' + esc(dShort(it.expires)) + '</b></div>' : '') + '</div>';
     const pick = '<div class="lg-pick" role="radiogroup">' + PICK.map((k) => '<button type="button" role="radio" aria-checked="' + ((it.status || 'verif') === k) + '" class="lg-st is-' + k + ((it.status || 'verif') === k ? ' is-on' : '') + '" data-lgst="' + k + '"><i></i>' + LABEL[k] + '</button>').join('') + '</div>';
     const warn = s.k === 'expirat' ? '<p class="lg-warn is-bad">' + icon('alert') + 'Expirat din ' + dShort(it.expires) + '</p>' : s.k === 'curand' ? '<p class="lg-warn">' + icon('clock') + 'Expiră în ' + s.n + (s.n === 1 ? ' zi' : ' zile') + ', pe ' + dShort(it.expires) + '</p>' : '';
     const files = (it.files || []).map((f) => '<li><a href="/api/portal-file?p=' + encodeURIComponent(f.path) + '" target="_blank" rel="noopener">' +

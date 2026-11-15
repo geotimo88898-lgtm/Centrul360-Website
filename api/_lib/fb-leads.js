@@ -69,8 +69,11 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     const employees = await readJSON('data/employees.json', []);
     const ids = ['admin'].concat((employees || []).filter((e) => e.role === 'admin' && e.active !== false).map((e) => e.id));
     const { notifyMany } = require('./notify');
-    await notifyMany({ readJSON, writeJSON }, [...new Set(ids)], { kind: 'alert', tone: 'info', go: 'angajati', tag: 'cand-' + leadgenId,
-      title: 'CANDIDAT NOU 💼 - ' + (name || 'fără nume'), text: [phone].concat(pairs.map((x) => x.q + ': ' + x.a)).join(' · ') });
+    const cand = { kind: 'alert', tone: 'info', tag: 'cand-' + leadgenId, title: 'CANDIDAT NOU 💼 - ' + (name || 'fără nume'), text: [phone].concat(pairs.map((x) => x.q + ': ' + x.a)).join(' · ') };
+    await notifyMany({ readJSON, writeJSON }, [...new Set(ids)], Object.assign({ go: 'angajati' }, cand));
+    // the manager of that clinic too (15.11: she calls the candidates and does the interviews), to her Pipeline → Angajări
+    const mgrs = require('./roles').managerIds(employees, form.location || '').filter((id) => !ids.includes(id));
+    if (mgrs.length) await notifyMany({ readJSON, writeJSON }, mgrs, Object.assign({ go: 'pipeline/angajari' }, cand));
     await require('./hire-once').welcomeCandidates().catch((e) => console.error('candidate welcome:', e.message));
     return 'candidat nou: ' + (name || 'fără nume') + ' · ' + (form.job || form.name);
   }

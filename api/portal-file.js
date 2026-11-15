@@ -63,6 +63,12 @@ module.exports = async (req, res) => {
     const team = await R.teamOf(session, null, emps);
     const ok = dir === 'tm' ? mine.includes('Timișoara') : dir === 'ar' ? mine.includes('Arad') : dir.startsWith('e-') && (dir.slice(2) === session.employeeId || team.has(dir.slice(2)));
     if (!ok) { res.status(403).json({ error: 'forbidden' }); return; }
+    // a colleague's papers with her pay (contract, REGES, additional acts): the owner's, never the manager's (api/portal-legal.js)
+    if (dir.startsWith('e-') && dir.slice(2) !== session.employeeId) {
+      const box = (((await require('./_lib/store').readJSON('data/legal.json', {})) || {}).scopes || {})['emp:' + dir.slice(2)] || {};
+      const pay = ['cim', 'reges', 'acte-ad'].some((id) => (((box.items || {})[id] || {}).files || []).some((f) => f && f.path === p));
+      if (pay) { res.status(403).json({ error: 'forbidden' }); return; }
+    }
   }
   const buf = await readBinary(p);
   if (!buf) { res.status(404).json({ error: 'not_found' }); return; }

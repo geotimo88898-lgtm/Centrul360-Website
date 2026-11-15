@@ -285,6 +285,8 @@
   // whose view: the person's own role; the owner picks Recepție or Cosmeticiană
   // (the owner, 15.11) only the cosmeticians' trainings: the reception's are gone, for everyone
   const viewRole = () => 'cosmetician';
+  // „Cum folosesc portalul”: the manager has her own lessons (portal-academy-guide.js); everyone else the cosmetician's
+  const guideRole = () => (K.data && K.data.me && K.data.me.role === 'manager' ? 'manager' : 'cosmetician');
   function areaCards(area, role) {
     const p = mine();
     const HIDE = role === 'cosmetician' ? ['vanzari', 'cabina'] : [];
@@ -362,14 +364,14 @@
   function gsave(set) { try { localStorage.setItem(window.C360Guide.KEY, JSON.stringify([...set])); } catch (e) { /* private mode */ } }
   function guidePct() {
     if (!window.C360Guide) return 0;
-    const list = window.C360Guide.lessons(viewRole()), d = gdone();
+    const list = window.C360Guide.lessons(guideRole()), d = gdone();
     return list.length ? Math.round(list.filter((x) => d.has(x.id)).length / list.length * 100) : 0;
   }
   function guideHtml() {
     if (!window.C360Guide) return K.empty('book', 'Se încarcă', '');
-    const list = window.C360Guide.lessons(viewRole()), d = gdone();
+    const list = window.C360Guide.lessons(guideRole()), d = gdone();
     if (A.gstep == null || A.gstep < 0 || A.gstep >= list.length) { A.gstep = list.findIndex((x) => !d.has(x.id)); if (A.gstep < 0) A.gstep = 0; }
-    return window.C360Guide.html(viewRole(), A.gstep, d, icon);
+    return window.C360Guide.html(guideRole(), A.gstep, d, icon);
   }
 
   // ------------------------------------------------------------------ Parcursul clientei
@@ -1584,7 +1586,7 @@
     if (gl && !gl.disabled) { A.gstep = +gl.dataset.glesson; render(); const sh = panel.querySelector('[data-gsheet]'); if (sh && window.innerWidth < 900) sh.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     const gd = t.closest('[data-gdone]');
     if (gd) {
-      const list = window.C360Guide.lessons(viewRole()), i = +gd.dataset.gdone, set = gdone();
+      const list = window.C360Guide.lessons(guideRole()), i = +gd.dataset.gdone, set = gdone();
       set.add(list[i].id); gsave(set); burst(gd);
       setTimeout(() => { A.gstep = Math.min(list.length - 1, i + 1); render(); if (list.every((x) => set.has(x.id)) && i === list.length - 1) K.ui().toast('Bravo! Știi tot portalul.', 'success'); }, 380);
       return;

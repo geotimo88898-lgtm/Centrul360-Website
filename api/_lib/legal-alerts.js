@@ -33,18 +33,27 @@ async function run() {
       const k = scope + '|' + id + '|' + it.expires + '|' + step[1];
       if (st.sent[k]) return;
       const req = (scope.startsWith('salon:') ? R.SALON : R.EMPLOYEE).find((r) => r.id === id) || (box.custom || []).find((c) => c.id === id) || { title: 'Document' };
-      due.push({ k, where, title: req.title, left, expires: it.expires });
+      due.push({ k, where, title: req.title, left, expires: it.expires, scope, id, emp });
     });
   });
   if (due.length) {
-    const ids = await N.ownerIds({ readJSON });
-    const one = due[0];
     const say = (x) => x.title + ' · ' + x.where + (x.left < 0 ? ': a expirat pe ' + dShort(x.expires) : x.left === 0 ? ': expiră azi' : ': expiră pe ' + dShort(x.expires));
-    await N.notifyMany({ readJSON, writeJSON }, ids, {
-      kind: 'alert', tone: due.some((x) => x.left <= 7) ? 'warn' : 'info', go: 'acte', tag: 'acte-' + today,
-      title: due.length === 1 ? (one.left <= 0 ? 'ACT EXPIRAT 📄' : 'ACT CARE EXPIRĂ 📄') : due.length + ' ACTE DE REÎNNOIT 📄',
-      text: due.length === 1 ? say(one) : due.slice(0, 3).map(say).join(' · '),
+    const tell = (ids, list) => N.notifyMany({ readJSON, writeJSON }, ids, {
+      kind: 'alert', tone: list.some((x) => x.left <= 7) ? 'warn' : 'info', go: 'acte', tag: 'acte-' + today,
+      title: list.length === 1 ? (list[0].left <= 0 ? 'ACT EXPIRAT 📄' : 'ACT CARE EXPIRĂ 📄') : list.length + ' ACTE DE REÎNNOIT 📄',
+      text: list.length === 1 ? say(list[0]) : list.slice(0, 3).map(say).join(' · '),
     });
+    const owners = await N.ownerIds({ readJSON });
+    await tell(owners, due);
+    // the manager (15.11, „reînnoirea actelor și autorizațiilor”): her clinics' papers and her people's, never a
+    // colleague's contract / REGES / additional acts (they say the pay: the owner's)
+    const Ro = require('./roles');
+    for (const m of emps.filter((e) => e && e.active !== false && e.role === 'manager' && !owners.includes(e.id))) {
+      const clinics = Ro.managesOf(m);
+      const mine = due.filter((x) => (x.scope.startsWith('salon:') ? clinics.includes(x.scope.slice(6))
+        : x.emp && (x.emp.id === m.id || (x.emp.role !== 'admin' && clinics.includes(x.emp.location) && !['cim', 'reges', 'acte-ad'].includes(x.id)))));
+      if (mine.length) await tell([m.id], mine).catch((e) => console.error('legal alerts manager:', e.message));
+    }
     due.forEach((x) => { st.sent[x.k] = new Date().toISOString(); });
   }
   st.day = today;

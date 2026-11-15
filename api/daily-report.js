@@ -123,10 +123,23 @@ module.exports = async (req, res) => {
   const n = await numbers(today());
   const w = words(n);
   const ids = await adminIds(store);
-  const pushed = await notifyMany(store, ids, { kind: 'report', tone: 'info', title: w.title, text: w.text, go: 'incasari', tag: 'report-' + n.day, ownerPush: false });
+  // the manager (15.11: she checks the day's money, card against the POS, every payment in the portal): the day's report
+  // when she runs both clinics (it counts both), and the POS warnings of her clinics. Money in, never costs.
+  const R = require('./_lib/roles');
+  const mgrs = (await readJSON('data/employees.json', [])).filter((e) => e && e.active !== false && e.role === 'manager' && !ids.includes(e.id));
+  const mgrFor = (city) => mgrs.filter((e) => R.managesCity(e, city)).map((e) => e.id);
+  const allMgrs = mgrs.filter((e) => R.CLINICS.every((c) => R.managesOf(e).includes(c))).map((e) => e.id);
+  const pushed = await notifyMany(store, ids.concat(allMgrs), { kind: 'report', tone: 'info', title: w.title, text: w.text, go: 'incasari', tag: 'report-' + n.day, ownerPush: false });
   const un = n.pos.unrecorded || [];
   if (un.length) {
     const line = (p) => lei2(p.amount) + ' la ' + hhmm(p.at) + (p.city ? ', ' + p.city : '');
+    const mine = (who) => un.filter((p) => mgrFor(p.city || '').includes(who));
+    for (const m of mgrs) {
+      const list = mine(m.id);
+      if (list.length) await notifyMany(store, [m.id], { kind: 'alert', tone: 'bad', go: 'incasari', tag: 'unrec-' + n.day,
+        title: 'ATENȚIE ⚠️ - ' + (list.length === 1 ? 'o plată pe POS nepusă în portal' : plural(list.length, 'plată', 'plăți') + ' pe POS nepuse în portal'),
+        text: list.slice(0, 4).map(line).join(' · ') + (list.length > 4 ? ' · și încă ' + (list.length - 4) : '') }).catch(() => {});
+    }
     await notifyMany(store, ids, {
       kind: 'alert', tone: 'bad', go: 'incasari', tag: 'unrec-' + n.day,
       title: 'ATENȚIE ⚠️ - ' + (un.length === 1 ? 'o plată pe POS nepusă în portal' : plural(un.length, 'plată', 'plăți') + ' pe POS nepuse în portal'),
@@ -139,7 +152,7 @@ module.exports = async (req, res) => {
     idle = await idlePos(store, n.day, (await readJSON(M.PAY, { list: [] })).list || [], conn.devices);
     for (const p of idle) {
       const dd = new Date(p.last + 'T12:00:00Z');
-      await notifyMany(store, ids, {
+      await notifyMany(store, ids.concat(mgrFor(p.city || '')), {
         kind: 'alert', tone: 'bad', go: 'incasari', tag: 'idle-' + p.tid + '-' + n.day,
         title: 'ATENȚIE ⚠️ - POS ' + p.city + ', nicio plată de ' + plural(p.days, 'zi', 'zile'),
         text: 'Ultima plată: ' + RO_DAYS[dd.getUTCDay()] + ', ' + dd.getUTCDate() + ' ' + RO_MONTHS[dd.getUTCMonth()],

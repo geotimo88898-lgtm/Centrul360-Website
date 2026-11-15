@@ -177,6 +177,7 @@ module.exports = async (req, res) => {
       await require('./_lib/clients').ensureContacts(conversations.filter((c) => (c.messages || []).some((m) => m.direction === 'in'))
         .map((c) => ({ phone: c.phone, name: c.clientName && c.clientName !== c.phone ? c.clientName : '', location: c.location || '' })), { readJSON, writeJSON }).catch(() => 0);
       const leads = await readJSON('data/leads.json', []);
+      const cand = new Map((await readJSON('data/candidates.json', [])).filter((x) => !x.test && digits9(x.phone).length === 9).map((x) => [digits9(x.phone), require('./_lib/roles').canManage(session) ? { job: x.job || '', status: x.status || 'nou' } : { job: x.job || '' }]));
       const names = new Map();
       leads.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).forEach((l) => { if (l.name && digits9(l.phone).length === 9) names.set(digits9(l.phone), String(l.name).trim()); });
       (await readJSON('data/clients.json', [])).forEach((c) => { if (c.name && digits9(c.phone).length === 9) names.set(digits9(c.phone), String(c.name).trim()); });
@@ -184,6 +185,9 @@ module.exports = async (req, res) => {
         .map((c) => Object.assign({}, c, { clientName: names.get(digits9(c.phone)) || (c.clientName && c.clientName !== c.phone ? c.clientName : c.phone) }))
         .map(listItem)
         .filter((c) => !scope || !c.location || scope.includes(c.location))
+        // a candidate of a job ad (data/candidates.json): marked, so the owner and the manager find the hiring chats
+        // (Mesaje → „Angajări”) and nobody takes her for a client
+        .map((c) => (cand.has(digits9(c.phone)) ? Object.assign(c, { hire: cand.get(digits9(c.phone)) }) : c))
         // Instagram's and Facebook's (a failure there never empties the WhatsApp list)
         .concat(await IG.list().catch((e) => { console.error('instagram list:', e.message); return []; }))
         .sort((a, b) => (a.lastMessageAt < b.lastMessageAt ? 1 : a.lastMessageAt > b.lastMessageAt ? -1 : 0));

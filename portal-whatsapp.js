@@ -146,7 +146,7 @@
 
   function visible() {
     const q = K.norm(C.q || ''), qd = C.q.replace(/\D/g, '');
-    return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' || C.loc === 'fb' ? c.channel === C.loc : c.location === C.loc)) && (C.show === 'all' || (C.show === 'wait' && c.waiting) || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h)) &&
+    return C.conversations.filter((c) => (C.loc === 'all' || (C.loc === 'ig' || C.loc === 'fb' ? c.channel === C.loc : c.location === C.loc)) && (C.show === 'all' || (C.show === 'wait' && c.waiting) || (C.show === 'unread' && c.unreadCount) || (C.show === 'open' && c.within24h) || (C.show === 'hire' && c.hire)) &&
       (!q || K.norm(nameOf(c)).includes(q) || (!isIg(c) && K.phoneHit(c.phone, C.q))));
   }
   function paintList() {
@@ -155,7 +155,11 @@
     const unread = C.conversations.filter((c) => c.unreadCount).length;
     const open = C.conversations.filter((c) => c.within24h).length;
     const owed = C.conversations.filter((c) => c.waiting && c.waiting.needs !== false).length;
+    // the owner and the manager: the candidates of the job ads, in one place (15.11)
+    const hire = K.canManage && K.canManage() ? C.conversations.filter((c) => c.hire) : [];
+    if (C.show === 'hire' && !hire.length) C.show = 'all';
     panel.querySelector('[data-chips]').innerHTML = [['all', 'Toate', C.conversations.length], ['wait', 'Fără răspuns', C.conversations.filter((c) => c.waiting).length], ['unread', 'Necitite', unread], ['open', 'Deschise 24h', open]]
+      .concat(hire.length ? [['hire', 'Angajări', hire.filter((c) => c.unreadCount).length || hire.length]] : [])
       .map(([k, l, n]) => '<button type="button" class="k-chip' + (C.show === k ? ' is-on' : '') + (k === 'wait' && owed ? ' is-wait' : '') + '" data-show="' + k + '">' + l + (n ? '<span>' + n + '</span>' : '') + '</button>').join('');
     const list = visible();
     // the list stays where she scrolled it (picking a conversation repaints it: it jumped back to the top)
@@ -197,6 +201,7 @@
       face(c, 44) +
       '<span class="mx-row-main"><span class="mx-row-top"><b>' + esc(nameOf(c)) + '</b><small>' + esc(fmtTime(c.lastMessageAt)) + '</small></span>' +
         '<span class="mx-row-bottom"><span class="mx-row-prev">' + preview + '</span>' +
+        (c.hire ? '<em class="mx-city mx-hire" title="' + esc('Candidată' + (c.hire.job ? ', ' + c.hire.job : '')) + '">Candidată</em>' : '') +
         (isIg(c) ? '<em class="mx-city mx-' + chanOf(c) + '">' + (chanOf(c) === 'ig' ? 'Insta' : 'FB') + '</em>' : c.location ? '<em class="mx-city">' + esc(CITY_SHORT[c.location] || c.location) + '</em>' : '') +
         (c.unreadCount ? '<i class="mx-unread">' + (c.unreadCount > 99 ? '99+' : c.unreadCount) + '</i>' : '') + '</span>' + waitLine(c) + '</span></button>';
   }
