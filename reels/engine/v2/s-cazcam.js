@@ -42,7 +42,8 @@
     const MAC = src2w(p.macro[0], p.macro[1]), CHIN = src2w(p.detail[0], p.detail[1]), FACE = src2w(p.face[0], p.face[1]);
     // ---- the camera: position on the subject's plane (x, y), distance D and focal F (both F0 at rest: the print 1:1)
     const REST = { x: 0, y: 0, D: F0, F: F0 };
-    const MACRO = (t) => ({ x: MAC[0] + 14 * Math.sin(t * 0.7), y: MAC[1] + 9 * Math.sin(t * 0.53 + 1), D: F0 / (2.75 + 0.18 * (t / tPull)), F: F0 });
+    const MAC2 = src2w(p.macro2[0], p.macro2[1]);
+    const MACRO = (t) => { const q = E.sine(clamp(t / (tPull + 0.3))); return { x: lerp(MAC[0], MAC2[0], q), y: lerp(MAC[1], MAC2[1], q), D: F0 / (2.6 + 0.3 * q), F: F0 }; }; // a slow drift along the jaw line
     const DOL = { x: FACE[0] * 0.35, y: FACE[1] * 0.9, D: 2900, F: 2900 };
     const CR = { x: CHIN[0], y: CHIN[1], D: 2900 / 2.25, F: 2900 };
     const mix = (a, b, q) => ({ x: lerp(a.x, b.x, q), y: lerp(a.y, b.y, q), D: lerp(a.D, b.D, q), F: lerp(a.F, b.F, q) });
@@ -57,7 +58,7 @@
     }
     const proj = (C, X, Y, Z) => { const s = C.F / (C.D + Z); return { x: W / 2 + (X - C.x) * s, y: H / 2 + (Y - C.y) * s, s }; };
     // ---- the after part, in screen space: a print's centre and width
-    const FIN = { w: 494, y: 752, gap: 22 };                  // the two prints side by side at the end
+    const FIN = { w: 456, y: 790, gap: 20 };                  // the two prints side by side at the end
     const aCh = src2w(p.detail[0], p.detail[1]);
     function afterRect(t) {
       // under the light: the same detail, the same framing as the before print had (k 2.25), already a little closer
@@ -118,8 +119,10 @@
         // the after print, hidden behind the before one until the dolly shows its edges
         const a = proj(C, 0, 0, ZA); print(SA, a.x, a.y, CA * a.s, { gray: 1, blur: 1.2 + 2.5 * smooth((t - tDolly) / 0.9), shadow: 0.7 });
         const b = proj(C, 0, 0, 0), bw = CW * b.s;
-        const blur = t < tPull ? 7 * (1 - smooth(t / 2.6)) + 1.2 : 0;
+        const blur = t < tPull ? 6 * (1 - smooth(t / 1.0)) + 0.8 : 0;
         print(SB, b.x, b.y, bw, { gray: 1, blur, sweep: t > tTag && t < tTag + 1.0 ? (t - tTag) / 1.0 : null });
+        if (t < tPull + 0.1) { const q = clamp((t - 0.2) / 1.5); if (q > 0 && q < 1) { const xs = -500 + 2100 * E.inout(q), g = c.createLinearGradient(xs - 260, 0, xs + 260, 260); // a soft window light crosses the jaw
+          g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,' + (0.26 * Math.sin(Math.PI * q)).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.save(); c.translate(0, 0); c.transform(1, 0, -0.35, 1, 0, 0); c.fillStyle = g; c.fillRect(-1200, 0, 3600, H); c.restore(); } }
         // the crane lands: the corners close on the detail; a breath of shade around it
         const cq = smooth((t - tCorn + 0.2) / 0.3), dp = proj(C, CHIN[0], CHIN[1], 0);
         if (cq > 0) { const sh = 0.16 * cq; const gr = c.createRadialGradient(dp.x, dp.y, 260, dp.x, dp.y, 900); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,' + sh.toFixed(3) + ')'); c.fillStyle = gr; c.fillRect(0, 0, W, H);
@@ -128,8 +131,8 @@
       } else {
         const C = REST; wall({ x: (afterRect(t).cx - W / 2) * -0.08, y: 0, D: F0, F: F0 }, t);
         const A = afterRect(t), gq = 1 - smooth((t - tColour) / 0.3);
-        if (t >= tSide) { const B = beforeBack(t); print(SB, B.cx, B.cy, B.w, { gray: gq, r: B.r, sweep: t > tBack ? (t - tBack) / 1.4 : t > tStop ? (t - tStop) / 1.4 : null }); }
-        print(SA, A.cx, A.cy, A.w, { gray: gq, sweep: t > tBack + 0.08 ? (t - tBack - 0.08) / 1.4 : t > tStop + 0.08 ? (t - tStop - 0.08) / 1.4 : null });
+        if (t >= tSide) { const B = beforeBack(t); print(SB, B.cx, B.cy, B.w, { gray: gq, r: B.r, sweep: t > tBack ? (t - tBack) / 1.4 : t > tStop ? (t - tStop) / 1.4 : t > tColour - 0.05 ? (t - tColour + 0.05) / 1.0 : null }); }
+        print(SA, A.cx, A.cy, A.w, { gray: gq, sweep: t > tBack + 0.08 ? (t - tBack - 0.08) / 1.4 : t > tStop + 0.08 ? (t - tStop - 0.08) / 1.4 : t > tColour + 0.03 ? (t - tColour - 0.03) / 1.0 : null });
         void C;
         white = 1 - smooth((t - tDrop) / 0.34);
       }
@@ -152,9 +155,9 @@
       + '<div style="font:800 28px/1 ' + FONT + ';letter-spacing:.26em;text-indent:.26em;color:' + TEAL + '">' + esc(p.kicker.toUpperCase()) + '</div>'
       + '<div style="margin-top:14px;font:800 150px/1 ' + FONT + ';letter-spacing:-.05em;color:' + INK + ';white-space:nowrap"><span style="background:linear-gradient(160deg,#eab5a5,#cf8f7d 55%,#b06f5e);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em">' + esc(p.count[0]) + '</span> ' + esc(p.count[1]) + '</div></div>');
     // the end: the catalog's words under the two prints
-    const t1 = txt('left:160px;width:760px;top:1120px;text-align:center;font:800 64px/1.05 ' + FONT + ';letter-spacing:-.035em;color:' + INK + ';white-space:nowrap', esc(p.title));
-    const t2 = txt('left:160px;width:760px;top:1200px;text-align:center;font:600 46px/1.1 ' + FONT + ';letter-spacing:-.02em;color:rgba(11,11,13,.72);white-space:nowrap', esc(p.meta));
-    const t3 = txt('left:160px;width:760px;top:1372px;text-align:center;font:500 31px/1.36 ' + FONT + ';letter-spacing:-.008em;color:#55625f;text-wrap:balance', esc(p.consent));
+    const t1 = txt('left:160px;width:760px;top:1132px;text-align:center;font:800 72px/1.05 ' + FONT + ';letter-spacing:-.035em;color:' + INK + ';white-space:nowrap', esc(p.title));
+    const t2 = txt('left:160px;width:760px;top:1222px;text-align:center;font:600 48px/1.1 ' + FONT + ';letter-spacing:-.02em;color:rgba(11,11,13,.72);white-space:nowrap', esc(p.meta));
+    const t3 = txt('left:160px;width:760px;top:1322px;text-align:center;font:500 32px/1.36 ' + FONT + ';letter-spacing:-.008em;color:#55625f;text-wrap:balance', esc(p.consent));
     const place = (e, x, y) => { e.style.left = x.toFixed(1) + 'px'; e.style.top = y.toFixed(1) + 'px'; };
     function dom(t) {
       // the opening line, word by word on the singer's attacks; gone with the pull back
@@ -180,7 +183,7 @@
     const ev = (t, kind) => R.event(t, kind);
     ctx.sfx(0, 'pulse', 0.35); ev(0, 'breath');
     HT.w.forEach((tw, i) => { ctx.sfx(fr(tw), 'tick_soft', 0.5); ev(fr(tw), i ? 'word' : 'write'); });
-    ev(1.4, 'glow'); ev(2.3, 'glow');
+    ev(0.9, 'glow');
     ctx.sfx(tPull, 'whoosh_cut', 0.7, { prio: 5, peak: true }); ctx.sfx(tPull + 0.072, 'hit_deep', 0.7, { prio: 5 }); ev(tPull, 'cut'); ev(tPull, 'stop');
     ctx.sfx(tTag, 'tap', 0.6); ev(tTag, 'pop');
     ctx.sfx(tDolly - 0.05, 'riser_soft', 0.5); ctx.sfx(tDolly, 'whoosh_through', 0.55, { prio: 5, peak: true }); ctx.sfx(tDolly + 0.072, 'pulse', 0.5); ev(tDolly, 'cut'); ev(tDolly + 0.5, 'glow');
@@ -192,7 +195,7 @@
     ctx.sfx(tRise, 'whoosh_cut', 0.6, { prio: 5, peak: true }); ctx.sfx(tRise + 0.072, 'hit_deep', 0.45, { prio: 5 }); ev(tRise, 'cut'); ctx.sfx(tRise + 0.6, 'tap', 0.55); ev(tRise + 0.6, 'pop');
     ctx.sfx(tSide, 'whoosh_through', 0.6, { prio: 5, peak: true }); ev(tSide, 'cut'); ctx.sfx(tSide + 0.62, 'tap', 0.6); ev(tSide + 0.62, 'slide');
     ctx.sfx(tSide + 0.42, 'tick_soft', 0.4); ev(tSide + 0.42, 'in'); ctx.sfx(tSide + 0.7, 'tick_soft', 0.35);
-    ctx.sfx(tColour, 'shimmer_soft', 0.7, { prio: 4 }); ctx.sfx(tColour + 0.08, 'dot', 0.55); ev(tColour, 'reveal');
+    ctx.sfx(tColour, 'whoosh_cut', 0.35, { prio: 5, peak: true }); ctx.sfx(tColour + 0.075, 'shimmer_soft', 0.8, { prio: 4 }); ctx.sfx(tColour + 0.16, 'dot', 0.55); ev(tColour, 'reveal');
     ev(tStop, 'breath'); ctx.sfx(tBack, 'shimmer_soft', 0.35); ev(tBack, 'glow');
     ctx.focus(t1);
     R.cazcam = { cam, HT, afterRect };

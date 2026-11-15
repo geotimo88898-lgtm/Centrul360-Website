@@ -12,7 +12,7 @@
  "keyword": "360",
  "post": "Câte ședințe, dacă doare și unde ne găsiți: Nuki răspunde pe scurt. Epilarea laser se face doar în clinica din Timișoara.",
  "ctaType": "comment",
- "sources": "v2/src/epilare-laser.html, „Bine de știut înainte să începi”: „În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere.”; „Părul crește în cicluri.”; „Datorită sistemului de răcire al Elysion Pro, senzația este mult mai blândă decât la epilarea clasică.”; „Epilarea laser se face doar în clinica din Timișoara.”; „Consultația e gratuită.”; adresa „Timișoara (Str. Bucegi 7)” (v2/src/index.html, timisoara.html). Pozele: brand_asset/g-tm-laser.webp, g-tm-810.webp (reale, din clinică); pagina de pe telefon: captură reală a secțiunii #cum de pe centrul360.com/epilare-laser (site.cjs).",
+ "sources": "v2/src/epilare-laser.html: „În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere.”; „Părul crește în cicluri.”; „Răcire activă”; „Datorită sistemului de răcire al Elysion Pro, senzația este mult mai blândă decât la epilarea clasică.”; „Epilarea laser se face doar în clinica din Timișoara.”; adresa „Str. Bucegi 7”, Timișoara (index.html, timisoara.html). Pozele: brand_asset/g-tm-laser.webp, g-tm-810.webp (reale, din clinică); pagina de pe telefon: captură reală a secțiunii #cum de pe centrul360.com/epilare-laser (site.cjs).",
  "concept": {
   "who": "Femeile din Timișoara care se gândesc la epilarea laser și au exact aceste trei întrebări: câte ședințe, dacă doare și unde ne găsesc.",
   "oneThing": "Întrebările despre epilarea laser au răspunsuri simple, iar clinica e la un mesaj distanță.",
@@ -46,7 +46,7 @@
   ],
   "track": {
    "file": "owner-trainingseason",
-   "why": "e ușoară și spontană, „loved by our audience”; fiind cântată liber, mesajele stau pe atacurile ei reale, iar pauza ei de la 10,2-12,0 s e chiar ezitarea din chat"
+   "why": "cererea proprietarului (15.11): partea cu „I need someone to hold me close, deeper than I've ever known”. Golul tobei (114,72-118,14 s) e chiar ezitarea din chat, iar toba care revine pe „deeper” e bula care devine poza."
   },
   "different": "Singurul reel care se citește ca o conversație și singurul în care un element de interfață (o bulă) se transformă într-un obiect 3D; fără tunel, fără tipografie mare, fără cazuri."
  },
@@ -59,11 +59,11 @@
    "owner": "da: e ușor și se termină cu invitația „360”"
   },
   "render": {
-   "scroll": "da: întrebarea e pe ecran din cadrul 0, pe trei rânduri, cât toată coloana de text (bula e deja în mișcare); la 0,95 s camera se retrage și se vede că e un chat cu Nuki",
-   "serves": "da, cu o schimbare față de cerere: la epilare nu există un înainte/după real (catalogul nu are niciun caz, iar ba-epilare.webp e o poză de atmosferă), așa că în locul lui e piesa de mână reală a laserului (810 nm), nu un rezultat",
-   "effects": "nu: cărțile se întorc și trec pe lângă cameră doar la cele trei schimbări ale montajului; în chat se mișcă numai bulele și camera, puțin",
-   "natural": "da, cu o limită: răspunsul lung al lui Nuki (16 cuvinte, la 48 px) are 2,1 s până la mesajul următor; rămâne pe ecran și după. Foaia e cât 88 % din lățimea cadrului și stă mereu pe axa lui; camera doar se înclină și împinge",
-   "owner": "da, cu două lucruri de confirmat de el: „Consultația e gratuită” (site-ul o spune, dar reels-urile educative o evită) și logo-ul mic de sub Nuki (cerut de verificarea filmelor de brand)"
+   "scroll": "da: întrebarea e pe ecran din cadrul 0, mare și înclinată în 3D; pe bătaia 2 camera se retrage și se vede chatul cu Nuki",
+   "serves": "da: trei întrebări, bule de 2-5 cuvinte, toate de pe site; locul real (poza sălii, piesa de mână, pagina) vine fix când toba revine",
+   "effects": "nu: o singură lumină (zoom prin lumină) pe toată bucata, la momentul principal; mișcările de cameră pornesc pe bătăi și apoi stau",
+   "natural": "da: bulele pică pe bătăi, ca un ritm de tastare; Nuki răspunde cu „Vă așteptăm”",
+   "owner": "da, cu un lucru de confirmat: răspunsul „360” al privitorului sub bula finală (e cererea însăși, nu un mesaj de clientă)"
   }
  },
  "musicFile": "owner-trainingseason",

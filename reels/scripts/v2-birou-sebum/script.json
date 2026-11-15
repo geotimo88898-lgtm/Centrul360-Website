@@ -58,7 +58,7 @@
   "say": "Acneea nu ține de igienă.",
   "visual": { "type": "br-desk", "cam": "none" }
  },
- "end": { "type": "save", "hold": 24.4 },
+ "end": { "type": "save", "hold": 25.0 },
  "musicFile": "owner-trainingseason",
  "musicStart": 7.6485,
  "beat": { "bpm": 122.62 },

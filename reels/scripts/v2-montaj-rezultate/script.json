@@ -102,26 +102,22 @@
    ],
    [
     6.3,
-    7.05
+    6.95
    ],
    [
-    7.3,
-    7.62
+    7.8,
+    8.0
    ],
    [
-    7.78,
-    7.98
+    8.03,
+    8.25
    ],
    [
-    8.0,
-    8.22
+    8.95,
+    9.15
    ],
    [
-    8.85,
-    9.25
-   ],
-   [
-    9.55,
+    9.6,
     9.8
    ],
    [
@@ -247,16 +243,6 @@
       0.5,
       0.55
      ]
-    },
-    {
-     "n": 5,
-     "img": "cazul-05-liposonix-solduri.webp",
-     "title": "Liposonix șolduri",
-     "meta": "Timișoara · 1 ședință",
-     "focus": [
-      0.5,
-      0.5
-     ]
     }
    ],
    "trio": [
@@ -272,7 +258,11 @@
     "Timișoara",
     "Arad"
    ],
-   "consent": "Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta."
+   "consent": "Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta.",
+   "trioNote": [
+    "3 cazuri, câte 1 ședință",
+    "HIFU și RF Sculpt · Timișoara și Arad"
+   ]
   }
  },
  "end": {

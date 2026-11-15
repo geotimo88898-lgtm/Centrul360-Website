@@ -72,38 +72,42 @@
   }
  },
  "musicFile": "owner-toomuch",
- "musicStart": 38.015,
+ "musicStart": 39.715,
  "beat": {
   "bpm": 129.2
  },
- "musicNote": "„Too Much For Me” (SELKER, piesa nouă a proprietarului din 15.11): finalul breakdown-ului calm, fără bas, apoi drop-ul: 38,02-53,22 s din piesă. Măsurat pe fișier (anvelopa 30-110 Hz și toată banda, la 10 ms): basul plin revine la 45,215 s (vârful la 45,28; înainte, un accent la 44,51 și o lovitură de pregătire la 44,98). musicStart 38,015 pune drop-ul pe cadrul 216 (7,20 s), zoom-ul prin lumină. Mișcările camerei stau pe atacurile din breakdown: 41,46 s (retragerea, 3,45 s), 41,70 (eticheta), 42,30 (dolly zoom, 4,29), 43,34 (macaraua, 5,33), 44,18 (colțurile se închid), 44,98 (graba spre lumină, 6,97). După drop, pe accentele de bas: 46,68 s (urcarea, 8,66), 48,55 (cele două poze alături, 10,53), 50,44 (culorile, 12,42), 52,79 (o lumină trece peste poze, 14,78). Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
+ "musicNote": "„Too Much For Me” (SELKER, piesa nouă a proprietarului din 15.11): finalul breakdown-ului calm, fără bas, apoi drop-ul: 39,72-53,42 s din piesă. Măsurat pe fișier (anvelopa 30-110 Hz și toată banda, la 10 ms): basul plin revine la 45,215 s (vârful la 45,28; înainte, un accent la 44,51 și o lovitură de pregătire la 44,98). musicStart 39,715 pune drop-ul pe cadrul 165 (5,50 s), zoom-ul prin lumină. Mișcările camerei stau pe atacurile din breakdown: 41,46 s (retragerea, 1,75 s, pe bătaia de la 8 bătăi înainte de drop), 41,70 (eticheta), 42,30 (dolly zoom, 2,59), 43,34 (macaraua, 3,63), 44,18 (colțurile se închid, 4,47), 44,98 (graba spre lumină, 5,27). După drop, pe accentele de bas: 46,68 s (urcarea, 6,97), 48,55 (cele două poze alături, 8,83), 50,44 (culorile, 10,72), 52,79 (o lumină trece peste poze, 13,08). Fișierul stă doar local, în reels/engine/music/ (ignorat de git).",
  "subframes": {
   "n": 5,
   "shutter": 0.55,
   "ranges": [
    [
-    3.4,
-    4.2
+    1.7,
+    2.5
    ],
    [
-    4.24,
-    5.25
+    2.54,
+    3.55
    ],
    [
-    5.28,
-    6.4
+    3.58,
+    4.7
+   ],
+   [
+    5.2,
+    5.75
    ],
    [
     6.9,
-    7.45
+    7.85
    ],
    [
-    8.6,
-    9.55
+    8.78,
+    9.7
    ],
    [
-    10.47,
-    11.4
+    10.68,
+    10.9
    ]
   ]
  },
@@ -126,8 +130,8 @@
     872
    ],
    "macro": [
-    285,
-    470
+    215,
+    445
    ],
    "detail": [
     297,
@@ -139,21 +143,21 @@
    ],
    "hits": {
     "w": [
-     0.535,
-     1.335
+     0.0,
+     0.25
     ],
-    "pull": 3.445,
-    "tag": 3.685,
-    "dolly": 4.285,
-    "crane": 5.325,
-    "breath": 6.965,
-    "drop": 7.2,
-    "rise": 8.664,
-    "side": 10.531,
-    "colour": 12.422,
-    "stop": 13.2,
-    "back": 14.776,
-    "corners": 6.165
+    "pull": 1.745,
+    "tag": 1.985,
+    "dolly": 2.585,
+    "crane": 3.625,
+    "corners": 4.465,
+    "breath": 5.265,
+    "drop": 5.5,
+    "rise": 6.965,
+    "side": 8.831,
+    "colour": 10.722,
+    "stop": 12.0,
+    "back": 13.076
    },
    "line": "Urmărește linia.",
    "kicker": "HIFU gușă",
@@ -163,11 +167,15 @@
    ],
    "title": "HIFU gușă",
    "meta": "Timișoara · 1 ședință",
-   "consent": "Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta."
+   "consent": "Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.",
+   "macro2": [
+    300,
+    515
+   ]
   }
  },
  "end": {
   "type": "save",
-  "hold": 14.11
+  "hold": 12.61
  }
 }

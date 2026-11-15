@@ -102,12 +102,12 @@
     const bubRim = mk(bub, 'position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,212,198,.35),rgba(234,181,165,.32),rgba(255,255,255,.2),rgba(95,212,198,.35));-webkit-mask:radial-gradient(circle,transparent 64%,#000 70%,#000 97%,transparent 100%);mask:radial-gradient(circle,transparent 64%,#000 70%,#000 97%,transparent 100%)');
     const drops = []; for (let k = 0; k < 14; k++) { const a = (k / 14) * Math.PI * 2 + R.rnd(k, 2) * 0.4, d = mk(C[0], 'position:absolute;left:0;top:0;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,rgba(95,212,198,.6));opacity:0'); drops.push({ d, a, r: 120 + R.rnd(k, 4) * 160 }); }
     const ring0 = mk(C[0], 'position:absolute;left:' + (BUB1[0] - 80) + 'px;top:' + (BUB1[1] - 80) + 'px;width:160px;height:160px;border-radius:50%;border:4px solid rgba(255,255,255,.95);box-shadow:0 0 0 2px rgba(95,212,198,.35);opacity:0');
-    const tA = txt(C[0], 470, 'ACNEEA', 'font-size:280px', T.pop, 'slam', { cls: 'cond', silent: true });
-    const tB = txt(C[0], 760, 'nu ține de', 'font:520 66px/1.1 ' + SANS, T.pop + B * 0.5, 'rise');
-    const tC = txt(C[0], 828, 'igienă.', 'font-size:200px;line-height:1.05', T.pop + B, 'slam', { cls: 'ser' });
+    const tA = txt(C[0], 470, 'ACNEEA', 'font-size:280px', T.pop, 'slam', { cls: 'cond', silent: true, fit: 730 });
+    const tB = txt(C[0], 790, 'nu ține de', 'font:520 66px/1.1 ' + SANS, T.pop + B * 0.5, 'rise');
+    const tC = txt(C[0], 905, 'igienă.', 'font-size:200px;line-height:1.05', T.pop + B, 'slam', { cls: 'ser' });
     const pen0 = obj(C[0], 'pencil', 180, 0, 760, 1176, 101);
-    const strike = svg(C[0], 640, 80, '<path d="M8 50C150 40 330 30 632 18" fill="none" stroke="' + DEEP + '" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:220px;top:888px');
-    const tD = txt(C[0], 1080, 'ține de <span class="ser" style="font-size:2.1em;color:' + DEEP + ';vertical-align:-.12em">echilibru.</span>', 'font:560 64px/1.1 ' + SANS, TB(11), 'rise');
+    const strike = svg(C[0], 640, 80, '<path d="M8 50C150 40 330 30 632 18" fill="none" stroke="' + DEEP + '" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:220px;top:965px');
+    const tD = txt(C[0], 1175, 'ține de <span class="ser" style="font-size:2.1em;color:' + DEEP + ';vertical-align:-.12em">echilibru.</span>', 'font:560 64px/1.1 ' + SANS, TB(11), 'rise');
     T.p0in = TB(8); T.s0 = TB(9); T.s1 = TB(10); T.p0out = TB(11.5);
     cue(0, 'tick_soft', 0.25); cue(0.12, 'shimmer_soft', 0.3); ev(0.1, 'step'); cue(0.9, 'tick_soft', 0.3); ev(0.9, 'step'); cue(1.7, 'tick_soft', 0.3); ev(1.7, 'step');
     cue(T.pop, 'hit_deep', 0.95, { prio: 5 }); cue(T.pop, 'dot', 0.6, { prio: 4 }); cue(T.pop + 0.02, 'shimmer_soft', 0.45); ev(T.pop, 'reveal');
@@ -124,10 +124,10 @@
       const q = seg(t, T.pop, T.pop + 0.55);
       drops.forEach((o) => { o.d.style.opacity = t >= T.pop ? (Math.sin(Math.PI * q) * 0.9).toFixed(3) : '0'; o.d.style.transform = 'translate(' + (BUB1[0] + Math.cos(o.a) * o.r * o3(q)).toFixed(1) + 'px,' + (BUB1[1] + Math.sin(o.a) * o.r * o3(q) + 80 * q * q).toFixed(1) + 'px) scale(' + (1 - 0.6 * q).toFixed(3) + ')'; });
       const rq = seg(t, T.pop, T.pop + 0.3); ring0.style.opacity = t >= T.pop ? (1 - rq).toFixed(3) : '0'; ring0.style.transform = 'scale(' + (1 + 1.6 * o3(rq)).toFixed(3) + ')';
-      setObj(soap0, 0, Math.sin(t * 0.8) * 2, -3 + Math.sin(t * 0.5) * 0.3, 1, 1, 34);
+      setObj(soap0, 0, Math.sin(t * 0.8) * 2 + 300 * io(seg(t, T.pop + 0.25, T.pop + 0.95)), -3 + Math.sin(t * 0.5) * 0.3 + 6 * io(seg(t, T.pop + 0.25, T.pop + 0.95)), 1, 1, 34);   // after the burst the soap slides down, out of the way of the words
       // the pencil comes in from the right, strikes „igienă”, leaves
       const pin = ex(seg(t, T.p0in, T.p0in + 0.45)), pdr = io(seg(t, T.s0, T.s1)), pout = io(seg(t, T.p0out, T.p0out + 0.5));
-      const tipX = 228 + 624 * pdr, tipY = 938 - 32 * pdr;
+      const tipX = 228 + 624 * pdr, tipY = 1015 - 32 * pdr;
       setObj(pen0, tipX - 180 + (1 - pin) * 760 + pout * 700, tipY - 48 + (1 - pin) * -60 + pout * -120, -4 - pdr * 2 + (1 - pin) * -8, 1, clamp(pin * 3) * (1 - pout), 70 + (1 - pin) * 60);
       pen0.im.style.transformOrigin = '0px 50px';
       strike.querySelector('path').style.strokeDashoffset = (1 - pdr).toFixed(4);
@@ -168,10 +168,10 @@
     // ================================================================ card 2: „Spălatul agresiv adesea înrăutățește lucrurile.” — the soap scrubs
     T.c2 = CUT[2];
     txt(C[2], 330, 'SPĂLATUL', 'font-size:210px', T.c2 + B * 0.5, 'slam', { cls: 'cond', fit: 760 });
-    txt(C[2], 530, 'AGRESIV', 'font-size:210px', T.c2 + B, 'slam', { cls: 'cond', fit: 760 });
-    txt(C[2], 790, 'adesea înrăutățește', 'font:560 66px/1.1 ' + SANS, T.c2 + B * 2, 'stag', { stagger: 0.1 });
-    txt(C[2], 876, '<span class="ser" style="font-size:1.9em;color:' + DEEP + '">lucrurile.</span>', 'font:560 66px/1.1 ' + SANS, T.c2 + B * 2.5, 'rise');
-    const soap2 = obj(C[2], 'soap', 360, 1180, 360, 528, 327);
+    txt(C[2], 600, 'AGRESIV', 'font-size:210px', T.c2 + B, 'slam', { cls: 'cond', fit: 760 });
+    txt(C[2], 870, 'adesea înrăutățește', 'font:560 66px/1.1 ' + SANS, T.c2 + B * 2, 'stag', { stagger: 0.1 });
+    txt(C[2], 956, '<span class="ser" style="font-size:1.9em;color:' + DEEP + '">lucrurile.</span>', 'font:560 66px/1.1 ' + SANS, T.c2 + B * 2.5, 'rise');
+    const soap2 = obj(C[2], 'soap', 360, 1250, 360, 528, 327);
     const foam = []; for (let k = 0; k < 16; k++) { const d = mk(C[2], 'position:absolute;left:0;top:0;width:' + (16 + (k % 4) * 9) + 'px;height:' + (16 + (k % 4) * 9) + 'px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0,rgba(255,255,255,.7) 25%,rgba(220,242,239,.5) 70%,rgba(95,212,198,.35) 100%);opacity:0'); foam.push({ d, k, x: 380 + R.rnd(k, 11) * 320, y: 1160 + R.rnd(k, 13) * 200, t: 0 }); }
     T.sc0 = T.c2 + B * 1.5; T.sc1 = TB(27);
     const swipes = []; for (let tt = T.sc0; tt < T.sc1 - 0.05; tt += B / 2) swipes.push(tt);
@@ -189,8 +189,8 @@
     // ================================================================ card 3: „Pielea se apără producând și mai mult sebum.” — the pencil draws the loop
     T.c3 = CUT[3];
     txt(C[3], 330, 'pielea se apără', 'font:560 70px/1.1 ' + SANS, T.c3 + B * 0.5, 'stag', { stagger: 0.12 });
-    txt(C[3], 432, 'producând <span class="ser" style="font-size:1.55em;color:' + DEEP + '">și mai mult</span>', 'font:560 66px/1.1 ' + SANS, T.c3 + B, 'rise');
-    txt(C[3], 600, 'SEBUM', 'font-size:300px', T.c3 + B * 2, 'slam', { cls: 'cond' });
+    txt(C[3], 432, 'producând <span class="ser" style="font-size:1.4em;color:' + DEEP + '">și mai mult</span>', 'font:560 64px/1.1 ' + SANS, T.c3 + B, 'rise', { fit: 730 });
+    txt(C[3], 600, 'SEBUM', 'font-size:300px', T.c3 + B * 2, 'slam', { cls: 'cond', fit: 730 });
     const loop3 = svg(C[3], 1080, 1920, '<path class="lp" d="M780 640C930 760 900 1000 700 1050C520 1095 270 1060 205 920C150 800 230 640 400 600C520 572 660 590 742 620" fill="none" stroke="' + DEEP + '" stroke-width="9" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="ah" d="M700 588L748 622L700 660" fill="none" stroke="' + DEEP + '" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>', 'left:0;top:0');
     const lpPath = loop3.querySelector('.lp'), ah = loop3.querySelector('.ah'), LPL = lpPath.getTotalLength ? lpPath.getTotalLength() : 1;
     const pen3 = obj(C[3], 'pencil', 0, 0, 640, 1176, 101); pen3.im.style.transformOrigin = '0px 43px';
@@ -205,7 +205,7 @@
 
     // ================================================================ card 4: „Mai mult săpun nu e răspunsul. Echilibrul este.” — the level's bubble settles
     T.c4 = CUT[4];
-    txt(C[4], 320, 'MAI MULT SĂPUN', 'font-size:170px', T.c4 + B * 0.5, 'slam', { cls: 'cond', fit: 760 });
+    txt(C[4], 320, 'MAI MULT SĂPUN', 'font-size:170px', T.c4 + B * 0.5, 'slam', { cls: 'cond', fit: 730 });
     txt(C[4], 500, 'nu e răspunsul.', 'font:560 70px/1.1 ' + SANS, T.c4 + B * 1.5, 'stag', { stagger: 0.12 });
     const lvl = obj(C[4], 'level', 120, 760, 840, 1103, 139);
     const LV = { x0: 484, x1: 632, y0: 49, y1: 88 }, lk = 840 / 1103;
@@ -239,9 +239,12 @@
       const ck = svg(nt, 60, 60, '<circle cx="30" cy="30" r="27" fill="' + TEAL + '"/><path d="M17 31l9 9 17-19" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:308px;top:' + (y + 4) + 'px');
       return { B0, ck, at, s };
     });
+    const pen5 = obj(C[5], 'pencil', 0, 0, 560, 1176, 101); pen5.im.style.transformOrigin = '280px 24px'; T.pen5 = TB(49);
+    cue(T.pen5 + 0.4, 'tap', 0.45); ev(T.pen5 + 0.4, 'drop');
     T.n0 = T.c5 + B * 0.5;
     cue(T.n0 + 0.3, 'card_flip', 0.6); ev(T.n0 + 0.3, 'drop'); tapes.forEach((q, k) => { q.at = TB(45 + k * 0.25); cue(q.at, 'tap', 0.4); ev(q.at, 'step'); }); items.forEach((q) => { cue(q.at + 0.12, 'tick_soft', 0.45); });
     C[5]._tick = (t) => {
+      { const q = ex(seg(t, T.pen5, T.pen5 + 0.45)), bn = t > T.pen5 + 0.4 ? Math.exp(-8 * (t - T.pen5 - 0.4)) * Math.sin(20 * (t - T.pen5 - 0.4)) : 0; setObj(pen5, 470 + (1 - q) * 520, 1330 + (1 - q) * 160 + bn * 3, -8 + (1 - q) * -14 + bn * 0.8, 1, clamp(q * 3), 26 + (1 - q) * 70); }
       const a = ex(seg(t, T.n0, T.n0 + 0.55));
       setObj(note, (1 - a) * 80, (1 - a) * 420, -2 + (1 - a) * 8, 1, clamp(a * 3), 22 + (1 - a) * 90); note.im.style.transformOrigin = '304px 436px';
       nt.style.transform = 'translate(' + ((1 - a) * 80).toFixed(1) + 'px,' + ((1 - a) * 420).toFixed(1) + 'px) rotate(' + (-2 + (1 - a) * 8).toFixed(3) + 'deg)'; nt.style.transformOrigin = '540px 796px';
@@ -263,7 +266,7 @@
       desk.style.transform = 'translate(0,' + (960 - y).toFixed(2) + 'px)';
       if (Math.abs(v) > 3) { fblur.setAttribute('stdDeviation', '0 ' + Math.min(80, Math.abs(v) * 0.38).toFixed(1)); desk.style.filter = 'url(#br-mb) blur(0px)'; } else desk.style.filter = Math.abs(v) > 0.2 ? 'blur(0px)' : '';
       pop.style.opacity = (R.cam.flash(t, T.pop) * 0.55).toFixed(3);
-      cards.forEach((c, k) => { const on = Math.abs(CY(k) - y) < 2100; c.el.style.display = on ? 'block' : 'none'; if (on && c.el._tick) c.el._tick(t); });
+      cards.forEach((c, k) => { const on = Math.abs(CY(k) - y) < 1780; c.el.style.display = on ? 'block' : 'none'; if (on && c.el._tick) c.el._tick(t); });
       for (const b of blocks) {
         const p = seg(t, b.at, b.at + b.dur), e = ex(p);
         if (b.ws) b.ws.forEach((w, i) => { const q = seg(t, b.at + i * b.stagger, b.at + i * b.stagger + 0.4), f = ex(q); w.style.opacity = clamp(q * 3).toFixed(3); w.style.transform = 'translateY(' + ((1 - f) * 40).toFixed(1) + 'px)'; });

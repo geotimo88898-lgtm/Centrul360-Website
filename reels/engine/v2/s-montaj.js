@@ -60,7 +60,7 @@
       c.save(); c.translate(o.ax, 0); half(k.im, b, 0, SEAM + GAP / 2, W, H - SEAM - GAP / 2, kk, k.focus); c.restore();
     }
     // a strip of the triple split: before | after side by side
-    const STR = [[282, 690], [702, 1110], [1122, 1530]];
+    const STR = [[286, 612], [622, 948], [958, 1284]];
     function strip(k, y0, y1, dx) {
       const [a, b] = halves(k), sw = Math.max(a[2], b[2]), sh = Math.max(a[3], b[3]), cw = (W - GAP) / 2;
       const kk = Math.max(cw / sw, (y1 - y0) / sh) * (k.zoom || 1);
@@ -82,20 +82,18 @@
       esc(p.h1[1].replace(/\.$/, '')) + '<i class="pd" style="display:inline-block;width:.16em;height:.16em;border-radius:50%;margin-left:.04em;background:radial-gradient(circle at 36% 34%,#fdeee6,#efbfad 30%,#dc9a85 75%,#bf7a64);vertical-align:baseline"></i>');
     const pd = h1b.querySelector('.pd');
     // 2. the labels of a case: the tags in the corners and the catalog's line on the seam
-    const tagCss = 'padding:12px 20px 11px;border-radius:999px;background:rgba(255,255,255,.9);box-shadow:0 10px 26px -14px rgba(4,40,36,.45);font:800 25px/1 ' + FONT + ';letter-spacing:.24em;text-indent:.24em;white-space:nowrap';
+    const tagCss = 'padding:12px 20px 11px;border-radius:999px;background:rgba(255,255,255,.9);box-shadow:0 10px 26px -14px rgba(4,40,36,.45);font:800 28px/1 ' + FONT + ';letter-spacing:.22em;text-indent:.22em;white-space:nowrap';
     const tagB = txt('left:72px;top:244px;' + tagCss + ';color:' + INK, 'ÎNAINTE');
     const tagA = txt('left:72px;top:1452px;' + tagCss + ';color:' + DEEP, 'DUPĂ');
-    const seam = txt('left:160px;width:760px;top:' + (SEAM - 34) + 'px;height:68px;display:flex;justify-content:center;align-items:center;pointer-events:none', '');
-    const pill = h('div', null, null, seam); pill.style.cssText = 'display:flex;align-items:center;gap:16px;height:68px;padding:0 30px;border-radius:999px;background:#fff;box-shadow:0 16px 40px -18px rgba(4,40,36,.55),0 0 0 1px rgba(11,60,55,.06);overflow:hidden;white-space:nowrap';
-    const pillDot = h('i', null, null, pill); pillDot.style.cssText = 'display:block;width:15px;height:15px;border-radius:50%;background:' + TEAL + ';flex:none';
-    const pillTx = h('div', null, null, pill); pillTx.style.cssText = 'position:relative;height:68px;overflow:hidden';
-    const lab = (k) => '<b style="font-weight:750;color:' + INK + '">' + esc(k.title) + '</b><span style="color:#4c5957;font-weight:550"> · ' + esc(k.meta) + '</span>';
-    const pillRows = cases.map((k) => { const d = h('div', null, lab(k), pillTx); d.style.cssText = 'position:absolute;left:0;top:0;height:68px;line-height:68px;font:34px/68px ' + FONT + ';letter-spacing:-.018em;white-space:nowrap'; return d; });
+    const seam = txt('left:160px;width:760px;top:' + (SEAM - 67) + 'px;height:134px;display:flex;justify-content:center;align-items:center;pointer-events:none', '');
+    const pill = h('div', null, null, seam); pill.style.cssText = 'height:134px;padding:11px 40px;border-radius:36px;background:#fff;box-shadow:0 16px 40px -18px rgba(4,40,36,.55),0 0 0 1px rgba(11,60,55,.06);overflow:hidden;white-space:nowrap';
+    const pillTx = h('div', null, null, pill); pillTx.style.cssText = 'position:relative;height:112px;overflow:hidden;text-align:center';
+    const pillRows = cases.map((k) => { const d = h('div', null, '<div style="font:800 46px/58px ' + FONT + ';letter-spacing:-.03em;color:' + INK + '">' + esc(k.title) + '</div><div style="font:550 44px/54px ' + FONT + ';letter-spacing:-.02em;color:#4c5957">' + esc(k.meta) + '</div>', pillTx); d.style.cssText = 'position:absolute;left:0;top:0;height:112px;white-space:nowrap;text-align:center'; return d; });
     // the triple split: two small heads over the columns, a line under each strip
     const headB = txt('left:110px;width:320px;top:236px;text-align:center;font:800 25px/1 ' + FONT + ';letter-spacing:.24em;text-indent:.24em;color:' + INK, 'ÎNAINTE');
     const headA = txt('left:560px;width:320px;top:236px;text-align:center;font:800 25px/1 ' + FONT + ';letter-spacing:.24em;text-indent:.24em;color:' + DEEP, 'DUPĂ');
     const trio = (p.trio || [6, 7, 8]).map((i) => cases[i]);
-    const trioLab = trio.map((k, j) => txt('left:160px;width:760px;top:' + (STR[j][1] - 66) + 'px;display:flex;justify-content:center', '<div style="padding:11px 24px 12px;border-radius:999px;background:#fff;box-shadow:0 12px 30px -16px rgba(4,40,36,.5);font:31px/1.1 ' + FONT + ';letter-spacing:-.015em;white-space:nowrap">' + lab(k) + '</div>'));
+    const trioNote = txt('left:160px;width:760px;top:1322px;text-align:center;white-space:nowrap', '<div style="font:800 46px/1.15 ' + FONT + ';letter-spacing:-.03em;color:' + INK + '">' + esc(p.trioNote[0]) + '</div><div style="margin-top:6px;font:550 40px/1.15 ' + FONT + ';letter-spacing:-.02em;color:#4c5957">' + esc(p.trioNote[1]) + '</div>');
     // 3. the end: the real Google score, then the logo (black on white) and the cities, the consent line
     const STAR = '<svg viewBox="0 0 24 24" width="50" height="50" fill="' + TEAL + '" style="margin:0 4px"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>';
     const endG = h('div', null, null, ov); endG.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
@@ -113,10 +111,10 @@
     const consent = txt('left:160px;width:760px;top:1386px;text-align:center;font:500 31px/1.36 ' + FONT + ';letter-spacing:-.008em;color:#55625f;text-wrap:balance', esc(p.consent)); endG.appendChild(consent);
 
     // ---- the cut list: what is on screen between two hits, and how it arrived
-    const TRIO0 = T('41.5'), TRIO = [T('41.5'), T('42.5'), T('43')];
+    const TRIO0 = T('42.5'), TRIO = [T('42.5'), T('43'), T('45')];
     // index of the case on screen at t (the V-split cases), and the shot's own start
     const SHOTS = [ // [start, case index, how it arrives]
-      [tBoom, 0, 'boom'], [seq[1], 1, 'whip'], [seq[2], 2, 'split'], [seq[3], 3, 'zoomout'], [seq[4], 4, 'whipv'], [seq[5], 5, 'flash'], [seq[9], 9, 'punch'],
+      [tBoom, 0, 'boom'], [seq[1], 1, 'whip'], [seq[2], 2, 'split'], [seq[3], 3, 'zoomout'], [seq[4], 4, 'whipv'], [seq[5], 5, 'flash'],
     ];
     const shotAt = (t) => { let s = null; for (const x of SHOTS) if (t >= x[0]) s = x; return s; };
     const nextOf = (s) => { const i = SHOTS.indexOf(s); const n = i >= 0 && i < SHOTS.length - 1 ? SHOTS[i + 1][0] : tEnd; return s[0] < TRIO0 ? Math.min(n, TRIO0) : n; };
@@ -125,8 +123,8 @@
     // the frost of the opening: the first case, out of focus behind milky glass, breathing
     function opening(t) {
       c.save(); const s = 1.08 + 0.025 * Math.sin(t * 1.3) + 0.04 * (t / tBoom), u = clamp((t - (tBoom - 0.34)) / 0.34);
-      camOn(s * (1 + 0.5 * Math.pow(u, 3)), 0, 0); c.filter = 'blur(' + (34 - 10 * u).toFixed(1) + 'px)'; vsplit(cases[0]); c.restore(); c.filter = 'none';
-      c.fillStyle = 'rgba(251,252,251,' + (0.7 - 0.25 * Math.pow(u, 2)).toFixed(3) + ')'; c.fillRect(0, 0, W, H);
+      camOn(s * (1 + 0.5 * Math.pow(u, 3)), 0, 0); c.filter = 'blur(' + (34 - 10 * u).toFixed(1) + 'px) grayscale(1)'; vsplit(cases[0]); c.restore(); c.filter = 'none';
+      c.fillStyle = 'rgba(251,252,251,' + (0.68 - 0.25 * Math.pow(u, 2)).toFixed(3) + ')'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(20,165,150,.05)'; c.fillRect(0, 0, W, H);
       grid(0.55 * (1 - u));
     }
     function grid(a) { if (a <= 0.01) return; c.save(); c.globalAlpha = a; c.strokeStyle = 'rgba(20,165,150,.10)'; c.lineWidth = 1; c.beginPath();
@@ -135,8 +133,8 @@
     // the triple split over the hero, which sinks into milky glass (no flash of empty white)
     function trioFrame(t) {
       const m = 0.42 + 0.46 * smooth((t - TRIO0) / 0.5);
-      c.save(); camOn(1.12 + 0.05 * (t - TRIO0), 0, 0); c.filter = 'blur(26px)'; vsplit(cases[5]); c.restore(); c.filter = 'none';
-      c.fillStyle = 'rgba(251,252,251,' + m.toFixed(3) + ')'; c.fillRect(0, 0, W, H); grid(0.7);
+      c.save(); camOn(1.12 + 0.05 * (t - TRIO0), 0, 0); c.filter = 'blur(26px) grayscale(1)'; vsplit(cases[5]); c.restore(); c.filter = 'none';
+      c.fillStyle = 'rgba(251,252,251,' + m.toFixed(3) + ')'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(20,165,150,.05)'; c.fillRect(0, 0, W, H); grid(0.7);
       trio.forEach((k, j) => { const u = t - TRIO[j]; if (u < 0) return; const e = out5(u / 0.18), dir = j % 2 ? 1 : -1; const [sx] = shake(t, TRIO[j], 10, 0.12);
         strip(k, STR[j][0], STR[j][1], dir * W * (1 - e) + sx); });
     }
@@ -145,7 +143,7 @@
       c.fillStyle = BG; c.fillRect(0, 0, W, H);
       let white = 0; // the light over everything (the flash)
       if (t < tBoom) opening(t);
-      else if (t < TRIO0 || (t >= seq[9] && t < tEnd)) {
+      else if (t < TRIO0) {
         const S = shotAt(t), [t0, i, how] = S, k = cases[i], t1 = nextOf(S), u = t - t0;
         let s = 1 + 0.018 * u, x = 0, y = 0, bx = null, ax = null; const [sx, sy] = shake(t, t0, how === 'boom' || how === 'flash' ? 26 : 12);
         if (how === 'boom') s *= 1 + 0.24 * (1 - out5(u / 0.3));
@@ -162,16 +160,16 @@
         if (how === 'boom') x -= W * 1.05 * whipG(t); // thrown off to the left: the next one comes in from the right
         if (how === 'whip' && left < 0.07) s *= 1 + 0.5 * Math.pow(1 - left / 0.07, 2);
         if (how === 'flash' && left < 0.08) s *= 1 + 0.3 * Math.pow(1 - left / 0.08, 2);
-        if (how === 'flash') white = Math.max(white, 1 - smooth(u / 0.24));
+        if (how === 'flash') white = Math.max(white, 1 - smooth(u / 0.2));
         if (how === 'split' && u < 0.3) { c.save(); camOn(1.02, 0, 0); vsplit(cases[1]); c.restore(); } // the bands slide in over the one before
         if (how === 'whipv' && u < 0.2) { c.save(); camOn(1.0, 0, y - H); vsplit(cases[3]); c.restore(); } // one vertical strip: the one before leaves upwards
         c.save(); camOn(s, x + sx, y + sy); vsplit(k, bx != null ? { bx, ax } : {}); c.restore();
         if (how === 'whip' && u < 0.2) { c.save(); camOn(1, x - W * 1.05, 0); vsplit(cases[0]); c.restore(); } // the one before, leaving on the same strip
-      } else if (t < seq[9]) { // the triple split
+      } else if (t < tEnd) { // the triple split
         trioFrame(t);
       } else { // the end: white, a clean sheet that comes down over the last case
         const q = clamp((t - tEnd + 0.02) / 0.17);
-        if (q < 1) { c.save(); camOn(1 + 0.018 * (tEnd - seq[9]), 0, 0); vsplit(cases[9]); c.restore(); c.fillStyle = BG; c.fillRect(0, 0, W, H * q); }
+        if (q < 1) { trioFrame(Math.min(t, tEnd - 0.001)); c.fillStyle = BG; c.fillRect(0, 0, W, H * q); }
         grid(0.6 * smooth((t - tEnd) / 0.4));
       }
       if (white > 0.002) { c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(255,255,255,' + clamp(white).toFixed(3) + ')'; c.fillRect(0, 0, W, H); }
@@ -184,20 +182,20 @@
       [[h1a, ha], [h1b, hb]].forEach(([e, q]) => { vis(e, q * (1 - smooth((t - tBoom + 0.12) / 0.12))); e.style.transformOrigin = '540px ' + (960 - parseFloat(e.style.top)) + 'px'; e.style.transform = 'translateY(' + ((1 - out3(q)) * 26).toFixed(1) + 'px) scale(' + (z * (1.06 - 0.06 * out3(q))).toFixed(4) + ')'; e.style.filter = q < 0.99 || go > 0.01 ? 'blur(' + ((1 - q) * 14 + go * 18).toFixed(1) + 'px)' : ''; });
       const pq = clamp((t - T('27')) / 0.12); pd.style.transform = 'scale(' + (pq < 1 ? pq * 1.4 : 1 + 0.4 * Math.exp(-(t - T('27') - 0.12) * 12)).toFixed(3) + ')';
       // the case labels (the V-split shots only)
-      const S = t >= tBoom && (t < TRIO0 || (t >= seq[9] && t < tEnd)) ? shotAt(t) : null;
+      const S = t >= tBoom && t < TRIO0 ? shotAt(t) : null;
       const on = S ? 1 : 0, u = S ? t - S[0] : 0;
       vis(tagB, on * smooth((t - tBoom) / 0.2)); vis(tagA, on * smooth((t - tBoom - 0.05) / 0.2));
       vis(seam, on);
       if (S) { // the seam's line rolls to the new case on every cut
-        const i = S[1], prev = S[0] === seq[9] ? null : SHOTS[SHOTS.indexOf(S) - 1], e = S[0] === seq[9] ? 1 : out5(u / 0.22);
+        const i = S[1], prev = SHOTS[SHOTS.indexOf(S) - 1], e = out5(u / 0.22);
         pillRows.forEach((d, j) => { const show = j === i ? 1 : prev && j === prev[1] && u < 0.22 ? 1 : 0; d.style.visibility = show ? '' : 'hidden'; d.style.position = j === i ? 'relative' : 'absolute';
-          d.style.transform = j === i ? 'translateY(' + ((1 - e) * 68).toFixed(1) + 'px)' : 'translateY(' + (-e * 68).toFixed(1) + 'px)'; });
+          d.style.transform = j === i ? 'translateY(' + ((1 - e) * 112).toFixed(1) + 'px)' : 'translateY(' + (-e * 112).toFixed(1) + 'px)'; });
         const sc = S[2] === 'boom' ? 0.9 + 0.1 * out5(u / 0.25) : 1; pill.style.transform = 'scale(' + sc.toFixed(3) + ')';
       }
       // the triple split
-      const tr = t >= TRIO0 && t < seq[9];
+      const tr = t >= TRIO0 && t < tEnd;
       vis(headB, tr ? smooth((t - TRIO0) / 0.15) : 0); vis(headA, tr ? smooth((t - TRIO0) / 0.15) : 0);
-      trioLab.forEach((d, j) => { const q = tr ? smooth((t - TRIO[j] - 0.06) / 0.14) : 0; vis(d, q); d.style.transform = 'translateY(' + ((1 - out3(q)) * 14).toFixed(1) + 'px)'; });
+      { const q = tr ? smooth((t - TRIO0 - 0.1) / 0.2) : 0; vis(trioNote, q); trioNote.style.transform = 'translateY(' + ((1 - out3(q)) * 14).toFixed(1) + 'px)'; }
       // the end
       const te = t - tEnd, tl = t - tLogo;
       vis(endG, t >= tEnd ? 1 : 0);
@@ -228,7 +226,6 @@
     cut(seq[4], 'whoosh_cut', 0.7, 0);
     ctx.sfx(seq[5] - 0.44, 'riser_soft', 0.6); cut(seq[5], 'suck_in', 0.6, 1); ctx.sfx(seq[5] + 0.16, 'shimmer_soft', 0.8, { prio: 4 }); ev(seq[5], 'reveal');
     cut(TRIO[0], 'whoosh_cut', 0.7, 0); ctx.sfx(TRIO[0] + 0.02, 'tap', 0.8); ctx.sfx(TRIO[1], 'tap', 0.85); ev(TRIO[1], 'panel'); ctx.sfx(TRIO[2], 'tap', 0.85); ev(TRIO[2], 'panel');
-    cut(seq[9], 'whoosh_cut', 0.7, 0.55);
     ctx.sfx(tEnd, 'swoosh_end', 0.7, { prio: 5, peak: true }); ev(tEnd, 'cut'); ctx.sfx(tEnd + 0.03, 'tap', 0.6); ev(tEnd, 'slam'); ctx.sfx(tEnd + 0.12, 'tick_soft', 0.4);
     ctx.sfx(tLogo, 'tap', 0.55); ev(tLogo, 'slam'); ctx.sfx(tLogo + 0.08, 'dot', 0.5); ctx.sfx(tLogo + 0.2, 'shimmer_soft', 0.45); ev(tLogo + 0.2, 'glow');
     ctx.sfx(T('51'), 'tick_soft', 0.3); ev(T('51'), 'glow');
