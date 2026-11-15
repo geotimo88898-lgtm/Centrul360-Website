@@ -47,6 +47,11 @@ pe placul meu”).
 | 15.11 | `v2-suspans-hifu` (clepsidra, dezvăluire pe WE ON GO II) | „super nice”, dar: început neașteptat calm și catchy, apoi BUM în „honorable”; montaj mai agresiv la drop | principiile 1 și 3 |
 | 15.11 | `v2-chat-epilare` (conversație cu Nuki) | „foarte bună ideea”, dar: muzica pe versul „I need someone to keep me close”, montaj pe ritm, animații mai crazy, mai puțin text | principiile 2 și 5 |
 
+**15.11, verdictul pe lot:** gușa, cazul real, EMS și crema, cu muzica mai încet: **undă verde** („sunt foarte mulțumit
+de ele, sigur poți mai bine… o să ajungem și la nivelul de insane pe care-l vreau eu cu timpul”). Păstrate în admin,
+la Conținut, ca ciorne (nu sunt programate, la cererea lui: „nu le programa încă, dar păstrează-le”). Nivelul de acum e
+baza; ținta e „insane”.
+
 ## Cum folosești jurnalul
 - Înainte de concept: citește principiile și ultimele verdicte; în blocul `concept` din script scrie care principii
   servește reelul și ce verdict anterior îl influențează.
