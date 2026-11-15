@@ -159,7 +159,6 @@
   <div class="shell">
     <nav class="tabs" id="tabsNav">
       <button data-tab="panou" class="active"><svg></svg>Panou</button>
-      <button data-tab="reclame" class="admin-only hidden"><svg></svg>Reclame</button>
       <div class="nav-group-label">Clinică</div>
       <button data-tab="programari"><svg></svg>Calendar</button>
       <button data-tab="mesaje" data-roles="admin,receptie,cosmetician"><svg></svg>Mesaje</button>
@@ -174,25 +173,26 @@
       <button data-tab="calculator" data-roles="cosmetician,receptie"><svg></svg>Calculator ofertă</button>
       <button data-tab="condica" data-roles="receptie,cosmetician"><svg></svg>Condică</button>
       <button data-tab="ofertele" data-roles="receptie,cosmetician"><svg></svg>Oferte</button>
+      <!-- (the owner, 15.11) on the computer: Panou alone, Clinică, Admin (the site goes in here, portal-nou-site.js),
+           Marketing (Reclame, Conținut, Ad Engine), Setări (Activitate, Integrări, every setting). The phone's quick
+           actions are their own list (portal-mobile-nav.js) and stay as they were. -->
       <div class="nav-group-label admin-only hidden">Admin</div>
       <button data-tab="aprobari" class="admin-only hidden"><svg></svg>Aprobări</button>
-      <button data-tab="activitate" class="admin-only hidden"><svg></svg>Activitate</button>
       <button data-tab="angajati" class="admin-only hidden"><svg></svg>Echipa</button>
       <button data-tab="acte" class="admin-only hidden"><svg></svg>Acte și autorizații</button>
       <button data-tab="fluxuri" class="admin-only hidden"><svg></svg>Automatizări</button>
-      <button data-tab="integrari" class="admin-only hidden"><svg></svg>Integrări</button>
       <button data-tab="oferte" class="admin-only hidden"><svg></svg>Oferte</button>
       <button data-tab="traininguri" data-roles="admin" data-dup="1"><svg></svg>Traininguri</button>
       <button data-tab="fise" data-roles="admin" data-dup="1"><svg></svg>Fișe de printat</button>
-      <button data-tab="calculator" data-roles="admin" data-dup="1"><svg></svg>Calculator ofertă</button>
+      <button data-tab="calculator" data-roles="admin" data-dup="1" data-site-after="1"><svg></svg>Calculator ofertă</button>
       <div class="nav-group-label admin-only hidden">Marketing</div>
+      <button data-tab="reclame" class="admin-only hidden"><svg></svg>Reclame</button>
       <button data-tab="continut" class="admin-only hidden"><svg></svg>Content</button>
-      <button data-tab="creative" data-route="/" class="admin-only hidden"><svg></svg>Galerie creative</button>
-      <button data-tab="creative" data-route="/convertor" class="admin-only hidden"><svg></svg>Convertor oraș</button>
-      <button data-tab="creative" data-route="/video" class="admin-only hidden"><svg></svg>Scripturi video</button>
-      <button data-tab="creative" data-route="/referinte" class="admin-only hidden"><svg></svg>Referințe</button>
-      <button data-tab="creative" data-route="/cunostinte" class="admin-only hidden"><svg></svg>Cunoștințe</button>
-      <button data-tab="creative" data-route="/setari" class="admin-only hidden"><svg></svg>Setări Creative</button>
+      <button data-tab="creative" data-route="/" data-routes="/ /convertor /video /referinte /cunostinte" class="admin-only hidden"><svg></svg>Ad Engine</button>
+      <div class="nav-group-label admin-only hidden">Setări</div>
+      <button data-tab="activitate" class="admin-only hidden"><svg></svg>Activitate</button>
+      <button data-tab="integrari" class="admin-only hidden"><svg></svg>Integrări</button>
+      <button data-tab="creative" data-route="/setari" class="admin-only hidden"><svg></svg>Setări</button>
     </nav>
 
     <main>

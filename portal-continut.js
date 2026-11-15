@@ -1528,5 +1528,13 @@
     });
   }
 
+  // Marketing → Setări opens this from outside Conținut (the content first, so the form starts from what is saved)
+  window.C360Content = {
+    async openSettings() {
+      if (!S.d) { try { S.d = await K.api('/api/portal-content', { action: 'get' }); } catch (e) { K.ui().toast(K.errText(e), 'error'); return; } }
+      openSettings();
+    },
+  };
+
   K.section('continut', { mount, show() { load(); } });
 })();

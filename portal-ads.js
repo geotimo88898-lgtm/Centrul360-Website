@@ -865,7 +865,7 @@
             if (ex.join(',') !== (sc.exclude || []).join(',')) {
               const s2 = await post({ action: 'scope', scope: { exclude: ex, include: sc.include || '' } });
               if (A.d) A.d.scope = s2.scope;
-              A.cache.clear(); load(true);
+              A.cache.clear(); if (panel) load(true);
             }
             dr.close();
             K.ui().toast('Salvat. Fereastra „Publică pe Meta” pornește de acum cu ele.', 'success');
@@ -874,6 +874,15 @@
       },
     });
   }
+
+  // Marketing → Setări (Creative's /setari page) opens these from outside Reclame: the account's data first, so the
+  // form starts from what is saved, never from blanks
+  window.C360Ads = {
+    async openDefaults() {
+      if (!A.d) { try { A.d = await K.api('/api/ads-manager?' + qsOf()); } catch (e) { K.ui().toast(K.errText(e), 'error'); return; } }
+      openDefaults();
+    },
+  };
 
   K.section('reclame', { mount, show: () => (A.d ? (Date.now() - (A.at || 0) > 20e3 ? load(true) : null) : load()) });
   const fresh = (ms) => { if (A.d && K.isActive('reclame') && !document.hidden && !K.drawerOpen && Date.now() - (A.at || 0) > ms) load(true); };

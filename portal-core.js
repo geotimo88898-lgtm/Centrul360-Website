@@ -418,7 +418,7 @@
   const creativeHash = (r) => 'creative' + (r && r !== '/' ? r : '');
   function markNav(tab) {
     document.querySelectorAll('#tabsNav button[data-tab]').forEach((b) => b.classList.toggle('active',
-      b.dataset.tab === tab && (!b.dataset.route || b.dataset.route === creativeRoute)));
+      b.dataset.tab === tab && (!b.dataset.route || b.dataset.route === creativeRoute || (b.dataset.routes || '').split(' ').includes(creativeRoute))));
   }
   function activate(tab, sub) {
     if (!allowed(tab)) tab = 'panou';
@@ -554,6 +554,16 @@
     markNav('creative');
     const hash = creativeHash(creativeRoute);
     if (location.hash.slice(1) !== hash) history.replaceState(null, '', location.pathname + location.search + '#' + hash);
+  });
+  // Setări (Creative's /setari page) holds every marketing setting: the ones that live in the portal (Reclame's
+  // defaults for „Publică pe Meta”, Conținut's networks and hours) open here, in their own drawers
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'c360:open-settings') return;
+    const w = e.data.which;
+    if (w === 'ads' && window.C360Ads) window.C360Ads.openDefaults();
+    else if (w === 'content' && window.C360Content) window.C360Content.openSettings();
+    else if (w === 'forms' && window.C360Forms) window.C360Forms.settings();
+    else if (w === 'integrari' || w === 'activitate') activate(w);
   });
   // Command palette → "Comandă creative noi": open the order form inside Creative.
   window.addEventListener('c360:creative-new', () => creativePost({ type: 'c360:new-request' }));
