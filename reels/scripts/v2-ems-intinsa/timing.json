@@ -1,67 +1,67 @@
 {
 "_mode": "continuous",
-"_tempo": 1.0,
+"_tempo": 1.05,
 "_wpm_take": 214,
 "L0": {
 "text": "Există un antrenament la care stai întinsă.",
-"dur": 2.32,
-"speech": 2.14,
+"dur": 2.21,
+"speech": 2.05,
 "file": "voice/cont-0bd0b99676d8464b-L0.wav",
 "role": "hook"
 },
 "L1": {
 "text": "Și în care mușchiul lucrează mai mult decât ar putea la sală.",
-"dur": 3.19,
-"speech": 2.92,
+"dur": 3.05,
+"speech": 2.78,
 "file": "voice/cont-0bd0b99676d8464b-L1.wav",
 "role": "beat"
 },
 "L2": {
 "text": "Se numește EMS, adică electrostimulare magnetică.",
-"dur": 3.51,
-"speech": 3.1,
+"dur": 3.33,
+"speech": 2.94,
 "file": "voice/cont-0bd0b99676d8464b-L2.wav",
 "role": "beat"
 },
 "L3": {
 "text": "Aparatul trimite impulsuri care fac mușchiul să se contracte singur, mult mai intens și mai des decât la un antrenament obișnuit.",
-"dur": 7.14,
-"speech": 6.6,
+"dur": 6.8,
+"speech": 6.29,
 "file": "voice/cont-0bd0b99676d8464b-L3.wav",
 "role": "beat"
 },
 "L4": {
 "text": "Cât face într-o singură ședință e greu de crezut.",
-"dur": 2.54,
-"speech": 2.26,
+"dur": 2.4,
+"speech": 2.16,
 "file": "voice/cont-0bd0b99676d8464b-L4.wav",
 "role": "beat"
 },
 "L5": {
 "text": "Până la douăzeci de mii de contracții, pe care nu le-ai putea face voluntar, oricât ai trage la sală.",
-"dur": 5.25,
-"speech": 4.91,
+"dur": 5.03,
+"speech": 4.71,
 "file": "voice/cont-0bd0b99676d8464b-L5.wav",
 "role": "payoff"
 },
 "L6": {
 "text": "Contracțiile sunt intense, dar nu dor, iar tu stai relaxată tot timpul.",
-"dur": 4.3,
-"speech": 3.97,
+"dur": 4.08,
+"speech": 3.77,
 "file": "voice/cont-0bd0b99676d8464b-L6.wav",
 "role": "resolve"
 },
 "L7": {
 "text": "De obicei e o cură de șase până la opt ședințe, iar un tonus mai bun se simte după primele.",
-"dur": 4.78,
-"speech": 4.54,
+"dur": 4.57,
+"speech": 4.34,
 "file": "voice/cont-0bd0b99676d8464b-L7.wav",
 "role": "resolve"
 },
 "L8": {
 "text": "EMS se face doar în clinica din Timișoara. Trimite-i clipul prietenei cu care tot amâni sala.",
-"dur": 5.028,
-"speech": 5.028,
+"dur": 4.782,
+"speech": 4.782,
 "file": "voice/cont-0bd0b99676d8464b-L8.wav",
 "role": "outro"
 }
