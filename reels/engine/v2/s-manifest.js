@@ -243,9 +243,6 @@ void main() {
     return { cv: c, w, h: hh };
   }
   function blobTex() { const c = mk(128, 128), g = c.getContext('2d'); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return c; }
-  function railTex() { const c = mk(64, 64), g = c.getContext('2d'); const im = g.createImageData(64, 64);
-    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { const u = (x - 31.5) / 31.5, v = y / 63; const a = (Math.exp(-u * u * 60) * 0.95 + Math.exp(-u * u * 5) * 0.22) * smooth(v / 0.06) * smooth((1 - v) / 0.1); const i = (y * 64 + x) * 4; im.data[i] = 20; im.data[i + 1] = 165; im.data[i + 2] = 150; im.data[i + 3] = Math.round(255 * clamp(a)); }
-    g.putImageData(im, 0, 0); return c; }
   function dotTex() { const c = mk(128, 128), g = c.getContext('2d'); // the rose gold light-dot (the gradient of the site's rose gold)
     let gr = g.createRadialGradient(64, 64, 14, 64, 64, 64); gr.addColorStop(0, 'rgba(226,162,141,.55)'); gr.addColorStop(1, 'rgba(226,162,141,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
     gr = g.createRadialGradient(57, 55, 2, 64, 64, 27); gr.addColorStop(0, '#fdeee6'); gr.addColorStop(0.3, '#efbfad'); gr.addColorStop(0.75, '#dc9a85'); gr.addColorStop(1, '#bf7a64'); g.fillStyle = gr; g.beginPath(); g.arc(64, 64, 27, 0, 7); g.fill(); return c; }

@@ -50,6 +50,22 @@
   },
   "different": "Primul reel într-o lume 3D adevărată (WebGL: perspectivă, reflexii în podea, blur de mișcare și adâncime de câmp reale), primul fără nicio tăietură și singurul a cărui semnătură e plonjarea camerei printr-o literă."
  },
+ "critique": {
+  "storyboard": {
+   "scroll": "da, cu o rezervă: primele 1,9 s sunt liniștite pe alb (punctul de lumină scrie rândul mic), iar oprirea vine pe drop, cu tipografia mare",
+   "serves": "da: rândul mic e promisiunea tuturor, tipografia e refuzul, coridorul e dovada, cazul ales e omul, sloganul și logo-ul sunt semnătura",
+   "effects": "nu: blurul de mișcare, adâncimea de câmp și reflexiile fac spațiul credibil; fără particule, străluciri sau tranziții de dragul lor",
+   "natural": "da: o singură mișcare de cameră și câte o idee pe ecran",
+   "owner": "da: e titlul site-ului lui, cu pozele reale din catalogul lui"
+  },
+  "render": {
+   "scroll": "da, cu aceeași rezervă: până la 1,92 s e doar punctul și rândul mic (46 px); lovitura vine pe drop. Dacă se vrea oprire din primul cadru, tipografia mare poate veni cu 4 bătăi mai devreme",
+   "serves": "da: după prima randare am scos șinele de lumină (arătau ca niște sârme) și am lăsat grila brandului pe podea; linia cu acordul stă pe o plăcuță albă, ca să se citească peste poze",
+   "effects": "nu: singurul gest decorativ e o trecere de lumină peste cazul ales, o singură dată, când camera se oprește",
+   "natural": "da, cu o limită: cardurile de pe pereți trec repede, iar etichetele lor se citesc doar la începutul zborului și la frână; cazul ales stă 3,3 s (întâi „înainte”, 1,9 s, apoi „după”)",
+   "owner": "da, cu două lucruri de văzut de el: cazul ales (cazul 16, HIFU gușă și contur, Timișoara, 1 ședință) și plonjarea prin litera „o”"
+  }
+ },
  "musicFile": "owner-free",
  "musicStart": 152.063,
  "beat": {

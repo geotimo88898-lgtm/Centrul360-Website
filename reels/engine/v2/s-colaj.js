@@ -45,7 +45,7 @@
       '.cj-world .ln{display:block;width:max-content;margin:0 auto}' +
       '.cj-world .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding:.12em .1em .24em;margin:-.12em -.1em -.24em}.cj-world .wi{display:inline-block;will-change:auto}' +
       '.cj-world .k{font-family:' + SERIF + ';font-style:italic;font-weight:470;letter-spacing:-.02em;color:' + DEEP + '}' +
-      '.cj-world .kick{font:650 30px/1 ' + SANS + ';letter-spacing:.3em;text-transform:uppercase;color:' + MUTE + '}' +
+      '.cj-world .kick{font:600 58px/1.1 ' + SANS + ';letter-spacing:-.02em;color:' + INK + '}' +
       '.cj-world .ser{font-family:' + SERIF + ';font-weight:580;letter-spacing:-.025em}' +
       '.cj-world img{position:absolute;display:block}.cj-world .p{position:absolute;width:1080px;height:1920px}', root);
     root.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute"><defs><filter id="cj-blur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="0 0"/></filter></defs></svg>');
@@ -105,11 +105,11 @@
     const T = {}, TA = 0.24, TB = 0.6;   // a travel starts TA before its cut and lands TB after it
     // ---- P0: „Există un antrenament la care stai întinsă.” The reclining marble figure, a turquoise sun behind her
     const p0 = P(0, 0, 0); crop(p0.el);
-    const disc = mk(p0.el, 'position:absolute;left:452px;top:516px;width:510px;height:510px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#3cc9ba,#14a596 58%,#0f9486);box-shadow:26px 34px 60px -18px rgba(11,127,116,.38)');
-    const statue0 = obj(p0, 'statue', 70, 598, 940, { z: 150, so: 0.34 });
-    words(p0.el, 0, ['există un'], 'top:296px', { cls: 'kick' });
-    const w0 = words(p0.el, 0, ['antrenament'], 'top:336px;font-size:150px;line-height:1.1', { cls: 'ser', q: 1 });
-    words(p0.el, 0, ['60:la care stai', '184:*întinsă.*'], 'top:1194px', { q: 1 });
+    const disc = mk(p0.el, 'position:absolute;left:430px;top:468px;width:570px;height:570px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#3cc9ba,#14a596 58%,#0f9486);box-shadow:26px 34px 60px -18px rgba(11,127,116,.38)');
+    const statue0 = obj(p0, 'statue', 36, 566, 1008, { z: 150, so: 0.34 });
+    words(p0.el, 0, ['există un'], 'top:246px', { cls: 'kick' });
+    const w0 = words(p0.el, 0, ['antrenament'], 'top:312px;font-size:156px;line-height:1.1', { cls: 'ser', q: 1 });
+    words(p0.el, 0, ['62:la care stai', '192:*întinsă.*'], 'top:1196px', { q: 1 });
     void w0;
     T.in0 = wt(0, /^întinsă/, 1.7);
     cue(0.86, 'tap', 0.5); ev(0.86, 'drop'); cue(T.in0, 'tick_soft', 0.5); ev(T.in0, 'reveal'); ev(1.2, 'step');
@@ -119,36 +119,37 @@
 
     // ---- P1: „…mușchiul lucrează mai mult decât ar putea la sală.” The dumbbell
     const p1 = P(1, 1420, 300); crop(p1.el);
-    const ring1 = svg(p1.el, 760, 760, '<circle cx="380" cy="380" r="372" fill="none" stroke="' + TEAL + '" stroke-width="3" stroke-dasharray="3 15" stroke-linecap="round"/>', 'left:160px;top:598px;transform-origin:380px 380px');
-    const mm = words(p1.el, 1, ['60:mușchiul lucrează', '214:*mai mult*'], 'top:300px');
-    const und = svg(p1.el, 640, 40, '<path d="M8 22C120 6 260 30 380 16S560 8 632 20" fill="none" stroke="' + TEAL + '" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:220px;top:590px');
-    const dumb1 = obj(p1, 'dumbbell', 130, 716, 820, { z: 170, so: 0.36 });
-    words(p1.el, 1, ['56:decât ar putea', '112s:la sală'], 'top:1288px');
+    const ring1 = svg(p1.el, 760, 760, '<circle cx="380" cy="380" r="372" fill="none" stroke="' + TEAL + '" stroke-width="3" stroke-dasharray="3 15" stroke-linecap="round"/>', 'left:160px;top:560px;transform-origin:380px 380px;transform:scale(1.1)');
+    const mm = words(p1.el, 1, ['62:mușchiul lucrează', '222:*mai mult*'], 'top:256px');
+    const und = svg(p1.el, 640, 40, '<path d="M8 22C120 6 260 30 380 16S560 8 632 20" fill="none" stroke="' + TEAL + '" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:220px;top:560px');
+    const dumb1 = obj(p1, 'dumbbell', 84, 648, 912, { z: 170, so: 0.36 });
+    words(p1.el, 1, ['60:decât ar putea', '128s:la sală'], 'top:1262px');
     T.mult = wt(1, /^mai$/, 1.4); T.sala = wt(1, /^sală/, 2.5);
     cue(T.mult, 'tick_soft', 0.5); ev(T.mult, 'reveal'); cue(S[1] + 0.42, 'tap', 0.6); ev(S[1] + 0.42, 'drop'); cue(T.sala, 'tick_soft', 0.4); ev(T.sala, 'step');
     p1.ticks.push((t) => { const lt = t - S[1], d = seg(lt, -0.1, 0.42), fall = 1 - d * d, bnc = lt > 0.42 ? Math.exp(-7 * (lt - 0.42)) * Math.cos(18 * (lt - 0.42)) : 0;
       dumb1.set(0, -fall * 60 + Math.sin(t * 0.8) * 4, -9 + fall * -6 + bnc * 1.6 + Math.sin(t * 0.5) * 0.4, 1 + 0.02 * bnc, clamp((lt + 0.2) * 5), 170 + fall * 260 - bnc * 30 + Math.sin(t * 0.7) * 12);
-      ring1.style.transform = 'rotate(' + (t * 5).toFixed(2) + 'deg) scale(' + (0.9 + 0.1 * ex(seg(lt, 0, 0.9))).toFixed(4) + ')'; ring1.style.opacity = sm(seg(lt, 0, 0.5)).toFixed(3);
+      ring1.style.transform = 'rotate(' + (t * 5).toFixed(2) + 'deg) scale(' + (1.0 + 0.12 * ex(seg(lt, 0, 0.9))).toFixed(4) + ')'; ring1.style.opacity = sm(seg(lt, 0, 0.5)).toFixed(3);
       und.querySelector('path').style.strokeDashoffset = (1 - io(seg(t, T.mult + 0.2, T.mult + 0.75))).toFixed(4); });
     void mm;
 
     // ---- P2: „Se numește EMS, adică electrostimulare magnetică.” A dictionary card; the magnifier enlarges the headword, the camera goes through its lens
     const p2 = P(2, 1420, 2420);
     const CARD = { x: 340, y: 664, k: 1 / 2.7, tilt: -3 };            // the card is the definition poster, printed at 1 / 2.7
-    const cardHtml = '<div class="hw" style="position:absolute;left:0;width:1080px;top:356px;text-align:center;font:620 250px/1 ' + SERIF + ';letter-spacing:-.02em;color:' + INK + '">EMS</div>' +
-      '<div style="position:absolute;left:0;width:1080px;top:642px;text-align:center;font:500 40px/1 ' + MONO + ';letter-spacing:.04em;color:' + MUTE + '">[ e-em-es ]</div>' +
-      '<div style="position:absolute;left:190px;width:700px;top:748px;height:2px;background:' + INK + ';opacity:.16"></div>' +
-      '<div class="df" style="position:absolute;left:0;width:1080px;top:800px;text-align:center;font:italic 470 104px/1.12 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + '"><span class="m1" style="position:relative;z-index:0">electrostimulare</span><br><span class="m2" style="position:relative;z-index:0">magnetică</span></div>' +
-      '<div style="position:absolute;left:180px;width:720px;top:1100px;text-align:center;white-space:normal;font:500 38px/1.42 ' + SANS + ';letter-spacing:-.005em;color:#2f3f3d">trimite impulsuri care fac mușchiul să se contracte mult mai intens și mai des decât la antrenamentul clasic</div>';
+    const cardHtml = '<div class="hw" style="position:absolute;left:0;width:1080px;top:330px;text-align:center;font:620 290px/1 ' + SERIF + ';letter-spacing:-.02em;color:' + INK + '">EMS</div>' +
+      '<div style="position:absolute;left:0;width:1080px;top:650px;text-align:center;font:500 44px/1 ' + MONO + ';letter-spacing:.04em;color:' + MUTE + '">[ e-em-es ]</div>' +
+      '<div style="position:absolute;left:190px;width:700px;top:752px;height:2px;background:' + INK + ';opacity:.16"></div>' +
+      '<div class="df" style="position:absolute;left:0;width:1080px;top:800px;text-align:center;font:italic 470 102px/1.14 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + '"><span class="m1" style="position:relative;z-index:0">electrostimulare</span><br><span class="m2" style="position:relative;z-index:0">magnetică</span></div>' +
+      '<div style="position:absolute;left:170px;width:740px;top:1104px;text-align:center;white-space:normal;font:600 58px/1.2 ' + SANS + ';letter-spacing:-.02em;color:' + INK + '">trimite impulsuri</div>' +
+      '<div style="position:absolute;left:170px;width:740px;top:1192px;text-align:center;white-space:normal;font:500 40px/1.42 ' + SANS + ';letter-spacing:-.005em;color:#2f3f3d">care fac mușchiul să se contracte mult mai intens și mai des decât la antrenamentul clasic</div>';
     const cardBox = mk(p2.el, 'position:absolute;left:' + (CARD.x - 28) + 'px;top:' + (CARD.y - 30) + 'px;width:456px;height:771px;border-radius:10px;background:linear-gradient(170deg,#ffffff,#f6f8f7);transform-origin:228px 386px;' +
       'box-shadow:0 0 0 1px rgba(18,32,31,.06),3px 4px 0 #eef1f0,6px 8px 0 #e4e8e7,26px 44px 70px -24px rgba(18,32,31,.32),10px 16px 22px -12px rgba(18,32,31,.2)');
     const cardIn = mk(cardBox, 'position:absolute;left:28px;top:30px;width:1080px;height:1920px;transform-origin:0 0;transform:scale(' + CARD.k + ')', 'tx cj-card', cardHtml);
     cardIn.style.whiteSpace = 'normal';
     const hl = ['m1', 'm2'].map((c) => { const sp = cardIn.querySelector('.' + c), m = h('i', null, null, sp); m.style.cssText = 'position:absolute;left:-10px;right:-10px;bottom:10px;height:44px;border-radius:8px;background:' + TEAL + ';opacity:.26;z-index:-1;transform-origin:0 50%;transform:scaleX(0)'; return m; });
-    const kick2 = words(p2.el, 2, ['se numește'], 'top:452px;font-size:60px');
+    const kick2 = words(p2.el, 2, ['se numește'], 'top:470px;font-size:56px');
     kick2.out = wt(2, /^adică/, 1.15) - 0.3;
     // the magnifier: the photograph's handle, a crisp ring over its rim, clear glass with a highlight, and inside it the card, larger
-    const LR = 150, MW = 540, MK = MW / 735, lensC = [CARD.x + 540 * CARD.k, CARD.y + 486 * CARD.k];   // the lens rests over „EMS”
+    const MW = 620, MK = MW / 735, LR = 204 * MK, lensC = [CARD.x + 540 * CARD.k, CARD.y + 478 * CARD.k];   // the lens rests over „EMS”
     const mg = mk(p2.el, 'position:absolute;left:' + lensC[0] + 'px;top:' + lensC[1] + 'px;width:0;height:0');
     const mgSh = mk(mg, 'position:absolute;left:' + (-LR - 8) + 'px;top:' + (-LR - 8) + 'px;width:' + (2 * LR + 16) + 'px;height:' + (2 * LR + 16) + 'px;border-radius:50%;box-shadow:54px 70px 50px -14px rgba(18,32,31,.3)');
     const mgHandleSh = h('img', null, null, mg); mgHandleSh.src = OBJ + 'magnifier.png'; mgHandleSh.style.cssText = 'left:' + (-233.8 * MK + 40) + 'px;top:' + (-233 * MK + 54) + 'px;width:' + MW + 'px;filter:brightness(0) blur(18px);opacity:.24;clip-path:polygon(60% 55%,100% 55%,100% 100%,55% 100%)';
@@ -166,7 +167,7 @@
     p2.ticks.push((t) => { const lt = t - S[2], arr = ex(seg(t, T.ems - 0.62, T.ems - 0.1)), pk = pushK(t), gone = pk >= 1, hov = 1 - arr;
       cardBox.style.transform = clone.style.transform = 'translate(0,' + ((1 - ex(seg(lt, -0.2, 0.6))) * 60).toFixed(2) + 'px) rotate(' + CARD.tilt + 'deg)';
       // the magnifier glides in from the lower right (out of focus, higher), settles over the headword; on the push it comes at the camera and its lens fills the frame
-      const kk = (1 + 3.5 * pk * pk) * (1 + hov * 0.35), M = lerp(1.5, 1, pk), hx = hov * 520 + Math.sin(t * 0.9) * 5 * (1 - pk), hy = hov * 620 + Math.cos(t * 0.7) * 5 * (1 - pk), rot = hov * 16 - 3 * (1 - pk);
+      const kk = (1 + 3.5 * pk * pk) * (1 + hov * 0.35), M = lerp(1.42, 1, pk), hx = hov * 520 + Math.sin(t * 0.9) * 5 * (1 - pk), hy = hov * 620 + Math.cos(t * 0.7) * 5 * (1 - pk), rot = hov * 16 - 3 * (1 - pk);
       mg.style.display = gone || arr <= 0 ? 'none' : 'block';
       mg.style.transform = 'translate(' + hx.toFixed(2) + 'px,' + hy.toFixed(2) + 'px) rotate(' + rot.toFixed(3) + 'deg) scale(' + kk.toFixed(5) + ')';
       mg.style.filter = hov > 0.02 ? 'blur(' + (hov * 9).toFixed(2) + 'px)' : '';
@@ -175,28 +176,28 @@
       hl[0].style.transform = 'scaleX(' + io(seg(t, T.el, T.el + 0.55)).toFixed(4) + ')'; hl[1].style.transform = 'scaleX(' + io(seg(t, T.mag, T.mag + 0.45)).toFixed(4) + ')'; });
 
     // ---- P3: „Aparatul trimite impulsuri care fac mușchiul să se contracte singur, mult mai intens și mai des…” A paper tape; the pen draws the pulses
-    const p3 = P(3, 2960, 2600); const ST = { x0: 40, y: 690, w: 2700, h: 430, base: 250 };
+    const p3 = P(3, 2960, 2600); const ST = { x0: 40, y: 608, w: 2700, h: 530, base: 292 };
     const hold3 = mk(p3.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px');           // stays with the camera while the tape runs by
-    words(hold3, 3, ['aparatul trimite'], 'top:300px', { cls: 'kick' });
-    words(hold3, 3, ['*impulsuri*'], 'top:362px;font-size:178px;line-height:1.05');
-    const tape = mk(p3.el, 'position:absolute;left:' + ST.x0 + 'px;top:' + ST.y + 'px;width:' + ST.w + 'px;height:' + ST.h + 'px;border-radius:6px;transform-origin:500px 215px;background-color:#fff;' +
+    words(hold3, 3, ['aparatul trimite'], 'top:240px', { cls: 'kick' });
+    words(hold3, 3, ['*impulsuri*'], 'top:304px;font-size:190px;line-height:1.05');
+    const tape = mk(p3.el, 'position:absolute;left:' + ST.x0 + 'px;top:' + ST.y + 'px;width:' + ST.w + 'px;height:' + ST.h + 'px;border-radius:6px;transform-origin:500px 265px;background-color:#fff;' +
       'background-image:linear-gradient(rgba(20,165,150,.16) 1.5px,transparent 0),linear-gradient(90deg,rgba(20,165,150,.16) 1.5px,transparent 0),linear-gradient(rgba(20,165,150,.3) 2px,transparent 0),linear-gradient(90deg,rgba(20,165,150,.3) 2px,transparent 0);background-size:27px 27px,27px 27px,135px 135px,135px 135px;background-position:0 -8px,0 0,0 -8px,0 0;' +
       'box-shadow:0 0 0 1px rgba(18,32,31,.07),2px 4px 0 #eceff0,22px 40px 64px -22px rgba(18,32,31,.34),8px 14px 20px -10px rgba(18,32,31,.18)');
     const ZA = 760, ZB = 1560;                                   // the tape's three parts: as usual | far more intense | and far more often
-    const spikes = []; for (let x = 150; x < ST.w - 60;) { spikes.push({ x, a: x < ZA ? 50 : 152 }); x += x < ZB ? 150 : 66; }
+    const spikes = []; for (let x = 150; x < ST.w - 60;) { spikes.push({ x, a: x < ZA ? 62 : 186 }); x += x < ZB ? 150 : 66; }
     const refSp = []; for (let x = 190; x < ST.w - 60; x += 206) refSp.push(x);
     const pathOf = (sp, amp) => { let d = 'M0 0'; sp.forEach((s) => { const x = s.x != null ? s.x : s, a = amp || s.a; d += 'L' + (x - 14) + ' 0L' + x + ' ' + (-a) + 'L' + (x + 12) + ' ' + (a * 0.3).toFixed(1) + 'L' + (x + 26) + ' 0'; }); return d + 'L' + ST.w + ' 0'; };
-    svg(tape, ST.w, ST.h, '<g transform="translate(0,' + (ST.base + 96) + ')"><path d="' + pathOf(refSp, 34) + '" fill="none" stroke="#a9b4b2" stroke-width="3.5" stroke-linejoin="round"/></g>', 'left:0;top:0');
+    svg(tape, ST.w, ST.h, '<g transform="translate(0,' + (ST.base + 122) + ')"><path d="' + pathOf(refSp, 40) + '" fill="none" stroke="#a9b4b2" stroke-width="3.5" stroke-linejoin="round"/></g>', 'left:0;top:0');
     const emsClip = mk(tape, 'position:absolute;left:0;top:0;height:' + ST.h + 'px;overflow:hidden;width:0');
-    svg(emsClip, ST.w, ST.h, '<g transform="translate(0,' + ST.base + ')"><path d="' + pathOf(spikes) + '" fill="none" stroke="' + TEAL + '" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/></g>', 'left:0;top:0');
+    svg(emsClip, ST.w, ST.h, '<g transform="translate(0,' + ST.base + ')"><path d="' + pathOf(spikes) + '" fill="none" stroke="' + TEAL + '" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/></g>', 'left:0;top:0');
     const pen = mk(tape, 'position:absolute;left:0;top:0;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#7fe3d7,' + TEAL + ' 60%,' + DEEP + ');box-shadow:0 0 0 7px rgba(20,165,150,.16),4px 8px 12px -4px rgba(11,127,116,.5)');
-    const refLab = txt(tape, '<i style="display:inline-block;width:46px;height:5px;border-radius:3px;background:#a9b4b2;vertical-align:middle;margin-right:14px"></i>un antrenament obișnuit', 'left:' + (ST.w - 1040) + 'px;width:620px;top:' + (ST.base + 126) + 'px;font:600 36px/1 ' + SANS + ';color:' + MUTE + ';letter-spacing:0;text-align:left');
+    const refLab = txt(tape, '<i style="display:inline-block;width:46px;height:5px;border-radius:3px;background:#a9b4b2;vertical-align:middle;margin-right:14px"></i>un antrenament obișnuit', 'left:' + (ST.w - 1040) + 'px;width:680px;top:' + (ST.base + 156) + 'px;font:600 42px/1 ' + SANS + ';color:' + MUTE + ';letter-spacing:0;text-align:left');
     const yEms = (x) => { for (const s of spikes) { if (x < s.x - 14) break; if (x <= s.x) return -s.a * (x - (s.x - 14)) / 14; if (x <= s.x + 12) return -s.a + (s.a * 1.3) * (x - s.x) / 12; if (x <= s.x + 26) return s.a * 0.3 * (1 - (x - s.x - 12) / 14); } return 0; };
     T.imp = wt(3, /^impulsuri/, 0.85); T.sing = wt(3, /^să$/, 2.0) - 0.05; T.int = wt(3, /^mult$/, 3.1); T.des = wt(3, /^și$/, 4.05); T.obi = wt(3, /^decât/, 4.6); T.e3 = L[3].t0 + (L[3].speech || L[3].dur);
     const front = (t) => (t < T.int ? ZA * seg(t, T.imp - 0.1, T.int) : t < T.des ? lerp(ZA, ZB, seg(t, T.int, T.des)) : lerp(ZB, ST.w - 250, seg(t, T.des, T.e3 + 0.3)));
     const dx3 = (t) => clamp(0.82 * (front(t) - 420), -40, 1900);
     // below the tape: what the pulses do (one line, a little before it is said, so „singur” can be read), then the two things that set them apart
-    const ph3 = [words(hold3, 3, ['68:se contractă *singur*'], 'top:1230px', { at: wt(3, /^să$/, 2.2) - 0.1, stagger: 0.13, kem: 2.05 }), words(hold3, 3, ['68:mult mai *intens*', '68:și mai *des*'], 'top:1184px', { kem: 2.05 })];
+    const ph3 = [words(hold3, 3, ['70:se contractă *singur*'], 'top:1242px', { at: wt(3, /^să$/, 2.2) - 0.1, stagger: 0.13, kem: 2.05 }), words(hold3, 3, ['70:mult mai *intens*', '70:și mai *des*'], 'top:1186px', { kem: 2.0 })];
     ph3[0].out = T.int - 0.34; ph3[1].out = null;
     spikes.forEach((s, i) => { let a = T.imp - 0.1, b = T.e3 + 0.3; for (let k = 0; k < 26; k++) { const m = (a + b) / 2; if (front(m) < s.x) a = m; else b = m; } s.t = a; if (s.x < ZB) { cue(a, 'tick_soft', s.x < ZA ? 0.4 : 0.62); ev(a, 'step'); } else if (i % 2 === 0) cue(a, 'key', 0.3); });
     cue(T.int, 'tap', 0.5); ev(T.int, 'reveal'); cue(T.des, 'tap', 0.45); ev(T.des, 'reveal'); ev(T.obi, 'step'); cue(T.obi + 0.2, 'tick_soft', 0.4); ev(T.sing, 'step'); ev(T.e3 - 0.6, 'step');
@@ -208,8 +209,8 @@
 
     // ---- P4: „Cât face într-o singură ședință e greu de crezut.” The stopwatch
     const p4 = P(4, 4700, 480); crop(p4.el);
-    words(p4.el, 4, ['60:într-o singură', '190:*ședință*'], 'top:296px');
-    const SW = 716, SK = SW / 612, swx = 182, swy = 590, piv = [swx + 306 * SK, swy + 499 * SK];
+    words(p4.el, 4, ['62:într-o singură', '204:*ședință*'], 'top:250px');
+    const SW = 752, SK = SW / 612, swx = 164, swy = 552, piv = [swx + 306 * SK, swy + 499 * SK];
     const watch = obj(p4, 'stopwatch', swx, swy, SW, { z: 130, so: 0.34 });
     const face = mk(p4.el, 'position:absolute;left:' + piv[0] + 'px;top:' + piv[1] + 'px;width:0;height:0');
     const arcR = 205 * SK; const sweep = svg(face, 10, 10, '<path class="a" d="" fill="' + TEAL + '" fill-opacity=".2"/><g class="hd"><path d="M-5 26L-2.5 ' + (-arcR - 26) + 'h5L5 26z" fill="' + TEAL + '"/><circle r="15" fill="' + TEAL + '"/><circle r="5.5" fill="#fff"/></g>', 'left:0;top:0');
@@ -226,17 +227,17 @@
 
     // ---- P5: „Până la douăzeci de mii de contracții, pe care nu le-ai putea face voluntar, oricât ai trage la sală.” The number, the marker circle
     const p5 = P(5, 6100, 1500); crop(p5.el);
-    words(p5.el, 5, ['până la'], 'top:300px', { cls: 'kick' });
-    const numBox = txt(p5.el, '', 'top:424px;font:600 212px/1 ' + SERIF + ';letter-spacing:0;color:' + INK, 'cj-num');
+    words(p5.el, 5, ['până la'], 'top:250px', { cls: 'kick' });
+    const numBox = txt(p5.el, '', 'top:352px;font:600 226px/1 ' + SERIF + ';letter-spacing:0;color:' + INK, 'cj-num');
     const SL = [0.58, 0.58, 0.27, 0.58, 0.58, 0.58];               // six slots: 2 0 . 0 0 0 (fixed, so the number never jumps while it runs)
     numBox.innerHTML = '<span style="display:inline-block;white-space:nowrap">' + SL.map((w, i) => '<span class="d" style="display:inline-block;width:' + w + 'em;text-align:center">' + (i === 2 ? '.' : '0') + '</span>').join('') + '</span>';
     const digs = [...numBox.querySelectorAll('.d')];
     const circ = svg(p5.el, 900, 420, '<defs><linearGradient id="cj-rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eab5a5"/><stop offset="1" stop-color="#cf8f7d"/></linearGradient></defs>' +
-      '<path d="M96 236C70 120 250 34 470 38C690 42 846 108 838 214C830 322 640 392 430 386C240 380 84 330 104 204C116 128 230 70 380 52" fill="none" stroke="url(#cj-rg)" stroke-width="11" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:118px;top:338px;transform-origin:450px 210px;transform:scale(.94,.92)');
-    words(p5.el, 5, ['*de contracții*'], 'top:716px;font-size:110px;line-height:1.05');
-    const ses5 = txt(p5.el, 'într-o ședință', 'top:872px;font:560 40px/1 ' + SANS + ';color:' + MUTE + ';letter-spacing:0');
-    const dumb5 = obj(p5, 'dumbbell', 300, 990, 480, { z: 110, so: 0.32 });
-    const typed = txt(p5.el, '', 'top:1340px;font:560 40px/1.5 ' + MONO + ';letter-spacing:.01em;color:' + INK, 'cj-typed');
+      '<path d="M96 236C70 120 250 34 470 38C690 42 846 108 838 214C830 322 640 392 430 386C240 380 84 330 104 204C116 128 230 70 380 52" fill="none" stroke="url(#cj-rg)" stroke-width="11" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>', 'left:90px;top:258px;transform-origin:450px 210px;transform:scale(.97,.82)');
+    words(p5.el, 5, ['*de contracții*'], 'top:626px;font-size:116px;line-height:1.05');
+    const ses5 = txt(p5.el, 'într-o ședință', 'top:770px;font:600 58px/1.1 ' + SANS + ';color:' + MUTE + ';letter-spacing:-.02em');
+    const dumb5 = obj(p5, 'dumbbell', 262, 872, 556, { z: 110, so: 0.32 });
+    const typed = txt(p5.el, '', 'top:1238px;font:560 58px/1.44 ' + MONO + ';letter-spacing:-.01em;color:' + INK, 'cj-typed');
     const TY1 = 'imposibil de obținut ', TY2 = 'VOLUNTAR';
     T.c0 = L[5].t0 + 0.12; T.land = S0.countAt != null ? S0.countAt : wt(5, /^mii/, 0.95) + 0.12; T.circ = Math.max(T.land + 0.12, wt(5, /^contracții/, 1.2) + 0.05); T.vol = wt(5, /^voluntar/, 3.2); T.pe = wt(5, /^pe$/, 1.9); T.ori = wt(5, /^oricât/, 3.6);
     shots[5].revealAt = T.land;
@@ -254,19 +255,19 @@
       const din = ex(seg(t, T.pe - 0.05, T.pe + 0.7)), bn = t > T.pe + 0.35 ? Math.exp(-7 * (t - T.pe - 0.35)) * Math.cos(17 * (t - T.pe - 0.35)) : 0;
       dumb5.set((1 - din) * 760, Math.sin(t * 0.8) * 3, 10 + (1 - din) * 50 + bn * 1.5 + Math.sin(t * 0.5) * 0.5, 1, clamp((t - T.pe + 0.05) * 4), 110 + (1 - din) * 160 + Math.sin(t * 0.7) * 8);
       const nT = clamp(Math.floor((t - (T.vol - 0.75)) / 0.035), 0, TY1.length + TY2.length), a = TY1.slice(0, Math.min(nT, TY1.length)), b = TY2.slice(0, Math.max(0, nT - TY1.length)), pq = sm(seg(t, T.vol + 0.2, T.vol + 0.5));
-      const html = nT ? esc(a) + (b ? '<span style="display:inline-block;padding:2px 16px 3px;margin-left:2px;border-radius:9px;color:rgb(' + [lerp(18, 255, pq), lerp(32, 255, pq), lerp(31, 255, pq)].map(Math.round).join(',') + ');background:rgba(20,165,150,' + pq.toFixed(3) + ')">' + esc(b) + '</span>' : '') + (nT < TY1.length + TY2.length ? '<span style="display:inline-block;width:3px;height:36px;background:' + TEAL + ';vertical-align:-6px;margin-left:3px"></span>' : '') : '';
+      const html = nT ? esc(a) + (b ? '<br><span style="display:inline-block;padding:0 22px 2px;margin-top:6px;border-radius:12px;color:rgb(' + [lerp(18, 255, pq), lerp(32, 255, pq), lerp(31, 255, pq)].map(Math.round).join(',') + ');background:rgba(20,165,150,' + pq.toFixed(3) + ')">' + esc(b) + '</span>' : '') + (nT < TY1.length + TY2.length ? '<span style="display:inline-block;width:4px;height:54px;background:' + TEAL + ';vertical-align:-9px;margin-left:4px"></span>' : '') : '';
       if (typed._h !== html) { typed._h = html; typed.innerHTML = html; } typed.style.filter = t < T.vol + 0.6 ? 'blur(0px)' : ''; });
 
     // ---- P6: „Contracțiile sunt intense, dar nu dor, iar tu stai relaxată tot timpul.” A word flips in place; she rests
     const p6 = P(6, 6100, 3640); crop(p6.el);
     const blk6 = h('div', 'tx', null, p6.el); blk6.style.cssText = 'top:0;height:0';
-    words(blk6, 6, ['contracțiile sunt'], 'top:300px;font-size:58px;left:50%;width:max-content;transform:translateX(-50%)', { noTx: 1 });
-    const flip = mk(blk6, 'position:absolute;left:540px;top:352px;width:0;height:0;perspective:1100px;perspective-origin:0 110px');
-    const fA = mk(flip, 'position:absolute;left:0;width:max-content;top:0;white-space:nowrap;font:600 176px/1.15 ' + SERIF + ';letter-spacing:-.025em;transform-origin:50% 55%;backface-visibility:hidden', null, 'intense');
-    const fB = mk(flip, 'position:absolute;left:0;width:max-content;top:14px;white-space:nowrap;font:italic 470 150px/1.2 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';transform-origin:50% 55%;backface-visibility:hidden', null, 'dar nu dor');
-    const pulse6 = svg(p6.el, 1500, 200, '<path d="" fill="none" stroke="' + TEAL + '" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>', 'left:-210px;top:880px');
-    const statue6 = obj(p6, 'statue', 62, 664, 956, { z: 140, so: 0.34 });
-    words(p6.el, 6, ['58:iar tu stai', '160:*relaxată*'], 'top:1264px');
+    words(blk6, 6, ['contracțiile sunt'], 'top:252px;font-size:60px;left:50%;width:max-content;transform:translateX(-50%)', { noTx: 1 });
+    const flip = mk(blk6, 'position:absolute;left:540px;top:308px;width:0;height:0;perspective:1100px;perspective-origin:0 110px');
+    const fA = mk(flip, 'position:absolute;left:0;width:max-content;top:0;white-space:nowrap;font:600 190px/1.15 ' + SERIF + ';letter-spacing:-.025em;transform-origin:50% 55%;backface-visibility:hidden', null, 'intense');
+    const fB = mk(flip, 'position:absolute;left:0;width:max-content;top:14px;white-space:nowrap;font:italic 470 160px/1.2 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';transform-origin:50% 55%;backface-visibility:hidden', null, 'dar nu dor');
+    const pulse6 = svg(p6.el, 1500, 200, '<path d="" fill="none" stroke="' + TEAL + '" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>', 'left:-210px;top:850px');
+    const statue6 = obj(p6, 'statue', 36, 606, 1008, { z: 140, so: 0.34 });
+    words(p6.el, 6, ['60:iar tu stai', '176:*relaxată*'], 'top:1236px');
     T.inte = wt(6, /^intense/, 1.0); T.dar = wt(6, /^dar$/, 1.45); T.rel = wt(6, /^relaxată/, 2.7);
     cue(T.inte, 'tick_soft', 0.5); ev(T.inte, 'reveal'); cue(T.dar + 0.16, 'card_flip', 0.7); ev(T.dar + 0.16, 'flip'); cue(T.rel, 'tick_soft', 0.5); ev(T.rel, 'step'); cue(S[6] + 0.45, 'tap', 0.45); ev(S[6] + 0.45, 'drop'); ev(T.rel + 0.9, 'step');
     p6.ticks.push((t) => { const lt = t - S[6], a = ex(seg(lt, -0.2, 0.75)), f = io(seg(t, T.dar - 0.02, T.dar + 0.42)), ain = ex(seg(t, T.inte - 0.1, T.inte + 0.4));
@@ -278,16 +279,16 @@
 
     // ---- P7: „De obicei e o cură de 6-8 ședințe, iar un tonus mai bun se simte după primele.” A card with eight marks
     const p7 = P(7, 4680, 3900); crop(p7.el);
-    words(p7.el, 7, ['de obicei, o cură de'], 'top:306px', { cls: 'kick' });
-    words(p7.el, 7, ['*6-8|șase* ședințe'], 'top:352px;font-size:132px;line-height:1.1', { cls: 'ser' });
-    const hold7 = mk(p7.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px;perspective:1700px;perspective-origin:540px 875px');
-    const card7 = mk(hold7, 'position:absolute;left:120px;top:630px;width:840px;height:500px;border-radius:14px;background:linear-gradient(165deg,#ffffff,#f5f8f7);transform-origin:420px 250px;' +
+    words(p7.el, 7, ['de obicei, o cură de'], 'top:246px', { cls: 'kick' });
+    words(p7.el, 7, ['*6-8|șase* ședințe'], 'top:312px;font-size:160px;line-height:1.1', { cls: 'ser' });
+    const hold7 = mk(p7.el, 'position:absolute;left:0;top:0;width:1080px;height:1920px;perspective:1700px;perspective-origin:540px 860px');
+    const card7 = mk(hold7, 'position:absolute;left:84px;top:566px;width:912px;height:580px;border-radius:16px;background:linear-gradient(165deg,#ffffff,#f5f8f7);transform-origin:456px 290px;' +
       'box-shadow:0 0 0 1px rgba(18,32,31,.06),0 5px 0 #edf0ef,0 10px 0 #e2e7e6,0 15px 0 #d9dfde,30px 60px 80px -30px rgba(18,32,31,.36),10px 22px 26px -14px rgba(18,32,31,.2)');
-    const marks = []; for (let i = 0; i < 8; i++) { const cxm = 135 + (i % 4) * 190, cym = 150 + Math.floor(i / 4) * 200;
+    const marks = []; for (let i = 0; i < 8; i++) { const cxm = 153 + (i % 4) * 202, cym = 172 + Math.floor(i / 4) * 236, MS = 1.2;
       const m = svg(card7, 140, 140, '<circle cx="70" cy="70" r="64" fill="none" stroke="' + INK + '" stroke-opacity=".3" stroke-width="3.5"' + (i >= 6 ? ' stroke-dasharray="7 9"' : '') + '/><circle class="f" cx="70" cy="70" r="60" fill="' + TEAL + '"/><path class="c" d="M44 72l18 18 34-40" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>' +
-        '<text x="70" y="88" text-anchor="middle" font-family="Fraunces Variable,serif" font-weight="560" font-size="50" fill="' + INK + '" fill-opacity=".5" class="n">' + (i + 1) + '</text>', 'left:' + (cxm - 70) + 'px;top:' + (cym - 70) + 'px;transform-origin:70px 70px');
+        '<text x="70" y="88" text-anchor="middle" font-family="Fraunces Variable,serif" font-weight="560" font-size="50" fill="' + INK + '" fill-opacity=".5" class="n">' + (i + 1) + '</text>', 'left:' + (cxm - 70) + 'px;top:' + (cym - 70) + 'px;transform-origin:70px 70px;transform:scale(' + MS + ')');
       marks.push({ el: m, f: m.querySelector('.f'), c: m.querySelector('.c'), n: m.querySelector('.n') }); }
-    const w7b = words(p7.el, 7, ['66:un *tonus* mai *bun*', '50:se simte după primele'], 'top:1192px', { kem: 1.75 });
+    const w7b = words(p7.el, 7, ['68:un *tonus* mai *bun*', '60:se simte după primele'], 'top:1226px', { kem: 1.75 });
     void w7b;
     T.sase = wt(7, /^șase/, 0.95); T.opt = wt(7, /^opt/, 1.45); T.ton = wt(7, /^tonus/, 2.3); T.prim = wt(7, /^primele/, 3.85);
     const markAt = (i) => (i < 6 ? T.sase - 0.12 + i * ((T.opt - T.sase + 0.1) / 6) : T.opt + 0.1 + (i - 6) * 0.14);
@@ -300,17 +301,17 @@
 
     // ---- P8: „EMS se face doar în clinica din Timișoara. Trimite-i clipul prietenei cu care tot amâni sala.” The pin, the paper plane
     const p8 = P(8, 3260, 4100); crop(p8.el);
-    words(p8.el, 8, ['EMS · doar în clinica din'], 'top:436px', { cls: 'kick' });
-    const tm = words(p8.el, 8, ['Timișoara'], 'top:486px;font-size:150px;line-height:1.1', { cls: 'ser', at: S[8] + 0.5 });
-    const pin = svg(p8.el, 90, 120, '<path d="M45 4C22 4 6 21 6 43c0 28 39 71 39 71s39-43 39-71C84 21 68 4 45 4z" fill="' + TEAL + '"/><path d="M45 4C22 4 6 21 6 43c0 10 5 22 12 34C16 50 24 14 58 7 54 5 50 4 45 4z" fill="#fff" fill-opacity=".2"/><circle cx="45" cy="43" r="15" fill="#fff"/>', 'left:495px;top:292px;transform-origin:45px 116px');
-    const pinSh = mk(p8.el, 'position:absolute;left:500px;top:400px;width:80px;height:20px;border-radius:50%;background:radial-gradient(ellipse,rgba(18,32,31,.3),rgba(18,32,31,0) 70%)');
-    const PL = { a: [-460, 1500], c1: [60, 1560], c2: [330, 1150], b: [560, 912] };
+    words(p8.el, 8, ['EMS, doar în clinica din'], 'top:384px', { cls: 'kick' });
+    const tm = words(p8.el, 8, ['Timișoara'], 'top:446px;font-size:160px;line-height:1.1', { cls: 'ser', at: S[8] + 0.5 });
+    const pin = svg(p8.el, 90, 120, '<path d="M45 4C22 4 6 21 6 43c0 28 39 71 39 71s39-43 39-71C84 21 68 4 45 4z" fill="' + TEAL + '"/><path d="M45 4C22 4 6 21 6 43c0 10 5 22 12 34C16 50 24 14 58 7 54 5 50 4 45 4z" fill="#fff" fill-opacity=".2"/><circle cx="45" cy="43" r="15" fill="#fff"/>', 'left:486px;top:226px;transform-origin:45px 116px;width:108px');
+    const pinSh = mk(p8.el, 'position:absolute;left:500px;top:356px;width:80px;height:20px;border-radius:50%;background:radial-gradient(ellipse,rgba(18,32,31,.3),rgba(18,32,31,0) 70%)');
+    const PL = { a: [-460, 1500], c1: [60, 1560], c2: [330, 1130], b: [560, 878] };
     const bez = (u) => { const m = 1 - u, f = (i) => m * m * m * PL.a[i] + 3 * m * m * u * PL.c1[i] + 3 * m * u * u * PL.c2[i] + u * u * u * PL.b[i]; return [f(0), f(1)]; };
     const trail = svg(p8.el, 1080, 1920, '<path d="M' + PL.a + 'C' + PL.c1 + ' ' + PL.c2 + ' ' + PL.b + '" fill="none" stroke="' + TEAL + '" stroke-width="5" stroke-linecap="round" stroke-dasharray="4 20"/>', 'left:0;top:0');
     const trailClip = trail.querySelector('svg'); trail.style.overflow = 'hidden';
-    const plane = obj(p8, 'plane', 560 - 300, 912 - 168, 600, { z: 200, so: 0.3 });
-    const sub8 = words(p8.el, 8, ['58:trimite-i clipul', '168:*prietenei*', '42:cu care tot amâni sala'], 'top:1150px');
-    { const r3 = sub8.el.querySelectorAll('.ln')[2]; r3.style.color = MUTE; r3.style.fontWeight = '540'; r3.style.marginTop = '14px'; }
+    const plane = obj(p8, 'plane', 560 - 335, 878 - 188, 670, { z: 200, so: 0.3 });
+    const sub8 = words(p8.el, 8, ['60:trimite-i clipul', '172:*prietenei*', '58:cu care tot amâni sala'], 'top:1122px');
+    { const r3 = sub8.el.querySelectorAll('.ln')[2]; r3.style.color = MUTE; r3.style.marginTop = '8px'; }
     void tm;
     T.tim = S[8] + 0.62; T.tim2 = wt(8, /^timișoara/, 1.8) + 0.05; T.trim = wt(8, /^trimite/, 2.6); T.pri = wt(8, /^prietenei/, 3.3); T.fly0 = T.trim + 0.32; T.fly1 = T.pri + 0.5;
     shots[8].resolveAt = T.fly1;
@@ -318,7 +319,7 @@
     p8.ticks.push((t) => { const pq = seg(t, T.tim - 0.1, T.tim + 0.2), fall = 1 - pq * pq, bn = (t > T.tim + 0.2 ? Math.exp(-7 * (t - T.tim - 0.2)) * Math.cos(19 * (t - T.tim - 0.2)) : 0) + (t > T.tim2 ? 0.9 * Math.exp(-6 * (t - T.tim2)) * Math.sin(17 * (t - T.tim2)) : 0), hop = t > T.tim2 ? 26 * Math.exp(-5 * (t - T.tim2)) * Math.abs(Math.sin(9 * (t - T.tim2))) : 0;
       pin.style.transform = 'translate(0,' + (-fall * 150 - hop + Math.sin(t * 1.1) * 2).toFixed(2) + 'px) scale(' + (1 + 0.08 * bn).toFixed(4) + ',' + (1 - 0.1 * bn).toFixed(4) + ')'; pin.style.opacity = clamp((t - T.tim + 0.1) * 8).toFixed(3); pinSh.style.opacity = (clamp((t - T.tim + 0.1) * 8) * (1 - fall * 0.7)).toFixed(3); pinSh.style.transform = 'scale(' + (1 + fall * 0.8).toFixed(3) + ')';
       const u = o3(seg(t, T.fly0, T.fly1)), pos = bez(u), nx = bez(Math.min(1, u + 0.01)), pv = bez(Math.max(0, u - 0.01)), ang = Math.atan2(nx[1] - pv[1], nx[0] - pv[0]) * 180 / Math.PI + 27, hov = u >= 1 ? 1 : 0;
-      plane.set(pos[0] - 560 + hov * Math.sin(t * 0.9) * 6, pos[1] - 912 + hov * Math.cos(t * 1.1) * 7, ang + hov * Math.sin(t * 0.7) * 1.2, 0.6 + 0.4 * u, clamp((t - T.fly0) * 6), 200 + (1 - u) * 260 + hov * Math.sin(t * 0.8) * 16);
+      plane.set(pos[0] - 560 + hov * Math.sin(t * 0.9) * 6, pos[1] - 878 + hov * Math.cos(t * 1.1) * 7, ang + hov * Math.sin(t * 0.7) * 1.2, 0.6 + 0.4 * u, clamp((t - T.fly0) * 6), 200 + (1 - u) * 260 + hov * Math.sin(t * 0.8) * 16);
       trailClip.style.clipPath = 'inset(0 ' + (1080 - Math.max(0, pos[0] - 60)).toFixed(1) + 'px 0 0)'; trail.style.opacity = (0.9 * clamp((t - T.fly0) * 4)).toFixed(3); });
 
     [[p0, p1], [p1, p2], [p4, p5], [p5, p6], [p6, p7], [p7, p8]].forEach(([a, b], k) => between(a, b, k));
@@ -329,7 +330,7 @@
     const pose = [
       (t) => ({ x: p0.cx, y: p0.cy, z: 1.0 + 0.04 * sm(seg(t, -0.3, S[1])), r: 0.5 }),
       (t) => ({ x: p1.cx, y: p1.cy, z: 1.0 + 0.04 * sm(seg(t, S[1], S[2])), r: -0.9 }),
-      (t) => { const pk = pushK(t), a = { x: lerp(p2.cx, lensW[0], 0.35), y: p2.cy - 40, z: 1.22 + 0.05 * sm(seg(t, S[2], T.push)), r: 1.2 }, c = { x: cardC[0], y: cardC[1], z: 2.7 * (1 + 0.025 * sm(seg(t, T.pushEnd, S[3]))), r: -CARD.tilt };
+      (t) => { const pk = pushK(t), a = { x: p2.cx, y: p2.cy - 12, z: 1.42 + 0.05 * sm(seg(t, S[2], T.push)), r: 1.2 }, c = { x: cardC[0], y: cardC[1], z: 2.7 * (1 + 0.025 * sm(seg(t, T.pushEnd, S[3]))), r: -CARD.tilt };
         return { x: lerp(a.x, c.x, pk), y: lerp(a.y, c.y, pk), z: Math.exp(lerp(Math.log(a.z), Math.log(c.z), pk)), r: lerp(a.r, c.r, pk), still: pk };
       },
       (t) => ({ x: p3.cx + dx3(t), y: p3.cy, z: 1.0 + 0.03 * sm(seg(t, S[3], S[4])), r: -0.4 }),
