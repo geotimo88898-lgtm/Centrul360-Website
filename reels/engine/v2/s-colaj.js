@@ -92,7 +92,7 @@
             const s = h('span', 'w' + (key ? ' k' : ''), '<span class="wi">' + esc(txt.replace(/_/g, ' ')) + '</span>', row); row.appendChild(document.createTextNode(' '));
             const tw = (o.at != null ? o.at + K.ws.length * (o.stagger || 0.09) : (k >= 0 ? LW[k].t : L[Li].t0)) - 0.08, cap = (Li < 8 ? S[Li + 1] - TA : 1e9) - (key ? 1.0 : 0.85);
             K.ws.push({ s, wi: s.firstChild, key, t: Math.min(tw, cap + K.ws.length * 0.05) }); }); }); });
-      [...el.querySelectorAll('.ln')].forEach((x) => { let fs = parseFloat(x.style.fontSize) || parseFloat(el.style.fontSize) || 60; while (fs > 30 && x.offsetWidth > (o.max || 756)) { fs -= 2; x.style.fontSize = fs + 'px'; } });
+      [...el.querySelectorAll('.ln')].forEach((x) => { let fs = parseFloat(x.style.fontSize) || parseFloat(el.style.fontSize) || 60; while (fs > 30 && x.offsetWidth > (o.max || 722)) { fs -= 2; x.style.fontSize = fs + 'px'; } });
       K.t0 = K.ws[0].t; kin.push(K); return K;
     }
     const txt = (par, html, css, cls) => { const d = h('div', 'tx' + (cls ? ' ' + cls : ''), html, par); d.style.cssText = css; return d; };
@@ -111,10 +111,10 @@
     words(p0.el, 0, ['60:la care stai', '184:*întinsă.*'], 'top:1194px', { q: 1 });
     void w0;
     T.in0 = wt(0, /^întinsă/, 1.7);
-    cue(0.5, 'tap', 0.5); ev(0.5, 'drop'); cue(T.in0, 'tick_soft', 0.5); ev(T.in0, 'reveal'); ev(1.2, 'step');
-    p0.ticks.push((t) => { const a = ex(seg(t, -0.3, 0.75)), fl = Math.sin(t * 0.9) * 5;
-      statue0.set((1 - a) * 300, fl, (1 - a) * 2.5 + Math.sin(t * 0.6) * 0.25, 1, clamp((t + 0.3) * 4), 150 + Math.sin(t * 0.7) * 16);
-      const d = back(seg(t, -0.3, 0.7), 1.1); disc.style.transform = 'translate(' + (Math.sin(t * 0.5) * 6 + (p0.cx - C.x) * 0.02 + C.ty * 0.7).toFixed(2) + 'px,' + ((1 - d) * 120 - C.tx * 0.7).toFixed(2) + 'px) scale(' + (0.7 + 0.3 * d).toFixed(4) + ')'; disc.style.opacity = clamp((t + 0.3) * 3).toFixed(3); });
+    cue(0.86, 'tap', 0.5); ev(0.86, 'drop'); cue(T.in0, 'tick_soft', 0.5); ev(T.in0, 'reveal'); ev(1.2, 'step');
+    p0.ticks.push((t) => { const a = o3(seg(t, -0.25, 1.05)), fl = Math.sin(t * 0.9) * 5;
+      statue0.set((1 - a) * 420, fl, (1 - a) * 3.2 + Math.sin(t * 0.6) * 0.25, 1, clamp((t + 0.25) * 5), 150 + (1 - a) * 180 + Math.sin(t * 0.7) * 16);
+      const d = back(seg(t, -0.2, 1.1), 1.1); disc.style.transform = 'translate(' + (Math.sin(t * 0.5) * 6 + (p0.cx - C.x) * 0.02 + C.ty * 0.7).toFixed(2) + 'px,' + ((1 - d) * 120 - C.tx * 0.7).toFixed(2) + 'px) scale(' + (0.7 + 0.3 * d).toFixed(4) + ')'; disc.style.opacity = clamp((t + 0.25) * 4).toFixed(3); });
 
     // ---- P1: „…mușchiul lucrează mai mult decât ar putea la sală.” The dumbbell
     const p1 = P(1, 1420, 300); crop(p1.el);
@@ -226,7 +226,7 @@
     // ---- P5: „Până la douăzeci de mii de contracții, pe care nu le-ai putea face voluntar, oricât ai trage la sală.” The number, the marker circle
     const p5 = P(5, 6100, 1500); crop(p5.el);
     words(p5.el, 5, ['până la'], 'top:300px', { cls: 'kick' });
-    const numBox = txt(p5.el, '', 'top:420px;font:600 222px/1 ' + SERIF + ';letter-spacing:0;color:' + INK, 'cj-num');
+    const numBox = txt(p5.el, '', 'top:424px;font:600 212px/1 ' + SERIF + ';letter-spacing:0;color:' + INK, 'cj-num');
     const SL = [0.58, 0.58, 0.27, 0.58, 0.58, 0.58];               // six slots: 2 0 . 0 0 0 (fixed, so the number never jumps while it runs)
     numBox.innerHTML = '<span style="display:inline-block;white-space:nowrap">' + SL.map((w, i) => '<span class="d" style="display:inline-block;width:' + w + 'em;text-align:center">' + (i === 2 ? '.' : '0') + '</span>').join('') + '</span>';
     const digs = [...numBox.querySelectorAll('.d')];
@@ -258,17 +258,17 @@
     // ---- P6: „Contracțiile sunt intense, dar nu dor, iar tu stai relaxată tot timpul.” A word flips in place; she rests
     const p6 = P(6, 6100, 3640); crop(p6.el);
     const blk6 = h('div', 'tx', null, p6.el); blk6.style.cssText = 'top:0;height:0';
-    words(blk6, 6, ['contracțiile sunt'], 'top:300px;font-size:58px', { noTx: 1 });
-    const flip = mk(blk6, 'position:absolute;left:0;top:352px;width:1080px;height:230px;perspective:1100px');
-    const fA = mk(flip, 'position:absolute;left:0;width:1080px;top:0;text-align:center;font:600 184px/1.15 ' + SERIF + ';letter-spacing:-.025em;transform-origin:50% 55%;backface-visibility:hidden', null, 'intense');
-    const fB = mk(flip, 'position:absolute;left:0;width:1080px;top:14px;text-align:center;font:italic 470 154px/1.2 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';transform-origin:50% 55%;backface-visibility:hidden', null, 'dar nu dor');
+    words(blk6, 6, ['contracțiile sunt'], 'top:300px;font-size:58px;left:50%;width:max-content;transform:translateX(-50%)', { noTx: 1 });
+    const flip = mk(blk6, 'position:absolute;left:540px;top:352px;width:0;height:0;perspective:1100px;perspective-origin:0 110px');
+    const fA = mk(flip, 'position:absolute;left:0;width:max-content;top:0;white-space:nowrap;font:600 176px/1.15 ' + SERIF + ';letter-spacing:-.025em;transform-origin:50% 55%;backface-visibility:hidden', null, 'intense');
+    const fB = mk(flip, 'position:absolute;left:0;width:max-content;top:14px;white-space:nowrap;font:italic 470 150px/1.2 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';transform-origin:50% 55%;backface-visibility:hidden', null, 'dar nu dor');
     const pulse6 = svg(p6.el, 1500, 200, '<path d="" fill="none" stroke="' + TEAL + '" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>', 'left:-210px;top:880px');
     const statue6 = obj(p6, 'statue', 62, 664, 956, { z: 140, so: 0.34 });
     words(p6.el, 6, ['58:iar tu stai', '160:*relaxată*'], 'top:1264px');
     T.inte = wt(6, /^intense/, 1.0); T.dar = wt(6, /^dar$/, 1.45); T.rel = wt(6, /^relaxată/, 2.7);
     cue(T.inte, 'tick_soft', 0.5); ev(T.inte, 'reveal'); cue(T.dar + 0.16, 'tap', 0.6); ev(T.dar + 0.16, 'flip'); cue(T.rel, 'tick_soft', 0.5); ev(T.rel, 'step'); cue(S[6] + 0.45, 'tap', 0.45); ev(S[6] + 0.45, 'drop'); ev(T.rel + 0.9, 'step');
     p6.ticks.push((t) => { const lt = t - S[6], a = ex(seg(lt, -0.2, 0.75)), f = io(seg(t, T.dar - 0.02, T.dar + 0.42)), ain = ex(seg(t, T.inte - 0.1, T.inte + 0.4));
-      fA.style.transform = 'translateY(' + ((1 - ain) * 60).toFixed(2) + 'px) rotateX(' + (f * 180).toFixed(2) + 'deg)'; fA.style.opacity = f < 0.5 ? ain.toFixed(3) : '0'; fB.style.transform = 'rotateX(' + ((f - 1) * 180).toFixed(2) + 'deg)'; fB.style.opacity = f >= 0.5 ? '1' : '0';
+      fA.style.transform = 'translateX(-50%) translateY(' + ((1 - ain) * 60).toFixed(2) + 'px) rotateX(' + (f * 180).toFixed(2) + 'deg)'; fA.style.opacity = f < 0.5 ? ain.toFixed(3) : '0'; fB.style.transform = 'translateX(-50%) rotateX(' + ((f - 1) * 180).toFixed(2) + 'deg)'; fB.style.opacity = f >= 0.5 ? '1' : '0';
       blk6.style.filter = (ain < 1 && t > T.inte - 0.1) || (f > 0 && f < 1) ? 'blur(0px)' : '';
       statue6.set((1 - a) * -260, Math.sin(t * 0.85) * 4, (1 - a) * -2 + Math.sin(t * 0.55) * 0.22, 1, clamp((lt + 0.2) * 4), 140 + Math.sin(t * 0.7) * 14);
       let d = 'M0 100'; for (let x = 0; x <= 1500; x += 6) { const u = (x - ((t * 420) % 300)), k = ((u % 300) + 300) % 300, y = k < 16 ? -62 * (k / 16) : k < 30 ? -62 + 82 * ((k - 16) / 14) : k < 46 ? 20 * (1 - (k - 30) / 16) : 0; d += 'L' + x + ' ' + (100 + y).toFixed(1); }

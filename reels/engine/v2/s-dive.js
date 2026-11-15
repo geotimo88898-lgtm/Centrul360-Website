@@ -36,7 +36,7 @@
   const colAt = (y) => { if (y <= STOPS[0][0]) return STOPS[0][1]; for (let i = 1; i < STOPS.length; i++) if (y <= STOPS[i][0]) return mixc(STOPS[i - 1][1], STOPS[i][1], (y - STOPS[i - 1][0]) / (STOPS[i][0] - STOPS[i - 1][0])); return STOPS[STOPS.length - 1][1]; };
   // an ease built from a velocity profile: slow start, the fastest moment at pc, then a quick, soft stop
   function profile(pc, nIn, nOut) { const N = 600, tb = [0]; let s = 0; for (let i = 1; i <= N; i++) { const p = (i - 0.5) / N; s += p < pc ? Math.pow(p / pc, nIn) : Math.pow((1 - p) / (1 - pc), nOut); tb.push(s); } return (p) => { p = clamp(p) * N; const i = Math.min(N - 1, Math.floor(p)); return (tb[i] + (tb[i + 1] - tb[i]) * (p - i)) / s; }; }
-  const wt = (L, re, dflt) => { const w = L.words.find((x) => re.test(x.w)); return w ? w.t : (dflt != null ? dflt : L.t0); };
+  const wt = (L, re, dflt) => { const w = (L.wv || L.words).find((x) => re.test(x.w.replace(/[.,;:]/g, ''))); return w ? w.t : (dflt != null ? dflt : L.t0); };
   const mk = (w, hh) => { const c = document.createElement('canvas'); c.width = w; c.height = hh; return c; };
 
   let W = null;
@@ -45,6 +45,8 @@
     W = {};
     const shots = TYPES.map((tp) => R.shots.find((s) => s.vis.type === tp)), L = shots.map((s) => s.lines[0]);
     const S = shots.map((s) => s.t0), total = R.total;
+    // the words' times, measured on the voice (script "words", wordtimes.py: the spoken text, numbers as words); else the engine's estimate
+    L.forEach((ln, i) => { const m = R.script.words && R.script.words['L' + i]; ln.wv = m && ln.voiced ? m.map(([w, t]) => ({ w, t: ln.t0 + t })) : ln.words.map((x) => ({ w: x.w, t: x.t })); });
     // ---------------------------------------------------------------- the clock: every moment from the voice
     const T = { land: 0.42 };
     T.s1 = S[1]; T.sink = wt(L[1], /^mai$/i, L[1].t0 + 1.5) - 0.12; T.s2 = S[2]; T.arrive = T.s2 + 0.86;
@@ -167,21 +169,21 @@
     function phrase(Li, lines, o) {
       const el = h('div', 'tx ' + (o.dk ? 'dk' : 'lt'), null, root); el.style.cssText = 'position:absolute;top:' + o.y + 'px;font-size:' + (o.size || 80) + 'px;z-index:5';
       if (o.q) el.dataset.q = '1';
-      const P = { el, ws: [], out: o.out, o, Li }; let last = -1; const LW = L[Li].words;
+      const P = { el, ws: [], out: o.out, o, Li }; let last = -1; const LW = L[Li].wv;
       const nrm = (x) => x.toLowerCase().replace(/[^a-zăâîșț0-9-]/g, '');
       lines.forEach((ln) => { const row = h('span', 'ln', null, el);
         ln.split(/(\*[^*]+\*)/).forEach((part) => { if (!part) return; const key = /^\*/.test(part);
           part.replace(/\*/g, '').split(/\s+/).filter(Boolean).forEach((tok) => { const [txt, sync] = tok.split('|');
             const want = nrm(sync || txt); let k = LW.findIndex((x, i) => i > last && (sync ? nrm(x.w).startsWith(want) : nrm(x.w) === want)); if (k < 0) k = last; else last = k;
             const s = h('span', 'w' + (key ? ' k' : ''), esc(txt), row); row.appendChild(document.createTextNode(' '));
-            P.ws.push({ s, key, t: (k >= 0 ? LW[k].t : L[Li].t0) - 0.07 + (o.dt || 0) }); }); }); });
+            P.ws.push({ s, key, t: Math.min((k >= 0 ? LW[k].t : L[Li].t0) - 0.07 + (o.dt || 0), o.cap != null ? o.cap + P.ws.length * 0.05 : 1e9) }); }); }); });
       let fs = o.size || 80; const lns = [...el.querySelectorAll('.ln')]; while (fs > 44 && lns.some((x) => x.offsetWidth > 756)) { fs -= 2; el.style.fontSize = fs + 'px'; }
       P.t0 = P.ws[0].t; phrases.push(P); return P;
     }
     const TOP = 372;
-    phrase(0, ['Crema ta de față', 'lucrează doar', 'la *suprafață*'], { y: 0, worldY: -140 + 286 - 960, fadeY: 120, out: T.s1 + 0.5, q: 1, size: 90 });
+    phrase(0, ['Crema ta de față', 'lucrează doar', 'la *suprafață*'], { y: 0, worldY: -140 + 286 - 960, fadeY: 120, out: T.s1 + 0.5, q: 1, size: 90, cap: T.s1 - 1.25 });
     phrase(1, ['Fermitatea pielii', 'se hotărăște', '*mai|mai jos|jos*'], { y: 0, dk: 1, out: T.s2 - 0.05, worldY: 330 + 30, fadeY: 250, size: 84 });
-    phrase(1, ['în *straturile*', '*profunde*'], { y: TOP - 30, dk: 1, out: wt(L[2], /^pielea$/i) - 0.1, size: 84, dt: 0.45 });
+    phrase(1, ['în *straturile*', '*profunde*'], { y: TOP - 30, dk: 1, out: wt(L[2], /^pielea$/i) - 0.1, size: 84 });
     phrase(2, ['tot mai puțin', '*colagen* și *elastină*'], { y: TOP - 20, dk: 1, out: T.scade - 0.25, size: 84 });
     const pScade = phrase(2, ['fermitatea *scade*'], { y: TOP + 30, dk: 1, out: T.s3 - 0.3, size: 86 });
     phrase(3, ['există totuși', 'o *cale*'], { y: TOP - 40, dk: 1, out: T.acolo - 0.2, size: 86 });
@@ -199,8 +201,8 @@
     // the ring's own text: the weeks counted, then „8-12 săptămâni” (the site: „maxim la 8-12 săptămâni de la ședință”)
     const rtx = h('div', 'tx dk', '<div class="n"></div><div class="u"><span class="k" style="font-size:1em">săptămâni</span></div><div class="s">de la ședință</div>', root); rtx.style.cssText = 'position:absolute;top:0;height:0;z-index:5;color:#fff';
     const num = rtx.querySelector('.n'), unit = rtx.querySelector('.u'), sub = rtx.querySelector('.s');
-    num.style.cssText = 'position:absolute;left:0;width:1080px;top:742px;font:760 204px/1 ' + SANS + ';letter-spacing:-.06em;font-variant-numeric:tabular-nums';
-    unit.style.cssText = 'position:absolute;left:0;width:1080px;top:946px;font-size:70px'; sub.style.cssText = 'position:absolute;left:0;width:1080px;top:1046px;font:560 36px/1 ' + SANS + ';letter-spacing:.01em;color:rgba(255,255,255,.84)';
+    num.style.cssText = 'position:absolute;left:540px;width:max-content;top:742px;font:760 204px/1 ' + SANS + ';letter-spacing:-.06em;font-variant-numeric:tabular-nums';
+    unit.style.cssText = 'position:absolute;left:540px;width:max-content;top:946px;font-size:70px'; sub.style.cssText = 'position:absolute;left:540px;width:max-content;top:1046px;font:560 36px/1 ' + SANS + ';letter-spacing:.01em;color:rgba(255,255,255,.84)';
     // the comment pill (a glass card with thickness): the avatar, the typed word, the send button the dot becomes
     const pill = h('div', null, '<i class="av"></i><span class="tx pt"></span><i class="sd"></i>', root);
     pill.style.cssText = 'position:absolute;left:160px;top:820px;width:760px;height:156px;border-radius:78px;z-index:5;background:linear-gradient(180deg,#ffffff,#f4fbfa);' +
@@ -210,7 +212,7 @@
     const ptxt = pill.querySelector('.pt'); ptxt.style.cssText = 'position:absolute;left:162px;top:42px;width:auto;text-align:left;font:680 68px/72px ' + SANS + ';letter-spacing:-.02em;color:#12201f';
     const sd = pill.querySelector('.sd'); sd.style.cssText = 'position:absolute;right:24px;top:24px;width:108px;height:108px;border-radius:50%;background:#ffffff;box-shadow:0 0 0 3px #dcf2ef inset,0 10px 22px -10px rgba(11,127,116,.5)';
     sd.innerHTML = '<svg viewBox="0 0 96 96" width="108" height="108"><path class="ck" d="M33 49l11 11 20-23" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>';
-    const ck = sd.querySelector('.ck');
+    const ck = sd.querySelector('.ck'); const sdot = h('i', null, null, sd); sdot.style.cssText = 'position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff,#fbe3d9 35%,#eab5a5 70%,#cf8f7d);box-shadow:0 0 22px 8px rgba(234,181,165,.45)';
 
     // ---------------------------------------------------------------- sounds and events (the engine adds the whoosh on every cut)
     const cue = (t, cat, gain, o) => R.cue(t, cat, gain, o), ev = (t, kind) => R.event(t, kind || 'step');
@@ -415,6 +417,7 @@
       let A = null;
       lay('mid', 1, (x) => { drawSheets(x, cy, z, cx, t); dots(x, 1, cy, z, cx, t, spK); drawSurface(x, cy, z, cx, t); A = drawNet(x, cy, z, cx, t); if (A) drawEnergy(x, A, t); });
       lay('near', PAR[2], (x) => dots(x, 2, cy, z, cx, t, spK));
+      const pin = seg(t, T.up - 0.25, T.up + 0.45), pe = back(pin, 1.2), fl2 = Math.sin(t * 1.15) * 5; W.pillY = 820 + (1 - pe) * 520 + fl2;
       // the ring (it belongs to the deep: it stays behind when the camera rises)
       const yUp = (YD - cy) * z, ring = drawRing(t, t > T.s8 - 0.4 ? yUp : 0);
       // the guide dot: on the surface under the jar, ahead of the camera in the dive, on the net's centre, on the ring, in the send button
@@ -437,7 +440,7 @@
       else if (ring && t < T.s8 - 0.2) { dp = [ring.x, ring.y]; ds = 1.15 + 0.3 * Math.exp(-6 * Math.max(0, t - T.w12)) * (t > T.w12 ? 1 : 0); }
       else { // it leaves the ring, rises with the camera and settles into the send button
         const bx = 160 + 760 - 24 - 54, by = W.pillY + 78, q = io(seg(t, T.s8 - 0.2, T.up + 0.35)); const from = ring ? [ring.x, ring.y] : [540, 600];
-        dp = [lerp(from[0], bx, q), lerp(Math.min(from[1], 1500), by, q) - Math.sin(Math.PI * q) * 260]; ds = lerp(1.15, 1.5, q) * (1 - 0.12 * Math.sin(Math.PI * seg(t, T.send, T.send + 0.3))); da = 1; W.dotBtn = q >= 1; }
+        dp = [lerp(from[0], bx, q), lerp(Math.min(from[1], 1500), by, q) - Math.sin(Math.PI * q) * 260]; ds = lerp(1.15, 1.9, q) * (1 + 0.25 * Math.sin(Math.PI * seg(t, T.send, T.send + 0.3))); da = 1 - sm(seg(q, 0.9, 1)); W.dq = q; }
       if (dp) drawDot(g, dp[0], dp[1], ds, da, tail);
 
       // ------------------------------------------------------------ the type
@@ -463,12 +466,10 @@
       if (showN) { const wkI = Math.max(1, Math.min(12, Math.floor(ring.wk + 0.0001))), done = t >= T.w12, inq = ex(seg(t, T.w0 - 0.1, T.w0 + 0.4)), mv = inq < 1 || rise !== 0;
         const txt = done ? '8-12' : String(ring.wk < 8 ? wkI : Math.min(wkI, 11)); if (num.textContent !== txt) num.textContent = txt;
         const pop = done ? 1 + 0.1 * Math.exp(-7 * (t - T.w12)) * Math.cos(16 * (t - T.w12)) : 1 + 0.035 * Math.exp(-14 * (ring.wk - Math.floor(ring.wk)));
-        num.style.transform = 'translateY(' + (rise + (1 - inq) * 30).toFixed(2) + 'px) scale(' + pop.toFixed(4) + ')'; num.style.opacity = inq.toFixed(3); num.style.filter = mv ? 'blur(' + ((1 - inq) * 10).toFixed(2) + 'px)' : '';
-        const uq = ex(seg(t, T.w0 + 0.1, T.w0 + 0.6)); unit.style.transform = 'translateY(' + (rise + (1 - uq) * 22).toFixed(2) + 'px)'; unit.style.opacity = uq.toFixed(3); unit.style.filter = uq < 1 || rise ? 'blur(' + ((1 - uq) * 8).toFixed(2) + 'px)' : '';
-        const sq = ex(seg(t, T.sed - 0.05, T.sed + 0.4)); sub.style.transform = 'translateY(' + (rise + (1 - sq) * 16).toFixed(2) + 'px)'; sub.style.opacity = sq.toFixed(3); sub.style.filter = sq < 1 || rise ? 'blur(' + ((1 - sq) * 6).toFixed(2) + 'px)' : ''; }
+        num.style.transform = 'translateX(-50%) translateY(' + (rise + (1 - inq) * 30).toFixed(2) + 'px) scale(' + pop.toFixed(4) + ')'; num.style.opacity = inq.toFixed(3); num.style.filter = mv ? 'blur(' + ((1 - inq) * 10).toFixed(2) + 'px)' : '';
+        const uq = ex(seg(t, T.w0 + 0.1, T.w0 + 0.6)); unit.style.transform = 'translateX(-50%) translateY(' + (rise + (1 - uq) * 22).toFixed(2) + 'px)'; unit.style.opacity = uq.toFixed(3); unit.style.filter = uq < 1 || rise ? 'blur(' + ((1 - uq) * 8).toFixed(2) + 'px)' : '';
+        const sq = ex(seg(t, T.sed - 0.05, T.sed + 0.4)); sub.style.transform = 'translateX(-50%) translateY(' + (rise + (1 - sq) * 16).toFixed(2) + 'px)'; sub.style.opacity = sq.toFixed(3); sub.style.filter = sq < 1 || rise ? 'blur(' + ((1 - sq) * 6).toFixed(2) + 'px)' : ''; }
       // the comment pill: it floats in the daylight; the word is typed on the voice; the dot is the send button
-      const pin = seg(t, T.up - 0.25, T.up + 0.45), pe = back(pin, 1.2), fl2 = Math.sin(t * 1.15) * 5;
-      W.pillY = 820 + (1 - pe) * 520 + fl2;
       pill.style.display = t > T.up - 0.3 ? 'block' : 'none';
       if (t > T.up - 0.3) { const press = Math.exp(-9 * Math.max(0, t - T.send)) * (t > T.send ? 1 : 0);
         pill.style.transform = 'translateY(' + ((1 - pe) * 520 + fl2).toFixed(2) + 'px) perspective(1600px) rotateX(' + (6 * (1 - pe) + 2.2 + Math.sin(t * 0.8) * 0.8).toFixed(2) + 'deg) rotateY(' + (Math.sin(t * 0.6) * 1.2).toFixed(2) + 'deg) scale(' + (1 - 0.025 * press).toFixed(4) + ')';
@@ -477,7 +478,8 @@
         const html = (typed ? esc(typed) : '<span style="color:#9bb0ad;font-weight:540;font-size:40px;letter-spacing:-.01em">Adaugă un comentariu…</span>') + (caret && typed ? '<i style="display:inline-block;width:5px;height:62px;margin-left:6px;border-radius:2px;background:#14a596;vertical-align:-9px"></i>' : '');
         if (ptxt._h !== html) { ptxt._h = html; ptxt.innerHTML = html; }
         const sq = sm(seg(t, T.send, T.send + 0.25)); sd.style.background = 'rgb(' + mixc([255, 255, 255], [20, 165, 150], sq).join(',') + ')'; sd.style.transform = 'scale(' + (1 + 0.12 * press).toFixed(4) + ')';
-        ck.style.strokeDashoffset = (1 - io(seg(t, T.send + 0.05, T.send + 0.4))).toFixed(3); W.sent = sq; }
+        ck.style.strokeDashoffset = (1 - io(seg(t, T.send + 0.05, T.send + 0.4))).toFixed(3);
+        const dq = io(seg(t, T.s8 - 0.2, T.up + 0.35)); sdot.style.opacity = (sm(seg(dq, 0.9, 1)) * (1 - sq)).toFixed(3); sdot.style.transform = 'scale(' + (1 + 0.12 * Math.sin(t * 3) + 0.5 * press).toFixed(3) + ')'; }
       grain.style.transform = 'translate(' + Math.floor(rnd(Math.floor(t * 15), 91) * 256) + 'px,' + Math.floor(rnd(Math.floor(t * 15), 92) * 256) + 'px)';
       cv.style.transform = 'translateZ(0)'; cv.style.opacity = (0.999 + 0.001 * Math.sin(t * 40)).toFixed(4);
     };

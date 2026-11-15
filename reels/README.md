@@ -206,6 +206,17 @@ false nu merge pentru o clinică). Replicile, în română, calme și istețe, n
 răbdare (de ex. rezultatele care vin treptat, în 6-8 săptămâni). Un final blând spre site sau „360”, logo-ul doar la
 sfârșit. Aceleași reguli ca filmele de brand (`"kind": "brand"`): ocazional, fără voce (sau o singură replică foarte
 încet), piesa proprietarului.
+Primul nostru (15.11): `scripts/v2-suspans-hifu`, scena `suspans` (`engine/v2/s-suspans.js`), 18,2 s pe „WE ON GO II”.
+Ideea: „O ședință de HIFU. Apoi, liniște.” Un cadru alb, text mic pe centru și un singur obiect: o clepsidră uriașă,
+tăiată de cadru, din sticlă alb-negru cu nisip turcoaz. Boabele cad câte unul și fiecare aterizează pe o bătaie, cu
+tick-ul lui pe același cadru; contorul „Săptămâna 1” … „Săptămâna 8” urcă pe loviturile de bas, boabele vin tot mai des,
+apoi șuvoi; când sus se termină nisipul, piesa tace, cade încet un singur bob rose gold, iar cadrul în care aterizează
+e lovitura piesei: poza reală „înainte”, peste care trece o cortină de nisip și rămâne „după” (mișcarea doar a acestui
+reel), apoi cele două alături, cu rândurile din catalog. Ultima propoziție e a site-ului („Colagenul are nevoie de
+timp.”), iar punctul ei e bobul rose gold. Contorul se oprește unde spune catalogul la acel caz (6-8 săptămâni).
+Tipul lui în script e `"kind": "silent"`: un reel fără voce care duce o idee cu text pe ecran și un caz real;
+`check2.cjs` sare regulile de poveste ca la brand, nu cere logo la final și primește un sunet moale pe cadrul 0 în loc
+de lovitură. Fișierul curat al unui asemenea reel iese sub -14 LUFS (aproape tot e liniște): e normal, nu se forțează.
 
 **(vii) Lansarea** (instagram.com/reel/DeO1Rh7x5Qm, trimis 14.11; referința e în 16:9, la noi 9:16). Cum arată: un film
 de lansare calm și premium, de la problemă la soluție, fără voce, cam 20 s: câmpuri de gradient difuze, ca o auroră,
@@ -308,14 +319,19 @@ plutitoare, ca iconiță de aplicație, pe hârtie, pe un ecran, pe o cască, pe
 paletă, fiecare tăietură pe bătaie; identitatea pare să trăiască peste tot, fără niciun cuvânt. La noi (`"kind":
 "brand"`, fără voce; singurul loc unde logo-ul e chiar subiectul; merge și ca intro sau outro): logo-ul real (semnul și
 CENTRUL360.COM, din `brand_asset`), fix ca loc și mărime; în spate, mai ales lucruri reale: pozele clinicii (recepția,
-sălile, aparatele, fiolele, raftul, monstera), aduse la paletă (monocrom turcoaz) cu o apropiere lentă, și site-ul pe un
-telefon (`site.cjs`); plus suprafețe desenate din cod: o carte de sticlă, hârtie în lumina ferestrei cu umbre, un cuvânt
+sălile, aparatele, fiolele, raftul, monstera), în alb-negru adevărat (proprietarul, 15.11: „alb negru cu accente
+turcoaz, logoul negru pe alb”), cu o apropiere lentă, și site-ul pe un telefon (`site.cjs`); plus suprafețe desenate din cod: o carte de sticlă, hârtie în lumina ferestrei cu umbre, un cuvânt
 uriaș în spate („CORP”, „FAȚĂ”, „PIELE”), o fișă tehnică și o grilă elvețiană doar cu date reale (Timișoara · Arad,
 centrul360.com, anul, serviciile de pe site). Fără merchandise inventat (cască, geacă, sacoșă pe care nu le avem).
 Ritmul: tăieturi de la o bătaie (~0,46 s), apoi la jumătate de bătaie (~0,23 s), apoi finalul ținut ~2 s pe logo, pe
-alb curat, cu un singur accent rose gold. Sunetul v3: un tap sau un tic moale pe fiecare tăietură și un riser moale spre
-final. Fără strobe: tăieturi cu dizolvare de două cadre și dizolvări mai lungi unde lumina se schimbă mult (sub 10 % pe
-cadru; verificarea de flash). Motorul: scena `logoanchor` (`engine/v2/brand.js`); exemplul: `scripts/v2-brand-logo-01`.
+alb curat. Varianta aprobată ca direcție (15.11): logo-ul negru stă pe o bandă albă fixă, cu o etichetă turcoaz în
+stânga (orașul pozei) și un contor de cadre în dreapta; fiecare schimbare e o expunere: o cortină coboară în trei-patru
+cadre și se aude declanșatorul (`shutter`, pe cadrul schimbării, la fiecare slide); cuvintele uriașe sunt turcoaz,
+condensate; la final banda albă se deschide peste tot cadrul cu un swoosh (`swoosh_end`, vârful pe cadru) și o linie
+turcoaz se trage sub logo. Fără strobe: slide-urile luminoase și pozele sunt grupate, pozele sunt aduse la aceeași
+luminozitate și schimbarea alb ↔ poză ține patru cadre (verificarea de flash: cel mult 3 salturi mari pe secundă).
+Motorul: scena `logoanchor` (`engine/v2/brand.js`, felurile `photo`, `word`, `paper`, `glass`, `grid`); exemplul:
+`scripts/v2-brand-logo-01`.
 
 **Combinații** (principiul proprietarului din 14.11: „poți să le și combini una cu alta, creativitatea e limita, iar în
 cazul nostru nu cred că avem limite”). Cele douăsprezece formate sunt piese de construcție, nu șabloane. Un reel le poate
@@ -343,7 +359,7 @@ numai în previzualizări: proprietarul postează din aplicații fișierul `-cle
 | fișier | starea | pentru ce formate | de unde pornește |
 |---|---|---|---|
 | `owner-free.wav` („Free”, Ultra Naté) | house anii '90, cald, cu energie constantă | reels-urile educative (data-viz, explicația în blocuri), cazurile | de la început: primul downbeat, 0,395 s; 125,01 BPM |
-| `owner-weongo.wav` („WE ON GO II”, feat. Denzel Curry, 3:16) | „unexpected edits”, pielea de găină | (vi) suspansul minimalist, (xii) logo-ancora, scheciul 3D, o dezvăluire dramatică, un înainte/după puternic | partea cu „honorable” (alegerea proprietarului): 0,1-11,8 s (măsurată la `v2-brand-logo-01`; „Honorable, honorable” la 0-1,5 s, apoi ad-lib-uri, „Here we go” de la ~12 s); primul downbeat 0,114 s, 131,01 BPM; după ~24 s versurile devin explicite: nu se folosesc |
+| `owner-weongo.wav` („WE ON GO II”, feat. Denzel Curry, 3:16) | „unexpected edits”, pielea de găină | (vi) suspansul minimalist, (xii) logo-ancora, scheciul 3D, o dezvăluire dramatică, un înainte/după puternic | partea cu „honorable” (alegerea proprietarului): 0,1-11,8 s (măsurată la `v2-brand-logo-01`; „Honorable, honorable” la 0-1,5 s, apoi ad-lib-uri, „Here we go” de la ~12 s); primul downbeat 0,114 s, 131,01 BPM; basul cade rar, la bătăile 3, 5, 8, 9,5, 10,5, 13, 14,5, 16 și apoi la fel la fiecare 16 bătăi (19, 21, 24 …), toate la aproape același nivel; cel mai lung gol e înaintea bătăilor 8, 24 și 40 (lovitura de la 11,094 s e dezvăluirea din `v2-suspans-hifu`); după ~24 s versurile devin explicite: nu se folosesc |
 | `owner-trainingseason.wav` („Training Season”, live, Royal Albert Hall, 3:41) | „loved by our audience”, spontan, ușor | reels-urile spontane, edit-uri ușoare: Nuki, din culise, un sfat rapid | la lovitura muzicii, 10,17 s (primele ~10 s sunt intro live care se stinge, -19 → -35 dB); 123,01 BPM; din intro doar dacă reel-ul vrea atmosfera de concert |
 
 Alegerea: piesa după starea reel-ului, și niciodată aceeași piesă la două reels la rând (`check2.cjs` avertizează când
@@ -531,8 +547,8 @@ le-a aprobat proprietarul):
 - **Fiecare eveniment vizual are sunetul lui, aliniat la cadru**: un text care apare primește tic-uri moi (`tick_soft`,
   câte unul pe cuvânt), un panou sau o carte care aterizează primește un „tap” (`tap`), o tăietură primește un whoosh
   al cărui vârf cade exact pe tăietură (`whoosh_cut`, așezat de `mix.py` după vârful lui), un obiect-erou are un singur
-  sunet-semnătură (punctul-ghid: `dot`). Biblioteca mică și liniștită e în `engine/sfx/v2` (`python3 sfx.py --v3`); fără
-  efecte de desen animat. Stă sub voce: vocea rămâne perfect clară, muzica la nivelul hotărât de proprietar, fără
+  sunet-semnătură (punctul-ghid: `dot`). Biblioteca e setul premium din `engine/sfx/v3` (`python3 sfx.py --v3`, vezi mai
+  jos); fără efecte de desen animat. Stă sub voce: vocea rămâne perfect clară, muzica la nivelul hotărât de proprietar, fără
   ducking. `mix.py` raportează sincronizarea: câte tăieturi au un whoosh cu vârful pe ele (±1 cadru) și câte intrări
   importante au sunetul lor (±1 cadru).
 - **Un motiv-ghid** (`"motif": "dot"`): un punct mic de lumină rose gold duce privirea dintr-o scenă în alta; la fiecare
@@ -562,8 +578,35 @@ le-a aprobat proprietarul):
   hotărăște altfel.
 - Scenele noi pentru asta (`engine/v2/edit.js`): `writeon` (un rând mic scris de punctul de lumină, cu tic pe cuvânt),
   `panels` (panouri verticale care intră una după alta pe grilă, cu tap), `titlecard` (titlul mare, accentul, cele trei
-  rânduri și cartea reală care îl acoperă, cu linia despre acord; ținut). Demonstrația: `scripts/v2-demo-sfx`
-  (`"kind": "demo"`, nu se postează), `out/v2-demo-sfx.mp4`.
+  rânduri și cartea reală care îl acoperă, cu linia despre acord; ținut).
+- **Setul premium de sunete** (15.11, proprietarul: „fă-le cu sound effects nice, nu doar așa”; `engine/sfx/v3`, făcut
+  de `python3 sfx.py --v3`): fiecare sunet e din straturi (un tranzient, un corp, o coadă), cu puțină cameră, stereo, în
+  3-8 variante, niciodată un bip. Numele categoriilor sunt stabile: `shutter` (oglinda, cele două cortine, întoarcerea,
+  motorul; modelat după declanșatorul din referința 13), `tick_soft`, `tap`, `dot`, `whoosh_cut`, `swoosh_end`,
+  `whoosh_through` (trecerea camerei printr-un obiect), `riser_soft`, `card_flip`, `shimmer_soft`, `grain` (un bob de
+  nisip pe sticlă), `sand_flow` (șuvoi care se îngroașă), `pulse` (o bătaie joasă, moale), `suck_in`, `hit_deep`
+  (lovitura). `mix.py` (sunet `v3`) ia întâi `sfx/v3`, apoi, dacă există, un sunet real din `sfx/ov` pentru aceeași
+  categorie. Fișierele nu au fade la început, ca tranzientul să cadă pe cadrul lui; un sunet cu `peak: true` (whoosh,
+  swoosh, riser) e așezat cu vârful pe cadrul evenimentului. `shutter`, `tick_soft`, `tap`, `grain`, `card_flip` nu se
+  răresc niciodată: câte evenimente se văd, atâtea se aud. Sunetele se judecă din măsurători (spectru, anvelopă, cadru),
+  nu cu modelul care ascultă: el descrie aproape orice efect scurt ca pe un clic.
+- **Fără lovitură pusă din oficiu pe cadrul 0**: `"hookHit": false` în script, pentru un reel care începe cu sunetul
+  lui (declanșatorul, un tick moale). Altfel motorul pune singur un `impact` pe primul cadru.
+- **Piesa de demonstrație** (15.11, proprietarul: „mult mult mai clean și foarte profesional, cu un zoom in poate insane,
+  cu lumină foarte nice și movement constant, și chenare 3D etc. care dau în animații crazy”): `scripts/v2-demo-sfx`
+  (`"kind": "demo"`, nu se postează), scena `showpiece` (`engine/v2/s-demo.js`), `out/v2-demo-sfx.mp4`. E ștacheta pentru
+  orice scenă nouă: o cameră care nu se oprește niciodată (împinge sau plutește mereu); un singur zoom mare (camera zboară
+  prin bucla unei litere, cu blur de mișcare din viteza ei și profunzime de câmp); lumină dintr-o parte, cu umbre moi
+  sub fiecare obiect și reflexii care trec; cărți 3D cu grosime, din materiale (hârtie, poză reală alb-negru, sticlă
+  turcoaz, negru lucios), care se întorc, stau în evantai și trec pe lângă obiectiv; puține elemente, mari, perfect
+  aliniate și centrate; alb, negru și un accent turcoaz. Tehnic: o lume CSS 3D cu `perspective` și transformarea inversă
+  a camerei, totul funcție pură de timp; blur-ul se pune pe fețele cărții, nu pe containerul 3D (opacitatea sau filtrul
+  pe el îl turtește).
+- **Reel numărat înapoi de la lovitură** (15.11, `v2-suspans-hifu`): măsori loviturile piesei (`beats.py`, apoi începutul
+  fiecărei lovituri la milisecundă), alegi lovitura dezvăluirii și pui `"musicStart"` astfel încât ea să cadă exact pe
+  începutul unui cadru; tot ce e înainte se programează de la ea înapoi, pe bătăile piesei (un bob care cade pleacă de
+  sus cu atât mai devreme cu cât durează căderea, ca să aterizeze pe bătaie). Liniștea dinaintea loviturii rămâne
+  liniște: fără riser, fără suck-in.
 - **Sunete reale** (`engine/openverse.py`): caută în Openverse doar sunete CC0 sau Public Domain Mark (fără obligații,
   merg comercial) și le pune în `engine/sfx/ov/<categorie>_<id>.wav`; proveniența (sursa, autorul, licența) stă în
   `openverse-library.json`, comis; fișierele audio nu se comit (`sfx/` e ignorat; `python3 openverse.py fetch` le reface).

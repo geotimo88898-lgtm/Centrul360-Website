@@ -39,22 +39,26 @@
     // ---- text (DOM): small, centred
     const FONT = "'Inter Variable',sans-serif";
     const txt = (top, css, html) => { const e = h('div', null, html, root); e.style.cssText = 'position:absolute;left:0;width:1080px;top:' + top + 'px;text-align:center;white-space:nowrap;color:' + INK + ';opacity:0;' + css; return e; };
-    const l1 = txt(868, 'font:600 58px/1.1 ' + FONT + ';letter-spacing:-.025em', 'O ședință de HIFU<span class="pd" style="position:relative;display:inline-block;width:.17em;height:.17em;border-radius:50%;background:' + TEAL + ';margin-left:.045em"></span>');
+    const BIG = p.big || 98, wsp = (tx) => tx.split(' ').map((w) => '<span class="w" style="display:inline-block">' + esc(w) + '</span>').join(' ');
+    const l1 = txt(900 - BIG * 0.55, 'font:600 ' + BIG + 'px/1.1 ' + FONT + ';letter-spacing:-.03em', wsp('O ședință de HIFU') + '<span class="pd" style="position:relative;display:inline-block;width:.17em;height:.17em;border-radius:50%;background:' + TEAL + ';margin-left:.045em"></span>');
     const ring = h('i', null, null, l1.querySelector('.pd')); ring.style.cssText = 'position:absolute;left:50%;top:50%;border-radius:50%;border:3px solid ' + TEAL + ';box-sizing:border-box;opacity:0';
-    const l2 = txt(868, 'font:600 58px/1.1 ' + FONT + ';letter-spacing:-.025em', 'Apoi, liniște.');
+    const l2 = txt(900 - BIG * 0.55, 'font:600 ' + BIG + 'px/1.1 ' + FONT + ';letter-spacing:-.03em', wsp('Apoi, liniște.'));
+    const w1 = [...l1.querySelectorAll('.w')], w2 = [...l2.querySelectorAll('.w')], tw1 = [0, 0.12, 0.27, 0.39], tDotIn = 0.6;
+    const wordIn = (e, q) => { e.style.opacity = q.toFixed(3); e.style.filter = q < 1 ? 'blur(' + ((1 - q) * 16).toFixed(1) + 'px)' : ''; e.style.transform = q < 1 ? 'translateY(' + ((1 - q) * 20).toFixed(1) + 'px) scale(' + (1.2 - 0.2 * q).toFixed(3) + ')' : ''; };
     const wk = txt(206, 'font:600 58px/1.1 ' + FONT + ';letter-spacing:-.025em', 'Săptămâna <b style="display:inline-block;min-width:.62em;text-align:left;font-weight:800;color:' + TEAL + '"></b>'), wkN = wk.querySelector('b');
-    const ln = txt(292, 'font:500 37px/1.2 ' + FONT + ';letter-spacing:-.012em;color:rgba(11,11,13,.62)', 'Sub piele se formează colagen nou.');
+    const ln = txt(284, 'font:500 58px/1.14 ' + FONT + ';letter-spacing:-.025em;color:rgba(11,11,13,.66)', 'Sub piele se formează<br>colagen nou.');
     const lab = txt(258, 'font:800 34px/1 ' + FONT + ';letter-spacing:.27em;text-indent:.27em', '');
     const labL = txt(414, 'left:42px;width:488px;font:800 25px/1 ' + FONT + ';letter-spacing:.27em;text-indent:.27em', 'ÎNAINTE');
     const labR = txt(414, 'left:550px;width:488px;font:800 25px/1 ' + FONT + ';letter-spacing:.27em;text-indent:.27em;color:' + TEAL, 'DUPĂ');
     const cs = p.caseNo || 'Cazul 36', cTitle = p.caseTitle || 'HIFU gușă și contur', cSub = p.caseSub || 'Arad · 1 ședință', cFine = p.caseFine || ['Fotografie publicată cu acordul clientei.', 'Rezultatele pot varia de la o persoană la alta.'];
     const cap0 = txt(1196, 'font:700 24px/1 ' + FONT + ';letter-spacing:.26em;text-indent:.26em;color:' + TEAL, esc(cs.toUpperCase()));
     const cap1 = txt(1238, 'font:800 64px/1.05 ' + FONT + ';letter-spacing:-.035em', esc(cTitle));
-    const cap2 = txt(1322, 'font:600 40px/1.1 ' + FONT + ';letter-spacing:-.015em;color:rgba(11,11,13,.66)', esc(cSub));
-    const cap3 = txt(1402, 'font:500 27px/1.42 ' + FONT + ';color:rgba(11,11,13,.5)', cFine.map(esc).join('<br>'));
+    const cap2 = txt(1318, 'font:600 48px/1.1 ' + FONT + ';letter-spacing:-.02em;color:rgba(11,11,13,.7)', esc(cSub));
+    const cap3 = txt(1398, 'font:500 33px/1.4 ' + FONT + ';letter-spacing:-.005em;color:rgba(11,11,13,.56)', cFine.map(esc).join('<br>'));
     const lastW = h('div', null, null, root); lastW.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:540px 900px;opacity:0';
-    const last = h('div', null, 'Colagenul are nevoie de timp<span class="pd" style="display:inline-block;width:.19em;height:.19em;border-radius:50%;background:radial-gradient(circle at 36% 34%,#f4cbbd,' + ROSE + ' 58%,#b77665);margin-left:.05em;visibility:hidden"></span>', lastW);
-    last.style.cssText = 'position:absolute;left:0;width:1080px;top:866px;text-align:center;white-space:nowrap;font:600 56px/1.1 ' + FONT + ';letter-spacing:-.025em;color:' + INK;
+    const last = h('div', null, wsp('Colagenul are') + '<br>' + wsp('nevoie de timp') + '<span class="pd" style="display:inline-block;width:.19em;height:.19em;border-radius:50%;background:radial-gradient(circle at 36% 34%,#f4cbbd,' + ROSE + ' 58%,#b77665);margin-left:.05em;visibility:hidden"></span>', lastW);
+    last.style.cssText = 'position:absolute;left:0;width:1080px;top:' + (900 - BIG * 1.12) + 'px;text-align:center;white-space:nowrap;font:600 ' + BIG + 'px/1.12 ' + FONT + ';letter-spacing:-.03em;color:' + INK;
+    const w3 = [...last.querySelectorAll('.w')];
     const lastDot = last.querySelector('.pd');
     const ring2 = h('i', null, null, root); ring2.style.cssText = 'position:absolute;border-radius:50%;border:2.5px solid ' + ROSE + ';box-sizing:border-box;opacity:0';
     // ---- the sand: a tile of many small grains (it fills the two masses), and every grain that falls, by its landing
@@ -102,13 +106,13 @@
       q.strokeStyle = 'rgba(22,36,34,.32)'; q.lineWidth = 1.6; q.beginPath(); q.ellipse(0, 0, WN + 7, 5, 0, 0, 6.2832); q.stroke();                    // the collar of the neck
       q.fillStyle = 'rgba(255,255,255,.95)'; q.beginPath(); q.ellipse(-WN - 1, -6, 3.2, 7, -0.3, 0, 6.2832); q.fill();
       const s = shade.getContext('2d'); s.setTransform(GS / 2, 0, 0, GS / 2, XM * GS / 2, YM * GS / 2); s.filter = 'blur(26px)'; s.fillStyle = 'rgba(10,24,22,1)'; bodyPath(s); s.fill(); }
-    const camAt = (t) => { const q = clamp((t - tGlass) / (tCut - tGlass)), g = io((t - B(21.25)) / (tH - B(21.25))), S0 = 1.0 + 0.05 * q, fy0 = 285 - 8 * q;
+    const camAt = (t) => { const q = clamp((t - tGlass) / (tCut - tGlass)), g = io((t - B(21.25)) / (tH - B(21.25))), S0 = 0.95 + 0.05 * q, fy0 = 243 - 8 * q;
       return { S: lerp(S0, 1.42, g), fy: lerp(fy0, HB - hA(t) - 135, g), sy: lerp(900, 960, g) }; };
     // ---- sound: every visible grain has its tick, on the frame it lands; the silence is left alone; then the hit
     const ev = (t, k) => R.event(t, k || 'panel');
-    ctx.sfx(t1, 'tick_soft', 0.6); ev(t1, 'write');
+    tw1.forEach((t, i) => { ctx.sfx(t, 'tick_soft', 0.6); ev(t, i ? 'word' : 'write'); }); ctx.sfx(tDotIn, 'dot', 0.32); ev(tDotIn, 'word');
     ctx.sfx(tPulse, 'pulse', 0.7, { prio: 3 }); ev(tPulse);
-    ctx.sfx(t2, 'tick_soft', 0.7); ev(t2, 'write');
+    ctx.sfx(t2, 'tick_soft', 0.7); ev(t2, 'write'); ctx.sfx(t2 + 0.12, 'tick_soft', 0.6); ev(t2 + 0.12, 'word');
     ctx.sfx(tGlass + 0.1, 'shimmer_soft', 0.4); ev(tGlass + 0.1, 'in');
     GR.forEach((g, i) => { if (g.single) ctx.sfx(g.tl, 'grain', g.tail ? 0.7 : i < 9 ? 1 : i < 20 ? 0.85 : 0.65, { pan: clamp(g.xl / 200, -0.3, 0.3) }); });
     tW.forEach((t) => ev(t)); ctx.sfx(tW[7], 'tick_soft', 0.7); // (week 8 comes inside the stream: its own tick)
@@ -205,18 +209,25 @@
     ctx.tick((t) => {
       c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.filter = 'none'; c.clearRect(0, 0, 1080, 1920);
       { const g = c.createRadialGradient(400, 560, 100, 540, 960, 1300); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#eef1f0'); c.fillStyle = g; c.fillRect(0, 0, 1080, 1920); }
+      { const aL = Math.max(1 - clamp((t - tGlass) / 0.6), clamp((t - tLast + 0.05) / 0.35)); // window light drifting over the white: soft bars and a warm patch that travels
+        if (aL > 0.004) { c.save(); c.globalAlpha = aL; const tt = t < tGlass + 0.7 ? t : t - tLast + 3;
+          const px = 240 + 150 * tt, g = c.createRadialGradient(px, 620 + 40 * tt, 0, px, 620 + 40 * tt, 760); g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+          c.fillStyle = 'rgba(18,40,37,.05)'; c.fillRect(0, 0, 1080, 1920); c.fillStyle = g; c.fillRect(0, 0, 1080, 1920);
+          c.translate(540, 960); c.rotate(-0.49); for (let k = -3; k <= 3; k++) { const x = k * 560 + ((tt * 72) % 560), gb = c.createLinearGradient(x - 170, 0, x + 170, 0); gb.addColorStop(0, 'rgba(14,34,31,0)'); gb.addColorStop(0.5, 'rgba(14,34,31,.06)'); gb.addColorStop(1, 'rgba(14,34,31,0)'); c.fillStyle = gb; c.fillRect(x - 170, -1500, 340, 3000); }
+          c.restore(); } }
       // 1. the two lines
-      const a1 = out((t - t1) / 0.4) * (1 - clamp((t - t2 + 0.1) / 0.1)); show(l1, a1, (1 - out((t - t1) / 0.5)) * 14);
+      const pz = 1 + 0.075 * clamp(t / (tGlass + 0.1)); // the slow push on the whole opening
+      const a1 = 1 - clamp((t - t2 + 0.1) / 0.1); show(l1, t >= 0 ? a1 : 0, 0, pz); w1.forEach((e, i) => wordIn(e, out((t - tw1[i]) / 0.42)));
       { const q = clamp((t - tPulse) / 0.95), d = 18 + 560 * out(q); ring.style.width = ring.style.height = d.toFixed(1) + 'px'; ring.style.margin = (-d / 2).toFixed(1) + 'px 0 0 ' + (-d / 2).toFixed(1) + 'px'; ring.style.borderWidth = (3.4 - 2.4 * q).toFixed(2) + 'px'; ring.style.opacity = t < tPulse || q >= 1 ? '0' : (0.85 * Math.pow(1 - q, 1.6)).toFixed(3);
-        l1.querySelector('.pd').style.transform = 'scale(' + (1 + 0.9 * Math.max(0, 1 - Math.abs(t - tPulse - 0.04) / 0.14)).toFixed(3) + ')'; }
-      const up = io((t - (t2 + 0.25)) / 0.45), a2 = clamp((t - t2) / 0.1) * (1 - clamp((t - tW[0] + 0.1) / 0.1)); show(l2, a2, lerp(0, 206 - 868, up), 1);
+        l1.querySelector('.pd').style.transform = 'scale(' + (out((t - tDotIn) / 0.2) * (1 + 0.7 * Math.max(0, 1 - Math.abs(t - tDotIn - 0.12) / 0.12) + 0.9 * Math.max(0, 1 - Math.abs(t - tPulse - 0.04) / 0.14))).toFixed(3) + ')'; }
+      const up = io((t - (t2 + 0.4)) / 0.42), a2 = (t >= t2 ? 1 : 0) * (1 - clamp((t - tW[0] + 0.1) / 0.1)); show(l2, a2, lerp(0, 238 - 900, up), lerp(pz, 58 / BIG, up)); w2.forEach((e, i) => wordIn(e, out((t - t2 - i * 0.12) / 0.36)));
       // 2. the hourglass, the weeks
       if (t < tH) hourglass(t);
       let wn = 0; for (let i = 0; i < tW.length; i++) if (t >= tW[i]) wn = i + 1;
       const aOut = 1 - clamp((t - tOutText) / 0.3);
       if (wn) { wkN.textContent = String(wn); const q = out((t - tW[wn - 1]) / 0.22); wkN.style.transform = 'translateY(' + ((1 - q) * 20).toFixed(1) + 'px)'; wkN.style.opacity = (0.15 + 0.85 * q).toFixed(3); }
       show(wk, wn && t < tH ? aOut * clamp((t - tW[0]) / 0.1 + 0.4) : 0);
-      show(ln, t < tH ? out((t - tLine) / 0.5) * aOut : 0, (1 - out((t - tLine) / 0.5)) * 10);
+      show(ln, t < tH ? out((t - tLine) / 0.5) * aOut : 0, (1 - out((t - tLine) / 0.5)) * 12);
       // 4. the drop
       if (t >= tH) reveal(t);
       const qe = clamp((t - tEnd0) / 0.2), after = t >= tWipe1;
@@ -226,9 +237,10 @@
       [cap0, cap1].forEach((e) => show(e, out((t - tCap[0]) / 0.3) * (1 - qe), (1 - out((t - tCap[0]) / 0.35)) * 14));
       show(cap2, out((t - tCap[1]) / 0.3) * (1 - qe), (1 - out((t - tCap[1]) / 0.35)) * 14); show(cap3, out((t - tCap[2]) / 0.35) * (1 - qe), (1 - out((t - tCap[2]) / 0.4)) * 12);
       // 5. the last line; its full stop falls in
-      const aL = out((t - tLast) / 0.32); lastW.style.opacity = aL.toFixed(3); lastW.style.display = aL > 0.003 ? 'block' : 'none';
-      if (aL > 0.003) {
-        lastW.style.transform = 'scale(' + (1 + 0.035 * clamp((t - tLast) / (total - tLast))).toFixed(4) + ')';
+      const aL = t >= tLast ? 1 : 0; lastW.style.opacity = String(aL); lastW.style.display = aL ? 'block' : 'none';
+      if (aL) {
+        const qd = clamp((t - tLast) / (total - tLast)); lastW.style.transform = 'translate(' + (-8 * qd).toFixed(2) + 'px,' + (-14 * qd).toFixed(2) + 'px) scale(' + (1 + 0.06 * qd).toFixed(4) + ')'; // it holds, but it never stands still
+        w3.forEach((e, i) => wordIn(e, out((t - tLast - i * 0.05) / 0.26)));
         const rest = t >= tDot + 0.34; lastDot.style.visibility = rest ? 'visible' : 'hidden';
         if (dot) { const q = clamp((t - tDot) / 0.8), d = 2 * dot.r + 190 * out(q); ring2.style.width = ring2.style.height = d.toFixed(1) + 'px'; ring2.style.left = (dot.x - d / 2).toFixed(1) + 'px'; ring2.style.top = (dot.y - d / 2).toFixed(1) + 'px'; ring2.style.opacity = t < tDot || q >= 1 ? '0' : (0.7 * Math.pow(1 - q, 1.5)).toFixed(3); }
         if (!rest) { dot = measure() || dot; if (dot) { const D = tDot - tLast - 0.02, tau = t - (tDot - D); if (tau > 0) { let y; if (t < tDot) y = lerp(-40, dot.y, Math.pow(tau / D, 2)); else { const q = t - tDot; y = dot.y - (q < 0.2 ? 15 * 4 * (q / 0.2) * (1 - q / 0.2) : 4 * 4 * ((q - 0.2) / 0.14) * (1 - (q - 0.2) / 0.14)); }

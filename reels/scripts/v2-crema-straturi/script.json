@@ -596,5 +596,14 @@
    ]
   ]
  },
- "wordsNote": "Timpii cuvintelor, măsurați pe voce (wordtimes.py: pauzele reale la punctuație, apoi silabele); scenele îi folosesc pentru textul cinetic și contoare."
+ "wordsNote": "Timpii cuvintelor, măsurați pe voce (wordtimes.py: pauzele reale la punctuație, apoi silabele); scenele îi folosesc pentru textul cinetic și contoare.",
+ "critique": {
+  "storyboard": {
+   "scroll": "da: din primul cadru un borcan cade pe o suprafață care se lasă sub el, iar lumina cremei aleargă într-un strat subțire; propoziția „lucrează doar la suprafață” e pe ecran în 2 secunde",
+   "serves": "da: borcanul și stratul luminat arată „suprafața”, coborârea arată „mai jos”, plasa slabă și apoi întinsă arată colagenul, inelul arată timpul; nimic altceva nu e pe ecran",
+   "effects": "nu: singura mișcare mare e coborârea, care e chiar mesajul; blurul de mișcare și adâncimea de câmp vin din ea, nu sunt puse deasupra",
+   "natural": "da: o singură cameră, un singur punct de lumină, cuvintele-cheie apar când sunt spuse; fără tăieturi, fără etichete inventate",
+   "owner": "da: alb, turcoazul site-ului, un singur accent rose gold, totul centrat, text mare; mai multă mișcare și lumină decât reel-ul cu gușa"
+  }
+ }
 }

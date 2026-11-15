@@ -665,5 +665,14 @@
   ]
  },
  "wordsNote": "Timpii cuvintelor, măsurați pe voce (wordtimes.py: pauzele reale la punctuație, apoi silabele); scenele îi folosesc pentru textul cinetic și contoare.",
- "countAt": 19.023
+ "countAt": 19.023,
+ "critique": {
+  "storyboard": {
+   "scroll": "da: o statuie de marmură întinsă alunecă în cadru sub un soare turcoaz, cu „antrenament” scris mare deasupra; contrastul dintre „antrenament” și „întinsă” oprește derularea",
+   "serves": "da: fiecare afiș are un singur obiect pentru o singură idee (statuia, gantera, lupa pe „EMS”, banda cu impulsuri, cronometrul, cifra încercuită, cardul cu ședințe, avionul de hârtie)",
+   "effects": "nu: lupa mărește exact cuvântul explicat, cercul de marker e pe singura cifră, trecerea prin lentilă duce la definiție; mișcările dintre afișe sunt doar drumul camerei pe aceeași coală",
+   "natural": "da: hârtie albă, fotografii alb-negru, serif și sans ale site-ului; cuvintele urcă pe rând când sunt spuse",
+   "owner": "da: e exact gustul notat azi (obiecte fotografice alb-negru cu accente turcoaz), curat și centrat; rose gold doar pe cercul de marker"
+  }
+ }
 }

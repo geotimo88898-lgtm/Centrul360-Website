@@ -15,7 +15,7 @@
  "concept": {
   "who": "Femeia din Timișoara sau Arad care se gândește la HIFU și se teme de un singur lucru: că plătește o ședință și a doua zi nu vede nimic. Și cea care a făcut deja o ședință și așteaptă.",
   "oneThing": "După HIFU liniștea e normală: colagenul se formează săptămâni la rând, iar rezultatul vine la sfârșitul lor.",
-  "tone": "Minimalist și răbdător: alb, un singur obiect, text mic. Suspans fără să sperie; liniștea e subiectul, nu un gol.",
+  "tone": "Minimalist și răbdător: alb, un singur obiect, puține cuvinte. Suspans fără să sperie; liniștea e subiectul, nu un gol. Nimic nu stă pe loc: lumina trece peste alb, cadrul se apropie încet.",
   "formats": [
    "(vi) Suspansul minimalist",
    "(x) Colajul editorial, doar pentru dezvăluire: poza reală ca obiect pe alb, cu cuvintele catalogului"
@@ -51,21 +51,21 @@
    "file": "owner-weongo",
    "why": "deschiderea cu „honorable” e rară și plină de goluri: basul cade la bătăile 3, 5, 8 și apoi tot mai des, exact cum cad boabele. Golul cel mai lung al piesei (bătăile 5-8) e sub „Apoi, liniște.”, iar golul dinaintea bătăii 24 e liniștea dinaintea rezultatului. Lovitura de la 11,09 s (bătaia 24, după cel mai lung gol dinaintea versurilor explicite) e dezvăluirea; reelul se termină la 18,3 s din piesă, mult înainte de 24 s."
   },
-  "different": "Singurul reel fără voce care duce o idee de la cap la coadă doar cu un obiect, 12 cuvinte mici și o poză reală; singurul cu clepsidra și cu dezvăluirea prin cortina de nisip."
+  "different": "Singurul reel fără voce care duce o idee de la cap la coadă doar cu un obiect, câteva rânduri scurte și o poză reală; singurul cu clepsidra și cu dezvăluirea prin cortina de nisip."
  },
  "critique": {
   "storyboard": {
-   "scroll": "da: un cadru alb cu un rând mic și un singur punct turcoaz care pulsează pe prima bătaie de bas; e atât de puțin, încât te oprești să vezi ce urmează",
+   "scroll": "da: un cadru alb cu un singur rând mare, care intră cuvânt cu cuvânt, și un punct turcoaz care pulsează pe prima bătaie de bas; e atât de puțin, încât te oprești să vezi ce urmează",
    "serves": "da: clepsidra e chiar ideea (timpul construiește), contorul e cronologia de pe site, iar poza e un caz din catalog cu ce scrie acolo",
    "effects": "nu: un singur obiect și o singură mișcare specială (cortina de nisip), folosită o singură dată",
-   "natural": "da: alb, sticlă alb-negru, nisip turcoaz; text mic, centrat; nimic din șablonul celorlalte reeluri",
+   "natural": "da: alb, sticlă alb-negru, nisip turcoaz; text centrat, puține cuvinte; nimic din șablonul celorlalte reeluri",
    "owner": "da: e ideea cerută (suspans minimalist pe WE ON GO II, clepsidră cu nisip turcoaz, săptămânile care accelerează, dezvăluirea pe lovitură, ultima propoziție de pe site)"
   },
   "render": {
-   "scroll": "da, cu o rezervă: primul cadru se mișcă deja (rândul intră cu un tick moale), dar până la pulsul de la 1,33 s e doar un rând mic pe alb; dacă se pierde lume acolo, rândul poate intra cuvânt cu cuvânt",
+   "scroll": "da: rândul intră mare, cuvânt cu cuvânt din blur, pe o lumină de fereastră care trece peste alb, cu o apropiere lentă; punctul turcoaz apare la 0,6 s și pulsează pe prima lovitură de bas (1,33 s)",
    "serves": "da: 32 de boabe au fiecare tick-ul lor pe cadrul în care aterizează, contorul urcă pe loviturile de bas, iar poza și cuvintele de sub ea sunt exact cele din catalog",
    "effects": "nu: verificarea de flash dă un singur salt de lumină (tăietura de la dezvăluire); cortina de nisip apare o singură dată, 0,46 s",
-   "natural": "da: sticla are grosime și lumină, nisipul are boabe, grămada crește din ce cade; textul rămâne mic și centrat peste tot",
+   "natural": "da: sticla are grosime și lumină, nisipul are boabe, grămada crește din ce cade; rândurile de sus se citesc pe telefon (58 px), iar primul și ultimul rând au prezență (98 px) și nu stau pe loc",
    "owner": "da, cu o rezervă: liniștea dinaintea loviturii e liniște adevărată doar în fișierul curat; în preview piesa are acolo propriul gol, cu ad-lib-uri la nivel mic"
   }
  },
@@ -107,5 +107,5 @@
   "type": "save",
   "hold": 16.3
  },
- "timeline": "Numărat înapoi de la lovitura de bas de la 11,094 s din piesă (cadrul 329, 10,967 s): 0,00 primul rând; 1,33 pulsul (bătaia 3); 2,27 „Apoi, liniște.” (bătaia 5); 2,75 clepsidra; 3,63 primul bob aterizează, Săptămâna 1 (bătaia 8); săptămânile 2-8 la bătăile 10,5, 13, 14,5, 16, 17,5, 19, 20; 6,60 rândul despre colagen; 8,67 șuvoiul; 9,60 sus se termină nisipul (bătaia 21); 10,25-10,97 liniște, cade doar bobul rose gold; 10,967 lovitura: poza „înainte”; 11,67-12,10 cortina de nisip, apoi „după” (bătăile 25,5 și 26,5); 13,27 cele două poze alături, cu datele din catalog (bătaia 29); 15,53 ultima propoziție; 16,00 punctul ei aterizează (bătaia 35); ținut până la 18,2."
+ "timeline": "Numărat înapoi de la lovitura de bas de la 11,094 s din piesă (cadrul 329, 10,967 s): 0,00 primul rând, cuvânt cu cuvânt (punctul turcoaz la 0,6); 1,33 pulsul (bătaia 3); 2,27 „Apoi, liniște.” (bătaia 5); 2,75 clepsidra; 3,63 primul bob aterizează, Săptămâna 1 (bătaia 8); săptămânile 2-8 la bătăile 10,5, 13, 14,5, 16, 17,5, 19, 20; 6,60 rândul despre colagen, pe două rânduri; 8,67 șuvoiul; 9,60 sus se termină nisipul (bătaia 21); 10,25-10,97 liniște, cade doar bobul rose gold; 10,967 lovitura: poza „înainte”; 11,67-12,10 cortina de nisip, apoi „după” (bătăile 25,5 și 26,5); 13,27 cele două poze alături, cu datele din catalog (bătaia 29); 15,53 ultima propoziție, pe două rânduri; 16,00 punctul ei aterizează (bătaia 35); ținut până la 18,2."
 }
