@@ -1,17 +1,26 @@
-// Centrul360 portal, Marketing → „Conținut” (the owner, 12.11: „vreau să fie totul în one screen: main screen-ul să fie
-// cu insights, și după, la Program, să fie ăla de aprobat”). Two tabs:
-//  - „Rezultate” (first, the dashboard): the key numbers, the week's analysis, the monthly goals, the networks, the
-//    organic funnel, „Merge tare 🔥” (with „Fă reclamă din asta”), what to make more of, the top 10, what works, the
-//    audience, the recommended hours (one tap saves them), what people say, last month (api/_lib/content-learn.js,
-//    api/_lib/content-insights.js). A banner says when next week waits for approval.
-//  - „Program” (#continut/program): next week's batch as a review feed (every item large, its video inline, a phone
-//    preview per network with that network's text, editable, its planned time, Aprobă / Refă, „Aprobă toată
-//    săptămâna” always at hand), the compact calendar of days × networks, this week, the owner's ideas, what to look at,
-//    the last posted. The clock posts only what is approved (api/_lib/content-post.js).
-// An item's drawer: the owner's look, the texts' check, the statistics (per network the numbers and rates, the
-// retention curve, the growth in the first hours, × the usual post, the funnel), the video, the texts, the plan and,
-// once posted on Instagram or Facebook, „Fă reclamă din asta” (api/_lib/content-boost.js). Admin only.
-// „De postat” (the owner, 14.11: he posts from each app, with a licensed trending sound), on top of both tabs: the
+// Centrul360 portal, Marketing → „Content” (renamed from „Conținut”, the owner, 15.11; the section's id stays
+// `continut`, so the old links and notifications still open it). Three tabs:
+//  - „Insights” (first): what is useful to him and to the producer, numbers first, a line that says what it means
+//    under each: the key numbers, the week's analysis, the monthly goals, the networks (followers, growth, rates), the
+//    organic funnel, „Merge tare 🔥” (with „Fă reclamă din asta”), what to make more of, the top 10, what works
+//    (rubrics, topics, hooks), the audience, the hours (one tap saves them), what people say, last month, the moments
+//    ahead, his ideas (api/_lib/content-learn.js, content-insights.js). Each block says what will appear and when
+//    while it has no data yet.
+//  - „Transit” (#continut/transit, also #continut/program): the queue to approve, one item at a time, full height,
+//    like Tinder: the video plays (the preview with the music; the clean one is what posts), where and when it goes on
+//    each network is on the card, the texts per network a tap away; ✓ / a swipe right / → approves it (its planned
+//    slots are its places in the Calendar), ✕ / a swipe left / ← opens „Ce schimbăm?”: the areas (Video, Muzică, Text
+//    pe ecran, Caption, Descriere, Hashtag-uri, Altceva), his words, links and files of reference (photos, videos,
+//    music, from the phone's picker, up to 200 MB each); it goes to the producer (reels/PRODUCER.md „Refacerea”) and
+//    comes back here once redone. A note can go with an approval too (a lesson for the producer). „Anulează”, the
+//    counter („3 din 7”), „Aprobă tot” for a week.
+//  - „Calendar” (#continut/calendar): what posts when, a week (the default) or a month, per network; a day with many
+//    posts shows compact chips (time, network, cover) and „+N”, which opens the whole day; a post opens its drawer
+//    (preview, time, networks, state, skip a network, post now, its numbers). Today marked; what went out shows its
+//    views. Above it: what needs a look (errors, holds) and the connections; under it, the last posted.
+// An item's drawer: the owner's look, the texts' check, the statistics, the video, the texts (editable), the plan per
+// network and, once posted on Instagram or Facebook, „Fă reclamă din asta” (api/_lib/content-boost.js). Admin only.
+// „De postat” (the owner, 14.11: he posts from each app, with a licensed trending sound), on top of every tab: the
 // slots of the networks in „Din aplicație” mode that came due (api/_lib/content-app.js), one card each, phone first:
 // the preview, „Distribuie” (the clean MP4 through the phone's share sheet, else a download), the texts to copy, the
 // hint for the sound, „Am postat” (the link optional), „Nu pot acum”, „Sari peste”. A push opens its card
@@ -901,20 +910,73 @@
   const n1 = (v) => (v == null ? '-' : (Math.round(v * 10) / 10).toLocaleString('ro-RO'));
   const lei = (v) => full(Math.round(v || 0)) + ' lei';
   // the dashboard: the key numbers first, then the blocks in the owner's order; side by side on a wide screen
+  // a block's line that says what it means, under its numbers
+  const take = (html, text) => (html && text ? html.replace(/<\/section>$/, '<p class="cn-take">' + icon('sparkles') + '<span>' + esc(text) + '</span></p></section>') : html);
+  const best = (arr, f) => (arr || []).reduce((m, x) => (m == null || f(x) > f(m) ? x : m), null);
+  function takes(R, L) {
+    const t = {}, fol = R.followers || {}, per = (R.last30 && R.last30.per) || {};
+    const g = best(ORDER.filter((n) => fol[n] && fol[n].d30 != null), (n) => fol[n].d30);
+    const v = best(ORDER.filter((n) => per[n] && per[n].views), (n) => per[n].views);
+    if (g && fol[g].d30 > 0) t.nets = 'Crește cel mai repede ' + NET[g] + ': ' + signed(fol[g].d30) + ' urmăritori în 30 de zile.';
+    else if (v) t.nets = 'Cele mai multe vizualizări vin de pe ' + NET[v] + ' (' + k(per[v].views) + ' în 30 de zile).';
+    const F = R.funnel && R.funnel.month;
+    if (F && (F.kw || F.leads)) t.funnel = 'Luna asta: ' + pl(Math.round(F.kw || 0), 'comentariu', 'comentarii') + ' cu cuvântul, ' + pl(Math.round(F.leads || 0), 'lead', 'leaduri') + ', ' + pl(Math.round(F.clients || 0), 'clientă', 'cliente') + '.';
+    if ((R.hot || []).length) t.hot = (R.hot.length === 1 ? 'O postare merge' : R.hot.length + ' postări merg') + ' mult peste obișnuit: reclama din ea prinde cel mai bine acum.';
+    const ml = (L.more_like || [])[0]; if (ml) t.more = 'Facem mai mult din „' + (ml.topic || ml.rubric) + '”: ' + x1(ml.score) + ' față de o postare obișnuită.';
+    const tp = (R.top || [])[0]; if (tp) t.top = 'Pe primul loc: „' + (tp.topic || tp.rubric || KIND[tp.kind]) + '”, ' + k(tp.views) + ' vizualizări.';
+    const r1 = (L.rubrics || [])[0], h1 = (L.hooks || [])[0];
+    if (r1 || h1) t.ranks = [r1 ? 'Merge cel mai bine rubrica ' + (r1.rubric || 'fără rubrică') + ' (' + x1(r1.score) + ')' : '', h1 ? 'cârligul ' + (hookName(h1.hookType) || 'fără tip').toLowerCase() + ' (' + x1(h1.score) + ')' : ''].filter(Boolean).join(', ') + '.';
+    const A = R.audience;
+    if (A) {
+      const age = best(A.ages || [], (a) => a.p), city = (A.cities || [])[0];
+      const who = A.gender ? (A.gender.F >= 50 ? 'mai ales femei' : 'mai ales bărbați') : '';
+      const bits = [who, age ? age.k + ' ani' : '', city ? 'din ' + city.name : ''].filter(Boolean);
+      if (bits.length) t.aud = 'Publicul: ' + bits.join(', ') + '.';
+    }
+    const rec = R.hoursRec || {}, diff = ORDER.filter((n) => rec[n] && !rec[n].same).length;
+    if (Object.keys(rec).length) t.hours = diff ? 'Pe ' + pl(diff, 'rețea', 'rețele') + ' sunt ore mai bune decât cele de acum: un tap le salvează.' : 'Orele de acum sunt deja cele mai bune.';
+    const G = R.goals;
+    if (G && G.set) { const late = (G.rows || []).filter((x) => x.pace === 'behind').length; t.goals = late ? pl(late, 'țintă', 'ținte') + ' în urmă: le vezi mai sus cu estimarea.' : 'Toate țintele sunt în grafic.'; }
+    return t;
+  }
+  // what will appear, and when, while a block has no data yet
+  const SOON = [
+    ['an', 'sparkles', 'Analiza săptămânii', 'Lunea dimineață, după o săptămână cu postări: ce a mers, ce nu și ce schimbăm.'],
+    ['nets', 'users', 'Pe rețele', 'Urmăritorii și creșterea, zilnic, după primele postări pe fiecare rețea.'],
+    ['funnel', 'userPlus', 'Pâlnia organică', 'Când apar comentariile cu „360”: mesaje, leaduri, programări, cliente, încasări.'],
+    ['ranks', 'trophy', 'Ce merge', 'Rubricile, subiectele și cârligele, după postările de cel puțin 3 zile.'],
+    ['top', 'star', 'Top 10', 'Cele mai bune postări din ultimele 30 de zile, cu cifrele lor.'],
+    ['aud', 'globe', 'Publicul', 'Vârsta, orașele și orele online, când Instagram și Facebook dau datele.'],
+    ['voice', 'chat', 'Ce spun oamenii', 'Temele, întrebările și obiecțiile din comentarii, o dată pe săptămână.'],
+  ];
+  function soonBlock(have) {
+    const list = SOON.filter((x) => !have[x[0]]);
+    if (!list.length) return '';
+    return '<section class="cn-sec"><h3>Apare în curând</h3><div class="cn-soon">' + list.map(([, ic, t, d]) => '<div class="cn-soon-c"><span class="cn-soon-ic">' + icon(ic) + '</span><b>' + t + '</b><p>' + d + '</p></div>').join('') + '</div></section>';
+  }
+  // the dashboard: the key numbers first, then the blocks in the owner's order; side by side on a wide screen
   function resTab() {
     const R = S.r;
-    if (!R) return S.rErr ? K.empty('alert', 'Nu am putut încărca rezultatele', esc(S.rErr)) : '<div class="k-skel" style="height:420px"></div>';
-    const L = R.learn || {};
+    if (!R) return S.rErr ? K.empty('alert', 'Nu am putut încărca insights', esc(S.rErr)) : '<div class="k-skel" style="height:420px"></div>';
+    const L = R.learn || {}, T = takes(R, L);
     const any = Object.keys(R.followers || {}).length || (R.last30 && R.last30.total.posts) || (R.month && R.month.total.posts) || R.audience || (R.analysis || []).length || (R.goals && R.goals.set);
-    if (!any) return K.empty('trend', 'Rezultatele apar după primele postări', '', '<button type="button" class="k-btn is-outline" data-ctgoals>' + icon('target') + 'Setează ținte lunare</button>');
+    if (!any) return '<div class="cn-ins0"><span class="cn-ins0-ic">' + icon('trend') + '</span><b>Insights apar după primele postări</b><p>Fiecare postare își aduce cifrele aici. Până atunci, ce urmează:</p><button type="button" class="k-btn is-outline" data-ctgoals>' + icon('target') + 'Setează ținte lunare</button></div>' + soonBlock({});
     const w = (cls, html) => (html ? '<div class="cn-dw ' + cls + '">' + html + '</div>' : '');
-    const an = analysisBlock(R), gl = goalsBlock(R);
-    const au = audienceBlock(R), hr = hoursBlock(R, L);
+    const an = analysisBlock(R), gl = take(goalsBlock(R), T.goals);
+    const nc = take(netCards(R), T.nets), fu = take(funnelBlock(R), T.funnel), ho = take(hotBlock(R), T.hot), ml = take(moreLike(L), T.more), tt = take(topTen(R), T.top), rk = take(ranks(L), T.ranks);
+    const au = take(audienceBlock(R), T.aud), hr = take(hoursBlock(R, L), T.hours);
     const vo = voiceBlock(R), mo = monthCard(R);
+    const have = { an, nets: nc, funnel: fu, ranks: rk, top: tt, aud: au, voice: vo };
     return kpis(R) + '<div class="cn-dash">' +
       w(an && gl ? 'is-w7' : 'is-w12', an) + w(an && gl ? 'is-w5' : 'is-w12', gl) +
-      w('is-w12', netCards(R)) + w('is-w12', funnelBlock(R)) + w('is-w12', hotBlock(R)) + w('is-w12', moreLike(L)) + w('is-w12', topTen(R)) + w('is-w12', ranks(L)) +
-      w('is-w12', au) + w('is-w12', hr) + w(vo && mo ? 'is-w7' : 'is-w12', vo) + w(vo && mo ? 'is-w5' : 'is-w12', mo) + '</div>';
+      w('is-w12', nc) + w('is-w12', fu) + w('is-w12', ho) + w('is-w12', ml) + w('is-w12', tt) + w('is-w12', rk) +
+      w('is-w12', au) + w('is-w12', hr) + w(vo && mo ? 'is-w7' : 'is-w12', vo) + w(vo && mo ? 'is-w5' : 'is-w12', mo) + '</div>' + soonBlock(have);
+  }
+  // the moments of the weeks ahead (reels/calendar.json): what the producer makes for them
+  function seasonBox() {
+    const list = (S.d && S.d.season) || [];
+    if (!list.length) return '';
+    return '<section class="cn-sec"><h3>Momente care vin</h3><div class="cn-sea">' + list.map((x) => '<div class="cn-sea-c"><span class="cn-sea-d">' + esc(dm(x.from)) + '-' + esc(dm(x.to)) + '</span><b>' + esc(x.name) + '</b>' + (x.angle ? '<p>' + esc(x.angle) + '</p>' : '') + (x.note ? '<small>' + esc(x.note) + '</small>' : '') + '</div>').join('') + '</div></section>';
   }
   function kpis(R) {
     const x = R.kpi || {}, t = R.last30.total;
@@ -1142,11 +1204,27 @@
     const imgs = files.filter((f) => /^image\//.test(f.mime));
     return '<div class="cn-pv' + (photo(it) ? ' is-photo' : '') + (imgs.length > 1 ? ' is-many' : '') + '">' + imgs.map((f) => '<img src="' + esc(fileUrl(it, f.name)) + '" alt="" loading="lazy">').join('') + '</div>';
   }
+  // a network's entry not out yet can be taken off that network only (the others keep theirs)
+  const canSkip = (e) => !['posted', 'posting', 'skipped', 'missed'].includes(e.state);
+  let focusNet = '';
+  // the owner's change request on the item: his words, the areas, the references (links, his files)
+  function requestView(r) {
+    if (!r) return '';
+    const files = (r.files || []).map((f) => {
+      const u = f.url.replace(/^https?:\/\/[^/]+/, '');
+      return f.kind === 'image' ? '<a class="cn-rf is-img" href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="" loading="lazy"></a>'
+        : '<a class="cn-rf" href="' + esc(u) + '" target="_blank" rel="noopener">' + (f.kind === 'video' ? icon('video') : f.kind === 'audio' ? mi('note') : icon('file')) + '<span>' + esc(f.name) + '</span></a>';
+    }).join('');
+    return '<div class="cn-rqv">' + ((r.areaNames || []).length ? '<span class="cn-ar-ts">' + r.areaNames.map((a) => '<i class="cn-ar-t">' + esc(a) + '</i>').join('') + '</span>' : '') +
+      (r.note ? '<p>' + esc(r.note) + '</p>' : '') + ((r.links || []).length ? '<ul class="cn-rq-ls">' + r.links.map((l) => '<li>' + icon('link') + '<a href="' + esc(l) + '" target="_blank" rel="noopener">' + esc(l.replace(/^https?:\/\/(www\.)?/, '')) + '</a></li>').join('') + '</ul>' : '') +
+      (files ? '<div class="cn-rfs">' + files + '</div>' : '') + '</div>';
+  }
   function itemBody(it) {
     const on = S.d.settings.nets, r = review(it);
     const rv = REVIEW[r];
     const status = '<div class="cn-rv is-' + r + '"><span class="k-tag ' + rv[1] + '">' + (r === 'approved' ? icon('check') : r === 'redo' ? icon('undo') : '') + rv[0] + '</span>' +
-      (r === 'redo' && it.redoNote ? '<p>' + esc(it.redoNote) + '</p>' : r === 'pending' && it.replacedAt ? '<p>Refăcut' + (it.redoNote ? ': ' + esc(it.redoNote) : '') + '</p>' : '') +
+      (r === 'redo' ? (it.redo ? requestView(it.redo) : it.redoNote ? '<p>' + esc(it.redoNote) + '</p>' : '') : r === 'pending' && it.replacedAt ? '<p>Refăcut' + (it.redoNote ? ': ' + esc(it.redoNote) : '') + '</p>' : '') +
+      (r === 'approved' ? (it.notes || []).filter((n) => n && n.kind === 'approve' && n.note).slice(-1).map((n) => '<p class="cn-rv-nt">' + icon('pen') + esc(n.note) + '</p>').join('') : '') +
       (r === 'redo' && it.state === 'draft' ? '<p class="cn-rv-w">' + icon('refresh') + 'Se reface</p>' : '') +
       (it.ideaId ? '<span class="k-tag is-accent">' + icon('sparkles') + 'Ideea ta</span>' : '') + (it.variantOf ? '<span class="k-tag">' + icon('refresh') + 'Variantă nouă</span>' : '') +
       (it.hookType ? '<span class="k-tag">' + esc(hookName(it.hookType)) + '</span>' : '') + (it.hook ? '<p class="cn-hook">„' + esc(it.hook) + '”</p>' : '') + '</div>';
@@ -1165,7 +1243,7 @@
     const plan = (it.plan || []).slice().sort((a, b) => String(a.at).localeCompare(String(b.at))).map((e) => {
       const can = on[e.net] && modeOf(e.net) === 'auto' && S.d.settings.on && r === 'approved' && (e.state === 'planned' || e.state === 'error' || e.state === 'missed') && e.net !== 'tt' && e.net !== 'yt';
       const app = e.manual || e.state === 'todo' || (modeOf(e.net) === 'app' && e.state !== 'posted');
-      return '<li class="cn-pl is-' + e.state + '"><div class="cn-pl-h">' + badge(e.net) + '<b>' + NET[e.net] + (e.kind && e.kind !== it.kind ? ' · ' + KIND[e.kind] : '') + '</b>' +
+      return '<li class="cn-pl is-' + e.state + (e.net === focusNet ? ' is-focus' : '') + '" data-ctpl="' + e.net + '"><div class="cn-pl-h">' + badge(e.net) + '<b>' + NET[e.net] + (e.kind && e.kind !== it.kind ? ' · ' + KIND[e.kind] : '') + '</b>' +
         (app ? '<span class="k-tag">' + icon('share') + 'Din aplicație</span>' : '') + '<span class="k-tag ' + TONE[e.state] + '">' + STATE[e.state] + '</span></div>' +
         '<p>' + esc(when(e.postedAt || e.at)) + (e.url ? ' · <a href="' + esc(e.url) + '" target="_blank" rel="noopener">Deschide</a>' : '') + '</p>' + manualLine(e) +
         (e.skips && e.skips.length ? '<p class="cn-pl-sk">' + icon('ban') + '<span>Sărit ' + e.skips.map((k) => esc(dow(roDay(k.at)) + ' ' + fTime.format(new Date(k.at)) + ': ' + k.reason)).join(' · ') + '</span></p>' : '') +
@@ -1173,10 +1251,11 @@
         (e.note ? '<p class="cn-err is-warn">' + icon('eyeOff') + esc(e.note) + '</p>' : '') +
         (e.comment && (e.comment.text || e.comment.error) ? '<p class="cn-cmt' + (e.comment.error ? ' is-bad' : '') + '">' + icon('chat') + '<span>' + esc(e.comment.text || '') + (e.comment.error ? '<em>' + esc(e.comment.error) + '</em>' : '') + '</span></p>' : '') +
         (e.state === 'posted' && it.stats && it.stats[e.net] ? statLine(it.stats[e.net]) : '') +
-        (can ? '<button type="button" class="k-btn is-outline is-sm" data-ctnow="' + e.net + '">' + icon('arrow') + 'Postează acum</button>' : '') + boostLine(it, e) + '</li>';
+        (can || canSkip(e) ? '<div class="cn-pl-a">' + (can ? '<button type="button" class="k-btn is-outline is-sm" data-ctnow="' + e.net + '">' + icon('arrow') + 'Postează acum</button>' : '') +
+          (canSkip(e) ? '<button type="button" class="k-btn is-ghost is-sm" data-ctskipnet="' + e.net + '">' + icon('ban') + 'Scoate de pe ' + NET[e.net] + '</button>' : '') + '</div>' : '') + boostLine(it, e) + '</li>';
     }).join('');
     const fc = it.firstComment && !(it.plan || []).some((e) => e.comment) ? '<p class="cn-cmt is-plan">' + icon('chat') + '<span><small>Primul comentariu</small>' + esc(it.firstComment) + '</span></p>' : '';
-    return status + qa + statsSection(it) + preview(it) + '<section class="cn-caps">' + caps + '</section>' + fc + (plan ? '<ul class="cn-plan">' + plan + '</ul>' : '');
+    return status + qa + statsSection(it) + preview(it) + (plan ? '<h5 class="cn-dsub">Când și unde</h5><ul class="cn-plan">' + plan + '</ul>' : '') + '<h5 class="cn-dsub">Textele</h5><section class="cn-caps">' + caps + '</section>' + fc;
   }
   // a post made from the app: which post the numbers come from, or why there are none (and the link to give them)
   function manualLine(e) {
@@ -1303,15 +1382,17 @@
     return drop + '<span class="k-grow"></span>' + (r !== 'redo' && live ? '<button type="button" class="k-btn is-outline" data-ctredo>' + icon('undo') + 'Refă</button>' : '') +
       (r !== 'approved' ? '<button type="button" class="k-btn is-primary" data-ctok>' + icon('check') + 'Aprobă</button>' : '');
   }
-  function openItem(id) {
+  function openItem(id, net) {
     const it = S.d.items.find((x) => x.id === id); if (!it) return;
-    openId = id;
+    openId = id; focusNet = net || '';
     if (!S.r && (it.plan || []).some((e) => e.state === 'posted')) setTimeout(() => loadResults(), 0);
     dr = K.drawer({
       title: title(it), subtitle: esc([KIND[it.kind], it.rubric, it.keyword ? '„' + it.keyword + '”' : '', it.week ? range(it.week) : ''].filter(Boolean).join(' · ')), icon: photo(it) ? 'layers' : 'video', width: 540,
       body: itemBody(it), focus: false, footer: itemFoot(it) || ' ',
-      onClose: () => { dr = null; openId = ''; },
+      onClose: () => { dr = null; openId = ''; focusNet = ''; },
       onMount(el) {
+        // opened from a post in the Calendar: its network's line in view
+        if (focusNet) setTimeout(() => { const x = el.querySelector('[data-ctpl="' + focusNet + '"]'); if (x) x.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' }); }, 320);
         el.addEventListener('input', (e) => {
           const t = e.target.closest('[data-ctcap]'); if (!t) return;
           const c = el.querySelector('[data-ctcount="' + t.dataset.ctcap + '"]'); if (c) c.textContent = t.value.length + '/' + CAP_MAX[t.dataset.ctcap];
@@ -1331,6 +1412,13 @@
         el.addEventListener('click', async (e) => {
           const cur = S.d.items.find((x) => x.id === id) || it;
           const bst = e.target.closest('[data-ctboost]'); if (bst) return boost(bst, id, bst.dataset.ctboost);
+          const sn = e.target.closest('[data-ctskipnet]');
+          if (sn) {
+            const net = sn.dataset.ctskipnet;
+            if (!(await K.ui().confirm({ title: 'Scoți de pe ' + NET[net] + '?', message: '„' + title(cur) + '” nu se mai postează pe ' + NET[net] + '. Celelalte rețele rămân cum sunt.', confirmText: 'Scoate', danger: true }))) return;
+            if (await save({ action: 'skip', id, net })) K.ui().toast('Scos de pe ' + NET[net] + '.', 'success');
+            return;
+          }
           const bgo = e.target.closest('[data-ctbstart]'); if (bgo) return boostStart(bgo, id, bgo.dataset.ctbstart);
           const now = e.target.closest('[data-ctnow]');
           if (now) {
@@ -1344,14 +1432,7 @@
           }
           const ok = e.target.closest('[data-ctok]');
           if (ok) { if (await save({ action: 'approve', id }, ok)) K.ui().toast('Aprobat.', 'success'); return; }
-          const redo = e.target.closest('[data-ctredo]');
-          if (redo) {
-            const note = await K.ui().prompt({ title: 'Ce refacem?', multiline: true, value: '', confirmText: 'Trimite la refăcut' });
-            if (note == null) return;
-            if (note.trim().length < 2) { K.ui().toast('Scrie pe scurt ce refacem.', 'error'); return; }
-            if (await save({ action: 'redo', id, note: note.trim() }, redo)) K.ui().toast('Trimis la refăcut.', 'success');
-            return;
-          }
+          if (e.target.closest('[data-ctredo]')) return openRedo(id);
           if (e.target.closest('[data-ctskip]')) {
             if (!(await K.ui().confirm({ title: 'Scoți „' + title(cur) + '”?', message: 'Nu se mai postează nicăieri.', confirmText: 'Scoate', danger: true }))) return;
             if (await save({ action: 'skip', id })) { K.ui().toast('Scos din săptămână.', 'success'); if (dr) dr.close(); }
@@ -1371,7 +1452,9 @@
       '<div class="cn-setr cn-api' + (modeOf(n) === 'app' ? ' is-hidden' : '') + '" data-ctapi="' + n + '"><span>Postare prin API</span>' + K.toggle('net_' + n, st.nets[n]) + '</div>' +
       '<div class="cn-nf">' + t(n, 0) + t(n, 1) + (pk[n] ? t(n, 'p') : '<span></span>') + '</div>' +
       '<div class="cn-nf">' + q(n, 'warm', 'reel', 'Reels săpt. 1-' + st.warmWeeks) + q(n, 'full', 'reel', 'Reels apoi') + (pk[n] ? q(n, 'full', pk[n], n === 'tt' ? 'Slideshow' : 'Carusele') : '<span></span>') + '</div></div>';
-    const body = '<section class="cn-set"><h5>Rețele, ore și cote pe săptămână</h5><p class="cn-set-p">Din aplicație: la ora din program primești o notificare și postezi tu, cu sunetul din aplicație. Automat: se postează singur, prin API.</p>' + NETS.map(card).join('') + '</section>' +
+    const conn = access();
+    const body = '<section class="cn-set"><h5>Conexiuni</h5>' + (conn || '<p class="cn-set-p">' + icon('check') + ' Conturile sunt conectate.</p>') + '</section>' +
+      '<section class="cn-set"><h5>Rețele, ore și cote pe săptămână</h5><p class="cn-set-p">Din aplicație: la ora din program primești o notificare și postezi tu, cu sunetul din aplicație. Automat: se postează singur, prin API.</p>' + NETS.map(card).join('') + '</section>' +
       '<section class="cn-set"><h5>Prima săptămână</h5><label class="k-field"><span>Luni</span><input type="date" data-ctstart value="' + esc(st.startWeek) + '"></label></section>' +
       '<section class="cn-set"><h5>Concurenți</h5><label class="k-field"><span>Nu apar în texte</span><input type="text" data-ctcomp maxlength="600" placeholder="Nume, despărțite prin virgulă" value="' + esc((st.competitors || []).join(', ')) + '"></label></section>';
     // Ținte lunare: the followers gained per network, the views, the organic leads (empty: no goal)
@@ -1379,7 +1462,7 @@
     const goals = '<section class="cn-set" data-ctgoalsec><h5>Ținte lunare</h5><div class="cn-gf">' + NETS.map((n) => gi('f_' + n, 'Urmăritori noi ' + NET[n], (G.followers || {})[n])).join('') +
       gi('views', 'Vizualizări', G.views) + gi('leads', 'Leaduri organice', G.leads) + '</div></section>';
     const d = K.drawer({
-      title: 'Setări conținut', icon: 'sliders', width: 480, body: goalsFirst ? goals + body : body + goals, focus: false,
+      title: 'Setări Content', icon: 'sliders', width: 480, body: goalsFirst ? goals + body : body + goals, focus: false,
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-primary" data-ctsave>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         // Automat shows its API switch; Din aplicație needs none
@@ -1388,6 +1471,7 @@
           const r = el.querySelector('[data-ctapi="' + m[1] + '"]'); if (r) r.classList.toggle('is-hidden', e.target.value !== 'auto');
         });
         el.addEventListener('click', async (e) => {
+          if (e.target.closest('[data-ctgo]')) { d.close(); return K.go('integrari'); }
           const b = e.target.closest('[data-ctsave]'); if (!b) return;
           const nets = {}, modes = {}, times = {}, photoTime = {}, quotas = { warm: {}, full: {} };
           let bad = '';
