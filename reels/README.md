@@ -207,8 +207,11 @@ răbdare (de ex. rezultatele care vin treptat, în 6-8 săptămâni). Un final b
 sfârșit. Aceleași reguli ca filmele de brand (`"kind": "brand"`): ocazional, fără voce (sau o singură replică foarte
 încet), piesa proprietarului.
 Primul nostru (15.11): `scripts/v2-suspans-hifu`, scena `suspans` (`engine/v2/s-suspans.js`), 18,2 s pe „WE ON GO II”.
-Ideea: „O ședință de HIFU. Apoi, liniște.” Un cadru alb, text mic pe centru și un singur obiect: o clepsidră uriașă,
-tăiată de cadru, din sticlă alb-negru cu nisip turcoaz. Boabele cad câte unul și fiecare aterizează pe o bătaie, cu
+Ideea: „O ședință de HIFU. Apoi, liniște.” Un cadru alb, câteva rânduri scurte pe centru și un singur obiect: o
+clepsidră uriașă, tăiată de cadru, din sticlă alb-negru cu nisip turcoaz. Primul și ultimul rând sunt mari (98 px),
+intră cuvânt cu cuvânt din blur și nu stau pe loc: cadrul se apropie încet și o lumină de fereastră trece peste alb
+(un rând mic și nemișcat pe alb nu oprește scroll-ul). Rândurile de deasupra clepsidrei au 58 px, ca să se citească pe
+telefon; nimic sub ~33 px. Boabele cad câte unul și fiecare aterizează pe o bătaie, cu
 tick-ul lui pe același cadru; contorul „Săptămâna 1” … „Săptămâna 8” urcă pe loviturile de bas, boabele vin tot mai des,
 apoi șuvoi; când sus se termină nisipul, piesa tace, cade încet un singur bob rose gold, iar cadrul în care aterizează
 e lovitura piesei: poza reală „înainte”, peste care trece o cortină de nisip și rămâne „după” (mișcarea doar a acestui

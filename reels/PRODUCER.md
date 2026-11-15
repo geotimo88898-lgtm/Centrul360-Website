@@ -187,6 +187,16 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    rose gold sau turcoaz închis, niciodată roșu, o linie care taie un cuvânt); un bloc-definiție de dicționar doar cu
    formularea de pe site; CTA cu cuvânt în comentarii (cuvântul rămâne 360), dar mesajul în privat abia când mesajele
    Instagram sunt legate și avem o resursă reală de trimis; până atunci doar CTA-uri pe care le putem onora.
+   Din 15.11: sunetele vin din setul premium `engine/sfx/v3` (`python3 sfx.py --v3`: fiecare e din straturi, cu puțină
+   cameră, stereo, în 3-8 variante; pe lângă cele vechi: `shutter`, `swoosh_end`, `whoosh_through`, `card_flip`,
+   `grain`, `sand_flow`, `pulse`, `suck_in`, `hit_deep`); câte evenimente se văd, atâtea se aud, pe cadrul lor. Un reel
+   care începe cu sunetul lui scrie `"hookHit": false` (altfel motorul pune singur un impact pe cadrul 0). O dezvăluire
+   pe lovitura piesei se numără înapoi de la ea: `beats.py`, apoi începutul loviturii la milisecundă, `"musicStart"`
+   care o pune pe începutul unui cadru; liniștea dinainte rămâne liniște (fără riser). Ștacheta vizuală pentru orice
+   scenă nouă e piesa de demonstrație (`scripts/v2-demo-sfx`, scena `showpiece`): o cameră care nu se oprește, un singur
+   zoom mare, lumină dintr-o parte cu umbre moi, cărți 3D cu grosime, puține elemente, mari și centrate; nimic nu stă pe
+   loc, nici un rând ținut (alunecă încet, cu lumina care trece). Textul se citește pe telefon: rândurile care contează
+   de la 58 px în sus, nimic sub ~33 px.
    Detaliile: README, „Montajul”.
 6. **Tema și varietatea** (14.11): doar `brand-light` (alb cu turcoaz) sau `brand-teal` (turcoaz cu alb), alternate
    (niciodată aceeași de două ori la rând; citești `made`). Rose gold doar ca accent. Și, pentru că „nu vreau să fie la
@@ -229,7 +239,10 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    de proprietar între imagini Gemini animate 2.5D și video Veo), (v) manifestul tipografic (un cuvânt pe bătaie, fundal
    alternant alb / turcoaz, un cuvânt rose gold, logo la final), (vi) suspansul minimalist (o picătură de ser care se formează la
    vârful unei pipete sau la gâtul unei fiole reale, cronometrul secundelor reale privite, replici calme despre atenție
-   și răbdare, niciun contor cu măsurători inventate), (vii) lansarea (de la problemă la soluție, fără voce: aurora din alb
+   și răbdare, niciun contor cu măsurători inventate; primul făcut: `v2-suspans-hifu`, `"kind": "silent"`, scena
+   `suspans`: clepsidra uriașă cu nisip turcoaz, fiecare bob cu tick-ul lui pe bătaie, contorul de săptămâni oprit unde
+   spune catalogul la acel caz, liniște adevărată, apoi poza reală pe lovitura piesei, cu cortina de nisip peste ea, și
+   propoziția site-ului la final), (vii) lansarea (de la problemă la soluție, fără voce: aurora din alb
    în turcoaz, cărți 3D stivuite din lucruri reale, un moment întunecat #0b7f74 „Cunoaște” → „Centrul360.”, o pagină
    reală a site-ului din blur în clar, un cuvânt care se rotește, „Totul” → „într-un singur loc.” care devine logo), (viii) explicația în blocuri (blocuri 3D de sticlă
    numerotate care se stivuiesc, bara de progres pe capitole sus, un titlu mare și un obiect pe capitol, recapitularea
@@ -250,9 +263,11 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    (xi) faceless curat (fundal alb, turcoaz, text cinetic pe voce: cuvântul-cheie intră uriaș și în blur, apoi se
    retrage; accentul în italic serif; obiecte uriașe tăiate de cadru; colțuri de vizor; inel de numărătoare; noduri cu
    iconițe; pastile care se adună pentru o listă spusă în propoziții), (xii) logo-ancora (logo-ul real fix, în același
-   loc și mărime, lumea din spate schimbată pe bătaie: pozele clinicii aduse la paletă, site-ul pe telefon, sticlă,
-   hârtie în lumina ferestrei, un cuvânt uriaș, o fișă sau o grilă doar cu date reale; fără merchandise inventat;
-   tăieturi de la o bătaie la jumătate de bătaie, final ținut ~2 s pe alb; fără strobe; scena `logoanchor`).
+   loc și mărime, lumea din spate schimbată pe bătaie: pozele clinicii în alb-negru adevărat, cu accente turcoaz și
+   logo-ul negru pe o bandă albă (proprietarul, 15.11), sticlă, hârtie în lumina ferestrei, un cuvânt uriaș turcoaz, o
+   grilă doar cu date reale; fără merchandise inventat; fiecare schimbare e o expunere, cu declanșatorul pe cadrul ei,
+   iar finalul se deschide pe alb cu un swoosh; tăieturi de la o bătaie la jumătate de bătaie, final ținut ~2 s; fără
+   strobe; scena `logoanchor`).
    Reels-urile deja aprobate nu se refac în aceste stiluri;
    formatele sunt pentru materiale noi. **Combinații**: cele douăsprezece formate sunt piese de construcție, nu șabloane
    („poți să le și combini una cu alta, creativitatea e limita”): un data-viz al cărui răspuns e un moment de erou al
