@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 15.11, the owner in his main session (Arad RF gușă: „okay super și asta pornește-o”): the 40+ cover off (ROAS 1,2),
+  // the 50+ cover back on at 50 lei a day (ROAS 3, 6 clients since 8.11)
+  { id: 'ar-rf-swap-2026-11-15', why: 'Arad RF gușă: copertă 50+ pornită, 40+ oprită, cerut de voi pe 15.11', actions: [
+    { campaignId: '120251788054780103', name: 'AR RF GUSA · copertă 40+', status: 'PAUSED', why: 'ROAS 1,2' },
+    { campaignId: '120251788054230103', name: 'AR RF GUSA · copertă 50+', daily: 50, why: 'ROAS 3, 6 cliente, pornită la 50 lei/zi' },
+    { campaignId: '120251788054230103', name: 'AR RF GUSA · copertă 50+', status: 'ACTIVE', why: 'ROAS 3, 6 cliente, pornită la 50 lei/zi' },
+  ] },
   // 10.11 afternoon, the owner („ok”): abdomen video 3 back on after the guard stopped it (no lead after 40 lei in 7 days);
   // switched back on by hand, the guard leaves it for 7 days unless a lead costs 40 lei or more
   { id: 'tm-vid3-on-2026-11-10', why: 'pornită din nou pe 10.11 după oprirea paznicului, cerut de voi', actions: [
