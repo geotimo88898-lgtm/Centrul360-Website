@@ -388,3 +388,8 @@
 .cn-tx-m .cn-rc-bg{ display:block; }
 /* phones: above the floating tab bar */
 @media (max-width:720px){ .cn-tx-acts{ bottom:calc(max(10px, env(safe-area-inset-bottom)) + 88px); } }
+
+/* the speaker on a video is a real button (the owner, 15.11: no sound in Transit): a tap turns the sound on or off */
+.cn-snd.is-btn{ pointer-events:auto; cursor:pointer; border:0; padding:0; z-index:4; border-radius:999px; width:36px; height:36px; right:10px; bottom:10px; }
+.cn-snd.is-btn.is-on{ background:var(--accent, #6a4dff); }
+.cn-tx-m .cn-snd.is-btn{ width:44px; height:44px; right:14px; bottom:14px; }

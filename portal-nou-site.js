@@ -42,7 +42,9 @@
   function addNav() {
     var nav = document.getElementById('tabsNav');
     if (!nav || nav.querySelector('[data-tab="site"]')) return;
-    var ref = nav.querySelector('button[data-tab="reclame"]');
+    // (the owner, 15.11) at the end of the Admin group, after Calculator ofertă
+    var after = nav.querySelector('button[data-site-after]');
+    var ref = after ? after.nextElementSibling : nav.querySelector('button[data-tab="reclame"]');
     var b = document.createElement('button');
     b.setAttribute('data-tab', 'site');
     b.className = 'admin-only' + (K() && K().data && K().data.isAdmin ? '' : ' hidden');
