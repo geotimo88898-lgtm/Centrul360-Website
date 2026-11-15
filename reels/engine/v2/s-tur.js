@@ -24,7 +24,7 @@
   const out5 = (p) => 1 - Math.pow(1 - clamp(p), 5), out3 = (p) => 1 - Math.pow(1 - clamp(p), 3);
   const lerp = (a, b, p) => a + (b - a) * p, fr = (t) => Math.round(t * 30) / 30;
   const ease = (t, t0, d) => R.cam.ease(t, t0, d);
-  const AH = 1420, CX = 540, CY = 700;          // the photo's area (it melts into white from 1150 to 1420) and its centre
+  const CX = 540, CY = 840, PB = 1920;          // the photo fills the frame (its centre at CY, down to PB under the apps' bar); the words sit on a soft veil in the bottom third
 
   const VS = `#version 300 es
 layout(location=0) in vec2 aPos; out vec2 vUv;
@@ -57,7 +57,7 @@ void main() {
   const FS_OUT = `#version 300 es
 precision highp float;
 uniform sampler2D uAcc;
-uniform float uFocus, uAp, uMaxR, uF0, uF1, uSeed, uWhite, uGrid, uLeak;
+uniform float uFocus, uAp, uMaxR, uF0, uF1, uFa, uE0, uE1, uSeed, uWhite, uGrid, uLeak;
 uniform vec3 uStreak; uniform vec3 uBeam;
 in vec2 vUv; out vec4 o;
 vec4 A(vec2 p) { return texture(uAcc, p / vec2(1080., 1920.)); }
@@ -74,7 +74,6 @@ void main() {
       col = acc / wt; }
   }
   // the turquoise light on the photo: a soft leak from the top left, and the streak of a move
-  float m = smoothstep(uF0, uF1, yd);
   vec3 teal = vec3(.373, .831, .776);
   float leak = uLeak * exp(-dot(s - vec2(-120., 2050.), s - vec2(-120., 2050.)) / (2. * 700. * 700.));
   col = mix(col, col * vec3(.86, 1.02, 1.0) + teal * .10, leak);
@@ -83,11 +82,15 @@ void main() {
   vec2 rv = (s / vec2(1080., 1920.) - vec2(.5, .62)) * vec2(1., 1.6);
   col *= 1. - .16 * smoothstep(.35, 1.05, length(rv));
   col += (hash(s + uSeed) - .5) * .035;
-  // the white below the photo, with the grid
+  // the veil under the words: white with a breath of turquoise at its top edge, the photo still showing through
+  float m = smoothstep(uF0, uF1, yd) * uFa * (1. - .3 * smoothstep(1520., 1860., yd));
+  vec3 veil = mix(vec3(.915, .968, .962), vec3(.982, .988, .986), smoothstep(uF0 + 120., uF1 + 220., yd));
+  col = mix(col, veil, m);
+  // the end: clean white rising from the bottom, with the brand's grid
   vec3 paper = vec3(.984, .988, .984);
   float gx = mod(s.x - 540., 54.), gy = mod(yd, 54.); float g = (gx < 1. || gy < 1.) ? 1. : 0.;
   paper = mix(paper, vec3(.078, .647, .588), .085 * g * uGrid);
-  col = mix(col, paper, m);
+  col = mix(col, paper, smoothstep(uE0, uE1, yd));
   col = mix(col, vec3(1.), uWhite);
   o = vec4(col, 1.);
 }`;
@@ -104,7 +107,7 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
     const PH = {};
     Object.entries(p.shots).forEach(([k, s]) => {
       const [w, hh] = s.size, [lo, mid, hi] = s.lv, m = clamp((mid - lo) / (hi - lo), 0.05, 0.95);
-      PH[k] = { k, w, h: hh, lo, hi, gam: Math.log(0.64) / Math.log(m), sat: s.sat == null ? 0.5 : s.sat, s0: Math.max(W / w, AH / hh),
+      PH[k] = { k, w, h: hh, lo, hi, gam: Math.log(0.64) / Math.log(m), sat: s.sat == null ? 0.5 : s.sat, s0: Math.max(W / w, 2 * Math.max(CY, PB - CY) / hh),
         im: load(R.ROOT + '/brand_asset/' + s.img + '.webp'), dm: load('../../scripts/' + id + '/depth/' + s.img + '.png') };
     });
     const B = (k) => fr(p.b0 + k * p.per);
@@ -133,7 +136,6 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
       const u = t - B(4), r = ease(t, B(6), 0.9);
       const c = C([0.52, 0.47], 1.05, { D0: 0.42, dz: -0.95 * r });
       c.off = [W * 1.1 * (1 - out5(u / 0.3)), 0];
-      if (t > B(8) - 0.14) { const q = clamp((t - (B(8) - 0.14)) / 0.14); c.z *= 1 + 2.2 * Math.pow(q, 2.4); c.dz += 2.2 * q; }
       return c;
     }
     function camRoom(t) {
@@ -162,8 +164,20 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
       if (t > B(24)) c.z *= 1 + 0.03 * smooth((t - B(24)) / 1.5);
       return c;
     }
+    // the camera never shows a photo's edge: the look-at point is kept inside the photo by what the lens sees (with
+    // the parallax and the depth scaling at their worst)
+    function keep(key, c) {
+      const ph = PH[key], S = ph.s0 * c.z;
+      const kmin = Math.max(0.3, Math.min(1 + c.dz * (0 - c.D0), 1 + c.dz * (1 - c.D0), 1));
+      const px = (Math.abs(c.P[0]) + Math.abs(c.off[0]) * 0 + 12) / (ph.w * S), py = (Math.abs(c.P[1]) + 12) / (ph.h * S);
+      const hx = 540 / (ph.w * S * kmin) + px, up = CY / (ph.h * S * kmin) + py, dn = (PB - CY) / (ph.h * S * kmin) + py;
+      if (2 * hx < 1) c.f[0] = clamp(c.f[0], hx, 1 - hx); else c.f[0] = 0.5;
+      if (up + dn < 1) c.f[1] = clamp(c.f[1], up, 1 - dn); else c.f[1] = up / (up + dn);
+      return c;
+    }
     // what is on screen at t: [[photo, camera, weight], …]
-    function scene(t) {
+    function scene(t) { return scene0(t).map(([k, c, w]) => [k, keep(k, c), w]); }
+    function scene0(t) {
       if (t < B(0)) return [['hook', camHook(t), 1]];
       if (t < B(4)) return [['rec', camRec(t), 1]];
       if (t < B(8)) return [['chairs', camChairs(t), 1]];
@@ -182,7 +196,7 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
     // the moves (a streak of light on each, 4 frames)
     const MOVES = [B(-3), B(0), B(2), B(4), B(6), B(8), B(10), B(16), B(17), B(18), B(19), B(20), B(22)];
     // motion blur: sub-frames where the camera is fast
-    const FAST = [[B(-1) + 0.15, B(0) + 0.32], [B(-3), B(-3) + 0.3], [B(2), B(2) + 0.35], [B(4) - 0.12, B(4) + 0.3], [B(6), B(6) + 0.4], [B(8) - 0.16, B(8) + 0.36], [B(10), B(10) + 0.35], [B(16) - 0.1, B(20) + 0.34], [B(22), B(22) + 0.4]];
+    const FAST = [[B(-1) + 0.15, B(0) + 0.32], [B(-3), B(-3) + 0.3], [B(2), B(2) + 0.35], [B(4) - 0.12, B(4) + 0.3], [B(6), B(6) + 0.4], [B(8), B(8) + 0.3], [B(10), B(10) + 0.35], [B(16) - 0.1, B(20) + 0.34], [B(22), B(22) + 0.4]];
     const kAt = (t) => (FAST.some(([a, b]) => t >= a && t <= b) ? 7 : 1);
 
     // ---- WebGL
@@ -222,7 +236,10 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
     }
     // the end: the white rises over the photo
     const tEnd = B(24);
-    const fade = (t) => { const e = out3((t - tEnd + 0.03) / 0.42); return [lerp(1150, -420, e), lerp(1420, -120, e)]; };
+    const fade = (t) => { const e = out3((t - tEnd + 0.03) / 0.42); return t < tEnd - 0.04 ? [5000, 5300] : [lerp(1940, -420, e), lerp(2240, -120, e)]; };
+    // the veil is there for the words: light where no words are (the reception, the end), full under a step
+    const WORDS = [[0, B(-1) + 0.12], [B(4), B(8)], [B(8), B(12)], [B(12), B(16)], [B(16), B(24)]];
+    const veilAt = (t) => { let v = 0.3; for (const [a, z] of WORDS) v = Math.max(v, 0.3 + 0.52 * smooth((t - a + 0.12) / 0.25) * (1 - smooth((t - z + 0.05) / 0.25))); return v; };
     function render(t) {
       if (!G) initGL();
       const { gl } = G;
@@ -234,7 +251,7 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
       const pr = G.P.out; gl.useProgram(pr.p); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.acc); gl.uniform1i(pr.u.uAcc, 0);
       const F = focus(t); gl.uniform1f(pr.u.uFocus, F.f); gl.uniform1f(pr.u.uAp, F.ap); gl.uniform1f(pr.u.uMaxR, F.max);
-      const [f0, f1] = fade(t); gl.uniform1f(pr.u.uF0, f0); gl.uniform1f(pr.u.uF1, f1);
+      const [e0, e1] = fade(t); gl.uniform1f(pr.u.uE0, e0); gl.uniform1f(pr.u.uE1, e1); gl.uniform1f(pr.u.uF0, 1010); gl.uniform1f(pr.u.uF1, 1250); gl.uniform1f(pr.u.uFa, veilAt(t));
       gl.uniform1f(pr.u.uSeed, Math.round(t * 30) * 7.13 % 997); gl.uniform1f(pr.u.uGrid, 1);
       // white: the flight through the logo, then the light it lands in
       let white = 0;
@@ -258,23 +275,23 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
     const txt = (css, html) => { const d = h('div', 'tx', html, ov); d.style.cssText += ';' + css; return d; };
     const vis = (e, o) => { e.style.opacity = clamp(o).toFixed(3); e.style.visibility = o < 0.004 ? 'hidden' : ''; };
     const wsp = (s) => s.split(' ').map((w) => '<span style="display:inline-block">' + esc(w) + '</span>').join(' ');
-    const NUM = 'font:800 34px/1 ' + FONT + ';letter-spacing:.3em;text-indent:.3em;color:' + TEAL;
-    const LA = 'font:800 84px/1.06 ' + FONT + ';letter-spacing:-.04em;color:' + INK + ';white-space:nowrap';
-    const LB = 'font:italic 400 92px/1.04 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';white-space:nowrap';
+    const NUM = 'font:300 96px/1 ' + FONT + ';letter-spacing:-.03em;color:' + TEAL;
+    const LA = 'font:800 104px/1.06 ' + FONT + ';letter-spacing:-.04em;color:' + INK + ';white-space:nowrap';
+    const LB = 'font:italic 400 76px/1.04 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';white-space:nowrap';
     // a block: [number?], line a, line b; every word its own entrance
     function block(n, a, b, o = {}) {
       const g = h('div', null, null, ov); g.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px';
       const mk = (css, html, top) => { const d = h('div', 'tx', html, g); d.style.cssText += ';left:160px;width:760px;text-align:center;top:' + top + 'px;' + css; return d; };
-      const num = n ? mk(NUM, esc(n), 1282) : null;
-      const la = mk(o.la || LA, o.raw ? a : wsp(a), o.ya || 1334);
-      const lb = mk(LB, wsp(b), o.yb || 1428);
+      const num = n ? mk(NUM, esc(n), 1146) : null;
+      const la = mk(o.la || LA, o.raw ? a : wsp(a), o.ya || 1246);
+      const lb = mk(o.lb || LB, wsp(b), o.yb || 1364);
       return { g, num, la, lb, words: [...la.querySelectorAll('span'), ...lb.querySelectorAll('span')] };
     }
-    const hk = block(null, '<span style="display:inline-block;color:' + TEAL + '">POV:</span> ' + wsp(p.hook[1]), p.hook[2], { raw: true });
+    const hk = block(null, '<span style="display:inline-block;color:' + TEAL + '">POV:</span> ' + wsp(p.hook[1]), p.hook[2], { raw: true, ya: 1236, yb: 1352, lb: 'font:italic 400 96px/1.04 ' + SERIF + ';letter-spacing:-.02em;color:' + DEEP + ';white-space:nowrap' });
     const steps = p.steps.map((s) => block(s.n, s.a, s.b));
-    const pz = block(null, p.pause[0], p.pause[1], { la: 'font:800 150px/1 ' + FONT + ';letter-spacing:-.05em;color:' + INK + ';white-space:nowrap', ya: 1270, yb: 1428 });
+    const pz = block(null, p.pause[0], p.pause[1], { la: 'font:800 200px/1 ' + FONT + ';letter-spacing:-.05em;color:' + INK + ';white-space:nowrap', ya: 1128, yb: 1346 });
     // the fit: a line wider than the column gets smaller (never under 64 px)
-    const fitLine = (d) => { let f = parseFloat(getComputedStyle(d).fontSize); const span = () => { const r = document.createRange(); r.selectNodeContents(d); return r.getBoundingClientRect().width; }; while (f > 64 && span() > 748) { f -= 2; d.style.fontSize = f + 'px'; } };
+    const fitLine = (d) => { let f = parseFloat(getComputedStyle(d).fontSize); const span = () => { const r = document.createRange(); r.selectNodeContents(d); return r.getBoundingClientRect().width; }; while (f > 66 && span() > 752) { f -= 2; d.style.fontSize = f + 'px'; } };
     // the timing of each block's words: [word index → reel second]
     const WT = {
       hk: [0.03, B(-5), B(-5) + 0.12, B(-4)],
@@ -288,11 +305,13 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
       vis(bl.g, 1);
       const go = clamp((t - z + 0.2) / 0.2); // the exit: up and into blur, gone by the next cut
       const ws = WT[key];
-      bl.words.forEach((s, i) => { const q = smooth((t - ws[Math.min(i, ws.length - 1)]) / 0.3); s.style.opacity = (q * (1 - go)).toFixed(3); s.style.filter = q < 0.99 || go > 0 ? 'blur(' + ((1 - q) * 14 + go * 12).toFixed(1) + 'px)' : ''; s.style.transform = 'translateY(' + ((1 - out3(q)) * 22 - go * 26).toFixed(1) + 'px)'; });
+      const ghost = key === 'hk' ? 0.2 : 0;
+      bl.words.forEach((s, i) => { const q0 = smooth((t - ws[Math.min(i, ws.length - 1)]) / 0.3), q = ghost + (1 - ghost) * q0;
+        if (ghost) { s.style.opacity = (q * (1 - go)).toFixed(3); s.style.filter = go > 0 ? 'blur(' + (go * 12).toFixed(1) + 'px)' : ''; s.style.transform = 'scale(' + (1 + 0.06 * Math.sin(Math.PI * clamp(q0)) * (q0 < 1 ? 1 : 0)).toFixed(4) + ')'; return; } s.style.opacity = (q * (1 - go)).toFixed(3); s.style.filter = q < 0.99 || go > 0 ? 'blur(' + ((1 - q) * 14 + go * 12).toFixed(1) + 'px)' : ''; s.style.transform = 'translateY(' + ((1 - out3(q)) * 22 - go * 26).toFixed(1) + 'px)'; });
       if (bl.num) { const q = smooth((t - a - 0.02) / 0.25); vis(bl.num, q * (1 - go)); bl.num.style.transform = 'translateY(' + ((1 - out3(q)) * 12 - go * 20).toFixed(1) + 'px)'; }
     }
     // Nuki, once, small, with the file (the plan): at the photo's lower left
-    const nk = h('div', null, null, ov); nk.style.cssText = 'position:absolute;left:58px;top:1106px;width:196px;height:222px;transform-origin:50% 100%';
+    const nk = h('div', null, null, ov); nk.style.cssText = 'position:absolute;left:60px;top:1018px;width:196px;height:222px;transform-origin:50% 100%';
     const nki = h('img', null, null, nk); nki.src = R.ROOT + '/brand_asset/' + p.nukiImg; nki.style.cssText = 'width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 12px 14px rgba(4,40,36,.18))';
     const tN = B(20) + 0.08;
     // the end: the logo (black on white), the cities, the turquoise line
