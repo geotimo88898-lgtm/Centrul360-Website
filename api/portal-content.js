@@ -20,6 +20,10 @@
 //   POST ?upload=1                          a file of reference, from the phone straight to the store, in parts
 //                                           (cf/blob-client-r2.js; at most 200 MB)
 //   { action: 'approve_week', week }        every item of that week still waiting for a look
+//   { action: 'approve_all', ids? }         „Aprobă tot (N)” in Transit: every item ready and waiting, all weeks (only
+//                                           the `ids` the page showed, when it sends them) → { approved }
+//   { action: 'fav', id, fav }              a favourite on or off (any item: waiting, approved, posted) → { fav }
+//   { action: 'gallery' }                   Galerie: every item approved or posted (not only the weeks around now)
 //   { action: 'captions', id, captions: { tt?, yt?, ig?, fb? } }   a network's text, edited
 //   { action: 'post_now', id, net }         that item on that network now (approved items only)
 //   { action: 'skip', id, net? }            Scoate: the entries not posted yet are skipped
@@ -56,6 +60,7 @@ function view(it, url, ins) {
       e.manual ? { manual: true, markedAt: e.markedAt || '', match: matchOf(e.match) } : {},
       e.skips && e.skips.length ? { skips: e.skips.map((k) => ({ at: k.at || '', reason: k.reason || '', skippedAt: k.skippedAt || '' })) } : {},
       e.skipNote ? { skipNote: e.skipNote } : {})),
+    fav: !!it.fav, favAt: it.favAt || '',
     stats: it.stats || {}, hook: it.hook || '', hookType: it.hookType || '', ideaId: it.ideaId || '', variantOf: it.variantOf || '', firstComment: it.firstComment || '',
     qa: { problems: q.problems, warnings: C.fileWarnings(it).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).concat(q.warnings) },
     boosts: (it.boosts || []).filter((b) => b && b.campaignId).map((b) => ({ net: b.net, at: b.at || '', campaignId: b.campaignId, name: b.name || '', mode: b.mode || '', daily: b.daily || 0,
@@ -196,6 +201,23 @@ module.exports = async (req, res) => {
     } else if (b.action === 'approve_week') {
       const n = await C.approveWeek(String(b.week || ''));
       res.status(200).json(Object.assign(await payload(), { approved: n }));
+      return;
+    } else if (b.action === 'approve_all') {
+      const n = await C.approveAll(Array.isArray(b.ids) ? b.ids : null);
+      res.status(200).json(Object.assign(await payload(), { approved: n }));
+      return;
+    } else if (b.action === 'fav') {
+      const id = String(b.id || '');
+      await C.setFav(id, !!b.fav);
+      const it = C.findItem(await C.items(), id);
+      res.status(200).json(Object.assign(await payload(), { fav: { id, fav: !!(it && it.fav), favAt: (it && it.favAt) || '' } }));
+      return;
+    } else if (b.action === 'gallery') {
+      // the reels he approved (and whatever went out), the newest first, with their numbers
+      const list = await C.items(), now = Date.now();
+      const keep = list.filter((it) => !it.removed && (((it.review || 'pending') === 'approved' && !it.dropped && it.state === 'ready') || (it.plan || []).some((e) => e.state === 'posted'))).slice(-600);
+      const url = await adsLink(keep), ins = require('./_lib/content-insights').itemInsights(list, now);
+      res.status(200).json({ items: keep.map((it) => view(it, url, ins)), today: P.roDay(now) });
       return;
     } else if (b.action === 'captions') {
       await C.setCaptions(String(b.id || ''), b.captions);

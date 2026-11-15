@@ -521,6 +521,33 @@ async function approveWeek(week) {
   });
   return out || 0;
 }
+// „Aprobă tot” in Transit (the owner, 15.11: the number on the button is the Transit count): every item ready and
+// still waiting for a look, whatever its week; `ids` (the ones the page showed) keeps it to what he confirmed
+async function approveAll(ids) {
+  const only = Array.isArray(ids) ? new Set(ids.map(String).filter(isId).slice(0, 500)) : null;
+  const now = new Date().toISOString();
+  const { out } = await update((list) => {
+    let n = 0;
+    list.forEach((it) => {
+      if (only && !only.has(it.id)) return;
+      if (!it.removed && !it.dropped && it.state === 'ready' && P.review(it) === 'pending') { Object.assign(it, { review: 'approved', reviewedAt: now, approvedAt: now }); n++; }
+    });
+    return n || false;
+  });
+  return out || 0;
+}
+// a favourite (the owner, 15.11: „să pot să pun la favorite cele care îmi plac cel mai mult”): any item, waiting,
+// approved or posted; the Galerie shows them under „Favorite”
+async function setFav(id, on) {
+  const { out } = await update((list) => {
+    const it = findItem(list, id);
+    if (!it || it.removed) throw fail('not_found', 404);
+    if (!!it.fav === !!on) return false;
+    if (on) { it.fav = true; it.favAt = new Date().toISOString(); } else { delete it.fav; delete it.favAt; }
+    return true;
+  });
+  return out;
+}
 // the owner's edit of a network's text
 async function setCaptions(id, captions) {
   const c = {};
@@ -701,6 +728,6 @@ async function mondayHold(list, st, now) {
 }
 
 module.exports = { KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
-  settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, unreview, approveWeek, setCaptions, captionFor, status, skip, readState,
+  settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, unreview, approveWeek, approveAll, setFav, setCaptions, captionFor, status, skip, readState,
   AREAS, AREA_NAME, ATT_TYPES, ATT_MAX, isAtt, attPath, attOf, attUrl, noteOf, notesView, fromProducer,
   writeState, notices, mondayHold, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };

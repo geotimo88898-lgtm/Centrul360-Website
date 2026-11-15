@@ -13,11 +13,15 @@
 //    pe ecran, Caption, Descriere, Hashtag-uri, Altceva), his words, links and files of reference (photos, videos,
 //    music, from the phone's picker, up to 200 MB each); it goes to the producer (reels/PRODUCER.md „Refacerea”) and
 //    comes back here once redone. A note can go with an approval too (a lesson for the producer). „Anulează”, the
-//    counter („3 din 7”), „Aprobă tot” for a week.
+//    counter („3 din 7”), „Aprobă tot (N)”: everything in Transit, all weeks, N its count (the owner, 15.11). The bar's
+//    switch shows the whole queue as a grid of covers instead (remembered per device); a tap opens that one as the card.
 //  - „Calendar” (#continut/calendar): what posts when, a week (the default) or a month, per network; a day with many
 //    posts shows compact chips (time, network, cover) and „+N”, which opens the whole day; a post opens its drawer
 //    (preview, time, networks, state, skip a network, post now, its numbers). Today marked; what went out shows its
 //    views. Above it: what needs a look (errors, holds) and the connections; under it, the last posted.
+//  - „Galerie” (#continut/galerie, the owner, 15.11): every reel approved or posted, as a grid of covers: „Toate”,
+//    „Favorite” (the star, on any item: the Transit card, the grid, the drawer, here) and „Cele mai bune” (by the real
+//    numbers: views, then saves and shares; empty until the first posts have numbers). A tap opens the item's drawer.
 // An item's drawer: the owner's look, the texts' check, the statistics, the video, the texts (editable), the plan per
 // network and, once posted on Instagram or Facebook, „Fă reclamă din asta” (api/_lib/content-boost.js). Admin only.
 // „De postat” (the owner, 14.11: he posts from each app, with a licensed trending sound), on top of every tab: the
@@ -30,9 +34,15 @@
   const K = window.K;
   if (!K) return;
   const { esc, icon } = K;
+  // Transit as one card or as a grid (the owner, 15.11), remembered on this device
+  const VIEW_KEY = 'c360_ct_trview';
+  const readView = () => { try { return localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'card'; } catch (e) { return 'card'; } };
+  const saveView = (v) => { try { localStorage.setItem(VIEW_KEY, v); } catch (e) { /* private mode: this visit only */ } };
   const S = { d: null, busy: false, tab: 'ins', r: null, rErr: '', rAt: 0, warn: {}, an: '', fm: 'month', drafts: {}, wide: null, tpOpen: {},
     // sound: on once he turned it on (the owner, 15.11: "nu pot să aud sound-ul la transit"), for the next videos too
-    tr: { seen: 0, last: null, focus: '', cap: null, moved: false, skip: [] }, sound: false, cal: { view: 'week', day: '', nets: [] } };
+    tr: { seen: 0, last: null, focus: '', cap: null, moved: false, skip: [], view: readView() }, sound: false, cal: { view: 'week', day: '', nets: [] },
+    // Galerie: every item approved or posted (read when the tab opens), the segment, the favourites being saved
+    gal: { list: null, at: 0, err: '', busy: false, seg: 'all' }, favBusy: {} };
   let panel = null, dr = null, openId = '';
 
   const NETS = ['tt', 'yt', 'ig', 'fb'];
@@ -90,6 +100,14 @@
     panel.classList.add('k-panel', 'cn');
     panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Content</h2></div><div class="k-head-actions" data-cthead></div></div><div data-ctbody><div class="k-skel" style="height:420px"></div></div>';
     panel.addEventListener('click', async (e) => {
+      // the star: a favourite on or off (Transit, the grid, Galerie)
+      const fv = e.target.closest('[data-ctfav]');
+      if (fv) return toggleFav(fv.dataset.ctfav);
+      // Transit: one card or the grid; a cover in the grid opens that one as the card
+      const vw = e.target.closest('[data-ctview]');
+      if (vw) { const v = vw.dataset.ctview === 'grid' ? 'grid' : 'card'; if (v !== S.tr.view) { S.tr.view = v; saveView(v); S.tr.cap = null; paintTransit(); } return; }
+      const gt = e.target.closest('[data-cttr-open]');
+      if (gt) { S.tr.focus = gt.dataset.cttrOpen; S.tr.view = 'card'; S.tr.cap = null; paintTransit(); const c = panel.querySelector('.cn-tx'); if (c) { const y = c.getBoundingClientRect().top; if (y < 60 || y > window.innerHeight * 0.4) window.scrollTo({ top: Math.max(0, y + window.scrollY - 76), behavior: still ? 'auto' : 'smooth' }); } return; }
       // De postat: a card's buttons
       const tp = e.target.closest('[data-cttp]');
       if (tp) {
@@ -144,6 +162,7 @@
     panel.addEventListener('change', (e) => {
       if (e.target.name === 'cton') save({ action: 'settings', on: e.target.checked });
       if (e.target.name === 'cttab') setTab(e.target.value);
+      if (e.target.name === 'ctgal') { S.gal.seg = ['fav', 'best'].includes(e.target.value) ? e.target.value : 'all'; paintGallery(); }
       if (e.target.name === 'ctcalv') { S.cal.view = e.target.value === 'month' ? 'month' : 'week'; paint(true); }
       if (e.target.name === 'ctfm') { S.fm = e.target.value === 'prev' ? 'prev' : 'month'; paint(true); }
       if (e.target.matches('[data-ctan]')) { S.an = e.target.value; paint(true); }
@@ -179,13 +198,14 @@
     const tmp = document.createElement('div'); tmp.innerHTML = trCard(it);
     host.replaceWith(tmp.querySelector('.cn-tx-caps'));
   }
-  // Insights, Transit or Calendar (old links: „program” opens Transit, „rezultate” Insights)
-  const TABS = { ins: 'ins', insights: 'ins', rezultate: 'ins', res: 'ins', tr: 'tr', transit: 'tr', program: 'tr', week: 'tr', aprobare: 'tr', cal: 'cal', calendar: 'cal' };
+  // Insights, Transit, Calendar or Galerie (old links: „program” opens Transit, „rezultate” Insights)
+  const TABS = { ins: 'ins', insights: 'ins', rezultate: 'ins', res: 'ins', tr: 'tr', transit: 'tr', program: 'tr', week: 'tr', aprobare: 'tr', cal: 'cal', calendar: 'cal', gal: 'gal', galerie: 'gal', gallery: 'gal', favorite: 'gal' };
   function setTab(t) {
     S.tab = TABS[String(t || '').toLowerCase()] || 'ins';
     if (!panel || !S.d) return;
     paint(true);
     if (S.tab === 'ins') loadResults();
+    if (S.tab === 'gal') loadGallery();
   }
   // a push for a reel to post opens its card: #continut/de-postat~<id>~<net> (the tab stays as it is)
   K.on('continut:sub', (sub) => {
@@ -197,6 +217,7 @@
     try { S.d = await K.api('/api/portal-content', { action: 'get' }); paint(); focusCard(true); }
     catch (err) { const b = panel && panel.querySelector('[data-ctbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca Content', esc(K.errText(err))); }
     if (S.tab === 'ins') loadResults();
+    if (S.tab === 'gal') loadGallery(true);
   }
   // Insights: read when the tab opens (again after a minute)
   async function loadResults(force) {
@@ -205,7 +226,7 @@
     catch (err) { S.rErr = K.errText(err); }
     if (S.tab === 'ins' && S.d) paint(true);
     // an open drawer shows the item's funnel once Insights is there
-    if (dr && openId) { const it = S.d && S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; } }
+    if (dr && openId) { const it = S.d && itemById(openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; } }
   }
   const ERR = { not_approved: 'Întâi aprobă materialul.', paused: 'Programul e oprit.', not_ready: 'Materialul se reface acum.', already_posted: 'E postat deja.', idea_too_short: 'Scrie ideea pe scurt.',
     invalid_link: 'Linkul nu e al unei postări de pe rețeaua asta.', not_todo: 'Cardul s-a schimbat între timp.', reason_required: 'Alege un motiv.', not_manual: 'Linkul se pune doar la postările făcute din aplicație.',
@@ -234,7 +255,7 @@
     // a text being typed in the ideas box survives a repaint
     const typing = body.querySelector('[data-ctidea] input[name=text]'), draft = typing && !S.ideaSent ? typing.value : '', focused = typing && document.activeElement === typing;
     const pend = queue().length;
-    const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['ins', 'Insights', 'trend'], ['tr', pend ? 'Transit · ' + pend : 'Transit', 'checkCircle'], ['cal', 'Calendar', 'calendar']], S.tab, 'cn-tabseg') + '</div>';
+    const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['ins', 'Insights', 'trend'], ['tr', pend ? 'Transit · ' + pend : 'Transit', 'checkCircle'], ['cal', 'Calendar', 'calendar'], ['gal', 'Galerie', 'image']], S.tab, 'cn-tabseg') + '</div>';
     // a link being typed on a De postat card survives a repaint too
     const links = {};
     body.querySelectorAll('[data-cttp] input[name=link]').forEach((x) => { if (x.value) links[x.closest('[data-cttp]').dataset.cttp] = x.value; });
@@ -242,7 +263,8 @@
     stopMedia();
     const page = S.tab === 'tr' ? '<div data-cttrhost>' + transit() + '</div>'
       : S.tab === 'cal' ? access() + errors() + calendar() + last()
-        : banner(pend) + resTab() + seasonBox() + ideasBox();
+        : S.tab === 'gal' ? '<div data-ctgalhost>' + gallery() + '</div>'
+          : banner(pend) + resTab() + seasonBox() + ideasBox();
     body.innerHTML = tabs + toPost() + '<div class="cn-page is-' + S.tab + '">' + page + '</div>';
     const t2 = body.querySelector('[data-ctidea] input[name=text]');
     if (t2 && draft) { t2.value = draft; if (focused) t2.focus(); }
@@ -251,7 +273,7 @@
     wireShare(body);
     if (S.tab === 'tr') wireSwipe(body);
     K.badge('continut', pend);
-    if (dr && openId && !quiet) { const it = S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; dr.el.querySelector('.k-dfoot') && (dr.el.querySelector('.k-dfoot').innerHTML = itemFoot(it)); } }
+    if (dr && openId && !quiet) { const it = itemById(openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; dr.el.querySelector('.k-dfoot') && (dr.el.querySelector('.k-dfoot').innerHTML = itemFoot(it)); } }
   }
   // items wait for the owner's look: the way to Transit, on top of Insights
   function banner(n) {
@@ -259,11 +281,14 @@
     const it = queue()[0];
     return '<button type="button" class="cn-ban" data-cttab-go="tr"><span class="cn-ban-ic">' + icon('checkCircle') + '</span><span class="cn-main"><b>' + pl(n, 'material', 'materiale') + ' de aprobat</b><small>' + esc(it && it.week ? 'Săptămâna ' + range(it.week) : 'În Transit') + '</small></span><span class="cn-ban-go">Transit' + icon('right') + '</span></button>';
   }
+  // „Aprobă tot (N)” (the owner, 15.11: „să fie corelat cu nr de transit-uri”): everything in Transit, every week; the
+  // ids he saw go along, so one that arrives meanwhile still waits for his look
   async function approveAll(btn) {
-    const n = Number(btn.dataset.n) || 0;
-    if (!(await K.ui().confirm({ title: 'Aprobi ' + pl(n, 'material', 'materiale') + '?', message: 'Toate cele din săptămâna ' + range(btn.dataset.ctall) + ' intră în calendar, pe orele lor.', confirmText: 'Aprobă' }))) return;
-    const r = await save({ action: 'approve_week', week: btn.dataset.ctall }, btn);
-    if (r) { S.tr.seen += r.approved || 0; S.tr.last = null; K.ui().toast(r.approved === 1 ? 'Aprobat.' : pl(r.approved || 0, 'material aprobat', 'materiale aprobate') + '.', 'success'); }
+    const q = queue(), n = q.length;
+    if (!n || S.busy) return;
+    if (!(await K.ui().confirm({ title: n === 1 ? 'Aprobi materialul?' : 'Aprobi toate cele ' + n + '?', message: 'Intră în calendar, pe orele lor.', confirmText: 'Aprobă tot' }))) return;
+    const r = await save({ action: 'approve_all', ids: q.map((x) => x.id) }, btn);
+    if (r) { S.tr.seen += r.approved || 0; S.tr.last = null; S.tr.focus = ''; S.tr.skip = []; K.ui().toast(r.approved === 1 ? 'Aprobat.' : pl(r.approved || 0, 'material aprobat', 'materiale aprobate') + '.', 'success'); }
   }
   function access() {
     const a = S.d.access;
@@ -531,6 +556,8 @@
     caption: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 14h4M13 14h4M7 10h10"/>',
     desc: '<path d="M4 6h16M4 10h16M4 14h10M4 18h7"/>',
     clip: '<path d="m21 11-8.6 8.6a5 5 0 0 1-7-7l8.5-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.3-2.4l7.9-7.9"/>',
+    grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
+    card: '<rect x="6" y="2.5" width="12" height="19" rx="3"/>',
   };
   const mi = (n) => '<svg class="k-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MI[n] + '</svg>';
   const SPK = {
@@ -579,13 +606,21 @@
         '<div class="cn-tx-done"><span class="cn-tx-done-ic">' + icon('checkCircle') + '</span><b>Nimic de aprobat</b><p>' + esc(sub) + '</p>' +
         (ok ? '<button type="button" class="k-btn is-outline" data-cttab-go="cal">' + icon('calendar') + pl(ok, 'aprobat', 'aprobate') + ' în calendar' + icon('right') + '</button>' : '') + '</div></section>' + later;
     }
+    // „Aprobă tot (N)”: N is the Transit count, every week (the owner, 15.11)
+    const allB = q.length > 1 ? '<button type="button" class="k-btn is-ghost is-sm cn-tx-all" data-ctall>' + icon('checkCircle') + 'Aprobă tot (' + q.length + ')</button>' : '';
+    const sw = q.length > 1 ? viewSwitch() : '';
+    if (S.tr.view === 'grid' && q.length > 1) {
+      const gbar = '<div class="cn-tx-bar"><span class="cn-tx-n"><b>' + q.length + '</b> de aprobat</span><span class="k-grow"></span>' + undo + '<span class="cn-tx-ba">' + allB + '</span>' + sw + '</div>';
+      return '<section class="cn-tx is-grid">' + gbar + '<div class="cn-cvg" role="list">' + q.map((x) => tile(x, 'tr')).join('') + '</div></section>' + later;
+    }
     const skipped = (S.tr.skip || []).filter((x) => q.some((y) => y.id === x)).length;
-    const total = S.tr.seen + q.length, pos = S.tr.seen + 1 + Math.min(skipped, q.length - 1);
+    // a cover tapped in the grid: its own place in the queue
+    const total = S.tr.seen + q.length, pos = S.tr.seen + 1 + (S.tr.focus === it.id ? q.indexOf(it) : Math.min(skipped, q.length - 1));
     const dots = total <= 14 ? '<span class="cn-tx-dots" aria-hidden="true">' + Array.from({ length: total }, (_, i) => '<i class="' + (i < S.tr.seen ? 'is-done' : i === pos - 1 ? 'is-on' : '') + '"></i>').join('') + '</span>' : '<span class="cn-tx-prog" aria-hidden="true"><i style="width:' + ((S.tr.seen / total) * 100).toFixed(1) + '%"></i></span>';
-    const wk = q.filter((x) => x.week === it.week).length;
     const skipB = q.length > 1 ? '<button type="button" class="k-btn is-ghost is-sm cn-tx-skip" data-cttr-skip aria-label="Următorul, fără decizie (săgeata jos)">Următorul' + icon('right') + '</button>' : '';
-    const bar = '<div class="cn-tx-bar"><span class="cn-tx-n"><b>' + pos + '</b> din ' + total + '</span>' + dots + '<span class="k-grow"></span>' + undo + skipB +
-      (wk > 1 ? '<button type="button" class="k-btn is-ghost is-sm cn-tx-all" data-ctall="' + esc(it.week) + '" data-n="' + wk + '">' + icon('checkCircle') + 'Aprobă tot (' + wk + ')</button>' : '') + '</div>';
+    // phones: the count and the switch on one line, „Următorul” and „Aprobă tot” under them, half each
+    const bar = '<div class="cn-tx-bar"><span class="cn-tx-n"><b>' + pos + '</b> din ' + total + '</span>' + dots + '<span class="k-grow"></span>' + undo +
+      (skipB || allB ? '<span class="cn-tx-ba">' + skipB + allB + '</span>' : '') + sw + '</div>';
     const nx = q.filter((x) => x !== it)[0];
     const peek = nx ? '<div class="cn-tx-peek" aria-hidden="true">' + (nx.cover ? '<img src="' + esc(cover(nx)) + '" alt="">' : '') + '</div>' : '';
     return '<section class="cn-tx" data-cttr>' + bar + '<div class="cn-tx-stage">' + peek + trCard(it) + '</div>' +
@@ -608,7 +643,9 @@
       (sel ? capView(it, sel) : '') + '</div>';
     // on a phone the networks and times sit on the video too, seen before anything else
     // the player's controls sit under the networks and times, at the top: the approve buttons float at the bottom
-    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(VC, '').replace(/<\/div>$/, '<div class="cn-tx-ov">' + slotRow(it) + (mainVid(it) ? VC : '') + '</div></div>') +
+    // the star (a favourite) sits on the video, top right under the player's controls: clear of them, of the approve
+    // buttons at the bottom and of the speaker
+    return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(VC, '').replace(/<\/div>$/, '<div class="cn-tx-ov">' + slotRow(it) + (mainVid(it) ? VC : '') + '<div class="cn-tx-fv">' + favBtn(it, 'is-on-video') + '</div></div></div>') +
       '<span class="cn-tx-stamp is-ok" aria-hidden="true">' + icon('check') + 'Aprobat</span><span class="cn-tx-stamp is-no" aria-hidden="true">' + icon('undo') + 'De refăcut</span>' +
       '<div class="cn-tx-i"><div class="cn-tx-h"><small>' + esc(meta) + (it.week ? ' · ' + esc(range(it.week)) : '') + '</small><h3>' + esc(title(it)) + '</h3>' + (it.hook ? '<p class="cn-tx-hook">„' + esc(it.hook) + '”</p>' : '') + '</div>' +
       '<div class="cn-tx-w"><small>Când și unde se postează</small>' + slotRow(it, true) + '</div>' + prev + bad + caps +
@@ -629,6 +666,111 @@
     host.innerHTML = transit();
     wireMedia(host);
     wireSwipe(host);
+  }
+  // ------------------------------------------------------------------ the grid (Transit) and Galerie
+  // one card or every cover at once (the owner, 15.11: „ca să nu trebuiască să apăs pe următorul în continuu”)
+  function viewSwitch() {
+    const b = (v, ic, label) => '<button type="button" class="' + (S.tr.view === v ? 'is-on' : '') + '" data-ctview="' + v + '" aria-pressed="' + (S.tr.view === v) + '" aria-label="' + label + '" title="' + label + '">' + mi(ic) + '</button>';
+    return '<span class="cn-vw" role="group" aria-label="Cum arată Transit">' + b('card', 'card', 'Unul câte unul') + b('grid', 'grid', 'Toate, în grilă') + '</span>';
+  }
+  const itemById = (id) => (S.d && S.d.items.find((x) => x.id === id)) || (S.gal.list || []).find((x) => x.id === id) || null;
+  const favBtn = (it, cls) => { const on = !!it.fav; return '<button type="button" class="cn-fav ' + (cls || '') + (on ? ' is-on' : '') + '" data-ctfav="' + esc(it.id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Scoate de la favorite' : 'Pune la favorite') + '" title="' + (on ? 'Favorit' : 'Pune la favorite') + '">' + icon('star') + (/is-chip/.test(cls || '') ? '<span>' + (on ? 'Favorit' : 'Pune la favorite') + '</span>' : '') + '</button>'; };
+  // a star tapped: at once on screen, then saved (back as it was if the save fails)
+  async function toggleFav(id) {
+    const it = itemById(id);
+    if (!it || S.favBusy[id]) return;
+    const on = !it.fav;
+    S.favBusy[id] = true;
+    setFavLocal(id, on, on ? new Date().toISOString() : '', true);
+    try {
+      const r = await K.api('/api/portal-content', { action: 'fav', id, fav: on });
+      if (r && r.items) S.d = r;
+      if (r && r.fav) setFavLocal(id, r.fav.fav, r.fav.favAt);
+      K.badge('continut', queue().length);
+    } catch (err) {
+      setFavLocal(id, !on, it.favAt || '');
+      K.ui().toast(ERR[err && err.code] || K.errText(err, 'Nu am putut salva.'), 'error');
+    } finally { delete S.favBusy[id]; }
+  }
+  function setFavLocal(id, on, at, pop) {
+    [S.d && S.d.items, S.gal.list].forEach((list) => (list || []).forEach((x) => { if (x.id === id) { x.fav = !!on; x.favAt = on ? at || x.favAt || new Date().toISOString() : ''; } }));
+    // every star of this item on screen (the card, the grid, the drawer) follows, without repainting the playing video
+    document.querySelectorAll('[data-ctfav="' + id + '"]').forEach((b) => {
+      b.classList.toggle('is-on', !!on); b.setAttribute('aria-pressed', String(!!on));
+      b.setAttribute('aria-label', on ? 'Scoate de la favorite' : 'Pune la favorite'); b.title = on ? 'Favorit' : 'Pune la favorite';
+      const t = b.querySelector('span'); if (t) t.textContent = on ? 'Favorit' : 'Pune la favorite';
+      if (pop && on && !still) { b.classList.remove('is-pop'); void b.offsetWidth; b.classList.add('is-pop'); }
+    });
+    if (S.tab === 'gal') paintGallery();
+  }
+  // an item's real numbers, its posted networks added up (nothing guessed: no numbers, no rank)
+  function nums(it) {
+    const t = { views: 0, saves: 0, shares: 0, any: false };
+    const nets = [...new Set((it.plan || []).filter((e) => e.state === 'posted').map((e) => e.net))];
+    nets.forEach((n) => { const x = (it.stats || {})[n]; if (!x) return; if (x.views != null || x.saves != null || x.shares != null) t.any = true; t.views += x.views || 0; t.saves += x.saves || 0; t.shares += x.shares || 0; });
+    if (!(t.views + t.saves + t.shares)) t.any = false;
+    return t;
+  }
+  const postedAt = (it) => (it.plan || []).filter((e) => e.state === 'posted').map((e) => e.postedAt || e.at).filter(Boolean).sort().pop() || '';
+  // the small chips of a cover: where and when it goes, in time order
+  function miniSlots(it) {
+    const on = netsOf(it).map((n) => ({ n, e: entryOf(it, n) })).filter((x) => x.e && x.e.at).sort((a, b) => a.e.at.localeCompare(b.e.at));
+    if (!on.length) return '';
+    return '<span class="cn-gt-sl">' + on.map(({ n, e }) => '<i class="' + (e.state === 'posted' ? 'is-posted' : '') + '" title="' + esc(NET[n] + ', ' + when(e.at)) + '">' + badge(n) + '<b>' + esc(dow(roDay(e.at))) + '</b>' + fTime.format(new Date(e.at)) + '</i>').join('') + '</span>';
+  }
+  // a cover in a grid: 9:16, the star, „Refăcut”, the title, the week (Transit) or the post's numbers (Galerie)
+  function tile(it, where, rank) {
+    const n = nums(it), when2 = postedAt(it);
+    const open = where === 'tr' ? ' data-cttr-open="' + esc(it.id) + '"' : ' data-ctitem="' + esc(it.id) + '"';
+    const img = it.cover ? '<img src="' + esc(cover(it)) + '" alt="" loading="lazy" decoding="async" draggable="false">' : '<span class="cn-gt-ph">' + icon(photo(it) ? 'layers' : 'video') + '</span>';
+    const tags = (rank ? '<span class="cn-gt-rk">' + rank + '</span>' : '') + (it.replacedAt ? '<span class="cn-gt-tag">' + icon('refresh') + 'Refăcut</span>' : '') +
+      (where === 'tr' && qaOf(it).problems.length ? '<span class="cn-gt-tag is-bad" title="' + esc(qaOf(it).problems[0]) + '">' + icon('alert') + '</span>' : '');
+    const dur = (mainVid(it) || {}).dur;
+    const foot = n.any ? '<span class="cn-gt-st">' + icon('eye') + k(n.views) + (n.saves + n.shares ? '<em>' + icon('book') + k(n.saves + n.shares) + '</em>' : '') + '</span>'
+      : dur && where === 'tr' ? '<span class="cn-gt-st is-dur">' + Math.round(dur) + ' s</span>' : '';
+    const sub = where === 'tr' ? (it.week ? 'Săpt. ' + range(it.week) : KIND[it.kind] || '') : when2 ? 'Postat ' + dm(roDay(when2)) : it.week ? 'Săpt. ' + range(it.week) : '';
+    return '<div class="cn-gt' + (where === 'tr' ? ' is-tr' : '') + '" role="listitem"><button type="button" class="cn-gt-b"' + open + ' aria-label="' + esc(title(it)) + '"><span class="cn-gt-c' + (photo(it) ? ' is-photo' : '') + '">' + img + (tags ? '<span class="cn-gt-tags">' + tags + '</span>' : '') + foot + '</span>' +
+      '<span class="cn-gt-i"><b>' + esc(title(it)) + '</b><small>' + esc(sub) + '</small>' + (where === 'tr' || !when2 ? miniSlots(it) : '') + '</span></button>' + favBtn(it, 'is-on-cover') + '</div>';
+  }
+  // Galerie: read when the tab opens (again after a minute); until then, what the page already has
+  async function loadGallery(force) {
+    if (S.gal.busy || (!force && S.gal.list && Date.now() - S.gal.at < 60e3)) return;
+    S.gal.busy = true;
+    try { const r = await K.api('/api/portal-content', { action: 'gallery' }); S.gal.list = (r && r.items) || []; S.gal.at = Date.now(); S.gal.err = ''; }
+    catch (err) { S.gal.err = K.errText(err); }
+    finally { S.gal.busy = false; }
+    if (S.tab === 'gal' && S.d) paintGallery();
+  }
+  // every item approved (ready) or posted, the page's own copy first (the freshest)
+  function galItems() {
+    const map = new Map();
+    (S.gal.list || []).forEach((x) => map.set(x.id, x));
+    (S.d.items || []).forEach((x) => map.set(x.id, x));
+    return [...map.values()].filter((it) => !it.removed && ((review(it) === 'approved' && !it.dropped && it.state === 'ready') || (it.plan || []).some((e) => e.state === 'posted')));
+  }
+  const newest = (it) => postedAt(it) || firstAt(it) || it.createdAt || '';
+  function gallery() {
+    const all = galItems().sort((a, b) => newest(b).localeCompare(newest(a)));
+    const favs = all.filter((x) => x.fav).sort((a, b) => String(b.favAt || '').localeCompare(String(a.favAt || '')));
+    // the best: by the real views, then the saves and shares (the numbers content-stats.js reads per network)
+    const best = all.filter((x) => nums(x).any).sort((a, b) => { const x = nums(a), y = nums(b); return (y.views - x.views) || ((y.saves + y.shares) - (x.saves + x.shares)); });
+    const seg = S.gal.seg, list = seg === 'fav' ? favs : seg === 'best' ? best : all;
+    const segs = '<div class="k-seg cn-galseg" data-k-seg="ctgal">' + [['all', 'Toate', all.length], ['fav', 'Favorite', favs.length], ['best', 'Cele mai bune', best.length]].map(([v, l, c]) =>
+      '<button type="button" data-v="' + v + '" class="' + (v === seg ? 'is-on' : '') + '"><span>' + l + '</span><em>' + c + '</em></button>').join('') + '<input type="hidden" name="ctgal" value="' + esc(seg) + '"></div>';
+    const loading = !S.gal.list && !S.gal.err;
+    let body;
+    if (list.length) body = '<div class="cn-cvg" role="list">' + list.map((x, i) => tile(x, 'gal', seg === 'best' ? i + 1 : 0)).join('') + '</div>';
+    else if (loading && seg !== 'fav') body = '<div class="cn-cvg">' + '<div class="k-skel cn-gt-sk"></div>'.repeat(6) + '</div>';
+    else {
+      const E = { all: ['image', 'Nimic aprobat încă', 'Ce aprobi în Transit apare aici.'], fav: ['star', 'Nicio favorită încă', 'Atinge steaua de pe un reel ca să-l pui aici.'], best: ['trophy', 'Încă fără cifre', 'Apar după primele postări, când avem cifre.'] }[seg];
+      body = '<div class="cn-gal0"><span class="cn-gal0-ic">' + icon(E[0]) + '</span><b>' + E[1] + '</b><p>' + E[2] + '</p></div>';
+    }
+    const note = seg === 'best' && best.length ? '<p class="cn-gal-n">După vizualizări, apoi salvări și distribuiri, pe toate rețelele.</p>' : '';
+    return '<section class="cn-gal">' + segs + note + (S.gal.err && !S.gal.list ? '<p class="cn-line is-bad">' + icon('alert') + '<span>Nu am putut încărca galeria: ' + esc(S.gal.err) + '</span></p>' : '') + body + '</section>';
+  }
+  function paintGallery() {
+    const host = panel && panel.querySelector('[data-ctgalhost]');
+    if (host) host.innerHTML = gallery();
   }
   // the card follows the finger; far enough (or fast enough) to a side decides it
   function wireSwipe(root) {
@@ -702,7 +844,7 @@
     if (!panel || !S.d || S.tab !== 'tr' || !K.isActive('continut') || e.metaKey && e.key !== 'z' || e.altKey) return;
     if (document.querySelector('.k-drawer-root.is-open, .c360-dialog-root, .c360-palette-root')) return;
     if (e.target && e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
-    const it = current();
+    const it = S.tr.view === 'grid' && queue().length > 1 ? null : current();
     if (e.key === 'ArrowRight' && it) { e.preventDefault(); decide(it.id, 'ok'); }
     else if (e.key === 'ArrowLeft' && it) { e.preventDefault(); openRedo(it.id); }
     else if (e.key === 'ArrowDown' && it) { e.preventDefault(); skipItem(it.id); }
@@ -1309,7 +1451,7 @@
   function itemBody(it) {
     const on = S.d.settings.nets, r = review(it);
     const rv = REVIEW[r];
-    const status = '<div class="cn-rv is-' + r + '"><span class="k-tag ' + rv[1] + '">' + (r === 'approved' ? icon('check') : r === 'redo' ? icon('undo') : '') + rv[0] + '</span>' +
+    const status = '<div class="cn-rv is-' + r + '">' + favBtn(it, 'is-chip') + '<span class="k-tag ' + rv[1] + '">' + (r === 'approved' ? icon('check') : r === 'redo' ? icon('undo') : '') + rv[0] + '</span>' +
       (r === 'redo' ? (it.redo ? requestView(it.redo) : it.redoNote ? '<p>' + esc(it.redoNote) + '</p>' : '') : r === 'pending' && it.replacedAt ? '<p>Refăcut' + (it.redoNote ? ': ' + esc(it.redoNote) : '') + '</p>' : '') +
       (r === 'approved' ? (it.notes || []).filter((n) => n && n.kind === 'approve' && n.note).slice(-1).map((n) => '<p class="cn-rv-nt">' + icon('pen') + esc(n.note) + '</p>').join('') : '') +
       (r === 'redo' && it.state === 'draft' ? '<p class="cn-rv-w">' + icon('refresh') + 'Se reface</p>' : '') +
@@ -1470,7 +1612,7 @@
       (r !== 'approved' ? '<button type="button" class="k-btn is-primary" data-ctok>' + icon('check') + 'Aprobă</button>' : '');
   }
   function openItem(id, net) {
-    const it = S.d.items.find((x) => x.id === id); if (!it) return;
+    const it = itemById(id); if (!it) return;
     openId = id; focusNet = net || '';
     if (!S.r && (it.plan || []).some((e) => e.state === 'posted')) setTimeout(() => loadResults(), 0);
     dr = K.drawer({
@@ -1497,7 +1639,8 @@
           if (await save({ action: 'captions', id, captions: { [t.dataset.ctcap]: t.value } }, null, true)) K.ui().toast('Text salvat pentru ' + NET[t.dataset.ctcap] + '.', 'success');
         });
         el.addEventListener('click', async (e) => {
-          const cur = S.d.items.find((x) => x.id === id) || it;
+          const cur = itemById(id) || it;
+          const fv = e.target.closest('[data-ctfav]'); if (fv) return toggleFav(id);
           const bst = e.target.closest('[data-ctboost]'); if (bst) return boost(bst, id, bst.dataset.ctboost);
           const sn = e.target.closest('[data-ctskipnet]');
           if (sn) {
