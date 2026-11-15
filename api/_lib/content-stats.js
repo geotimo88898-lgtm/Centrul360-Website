@@ -337,7 +337,7 @@ async function run(opts) {
       // the bell keeps 160 characters: the names and views here, the links in Admin → Conținut (Top săptămâna)
       const name = (x) => { const t = String(x.topic || x.rubric || x.kind); return t.length > 34 ? t.slice(0, 33).replace(/\s+\S*$/, '') + '…' : t; };
       const text = 'De pus ca reclamă: ' + best.map((x, i) => (i + 1) + '. ' + name(x) + ' (' + kNum(x.views) + ')').join(' · ');
-      await N.notifyMany(store, await N.ownerIds(store), { kind: 'report', tone: 'good', go: 'continut', tag: 'ct-top-' + week, title: 'TOP CONȚINUT SĂPTĂMÂNA ASTA 🔥', text });
+      await N.notifyMany(store, await N.ownerIds(store), { kind: 'report', tone: 'good', go: 'continut', tag: 'ct-top-' + week, title: 'TOP CONTENT SĂPTĂMÂNA ASTA 🔥', text });
     }
     s.topWeek = week; save = true;
     out.top = best.map((x) => ({ id: x.id, score: x.score, url: x.url }));
@@ -362,7 +362,7 @@ async function hotAlerts(now) {
     const t = String(x.it.topic || x.it.rubric || 'Material');
     const topic = t.length > 48 ? t.slice(0, 47).replace(/\s+\S*$/, '') + '…' : t;
     const hours = x.h < 1.5 ? 'prima oră' : C.plural(Math.round(x.h), 'oră', 'ore');
-    const text = (C.NET_NAME[x.net] + ': ' + kNum(x.views) + ' vizualizări în ' + hours + ', de ' + x.x.toLocaleString('ro-RO') + ' ori peste obișnuit. Fă reclamă din asta, din Conținut.').slice(0, 160);
+    const text = (C.NET_NAME[x.net] + ': ' + kNum(x.views) + ' vizualizări în ' + hours + ', de ' + x.x.toLocaleString('ro-RO') + ' ori peste obișnuit. Fă reclamă din asta, din Content.').slice(0, 160);
     try { await N.notifyMany(store, await N.ownerIds(store), { kind: 'alert', tone: 'good', go: 'continut', tag: 'ct-hot-' + x.it.id, title: 'MERGE TARE 🔥 ' + topic, text }); }
     catch (e) { console.error('content hot:', e.message); }
   }

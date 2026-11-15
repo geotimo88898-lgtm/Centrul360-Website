@@ -196,7 +196,11 @@
     const C2 = BT(p.cards[1].b), C3 = BT(p.phone.b), E0 = BT(p.end.b0), E1 = BT(p.end.b), TN = BT(p.end.nuki != null ? p.end.nuki : p.end.b + 1);
     const S0 = clamp(760 / items[0].tw, 1, 2.2); // the first question fills the text column (the hook)
     const f0 = centre(0, BT(2));
-    const toF = (f, t) => (f === 'sheet' || f == null ? [540, SH_CY] : Array.isArray(f) ? f : centre(f, Math.max(t, items[f].tMsg + 0.6))); // a bubble: where it will stand, full size
+    const toF = (f, t) => { if (f === 'sheet' || f == null) return [540, SH_CY]; if (Array.isArray(f)) return f;
+      if (f.span) { const [a, b] = f.span, tt = Math.max(t, items[b].tMsg + 0.6), L = lay(tt), y0 = L.top + HEAD + PADT - L.O; // a run of bubbles, framed once the last one stands
+        return [f.x != null ? f.x : 540, y0 + (L.tops[a] + L.tops[b] + (L.st[b] || items[b]).h) / 2 + (f.dy || 0)]; }
+      const i = typeof f === 'object' ? f.i : f, c = centre(i, Math.max(t, items[i].tMsg + 0.6)); // a bubble: where it will stand, full size
+      return typeof f === 'object' ? [f.x != null ? f.x : c[0], f.y != null ? f.y : c[1] + (f.dy || 0)] : c; };
     const MV = (p.moves || []).map((m) => { const t0 = BT(m.b); return Object.assign({}, m, { t0, F: toF(m.f, t0 + (m.d || 0.6)) }); });
     const chatCam = (t) => {
       let c = { s: S0, fx: f0[0], fy: f0[1], rx: 5, ry: -8, rz: -1.6 };
@@ -354,34 +358,36 @@
     // mix.py keeps at most one non-tick sound per 70 ms: a move's hit sits ON the beat (pushed before the bubble's tap,
     // which is never thinned), its whoosh peaks 2-3 frames later, where the move is fastest
     const ev = (t, k) => R.event(t, k);
+    // a no-voice reel: the effects sit +3 dB over the bed mix.py gives a reel without voice (the owner, 15.11: the music a
+    // little quieter; here it carries the reel, but every bubble, hit and whoosh stays clearly audible)
+    const sfx = (t, cat, g = 0.6, o) => ctx.sfx(t, cat, g * 1.41, o);
     const SP = 0.085;
-    ctx.sfx(0.09, 'impact', 0.3, { prio: 4 });
-    MV.forEach((m) => { if (m.hit) ctx.sfx(m.t0, 'hit_deep', m.hit, { prio: 4 }); ctx.sfx(m.t0 + SP, 'whoosh_cut', m.hit ? 0.35 + 0.4 * m.hit : 0.35, { prio: 3, peak: true }); ev(m.t0, 'move'); });
+    sfx(0.09, 'impact', 0.3, { prio: 4 });
+    MV.forEach((m) => { if (m.hit) sfx(m.t0, 'hit_deep', m.hit, { prio: 4 }); sfx(m.t0 + SP, 'whoosh_cut', m.hit ? 0.35 + 0.4 * m.hit : 0.35, { prio: 3, peak: true }); ev(m.t0, 'move'); });
     const busy = (tt) => MV.some((m) => Math.abs(m.t0 + SP - tt) < 0.08) || HB.some((x) => Math.abs(x - tt) < 0.08);
-    const typingSounds = (tType, tMsg, pan) => { for (let k = 1; tType + k * per / 2 < tMsg - 0.1; k++) { const tt = tType + k * per / 2; if (!busy(tt)) ctx.sfx(tt, 'tick_soft', 0.32, { pan }); } };
+    const typingSounds = (tType, tMsg, pan) => { for (let k = 1; tType + k * per / 2 < tMsg - 0.1; k++) { const tt = tType + k * per / 2; if (!busy(tt)) sfx(tt, 'tick_soft', 0.32, { pan }); } };
     items.forEach((it) => {
       if (it.tType != null) { ev(it.tType, 'type'); typingSounds(it.tType, it.tMsg, it.who === 'n' ? -0.3 : 0.3); }
       const ts = Math.max(0, it.tMsg);
-      if (it.who === 'n' && !MV.some((m) => m.hit && Math.abs(m.t0 - ts) < 0.08)) ctx.sfx(ts, 'dot', 0.7, { pan: -0.22, prio: 3 }); else ctx.sfx(ts, 'tap', 0.72, { pan: it.who === 'n' ? -0.22 : 0.22 });
+      if (it.who === 'n' && !MV.some((m) => m.hit && Math.abs(m.t0 - ts) < 0.08)) sfx(ts, 'dot', 0.7, { pan: -0.22, prio: 3 }); else sfx(ts, 'tap', 0.72, { pan: it.who === 'n' ? -0.22 : 0.22 });
       ev(ts, 'pop');
     });
     // the gap in the music: a heartbeat on its beats
-    HB.forEach((t) => { ctx.sfx(t, 'pulse', 0.62, { prio: 3 }); ev(t, 'breath'); });
+    HB.forEach((t) => { sfx(t, 'pulse', 0.62, { prio: 3 }); ev(t, 'breath'); });
     // the lift: the bubble peels off the sheet, rushes edge-on into the lens; the drums come back through the light
-    ctx.sfx(TL, 'card_flip', 0.62); ev(TL, 'open');
-    ctx.sfx(TS - 0.09, 'whoosh_through', 0.7, { prio: 4, peak: true });
-    ctx.sfx(TS, 'hit_deep', 1.0, { prio: 5 }); ev(TS, 'cut');
-    ctx.sfx(TS, 'card_flip', 0.55);
-    ctx.sfx(TS + 0.1, 'shimmer_soft', 0.7, { prio: 3 }); ev(TS + 0.1, 'glow');
+    sfx(TL, 'card_flip', 0.62); ev(TL, 'open');
+    sfx(TS - 0.033, 'whoosh_through', 0.7, { prio: 4, peak: true }); ev(TS, 'cut');
+    sfx(TS + 0.04, 'hit_deep', 1.0, { prio: 5 }); // one frame after the light's peak, with the drums (118.149 s in the track = 11.229 s)
+    sfx(TS + 0.13, 'shimmer_soft', 0.7, { prio: 3 }); ev(TS + 0.13, 'glow');
     // the montage: a hit on each bar's beat, the card flies past (its whoosh at the fastest frames), the next one lands
-    (p.mmoves || []).forEach((m) => { const t0 = BT(m.b); if (m.hit) ctx.sfx(t0, 'hit_deep', m.hit, { prio: 4 }); ctx.sfx(t0 + SP, 'whoosh_cut', 0.4, { prio: 3, peak: true }); ev(t0, 'move'); });
-    [C2, C3].forEach((t) => { ctx.sfx(t, 'hit_deep', 0.6, { prio: 4 }); ctx.sfx(t, 'card_flip', 0.62); ev(t, 'flip'); ctx.sfx(t + 0.12, 'whoosh_cut', 0.62, { prio: 3, peak: true }); ev(t + 0.12, 'cut'); ctx.sfx(t + 0.36, 'tap', 0.6); ev(t + 0.36, 'slam'); });
+    (p.mmoves || []).forEach((m) => { const t0 = BT(m.b); if (m.hit) sfx(t0, 'hit_deep', m.hit, { prio: 4 }); sfx(t0 + SP, 'whoosh_cut', 0.4, { prio: 3, peak: true }); ev(t0, 'move'); });
+    [C2, C3].forEach((t) => { sfx(t, 'hit_deep', 0.6, { prio: 4 }); sfx(t, 'card_flip', 0.62); ev(t, 'flip'); sfx(t + 0.12, 'whoosh_cut', 0.62, { prio: 3, peak: true }); ev(t + 0.12, 'cut'); sfx(t + 0.36, 'tap', 0.6); ev(t + 0.36, 'slam'); });
     // the phone turns over into Nuki's last bubble
-    ctx.sfx(E0, 'hit_deep', 0.5, { prio: 4 }); ctx.sfx(E0, 'card_flip', 0.62); ev(E0, 'flip');
-    ctx.sfx(E0 + (E1 - E0) / 2, 'swoosh_end', 0.6, { prio: 4, peak: true }); ev(E0 + (E1 - E0) / 2, 'cut');
-    ctx.sfx(E1, 'dot', 0.78, { prio: 3 }); ev(E1, 'slam');
-    ctx.sfx(TN, 'tap', 0.55); ev(TN, 'pop');
-    if (rep) { ev(rep.tType, 'type'); typingSounds(rep.tType, rep.tMsg, 0.3); ctx.sfx(rep.tMsg, 'tap', 0.75, { pan: 0.22 }); ev(rep.tMsg, 'pop'); ctx.sfx(rep.tMsg + 0.1, 'shimmer_soft', 0.6, { prio: 3 }); ev(rep.tMsg + 0.1, 'glow'); }
+    sfx(E0, 'hit_deep', 0.5, { prio: 4 }); sfx(E0, 'card_flip', 0.62); ev(E0, 'flip');
+    sfx(E0 + (E1 - E0) / 2, 'swoosh_end', 0.6, { prio: 4, peak: true }); ev(E0 + (E1 - E0) / 2, 'cut');
+    sfx(E1, 'dot', 0.78, { prio: 3 }); ev(E1, 'slam');
+    sfx(TN, 'tap', 0.55); ev(TN, 'pop');
+    if (rep) { ev(rep.tType, 'type'); typingSounds(rep.tType, rep.tMsg, 0.3); sfx(rep.tMsg, 'tap', 0.75, { pan: 0.22 }); ev(rep.tMsg, 'pop'); sfx(rep.tMsg + 0.1, 'shimmer_soft', 0.6, { prio: 3 }); ev(rep.tMsg + 0.1, 'glow'); }
     ev(E1 + 1.4, 'hold');
     ctx.focus(cP.c);
   };

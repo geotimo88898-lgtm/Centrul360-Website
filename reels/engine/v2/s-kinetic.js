@@ -24,7 +24,7 @@
   const back = (p, c = 1.4) => { p = clamp(p); const c3 = c + 1; return 1 + c3 * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
   // the camera moves into each station: crane (vertical), through (push through the old picture), whip (horizontal),
   // pull (pull back), flash (zoom through light into the focus point)
-  const MOVE = [null, 'crane', 'through', 'whip', 'pull', 'crane', 'flash', 'whip', 'through', 'crane'];
+  const MOVE = [null, 'carry', 'through', 'whip', 'pull', 'crane', 'flash', 'whip', 'through', 'crane'];
   const MD = 0.62;
 
   let W = null;
@@ -53,7 +53,7 @@
     TYPES.forEach((_, i) => { defs[i] = root.querySelector('#kn-mb' + i + ' feGaussianBlur'); });
     // the paper: white, the brand's grid (faint, still), soft turquoise rings out of focus in the corners
     mk(root, 'position:absolute;inset:0;background-image:linear-gradient(rgba(20,165,150,.05) 1px,transparent 0),linear-gradient(90deg,rgba(20,165,150,.05) 1px,transparent 0);background-size:54px 54px;background-position:-1px -1px');
-    const rings = [[-170, 120, 520, 0.9], [760, 1430, 640, 0.7], [820, -160, 380, 0.5]].map(([x, y, d, o], k) => { const r = mk(root, 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + d + 'px;height:' + d + 'px;border-radius:50%;border:' + (34 + k * 8) + 'px solid rgba(20,165,150,' + (0.09 * o).toFixed(3) + ');filter:blur(' + (26 + k * 6) + 'px)'); return { r, x, y, k }; });
+    const rings = [[-230, 160, 520, 0.55], [800, 1500, 640, 0.45], [860, -220, 380, 0.35]].map(([x, y, d, o], k) => { const r = mk(root, 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + d + 'px;height:' + d + 'px;border-radius:50%;border:' + (22 + k * 6) + 'px solid rgba(95,212,198,' + (0.14 * o).toFixed(3) + ');filter:blur(' + (34 + k * 6) + 'px)'); return { r, x, y, k }; });
     const cam = mk(root, 'position:absolute;inset:0;transform-origin:540px 960px');
     const ST = TYPES.map((_, i) => { const o = mk(cam, null, 'st'); const inner = mk(o, null, 'st'); return { o, el: inner, i, ticks: [] }; });
     const flashEl = mk(root, 'position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9');
@@ -82,7 +82,8 @@
           K.ws.push({ s, wi, key, mode, t: tw, lts }); }); });
       cur[li] = last;
       if (o.kem) el.querySelectorAll('.k').forEach((e) => { e.style.fontSize = o.kem + 'em'; });
-      let fs = parseFloat(el.style.fontSize); while (fs > 30 && el.scrollWidth > (o.max || 780)) { fs -= 2; el.style.fontSize = fs + 'px'; }
+      const wid = () => { const rg = document.createRange(); rg.selectNodeContents(el); return rg.getBoundingClientRect().width; };
+      let fs = parseFloat(el.style.fontSize); while (fs > 30 && wid() > (o.max || 800)) { fs -= 2; el.style.fontSize = fs + 'px'; }
       K.t0 = K.ws[0].t; K.out = o.out; kin.push(K);
       K.ws.forEach((w) => { if (!o.silent) cue(w.t + 0.04, w.mode === 'blur' ? 'tick_soft' : 'tick_soft', w.mode === 'blur' ? 0.5 : 0.28); ev(w.t + 0.04, w.mode === 'blur' ? 'reveal' : 'step'); });
       return K;
@@ -100,15 +101,15 @@
     T.slab = wt(0, /^slăbi/, 0.35); T.tot = wt(0, /^tot/, 1.0); T.iar = wt(0, /^iar/, 1.3); T.ram = wt(0, /^rămân/, 1.9);
     // the drop: the bass comes back on a beat (the script puts the piece so that it lands on „rămân”)
     T.drop = S0.dropAt != null ? S0.dropAt : R.cam.beat(T.ram);
-    const b0b = block(s0.el, 640, 'iar zonele astea', { li: 0, size: 66, weight: 520, q: 1 });
+    const b0b = block(s0.el, 1110, 'iar zonele astea', { li: 0, size: 66, weight: 520, q: 1 });
     const ram = block(s0.el, 760, '*rămân*', { li: 0, size: 290, weight: 900, letters: true, plainKey: true, css: 'letter-spacing:-.05em;line-height:1', q: 1, at: T.drop, silent: true });
-    b0.out = T.drop - 0.08; pt.out = pt2.out = T.drop - 0.02; b0b.el.style.visibility = 'hidden';
+    b0.out = T.drop - 0.14; pt.out = pt2.out = T.drop - 0.12; b0b.out = S[1] - 0.06;
     const band0 = mk(s0.el, 'position:absolute;left:0;top:740px;width:220px;height:360px;background:linear-gradient(90deg,rgba(95,212,198,0),rgba(95,212,198,.42),rgba(95,212,198,0));mix-blend-mode:multiply;filter:blur(6px);opacity:0');
     T.wave0 = T.slab + 0.05; T.wave1 = T.tot + 0.42;
     cue(0, 'impact', 0.32, { prio: 4 }); cue(0.02, 'tick_soft', 0.4); ev(0.05, 'step');
     cue(T.wave0, 'suck_in', 0.45); ev(T.wave0 + 0.2, 'step'); ev(T.wave0 + 0.6, 'step');
     cue(T.drop, 'hit_deep', 0.95, { prio: 5 }); cue(T.drop, 'whoosh_cut', 0.55, { peak: true, prio: 4 }); ev(T.drop, 'reveal');
-    T.res = T.drop + 0.5; cue(T.res, 'shimmer_soft', 0.4); cue(T.res + 0.32, 'pulse', 0.55); ev(T.res, 'step'); ev(T.res + 0.32, 'step');
+    T.res = T.drop + 0.16; cue(T.res, 'shimmer_soft', 0.4); cue(T.res + 0.32, 'pulse', 0.55); ev(T.res, 'step'); ev(T.res + 0.32, 'step');
     s0.ticks.push((t) => {
       // „peste tot” thins letter by letter from „slăbi” to „tot” (the weight is the fat)
       const all = pt.ws[0].lts.concat(pt2.ws[0].lts), n = all.length;
@@ -116,11 +117,13 @@
       const breathe = 1 + 0.012 * Math.sin(t * 2.2);
       [pt, pt2].forEach((K) => { K.el.style.transform = 'scale(' + (breathe * (t < T.drop ? 1 : 1)).toFixed(4) + ')'; });
       // after the drop: the line above „rămân”, then a slimming wave that does not move a single stroke
-      b0b.el.style.visibility = t >= T.drop - 0.05 ? '' : 'hidden';
       const wv = seg(t, T.res, T.res + 0.55); band0.style.opacity = (Math.sin(Math.PI * wv) * 0.95).toFixed(3); band0.style.transform = 'translateX(' + lerp(120, 760, io(wv)).toFixed(1) + 'px)';
       const push = t > T.res + 0.25 ? Math.exp(-6 * (t - T.res - 0.25)) * Math.sin(16 * (t - T.res - 0.25)) : 0;
       weightOf(ram.ws[0].lts, (k, m) => { const cx = lerp(120, 760, io(wv)) + 110, lx = 540 + (k - (m - 1) / 2) * 150, near = Math.exp(-Math.pow((lx - cx) / 120, 2)) * Math.sin(Math.PI * wv); return 900 - 120 * near; });
-      ram.el.style.transform = 'translateX(' + (push * 9).toFixed(2) + 'px)';
+      // „iar zonele astea” rises above „rămân” on the drop; on the next line „rămân” goes up and becomes the heading of the zones
+      const up = ex(seg(t, T.drop - 0.06, T.drop + 0.3)); b0b.el.style.transform = 'translateY(' + (-500 * up).toFixed(2) + 'px)';
+      const hd = R.cam.ease(t, S[1], 0.62); ram.el.style.transformOrigin = '540px 145px';
+      ram.el.style.transform = 'translate(' + (push * 9).toFixed(2) + 'px,' + (-585 * hd).toFixed(2) + 'px) scale(' + (1 - 0.54 * hd).toFixed(4) + ')';
     });
 
     // ================================================================ 1: „Vorbesc de abdomenul de jos, de colăcei, de interiorul coapselor.”
@@ -257,7 +260,7 @@
     const gr7 = label(s7.el, 440, [...'grăsime'].map((c) => '<span class="lt">' + c + '</span>').join(''), 'font:100 236px/1 ' + SANS + ';letter-spacing:-.045em;color:' + INK);
     const lts7 = [...gr7.querySelectorAll('.lt')];
     const ghost7 = label(s7.el, 440, 'grăsime', 'font:900 236px/1 ' + SANS + ';letter-spacing:-.045em;color:' + TEAL + ';opacity:0');
-    ghost7.classList.remove('tx');
+    ghost7.classList.remove('tx'); ghost7.style.position = 'absolute'; ghost7.style.left = '0'; ghost7.style.width = '1080px'; ghost7.style.textAlign = 'center';
     block(s7.el, 730, 'nu mai *revin*', { li: 7, size: 76, weight: 560, kem: 2.2 });
     block(s7.el, 1060, 'cele rămase se pot mări', { li: 7, size: 62, weight: 560 });
     block(s7.el, 1150, 'dacă iei în greutate', { li: 7, size: 54, weight: 520, color: MUTE });
@@ -324,10 +327,11 @@
         if (t < S[i] && m !== 'flash') op = 0;
         if (m === 'flash' && t < S[i]) op = 0;
       }
-      if (nx > 0 && t >= S[nx] - (MOVE[nx] === 'flash' ? 0.32 : 0)) {   // leaving
-        const m = MOVE[nx];
-        if (m === 'flash') { const z = io(seg(t, S[nx] - 0.32, S[nx])); tr += ' translate(' + ((540 - FOC[0]) * z).toFixed(1) + 'px,' + ((960 - FOC[1]) * z).toFixed(1) + 'px) scale(' + (1 + 6 * z * z).toFixed(4) + ')'; st.o.style.transformOrigin = FOC[0] + 'px ' + FOC[1] + 'px'; bl = z * 6; op = t >= S[nx] ? 0 : 1; }
-        else { const p = mv(t, nx), v = spd(t, nx);
+      let lv = nx; if (lv > 0 && MOVE[lv] === 'carry') lv = lv + 1 < N ? lv + 1 : -1;   // a carried station leaves with the one after it
+      if (lv > 0 && t >= S[lv] - (MOVE[lv] === 'flash' ? 0.32 : 0)) {   // leaving
+        const m = MOVE[lv], nx2 = lv;
+        if (m === 'flash') { const z = io(seg(t, S[nx2] - 0.32, S[nx2])); tr += ' translate(' + ((540 - FOC[0]) * z).toFixed(1) + 'px,' + ((960 - FOC[1]) * z).toFixed(1) + 'px) scale(' + (1 + 6 * z * z).toFixed(4) + ')'; st.o.style.transformOrigin = FOC[0] + 'px ' + FOC[1] + 'px'; bl = z * 6; op = t >= S[nx2] ? 0 : 1; }
+        else { const p = mv(t, nx2), v = spd(t, nx2);
           if (m === 'crane') { tr += ' translateY(' + (-p * 1500).toFixed(2) + 'px)'; dir = [0, v * 1500 * 0.35]; }
           else if (m === 'whip') { tr += ' translateX(' + (-p * 1150).toFixed(2) + 'px)'; dir = [v * 1150 * 0.35, 0]; }
           else if (m === 'through') { tr += ' scale(' + (1 + 2.6 * p * p).toFixed(4) + ')'; op *= 1 - clamp(p * 1.6); bl = p * 22; }
@@ -341,7 +345,7 @@
     }
     // the flash through the light into the focus (the reel's one zoom through light; its sound is the loudest of the reel)
     cue(S[6] - 0.32, 'whoosh_through', 0.85, { peak: true, prio: 4 }); cue(S[6], 'hit_deep', 0.7, { prio: 4 }); cue(S[6] + 0.02, 'shimmer_soft', 0.45); ev(S[6], 'reveal');
-    for (let i = 1; i < N; i++) if (MOVE[i] !== 'flash') { cue(S[i] + 0.42, 'tap', 0.25); }
+    for (let i = 1; i < N; i++) if (MOVE[i] !== 'flash' && MOVE[i] !== 'carry') { cue(S[i] + 0.42, 'tap', 0.25); }
 
     // ================================================================ one frame
     let lastT = null;
@@ -349,11 +353,11 @@
       if (t === lastT) return; lastT = t;
       // the punch-in on the drop: a quick push, a short tremor, a clean stop
       const pd = t - T.drop, punch = pd > 0 ? Math.exp(-5.5 * pd) : 0, trem = pd > 0 && pd < 0.35 ? Math.sin(pd * 95) * 7 * (1 - pd / 0.35) : 0;
-      cam.style.transform = 'translate(' + trem.toFixed(2) + 'px,' + (trem * -0.5).toFixed(2) + 'px) scale(' + (1 + 0.075 * punch).toFixed(4) + ')';
+      cam.style.transform = 'translate(' + trem.toFixed(2) + 'px,' + (60 + trem * -0.5).toFixed(2) + 'px) scale(' + (1 + 0.075 * punch).toFixed(4) + ')';
       flashEl.style.opacity = (R.cam.flash(t, S[6]) * 0.96).toFixed(3);
       rings.forEach((q) => { q.r.style.transform = 'translate(' + (Math.sin(t * 0.21 + q.k * 2) * 26).toFixed(1) + 'px,' + (Math.cos(t * 0.17 + q.k) * 22).toFixed(1) + 'px)'; });
       for (let i = 0; i < N; i++) {
-        const st = ST[i], from = i ? S[i] - (MOVE[i] === 'flash' ? 0.02 : 0.01) : -1, to = i < N - 1 ? S[i + 1] + MD + 0.02 : 1e9;
+        const st = ST[i], from = i ? S[i] - (MOVE[i] === 'flash' ? 0.02 : 0.01) : -1, to = i < N - 1 ? (MOVE[i + 1] === 'carry' && i + 2 < N ? S[i + 2] : S[i + 1]) + MD + 0.02 : 1e9;
         const on = t >= from && t <= to && place(i, t);
         st.o.style.display = on ? 'block' : 'none';
         if (on) st.ticks.forEach((f) => f(t));

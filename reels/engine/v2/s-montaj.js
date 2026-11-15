@@ -126,12 +126,20 @@
     function opening(t) {
       c.save(); const s = 1.08 + 0.025 * Math.sin(t * 1.3) + 0.04 * (t / tBoom), u = clamp((t - (tBoom - 0.34)) / 0.34);
       camOn(s * (1 + 0.5 * Math.pow(u, 3)), 0, 0); c.filter = 'blur(' + (34 - 10 * u).toFixed(1) + 'px)'; vsplit(cases[0]); c.restore(); c.filter = 'none';
-      c.fillStyle = 'rgba(251,252,251,' + (0.8 - 0.25 * Math.pow(u, 2)).toFixed(3) + ')'; c.fillRect(0, 0, W, H);
+      c.fillStyle = 'rgba(251,252,251,' + (0.7 - 0.25 * Math.pow(u, 2)).toFixed(3) + ')'; c.fillRect(0, 0, W, H);
       grid(0.55 * (1 - u));
     }
     function grid(a) { if (a <= 0.01) return; c.save(); c.globalAlpha = a; c.strokeStyle = 'rgba(20,165,150,.10)'; c.lineWidth = 1; c.beginPath();
       for (let x = 0; x <= W; x += 54) { c.moveTo(x + 0.5, 0); c.lineTo(x + 0.5, H); } for (let y = 0; y <= H; y += 54) { c.moveTo(0, y + 0.5); c.lineTo(W, y + 0.5); } c.stroke(); c.restore(); }
 
+    // the triple split over the hero, which sinks into milky glass (no flash of empty white)
+    function trioFrame(t) {
+      const m = 0.42 + 0.46 * smooth((t - TRIO0) / 0.5);
+      c.save(); camOn(1.12 + 0.05 * (t - TRIO0), 0, 0); c.filter = 'blur(26px)'; vsplit(cases[5]); c.restore(); c.filter = 'none';
+      c.fillStyle = 'rgba(251,252,251,' + m.toFixed(3) + ')'; c.fillRect(0, 0, W, H); grid(0.7);
+      trio.forEach((k, j) => { const u = t - TRIO[j]; if (u < 0) return; const e = out5(u / 0.18), dir = j % 2 ? 1 : -1; const [sx] = shake(t, TRIO[j], 10, 0.12);
+        strip(k, STR[j][0], STR[j][1], dir * W * (1 - e) + sx); });
+    }
     function draw(t) {
       c.setTransform(1, 0, 0, 1, 0, 0); c.filter = 'none'; c.globalAlpha = 1;
       c.fillStyle = BG; c.fillRect(0, 0, W, H);
@@ -141,9 +149,9 @@
         const S = shotAt(t), [t0, i, how] = S, k = cases[i], t1 = nextOf(S), u = t - t0;
         let s = 1 + 0.018 * u, x = 0, y = 0, bx = null, ax = null; const [sx, sy] = shake(t, t0, how === 'boom' || how === 'flash' ? 26 : 12);
         if (how === 'boom') s *= 1 + 0.24 * (1 - out5(u / 0.3));
-        if (how === 'punch') s *= 1 + 0.16 * (1 - out5(u / 0.24));
+        if (how === 'punch') { s *= 1 + 0.16 * (1 - out5(u / 0.3)); y = H * Math.pow(1 - clamp(u / 0.15), 1.25); if (u < 0.16) trioFrame(t0 - 0.001); }
         if (how === 'whip') x = W * 1.05 * (1 - whipG(t));
-        if (how === 'whipv') y = H * 0.75 * (1 - out5(u / 0.2));
+        if (how === 'whipv') y = H * (1 - out5(u / 0.2));
         if (how === 'split') { const e1 = out5(u / 0.2), e2 = out5((u - 0.05) / 0.2); bx = -W * (1 - e1); ax = W * (1 - e2); }
         if (how === 'zoomout') s *= 1 + 0.55 * (1 - out5(u / 0.32));
         if (how === 'flash') s *= 1 + 0.12 * (1 - out5(u / 0.5));
@@ -152,19 +160,18 @@
         if (how === 'split' || how === 'whipv') { const D = t2 - t0, q = clamp((u - 0.3) / (D - 0.3)); s *= 1 + 0.03 * q + 0.62 * Math.pow(q, 7); } // slow, then everything rushes in
         if (how === 'whipv') white = 0.92 * Math.pow(clamp(1 - left / 0.3), 1.6); // into the light
         if (how === 'boom') x -= W * 1.05 * whipG(t); // thrown off to the left: the next one comes in from the right
-        if (how === 'zoomout' && left < 0.07) y -= H * 0.22 * Math.pow(1 - left / 0.07, 2); // thrown up: the next one comes from below
         if (how === 'whip' && left < 0.07) s *= 1 + 0.5 * Math.pow(1 - left / 0.07, 2);
         if (how === 'flash' && left < 0.08) s *= 1 + 0.3 * Math.pow(1 - left / 0.08, 2);
-        if (how === 'punch' && left < 0.06) y -= 120 * Math.pow(1 - left / 0.06, 2);
-        if (how === 'flash') white = Math.max(white, 1 - smooth(u / 0.36));
+        if (how === 'flash') white = Math.max(white, 1 - smooth(u / 0.24));
+        if (how === 'split' && u < 0.3) { c.save(); camOn(1.02, 0, 0); vsplit(cases[1]); c.restore(); } // the bands slide in over the one before
+        if (how === 'whipv' && u < 0.2) { c.save(); camOn(1.0, 0, y - H); vsplit(cases[3]); c.restore(); } // one vertical strip: the one before leaves upwards
         c.save(); camOn(s, x + sx, y + sy); vsplit(k, bx != null ? { bx, ax } : {}); c.restore();
         if (how === 'whip' && u < 0.2) { c.save(); camOn(1, x - W * 1.05, 0); vsplit(cases[0]); c.restore(); } // the one before, leaving on the same strip
       } else if (t < seq[9]) { // the triple split
-        grid(0.7);
-        trio.forEach((k, j) => { const u = t - TRIO[j]; if (u < 0) return; const e = out5(u / 0.18), dir = j % 2 ? 1 : -1; const [sx] = shake(t, TRIO[j], 10, 0.12);
-          const lv = seq[9] - t; const outX = lv < 0.1 ? -dir * W * 1.1 * Math.pow(1 - lv / 0.1, 2) : 0;
-          strip(k, STR[j][0], STR[j][1], dir * W * (1 - e) + sx + outX); });
-      } else { // the end: white
+        trioFrame(t);
+      } else { // the end: white, a clean sheet that comes down over the last case
+        const q = clamp((t - tEnd + 0.02) / 0.17);
+        if (q < 1) { c.save(); camOn(1 + 0.018 * (tEnd - seq[9]), 0, 0); vsplit(cases[9]); c.restore(); c.fillStyle = BG; c.fillRect(0, 0, W, H * q); }
         grid(0.6 * smooth((t - tEnd) / 0.4));
       }
       if (white > 0.002) { c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(255,255,255,' + clamp(white).toFixed(3) + ')'; c.fillRect(0, 0, W, H); }

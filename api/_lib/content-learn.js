@@ -341,7 +341,7 @@ async function run(opts) {
     if (m.total.posts > 0) {
       try {
         const N = require('./notify'), store = { readJSON, writeJSON };
-        await N.notifyMany(store, await N.ownerIds(store), { kind: 'report', tone: 'good', go: 'continut', tag: 'ct-month-' + ym, title: 'RAPORTUL LUNII: conținut', text: reportText(m) });
+        await N.notifyMany(store, await N.ownerIds(store), { kind: 'report', tone: 'good', go: 'continut', tag: 'ct-month-' + ym, title: 'RAPORTUL LUNII: content', text: reportText(m) });
       } catch (e) { console.error('content month:', e.message); }
     }
     out.month = { ym, posts: m.total.posts };

@@ -7,7 +7,7 @@
  "captions": false,
  "nuki": false,
  "hookHit": false,
- "music": "Training Season (live), piesa aleasă de proprietar",
+ "music": "Free (Ultra Naté), piesa aleasă de proprietar",
  "topic": "Grăsimea localizată: de ce rămâne când slăbești și ce se poate face",
  "topicTag": "liposonix-grasime",
  "hookType": "socant",
@@ -48,8 +48,8 @@
    "Flash-ul alb pe fiecare tăietură: un singur zoom prin lumină, la „distruse”"
   ],
   "track": {
-   "file": "owner-trainingseason",
-   "why": "partea de după al doilea refren (177,6 s în piesă), nefolosită: basul tace o măsură, revine, mai tace o măsură, apoi intră plin; reel-ul se termină pe coborârea de la final (208-216 s), deci și finalul e liniștit. Altă parte decât EMS (97,65 s) și decât conversația (refrenul)."
+   "file": "owner-free",
+   "why": "refrenul întâi („Cause you're free”, 77,19 s în piesă), nefolosit: reel-ul pornește la 74,79 s, pe finalul strofei, iar primul „free” al refrenului cade exact pe „rămân”, când cuvântul greu intră peste cel care slăbește. Restul reel-ului merge pe refren și pe al doilea refren (92,55 s), groove constant sub voce. Altă parte decât gușa, cazul real și crema (de la 0,395 s) și decât manifestul (152 s); nu „Training Season”, pe care îl folosesc acum cazul cu camera (177 s) și conversația (107 s)."
   },
   "different": "Primul reel în care tipografia e chiar mecanismul: greutatea fontului e grăsimea. „peste tot” slăbește literă cu literă, „rămân” nu slăbește, un focar de ultrasunete subțiază doar cuvântul GRĂSIME între PIELE și MUȘCHI, iar literele subțiate rămân subțiri. Fără obiecte, fără poze, fără colaj: alb, cerneală, turcoaz, un singur accent rose gold."
  },
@@ -59,7 +59,8 @@
   "visual": {
    "type": "kn-weight",
    "cam": "none"
-  }
+  },
+  "pre": 0.39
  },
  "beats": [
   {
@@ -77,7 +78,11 @@
    "visual": {
     "type": "kn-resist",
     "cam": "none",
-    "tr": "kn-b"
+    "tr": "kn-b",
+    "icons": [
+     "dna",
+     "activity"
+    ]
    }
   },
   {
@@ -102,7 +107,7 @@
  "payoff": [
   {
    "role": "body",
-   "say": "Cu Liposonix, ultrasunetele trec prin piele fără s-o afecteze și țintesc doar *grăsimea*.",
+   "say": "Cu Liposonix, ultrasunetele trec prin piele fără să o afecteze și țintesc doar *grăsimea*.",
    "visual": {
     "type": "kn-layers",
     "cam": "none",
@@ -122,7 +127,7 @@
   },
   {
    "role": "body",
-   "say": "Cele distruse nu mai *revin*. Doar cele rămase se pot mări, dacă iei în greutate.",
+   "say": "Celulele de grăsime distruse nu mai *revin*. Doar cele rămase se pot mări, dacă iei în greutate.",
    "visual": {
     "type": "kn-stay",
     "cam": "none",
@@ -152,13 +157,13 @@
  },
  "end": {
   "type": "save",
-  "hold": 2.6,
+  "hold": 2.9,
   "tr": "push"
  },
- "musicFile": "owner-trainingseason",
- "musicStart": 177.642,
+ "musicFile": "owner-free",
+ "musicStart": 74.789,
  "beat": {
-  "bpm": 123.01
+  "bpm": 125.01
  },
  "voiceNote": "Ritm rapid și legat, ca într-un clip scurt de treizeci de secunde, cam două sute de cuvinte pe minut; pauzele dintre propoziții sunt foarte scurte. Liposonix se citește românește.",
  "structure": "Hook (fapt surprinzător) → Lead (zonele, spuse în propoziție) → Body → Body (nu e vina ta) → Open loop (un punct slab) → Body (răspunsul: Liposonix) → Body → Body → Body → CTA (trimite unei prietene)",
@@ -351,23 +356,23 @@
    ],
    [
     "asta",
-    0.68
+    0.7
    ],
    [
     "are",
-    0.97
+    0.88
    ],
    [
     "un",
-    1.17
+    1.04
    ],
    [
     "punct",
-    1.36
+    1.21
    ],
    [
     "slab.",
-    1.41
+    1.46
    ]
   ],
   "L5": [
@@ -641,5 +646,6 @@
    ]
   ]
  },
- "wordsNote": "Timpii cuvintelor, măsurați pe voce (wordtimes.py: pauzele reale la punctuație, apoi silabele); scenele îi folosesc pentru textul cinetic și contoare."
+ "wordsNote": "Timpii cuvintelor, măsurați pe voce (wordtimes.py: pauzele reale la punctuație, apoi silabele); scenele îi folosesc pentru textul cinetic și contoare.",
+ "dropAt": 2.3998
 }

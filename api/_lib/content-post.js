@@ -275,14 +275,14 @@ async function postOne(a, id, net, waitMs) {
       if (x.tries >= MAX_TRIES) { x.state = 'error'; failed = !x.notified; x.notified = true; }
       else { x.state = 'planned'; x.retryAt = new Date(Date.now() + 45 * 60e3).toISOString(); }
     });
-    if (failed) await tell('ct-' + id + '-' + net, 'CONȚINUT NEPUBLICAT ⚠️', NAMES[net] + ': ' + (it.topic || it.rubric || it.kind) + '. ' + msg);
+    if (failed) await tell('ct-' + id + '-' + net, 'CONTENT NEPUBLICAT ⚠️', NAMES[net] + ': ' + (it.topic || it.rubric || it.kind) + '. ' + msg);
     return { id, net, error: msg };
   }
 }
 async function tell(tag, title, text) {
   try {
     const N = require('./notify'), store = { readJSON, writeJSON };
-    await N.notifyMany(store, await N.adminIds(store), { kind: 'alert', tone: 'bad', go: 'continut/program', tag, title, text });
+    await N.notifyMany(store, await N.adminIds(store), { kind: 'alert', tone: 'bad', go: 'continut/calendar', tag, title, text });
   } catch (e) { console.error('content notify:', e.message); }
 }
 // YouTube and TikTok keep the posts private until they approve the owner's app: the entry has the note, Integrări
@@ -295,7 +295,7 @@ async function privateNote(net, note) {
     if ((told[net] || '') === note) return;
     told[net] = note; s.privateTold = told;
     await C.writeState(s);
-    if (note) await tell('ct-private-' + net, 'CONȚINUT PRIVAT ⚠️', note + '.');
+    if (note) await tell('ct-private-' + net, 'CONTENT PRIVAT ⚠️', note + '.');
   } catch (e) { console.error('content private note:', e.message); }
 }
 // a held network: the entry keeps its place, the owner hears once per reason
@@ -333,7 +333,7 @@ async function run(opts) {
   // the owner hears once what holds the posts (a permission, the connection)
   if (holds.size) {
     const s = await C.readState(), note = [...holds].sort().join(' · ');
-    if (s.holdNote !== note) { s.holdNote = note; await C.writeState(s); await tell('ct-hold', 'CONȚINUTUL AȘTEAPTĂ ⚠️', note); }
+    if (s.holdNote !== note) { s.holdNote = note; await C.writeState(s); await tell('ct-hold', 'CONTENT AȘTEAPTĂ ⚠️', note); }
   } else if (out.done.some((r) => r.posted)) {
     const s = await C.readState();
     if (s.holdNote) { s.holdNote = ''; await C.writeState(s); }
