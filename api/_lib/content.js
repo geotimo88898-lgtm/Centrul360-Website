@@ -392,7 +392,9 @@ async function replace(id, input) {
   const { out } = await update((list) => {
     const it = findItem(list, id);
     if (!it || it.removed) throw fail('not_found', 404);
-    if (it.review !== 'redo') throw fail('not_redo', 409);
+    // a redo he asked for, or (15.11) a change he asked for in chat on one still waiting for his look: nothing posted yet
+    const waiting = it.review === 'pending' && it.state === 'ready' && !(it.plan || []).some((e) => ['posted', 'posting'].includes(e.state));
+    if (it.review !== 'redo' && !waiting) throw fail('not_redo', 409);
     it.state = 'draft';
     delete it.undo;
     if (x.caption != null) it.caption = clean(x.caption, 2200);
@@ -404,6 +406,7 @@ async function replace(id, input) {
     if (x.firstComment) it.firstComment = oneLine(x.firstComment, 280);
     if (x.theme) it.theme = slug(x.theme, 30);
     if (x.endType) it.endType = slug(x.endType, 12);
+    if (x.keyword != null) it.keyword = oneLine(x.keyword, 30);
     let dropped = [];
     if (x.clear) { dropped = (it.files || []).map((f) => f.path); it.files = []; it.cover = ''; }
     return { files: (it.files || []).map((f) => f.name), dropped };

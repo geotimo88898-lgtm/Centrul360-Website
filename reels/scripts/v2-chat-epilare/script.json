@@ -9,7 +9,7 @@
  "title": "Chat cu Nuki: epilarea laser",
  "topic": "Cele trei întrebări despre epilarea laser, într-un chat cu Nuki",
  "topicTag": "epilare-laser",
- "keyword": "360",
+ "keyword": "",
  "post": "Câte ședințe, dacă doare și unde ne găsiți: Nuki răspunde pe scurt. Epilarea laser se face doar în clinica din Timișoara.",
  "ctaType": "comment",
  "sources": "v2/src/epilare-laser.html: „În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere.”; „Părul crește în cicluri.”; „Răcire activă”; „Datorită sistemului de răcire al Elysion Pro, senzația este mult mai blândă decât la epilarea clasică.”; „Epilarea laser se face doar în clinica din Timișoara.”; adresa „Str. Bucegi 7”, Timișoara (index.html, timisoara.html). Pozele: brand_asset/g-tm-laser.webp, g-tm-810.webp (reale, din clinică); pagina de pe telefon: captură reală a secțiunii #cum de pe centrul360.com/epilare-laser (site.cjs).",
@@ -213,7 +213,7 @@
     "b0": 35,
     "b": 36,
     "nuki": 37,
-    "text": "Scrieți «360» în comentarii și vă răspundem.",
+    "text": "Pe curând, la Centrul360.",
     "pose": "telefon"
    },
    "break": [

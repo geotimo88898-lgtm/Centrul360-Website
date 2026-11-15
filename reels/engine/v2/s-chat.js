@@ -334,7 +334,7 @@
         pSheen.style.backgroundPosition = (30 + 60 * smooth((t - C3) / 1.8)) + '% 0';
         if (t < E0) { endT.style.opacity = '0'; nub.style.opacity = '0'; }
         // the answer: «360», typed under it; the keyword in Nuki's bubble answers it
-        const tR = rep ? rep.tMsg : 1e9, kp = Math.sin(Math.PI * clamp((t - tR) / 0.42)); kw.style.transform = 'scale(' + (1 + 0.12 * kp).toFixed(4) + ')';
+        const tR = rep ? rep.tMsg : 1e9, kp = Math.sin(Math.PI * clamp((t - tR) / 0.42)); if (kw) kw.style.transform = 'scale(' + (1 + 0.12 * kp).toFixed(4) + ')';
         if (rep) {
           const on = t >= rep.tType, m = t < rep.tMsg ? 0 : spring((t - rep.tMsg) / 0.4), e = spring((t - rep.tType) / 0.38);
           const w = lerp(TYW, rep.mw, m), hh = lerp(TYH, rep.mh, m);
