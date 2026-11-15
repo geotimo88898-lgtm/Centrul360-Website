@@ -132,6 +132,8 @@
     const sub = document.querySelector('.brand .brand-sub');
     if (sub) sub.textContent = DATA.isAdmin ? 'Admin' : 'Echipă';
     document.querySelectorAll('[data-roles]').forEach((el) => el.classList.toggle('hidden', !el.dataset.roles.split(',').includes(role)));
+    // in the menu for nobody of these roles, still open from a link (the manager's page: from her KPI, 16.11)
+    document.querySelectorAll('[data-quiet]').forEach((el) => el.classList.toggle('nav-quiet', el.dataset.quiet.split(',').includes(role)));
     K.setData(DATA);
     badges();
     if (DATA.live) connectLive(DATA.live);

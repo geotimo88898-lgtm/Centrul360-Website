@@ -33,18 +33,13 @@ const LEVELS = { mult_putine: 'mult prea puține', putin_putine: 'puțin prea pu
 const FATES = { ridicare: 'păstrat pentru ridicare', depus: 'depus în contul firmei' };
 const KEEP = 400;
 const KEYS = { feedback: 'data/manager-feedback.json', closes: 'data/day-closes.json', reports: 'data/manager-reports.json' };
-const SELF = ['facebook-webhook', 'site-form']; // leads that came by themselves (not typed in by the team)
 
 const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) && !isNaN(Date.parse(d + 'T12:00:00Z'));
 const addDay = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const roNow = () => B.roNow();
-const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? +m[1] * 60 + +m[2] : null; };
-const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const roDay = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? B.roNow(t).date : ''; };
-const roMin = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? B.roNow(t).min : null; };
 const monthEnd = (m) => { const [y, mo] = m.split('-').map(Number); return m + '-' + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0'); };
 const tag = (c) => N.cityTag(c).trim();
 
@@ -58,129 +53,17 @@ async function append(key, row) {
   throw new Error('manager store busy');
 }
 
-// ------------------------------------------------------------------ what the calendar holds
-const visit = (a) => a && a.status !== 'anulata' && a.status !== 'concediu' && !a.block;
-const isConsult = (a) => /consulta/.test(fold(a && a.treatment));
-// minutes of an appointment (no end: an hour, as the booking counts it)
-function apptMin(a) {
-  const s = toMin(a.time), e = toMin(a.endTime);
-  if (s == null) return 0;
-  return e != null && e > s ? e - s : 60;
-}
-// the team's minutes for clients that day in a city: the cosmeticians' shifts once the city has a weekly schedule
-// (Calendar → Program echipă), else the clinic's hours times its places (Calendar → Online) minus who is on leave
-function capMin(cfg, city, date, appts) {
-  const c = cfg.cities[city], d = c && c.days[new Date(date + 'T12:00:00Z').getUTCDay()];
-  if (!d || !d.on || (c.closed || []).includes(date)) return 0;
-  const dayAppts = appts.filter((a) => a && a.location === city && a.date === date && a.status !== 'anulata');
-  if (dayAppts.some((a) => (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId)) return 0; // the clinic closed that day
-  const t = cfg.team;
-  if (t && T.hasSchedule(t.doc, city, t.ids)) {
-    return T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).reduce((n, w) => n + Math.max(0, (toMin(w.to) || 0) - (toMin(w.from) || 0)), 0);
-  }
-  const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId)).size;
-  return Math.max(0, (toMin(d.to) || 0) - (toMin(d.from) || 0)) * Math.max(0, (Number(d.at) || 0) - off);
-}
-function fill(cfg, city, from, to, appts) {
-  let cap = 0, booked = 0;
-  for (let d = from; d <= to; d = addDay(d, 1)) {
-    cap += capMin(cfg, city, d, appts);
-    booked += appts.filter((a) => visit(a) && a.location === city && a.date === d).reduce((n, a) => n + apptMin(a), 0);
-  }
-  return { capHours: Math.round(cap / 6) / 10, bookedHours: Math.round(booked / 6) / 10, pct: cap ? Math.round((booked / cap) * 100) : null, targetPct: TARGET_FILL * 100,
-    targetHours: Math.round((cap * TARGET_FILL) / 6) / 10, freeHours: Math.max(0, Math.round((cap - booked) / 6) / 10) };
-}
-
-// ------------------------------------------------------------------ the numbers of a period, per clinic
-// money: collections attributed to who did the treatment (Încasări → „Cine a făcut tratamentul”); days worked: the days
-// she clocked in (Condică), or, when she never clocks in, the days she has collections (said so)
-function cosmeticians(emps, sales, attendance, city, from, to) {
-  return emps.filter((e) => e.role === 'cosmetician' && e.active !== false && e.location === city).map((e) => {
-    const mine = sales.filter((s) => s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
-    const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
-    const punched = new Set(attendance.filter((x) => x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
-    const byPay = new Set(mine.map((s) => s.date));
-    const days = punched.size || byPay.size;
-    const perDay = days ? Math.round(collected / days) : 0;
-    return { id: e.id, name: e.name || '', days, daysFrom: punched.size ? 'pontaj' : byPay.size ? 'incasari' : '', collected, perDay, ok: days > 0 && perDay >= TARGET_PER_DAY, gap: days ? Math.max(0, TARGET_PER_DAY - perDay) : TARGET_PER_DAY };
-  });
-}
-
-// consultations that took place (not cancelled, up to today) and those followed, within 7 days, by a payment with a
-// package or an upsell for the same client (the data has no „consultation → package” link: this is the closest real one)
-function consults(appts, sales, city, from, to) {
-  const list = appts.filter((a) => visit(a) && isConsult(a) && a.location === city && a.date >= from && a.date <= to);
-  const sold = sales.filter((s) => s.source === 'incasare' && (Number(s.upsell) > 0 || Number(s.packageTotal) > 0));
-  const same = (a, s) => (a.clientId && s.clientId && a.clientId === s.clientId) || (!!a.clientPhone && d9(a.clientPhone).length === 9 && s.clientPhone && d9(s.clientPhone) === d9(a.clientPhone)) ||
-    (!a.clientId && a.clientName && s.client && fold(a.clientName) === fold(s.client));
-  const closed = list.filter((a) => sold.some((s) => same(a, s) && s.date >= a.date && s.date <= addDay(a.date, 7)));
-  return { total: list.length, done: list.filter((a) => a.status === 'finalizata').length, withPackage: closed.length, pct: list.length ? Math.round((closed.length / list.length) * 100) : null };
-}
-
-// new leads (from the ads and the site) and how fast a person reached them: the first call or note logged in the
-// Pipeline, a booking, or the first WhatsApp answer a person wrote (not the automatic ones)
-function firstOutByPhone(convos) {
-  const m = new Map();
-  (convos || []).forEach((c) => {
-    const k = d9(c.phone);
-    if (k.length !== 9) return;
-    const outs = (c.messages || []).filter((x) => x.direction === 'out' && !x.auto && x.timestamp).map((x) => x.timestamp).sort();
-    if (outs.length) m.set(k, outs);
-  });
-  return m;
-}
-function leadSpeed(leads, convos, cfg, city, from, to) {
-  const outs = firstOutByPhone(convos);
-  const list = leads.filter((l) => (SELF.includes(l.createdBy) || ['facebook', 'site', 'instagram'].includes(l.source)) && l.location === city && roDay(l.createdAt) >= from && roDay(l.createdAt) <= to);
-  const rows = list.map((l) => {
-    const at = Date.parse(l.createdAt);
-    const acts = (l.activities || []).filter((a) => ['contact', 'booking'].includes(a.type) && a.author && Date.parse(a.at) >= at).map((a) => Date.parse(a.at));
-    const wa = (outs.get(d9(l.phone)) || []).map((t) => Date.parse(t)).filter((t) => t >= at);
-    const first = Math.min(...acts.concat(wa), Infinity);
-    const c = cfg.cities[city], d = c && c.days[new Date(roDay(l.createdAt) + 'T12:00:00Z').getUTCDay()], mm = roMin(l.createdAt);
-    const open = !!(d && d.on && mm != null && mm >= toMin(d.from) && mm < toMin(d.to) && !(c.closed || []).includes(roDay(l.createdAt)));
-    return { mins: Number.isFinite(first) ? (first - at) / 60e3 : null, open };
-  });
-  const inHours = rows.filter((r) => r.open);
-  const within = (xs) => xs.filter((r) => r.mins != null && r.mins <= 5).length;
-  const reached = rows.filter((r) => r.mins != null).map((r) => r.mins).sort((a, b) => a - b);
-  return { total: rows.length, within5: within(rows), pct: rows.length ? Math.round((within(rows) / rows.length) * 100) : null,
-    inHours: inHours.length, inHoursWithin5: within(inHours), inHoursPct: inHours.length ? Math.round((within(inHours) / inHours.length) * 100) : null,
-    never: rows.filter((r) => r.mins == null).length, median: reached.length ? Math.round(reached[Math.floor(reached.length / 2)]) : null };
-}
-
-// the conversations waiting for an answer now (she wrote last, nobody answered, nobody marked „Rezolvat”: Mesaje's rule)
-async function waitingNow(convos) {
-  const items = (convos || []).map((c) => {
-    const msgs = c.messages || [], last = msgs[msgs.length - 1];
-    return { phone: c.phone, location: c.location || '', lastText: last ? last.text : '', lastDirection: last ? last.direction : '',
-      lastInAt: msgs.reduce((a, m) => (m.direction === 'in' && m.timestamp > a ? m.timestamp : a), ''),
-      lastReplyAt: msgs.reduce((a, m) => (m.direction === 'out' && !m.auto && m.timestamp > a ? m.timestamp : a), '') };
-  });
-  const ig = await require('./_lib/social-inbox').list().catch(() => []);
-  const all = items.concat(ig);
-  await require('./_lib/wa-waiting').mark(all).catch(() => {});
-  const w = all.filter((x) => x.waiting);
-  const out = { social: w.filter((x) => !x.location).length };
-  CITIES.forEach((c) => { out[c] = w.filter((x) => x.location === c).length; });
-  return out;
-}
-
-// show-up: of the visits that were due in the last 30 days (not moved), how many came (finalizată); cancellations count
-// as not come, the ones never marked too (said so in the page)
-function showRate(appts, city, today) {
-  const from = addDay(today, -30);
-  const due = appts.filter((a) => a && a.location === city && a.date >= from && a.date < today && a.status !== 'concediu' && !a.block && a.status !== 'reprogramata');
-  const came = due.filter((a) => a.status === 'finalizata').length;
-  return { due: due.length, came, pct: due.length ? Math.round((came / due.length) * 100) : null };
-}
+// the clinic's numbers (the same on the KPI page): api/_lib/clinic.js
+const { visit, isConsult, fill, cosmeticians, consults, leadSpeed, waitingNow, showRate, normalize } = require('./_lib/clinic');
 
 async function load() {
   const [emps, sales, appts, attendance, leads, convos, cfg] = await Promise.all([
     readJSON('data/employees.json', []), readJSON('data/sales.json', []), readJSON('data/appointments.json', []), readJSON('data/attendance.json', []),
     readJSON('data/leads.json', []), readJSON('data/whatsapp-conversations.json', []), B.settings({ team: true }),
   ]);
-  return { emps, sales, appts, attendance, leads, convos, cfg };
+  // the clinic of every record written one way (the KPI page counts from the same, api/_lib/clinic.js)
+  const n = normalize({ leads, appts, sales, convos, emps });
+  return { emps, sales: n.sales, appts: n.appts, attendance, leads: n.leads, convos: n.convos, cfg };
 }
 
 async function stats(month, mine) {
@@ -219,14 +102,16 @@ async function context(city) {
     consultsNext7: D.appts.filter((a) => visit(a) && isConsult(a) && a.location === city && a.date >= now.date && a.date <= ahead).length,
     visitsNext7: D.appts.filter((a) => visit(a) && a.location === city && a.date >= now.date && a.date <= ahead).length,
     freeHoursNext7: f.freeHours, capHoursNext7: f.capHours, bookedHoursNext7: f.bookedHours, fillNext7: f.pct,
-    show30: showRate(D.appts, city, now.date),
+    show30: showRate(D.appts, city, now.date, D.sales),
     at: new Date().toISOString(),
   };
 }
 
 // ------------------------------------------------------------------ the day's close
 async function prefill(city, date) {
-  const sales = (await readJSON('data/sales.json', [])).filter((s) => s.source === 'incasare' && s.date === date && (s.location || '') === city);
+  // a payment without its clinic written takes its visit's (or its cosmetician's), as everywhere else (api/_lib/clinic.js)
+  const [all, appts, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', []), readJSON('data/employees.json', [])]);
+  const sales = normalize({ sales: all.filter((s) => s && s.source === 'incasare' && s.date === date), appts, emps }).sales.filter((s) => s.location === city);
   let cash = 0, card = 0, transfer = 0;
   sales.forEach((s) => {
     const a = Number(s.amount) || 0;

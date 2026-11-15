@@ -8,6 +8,7 @@ const { requireAuth, clearSessionCookie } = require('./_lib/auth');
 const { defaultConfig } = require('./_lib/defaults');
 const { categoriesOf, normalizeCategories, UPSELL_RATE, COST_SHARE } = require('./_lib/cats');
 const { cityOf, inCity } = require('./_lib/city');
+const { clinicOf } = require('./_lib/clinic');
 const { photoUrl } = require('./portal-account');
 const { mine: myNotifications } = require('./_lib/notify');
 const TB = require('./_lib/timebank');
@@ -182,7 +183,8 @@ module.exports = async (req, res) => {
         return {
           ...s,
           categories: categoriesOf(s),
-          location: s.location || (performer && performer.location) || (recorder && recorder.location) || '',
+          // its clinic written one way (Timișoara / Arad, whatever the spelling: api/_lib/clinic.js), so the manager's clinics keep it
+          location: clinicOf(s.location) || clinicOf(performer && performer.location) || s.location || (recorder && recorder.location) || '',
           employeeName: recorder ? recorder.name : s.employeeId,
           performedByName: performer ? performer.name : (s.performedBy || '-'),
         };
@@ -195,7 +197,7 @@ module.exports = async (req, res) => {
     // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
     // is fetched directly from api/portal-appointments.js by portal.html, not here.
     const todaysAppointments = appointments
-      .filter((a) => a.date === today && a.status !== 'concediu' && inCity(city, a.location)) // leave and blocked time aren't visits
+      .filter((a) => a.date === today && a.status !== 'concediu' && inCity(city, clinicOf(a.location) || a.location)) // leave and blocked time aren't visits
       .slice()
       .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const countsToday = emptyStatusCounts();

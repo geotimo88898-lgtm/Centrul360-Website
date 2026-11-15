@@ -560,6 +560,10 @@
   K.on('data', () => { if (K.isActive('panou')) setTimeout(placeStrip, 120); });
 
   K.section('manager', { mount, show() { paint(); } });
+  // the manager's three actions, also from her KPI page (Panou → KPI, „Țintele tale”; 16.11 her Manager tab is gone from the menu)
+  window.C360Manager = { george, close: closeDay, report };
+  // opened from Panou on a tab (K.go('manager/casa'), the manager's signals): that tab
+  K.on('manager:sub', (t) => { if (!['cifre', 'echipa', 'casa', 'rapoarte'].includes(t)) return; S.tab = t; if (panel && K.isActive('manager')) paint(); });
   // a save somewhere: the numbers read again, at most once a minute (they read a lot)
   let lastRemote = 0;
   K.on('remote', () => {

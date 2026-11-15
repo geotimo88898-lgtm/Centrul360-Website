@@ -85,7 +85,7 @@
   function kpiToday(cb) {
     if (KPI.busy || Date.now() - KPI.at < 5 * 60e3) { if (cb && KPI.d) cb(); return; }
     KPI.busy = true;
-    K().api('/api/kpi?period=today').then(function (x) { KPI.d = x; KPI.at = Date.now(); KPI.busy = false; if (cb) cb(); }, function () { KPI.busy = false; KPI.at = Date.now(); });
+    (window.C360Kpi ? window.C360Kpi.get('period=today', 60e3) : K().api('/api/kpi?period=today')).then(function (x) { KPI.d = x; KPI.at = Date.now(); KPI.busy = false; if (cb) cb(); }, function () { KPI.busy = false; KPI.at = Date.now(); });
   }
   function moneyNow(d) {
     var t = today(), y = K().addDays ? K().addDays(t, -1) : '', m = t.slice(0, 7);

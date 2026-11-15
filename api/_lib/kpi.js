@@ -12,10 +12,12 @@
 // an ad's lead form is "from the ads" (its offer, its ad); every other lead is organic, by its source. A payment of
 // a client without a lead is "direct", of one whose lead came before START "de dinainte".
 //
-//   came (prezentată)   the booking is finished or paid
-//   due                 its day has passed (or it came, or it was cancelled for a day that passed): show rate = came / due
+//   came (prezentată)   the booking is finished or paid, or she paid something that day (16.11)
+//   due                 its day has passed and it wasn't cancelled ahead (a cancellation at or after its hour is a no-show),
+//                       or it came: show rate = came / due. Time blocks and leave are never visits.
 
 const { bucharestDay } = require('./ads-funnel');
+const CL = require('./clinic');
 
 const cfg = { start: Date.parse('2026-10-16T19:05:00Z') }; // 16 oct 2026, 22:05 in Romania (tests move it)
 const DAY = 864e5;
@@ -35,20 +37,52 @@ const cityOf = (s) => (/arad/i.test(String(s || '')) ? 'Arad' : /timi/i.test(Str
 const addDay = (day, n) => bucharestDay(Date.parse(day + 'T12:00:00Z') + n * DAY);
 
 // the days of a period (Romania), never before START's day nor after today
-const PERIODS = ['today', 'yesterday', '7d', '30d', 'month', 'max', 'custom'];
+//   today, yesterday · week (Monday to today), lastweek · month (the 1st to today), lastmonth · 7d, 30d, 90d (rolling, today
+//   included) · year (1 January to today) · max (from START) · custom (since, until)
+const PERIODS = ['today', 'yesterday', 'week', 'lastweek', 'month', 'lastmonth', '7d', '30d', '90d', 'year', 'max', 'custom'];
+const mondayOf = (d) => { const w = new Date(d + 'T12:00:00Z').getUTCDay(); return addDay(d, w === 0 ? -6 : 1 - w); };
+const monthEnd = (m) => { const [y, mo] = m.split('-').map(Number); return m + '-' + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0'); };
+const prevMonth = (m) => { const [y, mo] = m.split('-').map(Number); return mo === 1 ? (y - 1) + '-12' : y + '-' + String(mo - 1).padStart(2, '0'); };
+const daysBetween = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / DAY);
+function rawRange(period, q, today) {
+  const mon = mondayOf(today), mo = today.slice(0, 7);
+  switch (period) {
+    case 'today': return { since: today, until: today };
+    case 'yesterday': return { since: addDay(today, -1), until: addDay(today, -1) };
+    case 'week': return { since: mon, until: today };
+    case 'lastweek': return { since: addDay(mon, -7), until: addDay(mon, -1) };
+    case 'month': return { since: mo + '-01', until: today };
+    case 'lastmonth': { const m = prevMonth(mo); return { since: m + '-01', until: monthEnd(m) }; }
+    case '7d': return { since: addDay(today, -6), until: today };
+    case '30d': return { since: addDay(today, -29), until: today };
+    case '90d': return { since: addDay(today, -89), until: today };
+    case 'year': return { since: today.slice(0, 4) + '-01-01', until: today };
+    case 'custom': if (q && isDay(q.since) && isDay(q.until)) { const s = [q.since, q.until].sort(); return { since: s[0], until: s[1] }; } return null;
+    default: return null;
+  }
+}
 function rangeOf(period, q, now) {
   const today = bucharestDay(now || Date.now()), first = bucharestDay(cfg.start);
-  let r = { since: first, until: today };
-  if (period === 'today') r = { since: today, until: today };
-  if (period === 'yesterday') r = { since: addDay(today, -1), until: addDay(today, -1) };
-  if (period === '7d') r = { since: addDay(today, -6), until: today };
-  if (period === '30d') r = { since: addDay(today, -29), until: today };
-  if (period === 'month') r = { since: today.slice(0, 8) + '01', until: today };
-  if (period === 'custom' && q && isDay(q.since) && isDay(q.until)) { const s = [q.since, q.until].sort(); r = { since: s[0], until: s[1] }; }
-  if (r.since < first) r.since = first;
+  const r = rawRange(period, q, today) || { since: first, until: today };
+  if (r.since < first) { r.since = first; r.clipped = true; } // asked from before START: counted from START (said so on the page)
   if (r.until > today) r.until = today;
   if (r.since > r.until) r.since = r.until;
   return r;
+}
+// the previous period of the same length, to compare with: the day before, last week up to the same weekday, last month
+// up to the same day, the N days before. None when it would reach before START's first whole day (no data there) or
+// when the period itself was cut at START. today: yesterday up to the same minute (cut).
+function prevOf(period, r, now) {
+  const NOW = now || Date.now(), today = bucharestDay(NOW), firstWhole = addDay(bucharestDay(cfg.start), 1);
+  if (r.clipped || period === 'max') return null;
+  let p;
+  if (period === 'today') p = { since: addDay(today, -1), until: addDay(today, -1), cut: NOW - DAY };
+  else if (period === 'week' || period === 'lastweek') p = { since: addDay(r.since, -7), until: addDay(r.until, -7) };
+  else if (period === 'month') { const m = prevMonth(r.since.slice(0, 7)), end = monthEnd(m); const d = m + r.until.slice(7); p = { since: m + '-01', until: d > end ? end : d }; }
+  else if (period === 'lastmonth') { const m = prevMonth(r.since.slice(0, 7)); p = { since: m + '-01', until: monthEnd(m) }; }
+  else if (period === 'year') { const y = String(Number(r.since.slice(0, 4)) - 1); p = { since: y + r.since.slice(4), until: y + r.until.slice(4) }; }
+  else { const n = daysBetween(r.since, r.until) + 1; p = { since: addDay(r.since, -n), until: addDay(r.since, -1) }; }
+  return p.since >= firstWhole ? p : null;
 }
 
 // the offer of an interest: its title / key / ad name exactly, else the one offer whose name it names
@@ -115,15 +149,17 @@ function model({ offers = [], leads = [], appointments = [], sales = [], clients
     return list.sort((a, b) => a.at - b.at).pop() || null;
   };
 
-  const A = appointments.filter((a) => a && a.status !== 'concediu' && a.date).map((a) => {
+  const paidOn = CL.paidDays(sales);
+  const A = appointments.filter((a) => a && a.status !== 'concediu' && a.date && !a.block).map((a) => {
     const made = Date.parse(a.createdAt) || 0;
     const imported = a.createdBy === 'highlevel' || !!a.importedAt || !!a.ghlId;
     const phone = digits9(a.clientPhone) || phoneOfClient.get(a.clientId) || '';
-    const came = a.status === 'finalizata' || !!a.paidSaleId;
-    const cancelled = a.status === 'anulata' && !came;
+    // came: finished, paid, or she paid something that day; cancelled ahead is not a no-show (api/_lib/clinic.js)
+    const came = CL.cameBy(a, paidOn);
+    const cancelled = a.status === 'anulata' && !came, noShow = cancelled && CL.lateCancel(a);
     const lead = byAppt.get(a.id) || (a.leadId && leadById.get(a.leadId)) || latestLead(phone, a.clientId, made + 5 * 60e3);
     return { id: a.id, made, madeDay: bucharestDay(made || NOW), date: a.date, time: a.time || '', status: a.status, city: cityOf(a.location), treatment: a.treatment || '',
-      fresh: made >= START && !imported, came, cancelled, due: came || a.date < today || (cancelled && a.date <= today), upcoming: !came && !cancelled && a.date >= today,
+      fresh: made >= START && !imported, came, cancelled, noShow, due: came || (!cancelled && a.date < today) || noShow, upcoming: !came && !cancelled && a.date >= today,
       confirmed: came || a.status === 'confirmata', createdBy: a.createdBy || '', cosmeticianId: a.cosmeticianId || '', clientId: a.clientId || '', phone, paidSaleId: a.paidSaleId || '',
       package: !!a.package, lead, pays: [] };
   });
@@ -139,7 +175,7 @@ function model({ offers = [], leads = [], appointments = [], sales = [], clients
     const key = lead && lead.fresh ? lead.key : lead ? 'org:old' : 'org:direct';
     // its day is the payment's day as the desk wrote it (the same day Încasări and Panou → Azi use), not when it was typed in
     const p = { id: s.id, t, day: /^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')) ? String(s.date) : bucharestDay(t), amount: Number(s.amount) || 0, upsell: Number(s.upsell) || 0, appt, lead, key, counts,
-      city: cityOf(s.location || (appt && appt.city)), by: s.performedBy || (appt && appt.cosmeticianId) || '', clientId: s.clientId || '' };
+      city: cityOf(s.location || (appt && appt.city)), by: s.performedBy || (appt && appt.cosmeticianId) || '', clientId: s.clientId || '', method: s.method || '', split: s.split || null };
     if (appt) appt.pays.push(p);
     if (counts && lead && lead.fresh && t >= lead.at - DAY) lead.pays.push(p);
     return p;
@@ -367,15 +403,59 @@ function sourcesOf(M, r) {
   return [...map.values()].map((x) => Object.assign(x, { revenue: r2(x.revenue) })).sort((a, b) => (a.key === 'ads' ? -1 : b.key === 'ads' ? 1 : b.revenue - a.revenue || b.leads - a.leads));
 }
 
-function citiesOf(M, r) {
+// the city of an ad: from its campaign / ad set name (TM… / AR…, Timișoara / Arad), else where most of its leads are from
+const cityOfAd = (name) => (/(^|[^a-z])ar([^a-z]|$)|arad/i.test(String(name)) ? 'Arad' : /(^|[^a-z])tm([^a-z]|$)|timi/i.test(String(name)) ? 'Timișoara' : '');
+function adCity(a, leadsOfAd) {
+  const n = cityOfAd((a.campaignName || a.campaign || '') + ' ' + (a.adsetName || a.adset || ''));
+  if (n) return n;
+  const c = new Map(); (leadsOfAd || []).forEach((l) => { if (l.city) c.set(l.city, (c.get(l.city) || 0) + 1); });
+  return [...c.entries()].sort((x, y) => y[1] - x[1]).map((x) => x[0])[0] || '';
+}
+
+// each clinic: the funnel of its leads (lead → contacted → booked → came → paid → package), the ads' spend and the cost of
+// each step (spend / that step's leads from the ads), the money paid in the period, its packages
+function citiesOf(M, r, adRows) {
   const inRange = inR(r);
-  return CITIES.map((city) => {
-    const leads = M.L.filter((l) => l.fresh && inRange(l.day) && l.city === city);
+  const fresh = M.L.filter((l) => l.fresh && inRange(l.day));
+  const byAd = new Map(); fresh.forEach((l) => { if (l.adId) { const x = byAd.get(l.adId) || []; x.push(l); byAd.set(l.adId, x); } });
+  const spend = new Map(), metaLeads = new Map();
+  let unassigned = 0;
+  (adRows || []).forEach((a) => {
+    const c = adCity(a, byAd.get(a.adId));
+    if (!c) { unassigned += a.spend || 0; return; }
+    spend.set(c, (spend.get(c) || 0) + (a.spend || 0)); metaLeads.set(c, (metaLeads.get(c) || 0) + (a.metaLeads || 0));
+  });
+  const rows = CITIES.map((city) => {
+    const leads = fresh.filter((l) => l.city === city), ads = leads.filter((l) => l.fromAds);
+    const f = funnelOf(leads), fa = funnelOf(ads);
+    const sp = adRows ? r2(spend.get(city) || 0) : null;
+    const per = (n) => (sp && n ? r2(sp / n) : null);
+    const pays = M.P.filter((p) => p.counts && inRange(p.day) && p.city === city);
     const made = M.A.filter((a) => a.fresh && inRange(a.madeDay) && a.city === city);
     const visits = M.A.filter((a) => a.fresh && inRange(a.date) && a.date <= M.today && a.city === city);
-    const pays = M.P.filter((p) => p.counts && inRange(p.day) && p.city === city);
-    return { city, leads: leads.length, booked: leads.filter((l) => l.appts.length).length, made: made.length, visits: visitsOf(visits), money: moneyOf(pays) };
+    return { city, funnel: f, ads: { leads: fa.leads, contacted: fa.contacted, booked: fa.booked, came: fa.came, paid: fa.paid, upsold: fa.upsold, revenue: fa.revenue },
+      spend: sp, metaLeads: adRows ? metaLeads.get(city) || 0 : null,
+      cost: sp ? { lead: per(fa.leads || metaLeads.get(city) || 0), contacted: per(fa.contacted), booked: per(fa.booked), came: per(fa.came), paid: per(fa.paid), upsold: per(fa.upsold) } : null,
+      roas: sp ? (fa.revenue ? r2(fa.revenue / sp) : 0) : null,
+      bookings: bookingsOf(made), visits: visitsOf(visits), money: moneyOf(pays), packages: packagesOf(pays) };
   });
+  const none = fresh.filter((l) => !l.city).length;
+  return { rows, unassignedSpend: adRows ? r2(unassigned) : null, noCity: none };
+}
+// the packages sold (a payment with an upsell: the upsell is the package's value) and the money by how it was paid
+function packagesOf(pays) {
+  const ups = pays.filter((p) => p.upsell > 0), v = ups.reduce((n, p) => n + p.upsell, 0);
+  return { count: ups.length, value: r2(v), avg: ups.length ? r2(v / ups.length) : null };
+}
+
+// the few numbers compared with the previous period (↑ / ↓)
+function summaryOf(rep) {
+  const f = rep.funnel, m = rep.money, a = rep.ads && rep.ads.totals, pk = packagesOf(rep._pays || []);
+  const out = { revenue: m.revenue, payments: m.payments, ticket: m.ticket, leads: f.leads, contacted: f.contacted, booked: f.booked, came: f.came, paid: f.paid,
+    bookRate: f.rates.booked, showRate: rep.visits.rate, made: rep.bookings.made, packages: pk.count, packageAvg: pk.avg, packageValue: pk.value, cities: {} };
+  if (a) Object.assign(out, { spend: a.spend, cpl: a.cpl, perBooked: a.perBooked, perCame: a.perCame, cpa: a.cpa, roas: a.roas, metaLeads: a.metaLeads });
+  (rep.cities.rows || []).forEach((c) => { out.cities[c.city] = { leads: c.funnel.leads, booked: c.funnel.booked, came: c.funnel.came, paid: c.funnel.paid, revenue: c.money.revenue, spend: c.spend, cpl: c.cost ? c.cost.lead : null, packages: c.packages.count }; });
+  return out;
 }
 
 function trendOf(M, r, daily) {
@@ -388,20 +468,6 @@ function trendOf(M, r, daily) {
     came: M.A.filter((a) => a.fresh && a.came && a.date === day).length,
     revenue: r2(M.P.filter((p) => p.counts && p.day === day).reduce((n, p) => n + p.amount, 0)),
     spend: r2(spend.get(day) || 0) }));
-}
-
-// today / yesterday / this month side by side (whatever the period picked)
-function paceOf(M) {
-  const first = bucharestDay(M.start);
-  const win = (since, until) => {
-    const r = { since: since < first ? first : since, until };
-    if (r.since > r.until) return null;
-    const inRange = inR(r);
-    return { leads: M.L.filter((l) => l.fresh && inRange(l.day)).length, bookings: bookingsOf(M.A.filter((a) => a.fresh && inRange(a.madeDay))),
-      visits: visitsOf(M.A.filter((a) => a.fresh && inRange(a.date) && a.date <= M.today)), revenue: r2(M.P.filter((p) => p.counts && inRange(p.day)).reduce((n, p) => n + p.amount, 0)) };
-  };
-  const y = addDay(M.today, -1);
-  return { today: win(M.today, M.today), yesterday: win(y, y), month: win(M.today.slice(0, 8) + '01', M.today) };
 }
 
 // what stands out in the period, facts only
@@ -421,7 +487,7 @@ function alertsOf(rep) {
   (rep.messages ? rep.messages.rows : []).forEach((m) => {
     if (m.group === 'lead' && m.sent >= 10 && m.replyRate != null && m.replyRate < 20) out.push({ tone: 'warn', kind: 'msg', title: 'Mesaj cu puține răspunsuri', name: m.label, text: m.replyRate + '% răspund din ' + m.sent, go: 'automatizari' });
   });
-  if (rep.messages && rep.messages.team.unanswered > 0) out.push({ tone: 'warn', kind: 'wa', title: 'Cliente fără răspuns pe WhatsApp', name: String(rep.messages.team.unanswered), text: 'au scris și n-au primit răspuns de peste 30 de minute', go: 'whatsapp' });
+  if (rep.messages && rep.messages.team.unanswered > 0) out.push({ tone: 'warn', kind: 'wa', title: 'Cliente fără răspuns pe WhatsApp', name: String(rep.messages.team.unanswered), text: 'au scris și n-au primit răspuns de peste 30 de minute', go: 'mesaje' });
   return out;
 }
 
@@ -434,31 +500,83 @@ function report(M, r, { offers = [], ads = null, templates = [], names = new Map
     bookings: bookingsOf(M.A.filter((a) => a.fresh && inRange(a.madeDay))),
     visits: visitsOf(M.A.filter((a) => a.fresh && inRange(a.date) && a.date <= M.today)),
     money: moneyOf(M.P.filter((p) => p.counts && inRange(p.day))),
-    pace: paceOf(M),
     offers: rowsOf(M, r, offers, ads ? ads.rows : null),
     ads: adsOf(M, r, ads),
     messages: messagesOf(M, r, templates),
     team: teamOf(M, r, names),
-    cities: citiesOf(M, r),
+    cities: citiesOf(M, r, ads ? ads.rows : null),
     sources: sourcesOf(M, r),
     trend: trendOf(M, r, ads && ads.daily),
   };
   rep.alerts = alertsOf(rep);
+  Object.defineProperty(rep, '_pays', { value: M.P.filter((p) => p.counts && inRange(p.day)), enumerable: false });
+  rep.packages = packagesOf(rep._pays);
+  rep.summary = summaryOf(rep);
   return rep;
 }
 
-// Meta's numbers of a period, kept 2 minutes (the page refreshes itself; Meta limits how often it may be asked)
-const adsCache = new Map();
+// Meta's numbers. Every ad's days from START on are kept in the store (data/ads-cache/kpi-daily.json) and any period is
+// added up from them: switching the period never waits for Meta (before, every period was a new read of Meta, 1 to 4 s,
+// on every switch). The days are read again at most every 5 minutes, only the last 3 (Meta still corrects them), and
+// while they are read the last ones answer at once (the new ones come with the next look). A change made from the
+// portal (on / off, budget) reads them again. Meta refused: the last numbers, marked, then a new try after 2 minutes.
+const DAILY = 'data/ads-cache/kpi-daily.json', VER = 'data/ads-cache/v.json';
+const memo = { job: null };
+function later(p) {
+  const c = globalThis[Symbol.for('@vercel/request-context')], ctx = c && c.get && c.get();
+  const q = p.catch(() => {});
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(q);
+}
+async function refreshDaily(conn, doc, v) {
+  const { writeJSON } = require('./store');
+  const today = bucharestDay(Date.now()), first = bucharestDay(cfg.start);
+  let from = first;
+  if (doc) { from = addDay(today, -2); const gap = addDay(doc.until, -1); if (gap < from) from = gap; if (from < first) from = first; }
+  const got = await require('./meta-ads').adStatsDaily(conn, { since: from, until: today });
+  if (got.error) {
+    const fail = Object.assign({}, doc || {}, { failAt: Date.now(), failWhy: String(got.error) });
+    await writeJSON(DAILY, fail, { quiet: true }).catch(() => {});
+    return fail;
+  }
+  const rows = (doc ? (doc.rows || []).filter((x) => x.day < from) : []).concat(got.rows);
+  const next = { acct: conn.adAccountId, since: first, until: today, at: Date.now(), v, rows, meta: got.meta };
+  await writeJSON(DAILY, next, { quiet: true }).catch(() => {});
+  return next;
+}
+async function adsDaily(conn) {
+  const { readJSON } = require('./store');
+  const today = bucharestDay(Date.now()), first = bucharestDay(cfg.start);
+  const [ver, doc] = await Promise.all([readJSON(VER, {}).catch(() => ({})), readJSON(DAILY, null).catch(() => null)]);
+  const v = (ver && ver.v) || 0;
+  const usable = !!(doc && Array.isArray(doc.rows) && doc.acct === conn.adAccountId && doc.since === first);
+  if (usable && doc.until === today && doc.v === v && Date.now() - doc.at < 5 * 60e3) return doc;
+  if (doc && doc.failAt && Date.now() - doc.failAt < 2 * 60e3) return usable ? Object.assign({}, doc, { stale: doc.at }) : { error: doc.failWhy || 'Meta a refuzat citirea.' };
+  const run = () => memo.job || (memo.job = refreshDaily(conn, usable ? doc : null, v).finally(() => { memo.job = null; }));
+  // today's days are there (only a few minutes old, or a switch made since): these now, the new ones for the next look
+  if (usable && doc.until === today && Date.now() - doc.at < 6 * 3600e3) { later(run()); return doc; }
+  const out = await run();
+  if (out.rows && !out.failAt) return out;
+  return usable && doc.until >= addDay(today, -1) ? Object.assign({}, doc, { stale: doc.at, staleWhy: out.failWhy || '' }) : { error: out.failWhy || 'Meta n-a răspuns.' };
+}
+// a period's numbers from the days: each ad added up (its status and picture as Meta says now), the spend day by day
+function adsIn(doc, r) {
+  const by = new Map(), days = new Map(), meta = doc.meta || {};
+  doc.rows.forEach((x) => {
+    if (x.day < r.since || x.day > r.until) return;
+    let a = by.get(x.adId);
+    if (!a) { const m = meta[x.adId] || {}; by.set(x.adId, a = { adId: x.adId, adName: x.adName, adsetId: x.adsetId, adsetName: x.adsetName, campaignId: x.campaignId, campaignName: x.campaignName, spend: 0, impressions: 0, reach: 0, linkClicks: 0, metaLeads: 0, status: m.status || 'ARCHIVED', thumb: m.thumb || '' }); }
+    a.spend += x.spend; a.impressions += x.impressions; a.linkClicks += x.linkClicks; a.metaLeads += x.metaLeads;
+    days.set(x.day, (days.get(x.day) || 0) + x.spend);
+  });
+  return { rows: [...by.values()].map((a) => Object.assign(a, { spend: r2(a.spend) })), daily: [...days.entries()].sort((x, y) => (x[0] < y[0] ? -1 : 1)).map(([day, spend]) => ({ day, spend: r2(spend) })),
+    readAt: doc.at, stale: doc.stale || null };
+}
+// Meta's numbers of a period: { rows, daily } (or { none } without the token, { error } when Meta said no)
 async function adsFor(conn, r) {
   if (!conn || !conn.userToken || !conn.adAccountId) return { none: true };
-  const key = conn.adAccountId + '|' + r.since + '|' + r.until;
-  const hit = adsCache.get(key);
-  if (hit && Date.now() - hit.at < 120e3) return hit.v;
-  // shared by every open portal, at most every 5 minutes for today, 30 for past days (Meta limits the reads)
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
-  const v = await require('./ads-cache').cached('stats-' + r.since + '_' + r.until, r.until < today ? 30 * 60e3 : 5 * 60e3, () => require('./meta-ads').adStats(conn, r));
-  if (!v.error) { adsCache.set(key, { at: Date.now(), v }); if (adsCache.size > 30) adsCache.delete(adsCache.keys().next().value); }
-  return v;
+  const doc = await adsDaily(conn);
+  if (doc.error) return { error: doc.error };
+  return adsIn(doc, r);
 }
 
-module.exports = { adsFor, cfg, DAY, SOURCES, PERIODS, rangeOf, offerMatcher, model, rowsOf, adsOf, messagesOf, report, digits9, fold };
+module.exports = { adsFor, adsDaily, adsIn, cfg, DAY, SOURCES, CITIES, PERIODS, rangeOf, prevOf, addDay, cityOfAd, citiesOf, packagesOf, summaryOf, funnelOf, inR, offerMatcher, model, rowsOf, adsOf, messagesOf, report, digits9, fold };

@@ -41,11 +41,17 @@ const addDay = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toIS
 const weekday = (d) => new Date(d + 'T12:00:00Z').getUTCDay();
 
 // Bucharest's date and minute of the day, now
+// (one formatter, the date and hour of each hour kept: Romania's offset is whole hours, so the minute is the UTC one)
+const RO_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const roOfHour = new Map();
 function roNow(ms) {
-  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date(ms == null ? Date.now() : ms));
-  const g = (t) => (p.find((x) => x.type === t) || {}).value;
-  return { date: g('year') + '-' + g('month') + '-' + g('day'), min: Number(g('hour')) * 60 + Number(g('minute')) };
+  const t = ms == null ? Date.now() : typeof ms === 'number' ? ms : new Date(ms).getTime();
+  const parts = (x) => { const p = RO_FMT.formatToParts(new Date(x)); const g = (k) => (p.find((y) => y.type === k) || {}).value; return { date: g('year') + '-' + g('month') + '-' + g('day'), hour: Number(g('hour')) }; };
+  if (!Number.isFinite(t)) { const q = parts(ms); return { date: q.date, min: NaN }; }
+  const h = Math.floor(t / 3600e3);
+  let v = roOfHour.get(h);
+  if (v === undefined) { if (roOfHour.size > 50000) roOfHour.clear(); v = parts(h * 3600e3); roOfHour.set(h, v); }
+  return { date: v.date, min: v.hour * 60 + Math.floor((t - h * 3600e3) / 60e3) };
 }
 
 // The settings as saved, filled in from DEFAULTS and cleaned (also what the admin's form sends back)

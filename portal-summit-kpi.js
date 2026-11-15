@@ -1,8 +1,8 @@
-// Centrul360 portal, aspectul nou: Panou → KPI, deschiderea cinematică (doar admin, doar sub html.ui-nou).
-// Cifrele importante ale perioadei alese, ca un HUD: încasările (cifra se derulează și numără, graficul zilelor se desenează),
-// programările, rata de prezentare (arcul se rotește în poziție), clientele și leadurile, reclamele (cheltuit, cost pe lead,
-// cost pe programare, de câte ori se întoarce leul) și cursa cosmeticienelor (barele aleargă). Datele: /api/kpi?period=<aceeași
-// perioadă ca mai jos> și încasările din portal; ce nu are valoare în perioada aleasă nu apare (fără „-”).
+// Centrul360 portal, aspectul nou: Panou → KPI, deschiderea cinematică (adminul și managerul, doar sub html.ui-nou).
+// Cifrele importante ale perioadei alese, ca un HUD: încasările (cifra se derulează și numără, graficul zilelor se desenează,
+// ↑ / ↓ față de perioada de dinainte), programările, rata de prezentare (arcul se rotește în poziție), clientele care au plătit.
+// portal-kpi.js îi dă răspunsul perioadei (C360Deck.render, sub bara perioadelor): prima dată spectacolul întreg, la o
+// perioadă nouă cifrele alunecă din cele vechi în cele noi (fără să mai aștepte o cerere a lui). Ce nu are valoare nu apare.
 // Mișcare doar cu transform și opacity; liniște pentru „mai puțină mișcare”.
 (function () {
   'use strict';
@@ -15,17 +15,6 @@
   var num = function (n, dec) { return (Number(n) || 0).toLocaleString('ro-RO', { maximumFractionDigits: dec || 0, minimumFractionDigits: 0 }); };
   var HUES = ['#2fd6c3', '#48d6ff', '#ffd27a', '#ff9f6b', '#5cf2a0', '#ff6f91', '#7fb2ff', '#ffe45c', '#9ff2e8'];
 
-  var deck = null, period = '', busy = false, key = '';
-  function curPeriod(panel) {
-    var on = panel.querySelector('[data-kp-period].is-on');
-    return on ? { k: on.dataset.kpPeriod, l: on.textContent.trim() } : { k: 'today', l: 'Azi' };
-  }
-  function custom(panel) {
-    var f = panel.querySelector('[data-kp-range]'); if (!f) return '';
-    var a = f.querySelector('[name=since]'), b = f.querySelector('[name=until]');
-    return a && b && a.value && b.value ? '&since=' + a.value + '&until=' + b.value : '';
-  }
-
   // ------------------------------------------------------------------ the tiles, only what has a value
   function tiles(r, pl) {
     var out = [], m = r.money || {}, v = r.visits || {}, b = r.bookings || {}, f = r.funnel || {}, a = r.ads && r.ads.totals;
@@ -34,7 +23,7 @@
       '<small>Încasări · ' + esc(pl) + '</small>' +
       '<div class="row"><b class="big" data-count="' + (m.revenue || 0) + '">0</b><em class="unit">lei</em></div>' +
       // the ticket and the upsell are in „Banii” below: here only the count
-      '<p>' + num(m.payments) + ' ' + (m.payments === 1 ? 'plată' : 'plăți') + '</p>' +
+      '<p>' + num(m.payments) + ' ' + (m.payments === 1 ? 'plată' : 'plăți') + delta(m.revenue, r.prev && r.prev.summary && r.prev.summary.revenue, r.prev) + '</p>' +
       (trend.length > 1 ? spark(trend) : hourly(r.range) ) });
     var made = b.made || 0, sch = v.scheduled || 0;
     if (made || sch) out.push({ cls: '', html: '<small>Programări</small><b data-count="' + (made || sch) + '">0</b><p>' + (made ? (b.confirmed ? num(b.confirmed) + ' confirmate' : 'făcute în perioadă') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate' : '') : 'în calendar') + '</p>' });
@@ -44,6 +33,12 @@
     if (m.clients) out.push({ cls: '', html: '<small>Cliente care au plătit</small><b data-count="' + m.clients + '">0</b>' });
     // the ads and the cosmeticians' race have their own full sections below (Reclamele, Echipa): not twice
     return out;
+  }
+  // ↑ / ↓ against the previous period of the same length (portal-kpi.js says which one in the bar)
+  function delta(cur, prev, pr) {
+    if (prev == null || !Number(prev)) return '';
+    var p = Math.round(((cur - prev) / Math.abs(prev)) * 100);
+    return ' · <span class="sx-dl ' + (p > 0 ? 'up' : p < 0 ? 'down' : '') + '" title="' + esc(pr && pr.cut ? 'față de ieri, la aceeași oră' : 'față de perioada de dinainte') + '">' + (p > 0 ? '↑ ' : p < 0 ? '↓ ' : '') + (p ? Math.abs(p) + '%' : '=') + '</span>';
   }
   function top(range) {
     var d = D(); if (!d || !range) return [];
@@ -81,11 +76,18 @@
   }
 
   // ------------------------------------------------------------------ the show
-  function play() {
+  // first: the digits spin and land, the tiles rise, the scan sweeps; then, at every new period, the numbers slide from
+  // the old ones to the new ones (half a second), nothing else moves
+  function play(deck, from) {
     var nodes = deck.querySelectorAll('[data-count]');
     Array.prototype.forEach.call(nodes, function (el, i) {
-      var to = Number(el.dataset.count) || 0, suf = el.dataset.suf || '';
+      var to = Number(el.dataset.count) || 0, suf = el.dataset.suf || '', f0 = from ? from[el.dataset.k] : null;
       if (calm()) { el.textContent = num(to) + suf; return; }
+      if (f0 != null) {
+        var s0 = performance.now();
+        (function slide(t) { var p = Math.min(1, (t - s0) / 520), e = 1 - Math.pow(1 - p, 3); el.textContent = num(f0 + (to - f0) * e) + suf; if (p < 1) requestAnimationFrame(slide); })(s0);
+        return;
+      }
       var t0 = performance.now() + 250 + i * 110, ms = 1600, digits = String(Math.round(to)).length;
       (function step(t) {
         if (t < t0) { requestAnimationFrame(step); return; }
@@ -96,46 +98,27 @@
         if (p < 1) requestAnimationFrame(step); else el.textContent = num(to) + suf;
       })(performance.now());
     });
-    deck.classList.remove('go'); void deck.offsetWidth; deck.classList.add('go');
+    if (!from) { deck.classList.remove('go'); void deck.offsetWidth; deck.classList.add('go'); }
   }
-  function render(r, pl) {
+  function render(deck, r, pl) {
     var t = tiles(r, pl);
+    var key = JSON.stringify([pl, r.range, t.map(function (x) { return x.html; })]);
+    if (deck._key === key) return;
+    var shape = t.map(function (x) { return x.cls; }).join('|');
+    // the numbers on the deck now, by tile: where the slide starts
+    var from = null;
+    if (deck._shape === shape && deck.childElementCount) {
+      from = {};
+      Array.prototype.forEach.call(deck.querySelectorAll('[data-count]'), function (el, i) { from['n' + i] = Number(el.dataset.count) || 0; });
+    }
+    deck._key = key; deck._shape = shape;
     deck.innerHTML = '<div class="sx-d-scan" aria-hidden="true"></div>' +
       '<div class="sx-d-head"><span><i></i>KPI · ' + esc(pl) + '</span><span>' + esc(r.range ? (r.range.since === r.range.until ? r.range.since : r.range.since + ' → ' + r.range.until) : '') + '</span></div>' +
       '<div class="sx-d-grid">' + t.map(function (x, i) { return '<article class="sx-t ' + x.cls + '" style="--i:' + i + '"><b class="cn tl"></b><b class="cn tr"></b><b class="cn bl"></b><b class="cn br"></b>' + x.html + '</article>'; }).join('') + '</div>';
-    play();
+    Array.prototype.forEach.call(deck.querySelectorAll('[data-count]'), function (el, i) { el.dataset.k = 'n' + i; });
+    // a new period: the tiles stay where they are (no new entrance, portal-kpi.css .kq-still), only the numbers slide
+    if (from) deck.classList.add('go', 'kq-still'); else deck.classList.remove('kq-still');
+    play(deck, from);
   }
-  function load(panel) {
-    var p = curPeriod(panel), q = p.k + (p.k === 'custom' ? custom(panel) : '');
-    if (busy || (q === period && deck.isConnected && deck.childElementCount)) return;
-    busy = true;
-    K().api('/api/kpi?period=' + q).then(function (r) {
-      busy = false; period = q;
-      var k2 = q + '|' + JSON.stringify([r.money, r.visits && r.visits.rate, r.bookings && r.bookings.made, r.ads && r.ads.totals && r.ads.totals.spend]);
-      if (k2 === key && deck.childElementCount) return;
-      key = k2;
-      render(r, p.l);
-    }, function () { busy = false; });
-  }
-
-  // ------------------------------------------------------------------ wiring: the deck sits above the KPI page when it is open
-  function place() {
-    var d = D(); if (!d || !(d.isAdmin || d.isManager)) return; // the manager: her clinics, no ads (/api/kpi)
-    var panel = document.getElementById('panel-panou'); if (!panel) return;
-    var kr = panel.querySelector('[data-kpi-root]');
-    if (!kr) { if (deck && deck.isConnected) { deck.remove(); period = ''; key = ''; } return; }
-    if (!deck) { deck = document.createElement('section'); deck.className = 'sx-deck'; deck.setAttribute('aria-label', 'KPI'); }
-    if (!deck.isConnected) { panel.insertBefore(deck, panel.firstChild); period = ''; key = ''; }
-    load(panel);
-  }
-  function start() {
-    var panel = document.getElementById('panel-panou');
-    if (!panel) return;
-    var q = 0;
-    new MutationObserver(function () { if (q) return; q = requestAnimationFrame(function () { q = 0; place(); }); }).observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-    panel.addEventListener('click', function (e) { if (e.target.closest('[data-kp-period]')) setTimeout(place, 60); });
-    panel.addEventListener('submit', function () { setTimeout(place, 60); }, true);
-    var t = setInterval(function () { if (D()) { clearInterval(t); place(); } }, 300);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  window.C360Deck = { render: render };
 })();

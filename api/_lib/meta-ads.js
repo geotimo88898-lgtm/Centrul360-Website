@@ -494,6 +494,28 @@ async function adStats(conn, range) {
   };
 }
 
+// Every ad's days in a range (spend, impressions, link clicks, Meta's leads) and every ad's status and picture: one read
+// that serves any period inside it (api/_lib/kpi.js adds the days up; reach does not add up day by day, so it is not read)
+async function adStatsDaily(conn, range) {
+  const when = { time_range: JSON.stringify({ since: range.since, until: range.until }) };
+  const every = JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: LIVE.concat(['ARCHIVED', 'DELETED']) }]);
+  const act = '/' + conn.adAccountId, tok = conn.userToken;
+  const [ins, ads] = await Promise.all([
+    all(act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,actions,impressions,inline_link_clicks', time_increment: '1', limit: '500', filtering: every }, when), 30),
+    all(act + '/ads', tok, { fields: 'id,effective_status,creative{thumbnail_url,image_url}', limit: '200', effective_status: JSON.stringify(LIVE) }, 3),
+  ]);
+  if (ins.error) return { error: ins.error };
+  if (ads.error) return { error: ads.error };
+  const meta = {};
+  (ads.data || []).forEach((a) => { meta[String(a.id)] = { status: a.effective_status || '', thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '' }; });
+  return {
+    rows: ins.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ day: x.date_start, adId: String(x.ad_id || ''), adName: x.ad_name || '', adsetId: String(x.adset_id || ''), adsetName: x.adset_name || '',
+      campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0, impressions: Number(x.impressions) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x) }))
+      .filter((x) => x.adId && x.day),
+    meta,
+  };
+}
+
 // The lead form each ad sends to (the ones not deleted / archived): [{ adId, adName, status, formId }]
 async function adForms(conn) {
   const r = await all('/' + conn.adAccountId + '/ads', conn.userToken, { fields: 'id,name,effective_status,creative{object_story_spec,asset_feed_spec}', limit: '200', effective_status: JSON.stringify(LIVE) }, 5);
@@ -572,4 +594,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = (conn && conn.scope) || SCOPE.DEFAULT; return !!(s.include || (s.exclude || []).length); };
-module.exports = { ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adForms, adDays };
+module.exports = { ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };

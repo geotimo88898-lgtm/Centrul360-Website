@@ -290,11 +290,16 @@
         '<div class="db-clock" aria-label="Ora"><div class="db-time" data-time></div>' +'<div class="db-secs"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="db-secs-track"/><circle cx="24" cy="24" r="20" class="db-secs-arc" pathLength="60" data-arc/></svg><b data-sec>--</b></div></div>' +
       '</section>' });
 
+    // ---------------- the day of each clinic (the owner and the manager, 15.11: bookings by state, collected, leads and how
+    // fast they were reached, messages waiting, the ads of today, the manager's signals; portal-kpi.js fills it)
+    const control = (D.isAdmin || D.isManager) && window.C360Kpi && window.C360Kpi.today;
+    if (control) parts.push({ key: 'control', html: '<section class="kq-today" data-part="control" data-kq-today aria-label="Azi pe clinici"></section>' });
     // ---------------- the KPIs and blocks she chose (Personalizează)
     if (kpis) parts.push({ key: 'kpis', html: '<div class="db-kpis" data-part="kpis">' + kpis + '</div>' });
     parts.push({ key: 'blocks', html: '<div class="db-blocks" data-part="blocks"></div>',
       children: chosenBlocks.map((b) => ({ key: 'b:' + b, html: '<div class="db-b is-' + BLOCK[b].size + '" data-part="b:' + b + '">' + blockHtml[b]() + '</div>' })) });
     K.patch(root, parts);
+    if (control) window.C360Kpi.today(root.querySelector('[data-kq-today]'));
 
     // the chart is drawn into its box when the box is new (its numbers are in its mark, so a change makes a new box)
     const chartBox = root.querySelector('[data-chart]');

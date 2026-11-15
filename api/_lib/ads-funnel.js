@@ -14,8 +14,17 @@
 const DAY = 864e5;
 
 // the account's days (Romania): today, and the range of a period like Meta counts it
+// one formatter, and the day of each hour kept (Romania's offset is whole hours): a new Intl formatter per call took about
+// 70 µs, the KPI page asks for thousands of days (0,4 s of its answer, 15.11)
+const DAY_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' });
+const dayOfHour = new Map();
 function bucharestDay(t) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t));
+  const ms = typeof t === 'number' ? t : new Date(t).getTime();
+  if (!Number.isFinite(ms)) return DAY_FMT.format(new Date(t)); // an invalid date throws, as before
+  const h = Math.floor(ms / 3600e3);
+  let d = dayOfHour.get(h);
+  if (d === undefined) { if (dayOfHour.size > 50000) dayOfHour.clear(); d = DAY_FMT.format(new Date(h * 3600e3)); dayOfHour.set(h, d); }
+  return d;
 }
 function periodRange(period, range) {
   if (range) return range;

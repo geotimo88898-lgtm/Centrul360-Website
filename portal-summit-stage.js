@@ -28,7 +28,7 @@
   function kpi(cb) {
     if (KPI.busy || Date.now() - KPI.at < 3 * 60e3) return;
     KPI.busy = true;
-    K().api('/api/kpi?period=today').then(function (x) { KPI.d = x; KPI.at = Date.now(); KPI.busy = false; cb(); }, function () { KPI.busy = false; KPI.at = Date.now(); });
+    (window.C360Kpi ? window.C360Kpi.get('period=today', 60e3) : K().api('/api/kpi?period=today')).then(function (x) { KPI.d = x; KPI.at = Date.now(); KPI.busy = false; cb(); }, function () { KPI.busy = false; KPI.at = Date.now(); });
   }
   var tm = function (s) { if (s.time) return s.time; var dd = s.createdAt ? new Date(s.createdAt) : null; return dd && !isNaN(dd) ? ('0' + dd.getHours()).slice(-2) + ':' + ('0' + dd.getMinutes()).slice(-2) : ''; };
   function model() {
