@@ -21,7 +21,8 @@
   const K = window.K;
   if (!K) return;
   const { esc, icon } = K;
-  const S = { d: null, busy: false, tab: 'res', r: null, rErr: '', rAt: 0, warn: {}, an: '', fm: 'month', sel: {}, open: {} };
+  const S = { d: null, busy: false, tab: 'ins', r: null, rErr: '', rAt: 0, warn: {}, an: '', fm: 'month', drafts: {}, wide: null,
+    tr: { seen: 0, last: null, focus: '', cap: null, moved: false }, cal: { view: 'week', day: '', nets: [] } };
   let panel = null, dr = null, openId = '';
 
   const NETS = ['tt', 'yt', 'ig', 'fb'];
@@ -77,7 +78,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'cn');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Conținut</h2></div><div class="k-head-actions" data-cthead></div></div><div data-ctbody><div class="k-skel" style="height:420px"></div></div>';
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Content</h2></div><div class="k-head-actions" data-cthead></div></div><div data-ctbody><div class="k-skel" style="height:420px"></div></div>';
     panel.addEventListener('click', async (e) => {
       // De postat: a card's buttons
       const tp = e.target.closest('[data-cttp]');
@@ -92,41 +93,43 @@
       if (all) return approveAll(all);
       const del = e.target.closest('[data-ctidel]');
       if (del) { if (await save({ action: 'idea_del', id: del.dataset.ctidel }, del)) K.ui().toast('Idee ștearsă.', 'success'); return; }
-      // the review feed: a network's preview, approve, redo, open an approved one, the sound
-      const ph = e.target.closest('[data-ctph]');
-      if (ph) { const c = ph.closest('[data-ctrcid]'); if (c) { S.sel[c.dataset.ctrcid] = ph.dataset.ctph; refreshCard(c.dataset.ctrcid); } return; }
-      const rok = e.target.closest('[data-ctrc-ok]');
-      if (rok) { const id = rok.closest('[data-ctrcid]').dataset.ctrcid; if (await save({ action: 'approve', id }, rok)) K.ui().toast('Aprobat.', 'success'); return; }
-      const rredo = e.target.closest('[data-ctrc-redo]');
-      if (rredo) return redoItem(rredo.closest('[data-ctrcid]').dataset.ctrcid, rredo);
-      const ro = e.target.closest('[data-ctrc-open]');
-      if (ro) { const id = ro.dataset.ctrcOpen; S.open[id] = !S.open[id]; refreshCard(id); return; }
+      // Transit: approve, redo, a note, undo, a network's text
+      const card = e.target.closest('[data-cttr]');
+      if (card) {
+        const it = current();
+        if (e.target.closest('[data-cttr-undo]')) return undoLast();
+        if (it && e.target.closest('[data-cttr-ok]')) return decide(it.id, 'ok');
+        if (it && e.target.closest('[data-cttr-no]')) return openRedo(it.id);
+        if (it && e.target.closest('[data-cttr-note]')) return openRedo(it.id, 'note');
+        const cn = e.target.closest('[data-cttr-cap]');
+        if (it && cn) { const n = cn.dataset.cttrCap; S.tr.cap = S.tr.cap && S.tr.cap.id === it.id && S.tr.cap.net === n && !S.wide ? { id: it.id, net: '' } : { id: it.id, net: n }; return repaintCaps(it); }
+      } else if (e.target.closest('[data-cttr-undo]')) return undoLast();
       const v = e.target.closest('[data-ctvid]');
-      if (v) return sound(v);
+      if (v) { if (S.tr.moved) { S.tr.moved = false; return; } return sound(v); }
       const tg = e.target.closest('[data-cttab-go]');
       if (tg) { setTab(tg.dataset.cttabGo); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      // Calendar: move, a day, a network on or off
+      const cg = e.target.closest('[data-ctcal-go]'); if (cg) return calGo(Number(cg.dataset.ctcalGo));
+      const cf = e.target.closest('[data-ctcal-net]');
+      if (cf) { const n = cf.dataset.ctcalNet, l = S.cal.nets.length ? S.cal.nets.slice() : NETS.slice(); const i = l.indexOf(n); if (i >= 0) l.splice(i, 1); else l.push(n); S.cal.nets = l.length === NETS.length || !l.length ? [] : l; return paint(true); }
+      const cd = e.target.closest('[data-ctday]'); if (cd) return openDay(cd.dataset.ctday);
       const ap = e.target.closest('[data-ctapply]');
       if (ap) return applyHours(ap);
       const hb = e.target.closest('[data-cthboost]');
       if (hb) return boost(hb, hb.dataset.cthboost, hb.dataset.net);
       if (e.target.closest('[data-ctgoals]')) return openSettings(true);
-      const it = e.target.closest('[data-ctitem]'); if (it) return openItem(it.dataset.ctitem);
+      const it = e.target.closest('[data-ctitem]'); if (it) return openItem(it.dataset.ctitem, it.dataset.net);
       if (e.target.closest('[data-ctset]')) return openSettings();
       if (e.target.closest('[data-ctgo]')) return K.go('integrari');
     });
     panel.addEventListener('change', (e) => {
       if (e.target.name === 'cton') save({ action: 'settings', on: e.target.checked });
       if (e.target.name === 'cttab') setTab(e.target.value);
+      if (e.target.name === 'ctcalv') { S.cal.view = e.target.value === 'month' ? 'month' : 'week'; paint(true); }
       if (e.target.name === 'ctfm') { S.fm = e.target.value === 'prev' ? 'prev' : 'month'; paint(true); }
       if (e.target.matches('[data-ctan]')) { S.an = e.target.value; paint(true); }
-      const cap = e.target.closest('[data-ctrc-cap]');
-      if (cap) saveCaption(cap.closest('[data-ctrcid]').dataset.ctrcid, cap.dataset.ctrcCap, cap.value);
     });
-    panel.addEventListener('input', (e) => {
-      const cap = e.target.closest('[data-ctrc-cap]'); if (!cap) return;
-      const n = cap.closest('.cn-rc-e').querySelector('[data-ctrc-n]'); if (n) n.textContent = cap.value.length + '/' + CAP_MAX[cap.dataset.ctrcCap];
-    });
-    // a carousel in the feed: which photo is showing
+    // a carousel: which photo is showing
     panel.addEventListener('scroll', (e) => {
       const c = e.target.closest && e.target.closest('[data-ctcar]'); if (!c) return;
       const n = c.parentElement.querySelector('[data-ctcarn]'); if (!n) return;
@@ -148,13 +151,22 @@
         const t = panel.querySelector('[data-ctidea] input[name=text]'); if (t) t.focus();
       }
     });
+    // a phone turned or a window resized across the wide layout: the card follows (the text open or not)
+    if (window.matchMedia) { const mq = window.matchMedia('(min-width: 900px)'); const on = () => { const w = mq.matches; if (w !== S.wide) { S.wide = w; if (S.tab === 'tr' && S.d) paintTransit(); } }; if (mq.addEventListener) mq.addEventListener('change', on); }
   }
-  // Rezultate or Program (a notification opens Program: #continut/program)
+  // a network's text on the Transit card, opened or closed (the video keeps playing)
+  function repaintCaps(it) {
+    const host = panel.querySelector('[data-cttrid="' + it.id + '"] .cn-tr-caps'); if (!host) return paintTransit();
+    const tmp = document.createElement('div'); tmp.innerHTML = trCard(it);
+    host.replaceWith(tmp.querySelector('.cn-tr-caps'));
+  }
+  // Insights, Transit or Calendar (old links: „program” opens Transit, „rezultate” Insights)
+  const TABS = { ins: 'ins', insights: 'ins', rezultate: 'ins', res: 'ins', tr: 'tr', transit: 'tr', program: 'tr', week: 'tr', aprobare: 'tr', cal: 'cal', calendar: 'cal' };
   function setTab(t) {
-    S.tab = t === 'week' || t === 'program' ? 'week' : 'res';
+    S.tab = TABS[String(t || '').toLowerCase()] || 'ins';
     if (!panel || !S.d) return;
     paint(true);
-    if (S.tab === 'res') loadResults();
+    if (S.tab === 'ins') loadResults();
   }
   // a push for a reel to post opens its card: #continut/de-postat~<id>~<net> (the tab stays as it is)
   K.on('continut:sub', (sub) => {
@@ -164,21 +176,21 @@
   });
   async function load() {
     try { S.d = await K.api('/api/portal-content', { action: 'get' }); paint(); focusCard(true); }
-    catch (err) { const b = panel && panel.querySelector('[data-ctbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca conținutul', esc(K.errText(err))); }
-    if (S.tab === 'res') loadResults();
+    catch (err) { const b = panel && panel.querySelector('[data-ctbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca Content', esc(K.errText(err))); }
+    if (S.tab === 'ins') loadResults();
   }
-  // Rezultate: read when the tab opens (again after a minute)
+  // Insights: read when the tab opens (again after a minute)
   async function loadResults(force) {
     if (!force && S.r && Date.now() - S.rAt < 60e3) return;
     try { S.r = await K.api('/api/portal-content', { action: 'results' }); S.rErr = ''; S.rAt = Date.now(); }
     catch (err) { S.rErr = K.errText(err); }
-    if (S.tab === 'res' && S.d) paint(true);
-    // an open drawer shows the item's funnel once Rezultate is there
+    if (S.tab === 'ins' && S.d) paint(true);
+    // an open drawer shows the item's funnel once Insights is there
     if (dr && openId) { const it = S.d && S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; } }
   }
-  const ERR = { not_approved: 'Întâi aprobă materialul.', paused: 'Programul e oprit.', not_ready: 'Materialul se reface acum.', already_posted: 'E postat peste tot.', idea_too_short: 'Scrie ideea pe scurt.',
+  const ERR = { not_approved: 'Întâi aprobă materialul.', paused: 'Programul e oprit.', not_ready: 'Materialul se reface acum.', already_posted: 'E postat deja.', idea_too_short: 'Scrie ideea pe scurt.',
     invalid_link: 'Linkul nu e al unei postări de pe rețeaua asta.', not_todo: 'Cardul s-a schimbat între timp.', reason_required: 'Alege un motiv.', not_manual: 'Linkul se pune doar la postările făcute din aplicație.',
-    net_app: 'Rețeaua e pe „Din aplicație”: o postezi tu, din De postat.' };
+    net_app: 'Rețeaua e pe „Din aplicație”: o postezi tu, din De postat.', nothing_to_undo: 'Nu mai e nimic de anulat.', already_redoing: 'Producătorul a început deja refacerea.', not_found: 'Materialul nu mai există.' };
   async function save(payload, btn, quiet) {
     if (btn) btn.disabled = true;
     try { S.busy = true; const r = await K.api('/api/portal-content', payload); S.d = r; paint(quiet); return r; }
@@ -193,34 +205,46 @@
   // quiet: the drawer stays as it is (a text being edited keeps its focus)
   function paint(quiet) {
     if (!panel || !S.d) return;
-    const st = S.d.settings, s = S.d.status;
+    const st = S.d.settings;
+    if (S.wide == null) S.wide = !!(window.matchMedia && window.matchMedia('(min-width: 900px)').matches);
+    if (!S.cal.day) S.cal.day = S.d.today;
     // the switch runs the whole program: the API's posts and the De postat cards alike
-    panel.querySelector('[data-cthead]').innerHTML = K.toggle('cton', st.on, st.on ? 'Program pornit' : 'Program oprit') +
+    panel.querySelector('[data-cthead]').innerHTML = K.toggle('cton', st.on, st.on ? 'Postare pornită' : 'Postare oprită') +
       '<button type="button" class="k-icon-btn" data-ctset aria-label="Setări">' + icon('sliders') + '</button>';
     const body = panel.querySelector('[data-ctbody]');
     // a text being typed in the ideas box survives a repaint
     const typing = body.querySelector('[data-ctidea] input[name=text]'), draft = typing && !S.ideaSent ? typing.value : '', focused = typing && document.activeElement === typing;
-    const pend = (s.next && s.next.pending) || 0;
-    const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['res', 'Rezultate', 'trend'], ['week', pend ? 'Program · ' + pend : 'Program', 'calendar']], S.tab) + '</div>';
+    const pend = queue().length;
+    const tabs = '<div class="cn-tabs">' + K.seg('cttab', [['ins', 'Insights', 'trend'], ['tr', pend ? 'Transit · ' + pend : 'Transit', 'checkCircle'], ['cal', 'Calendar', 'calendar']], S.tab, 'cn-tabseg') + '</div>';
     // a link being typed on a De postat card survives a repaint too
     const links = {};
     body.querySelectorAll('[data-cttp] input[name=link]').forEach((x) => { if (x.value) links[x.closest('[data-cttp]').dataset.cttp] = x.value; });
     const linkFocus = document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-cttp] [data-cttp-done]') ? document.activeElement.closest('[data-cttp]').dataset.cttp : '';
     stopMedia();
-    body.innerHTML = toPost() + tabs + (S.tab === 'res' ? banner(s.next) + resTab()
-      : access() + gallery(s.next) + board(s.next, 'Săptămâna viitoare', true) + board(s.current, 'Săptămâna asta', false) + ideasBox() + errors() + last());
+    const page = S.tab === 'tr' ? '<div data-cttrhost>' + transit() + '</div>'
+      : S.tab === 'cal' ? access() + errors() + calendar() + last()
+        : banner(pend) + resTab() + seasonBox() + ideasBox();
+    body.innerHTML = toPost() + tabs + '<div class="cn-page is-' + S.tab + '">' + page + '</div>';
     const t2 = body.querySelector('[data-ctidea] input[name=text]');
     if (t2 && draft) { t2.value = draft; if (focused) t2.focus(); }
     Object.keys(links).forEach((key) => { const x = body.querySelector('[data-cttp="' + key + '"] input[name=link]'); if (x) { x.value = links[key]; if (key === linkFocus) x.focus(); } });
     wireMedia(body);
     wireShare(body);
+    if (S.tab === 'tr') wireSwipe(body);
+    K.badge('continut', pend);
     if (dr && openId && !quiet) { const it = S.d.items.find((x) => x.id === openId); if (it) { const y = dr.body.scrollTop; dr.body.innerHTML = itemBody(it); dr.body.scrollTop = y; dr.el.querySelector('.k-dfoot') && (dr.el.querySelector('.k-dfoot').innerHTML = itemFoot(it)); } }
   }
-  // next week waits for the owner's look: the way to it, on top of Rezultate
-  function banner(w) {
-    const n = (w && w.pending) || 0;
+  // items wait for the owner's look: the way to Transit, on top of Insights
+  function banner(n) {
     if (!n) return '';
-    return '<button type="button" class="cn-ban" data-cttab-go="week"><span class="cn-ban-ic">' + icon('calendar') + '</span><span class="cn-main"><b>' + pl(n, 'material', 'materiale') + ' de aprobat pentru săptămâna viitoare</b><small>' + esc(range(w.week)) + '</small></span><span class="cn-ban-go">Program' + icon('right') + '</span></button>';
+    const it = queue()[0];
+    return '<button type="button" class="cn-ban" data-cttab-go="tr"><span class="cn-ban-ic">' + icon('checkCircle') + '</span><span class="cn-main"><b>' + pl(n, 'material', 'materiale') + ' de aprobat</b><small>' + esc(it && it.week ? 'Săptămâna ' + range(it.week) : 'În Transit') + '</small></span><span class="cn-ban-go">Transit' + icon('right') + '</span></button>';
+  }
+  async function approveAll(btn) {
+    const n = Number(btn.dataset.n) || 0;
+    if (!(await K.ui().confirm({ title: 'Aprobi ' + pl(n, 'material', 'materiale') + '?', message: 'Toate cele din săptămâna ' + range(btn.dataset.ctall) + ' intră în calendar, pe orele lor.', confirmText: 'Aprobă' }))) return;
+    const r = await save({ action: 'approve_week', week: btn.dataset.ctall }, btn);
+    if (r) { S.tr.seen += r.approved || 0; S.tr.last = null; K.ui().toast(r.approved === 1 ? 'Aprobat.' : pl(r.approved || 0, 'material aprobat', 'materiale aprobate') + '.', 'success'); }
   }
   function access() {
     const a = S.d.access;
