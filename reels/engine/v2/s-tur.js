@@ -197,6 +197,7 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
     const MOVES = [B(-3), B(0), B(2), B(4), B(6), B(8), B(10), B(16), B(17), B(18), B(19), B(20), B(22)];
     // motion blur: sub-frames where the camera is fast
     const FAST = [[B(-1) + 0.15, B(0) + 0.32], [B(-3), B(-3) + 0.3], [B(2), B(2) + 0.35], [B(4) - 0.12, B(4) + 0.3], [B(6), B(6) + 0.4], [B(8), B(8) + 0.3], [B(10), B(10) + 0.35], [B(16) - 0.1, B(20) + 0.34], [B(22), B(22) + 0.4]];
+    const HARD = [B(8), B(16), B(17), B(18), B(19), B(20)];
     const kAt = (t) => (FAST.some(([a, b]) => t >= a && t <= b) ? 7 : 1);
 
     // ---- WebGL
@@ -246,7 +247,9 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
       gl.bindFramebuffer(gl.FRAMEBUFFER, G.fb); gl.viewport(0, 0, W, H); gl.disable(gl.BLEND); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
       const K = kAt(t), shut = 0.55 / 30;
-      for (let k = 0; k < K; k++) { const ts = K > 1 ? t + ((k + 0.5) / K - 0.5) * shut : t; scene(ts).forEach(([key, c, w]) => { if (w > 0.001) photoPass(key, c, w / K); }); }
+      for (let k = 0; k < K; k++) { let ts = K > 1 ? t + ((k + 0.5) / K - 0.5) * shut : t;
+        for (const cb of HARD) { if (t >= cb && ts < cb) ts = cb; else if (t < cb && ts >= cb) ts = cb - 0.0005; } // (a hard cut is never blended with the shot before it)
+        scene(ts).forEach(([key, c, w]) => { if (w > 0.001) photoPass(key, c, w / K); }); }
       gl.disable(gl.BLEND);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
       const pr = G.P.out; gl.useProgram(pr.p); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.acc); gl.uniform1i(pr.u.uAcc, 0);
@@ -294,7 +297,7 @@ precision highp float; out vec4 o; void main() { o = vec4(0.); }`;
     const fitLine = (d) => { let f = parseFloat(getComputedStyle(d).fontSize); const span = () => { const r = document.createRange(); r.selectNodeContents(d); return r.getBoundingClientRect().width; }; while (f > 66 && span() > 752) { f -= 2; d.style.fontSize = f + 'px'; } };
     // the timing of each block's words: [word index → reel second]
     const WT = {
-      hk: [0.03, B(-5), B(-5) + 0.12, B(-4)],
+      hk: [0.03, B(-5), B(-5) + 0.12, B(-4), B(-3) + 0.04],
       s0: [B(4) + 0.06, B(5), B(5) + 0.1], s1: [B(8) + 0.08, B(9)], s2: [B(16) + 0.04, B(16) + 0.16, B(17), B(17) + 0.12, B(18)],
       pz: [B(12) + 0.06, B(13), B(13) + 0.12],
     };

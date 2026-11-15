@@ -8,11 +8,11 @@
  "hookHit": false,
  "captions": false,
  "nuki": false,
- "title": "POV: prima ta consultație.",
+ "title": "POV: prima ta consultație gratuită.",
  "topic": "POV: prima ta consultație la Centrul360, un tur prin clinică în fotografii reale, cu pașii consultației spuși exact ca pe site",
- "post": "POV: prima ta consultație. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat. Timișoara · Arad.",
+ "post": "POV: prima ta consultație gratuită. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat. Timișoara · Arad.",
  "ctaType": "none",
- "sources": "v2/src/index.html, întrebarea „Consultația este gratuită?”: „Da, prima consultație este gratuită și fără obligații. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat.” (cei trei pași de pe ecran, în ordinea și cu cuvintele site-ului); v2/src/timisoara.html și arad.html: „Consultația inițială e gratuită și durează 30 de minute.” („30 de minute.”); Nuki cu fișa: index.html, „Planul tău e scris doar pentru tine. Eu țin fișa.” (doar poza, fără replică). Pozele: brand_asset/g-ar-2 (orhideea și logo-ul, Arad), g-tm-1 (recepția, Timișoara), g-ar-9 (cele două scaune, Arad), g-tm-sala (sala, Timișoara), g-ar-5 (patul în lumina ferestrei, Arad), g-tm-aparate, g-tm-laser, g-tm-810, g-tm-monstera, g-tm-fiole (Timișoara); reale, nemodificate ca imagine: doar alb-negru, încadrare și adâncime (hărțile de adâncime în depth/, făcute cu engine/depth.py, Depth Anything V2 small). Fără preț, fără „gratuită” pe ecran (regula din README: fără „consultație gratuită” în reels).",
+ "sources": "v2/src/index.html, întrebarea „Consultația este gratuită?”: „Da, prima consultație este gratuită și fără obligații. Discutăm obiectivele tale, evaluăm zona și îți recomandăm un plan personalizat.” (cei trei pași de pe ecran, în ordinea și cu cuvintele site-ului); v2/src/timisoara.html și arad.html: „Consultația inițială e gratuită și durează 30 de minute.” („30 de minute.”); Nuki cu fișa: index.html, „Planul tău e scris doar pentru tine. Eu țin fișa.” (doar poza, fără replică). Pozele: brand_asset/g-ar-2 (orhideea și logo-ul, Arad), g-tm-1 (recepția, Timișoara), g-ar-9 (cele două scaune, Arad), g-tm-sala (sala, Timișoara), g-ar-5 (patul în lumina ferestrei, Arad), g-tm-aparate, g-tm-laser, g-tm-810, g-tm-monstera, g-tm-fiole (Timișoara); reale, nemodificate ca imagine: doar alb-negru, încadrare și adâncime (hărțile de adâncime în depth/, făcute cu engine/depth.py, Depth Anything V2 small). Fără preț. „gratuită” pe ecran, cu acordul proprietarului din 15.11 („da, poți pune consultația gratuită în reel, normal”), din fraza site-ului „prima consultație este gratuită și fără obligații”; replica „say” a rămas „POV: prima ta consultație.” (check2.cjs încă refuză „consultație gratuită” într-o replică, iar lungimea ei dă durata reelului; reelul nu are voce, deci textul de pe ecran e cel din visual.hook).",
  "concept": {
   "who": "Femeia din Timișoara sau Arad care se gândește de ceva vreme la un tratament, dar amână prima vizită pentru că nu știe ce o așteaptă acolo.",
   "oneThing": "Prima consultație e simplă și liniștită: intri, vorbim despre ce vrei tu, ne uităm la zonă și pleci cu un plan făcut pentru tine.",
@@ -41,11 +41,11 @@
   ],
   "notUsed": [
    "Vocea: tururile POV se citesc din imagine, iar piesa duce ritmul",
-   "Cuvântul „gratuită” și orice preț: regula reels-urilor (fără „consultație gratuită”), chiar dacă site-ul o spune",
    "Etichete cu orașul pe fiecare poză: ar fi încă un rând de citit; orașele apar o dată, la final",
    "Nuki ca ghid al turului: apare o singură dată, mic, cu fișa, la pasul cu planul",
    "Persoane în cadre (cliente, echipa): nu avem poze cu acordul lor pentru asta; clinica vorbește singură",
-   "Culorile reale ale pozelor: orhideea și florile sunt roz aprins, iar reels-urile noastre nu au roz dulceag; alb-negru cu lumină turcoaz"
+   "Culorile reale ale pozelor: orhideea și florile sunt roz aprins, iar reels-urile noastre nu au roz dulceag; alb-negru cu lumină turcoaz",
+   "Prețuri sau oferte: doar faptul că prima consultație e gratuită, spus o dată, în cârlig"
   ],
   "track": {
    "file": "owner-toomuch",
@@ -62,11 +62,11 @@
    "owner": "da: e clinica lui, în alb-negru cu turcoaz, pe piesa lui, cu logo-ul negru pe alb la final"
   },
   "render": {
-   "scroll": "da: din primul cadru o petală în alb-negru, moale, cu o lumină turcoaz din colț, iar „POV: prima ta consultație.” intră cuvânt cu cuvânt pe bătăi (complet la 1,1 s); la 1,4 s focusul trece de pe petală pe logo, iar pe drop (2,83 s) camera zboară prin el, în lumină, la recepție",
-   "serves": "da: patru locuri reale prin care treci la prima vizită (recepția, scaunele, sala, patul în lumina ferestrei), cei trei pași cu cuvintele exacte ale site-ului, apoi aparatele și fiolele pe bătăi, la plan",
-   "effects": "nu, cu o rezervă: adâncimea e chiar ideea; zborul prin scaune spre sală (6,6 s) lasă 3-4 cadre cu urme dublate din blur-ul de mișcare, care trec repede",
-   "natural": "da: un singur cadru editorial (poza sus, care se topește în alb, pasul jos), cel mult două rânduri pe ecran, o pauză când tace toba",
-   "owner": "da, de văzut de el: amestecul de poze din Timișoara și din Arad în același tur (orașele apar doar la final) și Nuki mic, cu fișa, la pasul 3"
+   "scroll": "da: din primul cadru toată replica „POV: prima ta consultație gratuită.” e pe ecran, centrată, stinsă, peste o petală în alb-negru, și se aprinde cuvânt cu cuvânt pe bătăi (completă la 1,7 s); la 1,4 s focusul trece pe logo, iar pe drop (2,83 s) camera zboară prin el la recepție",
+   "serves": "da: fotografiile reale umplu cadrul, pașii stau jos pe un văl alb cu turcoaz, mari (numărul 96 px, cuvântul 104 px, rândul italic 76 px), exact cu cuvintele site-ului",
+   "effects": "nu: tăieturile tari (la sală și la aparate) nu mai amestecă cadrul de dinainte; blur-ul de mișcare rămâne doar pe mișcările camerei",
+   "natural": "da: o idee pe ecran, vălul se retrage unde nu sunt cuvinte (recepția), o pauză când tace toba",
+   "owner": "da, de văzut de el: pozele din Timișoara și din Arad în același tur (orașele apar la final) și Nuki mic, cu fișa, la pasul 3"
   }
  },
  "musicFile": "owner-toomuch",
@@ -210,7 +210,7 @@
    "hook": [
     "POV:",
     "prima ta",
-    "consultație."
+    "consultație gratuită."
    ],
    "steps": [
     {
