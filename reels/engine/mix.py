@@ -174,6 +174,9 @@ BASE = {'whoosh_s': 0.55, 'whoosh_l': 0.5, 'whoosh_r': 0.5, 'swoosh': 0.42, 'swo
 REMAP3 = {'pop': 'tap', 'bubble': 'tap', 'snap': 'tap', 'paper': 'tick_soft', 'tick': 'tick_soft', 'click': 'tick_soft', 'swoosh_up': 'tick_soft',
           'swoosh_down': 'tick_soft', 'swoosh': 'tap', 'glitch': 'tick_soft', 'whoosh_s': 'whoosh_cut'}
 BASE.update({'tick_soft': 0.3, 'tap': 0.38, 'whoosh_cut': 0.42, 'riser_soft': 0.32, 'dot': 0.3})
+# the premium set (15.11, sfx.py --v3 → sfx/v3): the new categories and the ones that are never thinned (one per visual event)
+BASE.update({'swoosh_end': 0.55, 'whoosh_through': 0.6, 'card_flip': 0.42, 'shimmer_soft': 0.3, 'grain': 0.3, 'sand_flow': 0.3, 'pulse': 0.55, 'suck_in': 0.5, 'hit_deep': 0.95})
+KEEP_ALL = {'key', 'tick_soft', 'tap', 'shutter', 'grain', 'card_flip'}
 MAJOR = {'pop', 'slam', 'drop', 'mask', 'flip', 'spin', 'blurIn', 'slideL', 'slideR', 'slideU', 'slideD', 'reveal', 'payoff', 'stack', 'field',
          'layers', 'panels', 'open', 'stop', 'tease', 'slide', 'motif', 'panel', 'write'}
 
@@ -205,7 +208,7 @@ def thin(cues):
     cues = sorted(cues, key=lambda c: c['t'])
     keep = []
     for c in cues:
-        if c['cat'] in ('key', 'tick_soft', 'tap'): keep.append(c); continue  # a word-by-word reveal, a panel sequence: every soft tick and tap stays
+        if c['cat'] in KEEP_ALL: keep.append(c); continue  # a word-by-word reveal, a panel sequence, a shutter on every slide: each one stays
         clash = [k for k in keep if k['cat'] != 'key' and abs(k['t'] - c['t']) < 0.07]
         if clash:
             worst = min(clash, key=lambda k: k['prio'])
@@ -214,7 +217,7 @@ def thin(cues):
         keep.append(c)
     keep.sort(key=lambda c: c['t'])
     while True:
-        nk = [c for c in keep if c['cat'] not in ('key', 'tick_soft', 'tap')]
+        nk = [c for c in keep if c['cat'] not in KEEP_ALL]
         over = None
         for i, c in enumerate(nk):
             win = [k for k in nk[i:] if k['t'] < c['t'] + 1.0]
@@ -304,11 +307,12 @@ def main_v2(rid, base, F, TIM):
     lib = {}
     for p in sorted(glob.glob(os.path.join(HERE, 'sfx', 'v2', '*.wav'))):
         cat = os.path.basename(p).rsplit('_', 1)[0]; lib.setdefault(cat, []).append(p)
-    if (F.get('sound') or 'v2') == 'v3':  # real recorded CC0/PDM sounds (openverse.py, sfx/ov/<cat>_<id>.wav) win over the synthesized ones
-        ov = {}
-        for p in sorted(glob.glob(os.path.join(HERE, 'sfx', 'ov', '*.wav'))):
-            ov.setdefault(os.path.basename(p).rsplit('_', 1)[0], []).append(p)
-        for cat, ps in ov.items(): lib[cat] = ps
+    if (F.get('sound') or 'v2') == 'v3':  # the premium synthesized set (sfx/v3) wins over sfx/v2; real recorded CC0/PDM sounds (openverse.py, sfx/ov) win over both
+        for sub in ('v3', 'ov'):
+            ov = {}
+            for p in sorted(glob.glob(os.path.join(HERE, 'sfx', sub, '*.wav'))):
+                ov.setdefault(os.path.basename(p).rsplit('_', 1)[0], []).append(p)
+            for cat, ps in ov.items(): lib[cat] = ps
     cache, last = {}, {}
     v3 = (F.get('sound') or 'v2') == 'v3'
     if v3:  # the quiet premium layer (14.11): the louder cartoon-ish sounds become soft ones; impacts stay rarer and lower
