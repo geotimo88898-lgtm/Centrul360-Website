@@ -221,6 +221,7 @@ Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonu
    |---|---|---|---|
    | `owner-free` („Free”) | house, cald, constant | educative, cazuri | 0,395 s (primul downbeat), 125,01 BPM |
    | `owner-weongo` („WE ON GO II”) | pielea de găină, „unexpected edits” | (vi) suspansul, (xii) logo-ancora, scheciul 3D, dezvăluiri dramatice, înainte/după puternic | partea cu „honorable”: 0,1-11,8 s (primul downbeat 0,114 s), 131,01 BPM; după ~24 s versuri explicite, nu |
+   | `owner-toomuch` („Too Much For Me”, house) | catchy, energic | montaje pe ritm, început calm pe breakdown și BUM pe drop | 129,2 BPM; breakdown calm 15-44 s, drop ~44-45 s (alte drop-uri ~112,7 s și ~187,7 s) |
    | `owner-trainingseason` („Training Season”, live) | spontan, ușor, „loved by our audience” | Nuki, din culise, un sfat rapid | 10,17 s, la lovitura muzicii; 123,01 BPM |
 
    Alegi piesa după starea reel-ului și le rotești: niciodată aceeași piesă la două reels la rând (`musicFile`,
