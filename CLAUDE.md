@@ -8,7 +8,7 @@
 
 ## Reguli
 - Proprietarul scrie în română: răspunsuri în română, scurt, fără liniuțe lungi (em sau en dash), nicăieri.
-- Fără formalități în admin (regula lui, 16.11): textele pe care le citește echipa nu spun „proprietarul”, „managerul”, „de manager” sau alte titluri țepene. Scurt și firesc: „Bonus”, „Trimite”, „după ce se trec costurile lunii”; când trebuie un nume, „George”.
+- Fără formalități în admin (regula lui, 16.11): textele pe care le citește echipa nu spun „proprietarul”, „managerul”, „de manager” sau alte titluri țepene. Scurt și firesc: „Bonus”, „Trimite”, „Cere corectarea”, „Se aprobă din Condică”, „după ce se trec costurile lunii”. Nici „George” sau alt nume nu se folosește ca să spui cui să se adreseze cineva (a repetat-o pe 16.11); un prenume apare doar ca fapt, de ex. „corectat de Ana”.
 - Înainte de fiecare publicare cu schimbări de interfață: `node qa/overflow.cjs --quick` (vezi `qa/README.md`) trebuie să iasă curat; nimic nu iese din chenar, pe niciun ecran (cererea lui, 16.11).
 - Mișcare cu sens de loc (lecția lui, 16.11, „Tap. Don't cut. Carry.”), pe site, în admin și în reels: ce atingi devine ecranul următor (cardul crește în pagină), înapoi se întoarce exact în locul de unde a plecat, meniurile și ferestrele se deschid din butonul lor. Fără tăieturi seci între ecrane fără legătură.
 - Repo public: fără nume de cliente, telefoane, cifre de business sau chei în cod, commituri sau loguri.
