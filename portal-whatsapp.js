@@ -1021,6 +1021,8 @@
   K.on('appointment:created', (a) => { if (panel && C.selectedPhone && a && tail(a.clientPhone) === tail(C.selectedPhone)) loadThread(C.selectedPhone, false); });
 
   K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); requestAnimationFrame(fitWrap); } load(); } });
+  // opened on a filter from elsewhere (K.go('mesaje/wait'): the manager's KPI, „mesaje care așteaptă”)
+  K.on('mesaje:sub', (v) => { if (!['all', 'wait', 'unread', 'open'].includes(v)) return; C.show = v; if (panel && panel.querySelector('[data-mx-list]')) paintList(); });
   K.on('remote', () => { if (panel && K.isActive('mesaje')) load(); });
   // leaving Mesaje on a phone gives the bottom bar back
   window.addEventListener('hashchange', () => { if (!K.isActive('mesaje')) document.documentElement.classList.remove('mx-thread-open'); });

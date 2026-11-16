@@ -448,11 +448,35 @@ function packagesOf(pays) {
   return { count: ups.length, value: r2(v), avg: ups.length ? r2(v / ups.length) : null };
 }
 
+// the clinic's rates of the period (both pages, 16.11), overall and per clinic:
+//   upsell   of the visits that came in the period, those with an upsell / package paid at the visit
+//   cancel   of the bookings made in the period, those cancelled
+//   rebook   of the clients who came in the period, those who already have another booking after that visit (not cancelled)
+function ratesOf(M, r) {
+  const inRange = inR(r);
+  const one = (city) => {
+    const visits = M.A.filter((a) => a.fresh && inRange(a.date) && a.date <= M.today && (!city || a.city === city));
+    const v = visitsOf(visits), made = bookingsOf(M.A.filter((a) => a.fresh && inRange(a.madeDay) && (!city || a.city === city)));
+    const key = (a) => a.clientId || a.phone;
+    const later = new Map();
+    M.A.forEach((a) => { const k = key(a); if (!k || a.cancelled) return; if (!later.has(k) || a.date > later.get(k)) later.set(k, a.date); });
+    const clients = new Map();
+    visits.filter((a) => a.came && key(a)).forEach((a) => { const k = key(a); if (!clients.has(k) || a.date > clients.get(k)) clients.set(k, a.date); });
+    const back = [...clients.entries()].filter(([k, d]) => (later.get(k) || '') > d).length;
+    return { upsell: { pct: v.upsellRate, upsold: v.upsold, came: v.came }, cancel: { pct: made.rates.cancelled, cancelled: made.cancelled, made: made.made },
+      rebook: { pct: pct(back, clients.size), back, clients: clients.size }, show: { pct: v.rate, came: v.came, due: v.due } };
+  };
+  const out = { all: one('') };
+  CITIES.forEach((c) => { out[c] = one(c); });
+  return out;
+}
+
 // the few numbers compared with the previous period (↑ / ↓)
 function summaryOf(rep) {
   const f = rep.funnel, m = rep.money, a = rep.ads && rep.ads.totals, pk = packagesOf(rep._pays || []);
   const out = { revenue: m.revenue, payments: m.payments, ticket: m.ticket, leads: f.leads, contacted: f.contacted, booked: f.booked, came: f.came, paid: f.paid,
-    bookRate: f.rates.booked, showRate: rep.visits.rate, made: rep.bookings.made, packages: pk.count, packageAvg: pk.avg, packageValue: pk.value, cities: {} };
+    bookRate: f.rates.booked, showRate: rep.visits.rate, made: rep.bookings.made,
+    upsellRate: rep.rates ? rep.rates.all.upsell.pct : null, cancelRate: rep.rates ? rep.rates.all.cancel.pct : null, rebookRate: rep.rates ? rep.rates.all.rebook.pct : null, packages: pk.count, packageAvg: pk.avg, packageValue: pk.value, cities: {} };
   if (a) Object.assign(out, { spend: a.spend, cpl: a.cpl, perBooked: a.perBooked, perCame: a.perCame, cpa: a.cpa, roas: a.roas, metaLeads: a.metaLeads });
   (rep.cities.rows || []).forEach((c) => { out.cities[c.city] = { leads: c.funnel.leads, booked: c.funnel.booked, came: c.funnel.came, paid: c.funnel.paid, revenue: c.money.revenue, spend: c.spend, cpl: c.cost ? c.cost.lead : null, packages: c.packages.count }; });
   return out;
@@ -511,6 +535,7 @@ function report(M, r, { offers = [], ads = null, templates = [], names = new Map
   rep.alerts = alertsOf(rep);
   Object.defineProperty(rep, '_pays', { value: M.P.filter((p) => p.counts && inRange(p.day)), enumerable: false });
   rep.packages = packagesOf(rep._pays);
+  rep.rates = ratesOf(M, r);
   rep.summary = summaryOf(rep);
   return rep;
 }

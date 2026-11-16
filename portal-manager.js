@@ -20,10 +20,16 @@
   const CL = () => (K.data && Array.isArray(K.data.manages) && K.data.manages.length ? K.data.manages : ALL);
   const LEVELS = [['mult_putine', 'Mult prea puține', 'is-bad'], ['putin_putine', 'Puțin prea puține', 'is-warn'], ['potrivit', 'Potrivit', 'is-good'], ['putin_multe', 'Puțin prea multe', 'is-warn'], ['mult_multe', 'Mult prea multe', 'is-bad']];
   const LEVEL = Object.fromEntries(LEVELS.map((x) => [x[0], x]));
+  // how good the leads are, and the reasons she ticks (16.11)
+  const QUALS = [['foarte_slabe', 'Foarte slabe', 'is-bad'], ['slabe', 'Slabe', 'is-warn'], ['ok', 'OK', ''], ['bune', 'Bune', 'is-good'], ['foarte_bune', 'Foarte bune', 'is-good']];
+  const QUAL = Object.fromEntries(QUALS.map((x) => [x[0], x]));
+  const REASONS = [['nu_raspund', 'Nu răspund'], ['nu_stiu', 'Nu știu de ce au lăsat datele'], ['doar_pret', 'Vor doar prețul'], ['alt_oras', 'Nu sunt din oraș'], ['doar_gratuit', 'Vor doar gratuit'],
+    ['se_programeaza', 'Interesate, se programează'], ['altele', 'Altele']];
+  const REASON = Object.fromEntries(REASONS);
   const FATE = { ridicare: 'Păstrat pentru ridicare', depus: 'Depus în contul firmei' };
   const LEAVE = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu', suplimentare: 'Ore libere din suplimentare' };
   const ERR = {
-    own_request: 'Cererile tale le decide adminul.', invalid_city: 'Alege orașul.', invalid_level: 'Alege cum sunt leadurile.', invalid_cash: 'Scrie cât cash ai numărat.',
+    own_request: 'Cererile tale le decide adminul.', invalid_city: 'Alege orașul.', invalid_level: 'Alege cum sunt leadurile.', invalid_quality: 'Alege cum sunt leadurile ca și calitate.', invalid_cash: 'Scrie cât cash ai numărat.',
     invalid_pos: 'Suma de pe POS nu e validă.', invalid_fate: 'Alege ce s-a întâmplat cu cash-ul.', invalid_deposit: 'Scrie suma depusă.', missing_notes: 'Scrie notițele sau problemele săptămânii.',
     invalid_week: 'Săptămâna nu e validă.', forbidden: 'Nu ai acces aici.', not_enough_overtime: 'Nu mai are destule ore suplimentare.', already_decided: 'A fost deja decisă.',
   };
@@ -94,7 +100,7 @@
     const s = S.stats;
     if (!s) return skel(320);
     const t = s.targets;
-    return '<p class="mg-month">' + icon('calendar') + esc(K.monthLabel(s.month)) + ', până azi · țintele lunii: ' + t.perDay.toLocaleString('ro-RO') + ' lei pe zi lucrată de fiecare cosmeticiană, calendar plin + 50%, jumătate din consultații cu upsell, toate leadurile sunate în 5 minute, niciun mesaj fără răspuns la închidere.</p>' +
+    return '<p class="mg-month">' + icon('calendar') + esc(K.monthLabel(s.month)) + ', până azi · țintele lunii: ' + t.perDay.toLocaleString('ro-RO') + ' lei pe zi lucrată de fiecare cosmeticiană, calendar plin plus cele care nu vin (' + CL().filter((c) => s.cities[c] && s.cities[c].fillTarget).map((c) => short(c) + ' ' + s.cities[c].fillTarget.target + '%').join(', ') + '), jumătate din consultații cu upsell, toate leadurile sunate în 5 minute, niciun mesaj fără răspuns la închidere.</p>' +
       cities().map((c) => cityCard(c, s.cities[c], t)).join('') +
       (s.waitingSocial ? '<p class="ct-hint">' + icon('chat') + K.plural(s.waitingSocial, 'conversație', 'conversații') + ' pe Instagram sau Facebook așteaptă răspuns (fără oraș).</p>' : '');
   }
@@ -102,7 +108,11 @@
     if (!x) return '';
     const team = x.team.slice().sort((a, b) => b.perDay - a.perDay);
     const fm = x.fillMonth, fa = x.fillAhead, cs = x.consults, ld = x.leads;
-    const fillTone = (f) => (f.pct == null ? '' : f.pct >= t.fill ? 'is-good' : f.pct >= 100 ? 'is-warn' : 'is-bad');
+    const fillTone = (f) => (f.pct == null ? '' : f.pct >= f.targetPct ? 'is-good' : f.pct >= 100 ? 'is-warn' : 'is-bad');
+    // the target: full plus the clients who didn't come in the last 60 days (api/_lib/clinic.js fillTargets)
+    const ft = x.fillTarget, win = ft ? 'de la ' + K.dateShort(ft.since) + ' la ' + K.dateShort(ft.until) : '';
+    const why = ft && ft.noShow != null ? 'Ținta = 100% + cele care nu au venit în ultimele 60 de zile: din ' + ft.due + ' programări ' + win + (ft.from === 'both' ? ' (ambele clinici, aici prea puține)' : '') + ' au venit ' + ft.came + ', n-au venit ' + ft.missed + ' (' + ft.noShow + '%) → ținta ' + ft.target + '%.'
+      : 'Ținta = plin + 50%: doar ' + (ft ? ft.due : 0) + ' programări ' + win + ', prea puține ca să știm câte nu vin.';
     const bonus = x.bonus.counted ? (x.bonus.ok ? '<span class="k-tag is-good">' + icon('check') + 'Bonus pe drum bun</span>' : '<span class="k-tag is-warn">' + K.plural(x.bonus.below, 'cosmeticiană sub 1500', 'cosmeticiene sub 1500') + '</span>') : '<span class="k-tag">nicio zi lucrată încă</span>';
     const rows = team.length ? team.map((p) => '<div class="k-row mg-cos">' + K.avatar(p.name, 34) +
       '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + '</div><div class="k-row-sub">' + (p.days ? K.plural(p.days, p.daysFrom === 'pontaj' ? 'zi pontată' : p.daysFrom === 'incasari' ? 'zi cu încasări' : 'zi lucrată', p.daysFrom === 'pontaj' ? 'zile pontate' : p.daysFrom === 'incasari' ? 'zile cu încasări' : 'zile lucrate') + (p.payOnly && p.daysFrom === 'mixt' ? ' (' + p.payOnly + ' fără pontaj)' : '') + ' · ' + K.lei(p.collected) : 'nicio zi lucrată luna asta') +
@@ -113,8 +123,8 @@
       : '<p class="k-muted">Nicio cosmeticiană activă în ' + esc(city) + '.</p>';
     return '<section class="k-card mg-city-card"><div class="k-card-head"><h3>' + icon('pin') + esc(city) + '</h3>' + bonus + '</div>' +
       '<div class="k-grid c4 mg-stats">' +
-        stat(fillTone(fm), 'calendar', 'Calendar, luna asta', pct(fm.pct), fm.capHours ? K.num(fm.bookedHours) + ' / ' + K.num(fm.capHours) + ' h · țintă ' + fm.targetPct + '%' : 'fără ore de lucru setate', 'Ore programate față de orele cosmeticienelor (Calendar → Program echipă). Ținta: plin + 50%.') +
-        stat(fillTone(fa), 'sunrise', 'Următoarele 7 zile', pct(fa.pct), fa.capHours ? K.num(fa.bookedHours) + ' / ' + K.num(fa.capHours) + ' h · ' + K.num(fa.freeHours) + ' h libere' : 'fără ore de lucru setate') +
+        stat(fillTone(fm), 'calendar', 'Calendar, luna asta', pct(fm.pct), fm.capHours ? K.num(fm.bookedHours) + ' / ' + K.num(fm.capHours) + ' h · țintă ' + fm.targetPct + '%' : 'fără ore de lucru setate', 'Ore programate față de orele cosmeticienelor (Calendar → Program echipă). ' + why) +
+        stat(fillTone(fa), 'sunrise', 'Următoarele 7 zile', pct(fa.pct), fa.capHours ? K.num(fa.bookedHours) + ' / ' + K.num(fa.capHours) + ' h · țintă ' + fa.targetPct + '%' : 'fără ore de lucru setate', why) +
         stat(cs.pct == null ? '' : cs.pct >= t.consults ? 'is-good' : 'is-warn', 'target', 'Consultații cu upsell', pct(cs.pct), cs.total ? cs.withPackage + ' din ' + cs.total + ' · țintă ' + t.consults + '%' : 'nicio consultație luna asta', 'Consultațiile neanulate până azi urmate, în 7 zile, de o încasare cu pachet sau upsell pentru aceeași clientă. Portalul nu leagă direct consultația de pachet: e cea mai apropiată cifră reală.') +
         stat(ld.inHoursPct == null ? '' : ld.inHoursPct >= t.leads5 ? 'is-good' : ld.inHoursPct >= 80 ? 'is-warn' : 'is-bad', 'zap', 'Leaduri sunate în 5 min', pct(ld.inHoursPct), ld.inHours ? ld.inHoursWithin5 + ' din ' + ld.inHours + ' în program' + (ld.median != null ? ' · median ' + ld.median + ' min' : '') : 'niciun lead nou în program', 'Leadurile noi din reclame și de pe site intrate cât clinica e deschisă. Primul contact: un apel sau o notă în Pipeline, o programare sau primul mesaj scris de cineva pe WhatsApp.') +
       '</div>' +
@@ -318,7 +328,7 @@
     const fbRow = (x) => { const l = LEVEL[x.level] || ['', x.level, '']; const c = x.context || {};
       return '<div class="k-row is-click" data-fb="' + esc(x.id) + '"><span class="mg-city-chip">' + short(x.city) + '</span><div class="k-row-main"><div class="k-row-title">' + esc(x.details || l[1]) + '</div>' +
         '<div class="k-row-sub">' + esc(K.dateShort(dayOfIso(x.at))) + ' ' + esc(hm(x.at)) + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + ' · ' + K.plural(c.leads7 || 0, 'lead', 'leaduri') + ' în 7 zile · ' + K.num(c.freeHoursNext7 || 0) + ' h libere</div></div>' +
-        '<div class="k-row-end"><span class="k-tag ' + l[2] + '">' + esc(l[1]) + '</span></div></div>'; };
+        '<div class="k-row-end"><span class="k-tag ' + l[2] + '">' + esc(l[1]) + '</span>' + (x.quality && QUAL[x.quality] ? '<span class="k-tag ' + QUAL[x.quality][2] + '">calitate: ' + esc(QUAL[x.quality][1].toLowerCase()) + '</span>' : '') + '</div></div>'; };
     const repRow = (x) => '<div class="k-row is-click" data-rep="' + esc(x.id) + '"><span class="k-icon-chip">' + icon('file') + '</span><div class="k-row-main"><div class="k-row-title">Săptămâna ' + esc(dShort(x.week)) + ' - ' + esc(dShort(x.to)) + '</div>' +
       '<div class="k-row-sub">' + Object.keys(x.numbers || {}).map((c) => short(c) + ' ' + K.lei((x.numbers[c] || {}).collected || 0)).join(' · ') + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + '</div></div>' +
       '<div class="k-row-end">' + (x.problems ? '<span class="k-tag is-warn">probleme</span>' : '') + icon('right') + '</div></div>';
@@ -330,15 +340,20 @@
   function contextHtml(c) {
     if (!c) return skel(90);
     const sh = c.show30 || {};
-    return '<dl class="mg-ctx"><div><dt>Leaduri, ultimele 7 zile</dt><dd>' + c.leads7 + '</dd></div><div><dt>Consultații, următoarele 7 zile</dt><dd>' + c.consultsNext7 + '</dd></div>' +
+    const q = c.quality7;
+    return (q ? '<dl class="mg-ctx"><div><dt>Leaduri, 7 zile</dt><dd>' + q.leads + '</dd></div><div><dt>Au răspuns la telefon</dt><dd>' + q.answered + '</dd></div>' +
+      '<div><dt>S-au programat</dt><dd>' + q.booked + '</dd></div><div><dt>Au venit</dt><dd>' + q.came + '</dd></div><div><dt>Au plătit</dt><dd>' + q.paid + '</dd></div></dl>' : '') +
+      '<dl class="mg-ctx"><div><dt>Leaduri, ultimele 7 zile</dt><dd>' + c.leads7 + '</dd></div><div><dt>Consultații, următoarele 7 zile</dt><dd>' + c.consultsNext7 + '</dd></div>' +
       '<div><dt>Ore libere, următoarele 7 zile</dt><dd>' + K.num(c.freeHoursNext7) + ' h <small>din ' + K.num(c.capHoursNext7) + ' h</small></dd></div>' +
-      '<div><dt>Calendar ocupat, 7 zile</dt><dd>' + pct(c.fillNext7) + ' <small>țintă 150%</small></dd></div>' +
+      '<div><dt>Calendar ocupat, 7 zile</dt><dd>' + pct(c.fillNext7) + ' <small>țintă ' + (c.fillTarget || 150) + '%</small></dd></div>' +
       '<div><dt>Au venit, ultimele 30 de zile</dt><dd>' + pct(sh.pct) + (sh.due ? ' <small>' + sh.came + ' din ' + sh.due + '</small>' : '') + '</dd></div></dl>';
   }
   function openFeedback(x) {
     const l = LEVEL[x.level] || ['', x.level, ''];
     K.drawer({ title: 'Leaduri ' + x.city, icon: 'bell', width: 520, subtitle: '<span class="k-tag ' + l[2] + '">' + esc(l[1]) + '</span>' + esc(K.dateLong(dayOfIso(x.at)) + ' ' + hm(x.at)) + (x.byName ? ' · ' + esc(x.byName) : ''),
-      body: (x.details ? '<p class="mg-text">' + esc(x.details) + '</p>' : '<p class="k-muted">Fără detalii.</p>') + '<h4 class="mg-h">Cifrele de atunci</h4>' + contextHtml(x.context) });
+      body: (x.quality && QUAL[x.quality] ? '<p class="mg-text">Calitate: <span class="k-tag ' + QUAL[x.quality][2] + '">' + esc(QUAL[x.quality][1]) + '</span></p>' : '') +
+        ((x.reasons || []).length ? '<div class="mg-reasons">' + x.reasons.filter((r) => REASON[r]).map((r) => '<span class="k-chip is-on">' + esc(REASON[r]) + '</span>').join('') + '</div>' : '') +
+        (x.details ? '<p class="mg-text">' + esc(x.details) + '</p>' : '<p class="k-muted">Fără detalii.</p>') + '<h4 class="mg-h">Cifrele de atunci</h4>' + contextHtml(x.context) });
   }
   function weekTable(n) {
     const CITIES = Object.keys(n || {});
@@ -361,10 +376,13 @@
     const city0 = S.city === 'all' ? myCity() : S.city;
     let ctx = null;
     const d = K.drawer({
-      title: 'Feedback pentru reclame', icon: 'bell', width: 560, subtitle: 'Cum sunt leadurile față de ținta: calendar plin + 50%',
+      title: 'Feedback pentru reclame', icon: 'bell', width: 560, subtitle: 'Cum sunt leadurile față de ținta: calendarul plin plus cele care nu vin',
       body: '<form class="k-form" data-form>' + K.field('Oraș', K.seg('city', CL().map((c) => [c, c]), city0, 'is-big'), 'full') +
         '<div class="k-field full"><span>Cum sunt leadurile</span><div class="mg-levels" role="radiogroup">' + LEVELS.map(([v, l, tone]) =>
           '<button type="button" role="radio" aria-checked="false" class="mg-level ' + tone + '" data-level="' + v + '"><i></i>' + esc(l) + '</button>').join('') + '<input type="hidden" name="level" value=""></div></div>' +
+        '<div class="k-field full"><span>Cum sunt leadurile ca și calitate</span><div class="mg-levels" data-quals role="radiogroup">' + QUALS.map(([v, l, tone]) =>
+          '<button type="button" role="radio" aria-checked="false" class="mg-level ' + tone + '" data-qual="' + v + '"><i></i>' + esc(l) + '</button>').join('') + '<input type="hidden" name="quality" value=""></div></div>' +
+        '<div class="k-field full"><span>De ce (alege câte vrei)</span><div class="mg-reasons" data-reasons>' + REASONS.map(([v, l]) => '<button type="button" class="k-chip" aria-pressed="false" data-reason="' + v + '">' + esc(l) + '</button>').join('') + '</div></div>' +
         K.field('Detalii', '<textarea name="details" rows="4" maxlength="1500" placeholder="De ce, ce fel de leaduri vin, zilele goale sau prea pline"></textarea>', 'full') + '</form>' +
         '<h4 class="mg-h">' + icon('info') + 'Se trimit și cifrele reale</h4><div data-ctx>' + contextHtml(null) + '</div>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-send>' + icon('bell') + 'Trimite</button>',
@@ -377,17 +395,24 @@
         };
         loadCtx(city0);
         f.addEventListener('change', (e) => { if (e.target.name === 'city') loadCtx(e.target.value); });
-        el.querySelector('.mg-levels').addEventListener('click', (e) => {
-          const b = e.target.closest('[data-level]');
+        el.querySelectorAll('.mg-levels').forEach((g) => g.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-level], [data-qual]');
           if (!b) return;
-          el.querySelectorAll('[data-level]').forEach((x) => { x.classList.toggle('is-on', x === b); x.setAttribute('aria-checked', String(x === b)); });
-          f.level.value = b.dataset.level;
+          const k = b.dataset.level ? 'level' : 'qual';
+          g.querySelectorAll('[data-' + k + ']').forEach((x) => { x.classList.toggle('is-on', x === b); x.setAttribute('aria-checked', String(x === b)); });
+          if (k === 'level') f.level.value = b.dataset.level; else f.quality.value = b.dataset.qual;
+        }));
+        el.querySelector('[data-reasons]').addEventListener('click', (e) => {
+          const b = e.target.closest('[data-reason]'); if (!b) return;
+          const on = !b.classList.contains('is-on'); b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on));
         });
         el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
         el.querySelector('[data-send]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           const v = K.formValues(f);
           if (!v.level) { K.ui().toast(ERR.invalid_level, 'error'); return; }
-          try { await K.api('/api/portal-manager', { action: 'feedback', city: v.city, level: v.level, details: v.details }); d.close(); K.ui().toast('Trimis. George a primit notificarea.', 'success'); if (S.tab === 'rapoarte') body(); }
+          if (!v.quality) { K.ui().toast(ERR.invalid_quality, 'error'); return; }
+          const reasons = Array.from(el.querySelectorAll('[data-reason].is-on')).map((x) => x.dataset.reason);
+          try { await K.api('/api/portal-manager', { action: 'feedback', city: v.city, level: v.level, quality: v.quality, reasons, details: v.details }); d.close(); K.ui().toast('Trimis. George a primit notificarea.', 'success'); if (S.tab === 'rapoarte') body(); }
           catch (err) { K.ui().toast(errText(err), 'error'); }
         }));
       },
@@ -533,7 +558,7 @@
     const rows = s ? CL().map((c) => { const x = s.cities[c]; if (!x) return '';
       return '<div class="mg-strip-row"><b>' + esc(c) + '</b>' +
         chip(x.bonus.counted ? x.bonus.ok : null, x.bonus.counted ? (x.bonus.ok ? '1500/zi: toate' : '1500/zi: ' + x.bonus.below + ' sub') : '1500/zi: -') +
-        chip(x.fillAhead.pct == null ? null : x.fillAhead.pct >= t.fill, 'calendar 7 zile ' + pct(x.fillAhead.pct)) +
+        chip(x.fillAhead.pct == null ? null : x.fillAhead.pct >= x.fillAhead.targetPct, 'calendar 7 zile ' + pct(x.fillAhead.pct) + ' din ' + x.fillAhead.targetPct + '%') +
         chip(x.consults.pct == null ? null : x.consults.pct >= t.consults, 'pachet ' + pct(x.consults.pct)) +
         chip(x.leads.inHoursPct == null ? null : x.leads.inHoursPct >= t.leads5, '5 min ' + pct(x.leads.inHoursPct)) +
         chip(!x.waiting, x.waiting ? x.waiting + ' fără răspuns' : 'mesaje la zi') + '</div>'; }).join('') : skel(60);

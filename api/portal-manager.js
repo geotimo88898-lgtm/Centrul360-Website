@@ -28,8 +28,12 @@ const B = require('./_lib/booking');
 
 const CITIES = ['Timișoara', 'Arad'];
 const TARGET_PER_DAY = 1500;       // lei collected per day worked, every cosmetician (the owner's monthly target)
-const TARGET_FILL = 1.5;           // the calendar: full plus 50% (the show-up rate eats the rest)
+const TARGET_FILL = 1.5;           // the calendar's fallback target (per clinic it is full plus the no-shows of 60 days, clinic.js)
 const LEVELS = { mult_putine: 'mult prea puține', putin_putine: 'puțin prea puține', potrivit: 'potrivit', putin_multe: 'puțin prea multe', mult_multe: 'mult prea multe' };
+// how good the leads are (16.11), and the reasons she can tick
+const QUALITY = { foarte_slabe: 'foarte slabe', slabe: 'slabe', ok: 'OK', bune: 'bune', foarte_bune: 'foarte bune' };
+const REASONS = { nu_raspund: 'Nu răspund', nu_stiu: 'Nu știu de ce au lăsat datele', doar_pret: 'Vor doar prețul', alt_oras: 'Nu sunt din oraș', doar_gratuit: 'Vor doar gratuit',
+  se_programeaza: 'Interesate, se programează', altele: 'Altele' };
 const FATES = { ridicare: 'păstrat pentru ridicare', depus: 'depus în contul firmei' };
 const KEEP = 400;
 const KEYS = { feedback: 'data/manager-feedback.json', closes: 'data/day-closes.json', reports: 'data/manager-reports.json' };
@@ -54,16 +58,16 @@ async function append(key, row) {
 }
 
 // the clinic's numbers (the same on the KPI page): api/_lib/clinic.js
-const { visit, isConsult, fill, cosmeticians, consults, leadSpeed, waitingNow, showRate, normalize } = require('./_lib/clinic');
+const { visit, isConsult, fill, fillTargets, cosmeticians, consults, leadSpeed, waitingNow, showRate, normalize } = require('./_lib/clinic');
 
 async function load() {
-  const [emps, sales, appts, attendance, leads, convos, cfg] = await Promise.all([
+  const [emps, sales, appts, attendance, leads, convos, cfg, clients] = await Promise.all([
     readJSON('data/employees.json', []), readJSON('data/sales.json', []), readJSON('data/appointments.json', []), readJSON('data/attendance.json', []),
-    readJSON('data/leads.json', []), readJSON('data/whatsapp-conversations.json', []), B.settings({ team: true }),
+    readJSON('data/leads.json', []), readJSON('data/whatsapp-conversations.json', []), B.settings({ team: true }), readJSON('data/clients.json', []),
   ]);
   // the clinic of every record written one way (the KPI page counts from the same, api/_lib/clinic.js)
   const n = normalize({ leads, appts, sales, convos, emps });
-  return { emps, sales: n.sales, appts: n.appts, attendance, leads: n.leads, convos: n.convos, cfg };
+  return { emps, sales: n.sales, appts: n.appts, attendance, leads: n.leads, convos: n.convos, cfg, clients };
 }
 
 async function stats(month, mine) {
@@ -72,6 +76,8 @@ async function stats(month, mine) {
   const from = m + '-01', to = m === now.date.slice(0, 7) ? now.date : monthEnd(m);
   const D = await load();
   const waiting = await waitingNow(D.convos);
+  // the calendar's target per clinic: full plus the no-shows of the last 60 days (api/_lib/clinic.js fillTargets)
+  const tg = fillTargets(D.appts, D.sales, mine, now.date, D.clients);
   const cities = {};
   mine.forEach((city) => {
     const team = cosmeticians(D.emps, D.sales, D.attendance, city, from, to, D.appts);
@@ -79,15 +85,16 @@ async function stats(month, mine) {
     cities[city] = {
       team,
       bonus: { ok: counted.length > 0 && counted.every((x) => x.ok), counted: counted.length, below: counted.filter((x) => !x.ok).length },
-      fillMonth: fill(D.cfg, city, from, to, D.appts),
-      fillAhead: fill(D.cfg, city, now.date, addDay(now.date, 6), D.appts),
+      fillMonth: fill(D.cfg, city, from, to, D.appts, tg[city].target),
+      fillAhead: fill(D.cfg, city, now.date, addDay(now.date, 6), D.appts, tg[city].target),
+      fillTarget: tg[city],
       schedule: !!(D.cfg.team && T.hasSchedule(D.cfg.team.doc, city, D.cfg.team.ids)),
       consults: consults(D.appts, D.sales, city, from, to),
       leads: leadSpeed(D.leads, D.convos, D.cfg, city, from, to),
       waiting: waiting[city] || 0,
     };
   });
-  return { ok: true, month: m, from, to, clinics: mine, targets: { perDay: TARGET_PER_DAY, fill: TARGET_FILL * 100, consults: 50, leads5: 100 }, waitingSocial: waiting.social || 0, cities };
+  return { ok: true, month: m, from, to, clinics: mine, targets: { perDay: TARGET_PER_DAY, fill: TARGET_FILL * 100, fillBy: 'noshow60', consults: 50, leads5: 100 }, waitingSocial: waiting.social || 0, cities };
 }
 
 async function context(city) {
@@ -95,14 +102,25 @@ async function context(city) {
   const D = await load();
   const since = Date.now() - 7 * 864e5;
   const ahead = addDay(now.date, 6);
-  const f = fill(D.cfg, city, now.date, ahead, D.appts);
+  const tg = fillTargets(D.appts, D.sales, [city], now.date, D.clients)[city];
+  const f = fill(D.cfg, city, now.date, ahead, D.appts, tg.target);
+  // the leads of the last 7 days and what they became (the KPI funnel's rules, api/_lib/kpi.js): answered when called = a call or
+  // message noted with an answer (anything but „nu răspunde” / „număr greșit”), or booked
+  const K = require('./_lib/kpi');
+  const M = K.model({ leads: D.leads, appointments: D.appts, sales: D.sales, clients: D.clients, conversations: D.convos });
+  const raw = new Map(D.leads.map((l) => [l.id, l]));
+  const L7 = M.L.filter((l) => l.fresh && l.city === city && l.at >= since);
+  const f7 = K.funnelOf(L7);
+  const answered = L7.filter((l) => l.appts.length || l.pays.length || ((raw.get(l.id) || {}).activities || []).some((a) => a.type === 'contact' && a.outcome && !['nu_raspunde', 'numar_gresit'].includes(a.outcome))).length;
   return {
     city,
+    quality7: { leads: f7.leads, contacted: f7.contacted, answered, booked: f7.booked, came: f7.came, paid: f7.paid },
+    fillTarget: tg.target, noShow60: tg.noShow, noShowCounts: { due: tg.due, came: tg.came, missed: tg.missed, since: tg.since, from: tg.from },
     leads7: D.leads.filter((l) => l.location === city && Date.parse(l.createdAt) >= since).length,
     consultsNext7: D.appts.filter((a) => visit(a) && isConsult(a) && a.location === city && a.date >= now.date && a.date <= ahead).length,
     visitsNext7: D.appts.filter((a) => visit(a) && a.location === city && a.date >= now.date && a.date <= ahead).length,
     freeHoursNext7: f.freeHours, capHoursNext7: f.capHours, bookedHoursNext7: f.bookedHours, fillNext7: f.pct,
-    show30: showRate(D.appts, city, now.date, D.sales),
+    show30: showRate(D.appts, city, now.date, D.sales, 30, D.clients),
     at: new Date().toISOString(),
   };
 }
@@ -199,22 +217,25 @@ module.exports = async (req, res) => {
     if (b.action === 'feedback') {
       if (!cityOk(b.city)) return fail(400, 'invalid_city');
       if (!LEVELS[b.level]) return fail(400, 'invalid_level');
+      if (!QUALITY[b.quality]) return fail(400, 'invalid_quality');
       const details = clip(b.details, 1500);
-      const row = { id: crypto.randomUUID(), at: new Date().toISOString(), by: session.employeeId, byName: await who(), city: b.city, level: b.level, details, context: await context(b.city) };
+      const reasons = [...new Set((Array.isArray(b.reasons) ? b.reasons : []).filter((x) => REASONS[x]))];
+      const row = { id: crypto.randomUUID(), at: new Date().toISOString(), by: session.employeeId, byName: await who(), city: b.city, level: b.level, quality: b.quality, reasons, details, context: await context(b.city) };
       await append(KEYS.feedback, row);
       const c = row.context;
       const arrow = /putine/.test(b.level) ? '📉' : /multe/.test(b.level) ? '📈' : '👌';
       await N.notifyMany(store, await N.adminIds(store), {
         kind: 'alert', tone: b.level === 'potrivit' ? 'good' : 'warn', go: 'manager', tag: 'mgr-fb-' + row.id,
-        title: 'LEADURI ' + tag(b.city) + ' ' + arrow + ' - ' + LEVELS[b.level],
-        text: (row.byName ? row.byName.split(' ')[0] + ': ' : '') + (details ? details.slice(0, 90) + ' · ' : '') + c.leads7 + ' leaduri în 7 zile · ' + c.freeHoursNext7 + ' ore libere în 7 zile',
+        title: 'LEADURI ' + tag(b.city) + ' ' + arrow + ' - ' + LEVELS[b.level] + ', calitate ' + QUALITY[b.quality],
+        text: (row.byName ? row.byName.split(' ')[0] + ': ' : '') + (reasons.length ? reasons.map((x) => REASONS[x]).join(', ') + ' · ' : '') + (details ? details.slice(0, 80) + ' · ' : '') +
+          (c.quality7 ? c.quality7.leads + ' leaduri în 7 zile: ' + c.quality7.answered + (c.quality7.answered === 1 ? ' a răspuns, ' : ' au răspuns, ') + c.quality7.booked + ' programate, ' + c.quality7.came + (c.quality7.came === 1 ? ' a venit, ' : ' au venit, ') + c.quality7.paid + (c.quality7.paid === 1 ? ' a plătit' : ' au plătit') : c.leads7 + ' leaduri în 7 zile') + ' · ' + c.freeHoursNext7 + ' ore libere',
       });
       res.status(200).json({ ok: true, feedback: row });
       return;
     }
     if (b.action === 'feedback_list') {
       const list = (await readJSON(KEYS.feedback, [])).filter(seen).reverse().slice(0, 100);
-      res.status(200).json({ ok: true, feedback: list, levels: LEVELS });
+      res.status(200).json({ ok: true, feedback: list, levels: LEVELS, quality: QUALITY, reasons: REASONS });
       return;
     }
 

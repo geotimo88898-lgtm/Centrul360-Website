@@ -8,7 +8,10 @@ const L = require('./left');
 
 const CITIES = ['Timișoara', 'Arad'];
 const TARGET_PER_DAY = 1500;       // lei collected per day worked, every cosmetician (the owner's monthly target)
-const TARGET_FILL = 1.5;           // the calendar: full plus 50% (the show-up rate eats the rest)
+const TARGET_FILL = 1.5;           // the calendar's target when there are too few visits to know the no-shows: full plus 50%
+// the calendar's target (the owner, 16.11): full plus the share of clients who didn't come in the last 60 days, per clinic
+// (fewer than 20 visits due there: both clinics together; still too few: 150%)
+const NOSHOW_DAYS = 60, NOSHOW_MIN = 20;
 const SELF = ['facebook-webhook', 'site-form']; // leads that came by themselves (not typed in by the team)
 
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -42,14 +45,15 @@ function capMin(cfg, city, date, appts) {
   const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId)).size;
   return Math.max(0, (toMin(d.to) || 0) - (toMin(d.from) || 0)) * Math.max(0, (Number(d.at) || 0) - off);
 }
-function fill(cfg, city, from, to, appts) {
+function fill(cfg, city, from, to, appts, targetPct) {
+  const tp = targetPct || TARGET_FILL * 100;
   let cap = 0, booked = 0;
   for (let d = from; d <= to; d = addDay(d, 1)) {
     cap += capMin(cfg, city, d, appts);
     booked += appts.filter((a) => visit(a) && a.location === city && a.date === d).reduce((n, a) => n + apptMin(a), 0);
   }
-  return { capHours: Math.round(cap / 6) / 10, bookedHours: Math.round(booked / 6) / 10, pct: cap ? Math.round((booked / cap) * 100) : null, targetPct: TARGET_FILL * 100,
-    targetHours: Math.round((cap * TARGET_FILL) / 6) / 10, freeHours: Math.max(0, Math.round((cap - booked) / 6) / 10) };
+  return { capHours: Math.round(cap / 6) / 10, bookedHours: Math.round(booked / 6) / 10, pct: cap ? Math.round((booked / cap) * 100) : null, targetPct: tp,
+    targetHours: Math.round((cap * tp / 100) / 6) / 10, freeHours: Math.max(0, Math.round((cap - booked) / 6) / 10) };
 }
 
 // ------------------------------------------------------------------ the numbers of a period, per clinic
@@ -158,12 +162,61 @@ function lateCancel(a) {
   const r = B.roNow(t), s = toMin(a.time);
   return r.date > a.date || (r.date === a.date && (s == null || r.min >= s));
 }
-// show-up: of the visits that were due in the last 30 days (not moved, not cancelled ahead), how many came
-function showRate(appts, city, today, sales) {
-  const from = addDay(today, -30), paid = paidDays(sales);
-  const due = appts.filter((a) => a && a.location === city && a.date >= from && a.date < today && a.status !== 'concediu' && !a.block && a.status !== 'reprogramata' && (a.status !== 'anulata' || lateCancel(a) || cameBy(a, paid)));
-  const came = due.filter((a) => cameBy(a, paid)).length;
-  return { due: due.length, came, pct: due.length ? Math.round((came / due.length) * 100) : null };
+// The visits of a clinic over the last days, as precise as the data allows (16.11: the calendar's target rests on it):
+//   window   Bucharest days from `days` ago to yesterday (today is still going on), never before the first whole day of
+//            the portal (17.10): the bookings imported from HighLevel before it were marked „finalizată” just for being
+//            past (_lib/ghl.js), so they would hide the no-shows
+//   due      a booking of a client on its day: not leave or a time block, not a test („Test …”), not cancelled before its
+//            hour (a cancellation at or after it is a no-show, as HighLevel's no-shows are), not „reprogramată” without
+//            having come (moved: it counts at its new date; still on the old one, it is not counted), the same client on the
+//            same day, clinic and treatment once
+//   came     finished, or paid, or the client paid something that day at that clinic (the same client: her card id, her
+//            phone, or her name as written on the payment); the portal has no client check-in
+function visitStats(appts, sales, city, today, days, clients) {
+  const first = addDay(B.roNow(require('./kpi').cfg.start).date, 1);
+  let from = addDay(today, -(days || 30)); if (from < first) from = first;
+  const to = addDay(today, -1);
+  const phoneOf = new Map((clients || []).map((c) => [c.id, d9(c.phone)]));
+  const idsOf = (clientId, phone, name) => { const p = d9(phone) || phoneOf.get(clientId) || ''; return [clientId ? 'c:' + clientId : '', p.length === 9 ? 'p:' + p : '', fold(name).trim() ? 'n:' + fold(name).trim().replace(/\s+/g, ' ') : ''].filter(Boolean); };
+  const paid = new Set();
+  (sales || []).forEach((x) => { if (!x || x.source !== 'incasare' || x.date < from || x.date > to || x.location !== city) return; idsOf(x.clientId, x.clientPhone, x.client).forEach((k) => paid.add(k + '|' + x.date)); });
+  const ex = { leave: 0, test: 0, cancelledAhead: 0, moved: 0, duplicate: 0 };
+  const seen = new Map();
+  (appts || []).forEach((a) => {
+    if (!a || a.location !== city || !a.date || a.date < from || a.date > to) return;
+    if (a.status === 'concediu' || a.block) { ex.leave++; return; }
+    if (/^\s*test\b/i.test(a.clientName || '')) { ex.test++; return; }
+    const ids = idsOf(a.clientId, a.clientPhone, a.clientName);
+    const came = a.status === 'finalizata' || !!a.paidSaleId || ids.some((k) => paid.has(k + '|' + a.date));
+    if (a.status === 'anulata' && !came && !lateCancel(a)) { ex.cancelledAhead++; return; }
+    if (a.status === 'reprogramata' && !came) { ex.moved++; return; }
+    const key = (ids[0] || 'id:' + a.id) + '|' + a.date + '|' + fold(a.treatment).trim();
+    const was = seen.get(key);
+    if (was) { ex.duplicate++; was.came = was.came || came; return; }
+    seen.set(key, { came });
+  });
+  const due = seen.size, came = [...seen.values()].filter((x) => x.came).length;
+  return { from, to, due, came, noShow: due - came, pct: due ? Math.round((came / due) * 100) : null, excluded: ex };
+}
+// show-up of a clinic: the share of the due visits that came (the last 30 days unless said)
+function showRate(appts, city, today, sales, days, clients) {
+  const v = visitStats(appts, sales, city, today, days || 30, clients);
+  return { due: v.due, came: v.came, pct: v.pct, from: v.from, to: v.to };
+}
+
+// the calendar's target per clinic: { target (%), noShow (%), show, due, came, from: 'clinic' | 'both' | 'default' }
+function fillTargets(appts, sales, cities, today, clients) {
+  const per = {}; let due = 0, came = 0;
+  CITIES.forEach((c) => { const v = visitStats(appts, sales, c, today, NOSHOW_DAYS, clients); per[c] = v; due += v.due; came += v.came; });
+  const out = {};
+  (cities || CITIES).forEach((c) => {
+    const v = per[c];
+    const base = v.due >= NOSHOW_MIN ? { due: v.due, came: v.came, from: 'clinic' } : due >= NOSHOW_MIN ? { due, came, from: 'both' } : null;
+    const noShow = base ? Math.round(100 - (base.came / base.due) * 100) : null;
+    out[c] = { target: base ? 100 + noShow : TARGET_FILL * 100, noShow, from: base ? base.from : 'default', due: base ? base.due : v.due, came: base ? base.came : v.came,
+      missed: base ? base.due - base.came : v.due - v.came, since: v.from, until: v.to, excluded: v.excluded };
+  });
+  return out;
 }
 
 // every record with its clinic written one way („Timișoara” / „Arad”, whatever the spelling): a payment without one takes
@@ -180,9 +233,9 @@ function normalize({ leads, appts, sales, convos, emps }) {
 }
 
 // the calendar of the next days, day by day (booked hours vs the team's hours)
-function fillDays(cfg, city, from, days, appts) {
+function fillDays(cfg, city, from, days, appts, targetPct) {
   const out = [];
-  for (let i = 0; i < days; i++) { const d = addDay(from, i); out.push(Object.assign({ date: d }, fill(cfg, city, d, d, appts))); }
+  for (let i = 0; i < days; i++) { const d = addDay(from, i); out.push(Object.assign({ date: d }, fill(cfg, city, d, d, appts, targetPct))); }
   return out;
 }
 
@@ -200,4 +253,4 @@ function methods(sales) {
   return { cash: r2(cash), card: r2(card), transfer: r2(transfer), other: r2(other) };
 }
 
-module.exports = { consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };
+module.exports = { visitStats, fillTargets, consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };

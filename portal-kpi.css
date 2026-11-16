@@ -170,7 +170,7 @@ b.is-bad, .is-bad > b{ color:var(--bad); }
 .kq-ad-n, .kq-of-n{ display:flex; flex-wrap:wrap; align-items:center; gap:2px 8px; min-width:0; color:var(--fg); font-weight:550; font-size:13.5px; }
 .kq-ad-n > i{ width:7px; height:7px; border-radius:50%; background:color-mix(in srgb, var(--fg) 25%, transparent); flex:none; }
 .kq-ad-n > i.is-on{ background:var(--accent); }
-.kq-ad-n small{ flex-basis:100%; padding-left:15px; font-weight:500; font-size:12px; color:var(--muted); }
+.kq-ad-n small{ flex-basis:100%; min-width:0; overflow-wrap:anywhere; padding-left:15px; font-weight:500; font-size:12px; color:var(--muted); }
 .kq-ads-l li.is-bad .kq-ad-n small{ color:var(--bad); }
 .kq-ads-l li.is-top .kq-ad-n small{ color:var(--accent); }
 .kq-of li > b{ color:var(--fg); font-weight:650; text-align:right; }
@@ -288,3 +288,70 @@ html.c360-reduce .kq *, html.c360-reduce .kq-today *, html.c360-reduce .kq-tc{ a
   .mg-hbar .k-seg{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; }
   .mg-hbar .k-seg button{ justify-content:center; padding:.55rem .3rem; font-size:.78rem; }
 }
+
+/* the manager's deck: her bonus condition (portal-summit-kpi.js mgrTiles), one bar per cosmetician, the target line in the middle */
+.sx-t .sx-near{ margin-top:6px; }
+.sx-bon{ list-style:none; margin:auto 0 0; padding:18px 0 0; display:grid; gap:10px; }
+.sx-bon li{ display:grid; grid-template-columns:1fr auto; gap:6px 10px; font-size:13.5px; }
+.sx-bon li em{ font-style:normal; font-weight:600; font-variant-numeric:tabular-nums; color:var(--bad); }
+.sx-bon li.ok em{ color:var(--accent); }
+.sx-bon li i{ position:relative; grid-column:1 / -1; height:6px; border-radius:6px; background:color-mix(in srgb, var(--fg) 8%, transparent); }
+.sx-bon li u{ position:absolute; left:0; top:0; bottom:0; width:100%; border-radius:6px; transform-origin:0 50%; transform:scaleX(var(--w)); background:var(--bad); }
+.sx-bon li.ok u{ background:var(--accent); }
+.sx-bon li s{ position:absolute; left:50%; top:-3px; bottom:-3px; width:2px; border-radius:2px; background:var(--fg); opacity:.4; }
+.sx-deck.go .sx-bon li{ animation:sx-rise .7s var(--sx-e) both; animation-delay:calc(var(--i) * 80ms + 500ms); }
+.sx-deck.go .sx-bon li u{ animation:sx-bar 1.2s var(--sx-e) both; animation-delay:calc(var(--i) * 110ms + 650ms); }
+.sx-deck.kq-still .sx-bon li, .sx-deck.kq-still .sx-bon li u{ animation:none !important; }
+:where(html.ui-nou:not([data-theme="light"])) .sx-bon li{ color:#fff; }
+.kq-act .k-ic{ width:13px; height:13px; margin-left:2px; opacity:.7; }
+
+/* the rates: five numbers in a row (two per line on a phone), per clinic under each */
+.kq-rates-g{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px 20px; }
+@media (min-width:760px){ .kq-rates-g{ grid-template-columns:repeat(5, minmax(0,1fr)); } }
+.kq-rates-g > div{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.kq-rates-g span{ font-size:12.5px; color:var(--muted); }
+.kq-rates-g b{ font-size:26px; font-weight:750; letter-spacing:-.04em; color:var(--fg); font-variant-numeric:tabular-nums; line-height:1.15; }
+.kq-rates-g .is-bad b{ color:var(--bad); }
+.kq-rates-g small{ font-size:11.5px; color:var(--muted); }
+.kq-in .kq-rates-g > div{ animation:kq-in .35s ease-out both; }
+.kq-in .kq-rates-g > div:nth-child(2){ animation-delay:.05s; } .kq-in .kq-rates-g > div:nth-child(3){ animation-delay:.1s; } .kq-in .kq-rates-g > div:nth-child(4){ animation-delay:.15s; } .kq-in .kq-rates-g > div:nth-child(5){ animation-delay:.2s; }
+
+/* the period bar on a phone: the five main periods on one line, a shorter „Luna trecută” */
+.kq-seg button .s{ display:none; }
+@media (max-width:560px){
+  .kq-seg{ gap:1px; padding:2px; }
+  .kq-seg button{ flex:1 1 auto; min-width:0; padding:0 5px; font-size:12px; overflow:visible; text-overflow:clip; }
+  .kq-seg button[data-kp-period="lastmonth"] .l{ display:none; }
+  .kq-seg button[data-kp-period="lastmonth"] .s{ display:inline; }
+}
+/* the manager's „De făcut”: everything waiting for her at the desk, a row each, a tap to where it's done */
+.kq-desk{ display:flex; flex-direction:column; gap:8px; padding:16px 18px; border-radius:20px; background:var(--paper, #fff); box-shadow:var(--n-card, 0 0 0 1px rgba(0,0,0,.06)); }
+:where(html.ui-nou:not([data-theme="light"])) .kq-desk{ background:rgba(255,255,255,.03); box-shadow:0 0 0 1px rgba(255,255,255,.07); }
+.kq-desk .kq-head h3{ font-size:16px; }
+.kq-desk ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+.kq-desk li{ display:grid; grid-template-columns:auto minmax(0,1fr) 15px; align-items:center; gap:10px; padding:10px 0; cursor:pointer; border-top:1px solid color-mix(in srgb, var(--fg) 6%, transparent); font-size:14px; color:var(--fg); }
+.kq-desk li:first-child{ border-top:0; }
+.kq-desk li > span:nth-child(2){ display:flex; flex-direction:column; gap:1px; min-width:0; }
+.kq-desk li b{ color:var(--bad); font-weight:700; }
+.kq-desk li small{ font-size:12px; color:var(--muted); }
+.kq-desk li > .k-ic{ width:15px; height:15px; color:var(--muted); }
+.kq-desk .kq-tag .k-ic{ width:12px; height:12px; }
+.kq-desk-ok{ display:flex; align-items:center; gap:8px; margin:0; font-size:14px; color:var(--muted); }
+.kq-desk-ok .k-ic{ width:17px; height:17px; color:var(--accent); }
+.kq-today:has(.kq-desk) > .kq-desk + .kq-head{ margin-top:6px; }
+
+/* the ads feedback: the reasons she ticks */
+.mg-reasons{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
+.kq-ad-n{ overflow-wrap:anywhere; }
+.kq-ads-l li > *{ min-width:0; }
+.kq-trend{ overflow:hidden; }
+@media (max-width:639px){
+  .kq-ads-l li, .kq-of li{ display:flex; flex-wrap:wrap; gap:4px 14px; }
+  .kq-ad-n, .kq-of-n{ flex-basis:100%; }
+  .kq-of li > b{ margin-left:auto; }
+}
+/* the deck's gauge tiles on a phone: the line under the number stays left of the ring */
+@media (max-width:860px){ .sx-deck .sx-t.gauge > p, .sx-deck .sx-t.gauge > small{ max-width:calc(100% - 78px); } }
+/* the quality: five short choices on one line */
+.mg-levels[data-quals]{ display:grid !important; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; }
+.mg-levels[data-quals] .mg-level{ flex-direction:column; justify-content:center; text-align:center; gap:6px; padding:10px 4px; font-size:12.5px; line-height:1.2; min-height:64px; }

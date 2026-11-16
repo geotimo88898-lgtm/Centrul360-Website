@@ -16,7 +16,43 @@
   var HUES = ['#2fd6c3', '#48d6ff', '#ffd27a', '#ff9f6b', '#5cf2a0', '#ff6f91', '#7fb2ff', '#ffe45c', '#9ff2e8'];
 
   // ------------------------------------------------------------------ the tiles, only what has a value
+  // the manager (r.scope, 16.11: „ce o interesează pe ea cel mai mult”): her bonus condition big (how many cosmeticians are over
+  // 1.500 lei a day, the one closest under it and what she still needs a day), then the three levers she moves: the calendar of
+  // the next 7 days vs its target (full plus the no-shows of 60 days), the leads called in 5 minutes, the consultations ending with a package vs 50%. No money totals.
+  function mgrTiles(r, pl) {
+    var out = [], cl = Object.keys(r.clinic || {}), T = (r.targets && r.targets.perDay) || 1500;
+    var team = [], cap = 0, booked = 0, capT = 0, tot = 0, w5 = 0, never = 0, ct = 0, cp = 0;
+    cl.forEach(function (c) {
+      var x = r.clinic[c];
+      (x.team || []).forEach(function (p) { team.push(p); });
+      cap += x.fill.capHours || 0; booked += x.fill.bookedHours || 0; capT += (x.fill.capHours || 0) * (x.fill.targetPct || 150);
+      tot += x.reception.total || 0; w5 += x.reception.within5 || 0; never += x.reception.never || 0;
+      ct += x.consults.total || 0; cp += x.consults.withPackage || 0;
+    });
+    team.sort(function (a, b) { return b.perDay - a.perDay; });
+    // the calendar's target: each clinic's (full plus its no-shows of 60 days), weighted by its hours
+    var F = cap ? Math.round(capT / cap) : Math.round((cl[0] && r.clinic[cl[0]].fill.targetPct) || 150);
+    var ok = team.filter(function (p) { return p.ok; }).length;
+    var near = team.filter(function (p) { return !p.ok; })[0];
+    var first = function (n) { return String(n || '').split(' ')[0]; };
+    out.push({ cls: 'hero', html:
+      '<small>Bonusul · ' + esc(pl) + '</small>' +
+      (team.length ? '<div class="row"><b class="big" data-count="' + ok + '">0</b><em class="unit">din ' + team.length + '</em></div>' +
+        '<p>cosmeticiene peste <b>' + num(T) + ' lei</b> pe zi lucrată</p>' +
+        (near ? '<p class="sx-near">' + esc(first(near.name)) + ' e cea mai aproape: mai are nevoie de <b>' + num(near.gap) + ' lei</b> pe zi</p>' : '<p class="sx-near">Toate sunt peste țintă.</p>') +
+        '<ol class="sx-bon">' + team.map(function (p, i) { return '<li style="--i:' + i + '" class="' + (p.ok ? 'ok' : '') + '"><span>' + esc(p.name) + '</span><em>' + num(p.perDay) + ' lei</em><i><u style="--w:' + Math.min(1, p.perDay / (T * 2)).toFixed(3) + '"></u><s></s></i></li>'; }).join('') + '</ol>'
+        : '<div class="row"><b class="big">-</b></div><p>nicio zi lucrată în perioada asta</p>') });
+    var lever = function (label, val, target, line) {
+      if (val == null) return;
+      out.push({ cls: 'gauge', html: '<small>' + label + '</small>' + gauge(Math.min(100, (val / target) * 100)) + '<b class="mid" data-count="' + Math.round(val) + '" data-suf="%">0</b><p>' + line + '</p>' });
+    };
+    lever('Calendar, 7 zile', cap ? Math.round((booked / cap) * 100) : null, F, 'ținta ' + F + '% · ' + num(Math.max(0, cap - booked)) + ' h libere');
+    lever('Sunate în 5 minute', tot ? Math.round((w5 / tot) * 100) : null, 100, w5 + ' din ' + tot + (never ? ' · <b>' + never + ' nesunate</b>' : ''));
+    lever('Consultații cu upsell', ct ? Math.round((cp / ct) * 100) : null, 50, 'ținta 50% · ' + cp + ' din ' + ct);
+    return out;
+  }
   function tiles(r, pl) {
+    if (r.scope) return mgrTiles(r, pl);
     var out = [], m = r.money || {}, v = r.visits || {}, b = r.bookings || {}, f = r.funnel || {}, a = r.ads && r.ads.totals;
     var trend = (r.trend || []).map(function (x) { return x.revenue || 0; });
     out.push({ cls: 'hero', html:

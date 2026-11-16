@@ -113,6 +113,8 @@ module.exports = async (req, res) => {
     const ro = B.roNow(), today = ro.date, ahead = C.addDay(today, 6);
     const waiting = await C.waitingNow(myConvos).catch(() => ({}));
     const openDues = (dues || []).filter((d) => d && Number(d.total) - Number(d.paid) > 0.005 && !d.closedAt);
+    // the calendar's target per clinic: full plus the no-shows of the last 60 days, from every clinic's visits (a share, never money)
+    const tg = C.fillTargets(N.appts, N.sales, cities, today, clients);
     const clinic = {};
     cities.forEach((city) => {
       const team = C.cosmeticians(employees, mySales, attendance, city, r.since, r.until);
@@ -122,16 +124,16 @@ module.exports = async (req, res) => {
       clinic[city] = {
         team: counted.sort((a, b) => b.perDay - a.perDay).map((x) => ({ id: x.id, name: x.name, days: x.days, daysFrom: x.daysFrom, collected: x.collected, perDay: x.perDay, ok: x.ok, gap: x.gap })),
         consults: C.consults(myAppts, mySales, city, r.since, r.until),
-        show30: C.showRate(myAppts, city, today, mySales),
+        show30: C.showRate(myAppts, city, today, mySales, 30, clients),
         reception: C.leadSpeed(myLeads, myConvos, cfg, city, r.since, r.until),
         methods: C.methods(pays),
         dues: { count: due.length, rest: C.r2(due.reduce((n, d) => n + Math.max(0, Number(d.total) - Number(d.paid)), 0)) },
-        fill: Object.assign(C.fill(cfg, city, today, ahead, myAppts), { days: C.fillDays(cfg, city, today, 7, myAppts), schedule: !!(cfg.team && T.hasSchedule(cfg.team.doc, city, cfg.team.ids)) }),
+        fill: Object.assign(C.fill(cfg, city, today, ahead, myAppts, tg[city].target), { target: tg[city], days: C.fillDays(cfg, city, today, 7, myAppts, tg[city].target), schedule: !!(cfg.team && T.hasSchedule(cfg.team.doc, city, cfg.team.ids)) }),
         waiting: waiting[city] || 0,
       };
     });
     rep.clinic = clinic;
-    rep.targets = { perDay: C.TARGET_PER_DAY, fill: C.TARGET_FILL * 100 };
+    rep.targets = { perDay: C.TARGET_PER_DAY, fill: C.TARGET_FILL * 100 }; // fill: only the fallback; each clinic's is clinic[city].fill.targetPct
     rep.waitingSocial = waiting.social || 0;
     // the team's first contacts, by person (who called / wrote first, how fast)
     rep.contactBy = (rep.team && rep.team.contact) || [];
@@ -146,8 +148,11 @@ module.exports = async (req, res) => {
       const paid = mySales.filter((s) => s && s.source === 'incasare' && s.date === today && (s.location || '') === city);
       const c = tc.find((x) => x.city === city) || {};
       const sp = C.leadSpeed(myLeads, myConvos, cfg, city, today, today);
+      const tomorrow = C.addDay(today, 1);
       now.cities[city] = {
         appts: todayOf(appts, ro.min),
+        // tomorrow's bookings not confirmed yet (the reception confirms them the day before)
+        tomorrowUnconfirmed: myAppts.filter((a) => a && a.date === tomorrow && a.location === city && !a.block && (a.status === 'programata' || a.status === 'reprogramata')).length,
         collected: C.r2(paid.reduce((n, s) => n + (Number(s.amount) || 0), 0)), payments: paid.length, methods: C.methods(paid),
         leads: { total: sp.total, within5: sp.within5, never: sp.never, median: sp.median, inHours: sp.inHours, inHoursWithin5: sp.inHoursWithin5 },
         waiting: waiting[city] || 0,
@@ -184,6 +189,7 @@ module.exports = async (req, res) => {
       Object.keys(rep.summary.cities).forEach((c) => { if (!scope.includes(c)) delete rep.summary.cities[c]; else { rep.summary.cities[c].spend = null; rep.summary.cities[c].cpl = null; } });
       if (rep.prev) Object.keys(rep.prev.summary.cities).forEach((c) => { if (!scope.includes(c)) delete rep.prev.summary.cities[c]; else { rep.prev.summary.cities[c].spend = null; rep.prev.summary.cities[c].cpl = null; } });
       delete rep.signals;
+      Object.keys(rep.rates || {}).forEach((k) => { if (k !== 'all' && !scope.includes(k)) delete rep.rates[k]; });
       rep.scope = scope;
     }
     rep.period = period;

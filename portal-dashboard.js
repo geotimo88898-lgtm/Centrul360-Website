@@ -299,7 +299,7 @@
     parts.push({ key: 'blocks', html: '<div class="db-blocks" data-part="blocks"></div>',
       children: chosenBlocks.map((b) => ({ key: 'b:' + b, html: '<div class="db-b is-' + BLOCK[b].size + '" data-part="b:' + b + '">' + blockHtml[b]() + '</div>' })) });
     K.patch(root, parts);
-    if (control) window.C360Kpi.today(root.querySelector('[data-kq-today]'));
+    if (control) window.C360Kpi.today(root.querySelector('[data-kq-today]'), leadsData ? L : null);
 
     // the chart is drawn into its box when the box is new (its numbers are in its mark, so a change makes a new box)
     const chartBox = root.querySelector('[data-chart]');
