@@ -286,7 +286,7 @@
     root.classList.add('pl-panel');
     root.innerHTML =
       '<div class="pl-head">' +
-        '<div><div class="k-eyebrow">Vânzări</div><div class="pl-title"><h2>Pipeline</h2>' +
+        '<div><div class="k-eyebrow" data-pl-eyebrow>' + (S.mode === 'angajari' && canHire() ? 'Angajări' : 'Vânzări') + '</div><div class="pl-title"><h2>Pipeline</h2>' +
           (pickCity() ? K.seg('plcity', [['', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.location, 'pl-city') : '') +
           (canHire() ? K.seg('plmode', [['clienti', 'Cliente'], ['angajari', 'Angajări']], S.mode === 'angajari' ? 'angajari' : 'clienti', 'pl-mode') : '') +
         '</div></div>' +
@@ -391,6 +391,8 @@
     if (!root) return;
     root.classList.toggle('is-hire', m === 'angajari');
     root.querySelector('[data-hire]').hidden = m !== 'angajari';
+    const eb = root.querySelector('[data-pl-eyebrow]');
+    if (eb) eb.textContent = m === 'angajari' ? 'Angajări' : 'Vânzări';
     const seg = root.querySelector('[data-k-seg="plmode"]');
     if (seg) { seg.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === m)); seg.querySelector('input').value = m; }
     if (m === 'angajari') loadCandidates();
@@ -1127,7 +1129,7 @@
   function tabsBar(l) {
     const t = curTab(l);
     return '<div class="pl-tabs" role="tablist">' + LTABS.map(([k, label, icn]) =>
-      '<button type="button" role="tab" aria-selected="' + (k === t) + '" data-ltab="' + k + '" class="' + (k === t ? 'is-on' : '') + '">' + ic(icn) + '<span>' + label + '</span>' +
+      '<button type="button" role="tab" aria-label="' + label + '" aria-selected="' + (k === t) + '" data-ltab="' + k + '" class="' + (k === t ? 'is-on' : '') + '">' + ic(icn) + '<span>' + label + '</span>' +
       (k === 'history' ? '<em>' + (l.activities || []).length + '</em>' : '') + '</button>').join('') + '</div>';
   }
   const pane = (l, k) => ' data-pane="' + k + '"' + (curTab(l) === k ? '' : ' hidden');

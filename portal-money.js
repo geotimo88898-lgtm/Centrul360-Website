@@ -695,7 +695,7 @@
         const r = await K.api('/api/portal-sale', { source: 'incasare', appointmentId: a.id, method: st.method, cashAmount: v.cash, cardAmount: v.card, performedBy: st.who, dueId: st.dueId || '',
           parts: { session: v.session, crossTo: st.cross ? String(st.crossTo).trim() : '', upsell: st.upsell, upsellValue: v.upsValue, upsellPaid: v.upsPaid, upsellWhat: st.upsell ? String(st.upsWhat).trim() : '', duePaid: v.duePaid } });
         d.close();
-        const dueTxt = r.due ? (r.due.rest > 0 ? ' Rest de achitat din pachet: ' + K.lei(r.due.rest, 2) + '.' : st.dueId ? ' Pachetul e achitat integral.' : '') : '';
+        const dueTxt = r.due ? (r.due.rest > 0 ? ' Rest de plată din pachet: ' + K.lei(r.due.rest, 2) + '.' : st.dueId ? ' Pachetul e achitat integral.' : '') : '';
         K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + '.' : '') + dueTxt, 'success'); K.emit('sale:recorded');
         DUES.at = 0; loadDues(true);
         if (!(a.date >= range()[0] && a.date <= range()[1])) { S.period = a.date === K.today() ? 'today' : 'month'; }

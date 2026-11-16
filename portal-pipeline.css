@@ -271,7 +271,8 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-pane{ display:flex; flex-direction:column; gap:.8rem; animation:plPane .22s var(--ease); }
 .pl-pane[hidden]{ display:none; }
 @keyframes plPane{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
-@media (max-width:560px){ .pl-tabs button span{ display:none; } .pl-tabs button.is-on span{ display:inline; } }
+/* the words stay on a phone too (an icon alone says nothing); on the narrowest the icons give way */
+@media (max-width:400px){ .pl-tabs button{ gap:.3rem; padding:.5rem .3rem; } .pl-tabs button svg{ display:none; } }
 /* the Facebook form answers */
 .pl-form-meta{ margin:.6rem 0 0; font-size:.78rem; color:var(--muted); line-height:1.45; }
 .pl-qa{ display:flex; flex-direction:column; margin:.5rem 0 0; }

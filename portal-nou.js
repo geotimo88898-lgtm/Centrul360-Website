@@ -107,6 +107,8 @@
     var today = new Date().toISOString().slice(0, 10);
     var key = 'c360_nou_hi_' + (me.id || '');
     if (store.get(key) === today) return;
+    // never over an open drawer, form or dialog (it covered the booking form for 5 s): it waits for a free moment
+    if (covered()) { if ((greet.tries = (greet.tries || 0) + 1) < 40) setTimeout(greet, 1500); return; }
     store.set(key, today);
     var h = window.K.roHour(); // the hour in Romania (portal-kit.js)
     var hi = window.K.salut(h);
@@ -122,6 +124,12 @@
     el.querySelector('button').addEventListener('click', close);
     requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('in'); }); });
     setTimeout(close, 5200);
+    // a drawer or a form opened meanwhile: it steps aside at once
+    var watch = setInterval(function () { if (!el.isConnected) { clearInterval(watch); return; } if (covered()) { clearInterval(watch); close(); } }, 250);
+  }
+  // something she is working in is open: a drawer (the booking form, a lead's sheet), a dialog, the command palette
+  function covered() {
+    return !!document.querySelector('.k-drawer-root.is-open, .pl-drawer-root.is-open, .c360-dialog-root, .c360-palette-root');
   }
 
   // ------------------------------------------------------------------ a slow first load: Jerry waits with her
