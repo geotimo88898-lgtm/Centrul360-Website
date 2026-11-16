@@ -165,8 +165,10 @@
     // the owner (16.11, again): team and reception alerts are the manager's job; his strip keeps only what he decides
     // himself (lead volume and cost per city, the ads)
     if (!own) {
-    const under = Object.keys(d.clinic || {}).reduce((a, c) => a.concat((d.clinic[c].team || []).filter((x) => !x.ok)), []);
-    if (under.length) list.push({ tone: 'warn', to: 'team', t: K.plural(under.length, 'cosmeticiană', 'cosmeticiene') + ' sub ' + K.lei((d.targets && d.targets.perDay) || 1500) + ' pe zi', s: under.map((x) => String(x.name).split(' ')[0] + ' ' + K.lei(x.perDay)).join(', ') });
+    const under = Object.keys(d.clinic || {}).reduce((a, c) => a.concat((d.clinic[c].team || []).filter((x) => !x.ok && !x.trainee)), []); // „în formare”: shown, never counted
+    // a day still under way (Azi) isn't judged against 1.500 lei a day: half a day is always under it
+    const partial = d.period === 'today' || (d.range && d.range.since === d.range.until && d.range.until === ((d.now && d.now.date) || K.today()));
+    if (under.length && !partial) list.push({ tone: 'warn', to: 'team', t: K.plural(under.length, 'cosmeticiană', 'cosmeticiene') + ' sub ' + K.lei((d.targets && d.targets.perDay) || 1500) + ' pe zi', s: under.map((x) => String(x.name).split(' ')[0] + ' ' + K.lei(x.perDay)).join(', ') });
     if (p && d.summary.upsellRate != null && p.upsellRate != null && d.summary.upsellRate <= p.upsellRate - 10) list.push({ tone: 'warn', to: 'rates', t: 'Upsellul a scăzut: ' + P(d.summary.upsellRate), s: 'înainte ' + P(p.upsellRate) + ' din vizite' });
     if (p && d.summary.showRate != null && p.showRate != null && d.summary.showRate <= p.showRate - 10) list.push({ tone: 'warn', to: 'rates', t: 'Vin mai puține: ' + P(d.summary.showRate), s: 'înainte ' + P(p.showRate) });
     // calling leads and answering messages are the manager's job: on the owner's page these stay in Pipeline and Mesaje (16.11)
@@ -194,7 +196,7 @@
       R.all.rebook.clients ? st('Revin', P(R.all.rebook.pct), p ? dl(R.all.rebook.pct, p.rebookRate, 'pt') : '', per((c) => P(R[c] && R[c].rebook.pct)) || '<small>' + R.all.rebook.back + ' din ' + R.all.rebook.clients + '</small>') : '',
     ].filter(Boolean);
     if (!items.length) return '';
-    return sec('rates', 'kq-rates is-full', 'Ratele', 'Nu vin: din programările ultimelor 60 de zile (de la 17 oct), cele care n-au venit (anulate la ora lor sau după, ori nemarcate și neplătite); din ele vine ținta calendarului. Upsell la vizită: vizitele venite cu un pachet sau upsell plătit atunci. Consultații cu upsell: consultațiile urmate în 7 zile de o plată cu upsell sau pachet a aceleiași cliente. Anulări: din programările făcute în perioadă. Revin: clientele venite în perioadă care au deja o altă programare după vizită.',
+    return sec('rates', 'kq-rates is-full', 'Ratele', 'Nu vin: din programările ultimelor 60 de zile' + sinceOf(d) + ', cele care n-au venit (anulate la ora lor sau după, ori nemarcate și neplătite); din ele vine ținta calendarului. Upsell la vizită: vizitele venite cu un pachet sau upsell plătit atunci. Consultații cu upsell: consultațiile urmate în 7 zile de o plată cu upsell sau pachet a aceleiași cliente. Anulări: din programările făcute în perioadă. Revin: clientele venite în perioadă care au deja o altă programare după vizită.',
       '<div class="kq-rates-g">' + items.join('') + '</div>');
   }
 
@@ -203,9 +205,9 @@
     const T = (d.targets && d.targets.perDay) || 1500;
     const pend = K.data && K.data.manager ? (K.data.manager.pendingTime || 0) + (K.data.manager.pendingLeave || 0) : 0;
     const cols = Object.keys(d.clinic || {}).map((c) => {
-      const x = d.clinic[c], team = x.team || [], under = team.filter((p) => !p.ok).length;
+      const x = d.clinic[c], team = (x.team || []).filter((p) => !p.trainee), under = team.filter((p) => !p.ok).length;
       const goals = [
-        [team.length ? !under : null, '1.500 lei / zi', team.length ? (under ? under + ' sub țintă' : 'toate') : '-'],
+        [team.length ? !under : null, '1.500 lei / zi', team.length ? (under ? under + ' sub țintă' : 'toate') : 'încă nu'],
         [x.fill.pct == null ? null : x.fill.pct >= x.fill.targetPct, 'Calendar 7 zile', P(x.fill.pct) + ' din ' + x.fill.targetPct + '%'],
         [x.reception.pct == null ? null : x.reception.pct >= 100, 'Leaduri în 5 min', P(x.reception.pct)],
         [!x.waiting, 'Mesaje', x.waiting ? x.waiting + ' așteaptă' : 'zero'],
@@ -215,10 +217,10 @@
       return '<div class="kq-col"><div class="kq-col-h">' + tag(c) + '<b>' + hit + '</b><small>din ' + known + ' ținte</small></div>' +
         '<ul class="kq-goals">' + goals.map((g, i) => '<li style="--i:' + i + '" class="' + (g[0] === true ? 'is-ok' : g[0] === false ? 'is-no' : '') + '"><i></i><span>' + g[1] + '</span><b>' + esc(g[2]) + '</b></li>').join('') + '</ul></div>';
     });
-    return sec('mgr', 'kq-mgr is-full', 'Țintele tale', 'În perioada aleasă; calendarul: următoarele 7 zile, ținta lui = 100% + cele care nu au venit în ultimele 60 de zile. ' + noShows(d) + '. Lei pe zi: încasările fiecărei cosmeticiene împărțite la zilele lucrate.',
+    return sec('mgr', 'kq-mgr is-full', 'Țintele lunii', 'În perioada aleasă; calendarul: următoarele 7 zile, ținta lui = 100% + cele care nu au venit în ultimele 60 de zile. ' + noShows(d) + '. Lei pe zi: încasările fiecărei cosmeticiene împărțite la zilele lucrate.',
       '<div class="kq-cols">' + cols.join('') + '</div>' +
       '<div class="kq-acts"><button type="button" class="k-btn is-sm is-accent" data-mg="george">' + icon('bell') + 'Trimite feedback pentru reclame</button><button type="button" class="k-btn is-sm is-outline" data-mg="close">Închide ziua</button>' +
-        '<button type="button" class="k-btn is-sm is-outline" data-mg="report">Raport</button><span class="kq-acts-l"><button type="button" class="kq-link" data-go="manager/echipa">Echipa' + (pend ? ' <b class="kq-dot">' + pend + '</b>' : '') + '</button><button type="button" class="kq-link" data-go="manager/casa">Casa</button><button type="button" class="kq-link" data-go="manager/rapoarte">Rapoarte</button></span></div>');
+        '<button type="button" class="k-btn is-sm is-outline" data-mg="report">Raport săptămânal</button><span class="kq-acts-l"><button type="button" class="kq-link" data-go="manager/echipa">Echipa' + (pend ? ' <b class="kq-dot">' + pend + '</b>' : '') + '</button><button type="button" class="kq-link" data-go="manager/casa">Casa</button><button type="button" class="kq-link" data-go="manager/rapoarte">Rapoarte</button></span></div>');
   }
 
   // per clinic: the leads, what one cost, and how far they went (only the steps that have someone)
@@ -263,7 +265,7 @@
     if (!pk.count && !cons.length && !rest) return '';
     return sec('packages', 'kq-packages', 'Pachete', 'Pachet: o plată cu upsell. Consultații cu upsell: consultațiile urmate în 7 zile de o plată cu upsell sau pachet a aceleiași cliente, după structura din Traininguri (nu există o legătură directă). De încasat: ce mai au de plătit acum clientele cu pachete în tranșe.',
       hero('packages', pk.count || 0, 'num', p ? dl(pk.count || 0, p.packages) : '', pk.count ? '<span>vândute</span> · medie ' + L(pk.avg) + (p ? dl(pk.avg, p.packageAvg, 'lei') : '') : '<span>vândute</span>') +
-      (cons.length ? '<ul class="kq-list">' + cons.map((c, i) => { const cs = d.clinic[c].consults; return '<li style="--i:' + i + '">' + ring(cs.pct) + tag(c) + '<span>consultație → pachet</span><b class="' + bad(cs.pct < 50).trim() + '">' + P(cs.pct) + '</b><small>' + cs.withPackage + ' din ' + cs.total + '</small></li>'; }).join('') + '</ul>' : '') +
+      (cons.length ? '<ul class="kq-list">' + cons.map((c, i) => { const cs = d.clinic[c].consults; return '<li style="--i:' + i + '">' + ring(cs.pct) + tag(c) + '<span>consultații cu upsell</span><b class="' + bad(cs.pct < 50).trim() + '">' + P(cs.pct) + '</b><small>' + cs.withPackage + ' din ' + cs.total + '</small></li>'; }).join('') + '</ul>' : '') +
       (rest ? '<p class="kq-sub">De încasat din pachete: <b>' + K.lei(rest) + '</b></p>' : ''));
   }
 
@@ -271,14 +273,19 @@
     const T = (d.targets && d.targets.perDay) || 1500;
     const all = Object.keys(d.clinic || {}).reduce((a, c) => a.concat((d.clinic[c].team || []).map((x) => Object.assign({ city: c }, x))), []).sort((a, b) => b.perDay - a.perDay);
     if (!all.length) return '';
-    const ok = all.filter((x) => x.ok).length;
+    const counted = all.filter((x) => !x.trainee), ok = counted.filter((x) => x.ok).length;
     return sec('team', 'kq-team', 'Cosmeticienele', 'Lei pe zi lucrată: încasările atribuite ei („Cine a făcut tratamentul”) împărțite la zilele pontate plus zilele cu încasări fără pontaj. Linia de pe bară: ținta de ' + K.lei(T) + '.',
-      hero('team', ok, 'num', '', '<span>din ' + all.length + '</span> peste ' + K.lei(T) + ' pe zi') +
-      '<ul class="kq-pp">' + all.map((x, i) => '<li style="--i:' + i + '" class="' + (x.ok ? 'is-ok' : 'is-low') + '"><span class="kq-pp-n">' + esc(x.name) + ' <small>' + short(x.city) + ' · ' + K.plural(x.days, 'zi', 'zile') + '</small></span><b>' + K.lei(x.perDay) + '</b>' +
+      hero('team', ok, 'num', '', '<span>din ' + counted.length + '</span> peste ' + K.lei(T) + ' pe zi') +
+      '<ul class="kq-pp">' + all.map((x, i) => '<li style="--i:' + i + '" class="' + (x.trainee ? 'is-trainee' : x.ok ? 'is-ok' : 'is-low') + '"><span class="kq-pp-n">' + esc(x.name) + ' <small>' + short(x.city) + ' · ' + K.plural(x.days, 'zi', 'zile') + (x.trainee ? ' · în formare' : '') + '</small></span><b>' + K.lei(x.perDay) + '</b>' +
         '<span class="kq-meter"><i style="--w:' + Math.min(100, (x.perDay / (T * 2)) * 100) + '%"></i><u style="--t:50%"></u></span></li>').join('') + '</ul>');
   }
 
   // the target of each clinic's calendar: full plus the clients who didn't come in the last 60 days
+  // the first day of that window, from the data (the portal started later than 60 days ago)
+  function sinceOf(d) {
+    const t = Object.keys(d.clinic || {}).map((c) => d.clinic[c].fill && d.clinic[c].fill.target).find((t) => t && t.since);
+    return t ? ' (de la ' + K.dateShort(t.since) + ')' : '';
+  }
   function noShows(d) {
     return Object.keys(d.clinic || {}).map((c) => {
       const t = d.clinic[c].fill.target;
@@ -292,13 +299,13 @@
     const DOW = ['D', 'L', 'Ma', 'Mi', 'J', 'V', 'S'];
     const cols = Object.keys(d.clinic || {}).map((c) => {
       const f = d.clinic[c].fill, tgt = f.targetPct;
-      return '<div class="kq-col"><div class="kq-col-h">' + tag(c) + big('cal-' + c, f.pct, 'pct', f.pct != null && f.pct < 100 ? 'is-bad' : '') + '<small>din ' + tgt + '% · ' + dec(f.freeHours, 0) + ' h libere</small></div>' +
+      return '<div class="kq-col"><div class="kq-col-h">' + tag(c) + big('cal-' + c, f.pct, 'pct', f.pct != null && f.pct < 100 ? 'is-bad' : '') + '<small>din ' + tgt + '% · ' + (Math.round(f.freeHours || 0) === 1 ? '1 oră liberă' : dec(f.freeHours, 0) + ' h libere') + (f.orphanHours > 0 ? ' · + ' + dec(f.orphanHours, 1) + ' h rămase fără cosmeticiană' : '') + '</small></div>' +
         '<div class="kq-days">' + f.days.map((x, i) => {
           const dd = new Date(x.date + 'T12:00:00');
           return '<div class="kq-day' + (x.capHours ? '' : ' is-off') + '" style="--i:' + i + '" title="' + esc(K.dateLong(x.date)) + ': ' + (x.capHours ? P(x.pct) + ' din ' + tgt + '%' : 'închis') + '"><div class="kq-day-b"><i style="--h:' + (x.pct == null ? 0 : Math.min(100, (x.pct / 200) * 100)) + '%" class="' + (x.pct != null && x.pct < 100 ? 'is-bad' : '') + '"></i><u style="--t:' + Math.min(100, tgt / 2) + '%"></u></div><small>' + DOW[dd.getDay()] + dd.getDate() + '</small></div>';
         }).join('') + '</div></div>';
     });
-    return sec('calendar', 'kq-calendar', 'Calendarul, 7 zile', 'Orele programate (fără anulări) față de orele cosmeticienelor din Program echipă; roșu: sub plin. Ținta (linia de pe zile) = 100% + cele care nu au venit în ultimele 60 de zile (de la 17 oct, când a pornit portalul): programările clientelor, fără anulările făcute dinainte, o clientă o dată pe zi și tratament; au venit = finalizate, plătite sau clienta a plătit ceva în ziua ei. ' + noShows(d) + '.', '<div class="kq-cols">' + cols.join('') + '</div>');
+    return sec('calendar', 'kq-calendar', 'Calendarul, 7 zile', 'Orele programate (fără anulări) față de orele cosmeticienelor din Program echipă; roșu: sub plin. Ținta (linia de pe zile) = 100% + cele care nu au venit în ultimele 60 de zile' + sinceOf(d) + ': programările clientelor, fără anulările făcute dinainte, o clientă o dată pe zi și tratament; au venit = finalizate, plătite sau clienta a plătit ceva în ziua ei. ' + noShows(d) + '.', '<div class="kq-cols">' + cols.join('') + '</div>');
   }
 
   function receptionHtml(d) {
@@ -459,14 +466,14 @@
       const x = n.cities[c], a = x.appts, m = x.methods, f = d.clinic && d.clinic[c] && d.clinic[c].fill, ld = x.leads;
       const meth = [['cash', 'cash'], ['card', 'card'], ['transfer', 'transfer']].filter((k) => m[k[0]] > 0).map((k) => K.lei(m[k[0]]) + ' ' + k[1]).join(' · ');
       const appts = [a.done ? a.done + ' finalizate' : '', a.confirmed ? a.confirmed + ' confirmate' : '', a.cancelled ? a.cancelled + ' anulate' : ''].filter(Boolean).join(' · ');
-      const leads = ld.total ? K.plural(ld.total, 'lead nou', 'leaduri noi') + (ld.within5 ? ' · ' + ld.within5 + ' sunate în 5 min' : '') : 'niciun lead nou';
+      const leads = ld.total ? K.plural(ld.total, 'lead nou', 'leaduri noi') + (ld.within5 ? ' · ' + (ld.within5 === 1 ? '1 sunat în 5 min' : ld.within5 + ' sunate în 5 min') : '') : 'niciun lead nou';
       const todo = act(a.unconfirmed, 'de confirmat', 'warn', 'programari') + act(a.passed, 'trecute, nefinalizate', 'bad', 'programari') + act(ld.never, ld.never === 1 ? 'nesunat' : 'nesunate', 'bad', 'pipeline', 'pipeline:queue') + act(x.waiting, x.waiting === 1 ? 'mesaj așteaptă' : 'mesaje așteaptă', 'bad', 'mesaje');
       return '<article class="kq-tc">' +
         '<header>' + tag(c) + '<div class="kq-tc-m"><b>' + K.lei(x.collected) + '</b><small>' + (x.payments ? K.plural(x.payments, 'plată', 'plăți') + (meth ? ' · ' + meth : '') : 'încasat azi') + '</small></div></header>' +
         '<ul class="kq-tc-l"><li>' + icon('calendar') + '<span><b>' + K.plural(a.total, 'programare', 'programări') + '</b>' + (appts ? ' · ' + appts : '') + '</span></li>' +
           '<li>' + icon('userPlus') + '<span>' + leads + '</span></li>' +
           (own && x.ads && x.ads.spend ? '<li>' + icon('facebook') + '<span>' + K.lei(x.ads.spend) + ' pe reclame · ' + x.ads.metaLeads + ' leaduri Meta' + (x.ads.cpl != null ? ' · ' + L2(x.ads.cpl) + ' / lead' : '') + '</span></li>' : '') +
-          (f ? '<li class="kq-tc-cal" data-go="programari">' + icon('clock') + '<span>7 zile: <b class="' + bad(f.pct != null && f.pct < 100).trim() + '">' + P(f.pct) + '</b> din ' + f.targetPct + '%</span><span class="kq-meter"><i class="' + bad(f.pct != null && f.pct < 100).trim() + '" style="--w:' + Math.min(100, ((f.pct || 0) / 200) * 100) + '%"></i><u style="--t:' + Math.min(100, f.targetPct / 2) + '%"></u></span></li>' : '') +
+          (f ? '<li class="kq-tc-cal" data-go="programari">' + icon('clock') + '<span>7 zile: <b class="' + bad(f.pct != null && f.pct < 100).trim() + '">' + P(f.pct) + '</b> din ' + f.targetPct + '%' + (f.orphanHours > 0 ? ' · + ' + dec(f.orphanHours, 1) + ' h fără cosmeticiană' : '') + '</span><span class="kq-meter"><i class="' + bad(f.pct != null && f.pct < 100).trim() + '" style="--w:' + Math.min(100, ((f.pct || 0) / 200) * 100) + '%"></i><u style="--t:' + Math.min(100, f.targetPct / 2) + '%"></u></span></li>' : '') +
         '</ul>' + (todo && own ? '<div class="kq-tc-do">' + todo + '</div>' : '') + '</article>'; // the manager has them all in „De făcut” above
     };
     const sg = d.signals, items = [];
@@ -477,7 +484,7 @@
       sg.unclosed.forEach((x) => items.push({ tone: 'warn', go: 'manager/casa', t: 'Casa ' + short(x.city) + ' neînchisă pe ' + K.dateShort(x.date), s: '' }));
       sg.closes.filter((x) => x.off || x.fate === 'depus').forEach((x) => items.push({ tone: x.off ? 'bad' : 'ok', go: 'manager/casa', t: 'Casa ' + short(x.city) + ', ' + K.dateShort(x.date) + (x.off ? ': diferență' : ': depus în cont'),
         s: [x.cashDiff ? 'cash ' + (x.cashDiff > 0 ? '+' : '') + K.lei(x.cashDiff, 2) : '', x.cardDiff ? 'card ' + (x.cardDiff > 0 ? '+' : '') + K.lei(x.cardDiff, 2) : '', x.fate === 'depus' ? 'depus ' + K.lei(x.deposited) : ''].filter(Boolean).join(' · ') }));
-      if (sg.report) items.push({ tone: sg.report.problems ? 'warn' : 'ok', go: 'manager/rapoarte', t: 'Raportul săptămânii trimis', s: hm(sg.report.at) + (sg.report.problems ? ' · are probleme notate' : '') });
+      if (sg.report) items.push({ tone: sg.report.problems ? 'warn' : 'ok', go: 'manager/rapoarte', t: 'Raport săptămânal trimis', s: hm(sg.report.at) + (sg.report.problems ? ' · are probleme notate' : '') });
     }
     const who = sg && [].concat(sg.feedback || [], sg.closes || [], sg.report ? [sg.report] : []).map((x) => x.by).find(Boolean);
     const sig = items.length ? '<div class="kq-sig"><h4>' + (who ? 'De la ' + esc(who) : 'Casa și rapoartele') + '</h4><ul>' + items.slice(0, 4).map((x) => '<li class="is-' + x.tone + '" data-go="' + x.go + '"><i></i><span><b>' + esc(x.t) + '</b>' + (x.s ? '<small>' + esc(x.s) + '</small>' : '') + '</span>' + icon('arrow') + '</li>').join('') + '</ul></div>' : '';

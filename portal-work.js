@@ -64,11 +64,13 @@
     const counts = {};
     T.tasks.forEach((t) => { counts[t.type] = (counts[t.type] || 0) + 1; });
     const list = T.tasks.filter((t) => !T.filter || t.type === T.filter);
-    tpanel.querySelector('[data-body]').innerHTML =
+    // nothing at all today: one calm empty state, not a 0/0 ring above it saying the same thing
+    const idle = !total && !T.calls.length;
+    tpanel.querySelector('[data-body]').innerHTML = (idle ? '' :
       '<section class="k-card wk-progress">' + K.ring(pct, { size: 86, stroke: 9, inner: '<b class="wk-pct">' + T.done.length + '<small>/' + total + '</small></b>' }) +
         '<div><b>' + (T.tasks.length ? K.plural(T.tasks.length, 'sarcină de făcut', 'sarcini de făcut') + (T.calls.length ? ' · ' + K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : '') : T.calls.length ? K.plural(T.calls.length, 'lead de sunat', 'leaduri de sunat') : 'Totul e făcut pentru azi') + '</b>' +
         '<span>' + (T.done.length ? K.plural(T.done.length, 'sarcină bifată azi', 'sarcini bifate azi') : 'Nicio sarcină bifată încă azi') + '</span></div>' +
-        (T.tasks.length > 1 ? '<button type="button" class="k-btn is-outline is-sm" data-act="all">' + icon('check') + 'Bifează toate</button>' : '') + '</section>' +
+        (T.tasks.length > 1 ? '<button type="button" class="k-btn is-outline is-sm" data-act="all">' + icon('check') + 'Bifează toate</button>' : '') + '</section>') +
       (T.tasks.length ? '<div class="k-chips wk-chips"><button type="button" class="k-chip' + (!T.filter ? ' is-on' : '') + '" data-filter="">Toate<span>' + T.tasks.length + '</span></button>' +
         Object.keys(TYPES).filter((k) => counts[k]).map((k) => '<button type="button" class="k-chip' + (T.filter === k ? ' is-on' : '') + '" data-filter="' + k + '">' + icon(TYPES[k].ic) + TYPES[k].label + '<span>' + counts[k] + '</span></button>').join('') + '</div>' : '') +
       callsHtml() +

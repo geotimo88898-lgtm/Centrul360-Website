@@ -1036,6 +1036,20 @@ html.ui-nou .nk-fab:hover{ transform:translateY(-2px) scale(1.04); }
 html.ui-nou .nk-fab:active{ transform:scale(.96); }
 html.ui-nou.c360-noscroll .nk-fab{ opacity:0; pointer-events:none; }
 @media (max-width:720px){ html.ui-nou .nk-fab{ right:14px; bottom:calc(84px + env(safe-area-inset-bottom)); width:50px; height:50px; } html.ui-nou .nk-fab img{ width:38px; } }
+/* Nuki never sits on the page's last row (16.11 final check): room under every page for him; scrolling down he tucks
+   into the edge (a sliver stays, a tap brings him back), scrolling up or at the end of the page he comes back */
+html.ui-nou .nk-fab{ transition:transform .45s var(--e), box-shadow .35s var(--e), opacity .3s; }
+html.ui-nou .nk-fab.is-docked{ transform:translateX(calc(100% + 22px - 18px)); opacity:.9; }
+html.ui-nou .nk-fab.is-docked:hover{ transform:translateX(calc(100% + 22px - 26px)); }
+html.ui-nou main{ padding-bottom:calc(22px + 56px + 28px + env(safe-area-inset-bottom)); }
+@media (max-width:720px){
+  html.ui-nou main{ padding-bottom:calc(84px + 50px + 24px + env(safe-area-inset-bottom)); }
+  html.ui-nou .nk-fab.is-docked{ transform:translateX(calc(100% + 14px - 16px)); }
+  html.ui-nou .nk-fab.is-docked:hover{ transform:translateX(calc(100% + 14px - 16px)); }
+  /* Calendar has its own round +: Nuki stands above it, never on it */
+  html.ui-nou:has(#panel-programari.active .cal-fab) .nk-fab{ bottom:calc(92px + 56px + 12px + env(safe-area-inset-bottom)); }
+  html.ui-nou:has(#panel-programari.active .cal-fab) main{ padding-bottom:calc(92px + 56px + 12px + 50px + 20px + env(safe-area-inset-bottom)); }
+}
 html.ui-nou .nk-av{ width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 12%, transparent); overflow:hidden; }
 html.ui-nou .nk-av img{ width:30px; height:auto; margin-top:3px; }
 html.ui-nou .nk{ display:flex; flex-direction:column; gap:10px; min-height:100%; }

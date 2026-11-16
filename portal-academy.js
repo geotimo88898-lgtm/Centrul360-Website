@@ -269,7 +269,7 @@
     const pct = ps.items ? Math.round(ps.done / ps.items * 100) : 0;
     if (A.openDay == null) A.openDay = ps.day - 1;
     return '<div class="tr-hero">' + K.ring(pct, { size: 92, stroke: 9, inner: '<b>' + pct + '%</b>' }) +
-      '<div><div class="k-eyebrow">' + esc(ROLE[ps.role] || '') + '</div><h3>' + (ps.done >= ps.items ? 'Ai terminat drumul de început' : 'Ziua ' + ps.day + ' din ' + ps.days.length) + '</h3>' +
+      '<div><div class="k-eyebrow">Drumul de început</div><h3>' + (ps.done >= ps.items ? 'Ai terminat drumul de început' : 'Ziua ' + ps.day + ' din ' + ps.days.length) + '</h3>' +
       '<p class="k-muted">' + ps.done + ' din ' + ps.items + ' pași făcuți · început pe ' + esc(K.dateShort(ps.start)) + '</p></div></div>' +
       '<div class="tr-days">' + ps.days.map((d, i) => {
         const n = d.items.filter((x) => itemDone(x, p)).length;
@@ -1165,7 +1165,16 @@
   // and plain. 1: tap what you recommend, set the sessions with − and +. 2: the total. 3: the 4 offers in the order
   // she shows them. No city to choose: everyone works with her own clinic's prices (her location; an admin with
   // no clinic sees both, each marked)
-  const calcCity = () => { const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : ''; };
+  // the manager works for both clinics (16.11): she picks Timișoara or Arad above the calculator; it starts on the city she
+  // has chosen elsewhere (the Pipeline's switch), else Timișoara
+  const isMgr = () => !!(K.data && K.data.me && K.data.me.role === 'manager' && !K.data.isAdmin);
+  const mgrCity = () => {
+    const s = calcState();
+    if (s.city === 'tm' || s.city === 'ar') return s.city;
+    let v = ''; try { v = localStorage.getItem('c360_pl_city_' + ((K.data && K.data.me && K.data.me.id) || '')) || ''; } catch (e) { /* private mode */ }
+    return v === 'Arad' ? 'ar' : 'tm';
+  };
+  const calcCity = () => { const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : isMgr() ? mgrCity() : ''; };
   const priceOk = (p) => { const c = calcCity(); return !c || p.city === 'both' || p.city === c; };
   function calcHtml() {
     const s = calcState(), city = calcCity();
@@ -1174,7 +1183,8 @@
     const tiles = (D().prices || []).filter((p) => p.group === s.grp && priceOk(p));
     const picked = new Set(s.lines.map((l) => l.price));
     return '<div class="tr-calc tr-c2" data-calc>' +
-      '<div class="tr-c2-top"><span class="tr-c2-city">' + icon('pin') + (city === 'ar' ? 'Prețuri Arad' : city === 'tm' ? 'Prețuri Timișoara' : 'Prețuri Timișoara și Arad') + '</span><span class="k-grow"></span>' +
+      '<div class="tr-c2-top">' + (isMgr() ? '<div class="k-seg tr-c2-cities" role="tablist" aria-label="Prețurile clinicii">' + [['tm', 'Timișoara'], ['ar', 'Arad']].map(([v, l]) => '<button type="button" role="tab" aria-selected="' + (city === v) + '" class="' + (city === v ? 'is-on' : '') + '" data-ccity="' + v + '">' + l + '</button>').join('') + '</div>'
+        : '<span class="tr-c2-city">' + icon('pin') + (city === 'ar' ? 'Prețuri Arad' : city === 'tm' ? 'Prețuri Timișoara' : 'Prețuri Timișoara și Arad') + '</span>') + '<span class="k-grow"></span>' +
         (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-prices>' + icon('tag') + 'Prețuri și reguli</button>' : '') +
         '<button type="button" class="k-btn is-ghost is-sm" data-calc-clear>' + icon('refresh') + 'De la capăt</button></div>' +
       // 1
@@ -1565,6 +1575,8 @@
     // the calculator: a whole repaint keeps the page where it is
     const recalc = () => { keepCalc(); const v = panel.querySelector('[data-calc]'); if (!v) return; const y = window.scrollY; v.outerHTML = calcHtml(); paintCalcResults(); window.scrollTo(0, y); };
     const cg = t.closest('[data-cgrp]'); if (cg) { calcState().grp = cg.dataset.cgrp; return recalc(); }
+    const cc = t.closest('[data-ccity]');
+    if (cc) { const st = calcState(); st.city = cc.dataset.ccity; st.lines = st.lines.filter((l) => { const p = (D().prices || []).find((x) => x.id === l.price); return !p || priceOk(p); }); return recalc(); }
     const ca = t.closest('[data-cadd]');
     if (ca) {
       const s = calcState(), id = ca.dataset.cadd;

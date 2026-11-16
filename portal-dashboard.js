@@ -7,6 +7,7 @@
   const { esc, icon } = K;
   let panel = null, timer = 0, leadsData = null, firstPaint = true, tasksOpen = 0;
   let actData = null, actTimer = 0; // today's changes by the whole team (Activitate), for the owner
+  const MGB = { month: '', v: null, at: 0 }; // the manager's own bonus estimate (portal-salariu), for her pay card
   function loadAct() {
     if (!K.data || !K.data.isAdmin) return;
     K.api('/api/portal-activity?days=1').then((j) => {
@@ -186,9 +187,26 @@
         '<button type="button" class="k-btn is-sm is-outline" data-go="angajati">' + icon('users') + 'Echipa · Salarii</button></section>'
       : myPay ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salariul meu · ' + esc(K.monthLabel(month)) + '</h3></div>' +
         '<b class="db-pay-total" data-count="' + myPay.total + '" data-fmt="lei" data-key="db-payme">0 lei</b><span class="db-pay-sub">în mână, până azi</span>' +
-        '<div class="db-pay-lines"><div><span>Salariu de bază</span><b>' + (myPay.base ? K.lei(myPay.base) : '-') + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(myPay.overtimeLei) + '</b></div>' +
-        (myPay.hasBonus ? '<div><span>Bonus programări</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '<div><span>Comision</span><b>' + lei2(myPay.commission) + '</b></div>') + (myPay.manual ? '<div><span>Comision adăugat</span><b>' + lei2(myPay.manual) + '</b></div>' : '') + '</div>' +
+        '<div class="db-pay-lines"><div><span>Salariu de bază</span><b>' + (myPay.base ? K.lei(myPay.base) : 'încă nu') + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(myPay.overtimeLei) + '</b></div>' +
+        (D.isManager ? '<div data-db-mgbonus><span>Bonus estimat</span><b>se calculează…</b></div>' + (myPay.bonus ? '<div><span>Bonus recepție, până la schimbare</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '')
+          : myPay.hasBonus ? '<div><span>Bonus programări</span><b>' + K.lei(myPay.bonus) + '</b></div>' : '<div><span>Comision</span><b>' + lei2(myPay.commission) + '</b></div>') + (myPay.manual ? '<div><span>Comision adăugat</span><b>' + lei2(myPay.manual) + '</b></div>' : '') + '</div>' +
         '<button type="button" class="k-btn is-sm is-outline" data-go="comision">' + icon('wallet') + 'Detalii</button></section>' : '';
+    // the manager (16.11): her own pay is the base plus HER bonus (5% of the profit, estimated), the same as in Salariu, not
+    // the reception's booking bonus; it is read after the page is drawn and written into the card
+    if (D.isManager && myPay) {
+      const fill = (v) => {
+        const m = v && v.month, est = m && !m.final && m.estimate ? Number(m.estimate.bonus) || 0 : 0, fin = m && m.final ? Number(m.final.lei) || 0 : null;
+        const line = document.querySelector('[data-db-mgbonus]'); if (!line) return;
+        line.querySelector('span').textContent = fin != null ? 'Bonus' : 'Bonus estimat';
+        line.querySelector('b').textContent = fin != null ? K.lei(fin) : m && m.estimate ? K.lei(est) : 'după costurile lunii';
+        const tot = line.closest('.db-pay') && line.closest('.db-pay').querySelector('.db-pay-total');
+        if (tot && est) { tot.dataset.count = Math.round(myPay.total + est); tot.textContent = K.lei(Math.round(myPay.total + est)); const sub = tot.nextElementSibling; if (sub) sub.textContent = 'în mână, cu bonusul estimat'; }
+      };
+      const hit = MGB.month === month && Date.now() - MGB.at < 5 * 60e3 ? MGB.v : null;
+      if (hit) setTimeout(() => fill(hit), 0);
+      else K.api('/api/portal-salariu?view=manager&month=' + encodeURIComponent(month)).then((v) => { MGB.month = month; MGB.v = v; MGB.at = Date.now(); fill(v); })
+        .catch(() => { const b = document.querySelector('[data-db-mgbonus] b'); if (b) b.textContent = 'în Salariu'; });
+    }
     // Reception: the booking bonus at a glance (average per clocked-in day, the steps)
     const bk = myPay && myPay.booking && !myPay.booking.frozen ? myPay.booking : null; // the manager's frozen one: in Salariu only
     const bonusCard = bk ? '<section class="k-card db-book"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3><a class="k-btn is-sm is-outline" href="#comision" data-go="comision">Detalii' + icon('arrow') + '</a></div>' +

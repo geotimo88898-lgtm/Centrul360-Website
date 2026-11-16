@@ -20,7 +20,7 @@
   function mountApprovals(p) {
     apanel = p;
     apanel.classList.add('k-panel', 'ad');
-    apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Aprobări</h2></div>' +
+    apanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Aprobări</h2></div>' +
       '<div class="k-head-actions" data-head></div></div><div data-body></div>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Pontaj: ore peste / sub program</h3></div><div data-time></div></section>' +
       '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('calendar') + 'Cereri de concediu</h3></div><div data-leave></div></section>';
@@ -217,7 +217,7 @@
     incasari_atribuite_luna: { label: 'Încasări din tratamentele făcute de ea (luna)', ron: true, roles: ['cosmetician'] },
     programari_finalizate_luna: { label: 'Tratamente făcute și încasate (luna)', roles: ['cosmetician'] },
     comision_aprobat_luna: { label: 'Comision din upsell, aprobat (luna)', ron: true, roles: ['cosmetician', 'receptie'] },
-    vanzari_aprobate_luna: { label: 'Upsell-uri aprobate (luna)', roles: ['cosmetician', 'receptie'] },
+    vanzari_aprobate_luna: { label: 'Upselluri aprobate (luna)', roles: ['cosmetician', 'receptie'] },
     leaduri_contactate_luna: { label: 'Leaduri contactate (luna)', roles: ['receptie'] },
     leaduri_programate_luna: { label: 'Leaduri programate din pipeline (luna)', roles: ['receptie'] },
     incasari_inregistrate_luna: { label: 'Încasări înregistrate de ea (luna)', ron: true, roles: ['receptie'] },
@@ -265,7 +265,7 @@
   function mountTeam(p) {
     epanel = p;
     epanel.classList.add('k-panel', 'ad');
-    epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2></div>' +
+    epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Timișoara și Arad</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
       '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
       '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="costuri" hidden><div data-costs></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
@@ -442,8 +442,8 @@
         const lf = el.querySelector('[data-left]');
         if (lf) lf.addEventListener('click', async () => {
           const first = e.name.split(' ')[0];
-          const day = await K.ui().prompt({ title: e.active ? first + ' a plecat?' : 'Ultima zi a lui ' + first, type: 'date', value: e.leftAt || K.today(), label: 'Ultima zi de lucru',
-            message: e.active ? 'Contul se oprește acum. Încasările ei rămân în totaluri, iar din luna asta nu mai intră în ținte și în bonus. Programările de după rămân în Calendar, pentru altă cosmeticiană.' : '',
+          const day = await K.ui().prompt({ title: e.active ? first + ' a plecat?' : 'Ultima zi de lucru', type: 'date', value: e.leftAt || K.today(), label: 'Ultima zi de lucru',
+            message: e.active ? 'Contul se oprește acum. Încasările ei rămân în totaluri, iar din luna asta nu mai intră în ținte și în bonus. Programările de după rămân în Calendar, pentru altă cosmeticiană.' : first + ' a plecat. Schimbă ziua dacă nu e cea bună.',
             confirmText: e.active ? 'A plecat' : 'Salvează', danger: e.active });
           if (day == null) return;
           if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > K.today()) { K.ui().toast('Alege o zi de azi sau din urmă.', 'error'); return; }
@@ -491,7 +491,7 @@
       title: 'Angajat nou', icon: 'userPlus', 
       body: '<form class="k-form" data-form>' +
         K.field('Nume complet', '<input name="name" required maxlength="100" placeholder="ex: Giovanna Marin" autofocus>', 'full') +
-        K.field('Rol', K.seg('role', ROLES.slice(0, 3), 'receptie', 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei. Managerul conduce ambele clinici.') +
+        K.field('Rol', K.seg('role', ROLES.slice(0, 3), 'receptie', 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei. Rolul Manager vede ambele clinici: cifrele, echipa și casa.') +
         K.field('Locație', K.seg('location', LOCS, 'Timișoara', 'is-big'), 'full') +
         K.field('Username', '<input name="username" required maxlength="60" autocomplete="off">') +
         K.field('Parolă temporară', '<div class="ad-pass"><input name="password" required minlength="6" autocomplete="off" value="' + gen() + '"><button type="button" class="k-icon-btn" data-gen title="Generează alta">' + icon('refresh') + '</button></div>') +
@@ -539,7 +539,7 @@
             '<div><dt>Bonus</dt><dd>' + (r.managerFinal ? K.lei(r.managerBonus) : mgrBonusText(mg)) + '</dd><small>' + (r.managerFinal ? 'final' : mg && mg.estimate ? 'estimat, în afara totalului' : 'după costurile lunii') + '</small></div>'
           : r.hasBonus
           ? '<div><dt>Bonus programări</dt><dd>' + K.lei(r.bonus) + '</dd><small>' + (r.booking && r.booking.days ? 'media ' + K.num(r.booking.avg) + '/zi' : 'fără zile pontate') + '</small></div>'
-          : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upsell-uri')) + '</small></div>';
+          : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upselluri')) + '</small></div>';
         return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + (r.active === false ? ' · a plecat' : '') + '</small></span></button>' +
           '<dl class="pr-kv"><div><dt>Salariu net</dt><dd>' + (r.base ? K.lei(r.base) : '<em>nesetat</em>') + '</dd></div>' +
           '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
@@ -693,7 +693,7 @@
   function mountOffers(p) {
     opanel = p;
     opanel.classList.add('k-panel', 'of');
-    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Oferte</h2></div>' +
+    opanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Vânzări</div><h2>Oferte</h2></div>' +
       '<div class="k-head-actions"><a class="k-btn is-outline" href="/oferte" target="_blank" rel="noopener">' + icon('eye') + 'Vezi pe site</a><button type="button" class="k-btn is-accent" data-new>' + icon('plus') + 'Ofertă nouă</button></div></div>' +
       '<div class="of-flow">' + ['Site public', 'Recepție & încasări', 'Comision', 'Creative · reclame'].map((x, i) => '<span>' + icon(['globe', 'wallet', 'percent', 'sparkles'][i] || 'tag') + x + '</span>').join(icon('arrow')) + '</div>' +
       '<div data-kpi></div><div data-body><div class="k-skel" style="height:260px"></div></div>';
@@ -1003,7 +1003,7 @@
   function mountIntegrations(p) {
     ipanel = p;
     ipanel.classList.add('k-panel', 'st');
-    ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Integrări</h2></div></div>' +
+    ipanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Setări</div><h2>Integrări</h2></div></div>' +
       '<div class="st-tabs">' + K.seg('intab', [['int', 'Integrări', 'layers'], ['forms', 'Formulare Facebook', 'file'], ['wa', 'Șabloane WhatsApp', 'chat']], I.tab) + '</div>' +
       '<div data-pane="int"><div data-int-body></div></div><div data-pane="forms" hidden></div><div data-pane="wa" hidden></div>';
     ipanel.addEventListener('change', (e) => { if (e.target.name === 'intab') setTab(e.target.value); });
@@ -1149,7 +1149,7 @@
     else {
       const up = K.liveUp && K.liveUp();
       box.innerHTML =
-        '<div class="st-fb-status ' + (up ? 'is-ok' : 'is-wait') + '">' + icon(up ? 'checkCircle' : 'alert') + '<div><b>' + (up ? 'Pornită' : 'Pornită, dar portalul ăsta încă se conectează') + '</b><span>' + esc(d.url) + (d.source === 'env' ? ' · din Vercel' : '') + '</span></div></div>' +
+        '<div class="st-fb-status ' + (up ? 'is-ok' : 'is-wait') + '">' + icon(up ? 'checkCircle' : 'alert') + '<div><b>' + (up ? 'Pornită' : 'Pornită, dar portalul ăsta încă se conectează') + '</b><span>' + esc(d.url) + (d.source === 'env' ? ' · din Cloudflare' : '') + '</span></div></div>' +
         (d.lastError ? '<div class="st-fb-status is-wait">' + icon('alert') + '<div><b>Ultimul anunț n-a plecat</b><span>' + esc(d.lastError) + '</span></div></div>' : '') +
         '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-live-test>' + icon('refresh') + 'Testează</button><span class="k-muted st-live-res" data-live-res></span></div>' +
         (d.source === 'env' ? '' : form(false) + '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-live-off>Oprește sincronizarea instantă</button>');
@@ -1800,7 +1800,7 @@
   // pasted here instead of in Vercel, and the two webhook values to paste back in Meta.
   function appHtml(app, open) {
     const copy = (label, val) => '<div class="st-fb-copy"><span>' + esc(label) + '</span><code>' + esc(val || '-') + '</code>' + (val ? '<button type="button" class="k-btn is-ghost is-sm" data-copy="' + esc(val) + '">' + icon('copy') + 'Copiază</button>' : '') + '</div>';
-    return '<details class="st-fb-app"' + (open ? ' open' : '') + '><summary>' + icon('key') + '<b>Aplicația Meta</b><span class="k-muted">' + (app.appId ? 'ID ' + esc(app.appId) + (app.fromPortal ? '' : ' (din Vercel)') : 'nesetată') + '</span></summary>' +
+    return '<details class="st-fb-app"' + (open ? ' open' : '') + '><summary>' + icon('key') + '<b>Aplicația Meta</b><span class="k-muted">' + (app.appId ? 'ID ' + esc(app.appId) + (app.fromPortal ? '' : ' (din Cloudflare)') : 'nesetată') + '</span></summary>' +
       '<form class="st-fb-appform" data-fb-app autocomplete="off">' +
         '<label class="k-field full"><span>App ID</span><input name="appId" inputmode="numeric" value="' + esc(app.appId || '') + '" placeholder="ex. 2177971149814780"></label>' +
         '<label class="k-field full"><span>App secret</span><input name="appSecret" type="password" autocomplete="new-password" placeholder="' + (app.hasSecret && app.fromPortal ? 'salvat, lasă gol ca să rămână' : 'din App settings → Basic → App secret → Show') + '"></label>' +

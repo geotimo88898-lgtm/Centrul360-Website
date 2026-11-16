@@ -145,7 +145,7 @@
         : '<div class="cd-today-note is-ok">' + icon('checkCircle') + 'Zi completă. Mulțumim!</div>';
     } else if (weekend) line = '<div class="cd-today-note">' + icon('info') + 'Azi e weekend: tot timpul lucrat e oră suplimentară.</div>';
     // no arrival yet in the afternoon: she probably forgot, and the owner can correct the hour
-    else if (!(mine && mine.checkIn) && new Date().getHours() >= 13) line = '<div class="cd-today-note">' + icon('info') + 'Ai uitat să pontezi dimineața? Pontează oricum și spune-i adminului ora reală, o corectează el.</div>';
+    else if (!(mine && mine.checkIn) && new Date().getHours() >= 13) line = '<div class="cd-today-note">' + icon('info') + 'Ai uitat să pontezi dimineața? Pontează oricum și spune-i lui George ora reală, o corectează el.</div>';
     return '<section class="k-card cd-today"><div class="k-card-head"><h3>' + icon('clock') + 'Azi, ' + esc(K.dateLong(today)) + '</h3></div>' +
       '<div class="cd-today-row">' +
         '<div class="cd-today-stat"><span>Sosire</span><b>' + (mine && mine.checkIn ? esc(mine.checkIn) : '-') + '</b></div>' +

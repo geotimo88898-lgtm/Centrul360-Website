@@ -13,7 +13,7 @@
     panel = p;
     panel.classList.add('k-panel', 'ac');
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Activitate</h2></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">Setări</div><h2>Activitate</h2></div>' +
       '<div class="k-head-actions">' + K.seg('acdays', [['1', 'Azi'], ['7', '7 zile'], ['30', '30 zile']], A.days) + '</div></div>' +
       '<div class="ac-filters"><input type="search" data-acq placeholder="Caută (clientă, ce s-a schimbat…)" autocomplete="off">' +
         '<select data-acwho></select><select data-acarea></select></div>' +

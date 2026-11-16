@@ -118,3 +118,101 @@
   .fu-tabs button > svg{ display:none; }
 }
 @media print{ .fu-acts, .fu-bar{ display:none !important; } }
+
+/* ================= 16.11 final check: lighter on a phone, the explanations visible ================= */
+/* Manager → Cifre: the ⓘ beside each number, its text under it */
+.mg-i{ display:inline-grid; place-items:center; width:22px; height:22px; margin-left:auto; padding:0; border:0; border-radius:50%; background:none; color:var(--muted); cursor:pointer; opacity:.75; flex:none; }
+.mg-i .k-ic{ width:15px; height:15px; }
+.mg-i:hover, .mg-i.is-on{ opacity:1; color:var(--accent-text, var(--accent)); }
+.mg-stats .k-stat-top{ display:flex; align-items:center; gap:.45rem; }
+.mg-info{ margin:.45rem 0 0; font-size:.76rem; line-height:1.45; color:var(--muted); white-space:normal; }
+/* Manager → Echipa: one row a person */
+.mg-prow .k-row-main{ display:flex; flex-direction:column; gap:.15rem; }
+.mg-prow-kv{ display:flex; flex-wrap:wrap; gap:.15rem .7rem; font-size:.76rem; color:var(--muted); }
+.mg-prow-kv .is-good{ color:var(--good); } .mg-prow-kv .is-warn{ color:var(--warn); }
+.mg-prow .k-row-end{ gap:.4rem; color:var(--muted); }
+.mg-prow .k-row-end > .k-ic{ width:16px; height:16px; }
+@media (max-width:640px){
+  /* Cifre: the clinic is one card; its four numbers are rows (label left, number right), not four boxes */
+  html.ui-nou .mg-stats.k-grid{ display:flex; flex-direction:column; gap:0; margin-bottom:.4rem; }
+  html.ui-nou[class] main .mg-stats .k-stat, html.ui-nou[class] main .mg-stats .k-stat:hover{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:.8rem; row-gap:.1rem; padding:.7rem 0; border-radius:0;
+    background:none !important; box-shadow:none !important; border:0; border-bottom:1px solid var(--line); transform:none !important; }
+  html.ui-nou .mg-stats .k-stat:last-child{ border-bottom:0; }
+  html.ui-nou .mg-stats .k-stat::after{ display:none; }
+  html.ui-nou .mg-stats .k-stat-top{ grid-column:1; grid-row:1; margin:0; font-size:.86rem; color:var(--fg); }
+  html.ui-nou .mg-stats .k-stat-top .k-stat-ic{ width:28px; height:28px; }
+  html.ui-nou .mg-stats .k-stat-value{ grid-column:2; grid-row:1 / span 2; align-self:center; font-size:1.3rem; margin:0; }
+  html.ui-nou .mg-stats .k-stat-sub{ grid-column:1; grid-row:2; padding-left:calc(28px + .45rem); font-size:.74rem; }
+  html.ui-nou .mg-stats .mg-info{ grid-column:1 / -1; padding-left:calc(28px + .45rem); }
+  html.ui-nou .mg-stats .mg-i{ margin-left:.1rem; }
+  /* the three follow-ups: a short list, not three stacked buttons */
+  html.ui-nou .fu-mg{ flex-direction:column; flex-wrap:nowrap; gap:0; margin:.2rem 0 .6rem; border-top:1px solid var(--line); }
+  html.ui-nou[class] main .fu-mg .k-btn{ width:100%; min-height:46px !important; justify-content:flex-start; padding:0 .1rem; border:0; border-radius:0; border-bottom:1px solid var(--line);
+    background:none !important; box-shadow:none !important; color:var(--fg); font-weight:560; }
+  html.ui-nou .fu-mg .k-btn::after{ content:"›"; margin-left:auto; font-size:1.2rem; color:var(--muted); }
+  /* messages waiting: a line, not a box */
+  html.ui-nou .mg-line{ padding:.3rem 0; background:none; border-radius:0; }
+}
+button.k-row.mg-prow{ width:100%; border:0; border-radius:0; background:none; box-shadow:none; text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+button.k-row.mg-prow:hover .k-row-title{ color:var(--accent-text, var(--accent)); }
+button.k-row.mg-prow + button.k-row.mg-prow{ border-top:1px solid var(--line); }
+@media (max-width:640px){
+  /* Ore libere / Pachete / De resunat on a phone: the buttons small, under the name, not three wide slabs */
+  .fu-acts{ padding-left:calc(36px + .75rem); justify-content:flex-start; flex-wrap:wrap; }
+  .fu-acts > .k-btn{ flex:0 1 auto; min-height:36px; padding:.35rem .75rem; font-size:.78rem; border-radius:999px; }
+  .fu-acts > .k-icon-btn{ width:36px; height:36px; }
+  .fu-row{ padding:.7rem .2rem; }
+}
+/* page heads on a phone (Încasări, Salariul meu, Sarcini): one main button, the others small icons beside it, not a stack
+   of full-width bars (the label stays in the button for screen readers and as its title) */
+@media (max-width:640px){
+  html.ui-nou :is(#panel-incasari, #panel-comision, #panel-automatizari) .k-head-actions{ flex-wrap:nowrap; justify-content:flex-end; gap:.4rem; }
+  html.ui-nou :is(#panel-incasari, #panel-comision, #panel-automatizari) .k-head-actions .k-btn:not(.is-accent):not(.is-primary){ flex:none; width:44px; min-width:44px; padding:0; gap:0; font-size:0; justify-content:center; }
+  html.ui-nou :is(#panel-incasari, #panel-comision, #panel-automatizari) .k-head-actions .k-btn:not(.is-accent):not(.is-primary) .k-ic{ width:18px; height:18px; margin:0; }
+  html.ui-nou :is(#panel-incasari, #panel-comision, #panel-automatizari) .k-head-actions .k-btn:is(.is-accent, .is-primary){ flex:1 1 auto; order:-1; }
+}
+/* Cheltuieli (Plăți, Variabile, Costuri lunare): the three views the same width; on a phone the sub-tabs a light line of
+   words with the chosen one underlined, the month inline without its box (16.11: not two stacked boxes) */
+.pf-subnav{ max-width:900px; }
+@media (max-width:640px){
+  html.ui-nou .pf-subnav{ margin:0 0 .6rem; border-bottom:1px solid var(--line); }
+  html.ui-nou .pf-subnav .k-seg{ display:flex; gap:1.2rem; padding:0; border-radius:0; background:none !important; box-shadow:none !important; border:0; }
+  html.ui-nou .pf-subnav .k-seg button{ position:relative; flex:none; min-height:42px !important; padding:0 !important; border-radius:0; background:none !important; box-shadow:none !important; font-size:.9rem; color:var(--muted); }
+  html.ui-nou .pf-subnav .k-seg button .k-ic{ display:none; }
+  html.ui-nou .pf-subnav .k-seg button.is-on{ color:var(--fg); }
+  html.ui-nou .pf-subnav .k-seg button.is-on::after{ content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; border-radius:2px; background:var(--accent); }
+  html.ui-nou :is(.pf-top, .co-top) .k-month{ padding:0; border:0; background:none; box-shadow:none; }
+  html.ui-nou :is(.pf-top, .co-top) .k-month b{ font-size:.95rem; }
+  html.ui-nou :is(.pf-top, .co-top){ margin-bottom:.6rem; }
+  /* Costuri lunare: Încasări, Costuri, Profit as three rows; nothing collides */
+  .co-eq{ grid-template-columns:1fr; gap:0; }
+  .co-eq > i{ display:none; }
+  .co-eq > div{ flex-direction:row; align-items:baseline; justify-content:space-between; gap:.8rem; padding:.45rem 0; border-top:1px solid var(--line); }
+  .co-eq > div:first-child{ border-top:0; padding-top:0; }
+  .co-eq > div:nth-of-type(2) b::before{ content:"− "; color:var(--muted); font-weight:500; }
+  .co-eq > div:last-child span{ color:var(--fg); }
+  .co-eq span{ font-size:.86rem; }
+  .co-eq b{ font-size:1.15rem; }
+  .co-eq > div:last-child b{ font-size:1.35rem; }
+}
+/* Salariu on a phone: „Lunile tale” as two lines a month (the month and the total, then what it's made of), and the bonus
+   condition with the whole name on its own line (16.11: no table squeezed into 360px, no names cut) */
+@media (max-width:640px){
+  .sl-hist .cb-hist-row.is-head{ display:none; }
+  .sl-hist .cb-hist-row{ display:flex; flex-wrap:wrap; align-items:baseline; column-gap:.8rem; row-gap:.15rem; font-size:.84rem; padding:.65rem .55rem; text-align:left; }
+  .sl-hist .cb-hist-row > span:first-child{ order:0; flex:1 1 auto; font-weight:650; }
+  .sl-hist .cb-hist-row > b{ order:1; white-space:nowrap; font-size:.95rem; }
+  .sl-hist .cb-hist-row::after{ content:""; order:2; flex:0 0 100%; height:0; }
+  .sl-hist .cb-hist-row > span[data-l]{ order:3; white-space:nowrap; font-size:.74rem; color:var(--muted); }
+  .sl-hist .cb-hist-row > span[data-l]::before{ content:attr(data-l) " "; }
+  .mg-p-top{ flex-wrap:wrap; row-gap:.1rem; }
+  .mg-p-top b{ flex:1 1 100%; white-space:normal; overflow:visible; }
+  .mg-p-top em{ margin-left:0; font-size:.86rem; }
+}
+/* the person's drawer: „Profil & salariu” on one line on a phone (no icons there) */
+@media (max-width:640px){
+  .ad-tabs .k-seg.is-big button{ white-space:nowrap; padding-left:.4rem; padding-right:.4rem; font-size:.8rem; }
+  .ad-tabs .k-seg.is-big button .k-ic{ display:none; }
+}
+/* Pipeline: the little mascot on the title's corner keeps its own room, the city switch starts after it */
+html.ui-nou .pl-head .pl-title > h2:has(.n-sn){ margin-right:36px; }

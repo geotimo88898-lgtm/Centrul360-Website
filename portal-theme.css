@@ -644,3 +644,13 @@ body::before{
 /* the page behind a menu or a drawer: no touch reaches it, the panels keep their own scroll (portal-kit.js locks the body) */
 html.c360-locked .c360-mnav-backdrop, html.c360-locked .k-drawer-backdrop, html.c360-locked .pl-drawer-backdrop{ touch-action:none; }
 html.c360-locked nav.tabs, html.c360-locked .k-drawer, html.c360-locked .k-dbody, html.c360-locked .pl-drawer, html.c360-locked .c360-dialog, html.c360-locked .c360-palette{ overscroll-behavior:contain; }
+
+/* a dialog asked from a drawer (portal-core.js marks it): over the drawer, the drawer dimmed under it; on a computer centred
+   on the drawer, not on the page behind it */
+.c360-dialog-root.is-over-drawer .c360-dialog-backdrop{ background:rgba(6,8,12,.52) !important; }
+html[data-theme="light"] .c360-dialog-root.is-over-drawer .c360-dialog-backdrop{ background:rgba(20,28,32,.42) !important; }
+.c360-dialog-root.is-over-drawer .c360-dialog{ box-shadow:0 0 0 1px var(--line), 0 30px 60px -20px rgb(0 0 0 / .55); }
+@media (min-width:721px){
+  .c360-dialog-root.is-over-drawer{ justify-content:flex-end; padding-right:max(1rem, calc((var(--dw, 520px) - min(420px, var(--dw, 520px) - 2rem)) / 2)); }
+  .c360-dialog-root.is-over-drawer .c360-dialog{ max-width:min(420px, calc(var(--dw, 520px) - 2rem)); }
+}

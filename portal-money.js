@@ -874,7 +874,7 @@
   async function cancelComm(id) {
     if (!(await K.ui().confirm({ title: 'Retragi cererea de comision?', message: 'Dispare din lista de aprobat. O poți trimite din nou oricând.', confirmText: 'Retrage', danger: true }))) return;
     try { await K.api('/api/portal-sale', { source: 'comision_cancel', id }); K.ui().toast('Cerere retrasă.', 'success'); K.reload(); }
-    catch (err) { K.ui().toast(err.code === 'already_decided' ? 'Adminul a decis deja asupra ei.' : K.errText(err), 'error'); }
+    catch (err) { K.ui().toast(err.code === 'already_decided' ? 'George a decis deja asupra ei.' : K.errText(err), 'error'); }
   }
 
   // "Salariu": what she takes home this month (salary + overtime + commission, or the booking bonus
@@ -971,11 +971,11 @@
         '<b data-count="' + pay.total + '" data-fmt="lei" data-key="sl-t-' + C.month + '">0</b>' +
         '<p>' + icon('wallet') + 'în mână' + (isNow ? ', până azi' : '') + '</p></div>' + monthNav(isNow) +
         '<div class="cb-split">' +
-          tile('user', 'Salariu de bază', pay.base ? K.lei(pay.base) : '-', pay.base ? 'net, pe lună' : 'nesetat încă') +
+          tile('user', 'Salariu de bază', pay.base ? K.lei(pay.base) : 'încă nu', pay.base ? 'net, pe lună' : 'nesetat încă') +
           tile('clock', 'Ore suplimentare', lei2(pay.overtimeLei), pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' + (pay.overtimeDueLei ? ', neplătite încă (toate lunile), vin cu salariul' : '') : 'nicio oră luna asta') +
           (pay.hasBonus ? tile('trophy', 'Bonus programări', K.lei(pay.bonus), pay.booking && pay.booking.days ? 'media ' + avg1(pay.booking.avg) + ' pe zi' : 'nicio zi pontată încă', pay.bonus ? 'is-good' : '')
-            : tile('percent', 'Comision', lei2(pay.commission), K.plural(pay.upsells, 'upsell', 'upsell-uri') + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : ''))) +
-          (pay.manual ? tile('sliders', 'Comision adăugat', (pay.manual > 0 ? '+' : '') + lei2(pay.manual), 'de admin, luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
+            : tile('percent', 'Comision', lei2(pay.commission), K.plural(pay.upsells, 'upsell', 'upselluri') + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : ''))) +
+          (pay.manual ? tile('sliders', 'Comision adăugat', (pay.manual > 0 ? '+' : '') + lei2(pay.manual), 'de George, luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
         '</div></section>';
 
     // the treatments and upsells (cosmeticians)
@@ -986,7 +986,7 @@
               '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(s.treatment || '') + '</div></div>' +
               '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">upsell</span>' : '') + '<span class="k-amount">' + K.lei(s.amount) + '</span></div></div>').join('') + '</div>'
               : K.empty('sparkles', 'Niciun tratament încasat', 'Tratamentele la care ești trecută la încasare apar aici.')) + '</section>' +
-          '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsell-urile tale</h3><span class="k-sub">' + (pay ? lei2(pay.commission) + ' comision' : '') + '</span></div>' +
+          '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsellurile tale</h3><span class="k-sub">' + (pay ? lei2(pay.commission) + ' comision' : '') + '</span></div>' +
             (inMonth.length ? '<div class="k-list">' + inMonth.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((s) => {
               const st = SALE_STATUS[s.status] || { label: s.status, tone: '' };
               const val = s.status === 'approved' ? Number(s.commission || 0) : (s.commission ? Number(s.commission) : K.commissionOf(s.amount));
@@ -994,14 +994,14 @@
                 '<div class="cb-calc"><span>Upsell <b>' + K.lei(s.amount) + '</b></span><span>- ' + RULE.cost + '%</span><span>= <b>' + K.lei(K.profitOf(s.amount), 2) + '</b></span><span>× ' + RULE.rate + '%</span></div></div>' +
                 '<div class="k-row-end">' + (s.status === 'pending' && s.origin === 'manual' ? '<button type="button" class="k-btn is-ghost is-sm" data-comm-cancel="' + esc(s.id) + '">Retrage</button>' : '') + (s.status === 'approved' ? '' : '<span class="k-tag is-' + st.tone + '">' + st.label + '</span>') + '<span class="k-amount">+' + K.lei(val, 2) + '</span></div></div>';
             }).join('') + '</div>'
-              : K.empty('trend', 'Niciun upsell încă', 'Upsell-urile la tratamentele făcute de tine apar aici, cu comisionul lor.', me.role === 'cosmetician' ? '<button type="button" class="k-btn is-accent is-sm" data-comm-new>' + icon('plus') + 'Adaugă comision</button>' : '')) + '</section>' +
+              : K.empty('trend', 'Niciun upsell încă', 'Upsellurile la tratamentele făcute de tine apar aici, cu comisionul lor.', me.role === 'cosmetician' ? '<button type="button" class="k-btn is-accent is-sm" data-comm-new>' + icon('plus') + 'Adaugă comision</button>' : '')) + '</section>' +
         '</div>';
 
     // ---- last months
     const hist = months.filter((m, i) => i === 0 || m.total > 0);
     const histHtml = '<section class="k-card"><div class="k-card-head"><h3>' + icon('calendar') + 'Lunile tale</h3></div>' +
       '<div class="cb-hist sl-hist"><div class="cb-hist-row is-head"><span>Luna</span><span>Salariu</span><span>Ore supl.</span><span>' + (isDesk ? 'Bonus' : 'Comision') + '</span><span>Total</span></div>' +
-      hist.map((h) => '<button type="button" class="cb-hist-row' + (h.month === C.month ? ' is-on' : '') + '" data-month="' + h.month + '"><span>' + esc(K.monthLabel(h.month)) + '</span><span>' + K.lei(h.base) + '</span><span>' + lei2(h.overtimeLei) + '</span><span>' + lei2(isDesk ? h.bonus : h.commission) + '</span><b>' + lei2(h.total) + '</b></button>').join('') + '</div></section>';
+      hist.map((h) => '<button type="button" class="cb-hist-row' + (h.month === C.month ? ' is-on' : '') + '" data-month="' + h.month + '"><span>' + esc(K.monthLabel(h.month)) + '</span><span data-l="salariu">' + K.lei(h.base) + '</span><span data-l="ore supl.">' + lei2(h.overtimeLei) + '</span><span data-l="' + (isDesk ? 'bonus' : 'comision') + '">' + lei2(isDesk ? h.bonus : h.commission) + '</span><b>' + lei2(h.total) + '</b></button>').join('') + '</div></section>';
     const tips = isDesk ? '' : '<section class="k-card cb-tip"><div class="k-card-head"><h3>' + icon('zap') + 'Cum îți crești comisionul</h3></div>' +
       '<ol><li>La finalul tratamentului spune-i clientei ce ai observat și ce ar ajuta-o să ajungă mai repede la rezultat.</li>' +
       '<li>Recomandă <b>o singură</b> combinație potrivită (ex. grăsime → plus tonifiere; facial → întreținere lunară).</li>' +
@@ -1013,22 +1013,22 @@
     const bkk = pay && pay.booking;
     const bestDone = days.map((dd, i) => [dd, daily[i]]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
     const SAL = {
-      payTotal: { label: 'Salariul în mână', group: 'Salariu', html: () => st('wallet', 'Salariul în mână', pay ? lei2(pay.total) : '-', isNow ? 'până azi' : esc(K.monthLabel(C.month)), 'is-accent') },
-      base: { label: 'Salariu de bază', group: 'Salariu', html: () => st('user', 'Salariu de bază', pay && pay.base ? K.lei(pay.base) : '-', 'net, pe lună') },
-      overtime: { label: 'Ore suplimentare', group: 'Salariu', html: () => st('clock', 'Ore suplimentare', pay ? lei2(pay.overtimeLei) : '-', pay && pay.overtimeMinutes ? hm(pay.overtimeMinutes) : 'nicio oră') },
+      payTotal: { label: 'Salariul în mână', group: 'Salariu', html: () => st('wallet', 'Salariul în mână', pay ? lei2(pay.total) : 'încă nu', isNow ? 'până azi' : esc(K.monthLabel(C.month)), 'is-accent') },
+      base: { label: 'Salariu de bază', group: 'Salariu', html: () => st('user', 'Salariu de bază', pay && pay.base ? K.lei(pay.base) : 'încă nu', 'net, pe lună') },
+      overtime: { label: 'Ore suplimentare', group: 'Salariu', html: () => st('clock', 'Ore suplimentare', pay ? lei2(pay.overtimeLei) : 'încă nu', pay && pay.overtimeMinutes ? hm(pay.overtimeMinutes) : 'nicio oră') },
       done: { label: 'Tratamente făcute', group: 'Tratamente', roles: ['cosmetician'], html: () => st('sparkles', 'Tratamente făcute', String(done.length), delta(done.length, donePrev.length) + 'vs ' + K.MON_S[Number(prevM.slice(5)) - 1] + '.' + (isNow ? ' (aceleași zile)' : '')) },
       doneValue: { label: 'Încasat din tratamentele tale', group: 'Tratamente', roles: ['cosmetician'], html: () => st('wallet', 'Încasat din tratamentele tale', K.lei(doneValue), delta(doneValue, donePrevValue) + (done.length ? 'bon mediu ' + K.lei(doneValue / done.length) : 'încă nimic luna asta')) },
       ticket: { label: 'Bon mediu', group: 'Tratamente', roles: ['cosmetician'], html: () => st('wallet', 'Bon mediu', K.lei(done.length ? doneValue / done.length : 0), 'pe tratament') },
-      bestDay: { label: 'Cea mai bună zi', group: 'Tratamente', roles: ['cosmetician'], html: () => st('trophy', 'Cea mai bună zi', bestDone ? K.lei(bestDone[1]) : '-', bestDone ? esc(K.dateLong(bestDone[0])) : '-') },
+      bestDay: { label: 'Cea mai bună zi', group: 'Tratamente', roles: ['cosmetician'], html: () => st('trophy', 'Cea mai bună zi', bestDone ? K.lei(bestDone[1]) : 'încă nu', bestDone ? esc(K.dateLong(bestDone[0])) : 'nicio zi încă') },
       upRate: { label: 'Rata de upsell', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('trend', 'Rata de upsell', upRate + '%', withUpsell + ' din ' + done.length + ' tratamente cu upsell') },
       upAvg: { label: 'Upsell mediu', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('percent', 'Upsell mediu', K.lei(inMonth.length ? upsTotal / inMonth.length : 0), K.lei(inMonth.length ? K.commissionOf(upsTotal / inMonth.length) : 0, 2) + ' comision / upsell') },
       upCount: { label: 'Număr de upselluri', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('trophy', 'Upselluri', String(inMonth.length), K.lei(upsTotal) + ' valoare') },
       upValue: { label: 'Valoarea upsellurilor', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('trend', 'Valoare upsell', K.lei(upsTotal), K.plural(inMonth.length, 'upsell', 'upselluri')) },
-      commission: { label: 'Comision aprobat', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('percent', 'Comision', pay ? lei2(pay.commission) : '-', 'aprobat', 'is-good') },
-      commWaiting: { label: 'Comision în așteptare', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('clock', 'În așteptare', pay ? lei2(pay.commissionWaiting || 0) : '-', 'se aprobă de admin', 'is-warn') },
-      bkAvg: { label: 'Programări pe zi', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări / zi', bkk ? K.num(bkk.avg) : '-', bkk ? K.plural(bkk.days, 'zi pontată', 'zile pontate') : '-') },
-      bkLei: { label: 'Bonusul acum', group: 'Bonus de programări', roles: ['receptie'], html: () => st('trophy', 'Bonus', bkk ? K.lei(bkk.lei) : '-', bkk && bkk.next ? 'următorul: ' + bkk.next.min + '+ pe zi' : bkk && bkk.lei >= Math.max(...bkk.tiers.map((t) => t.lei)) ? 'treapta cea mai mare' : bkk && bkk.frozen ? 'oprit la ' + esc(K.dateShort(bkk.frozen)) : '-', bkk && bkk.lei ? 'is-good' : '') },
-      bkTotal: { label: 'Programări făcute', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări făcute', bkk ? String(bkk.total) : '-', 'luna asta') },
+      commission: { label: 'Comision aprobat', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('percent', 'Comision', pay ? lei2(pay.commission) : 'încă nu', 'aprobat', 'is-good') },
+      commWaiting: { label: 'Comision în așteptare', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('clock', 'În așteptare', pay ? lei2(pay.commissionWaiting || 0) : 'încă nu', 'îl aprobă George', 'is-warn') },
+      bkAvg: { label: 'Programări pe zi', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări / zi', bkk ? K.num(bkk.avg) : 'încă nu', bkk ? K.plural(bkk.days, 'zi pontată', 'zile pontate') : '-') },
+      bkLei: { label: 'Bonusul acum', group: 'Bonus de programări', roles: ['receptie'], html: () => st('trophy', 'Bonus', bkk ? K.lei(bkk.lei) : 'încă nu', bkk && bkk.next ? 'următorul: ' + bkk.next.min + '+ pe zi' : bkk && bkk.lei >= Math.max(...bkk.tiers.map((t) => t.lei)) ? 'treapta cea mai mare' : bkk && bkk.frozen ? 'oprit la ' + esc(K.dateShort(bkk.frozen)) : '-', bkk && bkk.lei ? 'is-good' : '') },
+      bkTotal: { label: 'Programări făcute', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări făcute', bkk ? String(bkk.total) : 'încă nu', 'luna asta') },
     };
     const role = isDesk ? 'receptie' : 'cosmetician';
     const mineSal = Object.keys(SAL).filter((k) => !SAL[k].roles || SAL[k].roles.includes(role));
@@ -1094,7 +1094,7 @@
       const pct = Math.min(100, (p.perDay / top) * 100);
       const need = Math.max(1, cond.min - p.perDay);
       return '<div class="mg-person' + (p.days ? (p.ok ? ' is-ok' : ' is-low') : ' is-none') + '">' + K.avatar(p.name, 36) +
-        '<div class="mg-p-main"><div class="mg-p-top"><b>' + esc(p.name) + '</b><em>' + (p.days ? K.lei(p.perDay) + ' / zi' : '-') + '</em></div>' +
+        '<div class="mg-p-main"><div class="mg-p-top"><b>' + esc(p.name) + '</b><em>' + (p.days ? K.lei(p.perDay) + ' / zi' : 'încă nu') + '</em></div>' +
           '<div class="mg-bar"><i style="--w:' + pct + '%"></i><s style="left:75%"></s></div>' +
           '<small>' + esc(p.location) + ' · ' + (p.days ? K.plural(p.days, 'zi lucrată', 'zile lucrate') + ' · ' + K.lei(p.collected) + ' încasat' + (p.ok ? '' : ' · încă ' + K.lei(need) + ' pe zi') : 'Nicio zi lucrată luna asta, nu intră în calcul.') + '</small></div>' +
         '<span class="mg-p-ic">' + icon(p.ok ? 'check' : p.days ? 'x' : 'minus') + '</span></div>';
@@ -1116,7 +1116,7 @@
       return head + '<div class="mg-calc is-final"><div><span>Bonus final</span><b>' + K.lei(m.final.lei) + '</b><small>' + icon('checkCircle') + 'Luna e închisă' + (m.final.at ? ' pe ' + esc(roDay(m.final.at)) : '') + '</small></div></div>';
     }
     if (!m.estimate) {
-      return head + '<div class="mg-wait">' + icon('clock') + '<span>' + (admin ? 'Trece costurile lunii în Echipa → Costuri și bonusul se calculează singur.' : 'Bonusul se calculează după ce se trec costurile lunii.') + '</span></div>';
+      return head + '<div class="mg-wait">' + icon('clock') + '<span>' + (admin ? 'Trece costurile lunii în Cheltuieli → Costuri lunare și bonusul se calculează singur.' : 'Bonusul se calculează după ce se trec costurile lunii.') + '</span></div>';
     }
     const e = m.estimate;
     return head + '<div class="mg-calc">' +
@@ -1132,8 +1132,8 @@
     const p = v.probation;
     const dl = (d) => Number(d.slice(8, 10)) + ' ' + K.MON[Number(d.slice(5, 7)) - 1];
     return '<section class="k-card mg-base"><div class="k-card-head"><h3>' + icon('user') + 'Salariul de bază</h3></div>' +
-      '<div class="mg-base-row"><div><span>Acum</span><b>' + (base ? K.lei(base) : '-') + '</b><small>' + (base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
-      (p && (p.inProbation || p.after) ? '<div class="' + (p.inProbation ? '' : 'is-on') + '"><span>' + (p.inProbation ? 'După perioada de probă' : 'După probă') + '</span><b>' + (p.after ? K.lei(p.after) : '-') + '</b><small>' + (p.inProbation ? 'de la ' + esc(dl(p.end)) : 'net, pe lună') + '</small></div>' : '') + '</div>' +
+      '<div class="mg-base-row"><div><span>Acum</span><b>' + (base ? K.lei(base) : 'încă nu') + '</b><small>' + (base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
+      (p && (p.inProbation || p.after) ? '<div class="' + (p.inProbation ? '' : 'is-on') + '"><span>' + (p.inProbation ? 'După perioada de probă' : 'După probă') + '</span><b>' + (p.after ? K.lei(p.after) : 'încă nu') + '</b><small>' + (p.inProbation ? 'de la ' + esc(dl(p.end)) : 'net, pe lună') + '</small></div>' : '') + '</div>' +
       (p ? '<p class="cd-rule">' + icon('calendar') + (p.inProbation ? 'Perioada de probă: ' + v.rule.probationDays + ' de zile, până pe ' + esc(dl(p.end)) + '.' : 'Perioada de probă s-a încheiat pe ' + esc(dl(p.end)) + '.') + '</p>' : '') +
       '</section>';
   }
@@ -1162,7 +1162,7 @@
         const est = x && !x.final && x.estimate != null ? x.estimate : 0;
         const bon = (Number(h.bonus) || 0) + (x ? (x.final ? x.final.lei : est) : 0);
         const tag = x ? (x.final ? '' : x.estimate != null ? ' <em class="mg-est">estimat</em>' : ' <em class="mg-est">în calcul</em>') : '';
-        return '<button type="button" class="cb-hist-row' + (h.month === sel ? ' is-on' : '') + '" data-month="' + h.month + '"><span>' + esc(K.monthLabel(h.month)) + '</span><span>' + K.lei(h.base) + '</span><span>' + lei2(h.overtimeLei) + '</span><span>' + lei2(bon) + tag + '</span><b>' + lei2(h.total + est) + '</b></button>';
+        return '<button type="button" class="cb-hist-row' + (h.month === sel ? ' is-on' : '') + '" data-month="' + h.month + '"><span>' + esc(K.monthLabel(h.month)) + '</span><span data-l="salariu">' + K.lei(h.base) + '</span><span data-l="ore supl.">' + lei2(h.overtimeLei) + '</span><span data-l="bonus">' + lei2(bon) + tag + '</span><b>' + lei2(h.total + est) + '</b></button>';
       }).join('') + '</div></section>';
   }
 
@@ -1175,15 +1175,15 @@
     const bk = pay && pay.booking && pay.booking.frozen ? pay.booking : null;
     const head = '<section class="cb-hero k-card mg-hero"><div class="cb-hero-main"><span>' + (admin ? esc(v.name) : 'Salariul tău') + ' · ' + esc(K.monthLabel(m.month)) + '</span>' +
         (total != null ? '<b data-count="' + Math.round(total) + '" data-fmt="lei" data-key="mg-t-' + m.month + '">0</b><p>' + icon('wallet') + (m.current ? 'în mână luna asta' : 'în mână') + (est ? ', cu bonusul estimat' : '') + '</p>'
-          : '<b>' + (b ? K.lei(b.lei) : '-') + '</b><p>' + icon('trophy') + 'bonus' + (b ? ', ' + b.kind : '') + '</p>') + '</div>' +
+          : '<b>' + (b ? K.lei(b.lei) : 'încă nu') + '</b><p>' + icon('trophy') + 'bonus' + (b ? ', ' + b.kind : '') + '</p>') + '</div>' +
         (opts && opts.nav !== false ? monthNav(m.current) : '') +
         (pay ? '<div class="cb-split">' +
-          '<div><span>' + icon('user') + 'Salariu de bază</span><b>' + (pay.base ? K.lei(pay.base) : '-') + '</b><small>' + (pay.base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
-          '<div class="' + (b && b.lei ? 'is-good' : !b ? 'is-wait' : '') + '"><span>' + icon('trophy') + 'Bonus</span><b>' + (b ? K.lei(b.lei) : '-') + '</b><small>' + (b ? (b.kind === 'final' ? 'final, luna e închisă' : 'estimat, ' + (m.condition.ok ? 'condiția e îndeplinită' : 'condiția încă nu e îndeplinită')) : 'după costurile lunii') + '</small></div>' +
+          '<div><span>' + icon('user') + 'Salariu de bază</span><b>' + (pay.base ? K.lei(pay.base) : 'încă nu') + '</b><small>' + (pay.base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
+          '<div class="' + (b && b.lei ? 'is-good' : !b ? 'is-wait' : '') + '"><span>' + icon('trophy') + 'Bonus</span><b>' + (b ? K.lei(b.lei) : 'încă nu') + '</b><small>' + (b ? (b.kind === 'final' ? 'final, luna e închisă' : 'estimat, ' + (m.condition.ok ? 'condiția e îndeplinită' : 'condiția încă nu e îndeplinită')) : 'după costurile lunii') + '</small></div>' +
           '<div><span>' + icon('clock') + 'Ore suplimentare</span><b>' + lei2(pay.overtimeLei) + '</b><small>' + (pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' : 'nicio oră luna asta') + '</small></div>' +
           '</div>' : '') +
         (bk ? '<div class="mg-frozen">' + icon('calendar') + '<span>Bonus recepție (până la ' + esc(K.dateShort(bk.frozen)) + '): <b>' + K.lei(bk.lei) + '</b></span><small>media ' + avg1(bk.avg) + ' programări pe zi · ' + (bk.lei ? 'inclus în total' : 'sub prima treaptă (' + bk.tiers.slice().sort((a, c) => a.min - c.min)[0].min + ' pe zi)') + '</small></div>' : '') +
-        (pay && pay.manual ? '<div class="mg-frozen">' + icon('sliders') + '<span>Ajustare de la admin: <b>' + (pay.manual > 0 ? '+' : '') + lei2(pay.manual) + '</b></span></div>' : '') +
+        (pay && pay.manual ? '<div class="mg-frozen">' + icon('sliders') + '<span>Ajustare de la George: <b>' + (pay.manual > 0 ? '+' : '') + lei2(pay.manual) + '</b></span></div>' : '') +
       '</section>';
     const bonusCard = '<section class="k-card mg-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul</h3>' +
         (b ? '<span class="k-tag is-' + (b.kind === 'final' ? 'good' : 'info') + '">' + b.kind + '</span>' : '') + '</div>' +
@@ -1196,13 +1196,13 @@
     const m = v.month;
     if (!m.costs) return '';
     const src = { auto: 'auto', manual: 'scris de tine', typed: '', missing: 'lipsește', empty: '', records: 'din Cheltuieli' };
-    const rows = m.costs.rows.map((r) => '<div class="mg-cost' + (r.lei == null ? ' is-miss' : '') + '"><span>' + esc(r.label) + (src[r.source] ? ' <em>' + src[r.source] + '</em>' : '') + '</span><b>' + (r.lei == null ? '-' : K.lei(r.lei)) + '</b></div>').join('');
+    const rows = m.costs.rows.map((r) => '<div class="mg-cost' + (r.lei == null ? ' is-miss' : '') + '"><span>' + esc(r.label) + (src[r.source] ? ' <em>' + src[r.source] + '</em>' : '') + '</span><b>' + (r.lei == null ? 'lipsește' : K.lei(r.lei)) + '</b></div>').join('');
     const fin = m.final ? m.final.lei : m.estimate ? m.estimate.bonus : '';
     return '<div class="mg-admin"><div class="mg-step"><span class="mg-step-n">' + icon('shield') + '</span><div><b>Doar pentru tine</b><small>Costurile reale și profitul lunii.</small></div></div>' +
       '<div class="mg-costs"><div class="mg-cost is-in"><span>Încasări ' + esc(m.clinics.join(' și ')) + '</span><b>' + K.lei(m.collections) + '</b></div>' + rows +
         '<div class="mg-cost is-total"><span>Total costuri</span><b>' + K.lei(m.costs.total) + '</b></div>' +
         '<div class="mg-cost is-profit"><span>Profit</span><b>' + K.lei(m.profit) + '</b></div></div>' +
-      (m.costs.missing.length || !m.filled ? '<div class="mg-wait">' + icon('alert') + '<span>' + (m.costs.missing.length ? 'Lipsesc: ' + esc(m.costs.rows.filter((r) => r.lei == null).map((r) => r.label).join(', ')) + '.' : 'Luna nu e salvată încă în Echipa → Costuri.') + ' Bonusul apare la ea doar după ce luna e completă.</span></div>' : '') +
+      (m.costs.missing.length || !m.filled ? '<div class="mg-wait">' + icon('alert') + '<span>' + (m.costs.missing.length ? 'Lipsesc: ' + esc(m.costs.rows.filter((r) => r.lei == null).map((r) => r.label).join(', ')) + '.' : 'Luna nu e salvată încă în Cheltuieli → Costuri lunare.') + ' Bonusul apare la ea doar după ce luna e completă.</span></div>' : '') +
       '<form class="mg-final" data-mg-final><label><span>Bonus final</span><div class="k-money"><input name="lei" type="number" inputmode="numeric" min="0" step="1" value="' + esc(fin) + '" placeholder="0"></div></label>' +
         '<button type="button" class="k-btn is-accent" data-mg-final-save>' + icon('check') + (m.final ? 'Schimbă' : 'Confirmă la închiderea lunii') + '</button>' +
         (m.final ? '<button type="button" class="k-btn is-ghost" data-mg-final-clear>Retrage</button>' : '') + '</form>' +
@@ -1345,7 +1345,7 @@
           (E.eurFrom && E.eurFrom.source === 'bnr'
             // today's BNR rate, always (the owner, 16.11): shown, not typed
             ? '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro de azi</b><small>' + esc(E.eurFrom.bank || 'BNR') + (E.eurFrom.date ? ', ' + esc(roDay(E.eurFrom.date)) : '') + ', se actualizează singur</small></div><div class="k-money is-rate"><input name="eurRate" type="number" value="' + esc(val(E.eurRate)) + '" readonly tabindex="-1"></div></div>'
-            : '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro</b><small>BNR nu răspunde acum, scrie-l tu</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="lei pentru 1 €"></div></div>') +
+            : '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro</b><small>BNR nu răspunde acum, scrie-l tu</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="curs BNR"></div></div>') +
           d.lines.filter((l) => l.kind === 'fixed').map(line).join('') + '</section>' +
         '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('sliders') + 'Costuri variabile</h3></div>' +
           '<p class="k-muted co-note">Reclamele, WhatsApp, comisioanele și orele vin singure; scrie o sumă doar ca să le schimbi. Restul se adaugă în Cheltuieli.</p>' +

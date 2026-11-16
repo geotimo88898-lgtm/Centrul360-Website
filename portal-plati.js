@@ -17,14 +17,14 @@
 
   K.mountCosts = (box) => {
     PL.box = box;
-    box.innerHTML = '<div class="pf-subnav">' + K.seg('plsub', [['plati', 'Plăți', 'checkCircle'], ['chelt', 'Cheltuieli', 'receipt'], ['costuri', 'Costuri lunare', 'sliders']], PL.sub) + '</div><div data-pf-pane></div>';
+    box.innerHTML = '<div class="pf-subnav">' + K.seg('plsub', [['plati', 'Plăți', 'checkCircle'], ['chelt', 'Variabile', 'receipt'], ['costuri', 'Costuri lunare', 'sliders']], PL.sub) + '</div><div data-pf-pane></div>';
     showSub();
   };
   function showSub() {
     const pane = PL.box && PL.box.querySelector('[data-pf-pane]');
     if (!pane) return;
     try { localStorage.setItem('c360-pl-sub', PL.sub); } catch (e) { /* private mode */ }
-    pane.classList.toggle('pf-narrow', PL.sub !== 'costuri'); // the payments and the records read best not too wide
+    pane.classList.add('pf-narrow'); // the three views the same width (16.11): the payments and the records read best not too wide
     if (PL.sub === 'costuri') {
       // Costuri lunare goes up to this month; it keeps the month the owner looks at here
       const m = PL.month > K.thisMonth() ? K.thisMonth() : PL.month;
@@ -168,12 +168,12 @@
       const src = a.error && a.lei == null ? '<span class="is-err">' + (/nu poate fi citit/.test(a.error) ? esc(a.src) + ' nu poate fi citit acum' : esc(a.src) + ' nu răspunde: ' + esc(a.error)) + '. Scrie suma în Costuri lunare.</span>'
         : a.over != null ? 'scrisă de tine în Costuri lunare' : a.none ? 'WhatsApp nu e conectat' : a.key === 'payroll' ? 'din Salariu, se actualizează singur'
         : 'din ' + esc(a.src) + (a.at ? ', actualizat ' + esc(readAt(a.at)) : '') + (a.saved ? ' (ultima citire)' : '');
-      return '<li class="pf-auto"><div class="pf-main"><b class="pf-name">' + esc(a.label) + '</b><small>' + src + '</small></div><span class="pf-amt">' + (a.lei != null ? K.lei(a.lei) : '-') + '</span></li>';
+      return '<li class="pf-auto"><div class="pf-main"><b class="pf-name">' + esc(a.label) + '</b><small>' + src + '</small></div><span class="pf-amt">' + (a.lei != null ? K.lei(a.lei) : 'încă nu') + '</span></li>';
     };
     const recCard = (line) => '<section class="k-card pf-rec" data-line="' + esc(line.key) + '"><div class="pf-rec-head"><div class="pf-main"><b class="pf-name">' + esc(line.label) + '</b>' + (line.hint ? '<small>' + esc(line.hint) + '</small>' : '') + '</div>' +
         '<span class="pf-amt">' + K.lei(line.total, 2) + '</span></div>' +
         (line.entries.length ? '<ul class="pf-ents">' + line.entries.map((e) => '<li><span class="pf-ent-d">' + (e.date ? esc(K.dateShort(e.date)) : '-') + '</span><span class="pf-ent-n">' +
-          (e.kind && line.kinds ? '<em>' + esc(kindLabel(line, e.kind)) + '</em>' : '') + esc(e.note || (e.kind ? '' : '-')) + '</span><b>' + K.lei(e.lei, 2) + '</b>' +
+          (e.kind && line.kinds ? '<em>' + esc(kindLabel(line, e.kind)) + '</em>' : '') + esc(e.note || '') + '</span><b>' + K.lei(e.lei, 2) + '</b>' +
           '<button type="button" class="k-icon-btn pf-del" data-pf-del="' + esc(e.id) + '" aria-label="Șterge">' + icon('trash') + '</button></li>').join('') + '</ul>' : '') +
         '<button type="button" class="pf-add" data-pf-add>' + icon('plus') + 'Adaugă</button></section>';
     const tax = d.rec.find((l) => l.key === 'taxes');
@@ -202,7 +202,11 @@
       const dlt = total - w.prev.total, up = dlt > 0;
       cmp = '<p class="pf-cmp ' + (up ? 'is-up' : 'is-down') + '">' + (up ? '↑ ' : '↓ ') + K.lei(Math.abs(dlt)) + (up ? ' mai mult' : ' mai puțin') + ' decât în ' + esc(mName) + ' (' + K.lei(w.prev.total) + ')' + (w.upToday ? ', luna asta până azi' : '') + '</p>';
     }
-    const legend = parts.map((x) => '<li><i style="--c:' + x.color + '" aria-hidden="true"></i><span>' + esc(x.label) + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span><b>' + K.lei(x.lei) + '</b><em>' + pct(x.lei, total) + '%</em></li>').join('');
+    // whole percents that add up to 100 (largest remainder): the legend never says 99% or 101% in all
+    const raw = parts.map((x) => (total > 0 ? (x.lei / total) * 100 : 0)), pcs = raw.map(Math.floor);
+    let left = total > 0 ? 100 - pcs.reduce((a, v) => a + v, 0) : 0;
+    raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { pcs[i]++; left--; } });
+    const legend = parts.map((x, i) => '<li><i style="--c:' + x.color + '" aria-hidden="true"></i><span>' + esc(x.label) + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span><b>' + K.lei(x.lei) + '</b><em>' + pcs[i] + '%</em></li>').join('');
     return '<section class="k-card pf-where"><div class="pf-where-head"><h3>Unde se duc banii luna asta</h3>' + cmp + '</div>' +
       (total > 0 ? '<div class="pf-where-body">' + donut(parts, 148, '<b>' + K.lei(total) + '</b><small>' + (w.upToday ? 'până azi' : 'toată luna') + '</small>', 'Costurile lunii: ' + parts.map((x) => x.label + ' ' + K.lei(x.lei)).join(', ')) +
         '<ul class="pf-leg is-cats">' + legend + '</ul></div>' : '<p class="pf-foot">Nicio cheltuială încă luna asta.</p>') +
@@ -287,7 +291,7 @@
   if (K.section) K.section('cheltuieli', {
     mount(p) {
       p.classList.add('k-panel', 'lg');
-      p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Cheltuieli</h2></div></div><div data-costs></div>';
+      p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Bani</div><h2>Cheltuieli</h2></div></div><div data-costs></div>';
     },
     show() { const b = document.querySelector('#panel-cheltuieli [data-costs]'); if (b && K.mountCosts) K.mountCosts(b); },
   });

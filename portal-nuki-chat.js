@@ -267,8 +267,17 @@
     S.btn.setAttribute('aria-label', 'Nuki, asistentul tău');
     S.btn.title = 'Nuki';
     S.btn.innerHTML = '<img src="' + POSE + 'gandeste.webp" alt="">';
-    S.btn.addEventListener('click', open);
+    // tucked into the edge while the page scrolls down: a tap only brings him back
+    S.btn.addEventListener('click', function (e) { if (S.btn.classList.contains('is-docked')) { e.preventDefault(); S.btn.classList.remove('is-docked'); return; } open(); });
     document.body.appendChild(S.btn);
+    var lastY = window.scrollY, upBy = 0;
+    window.addEventListener('scroll', function () {
+      var y = window.scrollY, de = document.scrollingElement || document.documentElement, end = y + window.innerHeight >= de.scrollHeight - 40;
+      if (y > lastY) { upBy = 0; if (y > 120 && !end) S.btn.classList.add('is-docked'); }
+      else { upBy += lastY - y; if (upBy > 24 || y < 60) S.btn.classList.remove('is-docked'); }
+      if (end) S.btn.classList.remove('is-docked');
+      lastY = y;
+    }, { passive: true });
   }
   function wait() { if (K() && K().data && K().drawer) mount(); else setTimeout(wait, 400); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wait); else wait();

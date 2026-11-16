@@ -54,7 +54,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'lg');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">' + (K.data && K.data.isAdmin ? 'Admin' : 'Manager') + '</div><h2>Acte și autorizații</h2></div><div class="k-head-actions" data-lghead></div></div><div data-lgbody><div class="k-skel" style="height:360px"></div></div>';
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Acte și autorizații</h2></div><div class="k-head-actions" data-lghead></div></div><div data-lgbody><div class="k-skel" style="height:360px"></div></div>';
     panel.addEventListener('change', (e) => { if (e.target.name === 'lgview') { S.view = e.target.value; S.person = ''; paint(); } });
     panel.addEventListener('click', (e) => {
       const row = e.target.closest('[data-lgitem]'); if (row) return openItem(scopeOf(), row.dataset.lgitem);

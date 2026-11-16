@@ -48,7 +48,8 @@
   function why(x) {
     if (x.kind === 'pachet' && !x.what) return esc(x.treatment || 'Pachet început');
     if ((x.kind === 'noshow' || x.kind === 'anulata') && !x.date) return esc(x.treatment || '');
-    if (x.kind === 'pachet') return esc(x.what) + ' · ' + (x.left != null ? K.plural(x.left, 'ședință rămasă', 'ședințe rămase') + ' din ' + x.total : 'cumpărat pe ' + esc(K.dateShort(x.boughtOn)) + ', ' + (x.done ? K.plural(x.done, 'ședință', 'ședințe') + ' de atunci' : 'nicio ședință de atunci')) +
+    // short (16.11): the tag already says „Pachet început”; the generic name of an unnamed package isn't repeated
+    if (x.kind === 'pachet') return (x.what && x.what !== 'Pachet sau ședințe cumpărate în plus' ? esc(x.what) + ' · ' : '') + (x.left != null ? K.plural(x.left, 'ședință rămasă', 'ședințe rămase') + ' din ' + x.total : 'din ' + esc(K.dateShort(x.boughtOn)) + ', ' + (x.done ? K.plural(x.done, 'ședință', 'ședințe') + ' de atunci' : 'nicio ședință')) +
       (x.lastVisit && x.lastVisit !== x.boughtOn ? ' · ultima vizită ' + esc(K.dateShort(x.lastVisit)) : '') + (x.owe > 0 ? ' · rest de plată ' + K.lei(x.owe) : '');
     if (x.kind === 'noshow') return 'Nu a venit ' + esc(K.relDay(x.date).toLowerCase()) + (x.treatment ? ' · ' + esc(x.treatment) : '');
     if (x.kind === 'anulata') return 'A anulat ' + (x.treatment ? esc(x.treatment) + ', ' : '') + esc(K.relDay(x.date).toLowerCase());
@@ -64,7 +65,7 @@
     if (o.city && CL().includes(o.city)) S.city = o.city;
     if (!S.city || (S.city !== 'all' && !CL().includes(S.city))) S.city = CL().includes(K.data && K.data.me && K.data.me.location) ? K.data.me.location : CL()[0];
     S.d = K.drawer({
-      title: 'Ore libere și urmărire', icon: 'sunrise', width: 860, subtitle: esc(CL().join(' și ')),
+      title: 'Ore libere', icon: 'sunrise', width: 860, subtitle: esc(CL().join(' și ')),
       body: '<div class="fu" data-fu></div>',
       onMount(el) { el.addEventListener('click', onClick); },
       onClose() { S.d = null; },
@@ -109,7 +110,7 @@
     const people = day.closed ? K.empty('moon', 'Clinica e închisă în ziua asta', '')
       : !day.people.length ? K.empty('users', 'Nicio cosmeticiană la lucru', 'Programul se pune în Calendar → Program echipă.')
       : '<div class="fu-people">' + day.people.map((p) => '<div class="fu-person"><div class="fu-person-h">' + (p.id ? K.avatar(p.name, 32) : '') + '<span class="fu-pn"><b>' + esc(p.name || S.city) + '</b><small>' + esc(p.from) + ' - ' + esc(p.to) + '</small></span>' +
-          '<span class="fu-free ' + (p.freeMin ? '' : 'is-full') + '">' + (p.freeMin ? hrs(p.freeMin) + ' libere' : 'plin') + '</span></div>' +
+          '<span class="fu-free ' + (p.freeMin ? '' : 'is-full') + '">' + (p.freeMin ? (p.freeMin === 60 ? '1 oră liberă' : hrs(p.freeMin) + ' libere') : 'plin') + '</span></div>' +
           (p.free.length ? '<div class="fu-wins">' + p.free.map((w) => { const on = S.slot && S.slot.date === day.date && S.slot.time === w.from && S.slot.emp === p.id && S.slot.city === S.city;
             return '<button type="button" class="fu-win' + (on ? ' is-on' : '') + '" data-fu-slot="' + esc(w.from) + '" data-fu-to="' + esc(w.to) + '" data-fu-emp="' + esc(p.id) + '" data-fu-name="' + esc(p.name) + '"><b>' + esc(w.from) + ' - ' + esc(w.to) + '</b><small>' + hrs(w.min) + '</small></button>'; }).join('') + '</div>'
             : '<p class="k-muted fu-pad">Toată tura e programată.</p>') + '</div>').join('') + '</div>';
@@ -117,7 +118,7 @@
       ? '<div class="fu-picked">' + icon('check') + '<span>Programezi <b>' + esc(dayName(S.slot.date).toLowerCase()) + ', ' + esc(S.slot.time) + '</b>' + (S.slot.name ? ' cu ' + esc(S.slot.name) : '') + '. Alege clienta de mai jos.</span><button type="button" class="k-icon-btn" data-fu-unpick aria-label="Renunță">' + icon('x') + '</button></div>'
       : '<p class="fu-hint">' + icon('info') + 'Atinge o oră liberă, apoi „Programează” la clienta pe care o suni.</p>';
     return '<p class="fu-sum">' + icon('sunrise') + '<span>În următoarele 7 zile, ' + esc(S.city) + ': <b>' + hrs(c.freeMin) + ' libere</b>' + (c.team ? '' : ' (după orele clinicii: programul cosmeticienelor nu e pus)') + '</span></p>' +
-      chips + people + '<h4 class="fu-h">' + icon('phone') + 'Cine să suni' + (c.calls.length ? '<span class="k-muted">' + c.calls.length + '</span>' : '') + '</h4>' + pick +
+      chips + people + '<h4 class="fu-h">' + icon('phone') + 'Pe cine suni' + (c.calls.length ? '<span class="k-muted">' + c.calls.length + '</span>' : '') + '</h4>' + pick +
       (c.calls.length ? '<div class="fu-list">' + c.calls.map((x) => row(x, 'ore')).join('') + '</div>' : K.empty('checkCircle', 'Nimeni de sunat acum', 'Pachetele, cele care n-au venit și leadurile sunt toate programate.'));
   }
   function row(x, where) {
@@ -154,7 +155,7 @@
     if (reason === 'altul') { note = await K.ui().prompt({ title: 'Ce s-a întâmplat?', label: 'Pe scurt', confirmText: 'Rezolvat' }); if (note == null) return; }
     try {
       await api('resolve', { key, reason, until, note });
-      K.ui().toast('Rezolvat. Îl găsești la „Rezolvate”.', 'success');
+      K.ui().toast('Rezolvat. O găsești la „Rezolvate”.', 'success');
       paint(true);
     } catch (e) { K.ui().toast(errText(e), 'error'); }
   }
@@ -265,7 +266,7 @@
     const tile = (label, value, sub, extra, tone) => '<div class="fu-tile' + (tone ? ' ' + tone : '') + '"><span>' + label + '</span><b>' + value + '</b><small>' + sub + '</small>' + (extra || '') + '</div>';
     if (n.empty) return K.empty('calendar', 'Luna n-a început încă', '');
     return '<div class="fu-tiles">' +
-      tile('Lei pe zi lucrată', n.days ? K.lei(n.perDay) : '-', 'țintă ' + K.lei(n.target) + (p ? ' · luna trecută ' + (p.days ? K.lei(p.perDay) : '-') : ''), n.days && p && p.days ? cmp(n.perDay, p.perDay, K.lei, true) : '', n.days ? (n.ok ? 'is-good' : 'is-warn') : '') +
+      tile('Lei pe zi lucrată', n.days ? K.lei(n.perDay) : 'nicio zi', 'țintă ' + K.lei(n.target) + (p ? ' · luna trecută ' + (p.days ? K.lei(p.perDay) : 'nicio zi') : ''), n.days && p && p.days ? cmp(n.perDay, p.perDay, K.lei, true) : '', n.days ? (n.ok ? 'is-good' : 'is-warn') : '') +
       tile('Zile lucrate', String(n.days), (n.daysFrom === 'incasari' ? 'după încasări, fără pontaj' : 'din Condică și încasări') + (p ? ' · luna trecută ' + p.days : '')) +
       tile('Consultații', String(n.consults.total), n.consults.withPackage + ' cu upsell' + (n.consults.pct != null ? ' (' + n.consults.pct + '%)' : '') + (p ? ' · luna trecută ' + p.consults.withPackage + ' din ' + p.consults.total : ''), p ? cmp(n.consults.withPackage, p.consults.withPackage, String, true) : '') +
       tile('Clientele ei care n-au venit', String(n.noShows), 'din ' + K.plural(n.visits, 'programare trecută', 'programări trecute') + (p ? ' · luna trecută ' + p.noShows : ''), p ? cmp(n.noShows, p.noShows, String, false) : '', n.noShows ? 'is-warn' : '') +
@@ -293,7 +294,7 @@
     const f = document.querySelector('.k-drawer [data-s-form]');
     const v = f ? K.formValues(f) : x.notes;
     return [x.employee.name + ', ' + K.monthLabel(x.month),
-      'Lei pe zi lucrată: ' + (n.days ? K.lei(n.perDay) : '-') + ' (țintă ' + K.lei(n.target) + ')' + (p.empty ? '' : ', luna trecută ' + (p.days ? K.lei(p.perDay) : '-')),
+      'Lei pe zi lucrată: ' + (n.days ? K.lei(n.perDay) : 'nicio zi lucrată') + ' (țintă ' + K.lei(n.target) + ')' + (p.empty ? '' : ', luna trecută ' + (p.days ? K.lei(p.perDay) : 'nicio zi lucrată')),
       'Zile lucrate: ' + n.days + (p.empty ? '' : ', luna trecută ' + p.days),
       'Consultații: ' + n.consults.total + ', ' + n.consults.withPackage + ' cu upsell' + (p.empty ? '' : ' (luna trecută ' + p.consults.withPackage + ' din ' + p.consults.total + ')'),
       'Clientele ei care n-au venit: ' + n.noShows + ' din ' + n.visits + (p.empty ? '' : ', luna trecută ' + p.noShows),
@@ -330,7 +331,7 @@
     const cal = document.querySelector('#panel-programari .cal-head .k-head-actions');
     if (cal && !cal.querySelector('[data-fu-open]')) {
       const btn = document.createElement('button');
-      btn.type = 'button'; btn.className = 'k-btn is-outline'; btn.dataset.fuOpen = 'ore'; btn.innerHTML = icon('sunrise') + 'Ore libere';
+      btn.type = 'button'; btn.className = 'k-btn is-outline fu-cal-btn'; btn.dataset.fuOpen = 'ore'; btn.title = 'Ore libere'; btn.setAttribute('aria-label', 'Ore libere'); btn.innerHTML = icon('sunrise') + '<span>Ore libere</span>';
       const before = cal.querySelector('[data-act="block"]');
       cal.insertBefore(btn, before || cal.firstChild);
     }
@@ -340,11 +341,11 @@
       const city = ALL.find((c) => h && h.textContent.indexOf(c) >= 0) || '';
       const stats = card.querySelector('.mg-stats');
       if (!stats) return;
-      stats.insertAdjacentHTML('afterend', '<div class="fu-mg"><button type="button" class="k-btn is-outline is-sm" data-fu-open="ore" data-city="' + esc(city) + '">' + icon('sunrise') + 'Ore libere și cine să suni</button>' +
+      stats.insertAdjacentHTML('afterend', '<div class="fu-mg"><button type="button" class="k-btn is-outline is-sm" data-fu-open="ore" data-city="' + esc(city) + '">' + icon('sunrise') + 'Ore libere</button>' +
         '<button type="button" class="k-btn is-ghost is-sm" data-fu-open="pachete" data-city="' + esc(city) + '">' + icon('gift') + 'Pachete fără programare</button>' +
         '<button type="button" class="k-btn is-ghost is-sm" data-fu-open="resunat" data-city="' + esc(city) + '">' + icon('phone') + 'De resunat</button></div>');
     });
-    const emps = document.querySelector('#panel-manager [data-body] .ad-emps');
+    const emps = document.querySelector('#panel-manager [data-body] .mg-team-list');
     if (emps && !document.querySelector('#panel-manager .fu-1on1')) {
       const card = emps.closest('.k-card');
       if (!card) return;

@@ -92,6 +92,7 @@
     { label: 'Epilare laser Full Body', value: 490, category: 'epilare-laser', where: 'Timișoara' },
   ];
   const CITY_NAME = { timisoara: 'Timișoara', arad: 'Arad' };
+  const cityName = (c) => CITY_NAME[String(c || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')] || c || '';
   const OFFERS = new Proxy([], { get(_, k) {
     const shared = (window.K && K.data && K.data.offers) || [];
     const list = shared.length ? shared.map((o) => ({ label: o.title, value: Number(o.priceNew) || 0, category: o.category || '', where: Array.isArray(o.locations) && o.locations.length === 1 ? CITY_NAME[o.locations[0]] || '' : '' })) : OFFERS_FALLBACK;
@@ -108,7 +109,7 @@
     need_one_won_stage: 'Trebuie exact o etapă de tip „Câștigat”.', need_one_lost_stage: 'Trebuie exact o etapă de tip „Pierdut”.',
     need_open_stage: 'Ai nevoie de cel puțin o etapă de lucru.', missing_stage_name: 'Fiecare etapă are nevoie de un nume.',
     invalid_stages: 'Lista de etape nu e validă (maxim 15).', lead_not_found: 'Leadul nu mai există, probabil a fost șters.',
-    forbidden: 'Doar adminul poate face asta.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
+    forbidden: 'Asta o poate face doar George.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
     invalid_category: 'Alege categoria.', invalid_client: 'Leadul nu are nume sau telefon.', network: 'Nu am putut contacta serverul. Verifică conexiunea.',
   };
   const errText = (e) => ERR[e && e.code] || 'Nu am putut salva. Încearcă din nou.';
@@ -178,6 +179,7 @@
     const label = diff === 0 ? 'Azi' : diff === 1 ? 'Mâine' : diff === -1 ? 'Ieri' : (diff > 1 && diff < 7) ? DOW[d.getDay()] : d.getDate() + ' ' + MON[d.getMonth()];
     return label + ' ' + hm(d);
   }
+  const whenLow = (iso) => when(iso).replace(/^(Azi|Mâine|Ieri) /, (m) => m.toLowerCase());
   const fullDate = (iso) => { const d = new Date(iso); return Number.isFinite(d.getTime()) ? d.toLocaleString('ro-RO', { dateStyle: 'medium', timeStyle: 'short' }) : ''; };
   const toLocalInput = (iso) => { if (!iso) return ''; const d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + hm(d); };
   const fromLocalInput = (v) => (v ? new Date(v).toISOString() : '');
@@ -434,7 +436,7 @@
           const last = (c.notes || []).slice(-1)[0];
           return '<article class="pl-card hire-card">' +
           '<div class="pl-card-top"><b class="pl-name">' + esc(c.name) + '</b><span class="pl-age">' + ago(c.at) + '</span></div>' +
-          '<div class="pl-card-sub">' + esc(c.phone) + ' · ' + (c.location ? esc(c.location) : 'fără oraș') + '</div>' +
+          '<div class="pl-card-sub">' + esc(c.phone) + ' · ' + (c.location ? esc(cityName(c.location)) : 'fără oraș') + '</div>' +
           ((c.answers || []).length ? '<div class="hire-ans">' + c.answers.map((x) => '<span><em>' + esc(short(x.q)) + '</em> ' + esc(x.a) + '</span>').join('') + '</div>' : '') +
           (last ? '<div class="hire-note">' + ic('note') + '<span>' + esc(last.text) + '<small>' + esc((last.by ? last.by + ' · ' : '') + agoShort(last.at)) + ((c.notes || []).length > 1 ? ' · ' + c.notes.length + ' note' : '') + '</small></span></div>' : '') +
           '<div class="pl-tags">' + (c.cv ? '<button type="button" class="pl-tag is-accent hire-cv" data-preview="' + esc(c.cv.url) + '" data-pv-kind="' + esc(c.cv.kind) + '" data-pv-name="' + esc(c.cv.name) + '">📄 Vezi CV-ul</button>' : c.cvFile ? '<span class="pl-tag is-accent">📄 CV trimis</span>' : c.replied ? '<span class="pl-tag is-mute">A răspuns pe WhatsApp</span>' : '') + '</div>' +
@@ -682,7 +684,7 @@
         '<b class="pl-name">' + esc(l.name) + '</b>' +
         '<span class="pl-age" title="În etapă de ' + l.daysInStage + ' zile">' + ago(l.stageChangedAt || l.createdAt) + '</span>' +
       '</div>' +
-      '<div class="pl-card-sub">' + esc(l.phone) + ' · ' + esc(l.location) + '</div>' +
+      '<div class="pl-card-sub">' + esc(l.phone) + ' · ' + esc(cityName(l.location)) + '</div>' +
       '<div class="pl-meta" title="' + esc(src.label) + '">' + ic(src.icon) + '<span>' + esc(l.interest || src.label) + '</span>' + (l.value ? '<b>' + fmtLei(l.value) + '</b>' : '') + '</div>' +
       (chips.length ? '<div class="pl-tags">' + chips.join('') + '</div>' : '') +
       '<div class="pl-quick">' +
@@ -1146,7 +1148,7 @@
 
     return '<header class="pl-dhead">' +
         '<div class="pl-dtitle"><span class="pl-avatar" style="--c:' + avatarColor(l.name) + '">' + esc(initials(l.name)) + '</span>' +
-        '<div><h3>' + esc(l.name) + '</h3><p><span class="pl-src-inline is-' + l.source + '">' + ic(src.icon) + src.label + '</span> · ' + esc(l.location) + ' · creat ' + agoLong(l.createdAt) + '</p></div></div>' +
+        '<div><h3>' + esc(l.name) + '</h3><p><span class="pl-src-inline is-' + l.source + '">' + ic(src.icon) + src.label + '</span> · ' + esc(cityName(l.location)) + ' · creat ' + agoLong(l.createdAt) + '</p></div></div>' +
         nav + '<button type="button" class="pl-icon-btn" data-close aria-label="Închide (Esc)">' + ic('x') + '</button>' +
       '</header>' +
       '<div class="pl-dbody">' +
@@ -1167,7 +1169,7 @@
         // log contact
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +
           '<div class="pl-sec-head"><h4>' + ic('phone') + 'Cum a mers contactul?</h4><span class="pl-muted">' + (l.contactCount ? l.contactCount + (l.contactCount === 1 ? ' contactare' : ' contactări') + ' · ultima ' + agoLong(l.lastContactAt) : 'Încă necontactată') + '</span></div>' +
-          (l.followUpAt ? '<div class="pl-followup-now"><span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '">' + ic('clock') + 'Revin la ea ' + esc(when(l.followUpAt)) + '</span><span class="pl-muted">apare în Sarcini în ziua respectivă</span><button type="button" class="pl-btn is-ghost is-sm" data-clear-next>Anulează</button></div>' : '') +
+          (l.followUpAt ? '<div class="pl-followup-now"><span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '">' + ic('clock') + 'Revin la ea ' + esc(whenLow(l.followUpAt)) + '</span><span class="pl-muted">apare în Sarcini în ziua respectivă</span><button type="button" class="pl-btn is-ghost is-sm" data-clear-next>Anulează</button></div>' : '') +
           (isWorking(l) ? noAnswerHtml(l) : '') +
           '<div class="pl-seg" data-seg="channel">' + PICK_CHANNELS.map((k) => '<button type="button" data-val="' + k + '" class="' + (k === (d.channel || 'call') ? 'is-on' : '') + '">' + CHANNELS[k] + '</button>').join('') + '</div>' +
           '<div class="pl-outcomes" data-seg="outcome">' + Object.keys(OUTCOMES).map((k) => '<button type="button" data-val="' + k + '" class="is-' + OUTCOMES[k].tone + '">' + OUTCOMES[k].label + '</button>').join('') + '</div>' +
@@ -1411,7 +1413,7 @@
         const j = await api('log_contact', payload);
         replaceLead(j.lead); renderAll();
         // just a note: the stage stays as it is (the receptionist moves it herself)
-        ui().toast('Contact salvat' + (followUpAt ? ' · revii ' + when(followUpAt) : ''), 'success');
+        ui().toast('Contact salvat' + (followUpAt ? ' · revii ' + whenLow(followUpAt) : ''), 'success');
         if (S.drawer && S.drawer.queue) { stepDrawer(1); return; }
         S.drawer.section = '';
         renderDrawer();
@@ -1431,7 +1433,7 @@
       try {
         const j = await api('log_contact', { leadId: l.id, channel: 'call', outcome: 'nu_raspunde', text: '', followUpAt, nextAction: next ? 'Sună din nou' : 'Nu răspunde' });
         replaceLead(j.lead); renderAll();
-        ui().toast(next ? 'Notat · reîncerci ' + when(followUpAt) : 'Notat · nu mai sunăm, nu răspunde', 'success');
+        ui().toast(next ? 'Notat · reîncerci ' + whenLow(followUpAt) : 'Notat · nu mai sunăm, nu răspunde', 'success');
         if (S.drawer && S.drawer.queue) { stepDrawer(1); return; }
         renderDrawer();
       } catch (e) { ui().toast(errText(e), 'error'); }

@@ -1818,9 +1818,18 @@ main.ad-full{ max-width:none; }
 @media (max-width:720px){
   .cal .k-head-actions{ display:none; }
   /* the admin's Online (the site's booking hours) stays reachable on a phone */
-  .cal .k-head-actions:has([data-act="online"]){ display:flex; position:absolute; top:0; right:0; width:auto; }
+  /* the head's buttons stay reachable on a phone (16.11: „Ore libere” too, as a round icon), one quiet row on the right */
+  .cal .k-head-actions:has(:is([data-act="online"], [data-act="team"], [data-fu-open])){ display:flex; justify-content:flex-end; gap:.4rem; width:100%; margin:0 0 .5rem; }
   .cal .k-head-actions .k-btn{ display:none; }
-  .cal .k-head-actions .k-btn:is([data-act="online"], [data-act="team"]){ display:inline-flex; flex:none; }
+  .cal .k-head-actions .k-btn:is([data-act="online"], [data-act="team"], [data-fu-open]){ display:inline-flex; flex:none; min-height:40px; padding:0 .8rem; font-size:.8rem; }
+  .cal .k-head-actions .fu-cal-btn{ order:-1; width:40px; padding:0 !important; justify-content:center; }
+  .cal .k-head-actions .fu-cal-btn span{ display:none; }
+  .cal .k-head-actions .fu-cal-btn .k-ic{ margin:0; }
+  /* Zi | Săptămână: two equal halves */
+  .cal-bar-right [data-k-seg="calview"]{ display:grid; grid-template-columns:1fr 1fr; align-items:stretch; }
+  .cal-bar-right [data-k-seg="calview"] button{ justify-content:center; padding-left:.45rem !important; padding-right:.45rem !important; }
+  /* the week shows one city (portal-calendar.js oneCityWeek): no „Ambele orașe” there */
+  .cal.cal-pweek [data-k-seg="calloc"] button[data-v="all"]{ display:none; }
   .cal .k-head{ position:relative; }
   /* one scroll on a phone, the page: the day's grid is as tall as it needs, its heads stay under the header */
   .cal-wrap{ overflow:clip; max-height:none; min-height:0; }
@@ -1871,7 +1880,8 @@ main.ad-full{ max-width:none; }
   .cal-block.is-tiny .cal-b-tr{ font-size:.55rem; padding:.05rem .2rem; border-radius:4px; -webkit-line-clamp:2; line-clamp:2; }
   /* the phone's week: a 40px column holds no long word. The name breaks where it must (as before, also in the split week),
      the treatment is one line cut with …, and a sliver (several bookings in one half day) is only the colour */
-  .cal-grid .cal-block.is-tiny b{ overflow-wrap:anywhere; word-break:normal; }
+  /* 16.11: never a word split in two: the first name on one line, cut with … when the column is narrower */
+  .cal-grid .cal-block.is-tiny b{ display:block; overflow-wrap:normal; word-break:normal; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cal-block.is-tiny .cal-b-tr{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cal-block.is-tiny{ container-type:inline-size; }
   @container (max-width:22px){ .cal-block.is-tiny > *, .cal-block.is-tiny > .cal-b-tr{ display:none; } }

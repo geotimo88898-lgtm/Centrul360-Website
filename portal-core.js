@@ -640,3 +640,19 @@
     load(!first);
   } else load(false);
 })();
+
+// A question asked from inside a drawer (16.11 final check: „A plecat”): the dialog sits over that drawer, centred on it on
+// a computer, with the drawer dimmed under it, not in the middle of the page behind. The dialog itself is portal-ui.js's.
+(function () {
+  'use strict';
+  if (!window.MutationObserver) return;
+  new MutationObserver((muts) => {
+    muts.forEach((m) => m.addedNodes.forEach((n) => {
+      if (!n.classList || !n.classList.contains('c360-dialog-root')) return;
+      const dr = [...document.querySelectorAll('.k-drawer-root.is-open .k-drawer')].pop();
+      if (!dr) return;
+      n.classList.add('is-over-drawer');
+      n.style.setProperty('--dw', Math.round(dr.getBoundingClientRect().width) + 'px');
+    }));
+  }).observe(document.body, { childList: true });
+})();

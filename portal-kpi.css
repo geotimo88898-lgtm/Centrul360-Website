@@ -355,3 +355,27 @@ html.c360-reduce .kq *, html.c360-reduce .kq-today *, html.c360-reduce .kq-tc{ a
 /* the quality: five short choices on one line */
 .mg-levels[data-quals]{ display:grid !important; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; }
 .mg-levels[data-quals] .mg-level{ flex-direction:column; justify-content:center; text-align:center; gap:6px; padding:10px 4px; font-size:12.5px; line-height:1.2; min-height:64px; }
+
+/* ---- KPI deck, 16.11 final check: the ring's track in both themes, the gauge up in the corner so the line under the number
+   has the tile's whole width (no „54 / h libere” word by word), no hole next to a lone tile, one tile a row on a phone ---- */
+.sx-gauge .trk{ stroke:color-mix(in srgb, var(--fg) 9%, transparent); }
+.sx-deck .sx-t.gauge .sx-gauge{ top:18px; margin-top:0; right:18px; width:76px; height:76px; }
+.sx-deck .sx-t.gauge > small{ max-width:calc(100% - 92px); }
+.sx-deck .sx-t.gauge > p{ max-width:none; }
+.sx-deck .sx-t.gauge{ min-height:150px; align-content:start; }
+.sx-deck .sx-d-grid > .sx-t.hero:first-child ~ .sx-t:nth-child(4):last-child{ grid-column:span 2; }
+@media (max-width:860px){
+  .sx-deck .sx-t.gauge > p, .sx-deck .sx-t.gauge > small{ max-width:none; }
+  .sx-deck .sx-t.gauge > small{ max-width:calc(100% - 80px); }
+  .sx-deck .sx-t.gauge .sx-gauge{ top:14px; right:14px; width:62px; height:62px; }
+  .sx-deck .sx-t.gauge{ min-height:0; }
+  .sx-deck .sx-d-grid > .sx-t.hero:first-child ~ .sx-t:nth-child(4):last-child{ grid-column:1/-1; }
+}
+@media (max-width:560px){
+  .sx-deck .sx-d-grid > .sx-t{ grid-column:1/-1; }
+}
+/* „în formare”: shown in the lists, neutral, never counted for the 1.500 lei rule */
+.sx-bon li.tr em{ color:var(--muted); } .sx-bon li.tr u{ background:color-mix(in srgb, var(--fg) 30%, transparent); }
+.sx-bon li small{ margin-left:.35em; font-size:11px; color:var(--muted); font-weight:500; }
+.kq-pp li.is-trainee > b{ color:var(--muted); } .kq-pp li.is-trainee .kq-meter i{ background:color-mix(in srgb, var(--fg) 30%, transparent); }
+.mg-trainee{ margin-left:.35rem; vertical-align:middle; font-size:.66rem; }

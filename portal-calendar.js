@@ -195,8 +195,22 @@
   }
   const inCol = (a, c) => a.date === c.date && (!c.loc || a.location === c.loc);
 
+  // a phone's week with both cities is 14 slivers no one can read (16.11): the week shows one city, hers or Timișoara,
+  // and „Ambele orașe” steps aside until the day view (the city switch stays, one tap away)
+  function oneCityWeek() {
+    const pw = phone() && S.view === 'week';
+    if (panel) panel.classList.toggle('cal-pweek', pw);
+    if (!pw || S.loc !== 'all' || (K.data && K.data.city)) return;
+    const mine = K.data && K.data.me && K.data.me.location;
+    S.loc = LOCS.includes(mine) ? mine : LOCS[0];
+    const seg = panel && panel.querySelector('[data-k-seg="calloc"]');
+    if (seg) { seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === S.loc)); const i = seg.querySelector('input'); if (i) i.value = S.loc; }
+    if (S.emp && S.emp !== LEFT && !cosmeticians(S.loc).some((c) => c.id === S.emp)) S.emp = '';
+    const sel = panel && panel.querySelector('[data-emp]'); if (sel) { sel.innerHTML = empFilterOptions(); sel.value = S.emp; }
+  }
   function render(keepScroll) {
     if (!gridEl) return;
+    oneCityWeek();
     const mbox = panel.querySelector('[data-mbox]');
     mbox.hidden = !phone() || S.view === 'week'; // a phone's week: the 7 days' grid, like Google's
     const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && empMatch(a) &&
@@ -309,7 +323,7 @@
     const lines = tiny ? Math.max(1, Math.floor((h - 4) / 23)) : short ? 1 : Math.max(1, Math.min(2, Math.floor((h - 44) / 34)));
     return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : narrow ? ' is-narrow' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (base + it.lane * w) + '% + ' + (narrow ? 2 : 3) + 'px);width:calc(' + w + '% - ' + (narrow ? 4 : 6) + 'px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + nameOf(a) + ' · ' + tr + ' · ' + st.label + (a.location ? ' · ' + a.location : '')) + '">' +
-      (narrow ? '<span class="cal-b-t">' + esc(a.time || '') + '</span><b>' + esc(nameOf(a).split(/\s+/)[0]) + '</b>' : tiny ? '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') : short
+      (narrow ? '<span class="cal-b-t">' + esc(a.time || '') + '</span><b>' + esc(nameOf(a).split(/\s+/)[0]) + '</b>' : tiny ? '<b>' + esc(nameOf(a).split(/[\s-]+/)[0]) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') : short
         ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + (tr ? ' · ' + esc(tr) : '') + '</b>'
         : half ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '')
         : '<span class="cal-b-time">' + esc(span(a)) + (a.cosmeticianName ? '<i>' + esc(K.initials(a.cosmeticianName)) + '</i>' : '') + '</span>' +
@@ -1076,7 +1090,7 @@
     if (!list.length) return;
     const d = K.drawer({
       title: 'Rămase fără cosmeticiană', icon: 'users', width: 520,
-      subtitle: K.plural(list.length, 'programare', 'programări') + ' de după ultima zi a cui a plecat',
+      subtitle: K.plural(list.length, 'programare', 'programări') + ' de după ultima ' + (new Set(list.map((a) => a.cosmeticianId)).size > 1 ? 'lor' : 'ei') + ' zi de lucru',
       body: '<div class="k-list">' + list.map((a) => {
         const p = leftOf(a.cosmeticianId);
         return '<button type="button" class="k-row cal-left-row" data-go="' + esc(a.id) + '" data-date="' + esc(a.date) + '"><div class="k-row-main"><div class="k-row-title">' + esc(a.clientName || a.ghlTitle || 'Programare') + '</div>' +

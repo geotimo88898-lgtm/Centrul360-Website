@@ -21,15 +21,16 @@
   // the next 7 days vs its target (full plus the no-shows of 60 days), the leads called in 5 minutes, the consultations ending with a package vs 50%. No money totals.
   function mgrTiles(r, pl) {
     var out = [], cl = Object.keys(r.clinic || {}), T = (r.targets && r.targets.perDay) || 1500;
-    var team = [], cap = 0, booked = 0, capT = 0, tot = 0, w5 = 0, never = 0, ct = 0, cp = 0;
+    var orphanH = 0, shown = [], team = [], cap = 0, booked = 0, capT = 0, tot = 0, w5 = 0, never = 0, ct = 0, cp = 0;
     cl.forEach(function (c) {
       var x = r.clinic[c];
-      (x.team || []).forEach(function (p) { team.push(p); });
+      (x.team || []).forEach(function (p) { shown.push(p); if (!p.trainee) team.push(p); }); // „în formare”: shown, out of the bonus count
+      orphanH += x.fill.orphanHours || 0;
       cap += x.fill.capHours || 0; booked += x.fill.bookedHours || 0; capT += (x.fill.capHours || 0) * (x.fill.targetPct || 150);
       tot += x.reception.total || 0; w5 += x.reception.within5 || 0; never += x.reception.never || 0;
       ct += x.consults.total || 0; cp += x.consults.withPackage || 0;
     });
-    team.sort(function (a, b) { return b.perDay - a.perDay; });
+    team.sort(function (a, b) { return b.perDay - a.perDay; }); shown.sort(function (a, b) { return b.perDay - a.perDay; });
     // the calendar's target: each clinic's (full plus its no-shows of 60 days), weighted by its hours
     var F = cap ? Math.round(capT / cap) : Math.round((cl[0] && r.clinic[cl[0]].fill.targetPct) || 150);
     var ok = team.filter(function (p) { return p.ok; }).length;
@@ -40,14 +41,14 @@
       (team.length ? '<div class="row"><b class="big" data-count="' + ok + '">0</b><em class="unit">din ' + team.length + '</em></div>' +
         '<p>cosmeticiene peste <b>' + num(T) + ' lei</b> pe zi lucrată</p>' +
         (near ? '<p class="sx-near">' + esc(first(near.name)) + ' e cea mai aproape: mai are nevoie de <b>' + num(near.gap) + ' lei</b> pe zi</p>' : '<p class="sx-near">Toate sunt peste țintă.</p>') +
-        '<ol class="sx-bon">' + team.map(function (p, i) { return '<li style="--i:' + i + '" class="' + (p.ok ? 'ok' : '') + '"><span>' + esc(p.name) + '</span><em>' + num(p.perDay) + ' lei</em><i><u style="--w:' + Math.min(1, p.perDay / (T * 2)).toFixed(3) + '"></u><s></s></i></li>'; }).join('') + '</ol>'
+        '<ol class="sx-bon">' + shown.map(function (p, i) { return '<li style="--i:' + i + '" class="' + (p.ok ? 'ok' : p.trainee ? 'tr' : '') + '"><span>' + esc(p.name) + (p.trainee ? ' <small>în formare</small>' : '') + '</span><em>' + num(p.perDay) + ' lei</em><i><u style="--w:' + Math.min(1, p.perDay / (T * 2)).toFixed(3) + '"></u><s></s></i></li>'; }).join('') + '</ol>'
         : '<div class="row"><b class="big">-</b></div><p>nicio zi lucrată în perioada asta</p>') });
     var lever = function (label, val, target, line) {
       if (val == null) return;
       out.push({ cls: 'gauge', html: '<small>' + label + '</small>' + gauge(Math.min(100, (val / target) * 100)) + '<b class="mid" data-count="' + Math.round(val) + '" data-suf="%">0</b><p>' + line + '</p>' });
     };
-    lever('Calendar, 7 zile', cap ? Math.round((booked / cap) * 100) : null, F, 'ținta ' + F + '% · ' + num(Math.max(0, cap - booked)) + ' h libere');
-    lever('Sunate în 5 minute', tot ? Math.round((w5 / tot) * 100) : null, 100, w5 + ' din ' + tot + (never ? ' · <b>' + never + ' nesunate</b>' : ''));
+    lever('Calendar, 7 zile', cap ? Math.round((booked / cap) * 100) : null, F, 'ținta ' + F + '% · ' + (Math.round(Math.max(0, cap - booked)) === 1 ? '1 oră liberă' : num(Math.max(0, cap - booked)) + ' h libere') + (orphanH > 0 ? ' · + ' + num(orphanH, 1) + ' h rămase fără cosmeticiană' : ''));
+    lever('Sunate în 5 minute', tot ? Math.round((w5 / tot) * 100) : null, 100, w5 + ' din ' + tot + (never ? ' · <b>' + (never === 1 ? '1 nesunat' : never + ' nesunate') + '</b>' : ''));
     lever('Consultații cu upsell', ct ? Math.round((cp / ct) * 100) : null, 50, 'ținta 50% · ' + cp + ' din ' + ct);
     return out;
   }
@@ -62,13 +63,22 @@
       '<p>' + num(m.payments) + ' ' + (m.payments === 1 ? 'plată' : 'plăți') + delta(m.revenue, r.prev && r.prev.summary && r.prev.summary.revenue, r.prev) + '</p>' +
       (trend.length > 1 ? spark(trend) : hourly(r.range) ) });
     var made = b.made || 0, sch = v.scheduled || 0;
-    if (made || sch) out.push({ cls: '', html: '<small>Programări</small><b data-count="' + (made || sch) + '">0</b><p>' + (made ? (b.confirmed ? num(b.confirmed) + ' confirmate' : 'făcute în perioadă') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate' : '') : 'în calendar') + '</p>' });
+    // the same count as Calendar: without the cancelled ones (said under the number)
+    var live = made ? Math.max(0, made - (b.cancelled || 0)) : sch;
+    if (made || sch) out.push({ cls: '', html: '<small>' + (made ? 'Programări făcute' : 'Programări') + '</small><b data-count="' + live + '">0</b><p>' + (made ? (b.confirmed ? num(b.confirmed) + ' confirmate' : 'fără anulări') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate, nu intră' : '') : 'în calendar, inclusiv anulate') + '</p>' });
     var rate = v.rate != null ? v.rate : b.rates && b.rates.came;
-    if (rate != null) out.push({ cls: 'gauge', html: '<small>Rata de prezentare</small>' + gauge(rate) + '<b class="mid" data-count="' + Math.round(rate) + '" data-suf="%">0</b><p>' + num(v.came || b.came) + ' au venit din ' + num(v.due || b.due) + '</p>' });
+    if (rate != null) out.push({ cls: 'gauge', html: '<small>Au venit · ' + esc(pl) + '</small>' + gauge(rate) + '<b class="mid" data-count="' + Math.round(rate) + '" data-suf="%">0</b><p>' + num(v.came || b.came) + ' au venit din ' + num(v.due || b.due) + '</p>' });
     // the leads are in the row below (Leaduri): the tile only counts the clients who paid
     if (m.clients) out.push({ cls: '', html: '<small>Cliente care au plătit</small><b data-count="' + m.clients + '">0</b>' });
     // the ads and the cosmeticians' race have their own full sections below (Reclamele, Echipa): not twice
     return out;
+  }
+  // the period as the KPI bar writes it: „16 nov”, „1-16 nov”, „18 oct-16 nov”
+  function span(rg) {
+    var k = K(); if (!rg || !k || !k.dateShort) return '';
+    var a = k.dateShort(rg.since), z = k.dateShort(rg.until);
+    if (rg.since === rg.until) return a;
+    return rg.since.slice(0, 7) === rg.until.slice(0, 7) ? a.split(' ')[0] + '-' + z : a + '-' + z;
   }
   // ↑ / ↓ against the previous period of the same length (portal-kpi.js says which one in the bar)
   function delta(cur, prev, pr) {
@@ -105,7 +115,7 @@
   }
   function gauge(p) {
     var C = 2 * Math.PI * 52, v = Math.max(0, Math.min(100, p)) / 100;
-    return '<svg class="sx-gauge" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/>' +
+    return '<svg class="sx-gauge" viewBox="0 0 120 120" aria-hidden="true"><circle class="trk" cx="60" cy="60" r="52" fill="none" stroke-width="7"/>' +
       '<g class="arc"><circle cx="60" cy="60" r="52" fill="none" stroke="url(#sxgg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (C * v).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 60 60)"/></g>' +
       '<defs><linearGradient id="sxgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5cf2a0"/><stop offset="1" stop-color="#2fd6c3"/></linearGradient></defs>' +
       '<g class="ticks">' + Array.apply(null, Array(36)).map(function (x, i) { var a = i * 10 * Math.PI / 180; return '<line x1="' + (60 + Math.cos(a) * 58).toFixed(1) + '" y1="' + (60 + Math.sin(a) * 58).toFixed(1) + '" x2="' + (60 + Math.cos(a) * 61).toFixed(1) + '" y2="' + (60 + Math.sin(a) * 61).toFixed(1) + '"/>'; }).join('') + '</g></svg>';
@@ -149,7 +159,7 @@
     }
     deck._key = key; deck._shape = shape;
     deck.innerHTML = '<div class="sx-d-scan" aria-hidden="true"></div>' +
-      '<div class="sx-d-head"><span><i></i>KPI · ' + esc(pl) + '</span><span>' + esc(r.range ? (r.range.since === r.range.until ? r.range.since : r.range.since + ' → ' + r.range.until) : '') + '</span></div>' +
+      '<div class="sx-d-head"><span><i></i>KPI · ' + esc(pl) + '</span><span>' + esc(span(r.range)) + '</span></div>' +
       '<div class="sx-d-grid">' + t.map(function (x, i) { return '<article class="sx-t ' + x.cls + '" style="--i:' + i + '"><b class="cn tl"></b><b class="cn tr"></b><b class="cn bl"></b><b class="cn br"></b>' + x.html + '</article>'; }).join('') + '</div>';
     Array.prototype.forEach.call(deck.querySelectorAll('[data-count]'), function (el, i) { el.dataset.k = 'n' + i; });
     // a new period: the tiles stay where they are (no new entrance, portal-kpi.css .kq-still), only the numbers slide

@@ -29,7 +29,7 @@
   const FATE = { ridicare: 'Păstrat pentru ridicare', depus: 'Depus în contul firmei' };
   const LEAVE = { odihna: 'Concediu de odihnă', fara_plata: 'Concediu fără plată', medical: 'Concediu medical', alta: 'Alt tip de concediu', suplimentare: 'Ore libere din suplimentare' };
   const ERR = {
-    own_request: 'Cererile tale le decide adminul.', invalid_city: 'Alege orașul.', invalid_level: 'Alege cum sunt leadurile.', invalid_quality: 'Alege cum sunt leadurile ca și calitate.', invalid_cash: 'Scrie cât cash ai numărat.',
+    own_request: 'Cererile tale le decide George.', invalid_city: 'Alege orașul.', invalid_level: 'Alege cum sunt leadurile.', invalid_quality: 'Alege cum e calitatea leadurilor.', invalid_cash: 'Scrie cât cash ai numărat.',
     invalid_pos: 'Suma de pe POS nu e validă.', invalid_fate: 'Alege ce s-a întâmplat cu cash-ul.', invalid_deposit: 'Scrie suma depusă.', missing_notes: 'Scrie notițele sau problemele săptămânii.',
     invalid_week: 'Săptămâna nu e validă.', forbidden: 'Nu ai acces aici.', not_enough_overtime: 'Nu mai are destule ore suplimentare.', already_decided: 'A fost deja decisă.',
   };
@@ -58,7 +58,7 @@
     paint();
   }
   function head() {
-    return '<div class="k-head"><div><div class="k-eyebrow">' + (admin() ? 'Admin · ' : '') + esc(CL().join(' și ')) + '</div><h2>Manager</h2></div>' +
+    return '<div class="k-head"><div><div class="k-eyebrow">' + esc(CL().join(' și ')) + '</div><h2>Manager</h2></div>' +
       '<div class="k-head-actions mg-actions">' +
         (admin() ? '' : '<button type="button" class="k-btn is-accent" data-act="george">' + icon('bell') + 'Trimite feedback pentru reclame</button>') +
         '<button type="button" class="k-btn is-outline" data-act="close">' + icon('cash') + 'Închide ziua</button>' +
@@ -92,9 +92,11 @@
     if (S.tab === 'cifre' && el.isConnected) { el.innerHTML = cifreHtml(); K.countAll(el); }
   }
   const bar = (v, max, tone) => '<span class="mg-bar-t' + (tone ? ' ' + tone : '') + '"><i style="--w:' + Math.max(2, Math.min(100, max ? (v / max) * 100 : 0)).toFixed(1) + '%"></i></span>';
+  // the explanation is a visible ⓘ (a phone has no hover), opening under the number
   function stat(tone, ic, label, value, sub, hint) {
-    return '<div class="k-stat ' + tone + '"' + (hint ? ' title="' + esc(hint) + '"' : '') + '><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + esc(label) + '</div>' +
-      '<div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
+    return '<div class="k-stat ' + tone + '"' + (hint ? ' title="' + esc(hint) + '"' : '') + '><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + esc(label) +
+        (hint ? '<button type="button" class="mg-i" data-mg-i aria-label="Cum se calculează" aria-expanded="false">' + icon('info') + '</button>' : '') + '</div>' +
+      '<div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div>' + (hint ? '<p class="mg-info" hidden>' + esc(hint) + '</p>' : '') + '</div>';
   }
   function cifreHtml() {
     const s = S.stats;
@@ -108,28 +110,30 @@
     if (!x) return '';
     const team = x.team.slice().sort((a, b) => b.perDay - a.perDay);
     const fm = x.fillMonth, fa = x.fillAhead, cs = x.consults, ld = x.leads;
+    // the hours booked with someone who left (api: orphanHours): not the team's, said apart until someone takes them
+    const orphan = (f) => (f && f.orphanHours > 0 ? ' · + ' + K.num(f.orphanHours) + ' h rămase fără cosmeticiană' : '');
     const fillTone = (f) => (f.pct == null ? '' : f.pct >= f.targetPct ? 'is-good' : f.pct >= 100 ? 'is-warn' : 'is-bad');
     // the target: full plus the clients who didn't come in the last 60 days (api/_lib/clinic.js fillTargets)
     const ft = x.fillTarget, win = ft ? 'de la ' + K.dateShort(ft.since) + ' la ' + K.dateShort(ft.until) : '';
     const why = ft && ft.noShow != null ? 'Ținta = 100% + cele care nu au venit în ultimele 60 de zile: din ' + ft.due + ' programări ' + win + (ft.from === 'both' ? ' (ambele clinici, aici prea puține)' : '') + ' au venit ' + ft.came + ', n-au venit ' + ft.missed + ' (' + ft.noShow + '%) → ținta ' + ft.target + '%.'
       : 'Ținta = plin + 50%: doar ' + (ft ? ft.due : 0) + ' programări ' + win + ', prea puține ca să știm câte nu vin.';
-    const bonus = x.bonus.counted ? (x.bonus.ok ? '<span class="k-tag is-good">' + icon('check') + 'Bonus pe drum bun</span>' : '<span class="k-tag is-warn">' + K.plural(x.bonus.below, 'cosmeticiană sub 1500', 'cosmeticiene sub 1500') + '</span>') : '<span class="k-tag">nicio zi lucrată încă</span>';
+    const bonus = x.bonus.counted ? (x.bonus.ok ? '<span class="k-tag is-good">' + icon('check') + 'Spre bonus</span>' : '<span class="k-tag is-warn">' + K.plural(x.bonus.below, 'cosmeticiană sub 1.500', 'cosmeticiene sub 1.500') + '</span>') : '<span class="k-tag">nicio zi lucrată încă</span>';
     const rows = team.length ? team.map((p) => '<div class="k-row mg-cos">' + K.avatar(p.name, 34) +
-      '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + '</div><div class="k-row-sub">' + (p.days ? K.plural(p.days, p.daysFrom === 'pontaj' ? 'zi pontată' : p.daysFrom === 'incasari' ? 'zi cu încasări' : 'zi lucrată', p.daysFrom === 'pontaj' ? 'zile pontate' : p.daysFrom === 'incasari' ? 'zile cu încasări' : 'zile lucrate') + (p.payOnly && p.daysFrom === 'mixt' ? ' (' + p.payOnly + ' fără pontaj)' : '') + ' · ' + K.lei(p.collected) : 'nicio zi lucrată luna asta') +
+      '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + (p.trainee ? ' <span class="k-tag is-info mg-trainee">în formare</span>' : '') + '</div><div class="k-row-sub">' + (p.days ? K.plural(p.days, p.daysFrom === 'pontaj' ? 'zi pontată' : p.daysFrom === 'incasari' ? 'zi cu încasări' : 'zi lucrată', p.daysFrom === 'pontaj' ? 'zile pontate' : p.daysFrom === 'incasari' ? 'zile cu încasări' : 'zile lucrate') + (p.payOnly && p.daysFrom === 'mixt' ? ' (' + p.payOnly + ' fără pontaj)' : '') + ' · ' + K.lei(p.collected) : 'nicio zi lucrată luna asta') +
         (p.daysFrom === 'incasari' ? ' · fără pontaj' : '') +
         // her consultations this month and how many ended with a package within 7 days (for the monthly 1:1)
-        (p.consults && p.consults.total ? ' · ' + K.plural(p.consults.total, 'consultație', 'consultații') + ', ' + p.consults.withPackage + ' cu upsell' : '') + '</div>' + bar(p.perDay, t.perDay, p.ok ? 'is-good' : 'is-warn') + '</div>' +
-      '<div class="k-row-end"><span class="mg-perday ' + (p.ok ? 'is-good' : p.days ? 'is-warn' : '') + '"><b>' + (p.days ? K.lei(p.perDay) : '-') + '</b><small>' + (p.days ? (p.ok ? 'pe zi' : 'lipsesc ' + K.lei(p.gap)) : '') + '</small></span></div></div>').join('')
+        (p.consults && p.consults.total ? ' · ' + K.plural(p.consults.total, 'consultație', 'consultații') + ', ' + p.consults.withPackage + ' cu upsell' : '') + '</div>' + bar(p.perDay, t.perDay, p.ok ? 'is-good' : p.trainee ? '' : 'is-warn') + '</div>' +
+      '<div class="k-row-end"><span class="mg-perday ' + (p.ok ? 'is-good' : p.days && !p.trainee ? 'is-warn' : '') + '"><b>' + (p.days ? K.lei(p.perDay) : 'nicio zi') + '</b><small>' + (p.days ? (p.ok || p.trainee ? 'pe zi' : 'lipsesc ' + K.lei(p.gap)) : '') + '</small></span></div></div>').join('')
       : '<p class="k-muted">Nicio cosmeticiană activă în ' + esc(city) + '.</p>';
     return '<section class="k-card mg-city-card"><div class="k-card-head"><h3>' + icon('pin') + esc(city) + '</h3>' + bonus + '</div>' +
       '<div class="k-grid c4 mg-stats">' +
-        stat(fillTone(fm), 'calendar', 'Calendar, luna asta', pct(fm.pct), fm.capHours ? K.num(fm.bookedHours) + ' / ' + K.num(fm.capHours) + ' h · țintă ' + fm.targetPct + '%' : 'fără ore de lucru setate', 'Ore programate față de orele cosmeticienelor (Calendar → Program echipă). ' + why) +
-        stat(fillTone(fa), 'sunrise', 'Următoarele 7 zile', pct(fa.pct), fa.capHours ? K.num(fa.bookedHours) + ' / ' + K.num(fa.capHours) + ' h · țintă ' + fa.targetPct + '%' : 'fără ore de lucru setate', why) +
+        stat(fillTone(fm), 'calendar', 'Calendar, luna asta', pct(fm.pct), (fm.capHours ? K.num(fm.bookedHours) + ' / ' + K.num(fm.capHours) + ' h · țintă ' + fm.targetPct + '%' : 'fără ore de lucru setate') + orphan(fm), 'Ore programate față de orele cosmeticienelor (Calendar → Program echipă). ' + why) +
+        stat(fillTone(fa), 'sunrise', 'Următoarele 7 zile', pct(fa.pct), (fa.capHours ? K.num(fa.bookedHours) + ' / ' + K.num(fa.capHours) + ' h · țintă ' + fa.targetPct + '%' : 'fără ore de lucru setate') + orphan(fa), why) +
         stat(cs.pct == null ? '' : cs.pct >= t.consults ? 'is-good' : 'is-warn', 'target', 'Consultații cu upsell', pct(cs.pct), cs.total ? cs.withPackage + ' din ' + cs.total + ' · țintă ' + t.consults + '%' : 'nicio consultație luna asta', 'Consultațiile neanulate până azi urmate, în 7 zile, de o încasare cu pachet sau upsell pentru aceeași clientă. Portalul nu leagă direct consultația de pachet: e cea mai apropiată cifră reală.') +
         stat(ld.inHoursPct == null ? '' : ld.inHoursPct >= t.leads5 ? 'is-good' : ld.inHoursPct >= 80 ? 'is-warn' : 'is-bad', 'zap', 'Leaduri sunate în 5 min', pct(ld.inHoursPct), ld.inHours ? ld.inHoursWithin5 + ' din ' + ld.inHours + ' în program' + (ld.median != null ? ' · median ' + ld.median + ' min' : '') : 'niciun lead nou în program', 'Leadurile noi din reclame și de pe site intrate cât clinica e deschisă. Primul contact: un apel sau o notă în Pipeline, o programare sau primul mesaj scris de cineva pe WhatsApp.') +
       '</div>' +
       '<div class="mg-line">' + icon('chat') + '<span>Mesaje fără răspuns acum: <b class="' + (x.waiting ? 'is-bad' : 'is-good') + '">' + x.waiting + '</b></span>' + (x.waiting ? '<button type="button" class="k-btn is-ghost is-sm" data-go="mesaje">Deschide Mesaje</button>' : '') +
-        (ld.total ? '<span class="mg-sep"></span><span>' + K.plural(ld.total, 'lead nou', 'leaduri noi') + ' luna asta, ' + ld.within5 + ' în 5 min' + (ld.never ? ', ' + ld.never + ' încă nesunate' : '') + '</span>' : '') + '</div>' +
+        (ld.total ? '<span class="mg-sep"></span><span>' + K.plural(ld.total, 'lead nou', 'leaduri noi') + ' luna asta, ' + ld.within5 + ' în 5 min' + (ld.never ? ', ' + (ld.never === 1 ? '1 încă nesunat' : ld.never + ' încă nesunate') : '') + '</span>' : '') + '</div>' +
       (x.schedule ? '' : '<p class="ct-hint">' + icon('info') + 'Orele cosmeticienelor nu sunt setate în ' + esc(city) + ': calendarul se măsoară cu orele clinicii din Calendar → Online.</p>') +
       '<h4 class="mg-h">' + icon('wallet') + 'Încasat pe zi lucrată · țintă ' + K.lei(t.perDay) + '</h4><div class="k-list">' + rows + '</div></section>';
   }
@@ -160,29 +164,34 @@
       '<div class="ad-main"><div class="ad-top"><b>' + esc(a.employeeName) + '</b>' + (a.location ? '<span class="k-tag">' + icon('pin') + esc(a.location) + '</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(a.date)) + '</span>' + (a.weekend ? '<span class="k-tag is-accent">weekend</span>' : '') + '</div>' +
       '<div class="ad-what">Sosire ' + esc(a.checkIn || '-') + ' · Plecare ' + esc(a.checkOut || '-') + ' · ' + fmt(a.worked) + ' lucrate</div></div>' +
       '<div class="mg-dec-amt ' + (a.minutes > 0 ? 'is-up' : 'is-down') + '"><b>' + fmtS(a.minutes) + '</b><small>' + (a.weekend ? 'suplimentar' : a.minutes > 0 ? 'peste program' : 'sub program') + '</small></div>' +
-      (mine(a.employeeId) ? '<div class="ad-actions"><span class="k-tag">Decide adminul</span></div>'
+      (mine(a.employeeId) ? '<div class="ad-actions"><span class="k-tag">Decide George</span></div>'
         : '<div class="ad-actions"><button type="button" class="k-btn is-danger is-sm" data-adj-no="' + esc(a.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good is-sm" data-adj-ok="' + esc(a.id) + '">' + icon('check') + 'Aprobă</button></div>') + '</article>';
     const leaveCard = (r) => '<article class="ad-card mg-dec" data-lv="' + esc(r.id) + '">' + K.avatar(nameOf(r.employeeId), 40) +
       '<div class="ad-main"><div class="ad-top"><b>' + esc(nameOf(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE[r.type] || r.type) + '</span></div>' +
       '<div class="ad-what">' + esc(dShort(r.startDate)) + (r.endDate !== r.startDate ? ' - ' + esc(dShort(r.endDate)) : '') + ' · ' + K.plural(r.workDays, 'zi', 'zile') +
         (r.type === 'suplimentare' ? ' · ' + fmt(r.minutes) + ' din suplimentare' : r.recovery ? ' · cu recuperare ' + fmt(r.recovery.minutes) : '') + '</div>' +
       (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') + '</div>' +
-      (mine(r.employeeId) ? '<div class="ad-actions"><span class="k-tag">Decide adminul</span></div>'
+      (mine(r.employeeId) ? '<div class="ad-actions"><span class="k-tag">Decide George</span></div>'
         : '<div class="ad-actions"><button type="button" class="k-btn is-danger is-sm" data-lv-no="' + esc(r.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good is-sm" data-lv-ok="' + esc(r.id) + '">' + icon('check') + 'Aprobă</button></div>') + '</article>';
     const people = (S.team || []).filter((r) => inShown(r.location)).sort((a, b) => (a.location || '').localeCompare(b.location || '') || a.name.localeCompare(b.name));
+    // one quiet row a person (16.11: no four boxes each): who, where, today, and only the hours that aren't zero
     const person = (r) => {
-      const now = r.todayCheckIn ? (r.todayCheckOut ? 'Plecat la ' + r.todayCheckOut : 'Prezent de la ' + r.todayCheckIn) : 'Nepontat azi';
-      return '<button type="button" class="ad-emp mg-emp" data-emp="' + esc(r.employeeId) + '"><div class="ad-emp-top">' + K.avatar(r.name, 42) +
-        '<div><b>' + esc(r.name) + '</b><span>' + K.roleTag(r.role) + esc(r.role === 'manager' ? 'ambele' : r.location || '') + (r.pending ? '<span class="k-tag is-warn">' + r.pending + ' la aprobare</span>' : '') + '</span></div></div>' +
-        '<dl class="ad-emp-kv cd-kv4"><div><dt>Azi</dt><dd class="' + (r.todayCheckIn ? 'is-good' : '') + '">' + esc(now) + '</dd></div><div><dt>De recuperat</dt><dd>' + (r.debt ? fmt(r.debt) : '0') + '</dd></div><div><dt>Suplimentare</dt><dd>' + (r.bank ? fmt(r.bank) : '0') + '</dd></div><div><dt>Concediu rămas</dt><dd>' + r.daysLeft + ' z</dd></div></dl></button>';
+      const now = r.todayCheckIn ? (r.todayCheckOut ? 'plecat la ' + r.todayCheckOut : 'prezent de la ' + r.todayCheckIn) : 'nepontat azi';
+      return '<button type="button" class="k-row is-click mg-prow" data-emp="' + esc(r.employeeId) + '">' + K.avatar(r.name, 36) +
+        '<div class="k-row-main"><div class="k-row-title">' + esc(r.name) + '</div>' +
+          '<div class="k-row-sub">' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.role === 'manager' ? 'ambele clinici' : r.location || '') + '</div>' +
+          '<div class="mg-prow-kv"><span class="' + (r.todayCheckIn ? 'is-good' : '') + '">' + esc(now) + '</span>' +
+            (r.debt ? '<span class="is-warn">de recuperat ' + fmt(r.debt) + '</span>' : '') + (r.bank ? '<span>suplimentare ' + fmt(r.bank) + '</span>' : '') +
+            '<span>concediu rămas ' + K.plural(r.daysLeft, 'zi', 'zile') + '</span>' + (r.pending ? '<span class="is-warn">' + r.pending + ' la aprobare</span>' : '') + '</div></div>' +
+        '<div class="k-row-end">' + icon('right') + '</div></button>';
     };
     return '<section class="k-card"><div class="k-card-head"><h3>' + icon('shield') + 'De decis</h3><span class="k-sub">pontaj și concedii, ' + (S.city === 'all' ? 'ambele clinici' : esc(S.city)) + '</span></div>' +
         (adjs.length || leaves.length ? '<div class="ad-list">' + adjs.filter((x) => !own(x)).map(timeCard).join('') + leaves.filter((x) => !own(x)).map(leaveCard).join('') + adjs.filter(own).map(timeCard).join('') + leaves.filter(own).map(leaveCard).join('') + '</div>' : '<p class="k-muted">Nimic de decis acum.</p>') +
-        '<p class="ct-hint">' + icon('info') + 'Upsell-urile și comisioanele le aprobă adminul. Cererile tale le decide tot adminul.</p></section>' +
+        '<p class="ct-hint">' + icon('info') + 'Upsellurile și comisioanele le aprobă George. Tot el decide și cererile tale.</p></section>' +
       '<section class="k-card"><div class="k-card-head"><h3>' + icon('clock') + 'Pontajul echipei</h3><div class="mg-row-btns">' +
         (K.openTeamSchedule ? '<button type="button" class="k-btn is-outline is-sm" data-act="schedule">' + icon('calendar') + 'Program echipă</button>' : '') +
         '<button type="button" class="k-btn is-outline is-sm" data-act="leave-new">' + icon('plus') + 'Notează concediu</button></div></div>' +
-        (people.length ? '<div class="ad-emps">' + people.map(person).join('') + '</div>' : K.empty('users', 'Nimeni aici', '')) + '</section>';
+        (people.length ? '<div class="k-list mg-team-list">' + people.map(person).join('') + '</div>' : K.empty('users', 'Nimeni aici', '')) + '</section>';
   }
   async function decideAdj(id, ok) {
     let note = '';
@@ -218,7 +227,7 @@
           '<div class="k-row-sub">Sosire ' + esc(e.checkIn || '-') + ' · Plecare ' + esc(e.checkOut || '-') + (worked(e) != null ? ' · ' + fmt(worked(e)) : '') + (e.note ? ' · „' + esc(e.note) + '”' : '') + '</div></div>' +
           (own ? '' : '<div class="k-row-end"><span class="k-icon-btn" aria-hidden="true">' + icon('pen') + '</span></div>') + '</div>').join('') + '</div>'
           : K.empty('clock', 'Niciun pontaj luna asta', '')) +
-        (own ? '<p class="ct-hint">' + icon('info') + 'Pontajul tău îl corectează adminul.</p>' : ''),
+        (own ? '<p class="ct-hint">' + icon('info') + 'Pontajul tău îl corectează George.</p>' : ''),
       onMount(el) {
         el.addEventListener('click', (ev) => {
           const row = ev.target.closest('[data-att]');
@@ -289,22 +298,23 @@
       '<div class="k-row-end">' + diffTag(x.cashDiff, 'cash') + diffTag(x.cardDiff, 'card') + '</div></div>';
   }
   function casaHtml() {
-    const list = (S.closes || []).filter((x) => S.city === 'all' || x.city === S.city).slice(0, 30);
+    // the newest day first (16.11), then the later close of the same day
+    const list = (S.closes || []).filter((x) => S.city === 'all' || x.city === S.city).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.at || '').localeCompare(String(a.at || ''))).slice(0, 30);
     const p = S.pos || {};
     const pays = (p.payments || []);
     const ok = pays.filter((x) => !x.cancelled);
     const total = ok.reduce((a, x) => a + x.amount, 0);
     const byDay = {};
     pays.forEach((x) => { (byDay[x.day] = byDay[x.day] || []).push(x); });
-    const posBody = !p.connected ? K.empty('card', 'myPOS nu e conectat', 'Adminul îl conectează din Integrări.')
-      : !p.terminals ? K.empty('card', 'Niciun POS legat de ' + esc(p.city), 'Adminul alege orașul fiecărui POS din Integrări → myPOS.')
+    const posBody = !p.connected ? K.empty('card', 'myPOS nu e conectat', 'George îl conectează din Integrări.')
+      : !p.terminals ? K.empty('card', 'Niciun POS legat de ' + esc(p.city), 'George alege orașul fiecărui POS din Integrări → myPOS.')
       : pays.length ? Object.keys(byDay).sort().reverse().map((d) => { const day = byDay[d], sum = day.filter((x) => !x.cancelled).reduce((a, x) => a + x.amount, 0);
         return '<h4 class="mg-h">' + esc(K.dateLong(d)) + '<span>' + K.lei(sum, 2) + ' · ' + K.plural(day.filter((x) => !x.cancelled && x.amount > 0).length, 'plată', 'plăți') + '</span></h4><div class="k-list">' +
           day.map((x) => '<div class="k-row"><span class="mg-time">' + esc(hm(x.at)) + '</span><div class="k-row-main"><div class="k-row-title">' + K.lei(x.amount, 2) + '</div><div class="k-row-sub">' + (x.pan ? 'card ••' + esc(x.pan) : 'card') + '</div></div>' +
             '<div class="k-row-end">' + (x.cancelled ? '<span class="k-tag is-bad">anulată</span>' : x.refund ? '<span class="k-tag is-warn">returnare</span>' : '') + '</div></div>').join('') + '</div>'; }).join('')
       : '<p class="k-muted">Nicio plată cu cardul în zilele astea.</p>';
-    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('cash') + 'Închiderile zilei</h3><button type="button" class="k-btn is-primary is-sm" data-act="close">' + icon('plus') + 'Închide ziua</button></div>' +
-        (list.length ? '<div class="k-list">' + list.map(closeRow).join('') + '</div>' : '<p class="k-muted">Nicio închidere încă. La sfârșitul zilei apasă „Închide ziua”.</p>') + '</section>' +
+    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('cash') + 'Închiderile zilei</h3></div>' +
+        (list.length ? '<div class="k-list">' + list.map(closeRow).join('') + '</div>' : '<p class="k-muted">Nicio închidere încă. La sfârșitul zilei apasă „Închide ziua”, sus.</p>') + '</section>' +
       '<section class="k-card"><div class="k-card-head"><h3>' + icon('card') + 'Plăți cu cardul pe POS · ' + esc(p.city || S.posCity) + '</h3>' +
         (S.city === 'all' ? K.seg('poscity', CL().map((c) => [c, c]), S.posCity, 'mg-mini') : '') + '</div>' +
         (p.connected && p.terminals ? '<div class="k-grid c3 mg-stats" style="margin-bottom:.8rem">' + stat('is-accent', 'card', 'Încasat pe POS', K.lei(total, 2), esc(dShort(p.from)) + ' - ' + esc(dShort(p.to))) +
@@ -327,12 +337,12 @@
     const rep = S.reports || [];
     const fbRow = (x) => { const l = LEVEL[x.level] || ['', x.level, '']; const c = x.context || {};
       return '<div class="k-row is-click" data-fb="' + esc(x.id) + '"><span class="mg-city-chip">' + short(x.city) + '</span><div class="k-row-main"><div class="k-row-title">' + esc(x.details || l[1]) + '</div>' +
-        '<div class="k-row-sub">' + esc(K.dateShort(dayOfIso(x.at))) + ' ' + esc(hm(x.at)) + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + ' · ' + K.plural(c.leads7 || 0, 'lead', 'leaduri') + ' în 7 zile · ' + K.num(c.freeHoursNext7 || 0) + ' h libere</div></div>' +
+        '<div class="k-row-sub">' + esc(K.dateShort(dayOfIso(x.at))) + ' ' + esc(hm(x.at)) + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + (c.leads7 != null ? ' · ' + K.plural(c.leads7, 'lead', 'leaduri') + ' în 7 zile' : '') + (c.freeHoursNext7 != null ? ' · ' + (Math.round(c.freeHoursNext7) === 1 ? '1 oră liberă' : K.num(c.freeHoursNext7) + ' h libere') : '') + '</div></div>' +
         '<div class="k-row-end"><span class="k-tag ' + l[2] + '">' + esc(l[1]) + '</span>' + (x.quality && QUAL[x.quality] ? '<span class="k-tag ' + QUAL[x.quality][2] + '">calitate: ' + esc(QUAL[x.quality][1].toLowerCase()) + '</span>' : '') + '</div></div>'; };
     const repRow = (x) => '<div class="k-row is-click" data-rep="' + esc(x.id) + '"><span class="k-icon-chip">' + icon('file') + '</span><div class="k-row-main"><div class="k-row-title">Săptămâna ' + esc(dShort(x.week)) + ' - ' + esc(dShort(x.to)) + '</div>' +
-      '<div class="k-row-sub">' + Object.keys(x.numbers || {}).map((c) => short(c) + ' ' + K.lei((x.numbers[c] || {}).collected || 0)).join(' · ') + (x.byName ? ' · ' + esc(x.byName.split(' ')[0]) : '') + '</div></div>' +
+      '<div class="k-row-sub">' + Object.keys(x.numbers || {}).map((c) => short(c) + ' ' + K.lei((x.numbers[c] || {}).collected || 0)).concat(x.byName ? [esc(x.byName.split(' ')[0])] : []).join(' · ') + '</div></div>' +
       '<div class="k-row-end">' + (x.problems ? '<span class="k-tag is-warn">probleme</span>' : '') + icon('right') + '</div></div>';
-    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('file') + 'Rapoarte săptămânale</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-primary is-sm" data-act="report">' + icon('plus') + 'Raport nou</button>') + '</div>' +
+    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('file') + 'Rapoarte săptămânale</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-primary is-sm" data-act="report">' + icon('plus') + 'Raport săptămânal</button>') + '</div>' +
         (rep.length ? '<div class="k-list">' + rep.map(repRow).join('') + '</div>' : '<p class="k-muted">Niciun raport trimis încă.</p>') + '</section>' +
       '<section class="k-card"><div class="k-card-head"><h3>' + icon('bell') + 'Leaduri: ce s-a semnalat</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-outline is-sm" data-act="george">' + icon('plus') + 'Anunță</button>') + '</div>' +
         (fb.length ? '<div class="k-list">' + fb.map(fbRow).join('') + '</div>' : '<p class="k-muted">Nimic încă.</p>') + '</section>';
@@ -376,11 +386,11 @@
     const city0 = S.city === 'all' ? myCity() : S.city;
     let ctx = null;
     const d = K.drawer({
-      title: 'Feedback pentru reclame', icon: 'bell', width: 560, subtitle: 'Cum sunt leadurile față de ținta: calendarul plin plus cele care nu vin',
+      title: 'Feedback pentru reclame', icon: 'bell', width: 560, subtitle: 'Cum sunt leadurile față de țintă (calendarul plin plus cele care nu vin)',
       body: '<form class="k-form" data-form>' + K.field('Oraș', K.seg('city', CL().map((c) => [c, c]), city0, 'is-big'), 'full') +
         '<div class="k-field full"><span>Cum sunt leadurile</span><div class="mg-levels" role="radiogroup">' + LEVELS.map(([v, l, tone]) =>
           '<button type="button" role="radio" aria-checked="false" class="mg-level ' + tone + '" data-level="' + v + '"><i></i>' + esc(l) + '</button>').join('') + '<input type="hidden" name="level" value=""></div></div>' +
-        '<div class="k-field full"><span>Cum sunt leadurile ca și calitate</span><div class="mg-levels" data-quals role="radiogroup">' + QUALS.map(([v, l, tone]) =>
+        '<div class="k-field full"><span>Cum e calitatea leadurilor</span><div class="mg-levels" data-quals role="radiogroup">' + QUALS.map(([v, l, tone]) =>
           '<button type="button" role="radio" aria-checked="false" class="mg-level ' + tone + '" data-qual="' + v + '"><i></i>' + esc(l) + '</button>').join('') + '<input type="hidden" name="quality" value=""></div></div>' +
         '<div class="k-field full"><span>De ce (alege câte vrei)</span><div class="mg-reasons" data-reasons>' + REASONS.map(([v, l]) => '<button type="button" class="k-chip" aria-pressed="false" data-reason="' + v + '">' + esc(l) + '</button>').join('') + '</div></div>' +
         K.field('Detalii', '<textarea name="details" rows="4" maxlength="1500" placeholder="De ce, ce fel de leaduri vin, zilele goale sau prea pline"></textarea>', 'full') + '</form>' +
@@ -473,7 +483,7 @@
             const r = await K.api('/api/portal-manager', { action: 'close', city: v.city, date: v.date, cashCounted: Number(v.cashCounted), posAmount: v.posAmount === '' ? '' : Number(v.posAmount), cashFate: v.cashFate, deposited: Number(v.deposited) || 0, note: v.note });
             d.close();
             const c = r.close, off = Math.abs(c.cashDiff) >= 1 || (c.cardDiff != null && Math.abs(c.cardDiff) >= 1);
-            K.ui().toast(off ? 'Ziua e închisă, cu diferență. Adminul vede închiderea.' : 'Ziua e închisă. Totul se potrivește.', off ? 'info' : 'success');
+            K.ui().toast(off ? 'Ziua e închisă, cu diferență. George vede închiderea.' : 'Ziua e închisă. Totul se potrivește.', off ? 'info' : 'success');
             if (S.tab === 'casa') body();
           } catch (err) { K.ui().toast(errText(err), 'error'); }
         }));
@@ -526,6 +536,7 @@
     const go = e.target.closest('[data-go]');
     if (go) return K.go(go.dataset.go);
     const t = (sel, fn) => { const x = e.target.closest(sel); if (x) { fn(x); return true; } return false; };
+    if (t('[data-mg-i]', (x) => { const p = x.closest('.k-stat').querySelector('.mg-info'); if (p) { p.hidden = !p.hidden; x.setAttribute('aria-expanded', String(!p.hidden)); x.classList.toggle('is-on', !p.hidden); } })) return;
     if (t('[data-adj-ok]', (x) => decideAdj(x.dataset.adjOk, true))) return;
     if (t('[data-adj-no]', (x) => decideAdj(x.dataset.adjNo, false))) return;
     if (t('[data-lv-ok]', (x) => decideLeave(x.dataset.lvOk, true))) return;
@@ -557,15 +568,15 @@
     const chip = (ok, txt) => '<span class="k-tag ' + (ok == null ? '' : ok ? 'is-good' : 'is-warn') + '">' + txt + '</span>';
     const rows = s ? CL().map((c) => { const x = s.cities[c]; if (!x) return '';
       return '<div class="mg-strip-row"><b>' + esc(c) + '</b>' +
-        chip(x.bonus.counted ? x.bonus.ok : null, x.bonus.counted ? (x.bonus.ok ? '1500/zi: toate' : '1500/zi: ' + x.bonus.below + ' sub') : '1500/zi: -') +
+        chip(x.bonus.counted ? x.bonus.ok : null, x.bonus.counted ? (x.bonus.ok ? '1.500/zi: toate' : '1.500/zi: ' + x.bonus.below + ' sub') : '1.500/zi: încă nu') +
         chip(x.fillAhead.pct == null ? null : x.fillAhead.pct >= x.fillAhead.targetPct, 'calendar 7 zile ' + pct(x.fillAhead.pct) + ' din ' + x.fillAhead.targetPct + '%') +
-        chip(x.consults.pct == null ? null : x.consults.pct >= t.consults, 'pachet ' + pct(x.consults.pct)) +
+        chip(x.consults.pct == null ? null : x.consults.pct >= t.consults, 'cu upsell ' + pct(x.consults.pct)) +
         chip(x.leads.inHoursPct == null ? null : x.leads.inHoursPct >= t.leads5, '5 min ' + pct(x.leads.inHoursPct)) +
         chip(!x.waiting, x.waiting ? x.waiting + ' fără răspuns' : 'mesaje la zi') + '</div>'; }).join('') : skel(60);
     return '<div class="mg-strip-h"><h3>' + icon('trend') + 'Țintele lunii</h3><button type="button" class="k-btn is-ghost is-sm" data-strip="open">Manager' + icon('right') + '</button></div>' + rows +
       '<div class="mg-strip-acts"><button type="button" class="k-btn is-accent is-sm" data-strip="george">' + icon('bell') + 'Trimite feedback pentru reclame</button>' +
       '<button type="button" class="k-btn is-outline is-sm" data-strip="close">' + icon('cash') + 'Închide ziua</button>' +
-      '<button type="button" class="k-btn is-outline is-sm" data-strip="report">' + icon('listCheck') + 'Raport</button></div>';
+      '<button type="button" class="k-btn is-outline is-sm" data-strip="report">' + icon('listCheck') + 'Raport săptămânal</button></div>';
   }
   function placeStrip() {
     const d = K.data, p = document.getElementById('panel-panou');
