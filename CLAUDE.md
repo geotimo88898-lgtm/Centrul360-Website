@@ -8,6 +8,7 @@
 
 ## Reguli
 - Proprietarul scrie în română: răspunsuri în română, scurt, fără liniuțe lungi (em sau en dash), nicăieri.
+- Fără formalități în admin (regula lui, 16.11): textele pe care le citește echipa nu spun „proprietarul”, „managerul”, „de manager” sau alte titluri țepene. Scurt și firesc: „Bonus”, „Trimite”, „după ce se trec costurile lunii”; când trebuie un nume, „George”.
 - Repo public: fără nume de cliente, telefoane, cifre de business sau chei în cod, commituri sau loguri.
 - Doar date reale (recenzii, rezultate înainte/după, prețuri din Admin → Oferte). Nimic inventat.
 - Site-ul nou e live din 7.11. Sursele sunt în `v2/src/` (vezi `v2/README.md`): `python3 v2/build.py` face previzualizarea la /v2, iar `python3 v2/swap.py --apply` scrie paginile live, doar după „da”-ul proprietarului pe previzualizare.

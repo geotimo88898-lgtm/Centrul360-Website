@@ -102,7 +102,7 @@
       know: ['Ofertele le schimbă doar administratorul. Aici apar singure.'] },
 
     // ---- the manager (15.11): both clinics, the team, the till, the reports; the owner keeps hiring, pay, prices, refunds
-    { id: 'm-zi', t: 'Ziua ta de manager', ic: 'listCheck', roles: [M], go: 'panou', goL: 'Deschide Panoul',
+    { id: 'm-zi', t: 'Ziua ta', ic: 'listCheck', roles: [M], go: 'panou', goL: 'Deschide Panoul',
       what: 'Ordinea în care treci prin portal în fiecare zi, pentru Timișoara și Arad.',
       do: ['Dimineața: „Panou” → „Țintele lunii”. Vezi cifrele fiecărei clinici; apasă „Manager” pentru detalii.',
         '„Calendar”: ziua de azi și de mâine. Cele albastre sunt neconfirmate: le suni.', '„Sarcini”: „Sună și confirmă programarea”, apoi „Gata”.',

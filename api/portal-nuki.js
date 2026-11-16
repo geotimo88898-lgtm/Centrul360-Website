@@ -100,7 +100,7 @@ const EDIT_RULES = `Poți modifica pentru proprietar conținutul din Traininguri
 - altceva decât Traininguri (oferte, prețuri de pe site, reclame, programări, setări) nu poți modifica: îi spui în ce secțiune o face el.
 
 Ce poți modifica:`;
-const NO_EDIT = 'Nu poți modifica nimic în admin. Dacă ți se cere, spui că modificările le face proprietarul.';
+const NO_EDIT = 'Nu poți modifica nimic în admin. Dacă ți se cere, spui că modificările le face George.';
 
 function money(n) { return Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei'; }
 async function offersText() {

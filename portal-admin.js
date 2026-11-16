@@ -357,7 +357,7 @@
           // the day her net salary is paid (only the owner sees it: Echipa → Costuri și plăți)
           (e.role === 'admin' ? '' : K.field('Ziua salariului', '<input name="payDay" type="number" min="1" max="31" step="1" inputmode="numeric" value="' + esc(e.payDay || 15) + '">', 'full', 'Ziua din lună în care îi plătești salariul net. Apare doar la tine, în Plăți.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
-          K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Managerul conduce clinicile alese mai jos: tot ce face recepția acolo, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
+          K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Conduce clinicile alese mai jos: tot ce face recepția acolo, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
           K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +
           // the manager: the clinics she runs (a clinic opened later is added here by hand, never by itself)
           '<div class="k-field full ad-manages" data-manages' + (e.role === 'manager' ? '' : ' style="display:none"') + '><span>Clinicile pe care le conduce</span><div class="ad-manages-list">' +

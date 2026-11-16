@@ -324,7 +324,7 @@
       '<div class="k-row-end">' + (x.problems ? '<span class="k-tag is-warn">probleme</span>' : '') + icon('right') + '</div></div>';
     return '<section class="k-card"><div class="k-card-head"><h3>' + icon('file') + 'Rapoarte săptămânale</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-primary is-sm" data-act="report">' + icon('plus') + 'Raport nou</button>') + '</div>' +
         (rep.length ? '<div class="k-list">' + rep.map(repRow).join('') + '</div>' : '<p class="k-muted">Niciun raport trimis încă.</p>') + '</section>' +
-      '<section class="k-card"><div class="k-card-head"><h3>' + icon('bell') + 'Leaduri: ce i-a spus managerul lui George</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-outline is-sm" data-act="george">' + icon('plus') + 'Anunță</button>') + '</div>' +
+      '<section class="k-card"><div class="k-card-head"><h3>' + icon('bell') + 'Leaduri: ce s-a semnalat</h3>' + (admin() ? '' : '<button type="button" class="k-btn is-outline is-sm" data-act="george">' + icon('plus') + 'Anunță</button>') + '</div>' +
         (fb.length ? '<div class="k-list">' + fb.map(fbRow).join('') + '</div>' : '<p class="k-muted">Nimic încă.</p>') + '</section>';
   }
   function contextHtml(c) {
