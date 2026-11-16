@@ -39,7 +39,7 @@ async function teamOf(session, readJSON, employees) {
   const list = employees || await readJSON('data/employees.json', []);
   const me = list.find((e) => e.id === session.employeeId);
   const mine = managesOf(me);
-  return new Set(list.filter((e) => e && e.id && e.id !== 'admin' && e.role !== 'admin' && e.id !== session.employeeId && mine.includes(e.location)).map((e) => e.id));
+  return new Set(list.filter((e) => e && e.id && e.id !== 'admin' && e.role !== 'admin' && e.id !== session.employeeId && mine.includes(require('./clinic').clinicOf(e.location))).map((e) => e.id)); // „Timisoara” too
 }
 
 module.exports = { teamOf, ROLES, FRONT, CLINICS, isOwnerAdmin, isManager, canManage, isFront, deskRole, requireManage, managerIds, managesOf, managesCity };

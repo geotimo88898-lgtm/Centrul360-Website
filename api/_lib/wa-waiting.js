@@ -107,8 +107,8 @@ async function run() {
     const owed = items.filter((x) => x.w.needs !== false && !(now.resolved[x.key] && now.resolved[x.key].at >= x.lastInAt) && Date.now() - Date.parse(x.lastInAt) > 30 * 60e3).sort((a, b) => a.lastInAt.localeCompare(b.lastInAt));
     if (owed.length) {
       const N = require('./notify');
-      const emps = await readJSON('data/employees.json', []);
-      const ids = (await N.adminIds({ readJSON })).concat(emps.filter((e) => e.active !== false && (e.role === 'receptie' || (e.role === 'manager' && owed.some((x) => require('./roles').managesCity(e, x.loc))))).map((e) => e.id));
+      // reception and the managers of those clinics; the owner only for a clinic with no manager (16.11)
+      const ids = await N.deskIds({ readJSON }, [...new Set(owed.map((x) => x.loc || ''))]);
       await N.notifyMany({ readJSON, writeJSON }, ids, {
         kind: 'alert', tone: 'warn', go: 'mesaje', tag: 'waiting-' + day + '-' + slot,
         title: owed.length === 1 ? 'O CLIENTĂ FĂRĂ RĂSPUNS 💬' : owed.length + ' CLIENTE FĂRĂ RĂSPUNS 💬',

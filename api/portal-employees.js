@@ -279,14 +279,14 @@ module.exports = async (req, res) => {
         const sales = await readJSON('data/sales.json', []);
         sales.push({ id: crypto.randomUUID(), source: 'manual', employeeId: emp.id, date, categories: [], category: '', treatment: 'Comision adăugat manual', amount: 0, commission: lei, note, clientId: '', client: '', status: 'approved', createdAt: now, decidedAt: now, addedBy: session.employeeId });
         await writeJSON('data/sales.json', sales);
-        await notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: lei > 0 ? 'good' : 'info', title: (lei > 0 ? 'COMISION ➕ - ' : 'COMISION ➖ - ') + leiTxt(Math.abs(lei)).replace(/^[+]/, ''), text: note || 'Pus de admin.', go: 'comision' });
+        await notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: lei > 0 ? 'good' : 'info', title: (lei > 0 ? 'COMISION ➕ - ' : 'COMISION ➖ - ') + leiTxt(Math.abs(lei)).replace(/^[+]/, ''), text: note || 'Adăugat.', go: 'comision' });
       } else if (b.kind === 'overtime') {
         const minutes = Math.round(Number(b.value));
         if (!Number.isFinite(minutes) || !minutes || Math.abs(minutes) > 100 * 60) { res.status(400).json({ error: 'invalid_value' }); return; }
         const adjs = await readJSON(TB.ADJ, []);
         adjs.push({ id: crypto.randomUUID(), manual: true, employeeId: emp.id, date, minutes, approvedMinutes: minutes, worked: null, expected: null, weekend: false, location: emp.location || '', note, status: 'approved', createdAt: now, decidedAt: now, updatedAt: now, by: session.employeeId });
         await writeJSON(TB.ADJ, adjs);
-        await notify({ readJSON, writeJSON }, emp.id, { kind: 'time', tone: minutes > 0 ? 'good' : 'info', title: (minutes > 0 ? 'ORE SUPLIMENTARE ➕ - ' : 'ORE SUPLIMENTARE ➖ - ') + hm(Math.abs(minutes)).replace(/^[+]/, ''), text: note || 'Puse de admin.', go: 'condica' });
+        await notify({ readJSON, writeJSON }, emp.id, { kind: 'time', tone: minutes > 0 ? 'good' : 'info', title: (minutes > 0 ? 'ORE SUPLIMENTARE ➕ - ' : 'ORE SUPLIMENTARE ➖ - ') + hm(Math.abs(minutes)).replace(/^[+]/, ''), text: note || 'Adăugate.', go: 'condica' });
       } else { res.status(400).json({ error: 'invalid_kind' }); return; }
       // a month whose salaries are closed: the owner hears it (_lib/month-close.js)
       await require('./_lib/month-close').changed({ readJSON, writeJSON }, date.slice(0, 7), (b.kind === 'commission' ? 'Comision' : 'Ore suplimentare') + ' adăugat de mână pentru ' + String(emp.name || '').split(' ')[0] + ' pe ' + date);

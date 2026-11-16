@@ -95,11 +95,11 @@ module.exports = async (req, res) => {
       const month = EX.isMonth(q.month) && q.month >= FIRST && q.month <= last ? q.month : cur;
       const ctx = await MP.loadCtx(readJSON);
       const mine = EX.monthOf(ctx.exp, month);
-      // the records, with what was typed in Costuri lunare before them (kept, shown as an entry that can be removed)
+      // the records, with what was typed in the old monthly costs before them (kept, shown as an entry that can be removed)
       const entry = MP.cleanEntry(ctx.costs.months[month]);
       const rec = EX.REC.map((r) => {
         const list = mine.rec[r.key].slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)));
-        if (entry.lines[r.key] != null && entry.lines[r.key] > 0) list.push({ id: 'legacy', date: '', lei: entry.lines[r.key], note: 'scris în Costuri lunare', legacy: true });
+        if (entry.lines[r.key] != null && entry.lines[r.key] > 0) list.push({ id: 'legacy', date: '', lei: entry.lines[r.key], note: 'scris în Cheltuieli', legacy: true });
         return { key: r.key, label: r.label, hint: r.hint || '', kinds: r.kinds || null, entries: list, total: EX.recSum(list), day: EX.recDayOf(ctx.exp, r.key) };
       });
       // what is read by itself: the ads and the WhatsApp messages from Meta (only Centrul360's campaigns,

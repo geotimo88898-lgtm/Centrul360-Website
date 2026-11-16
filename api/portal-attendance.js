@@ -279,7 +279,7 @@ module.exports = async (req, res) => {
       const c = { id: crypto.randomUUID(), employeeId: targetId, minutes: m, before, note: String(body.note || '').trim().slice(0, 200), at: new Date().toISOString(), by: session.employeeId };
       all.corrections.push(c);
       await writeJSON(TB.CORR, all.corrections);
-      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'RECUPERARE 🕐 - ' + (m ? 'mai ai ' + fmtMin(m) : 'nimic de recuperat'), text: c.note || 'Corectat de admin.', go: 'condica' });
+      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'RECUPERARE 🕐 - ' + (m ? 'mai ai ' + fmtMin(m) : 'nimic de recuperat'), text: c.note || 'Corectat.', go: 'condica' });
       const bal = TB.ledger(targetId, all);
       delete bal.effects;
       res.status(200).json({ ok: true, correction: c, ...bal });

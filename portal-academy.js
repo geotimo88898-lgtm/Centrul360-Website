@@ -1651,6 +1651,7 @@
   const css = `
 .tr-tabs{ display:flex; gap:.4rem; overflow-x:auto; padding:.15rem .1rem .6rem; margin:0 0 .9rem; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
 .tr-tabs::-webkit-scrollbar{ display:none; }
+.tr-tabs[hidden]{ display:none; } /* one tab alone (the cosmetician's „Traininguri”) only repeats the title */
 .tr-tab{ flex:0 0 auto; display:inline-flex; align-items:center; gap:.45rem; height:40px; padding:0 .9rem; border-radius:999px; border:1px solid var(--line); background:var(--paper); color:var(--muted); font:inherit; font-size:.88rem; font-weight:600; cursor:pointer; transition:color .2s, border-color .2s, background .2s; }
 .tr-tab .k-ic{ width:16px; height:16px; }
 .tr-tab:hover{ color:var(--fg); }

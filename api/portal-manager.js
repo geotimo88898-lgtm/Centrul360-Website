@@ -229,7 +229,7 @@ module.exports = async (req, res) => {
       const c = row.context;
       const arrow = /putine/.test(b.level) ? '📉' : /multe/.test(b.level) ? '📈' : '👌';
       await N.notifyMany(store, await N.adminIds(store), {
-        kind: 'alert', tone: b.level === 'potrivit' ? 'good' : 'warn', go: 'manager', tag: 'mgr-fb-' + row.id,
+        kind: 'alert', tone: b.level === 'potrivit' ? 'good' : 'warn', go: 'manager/rapoarte', tag: 'mgr-fb-' + row.id,
         title: 'LEADURI ' + tag(b.city) + ' ' + arrow + ' - ' + LEVELS[b.level] + ', calitate ' + QUALITY[b.quality],
         text: (row.byName ? row.byName.split(' ')[0] + ': ' : '') + (reasons.length ? reasons.map((x) => REASONS[x]).join(', ') + ' · ' : '') + (details ? details.slice(0, 80) + ' · ' : '') +
           (c.quality7 ? c.quality7.leads + ' leaduri în 7 zile: ' + c.quality7.answered + (c.quality7.answered === 1 ? ' a răspuns, ' : ' au răspuns, ') + c.quality7.booked + ' programate, ' + c.quality7.came + (c.quality7.came === 1 ? ' a venit, ' : ' au venit, ') + c.quality7.paid + (c.quality7.paid === 1 ? ' a plătit' : ' au plătit') : c.leads7 + ' leaduri în 7 zile') + ' · ' + c.freeHoursNext7 + ' ore libere',
@@ -274,7 +274,7 @@ module.exports = async (req, res) => {
       const off = Math.abs(row.cashDiff) >= 1 || (row.cardDiff != null && Math.abs(row.cardDiff) >= 1);
       const money = (n) => N.leiTxt(n);
       await N.notifyMany(store, await N.adminIds(store), {
-        kind: 'report', tone: off ? 'warn' : 'good', go: 'manager', tag: 'mgr-close-' + b.city + '-' + date,
+        kind: 'report', tone: off ? 'warn' : 'good', go: 'manager/casa', tag: 'mgr-close-' + b.city + '-' + date,
         // a close that adds up stays in the bell; a difference or a deposit rings on the phone too
         ownerPush: off || b.cashFate === 'depus',
         title: 'ÎNCHIDERE ZI ' + tag(b.city) + ' 🧾 - ' + (off ? 'diferență' : 'în regulă'),
@@ -316,7 +316,7 @@ module.exports = async (req, res) => {
       await append(KEYS.reports, row);
       const sum = mine.map((c) => tag(c) + ' ' + N.leiTxt(numbers[c].collected)).join(' · ');
       await N.notifyMany(store, await N.adminIds(store), {
-        kind: 'report', tone: problems ? 'warn' : 'info', go: 'manager', tag: 'mgr-rep-' + row.id,
+        kind: 'report', tone: problems ? 'warn' : 'info', go: 'manager/rapoarte', tag: 'mgr-rep-' + row.id,
         title: 'RAPORT SĂPTĂMÂNAL 📋 - ' + monday.slice(8, 10) + '.' + monday.slice(5, 7) + '-' + row.to.slice(8, 10) + '.' + row.to.slice(5, 7),
         text: sum + (problems ? ' · Probleme: ' + problems.slice(0, 80) : ''),
       });

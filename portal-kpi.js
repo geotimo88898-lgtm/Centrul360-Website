@@ -476,7 +476,9 @@
           '<li>' + icon('userPlus') + '<span>' + leads + '</span></li>' +
           (own && x.ads && x.ads.spend ? '<li>' + icon('facebook') + '<span>' + K.lei(x.ads.spend) + ' pe reclame · ' + x.ads.metaLeads + ' leaduri Meta' + (x.ads.cpl != null ? ' · ' + L2(x.ads.cpl) + ' / lead' : '') + '</span></li>' : '') +
           (f ? '<li class="kq-tc-cal" data-go="programari">' + icon('clock') + '<span>7 zile: <b class="' + bad(f.pct != null && f.pct < 100).trim() + '">' + P(f.pct) + '</b> din ' + f.targetPct + '%' + (f.orphanHours > 0 ? ' · + ' + dec(f.orphanHours, 1) + ' h fără cosmeticiană' : '') + '</span><span class="kq-meter"><i class="' + bad(f.pct != null && f.pct < 100).trim() + '" style="--w:' + Math.min(100, ((f.pct || 0) / 200) * 100) + '%"></i><u style="--t:' + Math.min(100, f.targetPct / 2) + '%"></u></span></li>' : '') +
-        '</ul>' + (todo && own ? '<div class="kq-tc-do">' + todo + '</div>' : '') + '</article>'; // the manager has them all in „De făcut” above
+        // the manager has them all in „De făcut” above; the owner only for a clinic with no manager (16.11: the desk's to-dos
+        // are the manager's and reception's, never his)
+        '</ul>' + (todo && own && K.ownerDesk(c) ? '<div class="kq-tc-do">' + todo + '</div>' : '') + '</article>';
     };
     const sg = d.signals, items = [];
     if (sg) {
@@ -490,7 +492,7 @@
     }
     const who = sg && [].concat(sg.feedback || [], sg.closes || [], sg.report ? [sg.report] : []).map((x) => x.by).find(Boolean);
     const sig = items.length ? '<div class="kq-sig"><h4>' + (who ? 'De la ' + esc(who) : 'Casa și rapoartele') + '</h4><ul>' + items.slice(0, 4).map((x) => '<li class="is-' + x.tone + '" data-go="' + x.go + '"><i></i><span><b>' + esc(x.t) + '</b>' + (x.s ? '<small>' + esc(x.s) + '</small>' : '') + '</span>' + icon('arrow') + '</li>').join('') + '</ul></div>' : '';
-    return (own ? '' : deskHtml(d)) + '<div class="kq-head"><h3>Azi pe clinici</h3>' + (d.waitingSocial ? '<button type="button" class="kq-act is-bad" data-go="mesaje"><b>' + d.waitingSocial + '</b> pe Instagram / Messenger</button>' : '') + '</div>' +
+    return (own ? '' : deskHtml(d)) + '<div class="kq-head"><h3>Azi pe clinici</h3>' + (d.waitingSocial && (!own || K.ownerDesk('')) ? '<button type="button" class="kq-act is-bad" data-go="mesaje"><b>' + d.waitingSocial + '</b> pe Instagram / Messenger</button>' : '') + '</div>' +
       '<div class="kq-tc-g">' + cl.map(col).join('') + '</div>' + sig;
   }
 

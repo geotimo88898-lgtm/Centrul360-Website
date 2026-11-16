@@ -275,14 +275,30 @@ function setBreak(doc, employeeId, date, change, who) {
 
 // her phone hears when today's break moves (the owner, 16.11: „Pauza ta de azi s-a mutat la 15:00.”), only for today and
 // only a real move; never blocks the change
+// from: the new hour; null: no break today any more („Fără pauză azi”, a booking that leaves it out or takes it)
 async function tellBreak(store, employeeId, date, from) {
   try {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
-    if (date !== today || !from) return;
+    if (date !== today || from === '' || from === undefined) return;
     const emp = (await store.readJSON('data/employees.json', [])).find((e) => e && e.id === employeeId);
     if (!emp || emp.role !== 'cosmetician') return;
-    await require('./notify').notifyMany(store, [employeeId], { kind: 'break', tone: 'info', go: 'programari', tag: 'break-' + date + '-' + from,
-      title: 'Pauza de azi', text: 'Pauza ta de azi s-a mutat la ' + from + '.' });
+    await require('./notify').notifyMany(store, [employeeId], { kind: 'break', tone: 'info', go: 'programari', tag: 'break-' + date + '-' + (from || 'off'),
+      title: 'Pauza de azi', text: from ? 'Pauza ta de azi s-a mutat la ' + from + '.' : 'Azi nu ai pauză.' });
+  } catch (e) { /* a notification never blocks the change */ }
+}
+// a change of today's bookings (before → after) that takes a cosmetician's break without moving it (her client on it, the
+// clinic too busy at that half hour): she hears „Azi nu ai pauză” (16.11). Today only; never blocks the change.
+async function tellLost(store, before, after) {
+  try {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    const day = (l) => (l || []).filter((a) => a && a.date === today);
+    const [doc, cosm] = await Promise.all([load(), people()]);
+    const ids = new Set(cosm.map((p) => p.id));
+    for (const c of CITIES) {
+      const now = dayBreaks(doc, today, c, { appts: day(after), ids });
+      const lost = dayBreaks(doc, today, c, { appts: day(before), ids }).filter((b) => b.on && now.some((x) => x.employeeId === b.employeeId && !x.on));
+      for (const b of lost) await tellBreak(store, b.employeeId, today, null);
+    }
   } catch (e) { /* a notification never blocks the change */ }
 }
 
@@ -306,5 +322,5 @@ function cleanWeek(days) {
   return { days: out };
 }
 
-module.exports = { KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin,
+module.exports = { tellLost, KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin,
   BREAK_MIN, BREAK_SHIFT_MIN, BREAK_SINCE, midBreak, plannedBreak, dayBreaks, breakOf, breakSlots, breakNear, breakCheck, setBreak, tellBreak, hm };

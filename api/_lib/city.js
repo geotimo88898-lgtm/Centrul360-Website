@@ -11,7 +11,9 @@ async function cityOf(session, readJSON, employees) {
   const list = employees || await readJSON('data/employees.json', []);
   const me = list.find((e) => e.id === session.employeeId);
   if (session.role === 'manager') return managesOf(me);
-  return me && CITIES.includes(me.location) ? me.location : null;
+  // her clinic however it is spelled („Timisoara”): never „all” because of a missing diacritic
+  const c = me ? require('./clinic').clinicOf(me.location) : '';
+  return CITIES.includes(c) ? c : null;
 }
 
 // Rows with no city set (e.g. imported contacts) stay visible to everyone. `city`: one city, a list, or null (all).

@@ -51,7 +51,7 @@
     invalid_client: 'Completează numele și telefonul clientului.', invalid_location: 'Alege locația.', invalid_status: 'Statusul nu e valid.',
     missing_treatment: 'Completează tratamentul.', invalid_cosmetician: 'Cosmeticiana aleasă nu mai există.', cosmetician_left: 'Cosmeticiana aleasă a plecat. Alege pe altcineva.', performer_left: 'Cosmeticiana aleasă a plecat. Alege cine a făcut tratamentul.', invalid_left_day: 'Alege o zi de azi sau din urmă.', username_taken: 'Acest username există deja.',
     invalid_role: 'Rolul nu e valid.', employee_not_found: 'Angajatul nu mai există.', already_decided: 'Vânzarea a fost deja decisă.',
-    forbidden: 'Doar adminul poate face asta.', too_many_goals: 'Maxim 2 obiective per angajat.', invalid_goal: 'Un obiectiv nu e complet.',
+    forbidden: 'Nu ai acces la asta.', too_many_goals: 'Maxim 2 obiective per angajat.', invalid_goal: 'Un obiectiv nu e complet.',
     preview_only: 'Ești în previzualizarea contului, aici doar te uiți. Revino la Admin ca să faci modificări.',
     missing_title: 'Completează titlul.', invalid_prices: 'Prețurile nu sunt valide.', offer_not_found: 'Oferta nu mai există.',
     invalid_type: 'Alege tipul de concediu.', invalid_range: 'Data de sfârșit e înainte de cea de început.', missing_reason: 'Completează motivul.',
