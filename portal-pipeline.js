@@ -197,6 +197,11 @@
     return null;
   }
   const QUICK = [['2h', 'În 2 ore'], ['evening', 'Diseară 18:00'], ['tomorrow', 'Mâine 10:00'], ['3d', 'În 3 zile'], ['week', 'Peste o săptămână']];
+  // she didn't answer: the calls in a row without an answer and when to try again (the owner, 16.11): in 2 hours, the
+  // next day, in 3 days, then stop („Nu răspunde”); the same rule as Ore libere → De resunat (api/_lib/followups.js)
+  const RETRY = ['2h', 'tomorrow', '3d'];
+  const RETRY_TXT = { '2h': 'în 2 ore', tomorrow: 'mâine la 10', '3d': 'în 3 zile' };
+  function misses(l) { const a = (l.activities || []).filter((x) => x.type === 'contact'); let n = 0; for (let i = a.length - 1; i >= 0 && a[i].outcome === 'nu_raspunde'; i--) n++; return n; }
 
   // ------------------------------------------------------------------ derived data
   const stageById = (id) => S.stages.find((s) => s.id === id);
@@ -667,7 +672,9 @@
     if (l.neverContacted) chips.push('<span class="pl-tag is-accent">Nesunat · ' + ago(l.createdAt) + '</span>');
     else if (l.isInactive) chips.push('<span class="pl-tag is-mute">' + l.idleDays + ' zile fără activitate</span>');
     if (l.appointmentAt && l.kind !== 'won') chips.push('<span class="pl-tag is-mute">' + ic('calendar') + esc(apptWhen(l.appointmentAt)) + '</span>');
-    if (l.contactCount) chips.push('<span class="pl-tag is-mute" title="Contactări">' + ic('phone') + l.contactCount + '</span>');
+    const nm = isWorking(l) ? misses(l) : 0;
+    if (nm) chips.push('<span class="pl-tag is-' + (nm > 3 ? 'mute' : 'warn') + '" title="Apeluri la rând fără răspuns">' + ic('phone') + (nm > 3 ? 'Nu răspunde' : 'Fără răspuns · ' + nm) + '</span>');
+    else if (l.contactCount) chips.push('<span class="pl-tag is-mute" title="Contactări">' + ic('phone') + l.contactCount + '</span>');
     if (l.kind === 'lost' && l.lostReason) chips.push('<span class="pl-tag is-mute">' + esc(l.lostReason) + '</span>');
     return '<article class="pl-card' + (l.neverContacted ? ' is-new' : '') + '" data-id="' + l.id + '" tabindex="0">' +
       '<div class="pl-card-top">' +
@@ -1161,6 +1168,7 @@
         '<section class="pl-card-sec' + (d.section === 'log' ? ' is-focus' : '') + '" data-section="log">' +
           '<div class="pl-sec-head"><h4>' + ic('phone') + 'Cum a mers contactul?</h4><span class="pl-muted">' + (l.contactCount ? l.contactCount + (l.contactCount === 1 ? ' contactare' : ' contactări') + ' · ultima ' + agoLong(l.lastContactAt) : 'Încă necontactată') + '</span></div>' +
           (l.followUpAt ? '<div class="pl-followup-now"><span class="pl-tag is-' + (l.followUpState === 'overdue' ? 'bad' : l.followUpState === 'today' ? 'warn' : 'info') + '">' + ic('clock') + 'Revin la ea ' + esc(when(l.followUpAt)) + '</span><span class="pl-muted">apare în Sarcini în ziua respectivă</span><button type="button" class="pl-btn is-ghost is-sm" data-clear-next>Anulează</button></div>' : '') +
+          (isWorking(l) ? noAnswerHtml(l) : '') +
           '<div class="pl-seg" data-seg="channel">' + PICK_CHANNELS.map((k) => '<button type="button" data-val="' + k + '" class="' + (k === (d.channel || 'call') ? 'is-on' : '') + '">' + CHANNELS[k] + '</button>').join('') + '</div>' +
           '<div class="pl-outcomes" data-seg="outcome">' + Object.keys(OUTCOMES).map((k) => '<button type="button" data-val="' + k + '" class="is-' + OUTCOMES[k].tone + '">' + OUTCOMES[k].label + '</button>').join('') + '</div>' +
           '<textarea class="pl-input" data-log-text rows="2" maxlength="1000" placeholder="Ce a spus? (opțional)"></textarea>' +
@@ -1273,7 +1281,7 @@
         const sec = seg.closest('[data-section]');
         sec.querySelector('[data-save-log]').disabled = false;
         // Smart default for "when do I try again": unanswered calls retry fast, then back off.
-        const pick = out === 'nu_raspunde' ? ((l.contactCount || 0) >= 2 ? 'tomorrow' : '2h') : out === 'revine' ? '3d' : out === 'interesat' || out === 'raspuns' ? 'tomorrow' : '';
+        const pick = out === 'nu_raspunde' ? (RETRY[misses(l)] || '') : out === 'revine' ? '3d' : out === 'interesat' || out === 'raspuns' ? 'tomorrow' : '';
         const input = sec.querySelector('[data-log-follow]');
         sec.querySelectorAll('[data-pick]').forEach((b) => b.classList.toggle('is-on', b.dataset.pick === pick));
         input.value = pick ? toLocalInput(quickWhen(pick).toISOString()) : '';
@@ -1289,6 +1297,7 @@
       return;
     }
     if (t.closest('[data-save-log]')) return saveLog(l);
+    if (t.closest('[data-noanswer]')) return noAnswer(l, t.closest('[data-noanswer]'));
     if (t.closest('[data-clear-next]')) return clearFollowUp(l, t.closest('[data-clear-next]'));
     if (t.closest('[data-delete]')) return deleteLead(l);
     const sum = t.closest('summary');
@@ -1396,6 +1405,7 @@
       followUpAt,
     };
     if (outcome === 'nu_raspunde' && followUpAt && !l.nextAction) payload.nextAction = 'Sună din nou';
+    if (outcome === 'nu_raspunde' && !followUpAt && misses(l) >= RETRY.length) payload.nextAction = 'Nu răspunde';
     await busy(sec.querySelector('[data-save-log]'), async () => {
       try {
         const j = await api('log_contact', payload);
@@ -1404,6 +1414,25 @@
         ui().toast('Contact salvat' + (followUpAt ? ' · revii ' + when(followUpAt) : ''), 'success');
         if (S.drawer && S.drawer.queue) { stepDrawer(1); return; }
         S.drawer.section = '';
+        renderDrawer();
+      } catch (e) { ui().toast(errText(e), 'error'); }
+    });
+  }
+  // one tap: the call wasn't answered; the next try by the rule (or stop after the fourth)
+  function noAnswerHtml(l) {
+    const n = misses(l), next = RETRY[n];
+    return '<div class="pl-noans"><span class="pl-muted">' + (n ? n + (n === 1 ? ' apel' : ' apeluri') + ' la rând fără răspuns' : 'Sună, apoi alege cum a mers') + '</span>' +
+      '<button type="button" class="pl-btn is-ghost is-sm" data-noanswer>' + ic('phone') + 'Nu răspunde · ' + (next ? 'reîncerc ' + RETRY_TXT[next] : 'opresc') + '</button></div>';
+  }
+  async function noAnswer(l, btn) {
+    const next = RETRY[misses(l)];
+    const followUpAt = next ? quickWhen(next).toISOString() : '';
+    await busy(btn, async () => {
+      try {
+        const j = await api('log_contact', { leadId: l.id, channel: 'call', outcome: 'nu_raspunde', text: '', followUpAt, nextAction: next ? 'Sună din nou' : 'Nu răspunde' });
+        replaceLead(j.lead); renderAll();
+        ui().toast(next ? 'Notat · reîncerci ' + when(followUpAt) : 'Notat · nu mai sunăm, nu răspunde', 'success');
+        if (S.drawer && S.drawer.queue) { stepDrawer(1); return; }
         renderDrawer();
       } catch (e) { ui().toast(errText(e), 'error'); }
     });

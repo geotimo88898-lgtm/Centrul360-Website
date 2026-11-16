@@ -69,6 +69,8 @@ const STEPS = [
   ['waiting', () => require('./_lib/wa-waiting').run()],
   // Acte și autorizații: the papers that expire, told to the owner at 30 days, 7 days and on the day (api/_lib/legal-alerts.js)
   ['acte', () => require('./_lib/legal-alerts').run()],
+  // the day's to-dos as notifications, once a day from 8:00, for the owner and the manager (api/_lib/followups.js)
+  ['morning', () => require('./_lib/followups').morning()],
   // Plăți: the owner's payments due today and the late ones, once a day from 9:00, once each (api/_lib/expenses.js)
   ['plati', () => require('./_lib/expenses').run()],
   // the CRM steps of the Facebook leads that no change sent yet (Conversions API, api/_lib/meta-capi.js)
