@@ -178,11 +178,19 @@ const probationOf = (emp, day) => {
 const managerFrom = (emp) => (isDay(emp && emp.roleSince) ? emp.roleSince.slice(0, 7) : '');
 
 async function loadCtx(readJSON) {
-  const [employees, sales, attendance, appointments, tbAll, costs, finals] = await Promise.all([
+  const { writeJSON } = require('./store');
+  const [employees, sales, attendance, appointments, tbAll, costs, finals, eur] = await Promise.all([
     readJSON('data/employees.json', []), readJSON('data/sales.json', []), readJSON('data/attendance.json', []), readJSON('data/appointments.json', []),
-    TB.loadAll(readJSON), loadCosts(readJSON), readJSON(FINAL_KEY, {}),
+    TB.loadAll(readJSON), loadCosts(readJSON), readJSON(FINAL_KEY, {}), require('./eur-rate').eurToday(readJSON, writeJSON).catch(() => null),
   ]);
-  return { employees, sales, attendance, appointments, tbAll, costs, finals: finals && typeof finals === 'object' ? finals : {} };
+  return { employees, sales, attendance, appointments, tbAll, costs, finals: finals && typeof finals === 'object' ? finals : {}, eur };
+}
+// the rents in euro always at today's BNR rate (the owner, 16.11); the rate saved with the month only when the BNR
+// was never reached
+function withEur(entry, eur) {
+  if (eur && eur.rate) { entry.eurRate = eur.rate; entry.eurFrom = { source: 'bnr', bank: eur.source || 'BNR', date: eur.date }; }
+  else if (entry.eurRate) entry.eurFrom = { source: 'saved' };
+  return entry;
 }
 
 // one month of a manager: the condition, the profit and the bonus "if the month closed today" (the current month: up to
@@ -191,7 +199,7 @@ async function monthOf(readJSON, ctx, emp, month, opts) {
   const day = today(), isCurrent = month === day.slice(0, 7);
   const upto = isCurrent ? day : lastDay(month);
   const clinics = managesOf(emp);
-  const entry = cleanEntry(ctx.costs.months[month]);
+  const entry = withEur(cleanEntry(ctx.costs.months[month]), ctx.eur);
   const condition = conditionOf(ctx.employees, ctx.sales, ctx.attendance, clinics, month, upto);
   const fin = ctx.finals[emp.id + '|' + month];
   const final = fin && Number.isFinite(Number(fin.lei)) ? { lei: r2(fin.lei), at: fin.at || '' } : null;
@@ -212,7 +220,7 @@ async function monthOf(readJSON, ctx, emp, month, opts) {
     month, current: isCurrent, clinics, rate: RATE, condition, filled, final,
     estimate: filled ? { profit, bonus: condition.ok ? potential : 0, potential } : null,
   };
-  if (opts && opts.full) Object.assign(out, { costs, collections, profit, entry: { eurRate: entry.eurRate, savedAt: entry.savedAt, proposal: entry.proposal } });
+  if (opts && opts.full) Object.assign(out, { costs, collections, profit, entry: { eurRate: entry.eurRate, eurFrom: entry.eurFrom, savedAt: entry.savedAt, proposal: entry.proposal } });
   else out.proposal = entry.proposal ? { consumables: entry.proposal.consumables, other: entry.proposal.other, note: entry.proposal.note, at: entry.proposal.at, status: entry.proposal.status } : null;
   return out;
 }
@@ -236,4 +244,4 @@ async function view(readJSON, empId, month, opts) {
   return { ok: true, name: emp.name, managerFrom: from, month: main, history, probation: probationOf(emp, day), rule: { rate: RATE, min: MIN_PER_DAY, probationDays: PROBATION_DAYS } };
 }
 
-module.exports = { RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };
+module.exports = { withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };

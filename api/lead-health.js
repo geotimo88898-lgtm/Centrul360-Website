@@ -33,6 +33,25 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const session = getSession(req);
   if (!fromCreative(req) && !(session && session.role === 'admin')) { res.status(401).json({ error: 'unauthorized' }); return; }
+  // POST ?costs=1 { month: 'YYYY-MM', lines: { credits, rentTm (€), rentAr (€), laser, accounting, salaries, claude } }:
+  // the fixed costs of a month in Echipa → Costuri lunare, when the owner asks Claude to type them (16.11). Only the
+  // fixed lines; the variable ones and anything already there stay as they are. The sums travel in the request, never
+  // in this code.
+  if (req.method === 'POST' && req.query && req.query.costs) {
+    const MP = require('./_lib/manager-pay');
+    const { writeJSON } = require('./_lib/store');
+    const b = req.body || {};
+    if (!MP.isMonth(b.month)) { res.status(400).json({ error: 'invalid_month' }); return; }
+    const doc = await MP.loadCosts(readJSON);
+    const old = doc.months[b.month] && typeof doc.months[b.month] === 'object' ? doc.months[b.month] : {};
+    const lines = Object.assign({}, old.lines || {});
+    let n = 0;
+    MP.LINES.filter((l) => l.kind === 'fixed').forEach((l) => { const v = MP.amount(b.lines && b.lines[l.key]); if (v != null) { lines[l.key] = v; n++; } });
+    doc.months[b.month] = Object.assign({}, old, { lines, over: old.over || {}, savedAt: new Date().toISOString(), savedBy: old.savedBy || 'admin' });
+    await writeJSON(MP.COSTS_KEY, doc, { quiet: true });
+    res.status(200).json({ ok: true, month: b.month, fixedSet: n });
+    return;
+  }
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
   // ?wahealth=1: what Meta itself says about each city's WhatsApp account right now (may it send, and if not, why and
   // what to do): the health of the number, of the account, of the firm and of the app, whether a payment method is

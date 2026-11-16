@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
       if (q.view === 'costs') {
         const ctx = await MP.loadCtx(readJSON);
         const day = MP.today(), isCurrent = month === day.slice(0, 7);
-        const entry = MP.cleanEntry(ctx.costs.months[month]);
+        const entry = MP.withEur(MP.cleanEntry(ctx.costs.months[month]), ctx.eur);
         const all = ['Timișoara', 'Arad'];
         const autos = await MP.payrollAutos(ctx, all, month, isCurrent);
         autos.ads = await MP.adsOf(readJSON, all, month, day);
@@ -105,7 +105,8 @@ module.exports = async (req, res) => {
         if (l.auto) over[l.key] = MP.amount(b.over && b.over[l.key]);
         else lines[l.key] = MP.amount(b.lines && b.lines[l.key]);
       });
-      const entry = Object.assign({}, old, { eurRate: MP.amount(b.eurRate), lines, over, savedAt: new Date().toISOString(), savedBy: session.employeeId });
+      // the euro: today's BNR rate is used anyway; the one sent is kept only as the fallback for a day the BNR is down
+      const entry = Object.assign({}, old, { eurRate: MP.amount(b.eurRate) || old.eurRate || null, lines, over, savedAt: new Date().toISOString(), savedBy: session.employeeId });
       // what Meta says now, kept for when it can't be read
       const ads = await MP.adsOf(readJSON, ['Timișoara', 'Arad'], month, MP.today());
       if (ads != null) entry.adsAuto = { lei: ads, at: new Date().toISOString() };

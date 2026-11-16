@@ -1330,7 +1330,10 @@
       '<div class="k-grid c4 co-sum" data-co-sum></div>' + prop +
       '<form data-co-form class="co-form">' +
         '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('receipt') + 'Costuri fixe</h3></div>' +
-          '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro al lunii</b><small>pentru chiriile în euro</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="lei pentru 1 €"></div></div>' +
+          (E.eurFrom && E.eurFrom.source === 'bnr'
+            // today's BNR rate, always (the owner, 16.11): shown, not typed
+            ? '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro de azi</b><small>' + esc(E.eurFrom.bank || 'BNR') + (E.eurFrom.date ? ', ' + esc(roDay(E.eurFrom.date)) : '') + ', se actualizează singur</small></div><div class="k-money is-rate"><input name="eurRate" type="number" value="' + esc(val(E.eurRate)) + '" readonly tabindex="-1"></div></div>'
+            : '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro</b><small>BNR nu răspunde acum, scrie-l tu</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="lei pentru 1 €"></div></div>') +
           d.lines.filter((l) => l.kind === 'fixed').map(line).join('') + '</section>' +
         '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('sliders') + 'Costuri variabile</h3></div>' +
           '<p class="k-muted co-note">Reclamele, comisioanele și orele vin singure; scrie o sumă doar ca să le schimbi.</p>' +
