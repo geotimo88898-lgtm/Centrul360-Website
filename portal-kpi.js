@@ -151,7 +151,10 @@
 
   // only what needs doing (max 3); the ads that do well or badly are in Reclamele
   function alertsHtml(d) {
-    const list = (d.alerts || []).filter((a) => a.tone !== 'good' && a.kind !== 'ad').slice(0, 3);
+    // the owner (16.11): calling leads and answering messages are the manager's job; on admin these stay in Pipeline
+    // and Mesaje, not here
+    const owner = !!(K.data && K.data.isAdmin);
+    const list = (d.alerts || []).filter((a) => a.tone !== 'good' && a.kind !== 'ad' && !(owner && ['lead', 'speed', 'wa'].includes(a.kind))).slice(0, 3);
     if (!list.length) return '';
     return '<section class="kq-todo is-full" data-part="alerts">' + list.map((a, i) => '<button type="button" style="--i:' + i + '" class="kq-al is-' + a.tone + '"' + (a.go ? ' data-go="' + a.go + '"' : '') + '>' +
       icon(a.tone === 'bad' ? 'alert' : 'bell') + '<span><b>' + esc(a.title) + ': ' + esc(a.name) + '</b> ' + esc(a.text) + '</span>' + icon('arrow') + '</button>').join('') + '</section>';
