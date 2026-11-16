@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 16.11, the owner in his main session (few leads in Arad, only RF gușă 50+ running: „pornește restart”): Arad's
+  // Restart „Căutăm 10 doamne din Arad.” back on at 50 lei a day (ROAS 3,3, 5 clients since 16.10)
+  { id: 'ar-restart-on-2026-11-16', why: 'Restart Arad pornit din nou la 50 lei/zi, cerut de voi pe 16.11', actions: [
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', daily: 50, why: 'ROAS 3,3, 5 cliente; Arad are puține leaduri' },
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', status: 'ACTIVE', why: 'ROAS 3,3, 5 cliente; Arad are puține leaduri' },
+  ] },
   // 15.11 night, the owner in his main session (from the full report: „pornește doar asta”): Timișoara's HIFU gușă
   // „hifu gușă” back on at 50 lei a day (ROAS 5,1, 14 clients, a lead at 8 lei on its last days)
   { id: 'tm-hifu-gusa-on-2026-11-15', why: 'TM HIFU gușă pornită din nou la 50 lei/zi, cerut de voi pe 15.11', actions: [
