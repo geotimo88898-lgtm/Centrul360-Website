@@ -52,6 +52,15 @@
     const pane = PL.box && PL.box.querySelector('[data-pf-pane]');
     if (!pane || !PL.data) return;
     pane.innerHTML = monthNav() + (PL.sub === 'chelt' ? cheltHtml() : platiHtml());
+    const ak = PL.month + PL.sub; // drawn from nothing when a month or a view opens, not after every tick
+    if (PL.animKey !== ak) { PL.animKey = ak; animateDonuts(pane); }
+    // the slim line shows once the circle is out of view
+    if (PL.io) PL.io.disconnect();
+    const ov = pane.querySelector('[data-pf-ov]'), mini = pane.querySelector('[data-pf-mini]');
+    if (ov && mini && 'IntersectionObserver' in window) {
+      PL.io = new IntersectionObserver(([e]) => mini.classList.toggle('is-on', !e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
+      PL.io.observe(ov);
+    }
   }
   function monthNav() {
     const d = PL.data;
@@ -59,6 +68,38 @@
       '<button type="button" class="k-icon-btn" data-pf-m="1" aria-label="Luna următoare"' + (d.month >= d.last ? ' disabled' : '') + '>' + icon('right') + '</button></div>' +
       '<span class="pf-private">' + icon('shield') + 'Doar tu vezi</span></div>';
   }
+
+  // ------------------------------------------------------------------ the donut (SVG, no library)
+  // segs: [{ lei, color, label }]; a 2px surface gap between the parts; drawn from 0 when it appears (not with reduced
+  // motion); each part says its name and sum on hover (title)
+  const reduced = () => (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || document.documentElement.classList.contains('c360-reduce');
+  function donut(segs, size, center, aria) {
+    const sw = Math.max(10, Math.round(size * 0.13)), r = (size - sw) / 2, C = 2 * Math.PI * r;
+    const total = segs.reduce((a, x) => a + Math.max(0, x.lei), 0);
+    const live = segs.filter((x) => x.lei > 0);
+    const gap = live.length > 1 ? 2.5 : 0;
+    let at = 0;
+    const arcs = total > 0 ? live.map((x) => {
+      const len = (x.lei / total) * C, show = Math.max(0.5, len - gap);
+      const el = '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="' + x.color + '" stroke-width="' + sw + '" stroke-linecap="butt"' +
+        ' stroke-dasharray="' + show.toFixed(2) + ' ' + (C - show).toFixed(2) + '" stroke-dashoffset="' + (-at).toFixed(2) + '" data-len="' + show.toFixed(2) + '"><title>' + esc(x.label) + ': ' + K.lei(x.lei) + '</title></circle>';
+      at += len;
+      return el;
+    }).join('') : '';
+    return '<div class="pf-donut" style="--s:' + size + 'px" role="img" aria-label="' + esc(aria) + '"><svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="var(--pf-track)" stroke-width="' + sw + '"/>' + arcs + '</svg>' +
+      '<div class="pf-dc">' + center + '</div></div>';
+  }
+  // the parts grow from nothing, once, when the donut is painted
+  function animateDonuts(root) {
+    if (reduced()) return;
+    root.querySelectorAll('.pf-donut circle[data-len]').forEach((c) => {
+      const len = +c.dataset.len, C = len + Number(String(c.getAttribute('stroke-dasharray')).split(' ')[1]);
+      c.style.transition = 'none'; c.setAttribute('stroke-dasharray', '0 ' + C);
+      requestAnimationFrame(() => requestAnimationFrame(() => { c.style.transition = 'stroke-dasharray .9s cubic-bezier(.2,.8,.2,1)'; c.setAttribute('stroke-dasharray', len + ' ' + (C - len)); }));
+    });
+  }
+  const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
   // ------------------------------------------------------------------ Plăți
   const MON_S = K.MON_S;
@@ -98,18 +139,25 @@
   }
   function platiHtml() {
     const d = PL.data, s = d.summary;
-    const pct = s.count ? Math.round((s.paidCount / s.count) * 100) : 0;
-    const tile = (cls, label, value, sub) => '<div class="pf-tile ' + cls + '"><span>' + label + '</span><b>' + value + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+    const lateN = s.late, openLei = Math.max(0, s.toPay - s.lateLei), all = s.paid + s.toPay;
+    const p = pct(s.paid, all);
+    const leg = (cls, label, lei, sub) => '<li class="' + cls + '"><i aria-hidden="true"></i><span>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</span><b>' + K.lei(lei) + '</b></li>';
+    const nOpen = d.rows.filter((r) => !r.paid && r.state !== 'late').length;
+    const overview = all > 0 || s.count ? '<section class="pf-ov" data-pf-ov>' +
+        donut([{ lei: s.paid, color: 'var(--pf-paid)', label: 'Plătit' }, { lei: openLei, color: 'var(--pf-open)', label: 'De plătit' }, { lei: s.lateLei, color: 'var(--pf-late)', label: 'Întârziate' }], 120,
+          '<b>' + p + '%</b><small>plătit</small>', p + '% plătit: ' + K.lei(s.paid) + ' plătit, ' + K.lei(openLei) + ' de plătit, ' + K.lei(s.lateLei) + ' întârziate') +
+        '<ul class="pf-leg">' + leg('is-paid', 'Plătit', s.paid, K.plural(s.paidCount, 'plată', 'plăți')) + leg('is-open', 'De plătit', openLei, nOpen ? K.plural(nOpen, 'plată', 'plăți') + (s.soon ? ', ' + s.soon + ' în curând' : '') : '') +
+          leg('is-late', 'Întârziate', s.lateLei, lateN ? K.plural(lateN, 'plată', 'plăți') : 'nimic') + '</ul>' +
+        (s.missing ? '<p class="pf-ov-note">' + icon('info') + K.plural(s.missing, 'plată fără sumă', 'plăți fără sumă') + ', nu intră în cerc</p>' : '') + '</section>' +
+      // a slim line that stays at the top once the circle has scrolled away
+      '<div class="pf-mini" data-pf-mini aria-hidden="true"><span><b>' + p + '%</b> plătit</span><span>rămas <b>' + K.lei(s.toPay) + '</b></span>' + (lateN ? '<span class="is-late">' + K.plural(lateN, 'întârziată', 'întârziate') + '</span>' : '') +
+        '<i><i style="width:' + p + '%"></i></i></div>' : '';
     const late = d.rows.filter((r) => r.state === 'late'), open = d.rows.filter((r) => !r.paid && r.state !== 'late'), paid = d.rows.filter((r) => r.paid);
     const list = (title, rows) => rows.length ? '<section class="pf-group"><h4>' + title + '<span>' + rows.length + '</span></h4><ul class="pf-list">' + rows.map(rowHtml).join('') + '</ul></section>' : '';
-    return '<div class="pf-sum">' +
-        tile('is-good', 'Plătit', K.lei(s.paid), s.paidCount + ' din ' + s.count) +
-        tile('', 'De plătit', K.lei(s.toPay), s.missing ? K.plural(s.missing, 'fără sumă', 'fără sumă') : (s.soon ? s.soon + ' în curând' : '')) +
-        tile(s.late ? 'is-bad' : 'is-calm', 'Întârziate', s.late ? K.lei(s.lateLei) : '0', s.late ? K.plural(s.late, 'plată', 'plăți') : 'nimic') +
-        '<i class="pf-bar"><i style="width:' + pct + '%"></i></i></div>' +
+    return overview +
       (d.rows.length ? list('Întârziate', late) + list(d.current || d.month > d.today.slice(0, 7) ? 'De plătit' : 'Neplătite', open) + list('Plătite', paid)
         : K.empty('wallet', 'Nicio plată luna asta', 'Completează Costuri lunare și salariile în Echipa.')) +
-      '<p class="pf-foot">Salariile sunt cele pe ' + esc(K.MON[+d.salariesFor.slice(5, 7) - 1]) + ', plătite în ' + esc(K.MON[+d.month.slice(5, 7) - 1]) + ', în ziua din fișa fiecăruia (Echipa → Oameni → Ziua salariului). Sumele fixe vin din Costuri lunare.</p>';
+      '<p class="pf-foot">Salariile de ' + esc(K.MON[+d.salariesFor.slice(5, 7) - 1]) + ' se plătesc în ' + esc(K.MON[+d.month.slice(5, 7) - 1]) + ', în ziua din fișa fiecăruia (Oameni → Ziua salariului).</p>';
   }
 
   // ------------------------------------------------------------------ Cheltuieli variabile
@@ -128,13 +176,37 @@
           (e.kind && line.kinds ? '<em>' + esc(kindLabel(line, e.kind)) + '</em>' : '') + esc(e.note || (e.kind ? '' : '-')) + '</span><b>' + K.lei(e.lei, 2) + '</b>' +
           '<button type="button" class="k-icon-btn pf-del" data-pf-del="' + esc(e.id) + '" aria-label="Șterge">' + icon('trash') + '</button></li>').join('') + '</ul>' : '') +
         '<button type="button" class="pf-add" data-pf-add>' + icon('plus') + 'Adaugă</button></section>';
-    const total = d.rec.reduce((a, l) => a + l.total, 0) + d.autos.reduce((a, x) => a + (Number(x.lei) || 0), 0);
     const tax = d.rec.find((l) => l.key === 'taxes');
     const taxSal = tax ? tax.entries.filter((e) => e.kind === 'salarii').reduce((a, e) => a + Number(e.lei), 0) : 0;
-    return '<div class="pf-sum is-one"><div class="pf-tile"><span>Cheltuieli variabile · ' + esc(K.monthLabel(d.month)) + '</span><b>' + K.lei(total) + '</b>' + (taxSal ? '<small>' + K.lei(total - taxSal) + ' în costurile lunii</small>' : '') + '</div></div>' +
+    return whereHtml(d.where) +
       (d.autos.length ? '<section class="k-card pf-rec"><div class="pf-rec-head"><div class="pf-main"><b class="pf-name">' + icon('zap') + 'Se completează singure</b></div></div><ul class="pf-autos">' + d.autos.map(autoRow).join('') + '</ul></section>' : '') +
       '<div class="pf-recs">' + d.rec.map(recCard).join('') + '</div>' +
-      (taxSal ? '<p class="pf-foot">Taxele din salarii (' + K.lei(taxSal) + ') nu se mai scad din profit: sunt deja în Salarii brute.</p>' : '<p class="pf-foot">Tot ce scrii aici intră în costurile lunii, deci în profit și în bonus. La taxe, „Din salarii” nu se mai scade o dată: e deja în Salarii brute.</p>');
+      '<p class="pf-foot">Tot ce adaugi aici intră în costurile lunii' + (taxSal ? '. Taxele din salarii (' + K.lei(taxSal) + ') nu se scad încă o dată: sunt deja în Salarii brute.' : '.') + '</p>';
+  }
+  // Unde se duc banii: every cost of the month by category, the 6 biggest and the rest together, each with its own colour
+  // (the colour follows the category, never its rank), and last month's total
+  const CAT_COLOR = { sal: 1, rent: 2, credit: 3, laser: 4, tax: 5, ads: 6, cons: 7, util: 8 };
+  function whereHtml(w) {
+    if (!w) return '';
+    const list = (w.cats || []).filter((c) => c.lei > 0).sort((a, b) => b.lei - a.lei);
+    const colored = list.filter((c) => CAT_COLOR[c.key]);
+    const top = colored.slice(0, 6);
+    const rest = list.filter((c) => !top.includes(c));
+    const restLei = rest.reduce((a, c) => a + c.lei, 0);
+    const parts = top.map((c) => ({ key: c.key, label: c.label, lei: c.lei, color: 'var(--pf-c' + CAT_COLOR[c.key] + ')' }));
+    if (restLei > 0) parts.push({ key: 'rest', label: 'Altele', lei: restLei, color: 'var(--pf-c0)', sub: rest.map((c) => (c.key === 'other' ? (c.parts || []).join(', ') : c.label)).filter(Boolean).join(', ') });
+    const total = parts.reduce((a, x) => a + x.lei, 0);
+    const mName = K.MON[+(w.prev ? w.prev.month : '2000-01').slice(5, 7) - 1];
+    let cmp = '';
+    if (w.prev && w.prev.total > 0) {
+      const dlt = total - w.prev.total, up = dlt > 0;
+      cmp = '<p class="pf-cmp ' + (up ? 'is-up' : 'is-down') + '">' + (up ? '↑ ' : '↓ ') + K.lei(Math.abs(dlt)) + (up ? ' mai mult' : ' mai puțin') + ' decât în ' + esc(mName) + ' (' + K.lei(w.prev.total) + ')' + (w.upToday ? ', luna asta până azi' : '') + '</p>';
+    }
+    const legend = parts.map((x) => '<li><i style="--c:' + x.color + '" aria-hidden="true"></i><span>' + esc(x.label) + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span><b>' + K.lei(x.lei) + '</b><em>' + pct(x.lei, total) + '%</em></li>').join('');
+    return '<section class="k-card pf-where"><div class="pf-where-head"><h3>Unde se duc banii luna asta</h3>' + cmp + '</div>' +
+      (total > 0 ? '<div class="pf-where-body">' + donut(parts, 148, '<b>' + K.lei(total) + '</b><small>' + (w.upToday ? 'până azi' : 'toată luna') + '</small>', 'Costurile lunii: ' + parts.map((x) => x.label + ' ' + K.lei(x.lei)).join(', ')) +
+        '<ul class="pf-leg is-cats">' + legend + '</ul></div>' : '<p class="pf-foot">Nicio cheltuială încă luna asta.</p>') +
+      (w.missing && w.missing.length ? '<p class="pf-ov-note">' + icon('info') + 'Lipsesc: ' + esc(w.missing.join(', ')) + '</p>' : '') + '</section>';
   }
   function openAdd(lineKey) {
     const line = PL.data.rec.find((l) => l.key === lineKey);

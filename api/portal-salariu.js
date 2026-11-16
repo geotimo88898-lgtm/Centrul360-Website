@@ -69,6 +69,10 @@ module.exports = async (req, res) => {
           read: { ads: { ok: adsRead, at: adsRead ? ad.at : (entry.adsAuto ? entry.adsAuto.at : ''), saved: !adsRead && !!entry.adsAuto },
             whatsapp: { ok: !wa.error, at: wa.error ? (entry.waAuto ? entry.waAuto.at : '') : wa.at, saved: !!wa.error && !!entry.waAuto, error: wa.error || '' } }, collections, profit: Math.round((collections - costs.total) * 100) / 100,
           prev: prev && prev.savedAt ? { month: pm, eurRate: prev.eurRate, lines: prev.lines } : null,
+          // the bonus condition of the managers this month so far (every trained cosmetician of her clinics over the
+          // daily minimum): on track or not, no names
+          bonusOk: (() => { const ms = ctx.employees.filter((e) => e && e.role === 'manager' && e.active !== false); if (!ms.length) return null;
+            const upto = isCurrent ? day : MP.lastDay(month); return ms.every((m) => MP.conditionOf(ctx.employees, ctx.sales, ctx.attendance, require('./_lib/roles').managesOf(m), month, upto).ok); })(),
         });
         return;
       }
@@ -96,7 +100,7 @@ module.exports = async (req, res) => {
       await writeJSON(MP.COSTS_KEY, doc, { quiet: true });
       await N.notifyMany(store, await N.adminIds(store), {
         kind: 'info', tone: 'info', go: 'angajati', tag: 'mgr-costs-' + month, ownerPush: false,
-        title: 'Costuri variabile trimise', text: (me.name ? me.name.split(' ')[0] + ' a trimis' : 'Managerul a trimis') + ' consumabilele și alte costuri ale lunii. Le găsești în Echipa → Costuri.',
+        title: 'Costuri variabile trimise', text: (me.name ? me.name.split(' ')[0] + ' a trimis' : 'S-au trimis') + ' consumabilele și alte costuri ale lunii. Le găsești în Echipa → Costuri.',
       });
       res.status(200).json({ ok: true });
       return;
