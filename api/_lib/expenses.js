@@ -287,6 +287,13 @@ function nextDue(ctx, month, t) {
 }
 
 // ------------------------------------------------------------------ the owner's notices
+// where a notice opens (portal-plati.js, #cheltuieli/<what>@<month>): one payment, its row lit up; several, the filter
+// of their month (late: Întârziate, due today: De plătit)
+function alertLink(list, kind) {
+  const months = Array.from(new Set(list.map((r) => r.month).filter(Boolean)));
+  if (list.length === 1 && list[0].key) return 'cheltuieli/' + list[0].key + (list[0].month ? '@' + list[0].month : '');
+  return 'cheltuieli/' + kind + (months.length === 1 ? '@' + months[0] : '');
+}
 // Once a day from 9:00 (Romania): what is due today and what is late, once per payment per month (bell and phone,
 // the owner only; never the manager). Grouped in one line when several come the same day.
 async function run() {
@@ -304,8 +311,8 @@ async function run() {
     t.rows.forEach((r) => {
       if (r.paid || r.autoPay || !r.due || r.due < ALERT_FROM) return;
       const k = m + '|' + r.key + '|';
-      if (r.state === 'today' && !st.sent[k + 'due']) due.push(Object.assign({ k: k + 'due' }, r));
-      if (r.state === 'late' && !st.sent[k + 'late']) late.push(Object.assign({ k: k + 'late' }, r));
+      if (r.state === 'today' && !st.sent[k + 'due']) due.push(Object.assign({ k: k + 'due', month: m }, r));
+      if (r.state === 'late' && !st.sent[k + 'late']) late.push(Object.assign({ k: k + 'late', month: m }, r));
     });
   }
   const say = (list) => {
@@ -317,8 +324,8 @@ async function run() {
   };
   const owners = await N.ownerIds({ readJSON });
   const store = { readJSON, writeJSON };
-  if (due.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'warn', go: 'cheltuieli', tag: 'plati-azi-' + day, title: due.length === 1 ? 'DE PLĂTIT AZI 💳' : due.length + ' PLĂȚI AZI 💳', text: say(due) + '. Cheltuieli → Plăți.' });
-  if (late.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'bad', go: 'cheltuieli', tag: 'plati-late-' + day, title: late.length === 1 ? 'PLATĂ ÎNTÂRZIATĂ ⚠️' : late.length + ' PLĂȚI ÎNTÂRZIATE ⚠️', text: say(late) + (late.length === 1 ? '. Bifeaz-o când e plătită.' : '. Bifează-le când sunt plătite.') });
+  if (due.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'warn', go: alertLink(due, 'open'), tag: 'plati-azi-' + day, title: due.length === 1 ? 'DE PLĂTIT AZI 💳' : due.length + ' PLĂȚI AZI 💳', text: say(due) + '. Cheltuieli.' });
+  if (late.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'bad', go: alertLink(late, 'late'), tag: 'plati-late-' + day, title: late.length === 1 ? 'PLATĂ ÎNTÂRZIATĂ ⚠️' : late.length + ' PLĂȚI ÎNTÂRZIATE ⚠️', text: say(late) + (late.length === 1 ? '. Bifeaz-o când e plătită.' : '. Bifează-le când sunt plătite.') });
   due.concat(late).forEach((r) => { st.sent[r.k] = new Date().toISOString(); });
   // the marks of months long gone are dropped
   const keepFrom = prevMonth(prevMonth(cur));
@@ -328,4 +335,4 @@ async function run() {
   return { due: due.length, late: late.length };
 }
 
-module.exports = { FIRST, KEY, REC, REC_KEYS, FIXED, CARD, autoPayOf, PAYDAY, TAX_DAY, normDoc, loadDoc, monthOf, monthW, recDayOf, repeatsIn, newId, recCosts, recSum, newEntry, tracker, nextDue, run, isMonth, isDay, prevMonth, nextMonth, today, payDayOf };
+module.exports = { alertLink, FIRST, KEY, REC, REC_KEYS, FIXED, CARD, autoPayOf, PAYDAY, TAX_DAY, normDoc, loadDoc, monthOf, monthW, recDayOf, repeatsIn, newId, recCosts, recSum, newEntry, tracker, nextDue, run, isMonth, isDay, prevMonth, nextMonth, today, payDayOf };

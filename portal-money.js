@@ -1116,7 +1116,7 @@
       return head + '<div class="mg-calc is-final"><div><span>Bonus final</span><b>' + K.lei(m.final.lei) + '</b><small>' + icon('checkCircle') + 'Luna e închisă' + (m.final.at ? ' pe ' + esc(roDay(m.final.at)) : '') + '</small></div></div>';
     }
     if (!m.estimate) {
-      return head + '<div class="mg-wait">' + icon('clock') + '<span>' + (admin ? 'Trece costurile lunii în Cheltuieli → Costuri lunare și bonusul se calculează singur.' : 'Bonusul se calculează după ce se trec costurile lunii.') + '</span></div>';
+      return head + '<div class="mg-wait">' + icon('clock') + '<span>' + (admin ? 'Trece costurile lunii în Cheltuieli și bonusul se calculează singur.' : 'Bonusul se calculează după ce se trec costurile lunii.') + '</span></div>';
     }
     const e = m.estimate;
     return head + '<div class="mg-calc">' +
@@ -1138,7 +1138,7 @@
       '</section>';
   }
 
-  // what she sends at month close (consumables, other costs): a proposal the owner takes into Costuri lunare
+  // what she sends at month close (consumables, other costs): a proposal the owner takes into the month's costs (Cheltuieli)
   function mgProposeHtml(m) {
     const p = m.proposal;
     const st = p ? { pending: ['warn', 'Trimis, în așteptare'], accepted: ['good', 'Preluat'], declined: ['bad', 'Nepreluat'] }[p.status] : null;
@@ -1202,7 +1202,7 @@
       '<div class="mg-costs"><div class="mg-cost is-in"><span>Încasări ' + esc(m.clinics.join(' și ')) + '</span><b>' + K.lei(m.collections) + '</b></div>' + rows +
         '<div class="mg-cost is-total"><span>Total costuri</span><b>' + K.lei(m.costs.total) + '</b></div>' +
         '<div class="mg-cost is-profit"><span>Profit</span><b>' + K.lei(m.profit) + '</b></div></div>' +
-      (m.costs.missing.length || !m.filled ? '<div class="mg-wait">' + icon('alert') + '<span>' + (m.costs.missing.length ? 'Lipsesc: ' + esc(m.costs.rows.filter((r) => r.lei == null).map((r) => r.label).join(', ')) + '.' : 'Luna nu e salvată încă în Cheltuieli → Costuri lunare.') + ' Bonusul apare la ea doar după ce luna e completă.</span></div>' : '') +
+      (m.costs.missing.length || !m.filled ? '<div class="mg-wait">' + icon('alert') + '<span>' + (m.costs.missing.length ? 'Lipsesc: ' + esc(m.costs.rows.filter((r) => r.lei == null).map((r) => r.label).join(', ')) + '.' : 'Luna nu e salvată încă în Cheltuieli.') + ' Bonusul apare la ea doar după ce luna e completă.</span></div>' : '') +
       '<form class="mg-final" data-mg-final><label><span>Bonus final</span><div class="k-money"><input name="lei" type="number" inputmode="numeric" min="0" step="1" value="' + esc(fin) + '" placeholder="0"></div></label>' +
         '<button type="button" class="k-btn is-accent" data-mg-final-save>' + icon('check') + (m.final ? 'Schimbă' : 'Confirmă la închiderea lunii') + '</button>' +
         (m.final ? '<button type="button" class="k-btn is-ghost" data-mg-final-clear>Retrage</button>' : '') + '</form>' +
@@ -1289,139 +1289,8 @@
     });
   };
 
-  // =====================================================================================
-  // COSTURI LUNARE (the owner, Echipa → Costuri lunare): the month's lines, the profit, the manager's proposal
-  // =====================================================================================
-  const CO = { month: K.thisMonth(), data: null, box: null };
-  K.mountCosts = (box) => { CO.box = box; coLoad(); };
-  // the month shared with Plăți și cheltuieli (portal-plati.js)
-  K.costsMonth = () => CO.month;
-  K.setCostsMonth = (m) => { if (/^\d{4}-\d{2}$/.test(m || '')) CO.month = m; };
-  async function coLoad() {
-    const box = CO.box; if (!box) return;
-    const month = CO.month;
-    box.innerHTML = '<div class="k-skel" style="height:420px"></div>';
-    try {
-      const d = await K.api('/api/portal-salariu?view=costs&month=' + encodeURIComponent(month));
-      if (CO.month !== month) return;
-      CO.data = d; coPaint();
-    } catch (err) { box.innerHTML = K.empty('alert', 'Nu am putut încărca costurile', K.errText(err)); }
-  }
-  function coPaint(fill) {
-    const d = CO.data, box = CO.box; if (!d || !box) return;
-    const E = d.entry, isNow = d.current;
-    const val = (x) => (x == null ? '' : x);
-    const typed = Object.assign({}, E.lines, fill && fill.lines ? fill.lines : {});
-    const rate = fill && fill.eurRate != null ? fill.eurRate : E.eurRate;
-    const row = (k) => ((d.costs && d.costs.rows) || []).find((r) => r.key === k) || {};
-    const line = (l) => {
-      if (l.auto) {
-        const a = d.autos[l.key], rd = (d.read || {})[l.key];
-        const said = a != null ? 'din ' + l.auto + ': ' + K.lei(a) + (rd && rd.saved && rd.at ? ' (citit ' + esc(roDay(rd.at)) + ')' : '')
-          : rd && rd.error ? l.auto + ' nu răspunde, scrie suma' : rd ? l.auto + ' nu poate fi citit acum, scrie suma' : '';
-        return '<div class="co-line is-auto"><div class="co-l"><b>' + esc(l.label) + '</b><small>' + said + '</small></div>' +
-          '<div class="k-money"><input name="over|' + l.key + '" type="number" inputmode="decimal" min="0" step="1" value="' + esc(val(E.over[l.key])) + '" placeholder="' + esc(a != null ? Math.round(a) : 'suma') + '"></div></div>';
-      }
-      // kept as records in Cheltuieli (portal-plati.js): shown here, added there
-      if (l.rec) {
-        const r = row(l.key);
-        return '<div class="co-line is-rec"><div class="co-l"><b>' + esc(l.label) + '</b><small>din Cheltuieli' + (r.typed ? ', cu ' + K.lei(r.typed) + ' scriși aici înainte' : '') + '</small></div>' +
-          '<button type="button" class="co-rec" data-co-rec>' + K.lei(r.lei || 0) + icon('right') + '</button></div>';
-      }
-      return '<div class="co-line"><div class="co-l"><b>' + esc(l.label) + '</b>' + (l.eur ? '<small data-co-eur="' + l.key + '"></small>' : '') + '</div>' +
-        '<div class="k-money' + (l.eur ? ' is-eur' : '') + '"><input name="line|' + l.key + '" type="number" inputmode="decimal" min="0" step="1" value="' + esc(val(typed[l.key])) + '" placeholder="' + (l.kind === 'fixed' ? 'de completat' : '0') + '"></div></div>';
-    };
-    const P = E.proposal;
-    const prop = P && P.status === 'pending' ? '<div class="co-prop">' + icon('inbox') + '<div><b>' + (P.byName ? esc(first(P.byName)) + ' a trimis' : 'S-au trimis') + ' costurile lunii</b><span>' +
-        [P.consumables != null ? 'Consumabile ' + K.lei(P.consumables) : '', P.other != null ? 'Alte costuri ' + K.lei(P.other) : ''].filter(Boolean).join(' · ') + (P.note ? ' · „' + esc(P.note) + '”' : '') + '</span></div>' +
-        '<div class="co-prop-acts"><button type="button" class="k-btn is-sm is-good" data-co-prop="accept">' + icon('check') + 'Folosește</button><button type="button" class="k-btn is-sm is-ghost" data-co-prop="decline">Nu</button></div></div>' : '';
-    box.innerHTML =
-      '<div class="co-top"><div class="k-month"><button type="button" class="k-icon-btn" data-co-m="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + esc(K.monthLabel(d.month)) + '</b><button type="button" class="k-icon-btn" data-co-m="1" aria-label="Luna următoare"' + (isNow ? ' disabled' : '') + '>' + icon('right') + '</button></div>' +
-        '<span class="k-tag is-' + (E.savedAt ? 'good' : 'warn') + '">' + (E.savedAt ? 'salvat ' + esc(roDay(E.savedAt)) : 'nesalvat') + '</span>' +
-        (d.prev ? '<button type="button" class="k-btn is-outline is-sm" data-co-copy>' + icon('copy') + 'Copiază din ' + esc(K.MON[+d.prev.month.slice(5, 7) - 1]) + '</button>' : '') + '</div>' +
-      '<div class="co-sum" data-co-sum></div>' + prop +
-      '<form data-co-form class="co-form">' +
-        '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('receipt') + 'Costuri fixe</h3></div>' +
-          (E.eurFrom && E.eurFrom.source === 'bnr'
-            // today's BNR rate, always (the owner, 16.11): shown, not typed
-            ? '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro de azi</b><small>' + esc(E.eurFrom.bank || 'BNR') + (E.eurFrom.date ? ', ' + esc(roDay(E.eurFrom.date)) : '') + ', se actualizează singur</small></div><div class="k-money is-rate"><input name="eurRate" type="number" value="' + esc(val(E.eurRate)) + '" readonly tabindex="-1"></div></div>'
-            : '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro</b><small>BNR nu răspunde acum, scrie-l tu</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="curs BNR"></div></div>') +
-          d.lines.filter((l) => l.kind === 'fixed').map(line).join('') + '</section>' +
-        '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('sliders') + 'Costuri variabile</h3></div>' +
-          '<p class="k-muted co-note">Reclamele, WhatsApp, comisioanele și orele vin singure; scrie o sumă doar ca să le schimbi. Restul se adaugă în Cheltuieli.</p>' +
-          d.lines.filter((l) => l.kind === 'var').map(line).join('') + '</section>' +
-      '</form>' +
-      '<div class="co-save"><button type="button" class="k-btn is-accent" data-co-save>' + icon('check') + 'Salvează luna</button></div>';
-    coCalc();
-  }
-  // the sums as the owner types
-  function coRead() {
-    const f = CO.box.querySelector('[data-co-form]');
-    const num = (x) => { if (x == null || String(x).trim() === '') return null; const n = Number(String(x).replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : null; };
-    const out = { eurRate: num(f.eurRate.value), lines: {}, over: {} };
-    CO.data.lines.filter((l) => !l.rec).forEach((l) => { const i = f.elements[(l.auto ? 'over|' : 'line|') + l.key]; if (i) (l.auto ? out.over : out.lines)[l.key] = num(i.value); });
-    return out;
-  }
-  function coCalc() {
-    const d = CO.data, box = CO.box; if (!d || !box || !box.querySelector('[data-co-form]')) return;
-    const v = coRead();
-    let fixed = 0, variable = 0, missing = 0;
-    const missed = [];
-    d.lines.forEach((l) => {
-      let lei;
-      if (l.rec) lei = Number((((d.costs && d.costs.rows) || []).find((r) => r.key === l.key) || {}).lei) || 0;
-      else if (l.auto) lei = v.over[l.key] != null ? v.over[l.key] : d.autos[l.key];
-      else if (l.eur) { const e = v.lines[l.key]; lei = e != null && v.eurRate ? e * v.eurRate : e === 0 ? 0 : null; const s = box.querySelector('[data-co-eur="' + l.key + '"]'); if (s) s.textContent = e != null ? (v.eurRate ? '€ × ' + v.eurRate + ' = ' + K.lei(lei) : 'în euro, scrie cursul') : 'în euro'; }
-      else lei = v.lines[l.key] != null ? v.lines[l.key] : l.kind === 'var' ? 0 : null;
-      if (lei == null) { missing++; missed.push(l.label); return; }
-      if (l.kind === 'fixed') fixed += lei; else variable += lei;
-    });
-    const total = fixed + variable, profit = d.collections - total;
-    // Încasări − Costuri = Profit, the share of the income the costs take, the bonus (the owner, 16.11: „simplu de înțeles”)
-    const n = (x) => K.num(x) + '<small>lei</small>';
-    const share = d.collections > 0 ? Math.round((total / d.collections) * 100) : null;
-    const bonus = Math.round(Math.max(0, profit) * 0.05);
-    box.querySelector('[data-co-sum]').innerHTML =
-      '<div class="co-eq" role="img" aria-label="Încasări ' + K.lei(d.collections) + ' minus costuri ' + K.lei(total) + ' egal profit ' + K.lei(profit) + '">' +
-        '<div><span>Încasări</span><b>' + n(d.collections) + '</b></div><i aria-hidden="true">−</i>' +
-        '<div><span>Costuri</span><b>' + n(total) + '</b></div><i aria-hidden="true">=</i>' +
-        '<div class="' + (profit >= 0 ? 'is-good' : 'is-bad') + '"><span>Profit' + (d.current ? ' până azi' : '') + '</span><b>' + (profit < 0 ? '−' : '') + n(Math.abs(profit)) + '</b></div></div>' +
-      (share != null ? '<div class="co-share"><div class="co-share-bar' + (share > 100 ? ' is-over' : '') + '"><i style="width:' + Math.min(100, share) + '%"></i></div>' +
-        '<small>' + (share > 100 ? 'Costurile sunt mai mari decât încasările.' : 'Din fiecare 100 lei încasați, <b>' + share + '</b> se duc pe costuri și <b>' + (100 - share) + '</b> rămân profit.') + '</small></div>' : '') +
-      (missing ? '<div class="co-miss">' + icon('alert') + ' Lipsește: ' + esc(missed.join(', ')) + '</div>' : '') +
-      (d.bonusOk === null || d.bonusOk === undefined ? '' : '<div class="co-bonus">' + icon('trophy') + '<span>Bonus (5%)</span><b>' + (d.bonusOk ? K.lei(bonus) : '0 lei') + '</b>' +
-        (d.bonusOk ? '<span class="is-ok">condiția e îndeplinită până acum</span>' : '<span class="is-no">condiția nu e îndeplinită încă' + (bonus ? ' (ar fi ' + K.lei(bonus) + ')' : '') + '</span>') + '</div>');
-  }
-  function coClick(e) {
-    if (!CO.box || !CO.box.contains(e.target)) return;
-    // a line kept as records: to Cheltuieli (portal-plati.js)
-    if (e.target.closest('[data-co-rec]')) { const b = document.querySelector('[data-k-seg="plsub"] button[data-v="chelt"]'); if (b) b.click(); return; }
-    const mv = e.target.closest('[data-co-m]');
-    if (mv) { CO.month = K.addMonths(CO.month, +mv.dataset.coM); coLoad(); return; }
-    if (e.target.closest('[data-co-copy]')) {
-      const p = CO.data.prev, f = CO.box.querySelector('[data-co-form]');
-      if (p.eurRate != null) f.eurRate.value = p.eurRate;
-      CO.data.lines.filter((l) => l.kind === 'fixed').forEach((l) => { const i = f.elements['line|' + l.key]; if (i && p.lines[l.key] != null) i.value = p.lines[l.key]; });
-      coCalc();
-      K.ui().toast('Copiat din ' + K.monthLabel(p.month) + '. Verifică și salvează.', 'success');
-      return;
-    }
-    const pr = e.target.closest('[data-co-prop]');
-    if (pr) return K.busy(pr, async () => {
-      try { await K.api('/api/portal-salariu', { action: 'proposal_decide', month: CO.month, decision: pr.dataset.coProp }); K.ui().toast(pr.dataset.coProp === 'accept' ? 'Preluat în costurile lunii.' : 'Propunerea nu a fost preluată.', 'success'); MG.cache = {}; coLoad(); }
-      catch (err) { K.ui().toast(K.errText(err), 'error'); }
-    });
-    const sv = e.target.closest('[data-co-save]');
-    if (sv) return K.busy(sv, async () => {
-      const v = coRead();
-      const eurUsed = CO.data.lines.some((l) => l.eur && v.lines[l.key]);
-      if (eurUsed && !v.eurRate) { K.ui().toast('Scrie cursul euro al lunii.', 'error'); CO.box.querySelector('[name=eurRate]').focus(); return; }
-      try { await K.api('/api/portal-salariu', Object.assign({ action: 'costs_save', month: CO.month }, v)); K.ui().toast('Costurile lunii au fost salvate.', 'success'); MG.cache = {}; coLoad(); }
-      catch (err) { K.ui().toast(K.errText(err), 'error'); }
-    });
-  }
-  document.addEventListener('click', coClick);
-  document.addEventListener('input', (e) => { if (CO.box && CO.box.contains(e.target) && e.target.closest('[data-co-form]')) coCalc(); });
+  // the manager's pay is read again after the owner changes the month's costs (Cheltuieli, portal-plati.js)
+  K.mgReset = () => { MG.cache = {}; };
 
   K.section('comision', { mount: mountComision, show() { K.prefs.load().then(renderComision); }, data() { if (cpanel && K.isActive('comision')) renderComision(); } });
 })();

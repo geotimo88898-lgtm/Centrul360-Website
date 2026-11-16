@@ -168,7 +168,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const r3 = recs();
     check(6, 'accepted: replaces the earlier one (no double count), double tap at once', r3.c.join() === '200' && r3.o.length === 0, r3);
     const notes = rd('data/notifications.json', []).filter((n) => n.tag === 'mgr-costs-' + MONTH);
-    check(10, 'the manager\'s costs open Cheltuieli', notes.length && notes.every((n) => n.go === 'cheltuieli' && /Le găsești la Cheltuieli\./.test(n.text)), notes[0]);
+    check(10, 'the manager\'s costs open Cheltuieli', notes.length && notes.every((n) => n.go === 'cheltuieli/propunere@' + MONTH && /Le găsești la Cheltuieli\./.test(n.text)), notes[0]);
   }
 
   // 7. unanswered messages: never the candidates
@@ -268,7 +268,9 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check(16, 'Nuki: no „proprietar…” as a person', !/asistentul personal al proprietarului|pentru proprietar|fața proprietarului|Propune proprietarului|\(proprietarul, 14\.11\)/.test(nuki) && /decide George/.test(nuki));
     const ax = JSON.stringify(require('../api/_lib/academy-extra.js'));
     check(17, 'Traininguri: no „managerul”', !/[Mm]anagerul/.test(ax));
-    check(10, 'Plăți alerts open Cheltuieli', /go: 'cheltuieli', tag: 'plati-azi-'/.test(fs.readFileSync(path.join(__dirname, '../api/_lib/expenses.js'), 'utf8')));
+    { const AL = require('../api/_lib/expenses').alertLink;
+      check(10, 'Plăți alerts open Cheltuieli (the row, or the filter of its month)', /go: alertLink\(due, 'open'\), tag: 'plati-azi-'/.test(fs.readFileSync(path.join(__dirname, '../api/_lib/expenses.js'), 'utf8')) &&
+        AL([{ key: 'claude', month: '2026-11' }], 'open') === 'cheltuieli/claude@2026-11' && AL([{ key: 'a', month: '2026-10' }, { key: 'b', month: '2026-11' }], 'late') === 'cheltuieli/late' && AL([{ key: 'a', month: '2026-11' }, { key: 'b', month: '2026-11' }], 'open') === 'cheltuieli/open@2026-11'); }
   }
 
   // 18. Meta's errors: never raw on a page

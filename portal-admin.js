@@ -358,8 +358,8 @@
         '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
         '<div data-pane="profile"' + (tab === 'profile' ? '' : ' hidden') + '><form class="k-form" data-profile>' +
           K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'manager' ? 'bonusul.' : e.role === 'receptie' ? 'bonusul de programări.' : 'comisionul.')) +
-          // the day her net salary is paid (only the owner sees it: Echipa → Costuri și plăți)
-          (e.role === 'admin' ? '' : K.field('Ziua salariului', '<input name="payDay" type="number" min="1" max="31" step="1" inputmode="numeric" value="' + esc(e.payDay || 15) + '">', 'full', 'Ziua din lună în care îi plătești salariul net. Apare doar la tine, în Plăți.')) +
+          // the day her net salary is paid (only the owner sees it: Cheltuieli)
+          (e.role === 'admin' ? '' : K.field('Ziua salariului', '<input name="payDay" type="number" min="1" max="31" step="1" inputmode="numeric" value="' + esc(e.payDay || 15) + '">', 'full', 'Ziua din lună în care îi plătești salariul net. Apare doar la tine, în Cheltuieli.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
           K.field('Rol', K.seg('role', ROLES, e.role, 'is-big'), 'full', 'Conduce clinicile alese mai jos: tot ce face recepția acolo, plus programul echipei, pontajul și concediile, actele și pagina Manager. Nu vede profitul, costurile, salariile și reclamele.') +
           K.field('Locație', K.seg('location', LOCS, e.location, 'is-big'), 'full') +

@@ -118,7 +118,7 @@ module.exports = async (req, res) => {
         doc.months[month] = entry;
       });
       await N.notifyMany(store, await N.adminIds(store), {
-        kind: 'info', tone: 'info', go: 'cheltuieli', tag: 'mgr-costs-' + month, ownerPush: false,
+        kind: 'info', tone: 'info', go: 'cheltuieli/propunere@' + month, tag: 'mgr-costs-' + month, ownerPush: false,
         title: 'Costuri variabile trimise', text: (me.name ? me.name.split(' ')[0] + ' a trimis' : 'S-au trimis') + ' consumabilele și alte costuri ale lunii. Le găsești la Cheltuieli.',
       });
       res.status(200).json({ ok: true });
