@@ -213,7 +213,7 @@ function tracker(ctx, month) {
     }
     const rate = eur || (ctx.costs.months[month] && MP.amount(ctx.costs.months[month].eurRate)) || null;
     const lei = v == null ? null : f.eur ? (rate ? r2(v * rate) : null) : v;
-    push({ key: f.key, group: 'fixed', label: f.label, due: f.day ? dayOf(month, f.day) : null, lei, eur: f.eur ? v : undefined, from, src: 'Costuri lunare' });
+    push({ key: f.key, group: 'fixed', label: f.label, due: f.day ? dayOf(month, f.day) : null, lei, eur: f.eur ? v : undefined, from, src: 'Cheltuieli' });
   });
 
   // what Meta takes from the card by itself as it is spent (ads, WhatsApp): rows paid as the spend happens.

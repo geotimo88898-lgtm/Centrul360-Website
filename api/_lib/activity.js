@@ -47,14 +47,14 @@ const ROUTES = {
   'portal-legal': { area: 'Acte și autorizații', go: 'acte' },
   'portal-followups': { area: 'De sunat și pachete', go: 'programari' },
   'portal-plati': { area: 'Cheltuieli', go: 'cheltuieli' },
-  'portal-salariu': { area: 'Costuri lunare și bonus', go: 'cheltuieli' },
+  'portal-salariu': { area: 'Cheltuieli și bonus', go: 'cheltuieli' },
   'portal-content': { area: 'Content', go: 'continut' },
   'portal-candidates': { area: 'Angajări', go: 'pipeline' },
   'portal-booking': { area: 'Programări online', go: 'programari' },
 };
 // what is only read (never a line), and routes that are not changes of the clinic's work
 const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list', 'check', 'discover', 'profile_get',
-  'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause', 'test',
+  'details', 'defaults', 'fix_list', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause', 'test',
   'transcribe', 'stats', 'context', 'feedback_list', 'close_prefill', 'closes_list', 'pos', 'report_draft', 'reports_list']; // (a voice note written out in Mesaje: no change of the clinic's work)
 // what only reads in one route (an action name another route uses for a change stays a change there)
 const READS_IN = {
@@ -94,9 +94,11 @@ const VERBS = {
   'portal-employees:create': 'a adăugat în echipă pe', 'portal-employees:update_details': 'a modificat datele pentru', 'portal-employees:reset_password': 'a resetat parola pentru',
   'portal-employees:set_active': 'a schimbat accesul pentru', 'portal-employees:set_goals': 'a setat obiectivele pentru',
   'portal-employees:manual_add': 'a adăugat o ajustare pentru', 'portal-employees:manual_delete': 'a șters o ajustare',
-  'portal-attendance:clock_in': 'a pontat intrarea', 'portal-attendance:clock_out': 'a pontat ieșirea', 'portal-attendance:update': 'a modificat pontajul',
+  'portal-attendance:clock_in': 'a pontat intrarea', 'portal-attendance:clock_out': 'a pontat ieșirea', 'portal-attendance:update': 'a corectat pontajul pentru',
+  'portal-attendance:create': 'a adăugat o zi în pontaj pentru', 'portal-attendance:fix_request': 'a cerut corectarea pontajului',
+  'portal-attendance:fix_decide': 'a decis corectarea pontajului pentru', 'portal-attendance:fix_dismiss': 'a scos din De rezolvat',
   'portal-attendance:adjust_decide': 'a decis o corecție de pontaj', 'portal-attendance:payout': 'a plătit ore suplimentare',
-  'portal-manager:feedback': 'i-a spus lui George cum sunt leadurile', 'portal-manager:close': 'a închis ziua', 'portal-manager:report_send': 'a trimis raportul săptămânal',
+  'portal-manager:feedback': 'a trimis feedback pentru reclame', 'portal-manager:close': 'a închis ziua', 'portal-manager:report_send': 'a trimis raportul săptămânal',
   'portal-leave:create': 'a cerut concediu', 'portal-leave:decide': 'a decis o cerere de concediu', 'portal-leave:admin_create': 'a adăugat un concediu',
   'portal-offers:create': 'a adăugat oferta', 'portal-offers:update': 'a modificat oferta', 'portal-offers:delete': 'a șters oferta', 'portal-offers:reorder': 'a reordonat ofertele',
   'portal-workflows:save': 'a salvat automatizarea', 'portal-workflows:toggle': 'a pornit / oprit automatizarea', 'portal-workflows:delete': 'a șters automatizarea',
@@ -206,6 +208,10 @@ function describe(route, action, body, before, after, out) {
   else if (route === 'portal-config' && b.academy) detail = b.academy.remove ? 'scos' : (b.academy.upsert && b.academy.upsert.item && b.academy.upsert.item.verified ? 'verificat' : '');
   else if (/update|session_update|update_details/.test(action || '')) detail = diff(before, after);
   if (!detail && before && after) detail = diff(before, after);
+  // the pontaj's own words (api/portal-attendance.js answers with them): whose, which day, before → after, why
+  if (route === 'portal-attendance' && out && out.log) { subject = out.log.subject || subject; detail = out.log.detail || detail; }
+  // a payment changed in a month before this one (its salaries are closed): said first, so it is seen
+  if (route === 'portal-incasari' && out && out.closedMonth) detail = ['luna ' + out.closedMonth + ' închisă', detail].filter(Boolean).join(' · ');
   // a booking that moved her break (Calendar, the booking form): said on the same line
   if (route === 'portal-appointments' && b.breakMove && (b.breakMove.from || b.breakMove.off)) detail = [detail, b.breakMove.off ? 'fără pauză în ziua aceea' : 'pauza mutată la ' + b.breakMove.from].filter(Boolean).join(' · ');
   return { verb, subject: clip(subject, 80), detail: clip(detail, 160) };

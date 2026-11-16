@@ -46,6 +46,17 @@
   // the manager (both clinics): reception's screens plus the team (api/_lib/roles.js)
   K.isManager = () => !!(K.data && K.data.me && K.data.me.role === 'manager');
   K.canManage = () => !!(K.data && (K.data.isAdmin || (K.data.me && K.data.me.role === 'manager')));
+  // the clinics the owner still runs himself (16.11): the ones no active manager runs. The desk's to-dos (to confirm, to
+  // call, messages waiting) show for him only there; elsewhere they are the manager's and reception's.
+  K.ownerClinics = () => {
+    const E = (K.data && K.data.admin && K.data.admin.employees) || [];
+    const run = new Set();
+    E.filter((e) => e && e.active && e.role === 'manager').forEach((e) => (e.manages || ['Timișoara', 'Arad']).forEach((c) => run.add(c)));
+    return ['Timișoara', 'Arad'].filter((c) => !run.has(c));
+  };
+  // does this lead / booking / clinic wait for the owner himself (a clinic with no manager; one with no city: only when
+  // no clinic has a manager)
+  K.ownerDesk = (loc) => { const own = K.ownerClinics(); const c = /arad/i.test(String(loc || '')) ? 'Arad' : /timi/i.test(String(loc || '')) ? 'Timișoara' : ''; return c ? own.includes(c) : own.length === 2; };
   // Commission on an upsell: value - 60% costs, then 10% of the profit (same as api/_lib/cats.js).
   const costShare = () => (K.data && K.data.costShare != null ? K.data.costShare : 60);
   const upRate = () => (K.data && K.data.upsellRate) || 10;
@@ -534,7 +545,8 @@
     if (!DATA) return;
     K.badge('mesaje', DATA.waUnread || 0); // conversations with unread client messages
     if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length + (DATA.admin.pendingTime || 0) + (DATA.admin.pendingLeave || 0), 'hot');
-    if (DATA.manager) K.badge('manager', (DATA.manager.pendingTime || 0) + (DATA.manager.pendingLeave || 0), 'hot'); // the team's days and leave to decide
+    // the team's days and leave to decide: on Panou, where „De făcut” lists them (her Manager button is hidden from the menu)
+    if (DATA.manager) K.badge('panou', (DATA.manager.pendingTime || 0) + (DATA.manager.pendingLeave || 0), 'hot');
     if (!frontDesk()) return; // cosmeticians: no pipeline badge / task queue
     if (DATA.me.role === 'receptie' || DATA.me.role === 'manager') { // Sarcini is the receptionist's own list (and the manager's)
       try {
@@ -582,6 +594,7 @@
     // still loading: the page asked for is queued (the latest wins) and shown as soon as the app listens
     if (frame.dataset.started) { creativePost({ type: 'c360:navigate', route: creativeRoute }); return; }
     frame.dataset.started = '1';
+    if (DATA.manager) K.badge('condica', DATA.manager.toFix || 0); // the team's pontaj to fix (Condică → De rezolvat); the owner: none
     msg.classList.remove('hidden', 'is-error');
     msg.innerHTML = '<div class="cr-skel"><i></i><i></i><div>' + '<b></b>'.repeat(6) + '</div></div>';
     const ready = K.pageWait(); // the cover stays until Creative's own app has loaded

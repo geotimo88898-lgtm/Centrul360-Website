@@ -176,7 +176,7 @@ async function handleComisionAdmin(req, res, session) {
     try {
       await N.notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: 'good', go: 'comision',
         title: 'COMISION ✅ - +' + N.leiTxt(Math.round(total * 100) / 100),
-        text: made.length === 1 ? made[0].treatment + (made[0].client ? ', ' + made[0].client : '') + ', upsell ' + N.leiTxt(made[0].amount) : made.length + ' upselluri adăugate de admin: ' + made.map((x) => x.treatment).join(', ') });
+        text: made.length === 1 ? made[0].treatment + (made[0].client ? ', ' + made[0].client : '') + ', upsell ' + N.leiTxt(made[0].amount) : made.length + ' upselluri adăugate: ' + made.map((x) => x.treatment).join(', ') });
     } catch (e) { /* a notification never blocks the request */ }
     res.status(200).json({ ok: true, entries: made, commission: total });
   } catch (err) {

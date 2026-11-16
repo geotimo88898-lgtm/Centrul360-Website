@@ -200,3 +200,16 @@ dues.push({ id: 'pkd3', clientId: 'cl-pk-pk3', client: 'Clienta Pachet', what: '
 w('data/sales.json', sales); w('data/client-dues.json', dues);
 console.log('commission and refunds seeded');
 })();
+
+// 5. pontaj to fix (16.11): a day with no departure, a request from a cosmetician, so Condică → De rezolvat has rows
+(() => {
+const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
+const r = (p, d) => { try { return JSON.parse(fs.readFileSync(f(p), 'utf8')); } catch (e) { return d; } };
+const w = (p, d) => fs.writeFileSync(f(p), JSON.stringify(d));
+const att = r('data/attendance.json', []);
+const x = att.find((a) => a.employeeId === 'e-c3' && a.date === '2026-11-13');
+if (x) x.checkOut = null;
+w('data/attendance.json', att);
+w('data/attendance-requests.json', [{ id: 'rq1', employeeId: 'e-c1', date: '2026-11-12', checkIn: '08:45', checkOut: null, note: 'Am venit mai devreme, am uitat să pontez la timp', status: 'pending', at: '2026-11-12T17:30:00Z' }]);
+console.log('pontaj to fix seeded');
+})();

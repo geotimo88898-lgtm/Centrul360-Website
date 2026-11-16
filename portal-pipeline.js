@@ -109,7 +109,7 @@
     need_one_won_stage: 'Trebuie exact o etapă de tip „Câștigat”.', need_one_lost_stage: 'Trebuie exact o etapă de tip „Pierdut”.',
     need_open_stage: 'Ai nevoie de cel puțin o etapă de lucru.', missing_stage_name: 'Fiecare etapă are nevoie de un nume.',
     invalid_stages: 'Lista de etape nu e validă (maxim 15).', lead_not_found: 'Leadul nu mai există, probabil a fost șters.',
-    forbidden: 'Asta o poate face doar George.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
+    forbidden: 'Nu ai acces la asta.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
     invalid_category: 'Alege categoria.', invalid_client: 'Leadul nu are nume sau telefon.', network: 'Nu am putut contacta serverul. Verifică conexiunea.',
   };
   const errText = (e) => ERR[e && e.code] || 'Nu am putut salva. Încearcă din nou.';
@@ -286,7 +286,7 @@
     root.classList.add('pl-panel');
     root.innerHTML =
       '<div class="pl-head">' +
-        '<div><div class="k-eyebrow">Vânzări</div><div class="pl-title"><h2>Pipeline</h2>' +
+        '<div><div class="k-eyebrow" data-pl-eyebrow>' + (S.mode === 'angajari' && canHire() ? 'Angajări' : 'Vânzări') + '</div><div class="pl-title"><h2>Pipeline</h2>' +
           (pickCity() ? K.seg('plcity', [['', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.location, 'pl-city') : '') +
           (canHire() ? K.seg('plmode', [['clienti', 'Cliente'], ['angajari', 'Angajări']], S.mode === 'angajari' ? 'angajari' : 'clienti', 'pl-mode') : '') +
         '</div></div>' +
@@ -391,6 +391,8 @@
     if (!root) return;
     root.classList.toggle('is-hire', m === 'angajari');
     root.querySelector('[data-hire]').hidden = m !== 'angajari';
+    const eb = root.querySelector('[data-pl-eyebrow]');
+    if (eb) eb.textContent = m === 'angajari' ? 'Angajări' : 'Vânzări';
     const seg = root.querySelector('[data-k-seg="plmode"]');
     if (seg) { seg.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === m)); seg.querySelector('input').value = m; }
     if (m === 'angajari') loadCandidates();
@@ -403,12 +405,12 @@
   }
   async function moveCandidate(id, status, sel) {
     const c = (hireList || []).find((x) => x.id === id);
-    if (status === 'angajat' && !ownerHires()) { if (sel && c) sel.value = c.status || 'nou'; K.ui().toast('Angajarea o decide George. Mut-o la „Recomandat” și îi spunem noi.', 'info'); return; }
+    if (status === 'angajat' && !ownerHires()) { if (sel && c) sel.value = c.status || 'nou'; K.ui().toast('Angajarea nu se face de aici. Mut-o la „Recomandat”.', 'info'); return; }
     if (c) { c.status = status; renderHire(); }
     try {
       hireList = (await K.api('/api/portal-candidates', { id, status })).candidates || hireList; renderHire();
-      if (status === 'recomandat' && !ownerHires()) K.ui().toast('Recomandată. George a primit notificarea.', 'success');
-    } catch (e) { K.ui().toast(e.code === 'owner_only' ? 'Angajarea o decide George.' : K.errText(e), 'error'); loadCandidates(); }
+      if (status === 'recomandat' && !ownerHires()) K.ui().toast('Recomandată.', 'success');
+    } catch (e) { K.ui().toast(e.code === 'owner_only' ? 'Angajarea nu se face de aici. Mut-o la „Recomandat”.' : K.errText(e), 'error'); loadCandidates(); }
   }
   // the notes on a candidate (the interview, what she said on the phone): read and add one
   async function candidateNotes(id) {
@@ -1127,7 +1129,7 @@
   function tabsBar(l) {
     const t = curTab(l);
     return '<div class="pl-tabs" role="tablist">' + LTABS.map(([k, label, icn]) =>
-      '<button type="button" role="tab" aria-selected="' + (k === t) + '" data-ltab="' + k + '" class="' + (k === t ? 'is-on' : '') + '">' + ic(icn) + '<span>' + label + '</span>' +
+      '<button type="button" role="tab" aria-label="' + label + '" aria-selected="' + (k === t) + '" data-ltab="' + k + '" class="' + (k === t ? 'is-on' : '') + '">' + ic(icn) + '<span>' + label + '</span>' +
       (k === 'history' ? '<em>' + (l.activities || []).length + '</em>' : '') + '</button>').join('') + '</div>';
   }
   const pane = (l, k) => ' data-pane="' + k + '"' + (curTab(l) === k ? '' : ' hidden');

@@ -74,13 +74,13 @@ async function handleRefund(req, res) {
     if (!String(b.reason || '').trim()) return fail(400, 'missing_reason');
     const row = await R.apply(store, sales, p, Object.assign({}, b, { date }), session);
     await writeJSON('data/sales.json', sales);
-    // the manager's refund: George hears it (bell + phone)
+    // the manager's refund: the owner hears it (bell + phone)
     if (session.role === 'manager') {
       try {
         await N.notifyMany(store, await N.adminIds(store), {
           kind: 'money', tone: 'bad', go: 'incasari', tag: 'refund-' + row.id,
           title: 'RAMBURSARE' + N.cityTag(row.location) + ' - ' + N.leiTxt(p.lei),
-          text: (empName(session.employeeId).split(' ')[0] || 'Managerul') + ': ' + (row.client || 'clientă') + ' · ' + row.treatment.replace(/^Rambursare · /, '') + (row.reason ? ' · ' + row.reason : '') + (p.close ? ' · pachet închis' : ''),
+          text: (empName(session.employeeId).split(' ')[0] || 'Rambursare') + ': ' + (row.client || 'clientă') + ' · ' + row.treatment.replace(/^Rambursare · /, '') + (row.reason ? ' · ' + row.reason : '') + (p.close ? ' · pachet închis' : ''),
         });
       } catch (e) { /* never blocks the refund */ }
     }
@@ -97,13 +97,15 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // Încasări → "Rest de plată din pachete" (the desk and the owner): every package still being paid in their city
+  // Încasări → "Rest de plată din pachete": every package still being paid in their city (a cosmetician: hers, read-only)
   if ((req.body || {}).action === 'dues') {
-    const who = await requireRole(req, res, ['admin', 'receptie', 'manager']);
+    const who = await requireRole(req, res, ['admin', 'receptie', 'manager', 'cosmetician']);
     if (!who) return;
     try {
       const city = await require('./_lib/city').cityOf(who, readJSON);
-      res.status(200).json({ ok: true, dues: await require('./_lib/dues').openAll({ readJSON, writeJSON }, city || '') });
+      if (who.role === 'cosmetician' && !city) { res.status(200).json({ ok: true, dues: [] }); return; } // no clinic on her record
+      const list = await require('./_lib/dues').openAll({ readJSON, writeJSON }, city || '');
+      res.status(200).json({ ok: true, dues: who.role === 'cosmetician' ? list.filter((d) => d.location === city) : list });
     } catch (err) { console.error('portal-incasari dues error:', err.message); res.status(500).json({ error: 'incasari_failed' }); }
     return;
   }

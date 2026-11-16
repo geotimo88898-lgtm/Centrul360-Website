@@ -114,8 +114,12 @@ async function breakSave(plan, entry, session) {
   if (!plan || !plan.change) return;
   const who = { id: session.employeeId || 'admin', name: session.employeeId === 'admin' ? 'George' : await whoName(session) };
   await T.update((d) => T.setBreak(d, entry.cosmeticianId, entry.date, plan.change, who));
-  if (plan.change.from) await T.tellBreak({ readJSON, writeJSON }, entry.cosmeticianId, entry.date, plan.change.from);
+  // her phone hears it, today only: the new hour, or „Azi nu ai pauză” (16.11)
+  await T.tellBreak({ readJSON, writeJSON }, entry.cosmeticianId, entry.date, plan.change.from || null);
 }
+// today's bookings as they are before a change, so a break the change takes without moving it is told (T.tellLost)
+const roDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+const daySnap = (appointments) => { const t = roDay(); return appointments.filter((a) => a && a.date === t).map((a) => Object.assign({}, a)); };
 
 // current: the appointment being changed (an update): her cosmetician may stay on it after she left; a new one or another
 // one is put only on someone who works that day (_lib/left.js)
@@ -305,9 +309,11 @@ module.exports = async (req, res) => {
         const lead = await require('./portal-leads').bookLead(entry, { leadId: req.body && req.body.leadId, author: await whoName(session) });
         if (lead) entry.leadId = lead.id;
       }
+      const snap = daySnap(appointments);
       appointments.push(entry);
       await writeJSON('data/appointments.json', appointments);
       await breakSave(brk, entry, session);
+      if (entry.date === roDay()) await T.tellLost({ readJSON, writeJSON }, snap, appointments);
 
       // Automations (Admin → Automatizări): confirmation, reminders … Never throws.
       await workflows.emit('appointment_created', { appointment: entry });
@@ -380,6 +386,7 @@ module.exports = async (req, res) => {
         return;
       }
       const before = { date: appointment.date, time: appointment.time, status: appointment.status, location: appointment.location, clientId: appointment.clientId, clientPhone: appointment.clientPhone };
+      const snap = daySnap(appointments);
       if (!('endTime' in req.body)) result.fields.endTime = appointment.endTime || ''; // older clients don't send it
       if (!('note' in req.body)) result.fields.note = appointment.note || '';
       if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it
@@ -401,6 +408,7 @@ module.exports = async (req, res) => {
       }
       await writeJSON('data/appointments.json', appointments);
       await breakSave(brk, appointment, session);
+      if (appointment.date === roDay() || before.date === roDay()) await T.tellLost({ readJSON, writeJSON }, snap, appointments);
       // cancelled: her lead no longer shows it
       if (before.status !== appointment.status && appointment.status === 'anulata') await require('./portal-leads').unbookLead(appointment, 'Programare anulată', await whoName(session));
       // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the

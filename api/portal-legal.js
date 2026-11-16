@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
     }
     const item = String(b.item || '');
     if (!itemOk(scope, item, box)) return fail(400, 'invalid_item');
-    if (hidesPay(session, scope, item)) return fail(403, 'owner_only', 'Contractul și actele cu salariul le ține George.');
+    if (hidesPay(session, scope, item)) return fail(403, 'owner_only', 'Actele cu salariul nu se văd aici. Vezi doar dacă sunt în regulă și când expiră.');
     const it = box.items[item] = box.items[item] || {};
     it.files = it.files || [];
 

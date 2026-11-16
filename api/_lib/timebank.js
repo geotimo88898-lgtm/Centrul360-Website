@@ -1,7 +1,8 @@
 // Hours of the team: the 8-hour day, overtime, hours to make up.
 //
-// Monday to Friday everyone works 8 hours (arrival to departure, break included). When a day ends
-// (clock-out, or the owner corrects it), the difference from 8 hours becomes an "ajustare" that
+// From 16.11 a day is expected to last her shift in Program echipă (see dayDiff); with no schedule (and before
+// 16.11), Monday to Friday everyone works 8 hours (arrival to departure, break included). When a day ends
+// (clock-out, or a correction), the difference from that becomes an "ajustare" that
 // waits in the owner's Aprobări, but only from 15 minutes up. Saturday and Sunday every minute is
 // overtime. The owner approves (optionally with a corrected number of minutes) or rejects.
 //
@@ -63,10 +64,29 @@ function plannedOffMinutes(employeeId, date, leaveRequests, base) {
   return Math.min(base, off);
 }
 
+// The day she was expected to work, from 16.11 (the owner, 16.11): her shift in Program echipă (api/_lib/team-schedule.js,
+// the date entry, else her week), break included as before (the 30-minute break never changes the pontaj or the pay).
+// A day off in her schedule expects nothing (all of it is extra); a scheduled Saturday expects its shift like any day.
+// Someone with no schedule at all, and every day before 16.11: the old rule, 8 hours Monday to Friday.
+const SCHED_SINCE = '2026-11-16';
+function shiftMinutes(schedule, employeeId, date) {
+  if (!schedule || !(date >= SCHED_SINCE)) return null;
+  const TS = require('./team-schedule');
+  if (!TS.dayOf(schedule, employeeId, date)) return null; // no schedule for her
+  const w = TS.workingAt(schedule, employeeId, date, null, {});
+  return w ? toMin(w.to) - toMin(w.from) : 0;
+}
+
 // The difference of one complete day from what was expected.
-function dayDiff(entry, emp, leaveRequests) {
+function dayDiff(entry, emp, leaveRequests, schedule) {
   const worked = workedMinutes(entry.checkIn, entry.checkOut);
   if (worked == null) return null;
+  const shift = shiftMinutes(schedule, entry.employeeId, entry.date);
+  if (shift != null) {
+    const expected = Math.max(0, shift - plannedOffMinutes(entry.employeeId, entry.date, leaveRequests, shift));
+    // a weekend day off in her schedule is still said „weekend” (all of it extra); a scheduled Saturday is a working day
+    return { worked, expected, diff: worked - expected, weekend: isWeekend(entry.date) && !shift, scheduled: true };
+  }
   const weekend = isWeekend(entry.date);
   const base = baseOf(emp);
   const expected = weekend ? 0 : Math.max(0, base - plannedOffMinutes(entry.employeeId, entry.date, leaveRequests, base));
@@ -77,14 +97,15 @@ function dayDiff(entry, emp, leaveRequests) {
 // alone (the owner already ruled on it). Returns the adjustment (or null when there's nothing).
 async function syncAdjust(entry, store, ctx) {
   const { readJSON, writeJSON } = store;
-  const [adjs, employees, leaveRequests] = await Promise.all([
+  const [adjs, employees, leaveRequests, schedule] = await Promise.all([
     readJSON(ADJ, []), ctx && ctx.employees ? ctx.employees : readJSON('data/employees.json', []), readJSON('data/leave-requests.json', []),
+    ctx && ctx.schedule ? ctx.schedule : entry.date >= SCHED_SINCE ? require('./team-schedule').load().catch(() => null) : null,
   ]);
   const emp = employees.find((e) => e.id === entry.employeeId);
   const idx = adjs.findIndex((a) => a.attendanceId === entry.id);
   const existing = idx > -1 ? adjs[idx] : null;
   if (existing && existing.status !== 'pending') return existing;
-  const d = entry.employeeId !== 'admin' ? dayDiff(entry, emp, leaveRequests) : null;
+  const d = entry.employeeId !== 'admin' ? dayDiff(entry, emp, leaveRequests, schedule) : null;
   const counts = d && Math.abs(d.diff) >= TOLERANCE;
   if (!counts) {
     if (existing) { adjs.splice(idx, 1); await writeJSON(ADJ, adjs); }
@@ -140,5 +161,5 @@ async function loadAll(readJSON) {
 
 module.exports = {
   BASE_MINUTES, TOLERANCE, OVERTIME_LEI_PER_HOUR, ADJ, PAYOUTS, CORR,
-  bucharestNow, isWeekend, workedMinutes, weekdaysBetween, dayDiff, syncAdjust, ledger, preview, loadAll,
+  bucharestNow, isWeekend, workedMinutes, weekdaysBetween, dayDiff, shiftMinutes, SCHED_SINCE, syncAdjust, ledger, preview, loadAll,
 };

@@ -12,8 +12,14 @@
   'use strict';
   const K = window.K;
   const { esc, icon } = K;
-  const IC = { leave: 'calendar', time: 'clock', commission: 'percent', paid: 'wallet', bonus: 'trophy', lead: 'userPlus', alert: 'bell', booking: 'calendar', money: 'wallet', report: 'trend', post: 'video' };
+  const IC = { leave: 'calendar', time: 'clock', commission: 'percent', paid: 'wallet', bonus: 'trophy', lead: 'userPlus', alert: 'bell', booking: 'calendar', money: 'wallet', report: 'trend', post: 'video',
+    approval: 'shield', info: 'info', break: 'clock' };
+  // the clinic's alerts (leads, bookings, money, the automations, the reports)
   const ALERT_KINDS = ['lead', 'alert', 'booking', 'money', 'report', 'post'];
+  // waiting for her decision: a commission to approve, a request of the team (it opens Aprobări or Manager → Echipa)
+  const isAsk = (n) => n.kind === 'approval' || ((n.kind === 'leave' || n.kind === 'time') && /^(manager|aprobari)/.test(String(n.go || '')));
+  // what pops at once while the portal is open (a toast), besides the alerts: a decision to make, her break moved today
+  const pops = (n) => !n.live && (ALERT_KINDS.includes(n.kind) || isAsk(n) || n.kind === 'break');
   let btn = null;
 
   const me = () => (K.data && K.data.me && K.data.me.id) || '';
@@ -198,15 +204,17 @@
     const row = (n) => '<button type="button" class="nt-item is-' + esc(n.tone || 'info') + (isNew(n, s) ? ' is-new' : '') + '"' + (n.go ? ' data-go-to="' + esc(n.go) + '"' : '') + '>' +
       '<span class="nt-ic">' + icon(IC[n.kind] || 'bell') + '</span>' +
       '<span class="nt-body"><b>' + esc(n.title) + '</b>' + (n.text ? '<span>' + esc(n.text) + '</span>' : '') + '<small>' + (n.live ? 'luna aceasta' : esc(K.ago(n.at))) + '</small></span></button>';
-    const alerts = list.filter((n) => ALERT_KINDS.includes(n.kind)), live = list.filter((n) => n.live), past = list.filter((n) => !n.live && !ALERT_KINDS.includes(n.kind));
+    const alerts = list.filter((n) => ALERT_KINDS.includes(n.kind)), asks = list.filter((n) => !n.live && isAsk(n)), live = list.filter((n) => n.live);
+    const past = list.filter((n) => !n.live && !ALERT_KINDS.includes(n.kind) && !isAsk(n)); // answers to her requests, her break, the rest
     const admin = K.data && K.data.isAdmin;
     const d = K.drawer({
       title: 'Notificări', icon: 'bell', width: 460,
       
       body: '<div class="nt-push" data-push-box><span class="k-skel" style="height:40px"></span></div>' +
         (list.length ? (alerts.length ? '<h4 class="nt-h">' + icon('userPlus') + (admin ? 'Leaduri, programări, încasări' : 'Leaduri și alerte') + '</h4><div class="nt-list">' + alerts.map(row).join('') + '</div>' : '') +
+          (asks.length ? '<h4 class="nt-h">' + icon('shield') + 'De aprobat</h4><div class="nt-list">' + asks.map(row).join('') + '</div>' : '') +
           (live.length ? '<h4 class="nt-h">' + icon('trophy') + 'Bonusuri</h4><div class="nt-list">' + live.map(row).join('') + '</div>' : '') +
-          (past.length ? '<h4 class="nt-h">' + icon('bell') + 'Răspunsuri la cereri</h4><div class="nt-list">' + past.map(row).join('') + '</div>' : '')
+          (past.length ? '<h4 class="nt-h">' + icon('bell') + 'Pentru tine</h4><div class="nt-list">' + past.map(row).join('') + '</div>' : '')
         : K.empty('bell', 'Nicio notificare', admin ? 'Aici apar leadurile noi, imediat ce intră.' : 'Aici apar leadurile noi și răspunsurile la cererile tale.')),
       onMount(el) {
         paintPush(el.querySelector('[data-push-box]'));
@@ -224,7 +232,7 @@
   // (only what arrived after this page was opened; the phone gets it through Web Push)
   let since = null;
   async function popNew() {
-    const list = items().filter((n) => ALERT_KINDS.includes(n.kind) && !n.live);
+    const list = items().filter(pops);
     const newest = list.reduce((m, n) => (String(n.at) > m ? String(n.at) : m), '');
     if (since === null) { since = newest || new Date().toISOString(); return; }
     const fresh = list.filter((n) => String(n.at) > since).sort((a, b) => (a.at < b.at ? -1 : 1));

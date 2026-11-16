@@ -1,7 +1,8 @@
 // POST /api/portal-attendance, "Condică" (attendance log), one entry per employee per day.
 // One endpoint, action-routed via body.action, same style as portal-employees.js / portal-leads.js:
 //
-//   clock_in | clock_out | list | update (admin) | balance | balance_all (admin)
+//   clock_in | clock_out | list | update / create (admin, the manager: her people) | balance | balance_all (admin)
+//   fix_list (De rezolvat) | fix_request (anyone, her own past day) | fix_decide | fix_dismiss (see _lib/attendance-fix.js)
 //   timebank (her hours: to make up, overtime, waiting) | adjust_list / adjust_decide (admin, the
 //   days over / under 8 hours in Aprobări) | payout (admin: overtime paid with the salary)
 //
@@ -18,8 +19,10 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAuth, requireAdmin } = require('./_lib/auth');
 const TB = require('./_lib/timebank');
-const { notify, leiTxt } = require('./_lib/notify');
-const { canManage } = require('./_lib/roles');
+const { notify, notifyMany, leiTxt } = require('./_lib/notify');
+const { canManage, managerIds } = require('./_lib/roles');
+const FIX = require('./_lib/attendance-fix');
+const { adminIds } = require('./_lib/notify');
 // the manager (15.11) sees everyone's pontaj on both clinics, corrects a mistaken entry and decides the days over / under
 // 8 hours, never her own and never the money side (overtime in lei, the payout, the hours set by hand stay the owner's)
 const noLei = (o) => { const x = Object.assign({}, o); delete x.bankLei; delete x.rate; delete x.payouts; return x; };
@@ -37,6 +40,15 @@ const fmtMin = (m) => { const a = Math.abs(Math.round(m)); const h = Math.floor(
 const nowISO = () => new Date().toISOString();
 const isValidTime = (t) => t === null || /^\d{2}:\d{2}$/.test(t || '');
 const isValidDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
+const addDaysIso = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+// a day's times that can't be: the departure before the arrival, a day in the future, today's times after now
+function timesWrong(x) {
+  if (x.date && x.date > serverToday()) return 'future_date';
+  const a = minutesOf(x.checkIn), b = minutesOf(x.checkOut);
+  if (a != null && b != null && b <= a) return 'checkout_before_checkin';
+  if (x.date === serverToday()) { const now = minutesOf(serverTime()); if ((a != null && a > now + 5) || (b != null && b > now + 5)) return 'future_time'; }
+  return '';
+}
 
 async function employeeLocation(employeeId) {
   if (employeeId === 'admin') return '';
@@ -94,9 +106,49 @@ module.exports = async (req, res) => {
   const body = req.body || {};
   const { action } = body;
   const fail = (code, error) => res.status(code).json({ error });
+  let entries = [];
+  const nameOf = async (id) => { const e = (await readJSON('data/employees.json', [])).find((x) => x.id === id); return (e && e.name) || ''; };
+  // who is changing it: her name (the owner's from his profile), for the „corectat de …” line
+  const whoIs = async () => ({ id: session.employeeId, name: await require('./_lib/activity').whoName(session.employeeId) });
+  // the Activitate line (_lib/activity.js reads `log` from the answer): whose pontaj, which day, what changed and why
+  const logOf = async (entry, before, reason) => ({ subject: await nameOf(entry.employeeId), detail: FIX.dm(entry.date) + ' · ' + FIX.changeText(before, FIX.snap(entry)) + (reason ? ' · ' + String(reason).trim().slice(0, 80) : '') });
+  // a day with no pontaj: added for someone (the owner, the manager for her people, or an approved request)
+  async function addDay(targetId, b, o) {
+    const no = (code, error, extra) => ({ code, error, extra });
+    if (isMgr && targetId === session.employeeId) return no(403, 'own_request');
+    if (!inTeam(targetId)) return no(403, 'forbidden');
+    const employees = await readJSON('data/employees.json', []);
+    const emp = employees.find((e) => e.id === targetId);
+    if (!emp || emp.id === 'admin' || emp.role === 'admin') return no(404, 'employee_not_found');
+    const date = String(b.date || '');
+    if (!isValidDate(date)) return no(400, 'invalid_date');
+    if (date > serverToday()) return no(400, 'future_date');
+    if (emp.active === false && emp.leftAt && date > emp.leftAt) return no(400, 'after_left');
+    const checkIn = b.checkIn || null, checkOut = b.checkOut || null;
+    if (!checkIn || !checkOut || !isValidTime(checkIn) || !isValidTime(checkOut)) return no(400, 'missing_times');
+    const bad = timesWrong({ date, checkIn, checkOut });
+    if (bad) return no(400, bad);
+    const reason = String(o.reason || '').trim();
+    if (!reason) return no(400, 'missing_reason');
+    const ctx = await FIX.load(readJSON);
+    const why = FIX.dayCheck(ctx, targetId, date);
+    if (why && !o.confirm) return no(409, 'needs_confirm', { why });
+    const shift = FIX.shiftOf(ctx, targetId, date);
+    const location = VALID_LOCATIONS.includes(b.location) ? b.location : (shift && VALID_LOCATIONS.includes(shift.location) ? shift.location : (VALID_LOCATIONS.includes(emp.location) ? emp.location : ''));
+    // read again right before writing: a day added twice at the same time stays one
+    const list = await readJSON(KEY, []);
+    if (list.some((e) => e.employeeId === targetId && e.date === date)) return no(409, 'duplicate_day');
+    const entry = { id: crypto.randomUUID(), employeeId: targetId, date, checkIn, checkOut, location, note: String(b.note || '').slice(0, 300), createdAt: nowISO(), updatedAt: nowISO(), addedBy: session.employeeId };
+    FIX.record(entry, null, await whoIs(), o.kind || 'create', reason, o.requestId ? { requestId: o.requestId } : null);
+    list.push(entry);
+    await writeJSON(KEY, list);
+    entries = list;
+    const adjust = await TB.syncAdjust(entry, { readJSON, writeJSON });
+    return { entry, adjust };
+  }
 
   try {
-    let entries = await readJSON(KEY, []);
+    entries = await readJSON(KEY, []);
 
     if (action === 'clock_in' || action === 'clock_out') {
       const date = serverToday();
@@ -227,7 +279,7 @@ module.exports = async (req, res) => {
       const c = { id: crypto.randomUUID(), employeeId: targetId, minutes: m, before, note: String(body.note || '').trim().slice(0, 200), at: new Date().toISOString(), by: session.employeeId };
       all.corrections.push(c);
       await writeJSON(TB.CORR, all.corrections);
-      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'RECUPERARE 🕐 - ' + (m ? 'mai ai ' + fmtMin(m) : 'nimic de recuperat'), text: c.note || 'Corectat de admin.', go: 'condica' });
+      if (m !== before) await notify({ readJSON, writeJSON }, targetId, { kind: 'time', tone: 'info', title: 'RECUPERARE 🕐 - ' + (m ? 'mai ai ' + fmtMin(m) : 'nimic de recuperat'), text: c.note || 'Corectat.', go: 'condica' });
       const bal = TB.ledger(targetId, all);
       delete bal.effects;
       res.status(200).json({ ok: true, correction: c, ...bal });
@@ -247,7 +299,10 @@ module.exports = async (req, res) => {
         list = list.filter((e) => e.date.slice(0, 7) === ym);
       }
       list = list.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
-      res.status(200).json({ ok: true, entries: list });
+      // her own correction requests (the last 60 days), for the „trimisă” / „respinsă” mark on her days
+      const since = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
+      const requests = (await readJSON(FIX.REQ, [])).filter((r) => r.employeeId === session.employeeId && r.date >= since);
+      res.status(200).json({ ok: true, entries: list, requests });
       return;
     }
 
@@ -284,21 +339,137 @@ module.exports = async (req, res) => {
       if (!entry) return fail(404, 'entry_not_found');
       if (isMgr && entry.employeeId === session.employeeId) return fail(403, 'own_request'); // her own day: the owner corrects it
       if (!inTeam(entry.employeeId)) return fail(403, 'forbidden');
-      if (body.checkIn !== undefined) {
-        if (!isValidTime(body.checkIn)) return fail(400, 'invalid_time');
-        entry.checkIn = body.checkIn || null;
-      }
-      if (body.checkOut !== undefined) {
-        if (!isValidTime(body.checkOut)) return fail(400, 'invalid_time');
-        entry.checkOut = body.checkOut || null;
-      }
+      const before = FIX.snap(entry);
+      const next = Object.assign({}, before);
+      if (body.checkIn !== undefined) { if (!isValidTime(body.checkIn)) return fail(400, 'invalid_time'); next.checkIn = body.checkIn || null; }
+      if (body.checkOut !== undefined) { if (!isValidTime(body.checkOut)) return fail(400, 'invalid_time'); next.checkOut = body.checkOut || null; }
+      if (body.location !== undefined && VALID_LOCATIONS.includes(body.location)) next.location = body.location;
+      if (body.date !== undefined && isValidDate(body.date)) next.date = body.date;
+      const bad = timesWrong(next);
+      if (bad) return fail(400, bad);
+      if (next.date !== entry.date && entries.some((e) => e.id !== entry.id && e.employeeId === entry.employeeId && e.date === next.date)) return fail(409, 'duplicate_day');
+      Object.assign(entry, next);
       if (body.note !== undefined) entry.note = String(body.note || '').slice(0, 300);
-      if (body.location !== undefined && VALID_LOCATIONS.includes(body.location)) entry.location = body.location;
-      if (body.date !== undefined && isValidDate(body.date)) entry.date = body.date;
       entry.updatedAt = nowISO();
+      const h = FIX.record(entry, before, await whoIs(), 'update', body.reason || '');
       await writeJSON(KEY, entries);
       const adjust = await TB.syncAdjust(entry, { readJSON, writeJSON });
-      res.status(200).json({ ok: true, entry, adjust });
+      res.status(200).json({ ok: true, entry, adjust, log: await logOf(entry, h ? h.before : before, body.reason) });
+      return;
+    }
+
+    // ---------------------------------------------------------------- a day with no pontaj at all, added by hand
+    if (action === 'create') {
+      if (!sees) return fail(403, 'forbidden');
+      const targetId = String(body.employeeId || '');
+      const r = await addDay(targetId, body, { reason: body.reason, confirm: !!body.confirm, kind: 'create' });
+      if (r.error) return res.status(r.code).json(Object.assign({ error: r.error }, r.extra || {}));
+      res.status(200).json({ ok: true, entry: r.entry, adjust: r.adjust, log: await logOf(r.entry, null, body.reason) });
+      return;
+    }
+
+    // ---------------------------------------------------------------- De rezolvat (the owner, the manager)
+    if (action === 'fix_list') {
+      if (!sees) return fail(403, 'forbidden');
+      const ctx = await FIX.load(readJSON);
+      const rows = FIX.problems(ctx, { team, today: serverToday() });
+      // the owner: the manager's own requests first (only the owner decides them)
+      if (isAdmin) rows.sort((a, b) => (b.role === 'manager' && b.kind === 'request' ? 1 : 0) - (a.role === 'manager' && a.kind === 'request' ? 1 : 0));
+      res.status(200).json({ ok: true, rows, today: serverToday(), window: FIX.WINDOW, lateMin: FIX.LATE_MIN });
+      return;
+    }
+    if (action === 'fix_dismiss') {
+      if (!sees) return fail(403, 'forbidden');
+      const m = /^([^|]+)\|(\d{4}-\d{2}-\d{2})\|(missing|late|no_out|no_in)$/.exec(String(body.key || ''));
+      if (!m) return fail(400, 'invalid_key');
+      if (isMgr && m[1] === session.employeeId) return fail(403, 'own_request');
+      if (!inTeam(m[1])) return fail(403, 'forbidden');
+      const doc = await readJSON(FIX.DISMISS, {});
+      doc.keys = doc.keys && typeof doc.keys === 'object' ? doc.keys : {};
+      doc.keys[body.key] = { by: session.employeeId, at: nowISO(), note: String(body.note || '').trim().slice(0, 200) };
+      await writeJSON(FIX.DISMISS, doc);
+      res.status(200).json({ ok: true, log: { subject: await nameOf(m[1]), detail: FIX.dm(m[2]) + (m[3] === 'missing' ? ' · nu a lucrat' : ' · e corect') } });
+      return;
+    }
+
+    // ---------------------------------------------------------------- „Cere corectarea” (her own past day)
+    if (action === 'fix_request') {
+      if (session.employeeId === 'admin' || isAdmin) return fail(403, 'forbidden');
+      const date = String(body.date || '');
+      if (!isValidDate(date)) return fail(400, 'invalid_date');
+      if (date > serverToday()) return fail(400, 'future_date');
+      if (date < addDaysIso(serverToday(), -31)) return fail(400, 'too_old');
+      const checkIn = body.checkIn || null, checkOut = body.checkOut || null;
+      if (!isValidTime(checkIn) || !isValidTime(checkOut)) return fail(400, 'invalid_time');
+      if (!checkIn && !checkOut) return fail(400, 'missing_times');
+      const entry = entries.find((e) => e.employeeId === session.employeeId && e.date === date) || null;
+      const merged = { date, checkIn: checkIn || (entry && entry.checkIn) || null, checkOut: checkOut || (entry && entry.checkOut) || null };
+      if (!entry && (!merged.checkIn || !merged.checkOut)) return fail(400, 'missing_times');
+      const bad = timesWrong(merged);
+      if (bad) return fail(400, bad);
+      const reqs = await readJSON(FIX.REQ, []);
+      // one open request a day: a new one replaces it
+      let r = reqs.find((x) => x.employeeId === session.employeeId && x.date === date && x.status === 'pending');
+      const fresh = !r;
+      if (!r) { r = { id: crypto.randomUUID(), employeeId: session.employeeId, date, status: 'pending' }; reqs.push(r); }
+      Object.assign(r, { checkIn, checkOut, note: String(body.note || '').trim().slice(0, 200), at: nowISO() });
+      await writeJSON(FIX.REQ, reqs);
+      const employees = await readJSON('data/employees.json', []);
+      const me = employees.find((e) => e.id === session.employeeId) || {};
+      // who decides: the manager of her clinic; the manager's own (or no manager there): the owner
+      const mgrs = isMgr ? [] : managerIds(employees, me.location).filter((id) => id !== session.employeeId);
+      const to = mgrs.length ? mgrs : await adminIds({ readJSON });
+      const text = (me.name ? FIX.firstName(me.name) + ', ' : '') + FIX.dm(date) + ': ' + [checkIn ? 'sosire ' + checkIn : '', checkOut ? 'plecare ' + checkOut : ''].filter(Boolean).join(', ') + (r.note ? '. „' + r.note + '”' : '') + '. Se aprobă din Condică.';
+      await notifyMany({ readJSON, writeJSON }, to, { kind: mgrs.length ? 'time' : 'approval', tone: 'info', title: 'CORECTARE PONTAJ 🕐 - ' + FIX.dm(date), text, go: mgrs.length ? 'condica' : 'angajati/condica', tag: 'fixreq-' + r.id });
+      res.status(200).json({ ok: true, request: r, replaced: !fresh, log: { subject: '', detail: FIX.dm(date) + ' · ' + [checkIn ? 'sosire ' + checkIn : '', checkOut ? 'plecare ' + checkOut : ''].filter(Boolean).join(', ') + (r.note ? ' · ' + r.note : '') } });
+      return;
+    }
+    if (action === 'fix_decide') {
+      if (!sees) return fail(403, 'forbidden');
+      const reqs = await readJSON(FIX.REQ, []);
+      const r = reqs.find((x) => x.id === body.id);
+      if (!r) return fail(404, 'not_found');
+      if (isMgr && r.employeeId === session.employeeId) return fail(403, 'own_request');
+      if (!inTeam(r.employeeId)) return fail(403, 'forbidden');
+      if (r.status !== 'pending') return fail(409, 'already_decided');
+      if (!['approve', 'reject'].includes(body.decision)) return fail(400, 'invalid_decision');
+      const who = await whoIs();
+      const note = String(body.note || '').trim().slice(0, 200);
+      const day = FIX.dm(r.date);
+      if (body.decision === 'reject') {
+        Object.assign(r, { status: 'rejected', decidedAt: nowISO(), decidedBy: session.employeeId, decidedByName: FIX.firstName(who.name), decisionNote: note });
+        await writeJSON(FIX.REQ, reqs);
+        await notify({ readJSON, writeJSON }, r.employeeId, { kind: 'time', tone: 'bad', title: 'PONTAJ ❌ - corectarea din ' + day + ' respinsă', text: note || 'Pontajul rămâne cum era.', go: 'condica' });
+        res.status(200).json({ ok: true, request: r, log: { subject: await nameOf(r.employeeId), detail: day + ' · respinsă' + (note ? ': ' + note : '') } });
+        return;
+      }
+      // the times asked for, or the ones she set in the sheet before approving
+      const times = { checkIn: body.checkIn !== undefined ? body.checkIn || null : r.checkIn, checkOut: body.checkOut !== undefined ? body.checkOut || null : r.checkOut };
+      if (!isValidTime(times.checkIn) || !isValidTime(times.checkOut)) return fail(400, 'invalid_time');
+      const reason = 'Cerută de ' + FIX.firstName(await nameOf(r.employeeId)) + (r.note ? ': ' + r.note : '') + (note ? ' · ' + note : '');
+      let entry = entries.find((e) => e.employeeId === r.employeeId && e.date === r.date);
+      let adjust = null, before = null;
+      if (entry) {
+        before = FIX.snap(entry);
+        const next = Object.assign({}, before, { checkIn: times.checkIn || before.checkIn, checkOut: times.checkOut || before.checkOut });
+        if (body.location !== undefined && VALID_LOCATIONS.includes(body.location)) next.location = body.location;
+        const bad = timesWrong(next);
+        if (bad) return fail(400, bad);
+        Object.assign(entry, next, { updatedAt: nowISO() });
+        FIX.record(entry, before, who, 'request', reason, { requestId: r.id });
+        await writeJSON(KEY, entries);
+        adjust = await TB.syncAdjust(entry, { readJSON, writeJSON });
+      } else {
+        const out = await addDay(r.employeeId, { date: r.date, checkIn: times.checkIn, checkOut: times.checkOut, location: body.location }, { reason, confirm: true, kind: 'request', requestId: r.id });
+        if (out.error) return res.status(out.code).json({ error: out.error });
+        entry = out.entry; adjust = out.adjust;
+      }
+      const fresh = await readJSON(FIX.REQ, reqs);
+      const rr = fresh.find((x) => x.id === r.id) || r;
+      Object.assign(rr, { status: 'approved', decidedAt: nowISO(), decidedBy: session.employeeId, decidedByName: FIX.firstName(who.name), decisionNote: note, entryId: entry.id, applied: FIX.snap(entry) });
+      await writeJSON(FIX.REQ, fresh);
+      await notify({ readJSON, writeJSON }, r.employeeId, { kind: 'time', tone: 'good', title: 'PONTAJ ✅ - ' + day + ' corectat', text: 'Sosire ' + (entry.checkIn || '-') + ', plecare ' + (entry.checkOut || '-') + '.' + (note ? ' ' + note : ''), go: 'condica' });
+      res.status(200).json({ ok: true, request: rr, entry, adjust, log: await logOf(entry, before, reason) });
       return;
     }
 

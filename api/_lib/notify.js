@@ -33,6 +33,21 @@ async function ownerIds(store) {
   if (!g.length) console.warn('notify.ownerIds: no active admin named George, the ads alerts go to the admin login');
   return g.length ? g.map((e) => e.id) : ['admin'];
 }
+// who hears the clinic's day-to-day (the owner, 16.11: the team, reception and the leads are the manager's job, never his):
+// reception (one desk for both clinics) and the active managers of each clinic; the owner only for a clinic that has no
+// active manager (or when there is nobody else at all). `locs`: a clinic, a list, or '' (not tied to one).
+// { reception: false } leaves reception out (what only the manager decides).
+async function deskIds(store, locs, opts) {
+  const o = opts || {};
+  const emps = await store.readJSON('data/employees.json', []);
+  const R = require('./roles');
+  const list = (Array.isArray(locs) ? locs : [locs]).map((l) => require('./clinic').clinicOf(l) || '');
+  const ids = o.reception === false ? [] : emps.filter((e) => e && e.active !== false && e.role === 'receptie').map((e) => e.id);
+  let bare = false;
+  (list.length ? list : ['']).forEach((loc) => { const m = R.managerIds(emps, loc); if (!m.length) bare = true; ids.push(...m); });
+  if (bare || !ids.length) ids.push(...await adminIds(store));
+  return [...new Set(ids)];
+}
 const isOwner = (session) => !!session && (session.employeeId === 'admin' || session.role === 'admin');
 // a text that must fit: cut at a word, with a mark that there was more (a number cut in two would read as another number)
 const cut = (s, n) => { if (s.length <= n) return s; const t = s.slice(0, n - 1); const i = t.lastIndexOf(' '); return (i > n * 0.6 ? t.slice(0, i) : t).replace(/[\s,;:·.-]+$/, '') + '…'; };
@@ -124,4 +139,4 @@ const notify = (store, employeeId, n) => notifyMany(store, [employeeId], n);
 
 const mine = async (store, employeeId) => (await store.readJSON(KEY, [])).filter((x) => x.employeeId === employeeId).slice(-40).reverse();
 
-module.exports = { notify, notifyMany, mine, KEY, adminIds, ownerIds, isOwner, leiTxt, cityTag, payRef, claim, cut };
+module.exports = { notify, notifyMany, mine, KEY, adminIds, deskIds, ownerIds, isOwner, leiTxt, cityTag, payRef, claim, cut };

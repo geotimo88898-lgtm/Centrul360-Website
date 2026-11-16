@@ -19,7 +19,7 @@ Regulile serverului (cifrele clinicii și cine vede ce), pe o copie proprie a da
 ```
 node qa/api-checks.cjs               # neprezentări, consultații cu upsell, regula de 1.500, cine a plecat, costurile trimise,
                                      # mesaje fără răspuns, candidații, Activitate, euro, dimineața, erorile Meta, a doua citire,
-                                     # comisionul din banii încasați și rambursările (22)
+                                     # comisionul din banii încasați și rambursările, cine vede ce și cine aude ce (23)
 ```
 
 Iese cu codul 1 dacă o regulă nu se mai ține (`PORT=…`, `DATA=…` pentru altă copie; `DATA_KEEP=1` păstrează copia temporară).

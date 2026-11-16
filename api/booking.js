@@ -133,7 +133,7 @@ module.exports = async (req, res) => {
     // the owner and reception: in the bell and on their phones
     try {
       const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-      const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, city)) || (e.role === 'receptie' && (!e.location || e.location === city))).map((e) => e.id))
+      const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, city)) || e.role === 'receptie').map((e) => e.id)) // reception: one desk for both clinics (_lib/city.js)
         .concat(who ? [who.id] : []); // and the cosmetician it went to
       const offers = require('./_lib/offers');
       const what = svc.id === 'consult' ? 'Consultație gratuită' : svc.id === 'custom' ? svc.title : offers.shortName(await offers.loadOffers(readJSON), svc.title);
