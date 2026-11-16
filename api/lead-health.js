@@ -52,6 +52,11 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, month: b.month, fixedSet: n });
     return;
   }
+  // ?verify=1[&month=YYYY-MM]: the clinic's numbers checked twice, counts only (see verifyNumbers below)
+  if (req.query && req.query.verify) {
+    try { res.status(200).json(await verifyNumbers(req.query.month)); } catch (e) { res.status(500).json({ error: String(e.message || e).replace(PHONE, '…').slice(0, 200) }); }
+    return;
+  }
   const days = Math.max(1, Math.min(14, Number((req.query && req.query.days) || 3) || 3));
   // ?wahealth=1: what Meta itself says about each city's WhatsApp account right now (may it send, and if not, why and
   // what to do): the health of the number, of the account, of the firm and of the app, whether a payment method is
@@ -378,3 +383,193 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: String(e.message || e).slice(0, 200) });
   }
 };
+
+// ?verify=1: the numbers the owner pays and plans by, each one as production counts it and again by a second, separate
+// reading written from the definitions (it calls none of the production formulas), with `agree`. Counts, shares and lei
+// totals only: never a name, a phone, an id or a client's record (a cosmetician is TM1, AR2… by her clinic, highest lei a
+// day first). Writes nothing of its own (the euro rate and Meta's spend may refresh their caches, as Costuri lunare does).
+//   visits    the last 60 days per clinic (from 17.10 at the earliest): due / came / no-show, the calendar's target
+//   month     per clinic: the cosmeticians in the bonus condition and over 1.500 lei a day worked, consultations with an
+//             upsell or package within 7 days, the collections
+//   checks    what could bend the numbers: HighLevel bookings marked finished in the window, „reprogramată” left on a
+//             passed day, records without a clinic, etc.
+async function verifyNumbers(monthQ) {
+  const CL = require('./_lib/clinic'), K = require('./_lib/kpi'), MP = require('./_lib/manager-pay');
+  const [appts, sales, clients, emps, attendance] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/sales.json', []),
+    readJSON('data/clients.json', []), readJSON('data/employees.json', []), readJSON('data/attendance.json', [])]);
+  // ---------------------------------------------------------------- the second reading (own helpers only)
+  const FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const ro = (ms) => { const p = {}; FMT.formatToParts(new Date(ms)).forEach((x) => { p[x.type] = x.value; }); return { day: p.year + '-' + p.month + '-' + p.day, min: (+p.hour % 24) * 60 + +p.minute }; };
+  const shift = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const clinic = (s) => { const t = plain(s); return t.includes('arad') ? 'Arad' : t.includes('timi') ? 'Timișoara' : ''; };
+  const last9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  const hm = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? +m[1] * 60 + +m[2] : null; };
+  const round2 = (n) => Math.round(n * 100) / 100;
+  const nowRo = ro(Date.now()), today = nowRo.day;
+  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(monthQ || '')) && monthQ <= today.slice(0, 7) ? monthQ : today.slice(0, 7);
+  const mFrom = month + '-01';
+  const mLast = (() => { const [y, m] = month.split('-').map(Number); return month + '-' + String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0'); })();
+  const mTo = mLast < today ? mLast : today;
+  const home = new Map(emps.filter(Boolean).map((e) => [e.id, clinic(e.location)]));
+  const phoneOfClient = new Map(clients.filter(Boolean).map((c) => [c.id, last9(c.phone)]));
+  const apptById = new Map(appts.filter(Boolean).map((a) => [a.id, a]));
+  const apptClinic = (a) => clinic(a.location) || home.get(a.cosmeticianId) || '';
+  const saleClinic = (s) => { if (clinic(s.location)) return clinic(s.location); const a = s.appointmentId && apptById.get(s.appointmentId); return (a && apptClinic(a)) || home.get(s.performedBy) || ''; };
+  const keysOf = (clientId, phone, name) => {
+    const out = []; if (clientId) out.push('c:' + clientId);
+    const p = last9(phone) || phoneOfClient.get(clientId) || ''; if (p.length === 9) out.push('p:' + p);
+    const n = plain(name).trim().replace(/\s+/g, ' '); if (n) out.push('n:' + n);
+    return out;
+  };
+  const pays = sales.filter((s) => s && s.source === 'incasare' && /^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')));
+  const first = shift(ro(K.cfg.start).day, 1); // the portal's first whole day (17.10)
+  const wFrom = shift(today, -60) < first ? first : shift(today, -60), wTo = shift(today, -1);
+  const paidAt = new Set(); // clinic|key|day
+  pays.forEach((s) => { const c = saleClinic(s); keysOf(s.clientId, s.clientPhone, s.client).forEach((k) => paidAt.add(c + '|' + k + '|' + s.date)); });
+  const cameOf = (a, c) => a.status === 'finalizata' || !!a.paidSaleId || keysOf(a.clientId, a.clientPhone, a.clientName).some((k) => paidAt.has(c + '|' + k + '|' + a.date));
+  const late = (a) => { if (a.noShow) return true; const t = Date.parse(a.cancelledAt || a.updatedAt || ''); if (!Number.isFinite(t)) return false; const r = ro(t), s = hm(a.time); return r.day > a.date || (r.day === a.date && (s == null || r.min >= s)); };
+  const isTest = (a) => /^\s*test\b/i.test(a.clientName || '');
+  const ghl = (a) => a.createdBy === 'highlevel' || !!a.ghlId || !!a.importedAt;
+  const v2 = {}, checks = {};
+  CITIES.forEach((city) => {
+    const seen = new Map(), ex = { leave: 0, test: 0, cancelledAhead: 0, moved: 0, duplicate: 0 };
+    const ck = { ghlInWindow: 0, ghlFinishedNoPay: 0, ghlFinishedAtImport: 0, finishedNoPay: 0, movedPassedNotCame: 0, lateCancelNoShow: 0, plainNoShow: 0, cameByPaymentOnly: 0 };
+    appts.forEach((a) => {
+      if (!a || !a.date || a.date < wFrom || a.date > wTo || apptClinic(a) !== city) return;
+      if (a.status === 'concediu' || a.block) { ex.leave++; return; }
+      if (isTest(a)) { ex.test++; return; }
+      const came = cameOf(a, city);
+      if (ghl(a)) {
+        ck.ghlInWindow++;
+        if (a.status === 'finalizata' && !a.paidSaleId) { ck.ghlFinishedNoPay++; const imp = Date.parse(a.importedAt || a.createdAt || ''); if (Number.isFinite(imp) && ro(imp).day > a.date) ck.ghlFinishedAtImport++; }
+      } else if (a.status === 'finalizata' && !a.paidSaleId) ck.finishedNoPay++;
+      if (came && a.status !== 'finalizata' && !a.paidSaleId) ck.cameByPaymentOnly++;
+      if (a.status === 'anulata' && !came) { if (late(a)) ck.lateCancelNoShow++; else { ex.cancelledAhead++; return; } }
+      if (a.status === 'reprogramata' && !came) { ex.moved++; ck.movedPassedNotCame++; return; }
+      if (!came && a.status !== 'anulata') ck.plainNoShow++;
+      const k = (keysOf(a.clientId, a.clientPhone, a.clientName)[0] || 'id:' + a.id) + '|' + a.date + '|' + plain(a.treatment).trim();
+      if (seen.has(k)) { ex.duplicate++; if (came) seen.set(k, true); return; }
+      seen.set(k, came);
+    });
+    const due = seen.size, came = [...seen.values()].filter(Boolean).length;
+    v2[city] = { due, came, excluded: ex };
+    checks[city] = ck;
+  });
+  const both = { due: v2['Timișoara'].due + v2.Arad.due, came: v2['Timișoara'].came + v2.Arad.came };
+  CITIES.forEach((city) => {
+    const v = v2[city], base = v.due >= 20 ? v : both.due >= 20 ? both : null;
+    v.from = v.due >= 20 ? 'clinic' : base ? 'both' : 'default';
+    v.noShowPct = base ? Math.round(100 - (base.came / base.due) * 100) : null;
+    v.target = base ? 100 + v.noShowPct : 150;
+  });
+  // the month: cosmeticians, consultations, collections
+  const m2 = {};
+  CITIES.forEach((city) => {
+    const people = emps.filter((e) => e && e.role === 'cosmetician' && clinic(e.location) === city).filter((e) => {
+      if (e.active !== false) return true;
+      const leftMonth = /^\d{4}-\d{2}-\d{2}$/.test(String(e.leftAt || '')) ? e.leftAt.slice(0, 7) : '2026-11';
+      return month < leftMonth;
+    }).map((e) => {
+      const mine = pays.filter((s) => s.performedBy === e.id && s.date >= mFrom && s.date <= mTo);
+      const lei = mine.reduce((n, s) => n + (Number(s.amount) || 0), 0);
+      const daySet = new Set(attendance.filter((x) => x && x.employeeId === e.id && x.checkIn && x.date >= mFrom && x.date <= mTo).map((x) => x.date));
+      mine.forEach((s) => daySet.add(s.date));
+      return { e, days: daySet.size, lei, trainee: e.trainedOfficial === false };
+    }).filter((p) => p.e.active !== false || p.days > 0);
+    const inCond = people.filter((p) => !p.trainee && p.days > 0);
+    const consult = appts.filter((a) => a && a.status !== 'anulata' && a.status !== 'concediu' && !a.block && plain(a.treatment).includes('consulta') && apptClinic(a) === city &&
+      a.date >= mFrom && a.date <= mTo && (a.date < today || a.status === 'finalizata'));
+    const pkg = pays.filter((s) => Number(s.upsell) > 0 || Number(s.packageTotal) > 0);
+    const match = (a, s) => (a.clientId && s.clientId && a.clientId === s.clientId) || (last9(a.clientPhone).length === 9 && s.clientPhone && last9(s.clientPhone) === last9(a.clientPhone)) ||
+      (!a.clientId && a.clientName && s.client && plain(a.clientName).replace(/\s+/g, ' ').trim() === plain(s.client).replace(/\s+/g, ' ').trim());
+    const withUp = consult.filter((a) => pkg.some((s) => match(a, s) && s.date >= a.date && s.date <= shift(a.date, 7)));
+    const collected = pays.filter((s) => saleClinic(s) === city && s.date >= mFrom && s.date <= mTo).reduce((n, s) => n + (Number(s.amount) || 0), 0);
+    m2[city] = { people, inCond, consults: consult.length, withUpsell: withUp.length, consultsNotCame: consult.filter((a) => !cameOf(a, city)).length, collected: round2(collected) };
+  });
+
+  // ---------------------------------------------------------------- production
+  const N = CL.normalize({ leads: [], appts, sales, convos: [], emps });
+  const tg = CL.fillTargets(N.appts, N.sales, CITIES, today, clients);
+  const M = K.model({ leads: [], appointments: N.appts, sales: N.sales, clients, conversations: [] });
+  const out = { at: new Date().toISOString(), today, window: { from: wFrom, to: wTo, days: Math.round((Date.parse(wTo) - Date.parse(wFrom)) / 864e5) + 1, asked: 60, firstDay: first }, month: { month, from: mFrom, to: mTo }, cities: {} };
+  CITIES.forEach((city) => {
+    const p = tg[city], v = v2[city], vs = CL.visitStats(N.appts, N.sales, city, today, 60, clients);
+    // the KPI page's own show rate (bookings made in the portal from START on), over the same window, for comparison
+    const kv = M.A.filter((a) => a.fresh && a.city === city && a.date >= wFrom && a.date <= wTo && a.due);
+    // the cosmeticians: the Manager page (clinic.js cosmeticians) and the pay (manager-pay.js conditionOf)
+    const team = CL.cosmeticians(emps, N.sales, attendance, city, mFrom, mTo, N.appts).filter((x) => x.days > 0);
+    const cond = MP.conditionOf(emps, sales, attendance, [city], month, mTo);
+    const condPeople = cond.people.filter((x) => x.days > 0);
+    const mm = m2[city];
+    const pageOk = new Set(team.filter((x) => x.ok).map((x) => x.id)), payOk = new Set(condPeople.filter((x) => x.ok).map((x) => x.id));
+    const rows = mm.people.filter((x) => x.days > 0).sort((a, b) => b.lei / b.days - a.lei / a.days).map((x, i) => {
+      const exact = x.lei / x.days, pg = team.find((t) => t.id === x.e.id), py = condPeople.find((t) => t.id === x.e.id);
+      return { label: (city === 'Arad' ? 'AR' : 'TM') + (i + 1), days: x.days, perDay: Math.round(exact), trainee: x.trainee, over1500: exact > 1500, edge: Math.abs(exact - 1500) <= 15,
+        managerPage: pg ? { days: pg.days, perDay: pg.perDay, ok: pg.ok } : null, pay: py ? { days: py.days, perDay: py.perDay, ok: py.ok } : x.trainee ? 'în formare (în afara condiției)' : null };
+    });
+    const cons = CL.consults(N.appts, N.sales, city, mFrom, mTo);
+    const prodColl = round2(N.sales.filter((s) => s && s.source === 'incasare' && s.location === city && s.date >= mFrom && s.date <= mTo).reduce((n, s) => n + (Number(s.amount) || 0), 0));
+    const payColl = MP.collectionsOf(sales, appts, emps, [city], month, mTo);
+    const kpiColl = round2(M.P.filter((x) => x.counts && x.city === city && x.day >= mFrom && x.day <= mTo).reduce((n, x) => n + x.amount, 0));
+    out.cities[city] = {
+      visits60: {
+        production: { due: vs.due, came: vs.came, noShow: vs.noShow, from: vs.from, to: vs.to, excluded: vs.excluded, target: p.target, noShowPct: p.noShow, targetFrom: p.from },
+        second: { due: v.due, came: v.came, noShow: v.due - v.came, excluded: v.excluded, target: v.target, noShowPct: v.noShowPct, targetFrom: v.from },
+        agree: vs.due === v.due && vs.came === v.came && p.target === v.target,
+        kpiPageShowRate: { due: kv.length, came: kv.filter((a) => a.came).length, note: 'Panou → KPI „au venit”: doar programările făcute în portal; „reprogramată” trecută intră aici ca neprezentare' },
+        checks: checks[city],
+      },
+      month: {
+        cosmeticians: {
+          second: { inCondition: mm.inCond.length, over1500: mm.inCond.filter((x) => x.lei / x.days > 1500).length, trainees: mm.people.filter((x) => x.trainee && x.days > 0).length, conditionMet: mm.inCond.length > 0 && mm.inCond.every((x) => x.lei / x.days > 1500) },
+          managerPage: { counted: team.length, ok: pageOk.size, conditionMet: team.length > 0 && team.every((x) => x.ok) },
+          pay: { counted: condPeople.length, ok: payOk.size, trainees: cond.training.length, conditionMet: cond.ok },
+          agreePay: condPeople.length === mm.inCond.length && payOk.size === mm.inCond.filter((x) => x.lei / x.days > 1500).length && cond.ok === (mm.inCond.length > 0 && mm.inCond.every((x) => x.lei / x.days > 1500)),
+          agreeManagerPage: team.length === mm.inCond.length && pageOk.size === mm.inCond.filter((x) => x.lei / x.days > 1500).length,
+          rows,
+        },
+        consults: { production: { total: cons.total, withUpsell: cons.withPackage, pct: cons.pct }, second: { total: mm.consults, withUpsell: mm.withUpsell, notCame: mm.consultsNotCame }, agree: cons.total === mm.consults && cons.withPackage === mm.withUpsell },
+        collections: { production: prodColl, pay: payColl, kpi: kpiColl, second: mm.collected, agree: Math.abs(prodColl - mm.collected) < 0.01 && Math.abs(payColl - mm.collected) < 0.01 && Math.abs(kpiColl - mm.collected) < 0.01 },
+      },
+    };
+  });
+  // both clinics together (the manager's bonus condition is judged on all the clinics she runs)
+  const cAll = MP.conditionOf(emps, sales, attendance, CITIES, month, mTo);
+  const inAll = CITIES.flatMap((c) => m2[c].inCond);
+  out.bothClinics = { pay: { counted: cAll.people.filter((x) => x.days > 0).length, ok: cAll.people.filter((x) => x.days > 0 && x.ok).length, conditionMet: cAll.ok },
+    second: { counted: inAll.length, ok: inAll.filter((x) => x.lei / x.days > 1500).length, conditionMet: inAll.length > 0 && inAll.every((x) => x.lei / x.days > 1500) } };
+  out.bothClinics.agree = out.bothClinics.pay.conditionMet === out.bothClinics.second.conditionMet && out.bothClinics.pay.ok === out.bothClinics.second.ok;
+  // the data itself
+  const winAppts = appts.filter((a) => a && a.date >= wFrom && a.date <= wTo && !a.block && a.status !== 'concediu');
+  const monthPays = pays.filter((s) => s.date >= mFrom && s.date <= mTo);
+  out.data = {
+    apptsWithoutClinic: winAppts.filter((a) => !apptClinic(a)).length, apptsWithoutClientId: winAppts.filter((a) => !a.clientId).length,
+    paysWithoutClinic: monthPays.filter((s) => !saleClinic(s)).length, paysWithoutClientId: monthPays.filter((s) => !s.clientId).length, paysWithoutPerformer: monthPays.filter((s) => !s.performedBy || !home.has(s.performedBy)).length,
+    paysPerformerNotCosmetician: monthPays.filter((s) => { const e = emps.find((x) => x && x.id === s.performedBy); return e && e.role !== 'cosmetician'; }).length,
+    paysNonPositive: monthPays.filter((s) => !(Number(s.amount) > 0)).length, paysFutureDate: pays.filter((s) => s.date > today).length,
+    paysDatedOtherThanTyped: monthPays.filter((s) => { const t = Date.parse(s.createdAt || ''); return Number.isFinite(t) && ro(t).day !== s.date; }).length,
+    cosmeticiansLocationSpelledOtherwise: emps.filter((e) => e && e.role === 'cosmetician' && clinic(e.location) && e.location !== clinic(e.location)).length,
+    cosmeticiansWithoutClinic: emps.filter((e) => e && e.role === 'cosmetician' && !clinic(e.location)).length,
+    statuses: winAppts.reduce((o, a) => { o[a.status || '-'] = (o[a.status || '-'] || 0) + 1; return o; }, {}),
+  };
+  // the manager's 5% (no sums): is the month's cost sheet complete, and does the bonus follow from collections - costs
+  try {
+    const ctx = await MP.loadCtx(readJSON);
+    const mgrs = ctx.employees.filter((e) => e && e.role === 'manager' && e.active !== false);
+    out.managerBonus = [];
+    for (const [i, e] of mgrs.entries()) {
+      const r = await MP.monthOf(readJSON, ctx, e, month, { full: true });
+      const clin = r.clinics;
+      const coll = round2(clin.reduce((n, c) => n + (m2[c] ? m2[c].collected : 0), 0));
+      const costSum = r.costs ? round2(r.costs.rows.reduce((n, x) => n + (Number(x.lei) || 0), 0)) : null;
+      const cond = (() => { const ppl = clin.flatMap((c) => (m2[c] ? m2[c].inCond : [])); return ppl.length > 0 && ppl.every((x) => x.lei / x.days > 1500); })();
+      const bonus2 = r.filled ? (cond ? Math.round(Math.max(0, coll - costSum) * 0.05) : 0) : null;
+      out.managerBonus.push({ label: 'M' + (i + 1), clinics: clin.length, filled: r.filled, missingLines: r.costs ? r.costs.missing : null, conditionMet: r.condition.ok, secondConditionMet: cond,
+        collectionsAgree: r.collections != null && Math.abs(r.collections - coll) < 0.01, costsAddUp: r.costs ? Math.abs(costSum - r.costs.total) < 0.01 : null,
+        bonusAgree: r.filled ? (r.estimate && r.estimate.bonus) === bonus2 : null, profitPositive: r.filled ? r.profit > 0 : null, final: !!r.final });
+    }
+  } catch (e) { out.managerBonus = { error: String(e.message || e).replace(PHONE, '…').slice(0, 160) }; }
+  out.agree = CITIES.every((c) => out.cities[c].visits60.agree && out.cities[c].month.cosmeticians.agreePay && out.cities[c].month.consults.agree && out.cities[c].month.collections.agree) && out.bothClinics.agree;
+  return out;
+}
