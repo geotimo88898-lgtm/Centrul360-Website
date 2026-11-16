@@ -32,7 +32,7 @@ function apptMin(a) {
   return e != null && e > s ? e - s : 60;
 }
 // the team's minutes for clients that day in a city: the cosmeticians' shifts once the city has a weekly schedule
-// (Calendar → Program echipă), else the clinic's hours times its places (Calendar → Online) minus who is on leave
+// (Calendar → Program echipă) minus their breaks, else the clinic's hours times its places (Calendar → Online) minus who is on leave
 function capMin(cfg, city, date, appts) {
   const c = cfg.cities[city], d = c && c.days[new Date(date + 'T12:00:00Z').getUTCDay()];
   if (!d || !d.on || (c.closed || []).includes(date)) return 0;
@@ -41,7 +41,10 @@ function capMin(cfg, city, date, appts) {
   const t = cfg.team;
   // someone who left counts up to her last day (her shifts, her place), never after it (team.until, _lib/booking.js)
   if (t && T.hasSchedule(t.doc, city, t.ids)) {
-    return T.whoWorks(t.doc, date, city, { appts, ids: t.ids, until: t.until }).reduce((n, w) => n + Math.max(0, (toMin(w.to) || 0) - (toMin(w.from) || 0)), 0);
+    const o = { appts, ids: t.ids, until: t.until };
+    // minus the breaks that hold that day (the owner, 16.11: the fill is not diluted by the half hour she can't take a client)
+    const rest = T.dayBreaks(t.doc, date, city, o).filter((b) => b.on).length * T.BREAK_MIN;
+    return Math.max(0, T.whoWorks(t.doc, date, city, o).reduce((n, w) => n + Math.max(0, (toMin(w.to) || 0) - (toMin(w.from) || 0)), 0) - rest);
   }
   const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId)).size;
   // without a schedule: no more places than the cosmeticians of the clinic that day, once one of them has left

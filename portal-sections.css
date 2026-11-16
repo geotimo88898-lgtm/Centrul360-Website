@@ -3560,3 +3560,69 @@ html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }
 .mg-strip-row > b{ min-width:84px; font-size:.86rem; }
 .mg-strip-acts{ display:flex; flex-wrap:wrap; gap:.4rem; padding-top:.2rem; }
 @media (max-width:720px){ .mg-strip-row > b{ width:100%; } .mg-strip-acts .k-btn{ flex:1 1 auto; } }
+
+/* the break (portal-calendar.js brkHtml, openBreak; the owner 16.11): 30 minutes at the middle of her shift, a soft yellow
+   block in her lane; not an appointment, never dragged like one */
+.cal-brk{ --bk:var(--warn); position:absolute; z-index:2; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:1px; min-width:0; padding:.15rem .5rem; border:0; border-radius:10px;
+  font:inherit; text-align:left; overflow:hidden; cursor:pointer; color:color-mix(in srgb, var(--bk) 72%, var(--fg));
+  background:color-mix(in srgb, var(--bk) 12%, var(--paper)); box-shadow:inset 3px 0 0 color-mix(in srgb, var(--bk) 75%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--bk) 18%, transparent);
+  touch-action:pan-x pan-y; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; transition:transform .2s var(--ease), box-shadow .2s ease, opacity .2s ease; }
+.cal-brk:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm), inset 3px 0 0 var(--bk), inset 0 0 0 1px color-mix(in srgb, var(--bk) 28%, transparent); z-index:3; }
+.cal-brk.is-movable{ cursor:grab; }
+.cal-brk b{ max-width:100%; font-size:.72rem; font-weight:700; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-brk{ container-type:inline-size; }
+.cal-brk span{ display:block; max-width:100%; font-size:.66rem; font-weight:550; line-height:1.15; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-brk.is-moved:not(.is-slim) > b, .cal-brk.is-moved:not(.is-slim) > span{ max-width:calc(100% - 3.4rem); }
+.cal-brk i{ position:absolute; top:50%; right:.45rem; transform:translateY(-50%); font-style:normal; padding:.05rem .35rem; border-radius:5px; font-size:.58rem; font-weight:700; background:color-mix(in srgb, var(--bk) 20%, transparent); color:color-mix(in srgb, var(--bk) 80%, var(--fg)); }
+.cal-brk.is-slim{ padding:.1rem .35rem; }
+.cal-brk.is-slim b{ font-size:.66rem; }
+.cal-brk.is-slim i{ display:none; }
+.cal-brk.is-tiny{ padding:.1rem .2rem; border-radius:7px; }
+.cal-brk.is-tiny b{ font-size:.56rem; }
+.cal-brk.is-tiny span{ display:none; }
+@container (max-width:150px){ .cal-brk i{ display:none; } .cal-brk.is-moved > b, .cal-brk.is-moved > span{ max-width:100% !important; } }
+.cal-brk.is-src{ opacity:.25; }
+.cal-brk.is-ghost{ z-index:6; opacity:.95; cursor:grabbing; box-shadow:var(--shadow), inset 3px 0 0 var(--bk); pointer-events:none; }
+.cal-brk.is-ghost.is-no{ --bk:var(--bad); }
+.cal-grid.is-split .cal-brk{ container-type:inline-size; }
+@container (max-width:40px){ .cal-grid.is-split .cal-brk > *{ display:none; } }
+/* the quiet line next to her hours, on top of the day */
+.cal-team-p{ display:inline-flex; align-items:center; gap:.15rem; margin-right:.35rem; }
+.cal-team-brk{ margin:0; padding:.05rem .4rem; border:0; border-radius:999px; background:transparent; font:inherit; font-size:.72rem; font-weight:600; font-variant-numeric:tabular-nums;
+  color:color-mix(in srgb, var(--warn) 78%, var(--fg)); cursor:pointer; }
+.cal-team-brk:hover{ background:var(--warn-soft); }
+.cal-team-brk.is-off{ color:var(--muted-2); font-weight:500; }
+/* the sheet */
+.brk-sheet{ display:grid; gap:.9rem; }
+.brk-when{ display:grid; gap:.15rem; padding:.85rem 1rem; border-radius:14px; background:color-mix(in srgb, var(--warn) 11%, var(--paper)); box-shadow:inset 3px 0 0 color-mix(in srgb, var(--warn) 75%, transparent); }
+.brk-when b{ font-size:1.25rem; font-weight:700; font-variant-numeric:tabular-nums; color:color-mix(in srgb, var(--warn) 70%, var(--fg)); }
+.brk-when span{ font-size:.82rem; color:var(--muted); }
+.brk-when.is-off{ background:var(--glass); box-shadow:none; }
+.brk-when.is-off b{ color:var(--muted); }
+.brk-note{ display:flex; gap:.45rem; margin:0; font-size:.84rem; line-height:1.4; color:var(--muted); }
+.brk-note svg{ flex:none; width:15px; height:15px; margin-top:.12rem; opacity:.75; }
+.brk-move h4{ margin:0 0 .55rem; font-size:.8rem; font-weight:650; color:var(--muted); letter-spacing:.02em; }
+.brk-quick{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.4rem; margin-bottom:.7rem; }
+.brk-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(64px, 1fr)); gap:.35rem; }
+.brk-chip{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; min-width:0; min-height:38px; padding:.3rem .35rem; border:0; border-radius:10px; font:inherit; cursor:pointer;
+  background:var(--paper); color:var(--fg); box-shadow:0 0 0 1px color-mix(in srgb, var(--fg) 10%, transparent); transition:box-shadow .2s ease, background-color .2s ease, transform .15s var(--ease); }
+.brk-chip b{ font-size:.8rem; font-weight:650; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.brk-chip span{ max-width:100%; font-size:.62rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.brk-chip:hover:not(:disabled){ box-shadow:0 0 0 1.5px color-mix(in srgb, var(--warn) 70%, transparent); }
+.brk-chip:active:not(:disabled){ transform:scale(.96); }
+.brk-chip.is-on{ background:color-mix(in srgb, var(--warn) 14%, var(--paper)); box-shadow:0 0 0 1.5px var(--warn); }
+.brk-chip:disabled{ cursor:not-allowed; opacity:.5; background:var(--glass); box-shadow:none; }
+.brk-chip.is-quick b{ font-size:.78rem; }
+/* the booking form: her break under the hour picked */
+.cal-brk-hint{ display:grid; gap:.45rem; padding:.7rem .8rem; border-radius:12px; background:color-mix(in srgb, var(--warn) 10%, var(--paper)); box-shadow:inset 3px 0 0 color-mix(in srgb, var(--warn) 70%, transparent); }
+.cal-brk-hint[hidden]{ display:none; }
+.cal-brk-hint p{ display:flex; align-items:center; gap:.4rem; margin:0; font-size:.86rem; font-weight:600; color:color-mix(in srgb, var(--warn) 70%, var(--fg)); }
+.cal-brk-hint p svg{ flex:none; width:15px; height:15px; }
+.cal-brk-hint small{ font-size:.74rem; color:var(--muted); }
+.cal-brk-pick{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; }
+.cal-brk-pick > span{ font-size:.82rem; color:var(--muted); }
+.cal-brk-pick .brk-chip{ flex-direction:row; min-height:32px; padding:.25rem .7rem; border-radius:999px; }
+/* Panou: a cosmetician's own break in her day */
+.db-tl-item.is-brk .db-tl-dot{ border-color:var(--warn); }
+.db-tl-item.is-brk .db-tl-card{ background:color-mix(in srgb, var(--warn) 10%, var(--paper-2)); border-color:color-mix(in srgb, var(--warn) 25%, transparent); }
+.db-tl-item.is-brk .db-tl-top b{ color:color-mix(in srgb, var(--warn) 70%, var(--fg)); }

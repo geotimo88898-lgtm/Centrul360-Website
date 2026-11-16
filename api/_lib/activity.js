@@ -60,6 +60,7 @@ const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_
 const READS_IN = {
   'portal-followups': ['free', 'packages', 'counts', 'recontact', 'people', 'sheet'],
   'portal-appointments': ['orphans'],
+  'portal-schedule': ['break_info'],
   'portal-employees': ['manual_list'],
   'portal-incasari': ['dues'],
   'portal-content': ['results', 'gallery'],
@@ -71,6 +72,7 @@ const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-crea
 const VERBS = {
   'portal-appointments:create': 'a programat', 'portal-appointments:update': 'a modificat programarea', 'portal-appointments:delete': 'a șters programarea',
   'portal-schedule:save_week': 'a modificat programul pentru', 'portal-schedule:save_date': 'a modificat programul dintr-o zi pentru',
+  'portal-schedule:break_set': 'a mutat pauza pentru', 'portal-schedule:break_off': 'a scos pauza de azi pentru', 'portal-schedule:break_reset': 'a pus pauza la mijlocul programului pentru',
   'portal-leads:create': 'a adăugat leadul', 'portal-leads:update_details': 'a modificat leadul', 'portal-leads:move_stage': 'a mutat leadul',
   'portal-leads:add_note': 'a notat la', 'portal-leads:log_contact': 'a contactat', 'portal-leads:set_followup': 'a setat follow-up la',
   'portal-leads:link_appointment': 'a programat leadul', 'portal-leads:delete': 'a șters leadul', 'portal-leads:stages_save': 'a modificat etapele din Pipeline',
@@ -185,6 +187,7 @@ function describe(route, action, body, before, after, out) {
   let detail = '';
   if (route === 'portal-appointments' && action === 'create') detail = [b.treatment, [pretty('date', b.date), b.time].filter((x) => x && x !== '-').join(' '), b.location].filter(Boolean).join(' · ');
   else if (route === 'portal-leads' && action === 'move_stage' && after && (after.activities || []).length) detail = clip(after.activities[after.activities.length - 1].text, 80);
+  else if (route === 'portal-schedule' && /^break_/.test(action || '')) detail = [pretty('date', b.date), action === 'break_set' ? 'la ' + b.from : ''].filter((x) => x && x !== '-').join(' · ');
   else if (route === 'portal-leads' && action === 'log_contact') detail = [b.channel === 'whatsapp' ? 'pe WhatsApp' : 'telefonic', OUTCOME[b.outcome] || '', clip(b.text, 60)].filter(Boolean).join(' · ');
   else if (route === 'portal-leads' && action === 'add_note') detail = clip(b.text, 80);
   else if (route === 'portal-whatsapp' && (action === 'send' || action === 'send_media')) detail = clip(b.text || b.caption || b.filename, 80);
@@ -201,6 +204,8 @@ function describe(route, action, body, before, after, out) {
   else if (route === 'portal-config' && b.academy) detail = b.academy.remove ? 'scos' : (b.academy.upsert && b.academy.upsert.item && b.academy.upsert.item.verified ? 'verificat' : '');
   else if (/update|session_update|update_details/.test(action || '')) detail = diff(before, after);
   if (!detail && before && after) detail = diff(before, after);
+  // a booking that moved her break (Calendar, the booking form): said on the same line
+  if (route === 'portal-appointments' && b.breakMove && (b.breakMove.from || b.breakMove.off)) detail = [detail, b.breakMove.off ? 'fără pauză în ziua aceea' : 'pauza mutată la ' + b.breakMove.from].filter(Boolean).join(' · ');
   return { verb, subject: clip(subject, 80), detail: clip(detail, 160) };
 }
 

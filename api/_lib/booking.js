@@ -161,7 +161,8 @@ function busy(appts, city, date, skipId) {
   return { iv, cut: off.size, closed };
 }
 // How many clients fit at each minute of a day: the day's „at” minus the cosmeticians on leave, or, once the city has a
-// weekly schedule, the cosmeticians working at that minute (their leave already counted). edges: the minutes it changes.
+// weekly schedule, the cosmeticians working at that minute (their leave already counted) and not on their break
+// (team-schedule.js dayBreaks). edges: the minutes it changes.
 function capOf(cfg, city, date, d, b, appts) {
   const t = cfg.team;
   if (!t || !T.hasSchedule(t.doc, city, t.ids)) {
@@ -170,7 +171,10 @@ function capOf(cfg, city, date, d, b, appts) {
     return { team: false, at: () => n, edges: [], max: n };
   }
   const shifts = T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).map((w) => [toMin(w.from), toMin(w.to)]);
-  return { team: true, at: (p) => shifts.filter((x) => x[0] <= p && x[1] > p).length, edges: [].concat(...shifts), max: shifts.length };
+  // her break (the owner, 16.11): she is not a place during it (one cosmetician on: that half hour is gone; two: one less)
+  const breaks = T.dayBreaks(t.doc, date, city, { appts, ids: t.ids }).filter((b) => b.on).map((b) => [toMin(b.from), toMin(b.to)]);
+  const n = (list, p) => list.filter((x) => x[0] <= p && x[1] > p).length;
+  return { team: true, at: (p) => n(shifts, p) - n(breaks, p), edges: [].concat(...shifts, ...breaks), max: shifts.length, breaks };
 }
 // the same for a day of a city as Nuki reads it (api/portal-nuki.js): null when the city is closed that weekday
 function capacity(cfg, city, date, appts) {

@@ -90,6 +90,14 @@ function computeGoalCurrent(goal, employeeId, sales, appointments, today, month,
   }
 }
 
+// her break today ({ from, to, on, moved }) or null: no shift, a short one
+async function myBreakToday(id, today, appointments) {
+  const T = require('./_lib/team-schedule');
+  const [doc, cosm] = await Promise.all([T.load(), T.people()]);
+  const b = T.breakOf(doc, id, today, { appts: appointments.filter((a) => a && a.date === today), ids: new Set(cosm.map((p) => p.id)) });
+  return b ? { from: b.from, to: b.to, on: b.on, why: b.why, moved: b.moved } : null;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'method_not_allowed' });
@@ -279,6 +287,8 @@ module.exports = async (req, res) => {
         list: todaysAppointments,
         countsToday,
         myCountsToday,
+        // a cosmetician's own break today (Panou: „Pauza ta: 14:30-15:00”), from her shift (_lib/team-schedule.js)
+        myBreak: me.role === 'cosmetician' ? await myBreakToday(me.id, today, appointments).catch(() => null) : null,
       },
       myGoals,
       // Traininguri: every manual for everyone (the goal: everyone sells). The team sees the sheets and cases the

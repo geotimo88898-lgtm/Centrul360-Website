@@ -138,6 +138,8 @@
     // the manager runs the desk on both clinics: reception's Panou (her own Manager page has the team's numbers)
     const role = D.isAdmin ? 'admin' : me.role === 'manager' ? 'receptie' : me.role;
     const mineToday = appts.filter((a) => a.cosmeticianId === me.id);
+    // her break today (the owner, 16.11), when it holds: in her day, at its hour
+    const myBreak = (D.appointmentsToday && D.appointmentsToday.myBreak && D.appointmentsToday.myBreak.on) ? D.appointmentsToday.myBreak : null;
     const unconfirmed = appts.filter((a) => a.status === 'programata');
     const ms = D.mySales || [];
     const commMonth = ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.commission || 0), 0);
@@ -149,6 +151,7 @@
     const summary = [];
     if (role === 'cosmetician') {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(mineToday.filter((a) => a.status !== 'anulata').length, 'clientă', 'cliente') + '</a> azi');
+      if (myBreak) summary.push('pauza la ' + esc(myBreak.from));
       if (pendingMine.length) summary.push('<a href="#comision" data-go="comision">' + K.plural(pendingMine.length, 'upsell', 'upselluri') + ' în așteptare</a>');
     } else {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(live.length, 'programare', 'programări') + '</a> azi');
@@ -287,7 +290,7 @@
       today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3>' +
         (D.isAdmin && document.documentElement.classList.contains('ui-nou') ? '<div class="db-today-meta"><span><b>' + live.length + '</b> ' + (live.length === 1 ? 'programare' : 'programări') + (confirmed ? ' · ' + confirmed + ' confirmate' : '') + '</span>' +
           (leadsData ? '<button type="button" class="k-btn is-sm ' + (callNow.length ? 'is-accent' : 'is-outline') + '" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'De sunat · ' + callNow.length + '</button>' : '') + '</div>' : '') + '<a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
-        '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts) + '</div></section>',
+        '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts, role === 'cosmetician' ? myBreak : null) + '</div></section>',
       bonus: () => bonusCard,
       team: () => '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa</h3><a class="k-btn is-sm is-outline" href="#activitate" data-go="activitate">Activitate' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>',
     };
@@ -335,16 +338,28 @@
     tick(new Date());
   }
 
-  function timelineHtml(appts) {
+  function timelineHtml(appts, brk) {
     const list = appts.slice().sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
+    // her break, in its place among her clients (read-only: reception or the manager moves it)
+    const brkHtml = brk ? '<li class="db-tl-item is-brk" data-go="programari" data-time="' + esc(brk.from) + '"><span class="db-tl-time">' + esc(brk.from) + '<small>' + esc(brk.to) + '</small></span><span class="db-tl-dot"></span>' +
+      '<div class="db-tl-card"><div class="db-tl-top"><b>Pauza ta: ' + esc(brk.from) + '-' + esc(brk.to) + '</b>' + (brk.moved ? '<span class="k-tag is-warn">mutată</span>' : '') + '</div></div></li>' : '';
+    if (brk && !list.length) return '<ol class="db-tl">' + brkHtml + '</ol>';
+    if (brk) {
+      const out = [];
+      let put = false;
+      list.forEach((a) => { if (!put && (a.time || '99') > brk.from) { out.push(null); put = true; } out.push(a); });
+      if (!put) out.push(null);
+      return '<ol class="db-tl">' + out.map((a) => (a ? timelineItem(a) : brkHtml)).join('') + '</ol>';
+    }
     if (!list.length) return K.empty('calendar', 'Nicio programare azi', 'Când apar programări, le vezi aici în ordinea orei.', K.frontDesk && K.frontDesk() ? '<button type="button" class="k-btn is-sm is-primary" data-go="programari" data-then="calendar:new">' + icon('plus') + 'Adaugă programare</button>' : '');
-    return '<ol class="db-tl">' + list.map((a) => {
-      const st = STATUS[a.status] || { label: a.status, tone: '' };
-      return '<li class="db-tl-item is-' + a.status + '" data-appt="' + esc(a.id) + '" data-time="' + esc(a.time || '') + '">' +
+    return '<ol class="db-tl">' + list.map(timelineItem).join('') + '</ol>';
+  }
+  function timelineItem(a) {
+    const st = STATUS[a.status] || { label: a.status, tone: '' };
+    return '<li class="db-tl-item is-' + a.status + '" data-appt="' + esc(a.id) + '" data-time="' + esc(a.time || '') + '">' +
         '<span class="db-tl-time">' + esc(a.time || '-') + (a.endTime && a.endTime > (a.time || '') ? '<small>' + esc(a.endTime) + '</small>' : '') + '</span><span class="db-tl-dot"></span>' +
         '<div class="db-tl-card"><div class="db-tl-top"><b>' + esc(a.clientName || '-') + '</b><span class="k-tag is-' + st.tone + '">' + st.label + '</span></div>' +
         '<div class="db-tl-sub">' + esc(a.treatment || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div></li>';
-    }).join('') + '</ol>';
   }
 
   // Admin: what the team (reception) did in the pipeline, latest actions + today's counters per person.

@@ -265,9 +265,11 @@ function freeDay(D, city, date, nowRo) {
       for (let i = 0; i < places; i++) lanes.push({ id: '', name: places > 1 ? 'Loc ' + (i + 1) : '', from: toMin(d.from), to: toMin(d.to) });
     }
   }
-  lanes.forEach((l) => { l.busy = []; });
+  lanes.forEach((l) => { l.busy = []; l.rest = []; });
+  // her break (team-schedule.js dayBreaks): not free, not booked either
+  if (team && !closedDay) T.dayBreaks(cfg.team.doc, date, city, { appts: D.appts, ids: cfg.team.ids }).filter((b) => b.on).forEach((b) => { const l = lanes.find((x) => x.id === b.employeeId); if (l) l.rest.push([toMin(b.from), toMin(b.to)]); });
   const iv = (a) => { const s = toMin(a.time); if (s == null) return null; const e = toMin(a.endTime); return [s, e != null && e > s ? e : s + 60]; };
-  const free = (l, s, e) => s >= l.from && e <= l.to && !l.busy.some((b) => b[0] < e && b[1] > s);
+  const free = (l, s, e) => s >= l.from && e <= l.to && !l.busy.concat(l.rest).some((b) => b[0] < e && b[1] > s);
   // hers first, then the ones without a cosmetician (or hers when nobody's lane is hers: a shift not set that day)
   const own = dayAppts.filter((a) => (visit(a) || a.block) && iv(a));
   own.filter((a) => a.cosmeticianId && lanes.some((l) => l.id === a.cosmeticianId)).forEach((a) => lanes.find((l) => l.id === a.cosmeticianId).busy.push(iv(a)));
@@ -278,14 +280,14 @@ function freeDay(D, city, date, nowRo) {
   });
   const start = date === nowRo.date ? Math.ceil((nowRo.min + 1) / 30) * 30 : -1;
   const people = lanes.map((l) => {
-    const busy = l.busy.slice().sort((a, b) => a[0] - b[0]);
+    const busy = l.busy.concat(l.rest).sort((a, b) => a[0] - b[0]);
     const wins = [];
     let t = Math.max(l.from, start);
     busy.forEach((b) => { if (b[0] > t) wins.push([t, Math.min(b[0], l.to)]); t = Math.max(t, b[1]); });
     if (t < l.to) wins.push([t, l.to]);
     const ok = wins.filter((w) => w[1] - w[0] >= MIN_FREE);
-    const shift = l.to - l.from;
-    const booked = busy.reduce((n, b) => n + Math.max(0, Math.min(b[1], l.to) - Math.max(b[0], l.from)), 0);
+    const shift = l.to - l.from - l.rest.reduce((n, b) => n + b[1] - b[0], 0);
+    const booked = l.busy.reduce((n, b) => n + Math.max(0, Math.min(b[1], l.to) - Math.max(b[0], l.from)), 0);
     return { id: l.id, name: l.name, from: hhmm(l.from), to: hhmm(l.to), shiftMin: shift, bookedMin: booked,
       free: ok.map((w) => ({ from: hhmm(w[0]), to: hhmm(w[1]), min: w[1] - w[0] })), freeMin: ok.reduce((n, w) => n + w[1] - w[0], 0) };
   });

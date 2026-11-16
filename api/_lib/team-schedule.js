@@ -1,7 +1,9 @@
 // Programul echipei (the owner, 9.11: „unde trec programul fetelor”): when each cosmetician works, and where.
 // data/team-schedule.json:
 //   { weekly: { <employeeId>: { location: 'Timișoara' | 'Arad', days: { '1'..'7' (Monday..Sunday): { on, from, to } } } },
-//     dates:  { 'YYYY-MM-DD': { <employeeId>: { on, from, to, location } } } }
+//     dates:  { 'YYYY-MM-DD': { <employeeId>: { on, from, to, location } } },
+//     breaks: { 'YYYY-MM-DD': { <employeeId>: { from } | { off: true }, plus by, byName, at } } }  (the break moved or left out
+//             for that one day, see „The break” below)
 // A date entry replaces that employee's weekly day (a day off, other hours, the other city). An approved leave (an
 // appointment with status 'concediu', or a block for her with no hour) means she is off that day, whatever the schedule.
 // Read by the Calendar (who works, the booking form) and by the site's free hours (api/_lib/booking.js): once a city
@@ -19,12 +21,13 @@ const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) && !isNaN(Date
 // 1 = Monday … 7 = Sunday
 const isoDow = (date) => { const d = new Date(date + 'T12:00:00Z').getUTCDay(); return String(d === 0 ? 7 : d); };
 
-const empty = () => ({ weekly: {}, dates: {} });
+const empty = () => ({ weekly: {}, dates: {}, breaks: {} });
 function norm(d) {
   const out = empty();
   if (d && typeof d === 'object') {
     if (d.weekly && typeof d.weekly === 'object') out.weekly = d.weekly;
     if (d.dates && typeof d.dates === 'object') out.dates = d.dates;
+    if (d.breaks && typeof d.breaks === 'object') out.breaks = d.breaks;
   }
   return out;
 }
@@ -112,6 +115,188 @@ function hasSchedule(doc, location, ids) {
   });
 }
 
+// ------------------------------------------------------------------ the break (the owner, 16.11)
+// „o pauză de 30 de minute la mijlocul programului de lucru la toate cosmeticienele”: every day she works, from 16.11.
+// Never stored as an appointment: it is worked out from her shift that day (the date entry, else her week), so it follows
+// every change of the schedule by itself.
+//   when:  the half hour at the middle of her shift, rounded down to the clock's half hour (09-20 and 10-19 → 14:30-15:00,
+//          09-17 → 13:00-13:30); a shift under 5 hours has none
+//   moved: doc.breaks[date][id] = { from } (that day only; „Mută pauza”); a moved break that no longer fits her shift (the
+//          shift changed later) goes back to the middle. { off: true }: no break that day („Fără pauză azi”).
+//   two at once: colleagues of a city with the same middle take it one after the other (the second half an hour later), so
+//          the clinic never loses two places at the same time
+//   clients win: a client of hers (or a block for her) over the break that day, and there is none that day; the same when
+//          the clinic's clients at that half hour need her (more clients than the cosmeticians not on a break)
+// Read by the site's free hours (_lib/booking.js: she is not a place during it), the Calendar (the yellow block), the
+// calendar's fill (_lib/clinic.js: her minutes for clients are 30 fewer) and the free hours for calls (_lib/followups.js).
+// Never by the pontaj, the hours worked or the pay.
+const BREAK_MIN = 30;                // how long
+const BREAK_SHIFT_MIN = 5 * 60;      // the shortest shift with a break
+const BREAK_SINCE = '2026-11-16';    // the first day with a break
+const hm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const aEnd = (a) => { const s = toMin(a.time), e = toMin(a.endTime); return s == null ? null : e != null && e > s ? e : s + 60; };
+const live = (a) => a && a.status !== 'anulata';
+const isVisit = (a) => live(a) && a.status !== 'concediu' && !a.block && toMin(a.time) != null;
+
+// the automatic start of the break of a shift (minutes), or null (a shift under 5 hours, hours not set)
+function midBreak(from, to) {
+  const f = toMin(from), t = toMin(to);
+  if (f == null || t == null || t - f < BREAK_SHIFT_MIN) return null;
+  let s = Math.floor((f + t) / 2 / 30) * 30;
+  if (s < f) s = Math.ceil(f / 30) * 30;
+  return s + BREAK_MIN <= t ? s : null;
+}
+// what of hers sits on a time that day: her clients and the blocks for her ([start, end, what]); skipId: an appointment left out
+function hersOn(appts, employeeId, date, skipId) {
+  return (appts || []).filter((a) => a && a.date === date && a.cosmeticianId === employeeId && live(a) && toMin(a.time) != null && a.id !== skipId &&
+    (isVisit(a) || a.block)).map((a) => [toMin(a.time), aEnd(a), a.block ? 'block' : 'client']);
+}
+const over = (list, s, e) => list.find((x) => x[0] < e && x[1] > s) || null;
+
+// her break that day before the clients are looked at: { from, to (minutes), mid, shift: [from, to], moved?, fell?, off? }
+// or null (not working, a short shift, a day before the breaks)
+function plannedBreak(doc, employeeId, date, opts) {
+  if (!(date >= BREAK_SINCE)) return null;
+  const w = workingAt(doc, employeeId, date, null, opts);
+  if (!w) return null;
+  const f = toMin(w.from), t = toMin(w.to), mid = midBreak(w.from, w.to);
+  if (mid == null) return null;
+  const x = doc.breaks && doc.breaks[date] && doc.breaks[date][employeeId];
+  const base = { mid, shift: [f, t], location: w.location };
+  if (x && x.off) return Object.assign(base, { from: mid, to: mid + BREAK_MIN, off: true, by: x.byName || '', at: x.at || '' });
+  const s = x ? toMin(x.from) : null;
+  if (s != null) { // put there by hand (at the middle too: then it stays there, a colleague's doesn't push it)
+    if (s >= f && s + BREAK_MIN <= t) return Object.assign(base, { from: s, to: s + BREAK_MIN, moved: s !== mid, pinned: true, by: x.byName || '', at: x.at || '' });
+    return Object.assign(base, { from: mid, to: mid + BREAK_MIN, fell: true }); // her shift changed after the move
+  }
+  return Object.assign(base, { from: mid, to: mid + BREAK_MIN });
+}
+
+// the breaks of a city's day, everyone working: [{ employeeId, location, from, to ('HH:MM'), mid, shiftFrom, shiftTo, on, why,
+// moved, fell, after (put after a colleague's), by, at }]. on: the break holds; why when it doesn't: 'off' (left out for the day), 'client' (a client of hers on
+// it), 'block' (a block for her on it), 'busy' (the clinic's clients then need her). opts: { appts, ids, until } as whoWorks.
+function dayBreaks(doc, date, location, opts) {
+  const o = opts || {};
+  if (!(date >= BREAK_SINCE)) return [];
+  const appts = (o.appts || []).filter((a) => a && a.date === date);
+  const out = whoWorks(doc, date, location, o).map((w) => {
+    const p = plannedBreak(doc, w.employeeId, date, o);
+    if (!p) return null;
+    const row = { employeeId: w.employeeId, location: p.location, from: hm(p.from), to: hm(p.to), mid: hm(p.mid), shiftFrom: w.from, shiftTo: w.to,
+      on: !p.off, why: p.off ? 'off' : '', moved: !!p.moved, pinned: !!p.pinned, fell: !!p.fell, by: p.by || '', at: p.at || '' };
+    return row;
+  }).filter(Boolean);
+  // two of them with the same middle (the same shift): never both away at once. The first keeps it (one put by hand first,
+  // then by start of shift); the next goes to the closest free half hour after, then before (+30, -30, +60 …), inside her
+  // shift and not in its first or last hour; none free: it stays. So with two at work the clinic loses one place at a time.
+  // Then her own clients: a client of hers (or a block for her) on it, and there is no break that day.
+  const placed = [];
+  out.filter((b) => b.on).sort((x, y) => (y.pinned - x.pinned) || x.shiftFrom.localeCompare(y.shiftFrom) || x.employeeId.localeCompare(y.employeeId)).forEach((b) => {
+    const mine = hersOn(appts, b.employeeId, date), s0 = toMin(b.from);
+    if (!b.pinned && placed.some((x) => x[0] < s0 + BREAK_MIN && x[1] > s0)) {
+      const lo = toMin(b.shiftFrom) + 60, hi = toMin(b.shiftTo) - 60;
+      const ok = (s) => s >= lo && s + BREAK_MIN <= hi && !over(mine, s, s + BREAK_MIN) && !placed.some((x) => x[0] < s + BREAK_MIN && x[1] > s);
+      const alt = [30, -30, 60, -60, 90, -90, 120, -120].map((dm) => s0 + dm).find(ok);
+      if (alt != null) Object.assign(b, { from: hm(alt), to: hm(alt + BREAK_MIN), after: true });
+    }
+    const hit = over(mine, toMin(b.from), toMin(b.to));
+    if (hit) { b.on = false; b.why = hit[2]; return; }
+    placed.push([toMin(b.from), toMin(b.to)]);
+  });
+  // the clinic's clients at that half hour (anyone's, or no one's yet) fit in the cosmeticians not on a break; otherwise one
+  // break gives way (the latest, then by id), until they fit. A block for the whole clinic: closed then, nothing to do.
+  const here = appts.filter((a) => a.location === location && live(a) && toMin(a.time) != null);
+  if (here.some((a) => a.block && !a.cosmeticianId)) return out;
+  const busyAt = (p) => here.filter((a) => (isVisit(a) || (a.block && a.cosmeticianId)) && toMin(a.time) <= p && aEnd(a) > p).length;
+  const shifts = whoWorks(doc, date, location, o).map((w) => [toMin(w.from), toMin(w.to)]);
+  for (let guard = 0; guard < 20; guard++) {
+    const onb = out.filter((b) => b.on);
+    const pts = new Set();
+    onb.forEach((b) => { const s = toMin(b.from), e = toMin(b.to); pts.add(s); here.forEach((a) => { const t0 = toMin(a.time); if (t0 > s && t0 < e) pts.add(t0); }); });
+    const bad = [...pts].sort((a, b) => a - b).find((p) => busyAt(p) > shifts.filter((x) => x[0] <= p && x[1] > p).length - onb.filter((b) => toMin(b.from) <= p && toMin(b.to) > p).length);
+    if (bad == null) break;
+    const give = onb.filter((b) => toMin(b.from) <= bad && toMin(b.to) > bad).sort((a, b) => b.from.localeCompare(a.from) || b.employeeId.localeCompare(a.employeeId))[0];
+    if (!give) break;
+    give.on = false; give.why = 'busy';
+  }
+  return out;
+}
+// her break that day ({ … } as dayBreaks, on or not), or null when she has none (not working, short shift)
+function breakOf(doc, employeeId, date, opts) {
+  const w = workingAt(doc, employeeId, date, null, opts || {});
+  if (!w) return null;
+  return dayBreaks(doc, date, w.location, opts).find((b) => b.employeeId === employeeId) || null;
+}
+// the half hours a break of hers can move to that day: [{ from, to, free, why }] (why: 'client', 'block'); skipId: an
+// appointment not counted (the one being booked or moved), extra: [start, end] minutes taken too (the hour being booked)
+function breakSlots(doc, employeeId, date, opts) {
+  const o = opts || {};
+  const p = plannedBreak(doc, employeeId, date, o);
+  if (!p) return [];
+  const mine = hersOn(o.appts, employeeId, date, o.skipId).concat(o.extra ? [[o.extra[0], o.extra[1], 'client']] : []);
+  const out = [];
+  for (let s = Math.ceil(p.shift[0] / 30) * 30; s + BREAK_MIN <= p.shift[1]; s += 30) {
+    const hit = over(mine, s, s + BREAK_MIN);
+    out.push({ from: hm(s), to: hm(s + BREAK_MIN), free: !hit, why: hit ? hit[2] : '' });
+  }
+  return out;
+}
+// the free half hours closest to where the break was, one before and one after first (the first and the last hour of her
+// shift only when nothing else is free): ['14:00', '15:00', …]
+function breakNear(doc, employeeId, date, opts, at) {
+  const p = plannedBreak(doc, employeeId, date, opts);
+  if (!p) return [];
+  const ref = at != null ? at : p.from;
+  const free = breakSlots(doc, employeeId, date, opts).filter((x) => x.free && toMin(x.from) !== ref);
+  const inner = (x) => toMin(x.from) >= p.shift[0] + 60 && toMin(x.to) <= p.shift[1] - 60;
+  const pool = free.some(inner) ? free.filter(inner) : free;
+  const before = pool.filter((x) => toMin(x.from) < ref).sort((a, b) => toMin(b.from) - toMin(a.from));
+  const after = pool.filter((x) => toMin(x.from) > ref).sort((a, b) => toMin(a.from) - toMin(b.from));
+  const out = [];
+  for (let i = 0; out.length < pool.length && i < pool.length; i++) { if (before[i]) out.push(before[i].from); if (after[i]) out.push(after[i].from); }
+  return out;
+}
+// can her break that day go to „from”: '' when yes, else why ('not_working', 'no_break', 'invalid_time', 'outside_shift',
+// 'break_taken': a client or a block of hers there)
+function breakCheck(doc, employeeId, date, from, opts) {
+  const p = plannedBreak(doc, employeeId, date, opts);
+  if (!workingAt(doc, employeeId, date, null, opts || {})) return 'not_working';
+  if (!p) return 'no_break';
+  const s = toMin(from);
+  if (s == null || s % 30) return 'invalid_time'; // always at :00 or :30 (the owner, 16.11)
+  if (s < p.shift[0] || s + BREAK_MIN > p.shift[1]) return 'outside_shift';
+  const o = opts || {};
+  if (over(hersOn(o.appts, employeeId, date, o.skipId).concat(o.extra ? [[o.extra[0], o.extra[1], 'client']] : []), s, s + BREAK_MIN)) return 'break_taken';
+  return '';
+}
+// the change for one day, written into the doc (inside update()): { from } puts it there (by hand, kept even at the middle),
+// { off } leaves it out, null gives it back to the automatic rule. who: { id, name }
+function setBreak(doc, employeeId, date, change, who) {
+  doc.breaks = doc.breaks || {};
+  const day = doc.breaks[date] || {};
+  const mark = { by: (who && who.id) || '', byName: (who && who.name) || '', at: new Date().toISOString() };
+  if (change && change.off) day[employeeId] = Object.assign({ off: true }, mark);
+  else if (change && change.from) day[employeeId] = Object.assign({ from: change.from }, mark);
+  else delete day[employeeId];
+  if (Object.keys(day).length) doc.breaks[date] = day; else delete doc.breaks[date];
+  // the days long past go (the file stays small)
+  const old = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
+  Object.keys(doc.breaks).forEach((d) => { if (d < old) delete doc.breaks[d]; });
+}
+
+// her phone hears when today's break moves (the owner, 16.11: „Pauza ta de azi s-a mutat la 15:00.”), only for today and
+// only a real move; never blocks the change
+async function tellBreak(store, employeeId, date, from) {
+  try {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    if (date !== today || !from) return;
+    const emp = (await store.readJSON('data/employees.json', [])).find((e) => e && e.id === employeeId);
+    if (!emp || emp.role !== 'cosmetician') return;
+    await require('./notify').notifyMany(store, [employeeId], { kind: 'break', tone: 'info', go: 'programari', tag: 'break-' + date + '-' + from,
+      title: 'Pauza de azi', text: 'Pauza ta de azi s-a mutat la ' + from + '.' });
+  } catch (e) { /* a notification never blocks the change */ }
+}
+
 // ------------------------------------------------------------------ cleaning what the admin sends
 function cleanDay(x) {
   const d = x && typeof x === 'object' ? x : {};
@@ -132,4 +317,5 @@ function cleanWeek(days) {
   return { days: out };
 }
 
-module.exports = { KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin };
+module.exports = { KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin,
+  BREAK_MIN, BREAK_SHIFT_MIN, BREAK_SINCE, midBreak, plannedBreak, dayBreaks, breakOf, breakSlots, breakNear, breakCheck, setBreak, tellBreak, hm };

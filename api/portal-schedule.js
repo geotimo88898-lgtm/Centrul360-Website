@@ -4,6 +4,13 @@
 //         works: { <date>: { <city>: [{ employeeId, name, from, to }] } } (who works each day, leave counted; ranges up to 62 days) }
 //   { action: 'save_week', employeeId, location, days: { '1'..'7': { on, from, to } } }   admin or manager
 //   { action: 'save_date', date, employeeId, entry: { on, from, to, location } | null }    admin or manager (null removes the exception)
+//   { action: 'break_info', date, employeeId, time?, endTime?, skipId? }   any signed-in member: her break that day, the half
+//     hours it can move to and the closest free ones (with time/endTime: as if that booking were already there)
+//     → { break: { from, to, mid, on, why, moved, by, at, shiftFrom, shiftTo } | null, slots: [{ from, to, free, why }], near: ['14:00', …], clash }
+//   { action: 'break_set', date, employeeId, from }    admin or manager: her break that day at „from” (:00 or :30, in her
+//     shift, not over a client of hers); at the middle again: back to automatic
+//   { action: 'break_off', date, employeeId }          admin or manager: no break that day
+//   { action: 'break_reset', date, employeeId }        admin or manager: back to the middle of her shift
 // people: the cosmeticians and, for the owner and the manager, the desk too (role on each); only the cosmeticians are places
 // for clients (cities, works, the site's free hours).
 // Data and rules: api/_lib/team-schedule.js.
@@ -15,6 +22,12 @@ const { canManage } = require('./_lib/roles');
 
 const addDay = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const roToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+// who changed it (the „mutată” mark on a moved break): her name, the owner's „George”
+async function whoIs(session) {
+  if (!session || session.employeeId === 'admin') return 'George';
+  const e = (await readJSON('data/employees.json', [])).find((x) => x && x.id === session.employeeId);
+  return (e && e.name) || '';
+}
 const span = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5);
 
 async function answer(res, from, to, session) {
@@ -64,6 +77,50 @@ module.exports = async (req, res) => {
       if (to < from) return fail(400, 'invalid_range');
       if (span(from, to) > 400) to = addDay(from, 400);
       return answer(res, from, to, session);
+    }
+    if (b.action === 'break_info') {
+      const date = String(b.date || ''), id = String(b.employeeId || '');
+      if (!T.isDate(date)) return fail(400, 'invalid_date');
+      const [doc, cosm, appts] = await Promise.all([T.load(), T.people(), readJSON('data/appointments.json', [])]);
+      const ids = new Set(cosm.map((p) => p.id));
+      const s = T.toMin(b.time), e0 = T.toMin(b.endTime), e = s == null ? null : e0 != null && e0 > s ? e0 : s + 60;
+      const extra = s != null ? [s, e] : null;
+      const o = { appts: (Array.isArray(appts) ? appts : []).filter((a) => a && a.date === date), ids, skipId: String(b.skipId || '') };
+      // as it is now (the booking not there yet; the one being moved left out)
+      const now = T.breakOf(doc, id, date, Object.assign({}, o, { appts: o.appts.filter((a) => a.id !== o.skipId) }));
+      const clash = !!(now && now.on && extra && T.toMin(now.from) < extra[1] && T.toMin(now.to) > extra[0]);
+      const opt = Object.assign({}, o, extra ? { extra } : {});
+      // today: never a half hour already gone
+      const ro = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+      const gone = (t) => date < roToday() || (date === roToday() && T.toMin(t) < T.toMin(ro));
+      res.status(200).json({ ok: true, break: now, clash, slots: T.breakSlots(doc, id, date, opt), near: T.breakNear(doc, id, date, opt, now ? T.toMin(now.from) : null).filter((t) => !gone(t)) });
+      return;
+    }
+    if (b.action === 'break_set' || b.action === 'break_off' || b.action === 'break_reset') {
+      if (!canManage(session)) return fail(403, 'forbidden');
+      const date = String(b.date || ''), id = String(b.employeeId || '');
+      if (!T.isDate(date)) return fail(400, 'invalid_date');
+      const cosm = await T.people();
+      const emp = cosm.find((p) => p.id === id);
+      if (!emp) return fail(400, 'invalid_cosmetician');
+      const [doc0, appts] = await Promise.all([T.load(), readJSON('data/appointments.json', [])]);
+      const day = (Array.isArray(appts) ? appts : []).filter((a) => a && a.date === date);
+      const w = T.workingAt(doc0, id, date, null, { appts: day });
+      if (session.role === 'manager') {
+        const mine = await require('./_lib/city').cityOf(session, readJSON);
+        if (!mine.includes((w && w.location) || emp.location)) return fail(403, 'forbidden');
+      }
+      const from = b.action === 'break_set' ? String(b.from || '') : '';
+      if (b.action !== 'break_reset') {
+        const why = b.action === 'break_set' ? T.breakCheck(doc0, id, date, from, { appts: day }) : (!w ? 'not_working' : !T.plannedBreak(doc0, id, date, { appts: day }) ? 'no_break' : '');
+        if (why) return fail(409, why);
+      }
+      const who = { id: session.employeeId || 'admin', name: (await whoIs(session)) };
+      const doc = await T.update((d) => T.setBreak(d, id, date, b.action === 'break_off' ? { off: true } : b.action === 'break_set' ? { from } : null, who));
+      const brk = T.breakOf(doc, id, date, { appts: day, ids: new Set(cosm.map((p) => p.id)) });
+      if (b.action !== 'break_off' && brk) await T.tellBreak({ readJSON, writeJSON: require('./_lib/store').writeJSON }, id, date, brk.from);
+      res.status(200).json({ ok: true, break: brk });
+      return;
     }
     if (b.action !== 'save_week' && b.action !== 'save_date') return fail(400, 'invalid_action');
     if (!canManage(session)) return fail(403, 'forbidden');

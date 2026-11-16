@@ -36,6 +36,7 @@ const { cityOf, inCity } = require('./_lib/city');
 const N = require('./_lib/notify');
 const L = require('./_lib/left'); // someone who left: no new bookings on her, her later ones listed for someone else
 const capi = require('./_lib/meta-capi'); // Conversions API: a Facebook lead's CRM steps back to Meta
+const T = require('./_lib/team-schedule'); // the cosmeticians' breaks (shown in the list, moved with a booking)
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
 // neLocation select, api/portal-employees.js employee records), kept as a literal list
@@ -82,6 +83,38 @@ async function whoName(session) {
   if (!session || session.employeeId === 'admin') return 'Admin';
   const e = (await readJSON('data/employees.json', [])).find((x) => x.id === session.employeeId);
   return e ? e.name : 'Calendar';
+}
+
+// The break (_lib/team-schedule.js, the owner 16.11). The list carries the breaks of its days (her shift's middle, or where
+// it was moved, and whether it holds), so the Calendar draws them with the appointments and they follow every change.
+async function breaksIn(appointments, from, to, city) {
+  const span = Math.round((Date.parse(to + 'T12:00:00Z') - Date.parse(from + 'T12:00:00Z')) / 864e5);
+  if (span < 0 || span > 62 || to < T.BREAK_SINCE) return [];
+  const [doc, cosm] = await Promise.all([T.load(), T.people()]);
+  const ids = new Set(cosm.map((p) => p.id)), names = new Map(cosm.map((p) => [p.id, p.name]));
+  const inRange = appointments.filter((a) => a && a.date >= from && a.date <= to);
+  const out = [];
+  for (let d = from; d <= to; d = new Date(Date.parse(d + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10)) {
+    T.CITIES.filter((c) => inCity(city, c)).forEach((c) => T.dayBreaks(doc, d, c, { appts: inRange, ids }).forEach((b) => out.push(Object.assign({ date: d, name: names.get(b.employeeId) || '' }, b))));
+  }
+  return out;
+}
+// a booking that moves her break that day, or leaves it out (the booking form: „Mută pauza la 14:00”, „Fără pauză azi”),
+// checked as if the booking were already there; saved with it. { change } | { error } | null (nothing asked)
+async function breakPlan(body, entry, appointments) {
+  const m = body && body.breakMove;
+  if (!m || typeof m !== 'object' || !(m.from || m.off) || !entry.cosmeticianId || entry.block || ['anulata', 'concediu'].includes(entry.status)) return null;
+  const doc = await T.load();
+  const day = appointments.filter((a) => a && a.date === entry.date && a.id !== entry.id).concat([entry]);
+  if (m.off) return T.plannedBreak(doc, entry.cosmeticianId, entry.date, { appts: day }) ? { change: { off: true } } : { error: 'no_break' };
+  const why = T.breakCheck(doc, entry.cosmeticianId, entry.date, String(m.from), { appts: day });
+  return why ? { error: why } : { change: { from: String(m.from) } };
+}
+async function breakSave(plan, entry, session) {
+  if (!plan || !plan.change) return;
+  const who = { id: session.employeeId || 'admin', name: session.employeeId === 'admin' ? 'George' : await whoName(session) };
+  await T.update((d) => T.setBreak(d, entry.cosmeticianId, entry.date, plan.change, who));
+  if (plan.change.from) await T.tellBreak({ readJSON, writeJSON }, entry.cosmeticianId, entry.date, plan.change.from);
 }
 
 // current: the appointment being changed (an update): her cosmetician may stay on it after she left; a new one or another
@@ -210,7 +243,7 @@ module.exports = async (req, res) => {
         const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
         matching.forEach((a) => { if (!a.clientPhone && a.clientId) a.clientPhone = phoneById.get(a.clientId) || ''; });
       }
-      res.status(200).json({ ok: true, appointments: matching });
+      res.status(200).json({ ok: true, appointments: matching, breaks: await breaksIn(appointments, from, to, city).catch(() => []) });
       return;
     }
 
@@ -264,6 +297,9 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: 'same_day', existing: sameDay.map((x) => ({ id: x.id, time: x.time || '', endTime: x.endTime || '', treatment: x.ghlTitle || x.treatment || '' })) });
         return;
       }
+      // her break moved (or left out) with this booking: checked first, nothing is saved when it can't go there
+      const brk = await breakPlan(req.body, entry, appointments);
+      if (brk && brk.error) { res.status(409).json({ error: brk.error }); return; }
       // the person's lead moves to "Programare stabilită" (a booking from the Calendar, Mesaje or the lead's card alike)
       if (entry.status !== 'concediu') {
         const lead = await require('./portal-leads').bookLead(entry, { leadId: req.body && req.body.leadId, author: await whoName(session) });
@@ -271,6 +307,7 @@ module.exports = async (req, res) => {
       }
       appointments.push(entry);
       await writeJSON('data/appointments.json', appointments);
+      await breakSave(brk, entry, session);
 
       // Automations (Admin → Automatizări): confirmation, reminders … Never throws.
       await workflows.emit('appointment_created', { appointment: entry });
@@ -355,12 +392,15 @@ module.exports = async (req, res) => {
       // The same number under a new id (a sheet replaced by an import) is the same client: nothing starts again
       const otherClient = normalizePhone(before.clientPhone) !== normalizePhone(appointment.clientPhone);
       if (otherClient) delete appointment.leadId;
+      const brk = await breakPlan(req.body, appointment, appointments);
+      if (brk && brk.error) { res.status(409).json({ error: brk.error }); return; }
       // a moved appointment: the date on its lead follows (a lead not linked yet gets linked and moves to booked)
       if ((moved || otherClient) && appointment.status !== 'concediu' && !['anulata', 'finalizata'].includes(appointment.status)) {
         const lead = await require('./portal-leads').bookLead(appointment, { leadId: appointment.leadId, author: await whoName(session) });
         if (lead) appointment.leadId = lead.id;
       }
       await writeJSON('data/appointments.json', appointments);
+      await breakSave(brk, appointment, session);
       // cancelled: her lead no longer shows it
       if (before.status !== appointment.status && appointment.status === 'anulata') await require('./portal-leads').unbookLead(appointment, 'Programare anulată', await whoName(session));
       // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the

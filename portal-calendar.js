@@ -30,7 +30,7 @@
   // "Blochează timp": a leave-like row (status concediu) with block: true, hours and a reason
   const BLOCKED = { label: 'Blocat', plural: 'blocate', tone: 'mute', ic: 'ban' };
   const stOf = (a) => (a.block ? BLOCKED : STATUS[a.status] || STATUS.programata);
-  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false, orphans: [] };
+  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], breaks: [], range: '', loading: false, orphans: [] };
   const phone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
   const PHONE_VIEW = 'c360_cal_phone_view';
   const keepPhoneView = () => { if (phone()) try { localStorage.setItem(PHONE_VIEW, S.view); } catch (e) { /* private mode */ } };
@@ -54,6 +54,22 @@
   const empMatch = (a) => !S.emp || (S.emp === LEFT ? isOrphan(a) : a.cosmeticianId === S.emp);
   // Only cosmeticians do treatments; the list follows the chosen location (Timișoara / Arad).
   const cosmeticians = (loc) => ((K.data && K.data.activeEmployees) || []).filter((e) => e.role === 'cosmetician' && (!loc || loc === 'all' || e.location === loc));
+
+  // ------------------------------------------------------------------ the break (the owner, 16.11)
+  // 30 minutes at the middle of each cosmetician's shift, worked out by the server from Program echipă (api/_lib/team-
+  // schedule.js dayBreaks) and sent with the appointments: { date, employeeId, name, location, from, to, mid, shiftFrom,
+  // shiftTo, on, why, moved, by, at }. Not an appointment: not dragged like one, not counted. The owner and the manager move
+  // it for a day (the sheet, a drag on a computer); a client booked over it moves it with the booking (the form's chips).
+  const BRK = 30;
+  const canMoveBreak = () => !!(K.canManage && K.canManage());
+  const firstName = (n) => String(n || '').split(' ')[0];
+  const brkKey = (b) => b.date + '|' + b.employeeId;
+  const brkOf = (key) => S.breaks.find((b) => brkKey(b) === key) || null;
+  const brkShown = (b) => (S.loc === 'all' || b.location === S.loc) && (!S.emp || (S.emp !== LEFT && b.employeeId === S.emp));
+  // what of hers is on a half hour that day (a client, a block): the drag's check (the server checks it again)
+  const hersAt = (b, s, e) => S.appts.find((a) => a.date === b.date && a.cosmeticianId === b.employeeId && a.status !== 'anulata' && toMin(a.time) != null &&
+    (a.block || a.status !== 'concediu') && toMin(a.time) < e && endMin(a) > s) || null;
+  const WHY = { client: 'are o clientă atunci', block: 'are timp blocat atunci', busy: 'clinica e plină atunci', off: 'scoasă pentru azi' };
 
   // ------------------------------------------------------------------ mount + chrome
   function mount(p) {
@@ -149,6 +165,8 @@
       const m = K.addMonths(S.date.slice(0, 7), +mm.dataset.mmonth);
       return pickDay(m === K.today().slice(0, 7) ? K.today() : m + '-01');
     }
+    const bo = e.target.closest('[data-brk-open]');
+    if (bo) return openBreak(brkOf(bo.dataset.brkOpen), bo);
     const row = e.target.closest('[data-open]');
     if (row) return openAppt(row.dataset.open);
     const gap = e.target.closest('[data-gap]');
@@ -173,6 +191,7 @@
       const j = await K.api('/api/portal-appointments', { action: 'list', from, to });
       if (S.range !== from + '|' + to) return; // a newer navigation won
       S.appts = j.appointments || [];
+      S.breaks = j.breaks || [];
       render(keepScroll);
       loadOrphans();
       // who works these days (Programul echipei): the strip on top of the day, after the grid is drawn
@@ -237,12 +256,13 @@
       '<div class="cal-gutter" style="height:' + H + 'px">' + hours.map((h) => '<span style="top:' + ((h - START) * 60 * PPM) + 'px">' + K.pad(h) + ':00</span>').join('') + '</div>' +
       cols.map((c) => {
         const list = visible.filter((a) => inCol(a, c));
-        const timed = list.filter((a) => toMin(a.time) != null);
+        const timed = list.filter((a) => toMin(a.time) != null)
+          .concat(S.breaks.filter((b) => b.on && b.date === c.date && (!c.loc || b.location === c.loc) && brkShown(b)).map((b) => ({ brk: b, time: b.from, endTime: b.to, location: b.location })));
         const untimed = list.filter((a) => toMin(a.time) == null);
         return '<div class="cal-col' + (split ? ' is-split' : '') + (c.date === today ? ' is-today' : '') + (c.date < today ? ' is-past' : '') + '" data-date="' + c.date + '" data-loc="' + esc(c.loc) + '" style="height:' + H + 'px">' +
           hours.slice(0, -1).map((h) => '<i class="cal-hour" style="top:' + ((h - START) * 60 * PPM) + 'px"></i>').join('') +
           (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(nameOf(a)) + '</button>').join('') + '</div>' : '') +
-          (split ? cityLayout(timed) : layout(timed)).map(blockHtml).join('') + '</div>';
+          (split ? cityLayout(timed) : layout(timed)).map((it) => (it.a.brk ? brkHtml(it) : blockHtml(it))).join('') + '</div>';
       }).join('');
     placeNow();
     if (keepScroll) gridEl.parentElement.scrollTop = prevScroll;
@@ -330,6 +350,18 @@
           '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') +
           (subOf(a) && h > 80 ? '<span class="cal-b-sub">' + esc(subOf(a)) + '</span>' : '')) + '</button>';
   }
+  // the break in the grid: a soft yellow block in her lane, „Pauză · 30 min” and her name
+  function brkHtml(it) {
+    const b = it.a.brk;
+    const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(24, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
+    const base = it.base || 0, w = (it.span || 100) / it.lanes;
+    const slim = !!it.span || it.lanes > 1 || (phone() && S.view === 'week'); // a narrow lane: the word and her name
+    const tip = 'Pauză ' + b.from + '-' + b.to + ' · ' + b.name + (b.moved ? ' · mutată' : '');
+    const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the word
+    return '<button type="button" class="cal-brk' + (b.moved ? ' is-moved' : '') + (slim ? ' is-slim' : '') + (tiny ? ' is-tiny' : '') + (canMoveBreak() ? ' is-movable' : '') + '" data-brk="' + esc(brkKey(b)) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"' +
+      ' style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (base + it.lane * w) + '% + ' + (slim ? 2 : 3) + 'px);width:calc(' + w + '% - ' + (slim ? 4 : 6) + 'px)">' +
+      '<b>' + (slim ? 'Pauză' : 'Pauză · 30 min') + '</b><span>' + esc(firstName(b.name)) + '</span>' + (b.moved ? '<i>mutată</i>' : '') + '</button>';
+  }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
     // a blocked time is counted apart from the leaves, and neither is an appointment
@@ -359,9 +391,18 @@
   let drag = null;
   function onPointerDown(e) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    const block = e.target.closest('.cal-block, .cal-chip');
     const col = e.target.closest('.cal-col');
     if (!col) return;
+    // a break: a tap opens its sheet; on a computer the owner and the manager drag it within her shift (30-minute steps)
+    const bel = e.target.closest('.cal-brk');
+    if (bel) {
+      drag = { brkEl: bel, col, sx: e.clientX, sy: e.clientY, started: false, type: e.pointerType, timer: 0, readOnly: !(canMoveBreak() && e.pointerType === 'mouse') };
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onUp, { once: true });
+      window.addEventListener('pointercancel', onCancel, { once: true });
+      return;
+    }
+    const block = e.target.closest('.cal-block, .cal-chip');
     drag = { block, col, sx: e.clientX, sy: e.clientY, started: false, id: block && block.dataset.id, type: e.pointerType, timer: 0 };
     if (!canEdit()) { drag.readOnly = true; }
     if (block && block.classList.contains('is-concediu')) drag.readOnly = true; // a leave / a blocked time is not moved
@@ -386,11 +427,13 @@
     unbind();
     if (!d) return;
     clearTimeout(d.timer);
+    if (d.brkEl) { if (d.started) { gridEl.classList.remove('is-dragging'); render(true); } return; }
     if (d.started) { gridEl.classList.remove('is-dragging'); render(true); }
   }
   function onMove(e) {
     if (!drag) return;
     const dist = Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy);
+    if (drag.brkEl) return moveBreakDrag(e, dist);
     if (!drag.started) {
       if (drag.block && !drag.readOnly && drag.type === 'mouse' && dist > 5 && drag.block.classList.contains('cal-block')) startDrag(e);
       // moved before a hold: it was a scroll, not a tap (nothing opens, nothing is booked)
@@ -408,6 +451,53 @@
     const gt = drag.ghost.querySelector('.cal-b-time') || drag.ghost.querySelector('.cal-b-t');
     if (gt && gt.firstChild) gt.firstChild.textContent = toHM(m) + (drag.dur ? ' - ' + toHM(Math.min(m + drag.dur, 24 * 60 - 1)) : '');
   }
+  // dragging a break: only up and down in its own column, on :00 and :30, inside her shift; over a client of hers it turns red
+  function moveBreakDrag(e, dist) {
+    const d = drag, b = brkOf(d.brkEl.dataset.brk);
+    if (!b) return;
+    if (!d.started) {
+      if (!d.readOnly && dist > 5) {
+        d.started = true;
+        d.oy = d.sy - d.brkEl.getBoundingClientRect().top;
+        d.ghost = d.brkEl.cloneNode(true);
+        d.ghost.classList.add('is-ghost');
+        d.brkEl.classList.add('is-src');
+        d.col.appendChild(d.ghost);
+        gridEl.classList.add('is-dragging');
+      } else if (dist > 10) d.cancel = true;
+      return;
+    }
+    e.preventDefault();
+    const rect = d.col.getBoundingClientRect();
+    let m = Math.round(((e.clientY - rect.top - d.oy) / PPM + START * 60) / 30) * 30;
+    const lo = Math.ceil(toMin(b.shiftFrom) / 30) * 30, hi = Math.floor((toMin(b.shiftTo) - BRK) / 30) * 30;
+    m = Math.max(lo, Math.min(hi, m));
+    d.min = m;
+    d.clash = hersAt(b, m, m + BRK);
+    d.ghost.style.top = ((m - START * 60) * PPM) + 'px';
+    d.ghost.classList.toggle('is-no', !!d.clash);
+    const t = d.ghost.querySelector('b');
+    if (t) t.textContent = d.clash ? 'Clientă la ' + toHM(m) : 'Pauză ' + toHM(m);
+  }
+  async function dropBreak(d) {
+    const b = brkOf(d.brkEl.dataset.brk);
+    if (!d.started) { if (!d.cancel && b) openBreak(b, d.brkEl); return; }
+    gridEl.classList.remove('is-dragging');
+    if (!b || d.min == null || toHM(d.min) === b.from) { render(true); return; }
+    if (d.clash) { render(true); K.ui().toast('La ' + toHM(d.min) + ' ' + firstName(b.name) + ' are o clientă. Pauza rămâne la ' + b.from + '.', 'error'); return; }
+    await moveBreak(b, toHM(d.min));
+  }
+  // the break of that day to another half hour (the server checks the shift and her clients)
+  async function moveBreak(b, from) {
+    try {
+      await K.api('/api/portal-schedule', { action: 'break_set', date: b.date, employeeId: b.employeeId, name: b.name, from });
+      K.ui().toast('Pauza ' + firstName(b.name) + ': ' + from + '-' + toHM(toMin(from) + BRK) + (b.date === K.today() ? ', azi' : ', ' + K.relDay(b.date)), 'success');
+      await load(true);
+      return true;
+    } catch (err) { render(true); K.ui().toast(brkErr(err), 'error'); return false; }
+  }
+  const brkErr = (err) => ({ break_taken: 'Are o clientă atunci. Alege altă oră.', outside_shift: 'Ora e în afara programului ei.', invalid_time: 'Pauza începe doar la fix sau la jumătate.',
+    not_working: 'Nu lucrează în ziua asta.', no_break: 'Programul ei din ziua asta e prea scurt pentru pauză.' })[err && err.code] || K.errText(err);
   function colAt(x) { return Array.from(gridEl.querySelectorAll('.cal-col')).find((c) => { const r = c.getBoundingClientRect(); return x >= r.left && x <= r.right; }); }
   function startDrag(e) {
     const d = drag;
@@ -429,6 +519,7 @@
     const d = drag; drag = null;
     if (!d) return;
     clearTimeout(d.timer);
+    if (d.brkEl) return dropBreak(d);
     if (d.started) {
       gridEl.classList.remove('is-dragging');
       const a = S.appts.find((x) => x.id === d.id);
@@ -442,6 +533,9 @@
       try {
         await save(a);
         K.ui().toast(a.clientName + ' → ' + K.relDay(date) + ' ' + span(a) + (loc !== before.location ? ' · ' + loc : ''), 'success');
+        // moved onto her break: the break gives way that day (the sheet moves it elsewhere)
+        const hit = S.breaks.find((b) => b.on && b.date === a.date && b.employeeId === a.cosmeticianId && toMin(b.from) < endMin(a) && toMin(b.to) > toMin(a.time));
+        if (hit) setTimeout(() => K.ui().toast('Peste pauza ' + firstName(hit.name) + ': azi rămâne fără pauză. O poți muta din calendar.', 'info'), 400);
         load(true);
       } catch (err) { Object.assign(a, before); render(true); K.ui().toast(K.errText(err), 'error'); }
       return;
@@ -519,15 +613,53 @@
       K.field('Categorie (poți alege mai multe)', K.catPicker(K.catsOf(a)), 'full') +
       K.field('Suma programării', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="0" step="1" value="' + esc(a.amount || '') + '" placeholder="0"></div>', 'full', 'Cât plătește clienta pentru ce s-a programat. Un upsell (pachet, zonă în plus) se bifează la încasare.') +
       K.field('Cosmeticiană', '<select name="cosmeticianId" data-cos>' + empOptions(a.cosmeticianId || '', a.location || LOCS[0]) + '</select>', 'full') +
+      '<div class="cal-brk-hint full" data-brk-hint hidden></div>' +
       '<div class="k-field full">' + K.toggle('package', !!a.package, 'Ședință din pachet') + '<small>Primește doar reamintirile, fără confirmarea programării și fără cererea de recenzie.</small></div>' +
       K.field('Observații', '<textarea name="note" rows="2" maxlength="500" placeholder="ex. vine cu prietena, zona: abdomen">' + esc(a.note || '') + '</textarea>', 'full') +
       (isNew ? K.field('Status', K.seg('status', [['programata', 'Programată'], ['confirmata', 'Confirmată']], 'programata', 'is-big'), 'full') : '') +
       '</form>';
   }
 
-  function wireForm(el, f) {
+  function wireForm(el, f, apptId) {
     // Moving the start keeps the length (10:00-11:30 → 11:00-12:30).
     let lastStart = f.time.value;
+    // her break under the hour picked (the owner, 16.11): a light note, and one tap moves the break with the booking
+    // (f._brk, sent as breakMove); nothing picked: the booking stands and she has no break that day
+    let brkAsk = '';
+    f._brk = null;
+    const brkAgain = () => {
+      const box = f.querySelector('[data-brk-hint]');
+      if (!box) return;
+      const v = { date: f.date.value, time: f.time.value, endTime: f.endTime.value, emp: (f.querySelector('[data-cos]') || {}).value || '' };
+      const ask = JSON.stringify(v);
+      if (ask === brkAsk) return;
+      brkAsk = ask;
+      const hide = () => { box.hidden = true; box.innerHTML = ''; f._brk = null; };
+      if (!v.emp || !/^\d{4}-\d{2}-\d{2}$/.test(v.date) || !v.time) return hide();
+      K.api('/api/portal-schedule', { action: 'break_info', date: v.date, employeeId: v.emp, time: v.time, endTime: v.endTime, skipId: apptId || '' }).then((j) => {
+        if (brkAsk !== ask || !box.isConnected) return;
+        if (!j.clash || !j.break) return hide();
+        const b = j.break, who = firstName(empName(v.emp)) || 'cosmeticianei';
+        const near = (j.near || []).slice(0, 2).sort();
+        const keep = f._brk && (f._brk.off ? !near.length : near.includes(f._brk.from)) ? f._brk : null;
+        f._brk = keep;
+        box.innerHTML = '<p>' + icon('clock') + '<span>E pauza ' + esc(who) + ', ' + esc(b.from + '-' + b.to) + '.</span></p>' +
+          '<div class="cal-brk-pick">' + (near.length ? '<span>Mută pauza la</span>' + near.map((t) => '<button type="button" class="brk-chip' + (keep && keep.from === t ? ' is-on' : '') + '" data-brk-to="' + t + '"><b>' + t + '</b></button>').join('')
+            : '<button type="button" class="brk-chip' + (keep ? ' is-on' : '') + '" data-brk-off><b>Fără pauză azi</b></button>') + '</div>' +
+          '<small>' + (near.length ? 'Dacă nu alegi, azi rămâne fără pauză.' : 'Nu mai e nicio jumătate de oră liberă în programul ei azi.') + '</small>';
+        box.hidden = false;
+      }).catch(() => {});
+    };
+    f.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-brk-to], [data-brk-off]');
+      if (!c) return;
+      const on = !c.classList.contains('is-on');
+      f.querySelectorAll('[data-brk-to], [data-brk-off]').forEach((x) => x.classList.remove('is-on'));
+      c.classList.toggle('is-on', on);
+      f._brk = !on ? null : c.dataset.brkTo ? { from: c.dataset.brkTo } : { off: true };
+    });
+    f.addEventListener('change', (e) => { if (['date', 'time', 'endTime', 'cosmeticianId', 'location'].includes(e.target.name)) setTimeout(brkAgain, 0); });
+    setTimeout(brkAgain, 0);
     // the cosmeticians in the order of who works at that date and hour (Program echipă); fetched once per day
     const cosAgain = () => {
       const v = { date: f.date.value, time: f.time.value }, loc = (f.querySelector('input[name=location]') || {}).value || LOCS[0];
@@ -603,7 +735,7 @@
           // clinic; an empty sum counts as 0
           if (!v.cosmeticianId) { K.ui().toast('Alege cosmeticiana.', 'error'); return; }
           if (!(await placeOk(v, 'Programezi', 'Programează oricum'))) return;
-          const body = Object.assign({ action: 'create', clientId: picker.id(), leadId: pre.leadId || '' }, v, { categories: formCats(v), amount: Number(v.amount) || 0 });
+          const body = Object.assign({ action: 'create', clientId: picker.id(), leadId: pre.leadId || '' }, v, { categories: formCats(v), amount: Number(v.amount) || 0 }, f._brk ? { breakMove: f._brk } : {});
           try {
             let made;
             try { made = await K.api('/api/portal-appointments', body); }
@@ -621,7 +753,7 @@
             if (panel) load(true); // booked from Mesaje: the Calendar may not be open yet
             K.emit('tasks:changed');
             K.emit('appointment:created', made && made.appointment);
-          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+          } catch (err) { K.ui().toast(brkErr(err), 'error'); }
         }));
       },
     });
@@ -771,7 +903,7 @@
         '<div class="onl-gen">' + K.field('Cel mai devreme', '<select name="notice">' + K.options([[180, 'peste 3 ore'], [240, 'peste 4 ore'], [360, 'peste 6 ore'], [720, 'peste 12 ore'], [1440, 'cu o zi înainte']].map(([v, l]) => [String(v), l]), String(st.notice)) + '</select>') +
         K.field('Cât de departe', '<select name="ahead">' + K.options([[7, 'o săptămână'], [14, '2 săptămâni'], [21, '3 săptămâni'], [30, 'o lună'], [60, '2 luni']].map(([v, l]) => [String(v), l]), String(st.ahead)) + '</select>') +
         K.field('Orele din 30 în 30', '<select name="step">' + K.options([[15, 'din 15 în 15 min'], [30, 'din 30 în 30 min'], [60, 'la fix']].map(([v, l]) => [String(v), l]), String(st.step)) + '</select>') + '</div>' +
-        '<div class="mo-note">' + icon('info') + 'Pe site apar doar orele libere: programul de mai sus, minus ce e deja în Calendar (programări, timp blocat, concedii). Ziua cu un concediu are o clientă în minus.</div>' +
+        '<div class="mo-note">' + icon('info') + 'Pe site apar doar orele libere: programul de mai sus, minus ce e deja în Calendar (programări, timp blocat, concedii, pauzele cosmeticienelor). Ziua cu un concediu are o clientă în minus.</div>' +
         '</form>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
@@ -840,7 +972,12 @@
     el.innerHTML = '<span class="cal-team-k">' + icon('users') + 'La lucru</span>' + shown.map((l) => {
       const list = day[l] || [];
       return '<span class="cal-team-c">' + (shown.length > 1 || S.loc === 'all' ? '<b>' + esc(l) + '</b>' : '') +
-        (list.length ? list.map((w) => '<span class="k-tag">' + esc(String(w.name || empName(w.employeeId) || '').split(' ')[0]) + ' ' + esc(hShort(w.from) + '-' + hShort(w.to)) + '</span>').join('')
+        (list.length ? list.map((w) => {
+          // her break, quietly, next to her hours (a tap opens it)
+          const b = S.breaks.find((x) => x.date === S.date && x.employeeId === w.employeeId);
+          return '<span class="cal-team-p"><span class="k-tag">' + esc(String(w.name || empName(w.employeeId) || '').split(' ')[0]) + ' ' + esc(hShort(w.from) + '-' + hShort(w.to)) + '</span>' +
+            (b ? '<button type="button" class="cal-team-brk' + (b.on ? '' : ' is-off') + '" data-brk-open="' + esc(brkKey(b)) + '">' + (b.on ? 'pauză ' + esc(b.from) : 'fără pauză') + '</button>' : '') + '</span>';
+        }).join('')
           : '<span class="k-tag is-mute">nimeni</span>') + '</span>';
     }).join('');
   }
@@ -926,6 +1063,60 @@
     });
   }
 
+  // ------------------------------------------------------------------ the break's sheet (from the block, or from the day's line)
+  // who, when, why it is where it is; for the owner and the manager: move it for that day (-1h … +1h, or any free half hour of
+  // her shift; the taken ones greyed with the reason), „Fără pauză azi”, „Înapoi la mijloc”. A cosmetician sees it only.
+  function openBreak(b, fromEl) {
+    if (!b) return;
+    const can = canMoveBreak();
+    const h = (t) => hShort(t);
+    const head = b.on ? b.from + '-' + b.to : 'fără pauză';
+    const note = !b.on ? (b.why === 'off' ? 'Scoasă pentru ziua asta' + (b.by ? ' de ' + esc(firstName(b.by)) : '') + '.' : 'Azi nu are pauză: ' + esc(WHY[b.why] || '') + '. Mut-o pe o oră liberă.')
+      : b.moved ? 'Mutată' + (b.by ? ' de ' + esc(firstName(b.by)) : '') + (b.at ? ', ' + esc(K.ago(b.at)) : '') + '. La mijlocul programului ar fi la ' + esc(b.mid) + '.'
+      : b.after ? 'La mijlocul programului (' + esc(b.mid) + ') e în pauză o colegă din aceeași tură, așa că a ei e la ' + esc(b.from) + '. Nu lipsesc amândouă odată.'
+      : 'Pauza e la mijlocul programului (' + esc(h(b.shiftFrom) + '-' + h(b.shiftTo)) + ').' + (b.fell ? ' Programul s-a schimbat, așa că a revenit la mijloc.' : '');
+    const d = K.drawer({
+      from: fromEl || null, width: 420,
+      title: 'Pauză · 30 min', icon: 'clock',
+      subtitle: esc(K.relDay(b.date)) + ' · ' + esc(b.location),
+      body: '<div class="brk-sheet"><div class="brk-when' + (b.on ? '' : ' is-off') + '"><b>' + esc(head) + '</b><span>' + esc(b.name) + ' · ' + esc(K.dateLong(b.date)) + '</span></div>' +
+        '<p class="brk-note">' + icon('info') + '<span>' + note + '</span></p>' +
+        (can ? '<section class="brk-move"><h4>Mută pauza</h4><div class="brk-quick" data-quick></div><div class="brk-slots" data-slots><div class="k-skel" style="height:76px"></div></div></section>' : '') + '</div>',
+      footer: can ? (b.on ? '<button type="button" class="k-btn is-ghost is-sm" data-off>' + icon('x') + 'Fără pauză azi</button>' : '') + '<span class="k-grow"></span>' +
+        (b.moved || b.why === 'off' ? '<button type="button" class="k-btn is-outline" data-reset>' + icon('refresh') + 'Înapoi la mijloc</button>' : '<button type="button" class="k-btn" data-k-close2>Gata</button>') : '',
+      onMount(el) {
+        const close2 = el.querySelector('[data-k-close2]'); if (close2) close2.addEventListener('click', () => d.close());
+        const act = async (btn, payload, ok) => K.busy(btn, async () => {
+          try { await K.api('/api/portal-schedule', Object.assign({ date: b.date, employeeId: b.employeeId, name: b.name }, payload)); d.close(); K.ui().toast(ok, 'success'); load(true); }
+          catch (err) { K.ui().toast(brkErr(err), 'error'); }
+        });
+        const off = el.querySelector('[data-off]'); if (off) off.addEventListener('click', () => act(off, { action: 'break_off' }, firstName(b.name) + ' nu are pauză ' + (b.date === K.today() ? 'azi' : K.relDay(b.date)) + '.'));
+        const rs = el.querySelector('[data-reset]'); if (rs) rs.addEventListener('click', () => act(rs, { action: 'break_reset' }, 'Pauza ' + firstName(b.name) + ' e din nou la ' + b.mid + '.'));
+        if (!can) return;
+        K.api('/api/portal-schedule', { action: 'break_info', date: b.date, employeeId: b.employeeId }).then((j) => {
+          const box = el.querySelector('[data-slots]'), q = el.querySelector('[data-quick]');
+          if (!box || !box.isConnected) return;
+          // today: the half hours already gone are not offered
+          const nowM = b.date === K.today() ? new Date().getHours() * 60 + new Date().getMinutes() : -1;
+          const slots = (j.slots || []).map((x) => (x.free && toMin(x.from) < nowM ? Object.assign({}, x, { free: false, why: 'past' }) : x)), at = toMin(b.from);
+          const byFrom = new Map(slots.map((x) => [x.from, x]));
+          const why = (x) => (x.why === 'block' ? 'timp blocat' : x.why === 'past' ? 'a trecut' : 'clientă');
+          q.innerHTML = [[-60, '−1h'], [-30, '−30 min'], [30, '+30 min'], [60, '+1h']].map(([dm, l]) => {
+            const t = toHM(at + dm), x = byFrom.get(t);
+            const bad = !x ? 'în afara programului' : !x.free ? why(x) + ' la ' + t : '';
+            return '<button type="button" class="brk-chip is-quick" data-to="' + t + '"' + (bad ? ' disabled title="' + esc(bad) + '"' : ' title="La ' + t + '"') + '><b>' + l + '</b><span>' + (bad ? esc(bad.replace(' la ' + t, '')) : t) + '</span></button>';
+          }).join('');
+          box.innerHTML = slots.length ? '<div class="brk-grid">' + slots.map((x) => '<button type="button" class="brk-chip' + (b.on && x.from === b.from ? ' is-on' : '') + (x.free ? '' : ' is-taken') + '" data-to="' + x.from + '"' +
+            (x.free ? '' : ' disabled title="' + esc(why(x)) + '"') + '><b>' + x.from + '</b>' + (x.free ? '' : '<span>' + esc(why(x)) + '</span>') + '</button>').join('') + '</div>' : '<p class="k-muted">Nu lucrează în ziua asta.</p>';
+          el.querySelectorAll('[data-to]').forEach((btn) => btn.addEventListener('click', () => {
+            if (btn.disabled || (b.on && btn.dataset.to === b.from)) return;
+            act(btn, { action: 'break_set', from: btn.dataset.to }, 'Pauza ' + firstName(b.name) + ': ' + btn.dataset.to + '-' + toHM(toMin(btn.dataset.to) + BRK));
+          }));
+        }).catch((err) => { const box = el.querySelector('[data-slots]'); if (box) box.innerHTML = '<p class="k-muted">' + esc(K.errText(err)) + '</p>'; });
+      },
+    });
+  }
+
   // the Manager page opens the same drawer (the owner and the manager set the team's hours)
   K.openTeamSchedule = () => openTeam();
 
@@ -1002,7 +1193,7 @@
         (a.paidSaleId ? '' : '<button type="button" class="k-btn is-outline" data-pay>' + icon('wallet') + 'Încasează</button>') + '<button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
         const f = el.querySelector('[data-form]');
-        wireForm(el, f);
+        wireForm(el, f, a.id);
         const picker = K.clientPicker(f.clientName, f.clientPhone);
         // Enter in a field saves (it used to send the page away)
         f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });
@@ -1039,12 +1230,12 @@
           const placed = next.date !== a.date || next.time !== a.time || next.location !== a.location || next.cosmeticianId !== a.cosmeticianId || next.endTime !== a.endTime;
           if (placed && !(await placeOk(next, 'Muți programarea', 'Mută oricum'))) return;
           try {
-            const j = await save(next);
+            const j = await K.api('/api/portal-appointments', Object.assign(payload(next), f._brk ? { breakMove: f._brk } : {}));
             Object.assign(a, (j && j.appointment) || v);
             d.close();
             K.ui().toast('Programare salvată.', 'success');
             load(true);
-          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+          } catch (err) { K.ui().toast(brkErr(err), 'error'); }
         }));
         const pay = el.querySelector('[data-pay]');
         if (pay) pay.addEventListener('click', () => {

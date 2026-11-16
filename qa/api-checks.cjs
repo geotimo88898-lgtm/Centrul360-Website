@@ -419,6 +419,101 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check(20, 'Următoarea: the first one still to pay from today', !open.length || (nx && nx.due === open[0].due && nx.key === open[0].key), { nx, first: open[0] && open[0].key });
   }
 
+  // 21. the break (the owner, 16.11): 30 minutes at the middle of each cosmetician's shift, from her schedule, never stored as
+  // an appointment; clients win; the site skips it; it can be moved for a day (alone, or with a booking), always at :00/:30
+  {
+    let D2 = day(10); while ([0, 6].includes(new Date(D2 + 'T12:00:00Z').getUTCDay())) D2 = day(Math.round((Date.parse(D2 + 'T12:00:00Z') - Date.parse(TODAY + 'T12:00:00Z')) / 864e5) + 1);
+    const mid = (f, t) => { const m = T.midBreak(f, t); return m == null ? null : T.hm(m); };
+    check(21, 'the middle: 09-20 → 14:30, 10-19 → 14:30, 09-17 → 13:00, 09:15-17:45 → 13:30, under 5h none', mid('09:00', '20:00') === '14:30' && mid('10:00', '19:00') === '14:30' && mid('09:00', '17:00') === '13:00' && mid('09:15', '17:45') === '13:30' && mid('09:00', '13:59') === null && mid('09:00', '14:00') === '11:30');
+    // her shifts that day (date entries), no client of the seed on it
+    const ts2 = rd('data/team-schedule.json', {});
+    ts2.dates = ts2.dates || {};
+    ts2.dates[D2] = { 'e-c1': { on: true, from: '09:00', to: '20:00' }, 'e-c2': { on: true, from: '09:00', to: '20:00' }, 'e-c3': { on: true, from: '10:00', to: '19:00' } };
+    wr('data/team-schedule.json', ts2);
+    const weekly0 = JSON.stringify(ts2.weekly);
+    wr('data/appointments.json', rd('data/appointments.json', []).filter((a) => a.date !== D2));
+    const brkOn = async (id) => ((await api('admin', 'portal-appointments', { action: 'list', from: D2, to: D2 })).breaks || []).find((b) => b.employeeId === id) || null;
+    const slots = async (city) => (((await api('admin', 'booking', null, 'city=' + encodeURIComponent(city) + '&service=consult')).days || []).find((x) => x.date === D2) || {}).slots || [];
+    let b1 = await brkOn('e-c1'), b2 = await brkOn('e-c2'), b3 = await brkOn('e-c3');
+    check(21, 'list: the breaks of the day (Arad 14:30; Timișoara 14:30 and the colleague with the same shift right after, 15:00)', b3 && b3.on && b3.from === '14:30' && b1 && b1.on && b1.from === '14:30' && b2 && b2.on && b2.from === '15:00', { b1, b2, b3 });
+    check(21, 'never stored as an appointment', !rd('data/appointments.json', []).some((a) => a.date === D2));
+    let ar = await slots('Arad'), tm = await slots('Timișoara');
+    check(21, 'site, Arad (one at work): 14:30 not offered, 14:00 and 15:00 are', !ar.includes('14:30') && ar.includes('14:00') && ar.includes('15:00'), ar);
+    check(21, 'site, Timișoara (two at work, one on break): 14:30 and 15:00 still offered', tm.includes('14:30') && tm.includes('15:00'), tm);
+    // a client of the other one at 14:30: with one on a break, that half hour is full on the site
+    const mk = (o) => Object.assign({ id: 'fx-b' + Math.random().toString(36).slice(2, 8), date: D2, location: 'Timișoara', clientName: 'Pauza Proba', clientId: 'cl-br', treatment: 'Lipo 640', status: 'programata', createdAt: at(day(-1), '10:00') }, o);
+    wr('data/appointments.json', rd('data/appointments.json', []).concat([mk({ id: 'fx-b-c2', time: '14:30', endTime: '15:00', cosmeticianId: 'e-c2' })]));
+    tm = await slots('Timișoara');
+    check(21, 'site, Timișoara: a client of the other one at 14:30 → 14:30 full (capacity minus the break)', !tm.includes('14:30'), tm);
+    b2 = await brkOn('e-c2');
+    check(21, 'and her own break, not over her client, still holds', b2 && b2.on && b2.from !== '14:30', b2);
+    // the desk books a client over a break: no break that day
+    const bk = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '14:00', endTime: '15:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Peste Pauza', clientPhone: '0755000111', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata' });
+    b1 = await brkOn('e-c1');
+    check(21, 'a client booked over her break: no break that day (why: client)', bk.ok && b1 && !b1.on && b1.why === 'client', { bk: bk.error, b1 });
+    // booking + move together, from the form's chip
+    const info = await api('receptie', 'portal-schedule', { action: 'break_info', date: D2, employeeId: 'e-c3', time: '14:30', endTime: '15:00' });
+    check(21, 'break_info: the hour picked is on her break, the nearest free half hours offered (one before, one after)', info.clash && info.near && info.near[0] === '14:00' && info.near[1] === '15:00', info);
+    const both = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '14:30', endTime: '15:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Mutat Pauza', clientPhone: '0755000222', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', breakMove: { from: '15:00' } });
+    b3 = await brkOn('e-c3');
+    check(21, 'booking + „Mută pauza la 15:00” saved together', both.ok && b3 && b3.on && b3.from === '15:00' && b3.moved && rd('data/appointments.json', []).some((a) => a.id === both.appointment.id), { both: both.error, b3 });
+    const bad = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '16:00', endTime: '17:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Rea Pauza', clientPhone: '0755000333', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', breakMove: { from: '14:30' } });
+    check(21, 'booking + a move onto her other client: refused, nothing saved', bad._status === 409 && bad.error === 'break_taken' && !rd('data/appointments.json', []).some((a) => a.clientName === 'Rea Pauza'), bad);
+    // moving the break itself (the owner and the manager)
+    const rec = await api('receptie', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', from: '16:00' });
+    check(21, 'reception cannot move a break from its sheet', rec._status === 403, rec);
+    const odd = await api('manager', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', from: '16:15' });
+    const out = await api('manager', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', from: '09:30' });
+    const taken = await api('manager', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', from: '14:30' });
+    check(21, 'refused: not at :00/:30, outside her shift, over her client', odd.error === 'invalid_time' && out.error === 'outside_shift' && taken.error === 'break_taken', { odd: odd.error, out: out.error, taken: taken.error });
+    const mv = await api('manager', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', name: 'Dana Proba', from: '16:30' });
+    b3 = await brkOn('e-c3');
+    check(21, 'the manager moves it: 16:30, marked moved with who', mv.ok && b3.from === '16:30' && b3.moved && /^Ioana/.test(b3.by) && b3.at, b3);
+    check(21, 'the weekly rule never changes', JSON.stringify(rd('data/team-schedule.json', {}).weekly) === weekly0);
+    ar = await slots('Arad');
+    check(21, 'the site follows the moved break: 16:30 gone, 14:00 back', !ar.includes('16:30') && ar.includes('14:00'), ar);
+    const slotList = await api('admin', 'portal-schedule', { action: 'break_info', date: D2, employeeId: 'e-c3' });
+    check(21, 'her half hours: only :00/:30, inside her shift, her client\'s taken', (slotList.slots || []).every((x) => /:(00|30)$/.test(x.from)) && slotList.slots[0].from === '10:00' && slotList.slots[slotList.slots.length - 1].to === '19:00' && slotList.slots.find((x) => x.from === '14:30').free === false, slotList.slots);
+    // her shift changes later that day: a moved break that no longer fits goes back to the middle
+    const ts3 = rd('data/team-schedule.json', {}); ts3.dates[D2]['e-c3'] = { on: true, from: '10:00', to: '16:00' }; wr('data/team-schedule.json', ts3);
+    b3 = await brkOn('e-c3');
+    check(21, 'shift shortened to 10-16: the 16:30 break falls back to the middle (13:00)', b3 && b3.on && b3.from === '13:00' && b3.fell, b3);
+    // an odd shift: only :00/:30 starts fully inside it
+    await api('admin', 'portal-schedule', { action: 'break_reset', date: D2, employeeId: 'e-c3', name: 'Dana Proba' });
+    Object.assign(ts3, rd('data/team-schedule.json', {}));
+    ts3.dates[D2]['e-c3'] = { on: true, from: '09:15', to: '17:45' }; wr('data/team-schedule.json', ts3);
+    const oddInfo = await api('admin', 'portal-schedule', { action: 'break_info', date: D2, employeeId: 'e-c3' });
+    b3 = await brkOn('e-c3');
+    const odd2 = await api('admin', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', from: '09:15' });
+    check(21, 'shift 09:15-17:45: break 13:30, half hours 09:30 … 17:00, 09:15 refused', b3.from === '13:30' && oddInfo.slots[0].from === '09:30' && oddInfo.slots[oddInfo.slots.length - 1].from === '17:00' && oddInfo.slots.every((x) => /:(00|30)$/.test(x.from)) && odd2.error === 'invalid_time', { b3, first: oddInfo.slots && oddInfo.slots[0], odd2: odd2.error });
+    ts3.dates[D2]['e-c3'] = { on: true, from: '10:00', to: '19:00' }; wr('data/team-schedule.json', ts3);
+    // off and back
+    await api('admin', 'portal-schedule', { action: 'break_off', date: D2, employeeId: 'e-c3', name: 'Dana Proba' });
+    b3 = await brkOn('e-c3');
+    ar = await slots('Arad');
+    check(21, '„Fără pauză azi”: no break, its half hour on the site again', b3 && !b3.on && b3.why === 'off' && ar.includes('14:00'), { b3, ar });
+    await api('admin', 'portal-schedule', { action: 'break_reset', date: D2, employeeId: 'e-c3', name: 'Dana Proba' });
+    b3 = await brkOn('e-c3');
+    check(21, '„Înapoi la mijloc”: 14:30 again (her client there now: no break, why client)', b3 && b3.from === '14:30' && !b3.on && b3.why === 'client', b3);
+    // the calendar's fill: her minutes for clients are 30 fewer on a day with a break (another weekday, no clients)
+    let D3 = day(11); while ([0, 6].includes(new Date(D3 + 'T12:00:00Z').getUTCDay()) || D3 === D2) D3 = new Date(Date.parse(D3 + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10);
+    const ts4 = rd('data/team-schedule.json', {}); ts4.dates[D3] = { 'e-c1': { on: true, from: '09:00', to: '20:00' }, 'e-c2': { on: true, from: '09:00', to: '20:00' } }; wr('data/team-schedule.json', ts4);
+    wr('data/appointments.json', rd('data/appointments.json', []).filter((a) => !(a.date === D3 && a.location === 'Timișoara')));
+    const cfgB = await require('../api/_lib/booking').settings({ team: true });
+    const fl = C.fill(cfgB, 'Timișoara', D3, D3, rd('data/appointments.json', []));
+    check(21, 'fill: the team\'s hours minus the breaks (2 × 11h − 2 × 0.5h = 21h)', fl.capHours === 21, fl);
+    // activity: the move is a line
+    const actFile = rd('data/activity/' + TODAY + '.json', []);
+    check(21, 'Activitate: „a mutat pauza pentru” with the hour', actFile.some((x) => /a mutat pauza/.test(x.verb) && /16:30/.test(x.detail || '')), actFile.slice(-6).map((x) => x.verb + ' ' + x.detail));
+    // today: her phone hears the move
+    const tsT = rd('data/team-schedule.json', {}); tsT.dates[TODAY] = Object.assign({}, tsT.dates[TODAY], { 'e-c3': { on: true, from: '06:00', to: '24:00' } }); wr('data/team-schedule.json', tsT);
+    const near = await api('admin', 'portal-schedule', { action: 'break_info', date: TODAY, employeeId: 'e-c3' });
+    const pick = (near.near || [])[0];
+    const mvT = pick ? await api('admin', 'portal-schedule', { action: 'break_set', date: TODAY, employeeId: 'e-c3', name: 'Dana Proba', from: pick }) : {};
+    const notes = rd('data/notifications.json', []);
+    check(21, 'moved today: she is told „Pauza ta de azi s-a mutat la …” (no free half hour left today: skipped)', !pick || mvT.ok && notes.some((x) => x.employeeId === 'e-c3' && x.text === 'Pauza ta de azi s-a mutat la ' + pick + '.'), { pick, mvT: mvT.error, n: notes.filter((x) => x.employeeId === 'e-c3').slice(-2) });
+  }
+
   // the independent second reading agrees with production on the harness's data
   {
     const lh = await api('admin', 'lead-health', null, 'verify=1');
