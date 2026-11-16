@@ -391,7 +391,15 @@ module.exports = async (req, res) => {
       payload.manager = {
         pendingTime: (tbAll.adjustments || []).filter((a) => a.status === 'pending' && team.has(a.employeeId)).length,
         pendingLeave: (tbAll.leaveRequests || []).filter((r) => r.status === 'pending' && team.has(r.employeeId)).length,
+        toFix: 0,
       };
+      // Condică → De rezolvat (_lib/attendance-fix.js): the team's pontaj to fix, a small count on her Condică and Panou
+      try {
+        const FIX = require('./_lib/attendance-fix');
+        const [schedule, requests, dismissed] = await Promise.all([require('./_lib/team-schedule').load(), readJSON(FIX.REQ, []), readJSON(FIX.DISMISS, {})]);
+        payload.manager.toFix = FIX.problems({ attendance: attendanceAll, employees: employeesRaw, schedule, appts: appointments, leaveRequests: tbAll.leaveRequests,
+          adjustments: tbAll.adjustments, requests, dismissed: (dismissed && dismissed.keys) || {} }, { team, today }).length;
+      } catch (err) { console.error('portal-data toFix:', err.message); }
     }
 
     sendVersioned(res, payload, req.query && req.query.v);

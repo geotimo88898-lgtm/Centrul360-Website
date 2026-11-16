@@ -1084,3 +1084,38 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .co-bonus .is-ok{ color:var(--good); font-weight:600; } .co-bonus .is-no{ color:var(--warn); font-weight:600; }
 .co-miss{ color:var(--warn); }
 
+
+/* Condică → De rezolvat and the correction sheet (portal-condica.js, 16.11) */
+button.k-row.cd-fix-row{ width:100%; border:0; border-radius:0; background:none; box-shadow:none; text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+button.k-row.cd-fix-row + button.k-row.cd-fix-row{ border-top:1px solid var(--line); }
+button.k-row.cd-fix-row:hover .k-row-title{ color:var(--accent-text, var(--accent)); }
+.cd-fix-row .k-row-main{ display:flex; flex-direction:column; gap:.12rem; }
+.cd-fix-row .cd-fix-what{ color:var(--fg); white-space:normal; overflow-wrap:anywhere; }
+.cd-fix-row .k-row-end{ gap:.45rem; }
+.cd-fix-go{ pointer-events:none; }
+.cd-fix .k-card-head{ flex-wrap:wrap; gap:.5rem; }
+.cd-fix .k-card-head h3 .k-tag{ margin-left:.35rem; }
+.cd-fix-ok{ display:flex; align-items:center; gap:.45rem; margin:.2rem 0 0; color:var(--good); font-size:.9rem; font-weight:600; }
+.cd-fix-ok svg{ width:17px; height:17px; flex:none; }
+.cd-hist{ display:flex; align-items:center; gap:.3rem; color:var(--muted-2); min-width:0; }
+.cd-hist svg{ width:12px; height:12px; flex:none; }
+.cd-hist span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cd-hist.is-bad{ color:var(--bad); }
+.cd-ask-ic{ color:var(--muted); pointer-events:none; }
+.cd-asked{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .55rem; grid-column:1 / -1; padding:.75rem .85rem; border-radius:12px; background:var(--glass); border:1px solid var(--line); }
+.cd-asked b{ font-size:.95rem; font-variant-numeric:tabular-nums; }
+.cd-asked p{ width:100%; margin:0; font-size:.86rem; color:var(--fg); overflow-wrap:anywhere; }
+.cd-asked small{ width:100%; color:var(--muted); font-size:.76rem; }
+.cd-histlist{ display:flex; flex-direction:column; gap:.45rem; margin-top:1rem; padding-top:.9rem; border-top:1px solid var(--line); }
+.cd-histlist > b{ display:flex; align-items:center; gap:.4rem; font-size:.8rem; color:var(--muted); }
+.cd-histlist > b svg{ width:14px; height:14px; }
+.cd-histitem{ display:flex; flex-direction:column; gap:.1rem; font-size:.84rem; }
+.cd-histitem span{ overflow-wrap:anywhere; }
+.cd-histitem small{ color:var(--muted); font-size:.74rem; overflow-wrap:anywhere; }
+.mg-addday{ margin-bottom:.8rem; }
+.cd-fix-what .k-tag{ margin-right:.4rem; vertical-align:1px; }
+.cd-fix-chev{ display:none; color:var(--muted); }
+.cd-fix-chev svg{ width:16px; height:16px; }
+@media (max-width:600px){ .cd-fix-go{ display:none; } .cd-fix-chev{ display:inline-flex; } .cd-fix-row .k-row-end{ flex-wrap:nowrap; } }
+.cd-sched{ display:flex; align-items:center; gap:.45rem; margin:.9rem 0 0; font-size:.86rem; color:var(--muted); }
+.cd-sched svg{ width:15px; height:15px; flex:none; }

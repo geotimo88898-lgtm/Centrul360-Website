@@ -5,6 +5,10 @@
 // Admin additionally (inside Echipa → Condică): the team overview, one person's detail with
 // "Plătite cu salariul" for her overtime, corrections of mistaken entries. The day differences and
 // the requests are decided in Aprobări (portal-admin.js). Rules: api/_lib/timebank.js.
+// De rezolvat (the owner, 16.11, for the manager and the owner): the team's pontaj to fix (no departure, a working day
+// with no pontaj, a late arrival, the corrections asked for), each with a sheet that grows from its row, prefilled with
+// her scheduled hours. Everyone: „Cere corectarea” for a day of hers. Every correction keeps who, when, why
+// (api/_lib/attendance-fix.js).
 (function () {
   'use strict';
   const K = window.K;
@@ -21,13 +25,19 @@
     overlapping_request: 'Ai deja o cerere pentru zilele astea.', no_work_days: 'Perioada nu are zile lucrătoare (luni-vineri).',
     invalid_minutes: 'Scrie câte ore folosești.',
     nothing_to_pay: 'Nu are ore suplimentare de plătit.',
+    future_date: 'Nu se poate pune o zi din viitor.', future_time: 'Ora e după ora de acum.', checkout_before_checkin: 'Plecarea trebuie să fie după sosire.',
+    duplicate_day: 'Are deja pontaj în ziua asta. Corectează-l din listă.', missing_reason: 'Scrie de ce corectezi.', missing_times: 'Pune sosirea și plecarea.',
+    own_request: 'Pentru pontajul tău folosește „Cere corectarea”.', too_old: 'Se pot corecta doar zilele din ultima lună.', after_left: 'Nu mai lucra aici în ziua aceea.',
+    already_decided: 'A fost deja decisă.', invalid_date: 'Alege ziua.',
   };
   const errText = (e) => ERR[e && e.code] || K.errText(e);
 
-  const C = { attendance: [], leave: [], empFilter: '', year: null, month: null, balance: null, overview: null, tb: null };
+  const C = { attendance: [], leave: [], empFilter: '', year: null, month: null, balance: null, overview: null, tb: null, fix: null, requests: [] };
   let panel;
 
   function isAdmin() { return !!(K.data && K.data.isAdmin); }
+  // De rezolvat: the owner (in Echipa → Condică, on the team view) and the manager (her own Condică)
+  const fixer = () => (isAdmin() ? !C.empFilter : !!(K.isManager && K.isManager()));
   // who left („A plecat”) stays, at the end, for her past days
   function employees() { return isAdmin() ? (K.data.admin.employees || []).filter((e) => e.id !== 'admin' && e.role !== 'admin').sort((a, b) => (a.active === false ? 1 : 0) - (b.active === false ? 1 : 0)) : []; }
   function empName(id) {
@@ -57,13 +67,16 @@
       // Admin with no employee picked: the team overview. Picking someone switches to her detail.
       const wantOverview = isAdmin() && !C.empFilter;
       const who = isAdmin() ? C.empFilter : K.data.me.id;
-      const [att, lv, bal, ov, tb] = await Promise.all([
+      const [att, lv, bal, ov, tb, fx] = await Promise.all([
         K.api('/api/portal-attendance', { action: 'list', employeeId: isAdmin() ? (C.empFilter || undefined) : undefined, year: isAdmin() ? C.year : undefined, month: isAdmin() ? C.month : undefined }),
         K.api('/api/portal-leave', { action: 'list' }),
         !wantOverview ? K.api('/api/portal-attendance', { action: 'balance', employeeId: who }) : Promise.resolve(null),
         wantOverview ? K.api('/api/portal-attendance', { action: 'balance_all' }) : Promise.resolve(null),
         !wantOverview ? K.api('/api/portal-attendance', { action: 'timebank', employeeId: isAdmin() ? who : undefined }) : Promise.resolve(null),
+        fixer() ? K.api('/api/portal-attendance', { action: 'fix_list' }).catch(() => null) : Promise.resolve(null),
       ]);
+      C.fix = fx ? fx.rows || [] : null;
+      C.requests = att.requests || [];
       C.attendance = att.entries || [];
       C.leave = lv.requests || [];
       C.balance = bal;
@@ -96,7 +109,7 @@
         '<div class="cd-plan"><span class="k-tag is-' + STATUS_TONE[p.status] + '">' + (p.status === 'approved' ? 'Plan de recuperare' : 'Plan la aprobare') + '</span>' +
         '<b>' + fmt(p.minutes) + '</b><span class="k-muted">pentru ' + esc(K.dateShort(p.startDate)) + (p.endDate !== p.startDate ? ' - ' + esc(K.dateShort(p.endDate)) : '') + '</span>' +
         '<div class="cd-plan-days">' + p.plan.map((x) => '<span class="' + (x.date < K.today() ? 'is-past' : '') + '">' + esc(K.dateShort(x.date)) + ' · ' + fmt(x.minutes) + '</span>').join('') + '</div></div>').join('') + '</div>' : '') +
-      '<p class="cd-rule">' + icon('info') + 'Program: luni-vineri, 8 ore (cu pauza). De la ' + t.tolerance + ' minute în plus sau în minus, ziua merge la aprobare. Sâmbăta, tot timpul e oră suplimentară.</p>' +
+      '<p class="cd-rule">' + icon('info') + 'Ziua se compară cu programul din Program echipă, cu pauza inclusă (fără program: 8 ore, luni-vineri). De la ' + t.tolerance + ' minute în plus sau în minus, ziua merge la aprobare. Într-o zi liberă, tot timpul e oră suplimentară.</p>' +
       (isAdmin() && C.empFilter && t.bank > 0 ? '<div class="cd-payout"><span>' + icon('wallet') + 'De plătit cu salariul: <b>' + fmt(t.bank) + ' = ' + K.lei(t.bankLei) + '</b></span><button type="button" class="k-btn is-good" data-payout="' + esc(C.empFilter) + '">' + icon('check') + 'Plătite cu salariul</button></div>' : '') +
       '</section>';
   }
@@ -144,8 +157,8 @@
           (adj.weekend ? 'Azi e zi de weekend: ' + fmt(adj.minutes) + ' suplimentare' : fmt(adj.minutes, true) + (adj.minutes > 0 ? ' peste program' : ' sub program')) + ', ' + (ADJ_LABEL[adj.status] || '') + '.</div>'
         : '<div class="cd-today-note is-ok">' + icon('checkCircle') + 'Zi completă. Mulțumim!</div>';
     } else if (weekend) line = '<div class="cd-today-note">' + icon('info') + 'Azi e weekend: tot timpul lucrat e oră suplimentară.</div>';
-    // no arrival yet in the afternoon: she probably forgot, and the owner can correct the hour
-    else if (!(mine && mine.checkIn) && new Date().getHours() >= 13) line = '<div class="cd-today-note">' + icon('info') + 'Ai uitat să pontezi dimineața? Pontează oricum și spune-i lui George ora reală, o corectează el.</div>';
+    // no arrival yet in the afternoon: she probably forgot; she clocks in now and asks for the real hour
+    else if (!(mine && mine.checkIn) && new Date().getHours() >= 13) line = '<div class="cd-today-note">' + icon('clock') + 'Ai uitat să pontezi dimineața? Pontează sosirea acum, apoi cere corectarea cu ora reală.</div>';
     return '<section class="k-card cd-today"><div class="k-card-head"><h3>' + icon('clock') + 'Azi, ' + esc(K.dateLong(today)) + '</h3></div>' +
       '<div class="cd-today-row">' +
         '<div class="cd-today-stat"><span>Sosire</span><b>' + (mine && mine.checkIn ? esc(mine.checkIn) : '-') + '</b></div>' +
@@ -154,17 +167,34 @@
         '<div class="cd-today-actions">' +
           '<button type="button" class="k-btn is-good" data-clock="clock_in"' + (mine && mine.checkIn ? ' disabled' : '') + '>' + icon('checkCircle') + 'Pontează sosirea</button>' +
           '<button type="button" class="k-btn is-outline" data-clock="clock_out"' + (!mine || !mine.checkIn || mine.checkOut ? ' disabled' : '') + '>' + icon('clock') + 'Pontează plecarea</button>' +
+          (mine && mine.checkIn ? '<button type="button" class="k-btn is-ghost" data-fix-ask="' + esc(today) + '">' + icon('pen') + 'Cere corectarea</button>' : '') +
         '</div></div>' + line + '</section>';
   }
 
+  // the last correction of a day, in one short line: „Corectat de Ioana · a uitat plecarea”
+  function histLine(e) {
+    const h = e && Array.isArray(e.history) && e.history.length ? e.history[e.history.length - 1] : null;
+    if (!h) return '';
+    const what = h.kind === 'create' ? 'Adăugat de ' : 'Corectat de ';
+    return '<div class="k-row-sub cd-hist">' + icon('pen') + '<span>' + what + esc(h.byName || 'admin') + ' · ' + esc(K.dateShort(String(h.at).slice(0, 10))) + (h.reason ? ' · ' + esc(h.reason) : '') + '</span></div>';
+  }
+  K.attHistLine = histLine;
+  // her own request for a day: the last one
+  const reqOf = (date) => (C.requests || []).filter((r) => r.date === date).sort((a, b) => (a.at < b.at ? 1 : -1))[0] || null;
   function attendanceRow(e, editable) {
     const w = workedMin(e.checkIn, e.checkOut);
     const adj = adjOf(e.id);
     const tag = adj ? '<span class="k-tag is-' + (adj.status === 'rejected' ? 'bad' : adj.status === 'pending' ? 'warn' : adj.minutes > 0 ? 'good' : 'info') + '">' +
       fmt(adj.status === 'approved' ? adj.approvedMinutes : adj.minutes, true) + ' · ' + ADJ_LABEL[adj.status] + '</span>' : '';
-    return '<div class="k-row cd-arow"' + (editable ? ' data-edit-att="' + esc(e.id) + '"' : '') + '><div class="k-row-main"><div class="k-row-title">' + esc(K.relDay(e.date)) + (isWeekend(e.date) ? ' · weekend' : '') + (isAdmin() && !C.empFilter ? ' · ' + esc(empName(e.employeeId)) : '') + '</div>' +
-      '<div class="k-row-sub">Sosire ' + (e.checkIn ? esc(e.checkIn) : '-') + ' · Plecare ' + (e.checkOut ? esc(e.checkOut) : '-') + (w != null ? ' · ' + fmt(w) : '') + (e.note ? ' · „' + esc(e.note) + '”' : '') + '</div></div>' +
-      '<div class="k-row-end">' + tag + (editable ? '<button type="button" class="k-icon-btn" aria-label="Corectează">' + icon('pen') + '</button>' : '') + '</div></div>';
+    // her own days: tap one to ask for its correction (a pending one says so, a refused one says why)
+    const own = !isAdmin() && e.employeeId === K.data.me.id;
+    const rq = own ? reqOf(e.date) : null;
+    const rqTag = rq && rq.status === 'pending' ? '<span class="k-tag is-info">corectare trimisă</span>' : rq && rq.status === 'rejected' ? '<span class="k-tag is-bad">corectare respinsă</span>' : '';
+    const tap = editable ? ' data-edit-att="' + esc(e.id) + '"' : own ? ' data-fix-ask="' + esc(e.date) + '"' : '';
+    return '<div class="k-row cd-arow' + (tap ? ' is-click' : '') + '"' + tap + '><div class="k-row-main"><div class="k-row-title">' + esc(K.relDay(e.date)) + (isWeekend(e.date) ? ' · weekend' : '') + (isAdmin() && !C.empFilter ? ' · ' + esc(empName(e.employeeId)) : '') + '</div>' +
+      '<div class="k-row-sub">Sosire ' + (e.checkIn ? esc(e.checkIn) : '-') + ' · Plecare ' + (e.checkOut ? esc(e.checkOut) : '-') + (w != null ? ' · ' + fmt(w) : '') + (e.note ? ' · „' + esc(e.note) + '”' : '') + '</div>' +
+      histLine(e) + (rq && rq.status === 'rejected' && rq.decisionNote ? '<div class="k-row-sub cd-hist is-bad">' + icon('x') + '<span>' + esc(rq.decisionNote) + '</span></div>' : '') + '</div>' +
+      '<div class="k-row-end">' + rqTag + tag + (editable ? '<button type="button" class="k-icon-btn" aria-label="Corectează">' + icon('pen') + '</button>' : own ? '<span class="k-icon-btn cd-ask-ic" aria-hidden="true">' + icon('pen') + '</span>' : '') + '</div></div>';
   }
 
   function filterToolbar() {
@@ -194,6 +224,36 @@
       '</section>';
   }
 
+  // ------------------------------------------------------------------ De rezolvat
+  const FIX_TAG = { request: ['Cerere', 'info'], no_out: ['Fără plecare', 'warn'], no_in: ['Fără sosire', 'warn'], missing: ['Nepontată', 'bad'], late: ['Sosire târzie', 'info'] };
+  function fixWhat(r) {
+    const sched = r.from && r.to ? 'program ' + r.from + '-' + r.to : '';
+    if (r.kind === 'request') {
+      const q = r.request || {};
+      return 'Cere ' + [q.checkIn ? 'sosire ' + q.checkIn : '', q.checkOut ? 'plecare ' + q.checkOut : ''].filter(Boolean).join(', ') + (q.note ? ' · „' + q.note + '”' : '');
+    }
+    if (r.kind === 'no_out') return 'Sosire ' + r.checkIn + ', fără plecare' + (sched ? ' · ' + sched : '');
+    if (r.kind === 'no_in') return 'Plecare ' + r.checkOut + ', fără sosire' + (sched ? ' · ' + sched : '');
+    if (r.kind === 'missing') return 'Niciun pontaj' + (sched ? ' · ' + sched : '');
+    return 'Sosire ' + r.checkIn + (r.from ? ' · programul începe la ' + r.from : '');
+  }
+  function fixCard() {
+    const rows = C.fix || [];
+    const row = (r) => {
+      const [label, tone] = FIX_TAG[r.kind] || ['', ''];
+      return '<button type="button" class="k-row is-click cd-fix-row" data-fix="' + esc(r.key) + '">' + K.avatar(r.name, 36) +
+        '<div class="k-row-main"><div class="k-row-title">' + esc(r.name) + '</div>' +
+          '<div class="k-row-sub">' + esc(K.relDay(r.date)) + (r.location ? ' · ' + esc(r.location) : '') + '</div>' +
+          '<div class="k-row-sub cd-fix-what"><span class="k-tag is-' + tone + '">' + label + '</span>' + esc(fixWhat(r)) + '</div></div>' +
+        '<div class="k-row-end"><span class="k-btn is-sm is-outline cd-fix-go">' + (r.kind === 'request' ? 'Vezi' : 'Corectează') + '</span><span class="cd-fix-chev">' + icon('right') + '</span></div></button>';
+    };
+    return '<section class="k-card cd-fix"><div class="k-card-head"><h3>' + icon('alert') + 'De rezolvat' + (rows.length ? ' <span class="k-tag is-warn">' + rows.length + '</span>' : '') + '</h3>' +
+        '<button type="button" class="k-btn is-sm is-outline" data-fix-add="">' + icon('plus') + 'Adaugă o zi</button></div>' +
+      (rows.length ? '<div class="k-list cd-fix-list">' + rows.map(row).join('') + '</div>'
+        : '<p class="cd-fix-ok">' + icon('checkCircle') + 'Totul e în regulă. Niciun pontaj de corectat.</p>') +
+      '<p class="ct-hint">' + icon('info') + 'Ultimele 14 zile: zile fără plecare, zile de lucru fără pontaj, sosiri la peste 45 de minute de la începutul programului și cererile echipei.</p></section>';
+  }
+
   function attendanceSection() {
     if (isAdmin() && !C.empFilter) return overviewTable();
     const mineOnly = isAdmin() ? C.attendance : C.attendance.filter((e) => e.employeeId === K.data.me.id);
@@ -201,7 +261,9 @@
     const emptyState = isAdmin()
       ? K.empty('clock', 'Nicio intrare încă', esc(empName(C.empFilter)) + ' nu are pontaje în această perioadă.')
       : K.empty('clock', 'Nicio intrare încă', 'Pontajele apar aici imediat ce apeși „Pontează sosirea”.');
-    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + (isAdmin() ? 'Condica, ' + esc(empName(C.empFilter)) : 'Pontajele mele') + '</h3></div>' +
+    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + (isAdmin() ? 'Condica, ' + esc(empName(C.empFilter)) : 'Pontajele mele') + '</h3>' +
+        (isAdmin() ? '<button type="button" class="k-btn is-sm is-outline" data-fix-add="' + esc(C.empFilter) + '">' + icon('plus') + 'Adaugă o zi</button>'
+          : '<button type="button" class="k-btn is-sm is-outline" data-fix-ask="">' + icon('pen') + 'Cere corectarea</button>') + '</div>' +
       (isAdmin() ? filterToolbar() + summary() : '') +
       (recent.length ? '<div class="k-list">' + recent.map((e) => attendanceRow(e, isAdmin())).join('') + '</div>' : emptyState) +
       '</section>';
@@ -245,7 +307,7 @@
   function render() {
     if (!panel) return;
     // The owner doesn't clock in herself: no "azi" card; she gets the team + her detail.
-    panel.querySelector('[data-body]').innerHTML = (isAdmin() ? '' : todayCard()) + hoursHtml() + attendanceSection() + leaveSection();
+    panel.querySelector('[data-body]').innerHTML = (isAdmin() ? '' : todayCard()) + (fixer() && C.fix ? fixCard() : '') + hoursHtml() + attendanceSection() + leaveSection();
   }
 
   async function clock(action) {
@@ -378,27 +440,148 @@
     });
   }
 
-  function editAttendanceDrawer(entry) {
+  // ------------------------------------------------------------------ the correction sheet
+  // One sheet for every correction, grown from the row it was opened from (K.drawer({from})):
+  //   fix      an entry of someone else's (or a missing day): times, place, why → update / create
+  //   add      a day with no pontaj, for a person and a day picked here → create
+  //   decide   a request of the team: what she asked, the times (changeable), Aprobă / Respinge
+  //   ask      her own day: „Cere corectarea” with the real times and a note → fix_request
+  // o: { mode, from, employeeId, name, date, entry, row, request, shift: { from, to, location }, location, done }
+  const LOCS = [['Timișoara', 'Timișoara'], ['Arad', 'Arad']];
+  // the people the owner / the manager can add a day for (never the manager herself)
+  function teamPeople() {
+    const me = K.data.me && K.data.me.id;
+    const list = isAdmin() ? employees() : ((K.data && K.data.activeEmployees) || []).filter((e) => e.role !== 'admin' && e.id !== me);
+    return list.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => ({ id: e.id, name: e.name, location: e.location }));
+  }
+  function history(entry) {
+    const h = entry && Array.isArray(entry.history) ? entry.history.slice().reverse() : [];
+    if (!h.length) return '';
+    const ch = (x) => {
+      if (!x.before) return 'Sosire ' + (x.after.checkIn || '-') + ', plecare ' + (x.after.checkOut || '-');
+      return [['checkIn', 'Sosire'], ['checkOut', 'Plecare'], ['location', 'Locația']].filter(([k]) => (x.before[k] || '') !== (x.after[k] || ''))
+        .map(([k, l]) => l + ' ' + (x.before[k] || '-') + ' → ' + (x.after[k] || '-')).concat((x.before.date !== x.after.date) ? ['Ziua ' + K.dateShort(x.before.date) + ' → ' + K.dateShort(x.after.date)] : []).join(', ');
+    };
+    return '<div class="cd-histlist"><b>' + icon('clock') + 'Istoric</b>' + h.slice(0, 6).map((x) => '<div class="cd-histitem"><span>' + esc(ch(x)) + '</span><small>' +
+      esc((x.kind === 'create' ? 'Adăugat de ' : 'Corectat de ') + (x.byName || 'admin') + ', ' + K.dateShort(String(x.at).slice(0, 10)) + ' ' + String(new Date(x.at).toTimeString()).slice(0, 5)) + (x.reason ? ' · ' + esc(x.reason) : '') + '</small></div>').join('') + '</div>';
+  }
+  function fixSheet(o) {
+    const mode = o.mode;
+    const e = o.entry || null, q = o.request || null, sh = o.shift || {};
+    const pick = mode === 'add' && !o.employeeId;
+    const people = pick ? teamPeople() : [];
+    const val = {
+      date: o.date || K.addDays(K.today(), -1),
+      checkIn: mode === 'decide' ? (q.checkIn || (e && e.checkIn) || '') : mode === 'ask' ? ((e && e.checkIn) || '') : (e && e.checkIn) && !(o.row && o.row.kind === 'late') ? e.checkIn : sh.from || (e && e.checkIn) || '',
+      checkOut: mode === 'decide' ? (q.checkOut || (e && e.checkOut) || '') : (e && e.checkOut) || (mode === 'ask' ? '' : sh.to || ''),
+      location: (e && e.location) || sh.location || o.location || 'Timișoara',
+    };
+    if (!LOCS.some((x) => x[0] === val.location)) val.location = 'Timișoara';
+    const titles = { fix: o.row && o.row.kind === 'missing' ? 'Adaugă ziua' : 'Corectează pontajul', add: 'Adaugă o zi', decide: 'Corectarea cerută', ask: 'Cere corectarea' };
+    const who = o.name || (o.employeeId ? empName(o.employeeId) : '');
+    const today = K.today();
+    const asked = q ? '<div class="cd-asked"><span class="k-tag is-info">Cere</span><b>' + esc([q.checkIn ? 'Sosire ' + q.checkIn : '', q.checkOut ? 'Plecare ' + q.checkOut : ''].filter(Boolean).join(' · ')) + '</b>' +
+        (q.note ? '<p>„' + esc(q.note) + '”</p>' : '') + '<small>Acum: sosire ' + esc((e && e.checkIn) || '-') + ', plecare ' + esc((e && e.checkOut) || '-') + '</small></div>' : '';
+    const schedHint = sh.from && sh.to ? '<p class="cd-sched">' + icon('calendar') + 'Program în ziua aceea: ' + esc(sh.from) + '-' + esc(sh.to) + (sh.location ? ', ' + esc(sh.location) : '') + '.</p>' : '';
+    const body = '<form class="k-form" data-form>' + asked +
+      (pick ? K.field('Angajat', '<select name="employeeId" required>' + K.options([['', 'Alege…']].concat(people.map((p) => [p.id, p.name + (p.location ? ' · ' + p.location : '')])), '') + '</select>', 'full') : '') +
+      (mode === 'add' || (mode === 'ask' && !o.date) ? K.field('Ziua', '<input name="date" type="date" required max="' + esc(today) + '"' + (mode === 'ask' ? ' min="' + esc(K.addDays(today, -31)) + '"' : '') + ' value="' + esc(val.date) + '">', 'full') : '') +
+      K.field('Sosire', '<input name="checkIn" type="time" value="' + esc(val.checkIn) + '">') +
+      K.field('Plecare', '<input name="checkOut" type="time" value="' + esc(val.checkOut) + '">') +
+      (mode === 'ask' || mode === 'decide' ? '' : K.field('Locația', K.seg('location', LOCS, val.location), 'full')) +
+      (mode === 'ask' ? K.field('Notă', '<input name="note" maxlength="200" placeholder="Ex.: am uitat să pontez plecarea">', 'full')
+        : mode === 'decide' ? K.field('Notă pentru ea', '<input name="note" maxlength="200" placeholder="Opțional, o vede în notificare">', 'full')
+        : K.field('De ce', '<input name="reason" maxlength="200" required placeholder="Ex.: a uitat să ponteze plecarea">', 'full')) +
+      '</form>' + schedHint +
+      (mode === 'ask' ? '<p class="ct-hint">' + icon('info') + 'Pune ora reală. Cererea se aprobă din Condică și primești o notificare.</p>'
+        : mode === 'decide' ? '' : '<p class="ct-hint">' + icon('info') + 'Diferența față de program se recalculează cât timp ziua nu e decisă. Corectarea rămâne în istoricul zilei.</p>') +
+      history(e);
+    const dismiss = o.row && (o.row.kind === 'missing' || o.row.kind === 'late') ? '<button type="button" class="k-btn is-ghost" data-dismiss>' + (o.row.kind === 'missing' ? 'Nu a lucrat' : 'E corect') + '</button>' : '';
+    const footer = mode === 'decide'
+      ? '<span class="k-grow"></span><button type="button" class="k-btn is-danger" data-no>' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good" data-save>' + icon('check') + 'Aprobă</button>'
+      : dismiss + '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + (mode === 'ask' ? 'Trimite cererea' : 'Salvează') + '</button>';
     const d = K.drawer({
-      title: 'Corectează pontajul', icon: 'pen', width: 460,
-      subtitle: esc(empName(entry.employeeId)) + ' · ' + esc(K.dateLong(entry.date)),
-      body: '<form class="k-form" data-form>' +
-        K.field('Sosire', '<input name="checkIn" type="time" value="' + esc(entry.checkIn || '') + '">') +
-        K.field('Plecare', '<input name="checkOut" type="time" value="' + esc(entry.checkOut || '') + '">') +
-        K.field('Notă', '<input name="note" maxlength="300" value="' + esc(entry.note || '') + '">', 'full') +
-        '</form><p class="ct-hint">' + icon('info') + 'Diferența față de 8 ore se recalculează cât timp ziua nu e aprobată.</p>',
-      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+      title: titles[mode], icon: mode === 'ask' ? 'clock' : 'pen', width: 480, from: o.from,
+      subtitle: [who && mode !== 'ask' ? esc(who) : '', o.date && !(mode === 'add') ? esc(K.dateLong(o.date)) : ''].filter(Boolean).join(' · '),
+      body, footer,
       onMount(el) {
-        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        const f = el.querySelector('[data-form]');
+        const close = () => d.close();
+        // a person picked: her clinic as the place
+        if (pick) f.employeeId.addEventListener('change', () => { const p = people.find((x) => x.id === f.employeeId.value); const b = p && f.querySelector('[data-k-seg="location"] > button[data-v="' + p.location + '"]'); if (b) b.click(); });
+        const cancel = el.querySelector('[data-cancel]');
+        if (cancel) cancel.addEventListener('click', () => { close(); if (o.back) o.back(); });
+        const finish = (msg) => { d.close(); K.ui().toast(msg, 'success'); if (o.done) o.done(); else load(); K.reload(); };
+        const dis = el.querySelector('[data-dismiss]');
+        if (dis) dis.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try { await K.api('/api/portal-attendance', { action: 'fix_dismiss', key: o.row.key }); finish(o.row.kind === 'missing' ? 'Scos din listă: nu a lucrat.' : 'Scos din listă.'); }
+          catch (err) { K.ui().toast(errText(err), 'error'); }
+        }));
+        const no = el.querySelector('[data-no]');
+        if (no) no.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(f);
+          try { await K.api('/api/portal-attendance', { action: 'fix_decide', id: q.id, decision: 'reject', note: v.note }); finish('Cerere respinsă. Primește o notificare.'); }
+          catch (err) { K.ui().toast(errText(err), 'error'); }
+        }));
         el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          const v = K.formValues(el.querySelector('[data-form]'));
+          const v = K.formValues(f);
+          const empId = pick ? v.employeeId : o.employeeId;
+          const date = v.date || o.date;
+          if (pick && !empId) { K.ui().toast('Alege angajatul.', 'error'); return; }
+          if (!date) { K.ui().toast(ERR.invalid_date, 'error'); return; }
+          if (date > today) { K.ui().toast(ERR.future_date, 'error'); return; }
+          if (v.checkIn && v.checkOut && v.checkOut <= v.checkIn) { K.ui().toast(ERR.checkout_before_checkin, 'error'); return; }
           try {
-            await K.api('/api/portal-attendance', { action: 'update', id: entry.id, checkIn: v.checkIn || null, checkOut: v.checkOut || null, note: v.note });
-            d.close(); K.ui().toast('Pontaj corectat.', 'success'); load(); K.reload();
-          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+            if (mode === 'ask') {
+              if (!v.checkIn && !v.checkOut) { K.ui().toast('Scrie ora reală de sosire sau de plecare.', 'error'); return; }
+              const r = await K.api('/api/portal-attendance', { action: 'fix_request', date, checkIn: v.checkIn || null, checkOut: v.checkOut || null, note: v.note });
+              finish(r.replaced ? 'Cererea ta a fost actualizată.' : 'Cererea ta a fost trimisă.');
+              return;
+            }
+            if (mode === 'decide') {
+              await K.api('/api/portal-attendance', { action: 'fix_decide', id: q.id, decision: 'approve', checkIn: v.checkIn || null, checkOut: v.checkOut || null, note: v.note });
+              finish('Pontaj corectat. Primește o notificare.');
+              return;
+            }
+            if (!String(v.reason || '').trim()) { K.ui().toast(ERR.missing_reason, 'error'); return; }
+            if (e) {
+              await K.api('/api/portal-attendance', { action: 'update', id: e.id, checkIn: v.checkIn || null, checkOut: v.checkOut || null, location: v.location, reason: v.reason });
+              finish('Pontaj corectat.');
+              return;
+            }
+            if (!v.checkIn || !v.checkOut) { K.ui().toast(ERR.missing_times, 'error'); return; }
+            const body = { action: 'create', employeeId: empId, date, checkIn: v.checkIn, checkOut: v.checkOut, location: v.location, reason: v.reason };
+            try { await K.api('/api/portal-attendance', body); }
+            catch (err) {
+              if (err.code !== 'needs_confirm') throw err;
+              const why = err.data && err.data.why;
+              const msg = why === 'leave' ? 'Are concediu în ziua asta.' : why === 'off' ? 'Ziua asta e liberă în programul ei.' : 'E zi de weekend și nu are program setat.';
+              if (!(await K.ui().confirm({ title: 'Adaugi ziua oricum?', message: msg + ' Pontajul se adaugă și se numără ca zi lucrată.', confirmText: 'Da, adaugă' }))) return;
+              await K.api('/api/portal-attendance', Object.assign(body, { confirm: true }));
+            }
+            finish('Zi adăugată în pontaj.');
+          } catch (err) { K.ui().toast(errText(err), 'error'); }
         }));
       },
     });
+    return d;
+  }
+  K.attFixSheet = fixSheet;
+  // a row of De rezolvat → its sheet
+  function openFix(key, from) {
+    const r = (C.fix || []).find((x) => x.key === key);
+    if (!r) return;
+    const entry = r.entryId ? C.attendance.find((x) => x.id === r.entryId) || { id: r.entryId, employeeId: r.employeeId, date: r.date, checkIn: r.checkIn, checkOut: r.checkOut, location: r.location } : null;
+    fixSheet({ mode: r.kind === 'request' ? 'decide' : 'fix', from, employeeId: r.employeeId, name: r.name, date: r.date, entry, row: r, request: r.request, shift: { from: r.from, to: r.to, location: r.location }, location: r.location });
+  }
+  // her own day → „Cere corectarea” (a day picked in the sheet when none was tapped)
+  function ask(date, from) {
+    const e = date ? C.attendance.find((x) => x.employeeId === K.data.me.id && x.date === date) : null;
+    const rq = date ? reqOf(date) : null;
+    fixSheet({ mode: 'ask', from, employeeId: K.data.me.id, date: date || '', entry: e || (rq && rq.status === 'pending' ? { checkIn: rq.checkIn, checkOut: rq.checkOut } : null) });
+  }
+  function editAttendanceDrawer(entry, from) {
+    fixSheet({ mode: 'fix', from, employeeId: entry.employeeId, name: empName(entry.employeeId), date: entry.date, entry });
   }
 
   async function payout(id) {
@@ -423,8 +606,14 @@
     if (sd) return setDebt(sd.dataset.setDebt);
     const pick = t.closest('[data-pick-emp]');
     if (pick) { C.empFilter = pick.dataset.pickEmp; return load(); }
+    const fx = t.closest('[data-fix]');
+    if (fx) return openFix(fx.dataset.fix, fx);
+    const fa = t.closest('[data-fix-add]');
+    if (fa) return fixSheet({ mode: 'add', from: fa, employeeId: fa.dataset.fixAdd || '', name: fa.dataset.fixAdd ? empName(fa.dataset.fixAdd) : '' });
+    const ak = t.closest('[data-fix-ask]');
+    if (ak) return ask(ak.dataset.fixAsk, ak);
     const row = t.closest('[data-edit-att]');
-    if (row) { const entry = C.attendance.find((x) => x.id === row.dataset.editAtt); if (entry) editAttendanceDrawer(entry); }
+    if (row) { const entry = C.attendance.find((x) => x.id === row.dataset.editAtt); if (entry) editAttendanceDrawer(entry, row); }
   }
   function onChange(e) {
     const f = e.target.closest('[data-f]');
