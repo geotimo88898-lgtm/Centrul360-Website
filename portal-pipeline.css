@@ -246,7 +246,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-banner.is-bad{ background:var(--bad-soft); color:var(--bad); }
 .pl-banner.is-good{ background:var(--good-soft); color:var(--good); }
 
-.pl-contact{ display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; }
+.pl-contact{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }
 .pl-big-action{
   display:flex; align-items:center; gap:.6rem; padding:.7rem .75rem; border-radius:13px; border:1px solid var(--line); background:var(--paper-2);
   color:var(--fg); text-decoration:none; font:inherit; text-align:left; cursor:pointer; transition:all .2s var(--ease); min-width:0;

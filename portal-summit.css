@@ -1150,3 +1150,23 @@ html.ui-nou .pf-tick.is-on svg{ opacity:1; }
 html.ui-nou .pf-tick::after{ content:""; position:absolute; inset:-8px; } /* a bigger touch area than the circle */
 html.ui-nou .pf-tick{ position:relative; }
 html.ui-nou .pf-amt.is-btn{ border:0; padding:0; min-height:0; background:none; font-size:.82rem; font-weight:600; }
+
+/* Plăți, Cheltuieli, Costuri lunare: the same quiet surfaces as the Plăți list (16.11, „să meargă bine cu restul adminului”).
+   A long name ends with … instead of being cut at the edge; Cheltuieli is one grouped list (a hairline between the
+   categories, „Adaugă” a light text button, no dashed boxes); the inputs of Costuri lunare show their whole hint */
+html.ui-nou .pf-name{ display:block; }
+html.ui-nou .pf-name svg{ display:inline-block; vertical-align:-2px; margin-right:.35rem; }
+html.ui-nou .pf-name .pf-kind{ margin-right:.4rem; vertical-align:1px; }
+html.ui-nou main .pf-rec.k-card{ padding:.8rem .9rem; border-radius:16px !important; background:var(--paper) !important; border:1px solid var(--line); box-shadow:none !important; }
+html.ui-nou .pf-recs{ grid-template-columns:minmax(0,1fr); gap:0; border-radius:16px; background:var(--paper); border:1px solid var(--line); overflow:hidden; }
+html.ui-nou main .pf-recs > .pf-rec.k-card{ margin:0; border:0; border-radius:0 !important; background:none !important; }
+html.ui-nou main .pf-recs > .pf-rec.k-card + .pf-rec.k-card{ border-top:1px solid var(--line); }
+html.ui-nou main .pf-rec.k-card::after{ display:none; }
+html.ui-nou .pf-rec-head .pf-amt{ font-size:.9rem; font-weight:650; }
+html.ui-nou .pf-autos .pf-auto{ padding:.6rem 0; }
+html.ui-nou .pf-add{ width:auto; min-height:36px; margin:.25rem 0 0; padding:0; border:0; justify-content:flex-start; font-size:.82rem; font-weight:600; }
+html.ui-nou .pf-add svg{ width:14px; height:14px; }
+html.ui-nou .pf-sum.is-one{ padding:.35rem .25rem; }
+html.ui-nou .co-line .k-money input{ font-size:.95rem !important; }
+html.ui-nou .co-line .k-money input::placeholder{ font-size:.8rem; }
+@media (max-width:640px){ html.ui-nou .co-line .k-money{ flex-basis:146px; } html.ui-nou .co-line .k-money input{ padding-right:2.3rem !important; } }

@@ -119,6 +119,8 @@ html.ui-nou .k-nav-badge{ background:color-mix(in srgb, var(--fg) 7%, transparen
 html.ui-nou .k-nav-badge.is-hot{ background:var(--n-teal) !important; color:var(--accent-fg) !important; box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); animation:n-badge 2.8s var(--e) infinite !important; }
 @keyframes n-badge{ 0%,55%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); } 100%{ box-shadow:0 0 0 8px transparent; } }
 html.ui-nou.c360-rail nav.tabs{ width:72px; }
+/* the narrow menu: the group names become a thin line (they were cut, „Marketin”) */
+html.ui-nou.c360-rail nav.tabs .nav-group-label{ font-size:0; padding:.7rem 0 .3rem; }
 
 /* ================================================================ content */
 html.ui-nou main{ padding:2.6rem 2.8rem 6rem; max-width:1120px; }
@@ -831,7 +833,7 @@ html.ui-nou .st2-dot.is-gone{ animation:n-dotout .6s var(--e) forwards; }
 @keyframes n-dotlive{ from{ transform:scale(1); } to{ transform:scale(1.18); } }
 @keyframes n-dotin{ 0%{ transform:scale(0); } 60%{ transform:scale(1.6); } 100%{ transform:scale(1); } }
 @keyframes n-dotout{ to{ transform:scale(0); opacity:0; } }
-html.ui-nou .st2-hours{ display:grid; grid-template-columns:repeat(24, 1fr); gap:3px; align-items:end; height:64px; }
+html.ui-nou .st2-hours{ display:grid; grid-template-columns:repeat(24,minmax(0,1fr)); gap:3px; align-items:end; height:64px; }
 html.ui-nou .st2-hours span{ height:var(--h); border-radius:4px 4px 2px 2px; background:color-mix(in srgb, var(--accent) 28%, transparent); transform-origin:50% 100%; animation:n-grow .8s var(--spring) calc(var(--i) * 25ms) both; }
 html.ui-nou .st2-hours span.is-now{ background:var(--grad); }
 @keyframes n-grow{ from{ transform:scaleY(0); } to{ transform:none; } }

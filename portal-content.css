@@ -262,7 +262,7 @@
 .cn-wd{ min-width:0; display:flex; flex-direction:column; gap:.45rem; padding:.45rem; border-radius:18px; background:color-mix(in srgb, var(--fg) 2.5%, var(--paper)); box-shadow:inset 0 0 0 1px var(--line); min-height:230px; }
 .cn-wd.is-today{ background:color-mix(in srgb, var(--accent) 6%, var(--paper)); box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .cn-wd.is-past:not(.is-today){ background:transparent; }
-.cn-wd-h{ display:flex; align-items:baseline; gap:.35rem; padding:.2rem .3rem .1rem; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; border-radius:10px; }
+.cn-wd-h{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.15rem .35rem; min-width:0; padding:.2rem .3rem .1rem; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; border-radius:10px; }
 .cn-wd-h b{ font-size:.74rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
 .cn-wd-h span{ font-size:1.25rem; font-weight:760; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
 .cn-wd-h em{ font-style:normal; font-size:.66rem; font-weight:750; letter-spacing:.04em; text-transform:uppercase; padding:.12rem .4rem; border-radius:999px; background:var(--accent); color:var(--accent-fg); }

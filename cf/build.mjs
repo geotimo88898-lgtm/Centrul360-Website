@@ -43,7 +43,7 @@ fs.writeFileSync(r("cf/build-id.gen.js"), "// Generat de cf/build.mjs.\nexport d
 log("build:", buildId, "·", Object.keys(FILES).length, "fișiere ale portalului cu versiunea lor");
 
 // 2. dist/
-const SKIP = new Set(["api", "cf", "node_modules", "dist", ".git", ".github", ".creative", ".creative-build", ".cf-mods", ".wrangler",
+const SKIP = new Set(["api", "cf", "qa", "node_modules", "dist", ".git", ".github", ".creative", ".creative-build", ".cf-mods", ".wrangler",
   "package.json", "package-lock.json", "vercel.json", "middleware.js", "wrangler.jsonc", ".gitignore", ".assetsignore", ".vercel", ".dev.vars"]);
 fs.rmSync(r("dist"), { recursive: true, force: true });
 for (const f of fs.readdirSync(ROOT)) if (!SKIP.has(f)) fs.cpSync(r(f), r("dist", f), { recursive: true });

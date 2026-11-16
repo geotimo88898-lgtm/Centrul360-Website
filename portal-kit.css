@@ -122,8 +122,9 @@ button.k-stat:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
 .k-seg button{ display:inline-flex; align-items:center; gap:.4rem; border:0; background:transparent; color:var(--muted); font:inherit; font-size:.82rem; font-weight:600;
   padding:.46rem .8rem; border-radius:9px; cursor:pointer; transition:all .18s ease; }
 .k-seg button.is-on{ background:var(--paper); color:var(--fg); box-shadow:var(--shadow-sm); }
-.k-seg.is-big{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; width:100%; }
-.k-seg.is-big button{ justify-content:center; padding:.7rem .6rem; }
+/* equal buttons on one row while they fit; on a narrow screen the last ones go to a second row instead of out of the box */
+.k-seg.is-big{ display:flex; flex-wrap:wrap; width:100%; }
+.k-seg.is-big button{ flex:1 1 0; min-width:min-content; justify-content:center; padding:.7rem .6rem; }
 .k-seg.is-big button .k-ic{ width:17px; height:17px; }
 .k-switch{ display:inline-flex; align-items:center; gap:.6rem; cursor:pointer; font-size:.86rem; user-select:none; }
 .k-switch input{ position:absolute; opacity:0; pointer-events:none; }
@@ -171,6 +172,11 @@ button.k-stat:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
 .k-row:hover{ background:var(--glass); }
 .k-row.is-click{ cursor:pointer; }
 .k-row-main{ flex:1; min-width:0; }
+/* a row whose right side (tags, amount) does not fit next to the title: the right side goes on its own line, to the right,
+   instead of out of the card (Încasări on a phone, 16.11) */
+.k-row{ flex-wrap:wrap; }
+.k-row-main{ flex-basis:7rem; }
+.k-row-end{ max-width:100%; flex-wrap:wrap; justify-content:flex-end; margin-left:auto; }
 .k-row-title{ font-size:.88rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .k-row-sub{ font-size:.76rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:.1rem; }
 .k-row-end{ display:flex; align-items:center; gap:.4rem; flex:none; }
@@ -238,6 +244,9 @@ rect.k-col{ transform-box:fill-box; transform-origin:bottom; animation:k-bar .7s
 .k-dbody > *{ flex:none; }
 .k-dfoot{ display:flex; align-items:center; gap:.5rem; padding:.85rem 1.25rem; border-top:1px solid var(--line); background:var(--paper-2); }
 .k-dfoot .k-grow{ flex:1; }
+/* a footer with more buttons than the phone's width: they go on two rows instead of out of the screen */
+.k-dfoot{ flex-wrap:wrap; }
+@media (max-width:520px){ .k-dfoot > .k-btn{ flex:1 1 auto; justify-content:center; } .k-dfoot > .k-grow{ display:none; } }
 .k-section{ border:1px solid var(--line); border-radius:14px; padding:.95rem 1rem; }
 .k-section h4{ margin:0 0 .7rem; font-size:.84rem; font-weight:650; display:flex; align-items:center; gap:.45rem; }
 .k-section h4 .k-ic{ color:var(--muted); }

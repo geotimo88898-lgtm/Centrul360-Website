@@ -565,7 +565,7 @@ canvas.gm-3d{ position:absolute; inset:0; width:100%; height:100%; display:block
 
 /* ---------------- the bottom bar ---------------- */
 .gm-nav{ position:absolute; z-index:6; left:50%; bottom:calc(12px + var(--gm-safe-b)); transform:translateX(-50%); width:min(560px, calc(100% - 20px));
-  display:grid; grid-template-columns:repeat(5, 1fr); align-items:end; padding:8px 6px; border-radius:26px; background:rgba(19,20,21,.82); border:1px solid var(--gm-line2);
+  display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:end; padding:8px 6px; border-radius:26px; background:rgba(19,20,21,.82); border:1px solid var(--gm-line2);
     box-shadow:0 20px 50px -10px rgba(0,0,0,.9); }
 .gm-nav button{ position:relative; display:grid; justify-items:center; gap:3px; padding:6px 0 4px; border:0; background:none; color:var(--gm-dim); font-size:.66rem; font-weight:700; letter-spacing:.04em; transition:color .25s ease; }
 .gm-nav button svg.gi{ width:23px; height:23px; transition:transform .45s var(--gm-spring); }

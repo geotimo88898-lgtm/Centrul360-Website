@@ -12,7 +12,7 @@
 .k-btn[aria-disabled="true"]{ opacity:.5; pointer-events:none; }
 
 /* ---------------- category picker (multi) ---------------- */
-.k-catpick{ display:grid; grid-template-columns:repeat(3,1fr); gap:.45rem; }
+.k-catpick{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.45rem; }
 .k-catpick button{ display:flex; align-items:center; gap:.55rem; min-height:48px; padding:.55rem .75rem; border-radius:13px; border:1.5px solid var(--line); background:var(--paper-2);
   color:var(--fg); font:inherit; font-size:.86rem; font-weight:600; text-align:left; cursor:pointer; transition:border-color .18s ease, background .18s ease, transform .15s ease; }
 .k-catpick button i{ flex:none; width:22px; height:22px; border-radius:7px; border:1.5px solid var(--line-on-dark); display:grid; place-items:center; transition:all .18s ease; }
@@ -58,7 +58,7 @@
 .pay-main b{ font-size:.95rem; } .pay-main small{ color:var(--muted); font-size:.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pay-amt{ font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; } .pay-amt em{ font-style:normal; font-weight:500; color:var(--muted-2); font-size:.78rem; }
 .pay-change{ align-self:flex-start; }
-.pay-methods{ display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; }
+.pay-methods{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.5rem; }
 .pay-methods button{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35rem; min-height:76px; border-radius:14px; border:1.5px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; font-size:.84rem; font-weight:650; cursor:pointer; transition:all .15s ease; }
 .pay-methods button span{ width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:var(--glass); }
 .pay-methods button.is-on{ border-color:var(--accent); background:var(--accent-soft); }
@@ -224,13 +224,16 @@ div.pay-appt{ cursor:default; }
 
 /* ---------------- Echipa ---------------- */
 .ad-teamtabs{ margin-bottom:1rem; }
-.ad-teamtabs .k-seg{ display:flex; max-width:560px; } .ad-teamtabs .k-seg button{ flex:1; justify-content:center; }
+/* the six tabs: one row when there is room, else two rows of three (never five and one alone) */
+.ad-teamtabs{ container-type:inline-size; }
+.ad-teamtabs .k-seg{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); max-width:none; } .ad-teamtabs .k-seg button{ justify-content:center; min-width:0; }
+@container (min-width:780px){ .ad-teamtabs .k-seg{ grid-template-columns:repeat(6, minmax(0,1fr)); max-width:780px; } }
 
 /* ---------------- phones ---------------- */
 @media (max-width:720px){
   .k-catpick{ grid-template-columns:1fr; }
   .k-catpick button{ min-height:52px; font-size:.95rem; }
-  .pay-methods{ grid-template-columns:repeat(2,1fr); }
+  .pay-methods{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .pay-filters{ flex-direction:column; align-items:stretch; }
   .pay-filter .k-seg{ display:flex; } .pay-filter .k-seg button{ flex:1; justify-content:center; }
   .pay-days input{ flex:1; min-width:0; }
@@ -253,7 +256,7 @@ div.pay-appt{ cursor:default; }
   .ct-big{ min-height:84px; flex-direction:row; gap:.7rem; justify-content:flex-start; text-align:left; }
   .ct-big b{ display:block; }
   .ct-tabs .k-seg button span{ font-size:.78rem; }
-  .ct-files{ grid-template-columns:repeat(2,1fr); }
+  .ct-files{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .ct-consent-btns{ width:100%; } .ct-consent-btns button{ flex:1; justify-content:center; }
   .ct-session{ padding:.75rem; }
   .ad-teamtabs .k-seg{ max-width:none; }
@@ -290,7 +293,7 @@ html[data-role="cosmetician"] [data-section-toggle="book"], html[data-role="cosm
 }
 
 /* Comisionul meu: total split, history, tips */
-.cb-split{ grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,1fr); gap:.7rem; }
+.cb-split{ grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }
 .cb-split > div{ display:flex; flex-direction:column; gap:.2rem; padding:.85rem .95rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); min-width:0; }
 .cb-split span{ display:flex; align-items:center; gap:.4rem; font-size:.74rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
 .cb-split span svg{ width:15px; height:15px; color:var(--accent); }
@@ -340,7 +343,7 @@ html.c360-pull, html.c360-pull body{ overscroll-behavior-y:none; }
 @keyframes c360-ptr-spin{ to{ transform:rotate(360deg); } }
 /* switching the theme: instant, in one frame (no transition anywhere while it switches) */
 html.c360-theming, html.c360-theming *, html.c360-theming *::before, html.c360-theming *::after{ transition:none !important; animation-play-state:paused !important; }
-.acc-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:.55rem .4rem; padding:.3rem .6rem .75rem; justify-items:center; }
+.acc-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.55rem .4rem; padding:.3rem .6rem .75rem; justify-items:center; }
 .acc-sw{ position:relative; width:28px; height:28px; padding:0; border:0; border-radius:50%; cursor:pointer;
   background:linear-gradient(135deg, var(--a) 0%, var(--b) 100%); box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
   transition:transform .2s var(--spring), box-shadow .2s ease; }
@@ -612,10 +615,12 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .cd-today-note.is-up{ color:var(--good); background:var(--good-soft); }
 .cd-today-note.is-down{ color:var(--warn); background:var(--warn-soft); }
 .cd-today-note.is-ok{ color:var(--good); }
-.cd-kv4{ grid-template-columns:repeat(4, 1fr); }
+/* four tiles in a row only when the card has room for them, else 2 x 2 (they used to spill out of the card) */
+.ad-emp{ container-type:inline-size; }
+.cd-kv4{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+@container (min-width:460px){ .cd-kv4{ grid-template-columns:repeat(4, minmax(0,1fr)); } }
 .cd-owe{ display:flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:650; color:var(--good); }
 .cd-owe svg{ width:14px; height:14px; }
-@media (max-width:420px){ .cd-kv4{ grid-template-columns:repeat(2, 1fr); } }
 
 /* leave request: types, "cu recuperare" plan, hours off */
 .lv-types .k-seg{ flex-wrap:wrap; }
@@ -694,8 +699,8 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .sl-day span{ font-size:.72rem; color:var(--muted); }
 .sl-day b{ font-size:1.05rem; font-variant-numeric:tabular-nums; }
 .sl-day.is-good b{ color:var(--good); }
-.sl-hist .cb-hist-row{ grid-template-columns:1.4fr repeat(4, 1fr); }
-@media (max-width:520px){ .sl-bk-top{ grid-template-columns:1fr; } .sl-hist .cb-hist-row{ grid-template-columns:1.2fr repeat(4, 1fr); font-size:.74rem; } }
+.sl-hist .cb-hist-row{ grid-template-columns:1.4fr repeat(4,minmax(0,1fr)); }
+@media (max-width:520px){ .sl-bk-top{ grid-template-columns:1fr; } .sl-hist .cb-hist-row{ grid-template-columns:1.2fr repeat(4,minmax(0,1fr)); font-size:.74rem; } }
 
 /* Echipa > Salarii */
 .pr-list{ display:flex; flex-direction:column; gap:.6rem; }
