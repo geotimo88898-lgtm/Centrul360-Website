@@ -1119,3 +1119,34 @@ html.ui-nou[data-theme="light"] .st2 .lv-c b{ color:var(--fg); }
 
 /* Plăți: the sticky totals bar is solid, nothing shows through it while scrolling (16.11) */
 html.ui-nou .pf-sum{ background:var(--paper) !important; -webkit-backdrop-filter:none; backdrop-filter:none; }
+
+/* Plăți, clean (the owner, 16.11: „totul clean, fără chunky design”): one quiet list like iOS Settings. Rows are lines on
+   one surface with hairline separators; the state is a small coloured date and a status word, never a filled red card;
+   the tick is a light circle that fills green */
+html.ui-nou .pf-sum{ gap:0; padding:.35rem .25rem; border-radius:16px; box-shadow:none; }
+html.ui-nou .pf-tile, html.ui-nou .pf-tile.is-bad{ background:none; padding:.35rem .7rem; }
+html.ui-nou .pf-tile + .pf-tile{ border-left:1px solid var(--line); }
+html.ui-nou .pf-tile b{ font-size:.98rem; }
+html.ui-nou .pf-bar{ height:3px; margin:.3rem .7rem .2rem; }
+html.ui-nou .pf-group h4{ margin:0 0 .35rem .9rem; font-size:.7rem; letter-spacing:.06em; }
+html.ui-nou .pf-group h4 span{ background:none; padding:0; }
+html.ui-nou .pf-list{ gap:0; border-radius:16px; background:var(--paper); border:1px solid var(--line); overflow:hidden; }
+html.ui-nou .pf-row, html.ui-nou .pf-row.is-late, html.ui-nou .pf-row.is-today, html.ui-nou .pf-row.is-soon{ grid-template-columns:38px minmax(0,1fr) auto; gap:.75rem; padding:.7rem .85rem; border:0; border-radius:0; background:none; box-shadow:none; }
+html.ui-nou .pf-row + .pf-row{ border-top:1px solid var(--line); }
+html.ui-nou .pf-day, html.ui-nou .pf-row.is-late .pf-day, html.ui-nou .pf-row.is-today .pf-day, html.ui-nou .pf-row.is-soon .pf-day, html.ui-nou .pf-row.is-paid .pf-day{ width:38px; height:auto; background:none; border-radius:0; }
+html.ui-nou .pf-day b{ font-size:1.05rem; }
+html.ui-nou .pf-row.is-late .pf-day b, html.ui-nou .pf-row.is-late .pf-day small{ color:var(--bad); }
+html.ui-nou .pf-row.is-today .pf-day b, html.ui-nou .pf-row.is-soon .pf-day b{ color:var(--warn); }
+html.ui-nou .pf-row.is-paid .pf-day b, html.ui-nou .pf-row.is-paid .pf-name{ color:var(--muted); }
+html.ui-nou .pf-kind{ background:none; padding:0; font-size:.6rem; letter-spacing:.06em; }
+html.ui-nou .pf-name{ font-size:.9rem; font-weight:600; }
+html.ui-nou .pf-amt{ font-size:.9rem; font-weight:650; }
+html.ui-nou .pf-sub{ font-size:.74rem; }
+html.ui-nou .pf-tick, html.ui-nou .pf-row.is-late .pf-tick:not(.is-on){ width:34px; min-height:34px; height:34px; padding:0; border-radius:50%; border:1.5px solid var(--line); background:none; color:var(--muted); }
+html.ui-nou .pf-tick > :not(svg){ display:none; }
+html.ui-nou .pf-tick svg{ width:16px; height:16px; stroke-width:2.4; opacity:.45; }
+html.ui-nou .pf-tick.is-on{ background:var(--good); border-color:var(--good); color:#fff; }
+html.ui-nou .pf-tick.is-on svg{ opacity:1; }
+html.ui-nou .pf-tick::after{ content:""; position:absolute; inset:-8px; } /* a bigger touch area than the circle */
+html.ui-nou .pf-tick{ position:relative; }
+html.ui-nou .pf-amt.is-btn{ border:0; padding:0; min-height:0; background:none; font-size:.82rem; font-weight:600; }
