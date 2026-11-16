@@ -250,14 +250,14 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
 .sx-p-logo .h{ animation:n-mkX 6s var(--sx-e) 3s infinite; }
 
 /* the money: the one „Încasat azi”, centred under the prism */
-.sx-s-money{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:24px; min-width:0; width:100%; max-width:720px; margin-top:clamp(26px,3vw,40px); text-align:center; }
+.sx-s-money{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:24px; min-width:0; width:100%; max-width:720px; container-type:inline-size; margin-top:clamp(26px,3vw,40px); text-align:center; }
 .sx-s-lbl{ flex-wrap:wrap; justify-content:center; white-space:nowrap; font:500 11px/1 var(--sx-mono); letter-spacing:.16em; text-transform:uppercase; display:flex; align-items:center; gap:10px;  }
 
 :where(html.ui-nou:not([data-theme="light"])) .sx-s-lbl{ color:rgba(220,240,238,.62); }
 .sx-s-delta{ font:600 11px/1 var(--sx-mono); letter-spacing:.02em; padding:5px 8px; border-radius:999px; text-transform:none; }
 .sx-s-delta.up{ color:#7ff5c4; background:rgba(52,211,153,.12); box-shadow:inset 0 0 0 1px rgba(52,211,153,.3); }
 :where(html.ui-nou:not([data-theme="light"])) .sx-s-delta.down{ color:#ffb0b2; background:rgba(255,107,112,.1); box-shadow:inset 0 0 0 1px rgba(255,107,112,.28); }
-.sx-s-num{ position:relative; display:flex; justify-content:center; align-items:baseline; gap:.18em; margin:-6px 0 0; font:650 clamp(64px,8vw,132px)/.9 var(--sx-sans); letter-spacing:-.065em;
+.sx-s-num{ position:relative; display:flex; justify-content:center; align-items:baseline; gap:.18em; margin:-6px 0 0; font:650 min(clamp(64px,8vw,132px), 22cqi)/.9 var(--sx-sans); letter-spacing:-.065em;
   font-variant-numeric:tabular-nums; text-shadow:0 0 40px color-mix(in srgb, var(--sx-ac) 32%, transparent); white-space:nowrap; transform-origin:50% 60%;  }
 
 :where(html.ui-nou:not([data-theme="light"])) .sx-s-num{ color:#fff; }
@@ -356,7 +356,7 @@ html.ui-nou #panel-panou .sx-rise.sx-up{ opacity:1; transform:none; transition:o
   .sx-p-logo{ width:74px; margin-top:44px; }
   .sx-p-logo .v, .sx-p-logo .h{ animation:none; } /* the ellipses' flip repaints the SVG each frame: on a phone only the whole logo turns (compositor) */
   .sx-s-money{ gap:16px; margin-top:24px; }
-  .sx-s-num{ font-size:clamp(56px,17vw,74px); margin-top:-4px; }
+  .sx-s-num{ font-size:min(clamp(56px,17vw,74px), 22cqi); margin-top:-4px; }
   .sx-s-sub{ font-size:14px; }
   .sx-acts{ flex-wrap:nowrap; gap:6px; margin-top:2px; width:100%; }
   .sx-acts button{ flex:1 1 auto; min-width:0; padding:0 10px; gap:6px; }
@@ -827,6 +827,7 @@ html.ui-nou:not([data-theme="light"]) body{ font:14px/1.5 var(--sx-sans); letter
 html.ui-nou:not([data-theme="light"]) nav.tabs{ border-right:1px solid var(--line) !important; box-shadow:none !important; }
 html.ui-nou:not([data-theme="light"]) nav.tabs .nav-group-label, html.ui-nou:not([data-theme="light"]) nav.tabs .tab-group-label, html.ui-nou:not([data-theme="light"]) nav.tabs .c360-navlabel{
   font:500 12px/1 var(--sx-sans) !important; letter-spacing:0 !important; text-transform:none !important; color:var(--muted-2) !important; padding:16px 8px 6px !important; }
+html.ui-nou.c360-rail:not([data-theme="light"]) nav.tabs .nav-group-label{ font-size:0 !important; padding:.7rem 0 .3rem !important; }
 html.ui-nou:not([data-theme="light"]) nav.tabs button{ min-height:32px; border-radius:8px !important; font:400 14px/1.2 var(--sx-sans) !important; color:var(--muted) !important; transition:color .15s, background .15s; }
 html.ui-nou:not([data-theme="light"]) nav.tabs button:hover{ color:var(--fg) !important; background:rgba(255,255,255,.045) !important; }
 html.ui-nou:not([data-theme="light"]) nav.tabs button.active{ position:relative; color:var(--fg) !important; font-weight:500 !important;
@@ -1115,3 +1116,6 @@ html.ui-nou[data-theme="light"] .st2 .lv-feed h3{ color:var(--fg); }
 html.ui-nou[data-theme="light"] .st2 .ev .k.c{ background:rgba(61,99,214,.1); }
 html.ui-nou[data-theme="light"] .st2 .lv-c{ background:var(--paper); box-shadow:inset 0 0 0 1px var(--line), 0 10px 30px -24px rgba(16,24,40,.3); }
 html.ui-nou[data-theme="light"] .st2 .lv-c b{ color:var(--fg); }
+
+/* Plăți: the sticky totals bar is solid, nothing shows through it while scrolling (16.11) */
+html.ui-nou .pf-sum{ background:var(--paper) !important; -webkit-backdrop-filter:none; backdrop-filter:none; }
