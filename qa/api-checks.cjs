@@ -435,18 +435,18 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const brkOn = async (id) => ((await api('admin', 'portal-appointments', { action: 'list', from: D2, to: D2 })).breaks || []).find((b) => b.employeeId === id) || null;
     const slots = async (city) => (((await api('admin', 'booking', null, 'city=' + encodeURIComponent(city) + '&service=consult')).days || []).find((x) => x.date === D2) || {}).slots || [];
     let b1 = await brkOn('e-c1'), b2 = await brkOn('e-c2'), b3 = await brkOn('e-c3');
-    check(21, 'list: the breaks of the day (Arad 14:30; Timișoara 14:30 and the colleague with the same shift right after, 15:00)', b3 && b3.on && b3.from === '14:30' && b1 && b1.on && b1.from === '14:30' && b2 && b2.on && b2.from === '15:00', { b1, b2, b3 });
+    check(21, 'list: the breaks of the day (Arad 14:30; Timișoara: each at the middle of her own shift, the colleague with the same shift at 14:30 too)', b3 && b3.on && b3.from === '14:30' && b1 && b1.on && b1.from === '14:30' && b2 && b2.on && b2.from === '14:30', { b1, b2, b3 });
     check(21, 'never stored as an appointment', !rd('data/appointments.json', []).some((a) => a.date === D2));
     let ar = await slots('Arad'), tm = await slots('Timișoara');
     check(21, 'site, Arad (one at work): 14:30 not offered, 14:00 and 15:00 are', !ar.includes('14:30') && ar.includes('14:00') && ar.includes('15:00'), ar);
-    check(21, 'site, Timișoara (two at work, one on break): 14:30 and 15:00 still offered', tm.includes('14:30') && tm.includes('15:00'), tm);
-    // a client of the other one at 14:30: with one on a break, that half hour is full on the site
+    check(21, 'site, Timișoara (two at work, the same shift, both on their break at 14:30): 14:30 not offered, 14:00 and 15:00 are', !tm.includes('14:30') && tm.includes('14:00') && tm.includes('15:00'), tm);
+    // a client of the other one at 14:30: her break gives way that day, the colleague's stays; that half hour is full on the site
     const mk = (o) => Object.assign({ id: 'fx-b' + Math.random().toString(36).slice(2, 8), date: D2, location: 'Timișoara', clientName: 'Pauza Proba', clientId: 'cl-br', treatment: 'Lipo 640', status: 'programata', createdAt: at(day(-1), '10:00') }, o);
     wr('data/appointments.json', rd('data/appointments.json', []).concat([mk({ id: 'fx-b-c2', time: '14:30', endTime: '15:00', cosmeticianId: 'e-c2' })]));
     tm = await slots('Timișoara');
     check(21, 'site, Timișoara: a client of the other one at 14:30 → 14:30 full (capacity minus the break)', !tm.includes('14:30'), tm);
     b2 = await brkOn('e-c2');
-    check(21, 'and her own break, not over her client, still holds', b2 && b2.on && b2.from !== '14:30', b2);
+    check(21, 'and her own break gives way to her client (why: client), never moved onto another hour by itself', b2 && !b2.on && b2.why === 'client' && b2.from === '14:30', b2);
     // the desk books a client over a break: no break that day
     const bk = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '14:00', endTime: '15:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Peste Pauza', clientPhone: '0755000111', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata' });
     b1 = await brkOn('e-c1');

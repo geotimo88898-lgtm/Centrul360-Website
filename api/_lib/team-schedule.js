@@ -123,8 +123,8 @@ function hasSchedule(doc, location, ids) {
 //          09-17 → 13:00-13:30); a shift under 5 hours has none
 //   moved: doc.breaks[date][id] = { from } (that day only; „Mută pauza”); a moved break that no longer fits her shift (the
 //          shift changed later) goes back to the middle. { off: true }: no break that day („Fără pauză azi”).
-//   two at once: colleagues of a city with the same middle take it one after the other (the second half an hour later), so
-//          the clinic never loses two places at the same time
+//   each her own: the middle of HER shift, never a break of the whole clinic; two with the same shift take it at the same
+//          time (the owner, 16.11: „se face per mijlocul turei la fiecare cosmeticiană, nu e o pauză generală a salonului”)
 //   clients win: a client of hers (or a block for her) over the break that day, and there is none that day; the same when
 //          the clinic's clients at that half hour need her (more clients than the cosmeticians not on a break)
 // Read by the site's free hours (_lib/booking.js: she is not a place during it), the Calendar (the yellow block), the
@@ -173,7 +173,7 @@ function plannedBreak(doc, employeeId, date, opts) {
 }
 
 // the breaks of a city's day, everyone working: [{ employeeId, location, from, to ('HH:MM'), mid, shiftFrom, shiftTo, on, why,
-// moved, fell, after (put after a colleague's), by, at }]. on: the break holds; why when it doesn't: 'off' (left out for the day), 'client' (a client of hers on
+// moved, fell, by, at }]. on: the break holds; why when it doesn't: 'off' (left out for the day), 'client' (a client of hers on
 // it), 'block' (a block for her on it), 'busy' (the clinic's clients then need her). opts: { appts, ids, until } as whoWorks.
 function dayBreaks(doc, date, location, opts) {
   const o = opts || {};
@@ -186,22 +186,11 @@ function dayBreaks(doc, date, location, opts) {
       on: !p.off, why: p.off ? 'off' : '', moved: !!p.moved, pinned: !!p.pinned, fell: !!p.fell, by: p.by || '', at: p.at || '' };
     return row;
   }).filter(Boolean);
-  // two of them with the same middle (the same shift): never both away at once. The first keeps it (one put by hand first,
-  // then by start of shift); the next goes to the closest free half hour after, then before (+30, -30, +60 …), inside her
-  // shift and not in its first or last hour; none free: it stays. So with two at work the clinic loses one place at a time.
-  // Then her own clients: a client of hers (or a block for her) on it, and there is no break that day.
-  const placed = [];
-  out.filter((b) => b.on).sort((x, y) => (y.pinned - x.pinned) || x.shiftFrom.localeCompare(y.shiftFrom) || x.employeeId.localeCompare(y.employeeId)).forEach((b) => {
-    const mine = hersOn(appts, b.employeeId, date), s0 = toMin(b.from);
-    if (!b.pinned && placed.some((x) => x[0] < s0 + BREAK_MIN && x[1] > s0)) {
-      const lo = toMin(b.shiftFrom) + 60, hi = toMin(b.shiftTo) - 60;
-      const ok = (s) => s >= lo && s + BREAK_MIN <= hi && !over(mine, s, s + BREAK_MIN) && !placed.some((x) => x[0] < s + BREAK_MIN && x[1] > s);
-      const alt = [30, -30, 60, -60, 90, -90, 120, -120].map((dm) => s0 + dm).find(ok);
-      if (alt != null) Object.assign(b, { from: hm(alt), to: hm(alt + BREAK_MIN), after: true });
-    }
+  // her own clients: a client of hers (or a block for her) on it, and there is no break that day
+  out.filter((b) => b.on).forEach((b) => {
+    const mine = hersOn(appts, b.employeeId, date);
     const hit = over(mine, toMin(b.from), toMin(b.to));
-    if (hit) { b.on = false; b.why = hit[2]; return; }
-    placed.push([toMin(b.from), toMin(b.to)]);
+    if (hit) { b.on = false; b.why = hit[2]; }
   });
   // the clinic's clients at that half hour (anyone's, or no one's yet) fit in the cosmeticians not on a break; otherwise one
   // break gives way (the latest, then by id), until they fit. A block for the whole clinic: closed then, nothing to do.

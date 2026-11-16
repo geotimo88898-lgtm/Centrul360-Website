@@ -350,7 +350,7 @@
           '<b>' + esc(nameOf(a)) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') +
           (subOf(a) && h > 80 ? '<span class="cal-b-sub">' + esc(subOf(a)) + '</span>' : '')) + '</button>';
   }
-  // the break in the grid: a soft yellow block in her lane, „Pauză · 30 min” and her name
+  // the break in the grid: a soft yellow block in her lane, „Pauză <her first name>” (hers, never the clinic's) and the time
   function brkHtml(it) {
     const b = it.a.brk;
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(24, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
@@ -360,7 +360,7 @@
     const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the word
     return '<button type="button" class="cal-brk' + (b.moved ? ' is-moved' : '') + (slim ? ' is-slim' : '') + (tiny ? ' is-tiny' : '') + (canMoveBreak() ? ' is-movable' : '') + '" data-brk="' + esc(brkKey(b)) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"' +
       ' style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (base + it.lane * w) + '% + ' + (slim ? 2 : 3) + 'px);width:calc(' + w + '% - ' + (slim ? 4 : 6) + 'px)">' +
-      '<b>' + (slim ? 'Pauză' : 'Pauză · 30 min') + '</b><span>' + esc(firstName(b.name)) + '</span>' + (b.moved ? '<i>mutată</i>' : '') + '</button>';
+      '<b>Pauză ' + esc(firstName(b.name)) + '</b>' + (tiny ? '' : '<span>' + b.from + '-' + b.to + (slim ? '' : ' · 30 min') + '</span>') + (b.moved ? '<i>mutată</i>' : '') + '</button>';
   }
   function renderSummary(list) {
     const el = panel.querySelector('[data-summary]');
@@ -1073,11 +1073,10 @@
     const head = b.on ? b.from + '-' + b.to : 'fără pauză';
     const note = !b.on ? (b.why === 'off' ? 'Scoasă pentru ziua asta' + (b.by ? ' de ' + esc(firstName(b.by)) : '') + '.' : 'Azi nu are pauză: ' + esc(WHY[b.why] || '') + '. Mut-o pe o oră liberă.')
       : b.moved ? 'Mutată' + (b.by ? ' de ' + esc(firstName(b.by)) : '') + (b.at ? ', ' + esc(K.ago(b.at)) : '') + '. La mijlocul programului ar fi la ' + esc(b.mid) + '.'
-      : b.after ? 'La mijlocul programului (' + esc(b.mid) + ') e în pauză o colegă din aceeași tură, așa că a ei e la ' + esc(b.from) + '. Nu lipsesc amândouă odată.'
       : 'Pauza e la mijlocul programului (' + esc(h(b.shiftFrom) + '-' + h(b.shiftTo)) + ').' + (b.fell ? ' Programul s-a schimbat, așa că a revenit la mijloc.' : '');
     const d = K.drawer({
       from: fromEl || null, width: 420,
-      title: 'Pauză · 30 min', icon: 'clock',
+      title: 'Pauză ' + esc(firstName(b.name)), icon: 'clock',
       subtitle: esc(K.relDay(b.date)) + ' · ' + esc(b.location),
       body: '<div class="brk-sheet"><div class="brk-when' + (b.on ? '' : ' is-off') + '"><b>' + esc(head) + '</b><span>' + esc(b.name) + ' · ' + esc(K.dateLong(b.date)) + '</span></div>' +
         '<p class="brk-note">' + icon('info') + '<span>' + note + '</span></p>' +
