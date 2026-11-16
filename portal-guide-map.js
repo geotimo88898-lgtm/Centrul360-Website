@@ -371,7 +371,7 @@
     { q: 'cum închid ziua / casa?', by: {
       admin: ['Manager → „Închide ziua”: clinica, „Cash numărat” și „Card pe POS”.', 'manager.inchide'],
       manager: ['„Închide ziua”: alegi clinica, scrii „Cash numărat” și „Card pe POS”.', 'manager.inchide'] } },
-    { q: 'pe cine sun ca să umplu calendarul? / ore libere', by: {
+    { q: 'pe cine sun ca să umplu calendarul? / ore libere / clientele de sunat', by: {
       admin: ['Calendar → „Ore libere”: orele libere și „Pe cine suni”.', 'programari.orelibere'],
       manager: ['Calendar → „Ore libere”: orele libere și „Pe cine suni”.', 'programari.orelibere'],
       receptie: ['Leadurile de sunat sunt în Pipeline → „Coada de apeluri”.', 'pipeline.coada'] } },
@@ -421,7 +421,7 @@
       cosmetician: [NOT_MINE + ' Programările le mută recepția: spune-i ce trebuie schimbat.', ''] } },
     { q: 'cât câștigă colegele / profitul / salariile colegelor', by: {
       admin: ['„Echipa” → „Salarii”; profitul lunii e în „Cheltuieli”.', 'angajati.salarii'],
-      manager: [NOT_MINE + ' Salariile și comisioanele colegelor și profitul nu se văd din contul tău.', ''],
+      manager: [NOT_MINE + ' Salariile și comisioanele colegelor și profitul clinicii nu se văd din contul tău.', ''],
       receptie: [NOT_MINE + ' Vezi doar salariul tău, în Salariu.', ''], cosmetician: [NOT_MINE + ' Vezi doar salariul tău, în Salariu.', ''] } },
     { q: 'consumabilele / costurile lunii', by: {
       manager: ['Salariu → „Costuri variabile ale lunii”: scrii consumabilele și alte costuri, apoi „Trimite”.', 'comision.costuri'],

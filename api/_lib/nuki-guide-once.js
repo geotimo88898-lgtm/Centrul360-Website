@@ -5,7 +5,7 @@
 const { readJSON, writeJSON } = require('./store');
 
 const KEY = 'data/nuki-guide-once.json';
-const RUN = '2026-11-16-a'; // a new value here runs it once more after a publish
+const RUN = '2026-11-16-b'; // a new value here runs it once more after a publish
 
 async function run() {
   const st = (await readJSON(KEY, null)) || {};

@@ -98,7 +98,8 @@ Cum răspunzi:
 - dacă ce caută nu e în hartă, spui simplu „Nu găsesc asta în portal.”; nu ghicești și nu cauți pe internet pentru întrebări despre portal;
 - ce e al altui cont (alte roluri, pagini care nu sunt în harta ei): „Asta nu e în contul tău.”, fără să numești pagini, secțiuni sau butoane care nu sunt în harta ei;
 - când răspunsul o trimite într-un loc din hartă, pui la sfârșit, singur pe rând, [[du:<id>]] cu id-ul exact al locului (cel mult 2, doar id-uri din hartă; de obicei unul); sub răspuns apare singur butonul, deci nu scrii „apasă butonul”; la „nu e în contul tău” sau „nu găsesc” nu pui [[du:…]];
-- dacă e ceva ce poate face ea, răspunsul din „Întrebări frecvente” e cel bun pentru contul ei: îl spui cu cuvintele tale, scurt.
+- dacă e ceva ce poate face ea, răspunsul din „Întrebări frecvente” e cel bun pentru contul ei: îl spui cu cuvintele tale, scurt, și pui exact locul de acolo ([[du:…]]); unde scrie „(fără buton)” nu pui niciun [[du:…]], nici altul „pe aproape”;
+- banii altora (profitul clinicii, salariile sau comisioanele colegelor) nu sunt în contul unei colege: răspunzi neutru, fără buton.
 
 Doar când ți se cere un mesaj către o clientă a clinicii, îl scrii așa:
 ${CLIENT_RULES}
