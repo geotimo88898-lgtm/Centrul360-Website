@@ -338,6 +338,7 @@ module.exports = async (req, res) => {
           username: e.username,
           photo: photoOf(e),
           netSalary: Number(e.netSalary) || 0,
+          payDay: Number(e.payDay) || 15, // the day her salary is paid (the owner's Plăți)
           phone: e.phone || '',
           email: e.email || '',
           active: e.active !== false,

@@ -78,6 +78,12 @@ module.exports = async (req, res) => {
     res.status(200).json({ at: aud && aud.at, days: aud && aud.ig && aud.ig.online && aud.ig.online.days ? aud.ig.online.days.length : 0, grid: g });
     return;
   }
+  // ?wacost=YYYY-MM (or 1: this month): what Meta says the WhatsApp messages cost, per city, read now (api/_lib/wa-cost.js)
+  if (req.query && req.query.wacost) {
+    const m = /^\d{4}-\d{2}$/.test(req.query.wacost) ? req.query.wacost : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
+    res.status(200).json({ month: m, cities: await require('./_lib/wa-cost').probe(m).catch((e) => ({ error: e.message })) });
+    return;
+  }
   if (req.query && req.query.wahealth) {
     const cfg = await WA.loadConfig().catch(() => ({}));
     const get = async (path, token, fields) => {

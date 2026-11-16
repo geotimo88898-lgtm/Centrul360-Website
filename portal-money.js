@@ -1113,7 +1113,7 @@
     const pct = Math.round(m.rate * 100);
     const head = '<div class="mg-step"><span class="mg-step-n">2</span><div><b>' + (m.final ? 'Bonusul final' : m.current ? 'Dacă luna se închide azi' : 'Calculul lunii') + '</b><small>' + pct + '% din profitul clinicilor ' + esc(m.clinics.join(' și ')) + '.</small></div></div>';
     if (m.final) {
-      return head + '<div class="mg-calc is-final"><div><span>Bonus final</span><b>' + K.lei(m.final.lei) + '</b><small>' + icon('checkCircle') + 'Închis de proprietar' + (m.final.at ? ' pe ' + esc(roDay(m.final.at)) : '') + '</small></div></div>';
+      return head + '<div class="mg-calc is-final"><div><span>Bonus final</span><b>' + K.lei(m.final.lei) + '</b><small>' + icon('checkCircle') + 'Luna e închisă' + (m.final.at ? ' pe ' + esc(roDay(m.final.at)) : '') + '</small></div></div>';
     }
     if (!m.estimate) {
       return head + '<div class="mg-wait">' + icon('clock') + '<span>' + (admin ? 'Trece costurile lunii în Echipa → Costuri și bonusul se calculează singur.' : 'Bonusul se calculează după ce proprietarul trece costurile lunii.') + '</span></div>';
@@ -1124,7 +1124,7 @@
         '<i class="mg-x">× ' + pct + '%</i>' +
         '<div class="' + (e.bonus ? 'is-on' : '') + '"><span>Bonus estimat</span><b>' + K.lei(e.bonus) + '</b><small>' + (m.condition.ok ? (e.profit > 0 ? 'dacă rămâne așa' : 'luna e pe pierdere deocamdată') : 'condiția nu e îndeplinită' + (e.potential ? ': ar fi ' + K.lei(e.potential) : '')) + '</small></div>' +
       '</div>' +
-      '<p class="cd-rule">' + icon('info') + 'E o estimare. Calculul final îl face proprietarul la închiderea lunii.</p>';
+      '<p class="cd-rule">' + icon('info') + 'E o estimare. Suma finală vine la închiderea lunii.</p>';
   }
 
   // the base and the probation (30 days from the day she became manager)
@@ -1175,17 +1175,17 @@
     const bk = pay && pay.booking && pay.booking.frozen ? pay.booking : null;
     const head = '<section class="cb-hero k-card mg-hero"><div class="cb-hero-main"><span>' + (admin ? esc(v.name) : 'Salariul tău') + ' · ' + esc(K.monthLabel(m.month)) + '</span>' +
         (total != null ? '<b data-count="' + Math.round(total) + '" data-fmt="lei" data-key="mg-t-' + m.month + '">0</b><p>' + icon('wallet') + (m.current ? 'în mână luna asta' : 'în mână') + (est ? ', cu bonusul estimat' : '') + '</p>'
-          : '<b>' + (b ? K.lei(b.lei) : '-') + '</b><p>' + icon('trophy') + 'bonus de manager' + (b ? ', ' + b.kind : '') + '</p>') + '</div>' +
+          : '<b>' + (b ? K.lei(b.lei) : '-') + '</b><p>' + icon('trophy') + 'bonus' + (b ? ', ' + b.kind : '') + '</p>') + '</div>' +
         (opts && opts.nav !== false ? monthNav(m.current) : '') +
         (pay ? '<div class="cb-split">' +
           '<div><span>' + icon('user') + 'Salariu de bază</span><b>' + (pay.base ? K.lei(pay.base) : '-') + '</b><small>' + (pay.base ? 'net, pe lună' : 'nesetat încă') + '</small></div>' +
-          '<div class="' + (b && b.lei ? 'is-good' : !b ? 'is-wait' : '') + '"><span>' + icon('trophy') + 'Bonus de manager</span><b>' + (b ? K.lei(b.lei) : '-') + '</b><small>' + (b ? (b.kind === 'final' ? 'final, închis de proprietar' : 'estimat, ' + (m.condition.ok ? 'condiția e îndeplinită' : 'condiția încă nu e îndeplinită')) : 'după costurile lunii') + '</small></div>' +
+          '<div class="' + (b && b.lei ? 'is-good' : !b ? 'is-wait' : '') + '"><span>' + icon('trophy') + 'Bonus</span><b>' + (b ? K.lei(b.lei) : '-') + '</b><small>' + (b ? (b.kind === 'final' ? 'final, luna e închisă' : 'estimat, ' + (m.condition.ok ? 'condiția e îndeplinită' : 'condiția încă nu e îndeplinită')) : 'după costurile lunii') + '</small></div>' +
           '<div><span>' + icon('clock') + 'Ore suplimentare</span><b>' + lei2(pay.overtimeLei) + '</b><small>' + (pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' : 'nicio oră luna asta') + '</small></div>' +
           '</div>' : '') +
         (bk ? '<div class="mg-frozen">' + icon('calendar') + '<span>Bonus recepție (până la ' + esc(K.dateShort(bk.frozen)) + '): <b>' + K.lei(bk.lei) + '</b></span><small>media ' + avg1(bk.avg) + ' programări pe zi · ' + (bk.lei ? 'inclus în total' : 'sub prima treaptă (' + bk.tiers.slice().sort((a, c) => a.min - c.min)[0].min + ' pe zi)') + '</small></div>' : '') +
         (pay && pay.manual ? '<div class="mg-frozen">' + icon('sliders') + '<span>Ajustare de la admin: <b>' + (pay.manual > 0 ? '+' : '') + lei2(pay.manual) + '</b></span></div>' : '') +
       '</section>';
-    const bonusCard = '<section class="k-card mg-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de manager</h3>' +
+    const bonusCard = '<section class="k-card mg-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul</h3>' +
         (b ? '<span class="k-tag is-' + (b.kind === 'final' ? 'good' : 'info') + '">' + b.kind + '</span>' : '') + '</div>' +
       mgCondHtml(m.condition) + mgCalcHtml(m, admin) + (admin ? mgAdminHtml(v) : '') + '</section>';
     return head + bonusCard + (opts && opts.extra ? opts.extra : '');
@@ -1195,7 +1195,7 @@
   function mgAdminHtml(v) {
     const m = v.month;
     if (!m.costs) return '';
-    const src = { auto: 'auto', manual: 'scris de tine', typed: '', missing: 'lipsește', empty: '' };
+    const src = { auto: 'auto', manual: 'scris de tine', typed: '', missing: 'lipsește', empty: '', records: 'din Cheltuieli' };
     const rows = m.costs.rows.map((r) => '<div class="mg-cost' + (r.lei == null ? ' is-miss' : '') + '"><span>' + esc(r.label) + (src[r.source] ? ' <em>' + src[r.source] + '</em>' : '') + '</span><b>' + (r.lei == null ? '-' : K.lei(r.lei)) + '</b></div>').join('');
     const fin = m.final ? m.final.lei : m.estimate ? m.estimate.bonus : '';
     return '<div class="mg-admin"><div class="mg-step"><span class="mg-step-n">' + icon('shield') + '</span><div><b>Doar pentru tine</b><small>Costurile reale și profitul lunii.</small></div></div>' +
@@ -1293,6 +1293,9 @@
   // =====================================================================================
   const CO = { month: K.thisMonth(), data: null, box: null };
   K.mountCosts = (box) => { CO.box = box; coLoad(); };
+  // the month shared with Plăți și cheltuieli (portal-plati.js)
+  K.costsMonth = () => CO.month;
+  K.setCostsMonth = (m) => { if (/^\d{4}-\d{2}$/.test(m || '')) CO.month = m; };
   async function coLoad() {
     const box = CO.box; if (!box) return;
     const month = CO.month;
@@ -1309,11 +1312,20 @@
     const val = (x) => (x == null ? '' : x);
     const typed = Object.assign({}, E.lines, fill && fill.lines ? fill.lines : {});
     const rate = fill && fill.eurRate != null ? fill.eurRate : E.eurRate;
+    const row = (k) => ((d.costs && d.costs.rows) || []).find((r) => r.key === k) || {};
     const line = (l) => {
       if (l.auto) {
-        const a = d.autos[l.key];
-        return '<div class="co-line is-auto"><div class="co-l"><b>' + esc(l.label) + '</b><small>' + (a != null ? 'din ' + l.auto + ': ' + K.lei(a) : l.key === 'ads' ? 'Meta nu poate fi citit acum, scrie suma' : '') + (l.key === 'ads' && !d.adsRead && a != null ? ' (salvat ' + esc(roDay(d.adsSavedAt)) + ')' : '') + '</small></div>' +
+        const a = d.autos[l.key], rd = (d.read || {})[l.key];
+        const said = a != null ? 'din ' + l.auto + ': ' + K.lei(a) + (rd && rd.saved && rd.at ? ' (citit ' + esc(roDay(rd.at)) + ')' : '')
+          : rd && rd.error ? l.auto + ' nu răspunde, scrie suma' : rd ? l.auto + ' nu poate fi citit acum, scrie suma' : '';
+        return '<div class="co-line is-auto"><div class="co-l"><b>' + esc(l.label) + '</b><small>' + said + '</small></div>' +
           '<div class="k-money"><input name="over|' + l.key + '" type="number" inputmode="decimal" min="0" step="1" value="' + esc(val(E.over[l.key])) + '" placeholder="' + esc(a != null ? Math.round(a) : 'suma') + '"></div></div>';
+      }
+      // kept as records in Cheltuieli (portal-plati.js): shown here, added there
+      if (l.rec) {
+        const r = row(l.key);
+        return '<div class="co-line is-rec"><div class="co-l"><b>' + esc(l.label) + '</b><small>din Cheltuieli' + (r.typed ? ', cu ' + K.lei(r.typed) + ' scriși aici înainte' : '') + '</small></div>' +
+          '<button type="button" class="co-rec" data-co-rec>' + K.lei(r.lei || 0) + icon('right') + '</button></div>';
       }
       return '<div class="co-line"><div class="co-l"><b>' + esc(l.label) + '</b>' + (l.eur ? '<small data-co-eur="' + l.key + '"></small>' : '') + '</div>' +
         '<div class="k-money' + (l.eur ? ' is-eur' : '') + '"><input name="line|' + l.key + '" type="number" inputmode="decimal" min="0" step="1" value="' + esc(val(typed[l.key])) + '" placeholder="' + (l.kind === 'fixed' ? 'de completat' : '0') + '"></div></div>';
@@ -1325,8 +1337,8 @@
     box.innerHTML =
       '<div class="co-top"><div class="k-month"><button type="button" class="k-icon-btn" data-co-m="-1" aria-label="Luna anterioară">' + icon('left') + '</button><b>' + esc(K.monthLabel(d.month)) + '</b><button type="button" class="k-icon-btn" data-co-m="1" aria-label="Luna următoare"' + (isNow ? ' disabled' : '') + '>' + icon('right') + '</button></div>' +
         '<span class="k-tag is-' + (E.savedAt ? 'good' : 'warn') + '">' + (E.savedAt ? 'salvat ' + esc(roDay(E.savedAt)) : 'nesalvat') + '</span>' +
-        (d.prev ? '<button type="button" class="k-btn is-outline is-sm" data-co-copy>' + icon('copy') + 'Copiază din ' + esc(K.monthLabel(d.prev.month).split(' ')[0]) + '</button>' : '') + '</div>' +
-      '<p class="k-muted co-lead">' + icon('shield') + 'Doar tu vezi sumele. Din ele iese profitul lunii și bonusul managerului (5%).</p>' +
+        (d.prev ? '<button type="button" class="k-btn is-outline is-sm" data-co-copy>' + icon('copy') + 'Copiază din ' + esc(K.MON[+d.prev.month.slice(5, 7) - 1]) + '</button>' : '') + '</div>' +
+      '<p class="k-muted co-lead">' + icon('shield') + 'Doar tu vezi sumele. Din ele iese profitul lunii și bonusul (5%).</p>' +
       '<div class="k-grid c4 co-sum" data-co-sum></div>' + prop +
       '<form data-co-form class="co-form">' +
         '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('receipt') + 'Costuri fixe</h3></div>' +
@@ -1336,7 +1348,7 @@
             : '<div class="co-line is-rate"><div class="co-l"><b>Cursul euro</b><small>BNR nu răspunde acum, scrie-l tu</small></div><div class="k-money is-rate"><input name="eurRate" type="number" inputmode="decimal" min="0" step="0.0001" value="' + esc(val(rate)) + '" placeholder="lei pentru 1 €"></div></div>') +
           d.lines.filter((l) => l.kind === 'fixed').map(line).join('') + '</section>' +
         '<section class="k-card co-card"><div class="k-card-head"><h3>' + icon('sliders') + 'Costuri variabile</h3></div>' +
-          '<p class="k-muted co-note">Reclamele, comisioanele și orele vin singure; scrie o sumă doar ca să le schimbi.</p>' +
+          '<p class="k-muted co-note">Reclamele, WhatsApp, comisioanele și orele vin singure; scrie o sumă doar ca să le schimbi. Restul se adaugă în Cheltuieli.</p>' +
           d.lines.filter((l) => l.kind === 'var').map(line).join('') + '</section>' +
       '</form>' +
       '<div class="co-save"><button type="button" class="k-btn is-accent" data-co-save>' + icon('check') + 'Salvează luna</button></div>';
@@ -1347,7 +1359,7 @@
     const f = CO.box.querySelector('[data-co-form]');
     const num = (x) => { if (x == null || String(x).trim() === '') return null; const n = Number(String(x).replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : null; };
     const out = { eurRate: num(f.eurRate.value), lines: {}, over: {} };
-    CO.data.lines.forEach((l) => { const i = f.elements[(l.auto ? 'over|' : 'line|') + l.key]; if (i) (l.auto ? out.over : out.lines)[l.key] = num(i.value); });
+    CO.data.lines.filter((l) => !l.rec).forEach((l) => { const i = f.elements[(l.auto ? 'over|' : 'line|') + l.key]; if (i) (l.auto ? out.over : out.lines)[l.key] = num(i.value); });
     return out;
   }
   function coCalc() {
@@ -1356,7 +1368,8 @@
     let fixed = 0, variable = 0, missing = 0;
     d.lines.forEach((l) => {
       let lei;
-      if (l.auto) lei = v.over[l.key] != null ? v.over[l.key] : d.autos[l.key];
+      if (l.rec) lei = Number((((d.costs && d.costs.rows) || []).find((r) => r.key === l.key) || {}).lei) || 0;
+      else if (l.auto) lei = v.over[l.key] != null ? v.over[l.key] : d.autos[l.key];
       else if (l.eur) { const e = v.lines[l.key]; lei = e != null && v.eurRate ? e * v.eurRate : e === 0 ? 0 : null; const s = box.querySelector('[data-co-eur="' + l.key + '"]'); if (s) s.textContent = e != null ? (v.eurRate ? '€ × ' + v.eurRate + ' = ' + K.lei(lei) : 'în euro, scrie cursul') : 'în euro'; }
       else lei = v.lines[l.key] != null ? v.lines[l.key] : l.kind === 'var' ? 0 : null;
       if (lei == null) { missing++; return; }
@@ -1368,10 +1381,12 @@
       st('wallet', 'Încasări', K.lei(d.collections), d.current ? 'până azi' : 'toată luna') +
       st('receipt', 'Costuri', K.lei(total), missing ? K.plural(missing, 'linie lipsă', 'linii lipsă') : 'fixe ' + K.lei(fixed) + ' · variabile ' + K.lei(variable), missing ? 'is-warn' : '') +
       st('trend', 'Profit', K.lei(profit), d.current ? 'dacă luna se închide azi' : 'luna întreagă', profit >= 0 ? 'is-good' : 'is-bad') +
-      st('trophy', 'Bonus manager', K.lei(Math.round(Math.max(0, profit) * 0.05)), '5% din profit, dacă e îndeplinită condiția', 'is-accent');
+      st('trophy', 'Bonus', K.lei(Math.round(Math.max(0, profit) * 0.05)), '5% din profit, dacă e îndeplinită condiția', 'is-accent');
   }
   function coClick(e) {
     if (!CO.box || !CO.box.contains(e.target)) return;
+    // a line kept as records: to Cheltuieli (portal-plati.js)
+    if (e.target.closest('[data-co-rec]')) { const b = document.querySelector('[data-k-seg="plsub"] button[data-v="chelt"]'); if (b) b.click(); return; }
     const mv = e.target.closest('[data-co-m]');
     if (mv) { CO.month = K.addMonths(CO.month, +mv.dataset.coM); coLoad(); return; }
     if (e.target.closest('[data-co-copy]')) {

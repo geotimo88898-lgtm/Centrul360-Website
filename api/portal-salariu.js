@@ -8,7 +8,8 @@
 //   POST { action: 'costs_save', month, eurRate, lines: { key: lei|eur }, over: { ads, commissions, overtime } }  owner
 //   POST { action: 'final_set', employeeId, month, lei }   owner: the bonus he pays at month close (lei '' takes it back)
 //   POST { action: 'propose', month, consumables, other, note }   the manager: her month-close costs, a proposal
-//   POST { action: 'proposal_decide', month, decision: 'accept'|'decline' }   owner
+//   POST { action: 'proposal_decide', month, decision: 'accept'|'decline' }   owner (accepted: into the month's records,
+//                                                                            api/_lib/expenses.js)
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireRole } = require('./_lib/auth');
@@ -53,14 +54,20 @@ module.exports = async (req, res) => {
         const entry = MP.withEur(MP.cleanEntry(ctx.costs.months[month]), ctx.eur);
         const all = ['Timișoara', 'Arad'];
         const autos = await MP.payrollAutos(ctx, all, month, isCurrent);
-        autos.ads = await MP.adsOf(readJSON, all, month, day);
+        const ad = await MP.adsOf(readJSON, all, month, day, { detail: true });
+        autos.ads = ad ? ad.lei : null;
         const adsRead = autos.ads != null;
         if (autos.ads == null && entry.adsAuto) autos.ads = entry.adsAuto.lei;
-        const costs = MP.costsOf(entry, autos, all);
+        // the WhatsApp messages, from Meta (api/_lib/wa-cost.js); refused: what it said when the month was saved
+        const wa = await MP.waOf(readJSON, all, month, day);
+        autos.whatsapp = wa.error ? (entry.waAuto ? entry.waAuto.lei : null) : wa.lei;
+        const costs = MP.costsOf(entry, autos, all, require('./_lib/expenses').recCosts(ctx.exp, month));
         const collections = MP.collectionsOf(ctx.sales, ctx.appointments, ctx.employees, all, month, isCurrent ? day : MP.lastDay(month));
         const pm = MP.prevMonth(month), prev = ctx.costs.months[pm] ? MP.cleanEntry(ctx.costs.months[pm]) : null;
         res.status(200).json({
-          ok: true, month, current: isCurrent, lines: MP.LINES, entry, autos, adsRead, adsSavedAt: entry.adsAuto ? entry.adsAuto.at : '', costs, collections, profit: Math.round((collections - costs.total) * 100) / 100,
+          ok: true, month, current: isCurrent, lines: MP.LINES, entry, autos, adsRead, adsSavedAt: entry.adsAuto ? entry.adsAuto.at : '', costs,
+          read: { ads: { ok: adsRead, at: adsRead ? ad.at : (entry.adsAuto ? entry.adsAuto.at : ''), saved: !adsRead && !!entry.adsAuto },
+            whatsapp: { ok: !wa.error, at: wa.error ? (entry.waAuto ? entry.waAuto.at : '') : wa.at, saved: !!wa.error && !!entry.waAuto, error: wa.error || '' } }, collections, profit: Math.round((collections - costs.total) * 100) / 100,
           prev: prev && prev.savedAt ? { month: pm, eurRate: prev.eurRate, lines: prev.lines } : null,
         });
         return;
@@ -103,6 +110,8 @@ module.exports = async (req, res) => {
       const lines = {}, over = {};
       MP.LINES.forEach((l) => {
         if (l.auto) over[l.key] = MP.amount(b.over && b.over[l.key]);
+        // the lines kept as records (Plăți și cheltuieli): what was typed here before stays as it was
+        else if (l.rec) lines[l.key] = MP.amount(old.lines && old.lines[l.key]);
         else lines[l.key] = MP.amount(b.lines && b.lines[l.key]);
       });
       // the euro: today's BNR rate is used anyway; the one sent is kept only as the fallback for a day the BNR is down
@@ -110,6 +119,8 @@ module.exports = async (req, res) => {
       // what Meta says now, kept for when it can't be read
       const ads = await MP.adsOf(readJSON, ['Timișoara', 'Arad'], month, MP.today());
       if (ads != null) entry.adsAuto = { lei: ads, at: new Date().toISOString() };
+      const wa = await MP.waOf(readJSON, ['Timișoara', 'Arad'], month, MP.today());
+      if (!wa.error) entry.waAuto = { lei: wa.lei, byCity: wa.byCity, at: new Date().toISOString() };
       doc.months[month] = entry;
       await writeJSON(MP.COSTS_KEY, doc, { quiet: true });
       res.status(200).json({ ok: true });
@@ -122,9 +133,16 @@ module.exports = async (req, res) => {
       if (!entry || !entry.proposal) return fail(404, 'not_found');
       const p = entry.proposal;
       if (b.decision === 'accept') {
-        entry.lines = Object.assign({}, entry.lines);
-        if (p.consumables != null) entry.lines.consumables = p.consumables;
-        if (p.other != null) entry.lines.other = p.other;
+        // into the month's records (Plăți și cheltuieli → Cheltuieli variabile), marked as sent by her
+        const EX = require('./_lib/expenses');
+        const exp = await EX.loadDoc(readJSON);
+        const m = exp.months[month] && typeof exp.months[month] === 'object' ? exp.months[month] : {};
+        m.rec = m.rec && typeof m.rec === 'object' ? m.rec : {};
+        const day = month === cur ? MP.today() : MP.lastDay(month);
+        const note = 'trimis de ' + (String(p.byName || '').split(' ')[0] || 'manager') + (p.note ? ': ' + p.note : '');
+        [['consumables', p.consumables], ['other', p.other]].forEach(([k, lei]) => { if (lei != null && lei > 0) (m.rec[k] = Array.isArray(m.rec[k]) ? m.rec[k] : []).push(EX.newEntry({ date: day, lei, note: note.slice(0, 200) }, session.employeeId)); });
+        exp.months[month] = m;
+        await writeJSON(EX.KEY, exp, { quiet: true });
         p.status = 'accepted';
       } else if (b.decision === 'decline') p.status = 'declined';
       else return fail(400, 'invalid_decision');
@@ -151,7 +169,7 @@ module.exports = async (req, res) => {
       if (doc[key]) {
         const label = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'][+month.slice(5, 7) - 1];
         await N.notifyMany(store, [emp.id], { kind: 'info', tone: doc[key].lei > 0 ? 'good' : 'info', go: 'comision', tag: 'mgr-final-' + month,
-          title: 'Bonusul de manager pe ' + label, text: doc[key].lei > 0 ? 'Proprietarul a închis luna: ' + N.leiTxt(doc[key].lei) + ' bonus. Îl vezi în Salariu.' : 'Proprietarul a închis luna. Detaliile sunt în Salariu.' });
+          title: 'Bonusul pe ' + label, text: doc[key].lei > 0 ? 'Luna e închisă: ' + N.leiTxt(doc[key].lei) + ' bonus. Îl vezi în Salariu.' : 'Luna e închisă. Detaliile sunt în Salariu.' });
       }
       res.status(200).json({ ok: true, final: doc[key] || null });
       return;

@@ -34,11 +34,15 @@ const LINES = [
   { key: 'salaries', label: 'Salarii brute', kind: 'fixed' },
   { key: 'claude', label: 'Claude', kind: 'fixed' },
   { key: 'ads', label: 'Reclame Meta', kind: 'var', auto: 'Meta' },
-  { key: 'consumables', label: 'Consumabile', kind: 'var' },
+  // rec: the sum of the month's records in Plăți și cheltuieli (api/_lib/expenses.js), plus what was typed here before
+  { key: 'taxes', label: 'Taxe la stat (TVA, contribuții, impozite)', kind: 'var', rec: true },
+  { key: 'utilities', label: 'Utilități', kind: 'var', rec: true },
+  { key: 'consumables', label: 'Consumabile', kind: 'var', rec: true },
   { key: 'commissions', label: 'Comisioane și bonusuri', kind: 'var', auto: 'Salariu' },
   { key: 'overtime', label: 'Ore suplimentare', kind: 'var', auto: 'Salariu' },
-  { key: 'whatsapp', label: 'Mesaje WhatsApp', kind: 'var' },
-  { key: 'other', label: 'Alte cheltuieli neprevăzute', kind: 'var' },
+  // read from Meta's WhatsApp pricing (api/_lib/wa-cost.js, the owner 16.11); a month typed before keeps its sum
+  { key: 'whatsapp', label: 'Mesaje WhatsApp', kind: 'var', auto: 'Meta WhatsApp' },
+  { key: 'other', label: 'Alte cheltuieli neprevăzute', kind: 'var', rec: true },
 ];
 const LINE = Object.fromEntries(LINES.map((l) => [l.key, l]));
 
@@ -63,10 +67,13 @@ function cleanEntry(x) {
     if (!l.auto) lines[l.key] = amount(x.lines && x.lines[l.key]);
     else over[l.key] = amount(x.over && x.over[l.key]);
   });
+  // WhatsApp was a typed line before it was read from Meta: a month typed then keeps its sum, as the owner's override
+  if (over.whatsapp == null && x.lines && amount(x.lines.whatsapp) != null) over.whatsapp = amount(x.lines.whatsapp);
   const p = x.proposal && typeof x.proposal === 'object' ? x.proposal : null;
   return {
     eurRate: amount(x.eurRate), lines, over, savedAt: x.savedAt || '', savedBy: x.savedBy || '',
     adsAuto: x.adsAuto && Number.isFinite(Number(x.adsAuto.lei)) ? { lei: r2(x.adsAuto.lei), at: x.adsAuto.at || '' } : null,
+    waAuto: x.waAuto && Number.isFinite(Number(x.waAuto.lei)) ? { lei: r2(x.waAuto.lei), at: x.waAuto.at || '', byCity: x.waAuto.byCity && typeof x.waAuto.byCity === 'object' ? x.waAuto.byCity : null } : null,
     proposal: p ? { consumables: amount(p.consumables), other: amount(p.other), note: String(p.note || '').slice(0, 500), at: p.at || '', by: p.by || '', byName: p.byName || '', status: ['pending', 'accepted', 'declined'].includes(p.status) ? p.status : 'pending', decidedAt: p.decidedAt || '' } : null,
   };
 }
@@ -124,12 +131,12 @@ async function payrollAutos(ctx, clinics, month, isCurrent) {
 }
 
 // Meta's spend for the month on her clinics' campaigns (TM / AR in the name; the rest shared), kept a few hours
-async function adsOf(readJSON, clinics, month, day) {
+async function adsOf(readJSON, clinics, month, day, opts) {
   try {
     const conn = await require('./facebook').loadConnection(readJSON);
     if (!conn || !conn.userToken || !conn.adAccountId) return null;
     const since = month + '-01', until = day < lastDay(month) ? day : lastDay(month);
-    if (since > until) return 0;
+    if (since > until) return opts && opts.detail ? { lei: 0, at: '' } : 0;
     const current = day <= lastDay(month);
     const r = await require('./ads-cache').cached('mgr-spend-' + month, current ? 3 * 3600e3 : 24 * 3600e3,
       () => require('./meta-ads').adSpend(conn, 'custom', { since, until }), { keep: true });
@@ -142,13 +149,30 @@ async function adsOf(readJSON, clinics, month, day) {
       const c = /(^|[^A-Z])(TM|TIMI)/.test(n) ? 'Timișoara' : /(^|[^A-Z])(AR|ARAD)([^A-Z]|$)/.test(n) ? 'Arad' : '';
       lei += c ? (clinics.includes(c) ? x.spend : 0) : x.spend * clinics.length / CLINICS.length;
     });
-    return r2(lei);
+    // detail: when Meta was read (the owner sees „din Meta, actualizat la …”)
+    return opts && opts.detail ? { lei: r2(lei), at: r.readAt ? new Date(r.readAt).toISOString() : '', stale: !!r.stale } : r2(lei);
   } catch (e) { return null; }
 }
 
-// every line of the month, in lei, with where it comes from; filled = the owner saved the month and nothing is missing
-function costsOf(entry, autos, clinics) {
+// the WhatsApp messages of her clinics this month, from Meta (api/_lib/wa-cost.js): { lei, at, stale } or { error }
+async function waOf(readJSON, clinics, month, day) {
+  try {
+    const r = await require('./wa-cost').monthCost(readJSON, month, day);
+    if (!r || r.error) return { error: (r && r.error) || 'Meta nu a răspuns' };
+    const all = CLINICS.every((c) => clinics.includes(c));
+    const lei = all ? r.lei : r2(clinics.reduce((a, c) => a + (Number(r.byCity && r.byCity[c]) || 0), 0));
+    return { lei, byCity: r.byCity || {}, at: r.readAt ? new Date(r.readAt).toISOString() : '', stale: !!r.stale, staleWhy: r.staleWhy || '', none: !!r.none };
+  } catch (e) { return { error: e.message }; }
+}
+
+// every line of the month, in lei, with where it comes from; filled = the owner saved the month and nothing is missing.
+// recs: what the records of Plăți și cheltuieli add per line (api/_lib/expenses.js recCosts)
+function costsOf(entry, autos, clinics, recs) {
   const rows = LINES.filter((l) => !l.city || clinics.includes(l.city)).map((l) => {
+    if (l.rec) {
+      const t = entry.lines[l.key], r = Number(recs && recs[l.key]) || 0;
+      return { key: l.key, label: l.label, kind: l.kind, rec: true, lei: r2((t || 0) + r), typed: t, recLei: r, source: r ? 'records' : t != null ? 'typed' : 'empty' };
+    }
     if (l.auto) {
       const o = entry.over[l.key], a = autos[l.key];
       return { key: l.key, label: l.label, kind: l.kind, auto: l.auto, lei: o != null ? o : a != null ? a : null, autoLei: a != null ? a : null, source: o != null ? 'manual' : a != null ? 'auto' : 'missing' };
@@ -179,11 +203,12 @@ const managerFrom = (emp) => (isDay(emp && emp.roleSince) ? emp.roleSince.slice(
 
 async function loadCtx(readJSON) {
   const { writeJSON } = require('./store');
-  const [employees, sales, attendance, appointments, tbAll, costs, finals, eur] = await Promise.all([
+  const [employees, sales, attendance, appointments, tbAll, costs, finals, eur, exp] = await Promise.all([
     readJSON('data/employees.json', []), readJSON('data/sales.json', []), readJSON('data/attendance.json', []), readJSON('data/appointments.json', []),
     TB.loadAll(readJSON), loadCosts(readJSON), readJSON(FINAL_KEY, {}), require('./eur-rate').eurToday(readJSON, writeJSON).catch(() => null),
+    require('./expenses').loadDoc(readJSON),
   ]);
-  return { employees, sales, attendance, appointments, tbAll, costs, finals: finals && typeof finals === 'object' ? finals : {}, eur };
+  return { employees, sales, attendance, appointments, tbAll, costs, finals: finals && typeof finals === 'object' ? finals : {}, eur, exp };
 }
 // the rents in euro always at today's BNR rate (the owner, 16.11); the rate saved with the month only when the BNR
 // was never reached
@@ -210,7 +235,10 @@ async function monthOf(readJSON, ctx, emp, month, opts) {
     const autos = await payrollAutos(ctx, clinics, month, isCurrent);
     autos.ads = entry.over.ads != null ? null : await adsOf(readJSON, clinics, month, day);
     if (autos.ads == null && entry.adsAuto) autos.ads = entry.adsAuto.lei; // Meta can't be read now: what it said when the month was saved
-    costs = costsOf(entry, autos, clinics);
+    const wa = entry.over.whatsapp != null ? null : await waOf(readJSON, clinics, month, day);
+    autos.whatsapp = wa && !wa.error ? wa.lei : null;
+    if (autos.whatsapp == null && entry.waAuto) autos.whatsapp = CLINICS.every((c) => clinics.includes(c)) || !entry.waAuto.byCity ? entry.waAuto.lei : r2(clinics.reduce((a, c) => a + (Number(entry.waAuto.byCity[c]) || 0), 0));
+    costs = costsOf(entry, autos, clinics, require('./expenses').recCosts(ctx.exp, month));
     collections = collectionsOf(ctx.sales, ctx.appointments, ctx.employees, clinics, month, upto);
     profit = r2(collections - costs.total);
   }
@@ -244,4 +272,4 @@ async function view(readJSON, empId, month, opts) {
   return { ok: true, name: emp.name, managerFrom: from, month: main, history, probation: probationOf(emp, day), rule: { rate: RATE, min: MIN_PER_DAY, probationDays: PROBATION_DAYS } };
 }
 
-module.exports = { withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };
+module.exports = { waOf, withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };

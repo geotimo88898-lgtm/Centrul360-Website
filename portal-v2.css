@@ -874,3 +874,98 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
   .co-line .k-money{ flex-basis:128px; }
   .co-top .k-btn{ margin-left:auto; }
 }
+/* Costuri lunare: a line kept as records in Cheltuieli (portal-plati.js) */
+.co-rec{ flex:none; display:inline-flex; align-items:center; gap:.25rem; min-height:40px; padding:.35rem .5rem .35rem .75rem; border-radius:12px; border:1px solid var(--line); background:var(--glass); color:var(--fg); font:inherit; font-size:.95rem; font-weight:650; font-variant-numeric:tabular-nums; white-space:nowrap; cursor:pointer; }
+.co-rec svg{ width:15px; height:15px; color:var(--muted); }
+
+/* Plăți și cheltuieli (portal-plati.js), the owner only. Phone first: every line fits its card, the tick is a big tap */
+.pf-subnav{ margin-bottom:.9rem; max-width:100%; overflow-x:auto; scrollbar-width:none; }
+.pf-subnav::-webkit-scrollbar{ display:none; }
+.pf-subnav .k-seg{ min-width:max-content; }
+.pf-narrow{ max-width:900px; }
+.pf-top{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-bottom:.8rem; min-width:0; }
+.pf-top .k-month b{ min-width:0; padding:0 .35rem; white-space:nowrap; }
+.pf-private{ display:inline-flex; align-items:center; gap:.3rem; font-size:.76rem; color:var(--muted); white-space:nowrap; }
+.pf-private svg{ width:13px; height:13px; }
+.pf-sum{ position:sticky; top:var(--kq-top, 62px); z-index:5; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.45rem; padding:.45rem; margin:0 0 1rem; border-radius:18px; border:1px solid var(--line);
+  background:var(--paper); box-shadow:var(--shadow-sm); }
+.pf-sum.is-one{ grid-template-columns:minmax(0, 1fr); position:static; }
+.pf-tile{ min-width:0; display:flex; flex-direction:column; gap:.05rem; padding:.55rem .65rem; border-radius:13px; background:var(--glass); }
+.pf-tile span{ font-size:.72rem; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf-tile b{ font-size:1.02rem; font-weight:720; letter-spacing:-.02em; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf-tile small{ font-size:.7rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf-tile.is-good b{ color:var(--good); }
+.pf-tile.is-bad{ background:var(--bad-soft); } .pf-tile.is-bad b, .pf-tile.is-bad span{ color:var(--bad); }
+.pf-bar{ grid-column:1 / -1; display:block; height:4px; border-radius:4px; background:var(--glass-2); overflow:hidden; margin:.1rem .2rem .05rem; }
+.pf-bar > i{ display:block; height:100%; border-radius:4px; background:var(--good); transition:width .4s ease; }
+.pf-group{ margin:0 0 1.1rem; }
+.pf-group h4{ display:flex; align-items:center; gap:.4rem; margin:0 0 .45rem .2rem; font-size:.78rem; font-weight:650; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
+.pf-group h4 span{ font-size:.72rem; padding:.05rem .45rem; border-radius:20px; background:var(--glass-2); }
+.pf-group .pf-list, .pf-rec .pf-autos, .pf-rec .pf-ents{ padding:0; }
+.pf-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.45rem; }
+.pf-row{ display:grid; grid-template-columns:44px minmax(0, 1fr) auto; align-items:center; gap:.7rem; padding:.6rem .6rem .6rem .65rem; border-radius:16px; background:var(--paper); border:1px solid var(--line); min-width:0; transition:background .2s ease, border-color .2s ease; }
+.pf-day{ width:44px; height:44px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--surface-3); line-height:1; }
+.pf-day b{ font-size:1.05rem; font-weight:740; font-variant-numeric:tabular-nums; }
+.pf-day small{ font-size:.64rem; color:var(--muted); margin-top:.12rem; }
+.pf-day.is-none svg{ width:18px; height:18px; color:var(--muted); }
+.pf-main{ min-width:0; display:flex; flex-direction:column; gap:.18rem; }
+.pf-line{ display:flex; align-items:baseline; gap:.5rem; min-width:0; }
+.pf-name{ flex:1 1 auto; min-width:0; font-size:.92rem; font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:.35rem; }
+.pf-name svg{ width:15px; height:15px; color:var(--accent); flex:none; }
+.pf-kind{ flex:none; font-size:.62rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:.12rem .38rem; border-radius:6px; background:var(--glass-2); color:var(--muted); }
+.pf-amt{ flex:none; font-size:.95rem; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pf-amt.is-btn{ display:inline-flex; align-items:center; gap:.2rem; padding:.3rem .55rem; min-height:32px; border-radius:10px; border:1px dashed var(--line); background:none; color:var(--accent); font:inherit; font-size:.8rem; font-weight:650; cursor:pointer; }
+.pf-amt.is-btn svg{ width:13px; height:13px; }
+.pf-sub{ display:flex; flex-wrap:wrap; align-items:center; gap:.15rem .5rem; min-width:0; font-size:.76rem; color:var(--muted); }
+.pf-st{ font-weight:620; white-space:nowrap; }
+.pf-dt{ min-width:0; overflow-wrap:anywhere; }
+.pf-note{ display:inline-flex; align-items:center; gap:.2rem; min-width:0; max-width:100%; padding:0; border:0; background:none; color:var(--muted); font:inherit; font-size:.76rem; cursor:pointer; text-decoration:underline; text-decoration-color:var(--line); text-underline-offset:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pf-note svg{ width:12px; height:12px; }
+.pf-tick{ flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.12rem; width:64px; min-height:52px; padding:.35rem .2rem; border-radius:14px; border:1.5px solid var(--line); background:var(--paper);
+  color:var(--muted); font:inherit; font-size:.66rem; font-weight:650; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s ease, background .2s ease, color .2s ease, border-color .2s ease; }
+.pf-tick svg{ width:20px; height:20px; stroke-width:2.6; }
+.pf-tick:active{ transform:scale(.94); }
+.pf-tick.is-on{ background:var(--good); border-color:var(--good); color:#fff; }
+.pf-row.is-late{ border-color:color-mix(in srgb, var(--bad) 45%, var(--line)); background:color-mix(in srgb, var(--bad-soft) 60%, var(--paper)); }
+.pf-row.is-late .pf-day{ background:var(--bad); color:#fff; } .pf-row.is-late .pf-day small{ color:rgba(255,255,255,.85); }
+.pf-row.is-late .pf-st{ color:var(--bad); }
+.pf-row.is-late .pf-tick:not(.is-on){ border-color:color-mix(in srgb, var(--bad) 55%, var(--line)); color:var(--bad); }
+.pf-row.is-today, .pf-row.is-soon{ border-color:color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.pf-row.is-today .pf-day, .pf-row.is-soon .pf-day{ background:var(--warn-soft); color:var(--warn); } .pf-row.is-today .pf-day small, .pf-row.is-soon .pf-day small{ color:var(--warn); }
+.pf-row.is-today .pf-st, .pf-row.is-soon .pf-st{ color:var(--warn); }
+.pf-row.is-paid .pf-day{ background:var(--good-soft); color:var(--good); } .pf-row.is-paid .pf-day small{ color:var(--good); }
+.pf-row.is-paid .pf-st{ color:var(--good); }
+.pf-row.is-paid .pf-amt{ color:var(--muted); }
+.pf-foot{ margin:.4rem .2rem 0; font-size:.76rem; color:var(--muted); line-height:1.45; }
+.pf-recs{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.8rem; align-items:start; }
+.pf-rec{ padding:.9rem 1rem; margin-bottom:.8rem; }
+.pf-recs .pf-rec{ margin-bottom:0; }
+.pf-rec-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; min-width:0; }
+.pf-rec-head small, .pf-auto small{ font-size:.74rem; color:var(--muted); overflow-wrap:anywhere; }
+.pf-rec-head .pf-amt{ font-size:1.05rem; }
+.pf-autos, .pf-ents{ list-style:none; margin:.55rem 0 0; padding:0; }
+.pf-auto{ display:flex; align-items:center; justify-content:space-between; gap:.7rem; padding:.55rem 0; border-top:1px solid var(--line); min-width:0; }
+.pf-auto .pf-name{ font-size:.88rem; }
+.pf-auto .is-err{ color:var(--warn); }
+.pf-ents li{ display:grid; grid-template-columns:auto minmax(0, 1fr) auto 36px; align-items:center; gap:.5rem; padding:.3rem 0; border-top:1px solid var(--line); font-size:.84rem; min-width:0; }
+.pf-ent-d{ color:var(--muted); font-size:.76rem; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.pf-ent-n{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pf-ent-n em{ font-style:normal; font-size:.68rem; font-weight:650; padding:.08rem .35rem; border-radius:6px; background:var(--glass-2); margin-right:.35rem; }
+.pf-ents b{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pf-del{ width:36px; height:36px; }
+.pf-del svg{ width:16px; height:16px; }
+.pf-add{ display:flex; align-items:center; justify-content:center; gap:.35rem; width:100%; min-height:44px; margin-top:.6rem; border-radius:12px; border:1px dashed var(--line); background:none; color:var(--accent); font:inherit; font-size:.86rem; font-weight:650; cursor:pointer; }
+.pf-add svg{ width:16px; height:16px; }
+.pf-form .k-seg{ max-width:100%; }
+@media (max-width:760px){ .pf-recs{ grid-template-columns:minmax(0, 1fr); } }
+@media (max-width:520px){
+  .pf-sum{ top:var(--kq-top, 56px); gap:.3rem; padding:.3rem; border-radius:16px; }
+  .pf-tile{ padding:.45rem .5rem; }
+  .pf-tile b{ font-size:.92rem; }
+  .pf-row{ grid-template-columns:40px minmax(0, 1fr) auto; gap:.55rem; padding:.55rem .5rem .55rem .55rem; }
+  .pf-day{ width:40px; height:40px; }
+  .pf-tick{ width:58px; }
+  .pf-line{ flex-wrap:wrap; row-gap:.05rem; }
+  .pf-name{ flex-basis:100%; }
+}
+

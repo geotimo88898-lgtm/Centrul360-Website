@@ -169,6 +169,12 @@ module.exports = async (req, res) => {
         if (!Number.isFinite(n) || n < 0 || n > 100000) { res.status(400).json({ error: 'invalid_salary' }); return; }
         if (n) employee.netSalaryAfter = n; else delete employee.netSalaryAfter;
       }
+      // the day of the month her net salary is paid (Plăți și cheltuieli, api/_lib/expenses.js; unset: the 15th)
+      if (req.body.payDay !== undefined) {
+        const n = req.body.payDay === '' || req.body.payDay == null ? 0 : Math.round(Number(req.body.payDay));
+        if (!Number.isFinite(n) || n < 0 || n > 31) { res.status(400).json({ error: 'invalid_pay_day' }); return; }
+        if (n && n !== 15) employee.payDay = n; else delete employee.payDay;
+      }
       // a cosmetician who finished the official training counts in the manager's bonus condition
       if (typeof req.body.trainedOfficial === 'boolean' && employee.role === 'cosmetician') employee.trainedOfficial = req.body.trainedOfficial;
       if (contractedHoursPerDay !== undefined) {
