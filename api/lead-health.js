@@ -434,7 +434,7 @@ async function verifyNumbers(monthQ) {
   const v2 = {}, checks = {};
   CITIES.forEach((city) => {
     const seen = new Map(), ex = { leave: 0, test: 0, cancelledAhead: 0, moved: 0, duplicate: 0 };
-    const ck = { ghlInWindow: 0, ghlFinishedNoPay: 0, ghlFinishedAtImport: 0, finishedNoPay: 0, movedPassedNotCame: 0, lateCancelNoShow: 0, plainNoShow: 0, cameByPaymentOnly: 0 };
+    const ck = { ghlInWindow: 0, ghlFinishedNoPay: 0, ghlFinishedAtImport: 0, finishedNoPay: 0, movedPassedNotCame: 0, lateCancelNoShow: 0, plainNoShow: 0, cameByPaymentOnly: 0, plainNoShowBy: { packageFlag: 0, clientHadPackage: 0, noPrice: 0, other: 0, paidOnALaterDay: 0, highLevel: 0 }, lateCancelBy: { noShowFlag: 0, highLevel: 0, highLevelChangedOnlyByImport: 0, automatic: 0, portal: 0, portalChangedDayAfterOrLater: 0 } };
     appts.forEach((a) => {
       if (!a || !a.date || a.date < wFrom || a.date > wTo || apptClinic(a) !== city) return;
       if (a.status === 'concediu' || a.block) { ex.leave++; return; }
@@ -445,9 +445,26 @@ async function verifyNumbers(monthQ) {
         if (a.status === 'finalizata' && !a.paidSaleId) { ck.ghlFinishedNoPay++; const imp = Date.parse(a.importedAt || a.createdAt || ''); if (Number.isFinite(imp) && ro(imp).day > a.date) ck.ghlFinishedAtImport++; }
       } else if (a.status === 'finalizata' && !a.paidSaleId) ck.finishedNoPay++;
       if (came && a.status !== 'finalizata' && !a.paidSaleId) ck.cameByPaymentOnly++;
-      if (a.status === 'anulata' && !came) { if (late(a)) ck.lateCancelNoShow++; else { ex.cancelledAhead++; return; } }
+      if (a.status === 'anulata' && !came) {
+        if (!late(a)) { ex.cancelledAhead++; return; }
+        ck.lateCancelNoShow++;
+        // what the „late” rests on: HighLevel's no-show, or only the record's last change (cancelledAt is never written)
+        const lc = ck.lateCancelBy, upd = Date.parse(a.updatedAt || ''), imp = Date.parse(a.importedAt || '');
+        if (a.noShow) lc.noShowFlag++;
+        else if (ghl(a)) { lc.highLevel++; if (Number.isFinite(upd) && Number.isFinite(imp) && Math.abs(upd - imp) < 120e3) lc.highLevelChangedOnlyByImport++; }
+        else if (/^Automat/.test(String(a.statusBy || ''))) lc.automatic++;
+        else { lc.portal++; const start = Date.parse(a.date + 'T' + (a.time || '12:00') + ':00Z') - 2 * 3600e3; if (Number.isFinite(upd) && upd - start > 864e5) lc.portalChangedDayAfterOrLater++; }
+      }
       if (a.status === 'reprogramata' && !came) { ex.moved++; ck.movedPassedNotCame++; return; }
-      if (!came && a.status !== 'anulata') ck.plainNoShow++;
+      if (!came && a.status !== 'anulata') {
+        ck.plainNoShow++;
+        // a passed booking left „programată” / „confirmată” with no payment: a no-show, or a package session nobody closed?
+        const pb = ck.plainNoShowBy, ks = keysOf(a.clientId, a.clientPhone, a.clientName);
+        const pkgBefore = pays.some((s) => (Number(s.upsell) > 0 || Number(s.packageTotal) > 0 || s.dueId) && s.date <= a.date && keysOf(s.clientId, s.clientPhone, s.client).some((k) => ks.includes(k)));
+        if (a.package) pb.packageFlag++; else if (pkgBefore) pb.clientHadPackage++; else if (!(Number(a.amount) > 0)) pb.noPrice++; else pb.other++;
+        if (pays.some((s) => s.date > a.date && keysOf(s.clientId, s.clientPhone, s.client).some((k) => ks.includes(k)))) pb.paidOnALaterDay++;
+        if (ghl(a)) pb.highLevel++;
+      }
       const k = (keysOf(a.clientId, a.clientPhone, a.clientName)[0] || 'id:' + a.id) + '|' + a.date + '|' + plain(a.treatment).trim();
       if (seen.has(k)) { ex.duplicate++; if (came) seen.set(k, true); return; }
       seen.set(k, came);
@@ -485,7 +502,7 @@ async function verifyNumbers(monthQ) {
       (!a.clientId && a.clientName && s.client && plain(a.clientName).replace(/\s+/g, ' ').trim() === plain(s.client).replace(/\s+/g, ' ').trim());
     const withUp = consult.filter((a) => pkg.some((s) => match(a, s) && s.date >= a.date && s.date <= shift(a.date, 7)));
     const collected = pays.filter((s) => saleClinic(s) === city && s.date >= mFrom && s.date <= mTo).reduce((n, s) => n + (Number(s.amount) || 0), 0);
-    m2[city] = { people, inCond, consults: consult.length, withUpsell: withUp.length, consultsNotCame: consult.filter((a) => !cameOf(a, city)).length, collected: round2(collected) };
+    m2[city] = { people, inCond, consults: consult.length, withUpsell: withUp.length, withUpsellCame: withUp.filter((a) => cameOf(a, city)).length, consultsNotCame: consult.filter((a) => !cameOf(a, city)).length, consultsNotCameByStatus: consult.filter((a) => !cameOf(a, city)).reduce((o, a) => { o[a.status || '-'] = (o[a.status || '-'] || 0) + 1; return o; }, {}), collected: round2(collected) };
   });
 
   // ---------------------------------------------------------------- production
@@ -529,7 +546,7 @@ async function verifyNumbers(monthQ) {
           agreeManagerPage: team.length === mm.inCond.length && pageOk.size === mm.inCond.filter((x) => x.lei / x.days > 1500).length,
           rows,
         },
-        consults: { production: { total: cons.total, withUpsell: cons.withPackage, pct: cons.pct }, second: { total: mm.consults, withUpsell: mm.withUpsell, notCame: mm.consultsNotCame }, agree: cons.total === mm.consults && cons.withPackage === mm.withUpsell },
+        consults: { production: { total: cons.total, withUpsell: cons.withPackage, pct: cons.pct }, second: { total: mm.consults, withUpsell: mm.withUpsell, notCame: mm.consultsNotCame, notCameByStatus: mm.consultsNotCameByStatus, cameOnly: { total: mm.consults - mm.consultsNotCame, withUpsell: mm.withUpsellCame } }, agree: cons.total === mm.consults && cons.withPackage === mm.withUpsell },
         collections: { production: prodColl, pay: payColl, kpi: kpiColl, second: mm.collected, agree: Math.abs(prodColl - mm.collected) < 0.01 && Math.abs(payColl - mm.collected) < 0.01 && Math.abs(kpiColl - mm.collected) < 0.01 },
       },
     };
