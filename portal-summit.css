@@ -1167,6 +1167,83 @@ html.ui-nou .pf-autos .pf-auto{ padding:.6rem 0; }
 html.ui-nou .pf-add{ width:auto; min-height:36px; margin:.25rem 0 0; padding:0; border:0; justify-content:flex-start; font-size:.82rem; font-weight:600; }
 html.ui-nou .pf-add svg{ width:14px; height:14px; }
 html.ui-nou .pf-sum.is-one{ padding:.35rem .25rem; }
+
+/* Plăți, paid in parts and his own rows (the owner, 16.11: „fă să pot să plăti și parțial… fă-l chiar useful”). Same quiet
+   list: a thin bar and a small „plătit X din Y, rămas Z” on a row paid in part, its parts as hairline lines under it, the
+   next payment as one light line on top, the filter as small chips; the sheet of a row is three numbers and plain forms */
+html.ui-nou .pf-ov-tot{ flex:1 1 100%; margin:0 0 -.2rem; font-size:.8rem; color:var(--muted); }
+html.ui-nou .pf-ov-tot b{ color:var(--fg); font-weight:650; font-variant-numeric:tabular-nums; }
+html.ui-nou .pf-next{ position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:.6rem; row-gap:.1rem; width:100%; margin:0 0 .9rem; padding:.65rem .9rem; border-radius:16px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; text-align:left; cursor:pointer; }
+html.ui-nou .pf-next > svg{ grid-column:2; grid-row:1 / span 3; width:16px; height:16px; color:var(--muted); }
+html.ui-nou .pf-next-k{ grid-column:1; font-size:.66rem; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
+html.ui-nou .pf-next-v{ grid-column:1; display:flex; flex-wrap:wrap; align-items:baseline; gap:.1rem .5rem; min-width:0; font-size:.9rem; }
+html.ui-nou .pf-next-v > b:first-child{ font-weight:650; min-width:0; overflow-wrap:anywhere; }
+html.ui-nou .pf-next-v > span{ color:var(--muted); font-size:.8rem; white-space:nowrap; }
+html.ui-nou .pf-next-l{ font-weight:680; font-variant-numeric:tabular-nums; white-space:nowrap; }
+html.ui-nou .pf-next small{ grid-column:1; font-size:.74rem; color:var(--muted); }
+html.ui-nou .pf-next:active{ transform:scale(.99); }
+html.ui-nou .pf-tools{ margin:0 0 .9rem; min-width:0; }
+html.ui-nou .pf-chips{ flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; -webkit-overflow-scrolling:touch; margin:0 -2px; padding:0 2px; }
+html.ui-nou .pf-chips::-webkit-scrollbar{ display:none; }
+html.ui-nou .pf-chips .k-chip{ flex:none; padding:0 .7rem; font-size:.8rem; }
+html.ui-nou .pf-none{ margin:.2rem .9rem 1rem; font-size:.84rem; color:var(--muted); }
+html.ui-nou .pf-main[data-pf-open]{ cursor:pointer; border-radius:8px; outline:none; }
+html.ui-nou .pf-main[data-pf-open]:focus-visible{ box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+html.ui-nou .pf-orig{ margin-right:.4rem; font-size:.74rem; font-weight:500; color:var(--muted); text-decoration-thickness:1px; }
+html.ui-nou .pf-prog-line{ display:flex; flex-direction:column; gap:.3rem; margin-top:.2rem; font-size:.74rem; color:var(--muted); min-width:0; }
+html.ui-nou .pf-prog-line b{ color:var(--fg); font-weight:620; font-variant-numeric:tabular-nums; white-space:nowrap; }
+html.ui-nou .pf-row.is-late .pf-rest{ color:var(--bad); }
+html.ui-nou .pf-row:is(.is-today, .is-soon) .pf-rest{ color:var(--warn); }
+html.ui-nou .pf-prog{ display:block; height:3px; border-radius:3px; background:var(--pf-track); overflow:hidden; max-width:260px; }
+html.ui-nou .pf-prog > i{ display:block; height:100%; border-radius:3px; background:var(--pf-paid); transition:width .5s cubic-bezier(.2,.8,.2,1); }
+html.ui-nou .pf-parts{ list-style:none; margin:.35rem 0 0; padding:0; }
+html.ui-nou .pf-parts li{ display:grid; grid-template-columns:auto minmax(0,1fr) auto 28px; align-items:center; gap:.5rem; min-height:30px; border-top:1px solid var(--line); font-size:.76rem; color:var(--muted); }
+html.ui-nou .pf-pd{ white-space:nowrap; font-variant-numeric:tabular-nums; }
+html.ui-nou .pf-pn{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.ui-nou .pf-parts b{ color:var(--fg); font-weight:620; font-variant-numeric:tabular-nums; white-space:nowrap; }
+html.ui-nou .pf-pdel{ position:relative; width:28px; height:28px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:none; color:var(--muted); cursor:pointer; }
+html.ui-nou .pf-pdel::after{ content:""; position:absolute; inset:-6px; }
+html.ui-nou .pf-pdel svg{ width:13px; height:13px; }
+html.ui-nou .pf-pdel:hover{ color:var(--bad); background:var(--bad-soft); }
+html.ui-nou .pf-row.is-flash{ animation:pf-flash 1.5s ease; }
+@keyframes pf-flash{ 0%, 30%{ background:color-mix(in srgb, var(--accent) 12%, transparent); } 100%{ background:transparent; } }
+html.ui-nou .pf-acts{ display:flex; flex-wrap:wrap; gap:.2rem 1.2rem; margin:-.4rem .9rem .6rem; }
+html.ui-nou .pf-acts .pf-add span{ font-size:.7rem; padding:.03rem .38rem; border-radius:999px; background:var(--glass-2); color:var(--muted); }
+html.ui-nou .pf-dayset{ display:inline-flex; align-items:center; gap:.3rem; width:max-content; max-width:100%; margin-top:.25rem; padding:0; border:0; background:none; color:var(--muted); font:inherit; font-size:.74rem; cursor:pointer; }
+html.ui-nou .pf-dayset svg{ width:12px; height:12px; }
+html.ui-nou .pf-dayset.is-on{ color:var(--accent); font-weight:600; }
+/* the sheet of a row */
+html.ui-nou .pf-sh-top{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.6rem; padding:.2rem 0 .9rem; }
+html.ui-nou .pf-sh-stat{ display:flex; flex-direction:column; gap:.1rem; min-width:0; }
+html.ui-nou .pf-sh-stat span{ font-size:.72rem; color:var(--muted); }
+html.ui-nou .pf-sh-stat b{ font-size:1.02rem; font-weight:680; letter-spacing:-.01em; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+html.ui-nou .pf-sh-stat.is-paid b{ color:var(--good); } html.ui-nou .pf-sh-stat.is-late b{ color:var(--bad); }
+html.ui-nou .pf-sh-top .pf-prog{ grid-column:1 / -1; max-width:none; height:4px; }
+html.ui-nou .pf-sh-note{ grid-column:1 / -1; margin:0; font-size:.76rem; color:var(--muted); }
+html.ui-nou .pf-sh-h{ margin:1.1rem 0 .5rem; padding-top:.9rem; border-top:1px solid var(--line); font-size:.7rem; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+html.ui-nou .k-dbody > .pf-sh-h:first-child, html.ui-nou .pf-sh-top + .pf-sh-h{ margin-top:.2rem; }
+html.ui-nou .k-dbody:has(> .pf-sh-top){ gap:0; }
+html.ui-nou .k-dbody .pf-parts{ margin:0; }
+html.ui-nou .k-dbody .pf-parts li{ min-height:40px; font-size:.84rem; }
+html.ui-nou .k-dbody .pf-parts li:first-child{ border-top:0; }
+html.ui-nou .pf-sh-btns{ grid-column:1 / -1; display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:.5rem; margin-top:.7rem; }
+html.ui-nou .pf-sh-btns .pf-own-del{ margin-right:auto; background:none; color:var(--bad); padding-left:0; }
+html.ui-nou .pf-sh-btns .pf-link{ background:none; color:var(--accent); }
+html.ui-nou .pf-amtf .k-money input, html.ui-nou [data-pf-ownf] .k-money input{ font-size:1.15rem !important; padding:.55rem 3rem .55rem .8rem !important; }
+html.ui-nou .pf-approx{ margin-right:.2rem; text-decoration:none; color:var(--muted); font-weight:500; }
+html.ui-nou .pf-pauto{ width:28px; display:grid; place-items:center; color:var(--muted); }
+html.ui-nou .pf-pauto svg{ width:13px; height:13px; }
+html.ui-nou .pf-sh-note svg{ width:12px; height:12px; margin-right:.3rem; vertical-align:-1px; color:var(--accent); }
+html.ui-nou .pf-sh-note + .pf-sh-note{ margin-top:-.3rem; }
+html.ui-nou .pf-sh-auto{ display:flex; flex-direction:column; gap:.3rem; padding:.9rem 0 .2rem; border-top:1px solid var(--line); }
+html.ui-nou .pf-sh-auto > span{ font-size:.76rem; color:var(--muted); }
+html.ui-nou .pf-sugg{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:.35rem; margin-top:-.3rem; }
+@media (max-width:560px){
+  html.ui-nou .pf-sh-top{ gap:.4rem; }
+  html.ui-nou .pf-sh-stat b{ font-size:.94rem; }
+  html.ui-nou .pf-sugg .k-chip{ min-height:36px !important; }
+}
+@media (prefers-reduced-motion: reduce){ html.ui-nou .pf-row.is-flash{ animation:none; outline:2px solid color-mix(in srgb, var(--accent) 40%, transparent); } html.ui-nou .pf-prog > i{ transition:none; } }
 html.ui-nou .co-line .k-money input{ font-size:.95rem !important; }
 html.ui-nou .co-line .k-money input::placeholder{ font-size:.8rem; }
 @media (max-width:640px){ html.ui-nou .co-line .k-money{ flex-basis:146px; } html.ui-nou .co-line .k-money input{ padding-right:2.3rem !important; } }

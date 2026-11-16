@@ -290,6 +290,122 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check(19, 'today\'s leads: lead_nou, 07…, in the past', L.length && L.every((l) => l.stage === 'lead_nou' && /^07\d{8}$/.test(l.phone) && Date.parse(l.createdAt) <= Date.now()), L.map((l) => [l.stage, l.phone, l.createdAt]));
   }
 
+  // 20. Plăți (the owner, 16.11): paid in parts, a month's sum, his own rows, who left has no salary row, owner only
+  {
+    const EX = require('../api/_lib/expenses');
+    const store = require('../api/_lib/store');
+    const NEXT = EX.nextMonth(MONTH);
+    const get = (m) => api('admin', 'portal-plati', null, 'month=' + (m || MONTH));
+    const post = (b) => api('admin', 'portal-plati', Object.assign({ month: MONTH }, b));
+    const rowOf = (d, k) => (d.rows || []).find((r) => r.key === k);
+    const sums = (d) => { const s = d.summary, rows = d.rows; const paid = rows.reduce((a, r) => a + r.paidLei, 0), rest = rows.filter((r) => !r.done).reduce((a, r) => a + (r.rest || 0), 0); return { ok: Math.abs(s.paid - paid) < 0.01 && Math.abs(s.toPay - rest) < 0.01 && Math.abs(s.planned - (s.paid + s.toPay)) < 0.01, s, paid, rest }; };
+    // who sees it: George only
+    const gm = await api('manager', 'portal-plati', null, 'month=' + MONTH), gr = await api('receptie', 'portal-plati', null, 'month=' + MONTH);
+    const pm = await api('manager', 'portal-plati', { action: 'own_add', month: MONTH, label: 'x', lei: 1 }), pp = await api('manager', 'portal-plati', { action: 'pay', month: MONTH, key: 'claude' });
+    const pr = await api('receptie', 'portal-plati', { action: 'amount', month: MONTH, key: 'claude', lei: 5 }), pc = await api('manager', 'portal-plati', { action: 'own_copy', month: NEXT });
+    check(20, 'manager and reception: 403 on every read and action', [gm, gr, pm, pp, pr, pc].every((x) => x._status === 403), [gm, gr, pm, pp, pr, pc].map((x) => x._status));
+    // who left: no salary row from the month she left (her pay of the month before included); she would have one
+    const d0 = await get();
+    const ctx = await MP.loadCtx(store.readJSON);
+    ctx.employees = ctx.employees.map((e) => (e.id === 'e-c5' ? Object.assign({}, e, { active: true, leftAt: '' }) : e));
+    const would = EX.tracker(ctx, MONTH).rows.some((r) => r.key === 'sal:e-c5');
+    check(20, 'who left (A plecat): no salary row this month', d0._status === 200 && would && !rowOf(d0, 'sal:e-c5') && d0.rows.some((r) => r.group === 'sal'), { would, keys: (d0.rows || []).map((r) => r.key) });
+    const ctx2 = await MP.loadCtx(store.readJSON);
+    ctx2.employees = ctx2.employees.map((e) => (e.id === 'e-c5' ? Object.assign({}, e, { leftAt: EX.nextMonth(MONTH) + '-03' }) : e));
+    check(20, 'who left next month: still this month, not from that month on', EX.tracker(ctx2, MONTH).rows.some((r) => r.key === 'sal:e-c5') && !EX.tracker(ctx2, NEXT).rows.some((r) => r.key === 'sal:e-c5'));
+    const where0 = d0.where && d0.where.total;
+    // his own row, paid in parts
+    const a = await post({ action: 'own_add', label: 'Utilități proba', lei: 1000, day: 20, note: 'factura' });
+    const k = a.key;
+    const p1 = await post({ action: 'pay', key: k, lei: 300 }), p2 = await post({ action: 'pay', key: k, lei: '200', date: day(-1), note: 'a doua' });
+    let d = await get(), r = rowOf(d, k);
+    check(20, 'own row: 300 + 200 of 1000 is partial, 500 left', a.ok && p1.ok && p2.ok && r && r.partial && !r.done && r.paidLei === 500 && r.rest === 500 && r.parts.length === 2 && r.parts[0].date === day(-1), r);
+    check(20, 'totals: paid + left = planned (parts count as paid)', sums(d).ok, sums(d));
+    const [t1, t2] = await Promise.all([post({ action: 'pay', key: k }), post({ action: 'pay', key: k })]);
+    d = await get(); r = rowOf(d, k);
+    check(20, 'the tick pays what is left once (double tap)', t1.ok && t2.ok && r.done && r.paidLei === 1000 && r.rest === 0 && r.parts.length === 3 && r.state === 'paid', { t1, t2, r });
+    const del = await post({ action: 'part_del', key: k, id: r.parts[0].id });
+    d = await get(); r = rowOf(d, k);
+    check(20, 'a part removed: partial again', del.ok && r.partial && r.rest === 200 && r.paidLei === 800, r);
+    const bad = await post({ action: 'pay', key: k, lei: -5 }), bad2 = await post({ action: 'own_add', label: '', lei: 5 }), bad3 = await post({ action: 'own_add', label: 'x', day: 40 });
+    check(20, 'bad sums and days refused', bad._status === 400 && bad2._status === 400 && bad3._status === 400, [bad, bad2, bad3].map((x) => x.error));
+    // this month's sum of a row
+    const target = d.rows.find((x) => x.group === 'sal' && x.lei > 0);
+    const am = await post({ action: 'amount', key: target.key, lei: target.lei + 111 });
+    d = await get(); r = rowOf(d, target.key);
+    check(20, 'a sum for this month only: new sum, the usual one kept', am.ok && r.lei === Math.round((target.lei + 111) * 100) / 100 && r.orig === target.lei && r.changed, r);
+    await post({ action: 'pay', key: target.key, lei: 100 });
+    d = await get(); r = rowOf(d, target.key);
+    check(20, 'a part on the changed sum: left = new sum - part', r.rest === Math.round((target.lei + 11) * 100) / 100, r);
+    await post({ action: 'amount', key: target.key, lei: '' });
+    d = await get(); r = rowOf(d, target.key);
+    check(20, 'the usual sum again', r.lei === target.lei && !r.changed, r);
+    // monthly rows
+    const mr = await post({ action: 'own_add', label: 'Chirie extra proba', lei: 500, day: 3, repeat: true });
+    const dn = await get(NEXT);
+    check(20, 'monthly row: this month and the next', rowOf(await get(), mr.key) && rowOf(dn, mr.key) && rowOf(dn, mr.key).own.repeat, dn.rows && dn.rows.map((x) => x.key));
+    const sk = await api('admin', 'portal-plati', { action: 'own_del', month: NEXT, key: mr.key, scope: 'month' });
+    check(20, 'monthly row left out of one month only', sk.ok && !rowOf(await get(NEXT), mr.key) && rowOf(await get(), mr.key));
+    const one = await post({ action: 'own_add', label: 'Furnizor proba', lei: 250 });
+    const nd = rowOf(await get(), one.key);
+    check(20, 'a row without a day: fără dată', nd && nd.due === null && (nd.state === 'nodate' || nd.state === 'late'), nd);
+    const cp = await api('admin', 'portal-plati', { action: 'own_copy', month: NEXT }), cp2 = await api('admin', 'portal-plati', { action: 'own_copy', month: NEXT });
+    const dn2 = await get(NEXT);
+    check(20, 'Copiază din luna trecută: once, by name', cp.ok && cp.copied === 2 && cp2.copied === 0 && dn2.rows.filter((x) => x.label === 'Furnizor proba').length === 1 && dn2.copyable === 0, { cp, cp2, copyable: dn2.copyable });
+    const ed = await post({ action: 'own_edit', key: mr.key, label: 'Chirie extra proba', lei: 500, day: 3, repeat: false });
+    check(20, 'monthly turned off: stays this month, gone after', ed.ok && rowOf(await get(), mr.key) && !rowOf(await get(NEXT), mr.key));
+    // a category with a payment day
+    const rd1 = await post({ action: 'rec_day', line: 'utilities', day: 10 });
+    await post({ action: 'rec_add', line: 'utilities', lei: 250, date: MONTH + '-02', note: 'curent' });
+    d = await get(); r = rowOf(d, 'rec:utilities');
+    check(20, 'Utilități with a day: a payment row with its sum', rd1.ok && r && r.lei === 250 && r.due === MONTH + '-10' && (d.rec.find((x) => x.key === 'utilities') || {}).day === 10, r);
+    await post({ action: 'rec_day', line: 'utilities', day: 0 });
+    check(20, 'and off again', !rowOf(await get(), 'rec:utilities'));
+    check(20, 'Taxe la stat on the 25th by default', (rowOf(await get(), 'taxes') || {}).due === MONTH + '-25');
+    // a tick from before the parts: one full part, written as a part on the next change
+    const before = rd('data/expense-tracker.json', { months: {} });
+    const sal = d.rows.find((x) => x.group === 'sal' && x.key !== target.key && x.lei > 0);
+    before.months[MONTH].paid = Object.assign({}, before.months[MONTH].paid, { [sal.key]: { at: new Date().toISOString(), by: 'e-adm', byName: 'Admin', lei: sal.lei, note: '' } });
+    wr('data/expense-tracker.json', before);
+    d = await get(); r = rowOf(d, sal.key);
+    const lg = r && r.done && r.parts.length === 1 && r.parts[0].lei === sal.lei;
+    await post({ action: 'note', key: k, note: 'x' });
+    const after = rd('data/expense-tracker.json', { months: {} }).months[MONTH];
+    check(20, 'old tick: one full part, migrated on the next change', lg && after.parts[sal.key] && after.parts[sal.key].length === 1 && !(after.paid || {})[sal.key], { r, after: after.parts[sal.key], paid: after.paid });
+    d = await get();
+    check(20, 'totals still add up', sums(d).ok, sums(d));
+    // the profit's costs are not the rows of Plăți
+    check(20, 'Unde se duc banii: only the record added changes it (payments and own rows do not)', d.where && Math.abs(d.where.total - (where0 + 250)) < 0.01, { before: where0, after: d.where && d.where.total });
+    // automatic: a direct debit settles on its day, Meta's card rows are paid as spent, the taxes on the salaries estimated
+    const dd = await post({ action: 'own_add', label: 'Debit proba', lei: 300, day: 1 });
+    const ap = await post({ action: 'autopay', key: dd.key, on: true });
+    d = await get(); r = rowOf(d, dd.key);
+    check(20, 'Se plătește automat: paid on its day, a part „automat”, no tick', ap.ok && r.autoPay && r.done && r.parts.length === 1 && r.parts[0].auto && r.parts[0].date === MONTH + '-01', r);
+    const apSal = await post({ action: 'autopay', key: target.key, on: true });
+    check(20, 'never on a salary', apSal._status === 400, apSal);
+    const t0 = EX.tracker(Object.assign(await MP.loadCtx(store.readJSON)), MONTH);
+    check(20, 'automatic rows: no morning reminder, not „Următoarea”', !(d.next && d.next.key === dd.key) && /r\.paid \|\| r\.autoPay/.test(fs.readFileSync(path.join(__dirname, '../api/_lib/expenses.js'), 'utf8')) && t0.rows.find((x) => x.key === dd.key).done);
+    await post({ action: 'autopay', key: dd.key, on: false });
+    check(20, 'turned off: to pay again', !rowOf(await get(), dd.key).done);
+    const mc = rd('data/month-costs.json', { months: {} }); mc.months = mc.months || {};
+    const PM = EX.prevMonth(MONTH);
+    mc.months[MONTH] = Object.assign({}, mc.months[MONTH], { over: Object.assign({}, (mc.months[MONTH] || {}).over, { ads: 900 }) });
+    mc.months[PM] = Object.assign({}, mc.months[PM], { lines: Object.assign({}, (mc.months[PM] || {}).lines, { salaries: 999999 }) });
+    wr('data/month-costs.json', mc);
+    d = await get(); r = rowOf(d, 'auto:ads');
+    check(20, 'Reclame Meta: a row paid automatically with the card', r && r.lei === 900 && r.done && r.autoPay && r.group === 'card' && r.src === 'Meta', r);
+    const tx = rowOf(d, 'taxes');
+    check(20, 'Taxe la stat: estimated from Salarii brute minus the net pay', tx && tx.est && tx.est.gross === 999999 && Math.abs(tx.est.lei - (999999 - tx.est.net)) < 0.01 && Math.abs(tx.lei - (3200 * 0 + tx.est.lei + (tx.entries ? d.rec.find((x) => x.key === 'taxes').total : 0))) < 0.01, tx);
+    await post({ action: 'rec_add', line: 'taxes', lei: 1500, kind: 'salarii' });
+    const tx2 = rowOf(await get(), 'taxes');
+    check(20, 'the real sum typed: no estimate', tx2 && !tx2.est, tx2);
+    check(20, 'totals still add up with the automatic rows', sums(await get()).ok);
+    d = await get();
+    const nx = d.next;
+    const open = d.rows.filter((x) => !x.done && x.due && x.due >= TODAY);
+    check(20, 'Următoarea: the first one still to pay from today', !open.length || (nx && nx.due === open[0].due && nx.key === open[0].key), { nx, first: open[0] && open[0].key });
+  }
+
   // the independent second reading agrees with production on the harness's data
   {
     const lh = await api('admin', 'lead-health', null, 'verify=1');
