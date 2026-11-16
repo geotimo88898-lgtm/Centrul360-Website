@@ -265,7 +265,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
   // 16-17. texts the team reads: no stiff titles
   {
     const nuki = fs.readFileSync(path.join(__dirname, '../api/portal-nuki.js'), 'utf8') + fs.readFileSync(path.join(__dirname, '../api/_lib/nuki-edit.js'), 'utf8');
-    check(16, 'Nuki: no „proprietar…” as a person', !/asistentul personal al proprietarului|pentru proprietar|fața proprietarului|Propune proprietarului|\(proprietarul, 14\.11\)/.test(nuki) && /decide George/.test(nuki));
+    check(16, 'Nuki: no „proprietar…” as a person', !/asistentul personal al proprietarului|pentru proprietar|fața proprietarului|Propune proprietarului|\(proprietarul, 14\.11\)/.test(nuki) && !/decide George|spui că decide/.test(nuki));
     const ax = JSON.stringify(require('../api/_lib/academy-extra.js'));
     check(17, 'Traininguri: no „managerul”', !/[Mm]anagerul/.test(ax));
     { const AL = require('../api/_lib/expenses').alertLink;
@@ -636,6 +636,45 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const cmp = await api('admin', 'lead-health', null, 'commission=1&month=' + MONTH);
     check(22, 'lead-health ?commission=1: old and new rule per cosmetician id, the new one the same as Salariu, no names', cmp.total && cmp.people['e-c1'] && cmp.people['e-c1'].new === pay1(MONTH).commission && !/Proba/.test(JSON.stringify(cmp)), cmp);
     check(22, 'the cash rule only from November', !CMS.cashRule({ origin: 'upsell', incasareId: 'x', date: '2026-10-31' }) && CMS.cashRule({ origin: 'upsell', incasareId: 'x', date: '2026-11-01' }));
+  }
+
+  // nk. Nuki and the portal's map (16.11): its buttons only to places of her role, the conversations her account can't open
+  // stay closed to Nuki too, „Programăm?” in her clinic only and without the money for a cosmetician
+  {
+    const NK = require('../api/portal-nuki.js').lib;
+    const a1 = NK.placeActions('Apasă pe pauză.\n[[du:programari.pauza]]\n[[du:aprobari]]\n[[du:nimic.aici]]', 'cosmetician');
+    check('nk', 'marker: only her role\'s places, the lines out of the text', a1.text === 'Apasă pe pauză.' && a1.actions.length === 1 && a1.actions[0].id === 'programari.pauza' && a1.actions[0].label, a1);
+    const a2 = NK.placeActions('X [[du:aprobari]] [[du:incasari]] [[du:incasari]] [[du:programari]] [[du:contacte]]', 'admin');
+    check('nk', 'marker: at most 2, no repeats', a2.actions.map((x) => x.id).join() === 'aprobari,incasari' && !/\[\[/.test(a2.text), a2);
+    const a3 = NK.placeActions('Nu e în contul tău.\n[[du:incasari]]', 'receptie');
+    check('nk', 'marker: a place she has stays (reception, Încasări)', a3.actions.length === 1, a3);
+    const cand = { phone: '40733333333', name: 'Candidată Unu', messages: [{ dir: 'in', text: 'cv' }] };
+    const S = (role, id) => ({ role, employeeId: id });
+    const r1 = await NK.withMedia(cand, 'chat', S('receptie', 'e-rec'));
+    const r2 = await NK.withMedia(cand, 'chat', S('cosmetician', 'e-c3'));
+    const r3 = await NK.withMedia(cand, 'chat', S('manager', 'e-mgr'));
+    check('nk', 'withMedia: a candidate\'s chat closed to reception and a cosmetician, open to the manager', r1.forbidden && r2.forbidden && !r3.forbidden, { r1: !!r1.forbidden, r2: !!r2.forbidden, r3: !!r3.forbidden });
+    const E = rd('data/employees.json', []); E.find((e) => e.id === 'e-mgr').manages = ['Timișoara']; wr('data/employees.json', E);
+    const r4 = await NK.withMedia(cand, 'reply', S('manager', 'e-mgr'));
+    E.find((e) => e.id === 'e-mgr').manages = ['Timișoara', 'Arad']; wr('data/employees.json', E);
+    check('nk', 'withMedia: the manager, a chat of another clinic: closed', r4.forbidden, r4);
+    const rs = await api('receptie', 'portal-nuki', { action: 'reply', thread: cand });
+    const rm = await api('manager', 'portal-nuki', { action: 'reply', thread: cand });
+    check('nk', 'reply on a candidate\'s chat: 403 for reception, not for the manager', rs._status === 403 && rm._status !== 403, { rs: rs._status, rm: rm._status });
+    check('nk', 'slot city: a cosmetician in her clinic only', NK.slotCity('Arad', 'Timișoara', 'Timișoara') === 'Arad' && NK.slotCity(['Timișoara'], 'Arad', 'Arad') === 'Timișoara' && NK.slotCity(null, 'Arad', '') === 'Arad');
+    const d = { free: false, who: [{ id: 'x', name: 'Clientă', phone: '0700000000', treatment: 'Lipo', time: '10:00', session: 2, amount: 900, paid: true, cosmetician: 'C' }] };
+    const dc = NK.slotFor(S('cosmetician', 'e-c1'), d), dr = NK.slotFor(S('receptie', 'e-rec'), d);
+    check('nk', 'slot for a cosmetician: no phone, amount or paid; reception sees them', !('phone' in dc.who[0]) && !('amount' in dc.who[0]) && !('paid' in dc.who[0]) && dc.who[0].name && dr.who[0].phone && dr.who[0].amount === 900, { dc: dc.who[0], dr: dr.who[0] });
+    const g = await NK.guideText(S('cosmetician', 'e-c1'));
+    check('nk', 'her map: her role and clinic, no name', /Vorbești cu: Cosmeticiană, clinica Timișoara\./.test(g) && !/Maria|Proba/.test(g) && /programari\.pauza/.test(g) && !/aprobari/.test(g), g.slice(0, 120));
+  }
+
+  // map. the portal's map against the portal (qa/nuki-map.cjs)
+  {
+    const r = cp.spawnSync(process.execPath, [path.join(__dirname, 'nuki-map.cjs')], { encoding: 'utf8' });
+    const lines = String(r.stdout || '').split('\n').filter((l) => /^(ok|FAIL) /.test(l));
+    lines.forEach((l) => check('map', l.replace(/^(ok|FAIL)\s+/, ''), /^ok/.test(l)));
+    check('map', 'qa/nuki-map.cjs ran', r.status === 0 && lines.length >= 8, (r.stderr || '').slice(0, 300));
   }
 
   // the independent second reading agrees with production on the harness's data

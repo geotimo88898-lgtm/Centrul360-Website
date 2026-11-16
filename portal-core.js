@@ -474,6 +474,53 @@
     if (h && h !== here && 'panel-' + h !== here) route(h);
   });
 
+  // ------------------------------------------------------------------ places (Nuki's „Du-mă acolo”, the guide's buttons)
+  // K.place(id, { from }): a place of the guide map (portal-guide-map.js PLACES), opened the way she would open it: the
+  // role checked, the section (and its own page, `<tab>:sub`), then the sheet it is about (emit / call) once the section
+  // is there, and a short glow on what was asked about (George, 16.11: „Tap. Don't cut. Carry.”). → true when opened.
+  const CALLS = {
+    account: () => K.openAccount && K.openAccount(),
+    notif: () => K.openNotifications && K.openNotifications(),
+    closeDay: () => window.C360Manager && window.C360Manager.close(),
+  };
+  K.placeCalls = CALLS;
+  // a short glow on the first of `sel` on screen (scrolled into view when it is below), once it has appeared (≤ 4 s)
+  K.glow = (sel, opts) => {
+    if (!sel) return;
+    const until = Date.now() + ((opts && opts.wait) || 4000);
+    const find = () => Array.from(document.querySelectorAll('main > .panel.active ' + sel.split(',').join(', main > .panel.active '))).filter((el) => el.offsetParent !== null);
+    const tick = () => {
+      const all = find();
+      if (!all.length) { if (Date.now() < until) setTimeout(tick, 120); return; }
+      const reduce = document.documentElement.classList.contains('c360-reduce') || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      const r = all[0].getBoundingClientRect();
+      if (r.top < 70 || r.bottom > innerHeight - 40) all[0].scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+      all.slice(0, (opts && opts.max) || 6).forEach((el) => { el.classList.remove('k-place-glow'); void el.offsetWidth; el.classList.add('k-place-glow'); setTimeout(() => el.classList.remove('k-place-glow'), 2200); });
+    };
+    setTimeout(tick, 60);
+  };
+  K.place = (id, opts) => {
+    const GM = window.C360GuideMap;
+    const p = GM && GM.PLACES[id];
+    const role = DATA ? (DATA.isAdmin ? 'admin' : DATA.me.role) : '';
+    if (!p || !GM.can(id, role) || (p.go.tab && !allowed(p.go.tab))) { K.ui().toast('Nu e în contul tău.', 'info'); return false; }
+    const g = p.go;
+    if (g.tab) {
+      if (g.sub) route(g.tab + '/' + g.sub); else activate(g.tab);
+    }
+    if (!g.emit && !g.call) { if (p.glow && !g.sub) K.glow(p.glow); return true; }
+    // the sheet after the section is on screen (mounted, its data drawn): a drawer opens from its own button there
+    const until = Date.now() + 3000;
+    const then = () => {
+      const panel = g.tab && document.getElementById('panel-' + g.tab);
+      if (panel && !panel.children.length && Date.now() < until) { setTimeout(then, 100); return; }
+      if (g.emit) K.emit(g.emit, null);
+      if (g.call && CALLS[g.call]) CALLS[g.call]();
+    };
+    setTimeout(then, g.tab ? 260 : 0);
+    return true;
+  };
+
   // Section shortcuts from anywhere: Alt+1..9 follow the visible nav order.
   document.addEventListener('keydown', (e) => {
     if (!e.altKey || e.ctrlKey || e.metaKey || !/^[1-9]$/.test(e.key)) return;

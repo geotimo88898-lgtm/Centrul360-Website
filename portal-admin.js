@@ -722,6 +722,16 @@
       if (!sw) return;
       const o = O.list.find((x) => x.id === sw.closest('[data-offer]').dataset.offer);
       if (o) quickSave(o, { [sw.name]: sw.checked });
+  // #angajati/salarii (Nuki, the guide, a link): that tab of Echipa
+  K.on('angajati:sub', (t) => {
+    if (!['people', 'salarii', 'manual', 'condica', 'candidati'].includes(t)) return;
+    TEAM.tab = t;
+    if (!epanel) return;
+    const seg = epanel.querySelector('[data-k-seg="teamtab"]');
+    if (seg) { seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === t)); seg.querySelector('input').value = t; }
+    showTeamTab();
+    if (K.glow) K.glow('[data-k-seg="teamtab"] button.is-on', { max: 1 });
+  });
     });
   }
   // What each offer brought through the door: the payments of the clients its leads became (upsells included), the

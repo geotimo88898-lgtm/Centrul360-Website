@@ -1467,3 +1467,11 @@
 
   K.section('comision', { mount: mountComision, show() { K.prefs.load().then(renderComision); }, data() { if (cpanel && K.isActive('comision')) renderComision(); } });
 })();
+  // #comision/bonus, /costuri, /adauga (Nuki, the guide): her bonus card or the month's costs, with a short glow; „Adaugă comision”
+  K.on('comision:sub', (t) => {
+    if (t === 'adauga') { const me = K.data && K.data.me; if (me && me.role === 'cosmetician') setTimeout(() => openCommNew(), 120); return; }
+    if (t === 'bonus' && K.glow) K.glow('.sl-bonus, .mg-bonus', { max: 1 });
+    if (t === 'costuri' && K.glow) K.glow('.mg-prop', { max: 1 });
+  });
+  // #incasari/dues: „Rest de plată din pachete”
+  K.on('incasari:sub', (t) => { if (t === 'dues' && K.glow) K.glow('section:has(> [data-dues]), [data-dues]', { max: 1 }); });

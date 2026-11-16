@@ -11,3 +11,8 @@ main > .panel.cx-out > *{ animation:none !important; }
 html.c360-reduce .cx-ghost, html.c360-reduce .cx-layer{ display:none !important; }
 @media (prefers-reduced-motion: reduce){ .cx-ghost, .cx-layer{ display:none !important; } }
 @media print{ .cx-layer, .cx-ghost{ display:none !important; } }
+/* a place Nuki or the guide took her to (K.place / K.glow): a short ring around what she asked about, then gone */
+.k-place-glow{ animation:k-place-glow 2.1s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes k-place-glow{ 0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); } 25%{ box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 28px 4px color-mix(in srgb, var(--accent) 35%, transparent); } 100%{ box-shadow:0 0 0 0 transparent; } }
+html.c360-reduce .k-place-glow{ animation-duration:.01s; }
+@media (prefers-reduced-motion: reduce){ .k-place-glow{ animation:none; outline:2px solid var(--accent); outline-offset:2px; } }

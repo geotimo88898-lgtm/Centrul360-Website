@@ -195,7 +195,9 @@
     const ps = pathStats(meId());
     if (ps) t.push(['drum', 'Drumul meu', 'target', ps.done < ps.items ? ps.items - ps.done : 0]);
     // the cosmetician's trainings (and the owner looking as one): one page with three big doors (zonesHtml)
-    if (viewRole() === 'cosmetician') t.push(['acasa', 'Traininguri', 'book']);
+    // reception (16.11): the portal's lessons only (the cosmeticians' trainings are not hers)
+    if (guideRole() === 'receptie') t.push(['portal', 'Portalul', 'sliders']);
+    else if (viewRole() === 'cosmetician') t.push(['acasa', 'Traininguri', 'book']);
     else t.push(['vanzari', 'Vânzări', 'trend'], ['tratamente', 'Tratamente', 'sparkles'], ['portal', 'Portalul', 'sliders']);
     if (isAdmin()) t.push(['echipa', 'Progres echipă', 'trend', pendingTasks().length]);
     return t;
@@ -225,7 +227,7 @@
       return;
     }
     const t = tabs();
-    if (!A.tab || !t.some((x) => x[0] === A.tab)) A.tab = t[0][0] === 'drum' && pathStats(meId()).done < pathStats(meId()).items ? 'drum' : viewRole() === 'cosmetician' ? 'acasa' : 'vanzari';
+    if (!A.tab || !t.some((x) => x[0] === A.tab)) A.tab = t[0][0] === 'drum' && pathStats(meId()).done < pathStats(meId()).items ? 'drum' : t.some((x) => x[0] === 'acasa') ? 'acasa' : t.some((x) => x[0] === 'vanzari') ? 'vanzari' : t.find((x) => x[0] !== 'drum') ? t.find((x) => x[0] !== 'drum')[0] : t[0][0];
     panel.querySelector('[data-tabs]').hidden = t.length < 2; // one tab alone is no choice
     panel.querySelector('[data-tabs]').innerHTML = t.map(([id, l, ic, n]) => '<button type="button" class="tr-tab' + (A.tab === id ? ' is-on' : '') + '" data-tab="' + id + '">' + icon(ic) + '<span>' + esc(l) + '</span>' + (n ? '<b class="tr-tab-n">' + n + '</b>' : '') + '</button>').join('');
     const v = panel.querySelector('[data-view]');
@@ -285,8 +287,8 @@
   // whose view: the person's own role; the owner picks Recepție or Cosmeticiană
   // (the owner, 15.11) only the cosmeticians' trainings: the reception's are gone, for everyone
   const viewRole = () => 'cosmetician';
-  // „Cum folosesc portalul”: the manager has her own lessons (portal-academy-guide.js); everyone else the cosmetician's
-  const guideRole = () => (K.data && K.data.me && K.data.me.role === 'manager' ? 'manager' : 'cosmetician');
+  // „Cum folosesc portalul”: each role its own lessons (portal-guide-map.js, the same map Nuki answers from, 16.11)
+  const guideRole = () => (!K.data ? 'cosmetician' : K.data.isAdmin ? 'admin' : K.data.me && ['manager', 'receptie', 'cosmetician'].includes(K.data.me.role) ? K.data.me.role : 'cosmetician');
   function areaCards(area, role) {
     const p = mine();
     const HIDE = role === 'cosmetician' ? ['vanzari', 'cabina'] : [];
@@ -1603,8 +1605,9 @@
       setTimeout(() => { A.gstep = Math.min(list.length - 1, i + 1); render(); if (list.every((x) => set.has(x.id)) && i === list.length - 1) K.ui().toast('Bravo! Știi tot portalul.', 'success'); }, 380);
       return;
     }
-    const gg = t.closest('[data-ggo]');
-    if (gg) { const to = gg.dataset.ggo; if (to === 'account') return K.openAccount && K.openAccount(); if (to === 'notif') return K.openNotifications && K.openNotifications(); return K.go(to); }
+    // a lesson's button: the place itself (the guide map's places, K.place: the role checked, the tab, then a glow)
+    const gg = t.closest('[data-gplace]');
+    if (gg) return K.place ? K.place(gg.dataset.gplace, { from: gg }) : null;
     const pg2 = t.closest('[data-pgoto]');
     if (pg2) {
       const to = pg2.dataset.pgoto;
@@ -2161,4 +2164,14 @@ html.ui-nou[data-theme="light"] .tr-pd-h h2{ color:#16140f; }
     K.badge('traininguri', ps ? todayLeft(ps) : 0);
   }
   K.on('academy:print', () => K.go('fise'));
+  // #traininguri/portal (Nuki, a lesson's link): the portal's lessons, on the „Portalul” door or tab; portal~<lesson> opens that one
+  K.on('traininguri:sub', (sub) => {
+    const [what, lesson] = String(sub || '').split('~');
+    if (what !== 'portal') return;
+    const t = tabs();
+    if (t.some((x) => x[0] === 'portal')) A.tab = 'portal'; else { A.tab = 'acasa'; A.zone = 'portal'; }
+    if (lesson && window.C360Guide) { const k = window.C360Guide.lessons(guideRole()).findIndex((x) => x.id === lesson); if (k >= 0) A.gstep = k; }
+    if (panel && MODE === 'train') { panel.querySelector('[data-view]').innerHTML = ''; render(); }
+    if (K.glow) K.glow('[data-gsheet]', { max: 1 });
+  });
 })();

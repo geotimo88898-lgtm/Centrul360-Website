@@ -77,6 +77,9 @@ const STEPS = [
   ['capi', () => require('./_lib/meta-capi').sweep()],
   // the comments on posts and ads still without an answer or that failed, younger than a day (api/_lib/social-comments.js)
   ['comments', () => require('./_lib/social-comments').run()],
+  // once, last: the portal questions per role through Nuki, and whether its button is the right place (16.11;
+  // api/_lib/nuki-guide-once.js), the score shown by /api/clock-status
+  ['nukiguide', () => require('./_lib/nuki-guide-once').run()],
 ];
 
 module.exports = async (req, res) => {

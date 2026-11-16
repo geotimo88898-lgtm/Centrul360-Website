@@ -149,21 +149,12 @@ module.exports = async (req, res) => {
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
   // every role reads and answers (the owner, 6.11: the cosmeticians too, full access); the manager: the clinics she runs
   let scope = null;
-  if (session.role === 'manager') {
-    scope = await require('./_lib/city').cityOf(session, readJSON);
-    if (body.phone && action !== 'list') {
-      const c = (await readJSON(KEY, [])).find((x) => x.phone === String(body.phone));
-      if (c && c.location && !scope.includes(c.location)) return fail(403, 'forbidden');
-    }
-  }
-
+  if (session.role === 'manager') scope = await require('./_lib/city').cityOf(session, readJSON);
   // the hiring chats (candidates of the job ads) belong to the owner and the manager only (the owner, 16.11):
-  // reception and the cosmeticians neither see them in the list nor open or answer them
+  // reception and the cosmeticians neither see them in the list nor open or answer them. One conversation: the same
+  // rules as Nuki's (api/_lib/thread-access.js)
   const hiringOnly = !require('./_lib/roles').canManage(session);
-  if (hiringOnly && body.phone && action !== 'list') {
-    const p9 = digits9(body.phone);
-    if (p9.length === 9 && (await readJSON('data/candidates.json', [])).some((x) => !x.test && digits9(x.phone) === p9)) return fail(403, 'forbidden');
-  }
+  if (body.phone && action !== 'list' && !(await require('./_lib/thread-access').threadAllowed(session, body.phone, { readJSON }))) return fail(403, 'forbidden');
 
   try {
     const IG = require('./_lib/social-inbox');

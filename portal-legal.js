@@ -221,6 +221,13 @@
   }
 
   // from Echipa: an employee's papers in one tap
+  // #acte/echipa, #acte/Arad (Nuki, a link): the team's files or a clinic's
+  K.on('acte:sub', (t) => {
+    const v = t === 'echipa' ? 'team' : decodeURIComponent(String(t || ''));
+    if (v !== 'team' && !['Timișoara', 'Arad'].includes(v)) return;
+    S.view = v; S.person = '';
+    if (S.d && K.isActive('acte')) paint();
+  });
   window.C360Legal = { person(id) { S.view = 'team'; S.person = id; K.go('acte'); if (S.d) paint(); } };
   K.section('acte', { mount, show() { load(); } });
 })();

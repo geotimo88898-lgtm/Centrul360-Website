@@ -486,3 +486,13 @@
   });
   K.on('leads', (j) => { leadsData = j; });
 })();
+  // #panou/azi, #panou/kpi (Nuki, the guide): that page of the Panou (KPI: the owner and the manager)
+  K.on('panou:sub', (t) => {
+    if (t !== 'azi' && t !== 'kpi') return;
+    if (t === 'kpi' && !(K.data && (K.data.isAdmin || K.data.isManager))) return;
+    view = t;
+    try { localStorage.setItem('c360.dash.view', view); } catch (err) { /* this visit only */ }
+    firstPaint = true;
+    if (panel && K.isActive('panou') && leadsData) render(); // (still loading: its first paint uses the view)
+    if (K.glow) K.glow('.db-views [data-view="' + t + '"]', { max: 1 });
+  });

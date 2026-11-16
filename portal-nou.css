@@ -1064,6 +1064,12 @@ html.ui-nou .nk-m.is-nuki{ align-self:flex-start; background:color-mix(in srgb, 
 html.ui-nou .nk-copy{ position:absolute; top:6px; right:6px; width:26px; height:26px; border:0; border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; display:grid; place-items:center; opacity:.6; }
 html.ui-nou .nk-copy:hover{ opacity:1; background:color-mix(in srgb, var(--fg) 6%, transparent); }
 html.ui-nou .nk-copy .k-ic, html.ui-nou .nk-copy svg{ width:14px; height:14px; }
+/* the place an answer sends her to (16.11): outline buttons under Nuki's bubble, never wider than the chat */
+html.ui-nou .nk-acts{ align-self:flex-start; display:flex; flex-wrap:wrap; gap:6px; max-width:88%; margin-top:-4px; }
+html.ui-nou .nk-acts .nk-go{ max-width:100%; min-width:0; white-space:normal; text-align:left; line-height:1.25; animation:nk-go-in .32s cubic-bezier(.2,.9,.25,1) both; }
+html.ui-nou .nk-acts .nk-go .k-ic, html.ui-nou .nk-acts .nk-go svg{ flex:none; width:15px; height:15px; }
+@keyframes nk-go-in{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+html.c360-reduce .nk-acts .nk-go{ animation:none; }
 html.ui-nou .nk-dots{ display:flex; gap:5px; padding:14px 16px; }
 html.ui-nou .nk-dots i{ width:7px; height:7px; border-radius:50%; background:var(--muted); animation:nk-dot 1.1s ease-in-out infinite; }
 html.ui-nou .nk-dots i:nth-child(2){ animation-delay:.15s; } html.ui-nou .nk-dots i:nth-child(3){ animation-delay:.3s; }

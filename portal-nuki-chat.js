@@ -5,6 +5,8 @@
 // question (the owner, 8.11: „să-i pot trimite și poze, fișiere”): photos smaller first, everything as data to Claude.
 // For the owner, Nuki also edits what he tells it in Traininguri (8.11: „să editeze ce îi zic”): it shows the change as
 // a card (as it is now, as it would be) and it is saved only when he taps „Aplică” (api/_lib/nuki-edit.js).
+// Questions about the portal (16.11: „unde mut pauza?”) come back with a button under the answer that takes her there
+// (r.actions, places of her role from portal-guide-map.js): the chat goes back into Nuki, then K.place opens the place.
 (function () {
   'use strict';
   var K = function () { return window.K; };
@@ -27,6 +29,21 @@
     var t = p && p.id ? p.id.replace(/^panel-/, '') : (location.hash.slice(1) || '').split('/')[0];
     var b = document.querySelector('#tabsNav button[data-tab="' + t + '"].active') || document.querySelector('#tabsNav button[data-tab="' + t + '"]:not(.hidden)') || document.querySelector('#tabsNav button[data-tab="' + t + '"]');
     return b ? (b.getAttribute('data-label') || b.textContent || t).trim() : t;
+  }
+  // the place on screen, as the guide map names it (the section; its own page when the address says it)
+  function placeNow() {
+    var GM = window.C360GuideMap; if (!GM) return '';
+    var p = document.querySelector('main > .panel.active');
+    var tab = p && p.id ? p.id.replace(/^panel-/, '') : '';
+    var sub = (location.hash.slice(1) || '').split('/');
+    var id = sub[0] === tab && sub[1] && GM.PLACES[tab + '.' + sub[1]] ? tab + '.' + sub[1] : tab;
+    return GM.PLACES[id] ? id : '';
+  }
+  // „Du-mă acolo”: the chat goes back into Nuki's button, then the place opens (K.place: the role, the tab, the glow)
+  function goPlace(id, btn) {
+    if (!K().place) return;
+    if (S.d) S.d.close();
+    setTimeout(function () { K().place(id, { from: btn }); }, 140);
   }
   // the answer as text with line breaks: **bold**, a heading line as bold, links (sources of a search) clickable
   function fmt(t) {
@@ -84,6 +101,9 @@
       return m.role === 'user'
         ? '<div class="nk-m is-me' + (m.files && m.files.length ? ' has-files' : '') + '">' + (m.files && m.files.length ? '<div class="nk-mfiles">' + m.files.map(function (f, j) { return fileHtml(f, j, true); }).join('') + '</div>' : '') + fmt(m.content) + '</div>'
         : '<div class="nk-m is-nuki">' + fmt(m.content) + '<button type="button" class="nk-copy" data-copy="' + i + '" aria-label="Copiază">' + (K().icon ? K().icon('copy') : 'Copiază') + '</button></div>' +
+          (m.actions && m.actions.length ? '<div class="nk-acts">' + m.actions.map(function (a) {
+            return '<button type="button" class="k-btn is-outline is-sm nk-go" data-place="' + esc(a.id) + '">' + (m.actions.length > 1 ? esc(a.label) : 'Du-mă acolo') + (K().icon ? K().icon('right') : '') + '</button>';
+          }).join('') + '</div>' : '') +
           (m.edits || []).map(function (e, j) { return editHtml(e, i, j); }).join('');
     }).join('');
     var th = window.C360Nuki && window.C360Nuki.thread && window.C360Nuki.thread();
@@ -147,6 +167,8 @@
     var list = S.msgs.filter(function (m) { return !m.error; }).slice(-16), left = 18e6, n = 0;
     var out = list.map(function (m) {
       var said = m.content;
+      // the buttons it gave stay in what it said (so a next question knows where it sent her)
+      if (m.actions && m.actions.length) said += '\n' + m.actions.map(function (a) { return '[[du:' + a.id + ']]'; }).join('\n');
       if (m.edits && m.edits.length) said += '\n\n(Propunerile mele: ' + m.edits.map(function (e) {
         return e.what + ' „' + e.name + '” (' + e.fields.map(function (f) { return f.label; }).join(', ') + '): ' + (e.state === 'done' ? 'aplicată de el' : e.state === 'no' ? 'refuzată de el' : 'încă neaplicată');
       }).join('; ') + '.)';
@@ -186,8 +208,8 @@
       var msgs = payload(), size = 0;
       msgs.forEach(function (m) { (m.files || []).forEach(function (f) { size += (f.data || f.text || '').length; }); });
       // (photos and files also need the time to go up from the phone: a second for every 50 KB)
-      var r = await K().api('/api/portal-nuki', { action: 'chat', messages: msgs, thread: th || undefined, tab: tabName() }, { timeout: TIMEOUT + Math.round(size / 50e3) * 1e3 });
-      S.msgs.push({ role: 'assistant', content: r.text || (r.edits && r.edits.length ? 'Uite ce aș schimba.' : 'Nu am un răspuns acum.'), edits: r.edits || [] });
+      var r = await K().api('/api/portal-nuki', { action: 'chat', messages: msgs, thread: th || undefined, tab: tabName(), place: placeNow() || undefined }, { timeout: TIMEOUT + Math.round(size / 50e3) * 1e3 });
+      S.msgs.push({ role: 'assistant', content: r.text || (r.edits && r.edits.length ? 'Uite ce aș schimba.' : 'Nu am un răspuns acum.'), edits: r.edits || [], actions: r.actions || [] });
     } catch (err) {
       var d = err.data || {};
       // a photo or a file Claude refused: the ones sent since the last answer are not sent again (named only)
@@ -245,6 +267,8 @@
           var u = e.target.closest('[data-unfile]');
           if (u) { S.files.splice(Number(u.dataset.unfile), 1); paintFiles(); return; }
           if (e.target.closest('[data-retry]')) { retry(); return; }
+          var pl = e.target.closest('[data-place]');
+          if (pl) { goPlace(pl.getAttribute('data-place'), pl); return; }
           var ok = e.target.closest('[data-edit-ok]'), no = e.target.closest('[data-edit-no]');
           if (ok || no) { var at = (ok || no).getAttribute(ok ? 'data-edit-ok' : 'data-edit-no').split(':'); decide(Number(at[0]), Number(at[1]), !!ok); return; }
           var c = e.target.closest('[data-copy]');

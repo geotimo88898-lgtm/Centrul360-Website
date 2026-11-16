@@ -214,7 +214,13 @@ module.exports = async (req, res) => {
   }
   // ?nuki=1: Nuki (api/portal-nuki.js) answers a sample question with the real offers and free hours
   // ?nuki=edit: the owner's edits, end to end without saving: Nuki reads a sheet and proposes a change (nothing is applied)
-  if (req.query && req.query.nuki) { res.status(200).json(req.query.nuki === 'edit' ? await require('./portal-nuki').pingEdit(req.query.q) : await require('./portal-nuki').ping()); return; }
+  // ?nuki=guide: the portal questions per role through the real chat, and whether the button is the right place (16.11;
+  //   &role=<role> one role only, &texts=1 the failed answers' text too); read only, about 40 short answers
+  if (req.query && req.query.nuki) {
+    const N = require('./portal-nuki');
+    res.status(200).json(req.query.nuki === 'edit' ? await N.pingEdit(req.query.q) : req.query.nuki === 'guide' ? await N.pingGuide({ role: req.query.role, texts: !!req.query.texts }) : await N.ping());
+    return;
+  }
   // ?voice=1: the newest stored voice note written out now by Gemini (api/_lib/media-read.js), nothing saved; only its
   // length in characters, the time, ok or the error, and the last 7 days' voice notes in counts. Never the text.
   if (req.query && req.query.voice) { res.status(200).json(await require('./_lib/media-read').probe().catch((e) => ({ ok: false, error: String((e && (e.code || e.name)) || 'error').slice(0, 60) }))); return; }

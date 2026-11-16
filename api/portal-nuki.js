@@ -13,6 +13,9 @@
 //   Not found, or anything failing there: the screen's messages, with the labels, as before.
 // Nuki knows the active offers and prices (Admin → Oferte), the two clinics and their hours, the online free hours and the
 // clinic's rules. It never sends anything itself: the person reads it, changes it, sends it. At most 400 answers a day.
+// Questions about the portal itself (16.11: „unde mut pauza?”, „de unde văd comisionul meu?”) are answered from the
+// portal's map for her role (portal-guide-map.js); a place it sends her to comes back as a button: [[du:<id>]] in the
+// answer → { actions: [{ id, label }] }, only places her role has (placeActions).
 
 const Anthropic = require('@anthropic-ai/sdk');
 const { readJSON, writeJSON } = require('./_lib/store');
@@ -21,6 +24,10 @@ const E = require('./_lib/nuki-edit');
 const { loadOffers } = require('./_lib/offers');
 const B = require('./_lib/booking');
 const MR = require('./_lib/media-read');
+const { threadAllowed } = require('./_lib/thread-access');
+const { cityOf } = require('./_lib/city');
+// the portal's map (16.11): the places, the lessons and the answers per role, the same the guide in Traininguri draws
+const GM = require('../portal-guide-map.js');
 
 const MODEL = 'claude-opus-5-5';
 // when the first model is overloaded, rate limited, failing or too slow, the rest of the answer goes once to a faster one
@@ -61,8 +68,8 @@ const FACTS = `Fapte fixe:
 
 // who Nuki is in Mesaje (the reply button): the same for every question (cached by the API)
 const RULES = `Ești Nuki, asistentul echipei Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad (corp, față, epilare laser).
-Ajuți echipa (George, colega care conduce clinicile, recepția și cosmeticienele) să le răspundă clientelor pe WhatsApp, Instagram și Messenger, și răspunzi la întrebările echipei despre oferte, prețuri, programări și cum să vorbească cu o clientă.
-Când ceva trebuie hotărât (un preț, o reducere, o excepție), spui că decide George; nu folosești titluri („proprietarul”, „managerul”, „adminul”).
+Ajuți echipa clinicii să le răspundă clientelor pe WhatsApp, Instagram și Messenger, și răspunzi la întrebările echipei despre oferte, prețuri, programări și cum să vorbească cu o clientă.
+Când ceva trebuie hotărât (un preț, o reducere, o excepție), spui simplu că nu se hotărăște din chat; fără nume și fără titluri („proprietarul”, „managerul”, „adminul”), nici cui să se adreseze.
 
 Cum scrii un mesaj către o clientă:
 ${CLIENT_RULES}
@@ -74,17 +81,24 @@ ${FACTS}`;
 
 // the corner chat: a helper for anything, not only messages (the owner, 8.11: „să răspundă punctual la orice întrebare și
 // să mă ajute cu orice am nevoie”); the clinic's facts are there for when the question is about the clinic
-const CHAT_RULES = `Ești Nuki, asistentul echipei Centrul360 (George, colega care conduce clinicile, recepția și cosmeticienele), deschis în portalul clinicii (Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad).
-Vorbești firesc, fără titluri („proprietarul”, „managerul”, „adminul”); când ceva trebuie hotărât de cineva, spui că decide George.
+const CHAT_RULES = `Ești Nuki, asistentul echipei Centrul360, deschis în portalul clinicii (Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad).
+Vorbești firesc, fără titluri („proprietarul”, „managerul”, „adminul”) și fără nume când spui cui să se adreseze cineva: nu scrii „întreabă-l pe…”, „decide…”, „spune-i lui…”. Ce nu se poate face din contul ei: „Nu e în contul tău.” și, dacă ajută, ce poate face ea („spune ce trebuie schimbat și se rezolvă”).
 Îi ajuți cu orice au nevoie, nu doar cu mesajele clientelor: răspunzi la orice întrebare (clinică, marketing, reclame, vânzări, bani și calcule, texte, traduceri, Excel, tehnic, idei, sfaturi practice, cultură generală), citești poze și fișiere, scrii și corectezi texte, faci planuri și liste.
 
 Cum răspunzi:
 - punctual: răspunsul direct din prima propoziție, apoi doar ce ajută; scurt, fără introduceri și fără să repeți întrebarea;
 - în română, cu diacritice (sau în limba în care ți se scrie); fără liniuțe lungi (— sau –); fără titluri cu #; poți folosi liste scurte cu „-” și **bold** pentru ce contează;
-- corect: dacă nu știi sigur, spui; pentru lucruri recente sau care se schimbă (prețuri, știri, reguli, programe, cursuri), cauți pe internet și spui pe scurt ce ai aflat și de unde (numele site-ului), cu cuvintele tale, fără să lipești fragmente din pagini;
+- corect: dacă nu știi sigur, spui; pentru lucruri recente sau care se schimbă în afara clinicii (prețuri, știri, reguli, programe, cursuri), cauți pe internet și spui pe scurt ce ai aflat și de unde (numele site-ului), cu cuvintele tale, fără să lipești fragmente din pagini;
 - răspunzi doar la ce te întreabă: la o întrebare („pot să fac RF în sarcină?”, „cât costă…”, „ce înseamnă…”) dai răspunsul, nu un mesaj pentru o clientă și nici exemple de mesaje (the owner, 8.11);
 - scrii un mesaj de trimis doar când ți se cere explicit („scrie-i”, „ce să-i răspund”, „fă-mi un mesaj”), și atunci dai textul gata de copiat;
-- datele clinicii de mai jos (ofertele active, programul, orele libere) le folosești doar când întrebarea e despre clinică; nu inventezi date despre clinică (prețuri, programări, încasări) care nu sunt acolo; dacă nu le ai, spui unde le găsește în admin.
+- datele clinicii (ofertele active, programul, orele libere) le folosești doar când întrebarea e despre clinică; nu inventezi date despre clinică (prețuri, programări, încasări) care nu sunt acolo.
+
+Întrebările despre portal (unde găsesc ceva, cum fac ceva, de unde văd ceva, ce apas):
+- răspunzi doar din „Harta portalului” primită, care e exact contul ei; etichetele le scrii exact ca acolo, între „ ”; nu adaugi pași sau butoane care nu sunt în hartă;
+- dacă ce caută nu e în hartă, spui simplu „Nu găsesc asta în portal.”; nu ghicești și nu cauți pe internet pentru întrebări despre portal;
+- ce e al altui cont (alte roluri, pagini care nu sunt în harta ei): „Asta nu e în contul tău.”, fără să numești pagini, secțiuni sau butoane care nu sunt în harta ei;
+- când răspunsul o trimite într-un loc din hartă, pui la sfârșit, singur pe rând, [[du:<id>]] cu id-ul exact al locului (cel mult 2, doar id-uri din hartă; de obicei unul); sub răspuns apare singur butonul, deci nu scrii „apasă butonul”; la „nu e în contul tău” sau „nu găsesc” nu pui [[du:…]];
+- dacă e ceva ce poate face ea, răspunsul din „Întrebări frecvente” e cel bun pentru contul ei: îl spui cu cuvintele tale, scurt.
 
 Doar când ți se cere un mesaj către o clientă a clinicii, îl scrii așa:
 ${CLIENT_RULES}
@@ -102,7 +116,7 @@ const EDIT_RULES = `Poți modifica pentru George conținutul din Traininguri (fi
 - altceva decât Traininguri (oferte, prețuri de pe site, reclame, programări, setări) nu poți modifica: îi spui în ce secțiune o face el.
 
 Ce poți modifica:`;
-const NO_EDIT = 'Nu poți modifica nimic în portal. Dacă ți se cere, spui că modificările le face George.';
+const NO_EDIT = 'Nu poți modifica nimic în portal din chat. Dacă ți se cere, spui scurt că din chat nu se schimbă nimic și, dacă e în harta ei, unde se face.';
 
 function money(n) { return Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei'; }
 async function offersText() {
@@ -143,8 +157,11 @@ function threadText(t) {
 const MEDIA_NOTE = 'Ce a trimis ea în afară de text: mesajele vocale apar cu transcrierea lor („Mesaj vocal: …”), un video cu ce se vede în el; ' +
   'pozele și documentele ei, când le ai, sunt atașate mai jos, numerotate ca în conversație. Ce apare doar ca etichetă („Mesaj vocal”, „Poză”, „Video”) ' +
   'nu știi ce conține: nu ghici. Din pozele ei nu pui diagnostice și nu promiți rezultate.';
-async function withMedia(thread, kind) {
+// session: who asks; a conversation her account can't open in Mesaje (another clinic for the manager, a candidate for
+// reception or a cosmetician, api/_lib/thread-access.js) is not read here either → { forbidden: true }
+async function withMedia(thread, kind, session) {
   const key = thread && typeof thread === 'object' ? clip(thread.phone, 60) : '';
+  if (key && !(await threadAllowed(session, key, { readJSON }))) return { thread: null, blocks: [], forbidden: true };
   if (!key) return { thread, blocks: [] };
   try {
     const got = await MR.forNuki(key, { ms: MEDIA_MS[kind] || 10e3, max: MEDIA_MAX[kind] || 4 });
@@ -168,6 +185,30 @@ async function orWithout(blocks, run) {
   }
 }
 
+// the portal's map for the person asking (cached with the rules, one per role and clinics): who she is, without her name,
+// then her role's places, lessons and answers
+const CLINICS = (c) => (!c ? 'ambele clinici (Timișoara și Arad)' : Array.isArray(c) ? (c.length > 1 ? 'clinicile ' + c.join(' și ') : 'clinica ' + c[0]) : 'clinica ' + c);
+async function guideText(session) {
+  const role = GM.ROLES.includes(session && session.role) ? session.role : 'receptie';
+  const clinics = await cityOf(session, readJSON).catch(() => null);
+  return 'Vorbești cu: ' + (GM.ROLE_LABEL[role] || role) + ', ' + CLINICS(clinics) + '.\n\n' + GM.promptText(role) + (role === 'admin' ? '' : '\n\n' + NO_EDIT);
+}
+// the corner chat's system, in this order (16.11): the rules (cached), the portal's map for her role (cached), the owner's
+// edits and their index (cached), then the day's facts (not cached: they change every answer)
+async function chatSystemFor(session, facts) {
+  const owner = session && session.role === 'admin';
+  return [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: await guideText(session), cache_control: { type: 'ephemeral' } }]
+    .concat(owner ? [{ type: 'text', text: EDIT_RULES + '\n' + (await E.index()), cache_control: { type: 'ephemeral' } }] : [], [{ type: 'text', text: facts }]);
+}
+// the answer's [[du:<id>]] lines → the buttons under it: only places of her role, at most 2, the lines taken out of the text
+function placeActions(text, role) {
+  const ids = [];
+  const clean = String(text || '').replace(/\[\[\s*du\s*:\s*([A-Za-z0-9._-]+)\s*\]\]/g, (m, id) => { ids.push(id.toLowerCase()); return ''; })
+    .replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
+  const actions = [];
+  ids.forEach((id) => { if (actions.length < 2 && GM.can(id, role) && !actions.some((a) => a.id === id)) actions.push({ id, label: GM.PLACES[id].title }); });
+  return { text: clean, actions };
+}
 
 // ---------------------------------------------------------------- „Programăm?” (the owner, 8.11)
 // In Mesaje, when she names a day and an hour, Nuki reads what she wants and the Calendar says whether that hour is
@@ -218,6 +259,18 @@ async function slotCheck(want, city) {
   }
   return { date: want.date, time: want.time, endTime: hhmm(e), minutes, city, treatment: svc ? svc.title : want.treatment || '', price: svc ? svc.price : 0,
     free, open: P.open, inHours, who, alt: alt.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)) };
+}
+
+// the city the slot is checked in: one of hers (a cosmetician's clinic, the manager's clinics; reception and the owner:
+// both), the one she asked about first, then the conversation's
+function slotCity(scope, asked, threadCity) {
+  const mine = scope == null ? B.CITIES : [].concat(scope).filter((c) => B.CITIES.includes(c));
+  return mine.includes(asked) ? asked : mine.includes(threadCity) ? threadCity : mine[0] || '';
+}
+// a cosmetician sees who is booked there, never her phone or her money (the amount, whether it is paid)
+function slotFor(session, d) {
+  if (!session || session.role !== 'cosmetician') return d;
+  return Object.assign({}, d, { who: (d.who || []).map((w) => { const x = Object.assign({}, w); delete x.phone; delete x.amount; delete x.paid; return x; }) });
 }
 
 async function underCap() {
@@ -347,7 +400,9 @@ async function ask(system, messages, effort, tools, onTool, opts) {
   const searches = parts.filter((b) => b.type === 'server_tool_use').length;
   // one line per answer, no content (Cloudflare's logs): how long, which model, how it ended, so a slow or empty answer
   // can be told apart from a failed one
-  console.log('portal-nuki ' + JSON.stringify({ kind, ms: Date.now() - t0, calls: st.calls, model: r.model, fast: st.fast, stop: r.stop_reason, out: r.usage && r.usage.output_tokens, searches }));
+  // (cacheRead / cacheWrite: the rules and the portal's map read from the cache, or written to it)
+  console.log('portal-nuki ' + JSON.stringify({ kind, ms: Date.now() - t0, calls: st.calls, model: r.model, fast: st.fast, stop: r.stop_reason, out: r.usage && r.usage.output_tokens,
+    cacheRead: (r.usage && r.usage.cache_read_input_tokens) || 0, cacheWrite: (r.usage && r.usage.cache_creation_input_tokens) || 0, searches }));
   if (r.stop_reason === 'refusal') return { text: '', refused: true };
   const text = said.map((x) => x.trim()).filter(Boolean).join('\n\n');
   return { text: text.replace(/\s+[—–]\s+/g, ', ').replace(/[—–]/g, '-'), searches };
@@ -378,6 +433,9 @@ module.exports = async (req, res) => {
     }
     return;
   }
+  // a conversation her account can't open in Mesaje: no draft and no „Programăm?” on it (api/_lib/thread-access.js)
+  if ((b.action === 'reply' || b.action === 'slot') && b.thread && typeof b.thread === 'object' && b.thread.phone &&
+    !(await threadAllowed(session, clip(b.thread.phone, 60), { readJSON }))) { res.status(403).json({ error: 'forbidden' }); return; }
   if (!process.env.ANTHROPIC_API_KEY) { res.status(503).json({ error: 'no_key', message: 'Nuki nu are încă cheia Claude.' }); return; }
   // photos or files in this question (a 400 from Claude is then most likely one of them)
   const withFiles = b.action === 'chat' && (Array.isArray(b.messages) ? b.messages : []).some((m) => m && Array.isArray(m.files) && m.files.some((f) => f && !f.gone));
@@ -391,7 +449,8 @@ module.exports = async (req, res) => {
     const system = [{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts }];
     if (b.action === 'slot') {
       if (!threadText(b.thread)) { res.status(400).json({ error: 'no_thread' }); return; }
-      const md = await withMedia(b.thread, 'slot');
+      const md = await withMedia(b.thread, 'slot', session);
+      if (md.forbidden) { res.status(403).json({ error: 'forbidden' }); return; }
       const th = threadText(md.thread) + (md.note ? '\n\n' + md.note : '');
       const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
       const wd = RO_DAYS[new Date(today + 'T12:00:00Z').getUTCDay()];
@@ -402,13 +461,15 @@ module.exports = async (req, res) => {
       let want = null;
       try { const t = r.text || ''; want = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); } catch (e) { want = null; }
       if (!want || !want.found || !/^\d{4}-\d{2}-\d{2}$/.test(want.date || '') || toMin(want.time) == null || want.date < today) { res.status(200).json({ found: false }); return; }
-      const city = B.CITIES.includes(want.city) ? want.city : B.CITIES.includes((b.thread || {}).city) ? b.thread.city : B.CITIES[0];
-      res.status(200).json(Object.assign({ found: true }, await slotCheck(want, city)));
+      const city = slotCity(await cityOf(session, readJSON), want.city, (b.thread || {}).city);
+      if (!city) { res.status(200).json({ found: false }); return; }
+      res.status(200).json(Object.assign({ found: true }, slotFor(session, await slotCheck(want, city))));
       return;
     }
     if (b.action === 'reply') {
       if (!threadText(b.thread)) { res.status(400).json({ error: 'no_thread' }); return; }
-      const md = await withMedia(b.thread, 'reply');
+      const md = await withMedia(b.thread, 'reply', session);
+      if (md.forbidden) { res.status(403).json({ error: 'forbidden' }); return; }
       const th = threadText(md.thread) + (md.note ? '\n\n' + md.note : '');
       const draft = clip(b.draft, 2000);
       const ask1 = draft
@@ -429,9 +490,11 @@ module.exports = async (req, res) => {
       while (list.length && list[0].role !== 'user') list.shift();
       if (!list.length || list[list.length - 1].role !== 'user') { res.status(400).json({ error: 'no_question' }); return; }
       // the conversation open in Mesaje, from the store, with her voice notes heard and her newest files (MEDIA_MAX.chat)
-      const md = threadText(b.thread) ? await withMedia(b.thread, 'chat') : { thread: b.thread, blocks: [] };
+      // (a conversation her account can't open: the question goes without it)
+      const md = threadText(b.thread) ? await withMedia(b.thread, 'chat', session) : { thread: b.thread, blocks: [] };
       const th = threadText(md.thread) + (md.note && threadText(md.thread) ? '\n\n' + md.note : '');
-      const where = clip(b.tab, 40);
+      const here = clip(b.place, 40);
+      const where = clip(b.tab, 40) + (here && GM.can(here, session.role) ? ' (' + here + ')' : '');
       const first = list[0];
       // the API wants the turns to alternate: merge two of the same side
       const turnsWith = (files) => {
@@ -443,8 +506,7 @@ module.exports = async (req, res) => {
       };
       // the corner chat: a helper for anything (its own rules), able to search the internet
       const owner = session.role === 'admin';
-      const chatSystem = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: facts },
-        { type: 'text', text: owner ? EDIT_RULES + '\n' + (await E.index()) : NO_EDIT }];
+      const chatSystem = await chatSystemFor(session, facts);
       // the owner's edits: Nuki reads and proposes; what it proposes goes to the chat with „Aplică”, nothing is saved here
       const edits = [];
       const onTool = async (name, input) => {
@@ -460,8 +522,12 @@ module.exports = async (req, res) => {
         return { result: 'Nu am unealta asta.', error: true };
       };
       const r = await orWithout(md.blocks, (files) => { edits.length = 0; return ask(chatSystem, turnsWith(files), 'medium', owner ? WEB.concat(E.TOOLS) : WEB, onTool, { kind: 'chat', deadline: t0 + BUDGET.chat }); });
-      const text = r.refused || (!r.text && !edits.length) ? 'Nu pot răspunde la asta. Întreabă-mă altfel sau întreabă pe cineva din echipă.' : r.text;
-      res.status(200).json(edits.length ? { text, edits } : { text });
+      const nav = placeActions(r.text, session.role);
+      const text = r.refused || (!nav.text && !edits.length) ? (nav.actions.length ? 'Uite unde e.' : 'Nu pot răspunde la asta. Întreabă-mă altfel.') : nav.text;
+      const out = { text };
+      if (edits.length) out.edits = edits;
+      if (nav.actions.length && !r.refused) out.actions = nav.actions;
+      res.status(200).json(out);
       return;
     }
     res.status(400).json({ error: 'invalid_action' });
@@ -516,5 +582,63 @@ module.exports.pingEdit = async (q) => {
   } catch (e) { return { key: true, ok: false, status: e && e.status, error: String((e && e.message) || e).slice(0, 300) }; }
 };
 
+// /api/lead-health?nuki=guide (and once on the clock, api/_lib/nuki-guide-once.js): the questions people ask about the
+// portal, per role, through the real chat (the same system, model and tools), and whether the button Nuki gives is the
+// right place. Read only: nothing is saved, no proposal applied. → { ok, roles: { role: { ok, n, fails: [...] } }, ms }
+// want: the places that count as right; [] = no button (a neutral answer); named: a name or a title said as whom to ask
+const GUIDE_EVAL = {
+  admin: [['Cum aprob comisioanele fetelor?', ['aprobari']], ['Cum fac o rambursare?', ['incasari']], ['Am greșit o încasare, cum o corectez?', ['incasari']],
+    ['Unde trec costurile lunii?', ['cheltuieli']], ['Unde văd propunerea de costuri trimisă pentru bonus?', ['cheltuieli.propunere']], ['Unde văd salariile?', ['angajati.salarii']],
+    ['Cum confirm bonusul de manager?', ['angajati.salarii']], ['Unde mut pauza unei cosmeticiene?', ['programari.pauza']], ['Cum văd portalul exact ca o colegă?', ['angajati']],
+    ['Cine a schimbat ceva în portal azi?', ['activitate']]],
+  manager: [['Unde mut pauza unei fete?', ['programari.pauza']], ['Cum fac o rambursare?', ['incasari']], ['Cât mai am până la bonus?', ['comision.bonus']],
+    ['Unde trec consumabilele?', ['comision.costuri']], ['Unde văd programul fetelor pe săptămână?', ['programari.echipa']],
+    ['Unde aprob concediile și pontajul colegelor?', ['manager.echipa', 'condica', 'condica.derezolvat']], ['Cum închid ziua?', ['manager.inchide']],
+    ['Pe cine sun ca să umplu calendarul?', ['programari.orelibere']], ['Unde văd candidații?', ['pipeline.angajari']],
+    ['Cât profit a făcut clinica luna asta și cât iau colegele?', []]],
+  receptie: [['Cum programez o clientă?', ['programari.new']], ['Clienta vrea exact la ora pauzei cosmeticienei, ce fac?', ['programari.new']], ['Cum încasez o plată?', ['incasari.new']],
+    ['Cum fac o rambursare?', []], ['Unde văd bonusul meu?', ['comision.bonus']], ['Unde sun leadurile?', ['pipeline.coada']], ['Ce am de făcut azi?', ['automatizari']],
+    ['Vreau concediu, cum cer?', ['condica.noua']], ['Au trecut 24 de ore și nu-i mai pot scrie clientei, ce fac?', ['mesaje']],
+    ['Clienta vrea să plătească restul din pachet, unde văd cât mai are?', ['incasari.dues']]],
+  cosmetician: [['De unde văd comisionul meu?', ['comision']], ['Lipsește un upsell de-al meu, ce fac?', ['comision.adauga']], ['Când e pauza mea?', ['programari.pauza']],
+    ['Unde pun pozele înainte și după?', ['contacte']], ['Cum scanez fișa clientei?', ['contacte']], ['Cum fac oferta pentru clientă?', ['calculator']], ['Cum pontez?', ['condica']],
+    ['Vreau concediu, cum cer?', ['condica.noua']], ['Cum mut o programare?', []], ['Cât câștigă colegele?', []]],
+};
+const NAMED = /\bGeorge\b|managerul|managera|proprietar|adminul|\bșeful|\bșefa/i;
+module.exports.pingGuide = async (opts) => {
+  if (!process.env.ANTHROPIC_API_KEY) return { key: false };
+  const t0 = Date.now();
+  const [offers, hours] = await Promise.all([offersText(), hoursText()]);
+  const facts = 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.\n\nDatele clinicii.\nOfertele active (Admin → Oferte):\n' + offers + '\n\nClinicile:\n' + hours;
+  const only = opts && GM.ROLES.includes(opts.role) ? [opts.role] : GM.ROLES;
+  const jobs = [];
+  for (const role of only) {
+    // a made-up account of that role (no one's name): both clinics for the manager, Timișoara for a cosmetician
+    const session = { role, employeeId: '', username: 'eval' };
+    const system = await chatSystemFor(session, facts);
+    if (role === 'cosmetician') system[1].text = system[1].text.replace('ambele clinici (Timișoara și Arad)', 'clinica Timișoara');
+    GUIDE_EVAL[role].forEach(([q, want]) => jobs.push({ role, q, want, system }));
+  }
+  const noTool = async () => ({ result: 'Nimic nu se salvează în verificare.', error: true });
+  const runOne = async (j) => {
+    try {
+      const r = await ask(j.system, [{ role: 'user', content: 'Sunt în admin, la „Panou” (panou).\n' + j.q }], 'medium', j.role === 'admin' ? WEB.concat(E.TOOLS) : WEB, noTool, { kind: 'chat' });
+      const nav = placeActions(r.text, j.role);
+      const got = nav.actions.map((a) => a.id);
+      const ok = j.want.length ? got.some((id) => j.want.includes(id)) : got.length === 0;
+      return { role: j.role, q: j.q, want: j.want, got, ok, named: NAMED.test(nav.text), searches: r.searches || 0, text: nav.text.slice(0, 400) };
+    } catch (e) { return { role: j.role, q: j.q, want: j.want, got: [], ok: false, error: String((e && (e.status || e.code || e.message)) || e).slice(0, 80) }; }
+  };
+  const out = [];
+  for (let i = 0; i < jobs.length; i += 10) out.push(...(await Promise.all(jobs.slice(i, i + 10).map(runOne))));
+  const roles = {};
+  only.forEach((role) => {
+    const mine = out.filter((x) => x.role === role);
+    roles[role] = { ok: mine.filter((x) => x.ok && !x.named).length, n: mine.length, fails: mine.filter((x) => !x.ok || x.named).map((x) => ({ q: x.q, want: x.want, got: x.got, named: x.named || undefined, error: x.error, text: opts && opts.texts ? x.text : undefined })) };
+  });
+  const all = out.filter((x) => x.ok && !x.named).length;
+  return { key: true, ok: all === out.length, score: all + '/' + out.length, roles, searches: out.reduce((a, x) => a + (x.searches || 0), 0), ms: Date.now() - t0 };
+};
+
 // the answers to the comments on the clinic's posts and ads (api/_lib/social-comments.js) use the same Claude call and facts
-module.exports.lib = { ask, offersText, hoursText, FACTS };
+module.exports.lib = { ask, offersText, hoursText, FACTS, placeActions, withMedia, slotCity, slotFor, guideText };

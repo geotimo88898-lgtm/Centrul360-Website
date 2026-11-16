@@ -1360,3 +1360,14 @@
     if (o.id) openAppt(o.id);
   });
 })();
+  // #programari/pauza (Nuki, the guide): today's breaks, in the day view, with a short glow; #programari/echipa: Program echipă
+  K.on('programari:sub', async (sub) => {
+    if (sub === 'echipa') { if (K.canManage && K.canManage()) setTimeout(() => openTeam(), 120); return; }
+    if (sub !== 'pauza') return;
+    const until = Date.now() + 4000;
+    while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));
+    if (!panel) return;
+    S.date = K.today();
+    await setView('day');
+    if (K.glow) K.glow('.cal-team-brk, .cal-brk', { max: 8 }); // (the day's line „La lucru” and the blocks in the columns)
+  });

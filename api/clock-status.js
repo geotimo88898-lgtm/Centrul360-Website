@@ -9,5 +9,7 @@ module.exports = async (req, res) => {
   // the new texts of the Arad ads (8.11): per ad, in or not (names and counts only)
   const texts = await require('./_lib/ads-text-once').summary().catch(() => null);
   const tm = await require('./_lib/tm-on-once').summary().catch(() => null); // the Timișoara ads switched back on (8.11)
-  res.status(200).json({ ok: true, last, minutesAgo: age, healthy: age != null && age <= 75, texts, tm });
+  // Nuki's portal questions per role, once after a publish (16.11): the score and the questions it sent elsewhere
+  const nukiGuide = await require('./_lib/nuki-guide-once').summary().catch(() => null);
+  res.status(200).json({ ok: true, last, minutesAgo: age, healthy: age != null && age <= 75, texts, tm, nukiGuide });
 };

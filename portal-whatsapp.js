@@ -561,7 +561,7 @@
       body = '<b>' + esc(when) + ' e ocupat</b><small>Ea vrea: ' + esc(what) + '</small><ul>' + who + '</ul><p class="mx-nk-rec">' + esc(rec) + '</p>' + (alts ? '<div class="mx-nk-alts"><span>Ore libere</span>' + alts + '</div>' : '');
     }
     const html = '<div class="mx-nkslot ' + (d.free ? 'is-free' : 'is-busy') + '"><img src="/brand_asset/mascota/ipostaze/calendar.webp" alt=""><div class="mx-nk-t">' + body + '</div>' +
-      '<div class="mx-nk-a">' + (d.free ? '<button type="button" class="k-btn is-accent is-sm" data-slot-book>Programăm?</button>' : d.open && d.inHours ? '<button type="button" class="k-btn is-outline is-sm" data-slot-book>Programează oricum</button>' : '') +
+      '<div class="mx-nk-a">' + (K.data && K.data.me && K.data.me.role === 'cosmetician' && !K.data.isAdmin ? '' : d.free ? '<button type="button" class="k-btn is-accent is-sm" data-slot-book>Programăm?</button>' : d.open && d.inHours ? '<button type="button" class="k-btn is-outline is-sm" data-slot-book>Programează oricum</button>' : '') +
       '<button type="button" class="k-icon-btn" data-slot-x aria-label="Ascunde">' + icon('x') + '</button></div></div>';
     let el = box.querySelector('.mx-nkslot');
     const anchorEl = box.querySelector('.mx-compose') || box.querySelector('.mx-closed');
@@ -579,8 +579,9 @@
     const d = C.slot && C.slot.d, w = d && d.who[i]; if (!w) return;
     const first = String(w.name || '').split(' ')[0];
     const two = (d.alt || []).slice(0, 2).map((a) => slotDay(a.date).toLowerCase() + ' la ' + a.time);
-    const text = 'Bună, ' + first + '! 😊 Te rugăm frumos, ne-ar ajuta mult dacă am putea muta ședința ta de ' + slotDay(d.date).toLowerCase() + ', ora ' + w.time + '. ' +
-      (two.length ? 'Ți-ar conveni ' + two.join(' sau ') + '?' : 'Ce altă oră ți-ar conveni?') + ' Mulțumim mult pentru înțelegere!';
+    // (with „dumneavoastră”, as Nuki writes to every client, 16.11)
+    const text = 'Bună ziua, ' + first + '! 😊 Vă rugăm frumos, ne-ar ajuta mult dacă am putea muta ședința dumneavoastră de ' + slotDay(d.date).toLowerCase() + ', ora ' + w.time + '. ' +
+      (two.length ? 'V-ar conveni ' + two.join(' sau ') + '?' : 'Ce altă oră v-ar conveni?') + ' Vă mulțumim mult pentru înțelegere!';
     const d9 = String(w.phone).replace(/\D/g, '').slice(-9);
     const c = C.conversations.find((x) => !isIg(x) && String(x.phone).replace(/\D/g, '').slice(-9) === d9);
     if (c) { C.draftFor = { phone: c.phone, text }; openThread(c.phone); return; }
