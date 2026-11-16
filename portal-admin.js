@@ -267,7 +267,7 @@
     epanel.classList.add('k-panel', 'ad');
     epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
-      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['costuri', 'Costuri', 'receipt'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
+      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
       '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="costuri" hidden><div data-costs></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();

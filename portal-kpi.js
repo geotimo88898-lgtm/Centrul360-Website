@@ -162,12 +162,16 @@
         if (c.cost && c.cost.lead && pc.cpl && c.cost.lead >= pc.cpl * 1.3) list.push({ tone: 'warn', go: 'reclame', t: 'Un lead ' + short(c.city) + ': ' + L2(c.cost.lead), s: 'cu ' + Math.round((c.cost.lead / pc.cpl - 1) * 100) + '% mai scump decât înainte (' + L2(pc.cpl) + ')' });
       });
     }
+    // the owner (16.11, again): team and reception alerts are the manager's job; his strip keeps only what he decides
+    // himself (lead volume and cost per city, the ads)
+    if (!own) {
     const under = Object.keys(d.clinic || {}).reduce((a, c) => a.concat((d.clinic[c].team || []).filter((x) => !x.ok)), []);
     if (under.length) list.push({ tone: 'warn', to: 'team', t: K.plural(under.length, 'cosmeticiană', 'cosmeticiene') + ' sub ' + K.lei((d.targets && d.targets.perDay) || 1500) + ' pe zi', s: under.map((x) => String(x.name).split(' ')[0] + ' ' + K.lei(x.perDay)).join(', ') });
     if (p && d.summary.upsellRate != null && p.upsellRate != null && d.summary.upsellRate <= p.upsellRate - 10) list.push({ tone: 'warn', to: 'rates', t: 'Upsellul a scăzut: ' + P(d.summary.upsellRate), s: 'înainte ' + P(p.upsellRate) + ' din vizite' });
     if (p && d.summary.showRate != null && p.showRate != null && d.summary.showRate <= p.showRate - 10) list.push({ tone: 'warn', to: 'rates', t: 'Vin mai puține: ' + P(d.summary.showRate), s: 'înainte ' + P(p.showRate) });
     // calling leads and answering messages are the manager's job: on the owner's page these stay in Pipeline and Mesaje (16.11)
     (d.alerts || []).filter((a) => a.tone !== 'good' && a.kind !== 'ad' && a.kind !== 'show' && !(own && ['lead', 'speed', 'wa'].includes(a.kind))).forEach((a) => list.push({ tone: a.tone, go: a.go, t: a.title + ': ' + a.name, s: a.text }));
+    }
     if (!list.length) return '';
     return '<section class="kq-todo is-full" data-part="alerts">' + list.slice(0, 4).map((a, i) => '<button type="button" style="--i:' + i + '" class="kq-al is-' + a.tone + '"' + (a.go ? ' data-go="' + a.go + '"' : ' data-kq-to="' + a.to + '"') + '>' +
       icon(a.tone === 'bad' ? 'alert' : 'bell') + '<span><b>' + esc(a.t) + '</b> ' + esc(a.s) + '</span>' + icon('arrow') + '</button>').join('') + '</section>';

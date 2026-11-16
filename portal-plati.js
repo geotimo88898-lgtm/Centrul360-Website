@@ -283,4 +283,12 @@
     } catch (err) { K.ui().toast(K.errText(err), 'error'); }
     load();
   });
+  // its own entry in the menu (the owner, 16.11: „rubrică separată cu cheltuieli în meniu”): Plăți, Cheltuieli, Costuri lunare
+  if (K.section) K.section('cheltuieli', {
+    mount(p) {
+      p.classList.add('k-panel', 'lg');
+      p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Admin</div><h2>Cheltuieli</h2></div></div><div data-costs></div>';
+    },
+    show() { const b = document.querySelector('#panel-cheltuieli [data-costs]'); if (b && K.mountCosts) K.mountCosts(b); },
+  });
 })();
