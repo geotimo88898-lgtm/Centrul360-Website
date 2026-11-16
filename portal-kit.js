@@ -460,6 +460,7 @@
   // ------------------------------------------------------------------ drawer
   let drawerRoot = null, current = null, openRaf = 0, pushed = false;
   function drawer(opts) {
+    if (opts.from && window.C360Motion) window.C360Motion.from(opts.from); // grows out of (and goes back into) that card (portal-motion.js)
     if (!drawerRoot) {
       drawerRoot = document.createElement('div');
       drawerRoot.className = 'k-drawer-root';

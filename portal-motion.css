@@ -1,0 +1,13 @@
+/* portal-motion.css: the few rules portal-motion.js needs (motion with a sense of place, 16.11).
+   The Web Animations drive transform and opacity only; the pictures that ride on top never take a tap. */
+.cx-layer{ position:fixed; inset:0; z-index:1300; pointer-events:none; contain:strict; }
+.cx-ghost{ position:fixed; margin:0; pointer-events:none !important; overflow:hidden; box-sizing:border-box; contain:layout paint style; will-change:transform, opacity; }
+.cx-layer > .cx-ghost{ z-index:1; }
+.cx-fly{ overflow:visible; contain:layout style; }
+.cx-ghost *, .cx-ghost-clone, .cx-ghost-clone *{ pointer-events:none !important; animation:none !important; transition:none !important; }
+/* the section that leaves stays a moment where it was, fading out while the new one slides in */
+main > .panel.cx-out{ animation:none !important; }
+main > .panel.cx-out > *{ animation:none !important; }
+html.c360-reduce .cx-ghost, html.c360-reduce .cx-layer{ display:none !important; }
+@media (prefers-reduced-motion: reduce){ .cx-ghost, .cx-layer{ display:none !important; } }
+@media print{ .cx-layer, .cx-ghost{ display:none !important; } }

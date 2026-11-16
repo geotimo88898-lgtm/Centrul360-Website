@@ -55,6 +55,7 @@
   // =====================================================================================
   function dialog(opts) {
     return new Promise((resolve) => {
+      if (opts.from && window.C360Motion) window.C360Motion.from(opts.from); // opens from (and closes into) the button that asked (portal-motion.js)
       const previous = document.activeElement;
       const root = document.createElement('div');
       root.className = 'c360-dialog-root';
