@@ -206,9 +206,12 @@
     let rejectionNote = '';
     if (!ok) { rejectionNote = await K.ui().prompt({ title: 'Respingi cererea de concediu?', message: 'Spune-i pe scurt de ce, vede motivul la cererea ei.', label: 'Motiv (opțional)', confirmText: 'Respinge' }); if (rejectionNote === null) return; }
     try {
-      await K.api('/api/portal-leave', { action: 'decide', id, decision: ok ? 'approved' : 'rejected', rejectionNote });
+      const r = (S.leave || []).find((x) => x.id === id) || {};
+      // approved: the hours asked when needed („Ore libere”), her bookings those days in a sheet out of the card (portal-calendar.js)
+      if (ok) { if (!(await K.approveLeave(id, document.querySelector('[data-lv="' + id + '"]'), nameOf(r.employeeId), r.minutes))) return; }
+      else await K.api('/api/portal-leave', { action: 'decide', id, decision: 'rejected', rejectionNote });
       K.ui().toast(ok ? 'Concediu aprobat, calendarul e blocat.' : 'Cerere respinsă.', ok ? 'success' : 'info'); K.reload(); body();
-    } catch (e) { K.ui().toast(errText(e), 'error'); }
+    } catch (e) { K.ui().toast(e.code === 'employee_left' ? 'A plecat din echipă, cererea nu se mai aprobă.' : errText(e), 'error'); }
   }
   // one person's month: her days, with the correction of a mistaken entry (never one's own)
   async function openEmp(id) {
@@ -260,7 +263,12 @@
           if (!v.employeeId) { K.ui().toast('Alege angajatul.', 'error'); return; }
           if (v.endDate < v.startDate) { K.ui().toast('Data de sfârșit e înainte de început.', 'error'); return; }
           if ((v.type === 'medical' || v.type === 'alta') && !v.reason) { K.ui().toast('Scrie motivul.', 'error'); return; }
-          try { await K.api('/api/portal-leave', { action: 'admin_create', employeeId: v.employeeId, type: v.type, startDate: v.startDate, endDate: v.endDate, reason: v.reason }); d.close(); K.ui().toast('Concediu notat, calendarul e blocat.', 'success'); body(); }
+          try {
+            const j = await K.api('/api/portal-leave', { action: 'admin_create', employeeId: v.employeeId, type: v.type, startDate: v.startDate, endDate: v.endDate, reason: v.reason });
+            const save = el.querySelector('[data-save]');
+            if (j.affected && j.affected.length && K.affectedSheet) K.affectedSheet(j.affected, { from: save, why: 'concediu ' + String(nameOf(v.employeeId)).split(' ')[0] }); else d.close();
+            K.ui().toast('Concediu notat, calendarul e blocat.', 'success'); body();
+          }
           catch (err) { K.ui().toast(errText(err), 'error'); }
         }));
       },

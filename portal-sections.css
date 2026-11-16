@@ -2527,6 +2527,32 @@ html.mx-pv-open{ overflow:hidden; }
 .cal-left u{ text-underline-offset:2px; font-weight:600; }
 .cal-left-row{ width:100%; text-align:left; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; }
 .cal-left-row .k-row-main{ flex:1; min-width:0; }
+/* the bookings left without a cosmetician (16.11): „Mută la Ana” chips under each one, the line in Program echipă, her own
+   „A venit?” on a passed visit */
+.tc-list .k-row{ align-items:flex-start; }
+.tc-moves{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; margin-top:.5rem; min-width:0; }
+.tc-moves > span:not(.k-tag){ font-size:.76rem; color:var(--muted); margin-right:.1rem; }
+.tc-moves .k-btn{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tc-row.is-done .k-row-title{ color:var(--muted); }
+.tc-note{ margin:.2rem 0 .6rem; }
+.cal-mark-b{ display:flex; flex-wrap:wrap; gap:.5rem; }
+.cal-mark-b .k-btn{ flex:1 1 140px; justify-content:center; }
+.cal-mark small{ display:block; margin-top:.45rem; font-size:.76rem; color:var(--muted); }
+/* „De confirmat” and „Nefinalizate”: the Calendar as a list, one tap per row */
+.cal-grid.is-list{ display:block; height:auto; }
+.cal-list{ padding:.4rem .2rem .6rem; }
+.cal-list section + section{ margin-top:.9rem; }
+.cal-list h4{ display:flex; align-items:center; gap:.45rem; margin:.2rem .55rem .35rem; font-size:.78rem; font-weight:650; color:var(--muted); text-transform:none; }
+.cal-list h4 span{ font-variant-numeric:tabular-nums; padding:0 .4rem; border-radius:99px; background:var(--glass); }
+.cal-lrow{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem .7rem; padding:.55rem .55rem; border-radius:12px; min-width:0; transition:opacity .25s ease, transform .25s ease; }
+.cal-lrow + .cal-lrow{ border-top:1px solid var(--line); }
+.cal-lrow.is-gone{ opacity:0; transform:translateX(12px); }
+.cal-lrow-m{ flex:1 1 220px; display:flex; align-items:baseline; gap:.7rem; min-width:0; padding:0; border:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.cal-lrow-m > b{ flex:none; font-size:.84rem; font-variant-numeric:tabular-nums; }
+.cal-lrow-m > span{ display:flex; flex-direction:column; min-width:0; }
+.cal-lrow-n{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal-lrow-m small{ font-size:.76rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal-lrow-a{ display:flex; flex-wrap:wrap; gap:.4rem; margin-left:auto; }
 .cal-team-k{ display:inline-flex; align-items:center; gap:.3rem; font-weight:600; }
 .cal-team-k .k-ic{ width:13px; height:13px; opacity:.7; }
 .cal-team-c{ display:inline-flex; flex-wrap:wrap; align-items:center; gap:.3rem; }

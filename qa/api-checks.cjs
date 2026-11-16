@@ -458,7 +458,8 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const both = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '14:30', endTime: '15:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Mutat Pauza', clientPhone: '0755000222', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', breakMove: { from: '15:00' } });
     b3 = await brkOn('e-c3');
     check(21, 'booking + „Mută pauza la 15:00” saved together', both.ok && b3 && b3.on && b3.from === '15:00' && b3.moved && rd('data/appointments.json', []).some((a) => a.id === both.appointment.id), { both: both.error, b3 });
-    const bad = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '16:00', endTime: '17:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Rea Pauza', clientPhone: '0755000333', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', breakMove: { from: '14:30' } });
+    // (on her break at 15:00, as reception may: TIME 4)
+    const bad = await api('receptie', 'portal-appointments', { action: 'create', date: D2, time: '15:00', endTime: '15:30', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Rea Pauza', clientPhone: '0755000333', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', breakMove: { from: '14:30' } });
     check(21, 'booking + a move onto her other client: refused, nothing saved', bad._status === 409 && bad.error === 'break_taken' && !rd('data/appointments.json', []).some((a) => a.clientName === 'Rea Pauza'), bad);
     // moving the break itself (the owner and the manager)
     const rec = await api('receptie', 'portal-schedule', { action: 'break_set', date: D2, employeeId: 'e-c3', from: '16:00' });
@@ -1078,6 +1079,210 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const hits = team.filter((f) => /['"][^'"\n]*(George|[Aa]dminul|de admin\b|[Mm]anagerul)[^'"\n]*['"]/.test(lit(f)));
     check(25, 'no „George”, „adminul”, „de admin” in the team\'s texts', hits.length === 0, hits);
     check(25, 'Cheltuieli, not „Costuri lunare”', !/Costuri lunare/.test(lit('api/portal-plati.js') + lit('api/_lib/activity.js')));
+  }
+
+  // TIME (16.11): leave and days off leave bookings to be given away, the cosmetician marks her visits, a move keeps its
+  // no-show, the desk's breaks and leave rows, the other city, the blocked time, the open day, the half hour, who sees what
+  {
+    ROLE.cosmetician = 'e-c1';
+    const C = require('../api/_lib/clinic'), TC = require('../api/_lib/time-care'), Bk = require('../api/_lib/booking'), store = require('../api/_lib/store');
+    const wd = (n) => { let d = day(n); while ([0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay())) d = C.addDay(d, 1); return d; };
+    const A = () => rd('data/appointments.json', []);
+    const row = (id) => A().find((a) => a.id === id) || null;
+    const book = (o) => api('receptie', 'portal-appointments', Object.assign({ action: 'create', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', force: true, clientPhone: '07' + String(Math.floor(Math.random() * 1e8)).padStart(8, '0') }, o));
+    const notes = (id, re) => rd('data/notifications.json', []).filter((n) => n.employeeId === id && re.test((n.title || '') + ' ' + (n.text || '')));
+
+    // 1. an approved leave: her bookings those days come back in the answer, in the Calendar's orphans („concediu”), the
+    // desk hears it, their reminders wait; „Mută la …” gives one to a free colleague
+    const D1 = wd(30);
+    wr('data/appointments.json', A().filter((a) => a.date !== D1));
+    const b1 = await book({ date: D1, time: '10:00', endTime: '11:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Concediu Proba' });
+    const L1 = rd('data/leave-requests.json', []); L1.push({ id: 'lvT1', employeeId: 'e-c3', type: 'odihna', startDate: D1, endDate: D1, workDays: 1, reason: '', status: 'pending', requestedAt: at(TODAY, '08:00'), decidedAt: '', decidedBy: '', rejectionNote: '', pdfBlobPath: '' }); wr('data/leave-requests.json', L1);
+    const ap1 = await api('manager', 'portal-leave', { action: 'decide', id: 'lvT1', decision: 'approved' });
+    check('T1', 'leave approved: her booking that day in the answer („rămân fără cosmeticiană”)', ap1.ok && (ap1.affected || []).some((x) => x.id === b1.appointment.id), { err: ap1.error, aff: ap1.affected });
+    let orph = await api('receptie', 'portal-appointments', { action: 'orphans' });
+    check('T1', 'Calendar: listed as left without a cosmetician, why „concediu”', (orph.appointments || []).some((x) => x.id === b1.appointment.id && x.orphanWhy === 'concediu'), (orph.appointments || []).map((x) => x.orphanWhy));
+    check('T1', 'the desk hears it (bell and phone)', notes('e-rec', /FĂRĂ COSMETICIANĂ/).length >= 1, rd('data/notifications.json', []).filter((n) => n.employeeId === 'e-rec').slice(-2));
+    check('T1', 'her client reminders wait', (await TC.held(row(b1.appointment.id), A(), store.readJSON)) === 'concediu');
+    await api('admin', 'portal-schedule', { action: 'save_date', date: D1, employeeId: 'e-c1', entry: { on: true, from: '09:00', to: '17:00', location: 'Arad' } });
+    orph = await api('receptie', 'portal-appointments', { action: 'orphans' });
+    const o1 = (orph.appointments || []).find((x) => x.id === b1.appointment.id);
+    check('T1', '„Mută la …”: the colleague working there that day, free then', o1 && (o1.free || []).some((p) => p.id === 'e-c1'), o1 && o1.free);
+    const rs = await api('receptie', 'portal-appointments', { action: 'reassign', id: b1.appointment.id, cosmeticianId: 'e-c1' });
+    orph = await api('receptie', 'portal-appointments', { action: 'orphans' });
+    check('T1', 'given to her: off the list, the reminders go again', rs.ok && row(b1.appointment.id).cosmeticianId === 'e-c1' && !(orph.appointments || []).some((x) => x.id === b1.appointment.id) && (await TC.held(row(b1.appointment.id), A(), store.readJSON)) === '', rs.error);
+    // a day taken off in Program echipă: the same, why „zi liberă”; she works it again: the mark goes
+    const D1b = wd(31);
+    wr('data/appointments.json', A().filter((a) => a.date !== D1b));
+    const b1b = await book({ date: D1b, time: '12:00', endTime: '13:00', location: 'Timișoara', cosmeticianId: 'e-c2', clientName: 'Zi Libera Proba' });
+    const sv = await api('admin', 'portal-schedule', { action: 'save_date', date: D1b, employeeId: 'e-c2', entry: { on: false } });
+    orph = await api('receptie', 'portal-appointments', { action: 'orphans' });
+    check('T1', 'a day taken off: her booking in the answer and in the orphans („zi liberă”)', (sv.affected || []).some((x) => x.id === b1b.appointment.id) && (orph.appointments || []).some((x) => x.id === b1b.appointment.id && x.orphanWhy === 'zi liberă'), { aff: sv.affected, err: sv.error });
+    await api('admin', 'portal-schedule', { action: 'save_date', date: D1b, employeeId: 'e-c2', entry: null });
+    orph = await api('receptie', 'portal-appointments', { action: 'orphans' });
+    check('T1', 'she works it again: the mark goes', !row(b1b.appointment.id).offShift && !(orph.appointments || []).some((x) => x.id === b1b.appointment.id));
+
+    // 2. she marks HER visit: „Finalizată” (a package session) or „Nu a venit”; only hers, only from its day on
+    const Y = day(-1);
+    const pk = await book({ date: Y, time: '15:00', endTime: '16:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Pachet Ieri', package: true, status: 'confirmata' });
+    const paid = await book({ date: Y, time: '16:00', endTime: '17:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Cu Plata Ieri', amount: 300 });
+    const fut = await book({ date: wd(4), time: '16:00', endTime: '17:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Viitoare Marcare' });
+    const um = await api('cosmetician', 'portal-appointments', { action: 'unmarked' });
+    check('T2', 'Panou: yesterday\'s unmarked visits of hers', (um.appointments || []).some((x) => x.id === pk.appointment.id && x.byHand) && (um.appointments || []).some((x) => x.id === paid.appointment.id && !x.byHand) && (um.appointments || []).every((x) => x.cosmeticianId === 'e-c1'), um.appointments);
+    const umd = await api('receptie', 'portal-appointments', { action: 'unmarked' });
+    check('T2', 'the desk sees them too', (umd.appointments || []).some((x) => x.id === pk.appointment.id));
+    const vs0 = C.visitStats(A(), rd('data/sales.json', []), 'Timișoara', TODAY, 30, []);
+    const m1 = await api('cosmetician', 'portal-appointments', { action: 'mark', id: pk.appointment.id, mark: 'came' });
+    const vs1 = C.visitStats(A(), rd('data/sales.json', []), 'Timișoara', TODAY, 30, []);
+    check('T2', 'her package session „Finalizată”: came, one no-show less', m1.ok && row(pk.appointment.id).status === 'finalizata' && vs1.came === vs0.came + 1 && vs1.due === vs0.due, { err: m1.error, vs0: [vs0.due, vs0.came], vs1: [vs1.due, vs1.came] });
+    const m2 = await api('cosmetician', 'portal-appointments', { action: 'mark', id: paid.appointment.id, mark: 'came' });
+    check('T2', 'one with a sum: closes with its payment (409 needs_payment)', m2._status === 409 && m2.error === 'needs_payment', m2);
+    const m3 = await api('cosmetician', 'portal-appointments', { action: 'mark', id: paid.appointment.id, mark: 'noshow' });
+    check('T2', '„Nu a venit”: a no-show (cancelled at its hour)', m3.ok && row(paid.appointment.id).status === 'anulata' && row(paid.appointment.id).noShow && C.lateCancel(row(paid.appointment.id)), m3.error);
+    const m4 = await api('cosmetician', 'portal-appointments', { action: 'mark', id: fut.appointment.id, mark: 'noshow' });
+    ROLE.cosmetician = 'e-c2';
+    const m5 = await api('cosmetician', 'portal-appointments', { action: 'mark', id: fut.appointment.id, mark: 'noshow' });
+    const m6 = await api('cosmetician', 'portal-appointments', Object.assign({}, row(fut.appointment.id), { action: 'update', status: 'finalizata', categories: ['corporale'] }));
+    ROLE.cosmetician = 'e-c1';
+    check('T2', 'not before its day; never someone else\'s; no other change by a cosmetician', m4._status === 400 && m4.error === 'not_yet' && m5._status === 403 && m6._status === 403, { m4: m4.error, m5: m5._status, m6: m6._status });
+
+    // 3. a passed booking moved to another day: its no-show stays (missedOn), in the show rate and the call list's rule
+    const P3 = day(-4);
+    const mv = await book({ date: P3, time: '10:00', endTime: '11:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Mutata Proba' });
+    const vA = C.visitStats(A(), rd('data/sales.json', []), 'Arad', TODAY, 30, []);
+    const up3 = await api('receptie', 'portal-appointments', Object.assign({}, row(mv.appointment.id), { action: 'update', date: wd(6), status: 'reprogramata', categories: ['corporale'] }));
+    const vB = C.visitStats(A(), rd('data/sales.json', []), 'Arad', TODAY, 30, []);
+    check('T3', 'moved off a passed day: missedOn, still a no-show (due and came unchanged)', up3.ok && (row(mv.appointment.id).missedOn || []).includes(P3) && vB.due === vA.due && vB.came === vA.came, { err: up3.error, a: [vA.due, vA.came], b: [vB.due, vB.came], m: row(mv.appointment.id).missedOn });
+    const lh3 = await api('admin', 'lead-health', null, 'verify=1');
+    check('T3', 'the second reading counts it the same', lh3.cities && lh3.cities.Arad && lh3.cities.Arad.visits60.agree, lh3.cities && lh3.cities.Arad && lh3.cities.Arad.visits60);
+
+    // 4. reception moves a break only when the booking sits on it
+    const D4 = wd(32);
+    wr('data/appointments.json', A().filter((a) => a.date !== D4));
+    const r4a = await book({ date: D4, time: '10:00', endTime: '11:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Pauza Departe', breakMove: { from: '15:00' } });
+    const r4b = await book({ date: D4, time: '11:00', endTime: '12:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Pauza Off', breakMove: { off: true } });
+    check('T4', 'a booking away from her break: reception can\'t move or remove it (403), nothing saved', r4a._status === 403 && r4b._status === 403 && !A().some((a) => a.date === D4), { a: r4a._status, b: r4b._status });
+    const r4c = await book({ date: D4, time: '13:00', endTime: '13:30', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Pauza Peste', breakMove: { from: '14:00' } });
+    const r4d = await api('manager', 'portal-appointments', { action: 'create', date: D4, time: '10:00', endTime: '11:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Pauza Manager', clientPhone: '0755999111', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', breakMove: { from: '15:00' } });
+    check('T4', 'on her break: moved with the booking; the manager moves any', r4c.ok && r4d.ok, { c: r4c.error, d: r4d.error });
+
+    // 5. the rows of an approved leave: never deleted by reception; cancelled with the leave (admin, the manager for her team)
+    const lr = A().find((a) => a.createdBy === 'leave-approval' && a.leaveId === 'lvT1');
+    const del5 = await api('receptie', 'portal-appointments', { action: 'delete', id: lr && lr.id });
+    check('T5', 'reception can\'t delete a leave\'s row', del5._status === 403 && del5.error === 'leave_row' && !!row(lr && lr.id), del5);
+    const c5 = await api('manager', 'portal-leave', { action: 'cancel', appointmentId: lr && lr.id });
+    check('T5', '„Anulează concediul”: rows gone, request cancelled, she is told', c5.ok && !A().some((a) => a.leaveId === 'lvT1') && rd('data/leave-requests.json', []).find((r) => r.id === 'lvT1').status === 'cancelled' && notes('e-c3', /ANULAT/).length >= 1, c5);
+    const c5b = await api('receptie', 'portal-leave', { action: 'cancel', id: 'lvT1' });
+    check('T5', 'reception can\'t cancel a leave', c5b._status === 403, c5b);
+
+    // 6. she works in the other city for a day: her bookings and break there are hers to see; the pickers have her
+    const D6 = wd(33);
+    wr('data/appointments.json', A().filter((a) => a.date !== D6));
+    await api('admin', 'portal-schedule', { action: 'save_date', date: D6, employeeId: 'e-c1', entry: { on: true, from: '09:00', to: '17:00', location: 'Arad' } });
+    const b6 = await book({ date: D6, time: '10:00', endTime: '11:00', location: 'Arad', cosmeticianId: 'e-c1', clientName: 'Alt Oras Proba' });
+    const l6 = await api('cosmetician', 'portal-appointments', { action: 'list', from: D6, to: D6 });
+    check('T6', 'her booking and her break in the other city, nobody else\'s there', (l6.appointments || []).some((a) => a.id === b6.appointment.id) && (l6.breaks || []).some((b) => b.employeeId === 'e-c1' && b.location === 'Arad') &&
+      !(l6.appointments || []).some((a) => a.location === 'Arad' && a.cosmeticianId !== 'e-c1') && !(l6.breaks || []).some((b) => b.location === 'Arad' && b.employeeId !== 'e-c1'), { a: (l6.appointments || []).map((a) => a.location + a.cosmeticianId), b: l6.breaks });
+    const s6 = await api('admin', 'portal-schedule', { action: 'get', from: D6, to: D6 });
+    check('T6', 'who works there that day (the pickers): her in Arad', ((s6.works[D6] || {}).Arad || []).some((w) => w.employeeId === 'e-c1'));
+
+    // 7. the blocked time: the fill and the free hours take it off as the site does
+    const D7 = wd(34);
+    wr('data/appointments.json', A().filter((a) => a.date !== D7));
+    const cfg7 = await Bk.settings({ team: true });
+    const cap0 = C.capMin(cfg7, 'Arad', D7, A());
+    await api('receptie', 'portal-appointments', { action: 'block', date: D7, location: 'Arad', cosmeticianId: 'e-c3', time: '09:00', endTime: '11:00', label: 'Curs' });
+    const cap1 = C.capMin(cfg7, 'Arad', D7, A());
+    await api('receptie', 'portal-appointments', { action: 'block', date: D7, location: 'Arad', time: '15:00', endTime: '16:00', label: 'Instruire' });
+    const cap2 = C.capMin(cfg7, 'Arad', D7, A());
+    const at7 = T.whoWorks(cfg7.team.doc, D7, 'Arad', { appts: A(), ids: cfg7.team.ids, until: cfg7.team.until }).length;
+    check('T7', 'fill: her block takes her 2 h, the clinic\'s block 1 h from each one at work', cap0 - cap1 === 120 && cap1 - cap2 === 60 * at7 && at7 > 0, { cap0, cap1, cap2, at7 });
+    const fr7 = await api('admin', 'portal-followups', { action: 'free' });
+    const p7 = (((fr7.cities || {}).Arad || {}).days || []).find((d) => d.date === D7);
+    check('T7', 'follow-ups: no free hour inside the blocks', !p7 || (p7.people || []).every((p) => p.free.every((w) => w.to <= '09:00' || w.from >= '11:00') && p.free.every((w) => w.to <= '15:00' || w.from >= '16:00')), p7);
+
+    // 8. a „reprogramată” moved ahead is booked: the package list doesn't ask to call her
+    const sales8 = rd('data/sales.json', []); sales8.push({ id: 's-pk-T8', source: 'incasare', employeeId: 'e-rec', performedBy: 'e-c3', clientId: '', clientPhone: '0711000855', client: 'Pachet Mutat', date: day(-3), location: 'Arad', categories: ['corporale'], amount: 1000, packageTotal: 3000, upsell: 2000, upsellWhat: '6 ședințe Lipo', method: 'card', status: 'recorded', createdAt: at(day(-3), '10:00') }); wr('data/sales.json', sales8);
+    const pk8 = await book({ date: wd(5), time: '12:00', endTime: '13:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Pachet Mutat', clientPhone: '0711000855' });
+    await api('receptie', 'portal-appointments', Object.assign({}, row(pk8.appointment.id), { action: 'update', date: wd(7), status: 'reprogramata', categories: ['corporale'] }));
+    const pl8 = await api('manager', 'portal-followups', { action: 'packages' });
+    check('T8', '„reprogramată” ahead: booked, not on the package list', !(pl8.items || []).some((x) => (x.phone || '').endsWith('711000855')), (pl8.items || []).filter((x) => (x.phone || '').endsWith('711000855')));
+
+    // 9. a Saturday with a shift: open on the site, in the fill and the free hours (Online only clips the site's hours)
+    let D9 = day(12); while (new Date(D9 + 'T12:00:00Z').getUTCDay() !== 6) D9 = C.addDay(D9, 1);
+    await api('admin', 'portal-schedule', { action: 'save_date', date: D9, employeeId: 'e-c3', entry: { on: true, from: '10:00', to: '14:00' } });
+    const cfg9 = await Bk.settings({ team: true });
+    const site9 = (((await api('admin', 'booking', null, 'city=Arad&service=consult')).days || []).find((x) => x.date === D9) || {}).slots || [];
+    const fr9 = await api('admin', 'portal-followups', { action: 'free' });
+    check('T9', 'Saturday with a shift: site slots, capacity', site9.includes('10:00') && C.capMin(cfg9, 'Arad', D9, A()) === 240, { site9, cap: C.capMin(cfg9, 'Arad', D9, A()) });
+    check('T9', '… and not „closed” in the free hours', !(((fr9.cities || {}).Arad || {}).days || []).some((d) => d.date === D9 && d.closed));
+
+    // 10. who left: her leave can't be approved; „A plecat” answers her pending requests no
+    const L10 = rd('data/leave-requests.json', []); L10.push({ id: 'lvT10', employeeId: 'e-c5', type: 'odihna', startDate: wd(20), endDate: wd(20), workDays: 1, reason: '', status: 'pending', requestedAt: at(TODAY, '08:00'), decidedAt: '', decidedBy: '', rejectionNote: '', pdfBlobPath: '' });
+    L10.push({ id: 'lvT10b', employeeId: 'e-c2', type: 'odihna', startDate: wd(21), endDate: wd(21), workDays: 1, reason: '', status: 'pending', requestedAt: at(TODAY, '08:00'), decidedAt: '', decidedBy: '', rejectionNote: '', pdfBlobPath: '' }); wr('data/leave-requests.json', L10);
+    const a10 = await api('admin', 'portal-leave', { action: 'decide', id: 'lvT10', decision: 'approved' });
+    check('T10', 'a departed one\'s leave: not approved (409 employee_left)', a10._status === 409 && a10.error === 'employee_left', a10);
+    await api('admin', 'portal-employees', { action: 'set_active', employeeId: 'e-c2', active: false, leftAt: TODAY });
+    const r10 = rd('data/leave-requests.json', []).find((r) => r.id === 'lvT10b');
+    await api('admin', 'portal-employees', { action: 'set_active', employeeId: 'e-c2', active: true });
+    check('T10', '„A plecat”: her pending requests answered no', r10 && r10.status === 'rejected', r10);
+
+    // 11. „Ore libere” for part of a day: the hours asked, a blocked time for her
+    const D11 = wd(35);
+    const adj = rd('data/time-adjust.json', []); adj.push({ id: 'adjT11', employeeId: 'e-c1', date: day(-6), minutes: 240, approvedMinutes: 240, status: 'approved', decidedAt: at(day(-6), '18:00'), createdAt: at(day(-6), '18:00') }); wr('data/time-adjust.json', adj);
+    const L11 = rd('data/leave-requests.json', []); L11.push({ id: 'lvT11', employeeId: 'e-c1', type: 'suplimentare', startDate: D11, endDate: D11, workDays: 1, minutes: 120, reason: '', status: 'pending', requestedAt: at(TODAY, '08:00'), decidedAt: '', decidedBy: '', rejectionNote: '', pdfBlobPath: '' }); wr('data/leave-requests.json', L11);
+    const h0 = await api('admin', 'portal-leave', { action: 'decide', id: 'lvT11', decision: 'approved' });
+    const h1 = await api('admin', 'portal-leave', { action: 'decide', id: 'lvT11', decision: 'approved', hours: { from: '15:00', to: '17:00' } });
+    const blk = A().find((a) => a.leaveId === 'lvT11');
+    check('T11', 'without the hours: asked (missing_hours); with them: her time blocked 15:00-17:00', h0.error === 'missing_hours' && h1.ok && blk && blk.block && blk.time === '15:00' && blk.endTime === '17:00' && blk.cosmeticianId === 'e-c1', { h0: h0.error, h1: h1.error, blk });
+
+    // 13. one rule for „to confirm”: booked or moved, not confirmed
+    check('T13', 'toConfirm: programată and reprogramată, not confirmată', C.toConfirm({ status: 'programata', clientName: 'X' }) && C.toConfirm({ status: 'reprogramata', clientName: 'X' }) && !C.toConfirm({ status: 'confirmata', clientName: 'X' }) && !C.toConfirm({ status: 'programata', block: true }));
+
+    // 14. today from the current half hour: the fill and the free hours start at the same minute
+    const now14 = Bk.roNow(), hh = C.halfHourNow(now14), cfg14 = await Bk.settings({ team: true });
+    const fl14 = C.fill(cfg14, 'Timișoara', TODAY, TODAY, A());
+    const fr14 = await api('admin', 'portal-followups', { action: 'free' });
+    const t14 = (((fr14.cities || {})['Timișoara'] || {}).days || []).find((d) => d.date === TODAY);
+    check('T14', 'today: capacity from the current half hour, the free hours from it too', Math.abs(fl14.capHours * 60 - C.capMin(cfg14, 'Timișoara', TODAY, A(), hh)) <= 6 && (!t14 || t14.people.every((p) => p.free.every((w) => w.from >= Bk.hhmm(hh)))), { fl: fl14.capHours, cap: C.capMin(cfg14, 'Timișoara', TODAY, A(), hh), hh });
+
+    // 15. who sees what: a one-clinic manager and a cosmetician get their clinics only
+    const E15 = rd('data/employees.json', []); E15.find((e) => e.id === 'e-mgr').manages = ['Timișoara']; wr('data/employees.json', E15);
+    const g15 = await api('manager', 'portal-schedule', { action: 'get', from: TODAY, to: day(3) });
+    const bi15 = await api('manager', 'portal-schedule', { action: 'break_info', date: wd(2), employeeId: 'e-c3' });
+    E15.find((e) => e.id === 'e-mgr').manages = ['Timișoara', 'Arad']; wr('data/employees.json', E15);
+    const g15c = await api('cosmetician', 'portal-schedule', { action: 'get', from: TODAY, to: day(3) });
+    const bi15c = await api('cosmetician', 'portal-schedule', { action: 'break_info', date: wd(2), employeeId: 'e-c3' });
+    const noArad = (g) => !Object.keys(g.cities || {}).includes('Arad') && !(g.people || []).some((p) => p.location === 'Arad' && p.id !== 'e-c1') && Object.values(g.works || {}).every((d) => !(d.Arad || []).some((w) => w.employeeId !== 'e-c1'));
+    check('T15', 'schedule get: Timișoara only (manager of TM, a TM cosmetician); break_info for Arad: 403', noArad(g15) && noArad(g15c) && bi15._status === 403 && bi15c._status === 403, { m: [Object.keys(g15.cities || {}), bi15._status], c: [Object.keys(g15c.cities || {}), bi15c._status] });
+
+    // 16. without a schedule, only a cosmetician's leave takes a place (reception's day off doesn't)
+    const D16 = wd(16); // inside the site's 21 days
+    const ts16 = rd('data/team-schedule.json', {}); const keep16 = ts16.weekly['e-c3']; delete ts16.weekly['e-c3']; delete ts16.weekly['e-c5']; wr('data/team-schedule.json', ts16);
+    const cfg16 = await Bk.settings({ team: true });
+    wr('data/appointments.json', A().filter((a) => a.date !== D16));
+    const c16a = C.capMin(cfg16, 'Arad', D16, A());
+    wr('data/appointments.json', A().concat([{ id: 'fx-rec-off', date: D16, time: '', endTime: '', location: 'Arad', cosmeticianId: 'e-rec', clientName: 'Concediu', treatment: 'Concediu', status: 'concediu', createdBy: 'leave-approval', createdAt: at(TODAY, '08:00') }]));
+    const c16b = C.capMin(cfg16, 'Arad', D16, A());
+    const s16 = (Bk.freeOn(cfg16, 'Arad', D16, 30, A()) || []).length;
+    wr('data/appointments.json', A().filter((a) => a.id !== 'fx-rec-off'));
+    const s16a = (Bk.freeOn(cfg16, 'Arad', D16, 30, A()) || []).length;
+    ts16.weekly['e-c3'] = keep16; wr('data/team-schedule.json', ts16);
+    check('T16', 'reception\'s day off: the clinic\'s places as they were (fill and site)', c16a > 0 && c16a === c16b && s16 === s16a && s16 > 0, { c16a, c16b, s16, s16a });
+
+    // the desk's change today or tomorrow: a short line on her phone; a site booking moved by the desk stops waiting for her „Confirm”
+    const TM1 = C.addDay(TODAY, 1);
+    const d1 = await book({ date: TM1, time: '18:00', endTime: '18:30', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Push Proba' });
+    check('push', 'a booking for tomorrow: „Programare nouă mâine la 18:00”', notes('e-c1', /Programare nouă mâine la 18:00/).length >= 1);
+    await api('receptie', 'portal-appointments', Object.assign({}, row(d1.appointment.id), { action: 'update', time: '19:00', endTime: '19:30', categories: ['corporale'] }));
+    check('push', 'moved: „Clienta de la 18:00 s-a mutat la 19:00”', notes('e-c1', /Clienta de la 18:00 s-a mutat la 19:00/).length >= 1, rd('data/notifications.json', []).filter((n) => n.employeeId === 'e-c1').slice(-2));
+    const sid = 'fx-site-T';
+    wr('data/appointments.json', A().concat([{ id: sid, date: wd(3), time: '15:00', endTime: '16:00', location: 'Arad', cosmeticianId: 'e-c3', clientName: 'Site Mutat', clientId: 'cl-stT', clientPhone: '0755654300', treatment: 'Lipo 640', categories: ['corporale'], status: 'programata', online: true, createdBy: 'site', createdAt: at(TODAY, '08:00') }]));
+    const sc = rd('data/site-confirm.json', {}); sc[sid] = { plan: 'remind', at: at(TODAY, '08:00'), remindAt: at(TODAY, '12:00'), cancelAt: at(TODAY, '15:00') }; wr('data/site-confirm.json', sc);
+    await api('receptie', 'portal-appointments', Object.assign({}, row(sid), { action: 'update', time: '16:00', endTime: '17:00' }));
+    check('site', 'a site booking moved by the desk: its auto-cancel ends („moved”)', (rd('data/site-confirm.json', {})[sid] || {}).done === 'moved', rd('data/site-confirm.json', {})[sid]);
+    const lht = await api('admin', 'lead-health', null, 'time=1');
+    check('lh', 'lead-health ?time=1: counts per clinic, no names', lht.cities && lht.cities.Arad && typeof lht.cities.Arad.unmarked.all === 'number' && !/Proba/.test(JSON.stringify(lht)), lht);
   }
 
   // the independent second reading agrees with production on the harness's data

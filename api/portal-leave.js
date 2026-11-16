@@ -2,7 +2,13 @@
 // existing Aprobări mental model (api/portal-approve.js does the same for commission).
 // One endpoint, action-routed via body.action:
 //
-//   create | list | decide (admin)
+//   create | list | decide (admin, the manager for her team) | admin_create | cancel (admin, the manager for her team)
+//
+// An approval answers with `affected`: her bookings on those days, left without a cosmetician (_lib/time-care.js), each
+// with the colleagues free then; the desk hears it and the Calendar lists them („Rămase fără cosmeticiană”, why
+// „concediu”) until each is given to someone else or moved; their client reminders wait meanwhile. „Ore libere” that
+// don't cover whole days ask for the hours (hours: { from, to }): a blocked time for her those hours. cancel: an
+// approved leave taken back (status 'cancelled'), its rows gone from the Calendar, she and the desk told.
 //
 // Request shape (data/leave-requests.json):
 //   { id, employeeId, type ('odihna'|'fara_plata'|'medical'|'alta'|'suplimentare'), startDate, endDate,
@@ -46,14 +52,43 @@ const isoDate = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pa
 // Marks the employee unavailable on the Calendar for every day of the approved leave, so
 // reception doesn't accidentally book an appointment during it. Best-effort: an employee with
 // no fixed location (e.g. the admin, who isn't scheduled on the Calendar) simply gets no block.
-async function blockCalendar(request, employee) {
+// hours ({ from, to }): „Ore libere” for part of a day, a blocked time for her those hours on each weekday of the range.
+// Each row carries leaveId (cancel finds them by it).
+async function blockCalendar(request, employee, hours) {
   if (!VALID_LOCATIONS.includes(employee.location)) return;
-  const label = 'Concediu - ' + (LEAVE_LABELS[request.type] || request.type);
+  const label = hours ? 'Ore libere' : 'Concediu - ' + (LEAVE_LABELS[request.type] || request.type);
   const start = new Date(request.startDate + 'T00:00:00');
   const end = new Date(request.endDate + 'T00:00:00');
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    await createBlockingAppointment({ date: isoDate(d), location: employee.location, cosmeticianId: request.employeeId, cosmeticianName: employee.name, label });
+    if (hours && (d.getDay() === 0 || d.getDay() === 6)) continue;
+    await createBlockingAppointment({ date: isoDate(d), location: employee.location, cosmeticianId: request.employeeId, cosmeticianName: employee.name, label,
+      ...(hours ? { time: hours.from, endTime: hours.to, block: true } : {}), leaveId: request.id });
   }
+}
+const TC = require('./_lib/time-care');
+const toMin = (t) => { const m = /^(\d{2}):(\d{2})$/.exec(String(t || '')); return m ? +m[1] * 60 + +m[2] : null; };
+// the hours of a partial day off: { from, to } at :00/:15/:30/:45, to after from, or null
+function cleanHours(h) {
+  const f = toMin(h && h.from), t = toMin(h && h.to);
+  return f != null && t != null && t > f && f % 15 === 0 && t % 15 === 0 && t <= 24 * 60 ? { from: h.from, to: h.to } : null;
+}
+// her bookings left without a cosmetician by the leave (the hours only, for a partial day), for the answer and the desk
+async function leaveAffected(request, employee, hours, session) {
+  const [appts, emps, doc] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/employees.json', []), require('./_lib/team-schedule').load()]);
+  let list = TC.affected(appts, request.employeeId, TC.daysOf(request.startDate, request.endDate));
+  if (hours) { const f = toMin(hours.from), t = toMin(hours.to); list = list.filter((a) => { const s = toMin(a.time); if (s == null) return true; const e = toMin(a.endTime); return s < t && (e != null && e > s ? e : s + 60) > f; }); }
+  if (list.length) await TC.tellDesk({ readJSON, writeJSON }, emps, list, request.employeeId, (hours ? 'Ore libere ' : 'Concediu ') + String(employee.name || '').split(' ')[0], session && session.employeeId);
+  return TC.rows(list, appts, emps, doc);
+}
+// someone who left („A plecat”): her requests still waiting are answered no (api/portal-employees.js set_active)
+async function rejectPendingOf(employeeId, by) {
+  const requests = await readJSON(KEY, []);
+  const mine = requests.filter((r) => r.employeeId === employeeId && r.status === 'pending');
+  if (!mine.length) return 0;
+  const at = nowISO();
+  mine.forEach((r) => { r.status = 'rejected'; r.decidedAt = at; r.decidedBy = by || 'admin'; r.rejectionNote = 'A plecat din echipă'; });
+  await writeJSON(KEY, requests);
+  return mine.length;
 }
 
 // Simple calendar count of Mon-Fri between start/end inclusive, doesn't model Romanian public
@@ -107,7 +142,7 @@ module.exports = async (req, res) => {
       if (endDate < startDate) return fail(400, 'invalid_range');
       const reason = String(body.reason || '').trim().slice(0, MAX_REASON);
       if (REASON_REQUIRED.includes(type) && !reason) return fail(400, 'missing_reason');
-      if (requests.some((r) => r.employeeId === session.employeeId && r.status !== 'rejected' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
+      if (requests.some((r) => r.employeeId === session.employeeId && r.status !== 'rejected' && r.status !== 'cancelled' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
       if (type !== 'suplimentare' && !workDaysBetween(startDate, endDate)) return fail(400, 'no_work_days');
 
       // "Altul" + "cu recuperare": how many hours she misses and when she'll make them up
@@ -179,10 +214,18 @@ module.exports = async (req, res) => {
       if (request.status !== 'pending') return fail(400, 'already_decided');
       if (!['approved', 'rejected'].includes(body.decision)) return fail(400, 'invalid_decision');
 
+      // someone who left: nothing of hers is approved any more (her requests waiting were answered at „A plecat”)
+      const who = (await readJSON('data/employees.json', [])).find((e) => e && e.id === request.employeeId);
+      if (body.decision === 'approved' && who && who.active === false) return fail(409, 'employee_left');
       if (body.decision === 'approved' && request.type === 'suplimentare') {
         const bal = TB.ledger(request.employeeId, await TB.loadAll(readJSON));
         if ((Number(request.minutes) || 0) > bal.bank) return fail(400, 'not_enough_overtime');
       }
+      // a few hours off from overtime aren't a whole day away: a cosmetician's hours are asked (a blocked time for her)
+      const partial = request.type === 'suplimentare' && (Number(request.minutes) || 0) < TB.weekdaysBetween(request.startDate, request.endDate).length * TB.BASE_MINUTES;
+      const hours = partial ? cleanHours(body.hours) : null;
+      if (body.decision === 'approved' && partial && !hours && who && who.role === 'cosmetician' && VALID_LOCATIONS.includes(who.location)) return fail(400, body.hours ? 'invalid_hours' : 'missing_hours');
+      let affected = [];
       request.decidedAt = nowISO();
       request.decidedBy = session.employeeId;
       if (body.decision === 'rejected') {
@@ -197,9 +240,10 @@ module.exports = async (req, res) => {
         request.pdfBlobPath = pdfBlobPath;
         // Any leave type makes the person unavailable, not just 'odihna' - block the Calendar
         // for the whole range before responding, so reception sees it the moment it's approved.
-        // (A few hours off from overtime aren't a whole day away: no block.)
-        const partial = request.type === 'suplimentare' && (Number(request.minutes) || 0) < TB.weekdaysBetween(request.startDate, request.endDate).length * TB.BASE_MINUTES;
-        if (!partial) await blockCalendar(request, employee);
+        // (A few hours off from overtime: those hours, when they were given.)
+        if (hours) request.hours = hours;
+        if (!partial || hours) await blockCalendar(request, employee, hours);
+        if (!partial || hours) affected = await leaveAffected(request, employee, hours, session).catch((e) => { console.error('leave affected:', e.message); return []; });
       }
       await writeJSON(KEY, requests);
       // tell her, one short line
@@ -210,7 +254,45 @@ module.exports = async (req, res) => {
       await notify({ readJSON, writeJSON }, request.employeeId, request.status === 'approved'
         ? { kind: 'leave', tone: 'good', title: what + ' ✅ - ' + ok, text: when + (request.recovery ? ' · ai de recuperat ' + fmtMin(request.recovery.minutes) : ''), go: 'condica' }
         : { kind: 'leave', tone: 'bad', title: what + ' ❌ - ' + no, text: when + (request.rejectionNote ? ' · ' + request.rejectionNote : ''), go: 'condica' });
-      res.status(200).json({ ok: true, request });
+      res.status(200).json({ ok: true, request, affected });
+      return;
+    }
+
+    // an approved leave taken back: its rows leave the Calendar (the days are free again), she and the desk hear it
+    if (action === 'cancel') {
+      if (!sees) return fail(403, 'forbidden');
+      // by its id, or from one of its rows in the Calendar (appointmentId: the leave's own, else the one covering that day)
+      let rid = body.id;
+      if (!rid && body.appointmentId) {
+        const row = (await readJSON('data/appointments.json', [])).find((a) => a && a.id === body.appointmentId && a.createdBy === 'leave-approval');
+        const hit = row && (row.leaveId ? requests.find((r) => r.id === row.leaveId) : requests.find((r) => r.status === 'approved' && r.employeeId === row.cosmeticianId && r.startDate <= row.date && r.endDate >= row.date && r.type !== 'suplimentare'));
+        rid = hit && hit.id;
+      }
+      const request = requests.find((r) => r.id === rid);
+      if (!request) return fail(404, 'request_not_found');
+      if (isMgr && request.employeeId === session.employeeId) return fail(403, 'own_request');
+      if (!inTeam(request.employeeId)) return fail(403, 'forbidden');
+      if (request.status !== 'approved') return fail(400, 'not_approved');
+      const appts = await readJSON('data/appointments.json', []);
+      const mine = (a) => a && a.createdBy === 'leave-approval' && a.cosmeticianId === request.employeeId && a.status === 'concediu' &&
+        (a.leaveId ? a.leaveId === request.id : !a.block && a.date >= request.startDate && a.date <= request.endDate);
+      const gone = appts.filter(mine);
+      if (gone.length) await writeJSON('data/appointments.json', appts.filter((a) => !mine(a)));
+      request.status = 'cancelled';
+      request.cancelledAt = nowISO();
+      request.cancelledBy = session.employeeId;
+      await writeJSON(KEY, requests);
+      const when = request.startDate === request.endDate ? request.startDate.slice(8, 10) + '.' + request.startDate.slice(5, 7) : request.startDate.slice(8, 10) + '.' + request.startDate.slice(5, 7) + '-' + request.endDate.slice(8, 10) + '.' + request.endDate.slice(5, 7);
+      const what = request.type === 'suplimentare' ? 'ORE LIBERE' : String(LEAVE_LABELS[request.type] || 'Concediu').toLocaleUpperCase('ro-RO');
+      await notify({ readJSON, writeJSON }, request.employeeId, { kind: 'leave', tone: 'info', title: what + ' ANULAT', text: when + ' · zilele sunt din nou de lucru', go: 'condica', tag: 'leave-cancel-' + request.id });
+      try {
+        const emps = await readJSON('data/employees.json', []);
+        const emp = emps.find((e) => e.id === request.employeeId);
+        const loc = emp && emp.location;
+        if (gone.length && loc) await notifyMany({ readJSON, writeJSON }, TC.deskIds(emps, loc, session.employeeId), { kind: 'alert', tone: 'info', go: 'programari', tag: 'leave-cancel-desk-' + request.id,
+          title: 'CONCEDIU ANULAT' + require('./_lib/notify').cityTag(loc), text: String((emp && emp.name) || '').split(' ')[0] + ' · ' + when + ' · zilele sunt din nou libere în Calendar' });
+      } catch (e) { console.error('leave cancel notify:', e.message); }
+      res.status(200).json({ ok: true, request, removed: gone.length });
       return;
     }
 
@@ -231,7 +313,8 @@ module.exports = async (req, res) => {
 
       const employees = await readJSON('data/employees.json', []);
       if (employeeId !== 'admin' && !employees.some((e) => e.id === employeeId)) return fail(404, 'employee_not_found');
-      if (requests.some((r) => r.employeeId === employeeId && r.status !== 'rejected' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
+      if (requests.some((r) => r.employeeId === employeeId && r.status !== 'rejected' && r.status !== 'cancelled' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
+      if ((employees.find((e) => e.id === employeeId) || {}).active === false) return fail(409, 'employee_left');
       if (type !== 'suplimentare' && !workDaysBetween(startDate, endDate)) return fail(400, 'no_work_days');
 
       const request = {
@@ -257,7 +340,8 @@ module.exports = async (req, res) => {
 
       requests.push(request);
       await writeJSON(KEY, requests);
-      res.status(200).json({ ok: true, request });
+      const affected = await leaveAffected(request, employee, null, session).catch((e) => { console.error('leave affected:', e.message); return []; });
+      res.status(200).json({ ok: true, request, affected });
       return;
     }
 
@@ -268,3 +352,4 @@ module.exports = async (req, res) => {
   }
 };
 module.exports.employeeInfo = employeeInfo; // qa/api-checks.cjs
+module.exports.rejectPendingOf = rejectPendingOf; // api/portal-employees.js („A plecat”)

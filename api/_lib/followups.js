@@ -99,10 +99,10 @@ function paidSet(sales) {
   return k;
 }
 const came = (a, paid) => a.status === 'finalizata' || !!a.paidSaleId || idsOf(a.clientId, a.clientPhone, a.clientName).some((x) => paid.has(x + '|' + a.date));
-// the clients with something booked from today on (any clinic)
+// the clients with something booked from today on (any clinic); a „reprogramată” moved ahead is booked too (16.11)
 function bookedAhead(appts, today) {
   const k = new Set();
-  appts.forEach((a) => { if (visit(a) && a.date >= today && a.status !== 'reprogramata') idsOf(a.clientId, a.clientPhone, a.clientName).forEach((x) => k.add(x)); });
+  appts.forEach((a) => { if (visit(a) && a.date >= today) idsOf(a.clientId, a.clientPhone, a.clientName).forEach((x) => k.add(x)); });
   return k;
 }
 const hit = (set, ids) => ids.some((x) => set.has(x));
@@ -190,6 +190,19 @@ function missedItems(D, clinics, today) {
     const k = ids[0], was = byClient.get(k);
     if (!was || a.date > was.a.date) byClient.set(k, { a, why: noShow || C.lateCancel(a) ? 'noshow' : 'anulata' });
   });
+  // a booking moved after its day had passed without her (missedOn, api/portal-appointments.js): that day was a no-show;
+  // she is called only when nothing of hers is booked ahead (a move to a day still ahead takes her off by itself)
+  D.appts.forEach((a) => {
+    if (!a || !clinics.includes(a.location) || !Array.isArray(a.missedOn) || a.block || isTest(a.clientName)) return;
+    const ids = idsOf(a.clientId, a.clientPhone, a.clientName);
+    if (!ids.length || hit(ahead, ids)) return;
+    const set = new Set(ids);
+    a.missedOn.filter((d) => d >= from && d < today && !ids.some((x) => paid.has(x + '|' + d))).forEach((d) => {
+      if (D.appts.some((x) => visit(x) && x.date > d && hit(set, idsOf(x.clientId, x.clientPhone, x.clientName)) && (x.date >= today || came(x, paid)))) return;
+      const k = ids[0], was = byClient.get(k);
+      if (!was || d > was.a.date) byClient.set(k, { a: Object.assign({}, a, { date: d }), why: 'noshow' });
+    });
+  });
   return [...byClient.entries()].map(([ck, x]) => ({ key: 'ms:' + ck, ck, kind: x.why, name: x.a.clientName || 'Clientă', phone: x.a.clientPhone || '', clientId: x.a.clientId || '',
     location: x.a.location, date: x.a.date, treatment: x.a.treatment || '', cosmeticianId: x.a.cosmeticianId || '' }));
 }
@@ -253,14 +266,17 @@ function freeDay(D, city, date, nowRo) {
   const wd = new Date(date + 'T12:00:00Z').getUTCDay();
   const d = c && c.days[wd];
   const dayAppts = D.appts.filter((a) => a.location === city && a.date === date && a.status !== 'anulata');
-  const closedDay = !d || !d.on || (c.closed || []).includes(date) || dayAppts.some((a) => (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId);
   const team = cfg.team && T.hasSchedule(cfg.team.doc, city, cfg.team.ids);
+  // with a schedule a day is open when anyone works it (_lib/booking.js openDay: the Online day only clips the site's hours)
+  const closedDay = !d || !B.openDay(cfg, city, date, d) || dayAppts.some((a) => (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId);
   const names = new Map(D.emps.map((e) => [e.id, e.name || '']));
   let lanes = [];
   if (!closedDay) {
     if (team) lanes = T.whoWorks(cfg.team.doc, date, city, { appts: D.appts, ids: cfg.team.ids }).map((w) => ({ id: w.employeeId, name: names.get(w.employeeId) || '', from: toMin(w.from), to: toMin(w.to) }));
     else {
-      const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId)).size;
+      // only a cosmetician's leave takes a place (reception's or the manager's day off doesn't)
+      const cosm = new Set(D.emps.filter((e) => e && e.role === 'cosmetician').map((e) => e.id));
+      const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId && cosm.has(a.cosmeticianId)).map((a) => a.cosmeticianId)).size;
       const places = Math.max(0, (Number(d.at) || 0) - off);
       for (let i = 0; i < places; i++) lanes.push({ id: '', name: places > 1 ? 'Loc ' + (i + 1) : '', from: toMin(d.from), to: toMin(d.to) });
     }
@@ -270,15 +286,24 @@ function freeDay(D, city, date, nowRo) {
   if (team && !closedDay) T.dayBreaks(cfg.team.doc, date, city, { appts: D.appts, ids: cfg.team.ids }).filter((b) => b.on).forEach((b) => { const l = lanes.find((x) => x.id === b.employeeId); if (l) l.rest.push([toMin(b.from), toMin(b.to)]); });
   const iv = (a) => { const s = toMin(a.time); if (s == null) return null; const e = toMin(a.endTime); return [s, e != null && e > s ? e : s + 60]; };
   const free = (l, s, e) => s >= l.from && e <= l.to && !l.busy.concat(l.rest).some((b) => b[0] < e && b[1] > s);
-  // hers first, then the ones without a cosmetician (or hers when nobody's lane is hers: a shift not set that day)
+  // the blocked time (the same rule as the fill, api/_lib/clinic.js capMin): one for the whole clinic takes everyone's
+  // time, one for her takes hers (in a clinic without a schedule: one place's); not free, not booked either
   const own = dayAppts.filter((a) => (visit(a) || a.block) && iv(a));
-  own.filter((a) => a.cosmeticianId && lanes.some((l) => l.id === a.cosmeticianId)).forEach((a) => lanes.find((l) => l.id === a.cosmeticianId).busy.push(iv(a)));
+  own.filter((a) => a.block && !a.cosmeticianId).forEach((a) => lanes.forEach((l) => l.rest.push(iv(a))));
+  own.filter((a) => a.block && a.cosmeticianId).forEach((a) => {
+    const [s, e] = iv(a);
+    const l = lanes.find((x) => x.id === a.cosmeticianId) || (team ? null : lanes.find((x) => free(x, s, e)) || lanes.find((x) => x.from < e && x.to > s));
+    if (l) l.rest.push([s, e]);
+  });
+  // hers first, then the ones without a cosmetician (or hers when nobody's lane is hers: a shift not set that day)
+  own.filter((a) => visit(a) && a.cosmeticianId && lanes.some((l) => l.id === a.cosmeticianId)).forEach((a) => lanes.find((l) => l.id === a.cosmeticianId).busy.push(iv(a)));
   own.filter((a) => visit(a) && (!a.cosmeticianId || !lanes.some((l) => l.id === a.cosmeticianId))).forEach((a) => {
     const [s, e] = iv(a);
     const l = lanes.find((x) => free(x, s, e)) || lanes.find((x) => x.from < e && x.to > s);
     if (l) l.busy.push([s, e]);
   });
-  const start = date === nowRo.date ? Math.ceil((nowRo.min + 1) / 30) * 30 : -1;
+  // today: from the current half hour on (the same start as the fill, api/_lib/clinic.js)
+  const start = date === nowRo.date ? C.halfHourNow(nowRo) : -1;
   const people = lanes.map((l) => {
     const busy = l.busy.concat(l.rest).sort((a, b) => a[0] - b[0]);
     const wins = [];
@@ -286,7 +311,7 @@ function freeDay(D, city, date, nowRo) {
     busy.forEach((b) => { if (b[0] > t) wins.push([t, Math.min(b[0], l.to)]); t = Math.max(t, b[1]); });
     if (t < l.to) wins.push([t, l.to]);
     const ok = wins.filter((w) => w[1] - w[0] >= MIN_FREE);
-    const shift = l.to - l.from - l.rest.reduce((n, b) => n + b[1] - b[0], 0);
+    const shift = l.to - l.from - C.merge(l.rest).reduce((n, b) => n + Math.max(0, Math.min(b[1], l.to) - Math.max(b[0], l.from)), 0);
     const booked = l.busy.reduce((n, b) => n + Math.max(0, Math.min(b[1], l.to) - Math.max(b[0], l.from)), 0);
     return { id: l.id, name: l.name, from: hhmm(l.from), to: hhmm(l.to), shiftMin: shift, bookedMin: booked,
       free: ok.map((w) => ({ from: hhmm(w[0]), to: hhmm(w[1]), min: w[1] - w[0] })), freeMin: ok.reduce((n, w) => n + w[1] - w[0], 0) };
@@ -532,8 +557,8 @@ async function morningItems(clinics, opts) {
   const where = (pairs) => pairs.map(([c, k]) => c + ' ' + k).join(', ');
   const items = [];
   // tomorrow's bookings not confirmed yet
-  const unconf = n.appts.filter((a) => a && visit(a) && a.date === tomorrow && a.status === 'programata' && clinics.includes(a.location) && !isTest(a.clientName));
-  if (unconf.length) items.push({ kind: 'neconfirmate', count: unconf.length, go: 'programari/maine', tone: 'warn',
+  const unconf = n.appts.filter((a) => a && C.toConfirm(a) && a.date === tomorrow && clinics.includes(a.location));
+  if (unconf.length) items.push({ kind: 'neconfirmate', count: unconf.length, go: 'programari/maine/de-confirmat', tone: 'warn',
     title: unconf.length === 1 ? 'O PROGRAMARE DE CONFIRMAT 📅' : unconf.length + ' PROGRAMĂRI DE CONFIRMAT 📅', text: 'Mâine · ' + where(per(unconf)), short: unconf.length + ' de confirmat mâine' });
   // leads nobody called yet
   const fresh = n.leads.filter((l) => l && clinics.includes(l.location) && kindOf(stages, l.stage) !== 'won' && kindOf(stages, l.stage) !== 'lost' && !l.lastContactAt && !l.contactCount &&

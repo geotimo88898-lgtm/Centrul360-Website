@@ -798,6 +798,21 @@ async function runOne(run, wf, settings, counters) {
   const ctx = await context(run.ent);
   const log = (text) => run.log.push({ at: nowISO(), text });
   if (!ctx.lead && !ctx.appointment) { run.status = 'stopped'; log('Leadul / programarea nu mai există'); return; }
+  // her cosmetician is gone that day (on leave, a day taken off, left: _lib/time-care.js held): the client's messages wait
+  // until the booking is given to someone else or moved (16.11); checked again in an hour, the time it was due kept (heldDue)
+  if (ctx.appointment && run.at !== '^') {
+    const why = await require('./time-care').held(ctx.appointment, ctx.appointments, readJSON).catch(() => '');
+    if (why) {
+      const was = run.dueWas || run.heldDue;
+      delete run.dueWas;
+      run.heldDue = was;
+      run.dueAt = new Date(Date.now() + 3600e3).toISOString();
+      if (!run.held) log('În așteptare: programarea a rămas fără cosmeticiană (' + why + ')');
+      run.held = why;
+      return;
+    }
+    if (run.held) { log('Programarea are din nou cosmeticiană, mesajele merg mai departe'); delete run.held; }
+  }
   // runs saved before branches existed kept an index into the list of steps
   if (run.at === undefined) run.at = !run.step ? '^' : ((wf.steps[run.step] || {}).id || '$');
   // the clock came late (no portal open and the scheduler delayed): a message meant for a moment before the appointment

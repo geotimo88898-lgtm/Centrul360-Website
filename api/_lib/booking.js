@@ -158,7 +158,7 @@ function busy(appts, city, date, skipId) {
     const e = e0 != null && e0 > s ? e0 : s + 60;
     iv.push([s, e, leave && !a.cosmeticianId ? Infinity : 1]);
   });
-  return { iv, cut: off.size, closed };
+  return { iv, cut: off.size, offIds: [...off], closed };
 }
 // How many clients fit at each minute of a day: the day's „at” minus the cosmeticians on leave, or, once the city has a
 // weekly schedule, the cosmeticians working at that minute (their leave already counted) and not on their break
@@ -167,7 +167,9 @@ function capOf(cfg, city, date, d, b, appts) {
   const t = cfg.team;
   if (!t || !T.hasSchedule(t.doc, city, t.ids)) {
     const here = t && t.leftIn && t.leftIn.has(city) ? t.people.filter((p) => p.location === city).length : 0;
-    const n = (here ? Math.min(d.at, here) : d.at) - b.cut;
+    // only a cosmetician's leave takes a place (16.11: reception's or the manager's day off doesn't)
+    const cut = t && t.people ? b.offIds.filter((id) => t.people.some((p) => p.id === id) || (t.gone || []).some((g) => g.id === id)).length : b.cut;
+    const n = (here ? Math.min(d.at, here) : d.at) - cut;
     return { team: false, at: () => n, edges: [], max: n };
   }
   const shifts = T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).map((w) => [toMin(w.from), toMin(w.to)]);
@@ -175,6 +177,12 @@ function capOf(cfg, city, date, d, b, appts) {
   const breaks = T.dayBreaks(t.doc, date, city, { appts, ids: t.ids }).filter((b) => b.on).map((b) => [toMin(b.from), toMin(b.to)]);
   const n = (list, p) => list.filter((x) => x[0] <= p && x[1] > p).length;
   return { team: true, at: (p) => n(shifts, p) - n(breaks, p), edges: [].concat(...shifts, ...breaks), max: shifts.length, breaks };
+}
+// the day open for clients: the city's schedule decides when it has one, else the Online settings (on, not closed)
+function openDay(cfg, city, date, d) {
+  const t = cfg.team, c = cfg.cities[city];
+  if (t && T.hasSchedule(t.doc, city, t.ids)) return true;
+  return !!(d && d.on && !(c.closed || []).includes(date));
 }
 // the same for a day of a city as Nuki reads it (api/portal-nuki.js): null when the city is closed that weekday
 function capacity(cfg, city, date, appts) {
@@ -192,9 +200,12 @@ function freeOn(cfg, city, date, minutes, appts, now) {
   const c = cfg.cities[city];
   if (!c || !isDate(date)) return [];
   const n = now || roNow();
-  if (date < n.date || date > addDay(n.date, cfg.ahead - 1) || c.closed.includes(date)) return [];
+  if (date < n.date || date > addDay(n.date, cfg.ahead - 1)) return [];
   const d = c.days[weekday(date)];
-  if (!d || !d.on) return [];
+  if (!d) return [];
+  // once the city has a schedule, a day is open when anyone works it (a Saturday, a day closed in Calendar → Online):
+  // the Online day only clips the hours (the owner's decision, 16.11); without one, as set there
+  if (!openDay(cfg, city, date, d)) return [];
   const b = busy(appts, city, date);
   const cap = capOf(cfg, city, date, d, b, appts);
   if (b.closed || cap.max < 1) return [];
@@ -265,4 +276,4 @@ function sourceOf(raw, cookie) {
   return Object.assign({ from }, host ? { ref: host } : {}, Object.keys(tag).length ? { tag } : {}, land ? { land } : {}, at ? { at } : {}, fbc ? { fbc: true } : {});
 }
 
-module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, soleCosmetician, sourceOf, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };
+module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, openDay, soleCosmetician, sourceOf, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };

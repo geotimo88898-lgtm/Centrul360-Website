@@ -65,7 +65,10 @@
   const firstName = (n) => String(n || '').split(' ')[0];
   const brkKey = (b) => b.date + '|' + b.employeeId;
   const brkOf = (key) => S.breaks.find((b) => brkKey(b) === key) || null;
-  const brkShown = (b) => (S.loc === 'all' || b.location === S.loc) && (!S.emp || (S.emp !== LEFT && b.employeeId === S.emp));
+  // a cosmetician's own booking or break in the other clinic, a day she works there (16.11): shown with hers, in its city's column
+  const away = (x) => !!(K.data && K.data.city) && !!x.location && x.location !== K.data.city;
+  const locOk = (x) => S.loc === 'all' || x.location === S.loc || away(x);
+  const brkShown = (b) => locOk(b) && (!S.emp || (S.emp !== LEFT && b.employeeId === S.emp));
   // what of hers is on a half hour that day (a client, a block): the drag's check (the server checks it again)
   const hersAt = (b, s, e) => S.appts.find((a) => a.date === b.date && a.cosmeticianId === b.employeeId && a.status !== 'anulata' && toMin(a.time) != null &&
     (a.block || a.status !== 'concediu') && toMin(a.time) < e && endMin(a) > s) || null;
@@ -91,7 +94,7 @@
         '<button type="button" class="k-icon-btn" data-act="next" aria-label="Înainte">' + icon('right') + '</button>' +
         '<button type="button" class="cal-title" data-act="month"><b data-title></b>' + icon('down') + '</button></div>' +
         '<div class="cal-bar-right"><select data-emp aria-label="Cosmeticiană">' + empFilterOptions() + '</select>' + (locked ? '' : K.seg('calloc', [['all', 'Ambele orașe'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.loc)) +
-        K.seg('calonly', [['all', 'Toate'], ['confirmata', 'Doar confirmate']], S.only) +
+        '<select name="calonly" data-only aria-label="Arată">' + K.options(ONLY, S.only) + '</select>' +
         K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) + '</div>' +
       '</div>' +
       '<button type="button" class="cal-left" data-left data-act="orphans" hidden></button>' +
@@ -111,7 +114,7 @@
         const sel = panel.querySelector('[data-emp]'); sel.innerHTML = empFilterOptions(); sel.value = S.emp;
         render();
       }
-      if (e.target.name === 'calonly') { S.only = e.target.value; render(true); }
+      if (e.target.name === 'calonly') { setOnly(e.target.value); }
       if (e.target.matches('[data-emp]')) { S.emp = e.target.value; render(true); }
     });
     gridEl.addEventListener('pointerdown', onPointerDown);
@@ -144,6 +147,7 @@
   function pickDay(d) { S.date = d; inRange() ? (renderTitle(), render()) : load(); }
 
   function onClick(e) {
+    if (e.target.closest('[data-lconf], [data-lmark], [data-lpay]')) { listAct(e); return; }
     const act = e.target.closest('[data-act]');
     if (act) {
       const a = act.dataset.act;
@@ -177,6 +181,8 @@
 
   // ------------------------------------------------------------------ data
   function rangeFor() {
+    // „Nefinalizate”: the last 30 days up to today; „De confirmat”: the day or the week shown, from today on
+    if (S.only === 'nefin') return [K.addDays(K.today(), -30), K.today()];
     // a phone: the whole month (the month on top shows which days have bookings)
     if (phone() && S.view === 'day') { const m = S.date.slice(0, 7); return [m + '-01', m + '-' + K.pad(K.daysIn(m))]; }
     if (S.view === 'day') return [S.date, S.date];
@@ -206,11 +212,93 @@
     else { const [a, b] = rangeFor(); t.textContent = K.dateShort(a) + ' - ' + K.dateShort(b) + ' ' + b.slice(0, 4); }
   }
 
+  // ------------------------------------------------------------------ the two lists (16.11): „De confirmat”, „Nefinalizate”
+  // A tap on Panou („TM 8 de confirmat mâine”, „10 vizite trecute, nefinalizate”) opens the exact list, its city picked
+  // (routes programari/maine/de-confirmat/TM, programari/azi/de-confirmat/AR, programari/nefinalizate/TM). Each row: one tap
+  // „Confirmată” and the WhatsApp confirmation (the chat, the message written); a passed one: „Finalizată”, „Nu a venit”,
+  // „Încasează”. The grid comes back with „Toate”.
+  const ONLY = [['all', 'Toate'], ['confirmata', 'Doar confirmate'], ['deconf', 'De confirmat'], ['nefin', 'Nefinalizate']];
+  const LIST = { deconf: true, nefin: true };
+  const nowMin = () => { const d = new Date(); return K.roHour ? K.roHour() * 60 + d.getMinutes() : d.getHours() * 60 + d.getMinutes(); };
+  const gone = (a) => a.date < K.today() || (a.date === K.today() && endMin(a) != null && endMin(a) <= nowMin());
+  const openSt = (a) => ['programata', 'confirmata', 'reprogramata'].includes(a.status) && !a.block && !a.paidSaleId;
+  const inList = (a) => (S.only === 'deconf' ? openSt(a) && a.status !== 'confirmata' && !gone(a) : openSt(a) && gone(a) && toMin(a.time) != null);
+  function setOnly(v, quiet) {
+    const was = S.only;
+    S.only = ONLY.some((o) => o[0] === v) ? v : 'all';
+    const sel = panel && panel.querySelector('[data-only]'); if (sel && sel.value !== S.only) { sel.value = S.only; sel.dispatchEvent(new Event('change', { bubbles: false })); }
+    if (quiet) return;
+    if (was === 'nefin' || S.only === 'nefin') load(); else render(true);
+  }
+  const waText = (a) => 'Bună, ' + String(a.clientName || '').split(' ')[0] + '! Vă așteptăm ' + (a.date === K.today() ? 'azi' : a.date === K.addDays(K.today(), 1) ? 'mâine' : K.dateShort(a.date)) + ' la ora ' + (a.time || '') + ' la Centrul360 ' + (a.location || '') + (a.treatment ? ' pentru ' + a.treatment : '') + '. Confirmați?';
+  function renderList(visible) {
+    // „De confirmat”: the day shown (a phone loads its whole month) or the week; „Nefinalizate”: its 30 days
+    const [from, to] = S.only === 'nefin' ? rangeFor() : S.view === 'day' ? [S.date, S.date] : [K.mondayOf(S.date), K.addDays(K.mondayOf(S.date), 6)];
+    const rows = visible.filter((a) => a.date >= from && a.date <= to && inList(a)).sort((a, b) => (a.date !== b.date ? (S.only === 'nefin' ? (a.date < b.date ? 1 : -1) : (a.date < b.date ? -1 : 1)) : String(a.time || '').localeCompare(String(b.time || ''))));
+    renderSummary(rows);
+    const mb = panel.querySelector('[data-mbox]'); if (mb) mb.hidden = true;
+    gridEl.classList.remove('is-week', 'is-split');
+    gridEl.classList.add('is-list');
+    const byDay = {};
+    rows.forEach((a) => { (byDay[a.date] = byDay[a.date] || []).push(a); });
+    const row = (a) => '<div class="cal-lrow" data-lrow="' + esc(a.id) + '"><button type="button" class="cal-lrow-m" data-open="' + esc(a.id) + '"><b>' + esc(span(a) || 'fără oră') + '</b><span><span class="cal-lrow-n">' + esc(nameOf(a)) + '</span><small>' +
+        esc([treatOf(a), a.cosmeticianName ? firstName(a.cosmeticianName) : '', S.loc === 'all' ? a.location : ''].filter(Boolean).join(' · ')) + '</small></span></button><div class="cal-lrow-a">' +
+      (S.only === 'deconf'
+        ? '<button type="button" class="k-btn is-good is-sm" data-lconf="' + esc(a.id) + '">' + icon('checkCircle') + 'Confirmată</button>' +
+          (a.clientPhone ? '<a class="k-btn is-outline is-sm" href="#mesaje" data-chat="' + esc(a.clientPhone) + '" data-chat-name="' + esc(a.clientName || '') + '" data-chat-city="' + esc(a.location || '') + '" data-chat-text="' + esc(waText(a)) + '">' + icon('chat') + 'WhatsApp</a>' : '')
+        : (pickFor(a).includes('finalizata') ? '<button type="button" class="k-btn is-good is-sm" data-lmark="came" data-id="' + esc(a.id) + '">' + icon('check') + 'Finalizată</button>' : '<button type="button" class="k-btn is-outline is-sm" data-lpay="' + esc(a.id) + '">' + icon('wallet') + 'Încasează</button>') +
+          '<button type="button" class="k-btn is-outline is-sm" data-lmark="noshow" data-id="' + esc(a.id) + '">' + icon('ban') + 'Nu a venit</button>') + '</div></div>';
+    gridEl.innerHTML = rows.length ? '<div class="cal-list">' + Object.keys(byDay).map((d) => '<section><h4>' + esc(K.relDay(d)) + '<span>' + byDay[d].length + '</span></h4>' + byDay[d].map(row).join('') + '</section>').join('') + '</div>'
+      : '<div class="cal-list">' + K.empty('checkCircle', S.only === 'deconf' ? 'Nimic de confirmat' : 'Nicio vizită nefinalizată', S.only === 'deconf' ? 'Toate programările de aici sunt confirmate.' : 'Toate vizitele trecute sunt marcate.') + '</div>';
+  }
+  async function listAct(e) {
+    const c = e.target.closest('[data-lconf]'), m = e.target.closest('[data-lmark]'), p = e.target.closest('[data-lpay]');
+    if (!c && !m && !p) return false;
+    const id = (c && c.dataset.lconf) || (m && m.dataset.id) || (p && p.dataset.lpay), a = S.appts.find((x) => x.id === id);
+    if (!a) return true;
+    if (p) { K.go('incasari'); setTimeout(() => K.emit('incasari:new', { appointmentId: a.id }), 250); return true; }
+    const btn = c || m, row = btn.closest('[data-lrow]');
+    K.busy(btn, async () => {
+      if (c) { const before = a.status; a.status = 'confirmata'; try { await save(a); } catch (err) { a.status = before; throw err; } }
+      else { const j = await K.api('/api/portal-appointments', { action: 'mark', id: a.id, mark: m.dataset.lmark }); Object.assign(a, j.appointment || {}); }
+      if (row) { row.classList.add('is-gone'); setTimeout(() => render(true), 260); } else render(true);
+      K.ui().toast((a.clientName || 'Programarea') + ': ' + (c ? 'confirmată' : m.dataset.lmark === 'came' ? 'finalizată' : 'nu a venit'), 'success');
+      K.reload();
+    }).catch((err) => K.ui().toast(err.code === 'needs_payment' ? 'Se finalizează la încasare.' : K.errText(err), 'error'));
+    return true;
+  }
+  // the routes from Panou and the notifications: <day>/<list>/<TM|AR> (day: azi, maine; list: de-confirmat, nefinalizate)
+  const CITY_CODE = { TM: 'Timișoara', AR: 'Arad' };
+  K.on('programari:sub', async (sub) => {
+    const parts = String(sub || '').split('/');
+    const list = parts.includes('de-confirmat') ? 'deconf' : parts.includes('nefinalizate') ? 'nefin' : '';
+    if (!list) return;
+    const until = Date.now() + 4000;
+    while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));
+    if (!panel) return;
+    const city = CITY_CODE[parts[parts.length - 1]] || '';
+    if (city && !(K.data && K.data.city)) {
+      S.loc = city;
+      const seg = panel.querySelector('[data-k-seg="calloc"]');
+      if (seg) { seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === S.loc)); const i = seg.querySelector('input'); if (i) i.value = S.loc; }
+      if (S.emp && S.emp !== LEFT && !cosmeticians(S.loc).some((c) => c.id === S.emp)) S.emp = '';
+      const sel = panel.querySelector('[data-emp]'); if (sel) { sel.innerHTML = empFilterOptions(); sel.value = S.emp; }
+    }
+    S.date = parts[0] === 'maine' ? K.addDays(K.today(), 1) : K.today();
+    setOnly(list, true);
+    S.view = 'day';
+    const vseg = panel.querySelector('[data-k-seg="calview"]');
+    if (vseg) { vseg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === 'day')); const i = vseg.querySelector('input'); if (i) i.value = 'day'; }
+    load();
+  });
+
   // ------------------------------------------------------------------ render grid
   function columns() {
-    if (S.view === 'day') return (S.loc === 'all' ? LOCS : [S.loc]).map((l) => ({ key: S.date + '|' + l, date: S.date, loc: l, label: l, sub: '' }));
+    // a cosmetician with something of hers in the other clinic that day: that city's column too
+    const awayOn = (d) => S.appts.some((a) => a.date === d && away(a)) || S.breaks.some((b) => b.date === d && away(b));
+    if (S.view === 'day') return (S.loc === 'all' ? LOCS : LOCS.filter((l) => l === S.loc || (awayOn(S.date) && l !== S.loc))).map((l) => ({ key: S.date + '|' + l, date: S.date, loc: l, label: l, sub: '' }));
     const mon = K.mondayOf(S.date);
-    return Array.from({ length: 7 }, (_, i) => { const d = K.addDays(mon, i); return { key: d + '|' + S.loc, date: d, loc: S.loc === 'all' ? '' : S.loc, label: K.DOW_S[K.parse(d).getDay()], sub: String(K.parse(d).getDate()) }; });
+    return Array.from({ length: 7 }, (_, i) => { const d = K.addDays(mon, i); return { key: d + '|' + S.loc, date: d, loc: S.loc === 'all' || awayOn(d) ? '' : S.loc, label: K.DOW_S[K.parse(d).getDay()], sub: String(K.parse(d).getDate()) }; });
   }
   const inCol = (a, c) => a.date === c.date && (!c.loc || a.location === c.loc);
 
@@ -232,8 +320,8 @@
     oneCityWeek();
     const mbox = panel.querySelector('[data-mbox]');
     mbox.hidden = !phone() || S.view === 'week'; // a phone's week: the 7 days' grid, like Google's
-    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && empMatch(a) &&
-      (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
+    const visible = S.appts.filter((a) => locOk(a) && empMatch(a) && (S.only !== 'confirmata' || a.status === S.only || a.status === 'finalizata'));
+    if (LIST[S.only]) { renderList(visible); return; }
     if (phone() && S.view === 'day') mbox.innerHTML = monthHtml();
     const prevScroll = gridEl.parentElement.scrollTop;
     const cols = columns();
@@ -243,6 +331,7 @@
     const hours = Array.from({ length: END - START + 1 }, (_, i) => START + i);
     const today = K.today();
     gridEl.style.setProperty('--cols', cols.length);
+    gridEl.classList.remove('is-list');
     gridEl.classList.toggle('is-week', S.view === 'week');
     // the week with both cities (the owner, 16.11: too crowded): each day split in two, Timișoara left, Arad right
     const split = S.view === 'week' && S.loc === 'all' && !phone();
@@ -282,7 +371,7 @@
   function monthHtml() {
     const m = S.date.slice(0, 7), first = K.parse(m + '-01'), lead = (first.getDay() + 6) % 7, days = K.daysIn(m), today = K.today();
     const count = {};
-    S.appts.forEach((x) => { if (x.status !== 'anulata' && x.status !== 'concediu' && (S.loc === 'all' || x.location === S.loc) && empMatch(x)) count[x.date] = (count[x.date] || 0) + 1; });
+    S.appts.forEach((x) => { if (x.status !== 'anulata' && x.status !== 'concediu' && locOk(x) && empMatch(x)) count[x.date] = (count[x.date] || 0) + 1; });
     const cells = [];
     for (let i = 0; i < lead; i++) cells.push('<span></span>');
     for (let d = 1; d <= days; d++) {
@@ -561,8 +650,14 @@
   // ------------------------------------------------------------------ drawers
   // with a date and an hour, once the city has a schedule (Program echipă): who works then first, the others still
   // there, marked „(nu lucrează)”; without a schedule, as before
+  // the cosmeticians of a city, and the ones of the other clinic scheduled there that day (Program echipă, 16.11)
+  function pickable(loc, date) {
+    const day = date && teamAt(date, loc);
+    const all = ((K.data && K.data.activeEmployees) || []).filter((e) => e.role === 'cosmetician');
+    return cosmeticians(loc).concat(day ? all.filter((e) => e.location !== loc && day.has(e.id)) : []);
+  }
   function empOptions(sel, loc, when) {
-    let list = cosmeticians(loc);
+    const list = pickable(loc, when && when.date);
     const on = when && teamAt(when.date, loc, when.time);
     const pairs = on ? list.filter((e) => on.has(e.id)).map((e) => [e.id, e.name]).concat(list.filter((e) => !on.has(e.id)).map((e) => [e.id, e.name + ' (nu lucrează)'])) : list.map((e) => [e.id, e.name]);
     // an appointment already assigned to someone not in the list (moved city, other role) keeps her
@@ -684,8 +779,8 @@
       if (e.target.name !== 'location') return;
       const loc = e.target.value;
       const sel = f.querySelector('[data-cos]');
-      const keep = cosmeticians(loc).some((c) => c.id === sel.value) ? sel.value : '';
-      sel.innerHTML = empOptions(keep, loc); sel.value = keep;
+      const keep = pickable(loc, f.date.value).some((c) => c.id === sel.value) ? sel.value : '';
+      sel.innerHTML = empOptions(keep, loc, { date: f.date.value, time: f.time.value }); sel.value = keep;
       const box = f.querySelector('[data-offer-box]');
       if (box) box.innerHTML = offerChips(loc);
     });
@@ -904,6 +999,7 @@
         K.field('Cât de departe', '<select name="ahead">' + K.options([[7, 'o săptămână'], [14, '2 săptămâni'], [21, '3 săptămâni'], [30, 'o lună'], [60, '2 luni']].map(([v, l]) => [String(v), l]), String(st.ahead)) + '</select>') +
         K.field('Orele din 30 în 30', '<select name="step">' + K.options([[15, 'din 15 în 15 min'], [30, 'din 30 în 30 min'], [60, 'la fix']].map(([v, l]) => [String(v), l]), String(st.step)) + '</select>') + '</div>' +
         '<div class="mo-note">' + icon('info') + 'Pe site apar doar orele libere: programul de mai sus, minus ce e deja în Calendar (programări, timp blocat, concedii, pauzele cosmeticienelor). Ziua cu un concediu are o clientă în minus.</div>' +
+        '<div class="mo-note">' + icon('users') + 'Când orașul are Program echipă, ziua e deschisă dacă lucrează cineva, chiar dacă aici e oprită sau închisă. Aici se taie doar orele de pe site.</div>' +
         '</form>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
@@ -1015,6 +1111,15 @@
         return list.length ? '<h4 class="tm-city">' + icon('pin') + esc(l) + '</h4>' + list.map(card).join('') : ''; }).join('') + '</div>';
     };
     const changed = () => { Object.keys(TEAM.at).forEach((k) => delete TEAM.at[k]); if (panel && K.isActive('programari')) load(true); };
+    // a change that leaves her bookings without a cosmetician (a day off, the other city): a line in her card, a tap shows them
+    const affectedNote = (box, r, name) => {
+      const old = box.querySelector('[data-tc-note]'); if (old) old.remove();
+      const list = (r && r.affected) || [];
+      if (!list.length) return;
+      box.querySelector('.onl-city-h').insertAdjacentHTML('afterend', '<button type="button" class="cal-left tc-note" data-tc-note>' + icon('users') + '<span><b>' +
+        (list.length === 1 ? 'O programare rămâne' : list.length + ' programări rămân') + '</b> fără cosmeticiană. <u>Mută-le</u></span>' + icon('right') + '</button>');
+      box.querySelector('[data-tc-note]').addEventListener('click', (e) => K.affectedSheet(list, { from: e.currentTarget, why: 'programul ' + firstName(name) + ' s-a schimbat' }));
+    };
     const post = async (payload) => { const r = await K.api('/api/portal-schedule', Object.assign({ from, to }, payload)); d = r; changed(); return r; };
     K.drawer({
       title: 'Program echipă', icon: 'users', width: 560,
@@ -1038,7 +1143,7 @@
             const bad = WD_TEAM.find(([k]) => days[k].on && days[k].to <= days[k].from);
             if (bad) { K.ui().toast(bad[1] + ': ora de final e înainte de început.', 'error'); return; }
             K.busy(e.target.closest('[data-tm-save]'), async () => {
-              await post({ action: 'save_week', employeeId: id, name: p.name, location: val('loc'), days });
+              affectedNote(box, await post({ action: 'save_week', employeeId: id, name: p.name, location: val('loc'), days }), p.name);
               const h = box.querySelector('.onl-city-h > span'); if (h) h.remove();
               K.ui().toast('Salvat: programul pentru ' + p.name + '.', 'success');
             }).catch(err);
@@ -1050,7 +1155,7 @@
             if (!date) { box.querySelector('[name=exd]').focus(); return; }
             const entry = on ? { on: true, from: val('exf'), to: val('ext'), location: val('exl') } : { on: false };
             if (on && entry.to <= entry.from) { K.ui().toast('Ora de final e înainte de început.', 'error'); return; }
-            K.busy(add, async () => { await post({ action: 'save_date', employeeId: id, name: p.name, date, entry }); repaint(); box.querySelector('[name=exd]').value = ''; }).catch(err);
+            K.busy(add, async () => { affectedNote(box, await post({ action: 'save_date', employeeId: id, name: p.name, date, entry }), p.name); repaint(); box.querySelector('[name=exd]').value = ''; }).catch(err);
             return;
           }
           const rm = e.target.closest('[data-exc-rm]');
@@ -1119,20 +1224,55 @@
   // the Manager page opens the same drawer (the owner and the manager set the team's hours)
   K.openTeamSchedule = () => openTeam();
 
+  // her own visit of today or a passed day, still open (16.11): „Finalizată” (when there is no money to take: a package
+  // session, a booking of 0 lei; one with a sum closes when it is paid) or „Nu a venit”. Only the status changes.
+  const canMark = (a) => !!(K.data && K.data.me && a.cosmeticianId === K.data.me.id) && a.date <= K.today() && ['programata', 'confirmata', 'reprogramata'].includes(a.status) && !a.paidSaleId && !a.block;
+  function markHtml(a) {
+    if (!canMark(a)) return '';
+    const byHand = pickFor(a).includes('finalizata');
+    return '<section class="k-section cal-mark"><h4>' + icon('checkCircle') + 'A venit?</h4><div class="cal-mark-b">' +
+      (byHand ? '<button type="button" class="k-btn is-good" data-mark="came">' + icon('check') + 'Finalizată</button>' : '') +
+      '<button type="button" class="k-btn is-outline" data-mark="noshow">' + icon('ban') + 'Nu a venit</button></div>' +
+      (byHand ? '' : '<small>A venit: se finalizează singură la încasare.</small>') + '</section>';
+  }
+  function wireMark(el, a) {
+    el.querySelectorAll('[data-mark]').forEach((b) => b.addEventListener('click', () => K.busy(b, async () => {
+      const j = await K.api('/api/portal-appointments', { action: 'mark', id: a.id, mark: b.dataset.mark });
+      Object.assign(a, j.appointment || {});
+      K.closeDrawer();
+      K.ui().toast((a.clientName || 'Programarea') + ': ' + (b.dataset.mark === 'came' ? 'finalizată' : 'nu a venit'), 'success');
+      render(true); K.reload();
+    }).catch((err) => K.ui().toast(err.code === 'needs_payment' ? 'Se finalizează la încasare.' : K.errText(err), 'error'))));
+  }
+  // „Anulează concediul”: the leave taken back (api/portal-leave.js cancel), its days free again
+  function wireLeaveCancel(el, a) {
+    const b = el.querySelector('[data-leave-cancel]');
+    if (!b) return;
+    b.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: a.block ? 'Anulezi orele libere?' : 'Anulezi concediul?', message: 'Zilele lui devin din nou zile de lucru în Calendar. Află și ea, și recepția.', confirmText: 'Anulează', danger: true }))) return;
+      try { await K.api('/api/portal-leave', { action: 'cancel', appointmentId: a.id }); K.closeDrawer(); K.ui().toast(a.block ? 'Orele libere sunt anulate.' : 'Concediul e anulat.', 'success'); load(true); }
+      catch (err) { K.ui().toast(K.errText(err), 'error'); }
+    });
+  }
+
   function openAppt(id) {
     const a = S.appts.find((x) => x.id === id);
     if (!a) return;
     const st = STATUS[a.status] || STATUS.programata;
     // A leave block isn't a real appointment, show it read-only, with just a delete button
     // for whoever can edit the calendar (undoing the approval's calendar side, if ever needed).
+    // a leave's rows (and its „Ore libere”) go only with the leave, taken back by the owner or the manager (16.11)
+    const fromLeave = a.createdBy === 'leave-approval';
     if (a.status === 'concediu' && a.block) {
       K.drawer({
         title: a.clientName || 'Timp blocat', icon: 'ban',
         subtitle: '<span class="k-tag is-mute">' + icon('ban') + 'Blocat</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'toată ziua') + ' · ' + esc(a.location),
         body: '<dl class="k-kv cal-kv"><dt>Motiv</dt><dd>' + esc(a.clientName || '-') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || 'Toată ziua') + '</dd>' +
           '<dt>Locație</dt><dd>' + esc(a.location) + '</dd><dt>Pentru</dt><dd>' + esc(a.cosmeticianName || 'Toată clinica') + '</dd></dl>',
-        footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Deblochează</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-edit-block>' + icon('pen') + 'Modifică</button>' : '',
+        footer: fromLeave ? (canMoveBreak() ? '<button type="button" class="k-btn is-danger is-sm" data-leave-cancel>' + icon('x') + 'Anulează orele libere</button>' : '')
+          : canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Deblochează</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-edit-block>' + icon('pen') + 'Modifică</button>' : '',
         onMount(el) {
+          wireLeaveCancel(el, a);
           const eb = el.querySelector('[data-edit-block]');
           if (eb) eb.addEventListener('click', () => { K.closeDrawer(); setTimeout(() => openBlock(Object.assign({ id: a.id, label: a.clientName }, a)), 230); });
           const del = el.querySelector('[data-del]');
@@ -1149,9 +1289,11 @@
         title: a.clientName || 'Concediu', lead: K.avatar(a.cosmeticianName || '?', 42),
         subtitle: '<span class="k-tag is-mute">' + icon('calendar') + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.location),
         body: '<dl class="k-kv cal-kv"><dt>Angajat</dt><dd>' + esc(a.cosmeticianName || '-') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd></dl>' +
-          '<div class="mo-note">' + icon('info') + 'Pus automat când s-a aprobat cererea de concediu. În ziua asta nu se fac programări.</div>',
-        footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge blocarea</button>' : '',
+          '<div class="mo-note">' + icon('info') + (fromLeave ? 'Din cererea de concediu aprobată. Nu poate fi programată în ziua asta; ziua se eliberează doar dacă se anulează concediul.' : 'În ziua asta nu se fac programări.') + '</div>',
+        footer: fromLeave ? (canMoveBreak() ? '<button type="button" class="k-btn is-danger is-sm" data-leave-cancel>' + icon('x') + 'Anulează concediul</button>' : '')
+          : canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge blocarea</button>' : '',
         onMount(el) {
+          wireLeaveCancel(el, a);
           const del = el.querySelector('[data-del]');
           if (del) del.addEventListener('click', async () => {
             if (!(await K.ui().confirm({ title: 'Ștergi blocarea?', message: 'Ziua devine din nou liberă în Calendar, cererea de concediu rămâne aprobată.', confirmText: 'Șterge', danger: true }))) return;
@@ -1169,9 +1311,10 @@
         body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
+          markHtml(a) +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
           (a.clientId ? '<button type="button" class="k-btn is-outline" data-contact>' + icon('user') + 'Fișa clientei și pozele</button>' : ''),
-        onMount(el) { const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => (a.clientPhone ? K.emit('contacts:open-phone', a.clientPhone) : K.emit('contacts:open', a.clientId)), 250); }); }, // by her phone: an old link from HighLevel may point at a sheet that no longer exists
+        onMount(el) { wireMark(el, a); const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => (a.clientPhone ? K.emit('contacts:open-phone', a.clientPhone) : K.emit('contacts:open', a.clientId)), 250); }); }, // by her phone: an old link from HighLevel may point at a sheet that no longer exists
       });
       return;
     }
@@ -1251,6 +1394,92 @@
     });
   }
 
+  // ------------------------------------------------------------------ the bookings left without a cosmetician (16.11)
+  // An approved leave, a day taken off in Program echipă, someone who left: her bookings those days, each with the colleagues
+  // free then („Mută la Ana”, one tap) or „Altă zi” (the booking, in the Calendar). Opened from what was tapped (the
+  // approval's card, the line on top of the Calendar). The server sends the rows (api/_lib/time-care.js).
+  const WHY_TXT = { 'a plecat': 'a plecat', concediu: 'concediu', 'timp blocat': 'timp blocat', 'zi liberă': 'zi liberă', 'în alt oraș': 'în celălalt oraș' };
+  function movesHtml(a) {
+    if (a.done) return '<div class="tc-moves"><span class="k-tag is-good">' + icon('check') + 'La ' + esc(firstName(a.done)) + '</span></div>';
+    return '<div class="tc-moves">' + (a.free && a.free.length ? '<span>Mută la</span>' + a.free.map((p) => '<button type="button" class="k-btn is-outline is-sm" data-tc-to="' + esc(p.id) + '" data-tc-name="' + esc(p.name) + '">' + esc(firstName(p.name)) + '</button>').join('')
+      : '<span>Nicio colegă liberă atunci</span>') + '<button type="button" class="k-btn is-ghost is-sm" data-tc-day>' + icon('calendar') + 'Altă zi</button></div>';
+  }
+  function affectedSheet(list, o) {
+    const opts = o || {};
+    const rows = (list || []).map((a) => Object.assign({}, a));
+    if (!rows.length) return null;
+    const n = rows.length;
+    const row = (a) => '<div class="k-row tc-row' + (a.done ? ' is-done' : '') + '" data-tc="' + esc(a.id) + '"><div class="k-row-main"><div class="k-row-title">' + esc(a.clientName || a.ghlTitle || 'Programare') + '</div>' +
+      '<div class="k-row-sub">' + esc(K.relDay(a.date)) + (a.time ? ' · ' + esc(span(a)) : '') + ' · ' + esc(a.location || '') + (a.treatment ? ' · ' + esc(a.treatment) : '') +
+      (a.orphanWhy ? ' · <b>' + esc(a.orphanWhy === 'a plecat' ? (((leftOf(a.cosmeticianId) || {}).name || a.cosmeticianName || '').split(' ')[0] + ' a plecat').trim() : WHY_TXT[a.orphanWhy] || a.orphanWhy) + '</b>' : '') + '</div>' + movesHtml(a) + '</div></div>';
+    const d = K.drawer({
+      title: n === 1 ? 'O programare de mutat' : n + ' programări de mutat', icon: 'users', width: 540, from: opts.from,
+      subtitle: esc((n === 1 ? 'Rămâne' : 'Rămân') + ' fără cosmeticiană' + (opts.why ? ': ' + opts.why : '') + '. Dă-le unei colege libere sau mută-le pe altă zi.'),
+      body: '<div class="k-list tc-list">' + rows.map(row).join('') + '</div>',
+      footer: (opts.show ? '<button type="button" class="k-btn is-outline" data-show>' + icon('calendar') + 'Arată-le în Calendar</button>' : '') + '<span class="k-grow"></span><button type="button" class="k-btn" data-close>Gata</button>',
+      onMount(el) {
+        el.querySelector('[data-close]').addEventListener('click', () => d.close());
+        const sh = el.querySelector('[data-show]'); if (sh) sh.addEventListener('click', () => { d.close(); opts.show(); });
+        el.addEventListener('click', (e) => {
+          const r = e.target.closest('[data-tc]'); if (!r) return;
+          const a = rows.find((x) => x.id === r.dataset.tc); if (!a) return;
+          if (e.target.closest('[data-tc-day]')) { d.close(); K.openAppointment(a.id, a.date); return; }
+          const b = e.target.closest('[data-tc-to]'); if (!b) return;
+          K.busy(b, async () => {
+            await K.api('/api/portal-appointments', { action: 'reassign', id: a.id, cosmeticianId: b.dataset.tcTo });
+            a.done = b.dataset.tcName;
+            const box = r.querySelector('.tc-moves'); if (box) box.outerHTML = movesHtml(a);
+            r.classList.add('is-done');
+            K.ui().toast((a.clientName || 'Programarea') + ': la ' + firstName(a.done) + '.', 'success');
+            if (panel && K.isActive('programari')) load(true);
+          }).catch((err) => K.ui().toast(err.code === 'not_free' ? 'Nu mai e liberă atunci. Alege alta sau altă zi.' : K.errText(err), 'error'));
+        });
+      },
+    });
+    return d;
+  }
+  K.affectedSheet = affectedSheet;
+  // „Ore libere” that don't cover a whole day (16.11): which hours, so the Calendar blocks exactly those for her. Resolves
+  // { from, to } or null (closed). minutes: how many she asked for (the end follows the start).
+  K.askHours = (o) => new Promise((done) => {
+    const mins = Number(o && o.minutes) || 60;
+    const opts = []; for (let m = 7 * 60; m <= 22 * 60; m += 15) opts.push([toHM(m), toHM(m)]);
+    let out = null;
+    const d = K.drawer({
+      title: 'Ce ore are libere?', icon: 'clock', width: 440, from: o && o.from,
+      subtitle: esc((o && o.name ? firstName(o.name) + ' · ' : '') + durText(mins) + ' din orele suplimentare'),
+      body: '<form class="k-form" data-hours>' + K.field('De la', '<select name="from">' + K.options(opts, '15:00') + '</select>') +
+        K.field('Până la', '<select name="to">' + K.options(opts, toHM(Math.min(15 * 60 + mins, 22 * 60))) + '</select>') + '</form>' +
+        '<p class="ct-hint">' + icon('info') + 'Orele astea se blochează în Calendar pentru ea; programările ei de atunci apar ca rămase fără cosmeticiană.</p>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-good" data-ok>' + icon('check') + 'Aprobă</button>',
+      onMount(el) {
+        const f = el.querySelector('[data-hours]');
+        f.from.addEventListener('change', () => { f.to.value = toHM(Math.min(toMin(f.from.value) + mins, 22 * 60)); f.to.dispatchEvent(new Event('change')); });
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        el.querySelector('[data-ok]').addEventListener('click', () => {
+          if (toMin(f.to.value) <= toMin(f.from.value)) { K.ui().toast('Ora de final e înainte de început.', 'error'); return; }
+          out = { from: f.from.value, to: f.to.value }; d.close();
+        });
+      },
+      onClose() { done(out); },
+    });
+  });
+  // an approval (Aprobări, Manager → Echipa): the hours asked when needed, then her bookings left without a cosmetician in a
+  // sheet out of the card. Resolves the server's answer, or null when the hours were not given.
+  K.approveLeave = async (id, card, name, minutes) => {
+    const body = { action: 'decide', id, decision: 'approved' };
+    let j;
+    try { j = await K.api('/api/portal-leave', body); }
+    catch (err) {
+      if (err.code !== 'missing_hours' && err.code !== 'invalid_hours') throw err;
+      const hours = await K.askHours({ from: card, minutes, name });
+      if (!hours) return null;
+      j = await K.api('/api/portal-leave', Object.assign(body, { hours }));
+    }
+    if (j && j.affected && j.affected.length) setTimeout(() => K.affectedSheet(j.affected, { from: card && card.isConnected ? card : null, why: name ? 'concediu ' + firstName(name) : '' }), 60);
+    return j;
+  };
+
   // ------------------------------------------------------------------ the appointments of someone who left
   // After „A plecat” (Echipa): her appointments after the last day stay in the Calendar; a line on top says how many wait
   // for someone else, until each has another cosmetician (or is cancelled). Nothing is deleted.
@@ -1271,34 +1500,22 @@
     const list = S.orphans;
     el.hidden = !list.length;
     if (!list.length) { el.innerHTML = ''; return; }
-    const who = [...new Set(list.map((a) => (leftOf(a.cosmeticianId) || {}).name || a.cosmeticianName || '').filter(Boolean).map((n) => n.split(' ')[0]))];
+    // why, short: who left by name, then the leave and the days off
+    const who = [...new Set(list.filter((a) => (a.orphanWhy || 'a plecat') === 'a plecat').map((a) => (leftOf(a.cosmeticianId) || {}).name || a.cosmeticianName || '').filter(Boolean).map((n) => n.split(' ')[0]))];
+    const whys = [...new Set(list.map((a) => a.orphanWhy).filter((w) => w && w !== 'a plecat').map((w) => WHY_TXT[w] || w))];
+    const why = (who.length ? [who.join(', ') + ' a plecat'] : []).concat(whys);
     el.innerHTML = icon('users') + '<span><b>' + K.plural(list.length, 'programare', 'programări') + '</b> ' + (list.length === 1 ? 'rămasă' : 'rămase') + ' fără cosmeticiană' +
-      (who.length ? ' (' + esc(who.join(', ')) + ' a plecat)' : '') + '. <u>Dă-le altcuiva</u></span>' + icon('right');
+      (why.length ? ' (' + esc(why.join(' · ')) + ')' : '') + '. <u>Dă-le altcuiva</u></span>' + icon('right');
   }
   function openOrphans() {
     const list = S.orphans;
     if (!list.length) return;
-    const d = K.drawer({
-      title: 'Rămase fără cosmeticiană', icon: 'users', width: 520,
-      subtitle: K.plural(list.length, 'programare', 'programări') + ' de după ultima ' + (new Set(list.map((a) => a.cosmeticianId)).size > 1 ? 'lor' : 'ei') + ' zi de lucru',
-      body: '<div class="k-list">' + list.map((a) => {
-        const p = leftOf(a.cosmeticianId);
-        return '<button type="button" class="k-row cal-left-row" data-go="' + esc(a.id) + '" data-date="' + esc(a.date) + '"><div class="k-row-main"><div class="k-row-title">' + esc(a.clientName || a.ghlTitle || 'Programare') + '</div>' +
-          '<div class="k-row-sub">' + esc(K.relDay(a.date)) + (a.time ? ' · ' + esc(span(a)) : '') + ' · ' + esc(a.location || '') + (a.treatment ? ' · ' + esc(a.treatment) : '') + '</div></div>' +
-          '<span class="k-tag is-warn">' + esc(((p && p.name) || a.cosmeticianName || '').split(' ')[0] || 'a plecat') + '</span></button>';
-      }).join('') + '</div>',
-      footer: '<button type="button" class="k-btn is-outline" data-show>' + icon('calendar') + 'Arată-le în Calendar</button><span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button>',
-      onMount(el) {
-        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
-        el.querySelector('[data-show]').addEventListener('click', () => {
-          d.close();
-          S.emp = LEFT;
-          const sel = panel.querySelector('[data-emp]'); if (sel) { sel.innerHTML = empFilterOptions(); sel.value = LEFT; }
-          S.date = list[0].date; setView('week');
-        });
-        el.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { d.close(); K.openAppointment(b.dataset.go, b.dataset.date); }));
-      },
-    });
+    affectedSheet(list, { from: panel.querySelector('[data-left]'),
+      show: () => {
+        S.emp = LEFT;
+        const sel = panel.querySelector('[data-emp]'); if (sel) { sel.innerHTML = empFilterOptions(); sel.value = LEFT; }
+        S.date = list[0].date; setView('week');
+      } });
   }
 
   // ------------------------------------------------------------------ month picker

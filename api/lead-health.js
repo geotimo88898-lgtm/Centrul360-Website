@@ -168,6 +168,32 @@ module.exports = async (req, res) => {
     res.status(200).json({ today, cities: out });
     return;
   }
+  // ?time=1: the Calendar's time problems as they are now (16.11), counts per clinic only, never a name or a phone. Read only.
+  //   orphans    bookings to come left without a cosmetician, by why (a plecat, concediu, timp blocat, zi liberă, în alt oraș)
+  //   offDay     bookings to come on a cosmetician who doesn't work that day in Program echipă (not marked by a change)
+  //   unmarked   passed visits of the last 60 days neither finished, cancelled nor paid (each one a no-show today), and how
+  //              many of them are package sessions
+  //   movedAhead bookings „reprogramată” sitting on a day still ahead (moved; whether their old day passed without her can't
+  //              be known for the ones moved before 16.11), missedOn: the moves that kept their no-show since
+  if (req.query && req.query.time) {
+    const C = require('./_lib/clinic'), L = require('./_lib/left'), T = require('./_lib/team-schedule'), B = require('./_lib/booking');
+    const [appts, sales, emps, doc] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/employees.json', []), T.load()]);
+    const today = B.roNow().date, from = C.addDay(today, -60), paid = C.paidDays(sales);
+    const out = {};
+    const orph = L.orphans(appts, emps, today, doc);
+    C.CITIES.forEach((city) => {
+      const here = (a) => a && C.clinicOf(a.location) === city;
+      const o = {};
+      orph.filter(here).forEach((a) => { o[a.orphanWhy] = (o[a.orphanWhy] || 0) + 1; });
+      const ids = new Set(emps.filter((e) => e && e.role === 'cosmetician' && e.active !== false).map((e) => e.id));
+      const offDay = appts.filter((a) => here(a) && L.open(a) && a.date >= today && a.cosmeticianId && ids.has(a.cosmeticianId) && !a.offShift && T.dayOf(doc, a.cosmeticianId, a.date) && !T.workingAt(doc, a.cosmeticianId, a.date, null, {})).length;
+      const un = appts.filter((a) => here(a) && a.date >= from && a.date < today && ['programata', 'confirmata', 'reprogramata'].includes(a.status) && !a.block && !C.cameBy(a, paid) && !/^\s*test\b/i.test(a.clientName || ''));
+      out[city] = { orphans: o, offDay, unmarked: { all: un.length, packages: un.filter((a) => a.package).length, yesterday: un.filter((a) => a.date === C.addDay(today, -1)).length },
+        movedAhead: appts.filter((a) => here(a) && a.status === 'reprogramata' && a.date >= today).length, missedOn: appts.filter((a) => here(a) && Array.isArray(a.missedOn) && a.missedOn.length).length };
+    });
+    res.status(200).json({ today, cities: out });
+    return;
+  }
   if (req.query && req.query.plan) {
     const C = require('./_lib/content');
     const [list, st] = await Promise.all([C.items(), C.settings()]);
@@ -593,6 +619,18 @@ async function verifyNumbers(monthQ) {
       const k = (keysOf(a.clientId, a.clientPhone, a.clientName)[0] || 'id:' + a.id) + '|' + a.date + '|' + plain(a.treatment).trim();
       if (seen.has(k)) { ex.duplicate++; if (came) seen.set(k, true); return; }
       seen.set(k, came);
+    });
+    // a booking moved after its day had passed without her (missedOn): that day stays a no-show
+    appts.forEach((a) => {
+      if (!a || apptClinic(a) !== city || !Array.isArray(a.missedOn) || a.block || isTest(a)) return;
+      a.missedOn.forEach((d) => {
+        if (d < wFrom || d > wTo || d === a.date) return;
+        const came = cameOf(Object.assign({}, a, { date: d, status: 'programata', paidSaleId: '' }), city);
+        const k = (keysOf(a.clientId, a.clientPhone, a.clientName)[0] || 'id:' + a.id) + '|' + d + '|' + plain(a.treatment).trim();
+        if (seen.has(k)) { ex.duplicate++; if (came) seen.set(k, true); return; }
+        ex.moved++; ck.movedPassedNotCame++;
+        seen.set(k, came);
+      });
     });
     const due = seen.size, came = [...seen.values()].filter(Boolean).length;
     v2[city] = { due, came, excluded: ex };

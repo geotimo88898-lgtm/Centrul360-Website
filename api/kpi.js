@@ -157,7 +157,7 @@ module.exports = async (req, res) => {
       now.cities[city] = {
         appts: todayOf(appts, ro.min),
         // tomorrow's bookings not confirmed yet (the reception confirms them the day before)
-        tomorrowUnconfirmed: myAppts.filter((a) => a && a.date === tomorrow && a.location === city && !a.block && (a.status === 'programata' || a.status === 'reprogramata')).length,
+        tomorrowUnconfirmed: myAppts.filter((a) => a && a.date === tomorrow && a.location === city && C.toConfirm(a)).length, // the same rule as the morning notice (_lib/followups.js)
         collected: MONEY.net(paid), payments: paid.filter(MONEY.isPayment).length, methods: C.methods(paid),
         leads: { total: sp.total, within5: sp.within5, never: sp.never, median: sp.median, inHours: sp.inHours, inHoursWithin5: sp.inHoursWithin5 },
         waiting: waiting[city] || 0,
