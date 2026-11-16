@@ -394,11 +394,22 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     wr('data/month-costs.json', mc);
     d = await get(); r = rowOf(d, 'auto:ads');
     check(20, 'Reclame Meta: a row paid automatically with the card', r && r.lei === 900 && r.done && r.autoPay && r.group === 'card' && r.src === 'Meta', r);
-    const tx = rowOf(d, 'taxes');
-    check(20, 'Taxe la stat: estimated from Salarii brute minus the net pay', tx && tx.est && tx.est.gross === 999999 && Math.abs(tx.est.lei - (999999 - tx.est.net)) < 0.01 && Math.abs(tx.lei - (3200 * 0 + tx.est.lei + (tx.entries ? d.rec.find((x) => x.key === 'taxes').total : 0))) < 0.01, tx);
+    // the taxes on the salaries, calculated (ro-salary-tax.js, made-up sums)
+    const RT = require('../api/_lib/ro-salary-tax');
+    const g5 = RT.fromGross(5000, '2026-10'), gmin = RT.fromGross(4325, '2026-10'), gh = RT.fromGross(4050, '2026-03');
+    check(20, 'salary taxes: 5.000 gross → CAS 1.250, CASS 500, deduction 562, tax 269, CAM 113, net 2.981', g5.cas === 1250 && g5.cass === 500 && g5.deduction === 562 && g5.tax === 269 && g5.cam === 113 && g5.net === 2981, g5);
+    check(20, 'minimum wage (July 2026): 200 lei not taxed, net 2.699; (January) 300 lei, net 2.574', gmin.untaxed === 200 && gmin.net === 2699 && gmin.cam === 93 && gh.untaxed === 300 && gh.net === 2574, { gmin, gh });
+    check(20, 'gross from net: back to the same gross (5.000, the minimum wage)', RT.grossFromNet(2981, '2026-10') === 5000 && RT.grossFromNet(2699, '2026-10') === 4325 && RT.grossFromNet(2574, '2026-03') === 4050);
+    const big = RT.fromGross(9000, '2026-10');
+    check(20, 'above minimum wage + 2.000: no personal deduction', big.deduction === 0 && big.tax === Math.round((9000 - 2250 - 900) * 0.1), big);
+    d = await get();
+    const ts = rowOf(d, 'taxsal'), tv = rowOf(d, 'taxes');
+    const sumP = ts && ts.calc ? ts.calc.people.reduce((a2, x) => a2 + x.total, 0) : -1;
+    check(20, 'Taxe la stat (salarii): per person, the total on the row, who left not in it', ts && !ts.typed && ts.lei === sumP && ts.calc.people.every((x) => x.cas + x.cass + x.tax + x.cam === x.total) && !ts.calc.people.some((x) => x.id === 'e-c5') && ts.due === MONTH + '-25', ts && ts.calc);
+    check(20, 'Taxe la stat (TVA): only what is typed, apart', tv && tv.lei === (d.rec.find((x) => x.key === 'taxes').entries.filter((e) => e.kind !== 'salarii').reduce((a2, e) => a2 + e.lei, 0) || null), tv);
     await post({ action: 'rec_add', line: 'taxes', lei: 1500, kind: 'salarii' });
-    const tx2 = rowOf(await get(), 'taxes');
-    check(20, 'the real sum typed: no estimate', tx2 && !tx2.est, tx2);
+    const ts2 = rowOf(await get(), 'taxsal');
+    check(20, 'the accountant\'s sum typed („Din salarii”): it replaces the calculation', ts2 && ts2.typed && ts2.lei === 1500 && ts2.calc, ts2);
     check(20, 'totals still add up with the automatic rows', sums(await get()).ok);
     d = await get();
     const nx = d.next;

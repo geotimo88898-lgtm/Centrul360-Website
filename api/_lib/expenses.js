@@ -32,8 +32,8 @@
 //   autoPay: { rowKey: true | false } }                                        („Se plătește automat”: paid on its day by itself)
 // Automatic (the owner, 16.11: „ce poți extrage automat, să faci asta”), each row says its source (src): the salaries
 // from Salariu, the fixed lines from Costuri lunare, Reclame Meta and Mesaje WhatsApp from Meta (paid by the card as
-// they are spent), Taxe la stat from Variabile plus the taxes on the salaries estimated from Salarii brute minus the net
-// pay (until the real sum is typed). His monthly rows come every month by themselves.
+// they are spent), Taxe la stat (salarii) calculated per person (ro-salary-tax.js) until the accountant's sum is typed,
+// Taxe la stat (TVA and the others) from Variabile. His monthly rows come every month by themselves.
 // data/expense-alerts.json  { day, sent: { 'YYYY-MM|rowKey|due|late': at } }
 
 const crypto = require('crypto');
@@ -64,6 +64,7 @@ const FIRST = '2026-11'; // the first month of the tracker
 const ALERT_FROM = '2026-11-17'; // the payments due before the tracker existed don't ring
 
 const L = require('./left');
+const RT = require('./ro-salary-tax');
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const isMonth = (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(m || ''));
 const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || ''));
@@ -168,26 +169,37 @@ function tracker(ctx, month) {
     push({ key: 'sal:' + e.id, group: 'sal', label: e.name || 'Angajat', sub: 'Salariul pe ' + monthName(pm), due: dayOf(month, payDayOf(e)), payDay: payDayOf(e), lei: total, base: r2(p.base), extras, src: 'Salariu' });
   });
 
-  // the taxes on the salaries of the month before, estimated (the owner, 16.11: „ce poți extrage automat”): Salarii brute
-  // typed in Costuri lunare for that month minus the net base pay of everyone who worked in it. Only when both exist and
-  // the gross is above the net; never final: a sum typed under Taxe la stat → „Din salarii” replaces it.
-  let salEst = null;
-  const grossEn = ctx.costs && ctx.costs.months && ctx.costs.months[pm];
-  const gross = grossEn && grossEn.lines ? MP.amount(grossEn.lines.salaries) : null;
-  if (gross != null && gross > 0) {
-    const net = r2(team.filter((e) => e.active !== false || L.leftAt(e) >= pm + '-01').reduce((a, e) => a + (Number(payOf(e).base) || 0), 0));
-    if (net > 0 && gross > net) salEst = { lei: r2(gross - net), gross, net, month: pm };
-  }
+  // the taxes on the salaries of the month before (the owner, 16.11: „le poți calcula și tu”), per person, by the rules of
+  // api/_lib/ro-salary-tax.js: the same people as the salary rows (who left: not from the month she left on), her gross
+  // when stored, else worked out from her net, what came on top counted as salary too. Never final: the accountant's
+  // sum typed in Variabile → Taxe la stat → „Din salarii” takes its place
+  const people = team.filter((e) => !L.outOfMonth(e, month)).map((e) => {
+    const p = payOf(e), baseNet = Number(p.base) || 0;
+    if (!(baseNet > 0)) return null;
+    const x = RT.personMonth({ baseNet, extraNet: Math.max(0, (Number(p.total) || 0) - baseNet), month: pm, grossStored: e.grossSalary, dependants: e.dependants });
+    return { id: e.id, name: e.name || 'Angajat', gross: x.gross, cas: x.cas, cass: x.cass, tax: x.tax, cam: x.cam, untaxed: x.untaxed, total: x.state, derived: x.derived };
+  }).filter(Boolean);
+  const calc = people.length ? { month: pm, people, total: people.reduce((a, x) => a + x.total, 0), gross: people.reduce((a, x) => a + x.gross, 0),
+    rates: { year: RT.RATES.year, cas: RT.RATES.cas, cass: RT.RATES.cass, tax: RT.RATES.tax, cam: RT.RATES.cam, minWage: RT.minWageOf(pm) } } : null;
 
   // the variable categories with a payment day (Taxe la stat: the 25th, always a row; the others once they have a sum)
   REC.forEach((c) => {
     const d = recDayOf(doc, c.key);
     if (d == null) return;
     const list = mine.rec[c.key], key = c.key === 'taxes' ? 'taxes' : 'rec:' + c.key;
-    let lei = list.length ? recSum(list) : null, est = null;
-    if (c.key === 'taxes' && salEst && !list.some((e) => e.kind === 'salarii')) { est = salEst; lei = r2((lei || 0) + salEst.lei); }
-    if (c.key !== 'taxes' && !(lei > 0) && !mine.parts[key] && !mine.amt[key] && !mine.paid[key]) return;
-    push({ key, group: c.key === 'taxes' ? 'tax' : 'rec', line: c.key, label: c.label, sub: c.hint || '', due: dayOf(month, d), payDay: d, lei, entries: list.length, est, src: est ? 'Variabile + estimat din salarii' : 'Variabile' });
+    if (c.key === 'taxes') {
+      // two rows: the taxes on the salaries (calculated, or the accountant's sum typed as „Din salarii”) and the others (TVA...)
+      const sal = list.filter((e) => e.kind === 'salarii'), rest = list.filter((e) => e.kind !== 'salarii');
+      if (calc || sal.length || mine.parts.taxsal || mine.amt.taxsal) {
+        push({ key: 'taxsal', group: 'tax', line: 'taxes', label: 'Taxe la stat (salarii)', sub: 'CAS, CASS, impozit, CAM pe ' + monthName(pm), due: dayOf(month, d), payDay: d,
+          lei: sal.length ? recSum(sal) : calc ? r2(calc.total) : null, entries: sal.length, calc, typed: sal.length > 0, src: sal.length ? 'Variabile, suma de la contabilă' : 'calculat din salarii' });
+      }
+      push({ key, group: 'tax', line: c.key, label: c.label, sub: 'TVA și alte taxe', due: dayOf(month, d), payDay: d, lei: rest.length ? recSum(rest) : null, entries: rest.length, src: 'Variabile' });
+      return;
+    }
+    const lei = list.length ? recSum(list) : null;
+    if (!(lei > 0) && !mine.parts[key] && !mine.amt[key] && !mine.paid[key]) return;
+    push({ key, group: 'rec', line: c.key, label: c.label, sub: c.hint || '', due: dayOf(month, d), payDay: d, lei, entries: list.length, src: 'Variabile' });
   });
 
   // the fixed lines: Costuri lunare of the month, else the last month before it that has the line

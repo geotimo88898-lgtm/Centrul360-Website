@@ -1237,6 +1237,14 @@ html.ui-nou .pf-sh-note svg{ width:12px; height:12px; margin-right:.3rem; vertic
 html.ui-nou .pf-sh-note + .pf-sh-note{ margin-top:-.3rem; }
 html.ui-nou .pf-sh-auto{ display:flex; flex-direction:column; gap:.3rem; padding:.9rem 0 .2rem; border-top:1px solid var(--line); }
 html.ui-nou .pf-sh-auto > span{ font-size:.76rem; color:var(--muted); }
+html.ui-nou .pf-tax{ list-style:none; margin:0 0 .6rem; padding:0; }
+html.ui-nou .pf-tax li{ padding:.5rem 0; border-top:1px solid var(--line); min-width:0; }
+html.ui-nou .pf-tax li:first-child{ border-top:0; }
+html.ui-nou .pf-tax-h{ display:flex; align-items:baseline; justify-content:space-between; gap:.6rem; min-width:0; font-size:.86rem; }
+html.ui-nou .pf-tax-h b{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:620; }
+html.ui-nou .pf-tax-h span{ flex:none; font-weight:650; font-variant-numeric:tabular-nums; }
+html.ui-nou .pf-tax small{ display:block; margin-top:.15rem; font-size:.74rem; color:var(--muted); font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+html.ui-nou .pf-tax li.is-tot .pf-tax-h b{ color:var(--muted); font-weight:600; }
 html.ui-nou .pf-sugg{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:.35rem; margin-top:-.3rem; }
 @media (max-width:560px){
   html.ui-nou .pf-sh-top{ gap:.4rem; }

@@ -136,15 +136,15 @@
     if (r.eur != null && r.lei != null && !r.changed) return K.num(r.eur) + ' € la cursul de azi';
     if (r.from && !r.changed) return 'suma din ' + esc(K.MON[+r.from.slice(5, 7) - 1]);
     if (r.group === 'card') return 'din ' + esc(r.src) + (r.at ? ', ' + esc(readAt(r.at)) : '');
-    if (r.key === 'taxes' && r.est) return 'din care ' + K.lei(r.est.lei) + ' estimat din salarii' + (r.entries ? ' + ' + K.plural(r.entries, 'sumă', 'sume') + ' în Variabile' : '');
-    if (r.key === 'taxes') return r.entries ? K.plural(r.entries, 'sumă', 'sume') + ' în Variabile' : 'TVA, contribuții, impozite';
+    if (r.key === 'taxsal') return r.typed ? 'suma de la contabilă, din Variabile' : 'calculat din salarii, ' + K.plural((r.calc && r.calc.people.length) || 0, 'persoană', 'persoane');
+    if (r.key === 'taxes') return r.entries ? K.plural(r.entries, 'sumă', 'sume') + ' în Variabile' : 'TVA și alte taxe';
     if (r.group === 'rec') return K.plural(r.entries || 0, 'sumă', 'sume') + ' în Variabile';
     if (r.group === 'own') return esc(r.own.note || '');
     return '';
   }
   const kindOf = (r) => (r.group === 'sal' ? 'Salariu' : r.autoPay ? 'Automat' : r.group === 'own' && r.own.repeat ? 'Lunar' : '');
   function amountHtml(r) {
-    if (r.lei != null) return '<span class="pf-amt">' + (r.est && !r.entries && !r.changed ? '<s class="pf-approx">≈</s>' : '') + (r.changed && r.orig != null ? '<s class="pf-orig" title="Suma obișnuită">' + K.lei(r.orig) + '</s>' : '') + K.lei(r.lei) + '</span>';
+    if (r.lei != null) return '<span class="pf-amt">' + (r.key === 'taxsal' && !r.typed && !r.changed ? '<s class="pf-approx" title="Calculat">≈</s>' : '') + (r.changed && r.orig != null ? '<s class="pf-orig" title="Suma obișnuită">' + K.lei(r.orig) + '</s>' : '') + K.lei(r.lei) + '</span>';
     if (r.done) return '<span class="pf-amt">' + K.lei(r.paidLei) + '</span>';
     if (r.key === 'taxes') return '<button type="button" class="pf-amt is-btn" data-pf-tax>' + icon('plus') + 'Sumă</button>';
     if (r.group === 'own') return '<button type="button" class="pf-amt is-btn" data-pf-open>' + icon('plus') + 'Sumă</button>';
@@ -222,8 +222,8 @@
     const body =
       '<div class="pf-sh-top">' + stat('De plătit', r.lei != null ? K.lei(r.lei, 2) : 'fără sumă') + stat('Plătit', K.lei(r.paidLei, 2), 'is-paid') + stat('Rămas', r.rest != null ? K.lei(r.rest, 2) : '-', r.state === 'late' ? 'is-late' : '') +
         '<i class="pf-prog" aria-hidden="true"><i style="width:' + w + '%"></i></i>' + (r.changed && r.orig != null ? '<p class="pf-sh-note">Luna asta altă sumă. De obicei ' + K.lei(r.orig, 2) + '.</p>' : '') +
-        (r.src ? '<p class="pf-sh-note">' + icon('zap') + 'Suma vine automat din ' + esc(r.src) + (r.group === 'card' && r.upToday ? ', cât s-a cheltuit până azi' : '') + '.</p>' : '') +
-        (r.est ? '<p class="pf-sh-note">Estimat din salarii: ' + K.lei(r.est.gross) + ' brut în Costuri lunare pe ' + esc(K.MON[+r.est.month.slice(5, 7) - 1]) + ' minus ' + K.lei(r.est.net) + ' net = ' + K.lei(r.est.lei) + '. Nu e suma finală: scrie suma reală în Variabile → Taxe la stat, „Din salarii”.</p>' : '') + '</div>' +
+        (r.src ? '<p class="pf-sh-note">' + icon('zap') + (r.key === 'taxsal' ? (r.typed ? 'Suma e cea de la contabilă, din Variabile.' : 'Suma e calculată din salarii, pe persoane.') : 'Suma vine automat din ' + esc(r.src) + (r.group === 'card' && r.upToday ? ', cât s-a cheltuit până azi' : '') + '.') + '</p>' : '') +
+        '</div>' + (r.calc ? taxSalHtml(r) : '') +
       (r.group !== 'sal' ? '<div class="pf-sh-auto">' + K.toggle('autopay', !!r.autoPay, 'Se plătește automat') + '<span>' + (r.group === 'card' ? 'Meta ia banii de pe card pe măsură ce cheltuie.' : 'Debit direct: se trece plătită singură pe ' + (r.due ? esc(K.dateShort(r.due)) : '1 ale lunii') + ', fără bifă.') + '</span></div>' : '') +
       (r.parts.length ? '<h5 class="pf-sh-h">Plăți făcute</h5>' + partsHtml(r, true) : '') +
       (!r.done ? '<h5 class="pf-sh-h">Plătește</h5><form class="k-form pf-form" data-pf-payf>' +
@@ -294,6 +294,16 @@
         if (pf) setTimeout(() => { try { pf.lei.focus({ preventScroll: true }); pf.lei.select(); } catch (x) { /* */ } }, 300);
       },
     });
+  }
+  // Taxe la stat (salarii): per person, as calculated (api/_lib/ro-salary-tax.js), the rates of the year under it
+  function taxSalHtml(r) {
+    const c = r.calc, pc = (v) => String(Math.round(v * 10000) / 100).replace('.', ',') + '%';
+    const mon = K.MON[+c.month.slice(5, 7) - 1];
+    return '<h5 class="pf-sh-h">Calculat pe ' + esc(mon) + (r.typed ? ' (pentru comparație)' : '') + '</h5><ul class="pf-tax">' + c.people.map((x) => '<li><div class="pf-tax-h"><b>' + esc(x.name) + '</b><span>' + K.lei(x.total) + '</span></div>' +
+        '<small>brut ' + K.lei(x.gross) + (x.derived ? ' (din net)' : '') + ' · CAS ' + K.num(x.cas) + ' · CASS ' + K.num(x.cass) + ' · impozit ' + K.num(x.tax) + ' · CAM ' + K.num(x.cam) + (x.untaxed ? ' · ' + x.untaxed + ' lei neimpozabili' : '') + '</small></li>').join('') +
+      '<li class="is-tot"><div class="pf-tax-h"><b>Total</b><span>' + K.lei(c.total) + '</span></div></li></ul>' +
+      '<p class="pf-sh-note">Reguli ' + c.rates.year + ': CAS ' + pc(c.rates.cas) + ', CASS ' + pc(c.rates.cass) + ', impozit ' + pc(c.rates.tax) + ' după deducerea personală (fără persoane în întreținere, dacă nu sunt trecute), CAM ' + pc(c.rates.cam) + ' plătit de firmă, salariul minim ' + K.lei(c.rates.minWage) + '. ' +
+        'Brutul e calculat din net când nu e trecut; orele, comisionul și bonusurile intră în brut. ' + (r.typed ? 'Pe rând e suma de la contabilă.' : 'Nu e suma finală: scrie suma de la contabilă în Variabile → Taxe la stat → „Din salarii”.') + '</p>';
   }
   async function delPart(r, id, from) {
     const p = (r.parts || []).find((x) => x.id === id);
