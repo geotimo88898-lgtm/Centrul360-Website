@@ -67,6 +67,21 @@ module.exports = async (req, res) => {
   // ?plan=1: the posting calendar, read only (the owner's rule, 15.11: after a big wave of approvals the whole calendar is
   // checked against our posting rules and fixed where it isn't optimal): every planned or posted entry, by time, with
   // the item's topic, review state and kind; plus the settings' times and quotas. No ids of people, nothing private.
+  // ?fill=1: the calendar of the next days per clinic, read only (the owner, 16.11: the ads planned so the next 2 days
+  // fill up to 100% plus the no-shows of the last 60 days): the target, the hours of the team, booked and free, day by
+  // day, the same numbers as KPI → Clinică. Shares and hours only, never a name.
+  if (req.query && req.query.fill) {
+    const C = require('./_lib/clinic'), B = require('./_lib/booking');
+    const [appts, sales, clients, emps, cfg] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/sales.json', []),
+      readJSON('data/clients.json', []), readJSON('data/employees.json', []), B.settings({ team: true })]);
+    const N = C.normalize({ leads: [], appts, sales, convos: [], emps });
+    const today = B.roNow().date, n = Math.max(1, Math.min(14, Number(req.query.fill) || 7));
+    const tg = C.fillTargets(N.appts, N.sales, C.CITIES, today, clients);
+    const out = {};
+    C.CITIES.forEach((city) => { out[city] = { target: tg[city], days: C.fillDays(cfg, city, today, n, N.appts, tg[city].target) }; });
+    res.status(200).json({ today, cities: out });
+    return;
+  }
   if (req.query && req.query.plan) {
     const C = require('./_lib/content');
     const [list, st] = await Promise.all([C.items(), C.settings()]);
