@@ -33,12 +33,40 @@ function worksOn(e, date) {
 }
 // what is still open on an appointment (a visit to come: not cancelled, not done, not a leave or a blocked time)
 const open = (a) => a && !a.block && !['anulata', 'concediu', 'finalizata'].includes(a.status);
-// the appointments of the people who left that are still to come after their last day, by date
-function orphans(appts, emps, day) {
+// the appointments still to come that wait for another cosmetician, by date, each with why (orphanWhy):
+//   'a plecat'    she left before its day („A plecat”)
+//   'concediu'    her approved leave that day (the leave's row in the Calendar), 'timp blocat' a whole-day block for her
+//   'zi liberă'   taken off that day in Program echipă after it was booked (offShift, written by api/portal-schedule.js),
+//                 while she still doesn't work that day ('în alt oraș': she works in the other clinic that day) (doc: the team schedule, to check it; without it the mark counts)
+// Only the cosmeticians in emps are looked at for the leave and the day off (api/portal-employees.js passes just her).
+// A copy of each booking is returned (orphanWhy on it); nothing is written.
+function orphans(appts, emps, day, doc) {
   const d0 = day || today();
   const gone = new Map((emps || []).filter((e) => e && e.active === false).map((e) => [e.id, e]));
-  return (appts || []).filter((a) => open(a) && a.cosmeticianId && gone.has(a.cosmeticianId) && a.date >= d0 && a.date > leftAt(gone.get(a.cosmeticianId)))
+  const ids = new Set((emps || []).filter(Boolean).map((e) => e.id));
+  const off = new Map(); // '<id>|<date>' → 'concediu' | 'timp blocat'
+  (appts || []).forEach((x) => {
+    if (!x || !x.cosmeticianId || x.time || x.status === 'anulata' || !(x.status === 'concediu' || x.block) || !(x.date >= d0)) return;
+    const k = x.cosmeticianId + '|' + x.date;
+    if (!off.has(k) || !x.block) off.set(k, x.block ? 'timp blocat' : 'concediu');
+  });
+  let T = null;
+  const why = (a) => {
+    if (gone.has(a.cosmeticianId) && a.date > leftAt(gone.get(a.cosmeticianId))) return 'a plecat';
+    if (!ids.has(a.cosmeticianId)) return '';
+    const k = off.get(a.cosmeticianId + '|' + a.date);
+    if (k) return k;
+    if (a.offShift) {
+      if (!doc) return 'zi liberă';
+      T = T || require('./team-schedule');
+      const w = T.workingAt(doc, a.cosmeticianId, a.date, null, {});
+      if (!w) return 'zi liberă';
+      if (w.location && w.location !== a.location) return 'în alt oraș';
+    }
+    return '';
+  };
+  return (appts || []).filter((a) => open(a) && a.cosmeticianId && a.date >= d0).map((a) => { const w = why(a); return w ? Object.assign({}, a, { orphanWhy: w }) : null; }).filter(Boolean)
     .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : String(a.time || '').localeCompare(String(b.time || ''))));
 }
 
-module.exports = { OLD, isDay, today, leftAt, outOfMonth, worksOn, orphans };
+module.exports = { OLD, isDay, today, leftAt, outOfMonth, worksOn, orphans, open };

@@ -155,4 +155,17 @@ async function tick() {
   return out;
 }
 
-module.exports = { start, tick, undelivered, KEY, daytime, cancel };
+// The desk moved a site booking (a drag, the form): it spoke to her, so the wait for her „Confirm” ends; the plan made for
+// the old hour would otherwise cancel the moved booking (16.11). The task to call her closes with it (it was for the old hour).
+async function moved(apptId) {
+  const doc = (await readJSON(KEY, null)) || {};
+  const x = doc[apptId];
+  if (!x || x.done) return false;
+  await save(apptId, { done: 'moved', movedAt: nowISO() });
+  const tasks = await readJSON('data/automation-tasks.json', []);
+  const open = tasks.filter((t) => t.confirmAppt && t.relatedAppointmentId === apptId && t.status === 'pending');
+  if (open.length) { open.forEach((t) => { t.status = 'done'; t.doneAt = nowISO(); t.doneBy = 'Mutată din Calendar'; }); await writeJSON('data/automation-tasks.json', tasks); }
+  return true;
+}
+
+module.exports = { start, tick, undelivered, KEY, daytime, cancel, moved };

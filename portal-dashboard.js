@@ -72,12 +72,60 @@
       return;
     }
     if (e.target.closest('[data-act="customize"]')) return customizeDash();
+    const umEl = e.target.closest('[data-unmarked]');
+    if (umEl) { e.preventDefault(); openUnmarked(umEl); return; }
     const a = e.target.closest('[data-go]');
     if (a) { e.preventDefault(); K.go(a.dataset.go); if (a.dataset.then) setTimeout(() => K.emit(a.dataset.then, a.dataset.arg || null), 250); return; }
     const appt = e.target.closest('[data-appt]');
     if (appt) { K.go('programari'); setTimeout(() => K.emit('calendar:open', { id: appt.dataset.appt, date: K.today() }), 250); return; }
     const lead = e.target.closest('[data-lead]');
     if (lead) { K.go('pipeline'); setTimeout(() => window.C360Pipeline && window.C360Pipeline.openLead(lead.dataset.lead), 400); }
+  }
+
+  // ------------------------------------------------------------------ yesterday's visits nobody marked (16.11)
+  // A package session she came to counted as a no-show until someone tapped „Finalizată”: the cosmetician (her own) and the
+  // desk (its clinics) see them here, one tap each („Finalizată” when there is no money to take, else „Încasează”; „Nu a venit”)
+  const UM = { at: 0, list: null, p: null };
+  function loadUnmarked(force) {
+    if (!K.data || UM.p || (!force && UM.list && Date.now() - UM.at < 120e3)) return;
+    UM.p = K.api('/api/portal-appointments', { action: 'unmarked' }).then((j) => {
+      const was = UM.list ? UM.list.map((a) => a.id).join() : null;
+      UM.list = j.appointments || []; UM.at = Date.now();
+      if (was !== UM.list.map((a) => a.id).join() && panel && K.isActive('panou')) render();
+    }).catch(() => {}).then(() => { UM.p = null; });
+  }
+  window.C360Unmarked = { count: () => (UM.list ? UM.list.length : 0) };
+  function openUnmarked(from) {
+    const list = UM.list || [];
+    if (!list.length) return;
+    const cos = K.data && K.data.me && K.data.me.role === 'cosmetician';
+    const row = (a) => '<div class="k-row tc-row" data-um="' + esc(a.id) + '"><div class="k-row-main"><div class="k-row-title">' + esc(a.clientName || 'Programare') + '</div>' +
+      '<div class="k-row-sub">' + esc([a.time ? a.time + (a.endTime ? ' - ' + a.endTime : '') : '', a.treatment, a.package ? 'din pachet' : '', cos ? '' : String(a.cosmeticianName || '').split(' ')[0], cos ? '' : a.location].filter(Boolean).join(' · ')) + '</div>' +
+      '<div class="tc-moves">' + (a.byHand ? '<button type="button" class="k-btn is-good is-sm" data-um-mark="came">' + icon('check') + 'Finalizată</button>'
+        : cos ? '<span>A venit: se finalizează la încasare</span>' : '<button type="button" class="k-btn is-outline is-sm" data-um-pay>' + icon('wallet') + 'Încasează</button>') +
+      '<button type="button" class="k-btn is-outline is-sm" data-um-mark="noshow">' + icon('ban') + 'Nu a venit</button></div></div></div>';
+    const d = K.drawer({
+      title: list.length === 1 ? 'O ședință de ieri nemarcată' : list.length + ' ședințe de ieri nemarcate', icon: 'checkCircle', width: 520, from,
+      subtitle: 'Nemarcată, contează ca neprezentare. A venit sau nu?',
+      body: '<div class="k-list tc-list">' + list.map(row).join('') + '</div>',
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-close>Gata</button>',
+      onMount(el) {
+        el.querySelector('[data-close]').addEventListener('click', () => d.close());
+        el.addEventListener('click', (e) => {
+          const r = e.target.closest('[data-um]'); if (!r) return;
+          const a = list.find((x) => x.id === r.dataset.um); if (!a) return;
+          if (e.target.closest('[data-um-pay]')) { d.close(); K.go('incasari'); setTimeout(() => K.emit('incasari:new', { appointmentId: a.id }), 250); return; }
+          const b = e.target.closest('[data-um-mark]'); if (!b) return;
+          K.busy(b, async () => {
+            await K.api('/api/portal-appointments', { action: 'mark', id: a.id, mark: b.dataset.umMark });
+            UM.list = (UM.list || []).filter((x) => x.id !== a.id);
+            r.querySelector('.tc-moves').innerHTML = '<span class="k-tag is-' + (b.dataset.umMark === 'came' ? 'good' : 'warn') + '">' + icon(b.dataset.umMark === 'came' ? 'check' : 'ban') + (b.dataset.umMark === 'came' ? 'Finalizată' : 'Nu a venit') + '</span>';
+            r.classList.add('is-done');
+            render();
+          }).catch((err) => K.ui().toast(err.code === 'needs_payment' ? 'Se finalizează la încasare.' : K.errText(err), 'error'));
+        });
+      },
+    });
   }
 
   // Personalizează: the KPI cards (any number, any order) and the blocks of the page, per account
@@ -107,6 +155,7 @@
     if (!panel || !K.data) return;
     const D = K.data;
     if ((D.isAdmin || D.isManager) && view === 'kpi' && window.C360Kpi) { // the manager: the same KPI, her clinics, no ads
+      loadUnmarked(); // „De făcut” shows them too (portal-kpi.js deskHtml)
       const root = panel.querySelector('.db-root');
       let box = root.querySelector('[data-kpi-root]');
       if (!box) { root.innerHTML = viewsHtml() + '<div data-kpi-root></div>'; box = root.querySelector('[data-kpi-root]'); }
@@ -161,13 +210,18 @@
     const attributed = inc.filter((s) => s.performedBy === me.id && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.amount || 0), 0);
 
     const summary = [];
+    // yesterday's visits nobody marked (16.11): hers, or her clinics' for the desk; a tap opens them, one tap each
+    loadUnmarked();
+    const um = UM.list ? UM.list.length : 0;
+    const umLink = um ? '<a href="#programari" data-unmarked>' + K.plural(um, 'ședință de ieri nemarcată', 'ședințe de ieri nemarcate') + '</a>' : '';
+    if (umLink) summary.push(umLink);
     if (role === 'cosmetician') {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(mineToday.filter((a) => a.status !== 'anulata').length, 'clientă', 'cliente') + '</a> azi');
       if (myBreak) summary.push('pauza la ' + esc(myBreak.from));
       if (pendingMine.length) summary.push('<a href="#comision" data-go="comision">' + K.plural(pendingMine.length, 'upsell', 'upselluri') + ' în așteptare</a>');
     } else {
       summary.push('<a href="#programari" data-go="programari">' + K.plural(live.length, 'programare', 'programări') + '</a> azi');
-      if (role === 'receptie' && unconfirmed.length) summary.push('<a href="#programari" data-go="programari">' + K.plural(unconfirmed.length, 'programare de confirmat', 'programări de confirmat') + '</a>');
+      if (role === 'receptie' && unconfirmed.length) summary.push('<a href="#programari" data-go="programari/azi/de-confirmat">' + K.plural(unconfirmed.length, 'programare de confirmat', 'programări de confirmat') + '</a>');
       if (callNow.length) summary.push('<a href="#pipeline" data-go="pipeline" data-then="pipeline:queue">' + K.plural(callNow.length, 'lead de sunat', 'leaduri de sunat') + '</a>');
       if (role === 'receptie' && tasksOpen) summary.push('<a href="#automatizari" data-go="automatizari">' + K.plural(tasksOpen, 'sarcină', 'sarcini') + '</a>');
       if (pending) summary.push('<a href="#aprobari" data-go="aprobari">' + K.plural(pending, 'upsell de aprobat', 'upselluri de aprobat') + '</a>');
@@ -259,7 +313,7 @@
       refundsMonth: { label: 'Rambursări luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat(monthBack.lei ? 'is-warn' : 'is-info', 'incasari', '', 'undo', 'Rambursări', Math.round(monthBack.lei), 'lei', 'db-rf', monthBack.count ? K.plural(monthBack.count, 'rambursare', 'rambursări') + ' · ' + String(monthBack.pct).replace('.', ',') + '% din încasări' : 'niciuna luna asta') },
       upsellsMonth: { label: 'Upselluri luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-good', 'incasari', '', 'trophy', 'Upselluri luna asta', upsMonth.length, '', 'db-ups', K.lei(upsMonth.reduce((a, s) => a + Number(s.upsell || 0), 0)) + ' valoare') },
       apptsToday: { label: 'Programări azi', group: 'Programări', roles: DESK, html: () => stat('is-info', 'programari', '', 'calendar', 'Programări azi', live.length, '', 'db-appts', confirmed + ' confirmate · ' + appts.filter((a) => a.status === 'finalizata').length + ' finalizate') },
-      unconfirmed: { label: 'De confirmat azi', group: 'Programări', roles: DESK, html: () => stat(unconfirmed.length ? 'is-warn' : 'is-good', 'programari', '', 'checkCircle', 'De confirmat', unconfirmed.length, '', 'db-unconf', confirmed + ' confirmate din ' + live.length + ' azi') },
+      unconfirmed: { label: 'De confirmat azi', group: 'Programări', roles: DESK, html: () => stat(unconfirmed.length ? 'is-warn' : 'is-good', 'programari/azi/de-confirmat', '', 'checkCircle', 'De confirmat', unconfirmed.length, '', 'db-unconf', confirmed + ' confirmate din ' + live.length + ' azi') },
       doneToday: { label: 'Finalizate azi', group: 'Programări', roles: DESK, html: () => stat('is-good', 'programari', '', 'checkCircle', 'Finalizate azi', appts.filter((a) => a.status === 'finalizata').length, '', 'db-done', 'din ' + live.length + ' programări') },
       cancelledToday: { label: 'Anulate azi', group: 'Programări', roles: DESK, html: () => stat('is-bad', 'programari', '', 'alert', 'Anulate azi', appts.filter((a) => a.status === 'anulata').length, '', 'db-canc', 'programări anulate') },
       mineToday: { label: 'Clientele mele azi', group: 'Programări', roles: ['cosmetician'], html: () => stat('is-info', 'programari', '', 'calendar', 'Clientele mele azi', mineLive.length, '', 'db-mine', mineToday.filter((a) => a.status === 'confirmata').length + ' confirmate · ' + mineToday.filter((a) => a.status === 'finalizata').length + ' finalizate') },

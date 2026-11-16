@@ -25,6 +25,8 @@ const roMin = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? 
 
 // ------------------------------------------------------------------ what the calendar holds
 const visit = (a) => a && a.status !== 'anulata' && a.status !== 'concediu' && !a.block;
+// still to confirm: booked or moved, not confirmed yet (one rule for the KPI page and the morning notice, 16.11)
+const toConfirm = (a) => visit(a) && (a.status === 'programata' || a.status === 'reprogramata') && !/^\s*test\b/i.test(a.clientName || '');
 const isConsult = (a) => /consulta/.test(fold(a && a.treatment));
 // minutes of an appointment (no end: an hour, as the booking counts it)
 function apptMin(a) {
@@ -33,35 +35,64 @@ function apptMin(a) {
   return e != null && e > s ? e - s : 60;
 }
 // the team's minutes for clients that day in a city: the cosmeticians' shifts once the city has a weekly schedule
-// (Calendar → Program echipă) minus their breaks, else the clinic's hours times its places (Calendar → Online) minus who is on leave
-function capMin(cfg, city, date, appts) {
+// (Calendar → Program echipă) minus their breaks and the blocked time, else the clinic's hours times its places (Calendar
+// → Online) minus who is on leave and the blocked time.
+//   open day (the owner's decision, 16.11): once a city has a schedule, a day is open when anyone works it (a Saturday, a
+//            day closed in Calendar → Online); the Online day only clips the site's hours (_lib/booking.js), not her shift
+//   blocks:  a timed block for one cosmetician takes her minutes; one for the whole clinic takes everyone's (the site's rule)
+//   leave:   without a schedule, only a cosmetician's leave takes a place (reception's or the manager's doesn't)
+//   since:   minutes from midnight, for today: the current half hour on (the same start as the follow-ups' free hours)
+const merge = (list) => { const out = []; list.filter((x) => x[1] > x[0]).sort((a, b) => a[0] - b[0]).forEach((x) => { const l = out[out.length - 1]; if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else out.push(x.slice()); }); return out; };
+const within = (list, s, e) => merge(list).reduce((n, x) => n + Math.max(0, Math.min(x[1], e) - Math.max(x[0], s)), 0);
+const span = (a) => { const s = toMin(a.time); if (s == null) return null; const e = toMin(a.endTime); return [s, e != null && e > s ? e : s + 60]; };
+function capMin(cfg, city, date, appts, since) {
   const c = cfg.cities[city], d = c && c.days[new Date(date + 'T12:00:00Z').getUTCDay()];
-  if (!d || !d.on || (c.closed || []).includes(date)) return 0;
+  if (!d) return 0;
   const dayAppts = appts.filter((a) => a && a.location === city && a.date === date && a.status !== 'anulata');
   if (dayAppts.some((a) => (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId)) return 0; // the clinic closed that day
+  const blocks = dayAppts.filter((a) => a.block && span(a));
+  const clinicBlocks = blocks.filter((a) => !a.cosmeticianId).map(span);
   const t = cfg.team;
   // someone who left counts up to her last day (her shifts, her place), never after it (team.until, _lib/booking.js)
   if (t && T.hasSchedule(t.doc, city, t.ids)) {
     const o = { appts, ids: t.ids, until: t.until };
     // minus the breaks that hold that day (the owner, 16.11: the fill is not diluted by the half hour she can't take a client)
-    const rest = T.dayBreaks(t.doc, date, city, o).filter((b) => b.on).length * T.BREAK_MIN;
-    return Math.max(0, T.whoWorks(t.doc, date, city, o).reduce((n, w) => n + Math.max(0, (toMin(w.to) || 0) - (toMin(w.from) || 0)), 0) - rest);
+    const rest = new Map();
+    T.dayBreaks(t.doc, date, city, o).filter((b) => b.on).forEach((b) => rest.set(b.employeeId, [[toMin(b.from), toMin(b.to)]]));
+    return T.whoWorks(t.doc, date, city, o).reduce((n, w) => {
+      const s = Math.max(toMin(w.from) || 0, since == null ? 0 : since), e = toMin(w.to) || 0;
+      if (e <= s) return n;
+      const off = (rest.get(w.employeeId) || []).concat(clinicBlocks, blocks.filter((a) => a.cosmeticianId === w.employeeId).map(span));
+      return n + (e - s) - within(off, s, e);
+    }, 0);
   }
-  const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId)).size;
+  if (!d.on || (c.closed || []).includes(date)) return 0;
+  const open = Math.max(toMin(d.from) || 0, since == null ? 0 : since), close = toMin(d.to) || 0;
+  const cosm = t && t.people ? new Set(t.people.map((p) => p.id).concat((t.gone || []).map((g) => g.id))) : null;
+  const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId && (!cosm || cosm.has(a.cosmeticianId))).map((a) => a.cosmeticianId)).size;
   // without a schedule: no more places than the cosmeticians of the clinic that day, once one of them has left
   let at = Number(d.at) || 0;
   if (t && t.people && t.gone && t.gone.some((g) => g.location === city)) at = Math.min(at, t.people.filter((p) => p.location === city).length + t.gone.filter((g) => g.location === city && date <= g.leftAt).length);
-  return Math.max(0, (toMin(d.to) || 0) - (toMin(d.from) || 0)) * Math.max(0, at - off);
+  const places = Math.max(0, at - off);
+  if (close <= open || !places) return 0;
+  // a block for one of them takes one place for its time, one for the whole clinic takes them all
+  const one = blocks.filter((a) => a.cosmeticianId && (!cosm || cosm.has(a.cosmeticianId))).reduce((n, a) => { const x = span(a); return n + Math.max(0, Math.min(x[1], close) - Math.max(x[0], open)); }, 0);
+  return Math.max(0, (close - open - within(clinicBlocks, open, close)) * places - one);
 }
 // a booking left on someone who had left by its day („A plecat”, _lib/left.js): not the remaining team's time, it waits
 // for someone to take it (Calendar → „rămase fără cosmeticiană”)
 const orphaned = (cfg, a) => { const u = cfg && cfg.team && cfg.team.until; return !!(u && a.cosmeticianId && u.has(a.cosmeticianId) && a.date > u.get(a.cosmeticianId)); };
+// today counts from the current half hour on (the hours gone by can't be filled any more), its capacity and its bookings
+const halfHourNow = (now) => Math.floor(now.min / 30) * 30;
 function fill(cfg, city, from, to, appts, targetPct) {
   const tp = targetPct || TARGET_FILL * 100;
+  const now = B.roNow(), since = halfHourNow(now);
   let cap = 0, booked = 0, orphan = 0;
   for (let d = from; d <= to; d = addDay(d, 1)) {
-    cap += capMin(cfg, city, d, appts);
-    appts.forEach((a) => { if (!visit(a) || a.location !== city || a.date !== d) return; if (orphaned(cfg, a)) orphan += apptMin(a); else booked += apptMin(a); });
+    const cut = d === now.date ? since : null;
+    cap += capMin(cfg, city, d, appts, cut);
+    const minOf = (a) => { if (cut == null) return apptMin(a); const x = span(a); return x ? Math.max(0, x[1] - Math.max(x[0], cut)) : 0; };
+    appts.forEach((a) => { if (!visit(a) || a.location !== city || a.date !== d) return; if (orphaned(cfg, a)) orphan += minOf(a); else booked += minOf(a); });
   }
   return { capHours: Math.round(cap / 6) / 10, bookedHours: Math.round(booked / 6) / 10, pct: cap ? Math.round((booked / cap) * 100) : null, targetPct: tp,
     targetHours: Math.round((cap * tp / 100) / 6) / 10, freeHours: Math.max(0, Math.round((cap - booked) / 6) / 10), orphanHours: Math.round(orphan / 6) / 10 };
@@ -224,6 +255,20 @@ function visitStats(appts, sales, city, today, days, clients) {
     if (was) { ex.duplicate++; was.came = was.came || came; return; }
     seen.set(key, { came });
   });
+  // a booking moved after its day had passed without her (missedOn, api/portal-appointments.js): that day is a no-show
+  // too, even though the booking now sits on another day (16.11: moving it used to erase it)
+  (appts || []).forEach((a) => {
+    if (!a || a.location !== city || !Array.isArray(a.missedOn) || a.block || /^\s*test\b/i.test(a.clientName || '')) return;
+    const ids = idsOf(a.clientId, a.clientPhone, a.clientName);
+    a.missedOn.filter((d) => d >= from && d <= to && d !== a.date).forEach((d) => {
+      const came = ids.some((k) => paid.has(k + '|' + d));
+      const key = (ids[0] || 'id:' + a.id) + '|' + d + '|' + fold(a.treatment).trim();
+      const was = seen.get(key);
+      if (was) { ex.duplicate++; was.came = was.came || came; return; }
+      ex.moved++;
+      seen.set(key, { came });
+    });
+  });
   const due = seen.size, came = [...seen.values()].filter((x) => x.came).length;
   return { from, to, due, came, noShow: due - came, pct: due ? Math.round((came / due) * 100) : null, excluded: ex };
 }
@@ -282,4 +327,4 @@ function methods(sales) {
   return { cash: r2(cash), card: r2(card), transfer: r2(transfer), other: r2(other) };
 }
 
-module.exports = { CANCEL_FIX, orphaned, visitStats, fillTargets, consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };
+module.exports = { CANCEL_FIX, orphaned, toConfirm, halfHourNow, merge, visitStats, fillTargets, consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };

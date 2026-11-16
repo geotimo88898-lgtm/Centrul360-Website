@@ -218,7 +218,7 @@ module.exports = async (req, res) => {
     // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
     // is fetched directly from api/portal-appointments.js by portal.html, not here.
     const todaysAppointments = appointments
-      .filter((a) => a.date === today && a.status !== 'concediu' && inCity(city, clinicOf(a.location) || a.location)) // leave and blocked time aren't visits
+      .filter((a) => a.date === today && a.status !== 'concediu' && (inCity(city, clinicOf(a.location) || a.location) || (me.role === 'cosmetician' && a.cosmeticianId === me.id))) // leave and blocked time aren't visits; a cosmetician's own in the other clinic too (16.11)
       .slice()
       .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const countsToday = emptyStatusCounts();

@@ -1043,6 +1043,15 @@
     renderDrawer(true);
     setTimeout(() => { const f = drawerEl().querySelector('[name="name"]'); if (f) f.focus(); }, 260);
   }
+  // the city a link asked for (TM / AR / the name): the board and the queue show that clinic (when this account picks cities)
+  function queueCity(c) {
+    const city = { TM: 'Timișoara', AR: 'Arad' }[String(c || '').toUpperCase()] || (['Timișoara', 'Arad'].includes(c) ? c : '');
+    if (!city || !pickCity() || S.location === city) return;
+    S.location = city;
+    const seg = root && root.querySelector('[data-k-seg="plcity"]');
+    if (seg) { seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === city)); const i = seg.querySelector('input'); if (i) i.value = city; }
+    renderAll();
+  }
   function openQueue() {
     const q = queueList();
     if (!q.length) { ui().toast('Coada e goală, toate leadurile au fost contactate la timp.', 'success'); return; }
@@ -1602,7 +1611,9 @@
   if (window.K) {
     window.K.on('remote', () => { if (isActive()) refresh(); });
     window.K.on('pipeline:new', () => { if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX); mount(); openNew(); });
-    window.K.on('pipeline:queue', () => { mount(); (S.loaded ? Promise.resolve() : load()).then(openQueue); });
+    // city (16.11, Panou → „TM 1 lead nesunat”): the queue of that clinic only, its city picked on the board too
+    window.K.on('pipeline:queue', (city) => { mount(); (S.loaded ? Promise.resolve() : load()).then(() => { queueCity(city); openQueue(); }); });
+    window.K.on('pipeline:sub', (sub) => { const [p, c] = String(sub || '').split('/'); if (p === 'coada' && c) window.K.emit('pipeline:queue', c); });
     // booked from her card (or anywhere): her lead shows it at once
     window.K.on('appointment:created', (a) => { if (a && a.leadId && S.loaded) load(true); });
   }

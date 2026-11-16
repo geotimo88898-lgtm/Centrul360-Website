@@ -207,13 +207,16 @@
       rejectionNote = await K.ui().prompt({ title: 'Respingi cererea de concediu?', message: 'Spune-i pe scurt de ce, vede motivul la cererea ei.', label: 'Motiv (opțional)', confirmText: 'Respinge' });
       if (rejectionNote === null) return;
     }
-    if (card) card.classList.add('is-leaving', decision === 'approved' ? 'is-yes' : 'is-no');
+    const req = LV.requests.find((x) => x.id === id) || {};
     try {
-      await K.api('/api/portal-leave', { action: 'decide', id, decision, rejectionNote });
+      // approved: the hours asked when needed („Ore libere”), her bookings those days in a sheet (portal-calendar.js)
+      if (decision === 'approved') { if (!(await K.approveLeave(id, card, empNameFor(req.employeeId), req.minutes))) return; }
+      if (card) card.classList.add('is-leaving', decision === 'approved' ? 'is-yes' : 'is-no');
+      if (decision !== 'approved') await K.api('/api/portal-leave', { action: 'decide', id, decision, rejectionNote });
       K.ui().toast(decision === 'approved' ? 'Cerere aprobată, PDF-ul e generat.' : 'Cerere respinsă.', decision === 'approved' ? 'success' : 'info');
       setTimeout(loadLeaveApprovals, 260);
       K.reload();
-    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(e.code === 'not_enough_overtime' ? 'Nu mai are destule ore suplimentare pentru cererea asta.' : e.code === 'already_decided' ? 'Cererea a fost deja decisă.' : K.errText(e), 'error'); }
+    } catch (e) { if (card) card.classList.remove('is-leaving', 'is-yes', 'is-no'); K.ui().toast(e.code === 'not_enough_overtime' ? 'Nu mai are destule ore suplimentare pentru cererea asta.' : e.code === 'already_decided' ? 'Cererea a fost deja decisă.' : e.code === 'employee_left' ? 'A plecat din echipă, cererea nu se mai aprobă.' : K.errText(e), 'error'); }
   }
 
   // =====================================================================================

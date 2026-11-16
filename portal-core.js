@@ -467,7 +467,7 @@
     else K.show(tab);
   }
   function route(hash, initial) {
-    const [name, arg] = String(hash || '').split('/');
+    const [name, ...rest] = String(hash || '').split('/'), arg = rest.join('/'); // the rest of the address is the section's own (programari/maine/de-confirmat/TM)
     if (name === 'creative') { activate('creative', '/' + (arg || '')); return; }
     const alias = ALIASES[name];
     activate(alias ? alias[0] : name);

@@ -634,7 +634,7 @@
   }
   // a section, or a section's own page („continut/program”: the section hears `continut:sub` with „program”)
   const go = (tab) => {
-    const [t, sub] = String(tab || '').split('/');
+    const [t, ...rest] = String(tab || '').split('/'), sub = rest.join('/'); // „programari/maine/de-confirmat/TM”: the rest is the section's
     const b = document.querySelector('#tabsNav button[data-tab="' + t + '"]');
     if (b) b.click();
     if (b && sub) setTimeout(() => emit(t + ':sub', sub), 0);

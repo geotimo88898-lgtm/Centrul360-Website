@@ -256,6 +256,8 @@ module.exports = async (req, res) => {
       employee.active = active;
       require('./_lib/auth').forgetRoster(); // her sessions end now (the other instances within a minute)
       await writeJSON('data/employees.json', employees);
+      // her leave requests still waiting: answered no (nothing of hers is approved after she left, api/portal-leave.js)
+      if (!active) await require('./portal-leave').rejectPendingOf(employee.id, session.employeeId).catch((e) => console.error('left: pending leave', e.message));
       // her appointments after that day, to give to someone else (Calendar → „Rămase fără cosmeticiană”)
       const ahead = active ? [] : L.orphans(await readJSON('data/appointments.json', []), [employee]);
       res.status(200).json({ ok: true, leftAt: employee.leftAt || '', orphans: ahead.length });

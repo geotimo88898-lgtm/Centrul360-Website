@@ -196,7 +196,7 @@
       R.all.rebook.clients ? st('Revin', P(R.all.rebook.pct), p ? dl(R.all.rebook.pct, p.rebookRate, 'pt') : '', per((c) => P(R[c] && R[c].rebook.pct)) || '<small>' + R.all.rebook.back + ' din ' + R.all.rebook.clients + '</small>') : '',
     ].filter(Boolean);
     if (!items.length) return '';
-    return sec('rates', 'kq-rates is-full', 'Ratele', 'Nu vin: din programările ultimelor 60 de zile' + sinceOf(d) + ', cele care n-au venit (anulate la ora lor sau după, ori nemarcate și neplătite); din ele vine ținta calendarului. Upsell la vizită: vizitele venite cu un pachet sau upsell plătit atunci. Consultații cu upsell: consultațiile urmate în 7 zile de o plată cu upsell sau pachet a aceleiași cliente. Anulări: din programările făcute în perioadă. Revin: clientele venite în perioadă care au deja o altă programare după vizită.',
+    return sec('rates', 'kq-rates is-full', 'Ratele', 'Nu vin: din programările ultimelor 60 de zile' + sinceOf(d) + ', cele care n-au venit (anulate la ora lor sau după, ori nemarcate și neplătite, ori mutate pe altă zi după ce ziua lor a trecut fără ele); din ele vine ținta calendarului. Upsell la vizită: vizitele venite cu un pachet sau upsell plătit atunci. Consultații cu upsell: consultațiile urmate în 7 zile de o plată cu upsell sau pachet a aceleiași cliente. Anulări: din programările făcute în perioadă. Revin: clientele venite în perioadă care au deja o altă programare după vizită.',
       '<div class="kq-rates-g">' + items.join('') + '</div>');
   }
 
@@ -469,7 +469,7 @@
       const meth = [['cash', 'cash'], ['card', 'card'], ['transfer', 'transfer']].filter((k) => m[k[0]] > 0).map((k) => K.lei(m[k[0]]) + ' ' + k[1]).join(' · ');
       const appts = [a.done ? a.done + ' finalizate' : '', a.confirmed ? a.confirmed + ' confirmate' : '', a.cancelled ? a.cancelled + ' anulate' : ''].filter(Boolean).join(' · ');
       const leads = ld.total ? K.plural(ld.total, 'lead nou', 'leaduri noi') + (ld.within5 ? ' · ' + (ld.within5 === 1 ? '1 sunat în 5 min' : ld.within5 + ' sunate în 5 min') : '') : 'niciun lead nou';
-      const todo = act(a.unconfirmed, 'de confirmat', 'warn', 'programari') + act(a.passed, 'trecute, nefinalizate', 'bad', 'programari') + act(ld.never, ld.never === 1 ? 'nesunat' : 'nesunate', 'bad', 'pipeline', 'pipeline:queue') + act(x.waiting, x.waiting === 1 ? 'mesaj așteaptă' : 'mesaje așteaptă', 'bad', 'mesaje');
+      const todo = act(a.unconfirmed, 'de confirmat', 'warn', 'programari/azi/de-confirmat/' + short(c)) + act(a.passed, 'trecute, nefinalizate', 'bad', 'programari/nefinalizate/' + short(c)) + act(ld.never, ld.never === 1 ? 'nesunat' : 'nesunate', 'bad', 'pipeline/coada/' + short(c)) + act(x.waiting, x.waiting === 1 ? 'mesaj așteaptă' : 'mesaje așteaptă', 'bad', 'mesaje');
       return '<article class="kq-tc">' +
         '<header>' + tag(c) + '<div class="kq-tc-m"><b>' + K.lei(x.collected) + '</b><small>' + (x.payments ? K.plural(x.payments, 'plată', 'plăți') + (meth ? ' · ' + meth : '') : 'încasat azi') + '</small></div></header>' +
         '<ul class="kq-tc-l"><li>' + icon('calendar') + '<span><b>' + K.plural(a.total, 'programare', 'programări') + '</b>' + (appts ? ' · ' + appts : '') + '</span></li>' +
@@ -506,17 +506,19 @@
     Object.keys(n.cities).forEach((c) => {
       const x = n.cities[c], mine = leads.filter((l) => cityOf(l.location) === c);
       const never = mine.filter((l) => l.neverContacted).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
-      add(c, never.length, never.length === 1 ? 'lead nesunat' : 'leaduri nesunate', 'pipeline', 'pipeline:queue', never[0] && never[0].createdAt ? 'cel mai vechi așteaptă de ' + ago(never[0].createdAt) : '');
+      add(c, never.length, never.length === 1 ? 'lead nesunat' : 'leaduri nesunate', 'pipeline/coada/' + short(c), '', never[0] && never[0].createdAt ? 'cel mai vechi așteaptă de ' + ago(never[0].createdAt) : '');
       const back = mine.filter((l) => l.followUpState === 'overdue' && !l.neverContacted).length;
-      add(c, back, back === 1 ? 'de resunat acum' : 'de resunat acum', 'pipeline', 'pipeline:queue');
+      add(c, back, back === 1 ? 'de resunat acum' : 'de resunat acum', 'pipeline/coada/' + short(c));
       add(c, x.waiting, x.waiting === 1 ? 'mesaj fără răspuns' : 'mesaje fără răspuns', 'mesaje/wait');
-      add(c, x.appts.passed, x.appts.passed === 1 ? 'vizită trecută, nefinalizată' : 'vizite trecute, nefinalizate', 'programari');
-      add(c, x.appts.unconfirmed, 'de confirmat azi', 'programari');
-      add(c, x.tomorrowUnconfirmed, 'de confirmat mâine', 'programari');
+      add(c, x.appts.passed, x.appts.passed === 1 ? 'vizită trecută, nefinalizată' : 'vizite trecute, nefinalizate', 'programari/nefinalizate/' + short(c)); // the exact list, its city (16.11)
+      add(c, x.appts.unconfirmed, 'de confirmat azi', 'programari/azi/de-confirmat/' + short(c));
+      add(c, x.tomorrowUnconfirmed, 'de confirmat mâine', 'programari/maine/de-confirmat/' + short(c));
     });
     const loose = leads.filter((l) => !cityOf(l.location) && l.neverContacted);
     add('', loose.length, loose.length === 1 ? 'lead nesunat, fără oraș' : 'leaduri nesunate, fără oraș', 'pipeline', 'pipeline:queue');
     add('', d.waitingSocial || 0, (d.waitingSocial === 1 ? 'mesaj' : 'mesaje') + ' pe Instagram / Messenger', 'mesaje/wait');
+    const um = window.C360Unmarked ? window.C360Unmarked.count() : 0; // yesterday's visits nobody marked (portal-dashboard.js)
+    if (um) rows.push('<li data-unmarked><span class="kq-tag">' + icon('checkCircle') + '</span><span><span><b>' + um + '</b> ' + (um === 1 ? 'ședință de ieri nemarcată' : 'ședințe de ieri nemarcate') + '</span></span>' + icon('arrow') + '</li>');
     const pend = K.data && K.data.manager ? (K.data.manager.pendingTime || 0) + (K.data.manager.pendingLeave || 0) : 0;
     if (pend) rows.push('<li data-go="manager/echipa"><span class="kq-tag">' + icon('users') + '</span><span><span><b>' + pend + '</b> ' + (pend === 1 ? 'cerere de pontaj sau concediu' : 'cereri de pontaj și concediu') + '</span></span>' + icon('arrow') + '</li>');
     // more lists from the follow-ups (packages without a next booking, call again at…), when they are there
