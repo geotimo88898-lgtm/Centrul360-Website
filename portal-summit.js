@@ -1,5 +1,5 @@
 // Centrul360 portal, aspectul nou, stratul „Summit” (doar sub html.ui-nou): intrarea cinematică și tăieturile între ecrane.
-// Intrarea rulează la FIECARE deschidere, la toate rolurile (regula lui George pentru toate adminele), ca la adminul Summitlane: logoul
+// Intrarea rulează o singură dată, când se deschide aplicația (16.11), la toate rolurile, ca la adminul Summitlane: logoul
 // se desenează din linie și se umple, o dungă de lumină în accent îl taie, numele iese din blur, un rând scurt sub el; la final logoul
 // zboară în prisma ecranului și negrul se ridică lin, abia când ecranul e gata. „Sari peste” sau o atingere: un fade lin.
 (function () {
@@ -101,6 +101,12 @@
     });
   }
 
-  function start() { intro(); watch(); }
+  // the owner (16.11): the intro only when the app is opened, not again on a reload or another page in the same visit
+  // (sessionStorage lives as long as the tab / the installed app stays open)
+  function firstOpen() {
+    try { if (sessionStorage.getItem('c360_intro')) return false; sessionStorage.setItem('c360_intro', '1'); } catch (e) { /* private mode: play it */ }
+    return true;
+  }
+  function start() { if (firstOpen()) intro(); else html.classList.remove('sx-boot'); watch(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

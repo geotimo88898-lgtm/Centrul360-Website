@@ -36,7 +36,7 @@
     var fl = document.createElement('link'); fl.rel = 'stylesheet';
     fl.href = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400&family=Montserrat:wght@300;800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap';
     // the cinematic intro, at every opening (portal-summit.js): black from the first paint, never more than 4 s
-    document.documentElement.classList.add('sx-boot'); setTimeout(function () { document.documentElement.classList.remove('sx-boot'); }, 4000);
+    var sxSeen = false; try { sxSeen = !!sessionStorage.getItem('c360_intro'); } catch (e) {} if (!sxSeen) document.documentElement.classList.add('sx-boot'); setTimeout(function () { document.documentElement.classList.remove('sx-boot'); }, 4000);
     document.head.appendChild(fl);
   } catch (e) {}
 </script>
