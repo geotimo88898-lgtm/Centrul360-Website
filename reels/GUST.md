@@ -65,6 +65,7 @@ De acum el aprobă sau cere refacerea fiecărui reel în Content → Transit, cu
 | 15.11 | `v2-crema-straturi` (voce, plonjare prin straturile pielii) | bun; muzica foarte puțin mai încet | nimic nou de montaj |
 | 15.11 | `v2-suspans-hifu` (clepsidra, dezvăluire pe WE ON GO II) | „super nice”, dar: început neașteptat calm și catchy, apoi BUM în „honorable”; montaj mai agresiv la drop | principiile 1 și 3 |
 | 16.11 | referința „glide” (Tap. Don't cut. Carry.) | „lecție foarte importantă pentru website, aplicația internă și video-urile organice” | principiul 11: continuitate de spațiu, elementul atins devine scena următoare |
+| 16.11 | referința „POV pe laptop” (reel cu ecranul filmat pe birou, salvat în repo-ul privat centrul360-creative-machine, `references/organic/`) | „super top”, pentru postările organice | ecranul filmat în lume real, hook POV fix sus, CTA de comentariu, o culoare pe negru, cuvinte cheie în serif italic, o idee pe secundă, iconița purtată între scene (principiul 11) |
 | 15.11 | `v2-chat-epilare` (conversație cu Nuki) | „foarte bună ideea”, dar: muzica pe versul „I need someone to keep me close”, montaj pe ritm, animații mai crazy, mai puțin text | principiile 2 și 5 |
 
 **15.11, verdictul pe lot:** gușa, cazul real, EMS și crema, cu muzica mai încet: **undă verde** („sunt foarte mulțumit
