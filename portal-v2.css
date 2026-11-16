@@ -617,7 +617,9 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .cd-today-note.is-ok{ color:var(--good); }
 /* four tiles in a row only when the card has room for them, else 2 x 2 (they used to spill out of the card) */
 .ad-emp{ container-type:inline-size; }
-.cd-kv4{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+.cd-kv4{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); }
+.cd-kv4 > div, .mg-emp .ad-emp-kv > div{ min-width:0; }
+.cd-kv4 :is(dt, dd), .mg-emp .ad-emp-kv :is(dt, dd){ white-space:normal; overflow-wrap:break-word; }
 @container (min-width:460px){ .cd-kv4{ grid-template-columns:repeat(4, minmax(0,1fr)); } }
 .cd-owe{ display:flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:650; color:var(--good); }
 .cd-owe svg{ width:14px; height:14px; }

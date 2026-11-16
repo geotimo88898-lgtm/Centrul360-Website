@@ -551,13 +551,14 @@
 .ad-emp.is-off{ opacity:.55; }
 .ad-emp-top{ display:flex; gap:.8rem; align-items:center; }
 .ad-emp-top > div{ min-width:0; }
-.ad-emp-top b{ display:block; font-size:1rem; letter-spacing:-.01em; overflow-wrap:anywhere; }
+.ad-emp-top b{ display:block; font-size:1rem; letter-spacing:-.01em; overflow-wrap:break-word; }
 .ad-emp-top > div > span{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; font-size:.78rem; color:var(--muted); margin-top:.2rem; }
-.ad-emp-kv{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.4rem; margin:0; }
-.ad-emp-kv div{ min-width:0; padding:.5rem .55rem; border-radius:11px; background:var(--glass); }
-/* the tiles stay inside the card: a long label or value wraps instead of being cut (Echipa → Oameni, 16.11) */
-.ad-emp-kv dt{ font-size:.64rem; font-weight:650; text-transform:uppercase; letter-spacing:.05em; color:var(--muted-2); overflow-wrap:anywhere; }
-.ad-emp-kv dd{ margin:.15rem 0 0; font-size:.88rem; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.ad-emp-kv{ display:flex; flex-wrap:wrap; gap:.4rem; margin:0; }
+/* the tiles stay inside the card (Echipa → Oameni, 16.11): equal while they fit, each as wide as its label and value,
+   and the last one goes on a new row when the card is too narrow; never cut, never broken inside a word */
+.ad-emp-kv div{ flex:1 1 0; min-width:max-content; padding:.5rem .55rem; border-radius:11px; background:var(--glass); }
+.ad-emp-kv dt{ font-size:.64rem; font-weight:650; text-transform:uppercase; letter-spacing:.05em; color:var(--muted-2); white-space:nowrap; }
+.ad-emp-kv dd{ margin:.15rem 0 0; font-size:.88rem; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .ad-emp-goals{ display:flex; flex-direction:column; gap:.4rem; }
 .ad-goal-mini{ display:flex; align-items:center; gap:.6rem; font-size:.8rem; }
 .ad-goal-mini b{ font-size:.62rem; font-weight:700; }
@@ -3491,7 +3492,7 @@ html .cn-sts .cn-st th{ letter-spacing:normal !important; text-transform:none !i
 .mg-emp .ad-emp-kv dd{ font-size:.8rem; }
 /* the four tiles never push past the card (15.11: they spilled into the next card on desktop) */
 .mg-emp{ min-width:0; width:100%; text-align:left; }
-.mg-emp .ad-emp-kv{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+.mg-emp .ad-emp-kv{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
 .mg-emp .ad-emp-kv div{ min-width:0; }
 .mg-emp .ad-emp-kv dd.is-good{ color:var(--good); }
 .mg-city-chip{ width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex:none; background:var(--purple-soft, var(--glass)); color:var(--purple, var(--fg)); font-size:.72rem; font-weight:750; letter-spacing:.03em; }
