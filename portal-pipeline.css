@@ -207,6 +207,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .pl-drawer.is-swap > *{ animation:pl-swap .32s var(--ease) both; }
 .pl-dhead{ display:flex; align-items:center; gap:.6rem; padding:1rem 1rem .9rem 1.2rem; border-bottom:1px solid var(--line); background:var(--paper); }
 .pl-dtitle{ display:flex; align-items:center; gap:.75rem; flex:1; min-width:0; }
+.pl-dtitle > div{ min-width:0; flex:1; } /* a long name ellipsizes instead of pushing the buttons out (360) */
 .pl-dtitle h3{ margin:0; font-size:1.08rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pl-dtitle p{ margin:.15rem 0 0; font-size:.76rem; color:var(--muted); display:flex; align-items:center; gap:.3rem; flex-wrap:wrap; }
 .pl-avatar{

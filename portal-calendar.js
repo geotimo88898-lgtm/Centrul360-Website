@@ -1149,7 +1149,7 @@
         title: a.clientName || 'Concediu', lead: K.avatar(a.cosmeticianName || '?', 42),
         subtitle: '<span class="k-tag is-mute">' + icon('calendar') + st.label + '</span> ' + esc(K.relDay(a.date)) + ' · ' + esc(a.location),
         body: '<dl class="k-kv cal-kv"><dt>Angajat</dt><dd>' + esc(a.cosmeticianName || '-') + '</dd><dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd></dl>' +
-          '<div class="mo-note">' + icon('info') + 'Generat automat la aprobarea cererii de concediu (Aprobări). Angajatul nu poate fi programat în această zi.</div>',
+          '<div class="mo-note">' + icon('info') + 'Pus automat când s-a aprobat cererea de concediu. În ziua asta nu se fac programări.</div>',
         footer: canEdit() ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge blocarea</button>' : '',
         onMount(el) {
           const del = el.querySelector('[data-del]');

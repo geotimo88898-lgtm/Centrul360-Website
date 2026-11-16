@@ -155,7 +155,10 @@
     rows.forEach((s) => { const c = K.catsOf(s); c.forEach((k) => { byCat[k] += Number(s.amount || 0) / c.length; }); });
     const catKeys = Object.keys(byCat).filter((k) => byCat[k] > 0).sort((a, b) => byCat[b] - byCat[a]);
     const byPerson = {};
-    rows.forEach((s) => { const n = s.performedByName && s.performedByName !== '-' ? s.performedByName : 'Neatribuit'; byPerson[n] = (byPerson[n] || 0) + Number(s.amount || 0); });
+    // a cosmetician: her own share and the rest of the clinic together, never a colleague's (the server sends no names)
+    const solo = K.data.me && K.data.me.role === 'cosmetician';
+    const myName = solo ? K.data.me.name || 'Tu' : '';
+    rows.forEach((s) => { const n = solo ? (s.performedBy === K.data.me.id ? myName : 'Colegele') : s.performedByName && s.performedByName !== '-' ? s.performedByName : 'Neatribuit'; byPerson[n] = (byPerson[n] || 0) + Number(s.amount || 0); });
     const people = Object.keys(byPerson).sort((a, b) => byPerson[b] - byPerson[a]);
     const pct = (v) => (total ? Math.round((v / total) * 100) : 0);
     const where = S.loc === 'all' ? 'Timișoara + Arad' : S.loc;
@@ -168,7 +171,7 @@
     const cross = paysR.filter((x) => x.crossSell);
     const upsValue = ups.reduce((a, x) => a + Number(x.upsell || 0), 0);
     const cityOf = (c) => sum(rows.filter((x) => x.location === c));
-    const top = people.filter((n) => n !== 'Neatribuit')[0];
+    const top = solo ? '' : people.filter((n) => n !== 'Neatribuit')[0];
     const INC = {
       total: { label: 'Total încasat', group: 'Bani', html: () => card('is-accent', 'wallet', '', 'Total încasat', total, 'lei', 't', K.plural(paysR.length, 'încasare', 'încasări') + (paysR.length ? ' · bon mediu ' + K.lei(back.gross / paysR.length) : '') + (back.count ? ' · net, după rambursări' : '')) },
       count: { label: 'Număr de încasări', group: 'Bani', html: () => card('', 'receipt', '', 'Încasări', K.num(paysR.length), '', '', 'plăți în perioadă') },
@@ -190,6 +193,7 @@
       dueRest: { label: 'Rest de plată din pachete', group: 'Upsell', html: () => card('is-warn', 'wallet', '', 'Rest de plată', DUES.list ? DUES.list.filter(inLoc).reduce((x, y) => x + Number(y.rest || 0), 0) : 0, 'lei', 'dr', DUES.list ? K.plural(DUES.list.filter(inLoc).length, 'pachet', 'pachete') + ' de încasat' : 'se încarcă') },
       upsellRate: { label: 'Rata de upsell', group: 'Upsell', html: () => card('', 'percent', '', 'Rata de upsell', (paysR.length ? Math.round((ups.length / paysR.length) * 100) : 0) + '%', '', '', ups.length + ' din ' + paysR.length + ' încasări') },
     };
+    if (solo) delete INC.topPerson;
     // the refunds (the owner and the manager): their sum, how many, their share of what came in
     if (mgr) INC.refunds = { label: 'Rambursări', group: 'Bani', html: () => card(back.lei ? 'is-warn' : '', 'refresh', '', 'Rambursări', back.lei, 'lei', 'rf', back.count ? K.plural(back.count, 'rambursare', 'rambursări') + ' · ' + String(back.pct).replace('.', ',') + '% din încasări' : 'niciuna în perioadă') };
     const kpis = (K.prefs.get('inc.kpis', null) || INC_DEF).filter((k) => INC[k]);
@@ -203,7 +207,7 @@
       split: () => '<div class="mo-row">' +
         '<section class="k-card"><div class="k-card-head"><h3>' + icon('sparkles') + 'Pe categorii</h3></div>' +
           (catKeys.length ? catKeys.map((k) => '<div class="mo-bar"><span>' + esc(K.cats[k]) + '</span><b>' + K.lei(byCat[k]) + '</b><div class="k-bar"><i style="--w:' + (byCat[k] / byCat[catKeys[0]]) * 100 + '%"></i></div></div>').join('') : '<p class="k-muted">Nicio încasare în perioada aleasă.</p>') + '</section>' +
-        '<section class="k-card"><div class="k-card-head"><h3>' + icon('users') + 'Cine a făcut tratamentele</h3></div>' +
+        '<section class="k-card"><div class="k-card-head"><h3>' + icon('users') + (solo ? 'Partea ta' : 'Cine a făcut tratamentele') + '</h3></div>' +
           (people.length ? '<div class="mo-people-grid">' + people.map((n) => '<div class="mo-person">' + K.avatar(n, 34) + '<div><b>' + esc(n) + '</b><span>' + K.lei(byPerson[n]) + ' · ' + pct(byPerson[n]) + '%</span><div class="k-bar"><i style="--w:' + (byPerson[n] / byPerson[people[0]]) * 100 + '%"></i></div></div></div>').join('') + '</div>' : '<p class="k-muted">-</p>') + '</section>' +
         '</div>',
       dues: () => '<section class="k-card"><div class="k-card-head"><h3>' + icon('wallet') + 'Rest de plată din pachete</h3></div><div data-dues>' + duesHtml() + '</div></section>',
@@ -982,7 +986,7 @@
         K.field('Categorie', K.catPicker([]), 'full') +
         K.field('Valoarea upsell-ului', '<div class="k-money"><input name="amount" type="number" inputmode="decimal" min="1" step="1" required placeholder="0"></div>', 'full') +
         '<div class="pay-note" data-comm-est></div>' +
-        K.field('Notă pentru admin (opțional)', '<textarea name="note" rows="2" maxlength="500" placeholder="ex. a plătit la recepție, nu s-a bifat upsell"></textarea>', 'full') +
+        K.field('Notă (opțional)', '<textarea name="note" rows="2" maxlength="500" placeholder="ex. a plătit la recepție, nu s-a bifat upsell"></textarea>', 'full') +
         '</form>',
       footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Trimite la aprobare</button>',
       onMount(el) {
@@ -1017,7 +1021,7 @@
   async function cancelComm(id) {
     if (!(await K.ui().confirm({ title: 'Retragi cererea de comision?', message: 'Dispare din lista de aprobat. O poți trimite din nou oricând.', confirmText: 'Retrage', danger: true }))) return;
     try { await K.api('/api/portal-sale', { source: 'comision_cancel', id }); K.ui().toast('Cerere retrasă.', 'success'); K.reload(); }
-    catch (err) { K.ui().toast(err.code === 'already_decided' ? 'George a decis deja asupra ei.' : K.errText(err), 'error'); }
+    catch (err) { K.ui().toast(err.code === 'already_decided' ? 'Cererea e deja decisă.' : K.errText(err), 'error'); }
   }
 
   // "Salariu": what she takes home this month (salary + overtime + commission, or the booking bonus
@@ -1033,7 +1037,7 @@
     const days = K.daysIn(C.month), daysLeft = isNow ? days - Number(K.today().slice(8, 10)) + 1 : 0;
     return '<section class="k-card sl-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul de programări</h3>' + (bk.frozen ? '<span class="k-tag">oprit la ' + esc(K.dateShort(bk.frozen)) + '</span>' : '') + '</div>' +
       // the manager: what she made as reception until she became manager, frozen (paid for those days; nothing after)
-      (bk.frozen ? '<div class="mo-note">' + icon('info') + 'Bonusul de recepție se oprește din ziua în care ai devenit manager. Rămâne ce ai făcut până atunci, pentru zilele de recepție.</div>' : '') +
+      (bk.frozen ? '<div class="mo-note">' + icon('info') + 'Bonusul de recepție se oprește din ziua schimbării rolului. Rămâne ce ai făcut până atunci, pentru zilele de recepție.</div>' : '') +
       '<div class="sl-bk-top"><div><span>Media ta</span><b>' + K.num(bk.avg) + '</b><small>programări / zi · ' + K.plural(bk.days, 'zi pontată', 'zile pontate') + ', ' + bk.total + ' programări</small></div>' +
         '<div class="sl-bk-now' + (bk.lei ? ' is-on' : '') + '"><span>Bonus</span><b>' + K.lei(bk.lei) + '</b>' +
         (bk.next ? '<small>' + (bk.days ? 'Încă ' + avg1(Math.max(0.1, Math.ceil((bk.next.min - bk.avg) * 10) / 10)) + ' pe zi pentru ' + K.lei(bk.next.lei) : 'de la ' + bk.next.min + ' pe zi') + (isNow && daysLeft ? ' · ' + K.plural(daysLeft, 'zi rămasă', 'zile rămase') : '') + '</small>'
@@ -1144,7 +1148,7 @@
           tile('clock', 'Ore suplimentare', lei2(pay.overtimeLei), pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' + (pay.overtimeDueLei ? ', neplătite încă (toate lunile), vin cu salariul' : '') : 'nicio oră luna asta') +
           (pay.hasBonus ? tile('trophy', 'Bonus programări', K.lei(pay.bonus), pay.booking && pay.booking.days ? 'media ' + avg1(pay.booking.avg) + ' pe zi' : 'nicio zi pontată încă', pay.bonus ? 'is-good' : '')
             : tile('percent', 'Comision', lei2(pay.commission), K.plural(pay.upsells, 'upsell', 'upselluri') + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : ''))) +
-          (pay.manual ? tile('sliders', 'Comision adăugat', (pay.manual > 0 ? '+' : '') + lei2(pay.manual), 'de George, luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
+          (pay.manual ? tile('sliders', 'Comision adăugat', (pay.manual > 0 ? '+' : '') + lei2(pay.manual), 'luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
         '</div></section>';
 
     // the treatments and upsells (cosmeticians)
@@ -1197,7 +1201,7 @@
       upCount: { label: 'Număr de upselluri', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('trophy', 'Upselluri', String(inMonth.length), K.lei(upsTotal) + ' valoare') },
       upValue: { label: 'Valoarea upsellurilor', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('trend', 'Valoare upsell', K.lei(upsTotal), K.plural(inMonth.length, 'upsell', 'upselluri')) },
       commission: { label: 'Comision aprobat', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('percent', 'Comision', pay ? lei2(pay.commission) : 'încă nu', 'aprobat', 'is-good') },
-      commWaiting: { label: 'Comision în așteptare', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('clock', 'În așteptare', pay ? lei2(pay.commissionWaiting || 0) : 'încă nu', 'îl aprobă George', 'is-warn') },
+      commWaiting: { label: 'Comision în așteptare', group: 'Upsell și comision', roles: ['cosmetician'], html: () => st('clock', 'În așteptare', pay ? lei2(pay.commissionWaiting || 0) : 'încă nu', 'de aprobat', 'is-warn') },
       bkAvg: { label: 'Programări pe zi', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări / zi', bkk ? K.num(bkk.avg) : 'încă nu', bkk ? K.plural(bkk.days, 'zi pontată', 'zile pontate') : '-') },
       bkLei: { label: 'Bonusul acum', group: 'Bonus de programări', roles: ['receptie'], html: () => st('trophy', 'Bonus', bkk ? K.lei(bkk.lei) : 'încă nu', bkk && bkk.next ? 'următorul: ' + bkk.next.min + '+ pe zi' : bkk && bkk.lei >= Math.max(...bkk.tiers.map((t) => t.lei)) ? 'treapta cea mai mare' : bkk && bkk.frozen ? 'oprit la ' + esc(K.dateShort(bkk.frozen)) : '-', bkk && bkk.lei ? 'is-good' : '') },
       bkTotal: { label: 'Programări făcute', group: 'Bonus de programări', roles: ['receptie'], html: () => st('calendar', 'Programări făcute', bkk ? String(bkk.total) : 'încă nu', 'luna asta') },
@@ -1356,7 +1360,7 @@
           '<div><span>' + icon('clock') + 'Ore suplimentare</span><b>' + lei2(pay.overtimeLei) + '</b><small>' + (pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' : 'nicio oră luna asta') + '</small></div>' +
           '</div>' : '') +
         (bk ? '<div class="mg-frozen">' + icon('calendar') + '<span>Bonus recepție (până la ' + esc(K.dateShort(bk.frozen)) + '): <b>' + K.lei(bk.lei) + '</b></span><small>media ' + avg1(bk.avg) + ' programări pe zi · ' + (bk.lei ? 'inclus în total' : 'sub prima treaptă (' + bk.tiers.slice().sort((a, c) => a.min - c.min)[0].min + ' pe zi)') + '</small></div>' : '') +
-        (pay && pay.manual ? '<div class="mg-frozen">' + icon('sliders') + '<span>Ajustare de la George: <b>' + (pay.manual > 0 ? '+' : '') + lei2(pay.manual) + '</b></span></div>' : '') +
+        (pay && pay.manual ? '<div class="mg-frozen">' + icon('sliders') + '<span>Ajustare: <b>' + (pay.manual > 0 ? '+' : '') + lei2(pay.manual) + '</b></span></div>' : '') +
       '</section>';
     const bonusCard = '<section class="k-card mg-bonus"><div class="k-card-head"><h3>' + icon('trophy') + 'Bonusul</h3>' +
         (b ? '<span class="k-tag is-' + (b.kind === 'final' ? 'good' : 'info') + '">' + b.kind + '</span>' : '') + '</div>' +

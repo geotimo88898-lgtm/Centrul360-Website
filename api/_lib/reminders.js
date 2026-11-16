@@ -262,11 +262,11 @@ async function reply(b) {
   const KEYA = 'data/appointments.json';
   const key = digits(b.phone).slice(-9), now = Date.now();
   const hers = (x) => x && !x.block && key.length >= 9 && digits(x.clientPhone).slice(-9) === key;
-  const emps = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  const who = (loc) => [...new Set((['admin']).concat(emps.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./roles').managesCity(e, loc)) || (e.role === 'receptie' && (!loc || !e.location || e.location === loc))).map((e) => e.id)))];
+  // reception (both clinics) and the clinic's managers; the owner only for a clinic with no manager (16.11)
+  const who = (loc) => require('./notify').deskIds({ readJSON }, loc || '');
   const ddmm = (date, time) => String(date || '').slice(8, 10) + '.' + String(date || '').slice(5, 7) + (time ? ' ' + time : '');
   // the owner's phone rings for a cancel only; a confirmation and a late reply stay in his bell (the owner, 8.11)
-  const ring = (x, title, text, tone) => notifyMany({ readJSON, writeJSON }, who(x && x.location), { kind: 'booking', tone, title: title + cityTag(x && x.location), text, go: 'programari', ownerPush: !/^(CONFIRMATĂ|RĂSPUNS)/.test(title),
+  const ring = async (x, title, text, tone) => notifyMany({ readJSON, writeJSON }, await who(x && x.location), { kind: 'booking', tone, title: title + cityTag(x && x.location), text, go: 'programari', ownerPush: !/^(CONFIRMATĂ|RĂSPUNS)/.test(title),
     tag: 'reply-' + (x ? x.id : key) + '-' + (b.msgId || now) });
   const ask = (x, text) => ring(x, 'RĂSPUNS LA REAMINTIRE', text, 'info');
   let name = b.name || b.phone;

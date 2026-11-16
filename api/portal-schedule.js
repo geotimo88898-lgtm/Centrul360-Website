@@ -118,7 +118,8 @@ module.exports = async (req, res) => {
       const who = { id: session.employeeId || 'admin', name: (await whoIs(session)) };
       const doc = await T.update((d) => T.setBreak(d, id, date, b.action === 'break_off' ? { off: true } : b.action === 'break_set' ? { from } : null, who));
       const brk = T.breakOf(doc, id, date, { appts: day, ids: new Set(cosm.map((p) => p.id)) });
-      if (b.action !== 'break_off' && brk) await T.tellBreak({ readJSON, writeJSON: require('./_lib/store').writeJSON }, id, date, brk.from);
+      // her phone hears it, today only: the new hour, or „Azi nu ai pauză” (16.11)
+      if (b.action === 'break_off' || brk) await T.tellBreak({ readJSON, writeJSON: require('./_lib/store').writeJSON }, id, date, b.action === 'break_off' || !brk.on ? null : brk.from);
       res.status(200).json({ ok: true, break: brk });
       return;
     }

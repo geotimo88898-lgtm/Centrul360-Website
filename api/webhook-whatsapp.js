@@ -104,16 +104,17 @@ async function keepMedia(message, phoneNumberId) {
 }
 
 // A client's message rings on the phones (the owner, 18.10): "Mesaj de la NUME", the message itself under it.
-// Who hears it: the owner, and reception of the clinic she wrote to (both receptions while the number isn't tied to a city).
+// Who hears it (16.11): reception (one desk, both clinics) and the managers of the clinic she wrote to; the owner only for
+// a clinic with no manager (_lib/notify.js deskIds).
 async function pushMessages(fresh) {
   if (!fresh.length) return;
-  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  // a candidate's message rings only for the owner and the manager (the owner, 16.11: hiring chats aren't reception's)
+  const N = require('./_lib/notify');
+  // a candidate's message rings only for the manager (the owner, 16.11: hiring chats aren't reception's)
   const d9 = (x) => String(x || '').replace(/\D/g, '').slice(-9);
   const cand = new Set((await readJSON('data/candidates.json', [])).filter((x) => !x.test).map((x) => d9(x.phone)).filter((x) => x.length === 9));
   for (const m of fresh) {
     const hire = cand.has(d9(m.phone));
-    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, m.location)) || (!hire && e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
+    const ids = await N.deskIds({ readJSON }, m.location || '', { reception: !hire });
     const text = m.text.length > 160 ? m.text.slice(0, 159) + '…' : m.text;
     await sendPush({ readJSON, writeJSON }, ids, { title: 'Mesaj de la ' + m.name, body: text, url: '/#mesaje', tag: 'msg-' + m.phone });
   }
@@ -293,13 +294,13 @@ function handleStatusUpdate(conversations, status, failed) {
   // No matching outbound message found (e.g. sent before this feature existed), nothing to update.
 }
 
-// a message that didn't reach her: the admin and her city's front desk hear it at once (bell + phone)
+// a message that didn't reach her: reception and her clinic's manager hear it at once (bell + phone); the owner only for a
+// clinic with no manager (16.11)
 async function alertUndelivered(list) {
   if (!list.length) return;
-  const { notifyMany } = require('./_lib/notify');
-  const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
+  const { notifyMany, deskIds } = require('./_lib/notify');
   for (const { convo, msg } of list) {
-    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, convo.location)) || (e.role === 'receptie' && (!convo.location || !e.location || e.location === convo.location))).map((e) => e.id));
+    const ids = await deskIds({ readJSON }, convo.location || '');
     const who = convo.clientName || ('+' + convo.phone);
     const said = String(msg.text || '').replace(/\s+/g, ' ').slice(0, 60);
     await notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'bad', ownerPush: false, title: 'MESAJ NELIVRAT ❌ - ' + who, text: msg.error + (said ? ' · „' + said + '”' : ''), go: 'mesaje', tag: 'undelivered-' + msg.id });

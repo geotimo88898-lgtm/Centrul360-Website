@@ -236,7 +236,6 @@
     if (TEAM.tab === 'condica' && K.mountCondica) K.mountCondica(epanel.querySelector('[data-cond]'));
     if (TEAM.tab === 'manual') loadManual();
     if (TEAM.tab === 'candidati') loadCandidates();
-    if (TEAM.tab === 'costuri' && K.mountCosts) K.mountCosts(epanel.querySelector('[data-costs]'));
   }
   // ---- the managers' pay at a glance (probation, this month's bonus), for the cards and Salarii (api/portal-salariu.js)
   const MGRS = { list: null, at: 0, busy: false };
@@ -271,7 +270,7 @@
     epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Timișoara și Arad</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
       '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
-      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="costuri" hidden><div data-costs></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
+      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();
       const c = e.target.closest('[data-emp]');

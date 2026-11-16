@@ -109,7 +109,7 @@
     need_one_won_stage: 'Trebuie exact o etapă de tip „Câștigat”.', need_one_lost_stage: 'Trebuie exact o etapă de tip „Pierdut”.',
     need_open_stage: 'Ai nevoie de cel puțin o etapă de lucru.', missing_stage_name: 'Fiecare etapă are nevoie de un nume.',
     invalid_stages: 'Lista de etape nu e validă (maxim 15).', lead_not_found: 'Leadul nu mai există, probabil a fost șters.',
-    forbidden: 'Asta o poate face doar George.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
+    forbidden: 'Nu ai acces la asta.', invalid_date: 'Alege data programării.', missing_treatment: 'Completează tratamentul.',
     invalid_category: 'Alege categoria.', invalid_client: 'Leadul nu are nume sau telefon.', network: 'Nu am putut contacta serverul. Verifică conexiunea.',
   };
   const errText = (e) => ERR[e && e.code] || 'Nu am putut salva. Încearcă din nou.';
@@ -403,12 +403,12 @@
   }
   async function moveCandidate(id, status, sel) {
     const c = (hireList || []).find((x) => x.id === id);
-    if (status === 'angajat' && !ownerHires()) { if (sel && c) sel.value = c.status || 'nou'; K.ui().toast('Angajarea o decide George. Mut-o la „Recomandat” și îi spunem noi.', 'info'); return; }
+    if (status === 'angajat' && !ownerHires()) { if (sel && c) sel.value = c.status || 'nou'; K.ui().toast('Angajarea nu se face de aici. Mut-o la „Recomandat”.', 'info'); return; }
     if (c) { c.status = status; renderHire(); }
     try {
       hireList = (await K.api('/api/portal-candidates', { id, status })).candidates || hireList; renderHire();
-      if (status === 'recomandat' && !ownerHires()) K.ui().toast('Recomandată. George a primit notificarea.', 'success');
-    } catch (e) { K.ui().toast(e.code === 'owner_only' ? 'Angajarea o decide George.' : K.errText(e), 'error'); loadCandidates(); }
+      if (status === 'recomandat' && !ownerHires()) K.ui().toast('Recomandată.', 'success');
+    } catch (e) { K.ui().toast(e.code === 'owner_only' ? 'Angajarea nu se face de aici. Mut-o la „Recomandat”.' : K.errText(e), 'error'); loadCandidates(); }
   }
   // the notes on a candidate (the interview, what she said on the phone): read and add one
   async function candidateNotes(id) {

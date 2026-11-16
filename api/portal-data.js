@@ -172,7 +172,7 @@ module.exports = async (req, res) => {
       }
     });
     const leaderboard = activeEmployees
-      .filter((e) => (e.role !== 'receptie' && e.role !== 'manager') || raceCounts[e.id])
+      .filter((e) => e.id !== 'admin' && e.role !== 'admin' && ((e.role !== 'receptie' && e.role !== 'manager') || raceCounts[e.id]))
       .map((e) => ({
         employeeId: e.id,
         name: e.name,
@@ -207,6 +207,12 @@ module.exports = async (req, res) => {
         };
       })
       .filter((s) => inCity(city, s.location))
+      // a cosmetician (16.11): her own rows whole, the city's only as totals: never who did a colleague's treatment or its
+      // parts, from which a colleague's commission could be worked out
+      .map((s) => (me.role !== 'cosmetician' || s.performedBy === me.id ? s : Object.assign({}, s, {
+        performedBy: '', performedByName: '-', parts: undefined, upsellWhat: undefined,
+        employeeId: s.employeeId === me.id ? s.employeeId : '', employeeName: s.employeeId === me.id ? s.employeeName : '-',
+      })))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
 
     // Calendar, today's appointments (time order) for the Panou "azi" glance, plus
@@ -257,8 +263,9 @@ module.exports = async (req, res) => {
     // it's close (within 3 a day), the tone following the days left in the month. One short line.
     const bonusNotes = salary && !(salary.months[0].booking || {}).frozen ? bookingNotes(salary.months[0].booking, month, today) : []; // frozen: the manager's, no reminders
 
-    // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city), and Instagram's
-    const myCity = !isAdmin && me.role === 'receptie' ? me.location : manages || '';
+    // Mesaje: unread client messages, as Mesaje lists them (reception: one desk for both clinics, as _lib/city.js; the
+    // manager: her clinics), and Instagram's
+    const myCity = manages || '';
     // the hiring chats (job ads' candidates) are George's and the manager's: not in anyone else's count (as in Mesaje)
     const hire = isAdmin || me.role === 'manager' ? null : new Set((await readJSON('data/candidates.json', [])).filter((x) => x && !x.test).map((x) => String(x.phone || '').replace(/\D/g, '').slice(-9)).filter((x) => x.length === 9));
     const waUnread = waConvos.filter((c) => c.unreadCount && inCity(myCity, c.location) && !(hire && hire.has(String(c.phone || '').replace(/\D/g, '').slice(-9)))).length + igUnread;
@@ -274,7 +281,8 @@ module.exports = async (req, res) => {
         target: config.companyGoal.target,
         reward: config.companyGoal.reward,
         month,
-        current: companyApprovedTotal,
+        // what the clinics took in this month: the owner's number only
+        ...(isAdmin ? { current: companyApprovedTotal } : {}),
       },
       raceBonus: {
         category: raceCategory,

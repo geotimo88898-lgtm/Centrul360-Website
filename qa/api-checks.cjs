@@ -191,8 +191,9 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check(8, 'Contacte: hidden from reception, seen by George', rc.ok && !rc.contacts.some((c) => c.id === 'cl-cand2') && ac.contacts.some((c) => c.id === 'cl-cand2'), { rc: rc.total, ac: ac.total });
     const rg = await api('receptie', 'portal-contacts', { action: 'get', id: 'cl-cand2' });
     check(8, 'Contacte: her sheet closed to reception', rg._status === 404, rg);
-    const pd = await api('receptie', 'portal-data', null, '');
-    check(8, 'waUnread (reception, Arad): not the candidate\'s chat', pd.waUnread === 0, pd.waUnread);
+    const pd = await api('receptie', 'portal-data', null, ''), pa = await api('admin', 'portal-data', null, '');
+    // reception is one desk for both clinics (16.11, as Mesaje lists them): the owner's count without the candidate's chat
+    check(8, 'waUnread (reception, both clinics): not the candidate\'s chat', pd.waUnread === pa.waUnread - 1, { rec: pd.waUnread, admin: pa.waUnread });
   }
 
   // 9. Activitate: reads are not changes; the new sections have their names
@@ -207,7 +208,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const bad = lines.filter((l) => ['counts', 'free', 'orphans', 'manual_list', 'dues', 'gallery', 'packages', 'recontact', 'people', 'sheet', 'results'].includes(l.action));
     check(9, 'no line for a read', bad.length === 0, bad.map((l) => l.path + ':' + l.action));
     const sal = lines.filter((l) => l.path === 'portal-salariu');
-    check(9, 'Costuri: a named area and verb', sal.length && sal.every((l) => l.area === 'Costuri lunare și bonus' && /costuri/.test(l.verb)), sal.slice(0, 2));
+    check(9, 'Costuri: a named area and verb', sal.length && sal.every((l) => l.area === 'Cheltuieli și bonus' && /costuri/.test(l.verb)), sal.slice(0, 2));
   }
 
   // 11. the euro rate: 4 decimals; the month's sheet adds up exactly
@@ -636,6 +637,77 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const cmp = await api('admin', 'lead-health', null, 'commission=1&month=' + MONTH);
     check(22, 'lead-health ?commission=1: old and new rule per cosmetician id, the new one the same as Salariu, no names', cmp.total && cmp.people['e-c1'] && cmp.people['e-c1'].new === pay1(MONTH).commission && !/Proba/.test(JSON.stringify(cmp)), cmp);
     check(22, 'the cash rule only from November', !CMS.cashRule({ origin: 'upsell', incasareId: 'x', date: '2026-10-31' }) && CMS.cashRule({ origin: 'upsell', incasareId: 'x', date: '2026-11-01' }));
+  }
+
+  // 23. roles, access, notifications (the owner, 16.11): a cosmetician never sees a colleague's split; the owner hears only
+  // what he decides himself (a clinic with no manager), everything else reaches the manager and reception; reception is one
+  // desk for both clinics; the deep links; her break taken away is told; no titles or names saying whom to go to
+  {
+    ROLE.cosmetician = 'e-c1';
+    const store = require('../api/_lib/store'), N = require('../api/_lib/notify'), NK = () => rd('data/notifications.json', []);
+    const cd = await api('cosmetician', 'portal-data', null, '');
+    const others = (cd.incasari || []).filter((s) => s.performedBy !== 'e-c1'), hers = (cd.incasari || []).filter((s) => s.performedBy === 'e-c1');
+    check(23, 'Încasări (cosmetician): her rows whole, a colleague\'s without who or the parts', hers.length && hers.every((s) => s.performedByName && s.performedByName !== '-') && others.length &&
+      others.every((s) => !s.performedBy && s.performedByName === '-' && !s.parts && !/Proba/.test(JSON.stringify(s))), { hers: hers.length, others: others.slice(0, 1) });
+    const ad = await api('admin', 'portal-data', null, '');
+    check(23, 'dead fields: no month total for the team, no admin in the race', cd.companyGoal && cd.companyGoal.current === undefined && typeof ad.companyGoal.current === 'number' &&
+      !(cd.raceBonus.leaderboard || []).some((x) => x.employeeId === 'e-adm' || x.employeeId === 'admin'), { cg: cd.companyGoal, lb: cd.raceBonus.leaderboard });
+    const du = await api('cosmetician', 'portal-incasari', { action: 'dues', id: '-' });
+    const ref = await api('cosmetician', 'portal-incasari', { action: 'refund_preview', id: 'x' });
+    check(23, 'Rest de plată (cosmetician): read, her clinic only; still no refunds', du._status === 200 && Array.isArray(du.dues) && du.dues.every((d) => d.location === 'Timișoara') && ref._status === 403, { st: du._status, n: (du.dues || []).length, ref: ref._status });
+
+    // who hears the clinic's day: reception (both clinics) and the clinic's manager; the owner only where there is none
+    const both = await N.deskIds(store, 'Arad');
+    const E = rd('data/employees.json', []); E.find((e) => e.id === 'e-mgr').manages = ['Timișoara']; wr('data/employees.json', E);
+    const bare = await N.deskIds(store, 'Arad'), tm = await N.deskIds(store, 'Timișoara');
+    delete E.find((e) => e.id === 'e-mgr').manages; wr('data/employees.json', E);
+    check(23, 'deskIds: reception and the manager, the owner only for a clinic with no manager', both.includes('e-rec') && both.includes('e-mgr') && !both.includes('admin') && !both.includes('e-adm') &&
+      bare.includes('admin') && bare.includes('e-rec') && !bare.includes('e-mgr') && tm.includes('e-rec') && !tm.includes('admin'), { both, bare, tm });
+    const sc = NK().filter((n) => n.tag === 'site-cancel-fx-site').map((n) => n.employeeId);
+    check(23, 'a site booking cancelled (Arad): reception and the manager, not the owner', sc.includes('e-rec') && sc.includes('e-mgr') && !sc.includes('admin') && !sc.includes('e-adm'), sc);
+    const src = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+    check(23, 'pushes per message, undelivered, waiting, site, reminders: through deskIds, never [\'admin\'] first',
+      ['api/webhook-whatsapp.js', 'api/_lib/social-inbox.js', 'api/_lib/site-confirm.js', 'api/_lib/reminders.js', 'api/_lib/wa-waiting.js'].every((f) => /deskIds\(/.test(src(f))) &&
+      !/\['admin'\]\.concat/.test(src('api/webhook-whatsapp.js') + src('api/_lib/social-inbox.js') + src('api/_lib/site-confirm.js') + src('api/_lib/reminders.js')) && !/adminIds/.test(src('api/_lib/wa-waiting.js')));
+    // the morning: with a manager on both clinics the owner gets only his own decisions (the manager's own requests)
+    await require('../api/_lib/followups').morning({ force: true });
+    const fu = NK().filter((n) => /^fu-/.test(n.tag || ''));
+    const own = fu.filter((n) => n.employeeId === 'admin' || n.employeeId === 'e-adm'), mg = fu.filter((n) => n.employeeId === 'e-mgr');
+    check(23, 'the morning: the owner only what he decides (the manager\'s pontaj), the manager the rest', own.every((n) => /^fu-cereri-/.test(n.tag)) && own.some((n) => /^fu-cereri-/.test(n.tag)) && /1 pontaj/.test((own[0] || {}).text || '') && mg.length > 0,
+      { own: own.map((n) => n.tag + ' ' + n.text), mg: mg.map((n) => n.tag) });
+    // deep links
+    const fb = await api('manager', 'portal-manager', { action: 'feedback', city: 'Timișoara', level: 'potrivit', quality: 'ok', reasons: [], details: '' });
+    const fbn = NK().filter((n) => /^mgr-fb-/.test(n.tag || '') && n.employeeId === 'admin');
+    check(23, 'deep links: the manager\'s notices open her page there, a candidate opens Angajări', fb.ok && fbn.length && fbn.every((n) => n.go === 'manager/rapoarte') &&
+      /go: 'manager\/casa', tag: 'mgr-close-'/.test(src('api/portal-manager.js')) && /go: 'manager\/rapoarte', tag: 'mgr-rep-'/.test(src('api/portal-manager.js')) &&
+      /go: 'pipeline\/angajari'/.test(src('api/_lib/fb-leads.js')) && !/go: 'angajati'/.test(src('api/_lib/fb-leads.js')) && !/data-pane="costuri"/.test(src('portal-admin.js')), fbn.map((n) => n.go));
+    check(23, 'the bell: approval, info, leave, break grouped, the important ones pop', /approval: 'shield'/.test(src('portal-notif.js')) && /const isAsk = /.test(src('portal-notif.js')) && /n\.kind === 'break'/.test(src('portal-notif.js')) && /items\(\)\.filter\(pops\)/.test(src('portal-notif.js')));
+
+    // her break: „Fără pauză azi” and a booking that takes it are told, today only, with the move's tag
+    const T = require('../api/_lib/team-schedule');
+    const todays = () => rd('data/appointments.json', []).filter((a) => a.date === TODAY);
+    // her break put on a free half hour first (that move is told too), then a client booked right there, without moving it
+    const free = T.breakSlots(await T.load(), 'e-c1', TODAY, { appts: todays() }).filter((x) => x.free);
+    const at1 = free.length ? free[Math.floor(free.length / 2)] : null;
+    if (at1) {
+      const set = await api('manager', 'portal-schedule', { action: 'break_set', date: TODAY, employeeId: 'e-c1', from: at1.from });
+      const mv = NK().filter((n) => n.employeeId === 'e-c1' && n.tag === 'break-' + TODAY + '-' + at1.from);
+      await api('receptie', 'portal-appointments', { action: 'create', date: TODAY, time: at1.from, endTime: at1.to, location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Peste Pauza Azi', clientPhone: '0755000999', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata' });
+      const t1 = NK().filter((n) => n.employeeId === 'e-c1' && n.tag === 'break-' + TODAY + '-off');
+      check(23, 'a booking on her break today, not moving it: „Azi nu ai pauză” (the move before it told too)', set.ok && mv.length === 1 && t1.length === 1 && t1[0].text === 'Azi nu ai pauză.' && t1[0].kind === 'break', { set: set.error, mv: mv.length, t1 });
+    } else check(23, 'a booking on her break today (no free half hour today: skipped)', true);
+    const off = await api('manager', 'portal-schedule', { action: 'break_off', date: TODAY, employeeId: 'e-c3' });
+    const t2 = NK().filter((n) => n.employeeId === 'e-c3' && n.tag === 'break-' + TODAY + '-off');
+    check(23, '„Fără pauză azi”: she hears it', off.ok ? t2.length === 1 : off.error === 'no_break' || off.error === 'not_working', { off, t2 });
+    await api('manager', 'portal-schedule', { action: 'break_reset', date: TODAY, employeeId: 'e-c3' });
+    await api('manager', 'portal-schedule', { action: 'break_reset', date: TODAY, employeeId: 'e-c1' });
+
+    // texts the team reads: no title and no name saying whom to go to (CLAUDE.md, 16.11)
+    const lit = (f) => src(f).split('\n').filter((l) => !/^\s*\/\//.test(l)).map((l) => l.replace(/\/\/ .*$/, '')).join('\n');
+    const team = ['portal-manager.js', 'portal-money.js', 'portal-pipeline.js', 'portal-legal.js', 'portal-kit.js', 'portal-calendar.js', 'api/portal-legal.js', 'api/portal-employees.js', 'api/portal-sale.js'];
+    const hits = team.filter((f) => /['"][^'"\n]*(George|[Aa]dminul|de admin\b|[Mm]anagerul)[^'"\n]*['"]/.test(lit(f)));
+    check(23, 'no „George”, „adminul”, „de admin” in the team\'s texts', hits.length === 0, hits);
+    check(23, 'Cheltuieli, not „Costuri lunare”', !/Costuri lunare/.test(lit('api/portal-plati.js') + lit('api/_lib/activity.js')));
   }
 
   // the independent second reading agrees with production on the harness's data

@@ -541,8 +541,9 @@ async function morningItems(clinics, opts) {
   if (fresh.length) items.push({ kind: 'nesunate', count: fresh.length, go: 'pipeline/coada', tone: 'warn',
     title: fresh.length === 1 ? 'UN LEAD NESUNAT 📞' : fresh.length + ' LEADURI NESUNATE 📞', text: where(per(fresh)) + ' · coada de apeluri', short: fresh.length + (fresh.length === 1 ? ' lead nesunat' : ' leaduri nesunate') });
   // pontaj and leave waiting for a decision: the manager's team (never her own, the owner decides those), everything for the owner
+  // the owner (16.11): only the requests nobody else decides (the managers' own, people of a clinic with no manager)
   const team = o.team || null;
-  const mine = (id) => (team ? team.has(id) : true);
+  const mine = (id) => (team ? team.has(id) : o.decides ? o.decides.has(id) : true);
   const pt = (adjs || []).filter((a) => a && a.status === 'pending' && mine(a.employeeId)).length, pl = (leaves || []).filter((r) => r && r.status === 'pending' && mine(r.employeeId)).length;
   if (pt + pl) items.push({ kind: 'cereri', count: pt + pl, go: team ? 'manager/echipa' : 'aprobari', tone: 'info',
     title: pt + pl === 1 ? 'O CERERE DE APROBAT 🗓' : (pt + pl) + ' CERERI DE APROBAT 🗓', text: [pt ? pt + ' pontaj' : '', pl ? pl + (pl === 1 ? ' concediu' : ' concedii') : ''].filter(Boolean).join(', '), short: (pt + pl) + ' de aprobat' });
@@ -576,12 +577,20 @@ async function morning(opts) {
   const emps = await readJSON('data/employees.json', []);
   const owners = await N.adminIds(store);
   const ownerSet = new Set(['admin'].concat(await N.ownerIds(store).catch(() => [])));
-  const who = [{ ids: owners, clinics: CITIES.slice(), owner: true }].concat(emps.filter((e) => e && e.active !== false && e.role === 'manager').map((e) => ({ ids: [e.id], clinics: R.managesOf(e), team: e })));
+  // the owner (16.11: the team, reception and the leads are the manager's job, never his): only what he decides himself,
+  // the managers' own requests and the people or clinics with no active manager
+  const mgrs = emps.filter((e) => e && e.active !== false && e.role === 'manager');
+  const teams = new Map();
+  for (const m of mgrs) teams.set(m.id, await R.teamOf({ role: 'manager', employeeId: m.id }, readJSON, emps));
+  const covered = new Set(mgrs.flatMap((m) => R.managesOf(m)));
+  const managed = new Set([...teams.values()].flatMap((t) => [...(t || [])]));
+  const decides = new Set(emps.filter((e) => e && e.id && !managed.has(e.id)).map((e) => e.id));
+  const who = [{ ids: owners, clinics: CITIES.filter((c) => !covered.has(c)), owner: true }].concat(mgrs.map((e) => ({ ids: [e.id], clinics: R.managesOf(e), team: e })));
   let sent = 0;
   const summary = [];
   for (const w of who) {
-    const teamSet = w.team ? await R.teamOf({ role: 'manager', employeeId: w.team.id }, readJSON, emps) : null;
-    const items = await morningItems(w.clinics, { team: teamSet });
+    const teamSet = w.team ? teams.get(w.team.id) : null;
+    const items = await morningItems(w.clinics, w.owner ? { decides } : { team: teamSet });
     for (const it of items) {
       const k = day + '|' + it.kind + '|' + (w.owner ? 'owner' : w.team.id);
       if (st.sent[k]) continue;

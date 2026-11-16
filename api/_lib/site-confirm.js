@@ -44,10 +44,8 @@ function daytime(ms) {
 }
 const ddmm = (a) => String(a.date || '').slice(8, 10) + '.' + String(a.date || '').slice(5, 7) + (a.time ? ', ' + a.time : '');
 
-async function people(loc) {
-  const emps = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  return [...new Set(['admin'].concat(emps.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./roles').managesCity(e, loc)) || (e.role === 'receptie' && (!loc || !e.location || e.location === loc))).map((e) => e.id)))];
-}
+// reception (both clinics) and the clinic's managers; the owner only for a clinic with no manager (16.11)
+const people = (loc) => require('./notify').deskIds({ readJSON }, loc || '');
 
 // Giovanna calls her: one task in Sarcini (closes itself once the booking is confirmed, cancelled or past) and the bell
 async function callTask(a, why) {

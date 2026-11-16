@@ -131,7 +131,9 @@
     const confirmed = appts.filter((a) => a.status === 'confirmata').length;
     const L = leadsData ? leadsData.leads || [] : [];
     const working = L.filter((l) => l.kind === 'open' || l.kind === 'booked');
-    const callNow = working.filter((l) => l.followUpState === 'overdue' || l.neverContacted);
+    // the owner (16.11): only the leads of a clinic with no manager; the rest are the manager's and reception's
+    const ownDesk = !D.isAdmin || K.ownerClinics().length > 0;
+    const callNow = working.filter((l) => (l.followUpState === 'overdue' || l.neverContacted) && (!D.isAdmin || K.ownerDesk(l.location)));
     const pending = D.isAdmin && D.admin ? D.admin.pendingSales.length : 0;
 
     // ---- role shaping: reception runs the front desk, a cosmetician sees her own day + earnings
@@ -268,7 +270,7 @@
       myOvertime: { label: 'Ore suplimentare (lei)', group: 'Salariul meu', roles: STAFF, html: () => stat('is-info', 'comision', '', 'clock', 'Ore suplimentare', myPay ? Math.round(myPay.overtimeLei || 0) : 0, 'lei', 'db-myot', 'luna asta') },
       bookingAvg: { label: 'Programări pe zi (bonus)', group: 'Salariul meu', roles: ['receptie'], html: () => stat('is-accent', 'comision', '', 'trophy', 'Programări / zi', bk ? bk.avg : 0, '', 'db-bkavg', bk ? 'bonus acum ' + K.lei(bk.lei) : 'pontează ca să pornească media') },
     };
-    const DEF_KPI = { admin: ['incToday', 'mtd', 'apptsToday', 'callNow'], receptie: ['incToday', 'unconfirmed', 'apptsToday', 'callNow'], cosmetician: ['mineToday', 'commMonth', 'commPending', 'attributed'] };
+    const DEF_KPI = { admin: ['incToday', 'mtd', 'apptsToday', ownDesk ? 'callNow' : 'leadsNewToday'], receptie: ['incToday', 'unconfirmed', 'apptsToday', 'callNow'], cosmetician: ['mineToday', 'commMonth', 'commPending', 'attributed'] };
     const mineKpi = Object.keys(KPI).filter((k) => KPI[k].roles.includes(role));
     const chosenKpi = (K.prefs.get('dash.kpis', null) || DEF_KPI[role] || []).filter((k) => mineKpi.includes(k));
     const kpis = chosenKpi.map((k) => KPI[k].html()).join('');
@@ -292,7 +294,7 @@
       // the owner's Panou (new look) has no KPI row: what comes next today sits here, once (the appointments, who to call)
       today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3>' +
         (D.isAdmin && document.documentElement.classList.contains('ui-nou') ? '<div class="db-today-meta"><span><b>' + live.length + '</b> ' + (live.length === 1 ? 'programare' : 'programări') + (confirmed ? ' · ' + confirmed + ' confirmate' : '') + '</span>' +
-          (leadsData ? '<button type="button" class="k-btn is-sm ' + (callNow.length ? 'is-accent' : 'is-outline') + '" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'De sunat · ' + callNow.length + '</button>' : '') + '</div>' : '') + '<a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
+          (leadsData && ownDesk ? '<button type="button" class="k-btn is-sm ' + (callNow.length ? 'is-accent' : 'is-outline') + '" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'De sunat · ' + callNow.length + '</button>' : '') + '</div>' : '') + '<a class="k-btn is-sm is-outline" href="#programari" data-go="programari">Calendar' + icon('arrow') + '</a></div>' +
         '<div class="db-timeline" data-timeline>' + timelineHtml(role === 'cosmetician' ? mineToday : appts, role === 'cosmetician' ? myBreak : null) + '</div></section>',
       bonus: () => bonusCard,
       team: () => '<section class="k-card db-team"><div class="k-card-head"><h3>' + icon('users') + 'Ce face echipa</h3><a class="k-btn is-sm is-outline" href="#activitate" data-go="activitate">Activitate' + icon('arrow') + '</a></div><div data-team>' + teamHtml(L) + '</div></section>',
