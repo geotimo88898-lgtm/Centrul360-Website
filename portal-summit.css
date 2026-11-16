@@ -1170,3 +1170,7 @@ html.ui-nou .pf-sum.is-one{ padding:.35rem .25rem; }
 html.ui-nou .co-line .k-money input{ font-size:.95rem !important; }
 html.ui-nou .co-line .k-money input::placeholder{ font-size:.8rem; }
 @media (max-width:640px){ html.ui-nou .co-line .k-money{ flex-basis:146px; } html.ui-nou .co-line .k-money input{ padding-right:2.3rem !important; } }
+
+/* the logo's ellipses flip around the exact centre of the mark (405,405 in its own coordinates), never around a box the
+   browser may measure differently: they stay inside the ring (16.11, they sometimes drifted out of it) */
+html.ui-nou :is(.sx-p-logo, .n-p3-logo) :is(.v, .h){ transform-box:view-box !important; transform-origin:405px 405px !important; }
