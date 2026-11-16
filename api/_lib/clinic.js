@@ -39,21 +39,28 @@ function capMin(cfg, city, date, appts) {
   const dayAppts = appts.filter((a) => a && a.location === city && a.date === date && a.status !== 'anulata');
   if (dayAppts.some((a) => (a.status === 'concediu' || a.block) && !a.time && !a.cosmeticianId)) return 0; // the clinic closed that day
   const t = cfg.team;
+  // someone who left counts up to her last day (her shifts, her place), never after it (team.until, _lib/booking.js)
   if (t && T.hasSchedule(t.doc, city, t.ids)) {
-    return T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).reduce((n, w) => n + Math.max(0, (toMin(w.to) || 0) - (toMin(w.from) || 0)), 0);
+    return T.whoWorks(t.doc, date, city, { appts, ids: t.ids, until: t.until }).reduce((n, w) => n + Math.max(0, (toMin(w.to) || 0) - (toMin(w.from) || 0)), 0);
   }
   const off = new Set(dayAppts.filter((a) => (a.status === 'concediu' || a.block) && !a.time && a.cosmeticianId).map((a) => a.cosmeticianId)).size;
-  return Math.max(0, (toMin(d.to) || 0) - (toMin(d.from) || 0)) * Math.max(0, (Number(d.at) || 0) - off);
+  // without a schedule: no more places than the cosmeticians of the clinic that day, once one of them has left
+  let at = Number(d.at) || 0;
+  if (t && t.people && t.gone && t.gone.some((g) => g.location === city)) at = Math.min(at, t.people.filter((p) => p.location === city).length + t.gone.filter((g) => g.location === city && date <= g.leftAt).length);
+  return Math.max(0, (toMin(d.to) || 0) - (toMin(d.from) || 0)) * Math.max(0, at - off);
 }
+// a booking left on someone who had left by its day („A plecat”, _lib/left.js): not the remaining team's time, it waits
+// for someone to take it (Calendar → „rămase fără cosmeticiană”)
+const orphaned = (cfg, a) => { const u = cfg && cfg.team && cfg.team.until; return !!(u && a.cosmeticianId && u.has(a.cosmeticianId) && a.date > u.get(a.cosmeticianId)); };
 function fill(cfg, city, from, to, appts, targetPct) {
   const tp = targetPct || TARGET_FILL * 100;
-  let cap = 0, booked = 0;
+  let cap = 0, booked = 0, orphan = 0;
   for (let d = from; d <= to; d = addDay(d, 1)) {
     cap += capMin(cfg, city, d, appts);
-    booked += appts.filter((a) => visit(a) && a.location === city && a.date === d).reduce((n, a) => n + apptMin(a), 0);
+    appts.forEach((a) => { if (!visit(a) || a.location !== city || a.date !== d) return; if (orphaned(cfg, a)) orphan += apptMin(a); else booked += apptMin(a); });
   }
   return { capHours: Math.round(cap / 6) / 10, bookedHours: Math.round(booked / 6) / 10, pct: cap ? Math.round((booked / cap) * 100) : null, targetPct: tp,
-    targetHours: Math.round((cap * tp / 100) / 6) / 10, freeHours: Math.max(0, Math.round((cap - booked) / 6) / 10) };
+    targetHours: Math.round((cap * tp / 100) / 6) / 10, freeHours: Math.max(0, Math.round((cap - booked) / 6) / 10), orphanHours: Math.round(orphan / 6) / 10 };
 }
 
 // ------------------------------------------------------------------ the numbers of a period, per clinic
@@ -61,8 +68,11 @@ function fill(cfg, city, from, to, appts, targetPct) {
 // she clocked in (Condică), or, when she never clocks in, the days she has collections (said so)
 // appts (optional): also her consultations and how many ended with a package (the same 7-day rule), for the monthly 1:1
 // someone who left (_lib/left.js): out from the month she left; a period before it still shows her, when she worked in it
+// The 1.500 rule (the same as the pay, _lib/manager-pay.js conditionOf): more than 1.500 lei a day worked, exactly
+// (collected / days, not the rounded lei a day). Someone still in her official training (trainedOfficial false) is shown,
+// marked „în formare”, and is out of the bonus condition.
 function cosmeticians(emps, sales, attendance, city, from, to, appts) {
-  return emps.filter((e) => e.role === 'cosmetician' && e.location === city && !L.outOfMonth(e, from)).map((e) => {
+  return emps.filter((e) => e && e.role === 'cosmetician' && clinicOf(e.location) === city && !L.outOfMonth(e, from)).map((e) => {
     const mine = sales.filter((s) => s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
     const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
     const punched = new Set(attendance.filter((x) => x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
@@ -73,16 +83,19 @@ function cosmeticians(emps, sales, attendance, city, from, to, appts) {
     const days = punched.size + payOnly;
     const perDay = days ? Math.round(collected / days) : 0;
     return { id: e.id, name: e.name || '', days, punched: punched.size, payOnly, daysFrom: punched.size ? (payOnly ? 'mixt' : 'pontaj') : byPay.size ? 'incasari' : '',
-      collected, perDay, ok: days > 0 && perDay >= TARGET_PER_DAY, gap: days ? Math.max(0, TARGET_PER_DAY - perDay) : TARGET_PER_DAY,
+      collected, perDay, ok: days > 0 && collected / days > TARGET_PER_DAY, gap: !days ? TARGET_PER_DAY : collected / days > TARGET_PER_DAY ? 0 : Math.max(1, Math.ceil(TARGET_PER_DAY - collected / days)),
+      ...(e.trainedOfficial === false ? { trainee: true, label: 'în formare' } : {}),
       ...(appts ? { consults: consultsWhere(appts, sales, from, to, (a) => a.cosmeticianId === e.id) } : {}), ...(e.active === false ? { left: true } : {}) };
   }).filter((x) => !x.left || x.days > 0);
 }
 
-// consultations that took place (not cancelled; today's only once finished, a later one today hasn't happened yet) and those followed, within 7 days, by a payment with a
-// package or an upsell for the same client (the data has no „consultation → package” link: this is the closest real one)
+// consultations that came (the same rule as the show rate, cameBy: finished, paid, or she paid something that day; up to
+// today) and those followed, within 7 days, by a payment with a package or an upsell for the same client (the data has no
+// „consultation → package” link: this is the closest real one). One she didn't come to is not a consultation that could
+// sell (16.11: the share was counted on every passed booking, the no-shows lowered it).
 function consultsWhere(appts, sales, from, to, keep) {
-  const today = B.roNow().date;
-  const list = appts.filter((a) => visit(a) && isConsult(a) && keep(a) && a.date >= from && a.date <= to && (a.date < today || a.status === 'finalizata'));
+  const today = B.roNow().date, paid = paidDays(sales);
+  const list = appts.filter((a) => visit(a) && isConsult(a) && keep(a) && a.date >= from && a.date <= to && a.date <= today && cameBy(a, paid));
   const sold = sales.filter((s) => s.source === 'incasare' && (Number(s.upsell) > 0 || Number(s.packageTotal) > 0));
   const same = (a, s) => (a.clientId && s.clientId && a.clientId === s.clientId) || (!!a.clientPhone && d9(a.clientPhone).length === 9 && s.clientPhone && d9(s.clientPhone) === d9(a.clientPhone)) ||
     (!a.clientId && a.clientName && s.client && fold(a.clientName) === fold(s.client));
@@ -153,23 +166,34 @@ function paidDays(sales) {
 }
 const cameBy = (a, paid) => a.status === 'finalizata' || !!a.paidSaleId || !!(paid && ((a.clientId && paid.has('c|' + a.clientId + '|' + a.date)) || (d9(a.clientPhone).length === 9 && paid.has('p|' + d9(a.clientPhone) + '|' + a.date))));
 // a cancellation is a no-show only when it came at or after the visit's hour (or HighLevel said no-show); one made before
-// is a cancellation, not a client who didn't come (16.11: 7 bookings cancelled ahead showed as „0 din 7 au venit”)
+// is a cancellation, not a client who didn't come (16.11: 7 bookings cancelled ahead showed as „0 din 7 au venit”).
+// When it was cancelled: cancelledAt, written on every change to „anulată” from 16.11 (Calendar, the WhatsApp answer,
+// the site's unconfirmed bookings, HighLevel's own time). A record without it is read the most careful way:
+//   - made before CANCEL_FIX in the portal: late only when its last change (updatedAt) is on the visit's own day, at or
+//     after its hour (the desk marking her absent then); a change on a later day says nothing about when it was
+//     cancelled (an edit, a sync), so it counts as cancelled ahead
+//   - from HighLevel: only its own no-show (noShow); its updatedAt is the import's
+//   - made from CANCEL_FIX on without cancelledAt: ahead
+const CANCEL_FIX = Date.parse('2026-11-16T06:00:00Z'); // 08:00 in Bucharest, after this was published
+const fromGhl = (a) => a.createdBy === 'highlevel' || !!a.ghlId || !!a.importedAt;
 function lateCancel(a) {
   if (!a || a.status !== 'anulata') return false;
   if (a.noShow) return true;
-  const t = Date.parse(a.cancelledAt || a.updatedAt || '');
-  if (!Number.isFinite(t)) return false;
-  const r = B.roNow(t), s = toMin(a.time);
-  return r.date > a.date || (r.date === a.date && (s == null || r.min >= s));
+  const s = toMin(a.time);
+  const after = (t, sameDayOnly) => { if (!Number.isFinite(t)) return false; const r = B.roNow(t); return (!sameDayOnly && r.date > a.date) || (r.date === a.date && (s == null || r.min >= s)); };
+  if (a.cancelledAt) return after(Date.parse(a.cancelledAt), false);
+  if (fromGhl(a) || !(Date.parse(a.createdAt || '') < CANCEL_FIX)) return false;
+  return after(Date.parse(a.updatedAt || ''), true);
 }
 // The visits of a clinic over the last days, as precise as the data allows (16.11: the calendar's target rests on it):
 //   window   Bucharest days from `days` ago to yesterday (today is still going on), never before the first whole day of
 //            the portal (17.10): the bookings imported from HighLevel before it were marked „finalizată” just for being
 //            past (_lib/ghl.js), so they would hide the no-shows
 //   due      a booking of a client on its day: not leave or a time block, not a test („Test …”), not cancelled before its
-//            hour (a cancellation at or after it is a no-show, as HighLevel's no-shows are), not „reprogramată” without
-//            having come (moved: it counts at its new date; still on the old one, it is not counted), the same client on the
-//            same day, clinic and treatment once
+//            hour (a cancellation at or after it is a no-show, as HighLevel's no-shows are), the same client on the same
+//            day, clinic and treatment once. A „reprogramată” still on a passed day without her coming is a no-show (16.11:
+//            moving a booking moves its date; one left on the old day is a visit she didn't come to, as on the KPI page);
+//            `moved` counts them (they stay in due)
 //   came     finished, or paid, or the client paid something that day at that clinic (the same client: her card id, her
 //            phone, or her name as written on the payment); the portal has no client check-in
 function visitStats(appts, sales, city, today, days, clients) {
@@ -189,7 +213,7 @@ function visitStats(appts, sales, city, today, days, clients) {
     const ids = idsOf(a.clientId, a.clientPhone, a.clientName);
     const came = a.status === 'finalizata' || !!a.paidSaleId || ids.some((k) => paid.has(k + '|' + a.date));
     if (a.status === 'anulata' && !came && !lateCancel(a)) { ex.cancelledAhead++; return; }
-    if (a.status === 'reprogramata' && !came) { ex.moved++; return; }
+    if (a.status === 'reprogramata' && !came) ex.moved++; // a no-show (counted below), listed apart
     const key = (ids[0] || 'id:' + a.id) + '|' + a.date + '|' + fold(a.treatment).trim();
     const was = seen.get(key);
     if (was) { ex.duplicate++; was.came = was.came || came; return; }
@@ -253,4 +277,4 @@ function methods(sales) {
   return { cash: r2(cash), card: r2(card), transfer: r2(transfer), other: r2(other) };
 }
 
-module.exports = { visitStats, fillTargets, consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };
+module.exports = { CANCEL_FIX, orphaned, visitStats, fillTargets, consultsWhere, normalize, clinicOf, paidDays, cameBy, lateCancel, CITIES, TARGET_PER_DAY, TARGET_FILL, SELF, visit, isConsult, apptMin, capMin, fill, fillDays, cosmeticians, consults, firstOutByPhone, leadSpeed, waitingNow, showRate, methods, addDay, roDay, d9, fold, r2, toMin };

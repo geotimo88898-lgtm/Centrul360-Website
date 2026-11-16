@@ -10,13 +10,26 @@
 //   POST { action: 'propose', month, consumables, other, note }   the manager: her month-close costs, a proposal
 //   POST { action: 'proposal_decide', month, decision: 'accept'|'decline' }   owner (accepted: into the month's records,
 //                                                                            api/_lib/expenses.js)
+// A proposal is decided once, while it waits (status 'pending'): a second tap answers { ok, already } and adds nothing.
+// Sent again after one was accepted, it waits again; accepted, it replaces the records the accepted one put in the month
+// (data/month-costs.json months[m].proposalAccepted.ids), it never adds on top of them.
 
-const { readJSON, writeJSON } = require('./_lib/store');
+const { readJSON, writeJSON, readJSONTagged, writeJSONIf } = require('./_lib/store');
 const { requireRole } = require('./_lib/auth');
 const MP = require('./_lib/manager-pay');
 const N = require('./_lib/notify');
 
 const store = { readJSON, writeJSON };
+// a change of data/month-costs.json that never overwrites one made meanwhile (fn returns false: nothing to write)
+async function costsUpdate(fn) {
+  for (let i = 0; i < 6; i++) {
+    const { data, etag } = await readJSONTagged(MP.COSTS_KEY, null);
+    const doc = Object.assign({ v: 1 }, data && typeof data === 'object' ? data : {}, { months: data && data.months && typeof data.months === 'object' ? data.months : {} });
+    if (fn(doc) === false) return doc;
+    if (await writeJSONIf(MP.COSTS_KEY, doc, etag, { quiet: true })) return doc;
+  }
+  throw new Error('month costs busy');
+}
 const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 
 module.exports = async (req, res) => {
@@ -62,12 +75,13 @@ module.exports = async (req, res) => {
         const wa = await MP.waOf(readJSON, all, month, day);
         autos.whatsapp = wa.error ? (entry.waAuto ? entry.waAuto.lei : null) : wa.lei;
         const costs = MP.costsOf(entry, autos, all, require('./_lib/expenses').recCosts(ctx.exp, month));
-        const collections = MP.collectionsOf(ctx.sales, ctx.appointments, ctx.employees, all, month, isCurrent ? day : MP.lastDay(month));
+        // whole lei, as the lines (manager-pay.js costsOf): collections - costs = profit, exactly as the page shows them
+        const collections = MP.lei0(MP.collectionsOf(ctx.sales, ctx.appointments, ctx.employees, all, month, isCurrent ? day : MP.lastDay(month)));
         const pm = MP.prevMonth(month), prev = ctx.costs.months[pm] ? MP.cleanEntry(ctx.costs.months[pm]) : null;
         res.status(200).json({
           ok: true, month, current: isCurrent, lines: MP.LINES, entry, autos, adsRead, adsSavedAt: entry.adsAuto ? entry.adsAuto.at : '', costs,
           read: { ads: { ok: adsRead, at: adsRead ? ad.at : (entry.adsAuto ? entry.adsAuto.at : ''), saved: !adsRead && !!entry.adsAuto },
-            whatsapp: { ok: !wa.error, at: wa.error ? (entry.waAuto ? entry.waAuto.at : '') : wa.at, saved: !!wa.error && !!entry.waAuto, error: wa.error || '' } }, collections, profit: Math.round((collections - costs.total) * 100) / 100,
+            whatsapp: { ok: !wa.error, at: wa.error ? (entry.waAuto ? entry.waAuto.at : '') : wa.at, saved: !!wa.error && !!entry.waAuto, error: wa.error || '' } }, collections, profit: collections - costs.total,
           prev: prev && prev.savedAt ? { month: pm, eurRate: prev.eurRate, lines: prev.lines } : null,
           // the bonus condition of the managers this month so far (every trained cosmetician of her clinics over the
           // daily minimum): on track or not, no names
@@ -91,16 +105,21 @@ module.exports = async (req, res) => {
       if (month !== cur && month !== MP.prevMonth(cur)) return fail(400, 'invalid_month'); // the month that closes, or the one before
       const consumables = MP.amount(b.consumables), other = MP.amount(b.other);
       if (consumables == null && other == null) return fail(400, 'missing_fields');
-      const doc = await MP.loadCosts(readJSON);
-      const entry = doc.months[month] && typeof doc.months[month] === 'object' ? doc.months[month] : {};
       const emps = await readJSON('data/employees.json', []);
       const me = emps.find((e) => e.id === session.employeeId) || {};
-      entry.proposal = { consumables, other, note: clip(b.note, 500), at: new Date().toISOString(), by: session.employeeId, byName: me.name || '', status: 'pending' };
-      doc.months[month] = entry;
-      await writeJSON(MP.COSTS_KEY, doc, { quiet: true });
+      const proposal = { consumables, other, note: clip(b.note, 500), at: new Date().toISOString(), by: session.employeeId, byName: me.name || '', status: 'pending' };
+      // a new one waits for George (one that waited is replaced; one accepted stays in the records until this one is)
+      await costsUpdate((doc) => {
+        const entry = doc.months[month] && typeof doc.months[month] === 'object' ? doc.months[month] : {};
+        // one accepted before 16.11 kept no list of its records: its time, to find them when this one replaces them
+        const was = entry.proposal;
+        if (was && was.status === 'accepted' && !entry.proposalAccepted) entry.proposalAccepted = { ids: null, at: was.decidedAt || '', legacy: true };
+        entry.proposal = proposal;
+        doc.months[month] = entry;
+      });
       await N.notifyMany(store, await N.adminIds(store), {
-        kind: 'info', tone: 'info', go: 'angajati', tag: 'mgr-costs-' + month, ownerPush: false,
-        title: 'Costuri variabile trimise', text: (me.name ? me.name.split(' ')[0] + ' a trimis' : 'S-au trimis') + ' consumabilele și alte costuri ale lunii. Le găsești în Echipa → Costuri.',
+        kind: 'info', tone: 'info', go: 'cheltuieli', tag: 'mgr-costs-' + month, ownerPush: false,
+        title: 'Costuri variabile trimise', text: (me.name ? me.name.split(' ')[0] + ' a trimis' : 'S-au trimis') + ' consumabilele și alte costuri ale lunii. Le găsești la Cheltuieli.',
       });
       res.status(200).json({ ok: true });
       return;
@@ -119,7 +138,7 @@ module.exports = async (req, res) => {
         else lines[l.key] = MP.amount(b.lines && b.lines[l.key]);
       });
       // the euro: today's BNR rate is used anyway; the one sent is kept only as the fallback for a day the BNR is down
-      const entry = Object.assign({}, old, { eurRate: MP.amount(b.eurRate) || old.eurRate || null, lines, over, savedAt: new Date().toISOString(), savedBy: session.employeeId });
+      const entry = Object.assign({}, old, { eurRate: MP.eurRateOf(b.eurRate) || MP.eurRateOf(old.eurRate) || null, lines, over, savedAt: new Date().toISOString(), savedBy: session.employeeId });
       // what Meta says now, kept for when it can't be read
       const ads = await MP.adsOf(readJSON, ['Timișoara', 'Arad'], month, MP.today());
       if (ads != null) entry.adsAuto = { lei: ads, at: new Date().toISOString() };
@@ -132,27 +151,54 @@ module.exports = async (req, res) => {
     }
 
     if (b.action === 'proposal_decide') {
-      const doc = await MP.loadCosts(readJSON);
-      const entry = doc.months[month];
-      if (!entry || !entry.proposal) return fail(404, 'not_found');
-      const p = entry.proposal;
-      if (b.decision === 'accept') {
-        // into the month's records (Plăți și cheltuieli → Cheltuieli variabile), marked as sent by her
-        const EX = require('./_lib/expenses');
-        const exp = await EX.loadDoc(readJSON);
-        const m = exp.months[month] && typeof exp.months[month] === 'object' ? exp.months[month] : {};
-        m.rec = m.rec && typeof m.rec === 'object' ? m.rec : {};
-        const day = month === cur ? MP.today() : MP.lastDay(month);
-        const note = 'trimis de ' + (String(p.byName || '').split(' ')[0] || 'manager') + (p.note ? ': ' + p.note : '');
-        [['consumables', p.consumables], ['other', p.other]].forEach(([k, lei]) => { if (lei != null && lei > 0) (m.rec[k] = Array.isArray(m.rec[k]) ? m.rec[k] : []).push(EX.newEntry({ date: day, lei, note: note.slice(0, 200) }, session.employeeId)); });
-        exp.months[month] = m;
-        await writeJSON(EX.KEY, exp, { quiet: true });
-        p.status = 'accepted';
-      } else if (b.decision === 'decline') p.status = 'declined';
-      else return fail(400, 'invalid_decision');
-      p.decidedAt = new Date().toISOString();
-      await writeJSON(MP.COSTS_KEY, doc, { quiet: true });
-      res.status(200).json({ ok: true });
+      if (b.decision !== 'accept' && b.decision !== 'decline') return fail(400, 'invalid_decision');
+      const status = b.decision === 'accept' ? 'accepted' : 'declined';
+      const EX = require('./_lib/expenses');
+      const day = month === cur ? MP.today() : MP.lastDay(month);
+      // 1. the decision, taken once on the version read (a double tap: the second sees it decided and changes nothing)
+      let claim = null;
+      await costsUpdate((doc) => {
+        claim = null;
+        const entry = doc.months[month];
+        const p = entry && entry.proposal;
+        if (!p) { claim = { error: 'not_found' }; return false; }
+        if ((p.status || 'pending') !== 'pending') { claim = { already: p.status }; return false; }
+        const decidedAt = new Date().toISOString();
+        const prev = entry.proposalAccepted && typeof entry.proposalAccepted === 'object' ? entry.proposalAccepted : null;
+        claim = { p: Object.assign({}, p), decidedAt, prev, ids: [] };
+        if (status === 'accepted') {
+          // the records it puts in the month, named before they are written, so the next one accepted can replace them
+          const first = String(p.byName || '').split(' ')[0];
+          const note = (first ? 'trimis de ' + first : 'trimis din Salariu') + (p.note ? ': ' + p.note : '');
+          claim.add = [['consumables', p.consumables], ['other', p.other]].filter(([, lei]) => lei != null && lei > 0)
+            .map(([k, lei]) => ({ k, e: Object.assign(EX.newEntry({ date: day, lei, note: note.slice(0, 200) }, session.employeeId), { proposal: p.at || decidedAt }) }));
+          claim.ids = claim.add.map((x) => x.e.id);
+          entry.proposalAccepted = { ids: claim.ids, at: decidedAt, proposalAt: p.at || '' };
+        }
+        p.status = status; p.decidedAt = decidedAt;
+        return true;
+      });
+      if (claim && claim.error) return fail(404, claim.error);
+      if (claim && claim.already) { res.status(200).json({ ok: true, already: true, status: claim.already }); return; }
+      // 2. accepted: into the month's records (Cheltuieli → Cheltuieli variabile), in place of the ones the accepted one
+      // before it put there (by their ids; one accepted before 16.11 has none: its records are the ones written with its
+      // decision, „trimis de …”, within two minutes of it)
+      if (status === 'accepted') {
+        const prev = claim.prev, legacyAt = prev && prev.legacy ? Date.parse(prev.at || '') || 0 : 0;
+        const drop = (e) => !!e && ((prev && Array.isArray(prev.ids) && prev.ids.includes(e.id)) || (legacyAt && /^trimis de /.test(String(e.note || '')) && Math.abs(Date.parse(e.at || '') - legacyAt) < 120e3));
+        for (let i = 0; i < 6; i++) {
+          const { data, etag } = await readJSONTagged(EX.KEY, null);
+          const exp = Object.assign({ v: 1 }, data && typeof data === 'object' ? data : {}, { months: data && data.months && typeof data.months === 'object' ? data.months : {} });
+          const m = exp.months[month] && typeof exp.months[month] === 'object' ? exp.months[month] : {};
+          m.rec = m.rec && typeof m.rec === 'object' ? m.rec : {};
+          ['consumables', 'other'].forEach((k) => { if (Array.isArray(m.rec[k])) m.rec[k] = m.rec[k].filter((e) => !drop(e) && !claim.ids.includes(e && e.id)); });
+          claim.add.forEach(({ k, e }) => { (m.rec[k] = Array.isArray(m.rec[k]) ? m.rec[k] : []).push(e); });
+          exp.months[month] = m;
+          if (await writeJSONIf(EX.KEY, exp, etag, { quiet: true })) break;
+          if (i === 5) throw new Error('expenses busy');
+        }
+      }
+      res.status(200).json({ ok: true, status });
       return;
     }
 

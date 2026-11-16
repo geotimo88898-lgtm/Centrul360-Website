@@ -12,6 +12,7 @@
 //   POST { action: 'defaults', defaults }     what the "Publică pe Meta" window starts with
 // The Meta side lives in _lib/meta-ads.js.
 
+const ME = require('./_lib/meta-error');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
@@ -182,12 +183,15 @@ module.exports = async (req, res) => {
         AC.cached('token', 10 * 60e3, () => ads.tokenInfo(conn.userToken, creds)),
       ]);
       if (view.error) {
+        ME.log('ads-manager view', view.error);
         const expired = token && !token.valid;
         const noScope = token && token.valid && !(token.scopes || []).some((x) => x === 'ads_management' || x === 'ads_read');
         res.status(200).json({ ok: true, ready: false, reason: expired ? 'token_expired' : noScope ? 'no_ads_permission' : 'meta_error', defaults, scope,
-          message: expired ? 'Conexiunea pentru reclame a expirat. Integrări → Facebook → Reclame: lipește un token nou.' : noScope ? REASONS.no_ads_permission : 'Meta: ' + view.error });
+          message: expired ? 'Conexiunea pentru reclame a expirat. Integrări → Facebook → Reclame: lipește un token nou.' : noScope ? REASONS.no_ads_permission : ME.ui(view.error) });
         return;
       }
+      // an older reading shown because Meta refused the new one: why, in a short sentence (never Meta's raw words)
+      if (view.staleWhy) { ME.log('ads-manager stale', view.staleWhy); view.staleWhy = ME.ui(view.staleWhy); }
       // a switch made from the portal shows switched also in a reading older than it (Meta's own status lags behind)
       await AC.laySwitches(view);
       // without ads_management the page only reads (the switches would be refused)
@@ -230,37 +234,37 @@ module.exports = async (req, res) => {
     }
     if (body.action === 'creative_of') {
       const d = await edit.creativeOf(conn, body.adId);
-      if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }
+      if (d.error) { ME.log('ads-manager ' + body.action, d.error); res.status(400).json({ error: 'meta_refused', message: ME.action(d.error) }); return; }
       res.status(200).json(d);
       return;
     }
     if (body.action === 'active_ads') {
       const d = await edit.activeAds(conn);
-      if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }
+      if (d.error) { ME.log('ads-manager ' + body.action, d.error); res.status(400).json({ error: 'meta_refused', message: ME.action(d.error) }); return; }
       res.status(200).json(d);
       return;
     }
     if (body.action === 'details') {
       const d = await edit.details(conn, body.campaignId);
-      if (d.error) { res.status(400).json({ error: 'meta_refused', message: d.error }); return; }
+      if (d.error) { ME.log('ads-manager ' + body.action, d.error); res.status(400).json({ error: 'meta_refused', message: ME.action(d.error) }); return; }
       res.status(200).json(d);
       return;
     }
     if (body.action === 'edit_ad' || body.action === 'edit_adset') {
       const r = body.action === 'edit_ad' ? await edit.editAd(conn, body) : await edit.editAdset(conn, body);
-      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      if (r.error) { ME.log('ads-manager ' + body.action, r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error) }); return; }
       if (changes) await AC.clear().catch(() => {});
       res.status(200).json(r);
       return;
     }
     const r = await ads.act(conn, body);
-    if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+    if (r.error) { ME.log('ads-manager ' + body.action, r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error) }); return; }
     if (body.action === 'status') await AC.switched(String(body.id), body.status);
     if (changes) await AC.clear().catch(() => {});
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('ads-manager error:', err.message);
-    res.status(500).json({ error: 'ads_failed', message: err.message });
+    ME.log('ads-manager error', err && err.message);
+    res.status(500).json({ error: 'ads_failed', message: ME.ui(err && err.message) });
   }
 };
 

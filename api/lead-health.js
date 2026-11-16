@@ -428,8 +428,21 @@ async function verifyNumbers(monthQ) {
   const paidAt = new Set(); // clinic|key|day
   pays.forEach((s) => { const c = saleClinic(s); keysOf(s.clientId, s.clientPhone, s.client).forEach((k) => paidAt.add(c + '|' + k + '|' + s.date)); });
   const cameOf = (a, c) => a.status === 'finalizata' || !!a.paidSaleId || keysOf(a.clientId, a.clientPhone, a.clientName).some((k) => paidAt.has(c + '|' + k + '|' + a.date));
-  const late = (a) => { if (a.noShow) return true; const t = Date.parse(a.cancelledAt || a.updatedAt || ''); if (!Number.isFinite(t)) return false; const r = ro(t), s = hm(a.time); return r.day > a.date || (r.day === a.date && (s == null || r.min >= s)); };
+  // late: HighLevel's no-show, or cancelled (cancelledAt) at or after its hour; a record without cancelledAt: from the
+  // portal and made before the fix (16.11, 08:00 in Bucharest), its last change on the visit's own day at or after its hour; else ahead
+  const atOrAfter = (ms, a, sameDay) => { if (!Number.isFinite(ms)) return false; const r = ro(ms), s = hm(a.time); return (!sameDay && r.day > a.date) || (r.day === a.date && (s == null || r.min >= s)); };
+  const late = (a) => {
+    if (a.noShow) return true;
+    if (a.cancelledAt) return atOrAfter(Date.parse(a.cancelledAt), a, false);
+    if (a.createdBy === 'highlevel' || a.ghlId || a.importedAt) return false;
+    if (!(Date.parse(a.createdAt || '') < Date.parse('2026-11-16T06:00:00Z'))) return false;
+    return atOrAfter(Date.parse(a.updatedAt || ''), a, true);
+  };
   const isTest = (a) => /^\s*test\b/i.test(a.clientName || '');
+  // KPI's „came” (any clinic, her card id or her phone as written on the booking and the payment)
+  const paidKpi = new Set();
+  pays.forEach((s) => { if (s.clientId) paidKpi.add('c|' + s.clientId + '|' + s.date); const p = last9(s.clientPhone); if (p.length === 9) paidKpi.add('p|' + p + '|' + s.date); });
+  const cameKpi = (a) => a.status === 'finalizata' || !!a.paidSaleId || (!!a.clientId && paidKpi.has('c|' + a.clientId + '|' + a.date)) || (last9(a.clientPhone).length === 9 && paidKpi.has('p|' + last9(a.clientPhone) + '|' + a.date));
   const ghl = (a) => a.createdBy === 'highlevel' || !!a.ghlId || !!a.importedAt;
   const v2 = {}, checks = {};
   CITIES.forEach((city) => {
@@ -448,15 +461,17 @@ async function verifyNumbers(monthQ) {
       if (a.status === 'anulata' && !came) {
         if (!late(a)) { ex.cancelledAhead++; return; }
         ck.lateCancelNoShow++;
-        // what the „late” rests on: HighLevel's no-show, or only the record's last change (cancelledAt is never written)
+        // what the „late” rests on: HighLevel's no-show, the cancellation's own time (cancelledAt, from 16.11), or the record's last change
         const lc = ck.lateCancelBy, upd = Date.parse(a.updatedAt || ''), imp = Date.parse(a.importedAt || '');
         if (a.noShow) lc.noShowFlag++;
         else if (ghl(a)) { lc.highLevel++; if (Number.isFinite(upd) && Number.isFinite(imp) && Math.abs(upd - imp) < 120e3) lc.highLevelChangedOnlyByImport++; }
+        else if (a.cancelledAt) lc.cancelledAt = (lc.cancelledAt || 0) + 1;
         else if (/^Automat/.test(String(a.statusBy || ''))) lc.automatic++;
         else { lc.portal++; const start = Date.parse(a.date + 'T' + (a.time || '12:00') + ':00Z') - 2 * 3600e3; if (Number.isFinite(upd) && upd - start > 864e5) lc.portalChangedDayAfterOrLater++; }
       }
-      if (a.status === 'reprogramata' && !came) { ex.moved++; ck.movedPassedNotCame++; return; }
-      if (!came && a.status !== 'anulata') {
+      // „reprogramată” left on a passed day without her: a no-show (stays in due), counted apart
+      if (a.status === 'reprogramata' && !came) { ex.moved++; ck.movedPassedNotCame++; }
+      if (!came && a.status !== 'anulata' && a.status !== 'reprogramata') {
         ck.plainNoShow++;
         // a passed booking left „programată” / „confirmată” with no payment: a no-show, or a package session nobody closed?
         const pb = ck.plainNoShowBy, ks = keysOf(a.clientId, a.clientPhone, a.clientName);
@@ -495,14 +510,16 @@ async function verifyNumbers(monthQ) {
       return { e, days: daySet.size, lei, trainee: e.trainedOfficial === false };
     }).filter((p) => p.e.active !== false || p.days > 0);
     const inCond = people.filter((p) => !p.trainee && p.days > 0);
-    const consult = appts.filter((a) => a && a.status !== 'anulata' && a.status !== 'concediu' && !a.block && plain(a.treatment).includes('consulta') && apptClinic(a) === city &&
-      a.date >= mFrom && a.date <= mTo && (a.date < today || a.status === 'finalizata'));
+    // the consultations she came to (KPI's rule: finished, paid, or a payment that day with her card id or her phone)
+    const passed = appts.filter((a) => a && a.status !== 'anulata' && a.status !== 'concediu' && !a.block && plain(a.treatment).includes('consulta') && apptClinic(a) === city &&
+      a.date >= mFrom && a.date <= mTo && a.date <= today);
+    const consult = passed.filter(cameKpi);
     const pkg = pays.filter((s) => Number(s.upsell) > 0 || Number(s.packageTotal) > 0);
     const match = (a, s) => (a.clientId && s.clientId && a.clientId === s.clientId) || (last9(a.clientPhone).length === 9 && s.clientPhone && last9(s.clientPhone) === last9(a.clientPhone)) ||
       (!a.clientId && a.clientName && s.client && plain(a.clientName).replace(/\s+/g, ' ').trim() === plain(s.client).replace(/\s+/g, ' ').trim());
     const withUp = consult.filter((a) => pkg.some((s) => match(a, s) && s.date >= a.date && s.date <= shift(a.date, 7)));
     const collected = pays.filter((s) => saleClinic(s) === city && s.date >= mFrom && s.date <= mTo).reduce((n, s) => n + (Number(s.amount) || 0), 0);
-    m2[city] = { people, inCond, consults: consult.length, withUpsell: withUp.length, withUpsellCame: withUp.filter((a) => cameOf(a, city)).length, consultsNotCame: consult.filter((a) => !cameOf(a, city)).length, consultsNotCameByStatus: consult.filter((a) => !cameOf(a, city)).reduce((o, a) => { o[a.status || '-'] = (o[a.status || '-'] || 0) + 1; return o; }, {}), collected: round2(collected) };
+    m2[city] = { people, inCond, consults: consult.length, withUpsell: withUp.length, consultsNotCame: passed.filter((a) => !cameKpi(a)).length, consultsNotCameByStatus: passed.filter((a) => !cameKpi(a)).reduce((o, a) => { o[a.status || '-'] = (o[a.status || '-'] || 0) + 1; return o; }, {}), collected: round2(collected) };
   });
 
   // ---------------------------------------------------------------- production
@@ -515,7 +532,7 @@ async function verifyNumbers(monthQ) {
     // the KPI page's own show rate (bookings made in the portal from START on), over the same window, for comparison
     const kv = M.A.filter((a) => a.fresh && a.city === city && a.date >= wFrom && a.date <= wTo && a.due);
     // the cosmeticians: the Manager page (clinic.js cosmeticians) and the pay (manager-pay.js conditionOf)
-    const team = CL.cosmeticians(emps, N.sales, attendance, city, mFrom, mTo, N.appts).filter((x) => x.days > 0);
+    const team = CL.cosmeticians(emps, N.sales, attendance, city, mFrom, mTo, N.appts).filter((x) => x.days > 0 && !x.trainee);
     const cond = MP.conditionOf(emps, sales, attendance, [city], month, mTo);
     const condPeople = cond.people.filter((x) => x.days > 0);
     const mm = m2[city];
@@ -534,7 +551,7 @@ async function verifyNumbers(monthQ) {
         production: { due: vs.due, came: vs.came, noShow: vs.noShow, from: vs.from, to: vs.to, excluded: vs.excluded, target: p.target, noShowPct: p.noShow, targetFrom: p.from },
         second: { due: v.due, came: v.came, noShow: v.due - v.came, excluded: v.excluded, target: v.target, noShowPct: v.noShowPct, targetFrom: v.from },
         agree: vs.due === v.due && vs.came === v.came && p.target === v.target,
-        kpiPageShowRate: { due: kv.length, came: kv.filter((a) => a.came).length, note: 'Panou → KPI „au venit”: doar programările făcute în portal; „reprogramată” trecută intră aici ca neprezentare' },
+        kpiPageShowRate: { due: kv.length, came: kv.filter((a) => a.came).length, note: 'Panou → KPI „au venit”: doar programările făcute în portal (aceleași reguli: „reprogramată” trecută e neprezentare)' },
         checks: checks[city],
       },
       month: {
@@ -546,7 +563,7 @@ async function verifyNumbers(monthQ) {
           agreeManagerPage: team.length === mm.inCond.length && pageOk.size === mm.inCond.filter((x) => x.lei / x.days > 1500).length,
           rows,
         },
-        consults: { production: { total: cons.total, withUpsell: cons.withPackage, pct: cons.pct }, second: { total: mm.consults, withUpsell: mm.withUpsell, notCame: mm.consultsNotCame, notCameByStatus: mm.consultsNotCameByStatus, cameOnly: { total: mm.consults - mm.consultsNotCame, withUpsell: mm.withUpsellCame } }, agree: cons.total === mm.consults && cons.withPackage === mm.withUpsell },
+        consults: { production: { total: cons.total, withUpsell: cons.withPackage, pct: cons.pct }, second: { total: mm.consults, withUpsell: mm.withUpsell, passedNotCame: mm.consultsNotCame, notCameByStatus: mm.consultsNotCameByStatus }, agree: cons.total === mm.consults && cons.withPackage === mm.withUpsell },
         collections: { production: prodColl, pay: payColl, kpi: kpiColl, second: mm.collected, agree: Math.abs(prodColl - mm.collected) < 0.01 && Math.abs(payColl - mm.collected) < 0.01 && Math.abs(kpiColl - mm.collected) < 0.01 },
       },
     };
@@ -578,7 +595,7 @@ async function verifyNumbers(monthQ) {
     for (const [i, e] of mgrs.entries()) {
       const r = await MP.monthOf(readJSON, ctx, e, month, { full: true });
       const clin = r.clinics;
-      const coll = round2(clin.reduce((n, c) => n + (m2[c] ? m2[c].collected : 0), 0));
+      const coll = Math.round(clin.reduce((n, c) => n + (m2[c] ? m2[c].collected : 0), 0)); // whole lei, as the sheet
       const costSum = r.costs ? round2(r.costs.rows.reduce((n, x) => n + (Number(x.lei) || 0), 0)) : null;
       const cond = (() => { const ppl = clin.flatMap((c) => (m2[c] ? m2[c].inCond : [])); return ppl.length > 0 && ppl.every((x) => x.lei / x.days > 1500); })();
       const bonus2 = r.filled ? (cond ? Math.round(Math.max(0, coll - costSum) * 0.05) : 0) : null;

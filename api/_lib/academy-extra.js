@@ -307,7 +307,7 @@ const QUIZ = {
   'k-semnare': [
     Q('Ce capsezi de fișa de client?', ['Pagina 1 și pagina acceptată', 'Toate paginile', 'Nimic'], 0, 'Un exemplar rămâne la centru, o copie primește clienta.'),
     Q('La plata în tranșe, ce mai completezi?', ['Coloana „Se achită la” și valoarea fiecărei tranșe', 'Numărul cardului', 'Nimic'], 0, 'Tranșa 2 la ședința 2 și așa mai departe.'),
-    Q('Cine semnează?', ['Doar clienta', 'Clienta și specialista', 'Managerul'], 1, 'Amândouă, după ce clienta a citit condițiile.'),
+    Q('Cine semnează?', ['Doar clienta', 'Clienta și specialista', 'Colega de la recepție'], 1, 'Amândouă, după ce clienta a citit condițiile.'),
   ],
 };
 
@@ -648,7 +648,7 @@ const PATHS = {
     day('Bun venit și începutul apelului', [both('m:apel/t-principiu'), both('m:apel/t-deschidere'), both('m:programare/p-5min'), [it('task', '', 'Stai lângă o colegă la recepție și ascultă cel puțin 5 apeluri.'), it('task', '', 'Învață Calendarul, Contactele și Pipeline-ul cu o colegă.')]]),
     day('Întrebările și recomandarea', [both('m:apel/t-diagnostic'), both('m:apel/t-recomandare'), [it('read', 's:restart'), it('task', '', 'Fă 5 apeluri la leaduri, cu o colegă lângă tine.')]]),
     day('Închiderea și confirmarea', [both('m:apel/t-inchidere'), both('m:apel/t-confirmare'), both('m:programare/p-programare'), both('m:programare/p-confirmari'), [it('task', '', 'Urmărește confirmările pentru programările de mâine și sună-le pe cele care nu au răspuns.')]]),
-    day('Ofertele și obiecțiile', [both('m:apel/t-oferte'), both('m:apel/t-obiectii'), [it('read', 's:hifu-fata'), it('read', 's:liposonix'), it('read', 's:epilare'), it('task', '', 'Un apel de probă cu managerul: tu ești la recepție, el e clienta.')]]),
+    day('Ofertele și obiecțiile', [both('m:apel/t-oferte'), both('m:apel/t-obiectii'), [it('read', 's:hifu-fata'), it('read', 's:liposonix'), it('read', 's:epilare'), it('task', '', 'Un apel de probă cu o colegă: tu ești la recepție, ea e clienta.')]]),
     day('Reguli și cliente care revin', [both('m:apel/t-interzis'), both('m:programare/p-anulari'), both('m:programare/p-revenire'), [it('read', 'm:programare/p-mesaje'), it('task', '', 'O zi întreagă singură la recepție, cu verificare la final.')]]),
   ],
   cosmetician: [

@@ -45,11 +45,26 @@ const ROUTES = {
   'ads-publish': { area: 'Reclame', go: 'reclame' },
   'portal-manager': { area: 'Manager', go: 'manager' },
   'portal-legal': { area: 'Acte și autorizații', go: 'acte' },
+  'portal-followups': { area: 'De sunat și pachete', go: 'programari' },
+  'portal-plati': { area: 'Cheltuieli', go: 'cheltuieli' },
+  'portal-salariu': { area: 'Costuri lunare și bonus', go: 'cheltuieli' },
+  'portal-content': { area: 'Content', go: 'continut' },
+  'portal-candidates': { area: 'Angajări', go: 'pipeline' },
+  'portal-booking': { area: 'Programări online', go: 'programari' },
 };
 // what is only read (never a line), and routes that are not changes of the clinic's work
 const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_all', 'timebank', 'adjust_list', 'check', 'discover', 'profile_get',
   'details', 'defaults', 'fb_form_info', 'form_info', 'push_key', 'push_test', 'push_on', 'push_off', 'prefs', 'login_config', 'tpl_sync', 'media_image', 'sync', 'step', 'pause', 'test',
   'transcribe', 'stats', 'context', 'feedback_list', 'close_prefill', 'closes_list', 'pos', 'report_draft', 'reports_list']; // (a voice note written out in Mesaje: no change of the clinic's work)
+// what only reads in one route (an action name another route uses for a change stays a change there)
+const READS_IN = {
+  'portal-followups': ['free', 'packages', 'counts', 'recontact', 'people', 'sheet'],
+  'portal-appointments': ['orphans'],
+  'portal-employees': ['manual_list'],
+  'portal-incasari': ['dues'],
+  'portal-content': ['results', 'gallery'],
+  'portal-nuki': ['chat', 'reply', 'slot'],
+};
 const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-creative-sso', 'portal-file', 'portal-leave-pdf', 'portal-avatar', 'portal-data', 'portal-login', 'portal-logout', 'portal-activity', 'portal-game'];
 
 // the words for each change (route:action; route: for the routes without actions)
@@ -92,6 +107,17 @@ const VERBS = {
   'portal-account:photo_delete': 'și-a scos poza', 'portal-account:username': 'și-a schimbat utilizatorul',
   'ads-manager:edit_ad': 'a modificat o reclamă', 'ads-manager:edit_adset': 'a modificat un set de reclame',
   'portal-academy:read': 'a citit', 'portal-academy:quiz': 'a dat testul', 'portal-academy:case': 'a rezolvat cazul',
+  'portal-followups:resolve': 'a rezolvat de pe lista de sunat', 'portal-followups:unresolve': 'a pus înapoi pe lista de sunat',
+  'portal-followups:attempt': 'a notat un apel la', 'portal-followups:sheet_save': 'a scris discuția lunară pentru',
+  'portal-plati:pay': 'a bifat ca plătit', 'portal-plati:unpay': 'a scos bifa de plătit', 'portal-plati:note': 'a scris o notă la o plată',
+  'portal-plati:rec_add': 'a adăugat o cheltuială', 'portal-plati:rec_del': 'a șters o cheltuială',
+  'portal-salariu:costs_save': 'a salvat costurile lunii', 'portal-salariu:final_set': 'a stabilit bonusul lunii',
+  'portal-salariu:propose': 'a trimis costurile variabile ale lunii', 'portal-salariu:proposal_decide': 'a decis costurile trimise',
+  'portal-content:settings': 'a schimbat setările de content', 'portal-content:apply_hours': 'a pus orele recomandate', 'portal-content:approve': 'a aprobat un clip',
+  'portal-content:redo': 'a cerut refacerea unui clip', 'portal-content:unreview': 'a anulat o decizie pe un clip', 'portal-content:approve_week': 'a aprobat săptămâna',
+  'portal-content:approve_all': 'a aprobat tot ce aștepta', 'portal-content:fav': 'a marcat un favorit', 'portal-content:captions': 'a modificat textul unui clip',
+  'portal-content:post_now': 'a postat acum', 'portal-content:skip': 'a scos o postare', 'portal-content:idea_add': 'a adăugat o idee', 'portal-content:idea_del': 'a șters o idee',
+  'portal-candidates:': 'a schimbat o candidată',
   'portal-academy:task': 'a bifat sarcina', 'portal-academy:confirm': 'a decis sarcina', 'portal-academy:path': 'a setat drumul de început pentru',
 };
 const generic = (a) => (/create|add|new/.test(a) ? 'a adăugat' : /delete|remove/.test(a) ? 'a șters' : 'a modificat');
@@ -137,10 +163,10 @@ async function whoName(id) {
     const map = new Map();
     (await readJSON('data/employees.json', [])).forEach((e) => map.set(e.id, e.name));
     const admin = await readJSON('data/admin-profile.json', {});
-    if (!map.has('admin')) map.set('admin', (admin && admin.name) || 'Admin');
+    if (!map.has('admin')) map.set('admin', (admin && String(admin.name || '').trim()) || 'George');
     people = { at: Date.now(), map };
   }
-  return people.map.get(id) || (id === 'admin' ? 'Admin' : 'Cineva');
+  return people.map.get(id) || (id === 'admin' ? 'George' : 'Cineva');
 }
 
 // the words for one change
@@ -214,7 +240,8 @@ function watch(req, res, session) {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     if (typeof body.type === 'string' && body.type.startsWith('blob.')) return;
     const action = String(body.action || (req.method === 'DELETE' ? 'delete' : ''));
-    if (READS.includes(action)) return;
+    if (READS.includes(action) || (READS_IN[route] || []).includes(action)) return;
+    if (route === 'portal-content' && req.query && req.query.upload) return; // a file of reference on its way (the change is the „De refăcut” after it)
     res.__activity = true;
     const r = route === 'portal-config' && body.academy ? { area: 'Traininguri', go: 'traininguri' } : ROUTES[route] || { area: route.replace(/^portal-/, ''), go: '' };
     // the thing as it was, read before the route changes it
@@ -249,4 +276,4 @@ async function lines(days) {
   return all.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 3000);
 }
 
-module.exports = { watch, lines, describe, append, dayOf };
+module.exports = { watch, lines, describe, append, dayOf, whoName };

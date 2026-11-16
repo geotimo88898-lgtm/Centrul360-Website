@@ -12,6 +12,7 @@
 // The publishing itself lives in _lib/meta-ads.js.
 
 const crypto = require('crypto');
+const ME = require('./_lib/meta-error');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { getSession } = require('./_lib/auth');
 const { loadConnection, appCreds } = require('./_lib/facebook');
@@ -94,7 +95,7 @@ async function results(sinceQ) {
   // the same answer for half an hour (Meta limits how often the account is read)
   const AC = require('./_lib/ads-cache');
   const view = await AC.cached('results-' + since + '_' + today, 30 * 60e3, () => ads.overview(conn, 'custom', range));
-  if (view.error) return { ok: false, reason: 'meta_error', message: view.error, ads: [] };
+  if (view.error) { ME.log('ads results', view.error); return { ok: false, reason: 'meta_error', message: ME.ui(view.error), ads: [] }; }
   await AM.withFunnel(view, 'custom', range, conn).catch((e) => { console.error('results funnel:', e.message); });
   const out = [];
   (view.campaigns || []).forEach((c) => (c.adsets || []).forEach((s) => (s.ads || []).forEach((a) => out.push({
@@ -116,7 +117,7 @@ async function daily(sinceQ) {
   const since = /^\d{4}-\d{2}-\d{2}$/.test(String(sinceQ || '')) && sinceQ <= today ? String(sinceQ) : back;
   const AC = require('./_lib/ads-cache');
   const r = await AC.cached('daily-' + since + '_' + today, 30 * 60e3, () => ads.adDays(conn, { since, until: today }));
-  if (r.error) return { ok: false, reason: 'meta_error', message: r.error, rows: [] };
+  if (r.error) { ME.log('ads daily', r.error); return { ok: false, reason: 'meta_error', message: ME.ui(r.error), rows: [] }; }
   return { ok: true, since, until: today, rows: r.rows };
 }
 
@@ -157,7 +158,7 @@ module.exports = async (req, res) => {
         if (o) input.offerId = o.id;
       }
       const r = await createForm({ readJSON, writeJSON }, input);
-      if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+      if (r.error) { ME.log('ads-publish', r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error) }); return; }
       const offer = offersAll.find((o) => o.id === r.form.offerId);
       res.status(200).json({ ok: true, form: { id: r.form.id, name: r.form.name, lastAt: '', created: new Date().toISOString(), offer: offer ? offer.title : '', location: r.form.location } });
       return;
@@ -177,7 +178,7 @@ module.exports = async (req, res) => {
     if (v.error) { res.status(400).json({ error: v.error, message: SETTINGS[v.error] || v.error }); return; }
 
     const r = await ads.publish(conn, { base64: image.base64, name: String(image.name || 'creative.jpg').slice(0, 80) }, v.s);
-    if (r.error) { res.status(400).json({ error: 'meta_refused', message: r.error }); return; }
+    if (r.error) { ME.log('ads-publish', r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error) }); return; }
     const url = ads.adsManagerUrl(conn.adAccountId, r.campaignId);
     // what was published, for the record (Creative keeps its own link too)
     const log = await readJSON(LOG_KEY, []);
@@ -186,8 +187,8 @@ module.exports = async (req, res) => {
     await writeJSON(LOG_KEY, log.slice(0, 300));
     res.status(200).json(Object.assign({ ok: true, url }, r));
   } catch (err) {
-    console.error('ads-publish error:', err.message);
-    res.status(500).json({ error: 'publish_failed', message: 'Eroare la publicare: ' + err.message });
+    ME.log('ads-publish error', err && err.message);
+    res.status(500).json({ error: 'publish_failed', message: 'Reclama nu s-a publicat: ' + ME.ui(err && err.message) });
   }
 };
 

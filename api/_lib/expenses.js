@@ -164,8 +164,8 @@ async function run() {
   };
   const owners = await N.ownerIds({ readJSON });
   const store = { readJSON, writeJSON };
-  if (due.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'warn', go: 'angajati', tag: 'plati-azi-' + day, title: due.length === 1 ? 'DE PLĂTIT AZI 💳' : due.length + ' PLĂȚI AZI 💳', text: say(due) + '. Echipa → Costuri → Plăți.' });
-  if (late.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'bad', go: 'angajati', tag: 'plati-late-' + day, title: late.length === 1 ? 'PLATĂ ÎNTÂRZIATĂ ⚠️' : late.length + ' PLĂȚI ÎNTÂRZIATE ⚠️', text: say(late) + (late.length === 1 ? '. Bifeaz-o când e plătită.' : '. Bifează-le când sunt plătite.') });
+  if (due.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'warn', go: 'cheltuieli', tag: 'plati-azi-' + day, title: due.length === 1 ? 'DE PLĂTIT AZI 💳' : due.length + ' PLĂȚI AZI 💳', text: say(due) + '. Cheltuieli → Plăți.' });
+  if (late.length) await N.notifyMany(store, owners, { kind: 'alert', tone: 'bad', go: 'cheltuieli', tag: 'plati-late-' + day, title: late.length === 1 ? 'PLATĂ ÎNTÂRZIATĂ ⚠️' : late.length + ' PLĂȚI ÎNTÂRZIATE ⚠️', text: say(late) + (late.length === 1 ? '. Bifeaz-o când e plătită.' : '. Bifează-le când sunt plătite.') });
   due.concat(late).forEach((r) => { st.sent[r.k] = new Date().toISOString(); });
   // the marks of months long gone are dropped
   const keepFrom = prevMonth(prevMonth(cur));

@@ -178,7 +178,8 @@ function missedItems(D, clinics, today) {
     if (!a || !clinics.includes(a.location) || a.status === 'concediu' || a.block || isTest(a.clientName)) return;
     const cancelled = a.status === 'anulata';
     const cancelAt = cancelled ? B.roNow(Date.parse(a.cancelledAt || a.updatedAt || '') || Date.parse(a.date + 'T12:00:00Z')).date : '';
-    const noShow = !cancelled && a.status !== 'reprogramata' && a.date < today && a.date >= from && !came(a, paid);
+    // a passed booking she didn't come to, „reprogramată” left on the old day included (the same rule as api/_lib/clinic.js)
+    const noShow = !cancelled && a.date < today && a.date >= from && !came(a, paid);
     const cancel = cancelled && a.date >= from && cancelAt >= from && !came(a, paid);
     if (!noShow && !cancel) return;
     const ids = idsOf(a.clientId, a.clientPhone, a.clientName);
@@ -455,7 +456,7 @@ async function counts(clinics) {
 function monthNumbers(D, emp, month, today) {
   const from = month + '-01', end = monthEnd(month), to = end < today ? end : today;
   if (from > today) return { month, empty: true };
-  const team = C.cosmeticians(D.emps, D.sales, D.attendance, emp.location, from, to, D.appts);
+  const team = C.cosmeticians(D.emps, D.sales, D.attendance, C.clinicOf(emp.location) || emp.location, from, to, D.appts);
   const me = team.find((x) => x.id === emp.id) || { days: 0, collected: 0, perDay: 0, ok: false, consults: { total: 0, withPackage: 0, pct: null } };
   // her clients' visits up to yesterday: came or not (the same rules as the calendar's target, api/_lib/clinic.js)
   const yesterday = addDay(today, -1), last = to < yesterday ? to : yesterday;
@@ -466,7 +467,7 @@ function monthNumbers(D, emp, month, today) {
     const c = came(a, paid);
     if (a.status === 'anulata' && !c && !C.lateCancel(a)) { cancelled++; return; }
     if (a.date > last) return;
-    if (a.status === 'reprogramata' && !c) return;
+    // „reprogramată” still on a passed day without her: a no-show, as everywhere (api/_lib/clinic.js visitStats)
     const k = (idsOf(a.clientId, a.clientPhone, a.clientName)[0] || a.id) + '|' + a.date + '|' + fold(a.treatment);
     if (seen.has(k)) return;
     seen.add(k); due++; if (c) cameN++;
@@ -548,6 +549,17 @@ async function morningItems(clinics, opts) {
   const open = worked.filter((c) => !(closes || []).some((x) => x && x.city === c && x.date === yesterday));
   if (open.length) items.push({ kind: 'inchidere', count: open.length, go: 'manager/casa', tone: 'warn',
     title: 'ZIUA DE IERI NEÎNCHISĂ 🧾', text: open.join(', ') + ': casa de pe ' + yesterday.slice(8, 10) + '.' + yesterday.slice(5, 7) + ' nu e închisă', short: 'ziua de ieri neînchisă' });
+  // the manager's: the packages started without a next booking and who is due to be called again now (the two numbers of
+  // Panou → Azi → De făcut, counts() above), only when not zero
+  if (team && o.followups !== false) {
+    const fu = await counts(clinics).catch((e) => { console.error('followups morning counts:', e.message); return null; });
+    if (fu && fu.packagesUnbooked) items.push({ kind: 'pachete', count: fu.packagesUnbooked, go: 'programari/pachete', tone: 'info',
+      title: fu.packagesUnbooked === 1 ? 'UN PACHET FĂRĂ PROGRAMARE 🎁' : fu.packagesUnbooked + ' PACHETE FĂRĂ PROGRAMARE 🎁', text: where(clinics.map((c) => [c, (fu.cities[c] || {}).packagesUnbooked || 0]).filter((x) => x[1])) + ' · ședința următoare nu e programată',
+      short: fu.packagesUnbooked + (fu.packagesUnbooked === 1 ? ' pachet fără programare' : ' pachete fără programare') });
+    if (fu && fu.callAgain) items.push({ kind: 'resunat', count: fu.callAgain, go: 'programari/resunat', tone: 'info',
+      title: fu.callAgain === 1 ? 'O CLIENTĂ DE RESUNAT 📞' : fu.callAgain + ' CLIENTE DE RESUNAT 📞', text: where(clinics.map((c) => [c, (fu.cities[c] || {}).callAgain || 0]).filter((x) => x[1])) + ' · de resunat acum',
+      short: fu.callAgain + ' de resunat acum' });
+  }
   return items;
 }
 async function morning(opts) {

@@ -106,14 +106,15 @@ function searchClients(query, allClients) {
 }
 
 // Someone who wrote on WhatsApp and isn't in Contacte yet (no client, no lead with that number) becomes a
-// contact: source "whatsapp", the city of the number she wrote to, her WhatsApp name if it shows one.
+// contact: source "whatsapp", the city of the number she wrote to, her WhatsApp name if it shows one. A candidate of a
+// job ad (data/candidates.json) never does: she is not a client, and her chat is only for George and the manager (16.11).
 // people: [{ phone, name, location }]. One read, at most one write. Returns how many were added.
 async function ensureContacts(people, { readJSON, writeJSON }) {
   const key = (p) => String(p || '').replace(/\D/g, '').slice(-9);
   const want = (people || []).filter((p) => key(p.phone).length === 9);
   if (!want.length) return 0;
-  const [clients, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', [])]);
-  const known = new Set(clients.map((c) => key(c.phone)).concat(leads.map((l) => key(l.phone))));
+  const [clients, leads, cands] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', []), readJSON('data/candidates.json', [])]);
+  const known = new Set(clients.map((c) => key(c.phone)).concat(leads.map((l) => key(l.phone)), (Array.isArray(cands) ? cands : []).filter((x) => x && !x.test).map((x) => key(x.phone))));
   const today = todayISO();
   let added = 0;
   want.forEach((p) => {

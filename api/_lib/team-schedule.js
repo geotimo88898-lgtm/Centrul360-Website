@@ -77,9 +77,12 @@ function dayOf(doc, employeeId, date) {
 
 // where and when she works that day ({ from, to, location }), or null (off, on leave, nothing set). With a time: only
 // when that minute is inside her hours.
+// opts.until (Map id → last working day, the ones who left, „A plecat”): she works up to that day, never after it,
+// whatever opts.ids (the active ones) says, so a past day keeps her shifts and a day after it has none
 function workingAt(doc, employeeId, date, time, opts) {
   const o = opts || {};
-  if (o.ids && !has(o.ids, employeeId)) return null;
+  if (o.until && o.until.has(employeeId)) { if (!(date <= o.until.get(employeeId))) return null; }
+  else if (o.ids && !has(o.ids, employeeId)) return null;
   const d = dayOf(doc, employeeId, date);
   if (!d || !d.on || toMin(d.from) == null || toMin(d.to) == null || toMin(d.to) <= toMin(d.from)) return null;
   if (onLeave(o.appts, employeeId, date)) return null;
@@ -88,7 +91,8 @@ function workingAt(doc, employeeId, date, time, opts) {
 }
 const has = (ids, id) => (ids instanceof Set ? ids.has(id) : Array.isArray(ids) ? ids.includes(id) : true);
 
-// who works in a city that day: [{ employeeId, from, to }] by start. opts: { appts (for leave), ids (the active ones) }
+// who works in a city that day: [{ employeeId, from, to }] by start. opts: { appts (for leave), ids (the active ones),
+// until (the ones who left, up to their last day) }
 function whoWorks(doc, date, location, opts) {
   const o = opts || {};
   const ids = new Set(Object.keys(doc.weekly || {}).concat(Object.keys((doc.dates && doc.dates[date]) || {})));

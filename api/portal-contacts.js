@@ -101,6 +101,16 @@ const formsOf = (leads) => leads.reduce((all, l) => all.concat(l.forms || []), [
 const goodPhone = (p) => { const n = normalizePhone(p); return /^0\d{9}$/.test(n) || /^\d{9,15}$/.test(String(p || '').replace(/\D/g, '')) && String(p || '').trim().startsWith('+'); };
 const goodEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || '').trim());
 
+// for reception and the cosmeticians: a contact that is only a job ad's candidate (made from her WhatsApp chat, never a
+// visit or a payment) → true. George and the manager see everyone.
+async function candidateOnly(session) {
+  if (require('./_lib/roles').canManage(session)) return () => false;
+  const k9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  const cand = new Set((await readJSON('data/candidates.json', [])).filter((x) => x && !x.test).map((x) => k9(x.phone)).filter((x) => x.length === 9));
+  if (!cand.size) return () => false;
+  return (c) => !!c && c.source === 'whatsapp' && cand.has(k9(c.phone)) && !c.sessionsCount && !c.notesCount && !c.filesCount && !c.photosCount;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
   const session = await requireAuth(req, res);
@@ -119,7 +129,10 @@ module.exports = async (req, res) => {
       const [clients, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', [])]);
       const phones = new Set(clients.map((c) => normalizePhone(c.phone)).filter(Boolean));
       const city = await cityOf(session, readJSON, employees);
-      const all = clients.map((c) => contactRow(c)).concat(
+      // the candidates of the job ads: a contact made only from her WhatsApp chat is not a client; reception and the
+      // cosmeticians don't see it (the hiring chats are George's and the manager's, 16.11)
+      const hidden = await candidateOnly(session);
+      const all = clients.filter((c) => !hidden(c)).map((c) => contactRow(c)).concat(
         leads.filter((l) => l.phone && !phones.has(normalizePhone(l.phone))).map(leadRow)).filter((c) => inCity(city, c.location));
       const q = norm(body.q).trim();
       const qDigits = String(body.q || '').replace(/\D/g, '');
@@ -209,6 +222,7 @@ module.exports = async (req, res) => {
       lead = leads.find((l) => l.id === id.slice(5));
       if (!lead) return fail(404, 'contact_not_found');
     } else if (!client) return fail(404, 'contact_not_found');
+    if (client && (await candidateOnly(session))(client)) return fail(404, 'contact_not_found');
     // a cosmetician sees her city only, the sheet as much as the list
     if (session.role === 'cosmetician' || session.role === 'manager') { // the manager: the clinics she runs
       const myCity = await cityOf(session, readJSON, await readJSON('data/employees.json', []));

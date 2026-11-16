@@ -58,7 +58,7 @@ async function append(key, row) {
 }
 
 // the clinic's numbers (the same on the KPI page): api/_lib/clinic.js
-const { visit, isConsult, fill, fillTargets, cosmeticians, consults, leadSpeed, waitingNow, showRate, normalize } = require('./_lib/clinic');
+const { visit, isConsult, fill, fillTargets, cosmeticians, consults, leadSpeed, waitingNow, showRate, normalize, paidDays, cameBy } = require('./_lib/clinic');
 
 async function load() {
   const [emps, sales, appts, attendance, leads, convos, cfg, clients] = await Promise.all([
@@ -81,10 +81,11 @@ async function stats(month, mine) {
   const cities = {};
   mine.forEach((city) => {
     const team = cosmeticians(D.emps, D.sales, D.attendance, city, from, to, D.appts);
-    const counted = team.filter((x) => x.days > 0);
+    // the bonus condition: the trained ones who worked (someone „în formare” is shown, not counted: _lib/manager-pay.js)
+    const counted = team.filter((x) => x.days > 0 && !x.trainee);
     cities[city] = {
       team,
-      bonus: { ok: counted.length > 0 && counted.every((x) => x.ok), counted: counted.length, below: counted.filter((x) => !x.ok).length },
+      bonus: { ok: counted.length > 0 && counted.every((x) => x.ok), counted: counted.length, below: counted.filter((x) => !x.ok).length, trainees: team.filter((x) => x.trainee && x.days > 0).length },
       fillMonth: fill(D.cfg, city, from, to, D.appts, tg[city].target),
       fillAhead: fill(D.cfg, city, now.date, addDay(now.date, 6), D.appts, tg[city].target),
       fillTarget: tg[city],
@@ -107,7 +108,7 @@ async function context(city) {
   // the leads of the last 7 days and what they became (the KPI funnel's rules, api/_lib/kpi.js): answered when called = a call or
   // message noted with an answer (anything but „nu răspunde” / „număr greșit”), or booked
   const K = require('./_lib/kpi');
-  const M = K.model({ leads: D.leads, appointments: D.appts, sales: D.sales, clients: D.clients, conversations: D.convos });
+  const M = K.model({ leads: D.leads, appointments: D.appts, sales: D.sales, clients: D.clients, conversations: D.convos, candidates: await require('./_lib/wa-waiting').candidates().catch(() => null) });
   const raw = new Map(D.leads.map((l) => [l.id, l]));
   const L7 = M.L.filter((l) => l.fresh && l.city === city && l.at >= since);
   const f7 = K.funnelOf(L7);
@@ -166,6 +167,8 @@ async function posOf(city, from, to) {
 function weekNumbers(D, monday, mine) {
   const sunday = addDay(monday, 6);
   const out = {};
+  // she came: the KPI page's rule (finished, paid, or she paid something that day: api/_lib/clinic.js cameBy)
+  const paid = paidDays(D.sales);
   mine.forEach((city) => {
     const inc = D.sales.filter((s) => s.source === 'incasare' && (s.location || '') === city && s.date >= monday && s.date <= sunday);
     const team = cosmeticians(D.emps, D.sales, D.attendance, city, monday, sunday);
@@ -176,8 +179,8 @@ function weekNumbers(D, monday, mine) {
     out[city] = {
       collected: r2(inc.reduce((a, s) => a + (Number(s.amount) || 0), 0)), payments: inc.length,
       perDayAvg: worked.length ? Math.round(worked.reduce((a, x) => a + x.perDay, 0) / worked.length) : 0,
-      team: team.map((x) => ({ name: x.name, days: x.days, collected: x.collected, perDay: x.perDay })),
-      booked: made.length, visits: visits.length, shows: visits.filter((a) => a.status === 'finalizata').length, cancelled: cancelled.length,
+      team: team.map((x) => ({ name: x.name, days: x.days, collected: x.collected, perDay: x.perDay, ...(x.trainee ? { trainee: true, label: x.label } : {}) })),
+      booked: made.length, visits: visits.length, shows: visits.filter((a) => cameBy(a, paid)).length, cancelled: cancelled.length,
       consults: consults(D.appts, D.sales, city, monday, sunday),
       leads: D.leads.filter((l) => l.location === city && roDay(l.createdAt) >= monday && roDay(l.createdAt) <= sunday).length,
     };

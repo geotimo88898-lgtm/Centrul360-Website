@@ -82,7 +82,8 @@ module.exports = async (req, res) => {
     if (!scopeOk(scope, employees) || (scope.startsWith('salon:') && !cities.includes(scope.slice(6)))) return fail(400, 'invalid_scope');
     const box = data.scopes[scope] = data.scopes[scope] || { items: {}, custom: [] };
     box.items = box.items || {}; box.custom = box.custom || [];
-    const author = session.name || session.username || 'Admin';
+    // who did it, by her real name (the owner's from his profile), never a role (16.11)
+    const author = await require('./_lib/activity').whoName(session.employeeId);
     const save = async () => { await writeJSON(KEY, data); return answer(); };
 
     if (b.action === 'custom_add') {

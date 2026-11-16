@@ -140,7 +140,7 @@ const TOOLS = [
   },
   {
     name: 'propune_modificare',
-    description: 'Propune proprietarului o modificare în Traininguri. Nu salvează nimic: el vede cum e acum și cum ar fi, și o aplică el cu un buton. ' +
+    description: 'Propune-i lui George o modificare în Traininguri. Nu salvează nimic: el vede cum e acum și cum ar fi, și o aplică el cu un buton. ' +
       'Trimite doar câmpurile care se schimbă, fiecare cu valoarea nouă întreagă (la liste: toate rândurile, în ordine, nu doar cele noi). ' +
       'Câmpuri: fișa de tratament: name, minutes, sessions, interval, pack, what, forWho, benefits, phone, contra, steps, settings, say, after ' +
       '(sessions: doar numărul sau intervalul de ședințe, ex. „4” sau „6-8”, pe pagină apare „4 ședințe”; interval: cât de des, ex. „o dată pe lună”; ' +
@@ -151,7 +151,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         ref: { type: 'string', description: 'Ref-ul din listă.' },
-        rezumat: { type: 'string', description: 'Ce schimbi, într-o propoziție scurtă, pentru proprietar.' },
+        rezumat: { type: 'string', description: 'Ce schimbi, într-o propoziție scurtă, pentru George.' },
         campuri: { type: 'object', description: 'Câmpul → valoarea nouă.', additionalProperties: true },
       },
       required: ['ref', 'campuri'],

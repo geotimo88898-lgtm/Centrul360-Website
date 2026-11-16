@@ -100,8 +100,11 @@ function offerMatcher(offers) {
 }
 
 // who came from where: leads, bookings and payments, linked
-function model({ offers = [], leads = [], appointments = [], sales = [], clients = [], conversations = [], now }) {
+// candidates (a Set of the job ads' candidates' numbers, last 9 digits, api/_lib/wa-waiting.js candidates()): their chats
+// are not the clinic's clients, so they are never in the messages' numbers (the same as Mesaje's „fără răspuns”)
+function model({ offers = [], leads = [], appointments = [], sales = [], clients = [], conversations = [], candidates = null, now }) {
   const START = cfg.start, NOW = now || Date.now(), today = bucharestDay(NOW);
+  if (candidates && candidates.size) conversations = conversations.filter((c) => !candidates.has(digits9(c && c.phone)));
   const offerOf = offerMatcher(offers);
   const phoneOfClient = new Map(clients.map((c) => [c.id, digits9(c.phone)]));
   // a human's first message to a number on WhatsApp (reception, from the portal or the phone's app)

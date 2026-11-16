@@ -104,9 +104,11 @@ const hours = [9, 10, 11, 12, 13, 14, 16, 17];
   if (st === 'finalizata' && i % 3) sales.push({ id: id('s'), source: 'incasare', employeeId: 'e-mgr', performedBy: loc === 'Arad' ? 'e-c3' : 'e-c1', appointmentId: aid, clientId: 'cl-t-' + li + i, client: 'Azi', date: TODAY, location: loc,
     amount: 450 + i * 100, upsell: i === 1 ? 2400 : 0, method: i === 1 ? 'card' : 'cash', status: 'recorded', createdAt: at(TODAY, h, 50), treatment: 'Lipo 640' });
 }));
+// today's leads came in the past (never after the harness's clock: a lead „in 2 hours” counts nowhere), in the first
+// column of the Pipeline (lead_nou, as the real ones), with a mobile number written as the desk writes it (07…)
 ['Timișoara', 'Arad', 'Timișoara'].forEach((loc, i) => {
-  const c = at(TODAY, 9 + i * 2, 5), ad = ADS[loc][i % 2];
-  leads.push({ id: id('l'), name: 'Lead azi ' + i, phone: '0799' + String(100000 + i * 37), source: 'facebook', createdBy: 'facebook-webhook', location: loc, stage: 'nou', createdAt: c, interest: 'Lipo 640',
+  const c = new Date(Math.min(Date.parse(at(TODAY, 9 + i * 2, 5)), Date.now() - (3 - i) * 25 * 60e3)).toISOString(), ad = ADS[loc][i % 2];
+  leads.push({ id: id('l'), name: 'Lead azi ' + i, phone: '07' + String(45000000 + i * 3719).padStart(8, '0'), source: 'facebook', createdBy: 'facebook-webhook', location: loc, stage: 'lead_nou', createdAt: c, interest: 'Lipo 640',
     forms: [{ adId: ad[0], campaignId: ad[1], ad: ad[2], at: c }],
     activities: [{ id: id('ac'), type: 'created', at: c, author: '' }].concat(i < 2 ? [{ id: id('ac'), type: 'contact', at: new Date(Date.parse(c) + (i ? 14 : 3) * 60e3).toISOString(), author: 'Ioana Proba' }] : []) });
 });

@@ -242,7 +242,9 @@ module.exports = async (req, res) => {
 
     // Mesaje: unread client messages (reception: those of her city and the ones not tied to a city), and Instagram's
     const myCity = !isAdmin && me.role === 'receptie' ? me.location : manages || '';
-    const waUnread = waConvos.filter((c) => c.unreadCount && inCity(myCity, c.location)).length + igUnread;
+    // the hiring chats (job ads' candidates) are George's and the manager's: not in anyone else's count (as in Mesaje)
+    const hire = isAdmin || me.role === 'manager' ? null : new Set((await readJSON('data/candidates.json', [])).filter((x) => x && !x.test).map((x) => String(x.phone || '').replace(/\D/g, '').slice(-9)).filter((x) => x.length === 9));
+    const waUnread = waConvos.filter((c) => c.unreadCount && inCity(myCity, c.location) && !(hire && hire.has(String(c.phone || '').replace(/\D/g, '').slice(-9)))).length + igUnread;
     const payload = {
       // the owner gets the alerts meant for it (new leads); the team also its bonus reminders
       waUnread,

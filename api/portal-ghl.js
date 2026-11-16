@@ -24,6 +24,8 @@ const BUDGET = 40e3;
 const detailPath = (cid) => 'data/contacts/' + cid + '.json';
 const emptyDetail = () => ({ notes: [], files: [], sessions: [], consent: null, published: [] });
 const nowISO = () => new Date().toISOString();
+// a GHL time as an ISO instant ('' when it has none; a zoneless one is Bucharest's clock)
+const isoOf = (t) => { if (!t) return ''; const ms = G.msOf(t); return Number.isFinite(ms) ? new Date(ms).toISOString() : ''; };
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 const zero = () => ({ contacts: 0, created: 0, updated: 0, skipped: 0, notes: 0, messages: 0, appointments: 0, apptsUpdated: 0 });
 const newAccJob = () => ({ phase: 'contacts', cursor: null, queue: [], pos: 0, total: 0, counts: zero(), done: false });
@@ -220,7 +222,10 @@ function apptOf(e, conn, client) {
   const cat = CATS.includes(mapped.category) ? mapped.category : 'corporale';
   const calName = (cals.get(e.calendarId) || {}).name || '';
   const t = titleOf(e, client);
+  // when HighLevel says it was cancelled (its last change); none known: lateCancel reads it as cancelled ahead
+  const cancelledAt = st.status === 'anulata' && !st.noShow ? isoOf(e.dateUpdated || e.updatedAt) : '';
   const appt = Object.assign({
+    ...(cancelledAt ? { cancelledAt } : {}),
     id: G.uid(), ghlId: e.id, clientId: client.id, clientName: client.name, clientPhone: client.phone || '',
     treatment: (t || calName || 'Programare HighLevel').slice(0, 200), ghlTitle: t, categories: [cat], category: cat, amount: 0, package: false,
     note: G.text(e.notes || e.description, 500), createdBy: 'highlevel', createdAt: e.dateAdded || nowISO(), updatedAt: nowISO(), importedAt: nowISO(), tzFixed: true,
@@ -445,7 +450,14 @@ async function stepDetails(conn, aj, until) {
         if (cur) {
           // moved or edited in the portal since the import: what the team set stays
           const touched = Date.parse(cur.updatedAt || 0) - Date.parse(cur.importedAt || cur.createdAt || 0) > 120e3;
-          if (!touched && Object.keys(b.fields).some((k) => cur[k] !== b.fields[k])) { Object.assign(cur, b.fields, { updatedAt: nowISO() }); aj.counts.apptsUpdated++; apptsChanged = true; }
+          if (!touched && Object.keys(b.fields).some((k) => cur[k] !== b.fields[k])) {
+            const wasCancelled = cur.status === 'anulata';
+            Object.assign(cur, b.fields, { updatedAt: nowISO() });
+            // cancelled in HighLevel since: its time there (never the import's own, which would read as a no-show)
+            if (cur.status === 'anulata' && !wasCancelled) { if (b.appt.cancelledAt) cur.cancelledAt = b.appt.cancelledAt; else delete cur.cancelledAt; }
+            else if (cur.status !== 'anulata') delete cur.cancelledAt;
+            aj.counts.apptsUpdated++; apptsChanged = true;
+          }
           continue;
         }
         appointments.push(b.appt); apptByGhl.set(e.id, b.appt);
@@ -706,3 +718,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'ghl_failed' });
   }
 };
+module.exports.apptOf = apptOf; // qa/api-checks.cjs

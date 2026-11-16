@@ -305,7 +305,7 @@ async function reply(b) {
     const k9 = digits(a.clientPhone).slice(-9);
     const sibs = appts.filter((x) => x && x !== a && !x.block && x.date === a.date && x.status !== to && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now &&
       ((a.clientId && x.clientId === a.clientId) || (k9.length >= 9 && digits(x.clientPhone).slice(-9) === k9)));
-    [a].concat(sibs).forEach((x) => { x.status = to; x.updatedAt = nowISO(); x.statusBy = ME; });
+    [a].concat(sibs).forEach((x) => { x.status = to; x.updatedAt = nowISO(); x.statusBy = ME; if (to === 'anulata') x.cancelledAt = x.updatedAt; else delete x.cancelledAt; });
     if (!(await store.writeJSONIf(KEYA, appts, etag))) continue; // the calendar changed meanwhile: read it again
     for (const x of [a].concat(sibs)) {
       if (no) await require('../portal-leads').unbookLead(x, 'Anulată de clientă pe WhatsApp („' + NO + '”)', 'WhatsApp automat');

@@ -253,6 +253,7 @@ module.exports = async (req, res) => {
         createdBy: session.employeeId,
         createdAt: now,
         updatedAt: now,
+        ...(result.fields.status === 'anulata' ? { cancelledAt: now } : {}), // when it was cancelled (api/_lib/clinic.js lateCancel)
       };
       // the same client that day: the same booking sent twice (a double tap, a slow connection) gives back the one made;
       // another booking that day is confirmed by the desk first (two treatments are fine, a double booking isn't)
@@ -346,6 +347,9 @@ module.exports = async (req, res) => {
       if (!('note' in req.body)) result.fields.note = appointment.note || '';
       if (!('package' in req.body)) result.fields.package = !!appointment.package; // a drag in the Calendar doesn't send it
       Object.assign(appointment, result.fields, { updatedAt: new Date().toISOString() });
+      // when it was cancelled, so a cancellation ahead of its hour is never taken for a no-show (api/_lib/clinic.js lateCancel)
+      if (appointment.status === 'anulata' && before.status !== 'anulata') appointment.cancelledAt = appointment.updatedAt;
+      else if (appointment.status !== 'anulata') delete appointment.cancelledAt;
       const moved = before.date !== appointment.date || before.time !== appointment.time;
       // another client on it (the wrong one picked, a new phone): her own lead, not the one of the client before.
       // The same number under a new id (a sheet replaced by an import) is the same client: nothing starts again

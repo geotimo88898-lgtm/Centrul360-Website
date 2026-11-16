@@ -127,4 +127,4 @@ async function run() {
   return { waiting: items.length, read, pushed };
 }
 
-module.exports = { mark, resolve, run, KEY };
+module.exports = { mark, resolve, run, candidates, KEY };

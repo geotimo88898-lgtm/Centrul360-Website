@@ -55,6 +55,10 @@ const prevMonth = (m) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 2, 1
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 // a money field: a number of at least 0, or null (not typed)
 const amount = (v) => { if (v === '' || v == null) return null; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) && n >= 0 && n < 1e8 ? r2(n) : null; };
+// the euro's rate: 4 decimals, as the BNR gives it (4,9771), never rounded to 2
+const eurRateOf = (v) => { if (v === '' || v == null) return null; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) && n > 0 && n < 100 ? Math.round(n * 1e4) / 1e4 : null; };
+// a line of the month's sheet in whole lei, as the page shows it: collections - the lines = the profit, exactly as read
+const lei0 = (n) => Math.round(Number(n) || 0);
 // the clinic of a row, whatever the spelling
 const clinicOf = (s) => (/arad/i.test(String(s || '')) ? 'Arad' : /timi/i.test(String(s || '')) ? 'Timișoara' : '');
 const managesOf = (e) => require('./roles').managesOf(e);
@@ -71,7 +75,7 @@ function cleanEntry(x) {
   if (over.whatsapp == null && x.lines && amount(x.lines.whatsapp) != null) over.whatsapp = amount(x.lines.whatsapp);
   const p = x.proposal && typeof x.proposal === 'object' ? x.proposal : null;
   return {
-    eurRate: amount(x.eurRate), lines, over, savedAt: x.savedAt || '', savedBy: x.savedBy || '',
+    eurRate: eurRateOf(x.eurRate), lines, over, savedAt: x.savedAt || '', savedBy: x.savedBy || '',
     adsAuto: x.adsAuto && Number.isFinite(Number(x.adsAuto.lei)) ? { lei: r2(x.adsAuto.lei), at: x.adsAuto.at || '' } : null,
     waAuto: x.waAuto && Number.isFinite(Number(x.waAuto.lei)) ? { lei: r2(x.waAuto.lei), at: x.waAuto.at || '', byCity: x.waAuto.byCity && typeof x.waAuto.byCity === 'object' ? x.waAuto.byCity : null } : null,
     proposal: p ? { consumables: amount(p.consumables), other: amount(p.other), note: String(p.note || '').slice(0, 500), at: p.at || '', by: p.by || '', byName: p.byName || '', status: ['pending', 'accepted', 'declined'].includes(p.status) ? p.status : 'pending', decidedAt: p.decidedAt || '' } : null,
@@ -166,24 +170,25 @@ async function waOf(readJSON, clinics, month, day) {
   } catch (e) { return { error: e.message }; }
 }
 
-// every line of the month, in lei, with where it comes from; filled = the owner saved the month and nothing is missing.
+// every line of the month, in whole lei (the page's lei: the lines, their total and the profit add up exactly as shown),
+// with where it comes from; filled = the owner saved the month and nothing is missing.
 // recs: what the records of Plăți și cheltuieli add per line (api/_lib/expenses.js recCosts)
 function costsOf(entry, autos, clinics, recs) {
   const rows = LINES.filter((l) => !l.city || clinics.includes(l.city)).map((l) => {
     if (l.rec) {
       const t = entry.lines[l.key], r = Number(recs && recs[l.key]) || 0;
-      return { key: l.key, label: l.label, kind: l.kind, rec: true, lei: r2((t || 0) + r), typed: t, recLei: r, source: r ? 'records' : t != null ? 'typed' : 'empty' };
+      return { key: l.key, label: l.label, kind: l.kind, rec: true, lei: lei0((t || 0) + r), typed: t, recLei: r, source: r ? 'records' : t != null ? 'typed' : 'empty' };
     }
     if (l.auto) {
       const o = entry.over[l.key], a = autos[l.key];
-      return { key: l.key, label: l.label, kind: l.kind, auto: l.auto, lei: o != null ? o : a != null ? a : null, autoLei: a != null ? a : null, source: o != null ? 'manual' : a != null ? 'auto' : 'missing' };
+      return { key: l.key, label: l.label, kind: l.kind, auto: l.auto, lei: o != null ? lei0(o) : a != null ? lei0(a) : null, autoLei: a != null ? a : null, source: o != null ? 'manual' : a != null ? 'auto' : 'missing' };
     }
     const t = entry.lines[l.key];
-    if (l.eur) return { key: l.key, label: l.label, kind: l.kind, eur: t, lei: t != null && entry.eurRate ? r2(t * entry.eurRate) : t === 0 ? 0 : null, source: t == null ? 'missing' : 'typed' };
-    return { key: l.key, label: l.label, kind: l.kind, lei: t != null ? t : l.kind === 'var' ? 0 : null, source: t == null ? (l.kind === 'var' ? 'empty' : 'missing') : 'typed' };
+    if (l.eur) return { key: l.key, label: l.label, kind: l.kind, eur: t, lei: t != null && entry.eurRate ? lei0(t * entry.eurRate) : t === 0 ? 0 : null, source: t == null ? 'missing' : 'typed' };
+    return { key: l.key, label: l.label, kind: l.kind, lei: t != null ? lei0(t) : l.kind === 'var' ? 0 : null, source: t == null ? (l.kind === 'var' ? 'empty' : 'missing') : 'typed' };
   });
   const missing = rows.filter((r) => r.lei == null).map((r) => r.key);
-  const sum = (k) => r2(rows.filter((r) => !k || r.kind === k).reduce((a, r) => a + (Number(r.lei) || 0), 0));
+  const sum = (k) => rows.filter((r) => !k || r.kind === k).reduce((a, r) => a + (Number(r.lei) || 0), 0);
   return { rows, missing, fixed: sum('fixed'), variable: sum('var'), total: sum(), filled: !!entry.savedAt && !missing.length };
 }
 
@@ -240,8 +245,8 @@ async function monthOf(readJSON, ctx, emp, month, opts) {
     autos.whatsapp = wa && !wa.error ? wa.lei : null;
     if (autos.whatsapp == null && entry.waAuto) autos.whatsapp = CLINICS.every((c) => clinics.includes(c)) || !entry.waAuto.byCity ? entry.waAuto.lei : r2(clinics.reduce((a, c) => a + (Number(entry.waAuto.byCity[c]) || 0), 0));
     costs = costsOf(entry, autos, clinics, require('./expenses').recCosts(ctx.exp, month));
-    collections = collectionsOf(ctx.sales, ctx.appointments, ctx.employees, clinics, month, upto);
-    profit = r2(collections - costs.total);
+    collections = lei0(collectionsOf(ctx.sales, ctx.appointments, ctx.employees, clinics, month, upto)); // whole lei, as the lines
+    profit = collections - costs.total;
   }
   const filled = !!(costs && costs.filled);
   const potential = filled ? Math.round(Math.max(0, profit) * RATE) : null;
@@ -273,4 +278,4 @@ async function view(readJSON, empId, month, opts) {
   return { ok: true, name: emp.name, managerFrom: from, month: main, history, probation: probationOf(emp, day), rule: { rate: RATE, min: MIN_PER_DAY, probationDays: PROBATION_DAYS } };
 }
 
-module.exports = { waOf, withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };
+module.exports = { eurRateOf, lei0, waOf, withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };

@@ -8,6 +8,20 @@
 
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const lastDay = (m) => m + '-' + String(new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate()).padStart(2, '0');
+// the first second of a month in Bucharest (00:00 on the 1st, +2 or +3 hours), as Unix seconds: the month's messages are
+// the clinic's month, not UTC's (a message at 01:00 on the 1st belongs to that month)
+const FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+function monthStart(y, m) { // m: 1..12 (13 = January of the next year)
+  const yy = m > 12 ? y + 1 : y, mm = m > 12 ? 1 : m;
+  const utc = Date.UTC(yy, mm - 1, 1);
+  for (const h of [2, 3]) {
+    const ms = utc - h * 3600e3, p = {};
+    FMT.formatToParts(new Date(ms)).forEach((x) => { p[x.type] = x.value; });
+    if (+p.year === yy && +p.month === mm && +p.day === 1 && +p.hour === 0 && +p.minute === 0) return Math.floor(ms / 1000);
+  }
+  return Math.floor((utc - 2 * 3600e3) / 1000);
+}
+const monthBounds = (month) => ({ start: monthStart(+month.slice(0, 4), +month.slice(5, 7)), end: monthStart(+month.slice(0, 4), +month.slice(5, 7) + 1) });
 const clean = (s) => String(s || 'eroare').replace(/\d{8,}/g, '…').slice(0, 240); // never an id in what the owner reads
 
 async function graph(path, token, fields) {
@@ -45,9 +59,8 @@ async function monthCost(readJSON, month, day) {
     accounts.set(String(n.wabaId), a);
   });
   if (!accounts.size) return { lei: 0, byCity: {}, parts: [], none: true }; // no WhatsApp account connected: nothing to pay
-  const start = Math.floor(Date.UTC(+month.slice(0, 4), +month.slice(5, 7) - 1, 1) / 1000);
-  const monthEnd = Math.floor(Date.UTC(+month.slice(0, 4), +month.slice(5, 7), 1) / 1000);
-  const end = Math.min(monthEnd, Math.floor(Date.now() / 1000));
+  const b = monthBounds(month);
+  const start = b.start, end = Math.min(b.end, Math.floor(Date.now() / 1000));
   if (end <= start) return { lei: 0, byCity: {}, parts: [] };
   const current = day <= lastDay(month);
   return require('./ads-cache').cached('wa-cost-' + month, current ? 3 * 3600e3 : 24 * 3600e3, async () => {
@@ -73,8 +86,8 @@ async function monthCost(readJSON, month, day) {
 async function probe(month) {
   const WA = require('./whatsapp');
   const cfg = await WA.loadConfig().catch(() => null);
-  const start = Math.floor(Date.UTC(+month.slice(0, 4), +month.slice(5, 7) - 1, 1) / 1000);
-  const end = Math.min(Math.floor(Date.UTC(+month.slice(0, 4), +month.slice(5, 7), 1) / 1000), Math.floor(Date.now() / 1000));
+  const b = monthBounds(month);
+  const start = b.start, end = Math.min(b.end, Math.floor(Date.now() / 1000));
   const out = {};
   for (const city of WA.CITIES || []) {
     const n = cfg && cfg.numbers && cfg.numbers[city];
@@ -83,4 +96,4 @@ async function probe(month) {
   return out;
 }
 
-module.exports = { monthCost, costIn, probe };
+module.exports = { monthCost, costIn, probe, monthBounds };

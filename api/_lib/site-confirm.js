@@ -115,7 +115,7 @@ async function cancel(id) {
     const { data: appts, etag } = await store.readJSONTagged('data/appointments.json', []);
     const a = appts.find((y) => y.id === id);
     if (!a || a.status !== 'programata') return null;
-    a.status = 'anulata'; a.updatedAt = nowISO(); a.statusBy = 'Automat: neconfirmată pe WhatsApp';
+    a.status = 'anulata'; a.updatedAt = nowISO(); a.cancelledAt = a.updatedAt; a.statusBy = 'Automat: neconfirmată pe WhatsApp';
     if (!(await store.writeJSONIf('data/appointments.json', appts, etag))) continue;
     await require('../portal-leads').unbookLead(a, 'Anulată: nu a confirmat programarea de pe site', 'WhatsApp automat').catch(() => {});
     await WF.emit('appointment_status', { appointment: a, status: 'anulata' }); // the reminders still waiting stop
@@ -157,4 +157,4 @@ async function tick() {
   return out;
 }
 
-module.exports = { start, tick, undelivered, KEY, daytime };
+module.exports = { start, tick, undelivered, KEY, daytime, cancel };

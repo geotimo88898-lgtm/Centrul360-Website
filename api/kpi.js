@@ -83,7 +83,9 @@ module.exports = async (req, res) => {
     const myLeads = scope ? N.leads.filter(mine) : N.leads;
     const myConvos = scope ? N.convos.filter((c) => !c.location || mine(c)) : N.convos;
     const cities = scope ? K.CITIES.filter((c) => scope.includes(c)) : K.CITIES;
-    const M = K.model({ offers, leads: myLeads, appointments: myAppts, sales: mySales, clients, conversations: myConvos });
+    // the candidates of the job ads are not clients: out of the messages' numbers, as in Mesaje (api/_lib/wa-waiting.js)
+    const candidates = await require('./_lib/wa-waiting').candidates().catch(() => null);
+    const M = K.model({ offers, leads: myLeads, appointments: myAppts, sales: mySales, clients, conversations: myConvos, candidates });
     res.setHeader('Cache-Control', 'no-store');
     if (q.part === 'messages') { res.status(200).json({ period, range: r, start: new Date(K.cfg.start).toISOString(), messages: K.messagesOf(M, r, templates) }); return; }
 
@@ -122,7 +124,7 @@ module.exports = async (req, res) => {
       const pays = (rep._pays || []).filter((p) => p.city === city);
       const due = openDues.filter((d) => d.location === city);
       clinic[city] = {
-        team: counted.sort((a, b) => b.perDay - a.perDay).map((x) => ({ id: x.id, name: x.name, days: x.days, daysFrom: x.daysFrom, collected: x.collected, perDay: x.perDay, ok: x.ok, gap: x.gap })),
+        team: counted.sort((a, b) => b.perDay - a.perDay).map((x) => ({ id: x.id, name: x.name, days: x.days, daysFrom: x.daysFrom, collected: x.collected, perDay: x.perDay, ok: x.ok, gap: x.gap, ...(x.trainee ? { trainee: true, label: x.label } : {}) })),
         consults: C.consults(myAppts, mySales, city, r.since, r.until),
         show30: C.showRate(myAppts, city, today, mySales, 30, clients),
         reception: C.leadSpeed(myLeads, myConvos, cfg, city, r.since, r.until),
@@ -194,7 +196,9 @@ module.exports = async (req, res) => {
     }
     rep.period = period;
     rep.adsState = ads.none ? 'none' : ads.error ? 'error' : 'ok';
-    rep.adsError = ads.error || '';
+    // Meta's own words (a Graph address, a token) never go to the page: a short sentence there, the rest in the log
+    if (ads.error) require('./_lib/meta-error').log('kpi ads', ads.error);
+    rep.adsError = ads.error ? require('./_lib/meta-error').ui(ads.error) : '';
     rep.adsAt = ads.readAt || 0;
     rep.adsStale = !!ads.stale;
     const tCalc = Date.now() - t1;

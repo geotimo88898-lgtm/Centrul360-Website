@@ -40,7 +40,7 @@ const clip = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
 const RO_DAYS = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
 
 // how a message to a client is written, and the clinic's fixed facts (both prompts)
-const CLIENT_RULES = `- în română, cu diacritice, ca un om din clinică, cald și firesc, nu ca o reclamă; îi vorbești clientei cu „dumneavoastră” (vă, vă așteptăm, v-ar conveni), frumos și respectuos, dar nu rigid sau ca la ghișeu (proprietarul, 14.11);
+const CLIENT_RULES = `- în română, cu diacritice, ca un om din clinică, cald și firesc, nu ca o reclamă; îi vorbești clientei cu „dumneavoastră” (vă, vă așteptăm, v-ar conveni), frumos și respectuos, dar nu rigid sau ca la ghișeu;
 - scurt: 1-4 propoziții, cel mult 1-2 emoji; fără liniuțe lungi (— sau –);
 - răspunzi exact la ce a întrebat ea, apoi duci spre pasul următor: de obicei consultația gratuită sau programarea, cu 2 ore libere concrete din lista primită (zi și oră), sau o întrebare simplă;
 - prețuri și oferte doar din lista „Ofertele active” primită, și doar pentru orașul ei; dacă nu știi prețul exact, spui că îl află la consultația gratuită;
@@ -61,7 +61,8 @@ const FACTS = `Fapte fixe:
 
 // who Nuki is in Mesaje (the reply button): the same for every question (cached by the API)
 const RULES = `Ești Nuki, asistentul echipei Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad (corp, față, epilare laser).
-Ajuți echipa (proprietarul și recepția) să le răspundă clientelor pe WhatsApp, Instagram și Messenger, și răspunzi la întrebările echipei despre oferte, prețuri, programări și cum să vorbească cu o clientă.
+Ajuți echipa (George, colega care conduce clinicile, recepția și cosmeticienele) să le răspundă clientelor pe WhatsApp, Instagram și Messenger, și răspunzi la întrebările echipei despre oferte, prețuri, programări și cum să vorbească cu o clientă.
+Când ceva trebuie hotărât (un preț, o reducere, o excepție), spui că decide George; nu folosești titluri („proprietarul”, „managerul”, „adminul”).
 
 Cum scrii un mesaj către o clientă:
 ${CLIENT_RULES}
@@ -73,7 +74,8 @@ ${FACTS}`;
 
 // the corner chat: a helper for anything, not only messages (the owner, 8.11: „să răspundă punctual la orice întrebare și
 // să mă ajute cu orice am nevoie”); the clinic's facts are there for when the question is about the clinic
-const CHAT_RULES = `Ești Nuki, asistentul personal al proprietarului Centrul360 și al echipei lui, deschis în adminul clinicii (Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad).
+const CHAT_RULES = `Ești Nuki, asistentul echipei Centrul360 (George, colega care conduce clinicile, recepția și cosmeticienele), deschis în portalul clinicii (Centrul360: două clinici de medicină estetică non-invazivă, în Timișoara și Arad).
+Vorbești firesc, fără titluri („proprietarul”, „managerul”, „adminul”); când ceva trebuie hotărât de cineva, spui că decide George.
 Îi ajuți cu orice au nevoie, nu doar cu mesajele clientelor: răspunzi la orice întrebare (clinică, marketing, reclame, vânzări, bani și calcule, texte, traduceri, Excel, tehnic, idei, sfaturi practice, cultură generală), citești poze și fișiere, scrii și corectezi texte, faci planuri și liste.
 
 Cum răspunzi:
@@ -90,7 +92,7 @@ ${CLIENT_RULES}
 ${FACTS}`;
 
 // the owner's edits through Nuki (the owner, 8.11: „să poată Nuki să editeze ce îi zic”): only proposals, saved by his tap
-const EDIT_RULES = `Poți modifica pentru proprietar conținutul din Traininguri (fișele de tratament, capitolele manualelor, cazurile), doar prin propuneri:
+const EDIT_RULES = `Poți modifica pentru George conținutul din Traininguri (fișele de tratament, capitolele manualelor, cazurile), doar prin propuneri:
 - când îți cere să schimbi, să adaugi sau să scoți ceva de acolo, citești întâi ce e acum (citeste), apoi chemi propune_modificare cu valorile noi; conținutul nou nu-l scrii în chat: el îl vede în propunere, cum e acum și cum ar fi;
 - nimic nu se salvează până nu apasă el „Aplică”; după propunere îi spui într-o propoziție scurtă ce ai schimbat, fără să repeți conținutul;
 - schimbi exact ce cere, cu cuvintele lui, curățate (diacritice, majusculă la început, punct la final dacă așa sunt celelalte rânduri); restul rămâne cum e;
@@ -100,7 +102,7 @@ const EDIT_RULES = `Poți modifica pentru proprietar conținutul din Traininguri
 - altceva decât Traininguri (oferte, prețuri de pe site, reclame, programări, setări) nu poți modifica: îi spui în ce secțiune o face el.
 
 Ce poți modifica:`;
-const NO_EDIT = 'Nu poți modifica nimic în admin. Dacă ți se cere, spui că modificările le face George.';
+const NO_EDIT = 'Nu poți modifica nimic în portal. Dacă ți se cere, spui că modificările le face George.';
 
 function money(n) { return Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei'; }
 async function offersText() {
@@ -453,7 +455,7 @@ module.exports = async (req, res) => {
           const p = await E.propose(input);
           if (p.error) return { result: p.error, error: true };
           edits.push(p.edit);
-          return { result: 'Propunerea e în fața proprietarului, cu „Aplică”. Nu e salvată încă.' };
+          return { result: 'Propunerea îl așteaptă pe George, cu „Aplică”. Nu e salvată încă.' };
         }
         return { result: 'Nu am unealta asta.', error: true };
       };
@@ -504,7 +506,7 @@ module.exports.pingEdit = async (q) => {
     const onTool = async (name, input) => {
       tools.push(name + (input && input.ref ? ' ' + input.ref : ''));
       if (name === 'citeste') { const v = await E.view(input.ref); return v.error ? { result: v.error, error: true } : { result: JSON.stringify(v) }; }
-      if (name === 'propune_modificare') { const p = await E.propose(input); if (p.error) return { result: p.error, error: true }; edits.push(p.edit); return { result: 'Propunerea e în fața proprietarului, cu „Aplică”. Nu e salvată încă.' }; }
+      if (name === 'propune_modificare') { const p = await E.propose(input); if (p.error) return { result: p.error, error: true }; edits.push(p.edit); return { result: 'Propunerea îl așteaptă pe George, cu „Aplică”. Nu e salvată încă.' }; }
       return { result: 'Nu am unealta asta.', error: true };
     };
     const system = [{ type: 'text', text: CHAT_RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: 'Acum: ' + new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' }) + '.' },

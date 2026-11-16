@@ -71,11 +71,12 @@ function workDaysBetween(startDate, endDate) {
 }
 
 async function employeeInfo(employeeId) {
-  if (employeeId === 'admin') return { name: 'Admin', role: 'Admin', location: '' };
+  if (employeeId === 'admin') return { name: await require('./_lib/activity').whoName('admin'), role: 'Administrator', location: '' };
   const employees = await readJSON('data/employees.json', []);
   const e = employees.find((x) => x.id === employeeId);
   if (!e) return { name: employeeId, role: '', location: '' };
-  return { name: e.name, role: e.role === 'receptie' ? 'Recepție' : e.role === 'cosmetician' ? 'Cosmeticiană' : e.role === 'admin' ? 'Admin' : e.role, location: e.location, cnp: e.cnp || '' };
+  const ROLE = { receptie: 'Recepție', cosmetician: 'Cosmeticiană', manager: 'Manager', admin: 'Administrator' };
+  return { name: e.name, role: ROLE[e.role] || (e.role ? e.role[0].toUpperCase() + e.role.slice(1) : ''), location: e.location, cnp: e.cnp || '' };
 }
 
 module.exports = async (req, res) => {
@@ -266,3 +267,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'leave_failed' });
   }
 };
+module.exports.employeeInfo = employeeInfo; // qa/api-checks.cjs

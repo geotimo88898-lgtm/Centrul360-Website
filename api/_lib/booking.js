@@ -88,8 +88,11 @@ async function settings(opts) {
   const out = clean(raw);
   // the cities a cosmetician left („A plecat”, _lib/left.js): without a schedule there, no more clients at once than the
   // cosmeticians still there
-  const leftIn = new Set((Array.isArray(emps) ? emps : []).filter((e) => e && e.role === 'cosmetician' && e.active === false && e.leftAt).map((e) => e.location));
-  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)), people, leftIn }, enumerable: false });
+  const gone = (Array.isArray(emps) ? emps : []).filter((e) => e && e.role === 'cosmetician' && e.active === false && e.leftAt);
+  const leftIn = new Set(gone.map((e) => e.location));
+  // the ones who left, up to their last day: the calendar's fill of a past day counts their hours (api/_lib/clinic.js)
+  const until = new Map(gone.filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(String(e.leftAt))).map((e) => [e.id, e.leftAt]));
+  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)), people, leftIn, until, gone: gone.filter((e) => until.has(e.id)).map((e) => ({ id: e.id, location: T.CITIES.includes(e.location) ? e.location : '', leftAt: e.leftAt })) }, enumerable: false });
   return out;
 }
 
