@@ -5,6 +5,7 @@
 const T = require('./team-schedule');
 const B = require('./booking');
 const L = require('./left');
+const MONEY = require('./money');
 
 const CITIES = ['Timișoara', 'Arad'];
 const TARGET_PER_DAY = 1500;       // lei collected per day worked, every cosmetician (the owner's monthly target)
@@ -76,10 +77,11 @@ function fill(cfg, city, from, to, appts, targetPct) {
 // marked „în formare”, and is out of the bonus condition.
 function cosmeticians(emps, sales, attendance, city, from, to, appts) {
   return emps.filter((e) => e && e.role === 'cosmetician' && clinicOf(e.location) === city && !L.outOfMonth(e, from)).map((e) => {
+    // what she collected, minus the refunds of her treatments (_lib/money.js); a refund is never a day worked
     const mine = sales.filter((s) => s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
-    const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
+    const collected = MONEY.net(mine);
     const punched = new Set(attendance.filter((x) => x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
-    const byPay = new Set(mine.map((s) => s.date));
+    const byPay = new Set(mine.filter(MONEY.isPayment).map((s) => s.date));
     // a day she has collections counts as worked even when she forgot to clock in (16.11: the 1500 lei a day drives the
     // bonus, a day left out would raise her average and pay a bonus not earned)
     const payOnly = [...byPay].filter((d) => !punched.has(d)).length;
@@ -161,7 +163,7 @@ async function waitingNow(convos) {
 function paidDays(sales) {
   const k = new Set();
   (sales || []).forEach((s) => {
-    if (!s || s.source !== 'incasare' || !s.date) return;
+    if (!MONEY.isPayment(s) || !s.date) return; // a refund is not a visit
     if (s.clientId) k.add('c|' + s.clientId + '|' + s.date);
     const p = d9(s.clientPhone); if (p.length === 9) k.add('p|' + p + '|' + s.date);
   });
@@ -206,7 +208,7 @@ function visitStats(appts, sales, city, today, days, clients) {
   const phoneOf = new Map((clients || []).map((c) => [c.id, d9(c.phone)]));
   const idsOf = (clientId, phone, name) => { const p = d9(phone) || phoneOf.get(clientId) || ''; return [clientId ? 'c:' + clientId : '', p.length === 9 ? 'p:' + p : '', fold(name).trim() ? 'n:' + fold(name).trim().replace(/\s+/g, ' ') : ''].filter(Boolean); };
   const paid = new Set();
-  (sales || []).forEach((x) => { if (!x || x.source !== 'incasare' || x.date < from || x.date > to || x.location !== city) return; idsOf(x.clientId, x.clientPhone, x.client).forEach((k) => paid.add(k + '|' + x.date)); });
+  (sales || []).forEach((x) => { if (!MONEY.isPayment(x) || x.date < from || x.date > to || x.location !== city) return; idsOf(x.clientId, x.clientPhone, x.client).forEach((k) => paid.add(k + '|' + x.date)); });
   const ex = { leave: 0, test: 0, cancelledAhead: 0, moved: 0, duplicate: 0 };
   const seen = new Map();
   (appts || []).forEach((a) => {

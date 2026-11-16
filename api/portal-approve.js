@@ -1,11 +1,13 @@
 // POST /api/portal-approve, admin approves or rejects a pending sale entry.
-// Approving fixes the commission: upsell - 60% costs, then 10% of the profit (_lib/cats.js).
+// Approving fixes the commission: upsell - 60% costs, then 10% of the profit (_lib/cats.js). From November 2026 it is
+// paid on the money received (_lib/commission.js): approved once, every later payment of the package brings its part.
 
 const { leiTxt } = require('./_lib/notify');
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const { commissionOf } = require('./_lib/cats');
 const { notify } = require('./_lib/notify');
+const CM = require('./_lib/commission');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -48,8 +50,15 @@ module.exports = async (req, res) => {
     sale.decisionNote = reason ? String(reason).trim().slice(0, 200) : '';
 
     await writeJSON('data/sales.json', sales);
+    // from November 2026 the commission comes with the money (_lib/commission.js): what the payments so far brought
+    let now = sale.commission, later = '';
+    if (sale.status === 'approved' && CM.cashRule(sale)) {
+      const sum = CM.summaryOf(sale, CM.context(sales, await readJSON('data/client-dues.json', [])));
+      now = sum.lei;
+      if (sum.rest > 0) later = ' · încă ' + leiTxt(sum.restLei) + ' când plătește restul';
+    }
     await notify({ readJSON, writeJSON }, sale.employeeId, sale.status === 'approved'
-      ? { kind: 'commission', tone: 'good', title: 'COMISION ✅ - +' + leiTxt(sale.commission), text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : ''), go: 'comision' }
+      ? { kind: 'commission', tone: 'good', title: 'COMISION ✅ - +' + leiTxt(now) + later, text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.client ? ', ' + sale.client : ''), go: 'comision' }
       : { kind: 'commission', tone: 'bad', title: 'COMISION ❌ - respins', text: String(sale.treatment || 'Upsell').replace(/^Upsell · /, 'Upsell, ') + (sale.decisionNote ? '. ' + sale.decisionNote : ''), go: 'comision' });
 
     res.status(200).json({ ok: true, sale });

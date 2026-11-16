@@ -159,7 +159,7 @@ function tracker(ctx, month) {
   const pm = prevMonth(month), pmCurrent = pm === cur;
   const team = (ctx.employees || []).filter((e) => e && e.id !== 'admin' && e.role !== 'admin');
   const payMemo = new Map();
-  const payOf = (e) => payMemo.get(e.id) || payMemo.set(e.id, PAY.monthPay({ emp: e, month: pm, isCurrent: pmCurrent, sales: ctx.sales, payouts: (ctx.tbAll && ctx.tbAll.payouts) || [], bank: pmCurrent ? TB.ledger(e.id, ctx.tbAll) : null, attendance: ctx.attendance, appointments: ctx.appointments, finals: ctx.finals })).get(e.id);
+  const payOf = (e) => payMemo.get(e.id) || payMemo.set(e.id, PAY.monthPay({ emp: e, month: pm, isCurrent: pmCurrent, sales: ctx.sales, dues: ctx.dues, payouts: (ctx.tbAll && ctx.tbAll.payouts) || [], bank: pmCurrent ? TB.ledger(e.id, ctx.tbAll) : null, attendance: ctx.attendance, appointments: ctx.appointments, finals: ctx.finals })).get(e.id);
   team.filter((e) => !L.outOfMonth(e, month)).forEach((e) => {
     const p = payOf(e);
     const total = r2(p.total);

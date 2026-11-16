@@ -40,6 +40,41 @@
 .mo-range{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin:0 0 .8rem; }
 .mo-range b{ font-size:1.05rem; } .mo-range > span:not(.k-live){ color:var(--muted); font-size:.86rem; }
 
+/* ---------------- refunds (Rambursare, 16.11): a hairline list, no boxes ---------------- */
+.mo-refunds{ display:flex; align-items:center; gap:.5rem; margin:-.35rem 0 .8rem; font-size:.84rem; color:var(--muted); min-width:0; }
+.mo-refunds svg{ flex:none; width:15px; height:15px; color:var(--bad); }
+.mo-refunds span{ min-width:0; overflow-wrap:anywhere; } .mo-refunds b{ color:var(--fg); font-variant-numeric:tabular-nums; }
+.k-amount.is-neg{ color:var(--bad); }
+.mo-refund .k-row-title{ color:var(--fg); }
+.rf-form [data-scope], .rf-form [data-close]{ display:flex; flex-direction:column; gap:.45rem; }
+.rf-form [data-scope][hidden], .rf-form [data-close][hidden]{ display:none; }
+.rf-what{ grid-column:1 / -1; padding-top:.9rem; border-top:1px solid var(--line); }
+.rf-what h4{ margin:0 0 .35rem; font-size:.78rem; font-weight:650; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.rf-sum{ list-style:none; margin:0; padding:0; }
+.rf-sum li{ display:flex; align-items:flex-start; gap:.6rem; padding:.55rem 0; border-bottom:1px solid var(--line); font-size:.88rem; line-height:1.45; min-width:0; }
+.rf-sum li:last-child{ border-bottom:0; color:var(--muted); font-size:.82rem; }
+.rf-sum li > svg{ flex:none; width:16px; height:16px; margin-top:.15rem; color:var(--muted); }
+.rf-sum li > span{ min-width:0; overflow-wrap:anywhere; }
+.rf-sum li.is-bad > svg{ color:var(--bad); } .rf-sum li.is-warn > svg{ color:var(--warn); }
+.rf-err{ display:flex; gap:.5rem; align-items:flex-start; margin:0; color:var(--bad); font-size:.86rem; }
+.rf-err svg{ flex:none; width:16px; height:16px; margin-top:.1rem; }
+/* Salariu: the commission's lines (one per payment received, the refunds, what is still to come) */
+.cl-lines{ list-style:none; margin:0; padding:0; }
+.cl-lines li{ display:flex; align-items:baseline; gap:.75rem; padding:.62rem 0; border-bottom:1px solid var(--line); min-width:0; }
+.cl-lines li:last-child{ border-bottom:0; }
+.cl-lines .cl-main{ flex:1; min-width:0; }
+.cl-lines .cl-main b{ display:block; font-size:.9rem; font-weight:600; overflow-wrap:anywhere; }
+.cl-lines .cl-main small{ display:block; color:var(--muted); font-size:.78rem; margin-top:.1rem; overflow-wrap:anywhere; }
+.cl-lines .cl-lei{ flex:none; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cl-lines li.is-cut .cl-lei{ color:var(--bad); }
+.cl-lines li.is-wait .cl-lei{ color:var(--warn); }
+.cl-lines li.is-come .cl-main b, .cl-lines li.is-come .cl-lei{ color:var(--muted); font-weight:560; }
+.cl-head{ display:flex; justify-content:space-between; gap:.6rem; margin:.9rem 0 .1rem; font-size:.78rem; font-weight:650; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.pr-lines{ grid-column:1 / -1; margin-top:.2rem; }
+.pr-lines summary{ cursor:pointer; font-size:.8rem; color:var(--muted); padding:.3rem 0; }
+.pr-lines .cl-lines li{ padding:.45rem 0; }
+.pr-lines .cl-lines .cl-main b{ font-size:.84rem; }
+
 /* ---------------- payment drawer ---------------- */
 .pay-step{ display:flex; flex-direction:column; gap:.6rem; }
 .pay-step + .pay-step{ padding-top:1rem; border-top:1px solid var(--line); }

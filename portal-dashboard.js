@@ -34,7 +34,7 @@
   function dayIcon() { const h = K.roHour(); return h < 7 ? 'moon' : h < 11 ? 'sunrise' : h < 19 ? 'sun' : 'moon'; }
 
   function sumBy(list, from, to) {
-    return list.filter((s) => s.date >= from && s.date <= to).reduce((a, s) => a + Number(s.amount || 0), 0);
+    return K.net(list.filter((s) => s.date >= from && s.date <= to)); // net: a refund row has a minus sum (portal-core.js)
   }
   function dailySeries(list, days) {
     const out = [];
@@ -121,7 +121,7 @@
     const prevMonth = K.addMonths(month, -1);
     const prevSameDay = prevMonth + '-' + K.pad(Math.min(dayOfMonth, K.daysIn(prevMonth)));
     const todaySum = sumBy(inc, today, today);
-    const todayCount = inc.filter((s) => s.date === today).length;
+    const todayCount = K.pays(inc.filter((s) => s.date === today)).length;
     const yesterday = sumBy(inc, K.addDays(today, -1), K.addDays(today, -1));
     const mtd = sumBy(inc, month + '-01', today);
     const prevMtd = sumBy(inc, prevMonth + '-01', prevSameDay);
@@ -142,10 +142,12 @@
     const myBreak = (D.appointmentsToday && D.appointmentsToday.myBreak && D.appointmentsToday.myBreak.on) ? D.appointmentsToday.myBreak : null;
     const unconfirmed = appts.filter((a) => a.status === 'programata');
     const ms = D.mySales || [];
-    const commMonth = ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.commission || 0), 0);
+    // from November 2026 her month's commission comes from the money received (api/_lib/commission.js, in D.salary)
+    const payNow = ((D.salary && D.salary.months) || []).find((m) => m.month === month);
+    const commMonth = payNow && payNow.commissionLines ? payNow.commission : ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.commission || 0), 0);
     const commPrev = ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === prevMonth && s.date <= prevSameDay).reduce((a, s) => a + Number(s.commission || 0), 0);
     const pendingMine = ms.filter((s) => s.status === 'pending');
-    const pendingEst = pendingMine.reduce((a, s) => a + (s.commission ? Number(s.commission) : K.commissionOf(s.amount)), 0);
+    const pendingEst = payNow && payNow.commissionLines ? payNow.commissionWaiting : pendingMine.reduce((a, s) => a + (s.commission ? Number(s.commission) : K.commissionOf(s.amount)), 0);
     const attributed = inc.filter((s) => s.performedBy === me.id && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.amount || 0), 0);
 
     const summary = [];
@@ -219,8 +221,8 @@
 
     // ---- every KPI this account may put on its Panou (its own choice, K.prefs 'dash.kpis')
     const lastMonthSum = sumBy(inc, prevMonth + '-01', K.addDays(month + '-01', -1));
-    const monthInc = inc.filter((s) => K.monthOf(s.date) === month);
-    const byCity = (c) => monthInc.filter((s) => s.location === c).reduce((a, s) => a + Number(s.amount || 0), 0);
+    const monthAll = inc.filter((s) => K.monthOf(s.date) === month), monthInc = K.pays(monthAll), monthBack = K.refundsOf(monthAll);
+    const byCity = (c) => K.net(monthAll.filter((s) => s.location === c));
     const upsMonth = monthInc.filter((s) => Number(s.upsell) > 0);
     const dayOf = (iso) => (iso ? K.iso(new Date(iso)) : '');
     const newToday = L.filter((l) => dayOf(l.createdAt) === today);
@@ -242,6 +244,7 @@
       incCountMonth: { label: 'Nr. încasări luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-info', 'incasari', '', 'wallet', 'Încasări luna asta', monthInc.length, '', 'db-incn', 'plăți înregistrate') },
       incTM: { label: 'Timișoara, luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-accent', 'incasari', '', 'pin', 'Timișoara', byCity('Timișoara'), 'lei', 'db-tm', 'încasări luna asta') },
       incAR: { label: 'Arad, luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-accent', 'incasari', '', 'pin', 'Arad', byCity('Arad'), 'lei', 'db-ar', 'încasări luna asta') },
+      refundsMonth: { label: 'Rambursări luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat(monthBack.lei ? 'is-warn' : 'is-info', 'incasari', '', 'undo', 'Rambursări', Math.round(monthBack.lei), 'lei', 'db-rf', monthBack.count ? K.plural(monthBack.count, 'rambursare', 'rambursări') + ' · ' + String(monthBack.pct).replace('.', ',') + '% din încasări' : 'niciuna luna asta') },
       upsellsMonth: { label: 'Upselluri luna aceasta', group: 'Încasări', roles: ['admin'], html: () => stat('is-good', 'incasari', '', 'trophy', 'Upselluri luna asta', upsMonth.length, '', 'db-ups', K.lei(upsMonth.reduce((a, s) => a + Number(s.upsell || 0), 0)) + ' valoare') },
       apptsToday: { label: 'Programări azi', group: 'Programări', roles: DESK, html: () => stat('is-info', 'programari', '', 'calendar', 'Programări azi', live.length, '', 'db-appts', confirmed + ' confirmate · ' + appts.filter((a) => a.status === 'finalizata').length + ' finalizate') },
       unconfirmed: { label: 'De confirmat azi', group: 'Programări', roles: DESK, html: () => stat(unconfirmed.length ? 'is-warn' : 'is-good', 'programari', '', 'checkCircle', 'De confirmat', unconfirmed.length, '', 'db-unconf', confirmed + ' confirmate din ' + live.length + ' azi') },

@@ -2,7 +2,9 @@
 //   salary set by the owner (Echipa, net, in hand)
 // + overtime: paid with that month's salary ("Plătite cu salariul"), and for the current month what
 //   is still due (_lib/timebank.js, 40 lei / hour)
-// + commission (cosmeticians): approved upsell commission dated that month (_lib/cats.js)
+// + commission (cosmeticians): approved upsell commission (_lib/cats.js). Up to October 2026: the whole value's commission,
+//   dated the upsell's month. From November 2026 (_lib/commission.js): 4% of each payment received for the upsell, in that
+//   payment's month, minus 4% of what was refunded, in the refund's month; `commissionLines` and `toCome` say which.
 // + bonus (reception): the booking bonus, on the average number of appointments she books per day,
 //   over the days she clocked in: 24+ = 500 lei, 27+ = 700 lei, 30+ = 1.500 lei.
 // + added by hand (Echipa → Ajustări, anyone): commission lines the owner wrote herself, plus or minus, dated
@@ -11,6 +13,8 @@
 //   than 1.500 lei a day worked. Only the final number counts here, the one the owner confirms at month close
 //   (data/manager-bonus.json, passed in as finals); until then Salariu shows it as an estimate, outside the total.
 // Reception has no commission and the cosmeticians no bonus.
+
+const CM = require('./commission');
 
 const BOOKING_TIERS = [{ min: 30, lei: 1500 }, { min: 27, lei: 700 }, { min: 24, lei: 500 }];
 // The manager (the owner, 15.11): the reception bonus stops the day she became manager (roleSince, set in Echipa when the
@@ -53,7 +57,7 @@ function bookingBonus(employeeId, month, attendance, appointments, until) {
 }
 
 // One month of pay for one person.
-function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, appointments, finals }) {
+function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendance, appointments, finals, cctx }) {
   // the salary counts from the month it was first set (Echipa), not in the months before
   // someone who left („A plecat”, _lib/left.js): the month of her last day keeps its salary (paid the month after), none in the months after
   const after = emp.active === false && /^\d{4}-\d{2}-\d{2}$/.test(String(emp.leftAt || '')) && month > emp.leftAt.slice(0, 7);
@@ -63,8 +67,11 @@ function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, app
   const paidMin = paidOut.reduce((a, p) => a + (Number(p.minutes) || 0), 0);
   const dueLei = isCurrent && bank ? bank.bankLei : 0;
   const dueMin = isCurrent && bank ? bank.bank : 0;
-  let commission = 0, waiting = 0, upsells = 0;
-  if (hasCommission(emp)) {
+  let commission = 0, waiting = 0, upsells = 0, lines = null, toCome = null;
+  if (hasCommission(emp) && month >= CM.NEW_FROM) {
+    const c = CM.monthOfPerson(sales, dues, emp.id, month, isCurrent, cctx);
+    commission = c.commission; waiting = c.waiting; upsells = c.upsells; lines = c.lines; toCome = c.toCome;
+  } else if (hasCommission(emp)) {
     (sales || []).forEach((s) => {
       if (s.source === 'incasare' || s.source === 'manual' || s.employeeId !== emp.id || String(s.date).slice(0, 7) !== month) return;
       if (s.status === 'approved') { commission += Number(s.commission) || 0; upsells += 1; }
@@ -81,6 +88,7 @@ function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, app
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
+    ...(lines ? { commissionLines: lines, toCome: toCome || [] } : {}),
     total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
     ...(hasManagerBonus(emp, month) ? { hasManagerBonus: true, managerBonus: r2(managerBonus), managerFinal: !!fin } : {}),
   };

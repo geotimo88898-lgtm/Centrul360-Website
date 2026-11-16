@@ -95,7 +95,7 @@ const kindOf = (stages, id) => (stages.find((s) => s.id === id) || {}).kind || '
 // she came: finished, paid, or paid something that day (the same rule as everywhere, api/_lib/clinic.js)
 function paidSet(sales) {
   const k = new Set();
-  sales.forEach((s) => { if (s.source === 'incasare' && s.date) idsOf(s.clientId, s.clientPhone, s.client).forEach((x) => k.add(x + '|' + s.date)); });
+  sales.forEach((s) => { if (s.source === 'incasare' && s.kind !== 'refund' && s.date) idsOf(s.clientId, s.clientPhone, s.client).forEach((x) => k.add(x + '|' + s.date)); });
   return k;
 }
 const came = (a, paid) => a.status === 'finalizata' || !!a.paidSaleId || idsOf(a.clientId, a.clientPhone, a.clientName).some((x) => paid.has(x + '|' + a.date));

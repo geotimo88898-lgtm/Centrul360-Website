@@ -13,11 +13,82 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin, requireRole } = require('./_lib/auth');
 const { normalizeCategories, commissionOf, profitOf } = require('./_lib/cats');
 const portalSale = require('./portal-sale');
+const R = require('./_lib/refunds');
+const M = require('./_lib/money');
+const N = require('./_lib/notify');
 
 const VALID_METHODS = ['card', 'cash', 'transfer', 'cash_card'];
 
 function isValidDate(date) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date || '');
+}
+
+// POST { action: 'refund_preview' | 'refund', id (the payment), scope: 'payment' | 'package', dueId?, amount, close, date,
+//   reason, method }   and   { action: 'refund_undo', id (the refund row) }
+async function handleRefund(req, res) {
+  const session = await requireRole(req, res, ['admin', 'manager']);
+  if (!session) return;
+  if (session.viewer) { res.status(403).json({ error: 'forbidden' }); return; }
+  const b = req.body || {};
+  const fail = (code, error, extra) => res.status(code).json(Object.assign({ error }, extra || {}));
+  try {
+    const [sales, dues, employees] = await Promise.all([readJSON('data/sales.json', []), readJSON(require('./_lib/dues').KEY, []), readJSON('data/employees.json', [])]);
+    // the manager: only a payment of her clinics (its clinic, or its cosmetician's when it has none written)
+    const clinic = require('./_lib/clinic').clinicOf;
+    const mine = async (s) => {
+      if (session.role === 'admin') return true;
+      const where = clinic(s.location) || clinic(((employees.find((e) => e.id === s.performedBy) || {}).location));
+      const city = await require('./_lib/city').cityOf(session, readJSON, employees);
+      return !!where && Array.isArray(city) && city.includes(where);
+    };
+    const store = { readJSON, writeJSON };
+    const empName = (id) => ((employees.find((e) => e.id === id) || {}).name || '');
+
+    if (b.action === 'refund_undo') {
+      const row = sales.find((s) => s.id === String(b.id || '') && M.isRefund(s));
+      if (!row) return fail(404, 'entry_not_found');
+      if (!(await mine(row))) return fail(403, 'forbidden');
+      await R.undo(store, row);
+      await writeJSON('data/sales.json', sales.filter((s) => s !== row));
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    const sale = sales.find((s) => s.id === String(b.id || '') && s.source === 'incasare');
+    if (!sale) return fail(404, 'entry_not_found');
+    if (sale.kind === 'refund') return fail(400, 'is_refund');
+    if (!(await mine(sale))) return fail(403, 'forbidden');
+    const p = R.plan(sales, dues, b);
+    if (p.error) return fail(p.code || 400, p.error, p.max != null ? { max: p.max } : null);
+    const out = {
+      lei: p.lei, max: p.max, whole: p.whole, scope: p.scope, close: p.close, fromPkg: p.fromPkg, fromSession: p.fromSession, pkg: p.pkg,
+      restCut: p.restCut.reduce((a, x) => a + x.lei, 0),
+      cuts: p.cuts.map((c) => ({ employeeId: c.employeeId, name: empName(c.employeeId), lei: c.lei, cash: c.cash, status: c.status })),
+      refunded: R.refundedOf(sales, sale.id).total, amount: Number(sale.amount) || 0,
+    };
+    if (b.action === 'refund_preview') { res.status(200).json(Object.assign({ ok: true }, out)); return; }
+
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    const date = isValidDate(b.date) ? b.date : today;
+    if (date > today || date < R.FROM || date < sale.date) return fail(400, 'invalid_date');
+    if (!String(b.reason || '').trim()) return fail(400, 'missing_reason');
+    const row = await R.apply(store, sales, p, Object.assign({}, b, { date }), session);
+    await writeJSON('data/sales.json', sales);
+    // the manager's refund: George hears it (bell + phone)
+    if (session.role === 'manager') {
+      try {
+        await N.notifyMany(store, await N.adminIds(store), {
+          kind: 'money', tone: 'bad', go: 'incasari', tag: 'refund-' + row.id,
+          title: 'RAMBURSARE' + N.cityTag(row.location) + ' - ' + N.leiTxt(p.lei),
+          text: (empName(session.employeeId).split(' ')[0] || 'Managerul') + ': ' + (row.client || 'clientă') + ' · ' + row.treatment.replace(/^Rambursare · /, '') + (row.reason ? ' · ' + row.reason : '') + (p.close ? ' · pachet închis' : ''),
+        });
+      } catch (e) { /* never blocks the refund */ }
+    }
+    res.status(200).json(Object.assign({ ok: true, refund: row }, out));
+  } catch (err) {
+    console.error('portal-incasari refund error:', err.message);
+    res.status(500).json({ error: 'incasari_failed' });
+  }
 }
 
 module.exports = async (req, res) => {
@@ -37,6 +108,9 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // Rambursare (16.11): the owner and the manager (her clinics only); never cosmeticians or reception (_lib/refunds.js)
+  if (['refund_preview', 'refund', 'refund_undo'].includes((req.body || {}).action)) { await handleRefund(req, res); return; }
+
   const session = await requireAdmin(req, res);
   if (!session) return;
 
@@ -53,6 +127,11 @@ module.exports = async (req, res) => {
       res.status(404).json({ error: 'entry_not_found' });
       return;
     }
+    // a refund is taken back with refund_undo, never corrected like a payment
+    if (entry.kind === 'refund') { res.status(400).json({ error: 'is_refund' }); return; }
+    // a payment with a refund on it: the refund first (its package parts and commission hang on it)
+    const refunded = R.refundedOf(sales, entry.id).total;
+    if (refunded > 0 && action === 'delete') { res.status(409).json({ error: 'has_refunds' }); return; }
     const upsellEntry = sales.find((s) => s.source === 'comision' && s.incasareId === entry.id);
 
     if (action === 'delete') {
@@ -93,6 +172,7 @@ module.exports = async (req, res) => {
       if (!isValidDate(date)) { res.status(400).json({ error: 'invalid_date' }); return; }
       if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
       if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+      if (refunded > 0 && amount < refunded - 0.005) { res.status(409).json({ error: 'has_refunds' }); return; }
       let split = null;
       if (method === 'cash_card') {
         const cash = Math.round(Number(req.body.cashAmount) * 100) / 100;

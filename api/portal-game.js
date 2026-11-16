@@ -17,10 +17,10 @@ const R = require('./_lib/game-renders');
 
 
 async function compute(now) {
-  const [offers, leads, appointments, sales, clients, conversations, employees, attendance, tbAll, conn, doc] = await Promise.all([
+  const [offers, leads, appointments, sales, clients, conversations, employees, attendance, tbAll, conn, doc, dues] = await Promise.all([
     loadOffers(readJSON), readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/sales.json', []),
     readJSON('data/clients.json', []), readJSON('data/whatsapp-conversations.json', []), readJSON('data/employees.json', []),
-    readJSON('data/attendance.json', []), TB.loadAll(readJSON), loadConnection(readJSON), readJSON(G.KEY, null),
+    readJSON('data/attendance.json', []), TB.loadAll(readJSON), loadConnection(readJSON), readJSON(G.KEY, null), readJSON('data/client-dues.json', []),
   ]);
   const M = K.model({ offers, leads, appointments, sales, clients, conversations, now });
   // Meta's spend, day by day (shared cache with the KPI page; the game never waits more than a few seconds for it)
@@ -32,7 +32,7 @@ async function compute(now) {
   const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
   // Meta read for real: no error, and the day by day spend came back (an empty list next to ads that spent is a failed read)
   const adsOk = !!(ads && Array.isArray(ads.daily) && !ads.error && !ads.dailyError && !(ads.daily.length === 0 && (ads.rows || []).some((r) => r.spend > 0)));
-  const out = G.build({ M, employees, sales, attendance, tbAll, appointments, adsDaily: adsOk ? ads.daily : [], adsOk, adsFrom: first, doc, now, photoOf });
+  const out = G.build({ M, employees, sales, dues, attendance, tbAll, appointments, adsDaily: adsOk ? ads.daily : [], adsOk, adsFrom: first, doc, now, photoOf });
   out.state.adsState = ads.none ? 'none' : adsOk ? 'ok' : 'error';
   return out;
 }

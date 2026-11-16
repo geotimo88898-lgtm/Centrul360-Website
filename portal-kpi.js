@@ -251,10 +251,12 @@
     const seg = [['cash', 'cash', meth.cash], ['card', 'card', meth.card], ['transfer', 'transfer', meth.transfer]].filter((x) => x[2] > 0);
     const byCity = (d.cities.rows || []).filter((c) => c.money.revenue).map((c) => ({ city: c.city, v: c.money.revenue, pv: p && p.cities && p.cities[c.city] ? p.cities[c.city].revenue : null }));
     const topC = Math.max(1, ...byCity.map((x) => x.v));
-    return sec('money', 'kq-money', 'Încasat', 'Plățile din Încasări din perioada aleasă, după ziua scrisă la plată.',
+    return sec('money', 'kq-money', 'Încasat', 'Plățile din Încasări din perioada aleasă, după ziua scrisă la plată, minus rambursările (în ziua lor).',
       '<div class="kq-bars">' + byCity.map((x, i) => '<div class="kq-bar-r" style="--i:' + i + ';--w:' + ratio(x.v, topC) + '%">' + tag(x.city) + '<i class="kq-tr"><s></s></i><b>' + K.lei(x.v) + '</b>' + dl(x.v, x.pv, 'lei') + '</div>').join('') + '</div>' +
       (tot ? '<div class="kq-split"><div class="kq-split-bar">' + seg.map((s, i) => '<i class="is-' + s[0] + '" style="--w:' + ratio(s[2], tot) + '%;--i:' + i + '"></i>').join('') + '</div>' +
-        '<p class="kq-sub">' + seg.map((s) => '<span class="is-' + s[0] + '"><i></i>' + P(pct(s[2], tot)) + ' ' + s[1] + '</span>').join('') + '<span>bon mediu ' + L(d.money.ticket) + '</span></p></div>' : ''));
+        '<p class="kq-sub">' + seg.map((s) => '<span class="is-' + s[0] + '"><i></i>' + P(pct(s[2], tot)) + ' ' + s[1] + '</span>').join('') + '<span>bon mediu ' + L(d.money.ticket) + '</span></p></div>' : '') +
+      // the refunds of the period (the owner and the manager; the sums above are already net of them)
+      (d.money.refunds && d.money.refunds.count ? '<p class="kq-sub kq-refunds"><span>Rambursări ' + K.lei(d.money.refunds.lei) + '</span><span>' + K.plural(d.money.refunds.count, 'rambursare', 'rambursări') + '</span><span>' + String(d.money.refunds.pct).replace('.', ',') + '% din încasări</span></p>' : ''));
   }
 
   function packagesHtml(d) {

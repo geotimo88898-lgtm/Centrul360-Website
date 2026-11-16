@@ -182,7 +182,7 @@ function mergeDoc(latest, mine) {
 // input: { M (kpi model), employees, sales, attendance, tbAll, appointments, adsDaily, adsOk, adsFrom (the first day Meta was
 // read for), doc, now, photoOf }
 function build(input) {
-  const { M, employees = [], sales = [], attendance = [], tbAll = { payouts: [] }, appointments = [], adsDaily = [], adsOk = false, photoOf = () => '' } = input;
+  const { M, employees = [], sales = [], dues = [], attendance = [], tbAll = { payouts: [] }, appointments = [], adsDaily = [], adsOk = false, photoOf = () => '' } = input;
   const now = input.now || Date.now();
   const doc = cleanDoc(input.doc);
   let changed = !input.doc || input.doc.v !== DOC_V;
@@ -228,7 +228,7 @@ function build(input) {
     || appointments.some((a) => a && (a.createdBy === e.id || a.cosmeticianId === e.id) && inMonth(a.date, m));
   const payrollOf = (m, list) => (list || staffAll).reduce((n, e) => {
     if (e.active === false && !workedIn(e, m)) return n;
-    const pay = PAY.monthPay({ emp: e, month: m, isCurrent: m === month, sales, payouts: tbAll.payouts || [], bank: m === month ? TB.ledger(e.id, tbAll) : null, attendance, appointments });
+    const pay = PAY.monthPay({ emp: e, month: m, isCurrent: m === month, sales, dues, payouts: tbAll.payouts || [], bank: m === month ? TB.ledger(e.id, tbAll) : null, attendance, appointments });
     return n + pay.total;
   }, 0);
   // the salaries of a month that ended more than 5 days ago are kept (the payroll is heavy to recompute every time)

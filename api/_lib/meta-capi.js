@@ -244,7 +244,7 @@ function crmReached(lead, ctx) {
   // her payments since the form: Client, with what she paid
   const apptIds = new Set(mine.map((a) => a.id));
   const clientIds = new Set([lead.clientId].concat(mine.map((a) => a.clientId)).filter(Boolean));
-  const pays = (c.sales || []).filter((s) => s && s.source === 'incasare' && (apptIds.has(s.appointmentId) || clientIds.has(s.clientId)) && Date.parse(s.createdAt || s.date) >= since);
+  const pays = (c.sales || []).filter((s) => s && s.source === 'incasare' && s.kind !== 'refund' && (apptIds.has(s.appointmentId) || clientIds.has(s.clientId)) && Date.parse(s.createdAt || s.date) >= since);
   let value = 0;
   if (pays.length) {
     hit('Client', Math.min(...pays.map((s) => Date.parse(s.createdAt || s.date))));

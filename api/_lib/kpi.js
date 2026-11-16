@@ -177,7 +177,7 @@ function model({ offers = [], leads = [], appointments = [], sales = [], clients
     const lead = (appt && appt.lead) || latestLead(phoneOfClient.get(s.clientId) || '', s.clientId, t + DAY);
     const key = lead && lead.fresh ? lead.key : lead ? 'org:old' : 'org:direct';
     // its day is the payment's day as the desk wrote it (the same day Încasări and Panou → Azi use), not when it was typed in
-    const p = { id: s.id, t, day: /^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')) ? String(s.date) : bucharestDay(t), amount: Number(s.amount) || 0, upsell: Number(s.upsell) || 0, appt, lead, key, counts,
+    const p = { id: s.id, refund: s.kind === 'refund', t, day: /^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')) ? String(s.date) : bucharestDay(t), amount: Number(s.amount) || 0, upsell: Number(s.upsell) || 0, appt, lead, key, counts,
       city: cityOf(s.location || (appt && appt.city)), by: s.performedBy || (appt && appt.cosmeticianId) || '', clientId: s.clientId || '', method: s.method || '', split: s.split || null };
     if (appt) appt.pays.push(p);
     if (counts && lead && lead.fresh && t >= lead.at - DAY) lead.pays.push(p);
@@ -229,11 +229,16 @@ function visitsOf(list) {
   return { scheduled: list.length, due: due.length, came: came.length, missed: due.length - came.length, rate: pct(came.length, due.length),
     upsold: ups.length, upsellRate: pct(ups.length, came.length), upsellValue: r2(ups.reduce((n, a) => n + a.pays.reduce((m, p) => m + p.upsell, 0), 0)) };
 }
+// revenue: net, the payments minus the refunds (_lib/money.js: refund rows have a negative amount); a refund is never a
+// payment, a ticket or a client; `refunds` (the owner and the manager): their sum, count and share of what came in
 function moneyOf(list) {
-  const rev = list.reduce((n, p) => n + p.amount, 0), ups = list.filter((p) => p.upsell > 0);
+  const pays = list.filter((p) => !p.refund);
+  const rev = list.reduce((n, p) => n + p.amount, 0), gross = pays.reduce((n, p) => n + p.amount, 0), ups = pays.filter((p) => p.upsell > 0);
+  const back = list.filter((p) => p.refund), backLei = -back.reduce((n, p) => n + p.amount, 0);
   const ads = list.filter((p) => !p.key.startsWith('org:')).reduce((n, p) => n + p.amount, 0);
-  return { revenue: r2(rev), payments: list.length, ticket: list.length ? r2(rev / list.length) : null, upsell: r2(ups.reduce((n, p) => n + p.upsell, 0)), upsells: ups.length,
-    upsellAvg: ups.length ? r2(ups.reduce((n, p) => n + p.upsell, 0) / ups.length) : null, ads: r2(ads), organic: r2(rev - ads), clients: new Set(list.map((p) => p.clientId || p.id)).size };
+  return { revenue: r2(rev), gross: r2(gross), refunds: { lei: r2(backLei), count: back.length, pct: gross > 0 ? Math.round((backLei / gross) * 1000) / 10 : 0 },
+    payments: pays.length, ticket: pays.length ? r2(gross / pays.length) : null, upsell: r2(ups.reduce((n, p) => n + p.upsell, 0)), upsells: ups.length,
+    upsellAvg: ups.length ? r2(ups.reduce((n, p) => n + p.upsell, 0) / ups.length) : null, ads: r2(ads), organic: r2(rev - ads), clients: new Set(pays.map((p) => p.clientId || p.id)).size };
 }
 
 // each offer (from the ads) and each organic source: leads, bookings, visits, payments, and its share of the spend
@@ -251,7 +256,9 @@ function rowsOf(M, r, offers, adRows) {
     // a lead's payments count for the period of the lead; the others for the day they were paid
     if (p.lead && p.lead.fresh) { if (!inRange(p.lead.day) || p.t < p.lead.at - DAY) return; } else if (!inRange(p.day)) return;
     const row = rowOf(p.key);
-    row.revenue += p.amount; row.payments++;
+    row.revenue += p.amount;
+    if (p.refund) return; // a refund: only less money
+    row.payments++;
     if (p.upsell > 0) { row.upsell += p.upsell; row.upsells++; }
     row.clients.add(p.clientId || (p.lead ? p.lead.id : p.id));
   });
@@ -477,7 +484,7 @@ function ratesOf(M, r) {
 // the few numbers compared with the previous period (↑ / ↓)
 function summaryOf(rep) {
   const f = rep.funnel, m = rep.money, a = rep.ads && rep.ads.totals, pk = packagesOf(rep._pays || []);
-  const out = { revenue: m.revenue, payments: m.payments, ticket: m.ticket, leads: f.leads, contacted: f.contacted, booked: f.booked, came: f.came, paid: f.paid,
+  const out = { revenue: m.revenue, refunds: m.refunds.lei, refundCount: m.refunds.count, payments: m.payments, ticket: m.ticket, leads: f.leads, contacted: f.contacted, booked: f.booked, came: f.came, paid: f.paid,
     bookRate: f.rates.booked, showRate: rep.visits.rate, made: rep.bookings.made,
     upsellRate: rep.rates ? rep.rates.all.upsell.pct : null, cancelRate: rep.rates ? rep.rates.all.cancel.pct : null, rebookRate: rep.rates ? rep.rates.all.rebook.pct : null, packages: pk.count, packageAvg: pk.avg, packageValue: pk.value, cities: {} };
   if (a) Object.assign(out, { spend: a.spend, cpl: a.cpl, perBooked: a.perBooked, perCame: a.perCame, cpa: a.cpa, roas: a.roas, metaLeads: a.metaLeads });

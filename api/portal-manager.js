@@ -19,6 +19,7 @@
 //   { action: 'reports_list' }
 // Data: data/manager-feedback.json, data/day-closes.json, data/manager-reports.json (newest last, the last 400 kept).
 
+const MONEY = require('./_lib/money');
 const crypto = require('crypto');
 const { readJSON, writeJSON, readJSONTagged, writeJSONIf } = require('./_lib/store');
 const { requireManage } = require('./_lib/roles');
@@ -140,7 +141,7 @@ async function prefill(city, date) {
     else if (s.method === 'cash_card') { cash += Number(s.split && s.split.cash) || 0; card += Number(s.split && s.split.card) || 0; }
   });
   const pos = await posOf(city, date, date);
-  return { city, date, count: sales.length, cash: r2(cash), card: r2(card), transfer: r2(transfer),
+  return { city, date, count: sales.filter(MONEY.isPayment).length, refunds: MONEY.refundsOf(sales).lei, cash: r2(cash), card: r2(card), transfer: r2(transfer),
     pos: pos.connected ? { connected: true, total: r2(pos.payments.filter((p) => !p.cancelled).reduce((a, p) => a + p.amount, 0)), count: pos.payments.filter((p) => !p.cancelled && p.amount > 0).length, terminals: pos.terminals } : { connected: false } };
 }
 
@@ -177,7 +178,7 @@ function weekNumbers(D, monday, mine) {
     const made = D.appts.filter((a) => a && a.location === city && !a.block && a.status !== 'concediu' && roDay(a.createdAt) >= monday && roDay(a.createdAt) <= sunday);
     const worked = team.filter((x) => x.days > 0);
     out[city] = {
-      collected: r2(inc.reduce((a, s) => a + (Number(s.amount) || 0), 0)), payments: inc.length,
+      collected: MONEY.net(inc), payments: inc.filter(MONEY.isPayment).length, refunds: MONEY.refundsOf(inc),
       perDayAvg: worked.length ? Math.round(worked.reduce((a, x) => a + x.perDay, 0) / worked.length) : 0,
       team: team.map((x) => ({ name: x.name, days: x.days, collected: x.collected, perDay: x.perDay, ...(x.trainee ? { trainee: true, label: x.label } : {}) })),
       booked: made.length, visits: visits.length, shows: visits.filter((a) => cameBy(a, paid)).length, cancelled: cancelled.length,

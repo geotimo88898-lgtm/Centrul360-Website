@@ -52,6 +52,15 @@
   K.profitOf = (v) => Math.round((Number(v) || 0) * (100 - costShare())) / 100;
   K.commissionOf = (v) => Math.round((Number(v) || 0) * (100 - costShare()) / 100 * upRate()) / 100;
   K.commissionRule = () => ({ cost: costShare(), rate: upRate() });
+  // Money in (same as api/_lib/money.js): a refund (Rambursare) is a row of Încasări with a minus sum, in the refund's
+  // day, so the net collected is the sum of the rows; a refund is never counted as a payment (a visit, a ticket)
+  K.isRefund = (s) => !!s && s.kind === 'refund';
+  K.pays = (rows) => (rows || []).filter((s) => !K.isRefund(s));
+  K.net = (rows) => Math.round((rows || []).reduce((a, s) => a + (Number(s.amount) || 0), 0) * 100) / 100;
+  K.refundsOf = (rows) => {
+    const back = (rows || []).filter(K.isRefund), lei = -K.net(back), gross = K.net(K.pays(rows));
+    return { lei, count: back.length, gross, pct: gross > 0 ? Math.round((lei / gross) * 1000) / 10 : 0 };
+  };
 
   // Old links / bookmarks keep working.
   const ALIASES = { incasare: ['incasari', 'incasari:new'], resurse: ['traininguri'], setari: ['integrari'], formulare: ['integrari', 'integrari:forms'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'], contacts: ['contacte'] };

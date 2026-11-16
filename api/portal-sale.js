@@ -301,7 +301,15 @@ async function handleIncasare(req, res, session) {
     await writeJSON('data/sales.json', sales);
     let due = null;
     if (entry.packageTotal) due = parts ? await D.start(store, entry, entry.packageTotal, parts.upsellPaid, upsellWhat || 'Upsell · ' + entry.treatment) : await D.start(store, entry, entry.packageTotal);
-    if (owed && entry.toDue > 0) { const p = await D.pay(store, owed.id, appt.clientId, entry, entry.toDue); due = (p && p.due) || due; }
+    if (owed && entry.toDue > 0) {
+      const p = await D.pay(store, owed.id, appt.clientId, entry, entry.toDue); due = (p && p.due) || due;
+      // a part of a package whose upsell is approved: its commission comes with it (_lib/commission.js), she hears it
+      const full = await D.find(store, owed.id);
+      const u = full && sales.find((x) => x.source === 'comision' && x.incasareId === full.saleId && x.status === 'approved');
+      if (p && p.applied > 0 && u && require('./_lib/commission').cashRule(u)) {
+        try { await N.notify(store, u.employeeId, { kind: 'commission', tone: 'good', go: 'comision', title: 'COMISION ✅ - +' + N.leiTxt(commissionOf(p.applied)), text: 'Din restul pachetului: ' + N.leiTxt(p.applied) + ' încasați' + (entry.client ? ', ' + entry.client : '') }); } catch (e) { /* never blocks a payment */ }
+      }
+    }
 
     // Paid = done: the appointment is closed in the Calendar (and the "after treatment"
     // automations, like the review request, can start).

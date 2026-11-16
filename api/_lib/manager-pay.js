@@ -92,13 +92,12 @@ function collectionsOf(sales, appts, emps, clinics, month, upto) {
   const home = new Map((emps || []).map((e) => [e.id, clinicOf(e && e.location)]));
   const apptCity = new Map((appts || []).filter(Boolean).map((a) => [a.id, clinicOf(a.location)]));
   const all = CLINICS.every((c) => clinics.includes(c));
-  let total = 0;
-  (sales || []).forEach((s) => {
-    if (!s || s.source !== 'incasare' || String(s.date).slice(0, 7) !== month || (upto && s.date > upto)) return;
+  // net: the payments minus the refunds (_lib/money.js), the same number Încasări, KPI and Cheltuieli show
+  return require('./money').net(sales, (s) => {
+    if (String(s.date).slice(0, 7) !== month || (upto && s.date > upto)) return false;
     const c = clinicOf(s.location) || (s.appointmentId && apptCity.get(s.appointmentId)) || home.get(s.performedBy) || '';
-    if (c ? clinics.includes(c) : all) total += Number(s.amount) || 0;
+    return c ? clinics.includes(c) : all;
   });
-  return r2(total);
 }
 
 // the condition: every trained cosmetician of her clinics over 1.500 lei a day worked
@@ -108,9 +107,9 @@ function conditionOf(emps, sales, attendance, clinics, month, upto) {
   // someone who left is out from the month she left (_lib/left.js); her payments still count in the clinic's money
   (emps || []).filter((e) => e && e.role === 'cosmetician' && clinics.includes(clinicOf(e.location)) && !require('./left').outOfMonth(e, month)).forEach((e) => {
     const mine = (sales || []).filter((s) => s && s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
-    const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
+    const collected = require('./money').net(mine); // minus the refunds of her treatments
     const punched = new Set((attendance || []).filter((x) => x && x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
-    mine.forEach((s) => punched.add(s.date)); // a day with collections and no clock-in counts as worked
+    mine.filter(require('./money').isPayment).forEach((s) => punched.add(s.date)); // a day with collections and no clock-in counts as worked (a refund: not)
     const days = punched.size;
     if (e.active === false && !days) return; // she left before this month
     const row = { id: e.id, name: e.name || '', location: clinicOf(e.location), collected, days, perDay: days ? Math.round(collected / days) : 0, ok: days > 0 && collected / days > MIN_PER_DAY };
@@ -128,7 +127,7 @@ async function payrollAutos(ctx, clinics, month, isCurrent) {
   (ctx.employees || []).filter((e) => e && e.id !== 'admin' && e.role !== 'admin').forEach((e) => {
     const mine = e.role === 'manager' ? managesOf(e).some((c) => clinics.includes(c)) : clinics.includes(clinicOf(e.location));
     if (!mine) return;
-    const p = PAY.monthPay({ emp: e, month, isCurrent, sales: ctx.sales, payouts: ctx.tbAll.payouts || [], bank: isCurrent ? TB.ledger(e.id, ctx.tbAll) : null, attendance: ctx.attendance, appointments: ctx.appointments });
+    const p = PAY.monthPay({ emp: e, month, isCurrent, sales: ctx.sales, dues: ctx.dues, payouts: ctx.tbAll.payouts || [], bank: isCurrent ? TB.ledger(e.id, ctx.tbAll) : null, attendance: ctx.attendance, appointments: ctx.appointments });
     commissions += (Number(p.commission) || 0) + (Number(p.bonus) || 0) + (Number(p.manual) || 0);
     overtime += Number(p.overtimeLei) || 0;
   });
@@ -209,12 +208,12 @@ const managerFrom = (emp) => (isDay(emp && emp.roleSince) ? emp.roleSince.slice(
 
 async function loadCtx(readJSON) {
   const { writeJSON } = require('./store');
-  const [employees, sales, attendance, appointments, tbAll, costs, finals, eur, exp] = await Promise.all([
+  const [employees, sales, attendance, appointments, tbAll, costs, finals, eur, exp, dues] = await Promise.all([
     readJSON('data/employees.json', []), readJSON('data/sales.json', []), readJSON('data/attendance.json', []), readJSON('data/appointments.json', []),
     TB.loadAll(readJSON), loadCosts(readJSON), readJSON(FINAL_KEY, {}), require('./eur-rate').eurToday(readJSON, writeJSON).catch(() => null),
-    require('./expenses').loadDoc(readJSON),
+    require('./expenses').loadDoc(readJSON), readJSON(require('./dues').KEY, []),
   ]);
-  return { employees, sales, attendance, appointments, tbAll, costs, finals: finals && typeof finals === 'object' ? finals : {}, eur, exp };
+  return { employees, sales, attendance, appointments, tbAll, costs, finals: finals && typeof finals === 'object' ? finals : {}, eur, exp, dues };
 }
 // the rents in euro always at today's BNR rate (the owner, 16.11); the rate saved with the month only when the BNR
 // was never reached

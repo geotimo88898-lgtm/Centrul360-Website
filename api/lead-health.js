@@ -53,6 +53,33 @@ module.exports = async (req, res) => {
     return;
   }
   // ?verify=1[&month=YYYY-MM]: the clinic's numbers checked twice, counts only (see verifyNumbers below)
+  // ?commission=1&month=YYYY-MM: the upsell commission of a month under the old rule (the whole value, in the upsell's
+  // month) and under the rule from November 2026 (4% of each payment received, minus the refunds: _lib/commission.js),
+  // in total and per cosmetician id, approved and waiting; ids and sums only, never a name. Read only.
+  if (req.query && req.query.commission) {
+    const CM = require('./_lib/commission');
+    const month = /^\d{4}-\d{2}$/.test(String(req.query.month || '')) ? req.query.month : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
+    const [sales, dues, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/client-dues.json', []), readJSON('data/employees.json', [])]);
+    const C = CM.context(sales, dues);
+    const r2 = (n) => Math.round(n * 100) / 100;
+    const people = {}, total = { old: 0, oldWaiting: 0, new: 0, newWaiting: 0, toCome: 0 };
+    emps.filter((e) => e && e.role === 'cosmetician').forEach((e) => {
+      let o = 0, ow = 0;
+      sales.forEach((s) => {
+        if (!CM.isUpsellReq(s) || s.employeeId !== e.id || String(s.date).slice(0, 7) !== month) return;
+        if (s.status === 'approved') o += Number(s.commission) || 0;
+        if (s.status === 'pending') ow += Number(s.commission) || 0;
+      });
+      const n = CM.monthOfPerson(sales, dues, e.id, month, true, C);
+      const come = n.toCome.reduce((a, t) => a + t.lei, 0);
+      if (!o && !ow && !n.commission && !n.waiting && !come) return;
+      people[e.id] = { old: r2(o), oldWaiting: r2(ow), new: n.commission, newWaiting: n.waiting, toCome: r2(come), lines: n.lines.length };
+      total.old += o; total.oldWaiting += ow; total.new += n.commission; total.newWaiting += n.waiting; total.toCome += come;
+    });
+    Object.keys(total).forEach((k) => { total[k] = r2(total[k]); });
+    res.status(200).json({ month, rule: CM.NEW_FROM, total, people });
+    return;
+  }
   if (req.query && req.query.verify) {
     try { res.status(200).json(await verifyNumbers(req.query.month)); } catch (e) { res.status(500).json({ error: String(e.message || e).replace(PHONE, '…').slice(0, 200) }); }
     return;
@@ -437,11 +464,14 @@ async function verifyNumbers(monthQ) {
     const n = plain(name).trim().replace(/\s+/g, ' '); if (n) out.push('n:' + n);
     return out;
   };
+  // every money row (a refund, 16.11: a row of its own with a minus sum, in the sums) and the payments alone (a refund is
+  // never a visit, a day worked or a package)
   const pays = sales.filter((s) => s && s.source === 'incasare' && /^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')));
+  const paysIn = pays.filter((s) => s.kind !== 'refund');
   const first = shift(ro(K.cfg.start).day, 1); // the portal's first whole day (17.10)
   const wFrom = shift(today, -60) < first ? first : shift(today, -60), wTo = shift(today, -1);
   const paidAt = new Set(); // clinic|key|day
-  pays.forEach((s) => { const c = saleClinic(s); keysOf(s.clientId, s.clientPhone, s.client).forEach((k) => paidAt.add(c + '|' + k + '|' + s.date)); });
+  paysIn.forEach((s) => { const c = saleClinic(s); keysOf(s.clientId, s.clientPhone, s.client).forEach((k) => paidAt.add(c + '|' + k + '|' + s.date)); });
   const cameOf = (a, c) => a.status === 'finalizata' || !!a.paidSaleId || keysOf(a.clientId, a.clientPhone, a.clientName).some((k) => paidAt.has(c + '|' + k + '|' + a.date));
   // late: HighLevel's no-show, or cancelled (cancelledAt) at or after its hour; a record without cancelledAt: from the
   // portal and made before the fix (16.11, 08:00 in Bucharest), its last change on the visit's own day at or after its hour; else ahead
@@ -456,7 +486,7 @@ async function verifyNumbers(monthQ) {
   const isTest = (a) => /^\s*test\b/i.test(a.clientName || '');
   // KPI's „came” (any clinic, her card id or her phone as written on the booking and the payment)
   const paidKpi = new Set();
-  pays.forEach((s) => { if (s.clientId) paidKpi.add('c|' + s.clientId + '|' + s.date); const p = last9(s.clientPhone); if (p.length === 9) paidKpi.add('p|' + p + '|' + s.date); });
+  paysIn.forEach((s) => { if (s.clientId) paidKpi.add('c|' + s.clientId + '|' + s.date); const p = last9(s.clientPhone); if (p.length === 9) paidKpi.add('p|' + p + '|' + s.date); });
   const cameKpi = (a) => a.status === 'finalizata' || !!a.paidSaleId || (!!a.clientId && paidKpi.has('c|' + a.clientId + '|' + a.date)) || (last9(a.clientPhone).length === 9 && paidKpi.has('p|' + last9(a.clientPhone) + '|' + a.date));
   const ghl = (a) => a.createdBy === 'highlevel' || !!a.ghlId || !!a.importedAt;
   const v2 = {}, checks = {};
@@ -490,9 +520,9 @@ async function verifyNumbers(monthQ) {
         ck.plainNoShow++;
         // a passed booking left „programată” / „confirmată” with no payment: a no-show, or a package session nobody closed?
         const pb = ck.plainNoShowBy, ks = keysOf(a.clientId, a.clientPhone, a.clientName);
-        const pkgBefore = pays.some((s) => (Number(s.upsell) > 0 || Number(s.packageTotal) > 0 || s.dueId) && s.date <= a.date && keysOf(s.clientId, s.clientPhone, s.client).some((k) => ks.includes(k)));
+        const pkgBefore = paysIn.some((s) => (Number(s.upsell) > 0 || Number(s.packageTotal) > 0 || s.dueId) && s.date <= a.date && keysOf(s.clientId, s.clientPhone, s.client).some((k) => ks.includes(k)));
         if (a.package) pb.packageFlag++; else if (pkgBefore) pb.clientHadPackage++; else if (!(Number(a.amount) > 0)) pb.noPrice++; else pb.other++;
-        if (pays.some((s) => s.date > a.date && keysOf(s.clientId, s.clientPhone, s.client).some((k) => ks.includes(k)))) pb.paidOnALaterDay++;
+        if (paysIn.some((s) => s.date > a.date && keysOf(s.clientId, s.clientPhone, s.client).some((k) => ks.includes(k)))) pb.paidOnALaterDay++;
         if (ghl(a)) pb.highLevel++;
       }
       const k = (keysOf(a.clientId, a.clientPhone, a.clientName)[0] || 'id:' + a.id) + '|' + a.date + '|' + plain(a.treatment).trim();
@@ -521,7 +551,7 @@ async function verifyNumbers(monthQ) {
       const mine = pays.filter((s) => s.performedBy === e.id && s.date >= mFrom && s.date <= mTo);
       const lei = mine.reduce((n, s) => n + (Number(s.amount) || 0), 0);
       const daySet = new Set(attendance.filter((x) => x && x.employeeId === e.id && x.checkIn && x.date >= mFrom && x.date <= mTo).map((x) => x.date));
-      mine.forEach((s) => daySet.add(s.date));
+      mine.filter((s) => s.kind !== 'refund').forEach((s) => daySet.add(s.date));
       return { e, days: daySet.size, lei, trainee: e.trainedOfficial === false };
     }).filter((p) => p.e.active !== false || p.days > 0);
     const inCond = people.filter((p) => !p.trainee && p.days > 0);
@@ -596,7 +626,7 @@ async function verifyNumbers(monthQ) {
     apptsWithoutClinic: winAppts.filter((a) => !apptClinic(a)).length, apptsWithoutClientId: winAppts.filter((a) => !a.clientId).length,
     paysWithoutClinic: monthPays.filter((s) => !saleClinic(s)).length, paysWithoutClientId: monthPays.filter((s) => !s.clientId).length, paysWithoutPerformer: monthPays.filter((s) => !s.performedBy || !home.has(s.performedBy)).length,
     paysPerformerNotCosmetician: monthPays.filter((s) => { const e = emps.find((x) => x && x.id === s.performedBy); return e && e.role !== 'cosmetician'; }).length,
-    paysNonPositive: monthPays.filter((s) => !(Number(s.amount) > 0)).length, paysFutureDate: pays.filter((s) => s.date > today).length,
+    paysNonPositive: monthPays.filter((s) => s.kind !== 'refund' && !(Number(s.amount) > 0)).length, paysFutureDate: pays.filter((s) => s.date > today).length,
     paysDatedOtherThanTyped: monthPays.filter((s) => { const t = Date.parse(s.createdAt || ''); return Number.isFinite(t) && ro(t).day !== s.date; }).length,
     cosmeticiansLocationSpelledOtherwise: emps.filter((e) => e && e.role === 'cosmetician' && clinic(e.location) && e.location !== clinic(e.location)).length,
     cosmeticiansWithoutClinic: emps.filter((e) => e && e.role === 'cosmetician' && !clinic(e.location)).length,

@@ -13,6 +13,7 @@ const { photoUrl } = require('./portal-account');
 const { mine: myNotifications } = require('./_lib/notify');
 const TB = require('./_lib/timebank');
 const PAY = require('./_lib/payroll');
+const CM = require('./_lib/commission');
 const { bookingNotes } = require('./_lib/bonus');
 const { deviceCounts } = require('./_lib/push');
 // Profile photo (Contul meu) of an employee row, as a URL the portal can show.
@@ -108,7 +109,7 @@ module.exports = async (req, res) => {
   if (!session) return;
 
   try {
-    const [employeesRaw, sales, appointments, configRaw, leads, offersAll, academyProgress] = await Promise.all([
+    const [employeesRaw, sales, appointments, configRaw, leads, offersAll, academyProgress, duesAll] = await Promise.all([
       readJSON('data/employees.json', []),
       readJSON('data/sales.json', []),
       readJSON('data/appointments.json', []),
@@ -116,7 +117,10 @@ module.exports = async (req, res) => {
       readJSON('data/leads.json', []),
       loadOffers(readJSON, null),
       readJSON('data/academy-progress.json', {}),
+      readJSON('data/client-dues.json', []),
     ]);
+    // the commission on the money received (_lib/commission.js), read once for every person and month below
+    const cctx = CM.context(sales, duesAll);
 
     const config = configRaw || defaultConfig();
     const today = todayISO();
@@ -146,7 +150,8 @@ module.exports = async (req, res) => {
 
     // Commission sales only (source !== 'incasare'; legacy entries from before this
     // field existed have no `source` at all and are treated as 'comision' as well).
-    const comisionSales = sales.filter((s) => s.source !== 'incasare');
+    // each upsell with what it has brought so far (from November 2026: 4% of each payment received; _lib/commission.js)
+    const comisionSales = sales.filter((s) => s.source !== 'incasare').map((s) => (CM.isUpsellReq(s) ? Object.assign({}, s, { cash: CM.summaryOf(s, cctx) }) : s));
     const incasareSales = sales.filter((s) => s.source === 'incasare');
 
     // Company goal progress: everything the clinic took in this month (Încasări, both locations).
@@ -162,7 +167,7 @@ module.exports = async (req, res) => {
     // Counted from Încasări: every paid treatment in the category, credited to whoever did it.
     const raceCounts = {};
     incasareSales.forEach((s) => {
-      if (s.performedBy && monthKey(s.date) === raceMonth && categoriesOf(s).includes(raceCategory)) {
+      if (s.performedBy && s.kind !== 'refund' && monthKey(s.date) === raceMonth && categoriesOf(s).includes(raceCategory)) {
         raceCounts[s.performedBy] = (raceCounts[s.performedBy] || 0) + 1;
       }
     });
@@ -184,6 +189,9 @@ module.exports = async (req, res) => {
 
     // Shared "Tabel de încasări" - visible to every authenticated role, read-only for
     // non-admins. Only `source: 'incasare'` entries, so commission claims never show here.
+    // what was refunded of each payment (_lib/refunds.js): Încasări marks it „rambursat parțial / integral”
+    const refundedBy = new Map();
+    incasareSales.forEach((r) => { if (r.kind === 'refund') (r.from || []).forEach((p) => refundedBy.set(p.saleId, Math.round(((refundedBy.get(p.saleId) || 0) + Number(p.lei || 0)) * 100) / 100)); });
     const incasari = incasareSales
       .map((s) => {
         const recorder = employeesRaw.find((e) => e.id === s.employeeId);
@@ -193,6 +201,7 @@ module.exports = async (req, res) => {
           categories: categoriesOf(s),
           // its clinic written one way (Timișoara / Arad, whatever the spelling: api/_lib/clinic.js), so the manager's clinics keep it
           location: clinicOf(s.location) || clinicOf(performer && performer.location) || s.location || (recorder && recorder.location) || '',
+          ...(refundedBy.get(s.id) ? { refunded: refundedBy.get(s.id) } : {}),
           employeeName: recorder ? recorder.name : s.employeeId,
           performedByName: performer ? performer.name : (s.performedBy || '-'),
         };
@@ -241,7 +250,7 @@ module.exports = async (req, res) => {
 
     // ---- Salariu: what each person takes home (salary + overtime + commission or booking bonus)
     const monthsBack = (n) => { const out = []; let y = Number(month.slice(0, 4)), m = Number(month.slice(5, 7)); for (let i = 0; i < n; i++) { out.push(y + '-' + String(m).padStart(2, '0')); m -= 1; if (!m) { m = 12; y -= 1; } } return out; };
-    const payOf = (emp, m) => PAY.monthPay({ emp, month: m, isCurrent: m === month, sales, payouts: tbAll.payouts, bank: m === month ? TB.ledger(emp.id, tbAll) : null, attendance: attendanceAll, appointments, finals: mgrFinals || {} });
+    const payOf = (emp, m) => PAY.monthPay({ emp, month: m, isCurrent: m === month, sales, dues: duesAll, cctx, payouts: tbAll.payouts, bank: m === month ? TB.ledger(emp.id, tbAll) : null, attendance: attendanceAll, appointments, finals: mgrFinals || {} });
     const salary = isAdmin ? null : { months: monthsBack(6).map((m) => payOf(me, m)), rule: { rate: UPSELL_RATE, cost: COST_SHARE, tiers: PAY.BOOKING_TIERS } };
 
     // Bell reminders for the booking bonus (reception): the step reached, and the next one when

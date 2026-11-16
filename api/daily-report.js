@@ -84,7 +84,7 @@ async function numbers(day) {
   const conn = await M.loadConn(readJSON);
   const ofDay = appts.filter((a) => a.date === day && a.status !== 'concediu');
   return {
-    day, total, methods: m, byCity, count: paid.length,
+    day, total, methods: m, byCity, count: paid.filter((s) => s.kind !== 'refund').length, // total: net, refunds included (_lib/money.js)
     pos: { total: posTotal, count: posPaid.length, avg: posPaid.length ? Math.round(posPaid.reduce((a, p) => a + p.amount, 0) / posPaid.length * 100) / 100 : 0, connected: !!(pos.list || []).length,
       unrecorded: unrecorded(day, sales, pos.list || [], conn.devices) },
     appointments: { total: ofDay.filter((a) => a.status !== 'anulata').length, done: ofDay.filter((a) => a.status === 'finalizata').length, cancelled: ofDay.filter((a) => a.status === 'anulata').length },

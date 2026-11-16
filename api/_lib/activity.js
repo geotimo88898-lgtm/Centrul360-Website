@@ -62,7 +62,7 @@ const READS_IN = {
   'portal-appointments': ['orphans'],
   'portal-schedule': ['break_info'],
   'portal-employees': ['manual_list'],
-  'portal-incasari': ['dues'],
+  'portal-incasari': ['dues', 'refund_preview'],
   'portal-content': ['results', 'gallery'],
   'portal-nuki': ['chat', 'reply', 'slot'],
 };
@@ -83,6 +83,7 @@ const VERBS = {
   'portal-contacts:consent': 'a setat acordul pentru poze la', 'portal-contacts:frames_set': 'a aliniat pozele la', 'portal-contacts:publish': 'a publicat pe site rezultatele',
   'portal-contacts:unpublish': 'a scos de pe site rezultatele',
   'portal-incasari:update': 'a modificat încasarea', 'portal-incasari:delete': 'a șters încasarea',
+  'portal-incasari:refund': 'a făcut o rambursare la', 'portal-incasari:refund_undo': 'a anulat rambursarea la',
   'portal-ghl:connect': 'a conectat HighLevel', 'portal-ghl:mapping': 'a potrivit calendarele HighLevel', 'portal-ghl:start': 'a pornit importul din HighLevel', 'portal-ghl:disconnect': 'a deconectat HighLevel',
   'portal-live:connect': 'a pornit sincronizarea instantă', 'portal-live:disconnect': 'a oprit sincronizarea instantă',
   'portal-comments:toggle': 'a schimbat răspunsul automat la comentarii', 'portal-comments:retry': 'a trimis din nou răspunsul la un comentariu', 'portal-comments:skip': 'a oprit răspunsul la un comentariu',
@@ -191,6 +192,7 @@ function describe(route, action, body, before, after, out) {
   else if (route === 'portal-leads' && action === 'log_contact') detail = [b.channel === 'whatsapp' ? 'pe WhatsApp' : 'telefonic', OUTCOME[b.outcome] || '', clip(b.text, 60)].filter(Boolean).join(' · ');
   else if (route === 'portal-leads' && action === 'add_note') detail = clip(b.text, 80);
   else if (route === 'portal-whatsapp' && (action === 'send' || action === 'send_media')) detail = clip(b.text || b.caption || b.filename, 80);
+  else if (route === 'portal-incasari' && (action === 'refund' || action === 'refund_undo')) detail = [b.amount ? b.amount + ' lei' : '', b.close ? 'pachet închis' : '', clip(b.reason, 60)].filter(Boolean).join(' · ');
   else if (route === 'portal-sale') detail = [b.amount ? b.amount + ' lei' : '', b.cashAmount ? 'cash ' + b.cashAmount : '', b.cardAmount ? 'card ' + b.cardAmount : ''].filter(Boolean).join(' · ');
   else if (route === 'portal-approve') detail = (b.decision === 'approve' || b.decision === 'approved' ? 'aprobată' : b.decision ? 'respinsă' + (b.reason ? ': ' + clip(b.reason, 60) : '') : '') + ((after || before) && Number((after || before).amount) ? ' · ' + Number((after || before).amount) + ' lei' : '');
   else if (route === 'portal-employees' && action === 'manual_add') detail = (b.kind === 'commission' ? b.value + ' lei' : b.value + ' min') + (b.note ? ' · ' + clip(b.note, 60) : '');

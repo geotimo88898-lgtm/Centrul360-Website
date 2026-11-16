@@ -17,6 +17,7 @@
 // part=messages: only the messages (Automatizări → Mesaje).
 // Server-Timing: data (the store), meta (the ads), calc.
 
+const MONEY = require('./_lib/money');
 const { readJSON } = require('./_lib/store');
 const { requireRole } = require('./_lib/auth');
 const { cityOf } = require('./_lib/city');
@@ -155,7 +156,7 @@ module.exports = async (req, res) => {
         appts: todayOf(appts, ro.min),
         // tomorrow's bookings not confirmed yet (the reception confirms them the day before)
         tomorrowUnconfirmed: myAppts.filter((a) => a && a.date === tomorrow && a.location === city && !a.block && (a.status === 'programata' || a.status === 'reprogramata')).length,
-        collected: C.r2(paid.reduce((n, s) => n + (Number(s.amount) || 0), 0)), payments: paid.length, methods: C.methods(paid),
+        collected: MONEY.net(paid), payments: paid.filter(MONEY.isPayment).length, methods: C.methods(paid),
         leads: { total: sp.total, within5: sp.within5, never: sp.never, median: sp.median, inHours: sp.inHours, inHoursWithin5: sp.inHoursWithin5 },
         waiting: waiting[city] || 0,
         ads: owner && adsToday ? { spend: c.spend || 0, metaLeads: c.metaLeads || 0, leads: (c.ads && c.ads.leads) || 0, cpl: c.cost ? c.cost.lead : null } : null,
