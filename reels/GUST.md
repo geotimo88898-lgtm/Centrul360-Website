@@ -33,6 +33,12 @@ pe placul meu”).
 10. **Fiecare reel e alt tip de film.** Nu aceeași structură cu alt text. Structura (cârlig, explicație, buclă, CTA)
     rămâne ascunsă.
 
+11. **Nu tăia, poartă** (16.11, lecția „glide”, „foarte importantă”): obiectul pe care îl atingi sau îl urmărești duce
+    privirea în scena următoare. Cardul devine pagina, imaginea crește în cadrul nou, înapoi se întoarce exact de unde a
+    plecat, un meniu se deschide din butonul lui. În montaj: match cut-uri și tranziții în care un element (o poză reală,
+    un cuvânt, logo-ul, o mână) trece dintr-un cadru în altul, nu tăieturi seci între cadre fără legătură. Spectatorul
+    știe mereu unde se află („a sense of place”).
+
 ## Ținta (15.11, cuvintele lui)
 „Îmi plac reelurile extraordinare, unexpected și care doar zici wow și râzi din minunăție.” Câteva au fost
 spectaculoase; ținta e mult peste. Fiecare reel trebuie să aibă cel puțin un moment pe care nu-l vezi venind și care
@@ -58,6 +64,7 @@ De acum el aprobă sau cere refacerea fiecărui reel în Content → Transit, cu
 | 15.11 | `v2-ems-intinsa` (colaj editorial cu statui, voce) | foarte bun; muzica puțin mai încet | colajul editorial cu obiecte clasice și o linie turcoaz merge |
 | 15.11 | `v2-crema-straturi` (voce, plonjare prin straturile pielii) | bun; muzica foarte puțin mai încet | nimic nou de montaj |
 | 15.11 | `v2-suspans-hifu` (clepsidra, dezvăluire pe WE ON GO II) | „super nice”, dar: început neașteptat calm și catchy, apoi BUM în „honorable”; montaj mai agresiv la drop | principiile 1 și 3 |
+| 16.11 | referința „glide” (Tap. Don't cut. Carry.) | „lecție foarte importantă pentru website, aplicația internă și video-urile organice” | principiul 11: continuitate de spațiu, elementul atins devine scena următoare |
 | 15.11 | `v2-chat-epilare` (conversație cu Nuki) | „foarte bună ideea”, dar: muzica pe versul „I need someone to keep me close”, montaj pe ritm, animații mai crazy, mai puțin text | principiile 2 și 5 |
 
 **15.11, verdictul pe lot:** gușa, cazul real, EMS și crema, cu muzica mai încet: **undă verde** („sunt foarte mulțumit
