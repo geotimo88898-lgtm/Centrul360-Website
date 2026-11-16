@@ -157,6 +157,14 @@ module.exports = async (req, res) => {
     }
   }
 
+  // the hiring chats (candidates of the job ads) belong to the owner and the manager only (the owner, 16.11):
+  // reception and the cosmeticians neither see them in the list nor open or answer them
+  const hiringOnly = !require('./_lib/roles').canManage(session);
+  if (hiringOnly && body.phone && action !== 'list') {
+    const p9 = digits9(body.phone);
+    if (p9.length === 9 && (await readJSON('data/candidates.json', [])).some((x) => !x.test && digits9(x.phone) === p9)) return fail(403, 'forbidden');
+  }
+
   try {
     const IG = require('./_lib/social-inbox');
     const ig = IG.isKey(body.phone);
@@ -187,6 +195,7 @@ module.exports = async (req, res) => {
         .filter((c) => !scope || !c.location || scope.includes(c.location))
         // a candidate of a job ad (data/candidates.json): marked, so the owner and the manager find the hiring chats
         // (Mesaje → „Angajări”) and nobody takes her for a client
+        .filter((c) => !hiringOnly || !cand.has(digits9(c.phone)))
         .map((c) => (cand.has(digits9(c.phone)) ? Object.assign(c, { hire: cand.get(digits9(c.phone)) }) : c))
         // Instagram's and Facebook's (a failure there never empties the WhatsApp list)
         .concat(await IG.list().catch((e) => { console.error('instagram list:', e.message); return []; }))

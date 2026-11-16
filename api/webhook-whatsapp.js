@@ -108,8 +108,12 @@ async function keepMedia(message, phoneNumberId) {
 async function pushMessages(fresh) {
   if (!fresh.length) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
+  // a candidate's message rings only for the owner and the manager (the owner, 16.11: hiring chats aren't reception's)
+  const d9 = (x) => String(x || '').replace(/\D/g, '').slice(-9);
+  const cand = new Set((await readJSON('data/candidates.json', [])).filter((x) => !x.test).map((x) => d9(x.phone)).filter((x) => x.length === 9));
   for (const m of fresh) {
-    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, m.location)) || (e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
+    const hire = cand.has(d9(m.phone));
+    const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, m.location)) || (!hire && e.role === 'receptie' && (!m.location || !e.location || e.location === m.location))).map((e) => e.id));
     const text = m.text.length > 160 ? m.text.slice(0, 159) + '…' : m.text;
     await sendPush({ readJSON, writeJSON }, ids, { title: 'Mesaj de la ' + m.name, body: text, url: '/#mesaje', tag: 'msg-' + m.phone });
   }

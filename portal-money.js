@@ -942,7 +942,8 @@
     const RULE = K.commissionRule();
     const isDesk = me.role === 'receptie' || me.role === 'manager';
     const addBtn = cpanel.querySelector('[data-comm-new]');
-    if (addBtn) addBtn.hidden = me.role !== 'cosmetician';
+    // only a cosmetician's commission is paid (16.11: hidden for reception and the manager; .k-btn's display beat `hidden`)
+    if (addBtn) { addBtn.hidden = me.role !== 'cosmetician'; addBtn.style.display = me.role === 'cosmetician' ? '' : 'none'; }
 
     // ---- commission lines (cosmeticians)
     const sales = (D.mySales || []);
